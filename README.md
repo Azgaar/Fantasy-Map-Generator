@@ -1,4 +1,4 @@
-# Fantasy-Map-Generator
+# Fantasy Map Generator
 
 Based on [D3](https://d3js.org/) Voronoi diagram rendered to scalable svg.
 
