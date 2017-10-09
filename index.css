@@ -1,0 +1,348 @@
+@import url('https://fonts.googleapis.com/css?family=Bitter:400,400i&subset=latin-ext');
+body {
+  user-select: none;
+}
+
+svg {
+  position: absolute;
+  background-color: #5167a9;
+  border: 1px solid #414345;
+}
+
+canvas {
+  position: absolute;
+  pointer-events: none;
+}
+
+.base {
+  stroke: none;
+}
+
+.ocean {
+  filter: url(#blurFilter);
+}
+
+.mottling {
+  fill: url(#mottling);
+  opacity: .1;
+}
+
+input {
+  width: 100px;
+  height: 8px;
+}
+
+input[type=checkbox] {
+  width: 8px;
+  height: 14px;
+  margin-right: 0px;
+}
+
+.cursor {
+  fill: none;
+}
+
+.mapCells {
+  stroke-width: 0.1;
+  shape-rendering: optimizeSpeed;
+  mask: url(#shape);
+}
+
+.mapContours {
+  stroke-width: 0.1;
+  shape-rendering: optimizeSpeed;
+  mask: url(#shape);
+}
+
+.hillHatch {
+  fill: none;
+  stroke: grey;
+  stroke-width: 1;
+  stroke-dasharray: 0.1, 0.5;
+}
+
+.grid {
+  stroke: grey;
+  stroke-width: 0.1;
+  fill: #5167a9;
+  fill-opacity: 0;
+}
+
+.hCells {
+  stroke-width: .7;
+  stroke: none;
+ }
+
+.flux {
+  stroke-width: 0.1;
+  opacity: 0.7;
+}
+
+.islandBack {
+  stroke: none;
+}
+
+.lakecoast {
+  fill: #95cff3;
+  stroke: #477794;
+  stroke-width: 0.2;
+  stroke-linejoin: round;
+}
+
+.coastShade {
+  opacity: 0.5;
+  filter: url(#blurFilter);
+}
+
+.coastline {
+  fill: none;
+  stroke: #1f3846;
+  stroke-width: 1;
+  stroke-linejoin: round;
+}
+
+#shape {
+  fill: white;
+}
+
+.shallow {
+  fill: url(#shallowHatch);
+    mask: url(#shape);
+}
+
+.coastOutline {
+    fill: none;
+}
+
+.rivers {
+  fill: none;
+  stroke: #5d97bb;
+  stroke-linecap: round;
+  mask: url(#shape);
+}
+
+.riversShade {
+  fill: none;
+    stroke: black;
+    opacity: 0.9;
+    filter: url(#blurFilter);
+}
+
+.hatching {
+  fill: none;
+  stroke: grey;
+  stroke-width: 0.1;
+}
+
+.debug {
+  display: block;
+}
+
+#initial {
+  display: none;
+  font-family: Georgia;
+  position: absolute;
+  cursor: default;
+  color: #fff5da;
+  top: 8%;
+  left: 5%;
+}
+
+.buttonBig {
+  font-family: vedrana;
+  border-radius: 5px;
+  text-shadow: 1px 0px 1px #FF5722;
+  color: #ffffff;
+  font-size: 24px;
+  padding: 10px 15px 8px 22px;
+}
+
+.buttonBig:hover {
+  background: rgba(110,140,200,0.4);
+  cursor: pointer;
+}
+
+.buttonBig:active {
+  transform: translateY(1px);
+}
+
+.buttonBig span {
+  display: none;
+  text-shadow: none;
+  color: #364162;
+  margin-right: 14px;
+  float: right;
+}
+
+.buttonBig:hover span {
+  display: inline;
+}
+
+.title {
+  text-shadow: 0px 1px 4px #4c3a35;
+}
+
+#title_name {
+  font-size: 40px;
+  margin-left: 50px;
+}
+
+#title {
+  font-size: 75px;
+  margin-top: -12px;
+}
+
+#version {
+  text-align: right;
+  margin: -5px 14px 14px 0;
+  font-size: 24px;
+}
+
+.step {
+  font-family: Georgia;
+  text-shadow: 0px 2px 8px #4c3a35;
+  fill: #fff5da;
+  font-size: 5px;
+  fill-opacity: .1;
+  cursor: default;
+}
+
+#toolbar {
+  display: none;
+  position: absolute;
+  font-size: 18px;
+  width: 27px;
+  top: 187px;
+  border: 1px solid #39464e;
+  border-left: 0;
+  border-radius: 0 4px 4px 0;
+  background: linear-gradient(#c2b6b6, #b5bbc2, #7A7A7A);
+}
+
+.button {
+  cursor: pointer;
+}
+
+.toolbar_button {
+  position: relative;
+  text-shadow: 1px 0px 2px #222c36;
+  color: #cfd6d9;
+  margin: 0 -8px 0 4px;
+}
+
+.selected {
+    stroke: black;
+    stroke-width: 0.6;
+    fill: none;
+    stroke-linejoin: round;
+}
+
+.highlighted {
+    stroke: gray;
+    stroke-width: 0.4;
+    fill: none;
+    stroke-linejoin: round;
+}
+
+.cursored {
+  fill: none;
+  stroke-linejoin: round;
+ }
+
+#cellMenu {
+  display: none;
+  position: absolute;
+  border: 1px solid #39464e;
+  border-radius: 4px;
+  background: linear-gradient(#c2b6b6, #b5bbc2, #7A7A7A);
+  height: 22px;
+}
+
+.cellMenu_button {
+  position: relative;
+  display: inline-flex;
+  text-shadow: 1px 0px 5px #222c36;
+  color: #cfd6d9;
+  padding: 1px 4px;
+  top: 0px;
+  left: 0px;
+}
+
+.toolbar_button:hover, .cellMenu_button:hover {
+  text-shadow: 1px 0px 3px black;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.toolbar_button:active, .cellMenu_button:active {
+  top: 1px;
+}
+
+.smaller {
+    font-size: smaller;
+}
+
+#back {
+    margin-right: -11px;
+}
+
+.inline {
+  display: inline-block;
+}
+
+#hintbar {
+  position: absolute;
+  text-align: center;
+  top: 520px;
+  width: 960px;
+  cursor: default;
+  text-shadow: 1px 0px 1px #1d0e0f;
+  color: #ffffff;
+  font-size: 17px;
+  pointer-events: none;
+}
+
+.toolbarSection {
+  display: none;
+  position: absolute;
+  margin: -1px 0 0 27px;
+  border: 1px solid #39464e;
+  border-left: 0;
+  border-radius: 0 4px 4px 0;
+  background: linear-gradient(150deg, #bfb7b9, #b5bbc2, #7A7A7A);
+}
+
+.toolbarSection > div {
+  margin: 0 -4px 0 5px;
+}
+
+#toolbar_step2 {
+  display: none;
+}
+
+.cloud {
+  cursor: pointer;
+  display: none;
+  font-size: 50px;
+  fill: #fcfcfd;
+  stroke: #39464e;
+  stroke-width: 2px;
+  text-anchor: middle;
+}
+
+#cloudArrow {
+  font-size: 16px;
+  fill: #39464e;
+  stroke-width: 0.5;
+}
+
+.wind {
+  fill: white;
+}
+
+#operative {
+  position: absolute;
+  border: 1px solid #414345;
+  left: 974px;
+  top: 8px;
+}
