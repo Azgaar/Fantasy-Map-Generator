@@ -16,6 +16,7 @@ canvas {
 
 .base {
   stroke: none;
+  fill: #5167a9;
 }
 
 .ocean {

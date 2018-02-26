@@ -13,8 +13,6 @@ function fantasyMapGenerator() {
       viewbox = svg.select(".viewbox").on("touchmove mousemove", moved).on("click", clicked),
       container = viewbox.select(".container"), //.attr("transform", "translate(80 25)"),
       ocean = container.append("g").attr("class", "ocean"),
-      base = ocean.append("rect").attr("x", -180).attr("y", -125).attr("width", mapWidth+200).attr("height", mapHeight+200).attr("fill", "#5167a9").attr("class", "base"),
-      mottling = container.append("rect").attr("x", -180).attr("y", -125).attr("width", mapWidth+200).attr("height", mapHeight+200).attr("class", "mottling"),
       rose = container.append("use").attr("xlink:href","#rose"),
       islandBack = container.append("g").attr("class", "islandBack"),
       hCells = container.append("g").attr("class", "hCells"),
@@ -31,6 +29,9 @@ function fantasyMapGenerator() {
       selected = debug.append("g").attr("class", "selected"),
       highlighted = debug.append("g").attr("class", "highlighted")
       cursored = debug.append("g").attr("class", "cursored");
+
+  var base = ocean.append("rect").attr("x", 0).attr("y", 0).attr("width", mapWidth).attr("height", mapHeight).attr("class", "base");
+  var mottling = container.append("rect").attr("x", 0).attr("y", 0).attr("width", mapWidth).attr("height", mapHeight).attr("class", "mottling");
 
   // Define basic data for Voronoi. Poisson-disc sampling for a points
   // Source: bl.ocks.org/mbostock/99049112373e12709381
@@ -859,9 +860,7 @@ function fantasyMapGenerator() {
   function clicked() {
     if (journeyStep == 1) {
       var point = d3.mouse(this),
-          x = Math.floor(point[0]),
-          y = Math.floor(point[1]),
-          cell = diagram.find(x, y).index,
+          cell = diagram.find(point[0], point[1]).index,
           status = map_mode.getAttribute("status");       
       if (status == 1) {
         var power = +$("#change_power").text();
