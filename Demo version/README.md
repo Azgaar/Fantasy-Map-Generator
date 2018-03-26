@@ -1,6 +1,6 @@
 # Fantasy Map Generator
 
-Azgaar's _Fantasy Map Generator_. Based on [D3](https://d3js.org) Voronoi diagram rendered in svg.
+Azgaar's _Fantasy Map Generator_. Based on [D3](https://d3js.org) Voronoi diagram rendered in svg. Please open a [raw version](http://bl.ocks.org/Azgaar/raw/b845ce22ea68090d43a4ecfb914f51bd) to be able to enlarge the map and pring it.
 
 Project goal is a procedurally generated map for my *Medieval Dynasty* simulator. Map should be interactive, scalable, fast and plausible. There should be enought space to place at least 500 burgs within 7 countries. The imagined land area is about 1 million km<sup>2</sup>.
 
