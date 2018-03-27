@@ -2,7 +2,7 @@
 
 Azgaar's _Fantasy Map Generator_. Based on [D3](https://d3js.org) Voronoi diagram rendered in svg.
 
-Project goal is a procedurally generated map for my *Medieval Dynasty* simulator. Map should be interactive, scalable, fast and plausible. There should be enought space to place at least 500 burgs within 7 countries. The imagined land area is about 1 million km<sup>2</sup>.
+Project goal is a procedurally generated map for my *Medieval Dynasty* simulator. Map should be interactive, scalable, fast and plausible. There should be enough space to place at least 500 burgs within 7 countries. The imagined land area is about 1 million km<sup>2</sup>.
 
 [![alt tag](https://i0.wp.com/azgaar.files.wordpress.com/2017/03/80k-part.png)](https://azgaar.wordpress.com)
 
