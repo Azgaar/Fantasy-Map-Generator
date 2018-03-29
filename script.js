@@ -3543,8 +3543,8 @@ function fantasyMap() {
       var url = window.URL.createObjectURL(blob);
       var link = document.createElement("a");
       if (type === "png") {
-        canvas.width = mapWidth * 2.4;
-        canvas.height = mapHeight * 2.4;
+        canvas.width = mapWidth * 2;
+        canvas.height = mapHeight * 2;
         var img = new Image();
         img.src = url;
         img.onload = function(){
@@ -3564,7 +3564,7 @@ function fantasyMap() {
         link.click();  
       }
       console.timeEnd("saveAsImage");
-      window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
+      window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 5000);
     });
   }
 
@@ -3638,7 +3638,7 @@ function fantasyMap() {
     document.body.appendChild(link);
     link.click();
     console.timeEnd("saveMap");
-    window.setTimeout(function() {window.URL.revokeObjectURL(dataURL);}, 2000);
+    window.setTimeout(function() {window.URL.revokeObjectURL(dataURL);}, 5000);
   }
 
   // Map Loader based on FileSystem API
