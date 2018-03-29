@@ -2,10 +2,14 @@
 "use strict;"
 fantasyMap();
 function fantasyMap() {
+  // Version control
+  var version = "0.55b";
+  document.title += " v. " + version;
+
   // Declare variables
   var svg = d3.select("svg"),
     defs = svg.select("#deftemp"),
-    viewbox = svg.append("g").attr("id", "viewbox").on("touchmove mousemove", moved).on("click", clicked),
+    viewbox = svg.append("g").attr("id", "viewbox"),
     ocean = viewbox.append("g").attr("id", "ocean"),
     oceanLayers = ocean.append("g").attr("id", "oceanLayers"),
     oceanPattern = ocean.append("g").attr("id", "oceanPattern"),
@@ -33,6 +37,7 @@ function fantasyMap() {
     debug = viewbox.append("g").attr("id", "debug");
 
   // Declare styles
+    viewbox.on("touchmove mousemove", moved).on("click", clicked);
     landmass.attr("fill", "#eef6fb");
     coastline.attr("opacity", .5).attr("stroke", "#1f3846").attr("stroke-width", .7).attr("filter", "url(#dropShadow)");
     regions.attr("opacity", .55);
@@ -49,40 +54,21 @@ function fantasyMap() {
     ruler.style("display", "none").attr("filter", "url(#dropShadow)");
     overlay.attr("stroke", "#808080").attr("stroke-width", .5);
 
-  // canvas
+  // Common variables
+  var mapWidth, mapHeight,
+    customization, history = [], historyStage = -1, elSelected, 
+    cells = [], land = [], riversData = [],  manors = [], states = [],
+    queue = [], chain = {}, island = 0, cultureTree, manorTree, shift = false;
+
+    // canvas
   var canvas = document.getElementById("canvas"),
     ctx = canvas.getContext("2d");    
-    
-  // Color schemes
+
+  // Color schemes;
   var color = d3.scaleSequential(d3.interpolateSpectral),
       colors8 = d3.scaleOrdinal(d3.schemeSet2),
       colors20 = d3.scaleOrdinal(d3.schemeCategory20);
-
-  // Version control
-  var version = "0.54b";
-  document.title = document.title + " v. " + version;
-
-  // Set screen size
-  var mapWidth, mapHeight;
-  if (localStorage.getItem("screenSize")) {
-    var stored = localStorage.getItem("screenSize").split(",");
-    mapWidth = mapWidthInput.value = +stored[0];
-    mapHeight = mapHeightInput.value = +stored[1];
-  } else {
-    mapWidth = mapWidthInput.value = $(window).width();
-    mapHeight = mapHeightInput.value = $(window).height();    
-  }
-  svg.attr("width", mapWidth);
-  svg.attr("height", mapHeight);
-  $("#loading").remove();
-  $("#statusbar").css("top", mapHeight - 20).show();
-  $("#optionsContainer").show();
-
-  // Common variables
-  var customization, history = [], historyStage = -1, elSelected, 
-    cells = [], land = [], riversData = [],  manors = [], states = [],
-    queue = [], chain = {}, island = 0, cultureTree, manorTree, shift = false,
-    scalePos = [mapWidth - 10, mapHeight - 10];
+    
   // randomize options
   var graphSize = +sizeInput.value,
     manorsCount = manorsOutput.innerHTML = +manorsInput.value,
@@ -100,7 +86,25 @@ function fantasyMap() {
     size = rn(18 - capitalsCount / 6),
     countries = labels.append("g").attr("id", "countries").attr("fill", "#3e3e4b").attr("opacity", 1).attr("font-family", "Amatic SC").attr("data-font", "Amatic+SC:700").attr("font-size", size).attr("data-size", size),
     addedLabels = labels.append("g").attr("id", "addedLabels").attr("fill", "#3e3e4b").attr("opacity", 1).attr("font-family", "Amatic SC").attr("data-font", "Amatic+SC:700").attr("font-size", 18).attr("data-size", 18);
+
+  // Get screen size
+  if (localStorage.getItem("screenSize")) {
+    var stored = localStorage.getItem("screenSize").split(",");
+    mapWidthInput.value = +stored[0];
+    mapHeightInput.value = +stored[1];
+    $(".fullscreen").removeClass("fullscreen");
+    $("#mapScreenSize").addClass("icon-resize-full-alt").removeClass("icon-resize-small");
+  } else {
+    mapWidthInput.value = $(window).width();
+    mapHeightInput.value = $(window).height();    
+  }
+  applyMapSize();
   
+  // toggle off loading screen and on menus
+  $("#loading").remove();
+  $("#statusbar").css("top", mapHeight - 20).show();
+  $("#optionsContainer").show();
+ 
   // append ocean pattern
   oceanPattern.append("rect").attr("x", 0).attr("y", 0)
     .attr("width", mapWidth).attr("height", mapHeight).attr("class", "pattern")
@@ -199,20 +203,20 @@ function fantasyMap() {
   // Changelog dialog window
   var storedVersion = localStorage.getItem("version"); // show message on load
   if (storedVersion != version) {
-    var message = "2018-03-07: The <i>Fantasy Map Generator</i> Demo is updated up to version " + version + ". <br><br>Main changes:";
-    message += "<br>* 'Graph size' option is usable now";
-    message += "<br>* 'Add River' button (click to auto-add a new River)";
-    message += "<br>* Re-worked 'Paint Brushes' (Undo-Redo etc)";
-    message += "<br>* 'Perspective' preview for Heightmap";
-    message += "<br>* Active zooming (rescale labels on zooming)";
-    message += "<br>* Save/Load buttons moved to Options footer"; 
-    message += "<br>* 'Print' button is added"; 
-    message += "<br><br>See ";
+    var message = "2018-03-30: The <i>Fantasy Map Generator</i> Demo is updated up to version " + version + ". Main features:<br><br>";
+    message += "<li>Countries Editor: add, remove, change borders, export data etc.</li>";
+    message += "<li>Burgs Editor: add, rename, remove, change population or capital</li>";
+    message += "<li>Scale Editor: set distance, area and population scales</li>";
+    message += "<li>Measurers: linear distance, curve length and area measurers</li>";
+    message += "<li>Scale bar: toggable auto-rourded and auto-sized bar</li>";
+    message += "<li>Overlays: hex grid, square grid, wind rose</li>";
+    message += "<br><i>See ";
     message += "<a href='https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog' target='_blank'>changelog</a>";
-    message += " for additional details. Please report bugs and suggest enhancements ";
-    message += "<a href='https://github.com/Azgaar/Fantasy-Map-Generator/issues' target='_blank'>here</a>";
+    message += " for more details. Please report bugs ";
+    message += "<a href='https://github.com/Azgaar/Fantasy-Map-Generator/issues' target='_blank'>here</a></i>";
     alertMessage.innerHTML = message;
-    $(function() {$("#alert").dialog({resizable: false, title: "Fantasy Map Generator v. " + version,
+    $("#alert").dialog(
+      {resizable: false, title: "Fantasy Map Generator v. " + version, width: 400,
       buttons: {
         "Don't show again": function() {
           localStorage.setItem("version", version);
@@ -220,8 +224,8 @@ function fantasyMap() {
         },
         Close: function() {$(this).dialog("close");}
       },
-      position: {my: "center", at: "center", of: "svg"}})
-    });    
+      position: {my: "center", at: "center", of: "svg"}
+    });
   }
   
   generate(); // genarate map on load
@@ -230,7 +234,8 @@ function fantasyMap() {
   function generate() {
     console.group("Random map");
     console.time("TOTAL");
-    if (randomizeInput.value === "1") {randomizeOptions();}
+    applyMapSize();
+    randomizeOptions();
     placePoints();
     calculateVoronoi(points);
     detectNeighbors();
@@ -245,13 +250,13 @@ function fantasyMap() {
     drawCoastline();
     manorsAndRegions();
     cleanData();
-    if (!$("#toggleHeight").hasClass("buttonoff") && !terrs.selectAll("path").size()) {toggleHeight();}
     console.timeEnd("TOTAL");
     console.groupEnd("Random map");
   }
 
   // randomize options if randomization is allowed in option
   function randomizeOptions() {
+    if (randomizeInput.value !== "1") {return;}
     regionsInput.value = 7 + Math.floor(Math.random() * 10);
     manorsInput.value = regionsInput.value * 27 + Math.floor(Math.random() * 300);
     manorsCount = manorsOutput.innerHTML = manorsInput.value;
@@ -553,77 +558,78 @@ function fantasyMap() {
       if (rnd <= 0.01) {mapTemplate = "Atoll";}
     }
     addMountain();
-    if (mapTemplate === "Volcano") {templateVolcano();}
-    if (mapTemplate === "High Island") {templateHighIsland();}
-    if (mapTemplate === "Low Island") {templateLowIsland();}
-    if (mapTemplate === "Continents") {templateContinents();}
-    if (mapTemplate === "Archipelago") {templateArchipelago();}
-    if (mapTemplate === "Atoll") {templateAtoll();}
+    var mod = rn((mapWidth + mapHeight) / 1500, 2); // add mod for big screens
+    if (mapTemplate === "Volcano") {templateVolcano(mod);}
+    if (mapTemplate === "High Island") {templateHighIsland(mod);}
+    if (mapTemplate === "Low Island") {templateLowIsland(mod);}
+    if (mapTemplate === "Continents") {templateContinents(mod);}
+    if (mapTemplate === "Archipelago") {templateArchipelago(mod);}
+    if (mapTemplate === "Atoll") {templateAtoll(mod);}
     console.log(mapTemplate + " template is applied");
     console.timeEnd('defineHeightmap');
   }
 
   // Heighmap Template: Volcano
-  function templateVolcano() {
+  function templateVolcano(mod) {
     modifyHeights("all", 0.05, 1.1);
-    addHill(5, 0.4);
-    addHill(2, 0.15);
-    addRange(3);
-    addRange(-3);
+    addHill(rn(5 * mod), 0.4);
+    addHill(rn(2 * mod), 0.15);
+    addRange(rn(3 * mod));
+    addRange(rn(-3 * mod));
   }
   
 // Heighmap Template: High Island
-  function templateHighIsland() {
+  function templateHighIsland(mod) {
     modifyHeights("all", 0.05, 0.9);
-    addRange(4);
-    addHill(12, 0.25);
-    addRange(-3);
+    addRange(rn(4 * mod));
+    addHill(rn(12 * mod), 0.25);
+    addRange(rn(-3 * mod));
     modifyHeights("land", 0, 0.75);
-    addHill(3, 0.15);
+    addHill(rn(3 * mod), 0.15);
   }
 
 // Heighmap Template: Low Island
-  function templateLowIsland() {
+  function templateLowIsland(mod) {
     smoothHeights(2);
-    addRange(1);
-    addHill(4, 0.4);
-    addHill(12, 0.2);
-    addRange(-8);
+    addRange(rn(1 * mod));
+    addHill(rn(4 * mod), 0.4);
+    addHill(rn(12 * mod), 0.2);
+    addRange(rn(-8 * mod));
     modifyHeights("land", 0, 0.35);
   }
 
   // Heighmap Template: Continents
-  function templateContinents() {
-    addHill(24, 0.25);
-    addRange(4);
-    addHill(3, 0.18);
+  function templateContinents(mod) {
+    addHill(rn(24 * mod), 0.25);
+    addRange(rn(4 * mod));
+    addHill(rn(3 * mod), 0.18);
     modifyHeights("land", 0, 0.7);
     var count = Math.ceil(Math.random() * 6 + 2);
     addStrait(count);
     smoothHeights(2);
-    addPit(7);
-    addRange(-8);
+    addPit(rn(7 * mod));
+    addRange(rn(-8 * mod));
     modifyHeights("land", 0, 0.8);
     modifyHeights("all", 0.02, 1);
   }
 
   // Heighmap Template: Archipelago
-  function templateArchipelago() {
+  function templateArchipelago(mod) {
     modifyHeights("land", -0.2, 1);
-    addHill(14, 0.17);
-    addRange(5);
+    addHill(rn(14 * mod), 0.17);
+    addRange(rn(5 * mod));
     var count = Math.ceil(Math.random() * 2 + 2);
     addStrait(count);
-    addRange(-12);
-    addPit(8);
+    addRange(rn(-12 * mod));
+    addPit(rn(8 * mod));
     modifyHeights("land", -0.05, 0.7);
     smoothHeights(4);    
   }
 
   // Heighmap Template: Atoll
-  function templateAtoll() {
-    addHill(2, 0.35);
-    addRange(2);
+  function templateAtoll(mod) {
+    addHill(rn(2 * mod), 0.35);
+    addRange(rn(2 * mod));
     modifyHeights("all", 0.07, 1);
     smoothHeights(1);
     modifyHeights("0.27-10", 0, 0.1);
@@ -653,7 +659,7 @@ function fantasyMap() {
   }
 
   function add(start, type, height) {
-    var session = Math.ceil(Math.random() * 100000);
+    var session = Math.ceil(Math.random() * 1e5);
     var sharpness = 0.2;
     var radius, hRadius, mRadius;
     switch (+graphSize) {
@@ -664,7 +670,7 @@ function fantasyMap() {
     }
     radius = type === "mountain" ? mRadius : hRadius; 
     var queue = [start];
-    cells[start].height += height;
+    if (type === "mountain") {cells[start].height = height;}
     for (i = 0; i < queue.length && height >= 0.01; i++) {
       if (type == "mountain") {
         height = +cells[queue[i]].height * radius - height / 100;
@@ -1107,7 +1113,7 @@ function fantasyMap() {
             if (cells[ea].height < 0.2) {
               var start = edge[0].join(" ");
               var end = edge[1].join(" ");
-              if (cells[ea].fn === "Lake") {
+              if (cells[ea].f === "Lake") {
                 lakeEdges.push({start, end});
               } else {
                 // island extreme points
@@ -1182,8 +1188,13 @@ function fantasyMap() {
     label = `One pixel equals ${dScale} ${unit}`;
     scaleBar.append("text").attr("x", x + (l+1) / 2).attr("y", y + 2 * size).attr("dominant-baseline", "text-before-edge").attr("font-size", rn(7 * size, 1)).text(label);
     // move scaleBar to desired bottom-right point
-    var bbox = scaleBar.node().getBBox();
-    var tr = [scalePos[0] - bbox.width, scalePos[1] - bbox.height];
+    var tr, bbox = scaleBar.node().getBBox();
+    if (localStorage.getItem("scaleBar")) {
+      var scalePos = localStorage.getItem("scaleBar").split(",");
+      tr = [+scalePos[0] - bbox.width, +scalePos[1] - bbox.height];
+    } else {
+      tr = [mapWidth - 10 - bbox.width, mapHeight - 10 - bbox.height];
+    }
     scaleBar.attr("transform", "translate(" + rn(tr[0]) + "," + rn(tr[1]) + ")");
   }
   
@@ -1225,7 +1236,7 @@ function fantasyMap() {
       // remember scaleBar bottom-right position
       if (el.attr("id") === "scaleBar") {
         var bbox = el.node().getBoundingClientRect();
-        scalePos = [bbox.right, bbox.bottom];
+        localStorage.setItem("scaleBar", [bbox.right, bbox.bottom])
       }
     });
   }
@@ -2722,8 +2733,9 @@ function fantasyMap() {
       delete c.used;
       delete c.coastX;
       delete c.coastY;
-      
     });
+    // restore heightmap layer if it was turned on
+    if (!$("#toggleHeight").hasClass("buttonoff") && !terrs.selectAll("path").size()) {toggleHeight();}
     console.timeEnd("cleanData");
   }
   
@@ -2898,7 +2910,8 @@ function fantasyMap() {
   function getMap() {
     exitCustomization();
     console.time("TOTAL");
-    if (randomizeInput.value === "1") {randomizeOptions();}
+    applyMapSize();
+    randomizeOptions();
     markFeatures();
     drawOcean();
     reGraph();
@@ -2908,7 +2921,6 @@ function fantasyMap() {
     drawCoastline();
     manorsAndRegions();
     cleanData();
-    if (!$("#toggleHeight").hasClass("buttonoff") && terrs.selectAll("path").size() === 0) {toggleHeight();}
     console.timeEnd("TOTAL");
   }
 
@@ -4402,7 +4414,7 @@ function fantasyMap() {
         $("svg").addClass("fullscreen");
         $(this).removeClass("icon-resize-full-alt").addClass("icon-resize-small");
       }
-      updateMapSize();
+      changeMapSize();
     }    
     if (id === "saveButton") {$("#saveDropdown").slideToggle();}
     if (id === "loadMap") {fileToLoad.click();}
@@ -5609,12 +5621,25 @@ function fantasyMap() {
     lines.detach().appendTo(list);
   });
   
-  // updateMapSize
-  function updateMapSize() {
+  // just apply map size that was already set
+  function applyMapSize() {
     mapWidth = +mapWidthInput.value;
     mapHeight = +mapHeightInput.value;
     svg.attr("width", mapWidth).attr("height", mapHeight);
-    localStorage.setItem("screenSize", [mapWidth, mapHeight]);
+    canvas.width = mapWidth;
+    canvas.height = mapHeight;
+  }
+    
+  // change map size on manual size change or window resize
+  function changeMapSize() {
+    mapWidth = +mapWidthInput.value;
+    mapHeight = +mapHeightInput.value;
+    svg.attr("width", mapWidth).attr("height", mapHeight);
+    if ($("body").hasClass("fullscreen")) {
+      localStorage.removeItem("screenSize");
+    } else {
+      localStorage.setItem("screenSize", [mapWidth, mapHeight]);
+    }
     voronoi = d3.voronoi().extent([[0, 0], [mapWidth, mapHeight]]);
     oceanPattern.select("rect").attr("width", mapWidth).attr("height", mapHeight);
     oceanLayers.select("rect").attr("width", mapWidth).attr("height", mapHeight);       
@@ -5622,10 +5647,12 @@ function fantasyMap() {
     scY = d3.scaleLinear().domain([0, mapHeight]).range([0, mapHeight]);
     lineGen = d3.line().x(function(d) {return scX(d.scX);}).y(function(d) {return scY(d.scY);});
     zoom.translateExtent([[0, 0], [mapWidth, mapHeight]]);
-    scalePos = [mapWidth - 10, mapHeight - 10];
-    var bbox = d3.select("#scaleBar").node().getBBox();
-    var tr = [scalePos[0] - bbox.width, scalePos[1] - bbox.height];
-    d3.select("#scaleBar").attr("transform", "translate(" + rn(tr[0]) + "," + rn(tr[1]) + ")");
+    if (d3.select("#scaleBar").size()) {
+      var bbox = d3.select("#scaleBar").node().getBBox();
+      var tr = [mapWidth - 10 - bbox.width, mapHeight - 10 - bbox.height];
+      d3.select("#scaleBar").attr("transform", "translate(" + rn(tr[0]) + "," + rn(tr[1]) + ")");
+      localStorage.removeItem("scaleBar");
+    }
     $("#statusbar").css("top", mapHeight + 8);
     if ($("body").hasClass("fullscreen")) {$("#statusbar").css("top", mapHeight - 20);}
   }
@@ -5775,7 +5802,7 @@ function fantasyMap() {
         toggleOverlay();
       }
     }
-    if (id === "mapWidthInput" || id === "mapHeightInput") {updateMapSize();}
+    if (id === "mapWidthInput" || id === "mapHeightInput") {changeMapSize();}
     if (id === "sizeInput") {graphSize = sizeOutput.value = this.value;}
     if (id === "randomizeInput") {randomizeOutput.innerHTML = +this.value ? "✓" : "✕";}
     if (id === "manorsInput") {
@@ -5917,5 +5944,6 @@ function fantasyMap() {
     if (id === "styleTab") {$("#styleContent").show();}
     if (id === "optionsTab") {$("#optionsContent").show();}
     if (id === "customizeTab") {$("#customizeContent").show();}
+    if (id === "aboutTab") {$("#aboutContent").show();}
   });
 }

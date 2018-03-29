@@ -1,26 +1,34 @@
 <!DOCTYPE html>
 <head>
   <title>Azgaar's Fantasy Map Generator Demo</title>
-  <meta name="author" content="Azgaar (Max Ganiev)">
   <meta charset="utf-8">
-  <meta name="description" content="Azgaar's Fantasy Map Generator demo. Based on D3 Voronoi diagram rendered to svg.">  
-  <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
-  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
-  <script src="https://d3js.org/d3.v4.min.js"></script>
-  <script src="https://d3js.org/d3-hexbin.v0.2.min.js"></script>
-  <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
-  <script src="https://mewo2.com/js/priority-queue.js"></script>
-  <script src="https://rawgit.com/LuisSevillano/9f6c9edd7f90ac6cca54ed744e28f3ee/raw/38f9774f83f00b286360db1ea97d851f79e594aa/polylabel.js"></script>
+  <meta name="author" content="Azgaar (Max Ganiev)">
+  <meta name="description" content="Azgaar's Fantasy Map Generator (demo version). Based on D3 Voronoi diagram rendered to svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta property="og:url" content="https://azgaar.github.io/Fantasy-Map-Generator/">
+  <meta property="og:title" content="Azgaar's Fantasy Map Generator">
+  <meta property="og:description" content="Demo version. Based on D3 Voronoi diagram rendered to svg">
+  <meta property="og:image" content="images/preview.png">
+  <link rel="icon" type="image/png" href="images/favicon-32x32.png" sizes="32x32"/>
+  <link rel="icon" type="image/png" href="images/favicon-16x16.png" sizes="16x16"/>  
+  <link rel="canonical" href="https://azgaar.github.io/Fantasy-Map-Generator/">
+  <script src="libs/jquery-3.1.1.min.js"></script>
+  <script src="libs/d3.v4.min.js"></script>
+  <script src="libs/d3-scale-chromatic.v1.min.js"></script>
+  <script src="libs/priority-queue.js"></script>
   <script src="names.js"></script>
-  <link rel="stylesheet" type="text/css" href="index.css?version=0.54b"/>
-  <link rel="stylesheet" type="text/css" href="icons.css?version=0.54b"/>
+  <script src="libs/jquery-ui.min.js"></script>
+  <script src="libs/polylabel.js" async></script>
+  <script src="libs/quantize.js" defer></script>
+  <script src="libs/d3-hexbin.v0.2.min.js" defer></script>
+  <link rel="stylesheet" type="text/css" href="index.css?version=0.55b"/>
+  <link rel="stylesheet" type="text/css" href="icons.css?version=0.55b"/>
   <link rel="stylesheet" type="text/css" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"/>
-  <script src="quantize.js"></script>
 </head>
 <body class="fullscreen">
   <div id="loading">
     <h1 class="icon-cog spin"></h1>
-    <h2 id="loading-text">Loading...</h2>
+    <h3 id="loading-text">Loading...</h3>
   </div>
   <svg xmlns="http://www.w3.org/2000/svg" class="fullscreen">
     <defs>
@@ -95,9 +103,9 @@
          </g>
         <use xlink:href="#s3" transform="scale(-1)"/>
       </g>      
-    </defs> 
+    </defs>
   </svg>
-  <canvas id="canvas" width="960" height="540" style="opacity: 0;"></canvas>
+  <canvas id="canvas" style="opacity: 0"></canvas>
   <div id="optionsContainer">
     <div id="collapsible">
       <button id="optionsTrigger" class="options" title="Click to display Options">▶</button>
@@ -110,6 +118,7 @@
         <button id="styleTab" class="options">Style</button>
         <button id="optionsTab" class="options">Options</button>
         <button id="customizeTab" class="options">Customize</button>
+        <button id="aboutTab" class="options">?</button>
       </div>
       <div id="layoutContent" class="tabcontent">
         <p style="display: inline-block;">Select preset:</p>
@@ -402,6 +411,18 @@
           <button id="addBurg" title="Click on map to place burg icon with lbel. Hold Shift to place several" class="radio">Burg</button>
           <button id="addRiver" title="Click on map to place new river on extend an existing one" class="radio">River</button>
         </div>
+      </div>
+      <div id="aboutContent" class="tabcontent">
+        <p><a href="https://github.com/Azgaar/Fantasy-Map-Generator" target="_blank">Fantasy Map Generator</a> is an online tool which produces a procedurally generated fantasy maps. You may either use an auto-generated maps or create you own map manually or with a help of templates or image converter. Check out the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki" target="_blank">wiki</a> for guidance.<p/>
+        <p>This is a Demo version, project is still under development. For older versions see the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog" target="_blank">changelog</a>. Some details are covered in my <a href="https://azgaar.wordpress.com/" target="_blank">blog</a>. To track the current progress see the <a href="https://trello.com/b/7x832DG4/fantasy-map-generator" target="_blank">devboard</a>.<p/>
+        <p>Please report bugs and suggest new features <a href="https://github.com/Azgaar/Fantasy-Map-Generator/issues" target="_blank">here</a>. You may also <a href="mailto:maxganiev@yandex.ru">send me</a> an email.<p/>
+        <ul class="share-buttons">
+          <li><a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator%2F&quote=" title="Share on Facebook" target="_blank"><img alt="Share on Facebook" src="images/Facebook.png" /></a></li>
+          <li><a href="https://twitter.com/intent/tweet?source=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator%2F&text=:%20https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator%2F" target="_blank" title="Tweet"><img alt="Tweet" src="images/Twitter.png" /></a></li>
+          <li><a href="http://www.tumblr.com/share?v=3&u=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator%2F&quote=&s=" target="_blank" title="Post to Tumblr"><img alt="Post to Tumblr" src="images/Tumblr.png" /></a></li>
+          <li><a href="http://pinterest.com/pin/create/button/?url=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator%2F&description=" target="_blank" title="Pin it"><img alt="Pin it" src="images/Pinterest.png" /></a></li>
+          <li><a href="http://www.reddit.com/submit?url=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator%2F&title=" target="_blank" title="Submit to Reddit"><img alt="Submit to Reddit" src="images/Reddit.png" /></a></li>
+        </ul>
       </div>
       <div id="sticked">
         <button id="randomMap" title="Generate new random map based on options being set" class="options">New Map</button>
@@ -726,11 +747,11 @@
   </div>
 
   <div id="statusbar">
-    Coord: <span id="lx">0</span>/<span id="ly">0</span>; 
-    Cell: <span id="cell">0</span>; 
-    Height: <span id="height">0</span>; 
-    Type: <span id="feature">no</span>; 
+    Coord: <span id="lx">0</span>/<span id="ly">0</span>;
+    Cell: <span id="cell">0</span>;
+    Height: <span id="height">0</span>;
+    Type: <span id="feature">no</span>
   </div>
 
-  <script type="text/javascript" src="script.js?version=0.54b"></script>
+  <script type="text/javascript" src="script.js?version=0.55b"></script>
 </body>
