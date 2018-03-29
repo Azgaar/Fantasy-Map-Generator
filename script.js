@@ -572,10 +572,10 @@ function fantasyMap() {
   // Heighmap Template: Volcano
   function templateVolcano(mod) {
     modifyHeights("all", 0.05, 1.1);
-    addHill(rn(5 * mod), 0.4);
-    addHill(rn(2 * mod), 0.15);
-    addRange(rn(3 * mod));
-    addRange(rn(-3 * mod));
+    addHill(rn(4 * mod), 0.4);
+    addHill(rn(4 * mod), 0.15);
+    addRange(rn(4 * mod));
+    addRange(rn(-10 * mod));
   }
   
 // Heighmap Template: High Island
@@ -583,7 +583,7 @@ function fantasyMap() {
     modifyHeights("all", 0.05, 0.9);
     addRange(rn(4 * mod));
     addHill(rn(12 * mod), 0.25);
-    addRange(rn(-3 * mod));
+    addRange(rn(-8 * mod));
     modifyHeights("land", 0, 0.75);
     addHill(rn(3 * mod), 0.15);
   }
@@ -591,10 +591,10 @@ function fantasyMap() {
 // Heighmap Template: Low Island
   function templateLowIsland(mod) {
     smoothHeights(2);
-    addRange(rn(1 * mod));
-    addHill(rn(4 * mod), 0.4);
-    addHill(rn(12 * mod), 0.2);
-    addRange(rn(-8 * mod));
+    addRange(rn(5 * mod));
+    addHill(rn(6 * mod), 0.4);
+    addHill(rn(14 * mod), 0.2);
+    addRange(rn(-10 * mod));
     modifyHeights("land", 0, 0.35);
   }
 
@@ -606,9 +606,9 @@ function fantasyMap() {
     modifyHeights("land", 0, 0.7);
     var count = Math.ceil(Math.random() * 6 + 2);
     addStrait(count);
-    smoothHeights(2);
-    addPit(rn(7 * mod));
-    addRange(rn(-8 * mod));
+    smoothHeights(3);
+    addPit(rn(18 * mod));
+    addRange(rn(-14 * mod));
     modifyHeights("land", 0, 0.8);
     modifyHeights("all", 0.02, 1);
   }
@@ -616,12 +616,12 @@ function fantasyMap() {
   // Heighmap Template: Archipelago
   function templateArchipelago(mod) {
     modifyHeights("land", -0.2, 1);
-    addHill(rn(14 * mod), 0.17);
-    addRange(rn(5 * mod));
+    addHill(rn(16 * mod), 0.17);
+    addRange(rn(8 * mod));
     var count = Math.ceil(Math.random() * 2 + 2);
     addStrait(count);
-    addRange(rn(-12 * mod));
-    addPit(rn(8 * mod));
+    addRange(rn(-18 * mod));
+    addPit(rn(10 * mod));
     modifyHeights("land", -0.05, 0.7);
     smoothHeights(4);    
   }
