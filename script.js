@@ -2416,7 +2416,6 @@ function fantasyMap() {
   // calculate Markov's chain from real data
   function calculateChains() {
     var vowels = "aeiouy";
-    //var digraphs = ["ai","ay","ea","ee","ei","ey","ie","oa","oo","ow","ue","ch","ng","ph","sh","th","wh"];
     for (var l = 0; l < cultures.length; l++) {
       var probs = []; // Coleshill -> co les hil l-com
       var inline = manorNames[l].join(" ").toLowerCase();
@@ -3001,8 +3000,9 @@ function fantasyMap() {
           console.error("There is already a burg in this cell. Select a free cell");
           return;
         }
-        burgs.append("circle").attr("r", .5).attr("stroke-width", .12).attr("cx", x).attr("cy", y).call(d3.drag().on("start", elementDrag));
-        labels.select("#towns").append("text").attr("x", x).attr("y", y).attr("dy", -0.7).text(name).on("click", editLabel);
+        var i = manors.length;
+        burgs.append("circle").attr("id", "manorIcon"+i).attr("r", .5).attr("stroke-width", .12).attr("cx", x).attr("cy", y).call(d3.drag().on("start", elementDrag));
+        labels.select("#towns").append("text").attr("id", "manorLabel"+i).attr("x", x).attr("y", y).attr("dy", -0.7).text(name).on("click", editLabel);
         var region, state;
         if ($("#burgAdd").hasClass("pressed")) {
           state = +$("#burgsEditor").attr("data-state");
@@ -3016,7 +3016,6 @@ function fantasyMap() {
           region = cells[cell].region;
           state = region === "neutral" ? states.length - 1 : region;
         }
-        var i = manors.length;
         cells[cell].manor = i;
         var score = cells[cell].score;
         if (score <= 0) {score = rn(Math.random(), 2);}
@@ -3030,6 +3029,7 @@ function fantasyMap() {
         if (!shift) {
           $("#"+brush).removeClass("pressed");
           $("#burgAdd").removeClass("pressed");
+          viewbox.style("cursor", "default");
         }
       }
       if (brush.includes("selectCapital")) {
@@ -3067,8 +3067,8 @@ function fantasyMap() {
           if (cells[cell].port) {score *= 3;} // port-capital
           var population = rn(score, 1);
           manors.push({i, cell, x, y, region: state, culture, name, population});
-          burgs.append("circle").attr("r", 1).attr("stroke-width", .24).attr("cx", x).attr("cy", y).call(d3.drag().on("start", elementDrag));
-          capitals.append("text").attr("id", "manorLabel"+i).attr("x", x).attr("y", y).attr("dy", -1.3).text(name).on("click", editLabel);
+          burgs.append("circle").attr("id", "manorIcon"+i).attr("r", 1).attr("stroke-width", .24).attr("cx", x).attr("cy", y).call(d3.drag().on("start", elementDrag));
+          capitals.append("text").attr("id", "manorLabel"+i).attr("id", "manorLabel"+i).attr("x", x).attr("y", y).attr("dy", -1.3).text(name).on("click", editLabel);
         }
         cells[cell].region = state;
         cells[cell].neighbors.map(function(n) {
@@ -3833,7 +3833,7 @@ function fantasyMap() {
 
   // Hotkeys
   d3.select("body").on("keydown", function() {
-    if ($(".ui-dialog").is(":visible")) {return;}
+    //if ($(".ui-dialog").is(":visible")) {return;}
     switch(d3.event.keyCode) {
       case 16: // Shift - hold to continue adding elements on click 
         shift = true;
@@ -4033,6 +4033,11 @@ function fantasyMap() {
         if (s === "neutral") {s = states.length - 1;}
         recalculateStateData(s);
       });
+      var last = states.length - 1;
+      if (states[last].color === "neutral" && states[last].cells === 0) {
+        $("#state" + last).remove();
+        states.splice(-1);
+      }
       $("#countriesManuallyCancel").click();
       if (changedStates.length) {editCountries();}
     }
@@ -4183,7 +4188,14 @@ function fantasyMap() {
         }})
       });      
     }
-    if (id === "changeCapital") {$(this).toggleClass("pressed");}
+    if (id === "changeCapital") {
+      if ($(this).hasClass("pressed")) {
+        $(this).removeClass("pressed")
+      } else {
+        $(".pressed").removeClass("pressed");
+        $(this).addClass("pressed");
+      }
+    }
     if (id === "regenerateBurgNames") {
       var s = +$("#burgsEditor").attr("data-state");
       $(".burgName").each(function(e, i) {
@@ -4201,7 +4213,7 @@ function fantasyMap() {
         $("#state"+s+" > .stateCapital").val(manors[c].name);
       }
     }
-    if (id === "burgAdd") {$("#addBurg").click(); $(this).toggleClass("pressed");}
+    if (id === "burgAdd") {$("#addBurg").click();}
     if (id === "toggleScaleBar") {$("#scaleBar").toggleClass("hidden");}
     if (id === "addRuler") {
       $("#ruler").show();
@@ -4369,13 +4381,15 @@ function fantasyMap() {
     }
     if ($(this).hasClass('radio') && (parent === "addFeature" || parent === "brushesButtons")) {
       if ($(this).hasClass('pressed')) {
-        $(".pressed").removeClass('pressed');
+        $(this).removeClass('pressed');
         viewbox.style("cursor", "default").on(".drag", null);;
         $("#brushRadiusLabel, #brushRadius").attr("disabled", true).addClass("disabled");
+        if (id === "addBurg") {$("#burgAdd").removeClass("pressed");}
       } else {
         $(".pressed").removeClass('pressed');
         $(this).addClass('pressed'); 
         viewbox.style("cursor", "crosshair");
+        if (id === "addBurg") {$("#burgAdd").addClass("pressed");}
         if (id.slice(0,5) === "brush" && id !== "brushRange" && id !== "brushTrough") {
           viewbox.call(drag); 
         }
@@ -5305,15 +5319,15 @@ function fantasyMap() {
       if (b.i !== capital) {el.append('<span title="Remove burg" class="icon-trash-empty"></span>');}
       el.attr("data-burg", b.name).attr("data-culture", cultures[b.culture]).attr("data-population", b.population).attr("data-type", type);
     });
-    var color = '<input title="Country color. Click to change" type="color" class="stateColor" value="' + states[s].color + '"/>';
     if (!$("#burgsEditor").is(":visible")) {
       $("#burgsEditor").dialog({
         title: "Burgs of " + states[s].name,
         minHeight: "auto", width: "auto",
         position: {my: "right bottom", at: "right-10 bottom-10", of: "svg"}
       });
+      var color = '<input title="Country color. Click to change" type="color" class="stateColor" value="' + states[s].color + '"/>';
+      if (region !== "neutral") {$("div[aria-describedby='burgsEditor'] .ui-dialog-title").prepend(color);}
     }
-    if (region !== "neutral") {$("div[aria-describedby='burgsEditor'] .ui-dialog-title").prepend(color);}
     // populate total line on footer
     burgsFooterBurgs.innerHTML = burgs.length;
     burgsFooterCulture.innerHTML = $("#burgsBody div:first-child .burgCulture").text();   
