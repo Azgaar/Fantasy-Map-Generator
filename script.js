@@ -551,9 +551,9 @@ function fantasyMap() {
     if (mapTemplate === "Random") {
       var rnd = Math.random();
       if (rnd > 0.9) {mapTemplate = "Volcano";}
-      if (rnd > 0.8  && rnd <= 0.9) {mapTemplate = "High Island";}
-      if (rnd > 0.6 && rnd <= 0.8) {mapTemplate = "Low Island";}
-      if (rnd > 0.35 && rnd <= 0.6) {mapTemplate = "Continents";}
+      if (rnd > 0.7  && rnd <= 0.9) {mapTemplate = "High Island";}
+      if (rnd > 0.5 && rnd <= 0.7) {mapTemplate = "Low Island";}
+      if (rnd > 0.35 && rnd <= 0.5) {mapTemplate = "Continents";}
       if (rnd > 0.01 && rnd <= 0.35) {mapTemplate = "Archipelago";}
       if (rnd <= 0.01) {mapTemplate = "Atoll";}
     }
@@ -1615,8 +1615,7 @@ function fantasyMap() {
         $("#riverNew").click(); 
         return;
       }
-      elSelected.call(d3.drag().on("drag", null)).classed("draggable", false);
-      rivers.select(".riverPoints").remove();
+      unselect();
     }
     elSelected = d3.select(this);
     elSelected.call(d3.drag().on("start", riverDrag)).classed("draggable", true);   
@@ -1633,14 +1632,19 @@ function fantasyMap() {
       title: "Edit River",
       minHeight: 30, width: "auto", maxWidth: 275, resizable: false,
       position: {my: "center top", at: "top", of: this}
-    }).on("dialogclose", function(event) {
-      if (elSelected) {
-        elSelected.call(d3.drag().on("drag", null)).classed("draggable", false);
-        rivers.select(".riverPoints").remove();
-        $(".pressed").removeClass('pressed');
-        viewbox.style("cursor", "default");
-      }
-    });
+    }).on("dialogclose", function() {unselect();});
+  }
+
+  function unselect() {
+    if (elSelected) {
+      elSelected.call(d3.drag().on("drag", null)).classed("draggable", false);
+      rivers.select(".riverPoints").remove();
+      $(".pressed").removeClass('pressed');
+      viewbox.style("cursor", "default");
+      elSelected = null;
+      if ($("#riverEditor").is(":visible")) {$("#riverEditor").dialog("close");}
+      if ($("#labelEditor").is(":visible")) {$("#labelEditor").dialog("close");}
+    }   
   }
 
   function addRiverPoint(point) {
@@ -3185,9 +3189,7 @@ function fantasyMap() {
   }
   
   function editLabel() {
-    if (elSelected) {
-      elSelected.call(d3.drag().on("drag", null)).classed("draggable", false);
-    }
+    if (elSelected) {unselect();}
     elSelected = d3.select(this);
     elSelected.call(d3.drag().on("drag", dragged).on("end", dragended)).classed("draggable", true);
     var group = d3.select(this.parentNode);
@@ -3210,7 +3212,7 @@ function fantasyMap() {
       title: "Edit Label: " + editText.value,
       minHeight: 30, width: "auto", maxWidth: 275, resizable: false,
       position: {my: "center top", at: "bottom", of: this}
-    });
+    }).on("dialogclose", function() {unselect();});
     fetchAdditionalFonts();
   }
 
@@ -3833,12 +3835,12 @@ function fantasyMap() {
 
   // Hotkeys
   d3.select("body").on("keydown", function() {
-    //if ($(".ui-dialog").is(":visible")) {return;}
+    $("input").on("keydown", function(e) {e.stopPropagation();}); // cancel on input
     switch(d3.event.keyCode) {
       case 16: // Shift - hold to continue adding elements on click 
         shift = true;
         break;
-      case 78: // "N" for new map
+      case 113: // "F2" for new map
         $("#randomMap").click();
         break;
       case 32: // Space to log focused cell data
@@ -5135,15 +5137,7 @@ function fantasyMap() {
         title: "Countries Editor",
         minHeight: "auto", width: "auto",
         position: {my: "right top", at: "right-10 top+10", of: "svg"}
-      }).on("dialogclose", function(e) {
-        customization = 0;
-        if (grid.style("display") === "inline") {toggleGrid.click();}
-        if (labels.style("display") === "none") {toggleLabels.click();}
-        $("#countriesBottom").children().show();
-        $("#countriesManuallyButtons, #countriesRegenerateButtons").hide();
-        $(".selected").removeClass("selected");
-        customization = 0;
-      });      
+      }).on("dialogclose", function() {$("#countriesManuallyCancel").click();});      
     }
     // restore customization Editor version
     if (customization === 3) {
