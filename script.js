@@ -5665,6 +5665,26 @@ function fantasyMap() {
     if ($("body").hasClass("fullscreen")) {$("#statusbar").css("top", mapHeight - 20);}
   }
 
+  // fit full-screen map if window is resized
+  $(window).resize(function() {
+    if ($("body").hasClass("fullscreen")) {
+      console.log("resized");
+      mapWidthInput.value = $(window).width();
+      mapHeightInput.value = $(window).height();
+      applyMapSize();
+      oceanPattern.select("rect").attr("width", mapWidth).attr("height", mapHeight);
+      oceanLayers.select("rect").attr("width", mapWidth).attr("height", mapHeight);
+      zoom.translateExtent([[0, 0], [mapWidth, mapHeight]]);
+      $("#statusbar").css("top", mapHeight - 20);
+      if (d3.select("#scaleBar").size()) {
+        var bbox = d3.select("#scaleBar").node().getBBox();
+        var tr = [mapWidth - 10 - bbox.width, mapHeight - 10 - bbox.height];
+        d3.select("#scaleBar").attr("transform", "translate(" + rn(tr[0]) + "," + rn(tr[1]) + ")");
+        localStorage.removeItem("scaleBar");
+      }
+    }
+  });
+
   // Options handlers
   $("input, select").on("input change", function() {
     var id = this.id;

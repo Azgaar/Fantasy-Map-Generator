@@ -1,5 +1,12 @@
 <!DOCTYPE html>
 <head>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-116735150-1"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'UA-116735150-1');
+  </script>
   <title>Azgaar's Fantasy Map Generator Demo</title>
   <meta charset="utf-8">
   <meta name="author" content="Azgaar (Max Ganiev)">
@@ -21,13 +28,13 @@
   <script src="libs/polylabel.js"></script>
   <script src="libs/quantize.js" defer></script>
   <script src="libs/d3-hexbin.v0.2.min.js" defer></script>
-  <link rel="stylesheet" type="text/css" href="index.css?version=0.556b"/>
-  <link rel="stylesheet" type="text/css" href="icons.css?version=0.556b"/>
+  <link rel="stylesheet" type="text/css" href="index.css?version=0.557b"/>
+  <link rel="stylesheet" type="text/css" href="icons.css?version=0.557b"/>
   <link rel="stylesheet" type="text/css" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"/>
 </head>
 <body class="fullscreen">
   <div id="loading">
-    <h1 class="icon-cog spin"></h1>
+    <h1 class="spin">&#9881;</h1>
     <p id="loading-text">Loading...</p>
   </div>
   <svg xmlns="http://www.w3.org/2000/svg" class="fullscreen">
@@ -753,5 +760,5 @@
     Type: <span id="feature">no</span>
   </div>
 
-  <script type="text/javascript" src="script.js?version=0.556b"></script>
+  <script type="text/javascript" src="script.js?version=0.557b"></script>
 </body>
