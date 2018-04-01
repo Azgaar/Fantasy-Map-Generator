@@ -28,8 +28,8 @@
   <script src="libs/polylabel.js"></script>
   <script src="libs/quantize.js" defer></script>
   <script src="libs/d3-hexbin.v0.2.min.js" defer></script>
-  <link rel="stylesheet" type="text/css" href="index.css?version=0.557b"/>
-  <link rel="stylesheet" type="text/css" href="icons.css?version=0.557b"/>
+  <link rel="stylesheet" type="text/css" href="index.css?version=0.558b"/>
+  <link rel="stylesheet" type="text/css" href="icons.css?version=0.558b"/>
   <link rel="stylesheet" type="text/css" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"/>
 </head>
 <body class="fullscreen">
@@ -177,6 +177,7 @@
           <option value="scaleBar">Scale bar</option>
           <option value="ruler">Rulers</option>      
         </select>
+        <a id="restoreStyle" title="Restore initial style" class="icon-ccw"></a>
         <div id="styleInputs">
           <div id="styleOverlay">
             <br>Overlay type: <select id="styleOverlayType" class="pureInput">
@@ -653,7 +654,7 @@
         <button id="countriesAdd" title="Add country" class="icon-plus"></button>
         <button id="countriesManuallyCancel" title="Cancel assignment" class="icon-cancel"></button>
         <label title="Set the brush power" class="italic">Brush size:</label>
-        <input id="countriesManuallyBrush" onchange="this.title = this.value" type="range" min="1" max="7" value="2">
+        <input id="countriesManuallyBrush" onchange="this.title = this.value" type="range" min="1" max="7" value="3">
       </div>
       <div id="countriesRegenerateButtons" style="display: none">
         <button id="countriesManuallyCancel" title="Apply assignment" class="icon-check"></button>
@@ -760,5 +761,5 @@
     Type: <span id="feature">no</span>
   </div>
 
-  <script type="text/javascript" src="script.js?version=0.557b"></script>
+  <script type="text/javascript" src="script.js?version=0.558b"></script>
 </body>

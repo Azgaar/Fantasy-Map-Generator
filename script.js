@@ -35,24 +35,10 @@ function fantasyMap() {
     burgs = icons.append("g").attr("id", "burgs"),
     ruler = viewbox.append("g").attr("id", "ruler"),
     debug = viewbox.append("g").attr("id", "debug");
-
-  // Declare styles
-    viewbox.on("touchmove mousemove", moved).on("click", clicked);
-    landmass.attr("fill", "#eef6fb");
-    coastline.attr("opacity", .5).attr("stroke", "#1f3846").attr("stroke-width", .7).attr("filter", "url(#dropShadow)");
-    regions.attr("opacity", .55);
-    stateBorders.attr("opacity", .8).attr("stroke", "#56566d").attr("stroke-width", .5).attr("stroke-dasharray", "1.2 1.5").attr("stroke-linecap", "butt");
-    neutralBorders.attr("opacity", .8).attr("stroke", "#56566d").attr("stroke-width", .3).attr("stroke-dasharray", "1 1.5").attr("stroke-linecap", "butt");
-    cults.attr("opacity", .6);
-    rivers.attr("fill", "#5d97bb");
-    lakes.attr("fill", "#a6c1fd").attr("stroke", "#477794").attr("stroke-width", .3);
-    burgs.attr("fill", "#ffffff").attr("stroke", "#3e3e4b");
-    roads.attr("opacity", .8).attr("stroke", "#d06324").attr("stroke-width", .4).attr("stroke-dasharray", "1 2").attr("stroke-linecap", "round");
-    trails.attr("opacity", .8).attr("stroke", "#d06324").attr("stroke-width", .1).attr("stroke-dasharray", ".5 1").attr("stroke-linecap", "round");
-    searoutes.attr("opacity", .8).attr("stroke", "#ffffff").attr("stroke-width", .2).attr("stroke-dasharray", "1 2").attr("stroke-linecap", "round");
-    grid.attr("stroke", "#808080").attr("stroke-width", .1);
-    ruler.style("display", "none").attr("filter", "url(#dropShadow)");
-    overlay.attr("stroke", "#808080").attr("stroke-width", .5);
+    capitals = labels.append("g").attr("id", "capitals"),
+    towns = labels.append("g").attr("id", "towns"),
+    countries = labels.append("g").attr("id", "countries"),
+    addedLabels = labels.append("g").attr("id", "addedLabels");    
 
   // Common variables
   var mapWidth, mapHeight,
@@ -60,7 +46,10 @@ function fantasyMap() {
     cells = [], land = [], riversData = [],  manors = [], states = [],
     queue = [], chain = {}, island = 0, cultureTree, manorTree, shift = false;
 
-    // canvas
+  // default fonts
+  var fonts = ["Amatic+SC:700", "Georgia", "Times New Roman", "Arial", "Comic Sans MS", "Lucida Sans Unicode", "Verdana", "Courier New"];
+
+  // canvas
   var canvas = document.getElementById("canvas"),
     ctx = canvas.getContext("2d");    
 
@@ -78,15 +67,6 @@ function fantasyMap() {
     sharpness = +sharpnessInput.value,
     precipitation = +precInput.value;
 
-  // Groups for labels
-  var fonts = ["Amatic+SC:700", "Georgia", "Times New Roman", "Arial", "Comic Sans MS", "Lucida Sans Unicode", "Verdana", "Courier New"],
-    size = rn(10 - capitalsCount / 20),
-    capitals = labels.append("g").attr("id", "capitals").attr("fill", "#3e3e4b").attr("opacity", 1).attr("font-family", "Amatic SC").attr("data-font", "Amatic+SC:700").attr("font-size", size).attr("data-size", size),
-    towns = labels.append("g").attr("id", "towns").attr("fill", "#3e3e4b").attr("opacity", 1).attr("font-family", "Amatic SC").attr("data-font", "Amatic+SC:700").attr("font-size", 4).attr("data-size", 4),
-    size = rn(18 - capitalsCount / 6),
-    countries = labels.append("g").attr("id", "countries").attr("fill", "#3e3e4b").attr("opacity", 1).attr("font-family", "Amatic SC").attr("data-font", "Amatic+SC:700").attr("font-size", size).attr("data-size", size),
-    addedLabels = labels.append("g").attr("id", "addedLabels").attr("fill", "#3e3e4b").attr("opacity", 1).attr("font-family", "Amatic SC").attr("data-font", "Amatic+SC:700").attr("font-size", 18).attr("data-size", 18);
-
   // Get screen size
   if (localStorage.getItem("screenSize")) {
     var stored = localStorage.getItem("screenSize").split(",");
@@ -99,19 +79,18 @@ function fantasyMap() {
     mapHeightInput.value = $(window).height();    
   }
   applyMapSize();
+
+  // append ocean pattern
+  oceanPattern.append("rect").attr("x", 0).attr("y", 0).attr("width", mapWidth).attr("height", mapHeight).attr("fill", "url(#oceanPattern)").attr("stroke", "none");
+  oceanLayers.append("rect").attr("x", 0).attr("y", 0).attr("width", mapWidth).attr("height", mapHeight).attr("id", "oceanBase");
+
+  applyDefaultStyle();
   
   // toggle off loading screen and on menus
   $("#loading").remove();
   $("#statusbar").css("top", mapHeight - 20).show();
   $("#optionsContainer").show();
  
-  // append ocean pattern
-  oceanPattern.append("rect").attr("x", 0).attr("y", 0)
-    .attr("width", mapWidth).attr("height", mapHeight).attr("class", "pattern")
-    .attr("stroke", "none").attr("fill", "url(#oceanPattern)");
-  oceanLayers.append("rect").attr("x", 0).attr("y", 0)
-    .attr("width", mapWidth).attr("height", mapHeight).attr("id", "oceanBase").attr("fill", "#5167a9");
-
   // D3 Line generator
   var scX = d3.scaleLinear().domain([0, mapWidth]).range([0, mapWidth]),
     scY = d3.scaleLinear().domain([0, mapHeight]).range([0, mapHeight]),
@@ -2072,7 +2051,7 @@ function fantasyMap() {
         if (ports.length === 0) {
           var portCandidates = $.grep(manorsOnIsland, function(c) {return (c.harbor && c.ctype === 1);});
           if (portCandidates.length > 0) {
-            console.log("No ports on island " + manorsOnIsland[0].fn + ". Upgrading first burg to port");
+            // No ports on island. Upgrading first burg to port
             portCandidates[0].harbor = 1;
             portCandidates[0].port = true;
             portCandidates[0].data[0] = portCandidates[0].coastX;
@@ -2083,7 +2062,7 @@ function fantasyMap() {
             // add 1 score point for every other burg on island (as it's the only port)
             portCandidates[0].score += Math.floor((portCandidates.length - 1) / 2);
           } else {
-            console.log("No ports on island " + manorsOnIsland[0].fn + ". Reducing score for " + manorsOnIsland.length + " burgs");
+            // No ports on island. Reducing score for burgs
             manorsOnIsland.map(function(e) {e.score -= 2;});
           }
         }
@@ -4403,6 +4382,19 @@ function fantasyMap() {
       }
       return;
     }
+    if (id === "restoreStyle") {
+      alertMessage.innerHTML = "Are you sure you want to restore default style?";
+      $("#alert").dialog({resizable: false, title: "Restore style",
+        buttons: {
+          "Restore": function() {
+            applyDefaultStyle();
+            $(this).dialog("close");
+          },
+          Cancel: function() {
+            $(this).dialog("close");
+          }
+      }});
+    }
     if ($(this).hasClass('radio') && parent === "mapFilters") {
       $("svg").removeClass();
       if ($(this).hasClass('pressed')) {
@@ -4453,7 +4445,7 @@ function fantasyMap() {
       var mod = id === "styleFontPlus" ? 1.1 : 0.9;
       el.selectAll("g").each(function() {
         var el = d3.select(this);
-        var size = rn(el.attr("font-size") * mod, 2);
+        var size = rn(el.attr("data-size") * mod, 2);
         if (size < 0.2) {size = 0.2;}
         el.attr("data-size", size).attr("font-size", rn((size + (size / scale)) / 2, 2));
       });
@@ -5668,7 +5660,6 @@ function fantasyMap() {
   // fit full-screen map if window is resized
   $(window).resize(function() {
     if ($("body").hasClass("fullscreen")) {
-      console.log("resized");
       mapWidthInput.value = $(window).width();
       mapHeightInput.value = $(window).height();
       applyMapSize();
@@ -5684,6 +5675,34 @@ function fantasyMap() {
       }
     }
   });
+
+  // restore initial style
+  function applyDefaultStyle() {
+    viewbox.on("touchmove mousemove", moved).on("click", clicked);
+    landmass.attr("opacity", 1).attr("fill", "#eef6fb");
+    coastline.attr("opacity", .5).attr("stroke", "#1f3846").attr("stroke-width", .7).attr("filter", "url(#dropShadow)");
+    regions.attr("opacity", .55);
+    stateBorders.attr("opacity", .8).attr("stroke", "#56566d").attr("stroke-width", .5).attr("stroke-dasharray", "1.2 1.5").attr("stroke-linecap", "butt");
+    neutralBorders.attr("opacity", .8).attr("stroke", "#56566d").attr("stroke-width", .3).attr("stroke-dasharray", "1 1.5").attr("stroke-linecap", "butt");
+    cults.attr("opacity", .6);
+    rivers.attr("opacity", 1).attr("fill", "#5d97bb");
+    lakes.attr("opacity", 1).attr("fill", "#a6c1fd").attr("stroke", "#477794").attr("stroke-width", .3);
+    burgs.attr("opacity", 1).attr("fill", "#ffffff").attr("stroke", "#3e3e4b");
+    roads.attr("opacity", .8).attr("stroke", "#d06324").attr("stroke-width", .4).attr("stroke-dasharray", "1 2").attr("stroke-linecap", "round");
+    trails.attr("opacity", .8).attr("stroke", "#d06324").attr("stroke-width", .1).attr("stroke-dasharray", ".5 1").attr("stroke-linecap", "round");
+    searoutes.attr("opacity", .8).attr("stroke", "#ffffff").attr("stroke-width", .2).attr("stroke-dasharray", "1 2").attr("stroke-linecap", "round");
+    grid.attr("opacity", 1).attr("stroke", "#808080").attr("stroke-width", .1);
+    ruler.attr("opacity", 1).style("display", "none").attr("filter", "url(#dropShadow)");
+    overlay.attr("opacity", 1).attr("stroke", "#808080").attr("stroke-width", .5);
+    ocean.select("#oceanBase").attr("opacity", 1).attr("fill", "#5167a9");
+    labels.attr("opacity", 1);
+    size = rn(10 - capitalsCount / 20);
+    capitals.attr("fill", "#3e3e4b").attr("opacity", 1).attr("font-family", "Amatic SC").attr("data-font", "Amatic+SC:700").attr("font-size", size).attr("data-size", size);
+    towns.attr("fill", "#3e3e4b").attr("opacity", 1).attr("font-family", "Amatic SC").attr("data-font", "Amatic+SC:700").attr("font-size", 4).attr("data-size", 4);
+    size = rn(18 - capitalsCount / 6);
+    countries.attr("fill", "#3e3e4b").attr("opacity", 1).attr("font-family", "Amatic SC").attr("data-font", "Amatic+SC:700").attr("font-size", size).attr("data-size", size);
+    addedLabels.attr("fill", "#3e3e4b").attr("opacity", 1).attr("font-family", "Amatic SC").attr("data-font", "Amatic+SC:700").attr("font-size", 18).attr("data-size", 18);
+  }
 
   // Options handlers
   $("input, select").on("input change", function() {
