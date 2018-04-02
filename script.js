@@ -1586,16 +1586,14 @@ function fantasyMap() {
   }
 
   function editRiver() {
-    if (elSelected) {
-      if ($("#riverNew").hasClass('pressed')) {
-        var point = d3.mouse(this);
-        addRiverPoint({scX:point[0], scY:point[1]});
-        redrawRiver();
-        $("#riverNew").click(); 
-        return;
-      }
-      unselect();
+    if ($("#riverNew").hasClass('pressed')) {
+      var point = d3.mouse(this);
+      addRiverPoint({scX:point[0], scY:point[1]});
+      redrawRiver();
+      $("#riverNew").click(); 
+      return;
     }
+    unselect();
     elSelected = d3.select(this);
     elSelected.call(d3.drag().on("start", riverDrag)).classed("draggable", true);   
     var points = JSON.parse(elSelected.attr("data-points"));
@@ -1623,7 +1621,7 @@ function fantasyMap() {
       elSelected = null;
       if ($("#riverEditor").is(":visible")) {$("#riverEditor").dialog("close");}
       if ($("#labelEditor").is(":visible")) {$("#labelEditor").dialog("close");}
-    }   
+    }
   }
 
   function addRiverPoint(point) {
@@ -3168,7 +3166,7 @@ function fantasyMap() {
   }
   
   function editLabel() {
-    if (elSelected) {unselect();}
+    unselect();
     elSelected = d3.select(this);
     elSelected.call(d3.drag().on("drag", dragged).on("end", dragended)).classed("draggable", true);
     var group = d3.select(this.parentNode);
@@ -3367,6 +3365,7 @@ function fantasyMap() {
 
   // on any Editor input change
   $("#labelEditor .editTrigger").change(function() {
+    if (!elSelected) {return;}
     $(this).attr("title", $(this).val());    
     elSelected.text(editText.value); // change Label text   
     // check if Group was changed
@@ -3523,17 +3522,16 @@ function fantasyMap() {
       var blob = new Blob([svg_xml], {type:'image/svg+xml;charset=utf-8'});
       var url = window.URL.createObjectURL(blob);
       var link = document.createElement("a");
+      link.target = "_blank";
       if (type === "png") {
-        canvas.width = mapWidth * 2;
-        canvas.height = mapHeight * 2;
+        canvas.width = $(window).width();
+        canvas.height = $(window).height();
         var img = new Image();
         img.src = url;
         img.onload = function(){
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
           link.download = "fantasy_map_" + Date.now() + ".png";
           link.href = canvas.toDataURL('image/png');
-          canvas.width = mapWidth;
-          canvas.height = mapHeight;
           canvas.style.opacity = 0;        
           document.body.appendChild(link);
           link.click();
@@ -3545,7 +3543,7 @@ function fantasyMap() {
         link.click();  
       }
       console.timeEnd("saveAsImage");
-      window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 5000);
+      window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 10000);
     });
   }
 
@@ -3682,7 +3680,7 @@ function fantasyMap() {
       oceanPattern = ocean.select("#oceanPattern");
       landmass = viewbox.select("#landmass");
       grid = viewbox.select("#grid");
-      overlay = viewbox.select("id", "overlay");
+      overlay = viewbox.select("#overlay");
       terrs = viewbox.select("#terrs");
       cults = viewbox.select("#cults");
       routes = viewbox.select("#routes");
