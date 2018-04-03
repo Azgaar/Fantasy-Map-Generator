@@ -28,8 +28,8 @@
   <script src="libs/polylabel.min.js"></script>
   <script src="libs/quantize.min.js" defer></script>
   <script src="libs/d3-hexbin.v0.2.min.js" defer></script>
-  <link rel="stylesheet" type="text/css" href="index.css?version=0.559b"/>
-  <link rel="stylesheet" type="text/css" href="icons.css?version=0.559b"/>
+  <link rel="stylesheet" type="text/css" href="index.css?version=0.5591b"/>
+  <link rel="stylesheet" type="text/css" href="icons.css?version=0.5591b"/>
   <link rel="stylesheet" type="text/css" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"/>
 </head>
 <body class="fullscreen">
@@ -152,6 +152,7 @@
           <li title="Toggle Labels" id="toggleLabels" onclick="$('#labels').fadeToggle()">Labels</li>
           <li title="Toggle Burg icons" id="toggleIcons" onclick="$('#burgs').fadeToggle()">Burgs</li>
         </div>
+        <label id="activeZoomingLabel">Hide small labels: <input id="activeZooming" type="checkbox" checked></label>
       </div>
       <div id="styleContent" class="tabcontent">
         <p style="display: inline-block;">Select element:</p>
@@ -251,7 +252,7 @@
         <p>Generate new map to apply the options!</p>
         <table>
           <tr>
-            <td title="Canvas size">Map size</td>
+            <td title="Map size. Will be remembered on change">Map size</td>
             <td style="width: 130px;">
               <span title="width">w:</span>
               <input class="pairedNumber" id="mapWidthInput" type="number" min="240" value="960">
@@ -259,7 +260,7 @@
               <input class="pairedNumber" id="mapHeightInput" type="number" min="135" value="540">
             </td>
             <td>
-              <a title="Toggle full-screen / window view" id="mapScreenSize" class="icon-resize-small"></a>
+              <a title="Toggle full-screen view" id="mapScreenSize" class="icon-resize-small"></a>
             </td>
           </tr>
           <tr>
@@ -437,9 +438,8 @@
         <button id="saveButton" title="Select file format to save map" class="options">Save as</button>
         <div id="saveDropdown">
           <div id="saveMap" title="Save as fully functional map in .map format">.map</div>
-          <div id="saveSVG" title="Download the map as .svg image for later use in vector graphics editors">.svg</div>
-          <div id="savePNG" title="Download the visible part of the map as .png image">.png</div>
-          <div id="activeZooming" title="Click to show hidden elements (like labels)" class="icon-eye-off"></div>
+          <div id="saveSVG" title="Download the map as .svg image (open in browser on vector graphics editor)">.svg</div>
+          <div id="savePNG" title="Download the visible part of the map as 4K .png image (may be pretty slow)">.png</div>
         </div>
         <button id="loadMap" title="Load fully functional map in a .map format" class="options">Load</button>
         <input type="file" accept=".map" id="fileToLoad">        
@@ -761,5 +761,5 @@
     Type: <span id="feature">no</span>
   </div>
 
-  <script type="text/javascript" src="script.js?version=0.559b"></script>
+  <script type="text/javascript" src="script.js?version=0.5591b"></script>
 </body>

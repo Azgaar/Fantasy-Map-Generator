@@ -143,10 +143,10 @@ function fantasyMap() {
       var relative = rn((desired + (desired / scale)) / 2, 2);
       el.attr("font-size", relative);
       var size = +el.attr("font-size");
-      if ($("#activeZooming").hasClass("icon-eye-off") && size * scale < 6) {
+      if (activeZooming.checked && size * scale < 6) {
         el.classed("hidden", true);
       } else {
-        el.classed("hidden", false)
+        el.classed("hidden", false);
       }
     });
     if (ruler.size()) {
@@ -3500,6 +3500,11 @@ function fantasyMap() {
     // for each g element get inline style
     var emptyG = clone.append("g").node();
     var defaultStyles = window.getComputedStyle(emptyG);
+    clone.select("#labels").selectAll(".hidden").each(function(e) {
+      // show hidden labels but in reduced size
+      var size = d3.select(this).attr("font-size");
+      d3.select(this).classed("hidden", false).attr("font-size", rn(size * 0.8, 2));
+    });
     clone.selectAll("g, #ruler > g > *, #scaleBar > text").each(function(d) {
       var compStyle = window.getComputedStyle(this);
       var style = "";
@@ -3524,17 +3529,25 @@ function fantasyMap() {
       var link = document.createElement("a");
       link.target = "_blank";
       if (type === "png") {
-        canvas.width = $(window).width();
-        canvas.height = $(window).height();
+        var ratio = mapHeight / mapWidth;
+        canvas.width = 3840; // ultraHD
+        canvas.height = rn(3840 * ratio);
         var img = new Image();
+        img.setAttribute('crossOrigin', 'anonymous');
         img.src = url;
         img.onload = function(){
+          window.URL.revokeObjectURL(url);
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
           link.download = "fantasy_map_" + Date.now() + ".png";
-          link.href = canvas.toDataURL('image/png');
-          canvas.style.opacity = 0;        
-          document.body.appendChild(link);
-          link.click();
+          canvas.toBlob(function(blob) {
+             link.href = window.URL.createObjectURL(blob);
+             document.body.appendChild(link);
+             link.click();
+             window.setTimeout(function() {window.URL.revokeObjectURL(link.href);}, 5000);
+          });
+          canvas.style.opacity = 0;   
+          canvas.width = mapWidth;
+          canvas.height = mapHeight;
         }
       } else {
         link.download = "fantasy_map_" + Date.now() + ".svg";
@@ -3543,7 +3556,7 @@ function fantasyMap() {
         link.click();  
       }
       console.timeEnd("saveAsImage");
-      window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 10000);
+      window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 5000);
     });
   }
 
@@ -3652,14 +3665,9 @@ function fantasyMap() {
         $("#alert").dialog({title: "Load map", buttons: {OK: function() {$(this).dialog("close");}}});
       }
       if (mapVersion.length > 10) {console.error("Cannot load map"); return;}
-      newPoints = [], points = [], cells = [], land = [], riversData = [], island = 0, manors = [], states = [], queue = []; 
+      
+      // replace svg
       svg.remove();
-      points = JSON.parse(data[1]);
-      cells = JSON.parse(data[2]);
-      land = $.grep(cells, function(e) {return (e.height >= 0.2);});
-      cells.map(function(e) {newPoints.push(e.data);});
-      calculateVoronoi(newPoints);
-      manors = JSON.parse(data[3]);
       if (mapVersion === "0.52b" || mapVersion === "0.53b") {
         states = [];
         document.body.insertAdjacentHTML("afterbegin", data[4]);        
@@ -3669,12 +3677,11 @@ function fantasyMap() {
       }
 
       // redefine variables
-      customization = 0, elSelected = "";
-      svg = d3.select("svg").call(zoom);
+      svg = d3.select("svg");
       mapWidth = +svg.attr("width");
       mapHeight = +svg.attr("height");
       defs = svg.select("#deftemp");
-      viewbox = svg.select("#viewbox").on("touchmove mousemove", moved).on("click", clicked);
+      viewbox = svg.select("#viewbox");
       ocean = viewbox.select("#ocean");
       oceanLayers = ocean.select("#oceanLayers");
       oceanPattern = ocean.select("#oceanPattern");
@@ -3705,6 +3712,8 @@ function fantasyMap() {
       ruler = viewbox.select("#ruler");
 
       // restore events
+      svg.call(zoom);
+      viewbox.on("touchmove mousemove", moved).on("click", clicked);
       overlay.selectAll("*").call(d3.drag().on("start", elementDrag));
       labels.selectAll("text").on("click", editLabel);
       burgs.selectAll("circle").call(d3.drag().on("start", elementDrag));
@@ -3716,7 +3725,23 @@ function fantasyMap() {
       ruler.selectAll(".linear").selectAll("circle:not(.center)").call(d3.drag().on("drag", rulerEdgeDrag));
       ruler.selectAll(".linear").selectAll("circle.center").call(d3.drag().on("drag", rulerCenterDrag));
 
-      // get countries count
+      // update data
+      newPoints = [], riversData = [], island = 0, queue = [], customization = 0, elSelected = "";
+      points = JSON.parse(data[1]);
+      cells = JSON.parse(data[2]);
+      land = $.grep(cells, function(e) {return (e.height >= 0.2);});
+      manors = JSON.parse(data[3]);
+      mapWidthInput.value = +svg.attr("width");
+      mapHeightInput.value = +svg.attr("height");
+      if (mapWidthInput.value < $(window).width() || mapHeightInput.value < $(window).height()) {
+        $(".fullscreen").removeClass("fullscreen");
+      } else {
+        $("body").addClass("fullscreen");
+        $("svg").addClass("fullscreen");        
+      }
+      changeMapSize();
+      cells.map(function(e) {newPoints.push(e.data);});
+      calculateVoronoi(newPoints);
       capitalsCount = +$("#regions > path:last").attr("class").slice(6) + 1;
       regionsOutput.innerHTML = regionsInput.value = capitalsCount;
 
@@ -4421,6 +4446,7 @@ function fantasyMap() {
         $(this).removeClass("icon-resize-full-alt").addClass("icon-resize-small");
       }
       changeMapSize();
+      localStorage.setItem("screenSize", [+mapWidthInput.value, +mapHeightInput.value]);
     }    
     if (id === "saveButton") {$("#saveDropdown").slideToggle();}
     if (id === "loadMap") {fileToLoad.click();}
@@ -4525,12 +4551,6 @@ function fantasyMap() {
     if (id === "saveMap") {saveMap();}
     if (id === "saveSVG") {saveAsImage("svg");}
     if (id === "savePNG") {saveAsImage("png");}
-    if (id === "activeZooming") {
-      $(this).toggleClass("icon-eye icon-eye-off");
-      zoomUpdate();
-      invokeActiveZooming();
-      return;
-    }
     $("#saveDropdown").slideUp("fast"); 
   });
 
@@ -5633,11 +5653,6 @@ function fantasyMap() {
     mapWidth = +mapWidthInput.value;
     mapHeight = +mapHeightInput.value;
     svg.attr("width", mapWidth).attr("height", mapHeight);
-    if ($("body").hasClass("fullscreen")) {
-      localStorage.removeItem("screenSize");
-    } else {
-      localStorage.setItem("screenSize", [mapWidth, mapHeight]);
-    }
     voronoi = d3.voronoi().extent([[0, 0], [mapWidth, mapHeight]]);
     oceanPattern.select("rect").attr("width", mapWidth).attr("height", mapHeight);
     oceanLayers.select("rect").attr("width", mapWidth).attr("height", mapHeight);       
@@ -5847,7 +5862,15 @@ function fantasyMap() {
         toggleOverlay();
       }
     }
-    if (id === "mapWidthInput" || id === "mapHeightInput") {changeMapSize();}
+    if (id === "activeZooming") {
+      zoomUpdate();
+      invokeActiveZooming();
+      return;
+    }    
+    if (id === "mapWidthInput" || id === "mapHeightInput") {
+      changeMapSize();
+      localStorage.setItem("screenSize", [+mapWidthInput.value, +mapHeightInput.value]);
+    }
     if (id === "sizeInput") {graphSize = sizeOutput.value = this.value;}
     if (id === "randomizeInput") {randomizeOutput.innerHTML = +this.value ? "✓" : "✕";}
     if (id === "manorsInput") {
