@@ -2969,7 +2969,7 @@ function fantasyMap() {
       var name = generateName(culture);
       // please label
       if (brush === "addLabel") {
-        addedLabels.append("text").attr("x", x).attr("y", y).text(name).on("click", editLabel);
+        labels.select("#addedLabels").append("text").attr("x", x).attr("y", y).text(name).on("click", editLabel);
         if (!shift) {$("#"+brush).removeClass("pressed");} 
       }
       if (brush === "addBurg") {
@@ -3372,15 +3372,15 @@ function fantasyMap() {
     var group = d3.select(elSelected.node().parentNode);
     var groupOld = group.attr("id");
     var groupNew = editGroupSelect.value;
-    // check if label is country name
+    // check if label is a country name
     if (elSelected.attr("id").includes("regionLabel")) {
       var state = +elSelected.attr("id").slice(11);
-      states[state].name = name;
+      states[state].name = editText.value;
     }
-    // check if label is manor name
+    // check if label is a manor name
     if (elSelected.attr("id").includes("manorLabel")) {
       var manor = +elSelected.attr("id").slice(10);
-      manors[manor].name = name;
+      manors[manor].name = editText.value;
     }
     if (editGroupInput.value !== "") {
       groupNew = editGroupInput.value.toLowerCase().replace(/ /g, "_").replace(/[^\w\s]/gi, "");
@@ -3392,7 +3392,7 @@ function fantasyMap() {
         group = labels.select("#"+groupNew);
         editFontSelect.value = fonts.indexOf(group.attr("data-font"));
         editSize.value = group.attr("data-size");
-        editColor.value = toHEX(group.attr("fill"));    
+        editColor.value = toHEX(group.attr("fill"));
         editOpacity.value = group.attr("opacity");   
       } else {
         if (group.selectAll("text").size() === 0) {group.remove();}
