@@ -35,7 +35,7 @@
 <body class="fullscreen">
   <div id="loading">
     <h1 class="spin">&#9881;</h1>
-    <p id="loading-text">Loading...</p>
+    <p id="loading-text">Loading<span>.</span><span>.</span><span>.</span></p>
   </div>
   <svg xmlns="http://www.w3.org/2000/svg" class="fullscreen">
     <defs>
@@ -152,7 +152,8 @@
           <li title="Toggle Labels" id="toggleLabels" onclick="$('#labels').fadeToggle()">Labels</li>
           <li title="Toggle Burg icons" id="toggleIcons" onclick="$('#burgs').fadeToggle()">Burgs</li>
         </div>
-        <label id="activeZoomingLabel">Hide small labels: <input id="activeZooming" type="checkbox" checked></label>
+        <label id="activeZoomingLabel">Hide small labels: <input id="hideLabels" type="checkbox" checked></label>
+        <label>Show statusbar: <input id="toggleStatusbar" type="checkbox" checked onclick="$('#statusbar').fadeToggle()"></label>
       </div>
       <div id="styleContent" class="tabcontent">
         <p style="display: inline-block;">Select element:</p>

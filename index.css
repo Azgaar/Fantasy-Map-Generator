@@ -314,10 +314,6 @@ button.options {
 }
 
 #options input[type="checkbox"] {
-  width: 8;
-  padding: 0;
-  border: 0;
-  background: none;
   cursor: pointer;
 }
 
@@ -409,7 +405,7 @@ button.active {
 
 .tabcontent {
     display: none;
-    padding: 0 6px 0 12px;
+    padding: 0 6px 2px 12px;
     opacity: 0.8;
     max-width: 290px;    
 }
@@ -468,10 +464,12 @@ p {
 
 #statusbar {
 	display: none;
-	font-family: monospace;
 	position: absolute;
+	font-family: monospace;
 	margin-left: 10px;
 	color: #272727;
+  word-wrap: break-word;
+  font-size: 1.2vw;
 }
 
 table  {
@@ -915,6 +913,14 @@ div.states > .small {
     max-height: 362px;
 }
 
+#countriesBody {
+    min-width: 366px;
+}
+
+#burgsBody {
+    min-width: 260px;  
+}
+
 div.states .burgName, div.states .burgCulture {
     width: 56px;
 }
@@ -1061,16 +1067,46 @@ div.states button.selectCapital {
 
 #loading {
     text-align: center;
-    font-family: "Arial";
+    font-family: "Courier New";
+    font-weight: bold;
+    width: 88px;
+    position: absolute;
+    left: 45%; 
 }
 
 .spin {
     animation: spin 4s infinite linear;
+    margin: 0;
 }
 
 @keyframes spin {
     0% {transform: rotate(0deg);}
     100% {transform: rotate(359deg);}
+}
+
+#loading-text {
+    margin: 0;
+}
+
+#loading-text span {
+    animation-name: blink;
+    animation-duration: 4s;
+    animation-iteration-count: infinite;
+    animation-fill-mode: both;
+}
+
+#loading-text span:nth-child(2) {
+  animation-delay: 1s;
+}
+
+#loading-text span:nth-child(3) {
+  animation-delay: 2s;
+}
+
+@keyframes blink {
+  0% {opacity: .05;}
+  20% {opacity: 1;}
+  100% {opacity: .05;}
 }
 
 ul.share-buttons li{

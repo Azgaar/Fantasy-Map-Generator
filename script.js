@@ -37,8 +37,7 @@ function fantasyMap() {
     debug = viewbox.append("g").attr("id", "debug");
     capitals = labels.append("g").attr("id", "capitals"),
     towns = labels.append("g").attr("id", "towns"),
-    countries = labels.append("g").attr("id", "countries"),
-    addedLabels = labels.append("g").attr("id", "addedLabels");    
+    countries = labels.append("g").attr("id", "countries");  
 
   // Common variables
   var mapWidth, mapHeight,
@@ -88,8 +87,8 @@ function fantasyMap() {
   
   // toggle off loading screen and on menus
   $("#loading").remove();
-  $("#statusbar").css("top", mapHeight - 20).show();
   $("#optionsContainer").show();
+  fitStatusBar();
  
   // D3 Line generator
   var scX = d3.scaleLinear().domain([0, mapWidth]).range([0, mapWidth]),
@@ -141,13 +140,9 @@ function fantasyMap() {
       var el = d3.select(this);
       var desired = +el.attr("data-size");
       var relative = rn((desired + (desired / scale)) / 2, 2);
+      if (relative < 2) {relative = 2;}
       el.attr("font-size", relative);
-      var size = +el.attr("font-size");
-      if (activeZooming.checked && size * scale < 6) {
-        el.classed("hidden", true);
-      } else {
-        el.classed("hidden", false);
-      }
+      el.classed("hidden", hideLabels.checked && relative * scale < 6);
     });
     if (ruler.size()) {
       if (ruler.style("display") !== "none") {
@@ -2382,10 +2377,10 @@ function fantasyMap() {
       var cell = manors[i].cell;
       var name = manors[i].name;
       if (i < capitalsCount) {
-        burgs.append("circle").attr("id", "manorIcon"+i).attr("r", 1).attr("stroke-width", .24).attr("class", "manor").attr("cx", x).attr("cy", y);
+        burgs.append("circle").attr("id", "manorIcon"+i).attr("r", 1).attr("stroke-width", .24).attr("cx", x).attr("cy", y);
         capitals.append("text").attr("id", "manorLabel"+i).attr("x", x).attr("y", y).attr("dy", -1.3).text(name);      
       } else {
-        burgs.append("circle").attr("id", "manorIcon"+i).attr("r", .5).attr("stroke-width", .12).attr("class", "manor").attr("cx", x).attr("cy", y);
+        burgs.append("circle").attr("id", "manorIcon"+i).attr("r", .5).attr("stroke-width", .12).attr("cx", x).attr("cy", y);
         towns.append("text").attr("id", "manorLabel"+i).attr("x", x).attr("y", y).attr("dy", -.7).text(name);
       }
     }
@@ -2969,8 +2964,17 @@ function fantasyMap() {
       var name = generateName(culture);
       // please label
       if (brush === "addLabel") {
-        labels.select("#addedLabels").append("text").attr("x", x).attr("y", y).text(name).on("click", editLabel);
-        if (!shift) {$("#"+brush).removeClass("pressed");} 
+        var group = labels.select("#addedLabels");
+        if (!group.size()) {
+          group = labels.append("g").attr("id", "addedLabels").attr("fill", "#3e3e4b").attr("opacity", 1)
+            .attr("font-family", "Amatic SC").attr("data-font", "Amatic+SC:700").attr("font-size", 18).attr("data-size", 18);
+        }
+        group.append("text").attr("x", x).attr("y", y).text(name).on("click", editLabel);
+        if (!shift) {
+          $("#"+brush).removeClass("pressed");
+          viewbox.style("cursor", "default");
+        }
+        return;
       }
       if (brush === "addBurg") {
         if (cells[cell].height < 0.2) {
@@ -2983,10 +2987,15 @@ function fantasyMap() {
         }
         var i = manors.length;
         burgs.append("circle").attr("id", "manorIcon"+i).attr("r", .5).attr("stroke-width", .12).attr("cx", x).attr("cy", y).call(d3.drag().on("start", elementDrag));
-        labels.select("#towns").append("text").attr("id", "manorLabel"+i).attr("x", x).attr("y", y).attr("dy", -0.7).text(name).on("click", editLabel);
-        var region, state;
-        if ($("#burgAdd").hasClass("pressed")) {
-          state = +$("#burgsEditor").attr("data-state");
+        var group = labels.select("#addedBurgs");
+        if (!group.size()) {
+          group = labels.append("g").attr("id", "addedBurgs").attr("fill", "#3e3e4b").attr("opacity", 1)
+            .attr("font-family", "Amatic SC").attr("data-font", "Amatic+SC:700").attr("font-size", 4).attr("data-size", 4);          
+        }
+        group.append("text").attr("id", "manorLabel"+i).attr("x", x).attr("y", y).attr("dy", -0.7).text(name).on("click", editLabel);
+        invokeActiveZooming();
+        var region, state = +$("#addBurg").attr("data-state");
+        if (state !== -1) {
           region = states[state].color === "neutral" ? "neutral" : state;
           var oldRegion = cells[cell].region;
           if (region !== oldRegion) {
@@ -3012,6 +3021,7 @@ function fantasyMap() {
           $("#burgAdd").removeClass("pressed");
           viewbox.style("cursor", "default");
         }
+        return;
       }
       if (brush.includes("selectCapital")) {
         if (cells[cell].height < 0.2) {
@@ -3372,13 +3382,14 @@ function fantasyMap() {
     var group = d3.select(elSelected.node().parentNode);
     var groupOld = group.attr("id");
     var groupNew = editGroupSelect.value;
+    var id = elSelected.attr("id") || "";
     // check if label is a country name
-    if (elSelected.attr("id").includes("regionLabel")) {
+    if (id.includes("regionLabel")) {
       var state = +elSelected.attr("id").slice(11);
       states[state].name = editText.value;
     }
     // check if label is a manor name
-    if (elSelected.attr("id").includes("manorLabel")) {
+    if (id.includes("manorLabel")) {
       var manor = +elSelected.attr("id").slice(10);
       manors[manor].name = editText.value;
     }
@@ -4217,7 +4228,10 @@ function fantasyMap() {
         $("#state"+s+" > .stateCapital").val(manors[c].name);
       }
     }
-    if (id === "burgAdd") {$("#addBurg").click();}
+    if (id === "burgAdd") {
+      var state = +$("#burgsEditor").attr("data-state");
+      $("#addBurg").click().attr("data-state", state);
+    }
     if (id === "toggleScaleBar") {$("#scaleBar").toggleClass("hidden");}
     if (id === "addRuler") {
       $("#ruler").show();
@@ -4388,12 +4402,12 @@ function fantasyMap() {
         $(this).removeClass('pressed');
         viewbox.style("cursor", "default").on(".drag", null);;
         $("#brushRadiusLabel, #brushRadius").attr("disabled", true).addClass("disabled");
-        if (id === "addBurg") {$("#burgAdd").removeClass("pressed");}
+        $("#burgAdd").removeClass('pressed');
       } else {
         $(".pressed").removeClass('pressed');
-        $(this).addClass('pressed'); 
+        $(this).attr("data-state", -1).addClass('pressed');
+        if (id === "addBurg") {$("#burgAdd").addClass('pressed');}
         viewbox.style("cursor", "crosshair");
-        if (id === "addBurg") {$("#burgAdd").addClass("pressed");}
         if (id.slice(0,5) === "brush" && id !== "brushRange" && id !== "brushTrough") {
           viewbox.call(drag); 
         }
@@ -4470,7 +4484,7 @@ function fantasyMap() {
       el.selectAll("g").each(function() {
         var el = d3.select(this);
         var size = rn(el.attr("data-size") * mod, 2);
-        if (size < 0.2) {size = 0.2;}
+        if (size < 2) {size = 2;}
         el.attr("data-size", size).attr("font-size", rn((size + (size / scale)) / 2, 2));
       });
       return;
@@ -4646,7 +4660,7 @@ function fantasyMap() {
       var count = '<label>width:<input class="templateElCount" title="Set strait width" value="1-7"></label>';
     }
     el.append('<span title="Remove step" class="icon-trash-empty"></span>');
-    $(".icon-trash-empty").on("click", function() {$(this).parent().remove();});
+    $("#templateBody .icon-trash-empty").on("click", function() {$(this).parent().remove();});
     if (dist) {el.append(dist);}
     if (count) {el.append(count);}
     el.find("select.templateElDist").on("input", fireTemplateElDist);
@@ -5245,7 +5259,7 @@ function fantasyMap() {
       });
     });
     // fully remove country
-    $(".icon-trash-empty").on("click", function() {
+    $("#countriesBody .icon-trash-empty").on("click", function() {
       alertMessage.innerHTML = `Are you sure you want to remove the country?`;
       var s = +(this.parentNode.id).slice(5);
       var capital = states[s].capital;
@@ -5415,7 +5429,7 @@ function fantasyMap() {
       states[state].urbanPopulation = rn(states[state].urbanPopulation * change, 2);
       updateCountryPopulationUI(state);
     });
-    $(".icon-trash-empty").on("click", function() {
+    $("#burgsBody .icon-trash-empty").on("click", function() {
       alertMessage.innerHTML = `Are you sure you want to remove the burg?`;
       var b = +(this.parentNode.id).slice(5);
       $(function() {$("#alert").dialog({resizable: false, title: "Remove burg",
@@ -5486,6 +5500,7 @@ function fantasyMap() {
     var pos = localStorage.getItem(this.id);
     if (!pos) {return;}
     pos = pos.split(",");
+    if (pos[0] > $(window).width() - 100 || pos[1] > $(window).width()  - 40) {return;} // prevent showing out of screen
     var at = `left+${pos[0]} top+${pos[1]}`;
     $(this).dialog("option", "position", {my: "left top", at: at, of: "svg"});
   });
@@ -5660,14 +5675,8 @@ function fantasyMap() {
     scY = d3.scaleLinear().domain([0, mapHeight]).range([0, mapHeight]);
     lineGen = d3.line().x(function(d) {return scX(d.scX);}).y(function(d) {return scY(d.scY);});
     zoom.translateExtent([[0, 0], [mapWidth, mapHeight]]);
-    if (d3.select("#scaleBar").size()) {
-      var bbox = d3.select("#scaleBar").node().getBBox();
-      var tr = [mapWidth - 10 - bbox.width, mapHeight - 10 - bbox.height];
-      d3.select("#scaleBar").attr("transform", "translate(" + rn(tr[0]) + "," + rn(tr[1]) + ")");
-      localStorage.removeItem("scaleBar");
-    }
-    $("#statusbar").css("top", mapHeight + 8);
-    if ($("body").hasClass("fullscreen")) {$("#statusbar").css("top", mapHeight - 20);}
+    fitScaleBar();
+    fitStatusBar();
   }
 
   // fit full-screen map if window is resized
@@ -5679,16 +5688,32 @@ function fantasyMap() {
       oceanPattern.select("rect").attr("width", mapWidth).attr("height", mapHeight);
       oceanLayers.select("rect").attr("width", mapWidth).attr("height", mapHeight);
       zoom.translateExtent([[0, 0], [mapWidth, mapHeight]]);
-      $("#statusbar").css("top", mapHeight - 20);
-      if (d3.select("#scaleBar").size()) {
-        var bbox = d3.select("#scaleBar").node().getBBox();
-        var tr = [mapWidth - 10 - bbox.width, mapHeight - 10 - bbox.height];
-        d3.select("#scaleBar").attr("transform", "translate(" + rn(tr[0]) + "," + rn(tr[1]) + ")");
-        localStorage.removeItem("scaleBar");
-      }
+      fitScaleBar();
+      fitStatusBar();
     }
   });
 
+  // fit ScaleBar to map size
+  function fitScaleBar() {
+    if (d3.select("#scaleBar").size()) {
+      var bbox = d3.select("#scaleBar").node().getBBox();
+      var tr = [mapWidth - 10 - bbox.width, mapHeight - 10 - bbox.height];
+      d3.select("#scaleBar").attr("transform", "translate(" + rn(tr[0]) + "," + rn(tr[1]) + ")");
+      localStorage.removeItem("scaleBar");
+    }
+  }
+  
+  // fit Statusbar to map size
+  function fitStatusBar() {
+    var el = $("#statusbar");
+    if ($("body").hasClass("fullscreen")) {
+      el.css("top", mapHeight - 20);
+    } else {
+      el.css("top", mapHeight + 8);
+    }
+    if (toggleStatusbar.checked) {el.show();}
+  }
+  
   // restore initial style
   function applyDefaultStyle() {
     viewbox.on("touchmove mousemove", moved).on("click", clicked);
@@ -5714,7 +5739,6 @@ function fantasyMap() {
     towns.attr("fill", "#3e3e4b").attr("opacity", 1).attr("font-family", "Amatic SC").attr("data-font", "Amatic+SC:700").attr("font-size", 4).attr("data-size", 4);
     size = rn(18 - capitalsCount / 6);
     countries.attr("fill", "#3e3e4b").attr("opacity", 1).attr("font-family", "Amatic SC").attr("data-font", "Amatic+SC:700").attr("font-size", size).attr("data-size", size);
-    addedLabels.attr("fill", "#3e3e4b").attr("opacity", 1).attr("font-family", "Amatic SC").attr("data-font", "Amatic+SC:700").attr("font-size", 18).attr("data-size", 18);
   }
 
   // Options handlers
