@@ -2985,7 +2985,7 @@ function fantasyMap() {
           console.error("There is already a burg in this cell. Select a free cell");
           return;
         }
-        var i = manors.ljsength;
+        var i = manors.length;
         burgs.append("circle").attr("id", "manorIcon"+i).attr("r", .5).attr("stroke-width", .12).attr("cx", x).attr("cy", y).call(d3.drag().on("start", elementDrag));
         var group = labels.select("#addedBurgs");
         if (!group.size()) {
@@ -5706,7 +5706,7 @@ function fantasyMap() {
     scX = d3.scaleLinear().domain([0, mapWidth]).range([0, mapWidth]);
     scY = d3.scaleLinear().domain([0, mapHeight]).range([0, mapHeight]);
     lineGen = d3.line().x(function(d) {return scX(d.scX);}).y(function(d) {return scY(d.scY);});
-    zoom.scaleExtent([1, 40]).translateExtent([[0, 0], [mapWidth, mapHeight]]);
+    zoom.translateExtent([[0, 0], [mapWidth, mapHeight]]);
     fitScaleBar();
     fitStatusBar();
   }
