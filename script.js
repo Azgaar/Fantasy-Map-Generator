@@ -74,8 +74,8 @@ function fantasyMap() {
     $(".fullscreen").removeClass("fullscreen");
     $("#mapScreenSize").addClass("icon-resize-full-alt").removeClass("icon-resize-small");
   } else {
-    mapWidthInput.value = $(window).width();
-    mapHeightInput.value = $(window).height();    
+    mapWidthInput.value = window.innerWidth;
+    mapHeightInput.value = window.innerHeight;
   }
   applyMapSize();
 
@@ -2985,7 +2985,7 @@ function fantasyMap() {
           console.error("There is already a burg in this cell. Select a free cell");
           return;
         }
-        var i = manors.length;
+        var i = manors.ljsength;
         burgs.append("circle").attr("id", "manorIcon"+i).attr("r", .5).attr("stroke-width", .12).attr("cx", x).attr("cy", y).call(d3.drag().on("start", elementDrag));
         var group = labels.select("#addedBurgs");
         if (!group.size()) {
@@ -3472,7 +3472,7 @@ function fantasyMap() {
   }
 
   // corvent number to short string with SI postfix
-  function si(n, d) {
+  function si(n) {
     if (n >= 1e9) {return rn(n / 1e9, 1) + "B";}
     if (n >= 1e8) {return rn(n / 1e6) + "M";}
     if (n >= 1e6) {return rn(n / 1e6, 1) + "M";}
@@ -3673,7 +3673,7 @@ function fantasyMap() {
           message += ` of the Generator. Please note the Gennerator is still on demo and a lot of crusial changes are made every month`;
         }
         alertMessage.innerHTML = message;
-        $("#alert").dialog({title: "Load map", buttons: {OK: function() {$(this).dialog("close");}}});
+        $("#alert").dialog({title: "Map version conflict", buttons: {OK: function() {$(this).dialog("close");}}});
       }
       if (mapVersion.length > 10) {console.error("Cannot load map"); return;}
       
@@ -3685,12 +3685,55 @@ function fantasyMap() {
       } else {
         states = JSON.parse(data[4]);
         document.body.insertAdjacentHTML("afterbegin", data[5]);        
-      }
-
-      // redefine variables
+      }   
+      
       svg = d3.select("svg");
-      mapWidth = +svg.attr("width");
-      mapHeight = +svg.attr("height");
+      // check map size
+      const nWidth = +svg.attr("width"), nHeight = +svg.attr("height");
+      // temporary fit svg element to current canvas size
+      svg.attr("width", mapWidth).attr("height", mapHeight);
+      if (nWidth !== mapWidth || nHeight !== mapHeight) {
+        let message = `The loaded map has size ${nWidth} x ${nHeight} pixels, `
+        message += `while the current canvas size is ${mapWidthInput.value} x ${mapHeightInput.value} pixels. `;
+        message += `You should change the canvas size to fit the loaded map. `;
+        message += `You may also keep the current size, but it can cause issues`;        
+        alertMessage.innerHTML = message;
+        $("#alert").dialog({title: "Map size conflict",
+          buttons: {
+            "Keep": function() {
+              /* Should not play with scale as it breaks edit, re-save and re-load!
+              scale = Math.min(mapWidth / nWidth, mapHeight / nHeight);
+              const difX = (mapWidth - nWidth * scale) / 2;
+              const difY = (mapHeight - nHeight * scale) / 2;
+              const transform = d3.zoomIdentity.translate(difX, difY).scale(scale);
+              svg.transition().duration(2000).call(zoom.transform, transform);
+              oceanPattern.select("rect").attr("x", -difX).attr("y", -difY).attr("width", mapWidth).attr("height", mapHeight);
+              oceanLayers.select("rect").attr("x", -difX).attr("y", -difY).attr("width", mapWidth).attr("height", mapHeight);
+              zoom.scaleExtent([scale, 40]).translateExtent([[-difX, -difY], [mapWidth / scale, mapHeight / scale]]);
+              */
+              oceanPattern.select("rect").attr("width", mapWidth).attr("height", mapHeight);
+              oceanLayers.select("rect").attr("width", mapWidth).attr("height", mapHeight);
+              $(this).dialog("close");
+            },
+            "Change": function() {
+              mapWidthInput.value = nWidth;
+              mapHeightInput.value = nHeight;
+              changeMapSize();
+              if ($("body").hasClass("fullscreen")) {
+                $("svg").addClass("fullscreen");
+                $("#mapScreenSize").removeClass("icon-resize-full-alt").addClass("icon-resize-small");
+              } else {
+                $("svg").removeClass("fullscreen");
+                $("#mapScreenSize").addClass("icon-resize-full-alt").removeClass("icon-resize-small");
+              }
+              $(this).dialog("close");
+            }
+          }
+        });
+      }
+      invokeActiveZooming();
+      
+      // redefine variables
       defs = svg.select("#deftemp");
       viewbox = svg.select("#viewbox");
       ocean = viewbox.select("#ocean");
@@ -3721,7 +3764,7 @@ function fantasyMap() {
       towns = labels.select("#towns");
       countries = labels.select("#countries");
       ruler = viewbox.select("#ruler");
-
+     
       // restore events
       svg.call(zoom);
       viewbox.on("touchmove mousemove", moved).on("click", clicked);
@@ -3742,15 +3785,6 @@ function fantasyMap() {
       cells = JSON.parse(data[2]);
       land = $.grep(cells, function(e) {return (e.height >= 0.2);});
       manors = JSON.parse(data[3]);
-      mapWidthInput.value = +svg.attr("width");
-      mapHeightInput.value = +svg.attr("height");
-      if (mapWidthInput.value < $(window).width() || mapHeightInput.value < $(window).height()) {
-        $(".fullscreen").removeClass("fullscreen");
-      } else {
-        $("body").addClass("fullscreen");
-        $("svg").addClass("fullscreen");        
-      }
-      changeMapSize();
       cells.map(function(e) {newPoints.push(e.data);});
       calculateVoronoi(newPoints);
       capitalsCount = +$("#regions > path:last").attr("class").slice(6) + 1;
@@ -4450,17 +4484,17 @@ function fantasyMap() {
       if ($("body").hasClass("fullscreen")) {
         mapWidthInput.value = 960; // default width
         mapHeightInput.value = 540; // default height
-        $(".fullscreen").removeClass("fullscreen");     
+        localStorage.setItem("screenSize", [960, 540]);
+        $(".fullscreen").removeClass("fullscreen");
         $(this).addClass("icon-resize-full-alt").removeClass("icon-resize-small");
       } else {
-        mapWidthInput.value = $(window).width();
-        mapHeightInput.value = $(window).height();
-        $("body").addClass("fullscreen");
-        $("svg").addClass("fullscreen");
+        localStorage.removeItem("screenSize");
+        mapWidthInput.value = window.innerWidth;
+        mapHeightInput.value = window.innerHeight;
+        $("body, svg").addClass("fullscreen");
         $(this).removeClass("icon-resize-full-alt").addClass("icon-resize-small");
       }
       changeMapSize();
-      localStorage.setItem("screenSize", [+mapWidthInput.value, +mapHeightInput.value]);
     }    
     if (id === "saveButton") {$("#saveDropdown").slideToggle();}
     if (id === "loadMap") {fileToLoad.click();}
@@ -5499,7 +5533,7 @@ function fantasyMap() {
   $(".dialog").on("dialogopen", function(event, ui) {
     var pos = localStorage.getItem(this.id);
     if (!pos) {return;}
-    pos = pos.split(",");
+    pos = pos.split(",");    
     if (pos[0] > $(window).width() - 100 || pos[1] > $(window).width()  - 40) {return;} // prevent showing out of screen
     var at = `left+${pos[0]} top+${pos[1]}`;
     $(this).dialog("option", "position", {my: "left top", at: at, of: "svg"});
@@ -5659,8 +5693,6 @@ function fantasyMap() {
     mapWidth = +mapWidthInput.value;
     mapHeight = +mapHeightInput.value;
     svg.attr("width", mapWidth).attr("height", mapHeight);
-    canvas.width = mapWidth;
-    canvas.height = mapHeight;
   }
     
   // change map size on manual size change or window resize
@@ -5674,7 +5706,7 @@ function fantasyMap() {
     scX = d3.scaleLinear().domain([0, mapWidth]).range([0, mapWidth]);
     scY = d3.scaleLinear().domain([0, mapHeight]).range([0, mapHeight]);
     lineGen = d3.line().x(function(d) {return scX(d.scX);}).y(function(d) {return scY(d.scY);});
-    zoom.translateExtent([[0, 0], [mapWidth, mapHeight]]);
+    zoom.scaleExtent([1, 40]).translateExtent([[0, 0], [mapWidth, mapHeight]]);
     fitScaleBar();
     fitStatusBar();
   }
@@ -5682,8 +5714,8 @@ function fantasyMap() {
   // fit full-screen map if window is resized
   $(window).resize(function() {
     if ($("body").hasClass("fullscreen")) {
-      mapWidthInput.value = $(window).width();
-      mapHeightInput.value = $(window).height();
+      mapWidthInput.value = window.innerWidth;
+      mapHeightInput.value = window.innerHeight;
       applyMapSize();
       oceanPattern.select("rect").attr("width", mapWidth).attr("height", mapHeight);
       oceanLayers.select("rect").attr("width", mapWidth).attr("height", mapHeight);
