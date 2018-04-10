@@ -1,6 +1,6 @@
 <!-- PLEASE FILL OUT THE FOLLOWING INFORMATION -->
 ### Description
-<!-- Version is displayed in the page title -->
+<!-- Describe the problem / suggestion in a few words -->
 
 ### Generator version
 <!-- Version is displayed in the page title -->
