@@ -379,7 +379,7 @@ function fantasyMap() {
             var exists = regions.select("#temp").select("path[data-cell='"+c2+"']");
             if (exists.size()) {exists.remove();}
             var stateNew = +$("div.selected").attr("id").slice(5); // state
-            if (states[stateNew].color === "neutral") {stateNew = "neutral";}
+            if (states[stateNew].capital === "neutral") {stateNew = "neutral";}
             var stateOld = cells[c2].region;
             if (stateNew !== stateOld) {
               var color = stateNew !== "neutral" ? states[stateNew].color : "white";
@@ -3001,7 +3001,7 @@ function fantasyMap() {
         invokeActiveZooming();
         var region, state = +$("#addBurg").attr("data-state");
         if (state !== -1) {
-          region = states[state].color === "neutral" ? "neutral" : state;
+          region = states[state].capital === "neutral" ? "neutral" : state;
           var oldRegion = cells[cell].region;
           if (region !== oldRegion) {
             cells[cell].region = region;
@@ -3160,7 +3160,7 @@ function fantasyMap() {
   // re-calculate data for a particular state
   function recalculateStateData(state) {
     var s = states[state];
-    if (s.color === "neutral") {state = "neutral";}
+    if (s.capital === "neutral") {state = "neutral";}
     var ruralFactor = state === "neutral" ? 0.5 : 1;    
     var burgs = $.grep(manors, function(e) {return (e.region === state);});
     s.burgs = burgs.length;  
@@ -4095,7 +4095,7 @@ function fantasyMap() {
         recalculateStateData(s);
       });
       var last = states.length - 1;
-      if (states[last].color === "neutral" && states[last].cells === 0) {
+      if (states[last].capital === "neutral" && states[last].cells === 0) {
         $("#state" + last).remove();
         states.splice(-1);
       }
@@ -4119,7 +4119,7 @@ function fantasyMap() {
       var mod = +powerInput.value * 2;
       $(".statePower").each(function(e, i) {
         var state = +(this.parentNode.id).slice(5);
-        if (states[state].color === "neutral") {return;}
+        if (states[state].capital === "neutral") {return;}
         var power = rn(Math.random() * mod / 2 + 1, 1);
         $(this).val(power);
         $(this).parent().attr("data-expansion", power);
@@ -4130,7 +4130,7 @@ function fantasyMap() {
     if (id === "countriesAddM" || id === "countriesAddR" || id === "countriesAddG") {
       var i = states.length;
       // move neutrals to the last line
-      if (states[i-1].color === "neutral") {states[i-1].i = i; i -= 1;}
+      if (states[i-1].capital === "neutral") {states[i-1].i = i; i -= 1;}
       var name = generateStateName(0);
       var color = colors20(i);
       states.push({i, color, name, capital: "select", cells: 0, burgs: 0, urbanPopulation: 0, ruralPopulation: 0, area: 0, power: 1});
@@ -4227,7 +4227,7 @@ function fantasyMap() {
           "Remove": function() {
             $(this).dialog("close");
             var state = +$("#burgsEditor").attr("data-state");
-            var region = states[state].color === "neutral" ? "neutral" : state;
+            var region = states[state].capital === "neutral" ? "neutral" : state;
             $("#burgsBody").empty();
             manors.map(function(m) {
               if (m.region !== region) {return;}
@@ -4269,7 +4269,7 @@ function fantasyMap() {
         labels.select("#manorLabel"+b).text(name);
       });
       if ($("#countriesEditor").is(":visible")) {
-        if (states[s].color === "neutral") {return;}
+        if (states[s].capital === "neutral") {return;}
         var c = states[s].capital;
         $("#state"+s).attr("data-capital", manors[c].name);
         $("#state"+s+" > .stateCapital").val(manors[c].name);
@@ -5180,9 +5180,10 @@ function fantasyMap() {
       var population = (urban + rural) * 1000;
       totalPopulation += population;
       var populationConv = si(population);
-      var title = `Total population: ${population}K\nRural population: ${rural}K\nUrban population: ${urban}K`;    
+      var title = `Total population: ${population}K\nRural population: ${rural}K\nUrban population: ${urban}K`;
+      var neutral = states[s].color === "neutral" || states[s].capital === "neutral";
       // append elements to countriesBody
-      if (states[s].color !== "neutral") {
+      if (!neutral) {
         el.append('<input title="Country color. Click to change" class="stateColor" type="color" value="' + states[s].color + '"/>');
         el.append('<input title="Country name. Click and type to change" class="stateName" value="' + states[s].name + '" autocorrect="off" spellcheck="false"/>');
         var capital = states[s].capital !== "select" ? manors[states[s].capital].name : "select";
@@ -5195,7 +5196,7 @@ function fantasyMap() {
         el.append('<span title="Country expansionism (defines competitive size)" class="icon-resize-full hidden"></span>');
         el.append('<input title="Capital expansionism (defines competitive size)" class="statePower hidden" type="number" min="0" max="99" step="0.1" value="' + states[s].power + '"/>');
       } else {
-        el.append('<input class="stateColor placeholder" type="color"/>');
+        el.append('<input class="stateColor placeholder" disabled type="color"/>');
         el.append('<input title="Neutral burgs are united into this group. Click to change the group name" class="stateName italic" id="stateName' + s + '" value="' + states[s].name + '" autocorrect="off" spellcheck="false"/>');
         el.append('<span class="icon-star-empty placeholder"></span>');
         el.append('<input class="stateCapital placeholder"/>');
@@ -5210,7 +5211,7 @@ function fantasyMap() {
       el.append('<div title="Area: ' + (area + unit) + '" class="stateArea">' + areaConv + '</div>');
       el.append('<span title="' + title + '" class="icon-male"></span>');
       el.append('<input title="' + title + '" class="statePopulation" value="' + populationConv + '">');
-      if (states[s].color !== "neutral") {
+      if (!neutral) {
         el.append('<span title="Remove country, all assigned cells will become Neutral" class="icon-trash-empty"></span>');
         el.attr("data-country", states[s].name).attr("data-capital", capital).attr("data-expansion", states[s].power).attr("data-cells", states[s].cells)
           .attr("data-burgs", states[s].burgs).attr("data-area", area).attr("data-population", population);
@@ -5239,7 +5240,7 @@ function fantasyMap() {
     }
     // populate total line on footer
     countriesFooterCountries.innerHTML = states.length;
-    if (states[states.length-1].color === "neutral") {countriesFooterCountries.innerHTML = states.length - 1;}
+    if (states[states.length-1].capital === "neutral") {countriesFooterCountries.innerHTML = states.length - 1;}
     countriesFooterBurgs.innerHTML = totalBurgs;
     countriesFooterArea.innerHTML = si(totalArea) + unit;
     countriesFooterPopulation.innerHTML = si(totalPopulation);
@@ -5318,7 +5319,7 @@ function fantasyMap() {
         total += +$(this).attr("data-population");
       });
       countriesFooterPopulation.innerHTML = si(total * 1000);
-      if (states[s].color === "neutral") {s = "neutral";}
+      if (states[s].capital === "neutral") {s = "neutral";}
       manors.map(function(m) {
         if (m.region !== s) {return;}
         m.population = rn(m.population * change, 2);
@@ -5355,7 +5356,7 @@ function fantasyMap() {
               else if (c.region > s) {c.region -= 1;}
             });
             // re-calculate neutral data
-            if (states[states.length-1].color !== "neutral") {
+            if (states[states.length-1].capital !== "neutral") {
               states.push({i: states.length, color: "neutral", name: "Neutrals", capital: "neutral"});
             }
             redrawRegions();
@@ -5375,7 +5376,7 @@ function fantasyMap() {
     $("#burgsEditor").attr("data-state", s);
     $("#burgsBody").empty();
     $("#burgsHeader").children().removeClass("icon-sort-name-up icon-sort-name-down icon-sort-number-up icon-sort-number-down");
-    var region = states[s].color === "neutral" ? "neutral" : s;
+    var region = states[s].capital === "neutral" ? "neutral" : s;
     var burgs = $.grep(manors, function(e) {return (e.region === region);});
     var populationArray = [];
     burgs.map(function(b) {
@@ -5618,7 +5619,7 @@ function fantasyMap() {
       var state = "neutral", closest = neutral; 
       var x = m.x, y = m.y;
       states.map(function(s) {
-        if (s.color === "neutral") {return;}
+        if (s.capital === "neutral") {return;}
         var c = manors[s.capital];
         var dist = Math.hypot(c.x - x, c.y - y) / s.power;
         if (cells[m.cell].fn !== cells[c.cell].fn) {dist *= 3;}
