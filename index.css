@@ -361,14 +361,10 @@ button.options {
     color: grey;
 }
 
-#sticked {
-    padding: 0 5px;
-}
-
 #sticked button {
     background-color: rgba(153, 124, 137, 0);
     padding: 0;
-    margin: 1px 10px;
+    margin: 1px 17px;
 }
 
 #collapsible {
@@ -474,19 +470,26 @@ p {
   font-size: 1.2vw;
 }
 
-table  {
-    table-layout: fixed;
-    width: 288px;
-}
-
-table td:nth-of-type(1) {
+#optionsContent table td:nth-of-type(1) {
     text-decoration: underline dotted gray;
     cursor: help;
     width: 126px;
 }
 
-table td:nth-of-type(3) {
+#optionsContent table td:nth-of-type(3) {
     text-align: right;
+}
+
+.overflow-div {
+    height: 300px;
+    overflow-y: auto;
+    user-select: text;    
+}
+
+.overflow-table {
+    width: 100%;
+    font-size: smaller;
+    text-align: center;
 }
 
 #icons {
@@ -774,7 +777,7 @@ div.slider .ui-slider-handle {
 #saveDropdown {
     display: none;
     position: absolute;
-    left: 25%;
+    left: 29%;
     top: 100%;
     border: 1px solid #5e4fa2;
     background-color: #a4879b;

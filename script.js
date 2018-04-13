@@ -3624,12 +3624,6 @@ function fantasyMap() {
       });
   }
 
-  // print displayed map segment
-  function printMap() {
-    var popUpAndPrint = function() {window.print(); window.close();};
-    setTimeout(popUpAndPrint, 500);    
-  }
-
   // Save in .map format, based on FileSystem API
   function saveMap() {
     console.time("saveMap");
@@ -4193,6 +4187,7 @@ function fantasyMap() {
       link.href = url;
       link.click();
     }
+    if (id === "burgNamesImport") {burgsListToLoad.click();}
     if (id === "removeCountries") {
       alertMessage.innerHTML = `Are you sure you want to remove all countries?`;
       $(function() {$("#alert").dialog({resizable: false, title: "Remove countries",
@@ -4511,7 +4506,6 @@ function fantasyMap() {
     }    
     if (id === "saveButton") {$("#saveDropdown").slideToggle();}
     if (id === "loadMap") {fileToLoad.click();}
-    if (id === "printMap") {printMap();}
     if (id === "zoomReset") {resetZoom(1000);}
     if (id === "zoomPlus") {
       scale += 1; 
@@ -5330,46 +5324,42 @@ function fantasyMap() {
       alertMessage.innerHTML = `Are you sure you want to remove the country?`;
       var s = +(this.parentNode.id).slice(5);
       var capital = states[s].capital;
-      if (capital === "select") {
-        states.splice(s, 1);
-        states.map(function(s, i) {s.i = i;});
-        $("#state"+s).remove();
+      if (capital === "select" && s === states.length - 1) {
+        editCountries();
         return;
       }
-      $(function() {$("#alert").dialog({resizable: false, title: "Remove country",
-        buttons: {
-          "Remove": function() {
-            $(this).dialog("close");
-            states.splice(s, 1);
-            states.map(function(s, i) {s.i = i;});
-            $("#manorLabel"+capital).detach().appendTo($("#towns")).attr("dy", -0.7); // change capital label to burg
-            $("#manorIcon"+capital).attr("r", .5).attr("stroke-width", .12);
-            var burgs = $.grep(manors, function(e) {return (e.region === s);});
-            var urbanFactor = 0.9;
-            burgs.map(function(b) {
-              if (b.i === capital) {b.population *= 0.5;}
-              b.population *= urbanFactor;
-              b.region = "neutral";
-            });
-            cells.map(function(c) {
-              if (c.region === s) {c.region = "neutral";}
-              else if (c.region > s) {c.region -= 1;}
-            });
-            // re-calculate neutral data
-            if (states[states.length-1].capital !== "neutral") {
-              states.push({i: states.length, color: "neutral", name: "Neutrals", capital: "neutral"});
-            }
-            redrawRegions();
-            recalculateStateData(states.length - 1); // re-calc data for neutrals
-            editCountries();            
-          },
-          Cancel: function() {$(this).dialog("close");}
-        }})
-      });
+      $("#alert").dialog({resizable: false, title: "Remove country", buttons: {
+        "Remove": function() {
+          states.splice(s, 1);
+          states.map(function(s, i) {s.i = i;});
+          $("#manorLabel"+capital).detach().appendTo($("#towns")).attr("dy", -0.7); // change capital label to burg
+          $("#manorIcon"+capital).attr("r", .5).attr("stroke-width", .12);
+          var burgs = $.grep(manors, function(e) {return (e.region === s);});
+          var urbanFactor = 0.9;
+          burgs.map(function(b) {
+            if (b.i === capital) {b.population *= 0.5;}
+            b.population *= urbanFactor;
+            b.region = "neutral";
+          });
+          cells.map(function(c) {
+            if (c.region === s) {c.region = "neutral";}
+            else if (c.region > s) {c.region -= 1;}
+          });
+          // re-calculate neutral data
+          if (states[states.length-1].capital !== "neutral") {
+            states.push({i: states.length, color: "neutral", name: "Neutrals", capital: "neutral"});
+          }
+          $(this).dialog("close");
+          redrawRegions();
+          recalculateStateData(states.length - 1); // re-calc data for neutrals
+          editCountries();
+        },
+        Cancel: function() {$(this).dialog("close");}
+      }});
     });
     $("#countriesNeutral").on("change", function() {regenerateCountries();});
   }
-
+  
   // burgs list + editor
   function editBurgs(context, s) {
     if (s === undefined) {s = +(this.parentNode.id).slice(5);}
@@ -5619,7 +5609,7 @@ function fantasyMap() {
       var state = "neutral", closest = neutral; 
       var x = m.x, y = m.y;
       states.map(function(s) {
-        if (s.capital === "neutral") {return;}
+        if (s.capital === "neutral" || s.capital === "select") {return;}
         var c = manors[s.capital];
         var dist = Math.hypot(c.x - x, c.y - y) / s.power;
         if (cells[m.cell].fn !== cells[c.cell].fn) {dist *= 3;}
@@ -5720,6 +5710,45 @@ function fantasyMap() {
     }
     lines.detach().appendTo(list);
   });
+  
+  // load text file with new burg names
+  $("#burgsListToLoad").change(function() {
+    var fileToLoad = this.files[0];
+    this.value = "";
+    var fileReader = new FileReader();
+    fileReader.onload = function(fileLoadedEvent) {
+      var dataLoaded = fileLoadedEvent.target.result;
+      var data = dataLoaded.split("\r\n");
+      if (data.length === 0) {return;}
+      let change = [];
+      let message = `Burgs will be renamed as below. Please confirm`;
+      message += `<div class="overflow-div"><table class="overflow-table"><tr><th>Id</th><th>Current name</th><th>New Name</th></tr>`;
+      for (var i=0; i < data.length && i < manors.length; i++) {
+        const v = data[i];
+        if (v === "" || v === undefined) {continue;}
+        if (v === manors[i].name) {continue;}
+        change.push({i, name: v});
+        message += `<tr><td style="width:20%">${i}</td><td style="width:40%">${manors[i].name}</td><td style="width:40%">${v}</td></tr>`;
+      }
+      message += `</tr></table></div>`;
+      alertMessage.innerHTML = message;
+      $("#alert").dialog({title: "Burgs bulk renaming", position: {my: "center", at: "center", of: "svg"},
+        buttons: {
+          Cancel: function() {$(this).dialog("close");},
+          "Confirm": function() {
+            for (var i=0; i < change.length; i++) {
+              const id = change[i].i;
+              manors[id].name = change[i].name;
+              labels.select("#manorLabel"+id).text(change[i].name);
+            }
+            $(this).dialog("close");
+            updateCountryEditors();
+          }
+        }
+      });
+    }
+    fileReader.readAsText(fileToLoad, "UTF-8");
+  });  
   
   // just apply map size that was already set
   function applyMapSize() {
