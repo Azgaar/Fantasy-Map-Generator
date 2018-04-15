@@ -3527,9 +3527,14 @@ function fantasyMap() {
       for (var i=0; i < compStyle.length; i++) {
         var key = compStyle[i];
         var value = compStyle.getPropertyValue(key);
-        if (key !== "cursor" && value != defaultStyles.getPropertyValue(key)) {
-          style += key + ':' + value + ';';
+        // Firefox mask hack
+        if (key === "mask-image" && value !== defaultStyles.getPropertyValue(key)) {
+          style += "mask-image: url('#shape');"; 
+          continue;
         }
+        if (key === "cursor") {continue;} // cursor should be default
+        if (value === defaultStyles.getPropertyValue(key)) {continue;}
+        style += key + ':' + value + ';';
       }
       if (style != "") {this.setAttribute('style', style);}
     });
@@ -3549,7 +3554,6 @@ function fantasyMap() {
         canvas.width = 3840; // ultraHD
         canvas.height = rn(3840 * ratio);
         var img = new Image();
-        img.setAttribute('crossOrigin', 'anonymous');
         img.src = url;
         img.onload = function(){
           window.URL.revokeObjectURL(url);
@@ -3561,7 +3565,7 @@ function fantasyMap() {
              link.click();
              window.setTimeout(function() {window.URL.revokeObjectURL(link.href);}, 5000);
           });
-          canvas.style.opacity = 0;   
+          canvas.style.opacity = 0;
           canvas.width = mapWidth;
           canvas.height = mapHeight;
         }
@@ -3571,6 +3575,7 @@ function fantasyMap() {
         document.body.appendChild(link);
         link.click();  
       }
+      document.body.removeChild(link);
       console.timeEnd("saveAsImage");
       window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 5000);
     });
@@ -3627,11 +3632,12 @@ function fantasyMap() {
   // Save in .map format, based on FileSystem API
   function saveMap() {
     console.time("saveMap");
-    // data convention: 0 - version; 1 - all points; 2 - cells; 3 - manors; 4 - states; 5 - svg;
+    // data convention: 0 - version; 1 - all points; 2 - cells; 3 - manors; 4 - states; 5 - svg; 6 - options;
     // size stats: points = 6%, cells = 36%, manors and states = 2%, svg = 56%;
     var svg_xml = (new XMLSerializer()).serializeToString(svg.node());
     var line = "\r\n";
-    var data = version + line + JSON.stringify(points) + line + JSON.stringify(cells) + line + JSON.stringify(manors) + line + JSON.stringify(states) + line + svg_xml;
+    var data = version + line + JSON.stringify(points) + line + JSON.stringify(cells) + line;
+    data += JSON.stringify(manors) + line + JSON.stringify(states) + line + svg_xml + line + customization;
     var dataBlob = new Blob([data], {type:"text/plain"});
     var dataURL = window.URL.createObjectURL(dataBlob);
     var link = document.createElement("a");
@@ -3654,7 +3660,7 @@ function fantasyMap() {
       var dataLoaded = fileLoadedEvent.target.result;
       var data = dataLoaded.split("\r\n");
 
-      // data convention: 0 - version; 1 - all points; 2 - cells; 3 - manors; 4 - states; 5 - svg;
+      // data convention: 0 - version; 1 - all points; 2 - cells; 3 - manors; 4 - states; 5 - svg; 6 - options;
       var mapVersion = data[0];
       if (mapVersion !== version) {
         var message = `The Map version `;
@@ -3681,11 +3687,13 @@ function fantasyMap() {
       svg.remove();
       if (mapVersion === "0.52b" || mapVersion === "0.53b") {
         states = []; // no states data
-        document.body.insertAdjacentHTML("afterbegin", data[4]);        
+        document.body.insertAdjacentHTML("afterbegin", data[4]); 
+        customization = 0;
       } else {
         states = JSON.parse(data[4]);
-        document.body.insertAdjacentHTML("afterbegin", data[5]);        
-      }   
+        document.body.insertAdjacentHTML("afterbegin", data[5]);
+        customization = +data[6] || 0;
+      }
       
       svg = d3.select("svg");
       // check map size
@@ -3701,16 +3709,6 @@ function fantasyMap() {
         $("#alert").dialog({title: "Map size conflict",
           buttons: {
             "Keep": function() {
-              /* Should not play with scale as it breaks edit, re-save and re-load!
-              scale = Math.min(mapWidth / nWidth, mapHeight / nHeight);
-              const difX = (mapWidth - nWidth * scale) / 2;
-              const difY = (mapHeight - nHeight * scale) / 2;
-              const transform = d3.zoomIdentity.translate(difX, difY).scale(scale);
-              svg.transition().duration(2000).call(zoom.transform, transform);
-              oceanPattern.select("rect").attr("x", -difX).attr("y", -difY).attr("width", mapWidth).attr("height", mapHeight);
-              oceanLayers.select("rect").attr("x", -difX).attr("y", -difY).attr("width", mapWidth).attr("height", mapHeight);
-              zoom.scaleExtent([scale, 40]).translateExtent([[-difX, -difY], [mapWidth / scale, mapHeight / scale]]);
-              */
               voronoi = d3.voronoi().extent([[0, 0], [nWidth, nHeight]]);
               zoom.translateExtent([[0, 0], [nWidth, nHeight]]);
               applyLoadedData(data);
@@ -3787,15 +3785,17 @@ function fantasyMap() {
     ruler.selectAll(".linear").selectAll("circle.center").call(d3.drag().on("drag", rulerCenterDrag));
 
     // update data
-    newPoints = [], riversData = [], island = 0, queue = [], customization = 0, elSelected = "";
+    newPoints = [], riversData = [], island = 0, queue = [], elSelected = "";
     points = JSON.parse(data[1]);
     cells = JSON.parse(data[2]);
     land = $.grep(cells, function(e) {return (e.height >= 0.2);});
     manors = JSON.parse(data[3]);
     cells.map(function(e) {newPoints.push(e.data);});
     calculateVoronoi(newPoints);
-    capitalsCount = +$("#regions > path:last").attr("class").slice(6) + 1;
-    regionsOutput.innerHTML = regionsInput.value = capitalsCount;
+    if (!customization) {
+      capitalsCount = +$("#regions > path:last").attr("class").slice(6) + 1;
+      regionsOutput.innerHTML = regionsInput.value = capitalsCount;
+    }
 
     // restore layers state
     if (cults.selectAll("path").size() == 0) {$("#toggleCultures").addClass("buttonoff");} else {$("#toggleCultures").removeClass("buttonoff");}
@@ -4475,19 +4475,16 @@ function fantasyMap() {
       }});
     }
     if ($(this).hasClass('radio') && parent === "mapFilters") {
-      $("svg").removeClass();
+      $("svg").attr("filter", "");
       if ($(this).hasClass('pressed')) {
         $("#mapFilters .pressed").removeClass('pressed');
       } else {
         $("#mapFilters .pressed").removeClass('pressed');
         $(this).addClass('pressed');
-        if (id === "grayscale") {$("svg").addClass("grayscale");}
-        if (id === "sepia") {$("svg").addClass("sepia");}
-        if (id === "tint") {$("svg").addClass("tint");}
-        if (id === "dingy") {$("svg").addClass("dingy");}
+        $("svg").attr("filter", "url(#filter-" + id + ")");
       }
       return;
-    }  
+    }
     if (id === "mapScreenSize") {
       if ($("body").hasClass("fullscreen")) {
         mapWidthInput.value = 960; // default width
@@ -5840,6 +5837,7 @@ function fantasyMap() {
   // Options handlers
   $("input, select").on("input change", function() {
     var id = this.id;
+    if (id === "hideLabels") {invokeActiveZooming();}
     if (id === "styleElementSelect") {
       var sel = this.value;
       var el = viewbox.select("#"+sel);

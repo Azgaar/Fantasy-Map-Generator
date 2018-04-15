@@ -1,3 +1,4 @@
+
 @font-face {
   font-family: 'Amatic SC';
   font-style: normal;
@@ -78,7 +79,6 @@ button, select, a {
 #rivers {
   stroke: none;
   mask: url(#shape);
-  mask-mode: alpha;
   cursor: pointer;
 }
 
@@ -89,7 +89,7 @@ button, select, a {
 
 #terrain {
     mask: url(#shape);
-    mask-mode: alpha;
+    mask-mode: alpha;  
 }
 
 #hills {
@@ -116,7 +116,7 @@ button, select, a {
 
 #roads, #trails {
     mask: url(#shape);
-    mask-mode: alpha;
+    mask-mode: alpha;   
 }
 
 #swamps {
@@ -306,15 +306,11 @@ button.options {
 }
 
 #options input[type="color"], #convertImageDialog input[type="color"] {
-  width: 38px;
-  padding: 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-}
-
-#options input[type="checkbox"] {
-  cursor: pointer;
+	width: 38px;
+	padding: 0;
+	border: 0;
+	background: none;
+	cursor: pointer;
 }
 
 #options input[type="range"] {
@@ -323,12 +319,11 @@ button.options {
     background: #ffffff;
     top: -2px;
     position: relative;
-    -webkit-appearance: none;
     appearance: none;
 }
 
-#options input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
+#options input[type="range"]::slider-thumb {
+    appearance: none;
     border-radius: 15%;
     width: 10px;
     height: 10px;
@@ -637,20 +632,8 @@ body button.noicon {
     font-family: monospace;
 }
 
-.grayscale {
-    filter: grayscale(1);
-}
-
-.sepia {
-    filter: sepia(1) saturate(0.8);
-}
-
 .tint {
     filter: sepia(1) hue-rotate(200deg);
-}
-
-.dingy {
-    filter: contrast(1) saturate(1.8) sepia(.6);
 }
 
 .color-div {
@@ -720,12 +703,12 @@ body .ui-dialog-titlebar {
     background: #e9e9e9;
     top: -4px;
     position: relative;
-    -webkit-appearance: none;
+    appearance: none;
     appearance: none;
 }
 
-.ui-dialog input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
+.ui-dialog input[type="range"]::slider-thumb {
+    appearance: none;
     border-radius: 15%;
     width: 10px;
     height: 10px;
@@ -748,7 +731,7 @@ body .ui-dialog-titlebar {
     opacity: 0.2;
 }
 
-.ui-dialog .disabled::-webkit-slider-thumb {
+.ui-dialog .disabled::slider-thumb {
     opacity: 0.2;
 }
 
@@ -793,7 +776,7 @@ div.slider .ui-slider-handle {
     color: white;
 }
 
-#activeZoomingLabel {
+#layoutCheckboxes {
     font-style: italic;
     font-weight: bold;
 }
@@ -1123,4 +1106,31 @@ ul.share-buttons li{
 
 ul.share-buttons img{
   width: 16px;
+}
+
+input[type="checkbox"] {
+	display: none;
+}
+
+.checkbox, .checkbox-label {
+    margin: 5px;
+    cursor: pointer;
+}
+
+.checkbox + .checkbox-label:before {
+  content: '';
+  background: #ece6eb;
+  border-radius: 50%;  
+  display: inline-block;
+  vertical-align: text-top;
+  width: 8px;
+  height: 8px;
+  padding: 2px;
+  margin-right: 2px;
+}
+
+.checkbox:checked + .checkbox-label:before {
+  background: #826473;
+  border-radius: 50%;
+  box-shadow: inset 0px 0px 0px 2px #ece6ea;
 }

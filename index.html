@@ -31,8 +31,8 @@
   <script src="libs/polylabel.min.js"></script>
   <script src="libs/quantize.min.js" defer></script>
   <script src="libs/d3-hexbin.v0.2.min.js" defer></script>
-  <link rel="stylesheet" type="text/css" href="index.css?version=0.5598b"/>
-  <link rel="stylesheet" type="text/css" href="icons.css?version=0.5598b"/>
+  <link rel="stylesheet" type="text/css" href="index.css?version=0.5599b"/>
+  <link rel="stylesheet" type="text/css" href="icons.css?version=0.5599b"/>
   <link rel="stylesheet" type="text/css" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"/>
 </head>
 <body class="fullscreen">
@@ -40,7 +40,7 @@
     <h1 class="spin">&#9881;</h1>
     <p id="loading-text">Loading<span>.</span><span>.</span><span>.</span></p>
   </div>
-  <svg xmlns="http://www.w3.org/2000/svg" class="fullscreen">
+  <svg xmlns="http://www.w3.org/2000/svg" class="fullscreen" width="100%" height="100%" vector-effect="non-scaling-stroke">
     <defs>
       <filter id="blurFilter" x="-1" y="-1" width="100" height="100">
         <feGaussianBlur in="SourceGraphic" stdDeviation="0.2"/>
@@ -52,7 +52,19 @@
             <feMergeNode/>
             <feMergeNode in="SourceGraphic"/>
         </feMerge>
-      </filter> 
+      </filter>
+      <filter id="filter-grayscale">
+        <feColorMatrix type="matrix" values="0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0 0 0 1 0"/>
+      </filter>
+      <filter id="filter-sepia">
+        <feColorMatrix type="matrix" values="0.393 0.769 0.189 0 0 0.349 0.686 0.168 0 0 0.272 0.534 0.131 0 0 0 0 0 1 0"/>
+      </filter>
+      <filter id="filter-dingy">
+        <feColorMatrix type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0.3 0.3 0 0 0 0 0 1 0"/>
+      </filter>
+      <filter id="filter-tint">
+        <feColorMatrix type="matrix" values="0 0.9 0.2 0 0 0 0.8 0.1 0 0.1 0 0.4 1.4 0 -0.1 0 0 0 1 1"/>
+      </filter>      
       <g id="deftemp">
         <mask id="shape" x="0" y="0" width="100%" height="100%" fill="black"></mask> 
       </g>
@@ -155,8 +167,12 @@
           <li title="Toggle Labels" id="toggleLabels" onclick="$('#labels').fadeToggle()">Labels</li>
           <li title="Toggle Burg icons" id="toggleIcons" onclick="$('#burgs').fadeToggle()">Burgs</li>
         </ul>
-        <label id="activeZoomingLabel">Hide small labels: <input id="hideLabels" type="checkbox" checked></label>
-        <label>Show statusbar: <input id="toggleStatusbar" type="checkbox" checked onclick="$('#statusbar').fadeToggle()"></label>
+        <div id="layoutCheckboxes">
+          <input id="hideLabels" class="checkbox" type="checkbox" checked>
+          <label for="hideLabels" class="checkbox-label">Hide small labels</label>
+          <input id="toggleStatusbar" class="checkbox" type="checkbox" checked onclick="$('#statusbar').fadeToggle()">
+          <label for="toggleStatusbar" class="checkbox-label">Show statusbar</label>
+        </div>
       </div>
       <div id="styleContent" class="tabcontent">
         <p style="display: inline-block;">Select element:</p>
@@ -249,8 +265,8 @@
           <p>Toggle filters:</p>
           <button id="grayscale" class="radio">Grayscale</button>
           <button id="sepia" class="radio">Sepia</button>
-          <button id="tint" class="radio">Tint</button>
           <button id="dingy" class="radio">Dingy</button>
+          <button id="tint" class="radio">Tint</button>
         </div>
       </div>
       <div id="optionsContent" class="tabcontent">
@@ -763,5 +779,5 @@
     Type: <span id="feature">no</span>
   </div>
 
-  <script src="script.js?version=0.5598b"></script>
+  <script src="script.js?version=0.5599b"></script>
 </body>
