@@ -20,7 +20,7 @@
   <meta property="og:description" content="Demo version. Based on D3 Voronoi diagram rendered to svg">
   <meta property="og:image" content="images/preview.png">
   <link rel="icon" type="image/png" href="images/favicon-32x32.png" sizes="32x32"/>
-  <link rel="icon" type="image/png" href="images/favicon-16x16.png" sizes="16x16"/>  
+  <link rel="icon" type="image/png" href="images/favicon-16x16.png" sizes="16x16"/>
   <link rel="canonical" href="https://azgaar.github.io/Fantasy-Map-Generator/">
   <script src="libs/jquery-3.1.1.min.js"></script>
   <script src="libs/d3.v4.min.js"></script>
@@ -31,8 +31,8 @@
   <script src="libs/polylabel.min.js"></script>
   <script src="libs/quantize.min.js" defer></script>
   <script src="libs/d3-hexbin.v0.2.min.js" defer></script>
-  <link rel="stylesheet" type="text/css" href="index.css?version=0.55992b"/>
-  <link rel="stylesheet" type="text/css" href="icons.css?version=0.55992b"/>
+  <link rel="stylesheet" type="text/css" href="index.css?version=0.55993b"/>
+  <link rel="stylesheet" type="text/css" href="icons.css?version=0.55993b"/>
   <link rel="stylesheet" type="text/css" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"/>
 </head>
 <body class="fullscreen">
@@ -64,9 +64,9 @@
       </filter>
       <filter id="filter-tint">
         <feColorMatrix type="matrix" values="0 0.9 0.2 0 0 0 0.8 0.1 0 0.1 0 0.4 1.4 0 -0.1 0 0 0 1 1"/>
-      </filter>      
+      </filter>
       <g id="deftemp">
-        <mask id="shape" x="0" y="0" width="100%" height="100%" fill="black"></mask> 
+        <mask id="shape" x="0" y="0" width="100%" height="100%" fill="black"></mask>
       </g>
       <g id="defs-icons">
         <symbol id="icon-anchor" viewBox="0 0 28 32">
@@ -124,7 +124,7 @@
           <use xlink:href="#s2" transform="rotate(90)"/>
          </g>
         <use xlink:href="#s3" transform="scale(-1)"/>
-      </g>      
+      </g>
     </defs>
   </svg>
   <canvas id="canvas" style="opacity: 0"></canvas>
@@ -150,7 +150,7 @@
           <!-- <option value="layoutEconomical">Economical map</option> -->
           <option value="layoutHeightmap">Heightmap</option>
           <option value="layoutLandmass">Pure landmass</option>
-        </select>        
+        </select>
         <p>Displayed layers. Drag to move, click to toggle</p>
         <ul id="mapLayers">
           <li title="Toggle Ocean, not movable" id="toggleOcean" onclick="$('#oceanPattern').fadeToggle()" class="solid">Ocean</li>
@@ -161,7 +161,7 @@
           <li title="Toggle Cultures map" id="toggleCultures" class="buttonoff">Cultures</li>
           <li title="Toggle Routes" id="toggleRoutes" onclick="$('#routes').fadeToggle()">Routes</li>
           <li title="Toggle Rivers" id="toggleRivers" onclick="$('#rivers').fadeToggle()">Rivers</li>
-          <li title="Toggle Countries" id="toggleCountries">Countries</li>          
+          <li title="Toggle Countries" id="toggleCountries">Countries</li>
           <li title="Toggle Borders" id="toggleBorders" onclick="$('#borders').fadeToggle()">Borders</li>
           <li title="Toggle Relief icons" id="toggleRelief" onclick="$('#terrain').fadeToggle()">Relief</li>
           <li title="Toggle Labels" id="toggleLabels" onclick="$('#labels').fadeToggle()">Labels</li>
@@ -240,11 +240,11 @@
           <div id="styleSize">
             <br>Radius: <button title="Multiply Radius by 1.1" id="styleFillPlus">+</button><button title="Multiply Radius by 0.9" id="styleFillMinus">-</button>
             <span> Stroke: </span><button title="Multiply Stroke-width by 1.1" id="styleStrokePlus">+</button><button title="Multiply Stroke-width by 0.9" id="styleStrokeMinus">-</button>
-          </div>      
+          </div>
           <div id="styleOpacity">
             <br>Opacity: <input id="styleOpacityInput" type="range" min="0" max="1" step="0.01" value="1">
             <output id="styleOpacityOutput">1</output>
-          </div>         
+          </div>
           <div id="styleFilter">
             <br>Filter: <select id="styleFilterInput" class="pureInput">
               <option value="" selected>None</option>
@@ -273,7 +273,7 @@
         <p>Generate new map to apply the options!</p>
         <table>
           <tr>
-            <td title="Map size. Will be remembered on change">Map size</td>
+            <td title="Map size. Will be remembered on change. Highly affects performance!">Map size</td>
             <td style="width: 130px;">
               <span title="width">w:</span>
               <input class="pairedNumber" id="mapWidthInput" type="number" min="240" value="960">
@@ -300,9 +300,9 @@
             <td></td>
           </tr>
           <tr>
-            <td title="Set the graph size. Map on size 3 and 4 requires up to 1 minute to be generated!">Graph size</td>
+            <td title="Set the graph size. Performance on sizes 2 and 3 can be low!">Graph size</td>
             <td>
-              <input id="sizeInput" type="range" min="1" max="4" value="1">
+              <input id="sizeInput" type="range" min="1" max="3" value="1">
             </td>
             <td>
               <output id="sizeOutput">1</output>
@@ -391,7 +391,7 @@
                 <option value="-9,-8,-7,-6,-5,-4,-3,-2,-1">-9,-8,-7,-6,-5,-4,-3,-2,-1</option>
                 <option value="-6,-4,-2">-6,-4,-2</option>
                 <option value="-8,-6,-4,-2">-8,-6,-4,-2</option>
-              </select>            
+              </select>
             </td>
             <td></td>
           </tr>
@@ -420,7 +420,7 @@
         <div id="customizeHeightmap" style="display: none;">
           <p title="Click 'Start' to initiate customization, 'Complete' to finalize the Heightmap">Heightmap customization:</p>
           <div>
-            <button title="Roll back to Heightmap customization" id="fromHeightmap">Roll back</button>
+            <button title="Edit Heightmap" id="fromHeightmap">Edit</button>
             <button title="Start from scratch" id="fromScratch">Clear all</button>
             <button class="buttonoff" title="Finalize the Heightmap. Not allowed if landmass area is insufficient" id="getMap" disabled="disabled">Complete</button>
           </div>
@@ -463,12 +463,11 @@
           <div id="savePNG" title="Download the visible part of the map as 4K .png image (may be pretty slow)">.png</div>
         </div>
         <button id="loadMap" title="Load fully functional map in a .map format" class="options">Load</button>
-        <input type="file" accept=".map" id="fileToLoad">        
         <button id="zoomReset" title="Reset map zoom to default" class="options">Reset Zoom</button>
       </div>
     </div>
   </div>
-  
+
   <div id="labelEditor" class="dialog" style="display: none">
     <button id="editGroupButton" title="Edit label Group" class="editButton icon-list-bullet"></button>
     <select id="editGroupSelect" title="Select Group for this label" class="editTrigger"></select>
@@ -489,14 +488,14 @@
     <i id="editOpacityIcon" class="icon-adjust"></i>
     <input id="editOpacity" title="Change Opacity for the entire Group" class="editTrigger" value="1" type="number" min="0" max="1" step="0.02">
     <i id="editShadowIcon" class="icon-clone"></i>
-    <input id="editShadow" title="Change Shadow for the entire Group" class="editTrigger" value="1" type="number" min="0" max="1" step="0.02" disabled>      
+    <input id="editShadow" title="Change Shadow for the entire Group" class="editTrigger" value="1" type="number" min="0" max="1" step="0.02" disabled>
     <button id="editAngleButton" title="Rotate the label" class="editButton icon-ccw"></button>
     <input id="editAngle" class="editTrigger" value="0" type="range" min="-180" max="180" step="0.2" oninput="editAngleValue.innerHTML = Math.abs(this.value)+'°'">
     <span id="editAngleValue" class="editValue">0°</span>
     <button id="editCopy" title="Copy the label" class="editButton icon-clone"></button>
     <button id="editRemoveSingle" title="Remove the label" class="editButton icon-trash"></button>
   </div>
-  
+
   <div id="riverEditor" class="dialog" style="display: none">
     <button id="riverWidth" title="Change river width and widening" class="editButton icon-sort-alt-up"></button>
     <i id="riverWidthIcon" title="Change river width" class="dialog-icon icon-w"></i>
@@ -512,12 +511,12 @@
     <input id="riverScale" title="Change river scale" class="editTrigger" value="1" type="number" min="0.1" max="3" step="0.01">
     <span id="riverReset" title="Reset transformation to default" class="editButtonS icon-ccw"></span>
     <button id="riverAddPoint" title="Click to add a river point" class="editButton icon-plus-squared-alt"></button>
-    <button id="riverRemovePoint" title="Click on red circle to remove river point" class="editButton icon-minus-squared-alt"></button>   
+    <button id="riverRemovePoint" title="Click on red circle to remove river point" class="editButton icon-minus-squared-alt"></button>
     <button id="riverCopy" title="Copy river" class="editButton icon-clone"></button>
     <button id="riverNew" title="Create new river clicking on map" class="editButton icon-pin"></button>
     <button id="riverRemove" title="Remove river" class="editButton icon-trash"></button>
-  </div> 
-  
+  </div>
+
   <div id="templateEditor" class="dialog" style="display: none">
     <div id="templateTop">
       Base template: <select id="templateSelect" data-prev="templateCustom" title="Select base template">
@@ -551,18 +550,16 @@
       <button id="templateClear" title="Clear the map" class="icon-eraser"></button>
       <button id="templateComplete" title="Finalize the Heightmap. Not allowed if insufficient land area available" class="icon-check"></button>
       <button id="templateLoad" title="Open previously saved template" class="icon-upload"></button>
-      <input type="file" accept=".txt" id="templateToLoad" style="display: none;">
       <button id="templateSave" title="Save template" class="icon-download"></button>
     </div>
   </div>
-  
+
   <div id="imageConverter" class="dialog" style="display: none">
     <div id="convertImageButtons">
-      <input type="file" accept="image/*" id="imageToLoad" style="display: none;">
       <button id="convertImageLoad" title="Load image to convert" class="icon-upload"></button>
       <button id="convertAutoLum" title="Auto-assign colors based on liminosity" class="icon-adjust"></button>
       <button id="convertAutoHue" title="Auto-assign colors based on hue" class="icon-brush"></button>
-      <button id="convertColorsMinus" title="Reduce the number of colors. Minimal number is 3" class="icon-minus-squared"></button>      
+      <button id="convertColorsMinus" title="Reduce the number of colors. Minimal number is 3" class="icon-minus-squared"></button>
       <button id="convertColorsPlus" title="Increase the number of colors. Minimal number is 256" class="icon-plus-squared"></button>
       <input id="convertColors" value="12" style="display: none;"/>
       <button id="convertImageGrid" title="Toggle grid" class="icon-eye"></button>
@@ -582,13 +579,13 @@
       <label>Unassigned colors: </label><br>
     </div>
   </div>
-  
+
   <div id="brushesPanel" class="dialog" style="display: none">
     <div id="brushesButtons">
       <button id="brushHill" title="Click on the map to place a Hill" class="feature noicon radio pressed">H</button>
       <button id="brushPit" title="Click on the map to place a Pit" class="feature noicon radio">P</button>
       <button id="brushRange" title="Select two points to place a Range" class="feature noicon radio">R</button>
-      <button id="brushTrough" title="Select two points to place a Trought" class="feature noicon radio">T</button>       
+      <button id="brushTrough" title="Select two points to place a Trought" class="feature noicon radio">T</button>
       <button id="brushElevate" title="Click and drag the map to increase cells elevation" class="noicon radio">↥</button>
       <button id="brushDepress" title="Click and drag the map to decrease cells elevation" class="noicon radio">↧</button>
       <button id="brushAlign" title="Click and drag the map to align cells elevation" class="noicon radio">=</button>
@@ -625,7 +622,7 @@
       <button id="brushClear" title="Clear all height" class="icon-eraser"></button>
     </div>
   </div>
- 
+
   <div id="perspectivePanel" class="dialog" style="display: none">
     <div id="lineSlider" class="slider">
       <div id="lineHandle0" class="ui-slider-handle" data-value=240></div>
@@ -665,7 +662,6 @@
       <button id="countriesPercentage" title="Toggle percentage / absolut values views" class="icon-percent"></button>
       <button id="countriesRegenerate" title='Regenerate countries based on amended "Expansion" values' class="icon-cw"></button>
       <button id="countriesManually" title="Manually re-assign countries (select a country and drag the map)" class="icon-brush"></button>
-      <input type="file" accept=".txt,.csv" id="burgsListToLoad" style="display: none;">
       <div id="countriesManuallyButtons" style="display: none">
         <button id="countriesManuallyComplete" title="Apply assignment" class="icon-check"></button>
         <button id="countriesAddM" title="Add country" class="icon-plus"></button>
@@ -678,7 +674,7 @@
         <button id="countriesRandomize" title='Randomize countries "Expansion" value' class="icon-shuffle"></button>
         <button id="countriesAddR" title="Add country" class="icon-plus"></button>
         <label title="Distance to a consider a land as neutral" class="italic">Neutral distance:</label>
-        <input id="countriesNeutral" onchange="this.title = this.value" type="range" min="1" max="500" value="200">        
+        <input id="countriesNeutral" onchange="this.title = this.value" type="range" min="1" max="500" value="200">
       </div>
       <button id="countriesAddG" title="Add country" class="icon-plus"></button>
       <button id="countriesExport" title="Save country-related data as a text file (.csv)" class="icon-download"></button>
@@ -725,7 +721,7 @@
           <option value="km" selected>Kilometer</option>
           <option value="mi">Mile</option>
           <option value="lg">League</option>
-          <option value="vr">Versta</option>      
+          <option value="vr">Versta</option>
           <option value="custom_name">Custom name</option>
         </select>
       </div>
@@ -759,15 +755,15 @@
       </div>
     </div>
     <div id="scaleBottom">
-      <button id="toggleScaleBar" title="Click to toggle scale bar" class="icon-align-center"></button>      
+      <button id="toggleScaleBar" title="Click to toggle scale bar" class="icon-align-center"></button>
       <button title="Click to toggle ruler" class="icon-eye-off" onclick='$("#ruler").fadeToggle()'></button>
-      <button id="addOpisometer" title="Drag the map to measure curve length with opisometer" class="icon-brush"></button>      
+      <button id="addOpisometer" title="Drag the map to measure curve length with opisometer" class="icon-brush"></button>
       <button id="addRuler" title="Click to place additional ruler on map" class="icon-resize-horizontal"></button>
       <button id="addPlanimeter" title="Drag the map to determine a polygon area with planimeter" class="icon-edit"></button>
       <button id="removeAllRulers" title="Remove all rulers from the map. Click on ruler label to remove ruler separately" class="icon-trash"></button>
     </div>
   </div>
-  
+
   <div id="alert" title="Warning!" style="display: none">
     <p id="alertMessage">Warning!</p>
   </div>
@@ -779,5 +775,12 @@
     Type: <span id="feature">no</span>
   </div>
 
-  <script src="script.js?version=0.55992b"></script>
+  <div id="fileInputs">
+    <input type="file" accept=".map" id="mapToLoad">
+    <input type="file" accept=".txt,.csv" id="burgsListToLoad">
+    <input type="file" accept="image/*" id="imageToLoad">
+    <input type="file" accept=".txt" id="templateToLoad">
+  </div>
+
+  <script src="script.js?version=0.55993b"></script>
 </body>

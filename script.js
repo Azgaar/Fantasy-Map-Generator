@@ -37,14 +37,14 @@ function fantasyMap() {
     debug = viewbox.append("g").attr("id", "debug");
     capitals = labels.append("g").attr("id", "capitals"),
     towns = labels.append("g").attr("id", "towns"),
-    countries = labels.append("g").attr("id", "countries");  
+    countries = labels.append("g").attr("id", "countries");
 
   // main data variables
-  var voronoi, diagram, polygons, points = [], sample;    
+  var voronoi, diagram, polygons, points = [], sample;
 
   // Common variables
   var mapWidth, mapHeight,
-    customization, history = [], historyStage = -1, elSelected, 
+    customization, history = [], historyStage = -1, elSelected,
     cells = [], land = [], riversData = [],  manors = [], states = [],
     queue = [], chain = {}, island = 0, cultureTree, manorTree, shift = false;
 
@@ -53,7 +53,7 @@ function fantasyMap() {
 
   // canvas
   var canvas = document.getElementById("canvas"),
-    ctx = canvas.getContext("2d");    
+    ctx = canvas.getContext("2d");
 
   // Color schemes;
   var color = d3.scaleSequential(d3.interpolateSpectral),
@@ -64,7 +64,7 @@ function fantasyMap() {
   var scale = 1, viewX = 0, viewY = 0;
   var zoom = d3.zoom().scaleExtent([1, 40]).on("zoom", zoomed);
   svg.call(zoom);
-      
+
   // randomize options
   var graphSize = +sizeInput.value,
     manorsCount = manorsOutput.innerHTML = +manorsInput.value,
@@ -92,27 +92,27 @@ function fantasyMap() {
   oceanLayers.append("rect").attr("x", 0).attr("y", 0).attr("width", mapWidth).attr("height", mapHeight).attr("id", "oceanBase");
 
   applyDefaultStyle();
-  
+
   // toggle off loading screen and on menus
   $("#loading").remove();
   $("#optionsContainer").show();
   fitStatusBar();
- 
+
   // D3 Line generator
   var scX = d3.scaleLinear().domain([0, mapWidth]).range([0, mapWidth]),
     scY = d3.scaleLinear().domain([0, mapHeight]).range([0, mapHeight]),
     lineGen = d3.line().x(function(d) {return scX(d.scX);}).y(function(d) {return scY(d.scY);});
- 
+
   $("#optionsContainer").draggable({handle: ".drag-trigger", snap: "svg", snapMode: "both"});
   $("#mapLayers").sortable({items: "li:not(.solid)", cancel: ".solid", update: moveLayer});
   $("#templateBody").sortable({items: "div:not(div[data-type='Mountain'])"});
   $("#mapLayers, #templateBody").disableSelection();
-   
+
   var drag = d3.drag()
     .container(function() {return this;})
     .subject(function() {var p=[d3.event.x, d3.event.y]; return [p, p];})
     .on("start", dragstarted);
-  
+
   function zoomed() {
     var scaleDiff = Math.abs(scale - d3.event.transform.k);
     scale = d3.event.transform.k;
@@ -149,7 +149,7 @@ function fantasyMap() {
         ruler.selectAll("circle.center").attr("r", 1.2 * factor).attr("stroke-width", 0.3 * factor);
         ruler.selectAll("text").attr("font-size", 10 * factor);
         ruler.selectAll("line, path").attr("stroke-width", factor);
-      }      
+      }
     }
   }
 
@@ -163,9 +163,9 @@ function fantasyMap() {
   // Zoom to specific point (x,y - coods, z - scale, d - duration)
   function zoomTo(x, y, z, d) {
     var transform = d3.zoomIdentity.translate(x * -z + mapWidth / 2, y * -z + mapHeight / 2).scale(z);
-    svg.transition().duration(d).call(zoom.transform, transform);    
+    svg.transition().duration(d).call(zoom.transform, transform);
   }
-  
+
   // Reset zoom to initial with some duration
   function resetZoom(duration) {
     svg.transition().duration(duration).call(zoom.transform, d3.zoomIdentity);
@@ -191,14 +191,14 @@ function fantasyMap() {
       buttons: {
         "Don't show again": function() {
           localStorage.setItem("version", version);
-          $(this).dialog("close");            
+          $(this).dialog("close");
         },
         Close: function() {$(this).dialog("close");}
       },
       position: {my: "center", at: "center", of: "svg"}
     });
   }
-  
+
   generate(); // genarate map on load
   invokeActiveZooming(); // to hide what need to be hidden
 
@@ -231,7 +231,7 @@ function fantasyMap() {
     regionsInput.value = 7 + Math.floor(Math.random() * 10);
     manorsInput.value = regionsInput.value * 27 + Math.floor(Math.random() * 300);
     manorsCount = manorsOutput.innerHTML = manorsInput.value;
-    capitalsCount = regionsOutput.innerHTML = regionsInput.value; 
+    capitalsCount = regionsOutput.innerHTML = regionsInput.value;
     precInput.value = 10 + Math.floor(Math.random() * 15);
     precipitation = precOutput.value = +precInput.value;
   }
@@ -262,7 +262,7 @@ function fantasyMap() {
   // Get cell info on mouse move (useful for debugging)
   function moved() {
     var point = d3.mouse(this);
-    var i = diagram.find(point[0], point[1]).index;  
+    var i = diagram.find(point[0], point[1]).index;
     if (i) {
       var p = cells[i]; // get cell
       $("#lx").text(rn(point[0]));
@@ -285,7 +285,7 @@ function fantasyMap() {
     if (customization === 1 || customization === 2) {
       if (customization === 1 && (brush.length === 0 || brush.hasClass("feature"))) {circle.remove(); return;}
       if (customization === 2 && $("div.selected").length === 0) {circle.remove(); return;}
-      var radius = customization === 1 ? brushRadius.value : countriesManuallyBrush.value; 
+      var radius = customization === 1 ? brushRadius.value : countriesManuallyBrush.value;
       var r = rn(6 / graphSize * radius, 1);
       if (circle.size() > 0) {circle.attr("r", r).attr("cx", point[0]).attr("cy", point[1]);}
       else {icons.insert("circle", ":first-child").attr("class", "circle").attr("r", r).attr("cx", point[0]).attr("cy", point[1]);}
@@ -297,8 +297,8 @@ function fantasyMap() {
     if (e == undefined) {return "no";}
     if (f) {return e.toFixed(f);}
     return e;
-  }  
-  
+  }
+
   // Drag actions
   function dragstarted() {
     var x0 = d3.event.x, y0 = d3.event.y,
@@ -313,24 +313,24 @@ function fantasyMap() {
       var rulerNew = ruler.append("g").attr("class", type).call(d3.drag().on("start", elementDrag));
       var points = [{scX: rn(x0, 2), scY: rn(y0, 2)}];
       if (opisometer) {
-        var title = 
+        var title =
         `Opisometer is an instrument for measuring the lengths of arbitrary curved lines.
         One dash shows 30 km (18.6 mi), approximate distance of a daily loaded march.
-        Click on the label to remove the ruler from the map`;      
+        Click on the label to remove the ruler from the map`;
         rulerNew.append("title").text(title);
         var curve = rulerNew.append("path").attr("class", "opisometer white").attr("stroke-width", factor);
         var dash = rn(30 / distanceScale.value, 2);
         var curveGray = rulerNew.append("path").attr("class", "opisometer gray").attr("stroke-dasharray", dash).attr("stroke-width", factor);
       } else {
-        var title = 
+        var title =
         `Planimeter is an instrument  to determine the area of a two-dimensional shape.
-        Click on the label to remove the ruler from the map`;  
+        Click on the label to remove the ruler from the map`;
         rulerNew.append("title").text(title);
-        var curve = rulerNew.append("path").attr("class", "planimeter").attr("stroke-width", factor);  
+        var curve = rulerNew.append("path").attr("class", "planimeter").attr("stroke-width", factor);
       }
       var text = rulerNew.append("text").attr("dy", -1).attr("font-size", 10 * factor);
     }
-   
+
     d3.event.on("drag", function() {
       x1 = d3.event.x, y1 = d3.event.y;
       var c2 = diagram.find(x1, y1).index;
@@ -415,11 +415,11 @@ function fantasyMap() {
         } else {
           lineGen.curve(d3.curveBasisClosed);
           var d = round(lineGen(points));
-          curve.attr("d", d);      
+          curve.attr("d", d);
         }
       }
     });
-    
+
     d3.event.on("end", function() {
       if (opisometer || planimeter) {
         $("#addOpisometer, #addPlanimeter").removeClass("pressed");
@@ -449,7 +449,7 @@ function fantasyMap() {
       }
     });
   }
-  
+
   // remove parent element (usually if child is clicked)
   function removeParent() {
     $(this.parentNode).remove();
@@ -476,7 +476,7 @@ function fantasyMap() {
     var sourceHeight = cells[source].height;
     selection.map(function(s) {
       if (brush === "brushElevate") {
-        if (cells[s].height < 0.2) {cells[s].height = 0.2} 
+        if (cells[s].height < 0.2) {cells[s].height = 0.2}
         else {cells[s].height += power;}
       }
       if (brush === "brushDepress") {cells[s].height -= power;}
@@ -488,7 +488,7 @@ function fantasyMap() {
       }
     });
   }
-  
+
   // turn D3 polygons array into cell array, define neighbors for each cell
   function detectNeighbors(withGrid) {
     console.time("detectNeighbors");
@@ -548,7 +548,7 @@ function fantasyMap() {
     addRange(rn(4 * mod));
     addRange(rn(-10 * mod));
   }
-  
+
 // Heighmap Template: High Island
   function templateHighIsland(mod) {
     modifyHeights("all", 0.05, 0.9);
@@ -594,7 +594,7 @@ function fantasyMap() {
     addRange(rn(-18 * mod));
     addPit(rn(10 * mod));
     modifyHeights("land", -0.05, 0.7);
-    smoothHeights(4);    
+    smoothHeights(4);
   }
 
   // Heighmap Template: Atoll
@@ -605,7 +605,7 @@ function fantasyMap() {
     smoothHeights(1);
     modifyHeights("0.27-10", 0, 0.1);
   }
-  
+
   function addMountain() {
     var x = Math.floor(Math.random() * mapWidth / 3 + mapWidth / 3);
     var y = Math.floor(Math.random() * mapHeight * 0.2 + mapHeight * 0.4);
@@ -639,7 +639,7 @@ function fantasyMap() {
       case 3: hRadius = 0.999; mRadius = 0.975; break;
       case 4: hRadius = 0.9994; mRadius = 0.98; break;
     }
-    radius = type === "mountain" ? mRadius : hRadius; 
+    radius = type === "mountain" ? mRadius : hRadius;
     var queue = [start];
     if (type === "mountain") {cells[start].height = height;}
     for (i = 0; i < queue.length && height >= 0.01; i++) {
@@ -665,7 +665,7 @@ function fantasyMap() {
     var count = Math.abs(mod);
     for (c = 0; c < count; c++) {
       var diff = 0, start = from, end = to;
-      if (!start || !end) { 
+      if (!start || !end) {
         do {
           var xf = Math.floor(Math.random() * (mapWidth*0.7)) + mapWidth*0.15;
           var yf = Math.floor(Math.random() * (mapHeight*0.6)) + mapHeight*0.2;
@@ -689,7 +689,7 @@ function fantasyMap() {
         }
       }
       var change = height ? height : Math.random() * 0.1 + 0.1;
-      range.map(function(r) {  
+      range.map(function(r) {
         var rnd = Math.random() * 0.4 + 0.8;
         if (mod > 0) {cells[r].height += change * rnd;}
         else if (cells[r].height >= 0.1) {cells[r].height -= change * rnd;}
@@ -785,7 +785,7 @@ function fantasyMap() {
           if (mult == "^2") {factor = dif}
           if (mult == "^3") {factor = dif * dif;}
           i.height = 0.2 + dif * factor;
-        } 
+        }
       } else if (type === "all") {
         if (i.height > 0) {
           i.height += add;
@@ -824,10 +824,11 @@ function fantasyMap() {
       i.height = rn(i.height + rnd, 2);
     });
   }
-  
+
   // Mark features (ocean, lakes, islands)
   function markFeatures() {
     console.time("markFeatures");
+    island = 0;
     var queue = [], lake = 0, number = 0, type, greater = 0, less = 0;
     // ensure all border cells are ocean
     cells.map(function(l) {
@@ -892,13 +893,13 @@ function fantasyMap() {
     var frontier = $.grep(cells, function(e) {return (e.ctype === -1 && e.f === "Ocean");});
     if (Math.random() < odd) {limits.push(-1); odd = 0.3;}
     for (var c = -2; frontier.length > 0 && c > -10; c--) {
-      if (Math.random() < odd) {limits.unshift(c); odd = 0.3;} else {odd += 0.2;} 
+      if (Math.random() < odd) {limits.unshift(c); odd = 0.3;} else {odd += 0.2;}
       frontier.map(function(i) {
         i.neighbors.forEach(function(e) {
           if (!cells[e].ctype) {cells[e].ctype = c;}
         });
       });
-      frontier = $.grep(cells, function(e) {return (e.ctype === c);});      
+      frontier = $.grep(cells, function(e) {return (e.ctype === c);});
     }
     if (outlineLayers.value !== "random") {limits = outlineLayers.value.split(",");}
     // Define area edges
@@ -941,7 +942,7 @@ function fantasyMap() {
     var tempCells = [], newPoints = []; // to store new data
     land = [], polygons= []; // clear old data
     // get average precipitation based on graph size
-    var avPrec = rn(precipitation / Math.sqrt(cells.length), 2);   
+    var avPrec = rn(precipitation / Math.sqrt(cells.length), 2);
     cells.map(function(i) {
       var height = Math.trunc(i.height * 100) / 100;
       var ctype = i.ctype;
@@ -951,10 +952,12 @@ function fantasyMap() {
       var f = i.f;
       var fn = i.fn;
       var harbor = i.harbor;
+      var region = i.region; // handle value for edit hrightmap mode only
+      var culture = i.culture; // handle value for edit hrightmap mode only
       var copy = $.grep(newPoints, function(e) {return (e[0] == x && e[1] == y);});
       if (!copy.length) {
         newPoints.push([x, y]);
-        tempCells.push({index:tempCells.length, data:[x, y], height, ctype, f, fn, harbor});
+        tempCells.push({index:tempCells.length, data:[x, y], height, ctype, f, fn, harbor, region, culture});
       }
       // add additional points for cells along coast
       if (ctype === 2 || ctype === -1) {
@@ -966,7 +969,7 @@ function fantasyMap() {
             copy = $.grep(newPoints, function(e) {return (e[0] === x1 && e[1] === y1);});
             if (!copy.length) {
               newPoints.push([x1, y1]);
-              tempCells.push({index:tempCells.length, data:[x1, y1], height, ctype, f, fn, harbor});
+              tempCells.push({index:tempCells.length, data:[x1, y1], height, ctype, f, fn, harbor, region, culture});
             }
           };
         });
@@ -1004,6 +1007,8 @@ function fantasyMap() {
       })
       i.neighbors = neighbors;
       if (i.haven === undefined) {delete i.harbor;}
+      if (i.region === undefined) {delete i.region;}
+      if (i.culture === undefined) {delete i.culture;}
       i.flux = avPrec;
     });
     grid.append("path").attr("d", gridPath);
@@ -1025,7 +1030,7 @@ function fantasyMap() {
         landmass.append("path")
           .attr("d", "M" + polygons[i.index].join("L") + "Z")
           .attr("fill", color(1 - i.height))
-          .attr("stroke", color(1 - i.height));        
+          .attr("stroke", color(1 - i.height));
       }
       heights.push(i.height);
     });
@@ -1035,7 +1040,7 @@ function fantasyMap() {
       history[historyStage] = heights;
       historyStage += 1;
     }
-    redo.disabled = true; 
+    redo.disabled = true;
     undo.disabled = true;
     if (historyStage < history.length - 1) {redo.disabled = false;}
     if (historyStage > 0) {undo.disabled = false;}
@@ -1050,7 +1055,7 @@ function fantasyMap() {
     // if perspective is displayed, update it
     if ($("#perspectivePanel").is(":visible")) {drawPerspective();}
   }
-  
+
   // restoreHistory
   function restoreHistory(step) {
     historyStage = step;
@@ -1061,7 +1066,7 @@ function fantasyMap() {
     });
     mockHeightmap("nolog");
   }
-   
+
   // Detect and draw the coasline
   function drawCoastline() {
     console.time('drawCoastline');
@@ -1091,7 +1096,7 @@ function fantasyMap() {
                 if (edge[0][0] < minX) {minX = edge[0][0]; minXedge = edge[0]}
                 if (edge[1][0] < minX) {minX = edge[1][0]; minXedge = edge[1]}
                 if (edge[0][0] > maxX) {maxX = edge[0][0]; maxXedge = edge[0]}
-                if (edge[1][0] > maxX) {maxX = edge[1][0]; maxXedge = edge[1]} 
+                if (edge[1][0] > maxX) {maxX = edge[1][0]; maxXedge = edge[1]}
                 oceanEdges.push({start, end});
               }
             }
@@ -1103,7 +1108,7 @@ function fantasyMap() {
     }
     d3.select("#shape").append("path").attr("d", oceanCoastline).attr("fill", "white");  // draw the clippath
     landmass.append("path").attr("d", oceanCoastline); // draw the landmass
-    coastline.append("path").attr("d", oceanCoastline); // draw the coastline   
+    coastline.append("path").attr("d", oceanCoastline); // draw the coastline
     lakes.append("path").attr("d", lakeCoastline); // draw the lakes
     drawDefaultRuler(minXedge, maxXedge);
     console.timeEnd('drawCoastline');
@@ -1113,7 +1118,7 @@ function fantasyMap() {
   function drawScaleBar() {
     if ($("#scaleBar").hasClass("hidden")) {return;} // no need to re-draw hidden element
     svg.select("#scaleBar").remove(); // fully redraw every time
-    var title = 
+    var title =
     `Map scale defines ratio between distance on a map and the corresponding distance on the ground.
     Click to edit the map scale, drag to move the bar`;
     // get size
@@ -1142,8 +1147,8 @@ function fantasyMap() {
         var label = rn(value * dScale / scale);
         if (label < s) {continue;}
         if (s > 1 && (l * dScale / 25) >= 100) {continue;}
-        if (s > 2 && label >= 100) {continue;}        
-        if (s === 4 && label >= l / 10) {continue;}        
+        if (s > 2 && label >= 100) {continue;}
+        if (s === 4 && label >= l / 10) {continue;}
         scaleBar.append("text").attr("x", x + value).attr("y", y - 2 * size).attr("font-size", rn(2.6 * size, 1)).text(label);
       }
     // big scale
@@ -1168,10 +1173,10 @@ function fantasyMap() {
     }
     scaleBar.attr("transform", "translate(" + rn(tr[0]) + "," + rn(tr[1]) + ")");
   }
-  
+
   // draw default ruler measiring land x-axis edges
   function drawDefaultRuler(minXedge, maxXedge) {
-    var title = 
+    var title =
     `Ruler is an instrument for measuring thelinear lengths.
     One dash shows 30 km (18.6 mi), approximate distance of a daily loaded march.
     Drag edge circles to move the ruler, center circle to split the ruler into 2 parts.
@@ -1189,9 +1194,9 @@ function fantasyMap() {
     var tr = "rotate(" + angle + " " + x0 + " " + y0 +")";
     var dist = rn(Math.hypot(x1 - x2, y1 - y2));
     var label = rn(dist * distanceScale.value) + " " + distanceUnit.value;
-    rulerNew.append("text").attr("x", x0).attr("y", y0).attr("dy", -1).attr("transform", tr).attr("data-dist", dist).text(label).on("click", removeParent).attr("font-size", 10);    
+    rulerNew.append("text").attr("x", x0).attr("y", y0).attr("dy", -1).attr("transform", tr).attr("data-dist", dist).text(label).on("click", removeParent).attr("font-size", 10);
   }
-  
+
   // drag any element changing transform
   function elementDrag() {
     var el = d3.select(this);
@@ -1221,7 +1226,7 @@ function fantasyMap() {
     var line = group.selectAll("line");
     if (edge === "left") {
       line.attr("x1", x).attr("y1", y);
-      x0 = +line.attr("x2"), y0 = +line.attr("y2");  
+      x0 = +line.attr("x2"), y0 = +line.attr("y2");
     } else {
       line.attr("x2", x).attr("y2", y);
       x0 = +line.attr("x1"), y0 = +line.attr("y1");
@@ -1235,7 +1240,7 @@ function fantasyMap() {
     var tr = "rotate(" + angle + " " + xc + " " + yc +")";
     group.select("text").attr("x", xc).attr("y", yc).attr("transform", tr).attr("data-dist", dist).text(label);
   }
-  
+
   // draw ruler center point to split ruler into 2 parts
   function rulerCenterDrag() {
     var xc1, yc1, xc2, yc2;
@@ -1245,7 +1250,7 @@ function fantasyMap() {
     var x1 = +line.attr("x1"), y1 = +line.attr("y1"), x2 = +line.attr("x2"), y2 = +line.attr("y2"); // initial line edge points
     var rulerNew = ruler.insert("g", ":first-child");
     rulerNew.call(d3.drag().on("start", elementDrag));
-    var title = 
+    var title =
     `Ruler is an instrument for measuring thelinear lengths.
     One dash shows 30 km (18.6 mi), approximate distance of a daily loaded march.
     Drag edge circles to move the ruler, center circle to split the ruler into 2 parts.
@@ -1281,8 +1286,8 @@ function fantasyMap() {
     d3.event.on("end", function() {
       // circles for 1st part
       group.selectAll("circle").remove();
-      group.append("circle").attr("cx", x1).attr("cy", y1).attr("r", 2 * factor).attr("stroke-width", 0.5 * factor).attr("data-edge", "left").call(d3.drag().on("drag", rulerEdgeDrag));  
-      group.append("circle").attr("cx", x).attr("cy", y).attr("r", 2 * factor).attr("stroke-width", 0.5 * factor).attr("data-edge", "rigth").call(d3.drag().on("drag", rulerEdgeDrag));         
+      group.append("circle").attr("cx", x1).attr("cy", y1).attr("r", 2 * factor).attr("stroke-width", 0.5 * factor).attr("data-edge", "left").call(d3.drag().on("drag", rulerEdgeDrag));
+      group.append("circle").attr("cx", x).attr("cy", y).attr("r", 2 * factor).attr("stroke-width", 0.5 * factor).attr("data-edge", "rigth").call(d3.drag().on("drag", rulerEdgeDrag));
       group.append("circle").attr("cx", xc1).attr("cy", yc1).attr("r", 1.2 * factor).attr("stroke-width", 0.3 * factor).attr("class", "center").call(d3.drag().on("start", rulerCenterDrag));
       // circles for 2nd part
       rulerNew.append("circle").attr("cx", x).attr("cy", y).attr("r", 2 * factor).attr("stroke-width", 0.5 * factor).attr("data-edge", "left").call(d3.drag().on("drag", rulerEdgeDrag));
@@ -1293,7 +1298,7 @@ function fantasyMap() {
 
   function opisometerEdgeDrag() {
     var el = d3.select(this);
-    var x0 = +el.attr("cx"), y0 = +el.attr("cy");    
+    var x0 = +el.attr("cx"), y0 = +el.attr("cy");
     var group = d3.select(this.parentNode);
     var curve = group.select(".white");
     var curveGray = group.select(".gray");
@@ -1324,12 +1329,12 @@ function fantasyMap() {
       var atan = p.x > c.x ? Math.atan2(p.y - c.y, p.x - c.x) : Math.atan2(c.y - p.y, c.x - p.x);
       var angle = rn(atan * 180 / Math.PI, 3);
       var tr = "rotate(" + angle + " " + c.x + " " + c.y +")";
-      text.attr("data-points", JSON.stringify(points)).attr("data-dist", dist).attr("x", c.x).attr("y", c.y).attr("transform", tr).text(label);   
-    });    
+      text.attr("data-points", JSON.stringify(points)).attr("data-dist", dist).attr("x", c.x).attr("y", c.y).attr("transform", tr).text(label);
+    });
   }
 
   function getContinuousLine(edges, indention, relax) {
-    var edgesOr = edges.slice(); 
+    var edgesOr = edges.slice();
     var line = "";
     while (edges.length > 2) {
       var edgesOrdered = []; // to store points in a correct order
@@ -1360,11 +1365,11 @@ function fantasyMap() {
         if (indention || relax) {
           var dist = Math.hypot(+spl[0] - x0, +spl[1] - y0);
           if (dist >= indention && Math.random() > relax) {
-            edgesOrdered.push({scX: +spl[0], scY: +spl[1]}); 
+            edgesOrdered.push({scX: +spl[0], scY: +spl[1]});
             x0 = +spl[0], y0 = +spl[1];
           }
         } else {
-          edgesOrdered.push({scX: +spl[0], scY: +spl[1]}); 
+          edgesOrdered.push({scX: +spl[0], scY: +spl[1]});
         }
         edges.splice(index, 1);
         if (i === 100000-1) {
@@ -1395,8 +1400,8 @@ function fantasyMap() {
       if (l === limit - 1) {console.error("Error: resolveDepressions iteration limit");}
     }
     console.timeEnd('resolveDepressions');
-  }  
-  
+  }
+
   function flux() {
     console.time('flux');
     riversData = [];
@@ -1496,8 +1501,8 @@ function fantasyMap() {
         var eY = dataRiver[r+1].y;
         var angle = Math.atan2(eY - dY, eX - dX);
         var serpentine = 1 / (r+1);
-        var meandr = serpentine + 0.3 + Math.random() * 0.3 * rndFactor; 
-        if (Math.random() > 0.5) {side *= -1};           
+        var meandr = serpentine + 0.3 + Math.random() * 0.3 * rndFactor;
+        if (Math.random() > 0.5) {side *= -1};
         var dist = Math.hypot(eX - dX, eY - dY);
         // if dist is big or river is small add 2 extra points
         if (dist > 8 || (dist > 4 && dataRiver.length < 6)) {
@@ -1510,7 +1515,7 @@ function fantasyMap() {
           if (Math.random() > 0.8) {side *= -1};
           enX += Math.sin(angle) * meandr * side;
           enY += -Math.cos(angle) * meandr * side;
-          riverAmended.push([stX, stY], [enX, enY]);              
+          riverAmended.push([stX, stY], [enX, enY]);
         // if dist is medium or river is small add 1 extra point
         } else if (dist > 4 || dataRiver.length < 6) {
           var scX = (dX + eX) / 2;
@@ -1582,12 +1587,12 @@ function fantasyMap() {
       var point = d3.mouse(this);
       addRiverPoint({scX:point[0], scY:point[1]});
       redrawRiver();
-      $("#riverNew").click(); 
+      $("#riverNew").click();
       return;
     }
     unselect();
     elSelected = d3.select(this);
-    elSelected.call(d3.drag().on("start", riverDrag)).classed("draggable", true);   
+    elSelected.call(d3.drag().on("start", riverDrag)).classed("draggable", true);
     var points = JSON.parse(elSelected.attr("data-points"));
     rivers.append("g").attr("class", "riverPoints").attr("transform", elSelected.attr("transform"));
     points.map(function(p) {addRiverPoint(p)});
@@ -1622,7 +1627,7 @@ function fantasyMap() {
       .call(d3.drag().on("start", riverPointDrag))
       .on("click", function(d) {
         if ($("#riverRemovePoint").hasClass('pressed')) {
-          $(this).remove(); redrawRiver();            
+          $(this).remove(); redrawRiver();
         }
         if ($("#riverNew").hasClass('pressed')) {
           $("#riverNew").click();
@@ -1641,17 +1646,17 @@ function fantasyMap() {
   $("#riverEditor .editButton, #riverEditor .editButtonS").click(function() {
     if (this.id == "riverRemove") {
       alertMessage.innerHTML = `Are you sure you want to remove the river?`;
-      $(function() {$("#alert").dialog({resizable: false, title: "Remove river",
+      $("#alert").dialog({resizable: false, title: "Remove river",
         buttons: {
-          "Remove": function() {
+          Remove: function() {
             $(this).dialog("close");
             elSelected.remove();
             rivers.select(".riverPoints").remove();
             $("#riverEditor").dialog("close");
           },
           Cancel: function() {$(this).dialog("close");}
-        }})
-      });
+        }
+      })
       return;
     }
     if (this.id == "riverCopy") {
@@ -1708,7 +1713,7 @@ function fantasyMap() {
         if (elSelected.attr("data-river") == "new") {
           rivers.select(".riverPoints").selectAll("*").remove();
           elSelected.attr("data-river", "");
-          elSelected.call(d3.drag().on("start", riverDrag)).classed("draggable", true); 
+          elSelected.call(d3.drag().on("start", riverDrag)).classed("draggable", true);
         }
         viewbox.style("cursor", "default");
       } else {
@@ -1768,10 +1773,10 @@ function fantasyMap() {
     lineGen.curve(d3.curveCatmullRom.alpha(0.1));
     var width = +$("#riverWidthInput").val();
     var increment = +$("#riverIncrement").val();
-    var d = drawRiver(points, width, increment);    
+    var d = drawRiver(points, width, increment);
     elSelected.attr("d", d).attr("data-width", width).attr("data-increment", increment);
   });
-  
+
   function riverDrag() {
     var x = d3.event.x, y = d3.event.y;
     var el = d3.select(this);
@@ -1832,10 +1837,10 @@ function fantasyMap() {
       c.height = rn(c.height, 2);
       c.flux = rn(c.flux, 2);
       // base score from height (will be biom)
-      if (c.height <= 0.8) {score = 1.4;}      
+      if (c.height <= 0.8) {score = 1.4;}
       if (c.height <= 0.6) {score = 1.6;}
       if (c.height <= 0.5) {score = 1.8;}
-      if (c.height <= 0.4) {score = 2;} 
+      if (c.height <= 0.4) {score = 2;}
       score += (1 - c.height) / 2;
       if (c.ctype && Math.random() < 0.8 && !c.river) {
         c.score = 0; // ignore 80% of extended cells
@@ -1844,7 +1849,7 @@ function fantasyMap() {
           if (c.harbor === 1) {score += 2;} else {score -= 0.2;} // good sea harbor is valued
           if (c.river && c.ctype === 1) {score += 2;} // sea estuaries are valued
         }
-        if (c.river && c.ctype === 1) {score += 2;} // all estuaries are valued 
+        if (c.river && c.ctype === 1) {score += 2;} // all estuaries are valued
         if (c.flux > 1) {score += Math.pow(c.flux, 0.3);} // riverbank is valued
         if (c.confluence) {score += Math.pow(c.confluence, 0.3);} // confluence is valued;
       }
@@ -1863,17 +1868,17 @@ function fantasyMap() {
       if (path) {
         path = Math.pow(path, 0.2);
         var crossroad = c.crossroad || 0; // crossroads are valued
-        score = score + path + crossroad;     
-      } 
+        score = score + path + crossroad;
+      }
       c.score = rn(Math.random() * score + score, 2); // 0.5 random factor
     });
     land.sort(function(a, b) {return b.score - a.score;});
     console.timeEnd('rankPlacesEconomy');
   }
- 
+
    // get population for manors and states
   function calculatePopulation() {
-    // rank all burgs to get final scores (population); what attracts trade/people 
+    // rank all burgs to get final scores (population); what attracts trade/people
     manors.map(function(m) {
       var cell = cells[m.cell];
       var score = cell.score;
@@ -1889,7 +1894,7 @@ function fantasyMap() {
     states.map(function(s, i) {
       // define region burgs count
       var burgs = $.grep(manors, function(e) {return (e.region === i);});
-      s.burgs = burgs.length;  
+      s.burgs = burgs.length;
       // define region total and burgs population
       var burgsPop = 0; // get summ of all burgs population
       burgs.map(function(b) {burgsPop += b.population;});
@@ -1923,7 +1928,7 @@ function fantasyMap() {
       states.push({i: states.length, color: "neutral", name: "Neutrals", capital: "neutral", cells: regionCells.length, burgs: burgs.length, urbanPopulation, ruralPopulation, area});
     }
   }
-   
+
   // Locate cultures
   function locateCultures() {
     var cultureCenters = d3.range(7).map(function(d) {return [Math.random() * mapWidth, Math.random() * mapHeight];});
@@ -1944,7 +1949,7 @@ function fantasyMap() {
       }
       if (dist >= spacing) {
         var cell = land[l].index;
-        shiftSettlement(land[l], "capital"); 
+        shiftSettlement(land[l], "capital");
         queue.push(cell);
         queue.push(...land[l].neighbors);
         var closest = cultureTree.find(land[l].data[0], land[l].data[1]);
@@ -1970,7 +1975,7 @@ function fantasyMap() {
       states[i].name = generateStateName(i);
       var p = cells[e.cell];
       p.manor = i;
-      p.region = i; 
+      p.region = i;
       p.culture = e.culture;
     });
     console.timeEnd('locateCapitals');
@@ -1985,7 +1990,7 @@ function fantasyMap() {
         shiftSettlement(land[l], "town");
         var x = land[l].data[0];
         var y = land[l].data[1];
-        var cell = land[l].index;        
+        var cell = land[l].index;
         var region = "neutral", culture = -1, closest = neutral;
         for (c = 0; c < capitalsCount; c++) {
           var dist = Math.hypot(manors[c].x - x, manors[c].y - y) / states[c].power;
@@ -2011,7 +2016,7 @@ function fantasyMap() {
     }
     console.timeEnd('locateTowns');
   }
-  
+
   function shiftSettlement(cell, type) {
     if ((type === "capital" && cell.harbor) || (type === "town" && cell.harbor === 1)) {
       cell.port = true;
@@ -2028,9 +2033,9 @@ function fantasyMap() {
       cell.data[1] += shift;
       cell.data[0] = rn(cell.data[0], 2);
       cell.data[1] = rn(cell.data[1], 2);
-    }      
+    }
   }
-  
+
   // Validate each island with manors has at least one port (so Island is accessible)
   function checkAccessibility() {
     console.time("checkAccessibility");
@@ -2085,7 +2090,7 @@ function fantasyMap() {
       var minDist = 1000, end = -1;
       ports.map(function(p) {
         var dist = Math.hypot(e.data[0] - p.data[0], e.data[1] - p.data[1]);
-        if (dist < minDist) {minDist = dist; end = p.index;}        
+        if (dist < minDist) {minDist = dist; end = p.index;}
       });
       if (end !== -1) {
         var start = e.index;
@@ -2110,7 +2115,7 @@ function fantasyMap() {
           var dist = Math.hypot(cells[start].data[0] - cells[end].data[0], cells[start].data[1] - cells[end].data[1]);
           if (dist > 10) {
             var path = findLandPath(start, end, "direct");
-            restorePath(end, start, "small", path);            
+            restorePath(end, start, "small", path);
           }
         }
         manorsOnIsland.map(function(e, d) {
@@ -2210,7 +2215,7 @@ function fantasyMap() {
             cost += Math.hypot(cells[e].data[0] - pol.data[0], cells[e].data[1] - pol.data[1]) / 30;
           }
           var costNew = costTotal[next] + cost;
-          if (!cameFrom[e] || costNew < costTotal[e]) { //  
+          if (!cameFrom[e] || costNew < costTotal[e]) { //
             costTotal[e] = costNew;
             cameFrom[e] = next;
             var dist = Math.hypot(cells[e].data[0] - cells[end].data[0], cells[e].data[1] - cells[end].data[1]) / 15;
@@ -2221,7 +2226,7 @@ function fantasyMap() {
       });
     }
     return cameFrom;
-  } 
+  }
 
   function findLandPaths(start, type) {
     // Dijkstra algorithm (not used now)
@@ -2298,7 +2303,7 @@ function fantasyMap() {
       pol.neighbors.forEach(function(e) {
         if (cells[e].path && (cells[e].ctype === -1 || cells[e].haven === next)) {
           var dist = Math.hypot(cells[e].data[0] - pol.data[0], cells[e].data[1] - pol.data[1]);
-          costNew = costTotal[next] + dist;        
+          costNew = costTotal[next] + dist;
           if (!cameFrom[e]) {
             costTotal[e] = costNew;
             cameFrom[e] = next;
@@ -2341,7 +2346,7 @@ function fantasyMap() {
           var f = cells[path[0].i];
           if (f.path > 1) {
             if (!f.crossroad) {f.crossroad = 0;}
-            f.crossroad += plus;     
+            f.crossroad += plus;
           }
           var t = cells[(path[path.length - 1].i)];
           if (t.path > 1) {
@@ -2353,7 +2358,7 @@ function fantasyMap() {
         var line = lineGen(path);
         line = round(line, 1);
         if (type === "main") {
-          roads.append("path").attr("d", line).attr("data-start", start).attr("data-end", end);  
+          roads.append("path").attr("d", line).attr("data-start", start).attr("data-end", end);
         } else if (type === "small") {
           trails.append("path").attr("d", line);
         } else if (type === "ocean") {
@@ -2375,7 +2380,7 @@ function fantasyMap() {
       var name = manors[i].name;
       if (i < capitalsCount) {
         burgs.append("circle").attr("id", "manorIcon"+i).attr("r", 1).attr("stroke-width", .24).attr("cx", x).attr("cy", y);
-        capitals.append("text").attr("id", "manorLabel"+i).attr("x", x).attr("y", y).attr("dy", -1.3).text(name);      
+        capitals.append("text").attr("id", "manorLabel"+i).attr("x", x).attr("y", y).attr("dy", -1.3).text(name);
       } else {
         burgs.append("circle").attr("id", "manorIcon"+i).attr("r", .5).attr("stroke-width", .12).attr("cx", x).attr("cy", y);
         towns.append("text").attr("id", "manorLabel"+i).attr("x", x).attr("y", y).attr("dy", -.7).text(name);
@@ -2421,7 +2426,7 @@ function fantasyMap() {
       var l = cur.charAt(cur.length - 1);
       if (cur !== " ") {
         res += cur;
-        next = data[l]; 
+        next = data[l];
         cur = next[Math.floor(Math.random() * next.length)];
       } else if (res.length > 2 + Math.floor(Math.random() * 5)) {
         break;
@@ -2433,21 +2438,23 @@ function fantasyMap() {
     var name = res.charAt(0).toUpperCase() + res.slice(1);
     return name;
   }
-  
+
   // Define areas based on the closest manor to a polygon
   function defineRegions() {
     console.time('defineRegions');
     manorTree = d3.quadtree().extent([[0, 0], [mapHeight, mapWidth]]);
-    manors.map(function(m) {manorTree.add([m.x, m.y]);});
+    manors.map(function(m) {
+      if (m.region === "removed") {return;}
+      manorTree.add([m.x, m.y]);
+    });
     land.map(function(i) {
-      if (i.region !== undefined) {return;}
       var x = i.data[0], y = i.data[1];
       var closest = manorTree.find(x, y);
       var dist = Math.hypot(closest[0] - x, closest[1] - y);
       if (dist > neutral / 2) {
         i.region = "neutral";
         var closestCulture = cultureTree.find(i.data[0], i.data[1]);
-        i.culture = cultureTree.data().indexOf(closestCulture);            
+        i.culture = cultureTree.data().indexOf(closestCulture);
       } else {
         var manor = $.grep(manors, function(e) {return (e.x === closest[0] && e.y === closest[1]);});
         var cell = manor[0].cell;
@@ -2470,28 +2477,31 @@ function fantasyMap() {
   // Define areas cells
   function drawRegions() {
     console.time('drawRegions');
-    var edges = [], coastalEdges = [], borderEdges = [], neutralEdges = []; // arrays to store edges
-    land.map(function(l) {
-      var s = l.region;
-      if (!edges[s]) {edges[s] = [], coastalEdges[s] = [];}
-      var cell = diagram.cells[l.index];
-      cell.halfedges.forEach(function(e) {
-        var edge = diagram.edges[e];
-        if (edge.left && edge.right) {
-          var ea = edge.left.index;
-          if (ea === l.index) {ea = edge.right.index;}
-          var opp = cells[ea];
-          if (opp.region !== s) {
-            var start = edge[0].join(" ");
-            var end = edge[1].join(" ");
-            edges[s].push({start, end});
-            if (opp.height >= 0.2 && opp.region > s) {borderEdges.push({start, end});}
-            if (opp.height >= 0.2 && opp.region === "neutral") {neutralEdges.push({start, end});}
-            if (opp.height < 0.2) {coastalEdges[s].push({start, end});}
-          }
-        }
-      })
-    });
+    // arrays to store edge data
+    var edges = [], coastalEdges = [], borderEdges = [], neutralEdges = [];
+    for (let a=0; a < states.length; a++) {
+      edges[a] = [];
+      coastalEdges[a] = [];
+    }
+    const e = diagram.edges;
+    for (let i=0; i < e.length; i++) {
+      if (e[i] === undefined) {continue;}
+      if (e[i].left === undefined || e[i].right === undefined) {continue;}
+      const l = e[i].left.index;
+      const r = e[i].right.index;
+      const lr = cells[l].region;
+      const rr = cells[r].region;
+      if (lr === rr) {continue;}
+      const start = e[i][0].join(" ");
+      const end = e[i][1].join(" ");
+      const p = {start, end};
+      if (lr !== undefined && lr !== "neutral") {edges[lr].push(p);}
+      if (rr !== undefined && rr !== "neutral") {edges[rr].push(p);}
+      if (lr === undefined && rr !== "neutral") {coastalEdges[rr].push(p); continue;}
+      if (rr === undefined && lr !== "neutral") {coastalEdges[lr].push(p); continue;}
+      if (lr === "neutral" || rr === "neutral") {neutralEdges.push(p);}
+      else {borderEdges.push(p);}
+    }
     edges.map(function(e, i) {
       if (e.length) {
         drawRegion(e, i);
@@ -2539,7 +2549,7 @@ function fantasyMap() {
     array.sort(function(a, b){return b.length - a.length;});
     var name = states[region].name;
     var c = polylabel(array, 1.0); // pole of inaccessibility
-    countries.append("text").attr("id", "regionLabel"+region).attr("x", rn(c[0])).attr("y", rn(c[1])).text(name).on("click", editLabel);      
+    countries.append("text").attr("id", "regionLabel"+region).attr("x", rn(c[0])).attr("y", rn(c[1])).text(name).on("click", editLabel);
     states[region].area = rn(Math.abs(d3.polygonArea(array[0]))); // define region area
   }
 
@@ -2570,7 +2580,7 @@ function fantasyMap() {
       path += lineGen(edgesOrdered);
     }
     var color = states[region].color;
-    regions.append("path").attr("d", round(path, 1)).attr("fill", "none").attr("stroke", color).attr("stroke-width", 1.5).attr("class", "region"+region); 
+    regions.append("path").attr("d", round(path, 1)).attr("fill", "none").attr("stroke", color).attr("stroke-width", 1.5).attr("class", "region"+region);
   }
 
   function drawBorders(edges, type) {
@@ -2616,7 +2626,7 @@ function fantasyMap() {
     if (Math.random() < 0.5 && culture == 0) {suffix = "land";} // 50% "land" for German
     if (Math.random() < 0.33 && (culture == 1 || culture == 6)) {suffix = "land";} // 33% "land" for English and Scandinavian
     if (culture == 5 && name.slice(-2) === "sk") {name.slice(0,-2);} // exclude -sk suffix for Slavic
-    if (name.indexOf(suffix) !== -1) {suffix = "";} // null suffix if name already contains it 
+    if (name.indexOf(suffix) !== -1) {suffix = "";} // null suffix if name already contains it
     var ending = name.slice(-1);
     if (vowels.includes(ending) && name.length > 3) {
       if (Math.random() > 0.2) {
@@ -2629,9 +2639,9 @@ function fantasyMap() {
       }
     } else if (Math.random() > 0.5) {
       name += suffix // 50% for cc
-    } 
+    }
     if (name.slice(-4) === "berg") {name += suffix;} // special case for -berg
-    return name;    
+    return name;
   }
 
   // draw the Heightmap
@@ -2674,7 +2684,7 @@ function fantasyMap() {
       var size = +styleOverlaySize.value;
       if (type === "hex") {
         var hexbin = d3.hexbin().radius(size).size([mapWidth, mapHeight]);
-        overlay.append("path").attr("d", round(hexbin.mesh(), 0));        
+        overlay.append("path").attr("d", round(hexbin.mesh(), 0));
       } else if (type === "square") {
         var x = d3.range(size, mapWidth, size);
         var y = d3.range(size, mapHeight, size);
@@ -2705,20 +2715,23 @@ function fantasyMap() {
       delete c.used;
       delete c.coastX;
       delete c.coastY;
+      if (c.ctype === undefined) {delete c.ctype;}
+      c.height = rn(c.height, 2);
+      c.flux = rn(c.flux, 2);
     });
     // restore heightmap layer if it was turned on
     if (!$("#toggleHeight").hasClass("buttonoff") && !terrs.selectAll("path").size()) {toggleHeight();}
     closeAllDialogs();
     console.timeEnd("cleanData");
   }
-  
+
   // close all dialogs on re-load
   function closeAllDialogs() {
     $(".dialog:visible").each(function(e) {
       $(this).dialog("close");
     });
   }
-  
+
   // Draw the water flux system (for dubugging)
   function toggleFlux() {
     var colorFlux = d3.scaleSequential(d3.interpolateBlues);
@@ -2874,7 +2887,7 @@ function fantasyMap() {
       if (matrix) {
         var angle = matrix.split('(')[1].split(')')[0].split(' ')[0];
         var bbox = el.node().getBBox();
-        var rotate = "rotate("+ angle + " " + (bbox.x + bbox.width/2) + " " + (bbox.y + bbox.height/2) + ")";  
+        var rotate = "rotate("+ angle + " " + (bbox.x + bbox.width/2) + " " + (bbox.y + bbox.height/2) + ")";
         el.attr("transform", rotate);
       }
     } else {
@@ -2887,7 +2900,7 @@ function fantasyMap() {
   }
 
   // Complete the map for the "customize" mode
-  function getMap() {
+  function getMap(keepData) {
     exitCustomization();
     console.time("TOTAL");
     applyMapSize();
@@ -2899,7 +2912,7 @@ function fantasyMap() {
     flux();
     drawRelief();
     drawCoastline();
-    manorsAndRegions();
+    if (!keepData) {manorsAndRegions();} else {restoreRegions();}
     cleanData();
     console.timeEnd("TOTAL");
   }
@@ -2936,7 +2949,7 @@ function fantasyMap() {
       }).remove();
       var index = dists.length;
       if (points.length > 1) {
-        var sorted = dists.slice(0).sort(function(a, b) {return a-b;});  
+        var sorted = dists.slice(0).sort(function(a, b) {return a-b;});
         var closest = dists.indexOf(sorted[0]);
         var next = dists.indexOf(sorted[1]);
         if (closest <= next) {index = closest+1;} else {index = next+1;}
@@ -2949,7 +2962,7 @@ function fantasyMap() {
       return;
     }
     if ($("#riverNew").hasClass('pressed')) {
-      if (elSelected.attr("data-river") !== "new") {          
+      if (elSelected.attr("data-river") !== "new") {
         elSelected.call(d3.drag().on("drag", null)).classed("draggable", false);
         var river = +$("#rivers > path").last().attr("id").slice(5) + 1;
         elSelected = rivers.append("path").attr("data-river", "new").attr("id", "river"+river)
@@ -2995,7 +3008,7 @@ function fantasyMap() {
         var group = labels.select("#addedBurgs");
         if (!group.size()) {
           group = labels.append("g").attr("id", "addedBurgs").attr("fill", "#3e3e4b").attr("opacity", 1)
-            .attr("font-family", "Amatic SC").attr("data-font", "Amatic+SC:700").attr("font-size", 4).attr("data-size", 4);          
+            .attr("font-family", "Amatic SC").attr("data-font", "Amatic+SC:700").attr("font-size", 4).attr("data-size", 4);
         }
         group.append("text").attr("id", "manorLabel"+i).attr("x", x).attr("y", y).attr("dy", -0.7).text(name).on("click", editLabel);
         invokeActiveZooming();
@@ -3017,7 +3030,7 @@ function fantasyMap() {
         if (cells[cell].crossroad) {score += cell.crossroad;} // crossroads
         if (cells[cell].confluence) {score += Math.pow(cell.confluence, 0.3);} // confluences
         if (cells[cell].port) {score *= 3;} // port-capital
-        var population = rn(score, 1);  
+        var population = rn(score, 1);
         manors.push({i, cell, x, y, region, culture, name, population});
         recalculateStateData(state);
         updateCountryEditors();
@@ -3049,7 +3062,7 @@ function fantasyMap() {
             manors[burg].population *= 2; // give capital x2 population bonus
             states[state].capital = burg;
             $("#manorLabel"+burg).detach().appendTo($("#capitals")).attr("dy", -1.3);
-            $("#manorIcon"+burg).attr("r", 1).attr("stroke-width", .24); 
+            $("#manorIcon"+burg).attr("r", 1).attr("stroke-width", .24);
           }
         } else {
           // create new burg for capital
@@ -3133,7 +3146,7 @@ function fantasyMap() {
       var d = drawRiver(riverAmended, 2, 1);
       rivers.append("path").attr("d", d).attr("id", "river"+river)
         .attr("data-points", round(JSON.stringify(riverAmended), 1))
-        .attr("data-width", 2).attr("data-increment", 1).on("click", editRiver);       
+        .attr("data-width", 2).attr("data-increment", 1).on("click", editRiver);
       return;
     }
     if (customization === 1) {
@@ -3161,9 +3174,9 @@ function fantasyMap() {
   function recalculateStateData(state) {
     var s = states[state];
     if (s.capital === "neutral") {state = "neutral";}
-    var ruralFactor = state === "neutral" ? 0.5 : 1;    
+    var ruralFactor = state === "neutral" ? 0.5 : 1;
     var burgs = $.grep(manors, function(e) {return (e.region === state);});
-    s.burgs = burgs.length;  
+    s.burgs = burgs.length;
     var burgsPop = 0; // get summ of all burgs population
     burgs.map(function(b) {burgsPop += b.population;});
     s.urbanPopulation = rn(burgsPop, 2);
@@ -3179,7 +3192,7 @@ function fantasyMap() {
     var graphSizeAdj = 90 / Math.sqrt(cells.length, 2);
     s.ruralPopulation = rn(cellsScore * graphSizeAdj * ruralFactor, 2);
   }
-  
+
   function editLabel() {
     unselect();
     elSelected = d3.select(this);
@@ -3199,7 +3212,7 @@ function fantasyMap() {
       var rotation = 0;
     }
     editAngle.value = rotation;
-    editAngleValue.innerHTML = rotation + "°";  
+    editAngleValue.innerHTML = rotation + "°";
     $("#labelEditor").dialog({
       title: "Edit Label: " + editText.value,
       minHeight: 30, width: "auto", maxWidth: 275, resizable: false,
@@ -3208,7 +3221,7 @@ function fantasyMap() {
     fetchAdditionalFonts();
   }
 
-  // fetch default fonts if not done before  
+  // fetch default fonts if not done before
   function fetchAdditionalFonts() {
     if (fonts.indexOf("Bitter") === -1) {
       $("head").append('<link rel="stylesheet" type="text/css" href="fonts.css">');
@@ -3219,18 +3232,18 @@ function fantasyMap() {
 
   $("#labelEditor .editButton, #labelEditor .editButtonS").click(function() {
     var group = d3.select(elSelected.node().parentNode);
-    if (this.id == "editRemoveSingle") {  
+    if (this.id == "editRemoveSingle") {
       alertMessage.innerHTML = "Are you sure you want to remove the label?";
-      $(function() {$("#alert").dialog({resizable: false, title: "Remove label",
+      $("#alert").dialog({resizable: false, title: "Remove label",
         buttons: {
-          "Remove": function() {
+          Remove: function() {
             $(this).dialog("close");
             elSelected.remove();
             $("#labelEditor").dialog("close");
           },
           Cancel: function() {$(this).dialog("close");}
-        }})
-      });
+        }
+      })
       return;
     }
     if (this.id == "editGroupRemove") {
@@ -3242,16 +3255,16 @@ function fantasyMap() {
       }
       var message = "Are you sure you want to remove all labels (" + count + ") of that group?";
       alertMessage.innerHTML = message;
-      $(function() {$("#alert").dialog({resizable: false, title: "Remove labels",
+      $("#alert").dialog({resizable: false, title: "Remove labels",
         buttons: {
-          "Remove": function() {
+          Remove: function() {
             $(this).dialog("close");
             group.remove();
             $("#labelEditor").dialog("close");
           },
           Cancel: function() {$(this).dialog("close");}
-        }})
-      });
+        }
+      })
       return;
     }
     if (this.id == "editCopy") {
@@ -3381,8 +3394,8 @@ function fantasyMap() {
   // on any Editor input change
   $("#labelEditor .editTrigger").change(function() {
     if (!elSelected) {return;}
-    $(this).attr("title", $(this).val());    
-    elSelected.text(editText.value); // change Label text   
+    $(this).attr("title", $(this).val());
+    elSelected.text(editText.value); // change Label text
     // check if Group was changed
     var group = d3.select(elSelected.node().parentNode);
     var groupOld = group.attr("id");
@@ -3409,7 +3422,7 @@ function fantasyMap() {
         editFontSelect.value = fonts.indexOf(group.attr("data-font"));
         editSize.value = group.attr("data-size");
         editColor.value = toHEX(group.attr("fill"));
-        editOpacity.value = group.attr("opacity");   
+        editOpacity.value = group.attr("opacity");
       } else {
         if (group.selectAll("text").size() === 0) {group.remove();}
         group = labels.append("g").attr("id", groupNew);
@@ -3494,11 +3507,11 @@ function fantasyMap() {
     if (metric === "B") {return parseInt(value.slice(0, -1) * 1e9);}
     return parseInt(value);
   }
-  
+
   // downalod map as SVG or PNG file
   function saveAsImage(type) {
     console.time("saveAsImage");
-    // get all used fonts  
+    // get all used fonts
     var fontsInUse = []; // to store fonts currently in use
     labels.selectAll("g").each(function(d) {
       var font = d3.select(this).attr("data-font");
@@ -3529,7 +3542,7 @@ function fantasyMap() {
         var value = compStyle.getPropertyValue(key);
         // Firefox mask hack
         if (key === "mask-image" && value !== defaultStyles.getPropertyValue(key)) {
-          style += "mask-image: url('#shape');"; 
+          style += "mask-image: url('#shape');";
           continue;
         }
         if (key === "cursor") {continue;} // cursor should be default
@@ -3544,7 +3557,7 @@ function fantasyMap() {
     GFontToDataURI(fontsToLoad).then(cssRules => {
       clone.select("defs").append("style").text(cssRules.join('\n'));
       var svg_xml = (new XMLSerializer()).serializeToString(clone.node());
-      clone.remove();      
+      clone.remove();
       var blob = new Blob([svg_xml], {type:'image/svg+xml;charset=utf-8'});
       var url = window.URL.createObjectURL(blob);
       var link = document.createElement("a");
@@ -3573,7 +3586,7 @@ function fantasyMap() {
         link.download = "fantasy_map_" + Date.now() + ".svg";
         link.href = url;
         document.body.appendChild(link);
-        link.click();  
+        link.click();
       }
       document.body.removeChild(link);
       console.timeEnd("saveAsImage");
@@ -3650,7 +3663,7 @@ function fantasyMap() {
   }
 
   // Map Loader based on FileSystem API
-  $("#fileToLoad").change(function() {
+  $("#mapToLoad").change(function() {
     console.time("loadMap");
     closeAllDialogs();
     var fileToLoad = this.files[0];
@@ -3682,19 +3695,19 @@ function fantasyMap() {
         $("#alert").dialog({title: "Map version conflict", buttons: {OK: function() {$(this).dialog("close");}}});
       }
       if (mapVersion.length > 10) {console.error("Cannot load map"); return;}
-      
+
       // replace svg
       svg.remove();
       if (mapVersion === "0.52b" || mapVersion === "0.53b") {
         states = []; // no states data
-        document.body.insertAdjacentHTML("afterbegin", data[4]); 
+        document.body.insertAdjacentHTML("afterbegin", data[4]);
         customization = 0;
       } else {
         states = JSON.parse(data[4]);
         document.body.insertAdjacentHTML("afterbegin", data[5]);
         customization = +data[6] || 0;
       }
-      
+
       svg = d3.select("svg");
       // check map size
       const nWidth = +svg.attr("width"), nHeight = +svg.attr("height");
@@ -3704,17 +3717,11 @@ function fantasyMap() {
         let message = `The loaded map has size ${nWidth} x ${nHeight} pixels, `
         message += `while the current canvas size is ${mapWidthInput.value} x ${mapHeightInput.value} pixels. `;
         message += `You should change the canvas size to fit the loaded map. `;
-        message += `You may also keep the current size, but it can cause issues`;        
+        message += `You may also keep the current size, but it can cause issues`;
         alertMessage.innerHTML = message;
         $("#alert").dialog({title: "Map size conflict",
           buttons: {
-            "Keep": function() {
-              voronoi = d3.voronoi().extent([[0, 0], [nWidth, nHeight]]);
-              zoom.translateExtent([[0, 0], [nWidth, nHeight]]);
-              applyLoadedData(data);
-              $(this).dialog("close");
-            },
-            "Change": function() {
+            Change: function() {
               mapWidthInput.value = nWidth;
               mapHeightInput.value = nHeight;
               changeMapSize();
@@ -3727,6 +3734,12 @@ function fantasyMap() {
               }
               applyLoadedData(data);
               $(this).dialog("close");
+            },
+            Keep: function() {
+              voronoi = d3.voronoi().extent([[0, 0], [nWidth, nHeight]]);
+              zoom.translateExtent([[0, 0], [nWidth, nHeight]]);
+              applyLoadedData(data);
+              $(this).dialog("close");
             }
           }
         });
@@ -3737,7 +3750,7 @@ function fantasyMap() {
     fileReader.readAsText(fileToLoad, "UTF-8");
   });
 
-  function applyLoadedData(data) {   
+  function applyLoadedData(data) {
     // redefine variables
     defs = svg.select("#deftemp");
     viewbox = svg.select("#viewbox");
@@ -3769,7 +3782,7 @@ function fantasyMap() {
     towns = labels.select("#towns");
     countries = labels.select("#countries");
     ruler = viewbox.select("#ruler");
-   
+
     // restore events
     svg.call(zoom);
     viewbox.on("touchmove mousemove", moved).on("click", clicked);
@@ -3778,14 +3791,14 @@ function fantasyMap() {
     burgs.selectAll("circle").call(d3.drag().on("start", elementDrag));
     rivers.selectAll("path").on("click", editRiver);
     svg.select("#scaleBar").call(d3.drag().on("start", elementDrag)).on("click", editScale);
-    ruler.selectAll("g").call(d3.drag().on("start", elementDrag)); 
+    ruler.selectAll("g").call(d3.drag().on("start", elementDrag));
     ruler.selectAll("g").selectAll("text").on("click", removeParent);
     ruler.selectAll(".opisometer").selectAll("circle").call(d3.drag().on("start", opisometerEdgeDrag));
     ruler.selectAll(".linear").selectAll("circle:not(.center)").call(d3.drag().on("drag", rulerEdgeDrag));
     ruler.selectAll(".linear").selectAll("circle.center").call(d3.drag().on("drag", rulerCenterDrag));
 
     // update data
-    newPoints = [], riversData = [], island = 0, queue = [], elSelected = "";
+    newPoints = [], riversData = [], queue = [], elSelected = "";
     points = JSON.parse(data[1]);
     cells = JSON.parse(data[2]);
     land = $.grep(cells, function(e) {return (e.height >= 0.2);});
@@ -3823,7 +3836,7 @@ function fantasyMap() {
     invokeActiveZooming();
     console.timeEnd("loadMap");
   }
-  
+
   // Poisson-disc sampling for a points
   // Source: bl.ocks.org/mbostock/99049112373e12709381; Based on https://www.jasondavies.com/poisson-disc
   function poissonDiscSampler(width, height, radius) {
@@ -3890,7 +3903,7 @@ function fantasyMap() {
   d3.select("body").on("keydown", function() {
     $("input").on("keydown", function(e) {e.stopPropagation();}); // cancel on input
     switch(d3.event.keyCode) {
-      case 16: // Shift - hold to continue adding elements on click 
+      case 16: // Shift - hold to continue adding elements on click
         shift = true;
         break;
       case 113: // "F2" for new map
@@ -3909,7 +3922,7 @@ function fantasyMap() {
         break;
       case 83: // "S" to log states data
         console.table(states);
-        break;        
+        break;
       case 27: // Escape (do nothing)
         break;
       case 37: // Left to scroll map left
@@ -3991,22 +4004,22 @@ function fantasyMap() {
   });
 
   // move layers on mapLayers dragging (jquery sortable)
-  function moveLayer(event, ui) {    
+  function moveLayer(event, ui) {
     var el = getLayer(ui.item.attr("id"));
     if (el) {
       var prev = getLayer(ui.item.prev().attr("id"));
       var next = getLayer(ui.item.next().attr("id"));
       if (prev) {el.insertAfter(prev);} else if (next) {el.insertBefore(next);}
     }
-  } 
+  }
 
   // define connection between option layer buttons and actual svg groups
   function getLayer(id) {
-    if (id === "toggleGrid") {return $("#grid");}  
+    if (id === "toggleGrid") {return $("#grid");}
     if (id === "toggleOverlay") {return $("#overlay");}
     if (id === "toggleHeight") {return $("#terrs");}
     if (id === "toggleCultures") {return $("#cults");}
-    if (id === "toggleRoutes") {return $("#routes");} 
+    if (id === "toggleRoutes") {return $("#routes");}
     if (id === "toggleRivers") {return $("#rivers");}
     if (id === "toggleCountries") {return $("#regions");}
     if (id === "toggleBorders") {return $("#borders");}
@@ -4014,7 +4027,7 @@ function fantasyMap() {
     if (id === "toggleLabels") {return $("#labels");}
     if (id === "toggleIcons") {return $("#icons");}
   }
-  
+
   // UI Button handlers
   $("button, a, li").on("click", function() {
     var id = this.id;
@@ -4033,7 +4046,7 @@ function fantasyMap() {
     }
     if (id === "toggleCultures") {
       var countries = !$("#toggleCountries").hasClass("buttonoff");
-      var cultures = !$("#toggleCultures").hasClass("buttonoff");      
+      var cultures = !$("#toggleCultures").hasClass("buttonoff");
       if (!cultures && countries) {
         $("#toggleCountries").toggleClass("buttonoff");
         $('#regions').fadeToggle();
@@ -4059,7 +4072,7 @@ function fantasyMap() {
       regions.append("g").attr("id", "temp");
       $("#countriesBottom").children().hide();
       $("#countriesManuallyButtons").show();
-      viewbox.style("cursor", "crosshair").call(drag);   
+      viewbox.style("cursor", "crosshair").call(drag);
     }
     if (id === "countriesRegenerate") {
       customization = 3;
@@ -4104,7 +4117,7 @@ function fantasyMap() {
       $("#countriesManuallyButtons, #countriesRegenerateButtons").hide();
       $(".selected").removeClass("selected");
       $("div[data-sortby='expansion'], .statePower, .icon-resize-full").addClass("hidden");
-      $("div[data-sortby='cells'], .stateCells, .icon-check-empty").removeClass("hidden");  
+      $("div[data-sortby='cells'], .stateCells, .icon-check-empty").removeClass("hidden");
       customization = 0;
       viewbox.style("cursor", "default").on(".drag", null);
     }
@@ -4119,7 +4132,7 @@ function fantasyMap() {
         $(this).parent().attr("data-expansion", power);
         states[state].power = power;
       });
-      regenerateCountries();     
+      regenerateCountries();
     }
     if (id === "countriesAddM" || id === "countriesAddR" || id === "countriesAddG") {
       var i = states.length;
@@ -4190,9 +4203,10 @@ function fantasyMap() {
     if (id === "burgNamesImport") {burgsListToLoad.click();}
     if (id === "removeCountries") {
       alertMessage.innerHTML = `Are you sure you want to remove all countries?`;
-      $(function() {$("#alert").dialog({resizable: false, title: "Remove countries",
+      $("#alert").dialog({resizable: false, title: "Remove countries",
         buttons: {
-          "Remove": function() {
+          Cancel: function() {$(this).dialog("close");},
+          Remove: function() {
             $(this).dialog("close");
             $("#countriesBody").empty();
             manors.map(function(m) {m.region = "neutral";});
@@ -4201,8 +4215,8 @@ function fantasyMap() {
               var c = +s.capital;
               if (isNaN(c)) {return;}
               $("#manorLabel"+c).detach().appendTo($("#towns")).attr("dy", -0.7);
-              $("#manorIcon"+c).attr("r", .5).attr("stroke-width", .12); 
-            });    
+              $("#manorIcon"+c).attr("r", .5).attr("stroke-width", .12);
+            });
             labels.select("#countries").selectAll("text").remove();
             regions.selectAll("path").remove();
             states = [];
@@ -4210,16 +4224,16 @@ function fantasyMap() {
             recalculateStateData(0);
             if ($("#burgsEditor").is(":visible")) {$("#burgsEditor").dialog("close");}
             editCountries();
-          },
-          Cancel: function() {$(this).dialog("close");}
-        }})
-      });      
-    }    
+          }
+        }
+      })
+    }
     if (id === "removeBurgs") {
       alertMessage.innerHTML = `Are you sure you want to remove all burgs associated with the country?`;
-      $(function() {$("#alert").dialog({resizable: false, title: "Remove associated burgs",
+      $("#alert").dialog({resizable: false, title: "Remove associated burgs",
         buttons: {
-          "Remove": function() {
+          Cancel: function() {$(this).dialog("close");},
+          Remove: function() {
             $(this).dialog("close");
             var state = +$("#burgsEditor").attr("data-state");
             var region = states[state].capital === "neutral" ? "neutral" : state;
@@ -4229,7 +4243,7 @@ function fantasyMap() {
               m.region = "removed";
               cells[m.cell].manor = undefined;
               labels.select("#manorLabel"+m.i).remove();
-              icons.select("#manorIcon"+m.i).remove();        
+              icons.select("#manorIcon"+m.i).remove();
             });
             states[state].urbanPopulation = 0;
             states[state].burgs = 0;
@@ -4240,10 +4254,9 @@ function fantasyMap() {
             }
             burgsFooterBurgs.innerHTML = 0;
             burgsFooterPopulation.value = 0;
-          },
-          Cancel: function() {$(this).dialog("close");}
-        }})
-      });      
+          }
+        }
+      });
     }
     if (id === "changeCapital") {
       if ($(this).hasClass("pressed")) {
@@ -4277,7 +4290,7 @@ function fantasyMap() {
     if (id === "toggleScaleBar") {$("#scaleBar").toggleClass("hidden");}
     if (id === "addRuler") {
       $("#ruler").show();
-      var title = 
+      var title =
       `Ruler is an instrument for measuring thelinear lengths.
       One dash shows 30 km (18.6 mi), approximate distance of a daily loaded march.
       Drag edge circles to move the ruler, center circle to split the ruler into 2 parts.
@@ -4294,7 +4307,7 @@ function fantasyMap() {
       rulerNew.append("circle").attr("r", 2 * factor).attr("stroke-width", 0.5 * factor).attr("cx", x2).attr("cy", y).attr("data-edge", "rigth").call(d3.drag().on("drag", rulerEdgeDrag));
       rulerNew.append("circle").attr("r", 1.2 * factor).attr("stroke-width", 0.3 * factor).attr("cx", mapWidth / 2).attr("cy", y).attr("class", "center").call(d3.drag().on("start", rulerCenterDrag));
       var dist = rn(x2 - x1);
-      var label = rn(dist * distanceScale.value) + " " + distanceUnit.value;        
+      var label = rn(dist * distanceScale.value) + " " + distanceUnit.value;
       rulerNew.append("text").attr("x", mapWidth / 2).attr("y", y).attr("dy", -1).attr("data-dist", dist).text(label).text(label).on("click", removeParent).attr("font-size", 10 * factor);
       return;
     }
@@ -4311,42 +4324,55 @@ function fantasyMap() {
     if (id === "removeAllRulers") {
       if ($("#ruler > g").length < 1) {return;}
       alertMessage.innerHTML = `Are you sure you want to remove all placed rulers?`;
-      $(function() {$("#alert").dialog({resizable: false, title: "Remove all rulers",
+      $("#alert").dialog({resizable: false, title: "Remove all rulers",
         buttons: {
-          "Remove": function() {
+          Remove: function() {
             $(this).dialog("close");
             $("#ruler > g").remove();
           },
           Cancel: function() {$(this).dialog("close");}
-        }})
+        }
       });
       return;
-    }      
+    }
     if (id === "editHeightmap") {$("#customizeHeightmap").slideToggle();}
     if (id === "fromScratch") {
-      undraw();
-      placePoints();
-      calculateVoronoi(points);
-      detectNeighbors("grid");
-      drawScaleBar();
-      customizeHeightmap();
-      return;
+      alertMessage.innerHTML = "Are you sure you want to clear the map? All progress will be lost";
+      $("#alert").dialog({resizable: false, title: "Clear map",
+        buttons: {
+          Cancel: function() {$(this).dialog("close");},
+          Clear: function() {
+            closeAllDialogs();
+            undraw();
+            placePoints();
+            calculateVoronoi(points);
+            detectNeighbors("grid");
+            drawScaleBar();
+            customizeHeightmap();
+            $("#paintBrushes").click();
+            $(this).dialog("close");
+          }
+        }
+      });
     }
     if (id === "fromHeightmap") {
-      var heights = [];
-      for (var i = 0; i < points.length; i++) {
-        var cell = diagram.find(points[i][0], points[i][1]).index;  
-        heights.push(cells[cell].height);
-      }
-      undraw();
-      calculateVoronoi(points);
-      detectNeighbors("grid");
-      drawScaleBar();
-      for (var i = 0; i < points.length; i++) {
-        cells[i].height = heights[i];
-      }
-      mockHeightmap();
-      customizeHeightmap();
+      let message = "It's highly recommended to finalize a heightmap as a first step. ";
+      message += "If you want to edit a map, it's better to clean up all the data except on heights. ";
+      message += "You may also keep the data, but it can cause unexpected errors";
+      alertMessage.innerHTML = message;
+      $("#alert").dialog({resizable: false, title: "Edit Heightmap",
+        buttons: {
+          "Clean up": function() {
+            editHeightmap("clean");
+            $(this).dialog("close");
+          },
+          Keep: function() {
+            editHeightmap("keep");
+            $(this).dialog("close");
+          },
+          Cancel: function() {$(this).dialog("close");}
+        }
+      });
       return;
     }
     // heightmap customization buttons
@@ -4377,7 +4403,9 @@ function fantasyMap() {
       if (id === "redo") {restoreHistory(historyStage + 1);}
       if (id === "smoothHeights") {smoothHeights(4); mockHeightmap();}
       if (id === "disruptHeights") {disruptHeights(); mockHeightmap();}
-      if (id === "getMap") {getMap();}
+      if (id === "getMap") {
+        if (states.length && manors.length) {getMap("keep");} else {getMap();}
+      }
       if (id === "applyTemplate") {
         if ($("#templateEditor").is(":visible")) {return;}
         $("#templateEditor").dialog({
@@ -4451,7 +4479,7 @@ function fantasyMap() {
         if (id === "addBurg") {$("#burgAdd").addClass('pressed');}
         viewbox.style("cursor", "crosshair");
         if (id.slice(0,5) === "brush" && id !== "brushRange" && id !== "brushTrough") {
-          viewbox.call(drag); 
+          viewbox.call(drag);
         }
         if (parent === "addFeature" || $(this).hasClass("feature")) {
           $("#brushRadiusLabel, #brushRadius").attr("disabled", true).addClass("disabled");
@@ -4465,14 +4493,15 @@ function fantasyMap() {
       alertMessage.innerHTML = "Are you sure you want to restore default style?";
       $("#alert").dialog({resizable: false, title: "Restore style",
         buttons: {
-          "Restore": function() {
+          Restore: function() {
             applyDefaultStyle();
             $(this).dialog("close");
           },
           Cancel: function() {
             $(this).dialog("close");
           }
-      }});
+        }
+      });
     }
     if ($(this).hasClass('radio') && parent === "mapFilters") {
       $("svg").attr("filter", "");
@@ -4500,18 +4529,18 @@ function fantasyMap() {
         $(this).removeClass("icon-resize-full-alt").addClass("icon-resize-small");
       }
       changeMapSize();
-    }    
+    }
     if (id === "saveButton") {$("#saveDropdown").slideToggle();}
-    if (id === "loadMap") {fileToLoad.click();}
+    if (id === "loadMap") {mapToLoad.click();}
     if (id === "zoomReset") {resetZoom(1000);}
     if (id === "zoomPlus") {
-      scale += 1; 
+      scale += 1;
       if (scale > 40) {scale = 40;}
       zoomUpdate();
       invokeActiveZooming();
     }
     if (id === "zoomMinus") {
-      scale -= 1; 
+      scale -= 1;
       if (scale <= 1) {scale = 1; viewX = 0; viewY = 0;}
       zoomUpdate();
       invokeActiveZooming();
@@ -4548,14 +4577,14 @@ function fantasyMap() {
         if (el.node().nodeName === "circle") {el.attr("stroke-width", size);}
       });
       return;
-    } 
+    }
     if (id === "templateClear" || id === "brushClear") {
       if (customization === 1) {
         var message = "Are you sure you want to clear the map?";
         alertMessage.innerHTML = message;
-        $(function() {$("#alert").dialog({resizable: false, title: "Clear map",
+        $("#alert").dialog({resizable: false, title: "Clear map",
           buttons: {
-            "Clear": function() {
+            Clear: function() {
               $(this).dialog("close");
               viewbox.style("cursor", "crosshair").call(drag);
               landmassCounter.innerHTML = "0";
@@ -4568,8 +4597,8 @@ function fantasyMap() {
               undo.disabled = true;
             },
             Cancel: function() {$(this).dialog("close");}
-          }})
-        });     
+          }
+        });
       } else {
         start.click();
       }
@@ -4590,7 +4619,7 @@ function fantasyMap() {
       heightsFromImage(current);
     }
     if (id === "convertOverlayButton") {
-      $("#convertImageButtons").children().not(this).not("#imageToLoad, #convertColors").toggle();
+      $("#convertImageButtons").children().not(this).not("#convertColors").toggle();
     }
     if (id === "convertAutoLum") {autoAssing("lum");}
     if (id === "convertAutoHue") {autoAssing("hue");}
@@ -4610,25 +4639,58 @@ function fantasyMap() {
         buttons: {
           "Don't show again": function() {
             localStorage.setItem("dns_allow_popup_message", true);
-            $(this).dialog("close");            
+            $(this).dialog("close");
           },
           Close: function() {$(this).dialog("close");}
         },
         position: {my: "center", at: "center", of: "svg"}
       });
-    }      
+    }
     if (id === "saveMap") {saveMap();}
     if (id === "saveSVG") {saveAsImage("svg");}
     if (id === "savePNG") {saveAsImage("png");}
-    $("#saveDropdown").slideUp("fast"); 
+    $("#saveDropdown").slideUp("fast");
   });
+
+  function editHeightmap(type) {
+    closeAllDialogs();
+    var heights = [], regionData = [], cultureData = [];
+    for (var i = 0; i < points.length; i++) {
+      var cell = diagram.find(points[i][0], points[i][1]).index;
+      heights.push(cells[cell].height);
+      var region = cells[cell].region;
+      if (region === undefined) {region = -1;}
+      regionData.push(region);
+      var culture = cells[cell].culture;
+      if (culture === undefined) {culture = -1;}
+      cultureData.push(culture);
+    }
+    if (type === "clean") {undraw();}
+    calculateVoronoi(points);
+    detectNeighbors("grid");
+    drawScaleBar();
+    for (var i = 0; i < points.length; i++) {
+      cells[i].height = heights[i];
+    }
+    if (type === "keep") {
+      svg.selectAll("#shape, #lakes, #coastline, #terrain, #rivers, #grid, #terrs, #landmass, #ocean, #regions")
+        .selectAll("path, circle, line").remove();
+      for (var i = 0; i < points.length; i++) {
+        if (regionData[i] !== -1) {cells[i].region = regionData[i];}
+        if (cultureData[i] !== -1) {cells[i].culture = cultureData[i];}
+      }
+    }
+    mockHeightmap();
+    customizeHeightmap();
+    $("#paintBrushes").click();
+  }
 
   function drawPerspective() {
     console.time("drawPerspective");
     const width = 320, height = 180;
-    const wRatio = mapWidth / width, hRatio = mapHeight / height;    
+    const wRatio = mapWidth / width, hRatio = mapHeight / height;
     const lineCount = +$("#lineHandle0").attr("data-value");
-    const lineGranularity = +$("#lineHandle1").attr("data-value");    
+    const lineGranularity = +$("#lineHandle1").attr("data-value");
     const perspective = document.getElementById("perspective");
     const pContext = perspective.getContext("2d");
     const lines = [];
@@ -4710,7 +4772,7 @@ function fantasyMap() {
     }
     if (id === "Smooth") {
       var count = '<label>fraction:<input class="templateElCount" title="Set smooth fraction. 1 - full smooth, 2 - half-smooth, etc." type="number" min="1" max="10" value="2"></label>';
-    }    
+    }
     if (id === "Strait") {
       var count = '<label>width:<input class="templateElCount" title="Set strait width" value="1-7"></label>';
     }
@@ -4721,7 +4783,7 @@ function fantasyMap() {
     el.find("select.templateElDist").on("input", fireTemplateElDist);
     $("#templateBody").attr("data-changed", 1);
   });
-   
+
   // fireTemplateElDist selector handlers
   function fireTemplateElDist() {
     if (this.value === "interval") {
@@ -4729,10 +4791,10 @@ function fantasyMap() {
       if (interval) {
         var option = '<option value="' + interval + '">' + interval + '</option>';
         $(this).append(option).val(interval);
-      } 
+      }
     }
   }
-     
+
   // templateSelect on change listener
   $("#templateSelect").on("input", function() {
     var steps = $("#templateBody > div").length;
@@ -4740,18 +4802,18 @@ function fantasyMap() {
     var template = this.value;
     if (steps && changed === 1) {
       alertMessage.innerHTML = "Are you sure you want to change the base template? All the changes will be lost.";
-      $(function() {$("#alert").dialog({resizable: false, title: "Change Template",
+      $("#alert").dialog({resizable: false, title: "Change Template",
         buttons: {
-          "Change": function() {
+          Change: function() {
             changeTemplate(template);
-            $(this).dialog("close");            
+            $(this).dialog("close");
           },
           Cancel: function() {
             var prev = $("#templateSelect").attr("data-prev");
             $("#templateSelect").val(prev);
             $(this).dialog("close");
           }
-        }})
+        }
       });
     }
     if (steps === 0 || changed === 0) {changeTemplate(template);}
@@ -4802,12 +4864,12 @@ function fantasyMap() {
       addStep("Add", -0.2, "land");
       addStep("Hill", 14, 0.17);
       addStep("Range", 5);
-      addStep("Strait", "2-4");      
+      addStep("Strait", "2-4");
       addStep("Trough", 12);
       addStep("Pit", 8);
       addStep("Add", -0.05, "land");
       addStep("Multiply", 0.7, "land");
-      addStep("Smooth", 4);              
+      addStep("Smooth", 4);
     }
     if (template === "templateAtoll") {
       addStep("Hill", 2, 0.35);
@@ -4815,10 +4877,10 @@ function fantasyMap() {
       addStep("Add", 0.07, "all");
       addStep("Smooth", 1);
       addStep("Multiply", 0.1, "0.27-10");
-    }      
+    }
     $("#templateBody").attr("data-changed", 0);
   }
-  
+
   // interprete template function
   function addStep(feature, count, dist) {
     if (!feature) {return;}
@@ -4840,8 +4902,8 @@ function fantasyMap() {
       $("#templateBody div:last-child .templateElDist").val(dist);
     }
   }
-  
-  // Execute custom template  
+
+  // Execute custom template
   $("#templateRun").on("click", function() {
     if (customization !== 1) {return;}
     var steps = $("#templateBody > div").length;
@@ -4855,7 +4917,7 @@ function fantasyMap() {
       if (count) {
         if (count[0] !== "-" && count.includes("-")) {
           var lim = count.split("-");
-          count = Math.floor(Math.random() * (+lim[1] - +lim[0] + 1) + +lim[0]); 
+          count = Math.floor(Math.random() * (+lim[1] - +lim[0] + 1) + +lim[0]);
         } else {
           count = +count; // parse string
         }
@@ -4871,7 +4933,7 @@ function fantasyMap() {
     }
     if (steps) {mockHeightmap();}
   });
-  
+
   // Save custom template as text file
   $("#templateSave").on("click", function() {
     var steps = $("#templateBody > div").length;
@@ -4884,7 +4946,7 @@ function fantasyMap() {
       if (!count) {count = "0";}
       if (!dist) {dist = "0";}
       stepsData += type + " " + count + " " + dist + "\r\n";
-    }  
+    }
     var dataBlob = new Blob([stepsData], {type:"text/plain"});
     var url = window.URL.createObjectURL(dataBlob);
     var link = document.createElement("a");
@@ -4893,7 +4955,7 @@ function fantasyMap() {
     link.click();
     $("#templateBody").attr("data-changed", 0);
   });
-  
+
   // Load custom template as text file
   $("#templateLoad").on("click", function() {templateToLoad.click();});
   $("#templateToLoad").change(function() {
@@ -4915,7 +4977,7 @@ function fantasyMap() {
     };
     fileReader.readAsText(fileToLoad, "UTF-8");
   });
-  
+
   // Image to Heightmap Converter dialog
   function convertImage() {
     $(".pressed").removeClass('pressed');
@@ -4938,7 +5000,7 @@ function fantasyMap() {
       position: {my: "right top", at: "right-10 top+10", of: "svg"}})
     .on('dialogclose', function() {completeConvertion();});
   }
-  
+
   // Load image to convert
   $("#convertImageLoad").on("click", function() {imageToLoad.click();});
   $("#imageToLoad").change(function() {
@@ -4960,7 +5022,7 @@ function fantasyMap() {
     reader.onloadend = function() {img.src = reader.result;}
     reader.readAsDataURL(file);
   });
-  
+
   function heightsFromImage(count) {
     var imageData = ctx.getImageData(0, 0, mapWidth, mapHeight);
     var data = imageData.data;
@@ -5048,7 +5110,7 @@ function fantasyMap() {
     }
     if ($("#colorsAssigned .color-div").length > 1) {sortAssignedColors();}
   }
-   
+
   // sort colors based on assigned height
   function sortAssignedColors() {
     var data = [];
@@ -5072,7 +5134,7 @@ function fantasyMap() {
     $("#colorsUnassigned").fadeOut();
     var heights = [];
     polygons.map(function(i, d) {
-      var x = rn(i.data[0]), y = rn(i.data[1]);      
+      var x = rn(i.data[0]), y = rn(i.data[1]);
       if (y == mapHeight) {y--;}
       if (x == mapWidth) {x--;}
       var p = (x + y * mapWidth) * 4;
@@ -5087,7 +5149,7 @@ function fantasyMap() {
       var rgb = color(1 - normalized);
       var hex = toHEX(rgb);
       cells[d].height = normalized;
-      landmass.append("path").attr("d", "M" + i.join("L") + "Z").attr("data-i", d).attr("fill", hex).attr("stroke", hex);      
+      landmass.append("path").attr("d", "M" + i.join("L") + "Z").attr("data-i", d).attr("fill", hex).attr("stroke", hex);
     });
     heights.sort(function(a, b) {return a - b;});
     var unique = [...new Set(heights)];
@@ -5102,7 +5164,7 @@ function fantasyMap() {
   function normalize(val, min, max) {
     var normalized = (val - min) / (max - min);
     if (normalized < 0) {normalized = 0;}
-    if (normalized > 1) {normalized = 1;}     
+    if (normalized > 1) {normalized = 1;}
     return normalized;
   }
 
@@ -5115,7 +5177,7 @@ function fantasyMap() {
   // Clear the map
   function undraw() {
     svg.selectAll("path, circle, line, text, #ruler > g").remove();
-    cells = [], land = [], riversData = [], island = 0, manors = [], states = [], queue = [];
+    cells = [], land = [], riversData = [], manors = [], states = [], queue = [];
     history = [], historyStage = -1; redo.disabled = true; undo.disabled = true; // clear history
   }
 
@@ -5131,7 +5193,7 @@ function fantasyMap() {
     if ($("#labelEditor").is(":visible")) {$("#labelEditor").dialog('close');}
     if ($("#riverEditor").is(":visible")) {$("#riverEditor").dialog('close');}
   }
-  
+
   // Remove all customization related styles, reset values
   function exitCustomization() {
     customization = 0;
@@ -5140,7 +5202,7 @@ function fantasyMap() {
     $("#getMap").attr("disabled", true).addClass("buttonoff");
     $("#landmass").empty();
     $('#grid').empty().fadeOut();
-    $('#toggleGrid').addClass("buttonoff");      
+    $('#toggleGrid').addClass("buttonoff");
     viewbox.style("cursor", "default").on(".drag", null);
     if (!$("#toggleHeight").hasClass("buttonoff")) {toggleHeight();}
     if ($("#imageConverter").is(":visible")) {$("#imageConverter").dialog('close');}
@@ -5149,7 +5211,7 @@ function fantasyMap() {
     history = [];
     historyStage = -1;
   }
-  
+
   // open editCountries dialog
   function editCountries() {
     $("#countriesBody").empty();
@@ -5182,7 +5244,7 @@ function fantasyMap() {
           el.append('<button title="Click on map to select a capital or to create a new capital" class="selectCapital" id="selectCapital' + s + '">★ select</button>');
         } else {
           el.append('<span title="Country capital. Click to enlange" class="icon-star-empty enlange"></span>');
-          el.append('<input title="Capital name. Click and type to rename" class="stateCapital" value="' + capital + '" autocorrect="off" spellcheck="false"/>');          
+          el.append('<input title="Capital name. Click and type to rename" class="stateCapital" value="' + capital + '" autocorrect="off" spellcheck="false"/>');
         }
         el.append('<span title="Country expansionism (defines competitive size)" class="icon-resize-full hidden"></span>');
         el.append('<input title="Capital expansionism (defines competitive size)" class="statePower hidden" type="number" min="0" max="99" step="0.1" value="' + states[s].power + '"/>');
@@ -5326,7 +5388,7 @@ function fantasyMap() {
         return;
       }
       $("#alert").dialog({resizable: false, title: "Remove country", buttons: {
-        "Remove": function() {
+        Remove: function() {
           states.splice(s, 1);
           states.map(function(s, i) {s.i = i;});
           $("#manorLabel"+capital).detach().appendTo($("#towns")).attr("dy", -0.7); // change capital label to burg
@@ -5356,7 +5418,7 @@ function fantasyMap() {
     });
     $("#countriesNeutral").on("change", function() {regenerateCountries();});
   }
-  
+
   // burgs list + editor
   function editBurgs(context, s) {
     if (s === undefined) {s = +(this.parentNode.id).slice(5);}
@@ -5402,7 +5464,7 @@ function fantasyMap() {
     }
     // populate total line on footer
     burgsFooterBurgs.innerHTML = burgs.length;
-    burgsFooterCulture.innerHTML = $("#burgsBody div:first-child .burgCulture").text();   
+    burgsFooterCulture.innerHTML = $("#burgsBody div:first-child .burgCulture").text();
     var avPop = rn(d3.mean(populationArray), -1);
     burgsFooterPopulation.value = avPop;
     $(".enlange").click(function() {
@@ -5417,16 +5479,16 @@ function fantasyMap() {
       var type = $(this).attr("data-type");
       if (type.includes("capital")) {return;}
       var s = +$("#burgsEditor").attr("data-state");
-      var b = +$(this).attr("id").slice(5);    
+      var b = +$(this).attr("id").slice(5);
       var oldCap = states[s].capital;
       manors[oldCap].population *= 0.5;
       manors[b].population *= 2;
       states[s].capital = b;
       recalculateStateData(s);
       $("#manorLabel"+oldCap).detach().appendTo($("#towns")).attr("dy", -0.7);
-      $("#manorIcon"+oldCap).attr("r", .5).attr("stroke-width", .12);      
+      $("#manorIcon"+oldCap).attr("r", .5).attr("stroke-width", .12);
       $("#manorLabel"+b).detach().appendTo($("#capitals")).attr("dy", -1.3);
-      $("#manorIcon"+b).attr("r", 1).attr("stroke-width", .24);         
+      $("#manorIcon"+b).attr("r", 1).attr("stroke-width", .24);
       updateCountryEditors();
       $("#changeCapital").removeClass("pressed");
     });
@@ -5469,7 +5531,7 @@ function fantasyMap() {
       var state = +$("#burgsEditor").attr("data-state");
       var newPop = +this.value;
       var avPop = states[state].urbanPopulation / states[state].burgs * urbanization.value * populationRate.value * 1000;
-      if (!Number.isInteger(newPop) || newPop < 10) {this.value = rn(avPop, -1); return;}      
+      if (!Number.isInteger(newPop) || newPop < 10) {this.value = rn(avPop, -1); return;}
       var change = +this.value / avPop;
       $("#burgsBody > div").each(function(e, i) {
         var b = +(this.id).slice(5);
@@ -5477,7 +5539,7 @@ function fantasyMap() {
         manors[b].population = pop;
         $(this).attr("data-population", pop);
         var popUI = pop * urbanization.value * populationRate.value * 1000;
-        popUI = popUI > 1e4 ? si(popUI) : rn(popUI, -1);        
+        popUI = popUI > 1e4 ? si(popUI) : rn(popUI, -1);
         $(this).children().filter(".burgPopulation").val(popUI);
       });
       states[state].urbanPopulation = rn(states[state].urbanPopulation * change, 2);
@@ -5486,9 +5548,9 @@ function fantasyMap() {
     $("#burgsBody .icon-trash-empty").on("click", function() {
       alertMessage.innerHTML = `Are you sure you want to remove the burg?`;
       var b = +(this.parentNode.id).slice(5);
-      $(function() {$("#alert").dialog({resizable: false, title: "Remove burg",
+      $("#alert").dialog({resizable: false, title: "Remove burg",
         buttons: {
-          "Remove": function() {
+          Remove: function() {
             $(this).dialog("close");
             var state = +$("#burgsEditor").attr("data-state");
             $("#burgs"+b).remove();
@@ -5497,7 +5559,7 @@ function fantasyMap() {
             cells[cell].manor = undefined;
             states[state].burgs = states[state].burgs - 1;
             burgsFooterBurgs.innerHTML = states[state].burgs;
-            countriesFooterBurgs.innerHTML = +countriesFooterBurgs.innerHTML - 1; 
+            countriesFooterBurgs.innerHTML = +countriesFooterBurgs.innerHTML - 1;
             states[state].urbanPopulation = states[state].urbanPopulation - manors[b].population;
             var avPop = states[state].urbanPopulation / states[state].burgs * urbanization.value * populationRate.value * 1000;
             burgsFooterPopulation.value = rn(avPop, -1);
@@ -5505,14 +5567,14 @@ function fantasyMap() {
               $("#state"+state+" > .stateBurgs").text(states[state].burgs);
             }
             labels.select("#manorLabel"+b).remove();
-            icons.select("#manorIcon"+b).remove();            
+            icons.select("#manorIcon"+b).remove();
           },
           Cancel: function() {$(this).dialog("close");}
-        }})
+        }
       });
     });
   }
- 
+
   // onhover style functions
   function focusStates() {
     var s = +(this.parentNode.id).slice(5);
@@ -5523,8 +5585,8 @@ function fantasyMap() {
   function focusCapital() {
     var s = +(this.parentNode.id).slice(5);
     var capital = states[s].capital;
-    var l = labels.select("#manorLabel"+capital); 
-    l.classed("drag", true); 
+    var l = labels.select("#manorLabel"+capital);
+    l.classed("drag", true);
   }
 
   function focusBurgs() {
@@ -5534,8 +5596,8 @@ function fantasyMap() {
       labels.select("#manorLabel"+m.i).classed("drag", true);
       burgs.select("#manorIcon"+m.i).classed("drag", true);
     });
-  }  
-  
+  }
+
   function focusBurg() {
     var b = +(this.id).slice(5);
     var l = labels.select("#manorLabel"+b);
@@ -5548,12 +5610,12 @@ function fantasyMap() {
   $(".dialog").on("dialogdragstop", function(event, ui) {
     localStorage.setItem(this.id, [ui.offset.left, ui.offset.top]);
   });
-  
+
   // restore saved dialog position on dialog window open
   $(".dialog").on("dialogopen", function(event, ui) {
     var pos = localStorage.getItem(this.id);
     if (!pos) {return;}
-    pos = pos.split(",");    
+    pos = pos.split(",");
     if (pos[0] > $(window).width() - 100 || pos[1] > $(window).width()  - 40) {return;} // prevent showing out of screen
     var at = `left+${pos[0]} top+${pos[1]}`;
     $(this).dialog("option", "position", {my: "left top", at: at, of: "svg"});
@@ -5579,7 +5641,7 @@ function fantasyMap() {
       $("#state"+s).children().filter(".statePopulation").val(si(population));
     }
   }
-  
+
   // update dialogs if measurements are changed
   function updateCountryEditors() {
     if ($("#countriesEditor").is(":visible")) {editCountries();}
@@ -5592,18 +5654,56 @@ function fantasyMap() {
   // remove drawn regions and draw all regions again
   function redrawRegions() {
     regions.selectAll("*").remove();
-    stateBorders.selectAll("*").remove();
-    neutralBorders.selectAll("*").remove();
+    borders.selectAll("path").remove();
     countries.selectAll("text").remove();
-    drawRegions();  
+    drawRegions();
   }
-  
+
+  // restore keeped region data on edit heightmap completion
+  function restoreRegions() {
+    borders.selectAll("path").remove();
+    countries.selectAll("text").remove();
+    manors.map(function(m) {
+      const cell = diagram.find(m.x, m.y).index;
+      if (cells[cell].height < 0.2) {
+        // remove manor if it ocean
+        m.region = "removed";
+        m.cell = cell;
+        labels.select("#manorLabel"+m.i).remove();
+        icons.select("#manorIcon"+m.i).remove();
+      } else {
+        m.cell = cell;
+        cells[cell].manor = m.i;
+      }
+    });
+    cells.map(function(c) {
+      if (c.height < 0.2) {
+        // no longer a land cell
+        delete c.region;
+        delete c.culture;
+        return;
+      }
+      if (c.region === undefined) {
+        c.region = "neutral";
+        if (states[states.length - 1].capital !== "neutral") {
+          states.push({i: states.length, color: "neutral", capital: "neutral", name: "Neutrals"});
+        }
+      }
+      if (c.culture === undefined) {
+        const closest = cultureTree.find(c.data[0], c.data[1]);
+        c.culture = cultureTree.data().indexOf(closest);
+      }
+    });
+    states.map(function(s) {recalculateStateData(s.i);})
+    drawRegions();
+  }
+
   function regenerateCountries() {
     regions.selectAll("*").remove();
-    land.map(function(l) {l.region = undefined;});
     neutral = +countriesNeutral.value;
     manors.map(function(m) {
-      var state = "neutral", closest = neutral; 
+      if (m.region === "removed") {return;}
+      var state = "neutral", closest = neutral;
       var x = m.x, y = m.y;
       states.map(function(s) {
         if (s.capital === "neutral" || s.capital === "select") {return;}
@@ -5654,7 +5754,7 @@ function fantasyMap() {
       states.push({i: states.length, color: "neutral", capital: "neutral", name: "Neutrals"});
       recalculateStateData(states.length - 1);
       editCountries();
-    }    
+    }
   }
 
   // enter state edit mode
@@ -5685,7 +5785,7 @@ function fantasyMap() {
         if (an === "bottom") {return 1;}
         var bn = b.getAttribute("data-" + sortby);
         if (bn === "bottom") {return -1;}
-        if (type === "number") {an = +an; bn = +bn;} 
+        if (type === "number") {an = +an; bn = +bn;}
         if (an > bn) {return 1;}
         if (an < bn) {return -1;}
         return 0;
@@ -5707,7 +5807,7 @@ function fantasyMap() {
     }
     lines.detach().appendTo(list);
   });
-  
+
   // load text file with new burg names
   $("#burgsListToLoad").change(function() {
     var fileToLoad = this.files[0];
@@ -5732,7 +5832,7 @@ function fantasyMap() {
       $("#alert").dialog({title: "Burgs bulk renaming", position: {my: "center", at: "center", of: "svg"},
         buttons: {
           Cancel: function() {$(this).dialog("close");},
-          "Confirm": function() {
+          Confirm: function() {
             for (var i=0; i < change.length; i++) {
               const id = change[i].i;
               manors[id].name = change[i].name;
@@ -5745,15 +5845,15 @@ function fantasyMap() {
       });
     }
     fileReader.readAsText(fileToLoad, "UTF-8");
-  });  
-  
+  });
+
   // just apply map size that was already set
   function applyMapSize() {
     mapWidth = +mapWidthInput.value;
     mapHeight = +mapHeightInput.value;
     voronoi = d3.voronoi().extent([[0, 0], [mapWidth, mapHeight]]);
     svg.attr("width", mapWidth).attr("height", mapHeight);
-    zoom.translateExtent([[0, 0], [mapWidth, mapHeight]]);    
+    zoom.translateExtent([[0, 0], [mapWidth, mapHeight]]);
   }
 
   // change map size on manual size change or window resize
@@ -5764,7 +5864,7 @@ function fantasyMap() {
     voronoi = d3.voronoi().extent([[0, 0], [mapWidth, mapHeight]]);
     zoom.translateExtent([[0, 0], [mapWidth, mapHeight]]);
     oceanPattern.select("rect").attr("width", mapWidth).attr("height", mapHeight);
-    oceanLayers.select("rect").attr("width", mapWidth).attr("height", mapHeight);       
+    oceanLayers.select("rect").attr("width", mapWidth).attr("height", mapHeight);
     scX = d3.scaleLinear().domain([0, mapWidth]).range([0, mapWidth]);
     scY = d3.scaleLinear().domain([0, mapHeight]).range([0, mapHeight]);
     lineGen = d3.line().x(function(d) {return scX(d.scX);}).y(function(d) {return scY(d.scY);});
@@ -5795,7 +5895,7 @@ function fantasyMap() {
       localStorage.removeItem("scaleBar");
     }
   }
-  
+
   // fit Statusbar to map size
   function fitStatusBar() {
     var el = $("#statusbar");
@@ -5806,7 +5906,7 @@ function fantasyMap() {
     }
     if (toggleStatusbar.checked) {el.show();}
   }
-  
+
   // restore initial style
   function applyDefaultStyle() {
     viewbox.on("touchmove mousemove", moved).on("click", clicked);
@@ -5870,11 +5970,11 @@ function fantasyMap() {
           var id = this.id;
           var r = +id.replace("regionColor", "");
           states[r].color = this.value;
-          regions.selectAll(".region"+r).attr("fill", this.value).attr("stroke", this.value); 
+          regions.selectAll(".region"+r).attr("fill", this.value).attr("stroke", this.value);
         });
       }
-      if (sel === "terrs") {$("#styleScheme").css("display", "block");}  
-      if (sel === "heightmap") {$("#styleScheme").css("display", "block");} 
+      if (sel === "terrs") {$("#styleScheme").css("display", "block");}
+      if (sel === "heightmap") {$("#styleScheme").css("display", "block");}
       if (sel === "cults") {
         $("#styleMultiple").css("display", "inline-block");
         $("#styleMultiple input").remove();
@@ -5899,7 +5999,7 @@ function fantasyMap() {
       if (sel === "labels") {
         $("#styleFill, #styleFontSize").css("display", "inline-block");
         styleFillInput.value = styleFillOutput.value = el.select("g").attr("fill");
-      }      
+      }
       if (sel === "burgs") {
         $("#styleSize").css("display", "block");
         $("#styleStroke").css("display", "inline-block");
@@ -5984,12 +6084,17 @@ function fantasyMap() {
       zoomUpdate();
       invokeActiveZooming();
       return;
-    }    
+    }
     if (id === "mapWidthInput" || id === "mapHeightInput") {
       changeMapSize();
       localStorage.setItem("screenSize", [+mapWidthInput.value, +mapHeightInput.value]);
     }
-    if (id === "sizeInput") {graphSize = sizeOutput.value = this.value;}
+    if (id === "sizeInput") {
+      graphSize = sizeOutput.value = +this.value;
+      if (graphSize === 3) {sizeOutput.style.color = "red";}
+      if (graphSize === 2) {sizeOutput.style.color = "yellow";}
+      if (graphSize === 1) {sizeOutput.style.color = "green";}
+    }
     if (id === "randomizeInput") {randomizeOutput.innerHTML = +this.value ? "✓" : "✕";}
     if (id === "manorsInput") {
       if (randomizeInput.value === "1") {
@@ -6002,7 +6107,7 @@ function fantasyMap() {
       if (randomizeInput.value === "1") {
         randomizeInput.value = 0;
         randomizeOutput.innerHTML = "✕";
-      }      
+      }
       capitalsCount = regionsOutput.value = this.value;
       var size = rn(6 - capitalsCount / 20);
       if (size < 3) {size = 3;}
@@ -6081,7 +6186,7 @@ function fantasyMap() {
       rescaler.value = 5;
   });
 
-  $("#layoutPreset").on("change", function() { 
+  $("#layoutPreset").on("change", function() {
     var preset = this.value;
     $("#mapLayers li").not("#toggleOcean, #toggleLandmass").addClass("buttonoff");
     $("#toggleOcean, #toggleLandmass").removeClass("buttonoff");

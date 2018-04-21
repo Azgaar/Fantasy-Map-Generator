@@ -63,7 +63,7 @@ button, select, a {
 }
 
 #coastline {
-    fill: none;    
+    fill: none;
     stroke-linejoin: round;
 }
 
@@ -89,7 +89,7 @@ button, select, a {
 
 #terrain {
     mask: url(#shape);
-    mask-mode: alpha;  
+    mask-mode: alpha;
 }
 
 #hills {
@@ -116,7 +116,7 @@ button, select, a {
 
 #roads, #trails {
     mask: url(#shape);
-    mask-mode: alpha;   
+    mask-mode: alpha;
 }
 
 #swamps {
@@ -178,21 +178,21 @@ button, select, a {
 }
 
 #editFontInput {
-    width: 125px;   
+    width: 125px;
 }
 
 #editColor {
     height: 20px;
-    width: 50px;  
+    width: 50px;
     padding: 0;
 }
 
 #riverScale {
-    width: 50px; 
+    width: 50px;
 }
 
 #riverAngle, #riverWidthInput, #riverIncrement {
-    width: 79px; 
+    width: 79px;
 }
 
 .editButtonS {
@@ -320,10 +320,11 @@ button.options {
     top: -2px;
     position: relative;
     appearance: none;
+    -webkit-appearance: none;
 }
 
-#options input[type="range"]::slider-thumb {
-    appearance: none;
+#options input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
     border-radius: 15%;
     width: 10px;
     height: 10px;
@@ -391,14 +392,14 @@ button.active {
 }
 
 #layoutTab {
-    margin-left: 19px;   
+    margin-left: 19px;
 }
 
 .tabcontent {
     display: none;
     padding: 0 6px 2px 12px;
     opacity: 0.8;
-    max-width: 290px;    
+    max-width: 290px;
 }
 
 .tabcontent button {
@@ -418,7 +419,7 @@ button.active {
 #mapLayers {
   display: inline-block;
   padding: 0;
-  margin: 0;  
+  margin: 0;
 }
 
 .tabcontent li {
@@ -428,7 +429,7 @@ button.active {
     padding: 5px 8px;
     margin: 4px;
     transition: 0.1s;
-    float: left; 
+    float: left;
 }
 
 .tabcontent li:hover {
@@ -478,7 +479,7 @@ p {
 .overflow-div {
     height: 300px;
     overflow-y: auto;
-    user-select: text;    
+    user-select: text;
 }
 
 .overflow-table {
@@ -487,12 +488,16 @@ p {
     text-align: center;
 }
 
+#sizeOutput {
+  color: green;
+}
+
 #icons {
     stroke: #0d0d0d;
     fill: grey;
 }
 
-#fileToLoad {
+#fileInputs {
     display: none;
 }
 
@@ -510,7 +515,7 @@ body button.noicon {
     margin: 1px;
     padding: 1px 6px;
     float: left;
-    font-family: Copperplate, monospace;      
+    font-family: Copperplate, monospace;
 }
 
 #brushesPanel > div, #templateEditor > div {
@@ -519,7 +524,7 @@ body button.noicon {
 
 #templateEditor #templateTools {
     display: inline-block;
-    margin-bottom: -3px;    
+    margin-bottom: -3px;
 }
 
 #templateSelect {
@@ -566,14 +571,14 @@ body button.noicon {
     width: 45px;
     font-family: monospace;
     height: 4px;
-    font-family: monospace;    
+    font-family: monospace;
 }
 
 #templateBody select {
     border: 0;
     background-color: rgba(255, 255, 255, 0);
     width: 58px;
-    cursor: pointer;    
+    cursor: pointer;
 }
 
 .riverPoints {
@@ -620,7 +625,7 @@ body button.noicon {
 
 #restoreStyle {
 	cursor: pointer;
-	font-size: xx-small;	
+	font-size: xx-small;
 }
 
 .pureInput {
@@ -704,11 +709,11 @@ body .ui-dialog-titlebar {
     top: -4px;
     position: relative;
     appearance: none;
-    appearance: none;
+    -webkit-appearance: none;
 }
 
-.ui-dialog input[type="range"]::slider-thumb {
-    appearance: none;
+.ui-dialog input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
     border-radius: 15%;
     width: 10px;
     height: 10px;
@@ -776,11 +781,6 @@ div.slider .ui-slider-handle {
     color: white;
 }
 
-#layoutCheckboxes {
-    font-style: italic;
-    font-weight: bold;
-}
-
 #brushPower, #brushRadius {
     width: 88px;
 }
@@ -844,14 +844,14 @@ div.states sup {
 div.states > input {
     width: 60px;
     background: none;
-    border: 0;    
+    border: 0;
 }
 
 div.states > input.stateColor {
     width: 13px;
     height: 17px;
     padding: 0px;
-    margin-right: -1px;    
+    margin-right: -1px;
     border: 0;
     background: none;
     cursor: pointer;
@@ -906,7 +906,7 @@ div.states > .small {
 }
 
 #burgsBody {
-    min-width: 260px;  
+    min-width: 260px;
 }
 
 div.states .burgName, div.states .burgCulture {
@@ -922,7 +922,7 @@ div.states .burgPopulation {
     width: 50px;
     color: #666666;
     font-style: italic;
-    line-height: 14px;  
+    line-height: 14px;
 }
 
 div.states .enlange {
@@ -942,7 +942,7 @@ span.ui-dialog-title > input.stateColor {
     height: 18px;
     border: 0;
     background: none;
-    cursor: pointer;    
+    cursor: pointer;
 }
 
 div.states.selected {
@@ -956,10 +956,10 @@ div.states button.selectCapital {
 }
 
 #scaleBody {
-    margin-left: 14px; 
+    margin-left: 14px;
 }
 
-#scaleBody > div > * {   
+#scaleBody > div > * {
     display: inline-block;
     font-size: 11px;
 }
@@ -999,7 +999,7 @@ div.states button.selectCapital {
 
 #ruler circle {
     stroke: #4e5a69;
-    fill: yellow;   
+    fill: yellow;
 }
 
 #ruler .white {
@@ -1007,7 +1007,7 @@ div.states button.selectCapital {
 }
 
 #ruler .gray {
-    stroke: #3d3d3d;   
+    stroke: #3d3d3d;
 }
 
 #ruler text {
@@ -1026,7 +1026,7 @@ div.states button.selectCapital {
 
 #ruler .planimeter {
     fill: lightblue;
-    fill-rule: evenodd;    
+    fill-rule: evenodd;
     fill-opacity: 0.5;
     stroke: #737373;
 }
@@ -1059,7 +1059,7 @@ div.states button.selectCapital {
     font-weight: bold;
     width: 88px;
     position: absolute;
-    left: 45%; 
+    left: 45%;
 }
 
 .spin {
@@ -1120,7 +1120,7 @@ input[type="checkbox"] {
 .checkbox + .checkbox-label:before {
   content: '';
   background: #ece6eb;
-  border-radius: 50%;  
+  border-radius: 3px;
   display: inline-block;
   vertical-align: text-top;
   width: 8px;
@@ -1130,7 +1130,7 @@ input[type="checkbox"] {
 }
 
 .checkbox:checked + .checkbox-label:before {
-  background: #826473;
-  border-radius: 50%;
+  background: #8e6d7e;
+  transition: .1s;
   box-shadow: inset 0px 0px 0px 2px #ece6ea;
 }
