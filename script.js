@@ -423,7 +423,7 @@ function fantasyMap() {
     d3.event.on("end", function() {
       if (opisometer || planimeter) {
         $("#addOpisometer, #addPlanimeter").removeClass("pressed");
-        viewbox.style("cursor", "default").on(".drag", null);
+        restoreDefaultDrag();
         if (opisometer) {
           var dist = rn(curve.node().getTotalLength());
           var c = curve.node().getPointAtLength(dist / 2);
@@ -448,6 +448,11 @@ function fantasyMap() {
         }
       }
     });
+  }
+
+  // restore default drag (map panning) and cursor
+  function restoreDefaultDrag() {
+    viewbox.style("cursor", "default").on(".drag", null);
   }
 
   // remove parent element (usually if child is clicked)
@@ -4119,7 +4124,7 @@ function fantasyMap() {
       $("div[data-sortby='expansion'], .statePower, .icon-resize-full").addClass("hidden");
       $("div[data-sortby='cells'], .stateCells, .icon-check-empty").removeClass("hidden");
       customization = 0;
-      viewbox.style("cursor", "default").on(".drag", null);
+      restoreDefaultDrag();
     }
     if (id === "countriesApply") {$("#countriesManuallyCancel").click();}
     if (id === "countriesRandomize") {
@@ -4313,7 +4318,7 @@ function fantasyMap() {
     }
     if (id === "addOpisometer" || id === "addPlanimeter") {
       if ($(this).hasClass("pressed")) {
-        viewbox.style("cursor", "default").on(".drag", null);
+        restoreDefaultDrag();
         $(this).removeClass("pressed");
       } else {
         $(this).addClass("pressed");
@@ -4379,10 +4384,12 @@ function fantasyMap() {
     if (customization === 1) {
       if (id === "paintBrushes") {
         if ($("#brushesPanel").is(":visible")) {return;}
+        viewbox.style("cursor", "crosshair").call(drag);
         $("#brushesPanel").dialog({
           title: "Paint Brushes",
           minHeight: 40, width: "auto", maxWidth: 200, resizable: false,
-          position: {my: "right top", at: "right-10 top+10", of: "svg"}});
+          position: {my: "right top", at: "right-10 top+10", of: "svg"}})
+        .on('dialogclose', restoreDefaultDrag);
       }
       if (id === "rescaleExecute") {
         var subject = rescaleLower.value + "-" + rescaleHigher.value;
@@ -4470,7 +4477,7 @@ function fantasyMap() {
     if ($(this).hasClass('radio') && (parent === "addFeature" || parent === "brushesButtons")) {
       if ($(this).hasClass('pressed')) {
         $(this).removeClass('pressed');
-        viewbox.style("cursor", "default").on(".drag", null);;
+        restoreDefaultDrag();
         $("#brushRadiusLabel, #brushRadius").attr("disabled", true).addClass("disabled");
         $("#burgAdd").removeClass('pressed');
       } else {
@@ -4980,8 +4987,11 @@ function fantasyMap() {
 
   // Image to Heightmap Converter dialog
   function convertImage() {
+    canvas.width = mapWidth;
+    canvas.height = mapHeight;
+    // turn off paint brushes drag and cursor
     $(".pressed").removeClass('pressed');
-    viewbox.style("cursor", "default");
+    restoreDefaultDrag();
     var div = d3.select("#colorScheme");
     if (div.selectAll("*").size() === 0) {
       for (var i = 0; i <= 100; i++) {
@@ -5005,7 +5015,7 @@ function fantasyMap() {
   $("#convertImageLoad").on("click", function() {imageToLoad.click();});
   $("#imageToLoad").change(function() {
     console.time("loadImage");
-    // reset style
+    // set style
     viewbox.attr("transform", null);
     grid.attr("stroke-width", .3);
     // load image
@@ -5045,7 +5055,9 @@ function fantasyMap() {
       var rgb = "rgb(" + nearest[0] + ", " + nearest[1] + ", " + nearest[2] + ")";
       var hex = toHEX(rgb);
       if (palette.indexOf(hex) === -1) {palette.push(hex);}
-      landmass.append("path").attr("d", "M" + i.join("L") + "Z").attr("data-i", d).attr("fill", hex).attr("stroke", hex);
+      landmass.append("path")
+        .attr("d", "M" + i.join("L") + "Z").attr("data-i", d)
+        .attr("fill", hex).attr("stroke", hex);
     });
     landmass.selectAll("path").on("click", landmassClicked);
     palette.sort(function(a, b) {return d3.lab(a).b - d3.lab(b).b;}).map(function(i) {
@@ -5170,7 +5182,12 @@ function fantasyMap() {
 
   function completeConvertion() {
     mockHeightmap();
+    $(".color-div").remove();
+    $("#colorsAssigned, #colorsUnassigned").fadeOut();
+    grid.attr("stroke-width", .1);
     canvas.style.opacity = convertOverlay.value = convertOverlayValue.innerHTML = 0;
+    // turn on paint brushes drag and cursor
+    viewbox.style("cursor", "crosshair").call(drag);
     $("#imageConverter").dialog('close');
   }
 
@@ -5203,11 +5220,9 @@ function fantasyMap() {
     $("#landmass").empty();
     $('#grid').empty().fadeOut();
     $('#toggleGrid').addClass("buttonoff");
-    viewbox.style("cursor", "default").on(".drag", null);
+    restoreDefaultDrag();
     if (!$("#toggleHeight").hasClass("buttonoff")) {toggleHeight();}
-    if ($("#imageConverter").is(":visible")) {$("#imageConverter").dialog('close');}
-    if ($("#brushesPanel").is(":visible")) {$("#brushesPanel").dialog('close');}
-    if ($("#templateEditor").is(":visible")) {$("#templateEditor").dialog('close');}
+    closeAllDialogs();
     history = [];
     historyStage = -1;
   }
@@ -5280,7 +5295,7 @@ function fantasyMap() {
         minHeight: "auto", width: "auto",
         position: {my: "right top", at: "right-10 top+10", of: "svg"}
       }).on("dialogclose", function() {
-      if (customization === 2 || customization === 3) {$("#countriesManuallyCancel").click()};
+        if (customization === 2 || customization === 3) {$("#countriesManuallyCancel").click()};
       });
     }
     // restore customization Editor version

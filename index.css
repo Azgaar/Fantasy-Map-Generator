@@ -1130,7 +1130,7 @@ input[type="checkbox"] {
 }
 
 .checkbox:checked + .checkbox-label:before {
-  background: #8e6d7e;
+  background: #b19aa6;
   transition: .1s;
   box-shadow: inset 0px 0px 0px 2px #ece6ea;
 }
