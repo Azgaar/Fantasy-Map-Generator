@@ -132,12 +132,69 @@ function fantasyMap() {
   $("#mapLayers").sortable({items: "li:not(.solid)", cancel: ".solid", update: moveLayer});
   $("#templateBody").sortable({items: "div:not(div[data-type='Mountain'])"});
   $("#mapLayers, #templateBody").disableSelection();
-   
+
+  addDragToUpload();
+
   var drag = d3.drag()
     .container(function() {return this;})
     .subject(function() {var p=[d3.event.x, d3.event.y]; return [p, p];})
     .on("start", dragstarted);
   
+  function addDragToUpload()
+  {
+    document.addEventListener('dragover', function(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        $('#map-dragged').show();
+    });
+
+    document.addEventListener('dragleave', function(e) {
+        $('#map-dragged').hide();
+    });
+
+    document.addEventListener('drop', function(e) {
+      e.stopPropagation();
+      e.preventDefault();
+
+      $('#map-dragged').hide();
+
+      // no files or more than one
+      if (e.dataTransfer.items == null || e.dataTransfer.items.length != 1) {
+        return;
+      }
+
+      var file = e.dataTransfer.items[0].getAsFile();
+
+      // not a .map file
+      if (file.name.indexOf('.map') == -1) {
+        alertMessage.innerHTML = 'Invalid map file - please upload the <b>.map</b> file you have previously downloaded.';
+        $("#alert").dialog({
+          resizable: false,
+          title: "Invalid map file",
+          width: 400,
+          buttons: {
+            Close: function() { $(this).dialog("close"); }
+          },
+          position: {my: "center", at: "center", of: "svg"}
+        });
+
+        return;
+      }
+
+      // all good - show uploading dialog and load the map
+      $('#uploading-map').dialog({
+        resizable: false,
+        title: "Uploading Map...",
+        width: 400,
+        position: {my: "center", at: "center", of: "svg"}
+      });
+
+      uploadFile(file, function onUploadFinish() {
+        $('#uploading-map').dialog("close");
+      });
+    });
+  }
+
   function zoomed() {
     var scaleDiff = Math.abs(scale - d3.event.transform.k);
     scale = d3.event.transform.k;
@@ -3643,9 +3700,14 @@ function fantasyMap() {
 
   // Map Loader based on FileSystem API
   $("#fileToLoad").change(function() {
-    console.time("loadMap");
     var fileToLoad = this.files[0];
     this.value = "";
+    uploadFile(fileToLoad);
+  });
+
+  function uploadFile(file, callback) {
+    console.time("loadMap");
+    
     var fileReader = new FileReader();
     fileReader.onload = function(fileLoadedEvent) {
       var dataLoaded = fileLoadedEvent.target.result;
@@ -3765,9 +3827,14 @@ function fantasyMap() {
       });
       invokeActiveZooming();
       console.timeEnd("loadMap");
+
+      if (callback) {
+        callback();
+      }
     };
-    fileReader.readAsText(fileToLoad, "UTF-8");
-  });
+
+    fileReader.readAsText(file, "UTF-8");
+  }
 
   // Poisson-disc sampling for a points
   // Source: bl.ocks.org/mbostock/99049112373e12709381; Based on https://www.jasondavies.com/poisson-disc
