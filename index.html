@@ -1,39 +1,55 @@
 <!DOCTYPE html>
+<html lang="en">
 <head>
-  <title>Azgaar's Fantasy Map Generator Demo</title>
   <meta charset="utf-8">
-  <meta name="author" content="Azgaar (Max Ganiev)">
-  <meta name="description" content="Azgaar's Fantasy Map Generator (demo version). Based on D3 Voronoi diagram rendered to svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-116735150-1"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'UA-116735150-1');
+  </script>
+  <title>Azgaar's Fantasy Map Generator Demo</title>
+  <meta name="application-name" content="Azgaar's Fantasy Map Generator">
+  <meta name="author" content="Azgaar (Max Ganiev)">
+  <meta name="description" content="Azgaar's Fantasy Map Generator (demo). Based on D3 Voronoi diagram rendered to svg">
+  <meta name="google" content="notranslate">
   <meta property="og:url" content="https://azgaar.github.io/Fantasy-Map-Generator/">
   <meta property="og:title" content="Azgaar's Fantasy Map Generator">
   <meta property="og:description" content="Demo version. Based on D3 Voronoi diagram rendered to svg">
   <meta property="og:image" content="images/preview.png">
   <link rel="icon" type="image/png" href="images/favicon-32x32.png" sizes="32x32"/>
-  <link rel="icon" type="image/png" href="images/favicon-16x16.png" sizes="16x16"/>  
+  <link rel="icon" type="image/png" href="images/favicon-16x16.png" sizes="16x16"/>
   <link rel="canonical" href="https://azgaar.github.io/Fantasy-Map-Generator/">
   <script src="libs/jquery-3.1.1.min.js"></script>
   <script src="libs/d3.v4.min.js"></script>
   <script src="libs/d3-scale-chromatic.v1.min.js"></script>
-  <script src="libs/priority-queue.js"></script>
+  <script src="libs/priority-queue.min.js"></script>
   <script src="names.js"></script>
   <script src="libs/jquery-ui.min.js"></script>
-  <script src="libs/polylabel.js"></script>
-  <script src="libs/quantize.js" defer></script>
+  <script src="libs/polylabel.min.js"></script>
+  <script src="libs/quantize.min.js" defer></script>
   <script src="libs/d3-hexbin.v0.2.min.js" defer></script>
-  <link rel="stylesheet" type="text/css" href="index.css?version=0.554b"/>
-  <link rel="stylesheet" type="text/css" href="icons.css?version=0.554b"/>
+  <script src="libs/jquery.ui.touch-punch.min.js" defer></script>
+  <link rel="stylesheet" type="text/css" href="index.css?version=0.56b"/>
+  <link rel="stylesheet" type="text/css" href="icons.css?version=0.56b"/>
   <link rel="stylesheet" type="text/css" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"/>
 </head>
-<body class="fullscreen">
-  <div id="loading">
-    <h1 class="icon-cog spin"></h1>
-    <p id="loading-text">Loading...</p>
-  </div>
-  <svg xmlns="http://www.w3.org/2000/svg" class="fullscreen">
+<body>
+  <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
     <defs>
       <filter id="blurFilter" x="-1" y="-1" width="100" height="100">
         <feGaussianBlur in="SourceGraphic" stdDeviation="0.2"/>
+      </filter>
+      <filter id="blur1" x="-1" y="-1" width="100" height="100">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="1"/>
+      </filter>
+      <filter id="blur5" x="-1" y="-1" width="100" height="100">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="5"/>
+      </filter>
+      <filter id="blur10" x="-1" y="-1" width="100" height="100">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="10"/>
       </filter>
       <filter id="dropShadow">
         <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
@@ -42,9 +58,21 @@
             <feMergeNode/>
             <feMergeNode in="SourceGraphic"/>
         </feMerge>
-      </filter> 
+      </filter>
+      <filter id="filter-grayscale">
+        <feColorMatrix type="matrix" values="0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0 0 0 1 0"/>
+      </filter>
+      <filter id="filter-sepia">
+        <feColorMatrix type="matrix" values="0.393 0.769 0.189 0 0 0.349 0.686 0.168 0 0 0.272 0.534 0.131 0 0 0 0 0 1 0"/>
+      </filter>
+      <filter id="filter-dingy">
+        <feColorMatrix type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0.3 0.3 0 0 0 0 0 1 0"/>
+      </filter>
+      <filter id="filter-tint">
+        <feColorMatrix type="matrix" values="0 0.9 0.2 0 0 0 0.8 0.1 0 0.1 0 0.4 1.4 0 -0.1 0 0 0 1 1"/>
+      </filter>
       <g id="deftemp">
-        <mask id="shape" x="0" y="0" width="100%" height="100%" fill="black"></mask> 
+        <mask id="shape" x="0" y="0" width="100%" height="100%" fill="black"></mask>
       </g>
       <g id="defs-icons">
         <symbol id="icon-anchor" viewBox="0 0 28 32">
@@ -52,9 +80,9 @@
           <path d="M15 4c0-0.547-0.453-1-1-1s-1 0.453-1 1 0.453 1 1 1 1-0.453 1-1zM28 18.5v5.5c0 0.203-0.125 0.391-0.313 0.469-0.063 0.016-0.125 0.031-0.187 0.031-0.125 0-0.25-0.047-0.359-0.141l-1.453-1.453c-2.453 2.953-6.859 4.844-11.688 4.844s-9.234-1.891-11.688-4.844l-1.453 1.453c-0.094 0.094-0.234 0.141-0.359 0.141-0.063 0-0.125-0.016-0.187-0.031-0.187-0.078-0.313-0.266-0.313-0.469v-5.5c0-0.281 0.219-0.5 0.5-0.5h5.5c0.203 0 0.391 0.125 0.469 0.313s0.031 0.391-0.109 0.547l-1.563 1.563c1.406 1.891 4.109 3.266 7.203 3.687v-10.109h-3c-0.547 0-1-0.453-1-1v-2c0-0.547 0.453-1 1-1h3v-2.547c-1.188-0.688-2-1.969-2-3.453 0-2.203 1.797-4 4-4s4 1.797 4 4c0 1.484-0.812 2.766-2 3.453v2.547h3c0.547 0 1 0.453 1 1v2c0 0.547-0.453 1-1 1h-3v10.109c3.094-0.422 5.797-1.797 7.203-3.687l-1.563-1.563c-0.141-0.156-0.187-0.359-0.109-0.547s0.266-0.313 0.469-0.313h5.5c0.281 0 0.5 0.219 0.5 0.5z"></path>
         </symbol>
       </g>
-      <pattern id="oceanPattern" width="100" height="100" patternUnits="userSpaceOnUse">
+      <pattern id="oceanic" width="100" height="100" patternUnits="userSpaceOnUse">
         <filter id='image'>
-          <feImage x="0" y="0" width="100" height="100" xlink:href="data:image/png;base64,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">
+          <feImage x="0" y="0" width="100" height="100" xlink:href="data:image/png;base64,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"/>
         </filter>
         <rect width='100' height='100' filter="url(#image)" opacity='0.2'/>
       </pattern>
@@ -102,9 +130,19 @@
           <use xlink:href="#s2" transform="rotate(90)"/>
          </g>
         <use xlink:href="#s3" transform="scale(-1)"/>
-      </g>      
+      </g>
     </defs>
+    <g id="initial">
+      <rect x="0" y="0" width="100%" height="100%" fill="url(#oceanic)"></rect>
+      <use xlink:href="#rose" id="init-rose"></use>
+    </g>
   </svg>
+  <div id="loading">
+    <div id="title_name">Azgaar's</div>
+    <div id="title">Fantasy Map Generator</div>
+    <div id="version">v. 0.56b</div>
+    <p id="loading-text">LOADING<span>.</span><span>.</span><span>.</span></p>
+  </div>
   <canvas id="canvas" style="opacity: 0"></canvas>
   <div id="optionsContainer">
     <div id="collapsible">
@@ -128,22 +166,28 @@
           <!-- <option value="layoutEconomical">Economical map</option> -->
           <option value="layoutHeightmap">Heightmap</option>
           <option value="layoutLandmass">Pure landmass</option>
-        </select>        
+        </select>
         <p>Displayed layers. Drag to move, click to toggle</p>
-        <div id="mapLayers">
+        <ul id="mapLayers">
           <li title="Toggle Ocean, not movable" id="toggleOcean" onclick="$('#oceanPattern').fadeToggle()" class="solid">Ocean</li>
-          <li title="Toggle Landmass, not movable" id="toggleLandmass" onclick="$('#landmass').fadeToggle()" class="solid">Landmass</span></li>
+          <li title="Toggle Landmass, not movable" id="toggleLandmass" onclick="$('#landmass').fadeToggle()" class="solid">Landmass</li>
           <li title="Toggle Heightmap" id="toggleHeight" class="buttonoff">Heightmap</li>
           <li title="Toggle Grid" id="toggleGrid" class="buttonoff" onclick="$('#grid').fadeToggle()">Grid</li>
           <li title="Toggle Overlay" id="toggleOverlay" class="buttonoff">Overlay</li>
           <li title="Toggle Cultures map" id="toggleCultures" class="buttonoff">Cultures</li>
           <li title="Toggle Routes" id="toggleRoutes" onclick="$('#routes').fadeToggle()">Routes</li>
           <li title="Toggle Rivers" id="toggleRivers" onclick="$('#rivers').fadeToggle()">Rivers</li>
-          <li title="Toggle Countries" id="toggleCountries">Countries</li>          
+          <li title="Toggle Countries" id="toggleCountries">Countries</li>
           <li title="Toggle Borders" id="toggleBorders" onclick="$('#borders').fadeToggle()">Borders</li>
           <li title="Toggle Relief icons" id="toggleRelief" onclick="$('#terrain').fadeToggle()">Relief</li>
           <li title="Toggle Labels" id="toggleLabels" onclick="$('#labels').fadeToggle()">Labels</li>
           <li title="Toggle Burg icons" id="toggleIcons" onclick="$('#burgs').fadeToggle()">Burgs</li>
+        </ul>
+        <div id="layoutCheckboxes">
+          <input id="hideLabels" class="checkbox" type="checkbox" checked>
+          <label for="hideLabels" class="checkbox-label">Hide small labels</label>
+          <input id="toggleStatusbar" class="checkbox" type="checkbox" checked onclick="$('#statusbar').fadeToggle()">
+          <label for="toggleStatusbar" class="checkbox-label">Show statusbar</label>
         </div>
       </div>
       <div id="styleContent" class="tabcontent">
@@ -168,10 +212,12 @@
           <option value="labels">Labels</option>
           <option value="burgs">Burgs</option>
           <option value="scaleBar">Scale bar</option>
-          <option value="ruler">Rulers</option>      
+          <option value="ruler">Rulers</option>
         </select>
+        <a id="restoreStyle" title="Restore initial style" class="icon-ccw"></a>
         <div id="styleInputs">
           <div id="styleOverlay">
+            <br><span>Ensure Overlay layer is active (see Layout tab)</span><br>
             <br>Overlay type: <select id="styleOverlayType" class="pureInput">
               <option value="hex" selected>Hex grid</option>
               <option value="square">Square grid</option>
@@ -210,16 +256,19 @@
           <div id="styleSize">
             <br>Radius: <button title="Multiply Radius by 1.1" id="styleFillPlus">+</button><button title="Multiply Radius by 0.9" id="styleFillMinus">-</button>
             <span> Stroke: </span><button title="Multiply Stroke-width by 1.1" id="styleStrokePlus">+</button><button title="Multiply Stroke-width by 0.9" id="styleStrokeMinus">-</button>
-          </div>      
+          </div>
           <div id="styleOpacity">
             <br>Opacity: <input id="styleOpacityInput" type="range" min="0" max="1" step="0.01" value="1">
             <output id="styleOpacityOutput">1</output>
-          </div>         
+          </div>
           <div id="styleFilter">
             <br>Filter: <select id="styleFilterInput" class="pureInput">
-              <option value="">None</option>
-              <option value="url(#blurFilter)" selected>Blur</option>
-              <option value="url(#dropShadow)" selected>Shadow</option>
+              <option value="" selected>None</option>
+              <option value="url(#blurFilter)">Blur 0.2</option>
+              <option value="url(#blur1)">Blur 1</option>
+              <option value="url(#blur5)">Blur 5</option>
+              <option value="url(#blur10)">Blur 10</option>
+              <option value="url(#dropShadow)">Shadow</option>
             </select>
           </div>
           <div id="styleScheme">
@@ -235,15 +284,15 @@
           <p>Toggle filters:</p>
           <button id="grayscale" class="radio">Grayscale</button>
           <button id="sepia" class="radio">Sepia</button>
-          <button id="tint" class="radio">Tint</button>
           <button id="dingy" class="radio">Dingy</button>
+          <button id="tint" class="radio">Tint</button>
         </div>
       </div>
       <div id="optionsContent" class="tabcontent">
         <p>Generate new map to apply the options!</p>
         <table>
           <tr>
-            <td title="Canvas size">Map size</td>
+            <td title="Map size. Will be remembered on change. Highly affects performance!">Map size</td>
             <td style="width: 130px;">
               <span title="width">w:</span>
               <input class="pairedNumber" id="mapWidthInput" type="number" min="240" value="960">
@@ -251,7 +300,7 @@
               <input class="pairedNumber" id="mapHeightInput" type="number" min="135" value="540">
             </td>
             <td>
-              <a title="Toggle full-screen / window view" id="mapScreenSize" class="icon-resize-small"></a>
+              <a title="Fit map size to screen" id="updateFullscreen" class="icon-resize-full-alt"></a>
             </td>
           </tr>
           <tr>
@@ -270,9 +319,9 @@
             <td></td>
           </tr>
           <tr>
-            <td title="Set the graph size. Map on size 3 and 4 requires up to 1 minute to be generated!">Graph size</td>
+            <td title="Set the graph size. Performance on sizes 2 and 3 can be low!">Graph size</td>
             <td>
-              <input id="sizeInput" type="range" min="1" max="4" value="1">
+              <input id="sizeInput" type="range" min="1" max="3" value="1">
             </td>
             <td>
               <output id="sizeOutput">1</output>
@@ -361,7 +410,7 @@
                 <option value="-9,-8,-7,-6,-5,-4,-3,-2,-1">-9,-8,-7,-6,-5,-4,-3,-2,-1</option>
                 <option value="-6,-4,-2">-6,-4,-2</option>
                 <option value="-8,-6,-4,-2">-8,-6,-4,-2</option>
-              </select>            
+              </select>
             </td>
             <td></td>
           </tr>
@@ -390,7 +439,7 @@
         <div id="customizeHeightmap" style="display: none;">
           <p title="Click 'Start' to initiate customization, 'Complete' to finalize the Heightmap">Heightmap customization:</p>
           <div>
-            <button title="Roll back to Heightmap customization" id="fromHeightmap">Roll back</button>
+            <button title="Edit Heightmap" id="fromHeightmap">Edit</button>
             <button title="Start from scratch" id="fromScratch">Clear all</button>
             <button class="buttonoff" title="Finalize the Heightmap. Not allowed if landmass area is insufficient" id="getMap" disabled="disabled">Complete</button>
           </div>
@@ -407,15 +456,15 @@
         </div>
         <div id="addFeature">
           <p>Click to add:</p>
-          <button id="addLabel" title="Click on map to place label. Hold Shift to place several labels" class="radio">Label</button>
-          <button id="addBurg" title="Click on map to place burg icon with lbel. Hold Shift to place several" class="radio">Burg</button>
-          <button id="addRiver" title="Click on map to place new river on extend an existing one" class="radio">River</button>
+          <button id="addLabel" title="Click on map to place label. Hold Shift to place several labels">Label</button>
+          <button id="addBurg" title="Click on map to place burg icon with a label. Hold Shift to place several">Burg</button>
+          <button id="addRiver" title="Click on map to place new river or extend an existing one">River</button>
         </div>
       </div>
       <div id="aboutContent" class="tabcontent">
-        <p><a href="https://github.com/Azgaar/Fantasy-Map-Generator" target="_blank">Fantasy Map Generator</a> is an online tool which produces a procedurally generated fantasy maps. You may either use an auto-generated maps or create you own map manually or with a help of templates or image converter. Check out the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki" target="_blank">wiki</a> for guidance.<p/>
-        <p>This is a Demo version, project is still under development. For older versions see the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog" target="_blank">changelog</a>. Some details are covered in my <a href="https://azgaar.wordpress.com/" target="_blank">blog</a>. To track the current progress see the <a href="https://trello.com/b/7x832DG4/fantasy-map-generator" target="_blank">devboard</a>.<p/>
-        <p>Please report bugs and suggest new features <a href="https://github.com/Azgaar/Fantasy-Map-Generator/issues" target="_blank">here</a>. You may also <a href="mailto:maxganiev@yandex.ru">send me</a> an email.<p/>
+        <p><a href="https://github.com/Azgaar/Fantasy-Map-Generator" target="_blank">Fantasy Map Generator</a> is an online tool which produces a procedurally generated fantasy maps. You may either use an auto-generated maps or create you own map manually or with a help of templates or image converter. Check out the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki" target="_blank">wiki</a> for guidance.</p>
+        <p>This is a Demo version, project is still under development. For older versions see the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog" target="_blank">changelog</a>. Some details are covered in my <a href="https://azgaar.wordpress.com/" target="_blank">blog</a>. To track the current progress see the <a href="https://trello.com/b/7x832DG4/fantasy-map-generator" target="_blank">devboard</a>.</p>
+        <p>Please report bugs and suggest new features <a href="https://github.com/Azgaar/Fantasy-Map-Generator/issues" target="_blank">here</a>. You may also <a href="mailto:maxganiev@yandex.ru">send me</a> an email.</p>
         <ul class="share-buttons">
           <li><a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator%2F&quote=" title="Share on Facebook" target="_blank"><img alt="Share on Facebook" src="images/Facebook.png" /></a></li>
           <li><a href="https://twitter.com/intent/tweet?source=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator%2F&text=:%20https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator%2F" target="_blank" title="Tweet"><img alt="Tweet" src="images/Twitter.png" /></a></li>
@@ -429,33 +478,26 @@
         <button id="saveButton" title="Select file format to save map" class="options">Save as</button>
         <div id="saveDropdown">
           <div id="saveMap" title="Save as fully functional map in .map format">.map</div>
-          <div id="saveSVG" title="Download the map as .svg image for later use in vector graphics editors">.svg</div>
-          <div id="savePNG" title="Download the visible part of the map as .png image">.png</div>
-          <div id="activeZooming" title="Click to show hidden elements (like labels)" class="icon-eye-off"></div>
+          <div id="saveSVG" title="Download the map as .svg image (open derectly in browser or in vector editor like Inkscape)">.svg</div>
+          <div id="savePNG" title="Download the visible part of the map as 4K .png image. Please ensure popups are not blocked!">.png</div>
         </div>
         <button id="loadMap" title="Load fully functional map in a .map format" class="options">Load</button>
-        <input type="file" accept=".map" id="fileToLoad">        
-        <button id="printMap" title="Print visible part of the map" class="options">Print</button>
         <button id="zoomReset" title="Reset map zoom to default" class="options">Reset Zoom</button>
-          <!-- Zoom should be smooth and centrified, to be fixed later
-          <button id="zoomMinus" title="Zoom out" class="options">-</button>
-          <button id="zoomPlus" title="Zoom in" class="options">+</button> 
-          -->
       </div>
     </div>
   </div>
-  
-  <div id="labelEditor" style="display: none">
-    <button id="editGroupButton" title="Edit label Group" class="editButton icon-list-bullet"></button>
-    <select id="editGroupSelect" title="Select Group for this label" class="editTrigger"/></select>
+
+  <div id="labelEditor" class="dialog" style="display: none">
+    <button id="editGroupButton" title="Edit label Group" class="editButton icon-tags"></button>
+    <select id="editGroupSelect" title="Select Group for this label" class="editTrigger"></select>
     <input id="editGroupInput" placeholder="new name" title="Declare new Group for this label" class="editTrigger"/>
-    <span id="editGroupNew" title="Declare new Group for this label" class="editButtonS icon-plus-squared-alt"></span>
-    <span id="editGroupRemove" title="Remove the Group with all labels" class="editButtonS icon-trash-empty"></span>
+    <span id="editGroupNew" title="Declare new Group for this label" class="editButtonS icon-plus"></span>
+    <span id="editGroupRemove" title="Remove the Group with all labels" class="editButtonS icon-trash"></span>
     <button id="editTextButton" title="Edit label Text" class="editButton  icon-pencil"></button>
     <input id="editText" class="editTrigger"/>
     <span id="editTextRandom" title="Generate random name" class="editButtonS icon-shuffle"></span>
     <button id="editFontButton" title="Select Font for the entire Group" class="editButton icon-font"></button>
-    <span id="editExternalFont" title="Fetch fonts by linking @font-face declaration" class="editButtonS icon-link"></span>
+    <span id="editExternalFont" title="Fetch fonts by linking @font-face declaration, just populate with font name if using Google font (fonts.google.com)" class="editButtonS icon-link"></span>
     <select id="editFontSelect" class="editTrigger" title="Select one of the default Fonts"></select>
     <input id="editFontInput" placeholder="link to @font-face" title="Fetch fonts by linking @font-face declaration" class="editTrigger"/>
     <i id="editSizeIcon" class="icon-text-height"></i>
@@ -465,38 +507,50 @@
     <i id="editOpacityIcon" class="icon-adjust"></i>
     <input id="editOpacity" title="Change Opacity for the entire Group" class="editTrigger" value="1" type="number" min="0" max="1" step="0.02">
     <i id="editShadowIcon" class="icon-clone"></i>
-    <input id="editShadow" title="Change Shadow for the entire Group" class="editTrigger" value="1" type="number" min="0" max="1" step="0.02" disabled="true">      
+    <input id="editShadow" title="Change Shadow for the entire Group" class="editTrigger" value="1" type="number" min="0" max="1" step="0.02" disabled>
     <button id="editAngleButton" title="Rotate the label" class="editButton icon-ccw"></button>
     <input id="editAngle" class="editTrigger" value="0" type="range" min="-180" max="180" step="0.2" oninput="editAngleValue.innerHTML = Math.abs(this.value)+'°'">
     <span id="editAngleValue" class="editValue">0°</span>
     <button id="editCopy" title="Copy the label" class="editButton icon-clone"></button>
     <button id="editRemoveSingle" title="Remove the label" class="editButton icon-trash"></button>
   </div>
-  
-  <div id="riverEditor" style="display: none">
-    <button id="riverWidth" title="Change river width and widening" class="editButton icon-sort-alt-up"></button>
-    <i id="riverWidthIcon" title="Change river width" class="dialog-icon icon-w"></i>
-    <input id="riverWidthInput" title="Change river width" class="editTrigger" value="1" type="range" min="0.2" max="5" step="0.1">
-    <i id="riverIncrementIcon" title="Change river bed increment (widening speed)" class="dialog-icon icon-i"></i>
-    <input id="riverIncrement" title="Change river bed increment (widening speed)" class="editTrigger" value="1" type="range" min="0.02" max="2" step="0.02">
-    <button id="riverRegenerate" title="Regenerate river" class="editButton icon-shuffle"></button>
-    <button id="riverResize" title="Visually transform (rotate, scale) river" class="editButton icon-arrows-cw"></button>
-    <i id="riverAngleIcon" title="Rotate river (set angle)" class="dialog-icon icon-a"></i>
-    <input id="riverAngle" title="Rotate river (set angle)" class="editTrigger" value="0" type="range" min="-180" max="180" step="0.2">
-    <span id="riverAngleValue" class="editValue">0°</span>
-    <i id="riverScaleIcon" title="Change river scale" class="dialog-icon icon-s"></i>
-    <input id="riverScale" title="Change river scale" class="editTrigger" value="1" type="number" min="0.1" max="3" step="0.01">
-    <span id="riverReset" title="Reset transformation to default" class="editButtonS icon-ccw"></span>
-    <button id="riverAddPoint" title="Click to add a river point" class="editButton icon-plus-squared-alt"></button>
-    <button id="riverRemovePoint" title="Click on red circle to remove river point" class="editButton icon-minus-squared-alt"></button>   
-    <button id="riverCopy" title="Copy river" class="editButton icon-clone"></button>
-    <button id="riverNew" title="Create new river clicking on map" class="editButton icon-pin"></button>
-    <button id="riverRemove" title="Remove river" class="editButton icon-trash"></button>
-  </div> 
-  
-  <div id="templateEditor" class="dialog" style="display: none">
+
+  <div id="riverEditor" class="dialog" style="display: none">
+    <button id="riverWidth" title="Change river width and widening" class="icon-sort-alt-up" onclick='$("#riverEditor > *").not(this).not("#riverResizeButtons").toggle();'></button>
+    <div id="riverWidthButtons" style="display: none">
+      <i id="riverWidthIcon" title="Change river width" class="icon-w"></i>
+      <input id="riverWidthInput" title="Change river width" value="1" type="range" min="0.2" max="5" step="0.1">
+      <i id="riverIncrementIcon" title="Change river bed increment (widening speed)" class="icon-i"></i>
+      <input id="riverIncrement" title="Change river bed increment (widening speed)" value="1" type="range" min="0.02" max="2" step="0.02">
+    </div>
+    <button id="riverRegenerate" title="Regenerate river" class="icon-shuffle"></button>
+    <button id="riverResize" title="Visually transform (rotate, rescale) river" class="icon-arrows-cw" onclick='$("#riverEditor > *").not(this).not("#riverWidthButtons").toggle();'></button>
+    <div id="riverResizeButtons" style="display: none">
+      <i id="riverAngleIcon" title="Rotate river (set angle)" class="icon-a"></i>
+      <input id="riverAngle" title="Rotate river (set angle)" value="0" type="range" min="-180" max="180" step="0.2">
+      <span id="riverAngleValue">0°</span>
+      <i id="riverScaleIcon" title="Change river scale" class="icon-s"></i>
+      <input id="riverScale" title="Change river scale" value="1" type="number" min="0.1" max="3" step="0.01">
+      <span id="riverReset" title="Reset transformation to default" class="icon-cancel pointer"></span>
+    </div>
+    <button id="riverCopy" title="Copy river" class="icon-clone"></button>
+    <button id="riverNew" title="Create new river clicking on map" class="icon-map-pin"></button>
+    <button id="riverRemove" title="Remove river" class="icon-trash"></button>
+  </div>
+
+  <div id="routeEditor" class="dialog" style="display: none">
+    <button id="routeGroups" title="Change path group" class="icon-map-signs" onclick="$('#routeEditor').children().not(this).toggle()"></button>
+    <div id="routeGroupsSelection" style="display: none">
+      <select id="routeGroup" title="Select a group for this route"></select>
+    </div>
+    <button id="routeSplit" title="Click on a control point to split the route" class="icon-unlink" onclick="$(this).toggleClass('pressed')"></button>
+    <button id="routeNew" title="Create new route clicking on map" class="icon-map-pin"></button>
+    <button id="routeRemove" title="Remove route" class="icon-trash"></button>
+  </div>
+
+  <div id="templateEditor" class="dialog stable" style="display: none">
     <div id="templateTop">
-      Base template: <select id="templateSelect" data-prev="templateCustom" title="Select base template"/>
+      Base template: <select id="templateSelect" data-prev="templateCustom" title="Select base template">
         <option value="templateCustom" selected>Custom</option>
         <option value="templateVolcano">Volcano</option>
         <option value="templateHighIsland">High Island</option>
@@ -524,21 +578,20 @@
     </div>
     <div id="templateBottom">
       <button id="templateRun" title="Apply current template" class="icon-play-circled2"></button>
-      <button id="templateClear" title="Clear the map" class="icon-eraser"></button>
+      <button id="templateUndo" title="Up-do the latest action" class="icon-ccw" disabled></button>
+      <button id="templateRedo" title="Re-do the action" class="icon-cw" disabled></button>
       <button id="templateComplete" title="Finalize the Heightmap. Not allowed if insufficient land area available" class="icon-check"></button>
       <button id="templateLoad" title="Open previously saved template" class="icon-upload"></button>
-      <input type="file" accept=".txt" id="templateToLoad" style="display: none;">
       <button id="templateSave" title="Save template" class="icon-download"></button>
     </div>
   </div>
-  
-  <div id="imageConverter" class="dialog" style="display: none">
+
+  <div id="imageConverter" class="dialog stable" style="display: none">
     <div id="convertImageButtons">
-      <input type="file" accept="image/*" id="imageToLoad" style="display: none;">
       <button id="convertImageLoad" title="Load image to convert" class="icon-upload"></button>
       <button id="convertAutoLum" title="Auto-assign colors based on liminosity" class="icon-adjust"></button>
       <button id="convertAutoHue" title="Auto-assign colors based on hue" class="icon-brush"></button>
-      <button id="convertColorsMinus" title="Reduce the number of colors. Minimal number is 3" class="icon-minus-squared"></button>      
+      <button id="convertColorsMinus" title="Reduce the number of colors. Minimal number is 3" class="icon-minus-squared"></button>
       <button id="convertColorsPlus" title="Increase the number of colors. Minimal number is 256" class="icon-plus-squared"></button>
       <input id="convertColors" value="12" style="display: none;"/>
       <button id="convertImageGrid" title="Toggle grid" class="icon-eye"></button>
@@ -558,23 +611,23 @@
       <label>Unassigned colors: </label><br>
     </div>
   </div>
-  
-  <div id="brushesPanel" class="dialog" style="display: none">
+
+  <div id="brushesPanel" class="dialog stable" style="display: none">
     <div id="brushesButtons">
-      <button id="brushHill" title="Click on the map to place a Hill" class="feature noicon radio pressed">H</button>
-      <button id="brushPit" title="Click on the map to place a Pit" class="feature noicon radio">P</button>
-      <button id="brushRange" title="Select two points to place a Range" class="feature noicon radio">R</button>
-      <button id="brushTrough" title="Select two points to place a Trought" class="feature noicon radio">T</button>       
-      <button id="brushElevate" title="Click and drag the map to increase cells elevation" class="noicon radio">↥</button>
-      <button id="brushDepress" title="Click and drag the map to decrease cells elevation" class="noicon radio">↧</button>
-      <button id="brushAlign" title="Click and drag the map to align cells elevation" class="noicon radio">=</button>
-      <button id="brushSmooth" title="Click and drag the map to smooth cells elevation" class="noicon radio">~</button>
-    </div>
+      <button id="brushElevate" title="Click and drag the map to increase cells elevation" class="noicon">↥</button>
+      <button id="brushDepress" title="Click and drag the map to decrease cells elevation" class="noicon">↧</button>
+      <button id="brushAlign" title="Click and drag the map to align cells elevation" class="noicon">=</button>
+      <button id="brushSmooth" title="Click and drag the map to smooth cells elevation" class="noicon">~</button>
+      <button id="brushHill" title="Click on the map to place a Hill" class="feature noicon">H</button>
+      <button id="brushPit" title="Click on the map to place a Pit" class="feature noicon">P</button>
+      <button id="brushRange" title="Select two points to place a Range" class="feature noicon">R</button>
+      <button id="brushTrough" title="Select two points to place a Trought" class="feature noicon">T</button>
+  </div>
     <div style="display: table;">
+      <label id="brushRadiusLabel" title="Set the brush effective radius. Works only with 4 brushes above" class="disabled italic">R:</label>
+      <input id="brushRadius" onchange="this.title = this.value" type="range" min="1" max="10" value="3" class="disabled" disabled>
       <label title="Set the brush power" class="italic">H:</label>
       <input id="brushPower" onchange="this.title = this.value" type="range" min="0.01" max="0.3" step="0.01" value="0.05">
-      <label id="brushRadiusLabel" title="Set the brush effective radius. Works only with 4 brushes above" class="disabled italic" disabled>R:</label>
-      <input id="brushRadius" onchange="this.title = this.value" type="range" min="1" max="10" value="3" class="disabled" disabled>
     </div>
     <div id="modifyButtons">
       <button id="undo" title="Up-do the latest action" class="icon-ccw" disabled></button>
@@ -601,8 +654,8 @@
       <button id="brushClear" title="Clear all height" class="icon-eraser"></button>
     </div>
   </div>
- 
-  <div id="perspectivePanel" class="dialog" style="display: none">
+
+  <div id="perspectivePanel" class="dialog stable" style="display: none">
     <div id="lineSlider" class="slider">
       <div id="lineHandle0" class="ui-slider-handle" data-value=240></div>
       <div id="lineHandle1" class="ui-slider-handle" data-value=90></div>
@@ -619,7 +672,7 @@
     <canvas id="perspective" width="480" height="200"></canvas>
   </div>
 
-  <div id="countriesEditor" class="dialog" style="display: none" data-type="absolute">
+  <div id="countriesEditor" class="dialog stable" style="display: none" data-type="absolute">
     <div id="countriesHeader">
       <div style="margin-left: 14px" title="Click to sort alphabetically by country name" class="sortable alphabetically" data-sortby="country">Country&nbsp;</div>
       <div style="margin-left: 30px" title="Click to sort alphabetically by capital name" class="sortable alphabetically" data-sortby="capital">Capital&nbsp;</div>
@@ -637,31 +690,32 @@
       <div style="margin-left: 20px">Population:&nbsp;<span id="countriesFooterPopulation">0</span></div>
     </div>
     <div id="countriesBottom">
-      <button id="editScale" title="Change demographical and geographical measurements" class="icon-map-signs"></button>
+      <button id="editScaleCountries" title="Change demographical and geographical measurements" class="icon-map-signs"></button>
       <button id="countriesPercentage" title="Toggle percentage / absolut values views" class="icon-percent"></button>
-      <button id="countriesRegenerate" title='Regenerate countries based on amended "Expansion" values' class="icon-cw"></button>
+      <button id="countriesRegenerate" title='Regenerate countries based on amended "Expansion" values' class="icon-cog-alt"></button>
       <button id="countriesManually" title="Manually re-assign countries (select a country and drag the map)" class="icon-brush"></button>
       <div id="countriesManuallyButtons" style="display: none">
         <button id="countriesManuallyComplete" title="Apply assignment" class="icon-check"></button>
-        <button id="countriesAdd" title="Add country" class="icon-plus"></button>
+        <button id="countriesAddM" title="Proclaim a new country" class="icon-flag"></button>
         <button id="countriesManuallyCancel" title="Cancel assignment" class="icon-cancel"></button>
         <label title="Set the brush power" class="italic">Brush size:</label>
-        <input id="countriesManuallyBrush" onchange="this.title = this.value" type="range" min="1" max="7" value="2">
+        <input id="countriesManuallyBrush" onchange="this.title = this.value" type="range" min="1" max="7" value="3">
       </div>
       <div id="countriesRegenerateButtons" style="display: none">
-        <button id="countriesManuallyCancel" title="Apply assignment" class="icon-check"></button>
+        <button id="countriesApply" title="Apply assignment" class="icon-check"></button>
         <button id="countriesRandomize" title='Randomize countries "Expansion" value' class="icon-shuffle"></button>
-        <button id="countriesAdd" title="Add country" class="icon-plus"></button>
+        <button id="countriesAddR" title="Proclaim a new country" class="icon-flag"></button>
         <label title="Distance to a consider a land as neutral" class="italic">Neutral distance:</label>
-        <input id="countriesNeutral" onchange="this.title = this.value" type="range" min="1" max="500" value="200">        
+        <input id="countriesNeutral" onchange="this.title = this.value" type="range" min="1" max="500" value="200">
       </div>
-      <button id="countriesAdd" title="Add country" class="icon-plus"></button>
+      <button id="countriesAddG" title="Proclaim a new country" class="icon-flag"></button>
       <button id="countriesExport" title="Save country-related data as a text file (.csv)" class="icon-download"></button>
+      <button id="burgNamesImport" title="Load burg names from a text file. Each name should be on a new line!" class="icon-upload"></button>
       <button id="removeCountries" title="Remove all countries" class="icon-trash"></button>
     </div>
   </div>
 
-  <div id="burgsEditor" class="dialog" style="display: none">
+  <div id="burgsEditor" class="dialog stable" style="display: none">
     <div id="burgsHeader">
       <div style="margin-left: 19px" title="Click to sort alphabetically by burg name" class="sortable alphabetically" data-sortby="burg">Burg&nbsp;</div>
       <div style="margin-left: 29px" title="Click to sort alphabetically by culture name" class="sortable alphabetically" data-sortby="culture">Culture&nbsp;</div>
@@ -679,15 +733,15 @@
       </div>
     </div>
     <div id="burgsBottom">
-      <button id="editScale" title="Change demographical and geographical measurements" class="icon-map-signs"></button>
+      <button id="editScaleBurgs" title="Change demographical and geographical measurements" class="icon-map-signs"></button>
       <button id="changeCapital" title="Click on a burg line to make it a new capital" class="icon-star"></button>
-      <button id="regenerateBurgNames" title="Regenerate burg names" class="icon-shuffle"></button>
-      <button id="burgAdd" title="Add new burg" class="icon-plus"></button>
+      <button id="regenerateBurgNames" title="Regenerate burg names" class="icon-cog-alt"></button>
+      <button id="burgAdd" title="Add new burg" class="icon-fort-awesome"></button>
       <button id="removeBurgs" title="Remove all burgs" class="icon-trash"></button>
     </div>
   </div>
 
-  <div id="scaleEditor" class="dialog" style="display: none">
+  <div id="scaleEditor" class="dialog stable" style="display: none">
     <div id="scaleBody">
       <div class="scaleHeader">
         <span class="icon-map-signs"></span>
@@ -696,26 +750,30 @@
       <div>
         <div>Distance unit: </div>
         <select title="Select Distance unit" id="distanceUnit">
-          <option value="km" selected>Kilometer</option>
-          <option value="mi">Mile</option>
+          <option value="mi" selected>Mile</option>
+          <option value="km">Kilometer</option>
           <option value="lg">League</option>
-          <option value="vr">Versta</option>      
+          <option value="vr">Versta</option>
           <option value="custom_name">Custom name</option>
         </select>
       </div>
       <div>
         <div title="Select how many distance unit are in one pixel">1 map pixel =</div>
-        <input id="distanceScale" title="Select how many distance unit are in one pixel" type="range" min="0.1" max="10" value="3" step="0.1">
-        <output id="scaleOutput">3 km</output>
-      </div>
-      <div>
-        <div title="Change scale bar size">Scale bar size: </div>
-        <input id="barSize" title="Set scale bar size" type="range" min="0.5" max="3" value="1.5" step="0.1">
-        <output id="barSizeOutput">1</output>
+        <input id="distanceScale" title="Select how many distance unit are in one pixel" type="range" min="0.1" max="10" value="1" step="0.1">
+        <output id="scaleOutput">1 mi</output>
       </div>
       <div>
         <div title="Type area unit name, leave 'square' just to add ² to the distance unit selected above">Area unit: </div>
         <input id="areaUnit" title="Type area unit name, leave 'square' just to add ² to the distance unit selected above" type="text" value="square">
+      </div>
+      <div>
+        <div title="Change scale bar size">Scale bar size: </div>
+        <input id="barSize" title="Set scale bar size" type="range" min="0.5" max="4" value="2" step="0.1">
+        <output id="barSizeOutput">1</output>
+      </div>
+      <div>
+        <div title="Change scale bar label, leave blank to hide label">Scale bar label: </div>
+        <input id="barLabel" title="Set scale bar label, leave blank to hide label" type="text" value="">
       </div>
       <div class="scaleHeader">
         <span class="icon-male"></span>
@@ -733,15 +791,19 @@
       </div>
     </div>
     <div id="scaleBottom">
-      <button id="toggleScaleBar" title="Click to toggle scale bar" class="icon-align-center"></button>      
+      <button id="toggleScaleBar" title="Click to toggle scale bar" class="icon-align-center"></button>
       <button title="Click to toggle ruler" class="icon-eye-off" onclick='$("#ruler").fadeToggle()'></button>
-      <button id="addOpisometer" title="Drag the map to measure curve length with opisometer" class="icon-brush"></button>      
+      <button id="addOpisometer" title="Drag the map to measure curve length with opisometer" class="icon-brush"></button>
       <button id="addRuler" title="Click to place additional ruler on map" class="icon-resize-horizontal"></button>
       <button id="addPlanimeter" title="Drag the map to determine a polygon area with planimeter" class="icon-edit"></button>
       <button id="removeAllRulers" title="Remove all rulers from the map. Click on ruler label to remove ruler separately" class="icon-trash"></button>
     </div>
   </div>
-  
+
+  <div id="map-dragged" style="display: none">
+    <p>Drop to upload</p>
+  </div>
+
   <div id="alert" title="Warning!" style="display: none">
     <p id="alertMessage">Warning!</p>
   </div>
@@ -753,5 +815,12 @@
     Type: <span id="feature">no</span>
   </div>
 
-  <script type="text/javascript" src="script.js?version=0.554b"></script>
+  <div id="fileInputs">
+    <input type="file" accept=".map" id="mapToLoad">
+    <input type="file" accept=".txt,.csv" id="burgsListToLoad">
+    <input type="file" accept="image/*" id="imageToLoad">
+    <input type="file" accept=".txt" id="templateToLoad">
+  </div>
+
+  <script src="script.js?version=0.56b"></script>
 </body>
