@@ -4523,6 +4523,7 @@ function fantasyMap() {
       // highlight capital cells as it's not allowed to change capital's state that way
       states.map(function(s) {
         if (s.color === "neutral") {return;}
+        if (s.capital === "select" || !(s.capital in manors)) {return;}
         const capital = s.capital;
         const index = manors[capital].cell;
         temp.append("path")
