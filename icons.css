@@ -4,13 +4,13 @@
   font-weight: normal;
   font-style: normal;
 }
- 
+
  [class^="icon-"]:before, [class*=" icon-"]:before, [class^="icon-"]:after, [class*=" icon-"]:after {
   font-family: "icons";
   font-style: normal;
   font-weight: normal;
   speak: none;
- 
+
   display: inline-block;
   text-decoration: inherit;
   width: 1em;
@@ -18,7 +18,7 @@
   font-size: 1em;
   margin: -1px;
   padding: 0;
-   
+
   /* For safety - reset parent styles, that can break glyph codes*/
   font-variant: normal;
   text-transform: none;
@@ -27,7 +27,7 @@
   -moz-osx-font-smoothing: grayscale;
   /* text-shadow: 1px 1px 1px rgba(127, 127, 127, 0.3); */
 }
- 
+
 /* Font Awesome icons */
 .icon-pencil:before { content: '\e800'; } /* '' */
 .icon-font:before { content: '\e801'; } /* '' */
@@ -201,9 +201,11 @@
 
 /* Custom icons */
 .icon-w:before { font-style: italic; content: 'w:'; }
+.icon-f:before { font-style: italic; content: 'f:'; }
 .icon-n:before { font-style: italic; content: 'n:'; }
 .icon-i:before { font-style: italic; content: 'i:'; }
 .icon-s:before { font-style: italic; content: 's:'; }
+.icon-r:before { font-style: italic; content: 'r:'; }
 .icon-a:before { font-style: italic; content: 'a:'; }
 .icon-smooth:before {font-weight: bold; content: '∼'; }
 .icon-disrupt:before {font-weight: bold; content: '෴'; }

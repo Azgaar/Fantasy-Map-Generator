@@ -3,7 +3,7 @@
 fantasyMap();
 function fantasyMap() {
   // Version control
-  var version = "0.56b";
+  var version = "0.57b";
   document.title += " v. " + version;
 
   // Declare variables
@@ -31,31 +31,45 @@ function fantasyMap() {
     lakes = viewbox.append("g").attr("id", "lakes"),
     searoutes = routes.append("g").attr("id", "searoutes").attr("data-type", "sea"),
     labels = viewbox.append("g").attr("id", "labels"),
+    burgLabels = labels.append("g").attr("id", "burgLabels"),
     icons = viewbox.append("g").attr("id", "icons"),
-    burgs = icons.append("g").attr("id", "burgs"),
+    burgIcons = icons.append("g").attr("id", "burgIcons")
     ruler = viewbox.append("g").attr("id", "ruler"),
-    debug = viewbox.append("g").attr("id", "debug"),
-    capitals = labels.append("g").attr("id", "capitals"),
-    towns = labels.append("g").attr("id", "towns"),
-    countries = labels.append("g").attr("id", "countries");
+    debug = viewbox.append("g").attr("id", "debug");
+
+  labels.append("g").attr("id", "countries");
+  burgIcons.append("g").attr("id", "capitals");
+  burgLabels.append("g").attr("id", "capitals");
+  burgIcons.append("g").attr("id", "towns");
+  burgLabels.append("g").attr("id", "towns");
+  icons.append("g").attr("id", "capital-anchors");
+  icons.append("g").attr("id", "town-anchors");
+  terrain.append("g").attr("id", "hills");
+  terrain.append("g").attr("id", "mounts");
+  terrain.append("g").attr("id", "swamps");
+  terrain.append("g").attr("id", "forests");
 
   // main data variables
   var voronoi, diagram, polygons, points = [], sample;
 
+  // Set graph and canvas size to window size
+  mapWidthInput.value = window.innerWidth;
+  mapHeightInput.value = window.innerHeight;
+  let graphWidth = +mapWidthInput.value; // voronoi graph extention, should be stable for each map
+  let graphHeight = +mapHeightInput.value;
+  let svgWidth = graphWidth, svgHeight = graphHeight;  // svg canvas resolution, can vary for each map
+
   // Common variables
-  var graphWidth, graphHeight, // voronoi graph extention, should be stable for each map
-    svgWidth, svgHeight, // svg canvas resolution, can vary for each map
-    allowResize = true,
-    modules = {}, customization, history = [], historyStage = 0, elSelected,
+  var modules = {}, customization = 0, history = [], historyStage = 0, elSelected, autoResize = true,
     cells = [], land = [], riversData = [],  manors = [], states = [],
-    queue = [], chain = {}, fonts = [],
+    queue = [], chain = {}, fonts = ["Almendra+SC"],
     island = 0, cultureTree, manorTree;
 
-  // canvas
+  // canvas element for raster images
   var canvas = document.getElementById("canvas"),
     ctx = canvas.getContext("2d");
 
-  // Color schemes;
+  // Color schemes
   var color = d3.scaleSequential(d3.interpolateSpectral),
       colors8 = d3.scaleOrdinal(d3.schemeSet2),
       colors20 = d3.scaleOrdinal(d3.schemeCategory20);
@@ -70,31 +84,19 @@ function fantasyMap() {
     manorsCount = manorsOutput.innerHTML = +manorsInput.value,
     capitalsCount = regionsOutput.innerHTML = +regionsInput.value,
     neutral = countriesNeutral.value = +neutralInput.value,
-    swampiness = +swampinessInput.value,
-    sharpness = +sharpnessInput.value,
     precipitation = +precInput.value;
 
-  // Get screen size
-  mapWidthInput.value = window.innerWidth;
-  mapHeightInput.value = window.innerHeight;
-  svgWidth = graphWidth = +mapWidthInput.value;
-  svgHeight = graphHeight = +mapHeightInput.value;
-  svg.attr("width", svgWidth).attr("height", svgHeight);
-
   // D3 Line generator variables
-  var lineGen = d3.line().x(function(d) {return d.scX;}).y(function(d) {return d.scY;});
+  var lineGen = d3.line().x(function(d) {return d.scX;}).y(function(d) {return d.scY;}).curve(d3.curveCatmullRom);
 
   // append ocean pattern
   oceanPattern.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%").attr("fill", "url(#oceanic)").attr("stroke", "none");
   oceanLayers.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%").attr("id", "oceanBase");
 
-  applyDefaultStyle();
-
   // toggle off loading screen and on menus
   $("#loading, #initial").remove();
   svg.style("background-color", "#000000");
-  $("#optionsContainer").show();
-  fitStatusBar();
+  $("#optionsContainer, #tooltip").show();
 
   $("#optionsContainer").draggable({handle: ".drag-trigger", snap: "svg", snapMode: "both"});
   $("#mapLayers").sortable({items: "li:not(.solid)", cancel: ".solid", update: moveLayer});
@@ -113,7 +115,7 @@ function fantasyMap() {
     viewY = d3.event.transform.y;
     viewbox.attr("transform", d3.event.transform);
     // rescale only if zoom is significally changed
-    if (scaleDiff > 0.0001) {
+    if (scaleDiff > 0.001) {
       invokeActiveZooming();
       drawScaleBar();
     }
@@ -128,12 +130,14 @@ function fantasyMap() {
     // rescale lables on zoom (active zooming)
     labels.selectAll("g").each(function(d) {
       var el = d3.select(this);
+      if (el.attr("id") === "burgLabels") return;
       var desired = +el.attr("data-size");
       var relative = rn((desired + (desired / scale)) / 2, 2);
       if (relative < 2) {relative = 2;}
       el.attr("font-size", relative);
       el.classed("hidden", hideLabels.checked && relative * scale < 6);
     });
+
     if (ruler.size()) {
       if (ruler.style("display") !== "none") {
         if (ruler.selectAll("g").size() < 1) {return;}
@@ -169,14 +173,13 @@ function fantasyMap() {
   // Changelog dialog window
   var storedVersion = localStorage.getItem("version"); // show message on load
   if (storedVersion != version) {
-    alertMessage.innerHTML = `2018-05-06:
+    alertMessage.innerHTML = `2018-06-17:
       The <i>Fantasy Map Generator</i> Demo is updated up to version ${version}.
       Main changes:<br><br>
-      <li>Performance improvement</li>
-      <li>Route editor</li>
-      <li>Countries and River editors fixes</li>
-      <li>Map saving and loading fixes</li>
-      <li>New loading screen</li>
+      <li>Burg editor</li>
+      <li>Icons editor (including Relief icons)</li>
+      <li>New Options</li>
+      <li>Bug fixes</li>
       <br><i>See <a href='https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog' target='_blank'>changelog</a> for older versions.<br>
       Please report bugs <a href='https://github.com/Azgaar/Fantasy-Map-Generator/issues' target='_blank'>here</a></i>`;
     $("#alert").dialog(
@@ -193,6 +196,7 @@ function fantasyMap() {
   }
 
   generate(); // genarate map on load
+  applyDefaultStyle(); // apply style on load
   invokeActiveZooming(); // to hide what need to be hidden
 
   function generate() {
@@ -220,12 +224,24 @@ function fantasyMap() {
 
   // randomize options if randomization is allowed in option
   function randomizeOptions() {
-    if (randomizeInput.value !== "1") {return;}
-    regionsInput.value = 7 + Math.floor(Math.random() * 10);
-    manorsInput.value = regionsInput.value * 27 + Math.floor(Math.random() * 300);
+    if (lockRegionsInput.getAttribute("data-locked") == 0) regionsInput.value = 7 + Math.floor(Math.random() * 10);
+    if (lockManorsInput.getAttribute("data-locked") == 0) manorsInput.value = regionsInput.value * 27 + Math.floor(Math.random() * 300);
+    if (lockPowerInput.getAttribute("data-locked") == 0) powerInput.value = powerOutput.value = 2 + Math.floor(Math.random() * 6);
+    if (lockNeutralInput.getAttribute("data-locked") == 0) neutralInput.value = 100 + Math.floor(Math.random() * 200);
+    if (lockPrecInput.getAttribute("data-locked") == 0) precInput.value = 10 + Math.floor(Math.random() * 15);
+    if (lockSwampinessInput.getAttribute("data-locked") == 0) swampinessInput.value = swampinessOutput.value = Math.floor(Math.random() * 100);
+    if (lockTemplateInput.getAttribute("data-locked") == 0) {
+      const rnd = Math.random();
+      if (rnd > 0.9) {templateInput.value = "Volcano";}
+      else if (rnd > 0.7) {templateInput.value = "High Island";}
+      else if (rnd > 0.5) {templateInput.value = "Low Island";}
+      else if (rnd > 0.35) {templateInput.value = "Continents";}
+      else if (rnd > 0.01) {templateInput.value = "Archipelago";}
+      else {templateInput.value = "Atoll";}
+    }
     manorsCount = manorsOutput.innerHTML = manorsInput.value;
     capitalsCount = regionsOutput.innerHTML = regionsInput.value;
-    precInput.value = 10 + Math.floor(Math.random() * 15);
+    neutral = neutralOutput.value = countriesNeutral.value = neutralInput.value;
     precipitation = precOutput.value = +precInput.value;
   }
 
@@ -256,15 +272,37 @@ function fantasyMap() {
   function moved() {
     var point = d3.mouse(this);
     var i = diagram.find(point[0], point[1]).index;
+
+    // update cellInfo
     if (i) {
-      var p = cells[i]; // get cell
-      $("#lx").text(rn(point[0]));
-      $("#ly").text(rn(point[1]));
-      $("#cell").text(i);
-      $("#height").text(ifDefined(p.height, 2));
-      $("#feature").text(ifDefined(p.feature) + "" + ifDefined(p.featureNumber)); // to support v. >0.54b
-      $("#feature").text(ifDefined(p.f) + "" + ifDefined(p.fn));
+      const p = cells[i]; // get cell
+      infoX.innerHTML = rn(point[0]);
+      infoY.innerHTML = rn(point[1]);
+      infoCell.innerHTML = i;
+      infoHeight.innerHTML = ifDefined(p.height, "n/a", 2);
+      infoFlux.innerHTML = ifDefined(p.flux, "n/a", 2);
+      infoFeature.innerHTML = ifDefined(p.f) + "" + ifDefined(p.fn);
+      let country = p.region === undefined ? "n/a" : p.region === "neutral" ? "neutral" : states[p.region].name + " (" + p.region + ")";
+      infoCountry.innerHTML = country;
+      let culture = ifDefined(p.culture) !== "no" ? cultures[p.culture] + " (" + p.culture + ")" : "n/a";
+      infoCulture.innerHTML = culture;
+      infoBurg.innerHTML = ifDefined(p.manor) !== "no" ? manors[p.manor].name + " (" + p.manor + ")" : "no";
     }
+
+    // update tooltip
+    if (toggleTooltips.checked) {
+      tooltip.innerHTML = tooltip.getAttribute("data-main");
+      const group = d3.event.path[d3.event.path.length - 7].id;
+      const subgroup = d3.event.path[d3.event.path.length - 8].id;
+      if (group === "rivers") tip("Click to open River Editor");
+      if (group === "routes") tip("Click to open Route Editor");
+      if (group === "terrain") tip("Click to open Relief Icon Editor");
+      if (group === "labels") tip("Click to open Label Editor");
+      if (group === "icons") tip("Click to open Icon Editor");
+      if (subgroup === "burgIcons") tip("Click to open Burg Editor");
+      if (subgroup === "burgLabels") tip("Click to open Burg Editor");
+    }
+
     // draw line for Customization range placing
     icons.selectAll(".line").remove();
     if (customization === 1 && icons.selectAll(".tag").size() === 1) {
@@ -296,11 +334,12 @@ function fantasyMap() {
     } else {circle.remove();}
   }
 
-  // return value (e) if defined with specified number of decimals (f)
-  function ifDefined(e, f) {
-    if (e == undefined) {return "no";}
-    if (f) {return e.toFixed(f);}
-    return e;
+  // return value (v) if defined with specified number of decimals (d)
+  // else return "no" or attribute (r)
+  function ifDefined(v, r, d) {
+    if (v == undefined) {return r || "no";}
+    if (d) {return v.toFixed(d);}
+    return v;
   }
 
   // Drag actions
@@ -367,7 +406,7 @@ function fantasyMap() {
         if (c2 === c1 && x1 !== x0 && y1 !== y0) {return;}
         c1 = c2;
         selection = defineStateBrushSelection(c2);
-        changeStateForSelection(selection);
+        if (selection) changeStateForSelection(selection);
       }
       if (opisometer || planimeter) {
         var l = points[points.length - 1];
@@ -432,9 +471,11 @@ function fantasyMap() {
 
   // define selection based on radius
   function defineStateBrushSelection(center) {
+    if (cells[center].height < 0.2) return;
     let radius = +countriesManuallyBrush.value;
     let selection = [center];
     if (radius > 1) {selection = selection.concat(cells[center].neighbors);}
+    selection = $.grep(selection, function(e) {return (cells[e].height >= 0.2);});
     if (radius === 2) {return selection;}
     let frontier = cells[center].neighbors;
     while (radius > 2) {
@@ -442,18 +483,21 @@ function fantasyMap() {
       frontier = [];
       cycle.map(function(s) {
         cells[s].neighbors.forEach(function(e) {
-          if (selection.indexOf(e) !== -1) {return;}
+          if (selection.indexOf(e) !== -1) return;
+          if (cells[e].height < 0.2) return;
           selection.push(e);
           frontier.push(e);
         });
       });
       radius--;
     }
-    return $.grep(selection, function(e) {return (cells[e].height >= 0.2);});
+    selection = $.grep(selection, function(e) {return (cells[e].height >= 0.2);});
+    return selection;
   }
 
   // change region within selection
   function changeStateForSelection(selection) {
+    if (selection.length === 0) return;
     let stateNew, exists, stateOld, color;
     const temp = regions.select("#temp");
     selection.map(function(index) {
@@ -571,18 +615,9 @@ function fantasyMap() {
   // Generate Heigtmap routine
   function defineHeightmap() {
     console.time('defineHeightmap');
-    var mapTemplate = templateInput.value;
-    if (mapTemplate === "Random") {
-      var rnd = Math.random();
-      if (rnd > 0.9) {mapTemplate = "Volcano";}
-      if (rnd > 0.7  && rnd <= 0.9) {mapTemplate = "High Island";}
-      if (rnd > 0.5 && rnd <= 0.7) {mapTemplate = "Low Island";}
-      if (rnd > 0.35 && rnd <= 0.5) {mapTemplate = "Continents";}
-      if (rnd > 0.01 && rnd <= 0.35) {mapTemplate = "Archipelago";}
-      if (rnd <= 0.01) {mapTemplate = "Atoll";}
-    }
+    const mapTemplate = templateInput.value;
     addMountain();
-    var mod = rn((graphWidth + graphHeight) / 1500, 2); // add mod for big screens
+    const mod = rn((graphWidth + graphHeight) / 1500, 2); // add mod for big screens
     if (mapTemplate === "Volcano") {templateVolcano(mod);}
     if (mapTemplate === "High Island") {templateHighIsland(mod);}
     if (mapTemplate === "Low Island") {templateLowIsland(mod);}
@@ -684,7 +719,6 @@ function fantasyMap() {
 
   function add(start, type, height) {
     var session = Math.ceil(Math.random() * 1e5);
-    var sharpness = 0.2;
     var radius, hRadius, mRadius;
     switch (+graphSize) {
       case 1: hRadius = 0.991; mRadius = 0.91; break;
@@ -703,8 +737,7 @@ function fantasyMap() {
       }
       cells[queue[i]].neighbors.forEach(function(e) {
         if (cells[e].used === session) {return;}
-        var mod = Math.random() * sharpness + 1.1 - sharpness;
-        if (sharpness == 0) {mod = 1;}
+        var mod = Math.random() * 0.2 + 0.9;
         cells[e].height += height * mod;
         if (cells[e].height > 1) {cells[e].height = 1;}
         cells[e].used = session;
@@ -765,7 +798,7 @@ function fantasyMap() {
   function addStrait(width) {
     var session = Math.ceil(Math.random() * 100000);
     var top = Math.floor(Math.random() * graphWidth * 0.35 + graphWidth * 0.3);
-    var bottom = Math.floor((svgWidth - top) - (graphWidth * 0.1) + (Math.random() * graphWidth * 0.2));
+    var bottom = Math.floor((graphWidth - top) - (graphWidth * 0.1) + (Math.random() * graphWidth * 0.2));
     var start = diagram.find(top, graphHeight * 0.2).index;
     var end = diagram.find(bottom, graphHeight * 0.8).index;
     var range = [];
@@ -946,9 +979,9 @@ function fantasyMap() {
     var limits = [], odd = 0.8; // initial odd for ocean layer is 80%
     // Define type of ocean cells based on cell distance form land
     var frontier = $.grep(cells, function(e) {return (e.ctype === -1 && e.f === "Ocean");});
-    if (Math.random() < odd) {limits.push(-1); odd = 0.3;}
+    if (Math.random() < odd) {limits.push(-1); odd = 0.2;}
     for (var c = -2; frontier.length > 0 && c > -10; c--) {
-      if (Math.random() < odd) {limits.unshift(c); odd = 0.3;} else {odd += 0.2;}
+      if (Math.random() < odd) {limits.unshift(c); odd = 0.2;} else {odd += 0.2;}
       frontier.map(function(i) {
         i.neighbors.forEach(function(e) {
           if (!cells[e].ctype) {cells[e].ctype = c;}
@@ -1142,8 +1175,8 @@ function fantasyMap() {
     var elevationAverage = rn(d3.mean(heights), 2);
     var landRatio = rn(landCells / cells.length * 100);
     landmassCounter.innerHTML = landCells + " (" + landRatio + "%); Average Elevation: " + elevationAverage;
-    if (landCells > 100) {$("#getMap").attr("disabled", false).removeClass("buttonoff");}
-    else {$("#getMap").attr("disabled", true).addClass("buttonoff");}
+    if (landCells > 100) {$("#getMap").attr("disabled", false).removeClass("buttonoff").addClass("glow");}
+    else {$("#getMap").attr("disabled", true).addClass("buttonoff").removeClass("glow");}
     // if perspective is displayed, update it
     if ($("#perspectivePanel").is(":visible")) {drawPerspective();}
   }
@@ -1171,7 +1204,6 @@ function fantasyMap() {
   // Detect and draw the coasline
   function drawCoastline() {
     console.time('drawCoastline');
-    getCurveType();
     var oceanCoastline = "", lakeCoastline = "";
     $("#landmass").empty();
     var minX = graphWidth, maxX = 0; // extreme points
@@ -1265,17 +1297,14 @@ function fantasyMap() {
     if (barLabel.value !== "") {
       scaleBar.append("text").attr("x", x + (l+1) / 2).attr("y", y + 2 * size)
         .attr("dominant-baseline", "text-before-edge")
-        .attr("font-size", rn(7 * size, 1)).text(barLabel.value);
+        .attr("font-size", rn(5 * size, 1)).text(barLabel.value);
     }
-    // move scaleBar to desired bottom-right point
-    var tr, bbox = scaleBar.node().getBBox();
-    if (sessionStorage.getItem("scaleBar")) {
-      var scalePos = sessionStorage.getItem("scaleBar").split(",");
-      tr = [+scalePos[0] - bbox.width, +scalePos[1] - bbox.height];
-    } else {
-      tr = [svgWidth - 10 - bbox.width, svgHeight - 5 - bbox.height];
-    }
-    scaleBar.attr("transform", "translate(" + rn(tr[0]) + "," + rn(tr[1]) + ")");
+    const bbox = scaleBar.node().getBBox();
+    // append backbround rectangle
+    scaleBar.insert("rect", ":first-child").attr("x", -10).attr("y", -20).attr("width", bbox.width + 10).attr("height", bbox.height + 15)
+      .attr("stroke-width", size).attr("stroke", "none").attr("filter", "url(#blur5)")
+      .attr("fill", barBackColor.value).attr("opacity", +barBackOpacity.value);
+    fitScaleBar();
   }
 
   // draw default ruler measiring land x-axis edges
@@ -1303,20 +1332,26 @@ function fantasyMap() {
 
   // drag any element changing transform
   function elementDrag() {
-    var el = d3.select(this);
-    var tr = parseTransform(el.attr("transform"));
-    var dx = +tr[0] - d3.event.x, dy = +tr[1] - d3.event.y;
+    const el = d3.select(this);
+    const tr = parseTransform(el.attr("transform"));
+    const x = d3.event.x, y = d3.event.y;
+    const dx = +tr[0] - x, dy = +tr[1] - y;
+
     d3.event.on("drag", function() {
-      var x = d3.event.x, y = d3.event.y;
-      var transform = `translate(${(dx+x)},${(dy+y)})`;
+      const x = d3.event.x, y = d3.event.y;
+      const transform = `translate(${(dx+x)},${(dy+y)})`;
       el.attr("transform", transform);
     });
 
     d3.event.on("end", function() {
       // remember scaleBar bottom-right position
       if (el.attr("id") === "scaleBar") {
-        var bbox = el.node().getBoundingClientRect();
-        sessionStorage.setItem("scaleBar", [bbox.right, bbox.bottom])
+        const xEnd = d3.event.x, yEnd = d3.event.y;
+        const diff = Math.abs(x - xEnd) + Math.abs(y - yEnd);
+        if (diff > 5) {
+          const bbox = el.node().getBoundingClientRect();
+          sessionStorage.setItem("scaleBar", [bbox.right, bbox.bottom]);
+        }
       }
     });
   }
@@ -1489,19 +1524,19 @@ function fantasyMap() {
   // Resolve Heightmap Depressions (for a correct water flux modeling)
   function resolveDepressions() {
     console.time('resolveDepressions');
-    var depression = 1, limit = 100, minCell, minHigh;
-    for (var l = 0; depression > 0 && l < limit; l++) {
+    let depression = 1, limit = 100, minCell, minHigh;
+    for (let l = 0; depression > 0 && l < limit; l++) {
       depression = 0;
-      for (var i = 0; i < land.length; i++) {
-        var heights = [];
+      for (let i = 0; i < land.length; i++) {
+        const heights = [];
         land[i].neighbors.forEach(function(e) {heights.push(+cells[e].height);});
-        var minHigh = d3.min(heights);
+        const minHigh = d3.min(heights);
         if (land[i].height <= minHigh) {
-          depression += 1;
+          depression++;
           land[i].height = minHigh + 0.01;
         }
       }
-      if (l === limit - 1) {console.error("Error: resolveDepressions iteration limit");}
+      if (l === limit - 1) console.error("Error: resolveDepressions iteration limit");
     }
     console.timeEnd('resolveDepressions');
   }
@@ -1732,7 +1767,7 @@ function fantasyMap() {
   function editRiver() {
     if (customization) {return;}
     if (elSelected) {
-      const self = d3.select(this).attr("id") === elSelected.attr("id") ? true : false;
+      const self = d3.select(this).attr("id") === elSelected.attr("id");
       const point = d3.mouse(this);
       if (elSelected.attr("data-river") === "new") {
         addRiverPoint([point[0], point[1]]);
@@ -1766,7 +1801,7 @@ function fantasyMap() {
       }
     });
 
-    const controlPoints = icons.append("g").attr("class", "controlPoints")
+    const controlPoints = debug.append("g").attr("class", "controlPoints")
       .attr("transform", elSelected.attr("transform"));
     riverDrawPoints();
 
@@ -1775,7 +1810,7 @@ function fantasyMap() {
 
     function riverAddControlPoint(point) {
       let dists = [];
-      icons.select(".controlPoints").selectAll("circle").each(function() {
+      debug.select(".controlPoints").selectAll("circle").each(function() {
         const x = +d3.select(this).attr("cx");
         const y = +d3.select(this).attr("cy");
         dists.push(Math.hypot(point[0] - x, point[1] - y));
@@ -1788,7 +1823,7 @@ function fantasyMap() {
         if (closest <= next) {index = closest+1;} else {index = next+1;}
       }
       const before = ":nth-child(" + (index + 1) + ")";
-      icons.select(".controlPoints").insert("circle", before)
+      debug.select(".controlPoints").insert("circle", before)
         .attr("cx", point[0]).attr("cy", point[1]).attr("r", 0.35)
         .call(d3.drag().on("drag", riverPointDrag))
         .on("click", function(d) {
@@ -1820,7 +1855,7 @@ function fantasyMap() {
     }
 
     function addRiverPoint(point) {
-      icons.select(".controlPoints").append("circle")
+      debug.select(".controlPoints").append("circle")
         .attr("cx", point[0]).attr("cy", point[1]).attr("r", 0.35)
         .call(d3.drag().on("drag", riverPointDrag))
         .on("click", function(d) {
@@ -1841,13 +1876,13 @@ function fantasyMap() {
         let xc = d3.event.x, yc = d3.event.y;
         let transform = `translate(${(+tr[0]+xc-x)},${(+tr[1]+yc-y)}) rotate(${tr[2]} ${tr[3]} ${tr[4]}) scale(${tr[5]})`;
         elSelected.attr("transform", transform);
-        icons.select(".controlPoints").attr("transform", transform);
+        debug.select(".controlPoints").attr("transform", transform);
       });
     }
 
     function redrawRiver() {
       let points = [];
-      icons.select(".controlPoints").selectAll("circle").each(function() {
+      debug.select(".controlPoints").selectAll("circle").each(function() {
         const el = d3.select(this);
         points.push([+el.attr("cx"), +el.attr("cy")]);
       });
@@ -1907,7 +1942,7 @@ function fantasyMap() {
       elSelected.attr("data-width", width).attr("data-increment", increment);
       const d = drawRiverSlow(amended, width, increment);
       elSelected.attr("d", d).attr("data-width", width).attr("data-increment", increment);
-      icons.select(".controlPoints").selectAll("*").remove();
+      debug.select(".controlPoints").selectAll("*").remove();
       amended.map(function(p) {addRiverPoint(p);});
     });
 
@@ -1918,12 +1953,12 @@ function fantasyMap() {
       const angle = +this.value, scale = +tr[5];
       const transform = `translate(${tr[0]},${tr[1]}) rotate(${angle} ${(c.x+c.width/2)*scale} ${(c.y+c.height/2)*scale}) scale(${scale})`;
       elSelected.attr("transform", transform);
-      icons.select(".controlPoints").attr("transform", transform);
+      debug.select(".controlPoints").attr("transform", transform);
     });
 
     $("#riverReset").click(function() {
       elSelected.attr("transform", "");
-      icons.select(".controlPoints").attr("transform", "");
+      debug.select(".controlPoints").attr("transform", "");
       riverAngle.value = 0;
       riverAngleValue.innerHTML = "0°";
       riverScale.value = 1;
@@ -1940,7 +1975,7 @@ function fantasyMap() {
       const scY = +tr[4] * scale/scaleOld;
       const transform = `translate(${trX},${trY}) rotate(${tr[2]} ${scX} ${scY}) scale(${scale})`;
       elSelected.attr("transform", transform);
-      icons.select(".controlPoints").attr("transform", transform);
+      debug.select(".controlPoints").attr("transform", transform);
     });
 
     $("#riverNew").click(function() {
@@ -1951,7 +1986,7 @@ function fantasyMap() {
         $(".pressed").removeClass('pressed');
         $(this).addClass('pressed');
         elSelected.call(d3.drag().on("drag", null));
-        icons.select(".controlPoints").selectAll("*").remove();
+        debug.select(".controlPoints").selectAll("*").remove();
         viewbox.style("cursor", "crosshair").on("click", newRiverAddPoint);
       }
     });
@@ -1976,7 +2011,7 @@ function fantasyMap() {
         elSelected.attr("data-river", "");
         elSelected.call(d3.drag().on("start", riverDrag)).on("click", editRiver);
         const river = +elSelected.attr("id").slice(5);
-        icons.select(".controlPoints").selectAll("circle").each(function() {
+        debug.select(".controlPoints").selectAll("circle").each(function() {
           const x = +d3.select(this).attr("cx");
           const y = +d3.select(this).attr("cy");
           const cell = diagram.find(x, y, 3);
@@ -2032,7 +2067,7 @@ function fantasyMap() {
   function unselect() {
     if (elSelected) {
       elSelected.call(d3.drag().on("drag", null)).classed("draggable", false);
-      icons.select(".controlPoints").remove();
+      debug.select(".controlPoints").remove();
       viewbox.style("cursor", "default");
       elSelected = null;
     }
@@ -2048,7 +2083,7 @@ function fantasyMap() {
   function editRoute() {
     if (customization) {return;}
     if (elSelected) {
-      const self = d3.select(this).attr("id") === elSelected.attr("id") ? true : false;
+      const self = d3.select(this).attr("id") === elSelected.attr("id");
       const point = d3.mouse(this);
       if (elSelected.attr("data-route") === "new") {
         addRoutePoint({x:point[0], y:point[1]});
@@ -2062,33 +2097,34 @@ function fantasyMap() {
 
     unselect();
     closeDialogs("#routeEditor, .stable");
-    elSelected = d3.select(this);
-    const controlPoints = icons.append("g").attr("class", "controlPoints");
-    routeDrawPoints();
 
-    // get route type
-    const group = d3.select(this.parentNode);
-    routeUpdateGroups();
-    const routeType = group.attr("id");
-    routeType.value = routeType;
+    if (this !== window) {
+      elSelected = d3.select(this);
+      const controlPoints = debug.append("g").attr("class", "controlPoints");
+      routeDrawPoints();
+      const group = d3.select(this.parentNode);
+      routeUpdateGroups();
+      let routeType = group.attr("id");
+      routeType.value = routeType;
 
-    $("#routeEditor").dialog({
-      title: "Edit Route",
-      minHeight: 30, width: "auto", resizable: false,
-      position: {my: "center top+20", at: "top", of: d3.event},
-      close: function() {
-        if ($("#routeNew").hasClass('pressed')) {completeNewRoute();}
-        if ($("#routeSplit").hasClass('pressed')) {$("#routeSplit").removeClass('pressed');}
-        unselect();
-      }
-    });
+      $("#routeEditor").dialog({
+        title: "Edit Route",
+        minHeight: 30, width: "auto", resizable: false,
+        position: {my: "center top+20", at: "top", of: d3.event},
+        close: function() {
+          if ($("#addRoute").hasClass('pressed')) completeNewRoute();
+          if ($("#routeSplit").hasClass('pressed')) $("#routeSplit").removeClass('pressed');
+          unselect();
+        }
+      });
+    }
 
     if (modules.editRoute) {return;}
     modules.editRoute = true;
 
     function routeAddControlPoint(point) {
       let dists = [];
-      icons.select(".controlPoints").selectAll("circle").each(function() {
+      debug.select(".controlPoints").selectAll("circle").each(function() {
         const x = +d3.select(this).attr("cx");
         const y = +d3.select(this).attr("cy");
         dists.push(Math.hypot(point[0] - x, point[1] - y));
@@ -2101,7 +2137,7 @@ function fantasyMap() {
         if (closest <= next) {index = closest+1;} else {index = next+1;}
       }
       const before = ":nth-child(" + (index + 1) + ")";
-      icons.select(".controlPoints").insert("circle", before)
+      debug.select(".controlPoints").insert("circle", before)
         .attr("cx", point[0]).attr("cy", point[1]).attr("r", 0.35)
         .call(d3.drag().on("drag", routePointDrag))
         .on("click", function(d) {
@@ -2122,10 +2158,15 @@ function fantasyMap() {
         const p = node.getPointAtLength(i);
         addRoutePoint(p);
       }
+      // convert length to distance
+      routeLength.innerHTML = rn(l * distanceScale.value) + " " + distanceUnit.value;
     }
 
     function addRoutePoint(point) {
-      icons.select(".controlPoints").append("circle")
+      const controlPoints = debug.select(".controlPoints").size()
+        ? debug.select(".controlPoints")
+        : debug.append("g").attr("class", "controlPoints");
+      controlPoints.append("circle")
         .attr("cx", point.x).attr("cy", point.y).attr("r", 0.35)
         .call(d3.drag().on("drag", routePointDrag))
         .on("click", function(d) {
@@ -2145,27 +2186,49 @@ function fantasyMap() {
 
     function routeRedraw() {
       let points = [];
-      icons.select(".controlPoints").selectAll("circle").each(function() {
+      debug.select(".controlPoints").selectAll("circle").each(function() {
         var el = d3.select(this);
         points.push({scX: +el.attr("cx"), scY: +el.attr("cy")});
       });
       lineGen.curve(d3.curveCatmullRom.alpha(0.1));
       elSelected.attr("d", lineGen(points));
+      // get route distance
+      const l = elSelected.node().getTotalLength();
+      routeLength.innerHTML = rn(l * distanceScale.value) + " " + distanceUnit.value;
     }
 
     function newRouteAddPoint() {
       const point = d3.mouse(this);
-      addRoutePoint({x:point[0], y:point[1]});
-      if (elSelected.attr("data-route") !== "new") {
+      const x = rn(point[0], 2), y = rn(point[1], 2);
+      let group = elSelected ? d3.select(elSelected.node().parentNode) : null;
+      let routeType = routeGroup.value;
+      if (!elSelected) {
+        const index = getIndex(point);
+        const height = cells[index].height;
+        routeType = height < 0.2 ? "searoutes" : "roads";
+        group = routes.select("#"+routeType);
+      }
+      addRoutePoint({x, y});
+      if (!elSelected || elSelected.attr("data-route") !== "new") {
         const id = routeType + "" + group.selectAll("*").size();
         elSelected = group.append("path").attr("data-route", "new").attr("id", id).on("click", completeNewRoute);
+        $("#routeEditor").dialog({
+          title: "Edit Route",
+          minHeight: 30, width: "auto", resizable: false,
+          position: {my: "center top+20", at: "top", of: d3.event},
+          close: function() {
+            if ($("#addRoute").hasClass('pressed')) completeNewRoute();
+            if ($("#routeSplit").hasClass('pressed')) $("#routeSplit").removeClass('pressed');
+            unselect();
+          }
+        });
       } else {
         routeRedraw();
       }
     }
 
     function completeNewRoute() {
-      $("#routeNew").removeClass('pressed');
+      $("#routeNew, #addRoute").removeClass('pressed');
       restoreDefaultEvents();
       if (elSelected.attr("data-route") === "new") {
         routeRedraw();
@@ -2185,6 +2248,7 @@ function fantasyMap() {
           else {cells[c].path = 1;}
         });
       }
+      tip("", true);
     }
 
     function routeUpdateGroups() {
@@ -2203,7 +2267,7 @@ function fantasyMap() {
       $("#routeSplit").removeClass('pressed');
       let points1 = [], points2 = [];
       let points = points1;
-      icons.select(".controlPoints").selectAll("circle").each(function() {
+      debug.select(".controlPoints").selectAll("circle").each(function() {
         var el = d3.select(this);
         points.push({scX: +el.attr("cx"), scY: +el.attr("cy")});
         if (this === clicked) {
@@ -2232,9 +2296,10 @@ function fantasyMap() {
       } else {
         // enter creation mode
         $(".pressed").removeClass('pressed');
-        $(this).addClass('pressed');
-        icons.select(".controlPoints").selectAll("*").remove();
+        $("#routeNew, #addRoute").addClass('pressed');
+        debug.select(".controlPoints").selectAll("*").remove();
         viewbox.style("cursor", "crosshair").on("click", newRouteAddPoint);
+        tip("Click on map to add route point", true);
       }
     });
 
@@ -2253,11 +2318,611 @@ function fantasyMap() {
     });
   }
 
+  function editIcon() {
+    if (customization) return;
+    if (elSelected) if (this.isSameNode(elSelected.node())) return;
+
+    unselect();
+    closeDialogs("#iconEditor, .stable");
+    elSelected = d3.select(this).call(d3.drag().on("start", elementDrag));
+
+    // update group parameters
+    const group = d3.select(this.parentNode);
+    iconUpdateGroups();
+    iconGroup.value = group.attr("id");
+    iconFillColor.value = group.attr("fill");
+    iconStrokeColor.value = group.attr("stroke");
+    iconSize.value = group.attr("font-size");
+    iconStrokeWidth.value = group.attr("stroke-width");
+
+    $("#iconEditor").dialog({
+      title: "Edit icon: " + group.attr("id"),
+      minHeight: 30, width: "auto", resizable: false,
+      position: {my: "center top+20", at: "top", of: d3.event},
+      close: unselect
+    });
+
+    if (modules.editIcon) {return;}
+    modules.editIcon = true;
+
+    $("#iconGroups").click(function() {
+      $("#iconEditor > button").not(this).toggle();
+      $("#iconGroupsSelection").toggle();
+    });
+
+    function iconUpdateGroups() {
+      iconGroup.innerHTML = "";
+      const anchor = group.attr("id").includes("anchor");
+      icons.selectAll("g").each(function(d) {
+        const id = d3.select(this).attr("id");
+        if (id === "burgs") return;
+        if (!anchor && id.includes("anchor")) return;
+        if (anchor && !id.includes("anchor")) return;
+        const opt = document.createElement("option");
+        opt.value = opt.innerHTML = id;
+        iconGroup.add(opt);
+      });
+    }
+
+    $("#iconGroup").change(function() {
+      const newGroup = this.value;
+      const to = $("#icons > #"+newGroup);
+      $(elSelected.node()).detach().appendTo(to);
+    });
+
+    $("#iconCopy").click(function() {
+      const group = d3.select(elSelected.node().parentNode);
+      const copy = elSelected.node().cloneNode();
+      copy.removeAttribute("data-id"); // remove assignment to burg if any
+      const tr = parseTransform(copy.getAttribute("transform"));
+      const shift = 10 / Math.sqrt(scale);
+      let transform = "translate(" + rn(tr[0] - shift, 1)  + "," + rn(tr[1] - shift, 1)  + ")";
+      for (let i=2; group.selectAll("[transform='" + transform + "']").size() > 0; i++) {
+        transform = "translate(" + rn(tr[0] - shift * i, 1)  + "," + rn(tr[1] - shift * i, 1)  + ")";
+      }
+      copy.setAttribute("transform", transform);
+      group.node().insertBefore(copy, null);
+      copy.addEventListener("click", editIcon);
+    });
+
+    $("#iconRemoveGroup").click(function() {
+      const group = d3.select(elSelected.node().parentNode);
+      const count = group.selectAll("*").size();
+      if (count < 2) {
+        group.remove();
+        $("#labelEditor").dialog("close");
+        return;
+      }
+      const message = "Are you sure you want to remove all '" + iconGroup.value + "' icons (" + count + ")?";
+      alertMessage.innerHTML = message;
+      $("#alert").dialog({resizable: false, title: "Remove icon group",
+        buttons: {
+          Remove: function() {
+            $(this).dialog("close");
+            group.remove();
+            $("#iconEditor").dialog("close");
+          },
+          Cancel: function() {$(this).dialog("close");}
+        }
+      });
+    });
+
+    $("#iconColors").click(function() {
+      $("#iconEditor > button").not(this).toggle();
+      $("#iconColorsSection").toggle();
+    });
+
+    $("#iconFillColor").change(function() {
+      const group = d3.select(elSelected.node().parentNode);
+      group.attr("fill", this.value);
+    });
+
+    $("#iconStrokeColor").change(function() {
+      const group = d3.select(elSelected.node().parentNode);
+      group.attr("stroke", this.value);
+    });
+
+    $("#iconSetSize").click(function() {
+      $("#iconEditor > button").not(this).toggle();
+      $("#iconSizeSection").toggle();
+    });
+
+    $("#iconSize").change(function() {
+      const group = d3.select(elSelected.node().parentNode);
+      group.attr("font-size", this.value);
+    });
+
+    $("#iconStrokeWidth").change(function() {
+      const group = d3.select(elSelected.node().parentNode);
+      group.attr("stroke-width", this.value);
+    });
+
+    $("#iconRemove").click(function() {
+      alertMessage.innerHTML = `Are you sure you want to remove the icon?`;
+      $("#alert").dialog({resizable: false, title: "Remove icon",
+        buttons: {
+          Remove: function() {
+            $(this).dialog("close");
+            elSelected.remove();
+            $("#iconEditor").dialog("close");
+          },
+          Cancel: function() {$(this).dialog("close");}
+        }
+      })
+    });
+  }
+
+  function editReliefIcon() {
+    if (customization) return;
+    if (elSelected) if (this.isSameNode(elSelected.node())) return;
+
+    unselect();
+    closeDialogs("#reliefEditor, .stable");
+    elSelected = d3.select(this).raise().call(d3.drag().on("start", elementDrag));
+    const group = elSelected.node().parentNode.id;
+    reliefGroup.value = group;
+
+    $("#reliefEditor").dialog({
+      title: "Edit relief icon",
+      minHeight: 30, width: "auto", resizable: false,
+      position: {my: "center top+40", at: "top", of: d3.event},
+      close: unselect
+    });
+
+    if (modules.editReliefIcon) {return;}
+    modules.editReliefIcon = true;
+
+    $("#reliefGroups").click(function() {
+      $("#reliefEditor > button").not(this).toggle();
+      $("#reliefGroupsSelection").toggle();
+    });
+
+    $("#reliefGroup").change(function() {
+      const type = this.value;
+      const bbox = elSelected.node().getBBox();
+      const cx = bbox.x;
+      const cy = bbox.y + bbox.height / 2;
+      const cell = diagram.find(cx, cy).index;
+      const height = cell !== undefined ? cells[cell].height : 0.5;
+      elSelected.remove();
+      elSelected = addReliefIcon(height, type, cx, cy);
+      elSelected.call(d3.drag().on("start", elementDrag));
+    });
+
+    $("#reliefCopy").click(function() {
+      const group = d3.select(elSelected.node().parentNode);
+      const copy = elSelected.node().cloneNode(true);
+      const tr = parseTransform(copy.getAttribute("transform"));
+      const shift = 10 / Math.sqrt(scale);
+      let transform = "translate(" + rn(tr[0] - shift, 1)  + "," + rn(tr[1] - shift, 1)  + ")";
+      for (let i=2; group.selectAll("[transform='" + transform + "']").size() > 0; i++) {
+        transform = "translate(" + rn(tr[0] - shift * i, 1)  + "," + rn(tr[1] - shift * i, 1)  + ")";
+      }
+      copy.setAttribute("transform", transform);
+      group.node().insertBefore(copy, null);
+      copy.addEventListener("click", editReliefIcon);
+    });
+
+    $("#reliefAddfromEditor").click(function() {
+      clickToAdd(); // to load on click event function
+      $("#addRelief").click();
+    });
+
+    $("#reliefRemoveGroup").click(function() {
+      const group = d3.select(elSelected.node().parentNode);
+      const count = group.selectAll("*").size();
+      if (count < 2) {
+        group.selectAll("*").remove();
+        $("#labelEditor").dialog("close");
+        return;
+      }
+      const message = "Are you sure you want to remove all '" + reliefGroup.value + "' icons (" + count + ")?";
+      alertMessage.innerHTML = message;
+      $("#alert").dialog({resizable: false, title: "Remove all icons within group",
+        buttons: {
+          Remove: function() {
+            $(this).dialog("close");
+            group.selectAll("*").remove();
+            $("#reliefEditor").dialog("close");
+          },
+          Cancel: function() {$(this).dialog("close");}
+        }
+      });
+    });
+
+    $("#reliefRemove").click(function() {
+      alertMessage.innerHTML = `Are you sure you want to remove the icon?`;
+      $("#alert").dialog({resizable: false, title: "Remove relief icon",
+        buttons: {
+          Remove: function() {
+            $(this).dialog("close");
+            elSelected.remove();
+            $("#reliefEditor").dialog("close");
+          },
+          Cancel: function() {$(this).dialog("close");}
+        }
+      })
+    });
+  }
+
+  function editBurg() {
+    if (customization) {return;}
+    if (elSelected) {
+      const self = d3.select(this).attr("data-id") === elSelected.attr("data-id");
+      if (self) {return;}
+    }
+
+    closeDialogs("#burgEditor, .stable");
+    elSelected = d3.select(this);
+    const id = +elSelected.attr("data-id");
+    if (id === undefined) return;
+    d3.selectAll("[data-id='" + id + "']").call(d3.drag().on("start", elementDrag)).classed("draggable", true);
+
+    // update Burg details
+    const type = elSelected.node().parentNode.id;
+    const labelGroup = burgLabels.select("#"+type);
+    const iconGroup = burgIcons.select("#"+type);
+    burgNameInput.value = manors[id].name;
+    updateBurgsGroupOptions();
+    burgSelectGroup.value = labelGroup.attr("id");
+    burgSelectDefaultFont.value = fonts.indexOf(labelGroup.attr("data-font"));
+    burgSetLabelSize.value = labelGroup.attr("data-size");
+    burgLabelColorInput.value = toHEX(labelGroup.attr("fill"));
+    burgLabelOpacity.value = labelGroup.attr("opacity") === undefined ? 1 : +labelGroup.attr("opacity");
+    const matrix = elSelected.attr("transform");
+    const rotation = matrix ? matrix.split('(')[1].split(')')[0].split(' ')[0] : 0;
+    burgLabelAngle.value = rotation;
+    burgLabelAngleOutput.innerHTML = rotation + "°";
+    burgIconSize.value = iconGroup.attr("font-size");
+    burgIconFillOpacity.value = iconGroup.attr("fill-opacity") === undefined ? 1 : +iconGroup.attr("fill-opacity");
+    burgIconFillColor.value = iconGroup.attr("fill");
+    burgIconStrokeWidth.value = iconGroup.attr("stroke-width");
+    burgIconStrokeOpacity.value = iconGroup.attr("stroke-opacity") === undefined ? 1 : +iconGroup.attr("stroke-opacity");
+    burgIconStrokeColor.value = iconGroup.attr("stroke");
+    const cell = cells[manors[id].cell];
+    if (cell.region !== "neutral" && cell.region !== undefined) {
+      burgToggleCapital.disabled = false;
+      const capital = states[manors[id].region] ? id === states[manors[id].region].capital ? 1 : 0 : 0;
+      d3.select("#burgToggleCapital").classed("pressed", capital);
+    } else {
+      burgToggleCapital.disabled = true;
+      d3.select("#burgToggleCapital").classed("pressed", false);
+    }
+    if (cell.ctype === 1 || cell.river !== undefined) {
+      burgTogglePort.disabled = false;
+      const port = cell.port ? 1 : 0;
+      d3.select("#burgTogglePort").classed("pressed", port);
+    } else {
+      burgTogglePort.disabled = true;
+      d3.select("#burgTogglePort").classed("pressed", false);
+    }
+    burgPopulation.value = manors[id].population;
+    burgPopulationFriendly.value = rn(manors[id].population * urbanization.value * populationRate.value * 1000);
+
+    $("#burgEditor").dialog({
+      title: "Edit Burg: " + manors[id].name,
+      minHeight: 30, width: "auto", resizable: false,
+      position: {my: "center top+40", at: "top", of: d3.event},
+      close: function() {
+        d3.selectAll("[data-id='" + id + "']").call(d3.drag().on("drag", null)).classed("draggable", false);
+        elSelected = null;
+      }
+    });
+
+    if (modules.editBurg) return;
+    modules.editBurg = true;
+
+    loadDefaultFonts();
+
+    function updateBurgsGroupOptions() {
+      burgSelectGroup.innerHTML = "";
+      burgIcons.selectAll("g").each(function(d) {
+        var opt = document.createElement("option");
+        opt.value = opt.innerHTML = d3.select(this).attr("id");
+        burgSelectGroup.add(opt);
+      });
+    }
+
+    $("#burgEditor > button").not("#burgAddfromEditor").not("#burgRemove").click(function() {
+      if ($(this).next().is(":visible")) {
+        $("#burgEditor > button").show();
+        $(this).next("div").hide();
+      } else {
+        $("#burgEditor > *").not(this).hide();
+        $(this).next("div").show();
+      }
+    });
+
+    $("#burgEditor > div > button").click(function() {
+      if ($(this).next().is(":visible")) {
+        $("#burgEditor > div > button").show();
+        $(this).parent().prev().show();
+        $(this).next("div").hide();
+      } else {
+        $("#burgEditor > div > button").not(this).hide();
+        $(this).parent().prev().hide();
+        $(this).next("div").show();
+      }
+    });
+
+    $("#burgSelectGroup").change(function() {
+      const id = +elSelected.attr("data-id");
+      const g = this.value;
+      $("#burgIcons [data-id=" + id + "]").detach().appendTo($("#burgIcons > #"+g));
+      $("#burgLabels [data-id=" + id + "]").detach().appendTo($("#burgLabels > #"+g));
+      // special case for port icons (anchors)
+      if (g === "towns" || g === "capitals") {
+        const el = $("#icons g[id*='anchors'] [data-id=" + id + "]");
+        if (!el.length) return;
+        const to = g === "towns" ? $("#town-anchors") : $("#capital-anchors");
+        el.detach().appendTo(to);
+      }
+    });
+
+    $("#burgInputGroup").change(function() {
+      const newGroup = this.value.toLowerCase().replace(/ /g, "_").replace(/[^\w\s]/gi, "");
+      if (Number.isFinite(+newGroup.charAt(0))) newGroup = "g" + newGroup;
+      if (burgLabels.select("#"+newGroup).size()) {
+        tip('The group "'+ newGroup + ' is already exists"');
+        return;
+      }
+      burgInputGroup.value = "";
+      // clone old group assigning new id
+      const id = elSelected.node().parentNode.id;
+      const l = burgLabels.select("#"+id).node().cloneNode(false);
+      l.id = newGroup;
+      const i = burgIcons.select("#"+id).node().cloneNode(false);
+      i.id = newGroup;
+      burgLabels.node().insertBefore(l, null);
+      burgIcons.node().insertBefore(i, null);
+      // select new group
+      const opt = document.createElement("option");
+      opt.value = opt.innerHTML = newGroup;
+      burgSelectGroup.add(opt);
+      $("#burgSelectGroup").val(newGroup).change();
+      $("#burgSelectGroup, #burgInputGroup").toggle();
+    });
+
+    $("#burgAddGroup").click(function() {
+      if ($("#burgInputGroup").css("display") === "none") {
+        $("#burgInputGroup").css("display", "inline-block");
+        $("#burgSelectGroup").css("display", "none");
+        burgInputGroup.focus();
+      } else {
+        $("#burgSelectGroup").css("display", "inline-block");
+        $("#burgInputGroup").css("display", "none");
+      }
+    });
+
+    $("#burgRemoveGroup").click(function() {
+      const group = d3.select(elSelected.node().parentNode);
+      const type = group.attr("id");
+      const id = +elSelected.attr("data-id");
+      var count = group.selectAll("*").size();
+      const message = "Are you sure you want to remove all Burgs (" + count + ") of that group?";
+      alertMessage.innerHTML = message;
+      $("#alert").dialog({resizable: false, title: "Remove Burgs",
+        buttons: {
+          Remove: function() {
+            $(this).dialog("close");
+            group.selectAll("*").each(function(d) {
+              const id = +d3.select(this).attr("data-id");
+              if (id === undefined) return;
+              const cell = manors[id].cell;
+              const state = manors[id].region;
+              if (states[state]) {
+                if (states[state].capital === id) states[state].capital = "select";
+                states[state].burgs --;
+              }
+              manors[id].region = "removed";
+              cells[cell].manor = undefined;
+            });
+            burgLabels.select("#"+type).selectAll("*").remove();
+            burgIcons.select("#"+type).selectAll("*").remove();
+            $("#icons g[id*='anchors'] [data-id=" + id + "]").parent().children().remove();
+            closeDialogs(".stable");
+            updateCountryEditors();
+            $("#burgEditor").dialog("close");
+          },
+          Cancel: function() {$(this).dialog("close");}
+        }
+      })
+      return;
+    });
+
+    $("#burgNameInput").on("input", function() {
+      if (this.value === "") {
+        tip("Name should not be blank, set opacity to 0 to hide label or remove button to delete");
+        return;
+      }
+      const id = +elSelected.attr("data-id");
+      burgLabels.selectAll("[data-id='" + id + "']").text(this.value)
+      manors[id].name = this.value;
+      $("div[aria-describedby='burgEditor'] .ui-dialog-title").text("Edit Burg: " + this.value);
+    });
+
+    $("#burgNameReCulture, #burgNameReRandom").click(function() {
+      const id = +elSelected.attr("data-id");
+      const culture = this.id === "burgNameReCulture" ? manors[id].culture : Math.floor(Math.random() * cultures.length);
+      const name = generateName(culture);
+      burgLabels.selectAll("[data-id='" + id + "']").text(name)
+      manors[id].name = name;
+      burgNameInput.value = name;
+      $("div[aria-describedby='burgEditor'] .ui-dialog-title").text("Edit Burg: " + name);
+    });
+
+    $("#burgToggleExternalFont").click(function() {
+      if ($("#burgInputExternalFont").css("display") === "none") {
+        $("#burgInputExternalFont").css("display", "inline-block");
+        $("#burgSelectDefaultFont").css("display", "none");
+        burgInputExternalFont.focus();
+      } else {
+        $("#burgSelectDefaultFont").css("display", "inline-block");
+        $("#burgInputExternalFont").css("display", "none");
+      }
+    });
+
+    $("#burgSelectDefaultFont").change(function() {
+      const type = elSelected.node().parentNode.id;
+      const group = burgLabels.select("#"+type);
+      if (burgSelectDefaultFont.value === "") return;
+      const font = fonts[burgSelectDefaultFont.value].split(':')[0].replace(/\+/g, " ");
+      group.attr("font-family", font).attr("data-font", fonts[burgSelectDefaultFont.value]);
+    });
+
+    $("#burgInputExternalFont").change(function() {
+      fetchFonts(this.value).then(fetched => {
+        if (!fetched) return;
+        burgToggleExternalFont.click();
+        burgInputExternalFont.value = "";
+        if (fetched === 1) $("#burgSelectDefaultFont").val(fonts.length - 1).change();
+      });
+    });
+
+    $("#burgSetLabelSize").on("input", function() {
+      const type = elSelected.node().parentNode.id;
+      const group = burgLabels.select("#"+type);
+      group.attr("data-size", +this.value);
+      invokeActiveZooming();
+    });
+
+    $("#burgLabelColorInput").on("input", function() {
+      const type = elSelected.node().parentNode.id;
+      const group = burgLabels.select("#"+type);
+      group.attr("fill", this.value);
+    });
+
+    $("#burgLabelOpacity").on("input", function() {
+      const type = elSelected.node().parentNode.id;
+      const group = burgLabels.select("#"+type);
+      group.attr("opacity", +this.value);
+    });
+
+    $("#burgLabelAngle").on("input", function() {
+      const id = +elSelected.attr("data-id");
+      const el = burgLabels.select("[data-id='"+ id +"']");
+      const c = el.node().getBBox();
+      const rotate = `rotate(${this.value} ${(c.x+c.width/2)} ${(c.y+c.height/2)})`;
+      el.attr("transform", rotate);
+      burgLabelAngleOutput.innerHTML = Math.abs(+this.value) + "°";
+    });
+
+    $("#burgIconSize").on("input", function() {
+      const type = elSelected.node().parentNode.id;
+      const group = burgIcons.select("#"+type);
+      group.attr("font-size", +this.value);
+    });
+
+    $("#burgIconFillOpacity").on("input", function() {
+      const type = elSelected.node().parentNode.id;
+      const group = burgIcons.select("#"+type);
+      group.attr("fill-opacity", +this.value);
+    });
+
+    $("#burgIconFillColor").on("input", function() {
+      const type = elSelected.node().parentNode.id;
+      const group = burgIcons.select("#"+type);
+      group.attr("fill", this.value);
+    });
+
+    $("#burgIconStrokeWidth").on("input", function() {
+      const type = elSelected.node().parentNode.id;
+      const group = burgIcons.select("#"+type);
+      group.attr("stroke-width", +this.value);
+    });
+
+    $("#burgIconStrokeOpacity").on("input", function() {
+      const type = elSelected.node().parentNode.id;
+      const group = burgIcons.select("#"+type);
+      group.attr("stroke-opacity", +this.value);
+    });
+
+    $("#burgIconStrokeColor").on("input", function() {
+      const type = elSelected.node().parentNode.id;
+      const group = burgIcons.select("#"+type);
+      group.attr("stroke", this.value);
+    });
+
+    $("#burgToggleCapital").click(function() {
+      const id = +elSelected.attr("data-id");
+      const state = manors[id].region;
+      if (states[state] === undefined) return;
+      const capital = states[manors[id].region] ? id === states[manors[id].region].capital ? 0 : 1 : 1;
+      if (capital && states[state].capital !== "select") {
+        // move oldCapital to burg
+        const oldCapital = states[state].capital;
+        $("#burgIcons [data-id=" + oldCapital + "]").detach().appendTo($("#burgIcons > #towns"));
+        $("#burgLabels [data-id=" + oldCapital + "]").detach().appendTo($("#burgLabels > #towns"));
+        $("#icons #capital-anchors [data-id=" + oldCapital + "]").detach().appendTo($("#town-anchors"));
+      }
+      states[state].capital = capital ? id : "select";
+      d3.select("#burgToggleCapital").classed("pressed", capital);
+      const g = capital ? "capitals" : "towns";
+      $("#burgIcons [data-id=" + id + "]").detach().appendTo($("#burgIcons > #"+g));
+      $("#burgLabels [data-id=" + id + "]").detach().appendTo($("#burgLabels > #"+g));
+      const el = $("#icons g[id*='anchors'] [data-id=" + id + "]");
+      updateCountryEditors();
+      if (!el.length) return;
+      const to = g === "towns" ? $("#town-anchors") : $("#capital-anchors");
+      el.detach().appendTo(to);
+    });
+
+    $("#burgTogglePort").click(function() {
+      const id = +elSelected.attr("data-id");
+      const port = !cells[manors[id].cell].port;
+      cells[manors[id].cell].port = port;
+      d3.select("#burgTogglePort").classed("pressed", port);
+      if (port) {
+        const type = elSelected.node().parentNode.id;
+        const ag = type === "capitals" ? "#capital-anchors" : "#town-anchors";
+        icons.select(ag).append("use").attr("xlink:href", "#icon-anchor").attr("data-id", id)
+          .attr("x", manors[id].x).attr("y", manors[id].y).attr("width", "1em").attr("height", "1em")
+          .on("click", editIcon);
+      } else {
+        $("#icons g[id*='anchors'] [data-id=" + id + "]").remove();
+      }
+    });
+
+    $("#burgPopulation").on("input", function() {
+      const id = +elSelected.attr("data-id");
+      burgPopulationFriendly.value = rn(this.value * urbanization.value * populationRate.value * 1000);
+      manors[id].population = +this.value;
+    });
+
+    $("#burgAddfromEditor").click(function() {
+      clickToAdd(); // to load on click event function
+      $("#addBurg").click();
+    });
+
+    $("#burgRemove").click(function() {
+      alertMessage.innerHTML = `Are you sure you want to remove the Burg?`;
+      $("#alert").dialog({resizable: false, title: "Remove Burg",
+        buttons: {
+          Remove: function() {
+            $(this).dialog("close");
+            const id = +elSelected.attr("data-id");
+            d3.selectAll("[data-id='" + id + "']").remove();
+            const cell = manors[id].cell;
+            const state = manors[id].region;
+            if (states[state]) {
+              if (states[state].capital === id) states[state].capital = "select";
+              states[state].burgs --;
+            }
+            manors[id].region = "removed";
+            cells[cell].manor = undefined;
+            closeDialogs(".stable");
+            updateCountryEditors();
+          },
+          Cancel: function() {$(this).dialog("close");}
+        }
+      })
+    });
+  }
+
   function manorsAndRegions() {
     console.group('manorsAndRegions');
     calculateChains();
     rankPlacesGeography();
-    getCurveType();
     locateCultures();
     locateCapitals();
     generateMainRoads();
@@ -2595,7 +3260,8 @@ function fantasyMap() {
       if (portsOnIsland.length) {ports.push(portsOnIsland);}
     }
     ports.sort(function(a, b) {return b.length - a.length;});
-    const anchors = burgs.append("g").attr("id", "anchors");
+    const cAnchors = icons.selectAll("#capital-anchors");
+    const tAnchors = icons.selectAll("#town-anchors");
     for (var i = 0; i < ports.length; i++) {
       var start = ports[i][0].index;
       var paths = findOceanPaths(start, -1);
@@ -2603,10 +3269,17 @@ function fantasyMap() {
       for (var p = 0; p < ports[i].length; p++) {
         var x = ports[i][p].data[0];
         var y = ports[i][p].data[1];
-        anchors.append("use").attr("xlink:href", "#icon-anchor")
-          .attr("x", x - 0.5).attr("y", y - 0.44).attr("width", 1).attr("height", 1)
-          .call(d3.drag().on("start", elementDrag));
+        const manor = ports[i][p].manor;
+        const capital = manor === ports[i][p].region;
+        if (capital) {
+          cAnchors.append("use").attr("xlink:href", "#icon-anchor").attr("data-id", manor)
+            .attr("x", x).attr("y", y).attr("width", "1em").attr("height", "1em");
+        } else {
+          tAnchors.append("use").attr("xlink:href", "#icon-anchor").attr("data-id", manor)
+            .attr("x", x).attr("y", y).attr("width", "1em").attr("height", "1em")
+        }
       }
+      icons.selectAll("use").on("click", editIcon);
       var length = ports[i].length; // ports on island
       // routes from all ports on island to 1st port on island
       for (var h = 1; h < length; h++) {
@@ -2821,25 +3494,27 @@ function fantasyMap() {
     }
   }
 
-  // Append manors with random / generated names
-  // For each non-capital manor detect the closes capital (used for areas)
-  function drawManors() {
+  // Append burg elements
+    function drawManors() {
     console.time('drawManors');
-    for (var i = 0; i < manors.length; i++) {
-      var x = manors[i].x;
-      var y = manors[i].y;
-      var cell = manors[i].cell;
-      var name = manors[i].name;
-      if (i < capitalsCount) {
-        burgs.append("circle").attr("id", "manorIcon"+i).attr("r", 1).attr("stroke-width", .24).attr("cx", x).attr("cy", y);
-        capitals.append("text").attr("id", "manorLabel"+i).attr("x", x).attr("y", y).attr("dy", -1.3).text(name);
-      } else {
-        burgs.append("circle").attr("id", "manorIcon"+i).attr("r", .5).attr("stroke-width", .12).attr("cx", x).attr("cy", y);
-        towns.append("text").attr("id", "manorLabel"+i).attr("x", x).attr("y", y).attr("dy", -.7).text(name);
-      }
+    const capitalIcons = burgIcons.select("#capitals");
+    const capitalLabels = burgLabels.select("#capitals");
+    const townIcons = burgIcons.select("#towns");
+    const townLabels = burgLabels.select("#towns");
+    capitalIcons.selectAll("*").remove();
+    capitalLabels.selectAll("*").remove();
+    townIcons.selectAll("*").remove();
+    townLabels.selectAll("*").remove();
+
+    for (let i = 0; i < manors.length; i++) {
+      const x = manors[i].x, y = manors[i].y;
+      const cell = manors[i].cell;
+      const name = manors[i].name;
+      const ic = i < capitalsCount ? capitalIcons : townIcons;
+      const lb = i < capitalsCount ? capitalLabels : townLabels;
+      ic.append("circle").attr("data-id", i).attr("cx", x).attr("cy", y).attr("r", "1em").on("click", editBurg);
+      lb.append("text").attr("data-id", i).attr("x", x).attr("y", y).attr("dy", "-0.35em").text(name).on("click", editBurg);
     }
-    labels.selectAll("text").on("click", editLabel);
-    burgs.selectAll("circle").call(d3.drag().on("start", elementDrag));
     console.timeEnd('drawManors');
   }
 
@@ -2929,6 +3604,8 @@ function fantasyMap() {
   // Define areas cells
   function drawRegions() {
     console.time('drawRegions');
+    labels.select("#countries").selectAll("*").remove();
+
     // arrays to store edge data
     var edges = [], coastalEdges = [], borderEdges = [], neutralEdges = [];
     for (let a=0; a < states.length; a++) {
@@ -3006,7 +3683,7 @@ function fantasyMap() {
     array.sort(function(a, b){return b.length - a.length;});
     var name = states[region].name;
     var c = polylabel(array, 1.0); // pole of inaccessibility
-    countries.append("text").attr("id", "regionLabel"+region).attr("x", rn(c[0])).attr("y", rn(c[1])).text(name).on("click", editLabel);
+    labels.select("#countries").append("text").attr("id", "regionLabel"+region).attr("x", rn(c[0])).attr("y", rn(c[1])).text(name).on("click", editLabel);
     states[region].area = rn(Math.abs(d3.polygonArea(array[0]))); // define region area
   }
 
@@ -3209,104 +3886,140 @@ function fantasyMap() {
 
   // Draw the Relief (need to create more beautiness)
   function drawRelief() {
+    let h, count, rnd, cx, cy, swampCount = 0;
     console.time('drawRelief');
-    var ea, edge, id, cell, x, y, height, path, dash = "", rnd, count;
-    var hill = [], hShade = [], swamp = "", swampCount = 0, forest = "", fShade = "", fLight = "", swamp = "";
-    hill[0] = "", hill[1] = "", hShade[0] = "", hShade[1] = "";
-    var strokes = terrain.append("g").attr("id", "strokes"),
-      hills = terrain.append("g").attr("id", "hills"),
-      mounts = terrain.append("g").attr("id", "mounts"),
-      swamps = terrain.append("g").attr("id", "swamps"),
-      forests = terrain.append("g").attr("id", "forests");
+    const hills = terrain.select("#hills");
+    const mounts = terrain.select("#mounts");
+    const swamps = terrain.select("#swamps");
+    const forests = terrain.select("#forests");
+    terrain.selectAll("g").selectAll("g").remove();
     // sort the land to Draw the top element first (reduce the elements overlapping)
     land.sort(compareY);
     for (i = 0; i < land.length; i++) {
-      x = land[i].data[0];
-      y = land[i].data[1];
-      height = land[i].height;
+      const x = land[i].data[0];
+      const y = land[i].data[1];
+      const height = land[i].height;
       if (height >= 0.7 && !land[i].river) {
+        // mount icon
         h = (height - 0.55) * 12;
-        if (height < 0.8) {
-          count = 2;
-        } else {
-          count = 1;
-        }
+        count = height < 0.8 ? 2 : 1;
         rnd = Math.random() * 0.8 + 0.2;
-        for (c = 0; c < count; c++) {
+        for (let c = 0; c < count; c++) {
+          const g = mounts.append("g");
           cx = x - h * 0.9 - c;
           cy = y + h / 4 + c / 2;
-          path = "M " + cx + "," + cy + " L " + (cx + h / 3 + rnd) + "," + (cy - h / 4 - rnd * 1.2) + " L " + (cx + h / 1.1) + "," + (cy - h) + " L " + (cx + h + rnd) + "," + (cy - h / 1.2 + rnd) + " L " + (cx + h * 2) + "," + cy;
-          mounts.append("path").attr("d", path).attr("stroke", "#5c5c70");
-          path = "M " + cx + "," + cy + " L " + (cx + h / 3 + rnd) + "," + (cy - h / 4 - rnd * 1.2) + " L " + (cx + h / 1.1) + "," + (cy - h) + " L " + (cx + h / 1.5) + "," + cy;
-          mounts.append("path").attr("d", path).attr("fill", "#999999");
-          dash += "M" + (cx - 0.1) + "," + (cy + 0.3) + " L" + (cx + 2 * h + 0.1) + "," + (cy + 0.3);
+          let mount = "M" + cx + "," + cy + " L" + (cx + h / 3 + rnd) + "," + (cy - h / 4 - rnd * 1.2) + " L" + (cx + h / 1.1) + "," + (cy - h) + " L" + (cx + h + rnd) + "," + (cy - h / 1.2 + rnd) + " L" + (cx + h * 2) + "," + cy;
+          let shade = "M" + cx + "," + cy + " L" + (cx + h / 3 + rnd) + "," + (cy - h / 4 - rnd * 1.2) + " L" + (cx + h / 1.1) + "," + (cy - h) + " L" + (cx + h / 1.5) + "," + cy;
+          let dash = "M" + (cx - 0.1) + "," + (cy + 0.3) + " L" + (cx + 2 * h + 0.1) + "," + (cy + 0.3);
+          dash += "M" + (cx + 0.4) + "," + (cy + 0.6) + " L" + (cx + 2 * h - 0.3) + "," + (cy + 0.6);
+          g.append("path").attr("d", round(mount, 1)).attr("stroke", "#5c5c70");
+          g.append("path").attr("d", round(shade, 1)).attr("fill", "#999999");
+          g.append("path").attr("d", round(dash, 1)).attr("class", "strokes");
         }
-        dash += "M" + (cx + 0.4) + "," + (cy + 0.6) + " L" + (cx + 2 * h - 0.3) + "," + (cy + 0.6);
       } else if (height > 0.5 && !land[i].river) {
+        // hill icon
         h = (height - 0.4) * 10;
         count = Math.floor(4 - h);
-        if (h > 1.8) {
-          h = 1.8
-        }
-        for (c = 0; c < count; c++) {
+        if (h > 1.8) h = 1.8;
+        for (let c = 0; c < count; c++) {
+          const g = hills.append("g");
           cx = x - h - c;
           cy = y + h / 4 + c / 2;
-          hill[c] += "M" + cx + "," + cy + " Q" + (cx + h) + "," + (cy - h) + " " + (cx + 2 * h) + "," + cy;
-          hShade[c] += "M" + (cx + 0.6 * h) + "," + (cy + 0.1) + " Q" + (cx + h * 0.95) + "," + (cy - h * 0.91) + " " + (cx + 2 * h * 0.97) + "," + cy;
-          dash += "M" + (cx - 0.1) + "," + (cy + 0.2) + " L" + (cx + 2 * h + 0.1) + "," + (cy + 0.2);
+          let hill = "M" + cx + "," + cy + " Q" + (cx + h) + "," + (cy - h) + " " + (cx + 2 * h) + "," + cy;
+          let shade = "M" + (cx + 0.6 * h) + "," + (cy + 0.1) + " Q" + (cx + h * 0.95) + "," + (cy - h * 0.91) + " " + (cx + 2 * h * 0.97) + "," + cy;
+          let dash = "M" + (cx - 0.1) + "," + (cy + 0.2) + " L" + (cx + 2 * h + 0.1) + "," + (cy + 0.2);
+          dash += "M" + (cx + 0.4) + "," + (cy + 0.4) + " L" + (cx + 2 * h - 0.3) + "," + (cy + 0.4);
+          g.append("path").attr("d", round(hill, 1)).attr("stroke", "#5c5c70");
+          g.append("path").attr("d", round(shade, 1)).attr("fill", "white");
+          g.append("path").attr("d", round(dash, 1)).attr("class", "strokes");
         }
-        dash += "M" + (cx + 0.4) + "," + (cy + 0.4) + " L" + (cx + 2 * h - 0.3) + "," + (cy + 0.4);
       }
-      if (height >= 0.21 && height < 0.22 && !land[i].river && swampCount < swampiness && land[i].used != 1) {
+
+      // swamp icons
+      if (height >= 0.21 && height < 0.22 && !land[i].river && swampCount < +swampinessInput.value && land[i].used != 1) {
+        const g = swamps.append("g");
         swampCount++;
         land[i].used = 1;
-        swamp += drawSwamp(x, y);
-        id = land[i].index;
-        cell = diagram.cells[id];
+        let swamp = drawSwamp(x, y);
+        const id = land[i].index;
+        const cell = diagram.cells[id];
         cell.halfedges.forEach(function(e) {
           edge = diagram.edges[e];
           ea = edge.left.index;
-          if (ea === id || !ea) {
-            ea = edge.right.index;
-          }
+          if (ea === id || !ea) ea = edge.right.index;
           if (cells[ea].height >= 0.2 && cells[ea].height < 0.3 && !cells[ea].river && cells[ea].used != 1) {
             cells[ea].used = 1;
             swamp += drawSwamp(cells[ea].data[0], cells[ea].data[1]);
           }
         })
+        g.append("path").attr("d", round(swamp, 1));
       }
+
+      // forest icons
       if (Math.random() < height && height >= 0.22 && height < 0.48 && !land[i].river) {
-        for (c = 0; c < Math.floor(height * 8); c++) {
-          h = 0.6;
-          if (c == 0) {
-            cx = x - h - Math.random();
-            cy = y - h - Math.random();
-          }
-          if (c == 1) {
-            cx = x + h + Math.random();
-            cy = y + h + Math.random();
-          }
-          if (c == 2) {
-            cx = x - h - Math.random();
-            cy = y + 2 * h + Math.random();
-          }
-          forest += "M " + cx + " " + cy + " q -1 0.8 -0.05 1.25 v 0.75 h 0.1 v -0.75 q 0.95 -0.47 -0.05 -1.25 z";
-          fLight += "M " + cx + " " + cy + " q -1 0.8 -0.05 1.25 h 0.1 q 0.95 -0.47 -0.05 -1.25 z";
-          fShade += "M " + cx + " " + cy + " q -1 0.8 -0.05 1.25 q -0.2 -0.55 0 -1.1 z";
+        count = Math.floor(height * 8);
+        if (land[i].ctype === 1) count = 1;
+        for (let c = 0; c < count; c++) {
+          const g = forests.append("g");
+          rnd = Math.random();
+          h = 1 * rnd * 0.4 + 0.6;
+          cx = c === 1 ? x + h + Math.random() : x - h - Math.random();
+          cy = c === 1 ? y + h + rnd : c === 2 ? y + 2 * h + rnd : y - h - rnd;
+          cx = rn(cx, 1);
+          cy = rn(cy, 1);
+          const forest = "M" + cx + "," + cy + " q-1,0.8 -0.05,1.25 v0.75 h0.1 v-0.75 q0.95,-0.47 -0.05,-1.25 z ";
+          const light = "M" + cx + "," + cy + " q-1,0.8 -0.05,1.25 h0.1 q0.95,-0.47 -0.05,-1.25 z ";
+          const shade = "M" + cx + "," + cy + " q-1,0.8 -0.05,1.25 q-0.2,-0.55 0,-1.1 z ";
+          g.append("path").attr("d", forest);
+          g.append("path").attr("d", light).attr("fill", "white").attr("stroke", "none");
+          g.append("path").attr("d", shade).attr("fill", "#999999").attr("stroke", "none");
         }
       }
     }
-    // draw all these stuff
-    strokes.append("path").attr("d", round(dash, 1));
-    hills.append("path").attr("d", round(hill[0], 1)).attr("stroke", "#5c5c70");
-    hills.append("path").attr("d", round(hShade[0], 1)).attr("fill", "white");
-    hills.append("path").attr("d", round(hill[1], 1)).attr("stroke", "#5c5c70");
-    hills.append("path").attr("d", round(hShade[1], 1)).attr("fill", "white").attr("stroke", "white");
-    swamps.append("path").attr("d", round(swamp, 1));
-    forests.append("path").attr("d", forest);
-    forests.append("path").attr("d", fLight).attr("fill", "white").attr("stroke", "none");
-    forests.append("path").attr("d", fShade).attr("fill", "#999999").attr("stroke", "none");
+    terrain.selectAll("g").selectAll("g").on("click", editReliefIcon);
     console.timeEnd('drawRelief');
+  }
+
+  function addReliefIcon(height, type, cx, cy) {
+    const g = terrain.select("#" + type).append("g");
+    if (type === "mounts") {
+      const h = height >= 0.7 ? (height - 0.55) * 12 : 1.8;
+      const rnd = Math.random() * 0.8 + 0.2;
+      let mount = "M" + cx + "," + cy + " L" + (cx + h / 3 + rnd) + "," + (cy - h / 4 - rnd * 1.2) + " L" + (cx + h / 1.1) + "," + (cy - h) + " L" + (cx + h + rnd) + "," + (cy - h / 1.2 + rnd) + " L" + (cx + h * 2) + "," + cy;
+      let shade = "M" + cx + "," + cy + " L" + (cx + h / 3 + rnd) + "," + (cy - h / 4 - rnd * 1.2) + " L" + (cx + h / 1.1) + "," + (cy - h) + " L" + (cx + h / 1.5) + "," + cy;
+      let dash = "M" + (cx - 0.1) + "," + (cy + 0.3) + " L" + (cx + 2 * h + 0.1) + "," + (cy + 0.3);
+      dash += "M" + (cx + 0.4) + "," + (cy + 0.6) + " L" + (cx + 2 * h - 0.3) + "," + (cy + 0.6);
+      g.append("path").attr("d", round(mount, 1)).attr("stroke", "#5c5c70");
+      g.append("path").attr("d", round(shade, 1)).attr("fill", "#999999");
+      g.append("path").attr("d", round(dash, 1)).attr("class", "strokes");
+    }
+    if (type === "hills") {
+      let h = height > 0.5 ? (height - 0.4) * 10 : 1.2;
+      if (h > 1.8) h = 1.8;
+      let hill = "M" + cx + "," + cy + " Q" + (cx + h) + "," + (cy - h) + " " + (cx + 2 * h) + "," + cy;
+      let shade = "M" + (cx + 0.6 * h) + "," + (cy + 0.1) + " Q" + (cx + h * 0.95) + "," + (cy - h * 0.91) + " " + (cx + 2 * h * 0.97) + "," + cy;
+      let dash = "M" + (cx - 0.1) + "," + (cy + 0.2) + " L" + (cx + 2 * h + 0.1) + "," + (cy + 0.2);
+      dash += "M" + (cx + 0.4) + "," + (cy + 0.4) + " L" + (cx + 2 * h - 0.3) + "," + (cy + 0.4);
+      g.append("path").attr("d", round(hill, 1)).attr("stroke", "#5c5c70");
+      g.append("path").attr("d", round(shade, 1)).attr("fill", "white");
+      g.append("path").attr("d", round(dash, 1)).attr("class", "strokes");
+    }
+    if (type === "swamps") {
+      const swamp = drawSwamp(cx, cy);
+      g.append("path").attr("d", round(swamp, 1));
+    }
+    if (type === "forests") {
+      const rnd = Math.random();
+      const h = rnd * 0.4 + 0.6;
+      const forest = "M" + cx + "," + cy + " q-1,0.8 -0.05,1.25 v0.75 h0.1 v-0.75 q0.95,-0.47 -0.05,-1.25 z ";
+      const light = "M" + cx + "," + cy + " q-1,0.8 -0.05,1.25 h0.1 q0.95,-0.47 -0.05,-1.25 z ";
+      const shade = "M" + cx + "," + cy + " q-1,0.8 -0.05,1.25 q-0.2,-0.55 0,-1.1 z ";
+      g.append("path").attr("d", forest);
+      g.append("path").attr("d", light).attr("fill", "white").attr("stroke", "none");
+      g.append("path").attr("d", shade).attr("fill", "#999999").attr("stroke", "none");
+    }
+    g.on("click", editReliefIcon);
+    return g;
   }
 
   function compareY(a, b) {
@@ -3363,7 +4076,6 @@ function fantasyMap() {
   function getMap(keepData) {
     exitCustomization();
     console.time("TOTAL");
-    applyMapSize();
     randomizeOptions();
     markFeatures();
     drawOcean();
@@ -3432,6 +4144,7 @@ function fantasyMap() {
         $("#burgAdd").addClass('pressed');
         closeDialogs(".stable");
         viewbox.style("cursor", "crosshair").on("click", addBurgOnClick);
+        tip("Click on map to place burg icon with a label. Hold Shift to place several", true);
       }
     });
 
@@ -3446,24 +4159,18 @@ function fantasyMap() {
       const name = generateName(culture);
 
       if (cells[index].height < 0.2) {
-        console.error("Cannot place burg in the water! Select a land cell");
+        tip("Cannot place burg in the water! Select a land cell");
         return;
       }
       if (cells[index].manor !== undefined) {
-        console.error("There is already a burg in this cell. You have to select a free cell");
+        tip("There is already a burg in this cell. You have to select a free cell");
+        $('#grid').fadeIn();
+        d3.select("#toggleGrid").classed("buttonoff", false);
         return;
       }
       var i = manors.length;
-      burgs.append("circle").attr("id", "manorIcon"+i).attr("r", .5).attr("stroke-width", .12)
-        .attr("cx", x).attr("cy", y).call(d3.drag().on("start", elementDrag));
-      var group = labels.select("#addedBurgs");
-      if (!group.size()) {
-        group = labels.append("g").attr("id", "addedBurgs")
-          .attr("fill", "#3e3e4b").attr("opacity", 1)
-          .attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC")
-          .attr("font-size", 4).attr("data-size", 4);
-      }
-      group.append("text").attr("id", "manorLabel"+i).attr("x", x).attr("y", y).attr("dy", -0.7).text(name).on("click", editLabel);
+      burgIcons.select("#towns").append("circle").attr("data-id", i).attr("cx", x).attr("cy", y).attr("r", "1em").on("click", editBurg);
+      burgLabels.select("#towns").append("text").attr("data-id", i).attr("x", x).attr("y", y).attr("dy", "-0.35em").text(name).on("click", editBurg);
       invokeActiveZooming();
 
       if (d3.event.shiftKey === false) {
@@ -3493,6 +4200,7 @@ function fantasyMap() {
       manors.push({i, cell:index, x, y, region, culture, name, population});
       recalculateStateData(state);
       updateCountryEditors();
+      tip("", true);
     }
 
     // add river on click
@@ -3501,12 +4209,14 @@ function fantasyMap() {
         $(".pressed").removeClass('pressed');
         unselect();
         restoreDefaultEvents();
+        tip("", true);
       } else {
         $(".pressed").removeClass('pressed');
         unselect();
         $(this).addClass('pressed');
         closeDialogs(".stable");
         viewbox.style("cursor", "crosshair").on("click", addRiverOnClick);
+        tip("Click on map to place new river or extend an existing one", true);
       }
     });
 
@@ -3582,6 +4292,46 @@ function fantasyMap() {
       rivers.append("path").attr("d", d).attr("id", "river"+river)
         .attr("data-width", 1.3).attr("data-increment", 1).on("click", editRiver);
     }
+
+    // add relief icon on click
+    $("#addRelief").click(function() {
+      if ($(this).hasClass('pressed')) {
+        $(".pressed").removeClass('pressed');
+        restoreDefaultEvents();
+      } else {
+        $(".pressed").removeClass('pressed');
+        $(this).addClass('pressed');
+        closeDialogs(".stable");
+        viewbox.style("cursor", "crosshair").on("click", addReliefOnClick);
+        tip("Click on map to place relief icon. Hold Shift to place several", true);
+      }
+    });
+
+    function addReliefOnClick() {
+      const point = d3.mouse(this);
+      const index = getIndex(point);
+      const height = cells[index].height;
+      if (height < 0.2) {
+        tip("Cannot place icon in the water! Select a land cell");
+        return;
+      }
+
+      const x = rn(point[0], 2), y = rn(point[1], 2);
+      const type = reliefGroup.value;
+      addReliefIcon(height, type, x, y);
+
+      if (d3.event.shiftKey === false) {
+        $("#addRelief").removeClass("pressed");
+        restoreDefaultEvents();
+      }
+      tip("", true);
+    }
+
+    // add relief icon on click
+    $("#addRoute").click(function() {
+      if (!modules.editRoute) editRoute();
+      $("#routeNew").click();
+    });
   }
 
   // return cell / polly Index or error
@@ -3646,7 +4396,7 @@ function fantasyMap() {
     if (modules.editLabel) {return;}
     modules.editLabel = true;
 
-    $("#editFontButton").click(fetchAdditionalFonts);
+    loadDefaultFonts();
   }
 
   function changeSelectedStateOnClick() {
@@ -3663,17 +4413,31 @@ function fantasyMap() {
   }
 
   // fetch default fonts if not done before
-  function fetchAdditionalFonts() {
-    if (fonts.length < 10) {
+  function loadDefaultFonts() {
+    if (!$('link[href="fonts.css"]').length) {
       $("head").append('<link rel="stylesheet" type="text/css" href="fonts.css">');
-      const artistic = ["Almendra+SC", "Amatic+SC:700", "IM+Fell+English", "Great+Vibes", "MedievalSharp", "Metamorphous",
+      const artistic = ["Amatic+SC:700", "IM+Fell+English", "Great+Vibes", "MedievalSharp", "Metamorphous",
                         "Nova+Script", "Uncial+Antiqua", "Underdog", "Caesar+Dressing", "Bitter", "Yellowtail", "Montez",
                         "Shadows+Into+Light", "Fredericka+the+Great", "Orbitron", "Dancing+Script:700",
                         "Architects+Daughter", "Kaushan+Script", "Gloria+Hallelujah", "Satisfy", "Comfortaa:700", "Cinzel"];
       const webSafe = ["Georgia", "Times+New+Roman", "Comic+Sans+MS", "Lucida+Sans+Unicode", "Courier+New"];
-      fonts = artistic.concat(webSafe);
+      const fontsToAdd = artistic.concat(webSafe);
+      fontsToAdd.forEach(function(f) {if (fonts.indexOf(f) === -1) fonts.push(f);});
       updateFontOptions();
     }
+  }
+
+  // Update font list for Label and Burg Editors
+  function updateFontOptions() {
+    editFontSelect.innerHTML = "";
+    for (let i=0; i < fonts.length; i++) {
+      const opt = document.createElement('option');
+      opt.value = i;
+      const font = fonts[i].split(':')[0].replace(/\+/g, " ");
+      opt.style.fontFamily = opt.innerHTML = font;
+      editFontSelect.add(opt);
+    }
+    burgSelectDefaultFont.innerHTML  = editFontSelect.innerHTML;
   }
 
   $("#labelEditor .editButton, #labelEditor .editButtonS").click(function() {
@@ -3752,19 +4516,11 @@ function fantasyMap() {
         name = generateStateName(state.i);
         state.name = name;
       } else {
-        // check if label is manor name
-        var manor = $.grep(manors, function(e) {return (e.name === editText.value);})[0];
-        if (manor) {
-          var culture = manor.culture;
-          name = generateName(culture);
-          manor.name = name;
-        } else {
-          // if not, get culture closest to BBox centre
-          var c = elSelected.node().getBBox();
-          var closest = cultureTree.find((c.x + c.width / 2), (c.y + c.height / 2));
-          var culture = cultureTree.data().indexOf(closest) || 0;
-          name = generateName(culture);
-        }
+        // if not, get culture closest to BBox centre
+        var c = elSelected.node().getBBox();
+        var closest = cultureTree.find((c.x + c.width / 2), (c.y + c.height / 2));
+        var culture = cultureTree.data().indexOf(closest) || 0;
+        name = generateName(culture);
       }
       editText.value = name;
       elSelected.text(name);
@@ -3790,35 +4546,65 @@ function fantasyMap() {
   function updateGroupOptions() {
     editGroupSelect.innerHTML = "";
     labels.selectAll("g").each(function(d) {
+      const id = d3.select(this).attr("id");
+      if (id === "burgLabels") return;
+      if (id === "capitals") return;
+      if (id === "towns") return;
       var opt = document.createElement("option");
-      opt.value = opt.innerHTML = d3.select(this).attr("id");
+      opt.value = opt.innerHTML = id;
       editGroupSelect.add(opt);
     });
   }
 
   // on editAngle change
-  $("#editAngle").change(function() {
+  $("#editAngle").on("input", function() {
     var c = elSelected.node().getBBox();
     var rotate = `rotate(${this.value} ${(c.x+c.width/2)} ${(c.y+c.height/2)})`;
     elSelected.attr("transform", rotate);
+    editAngleValue.innerHTML = Math.abs(+this.value) + "°";
   });
 
-  // on editFontInput change. Use a direct link to any @font-face declaration or just font name to fetch from Google Fonts
   $("#editFontInput").change(function() {
-    if (editFontInput.value !== "") {
-      var url = editFontInput.value;
+    fetchFonts(this.value).then(fetched => {
+      if (!fetched) return;
+      editExternalFont.click();
+      editFontInput.value = "";
+      if (fetched === 1) $("#editFontSelect").val(fonts.length - 1).change();
+    });
+  });
+
+  function fetchFonts(url) {
+    return new Promise((resolve, reject) => {
+      if (url === "") {
+        tip("Use a direct link to any @font-face declaration or just font name to fetch from Google Fonts");
+        return;
+      }
       if (url.indexOf("http") === -1) {
         url = url.replace(url.charAt(0), url.charAt(0).toUpperCase()).split(" ").join("+");
         url = "https://fonts.googleapis.com/css?family=" + url;
       }
-      addFonts(url, "autoselect");
-      editFontInput.value = "";
-      editExternalFont.click();
-    }
-  });
+      const fetched = addFonts(url).then(fetched => {
+        if (fetched === undefined) {
+          tip("Cannot fetch font for this value!");
+          return;
+        }
+        if (fetched === 0) {
+          tip("Already in the fonts list!");
+          return;
+        }
+        updateFontOptions();
+        if (fetched === 1) {
+          tip("Font " + fonts[fonts.length - 1] + " is fetched");
+        } else if (fetched > 1) {
+          tip(fetched + " fonts are added to the list");
+        }
+        resolve(fetched);
+      });
+    })
+  }
 
-  function addFonts(url, autoselect) {
-    $('head').append('<link rel="stylesheet" type="text/css" href="' + url + '">');
+  function addFonts(url) {
+    $("head").append('<link rel="stylesheet" type="text/css" href="' + url + '">');
     return fetch(url)
       .then(resp => resp.text())
       .then(text => {
@@ -3830,22 +4616,17 @@ function fantasyMap() {
           sS => sS.ownerNode === s)[0];
         let FontRule = rule => {
           let family = rule.style.getPropertyValue('font-family');
+          let font = family.replace(/['"]+/g, '').replace(/ /g, "+");
           let weight = rule.style.getPropertyValue('font-weight');
-          let font = family.replace(/['"]+/g, '').replace(/ /g, "+") + ":" + weight;
-          if (fonts.indexOf(font) == -1) {fonts.push(font);}
+          if (weight !== "400") font += ":" + weight;
+          if (fonts.indexOf(font) == -1) {fonts.push(font); fetched++};
         };
+        let fetched = 0;
         for (var r of styleSheet.cssRules) {FontRule(r);}
         document.head.removeChild(s);
-        updateFontOptions();
-        // apply the last of added fonts
-        if (autoselect) {
-          const num = $("#editFontSelect option").length - 1;
-          $("#editFontSelect").prop("selectedIndex", num);
-          const group = d3.select(elSelected.node().parentNode);
-          const font = fonts[editFontSelect.value].split(':')[0].replace(/\+/g, " ");
-          group.attr("font-family", font).attr("data-font", fonts[editFontSelect.value]);
-        }
+        return fetched;
       })
+      .catch(function() {return});
   }
 
   // on any Editor input change
@@ -3863,14 +4644,11 @@ function fantasyMap() {
       var state = +elSelected.attr("id").slice(11);
       states[state].name = editText.value;
     }
-    // check if label is a manor name
-    if (id.includes("manorLabel")) {
-      var manor = +elSelected.attr("id").slice(10);
-      manors[manor].name = editText.value;
-    }
     if (editGroupInput.value !== "") {
       groupNew = editGroupInput.value.toLowerCase().replace(/ /g, "_").replace(/[^\w\s]/gi, "");
-      if (Number.isFinite(+groupNew.charAt(0))) {groupNew = "g" + groupNew;}
+      if (Number.isFinite(+groupNew.charAt(0))) groupNew = "g" + groupNew;
+      if (groupNew === "towns") groupNew = "town_labels";
+      if (groupNew === "capitals") groupNew = "capital_labels";
     }
     if (groupOld !== groupNew) {
       var removed = elSelected.remove();
@@ -3892,26 +4670,15 @@ function fantasyMap() {
     }
     // update Group attributes
     var size = +editSize.value;
-    var font = fonts[editFontSelect.value].split(':')[0].replace(/\+/g, " ");
     group.attr("data-size", size)
       .attr("font-size", rn((size + (size / scale)) / 2, 2))
-      .attr("font-family", font)
-      .attr("data-font", fonts[editFontSelect.value])
       .attr("fill", editColor.title)
       .attr("opacity", editOpacity.value);
-  });
-
-  // Update font list for Label Editor
-  function updateFontOptions() {
-    editFontSelect.innerHTML = "";
-    for (var i=0; i < fonts.length; i++) {
-      var opt = document.createElement('option');
-      opt.value = i;
-      var font = fonts[i].split(':')[0].replace(/\+/g, " ");
-      opt.style.fontFamily = opt.innerHTML = font;
-      editFontSelect.add(opt);
+    if (editFontSelect.value !== "") {
+      const font = fonts[editFontSelect.value].split(':')[0].replace(/\+/g, " ");
+      group.attr("font-family", font).attr("data-font", fonts[editFontSelect.value]);
     }
-  }
+  });
 
   // convert RGB color string to HEX without #
   function toHEX(rgb){
@@ -3921,16 +4688,6 @@ function fantasyMap() {
       ("0" + parseInt(rgb[1],10).toString(16)).slice(-2) +
       ("0" + parseInt(rgb[2],10).toString(16)).slice(-2) +
       ("0" + parseInt(rgb[3],10).toString(16)).slice(-2) : '';
-  }
-
-  // get Curve Type
-  function getCurveType() {
-    type = curveType.value;
-    if (type === "Catmull–Rom") {lineGen.curve(d3.curveCatmullRom);}
-    if (type === "Linear") {lineGen.curve(d3.curveLinear);}
-    if (type === "Basis") {lineGen.curve(d3.curveBasisClosed);}
-    if (type === "Cardinal") {lineGen.curve(d3.curveCardinal);}
-    if (type === "Step") {lineGen.curve(d3.curveStep);}
   }
 
   // round value to d decimals
@@ -3969,28 +4726,39 @@ function fantasyMap() {
   function saveAsImage(type) {
     console.time("saveAsImage");
     // get all used fonts
-    var fontsInUse = []; // to store fonts currently in use
+    const fontsInUse = []; // to store fonts currently in use
+    const webSafe = ["Georgia", "Times+New+Roman", "Comic+Sans+MS", "Lucida+Sans+Unicode", "Courier+New"];
     labels.selectAll("g").each(function(d) {
-      var font = d3.select(this).attr("data-font");
-      if (fontsInUse.indexOf(font) === -1) {fontsInUse.push(font);}
+      const font = d3.select(this).attr("data-font");
+      if (!font) return;
+      if (webSafe.indexOf(font) !== -1) return;
+      if (fontsInUse.indexOf(font) === -1) fontsInUse.push(font);
     });
-    var fontsToLoad = "https://fonts.googleapis.com/css?family=" + fontsInUse.join("|");
+    const fontsToLoad = "https://fonts.googleapis.com/css?family=" + fontsInUse.join("|");
+
+    // reset zoom for svg
+    const transform = d3.zoomTransform(svg.node());
+    if (type === "svg") resetZoom();
 
     // clone svg
     var cloneEl = document.getElementsByTagName("svg")[0].cloneNode(true);
     cloneEl.id = "clone";
     document.getElementsByTagName("body")[0].appendChild(cloneEl);
     var clone = d3.select("#clone");
-    if (type === "svg") {clone.select("#viewbox").attr("transform", null);}
 
     // for each g element get inline style
     var emptyG = clone.append("g").node();
     var defaultStyles = window.getComputedStyle(emptyG);
+
+    // restore zoom for svg
+    if (type === "svg") zoom.transform(svg, transform);
+
+    // show hidden labels but in reduced size
     clone.select("#labels").selectAll(".hidden").each(function(e) {
-      // show hidden labels but in reduced size
-      var size = d3.select(this).attr("font-size");
+      const size = d3.select(this).attr("font-size");
       d3.select(this).classed("hidden", false).attr("font-size", rn(size * 0.4, 2));
     });
+
     clone.selectAll("g, #ruler > g > *, #scaleBar > text").each(function(d) {
       var compStyle = window.getComputedStyle(this);
       var style = "";
@@ -4021,8 +4789,8 @@ function fantasyMap() {
       link.target = "_blank";
       if (type === "png") {
         var ratio = svgHeight / svgWidth;
-        canvas.width = 3840; // ultraHD
-        canvas.height = rn(3840 * ratio);
+        canvas.width = svgWidth * pngResolution.value;
+        canvas.height = svgHeight * pngResolution.value;
         var img = new Image();
         img.src = url;
         img.onload = function(){
@@ -4101,11 +4869,16 @@ function fantasyMap() {
   // Save in .map format, based on FileSystem API
   function saveMap() {
     console.time("saveMap");
-    // data convention: 0 - version; 1 - all points; 2 - cells; 3 - manors; 4 - states; 5 - svg; 6 - options;
+    // data convention: 0 - version; 1 - all points; 2 - cells; 3 - manors; 4 - states; 5 - svg; 6 - options (see below);
     // size stats: points = 6%, cells = 36%, manors and states = 2%, svg = 56%;
+    const options = customization + "|" +
+    distanceUnit.value + "|" + distanceScale.value + "|" + areaUnit.value + "|" +
+    barSize.value  + "|" + barLabel.value  + "|" + barBackOpacity.value  + "|" + barBackColor.value + "|" +
+    populationRate.value + "|" + urbanization.value;
+
     svg.attr("width", graphWidth).attr("height", graphHeight);
-    const transform = viewbox.attr("transform");
-    viewbox.attr("transform", "");
+    const transform = d3.zoomTransform(svg.node());
+    resetZoom();
     const oceanBack = ocean.select("rect");
     const oceanShift = [oceanBack.attr("x"), oceanBack.attr("y"), oceanBack.attr("width"), oceanBack.attr("height")];
     oceanBack.attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
@@ -4113,19 +4886,18 @@ function fantasyMap() {
     var svg_xml = (new XMLSerializer()).serializeToString(svg.node());
     var line = "\r\n";
     var data = version + line + JSON.stringify(points) + line + JSON.stringify(cells) + line;
-    data += JSON.stringify(manors) + line + JSON.stringify(states) + line + svg_xml + line + customization;
+    data += JSON.stringify(manors) + line + JSON.stringify(states) + line + svg_xml + line + options;
     var dataBlob = new Blob([data], {type:"text/plain"});
     var dataURL = window.URL.createObjectURL(dataBlob);
     var link = document.createElement("a");
     link.download = "fantasy_map_" + Date.now() + ".map";
     link.href = dataURL;
     document.body.appendChild(link);
-    allowResize = false;
     link.click();
 
     // restore initial values
     svg.attr("width", svgWidth).attr("height", svgHeight);
-    viewbox.attr("transform", transform);
+    zoom.transform(svg, transform);
     oceanBack.attr("x", oceanShift[0]).attr("y", oceanShift[1]).attr("width", oceanShift[2]).attr("height", oceanShift[3]);
 
     console.timeEnd("saveMap");
@@ -4167,7 +4939,7 @@ function fantasyMap() {
                       of the Generator. Please note the Gennerator is still on demo and a lot of crusial changes are made every month`;
         }
         alertMessage.innerHTML = message;
-        $("#alert").dialog({title: "Map version conflict", buttons: {OK: function() {
+        $("#alert").dialog({title: "Warning", buttons: {OK: function() {
           $(this).dialog("close");
           loadDataFromMap(data);
         }}});
@@ -4179,39 +4951,60 @@ function fantasyMap() {
   }
 
   function loadDataFromMap(data) {
+    // get options
+    if (data[0] === "0.52b" || data[0] === "0.53b") {
+      customization = 0;
+    } else {
+      const options = data[6].split("|");
+      customization = +options[0] || 0;
+      if (options[1]) distanceUnit.value = options[1];
+      if (options[2]) distanceScale.value = options[2];
+      if (options[3]) areaUnit.value = options[3];
+      if (options[4]) barSize.value = options[4];
+      if (options[5]) barLabel.value = options[5];
+      if (options[6]) barBackOpacity.value = options[6];
+      if (options[7]) barBackColor.value = options[7];
+      if (options[8]) populationRate.value = options[8];
+      if (options[9]) urbanization.value = options[9];
+    }
+
     // replace old svg
     svg.remove();
     if (data[0] === "0.52b" || data[0] === "0.53b") {
       states = []; // no states data
       document.body.insertAdjacentHTML("afterbegin", data[4]);
-      customization = 0;
     } else {
       states = JSON.parse(data[4]);
       document.body.insertAdjacentHTML("afterbegin", data[5]);
-      customization = +data[6] || 0;
     }
 
     svg = d3.select("svg");
-    // check map size
+
+    // always change graph size to the size of loaded map
     const nWidth = +svg.attr("width"), nHeight = +svg.attr("height");
-    // temporary fit svg element to current canvas size
+    graphWidth = nWidth;
+    graphHeight = nHeight;
+    voronoi = d3.voronoi().extent([[0, 0], [graphWidth, graphHeight]]);
+    initView = [1, 0, 0];
+    zoom.translateExtent([[0, 0], [graphWidth, graphHeight]]).scaleExtent([1, 20]).scaleTo(svg, 1);
+    viewbox.attr("transform", null);
+    ocean.selectAll("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
+
+    // temporary fit loaded svg element to current canvas size
     svg.attr("width", svgWidth).attr("height", svgHeight);
     if (nWidth !== svgWidth || nHeight !== svgHeight) {
       alertMessage.innerHTML  = `The loaded map has size ${nWidth} x ${nHeight} pixels,
                                 while the current canvas size is ${svgWidth} x ${svgHeight} pixels.
-                                You may either fit the loaded map to the current window
-                                or resize the canvas to ${nWidth} x ${nHeight} pixels`;
+                                You may either fit the loaded map to the current canvas
+                                or resize the current canvas to ${nWidth} x ${nHeight} pixels`;
       $("#alert").dialog({title: "Map size conflict",
         buttons: {
-          "Fit": function() {
-            voronoi = d3.voronoi().extent([[0, 0], [nWidth, nHeight]]);
-            graphWidth = nWidth;
-            graphHeight = nHeight;
+          Fit: function() {
             applyLoadedData(data);
             // rescale loaded map
             const xRatio = svgWidth / nWidth;
             const yRatio = svgHeight / nHeight;
-            const scaleTo = rn(Math.min(xRatio, yRatio), 2);
+            const scaleTo = rn(Math.min(xRatio, yRatio), 4);
             // calculate frames to scretch ocean background
             const extent = (100 / scaleTo) + "%";
             const xShift = (nWidth * scaleTo - svgWidth) / 2 / scaleTo;
@@ -4221,9 +5014,9 @@ function fantasyMap() {
             zoom.translateExtent([[0, 0], [nWidth, nHeight]]).scaleExtent([scaleTo, 20]).scaleTo(svg, scaleTo);
             $(this).dialog("close");
           },
-          "Resize": function() {
-            mapWidthInput.value = graphWidth = nWidth;
-            mapHeightInput.value = graphHeight = nHeight;
+          Resize: function() {
+            mapWidthInput.value = nWidth;
+            mapHeightInput.value = nHeight;
             changeMapSize();
             applyLoadedData(data);
             $(this).dialog("close");
@@ -4261,20 +5054,54 @@ function fantasyMap() {
     searoutes = routes.select("#searoutes");
     labels = viewbox.select("#labels");
     icons = viewbox.select("#icons");
-    burgs = icons.select("#burgs");
-    debug = viewbox.select("#debug");
-    capitals = labels.select("#capitals");
-    towns = labels.select("#towns");
-    countries = labels.select("#countries");
     ruler = viewbox.select("#ruler");
+    debug = viewbox.select("#debug");
+
+    // version control: ensure required groups are created with correct data
+    if (labels.select("#burgLabels").size() === 0) {
+      labels.append("g").attr("id", "burgLabels");
+      icons.append("g").attr("id", "burgIcons");
+      $("#labels #capitals, #labels #towns").detach().appendTo($("#burgLabels"));
+      $("#icons #capitals, #icons #towns").detach().appendTo($("#burgIcons"));
+      labels.select("#burgLabels").selectAll("text").each(function() {
+        const id = +this.getAttribute("id").replace("manorLabel", "");
+        this.removeAttribute("id");
+        this.setAttribute("data-id", id);
+      });
+      icons.select("#burgIcons").select("#capitals").attr("font-size", 1).attr("fill-opacity", .7).attr("stroke-opacity", 1);
+      icons.select("#burgIcons").select("#towns").attr("font-size", .5).attr("fill-opacity", .7).attr("stroke-opacity", 1);
+      icons.select("#burgIcons").selectAll("circle").each(function() {
+        const id = +this.getAttribute("id").replace("manorIcon", "");
+        this.removeAttribute("id");
+        this.setAttribute("data-id", id);
+      });
+      icons.select("#capital-anchors").raise().attr("font-size", 2).attr("size", null);
+      icons.select("#town-anchorss").raise().attr("font-size", 1).attr("size", null);
+      icons.selectAll("use").each(function() {
+        this.setAttribute("width", "1em");
+        this.setAttribute("hieght", "1em");
+      });
+    }
+    if (labels.select("#countries").size() === 0) {
+      labels.append("g").attr("id", "countries")
+        .attr("fill", "#3e3e4b").attr("opacity", 1)
+        .attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC")
+        .attr("font-size", 14).attr("data-size", 14);
+    }
+
+    burgLabels = labels.select("#burgLabels");
+    burgIcons = icons.select("#burgIcons");
 
     // restore events
     svg.call(zoom);
     restoreDefaultEvents();
     viewbox.on("touchmove mousemove", moved);
     overlay.selectAll("*").call(d3.drag().on("start", elementDrag));
+    terrain.selectAll("g").selectAll("g").on("click", editReliefIcon);
     labels.selectAll("text").on("click", editLabel);
-    burgs.selectAll("circle").call(d3.drag().on("start", elementDrag));
+    icons.selectAll("circle, path, use").on("click", editIcon);
+    burgLabels.selectAll("text").on("click", editBurg);
+    burgIcons.selectAll("circle, path, use").on("click", editBurg);
     rivers.selectAll("path").on("click", editRiver);
     routes.selectAll("path").on("click", editRoute);
     svg.select("#scaleBar").call(d3.drag().on("start", elementDrag)).on("click", editScale);
@@ -4297,25 +5124,38 @@ function fantasyMap() {
       regionsOutput.innerHTML = regionsInput.value = capitalsCount;
     }
 
+    // restore Heightmap customization mode
+    if (customization === 1) {
+      optionsTrigger.click();
+      $("#customizeHeightmap, #customizationMenu").slideDown();
+      $("#openEditor").slideUp();
+      updateHistory();
+      customizeTab.click();
+      paintBrushes.click();
+      tip("The map is in Heightmap customization mode. Please finalize the Heightmap", true);
+    }
+    // restore Country Edition mode
+    if (customization === 2 || customization === 3) tip("The map is in Country Edition mode. Please complete the assignment", true);
+
     // restore layers state
-    if (cults.selectAll("path").size() == 0) {$("#toggleCultures").addClass("buttonoff");} else {$("#toggleCultures").removeClass("buttonoff");}
-    if (terrs.selectAll("path").size() == 0) {$("#toggleHeight").addClass("buttonoff");} else {$("#toggleHeight").removeClass("buttonoff");}
-    if (regions.attr("display") === "none") {$("#toggleCountries").addClass("buttonoff");} else {$("#toggleCountries").removeClass("buttonoff");}
-    if (rivers.attr("display") === "none") {$("#toggleRivers").addClass("buttonoff");} else {$("#toggleRivers").removeClass("buttonoff");}
-    if (oceanPattern.attr("display") === "none") {$("#toggleOcean").addClass("buttonoff");} else {$("#toggleOcean").removeClass("buttonoff");}
-    if (landmass.attr("display") === "none") {$("#landmass").addClass("buttonoff");} else {$("#landmass").removeClass("buttonoff");}
-    if (terrain.attr("display") === "none") {$("#toggleRelief").addClass("buttonoff");} else {$("#toggleRelief").removeClass("buttonoff");}
-    if (borders.attr("display") === "none") {$("#toggleBorders").addClass("buttonoff");} else {$("#toggleBorders").removeClass("buttonoff");}
-    if (burgs.attr("display") === "none") {$("#toggleIcons").addClass("buttonoff");} else {$("#toggleIcons").removeClass("buttonoff");}
-    if (labels.attr("display") === "none") {$("#toggleLabels").addClass("buttonoff");} else {$("#toggleLabels").removeClass("buttonoff");}
-    if (routes.attr("display") === "none") {$("#toggleRoutes").addClass("buttonoff");} else {$("#toggleRoutes").removeClass("buttonoff");}
-    if (grid.attr("display") === "none") {$("#toggleGrid").addClass("buttonoff");} else {$("#toggleGrid").removeClass("buttonoff");}
+    d3.select("#toggleCultures").classed("buttonoff", !cults.selectAll("path").size());
+    d3.select("#toggleHeight").classed("buttonoff", !terrs.selectAll("path").size());
+    d3.select("#toggleCountries").classed("buttonoff", regions.attr("display") === "none");
+    d3.select("#toggleRivers").classed("buttonoff", rivers.attr("display") === "none");
+    d3.select("#toggleOcean").classed("buttonoff", oceanPattern.attr("display") === "none");
+    d3.select("#toggleRelief").classed("buttonoff", terrain.attr("display") === "none");
+    d3.select("#toggleBorders").classed("buttonoff", borders.attr("display") === "none");
+    d3.select("#toggleIcons").classed("buttonoff", icons.attr("display") === "none");
+    d3.select("#toggleLabels").classed("buttonoff", labels.attr("display") === "none");
+    d3.select("#toggleRoutes").classed("buttonoff", routes.attr("display") === "none");
+    d3.select("#toggleGrid").classed("buttonoff", grid.attr("display") === "none");
 
     // update map to support some old versions and fetch fonts
     labels.selectAll("g").each(function(d) {
       var el = d3.select(this);
+      if (el.attr("id") === "burgLabels") return;
       var font = el.attr("data-font");
-      if (fonts.indexOf(font) === -1) {addFonts("https://fonts.googleapis.com/css?family=" + font);}
+      if (font && fonts.indexOf(font) === -1) {addFonts("https://fonts.googleapis.com/css?family=" + font);}
       if (!el.attr("data-size")) {el.attr("data-size", +el.attr("font-size"));}
       if (el.style("display") === "none") {el.node().style.display = null;}
     });
@@ -4388,8 +5228,15 @@ function fantasyMap() {
 
   // Hotkeys
   d3.select("body").on("keydown", function() {
-    $("input").on("keydown", function(e) {e.stopPropagation();}); // cancel on input
+    const active = document.activeElement.tagName;
+    if (active === "INPUT" || active === "SELECT") return;
     switch(d3.event.keyCode) {
+      case 27: // Escape to close all dialogs
+        closeDialogs();
+        break;
+      case 79: // "O" to toggle options
+        optionsTrigger.click();
+        break;
       case 113: // "F2" for new map
         $("#randomMap").click();
         break;
@@ -4421,34 +5268,49 @@ function fantasyMap() {
         break;
       case 107: // Plus to zoom map up
         zoom.scaleBy(svg, 1.2);
-        invokeActiveZooming();
         break;
       case 109: // Minus to zoom map out
         zoom.scaleBy(svg, 0.8);
-        invokeActiveZooming();
         break;
       case 9: // Tab to toggle full-screen mode
         $("#updateFullscreen").click();
+        break;
+      case 90: // Ctrl + "Z" to toggle undo
+        if (customization !== 1) return;
+        if (d3.event.ctrlKey === false) return;
+        undo.click();
+        break;
+      case 89: // Ctrl + "Y" to toggle undo
+        if (customization !== 1) return;
+        if (d3.event.ctrlKey === false) return;
+        redo.click();
         break;
       }
   });
 
   // Toggle Options pane
   $("#optionsTrigger").on("click", function() {
+    if (tooltip.getAttribute("data-main") === "Сlick the arrow button to open options") {
+      tooltip.setAttribute("data-main", "");
+      tooltip.innerHTML = "";
+    }
     if ($("#options").css("display") === "none") {
       $("#regenerate").hide();
       $("#options").fadeIn();
       $("#layoutTab").click();
-      this.innerHTML = "◀";
+      $("#optionsTrigger").removeClass("icon-right-open glow").addClass("icon-left-open");
     } else {
       $("#options").fadeOut();
-      this.innerHTML = "▶";
+      $("#optionsTrigger").removeClass("icon-left-open").addClass("icon-right-open");
     }
   });
   $("#collapsible").hover(function() {
-    if ($("#options").css("display") === "none") {$("#regenerate").show();}
-  }, function() {
+    if ($("#options").css("display") === "none") {
+      $("#regenerate").show();
+      $("#optionsTrigger").removeClass("glow");
+    }}, function() {
     $("#regenerate").hide();
+    //$("#optionsTrigger").addClass("glow");
   });
 
   // move layers on mapLayers dragging (jquery sortable)
@@ -4477,31 +5339,13 @@ function fantasyMap() {
   }
 
   // UI Button handlers
-  $("button, a, li").on("click", function() {
+  $("button, a, li, i").on("click", function() {
     var id = this.id;
     var parent = this.parentNode.id;
     if (icons.selectAll(".tag").size() > 0) {icons.selectAll(".tag, .line").remove();}
     if (id === "toggleHeight") {toggleHeight();}
-    if (id === "toggleCountries") {
-      var countries = !$("#toggleCountries").hasClass("buttonoff");
-      var cultures = !$("#toggleCultures").hasClass("buttonoff");
-      if (!countries && cultures) {
-        $("#toggleCultures").toggleClass("buttonoff");
-        toggleCultures();
-      }
-      $('#regions').fadeToggle();
-      return;
-    }
-    if (id === "toggleCultures") {
-      var countries = !$("#toggleCountries").hasClass("buttonoff");
-      var cultures = !$("#toggleCultures").hasClass("buttonoff");
-      if (!cultures && countries) {
-        $("#toggleCountries").toggleClass("buttonoff");
-        $('#regions').fadeToggle();
-      }
-      toggleCultures();
-      return;
-    }
+    if (id === "toggleCountries") {$('#regions').fadeToggle();}
+    if (id === "toggleCultures") {toggleCultures();}
     if (id === "toggleOverlay") {toggleOverlay();}
     if (id === "toggleFlux") {toggleFlux();}
     if (parent === "mapLayers" || parent === "styleContent") {$(this).toggleClass("buttonoff");}
@@ -4516,6 +5360,7 @@ function fantasyMap() {
     if (id === "editScale" || id === "editScaleCountries" || id === "editScaleBurgs") {editScale();}
     if (id === "countriesManually") {
       customization = 2;
+      tip("Click to select a country, drag the circle to re-assign", true);
       mockRegions();
       let temp = regions.append("g").attr("id", "temp");
       $("#countriesBottom").children().hide();
@@ -4523,6 +5368,7 @@ function fantasyMap() {
       // highlight capital cells as it's not allowed to change capital's state that way
       states.map(function(s) {
         if (s.color === "neutral") {return;}
+        if (s.capital === "select") {return;}
         const capital = s.capital;
         const index = manors[capital].cell;
         temp.append("path")
@@ -4534,6 +5380,7 @@ function fantasyMap() {
     }
     if (id === "countriesRegenerate") {
       customization = 3;
+      tip("Manually change \"Expansion\" value for a country or click on \"Randomize\" button", true);
       mockRegions();
       regions.append("g").attr("id", "temp");
       $("#countriesBottom").children().hide();
@@ -4577,6 +5424,7 @@ function fantasyMap() {
       $("div[data-sortby='expansion'], .statePower, .icon-resize-full").addClass("hidden");
       $("div[data-sortby='cells'], .stateCells, .icon-check-empty").removeClass("hidden");
       customization = 0;
+      tip("", true);
       restoreDefaultEvents();
     }
     if (id === "countriesApply") {$("#countriesManuallyCancel").click();}
@@ -4654,13 +5502,15 @@ function fantasyMap() {
       var dataBlob = new Blob([data], {type:"text/plain"});
       var url = window.URL.createObjectURL(dataBlob);
       var link = document.createElement("a");
+      document.body.appendChild(link);
       link.download = "countries_data" + Date.now() + ".csv";
       link.href = url;
       link.click();
+      window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
     }
     if (id === "burgNamesImport") {burgsListToLoad.click();}
     if (id === "removeCountries") {
-      alertMessage.innerHTML = `Are you sure you want to remove all countries?`;
+      alertMessage.innerHTML = `Are you sure you want remove all countries?`;
       $("#alert").dialog({resizable: false, title: "Remove countries",
         buttons: {
           Cancel: function() {$(this).dialog("close");},
@@ -4670,10 +5520,10 @@ function fantasyMap() {
             manors.map(function(m) {m.region = "neutral";});
             land.map(function(l) {l.region = "neutral";});
             states.map(function(s) {
-              var c = +s.capital;
-              if (isNaN(c)) {return;}
-              $("#manorLabel"+c).detach().appendTo($("#towns")).attr("dy", -0.7);
-              $("#manorIcon"+c).attr("r", .5).attr("stroke-width", .12);
+              const c = +s.capital;
+              if (isNaN(c)) return;
+              $("#burgLabels [data-id=" + c + "]").detach().appendTo($("#burgLabels #towns"));
+              $("#burgIcons [data-id=" + c + "]").detach().appendTo($("#burgIcons #towns"));
             });
             labels.select("#countries").selectAll("text").remove();
             regions.selectAll("path").remove();
@@ -4700,8 +5550,8 @@ function fantasyMap() {
               if (m.region !== region) {return;}
               m.region = "removed";
               cells[m.cell].manor = undefined;
-              labels.select("#manorLabel"+m.i).remove();
-              icons.select("#manorIcon"+m.i).remove();
+              labels.select("[data-id='" + m.i + "']").remove();
+              icons.selectAll("[data-id='" + m.i + "']").remove();
             });
             states[state].urbanPopulation = 0;
             states[state].burgs = 0;
@@ -4732,7 +5582,7 @@ function fantasyMap() {
         $(this).val(name);
         $(this).parent().attr("data-burg", name);
         manors[b].name = name;
-        labels.select("#manorLabel"+b).text(name);
+        labels.select("[data-id='" + b + "']").text(name);
       });
       if ($("#countriesEditor").is(":visible")) {
         if (states[s].capital === "neutral") {return;}
@@ -4757,17 +5607,17 @@ function fantasyMap() {
       var rulerNew = ruler.append("g").attr("class", "linear").call(d3.drag().on("start", elementDrag));
       var factor = rn(1 / Math.pow(scale, 0.3), 1);
       rulerNew.append("title").text(title);
-      var y = Math.floor(Math.random() * svgHeight * 0.5 + svgHeight * 0.25);
-      var x1 = svgWidth * 0.2, x2 = svgWidth * 0.8;
+      var y = Math.floor(Math.random() * graphHeight * 0.5 + graphHeight * 0.25);
+      var x1 = graphWidth * 0.2, x2 = graphWidth * 0.8;
       var dash = rn(30 / distanceScale.value, 2);
       rulerNew.append("line").attr("x1", x1).attr("y1", y).attr("x2", x2).attr("y2", y).attr("class", "white").attr("stroke-width", factor);
       rulerNew.append("line").attr("x1", x1).attr("y1", y).attr("x2", x2).attr("y2", y).attr("class", "gray").attr("stroke-width", factor).attr("stroke-dasharray", dash);
       rulerNew.append("circle").attr("r", 2 * factor).attr("stroke-width", 0.5 * factor).attr("cx", x1).attr("cy", y).attr("data-edge", "left").call(d3.drag().on("drag", rulerEdgeDrag));
       rulerNew.append("circle").attr("r", 2 * factor).attr("stroke-width", 0.5 * factor).attr("cx", x2).attr("cy", y).attr("data-edge", "rigth").call(d3.drag().on("drag", rulerEdgeDrag));
-      rulerNew.append("circle").attr("r", 1.2 * factor).attr("stroke-width", 0.3 * factor).attr("cx", svgWidth / 2).attr("cy", y).attr("class", "center").call(d3.drag().on("start", rulerCenterDrag));
+      rulerNew.append("circle").attr("r", 1.2 * factor).attr("stroke-width", 0.3 * factor).attr("cx", graphWidth / 2).attr("cy", y).attr("class", "center").call(d3.drag().on("start", rulerCenterDrag));
       var dist = rn(x2 - x1);
       var label = rn(dist * distanceScale.value) + " " + distanceUnit.value;
-      rulerNew.append("text").attr("x", svgWidth / 2).attr("y", y).attr("dy", -1).attr("data-dist", dist).text(label).text(label).on("click", removeParent).attr("font-size", 10 * factor);
+      rulerNew.append("text").attr("x", graphWidth / 2).attr("y", y).attr("dy", -1).attr("data-dist", dist).text(label).text(label).on("click", removeParent).attr("font-size", 10 * factor);
       return;
     }
     if (id === "addOpisometer" || id === "addPlanimeter") {
@@ -4826,8 +5676,8 @@ function fantasyMap() {
             $(this).dialog("close");
           },
           Keep: function() {
-            editHeightmap("keep");
             $(this).dialog("close");
+            editHeightmap("keep");
           },
           Cancel: function() {$(this).dialog("close");}
         }
@@ -4959,6 +5809,12 @@ function fantasyMap() {
       mapHeightInput.value = window.innerHeight;
       changeMapSize();
     }
+    if (id === "zoomExtentDefault") {
+      zoomExtentMin.value = 1;
+      zoomExtentMax.value = 20;
+      initView[0] = 1;
+      zoom.scaleExtent([1, 20]).scaleTo(svg, 1);
+    }
     if (id === "saveButton") {$("#saveDropdown").slideToggle();}
     if (id === "loadMap") {mapToLoad.click();}
     if (id === "zoomReset") {resetZoom(1000);}
@@ -4987,11 +5843,12 @@ function fantasyMap() {
     if (id === "styleFillPlus" || id === "styleFillMinus") {
       var el = viewbox.select("#"+styleElementSelect.value);
       var mod = id === "styleFillPlus" ? 1.1 : 0.9;
-      el.selectAll("*").each(function() {
+      el.selectAll("g").each(function() {
         var el = d3.select(this);
-        var size = rn(el.attr("r") * mod, 2);
+        if (el.attr("id") === "burgIcons") return;
+        var size = rn(el.attr("font-size") * mod, 2);
         if (size < 0.1) {size = 0.1;}
-        if (el.node().nodeName === "circle") {el.attr("r", size);}
+        el.attr("font-size", size);
       });
       return;
     }
@@ -5000,9 +5857,10 @@ function fantasyMap() {
       var mod = id === "styleStrokePlus" ? 1.1 : 0.9;
       el.selectAll("*").each(function() {
         var el = d3.select(this);
+        if (el.attr("id") === "burgIcons") return;
         var size = rn(el.attr("stroke-width") * mod, 2);
         if (size < 0.1) {size = 0.1;}
-        if (el.node().nodeName === "circle") {el.attr("stroke-width", size);}
+        el.attr("stroke-width", size);
       });
       return;
     }
@@ -5079,6 +5937,12 @@ function fantasyMap() {
     if (id === "saveSVG") {saveAsImage("svg");}
     if (id === "savePNG") {saveAsImage("png");}
     $("#saveDropdown").slideUp("fast");
+  });
+
+  // lock / unlock option randomization
+  $("#options i[class^='icon-lock']").click(function() {
+    $(this).toggleClass("icon-lock icon-lock-open");
+    $(this).attr("data-locked", +$(this).hasClass("icon-lock"));
   });
 
   function editHeightmap(type) {
@@ -5218,27 +6082,27 @@ function fantasyMap() {
     $("#templateBody").append('<div data-type="' + id + '">' + id + '</div>');
     var el = $("#templateBody div:last-child");
     if (id === "Hill" || id === "Pit" || id === "Range" || id === "Trough") {
-      var count = '<label>count:<input class="templateElCount" title="Blobs to add" type="number" value="1" min="1" max="99"></label>';
+      var count = '<label>count:<input class="templateElCount" onmouseover="tip(\'Blobs to add\')" type="number" value="1" min="1" max="99"></label>';
     }
     if (id === "Hill") {
-      var dist = '<label>distribution:<input class="templateElDist" title="Set blobs distribution. 0.5 - map center; 0.1 - any place" type="number" value="0.25" min="0.1" max="0.5" step="0.01"></label>';
+      var dist = '<label>distribution:<input class="templateElDist" onmouseover="tip(\'Set blobs distribution. 0.5 - map center; 0.1 - any place\')" type="number" value="0.25" min="0.1" max="0.5" step="0.01"></label>';
     }
     if (id === "Add" || id === "Multiply") {
-      var dist = '<label>to:<select class="templateElDist" title="Change only land or all cells"><option value="all" selected>all cells</option><option value="land">land only</option><option value="interval">interval</option></select></label>';
+      var dist = '<label>to:<select class="templateElDist" onmouseover="tip(\'Change only land or all cells\')"><option value="all" selected>all cells</option><option value="land">land only</option><option value="interval">interval</option></select></label>';
     }
     if (id === "Add") {
-      var count = '<label>value:<input class="templateElCount" title="Add value to height of all cells (negative values are allowed)" type="number" value="-0.1" min="-1" max="1" step="0.01"></label>';
+      var count = '<label>value:<input class="templateElCount" onmouseover="tip(\'Add value to height of all cells (negative values are allowed)\')" type="number" value="-0.1" min="-1" max="1" step="0.01"></label>';
     }
     if (id === "Multiply") {
-      var count = '<label>by value:<input class="templateElCount" title="Multiply all cells Height by the value" type="number" value="1.1" min="0" max="10" step="0.1"></label>';
+      var count = '<label>by value:<input class="templateElCount" onmouseover="tip(\'Multiply all cells Height by the value\')" type="number" value="1.1" min="0" max="10" step="0.1"></label>';
     }
     if (id === "Smooth") {
-      var count = '<label>fraction:<input class="templateElCount" title="Set smooth fraction. 1 - full smooth, 2 - half-smooth, etc." type="number" min="1" max="10" value="2"></label>';
+      var count = '<label>fraction:<input class="templateElCount" onmouseover="tip(\'Set smooth fraction. 1 - full smooth, 2 - half-smooth, etc.\')" type="number" min="1" max="10" value="2"></label>';
     }
     if (id === "Strait") {
-      var count = '<label>width:<input class="templateElCount" title="Set strait width" value="1-7"></label>';
+      var count = '<label>width:<input class="templateElCount" onmouseover="tip(\'Set strait width\')" value="1-7"></label>';
     }
-    el.append('<span title="Remove step" class="icon-trash-empty"></span>');
+    el.append('<span onmouseover="tip(\'Remove step\')" class="icon-trash-empty"></span>');
     $("#templateBody .icon-trash-empty").on("click", function() {$(this).parent().remove();});
     if (dist) {el.append(dist);}
     if (count) {el.append(count);}
@@ -5472,7 +6336,7 @@ function fantasyMap() {
     console.time("loadImage");
     // set style
     resetZoom();
-    grid.attr("stroke-width", .3);
+    grid.attr("stroke-width", .2);
     // load image
     var file = this.files[0];
     this.value = ""; // reset input value to get triggered if the same file is uploaded
@@ -5649,24 +6513,28 @@ function fantasyMap() {
 
   // Clear the map
   function undraw() {
-    svg.selectAll("path, circle, line, text, #ruler > g").remove();
+    viewbox.selectAll("path, circle, line, text, use, #ruler > g").remove();
+    defs.selectAll("path").remove();
     cells = [], land = [], riversData = [], manors = [], states = [], queue = [];
   }
 
   // Enter Heightmap Customization mode
   function customizeHeightmap() {
     customization = 1;
+    tip("Heightmap customization mode is active. Click on \"Complete\" to finalize the Heightmap", true);
     resetZoom();
-    $("#customizationMenu").slideDown();
     landmassCounter.innerHTML = "0";
     $('#grid').fadeIn();
     $('#toggleGrid').removeClass("buttonoff");
     restartHistory();
+    $("#customizationMenu").slideDown();
+    $("#openEditor").slideUp();
   }
 
   // Remove all customization related styles, reset values
   function exitCustomization() {
     customization = 0;
+    tip("", true);
     canvas.style.opacity = 0;
     $("#customizationMenu").slideUp();
     $("#getMap").attr("disabled", true).addClass("buttonoff");
@@ -5678,6 +6546,10 @@ function fantasyMap() {
     closeDialogs();
     history = [];
     historyStage = 0;
+    $("#customizeHeightmap").slideUp();
+    $("#openEditor").slideDown();
+    $("#getMap").removeClass("glow");
+    icons.selectAll(".circle").remove();
   }
 
   // open editCountries dialog
@@ -5701,39 +6573,39 @@ function fantasyMap() {
       var population = (urban + rural) * 1000;
       totalPopulation += population;
       var populationConv = si(population);
-      var title = `Total population: ${population}K\nRural population: ${rural}K\nUrban population: ${urban}K`;
+      var title = '\'Total population: '+populationConv+'; Rural population: '+rural+'K; Urban population: '+urban+'K\'';
       var neutral = states[s].color === "neutral" || states[s].capital === "neutral";
       // append elements to countriesBody
       if (!neutral) {
-        el.append('<input title="Country color. Click to change" class="stateColor" type="color" value="' + states[s].color + '"/>');
-        el.append('<input title="Country name. Click and type to change" class="stateName" value="' + states[s].name + '" autocorrect="off" spellcheck="false"/>');
+        el.append('<input onmouseover="tip(\'Country color. Click to change\')" class="stateColor" type="color" value="' + states[s].color + '"/>');
+        el.append('<input onmouseover="tip(\'Country name. Click and type to change\')" class="stateName" value="' + states[s].name + '" autocorrect="off" spellcheck="false"/>');
         var capital = states[s].capital !== "select" ? manors[states[s].capital].name : "select";
         if (capital === "select") {
-          el.append('<button title="Click on map to select a capital or to create a new capital" class="selectCapital" id="selectCapital' + s + '">★ select</button>');
+          el.append('<button onmouseover="tip(\'Click on map to select a capital or to create a new capital\')" class="selectCapital" id="selectCapital' + s + '">★ select</button>');
         } else {
-          el.append('<span title="Country capital. Click to enlange" class="icon-star-empty enlange"></span>');
-          el.append('<input title="Capital name. Click and type to rename" class="stateCapital" value="' + capital + '" autocorrect="off" spellcheck="false"/>');
+          el.append('<span onmouseover="tip(\'Country capital. Click to enlange\')" class="icon-star-empty enlange"></span>');
+          el.append('<input onmouseover="tip(\'Capital name. Click and type to rename\')" class="stateCapital" value="' + capital + '" autocorrect="off" spellcheck="false"/>');
         }
-        el.append('<span title="Country expansionism (defines competitive size)" class="icon-resize-full hidden"></span>');
-        el.append('<input title="Capital expansionism (defines competitive size)" class="statePower hidden" type="number" min="0" max="99" step="0.1" value="' + states[s].power + '"/>');
+        el.append('<span onmouseover="tip(\'Country expansionism (defines competitive size)\')" class="icon-resize-full hidden"></span>');
+        el.append('<input onmouseover="tip(\'Capital expansionism (defines competitive size)\')" class="statePower hidden" type="number" min="0" max="99" step="0.1" value="' + states[s].power + '"/>');
       } else {
         el.append('<input class="stateColor placeholder" disabled type="color"/>');
-        el.append('<input title="Neutral burgs are united into this group. Click to change the group name" class="stateName italic" id="stateName' + s + '" value="' + states[s].name + '" autocorrect="off" spellcheck="false"/>');
+        el.append('<input onmouseover="tip(\'Neutral burgs are united into this group. Click to change the group name\')" class="stateName italic" id="stateName' + s + '" value="' + states[s].name + '" autocorrect="off" spellcheck="false"/>');
         el.append('<span class="icon-star-empty placeholder"></span>');
         el.append('<input class="stateCapital placeholder"/>');
         el.append('<span class="icon-resize-full hidden placeholder"></span>');
         el.append('<input class="statePower hidden placeholder" value="0.0"/>');
       }
-      el.append('<span title="Cells count" class="icon-check-empty"></span>');
-      el.append('<div title="Cells count" class="stateCells">' + states[s].cells + '</div>');
-      el.append('<span title="Burgs count. Click to show a full list" style="padding-right: 1px" class="stateBIcon icon-dot-circled"></span>');
-      el.append('<div title="Burgs count. Click to show a full list" class="stateBurgs">' + burgsCount + '</div>');
-      el.append('<span title="Area: ' + (area + unit) + '" style="padding-right: 4px" class="icon-map-o"></span>');
-      el.append('<div title="Area: ' + (area + unit) + '" class="stateArea">' + areaConv + '</div>');
-      el.append('<span title="' + title + '" class="icon-male"></span>');
-      el.append('<input title="' + title + '" class="statePopulation" value="' + populationConv + '">');
+      el.append('<span onmouseover="tip(\'Cells count\')" class="icon-check-empty"></span>');
+      el.append('<div onmouseover="tip(\'Cells count\')" class="stateCells">' + states[s].cells + '</div>');
+      el.append('<span onmouseover="tip(\'Burgs count. Click to show a full list\')" style="padding-right: 1px" class="stateBIcon icon-dot-circled"></span>');
+      el.append('<div onmouseover="tip(\'Burgs count. Click to show a full list\')" class="stateBurgs">' + burgsCount + '</div>');
+      el.append('<span onmouseover="tip(\'Country area: ' + (area + unit) + '\')" style="padding-right: 4px" class="icon-map-o"></span>');
+      el.append('<div onmouseover="tip(\'Country area: ' + (area + unit) + '\')" class="stateArea">' + areaConv + '</div>');
+      el.append('<span onmouseover="tip(' + title + ')" class="icon-male"></span>');
+      el.append('<input onmouseover="tip(' + title + ')" class="statePopulation" value="' + populationConv + '">');
       if (!neutral) {
-        el.append('<span title="Remove country, all assigned cells will become Neutral" class="icon-trash-empty"></span>');
+        el.append('<span onmouseover="tip(\'Remove country, all assigned cells will become Neutral\')" class="icon-trash-empty"></span>');
         el.attr("data-country", states[s].name).attr("data-capital", capital).attr("data-expansion", states[s].power).attr("data-cells", states[s].cells)
           .attr("data-burgs", states[s].burgs).attr("data-area", area).attr("data-population", population);
       } else {
@@ -5769,7 +6641,7 @@ function fantasyMap() {
     $(".enlange").click(function() {
       var s = +(this.parentNode.id).slice(5);
       var capital = states[s].capital;
-      var l = labels.select("#manorLabel"+capital);
+      var l = labels.select("[data-id='" + capital +"']");
       var x = +l.attr("x"), y = +l.attr("y");
       zoomTo(x, y, 8, 1600);
     });
@@ -5798,7 +6670,7 @@ function fantasyMap() {
       var s = +(this.parentNode.id).slice(5);
       var capital = states[s].capital;
       manors[capital].name = this.value;
-      labels.select("#manorLabel"+capital).text(this.value);
+      labels.select("[data-id='" + capital +"']").text(this.value);
       if ($("#burgsEditor").is(":visible")) {
         if ($("#burgsEditor").attr("data-state") == s) {
           $("#burgs"+capital+" > .burgName").val(this.value);
@@ -5821,10 +6693,12 @@ function fantasyMap() {
     $(".selectCapital").on("click", function() {
       if ($(this).hasClass("pressed")) {
         $(this).removeClass("pressed");
+        tooltip.setAttribute("data-main", "");
         restoreDefaultEvents();
       } else {
         $(this).addClass("pressed");
         viewbox.style("cursor", "crosshair").on("click", selectCapital);
+        tip("Click on the map to select or create a new capital", true);
       }
     });
 
@@ -5834,27 +6708,17 @@ function fantasyMap() {
       var x = rn(point[0], 2), y = rn(point[1], 2);
 
       if (cells[index].height < 0.2) {
-        console.error("Cannot place capital on the water! Select a land cell");
+        tip("Cannot place capital on the water! Select a land cell");
         return;
       }
-      // check for capitals group for labels
-      let group = labels.select("#capitals");
-      if (!group.size()) {
-        group = labels.append("g").attr("id", "capitals")
-          .attr("fill", "#3e3e4b").attr("opacity", 1)
-          .attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC")
-          .attr("font-size", 7).attr("data-size", 7);
-        invokeActiveZooming();
-      }
-
-      var state = $(".selectCapital.pressed").attr("id").replace("selectCapital", "");
+      var state = +$(".selectCapital.pressed").attr("id").replace("selectCapital", "");
       var oldState = cells[index].region;
       if (oldState === "neutral") {oldState = states.length - 1;}
       if (cells[index].manor !== undefined) {
         // cell has burg
         var burg = cells[index].manor;
         if (states[oldState].capital === burg) {
-          console.error("Existing capital cannot be selected as a new state capital! Select other cell");
+          tip("Existing capital cannot be selected as a new state capital! Select other cell");
           return;
         } else {
           // make this burg a new capital
@@ -5863,8 +6727,8 @@ function fantasyMap() {
           if (oldState === "neutral") {manors[burg].population *= (1 / urbanFactor);}
           manors[burg].population *= 2; // give capital x2 population bonus
           states[state].capital = burg;
-          $("#manorLabel"+burg).detach().appendTo($("#capitals")).attr("dy", -1.3);
-          $("#manorIcon"+burg).attr("r", 1).attr("stroke-width", .24);
+          $("#burgLabels [data-id=" + burg + "]").detach().appendTo($("#burgLabels #capitals"));
+          $("#burgIcons [data-id=" + burg + "]").detach().appendTo($("#burgIcons #capitals"));
         }
       } else {
         // free cell -> create new burg for a capital
@@ -5881,12 +6745,8 @@ function fantasyMap() {
         if (cells[index].port) {score *= 3;} // port-capital
         var population = rn(score, 1);
         manors.push({i, cell:index, x, y, region: state, culture, name, population});
-        burgs.append("circle").attr("id", "manorIcon"+i)
-          .attr("r", 1).attr("stroke-width", .24).attr("cx", x)
-          .attr("cy", y).call(d3.drag().on("start", elementDrag));
-        group.append("text").attr("id", "manorLabel"+i)
-          .attr("x", x).attr("y", y).attr("dy", -1.3)
-          .text(name).on("click", editLabel);
+        burgIcons.select("#capitals").append("circle").attr("data-id", i).attr("cx", x).attr("cy", y).attr("r", "1em").on("click", editBurg);
+        burgLabels.select("#capitals").append("text").attr("data-id", i).attr("x", x).attr("y", y).attr("dy", "-0.35em").text(name).on("click", editBurg);
       }
       cells[index].region = state;
       cells[index].neighbors.map(function(n) {
@@ -5899,6 +6759,7 @@ function fantasyMap() {
       recalculateStateData(state); // calc new state data
       editCountries();
       restoreDefaultEvents();
+      tip("", true);
     }
 
     $(".statePower").on("input", function() {
@@ -5926,7 +6787,7 @@ function fantasyMap() {
       $("#countriesBody > div").each(function(e, i) {
         total += +$(this).attr("data-population");
       });
-      countriesFooterPopulation.innerHTML = si(total * 1000);
+      countriesFooterPopulation.innerHTML = si(total);
       if (states[s].capital === "neutral") {s = "neutral";}
       manors.map(function(m) {
         if (m.region !== s) {return;}
@@ -5956,13 +6817,14 @@ function fantasyMap() {
       states.splice(s, 1);
       states.map(function(s, i) {s.i = i;});
       cells.map(function(c) {
-        if (c.region === s) {c.region = "neutral";}
-        else if (c.region > s) {c.region -= 1;}
+        if (c.region === s) c.region = "neutral";
+        else if (c.region > s) c.region -= 1;
       });
       // do only if removed state had cells
       if (cellsCount) {
-        $("#manorLabel"+capital).detach().appendTo($("#towns")).attr("dy", -0.7); // change capital label to burg
-        $("#manorIcon"+capital).attr("r", .5).attr("stroke-width", .12);
+        // change capital to burg
+        $("#burgLabels [data-id=" + capital + "]").detach().appendTo($("#burgLabels #towns"));
+        $("#burgIcons [data-id=" + capital + "]").detach().appendTo($("#burgIcons #towns"));
         var burgsSelection = $.grep(manors, function(e) {return (e.region === s);});
         var urbanFactor = 0.9;
         burgsSelection.map(function(b) {
@@ -6033,7 +6895,7 @@ function fantasyMap() {
     burgsFooterPopulation.value = avPop;
     $(".enlange").click(function() {
       var b = +(this.parentNode.id).slice(5);
-      var l = labels.select("#manorLabel"+b);
+      var l = labels.select("[data-id='" + b + "']");
       var x = +l.attr("x"), y = +l.attr("y");
       zoomTo(x, y, 8, 1600);
     });
@@ -6049,17 +6911,17 @@ function fantasyMap() {
       manors[b].population *= 2;
       states[s].capital = b;
       recalculateStateData(s);
-      $("#manorLabel"+oldCap).detach().appendTo($("#towns")).attr("dy", -0.7);
-      $("#manorIcon"+oldCap).attr("r", .5).attr("stroke-width", .12);
-      $("#manorLabel"+b).detach().appendTo($("#capitals")).attr("dy", -1.3);
-      $("#manorIcon"+b).attr("r", 1).attr("stroke-width", .24);
+      $("#labels [data-id=" + oldCap + "]").detach().appendTo($("#burgLabels #towns"));
+      $("#icons [data-id=" + oldCap + "]").detach().appendTo($("#burgIcons #towns"));
+      $("#labels [data-id=" + b + "]").detach().appendTo($("#burgLabels #capitals"));
+      $("#icons [data-id=" + b + "]").detach().appendTo($("#burgIcons #towns"));
       updateCountryEditors();
       $("#changeCapital").removeClass("pressed");
     });
     $(".burgName").on("input", function() {
       var b = +(this.parentNode.id).slice(5);
       manors[b].name = this.value;
-      labels.select("#manorLabel"+b).text(this.value);
+      labels.select("[data-id='" + b + "']").text(this.value);
       if (b === s && $("#countriesEditor").is(":visible")) {
         $("#state"+s+" > .stateCapital").val(this.value);
       }
@@ -6130,8 +6992,8 @@ function fantasyMap() {
             if ($("#countriesEditor").is(":visible")) {
               $("#state"+state+" > .stateBurgs").text(states[state].burgs);
             }
-            labels.select("#manorLabel"+b).remove();
-            icons.select("#manorIcon"+b).remove();
+            labels.select("[data-id='" + b + "']").remove();
+            icons.select("[data-id='" + b + "']").remove();
           },
           Cancel: function() {$(this).dialog("close");}
         }
@@ -6149,7 +7011,7 @@ function fantasyMap() {
   function focusCapital() {
     var s = +(this.parentNode.id).slice(5);
     var capital = states[s].capital;
-    var l = labels.select("#manorLabel"+capital);
+    var l = labels.select("[data-id='" + capital + "']");
     l.classed("drag", true);
   }
 
@@ -6157,14 +7019,14 @@ function fantasyMap() {
     var s = +(this.parentNode.id).slice(5);
     var stateManors = $.grep(manors, function(e) {return (e.region === s);});
     stateManors.map(function(m) {
-      labels.select("#manorLabel"+m.i).classed("drag", true);
-      burgs.select("#manorIcon"+m.i).classed("drag", true);
+      labels.select("[data-id='" + m.i + "']").classed("drag", true);
+      icons.select("[data-id='" + m.i + "']").classed("drag", true);
     });
   }
 
   function focusBurg() {
     var b = +(this.id).slice(5);
-    var l = labels.select("#manorLabel"+b);
+    var l = labels.select("[data-id='" + b + "']");
     l.classed("drag", true);
   }
 
@@ -6219,22 +7081,22 @@ function fantasyMap() {
   function redrawRegions() {
     regions.selectAll("*").remove();
     borders.selectAll("path").remove();
-    countries.selectAll("text").remove();
+    labels.select("#countries").selectAll("text").remove();
     drawRegions();
   }
 
   // restore keeped region data on edit heightmap completion
   function restoreRegions() {
     borders.selectAll("path").remove();
-    countries.selectAll("text").remove();
+    labels.select("#countries").selectAll("text").remove();
     manors.map(function(m) {
       const cell = diagram.find(m.x, m.y).index;
       if (cells[cell].height < 0.2) {
-        // remove manor if it ocean
+        // remove manor in ocean
         m.region = "removed";
         m.cell = cell;
-        labels.select("#manorLabel"+m.i).remove();
-        icons.select("#manorIcon"+m.i).remove();
+        labels.select("[data-id='" + m.i + "']").remove();
+        icons.select("[data-id='" + m.i + "']").remove();
       } else {
         m.cell = cell;
         cells[cell].manor = m.i;
@@ -6400,7 +7262,7 @@ function fantasyMap() {
             for (var i=0; i < change.length; i++) {
               const id = change[i].i;
               manors[id].name = change[i].name;
-              labels.select("#manorLabel"+id).text(change[i].name);
+              labels.select("[data-id='" + id + "']").text(change[i].name);
             }
             $(this).dialog("close");
             updateCountryEditors();
@@ -6430,13 +7292,12 @@ function fantasyMap() {
     svg.attr("width", svgWidth).attr("height", svgHeight);
     zoom.translateExtent([[0, 0], [svgWidth, svgHeight]]);
     fitScaleBar();
-    fitStatusBar();
   }
 
   // fit full-screen map if window is resized
   $(window).resize(function(e) {
     // trick to prevent resize on download bar opening
-    if (allowResize === false) {allowResize = true; return;}
+    if (autoResize === false) return;
     mapWidthInput.value = window.innerWidth;
     mapHeightInput.value = window.innerHeight;
     changeMapSize();
@@ -6444,19 +7305,15 @@ function fantasyMap() {
 
   // fit ScaleBar to map size
   function fitScaleBar() {
-    if (d3.select("#scaleBar").size()) {
-      var bbox = d3.select("#scaleBar").node().getBBox();
-      var tr = [svgWidth - 10 - bbox.width, svgHeight - 10 - bbox.height];
-      d3.select("#scaleBar").attr("transform", "translate(" + rn(tr[0]) + "," + rn(tr[1]) + ")");
-      sessionStorage.removeItem("scaleBar");
+    const el = d3.select("#scaleBar");
+    if (el.size() === 0) return;
+    const bbox = el.select("rect").node().getBBox();
+    let tr = [svgWidth - bbox.width, svgHeight - (bbox.height - 10)];
+    if (sessionStorage.getItem("scaleBar")) {
+      const scalePos = sessionStorage.getItem("scaleBar").split(",");
+      tr = [+scalePos[0] - bbox.width, +scalePos[1] - bbox.height];
     }
-  }
-
-  // fit Statusbar to map size
-  function fitStatusBar() {
-    var el = $("#statusbar");
-    el.css("top", svgHeight - 20);
-    if (toggleStatusbar.checked) {el.show();}
+    el.attr("transform", "translate(" + rn(tr[0]) + "," + rn(tr[1]) + ")");
   }
 
   // restore initial style
@@ -6470,22 +7327,27 @@ function fantasyMap() {
     cults.attr("opacity", .6);
     rivers.attr("opacity", 1).attr("fill", "#5d97bb");
     lakes.attr("opacity", 1).attr("fill", "#a6c1fd").attr("stroke", "#477794").attr("stroke-width", .3);
-    burgs.attr("opacity", 1).attr("fill", "#ffffff").attr("stroke", "#3e3e4b");
-    roads.attr("opacity", .8).attr("stroke", "#d06324").attr("stroke-width", .4).attr("stroke-dasharray", "1 2").attr("stroke-linecap", "round");
-    trails.attr("opacity", .8).attr("stroke", "#d06324").attr("stroke-width", .1).attr("stroke-dasharray", ".5 1").attr("stroke-linecap", "round");
+    icons.selectAll("g").attr("opacity", 1).attr("fill", "#ffffff").attr("stroke", "#3e3e4b");
+    roads.attr("opacity", .9).attr("stroke", "#d06324").attr("stroke-width", .35).attr("stroke-dasharray", "1.5").attr("stroke-linecap", "butt");
+    trails.attr("opacity", .9).attr("stroke", "#d06324").attr("stroke-width", .15).attr("stroke-dasharray", ".8 1.6").attr("stroke-linecap", "butt");
     searoutes.attr("opacity", .8).attr("stroke", "#ffffff").attr("stroke-width", .2).attr("stroke-dasharray", "1 2").attr("stroke-linecap", "round");
     grid.attr("opacity", 1).attr("stroke", "#808080").attr("stroke-width", .1);
     ruler.attr("opacity", 1).style("display", "none").attr("filter", "url(#dropShadow)");
     overlay.attr("opacity", .8).attr("stroke", "#808080").attr("stroke-width", .5);
     ocean.select("#oceanBase").attr("opacity", 1).attr("fill", "#53679f");
     labels.attr("opacity", 1);
-    size = rn(8 - capitalsCount / 20);
-    if (size < 3) {size = 3;}
-    capitals.attr("fill", "#3e3e4b").attr("opacity", 1).attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC").attr("font-size", size).attr("data-size", size);
-    towns.attr("fill", "#3e3e4b").attr("opacity", 1).attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC").attr("font-size", 3).attr("data-size", 4);
+
+    let size = rn(8 - capitalsCount / 20);
+    if (size < 3) size = 3;
+    burgLabels.select("#capitals").attr("fill", "#3e3e4b").attr("opacity", 1).attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC").attr("font-size", size).attr("data-size", size);
+    burgLabels.select("#towns").attr("fill", "#3e3e4b").attr("opacity", 1).attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC").attr("font-size", 3).attr("data-size", 4);
+    burgIcons.select("#capitals").attr("font-size", 1).attr("stroke-width", .24).attr("fill", "#ffffff").attr("stroke", "#3e3e4b").attr("fill-opacity", .7).attr("stroke-opacity", 1).attr("opacity", 1);
+    burgIcons.select("#towns").attr("font-size", .5).attr("stroke-width", .12).attr("fill", "#ffffff").attr("stroke", "#3e3e4b").attr("fill-opacity", .7).attr("stroke-opacity", 1).attr("opacity", 1);
     size = rn(16 - capitalsCount / 6);
-    if (size < 6) {size = 6;}
-    countries.attr("fill", "#3e3e4b").attr("opacity", 1).attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC").attr("font-size", size).attr("data-size", size);
+    if (size < 6) size = 6;
+    labels.select("#countries").attr("fill", "#3e3e4b").attr("opacity", 1).attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC").attr("font-size", size).attr("data-size", size);
+    icons.select("#capital-anchors").attr("fill", "#ffffff").attr("stroke", "#3e3e4b").attr("stroke-width", 1.2).attr("font-size", 2);
+    icons.select("#town-anchors").attr("fill", "#ffffff").attr("stroke", "#3e3e4b").attr("stroke-width", 1.2).attr("font-size", 1);
   }
 
   // Options handlers
@@ -6501,9 +7363,9 @@ function fantasyMap() {
       var opacity = el.attr("opacity") || 1;
       styleOpacityInput.value = styleOpacityOutput.value = opacity;
       // filter
-      if (sel == "oceanBase") {el = oceanLayers;}
+      if (sel == "oceanBase") {el = oceanLayers.select("rect");}
       styleFilterInput.value = el.attr("filter") || "";
-      if (sel === "rivers" || sel === "oceanBase" || sel === "lakes" || sel === "landmass" || sel === "burgs") {
+      if (sel === "rivers" || sel === "oceanBase" || sel === "lakes" || sel === "landmass") {
         $("#styleFill").css("display", "inline-block");
         styleFillInput.value = styleFillOutput.value = el.attr("fill");
       }
@@ -6561,11 +7423,6 @@ function fantasyMap() {
         $("#styleFill, #styleFontSize").css("display", "inline-block");
         styleFillInput.value = styleFillOutput.value = el.select("g").attr("fill");
       }
-      if (sel === "burgs") {
-        $("#styleSize").css("display", "block");
-        $("#styleStroke").css("display", "inline-block");
-        styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke");
-      }
       if (sel === "overlay") {
         $("#styleOverlay").css("display", "block");
       }
@@ -6614,7 +7471,7 @@ function fantasyMap() {
       if (sel == "oceanBase") {sel = "oceanLayers";}
       var el = svg.select("#"+sel);
       el.attr('filter', this.value);
-      invokeActiveZooming();
+      zoom.scaleBy(svg, 1.00001); // enforce browser re-draw
       return;
     }
     if (id === "styleSchemeInput") {
@@ -6637,6 +7494,7 @@ function fantasyMap() {
     }
     if (id === "mapWidthInput" || id === "mapHeightInput") {
       changeMapSize();
+      autoResize = false;
       sessionStorage.setItem("screenSize", [+mapWidthInput.value, +mapHeightInput.value]);
     }
     if (id === "sizeInput") {
@@ -6645,47 +7503,31 @@ function fantasyMap() {
       if (graphSize === 2) {sizeOutput.style.color = "yellow";}
       if (graphSize === 1) {sizeOutput.style.color = "green";}
     }
-    if (id === "randomizeInput") {randomizeOutput.innerHTML = +this.value ? "✓" : "✕";}
-    if (id === "manorsInput") {
-      if (randomizeInput.value === "1") {
-        randomizeInput.value = 0;
-        randomizeOutput.innerHTML = "✕";
-      }
-      manorsCount = manorsOutput.value = this.value;
-    }
+    if (id === "manorsInput") {manorsCount = manorsOutput.value = this.value;}
     if (id === "regionsInput") {
-      if (randomizeInput.value === "1") {
-        randomizeInput.value = 0;
-        randomizeOutput.innerHTML = "✕";
-      }
       capitalsCount = regionsOutput.value = this.value;
       var size = rn(6 - capitalsCount / 20);
       if (size < 3) {size = 3;}
-      capitals.attr("data-size", size);
+      burgLabels.select("#capitals").attr("data-size", size);
       size = rn(18 - capitalsCount / 6);
       if (size < 4) {size = 4;}
-      countries.attr("data-size", size);
+      labels.select("#countries").attr("data-size", size);
     }
     if (id === "powerInput") {powerOutput.value = this.value;}
-    if (id === "neutralInput") {neutral = neutralOutput.value = this.value;}
-    if (id === "swampinessInput") {swampiness = swampinessOutput.value = this.value;}
-    if (id === "sharpnessInput") {sharpness = sharpnessOutput.value = this.value;}
-    if (id === "precInput") {
-      precipitation = precOutput.value = +precInput.value;
-      if (randomizeInput.value === "1") {
-        randomizeInput.value = 0;
-        randomizeOutput.innerHTML = "✕";
-      }
+    if (id === "neutralInput") {neutral = neutralOutput.value = countriesNeutral.value = this.value;}
+    if (id === "swampinessInput") {swampinessOutput.value = this.value;}
+    if (id === "precInput") {precipitation = precOutput.value = +precInput.value;}
+    if (id === "zoomExtentMin" || id === "zoomExtentMax") {
+      initView[0] = +zoomExtentMin.value;
+      zoom.scaleExtent([+zoomExtentMin.value, +zoomExtentMax.value]).scaleTo(svg, +this.value);
     }
     if (id === "convertOverlay") {canvas.style.opacity = convertOverlayValue.innerHTML = +this.value;}
     if (id === "populationRate") {
-      var population = +populationRate.value;
-      var output = si(population * 1000);
-      populationRateOutput.innerHTML = output;
+      populationRateOutput.value = si(+populationRate.value * 1000);;
       updateCountryEditors();
     }
     if (id === "urbanization") {
-      urbanizationOutput.innerHTML = this.value;
+      urbanizationOutput.value = this.value;
       updateCountryEditors();
     }
     if (id === "distanceUnit" || id === "distanceScale" || id === "areaUnit") {
@@ -6702,7 +7544,7 @@ function fantasyMap() {
         }
       }
       var scale = distanceScale.value;
-      scaleOutput.innerHTML = scale + " " + dUnit;
+      scaleOutput.value = scale + " " + dUnit;
       ruler.selectAll("g").each(function() {
         var label;
         var g = d3.select(this);
@@ -6731,6 +7573,56 @@ function fantasyMap() {
       $("#scaleBar").removeClass("hidden");
       drawScaleBar();
     }
+    if (id === "barBackOpacity" || id === "barBackColor") {
+      d3.select("#scaleBar > rect")
+        .attr("opacity", +barBackOpacity.value)
+        .attr("fill", barBackColor.value);
+      $("#scaleBar").removeClass("hidden");
+    }
+  });
+
+  $("#scaleOutput").change(function() {
+    if (this.value === "" || isNaN(+this.value) || this.value < 0.01 || this.value > 10) {
+      tip("Manually entered distance scale should be a number in a [0.01; 10] range");
+      this.value = distanceScale.value + " " + distanceUnit.value;
+      return;
+    }
+    distanceScale.value = +this.value;
+    scaleOutput.value = this.value + " " + distanceUnit.value;
+    updateCountryEditors();
+  });
+
+  $("#populationRateOutput").change(function() {
+    if (this.value === "" || isNaN(+this.value) || this.value < 0.001 || this.value > 10) {
+      tip("Manually entered population rate should be a number in a [0.001; 10] range");
+      this.value = si(populationRate.value * 1000);
+      return;
+    }
+    populationRate.value = +this.value;
+    populationRateOutput.value = si(this.value * 1000);
+    updateCountryEditors();
+  });
+
+  $("#urbanizationOutput").change(function() {
+    if (this.value === "" || isNaN(+this.value) || this.value < 0 || this.value > 10) {
+      tip("Manually entered urbanization rate should be a number in a [0; 10] range");
+      this.value = urbanization.value;
+      return;
+    }
+    const val = parseFloat(+this.value);
+    if (val > 2) urbanization.setAttribute("max", val);
+    urbanization.value = urbanizationOutput.value = val;
+    updateCountryEditors();
+  });
+
+
+  // lock manually changed option to restrict it randomization
+  $("#optionsContent input, #optionsContent select").change(function() {
+    const icon = "lock" + this.id.charAt(0).toUpperCase() + this.id.slice(1);
+    const el = document.getElementById(icon);
+    if (!el) return;
+    el.setAttribute("data-locked", 1);
+    el.className = "icon-lock";
   });
 
   $("#rescaler").change(function() {
@@ -6743,10 +7635,10 @@ function fantasyMap() {
 
   $("#layoutPreset").on("change", function() {
     var preset = this.value;
-    $("#mapLayers li").not("#toggleOcean, #toggleLandmass").addClass("buttonoff");
-    $("#toggleOcean, #toggleLandmass").removeClass("buttonoff");
-    $("#oceanPattern, #landmass").fadeIn();
-    $("#rivers, #terrain, #borders, #regions, #burgs, #labels, #routes, #grid").fadeOut();
+    $("#mapLayers li").not("#toggleOcean").addClass("buttonoff");
+    $("#toggleOcean").removeClass("buttonoff");
+    $("#oceanPattern").fadeIn();
+    $("#rivers, #terrain, #borders, #regions, #icons, #labels, #routes, #grid").fadeOut();
     cults.selectAll("path").remove();
     terrs.selectAll("path").remove();
     if (preset === "layoutPolitical") {
@@ -6832,3 +7724,12 @@ function fantasyMap() {
     });
   }
 }
+
+function tip(tip, main) {
+  tooltip.innerHTML = tip;
+  if (main) {tooltip.setAttribute("data-main", tip);}
+}
+
+$("#optionsContainer *").on("mouseout", function() {
+  tooltip.innerHTML = tooltip.getAttribute("data-main");
+});
