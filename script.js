@@ -2200,18 +2200,20 @@ function fantasyMap() {
     function newRouteAddPoint() {
       const point = d3.mouse(this);
       const x = rn(point[0], 2), y = rn(point[1], 2);
-      let group = elSelected ? d3.select(elSelected.node().parentNode) : null;
       let routeType = routeGroup.value;
       if (!elSelected) {
         const index = getIndex(point);
         const height = cells[index].height;
-        routeType = height < 0.2 ? "searoutes" : "roads";
-        group = routes.select("#"+routeType);
+        if (height < 0.2) routeType = "searoutes";
+        if (routeType === "searoutes" && height >= 0.2) routeType = "roads";
       }
+      const group = routes.select("#"+routeType);
       addRoutePoint({x, y});
       if (!elSelected || elSelected.attr("data-route") !== "new") {
         const id = routeType + "" + group.selectAll("*").size();
-        elSelected = group.append("path").attr("data-route", "new").attr("id", id).on("click", completeNewRoute);
+        elSelected = group.append("path").attr("data-route", "new").attr("id", id).on("click", editRoute);
+        routeUpdateGroups();
+        routeType.value = routeType;
         $("#routeEditor").dialog({
           title: "Edit Route",
           minHeight: 30, width: "auto", resizable: false,
@@ -2230,9 +2232,10 @@ function fantasyMap() {
     function completeNewRoute() {
       $("#routeNew, #addRoute").removeClass('pressed');
       restoreDefaultEvents();
+      if (!elSelected) return;
       if (elSelected.attr("data-route") === "new") {
         routeRedraw();
-        elSelected.attr("data-route", "").on("click", editRoute);
+        elSelected.attr("data-route", "");
         const node = elSelected.node();
         const l = node.getTotalLength();
         let pathCells = [];
@@ -2252,6 +2255,7 @@ function fantasyMap() {
     }
 
     function routeUpdateGroups() {
+      const group = d3.select(elSelected.node().parentNode);
       const type = group.attr("data-type");
       routeGroup.innerHTML = "";
       routes.selectAll("g").each(function(d) {
@@ -2264,6 +2268,7 @@ function fantasyMap() {
     }
 
     function routeSplitInPoint(clicked) {
+      const group = d3.select(this.parentNode);
       $("#routeSplit").removeClass('pressed');
       let points1 = [], points2 = [];
       let points = points1;
@@ -2284,10 +2289,7 @@ function fantasyMap() {
     }
 
     $("#routeGroup").change(function() {
-      const newGroup = this.value;
-      if (routeType === newGroup) {return;}
-      $(elSelected.node()).detach().appendTo($("#"+newGroup));
-      routeType = newGroup;
+      $(elSelected.node()).detach().appendTo($("#"+this.value));
     });
 
     $("#routeNew").click(function() {
@@ -5064,16 +5066,18 @@ function fantasyMap() {
       $("#labels #capitals, #labels #towns").detach().appendTo($("#burgLabels"));
       $("#icons #capitals, #icons #towns").detach().appendTo($("#burgIcons"));
       labels.select("#burgLabels").selectAll("text").each(function() {
-        const id = +this.getAttribute("id").replace("manorLabel", "");
+        let id = this.getAttribute("id");
+        if (!id) return;
         this.removeAttribute("id");
-        this.setAttribute("data-id", id);
+        this.setAttribute("data-id", +id.replace("manorLabel", ""));
       });
       icons.select("#burgIcons").select("#capitals").attr("font-size", 1).attr("fill-opacity", .7).attr("stroke-opacity", 1);
       icons.select("#burgIcons").select("#towns").attr("font-size", .5).attr("fill-opacity", .7).attr("stroke-opacity", 1);
       icons.select("#burgIcons").selectAll("circle").each(function() {
-        const id = +this.getAttribute("id").replace("manorIcon", "");
+        let id = this.getAttribute("id");
+        if (!id) return;
         this.removeAttribute("id");
-        this.setAttribute("data-id", id);
+        this.setAttribute("data-id", +id.replace("manorIcon", ""));
       });
       icons.select("#capital-anchors").raise().attr("font-size", 2).attr("size", null);
       icons.select("#town-anchorss").raise().attr("font-size", 1).attr("size", null);

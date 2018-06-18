@@ -32,8 +32,8 @@
   <script src="libs/quantize.min.js" defer></script>
   <script src="libs/d3-hexbin.v0.2.min.js" defer></script>
   <script src="libs/jquery.ui.touch-punch.min.js" defer></script>
-  <link rel="stylesheet" type="text/css" href="index.css?version=0.57.02b"/>
-  <link rel="stylesheet" type="text/css" href="icons.css?version=0.57.02b"/>
+  <link rel="stylesheet" type="text/css" href="index.css?version=0.57.03b"/>
+  <link rel="stylesheet" type="text/css" href="icons.css?version=0.57.03b"/>
   <link rel="stylesheet" type="text/css" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"/>
 </head>
 <body>
@@ -575,9 +575,11 @@
   <div id="routeEditor" class="dialog" style="display: none">
     <button id="routeGroups" onmouseover="tip('Change path group')" class="icon-map-signs" onclick="$('#routeEditor').children().not(this).toggle()"></button>
     <div id="routeGroupsSelection" style="display: none">
-      <select id="routeGroup" onmouseover="tip('Select a group for this route')"></select>
+      <select id="routeGroup" onmouseover="tip('Select a group for this route')">
+        <option value="roads" selected>roads</option>
+      </select>
     </div>
-    <button id="routeLength"></button>
+    <button id="routeLength">0</button>
     <button id="routeSplit" onmouseover="tip('Click on a control point to split the route')" class="icon-unlink" onclick="$(this).toggleClass('pressed')"></button>
     <button id="routeNew" onmouseover="tip('Create new route clicking on map')" class="icon-map-pin"></button>
     <button id="routeRemove" onmouseover="tip('Remove route')" class="icon-trash"></button>
