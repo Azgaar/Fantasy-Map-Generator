@@ -48,7 +48,6 @@ button, select, a {
 
 #cults {
 	stroke-width: 0.7;
-	stroke-linejoin: round;
 	mask: url(#shape);
 	mask-mode: alpha;
 	pointer-events: none;
@@ -269,7 +268,7 @@ input[type="number"].editNumber {
 }
 
 circle.drag {
-	stroke: white;
+	stroke: #9f3237;
 }
 
 text.drag {
@@ -512,6 +511,10 @@ p {
 	width: 35%;
 }
 
+#customizeOptions {
+  margin: 2px 0;
+}
+
 #tooltip {
 	position: fixed;
 	display: none;
@@ -519,7 +522,7 @@ p {
 	top: calc(98vh - (10px + 0.5vw));
 	width: 100%;
 	cursor: default;
-	text-shadow: 1px 0px 1px #1d0e0f;
+	text-shadow: 1px 1px 2px #1d0e0f;
 	color: #ffffff;
 	font-size: calc(10px + 0.5vw);
 	pointer-events: none;
@@ -666,8 +669,8 @@ body button.noicon {
 	line-height: 6px;
 }
 
+#styleInputs #styleOcean,
 #styleInputs #styleOpacity,
-#styleInputs #styleFill,
 #styleInputs #styleFilter {
 	display: block;
 }
@@ -950,6 +953,13 @@ div.states>[class^="icon-"] {
 	padding: 0 1px 0 7px;
 }
 
+div.states>[class="icon-arrows-cw"] {
+	color: #67575c;
+  padding: 0 2px 0 0;
+  font-size: 9px;
+	cursor: pointer;
+}
+
 div.states>.before {
 	color: #6e5e66;
 	padding: 0 1px 0 0;
@@ -957,6 +967,24 @@ div.states>.before {
 
 div.states>.small {
 	font-size: 9px;
+}
+
+div.states>.cultureName {
+	width: 50px;
+}
+
+div.states>.culturePopulation {
+	width: 40px;
+}
+
+div.states>.cultureBase {
+	width: 46px;
+  cursor: pointer;
+	border: 0;
+	background-color: transparent;
+	-webkit-appearance: textfield;
+	-moz-appearance: textfield;
+	appearance: textfield;
 }
 
 #burgsBody,
@@ -1272,4 +1300,50 @@ input[type="checkbox"] {
 
 #capital-anchors, #town-anchors {
 	transform: translate(-0.47em, -0.47em);
+}
+
+#cultureCenters circle:hover {
+  stroke: #000000b3;
+  cursor: pointer;
+}
+
+#namesbaseEditor select,
+#namesbaseEditor textarea {
+  font-size: 10px;
+  font-family: Copperplate, monospace;
+  outline: none;
+}
+
+#namesbaseEditor input {
+  font-size: 10px;
+  font-family: Copperplate, monospace;
+  outline: none;
+  height: 12px;
+}
+
+#namesbaseEditor fieldset {
+  margin: 3px 3px 5px 0;
+  border-style: dashed;
+}
+
+#namesbaseEditor span, #namesbaseEditor legend {
+  font-size: 9px;
+  font-weight: bold;
+}
+
+#namesbaseExamples {
+  font-family: Copperplate, monospace;
+  cursor: pointer;
+}
+
+#namesbaseName {
+  width: 80px;
+}
+
+#namesbaseMin, #namesbaseMax {
+  width: 33px;
+}
+
+#namesbaseDouble {
+  width: 40px;
 }

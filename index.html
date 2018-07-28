@@ -10,7 +10,7 @@
     gtag('js', new Date());
     gtag('config', 'UA-116735150-1');
   </script>
-  <title>Azgaar's Fantasy Map Generator Demo</title>
+  <title>Azgaar's Fantasy Map Generator</title>
   <meta name="application-name" content="Azgaar's Fantasy Map Generator">
   <meta name="author" content="Azgaar (Max Ganiev)">
   <meta name="description" content="Azgaar's Fantasy Map Generator (demo). Based on D3 Voronoi diagram rendered to svg">
@@ -26,14 +26,13 @@
   <script src="libs/d3.v4.min.js"></script>
   <script src="libs/d3-scale-chromatic.v1.min.js"></script>
   <script src="libs/priority-queue.min.js"></script>
-  <script src="names.js"></script>
   <script src="libs/jquery-ui.min.js"></script>
   <script src="libs/polylabel.min.js"></script>
   <script src="libs/quantize.min.js" defer></script>
   <script src="libs/d3-hexbin.v0.2.min.js" defer></script>
   <script src="libs/jquery.ui.touch-punch.min.js" defer></script>
-  <link rel="stylesheet" type="text/css" href="index.css?version=0.57.03b"/>
-  <link rel="stylesheet" type="text/css" href="icons.css?version=0.57.03b"/>
+  <link rel="stylesheet" type="text/css" href="index.css?version=0.58.00b"/>
+  <link rel="stylesheet" type="text/css" href="icons.css?version=0.58.00b"/>
   <link rel="stylesheet" type="text/css" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"/>
 </head>
 <body>
@@ -51,6 +50,17 @@
       <filter id="blur10" x="-1" y="-1" width="100" height="100">
         <feGaussianBlur in="SourceGraphic" stdDeviation="10"/>
       </filter>
+      <filter id="splotch">
+        <feTurbulence type="fractalNoise" baseFrequency=".01" numOctaves="4"/>
+        <feColorMatrix values="0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 -0.9 1.2" result="texture"/>
+        <feComposite in="SourceGraphic" in2="texture" operator="in"/>
+      </filter>
+      <filter id="bluredSplotch">
+        <feTurbulence type="fractalNoise" baseFrequency=".01" numOctaves="4"/>
+        <feColorMatrix values="0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 -0.9 1.2" result="texture"/>
+        <feComposite in="SourceGraphic" in2="texture" operator="in"/>
+        <feGaussianBlur stdDeviation="4"/>
+      </filter>
       <filter id="dropShadow">
         <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
         <feOffset dx="1" dy="2"/>
@@ -59,17 +69,25 @@
             <feMergeNode in="SourceGraphic"/>
         </feMerge>
       </filter>
+      <filter id="pencil">
+        <feTurbulence baseFrequency="0.03" numOctaves="6" type="fractalNoise"/>
+        <feDisplacementMap scale="3" in="SourceGraphic" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+      <filter id="turbulence">
+        <feTurbulence baseFrequency="0.1" numOctaves="3" type="fractalNoise"/>
+        <feDisplacementMap scale="10" in="SourceGraphic" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
       <filter id="filter-grayscale">
-        <feColorMatrix type="matrix" values="0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0 0 0 1 0"/>
+        <feColorMatrix values="0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0 0 0 1 0"/>
       </filter>
       <filter id="filter-sepia">
-        <feColorMatrix type="matrix" values="0.393 0.769 0.189 0 0 0.349 0.686 0.168 0 0 0.272 0.534 0.131 0 0 0 0 0 1 0"/>
+        <feColorMatrix values="0.393 0.769 0.189 0 0 0.349 0.686 0.168 0 0 0.272 0.534 0.131 0 0 0 0 0 1 0"/>
       </filter>
       <filter id="filter-dingy">
-        <feColorMatrix type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0.3 0.3 0 0 0 0 0 1 0"/>
+        <feColorMatrix values="1 0 0 0 0 0 1 0 0 0 0 0.3 0.3 0 0 0 0 0 1 0"/>
       </filter>
       <filter id="filter-tint">
-        <feColorMatrix type="matrix" values="0 0.9 0.2 0 0 0 0.8 0.1 0 0.1 0 0.4 1.4 0 -0.1 0 0 0 1 1"/>
+        <feColorMatrix values="1.1 0 0 0 0  0 1.1 0 0 0  0 0 0.9 0 0  0 0 0 1 0"/>
       </filter>
       <g id="deftemp">
         <mask id="shape" x="0" y="0" width="100%" height="100%" fill="black"></mask>
@@ -140,7 +158,7 @@
   <div id="loading">
     <div id="title_name">Azgaar's</div>
     <div id="title">Fantasy Map Generator</div>
-    <div id="version">v. 0.57b</div>
+    <div id="version">v. 0.58b</div>
     <p id="loading-text">LOADING<span>.</span><span>.</span><span>.</span></p>
   </div>
   <canvas id="canvas" style="opacity: 0"></canvas>
@@ -192,26 +210,26 @@
       <div id="styleContent" class="tabcontent">
         <p style="display: inline-block;">Select element:</p>
         <select id="styleElementSelect">
-          <option value="oceanBase" selected>Ocean</option>
-          <option value="landmass">Landmass</option>
           <option value="grid">Grid</option>
-          <option value="overlay">Overlay</option>
-          <option value="terrs">Heightmap</option>
+          <option value="neutralBorders">Borders (neutral)</option>
+          <option value="stateBorders">Borders (state)</option>
+          <option value="coastline">Coastline</option>
+          <option value="regions">Countries</option>
           <option value="cults">Cultures</option>
+          <option value="terrs">Heightmap</option>
+          <option value="icons">Icons</option>
+          <option value="labels">Labels</option>
+          <option value="lakes">Lakes</option>
+          <option value="landmass">Landmass</option>
+          <option value="ocean" selected>Ocean</option>
+          <option value="overlay">Overlay</option>
+          <option value="terrain">Relief</option>
+          <option value="rivers">Rivers</option>
           <option value="roads">Roads</option>
+          <option value="ruler">Rulers</option>
           <option value="trails">Trails</option>
           <option value="searoutes">Searoutes</option>
-          <option value="rivers">Rivers</option>
-          <option value="terrain">Relief</option>
-          <option value="regions">Countries</option>
-          <option value="stateBorders">State Borders</option>
-          <option value="neutralBorders">Neutral Borders</option>
-          <option value="coastline">Coastline</option>
-          <option value="lakes">Lakes</option>
-          <option value="labels">Labels</option>
-          <option value="icons">Icons</option>
           <option value="scaleBar">Scale bar</option>
-          <option value="ruler">Rulers</option>
         </select>
         <i id="restoreStyle" onmouseover="tip('Restore default style')" class="icon-ccw"></i>
         <div id="styleInputs">
@@ -225,6 +243,15 @@
             <br>Size: <input id="styleOverlaySize" type="range" min="2" max="20" step="0.2" value="5">
             <output id="styleOverlaySizeOutput">5</output>
           </div>
+          <div id="styleOcean">
+            <br>Elements:
+            <input id="styleOceanPattern" class="checkbox" type="checkbox" checked>
+            <label for="styleOceanPattern" onmouseover="tip('Toggle ocean pattern')" class="checkbox-label">Pattern</label>
+            <input id="styleOceanLayers" class="checkbox" type="checkbox" checked>
+            <label for="styleOceanLayers" onmouseover="tip('Toggle ocean layers')" class="checkbox-label">Layers</label><br>
+            Background: <input id="styleOceanBack" type="color" value="#000000"/><output id="styleOceanBackOutput">#000000</output><br>
+            Foreground: <input id="styleOceanFore" type="color" value="#53679f"/><output id="styleOceanForeOutput">#53679f</output>
+          </div>
           <div id="styleFill">
             Fill: <input id="styleFillInput" type="color" value="#5E4FA2"/>
             <output id="styleFillOutput">#5E4FA2</output>
@@ -233,7 +260,6 @@
             Stroke: <input id="styleStrokeInput" type="color" value="#5E4FA2"/>
             <output id="styleStrokeOutput">#5E4FA2</output>
           </div>
-          <div id="styleMultiple">Colors:</div>
           <div id="styleStrokeWidth">
             <br>Stroke width: <input id="styleStrokeWidthInput" type="range" min="0" max="3" step="0.01" value="1">
             <output id="styleStrokeWidthOutput">1</output>
@@ -267,7 +293,11 @@
               <option value="url(#blur1)">Blur 1</option>
               <option value="url(#blur5)">Blur 5</option>
               <option value="url(#blur10)">Blur 10</option>
+              <option value="url(#splotch)">Splotch</option>
+              <option value="url(#bluredSplotch)">Blured Splotch</option>
               <option value="url(#dropShadow)">Shadow</option>
+              <option value="url(#pencil)">Pencil</option>
+              <option value="url(#turbulence)">Turbulence</option>
             </select>
           </div>
           <div id="styleScheme">
@@ -288,7 +318,7 @@
         </div>
       </div>
       <div id="optionsContent" class="tabcontent">
-        <p onmouseover="tip('Map generation setting. Generate new map to apply the settings')">Generation options (new map to apply):</p>
+        <p onmouseover="tip('Map generation setting. Generate a new map to apply the settings')">Generation options (new map to apply):</p>
         <table>
           <tr>
             <td></td>
@@ -380,6 +410,18 @@
           </tr>
           <tr>
             <td>
+              <i onmouseover="tip('Lock to restrict option randomization on new map generation')" data-locked=0 id="lockCulturesInput" class="icon-lock-open"></i>
+            </td>
+            <td onmouseover="tip('Define how many Cultures should be generated')">Cultures count</td>
+            <td>
+              <input id="culturesInput" type="range" min="1" max="10" value="7">
+            </td>
+            <td>
+              <output id="culturesOutput">7</output>
+            </td>
+          </tr>
+          <tr>
+            <td>
               <i onmouseover="tip('Lock to restrict option randomization on new map generation')" data-locked=0 id="lockPrecInput" class="icon-lock-open"></i>
             </td>
             <td onmouseover="tip('Set precipitation level. Controls river quantity and power')">Precipitation</td>
@@ -406,14 +448,14 @@
             <td></td>
             <td onmouseover="tip('Define the coast outline contours scheme')">Ocean layers</td>
             <td>
-              <select id="outlineLayers">
-                <option value="random" selected>Random</option>
-                <option value="-6,-3,-1">-6,-3,-1</option>
-                <option value="-9,-6,-3,-1">-9,-6,-3,-1</option>
-                <option value="-6,-5,-4,-3,-2,-1">-6,-5,-4,-3,-2,-1</option>
-                <option value="-9,-8,-7,-6,-5,-4,-3,-2,-1">-9,-8,-7,-6,-5,-4,-3,-2,-1</option>
-                <option value="-6,-4,-2">-6,-4,-2</option>
-                <option value="-8,-6,-4,-2">-8,-6,-4,-2</option>
+              <select id="outlineLayersInput">
+                <option value="random">Random</option>
+                <option value="none">No outline</option>
+                <option value="-6,-3,-1" selected>Standard 3</option>
+                <option value="-6,-4,-2">Indented 3</option>
+                <option value="-9,-6,-3,-1">Standard 4</option>
+                <option value="-6,-5,-4,-3,-2,-1">Smooth 6</option>
+                <option value="-9,-8,-7,-6,-5,-4,-3,-2,-1">Smooth 9</option>
               </select>
             </td>
             <td></td>
@@ -425,7 +467,7 @@
             <td></td>
             <td onmouseover="tip('Define relative size of a saved png images. Consider saving big images is slow')">PNG resolution</td>
             <td>
-              <input id="pngResolution" type="range" min="1" max="10" value="5" oninput="pngResolutionOutput.value = this.value + 'x'">
+              <input id="pngResolutionInput" type="range" min="1" max="10" value="5" oninput="pngResolutionOutput.value = this.value + 'x'">
             </td>
             <td>
               <output id="pngResolutionOutput">5x</output>
@@ -433,7 +475,7 @@
           </tr>
           <tr>
             <td></td>
-            <td onmouseover="tip('Set default zoom extent')">Zoom extent</td>
+            <td onmouseover="tip('Set mininum and maximum zoom level')">Zoom extent</td>
             <td style="width: 130px;">
               <span onmouseover="tip('Zoom out limit')">o:</span>
               <input class="pairedNumber" id="zoomExtentMin" type="number" min="0.2" step="0.1" max="20" value="1">
@@ -445,12 +487,14 @@
             </td>
           </tr>
         </table>
+        <button id="optionsReset" onmouseover="tip('Click to restore default options')">Reset Defaults</button>
       </div>
       <div id="customizeContent" class="tabcontent" style="display: block;">
         <div id="openEditor">
           <p>Customize:</p>
           <button id="editHeightmap" onmouseover="tip('Click to open Heightmap customization menu')">Heightmap</button>
           <button id="editCountries" onmouseover="tip('Click to open Countries Editor')">Countries</button>
+          <button id="editCultures" onmouseover="tip('Click to open Cultures Editor')">Cultures</button>
           <button id="editScale" onmouseover="tip('Click to open Scale Editor')">Scale</button>
         </div>
         <div id="customizeHeightmap" style="display: none;">
@@ -467,6 +511,12 @@
               <button onmouseover="tip('Open template editor')" id="applyTemplate">Template Editor</button>
               <button onmouseover="tip('Open Image Converter')" id="convertImage">Image Converter</button>
               <button onmouseover="tip('Show Heightmap in perspective')" id="perspectiveView">Perspective View</button>
+            </div>
+            <div id="customizeOptions">
+              <input id="renderOcean" class="checkbox" type="checkbox">
+              <label for="renderOcean" onmouseover="tip('Render cells below sea level')" class="checkbox-label">Render ocean cells</label>
+              <input id="changeHeights" class="checkbox" type="checkbox">
+              <label for="changeHeights" onmouseover="tip('Allow system to change custom heights if reasonable')" class="checkbox-label">Change heights</label>
             </div>
             <label onmouseover="tip('Number of Land cells and landmass/ocean ratio')">Landmass: <span id="landmassCounter">0</span></label><hr>
           </div>
@@ -496,19 +546,19 @@
         </div>
       </div>
       <div id="aboutContent" class="tabcontent">
-        <p><a href="https://github.com/Azgaar/Fantasy-Map-Generator" target="_blank">Fantasy Map Generator</a> is an <a href="https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE" target="_blank">open source</a> tool which procedurally generates fantasy maps. You may either use an auto-generated maps or create your own map manually or with a help of templates or image converter. Check out the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Quick-Start-Tutorial" target="_blank">quick start tutorial</a> and <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki" target="_blank">project wiki</a> for guidance.</p>
-        <p>This is a Demo version, the Generator is still under development. For older versions see the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog" target="_blank">changelog</a>. Some details are covered in my <a href="https://azgaar.wordpress.com/" target="_blank">blog</a>. To track the current progress see the <a href="https://trello.com/b/7x832DG4/fantasy-map-generator" target="_blank">devboard</a>.</p>
-        <p>Please report bugs and suggest new features <a href="https://github.com/Azgaar/Fantasy-Map-Generator/issues" target="_blank">here</a>. You may also <a href="mailto:maxganiev@yandex.ru">send me</a> an email.</p>
+        <p><a href="https://github.com/Azgaar/Fantasy-Map-Generator" target="_blank">Fantasy Map Generator</a> is an <a href="https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE" target="_blank">open source</a> tool which procedurally generates fantasy maps. You may use auto-generated maps as they are, edit them or even create a map from scratch. Check out the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Quick-Start-Tutorial" target="_blank">quick start tutorial</a> and <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki" target="_blank">project wiki</a> for guidance. Join our <a href="https://www.reddit.com/r/FantasyMapGenerator/" target="_blank">Reddit Community</a> if you have questions, need any help, have a suggestion or just want to share a created map.</p>
+        <p>The project is under active development. For older versions see the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog" target="_blank">changelog</a>. Some details are covered in my <a href="https://azgaar.wordpress.com/" target="_blank">blog</a>. To track the current progress see the <a href="https://trello.com/b/7x832DG4/fantasy-map-generator" target="_blank">devboard</a>.</p>
+        <p>Please report bugs <a href="https://github.com/Azgaar/Fantasy-Map-Generator/issues" target="_blank">here</a>. You may also <a href="mailto:maxganiev@yandex.ru" target="_blank">send me</a> an email.</p>
         <ul class="share-buttons">
           <li><a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator%2F&quote=" onmouseover="tip('Share on Facebook')" target="_blank"><img alt="Share on Facebook" src="images/Facebook.png" /></a></li>
-          <li><a href="https://twitter.com/intent/tweet?source=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator%2F&text=:%20https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator%2F" target="_blank" onmouseover="tip('Tweet')"><img alt="Tweet" src="images/Twitter.png" /></a></li>
-          <li><a href="http://www.tumblr.com/share?v=3&u=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator%2F&quote=&s=" target="_blank" onmouseover="tip('Post to Tumblr')"><img alt="Post to Tumblr" src="images/Tumblr.png" /></a></li>
-          <li><a href="http://pinterest.com/pin/create/button/?url=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator%2F&description=" target="_blank" onmouseover="tip('Pin it')"><img alt="Pin it" src="images/Pinterest.png" /></a></li>
+          <li><a href="https://twitter.com/intent/tweet?source=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator&text=%23FantasyMapGenerator%0A%0Ahttps%3A//azgaar.github.io/Fantasy-Map-Generator" target="_blank" onmouseover="tip('Tweet')"><img alt="Tweet" src="images/Twitter.png" /></a></li>
+          <li><a href="http://www.tumblr.com/share?v=3&u=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator" target="_blank" onmouseover="tip('Post to Tumblr')"><img alt="Post to Tumblr" src="images/Tumblr.png" /></a></li>
+          <li><a href="http://pinterest.com/pin/create/button/?url=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator" target="_blank" onmouseover="tip('Pin it')"><img alt="Pin it" src="images/Pinterest.png" /></a></li>
           <li><a href="http://www.reddit.com/submit?url=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator" target="_blank" onmouseover="tip('Submit to Reddit')"><img alt="Submit to Reddit" src="images/Reddit.png" /></a></li>
         </ul>
       </div>
       <div id="sticked">
-        <button id="randomMap" onmouseover="tip('Generate new random map based on options being set (F2)')" class="options">New Map</button>
+        <button id="randomMap" onmouseover="tip('Generate a new random map based on options set (F2). May take about 1 minute')" class="options">New Map</button>
         <button id="saveButton" onmouseover="tip('Select file format to save map')" class="options">Save as</button>
         <div id="saveDropdown">
           <div id="saveMap" onmouseover="tip('Save as fully functional map in .map format')">.map</div>
@@ -516,7 +566,7 @@
           <div id="savePNG" onmouseover="tip('Download the visible part of the map as 4K .png image. Please ensure popups are not blocked!')">.png</div>
         </div>
         <button id="loadMap" onmouseover="tip('Load fully functional map in a .map format')" class="options">Load</button>
-        <button id="zoomReset" onmouseover="tip('Reset map zoom to default')" class="options">Reset Zoom</button>
+        <button id="zoomReset" onmouseover="tip('Reset map zoom to 1')" class="options">Reset Zoom</button>
       </div>
     </div>
   </div>
@@ -527,7 +577,7 @@
     <input id="editGroupInput" placeholder="new name" onmouseover="tip('Declare new Group for this label')" class="editTrigger"/>
     <span id="editGroupNew" onmouseover="tip('Declare new Group for this label')" class="editButtonS icon-plus"></span>
     <span id="editGroupRemove" onmouseover="tip('Remove the Group with all labels')" class="editButtonS icon-trash"></span>
-    <button id="editTextButton" onmouseover="tip('Edit label Text')" class="editButton  icon-pencil"></button>
+    <button id="editTextButton" onmouseover="tip('Edit label Text')" class="editButton icon-pencil"></button>
     <input id="editText" class="editTrigger"/>
     <span id="editTextRandom" onmouseover="tip('Generate random name')" class="editButtonS icon-shuffle"></span>
     <button id="editFontButton" onmouseover="tip('Select Font for the entire Group')" class="editButton icon-font"></button>
@@ -737,8 +787,9 @@
       <button id="templateUndo" onmouseover="tip('Undo the latest action')" class="icon-ccw" disabled></button>
       <button id="templateRedo" onmouseover="tip('Redo the action')" class="icon-cw" disabled></button>
       <button id="templateComplete" onmouseover="tip('Finalize the Heightmap. Not allowed if insufficient land area available')" class="icon-check"></button>
-      <button id="templateLoad" onmouseover="tip('Open previously saved template')" class="icon-upload"></button>
       <button id="templateSave" onmouseover="tip('Save template')" class="icon-download"></button>
+      <button id="templateLoad" onmouseover="tip('Open previously saved template')" class="icon-upload"></button>
+      <button id="templateMail" onclick="window.open('mailto:maxganiev@yandex.com?Subject=Template%20suggestion', '_blank')" onmouseover="tip('Send a template suggestion to me')" class="icon-mail-alt"></button>
     </div>
   </div>
 
@@ -865,6 +916,7 @@
         <input id="countriesNeutral" onchange="this.title = this.value" type="range" min="1" max="500" value="200">
       </div>
       <button id="countriesAddG" onmouseover="tip('Proclaim a new country')" class="icon-flag"></button>
+      <button id="countriesRegenerateNames" onmouseover="tip('Regenerate countries names')" class="icon-arrows-cw"></button>
       <button id="countriesExport" onmouseover="tip('Save country-related data as a text file (.csv)')" class="icon-download"></button>
       <button id="burgNamesImport" onmouseover="tip('Load burg names from a text file. Each name should be on a new line!')" class="icon-upload"></button>
       <button id="removeCountries" onmouseover="tip('Remove all countries')" class="icon-trash"></button>
@@ -891,9 +943,81 @@
     <div id="burgsBottom">
       <button id="editScaleBurgs" onmouseover="tip('Change demographical and geographical measurements')" class="icon-map-signs"></button>
       <button id="changeCapital" onmouseover="tip('Click on a burg line to make it a new capital')" class="icon-star"></button>
-      <button id="regenerateBurgNames" onmouseover="tip('Regenerate burg names')" class="icon-cog-alt"></button>
+      <button id="regenerateBurgNames" onmouseover="tip('Regenerate burg names based on assigned culture')" class="icon-arrows-cw"></button>
       <button id="burgAdd" onmouseover="tip('Add new burg')" class="icon-fort-awesome"></button>
       <button id="removeBurgs" onmouseover="tip('Remove all burgs')" class="icon-trash"></button>
+    </div>
+  </div>
+
+  <div id="culturesEditor" class="dialog stable" style="display: none" data-type="absolute">
+    <div id="culturesHeader">
+      <div style="margin-left: 14px" onmouseover="tip('Click to sort by culture name')" class="sortable alphabetically" data-sortby="culture">Culture&nbsp;</div>
+      <div style="margin-left: 16px" onmouseover="tip('Click to sort by culture cells count')" class="sortable" data-sortby="cells">Cells&nbsp;</div>
+      <div style="margin-left: 18px" onmouseover="tip('Click to sort by culture area')" class="sortable" data-sortby="area">Area&nbsp;</div>
+      <div style="margin-left: 30px" onmouseover="tip('Click to sort by culture population')" class="sortable" data-sortby="population">Population&nbsp;</div>
+      <div style="margin-left: 3px" onmouseover="tip('Click to sort by culture namesbase')" class="sortable alphabetically" data-sortby="base">Namesbase&nbsp;</div>
+    </div>
+    <div id="culturesBody"></div>
+
+    <div id="culturesFooter" class="totalLine">
+      <div onmouseover="tip('Cultures number (active / total)')" style="margin-left: 7px">Cultures:&nbsp;<span id="culturesFooterCultures">0 / 7</span></div>
+      <div onmouseover="tip('Total Land cells number')" style="margin-left: 7px">Cells:&nbsp;<span id="culturesFooterCells">0</span></div>
+      <div onmouseover="tip('Total Land Area')" style="margin-left: 7px">Area:&nbsp;<span id="culturesFooterArea">0</span></div>
+      <div onmouseover="tip('Total Population')" style="margin-left: 7px">Population:&nbsp;<span id="culturesFooterPopulation">0</span></div>
+    </div>
+
+    <div id="culturesBottom">
+      <button id="culturesPercentage" onmouseover="tip('Toggle percentage / absolut values views')" class="icon-percent"></button>
+      <button id="culturesManually" onmouseover="tip('Manually re-assign cultures')" class="icon-brush"></button>
+      <div id="culturesManuallyButtons" style="display: none">
+        <button id="culturesManuallyComplete" onmouseover="tip('Apply assignment')" class="icon-check"></button>
+        <button id="culturesManuallyCancel" onmouseover="tip('Cancel assignment')" class="icon-cancel"></button>
+        <label onmouseover="tip('Set the brush power')" class="italic">Brush size:</label>
+        <input id="culturesManuallyBrush" onchange="this.title = this.value" type="range" min="1" max="7" value="3">
+      </div>
+      <button id="culturesRandomize" onmouseover="tip('Randomly re-distribute cultures')" class="icon-shuffle"></button>
+      <button id="culturesRegenerateNames" onmouseover="tip('Re-generate all Burg names based on assigned culture')" class="icon-arrows-cw"></button>
+      <button id="culturesEditNamesBase" onmouseover="tip('Edit a database used for names generation')" class="icon-list-bullet"></button>
+      <button id="culturesAdd" onmouseover="tip('Add a new culture')" class="icon-plus"></button>
+      <button id="culturesExport" onmouseover="tip('Save cultures-related data as a text file (.csv)')" class="icon-download"></button>
+    </div>
+  </div>
+
+  <div id="namesbaseEditor" class="dialog stable" style="display: none">
+    <div id="namesbaseBasesTop">
+      <span>Select base: </span>
+      <select id="namesbaseSelect" onmouseover="tip('Select base to edit')" value="0"></select>
+      <span>Base name: </span>
+      <input id="namesbaseName" onmouseover="tip('Type to change a base name')" placeholder="Base name" autocorrect="off" spellcheck="false"/>
+    </div>
+    <div id="namesbaseBody">
+      <span>Names data:</span><br>
+      <textarea id="namesbaseTextarea" data-base="0" cols="70" rows="10" onmouseover="tip('Names data: a comma separated list of source names used for names generation')" placeholder="Provide a names data: a comma separated list of source names" autocorrect="off" spellcheck="false"></textarea>
+      <br>
+      <div>
+        <span>Method: </span><select onmouseover="tip('Select generation method')" id="namesbaseMethod">
+          <option value="let-to-let">Markov let-to-let</option>
+          <option value="let-to-syl">Markov let-to-syl</option>
+          <option value="syl-to-syl">Markov syl-to-syl</option>
+          <option value="selection">Random selection</option>
+        </select><span>   Length: </span>
+        <input id="namesbaseMin" onmouseover="tip('Minimal name length recommendation')" type="number" min="2" max="100" value="4">
+        <input id="namesbaseMax" onmouseover="tip('Maximal name length recommendation')" type="number" min="2" value="10">
+        <span>Dublication: </span>
+        <input id="namesbaseDouble" onmouseover="tip('Populate with letters that can used twice in a row')" autocorrect="off" spellcheck="false" value="abc">
+      </div>
+      <fieldset>
+        <legend>Generated examples: </legend>
+        <div id="namesbaseExamples" onmouseover="tip('Generated examples. Click to re-gererate')"></div>
+      </fieldset>
+    </div>
+    <div id="namesbaseBottom">
+      <button id="namesbaseDefault" onmouseover="tip('Restore default namesbase')" class="icon-cancel"></button>
+      <button id="namesbaseAdd" onmouseover="tip('Add a new base')" class="icon-plus"></button>
+      <button id="namesbaseUpdateExamples" onmouseover="tip('Re-generate examples based on provided data and generation method')" class="icon-cw"></button>
+      <button id="namesbaseDownload" onmouseover="tip('Download namesbase to PC')" class="icon-download"></button>
+      <button id="namesbaseUpload" onmouseover="tip('Upload a namesbase from PC')" class="icon-upload"></button>
+      <button id="namesbaseMail" onclick="window.open('mailto:maxganiev@yandex.com?Subject=Namesbase%20suggestion', '_blank')" onmouseover="tip('Send a namesbase suggestion to me')" class="icon-mail-alt"></button>
     </div>
   </div>
 
@@ -915,8 +1039,8 @@
       </div>
       <div>
         <div onmouseover="tip('Select how many distance unit are in one pixel')">1 map pixel =</div>
-        <input id="distanceScale" onmouseover="tip('Select how many distance unit are in one pixel')" type="range" min="0.1" max="10" value="1" step="0.1">
-        <input id="scaleOutput" onmouseover="tip('Enter how many distance unit are in one pixel')" type="text" class="output" value="1 mi">
+        <input id="distanceScale" onmouseover="tip('Select how many distance unit are in one pixel')" type="range" min="0.1" max="10" value="3" step="0.1">
+        <input id="scaleOutput" onmouseover="tip('Enter how many distance unit are in one pixel')" type="text" class="output" value="3 mi">
       </div>
       <div>
         <div onmouseover="tip('Type area unit name, leave `square` just to add ² to the distance unit selected above')">Area unit: </div>
@@ -951,8 +1075,8 @@
       </div>
       <div>
         <div>Urbanization rate: </div>
-        <input id="urbanization" onmouseover="tip('Set the ubranization (burgs population relative to all population) rate')" type="range" min="0.02" max="5" value="0.3" step="0.01">
-        <input id="urbanizationOutput" onmouseover="tip('Enter the ubranization (burgs population relative to all population) rate')" type="text" class="output" value="0.3">
+        <input id="urbanization" onmouseover="tip('Set the ubranization (burgs population relative to all population) rate')" type="range" min="0.01" max="5" value="1" step="0.01">
+        <input id="urbanizationOutput" onmouseover="tip('Enter the ubranization (burgs population relative to all population) rate')" type="text" class="output" value="1">
       </div>
     </div>
     <div id="scaleBottom">
@@ -980,7 +1104,8 @@
     <input type="file" accept=".txt,.csv" id="burgsListToLoad">
     <input type="file" accept="image/*" id="imageToLoad">
     <input type="file" accept=".txt" id="templateToLoad">
+    <input type="file" accept=".txt" id="namesbaseToLoad">
   </div>
 
-  <script src="script.js?version=0.57.00b"></script>
+  <script src="script.js?version=0.58.00b"></script>
 </body>
