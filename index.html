@@ -13,11 +13,11 @@
   <title>Azgaar's Fantasy Map Generator</title>
   <meta name="application-name" content="Azgaar's Fantasy Map Generator">
   <meta name="author" content="Azgaar (Max Ganiev)">
-  <meta name="description" content="Azgaar's Fantasy Map Generator (demo). Based on D3 Voronoi diagram rendered to svg">
+  <meta name="description" content="Azgaar's Fantasy Map Generator and Editor">
   <meta name="google" content="notranslate">
   <meta property="og:url" content="https://azgaar.github.io/Fantasy-Map-Generator/">
   <meta property="og:title" content="Azgaar's Fantasy Map Generator">
-  <meta property="og:description" content="Demo version. Based on D3 Voronoi diagram rendered to svg">
+  <meta property="og:description" content="Based on Voronoi diagram rendered to svg">
   <meta property="og:image" content="images/preview.png">
   <link rel="icon" type="image/png" href="images/favicon-32x32.png" sizes="32x32"/>
   <link rel="icon" type="image/png" href="images/favicon-16x16.png" sizes="16x16"/>
@@ -31,64 +31,66 @@
   <script src="libs/quantize.min.js" defer></script>
   <script src="libs/d3-hexbin.v0.2.min.js" defer></script>
   <script src="libs/jquery.ui.touch-punch.min.js" defer></script>
-  <link rel="stylesheet" type="text/css" href="index.css?version=0.58.00b"/>
-  <link rel="stylesheet" type="text/css" href="icons.css?version=0.58.00b"/>
+  <link rel="stylesheet" type="text/css" href="index.css?version=0.58.02b"/>
+  <link rel="stylesheet" type="text/css" href="icons.css?version=0.58.02b"/>
   <link rel="stylesheet" type="text/css" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"/>
 </head>
 <body>
   <svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" width="100%" height="100%">
     <defs>
-      <filter id="blurFilter" x="-1" y="-1" width="100" height="100">
-        <feGaussianBlur in="SourceGraphic" stdDeviation="0.2"/>
-      </filter>
-      <filter id="blur1" x="-1" y="-1" width="100" height="100">
-        <feGaussianBlur in="SourceGraphic" stdDeviation="1"/>
-      </filter>
-      <filter id="blur5" x="-1" y="-1" width="100" height="100">
-        <feGaussianBlur in="SourceGraphic" stdDeviation="5"/>
-      </filter>
-      <filter id="blur10" x="-1" y="-1" width="100" height="100">
-        <feGaussianBlur in="SourceGraphic" stdDeviation="10"/>
-      </filter>
-      <filter id="splotch">
-        <feTurbulence type="fractalNoise" baseFrequency=".01" numOctaves="4"/>
-        <feColorMatrix values="0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 -0.9 1.2" result="texture"/>
-        <feComposite in="SourceGraphic" in2="texture" operator="in"/>
-      </filter>
-      <filter id="bluredSplotch">
-        <feTurbulence type="fractalNoise" baseFrequency=".01" numOctaves="4"/>
-        <feColorMatrix values="0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 -0.9 1.2" result="texture"/>
-        <feComposite in="SourceGraphic" in2="texture" operator="in"/>
-        <feGaussianBlur stdDeviation="4"/>
-      </filter>
-      <filter id="dropShadow">
-        <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
-        <feOffset dx="1" dy="2"/>
-        <feMerge>
-            <feMergeNode/>
-            <feMergeNode in="SourceGraphic"/>
-        </feMerge>
-      </filter>
-      <filter id="pencil">
-        <feTurbulence baseFrequency="0.03" numOctaves="6" type="fractalNoise"/>
-        <feDisplacementMap scale="3" in="SourceGraphic" xChannelSelector="R" yChannelSelector="G"/>
-      </filter>
-      <filter id="turbulence">
-        <feTurbulence baseFrequency="0.1" numOctaves="3" type="fractalNoise"/>
-        <feDisplacementMap scale="10" in="SourceGraphic" xChannelSelector="R" yChannelSelector="G"/>
-      </filter>
-      <filter id="filter-grayscale">
-        <feColorMatrix values="0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0 0 0 1 0"/>
-      </filter>
-      <filter id="filter-sepia">
-        <feColorMatrix values="0.393 0.769 0.189 0 0 0.349 0.686 0.168 0 0 0.272 0.534 0.131 0 0 0 0 0 1 0"/>
-      </filter>
-      <filter id="filter-dingy">
-        <feColorMatrix values="1 0 0 0 0 0 1 0 0 0 0 0.3 0.3 0 0 0 0 0 1 0"/>
-      </filter>
-      <filter id="filter-tint">
-        <feColorMatrix values="1.1 0 0 0 0  0 1.1 0 0 0  0 0 0.9 0 0  0 0 0 1 0"/>
-      </filter>
+      <g id="filters">
+        <filter id="blurFilter" x="-1" y="-1" width="100" height="100">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="0.2"/>
+        </filter>
+        <filter id="blur1" x="-1" y="-1" width="100" height="100">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="1"/>
+        </filter>
+        <filter id="blur5" x="-1" y="-1" width="100" height="100">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="5"/>
+        </filter>
+        <filter id="blur10" x="-1" y="-1" width="100" height="100">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="10"/>
+        </filter>
+        <filter id="splotch">
+          <feTurbulence type="fractalNoise" baseFrequency=".01" numOctaves="4"/>
+          <feColorMatrix values="0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 -0.9 1.2" result="texture"/>
+          <feComposite in="SourceGraphic" in2="texture" operator="in"/>
+        </filter>
+        <filter id="bluredSplotch">
+          <feTurbulence type="fractalNoise" baseFrequency=".01" numOctaves="4"/>
+          <feColorMatrix values="0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 -0.9 1.2" result="texture"/>
+          <feComposite in="SourceGraphic" in2="texture" operator="in"/>
+          <feGaussianBlur stdDeviation="4"/>
+        </filter>
+        <filter id="dropShadow">
+          <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+          <feOffset dx="1" dy="2"/>
+          <feMerge>
+              <feMergeNode/>
+              <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+        <filter id="pencil">
+          <feTurbulence baseFrequency="0.03" numOctaves="6" type="fractalNoise"/>
+          <feDisplacementMap scale="3" in="SourceGraphic" xChannelSelector="R" yChannelSelector="G"/>
+        </filter>
+        <filter id="turbulence">
+          <feTurbulence baseFrequency="0.1" numOctaves="3" type="fractalNoise"/>
+          <feDisplacementMap scale="10" in="SourceGraphic" xChannelSelector="R" yChannelSelector="G"/>
+        </filter>
+        <filter id="filter-grayscale">
+          <feColorMatrix values="0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0 0 0 1 0"/>
+        </filter>
+        <filter id="filter-sepia">
+          <feColorMatrix values="0.393 0.769 0.189 0 0 0.349 0.686 0.168 0 0 0.272 0.534 0.131 0 0 0 0 0 1 0"/>
+        </filter>
+        <filter id="filter-dingy">
+          <feColorMatrix values="1 0 0 0 0 0 1 0 0 0 0 0.3 0.3 0 0 0 0 0 1 0"/>
+        </filter>
+        <filter id="filter-tint">
+          <feColorMatrix values="1.1 0 0 0 0  0 1.1 0 0 0  0 0 0.9 0 0  0 0 0 1 0"/>
+        </filter>
+      </g>
       <g id="deftemp">
         <mask id="shape" x="0" y="0" width="100%" height="100%" fill="black"></mask>
       </g>
@@ -534,6 +536,7 @@
           <div>
             Coord: <span id="infoX">0</span>/<span id="infoY">0</span><br>
             Cell: <span id="infoCell">0</span><br>
+            Area: <span id="infoArea">0</span><br>
             Height: <span id="infoHeight">0</span><br>
             Flux: <span id="infoFlux">0</span>
           </div>
@@ -541,6 +544,7 @@
             Type: <span id="infoFeature">n/a</span><br>
             Country: <span id="infoCountry">n/a</span><br>
             Culture: <span id="infoCulture">n/a</span><br>
+            Population: <span id="infoPopulation">0</span><br>
             Burg: <span id="infoBurg">n/a</span>
           </div>
         </div>
@@ -1107,5 +1111,5 @@
     <input type="file" accept=".txt" id="namesbaseToLoad">
   </div>
 
-  <script src="script.js?version=0.58.00b"></script>
+  <script src="script.js?version=0.58.02b"></script>
 </body>

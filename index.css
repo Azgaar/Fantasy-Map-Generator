@@ -59,8 +59,7 @@ button, select, a {
 }
 
 #landmass {
-	fill-rule: evenodd;
-	stroke: none;
+	mask: url(#shape);
 }
 
 #lakes,
