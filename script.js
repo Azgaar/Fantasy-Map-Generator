@@ -1185,10 +1185,8 @@ function fantasyMap() {
       const edges = [];
       const lim = +limits[l];
       for (let i = 0; i < cells.length; i++) {
-        //debug.append("text").attr("x", cells[i].data[0]).attr("y", cells[i].data[1]).attr("font-size", 3).text(cells[i].ctype);
         if (cells[i].ctype < lim || cells[i].ctype === undefined) continue;
         if (cells[i].ctype > lim && cells[i].type !== "border") continue;
-        //debug.append("circle").attr("cx", cells[i].data[0]).attr("cy", cells[i].data[1]).attr("r", 1).attr("fill", "red");
         const cell = diagram.cells[i];
         cell.halfedges.forEach(function(e) {
           const edge = diagram.edges[e];
@@ -1412,7 +1410,8 @@ function fantasyMap() {
   // Detect and draw the coasline
   function drawCoastline() {
     console.time('drawCoastline');
-    const shape = d3.select("#shape");
+    const shape = defs.append("mask").attr("id", "shape").attr("fill", "black")
+      .attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
     $("#landmass").empty();
     let minX = graphWidth, maxX = 0; // extreme points
     let minXedge, maxXedge; // extreme edges
@@ -2638,7 +2637,7 @@ function fantasyMap() {
     iconGroup.value = group.attr("id");
     iconFillColor.value = group.attr("fill");
     iconStrokeColor.value = group.attr("stroke");
-    iconSize.value = group.attr("font-size");
+    iconSize.value = group.attr("size");
     iconStrokeWidth.value = group.attr("stroke-width");
 
     $("#iconEditor").dialog({
@@ -2735,7 +2734,9 @@ function fantasyMap() {
 
     $("#iconSize").change(function() {
       const group = d3.select(elSelected.node().parentNode);
-      group.attr("font-size", this.value);
+      const size = +this.value
+      group.attr("size", size);
+      group.selectAll("*").each(function() {d3.select(this).attr("width", size).attr("height", size)});
     });
 
     $("#iconStrokeWidth").change(function() {
@@ -2879,7 +2880,7 @@ function fantasyMap() {
     const rotation = matrix ? matrix.split('(')[1].split(')')[0].split(' ')[0] : 0;
     burgLabelAngle.value = rotation;
     burgLabelAngleOutput.innerHTML = rotation + "°";
-    burgIconSize.value = iconGroup.attr("font-size");
+    burgIconSize.value = iconGroup.attr("size");
     burgIconFillOpacity.value = iconGroup.attr("fill-opacity") === undefined ? 1 : +iconGroup.attr("fill-opacity");
     burgIconFillColor.value = iconGroup.attr("fill");
     burgIconStrokeWidth.value = iconGroup.attr("stroke-width");
@@ -2894,14 +2895,7 @@ function fantasyMap() {
       burgToggleCapital.disabled = true;
       d3.select("#burgToggleCapital").classed("pressed", false);
     }
-    if (cell.ctype === 1 || cell.river !== undefined) {
-      burgTogglePort.disabled = false;
-      const port = cell.port !== undefined ? 1 : 0;
-      d3.select("#burgTogglePort").classed("pressed", port);
-    } else {
-      burgTogglePort.disabled = true;
-      d3.select("#burgTogglePort").classed("pressed", false);
-    }
+    d3.select("#burgTogglePort").classed("pressed", cell.port !== undefined);
     burgPopulation.value = manors[id].population;
     burgPopulationFriendly.value = rn(manors[id].population * urbanization.value * populationRate.value * 1000);
 
@@ -3116,7 +3110,9 @@ function fantasyMap() {
     $("#burgIconSize").on("input", function() {
       const type = elSelected.node().parentNode.id;
       const group = burgIcons.select("#"+type);
-      group.attr("font-size", +this.value);
+      const size = +this.value
+      group.attr("size", size);
+      group.selectAll("*").each(function() {d3.select(this).attr("r", size)});
     });
 
     $("#burgIconFillOpacity").on("input", function() {
@@ -3175,14 +3171,19 @@ function fantasyMap() {
 
     $("#burgTogglePort").click(function() {
       const id = +elSelected.attr("data-id");
-      const port = cells[manors[id].cell].port === undefined;
-      //cells[manors[id].cell].port = port;
-      d3.select("#burgTogglePort").classed("pressed", port);
-      if (port) {
+      const cell = cells[manors[id].cell];
+      const markAsPort = cell.port === undefined ? true : undefined;
+      cell.port = markAsPort;
+      d3.select("#burgTogglePort").classed("pressed", markAsPort);
+      if (markAsPort) {
         const type = elSelected.node().parentNode.id;
         const ag = type === "capitals" ? "#capital-anchors" : "#town-anchors";
-        icons.select(ag).append("use").attr("xlink:href", "#icon-anchor").attr("data-id", id)
-          .attr("x", manors[id].x).attr("y", manors[id].y).attr("width", "1em").attr("height", "1em")
+        const group = icons.select(ag);
+        const size = +group.attr("size");
+        const x = rn(manors[id].x - size * 0.47, 2);
+        const y = rn(manors[id].y - size * 0.47, 2);
+        group.append("use").attr("xlink:href", "#icon-anchor").attr("data-id", id)
+          .attr("x", x).attr("y", y).attr("width", size).attr("height", size)
           .on("click", editIcon);
       } else {
         $("#icons g[id*='anchors'] [data-id=" + id + "]").remove();
@@ -3606,6 +3607,8 @@ function fantasyMap() {
     lineGen.curve(d3.curveBasis);
     const cAnchors = icons.selectAll("#capital-anchors");
     const tAnchors = icons.selectAll("#town-anchors");
+    const cSize = cAnchors.attr("size") || 2;
+    const tSize = tAnchors.attr("size") || 1;
 
     const ports = [];
     // groups all ports on water feature
@@ -3617,11 +3620,12 @@ function fantasyMap() {
       ports[port].push(cell);
 
       // draw anchor icon
-      const x = cells[cell].data[0];
-      const y = cells[cell].data[1];
       const group = m < states.length ? cAnchors : tAnchors;
+      const size = m < states.length ? cSize : tSize;
+      const x = rn(cells[cell].data[0] - size * 0.47, 2);
+      const y = rn(cells[cell].data[1] - size * 0.47, 2);
       group.append("use").attr("xlink:href", "#icon-anchor").attr("data-id", m)
-        .attr("x", x).attr("y", y).attr("width", "1em").attr("height", "1em");
+        .attr("x", x).attr("y", y).attr("width", size).attr("height", size);
       icons.selectAll("use").on("click", editIcon);
     }
 
@@ -3867,6 +3871,8 @@ function fantasyMap() {
     const capitalLabels = burgLabels.select("#capitals");
     const townIcons = burgIcons.select("#towns");
     const townLabels = burgLabels.select("#towns");
+    const capitalSize = capitalIcons.attr("size") || 1;
+    const townSize = townIcons.attr("size") || 0.5;
     capitalIcons.selectAll("*").remove();
     capitalLabels.selectAll("*").remove();
     townIcons.selectAll("*").remove();
@@ -3878,7 +3884,8 @@ function fantasyMap() {
       const name = manors[i].name;
       const ic = i < states.length ? capitalIcons : townIcons;
       const lb = i < states.length ? capitalLabels : townLabels;
-      ic.append("circle").attr("data-id", i).attr("cx", x).attr("cy", y).attr("r", "1em").on("click", editBurg);
+      const size = i < states.length ? capitalSize : townSize;
+      ic.append("circle").attr("data-id", i).attr("cx", x).attr("cy", y).attr("r", size).on("click", editBurg);
       lb.append("text").attr("data-id", i).attr("x", x).attr("y", y).attr("dy", "-0.35em").text(name).on("click", editBurg);
     }
     console.timeEnd('drawManors');
@@ -4724,7 +4731,8 @@ function fantasyMap() {
         return;
       }
       var i = manors.length;
-      burgIcons.select("#towns").append("circle").attr("data-id", i).attr("cx", x).attr("cy", y).attr("r", "1em").on("click", editBurg);
+      const size = burgIcons.select("#towns").attr("size");
+      burgIcons.select("#towns").append("circle").attr("data-id", i).attr("cx", x).attr("cy", y).attr("r", size).on("click", editBurg);
       burgLabels.select("#towns").append("text").attr("data-id", i).attr("x", x).attr("y", y).attr("dy", "-0.35em").text(name).on("click", editBurg);
       invokeActiveZooming();
 
@@ -5329,7 +5337,7 @@ function fantasyMap() {
 
       // to fix use elements sizing
       clone.selectAll("use").each(function() {
-        const size = this.parentNode.getAttribute("font-size") || 1;
+        const size = this.parentNode.getAttribute("size") || 1;
         this.setAttribute("width", size + "px");
         this.setAttribute("height", size + "px");
       });
@@ -5669,20 +5677,26 @@ function fantasyMap() {
         this.removeAttribute("id");
         this.setAttribute("data-id", +id.replace("manorLabel", ""));
       });
-      icons.select("#burgIcons").select("#capitals").attr("font-size", 1).attr("fill-opacity", .7).attr("stroke-opacity", 1);
-      icons.select("#burgIcons").select("#towns").attr("font-size", .5).attr("fill-opacity", .7).attr("stroke-opacity", 1);
+      icons.select("#burgIcons").select("#capitals").attr("size", 1).attr("fill-opacity", .7).attr("stroke-opacity", 1);
+      icons.select("#burgIcons").select("#towns").attr("size", .5).attr("fill-opacity", .7).attr("stroke-opacity", 1);
       icons.select("#burgIcons").selectAll("circle").each(function() {
         let id = this.getAttribute("id");
         if (!id) return;
         this.removeAttribute("id");
+        this.setAttribute("r", this.parentNode.getAttribute("size"));
         this.setAttribute("data-id", +id.replace("manorIcon", ""));
       });
-      icons.select("#capital-anchors").raise().attr("font-size", 2).attr("size", null);
-      icons.select("#town-anchorss").raise().attr("font-size", 1).attr("size", null);
-      icons.selectAll("use").each(function() {
-        this.setAttribute("width", "1em");
-        this.setAttribute("hieght", "1em");
+      icons.select("#capital-anchors").raise().attr("size", 2).attr("size", null);
+      icons.select("#capital-anchors").selectAll("use").each(function() {
+        this.setAttribute("width", "2");
+        this.setAttribute("height", "2");
       });
+      icons.select("#town-anchors").raise().attr("size", 1).attr("size", null);
+      icons.select("#town-anchors").selectAll("use").each(function() {
+        this.setAttribute("width", "1");
+        this.setAttribute("height", "1");
+      });
+
     }
     if (labels.select("#countries").size() === 0) {
       labels.append("g").attr("id", "countries")
@@ -6464,30 +6478,6 @@ function fantasyMap() {
       invokeActiveZooming();
       return;
     }
-    if (id === "styleFillPlus" || id === "styleFillMinus") {
-      var el = viewbox.select("#"+styleElementSelect.value);
-      var mod = id === "styleFillPlus" ? 1.1 : 0.9;
-      el.selectAll("g").each(function() {
-        var el = d3.select(this);
-        if (el.attr("id") === "burgIcons") return;
-        var size = rn(el.attr("font-size") * mod, 2);
-        if (size < 0.1) {size = 0.1;}
-        el.attr("font-size", size);
-      });
-      return;
-    }
-    if (id === "styleStrokePlus" || id === "styleStrokeMinus") {
-      var el = viewbox.select("#"+styleElementSelect.value);
-      var mod = id === "styleStrokePlus" ? 1.1 : 0.9;
-      el.selectAll("*").each(function() {
-        var el = d3.select(this);
-        if (el.attr("id") === "burgIcons") return;
-        var size = rn(el.attr("stroke-width") * mod, 2);
-        if (size < 0.1) {size = 0.1;}
-        el.attr("stroke-width", size);
-      });
-      return;
-    }
     if (id === "brushClear") {
       if (customization === 1) {
         var message = "Are you sure you want to clear the map?";
@@ -6593,8 +6583,9 @@ function fantasyMap() {
     drawScaleBar();
     for (let i = 0; i < points.length; i++) {cells[i].height = heights[i];}
     if (type === "keep") {
-      svg.selectAll("#shape, #lakes, #coastline, #terrain, #rivers, #grid, #terrs, #landmass, #ocean, #regions")
+      svg.selectAll("#lakes, #coastline, #terrain, #rivers, #grid, #terrs, #landmass, #ocean, #regions")
         .selectAll("path, circle, line").remove();
+      svg.select("#shape").remove();
       for (let i = 0; i < points.length; i++) {
         if (regionData[i] !== -1) cells[i].region = regionData[i];
         if (cultureData[i] !== -1) cells[i].culture = cultureData[i];
@@ -7141,7 +7132,7 @@ function fantasyMap() {
   // Clear the map
   function undraw() {
     viewbox.selectAll("path, circle, line, text, use, #ruler > g").remove();
-    defs.selectAll("path").remove();
+    svg.select("#shape").remove();
     cells = [], land = [], riversData = [], manors = [], states = [], features = [], queue = [];
   }
 
@@ -7375,7 +7366,7 @@ function fantasyMap() {
         if (cells[index].port !== undefined) {score *= 3;} // port-capital
         var population = rn(score, 1);
         manors.push({i, cell:index, x, y, region: state, culture, name, population});
-        burgIcons.select("#capitals").append("circle").attr("data-id", i).attr("cx", x).attr("cy", y).attr("r", "1em").on("click", editBurg);
+        burgIcons.select("#capitals").append("circle").attr("data-id", i).attr("cx", x).attr("cy", y).attr("r", 1).on("click", editBurg);
         burgLabels.select("#capitals").append("text").attr("data-id", i).attr("x", x).attr("y", y).attr("dy", "-0.35em").text(name).on("click", editBurg);
       }
       cells[index].region = state;
@@ -8517,13 +8508,13 @@ function fantasyMap() {
     if (size < 3) size = 3;
     burgLabels.select("#capitals").attr("fill", "#3e3e4b").attr("opacity", 1).attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC").attr("font-size", size).attr("data-size", size);
     burgLabels.select("#towns").attr("fill", "#3e3e4b").attr("opacity", 1).attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC").attr("font-size", 3).attr("data-size", 4);
-    burgIcons.select("#capitals").attr("font-size", 1).attr("stroke-width", .24).attr("fill", "#ffffff").attr("stroke", "#3e3e4b").attr("fill-opacity", .7).attr("stroke-opacity", 1).attr("opacity", 1);
-    burgIcons.select("#towns").attr("font-size", .5).attr("stroke-width", .12).attr("fill", "#ffffff").attr("stroke", "#3e3e4b").attr("fill-opacity", .7).attr("stroke-opacity", 1).attr("opacity", 1);
+    burgIcons.select("#capitals").attr("size", 1).attr("stroke-width", .24).attr("fill", "#ffffff").attr("stroke", "#3e3e4b").attr("fill-opacity", .7).attr("stroke-opacity", 1).attr("opacity", 1);
+    burgIcons.select("#towns").attr("size", .5).attr("stroke-width", .12).attr("fill", "#ffffff").attr("stroke", "#3e3e4b").attr("fill-opacity", .7).attr("stroke-opacity", 1).attr("opacity", 1);
     size = rn(16 - regionsInput.value / 6);
     if (size < 6) size = 6;
     labels.select("#countries").attr("fill", "#3e3e4b").attr("opacity", 1).attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC").attr("font-size", size).attr("data-size", size);
-    icons.select("#capital-anchors").attr("fill", "#ffffff").attr("stroke", "#3e3e4b").attr("stroke-width", 1.2).attr("font-size", 2);
-    icons.select("#town-anchors").attr("fill", "#ffffff").attr("stroke", "#3e3e4b").attr("stroke-width", 1.2).attr("font-size", 1);
+    icons.select("#capital-anchors").attr("fill", "#ffffff").attr("stroke", "#3e3e4b").attr("stroke-width", 1.2).attr("size", 2);
+    icons.select("#town-anchors").attr("fill", "#ffffff").attr("stroke", "#3e3e4b").attr("stroke-width", 1.2).attr("size", 1);
   }
 
   // Options handlers

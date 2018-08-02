@@ -1297,10 +1297,6 @@ input[type="checkbox"] {
 	height: 100%;
 }
 
-#capital-anchors, #town-anchors {
-	transform: translate(-0.47em, -0.47em);
-}
-
 #cultureCenters circle:hover {
   stroke: #000000b3;
   cursor: pointer;

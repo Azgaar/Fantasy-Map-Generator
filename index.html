@@ -31,8 +31,8 @@
   <script src="libs/quantize.min.js" defer></script>
   <script src="libs/d3-hexbin.v0.2.min.js" defer></script>
   <script src="libs/jquery.ui.touch-punch.min.js" defer></script>
-  <link rel="stylesheet" type="text/css" href="index.css?version=0.58.02b"/>
-  <link rel="stylesheet" type="text/css" href="icons.css?version=0.58.02b"/>
+  <link rel="stylesheet" type="text/css" href="index.css?version=0.58.03b"/>
+  <link rel="stylesheet" type="text/css" href="icons.css?version=0.58.03b"/>
   <link rel="stylesheet" type="text/css" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"/>
 </head>
 <body>
@@ -91,12 +91,10 @@
           <feColorMatrix values="1.1 0 0 0 0  0 1.1 0 0 0  0 0 0.9 0 0  0 0 0 1 0"/>
         </filter>
       </g>
-      <g id="deftemp">
-        <mask id="shape" x="0" y="0" width="100%" height="100%" fill="black"></mask>
-      </g>
+      <g id="deftemp"></g>
       <g id="defs-icons">
         <symbol id="icon-anchor" viewBox="0 0 30 29">
-          <title>Anchor</title>
+          <title>Port</title>
           <path d="M15 4c0-0.547-0.453-1-1-1s-1 0.453-1 1 0.453 1 1 1 1-0.453 1-1zM28 18.5v5.5c0 0.203-0.125 0.391-0.313 0.469-0.063 0.016-0.125 0.031-0.187 0.031-0.125 0-0.25-0.047-0.359-0.141l-1.453-1.453c-2.453 2.953-6.859 4.844-11.688 4.844s-9.234-1.891-11.688-4.844l-1.453 1.453c-0.094 0.094-0.234 0.141-0.359 0.141-0.063 0-0.125-0.016-0.187-0.031-0.187-0.078-0.313-0.266-0.313-0.469v-5.5c0-0.281 0.219-0.5 0.5-0.5h5.5c0.203 0 0.391 0.125 0.469 0.313s0.031 0.391-0.109 0.547l-1.563 1.563c1.406 1.891 4.109 3.266 7.203 3.687v-10.109h-3c-0.547 0-1-0.453-1-1v-2c0-0.547 0.453-1 1-1h3v-2.547c-1.188-0.688-2-1.969-2-3.453 0-2.203 1.797-4 4-4s4 1.797 4 4c0 1.484-0.812 2.766-2 3.453v2.547h3c0.547 0 1 0.453 1 1v2c0 0.547-0.453 1-1 1h-3v10.109c3.094-0.422 5.797-1.797 7.203-3.687l-1.563-1.563c-0.141-0.156-0.187-0.359-0.109-0.547s0.266-0.313 0.469-0.313h5.5c0.281 0 0.5 0.219 0.5 0.5z"></path>
         </symbol>
       </g>
@@ -747,8 +745,8 @@
 
     <button id="burgFeatures" onmouseover="tip('Change Burg features')" class="icon-cog-alt"></button>
     <div id="burgFeaturesSection" style="display: none">
-      <button id="burgToggleCapital" onmouseover="tip('Mark the Burg as country capital. Neutral burg cannot be capital')" class="icon-star"></button>
-      <button id="burgTogglePort" onmouseover="tip('Mark the Burg as port. Only coastal and riverine burgs can be ports')" class="icon-anchor"></button>
+      <button id="burgToggleCapital" onmouseover="tip('Mark the Burg as country capital. Neutral burg cannot be a capital')" class="icon-star"></button>
+      <button id="burgTogglePort" onmouseover="tip('Mark the Burg as port (toggle anchor icon)')" class="icon-anchor"></button>
       <i onmouseover="tip('Set Burg population')" class="icon-users"></i>
       <input id="burgPopulation" onmouseover="tip('Set Burg population (in population points)')" type="number" value="1" min="0" step="1" style="width: 40px;"></select>
       <output id="burgPopulationFriendly" onmouseover="tip('Burg population (in people)')">1000</output>
@@ -1111,5 +1109,5 @@
     <input type="file" accept=".txt" id="namesbaseToLoad">
   </div>
 
-  <script src="script.js?version=0.58.02b"></script>
+  <script src="script.js?version=0.58.03b"></script>
 </body>
