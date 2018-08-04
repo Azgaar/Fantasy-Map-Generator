@@ -325,11 +325,11 @@ function fantasyMap() {
       {name:"Tallian", color:"#a6d854", base:3},
       {name:"Toledi", color:"#ffd92f", base:4},
       {name:"Slovian", color:"#e5c494", base:5},
-      {name:"Norse", color:"#e8c2ed", base:6},
+      {name:"Norse", color:"#dca3e4", base:6},
       {name:"Elladian", color:"#96d6be", base:7},
       {name:"Latian", color:"#ff7174", base:8},
       {name:"Somi", color:"#aedff7", base:9},
-      {name:"Koryo", color:"#f8baf7", base:10},
+      {name:"Koryo", color:"#578880", base:10},
       {name:"Hantzu", color:"#fdface", base:11},
       {name:"Yamoto", color:"#ffd9da", base:12}
     ];
@@ -337,20 +337,20 @@ function fantasyMap() {
 
   // apply default names data
   function applyDefaultNamesData() {
-    nameBases = [                                                           // min; max; mean; common
-      {name: "German", method: "let-to-syl", min: 4, max: 11, d: "lt"},     // real: 3; 17; 8.6; 8
-      {name: "English", method: "let-to-syl", min: 5, max: 10, d: ""},      // real: 4; 13; 7.9; 8
-      {name: "French", method: "let-to-syl", min: 4, max: 10, d: "lns"},    // real: 3; 15; 7.6; 6
-      {name: "Italian", method: "let-to-syl", min: 4, max: 11, d: "clrt"},  // real: 4; 14; 7.7; 7
-      {name: "Castillian", method: "let-to-syl", min: 4, max: 10, d: "lr"}, // real: 2; 13; 7.5; 8
-      {name: "Ruthenian", method: "let-to-syl", min: 4, max: 9, d: ""},     // real: 3; 12; 7.1; 7
-      {name: "Nordic", method: "let-to-syl", min: 5, max: 9, d: "kln"},     // real: 3; 12; 7.5; 6
-      {name: "Greek", method: "let-to-syl", min: 4, max: 10, d: "ls"},      // real: 3; 14; 7.1; 6
-      {name: "Roman", method: "let-to-syl", min: 5, max: 10, d: ""},        // real: 3; 15; 8.0; 7
-      {name: "Finnic", method: "let-to-syl", min: 3, max: 10, d: "aktu"},   // real: 3; 13; 7.5; 6
-      {name: "Korean", method: "let-to-syl", min: 5, max: 10, d: ""},       // real: 3; 13; 6.8; 7
-      {name: "Chinese", method: "let-to-syl", min: 5, max: 9, d: ""},       // real: 4; 11; 6.9; 6
-      {name: "Japanese", method: "let-to-syl", min: 3, max: 9, d: ""}       // real: 2; 15; 6.8; 6
+    nameBases = [                                                                   // min; max; mean; common
+      {name: "German", method: "let-to-syl", min: 4, max: 11, d: "lt", m: 0.1},     // real: 3; 17; 8.6; 8
+      {name: "English", method: "let-to-syl", min: 5, max: 10, d: "", m: 0.3},      // real: 4; 13; 7.9; 8
+      {name: "French", method: "let-to-syl", min: 4, max: 10, d: "lns", m: 0.3},    // real: 3; 15; 7.6; 6
+      {name: "Italian", method: "let-to-syl", min: 4, max: 11, d: "clrt", m: 0.2},  // real: 4; 14; 7.7; 7
+      {name: "Castillian", method: "let-to-syl", min: 4, max: 10, d: "lr", m: 0},   // real: 2; 13; 7.5; 8
+      {name: "Ruthenian", method: "let-to-syl", min: 4, max: 9, d: "", m: 0},       // real: 3; 12; 7.1; 7
+      {name: "Nordic", method: "let-to-syl", min: 5, max: 9, d: "kln", m: 0.1},     // real: 3; 12; 7.5; 6
+      {name: "Greek", method: "let-to-syl", min: 4, max: 10, d: "ls", m: 0.2},      // real: 3; 14; 7.1; 6
+      {name: "Roman", method: "let-to-syl", min: 5, max: 10, d: "", m: 1},          // real: 3; 15; 8.0; 7
+      {name: "Finnic", method: "let-to-syl", min: 3, max: 10, d: "aktu", m: 0},     // real: 3; 13; 7.5; 6
+      {name: "Korean", method: "let-to-syl", min: 5, max: 10, d: "", m: 0},         // real: 3; 13; 6.8; 7
+      {name: "Chinese", method: "let-to-syl", min: 5, max: 9, d: "", m: 0},         // real: 4; 11; 6.9; 6
+      {name: "Japanese", method: "let-to-syl", min: 3, max: 9, d: "", m: 0}         // real: 2; 15; 6.8; 6
     ];
     nameBase = [
       ["Achern","Aichhalden","Aitern","Albbruck","Alpirsbach","Altensteig","Althengstett","Appenweier","Auggen","Wildbad","Badenen","Badenweiler","Baiersbronn","Ballrechten","Bellingen","Berghaupten","Bernau","Biberach","Biederbach","Binzen","Birkendorf","Birkenfeld","Bischweier","Blumberg","Bollen","Bollschweil","Bonndorf","Bosingen","Braunlingen","Breisach","Breisgau","Breitnau","Brigachtal","Buchenbach","Buggingen","Buhl","Buhlertal","Calw","Dachsberg","Dobel","Donaueschingen","Dornhan","Dornstetten","Dottingen","Dunningen","Durbach","Durrheim","Ebhausen","Ebringen","Efringen","Egenhausen","Ehrenkirchen","Ehrsberg","Eimeldingen","Eisenbach","Elzach","Elztal","Emmendingen","Endingen","Engelsbrand","Enz","Enzklosterle","Eschbronn","Ettenheim","Ettlingen","Feldberg","Fischerbach","Fischingen","Fluorn","Forbach","Freiamt","Freiburg","Freudenstadt","Friedenweiler","Friesenheim","Frohnd","Furtwangen","Gaggenau","Geisingen","Gengenbach","Gernsbach","Glatt","Glatten","Glottertal","Gorwihl","Gottenheim","Grafenhausen","Grenzach","Griesbach","Gutach","Gutenbach","Hag","Haiterbach","Hardt","Harmersbach","Hasel","Haslach","Hausach","Hausen","Hausern","Heitersheim","Herbolzheim","Herrenalb","Herrischried","Hinterzarten","Hochenschwand","Hofen","Hofstetten","Hohberg","Horb","Horben","Hornberg","Hufingen","Ibach","Ihringen","Inzlingen","Kandern","Kappel","Kappelrodeck","Karlsbad","Karlsruhe","Kehl","Keltern","Kippenheim","Kirchzarten","Konigsfeld","Krozingen","Kuppenheim","Kussaberg","Lahr","Lauchringen","Lauf","Laufenburg","Lautenbach","Lauterbach","Lenzkirch","Liebenzell","Loffenau","Loffingen","Lorrach","Lossburg","Mahlberg","Malsburg","Malsch","March","Marxzell","Marzell","Maulburg","Monchweiler","Muhlenbach","Mullheim","Munstertal","Murg","Nagold","Neubulach","Neuenburg","Neuhausen","Neuried","Neuweiler","Niedereschach","Nordrach","Oberharmersbach","Oberkirch","Oberndorf","Oberbach","Oberried","Oberwolfach","Offenburg","Ohlsbach","Oppenau","Ortenberg","otigheim","Ottenhofen","Ottersweier","Peterstal","Pfaffenweiler","Pfalzgrafenweiler","Pforzheim","Rastatt","Renchen","Rheinau","Rheinfelden","Rheinmunster","Rickenbach","Rippoldsau","Rohrdorf","Rottweil","Rummingen","Rust","Sackingen","Sasbach","Sasbachwalden","Schallbach","Schallstadt","Schapbach","Schenkenzell","Schiltach","Schliengen","Schluchsee","Schomberg","Schonach","Schonau","Schonenberg","Schonwald","Schopfheim","Schopfloch","Schramberg","Schuttertal","Schwenningen","Schworstadt","Seebach","Seelbach","Seewald","Sexau","Simmersfeld","Simonswald","Sinzheim","Solden","Staufen","Stegen","Steinach","Steinen","Steinmauern","Straubenhardt","Stuhlingen","Sulz","Sulzburg","Teinach","Tiefenbronn","Tiengen","Titisee","Todtmoos","Todtnau","Todtnauberg","Triberg","Tunau","Tuningen","uhlingen","Unterkirnach","Reichenbach","Utzenfeld","Villingen","Villingendorf","Vogtsburg","Vohrenbach","Waldachtal","Waldbronn","Waldkirch","Waldshut","Wehr","Weil","Weilheim","Weisenbach","Wembach","Wieden","Wiesental","Wildberg","Winzeln","Wittlingen","Wittnau","Wolfach","Wutach","Wutoschingen","Wyhlen","Zavelstein"],
@@ -3942,19 +3942,19 @@ function fantasyMap() {
     if (base === undefined) base = cultures[culture].base;
     const method = nameBases[base].method;
     const error = function(base) {
-      const er = "Names data for base " + nameBases[base].name + " is incorrect. Please fix in Namesbase Editor";
-      tip(er);
+      tip("Names data for base " + nameBases[base].name + " is incorrect. Please fix in Namesbase Editor");
       editNamesbase();
     }
 
     if (method === "selection") {
+      if (nameBase[base].length < 1) {error; return;}
       const rnd = rand(nameBase[base].length - 1);
       const name = nameBase[base][rnd];
-      if (name === undefined) {error; return;}
       return name;
     }
 
     const data = chain[base];
+    if (data[" "] === undefined) {error; return;}
     const max = nameBases[base].max;
     const min = nameBases[base].min;
     const d = nameBases[base].d;
@@ -3980,6 +3980,23 @@ function fantasyMap() {
     }
     // very rare case, let's just select a random name
     if (word.length < 2) word = nameBase[base][rand(nameBase[base].length - 1)];
+
+    // do not allow multi-word name if word is foo short or not allowed for culture
+    if (word.includes(" ")) {
+      let words = word.split(" "), parsed;
+      if (Math.random() > nameBases[base].m) {word = words.join("");}
+      else {
+        for (let i=0; i < words.length; i++) {
+          if (words[i].length < 2) {
+            if (!i) words[1] = words[0] + words[1];
+            if (i) words[i-1] = words[i-1] + words[i];
+            words.splice(i, 1);
+        	  i--;
+          }
+        }
+        word = words.join(" ");
+      }
+    }
 
     // parse word to get a final name
     const name = [...word].reduce(function(r, c, i, data) {
@@ -8156,7 +8173,7 @@ function fantasyMap() {
       const select = document.getElementById("namesbaseSelect");
       select.options.add(new Option(name, base));
       select.value = base;
-      nameBases.push({name, method, min: 4, max: 10, d: ""});
+      nameBases.push({name, method, min: 4, max: 10, d: "", m: 1});
       nameBase.push([]);
       document.getElementById("namesbaseName").value = name;
       const textarea = document.getElementById("namesbaseTextarea");
