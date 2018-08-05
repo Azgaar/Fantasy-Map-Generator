@@ -4183,7 +4183,7 @@ function fantasyMap() {
       path += lineGen(edgesOrdered);
     }
     var color = states[region].color;
-    regions.append("path").attr("d", round(path, 1)).attr("fill", "none").attr("stroke", color).attr("stroke-width", 1.5).attr("class", "region"+region);
+    regions.append("path").attr("d", round(path, 1)).attr("fill", "none").attr("stroke", color).attr("stroke-width", 3).attr("class", "region"+region);
   }
 
   function drawBorders(edges, type) {
@@ -7161,6 +7161,7 @@ function fantasyMap() {
   function undraw() {
     viewbox.selectAll("path, circle, line, text, use, #ruler > g").remove();
     svg.select("#shape").remove();
+    landmass.select("rect").remove();
     cells = [], land = [], riversData = [], manors = [], states = [], features = [], queue = [];
   }
 
@@ -8507,9 +8508,9 @@ function fantasyMap() {
     viewbox.on("touchmove mousemove", moved);
     landmass.attr("opacity", 1).attr("fill", "#eef6fb");
     coastline.attr("opacity", .5).attr("stroke", "#1f3846").attr("stroke-width", .7).attr("filter", "url(#dropShadow)");
-    regions.attr("opacity", .6).attr("filter", "url(#splotch)");
-    stateBorders.attr("opacity", .8).attr("stroke", "#56566d").attr("stroke-width", .5).attr("stroke-dasharray", "1.2 1.5").attr("stroke-linecap", "butt");
-    neutralBorders.attr("opacity", .8).attr("stroke", "#56566d").attr("stroke-width", .3).attr("stroke-dasharray", "1 1.5").attr("stroke-linecap", "butt");
+    regions.attr("opacity", .4);
+    stateBorders.attr("opacity", .8).attr("stroke", "#56566d").attr("stroke-width", .7).attr("stroke-dasharray", "1.2 1.5").attr("stroke-linecap", "butt");
+    neutralBorders.attr("opacity", .8).attr("stroke", "#56566d").attr("stroke-width", .5).attr("stroke-dasharray", "1 1.5").attr("stroke-linecap", "butt");
     cults.attr("opacity", .6);
     rivers.attr("opacity", 1).attr("fill", "#5d97bb");
     lakes.attr("opacity", .5).attr("fill", "#a6c1fd").attr("stroke", "#5f799d").attr("stroke-width", .7);
