@@ -60,6 +60,7 @@ button, select, a {
 
 #landmass {
 	mask: url(#shape);
+	mask-clip: no-clip;
 }
 
 #lakes,
