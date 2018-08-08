@@ -258,13 +258,17 @@ input[type="number"].editNumber {
 }
 
 .line {
-	stroke: #666666;
+	stroke: #373737;
 	stroke-width: 1px;
+	stroke-dasharray: 6;
+  stroke-linecap: butt;
 }
 
 .circle {
 	stroke-width: 1px;
 	fill: none;
+	stroke-dasharray: 6;
+  stroke-linecap: butt;
 }
 
 circle.drag {

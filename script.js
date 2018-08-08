@@ -222,8 +222,8 @@ function fantasyMap() {
     resolveDepressionsSecondary();
     flux();
     addLakes();
-    drawRelief();
     drawCoastline();
+    drawRelief();
     generateCultures();
     manorsAndRegions();
     cleanData();
@@ -416,8 +416,8 @@ function fantasyMap() {
 
   // Get cell info on mouse move (useful for debugging)
   function moved() {
-    var point = d3.mouse(this);
-    var i = diagram.find(point[0], point[1]).index;
+    const point = d3.mouse(this);
+    const i = diagram.find(point[0], point[1]).index;
 
     // update cellInfo
     if (i) {
@@ -435,9 +435,10 @@ function fantasyMap() {
       infoPopulation.innerHTML = ifDefined(p.pop, "n/a", 2);
       infoBurg.innerHTML = ifDefined(p.manor) !== "no" ? manors[p.manor].name + " (" + p.manor + ")" : "no";
       const feature = features[p.fn];
-      if (feature === undefined) return;
-      const fType = feature.land ? "Island" : feature.border ? "Ocean" : "Lake";
-      infoFeature.innerHTML = fType + " (" + p.fn + ")";
+      if (feature !== undefined) {
+        const fType = feature.land ? "Island" : feature.border ? "Ocean" : "Lake";
+        infoFeature.innerHTML = fType + " (" + p.fn + ")";
+      }
     }
 
     // update tooltip
@@ -454,37 +455,48 @@ function fantasyMap() {
       if (subgroup === "burgLabels") tip("Click to open Burg Editor");
     }
 
-    // draw line for Customization range placing
-    icons.selectAll(".line").remove();
+    // draw line for ranges placing for heightmap Customization
     if (customization === 1) {
-      if (icons.selectAll(".tag").size() === 1) {
-        const x = +icons.select(".tag").attr("cx");
-        const y = +icons.select(".tag").attr("cy");
-        icons.insert("line", ":first-child").attr("class", "line")
-          .attr("x1", x).attr("y1", y).attr("x2", point[0]).attr("y2", point[1]);
+      const line = debug.selectAll(".line");
+      if (debug.selectAll(".tag").size() === 1) {
+        const x = +debug.select(".tag").attr("cx");
+        const y = +debug.select(".tag").attr("cy");
+        if (line.size()) {line.attr("x1", x).attr("y1", y).attr("x2", point[0]).attr("y2", point[1]);}
+        else {debug.insert("line", ":first-child").attr("class", "line")
+      .attr("x1", x).attr("y1", y).attr("x2", point[0]).attr("y2", point[1]);}
+      } else {
+         line.remove();
       }
     }
 
+    // change radius circle for Customization
     if (customization > 0) {
       const brush = $("#brushesButtons > .pressed");
-      if ((!brush.length || brush.hasClass("feature")) && !$("div.selected").length) {
-        icons.selectAll(".circle").remove();
-        return;
+      const brushId = brush.attr("id");
+      if (brushId === "brushRange" || brushId === "brushTrough") return;
+      if (!brush.length && !$("div.selected").length) return;
+      let radius = 0;
+      if (customization === 1) {
+        radius = brushRadius.value;
+        if (brushId === "brushHill" || brushId === "brushPit") {
+          radius = Math.pow(brushPower.value * 400, .5);
+        }
       }
-      const radius = customization === 1 ? brushRadius.value : customization === 2
-        ? countriesManuallyBrush.value : culturesManuallyBrush.value;
+      else if (customization === 2) radius = countriesManuallyBrush.value;
+      else if (customization === 4) radius = culturesManuallyBrush.value;
+
       const r = rn(6 / graphSize * radius, 1);
-      let clr = "#666666;"
+      let clr = "#373737";
       if (customization === 2) {
         const state = +$("div.selected").attr("id").slice(5);
-        clr = states[state].color === "neutral" ? "white" :states[state].color;
+        clr = states[state].color === "neutral" ? "white" : states[state].color;
       }
       if (customization === 4) {
         const culture = +$("div.selected").attr("id").slice(7);
         clr = cultures[culture].color;
       }
       moveCircle(point[0], point[1], r, clr);
-    } else {icons.selectAll(".circle").remove();}
+    }
   }
 
   // return value (v) if defined with specified number of decimals (d)
@@ -497,8 +509,8 @@ function fantasyMap() {
 
   // move brush radius circle
   function moveCircle(x, y, r, c) {
-    let circle = icons.selectAll(".circle");
-    if (!circle.size()) circle = icons.insert("circle", ":first-child").attr("class", "circle");
+    let circle = debug.selectAll(".circle");
+    if (!circle.size()) circle = debug.insert("circle", ":first-child").attr("class", "circle");
     circle.attr("cx", x).attr("cy", y);
     if (r) circle.attr("r", r);
     if (c) circle.attr("stroke", c);
@@ -541,11 +553,9 @@ function fantasyMap() {
         const power = +brushPower.value;
         if (id === "brushHill") {add(c2, "hill", power); updateHeightmap();}
         if (id === "brushPit") {addPit(1, power, c2); updateHeightmap();}
-        if (!brush.hasClass("feature")) {
+        if (id !== "brushRange" || id !== "brushTrough") {
           // move a circle to show approximate change radius
-          const radius = +brushRadius.value;
-          const r = rn(6 / graphSize * radius, 1);
-          moveCircle(x1, y1, r);
+          moveCircle(x1, y1);
           updateCellsInRadius(c2, c0);
         }
       }
@@ -737,13 +747,13 @@ function fantasyMap() {
   function placeLinearFeature() {
     const point = d3.mouse(this);
     const index = getIndex(point);
-    let tag = icons.selectAll(".tag");
-    if (tag.size() === 0) {
-      tag = icons.append("circle").attr("data-cell", index).attr("class", "tag")
+    let tag = debug.selectAll(".tag");
+    if (!tag.size()) {
+      tag = debug.append("circle").attr("data-cell", index).attr("class", "tag")
         .attr("r", 3).attr("cx", point[0]).attr("cy", point[1]);
     } else {
       const from = +tag.attr("data-cell");
-      icons.selectAll(".tag, .line").remove();
+      debug.selectAll(".tag, .line").remove();
       const power = +brushPower.value;
       const mod = $("#brushesButtons > .pressed").attr("id") === "brushRange" ? 1 : -1;
       const selection = addRange(mod, power, from, index);
@@ -1228,13 +1238,19 @@ function fantasyMap() {
     const avPrec = precInput.value / 5000;
     const evaporation = 2;
     cells.map(function(i) {
-      const height = Math.trunc(i.height * 100) / 100;
+      let height = Math.trunc(i.height * 100) / 100;
       const ctype = i.ctype;
-      if (ctype !== -1 && ctype !== -2 && height < 0.2) return;
+      if (ctype !== -1 && ctype !== -2 && height < 0.2) return; // exclude all depp ocean points
       const x = rn(i.data[0], 1), y = rn(i.data[1], 1);
       const fn = i.fn;
       const harbor = i.harbor;
-      const lake = i.lake ? 1 : i.pit > evaporation ? 2 : undefined;
+      let lake = i.lake;
+      if (!lake && i.pit > evaporation && ctype !== 2) {
+        lake = 2;
+        height = Math.trunc(height * 100 - i.pit) / 100;
+      }
+      if (height > 1) height = 1;
+      if (height < 0) height = 0;
       const region = i.region; // handle value for edit heightmap mode only
       const culture = i.culture; // handle value for edit heightmap mode only
       let copy = $.grep(newPoints, function(e) {return (e[0] == x && e[1] == y);});
@@ -1245,6 +1261,7 @@ function fantasyMap() {
       // add additional points for cells along coast
       if (ctype === 2 || ctype === -1) {
         if (i.type === "border") return;
+        if (!features[fn].land && !features[fn].border) return;
         i.neighbors.forEach(function(e) {
           if (cells[e].ctype === ctype) {
             let x1 = (x * 2 + cells[e].data[0]) / 3;
@@ -1257,14 +1274,14 @@ function fantasyMap() {
           };
         });
       }
-      if (lake === 2) { // small lake
-        //debug.append("circle").attr("r", 0.6).attr("cx", x).attr("cy", y).attr("fill", "blue");
-        if (i.height >= 0.3) i.height -= 0.1;
+      if (lake === 2) { // add potential small lakes
+        //debug.append("circle").attr("r", 0.3).attr("cx", x).attr("cy", y).attr("fill", "blue");
+        height = Math.trunc(height * 100 + 1) / 100;
         polygons[i.index].forEach(function(e) {
-          if (Math.random() > 0.9) return;
-          let rnd = Math.random() * 1.2 + 0.2;
+          if (Math.random() > 0.8) return;
+          let rnd = Math.random() * 0.6 + 0.8;
           const x1 = rn((e[0] * rnd + i.data[0]) / (1 + rnd), 2);
-          rnd = Math.random() * 1.2 + 0.2;
+          rnd = Math.random() * 0.6 + 0.8;
           const y1 = rn((e[1] * rnd + i.data[1]) / (1 + rnd), 2);
           copy = $.grep(newPoints, function(c) {return x1 === c[0] && y1 === c[1];});
           if (copy.length) return;
@@ -1282,7 +1299,7 @@ function fantasyMap() {
         // calc cell area
         i.area = rn(Math.abs(d3.polygonArea(polygons[d])), 2);
         const prec = rn(avPrec * i.area, 2);
-        i.flux = i.lake ? prec * 3 : prec;
+        i.flux = i.lake ? prec * 10 : prec;
       }
       const neighbors = []; // re-detect neighbors
       diagram.cells[d].halfedges.forEach(function(e) {
@@ -1296,22 +1313,8 @@ function fantasyMap() {
         if (d < ea && i.height >= 0.2 && i.lake !== 1 && cells[ea].height >= 0.2 && cells[ea].lake !== 1) {
           gridPath += "M" + edge[0][0] + "," + edge[0][1] + "L" + edge[1][0] + "," + edge[1][1];
         }
-        if (i.height >= 0.2 && !i.lake && (cells[ea].height < 0.2 || cells[ea].lake)) {
-          if (i.ctype === 1) return; // already defined coastal point
-          i.ctype = 1; // mark coastal land cells
-          // move cell point closer to coast
-          const x = (i.data[0] + cells[ea].data[0]) / 2;
-          const y = (i.data[1] + cells[ea].data[1]) / 2;
-          i.haven = ea; // harbor haven (oposite water cell)
-          i.coastX = x, i.coastY = y;
-          i.data[0] = rn(x + (i.data[0] - x) * 0.5, 1);
-          i.data[1] = rn(y + (i.data[1] - y) * 0.5, 1);
-          //debug.append("circle").attr("cx", x).attr("cy", y).attr("r", 0.2).attr("fill", "red");
-          //debug.append("circle").attr("cx", i.data[0]).attr("cy", i.data[1]).attr("r", 0.2).attr("fill", "blue");
-        }
       });
       i.neighbors = neighbors;
-      if (i.haven === undefined) delete i.harbor;
       if (i.region === undefined) delete i.region;
       if (i.culture === undefined) delete i.culture;
     });
@@ -1340,8 +1343,8 @@ function fantasyMap() {
   function updateHeightmap() {
     cells.map(function(c) {
       let height = c.height;
-      if (height > 1) {height = 1;}
-      if (height < 0) {height = 0;}
+      if (height > 1) height = 1;
+      if (height < 0) height = 0;
       c.height = height;
       let cell = landmass.select("#cell"+c.index);
       const clr = color(1 - height);
@@ -1421,53 +1424,78 @@ function fantasyMap() {
   // Detect and draw the coasline
   function drawCoastline() {
     console.time('drawCoastline');
-    const shape = defs.append("mask").attr("id", "shape").attr("fill", "black")
-      .attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
+    const shape = defs.append("mask").attr("id", "shape").attr("fill", "black").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
     $("#landmass").empty();
     let minX = graphWidth, maxX = 0; // extreme points
     let minXedge, maxXedge; // extreme edges
-    for (let f = 0; f < features.length; f++) {
-      if (!features[f].land) continue;
-      const coastal = $.grep(land, function(e) {return ((e.ctype === 1 || e.ctype === 99) && e.fn === f);});
-      let oceanEdges = [], lakeEdges = [];
-      for (let i = 0; i < coastal.length; i++) {
-        const id = coastal[i].index, cell = diagram.cells[id];
-        cell.halfedges.forEach(function(e) {
-          const edge = diagram.edges[e];
-          const start = edge[0].join(" ");
-          const end = edge[1].join(" ");
-          if (edge.left && edge.right) {
-            const ea = edge.left.index === id ? edge.right.index : edge.left.index;
-            if (cells[ea].height < 0.2) {
-              if (features[cells[ea].fn].border) {
-                oceanEdges.push({start, end});
-                // island extreme points
-                if (edge[0][0] < minX) {minX = edge[0][0]; minXedge = edge[0]}
-                if (edge[1][0] < minX) {minX = edge[1][0]; minXedge = edge[1]}
-                if (edge[0][0] > maxX) {maxX = edge[0][0]; maxXedge = edge[0]}
-                if (edge[1][0] > maxX) {maxX = edge[1][0]; maxXedge = edge[1]}
-              } else {
-                lakeEdges.push({start, end});
-              }
+    const oceanEdges = [], lakeEdges = [];
+    for (let i=0; i < land.length; i++) {
+      const id = land[i].index, cell = diagram.cells[id];
+      const f = land[i].fn;
+      land[i].height = Math.trunc(land[i].height * 100) / 100;
+      if (!oceanEdges[f]) {oceanEdges[f] = []; lakeEdges[f] = [];}
+      cell.halfedges.forEach(function(e) {
+  			const edge = diagram.edges[e];
+  			const start = edge[0].join(" ");
+  			const end = edge[1].join(" ");
+  			if (edge.left && edge.right) {
+  				const ea = edge.left.index === id ? edge.right.index : edge.left.index;
+          cells[ea].height = Math.trunc(cells[ea].height * 100) / 100;
+  				if (cells[ea].height < 0.2) {
+            cells[ea].ctype = -1;
+            if (land[i].ctype !== 1) {
+              land[i].ctype = 1; // mark coastal land cells
+            	// move cell point closer to coast
+            	const x = (land[i].data[0] + cells[ea].data[0]) / 2;
+            	const y = (land[i].data[1] + cells[ea].data[1]) / 2;
+            	land[i].haven = ea; // harbor haven (oposite water cell)
+            	land[i].coastX = x, land[i].coastY = y;
+            	land[i].data[0] = rn(x + (land[i].data[0] - x) * 0.5, 1);
+            	land[i].data[1] = rn(y + (land[i].data[1] - y) * 0.5, 1);
             }
-          } else {
-            oceanEdges.push({start, end});
-          }
-        })
-      }
-      if (coastal.length && lakeEdges.length && oceanEdges.length < 3) {
-        console.error("Feature " + f + " is an on-lake island. This can cause defects!");
-        oceanEdges = lakeEdges;
-        lakeEdges = [];
+  					if (features[cells[ea].fn].border) {
+  						//debug.append("line").attr("x1", edge[0][0]).attr("y1", edge[0][1]).attr("x2", edge[1][0]).attr("y2", edge[1][1]).attr("stroke", "blue").attr("stroke-width", .2);
+  						oceanEdges[f].push({start, end});
+  						// island extreme points
+  						if (edge[0][0] < minX) {minX = edge[0][0]; minXedge = edge[0]}
+  						if (edge[1][0] < minX) {minX = edge[1][0]; minXedge = edge[1]}
+  						if (edge[0][0] > maxX) {maxX = edge[0][0]; maxXedge = edge[0]}
+  						if (edge[1][0] > maxX) {maxX = edge[1][0]; maxXedge = edge[1]}
+  					} else {
+              const l = cells[ea].fn;
+              if (!lakeEdges[f][l]) lakeEdges[f][l] = [];
+  						lakeEdges[f][l].push({start, end});
+  						//debug.append("line").attr("x1", edge[0][0]).attr("y1", edge[0][1]).attr("x2", edge[1][0]).attr("y2", edge[1][1]).attr("stroke", "red").attr("stroke-width", .2);
+  					}
+  				}
+  			} else {
+  				oceanEdges[f].push({start, end});
+  				//debug.append("line").attr("x1", edge[0][0]).attr("y1", edge[0][1]).attr("x2", edge[1][0]).attr("y2", edge[1][1]).attr("stroke", "black").attr("stroke-width", .5);
+  			}
+  		});
+    }
+
+    for (let f = 0; f < features.length; f++) {
+    	if (!oceanEdges[f]) continue;
+      if (!oceanEdges[f].length && lakeEdges[f].length) {
+        const m = lakeEdges[f].indexOf(d3.max(lakeEdges[f]));
+        oceanEdges[f] = lakeEdges[f][m];
+        lakeEdges[f][m] = [];
       }
       lineGen.curve(d3.curveCatmullRomClosed.alpha(0.1));
-      const oceanCoastline = getContinuousLine(oceanEdges, 3, 0);
+    	const oceanCoastline = getContinuousLine(oceanEdges[f], 3, 0);
+      if (oceanCoastline) {
+        shape.append("path").attr("d", oceanCoastline).attr("fill", "white"); // draw the mask
+        coastline.append("path").attr("d", oceanCoastline); // draw the coastline
+      }
       lineGen.curve(d3.curveBasisClosed);
-      const lakeCoastline = getContinuousLine(lakeEdges, 1.5, 0);
-      shape.append("path").attr("d", oceanCoastline).attr("fill", "white");
-      if (lakeCoastline) shape.append("path").attr("d", lakeCoastline).attr("fill", "black");
-      coastline.append("path").attr("d", oceanCoastline); // draw the coastline
-      if (lakeCoastline) lakes.append("path").attr("d", lakeCoastline); // draw the lakes
+      lakeEdges[f].forEach(function(l) {
+        const lakeCoastline = getContinuousLine(l, 3, 0);
+        if (lakeCoastline) {
+          shape.append("path").attr("d", lakeCoastline).attr("fill", "black"); // draw the mask
+        	lakes.append("path").attr("d", lakeCoastline); // draw the lakes
+        }
+      });
     }
     landmass.append("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight); // draw the landmass
     drawDefaultRuler(minXedge, maxXedge);
@@ -1731,9 +1759,9 @@ function fantasyMap() {
     for (let i=0; i < lakes.length; i++) {
       const heights = [];
       lakes[i].neighbors.forEach(function(n) {if (cells[n].height >= 0.2) heights.push(cells[n].height)});
-      if (heights.length) lakes[i].height = d3.min(heights) - 0.01;
+      if (heights.length) lakes[i].height = Math.trunc((d3.min(heights) - 0.01) * 100) / 100;
       if (cells[i].height < 0.2) lakes[i].height = 0.2;
-      lakes[i].lake = true;
+      lakes[i].lake = 1;
     }
     console.timeEnd('elevateLakes');
   }
@@ -1753,7 +1781,7 @@ function fantasyMap() {
         if (land[i].height <= minHigh) {
           depression++;
           land[i].pit = land[i].pit ? land[i].pit + 1 : 1;
-          land[i].height = minHigh + 0.02;
+          land[i].height = Math.trunc((minHigh + 0.02) * 100) / 100;
         }
       }
       if (l === 0) console.log(" depressions init: " + depression);
@@ -1776,7 +1804,7 @@ function fantasyMap() {
         if (land[i].height <= minHigh) {
           depression++;
           land[i].pit = land[i].pit ? land[i].pit + 1 : 1;
-          land[i].height = minHigh + 0.02;
+          land[i].height = Math.trunc((minHigh + 0.02) * 100) / 100;
         }
       }
       if (l === 0) console.log(" depressions reGraphed: " + depression);
@@ -2039,43 +2067,61 @@ function fantasyMap() {
 
   // add lakes on depressed points on river course
   function addLakes() {
+    console.time('addLakes');
     for (let i=0; i < land.length; i++) {
+      // elavate all big lakes
       if (land[i].lake === 1) {
         land[i].height = 0.19;
         land[i].ctype = -1;
-        land[i].neighbors.forEach(function(e) {if (cells[e].height >= 0.2) cells[e].ctype = 1;});
       }
+      // define eligible small lakes
       if (land[i].lake === 2) {
         if (land[i].river !== undefined) {
-          addLakeAtCell(land[i].index);
+          land[i].height = 0.19;
+          land[i].ctype = -1;
+          land[i].fn = -1;
         } else {
-          delete land[i].lake;
+          land[i].lake = undefined;
           land[i].neighbors.forEach(function(n) {
-            if (cells[n].river !== undefined) {
-              addLakeAtCell(n);
-              return;
+            if (cells[n].lake !== 1 && cells[n].river !== undefined) {
+              cells[n].lake = 2;
+              cells[n].height = 0.19;
+              cells[n].ctype = -1;
+              cells[n].fn = -1;
+            } else if (cells[n].lake === 2) {
+              cells[n].lake = undefined;
             }
           });
         }
       }
     }
 
-    function addLakeAtCell(i) {
-      cells[i].lake = 2;
-      cells[i].height = 0.19;
-      cells[i].ctype = -1;
-      let fn = features.length;
-      cells[i].neighbors.forEach(function(e) {
-        if (cells[e].height >= 0.2) cells[e].ctype = 1;
-        // change fn to neighboring lake
-        if (cells[e].lake === 2 && cells[e].river !== undefined) fn = cells[e].fn;
-        else if (cells[e].lake === 1) fn = cells[e].fn;
-      });
-      cells[i].fn = fn;
-      if (fn === features.length) features.push({i: fn, land: false, border: false});
+    // mark small lakes
+    let unmarked = $.grep(land, function(e) {return e.fn === -1});
+    while (unmarked.length) {
+      let fn = -1, queue = [unmarked[0].index], lakeCells = [];
+      unmarked[0].session = "addLakes";
+      while (queue.length) {
+        const q = queue.pop();
+        lakeCells.push(q);
+        if (cells[q].fn !== -1) fn = cells[q].fn;
+        cells[q].neighbors.forEach(function(e) {
+          if (cells[e].lake && cells[e].session !== "addLakes") {
+            cells[e].session = "addLakes";
+            queue.push(e);
+          }
+        });
+      }
+      if (fn === -1) {
+        fn = features.length;
+        features.push({i: fn, land: false, border: false});
+      }
+      lakeCells.forEach(function(c) {cells[c].fn = fn;});
+      unmarked = $.grep(land, function(e) {return e.fn === -1});
     }
 
     land = $.grep(cells, function(e) {return e.height >= 0.2;});
+    console.timeEnd('addLakes');
   }
 
   function editRiver() {
@@ -3276,8 +3322,8 @@ function fantasyMap() {
     console.time('rankPlacesGeography');
     land.map(function(c) {
       let score = 0;
-      // truncate decimals to keep dta clear
-      c.height = rn(c.height, 2);
+      // truncate decimals to keep data clear
+      c.height = Math.trunc(c.height * 100) / 100;
       c.flux = rn(c.flux, 2);
       // get base score from height (will be biom)
       if (c.height <= 0.4) score = 2;
@@ -3481,9 +3527,13 @@ function fantasyMap() {
       let x = manors[i].x, y = manors[i].y;
       if ((capital && cell.harbor) || cell.harbor === 1) {
         // port: capital with any harbor and towns with good harbors
-        cell.port = cells[cell.haven].fn;
-        x = cell.coastX;
-        y = cell.coastY;
+        if (cell.haven === undefined) {
+          cell.harbor = undefined;
+        } else {
+          cell.port = cells[cell.haven].fn;
+          x = cell.coastX;
+          y = cell.coastY;
+        }
       }
       if (cell.river) {
         let shift = 0.2 * cell.flux;
@@ -4366,8 +4416,8 @@ function fantasyMap() {
         if (height < 0.2 && i.lake !== 2) return;
         if (i.lake === 2) {
           const heights = i.neighbors.map(function(e) {if (cells[e].height >= 0.2) return cells[e].height;})
-          height = d3.mean(heights);
-          if (height < 0.2 || height === undefined) height = 0.2;
+          height = Math.trunc(d3.mean(heights) * 100) / 100;
+          if (height < 0.2 || isNaN(height)) height = 0.2;
         }
         const clr = hColor(1 - height);
         terrs.append("path")
@@ -4433,8 +4483,9 @@ function fantasyMap() {
       delete c.used;
       delete c.coastX;
       delete c.coastY;
-      if (c.ctype === undefined) {delete c.ctype;}
-      c.height = rn(c.height, 2);
+      if (c.ctype === undefined) delete c.ctype;
+      if (c.lake === undefined) delete c.lake;
+      c.height = Math.trunc(c.height * 100) / 100;
       if (c.height >= 0.2) c.flux = rn(c.flux, 2);
     });
     // restore layers if they was turned on
@@ -4667,8 +4718,8 @@ function fantasyMap() {
     flux();
     addLakes();
     if (!changeHeights.checked) restoreCustomHeights();
-    drawRelief();
     drawCoastline();
+    drawRelief();
     if (!keepData) {
       generateCultures();
       manorsAndRegions();
@@ -5014,7 +5065,7 @@ function fantasyMap() {
       $("#culture"+c).addClass("selected");
     }
 
-    icons.selectAll(".circle").attr("stroke", color);
+    debug.selectAll(".circle").attr("stroke", color);
   }
 
   // fetch default fonts if not done before
@@ -6004,7 +6055,7 @@ function fantasyMap() {
   $("button, a, li, i").on("click", function() {
     var id = this.id;
     var parent = this.parentNode.id;
-    if (icons.selectAll(".tag").size() > 0) {icons.selectAll(".tag, .line").remove();}
+    if (debug.selectAll(".tag").size()) {debug.selectAll(".tag, .line").remove();}
     if (id === "toggleHeight") {toggleHeight();}
     if (id === "toggleCountries") {$('#regions').fadeToggle();}
     if (id === "toggleCultures") {toggleCultures();}
@@ -6051,7 +6102,7 @@ function fantasyMap() {
       $("div[data-sortby='expansion'], div[data-sortby='cells']").toggleClass("hidden");
     }
     if (id === "countriesManuallyComplete") {
-      icons.selectAll(".circle").remove();
+      debug.selectAll(".circle").remove();
       var changedCells = regions.select("#temp").selectAll("path");
       var changedStates = [];
       changedCells.each(function() {
@@ -6077,7 +6128,7 @@ function fantasyMap() {
     }
     if (id === "countriesManuallyCancel") {
       redrawRegions();
-      icons.selectAll(".circle").remove();
+      debug.selectAll(".circle").remove();
       if (grid.style("display") === "inline") {toggleGrid.click();}
       if (labels.style("display") === "none") {toggleLabels.click();}
       $("#countriesBottom").children().show();
@@ -6640,17 +6691,18 @@ function fantasyMap() {
 
     $("#brushesButtons > button").on("click", function() {
       const rSlider = $("#brushRadiusLabel, #brushRadius");
+      debug.selectAll(".circle, .tag, .line").remove();
       if ($(this).hasClass('pressed')) {
         $(this).removeClass('pressed');
         restoreDefaultEvents();
-        icons.selectAll(".circle").remove();
         rSlider.attr("disabled", true).addClass("disabled");
       } else {
         $("#brushesButtons > .pressed").removeClass('pressed');
         $(this).addClass('pressed');
         viewbox.style("cursor", "crosshair");
-        if (this.id !== "brushRange" && this.id !== "brushTrough") {viewbox.call(drag);} // on drag brushes
-        else {viewbox.on("click", placeLinearFeature);} // on click brushes
+        const id = this.id;
+        if (id === "brushRange" || id === "brushTrough") {viewbox.on("click", placeLinearFeature);} // on click brushes
+        else {viewbox.call(drag).on("click", null);} // on drag brushes
         if ($(this).hasClass("feature")) {rSlider.attr("disabled", true).addClass("disabled");}
         else {rSlider.attr("disabled", false).removeClass("disabled");}
       }
@@ -7196,7 +7248,7 @@ function fantasyMap() {
     $("#customizeHeightmap").slideUp();
     $("#openEditor").slideDown();
     $("#getMap").removeClass("glow");
-    icons.selectAll(".circle").remove();
+    debug.selectAll(".circle, .tag, .line").remove();
   }
 
   // open editCountries dialog
@@ -7336,7 +7388,7 @@ function fantasyMap() {
         const state = +$(this).attr("id").slice(5);
         let color = states[state].color;
         if (color === "neutral") {color = "white";}
-        if (icons.selectAll(".circle").size()) {icons.selectAll(".circle").attr("stroke", color);}
+        if (debug.selectAll(".circle").size()) debug.selectAll(".circle").attr("stroke", color);
       }
     });
 
@@ -7796,7 +7848,7 @@ function fantasyMap() {
       $(".selected").removeClass("selected");
       $(this).addClass("selected");
       let color = cultures[c].color;
-      icons.selectAll(".circle").attr("stroke", color);
+      debug.selectAll(".circle").attr("stroke", color);
     });
 
     $(".cultures .stateColor").on("input", function() {
@@ -7937,7 +7989,7 @@ function fantasyMap() {
     });
 
     function exitCulturesManualAssignment() {
-      icons.selectAll(".circle").remove();
+      debug.selectAll(".circle").remove();
       $("#culturesBottom").children().show();
       $("#culturesManuallyButtons").hide();
       $(".selected").removeClass("selected");
