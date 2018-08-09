@@ -1,4 +1,8 @@
 // Fantasy Map Generator main script
+// Azgaar (Max Haniyeu). Minsk, 2017-2018
+// https://github.com/Azgaar/Fantasy-Map-Generator
+// GNU General Public License v3.0
+
 "use strict;"
 fantasyMap();
 function fantasyMap() {
@@ -2068,6 +2072,7 @@ function fantasyMap() {
   // add lakes on depressed points on river course
   function addLakes() {
     console.time('addLakes');
+    let smallLakes = 0;
     for (let i=0; i < land.length; i++) {
       // elavate all big lakes
       if (land[i].lake === 1) {
@@ -2075,11 +2080,12 @@ function fantasyMap() {
         land[i].ctype = -1;
       }
       // define eligible small lakes
-      if (land[i].lake === 2) {
+      if (land[i].lake === 2 && smallLakes < 100) {
         if (land[i].river !== undefined) {
           land[i].height = 0.19;
           land[i].ctype = -1;
           land[i].fn = -1;
+          smallLakes++;
         } else {
           land[i].lake = undefined;
           land[i].neighbors.forEach(function(n) {
@@ -2088,6 +2094,7 @@ function fantasyMap() {
               cells[n].height = 0.19;
               cells[n].ctype = -1;
               cells[n].fn = -1;
+              smallLakes++;
             } else if (cells[n].lake === 2) {
               cells[n].lake = undefined;
             }
@@ -3989,9 +3996,16 @@ function fantasyMap() {
 
   // generate random name using Markov's chain
   function generateName(culture, base) {
-    if (base === undefined) base = cultures[culture].base;
+    if (base === undefined) {
+      if (!cultures[culture]) {
+        console.error("culture " + culture + " is not defined. Will load default cultures and set first culture");
+        generateCultures();
+        culture = 0;
+      }
+      base = cultures[culture].base;
+    }
     if (!nameBases[base]) {
-      console.error("nameBase " + base + "is not defined. Will load default names data and first base");
+      console.error("nameBase " + base + " is not defined. Will load default names data and first base");
       localStorage.removeItem("nameBase");
       localStorage.removeItem("nameBases");
       applyDefaultNamesData();
@@ -4420,10 +4434,12 @@ function fantasyMap() {
     if (!terrs.selectAll("path").size()) {
       cells.map(function(i, d) {
         let height = i.height;
-        if (height < 0.2 && i.lake !== 2) return;
-        if (i.lake === 2) {
+        if (height < 0.2 && !i.lake) return;
+        if (i.lake) {
           const heights = i.neighbors.map(function(e) {if (cells[e].height >= 0.2) return cells[e].height;})
-          height = Math.trunc(d3.mean(heights) * 100) / 100;
+          const mean = d3.mean(heights);
+          if (!mean) return;
+          height = Math.trunc(mean * 100) / 100;
           if (height < 0.2 || isNaN(height)) height = 0.2;
         }
         const clr = hColor(1 - height);
@@ -5763,24 +5779,28 @@ function fantasyMap() {
       $("#icons #capitals, #icons #towns").detach().appendTo($("#burgIcons"));
       icons.select("#burgIcons").select("#capitals").attr("size", 1).attr("fill-opacity", .7).attr("stroke-opacity", 1);
       icons.select("#burgIcons").select("#towns").attr("size", .5).attr("fill-opacity", .7).attr("stroke-opacity", 1);
-      icons.select("#burgIcons").selectAll("circle").each(function() {
-        let id = this.getAttribute("id");
-        if (!id) return;
-        this.removeAttribute("id");
-        this.setAttribute("r", this.parentNode.getAttribute("size"));
-        this.setAttribute("data-id", +id.replace("manorIcon", ""));
-      });
-      icons.select("#capital-anchors").raise().attr("size", 2).attr("size", null);
-      icons.select("#capital-anchors").selectAll("use").each(function() {
-        this.setAttribute("width", "2");
-        this.setAttribute("height", "2");
-      });
-      icons.select("#town-anchors").raise().attr("size", 1).attr("size", null);
-      icons.select("#town-anchors").selectAll("use").each(function() {
-        this.setAttribute("width", "1");
-        this.setAttribute("height", "1");
-      });
     }
+
+    icons.selectAll("g").each(function(d) {
+      const size = this.getAttribute("font-size");
+      if (size === undefined) return;
+      this.removeAttribute("font-size");
+      this.setAttribute("size", size);
+    });
+
+    icons.select("#burgIcons").selectAll("circle").each(function() {
+      this.setAttribute("r", this.parentNode.getAttribute("size"));
+      const id = this.getAttribute("id");
+      if (!id) return;
+      this.removeAttribute("id");
+      this.setAttribute("data-id", +id.replace("manorIcon", ""));
+    });
+
+    icons.selectAll("use").each(function() {
+      const size = this.parentNode.getAttribute("size");
+      this.setAttribute("width", size);
+      this.setAttribute("height", size);
+    });
 
     if (!labels.select("#countries").size()) {
       labels.append("g").attr("id", "countries")
