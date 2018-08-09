@@ -502,7 +502,7 @@ function fantasyMap() {
   // return value (v) if defined with specified number of decimals (d)
   // else return "no" or attribute (r)
   function ifDefined(v, r, d) {
-    if (v === undefined) return r || "no";
+    if (v === null || v === undefined) return r || "no";
     if (d) return v.toFixed(d);
     return v;
   }
@@ -3990,6 +3990,13 @@ function fantasyMap() {
   // generate random name using Markov's chain
   function generateName(culture, base) {
     if (base === undefined) base = cultures[culture].base;
+    if (!nameBases[base]) {
+      console.error("nameBase " + base + "is not defined. Will load default names data and first base");
+      localStorage.removeItem("nameBase");
+      localStorage.removeItem("nameBases");
+      applyDefaultNamesData();
+      base = 0;
+    }
     const method = nameBases[base].method;
     const error = function(base) {
       tip("Names data for base " + nameBases[base].name + " is incorrect. Please fix in Namesbase Editor");
@@ -3997,14 +4004,14 @@ function fantasyMap() {
     }
 
     if (method === "selection") {
-      if (nameBase[base].length < 1) {error; return;}
+      if (nameBase[base].length < 1) {error(base); return;}
       const rnd = rand(nameBase[base].length - 1);
       const name = nameBase[base][rnd];
       return name;
     }
 
     const data = chain[base];
-    if (data[" "] === undefined) {error; return;}
+    if (data === undefined || data[" "] === undefined) {error(base); return;}
     const max = nameBases[base].max;
     const min = nameBases[base].min;
     const d = nameBases[base].d;
@@ -5570,7 +5577,7 @@ function fantasyMap() {
     viewbox.attr("transform", null);
     const oceanBack = ocean.select("rect");
     const oceanShift = [oceanBack.attr("x"), oceanBack.attr("y"), oceanBack.attr("width"), oceanBack.attr("height")];
-    oceanBack.attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
+    oceanBack.attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 
     var svg_xml = (new XMLSerializer()).serializeToString(svg.node());
     var line = "\r\n";
@@ -5676,18 +5683,15 @@ function fantasyMap() {
     voronoi = d3.voronoi().extent([[-1, -1], [graphWidth+1, graphHeight+1]]);
     zoom.translateExtent([[0, 0], [graphWidth, graphHeight]]).scaleExtent([1, 20]).scaleTo(svg, 1);
     viewbox.attr("transform", null);
-    ocean.selectAll("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
 
     // temporary fit loaded svg element to current canvas size
     svg.attr("width", svgWidth).attr("height", svgHeight);
     if (nWidth !== svgWidth || nHeight !== svgHeight) {
-      alertMessage.innerHTML  = `The loaded map has size ${nWidth} x ${nHeight} pixels,
-                                while the current canvas size is ${svgWidth} x ${svgHeight} pixels.
-                                You may either fit the loaded map to the current canvas
-                                or resize the current canvas to ${nWidth} x ${nHeight} pixels`;
+      alertMessage.innerHTML  = `The loaded map has size ${nWidth} x ${nHeight} pixels, while the current canvas size is ${svgWidth} x ${svgHeight} pixels.
+                                Click "Rescale" to fit the map to the current canvas size. Click "OK" to browse the map without rescaling`;
       $("#alert").dialog({title: "Map size conflict",
         buttons: {
-          Fit: function() {
+          Rescale: function() {
             applyLoadedData(data);
             // rescale loaded map
             const xRatio = svgWidth / nWidth;
@@ -5701,9 +5705,7 @@ function fantasyMap() {
             zoom.translateExtent([[0, 0], [nWidth, nHeight]]).scaleExtent([scaleTo, 20]).scaleTo(svg, scaleTo);
             $(this).dialog("close");
           },
-          Resize: function() {
-            mapWidthInput.value = nWidth;
-            mapHeightInput.value = nHeight;
+          OK: function() {
             changeMapSize();
             applyLoadedData(data);
             $(this).dialog("close");
@@ -5745,17 +5747,20 @@ function fantasyMap() {
     debug = viewbox.select("#debug");
 
     // version control: ensure required groups are created with correct data
-    if (labels.select("#burgLabels").size() === 0) {
+    if (!labels.select("#burgLabels").size()) {
       labels.append("g").attr("id", "burgLabels");
-      icons.append("g").attr("id", "burgIcons");
       $("#labels #capitals, #labels #towns").detach().appendTo($("#burgLabels"));
-      $("#icons #capitals, #icons #towns").detach().appendTo($("#burgIcons"));
       labels.select("#burgLabels").selectAll("text").each(function() {
         let id = this.getAttribute("id");
         if (!id) return;
         this.removeAttribute("id");
         this.setAttribute("data-id", +id.replace("manorLabel", ""));
       });
+    }
+
+    if (!icons.select("#burgIcons").size()) {
+      icons.append("g").attr("id", "burgIcons");
+      $("#icons #capitals, #icons #towns").detach().appendTo($("#burgIcons"));
       icons.select("#burgIcons").select("#capitals").attr("size", 1).attr("fill-opacity", .7).attr("stroke-opacity", 1);
       icons.select("#burgIcons").select("#towns").attr("size", .5).attr("fill-opacity", .7).attr("stroke-opacity", 1);
       icons.select("#burgIcons").selectAll("circle").each(function() {
@@ -5775,9 +5780,9 @@ function fantasyMap() {
         this.setAttribute("width", "1");
         this.setAttribute("height", "1");
       });
-
     }
-    if (labels.select("#countries").size() === 0) {
+
+    if (!labels.select("#countries").size()) {
       labels.append("g").attr("id", "countries")
         .attr("fill", "#3e3e4b").attr("opacity", 1)
         .attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC")
@@ -5823,7 +5828,6 @@ function fantasyMap() {
     const graphSizeAdj = 90 / Math.sqrt(cells.length, 2); // adjust to different graphSize
     land.forEach(function(i) {
         const p = i.index;
-        i.area = rn(Math.abs(d3.polygonArea(polygons[p])), 2);
         if (i.pop === undefined) {
           let population = 0;
           const elevationFactor = Math.pow(1 - i.height, 3);
@@ -5831,6 +5835,9 @@ function fantasyMap() {
           if (i.region === "neutral") population *= 0.5;
           i.pop = rn(population, 1);
         }
+        if (!polygons[p] || !polygons[p].length) return;
+        const area = d3.polygonArea(polygons[p]);
+        i.area = rn(Math.abs(area), 2);
     });
 
     // restore Heightmap customization mode
@@ -5957,7 +5964,7 @@ function fantasyMap() {
       case 67: // "C" to log cells data
         console.log(cells);
         break;
-      case 77: // "B" to log burgs data
+      case 66: // "B" to log burgs data
         console.table(manors);
         break;
       case 83: // "S" to log states data
@@ -8518,7 +8525,7 @@ function fantasyMap() {
     voronoi = d3.voronoi().extent([[-1, -1], [graphWidth+1, graphHeight+1]]);
     zoom.translateExtent([[0, 0], [graphWidth, graphHeight]]).scaleExtent([1, 20]).scaleTo(svg, 1);
     viewbox.attr("transform", null);
-    ocean.selectAll("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
+    ocean.selectAll("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
   }
 
   // change svg size on manual size change or window resize, do not change graph size
@@ -8545,7 +8552,7 @@ function fantasyMap() {
   // fit ScaleBar to map size
   function fitScaleBar() {
     const el = d3.select("#scaleBar");
-    if (el.size() === 0) return;
+    if (!el.select("rect").size()) return;
     const bbox = el.select("rect").node().getBBox();
     let tr = [svgWidth - bbox.width, svgHeight - (bbox.height - 10)];
     if (sessionStorage.getItem("scaleBar")) {
