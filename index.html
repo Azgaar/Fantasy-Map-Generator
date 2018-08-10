@@ -164,8 +164,8 @@
   <canvas id="canvas" style="opacity: 0"></canvas>
   <div id="optionsContainer" class="hidden">
     <div id="collapsible">
-      <button id="optionsTrigger" onmouseover="tip('Click to toggle options')" class="options icon-right-open glow"></button>
-      <button id="regenerate" onmouseover="tip('Click to generate a new map')" class="options">New Map!</button>
+      <button id="optionsTrigger" onmouseover="tip('Click to toggle options. Hotkey: O')" class="options icon-right-open glow"></button>
+      <button id="regenerate" onmouseover="tip('Click to generate a new map. Hotkey: F6')" class="options">New Map!</button>
     </div>
     <div id="options">
       <div class="drag-trigger" onmouseover="tip('Drag to move options pane')"></div>
@@ -560,15 +560,15 @@
         </ul>
       </div>
       <div id="sticked">
-        <button id="randomMap" onmouseover="tip('Generate a new random map based on options set (F2). May take about 1 minute')" class="options">New Map</button>
+        <button id="randomMap" onmouseover="tip('Generate a new map based on options. May take about 1 minute. Hotkey: F6')" class="options">New Map</button>
         <button id="saveButton" onmouseover="tip('Select file format to save map')" class="options">Save as</button>
         <div id="saveDropdown">
-          <div id="saveMap" onmouseover="tip('Save as fully functional map in .map format')">.map</div>
-          <div id="saveSVG" onmouseover="tip('Download the map as .svg image (open derectly in browser or in vector editor like Inkscape)')">.svg</div>
-          <div id="savePNG" onmouseover="tip('Download the visible part of the map as 4K .png image. Please ensure popups are not blocked!')">.png</div>
+          <div id="saveMap" onmouseover="tip('Save as fully functional map in .map format. Hotkey: M')">.map</div>
+          <div id="saveSVG" onmouseover="tip('Download the map as .svg image (open in browser or in Inkscape. Hotkey: S)')">.svg</div>
+          <div id="savePNG" onmouseover="tip('Download the visible part of the map as 4K .png image. Please ensure popups are not blocked! Hotkey: P')">.png</div>
         </div>
-        <button id="loadMap" onmouseover="tip('Load fully functional map in a .map format')" class="options">Load</button>
-        <button id="zoomReset" onmouseover="tip('Reset map zoom to 1')" class="options">Reset Zoom</button>
+        <button id="loadMap" onmouseover="tip('Load fully functional map in a .map format. Hotkey: L')" class="options">Load</button>
+        <button id="zoomReset" onmouseover="tip('Reset map zoom. Hotkey: 0')" class="options">Reset Zoom</button>
       </div>
     </div>
   </div>
@@ -752,6 +752,7 @@
       <output id="burgPopulationFriendly" onmouseover="tip('Burg population (in people)')">1000</output>
     </div>
 
+    <button id="burgRelocate" onmouseover="tip('Move burg to a different cell')" class="icon-target"></button>
     <button id="burgAddfromEditor" onmouseover="tip('Add new Burg')" class="icon-plus"></button>
     <button id="burgRemove" onmouseover="tip('Remove the Burg')" class="icon-trash"></button>
   </div>

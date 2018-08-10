@@ -524,12 +524,13 @@ p {
 	display: none;
 	text-align: center;
 	top: calc(98vh - (10px + 0.5vw));
-	width: 100%;
-	cursor: default;
-	text-shadow: 1px 1px 2px #1d0e0f;
-	color: #ffffff;
-	font-size: calc(10px + 0.5vw);
-	pointer-events: none;
+	width: 90%;
+  left: 5%;
+  cursor: default;
+  text-shadow: 1px 1px 3px #0e0e0e;
+  color: #ffffff;
+  font-size: calc(10px + 0.5vw);
+  pointer-events: none;
 }
 
 #optionsContent table td:nth-of-type(1) {

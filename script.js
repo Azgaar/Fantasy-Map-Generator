@@ -37,7 +37,7 @@ function fantasyMap() {
     labels = viewbox.append("g").attr("id", "labels"),
     burgLabels = labels.append("g").attr("id", "burgLabels"),
     icons = viewbox.append("g").attr("id", "icons"),
-    burgIcons = icons.append("g").attr("id", "burgIcons")
+    burgIcons = icons.append("g").attr("id", "burgIcons"),
     ruler = viewbox.append("g").attr("id", "ruler"),
     debug = viewbox.append("g").attr("id", "debug");
 
@@ -1581,6 +1581,10 @@ function fantasyMap() {
       const x = d3.event.x, y = d3.event.y;
       const transform = `translate(${(dx+x)},${(dy+y)})`;
       el.attr("transform", transform);
+      const pp = this.parentNode.parentNode.id;
+      if (pp === "burgIcons" || pp === "burgLabels") {
+        tip('Use dragging for fine-tuning only, to move burg to a different cell use "Relocate" button');
+      }
     });
 
     d3.event.on("end", function() {
@@ -2433,7 +2437,7 @@ function fantasyMap() {
 
   function unselect() {
     if (elSelected) {
-      elSelected.call(d3.drag().on("drag", null)).classed("draggable", false);
+      elSelected.call(d3.drag().on("drag", null)).attr("class", null);
       debug.select(".controlPoints").remove();
       viewbox.style("cursor", "default");
       elSelected = null;
@@ -2917,12 +2921,8 @@ function fantasyMap() {
   }
 
   function editBurg() {
-    if (customization) {return;}
-    if (elSelected) {
-      const self = d3.select(this).attr("data-id") === elSelected.attr("data-id");
-      if (self) {return;}
-    }
-
+    if (customization) return;
+    unselect();
     closeDialogs("#burgEditor, .stable");
     elSelected = d3.select(this);
     const id = +elSelected.attr("data-id");
@@ -2987,7 +2987,7 @@ function fantasyMap() {
       });
     }
 
-    $("#burgEditor > button").not("#burgAddfromEditor").not("#burgRemove").click(function() {
+    $("#burgEditor > button").not("#burgAddfromEditor").not("#burgRelocate").not("#burgRemove").click(function() {
       if ($(this).next().is(":visible")) {
         $("#burgEditor > button").show();
         $(this).next("div").hide();
@@ -3260,6 +3260,75 @@ function fantasyMap() {
       manors[id].population = +this.value;
     });
 
+    $("#burgRelocate").click(function() {
+      if ($(this).hasClass('pressed')) {
+        $(".pressed").removeClass('pressed');
+        restoreDefaultEvents();
+        tip("", true);
+      } else {
+        $(".pressed").removeClass('pressed');
+        const id = elSelected.attr("data-id");
+        $(this).addClass('pressed').attr("data-id", id);
+        viewbox.style("cursor", "crosshair").on("click", relocateBurgOnClick);
+        tip("Click on map to relocate burg. Hold Shift for continuous move", true);
+      }
+    });
+
+    // move burg to a different cell
+    function relocateBurgOnClick() {
+      const point = d3.mouse(this);
+      const index = getIndex(point);
+      const i = +$("#burgRelocate").attr("data-id");
+      if (isNaN(i) || !manors[i]) return;
+
+      if (cells[index].height < 0.2) {
+        tip("Cannot place burg in the water! Select a land cell", null, "error");
+        return;
+      }
+
+      if (cells[index].manor !== undefined && cells[index].manor !== i) {
+        tip("There is already a burg in this cell. Please select a free cell", null, "error");
+        $('#grid').fadeIn();
+        d3.select("#toggleGrid").classed("buttonoff", false);
+        return;
+      }
+
+      let region = cells[index].region;
+      const oldRegion = manors[i].region;
+      // relocating capital to other country you "conqure" thid cell
+      if (states[oldRegion] && states[oldRegion].capital === i) {
+        if (region !== oldRegion) {
+          tip("Capital cannot be moved to another country!", null, "error");
+          return;
+        }
+      }
+
+      if (d3.event.shiftKey === false) {
+        $("#burgRelocate").removeClass("pressed");
+        restoreDefaultEvents();
+        tip("", true);
+        if (region !== oldRegion) {
+          recalculateStateData(oldRegion);
+          recalculateStateData(region);
+          updateCountryEditors();
+        }
+      }
+
+      const x = rn(point[0], 2), y = rn(point[1], 2);
+      burgIcons.select("circle[data-id='"+i+"']").attr("cx", x).attr("cy", y);
+      burgLabels.select("text[data-id='"+i+"']").attr("x", x).attr("y", y);
+      const anchor = icons.select("use[data-id='"+i+"']");
+      if (anchor.size()) {
+        const size = anchor.attr("width");
+        const xa = rn(x - size * 0.47, 2);
+        const ya = rn(y - size * 0.47, 2);
+        icons.select("use[data-id='"+i+"']").attr("x", xa).attr("y", ya);
+      }
+      cells[index].manor = i;
+      cells[manors[i].cell].manor = undefined;
+      manors[i].x = x, manors[i].y = y, manors[i].region = region, manors[i].cell = index;
+    }
+
     $("#burgAddfromEditor").click(function() {
       clickToAdd(); // to load on click event function
       $("#addBurg").click();
@@ -3393,7 +3462,8 @@ function fantasyMap() {
       if (m.i === m.region && !cell.port) {score *= 2;} // land-capitals
       if (m.i === m.region && cell.port) {score *= 3;} // port-capitals
       if (m.region === "neutral") score *= urbanFactor;
-      m.population = rn(score, 1);
+      const rnd = 0.6 + Math.random() * 0.8; // random factor
+      m.population = rn(score * rnd, 1);
     });
 
     // calculate rural population for each cell based on area + elevation (elevation to be changed to biome)
@@ -4296,7 +4366,10 @@ function fantasyMap() {
     if (Math.random() < 0.85 || culture === null) {
       // culture is random if capital is not yet defined
       if (culture === null) culture = rand(cultures.length - 1);
-      while (name.length > 8) {name = generateName(culture);}
+      // try to avoid too long words as a basename
+      for (let i=0; i < 20 && name.length > 7; i++) {
+        name = generateName(culture);
+      }
     } else {
       name = manors[state].name;
     }
@@ -4309,10 +4382,30 @@ function fantasyMap() {
       // remove -sk and -ev/-ov for Ruthenian
       name = name.slice(0,-2);
       addSuffix = true;
+    } else if (name.length > 5 && base === 1 && name.slice(-3) === "ton") {
+      // remove -ton ending for English
+      name = name.slice(0,-3);
+      addSuffix = true;
     } else if (name.length > 6 && name.slice(-4) === "berg") {
       // remove -berg ending for any
       name = name.slice(0,-4);
       addSuffix = true;
+    } else if (base === 12) {
+      // Japanese ends on vowels
+      if (vowels.includes(name.slice(-1))) return name;
+      return name + "u";
+    } else if (base === 10) {
+      // Korean has "guk" suffix
+      if (name.slice(-3) === "guk") return name;
+      if (name.slice(-1) === "g") name = name.slice(0,-1);
+      if (Math.random() < 0.2 && name.length < 7) name = name + "guk"; // 20% for "guk"
+      return name;
+    } else if (base === 11) {
+      // Chinese has "guo" suffix
+      if (name.slice(-3) === "guo") return name;
+      if (name.slice(-1) === "g") name = name.slice(0,-1);
+      if (Math.random() < 0.3 && name.length < 7) name = name + " Guo"; // 30% for "guo"
+      return name;
     }
 
     // define if suffix should be used
@@ -4332,7 +4425,6 @@ function fantasyMap() {
     }
 
     if (addSuffix === false) return name;
-
     let suffix = "ia"; // common latin suffix
     const rnd = Math.random();
     if (rnd < 0.05 && base === 3) suffix = "terra"; // 5% "terra" for Italian
@@ -4341,6 +4433,8 @@ function fantasyMap() {
     else if (rnd < 0.5 && base == 0) suffix = "land"; // 50% "land" for German
     else if (rnd < 0.4 && base == 1) suffix = "land"; // 40% "land" for English
     else if (rnd < 0.3 && base == 6) suffix = "land"; // 30% "land" for Nordic
+    else if (rnd < 0.1 && base == 7) suffix = "eia"; // 10% "eia" for Greek ("ia" is also Greek)
+    else if (rnd < 0.4 && base == 9) suffix = "maa"; // 40% "maa" for Finnic
     if (name.slice(-1 * suffix.length) === suffix) return name; // no suffix if name already ends with it
     return name + suffix;
   }
@@ -4756,7 +4850,7 @@ function fantasyMap() {
   // Add support "click to add" button events
   $("#customizeTab").click(function() {clickToAdd()});
   function clickToAdd() {
-    if (modules.clickToAdd) {return;}
+    if (modules.clickToAdd) return;
     modules.clickToAdd = true;
 
     // add label on click
@@ -4802,11 +4896,11 @@ function fantasyMap() {
       if ($(this).hasClass('pressed')) {
         $(".pressed").removeClass('pressed');
         restoreDefaultEvents();
+        tip("", true);
       } else {
         $(".pressed").removeClass('pressed');
         $(this).attr("data-state", -1).addClass('pressed');
-        $("#burgAdd").addClass('pressed');
-        closeDialogs(".stable");
+        $("#burgAdd, #burgAddfromEditor").addClass('pressed');
         viewbox.style("cursor", "crosshair").on("click", addBurgOnClick);
         tip("Click on map to place burg icon with a label. Hold Shift to place several", true);
       }
@@ -4823,11 +4917,11 @@ function fantasyMap() {
       const name = generateName(culture);
 
       if (cells[index].height < 0.2) {
-        tip("Cannot place burg in the water! Select a land cell");
+        tip("Cannot place burg in the water! Select a land cell", null, "error");
         return;
       }
       if (cells[index].manor !== undefined) {
-        tip("There is already a burg in this cell. You have to select a free cell");
+        tip("There is already a burg in this cell. Please select a free cell", null, "error");
         $('#grid').fadeIn();
         d3.select("#toggleGrid").classed("buttonoff", false);
         return;
@@ -4839,7 +4933,7 @@ function fantasyMap() {
       invokeActiveZooming();
 
       if (d3.event.shiftKey === false) {
-        $("#addBurg, #burgAdd").removeClass("pressed");
+        $("#addBurg, #burgAdd, #burgAddfromEditor").removeClass("pressed");
         restoreDefaultEvents();
       }
 
@@ -5011,7 +5105,7 @@ function fantasyMap() {
 
   // re-calculate data for a particular state
   function recalculateStateData(state) {
-    const s = states[state];
+    const s = states[state] || states[states.length - 1];
     if (s.capital === "neutral") state = "neutral";
     const burgs = $.grep(manors, function(e) {return e.region === state;});
     s.burgs = burgs.length;
@@ -5717,7 +5811,7 @@ function fantasyMap() {
             const extent = (100 / scaleTo) + "%";
             const xShift = (nWidth * scaleTo - svgWidth) / 2 / scaleTo;
             const yShift = (nHeight * scaleTo - svgHeight) / 2 / scaleTo;
-            ocean.selectAll("rect").attr("x", xShift).attr("y", yShift).attr("width", extent).attr("height", extent);
+            svg.select("#ocean").selectAll("rect").attr("x", xShift).attr("y", yShift).attr("width", extent).attr("height", extent);
             zoom.translateExtent([[0, 0], [nWidth, nHeight]]).scaleExtent([scaleTo, 20]).scaleTo(svg, scaleTo);
             $(this).dialog("close");
           },
@@ -5767,8 +5861,8 @@ function fantasyMap() {
       labels.append("g").attr("id", "burgLabels");
       $("#labels #capitals, #labels #towns").detach().appendTo($("#burgLabels"));
       labels.select("#burgLabels").selectAll("text").each(function() {
-        let id = this.getAttribute("id");
-        if (!id) return;
+        const id = this.getAttribute("id");
+        if (id === null || id === undefined) return;
         this.removeAttribute("id");
         this.setAttribute("data-id", +id.replace("manorLabel", ""));
       });
@@ -5781,9 +5875,9 @@ function fantasyMap() {
       icons.select("#burgIcons").select("#towns").attr("size", .5).attr("fill-opacity", .7).attr("stroke-opacity", 1);
     }
 
-    icons.selectAll("g").each(function(d) {
+    icons.selectAll("g").each(function() {
       const size = this.getAttribute("font-size");
-      if (size === undefined) return;
+      if (size === null || size === undefined) return;
       this.removeAttribute("font-size");
       this.setAttribute("size", size);
     });
@@ -5791,13 +5885,14 @@ function fantasyMap() {
     icons.select("#burgIcons").selectAll("circle").each(function() {
       this.setAttribute("r", this.parentNode.getAttribute("size"));
       const id = this.getAttribute("id");
-      if (!id) return;
+      if (id === null || id === undefined) return;
       this.removeAttribute("id");
       this.setAttribute("data-id", +id.replace("manorIcon", ""));
     });
 
     icons.selectAll("use").each(function() {
       const size = this.parentNode.getAttribute("size");
+      if (size === null || size === undefined) return;
       this.setAttribute("width", size);
       this.setAttribute("height", size);
     });
@@ -5962,70 +6057,55 @@ function fantasyMap() {
     }
   }
 
-  // Hotkeys
+  // Hotkeys, see github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys
   d3.select("body").on("keydown", function() {
     const active = document.activeElement.tagName;
     if (active === "INPUT" || active === "SELECT" || active === "TEXTAREA") return;
-    switch(d3.event.keyCode) {
-      case 27: // Escape to close all dialogs
-        closeDialogs();
-        break;
-      case 79: // "O" to toggle options
-        optionsTrigger.click();
-        break;
-      case 113: // "F2" for new map
-        $("#randomMap").click();
-        break;
-      case 32: // Space to log focused cell data
-        var point = d3.mouse(this);
-        const index = diagram.find(point[0], point[1]).index;
-        console.table(cells[index]);
-        break;
-      case 67: // "C" to log cells data
-        console.log(cells);
-        break;
-      case 66: // "B" to log burgs data
-        console.table(manors);
-        break;
-      case 83: // "S" to log states data
-        console.table(states);
-        break;
-      case 70: // "F" to log features data
-        console.table(features);
-        break;
-      case 37: // Left to scroll map left
-        zoom.translateBy(svg, 10, 0);
-        break;
-      case 39: // Right to scroll map right
-        zoom.translateBy(svg, -10, 0);
-        break;
-      case 38: // Up to scroll map up
-        zoom.translateBy(svg, 0, 10);
-        break;
-      case 40: // Down to scroll map down
-        zoom.translateBy(svg, 0, -10);
-        break;
-      case 107: // Plus to zoom map up
-        zoom.scaleBy(svg, 1.2);
-        break;
-      case 109: // Minus to zoom map out
-        zoom.scaleBy(svg, 0.8);
-        break;
-      case 9: // Tab to toggle full-screen mode
-        $("#updateFullscreen").click();
-        break;
-      case 90: // Ctrl + "Z" to toggle undo
-        if (customization !== 1) return;
-        if (d3.event.ctrlKey === false) return;
-        undo.click();
-        break;
-      case 89: // Ctrl + "Y" to toggle undo
-        if (customization !== 1) return;
-        if (d3.event.ctrlKey === false) return;
-        redo.click();
-        break;
-      }
+    const key = d3.event.keyCode;
+    const ctrl = d3.event.ctrlKey;
+    const p = d3.mouse(this);
+    if (key === 117) $("#randomMap").click(); // "F6" for new map
+    else if (key === 27) closeDialogs(); // Escape to close all dialogs
+    else if (key === 79) optionsTrigger.click(); // "O" to toggle options
+    else if (key === 80) saveAsImage("png"); // "P" to save as PNG
+    else if (key === 83) saveAsImage("svg"); // "S" to save as SVG
+    else if (key === 77) saveMap(); // "M" to save MAP file
+    else if (key === 76) mapToLoad.click(); // "L" to load MAP
+    else if (key === 32) console.table(cells[diagram.find(p[0], p[1]).index]); // Space to log focused cell data
+    else if (key === 192) console.log(cells); // "`" to log cells data
+    else if (key === 66) console.table(manors); // "B" to log burgs data
+    else if (key === 67) console.table(states); // "C" to log countries data
+    else if (key === 70) console.table(features); // "F" to log features data
+    else if (key === 37) zoom.translateBy(svg, 10, 0); // Left to scroll map left
+    else if (key === 39) zoom.translateBy(svg, -10, 0); // Right to scroll map right
+    else if (key === 38) zoom.translateBy(svg, 0, 10); // Up to scroll map up
+    else if (key === 40) zoom.translateBy(svg, 0, -10); // Up to scroll map up
+    else if (key === 107) zoom.scaleBy(svg, 1.2); // Plus to zoom map up
+    else if (key === 109) zoom.scaleBy(svg, 0.8); // Minus to zoom map out
+    else if (key === 48 || key === 96) resetZoom(); // 0 to reset zoom
+    else if (key === 49 || key === 97) zoom.scaleTo(svg, 1); // 1 to zoom to 1
+    else if (key === 50 || key === 98) zoom.scaleTo(svg, 2); // 2 to zoom to 2
+    else if (key === 51 || key === 99) zoom.scaleTo(svg, 3); // 3 to zoom to 3
+    else if (key === 52 || key === 100) zoom.scaleTo(svg, 4); // 4 to zoom to 4
+    else if (key === 53 || key === 101) zoom.scaleTo(svg, 5); // 5 to zoom to 5
+    else if (key === 54 || key === 102) zoom.scaleTo(svg, 6); // 6 to zoom to 6
+    else if (key === 55 || key === 103) zoom.scaleTo(svg, 7); // 7 to zoom to 7
+    else if (key === 56 || key === 104) zoom.scaleTo(svg, 8); // 8 to zoom to 8
+    else if (key === 57 || key === 105) zoom.scaleTo(svg, 9); // 9 to zoom to 9
+    else if (key === 9) $("#updateFullscreen").click(); // Tab to fit map to fullscreen
+    else if (ctrl && key === 90) undo.click(); // Ctrl + "Z" to toggle undo
+    else if (ctrl && key === 89) redo.click(); // Ctrl + "Y" to toggle undo
   });
+
+  // Show help
+  function showHelp() {
+    $("#help").dialog({
+      title: "About Fantasy Map Generator",
+      minHeight: 30, width: "auto", maxWidth: 275, resizable: false,
+      position: {my: "center top+10", at: "bottom", of: this},
+      close: unselect
+    });
+  }
 
   // Toggle Options pane
   $("#optionsTrigger").on("click", function() {
@@ -8557,7 +8637,8 @@ function fantasyMap() {
     const width = Math.max(svgWidth, graphWidth);
     const height = Math.max(svgHeight, graphHeight);
     zoom.translateExtent([[0, 0], [width, height]]);
-    ocean.selectAll("rect").attr("width", width).attr("height", height);
+    svg.select("#ocean").selectAll("rect").attr("x", 0)
+      .attr("y", 0).attr("width", width).attr("height", height);
   }
 
   // fit full-screen map if window is resized
@@ -8996,9 +9077,12 @@ function fantasyMap() {
   }
 }
 
-function tip(tip, main) {
-  tooltip.innerHTML = tip;
-  if (main) {tooltip.setAttribute("data-main", tip);}
+function tip(tip, main, error) {
+  const tooltip = d3.select("#tooltip");
+  const reg = "linear-gradient(0.1turn, #ffffff00, #5e5c5c33, #ffffff00)";
+  const red = "linear-gradient(0.1turn, #ffffff00, #c71d1d4d, #ffffff00)";
+  tooltip.text(tip).style("background", error ? red : reg);
+  if (main) tooltip.attr("data-main", tip);
 }
 
 $("#optionsContainer *").on("mouseout", function() {
