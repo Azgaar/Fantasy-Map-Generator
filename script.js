@@ -1299,6 +1299,7 @@ function fantasyMap() {
         });
       }
     });
+    console.log( "small lakes candidates: " + smallLakes);
     cells = tempCells; // use tempCells as the only cells array
     calculateVoronoi(newPoints); // recalculate Voronoi diagram using new points
     let gridPath = ""; // store grid as huge single path string
@@ -2113,6 +2114,7 @@ function fantasyMap() {
         }
       }
     }
+    console.log( "small lakes: " + smallLakes);
 
     // mark small lakes
     let unmarked = $.grep(land, function(e) {return e.fn === -1});

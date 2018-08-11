@@ -582,7 +582,7 @@
     <button id="editTextButton" onmouseover="tip('Edit label Text')" class="editButton icon-pencil"></button>
     <input id="editText" class="editTrigger"/>
     <span id="editTextRandom" onmouseover="tip('Generate random name')" class="editButtonS icon-shuffle"></span>
-    <button id="editFontButton" onmouseover="tip('Select Font for the entire Group')" class="editButton icon-font"></button>
+    <button id="editFontButton" onmouseover="tip('Select Font for the label Group')" class="editButton icon-font"></button>
     <span id="editExternalFont" onmouseover="tip('Fetch fonts by linking @font-face declaration, just populate with font name if using Google font (fonts.google.com)')" class="editButtonS icon-link"></span>
     <select id="editFontSelect" class="editTrigger" onmouseover="tip('Select one of the default Fonts')"></select>
     <input id="editFontInput" placeholder="link to @font-face" onmouseover="tip('Fetch fonts by linking @font-face declaration')" class="editTrigger"/>
@@ -1083,8 +1083,8 @@
       </div>
     </div>
     <div id="scaleBottom">
-      <button id="toggleScaleBar" onmouseover="tip('Click to toggle scale bar')" class="icon-align-center"></button>
-      <button onmouseover="tip('Click to toggle ruler')" class="icon-eye-off" onclick='$("#ruler").fadeToggle()'></button>
+      <button id="toggleScaleBar" onmouseover="tip('Click to toggle scale bar visibility')" class="icon-align-center"></button>
+      <button onmouseover="tip('Click to toggle rulers visibility')" class="icon-eye-off" onclick='$("#ruler").fadeToggle()'></button>
       <button id="addOpisometer" onmouseover="tip('Drag the map to measure curve length with opisometer')" class="icon-brush"></button>
       <button id="addRuler" onmouseover="tip('Click to place additional ruler on map')" class="icon-resize-horizontal"></button>
       <button id="addPlanimeter" onmouseover="tip('Drag the map to determine a polygon area with planimeter')" class="icon-edit"></button>
