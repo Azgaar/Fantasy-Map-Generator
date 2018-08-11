@@ -1235,23 +1235,28 @@ function fantasyMap() {
   }
 
   // recalculate Voronoi Graph to pack cells
-  function reGraph() {
+  function reGraph(noChange) {
     console.time("reGraph");
     const tempCells = [], newPoints = []; // to store new data
     // get average precipitation based on graph size
     const avPrec = precInput.value / 5000;
+    const smallLakesMax = 500;
+    let smallLakes = 0;
     const evaporation = 2;
     cells.map(function(i) {
       let height = Math.trunc(i.height * 100) / 100;
+      const pit = i.pit;
       const ctype = i.ctype;
       if (ctype !== -1 && ctype !== -2 && height < 0.2) return; // exclude all depp ocean points
       const x = rn(i.data[0], 1), y = rn(i.data[1], 1);
       const fn = i.fn;
       const harbor = i.harbor;
       let lake = i.lake;
-      if (!lake && i.pit > evaporation && ctype !== 2) {
+      // mark potential cells for small lakes to add additional point there
+      // not for custom map if "changeHeights" is not alkowed
+      if (!noChange && smallLakes < smallLakesMax && !lake && pit > evaporation && ctype !== 2) {
         lake = 2;
-        height = Math.trunc(height * 100 - i.pit) / 100;
+        smallLakes++;
       }
       if (height > 1) height = 1;
       if (height < 0) height = 0;
@@ -1260,7 +1265,7 @@ function fantasyMap() {
       let copy = $.grep(newPoints, function(e) {return (e[0] == x && e[1] == y);});
       if (!copy.length) {
         newPoints.push([x, y]);
-        tempCells.push({index:tempCells.length, data:[x, y], height, ctype, fn, harbor, lake, region, culture});
+        tempCells.push({index:tempCells.length, data:[x, y], height, pit, ctype, fn, harbor, lake, region, culture});
       }
       // add additional points for cells along coast
       if (ctype === 2 || ctype === -1) {
@@ -1274,13 +1279,12 @@ function fantasyMap() {
             copy = $.grep(newPoints, function(e) {return e[0] === x1 && e[1] === y1;});
             if (copy.length) return;
             newPoints.push([x1, y1]);
-            tempCells.push({index:tempCells.length, data:[x1, y1], height, ctype, fn, harbor, lake, region, culture});
+            tempCells.push({index:tempCells.length, data:[x1, y1], height, pit, ctype, fn, harbor, lake, region, culture});
           };
         });
       }
       if (lake === 2) { // add potential small lakes
         //debug.append("circle").attr("r", 0.3).attr("cx", x).attr("cy", y).attr("fill", "blue");
-        height = Math.trunc(height * 100 + 1) / 100;
         polygons[i.index].forEach(function(e) {
           if (Math.random() > 0.8) return;
           let rnd = Math.random() * 0.6 + 0.8;
@@ -1291,7 +1295,7 @@ function fantasyMap() {
           if (copy.length) return;
           //debug.append("circle").attr("r", 0.2).attr("cx", x1).attr("cy", y1).attr("fill", "red");
           newPoints.push([x1, y1]);
-          tempCells.push({index:tempCells.length, data:[x1, y1], height, ctype, fn, region, culture});
+          tempCells.push({index:tempCells.length, data:[x1, y1], height, pit, ctype, fn, region, culture});
         });
       }
     });
@@ -1389,7 +1393,7 @@ function fantasyMap() {
     let landCells = 0;
     cells.map(function(c) {
       heights.push(c.height);
-      if (c.height >= 0.2) {landCells++;}
+      if (c.height >= 0.2) landCells++;
     });
     history = history.slice(0, historyStage);
     history[historyStage] = heights;
@@ -1399,8 +1403,6 @@ function fantasyMap() {
     var elevationAverage = rn(d3.mean(heights), 2);
     var landRatio = rn(landCells / cells.length * 100);
     landmassCounter.innerHTML = landCells + " (" + landRatio + "%); Average Elevation: " + elevationAverage;
-    if (landCells > 100) {$("#getMap").attr("disabled", false).removeClass("buttonoff").addClass("glow");}
-    else {$("#getMap").attr("disabled", true).addClass("buttonoff").removeClass("glow");}
     // if perspective is displayed, update it
     if ($("#perspectivePanel").is(":visible")) {drawPerspective();}
   }
@@ -1822,7 +1824,12 @@ function fantasyMap() {
   }
 
   function restoreCustomHeights() {
-    land.forEach(function(l) {if (l.pit) rn(l.height -= l.pit / 50, 2);});
+    land.forEach(function(l) {
+      if (l.pit) {
+        l.height = Math.trunc(l.height * 100 - l.pit * 2) / 100;
+        if (l.height < 0.2) l.height = 0.2;
+      }
+    });
   }
 
   function flux() {
@@ -3012,15 +3019,7 @@ function fantasyMap() {
     $("#burgSelectGroup").change(function() {
       const id = +elSelected.attr("data-id");
       const g = this.value;
-      $("#burgIcons [data-id=" + id + "]").detach().appendTo($("#burgIcons > #"+g));
-      $("#burgLabels [data-id=" + id + "]").detach().appendTo($("#burgLabels > #"+g));
-      // special case for port icons (anchors)
-      if (g === "towns" || g === "capitals") {
-        const el = $("#icons g[id*='anchors'] [data-id=" + id + "]");
-        if (!el.length) return;
-        const to = g === "towns" ? $("#town-anchors") : $("#capital-anchors");
-        el.detach().appendTo(to);
-      }
+      moveBurgToGroup(id, g);
     });
 
     $("#burgInputGroup").change(function() {
@@ -3215,22 +3214,14 @@ function fantasyMap() {
       if (states[state] === undefined) return;
       const capital = states[manors[id].region] ? id === states[manors[id].region].capital ? 0 : 1 : 1;
       if (capital && states[state].capital !== "select") {
-        // move oldCapital to burg
+        // move oldCapital to a town group
         const oldCapital = states[state].capital;
-        $("#burgIcons [data-id=" + oldCapital + "]").detach().appendTo($("#burgIcons > #towns"));
-        $("#burgLabels [data-id=" + oldCapital + "]").detach().appendTo($("#burgLabels > #towns"));
-        $("#icons #capital-anchors [data-id=" + oldCapital + "]").detach().appendTo($("#town-anchors"));
+        moveBurgToGroup(oldCapital, "towns");
       }
       states[state].capital = capital ? id : "select";
       d3.select("#burgToggleCapital").classed("pressed", capital);
       const g = capital ? "capitals" : "towns";
-      $("#burgIcons [data-id=" + id + "]").detach().appendTo($("#burgIcons > #"+g));
-      $("#burgLabels [data-id=" + id + "]").detach().appendTo($("#burgLabels > #"+g));
-      const el = $("#icons g[id*='anchors'] [data-id=" + id + "]");
-      updateCountryEditors();
-      if (!el.length) return;
-      const to = g === "towns" ? $("#town-anchors") : $("#capital-anchors");
-      el.detach().appendTo(to);
+      moveBurgToGroup(id, g);
     });
 
     $("#burgTogglePort").click(function() {
@@ -3315,14 +3306,14 @@ function fantasyMap() {
       }
 
       const x = rn(point[0], 2), y = rn(point[1], 2);
-      burgIcons.select("circle[data-id='"+i+"']").attr("cx", x).attr("cy", y);
-      burgLabels.select("text[data-id='"+i+"']").attr("x", x).attr("y", y);
+      burgIcons.select("circle[data-id='"+i+"']").attr("transform", null).attr("cx", x).attr("cy", y);
+      burgLabels.select("text[data-id='"+i+"']").attr("transform", null).attr("x", x).attr("y", y);
       const anchor = icons.select("use[data-id='"+i+"']");
       if (anchor.size()) {
         const size = anchor.attr("width");
         const xa = rn(x - size * 0.47, 2);
         const ya = rn(y - size * 0.47, 2);
-        icons.select("use[data-id='"+i+"']").attr("x", xa).attr("y", ya);
+        anchor.attr("transform", null).attr("x", xa).attr("y", ya);
       }
       cells[index].manor = i;
       cells[manors[i].cell].manor = undefined;
@@ -3357,6 +3348,24 @@ function fantasyMap() {
         }
       })
     });
+  }
+
+  // generic function to move any burg to any group
+  function moveBurgToGroup(id, g) {
+    $("#burgLabels [data-id=" + id + "]").detach().appendTo($("#burgLabels > #"+g));
+    $("#burgIcons [data-id=" + id + "]").detach().appendTo($("#burgIcons > #"+g));
+    const rSize = $("#burgIcons > #"+g).attr("size");
+    $("#burgIcons [data-id=" + id + "]").attr("r", rSize);
+    const el = $("#icons g[id*='anchors'] [data-id=" + id + "]");
+    if (el.length) {
+      const to = g === "towns" ? $("#town-anchors") : $("#capital-anchors");
+      el.detach().appendTo(to);
+      const useSize = to.attr("size");
+      const x = rn(manors[id].x - useSize * 0.47, 2);
+      const y = rn(manors[id].y - useSize * 0.47, 2);
+      el.attr("x", x).attr("y", y).attr("width", useSize).attr("height", useSize);
+    }
+    updateCountryEditors();
   }
 
   // generate cultures for a new map based on options and namesbase
@@ -4822,26 +4831,36 @@ function fantasyMap() {
   }
 
   // Complete the map for the "customize" mode
-  function getMap(keepData) {
+  function getMap() {
+    if (customization !== 1) {
+      tip('Nothing to complete! Click on "Edit" or "Clear all" to enter a heightmap customizaton mode', null, "error");
+      return;
+    }
+    land = $.grep(cells, function(e) {return e.height >= 0.2;});
+    if (land.length < 100) {
+      tip("Insufficient land area! Please add more land cells to complete the map", null, "error");
+      return;
+    }
     exitCustomization();
     console.time("TOTAL");
     markFeatures();
-    // if (changeHeights.checked) reduceClosedLakes();
     drawOcean();
     elevateLakes();
     resolveDepressionsPrimary();
-    reGraph();
+    const noChange = !changeHeights.checked;
+    reGraph(noChange);
     resolveDepressionsSecondary();
     flux();
     addLakes();
-    if (!changeHeights.checked) restoreCustomHeights();
+    if (noChange) restoreCustomHeights();
     drawCoastline();
     drawRelief();
-    if (!keepData) {
+    const keepData = states.length && manors.length;
+    if (keepData) {
+      restoreRegions();
+    } else {
       generateCultures();
       manorsAndRegions();
-    } else {
-      restoreRegions();
     }
     cleanData();
     console.timeEnd("TOTAL");
@@ -6176,9 +6195,9 @@ function fantasyMap() {
       generate();
       return;
     }
-    if (id === "editCountries") {editCountries();}
-    if (id === "editCultures") {editCultures();}
-    if (id === "editScale" || id === "editScaleCountries" || id === "editScaleBurgs") {editScale();}
+    if (id === "editCountries") editCountries();
+    if (id === "editCultures") editCultures();
+    if (id === "editScale" || id === "editScaleCountries" || id === "editScaleBurgs") editScale();
     if (id === "countriesManually") {
       customization = 2;
       tip("Click to select a country, drag the circle to re-assign", true);
@@ -6337,7 +6356,9 @@ function fantasyMap() {
       link.click();
       window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
     }
-    if (id === "burgNamesImport") {burgsListToLoad.click();}
+
+    if (id === "burgNamesImport") burgsListToLoad.click();
+
     if (id === "removeCountries") {
       alertMessage.innerHTML = `Are you sure you want remove all countries?`;
       $("#alert").dialog({resizable: false, title: "Remove countries",
@@ -6351,8 +6372,7 @@ function fantasyMap() {
             states.map(function(s) {
               const c = +s.capital;
               if (isNaN(c)) return;
-              $("#burgLabels [data-id=" + c + "]").detach().appendTo($("#burgLabels #towns"));
-              $("#burgIcons [data-id=" + c + "]").detach().appendTo($("#burgIcons #towns"));
+              moveBurgToGroup(c, "towns");
             });
             labels.select("#countries").selectAll("text").remove();
             regions.selectAll("path").remove();
@@ -6488,9 +6508,11 @@ function fantasyMap() {
       });
     }
     if (id === "fromHeightmap") {
-      let message = "It's highly recommended to finalize a heightmap as a first step. ";
-      message += "If you want to edit a map, it's better to clean up all the data except on heights. ";
-      message += "You may also keep the data, but it can cause unexpected errors";
+      const message = `Hightmap is a basic element on which secondary data (burgs, countries, cultures) is based.
+      If you want to significantly change the hightmap, it may be better to clean up all the secondary data
+      and let the system to re-generate it based on the updated hightmap. In case of minor changes, you can keep the data.
+      Newly added lands will be considered as neutral. Burgs located on a removed land cells will be deleted.
+      Routes won't be regenerated.`
       alertMessage.innerHTML = message;
       $("#alert").dialog({resizable: false, title: "Edit Heightmap",
         buttons: {
@@ -6538,9 +6560,7 @@ function fantasyMap() {
         updateHeightmap();
         updateHistory();
       }
-      if (id === "getMap") {
-        if (states.length && manors.length) {getMap("keep");} else {getMap();}
-      }
+      if (id === "getMap") getMap();
       if (id === "applyTemplate") {
         if ($("#templateEditor").is(":visible")) {return;}
         $("#templateEditor").dialog({
@@ -6690,9 +6710,7 @@ function fantasyMap() {
         start.click();
       }
     }
-    if (id === "templateComplete") {
-      if (customization === 1 && !$("#getMap").attr("disabled")) {getMap();}
-    }
+    if (id === "templateComplete") getMap();
     if (id === "convertColorsMinus") {
       var current = +convertColors.value - 1;
       if (current < 4) {current = 3;}
@@ -7327,7 +7345,8 @@ function fantasyMap() {
   // Enter Heightmap Customization mode
   function customizeHeightmap() {
     customization = 1;
-    tip("Heightmap customization mode is active. Click on \"Complete\" to finalize the Heightmap", true);
+    tip('Heightmap customization mode is active. Click on "Complete" to finalize the Heightmap', true);
+    $("#getMap").removeClass("buttonoff").addClass("glow");
     resetZoom();
     landmassCounter.innerHTML = "0";
     $('#grid').fadeIn();
@@ -7343,7 +7362,7 @@ function fantasyMap() {
     tip("", true);
     canvas.style.opacity = 0;
     $("#customizationMenu").slideUp();
-    $("#getMap").attr("disabled", true).addClass("buttonoff");
+    $("#getMap").addClass("buttonoff").removeClass("glow");
     $("#landmass").empty();
     $('#grid').empty().fadeOut();
     $('#toggleGrid').addClass("buttonoff");
@@ -7354,7 +7373,6 @@ function fantasyMap() {
     historyStage = 0;
     $("#customizeHeightmap").slideUp();
     $("#openEditor").slideDown();
-    $("#getMap").removeClass("glow");
     debug.selectAll(".circle, .tag, .line").remove();
   }
 
@@ -7536,8 +7554,7 @@ function fantasyMap() {
           if (oldState === "neutral") {manors[burg].population *= (1 / urbanFactor);}
           manors[burg].population *= 2; // give capital x2 population bonus
           states[state].capital = burg;
-          $("#burgLabels [data-id=" + burg + "]").detach().appendTo($("#burgLabels #capitals"));
-          $("#burgIcons [data-id=" + burg + "]").detach().appendTo($("#burgIcons #capitals"));
+          moveBurgToGroup(burg, "capitals");
         }
       } else {
         // free cell -> create new burg for a capital
@@ -7605,47 +7622,33 @@ function fantasyMap() {
     });
     // fully remove country
     $("#countriesBody .icon-trash-empty").on("click", function() {
-      var s = +(this.parentNode.id).slice(5);
-      if (states[s].capital === "select") {
-        removeCountry(s);
-        return;
-      }
-      alertMessage.innerHTML = `Are you sure you want to remove the country?`;
+      const s = +(this.parentNode.id).slice(5);
+      alertMessage.innerHTML = `Are you sure you want to remove the country? All lands and burgs will become neutral`;
       $("#alert").dialog({resizable: false, title: "Remove country", buttons: {
-        Remove: function() {
-          removeCountry(s);
-          $(this).dialog("close");
-        },
+        Remove: function() {removeCountry(s); $(this).dialog("close");},
         Cancel: function() {$(this).dialog("close");}
       }});
     });
 
     function removeCountry(s) {
       const cellsCount = states[s].cells;
-      const capital = states[s].capital;
+      const capital = +states[s].capital;
+      if (!isNaN(capital)) moveBurgToGroup(capital, "towns");
       states.splice(s, 1);
       states.map(function(s, i) {s.i = i;});
-      cells.map(function(c) {
+      land.map(function(c) {
         if (c.region === s) c.region = "neutral";
         else if (c.region > s) c.region -= 1;
       });
       // do only if removed state had cells
       if (cellsCount) {
-        // change capital to burg
-        $("#burgLabels [data-id=" + capital + "]").detach().appendTo($("#burgLabels #towns"));
-        $("#burgIcons [data-id=" + capital + "]").detach().appendTo($("#burgIcons #towns"));
-        var burgsSelection = $.grep(manors, function(e) {return (e.region === s);});
-        var urbanFactor = 0.9;
-        burgsSelection.map(function(b) {
-          if (b.i === capital) {b.population *= 0.5;}
-          b.population *= urbanFactor;
-          b.region = "neutral";
-        });
+        manors.map(function(b) {if (b.region === s) b.region = "neutral";});
         // re-calculate neutral data
-        if (states[states.length-1].capital !== "neutral") {
-          states.push({i: states.length, color: "neutral", name: "Neutrals", capital: "neutral"});
+        const i = states.length;
+        if (states[i-1].capital !== "neutral") {
+          states.push({i, color: "neutral", name: "Neutrals", capital: "neutral"});
         }
-        recalculateStateData(states.length - 1); // re-calc data for neutrals
+        recalculateStateData(i-1); // re-calc data for neutrals
         redrawRegions();
       }
       editCountries();
@@ -7708,25 +7711,25 @@ function fantasyMap() {
       var x = +l.attr("x"), y = +l.attr("y");
       zoomTo(x, y, 8, 1600);
     });
+
     $("#burgsBody > div").hover(focusBurg, unfocus);
+
     $("#burgsBody > div").click(function() {
-      if (!$("#changeCapital").hasClass("pressed")) {return;}
-      var type = $(this).attr("data-type");
-      if (type.includes("capital")) {return;}
-      var s = +$("#burgsEditor").attr("data-state");
-      var b = +$(this).attr("id").slice(5);
-      var oldCap = states[s].capital;
-      manors[oldCap].population *= 0.5;
-      manors[b].population *= 2;
-      states[s].capital = b;
-      recalculateStateData(s);
-      $("#labels [data-id=" + oldCap + "]").detach().appendTo($("#burgLabels #towns"));
-      $("#icons [data-id=" + oldCap + "]").detach().appendTo($("#burgIcons #towns"));
-      $("#labels [data-id=" + b + "]").detach().appendTo($("#burgLabels #capitals"));
-      $("#icons [data-id=" + b + "]").detach().appendTo($("#burgIcons #towns"));
-      updateCountryEditors();
+      if (!$("#changeCapital").hasClass("pressed")) return;
+      const s = +$("#burgsEditor").attr("data-state");
+      const newCap = +$(this).attr("id").slice(5);
+      const oldCap = +states[s].capital;
+      if (newCap === oldCap) {
+        tip("This burg is already a capital! Please select a different burg", null, "error");
+        return;
+      }
       $("#changeCapital").removeClass("pressed");
+      states[s].capital = newCap;
+      if (!isNaN(oldCap)) moveBurgToGroup(oldCap, "towns");
+      recalculateStateData(s);
+      moveBurgToGroup(newCap, "capitals");
     });
+
     $(".burgName").on("input", function() {
       var b = +(this.parentNode.id).slice(5);
       manors[b].name = this.value;
@@ -7858,7 +7861,7 @@ function fantasyMap() {
 
   // open editCultures dialog
   function editCultures() {
-    if (cults.selectAll("path").size() === 0) $("#toggleCultures").click();
+    if (!cults.selectAll("path").size()) $("#toggleCultures").click();
     if (regions.style("display") !== "none") $("#toggleCountries").click();
     layoutPreset.value = "layoutCultural";
     $("#culturesBody").empty();
@@ -7876,9 +7879,9 @@ function fantasyMap() {
     });
 
     manors.map(function(m) {
-      const r = m.region;
-      if (r === undefined || r === "removed") return;
-      urbPops[r] = urbPops[r] ? urbPops[r] + m.population : m.population;
+      const c = m.culture;
+      if (isNaN(c)) return;
+      urbPops[c] = urbPops[c] ? urbPops[c] + m.population : m.population;
     });
 
     for (let c = 0; c < cultures.length; c++) {
