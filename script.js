@@ -890,7 +890,7 @@ function fantasyMap() {
 
   function addHill(count, shift) {
     // shift from 0 to 0.5
-    for (c = 0; c < count; c++) {
+    for (let c = 0; c < count; c++) {
       var limit = 0;
       do {
         var height = Math.random() * 0.4 + 0.1;
@@ -915,7 +915,7 @@ function fantasyMap() {
     radius = type === "mountain" ? mRadius : hRadius;
     var queue = [start];
     if (type === "mountain") {cells[start].height = height;}
-    for (i = 0; i < queue.length && height >= 0.01; i++) {
+    for (let i = 0; i < queue.length && height >= 0.01; i++) {
       if (type == "mountain") {
         height = +cells[queue[i]].height * radius - height / 100;
       } else {
@@ -936,7 +936,7 @@ function fantasyMap() {
     var session = Math.ceil(Math.random() * 100000);
     var count = Math.abs(mod);
     let range = [];
-    for (c = 0; c < count; c++) {
+    for (let c = 0; c < count; c++) {
       range = [];
       var diff = 0, start = from, end = to;
       if (!start || !end) {
@@ -951,7 +951,7 @@ function fantasyMap() {
         } while (diff < 150 / graphSize || diff > 300  / graphSize)
       }
       if (start && end) {
-        for (var l = 0; start != end && l < 10000; l++) {
+        for (let l = 0; start != end && l < 10000; l++) {
           var min = 10000;
           cells[start].neighbors.forEach(function(e) {
             diff = Math.hypot(cells[end].data[0] - cells[e].data[0], cells[end].data[1] - cells[e].data[1]);
@@ -988,7 +988,7 @@ function fantasyMap() {
     var start = diagram.find(top, graphHeight * 0.2).index;
     var end = diagram.find(bottom, graphHeight * 0.8).index;
     var range = [];
-    for (var l = 0; start !== end && l < 1000; l++) {
+    for (let l = 0; start !== end && l < 1000; l++) {
       var min = 10000; // dummy value
       cells[start].neighbors.forEach(function(e) {
         diff = Math.hypot(cells[end].data[0] - cells[e].data[0], cells[end].data[1] - cells[e].data[1]);
@@ -1014,7 +1014,7 @@ function fantasyMap() {
 
   function addPit(count, height, cell) {
     var session = Math.ceil(Math.random() * 100000);
-    for (c = 0; c < count; c++) {
+    for (let c = 0; c < count; c++) {
       var change = height ? height + 0.1 : Math.random() * 0.1 + 0.2;
       var start = cell;
       if (!start) {
@@ -1028,7 +1028,7 @@ function fantasyMap() {
       cells[start].height -= change;
       if (cells[start].height < 0.05) {cells[start].height = 0.05;}
       cells[start].used = session;
-      for (var i = 1; i < 10000; i++) {
+      for (let i = 1; i < 10000; i++) {
         var rnd = Math.random() * 0.4 + 0.8;
         change -= i / 60 * rnd;
         if (change < 0.01) {return;}
@@ -1532,7 +1532,7 @@ function fantasyMap() {
     scaleBar.append("line").attr("x1", x).attr("y1", y).attr("x2", x+l+size).attr("y2", y)
       .attr("stroke-width", rn(size * 3, 2)).attr("stroke-dasharray", dash).attr("stroke", "#3d3d3d");
     // big scale
-    for (var b = 0; b < 6; b++) {
+    for (let b = 0; b < 6; b++) {
       var value = rn(b * l / 5, 2);
       var label = rn(value * dScale / scale);
       if (b === 5) {
@@ -1926,7 +1926,7 @@ function fantasyMap() {
 
   function drawRiverLines(riverNext) {
     console.time('drawRiverLines');
-    for (var i = 0; i < riverNext; i++) {
+    for (let i = 0; i < riverNext; i++) {
       var dataRiver = $.grep(riversData, function(e) {return e.river === i;});
       if (dataRiver.length > 1) {
         var riverAmended = amendRiver(dataRiver, 1);
@@ -1943,7 +1943,7 @@ function fantasyMap() {
   // add more river points on 1/3 and 2/3 of length
   function amendRiver(dataRiver, rndFactor) {
     var riverAmended = [], side = 1;
-    for (var r = 0; r < dataRiver.length; r++) {
+    for (let r = 0; r < dataRiver.length; r++) {
       var dX = dataRiver[r].x;
       var dY = dataRiver[r].y;
       var cell = dataRiver[r].cell;
@@ -2007,7 +2007,7 @@ function fantasyMap() {
       riverPointsRight.unshift({scX:xRight, scY:yRight});
 
       // middle points
-      for (var p = 1; p < last; p ++) {
+      for (let p = 1; p < last; p ++) {
         x = points[p][0], y = points[p][1], c = points[p][2];
         if (c) {extraOffset += Math.atan(c * 10 / widening);} // confluence
         var xPrev = points[p-1][0], yPrev = points[p-1][1];
@@ -2221,7 +2221,7 @@ function fantasyMap() {
       let inc = l / parts; // increment
       if (inc === Infinity) {inc = l;} // 2 control points for short rivers
       // draw control points
-      for (var i = l, c = l; i > 0; i -= inc, c += inc) {
+      for (let i = l, c = l; i > 0; i -= inc, c += inc) {
         const p1 = node.getPointAtLength(i);
         const p2 = node.getPointAtLength(c);
         const p = [(p1.x + p2.x) / 2, (p1.y + p2.y) / 2];
@@ -2286,7 +2286,7 @@ function fantasyMap() {
       const parts = (l / 8) >> 0; // number of points
       let inc = l / parts; // increment
       if (inc === Infinity) {inc = l;} // 2 control points for short rivers
-      for (var i = l, e = l; i > 0; i -= inc, e += inc) {
+      for (let i = l, e = l; i > 0; i -= inc, e += inc) {
         p1 = node.getPointAtLength(i);
         p2 = node.getPointAtLength(e);
         x = (p1.x + p2.x) / 2, y = (p1.y + p2.y) / 2;
@@ -2299,7 +2299,7 @@ function fantasyMap() {
       points.push([x, y]);
       // amend points
       const rndFactor = 0.3 + Math.random() * 1.4; // random factor in range 0.2-1.8
-      for (var i = 0; i < points.length; i++) {
+      for (let i = 0; i < points.length; i++) {
         x = points[i][0], y = points[i][1];
         amended.push([x, y]);
         // add additional semi-random point
@@ -2534,7 +2534,7 @@ function fantasyMap() {
       let inc = l / parts; // increment
       if (inc === Infinity) {inc = l;} // 2 control points for short routes
       // draw control points
-      for (var i = 0; i <= l; i += inc) {
+      for (let i = 0; i <= l; i += inc) {
         const p = node.getPointAtLength(i);
         addRoutePoint(p);
       }
@@ -2619,7 +2619,7 @@ function fantasyMap() {
         const node = elSelected.node();
         const l = node.getTotalLength();
         let pathCells = [];
-        for (var i = 0; i <= l; i ++) {
+        for (let i = 0; i <= l; i ++) {
           const p = node.getPointAtLength(i);
           const cell = diagram.find(p.x, p.y);
           if (!cell) {return;}
@@ -3720,7 +3720,7 @@ function fantasyMap() {
       var l = manorsOnIsland.length;
       if (l > 1) {
         var secondary = rn((l + 8) / 10);
-        for (s = 0; s < secondary; s++) {
+        for (let s = 0; s < secondary; s++) {
           var start = manorsOnIsland[Math.floor(Math.random() * l)].index;
           var end = manorsOnIsland[Math.floor(Math.random() * l)].index;
           var dist = Math.hypot(cells[start].data[0] - cells[end].data[0], cells[start].data[1] - cells[end].data[1]);
@@ -3960,7 +3960,7 @@ function fantasyMap() {
     var prev = cells[end];
     if (type === "ocean" || !prev.path) {path.push({scX: prev.data[0], scY: prev.data[1], i: end});}
     if (!prev.path) {prev.path = 1;}
-    for (var i = 0; i < limit; i++) {
+    for (let i = 0; i < limit; i++) {
       current = from[current];
       var cur = cells[current];
       if (!cur) {break;}
@@ -4280,7 +4280,7 @@ function fantasyMap() {
       edgesOrdered.push({scX: spl[0], scY: spl[1]});
       spl = end.split(" ");
       edgesOrdered.push({scX: spl[0], scY: spl[1]});
-      for (var i = 0; end !== start && i < 2000; i++) {
+      for (let i = 0; end !== start && i < 2000; i++) {
         var next = $.grep(edges, function(e) {return (e.start == end || e.end == end);});
         if (next.length > 0) {
           if (next[0].start == end) {
@@ -4658,7 +4658,7 @@ function fantasyMap() {
     terrain.selectAll("g").selectAll("g").remove();
     // sort the land to Draw the top element first (reduce the elements overlapping)
     land.sort(compareY);
-    for (i = 0; i < land.length; i++) {
+    for (let i = 0; i < land.length; i++) {
       const x = land[i].data[0];
       const y = land[i].data[1];
       const height = land[i].height;
@@ -4790,7 +4790,8 @@ function fantasyMap() {
 
   function drawSwamp(x, y) {
     var h = 0.6, line = "";
-    for (c = 0; c < 3; c++) {
+    for (let c = 0; c < 3; c++) {
+      let cx, cy;
       if (c == 0) {
         cx = x;
         cy = y - 0.5 - Math.random();
@@ -5414,7 +5415,7 @@ function fantasyMap() {
           if (fonts.indexOf(font) == -1) {fonts.push(font); fetched++};
         };
         let fetched = 0;
-        for (var r of styleSheet.cssRules) {FontRule(r);}
+        for (let r of styleSheet.cssRules) {FontRule(r);}
         document.head.removeChild(s);
         return fetched;
       })
@@ -5668,7 +5669,7 @@ function fantasyMap() {
         };
         let fontRules = [], fontProms = [];
 
-        for (var r of styleSheet.cssRules) {
+        for (let r of styleSheet.cssRules) {
           let fR = FontRule(r)
           fontRules.push(fR);
           fontProms.push(
@@ -6036,7 +6037,7 @@ function fantasyMap() {
         var i = Math.random() * queueSize | 0,
             s = queue[i];
         // Make a new candidate between [radius, 2 * radius] from the existing sample.
-        for (var j = 0; j < k; ++j) {
+        for (let j = 0; j < k; ++j) {
           var a = 2 * Math.PI * Math.random(),
               r = Math.sqrt(Math.random() * R + radius2),
               x = s[0] + r * Math.cos(a),
@@ -7059,7 +7060,7 @@ function fantasyMap() {
     if (customization !== 1) {return;}
     var steps = $("#templateBody > div").length;
     if (steps) {cells.map(function(i) {i.height = 0;});}
-    for (var step=1; step <= steps; step++) {
+    for (let step=1; step <= steps; step++) {
       var element = $("#templateBody div:nth-child(" + step + ")");
       var type = element.attr("data-type");
       if (type === "Mountain") {addMountain(); continue;}
@@ -7089,7 +7090,7 @@ function fantasyMap() {
   $("#templateSave").on("click", function() {
     var steps = $("#templateBody > div").length;
     var stepsData = "";
-    for (var step=1; step <= steps; step++) {
+    for (let step=1; step <= steps; step++) {
       var element = $("#templateBody div:nth-child(" + step + ")");
       var type = element.attr("data-type");
       var count = $("#templateBody div:nth-child(" + step + ") .templateElCount").val();
@@ -7121,7 +7122,7 @@ function fantasyMap() {
         $("#templateBody").attr("data-changed", 1);
         $("#templateSelect").attr("data-prev", "templateCustom").val("templateCustom");
       }
-      for (var i=0; i < data.length; i++) {
+      for (let i=0; i < data.length; i++) {
         var line = data[i].split(" ");
         addStep(line[0], line[1], line[2]);
       }
@@ -7138,7 +7139,7 @@ function fantasyMap() {
     restoreDefaultEvents();
     var div = d3.select("#colorScheme");
     if (div.selectAll("*").size() === 0) {
-      for (var i = 0; i <= 100; i++) {
+      for (let i = 0; i <= 100; i++) {
         var width = i < 20 || i > 70 ? "1px" : "3px";
         if (i === 0) {width = "4px";}
         var clr = color(1-i/100);
@@ -7388,7 +7389,7 @@ function fantasyMap() {
     var totalArea = 0, totalBurgs = 0, unit, areaConv;
     if (areaUnit.value === "square") {unit = " " + distanceUnit.value + "²";} else {unit = " " + areaUnit.value;}
     var totalPopulation = 0;
-    for (var s = 0; s < states.length; s++) {
+    for (let s = 0; s < states.length; s++) {
       $("#countriesBody").append('<div class="states" id="state' + s + '"></div>');
       var el = $("#countriesBody div:last-child");
       var burgsCount = states[s].burgs;
@@ -8594,7 +8595,7 @@ function fantasyMap() {
       let change = [];
       let message = `Burgs will be renamed as below. Please confirm`;
       message += `<div class="overflow-div"><table class="overflow-table"><tr><th>Id</th><th>Current name</th><th>New Name</th></tr>`;
-      for (var i=0; i < data.length && i < manors.length; i++) {
+      for (let i=0; i < data.length && i < manors.length; i++) {
         const v = data[i];
         if (v === "" || v === undefined) {continue;}
         if (v === manors[i].name) {continue;}
@@ -8607,7 +8608,7 @@ function fantasyMap() {
         buttons: {
           Cancel: function() {$(this).dialog("close");},
           Confirm: function() {
-            for (var i=0; i < change.length; i++) {
+            for (let i=0; i < change.length; i++) {
               const id = change[i].i;
               manors[id].name = change[i].name;
               labels.select("[data-id='" + id + "']").text(change[i].name);
