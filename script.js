@@ -1,13 +1,30 @@
 // Fantasy Map Generator main script
-// Azgaar (Max Haniyeu). Minsk, 2017-2018
+// Azgaar (maxganiev@yandex.com). Minsk, 2017-2018
 // https://github.com/Azgaar/Fantasy-Map-Generator
 // GNU General Public License v3.0
+
+// To programmers:
+  // I don't mind of any help with programming
+  // I know the code is badly structurized and it's hard to read it as a single page
+  // Meanwhile a core part takes only 300-500 lines
+
+// What should be done generally:
+  // Refactor the code
+  // Modernize the code (ES6)
+  // Optimize the code
+  // Modulize the code
+
+// And particularry:
+  // Migrate from d3-voronoi to mapbox-delunator or d3-delaunay
+  // Use typed array instead of array of objects
+  // Get rid of jQuery as d3.js can almost all the same and more
+  // Re-build UI on reactive approach, vue.js
 
 "use strict;"
 fantasyMap();
 function fantasyMap() {
   // Version control
-  const version = "0.58b";
+  const version = "0.59b";
   document.title += " v. " + version;
 
   // Declare variables
@@ -58,7 +75,7 @@ function fantasyMap() {
   oceanLayers.append("rect").attr("id", "oceanBase");
 
   // main data variables
-  var voronoi, diagram, polygons, points = [], sample;
+  var seed, from, voronoi, diagram, polygons, points = [], heights;
   // Common variables
   var modules = {}, customization = 0, history = [], historyStage = 0, elSelected, autoResize = true, graphSize,
     cells = [], land = [], riversData = [], manors = [], states = [], features = [],
@@ -144,24 +161,27 @@ function fantasyMap() {
   // Active zooming
   function invokeActiveZooming() {
     // toggle shade/blur filter on zoom
-    var filter = scale > 2.6 ? "url(#blurFilter)" : "url(#dropShadow)";
-    if (scale > 1.5 && scale <= 2.6) {filter = null;}
+    let filter = scale > 2.6 ? "url(#blurFilter)" : "url(#dropShadow)";
+    if (scale > 1.5 && scale <= 2.6) filter = null;
     coastline.attr("filter", filter);
     // rescale lables on zoom (active zooming)
     labels.selectAll("g").each(function(d) {
-      var el = d3.select(this);
+      const el = d3.select(this);
       if (el.attr("id") === "burgLabels") return;
-      var desired = +el.attr("data-size");
-      var relative = rn((desired + (desired / scale)) / 2, 2);
+      const desired = +el.attr("data-size");
+      let relative = rn((desired + (desired / scale)) / 2, 2);
       if (relative < 2) {relative = 2;}
       el.attr("font-size", relative);
-      el.classed("hidden", hideLabels.checked && relative * scale < 6);
+      if (hideLabels.checked) {
+        el.classed("hidden", relative * scale < 6);
+        updateLabelGroups();
+      }
     });
 
     if (ruler.size()) {
       if (ruler.style("display") !== "none") {
         if (ruler.selectAll("g").size() < 1) {return;}
-        var factor = rn(1 / Math.pow(scale, 0.3), 1);
+        const factor = rn(1 / Math.pow(scale, 0.3), 1);
         ruler.selectAll("circle:not(.center)").attr("r", 2 * factor).attr("stroke-width", 0.5 * factor);
         ruler.selectAll("circle.center").attr("r", 1.2 * factor).attr("stroke-width", 0.3 * factor);
         ruler.selectAll("text").attr("font-size", 10 * factor);
@@ -175,22 +195,22 @@ function fantasyMap() {
   // Changelog dialog window
   var storedVersion = localStorage.getItem("version"); // show message on load
   if (storedVersion != version) {
-    alertMessage.innerHTML = `<b>2018-07-28</b>:
+    alertMessage.innerHTML = `<b>2018-08-28</b>:
       The <i>Fantasy Map Generator</i> is updated up to version <b>${version}</b>.
       Main changes:<br><br>
-      <li>Cultures editor</li>
-      <li>Namesbase editor</li>
-      <li>Reworked lakes</li>
-      <li>Options preservation</li>
-      <li>New filters</li>
-      <li>Non-island maps (wip)</li>
+      <li>Random seed support</li>
+      <li>New heightmap templates</li>
+      <li>Integration with <a href='https://watabou.itch.io/medieval-fantasy-city-generator' target='_blank'>Medieval Fantasy City Generator</a></li>
+      <li>Relocate Burg option</li>
+      <li>Dialogs style changes, optional transparency</li>
+      <li>Ability to toggle Label groups separately</li>
       <li>Bug fixes</li>
-      <br><i>See <a href='https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog' target='_blank'>changelog</a> for older versions.
-      Please report bugs <a href='https://github.com/Azgaar/Fantasy-Map-Generator/issues' target='_blank'>here</a></i>.
-      <br><br><i>Join our <a href='https://www.reddit.com/r/FantasyMapGenerator/' target='_blank'>Reddit community</a>
+      <br><i>See <a href='' target='_blank'>a dedecated post</a> for the details.
+      Please report bugs <a href='https://github.com/Azgaar/Fantasy-Map-Generator/issues' target='_blank'>here</a>.
+      Join our <a href='https://www.reddit.com/r/FantasyMapGenerator/' target='_blank'>Reddit community</a>
       to share created maps, discuss the Generator, ask questions and propose new features.</i>`;
     $("#alert").dialog(
-      {resizable: false, title: "Fantasy Map Generator update", width: 280,
+      {resizable: false, title: "Fantasy Map Generator update", width: 320,
       buttons: {
         "Don't show again": function() {
           localStorage.setItem("version", version);
@@ -202,8 +222,9 @@ function fantasyMap() {
     });
   }
 
+  getSeed(); // get and set random generator seed
   applyNamesData(); // apply default namesbase on load
-  generate(); // genarate map on load
+  generate(); // generate map on load
   applyDefaultStyle(); // apply style on load
   invokeActiveZooming(); // to hide what need to be hidden
 
@@ -217,7 +238,6 @@ function fantasyMap() {
     drawScaleBar();
     defineHeightmap();
     markFeatures();
-    //reduceClosedLakes();
     drawOcean();
     elevateLakes();
     resolveDepressionsPrimary();
@@ -230,9 +250,36 @@ function fantasyMap() {
     drawRelief();
     generateCultures();
     manorsAndRegions();
+    // focus on burg from MFCG
+    if (from === "MFCG") findBurgForMFCG();
     cleanData();
     console.timeEnd("TOTAL");
     console.groupEnd("Random map");
+  }
+
+  // get or generate map seed
+  function getSeed() {
+    const url = new URL(window.location.href);
+    const s = url.searchParams.get("seed");
+    seed = s || Math.floor(Math.random() * 1e9);
+    console.log(" seed: " + seed);
+    optionsSeed.value = seed;
+    Math.seedrandom(seed);
+    from = url.searchParams.get("from");
+  }
+
+  // generate new map seed
+  function changeSeed() {
+    seed = Math.floor(Math.random() * 1e9);
+    console.log(" seed: " + seed);
+    optionsSeed.value = seed;
+    Math.seedrandom(seed);
+  }
+
+  function updateURL() {
+    const url = new URL(window.location.href);
+    url.searchParams.set("seed", seed);
+    if (url.protocol !== "file:") window.history.pushState({seed}, "", "url.search");
   }
 
   // load options from LocalStorage is any
@@ -271,6 +318,11 @@ function fantasyMap() {
       lockPowerInput.className = "icon-lock";
     }
     if (localStorage.getItem("neutral")) neutralInput.value = neutralOutput.value = localStorage.getItem("neutral");
+    if (localStorage.getItem("names")) {
+      namesInput.value = localStorage.getItem("names");
+      lockNamesInput.setAttribute("data-locked", 1)
+      lockNamesInput.className = "icon-lock";
+    }
     if (localStorage.getItem("cultures")) {
       culturesInput.value = culturesOutput.value = localStorage.getItem("cultures");
       lockCulturesInput.setAttribute("data-locked", 1)
@@ -287,10 +339,14 @@ function fantasyMap() {
       pngResolutionInput.value = localStorage.getItem("pngResolution");
       pngResolutionOutput.value = pngResolutionInput.value + "x";
     }
+    if (localStorage.getItem("transparency")) {
+      transparencyInput.value = transparencyOutput.value = localStorage.getItem("transparency");
+      changeDialogsTransparency(transparencyInput.value);
+    } else {changeDialogsTransparency(0);}
   }
 
   function restoreDefaultOptions() {
-    // remove saved options from LocalStorage
+    // remove ALL saved data from LocalStorage
     localStorage.clear();
     // set defaut values
     mapWidthInput.value = window.innerWidth;
@@ -308,6 +364,8 @@ function fantasyMap() {
     neutralInput.value = neutralOutput.value = 200;
     swampinessInput.value = swampinessOutput.value = 10;
     outlineLayersInput.value = "-6,-3,-1";
+    transparencyInput.value = transparencyOutput.value = 0;
+    changeDialogsTransparency(0);
     pngResolutionInput.value = 5;
     pngResolutionOutput.value = "5x";
     randomizeOptions();
@@ -315,15 +373,9 @@ function fantasyMap() {
 
   // apply names data from localStorage if available
   function applyNamesData() {
-    const storedNameBases = localStorage.getItem("nameBases");
-    const storedNameBase = localStorage.getItem("nameBase");
-    if (storedNameBases && storedNameBase) {
-      nameBases = JSON.parse(storedNameBases);
-      nameBase = JSON.parse(storedNameBase);
-    } else {
-      applyDefaultNamesData();
-    }
-    defaultCultures = [{name:"Shwazen", color:"#b3b3b3", base:0},
+    applyDefaultNamesData();
+    defaultCultures = [
+      {name:"Shwazen", color:"#b3b3b3", base:0},
       {name:"Angshire", color:"#fca463", base:1},
       {name:"Luari", color:"#99acfb", base:2},
       {name:"Tallian", color:"#a6d854", base:3},
@@ -383,6 +435,7 @@ function fantasyMap() {
     }
     if (lockPowerInput.getAttribute("data-locked") == 0) powerInput.value = powerOutput.value = rand(2, 8);
     if (lockNeutralInput.getAttribute("data-locked") == 0) neutralInput.value = neutralOutput.value = rand(100, 300);
+    if (lockNamesInput.getAttribute("data-locked") == 0) namesInput.value = rand(0, 1);
     if (lockCulturesInput.getAttribute("data-locked") == 0) culturesInput.value = culturesOutput.value = rand(5, 10);
     if (lockPrecInput.getAttribute("data-locked") == 0) precInput.value = precOutput.value = rand(10, 25);
     if (lockSwampinessInput.getAttribute("data-locked") == 0) swampinessInput.value = swampinessOutput.value = rand(100);
@@ -392,13 +445,15 @@ function fantasyMap() {
   function placePoints() {
     console.time("placePoints");
     points = [];
-    var radius = 5.9 / graphSize; // 5.9 is a radius to get 8k cells
-    var sampler = poissonDiscSampler(graphWidth, graphHeight, radius);
+    const mod = rn((graphWidth + graphHeight) / 1500, 2); // screen size modifier
+    const radius = rn(5.2 * mod / graphSize, 2); // 5.2 is a radius to get 10k cells on 960 x 540 screen and size 1
+    const sampler = poissonDiscSampler(graphWidth, graphHeight, radius);
     while (sample = sampler()) {
-      var x = rn(sample[0], 2);
-      var y = rn(sample[1], 2);
+      const x = rn(sample[0], 2);
+      const y = rn(sample[1], 2);
       points.push([x, y]);
     }
+    heights = new Uint8Array(points.length);
     console.timeEnd("placePoints");
   }
 
@@ -430,7 +485,8 @@ function fantasyMap() {
       infoY.innerHTML = rn(point[1]);
       infoCell.innerHTML = i;
       infoArea.innerHTML = ifDefined(p.area, "n/a", 2);
-      infoHeight.innerHTML = ifDefined(p.height, "n/a", 2);
+      if (customization === 1) {infoHeight.innerHTML = heights[i];}
+      else {infoHeight.innerHTML = ifDefined(p.height, "n/a");}
       infoFlux.innerHTML = ifDefined(p.flux, "n/a", 2);
       let country = p.region === undefined ? "n/a" : p.region === "neutral" ? "neutral" : states[p.region].name + " (" + p.region + ")";
       infoCountry.innerHTML = country;
@@ -442,6 +498,8 @@ function fantasyMap() {
       if (feature !== undefined) {
         const fType = feature.land ? "Island" : feature.border ? "Ocean" : "Lake";
         infoFeature.innerHTML = fType + " (" + p.fn + ")";
+      } else {
+        infoFeature.innerHTML = "n/a";
       }
     }
 
@@ -483,7 +541,7 @@ function fantasyMap() {
       if (customization === 1) {
         radius = brushRadius.value;
         if (brushId === "brushHill" || brushId === "brushPit") {
-          radius = Math.pow(brushPower.value * 400, .5);
+          radius = Math.pow(brushPower.value * 4, .5);
         }
       }
       else if (customization === 2) radius = countriesManuallyBrush.value;
@@ -645,7 +703,7 @@ function fantasyMap() {
     let radius = r;
     let selection = [center];
     if (radius > 1) selection = selection.concat(cells[center].neighbors);
-    selection = $.grep(selection, function(e) {return cells[e].height >= 0.2;});
+    selection = $.grep(selection, function(e) {return cells[e].height >= 20;});
     if (radius === 2) return selection;
     let frontier = cells[center].neighbors;
     while (radius > 2) {
@@ -654,14 +712,14 @@ function fantasyMap() {
       cycle.map(function(s) {
         cells[s].neighbors.forEach(function(e) {
           if (selection.indexOf(e) !== -1) return;
-          // if (cells[e].height < 0.2) return;
+          // if (cells[e].height < 20) return;
           selection.push(e);
           frontier.push(e);
         });
       });
       radius--;
     }
-    selection = $.grep(selection, function(e) {return cells[e].height >= 0.2;});
+    selection = $.grep(selection, function(e) {return cells[e].height >= 20;});
     return selection;
   }
 
@@ -712,7 +770,7 @@ function fantasyMap() {
     if ($("#brushesButtons > .pressed").hasClass("feature")) {return;}
     // define selection besed on radius
     let selection = [cell];
-    if (radius > 1) {selection = selection.concat(cells[cell].neighbors);}
+    if (radius > 1) selection = selection.concat(cells[cell].neighbors);
     if (radius > 2) {
       let frontier = cells[cell].neighbors;
       while (radius > 2) {
@@ -729,19 +787,23 @@ function fantasyMap() {
       }
     }
     // change each cell in the selection
-    const sourceHeight = cells[source].height;
+    const sourceHeight = heights[source];
     selection.map(function(s) {
       // calculate changes
       if (brush === "brushElevate") {
-        if (cells[s].height < 0.2) {cells[s].height = 0.2}
-        else {cells[s].height += power;}
+        if (heights[s] < 20) {heights[s] = 20;}
+        else {heights[s] += power;}
+        if (heights[s] > 100) heights[s] = 100;
       }
-      if (brush === "brushDepress") {cells[s].height -= power;}
-      if (brush === "brushAlign") {cells[s].height = sourceHeight;}
+      if (brush === "brushDepress") {
+        heights[s] -= power;
+       if (heights[s] > 100) heights[s] = 0;
+      }
+      if (brush === "brushAlign") {heights[s] = sourceHeight;}
       if (brush === "brushSmooth") {
-        let heights = [cells[s].height];
-        cells[s].neighbors.forEach(function(e) {heights.push(cells[e].height);});
-        cells[s].height = (cells[s].height + d3.mean(heights)) / 2;
+        let hs = [heights[s]];
+        cells[s].neighbors.forEach(function(e) {hs.push(heights[e]);});
+        heights[s] = (heights[s] + d3.mean(hs)) / 2;
       }
     });
     updateHeightmapSelection(selection);
@@ -768,14 +830,14 @@ function fantasyMap() {
   // turn D3 polygons array into cell array, define neighbors for each cell
   function detectNeighbors(withGrid) {
     console.time("detectNeighbors");
-    var gridPath = ""; // store grid as huge single path string
+    let gridPath = ""; // store grid as huge single path string
     cells = [];
     polygons.map(function(i, d) {
-      var neighbors = [];
-      var type; // define cell type
+      const neighbors = [];
+      let type; // define cell type
       if (withGrid) {gridPath += "M" + i.join("L") + "Z";} // grid path
       diagram.cells[d].halfedges.forEach(function(e) {
-        var edge = diagram.edges[e], ea;
+        const edge = diagram.edges[e];
         if (edge.left && edge.right) {
           const ea = edge.left.index === d ? edge.right.index : edge.left.index;
           neighbors.push(ea);
@@ -798,114 +860,146 @@ function fantasyMap() {
       else if (rnd > 0.7) {templateInput.value = "High Island";}
       else if (rnd > 0.5) {templateInput.value = "Low Island";}
       else if (rnd > 0.35) {templateInput.value = "Continents";}
-      else if (rnd > 0.01) {templateInput.value = "Archipelago";}
+      else if (rnd > 0.05) {templateInput.value = "Archipelago";}
+      else if (rnd > 0.03) {templateInput.value = "Mainland";}
+      else if (rnd > 0.01) {templateInput.value = "Peninsulas";}
       else {templateInput.value = "Atoll";}
     }
     const mapTemplate = templateInput.value;
-    addMountain();
-    const mod = rn((graphWidth + graphHeight) / 1500, 2); // add mod for big screens
-    if (mapTemplate === "Volcano") {templateVolcano(mod);}
-    if (mapTemplate === "High Island") {templateHighIsland(mod);}
-    if (mapTemplate === "Low Island") {templateLowIsland(mod);}
-    if (mapTemplate === "Continents") {templateContinents(mod);}
-    if (mapTemplate === "Archipelago") {templateArchipelago(mod);}
-    if (mapTemplate === "Atoll") {templateAtoll(mod);}
+    if (mapTemplate === "Volcano") templateVolcano();
+    if (mapTemplate === "High Island") templateHighIsland();
+    if (mapTemplate === "Low Island") templateLowIsland();
+    if (mapTemplate === "Continents") templateContinents();
+    if (mapTemplate === "Archipelago") templateArchipelago();
+    if (mapTemplate === "Atoll") templateAtoll();
+    if (mapTemplate === "Mainland") templateMainland();
+    if (mapTemplate === "Peninsulas") templatePeninsulas();
     console.log(" template: " + mapTemplate);
     console.timeEnd('defineHeightmap');
   }
 
   // Heighmap Template: Volcano
   function templateVolcano(mod) {
-    modifyHeights("all", 0.05, 1.1);
-    addHill(rn(4 * mod), 0.4);
-    addHill(rn(4 * mod), 0.15);
-    addRange(rn(4 * mod));
-    addRange(rn(-10 * mod));
+    addMountain();
+    modifyHeights("all", 10, 1);
+    addHill(5, 0.35);
+    addRange(3);
+    addRange(-4);
   }
 
 // Heighmap Template: High Island
   function templateHighIsland(mod) {
-    modifyHeights("all", 0.05, 0.9);
-    addRange(rn(4 * mod));
-    addHill(rn(12 * mod), 0.25);
-    addRange(rn(-8 * mod));
+    addMountain();
+    modifyHeights("all", 10, 1);
+    addRange(6);
+    addHill(12, 0.25);
+    addRange(-3);
     modifyHeights("land", 0, 0.75);
-    addHill(rn(3 * mod), 0.15);
+    addPit(1);
+    addHill(3, 0.15);
   }
 
 // Heighmap Template: Low Island
   function templateLowIsland(mod) {
+    addMountain();
+    modifyHeights("all", 10, 1);
     smoothHeights(2);
-    addRange(rn(5 * mod));
-    addHill(rn(6 * mod), 0.4);
-    addHill(rn(14 * mod), 0.2);
-    addRange(rn(-10 * mod));
+    addRange(2);
+    addHill(4, 0.4);
+    addHill(12, 0.2);
+    addRange(-8);
     modifyHeights("land", 0, 0.35);
   }
 
   // Heighmap Template: Continents
   function templateContinents(mod) {
-    addHill(rn(24 * mod), 0.25);
-    addRange(rn(4 * mod));
-    addHill(rn(3 * mod), 0.18);
-    modifyHeights("land", 0, 0.7);
-    var count = Math.ceil(Math.random() * 6 + 2);
+    addMountain();
+    modifyHeights("all", 10, 1);
+    addHill(30, 0.25);
+    const count = Math.ceil(Math.random() * 4 + 4);
     addStrait(count);
-    smoothHeights(3);
-    addPit(rn(18 * mod));
-    addRange(rn(-14 * mod));
-    modifyHeights("land", 0, 0.8);
-    modifyHeights("all", 0.02, 1);
+    addPit(10);
+    addRange(-10);
+    modifyHeights("land", 0, 0.6);
+    smoothHeights(2);
+    addRange(3);
   }
 
   // Heighmap Template: Archipelago
   function templateArchipelago(mod) {
-    modifyHeights("land", -0.2, 1);
-    addHill(rn(16 * mod), 0.17);
-    addRange(rn(8 * mod));
-    var count = Math.ceil(Math.random() * 2 + 2);
+    addMountain();
+    modifyHeights("all", 10, 1);
+    addHill(12, 0.15);
+    addRange(8);
+    const count = Math.ceil(Math.random() * 2 + 2);
     addStrait(count);
-    addRange(rn(-18 * mod));
-    addPit(rn(10 * mod));
-    modifyHeights("land", -0.05, 0.7);
-    smoothHeights(4);
+    addRange(-15);
+    addPit(10);
+    modifyHeights("land", -5, 0.7);
+    smoothHeights(3);
   }
 
   // Heighmap Template: Atoll
   function templateAtoll(mod) {
-    addHill(rn(2 * mod), 0.35);
-    addRange(rn(2 * mod));
-    modifyHeights("all", 0.07, 1);
+    addMountain();
+    modifyHeights("all", 10, 1);
+    addHill(2, 0.35);
+    addRange(2);
     smoothHeights(1);
-    modifyHeights("0.27-10", 0, 0.1);
+    modifyHeights("27-100", 0, 0.1);
+  }
+
+  // Heighmap Template: Mainland
+  function templateMainland(mod) {
+    addMountain();
+    modifyHeights("all", 10, 1);
+    addHill(30, 0.2);
+    addRange(10);
+    addPit(20);
+    addHill(10, 0.15);
+    addRange(-10);
+    modifyHeights("land", 0, 0.4);
+    addRange(10);
+    smoothHeights(3);
+  }
+
+  // Heighmap Template: Peninsulas
+  function templatePeninsulas(mod) {
+    addMountain();
+    modifyHeights("all", 15, 1);
+    addHill(30, 0);
+    addRange(5);
+    addPit(15);
+    const count = Math.ceil(Math.random() * 5 + 15);
+    addStrait(count);
   }
 
   function addMountain() {
-    var x = Math.floor(Math.random() * graphWidth / 3 + graphWidth / 3);
-    var y = Math.floor(Math.random() * graphHeight * 0.2 + graphHeight * 0.4);
-    var rnd = diagram.find(x, y).index;
-    var height = Math.random() * 0.1 + 0.9;
-    add(rnd, "mountain", height);
+    const x = Math.floor(Math.random() * graphWidth / 3 + graphWidth / 3);
+    const y = Math.floor(Math.random() * graphHeight * 0.2 + graphHeight * 0.4);
+    const cell = diagram.find(x, y).index;
+    const height = Math.random() * 10 + 90; // 90-99
+    add(cell, "mountain", height);
   }
 
+  // place with shift 0-0.5
   function addHill(count, shift) {
-    // shift from 0 to 0.5
-    for (c = 0; c < count; c++) {
-      var limit = 0;
+    for (let c = 0; c < count; c++) {
+      let limit = 0, cell, height;
       do {
-        var height = Math.random() * 0.4 + 0.1;
-        var x = Math.floor(Math.random() * graphWidth * (1-shift*2) + graphWidth * shift);
-        var y = Math.floor(Math.random() * graphHeight * (1-shift*2) + graphHeight * shift);
-        var rnd = diagram.find(x, y).index;
-        limit ++;
-      } while (cells[rnd].height + height > 0.9 && limit < 100)
-      add(rnd, "hill", height);
+        height = Math.random() * 40 + 10; // 10-50
+        const x = Math.floor(Math.random() * graphWidth * (1 - shift * 2) + graphWidth * shift);
+        const y = Math.floor(Math.random() * graphHeight * (1 - shift * 2) + graphHeight * shift);
+        cell = diagram.find(x, y).index;
+        limit++;
+      } while (heights[cell] + height > 90 && limit < 100)
+      add(cell, "hill", height);
     }
   }
 
   function add(start, type, height) {
-    var session = Math.ceil(Math.random() * 1e5);
-    var radius, hRadius, mRadius;
+    const session = Math.ceil(Math.random() * 1e5);
+    let radius, hRadius, mRadius;
     switch (+graphSize) {
       case 1: hRadius = 0.991; mRadius = 0.91; break;
       case 2: hRadius = 0.9967; mRadius = 0.951; break;
@@ -914,18 +1008,15 @@ function fantasyMap() {
     }
     radius = type === "mountain" ? mRadius : hRadius;
     var queue = [start];
-    if (type === "mountain") {cells[start].height = height;}
-    for (i = 0; i < queue.length && height >= 0.01; i++) {
-      if (type == "mountain") {
-        height = +cells[queue[i]].height * radius - height / 100;
-      } else {
-        height *= radius;
-      }
+    if (type === "mountain") heights[start] = height;
+    for (let i=0; i < queue.length && height >= 1; i++) {
+      if (type === "mountain") {height = heights[queue[i]] * radius - height / 100;}
+      else {height *= radius;}
       cells[queue[i]].neighbors.forEach(function(e) {
-        if (cells[e].used === session) {return;}
-        var mod = Math.random() * 0.2 + 0.9;
-        cells[e].height += height * mod;
-        if (cells[e].height > 1) {cells[e].height = 1;}
+        if (cells[e].used === session) return;
+        const mod = Math.random() * 0.2 + 0.9; // 0.9-1.1 random factor
+        heights[e] += height * mod;
+        if (heights[e] > 100) heights[e] = 100;
         cells[e].used = session;
         queue.push(e);
       });
@@ -936,7 +1027,7 @@ function fantasyMap() {
     var session = Math.ceil(Math.random() * 100000);
     var count = Math.abs(mod);
     let range = [];
-    for (c = 0; c < count; c++) {
+    for (let c = 0; c < count; c++) {
       range = [];
       var diff = 0, start = from, end = to;
       if (!start || !end) {
@@ -951,31 +1042,30 @@ function fantasyMap() {
         } while (diff < 150 / graphSize || diff > 300  / graphSize)
       }
       if (start && end) {
-        for (var l = 0; start != end && l < 10000; l++) {
+        for (let l = 0; start != end && l < 10000; l++) {
           var min = 10000;
           cells[start].neighbors.forEach(function(e) {
             diff = Math.hypot(cells[end].data[0] - cells[e].data[0], cells[end].data[1] - cells[e].data[1]);
-            if (Math.random() > 0.8) {diff = diff / 2}
+            if (Math.random() > 0.8) diff = diff / 2;
             if (diff < min) {min = diff, start = e;}
           });
           range.push(start);
         }
       }
-      var change = height ? height : Math.random() * 0.1 + 0.1;
+      var change = height ? height : Math.random() * 10 + 10;
       range.map(function(r) {
-        var rnd = Math.random() * 0.4 + 0.8;
-        if (mod > 0) {cells[r].height += change * rnd;}
-        else if (cells[r].height >= 0.1) {cells[r].height -= change * rnd;}
+        let rnd = Math.random() * 0.4 + 0.8;
+        if (mod > 0) heights[r] += change * rnd;
+        else if (heights[r] >= 10) {heights[r] -= change * rnd;}
         cells[r].neighbors.forEach(function(e) {
-          if (cells[e].used === session) {return;}
+          if (cells[e].used === session) return;
           cells[e].used = session;
           rnd = Math.random() * 0.4 + 0.8;
-          if (mod > 0) {
-            cells[e].height += change / 2 * rnd;
-          } else if (cells[e].height >= 0.1) {
-            cells[e].height -= change / 2 * rnd;
-          }
+          const ch = change / 2 * rnd;
+          if (mod > 0) {heights[e] += ch;} else if (heights[e] >= 10) {heights[e] -= ch;}
+          if (heights[e] > 100) heights[e] = mod > 0 ? 100 : 5;
         });
+        if (heights[r] > 100) heights[r] = mod > 0 ? 100 : 5;
       });
     }
     return range;
@@ -985,10 +1075,10 @@ function fantasyMap() {
     var session = Math.ceil(Math.random() * 100000);
     var top = Math.floor(Math.random() * graphWidth * 0.35 + graphWidth * 0.3);
     var bottom = Math.floor((graphWidth - top) - (graphWidth * 0.1) + (Math.random() * graphWidth * 0.2));
-    var start = diagram.find(top, graphHeight * 0.2).index;
-    var end = diagram.find(bottom, graphHeight * 0.8).index;
+    var start = diagram.find(top, graphHeight * 0.1).index;
+    var end = diagram.find(bottom, graphHeight * 0.9).index;
     var range = [];
-    for (var l = 0; start !== end && l < 1000; l++) {
+    for (let l = 0; start !== end && l < 1000; l++) {
       var min = 10000; // dummy value
       cells[start].neighbors.forEach(function(e) {
         diff = Math.hypot(cells[end].data[0] - cells[e].data[0], cells[end].data[1] - cells[e].data[1]);
@@ -1004,8 +1094,8 @@ function fantasyMap() {
           if (cells[e].used === session) {return;}
           cells[e].used = session;
           query.push(e);
-          var height = cells[e].height * 0.23;
-          cells[e].height = rn(height, 2);
+          heights[e] *= 0.23;
+          if (heights[e] > 100 || heights[e] < 5) heights[e] = 5;
         });
         range = query.slice();
       });
@@ -1013,33 +1103,33 @@ function fantasyMap() {
   }
 
   function addPit(count, height, cell) {
-    var session = Math.ceil(Math.random() * 100000);
-    for (c = 0; c < count; c++) {
-      var change = height ? height + 0.1 : Math.random() * 0.1 + 0.2;
-      var start = cell;
+    const session = Math.ceil(Math.random() * 1e5);
+    for (let c = 0; c < count; c++) {
+      let change = height ? height + 10 : Math.random() * 10 + 20;
+      let start = cell;
       if (!start) {
-        var lowlands = $.grep(cells, function(e) {return (e.height >= 0.2);});
-        if (lowlands.length == 0) {return;}
-        var rnd = Math.floor(Math.random() * lowlands.length);
+        const lowlands = $.grep(cells, function(e) {return (heights[e.index] >= 20);});
+        if (!lowlands.length) return;
+        const rnd = Math.floor(Math.random() * lowlands.length);
         start = lowlands[rnd].index;
       }
-      var query = [start], newQuery= [];
+      let query = [start], newQuery= [];
       // depress pit center
-      cells[start].height -= change;
-      if (cells[start].height < 0.05) {cells[start].height = 0.05;}
+      heights[start] -= change;
+      if (heights[start] < 5 || heights[start] > 100) heights[start] = 5;
       cells[start].used = session;
-      for (var i = 1; i < 10000; i++) {
-        var rnd = Math.random() * 0.4 + 0.8;
-        change -= i / 60 * rnd;
-        if (change < 0.01) {return;}
+      for (let i = 1; i < 10000; i++) {
+        const rnd = Math.random() * 0.4 + 0.8;
+        change -= i / 0.6 * rnd;
+        if (change < 1) break;
         query.map(function(p) {
           cells[p].neighbors.forEach(function(e) {
-            if (cells[e].used === session) {return;}
+            if (cells[e].used === session) return;
             cells[e].used = session;
-            if (Math.random() > 0.8) {return;}
+            if (Math.random() > 0.8) return;
             newQuery.push(e);
-            cells[e].height -= change;
-            if (cells[e].height < 0.05) {cells[e].height = 0.05;}
+            heights[e] -= change;
+            if (heights[e] < 5 || heights[e] > 100) heights[e] = 5;
           });
         });
         query = newQuery.slice();
@@ -1048,55 +1138,46 @@ function fantasyMap() {
     }
   }
 
-  // Modify heights multiplying/adding by value
-  function modifyHeights(type, add, mult) {
-    cells.map(function(i) {
-      if (type === "land") {
-        if (i.height >= 0.2) {
-          i.height += add;
-          var dif = i.height - 0.2;
-          var factor = mult;
-          if (mult == "^2") {factor = dif}
-          if (mult == "^3") {factor = dif * dif;}
-          i.height = 0.2 + dif * factor;
-        }
-      } else if (type === "all") {
-        if (i.height > 0) {
-          i.height += add;
-          i.height *= mult;
-        }
-      } else {
-        var interval = type.split("-");
-        if (i.height >= +interval[0] && i.height <= +interval[1]) {
-          i.height += add;
-          if ($.isNumeric(mult)) {i.height *= mult; return;}
-          if (mult.slice(0,1) === "^") {
-            pow = mult.slice(1);
-            i.height = Math.pow(i.height, pow);
-          }
-        }
+  // Modify heights adding or multiplying by value
+  function modifyHeights(range, add, mult) {
+    function modify(v) {
+      if (add) v += add;
+      if (mult !== 1) {
+        if (mult === "^2") mult = (v - 20) / 100;
+        if (mult === "^3") mult = ((v - 20) * (v - 20)) / 100;
+        if (range === "land") {v = 20 + (v - 20) * mult;}
+        else {v *=  mult;}
       }
-    });
+      if (v < 0) v = 0;
+      if (v > 100) v = 100;
+      return v;
+    }
+    const limMin = range === "land" ? 20 : range === "all" ? 0 : +range.split("-")[0];
+    const limMax = range === "land" || range === "all" ? 100 : +range.split("-")[1];
+
+    for (let i=0; i < heights.length; i++) {
+      if (heights[i] < limMin || heights[i] > limMax) continue;
+      heights[i] = modify(heights[i]);
+    }
   }
 
   // Smooth heights using mean of neighbors
   function smoothHeights(fraction) {
-    var fraction = fraction || 2;
-    cells.map(function(i) {
-      var heights = [i.height];
-      i.neighbors.forEach(function(e) {heights.push(cells[e].height);});
-      i.height = (i.height * (fraction - 1) + d3.mean(heights)) / fraction;
-    });
+    const fr = fraction || 2;
+    for (let i=0; i < heights.length; i++) {
+      const nHeights = [heights[i]];
+      cells[i].neighbors.forEach(function(e) {nHeights.push(heights[e]);});
+      heights[i] = (heights[i] * (fr - 1) + d3.mean(nHeights)) / fr;
+    }
   }
 
   // Randomize heights a bit
   function disruptHeights() {
-    cells.map(function(i) {
-      if (i.height < 0.18) {return;}
-      if (Math.random() > 0.5) {return;}
-      var rnd = rn(2 - Math.random() * 4) / 100;
-      i.height = rn(i.height + rnd, 2);
-    });
+    for (let i=0; i < heights.length; i++) {
+      if (heights[i] < 18) continue;
+      if (Math.random() < 0.5) continue;
+      heights[i] += 2 - Math.random() * 4;
+    }
   }
 
   // Mark features (ocean, lakes, islands)
@@ -1106,7 +1187,7 @@ function fantasyMap() {
     for (let i=0, queue=[0]; queue.length > 0; i++) {
       const cell = cells[queue[0]];
       cell.fn = i; // feature number
-      const land = cell.height >= 0.2;
+      const land = heights[queue[0]] >= 20;
       let border = cell.type === "border";
       if (border && land) cell.ctype = 2;
 
@@ -1118,7 +1199,7 @@ function fantasyMap() {
         }
 
         cells[q].neighbors.forEach(function(e) {
-          const eLand = cells[e].height >= 0.2;
+          const eLand = heights[e] >= 20;
           if (land === eLand && cells[e].fn === undefined) {
             cells[e].fn = i;
             queue.push(e);
@@ -1152,12 +1233,12 @@ function fantasyMap() {
     }, 0);
 
     for (let c=0; c < cells.length && lakesNow > 0; c++) {
-      if (cells[c].height < 0.2) continue; // not land
+      if (heights[c] < 20) continue; // not land
       if (cells[c].ctype !== 2) continue; // not near water
       let ocean = null, lake = null;
       // find land cells with lake and ocean nearby
       cells[c].neighbors.forEach(function(n) {
-        if (cells[n].height >= 0.2) return;
+        if (heights[n] >= 20) return;
         const fn = cells[n].fn;
         if (features[fn].border !== false) ocean = fn;
         if (fs[fn].border === false) lake = fn;
@@ -1167,16 +1248,16 @@ function fantasyMap() {
         //debug.append("circle").attr("cx", cells[c].data[0]).attr("cy", cells[c].data[1]).attr("r", 2).attr("fill", "red");
         lakesNow --;
         fs[lake].border = ocean;
-        cells[c].height = 0.19;
+        heights[c] = 19;
         cells[c].fn = ocean;
         cells[c].ctype = -1;
-        cells[c].neighbors.forEach(function(e) {if (cells[e].height >= 0.2) cells[e].ctype = 2;});
+        cells[c].neighbors.forEach(function(e) {if (heights[e] >= 20) cells[e].ctype = 2;});
       }
     }
 
     if (lakesInit === lakesNow) return; // nothing was changed
     for (let i=0; i < cells.length; i++) {
-      if (cells[i].height >= 0.2) continue; // not water
+      if (heights[i] >= 20) continue; // not water
       const fn = cells[i].fn;
       if (fs[fn].border !== features[fn].border) {
         cells[i].fn = fs[fn].border;
@@ -1243,11 +1324,12 @@ function fantasyMap() {
     const smallLakesMax = 500;
     let smallLakes = 0;
     const evaporation = 2;
-    cells.map(function(i) {
-      let height = Math.trunc(i.height * 100) / 100;
+    cells.map(function(i, d) {
+      const height = heights[d];
+      if (height > 100) console.log(height, d);
       const pit = i.pit;
       const ctype = i.ctype;
-      if (ctype !== -1 && ctype !== -2 && height < 0.2) return; // exclude all depp ocean points
+      if (ctype !== -1 && ctype !== -2 && height < 20) return; // exclude all depp ocean points
       const x = rn(i.data[0], 1), y = rn(i.data[1], 1);
       const fn = i.fn;
       const harbor = i.harbor;
@@ -1258,8 +1340,6 @@ function fantasyMap() {
         lake = 2;
         smallLakes++;
       }
-      if (height > 1) height = 1;
-      if (height < 0) height = 0;
       const region = i.region; // handle value for edit heightmap mode only
       const culture = i.culture; // handle value for edit heightmap mode only
       let copy = $.grep(newPoints, function(e) {return (e[0] == x && e[1] == y);});
@@ -1304,7 +1384,7 @@ function fantasyMap() {
     calculateVoronoi(newPoints); // recalculate Voronoi diagram using new points
     let gridPath = ""; // store grid as huge single path string
     cells.map(function(i, d) {
-      if (i.height >= 0.2) {
+      if (i.height >= 20) {
         // calc cell area
         i.area = rn(Math.abs(d3.polygonArea(polygons[d])), 2);
         const prec = rn(avPrec * i.area, 2);
@@ -1314,12 +1394,12 @@ function fantasyMap() {
       diagram.cells[d].halfedges.forEach(function(e) {
         const edge = diagram.edges[e];
         if (edge.left === undefined || edge.right === undefined) {
-          if (i.height >= 0.2) i.ctype = 99; // border cell
+          if (i.height >= 20) i.ctype = 99; // border cell
           return;
         }
         const ea = edge.left.index === d ? edge.right.index : edge.left.index;
         neighbors.push(ea);
-        if (d < ea && i.height >= 0.2 && i.lake !== 1 && cells[ea].height >= 0.2 && cells[ea].lake !== 1) {
+        if (d < ea && i.height >= 20 && i.lake !== 1 && cells[ea].height >= 20 && cells[ea].lake !== 1) {
           gridPath += "M" + edge[0][0] + "," + edge[0][1] + "L" + edge[1][0] + "," + edge[1][1];
         }
       });
@@ -1333,55 +1413,51 @@ function fantasyMap() {
 
   // redraw all cells for Customization 1 mode
   function mockHeightmap() {
-    let heights = [];
     let landCells = 0;
     $("#landmass").empty();
-    const limit = renderOcean.checked ? -1 : 0.2;
-    cells.map(function(i) {
-      if (i.height < limit) return;
-      const clr = color(1 - i.height);
-      landmass.append("path").attr("id", "cell"+i.index)
-        .attr("d", "M" + polygons[i.index].join("L") + "Z")
+    const limit = renderOcean.checked ? 1 : 20;
+    for (let i=0; i < heights.length; i++) {
+      if (heights[i] < limit) continue;
+      if (heights[i] > 100) heights[i] = 100;
+      const clr = color(1 - heights[i] / 100);
+      landmass.append("path").attr("id", "cell"+i)
+        .attr("d", "M" + polygons[i].join("L") + "Z")
         .attr("fill", clr).attr("stroke", clr);
-    });
+    }
   }
 
   $("#renderOcean").click(mockHeightmap);
 
   // draw or update all cells
   function updateHeightmap() {
-    cells.map(function(c) {
-      let height = c.height;
-      if (height > 1) height = 1;
-      if (height < 0) height = 0;
-      c.height = height;
-      let cell = landmass.select("#cell"+c.index);
-      const clr = color(1 - height);
+    const limit = renderOcean.checked ? 1 : 20;
+    for (let i=0; i < heights.length; i++) {
+      if (heights[i] > 100) heights[i] = 100;
+      let cell = landmass.select("#cell"+i);
+      const clr = color(1 - heights[i] / 100);
       if (cell.size()) {
-        if (height < 0.2) {cell.remove();}
+        if (heights[i] < limit) {cell.remove();}
         else {cell.attr("fill", clr).attr("stroke", clr);}
-      } else if (height >= 0.2) {
-        cell = landmass.append("path").attr("id", "cell"+c.index)
-          .attr("d", "M" + polygons[c.index].join("L") + "Z")
+      } else if (heights[i] >= limit) {
+        cell = landmass.append("path").attr("id", "cell"+i)
+          .attr("d", "M" + polygons[i].join("L") + "Z")
           .attr("fill", clr).attr("stroke", clr);
       }
-    });
+    }
   }
 
   // draw or update cells from the selection
   function updateHeightmapSelection(selection) {
-    if (selection === undefined) {selection = cells;}
+    if (selection === undefined) return;
+    const limit = renderOcean.checked ? 1 : 20;
     selection.map(function(s) {
-      let height = cells[s].height;
-      if (height > 1) {height = 1;}
-      if (height < 0) {height = 0;}
-      cells[s].height = height;
+      if (heights[s] > 100) heights[s] = 100;
       let cell = landmass.select("#cell"+s);
-      const clr = color(1 - height);
+      const clr = color(1 - heights[s] / 100);
       if (cell.size()) {
-        if (height < 0.2) {cell.remove();}
+        if (heights[s] < limit) {cell.remove();}
         else {cell.attr("fill", clr).attr("stroke", clr);}
-      } else if (height >= 0.2) {
+      } else if (heights[s] >= limit) {
         cell = landmass.append("path").attr("id", "cell"+s)
           .attr("d", "M" + polygons[s].join("L") + "Z")
           .attr("fill", clr).attr("stroke", clr);
@@ -1390,22 +1466,24 @@ function fantasyMap() {
   }
 
   function updateHistory() {
-    let heights = [];
-    let landCells = 0;
-    cells.map(function(c) {
-      heights.push(c.height);
-      if (c.height >= 0.2) landCells++;
-    });
+    let landCells = 0; // count number of land cells
+    if (renderOcean.checked) {
+      landCells = heights.reduce(function(s, v) {if (v >= 20) {return s + 1;} else {return s;}}, 0);
+    } else {
+      landCells = landmass.selectAll("*").size();
+    }
     history = history.slice(0, historyStage);
-    history[historyStage] = heights;
+    history[historyStage] = heights.slice();
     historyStage++;
     undo.disabled = templateUndo.disabled = historyStage > 1 ? false : true;
     redo.disabled = templateRedo.disabled = true;
-    var elevationAverage = rn(d3.mean(heights), 2);
-    var landRatio = rn(landCells / cells.length * 100);
-    landmassCounter.innerHTML = landCells + " (" + landRatio + "%); Average Elevation: " + elevationAverage;
-    // if perspective is displayed, update it
-    if ($("#perspectivePanel").is(":visible")) {drawPerspective();}
+    const landMean = Math.trunc(d3.mean(heights));
+    const landRatio = rn(landCells / heights.length * 100);
+    landmassCounter.innerHTML = landCells;
+    landmassRatio.innerHTML = landRatio;
+    landmassAverage.innerHTML = landMean;
+    // if perspective view dialog is opened, update it
+    if ($("#perspectivePanel").is(":visible")) drawPerspective();
   }
 
   // restoreHistory
@@ -1413,9 +1491,8 @@ function fantasyMap() {
     historyStage = step;
     redo.disabled = templateRedo.disabled = historyStage < history.length ? false : true;
     undo.disabled = templateUndo.disabled = historyStage > 1 ? false : true;
-    let heights = history[historyStage - 1];
-    if (heights === undefined) {return;}
-    cells.map(function(i, d) {i.height = heights[d];});
+    if (history[historyStage - 1] === undefined) return;
+    heights = history[historyStage - 1].slice();
     updateHeightmap();
   }
 
@@ -1439,7 +1516,7 @@ function fantasyMap() {
     for (let i=0; i < land.length; i++) {
       const id = land[i].index, cell = diagram.cells[id];
       const f = land[i].fn;
-      land[i].height = Math.trunc(land[i].height * 100) / 100;
+      land[i].height = Math.trunc(land[i].height);
       if (!oceanEdges[f]) {oceanEdges[f] = []; lakeEdges[f] = [];}
       cell.halfedges.forEach(function(e) {
   			const edge = diagram.edges[e];
@@ -1447,8 +1524,8 @@ function fantasyMap() {
   			const end = edge[1].join(" ");
   			if (edge.left && edge.right) {
   				const ea = edge.left.index === id ? edge.right.index : edge.left.index;
-          cells[ea].height = Math.trunc(cells[ea].height * 100) / 100;
-  				if (cells[ea].height < 0.2) {
+          cells[ea].height = Math.trunc(cells[ea].height);
+  				if (cells[ea].height < 20) {
             cells[ea].ctype = -1;
             if (land[i].ctype !== 1) {
               land[i].ctype = 1; // mark coastal land cells
@@ -1532,7 +1609,7 @@ function fantasyMap() {
     scaleBar.append("line").attr("x1", x).attr("y1", y).attr("x2", x+l+size).attr("y2", y)
       .attr("stroke-width", rn(size * 3, 2)).attr("stroke-dasharray", dash).attr("stroke", "#3d3d3d");
     // big scale
-    for (var b = 0; b < 6; b++) {
+    for (let b = 0; b < 6; b++) {
       var value = rn(b * l / 5, 2);
       var label = rn(value * dScale / scale);
       if (b === 5) {
@@ -1577,12 +1654,11 @@ function fantasyMap() {
   function elementDrag() {
     const el = d3.select(this);
     const tr = parseTransform(el.attr("transform"));
-    const x = d3.event.x, y = d3.event.y;
-    const dx = +tr[0] - x, dy = +tr[1] - y;
+    const dx = +tr[0] - d3.event.x, dy = +tr[1] - d3.event.y;
 
     d3.event.on("drag", function() {
       const x = d3.event.x, y = d3.event.y;
-      const transform = `translate(${(dx+x)},${(dy+y)})`;
+      const transform = `translate(${(dx+x)},${(dy+y)}) rotate(${tr[2]} ${tr[3]} ${tr[4]})`;
       el.attr("transform", transform);
       const pp = this.parentNode.parentNode.id;
       if (pp === "burgIcons" || pp === "burgLabels") {
@@ -1765,13 +1841,13 @@ function fantasyMap() {
   // temporary elevate lakes to min neighbors heights to correctly flux the water
   function elevateLakes() {
     console.time('elevateLakes');
-    const lakes = $.grep(cells, function(e) {return e.height < 0.2 && !features[e.fn].border;});
+    const lakes = $.grep(cells, function(e, d) {return heights[d] < 20 && !features[e.fn].border;});
     lakes.sort(function(a, b) {return b.height - a.height;});
     for (let i=0; i < lakes.length; i++) {
-      const heights = [];
-      lakes[i].neighbors.forEach(function(n) {if (cells[n].height >= 0.2) heights.push(cells[n].height)});
-      if (heights.length) lakes[i].height = Math.trunc((d3.min(heights) - 0.01) * 100) / 100;
-      if (cells[i].height < 0.2) lakes[i].height = 0.2;
+      const hs = [], id = lakes[i].index;
+      lakes[i].neighbors.forEach(function(n) {if (cells[n].height >= 20) hs.push(cells[n].height)});
+      if (hs.length) heights[id] = d3.min(hs) - 1;
+      if (heights[id] < 20) heights[id] = 20;
       lakes[i].lake = 1;
     }
     console.timeEnd('elevateLakes');
@@ -1780,19 +1856,20 @@ function fantasyMap() {
   // Depression filling algorithm (for a correct water flux modeling; phase1)
   function resolveDepressionsPrimary() {
     console.time('resolveDepressionsPrimary');
-    land = $.grep(cells, function(e) {return e.height >= 0.2;});
-    land.sort(function(a, b) {return b.height - a.height;});
+    land = $.grep(cells, function(e, d) {return heights[d] >= 20;});
+    land.sort(function(a, b) {return heights[b.index] - heights[a.index];});
     const limit = 10;
     for (let l = 0, depression = 1; depression > 0 && l < limit; l++) {
       depression = 0;
       for (let i = 0; i < land.length; i++) {
+        const id = land[i].index;
         if (land[i].type === "border") continue;
-        const heights = land[i].neighbors.map(function(n) {return cells[n].height});
-        const minHigh = d3.min(heights);
-        if (land[i].height <= minHigh) {
+        const hs = land[i].neighbors.map(function(n) {return heights[n];});
+        const minHigh = d3.min(hs);
+        if (heights[id] <= minHigh) {
           depression++;
           land[i].pit = land[i].pit ? land[i].pit + 1 : 1;
-          land[i].height = Math.trunc((minHigh + 0.02) * 100) / 100;
+          heights[id] = minHigh + 2;
         }
       }
       if (l === 0) console.log(" depressions init: " + depression);
@@ -1803,7 +1880,7 @@ function fantasyMap() {
   // Depression filling algorithm (for a correct water flux modeling; phase2)
   function resolveDepressionsSecondary() {
     console.time('resolveDepressionsSecondary');
-    land = $.grep(cells, function(e) {return e.height >= 0.2;});
+    land = $.grep(cells, function(e) {return e.height >= 20;});
     land.sort(function(a, b) {return b.height - a.height;});
     const limit = 100;
     for (let l = 0, depression = 1; depression > 0 && l < limit; l++) {
@@ -1815,7 +1892,7 @@ function fantasyMap() {
         if (land[i].height <= minHigh) {
           depression++;
           land[i].pit = land[i].pit ? land[i].pit + 1 : 1;
-          land[i].height = Math.trunc((minHigh + 0.02) * 100) / 100;
+          land[i].height = Math.trunc(minHigh + 2);
         }
       }
       if (l === 0) console.log(" depressions reGraphed: " + depression);
@@ -1827,8 +1904,8 @@ function fantasyMap() {
   function restoreCustomHeights() {
     land.forEach(function(l) {
       if (l.pit) {
-        l.height = Math.trunc(l.height * 100 - l.pit * 2) / 100;
-        if (l.height < 0.2) l.height = 0.2;
+        l.height = Math.trunc(l.height - l.pit * 2);
+        if (l.height < 20) l.height = 20;
       }
     });
   }
@@ -1861,7 +1938,7 @@ function fantasyMap() {
           land[i].flux = 0;
         }
       }
-      let minHeight = 10, min;
+      let minHeight = 1000, min;
       land[i].neighbors.forEach(function(e) {
         if (cells[e].height < minHeight) {
           minHeight = cells[e].height;
@@ -1892,7 +1969,7 @@ function fantasyMap() {
             minRiverL -= 1;
           }
           // mark confluences
-          if (cells[min].height >= 0.2 && iRiverL > 1 && minRiverL > 1) {
+          if (cells[min].height >= 20 && iRiverL > 1 && minRiverL > 1) {
             if (!cells[min].confluence) {
               cells[min].confluence = minRiverL-1;
             } else {
@@ -1905,7 +1982,7 @@ function fantasyMap() {
       if (land[i].river !== undefined) {
         const px = cells[min].data[0];
         const py = cells[min].data[1];
-        if (cells[min].height < 0.2) {
+        if (cells[min].height < 20) {
           // pour water to the sea
           const x = (px + sx) / 2 + (px - sx) / 10;
           const y = (py + sy) / 2 + (py - sy) / 10;
@@ -1926,7 +2003,7 @@ function fantasyMap() {
 
   function drawRiverLines(riverNext) {
     console.time('drawRiverLines');
-    for (var i = 0; i < riverNext; i++) {
+    for (let i = 0; i < riverNext; i++) {
       var dataRiver = $.grep(riversData, function(e) {return e.river === i;});
       if (dataRiver.length > 1) {
         var riverAmended = amendRiver(dataRiver, 1);
@@ -1943,7 +2020,7 @@ function fantasyMap() {
   // add more river points on 1/3 and 2/3 of length
   function amendRiver(dataRiver, rndFactor) {
     var riverAmended = [], side = 1;
-    for (var r = 0; r < dataRiver.length; r++) {
+    for (let r = 0; r < dataRiver.length; r++) {
       var dX = dataRiver[r].x;
       var dY = dataRiver[r].y;
       var cell = dataRiver[r].cell;
@@ -2007,7 +2084,7 @@ function fantasyMap() {
       riverPointsRight.unshift({scX:xRight, scY:yRight});
 
       // middle points
-      for (var p = 1; p < last; p ++) {
+      for (let p = 1; p < last; p ++) {
         x = points[p][0], y = points[p][1], c = points[p][2];
         if (c) {extraOffset += Math.atan(c * 10 / widening);} // confluence
         var xPrev = points[p-1][0], yPrev = points[p-1][1];
@@ -2088,13 +2165,13 @@ function fantasyMap() {
     for (let i=0; i < land.length; i++) {
       // elavate all big lakes
       if (land[i].lake === 1) {
-        land[i].height = 0.19;
+        land[i].height = 19;
         land[i].ctype = -1;
       }
       // define eligible small lakes
       if (land[i].lake === 2 && smallLakes < 100) {
         if (land[i].river !== undefined) {
-          land[i].height = 0.19;
+          land[i].height = 19;
           land[i].ctype = -1;
           land[i].fn = -1;
           smallLakes++;
@@ -2103,7 +2180,7 @@ function fantasyMap() {
           land[i].neighbors.forEach(function(n) {
             if (cells[n].lake !== 1 && cells[n].river !== undefined) {
               cells[n].lake = 2;
-              cells[n].height = 0.19;
+              cells[n].height = 19;
               cells[n].ctype = -1;
               cells[n].fn = -1;
               smallLakes++;
@@ -2140,12 +2217,12 @@ function fantasyMap() {
       unmarked = $.grep(land, function(e) {return e.fn === -1});
     }
 
-    land = $.grep(cells, function(e) {return e.height >= 0.2;});
+    land = $.grep(cells, function(e) {return e.height >= 20;});
     console.timeEnd('addLakes');
   }
 
   function editRiver() {
-    if (customization) {return;}
+    if (customization) return;
     if (elSelected) {
       const self = d3.select(this).attr("id") === elSelected.attr("id");
       const point = d3.mouse(this);
@@ -2221,7 +2298,7 @@ function fantasyMap() {
       let inc = l / parts; // increment
       if (inc === Infinity) {inc = l;} // 2 control points for short rivers
       // draw control points
-      for (var i = l, c = l; i > 0; i -= inc, c += inc) {
+      for (let i = l, c = l; i > 0; i -= inc, c += inc) {
         const p1 = node.getPointAtLength(i);
         const p2 = node.getPointAtLength(c);
         const p = [(p1.x + p2.x) / 2, (p1.y + p2.y) / 2];
@@ -2286,7 +2363,7 @@ function fantasyMap() {
       const parts = (l / 8) >> 0; // number of points
       let inc = l / parts; // increment
       if (inc === Infinity) {inc = l;} // 2 control points for short rivers
-      for (var i = l, e = l; i > 0; i -= inc, e += inc) {
+      for (let i = l, e = l; i > 0; i -= inc, e += inc) {
         p1 = node.getPointAtLength(i);
         p2 = node.getPointAtLength(e);
         x = (p1.x + p2.x) / 2, y = (p1.y + p2.y) / 2;
@@ -2299,7 +2376,7 @@ function fantasyMap() {
       points.push([x, y]);
       // amend points
       const rndFactor = 0.3 + Math.random() * 1.4; // random factor in range 0.2-1.8
-      for (var i = 0; i < points.length; i++) {
+      for (let i = 0; i < points.length; i++) {
         x = points[i][0], y = points[i][1];
         amended.push([x, y]);
         // add additional semi-random point
@@ -2534,7 +2611,7 @@ function fantasyMap() {
       let inc = l / parts; // increment
       if (inc === Infinity) {inc = l;} // 2 control points for short routes
       // draw control points
-      for (var i = 0; i <= l; i += inc) {
+      for (let i = 0; i <= l; i += inc) {
         const p = node.getPointAtLength(i);
         addRoutePoint(p);
       }
@@ -2584,8 +2661,8 @@ function fantasyMap() {
       if (!elSelected) {
         const index = getIndex(point);
         const height = cells[index].height;
-        if (height < 0.2) routeType = "searoutes";
-        if (routeType === "searoutes" && height >= 0.2) routeType = "roads";
+        if (height < 20) routeType = "searoutes";
+        if (routeType === "searoutes" && height >= 20) routeType = "roads";
       }
       const group = routes.select("#"+routeType);
       addRoutePoint({x, y});
@@ -2619,7 +2696,7 @@ function fantasyMap() {
         const node = elSelected.node();
         const l = node.getTotalLength();
         let pathCells = [];
-        for (var i = 0; i <= l; i ++) {
+        for (let i = 0; i <= l; i ++) {
           const p = node.getPointAtLength(i);
           const cell = diagram.find(p.x, p.y);
           if (!cell) {return;}
@@ -2867,7 +2944,7 @@ function fantasyMap() {
       const cx = bbox.x;
       const cy = bbox.y + bbox.height / 2;
       const cell = diagram.find(cx, cy).index;
-      const height = cell !== undefined ? cells[cell].height : 0.5;
+      const height = cell !== undefined ? cells[cell].height : 50;
       elSelected.remove();
       elSelected = addReliefIcon(height, type, cx, cy);
       elSelected.call(d3.drag().on("start", elementDrag));
@@ -2949,10 +3026,9 @@ function fantasyMap() {
     burgSetLabelSize.value = labelGroup.attr("data-size");
     burgLabelColorInput.value = toHEX(labelGroup.attr("fill"));
     burgLabelOpacity.value = labelGroup.attr("opacity") === undefined ? 1 : +labelGroup.attr("opacity");
-    const matrix = elSelected.attr("transform");
-    const rotation = matrix ? matrix.split('(')[1].split(')')[0].split(' ')[0] : 0;
-    burgLabelAngle.value = rotation;
-    burgLabelAngleOutput.innerHTML = rotation + "°";
+    const tr = parseTransform(elSelected.attr("transform"));
+    burgLabelAngle.value = tr[2];
+    burgLabelAngleOutput.innerHTML = Math.abs(+tr[2]) + "°";
     burgIconSize.value = iconGroup.attr("size");
     burgIconFillOpacity.value = iconGroup.attr("fill-opacity") === undefined ? 1 : +iconGroup.attr("fill-opacity");
     burgIconFillColor.value = iconGroup.attr("fill");
@@ -3046,6 +3122,7 @@ function fantasyMap() {
       burgSelectGroup.add(opt);
       $("#burgSelectGroup").val(newGroup).change();
       $("#burgSelectGroup, #burgInputGroup").toggle();
+      updateLabelGroups();
     });
 
     $("#burgAddGroup").click(function() {
@@ -3163,13 +3240,15 @@ function fantasyMap() {
       group.attr("opacity", +this.value);
     });
 
-    $("#burgLabelAngle").on("input", function() {
+    $("#burgLabelAngle").change(function() {
       const id = +elSelected.attr("data-id");
       const el = burgLabels.select("[data-id='"+ id +"']");
+      const tr = parseTransform(el.attr("transform"));
       const c = el.node().getBBox();
-      const rotate = `rotate(${this.value} ${(c.x+c.width/2)} ${(c.y+c.height/2)})`;
-      el.attr("transform", rotate);
       burgLabelAngleOutput.innerHTML = Math.abs(+this.value) + "°";
+      const angle = +this.value;
+      const transform = `translate(${tr[0]},${tr[1]}) rotate(${angle} ${(c.x+c.width/2)} ${(c.y+c.height/2)})`;
+      el.attr("transform", transform);
     });
 
     $("#burgIconSize").on("input", function() {
@@ -3274,7 +3353,7 @@ function fantasyMap() {
       const i = +$("#burgRelocate").attr("data-id");
       if (isNaN(i) || !manors[i]) return;
 
-      if (cells[index].height < 0.2) {
+      if (cells[index].height < 20) {
         tip("Cannot place burg in the water! Select a land cell", null, "error");
         return;
       }
@@ -3288,7 +3367,7 @@ function fantasyMap() {
 
       let region = cells[index].region;
       const oldRegion = manors[i].region;
-      // relocating capital to other country you "conqure" thid cell
+      // relocating capital to other country you "conquer" target cell
       if (states[oldRegion] && states[oldRegion].capital === i) {
         if (region !== oldRegion) {
           tip("Capital cannot be moved to another country!", null, "error");
@@ -3321,6 +3400,25 @@ function fantasyMap() {
       cells[manors[i].cell].manor = undefined;
       manors[i].x = x, manors[i].y = y, manors[i].region = region, manors[i].cell = index;
     }
+
+    // open in MFCG
+    $("#burgSeeInMFCG").click(function() {
+      const id = +elSelected.attr("data-id");
+      const cell = manors[id].cell;
+      const pop = rn(manors[id].population);
+      const size = pop > 65 ? 65 : pop < 6 ? 6 : pop;
+      const s = seed + "" + id;
+      const hub = cells[cell].crossroad > 2 ? 1 : 0;
+      const river = cells[cell].river ? 1 : 0;
+      const coast = cells[cell].port !== undefined ? 1 : 0;
+      const sec = pop > 40 ? 1 : Math.random() < pop / 100 ? 1 : 0;
+      const thr = sec && Math.random() < 0.8 ? 1 : 0;
+      const url = "http://fantasycities.watabou.ru/";
+      let params = `?size=${size}&seed=${s}&hub=${hub}&random=0&continuous=0`
+      params += `&river=${river}&coast=${coast}&citadel=${id&1}&plaza=${sec}&temple=${thr}&walls=${sec}&shantytown=${sec}`;
+      const win = window.open(url+params, '_blank');
+      win.focus();
+    });
 
     $("#burgAddfromEditor").click(function() {
       clickToAdd(); // to load on click event function
@@ -3392,15 +3490,16 @@ function fantasyMap() {
     generateMainRoads();
     rankPlacesEconomy();
     locateTowns();
+    getNames();
     shiftSettlements();
     checkAccessibility();
-    defineRegions();
-    drawManors();
-    drawRegions();
+    defineRegions("withCultures");
     generatePortRoads();
     generateSmallRoads();
     generateOceanRoutes();
     calculatePopulation();
+    drawManors();
+    drawRegions();
     console.groupEnd('manorsAndRegions');
   }
 
@@ -3409,30 +3508,26 @@ function fantasyMap() {
     console.time('rankPlacesGeography');
     land.map(function(c) {
       let score = 0;
-      // truncate decimals to keep data clear
-      c.height = Math.trunc(c.height * 100) / 100;
       c.flux = rn(c.flux, 2);
       // get base score from height (will be biom)
-      if (c.height <= 0.4) score = 2;
-      else if (c.height <= 0.5) score = 1.8;
-      else if (c.height <= 0.6) score = 1.6;
-      else if (c.height <= 0.8) score = 1.4;
-      score += (1 - c.height) / 3;
+      if (c.height <= 40) score = 2;
+      else if (c.height <= 50) score = 1.8;
+      else if (c.height <= 60) score = 1.6;
+      else if (c.height <= 80) score = 1.4;
+      score += (1 - c.height / 100) / 3;
       if (c.ctype && Math.random() < 0.8 && !c.river) {
         c.score = 0; // ignore 80% of extended cells
       } else {
         if (c.harbor) {
           if (c.harbor === 1) {score += 1;} else {score -= 0.3;} // good sea harbor is valued
         }
+        if (c.river) score += 1; // coastline is valued
         if (c.river && c.ctype === 1) score += 1; // estuary is valued
         if (c.flux > 1) score += Math.pow(c.flux, 0.3); // riverbank is valued
         if (c.confluence) score += Math.pow(c.confluence, 0.7); // confluence is valued;
-        const neighbEv = c.neighbors.map(function(n) {if (cells[n].height >= 0.2) return cells[n].height;})
+        const neighbEv = c.neighbors.map(function(n) {if (cells[n].height >= 20) return cells[n].height;})
         const difEv = c.height - d3.mean(neighbEv);
-        if (!isNaN(difEv)) {
-          score += difEv * 10 * (1 - c.height); // local height maximums are valued
-          //debug.append("text").attr("x", c.data[0]).attr("y", c.data[1]).attr("font-size", 1).text(rn(difEv * 10 * (1 - c.height), 1));
-        }
+        // if (!isNaN(difEv)) score += difEv * 10 * (1 - c.height / 100); // local height maximums are valued
       }
       c.score = rn(Math.random() * score + score, 3); // add random factor
     });
@@ -3481,7 +3576,7 @@ function fantasyMap() {
     const graphSizeAdj = 90 / Math.sqrt(cells.length, 2); // adjust to different graphSize
     land.map(function(l) {
       let population = 0;
-      const elevationFactor = Math.pow(1 - l.height, 3);
+      const elevationFactor = Math.pow(1 - l.height / 100, 3);
       population = elevationFactor * l.area * graphSizeAdj;
       if (l.region === "neutral") population *= ruralFactor;
       l.pop = rn(population, 1);
@@ -3542,8 +3637,7 @@ function fantasyMap() {
         const cell = land[l].index;
         const closest = cultureTree.find(x, y);
         const culture = getCultureId(closest);
-        const name = generateName(culture);
-        manors.push({i: region, cell, x, y, region, culture, name});
+        manors.push({i: region, cell, x, y, region, culture});
       }
       if (l === land.length - 1) {
         console.error("Cannot place capitals with current spacing. Trying again with reduced spacing");
@@ -3558,7 +3652,6 @@ function fantasyMap() {
       const power = rn(Math.random() * mod / 2 + 1, 1);
       const color = scheme(i / count);
       states.push({i, color, power, capital: i});
-      states[i].name = generateStateName(i);
       const p = cells[m.cell];
       p.manor = i;
       p.region = i;
@@ -3593,11 +3686,10 @@ function fantasyMap() {
       } else {
         culture = manors[region].culture;
       }
-      const name = generateName(culture);
       land[l].manor = manors.length;
       land[l].culture = culture;
       land[l].region = region;
-      manors.push({i: manors.length, cell, x, y, region, culture, name});
+      manors.push({i: manors.length, cell, x, y, region, culture});
       manorTree.add([x, y]);
     }
     if (manors.length < count) {
@@ -3846,8 +3938,8 @@ function fantasyMap() {
       if (next === end) {break;}
       var pol = cells[next];
       pol.neighbors.forEach(function(e) {
-        if (cells[e].height >= 0.2) {
-          var cost = cells[e].height * 2;
+        if (cells[e].height >= 20) {
+          var cost = cells[e].height / 100 * 2;
           if (cells[e].path && type === "main") {
             cost = 0.15;
           } else {
@@ -3881,8 +3973,8 @@ function fantasyMap() {
       const next = queue.dequeue().e;
       const pol = cells[next];
       pol.neighbors.forEach(function(e) {
-        if (cells[e].height < 0.2) return;
-        let cost = cells[e].height * 2;
+        if (cells[e].height < 20) return;
+        let cost = cells[e].height / 100 * 2;
         if (e.river !== undefined) cost -= 0.2;
         if (pol.region !== cells[e].region) cost += 1;
         if (cells[e].region === "neutral") cost += 1;
@@ -3960,7 +4052,7 @@ function fantasyMap() {
     var prev = cells[end];
     if (type === "ocean" || !prev.path) {path.push({scX: prev.data[0], scY: prev.data[1], i: end});}
     if (!prev.path) {prev.path = 1;}
-    for (var i = 0; i < limit; i++) {
+    for (let i = 0; i < limit; i++) {
       current = from[current];
       var cur = cells[current];
       if (!cur) {break;}
@@ -4040,6 +4132,38 @@ function fantasyMap() {
     console.timeEnd('drawManors');
   }
 
+  // get settlement and country names based on option selected
+  function getNames() {
+    console.time('getNames');
+    // if names source is an external resource
+    if (namesInput.value === "1") {
+      const request = new XMLHttpRequest();
+      const url = "https://archivist.xalops.com/archivist-core/api/name/settlement?count=";
+      request.open("GET", url+manors.length, true);
+      request.onload = function() {
+        const names = JSON.parse(request.responseText);
+        for (let i=0; i < manors.length; i++) {
+          manors[i].name = names[i];
+          burgLabels.select("[data-id='" + i + "']").text(names[i]);
+          if (i < states.length) {
+            states[i].name = generateStateName(i);
+            labels.select("#countries").select("#regionLabel"+i).text(states[i].name);
+          }
+        }
+        console.log(names);
+      }
+      request.send(null);
+    }
+
+    if (namesInput.value !== "0") return;
+    for (let i=0; i < manors.length; i++) {
+      const culture = manors[i].culture;
+      manors[i].name = generateName(culture);
+      if (i < states.length) states[i].name = generateStateName(i);
+    }
+    console.timeEnd('getNames');
+  }
+
   function calculateChains() {
     for (let c=0; c < nameBase.length; c++) {
       chain[c] = calculateChain(c);
@@ -4087,9 +4211,7 @@ function fantasyMap() {
     }
     if (!nameBases[base]) {
       console.error("nameBase " + base + " is not defined. Will load default names data and first base");
-      localStorage.removeItem("nameBase");
-      localStorage.removeItem("nameBases");
-      applyDefaultNamesData();
+      if (!nameBases[0]) applyDefaultNamesData();
       base = 0;
     }
     const method = nameBases[base].method;
@@ -4168,16 +4290,16 @@ function fantasyMap() {
   }
 
   // Define areas based on the closest manor to a polygon
-  function defineRegions() {
+  function defineRegions(withCultures) {
     console.time('defineRegions');
     const manorTree = d3.quadtree();
     manors.forEach(function(m) {if (m.region !== "removed") manorTree.add([m.x, m.y]);});
 
     const neutral = +neutralInput.value;
     land.forEach(function(i) {
-      if (i.manor !== undefined) {
+      if (i.manor !== undefined && manors[i.manor].region !== "removed") {
         i.region = manors[i.manor].region;
-        i.culture = manors[i.manor].culture;
+        if (withCultures && manors[i.manor].culture !== undefined) i.culture = manors[i.manor].culture;
         return;
       }
       const x = i.data[0], y = i.data[1];
@@ -4190,8 +4312,10 @@ function fantasyMap() {
       }
       if (dist > neutral / 2 || manor === null) {
         i.region = "neutral";
-        const closestCulture = cultureTree.find(x, y);
-        i.culture = getCultureId(closestCulture);
+        if (withCultures) {
+          const closestCulture = cultureTree.find(x, y);
+          i.culture = getCultureId(closestCulture);
+        }
       } else {
         const cell = manors[manor].cell;
         if (cells[cell].fn !== i.fn) {
@@ -4205,7 +4329,7 @@ function fantasyMap() {
           });
         }
         i.region = manors[manor].region;
-        i.culture = manors[manor].culture;
+        if (withCultures) i.culture = manors[manor].culture;
       }
     });
     console.timeEnd('defineRegions');
@@ -4280,7 +4404,7 @@ function fantasyMap() {
       edgesOrdered.push({scX: spl[0], scY: spl[1]});
       spl = end.split(" ");
       edgesOrdered.push({scX: spl[0], scY: spl[1]});
-      for (var i = 0; end !== start && i < 2000; i++) {
+      for (let i = 0; end !== start && i < 2000; i++) {
         var next = $.grep(edges, function(e) {return (e.start == end || e.end == end);});
         if (next.length > 0) {
           if (next[0].start == end) {
@@ -4468,16 +4592,21 @@ function fantasyMap() {
     manors.forEach(function(m) {
       if (m.region === "removed") return;
       manorTree.add([m.x, m.y]);
-      if (m.region !== "neutral") {
-        const c = states[m.region].capital;
+      if (m.region === "neutral") {
+        const culture = cultureTree.find(m.x, m.y);
+        m.culture = getCultureId(culture);
+        return;
+      }
+      const c = states[m.region].capital;
+      if (c !== "neutral" && c !== "select") {
         const dist = Math.hypot(m.x - manors[c].x, m.y - manors[c].y);
         if (dist <= neutral / 5) {
           m.culture = manors[c].culture;
           return;
         }
       }
-      const c = cultureTree.find(m.x, m.y);
-      m.culture = getCultureId(c);
+      const culture = cultureTree.find(m.x, m.y);
+      m.culture = getCultureId(culture);
     });
 
     // For each land cell if distance to closest manor > neutral / 2,
@@ -4529,6 +4658,49 @@ function fantasyMap() {
     }
   }
 
+  // find burg from MFCG and focus on it
+  function findBurgForMFCG() {
+    if (!manors.length) {console.error("No burgs generated. Cannot select a burg for MFCG"); return;}
+    const url = new URL(window.location.href);
+    const size = +url.searchParams.get("size");
+    let coast = +url.searchParams.get("coast");
+    let river = +url.searchParams.get("river");
+    let selection = defineSelection(coast, river);
+    if (!selection.length) selection = defineSelection(coast, !river);
+    if (!selection.length) selection = defineSelection(!coast, !river);
+    if (!selection.length) {console.error("Cannot find a burg for MFCG"); return;}
+
+    function defineSelection(coast, river) {
+      let selection = [];
+      if (coast && river) selection = $.grep(manors, function(e) {return cells[e.cell].port !== undefined && cells[e.cell].river !== undefined;});
+      if (!coast && !river) selection = $.grep(manors, function(e) {return cells[e.cell].port === undefined && cells[e.cell].river === undefined;});
+      if (!coast && river) selection = $.grep(manors, function(e) {return cells[e.cell].port === undefined && cells[e.cell].river !== undefined;});
+      if (coast && !river) selection = $.grep(manors, function(e) {return cells[e.cell].port !== undefined && cells[e.cell].river === undefined;});
+      return selection;
+    }
+
+    // select a burg with closes population from selection
+    const selected = d3.scan(selection, function(a, b) {return Math.abs(a.population - size) - Math.abs(b.population - size);});
+    console.log(selection)
+    const burg = selection[selected].i;
+    console.log(selected, size)
+    if (size && burg !== undefined) {manors[burg].population = size;} else {return;}
+
+    // focus on found burg
+    const label = burgLabels.select("[data-id='" + burg + "']");
+    if (!label.size()) {
+      console.error("Cannot find a label for MFCG burg "+burg);
+      return;
+    }
+    tip("Here stands the glorious city of "+manors[burg].name, true);
+    label.classed("drag", true).on("mouseover", function() {
+      d3.select(this).classed("drag", false);
+      tip("", true);
+    });
+    const x = +label.attr("x"), y = +label.attr("y");
+    zoomTo(x, y, 8, 1600);
+  }
+
   // draw the Heightmap
   function toggleHeight() {
     const scheme = styleSchemeInput.value;
@@ -4539,15 +4711,15 @@ function fantasyMap() {
     if (!terrs.selectAll("path").size()) {
       cells.map(function(i, d) {
         let height = i.height;
-        if (height < 0.2 && !i.lake) return;
+        if (height < 20 && !i.lake) return;
         if (i.lake) {
-          const heights = i.neighbors.map(function(e) {if (cells[e].height >= 0.2) return cells[e].height;})
+          const heights = i.neighbors.map(function(e) {if (cells[e].height >= 20) return cells[e].height;})
           const mean = d3.mean(heights);
           if (!mean) return;
-          height = Math.trunc(mean * 100) / 100;
-          if (height < 0.2 || isNaN(height)) height = 0.2;
+          height = Math.trunc(mean);
+          if (height < 20 || isNaN(height)) height = 20;
         }
-        const clr = hColor(1 - height);
+        const clr = hColor((100 - height) / 100);
         terrs.append("path")
           .attr("d", "M" + polygons[d].join("L") + "Z")
           .attr("fill", clr).attr("stroke", clr);
@@ -4613,8 +4785,8 @@ function fantasyMap() {
       delete c.coastY;
       if (c.ctype === undefined) delete c.ctype;
       if (c.lake === undefined) delete c.lake;
-      c.height = Math.trunc(c.height * 100) / 100;
-      if (c.height >= 0.2) c.flux = rn(c.flux, 2);
+      c.height = Math.trunc(c.height);
+      if (c.height >= 20) c.flux = rn(c.flux, 2);
     });
     // restore layers if they was turned on
     if (!$("#toggleHeight").hasClass("buttonoff") && !terrs.selectAll("path").size()) toggleHeight();
@@ -4630,6 +4802,16 @@ function fantasyMap() {
     $(".dialog:visible").not(except).each(function(e) {
       $(this).dialog("close");
     });
+  }
+
+  // change transparency for modal windowa
+  function changeDialogsTransparency(v) {
+    localStorage.setItem("transparency", v);
+    const alpha = (100 - +v) / 100;
+    const optionsColor = "rgba(164, 139, 149, " + alpha + ")"; // purple-red
+    const dialogsColor = "rgba(255, 255, 255, " + alpha + ")"; // white
+    document.getElementById("options").style.backgroundColor = optionsColor;
+    document.getElementById("dialogs").style.backgroundColor = dialogsColor;
   }
 
   // Draw the water flux system (for dubugging)
@@ -4649,8 +4831,8 @@ function fantasyMap() {
 
   // Draw the Relief (need to create more beautiness)
   function drawRelief() {
-    let h, count, rnd, cx, cy, swampCount = 0;
     console.time('drawRelief');
+    let h, count, rnd, cx, cy, swampCount = 0;
     const hills = terrain.select("#hills");
     const mounts = terrain.select("#mounts");
     const swamps = terrain.select("#swamps");
@@ -4658,20 +4840,28 @@ function fantasyMap() {
     terrain.selectAll("g").selectAll("g").remove();
     // sort the land to Draw the top element first (reduce the elements overlapping)
     land.sort(compareY);
-    for (i = 0; i < land.length; i++) {
-      const x = land[i].data[0];
-      const y = land[i].data[1];
+    for (let i = 0; i < land.length; i++) {
+      if (land[i].river) continue; // no icons on rivers
+      const cell = land[i].index;
+      const p = d3.polygonCentroid(polygons[cell]); // polygon centroid point
+      if (p === undefined) continue; // something is wrong with data
       const height = land[i].height;
-      if (height >= 0.7 && !land[i].river) {
+      const area = land[i].area;
+      if (height >= 70) {
         // mount icon
-        h = (height - 0.55) * 12;
-        count = height < 0.8 ? 2 : 1;
-        if (land[i].ctype === 1) count = 0;
-        rnd = Math.random() * 0.8 + 0.2;
-        for (let c = 0; c < count; c++) {
+        h = (height - 55) * 0.12;
+        for (let c = 0, a = area; Math.random() < a / 50; c++, a -= 50) {
+          if (polygons[cell][c] === undefined) break;
           const g = mounts.append("g");
-          cx = x - h * 0.9 - c;
-          cy = y + h / 4 + c / 2;
+          if (c < 2) {
+            cx = p[0] - h / 100 * (1 - c / 10) - c * 2;
+            cy = p[1] + h / 400 + c;
+          } else {
+            const p2 = polygons[cell][c];
+            cx = (p[0] * 1.2 + p2[0] * 0.8) / 2;
+            cy = (p[1] * 1.2 + p2[1] * 0.8) / 2;
+          }
+          rnd = Math.random() * 0.8 + 0.2;
           let mount = "M" + cx + "," + cy + " L" + (cx + h / 3 + rnd) + "," + (cy - h / 4 - rnd * 1.2) + " L" + (cx + h / 1.1) + "," + (cy - h) + " L" + (cx + h + rnd) + "," + (cy - h / 1.2 + rnd) + " L" + (cx + h * 2) + "," + cy;
           let shade = "M" + cx + "," + cy + " L" + (cx + h / 3 + rnd) + "," + (cy - h / 4 - rnd * 1.2) + " L" + (cx + h / 1.1) + "," + (cy - h) + " L" + (cx + h / 1.5) + "," + cy;
           let dash = "M" + (cx - 0.1) + "," + (cy + 0.3) + " L" + (cx + 2 * h + 0.1) + "," + (cy + 0.3);
@@ -4680,16 +4870,22 @@ function fantasyMap() {
           g.append("path").attr("d", round(shade, 1)).attr("fill", "#999999");
           g.append("path").attr("d", round(dash, 1)).attr("class", "strokes");
         }
-      } else if (height > 0.5 && !land[i].river) {
+      } else if (height > 50) {
         // hill icon
-        h = (height - 0.4) * 10;
-        count = Math.floor(4 - h);
-        if (land[i].ctype === 1) count = Math.random() < 0.2 ? 1 : 0;
-        if (h > 1.8) h = 1.8;
-        for (let c = 0; c < count; c++) {
+        h = (height - 40) / 10;
+        if (h > 1.7) h = 1.7;
+        for (let c = 0, a = area; Math.random() < a / 30; c++, a -= 30) {
+          if (land[i].ctype === 1 && c > 0) break;
+          if (polygons[cell][c] === undefined) break;
           const g = hills.append("g");
-          cx = x - h - c;
-          cy = y + h / 4 + c / 2;
+          if (c < 2) {
+            cx = p[0] - h - c * 1.2;
+            cy = p[1] + h / 4 + c / 1.6;
+          } else {
+            const p2 = polygons[cell][c];
+            cx = (p[0] * 1.2 + p2[0] * 0.8) / 2;
+            cy = (p[1] * 1.2 + p2[1] * 0.8) / 2;
+          }
           let hill = "M" + cx + "," + cy + " Q" + (cx + h) + "," + (cy - h) + " " + (cx + 2 * h) + "," + cy;
           let shade = "M" + (cx + 0.6 * h) + "," + (cy + 0.1) + " Q" + (cx + h * 0.95) + "," + (cy - h * 0.91) + " " + (cx + 2 * h * 0.97) + "," + cy;
           let dash = "M" + (cx - 0.1) + "," + (cy + 0.2) + " L" + (cx + 2 * h + 0.1) + "," + (cy + 0.2);
@@ -4701,13 +4897,13 @@ function fantasyMap() {
       }
 
       // swamp icons
-      if (height >= 0.21 && height < 0.22 && !land[i].river && swampCount < +swampinessInput.value && land[i].used != 1) {
+      if (height >= 21 && height < 22 && swampCount < +swampinessInput.value && land[i].used != 1) {
         const g = swamps.append("g");
         swampCount++;
         land[i].used = 1;
-        let swamp = drawSwamp(x, y);
+        let swamp = drawSwamp(p[0], p[1]);
         land[i].neighbors.forEach(function(e) {
-          if (cells[e].height >= 0.2 && cells[e].height < 0.3 && !cells[e].river && cells[e].used != 1) {
+          if (cells[e].height >= 20 && cells[e].height < 30 && !cells[e].river && cells[e].used != 1) {
             cells[e].used = 1;
             swamp += drawSwamp(cells[e].data[0], cells[e].data[1]);
           }
@@ -4716,17 +4912,23 @@ function fantasyMap() {
       }
 
       // forest icons
-      if (Math.random() < height && height >= 0.22 && height < 0.48 && !land[i].river) {
-        count = Math.floor(height * 8);
-        if (land[i].ctype === 1) count = 1;
-        for (let c = 0; c < count; c++) {
+      if (Math.random() < height / 100 && height >= 22 && height < 48) {
+        for (let c = 0, a = area; Math.random() < a / 15; c++, a -= 15) {
+          if (land[i].ctype === 1 && c > 0) break;
+          if (polygons[cell][c] === undefined) break;
           const g = forests.append("g");
-          rnd = Math.random();
-          h = 1 * rnd * 0.4 + 0.6;
-          cx = c === 1 ? x + h + Math.random() : x - h - Math.random();
-          cy = c === 1 ? y + h + rnd : c === 2 ? y + 2 * h + rnd : y - h - rnd;
-          cx = rn(cx, 1);
-          cy = rn(cy, 1);
+          if (c === 0) {
+            cx = rn(p[0] - 1 - Math.random(), 1);
+            cy = p[1] - 2;
+          } else {
+            const p2 = polygons[cell][c];
+            if (c > 1) {
+              const dist = Math.hypot(p2[0] - polygons[cell][c-1][0], p2[1] - polygons[cell][c-1][1]);
+              if (dist < 2) continue;
+            }
+            cx = (p[0] * 0.5 + p2[0] * 1.5) / 2;
+            cy = (p[1] * 0.5 + p2[1] * 1.5) / 2 - 1;
+          }
           const forest = "M" + cx + "," + cy + " q-1,0.8 -0.05,1.25 v0.75 h0.1 v-0.75 q0.95,-0.47 -0.05,-1.25 z ";
           const light = "M" + cx + "," + cy + " q-1,0.8 -0.05,1.25 h0.1 q0.95,-0.47 -0.05,-1.25 z ";
           const shade = "M" + cx + "," + cy + " q-1,0.8 -0.05,1.25 q-0.2,-0.55 0,-1.1 z ";
@@ -4790,7 +4992,7 @@ function fantasyMap() {
 
   function drawSwamp(x, y) {
     var h = 0.6, line = "";
-    for (c = 0; c < 3; c++) {
+    for (let c = 0; c < 3; c++) {
       if (c == 0) {
         cx = x;
         cy = y - 0.5 - Math.random();
@@ -4835,11 +5037,10 @@ function fantasyMap() {
   // Complete the map for the "customize" mode
   function getMap() {
     if (customization !== 1) {
-      tip('Nothing to complete! Click on "Edit" or "Clear all" to enter a heightmap customizaton mode', null, "error");
+      tip('Nothing to complete! Click on "Edit" or "Clear all" to enter a heightmap customization mode', null, "error");
       return;
     }
-    land = $.grep(cells, function(e) {return e.height >= 0.2;});
-    if (land.length < 100) {
+    if (+landmassCounter.innerHTML < 150) {
       tip("Insufficient land area! Please add more land cells to complete the map", null, "error");
       return;
     }
@@ -4937,7 +5138,7 @@ function fantasyMap() {
       const culture = cultureTree.data().indexOf(closest) || 0;
       const name = generateName(culture);
 
-      if (cells[index].height < 0.2) {
+      if (cells[index].height < 20) {
         tip("Cannot place burg in the water! Select a land cell", null, "error");
         return;
       }
@@ -5004,7 +5205,7 @@ function fantasyMap() {
       var point = d3.mouse(this);
       var index = diagram.find(point[0], point[1]).index;
       var cell = cells[index];
-      if (cell.river || cell.height < 0.2) {return;}
+      if (cell.river || cell.height < 20) return;
       var dataRiver = []; // to store river points
       const last = $("#rivers > path").last();
       const river = last.length ? +last.attr("id").slice(5) + 1 : 0;
@@ -5018,7 +5219,7 @@ function fantasyMap() {
         var minId = heights.indexOf(d3.min(heights));
         var min = cell.neighbors[minId];
         var tx = cells[min].data[0], ty = cells[min].data[1];
-        if (cells[min].height < 0.2) {
+        if (cells[min].height < 20) {
           var px = (x + tx) / 2;
           var py = (y + ty) / 2;
           dataRiver.push({x: px, y: py, cell:index});
@@ -5091,14 +5292,14 @@ function fantasyMap() {
       const point = d3.mouse(this);
       const index = getIndex(point);
       const height = cells[index].height;
-      if (height < 0.2) {
+      if (height < 20) {
         tip("Cannot place icon in the water! Select a land cell");
         return;
       }
 
       const x = rn(point[0], 2), y = rn(point[1], 2);
       const type = reliefGroup.value;
-      addReliefIcon(height, type, x, y);
+      addReliefIcon(height / 100, type, x, y);
 
       if (d3.event.shiftKey === false) {
         $("#addRelief").removeClass("pressed");
@@ -5148,7 +5349,7 @@ function fantasyMap() {
     if (customization) {return;}
     closeDialogs("#labelEditor, .stable");
     elSelected = d3.select(this);
-    elSelected.call(d3.drag().on("drag", dragged).on("end", dragended)).classed("draggable", true);
+    elSelected.call(d3.drag().on("start", elementDrag)).classed("draggable", true);
 
     var group = d3.select(this.parentNode);
     updateGroupOptions();
@@ -5158,10 +5359,9 @@ function fantasyMap() {
     editColor.value = toHEX(group.attr("fill"));
     editOpacity.value = group.attr("opacity");
     editText.value = elSelected.text();
-    var matrix = elSelected.attr("transform");
-    var rotation = matrix ?  matrix.split('(')[1].split(')')[0].split(' ')[0] : 0;
-    editAngle.value = rotation;
-    editAngleValue.innerHTML = rotation + "°";
+    const tr = parseTransform(elSelected.attr("transform"));
+    editAngle.value = tr[2];
+    editAngleValue.innerHTML = Math.abs(+tr[2]) + "°";
 
     $("#labelEditor").dialog({
       title: "Edit Label: " + editText.value,
@@ -5179,7 +5379,7 @@ function fantasyMap() {
   function changeSelectedOnClick() {
     const point = d3.mouse(this);
     const index = diagram.find(point[0], point[1]).index;
-    if (cells[index].height < 0.2) return;
+    if (cells[index].height < 20) return;
     $(".selected").removeClass("selected");
     let color;
 
@@ -5249,9 +5449,10 @@ function fantasyMap() {
       return;
     }
     if (this.id == "editGroupRemove") {
-      var count = group.selectAll("text").size()
+      var count = group.selectAll("text").size();
       if (count < 2) {
         group.remove();
+        updateLabelGroups();
         $("#labelEditor").dialog("close");
         return;
       }
@@ -5262,6 +5463,7 @@ function fantasyMap() {
           Remove: function() {
             $(this).dialog("close");
             group.remove();
+            updateLabelGroups();
             $("#labelEditor").dialog("close");
           },
           Cancel: function() {$(this).dialog("close");}
@@ -5300,7 +5502,7 @@ function fantasyMap() {
       }
       return;
     }
-    if (this.id == "editTextRandom") {
+    if (this.id === "editTextRandom") {
       var name;
       // check if label is country name
       if (group.attr("id") === "countries") {
@@ -5350,10 +5552,12 @@ function fantasyMap() {
 
   // on editAngle change
   $("#editAngle").on("input", function() {
-    var c = elSelected.node().getBBox();
-    var rotate = `rotate(${this.value} ${(c.x+c.width/2)} ${(c.y+c.height/2)})`;
-    elSelected.attr("transform", rotate);
+    const tr = parseTransform(elSelected.attr("transform"));
     editAngleValue.innerHTML = Math.abs(+this.value) + "°";
+    const c = elSelected.node().getBBox();
+    const angle = +this.value;
+    const transform = `translate(${tr[0]},${tr[1]}) rotate(${angle} ${(c.x+c.width/2)} ${(c.y+c.height/2)})`;
+    elSelected.attr("transform", transform);
   });
 
   $("#editFontInput").change(function() {
@@ -5414,18 +5618,22 @@ function fantasyMap() {
           if (fonts.indexOf(font) == -1) {fonts.push(font); fetched++};
         };
         let fetched = 0;
-        for (var r of styleSheet.cssRules) {FontRule(r);}
+        for (let r of styleSheet.cssRules) {FontRule(r);}
         document.head.removeChild(s);
         return fetched;
       })
       .catch(function() {return});
   }
 
-  // on any Editor input change
-  $("#labelEditor .editTrigger").change(function() {
-    if (!elSelected) {return;}
+  // on name input
+  $("#editText").on("input", function() {
     $(this).attr("title", $(this).val());
     elSelected.text(editText.value); // change Label text
+  });
+
+  // on any Editor input change
+  $("#labelEditor .editTrigger").change(function() {
+    if (!elSelected) return;
     // check if Group was changed
     var group = d3.select(elSelected.node().parentNode);
     var groupOld = group.attr("id");
@@ -5459,6 +5667,7 @@ function fantasyMap() {
       }
       group.append(function() {return removed.node();});
       editGroupSelect.value = group.attr("id");
+      updateLabelGroups();
     }
     // update Group attributes
     var size = +editSize.value;
@@ -5668,7 +5877,7 @@ function fantasyMap() {
         };
         let fontRules = [], fontProms = [];
 
-        for (var r of styleSheet.cssRules) {
+        for (let r of styleSheet.cssRules) {
           let fR = FontRule(r)
           fontRules.push(fR);
           fontProms.push(
@@ -5695,7 +5904,8 @@ function fantasyMap() {
   function saveMap() {
     console.time("saveMap");
     // data convention: 0 - version; 1 - all points; 2 - cells; 3 - manors; 4 - states;
-    // 5 - svg; 6 - options (see below); 7 - cultures; 8 - nameBase; 9 - nameBases;
+    // 5 - svg; 6 - options (see below); 7 - cultures;
+    // 8 - empty (former nameBase); 9 - empty (former nameBases); 10 - heights;
     // size stats: points = 6%, cells = 36%, manors and states = 2%, svg = 56%;
     const options = customization + "|" +
     distanceUnit.value + "|" + distanceScale.value + "|" + areaUnit.value + "|" +
@@ -5714,7 +5924,7 @@ function fantasyMap() {
     var line = "\r\n";
     var data = version + line + JSON.stringify(points) + line + JSON.stringify(cells) + line;
     data += JSON.stringify(manors) + line + JSON.stringify(states) + line + svg_xml + line + options + line;
-    data += JSON.stringify(cultures) + line + JSON.stringify(nameBase) + line + JSON.stringify(nameBases) + line;
+    data += JSON.stringify(cultures) + line + "" + line + "" + line + heights + line;
     var dataBlob = new Blob([data], {type:"text/plain"});
     var dataURL = window.URL.createObjectURL(dataBlob);
     var link = document.createElement("a");
@@ -5748,7 +5958,7 @@ function fantasyMap() {
       var dataLoaded = fileLoadedEvent.target.result;
       var data = dataLoaded.split("\r\n");
       // data convention: 0 - version; 1 - all points; 2 - cells; 3 - manors; 4 - states;
-      // 5 - svg; 6 - options; 7 - cultures; 8 - nameBase; 9 - nameBases;
+      // 5 - svg; 6 - options; 7 - cultures; 8 - none; 9 - none; 10 - heights;
       var mapVersion = data[0];
       if (mapVersion !== version) {
         var message = `The Map version `;
@@ -5950,30 +6160,59 @@ function fantasyMap() {
     // update data
     newPoints = [], riversData = [], queue = [], elSelected = "";
     points = JSON.parse(data[1]);
+    if (data[10]) {heights = new Uint8Array(data[10].split(","));}
+    else {
+      heights = new Uint8Array(points.length);
+      for (let i=0; i < points.length; i++) {
+        const cell = diagram.find(points[i][0], points[i][1]).index;
+        heights[i] = cells[cell].height;
+      }
+    }
     cells = JSON.parse(data[2]);
-    land = $.grep(cells, function(e) {return (e.height >= 0.2);});
+
     manors = JSON.parse(data[3]);
-    cells.map(function(e) {newPoints.push(e.data);});
-    calculateVoronoi(newPoints);
-    if(data[7]) cultures = JSON.parse(data[7]);
+    if (data[7]) cultures = JSON.parse(data[7]);
     if (data[7] === undefined) generateCultures();
-    if(data[8]) nameBase = JSON.parse(data[8]);
-    if(data[8]) nameBases = JSON.parse(data[9]);
+
+    // ensure each culure has a valid namesbase assigned, if not assign first base
+    if (!nameBase[0]) applyDefaultNamesData();
+    cultures.forEach(function(c) {
+      const b = c.base;
+      if (b === undefined) c.base = 0;
+      if (!nameBase[b] || !nameBases[b]) c.base = 0;
+    });
+
+    // cells validations
+    cells.forEach(function(c) {
+      // collect points
+      newPoints.push(c.data);
+
+      // update old 0-1 height range to new 0-100 range
+      if (c.height > 1) return;
+      if (c.height === 1 && c.region === undefined && c.flux === undefined) return;
+      c.height = Math.trunc(c.height * 100);
+
+      // check if there unavailable cultures
+      if (c.culture > cultures.length - 1) cultures.push({name:"AUTO_"+c.culture, color:"#ff0000", base:0});
+    });
+
+    land = $.grep(cells, function(e) {return (e.height >= 20);});
+    calculateVoronoi(newPoints);
 
     // calculate areas / population for old maps
     const graphSizeAdj = 90 / Math.sqrt(cells.length, 2); // adjust to different graphSize
     land.forEach(function(i) {
         const p = i.index;
+        if (!polygons[p] || !polygons[p].length) return;
+        const area = d3.polygonArea(polygons[p]);
+        i.area = rn(Math.abs(area), 2);
         if (i.pop === undefined) {
           let population = 0;
-          const elevationFactor = Math.pow(1 - i.height, 3);
+          const elevationFactor = Math.pow((100 - i.height) / 100, 3);
           population = elevationFactor * i.area * graphSizeAdj;
           if (i.region === "neutral") population *= 0.5;
           i.pop = rn(population, 1);
         }
-        if (!polygons[p] || !polygons[p].length) return;
-        const area = d3.polygonArea(polygons[p]);
-        i.area = rn(Math.abs(area), 2);
     });
 
     // restore Heightmap customization mode
@@ -6036,7 +6275,7 @@ function fantasyMap() {
         var i = Math.random() * queueSize | 0,
             s = queue[i];
         // Make a new candidate between [radius, 2 * radius] from the existing sample.
-        for (var j = 0; j < k; ++j) {
+        for (let j = 0; j < k; ++j) {
           var a = 2 * Math.PI * Math.random(),
               r = Math.sqrt(Math.random() * R + radius2),
               x = s[0] + r * Math.cos(a),
@@ -6191,6 +6430,7 @@ function fantasyMap() {
     if (id === "toggleFlux") {toggleFlux();}
     if (parent === "mapLayers" || parent === "styleContent") {$(this).toggleClass("buttonoff");}
     if (id === "randomMap" || id === "regenerate") {
+      changeSeed();
       exitCustomization();
       undraw();
       resetZoom(1000);
@@ -6494,7 +6734,6 @@ function fantasyMap() {
       alertMessage.innerHTML = "Are you sure you want to clear the map? All progress will be lost";
       $("#alert").dialog({resizable: false, title: "Clear map",
         buttons: {
-          Cancel: function() {$(this).dialog("close");},
           Clear: function() {
             closeDialogs();
             undraw();
@@ -6505,7 +6744,8 @@ function fantasyMap() {
             customizeHeightmap();
             openBrushesPanel();
             $(this).dialog("close");
-          }
+          },
+          Cancel: function() {$(this).dialog("close");}
         }
       });
     }
@@ -6575,49 +6815,10 @@ function fantasyMap() {
       if (id === "convertImageGrid") {$("#grid").fadeToggle();}
       if (id === "convertImageHeights") {$("#landmass").fadeToggle();}
       if (id === "perspectiveView") {
-        // Inputs control
-        if ($("#perspectivePanel").is(":visible")) {return;}
-        const line = +$("#lineHandle0").attr("data-value");
-        const grad = +$("#lineHandle1").attr("data-value");
-        $("#lineSlider").slider({
-          min: 10, max: 320, step: 1, values: [line, grad],
-          create: function() {
-            $("#lineHandle0").text("x:"+line);
-            $("#lineHandle1").text("y:"+grad);
-          },
-          slide: function(event, ui) {
-            $("#lineHandle0").text("x:"+ui.values[0]).attr("data-value", ui.values[0]);
-            $("#lineHandle1").text("y:"+ui.values[1]).attr("data-value", ui.values[1]);
-            drawPerspective();
-          }
-        });
-        $("#ySlider").slider({
-          min: 1, max: 5, step: 0.1, value: +$("#yHandle").attr("data-value"),
-          create: function() {$("#yHandle").text($("#yHandle").attr("data-value"));},
-          slide: function(event, ui) {
-            $("#yHandle").text(ui.value).attr("data-value", ui.value);
-            drawPerspective();
-          }
-        });
-        $("#scaleSlider").slider({
-          min: 0.5, max: 2, step: 0.1, value: +$("#scaleHandle").attr("data-value"),
-          create: function() {$("#scaleHandle").text($("#scaleHandle").attr("data-value"));},
-          slide: function(event, ui) {
-            $("#scaleHandle").text(ui.value).attr("data-value", ui.value);
-            drawPerspective();
-          }
-        });
-        $("#heightSlider").slider({
-          min: 1, max: 50, step: 1, value: +$("#heightHandle").attr("data-value"),
-          create: function() {$("#heightHandle").text($("#heightHandle").attr("data-value"));},
-          slide: function(event, ui) {
-            $("#heightHandle").text(ui.value).attr("data-value", ui.value);
-            drawPerspective();
-          }
-        });
+        if ($("#perspectivePanel").is(":visible")) return;
         $("#perspectivePanel").dialog({
           title: "Perspective View",
-          width: 520, height: 360,
+          width: 520, height: 190,
           position: {my: "center center", at: "center center", of: "svg"}
         });
         drawPerspective();
@@ -6697,7 +6898,7 @@ function fantasyMap() {
               viewbox.style("cursor", "crosshair").call(drag);
               landmassCounter.innerHTML = "0";
               $("#landmass").empty();
-              cells.map(function(i) {i.height = 0;});
+              heights = new Uint8Array(heights.length);
               // clear history
               history = [];
               historyStage = 0;
@@ -6772,22 +6973,21 @@ function fantasyMap() {
 
   function editHeightmap(type) {
     closeDialogs();
-    const heights = [], regionData = [], cultureData = [];
-    for (let i = 0; i < points.length; i++) {
-      const cell = diagram.find(points[i][0], points[i][1]).index;
-      heights.push(cells[cell].height);
-      let region = cells[cell].region;
-      if (region === undefined) region = -1;
-      regionData.push(region);
-      let culture = cells[cell].culture;
-      if (culture === undefined) culture = -1;
-      cultureData.push(culture);
-    }
-    if (type === "clean") undraw();
+    const regionData = [], cultureData = [];
+    if (type !== "clean") {
+      for (let i = 0; i < points.length; i++) {
+        const cell = diagram.find(points[i][0], points[i][1]).index;
+        let region = cells[cell].region;
+        if (region === undefined) region = -1;
+        regionData.push(region);
+        let culture = cells[cell].culture;
+        if (culture === undefined) culture = -1;
+        cultureData.push(culture);
+      }
+    } else {undraw();}
     calculateVoronoi(points);
     detectNeighbors("grid");
     drawScaleBar();
-    for (let i = 0; i < points.length; i++) {cells[i].height = heights[i];}
     if (type === "keep") {
       svg.selectAll("#lakes, #coastline, #terrain, #rivers, #grid, #terrs, #landmass, #ocean, #regions")
         .selectAll("path, circle, line").remove();
@@ -6840,12 +7040,11 @@ function fantasyMap() {
     console.time("drawPerspective");
     const width = 320, height = 180;
     const wRatio = graphWidth / width, hRatio = graphHeight / height;
-    const lineCount = +$("#lineHandle0").attr("data-value");
-    const lineGranularity = +$("#lineHandle1").attr("data-value");
+    const lineCount = 320, lineGranularity = 90;
     const perspective = document.getElementById("perspective");
     const pContext = perspective.getContext("2d");
     const lines = [];
-    let i = Math.floor(lineCount);
+    let i = lineCount;
     while (i--) {
       const x = i / lineCount * width | 0;
       const canvasPoints = [];
@@ -6853,8 +7052,8 @@ function fantasyMap() {
       let j = Math.floor(lineGranularity);
       while (j--) {
         const y = j / lineGranularity * height | 0;
-        let h = getHeightInPoint(x * wRatio, y * hRatio) - 0.2;
-        if (h < 0) {h = 0;}
+        let h = getHeightInPoint(x * wRatio, y * hRatio) - 20;
+        if (h < 1) h = 0;
         canvasPoints.push([x, y, h]);
       }
     }
@@ -6863,7 +7062,7 @@ function fantasyMap() {
       for (let i = 0; i < canvasPoints.length - 1; i++) {
         const pt1 = canvasPoints[i];
         const pt2 = canvasPoints[i + 1];
-        const avHeight = (pt1[2] + pt2[2]) / 2;
+        const avHeight = (pt1[2] + pt2[2]) / 200;
         pContext.beginPath();
         pContext.moveTo(...transformPt(pt1));
         pContext.lineTo(...transformPt(pt2));
@@ -6871,6 +7070,9 @@ function fantasyMap() {
         if (avHeight !== 0) {clr = color(1 - avHeight - 0.2);}
         pContext.strokeStyle = clr;
         pContext.stroke();
+      }
+      for (let i = 0; i < canvasPoints.length - 1; i++) {
+
       }
     }
     console.timeEnd("drawPerspective");
@@ -6883,15 +7085,13 @@ function fantasyMap() {
   }
 
   function transformPt(pt) {
-    const width = 320;
-    const maxHeight = +$("#heightHandle").attr("data-value");
+    const width = 320, maxHeight = 0.2;
     var [x, y] = projectIsometric(pt[0], pt[1]);
     return [x + width / 2 + 10, y + 10 - pt[2] * maxHeight];
   }
 
   function projectIsometric(x, y) {
-    const scale = $("#scaleHandle").attr("data-value");
-    const yProj = $("#yHandle").attr("data-value");
+    const scale = 1, yProj = 4;
     return [(x - y) * scale, (x + y) / yProj * scale];
   }
 
@@ -6901,7 +7101,7 @@ function fantasyMap() {
     id = id.replace("template", "");
     if (id === "Mountain") {
       var steps = $("#templateBody > div").length;
-      if (steps > 0) {return;}
+      if (steps > 0) return;
     }
     $("#templateBody").attr("data-changed", 1);
     $("#templateBody").append('<div data-type="' + id + '">' + id + '</div>');
@@ -6910,13 +7110,13 @@ function fantasyMap() {
       var count = '<label>count:<input class="templateElCount" onmouseover="tip(\'Blobs to add\')" type="number" value="1" min="1" max="99"></label>';
     }
     if (id === "Hill") {
-      var dist = '<label>distribution:<input class="templateElDist" onmouseover="tip(\'Set blobs distribution. 0.5 - map center; 0.1 - any place\')" type="number" value="0.25" min="0.1" max="0.5" step="0.01"></label>';
+      var dist = '<label>distribution:<input class="templateElDist" onmouseover="tip(\'Set blobs distribution. 0.5 - map center; 0 - any place\')" type="number" value="0.25" min="0" max="0.5" step="0.01"></label>';
     }
     if (id === "Add" || id === "Multiply") {
       var dist = '<label>to:<select class="templateElDist" onmouseover="tip(\'Change only land or all cells\')"><option value="all" selected>all cells</option><option value="land">land only</option><option value="interval">interval</option></select></label>';
     }
     if (id === "Add") {
-      var count = '<label>value:<input class="templateElCount" onmouseover="tip(\'Add value to height of all cells (negative values are allowed)\')" type="number" value="-0.1" min="-1" max="1" step="0.01"></label>';
+      var count = '<label>value:<input class="templateElCount" onmouseover="tip(\'Add value to height of all cells (negative values are allowed)\')" type="number" value="-10" min="-100" max="100" step="1"></label>';
     }
     if (id === "Multiply") {
       var count = '<label>by value:<input class="templateElCount" onmouseover="tip(\'Multiply all cells Height by the value\')" type="number" value="1.1" min="0" max="10" step="0.1"></label>';
@@ -6929,8 +7129,8 @@ function fantasyMap() {
     }
     el.append('<span onmouseover="tip(\'Remove step\')" class="icon-trash-empty"></span>');
     $("#templateBody .icon-trash-empty").on("click", function() {$(this).parent().remove();});
-    if (dist) {el.append(dist);}
-    if (count) {el.append(count);}
+    if (dist) el.append(dist);
+    if (count) el.append(count);
     el.find("select.templateElDist").on("input", fireTemplateElDist);
     $("#templateBody").attr("data-changed", 1);
   });
@@ -6938,7 +7138,7 @@ function fantasyMap() {
   // fireTemplateElDist selector handlers
   function fireTemplateElDist() {
     if (this.value === "interval") {
-      var interval = prompt("Populate a height interval (e.g. from 0.17 to 0.2), without space, but with hyphen", "0.17-0.2");
+      var interval = prompt("Populate a height interval (e.g. from 17 to 20), without space, but with hyphen", "17-20");
       if (interval) {
         var option = '<option value="' + interval + '">' + interval + '</option>';
         $(this).append(option).val(interval);
@@ -6967,87 +7167,109 @@ function fantasyMap() {
         }
       });
     }
-    if (steps === 0 || changed === 0) {changeTemplate(template);}
+    if (steps === 0 || changed === 0) changeTemplate(template);
   });
 
   function changeTemplate(template) {
     $("#templateBody").empty();
     $("#templateSelect").attr("data-prev", template);
-    addStep("Mountain");
     if (template === "templateVolcano") {
-      addStep("Add", 0.05);
-      addStep("Multiply", 1.1);
-      addStep("Hill", 5, 0.4);
-      addStep("Hill", 2, 0.15);
+      addStep("Mountain");
+      addStep("Add", 10);
+      addStep("Hill", 5, 0.35);
       addStep("Range", 3);
-      addStep("Trough", 3);
+      addStep("Trough", -4);
     }
     if (template === "templateHighIsland") {
-      addStep("Add", 0.05);
-      addStep("Multiply", 0.9);
-      addStep("Range", 4);
+      addStep("Mountain");
+      addStep("Add", 10);
+      addStep("Range", 6);
       addStep("Hill", 12, 0.25);
       addStep("Trough", 3);
       addStep("Multiply", 0.75, "land");
+      addStep("Pit", 1);
       addStep("Hill", 3, 0.15);
     }
     if (template === "templateLowIsland") {
+      addStep("Mountain");
+      addStep("Add", 10);
       addStep("Smooth", 2);
-      addStep("Range", 1);
+      addStep("Range", 2);
       addStep("Hill", 4, 0.4);
       addStep("Hill", 12, 0.2);
       addStep("Trough", 8);
       addStep("Multiply", 0.35, "land");
     }
     if (template === "templateContinents") {
-      addStep("Hill", 24, 0.25);
-      addStep("Range", 4);
-      addStep("Hill", 3, 0.18);
-      addStep("Multiply", 0.7, "land");
-      addStep("Strait", "2-7");
+      addStep("Mountain");
+      addStep("Add", 10);
+      addStep("Hill", 30, 0.25);
+      addStep("Strait", "4-7");
+      addStep("Pit", 10);
+      addStep("Trough", 10);
+      addStep("Multiply", 0.6, "land");
       addStep("Smooth", 2);
-      addStep("Pit", 7);
-      addStep("Trough", 8);
-      addStep("Multiply", 0.8, "land");
-      addStep("Add", 0.02, "all");
+      addStep("Range", 3);
     }
     if (template === "templateArchipelago") {
-      addStep("Add", -0.2, "land");
-      addStep("Hill", 14, 0.17);
-      addStep("Range", 5);
-      addStep("Strait", "2-4");
-      addStep("Trough", 12);
-      addStep("Pit", 8);
-      addStep("Add", -0.05, "land");
+      addStep("Mountain");
+      addStep("Add", 10);
+      addStep("Hill", 12, 0.15);
+      addStep("Range", 8);
+      addStep("Strait", "2-3");
+      addStep("Trough", 15);
+      addStep("Pit", 10);
+      addStep("Add", -5, "land");
       addStep("Multiply", 0.7, "land");
-      addStep("Smooth", 4);
+      addStep("Smooth", 3);
     }
+
     if (template === "templateAtoll") {
+      addStep("Mountain");
+      addStep("Add", 10, "all");
       addStep("Hill", 2, 0.35);
       addStep("Range", 2);
-      addStep("Add", 0.07, "all");
       addStep("Smooth", 1);
-      addStep("Multiply", 0.1, "0.27-10");
+      addStep("Multiply", 0.1, "27-100");
+    }
+    if (template === "templateMainland") {
+      addStep("Mountain");
+      addStep("Add", 10, "all");
+      addStep("Hill", 30, 0.2);
+      addStep("Range", 10);
+      addStep("Pit", 20);
+      addStep("Hill", 10, 0.15);
+      addStep("Trough", 10);
+      addStep("Multiply", 0.4, "land");
+      addStep("Range", 10);
+      addStep("Smooth", 3);
+    }
+    if (template === "templatePeninsulas") {
+      addStep("Add", 15);
+      addStep("Hill", 30, 0);
+      addStep("Range", 5);
+      addStep("Pit", 15);
+      addStep("Strait", "15-20");
     }
     $("#templateBody").attr("data-changed", 0);
   }
 
   // interprete template function
   function addStep(feature, count, dist) {
-    if (!feature) {return;}
-    if (feature === "Mountain") {templateMountain.click();}
-    if (feature === "Hill") {templateHill.click();}
-    if (feature === "Pit") {templatePit.click();}
-    if (feature === "Range") {templateRange.click();}
-    if (feature === "Trough") {templateTrough.click();}
-    if (feature === "Strait") {templateStrait.click();}
-    if (feature === "Add") {templateAdd.click();}
-    if (feature === "Multiply") {templateMultiply.click();}
-    if (feature === "Smooth") {templateSmooth.click();}
+    if (!feature) return;
+    if (feature === "Mountain") templateMountain.click();
+    if (feature === "Hill") templateHill.click();
+    if (feature === "Pit") templatePit.click();
+    if (feature === "Range") templateRange.click();
+    if (feature === "Trough") templateTrough.click();
+    if (feature === "Strait") templateStrait.click();
+    if (feature === "Add") templateAdd.click();
+    if (feature === "Multiply") templateMultiply.click();
+    if (feature === "Smooth") templateSmooth.click();
     if (count) {$("#templateBody div:last-child .templateElCount").val(count);}
-    if (dist) {
+    if (dist !== undefined) {
       if (dist !== "land") {
-        var option = '<option value="' + dist + '">' + dist + '</option>';
+        const option = '<option value="' + dist + '">' + dist + '</option>';
         $("#templateBody div:last-child .templateElDist").append(option);
       }
       $("#templateBody div:last-child .templateElDist").val(dist);
@@ -7056,18 +7278,18 @@ function fantasyMap() {
 
   // Execute custom template
   $("#templateRun").on("click", function() {
-    if (customization !== 1) {return;}
+    if (customization !== 1) return;
     var steps = $("#templateBody > div").length;
-    if (steps) {cells.map(function(i) {i.height = 0;});}
-    for (var step=1; step <= steps; step++) {
-      var element = $("#templateBody div:nth-child(" + step + ")");
-      var type = element.attr("data-type");
+    if (!steps) return;
+    heights = new Uint8Array(heights.length); // clean all heights
+    for (let step=1; step <= steps; step++) {
+      const type = $("#templateBody div:nth-child(" + step + ")").attr("data-type");
       if (type === "Mountain") {addMountain(); continue;}
-      var count = $("#templateBody div:nth-child(" + step + ") .templateElCount").val();
-      var dist = $("#templateBody div:nth-child(" + step + ") .templateElDist").val();
+      let count = $("#templateBody div:nth-child(" + step + ") .templateElCount").val();
+      const dist = $("#templateBody div:nth-child(" + step + ") .templateElDist").val();
       if (count) {
         if (count[0] !== "-" && count.includes("-")) {
-          var lim = count.split("-");
+          const lim = count.split("-");
           count = Math.floor(Math.random() * (+lim[1] - +lim[0] + 1) + +lim[0]);
         } else {
           count = +count; // parse string
@@ -7082,14 +7304,15 @@ function fantasyMap() {
       if (type === "Multiply") {modifyHeights(dist, 0, count);}
       if (type === "Smooth") {smoothHeights(count);}
     }
-    if (steps) {mockHeightmap(); updateHistory();}
+    mockHeightmap();
+    updateHistory();
   });
 
   // Save custom template as text file
   $("#templateSave").on("click", function() {
     var steps = $("#templateBody > div").length;
     var stepsData = "";
-    for (var step=1; step <= steps; step++) {
+    for (let step=1; step <= steps; step++) {
       var element = $("#templateBody div:nth-child(" + step + ")");
       var type = element.attr("data-type");
       var count = $("#templateBody div:nth-child(" + step + ") .templateElCount").val();
@@ -7121,7 +7344,7 @@ function fantasyMap() {
         $("#templateBody").attr("data-changed", 1);
         $("#templateSelect").attr("data-prev", "templateCustom").val("templateCustom");
       }
-      for (var i=0; i < data.length; i++) {
+      for (let i=0; i < data.length; i++) {
         var line = data[i].split(" ");
         addStep(line[0], line[1], line[2]);
       }
@@ -7138,9 +7361,9 @@ function fantasyMap() {
     restoreDefaultEvents();
     var div = d3.select("#colorScheme");
     if (div.selectAll("*").size() === 0) {
-      for (var i = 0; i <= 100; i++) {
+      for (let i = 0; i <= 100; i++) {
         var width = i < 20 || i > 70 ? "1px" : "3px";
-        if (i === 0) {width = "4px";}
+        if (i === 0) width = "4px";
         var clr = color(1-i/100);
         var style = "background-color: " + clr + "; width: " + width;
         div.append("div").attr("data-color", i/100).attr("style", style);
@@ -7304,7 +7527,7 @@ function fantasyMap() {
       heights.push(normalized);
       var rgb = color(1 - normalized);
       var hex = toHEX(rgb);
-      cells[d].height = normalized;
+      cells[d].height = normalized * 100;
       landmass.append("path").attr("d", "M" + i.join("L") + "Z").attr("data-i", d).attr("fill", hex).attr("stroke", hex);
     });
     heights.sort(function(a, b) {return a - b;});
@@ -7388,7 +7611,7 @@ function fantasyMap() {
     var totalArea = 0, totalBurgs = 0, unit, areaConv;
     if (areaUnit.value === "square") {unit = " " + distanceUnit.value + "²";} else {unit = " " + areaUnit.value;}
     var totalPopulation = 0;
-    for (var s = 0; s < states.length; s++) {
+    for (let s = 0; s < states.length; s++) {
       $("#countriesBody").append('<div class="states" id="state' + s + '"></div>');
       var el = $("#countriesBody div:last-child");
       var burgsCount = states[s].burgs;
@@ -7427,8 +7650,8 @@ function fantasyMap() {
       }
       el.append('<span onmouseover="tip(\'Cells count\')" class="icon-check-empty"></span>');
       el.append('<div onmouseover="tip(\'Cells count\')" class="stateCells">' + states[s].cells + '</div>');
-      el.append('<span onmouseover="tip(\'Burgs count. Click to show a full list\')" style="padding-right: 1px" class="stateBIcon icon-dot-circled"></span>');
-      el.append('<div onmouseover="tip(\'Burgs count. Click to show a full list\')" class="stateBurgs">' + burgsCount + '</div>');
+      el.append('<span onmouseover="tip(\'Burgs count. Click to see a full list\')" style="padding-right: 1px" class="stateBIcon icon-dot-circled"></span>');
+      el.append('<div onmouseover="tip(\'Burgs count. Click to see a full list\')" class="stateBurgs">' + burgsCount + '</div>');
       el.append('<span onmouseover="tip(\'Country area: ' + (area + unit) + '\')" style="padding-right: 4px" class="icon-map-o"></span>');
       el.append('<div onmouseover="tip(\'Country area: ' + (area + unit) + '\')" class="stateArea">' + areaConv + '</div>');
       el.append('<span onmouseover="tip(' + title + ')" class="icon-male"></span>');
@@ -7536,7 +7759,7 @@ function fantasyMap() {
       var index = getIndex(point);
       var x = rn(point[0], 2), y = rn(point[1], 2);
 
-      if (cells[index].height < 0.2) {
+      if (cells[index].height < 20) {
         tip("Cannot place capital on the water! Select a land cell");
         return;
       }
@@ -7578,7 +7801,7 @@ function fantasyMap() {
       }
       cells[index].region = state;
       cells[index].neighbors.map(function(n) {
-        if (cells[n].height < 0.2) {return;}
+        if (cells[n].height < 20) {return;}
         if (cells[n].manor !== undefined) {return;}
         cells[n].region = state;
       });
@@ -7656,7 +7879,7 @@ function fantasyMap() {
       editCountries();
     }
 
-    $("#countriesNeutral").on("change", regenerateCountries);
+    $("#countriesNeutral, #countriesNeutralNumber").on("change", regenerateCountries);
   }
 
   // burgs list + editor
@@ -7671,7 +7894,7 @@ function fantasyMap() {
     burgs.map(function(b) {
       $("#burgsBody").append('<div class="states" id="burgs' + b.i + '"></div>');
       var el = $("#burgsBody div:last-child");
-      el.append('<span title="Click to enlange the burg" style="padding-right: 2px" class="enlange icon-globe"></span>');
+      el.append('<span title="Click to enlarge the burg" style="padding-right: 2px" class="enlarge icon-globe"></span>');
       el.append('<input title="Burg name. Click and type to change" class="burgName" value="' + b.name + '" autocorrect="off" spellcheck="false"/>');
       el.append('<span title="Burg culture" class="icon-book" style="padding-right: 2px"></span>');
       el.append('<div title="Burg culture" class="burgCulture">' + cultures[b.culture].name + '</div>');
@@ -7707,7 +7930,7 @@ function fantasyMap() {
     burgsFooterCulture.innerHTML = $("#burgsBody div:first-child .burgCulture").text();
     var avPop = rn(d3.mean(populationArray), -1);
     burgsFooterPopulation.value = avPop;
-    $(".enlange").click(function() {
+    $(".enlarge").click(function() {
       var b = +(this.parentNode.id).slice(5);
       var l = labels.select("[data-id='" + b + "']");
       var x = +l.attr("x"), y = +l.attr("y");
@@ -7886,6 +8109,7 @@ function fantasyMap() {
       urbPops[c] = urbPops[c] ? urbPops[c] + m.population : m.population;
     });
 
+    if (!nameBases[0]) applyDefaultNamesData();
     for (let c = 0; c < cultures.length; c++) {
       $("#culturesBody").append('<div class="states cultures" id="culture' + c + '"></div>');
       if (cellsC[c] === undefined) {
@@ -7901,7 +8125,9 @@ function fantasyMap() {
       const population = (urban + rural) * 1000;
       const populationConv = si(population);
       const title = '\'Total population: '+populationConv+'; Rural population: '+rural+'K; Urban population: '+urban+'K\'';
-      const base = nameBases[cultures[c].base].name;
+      const b = cultures[c].base;
+      if (b >= nameBases.length) b = 0;
+      const base = nameBases[b].name;
       const el = $("#culturesBody div:last-child");
       el.append('<input onmouseover="tip(\'Culture color. Click to change\')" class="stateColor" type="color" value="' + cultures[c].color + '"/>');
       el.append('<input onmouseover="tip(\'Culture name. Click and type to change\')" class="cultureName" value="' + cultures[c].name + '" autocorrect="off" spellcheck="false"/>');
@@ -8205,11 +8431,7 @@ function fantasyMap() {
     $("#namesbaseEditor").dialog({
       title: "Namesbase Editor",
       minHeight: "auto", minWidth: Math.min(svgWidth, 400),
-      position: {my: "center", at: "center", of: "svg"},
-      close: function() {
-        localStorage.setItem("nameBase", JSON.stringify(nameBase));
-        localStorage.setItem("nameBases", JSON.stringify(nameBases));
-      }
+      position: {my: "center", at: "center", of: "svg"}
     });
 
     if (modules.editNamesbase) return;
@@ -8316,8 +8538,6 @@ function fantasyMap() {
             document.getElementById("namesbaseTextarea").value = "";
             document.getElementById("namesbaseTextarea").setAttribute("data-base", 0);
             document.getElementById("namesbaseExamples").innerHTML === "";
-            localStorage.removeItem("nameBases");
-            localStorage.removeItem("nameBase");
             applyDefaultNamesData();
             const baseMax = nameBases.length - 1;
             cultures.forEach(function(c) {if (c.base > baseMax) c.base = baseMax;});
@@ -8439,7 +8659,7 @@ function fantasyMap() {
     labels.select("#countries").selectAll("text").remove();
     manors.map(function(m) {
       const cell = diagram.find(m.x, m.y).index;
-      if (cells[cell].height < 0.2) {
+      if (cells[cell].height < 20) {
         // remove manor in ocean
         m.region = "removed";
         m.cell = cell;
@@ -8451,7 +8671,7 @@ function fantasyMap() {
       }
     });
     cells.map(function(c) {
-      if (c.height < 0.2) {
+      if (c.height < 20) {
         // no longer a land cell
         delete c.region;
         delete c.culture;
@@ -8594,7 +8814,7 @@ function fantasyMap() {
       let change = [];
       let message = `Burgs will be renamed as below. Please confirm`;
       message += `<div class="overflow-div"><table class="overflow-table"><tr><th>Id</th><th>Current name</th><th>New Name</th></tr>`;
-      for (var i=0; i < data.length && i < manors.length; i++) {
+      for (let i=0; i < data.length && i < manors.length; i++) {
         const v = data[i];
         if (v === "" || v === undefined) {continue;}
         if (v === manors[i].name) {continue;}
@@ -8607,7 +8827,7 @@ function fantasyMap() {
         buttons: {
           Cancel: function() {$(this).dialog("close");},
           Confirm: function() {
-            for (var i=0; i < change.length; i++) {
+            for (let i=0; i < change.length; i++) {
               const id = change[i].i;
               manors[id].name = change[i].name;
               labels.select("[data-id='" + id + "']").text(change[i].name);
@@ -8711,134 +8931,164 @@ function fantasyMap() {
     icons.select("#town-anchors").attr("fill", "#ffffff").attr("stroke", "#3e3e4b").attr("stroke-width", 1.2).attr("size", 1);
   }
 
-  // Options handlers
-  $("input, select").on("input change", function() {
-    var id = this.id;
-    if (id === "hideLabels") {invokeActiveZooming();}
-    if (id === "styleElementSelect") {
-      const sel = this.value;
-      let el = viewbox.select("#"+sel);
-      if (sel == "ocean") el = oceanLayers.select("rect");
-      $("#styleInputs div").hide();
-      // opacity
-      $("#styleOpacity, #styleFilter").css("display", "block");
-      var opacity = el.attr("opacity") || 1;
-      styleOpacityInput.value = styleOpacityOutput.value = opacity;
-      // filter
-      if (sel == "ocean") el = oceanLayers;
-      styleFilterInput.value = el.attr("filter") || "";
-      if (sel === "rivers" || sel === "lakes" || sel === "landmass") {
-        $("#styleFill").css("display", "inline-block");
-        styleFillInput.value = styleFillOutput.value = el.attr("fill");
-      }
-      if (sel === "roads" || sel === "trails" || sel === "searoutes" || sel === "lakes" || sel === "stateBorders" || sel === "neutralBorders" || sel === "grid" || sel === "overlay" || sel === "coastline") {
-        $("#styleStroke").css("display", "inline-block");
-        styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke");
-        $("#styleStrokeWidth").css("display", "block");
-        var width = el.attr("stroke-width") || "";
-        styleStrokeWidthInput.value = styleStrokeWidthOutput.value = width;
-      }
-      if (sel === "roads" || sel === "trails" || sel === "searoutes" || sel === "stateBorders" || sel === "neutralBorders" || sel === "overlay") {
-        $("#styleStrokeDasharray, #styleStrokeLinecap").css("display", "block");
-        styleStrokeDasharrayInput.value = el.attr("stroke-dasharray") || "";
-        styleStrokeLinecapInput.value = el.attr("stroke-linecap") || "inherit";
-      }
-      if (sel === "terrs") {$("#styleScheme").css("display", "block");}
-      if (sel === "heightmap") {$("#styleScheme").css("display", "block");}
-      if (sel === "labels") {
-        $("#styleFill, #styleFontSize").css("display", "inline-block");
-        styleFillInput.value = styleFillOutput.value = el.select("g").attr("fill");
-      }
-      if (sel === "overlay") {
-        $("#styleOverlay").css("display", "block");
-      }
-      if (sel === "ocean") {
-        $("#styleOcean").css("display", "block");
-        styleOceanBack.value = styleOceanBackOutput.value = svg.style("background-color");
-        styleOceanFore.value = styleOceanForeOutput.value = oceanLayers.select("rect").attr("fill");
-      }
-      return;
-    }
-    if (id === "styleFillInput") {
-      styleFillOutput.value = this.value;
-      var el = svg.select("#"+styleElementSelect.value);
-      if (styleElementSelect.value !== "labels") {
-          el.attr('fill', this.value);
-      } else {
-        el.selectAll("g").attr('fill', this.value);
-      }
-      return;
-    }
-    if (id === "styleStrokeInput") {
-      styleStrokeOutput.value = this.value;
-      var el = svg.select("#"+styleElementSelect.value);
-      el.attr('stroke', this.value);
-      return;
-    }
-    if (id === "styleStrokeWidthInput") {
-      styleStrokeWidthOutput.value = this.value;
-      var sel = styleElementSelect.value;
-      svg.select("#"+sel).attr('stroke-width', +this.value);
-      return;
-    }
-    if (id === "styleStrokeDasharrayInput") {
-      var sel = styleElementSelect.value;
-      svg.select("#"+sel).attr('stroke-dasharray', this.value);
-      return;
-    }
-    if (id === "styleStrokeLinecapInput") {
-      var sel = styleElementSelect.value;
-      svg.select("#"+sel).attr('stroke-linecap', this.value);
-      return;
-    }
-    if (id === "styleOpacityInput") {
-      styleOpacityOutput.value = this.value;
-      var sel = styleElementSelect.value;
-      svg.select("#"+sel).attr('opacity', this.value);
-      return;
-    }
-    if (id === "styleFilterInput") {
-      let sel = styleElementSelect.value;
-      if (sel == "ocean") sel = "oceanLayers";
-      const el = svg.select("#"+sel);
-      el.attr('filter', this.value);
-      zoom.scaleBy(svg, 1.00001); // enforce browser re-draw
-      return;
-    }
-    if (id === "styleSchemeInput") {
-      terrs.selectAll("path").remove();
-      toggleHeight();
-      return;
-    }
-    if (id === "styleOverlayType") {
-      overlay.selectAll("*").remove();
-      if (!$("#toggleOverlay").hasClass("buttonoff")) {
-        toggleOverlay();
-      }
-    }
-    if (id === "styleOverlaySize") {
-      styleOverlaySizeOutput.value = this.value;
-      overlay.selectAll("*").remove();
-      if (!$("#toggleOverlay").hasClass("buttonoff")) {
-        toggleOverlay();
-      }
-    }
-    if (id === "styleOceanBack") {
-      svg.style("background-color", this.value);
-      styleOceanBackOutput.value = this.value;
-    }
-    if (id === "styleOceanFore") {
-      oceanLayers.select("rect").attr("fill", this.value);
-      styleOceanForeOutput.value = this.value;
-    }
-    if (id === "styleOceanPattern") {
-      oceanPattern.attr("opacity", +this.checked);
-    }
-    if (id === "styleOceanLayers") {
-      const display = this.checked ? "block" : "none";
-      oceanLayers.selectAll("path").attr("display", display);
+  // Style options
+  $("#styleElementSelect").on("change", function() {
+    const sel = this.value;
+    let el = viewbox.select("#"+sel);
+    if (sel == "ocean") el = oceanLayers.select("rect");
+    $("#styleInputs > div").hide();
+
+    // opacity
+    $("#styleOpacity, #styleFilter").css("display", "block");
+    var opacity = el.attr("opacity") || 1;
+    styleOpacityInput.value = styleOpacityOutput.value = opacity;
+
+    // filter
+    if (sel == "ocean") el = oceanLayers;
+    styleFilterInput.value = el.attr("filter") || "";
+    if (sel === "rivers" || sel === "lakes" || sel === "landmass") {
+      $("#styleFill").css("display", "inline-block");
+      styleFillInput.value = styleFillOutput.value = el.attr("fill");
     }
 
+    if (sel === "roads" || sel === "trails" || sel === "searoutes" || sel === "lakes" || sel === "stateBorders" || sel === "neutralBorders" || sel === "grid" || sel === "overlay" || sel === "coastline") {
+      $("#styleStroke").css("display", "inline-block");
+      styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke");
+      $("#styleStrokeWidth").css("display", "block");
+      var width = el.attr("stroke-width") || "";
+      styleStrokeWidthInput.value = styleStrokeWidthOutput.value = width;
+    }
+
+    if (sel === "roads" || sel === "trails" || sel === "searoutes" || sel === "stateBorders" || sel === "neutralBorders" || sel === "overlay") {
+      $("#styleStrokeDasharray, #styleStrokeLinecap").css("display", "block");
+      styleStrokeDasharrayInput.value = el.attr("stroke-dasharray") || "";
+      styleStrokeLinecapInput.value = el.attr("stroke-linecap") || "inherit";
+    }
+
+    if (sel === "terrs") $("#styleScheme").css("display", "block");
+    if (sel === "heightmap") $("#styleScheme").css("display", "block");
+    if (sel === "overlay") $("#styleOverlay").css("display", "block");
+
+    if (sel === "labels") {
+      $("#styleFill, #styleFontSize").css("display", "inline-block");
+      styleFillInput.value = styleFillOutput.value = el.select("g").attr("fill") || "#3e3e4b";
+      $("#styleLabelGroups").css("display", "inline-block");
+      updateLabelGroups();
+    }
+
+    if (sel === "ocean") {
+      $("#styleOcean").css("display", "block");
+      styleOceanBack.value = styleOceanBackOutput.value = svg.style("background-color");
+      styleOceanFore.value = styleOceanForeOutput.value = oceanLayers.select("rect").attr("fill");
+    }
+  });
+
+  // update Label Groups displayed on Style tab
+  function updateLabelGroups() {
+    if (styleElementSelect.value !== "labels") return;
+    const cont = d3.select("#styleLabelGroupItems");
+    cont.selectAll("button").remove();
+    labels.selectAll("g").each(function() {
+      const el = d3.select(this);
+      const id = el.attr("id");
+      const name = id.charAt(0).toUpperCase() + id.substr(1);
+      const state = el.classed("hidden");
+      if (id === "burgLabels") return;
+      cont.append("button").attr("id", id).text(name).classed("buttonoff", state).on("click", function() {
+        // toggle label group on click
+        if (hideLabels.checked) hideLabels.click();
+        const el = d3.select("#"+this.id);
+        const state = !el.classed("hidden");
+        el.classed("hidden", state);
+        d3.select(this).classed("buttonoff", state);
+      });
+    });
+  }
+
+  $("#styleFillInput").on("input", function() {
+    styleFillOutput.value = this.value;
+    var el = svg.select("#"+styleElementSelect.value);
+    if (styleElementSelect.value !== "labels") {
+      el.attr('fill', this.value);
+    } else {
+      el.selectAll("g").attr('fill', this.value);
+    }
+  });
+
+  $("#styleStrokeInput").on("input", function() {
+    styleStrokeOutput.value = this.value;
+    const el = svg.select("#"+styleElementSelect.value);
+    el.attr('stroke', this.value);
+  });
+
+  $("#styleStrokeWidthInput").on("input", function() {
+    styleStrokeWidthOutput.value = this.value;
+    const el = svg.select("#"+styleElementSelect.value);
+    el.attr('stroke-width', +this.value);
+  });
+
+  $("#styleStrokeDasharrayInput").on("input", function() {
+    const sel = styleElementSelect.value;
+    svg.select("#"+sel).attr('stroke-dasharray', this.value);
+  });
+
+  $("#styleStrokeLinecapInput").on("change", function() {
+    const sel = styleElementSelect.value;
+    svg.select("#"+sel).attr('stroke-linecap', this.value);
+  });
+
+  $("#styleOpacityInput").on("input", function() {
+    styleOpacityOutput.value = this.value;
+    const sel = styleElementSelect.value;
+    svg.select("#"+sel).attr('opacity', this.value);
+
+  });
+
+  $("#styleFilterInput").on("change", function() {
+    let sel = styleElementSelect.value;
+    if (sel == "ocean") sel = "oceanLayers";
+    const el = svg.select("#"+sel);
+    el.attr('filter', this.value);
+    zoom.scaleBy(svg, 1.00001); // enforce browser re-draw
+  });
+
+  $("#styleSchemeInput").on("change", function() {
+    terrs.selectAll("path").remove();
+    toggleHeight();
+  });
+
+  $("#styleOverlayType").on("change", function() {
+    overlay.selectAll("*").remove();
+    if (!$("#toggleOverlay").hasClass("buttonoff")) toggleOverlay();
+  });
+
+  $("#styleOverlaySize").on("input", function() {
+    styleOverlaySizeOutput.value = this.value;
+    overlay.selectAll("*").remove();
+    if (!$("#toggleOverlay").hasClass("buttonoff")) toggleOverlay();
+  });
+
+  $("#styleOceanBack").on("input", function() {
+    svg.style("background-color", this.value);
+    styleOceanBackOutput.value = this.value;
+  });
+
+  $("#styleOceanFore").on("input", function() {
+    oceanLayers.select("rect").attr("fill", this.value);
+    styleOceanForeOutput.value = this.value;
+  });
+
+  $("#styleOceanPattern").on("click", function() {oceanPattern.attr("opacity", +this.checked);});
+
+  $("#styleOceanLayers").on("click", function() {
+    const display = this.checked ? "block" : "none";
+    oceanLayers.selectAll("path").attr("display", display);
+  });
+
+  // Other Options handlers
+  $("input, select").on("input change", function() {
+    var id = this.id;
+    if (id === "hideLabels") invokeActiveZooming();
     if (id === "mapWidthInput" || id === "mapHeightInput") {
       changeMapSize();
       autoResize = false;
@@ -8869,8 +9119,9 @@ function fantasyMap() {
     if (id === "culturesInput") {culturesOutput.value = this.value; localStorage.setItem("cultures", this.value);}
     if (id === "precInput") {precOutput.value = +precInput.value; localStorage.setItem("prec", this.value);}
     if (id === "swampinessInput") {swampinessOutput.value = this.value; localStorage.setItem("swampiness", this.value);}
-    if (id === "outlineLayersInput") {localStorage.setItem("outlineLayers", this.value);}
-    if (id === "pngResolutionInput") {localStorage.setItem("pngResolution", this.value);}
+    if (id === "outlineLayersInput") localStorage.setItem("outlineLayers", this.value);
+    if (id === "transparencyInput") changeDialogsTransparency(this.value);
+    if (id === "pngResolutionInput") localStorage.setItem("pngResolution", this.value);
     if (id === "zoomExtentMin" || id === "zoomExtentMax") {
       zoom.scaleExtent([+zoomExtentMin.value, +zoomExtentMax.value]);
       zoom.scaleTo(svg, +this.value);
@@ -8983,7 +9234,7 @@ function fantasyMap() {
   $("#optionsReset").click(restoreDefaultOptions);
 
   $("#rescaler").change(function() {
-      var change = rn((+this.value - 5) / 10, 2);
+      const change = rn((+this.value - 5), 2);
       modifyHeights("all", change, 1);
       updateHeightmap();
       updateHistory();
@@ -9034,12 +9285,24 @@ function fantasyMap() {
     $(".tabcontent").hide();
     $(".tab > button").removeClass("active");
     $(this).addClass("active");
-    var id = this.id;
+    const id = this.id;
     if (id === "layoutTab") {$("#layoutContent").show();}
     if (id === "styleTab") {$("#styleContent").show();}
     if (id === "optionsTab") {$("#optionsContent").show();}
     if (id === "customizeTab") {$("#customizeContent").show();}
     if (id === "aboutTab") {$("#aboutContent").show();}
+  });
+
+  // Generate map from provided seed
+  $("#optionsSeedGenerate").on("click", function() {
+    if (optionsSeed.value == seed) return;
+    seed = optionsSeed.value;
+    console.log(" seed: " + seed);
+    Math.seedrandom(seed);
+    exitCustomization();
+    undraw();
+    resetZoom(1000);
+    generate();
   });
 
   // Pull request from @evyatron

@@ -293,7 +293,6 @@ text.drag {
 	font-size: smaller;
 	font-family: monospace;
 	position: absolute;
-	background-color: rgba(168, 130, 147, 0.85);
 	border: solid 1px #5e4fa2;
 }
 
@@ -452,7 +451,7 @@ button.active {
 }
 
 .tabcontent button {
-	background-color: #997c89;
+	background-color: #916e7f;
 	font-family: monospace;
 	border: none;
 	padding: 5px 8px;
@@ -471,9 +470,13 @@ button.active {
 	margin: 0;
 }
 
+fieldset {
+  border: 1px solid #5d4651;
+}
+
 .tabcontent li {
 	list-style-type: none;
-	background-color: #997c89;
+	background-color: #916e7f;
 	cursor: pointer;
 	padding: 5px 8px;
 	margin: 4px;
@@ -516,7 +519,7 @@ p {
 }
 
 #customizeOptions {
-  margin: 2px 0 6px 0;
+  margin: 2px 0;
 }
 
 #tooltip {
@@ -524,13 +527,12 @@ p {
 	display: none;
 	text-align: center;
 	top: calc(98vh - (10px + 0.5vw));
-	width: 90%;
-  left: 5%;
-  cursor: default;
-  text-shadow: 1px 1px 3px #0e0e0e;
-  color: #ffffff;
-  font-size: calc(10px + 0.5vw);
-  pointer-events: none;
+	width: 100%;
+	cursor: default;
+	text-shadow: 1px 1px 2px #1d0e0f;
+	color: #ffffff;
+	font-size: calc(10px + 0.5vw);
+	pointer-events: none;
 }
 
 #optionsContent table td:nth-of-type(1) {
@@ -538,8 +540,6 @@ p {
 }
 
 #optionsContent table td:nth-of-type(2) {
-	text-decoration: underline dotted gray;
-	cursor: help;
 	width: 126px;
 }
 
@@ -602,8 +602,9 @@ body button.noicon {
 	background-image: linear-gradient(to right, #ffffff 0%, #fafafa 51%, #ebebeb 100%);
 	margin: 1px 1px;
 	width: 226px;
-	padding: 1px 2px;
-	font-size: 9px;
+	padding: 0px 2px;
+	height: 12px;
+	font-size: 10px;
 }
 
 #templateBody>div:hover {
@@ -632,11 +633,10 @@ body button.noicon {
 }
 
 #templateBody input {
-	height: 4px;
-	width: 45px;
-	font-family: monospace;
-	height: 4px;
-	font-family: monospace;
+  width: 40px;
+  height: 10px;
+  border: none;
+  font-family: monospace;
 }
 
 #templateBody select {
@@ -669,9 +669,9 @@ body button.noicon {
 	border-right-color: #5e4fa2;
 }
 
-#styleInputs div {
+#styleInputs > div {
 	display: none;
-	line-height: 6px;
+	line-height: 8px;
 }
 
 #styleInputs #styleOcean,
@@ -680,7 +680,7 @@ body button.noicon {
 	display: block;
 }
 
-#styleInputs button {
+#styleInputs .whiteButton {
 	padding: 0 6px;
 	margin: 0 2px;
 	border: 1px #827c7f solid;
@@ -692,11 +692,21 @@ body button.noicon {
 	font-size: xx-small;
 }
 
+#styleLabelGroups {
+  margin-top: 6px;
+  display: block;
+}
+
+#styleLabelGroups button {
+  display: inline-block;
+  margin: 5px 3px 0 3px;
+  padding: 2px 6px;
+}
+
 .pureInput {
 	display: inline-block;
 	width: 50px;
 	height: 10px;
-	font-size: small;
 	font-size: smaller;
 	font-family: monospace;
 }
@@ -749,15 +759,6 @@ body button.noicon {
 	stroke: #da3126;
 }
 
-body .ui-dialog {
-	padding: 1px;
-	font-size: 12px;
-}
-
-body .ui-dialog-titlebar {
-	font-size: 14px;
-}
-
 .ui-dialog input {
 	height: 14px;
 }
@@ -771,7 +772,7 @@ body .ui-dialog-titlebar {
 .ui-dialog input[type="range"] {
 	outline: none;
 	height: 2px;
-	background: #e9e9e9;
+	background: #d4d4d4;
 	top: -4px;
 	position: relative;
 	appearance: none;
@@ -795,6 +796,12 @@ body .ui-dialog-titlebar {
 	height: 10px;
 	background: #e9e9e9;
 	border: 1px solid #9b9b9b;
+	cursor: pointer;
+}
+
+.ui-dialog input[type="number"] {
+	width: 28px;
+	height: 12px;
 	cursor: pointer;
 }
 
@@ -891,7 +898,7 @@ div.slider .ui-slider-handle {
 
 div.states {
 	border: 1px solid #d4d4d4;
-	background-image: linear-gradient(to right, #fcfcfc 0%, #f2f2f2 51%, #dedede 100%);
+	background-image: linear-gradient(to right, #fafafa80 0%, #f0f0f080 50%, #c8c8c880 100%);
 	margin: 1px 0;
 	padding: 0 2px;
 	font-size: 10px;
@@ -899,7 +906,7 @@ div.states {
 
 div.states:hover {
 	border: 1px solid #c4c4c4;
-	background-image: linear-gradient(to right, #dedede 100%, #f2f2f2 51%, #fcfcfc 0%);
+	background-image: linear-gradient(to right, #dedede 100%, #f2f2f2 50%, #fcfcfc 0%);
 }
 
 div.states * {
