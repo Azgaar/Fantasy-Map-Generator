@@ -205,7 +205,7 @@ function fantasyMap() {
       <li>Dialogs style changes, optional transparency</li>
       <li>Ability to toggle Label groups separately</li>
       <li>Bug fixes</li>
-      <br><i>See <a href='' target='_blank'>a dedecated post</a> for the details.
+      <br><i>See <a href='https://www.reddit.com/r/FantasyMapGenerator/comments/9b2v2u/update_new_version_is_published_v059b' target='_blank'>a dedicated post</a> for the details.
       Please report bugs <a href='https://github.com/Azgaar/Fantasy-Map-Generator/issues' target='_blank'>here</a>.
       Join our <a href='https://www.reddit.com/r/FantasyMapGenerator/' target='_blank'>Reddit community</a>
       to share created maps, discuss the Generator, ask questions and propose new features.</i>`;
@@ -3404,6 +3404,7 @@ function fantasyMap() {
     // open in MFCG
     $("#burgSeeInMFCG").click(function() {
       const id = +elSelected.attr("data-id");
+      const name = manors[id].name;
       const cell = manors[id].cell;
       const pop = rn(manors[id].population);
       const size = pop > 65 ? 65 : pop < 6 ? 6 : pop;
@@ -3414,7 +3415,7 @@ function fantasyMap() {
       const sec = pop > 40 ? 1 : Math.random() < pop / 100 ? 1 : 0;
       const thr = sec && Math.random() < 0.8 ? 1 : 0;
       const url = "http://fantasycities.watabou.ru/";
-      let params = `?size=${size}&seed=${s}&hub=${hub}&random=0&continuous=0`
+      let params = `?name=${name}&size=${size}&seed=${s}&hub=${hub}&random=0&continuous=0`
       params += `&river=${river}&coast=${coast}&citadel=${id&1}&plaza=${sec}&temple=${thr}&walls=${sec}&shantytown=${sec}`;
       const win = window.open(url+params, '_blank');
       win.focus();
