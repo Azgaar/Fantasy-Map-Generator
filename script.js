@@ -1887,8 +1887,8 @@ function fantasyMap() {
       depression = 0;
       for (let i = 0; i < land.length; i++) {
         if (land[i].ctype === 99) continue;
-        const heights = land[i].neighbors.map(function(n) {return cells[n].height});
-        const minHigh = d3.min(heights);
+        const nHeights = land[i].neighbors.map(function(n) {return cells[n].height});
+        const minHigh = d3.min(nHeights);
         if (land[i].height <= minHigh) {
           depression++;
           land[i].pit = land[i].pit ? land[i].pit + 1 : 1;
@@ -4714,8 +4714,8 @@ function fantasyMap() {
         let height = i.height;
         if (height < 20 && !i.lake) return;
         if (i.lake) {
-          const heights = i.neighbors.map(function(e) {if (cells[e].height >= 20) return cells[e].height;})
-          const mean = d3.mean(heights);
+          const nHeights = i.neighbors.map(function(e) {if (cells[e].height >= 20) return cells[e].height;})
+          const mean = d3.mean(nHeights);
           if (!mean) return;
           height = Math.trunc(mean);
           if (height < 20 || isNaN(height)) height = 20;
@@ -5215,9 +5215,9 @@ function fantasyMap() {
         cell.river = river;
         var x = cell.data[0], y = cell.data[1];
         dataRiver.push({x, y, cell:index});
-        var heights = [];
-        cell.neighbors.forEach(function(e) {heights.push(cells[e].height);});
-        var minId = heights.indexOf(d3.min(heights));
+        var nHeights = [];
+        cell.neighbors.forEach(function(e) {nHeights.push(cells[e].height);});
+        var minId = nHeights.indexOf(d3.min(nHeights));
         var min = cell.neighbors[minId];
         var tx = cells[min].data[0], ty = cells[min].data[1];
         if (cells[min].height < 20) {
@@ -6161,16 +6161,7 @@ function fantasyMap() {
     // update data
     newPoints = [], riversData = [], queue = [], elSelected = "";
     points = JSON.parse(data[1]);
-    if (data[10]) {heights = new Uint8Array(data[10].split(","));}
-    else {
-      heights = new Uint8Array(points.length);
-      for (let i=0; i < points.length; i++) {
-        const cell = diagram.find(points[i][0], points[i][1]).index;
-        heights[i] = cells[cell].height;
-      }
-    }
     cells = JSON.parse(data[2]);
-
     manors = JSON.parse(data[3]);
     if (data[7]) cultures = JSON.parse(data[7]);
     if (data[7] === undefined) generateCultures();
@@ -6182,39 +6173,49 @@ function fantasyMap() {
       if (b === undefined) c.base = 0;
       if (!nameBase[b] || !nameBases[b]) c.base = 0;
     });
+    const graphSizeAdj = 90 / Math.sqrt(cells.length, 2); // adjust to different graphSize
 
     // cells validations
-    cells.forEach(function(c) {
+    cells.forEach(function(c, d) {
       // collect points
       newPoints.push(c.data);
 
-      // update old 0-1 height range to new 0-100 range
-      if (c.height > 1) return;
-      if (c.height === 1 && c.region === undefined && c.flux === undefined) return;
-      c.height = Math.trunc(c.height * 100);
+      // update old 0-1 height range to a new 0-100 range
+      if (c.height < 1) c.height = Math.trunc(c.height * 100);
+      if (c.height === 1 && c.flux !== undefined) c.height = 100; 
 
       // check if there unavailable cultures
       if (c.culture > cultures.length - 1) cultures.push({name:"AUTO_"+c.culture, color:"#ff0000", base:0});
+      
+      // calculate areas / population for old maps
+      if (c.height >= 20) {
+        if (!polygons[d] || !polygons[d].length) return;
+        if (c.area === undefined || isNaN(c.area)) {
+          const area = d3.polygonArea(polygons[d]);
+          c.area = rn(Math.abs(area), 2);          
+        }
+        if (c.pop === undefined || isNaN(c.pop)) {
+          let population = 0;
+          const elevationFactor = Math.pow((100 - c.height) / 100, 3);
+          population = elevationFactor * c.area * graphSizeAdj;
+          if (c.region === "neutral") population *= 0.5;
+          c.pop = rn(population, 1);
+        }
+      }
     });
 
     land = $.grep(cells, function(e) {return (e.height >= 20);});
     calculateVoronoi(newPoints);
 
-    // calculate areas / population for old maps
-    const graphSizeAdj = 90 / Math.sqrt(cells.length, 2); // adjust to different graphSize
-    land.forEach(function(i) {
-        const p = i.index;
-        if (!polygons[p] || !polygons[p].length) return;
-        const area = d3.polygonArea(polygons[p]);
-        i.area = rn(Math.abs(area), 2);
-        if (i.pop === undefined) {
-          let population = 0;
-          const elevationFactor = Math.pow((100 - i.height) / 100, 3);
-          population = elevationFactor * i.area * graphSizeAdj;
-          if (i.region === "neutral") population *= 0.5;
-          i.pop = rn(population, 1);
-        }
-    });
+    // get heights Uint8Array
+    if (data[10]) {heights = new Uint8Array(data[10].split(","));}
+    else {
+      heights = new Uint8Array(points.length);
+      for (let i=0; i < points.length; i++) {
+        const cell = diagram.find(points[i][0], points[i][1]).index;
+        heights[i] = cells[cell].height;
+      }
+    }
 
     // restore Heightmap customization mode
     if (customization === 1) {
