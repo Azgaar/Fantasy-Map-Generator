@@ -5734,11 +5734,13 @@ function fantasyMap() {
   // downalod map as SVG or PNG file
   function saveAsImage(type) {
     console.time("saveAsImage");
-    // get all used fonts
+    const webSafe = ["Georgia", "Times+New+Roman", "Comic+Sans+MS", "Lucida+Sans+Unicode", "Courier+New", "Verdana", "Arial", "Impact"];
+    // get non-standard fonts used for labels to fetch them from web
     const fontsInUse = []; // to store fonts currently in use
     labels.selectAll("g").each(function(d) {
       const font = d3.select(this).attr("data-font");
       if (!font) return;
+      if (webSafe.indexOf(font) !== -1) return; // do not fetch web-safe fonts
       if (fontsInUse.indexOf(font) === -1) fontsInUse.push(font);
     });
     const fontsToLoad = "https://fonts.googleapis.com/css?family=" + fontsInUse.join("|");
