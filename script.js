@@ -6166,12 +6166,20 @@ function fantasyMap() {
     if (data[7]) cultures = JSON.parse(data[7]);
     if (data[7] === undefined) generateCultures();
 
+    // place random point
+    function placePoint() {
+      const x = Math.floor(Math.random() * graphWidth * 0.8 + graphWidth * 0.1);
+      const y = Math.floor(Math.random() * graphHeight * 0.8 + graphHeight * 0.1);
+      return [x, y];
+    }
+    
     // ensure each culure has a valid namesbase assigned, if not assign first base
     if (!nameBase[0]) applyDefaultNamesData();
     cultures.forEach(function(c) {
       const b = c.base;
       if (b === undefined) c.base = 0;
       if (!nameBase[b] || !nameBases[b]) c.base = 0;
+      if (c.center === undefined) c.center = placePoint();
     });
     const graphSizeAdj = 90 / Math.sqrt(cells.length, 2); // adjust to different graphSize
 
@@ -6182,18 +6190,23 @@ function fantasyMap() {
 
       // update old 0-1 height range to a new 0-100 range
       if (c.height < 1) c.height = Math.trunc(c.height * 100);
-      if (c.height === 1 && c.flux !== undefined) c.height = 100; 
+      if (c.height === 1 && c.region !== undefined && c.flux !== undefined) c.height = 100;
 
-      // check if there unavailable cultures
-      if (c.culture > cultures.length - 1) cultures.push({name:"AUTO_"+c.culture, color:"#ff0000", base:0});
-      
-      // calculate areas / population for old maps
+      // check if there are any unavailable cultures
+      if (c.culture > cultures.length - 1) {
+        const center = [c.data[0], c.data[1]];
+        const cult = {name:"AUTO_"+c.culture, color:"#ff0000", base:0, center};
+        cultures.push(cult);
+      }
+
       if (c.height >= 20) {
         if (!polygons[d] || !polygons[d].length) return;
+        // calculate area
         if (c.area === undefined || isNaN(c.area)) {
           const area = d3.polygonArea(polygons[d]);
           c.area = rn(Math.abs(area), 2);          
         }
+        // calculate population
         if (c.pop === undefined || isNaN(c.pop)) {
           let population = 0;
           const elevationFactor = Math.pow((100 - c.height) / 100, 3);
@@ -6201,6 +6214,8 @@ function fantasyMap() {
           if (c.region === "neutral") population *= 0.5;
           c.pop = rn(population, 1);
         }
+        // if culture is undefined, set to 0
+        if (c.culture === undefined || isNaN(c.culture)) c.culture = 0;
       }
     });
 
