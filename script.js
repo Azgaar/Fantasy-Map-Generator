@@ -75,7 +75,7 @@ function fantasyMap() {
   oceanLayers.append("rect").attr("id", "oceanBase");
 
   // main data variables
-  var seed, from, voronoi, diagram, polygons, points = [], heights;
+  var seed, params, voronoi, diagram, polygons, points = [], heights;
   // Common variables
   var modules = {}, customization = 0, history = [], historyStage = 0, elSelected, autoResize = true, graphSize,
     cells = [], land = [], riversData = [], manors = [], states = [], features = [],
@@ -226,12 +226,14 @@ function fantasyMap() {
   applyNamesData(); // apply default namesbase on load
   generate(); // generate map on load
   applyDefaultStyle(); // apply style on load
+  focusOn(); // based on searchParams focus on point, cell or burg from MFCG
   invokeActiveZooming(); // to hide what need to be hidden
 
   function generate() {
     console.group("Random map");
     console.time("TOTAL");
     applyMapSize();
+    randomizeOptions();
     placePoints();
     calculateVoronoi(points);
     detectNeighbors();
@@ -242,7 +244,6 @@ function fantasyMap() {
     elevateLakes();
     resolveDepressionsPrimary();
     reGraph();
-    randomizeOptions();
     resolveDepressionsSecondary();
     flux();
     addLakes();
@@ -250,8 +251,6 @@ function fantasyMap() {
     drawRelief();
     generateCultures();
     manorsAndRegions();
-    // focus on burg from MFCG
-    if (from === "MFCG") findBurgForMFCG();
     cleanData();
     console.timeEnd("TOTAL");
     console.groupEnd("Random map");
@@ -260,12 +259,11 @@ function fantasyMap() {
   // get or generate map seed
   function getSeed() {
     const url = new URL(window.location.href);
-    const s = url.searchParams.get("seed");
-    seed = s || Math.floor(Math.random() * 1e9);
+    params = url.searchParams;
+    seed = params.get("seed") || Math.floor(Math.random() * 1e9);
     console.log(" seed: " + seed);
     optionsSeed.value = seed;
     Math.seedrandom(seed);
-    from = url.searchParams.get("from");
   }
 
   // generate new map seed
@@ -1183,7 +1181,7 @@ function fantasyMap() {
   // Mark features (ocean, lakes, islands)
   function markFeatures() {
     console.time("markFeatures");
-
+    Math.seedrandom(seed); // reset seed to get the same result on heightmap edit
     for (let i=0, queue=[0]; queue.length > 0; i++) {
       const cell = cells[queue[0]];
       cell.fn = i; // feature number
@@ -1316,7 +1314,7 @@ function fantasyMap() {
   }
 
   // recalculate Voronoi Graph to pack cells
-  function reGraph(noChange) {
+  function reGraph() {
     console.time("reGraph");
     const tempCells = [], newPoints = []; // to store new data
     // get average precipitation based on graph size
@@ -1325,18 +1323,17 @@ function fantasyMap() {
     let smallLakes = 0;
     const evaporation = 2;
     cells.map(function(i, d) {
-      const height = heights[d];
-      if (height > 100) console.log(height, d);
+      let height = i.height || heights[d];
+      if (height > 100) height = 100;
       const pit = i.pit;
       const ctype = i.ctype;
-      if (ctype !== -1 && ctype !== -2 && height < 20) return; // exclude all depp ocean points
+      if (ctype !== -1 && ctype !== -2 && height < 20) return; // exclude all deep ocean points
       const x = rn(i.data[0], 1), y = rn(i.data[1], 1);
       const fn = i.fn;
       const harbor = i.harbor;
       let lake = i.lake;
       // mark potential cells for small lakes to add additional point there
-      // not for custom map if "changeHeights" is not alkowed
-      if (!noChange && smallLakes < smallLakesMax && !lake && pit > evaporation && ctype !== 2) {
+      if (smallLakes < smallLakesMax && !lake && pit > evaporation && ctype !== 2) {
         lake = 2;
         smallLakes++;
       }
@@ -1364,7 +1361,6 @@ function fantasyMap() {
         });
       }
       if (lake === 2) { // add potential small lakes
-        //debug.append("circle").attr("r", 0.3).attr("cx", x).attr("cy", y).attr("fill", "blue");
         polygons[i.index].forEach(function(e) {
           if (Math.random() > 0.8) return;
           let rnd = Math.random() * 0.6 + 0.8;
@@ -1373,7 +1369,6 @@ function fantasyMap() {
           const y1 = rn((e[1] * rnd + i.data[1]) / (1 + rnd), 2);
           copy = $.grep(newPoints, function(c) {return x1 === c[0] && y1 === c[1];});
           if (copy.length) return;
-          //debug.append("circle").attr("r", 0.2).attr("cx", x1).attr("cy", y1).attr("fill", "red");
           newPoints.push([x1, y1]);
           tempCells.push({index:tempCells.length, data:[x1, y1], height, pit, ctype, fn, region, culture});
         });
@@ -1508,6 +1503,7 @@ function fantasyMap() {
   // Detect and draw the coasline
   function drawCoastline() {
     console.time('drawCoastline');
+    Math.seedrandom(seed); // reset seed to get the same result on heightmap edit
     const shape = defs.append("mask").attr("id", "shape").attr("fill", "black").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
     $("#landmass").empty();
     let minX = graphWidth, maxX = 0; // extreme points
@@ -1533,12 +1529,12 @@ function fantasyMap() {
             	const x = (land[i].data[0] + cells[ea].data[0]) / 2;
             	const y = (land[i].data[1] + cells[ea].data[1]) / 2;
             	land[i].haven = ea; // harbor haven (oposite water cell)
-            	land[i].coastX = x, land[i].coastY = y;
+            	land[i].coastX = rn(x + (land[i].data[0] - x) * 0.1, 1);
+              land[i].coastY = rn(y + (land[i].data[1] - y) * 0.1, 1);
             	land[i].data[0] = rn(x + (land[i].data[0] - x) * 0.5, 1);
             	land[i].data[1] = rn(y + (land[i].data[1] - y) * 0.5, 1);
             }
   					if (features[cells[ea].fn].border) {
-  						//debug.append("line").attr("x1", edge[0][0]).attr("y1", edge[0][1]).attr("x2", edge[1][0]).attr("y2", edge[1][1]).attr("stroke", "blue").attr("stroke-width", .2);
   						oceanEdges[f].push({start, end});
   						// island extreme points
   						if (edge[0][0] < minX) {minX = edge[0][0]; minXedge = edge[0]}
@@ -1549,12 +1545,10 @@ function fantasyMap() {
               const l = cells[ea].fn;
               if (!lakeEdges[f][l]) lakeEdges[f][l] = [];
   						lakeEdges[f][l].push({start, end});
-  						//debug.append("line").attr("x1", edge[0][0]).attr("y1", edge[0][1]).attr("x2", edge[1][0]).attr("y2", edge[1][1]).attr("stroke", "red").attr("stroke-width", .2);
   					}
   				}
   			} else {
   				oceanEdges[f].push({start, end});
-  				//debug.append("line").attr("x1", edge[0][0]).attr("y1", edge[0][1]).attr("x2", edge[1][0]).attr("y2", edge[1][1]).attr("stroke", "black").attr("stroke-width", .5);
   			}
   		});
     }
@@ -1842,12 +1836,16 @@ function fantasyMap() {
   function elevateLakes() {
     console.time('elevateLakes');
     const lakes = $.grep(cells, function(e, d) {return heights[d] < 20 && !features[e.fn].border;});
-    lakes.sort(function(a, b) {return b.height - a.height;});
+    lakes.sort(function(a, b) {return heights[b.index] - heights[a.index];});
     for (let i=0; i < lakes.length; i++) {
       const hs = [], id = lakes[i].index;
-      lakes[i].neighbors.forEach(function(n) {if (cells[n].height >= 20) hs.push(cells[n].height)});
-      if (hs.length) heights[id] = d3.min(hs) - 1;
-      if (heights[id] < 20) heights[id] = 20;
+      cells[id].height = heights[id]; // use height on object level
+      lakes[i].neighbors.forEach(function(n) {
+        const nHeight = cells[n].height || heights[n];
+        if (nHeight >= 20) hs.push(nHeight);
+      });
+      if (hs.length) cells[id].height = d3.min(hs) - 1;
+      if (cells[id].height < 20) cells[id].height = 20;
       lakes[i].lake = 1;
     }
     console.timeEnd('elevateLakes');
@@ -1856,20 +1854,23 @@ function fantasyMap() {
   // Depression filling algorithm (for a correct water flux modeling; phase1)
   function resolveDepressionsPrimary() {
     console.time('resolveDepressionsPrimary');
-    land = $.grep(cells, function(e, d) {return heights[d] >= 20;});
-    land.sort(function(a, b) {return heights[b.index] - heights[a.index];});
+    land = $.grep(cells, function(e, d) {
+      if (!e.height) e.height = heights[d]; // use height on object level
+      return e.height >= 20;
+    });
+    land.sort(function(a, b) {return b.height - a.height;});
     const limit = 10;
     for (let l = 0, depression = 1; depression > 0 && l < limit; l++) {
       depression = 0;
       for (let i = 0; i < land.length; i++) {
         const id = land[i].index;
         if (land[i].type === "border") continue;
-        const hs = land[i].neighbors.map(function(n) {return heights[n];});
+        const hs = land[i].neighbors.map(function(n) {return cells[n].height;});
         const minHigh = d3.min(hs);
-        if (heights[id] <= minHigh) {
+        if (cells[id].height <= minHigh) {
           depression++;
           land[i].pit = land[i].pit ? land[i].pit + 1 : 1;
-          heights[id] = minHigh + 2;
+          cells[id].height = minHigh + 2;
         }
       }
       if (l === 0) console.log(" depressions init: " + depression);
@@ -1887,8 +1888,8 @@ function fantasyMap() {
       depression = 0;
       for (let i = 0; i < land.length; i++) {
         if (land[i].ctype === 99) continue;
-        const heights = land[i].neighbors.map(function(n) {return cells[n].height});
-        const minHigh = d3.min(heights);
+        const nHeights = land[i].neighbors.map(function(n) {return cells[n].height});
+        const minHigh = d3.min(nHeights);
         if (land[i].height <= minHigh) {
           depression++;
           land[i].pit = land[i].pit ? land[i].pit + 1 : 1;
@@ -1901,12 +1902,12 @@ function fantasyMap() {
     console.timeEnd('resolveDepressionsSecondary');
   }
 
+  // restore initial heights if user don't want system to change heightmap
   function restoreCustomHeights() {
     land.forEach(function(l) {
-      if (l.pit) {
-        l.height = Math.trunc(l.height - l.pit * 2);
-        if (l.height < 20) l.height = 20;
-      }
+      if (!l.pit) return;
+      l.height = Math.trunc(l.height - l.pit * 2);
+      if (l.height < 20) l.height = 20;
     });
   }
 
@@ -2507,7 +2508,7 @@ function fantasyMap() {
             land.map(function(l) {
               if (l.river === river) {
                 l.river = undefined;
-                i.flux = avPrec;
+                l.flux = avPrec;
               }
             });
             elSelected.remove();
@@ -3716,7 +3717,7 @@ function fantasyMap() {
           y = cell.coastY;
         }
       }
-      if (cell.river) {
+      if (cell.river && cell.type !== 1) {
         let shift = 0.2 * cell.flux;
         if (shift < 0.2) shift = 0.2;
         if (shift > 1) shift = 1;
@@ -4659,32 +4660,55 @@ function fantasyMap() {
     }
   }
 
+  // focus on coorditanes, cell or burg provided in searchParams
+  function focusOn() {
+    if (params.get("from") === "MFCG") {
+      // focus on burg from MFCG
+      findBurgForMFCG();
+      return;
+    }
+    let s = params.get("scale") || 8;
+    let x = params.get("x");
+    let y = params.get("y");
+    let c = params.get("cell");
+    if (c !== null) {
+      x = cells[+c].data[0];
+      y = cells[+c].data[1];
+    }
+    let b = params.get("burg");
+    if (b !== null) {
+      x = manors[+b].x;
+      y = manors[+b].y;
+    }
+    if (x !== null && y !== null) zoomTo(x, y, s, 1600);
+  }
+
   // find burg from MFCG and focus on it
   function findBurgForMFCG() {
     if (!manors.length) {console.error("No burgs generated. Cannot select a burg for MFCG"); return;}
-    const url = new URL(window.location.href);
-    const size = +url.searchParams.get("size");
-    let coast = +url.searchParams.get("coast");
-    let river = +url.searchParams.get("river");
-    let selection = defineSelection(coast, river);
-    if (!selection.length) selection = defineSelection(coast, !river);
-    if (!selection.length) selection = defineSelection(!coast, !river);
+    const size = +params.get("size");
+    let coast = +params.get("coast");
+    let port = +params.get("port");
+    let river = +params.get("river");
+    let selection = defineSelection(coast, port, river);
+    if (!selection.length) selection = defineSelection(coast, !port, !river);
+    if (!selection.length) selection = defineSelection(!coast, 0, !river);
+    if (!selection.length) selection = manors[0]; // select first if nothing is found
     if (!selection.length) {console.error("Cannot find a burg for MFCG"); return;}
 
-    function defineSelection(coast, river) {
+    function defineSelection(coast, port, river) {
       let selection = [];
-      if (coast && river) selection = $.grep(manors, function(e) {return cells[e.cell].port !== undefined && cells[e.cell].river !== undefined;});
-      if (!coast && !river) selection = $.grep(manors, function(e) {return cells[e.cell].port === undefined && cells[e.cell].river === undefined;});
-      if (!coast && river) selection = $.grep(manors, function(e) {return cells[e.cell].port === undefined && cells[e.cell].river !== undefined;});
-      if (coast && !river) selection = $.grep(manors, function(e) {return cells[e.cell].port !== undefined && cells[e.cell].river === undefined;});
+      if (port && river) selection = $.grep(manors, function(e) {return cells[e.cell].port !== undefined && cells[e.cell].river !== undefined;});
+      else if (!port && coast && river) selection = $.grep(manors, function(e) {return cells[e.cell].port === undefined && cells[e.cell].ctype === 1 && cells[e.cell].river !== undefined;});
+      else if (!coast && !river) selection = $.grep(manors, function(e) {return cells[e.cell].ctype !== 1 && cells[e.cell].river === undefined;});
+      else if (!coast && river) selection = $.grep(manors, function(e) {return cells[e.cell].ctype !== 1 && cells[e.cell].river !== undefined;});
+      else if (coast && !river) selection = $.grep(manors, function(e) {return cells[e.cell].ctype === 1 && cells[e.cell].river === undefined;});
       return selection;
     }
 
     // select a burg with closes population from selection
     const selected = d3.scan(selection, function(a, b) {return Math.abs(a.population - size) - Math.abs(b.population - size);});
-    console.log(selection)
     const burg = selection[selected].i;
-    console.log(selected, size)
     if (size && burg !== undefined) {manors[burg].population = size;} else {return;}
 
     // focus on found burg
@@ -4714,8 +4738,8 @@ function fantasyMap() {
         let height = i.height;
         if (height < 20 && !i.lake) return;
         if (i.lake) {
-          const heights = i.neighbors.map(function(e) {if (cells[e].height >= 20) return cells[e].height;})
-          const mean = d3.mean(heights);
+          const nHeights = i.neighbors.map(function(e) {if (cells[e].height >= 20) return cells[e].height;})
+          const mean = d3.mean(nHeights);
           if (!mean) return;
           height = Math.trunc(mean);
           if (height < 20 || isNaN(height)) height = 20;
@@ -5051,12 +5075,11 @@ function fantasyMap() {
     drawOcean();
     elevateLakes();
     resolveDepressionsPrimary();
-    const noChange = !changeHeights.checked;
-    reGraph(noChange);
+    reGraph();
     resolveDepressionsSecondary();
     flux();
     addLakes();
-    if (noChange) restoreCustomHeights();
+    if (!changeHeights.checked) restoreCustomHeights();
     drawCoastline();
     drawRelief();
     const keepData = states.length && manors.length;
@@ -5215,9 +5238,9 @@ function fantasyMap() {
         cell.river = river;
         var x = cell.data[0], y = cell.data[1];
         dataRiver.push({x, y, cell:index});
-        var heights = [];
-        cell.neighbors.forEach(function(e) {heights.push(cells[e].height);});
-        var minId = heights.indexOf(d3.min(heights));
+        var nHeights = [];
+        cell.neighbors.forEach(function(e) {nHeights.push(cells[e].height);});
+        var minId = nHeights.indexOf(d3.min(nHeights));
         var min = cell.neighbors[minId];
         var tx = cells[min].data[0], ty = cells[min].data[1];
         if (cells[min].height < 20) {
@@ -5648,8 +5671,8 @@ function fantasyMap() {
     if (editGroupInput.value !== "") {
       groupNew = editGroupInput.value.toLowerCase().replace(/ /g, "_").replace(/[^\w\s]/gi, "");
       if (Number.isFinite(+groupNew.charAt(0))) groupNew = "g" + groupNew;
-      if (groupNew === "towns") groupNew = "town_labels";
-      if (groupNew === "capitals") groupNew = "capital_labels";
+      const size = svg.selectAll("#"+groupNew).size();
+      if (size) groupNew += size; // if el with this id exists, add size to id;
     }
     if (groupOld !== groupNew) {
       var removed = elSelected.remove();
@@ -5734,11 +5757,13 @@ function fantasyMap() {
   // downalod map as SVG or PNG file
   function saveAsImage(type) {
     console.time("saveAsImage");
-    // get all used fonts
+    const webSafe = ["Georgia", "Times+New+Roman", "Comic+Sans+MS", "Lucida+Sans+Unicode", "Courier+New", "Verdana", "Arial", "Impact"];
+    // get non-standard fonts used for labels to fetch them from web
     const fontsInUse = []; // to store fonts currently in use
     labels.selectAll("g").each(function(d) {
       const font = d3.select(this).attr("data-font");
       if (!font) return;
+      if (webSafe.indexOf(font) !== -1) return; // do not fetch web-safe fonts
       if (fontsInUse.indexOf(font) === -1) fontsInUse.push(font);
     });
     const fontsToLoad = "https://fonts.googleapis.com/css?family=" + fontsInUse.join("|");
@@ -5904,10 +5929,14 @@ function fantasyMap() {
   // Save in .map format, based on FileSystem API
   function saveMap() {
     console.time("saveMap");
-    // data convention: 0 - version; 1 - all points; 2 - cells; 3 - manors; 4 - states;
+    // data convention: 0 - params; 1 - all points; 2 - cells; 3 - manors; 4 - states;
     // 5 - svg; 6 - options (see below); 7 - cultures;
     // 8 - empty (former nameBase); 9 - empty (former nameBases); 10 - heights;
     // size stats: points = 6%, cells = 36%, manors and states = 2%, svg = 56%;
+    const date = new Date();
+    const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
+    const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
+    const params = version + "|" + license +  "|" + dateString + "|" + seed;
     const options = customization + "|" +
     distanceUnit.value + "|" + distanceScale.value + "|" + areaUnit.value + "|" +
     barSize.value  + "|" + barLabel.value  + "|" + barBackOpacity.value  + "|" + barBackColor.value + "|" +
@@ -5923,7 +5952,7 @@ function fantasyMap() {
 
     var svg_xml = (new XMLSerializer()).serializeToString(svg.node());
     var line = "\r\n";
-    var data = version + line + JSON.stringify(points) + line + JSON.stringify(cells) + line;
+    var data = params + line + JSON.stringify(points) + line + JSON.stringify(cells) + line;
     data += JSON.stringify(manors) + line + JSON.stringify(states) + line + svg_xml + line + options + line;
     data += JSON.stringify(cultures) + line + "" + line + "" + line + heights + line;
     var dataBlob = new Blob([data], {type:"text/plain"});
@@ -5958,9 +5987,10 @@ function fantasyMap() {
     fileReader.onload = function(fileLoadedEvent) {
       var dataLoaded = fileLoadedEvent.target.result;
       var data = dataLoaded.split("\r\n");
-      // data convention: 0 - version; 1 - all points; 2 - cells; 3 - manors; 4 - states;
+      // data convention: 0 - params; 1 - all points; 2 - cells; 3 - manors; 4 - states;
       // 5 - svg; 6 - options; 7 - cultures; 8 - none; 9 - none; 10 - heights;
-      var mapVersion = data[0];
+      const params = data[0].split("|");
+      const mapVersion = params[0] || data[0];
       if (mapVersion !== version) {
         var message = `The Map version `;
         // mapVersion reference was not added to downloaded map before v. 0.52b, so I cannot support really old files
@@ -5971,7 +6001,7 @@ function fantasyMap() {
                       or just keep using
                       <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog" target="_blank">an appropriate version</a>
                       of the Generator`;
-        } else {
+        } else if (!mapVersion || parseFloat(mapVersion) < 0.54) {
           message += `you are trying to load is too old and cannot be updated. Please re-create the map or just keep using
                       <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog" target="_blank">an archived version</a>
                       of the Generator. Please note the Gennerator is still on demo and a lot of crusial changes are being made every month`;
@@ -5989,6 +6019,13 @@ function fantasyMap() {
 
   function loadDataFromMap(data) {
     closeDialogs();
+    // update seed
+    const params = data[0].split("|");
+    if (params[3]) {
+      seed = params[3];
+      optionsSeed.value = seed;
+    }
+
     // get options
     if (data[0] === "0.52b" || data[0] === "0.53b") {
       customization = 0;
@@ -6161,6 +6198,68 @@ function fantasyMap() {
     // update data
     newPoints = [], riversData = [], queue = [], elSelected = "";
     points = JSON.parse(data[1]);
+    cells = JSON.parse(data[2]);
+    manors = JSON.parse(data[3]);
+    if (data[7]) cultures = JSON.parse(data[7]);
+    if (data[7] === undefined) generateCultures();
+
+    // place random point
+    function placePoint() {
+      const x = Math.floor(Math.random() * graphWidth * 0.8 + graphWidth * 0.1);
+      const y = Math.floor(Math.random() * graphHeight * 0.8 + graphHeight * 0.1);
+      return [x, y];
+    }
+
+    // ensure each culure has a valid namesbase assigned, if not assign first base
+    if (!nameBase[0]) applyDefaultNamesData();
+    cultures.forEach(function(c) {
+      const b = c.base;
+      if (b === undefined) c.base = 0;
+      if (!nameBase[b] || !nameBases[b]) c.base = 0;
+      if (c.center === undefined) c.center = placePoint();
+    });
+    const graphSizeAdj = 90 / Math.sqrt(cells.length, 2); // adjust to different graphSize
+
+    // cells validations
+    cells.forEach(function(c, d) {
+      // collect points
+      newPoints.push(c.data);
+
+      // update old 0-1 height range to a new 0-100 range
+      if (c.height < 1) c.height = Math.trunc(c.height * 100);
+      if (c.height === 1 && c.region !== undefined && c.flux !== undefined) c.height = 100;
+
+      // check if there are any unavailable cultures
+      if (c.culture > cultures.length - 1) {
+        const center = [c.data[0], c.data[1]];
+        const cult = {name:"AUTO_"+c.culture, color:"#ff0000", base:0, center};
+        cultures.push(cult);
+      }
+
+      if (c.height >= 20) {
+        if (!polygons[d] || !polygons[d].length) return;
+        // calculate area
+        if (c.area === undefined || isNaN(c.area)) {
+          const area = d3.polygonArea(polygons[d]);
+          c.area = rn(Math.abs(area), 2);
+        }
+        // calculate population
+        if (c.pop === undefined || isNaN(c.pop)) {
+          let population = 0;
+          const elevationFactor = Math.pow((100 - c.height) / 100, 3);
+          population = elevationFactor * c.area * graphSizeAdj;
+          if (c.region === "neutral") population *= 0.5;
+          c.pop = rn(population, 1);
+        }
+        // if culture is undefined, set to 0
+        if (c.culture === undefined || isNaN(c.culture)) c.culture = 0;
+      }
+    });
+
+    land = $.grep(cells, function(e) {return (e.height >= 20);});
+    calculateVoronoi(newPoints);
+
+    // get heights Uint8Array
     if (data[10]) {heights = new Uint8Array(data[10].split(","));}
     else {
       heights = new Uint8Array(points.length);
@@ -6169,52 +6268,6 @@ function fantasyMap() {
         heights[i] = cells[cell].height;
       }
     }
-    cells = JSON.parse(data[2]);
-
-    manors = JSON.parse(data[3]);
-    if (data[7]) cultures = JSON.parse(data[7]);
-    if (data[7] === undefined) generateCultures();
-
-    // ensure each culure has a valid namesbase assigned, if not assign first base
-    if (!nameBase[0]) applyDefaultNamesData();
-    cultures.forEach(function(c) {
-      const b = c.base;
-      if (b === undefined) c.base = 0;
-      if (!nameBase[b] || !nameBases[b]) c.base = 0;
-    });
-
-    // cells validations
-    cells.forEach(function(c) {
-      // collect points
-      newPoints.push(c.data);
-
-      // update old 0-1 height range to new 0-100 range
-      if (c.height > 1) return;
-      if (c.height === 1 && c.region === undefined && c.flux === undefined) return;
-      c.height = Math.trunc(c.height * 100);
-
-      // check if there unavailable cultures
-      if (c.culture > cultures.length - 1) cultures.push({name:"AUTO_"+c.culture, color:"#ff0000", base:0});
-    });
-
-    land = $.grep(cells, function(e) {return (e.height >= 20);});
-    calculateVoronoi(newPoints);
-
-    // calculate areas / population for old maps
-    const graphSizeAdj = 90 / Math.sqrt(cells.length, 2); // adjust to different graphSize
-    land.forEach(function(i) {
-        const p = i.index;
-        if (!polygons[p] || !polygons[p].length) return;
-        const area = d3.polygonArea(polygons[p]);
-        i.area = rn(Math.abs(area), 2);
-        if (i.pop === undefined) {
-          let population = 0;
-          const elevationFactor = Math.pow((100 - i.height) / 100, 3);
-          population = elevationFactor * i.area * graphSizeAdj;
-          if (i.region === "neutral") population *= 0.5;
-          i.pop = rn(population, 1);
-        }
-    });
 
     // restore Heightmap customization mode
     if (customization === 1) {
@@ -6751,11 +6804,11 @@ function fantasyMap() {
       });
     }
     if (id === "fromHeightmap") {
-      const message = `Hightmap is a basic element on which secondary data (burgs, countries, cultures) is based.
+      const message = `Hightmap is a basic element on which secondary data (rivers, burgs, countries etc) is based.
       If you want to significantly change the hightmap, it may be better to clean up all the secondary data
       and let the system to re-generate it based on the updated hightmap. In case of minor changes, you can keep the data.
       Newly added lands will be considered as neutral. Burgs located on a removed land cells will be deleted.
-      Routes won't be regenerated.`
+      Rivers and small lakes will be re-gerenated based on updated heightmap. Routes won't be regenerated.`
       alertMessage.innerHTML = message;
       $("#alert").dialog({resizable: false, title: "Edit Heightmap",
         buttons: {
@@ -6977,7 +7030,11 @@ function fantasyMap() {
     const regionData = [], cultureData = [];
     if (type !== "clean") {
       for (let i = 0; i < points.length; i++) {
-        const cell = diagram.find(points[i][0], points[i][1]).index;
+        let cell = diagram.find(points[i][0], points[i][1]).index;
+        // if closest cell is a small lake, try to find a land neighbor
+        if (cells[cell].lake === 2) cells[cell].neighbors.forEach(function(n) {
+          if (cells[n].height >= 20) {cell = n; return;}
+        });
         let region = cells[cell].region;
         if (region === undefined) region = -1;
         regionData.push(region);
@@ -8654,7 +8711,7 @@ function fantasyMap() {
     drawRegions();
   }
 
-  // restore keeped region data on edit heightmap completion
+  // restore keeped region / burgs / cultures data on edit heightmap completion
   function restoreRegions() {
     borders.selectAll("path").remove();
     labels.select("#countries").selectAll("text").remove();
@@ -8664,8 +8721,7 @@ function fantasyMap() {
         // remove manor in ocean
         m.region = "removed";
         m.cell = cell;
-        labels.select("[data-id='" + m.i + "']").remove();
-        icons.select("[data-id='" + m.i + "']").remove();
+        d3.selectAll("[data-id='" + m.i + "']").remove();
       } else {
         m.cell = cell;
         cells[cell].manor = m.i;
@@ -9294,16 +9350,12 @@ function fantasyMap() {
     if (id === "aboutTab") {$("#aboutContent").show();}
   });
 
-  // Generate map from provided seed
+  // re-load page with provided seed
   $("#optionsSeedGenerate").on("click", function() {
     if (optionsSeed.value == seed) return;
     seed = optionsSeed.value;
-    console.log(" seed: " + seed);
-    Math.seedrandom(seed);
-    exitCustomization();
-    undraw();
-    resetZoom(1000);
-    generate();
+    const url = new URL(window.location.href);
+    window.location.href = url.pathname + "?seed=" + seed;
   });
 
   // Pull request from @evyatron

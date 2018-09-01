@@ -32,8 +32,8 @@
   <script src="libs/quantize.min.js" defer></script>
   <script src="libs/d3-hexbin.v0.2.min.js" defer></script>
   <script src="libs/jquery.ui.touch-punch.min.js" defer></script>
-  <link rel="stylesheet" type="text/css" href="index.css?version=0.59.01b"/>
-  <link rel="stylesheet" type="text/css" href="icons.css?version=0.59.01b"/>
+  <link rel="stylesheet" type="text/css" href="index.css?version=0.59.07b"/>
+  <link rel="stylesheet" type="text/css" href="icons.css?version=0.59.07b"/>
   <link rel="stylesheet" type="text/css" href="libs/jquery-ui.css"/>
 </head>
 <body>
@@ -159,7 +159,7 @@
   <div id="loading">
     <div id="title_name">Azgaar's</div>
     <div id="title">Fantasy Map Generator</div>
-    <div id="version">v. 0.58b</div>
+    <div id="version">v. 0.59b</div>
     <p id="loading-text">LOADING<span>.</span><span>.</span><span>.</span></p>
   </div>
   <canvas id="canvas" style="opacity: 0"></canvas>
@@ -205,8 +205,8 @@
           <input id="toggleTooltips" class="checkbox" type="checkbox" checked onclick="$('#tooltip').fadeToggle()">
           <label for="toggleTooltips" onmouseover="tip('Toogle tooltip line')" class="checkbox-label">Show tooltips</label>
           <label id="optionSeedLabel" style="margin-left:10px">Map seed:
-            <input id="optionsSeed" class="pureInput" style="width:65px" value="">
-            <i onmouseover="tip('Click to generate a map for this seed')" id="optionsSeedGenerate" style="margin-left:-3px" class="icon-play"></i>
+            <input id="optionsSeed" class="pureInput" style="width:50px" value="">
+            <i onmouseover="tip('Click to generate a map for this seed')" id="optionsSeedGenerate" style="margin-left:-3px; color: #5d4651" class="icon-play"></i>
           </label>
         </div>
       </div>
@@ -551,7 +551,7 @@
             <div id="customizeOptions">
               <input id="renderOcean" class="checkbox" type="checkbox">
               <label for="renderOcean" onmouseover="tip('Render cells below sea level')" class="checkbox-label">Render ocean cells</label>
-              <input id="changeHeights" class="checkbox" type="checkbox">
+              <input id="changeHeights" class="checkbox" type="checkbox" checked>
               <label for="changeHeights" onmouseover="tip('Allow system to change custom heights if reasonable')" class="checkbox-label">Change heights</label>
             </div>
             <label onmouseover="tip('Number of Land cells and landmass/ocean ratio')">Landmass:
@@ -1143,5 +1143,5 @@
     <input type="file" accept=".txt" id="namesbaseToLoad">
   </div>
 
-  <script src="script.js?version=0.59.01b"></script>
+  <script src="script.js?version=0.59.07b"></script>
 </body>
