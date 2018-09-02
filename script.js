@@ -4421,13 +4421,13 @@ function fantasyMap() {
         edges.splice(rem, 1);
       }
       path += lineGen(edgesOrdered) + "Z ";
-      var edgesFormatted = [];
-      edgesOrdered.map(function(e) {edgesFormatted.push([+e.scX, +e.scY])});
-      array[array.length] = edgesFormatted;
+      array[array.length] = edgesOrdered.map(function(e) {return [+e.scX, +e.scY];});
     }
     var color = states[region].color;
     regions.append("path").attr("d", round(path, 1)).attr("fill", color).attr("stroke", "none").attr("class", "region"+region);
     array.sort(function(a, b){return b.length - a.length;});
+    const capitalCell = manors[states[region].capital].cell;
+    array.push(polygons[capitalCell]); // add capital cell as a hole
     var name = states[region].name;
     var c = polylabel(array, 1.0); // pole of inaccessibility
     labels.select("#countries").append("text").attr("id", "regionLabel"+region).attr("x", rn(c[0])).attr("y", rn(c[1])).text(name).on("click", editLabel);
