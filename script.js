@@ -7424,7 +7424,7 @@ function fantasyMap() {
         if (i === 0) width = "4px";
         var clr = color(1-i/100);
         var style = "background-color: " + clr + "; width: " + width;
-        div.append("div").attr("data-color", i/100).attr("style", style);
+        div.append("div").attr("data-color", i).attr("style", style);
       }
       div.selectAll("*").on("touchmove mousemove", showHeight).on("click", assignHeight);
     }
@@ -7474,8 +7474,8 @@ function fantasyMap() {
       colors.push([r, g, b]);
     });
     var cmap = MMCQ.quantize(colors, count);
+    heights = new Uint8Array(points.length);
     polygons.map(function(i, d) {
-      cells[d].height = undefined;
       var nearest = cmap.nearest(colors[d]);
       var rgb = "rgb(" + nearest[0] + ", " + nearest[1] + ", " + nearest[2] + ")";
       var hex = toHEX(rgb);
@@ -7509,7 +7509,7 @@ function fantasyMap() {
       if (el.attr("data-height")) {
         var height = el.attr("data-height");
         $("#colorScheme div[data-color='" + height + "']").addClass("hoveredColor");
-        $("#colorsSelectValue").text(rn(height * 100));
+        $("#colorsSelectValue").text(height);
       }
       var color = "#" + d3.select(this).attr("id");
       landmass.selectAll("path").classed("selectedCell", 0);
@@ -7518,8 +7518,8 @@ function fantasyMap() {
   }
 
   function showHeight() {
-    var el = d3.select(this);
-    var height = rn(el.attr("data-color") * 100);
+    let el = d3.select(this);
+    let height = el.attr("data-color");
     $("#colorsSelectValue").text(height);
     $("#colorScheme .hoveredColor").removeClass("hoveredColor");
     el.classed("hoveredColor", 1);
@@ -7528,7 +7528,7 @@ function fantasyMap() {
   function assignHeight() {
     var sel = $(".selectedColor")[0];
     var height = +d3.select(this).attr("data-color");
-    var rgb = color(1-height);
+    var rgb = color(1 - height / 100);
     var hex = toHEX(rgb);
     sel.style.backgroundColor = rgb;
     sel.setAttribute("data-height", height);
@@ -7536,8 +7536,8 @@ function fantasyMap() {
     sel.id = hex.substr(1);
     landmass.selectAll(".selectedCell").each(function() {
       d3.select(this).attr("fill", hex).attr("stroke", hex);
-      var i = +d3.select(this).attr("data-i");
-      cells[i].height = height;
+      let i = +d3.select(this).attr("data-i");
+      heights[i] = height;
     });
     var parent = sel.parentNode;
     if (parent.id === "colorsUnassigned") {
@@ -7569,11 +7569,10 @@ function fantasyMap() {
     $("#landmass > path, .color-div").remove();
     $("#colorsAssigned").fadeIn();
     $("#colorsUnassigned").fadeOut();
-    var heights = [];
-    polygons.map(function(i, d) {
+    polygons.forEach(function(i, d) {
       var x = rn(i.data[0]), y = rn(i.data[1]);
-      if (y == svgHeight) {y--;}
-      if (x == svgWidth) {x--;}
+      if (y == svgHeight) y--;
+      if (x == svgWidth) x--;
       var p = (x + y * svgWidth) * 4;
       var r = data[p], g = data[p + 1], b = data[p + 2];
       var lab = d3.lab("rgb(" + r + ", " + g + ", " + b + ")");
@@ -7582,18 +7581,16 @@ function fantasyMap() {
       } else {
         var normalized = rn(normalize(lab.l, 0, 100), 2);
       }
-      heights.push(normalized);
       var rgb = color(1 - normalized);
       var hex = toHEX(rgb);
-      cells[d].height = normalized * 100;
+      heights[d] = normalized * 100;
       landmass.append("path").attr("d", "M" + i.join("L") + "Z").attr("data-i", d).attr("fill", hex).attr("stroke", hex);
     });
-    heights.sort(function(a, b) {return a - b;});
-    var unique = [...new Set(heights)];
-    unique.map(function(i) {
-      var rgb = color(1 - i);
+    let unique = [...new Set(heights)].sort();
+    unique.forEach(function(h) {
+      var rgb = color(1 - h / 100);
       var hex = toHEX(rgb);
-      $("#colorsAssigned").append('<div class="color-div" id="' + hex.substr(1) + '" data-height="' + i + '" style="background-color: ' + hex + ';"/>');
+      $("#colorsAssigned").append('<div class="color-div" id="' + hex.substr(1) + '" data-height="' + h + '" style="background-color: ' + hex + ';"/>');
     });
     $(".color-div").click(selectColor);
   }
