@@ -47,7 +47,7 @@ button, select, a {
 }
 
 #cults {
-	stroke-width: 2;
+	stroke-width: 4;
 	mask: url(#shape);
 	mask-mode: alpha;
 	pointer-events: none;
@@ -75,6 +75,7 @@ button, select, a {
 
 #regions {
 	stroke-width: 0;
+	stroke: none;
 	fill-rule: evenodd;
 	stroke-linejoin: round;
 	mask: url(#shape);

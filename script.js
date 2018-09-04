@@ -380,11 +380,11 @@ function fantasyMap() {
       {name:"Toledi", color:"#ffd92f", base:4},
       {name:"Slovian", color:"#e5c494", base:5},
       {name:"Norse", color:"#dca3e4", base:6},
-      {name:"Elladian", color:"#96d6be", base:7},
+      {name:"Elladian", color:"#66c4a0", base:7},
       {name:"Latian", color:"#ff7174", base:8},
-      {name:"Somi", color:"#aedff7", base:9},
+      {name:"Soomi", color:"#85c8fa", base:9},
       {name:"Koryo", color:"#578880", base:10},
-      {name:"Hantzu", color:"#fdface", base:11},
+      {name:"Hantzu", color:"#becb8d", base:11},
       {name:"Yamoto", color:"#ffd9da", base:12}
     ];
   }
@@ -854,12 +854,12 @@ function fantasyMap() {
     console.time('defineHeightmap');
     if (lockTemplateInput.getAttribute("data-locked") == 0) {
       const rnd = Math.random();
-      if (rnd > 0.9) {templateInput.value = "Volcano";}
-      else if (rnd > 0.7) {templateInput.value = "High Island";}
-      else if (rnd > 0.5) {templateInput.value = "Low Island";}
+      if (rnd > 0.95) {templateInput.value = "Volcano";}
+      else if (rnd > 0.75) {templateInput.value = "High Island";}
+      else if (rnd > 0.55) {templateInput.value = "Low Island";}
       else if (rnd > 0.35) {templateInput.value = "Continents";}
-      else if (rnd > 0.05) {templateInput.value = "Archipelago";}
-      else if (rnd > 0.03) {templateInput.value = "Mainland";}
+      else if (rnd > 0.15) {templateInput.value = "Archipelago";}
+      else if (rnd > 0.10) {templateInput.value = "Mainland";}
       else if (rnd > 0.01) {templateInput.value = "Peninsulas";}
       else {templateInput.value = "Atoll";}
     }
@@ -4424,10 +4424,14 @@ function fantasyMap() {
       array[array.length] = edgesOrdered.map(function(e) {return [+e.scX, +e.scY];});
     }
     var color = states[region].color;
-    regions.append("path").attr("d", round(path, 1)).attr("fill", color).attr("stroke", "none").attr("class", "region"+region);
+    regions.append("path").attr("d", round(path, 1)).attr("fill", color).attr("class", "region"+region);
     array.sort(function(a, b){return b.length - a.length;});
-    const capitalCell = manors[states[region].capital].cell;
-    array.push(polygons[capitalCell]); // add capital cell as a hole
+    let capital = states[region].capital;
+    // add capital cell as a hole
+    if (!isNaN(capital)) {
+      const capitalCell = manors[capital].cell;
+      array.push(polygons[capitalCell]);
+    }
     var name = states[region].name;
     var c = polylabel(array, 1.0); // pole of inaccessibility
     labels.select("#countries").append("text").attr("id", "regionLabel"+region).attr("x", rn(c[0])).attr("y", rn(c[1])).text(name).on("click", editLabel);
@@ -4461,7 +4465,7 @@ function fantasyMap() {
       path += lineGen(edgesOrdered);
     }
     var color = states[region].color;
-    regions.append("path").attr("d", round(path, 1)).attr("fill", "none").attr("stroke", color).attr("stroke-width", 3).attr("class", "region"+region);
+    regions.append("path").attr("d", round(path, 1)).attr("fill", "none").attr("stroke", color).attr("stroke-width", 5).attr("class", "region"+region);
   }
 
   function drawBorders(edges, type) {
