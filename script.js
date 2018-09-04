@@ -8975,7 +8975,7 @@ function fantasyMap() {
     styleOceanPattern.checked = true;
     styleOceanLayers.checked = true;
 
-    labels.attr("opacity", 1);
+    labels.attr("opacity", 1).attr("stroke", "#3a3a3a").attr("stroke-width", 0);
     let size = rn(8 - regionsInput.value / 20);
     if (size < 3) size = 3;
     burgLabels.select("#capitals").attr("fill", "#3e3e4b").attr("opacity", 1).attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC").attr("font-size", size).attr("data-size", size);
@@ -9028,8 +9028,10 @@ function fantasyMap() {
     if (sel === "overlay") $("#styleOverlay").css("display", "block");
 
     if (sel === "labels") {
-      $("#styleFill, #styleFontSize").css("display", "inline-block");
+      $("#styleFill, #styleStroke, #styleStrokeWidth, #styleFontSize").css("display", "inline-block");
       styleFillInput.value = styleFillOutput.value = el.select("g").attr("fill") || "#3e3e4b";
+      styleStrokeInput.value = styleStrokeOutput.value = el.select("g").attr("stroke") || "#3a3a3a";
+      styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr("stroke-width") || 0;
       $("#styleLabelGroups").css("display", "inline-block");
       updateLabelGroups();
     }

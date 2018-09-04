@@ -71,6 +71,13 @@
               <feMergeNode in="SourceGraphic"/>
           </feMerge>
         </filter>
+        <filter id="outline">
+          <feGaussianBlur in="SourceAlpha" stdDeviation="1"/>
+          <feMerge>
+              <feMergeNode/>
+              <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
         <filter id="pencil">
           <feTurbulence baseFrequency="0.03" numOctaves="6" type="fractalNoise"/>
           <feDisplacementMap scale="3" in="SourceGraphic" xChannelSelector="R" yChannelSelector="G"/>
@@ -299,8 +306,10 @@
               <option value="url(#splotch)">Splotch</option>
               <option value="url(#bluredSplotch)">Blured Splotch</option>
               <option value="url(#dropShadow)">Shadow</option>
+              <option value="url(#outline)">Outline</option>
               <option value="url(#pencil)">Pencil</option>
               <option value="url(#turbulence)">Turbulence</option>
+              <option value="url(#water)">Water</option>
             </select>
           </div>
           <div id="styleScheme">
@@ -315,7 +324,7 @@
             <fieldset>
               <legend>Label groups:</legend>
               <input id="hideLabels" class="checkbox" type="checkbox" checked>
-              <label for="hideLabels" onmouseover="tip('Allow system to hide labels if their size in too small on that scale)')" class="checkbox-label">Toogle visibility automatically</label>
+              <label for="hideLabels" onmouseover="tip('Allow system to hide labels if their size in too small on that scale)')" class="checkbox-label">Toggle visibility automatically</label>
               <div id="styleLabelGroupItems"></div>
             </fieldset>
           </div>
