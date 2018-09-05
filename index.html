@@ -30,10 +30,9 @@
   <script src="libs/jquery-ui.min.js"></script>
   <script src="libs/polylabel.min.js"></script>
   <script src="libs/quantize.min.js" defer></script>
-  <script src="libs/d3-hexbin.v0.2.min.js" defer></script>
   <script src="libs/jquery.ui.touch-punch.min.js" defer></script>
-  <link rel="stylesheet" type="text/css" href="index.css?version=0.59.10b"/>
-  <link rel="stylesheet" type="text/css" href="icons.css?version=0.59.10b"/>
+  <link rel="stylesheet" type="text/css" href="index.css?version=0.59.12b"/>
+  <link rel="stylesheet" type="text/css" href="icons.css?version=0.59.12b"/>
   <link rel="stylesheet" type="text/css" href="libs/jquery-ui.css"/>
 </head>
 <body>
@@ -195,18 +194,18 @@
         </select>
         <p>Displayed layers. Drag to move, click to toggle</p>
         <ul id="mapLayers">
-          <li onmouseover="tip('Toggle Ocean pattern')" id="toggleOcean" onclick="$('#oceanPattern').fadeToggle()" class="solid">Ocean</li>
-          <li onmouseover="tip('Toggle Heightmap')" id="toggleHeight" class="buttonoff">Heightmap</li>
+          <li onmouseover="tip('Toggle Ocean pattern (see Style tab for styling)')" id="toggleOcean" onclick="$('#oceanPattern').fadeToggle()" class="solid">Ocean</li>
+          <li onmouseover="tip('Toggle Heightmap (see Style tab for styling and Customize for editting)')" id="toggleHeight" class="buttonoff">Heightmap</li>
           <li onmouseover="tip('Toggle Grid')" id="toggleGrid" class="buttonoff" onclick="$('#grid').fadeToggle()">Grid</li>
           <li onmouseover="tip('Toggle Overlay (overlay type can be set in Style tab)')" id="toggleOverlay" class="buttonoff">Overlay</li>
           <li onmouseover="tip('Toggle Cultural map (does not work good when counties layer is on)')" id="toggleCultures" class="buttonoff">Cultures</li>
           <li onmouseover="tip('Toggle Routes')" id="toggleRoutes" onclick="$('#routes').fadeToggle()">Routes</li>
           <li onmouseover="tip('Toggle Rivers')" id="toggleRivers" onclick="$('#rivers').fadeToggle()">Rivers</li>
-          <li onmouseover="tip('Toggle Countries')" id="toggleCountries">Countries</li>
+          <li onmouseover="tip('Toggle Countries (open Customize tab for editting)')" id="toggleCountries">Countries</li>
           <li onmouseover="tip('Toggle Borders')" id="toggleBorders" onclick="$('#borders').fadeToggle()">Borders</li>
-          <li onmouseover="tip('Toggle Relief icons')" id="toggleRelief" onclick="$('#terrain').fadeToggle()">Relief</li>
-          <li onmouseover="tip('Toggle Labels')" id="toggleLabels" onclick="$('#labels').fadeToggle()">Labels</li>
-          <li onmouseover="tip('Toggle Icons')" id="toggleIcons" onclick="$('#icons').fadeToggle()">Icons</li>
+          <li onmouseover="tip('Toggle Relief icons (draft version)')" id="toggleRelief" onclick="$('#terrain').fadeToggle()">Relief</li>
+          <li onmouseover="tip('Toggle Labels (label groups can be toggled separately in Style tab)')" id="toggleLabels" onclick="$('#labels').fadeToggle()">Labels</li>
+          <li onmouseover="tip('Toggle Burg icons')" id="toggleIcons" onclick="$('#icons').fadeToggle()">Icons</li>
         </ul>
         <div id="layoutCheckboxes">
           <input id="toggleTooltips" class="checkbox" type="checkbox" checked onclick="$('#tooltip').fadeToggle()">
@@ -246,12 +245,13 @@
           <div id="styleOverlay">
             <br><span>Ensure Overlay layer is active (see Layout tab)</span><br>
             <br>Overlay type: <select id="styleOverlayType" class="pureInput">
-              <option value="hex" selected>Hex grid</option>
+              <option value="pointyHex" selected>Hex grid (pointy)</option>
+              <option value="flatHex">Hex grid (flat)</option>
               <option value="square">Square grid</option>
               <option value="windrose">Wind rose</option>
             </select><br>
-            <br>Size: <input id="styleOverlaySize" type="range" min="2" max="20" step="0.2" value="5">
-            <output id="styleOverlaySizeOutput">5</output>
+            <br>Size: <input id="styleOverlaySize" type="range" min="2" max="50" step="0.1" value="10">
+            <output id="styleOverlaySizeOutput">10</output>
           </div>
           <div id="styleOcean">
             <br>Elements:
@@ -292,6 +292,7 @@
             <br>Radius: <button class="whiteButton" onmouseover="tip('Multiply Radius by 1.1')" id="styleFillPlus">+</button><button class="whiteButton" onmouseover="tip('Multiply Radius by 0.9')" id="styleFillMinus">-</button>
             <span> Stroke: </span><button class="whiteButton" onmouseover="tip('Multiply Stroke-width by 1.1')" id="styleStrokePlus">+</button><button class="whiteButton" onmouseover="tip('Multiply Stroke-width by 0.9')" id="styleStrokeMinus">-</button>
           </div>
+
           <div id="styleOpacity">
             <br>Opacity: <input id="styleOpacityInput" type="range" min="0" max="1" step="0.01" value="1">
             <output id="styleOpacityOutput">1</output>
@@ -309,7 +310,6 @@
               <option value="url(#outline)">Outline</option>
               <option value="url(#pencil)">Pencil</option>
               <option value="url(#turbulence)">Turbulence</option>
-              <option value="url(#water)">Water</option>
             </select>
           </div>
           <div id="styleScheme">
@@ -1152,5 +1152,5 @@
     <input type="file" accept=".txt" id="namesbaseToLoad">
   </div>
 
-  <script src="script.js?version=0.59.10b"></script>
+  <script src="script.js?version=0.59.12b"></script>
 </body>
