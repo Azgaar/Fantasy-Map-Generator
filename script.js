@@ -5727,7 +5727,7 @@ function fantasyMap() {
     var size = +editSize.value;
     group.attr("data-size", size)
       .attr("font-size", rn((size + (size / scale)) / 2, 2))
-      .attr("fill", editColor.title)
+      .attr("fill", editColor.value)
       .attr("opacity", editOpacity.value);
     if (editFontSelect.value !== "") {
       const font = fonts[editFontSelect.value].split(':')[0].replace(/\+/g, " ");
