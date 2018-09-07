@@ -5686,7 +5686,7 @@ function fantasyMap() {
   });
 
   // on any Editor input change
-  $("#labelEditor .editTrigger").change(function() {
+  $("#labelEditor .editTrigger").on("input", function() {
     if (!elSelected) return;
     // check if Group was changed
     var group = d3.select(elSelected.node().parentNode);

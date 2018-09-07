@@ -159,12 +159,12 @@ button, select, a {
 	width: 60px;
 }
 
-.editTrigger[type="number"] {
+div > input.editTrigger[type="number"] {
 	width: 44px;
 	height: 14px;
 }
 
-.editTrigger[type="range"] {
+div > input.editTrigger[type="range"] {
 	width: 132px;
 	cursor: pointer;
 }
