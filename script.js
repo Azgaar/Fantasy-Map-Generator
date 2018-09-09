@@ -414,12 +414,12 @@ function fantasyMap() {
       ["Abanades","Ablanque","Adobes","Ajofrin","Alameda","Alaminos","Alarilla","Albalate","Albares","Albarreal","Albendiego","Alcabon","Alcanizo","Alcaudete","Alcocer","Alcolea","Alcoroches","Aldea","Aldeanueva","Algar","Algora","Alhondiga","Alique","Almadrones","Almendral","Almoguera","Almonacid","Almorox","Alocen","Alovera","Alustante","Angon","Anguita","Anover","Anquela","Arbancon","Arbeteta","Arcicollar","Argecilla","Arges","Armallones","Armuna","Arroyo","Atanzon","Atienza","Aunon","Azuqueca","Azutan","Baides","Banos","Banuelos","Barcience","Bargas","Barriopedro","Belvis","Berninches","Borox","Brihuega","Budia","Buenaventura","Bujalaro","Burguillos","Burujon","Bustares","Cabanas","Cabanillas","Calera","Caleruela","Calzada","Camarena","Campillo","Camunas","Canizar","Canredondo","Cantalojas","Cardiel","Carmena","Carranque","Carriches","Casa","Casarrubios","Casas","Casasbuenas","Caspuenas","Castejon","Castellar","Castilforte","Castillo","Castilnuevo","Cazalegas","Cebolla","Cedillo","Cendejas","Centenera","Cervera","Checa","Chequilla","Chillaron","Chiloeches","Chozas","Chueca","Cifuentes","Cincovillas","Ciruelas","Ciruelos","Cobeja","Cobeta","Cobisa","Cogollor","Cogolludo","Condemios","Congostrina","Consuegra","Copernal","Corduente","Corral","Cuerva","Domingo","Dosbarrios","Driebes","Duron","El","Embid","Erustes","Escalona","Escalonilla","Escamilla","Escariche","Escopete","Espinosa","Espinoso","Esplegares","Esquivias","Estables","Estriegana","Fontanar","Fuembellida","Fuensalida","Fuentelsaz","Gajanejos","Galve","Galvez","Garciotum","Gascuena","Gerindote","Guadamur","Henche","Heras","Herreria","Herreruela","Hijes","Hinojosa","Hita","Hombrados","Hontanar","Hontoba","Horche","Hormigos","Huecas","Huermeces","Huerta","Hueva","Humanes","Illan","Illana","Illescas","Iniestola","Irueste","Jadraque","Jirueque","Lagartera","Las","Layos","Ledanca","Lillo","Lominchar","Loranca","Los","Lucillos","Lupiana","Luzaga","Luzon","Madridejos","Magan","Majaelrayo","Malaga","Malaguilla","Malpica","Mandayona","Mantiel","Manzaneque","Maqueda","Maranchon","Marchamalo","Marjaliza","Marrupe","Mascaraque","Masegoso","Matarrubia","Matillas","Mazarete","Mazuecos","Medranda","Megina","Mejorada","Mentrida","Mesegar","Miedes","Miguel","Millana","Milmarcos","Mirabueno","Miralrio","Mocejon","Mochales","Mohedas","Molina","Monasterio","Mondejar","Montarron","Mora","Moratilla","Morenilla","Muduex","Nambroca","Navalcan","Negredo","Noblejas","Noez","Nombela","Noves","Numancia","Nuno","Ocana","Ocentejo","Olias","Olmeda","Ontigola","Orea","Orgaz","Oropesa","Otero","Palmaces","Palomeque","Pantoja","Pardos","Paredes","Pareja","Parrillas","Pastrana","Pelahustan","Penalen","Penalver","Pepino","Peralejos","Peralveche","Pinilla","Pioz","Piqueras","Polan","Portillo","Poveda","Pozo","Pradena","Prados","Puebla","Puerto","Pulgar","Quer","Quero","Quintanar","Quismondo","Rebollosa","Recas","Renera","Retamoso","Retiendas","Riba","Rielves","Rillo","Riofrio","Robledillo","Robledo","Romanillos","Romanones","Rueda","Sacecorbo","Sacedon","Saelices","Salmeron","San","Santa","Santiuste","Santo","Sartajada","Sauca","Sayaton","Segurilla","Selas","Semillas","Sesena","Setiles","Sevilleja","Sienes","Siguenza","Solanillos","Somolinos","Sonseca","Sotillo","Sotodosos","Talavera","Tamajon","Taragudo","Taravilla","Tartanedo","Tembleque","Tendilla","Terzaga","Tierzo","Tordellego","Tordelrabano","Tordesilos","Torija","Torralba","Torre","Torrecilla","Torrecuadrada","Torrejon","Torremocha","Torrico","Torrijos","Torrubia","Tortola","Tortuera","Tortuero","Totanes","Traid","Trijueque","Trillo","Turleque","Uceda","Ugena","Ujados","Urda","Utande","Valdarachas","Valdesotos","Valhermoso","Valtablado","Valverde","Velada","Viana","Vinuelas","Yebes","Yebra","Yelamos","Yeles","Yepes","Yuncler","Yunclillos","Yuncos","Yunquera","Zaorejas","Zarzuela","Zorita"],
       ["Belgorod","Beloberezhye","Belyi","Belz","Berestiy","Berezhets","Berezovets","Berezutsk","Bobruisk","Bolonets","Borisov","Borovsk","Bozhesk","Bratslav","Bryansk","Brynsk","Buryn","Byhov","Chechersk","Chemesov","Cheremosh","Cherlen","Chern","Chernigov","Chernitsa","Chernobyl","Chernogorod","Chertoryesk","Chetvertnia","Demyansk","Derevesk","Devyagoresk","Dichin","Dmitrov","Dorogobuch","Dorogobuzh","Drestvin","Drokov","Drutsk","Dubechin","Dubichi","Dubki","Dubkov","Dveren","Galich","Glebovo","Glinsk","Goloty","Gomiy","Gorodets","Gorodische","Gorodno","Gorohovets","Goroshin","Gorval","Goryshon","Holm","Horobor","Hoten","Hotin","Hotmyzhsk","Ilovech","Ivan","Izborsk","Izheslavl","Kamenets","Kanev","Karachev","Karna","Kavarna","Klechesk","Klyapech","Kolomyya","Kolyvan","Kopyl","Korec","Kornik","Korochunov","Korshev","Korsun","Koshkin","Kotelno","Kovyla","Kozelsk","Kozelsk","Kremenets","Krichev","Krylatsk","Ksniatin","Kulatsk","Kursk","Kursk","Lebedev","Lida","Logosko","Lomihvost","Loshesk","Loshichi","Lubech","Lubno","Lubutsk","Lutsk","Luchin","Luki","Lukoml","Luzha","Lvov","Mtsensk","Mdin","Medniki","Melecha","Merech","Meretsk","Mescherskoe","Meshkovsk","Metlitsk","Mezetsk","Mglin","Mihailov","Mikitin","Mikulino","Miloslavichi","Mogilev","Mologa","Moreva","Mosalsk","Moschiny","Mozyr","Mstislav","Mstislavets","Muravin","Nemech","Nemiza","Nerinsk","Nichan","Novgorod","Novogorodok","Obolichi","Obolensk","Obolensk","Oleshsk","Olgov","Omelnik","Opoka","Opoki","Oreshek","Orlets","Osechen","Oster","Ostrog","Ostrov","Perelai","Peremil","Peremyshl","Pererov","Peresechen","Perevitsk","Pereyaslav","Pinsk","Ples","Polotsk","Pronsk","Proposhesk","Punia","Putivl","Rechitsa","Rodno","Rogachev","Romanov","Romny","Roslavl","Rostislavl","Rostovets","Rsha","Ruza","Rybchesk","Rylsk","Rzhavesk","Rzhev","Rzhischev","Sambor","Serensk","Serensk","Serpeysk","Shilov","Shuya","Sinech","Sizhka","Skala","Slovensk","Slutsk","Smedin","Sneporod","Snitin","Snovsk","Sochevo","Sokolec","Starica","Starodub","Stepan","Sterzh","Streshin","Sutesk","Svinetsk","Svisloch","Terebovl","Ternov","Teshilov","Teterin","Tiversk","Torchevsk","Toropets","Torzhok","Tripolye","Trubchevsk","Tur","Turov","Usvyaty","Uteshkov","Vasilkov","Velil","Velye","Venev","Venicha","Verderev","Vereya","Veveresk","Viazma","Vidbesk","Vidychev","Voino","Volodimer","Volok","Volyn","Vorobesk","Voronich","Voronok","Vorotynsk","Vrev","Vruchiy","Vselug","Vyatichsk","Vyatka","Vyshegorod","Vyshgorod","Vysokoe","Yagniatin","Yaropolch","Yasenets","Yuryev","Yuryevets","Zaraysk","Zhitomel","Zholvazh","Zizhech","Zubkov","Zudechev","Zvenigorod"],
       ["Akureyri","Aldra","Alftanes","Andenes","Austbo","Auvog","Bakkafjordur","Ballangen","Bardal","Beisfjord","Bifrost","Bildudalur","Bjerka","Bjerkvik","Bjorkosen","Bliksvaer","Blokken","Blonduos","Bolga","Bolungarvik","Borg","Borgarnes","Bosmoen","Bostad","Bostrand","Botsvika","Brautarholt","Breiddalsvik","Bringsli","Brunahlid","Budardalur","Byggdakjarni","Dalvik","Djupivogur","Donnes","Drageid","Drangsnes","Egilsstadir","Eiteroga","Elvenes","Engavogen","Ertenvog","Eskifjordur","Evenes","Eyrarbakki","Fagernes","Fallmoen","Fellabaer","Fenes","Finnoya","Fjaer","Fjelldal","Flakstad","Flateyri","Flostrand","Fludir","Gardabær","Gardur","Gimstad","Givaer","Gjeroy","Gladstad","Godoya","Godoynes","Granmoen","Gravdal","Grenivik","Grimsey","Grindavik","Grytting","Hafnir","Halsa","Hauganes","Haugland","Hauknes","Hella","Helland","Hellissandur","Hestad","Higrav","Hnifsdalur","Hofn","Hofsos","Holand","Holar","Holen","Holkestad","Holmavik","Hopen","Hovden","Hrafnagil","Hrisey","Husavik","Husvik","Hvammstangi","Hvanneyri","Hveragerdi","Hvolsvollur","Igeroy","Indre","Inndyr","Innhavet","Innes","Isafjordur","Jarklaustur","Jarnsreykir","Junkerdal","Kaldvog","Kanstad","Karlsoy","Kavosen","Keflavik","Kjelde","Kjerstad","Klakk","Kopasker","Kopavogur","Korgen","Kristnes","Krutoga","Krystad","Kvina","Lande","Laugar","Laugaras","Laugarbakki","Laugarvatn","Laupstad","Leines","Leira","Leiren","Leland","Lenvika","Loding","Lodingen","Lonsbakki","Lopsmarka","Lovund","Luroy","Maela","Melahverfi","Meloy","Mevik","Misvaer","Mornes","Mosfellsbær","Moskenes","Myken","Naurstad","Nesberg","Nesjahverfi","Nesset","Nevernes","Obygda","Ofoten","Ogskardet","Okervika","Oknes","Olafsfjordur","Oldervika","Olstad","Onstad","Oppeid","Oresvika","Orsnes","Orsvog","Osmyra","Overdal","Prestoya","Raudalaekur","Raufarhofn","Reipo","Reykholar","Reykholt","Reykjahlid","Rif","Rinoya","Rodoy","Rognan","Rosvika","Rovika","Salhus","Sanden","Sandgerdi","Sandoker","Sandset","Sandvika","Saudarkrokur","Selfoss","Selsoya","Sennesvik","Setso","Siglufjordur","Silvalen","Skagastrond","Skjerstad","Skonland","Skorvogen","Skrova","Sleneset","Snubba","Softing","Solheim","Solheimar","Sorarnoy","Sorfugloy","Sorland","Sormela","Sorvaer","Sovika","Stamsund","Stamsvika","Stave","Stokka","Stokkseyri","Storjord","Storo","Storvika","Strand","Straumen","Strendene","Sudavik","Sudureyri","Sundoya","Sydalen","Thingeyri","Thorlakshofn","Thorshofn","Tjarnabyggd","Tjotta","Tosbotn","Traelnes","Trofors","Trones","Tverro","Ulvsvog","Unnstad","Utskor","Valla","Vandved","Varmahlid","Vassos","Vevelstad","Vidrek","Vik","Vikholmen","Vogar","Vogehamn","Vopnafjordur"],
-      ["Abdera","Abila","Abydos","Acanthus","Acharnae","Actium","Adramyttium","Aegae","Aegina","Aegium","Aenus","Agrinion","Aigosthena","Akragas","Akrai","Akrillai","Akroinon","Akrotiri","Alalia","Alexandreia","Alexandretta","Alexandria","Alinda","Amarynthos","Amaseia","Ambracia","Amida","Amisos","Amnisos","Amphicaea","Amphigeneia","Amphipolis","Amphissa","Ankon","Antigona","Antipatrea","Antioch","Antioch","Antiochia","Andros","Apamea","Aphidnae","Apollonia","Argos","Arsuf","Artanes","Artemita","Argyroupoli","Asine","Asklepios","Aspendos","Assus","Astacus","Athenai","Athmonia","Aytos","Ancient","Baris","Bhrytos","Borysthenes","Berge","Boura","Bouthroton","Brauron","Byblos","Byllis","Byzantium","Bythinion","Callipolis","Cebrene","Chalcedon","Calydon","Carystus","Chamaizi","Chalcis","Chersonesos","Chios","Chytri","Clazomenae","Cleonae","Cnidus","Colosse","Corcyra","Croton","Cyme","Cyrene","Cythera","Decelea","Delos","Delphi","Demetrias","Dicaearchia","Dimale","Didyma","Dion","Dioscurias","Dodona","Dorylaion","Dyme","Edessa","Elateia","Eleusis","Eleutherna","Emporion","Ephesus","Ephyra","Epidamnos","Epidauros","Eresos","Eretria","Erythrae","Eubea","Gangra","Gaza","Gela","Golgi","Gonnos","Gorgippia","Gournia","Gortyn","Gythium","Hagios","Hagia","Halicarnassus","Halieis","Helike","Heliopolis","Hellespontos","Helorus","Hemeroskopeion","Heraclea","Hermione","Hermonassa","Hierapetra","Hierapolis","Himera","Histria","Hubla","Hyele","Ialysos","Iasus","Idalium","Imbros","Iolcus","Itanos","Ithaca","Juktas","Kallipolis","Kamares","Kameiros","Kannia","Kamarina","Kasmenai","Katane","Kerkinitida","Kepoi","Kimmerikon","Kios","Klazomenai","Knidos","Knossos","Korinthos","Kos","Kourion","Kume","Kydonia","Kynos","Kyrenia","Lamia","Lampsacus","Laodicea","Lapithos","Larissa","Lato","Laus","Lebena","Lefkada","Lekhaion","Leibethra","Leontinoi","Lepreum","Lessa","Lilaea","Lindus","Lissus","Epizephyrian","Madytos","Magnesia","Mallia","Mantineia","Marathon","Marmara","Maroneia","Masis","Massalia","Megalopolis","Megara","Mesembria","Messene","Metapontum","Methana","Methone","Methumna","Miletos","Misenum","Mochlos","Monastiraki","Morgantina","Mulai","Mukenai","Mylasa","Myndus","Myonia","Myra","Myrmekion","Mutilene","Myos","Nauplíos","Naucratis","Naupactus","Naxos","Neapoli","Neapolis","Nemea","Nicaea","Nicopolis","Nirou","Nymphaion","Nysa","Oenoe","Oenus","Odessos","Olbia","Olous","Olympia","Olynthus","Opus","Orchomenus","Oricos","Orestias","Oreus","Oropus","Onchesmos","Pactye","Pagasae","Palaikastro","Pandosia","Panticapaeum","Paphos","Parium","Paros","Parthenope","Patrae","Pavlopetri","Pegai","Pelion","Peiraieús","Pella","Percote","Pergamum","Petsofa","Phaistos","Phaleron","Phanagoria","Pharae","Pharnacia","Pharos","Phaselis","Philippi","Pithekussa","Philippopolis","Platanos","Phlius","Pherae","Phocaea","Pinara","Pisa","Pitane","Pitiunt","Pixous","Plataea","Poseidonia","Potidaea","Priapus","Priene","Prousa","Pseira","Psychro","Pteleum","Pydna","Pylos","Pyrgos","Rhamnus","Rhegion","Rhithymna","Rhodes","Rhypes","Rizinia","Salamis","Same","Samos","Scyllaeum","Selinus","Seleucia","Semasus","Sestos","Scidrus","Sicyon","Side","Sidon","Siteia","Sinope","Siris","Sklavokampos","Smyrna","Soli","Sozopolis","Sparta","Stagirus","Stratos","Stymphalos","Sybaris","Surakousai","Taras","Tanagra","Tanais","Tauromenion","Tegea","Temnos","Tenedos","Tenea","Teos","Thapsos","Thassos","Thebai","Theodosia","Therma","Thespiae","Thronion","Thoricus","Thurii","Thyreum","Thyria","Tiruns","Tithoraea","Tomis","Tragurion","Trapeze","Trapezus","Tripolis","Troizen","Troliton","Troy","Tylissos","Tyras","Tyros","Tyritake","Vasiliki","Vathypetros","Zakynthos","Zakros","Zankle"],
+      ["Abdera","Abila","Abydos","Acanthus","Acharnae","Actium","Adramyttium","Aegae","Aegina","Aegium","Aenus","Agrinion","Aigosthena","Akragas","Akrai","Akrillai","Akroinon","Akrotiri","Alalia","Alexandreia","Alexandretta","Alexandria","Alinda","Amarynthos","Amaseia","Ambracia","Amida","Amisos","Amnisos","Amphicaea","Amphigeneia","Amphipolis","Amphissa","Ankon","Antigona","Antipatrea","Antioch","Antioch","Antiochia","Andros","Apamea","Aphidnae","Apollonia","Argos","Arsuf","Artanes","Artemita","Argyroupoli","Asine","Asklepios","Aspendos","Assus","Astacus","Athenai","Athmonia","Aytos","Ancient","Baris","Bhrytos","Borysthenes","Berge","Boura","Bouthroton","Brauron","Byblos","Byllis","Byzantium","Bythinion","Callipolis","Cebrene","Chalcedon","Calydon","Carystus","Chamaizi","Chalcis","Chersonesos","Chios","Chytri","Clazomenae","Cleonae","Cnidus","Colosse","Corcyra","Croton","Cyme","Cyrene","Cythera","Decelea","Delos","Delphi","Demetrias","Dicaearchia","Dimale","Didyma","Dion","Dioscurias","Dodona","Dorylaion","Dyme","Edessa","Elateia","Eleusis","Eleutherna","Emporion","Ephesus","Ephyra","Epidamnos","Epidauros","Eresos","Eretria","Erythrae","Eubea","Gangra","Gaza","Gela","Golgi","Gonnos","Gorgippia","Gournia","Gortyn","Gythium","Hagios","Hagia","Halicarnassus","Halieis","Helike","Heliopolis","Hellespontos","Helorus","Hemeroskopeion","Heraclea","Hermione","Hermonassa","Hierapetra","Hierapolis","Himera","Histria","Hubla","Hyele","Ialysos","Iasus","Idalium","Imbros","Iolcus","Itanos","Ithaca","Juktas","Kallipolis","Kamares","Kameiros","Kannia","Kamarina","Kasmenai","Katane","Kerkinitida","Kepoi","Kimmerikon","Kios","Klazomenai","Knidos","Knossos","Korinthos","Kos","Kourion","Kume","Kydonia","Kynos","Kyrenia","Lamia","Lampsacus","Laodicea","Lapithos","Larissa","Lato","Laus","Lebena","Lefkada","Lekhaion","Leibethra","Leontinoi","Lepreum","Lessa","Lilaea","Lindus","Lissus","Epizephyrian","Madytos","Magnesia","Mallia","Mantineia","Marathon","Marmara","Maroneia","Masis","Massalia","Megalopolis","Megara","Mesembria","Messene","Metapontum","Methana","Methone","Methumna","Miletos","Misenum","Mochlos","Monastiraki","Morgantina","Mulai","Mukenai","Mylasa","Myndus","Myonia","Myra","Myrmekion","Mutilene","Myos","Nauplios","Naucratis","Naupactus","Naxos","Neapoli","Neapolis","Nemea","Nicaea","Nicopolis","Nirou","Nymphaion","Nysa","Oenoe","Oenus","Odessos","Olbia","Olous","Olympia","Olynthus","Opus","Orchomenus","Oricos","Orestias","Oreus","Oropus","Onchesmos","Pactye","Pagasae","Palaikastro","Pandosia","Panticapaeum","Paphos","Parium","Paros","Parthenope","Patrae","Pavlopetri","Pegai","Pelion","Peiraieús","Pella","Percote","Pergamum","Petsofa","Phaistos","Phaleron","Phanagoria","Pharae","Pharnacia","Pharos","Phaselis","Philippi","Pithekussa","Philippopolis","Platanos","Phlius","Pherae","Phocaea","Pinara","Pisa","Pitane","Pitiunt","Pixous","Plataea","Poseidonia","Potidaea","Priapus","Priene","Prousa","Pseira","Psychro","Pteleum","Pydna","Pylos","Pyrgos","Rhamnus","Rhegion","Rhithymna","Rhodes","Rhypes","Rizinia","Salamis","Same","Samos","Scyllaeum","Selinus","Seleucia","Semasus","Sestos","Scidrus","Sicyon","Side","Sidon","Siteia","Sinope","Siris","Sklavokampos","Smyrna","Soli","Sozopolis","Sparta","Stagirus","Stratos","Stymphalos","Sybaris","Surakousai","Taras","Tanagra","Tanais","Tauromenion","Tegea","Temnos","Tenedos","Tenea","Teos","Thapsos","Thassos","Thebai","Theodosia","Therma","Thespiae","Thronion","Thoricus","Thurii","Thyreum","Thyria","Tiruns","Tithoraea","Tomis","Tragurion","Trapeze","Trapezus","Tripolis","Troizen","Troliton","Troy","Tylissos","Tyras","Tyros","Tyritake","Vasiliki","Vathypetros","Zakynthos","Zakros","Zankle"],
       ["Abila","Adflexum","Adnicrem","Aelia","Aelius","Aeminium","Aequum","Agrippina","Agrippinae","Ala","Albanianis","Ambianum","Andautonia","Apulum","Aquae","Aquaegranni","Aquensis","Aquileia","Aquincum","Arae","Argentoratum","Ariminum","Ascrivium","Atrebatum","Atuatuca","Augusta","Aurelia","Aurelianorum","Batavar","Batavorum","Belum","Biriciana","Blestium","Bonames","Bonna","Bononia","Borbetomagus","Bovium","Bracara","Brigantium","Burgodunum","Caesaraugusta","Caesarea","Caesaromagus","Calleva","Camulodunum","Cannstatt","Cantiacorum","Capitolina","Castellum","Castra","Castrum","Cibalae","Clausentum","Colonia","Concangis","Condate","Confluentes","Conimbriga","Corduba","Coria","Corieltauvorum","Corinium","Coriovallum","Cornoviorum","Danum","Deva","Divodurum","Dobunnorum","Drusi","Dubris","Dumnoniorum","Durnovaria","Durocobrivis","Durocornovium","Duroliponte","Durovernum","Durovigutum","Eboracum","Edetanorum","Emerita","Emona","Euracini","Faventia","Flaviae","Florentia","Forum","Gerulata","Gerunda","Glevensium","Hadriani","Herculanea","Isca","Italica","Iulia","Iuliobrigensium","Iuvavum","Lactodurum","Lagentium","Lauri","Legionis","Lemanis","Lentia","Lepidi","Letocetum","Lindinis","Lindum","Londinium","Lopodunum","Lousonna","Lucus","Lugdunum","Luguvalium","Lutetia","Mancunium","Marsonia","Martius","Massa","Matilo","Mattiacorum","Mediolanum","Mod","Mogontiacum","Moridunum","Mursa","Naissus","Nervia","Nida","Nigrum","Novaesium","Noviomagus","Olicana","Ovilava","Parisiorum","Partiscum","Paterna","Pistoria","Placentia","Pollentia","Pomaria","Pons","Portus","Praetoria","Praetorium","Pullum","Ragusium","Ratae","Raurica","Regina","Regium","Regulbium","Rigomagus","Roma","Romula","Rutupiae","Salassorum","Salernum","Salona","Scalabis","Segovia","Silurum","Sirmium","Siscia","Sorviodurum","Sumelocenna","Tarraco","Taurinorum","Theranda","Traiectum","Treverorum","Tungrorum","Turicum","Ulpia","Valentia","Venetiae","Venta","Verulamium","Vesontio","Vetera","Victoriae","Victrix","Villa","Viminacium","Vindelicorum","Vindobona","Vinovia","Viroconium"],
       ["Aanekoski","Abjapaluoja","Ahlainen","Aholanvaara","Ahtari","Aijala","Aimala","Akaa","Alajarvi","Alatornio","Alavus","Antsla","Aspo","Bennas","Bjorkoby","Elva","Emasalo","Espoo","Esse","Evitskog","Forssa","Haapajarvi","Haapamaki","Haapavesi","Haapsalu","Haavisto","Hameenlinna","Hameenmaki","Hamina","Hanko","Harjavalta","Hattuvaara","Haukipudas","Hautajarvi","Havumaki","Heinola","Hetta","Hinkabole","Hirmula","Hossa","Huittinen","Husula","Hyryla","Hyvinkaa","Iisalmi","Ikaalinen","Ilmola","Imatra","Inari","Iskmo","Itakoski","Jamsa","Jarvenpaa","Jeppo","Jioesuu","Jiogeva","Joensuu","Jokela","Jokikyla","Jokisuu","Jormua","Juankoski","Jungsund","Jyvaskyla","Kaamasmukka","Kaarina","Kajaani","Kalajoki","Kallaste","Kankaanpaa","Kannus","Kardla","Karesuvanto","Karigasniemi","Karkkila","Karkku","Karksinuia","Karpankyla","Kaskinen","Kasnas","Kauhajoki","Kauhava","Kauniainen","Kauvatsa","Kehra","Keila","Kellokoski","Kelottijarvi","Kemi","Kemijarvi","Kerava","Keuruu","Kiikka","Kiipu","Kilinginiomme","Kiljava","Kilpisjarvi","Kitee","Kiuruvesi","Kivesjarvi","Kiviioli","Kivisuo","Klaukkala","Klovskog","Kohtlajarve","Kokemaki","Kokkola","Kolho","Koria","Koskue","Kotka","Kouva","Kouvola","Kristiina","Kaupunki","Kuhmo","Kunda","Kuopio","Kuressaare","Kurikka","Kusans","Kuusamo","Kylmalankyla","Lahti","Laitila","Lankipohja","Lansikyla","Lappeenranta","Lapua","Laurila","Lautiosaari","Lepsama","Liedakkala","Lieksa","Lihula","Littoinen","Lohja","Loimaa","Loksa","Loviisa","Luohuanylipaa","Lusi","Maardu","Maarianhamina","Malmi","Mantta","Masaby","Masala","Matasvaara","Maula","Miiluranta","Mikkeli","Mioisakula","Munapirtti","Mustvee","Muurahainen","Naantali","Nappa","Narpio","Nickby","Niinimaa","Niinisalo","Nikkila","Nilsia","Nivala","Nokia","Nummela","Nuorgam","Nurmes","Nuvvus","Obbnas","Oitti","Ojakkala","Ollola","onningeby","Orimattila","Orivesi","Otanmaki","Otava","Otepaa","Oulainen","Oulu","Outokumpu","Paavola","Paide","Paimio","Pakankyla","Paldiski","Parainen","Parkano","Parkumaki","Parola","Perttula","Pieksamaki","Pietarsaari","Pioltsamaa","Piolva","Pohjavaara","Porhola","Pori","Porrasa","Porvoo","Pudasjarvi","Purmo","Pussi","Pyhajarvi","Raahe","Raasepori","Raisio","Rajamaki","Rakvere","Rapina","Rapla","Rauma","Rautio","Reposaari","Riihimaki","Rovaniemi","Roykka","Ruonala","Ruottala","Rutalahti","Saarijarvi","Salo","Sastamala","Saue","Savonlinna","Seinajoki","Sillamae","Sindi","Siuntio","Somero","Sompujarvi","Suonenjoki","Suurejaani","Syrjantaka","Tampere","Tamsalu","Tapa","Temmes","Tiorva","Tormasenvaara","Tornio","Tottijarvi","Tulppio","Turenki","Turi","Tuukkala","Tuurala","Tuuri","Tuuski","Ulvila","Unari","Upinniemi","Utti","Uusikaarlepyy","Uusikaupunki","Vaaksy","Vaalimaa","Vaarinmaja","Vaasa","Vainikkala","Valga","Valkeakoski","Vantaa","Varkaus","Vehkapera","Vehmasmaki","Vieki","Vierumaki","Viitasaari","Viljandi","Vilppula","Viohma","Vioru","Virrat","Ylike","Ylivieska","Ylojarvi"],
       ["Sabi","Wiryeseong","Hwando","Gungnae","Ungjin","Wanggeomseong","Ganggyeong","Jochiwon","Cheorwon","Beolgyo","Gangjin","Gampo","Yecheon","Geochang","Janghang","Hadong","Goseong","Yeongdong","Yesan","Sintaein","Geumsan","Boseong","Jangheung","Uiseong","Jumunjin","Janghowon","Hongseong","Gimhwa","Gwangcheon","Guryongpo","Jinyeong","Buan","Damyang","Jangseong","Wando","Angang","Okcheon","Jeungpyeong","Waegwan","Cheongdo","Gwangyang","Gochang","Haenam","Yeonggwang","Hanam","Eumseong","Daejeong","Hanrim","Samrye","Yongjin","Hamyang","Buyeo","Changnyeong","Yeongwol","Yeonmu","Gurye","Hwasun","Hampyeong","Namji","Samnangjin","Dogye","Hongcheon","Munsan","Gapyeong","Ganghwa","Geojin","Sangdong","Jeongseon","Sabuk","Seonghwan","Heunghae","Hapdeok","Sapgyo","Taean","Boeun","Geumwang","Jincheon","Bongdong","Doyang","Geoncheon","Pungsan","Punggi","Geumho","Wonju","Gaun","Hayang","Yeoju","Paengseong","Yeoncheon","Yangpyeong","Ganseong","Yanggu","Yangyang","Inje","Galmal","Pyeongchang","Hwacheon","Hoengseong","Seocheon","Cheongyang","Goesan","Danyang","Hamyeol","Muju","Sunchang","Imsil","Jangsu","Jinan","Goheung","Gokseong","Muan","Yeongam","Jindo","Seonsan","Daegaya","Gunwi","Bonghwa","Seongju","Yeongdeok","Yeongyang","Ulleung","Uljin","Cheongsong","wayang","Namhae","Sancheong","Uiryeong","Gaya","Hapcheon","Wabu","Dongsong","Sindong","Wondeok","Maepo","Anmyeon","Okgu","Sariwon","Dolsan","Daedeok","Gwansan","Geumil","Nohwa","Baeksu","Illo","Jido","Oedong","Ocheon","Yeonil","Hamchang","Pyeonghae","Gijang","Jeonggwan","Aewor","Gujwa","Seongsan","Jeongok","Seonggeo","Seungju","Hongnong","Jangan","Jocheon","Gohan","Jinjeop","Bubal","Beobwon","Yeomchi","Hwado","Daesan","Hwawon","Apo","Nampyeong","Munsan","Sinbuk","Munmak","Judeok","Bongyang","Ungcheon","Yugu","Unbong","Mangyeong","Dong","Naeseo","Sanyang","Soheul","Onsan","Eonyang","Nongong","Dasa","Goa","Jillyang","Bongdam","Naesu","Beomseo","Opo","Gongdo","Jingeon","Onam","Baekseok","Jiksan","Mokcheon","Jori","Anjung","Samho","Ujeong","Buksam","Tongjin","Chowol","Gonjiam","Pogok","Seokjeok","Poseung","Ochang","Hyangnam","Baebang","Gochon","Songak","Samhyang","Yangchon","Osong","Aphae","Ganam","Namyang","Chirwon","Andong","Ansan","Anseong","Anyang","Asan","Boryeong","Bucheon","Busan","Changwon","Cheonan","Cheongju","Chuncheon","Chungju","Daegu","Daejeon","Dangjin","Dongducheon","Donghae","Gangneung","Geoje","Gimcheon","Gimhae","Gimje","Gimpo","Gongju","Goyang","Gumi","Gunpo","Gunsan","Guri","Gwacheon","Gwangju","Gwangju","Gwangmyeong","Gyeongju","Gyeongsan","Gyeryong","Hwaseong","Icheon","Iksan","Incheon","Jecheon","Jeongeup","Jeonju","Jeju","Jinju","Naju","Namyangju","Namwon","Nonsan","Miryang","Mokpo","Mungyeong","Osan","Paju","Pocheon","Pohang","Pyeongtaek","Sacheon","Sangju","Samcheok","Sejong","Seogwipo","Seongnam","Seosan","Seoul","Siheung","Sokcho","Suncheon","Suwon","Taebaek","Tongyeong","Uijeongbu","Uiwang","Ulsan","Yangju","Yangsan","Yeongcheon","Yeongju","Yeosu","Yongin","Chungmu","Daecheon","Donggwangyang","Geumseong","Gyeongseong","Iri","Jangseungpo","Jeomchon","Jeongju","Migeum","Onyang","Samcheonpo","Busan","Busan","Cheongju","Chuncheon","Daegu","Daegu","Daejeon","Daejeon","Gunsan","Gwangju","Gwangju","Gyeongseong","Incheon","Incheon","Iri","Jeonju","Jinhae","Jinju","Masan","Masan","Mokpo","Songjeong","Songtan","Ulsan","Yeocheon","Cheongjin","Gaeseong","Haeju","Hamheung","Heungnam","Jinnampo","Najin","Pyeongyang","Seongjin","Sineuiju","Songnim","Wonsan"],
       ["Anding","Anlu","Anqing","Anshun","Baan","Baixing","Banyang","Baoding","Baoqing","Binzhou","Caozhou","Changbai","Changchun","Changde","Changling","Changsha","Changtu","Changzhou","Chaozhou","Cheli","Chengde","Chengdu","Chenzhou","Chizhou","Chongqing","Chuxiong","Chuzhou","Dading","Dali","Daming","Datong","Daxing","Dean","Dengke","Dengzhou","Deqing","Dexing","Dihua","Dingli","Dongan","Dongchang","Dongchuan","Dongping","Duyun","Fengtian","Fengxiang","Fengyang","Fenzhou","Funing","Fuzhou","Ganzhou","Gaoyao","Gaozhou","Gongchang","Guangnan","Guangning","Guangping","Guangxin","Guangzhou","Guide","Guilin","Guiyang","Hailong","Hailun","Hangzhou","Hanyang","Hanzhong","Heihe","Hejian","Henan","Hengzhou","Hezhong","Huaian","Huaide","Huaiqing","Huanglong","Huangzhou","Huining","Huizhou","Hulan","Huzhou","Jiading","Jian","Jianchang","Jiande","Jiangning","Jiankang","Jianning","Jiaxing","Jiayang","Jilin","Jinan","Jingjiang","Jingzhao","Jingzhou","Jinhua","Jinzhou","Jiujiang","Kaifeng","Kaihua","Kangding","Kuizhou","Laizhou","Lanzhou","Leizhou","Liangzhou","Lianzhou","Liaoyang","Lijiang","Linan","Linhuang","Linjiang","Lintao","Liping","Liuzhou","Longan","Longjiang","Longqing","Longxing","Luan","Lubin","Lubin","Luzhou","Mishan","Nanan","Nanchang","Nandian","Nankang","Nanning","Nanyang","Nenjiang","Ningan","Ningbo","Ningguo","Ninguo","Ningwu","Ningxia","Ningyuan","Pingjiang","Pingle","Pingliang","Pingyang","Puer","Puzhou","Qianzhou","Qingyang","Qingyuan","Qingzhou","Qiongzhou","Qujing","Quzhou","Raozhou","Rende","Ruian","Ruizhou","Runing","Shafeng","Shajing","Shaoqing","Shaowu","Shaoxing","Shaozhou","Shinan","Shiqian","Shouchun","Shuangcheng","Shulei","Shunde","Shunqing","Shuntian","Shuoping","Sicheng","Sien","Sinan","Sizhou","Songjiang","Suiding","Suihua","Suining","Suzhou","Taian","Taibei","Tainan","Taiping","Taiwan","Taiyuan","Taizhou","Taonan","Tengchong","Tieli","Tingzhou","Tongchuan","Tongqing","Tongren","Tongzhou","Weihui","Wensu","Wenzhou","Wuchang","Wuding","Wuzhou","Xian","Xianchun","Xianping","Xijin","Xiliang","Xincheng","Xingan","Xingde","Xinghua","Xingjing","Xingqing","Xingyi","Xingyuan","Xingzhong","Xining","Xinmen","Xiping","Xuanhua","Xunzhou","Xuzhou","Yanan","Yangzhou","Yanji","Yanping","Yanqi","Yanzhou","Yazhou","Yichang","Yidu","Yilan","Yili","Yingchang","Yingde","Yingtian","Yingzhou","Yizhou","Yongchang","Yongping","Yongshun","Yongzhou","Yuanzhou","Yuezhou","Yulin","Yunnan","Yunyang","Zezhou","Zhangde","Zhangzhou","Zhaoqing","Zhaotong","Zhenan","Zhending","Zhengding","Zhenhai","Zhenjiang","Zhenxi","Zhenyun","Zhongshan","Zunyi"],
-      ["Nanporo","Naie","Kamisunagawa","Yuni","Naganuma","Kuriyama","Tsukigata","Urausu","Shintotsukawa","Moseushi","Chippubetsu","Uryu","Hokuryu","Numata","Tobetsu","Suttsu","Kuromatsunai","Rankoshi","Niseko","Kimobetsu","Kyogoku","Kutchan","Kyowa","Iwanai","Shakotan","Furubira","Niki","Yoichi","Toyoura","Toyako","Sobetsu","Shiraoi","Atsuma","Abira","Mukawa","Hidaka","Biratori","Niikappu","Urakawa","Samani","Erimo","Shinhidaka","Matsumae","Fukushima","Shiriuchi","Kikonai","Nanae","Shikabe","Mori","Yakumo","Oshamambe","Esashi","Kaminokuni","Assabu","Otobe","Okushiri","Imakane","Setana","Takasu","Higashikagura","Toma","Pippu","Aibetsu","Kamikawa","Higashikawa","Biei","Kamifurano","Nakafurano","Minamifurano","Horokanai","Wassamu","Kenbuchi","Shimokawa","Bifuka","Nakagawa","Mashike","Obira","Tomamae","Haboro","Enbetsu","Teshio","Hamatonbetsu","Nakatonbetsu","Esashi","Toyotomi","Horonobe","Rebun","Rishiri","Rishirifuji","Bihoro","Tsubetsu","Ozora","Shari","Kiyosato","Koshimizu","Kunneppu","Oketo","Saroma","Engaru","Yubetsu","Takinoue","Okoppe","Omu","Otofuke","Shihoro","Kamishihoro","Shikaoi","Shintoku","Shimizu","Memuro","Taiki","Hiroo","Makubetsu","Ikeda","Toyokoro","Honbetsu","Ashoro","Rikubetsu","Urahoro","Kushiro","Akkeshi","Hamanaka","Shibecha","Teshikaga","Shiranuka","Betsukai","Nakashibetsu","Shibetsu","Rausu","Hiranai","Imabetsu","Sotogahama","Ajigasawa","Fukaura","Fujisaki","Owani","Itayanagi","Tsuruta","Nakadomari","Noheji","Shichinohe","Rokunohe","Yokohama","Tohoku","Oirase","Oma","Sannohe","Gonohe","Takko","Nanbu","Hashikami","Shizukuishi","Kuzumaki","Iwate","Shiwa","Yahaba","Nishiwaga","Kanegasaki","Hiraizumi","Sumita","Otsuchi","Yamada","Iwaizumi","Karumai","Hirono","Ichinohe","Zao","Shichikashuku","Ogawara","Murata","Shibata","Kawasaki","Marumori","Watari","Yamamoto","Matsushima","Shichigahama","Rifu","Taiwa","Osato","Shikama","Kami","Wakuya","Misato","Onagawa","Minamisanriku","Kosaka","Fujisato","Mitane","Happo","Gojome","Hachirogata","Ikawa","Misato","Ugo","Yamanobe","Nakayama","Kahoku","Nishikawa","Asahi","Oe","Oishida","Kaneyama","Mogami","Funagata","Mamurogawa","Takahata","Kawanishi","Oguni","Shirataka","Iide","Mikawa","Shonai","Yuza","Koori","Kunimi","Kawamata","Kagamiishi","Shimogo","Tadami","Minamiaizu","Nishiaizu","Bandai","Inawashiro","Aizubange","Yanaizu","Mishima","Kaneyama","Aizumisato","Yabuki","Tanagura","Yamatsuri","Hanawa","Ishikawa","Asakawa","Furudono","Miharu","Ono","Hirono","Naraha","Tomioka","Okuma","Futaba","Namie","Shinchi","Ibaraki","Oarai","Shirosato","Daigo","Ami","Kawachi","Yachiyo","Goka","Sakai","Tone","Kaminokawa","Mashiko","Motegi","Ichikai","Haga","Mibu","Nogi","Shioya","Takanezawa","Nasu","Nakagawa","Yoshioka","Kanna","Shimonita","Kanra","Nakanojo","Naganohara","Kusatsu","Higashiagatsuma","Minakami","Tamamura","Itakura","Meiwa","Chiyoda","Oizumi","Ora","Ina","Miyoshi","Moroyama","Ogose","Namegawa","Ranzan","Ogawa","Kawajima","Yoshimi","Hatoyama","Tokigawa","Yokoze","Minano","Nagatoro","Ogano","Misato","Kamikawa","Kamisato","Yorii","Miyashiro","Sugito","Matsubushi","Shisui","Sakae","Kozaki","Tako","Tonosho","Kujukuri","Shibayama","Yokoshibahikari","Ichinomiya","Mutsuzawa","Shirako","Nagara","Chonan","Otaki","Onjuku","Kyonan","Mizuho","Hinode","Okutama","Oshima","Hachijo","Aikawa","Hayama","Samukawa","Oiso","Ninomiya","Nakai","Oi","Matsuda","Yamakita","Kaisei","Hakone","Manazuru","Yugawara","Seiro","Tagami","Aga","Izumozaki","Yuzawa","Tsunan","Kamiichi","Tateyama","Nyuzen","Asahi","Kawakita","Tsubata","Uchinada","Shika","Hodatsushimizu","Nakanoto","Anamizu","Noto","Eiheiji","Ikeda","Minamiechizen","Echizen","Mihama","Takahama","Oi","Wakasa","Ichikawamisato","Hayakawa","Minobu","Nanbu","Fujikawa","Showa","Nishikatsura","Fujikawaguchiko","Koumi","Sakuho","Karuizawa","Miyota","Tateshina","Nagawa","Shimosuwa","Fujimi","Tatsuno","Minowa","Iijima","Matsukawa","Takamori","Anan","Agematsu","Nagiso","Kiso","Ikeda","Sakaki","Obuse","Yamanouchi","Shinano","Iizuna","Ginan","Kasamatsu","Yoro","Tarui","Sekigahara","Godo","Wanouchi","Anpachi","Ibigawa","Ono","Ikeda","Kitagata","Sakahogi","Tomika","Kawabe","Hichiso","Yaotsu","Shirakawa","Mitake","Higashiizu","Kawazu","Minamiizu","Matsuzaki","Nishiizu","Kannami","Shimizu","Nagaizumi","Oyama","Yoshida","Kawanehon","Mori","Togo","Toyoyama","Oguchi","Fuso","Oharu","Kanie","Agui","Higashiura","Minamichita","Mihama","Taketoyo","Mihama","Kota","Shitara","Toei","Kisosaki","Toin","Komono","Asahi","Kawagoe","Taki","Meiwa","Odai","Tamaki","Watarai","Taiki","Minamiise","Kihoku","Mihama","Kiho","Hino","Ryuo","Aisho","Toyosato","Kora","Taga","Oyamazaki","Kumiyama","Ide","Ujitawara","Kasagi","Wazuka","Seika","Kyotamba","Ine","Yosano","Shimamoto","Toyono","Nose","Tadaoka","Kumatori","Tajiri","Misaki","Taishi","Kanan","Inagawa","Taka","Inami","Harima","Ichikawa","Fukusaki","Kamikawa","Taishi","Kamigori","Sayo","Kami","Shin'onsen","Heguri","Sango","Ikaruga","Ando","Kawanishi","Miyake","Tawaramoto","Takatori","Kanmaki","Oji","Koryo","Kawai","Yoshino","Oyodo","Shimoichi","Kushimoto","Kimino","Katsuragi","Kudoyama","Koya","Yuasa","Hirogawa","Aridagawa","Mihama","Hidaka","Yura","Inami","Minabe","Hidakagawa","Shirahama","Kamitonda","Susami","Nachikatsuura","Taiji","Kozagawa","Iwami","Wakasa","Chizu","Yazu","Misasa","Yurihama","Kotoura","Hokuei","Daisen","Nanbu","Hoki","Nichinan","Hino","Kofu","Okuizumo","Iinan","Kawamoto","Misato","Onan","Tsuwano","Yoshika","Ama","Nishinoshima","Okinoshima","Wake","Hayashima","Satosho","Yakage","Kagamino","Shoo","Nagi","Kumenan","Misaki","Kibichuo","Fuchu","Kaita","Kumano","Saka","Kitahiroshima","Akiota","Osakikamijima","Sera","Jinsekikogen","Suooshima","Waki","Kaminoseki","Tabuse","Hirao","Abu","Katsuura","Kamikatsu","Ishii","Kamiyama","Naka","Mugi","Minami","Kaiyo","Matsushige","Kitajima","Aizumi","Itano","Kamiita","Tsurugi","Higashimiyoshi","Tonosho","Shodoshima","Miki","Naoshima","Utazu","Ayagawa","Kotohira","Tadotsu","Manno","Kamijima","Kumakogen","Masaki","Tobe","Uchiko","Ikata","Kihoku","Matsuno","Ainan","Toyo","Nahari","Tano","Yasuda","Motoyama","Otoyo","Tosa","Ino","Niyodogawa","Nakatosa","Sakawa","Ochi","Yusuhara","Tsuno","Shimanto","Otsuki","Kuroshio","Nakagawa","Umi","Sasaguri","Shime","Sue","Shingu","Hisayama","Kasuya","Ashiya","Mizumaki","Okagaki","Onga","Kotake","Kurate","Keisen","Chikuzen","Tachiarai","Oki","Hirokawa","Kawara","Soeda","Itoda","Kawasaki","Oto","Fukuchi","Kanda","Miyako","Yoshitomi","Koge","Chikujo","Yoshinogari","Kiyama","Kamimine","Miyaki","Genkai","Arita","Omachi","Kohoku","Shiroishi","Tara","Nagayo","Togitsu","Higashisonogi","Kawatana","Hasami","Ojika","Saza","Shinkamigoto","Misato","Gyokuto","Nankan","Nagasu","Nagomi","Ozu","Kikuyo","Minamioguni","Oguni","Takamori","Mifune","Kashima","Mashiki","Kosa","Yamato","Hikawa","Ashikita","Tsunagi","Nishiki","Taragi","Yunomae","Asagiri","Reihoku","Hiji","Kusu","Kokonoe","Mimata","Takaharu","Kunitomi","Aya","Takanabe","Shintomi","Kijo","Kawaminami","Tsuno","Kadogawa","Misato","Takachiho","Hinokage","Gokase","Satsuma","Nagashima","Yusui","Osaki","Higashikushira","Kinko","Minamiosumi","Kimotsuki","Nakatane","Minamitane","Yakushima","Setouchi","Tatsugo","Kikai","Tokunoshima","Amagi","Isen","Wadomari","China","Yoron","Motobu","Kin","Kadena","Chatan","Nishihara","Yonabaru","Haebaru","Kumejima","Yaese","Taketomi","Yonaguni"]
+      ["Nanporo","Naie","Kamisunagawa","Yuni","Naganuma","Kuriyama","Tsukigata","Urausu","Shintotsukawa","Moseushi","Chippubetsu","Uryu","Hokuryu","Numata","Tobetsu","Suttsu","Kuromatsunai","Rankoshi","Niseko","Kimobetsu","Kyogoku","Kutchan","Kyowa","Iwanai","Shakotan","Furubira","Niki","Yoichi","Toyoura","Toyako","Sobetsu","Shiraoi","Atsuma","Abira","Mukawa","Hidaka","Biratori","Niikappu","Urakawa","Samani","Erimo","Shinhidaka","Matsumae","Fukushima","Shiriuchi","Kikonai","Nanae","Shikabe","Mori","Yakumo","Oshamambe","Esashi","Kaminokuni","Assabu","Otobe","Okushiri","Imakane","Setana","Takasu","Higashikagura","Toma","Pippu","Aibetsu","Kamikawa","Higashikawa","Biei","Kamifurano","Nakafurano","Minamifurano","Horokanai","Wassamu","Kenbuchi","Shimokawa","Bifuka","Nakagawa","Mashike","Obira","Tomamae","Haboro","Enbetsu","Teshio","Hamatonbetsu","Nakatonbetsu","Esashi","Toyotomi","Horonobe","Rebun","Rishiri","Rishirifuji","Bihoro","Tsubetsu","Ozora","Shari","Kiyosato","Koshimizu","Kunneppu","Oketo","Saroma","Engaru","Yubetsu","Takinoue","Okoppe","Omu","Otofuke","Shihoro","Kamishihoro","Shikaoi","Shintoku","Shimizu","Memuro","Taiki","Hiroo","Makubetsu","Ikeda","Toyokoro","Honbetsu","Ashoro","Rikubetsu","Urahoro","Kushiro","Akkeshi","Hamanaka","Shibecha","Teshikaga","Shiranuka","Betsukai","Nakashibetsu","Shibetsu","Rausu","Hiranai","Imabetsu","Sotogahama","Ajigasawa","Fukaura","Fujisaki","Owani","Itayanagi","Tsuruta","Nakadomari","Noheji","Shichinohe","Rokunohe","Yokohama","Tohoku","Oirase","Oma","Sannohe","Gonohe","Takko","Nanbu","Hashikami","Shizukuishi","Kuzumaki","Iwate","Shiwa","Yahaba","Nishiwaga","Kanegasaki","Hiraizumi","Sumita","Otsuchi","Yamada","Iwaizumi","Karumai","Hirono","Ichinohe","Zao","Shichikashuku","Ogawara","Murata","Shibata","Kawasaki","Marumori","Watari","Yamamoto","Matsushima","Shichigahama","Rifu","Taiwa","Osato","Shikama","Kami","Wakuya","Misato","Onagawa","Minamisanriku","Kosaka","Fujisato","Mitane","Happo","Gojome","Hachirogata","Ikawa","Misato","Ugo","Yamanobe","Nakayama","Kahoku","Nishikawa","Asahi","Oe","Oishida","Kaneyama","Mogami","Funagata","Mamurogawa","Takahata","Kawanishi","Oguni","Shirataka","Iide","Mikawa","Shonai","Yuza","Koori","Kunimi","Kawamata","Kagamiishi","Shimogo","Tadami","Minamiaizu","Nishiaizu","Bandai","Inawashiro","Aizubange","Yanaizu","Mishima","Kaneyama","Aizumisato","Yabuki","Tanagura","Yamatsuri","Hanawa","Ishikawa","Asakawa","Furudono","Miharu","Ono","Hirono","Naraha","Tomioka","Okuma","Futaba","Namie","Shinchi","Ibaraki","Oarai","Shirosato","Daigo","Ami","Kawachi","Yachiyo","Goka","Sakai","Tone","Kaminokawa","Mashiko","Motegi","Ichikai","Haga","Mibu","Nogi","Shioya","Takanezawa","Nasu","Nakagawa","Yoshioka","Kanna","Shimonita","Kanra","Nakanojo","Naganohara","Kusatsu","Higashiagatsuma","Minakami","Tamamura","Itakura","Meiwa","Chiyoda","Oizumi","Ora","Ina","Miyoshi","Moroyama","Ogose","Namegawa","Ranzan","Ogawa","Kawajima","Yoshimi","Hatoyama","Tokigawa","Yokoze","Minano","Nagatoro","Ogano","Misato","Kamikawa","Kamisato","Yorii","Miyashiro","Sugito","Matsubushi","Shisui","Sakae","Kozaki","Tako","Tonosho","Kujukuri","Shibayama","Yokoshibahikari","Ichinomiya","Mutsuzawa","Shirako","Nagara","Chonan","Otaki","Onjuku","Kyonan","Mizuho","Hinode","Okutama","Oshima","Hachijo","Aikawa","Hayama","Samukawa","Oiso","Ninomiya","Nakai","Oi","Matsuda","Yamakita","Kaisei","Hakone","Manazuru","Yugawara","Seiro","Tagami","Aga","Izumozaki","Yuzawa","Tsunan","Kamiichi","Tateyama","Nyuzen","Asahi","Kawakita","Tsubata","Uchinada","Shika","Hodatsushimizu","Nakanoto","Anamizu","Noto","Eiheiji","Ikeda","Minamiechizen","Echizen","Mihama","Takahama","Oi","Wakasa","Ichikawamisato","Hayakawa","Minobu","Nanbu","Fujikawa","Showa","Nishikatsura","Fujikawaguchiko","Koumi","Sakuho","Karuizawa","Miyota","Tateshina","Nagawa","Shimosuwa","Fujimi","Tatsuno","Minowa","Iijima","Matsukawa","Takamori","Anan","Agematsu","Nagiso","Kiso","Ikeda","Sakaki","Obuse","Yamanouchi","Shinano","Iizuna","Ginan","Kasamatsu","Yoro","Tarui","Sekigahara","Godo","Wanouchi","Anpachi","Ibigawa","Ono","Ikeda","Kitagata","Sakahogi","Tomika","Kawabe","Hichiso","Yaotsu","Shirakawa","Mitake","Higashiizu","Kawazu","Minamiizu","Matsuzaki","Nishiizu","Kannami","Shimizu","Nagaizumi","Oyama","Yoshida","Kawanehon","Mori","Togo","Toyoyama","Oguchi","Fuso","Oharu","Kanie","Agui","Higashiura","Minamichita","Mihama","Taketoyo","Mihama","Kota","Shitara","Toei","Kisosaki","Toin","Komono","Asahi","Kawagoe","Taki","Meiwa","Odai","Tamaki","Watarai","Taiki","Minamiise","Kihoku","Mihama","Kiho","Hino","Ryuo","Aisho","Toyosato","Kora","Taga","Oyamazaki","Kumiyama","Ide","Ujitawara","Kasagi","Wazuka","Seika","Kyotamba","Ine","Yosano","Shimamoto","Toyono","Nose","Tadaoka","Kumatori","Tajiri","Misaki","Taishi","Kanan","Inagawa","Taka","Inami","Harima","Ichikawa","Fukusaki","Kamikawa","Taishi","Kamigori","Sayo","Kami","Shinonsen","Heguri","Sango","Ikaruga","Ando","Kawanishi","Miyake","Tawaramoto","Takatori","Kanmaki","Oji","Koryo","Kawai","Yoshino","Oyodo","Shimoichi","Kushimoto","Kimino","Katsuragi","Kudoyama","Koya","Yuasa","Hirogawa","Aridagawa","Mihama","Hidaka","Yura","Inami","Minabe","Hidakagawa","Shirahama","Kamitonda","Susami","Nachikatsuura","Taiji","Kozagawa","Iwami","Wakasa","Chizu","Yazu","Misasa","Yurihama","Kotoura","Hokuei","Daisen","Nanbu","Hoki","Nichinan","Hino","Kofu","Okuizumo","Iinan","Kawamoto","Misato","Onan","Tsuwano","Yoshika","Ama","Nishinoshima","Okinoshima","Wake","Hayashima","Satosho","Yakage","Kagamino","Shoo","Nagi","Kumenan","Misaki","Kibichuo","Fuchu","Kaita","Kumano","Saka","Kitahiroshima","Akiota","Osakikamijima","Sera","Jinsekikogen","Suooshima","Waki","Kaminoseki","Tabuse","Hirao","Abu","Katsuura","Kamikatsu","Ishii","Kamiyama","Naka","Mugi","Minami","Kaiyo","Matsushige","Kitajima","Aizumi","Itano","Kamiita","Tsurugi","Higashimiyoshi","Tonosho","Shodoshima","Miki","Naoshima","Utazu","Ayagawa","Kotohira","Tadotsu","Manno","Kamijima","Kumakogen","Masaki","Tobe","Uchiko","Ikata","Kihoku","Matsuno","Ainan","Toyo","Nahari","Tano","Yasuda","Motoyama","Otoyo","Tosa","Ino","Niyodogawa","Nakatosa","Sakawa","Ochi","Yusuhara","Tsuno","Shimanto","Otsuki","Kuroshio","Nakagawa","Umi","Sasaguri","Shime","Sue","Shingu","Hisayama","Kasuya","Ashiya","Mizumaki","Okagaki","Onga","Kotake","Kurate","Keisen","Chikuzen","Tachiarai","Oki","Hirokawa","Kawara","Soeda","Itoda","Kawasaki","Oto","Fukuchi","Kanda","Miyako","Yoshitomi","Koge","Chikujo","Yoshinogari","Kiyama","Kamimine","Miyaki","Genkai","Arita","Omachi","Kohoku","Shiroishi","Tara","Nagayo","Togitsu","Higashisonogi","Kawatana","Hasami","Ojika","Saza","Shinkamigoto","Misato","Gyokuto","Nankan","Nagasu","Nagomi","Ozu","Kikuyo","Minamioguni","Oguni","Takamori","Mifune","Kashima","Mashiki","Kosa","Yamato","Hikawa","Ashikita","Tsunagi","Nishiki","Taragi","Yunomae","Asagiri","Reihoku","Hiji","Kusu","Kokonoe","Mimata","Takaharu","Kunitomi","Aya","Takanabe","Shintomi","Kijo","Kawaminami","Tsuno","Kadogawa","Misato","Takachiho","Hinokage","Gokase","Satsuma","Nagashima","Yusui","Osaki","Higashikushira","Kinko","Minamiosumi","Kimotsuki","Nakatane","Minamitane","Yakushima","Setouchi","Tatsugo","Kikai","Tokunoshima","Amagi","Isen","Wadomari","China","Yoron","Motobu","Kin","Kadena","Chatan","Nishihara","Yonabaru","Haebaru","Kumejima","Yaese","Taketomi","Yonaguni"]
     ];
   }
 
@@ -435,7 +435,7 @@ function fantasyMap() {
     if (lockNeutralInput.getAttribute("data-locked") == 0) neutralInput.value = neutralOutput.value = rand(100, 300);
     if (lockNamesInput.getAttribute("data-locked") == 0) namesInput.value = rand(0, 1);
     if (lockCulturesInput.getAttribute("data-locked") == 0) culturesInput.value = culturesOutput.value = rand(5, 10);
-    if (lockPrecInput.getAttribute("data-locked") == 0) precInput.value = precOutput.value = rand(10, 25);
+    if (lockPrecInput.getAttribute("data-locked") == 0) precInput.value = precOutput.value = rand(3, 12);
     if (lockSwampinessInput.getAttribute("data-locked") == 0) swampinessInput.value = swampinessOutput.value = rand(100);
   }
 
@@ -1653,6 +1653,10 @@ function fantasyMap() {
       if (pp === "burgIcons" || pp === "burgLabels") {
         tip('Use dragging for fine-tuning only, to move burg to a different cell use "Relocate" button');
       }
+      if (pp === "labels") {
+        // also transform curve control circle
+        debug.select("circle").attr("transform", transform);
+      }
     });
 
     d3.event.on("end", function() {
@@ -2217,6 +2221,385 @@ function fantasyMap() {
     console.timeEnd('addLakes');
   }
 
+  function editLabel() {
+    if (customization) return;
+
+    unselect();
+    closeDialogs("#labelEditor, .stable");
+    elSelected = d3.select(this).call(d3.drag().on("start", elementDrag)).classed("draggable", true);
+
+    // update group parameters
+    let group = d3.select(this.parentNode);
+    updateGroupOptions();
+    labelGroupSelect.value = group.attr("id");
+    labelFontSelect.value = fonts.indexOf(group.attr("data-font"));
+    labelSize.value = group.attr("data-size");
+    labelColor.value = toHEX(group.attr("fill"));
+    labelOpacity.value = group.attr("opacity");
+    labelText.value = elSelected.text();
+    const tr = parseTransform(elSelected.attr("transform"));
+    labelAngle.value = tr[2];
+    labelAngleValue.innerHTML = Math.abs(+tr[2]) + "°";
+
+    $("#labelEditor").dialog({
+      title: "Edit Label: " + labelText.value,
+      minHeight: 30, width: "auto", maxWidth: 275, resizable: false,
+      position: {my: "center top+10", at: "bottom", of: this},
+      close: unselect
+    });
+
+    if (modules.editLabel) return;
+    modules.editLabel = true;
+
+    loadDefaultFonts();
+
+    function updateGroupOptions() {
+      labelGroupSelect.innerHTML = "";
+      labels.selectAll("g:not(#burgLabels)").each(function(d) {
+        if (this.parentNode.id === "burgLabels") return;
+        let id = d3.select(this).attr("id");
+        let opt = document.createElement("option");
+        opt.value = opt.innerHTML = id;
+        labelGroupSelect.add(opt);
+      });
+    }
+
+    $("#labelGroupButton").click(function() {
+      $("#labelEditor > button").not(this).toggle();
+      $("#labelGroupButtons").toggle();
+    });
+
+    // on group change
+    document.getElementById("labelGroupSelect").addEventListener("change", function() {
+      document.getElementById(this.value).appendChild(elSelected.remove().node());
+    });
+
+    // toggle inputs to declare a new group
+    document.getElementById("labelGroupNew").addEventListener("click", function() {
+      if ($("#labelGroupInput").css("display") === "none") {
+        $("#labelGroupInput").css("display", "inline-block");
+        $("#labelGroupSelect").css("display", "none");
+        labelGroupInput.focus();
+      } else {
+        $("#labelGroupSelect").css("display", "inline-block");
+        $("#labelGroupInput").css("display", "none");
+      }
+    });
+
+    // toggle inputs to select a group
+    document.getElementById("labelExternalFont").addEventListener("click", function() {
+      if ($("#labelFontInput").css("display") === "none") {
+        $("#labelFontInput").css("display", "inline-block");
+        $("#labelFontSelect").css("display", "none");
+        labelFontInput.focus();
+      } else {
+        $("#labelFontSelect").css("display", "inline-block");
+        $("#labelFontInput").css("display", "none");
+      }
+    });
+
+    // on new group creation
+    document.getElementById("labelGroupInput").addEventListener("change", function() {
+      if (!this.value) {
+        tip("Please provide a valid group name");
+        return;
+      }
+      let group = this.value.toLowerCase().replace(/ /g, "_").replace(/[^\w\s]/gi, "");
+      if (Number.isFinite(+group.charAt(0))) group = "g" + group;
+      // if el with this id exists, add size to id
+      while (labels.selectAll("#"+group).size()) {group += "_new";}
+      createNewLabelGroup(group);
+    });
+
+    function createNewLabelGroup(g) {
+      let group = elSelected.node().parentNode.cloneNode(false);
+      let groupNew = labels.append(f => group).attr("id", g);
+      groupNew.append(f => elSelected.remove().node());
+      updateGroupOptions();
+      $("#labelGroupSelect, #labelGroupInput").toggle();
+      labelGroupInput.value = "";
+      labelGroupSelect.value = g;
+      updateLabelGroups();
+    }
+
+    // remove label group on click
+    document.getElementById("labelGroupRemove").addEventListener("click", function() {
+      let group = d3.select(elSelected.node().parentNode);
+      let id = group.attr("id");
+      let count = group.selectAll("text").size();
+      // remove group with < 2 label without ask
+      if (count < 2) {
+        removeAllLabelsInGroup(id);
+        $("#labelEditor").dialog("close");
+        return;
+      }
+      alertMessage.innerHTML = "Are you sure you want to remove all labels (" + count + ") of that group?";
+      $("#alert").dialog({resizable: false, title: "Remove label group",
+        buttons: {
+          Remove: function() {
+            $(this).dialog("close");
+            removeAllLabelsInGroup(id);
+            $("#labelEditor").dialog("close");
+          },
+          Cancel: function() {$(this).dialog("close");}
+        }
+      });
+    });
+
+    $("#labelTextButton").click(function() {
+      $("#labelEditor > button").not(this).toggle();
+      $("#labelTextButtons").toggle();
+    });
+
+    // on label text change
+    document.getElementById("labelText").addEventListener("input", function() {
+      if (!this.value) {
+        tip("Name should not be blank, set opacity to 0 to hide label or click remove button to delete");
+        return;
+      }
+      // change Label text
+      if (elSelected.select("textPath").size()) elSelected.select("textPath").text(this.value);
+      else elSelected.text(this.value);
+      $("div[aria-describedby='labelEditor'] .ui-dialog-title").text("Edit Label: " + this.value);
+      // check if label is a country name
+      let id = elSelected.attr("id") || "";
+      if (id.includes("regionLabel")) {
+        let state = +elSelected.attr("id").slice(11);
+        states[state].name = this.value;
+      }
+    });
+
+    // generate a random country name
+    document.getElementById("labelTextRandom").addEventListener("click", function() {
+      let name = elSelected.text();
+      let id = elSelected.attr("id") || "";
+      if (id.includes("regionLabel")) {
+        // label is a country name
+        let state = +elSelected.attr("id").slice(11);
+        name = generateStateName(state.i);
+        states[state].name = name;
+      } else {
+        // label is not a country name, get culture closest to BBox centre
+        let c = elSelected.node().getBBox();
+        let closest = cultureTree.find((c.x + c.width / 2), (c.y + c.height / 2));
+        let culture = cultureTree.data().indexOf(closest) || 0;
+        name = generateName(culture);
+      }
+      labelText.value = name;
+      $("div[aria-describedby='labelEditor'] .ui-dialog-title").text("Edit Label: " + name);
+      // change Label text
+      if (elSelected.select("textPath").size()) elSelected.select("textPath").text(name);
+      else elSelected.text(name);
+    });
+
+    $("#labelFontButton").click(function() {
+      $("#labelEditor > button").not(this).toggle();
+      $("#labelFontButtons").toggle();
+    });
+
+    // on label font change
+    document.getElementById("labelFontSelect").addEventListener("change", function() {
+      let group = elSelected.node().parentNode;
+      let font = fonts[this.value].split(':')[0].replace(/\+/g, " ");
+      group.setAttribute("font-family", font)
+      group.setAttribute("data-font", fonts[this.value]);
+    });
+
+    // on adding custom font
+    document.getElementById("labelFontInput").addEventListener("change", function() {
+      fetchFonts(this.value).then(fetched => {
+        if (!fetched) return;
+        labelExternalFont.click();
+        labelFontInput.value = "";
+        if (fetched === 1) $("#labelFontSelect").val(fonts.length - 1).change();
+      });
+    });
+
+    function fetchFonts(url) {
+      return new Promise((resolve, reject) => {
+        if (url === "") {
+          tip("Use a direct link to any @font-face declaration or just font name to fetch from Google Fonts");
+          return;
+        }
+        if (url.indexOf("http") === -1) {
+          url = url.replace(url.charAt(0), url.charAt(0).toUpperCase()).split(" ").join("+");
+          url = "https://fonts.googleapis.com/css?family=" + url;
+        }
+        const fetched = addFonts(url).then(fetched => {
+          if (fetched === undefined) {
+            tip("Cannot fetch font for this value!");
+            return;
+          }
+          if (fetched === 0) {
+            tip("Already in the fonts list!");
+            return;
+          }
+          updateFontOptions();
+          if (fetched === 1) {
+            tip("Font " + fonts[fonts.length - 1] + " is fetched");
+          } else if (fetched > 1) {
+            tip(fetched + " fonts are added to the list");
+          }
+          resolve(fetched);
+        });
+      })
+    }
+
+    function addFonts(url) {
+      $("head").append('<link rel="stylesheet" type="text/css" href="' + url + '">');
+      return fetch(url)
+        .then(resp => resp.text())
+        .then(text => {
+          let s = document.createElement('style');
+          s.innerHTML = text;
+          document.head.appendChild(s);
+          let styleSheet = Array.prototype.filter.call(
+            document.styleSheets,
+            sS => sS.ownerNode === s)[0];
+          let FontRule = rule => {
+            let family = rule.style.getPropertyValue('font-family');
+            let font = family.replace(/['"]+/g, '').replace(/ /g, "+");
+            let weight = rule.style.getPropertyValue('font-weight');
+            if (weight !== "400") font += ":" + weight;
+            if (fonts.indexOf(font) == -1) {fonts.push(font); fetched++};
+          };
+          let fetched = 0;
+          for (let r of styleSheet.cssRules) {FontRule(r);}
+          document.head.removeChild(s);
+          return fetched;
+        })
+        .catch(function() {return});
+    }
+
+    // on label size input
+    document.getElementById("labelSize").addEventListener("input", function() {
+      let group = elSelected.node().parentNode;
+      let size = +this.value;
+      group.setAttribute("data-size", size);
+      group.setAttribute("font-size", rn((size + (size / scale)) / 2, 2))
+    });
+
+    $("#labelStyleButton").click(function() {
+      $("#labelEditor > button").not(this).toggle();
+      $("#labelStyleButtons").toggle();
+    });
+
+    // on label fill color input
+    document.getElementById("labelColor").addEventListener("input", function() {
+      let group = elSelected.node().parentNode;
+      group.setAttribute("fill", this.value);
+    });
+
+    // on label opacity input
+    document.getElementById("labelOpacity").addEventListener("input", function() {
+      let group = elSelected.node().parentNode;
+      group.setAttribute("opacity", this.value);
+    });
+
+    $("#labelAngleButton").click(function() {
+      $("#labelEditor > button").not(this).toggle();
+      $("#labelAngleButtons").toggle();
+    });
+
+    // on label angle input
+    document.getElementById("labelAngle").addEventListener("input", function() {
+      const tr = parseTransform(elSelected.attr("transform"));
+      labelAngleValue.innerHTML = Math.abs(+this.value) + "°";
+      const c = elSelected.node().getBBox();
+      const angle = +this.value;
+      const transform = `translate(${tr[0]},${tr[1]}) rotate(${angle} ${(c.x+c.width/2)} ${(c.y+c.height/2)})`;
+      elSelected.attr("transform", transform);
+    });
+
+    // display control points to curve label (place on path)
+    document.getElementById("labelCurve").addEventListener("click", function() {
+      let c = elSelected.node().getBBox();
+      let cx = c.x + c.width / 2, cy = c.y + c.height / 2;
+
+      if (!elSelected.select("textPath").size()) {
+        let id = elSelected.attr("id");
+        let pathId = "#textPath_" + id;
+        let path = `M${cx-c.width},${cy} q${c.width},0 ${c.width * 2},0`;
+        let text = elSelected.text(), x = elSelected.attr("x"), y = elSelected.attr("y");
+        elSelected.text(null).attr("data-x", x).attr("data-y", y).attr("x", null).attr("y", null);
+        defs.append("path").attr("id", "textPath_" + id).attr("d", path);
+        elSelected.append("textPath").attr("href", pathId).attr("startOffset", "50%").text(text);
+      }
+
+      if (!debug.select("circle").size()) {
+        debug.append("circle").attr("id", "textPathControl").attr("r", 1.6)
+          .attr("cx", cx).attr("cy", cy).attr("transform", elSelected.attr("transform") || null)
+          .call(d3.drag().on("start", textPathControlDrag));
+      }
+    });
+
+    // drag textPath controle point to curve the label
+    function textPathControlDrag() {
+      let textPath = defs.select("#textPath_" + elSelected.attr("id"));
+      let path = textPath.attr("d").split(" ");
+      let M = path[0].split(",");
+      let q = path[1].split(","); // +q[1] to get qy - the only changeble value
+      let y = d3.event.y;
+
+      d3.event.on("drag", function() {
+        let dy = d3.event.y - y;
+        let total = +q[1] + dy * 8;
+        d3.select(this).attr("cy", d3.event.y);
+        textPath.attr("d", `${M[0]},${+M[1] - dy} ${q[0]},${total} ${path[2]}`);
+      });
+    }
+
+    // cancel label curvature
+    document.getElementById("labelCurveCancel").addEventListener("click", function() {
+      if (!elSelected.select("textPath").size()) return;
+      let text = elSelected.text(), x = elSelected.attr("data-x"), y = elSelected.attr("data-y");
+      elSelected.text();
+      elSelected.attr("x", x).attr("y", y).attr("data-x", null).attr("data-y", null).text(text);
+      defs.select("#textPath_" + elSelected.attr("id")).remove();
+      debug.select("circle").remove();
+    });
+
+    // copy label on click
+    document.getElementById("labelCopy").addEventListener("click", function() {
+      let group = d3.select(elSelected.node().parentNode);
+      copy = group.append(f => elSelected.node().cloneNode(true));
+      let number = 0, id = 0;
+      do {id = group.attr("id") + "Label" + number; number++;} while (group.select("#"+id).size())
+      copy.attr("id", id).attr("class", null).on("click", editLabel);
+      let shift = +group.attr("font-size") + 1;
+      if (copy.select("textPath").size()) {
+        let path = defs.select("#textPath_" + elSelected.attr("id")).attr("d");
+        let textPath = defs.append("path").attr("id", "textPath_" + id);
+        copy.select("textPath").attr("href", "#textPath_" + id);
+        let pathArray = path.split(" ");
+        let x = +pathArray[0].split(",")[0].slice(1);
+        let y = +pathArray[0].split(",")[1];
+        textPath.attr("d", `M${x-shift},${y-shift} ${pathArray[1]} ${pathArray[2]}`);shift
+      } else {
+        let x = +elSelected.attr("x") - shift;
+        let y = +elSelected.attr("y") - shift;
+        while (group.selectAll("text[x='" + x + "']").size()) {x -= shift; y -= shift;}
+        copy.attr("x", x).attr("y", y);
+      }
+    });
+
+    // remove label on click
+    document.getElementById("labelRemoveSingle").addEventListener("click", function() {
+      alertMessage.innerHTML = "Are you sure you want to remove the label?";
+      $("#alert").dialog({resizable: false, title: "Remove label",
+        buttons: {
+          Remove: function() {
+            $(this).dialog("close");
+            elSelected.remove();
+            defs.select("#textPath_" + elSelected.attr("id")).remove();
+            $("#labelEditor").dialog("close");
+          },
+          Cancel: function() {$(this).dialog("close");}
+        }
+      });
+    });
+  }
+
   function editRiver() {
     if (customization) return;
     if (elSelected) {
@@ -2399,7 +2782,7 @@ function fantasyMap() {
       amended.map(function(p) {addRiverPoint(p);});
     });
 
-    $("#riverAngle").change(function() {
+    $("#riverAngle").on("input", function() {
       const tr = parseTransform(elSelected.attr("transform"));
       riverAngleValue.innerHTML = Math.abs(+this.value) + "°";
       var c = elSelected.node().getBBox();
@@ -2515,22 +2898,6 @@ function fantasyMap() {
       })
     });
 
-  }
-
-  function unselect() {
-    if (elSelected) {
-      elSelected.call(d3.drag().on("drag", null)).attr("class", null);
-      debug.select(".controlPoints").remove();
-      viewbox.style("cursor", "default");
-      elSelected = null;
-    }
-  }
-
-  function parseTransform(string) {
-    // [translateX,translateY,rotateDeg,rotateX,rotateY,scale]
-    if (!string) {return [0,0,0,0,0,1];}
-    var a = string.replace(/[a-z()]/g,"").replace(/[ ]/g,",").split(",");
-    return [a[0] || 0, a[1] || 0, a[2] || 0, a[3] || 0, a[4] || 0, a[5] || 1];
   }
 
   function editRoute() {
@@ -2779,7 +3146,7 @@ function fantasyMap() {
 
     unselect();
     closeDialogs("#iconEditor, .stable");
-    elSelected = d3.select(this).call(d3.drag().on("start", elementDrag));
+    elSelected = d3.select(this).call(d3.drag().on("start", elementDrag)).classed("draggable", true);
 
     // update group parameters
     const group = d3.select(this.parentNode);
@@ -2915,7 +3282,7 @@ function fantasyMap() {
 
     unselect();
     closeDialogs("#reliefEditor, .stable");
-    elSelected = d3.select(this).raise().call(d3.drag().on("start", elementDrag));
+    elSelected = d3.select(this).raise().call(d3.drag().on("start", elementDrag)).classed("draggable", true);
     const group = elSelected.node().parentNode.id;
     reliefGroup.value = group;
 
@@ -3236,7 +3603,7 @@ function fantasyMap() {
       group.attr("opacity", +this.value);
     });
 
-    $("#burgLabelAngle").change(function() {
+    $("#burgLabelAngle").on("input", function() {
       const id = +elSelected.attr("data-id");
       const el = burgLabels.select("[data-id='"+ id +"']");
       const tr = parseTransform(el.attr("transform"));
@@ -3445,6 +3812,22 @@ function fantasyMap() {
         }
       })
     });
+  }
+
+  // clear elSelected variable
+  function unselect() {
+    if (!elSelected) return;
+    elSelected.call(d3.drag().on("drag", null)).attr("class", null);
+    debug.selectAll("*").remove();
+    viewbox.style("cursor", "default");
+    elSelected = null;
+  }
+
+  // transform string to array [translateX,translateY,rotateDeg,rotateX,rotateY,scale]
+  function parseTransform(string) {
+    if (!string) {return [0,0,0,0,0,1];}
+    var a = string.replace(/[a-z()]/g,"").replace(/[ ]/g,",").split(",");
+    return [a[0] || 0, a[1] || 0, a[2] || 0, a[3] || 0, a[4] || 0, a[5] || 1];
   }
 
   // generic function to move any burg to any group
@@ -5159,7 +5542,9 @@ function fantasyMap() {
           .attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC")
           .attr("font-size", 18).attr("data-size", 18);
       }
-      group.append("text").attr("x", x).attr("y", y).text(name).on("click", editLabel);
+      let number = 0, id = 0;
+      do {id = group.attr("id") + "Label" + number; number++;} while (group.select("#"+id).size())
+      group.append("text").attr("id", id).attr("x", x).attr("y", y).text(name).on("click", editLabel);
 
       if (d3.event.shiftKey === false) {
         $("#addLabel").removeClass("pressed");
@@ -5399,37 +5784,6 @@ function fantasyMap() {
     s.ruralPopulation = rn(cellsPop, 1);
   }
 
-  function editLabel() {
-    if (customization) {return;}
-    closeDialogs("#labelEditor, .stable");
-    elSelected = d3.select(this);
-    elSelected.call(d3.drag().on("start", elementDrag)).classed("draggable", true);
-
-    var group = d3.select(this.parentNode);
-    updateGroupOptions();
-    editGroupSelect.value = group.attr("id");
-    editFontSelect.value = fonts.indexOf(group.attr("data-font"));
-    editSize.value = group.attr("data-size");
-    editColor.value = toHEX(group.attr("fill"));
-    editOpacity.value = group.attr("opacity");
-    editText.value = elSelected.text();
-    const tr = parseTransform(elSelected.attr("transform"));
-    editAngle.value = tr[2];
-    editAngleValue.innerHTML = Math.abs(+tr[2]) + "°";
-
-    $("#labelEditor").dialog({
-      title: "Edit Label: " + editText.value,
-      minHeight: 30, width: "auto", maxWidth: 275, resizable: false,
-      position: {my: "center top+10", at: "bottom", of: this},
-      close: unselect
-    });
-
-    if (modules.editLabel) {return;}
-    modules.editLabel = true;
-
-    loadDefaultFonts();
-  }
-
   function changeSelectedOnClick() {
     const point = d3.mouse(this);
     const index = diagram.find(point[0], point[1]).index;
@@ -5475,265 +5829,16 @@ function fantasyMap() {
 
   // Update font list for Label and Burg Editors
   function updateFontOptions() {
-    editFontSelect.innerHTML = "";
+    labelFontSelect.innerHTML = "";
     for (let i=0; i < fonts.length; i++) {
       const opt = document.createElement('option');
       opt.value = i;
       const font = fonts[i].split(':')[0].replace(/\+/g, " ");
       opt.style.fontFamily = opt.innerHTML = font;
-      editFontSelect.add(opt);
+      labelFontSelect.add(opt);
     }
-    burgSelectDefaultFont.innerHTML  = editFontSelect.innerHTML;
+    burgSelectDefaultFont.innerHTML  = labelFontSelect.innerHTML;
   }
-
-  $("#labelEditor .editButton, #labelEditor .editButtonS").click(function() {
-    var group = d3.select(elSelected.node().parentNode);
-    if (this.id == "editRemoveSingle") {
-      alertMessage.innerHTML = "Are you sure you want to remove the label?";
-      $("#alert").dialog({resizable: false, title: "Remove label",
-        buttons: {
-          Remove: function() {
-            $(this).dialog("close");
-            elSelected.remove();
-            $("#labelEditor").dialog("close");
-          },
-          Cancel: function() {$(this).dialog("close");}
-        }
-      })
-      return;
-    }
-    if (this.id == "editGroupRemove") {
-      var count = group.selectAll("text").size();
-      if (count < 2) {
-        group.remove();
-        updateLabelGroups();
-        $("#labelEditor").dialog("close");
-        return;
-      }
-      var message = "Are you sure you want to remove all labels (" + count + ") of that group?";
-      alertMessage.innerHTML = message;
-      $("#alert").dialog({resizable: false, title: "Remove labels",
-        buttons: {
-          Remove: function() {
-            $(this).dialog("close");
-            group.remove();
-            updateLabelGroups();
-            $("#labelEditor").dialog("close");
-          },
-          Cancel: function() {$(this).dialog("close");}
-        }
-      })
-      return;
-    }
-    if (this.id == "editCopy") {
-      var shift = +group.attr("font-size") + 1;
-      var xn = +elSelected.attr("x") - shift;
-      var yn = +elSelected.attr("y") - shift;
-      while (group.selectAll("text[x='" + xn + "']").size() > 0) {xn -= shift; yn -= shift;}
-      group.append("text").attr("x", xn).attr("y", yn).text(elSelected.text())
-        .attr("transform", elSelected.attr("transform")).on("click", editLabel);
-      return;
-    }
-    if (this.id == "editGroupNew") {
-      if ($("#editGroupInput").css("display") === "none") {
-        $("#editGroupInput").css("display", "inline-block");
-        $("#editGroupSelect").css("display", "none");
-        editGroupInput.focus();
-      } else {
-        $("#editGroupSelect").css("display", "inline-block");
-        $("#editGroupInput").css("display", "none");
-      }
-      return;
-    }
-    if (this.id == "editExternalFont") {
-      if ($("#editFontInput").css("display") === "none") {
-        $("#editFontInput").css("display", "inline-block");
-        $("#editFontSelect").css("display", "none");
-        editFontInput.focus();
-      } else {
-        $("#editFontSelect").css("display", "inline-block");
-        $("#editFontInput").css("display", "none");
-      }
-      return;
-    }
-    if (this.id === "editTextRandom") {
-      var name;
-      // check if label is country name
-      if (group.attr("id") === "countries") {
-        var state = $.grep(states, function(e) {return (e.name === editText.value);})[0];
-        name = generateStateName(state.i);
-        state.name = name;
-      } else {
-        // if not, get culture closest to BBox centre
-        var c = elSelected.node().getBBox();
-        var closest = cultureTree.find((c.x + c.width / 2), (c.y + c.height / 2));
-        var culture = cultureTree.data().indexOf(closest) || 0;
-        name = generateName(culture);
-      }
-      editText.value = name;
-      elSelected.text(name);
-      $("div[aria-describedby='labelEditor'] .ui-dialog-title").text("Edit Label: " + name);
-      return;
-    }
-    $("#labelEditor .editButton").toggle();
-    if (this.id == "editGroupButton") {
-      if ($("#editGroupInput").css("display") !== "none") {$("#editGroupSelect").css("display", "inline-block");}
-      if ($("#editGroupRemove").css("display") === "none") {
-        $("#editGroupRemove, #editGroupNew").css("display", "inline-block");
-      } else {
-        $("#editGroupInput, #editGroupRemove, #editGroupNew").css("display", "none");
-      }
-    }
-    if (this.id == "editFontButton") {$("#editSizeIcon, #editFontSelect, #editSize").toggle();}
-    if (this.id == "editStyleButton") {$("#editOpacityIcon, #editOpacity, #editShadowIcon, #editShadow").toggle();}
-    if (this.id == "editAngleButton") {$("#editAngleValue").toggle();}
-    if (this.id == "editTextButton") {$("#editTextRandom").toggle();}
-    $(this).show().next().toggle();
-  });
-
-  function updateGroupOptions() {
-    editGroupSelect.innerHTML = "";
-    labels.selectAll("g").each(function(d) {
-      const id = d3.select(this).attr("id");
-      if (id === "burgLabels") return;
-      if (id === "capitals") return;
-      if (id === "towns") return;
-      var opt = document.createElement("option");
-      opt.value = opt.innerHTML = id;
-      editGroupSelect.add(opt);
-    });
-  }
-
-  // on editAngle change
-  $("#editAngle").on("input", function() {
-    const tr = parseTransform(elSelected.attr("transform"));
-    editAngleValue.innerHTML = Math.abs(+this.value) + "°";
-    const c = elSelected.node().getBBox();
-    const angle = +this.value;
-    const transform = `translate(${tr[0]},${tr[1]}) rotate(${angle} ${(c.x+c.width/2)} ${(c.y+c.height/2)})`;
-    elSelected.attr("transform", transform);
-  });
-
-  $("#editFontInput").change(function() {
-    fetchFonts(this.value).then(fetched => {
-      if (!fetched) return;
-      editExternalFont.click();
-      editFontInput.value = "";
-      if (fetched === 1) $("#editFontSelect").val(fonts.length - 1).change();
-    });
-  });
-
-  function fetchFonts(url) {
-    return new Promise((resolve, reject) => {
-      if (url === "") {
-        tip("Use a direct link to any @font-face declaration or just font name to fetch from Google Fonts");
-        return;
-      }
-      if (url.indexOf("http") === -1) {
-        url = url.replace(url.charAt(0), url.charAt(0).toUpperCase()).split(" ").join("+");
-        url = "https://fonts.googleapis.com/css?family=" + url;
-      }
-      const fetched = addFonts(url).then(fetched => {
-        if (fetched === undefined) {
-          tip("Cannot fetch font for this value!");
-          return;
-        }
-        if (fetched === 0) {
-          tip("Already in the fonts list!");
-          return;
-        }
-        updateFontOptions();
-        if (fetched === 1) {
-          tip("Font " + fonts[fonts.length - 1] + " is fetched");
-        } else if (fetched > 1) {
-          tip(fetched + " fonts are added to the list");
-        }
-        resolve(fetched);
-      });
-    })
-  }
-
-  function addFonts(url) {
-    $("head").append('<link rel="stylesheet" type="text/css" href="' + url + '">');
-    return fetch(url)
-      .then(resp => resp.text())
-      .then(text => {
-        let s = document.createElement('style');
-        s.innerHTML = text;
-        document.head.appendChild(s);
-        let styleSheet = Array.prototype.filter.call(
-          document.styleSheets,
-          sS => sS.ownerNode === s)[0];
-        let FontRule = rule => {
-          let family = rule.style.getPropertyValue('font-family');
-          let font = family.replace(/['"]+/g, '').replace(/ /g, "+");
-          let weight = rule.style.getPropertyValue('font-weight');
-          if (weight !== "400") font += ":" + weight;
-          if (fonts.indexOf(font) == -1) {fonts.push(font); fetched++};
-        };
-        let fetched = 0;
-        for (let r of styleSheet.cssRules) {FontRule(r);}
-        document.head.removeChild(s);
-        return fetched;
-      })
-      .catch(function() {return});
-  }
-
-  // on name input
-  $("#editText").on("input", function() {
-    $(this).attr("title", $(this).val());
-    elSelected.text(editText.value); // change Label text
-  });
-
-  // on any Editor input change
-  $("#labelEditor .editTrigger").on("input", function() {
-    if (!elSelected) return;
-    // check if Group was changed
-    var group = d3.select(elSelected.node().parentNode);
-    var groupOld = group.attr("id");
-    var groupNew = editGroupSelect.value;
-    var id = elSelected.attr("id") || "";
-    // check if label is a country name
-    if (id.includes("regionLabel")) {
-      var state = +elSelected.attr("id").slice(11);
-      states[state].name = editText.value;
-    }
-    if (editGroupInput.value !== "") {
-      groupNew = editGroupInput.value.toLowerCase().replace(/ /g, "_").replace(/[^\w\s]/gi, "");
-      if (Number.isFinite(+groupNew.charAt(0))) groupNew = "g" + groupNew;
-      const size = svg.selectAll("#"+groupNew).size();
-      if (size) groupNew += size; // if el with this id exists, add size to id;
-    }
-    if (groupOld !== groupNew) {
-      var removed = elSelected.remove();
-      if (labels.select("#"+groupNew).size() > 0) {
-        group = labels.select("#"+groupNew);
-        editFontSelect.value = fonts.indexOf(group.attr("data-font"));
-        editSize.value = group.attr("data-size");
-        editColor.value = toHEX(group.attr("fill"));
-        editOpacity.value = group.attr("opacity");
-      } else {
-        if (group.selectAll("text").size() === 0) {group.remove();}
-        group = labels.append("g").attr("id", groupNew);
-        updateGroupOptions();
-        $("#editGroupSelect, #editGroupInput").toggle();
-        editGroupInput.value = "";
-      }
-      group.append(function() {return removed.node();});
-      editGroupSelect.value = group.attr("id");
-      updateLabelGroups();
-    }
-    // update Group attributes
-    var size = +editSize.value;
-    group.attr("data-size", size)
-      .attr("font-size", rn((size + (size / scale)) / 2, 2))
-      .attr("fill", editColor.value)
-      .attr("opacity", editOpacity.value);
-    if (editFontSelect.value !== "") {
-      const font = fonts[editFontSelect.value].split(':')[0].replace(/\+/g, " ");
-      group.attr("font-family", font).attr("data-font", fonts[editFontSelect.value]);
-    }
-  });
 
   // convert RGB color string to HEX without #
   function toHEX(rgb){
@@ -6654,7 +6759,7 @@ function fantasyMap() {
               if (isNaN(c)) return;
               moveBurgToGroup(c, "towns");
             });
-            labels.select("#countries").selectAll("text").remove();
+            removeAllLabelsInGroup("countries");
             regions.selectAll("path").remove();
             states = [];
             states.push({i: 0, color: "neutral", capital: "neutral", name: "Neutrals"});
@@ -7601,7 +7706,7 @@ function fantasyMap() {
   // Clear the map
   function undraw() {
     viewbox.selectAll("path, circle, line, text, use, #ruler > g").remove();
-    svg.select("#shape").remove();
+    defs.selectAll("*").remove();
     landmass.select("rect").remove();
     cells = [], land = [], riversData = [], manors = [], states = [], features = [], queue = [];
   }
@@ -8688,14 +8793,26 @@ function fantasyMap() {
   function redrawRegions() {
     regions.selectAll("*").remove();
     borders.selectAll("path").remove();
-    labels.select("#countries").selectAll("text").remove();
+    removeAllLabelsInGroup("countries");
     drawRegions();
+  }
+
+  // remove all labels in group including textPaths
+  function removeAllLabelsInGroup(group) {
+    labels.select("#"+group).selectAll("text").each(function() {
+      defs.select("#textPath_" + this.id).remove();
+      this.remove();
+    });
+    if (group !== "countries") {
+      labels.select("#"+group).remove();
+      updateLabelGroups();
+    }
   }
 
   // restore keeped region / burgs / cultures data on edit heightmap completion
   function restoreRegions() {
     borders.selectAll("path").remove();
-    labels.select("#countries").selectAll("text").remove();
+    removeAllLabelsInGroup("countries");
     manors.map(function(m) {
       const cell = diagram.find(m.x, m.y).index;
       if (cells[cell].height < 20) {
