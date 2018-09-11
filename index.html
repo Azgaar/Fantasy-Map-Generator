@@ -30,10 +30,9 @@
   <script src="libs/jquery-ui.min.js"></script>
   <script src="libs/polylabel.min.js"></script>
   <script src="libs/quantize.min.js" defer></script>
-  <script src="libs/d3-hexbin.v0.2.min.js" defer></script>
   <script src="libs/jquery.ui.touch-punch.min.js" defer></script>
-  <link rel="stylesheet" type="text/css" href="index.css?version=0.59.07b"/>
-  <link rel="stylesheet" type="text/css" href="icons.css?version=0.59.07b"/>
+  <link rel="stylesheet" type="text/css" href="index.css?version=0.59.15b"/>
+  <link rel="stylesheet" type="text/css" href="icons.css?version=0.59.15b"/>
   <link rel="stylesheet" type="text/css" href="libs/jquery-ui.css"/>
 </head>
 <body>
@@ -66,6 +65,13 @@
         <filter id="dropShadow">
           <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
           <feOffset dx="1" dy="2"/>
+          <feMerge>
+              <feMergeNode/>
+              <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+        <filter id="outline">
+          <feGaussianBlur in="SourceAlpha" stdDeviation="1"/>
           <feMerge>
               <feMergeNode/>
               <feMergeNode in="SourceGraphic"/>
@@ -188,18 +194,18 @@
         </select>
         <p>Displayed layers. Drag to move, click to toggle</p>
         <ul id="mapLayers">
-          <li onmouseover="tip('Toggle Ocean pattern')" id="toggleOcean" onclick="$('#oceanPattern').fadeToggle()" class="solid">Ocean</li>
-          <li onmouseover="tip('Toggle Heightmap')" id="toggleHeight" class="buttonoff">Heightmap</li>
+          <li onmouseover="tip('Toggle Ocean pattern (see Style tab for styling)')" id="toggleOcean" onclick="$('#oceanPattern').fadeToggle()" class="solid">Ocean</li>
+          <li onmouseover="tip('Toggle Heightmap (see Style tab for styling and Customize for editting)')" id="toggleHeight" class="buttonoff">Heightmap</li>
           <li onmouseover="tip('Toggle Grid')" id="toggleGrid" class="buttonoff" onclick="$('#grid').fadeToggle()">Grid</li>
           <li onmouseover="tip('Toggle Overlay (overlay type can be set in Style tab)')" id="toggleOverlay" class="buttonoff">Overlay</li>
           <li onmouseover="tip('Toggle Cultural map (does not work good when counties layer is on)')" id="toggleCultures" class="buttonoff">Cultures</li>
           <li onmouseover="tip('Toggle Routes')" id="toggleRoutes" onclick="$('#routes').fadeToggle()">Routes</li>
           <li onmouseover="tip('Toggle Rivers')" id="toggleRivers" onclick="$('#rivers').fadeToggle()">Rivers</li>
-          <li onmouseover="tip('Toggle Countries')" id="toggleCountries">Countries</li>
+          <li onmouseover="tip('Toggle Countries (open Customize tab for editting)')" id="toggleCountries">Countries</li>
           <li onmouseover="tip('Toggle Borders')" id="toggleBorders" onclick="$('#borders').fadeToggle()">Borders</li>
-          <li onmouseover="tip('Toggle Relief icons')" id="toggleRelief" onclick="$('#terrain').fadeToggle()">Relief</li>
-          <li onmouseover="tip('Toggle Labels')" id="toggleLabels" onclick="$('#labels').fadeToggle()">Labels</li>
-          <li onmouseover="tip('Toggle Icons')" id="toggleIcons" onclick="$('#icons').fadeToggle()">Icons</li>
+          <li onmouseover="tip('Toggle Relief icons (draft version)')" id="toggleRelief" onclick="$('#terrain').fadeToggle()">Relief</li>
+          <li onmouseover="tip('Toggle Labels (label groups can be toggled separately in Style tab)')" id="toggleLabels" onclick="$('#labels').fadeToggle()">Labels</li>
+          <li onmouseover="tip('Toggle Burg icons')" id="toggleIcons" onclick="$('#icons').fadeToggle()">Icons</li>
         </ul>
         <div id="layoutCheckboxes">
           <input id="toggleTooltips" class="checkbox" type="checkbox" checked onclick="$('#tooltip').fadeToggle()">
@@ -239,12 +245,13 @@
           <div id="styleOverlay">
             <br><span>Ensure Overlay layer is active (see Layout tab)</span><br>
             <br>Overlay type: <select id="styleOverlayType" class="pureInput">
-              <option value="hex" selected>Hex grid</option>
+              <option value="pointyHex" selected>Hex grid (pointy)</option>
+              <option value="flatHex">Hex grid (flat)</option>
               <option value="square">Square grid</option>
               <option value="windrose">Wind rose</option>
             </select><br>
-            <br>Size: <input id="styleOverlaySize" type="range" min="2" max="20" step="0.2" value="5">
-            <output id="styleOverlaySizeOutput">5</output>
+            <br>Size: <input id="styleOverlaySize" type="range" min="2" max="50" step="0.1" value="10">
+            <output id="styleOverlaySizeOutput">10</output>
           </div>
           <div id="styleOcean">
             <br>Elements:
@@ -285,6 +292,7 @@
             <br>Radius: <button class="whiteButton" onmouseover="tip('Multiply Radius by 1.1')" id="styleFillPlus">+</button><button class="whiteButton" onmouseover="tip('Multiply Radius by 0.9')" id="styleFillMinus">-</button>
             <span> Stroke: </span><button class="whiteButton" onmouseover="tip('Multiply Stroke-width by 1.1')" id="styleStrokePlus">+</button><button class="whiteButton" onmouseover="tip('Multiply Stroke-width by 0.9')" id="styleStrokeMinus">-</button>
           </div>
+
           <div id="styleOpacity">
             <br>Opacity: <input id="styleOpacityInput" type="range" min="0" max="1" step="0.01" value="1">
             <output id="styleOpacityOutput">1</output>
@@ -299,6 +307,7 @@
               <option value="url(#splotch)">Splotch</option>
               <option value="url(#bluredSplotch)">Blured Splotch</option>
               <option value="url(#dropShadow)">Shadow</option>
+              <option value="url(#outline)">Outline</option>
               <option value="url(#pencil)">Pencil</option>
               <option value="url(#turbulence)">Turbulence</option>
             </select>
@@ -315,7 +324,7 @@
             <fieldset>
               <legend>Label groups:</legend>
               <input id="hideLabels" class="checkbox" type="checkbox" checked>
-              <label for="hideLabels" onmouseover="tip('Allow system to hide labels if their size in too small on that scale)')" class="checkbox-label">Toogle visibility automatically</label>
+              <label for="hideLabels" onmouseover="tip('Allow system to hide labels if their size in too small on that scale)')" class="checkbox-label">Toggle visibility automatically</label>
               <div id="styleLabelGroupItems"></div>
             </fieldset>
           </div>
@@ -452,7 +461,7 @@
             </td>
             <td onmouseover="tip('Set precipitation level. Controls river quantity and power')">Precipitation</td>
             <td>
-              <input id="precInput" type="range" min="0" max="50" value="15">
+              <input id="precInput" type="range" min="0" max="25" value="10">
             </td>
             <td>
               <output id="precOutput">15</output>
@@ -551,7 +560,7 @@
             <div id="customizeOptions">
               <input id="renderOcean" class="checkbox" type="checkbox">
               <label for="renderOcean" onmouseover="tip('Render cells below sea level')" class="checkbox-label">Render ocean cells</label>
-              <input id="changeHeights" class="checkbox" type="checkbox" checked>
+              <input id="changeHeights" class="checkbox" type="checkbox">
               <label for="changeHeights" onmouseover="tip('Allow system to change custom heights if reasonable')" class="checkbox-label">Change heights</label>
             </div>
             <label onmouseover="tip('Number of Land cells and landmass/ocean ratio')">Landmass:
@@ -612,32 +621,50 @@
   </div>
 
   <div id="dialogs" style="background-color: #ffffff">
+
     <div id="labelEditor" class="dialog" style="display: none">
-      <button id="editGroupButton" onmouseover="tip('Edit label Group')" class="editButton icon-tags"></button>
-      <select id="editGroupSelect" onmouseover="tip('Select Group for this label')" class="editTrigger"></select>
-      <input id="editGroupInput" placeholder="new name" onmouseover="tip('Declare new Group for this label')" class="editTrigger"/>
-      <span id="editGroupNew" onmouseover="tip('Declare new Group for this label')" class="editButtonS icon-plus"></span>
-      <span id="editGroupRemove" onmouseover="tip('Remove the Group with all labels')" class="editButtonS icon-trash"></span>
-      <button id="editTextButton" onmouseover="tip('Edit label Text')" class="editButton icon-pencil"></button>
-      <input id="editText" class="editTrigger"/>
-      <span id="editTextRandom" onmouseover="tip('Generate random name')" class="editButtonS icon-shuffle"></span>
-      <button id="editFontButton" onmouseover="tip('Select Font for the entire Group')" class="editButton icon-font"></button>
-      <span id="editExternalFont" onmouseover="tip('Fetch fonts by linking @font-face declaration, just populate with font name if using Google font (fonts.google.com)')" class="editButtonS icon-link"></span>
-      <select id="editFontSelect" class="editTrigger" onmouseover="tip('Select one of the default Fonts')"></select>
-      <input id="editFontInput" placeholder="link to @font-face" onmouseover="tip('Fetch fonts by linking @font-face declaration')" class="editTrigger"/>
-      <i id="editSizeIcon" class="icon-text-height hidden"></i>
-      <input id="editSize" onmouseover="tip('Change Font size for the label Group')" class="editTrigger" value="14" type="number" min="1" max="100" step=".5"/>
-      <button id="editStyleButton" onmouseover="tip('Select text color and opacity for the label Group')" class="editButton icon-brush"></button>
-      <input id="editColor" type="color" class="editTrigger editColor" value="#3e3e4b">
-      <i id="editOpacityIcon" class="icon-adjust hidden"></i>
-      <input id="editOpacity" onmouseover="tip('Change Opacity for the entire Group')" class="editTrigger" value="1" type="number" min="0" max="1" step="0.02">
-      <i id="editShadowIcon" class="icon-clone hidden"></i>
-      <input id="editShadow" onmouseover="tip('Change Shadow for the entire Group')" class="editTrigger" value="1" type="number" min="0" max="1" step="0.02" disabled>
-      <button id="editAngleButton" onmouseover="tip('Rotate the label')" class="editButton icon-ccw"></button>
-      <input id="editAngle" class="editTrigger" value="0" type="range" min="-180" max="180" step="0.2">
-      <span id="editAngleValue" class="editValue">0°</span>
-      <button id="editCopy" onmouseover="tip('Copy the label')" class="editButton icon-clone"></button>
-      <button id="editRemoveSingle" onmouseover="tip('Remove the label')" class="editButton icon-trash"></button>
+      <button id="labelGroupButton" onmouseover="tip('Edit label Group')" class="icon-tags"></button>
+      <div id="labelGroupButtons" style="display: none">
+        <select id="labelGroupSelect" onmouseover="tip('Select Group for this label')"></select>
+        <input id="labelGroupInput" placeholder="new group name" onmouseover="tip('Declare new Group for this label')"/>
+        <span id="labelGroupNew" onmouseover="tip('Declare new Group for this label')" class="icon-plus"></span>
+        <span id="labelGroupRemove" onmouseover="tip('Remove the Group with all labels')" class="icon-trash"></span>
+      </div>
+
+      <button id="labelTextButton" onmouseover="tip('Edit label Text')" class="icon-pencil"></button>
+      <div id="labelTextButtons" style="display: none">
+        <input id="labelText"/>
+        <span id="labelTextRandom" onmouseover="tip('Generate random name')" class="icon-shuffle"></span>
+      </div>
+
+      <button id="labelFontButton" onmouseover="tip('Select Font for the entire Group')" class="icon-font"></button>
+      <div id="labelFontButtons" style="display: none">
+        <span id="labelExternalFont" onmouseover="tip('Fetch fonts by linking @font-face declaration, just populate with font name if using Google font (fonts.google.com)')" class="icon-plus"></span>
+        <select id="labelFontSelect" onmouseover="tip('Select one of the default Fonts')"></select>
+        <input id="labelFontInput" placeholder="link to @font-face" onmouseover="tip('Fetch fonts by linking @font-face declaration')"/ class="hidden">
+        <i id="labelSizeIcon" class="icon-text-height"></i>
+        <input id="labelSize" onmouseover="tip('Change Font size for the label Group')" value="14" type="number" min="1" max="100" step=".5" class="editNumber"/>
+      </div>
+
+      <button id="labelStyleButton" onmouseover="tip('Select text color and opacity for the label Group')" class="icon-brush"></button>
+      <div id="labelStyleButtons" style="display: none">
+        <input id="labelColor" type="color" class="editColor" value="#3e3e4b">
+        <i id="labelOpacityIcon" class="icon-adjust hidden"></i>
+        <input id="labelOpacity" onmouseover="tip('Change Opacity for the entire Group')" value="1" type="number" min="0" max="1" step="0.02" class="editNumber">
+        <i id="labelShadowIcon" class="icon-clone hidden"></i>
+        <input id="labelShadow" onmouseover="tip('Change Shadow for the entire Group')" value="1" type="number" min="0" max="1" step="0.02" disabled>
+      </div>
+
+      <button id="labelAngleButton" onmouseover="tip('Rotate the label')" class="icon-ccw"></button>
+      <div id="labelAngleButtons" style="display: none">
+        <input id="labelAngle" value="0" type="range" min="-90" max="90" step="0.2" class="editRange">
+        <span id="labelAngleValue" class="labelValue">0°</span>
+        <button id="labelCurve" onmouseover="tip('Show control points to curve the label')" class="icon-arc"></button>
+        <button id="labelCurveCancel" onmouseover="tip('Convert curved label into a normal one')" class="icon-minus"></button>
+      </div>
+
+      <button id="labelCopy" onmouseover="tip('Copy the label')" class="icon-clone"></button>
+      <button id="labelRemoveSingle" onmouseover="tip('Remove the label')" class="icon-trash"></button>
     </div>
 
     <div id="riverEditor" class="dialog" style="display: none">
@@ -649,10 +676,10 @@
         <input id="riverIncrement" onmouseover="tip('Change river bed increment (widening speed)')" value="1" type="range" min="0.02" max="2" step="0.02">
       </div>
       <button id="riverRegenerate" onmouseover="tip('Regenerate river')" class="icon-shuffle"></button>
-      <button id="riverResize" onmouseover="tip('Visually transform (rotate, rescale) river')" class="icon-arrows-cw" onclick='$("#riverEditor > *").not(this).not("#riverWidthButtons").toggle();'></button>
+      <button id="riverResize" onmouseover="tip('Visually transform (rotate, rescale) river')" class="icon-ccw" onclick='$("#riverEditor > *").not(this).not("#riverWidthButtons").toggle();'></button>
       <div id="riverResizeButtons" style="display: none">
         <i id="riverAngleIcon" onmouseover="tip('Rotate river (set angle)')" class="icon-a"></i>
-        <input id="riverAngle" onmouseover="tip('Rotate river (set angle)')" value="0" type="range" min="-180" max="180" step="0.2">
+        <input id="riverAngle" onmouseover="tip('Rotate river (set angle)')" value="0" type="range" min="-90" max="90" step="0.2">
         <span id="riverAngleValue">0°</span>
         <i id="riverScaleIcon" onmouseover="tip('Change river scale')" class="icon-s"></i>
         <input id="riverScale" onmouseover="tip('Change river scale')" value="1" type="number" min="0.1" max="3" step="0.01">
@@ -756,7 +783,7 @@
 
         <button id="burgLabelRotation" onmouseover="tip('Rotate the label')" class="icon-ccw"></button>
         <div id="burgLabelRotationSection" style="display: none; width: 142px;">
-          <input id="burgLabelAngle" class="editTrigger" value="0" type="range" min="-180" max="180" step="0.2" style="width: 98px">
+          <input id="burgLabelAngle" value="0" type="range" min="-90" max="90" step="0.2" style="width: 98px">
           <output id="burgLabelAngleOutput">0°</output>
         </div>
       </div>
@@ -1144,5 +1171,5 @@
     <input type="file" accept=".txt" id="namesbaseToLoad">
   </div>
 
-  <script src="script.js?version=0.59.07b"></script>
+  <script src="script.js?version=0.59.15b"></script>
 </body>

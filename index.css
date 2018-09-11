@@ -47,7 +47,7 @@ button, select, a {
 }
 
 #cults {
-	stroke-width: 2;
+	stroke-width: 4;
 	mask: url(#shape);
 	mask-mode: alpha;
 	pointer-events: none;
@@ -75,6 +75,7 @@ button, select, a {
 
 #regions {
 	stroke-width: 0;
+	stroke: none;
 	fill-rule: evenodd;
 	stroke-linejoin: round;
 	mask: url(#shape);
@@ -152,55 +153,61 @@ button, select, a {
 	font-size: 9px;
 }
 
-.editTrigger {
-	display: none;
-	position: relative;
-	width: 60px;
+#labelEditor div {
+	display: inline-block;
 }
 
-.editTrigger[type="number"] {
-	width: 44px;
-	height: 14px;
-}
-
-.editTrigger[type="range"] {
-	width: 132px;
+#labelEditor span {
 	cursor: pointer;
 }
 
-#editGroupSelect {
+#labelGroupSelect {
 	width: 146px;
+	height: 20px;
 }
 
-#editGroupInput {
+#labelGroupInput {
 	display: none;
-	width: 161px;
+	width: 142px;
 }
 
-#editText {
+#labelText {
 	width: 160px;
 }
 
-#editFontSelect {
+#labelFontSelect {
 	width: 129px;
 }
 
-#editFontInput {
+#labelFontInput {
 	width: 125px;
 }
 
-input[type="color"].editColor {
+#textPath {
+	stroke: #3e3e4b;
+	stroke-width: .5;
+	fill: none;
+}
+
+#textPathControl {
+	stroke: #3e3e4b;
+	stroke-width: .5;
+	fill: #ffff00;
+	cursor: row-resize;
+}
+
+div > input[type="color"].editColor {
 	height: 18px;
 	width: 46px;
 	padding: 0;
 	cursor: pointer;
 }
 
-input[type="range"].editRange {
+div > input[type="range"].editRange {
 	width: 80px;
 }
 
-input[type="number"].editNumber {
+div > input[type="number"].editNumber {
 	width: 44px;
 }
 
@@ -234,13 +241,13 @@ input[type="number"].editNumber {
 
 #labels {
 	text-anchor: middle;
-	dominant-baseline: alphabetic;
+	dominant-baseline: central;
 	text-shadow: 0 0 4px white;
 	cursor: pointer;
 }
 
-#countries {
-	dominant-baseline: central;
+#burgLabels {
+	dominant-baseline: alphabetic;
 }
 
 #routeLength {
