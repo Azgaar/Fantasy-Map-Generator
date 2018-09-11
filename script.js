@@ -3383,6 +3383,7 @@ function fantasyMap() {
     const labelGroup = burgLabels.select("#"+type);
     const iconGroup = burgIcons.select("#"+type);
     burgNameInput.value = manors[id].name;
+    burgSeedInput.value = manors[id].seed == undefined ? "" : manors[id].seed;
     updateBurgsGroupOptions();
     burgSelectGroup.value = labelGroup.attr("id");
     burgSelectDefaultFont.value = fonts.indexOf(labelGroup.attr("data-font"));
@@ -3545,6 +3546,15 @@ function fantasyMap() {
       manors[id].name = this.value;
       $("div[aria-describedby='burgEditor'] .ui-dialog-title").text("Edit Burg: " + this.value);
     });
+	
+	$("#burgSeedInput").on("input", function() {
+      if (this.value === "") {
+        tip("Seed can be blank");
+        return;
+      }
+      const id = +elSelected.attr("data-id");
+      manors[id].seed = this.value;
+    });
 
     $("#burgNameReCulture, #burgNameReRandom").click(function() {
       const id = +elSelected.attr("data-id");
@@ -3552,6 +3562,7 @@ function fantasyMap() {
       const name = generateName(culture);
       burgLabels.selectAll("[data-id='" + id + "']").text(name)
       manors[id].name = name;
+      manors[id].seed = "";
       burgNameInput.value = name;
       $("div[aria-describedby='burgEditor'] .ui-dialog-title").text("Edit Burg: " + name);
     });
@@ -3767,11 +3778,14 @@ function fantasyMap() {
     // open in MFCG
     $("#burgSeeInMFCG").click(function() {
       const id = +elSelected.attr("data-id");
+	  console.log(manors[id]);
       const name = manors[id].name;
       const cell = manors[id].cell;
       const pop = rn(manors[id].population);
       const size = pop > 65 ? 65 : pop < 6 ? 6 : pop;
-      const s = seed + "" + id;
+	  var bs = "";
+	  if(manors[id].seed) bs += manors[id].seed
+      const s = seed + "" + id + "" + bs;
       const hub = cells[cell].crossroad > 2 ? 1 : 0;
       const river = cells[cell].river ? 1 : 0;
       const coast = cells[cell].port !== undefined ? 1 : 0;
@@ -8047,6 +8061,7 @@ function fantasyMap() {
       population = population > 1e4 ? si(population) : rn(population, -1);
       el.append('<span title="Population" class="icon-male"></span>');
       el.append('<input title="Population. Input to change" class="burgPopulation" value="' + population + '"/>');
+      el.append('<input title="Seed. Input to change" class="burgSeed" value="'+ b.seed + '"/>');
       var capital = states[s].capital;
       var type = "z-burg"; // usual burg by default
       if (b.i === capital) {el.append('<span title="Capital" class="icon-star-empty"></span>'); type = "c-capital";}
