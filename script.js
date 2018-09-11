@@ -3021,7 +3021,7 @@ function fantasyMap() {
     const labelGroup = burgLabels.select("#"+type);
     const iconGroup = burgIcons.select("#"+type);
     burgNameInput.value = manors[id].name;
-    burgSeedInput.value = manors[id].seed;
+    burgSeedInput.value = manors[id].seed == undefined ? "" : manors[id].seed;
     updateBurgsGroupOptions();
     burgSelectGroup.value = labelGroup.attr("id");
     burgSelectDefaultFont.value = fonts.indexOf(labelGroup.attr("data-font"));
@@ -3200,6 +3200,7 @@ function fantasyMap() {
       const name = generateName(culture);
       burgLabels.selectAll("[data-id='" + id + "']").text(name)
       manors[id].name = name;
+      manors[id].seed = "";
       burgNameInput.value = name;
       $("div[aria-describedby='burgEditor'] .ui-dialog-title").text("Edit Burg: " + name);
     });
