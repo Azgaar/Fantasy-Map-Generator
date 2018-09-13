@@ -1704,7 +1704,7 @@ function fantasyMap() {
     var line = group.selectAll("line"); // current lines
     var x1 = +line.attr("x1"), y1 = +line.attr("y1"), x2 = +line.attr("x2"), y2 = +line.attr("y2"); // initial line edge points
     var rulerNew = ruler.insert("g", ":first-child");
-    rulerNew.call(d3.drag().on("start", elementDrag));
+    rulerNew.attr("transform", group.attr("transform")).call(d3.drag().on("start", elementDrag));
     var factor = rn(1 / Math.pow(scale, 0.3), 1);
     rulerNew.append("line").attr("class", "white").attr("stroke-width", factor);
     var dash = +group.select(".gray").attr("stroke-dasharray");
@@ -3309,7 +3309,7 @@ function fantasyMap() {
       const cell = diagram.find(cx, cy).index;
       const height = cell !== undefined ? cells[cell].height : 50;
       elSelected.remove();
-      elSelected = addReliefIcon(height, type, cx, cy);
+      elSelected = addReliefIcon(height / 100, type, cx, cy);
       elSelected.call(d3.drag().on("start", elementDrag));
     });
 
