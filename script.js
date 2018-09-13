@@ -2632,13 +2632,12 @@ function fantasyMap() {
       minHeight: 30, width: "auto", resizable: false,
       position: {my: "center top+20", at: "top", of: d3.event},
       close: function() {
-        if ($("#riverNew").hasClass('pressed')) {completeNewRiver();}
+        if ($("#riverNew").hasClass('pressed')) completeNewRiver();
         unselect();
       }
     });
 
-    const controlPoints = debug.append("g").attr("class", "controlPoints")
-      .attr("transform", elSelected.attr("transform"));
+    if (!debug.select(".controlPoints").size()) debug.append("g").attr("class", "controlPoints");
     riverDrawPoints();
 
     if (modules.editRiver) {return;}
@@ -2821,7 +2820,7 @@ function fantasyMap() {
         // enter creation mode
         $(".pressed").removeClass('pressed');
         $(this).addClass('pressed');
-        elSelected.call(d3.drag().on("drag", null));
+        if (elSelected) elSelected.call(d3.drag().on("drag", null));
         debug.select(".controlPoints").selectAll("*").remove();
         viewbox.style("cursor", "crosshair").on("click", newRiverAddPoint);
       }
@@ -2830,31 +2829,36 @@ function fantasyMap() {
     function newRiverAddPoint() {
       const point = d3.mouse(this);
       addRiverPoint([point[0], point[1]]);
-      if (elSelected.attr("data-river") !== "new") {
+      if (!elSelected || elSelected.attr("data-river") !== "new") {
         const id = +$("#rivers > path").last().attr("id").slice(5) + 1;
         elSelected = rivers.append("path").attr("data-river", "new").attr("id", "river"+id)
           .attr("data-width", 2).attr("data-increment", 1).on("click", completeNewRiver);
       } else {
         redrawRiver();
+        let cell = diagram.find(point[0], point[1]).index;
+        let f = cells[cell].fn;
+        let ocean = !features[f].land && features[f].border;
+        if (ocean && debug.select(".controlPoints").selectAll("circle").size() > 5) completeNewRiver();
       }
     }
 
     function completeNewRiver() {
       $("#riverNew").removeClass('pressed');
       restoreDefaultEvents();
-      if (elSelected.attr("data-river") === "new") {
-        redrawRiver();
-        elSelected.attr("data-river", "");
-        elSelected.call(d3.drag().on("start", riverDrag)).on("click", editRiver);
-        const river = +elSelected.attr("id").slice(5);
-        debug.select(".controlPoints").selectAll("circle").each(function() {
-          const x = +d3.select(this).attr("cx");
-          const y = +d3.select(this).attr("cy");
-          const cell = diagram.find(x, y, 3);
-          if (!cell) {return;}
-          if (cells[cell.index].river === undefined) {cells[cell.index].river = r;}
-        });
-      }
+      if (!elSelected || elSelected.attr("data-river") !== "new") return;
+      redrawRiver();
+      elSelected.attr("data-river", "");
+      elSelected.call(d3.drag().on("start", riverDrag)).on("click", editRiver);
+      const r = +elSelected.attr("id").slice(5);
+      debug.select(".controlPoints").selectAll("circle").each(function() {
+        const x = +d3.select(this).attr("cx");
+        const y = +d3.select(this).attr("cy");
+        const cell = diagram.find(x, y, 3);
+        if (!cell) return;
+        if (cells[cell.index].river === undefined) cells[cell.index].river = r;
+      });
+      unselect();
+      debug.append("g").attr("class", "controlPoints");
     }
 
     $("#riverCopy").click(function() {
@@ -2920,11 +2924,10 @@ function fantasyMap() {
 
     if (this !== window) {
       elSelected = d3.select(this);
-      const controlPoints = debug.append("g").attr("class", "controlPoints");
+      if (!debug.select(".controlPoints").size()) debug.append("g").attr("class", "controlPoints");
       routeDrawPoints();
-      const group = d3.select(this.parentNode);
       routeUpdateGroups();
-      let routeType = group.attr("id");
+      let routeType = d3.select(this.parentNode).attr("id");
       routeType.value = routeType;
 
       $("#routeEditor").dialog({
@@ -4115,25 +4118,35 @@ function fantasyMap() {
     for (let f = 0; f < features.length; f++) {
       if (!features[f].land) continue;
       var manorsOnIsland = $.grep(land, function(e) {return e.manor !== undefined && e.fn === f;});
-      if (manorsOnIsland.length > 0) {
-        var ports = $.grep(manorsOnIsland, function(p) {return p.port;});
-        if (ports.length === 0) {
-          var portCandidates = $.grep(manorsOnIsland, function(c) {return c.harbor && c.ctype === 1;});
-          if (portCandidates.length > 0) {
-            // No ports on island. Upgrading first burg to port
-            const candidate = portCandidates[0];
-            candidate.harbor = 1;
-            candidate.port = cells[candidate.haven].fn;
-            const manor = manors[portCandidates[0].manor];
-            candidate.data[0] = manor.x = candidate.coastX;
-            candidate.data[1] = manor.y = candidate.coastY;
-            // add score for each burg on island (as it's the only port)
-            candidate.score += Math.floor((portCandidates.length - 1) / 2);
-          } else {
-            // No ports on island. Reducing score for burgs
-            manorsOnIsland.map(function(e) {e.score -= 2;});
-          }
-        }
+      if (!manorsOnIsland.length) continue;
+
+      // if lake port is the only port on lake, remove port
+      var lakePorts = $.grep(manorsOnIsland, function(p) {return p.port && !features[p.port].border;});
+      if (lakePorts.length) {
+        var lakes = [];
+        lakePorts.forEach(function(p) {lakes[p.port] = lakes[p.port] ? lakes[p.port] + 1 : 1;});
+        lakePorts.forEach(function(p) {if (lakes[p.port] === 1) p.port = undefined;});
+      }
+
+      // check how many ocean ports are there on island
+      var oceanPorts = $.grep(manorsOnIsland, function(p) {return p.port && features[p.port].border;});
+      if (oceanPorts.length) continue;
+      var portCandidates = $.grep(manorsOnIsland, function(c) {
+        return c.harbor && features[cells[c.harbor].fn].border && c.ctype === 1;
+      });
+      if (portCandidates.length) {
+        // No ports on island. Upgrading first burg to port
+        const candidate = portCandidates[0];
+        candidate.harbor = 1;
+        candidate.port = cells[candidate.haven].fn;
+        const manor = manors[portCandidates[0].manor];
+        candidate.data[0] = manor.x = candidate.coastX;
+        candidate.data[1] = manor.y = candidate.coastY;
+        // add score for each burg on island (as it's the only port)
+        candidate.score += Math.floor((portCandidates.length - 1) / 2);
+      } else {
+        // No ports on island. Reducing score for burgs
+        manorsOnIsland.forEach(function(e) {e.score -= 2;});
       }
     }
   console.timeEnd("checkAccessibility");
