@@ -3309,7 +3309,7 @@ function fantasyMap() {
       const cell = diagram.find(cx, cy).index;
       const height = cell !== undefined ? cells[cell].height : 50;
       elSelected.remove();
-      elSelected = addReliefIcon(height, type, cx, cy);
+      elSelected = addReliefIcon(height / 100, type, cx, cy);
       elSelected.call(d3.drag().on("start", elementDrag));
     });
 
