@@ -7634,6 +7634,7 @@ function fantasyMap() {
       $("#alert").dialog({title: "File saver. Please enable popups!",
         buttons: {
           "Don't show again": function() {
+            localStorage.clear();
             localStorage.setItem("dns_allow_popup_message", true);
             $(this).dialog("close");
           },
