@@ -76,7 +76,7 @@ function fantasyMap() {
   oceanLayers.append("rect").attr("id", "oceanBase");
 
   // main data variables
-  var seed, params, voronoi, diagram, polygons, points = [],heights;
+  var seed, params, voronoi, diagram, polygons, spacing, points = [], heights;
   // Common variables
   var modules = {}, customization = 0, history = [], historyStage = 0, elSelected, autoResize = true, graphSize,
     cells = [],land = [], riversData = [], manors = [], states = [], features = [], notes = [],
@@ -107,9 +107,6 @@ function fantasyMap() {
   let graphWidth = +mapWidthInput.value; // voronoi graph extention, should be stable for each map
   let graphHeight = +mapHeightInput.value;
   let svgWidth = graphWidth, svgHeight = graphHeight;  // svg canvas resolution, can vary for each map
-
-  let sizeMod = rn((graphWidth + graphHeight) / 1500, 2); // screen size modifier
-  let spacing = rn(7.5 * sizeMod / graphSize, 2); // space between points before jirrering
 
   // toggle off loading screen and on menus
   $("#loading, #initial").remove();
@@ -6991,6 +6988,8 @@ function fantasyMap() {
 
   // get square grid with some jirrering
   function getJitteredGrid() {
+    let sizeMod = rn((graphWidth + graphHeight) / 1500, 2); // screen size modifier
+    let spacing = rn(7.5 * sizeMod / graphSize, 2); // space between points before jirrering
     const radius = spacing / 2; // square radius
     const jittering = radius * 0.9; // max deviation
     const jitter = function() {return Math.random() * 2 * jittering - jittering;}
