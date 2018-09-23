@@ -7627,6 +7627,7 @@ function fantasyMap() {
     var id = this.id;
     var dns_allow_popup_message = localStorage.getItem("dns_allow_popup_message");
     if (!dns_allow_popup_message) {
+      localStorage.clear();
       var message = "Generator uses pop-up window to download files. ";
       message += "Please ensure your browser does not block popups. ";
       message += "Please check browser settings and turn off adBlocker if it is enabled";
@@ -7634,11 +7635,10 @@ function fantasyMap() {
       $("#alert").dialog({title: "File saver. Please enable popups!",
         buttons: {
           "Don't show again": function() {
-            localStorage.clear();
             localStorage.setItem("dns_allow_popup_message", true);
             $(this).dialog("close");
           },
-          Close: function() {localStorage.clear(); $(this).dialog("close");}
+          Close: function() {$(this).dialog("close");}
         },
         position: {my: "center", at: "center", of: "svg"}
       });
