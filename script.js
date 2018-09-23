@@ -7638,7 +7638,7 @@ function fantasyMap() {
             localStorage.setItem("dns_allow_popup_message", true);
             $(this).dialog("close");
           },
-          Close: function() {$(this).dialog("close");}
+          Close: function() {localStorage.clear(); $(this).dialog("close");}
         },
         position: {my: "center", at: "center", of: "svg"}
       });
