@@ -31,8 +31,8 @@
   <script src="libs/polylabel.min.js"></script>
   <script src="libs/quantize.min.js" defer></script>
   <script src="libs/jquery.ui.touch-punch.min.js" defer></script>
-  <link rel="stylesheet" type="text/css" href="index.css?version=0.59.18b"/>
-  <link rel="stylesheet" type="text/css" href="icons.css?version=0.59.18b"/>
+  <link rel="stylesheet" type="text/css" href="index.css?version=0.60.00b"/>
+  <link rel="stylesheet" type="text/css" href="icons.css?version=0.60.00b"/>
   <link rel="stylesheet" type="text/css" href="libs/jquery-ui.css"/>
 </head>
 <body>
@@ -65,6 +65,22 @@
         <filter id="dropShadow">
           <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
           <feOffset dx="1" dy="2"/>
+          <feMerge>
+              <feMergeNode/>
+              <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+        <filter id="dropShadow01">
+          <feGaussianBlur in="SourceAlpha" stdDeviation=".1"/>
+          <feOffset dx=".2" dy=".3"/>
+          <feMerge>
+              <feMergeNode/>
+              <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+        <filter id="dropShadow05">
+          <feGaussianBlur in="SourceAlpha" stdDeviation=".5"/>
+          <feOffset dx=".5" dy=".7"/>
           <feMerge>
               <feMergeNode/>
               <feMergeNode in="SourceGraphic"/>
@@ -103,6 +119,13 @@
         <symbol id="icon-anchor" viewBox="0 0 30 29">
           <title>Port</title>
           <path d="M15 4c0-0.547-0.453-1-1-1s-1 0.453-1 1 0.453 1 1 1 1-0.453 1-1zM28 18.5v5.5c0 0.203-0.125 0.391-0.313 0.469-0.063 0.016-0.125 0.031-0.187 0.031-0.125 0-0.25-0.047-0.359-0.141l-1.453-1.453c-2.453 2.953-6.859 4.844-11.688 4.844s-9.234-1.891-11.688-4.844l-1.453 1.453c-0.094 0.094-0.234 0.141-0.359 0.141-0.063 0-0.125-0.016-0.187-0.031-0.187-0.078-0.313-0.266-0.313-0.469v-5.5c0-0.281 0.219-0.5 0.5-0.5h5.5c0.203 0 0.391 0.125 0.469 0.313s0.031 0.391-0.109 0.547l-1.563 1.563c1.406 1.891 4.109 3.266 7.203 3.687v-10.109h-3c-0.547 0-1-0.453-1-1v-2c0-0.547 0.453-1 1-1h3v-2.547c-1.188-0.688-2-1.969-2-3.453 0-2.203 1.797-4 4-4s4 1.797 4 4c0 1.484-0.812 2.766-2 3.453v2.547h3c0.547 0 1 0.453 1 1v2c0 0.547-0.453 1-1 1h-3v10.109c3.094-0.422 5.797-1.797 7.203-3.687l-1.563-1.563c-0.141-0.156-0.187-0.359-0.109-0.547s0.266-0.313 0.469-0.313h5.5c0.281 0 0.5 0.219 0.5 0.5z"></path>
+        </symbol>
+      </g>
+      <g id="defs-markers">
+        <symbol id="marker0" viewBox="0 0 30 30">
+          <path d="M6,19 l9,10 L24,19" fill="#000000" stroke="none"></path>
+          <circle cx="15" cy="15" r="10" stroke-width="1" stroke="#000000" fill="#ffffff"></circle>
+          <text x="50%" y="50%" fill="#000000" stroke-width="0" stroke="#000000" font-size="22px" dominant-baseline="central">?</text>
         </symbol>
       </g>
       <pattern id="oceanic" width="100" height="100" patternUnits="userSpaceOnUse">
@@ -165,7 +188,7 @@
   <div id="loading">
     <div id="title_name">Azgaar's</div>
     <div id="title">Fantasy Map Generator</div>
-    <div id="version">v. 0.59b</div>
+    <div id="version">v. 0.60b</div>
     <p id="loading-text">LOADING<span>.</span><span>.</span><span>.</span></p>
   </div>
   <canvas id="canvas" style="opacity: 0"></canvas>
@@ -206,12 +229,13 @@
           <li onmouseover="tip('Toggle Relief icons (draft version)')" id="toggleRelief" onclick="$('#terrain').fadeToggle()">Relief</li>
           <li onmouseover="tip('Toggle Labels (label groups can be toggled separately in Style tab)')" id="toggleLabels" onclick="$('#labels').fadeToggle()">Labels</li>
           <li onmouseover="tip('Toggle Burg icons')" id="toggleIcons" onclick="$('#icons').fadeToggle()">Icons</li>
+          <li onmouseover="tip('Toggle Markers')" id="toggleMarkers" onclick="$('#markers').fadeToggle()">Markers</li>
         </ul>
         <div id="layoutCheckboxes">
           <input id="toggleTooltips" class="checkbox" type="checkbox" checked onclick="$('#tooltip').fadeToggle()">
-          <label for="toggleTooltips" onmouseover="tip('Toogle tooltip line')" class="checkbox-label">Show tooltips</label>
-          <label id="optionSeedLabel" style="margin-left:10px">Map seed:
-            <input id="optionsSeed" class="pureInput" style="width:50px" value="">
+          <label for="toggleTooltips" onmouseover="tip('Toogle tooltip line and legend box')" class="checkbox-label">Show tooltips</label>
+          <label id="optionSeedLabel" onmouseover="tip('Map seed. Please do NOT consider as a save function, seed produces different maps in case of code and options change')" style="margin-left:10px">Map seed:
+            <input id="optionsSeed" onmouseover="tip('Map seed. Please do NOT consider as a save function, seed produces different maps in case of code and options change')" class="pureInput" style="width:50px" value="">
             <i onmouseover="tip('Click to generate a map for this seed')" id="optionsSeedGenerate" style="margin-left:-3px; color: #5d4651" class="icon-play"></i>
           </label>
         </div>
@@ -230,6 +254,7 @@
           <option value="labels">Labels</option>
           <option value="lakes">Lakes</option>
           <option value="landmass">Landmass</option>
+          <option value="markers">Markers</option>
           <option value="ocean" selected>Ocean</option>
           <option value="overlay">Overlay</option>
           <option value="terrain">Relief</option>
@@ -251,7 +276,8 @@
               <option value="windrose">Wind rose</option>
             </select><br>
             <br>Size: <input id="styleOverlaySize" type="range" min="2" max="50" step="0.1" value="10">
-            <output id="styleOverlaySizeOutput">10</output>
+            <output id="styleOverlaySizeOutput" onmouseover="tip('Overlay size')">10</output>
+            <output id="styleOverlaySizeFriendly" onmouseover="tip('Size between two adjacent cells in map scale')">(52 mi)</output>
           </div>
           <div id="styleOcean">
             <br>Elements:
@@ -306,7 +332,9 @@
               <option value="url(#blur10)">Blur 10</option>
               <option value="url(#splotch)">Splotch</option>
               <option value="url(#bluredSplotch)">Blured Splotch</option>
-              <option value="url(#dropShadow)">Shadow</option>
+              <option value="url(#dropShadow01)">Shadow 0.1</option>
+              <option value="url(#dropShadow05)">Shadow 0.5</option>
+              <option value="url(#dropShadow)">Shadow 2</option>
               <option value="url(#outline)">Outline</option>
               <option value="url(#pencil)">Pencil</option>
               <option value="url(#turbulence)">Turbulence</option>
@@ -575,6 +603,7 @@
           <button id="addRelief" onmouseover="tip('Click on map to place a relief icon')">Relief Icon</button>
           <button id="addRiver" onmouseover="tip('Click on map to place new river or extend an existing one')">River</button>
           <button id="addRoute" onmouseover="tip('Click on map to place a route')">Route</button>
+          <button id="addMarker" onmouseover="tip('Click on map to place a marker')">Marker</button>
         </div>
         <div id="cellInfo">
           <p>Cell info:</p>
@@ -663,6 +692,7 @@
         <button id="labelCurveCancel" onmouseover="tip('Convert curved label into a normal one')" class="icon-minus"></button>
       </div>
 
+      <button id="labelLegend" onmouseover="tip('Edit free text notes (legend) for this label')" class="icon-edit"></button>
       <button id="labelCopy" onmouseover="tip('Copy the label')" class="icon-clone"></button>
       <button id="labelRemoveSingle" onmouseover="tip('Remove the label')" class="icon-trash"></button>
     </div>
@@ -686,6 +716,7 @@
         <span id="riverReset" onmouseover="tip('Reset transformation to default')" class="icon-cancel pointer"></span>
       </div>
       <button id="riverCopy" onmouseover="tip('Copy river')" class="icon-clone"></button>
+      <button id="riverLegend" onmouseover="tip('Edit free text notes (legend) for the river')" class="icon-edit"></button>
       <button id="riverNew" onmouseover="tip('Create new river clicking on map')" class="icon-map-pin"></button>
       <button id="riverRemove" onmouseover="tip('Remove river')" class="icon-trash"></button>
     </div>
@@ -699,6 +730,7 @@
       </div>
       <button id="routeLength">0</button>
       <button id="routeSplit" onmouseover="tip('Click on a control point to split the route')" class="icon-unlink" onclick="$(this).toggleClass('pressed')"></button>
+      <button id="routeLegend" onmouseover="tip('Edit free text notes (legend) for the route')" class="icon-edit"></button>
       <button id="routeNew" onmouseover="tip('Create new route clicking on map')" class="icon-map-pin"></button>
       <button id="routeRemove" onmouseover="tip('Remove route')" class="icon-trash"></button>
     </div>
@@ -820,8 +852,50 @@
 
       <button id="burgSeeInMFCG" onmouseover="tip('See the burg representation in Medieval Fantasy City Generator by watabou')" class="icon-map"></button>
       <button id="burgRelocate" onmouseover="tip('Move burg to a different cell')" class="icon-target"></button>
+      <button id="burglLegend" onmouseover="tip('Edit free text notes (legend) for this burg')" class="icon-edit"></button>
       <button id="burgAddfromEditor" onmouseover="tip('Add new Burg')" class="icon-plus"></button>
       <button id="burgRemove" onmouseover="tip('Remove the Burg')" class="icon-trash"></button>
+    </div>
+
+    <div id="markerEditor" class="dialog" style="display: none">
+
+      <button id="markerGroup" onmouseover="tip('Change marker type')" class="icon-tags"></button>
+      <div id="markerGroupSection" style="display: none">
+        <select id="markerSelectGroup" onmouseover="tip('Select type for the selected marker')" style="width: 117px;"></select>
+        <input id="markerInputGroup" placeholder="type new type name" onmouseover="tip('Create new type for selected marker')" style="display: none; width: 113px;"/>
+        <i id="markerAddGroup" onmouseover="tip('Pick out selected marker into a new type')" class="icon-plus pointer"></i>
+        <i id="markerRemoveGroup" onmouseover="tip('Remove all markers of that type')" class="icon-trash pointer"></i>
+      </div>
+
+      <button id="markerIconButton" onmouseover="tip('Change marker icon and edit positioning')" class="icon-star"></button>
+      <div id="markerIconButtons" style="display: none">
+        <i onmouseover="tip('Change marker icon size')" class="icon-resize-full"></i>
+        <input id="markerIconSize" onmouseover="tip('Change marker icon size')" value="22" type="range" min="10" max="30" step="0.5" class="editRange">
+        <i onmouseover="tip('Change marker horizontal shift')" class="icon-resize-horizontal"></i>
+        <input id="markerIconShiftX" onmouseover="tip('Change marker horizontal shift')" value="50" type="number" min="0" max="100" style="width: 38px;">
+        <i onmouseover="tip('Change marker vertical shift')" class="icon-resize-vertical"></i>
+        <input id="markerIconShiftY" onmouseover="tip('Change marker vertical shift')" value="50" type="number" min="0" max="100" style="width: 38px;">
+        <i onmouseover="tip('Paste custom unicode symbol to use as icon')" class="icon-pencil"></i>
+        <input id="markerIconCustom" onmouseover="tip('Paste custom unicode symbol to use as icon')" style="width: 38px;">
+        <table id="markerIconTable"></table>
+        <div style="font-style: italic; color: darkgrey;">Please note icons look different in different browsers!</div>
+      </div>
+
+      <button id="markerStyleButton" onmouseover="tip('Change marker size and colors')" class="icon-brush"></button>
+      <div id="markerStyleButtons" style="display: none">
+        <i onmouseover="tip('Change marker base style')" class="icon-map-pin"></i>:
+        <input id="markerSize" onmouseover="tip('Change marker size')" value="1" type="range" min="0.1" max="10" step="0.2" class="editRange">
+        <input id="markerBase" onmouseover="tip('Change marker base color')" type="color" class="editColor" value="#ffffff">
+        <input id="markerFill" onmouseover="tip('Change marker fill color ')" type="color" class="editColor" value="#000000">
+        <br><i onmouseover="tip('Change marker icon style')" class="icon-star"></i>:
+        <input id="markerIconFill" onmouseover="tip('Change marker icon fill color')" type="color" class="editColor" value="#000000">
+        <input id="markerIconStrokeWidth" onmouseover="tip('Change marker icon stroke width')" value="0" type="number" min="0" max="2" step="0.1" style="width: 40px;">
+        <input id="markerIconStroke" onmouseover="tip('Change marker icon stroke color')" type="color" class="editColor" value="#000000">
+      </div>
+
+      <button id="markerLegendButton" onmouseover="tip('Edit place legend (free text notes)')" class="icon-edit"></button>
+      <button id="markerAdd" onmouseover="tip('Add additional marker of that type')" class="icon-plus"></button>
+      <button id="markerRemove" onmouseover="tip('Remove the marker')" class="icon-trash"></button>
     </div>
 
     <div id="templateEditor" class="dialog stable" style="display: none">
@@ -1045,7 +1119,7 @@
       </div>
     </div>
 
-    <div id="namesbaseEditor" class="dialog stable" style="display: none">
+    <div id="namesbaseEditor" class="dialog stable textual" style="display: none">
       <div id="namesbaseBasesTop">
         <span>Select base: </span>
         <select id="namesbaseSelect" onmouseover="tip('Select base to edit')" value="0"></select>
@@ -1082,6 +1156,25 @@
         <button id="namesbaseMail" onclick="window.open('mailto:maxganiev@yandex.com?Subject=Namesbase%20suggestion', '_blank')" onmouseover="tip('Send a namesbase suggestion to me')" class="icon-mail-alt"></button>
       </div>
     </div>
+
+  <div id="legendEditor" class="dialog stable textual" style="display: none">
+    <div>
+      <span>Select object: </span>
+      <select id="legendSelect" onmouseover="tip('Select object')" style="width: 120px;"></select>
+      <span>Object name: </span>
+      <input id="legendName" onmouseover="tip('Type to change object name')" autocorrect="off" spellcheck="false" style="width: 120px;">
+    </div>
+    <div>
+      <span>Legend:</span><br>
+      <textarea id="legendText" cols="70" rows="7" onmouseover="tip('Legend is a free text note, enter any object description you like')" placeholder="Legend is a free text note, enter any object description you like"></textarea>
+    </div>
+    <div>
+      <button id="legendFocus" onmouseover="tip('Focus map on selected object')" class="icon-target"></button>
+      <button id="legendDownload" onmouseover="tip('Download legends to PC')" class="icon-download"></button>
+      <button id="legendUpload" onmouseover="tip('Upload legends from PC')" class="icon-upload"></button>
+      <button id="legendRemove" onmouseover="tip('Remove this note')" class="icon-trash"></button>
+    </div>
+  </div>
 
     <div id="scaleEditor" class="dialog stable" style="display: none">
       <div id="scaleBody">
@@ -1143,10 +1236,10 @@
       </div>
       <div id="scaleBottom">
         <button id="toggleScaleBar" onmouseover="tip('Click to toggle scale bar')" class="icon-align-center"></button>
-        <button onmouseover="tip('Click to toggle ruler')" class="icon-eye-off" onclick='$("#ruler").fadeToggle()'></button>
-        <button id="addOpisometer" onmouseover="tip('Drag the map to measure curve length with opisometer')" class="icon-brush"></button>
-        <button id="addRuler" onmouseover="tip('Click to place additional ruler on map')" class="icon-resize-horizontal"></button>
-        <button id="addPlanimeter" onmouseover="tip('Drag the map to determine a polygon area with planimeter')" class="icon-edit"></button>
+        <button onmouseover="tip('Click to toggle rulers (measurers)')" class="icon-eye-off" onclick='$("#ruler").fadeToggle()'></button>
+        <button id="addOpisometer" onmouseover="tip('Drag to measure curve length with opisometer')" class="icon-brush"></button>
+        <button id="addRuler" onmouseover="tip('Click to place additional linear ruler')" class="icon-resize-horizontal"></button>
+        <button id="addPlanimeter" onmouseover="tip('Drag to measure a polygon area with planimeter')" class="icon-check-empty"></button>
         <button id="removeAllRulers" onmouseover="tip('Remove all rulers from the map. Click on ruler label to remove ruler separately')" class="icon-trash"></button>
       </div>
     </div>
@@ -1160,15 +1253,21 @@
     <p>Drop to upload</p>
   </div>
 
+  <div id="legend">
+    <div id="legendHeader"></div>
+    <div id="legendBody"></div>
+  </div>
+
   <div id="tooltip" data-main="Сlick the arrow button to open options">Сlick the arrow button to open options</div>
 
   <div id="fileInputs" class="hidden">
     <input type="file" accept=".map" id="mapToLoad">
     <input type="file" accept=".txt,.csv" id="burgsListToLoad">
+    <input type="file" accept=".txt" id="lagendsToLoad">
     <input type="file" accept="image/*" id="imageToLoad">
     <input type="file" accept=".txt" id="templateToLoad">
     <input type="file" accept=".txt" id="namesbaseToLoad">
   </div>
 
-  <script src="script.js?version=0.59.18b"></script>
+  <script src="script.js?version=0.60.00b"></script>
 </body>
