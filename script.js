@@ -485,8 +485,8 @@ function fantasyMap() {
       infoY.innerHTML = rn(point[1]);
       infoCell.innerHTML = i;
       infoArea.innerHTML = ifDefined(p.area, "n/a", 2);
-      if (customization === 1) {infoHeight.innerHTML = heights[i];}
-      else {infoHeight.innerHTML = ifDefined(p.height, "n/a");}
+      if (customization === 1) {infoHeight.innerHTML = getFriendlyHeight(heights[i]);}
+      else {infoHeight.innerHTML = getFriendlyHeight(p.height);}
       infoFlux.innerHTML = ifDefined(p.flux, "n/a", 2);
       let country = p.region === undefined ? "n/a" : p.region === "neutral" ? "neutral" : states[p.region].name + " (" + p.region + ")";
       infoCountry.innerHTML = country;
@@ -594,6 +594,19 @@ function fantasyMap() {
     if (v === null || v === undefined) return r || "no";
     if (d) return v.toFixed(d);
     return v;
+  }
+
+  // get user-friendly (real-world) height value from map data
+  function getFriendlyHeight(h) {
+    let exponent = +heightExponent.value;
+    let unit = heightUnit.value;
+    let unitRatio = 1; // default calculations are in meters
+    if (unit === "ft") unitRatio = 3.28; // if foot
+    if (unit === "f") unitRatio = 0.5468; // if fathom
+    let height = -990;
+    if (h >= 20) height = Math.pow(h - 18, exponent);
+    if (h < 20 && h > 0) height = (h - 20) / h * 50;
+    return h + " (" + rn(height * unitRatio) + " " + unit + ")";
   }
 
   // move brush radius circle
@@ -6800,6 +6813,13 @@ function fantasyMap() {
     ruler = viewbox.select("#ruler");
     debug = viewbox.select("#debug");
 
+    if (!d3.select("#defs-markers").size()) {
+      let symbol = '<g id="defs-markers"><symbol id="marker0" viewBox="0 0 30 30"><path d="M6,19 l9,10 L24,19" fill="#000000" stroke="none"></path><circle cx="15" cy="15" r="10" stroke-width="1" stroke="#000000" fill="#ffffff"></circle><text x="50%" y="50%" fill="#000000" stroke-width="0" stroke="#000000" font-size="22px" dominant-baseline="central">?</text></symbol></g>';
+      let cont = document.getElementsByTagName("defs");
+      cont[0].insertAdjacentHTML("afterbegin", symbol);
+      markers = viewbox.append("g").attr("id", "markers");
+    }
+
     // version control: ensure required groups are created with correct data
     if (!labels.select("#burgLabels").size()) {
       labels.append("g").attr("id", "burgLabels");
@@ -6989,7 +7009,7 @@ function fantasyMap() {
   // get square grid with some jirrering
   function getJitteredGrid() {
     let sizeMod = rn((graphWidth + graphHeight) / 1500, 2); // screen size modifier
-    let spacing = rn(7.5 * sizeMod / graphSize, 2); // space between points before jirrering
+    spacing = rn(7.5 * sizeMod / graphSize, 2); // space between points before jirrering
     const radius = spacing / 2; // square radius
     const jittering = radius * 0.9; // max deviation
     const jitter = function() {return Math.random() * 2 * jittering - jittering;}
@@ -7773,8 +7793,9 @@ function fantasyMap() {
 
   // get square grid cell index based on coords
   function getCellIndex(x, y) {
-    let cellsX = Math.floor(graphWidth / spacing);
-    let index = Math.floor(y / spacing) * cellsX + Math.floor(x / spacing);
+    const index = diagram.find(x, y).index;
+    // let cellsX = Math.round(graphWidth / spacing);
+    // let index = Math.ceil(y / spacing) * cellsX + Math.round(x / spacing);
     return index;
   }
 
