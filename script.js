@@ -1121,7 +1121,7 @@ function fantasyMap() {
     for (let l = 0; start !== end && l < 1000; l++) {
       var min = 10000; // dummy value
       cells[start].neighbors.forEach(function(e) {
-        diff = Math.hypot(cells[end].data[0] - cells[e].data[0],cells[end].data[1] - cells[e].data[1]);
+        let diff = Math.hypot(cells[end].data[0] - cells[e].data[0], cells[end].data[1] - cells[e].data[1]);
         if (Math.random() > 0.8) {diff = diff / 2}
         if (diff < min) {min = diff; start = e;}
       });
@@ -3479,7 +3479,7 @@ function fantasyMap() {
     });
 
     $("#burgInputGroup").change(function() {
-      const newGroup = this.value.toLowerCase().replace(/ /g, "_").replace(/[^\w\s]/gi, "");
+      let newGroup = this.value.toLowerCase().replace(/ /g, "_").replace(/[^\w\s]/gi, "");
       if (Number.isFinite(+newGroup.charAt(0))) newGroup = "g" + newGroup;
       if (burgLabels.select("#"+newGroup).size()) {
         tip('The group "'+ newGroup + '" is already exists');
@@ -4652,7 +4652,7 @@ function fantasyMap() {
       var l = manorsOnIsland.length;
       if (l > 1) {
         var secondary = rn((l + 8) / 10);
-        for (s = 0; s < secondary; s++) {
+        for (let s = 0; s < secondary; s++) {
           var start = manorsOnIsland[Math.floor(Math.random() * l)].index;
           var end = manorsOnIsland[Math.floor(Math.random() * l)].index;
           var dist = Math.hypot(cells[start].data[0] - cells[end].data[0],cells[start].data[1] - cells[end].data[1]);
@@ -5893,6 +5893,8 @@ function fantasyMap() {
   function drawSwamp(x, y) {
     var h = 0.6, line = "";
     for (let c = 0; c < 3; c++) {
+      let cx;
+      let cy;
       if (c == 0) {
         cx = x;
         cy = y - 0.5 - Math.random();
@@ -8837,7 +8839,7 @@ function fantasyMap() {
       const population = (urban + rural) * 1000;
       const populationConv = si(population);
       const title = '\'Total population: '+populationConv+'; Rural population: '+rural+'K; Urban population: '+urban+'K\'';
-      const b = cultures[c].base;
+      let b = cultures[c].base;
       if (b >= nameBases.length) b = 0;
       const base = nameBases[b].name;
       const el = $("#culturesBody div:last-child");
@@ -10231,6 +10233,8 @@ function tip(tip, main, error) {
   tooltip.text(tip).style("background", error ? red : reg);
   if (main) tooltip.attr("data-main", tip);
 }
+
+window.tip = tip;
 
 $("#optionsContainer *").on("mouseout", function() {
   tooltip.innerHTML = tooltip.getAttribute("data-main");
