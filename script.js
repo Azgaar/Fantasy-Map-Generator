@@ -1397,7 +1397,7 @@ function fantasyMap() {
   // recalculate Voronoi Graph to pack cells
   function reGraph() {
     console.time("reGraph");
-    const tempCells = [],newPoints = []; // to store new data
+    const tempCells = [], newPoints = []; // to store new data
     // get average precipitation based on graph size
     const avPrec = precInput.value / 5000;
     const smallLakesMax = 500;
@@ -6989,7 +6989,8 @@ function fantasyMap() {
     ruler.selectAll(".linear").selectAll("circle.center").call(d3.drag().on("drag", rulerCenterDrag));
 
     // update data
-    newPoints = [],riversData = [],queue = [],elSelected = "";
+    const newPoints = [];
+    riversData = [], queue = [], elSelected = "";
     points = JSON.parse(data[1]);
     cells = JSON.parse(data[2]);
     manors = JSON.parse(data[3]);
