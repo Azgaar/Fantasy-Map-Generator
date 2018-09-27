@@ -20,7 +20,7 @@
   // Get rid of jQuery as d3.js can almost all the same and more
   // Re-build UI on reactive approach, vue.js
 
-"use strict;"
+"use strict";
 fantasyMap();
 function fantasyMap() {
   // Version control
@@ -28,36 +28,36 @@ function fantasyMap() {
   document.title += " v. " + version;
 
   // Declare variables
-  var svg = d3.select("svg"),
-    defs = svg.select("#deftemp"),
-    viewbox = svg.append("g").attr("id", "viewbox"),
-    ocean = viewbox.append("g").attr("id", "ocean"),
-    oceanLayers = ocean.append("g").attr("id", "oceanLayers"),
-    oceanPattern = ocean.append("g").attr("id", "oceanPattern"),
-    landmass = viewbox.append("g").attr("id", "landmass"),
-    terrs = viewbox.append("g").attr("id", "terrs"),
-    grid = viewbox.append("g").attr("id", "grid"),
-    overlay = viewbox.append("g").attr("id", "overlay"),
-    routes = viewbox.append("g").attr("id", "routes"),
-    roads = routes.append("g").attr("id", "roads").attr("data-type", "land"),
-    trails = routes.append("g").attr("id", "trails").attr("data-type", "land"),
-    rivers = viewbox.append("g").attr("id", "rivers"),
-    terrain = viewbox.append("g").attr("id", "terrain"),
-    cults = viewbox.append("g").attr("id", "cults"),
-    regions = viewbox.append("g").attr("id", "regions"),
-    borders = viewbox.append("g").attr("id", "borders"),
-    stateBorders = borders.append("g").attr("id", "stateBorders"),
-    neutralBorders = borders.append("g").attr("id", "neutralBorders"),
-    lakes = viewbox.append("g").attr("id", "lakes"),
-    coastline = viewbox.append("g").attr("id", "coastline"),
-    searoutes = routes.append("g").attr("id", "searoutes").attr("data-type", "sea"),
-    labels = viewbox.append("g").attr("id", "labels"),
-    burgLabels = labels.append("g").attr("id", "burgLabels"),
-    icons = viewbox.append("g").attr("id", "icons"),
-    burgIcons = icons.append("g").attr("id", "burgIcons"),
-    markers = viewbox.append("g").attr("id", "markers"),
-    ruler = viewbox.append("g").attr("id", "ruler"),
-    debug = viewbox.append("g").attr("id", "debug");
+  let svg = d3.select("svg");
+  let defs = svg.select("#deftemp");
+  let viewbox = svg.append("g").attr("id", "viewbox");
+  let ocean = viewbox.append("g").attr("id", "ocean");
+  let oceanLayers = ocean.append("g").attr("id", "oceanLayers");
+  let oceanPattern = ocean.append("g").attr("id", "oceanPattern");
+  let landmass = viewbox.append("g").attr("id", "landmass");
+  let terrs = viewbox.append("g").attr("id", "terrs");
+  let grid = viewbox.append("g").attr("id", "grid");
+  let overlay = viewbox.append("g").attr("id", "overlay");
+  let routes = viewbox.append("g").attr("id", "routes");
+  let roads = routes.append("g").attr("id", "roads").attr("data-type", "land");
+  let trails = routes.append("g").attr("id", "trails").attr("data-type", "land");
+  let rivers = viewbox.append("g").attr("id", "rivers");
+  let terrain = viewbox.append("g").attr("id", "terrain");
+  let cults = viewbox.append("g").attr("id", "cults");
+  let regions = viewbox.append("g").attr("id", "regions");
+  let borders = viewbox.append("g").attr("id", "borders");
+  let stateBorders = borders.append("g").attr("id", "stateBorders");
+  let neutralBorders = borders.append("g").attr("id", "neutralBorders");
+  let lakes = viewbox.append("g").attr("id", "lakes");
+  let coastline = viewbox.append("g").attr("id", "coastline");
+  let searoutes = routes.append("g").attr("id", "searoutes").attr("data-type", "sea");
+  let labels = viewbox.append("g").attr("id", "labels");
+  let burgLabels = labels.append("g").attr("id", "burgLabels");
+  let icons = viewbox.append("g").attr("id", "icons");
+  let burgIcons = icons.append("g").attr("id", "burgIcons");
+  let markers = viewbox.append("g").attr("id", "markers");
+  let ruler = viewbox.append("g").attr("id", "ruler");
+  let debug = viewbox.append("g").attr("id", "debug");
 
   labels.append("g").attr("id", "countries");
   burgIcons.append("g").attr("id", "capitals");
@@ -76,32 +76,61 @@ function fantasyMap() {
   oceanLayers.append("rect").attr("id", "oceanBase");
 
   // main data variables
-  var seed, params, voronoi, diagram, polygons, spacing, points = [], heights;
+  let seed;
+  let params;
+  let voronoi;
+  let diagram;
+  let polygons;
+  let spacing;
+  let points = [];
+  let heights;
   // Common variables
-  var modules = {}, customization = 0, history = [], historyStage = 0, elSelected, autoResize = true, graphSize,
-    cells = [],land = [], riversData = [], manors = [], states = [], features = [], notes = [],
-    queue = [], fonts = ["Almendra+SC", "Georgia", "Times+New+Roman", "Comic+Sans+MS", "Lucida+Sans+Unicode", "Courier+New"];
+  const modules = {};
+  let customization = 0;
+  let history = [];
+  let historyStage = 0;
+  let elSelected;
+  let autoResize = true;
+  let graphSize;
+  let cells = [];
+  let land = [];
+  let riversData = [];
+  let manors = [];
+  let states = [];
+  let features = [];
+  let notes = [];
+  let queue = [];
+  const fonts = ["Almendra+SC", "Georgia", "Times+New+Roman", "Comic+Sans+MS", "Lucida+Sans+Unicode", "Courier+New"];
 
   // Cultures-related data
-  var defaultCultures = [], cultures = [], chain = {}, nameBases = [], nameBase = [], cultureTree;
+  let defaultCultures = [];
+  let cultures = [];
+  const chain = {};
+  let nameBases = [];
+  let nameBase = [];
+  let cultureTree;
   const vowels = "aeiouy";
 
   // canvas element for raster images
-  var canvas = document.getElementById("canvas"),
-    ctx = canvas.getContext("2d");
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
 
   // Color schemes
-  var color = d3.scaleSequential(d3.interpolateSpectral),
-      colors8 = d3.scaleOrdinal(d3.schemeSet2),
-      colors20 = d3.scaleOrdinal(d3.schemeCategory20);
+  let color = d3.scaleSequential(d3.interpolateSpectral);
+  const colors8 = d3.scaleOrdinal(d3.schemeSet2);
+  const colors20 = d3.scaleOrdinal(d3.schemeCategory20);
 
   // D3 drag and zoom behavior
-  var scale = 1, viewX = 0, viewY = 0;
-  var zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", zoomed);
+  let scale = 1, viewX = 0, viewY = 0;
+  const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", zoomed);
   svg.call(zoom);
 
   // D3 Line generator variables
-  var lineGen = d3.line().x(function(d) {return d.scX;}).y(function(d) {return d.scY;}).curve(d3.curveCatmullRom);
+  const lineGen = d3.line().x(function (d) {
+    return d.scX;
+  }).y(function (d) {
+    return d.scY;
+  }).curve(d3.curveCatmullRom);
 
   applyStoredOptions();
   let graphWidth = +mapWidthInput.value; // voronoi graph extention, should be stable for each map
@@ -123,13 +152,18 @@ function fantasyMap() {
   $("#templateBody").sortable({items: "div:not(div[data-type='Mountain'])"});
   $("#mapLayers, #templateBody").disableSelection();
 
-  var drag = d3.drag()
-    .container(function() {return this;})
-    .subject(function() {var p=[d3.event.x, d3.event.y]; return [p, p];})
+  const drag = d3.drag()
+    .container(function () {
+      return this;
+    })
+    .subject(function () {
+      const p = [d3.event.x, d3.event.y];
+      return [p, p];
+    })
     .on("start", dragstarted);
 
   function zoomed() {
-    var scaleDiff = Math.abs(scale - d3.event.transform.k);
+    const scaleDiff = Math.abs(scale - d3.event.transform.k);
     scale = d3.event.transform.k;
     viewX = d3.event.transform.x;
     viewY = d3.event.transform.y;
@@ -204,7 +238,7 @@ function fantasyMap() {
   addDragToUpload();
 
   // Changelog dialog window
-  var storedVersion = localStorage.getItem("version"); // show message on load
+  const storedVersion = localStorage.getItem("version"); // show message on load
   if (storedVersion != version) {
     alertMessage.innerHTML = `<b>2018-29-23</b>:
       The <i>Fantasy Map Generator</i> is updated up to version <b>${version}</b>.
@@ -306,38 +340,38 @@ function fantasyMap() {
     }
     if (localStorage.getItem("template")) {
       templateInput.value = localStorage.getItem("template");
-      lockTemplateInput.setAttribute("data-locked", 1)
+      lockTemplateInput.setAttribute("data-locked", 1);
       lockTemplateInput.className = "icon-lock";
     }
     if (localStorage.getItem("manors")) {
       manorsInput.value = manorsOutput.value = localStorage.getItem("manors");
-      lockManorsInput.setAttribute("data-locked", 1)
+      lockManorsInput.setAttribute("data-locked", 1);
       lockManorsInput.className = "icon-lock";
     }
     if (localStorage.getItem("regions")) {
       regionsInput.value = regionsOutput.value = localStorage.getItem("regions");
-      lockRegionsInput.setAttribute("data-locked", 1)
+      lockRegionsInput.setAttribute("data-locked", 1);
       lockRegionsInput.className = "icon-lock";
     }
     if (localStorage.getItem("power")) {
       powerInput.value = powerOutput.value = localStorage.getItem("power");
-      lockPowerInput.setAttribute("data-locked", 1)
+      lockPowerInput.setAttribute("data-locked", 1);
       lockPowerInput.className = "icon-lock";
     }
     if (localStorage.getItem("neutral")) neutralInput.value = neutralOutput.value = localStorage.getItem("neutral");
     if (localStorage.getItem("names")) {
       namesInput.value = localStorage.getItem("names");
-      lockNamesInput.setAttribute("data-locked", 1)
+      lockNamesInput.setAttribute("data-locked", 1);
       lockNamesInput.className = "icon-lock";
     }
     if (localStorage.getItem("cultures")) {
       culturesInput.value = culturesOutput.value = localStorage.getItem("cultures");
-      lockCulturesInput.setAttribute("data-locked", 1)
+      lockCulturesInput.setAttribute("data-locked", 1);
       lockCulturesInput.className = "icon-lock";
     }
     if (localStorage.getItem("prec")) {
       precInput.value = precOutput.value = localStorage.getItem("prec");
-      lockPrecInput.setAttribute("data-locked", 1)
+      lockPrecInput.setAttribute("data-locked", 1);
       lockPrecInput.className = "icon-lock";
     }
     if (localStorage.getItem("swampiness")) swampinessInput.value = swampinessOutput.value = localStorage.getItem("swampiness");
@@ -620,21 +654,22 @@ function fantasyMap() {
 
   // Drag actions
   function dragstarted() {
-    var x0 = d3.event.x, y0 = d3.event.y,
-        c0 = diagram.find(x0, y0).index, c1 = c0;
-    var x1, y1;
-    var opisometer = $("#addOpisometer").hasClass("pressed");
-    var planimeter = $("#addPlanimeter").hasClass("pressed");
-    var factor = rn(1 / Math.pow(scale, 0.3), 1);
+    const x0 = d3.event.x, y0 = d3.event.y,
+      c0 = diagram.find(x0, y0).index;
+    let c1 = c0;
+    let x1, y1;
+    const opisometer = $("#addOpisometer").hasClass("pressed");
+    const planimeter = $("#addPlanimeter").hasClass("pressed");
+    const factor = rn(1 / Math.pow(scale, 0.3), 1);
 
     if (opisometer || planimeter) {
       $("#ruler").show();
-      var type = opisometer ? "opisometer" : "planimeter";
+      const type = opisometer ? "opisometer" : "planimeter";
       var rulerNew = ruler.append("g").attr("class", type).call(d3.drag().on("start", elementDrag));
       var points = [{scX: rn(x0, 2), scY: rn(y0, 2)}];
       if (opisometer) {
         var curve = rulerNew.append("path").attr("class", "opisometer white").attr("stroke-width", factor);
-        var dash = rn(30 / distanceScale.value, 2);
+        const dash = rn(30 / distanceScale.value, 2);
         var curveGray = rulerNew.append("path").attr("class", "opisometer gray").attr("stroke-dasharray", dash).attr("stroke-width", factor);
       } else {
         var curve = rulerNew.append("path").attr("class", "planimeter").attr("stroke-width", factor);
@@ -644,7 +679,7 @@ function fantasyMap() {
 
     d3.event.on("drag", function() {
       x1 = d3.event.x, y1 = d3.event.y;
-      var c2 = diagram.find(x1, y1).index;
+      const c2 = diagram.find(x1, y1).index;
 
       // Heightmap customization
       if (customization === 1) {
@@ -678,16 +713,16 @@ function fantasyMap() {
       }
 
       if (opisometer || planimeter) {
-        var l = points[points.length - 1];
-        var diff = Math.hypot(l.scX - x1, l.scY - y1);
+        const l = points[points.length - 1];
+        const diff = Math.hypot(l.scX - x1, l.scY - y1);
         if (diff > 5) {points.push({scX: x1, scY: y1});}
         if (opisometer) {
           lineGen.curve(d3.curveBasis);
           var d = round(lineGen(points));
           curve.attr("d", d);
           curveGray.attr("d", d);
-          var dist = rn(curve.node().getTotalLength());
-          var label = rn(dist * distanceScale.value) + " " + distanceUnit.value;
+          const dist = rn(curve.node().getTotalLength());
+          const label = rn(dist * distanceScale.value) + " " + distanceUnit.value;
           text.attr("x", x1).attr("y", y1 - 10).text(label);
         } else {
           lineGen.curve(d3.curveBasisClosed);
@@ -703,22 +738,24 @@ function fantasyMap() {
         $("#addOpisometer, #addPlanimeter").removeClass("pressed");
         restoreDefaultEvents();
         if (opisometer) {
-          var dist = rn(curve.node().getTotalLength());
+          const dist = rn(curve.node().getTotalLength());
           var c = curve.node().getPointAtLength(dist / 2);
-          var p = curve.node().getPointAtLength((dist / 2) - 1);
-          var label = rn(dist * distanceScale.value) + " " + distanceUnit.value;
-          var atan = p.x > c.x ? Math.atan2(p.y - c.y, p.x - c.x) : Math.atan2(c.y - p.y, c.x - p.x);
-          var angle = rn(atan * 180 / Math.PI, 3);
-          var tr = "rotate(" + angle + " " + c.x + " " + c.y +")";
+          const p = curve.node().getPointAtLength((dist / 2) - 1);
+          const label = rn(dist * distanceScale.value) + " " + distanceUnit.value;
+          const atan = p.x > c.x ? Math.atan2(p.y - c.y, p.x - c.x) : Math.atan2(c.y - p.y, c.x - p.x);
+          const angle = rn(atan * 180 / Math.PI, 3);
+          const tr = "rotate(" + angle + " " + c.x + " " + c.y + ")";
           text.attr("data-points", JSON.stringify(points)).attr("data-dist", dist).attr("x", c.x).attr("y", c.y).attr("transform", tr).text(label).on("click", removeParent);
           rulerNew.append("circle").attr("cx", points[0].scX).attr("cy", points[0].scY).attr("r", 2 * factor).attr("stroke-width", 0.5 * factor)
             .attr("data-edge", "start").call(d3.drag().on("start", opisometerEdgeDrag));
           rulerNew.append("circle").attr("cx", points[points.length - 1].scX).attr("cy", points[points.length - 1].scY).attr("r", 2 * factor).attr("stroke-width", 0.5 * factor)
             .attr("data-edge", "end").call(d3.drag().on("start", opisometerEdgeDrag));
         } else {
-          var vertices = points.map(function(p) {return [p.scX, p.scY]});
-          var area = rn(Math.abs(d3.polygonArea(vertices))); // initial area as positive integer
-          var areaConv = area * Math.pow(distanceScale.value, 2); // convert area to distanceScale
+          const vertices = points.map(function (p) {
+            return [p.scX, p.scY]
+          });
+          const area = rn(Math.abs(d3.polygonArea(vertices))); // initial area as positive integer
+          let areaConv = area * Math.pow(distanceScale.value, 2); // convert area to distanceScale
           areaConv = si(areaConv);
           if (areaUnit.value === "square") {areaConv += " " + distanceUnit.value + "²"} else {areaConv += " " + areaUnit.value;}
           var c = polylabel([vertices],1.0); // pole of inaccessibility
@@ -772,7 +809,7 @@ function fantasyMap() {
     selection.map(function(index) {
       // keep stateOld and stateNew as integers!
       const exists = temp.select("path[data-cell='"+index+"']");
-      const region = cells[index].region === "neutral" ? states.length - 1 : cells[index].region
+      const region = cells[index].region === "neutral" ? states.length - 1 : cells[index].region;
       const stateOld = exists.size() ? +exists.attr("data-state") : region;
       if (stateNew === stateOld) return;
       if (states[stateOld].capital === cells[index].manor) return; // not allowed to re-draw calitals
@@ -884,7 +921,7 @@ function fantasyMap() {
         } else {
           type = "border"; // polygon is on border if it has edge without opposite side polygon
         }
-      })
+      });
       cells.push({index: d, data: i.data, height: 0, type, neighbors});
     });
     if (withGrid) {grid.append("path").attr("d", round(gridPath, 1));}
@@ -1032,14 +1069,16 @@ function fantasyMap() {
         const y = Math.floor(Math.random() * graphHeight * (1 - shift * 2) + graphHeight * shift);
         cell = diagram.find(x, y).index;
         limit++;
-      } while (heights[cell] + height > 90 && limit < 100)
+      } while (heights[cell] + height > 90 && limit < 100);
       add(cell, "hill", height);
     }
   }
 
   function add(start, type, height) {
     const session = Math.ceil(Math.random() * 1e5);
-    let radius, hRadius, mRadius;
+    let radius;
+    let hRadius;
+    let mRadius;
     switch (+graphSize) {
       case 1: hRadius = 0.991; mRadius = 0.91; break;
       case 2: hRadius = 0.9967; mRadius = 0.951; break;
@@ -1047,7 +1086,7 @@ function fantasyMap() {
       case 4: hRadius = 0.9994; mRadius = 0.98; break;
     }
     radius = type === "mountain" ? mRadius : hRadius;
-    var queue = [start];
+    const queue = [start];
     if (type === "mountain") heights[start] = height;
     for (let i=0; i < queue.length && height >= 1; i++) {
       if (type === "mountain") {height = heights[queue[i]] * radius - height / 100;}
@@ -1064,26 +1103,26 @@ function fantasyMap() {
   }
 
   function addRange(mod, height, from, to) {
-    var session = Math.ceil(Math.random() * 100000);
-    var count = Math.abs(mod);
+    const session = Math.ceil(Math.random() * 100000);
+    const count = Math.abs(mod);
     let range = [];
     for (let c = 0; c < count; c++) {
       range = [];
-      var diff = 0, start = from, end = to;
+      let diff = 0, start = from, end = to;
       if (!start || !end) {
         do {
-          var xf = Math.floor(Math.random() * (graphWidth*0.7)) + graphWidth*0.15;
-          var yf = Math.floor(Math.random() * (graphHeight*0.6)) + graphHeight*0.2;
+          const xf = Math.floor(Math.random() * (graphWidth * 0.7)) + graphWidth * 0.15;
+          const yf = Math.floor(Math.random() * (graphHeight * 0.6)) + graphHeight * 0.2;
           start = diagram.find(xf, yf).index;
-          var xt = Math.floor(Math.random() * (graphWidth*0.7)) + graphWidth*0.15;
-          var yt = Math.floor(Math.random() * (graphHeight*0.6)) + graphHeight*0.2;
+          const xt = Math.floor(Math.random() * (graphWidth * 0.7)) + graphWidth * 0.15;
+          const yt = Math.floor(Math.random() * (graphHeight * 0.6)) + graphHeight * 0.2;
           end = diagram.find(xt, yt).index;
           diff = Math.hypot(xt - xf, yt - yf);
         } while (diff < 150 / graphSize || diff > 300  / graphSize)
       }
       if (start && end) {
         for (let l = 0; start != end && l < 10000; l++) {
-          var min = 10000;
+          let min = 10000;
           cells[start].neighbors.forEach(function(e) {
             diff = Math.hypot(cells[end].data[0] - cells[e].data[0],cells[end].data[1] - cells[e].data[1]);
             if (Math.random() > 0.8) diff = diff / 2;
@@ -1092,7 +1131,7 @@ function fantasyMap() {
           range.push(start);
         }
       }
-      var change = height ? height : Math.random() * 10 + 10;
+      const change = height ? height : Math.random() * 10 + 10;
       range.map(function(r) {
         let rnd = Math.random() * 0.4 + 0.8;
         if (mod > 0) heights[r] += change * rnd;
@@ -1112,22 +1151,22 @@ function fantasyMap() {
   }
 
   function addStrait(width) {
-    var session = Math.ceil(Math.random() * 100000);
-    var top = Math.floor(Math.random() * graphWidth * 0.35 + graphWidth * 0.3);
-    var bottom = Math.floor((graphWidth - top) - (graphWidth * 0.1) + (Math.random() * graphWidth * 0.2));
-    var start = diagram.find(top, graphHeight * 0.1).index;
-    var end = diagram.find(bottom, graphHeight * 0.9).index;
-    var range = [];
+    const session = Math.ceil(Math.random() * 100000);
+    const top = Math.floor(Math.random() * graphWidth * 0.35 + graphWidth * 0.3);
+    const bottom = Math.floor((graphWidth - top) - (graphWidth * 0.1) + (Math.random() * graphWidth * 0.2));
+    let start = diagram.find(top, graphHeight * 0.1).index;
+    const end = diagram.find(bottom, graphHeight * 0.9).index;
+    let range = [];
     for (let l = 0; start !== end && l < 1000; l++) {
-      var min = 10000; // dummy value
+      let min = 10000; // dummy value
       cells[start].neighbors.forEach(function(e) {
-        diff = Math.hypot(cells[end].data[0] - cells[e].data[0],cells[end].data[1] - cells[e].data[1]);
+        let diff = Math.hypot(cells[end].data[0] - cells[e].data[0], cells[end].data[1] - cells[e].data[1]);
         if (Math.random() > 0.8) {diff = diff / 2}
         if (diff < min) {min = diff; start = e;}
       });
       range.push(start);
     }
-    var query = [];
+    const query = [];
     for (; width > 0; width--) {
       range.map(function(r) {
         cells[r].neighbors.forEach(function(e) {
@@ -1399,7 +1438,7 @@ function fantasyMap() {
             if (copy.length) return;
             newPoints.push([x1, y1]);
             tempCells.push({index:tempCells.length, data:[x1, y1],height, pit, ctype, fn, harbor, lake, region, culture});
-          };
+          }
         });
       }
       if (lake === 2) { // add potential small lakes
@@ -1512,7 +1551,7 @@ function fantasyMap() {
     history = history.slice(0, historyStage);
     history[historyStage] = heights.slice();
     historyStage++;
-    undo.disabled = templateUndo.disabled = historyStage > 1 ? false : true;
+    undo.disabled = templateUndo.disabled = historyStage <= 1;
     redo.disabled = templateRedo.disabled = true;
     const landMean = Math.trunc(d3.mean(heights));
     const landRatio = rn(landCells / heights.length * 100);
@@ -1526,8 +1565,8 @@ function fantasyMap() {
   // restoreHistory
   function restoreHistory(step) {
     historyStage = step;
-    redo.disabled = templateRedo.disabled = historyStage < history.length ? false : true;
-    undo.disabled = templateUndo.disabled = historyStage > 1 ? false : true;
+    redo.disabled = templateRedo.disabled = historyStage >= history.length;
+    undo.disabled = templateUndo.disabled = historyStage <= 1;
     if (history[historyStage - 1] === undefined) return;
     heights = history[historyStage - 1].slice();
     updateHeightmap();
@@ -1627,12 +1666,14 @@ function fantasyMap() {
     if ($("#scaleBar").hasClass("hidden")) return; // no need to re-draw hidden element
     svg.select("#scaleBar").remove(); // fully redraw every time
     // get size
-    var size = +barSize.value;
-    var dScale = distanceScale.value;
-    var unit = distanceUnit.value;
-    var scaleBar = svg.append("g").attr("id", "scaleBar")
+    const size = +barSize.value;
+    const dScale = distanceScale.value;
+    const unit = distanceUnit.value;
+    const scaleBar = svg.append("g").attr("id", "scaleBar")
       .on("click", editScale)
-      .on("mousemove", function() {tip("Click to open Scale Editor, drag to move");})
+      .on("mousemove", function () {
+        tip("Click to open Scale Editor, drag to move");
+      })
       .call(d3.drag().on("start", elementDrag));
     const init = 100; // actual length in pixels if scale, dScale and size = 1;
     let val = init * size * dScale / scale; // bar length in distance unit
@@ -1649,8 +1690,8 @@ function fantasyMap() {
       .attr("stroke-width", rn(size * 3, 2)).attr("stroke-dasharray", dash).attr("stroke", "#3d3d3d");
     // big scale
     for (let b = 0; b < 6; b++) {
-      var value = rn(b * l / 5, 2);
-      var label = rn(value * dScale / scale);
+      const value = rn(b * l / 5, 2);
+      const label = rn(value * dScale / scale);
       if (b === 5) {
         scaleBar.append("text").attr("x", x + value).attr("y", y - 2 * size).attr("font-size", rn(5 * size, 1)).text(label + " " + unit);
       } else {
@@ -1724,11 +1765,12 @@ function fantasyMap() {
 
   // draw ruler circles and update label
   function rulerEdgeDrag() {
-    var group = d3.select(this.parentNode);
-    var edge = d3.select(this).attr("data-edge");
-    var x = d3.event.x, y = d3.event.y, x0, y0;
+    const group = d3.select(this.parentNode);
+    const edge = d3.select(this).attr("data-edge");
+    const x = d3.event.x, y = d3.event.y;
+    let x0, y0;
     d3.select(this).attr("cx", x).attr("cy", y);
-    var line = group.selectAll("line");
+    const line = group.selectAll("line");
     if (edge === "left") {
       line.attr("x1", x).attr("y1", y);
       x0 = +line.attr("x2"), y0 = +line.attr("y2");
@@ -1736,28 +1778,28 @@ function fantasyMap() {
       line.attr("x2", x).attr("y2", y);
       x0 = +line.attr("x1"), y0 = +line.attr("y1");
     }
-    var xc = rn((x + x0) / 2, 2), yc = rn((y + y0) / 2, 2);
+    const xc = rn((x + x0) / 2, 2), yc = rn((y + y0) / 2, 2);
     group.select(".center").attr("cx", xc).attr("cy", yc);
-    var dist = rn(Math.hypot(x0 - x, y0 - y));
-    var label = rn(dist * distanceScale.value) + " " + distanceUnit.value;
-    var atan = x0 > x ? Math.atan2(y0 - y, x0 - x) : Math.atan2(y - y0, x - x0);
-    var angle = rn(atan * 180 / Math.PI, 3);
-    var tr = "rotate(" + angle + " " + xc + " " + yc +")";
+    const dist = rn(Math.hypot(x0 - x, y0 - y));
+    const label = rn(dist * distanceScale.value) + " " + distanceUnit.value;
+    const atan = x0 > x ? Math.atan2(y0 - y, x0 - x) : Math.atan2(y - y0, x - x0);
+    const angle = rn(atan * 180 / Math.PI, 3);
+    const tr = "rotate(" + angle + " " + xc + " " + yc + ")";
     group.select("text").attr("x", xc).attr("y", yc).attr("transform", tr).attr("data-dist", dist).text(label);
   }
 
   // draw ruler center point to split ruler into 2 parts
   function rulerCenterDrag() {
-    var xc1, yc1, xc2, yc2;
-    var group = d3.select(this.parentNode); // current ruler group
-    var x = d3.event.x, y = d3.event.y; // current coords
-    var line = group.selectAll("line"); // current lines
-    var x1 = +line.attr("x1"), y1 = +line.attr("y1"), x2 = +line.attr("x2"), y2 = +line.attr("y2"); // initial line edge points
-    var rulerNew = ruler.insert("g", ":first-child");
+    let xc1, yc1, xc2, yc2;
+    const group = d3.select(this.parentNode); // current ruler group
+    let x = d3.event.x, y = d3.event.y; // current coords
+    const line = group.selectAll("line"); // current lines
+    const x1 = +line.attr("x1"), y1 = +line.attr("y1"), x2 = +line.attr("x2"), y2 = +line.attr("y2"); // initial line edge points
+    const rulerNew = ruler.insert("g", ":first-child");
     rulerNew.attr("transform", group.attr("transform")).call(d3.drag().on("start", elementDrag));
-    var factor = rn(1 / Math.pow(scale, 0.3), 1);
+    const factor = rn(1 / Math.pow(scale, 0.3), 1);
     rulerNew.append("line").attr("class", "white").attr("stroke-width", factor);
-    var dash = +group.select(".gray").attr("stroke-dasharray");
+    const dash = +group.select(".gray").attr("stroke-dasharray");
     rulerNew.append("line").attr("class", "gray").attr("stroke-dasharray", dash).attr("stroke-width", factor);
     rulerNew.append("text").attr("dy", -1).on("click", removeParent).attr("font-size", 10 * factor).attr("stroke-width", factor);
 
@@ -1766,11 +1808,11 @@ function fantasyMap() {
       d3.select(this).attr("cx", x).attr("cy", y);
       // change first part
       line.attr("x1", x1).attr("y1", y1).attr("x2", x).attr("y2", y);
-      var dist = rn(Math.hypot(x1 - x, y1 - y));
-      var label = rn(dist * distanceScale.value) + " " + distanceUnit.value;
-      var atan = x1 > x ? Math.atan2(y1 - y, x1 - x) : Math.atan2(y - y1, x - x1);
+      let dist = rn(Math.hypot(x1 - x, y1 - y));
+      let label = rn(dist * distanceScale.value) + " " + distanceUnit.value;
+      let atan = x1 > x ? Math.atan2(y1 - y, x1 - x) : Math.atan2(y - y1, x - x1);
       xc1 = rn((x + x1) / 2, 2), yc1 = rn((y + y1) / 2, 2);
-      var tr = "rotate(" + rn(atan * 180 / Math.PI, 3) + " " + xc1 + " " + yc1 +")";
+      let tr = "rotate(" + rn(atan * 180 / Math.PI, 3) + " " + xc1 + " " + yc1 + ")";
       group.select("text").attr("x", xc1).attr("y", yc1).attr("transform", tr).attr("data-dist", dist).text(label);
       // change second (new) part
       dist = rn(Math.hypot(x2 - x, y2 - y));
@@ -1796,38 +1838,38 @@ function fantasyMap() {
   }
 
   function opisometerEdgeDrag() {
-    var el = d3.select(this);
-    var x0 = +el.attr("cx"), y0 = +el.attr("cy");
-    var group = d3.select(this.parentNode);
-    var curve = group.select(".white");
-    var curveGray = group.select(".gray");
-    var text = group.select("text");
-    var points = JSON.parse(text.attr("data-points"));
+    const el = d3.select(this);
+    const x0 = +el.attr("cx"), y0 = +el.attr("cy");
+    const group = d3.select(this.parentNode);
+    const curve = group.select(".white");
+    const curveGray = group.select(".gray");
+    const text = group.select("text");
+    const points = JSON.parse(text.attr("data-points"));
     if (x0 === points[0].scX && y0 === points[0].scY) {points.reverse();}
 
     d3.event.on("drag", function() {
-      var x = d3.event.x, y = d3.event.y;
+      const x = d3.event.x, y = d3.event.y;
       el.attr("cx", x).attr("cy", y);
-      var l = points[points.length - 1];
-      var diff = Math.hypot(l.scX - x, l.scY - y);
+      const l = points[points.length - 1];
+      const diff = Math.hypot(l.scX - x, l.scY - y);
       if (diff > 5) {points.push({scX: x, scY: y});} else {return;}
       lineGen.curve(d3.curveBasis);
-      var d = round(lineGen(points));
+      const d = round(lineGen(points));
       curve.attr("d", d);
       curveGray.attr("d", d);
-      var dist = rn(curve.node().getTotalLength());
-      var label = rn(dist * distanceScale.value) + " " + distanceUnit.value;
+      const dist = rn(curve.node().getTotalLength());
+      const label = rn(dist * distanceScale.value) + " " + distanceUnit.value;
       text.attr("x", x).attr("y", y).text(label);
     });
 
     d3.event.on("end", function() {
-      var dist = rn(curve.node().getTotalLength());
-      var c = curve.node().getPointAtLength(dist / 2);
-      var p = curve.node().getPointAtLength((dist / 2) - 1);
-      var label = rn(dist * distanceScale.value) + " " + distanceUnit.value;
-      var atan = p.x > c.x ? Math.atan2(p.y - c.y, p.x - c.x) : Math.atan2(c.y - p.y, c.x - p.x);
-      var angle = rn(atan * 180 / Math.PI, 3);
-      var tr = "rotate(" + angle + " " + c.x + " " + c.y +")";
+      const dist = rn(curve.node().getTotalLength());
+      const c = curve.node().getPointAtLength(dist / 2);
+      const p = curve.node().getPointAtLength((dist / 2) - 1);
+      const label = rn(dist * distanceScale.value) + " " + distanceUnit.value;
+      const atan = p.x > c.x ? Math.atan2(p.y - c.y, p.x - c.x) : Math.atan2(c.y - p.y, c.x - p.x);
+      const angle = rn(atan * 180 / Math.PI, 3);
+      const tr = "rotate(" + angle + " " + c.x + " " + c.y + ")";
       text.attr("data-points", JSON.stringify(points)).attr("data-dist", dist).attr("x", c.x).attr("y", c.y).attr("transform", tr).text(label);
     });
   }
@@ -2007,11 +2049,15 @@ function fantasyMap() {
         if (cells[min].river == undefined) {
           cells[min].river = land[i].river;
         } else {
-          var riverTo = cells[min].river;
-          var iRiver = $.grep(riversData, function(e) {return (e.river == land[i].river);});
-          var minRiver = $.grep(riversData, function(e) {return (e.river == riverTo);});
-          var iRiverL = iRiver.length;
-          var minRiverL = minRiver.length;
+          const riverTo = cells[min].river;
+          const iRiver = $.grep(riversData, function (e) {
+            return (e.river == land[i].river);
+          });
+          const minRiver = $.grep(riversData, function (e) {
+            return (e.river == riverTo);
+          });
+          let iRiverL = iRiver.length;
+          let minRiverL = minRiver.length;
           // re-assing river nunber if new part is greater
           if (iRiverL >= minRiverL) {
             cells[min].river = land[i].river;
@@ -2054,12 +2100,14 @@ function fantasyMap() {
   function drawRiverLines(riverNext) {
     console.time('drawRiverLines');
     for (let i = 0; i < riverNext; i++) {
-      var dataRiver = $.grep(riversData, function(e) {return e.river === i;});
+      const dataRiver = $.grep(riversData, function (e) {
+        return e.river === i;
+      });
       if (dataRiver.length > 1) {
-        var riverAmended = amendRiver(dataRiver, 1);
-        var width = rn(0.8 + Math.random() * 0.4, 1);
-        var increment = rn(0.8 + Math.random() * 0.4, 1);
-        var d = drawRiver(riverAmended, width, increment);
+        const riverAmended = amendRiver(dataRiver, 1);
+        const width = rn(0.8 + Math.random() * 0.4, 1);
+        const increment = rn(0.8 + Math.random() * 0.4, 1);
+        const d = drawRiver(riverAmended, width, increment);
         rivers.append("path").attr("d", d).attr("id", "river"+i).attr("data-width", width).attr("data-increment", increment);
       }
     }
@@ -2069,37 +2117,42 @@ function fantasyMap() {
 
   // add more river points on 1/3 and 2/3 of length
   function amendRiver(dataRiver, rndFactor) {
-    var riverAmended = [],side = 1;
+    const riverAmended = [];
+    let side = 1;
     for (let r = 0; r < dataRiver.length; r++) {
-      var dX = dataRiver[r].x;
-      var dY = dataRiver[r].y;
-      var cell = dataRiver[r].cell;
-      var c = cells[cell].confluence || 0;
+      const dX = dataRiver[r].x;
+      const dY = dataRiver[r].y;
+      const cell = dataRiver[r].cell;
+      const c = cells[cell].confluence || 0;
       riverAmended.push([dX, dY, c]);
       if (r+1 < dataRiver.length) {
-        var eX = dataRiver[r+1].x;
-        var eY = dataRiver[r+1].y;
-        var angle = Math.atan2(eY - dY, eX - dX);
-        var serpentine = 1 / (r+1);
-        var meandr = serpentine + 0.3 + Math.random() * 0.3 * rndFactor;
-        if (Math.random() > 0.5) {side *= -1};
-        var dist = Math.hypot(eX - dX, eY - dY);
+        const eX = dataRiver[r + 1].x;
+        const eY = dataRiver[r + 1].y;
+        const angle = Math.atan2(eY - dY, eX - dX);
+        const serpentine = 1 / (r + 1);
+        const meandr = serpentine + 0.3 + Math.random() * 0.3 * rndFactor;
+        if (Math.random() > 0.5) {
+          side *= -1
+        }
+        const dist = Math.hypot(eX - dX, eY - dY);
         // if dist is big or river is small add 2 extra points
         if (dist > 8 || (dist > 4 && dataRiver.length < 6)) {
-          var stX = (dX * 2 + eX) / 3;
-          var stY = (dY * 2 + eY) / 3;
-          var enX = (dX + eX * 2) / 3;
-          var enY = (dY + eY * 2) / 3;
+          let stX = (dX * 2 + eX) / 3;
+          let stY = (dY * 2 + eY) / 3;
+          let enX = (dX + eX * 2) / 3;
+          let enY = (dY + eY * 2) / 3;
           stX += -Math.sin(angle) * meandr * side;
           stY += Math.cos(angle) * meandr * side;
-          if (Math.random() > 0.8) {side *= -1};
+          if (Math.random() > 0.8) {
+            side *= -1
+          }
           enX += Math.sin(angle) * meandr * side;
           enY += -Math.cos(angle) * meandr * side;
           riverAmended.push([stX, stY],[enX, enY]);
         // if dist is medium or river is small add 1 extra point
         } else if (dist > 4 || dataRiver.length < 6) {
-          var scX = (dX + eX) / 2;
-          var scY = (dY + eY) / 2;
+          let scX = (dX + eX) / 2;
+          let scY = (dY + eY) / 2;
           scX += -Math.sin(angle) * meandr * side;
           scY += Math.cos(angle) * meandr * side;
           riverAmended.push([scX, scY]);
@@ -2112,33 +2165,33 @@ function fantasyMap() {
   // draw river polygon using arrpoximation
   function drawRiver(points, width, increment) {
       lineGen.curve(d3.curveCatmullRom.alpha(0.1));
-      var extraOffset = 0.03; // start offset to make river source visible
+    let extraOffset = 0.03; // start offset to make river source visible
       width = width || 1; // river width modifier
       increment = increment || 1; // river bed widening modifier
-      var riverLength = 0;
-      points.map(function(p, i) {
+    let riverLength = 0;
+    points.map(function(p, i) {
         if (i === 0) {return 0;}
         riverLength += Math.hypot(p[0] - points[i-1][0],p[1] - points[i-1][1]);
       });
-      var widening = rn((1000 + (riverLength * 30)) * increment);
-      var riverPointsLeft = [],riverPointsRight = [];
-      var last = points.length - 1;
-      var factor = riverLength / points.length;
+    const widening = rn((1000 + (riverLength * 30)) * increment);
+    const riverPointsLeft = [], riverPointsRight = [];
+    const last = points.length - 1;
+    const factor = riverLength / points.length;
 
-      // first point
-      var x = points[0][0],y = points[0][1],c;
-      var angle = Math.atan2(y - points[1][1],x - points[1][0]);
-      var xLeft = x + -Math.sin(angle) * extraOffset, yLeft = y + Math.cos(angle) * extraOffset;
-      riverPointsLeft.push({scX:xLeft, scY:yLeft});
-      var xRight = x + Math.sin(angle) * extraOffset, yRight = y + -Math.cos(angle) * extraOffset;
-      riverPointsRight.unshift({scX:xRight, scY:yRight});
+    // first point
+    let x = points[0][0], y = points[0][1], c;
+    let angle = Math.atan2(y - points[1][1], x - points[1][0]);
+    let xLeft = x + -Math.sin(angle) * extraOffset, yLeft = y + Math.cos(angle) * extraOffset;
+    riverPointsLeft.push({scX:xLeft, scY:yLeft});
+    let xRight = x + Math.sin(angle) * extraOffset, yRight = y + -Math.cos(angle) * extraOffset;
+    riverPointsRight.unshift({scX:xRight, scY:yRight});
 
       // middle points
       for (let p = 1; p < last; p ++) {
         x = points[p][0],y = points[p][1],c = points[p][2];
         if (c) {extraOffset += Math.atan(c * 10 / widening);} // confluence
-        var xPrev = points[p-1][0],yPrev = points[p-1][1];
-        var xNext = points[p+1][0],yNext = points[p+1][1];
+        const xPrev = points[p - 1][0], yPrev = points[p - 1][1];
+        const xNext = points[p + 1][0], yNext = points[p + 1][1];
         angle = Math.atan2(yPrev - yNext, xPrev - xNext);
         var offset = (Math.atan(Math.pow(p * factor, 2) / widening) / 2 * width) + extraOffset;
         xLeft = x + -Math.sin(angle) * offset, yLeft = y + Math.cos(angle) * offset;
@@ -2157,9 +2210,9 @@ function fantasyMap() {
       riverPointsRight.unshift({scX:xRight, scY:yRight});
 
       // generate path and return
-      var right = lineGen(riverPointsRight);
-      var left = lineGen(riverPointsLeft);
-      left = left.substring(left.indexOf("C"));
+    const right = lineGen(riverPointsRight);
+    let left = lineGen(riverPointsLeft);
+    left = left.substring(left.indexOf("C"));
       return round(right + left, 2);
   }
 
@@ -2167,18 +2220,20 @@ function fantasyMap() {
   function drawRiverSlow(points, width, increment) {
       lineGen.curve(d3.curveCatmullRom.alpha(0.1));
       width = width || 1;
-      var extraOffset = 0.02 * width;
-      increment = increment || 1;
-      var riverPoints = points.map(function(p) {return {scX: p[0],scY: p[1]};});
-      var river = defs.append("path").attr("d", lineGen(riverPoints));
-      var riverLength = river.node().getTotalLength();
-      var widening = rn((1000 + (riverLength * 30)) * increment);
-      var riverPointsLeft = [],riverPointsRight = [];
+    const extraOffset = 0.02 * width;
+    increment = increment || 1;
+    const riverPoints = points.map(function (p) {
+      return {scX: p[0], scY: p[1]};
+    });
+    const river = defs.append("path").attr("d", lineGen(riverPoints));
+    const riverLength = river.node().getTotalLength();
+    const widening = rn((1000 + (riverLength * 30)) * increment);
+    const riverPointsLeft = [], riverPointsRight = [];
 
-      for (let l = 0; l < riverLength; l++) {
+    for (let l = 0; l < riverLength; l++) {
         var point = river.node().getPointAtLength(l);
         var from = river.node().getPointAtLength(l - 0.1);
-        var to = river.node().getPointAtLength(l + 0.1);
+        const to = river.node().getPointAtLength(l + 0.1);
         var angle = Math.atan2(from.y - to.y, from.x - to.x);
         var offset = (Math.atan(Math.pow(l, 2) / widening) / 2 * width) + extraOffset;
         var xLeft = point.x + -Math.sin(angle) * offset;
@@ -2202,9 +2257,9 @@ function fantasyMap() {
 
       river.remove();
       // generate path and return
-      var right = lineGen(riverPointsRight);
-      var left = lineGen(riverPointsLeft);
-      left = left.substring(left.indexOf("C"));
+    const right = lineGen(riverPointsRight);
+    let left = lineGen(riverPointsLeft);
+    left = left.substring(left.indexOf("C"));
       return round(right + left, 2);
   }
 
@@ -2451,7 +2506,7 @@ function fantasyMap() {
     document.getElementById("labelFontSelect").addEventListener("change", function() {
       let group = elSelected.node().parentNode;
       let font = fonts[this.value].split(':')[0].replace(/\+/g, " ");
-      group.setAttribute("font-family", font)
+      group.setAttribute("font-family", font);
       group.setAttribute("data-font", fonts[this.value]);
     });
 
@@ -2770,7 +2825,7 @@ function fantasyMap() {
           amended.push([x, y]);
         }
       }
-      const width = +riverWidthInput.value * 0.6 + Math.random() * 1;
+      const width = +riverWidthInput.value * 0.6 + Math.random();
       const increment = +riverIncrement.value * 0.9 + Math.random() * 0.2;
       riverWidthInput.value = width;
       riverIncrement.value = increment;
@@ -2784,7 +2839,7 @@ function fantasyMap() {
     $("#riverAngle").on("input", function() {
       const tr = parseTransform(elSelected.attr("transform"));
       riverAngleValue.innerHTML = Math.abs(+this.value) + "°";
-      var c = elSelected.node().getBBox();
+      const c = elSelected.node().getBBox();
       const angle = +this.value, scale = +tr[5];
       const transform = `translate(${tr[0]},${tr[1]}) rotate(${angle} ${(c.x+c.width/2)*scale} ${(c.y+c.height/2)*scale}) scale(${scale})`;
       elSelected.attr("transform", transform);
@@ -2802,7 +2857,7 @@ function fantasyMap() {
     $("#riverScale").change(function() {
       const tr = parseTransform(elSelected.attr("transform"));
       const scaleOld = +tr[5],scale = +this.value;
-      var c = elSelected.node().getBBox();
+      const c = elSelected.node().getBBox();
       const cx = c.x + c.width / 2, cy = c.y + c.height / 2;
       const trX = +tr[0] + cx * (scaleOld - scale);
       const trY = +tr[1] + cy * (scaleOld - scale);
@@ -3016,7 +3071,7 @@ function fantasyMap() {
     function routeRedraw() {
       let points = [];
       debug.select(".controlPoints").selectAll("circle").each(function() {
-        var el = d3.select(this);
+        const el = d3.select(this);
         points.push({scX: +el.attr("cx"), scY: +el.attr("cy")});
       });
       lineGen.curve(d3.curveCatmullRom.alpha(0.1));
@@ -3266,7 +3321,7 @@ function fantasyMap() {
 
     $("#iconSize").change(function() {
       const group = d3.select(elSelected.node().parentNode);
-      const size = +this.value
+      const size = +this.value;
       group.attr("size", size);
       group.selectAll("*").each(function() {d3.select(this).attr("width", size).attr("height", size)});
     });
@@ -3444,7 +3499,7 @@ function fantasyMap() {
     function updateBurgsGroupOptions() {
       burgSelectGroup.innerHTML = "";
       burgIcons.selectAll("g").each(function(d) {
-        var opt = document.createElement("option");
+        const opt = document.createElement("option");
         opt.value = opt.innerHTML = d3.select(this).attr("id");
         burgSelectGroup.add(opt);
       });
@@ -3479,7 +3534,7 @@ function fantasyMap() {
     });
 
     $("#burgInputGroup").change(function() {
-      const newGroup = this.value.toLowerCase().replace(/ /g, "_").replace(/[^\w\s]/gi, "");
+      let newGroup = this.value.toLowerCase().replace(/ /g, "_").replace(/[^\w\s]/gi, "");
       if (Number.isFinite(+newGroup.charAt(0))) newGroup = "g" + newGroup;
       if (burgLabels.select("#"+newGroup).size()) {
         tip('The group "'+ newGroup + '" is already exists');
@@ -3518,7 +3573,7 @@ function fantasyMap() {
       const group = d3.select(elSelected.node().parentNode);
       const type = group.attr("id");
       const id = +elSelected.attr("data-id");
-      var count = group.selectAll("*").size();
+      const count = group.selectAll("*").size();
       const message = "Are you sure you want to remove all Burgs (" + count + ") of that group?";
       alertMessage.innerHTML = message;
       $("#alert").dialog({resizable: false, title: "Remove Burgs",
@@ -3546,8 +3601,8 @@ function fantasyMap() {
           },
           Cancel: function() {$(this).dialog("close");}
         }
-      })
-      return;
+      });
+
     });
 
     $("#burgNameInput").on("input", function() {
@@ -3556,7 +3611,7 @@ function fantasyMap() {
         return;
       }
       const id = +elSelected.attr("data-id");
-      burgLabels.selectAll("[data-id='" + id + "']").text(this.value)
+      burgLabels.selectAll("[data-id='" + id + "']").text(this.value);
       manors[id].name = this.value;
       $("div[aria-describedby='burgEditor'] .ui-dialog-title").text("Edit Burg: " + this.value);
     });
@@ -3565,7 +3620,7 @@ function fantasyMap() {
       const id = +elSelected.attr("data-id");
       const culture = this.id === "burgNameReCulture" ? manors[id].culture : Math.floor(Math.random() * cultures.length);
       const name = generateName(culture);
-      burgLabels.selectAll("[data-id='" + id + "']").text(name)
+      burgLabels.selectAll("[data-id='" + id + "']").text(name);
       manors[id].name = name;
       burgNameInput.value = name;
       $("div[aria-describedby='burgEditor'] .ui-dialog-title").text("Edit Burg: " + name);
@@ -3632,7 +3687,7 @@ function fantasyMap() {
     $("#burgIconSize").on("input", function() {
       const type = elSelected.node().parentNode.id;
       const group = burgIcons.select("#"+type);
-      const size = +this.value
+      const size = +this.value;
       group.attr("size", size);
       group.selectAll("*").each(function() {d3.select(this).attr("r", size)});
     });
@@ -3801,7 +3856,7 @@ function fantasyMap() {
       const sec = pop > 40 ? 1 : Math.random() < pop / 100 ? 1 : 0;
       const thr = sec && Math.random() < 0.8 ? 1 : 0;
       const url = "http://fantasycities.watabou.ru/";
-      let params = `?name=${name}&size=${size}&seed=${s}&hub=${hub}&random=0&continuous=0`
+      let params = `?name=${name}&size=${size}&seed=${s}&hub=${hub}&random=0&continuous=0`;
       params += `&river=${river}&coast=${coast}&citadel=${id&1}&plaza=${sec}&temple=${thr}&walls=${sec}&shantytown=${sec}`;
       const win = window.open(url+params, '_blank');
       win.focus();
@@ -3886,7 +3941,7 @@ function fantasyMap() {
       markerSelectGroup.innerHTML = "";
       d3.select("#defs-markers").selectAll("symbol").each(function() {
         let opt = document.createElement("option");
-        opt.value = opt.innerHTML = this.id
+        opt.value = opt.innerHTML = this.id;
         markerSelectGroup.add(opt);
       });
       let id = elSelected.attr("href").slice(1);
@@ -4146,7 +4201,7 @@ function fantasyMap() {
     function clickMarkerIconTable(e) {
       if (e.target !== e.currentTarget) {
         let table = document.getElementById("markerIconTable");
-        let selected = table.getElementsByClassName("selected")
+        let selected = table.getElementsByClassName("selected");
         if (selected.length) selected[0].removeAttribute("class");
         e.target.className = "selected";
         let id = elSelected.attr("href");
@@ -4276,7 +4331,7 @@ function fantasyMap() {
   // transform string to array [translateX,translateY,rotateDeg,rotateX,rotateY,scale]
   function parseTransform(string) {
     if (!string) {return [0,0,0,0,0,1];}
-    var a = string.replace(/[a-z()]/g,"").replace(/[ ]/g,",").split(",");
+    const a = string.replace(/[a-z()]/g, "").replace(/[ ]/g, ",").split(",");
     return [a[0] || 0, a[1] || 0, a[2] || 0, a[3] || 0, a[4] || 0, a[5] || 1];
   }
 
@@ -4355,7 +4410,7 @@ function fantasyMap() {
         if (c.river && c.ctype === 1) score += 1; // estuary is valued
         if (c.flux > 1) score += Math.pow(c.flux, 0.3); // riverbank is valued
         if (c.confluence) score += Math.pow(c.confluence, 0.7); // confluence is valued;
-        const neighbEv = c.neighbors.map(function(n) {if (cells[n].height >= 20) return cells[n].height;})
+        const neighbEv = c.neighbors.map(function(n) {if (cells[n].height >= 20) return cells[n].height;});
         const difEv = c.height - d3.mean(neighbEv);
         // if (!isNaN(difEv)) score += difEv * 10 * (1 - c.height / 100); // local height maximums are valued
       }
@@ -4369,11 +4424,11 @@ function fantasyMap() {
   function rankPlacesEconomy() {
     console.time('rankPlacesEconomy');
     land.map(function(c) {
-      var score = c.score;
-      var path = c.path || 0; // roads are valued
+      let score = c.score;
+      let path = c.path || 0; // roads are valued
       if (path) {
         path = Math.pow(path, 0.2);
-        var crossroad = c.crossroad || 0; // crossroads are valued
+        const crossroad = c.crossroad || 0; // crossroads are valued
         score = score + path + crossroad;
       }
       c.score = rn(Math.random() * score + score, 2); // add random factor
@@ -4389,8 +4444,8 @@ function fantasyMap() {
 
     // calculate population for each burg (based on trade/people attractors)
     manors.map(function(m) {
-      var cell = cells[m.cell];
-      var score = cell.score;
+      const cell = cells[m.cell];
+      let score = cell.score;
       if (score <= 0) {score = rn(Math.random(), 2)}
       if (cell.crossroad) {score += cell.crossroad;} // crossroads
       if (cell.confluence) {score += Math.pow(cell.confluence, 0.3);} // confluences
@@ -4415,13 +4470,17 @@ function fantasyMap() {
     // calculate population for each region
     states.map(function(s, i) {
       // define region burgs count
-      var burgs = $.grep(manors, function(e) {return e.region === i;});
+      const burgs = $.grep(manors, function (e) {
+        return e.region === i;
+      });
       s.burgs = burgs.length;
       // define region total and burgs population
-      var burgsPop = 0; // get summ of all burgs population
+      let burgsPop = 0; // get summ of all burgs population
       burgs.map(function(b) {burgsPop += b.population;});
       s.urbanPopulation = rn(burgsPop, 2);
-      var regionCells = $.grep(cells, function(e) {return e.region === i;});
+      const regionCells = $.grep(cells, function (e) {
+        return e.region === i;
+      });
       let cellsPop = 0;
       regionCells.map(function(c) {cellsPop += c.pop});
       s.cells = regionCells.length;
@@ -4564,21 +4623,27 @@ function fantasyMap() {
     console.time("checkAccessibility");
     for (let f = 0; f < features.length; f++) {
       if (!features[f].land) continue;
-      var manorsOnIsland = $.grep(land, function(e) {return e.manor !== undefined && e.fn === f;});
+      const manorsOnIsland = $.grep(land, function (e) {
+        return e.manor !== undefined && e.fn === f;
+      });
       if (!manorsOnIsland.length) continue;
 
       // if lake port is the only port on lake, remove port
-      var lakePorts = $.grep(manorsOnIsland, function(p) {return p.port && !features[p.port].border;});
+      const lakePorts = $.grep(manorsOnIsland, function (p) {
+        return p.port && !features[p.port].border;
+      });
       if (lakePorts.length) {
-        var lakes = [];
+        const lakes = [];
         lakePorts.forEach(function(p) {lakes[p.port] = lakes[p.port] ? lakes[p.port] + 1 : 1;});
         lakePorts.forEach(function(p) {if (lakes[p.port] === 1) p.port = undefined;});
       }
 
       // check how many ocean ports are there on island
-      var oceanPorts = $.grep(manorsOnIsland, function(p) {return p.port && features[p.port].border;});
+      const oceanPorts = $.grep(manorsOnIsland, function (p) {
+        return p.port && features[p.port].border;
+      });
       if (oceanPorts.length) continue;
-      var portCandidates = $.grep(manorsOnIsland, function(c) {
+      const portCandidates = $.grep(manorsOnIsland, function (c) {
         return c.harbor && features[cells[c.harbor].fn].border && c.ctype === 1;
       });
       if (portCandidates.length) {
@@ -4648,11 +4713,13 @@ function fantasyMap() {
     console.time("generateSmallRoads");
     if (manors.length < 2) return;
     for (let f = 0; f < features.length; f++) {
-      var manorsOnIsland = $.grep(land, function(e) {return e.manor !== undefined && e.fn === f;});
-      var l = manorsOnIsland.length;
+      const manorsOnIsland = $.grep(land, function (e) {
+        return e.manor !== undefined && e.fn === f;
+      });
+      const l = manorsOnIsland.length;
       if (l > 1) {
-        var secondary = rn((l + 8) / 10);
-        for (s = 0; s < secondary; s++) {
+        const secondary = rn((l + 8) / 10);
+        for (let s = 0; s < secondary; s++) {
           var start = manorsOnIsland[Math.floor(Math.random() * l)].index;
           var end = manorsOnIsland[Math.floor(Math.random() * l)].index;
           var dist = Math.hypot(cells[start].data[0] - cells[end].data[0],cells[start].data[1] - cells[end].data[1]);
@@ -4663,18 +4730,21 @@ function fantasyMap() {
         }
         manorsOnIsland.map(function(e, d) {
           if (!e.path && d > 0) {
-            var start = e.index, end = -1;
-            var road = $.grep(land, function(e) {return e.path && e.fn === f;});
+            const start = e.index;
+            let end = -1;
+            const road = $.grep(land, function (e) {
+              return e.path && e.fn === f;
+            });
             if (road.length > 0) {
-              var minDist = 10000;
+              let minDist = 10000;
               road.map(function(i) {
-                var dist = Math.hypot(e.data[0] - i.data[0],e.data[1] - i.data[1]);
+                const dist = Math.hypot(e.data[0] - i.data[0], e.data[1] - i.data[1]);
                 if (dist < minDist) {minDist = dist; end = i.index;}
               });
             } else {
               end = manorsOnIsland[0].index;
             }
-            var path = findLandPath(start, end, "main");
+            const path = findLandPath(start, end, "main");
             restorePath(end, start, "small", path);
           }
         });
@@ -4768,18 +4838,22 @@ function fantasyMap() {
 
   function findLandPath(start, end, type) {
     // A* algorithm
-    var queue = new PriorityQueue({comparator: function(a, b) {return a.p - b.p}});
-    var cameFrom = [];
-    var costTotal = [];
+    const queue = new PriorityQueue({
+      comparator: function (a, b) {
+        return a.p - b.p
+      }
+    });
+    const cameFrom = [];
+    const costTotal = [];
     costTotal[start] = 0;
     queue.queue({e: start, p: 0});
     while (queue.length > 0) {
-      var next = queue.dequeue().e;
+      const next = queue.dequeue().e;
       if (next === end) {break;}
-      var pol = cells[next];
+      const pol = cells[next];
       pol.neighbors.forEach(function(e) {
         if (cells[e].height >= 20) {
-          var cost = cells[e].height / 100 * 2;
+          let cost = cells[e].height / 100 * 2;
           if (cells[e].path && type === "main") {
             cost = 0.15;
           } else {
@@ -4789,12 +4863,12 @@ function fantasyMap() {
             if (cells[e].path) {cost *= 0.5;}
             cost += Math.hypot(cells[e].data[0] - pol.data[0],cells[e].data[1] - pol.data[1]) / 30;
           }
-          var costNew = costTotal[next] + cost;
+          const costNew = costTotal[next] + cost;
           if (!cameFrom[e] || costNew < costTotal[e]) { //
             costTotal[e] = costNew;
             cameFrom[e] = next;
-            var dist = Math.hypot(cells[e].data[0] - cells[end].data[0],cells[e].data[1] - cells[end].data[1]) / 15;
-            var priority = costNew + dist;
+            const dist = Math.hypot(cells[e].data[0] - cells[end].data[0], cells[e].data[1] - cells[end].data[1]) / 15;
+            const priority = costNew + dist;
             queue.queue({e, p: priority});
           }
         }
@@ -4862,19 +4936,23 @@ function fantasyMap() {
   }
 
   function getPathDist(start, end) {
-    var queue = new PriorityQueue({comparator: function(a, b) {return a.p - b.p}});
-    var next, costNew;
-    var cameFrom = [];
-    var costTotal = [];
+    const queue = new PriorityQueue({
+      comparator: function (a, b) {
+        return a.p - b.p
+      }
+    });
+    let next, costNew;
+    const cameFrom = [];
+    const costTotal = [];
     cameFrom[start] = "no";
     costTotal[start] = 0;
     queue.queue({e: start, p: 0});
     while (queue.length > 0 && next !== end) {
       next = queue.dequeue().e;
-      var pol = cells[next];
+      const pol = cells[next];
       pol.neighbors.forEach(function(e) {
         if (cells[e].path && (cells[e].ctype === -1 || cells[e].haven === next)) {
-          var dist = Math.hypot(cells[e].data[0] - pol.data[0],cells[e].data[1] - pol.data[1]);
+          const dist = Math.hypot(cells[e].data[0] - pol.data[0], cells[e].data[1] - pol.data[1]);
           costNew = costTotal[next] + dist;
           if (!cameFrom[e]) {
             costTotal[e] = costNew;
@@ -4888,13 +4966,14 @@ function fantasyMap() {
   }
 
   function restorePath(end, start, type, from) {
-    var path = [],current = end, limit = 1000;
-    var prev = cells[end];
+    let path = [], current = end;
+    const limit = 1000;
+    let prev = cells[end];
     if (type === "ocean" || !prev.path) {path.push({scX: prev.data[0],scY: prev.data[1],i: end});}
     if (!prev.path) {prev.path = 1;}
     for (let i = 0; i < limit; i++) {
       current = from[current];
-      var cur = cells[current];
+      let cur = cells[current];
       if (!cur) {break;}
       if (cur.path) {
         cur.path += 1;
@@ -4914,20 +4993,20 @@ function fantasyMap() {
       if (path.length > 1) {
         // mark crossroades
         if (type === "main" || type === "small") {
-          var plus = type === "main" ? 4 : 2;
-          var f = cells[path[0].i];
+          const plus = type === "main" ? 4 : 2;
+          const f = cells[path[0].i];
           if (f.path > 1) {
             if (!f.crossroad) {f.crossroad = 0;}
             f.crossroad += plus;
           }
-          var t = cells[(path[path.length - 1].i)];
+          const t = cells[(path[path.length - 1].i)];
           if (t.path > 1) {
             if (!t.crossroad) {t.crossroad = 0;}
             t.crossroad += plus;
           }
         }
         // draw path segments
-        var line = lineGen(path);
+        let line = lineGen(path);
         line = round(line, 1);
         let id = 0; // to create unique route id
         if (type === "main") {
@@ -4991,7 +5070,7 @@ function fantasyMap() {
           }
         }
         console.log(names);
-      }
+      };
       request.send(null);
     }
 
@@ -5058,7 +5137,7 @@ function fantasyMap() {
     const error = function(base) {
       tip("Names data for base " + nameBases[base].name + " is incorrect. Please fix in Namesbase Editor");
       editNamesbase();
-    }
+    };
 
     if (method === "selection") {
       if (nameBase[base].length < 1) {error(base); return;}
@@ -5073,7 +5152,10 @@ function fantasyMap() {
     const min = nameBases[base].min;
     const d = nameBases[base].d;
     let word = "", variants = data[" "];
-    if (variants === undefined) {error(base); return;};
+    if (variants === undefined) {
+      error(base);
+      return;
+    }
     let cur = variants[rand(variants.length - 1)];
     for (let i=0; i < 21; i++) {
       if (cur === " " && Math.random() < 0.8) {
@@ -5089,7 +5171,10 @@ function fantasyMap() {
         word += cur; // add current el to word
         if (word.length > max) word = "";
       }
-      if (variants === undefined) {error(base); return;};
+      if (variants === undefined) {
+        error(base);
+        return;
+      }
       cur = variants[rand(variants.length - 1)];
     }
     // very rare case, let's just select a random name
@@ -5233,19 +5318,22 @@ function fantasyMap() {
   }
 
   function drawRegion(edges, region) {
-    var path = "", array = [];
+    let path = "";
+    const array = [];
     lineGen.curve(d3.curveLinear);
     while (edges.length > 2) {
-      var edgesOrdered = []; // to store points in a correct order
-      var start = edges[0].start;
-      var end = edges[0].end;
+      const edgesOrdered = []; // to store points in a correct order
+      const start = edges[0].start;
+      let end = edges[0].end;
       edges.shift();
-      var spl = start.split(" ");
+      let spl = start.split(" ");
       edgesOrdered.push({scX: spl[0],scY: spl[1]});
       spl = end.split(" ");
       edgesOrdered.push({scX: spl[0],scY: spl[1]});
       for (let i = 0; end !== start && i < 2000; i++) {
-        var next = $.grep(edges, function(e) {return (e.start == end || e.end == end);});
+        const next = $.grep(edges, function (e) {
+          return (e.start == end || e.end == end);
+        });
         if (next.length > 0) {
           if (next[0].start == end) {
             end = next[0].end;
@@ -5255,13 +5343,13 @@ function fantasyMap() {
           spl = end.split(" ");
           edgesOrdered.push({scX: spl[0],scY: spl[1]});
         }
-        var rem = edges.indexOf(next[0]);
+        const rem = edges.indexOf(next[0]);
         edges.splice(rem, 1);
       }
       path += lineGen(edgesOrdered) + "Z ";
       array[array.length] = edgesOrdered.map(function(e) {return [+e.scX, +e.scY];});
     }
-    var color = states[region].color;
+    const color = states[region].color;
     regions.append("path").attr("d", round(path, 1)).attr("fill", color).attr("class", "region"+region);
     array.sort(function(a, b){return b.length - a.length;});
     let capital = states[region].capital;
@@ -5270,24 +5358,26 @@ function fantasyMap() {
       const capitalCell = manors[capital].cell;
       array.push(polygons[capitalCell]);
     }
-    var name = states[region].name;
-    var c = polylabel(array, 1.0); // pole of inaccessibility
+    const name = states[region].name;
+    const c = polylabel(array, 1.0); // pole of inaccessibility
     labels.select("#countries").append("text").attr("id", "regionLabel"+region).attr("x", rn(c[0])).attr("y", rn(c[1])).text(name).on("click", editLabel);
     states[region].area = rn(Math.abs(d3.polygonArea(array[0]))); // define region area
   }
 
   function drawRegionCoast(edges, region) {
-    var path = "";
+    let path = "";
     while (edges.length > 0) {
-      var edgesOrdered = []; // to store points in a correct order
-      var start = edges[0].start;
-      var end = edges[0].end;
+      const edgesOrdered = []; // to store points in a correct order
+      const start = edges[0].start;
+      let end = edges[0].end;
       edges.shift();
-      var spl = start.split(" ");
+      let spl = start.split(" ");
       edgesOrdered.push({scX: spl[0],scY: spl[1]});
       spl = end.split(" ");
       edgesOrdered.push({scX: spl[0],scY: spl[1]});
-      var next = $.grep(edges, function(e) {return (e.start == end || e.end == end);});
+      let next = $.grep(edges, function (e) {
+        return (e.start == end || e.end == end);
+      });
       while (next.length > 0) {
         if (next[0].start == end) {
           end = next[0].end;
@@ -5296,29 +5386,31 @@ function fantasyMap() {
         }
         spl = end.split(" ");
         edgesOrdered.push({scX: spl[0],scY: spl[1]});
-        var rem = edges.indexOf(next[0]);
+        const rem = edges.indexOf(next[0]);
         edges.splice(rem, 1);
         next = $.grep(edges, function(e) {return (e.start == end || e.end == end);});
       }
       path += lineGen(edgesOrdered);
     }
-    var color = states[region].color;
+    const color = states[region].color;
     regions.append("path").attr("d", round(path, 1)).attr("fill", "none").attr("stroke", color).attr("stroke-width", 5).attr("class", "region"+region);
   }
 
   function drawBorders(edges, type) {
-    var path = "";
+    let path = "";
     if (edges.length < 1) {return;}
     while (edges.length > 0) {
-      var edgesOrdered = []; // to store points in a correct order
-      var start = edges[0].start;
-      var end = edges[0].end;
+      const edgesOrdered = []; // to store points in a correct order
+      const start = edges[0].start;
+      let end = edges[0].end;
       edges.shift();
-      var spl = start.split(" ");
+      let spl = start.split(" ");
       edgesOrdered.push({scX: spl[0],scY: spl[1]});
       spl = end.split(" ");
       edgesOrdered.push({scX: spl[0],scY: spl[1]});
-      var next = $.grep(edges, function(e) {return (e.start == end || e.end == end);});
+      let next = $.grep(edges, function (e) {
+        return (e.start == end || e.end == end);
+      });
       while (next.length > 0) {
         if (next[0].start == end) {
           end = next[0].end;
@@ -5327,7 +5419,7 @@ function fantasyMap() {
         }
         spl = end.split(" ");
         edgesOrdered.push({scX: spl[0],scY: spl[1]});
-        var rem = edges.indexOf(next[0]);
+        const rem = edges.indexOf(next[0]);
         edges.splice(rem, 1);
         next = $.grep(edges, function(e) {return (e.start == end || e.end == end);});
       }
@@ -5581,7 +5673,7 @@ function fantasyMap() {
         let height = i.height;
         if (height < 20 && !i.lake) return;
         if (i.lake) {
-          const nHeights = i.neighbors.map(function(e) {if (cells[e].height >= 20) return cells[e].height;})
+          const nHeights = i.neighbors.map(function(e) {if (cells[e].height >= 20) return cells[e].height;});
           const mean = d3.mean(nHeights);
           if (!mean) return;
           height = Math.trunc(mean);
@@ -5616,16 +5708,16 @@ function fantasyMap() {
   // draw Overlay
   function toggleOverlay() {
     if (overlay.selectAll("*").size() === 0) {
-      var type = styleOverlayType.value;
-      var size = +styleOverlaySize.value;
+      const type = styleOverlayType.value;
+      const size = +styleOverlaySize.value;
       if (type === "pointyHex" || type === "flatHex") {
         let points = getHexGridPoints(size, type);
         let hex = "m" + getHex(size, type).slice(0, 4).join("l");
         let d = points.map(function(p) {return "M" + p + hex;}).join("");
         overlay.append("path").attr("d", d);
       } else if (type === "square") {
-        var x = d3.range(size, svgWidth, size);
-        var y = d3.range(size, svgHeight, size);
+        const x = d3.range(size, svgWidth, size);
+        const y = d3.range(size, svgHeight, size);
         overlay.append("g").selectAll("line").data(x).enter().append("line")
           .attr("x1", function(d) {return d;})
           .attr("x2", function(d) {return d;})
@@ -5635,7 +5727,7 @@ function fantasyMap() {
           .attr("y2", function(d) {return d;})
           .attr("x1", 0).attr("x2", svgWidth);
       } else {
-        var tr = `translate(80 80) scale(${size / 20})`;
+        const tr = `translate(80 80) scale(${size / 20})`;
         d3.select("#rose").attr("transform", tr);
         overlay.append("use").attr("xlink:href","#rose");
       }
@@ -5652,10 +5744,10 @@ function fantasyMap() {
     let thirdPi = Math.PI / 3;
     let angles = [s, s + thirdPi, s + 2 * thirdPi, s + 3 * thirdPi, s + 4 * thirdPi, s + 5 * thirdPi];
     return angles.map(function(angle) {
-      var x1 = Math.sin(angle) * radius,
-          y1 = -Math.cos(angle) * radius,
-          dx = x1 - x0,
-          dy = y1 - y0;
+      const x1 = Math.sin(angle) * radius,
+        y1 = -Math.cos(angle) * radius,
+        dx = x1 - x0,
+        dy = y1 - y0;
       x0 = x1, y0 = y1;
       return [dx, dy];
     });
@@ -5716,7 +5808,7 @@ function fantasyMap() {
 
   // Draw the water flux system (for dubugging)
   function toggleFlux() {
-    var colorFlux = d3.scaleSequential(d3.interpolateBlues);
+    const colorFlux = d3.scaleSequential(d3.interpolateBlues);
     if (terrs.selectAll("path").size() == 0) {
       land.map(function(i) {
         terrs.append("path")
@@ -5807,7 +5899,7 @@ function fantasyMap() {
             cells[e].used = 1;
             swamp += drawSwamp(cells[e].data[0],cells[e].data[1]);
           }
-        })
+        });
         g.append("path").attr("d", round(swamp, 1));
       }
 
@@ -5891,8 +5983,11 @@ function fantasyMap() {
   }
 
   function drawSwamp(x, y) {
-    var h = 0.6, line = "";
+    const h = 0.6;
+    let line = "";
     for (let c = 0; c < 3; c++) {
+      let cx;
+      let cy;
       if (c == 0) {
         cx = x;
         cy = y - 0.5 - Math.random();
@@ -5912,17 +6007,17 @@ function fantasyMap() {
   }
 
   function dragged(e) {
-    var el = d3.select(this);
-    var x = d3.event.x;
-    var y = d3.event.y;
+    const el = d3.select(this);
+    const x = d3.event.x;
+    const y = d3.event.y;
     el.raise().classed("drag", true);
     if (el.attr("x")) {
       el.attr("x", x).attr("y", y + 0.8);
-      var matrix = el.attr("transform");
+      const matrix = el.attr("transform");
       if (matrix) {
-        var angle = matrix.split('(')[1].split(')')[0].split(' ')[0];
-        var bbox = el.node().getBBox();
-        var rotate = "rotate("+ angle + " " + (bbox.x + bbox.width/2) + " " + (bbox.y + bbox.height/2) + ")";
+        const angle = matrix.split('(')[1].split(')')[0].split(' ')[0];
+        const bbox = el.node().getBBox();
+        const rotate = "rotate(" + angle + " " + (bbox.x + bbox.width / 2) + " " + (bbox.y + bbox.height / 2) + ")";
         el.attr("transform", rotate);
       }
     } else {
@@ -6048,7 +6143,7 @@ function fantasyMap() {
         d3.select("#toggleGrid").classed("buttonoff", false);
         return;
       }
-      var i = manors.length;
+      const i = manors.length;
       const size = burgIcons.select("#towns").attr("size");
       burgIcons.select("#towns").append("circle").attr("id", "burg"+i).attr("data-id", i).attr("cx", x).attr("cy", y).attr("r", size).on("click", editBurg);
       burgLabels.select("#towns").append("text").attr("data-id", i).attr("x", x).attr("y", y).attr("dy", "-0.35em").text(name).on("click", editBurg);
@@ -6059,10 +6154,10 @@ function fantasyMap() {
         restoreDefaultEvents();
       }
 
-      var region, state = +$("#addBurg").attr("data-state");
+      let region, state = +$("#addBurg").attr("data-state");
       if (state !== -1) {
         region = states[state].capital === "neutral" ? "neutral" : state;
-        var oldRegion = cells[index].region;
+        const oldRegion = cells[index].region;
         if (region !== oldRegion) {
           cells[index].region = region;
           redrawRegions();
@@ -6077,7 +6172,7 @@ function fantasyMap() {
       if (cells[index].crossroad) {score += cells[index].crossroad;} // crossroads
       if (cells[index].confluence) {score += Math.pow(cells[index].confluence, 0.3);} // confluences
       if (cells[index].port !== undefined) {score *= 3;} // port-capital
-      var population = rn(score, 1);
+      const population = rn(score, 1);
       manors.push({i, cell:index, x, y, region, culture, name, population});
       recalculateStateData(state);
       updateCountryEditors();
@@ -6102,26 +6197,26 @@ function fantasyMap() {
     });
 
     function addRiverOnClick() {
-      var point = d3.mouse(this);
-      var index = diagram.find(point[0],point[1]).index;
-      var cell = cells[index];
+      const point = d3.mouse(this);
+      const index = diagram.find(point[0], point[1]).index;
+      let cell = cells[index];
       if (cell.river || cell.height < 20) return;
-      var dataRiver = []; // to store river points
+      const dataRiver = []; // to store river points
       const last = $("#rivers > path").last();
       const river = last.length ? +last.attr("id").slice(5) + 1 : 0;
       cell.flux = 0.85;
       while (cell) {
         cell.river = river;
-        var x = cell.data[0],y = cell.data[1];
+        const x = cell.data[0], y = cell.data[1];
         dataRiver.push({x, y, cell:index});
-        var nHeights = [];
+        const nHeights = [];
         cell.neighbors.forEach(function(e) {nHeights.push(cells[e].height);});
-        var minId = nHeights.indexOf(d3.min(nHeights));
-        var min = cell.neighbors[minId];
-        var tx = cells[min].data[0],ty = cells[min].data[1];
+        const minId = nHeights.indexOf(d3.min(nHeights));
+        const min = cell.neighbors[minId];
+        const tx = cells[min].data[0], ty = cells[min].data[1];
         if (cells[min].height < 20) {
-          var px = (x + tx) / 2;
-          var py = (y + ty) / 2;
+          const px = (x + tx) / 2;
+          const py = (y + ty) / 2;
           dataRiver.push({x: px, y: py, cell:index});
           cell = undefined;
         } else {
@@ -6167,7 +6262,7 @@ function fantasyMap() {
           }
         }
       }
-      var rndFactor = 0.2 + Math.random() * 1.6; // random factor in range 0.2-1.8
+      const rndFactor = 0.2 + Math.random() * 1.6; // random factor in range 0.2-1.8
       var riverAmended = amendRiver(dataRiver, rndFactor);
       var d = drawRiver(riverAmended, 1.3, 1);
       rivers.append("path").attr("d", d).attr("id", "river"+river)
@@ -6369,14 +6464,17 @@ function fantasyMap() {
           let font = family.replace(/['"]+/g, '').replace(/ /g, "+");
           let weight = rule.style.getPropertyValue('font-weight');
           if (weight !== "400") font += ":" + weight;
-          if (fonts.indexOf(font) == -1) {fonts.push(font); fetched++};
+          if (fonts.indexOf(font) == -1) {
+            fonts.push(font);
+            fetched++
+          }
         };
         let fetched = 0;
         for (let r of styleSheet.cssRules) {FontRule(r);}
         document.head.removeChild(s);
         return fetched;
       })
-      .catch(function() {return});
+      .catch(function() {});
   }
 
   // Update font list for Label and Burg Editors
@@ -6412,8 +6510,8 @@ function fantasyMap() {
   // round value to d decimals
   function rn(v, d) {
      var d = d || 0;
-     var m = Math.pow(10, d);
-     return Math.round(v * m) / m;
+    const m = Math.pow(10, d);
+    return Math.round(v * m) / m;
   }
 
   // round string to d decimals
@@ -6434,7 +6532,7 @@ function fantasyMap() {
 
   // getInteger number from user input data
   function getInteger(value) {
-    var metric = value.slice(-1);
+    const metric = value.slice(-1);
     if (metric === "K") {return parseInt(value.slice(0, -1) * 1e3);}
     if (metric === "M") {return parseInt(value.slice(0, -1) * 1e6);}
     if (metric === "B") {return parseInt(value.slice(0, -1) * 1e9);}
@@ -6456,10 +6554,10 @@ function fantasyMap() {
     const fontsToLoad = "https://fonts.googleapis.com/css?family=" + fontsInUse.join("|");
 
     // clone svg
-    var cloneEl = document.getElementsByTagName("svg")[0].cloneNode(true);
+    const cloneEl = document.getElementsByTagName("svg")[0].cloneNode(true);
     cloneEl.id = "fantasyMap";
     document.getElementsByTagName("body")[0].appendChild(cloneEl);
-    var clone = d3.select("#fantasyMap");
+    const clone = d3.select("#fantasyMap");
 
     // rteset transform for svg
     if (type === "svg") {
@@ -6528,17 +6626,17 @@ function fantasyMap() {
     // load fonts as dataURI so they will be available in downloaded svg/png
     GFontToDataURI(fontsToLoad).then(cssRules => {
       clone.select("defs").append("style").text(cssRules.join('\n'));
-      var svg_xml = (new XMLSerializer()).serializeToString(clone.node());
+      const svg_xml = (new XMLSerializer()).serializeToString(clone.node());
       clone.remove();
-      var blob = new Blob([svg_xml],{type:'image/svg+xml;charset=utf-8'});
-      var url = window.URL.createObjectURL(blob);
-      var link = document.createElement("a");
+      const blob = new Blob([svg_xml], {type: 'image/svg+xml;charset=utf-8'});
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
       link.target = "_blank";
       if (type === "png") {
-        var ratio = svgHeight / svgWidth;
+        const ratio = svgHeight / svgWidth;
         canvas.width = svgWidth * pngResolutionInput.value;
         canvas.height = svgHeight * pngResolutionInput.value;
-        var img = new Image();
+        const img = new Image();
         img.src = url;
         img.onload = function(){
           window.URL.revokeObjectURL(url);
@@ -6568,7 +6666,7 @@ function fantasyMap() {
   // Code from Kaiido's answer:
   // https://stackoverflow.com/questions/42402584/how-to-use-google-fonts-in-canvas-when-drawing-dom-objects-in-svg
   function GFontToDataURI(url) {
-    "use strict;"
+    "use strict";
     return fetch(url) // first fecth the embed stylesheet page
       .then(resp => resp.text()) // we only need the text of it
       .then(text => {
@@ -6591,7 +6689,7 @@ function fantasyMap() {
         let fontRules = [],fontProms = [];
 
         for (let r of styleSheet.cssRules) {
-          let fR = FontRule(r)
+          let fR = FontRule(r);
           fontRules.push(fR);
           fontProms.push(
             fetch(fR.url) // fetch the actual font-file (.woff)
@@ -6637,14 +6735,14 @@ function fantasyMap() {
     const oceanShift = [oceanBack.attr("x"), oceanBack.attr("y"), oceanBack.attr("width"), oceanBack.attr("height")];
     oceanBack.attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 
-    var svg_xml = (new XMLSerializer()).serializeToString(svg.node());
-    var line = "\r\n";
-    var data = params + line + JSON.stringify(points) + line + JSON.stringify(cells) + line;
+    const svg_xml = (new XMLSerializer()).serializeToString(svg.node());
+    const line = "\r\n";
+    let data = params + line + JSON.stringify(points) + line + JSON.stringify(cells) + line;
     data += JSON.stringify(manors) + line + JSON.stringify(states) + line + svg_xml + line + options + line;
     data += JSON.stringify(cultures) + line + "" + line + "" + line + heights + line +  JSON.stringify(notes) + line;
-    var dataBlob = new Blob([data],{type:"text/plain"});
-    var dataURL = window.URL.createObjectURL(dataBlob);
-    var link = document.createElement("a");
+    const dataBlob = new Blob([data], {type: "text/plain"});
+    const dataURL = window.URL.createObjectURL(dataBlob);
+    const link = document.createElement("a");
     link.download = "fantasy_map_" + Date.now() + ".map";
     link.href = dataURL;
     document.body.appendChild(link);
@@ -6663,23 +6761,23 @@ function fantasyMap() {
   $("#mapToLoad").change(function() {
     console.time("loadMap");
     closeDialogs();
-    var fileToLoad = this.files[0];
+    const fileToLoad = this.files[0];
     this.value = "";
     uploadFile(fileToLoad);
   });
 
   function uploadFile(file, callback) {
     console.time("loadMap");
-    var fileReader = new FileReader();
+    const fileReader = new FileReader();
     fileReader.onload = function(fileLoadedEvent) {
-      var dataLoaded = fileLoadedEvent.target.result;
-      var data = dataLoaded.split("\r\n");
+      const dataLoaded = fileLoadedEvent.target.result;
+      const data = dataLoaded.split("\r\n");
       // data convention: 0 - params; 1 - all points; 2 - cells; 3 - manors; 4 - states;
       // 5 - svg; 6 - options; 7 - cultures; 8 - none; 9 - none; 10 - heights; 11 - notes;
       const params = data[0].split("|");
       const mapVersion = params[0] || data[0];
       if (mapVersion !== version) {
-        var message = `The Map version `;
+        let message = `The Map version `;
         // mapVersion reference was not added to downloaded map before v. 0.52b, so I cannot support really old files
         if (mapVersion.length <= 10) {
           message +=  `(${mapVersion}) does not match the Generator version (${version}). The map will be auto-updated.
@@ -6698,8 +6796,8 @@ function fantasyMap() {
           loadDataFromMap(data);
         }}});
       } else {loadDataFromMap(data);}
-      if (mapVersion.length > 10) {console.error("Cannot load map"); return;}
-    }
+      if (mapVersion.length > 10) {console.error("Cannot load map"); }
+    };
     fileReader.readAsText(file, "UTF-8");
     if (callback) {callback();}
   }
@@ -6994,9 +7092,9 @@ function fantasyMap() {
 
     // update map to support some old versions and fetch fonts
     labels.selectAll("g").each(function(d) {
-      var el = d3.select(this);
+      const el = d3.select(this);
       if (el.attr("id") === "burgLabels") return;
-      var font = el.attr("data-font");
+      const font = el.attr("data-font");
       if (font && fonts.indexOf(font) === -1) addFonts("https://fonts.googleapis.com/css?family=" + font);
       if (!el.attr("data-size")) el.attr("data-size", +el.attr("font-size"));
       if (el.style("display") === "none") el.node().style.display = null;
@@ -7012,7 +7110,7 @@ function fantasyMap() {
     spacing = rn(7.5 * sizeMod / graphSize, 2); // space between points before jirrering
     const radius = spacing / 2; // square radius
     const jittering = radius * 0.9; // max deviation
-    const jitter = function() {return Math.random() * 2 * jittering - jittering;}
+    const jitter = function() {return Math.random() * 2 * jittering - jittering;};
     let points = [];
     for (let y = radius; y < graphHeight; y += spacing) {
       for (let x = radius; x < graphWidth; x += spacing) {
@@ -7102,10 +7200,10 @@ function fantasyMap() {
 
   // move layers on mapLayers dragging (jquery sortable)
   function moveLayer(event, ui) {
-    var el = getLayer(ui.item.attr("id"));
+    const el = getLayer(ui.item.attr("id"));
     if (el) {
-      var prev = getLayer(ui.item.prev().attr("id"));
-      var next = getLayer(ui.item.next().attr("id"));
+      const prev = getLayer(ui.item.prev().attr("id"));
+      const next = getLayer(ui.item.next().attr("id"));
       if (prev) {el.insertAfter(prev);} else if (next) {el.insertBefore(next);}
     }
   }
@@ -7127,8 +7225,8 @@ function fantasyMap() {
 
   // UI Button handlers
   $("button, a, li, i").on("click", function() {
-    var id = this.id;
-    var parent = this.parentNode.id;
+    const id = this.id;
+    const parent = this.parentNode.id;
     if (debug.selectAll(".tag").size()) {debug.selectAll(".tag, .line").remove();}
     if (id === "toggleHeight") {toggleHeight();}
     if (id === "toggleCountries") {$('#regions').fadeToggle();}
@@ -7178,14 +7276,14 @@ function fantasyMap() {
     }
     if (id === "countriesManuallyComplete") {
       debug.selectAll(".circle").remove();
-      var changedCells = regions.select("#temp").selectAll("path");
-      var changedStates = [];
+      const changedCells = regions.select("#temp").selectAll("path");
+      let changedStates = [];
       changedCells.each(function() {
-        var el = d3.select(this);
-        var cell = +el.attr("data-cell");
-        var stateOld = cells[cell].region;
+        const el = d3.select(this);
+        const cell = +el.attr("data-cell");
+        let stateOld = cells[cell].region;
         if (stateOld === "neutral") {stateOld = states.length - 1;}
-        var stateNew = +el.attr("data-state");
+        const stateNew = +el.attr("data-state");
         const region = states[stateNew].color === "neutral" ? "neutral" : stateNew;
         cells[cell].region = region;
         if (cells[cell].manor !== undefined) {manors[cells[cell].manor].region = region;}
@@ -7193,7 +7291,7 @@ function fantasyMap() {
       });
       changedStates = [...new Set(changedStates)];
       changedStates.map(function(s) {recalculateStateData(s);});
-      var last = states.length - 1;
+      const last = states.length - 1;
       if (states[last].capital === "neutral" && states[last].cells === 0) {
         $("#state" + last).remove();
         states.splice(-1);
@@ -7229,11 +7327,11 @@ function fantasyMap() {
       regenerateCountries();
     }
     if (id === "countriesAddM" || id === "countriesAddR" || id === "countriesAddG") {
-      var i = states.length;
+      let i = states.length;
       // move neutrals to the last line
       if (states[i-1].capital === "neutral") {states[i-1].i = i; i -= 1;}
       var name = generateStateName(0);
-      var color = colors20(i);
+      const color = colors20(i);
       states.push({i, color, name, capital: "select", cells: 0, burgs: 0, urbanPopulation: 0, ruralPopulation: 0, area: 0, power: 1});
       states.sort(function(a, b){return a.i - b.i});
       editCountries();
@@ -7251,16 +7349,16 @@ function fantasyMap() {
       var el = $("#countriesEditor");
       if (el.attr("data-type") === "absolute") {
         el.attr("data-type", "percentage");
-        var totalCells = land.length;
-        var totalBurgs = +countriesFooterBurgs.innerHTML;
-        var totalArea = countriesFooterArea.innerHTML;
+        const totalCells = land.length;
+        const totalBurgs = +countriesFooterBurgs.innerHTML;
+        let totalArea = countriesFooterArea.innerHTML;
         totalArea = getInteger(totalArea.split(" ")[0]);
-        var totalPopulation = getInteger(countriesFooterPopulation.innerHTML);
+        const totalPopulation = getInteger(countriesFooterPopulation.innerHTML);
         $("#countriesBody > .states").each(function() {
-          var cells = rn($(this).attr("data-cells") / totalCells * 100);
-          var burgs = rn($(this).attr("data-burgs") / totalBurgs * 100);
-          var area = rn($(this).attr("data-area") / totalArea * 100);
-          var population = rn($(this).attr("data-population") / totalPopulation * 100);
+          const cells = rn($(this).attr("data-cells") / totalCells * 100);
+          const burgs = rn($(this).attr("data-burgs") / totalBurgs * 100);
+          const area = rn($(this).attr("data-area") / totalArea * 100);
+          const population = rn($(this).attr("data-population") / totalPopulation * 100);
           $(this).children().filter(".stateCells").text(cells + "%");
           $(this).children().filter(".stateBurgs").text(burgs + "%");
           $(this).children().filter(".stateArea").text(area + "%");
@@ -7273,32 +7371,32 @@ function fantasyMap() {
     }
     if (id === "countriesExport") {
       if ($(".statePower").length === 0) {return;}
-      var unit = areaUnit.value === "square" ? distanceUnit.value + "2" : areaUnit.value;
-      var data = "Country,Capital,Cells,Burgs,Area ("+ unit +"),Population\n"; // countries headers
+      const unit = areaUnit.value === "square" ? distanceUnit.value + "2" : areaUnit.value;
+      let data = "Country,Capital,Cells,Burgs,Area (" + unit + "),Population\n"; // countries headers
       $("#countriesBody > .states").each(function() {
-        var country = $(this).attr("data-country");
+        const country = $(this).attr("data-country");
         if (country === "bottom") {data += "neutral,"} else {data += country + ",";}
-        var capital = $(this).attr("data-capital");
+        const capital = $(this).attr("data-capital");
         if (capital === "bottom" || capital === "select") {data += ","} else {data += capital + ",";}
         data += $(this).attr("data-cells") + ",";
         data += $(this).attr("data-burgs") + ",";
         data += $(this).attr("data-area") + ",";
-        var population = +$(this).attr("data-population");
+        const population = +$(this).attr("data-population");
         data += population + "\n";
       });
       data += "\nBurg,Country,Culture,Population\n"; // burgs headers
       manors.map(function(m) {
         if (m.region === "removed") return; // skip removed burgs
         data += m.name + ",";
-        var country = m.region === "neutral" ? "neutral" : states[m.region].name;
+        const country = m.region === "neutral" ? "neutral" : states[m.region].name;
         data += country + ",";
         data += cultures[m.culture].name + ",";
-        var population = m.population * urbanization.value * populationRate.value * 1000;
+        const population = m.population * urbanization.value * populationRate.value * 1000;
         data += population + "\n";
       });
-      var dataBlob = new Blob([data],{type:"text/plain"});
-      var url = window.URL.createObjectURL(dataBlob);
-      var link = document.createElement("a");
+      const dataBlob = new Blob([data], {type: "text/plain"});
+      const url = window.URL.createObjectURL(dataBlob);
+      const link = document.createElement("a");
       document.body.appendChild(link);
       link.download = "countries_data" + Date.now() + ".csv";
       link.href = url;
@@ -7341,8 +7439,8 @@ function fantasyMap() {
           Cancel: function() {$(this).dialog("close");},
           Remove: function() {
             $(this).dialog("close");
-            var state = +$("#burgsEditor").attr("data-state");
-            var region = states[state].capital === "neutral" ? "neutral" : state;
+            const state = +$("#burgsEditor").attr("data-state");
+            const region = states[state].capital === "neutral" ? "neutral" : state;
             $("#burgsBody").empty();
             manors.map(function(m) {
               if (m.region !== region) {return;}
@@ -7375,8 +7473,8 @@ function fantasyMap() {
     if (id === "regenerateBurgNames") {
       var s = +$("#burgsEditor").attr("data-state");
       $(".burgName").each(function(e, i) {
-        var b = +(this.parentNode.id).slice(5);
-        var name = generateName(manors[b].culture);
+        const b = +(this.parentNode.id).slice(5);
+        const name = generateName(manors[b].culture);
         $(this).val(name);
         $(this).parent().attr("data-burg", name);
         manors[b].name = name;
@@ -7397,18 +7495,18 @@ function fantasyMap() {
     if (id === "toggleScaleBar") {$("#scaleBar").toggleClass("hidden");}
     if (id === "addRuler") {
       $("#ruler").show();
-      var rulerNew = ruler.append("g").attr("class", "linear").call(d3.drag().on("start", elementDrag));
-      var factor = rn(1 / Math.pow(scale, 0.3), 1);
-      var y = Math.floor(Math.random() * graphHeight * 0.5 + graphHeight * 0.25);
-      var x1 = graphWidth * 0.2, x2 = graphWidth * 0.8;
-      var dash = rn(30 / distanceScale.value, 2);
+      const rulerNew = ruler.append("g").attr("class", "linear").call(d3.drag().on("start", elementDrag));
+      const factor = rn(1 / Math.pow(scale, 0.3), 1);
+      const y = Math.floor(Math.random() * graphHeight * 0.5 + graphHeight * 0.25);
+      const x1 = graphWidth * 0.2, x2 = graphWidth * 0.8;
+      const dash = rn(30 / distanceScale.value, 2);
       rulerNew.append("line").attr("x1", x1).attr("y1", y).attr("x2", x2).attr("y2", y).attr("class", "white").attr("stroke-width", factor);
       rulerNew.append("line").attr("x1", x1).attr("y1", y).attr("x2", x2).attr("y2", y).attr("class", "gray").attr("stroke-width", factor).attr("stroke-dasharray", dash);
       rulerNew.append("circle").attr("r", 2 * factor).attr("stroke-width", 0.5 * factor).attr("cx", x1).attr("cy", y).attr("data-edge", "left").call(d3.drag().on("drag", rulerEdgeDrag));
       rulerNew.append("circle").attr("r", 2 * factor).attr("stroke-width", 0.5 * factor).attr("cx", x2).attr("cy", y).attr("data-edge", "rigth").call(d3.drag().on("drag", rulerEdgeDrag));
       rulerNew.append("circle").attr("r", 1.2 * factor).attr("stroke-width", 0.3 * factor).attr("cx", graphWidth / 2).attr("cy", y).attr("class", "center").call(d3.drag().on("start", rulerCenterDrag));
-      var dist = rn(x2 - x1);
-      var label = rn(dist * distanceScale.value) + " " + distanceUnit.value;
+      const dist = rn(x2 - x1);
+      const label = rn(dist * distanceScale.value) + " " + distanceUnit.value;
       rulerNew.append("text").attr("x", graphWidth / 2).attr("y", y).attr("dy", -1).attr("data-dist", dist).text(label).text(label).on("click", removeParent).attr("font-size", 10 * factor);
       return;
     }
@@ -7461,7 +7559,7 @@ function fantasyMap() {
       If you want to significantly change the hightmap, it may be better to clean up all the secondary data
       and let the system to re-generate it based on the updated hightmap. In case of minor changes, you can keep the data.
       Newly added lands will be considered as neutral. Burgs located on a removed land cells will be deleted.
-      Rivers and small lakes will be re-gerenated based on updated heightmap. Routes won't be regenerated.`
+      Rivers and small lakes will be re-gerenated based on updated heightmap. Routes won't be regenerated.`;
       alertMessage.innerHTML = message;
       $("#alert").dialog({resizable: false, title: "Edit Heightmap",
         buttons: {
@@ -7482,9 +7580,9 @@ function fantasyMap() {
     if (customization === 1) {
       if (id === "paintBrushes") {openBrushesPanel();}
       if (id === "rescaleExecute") {
-        var subject = rescaleLower.value + "-" + rescaleHigher.value;
-        var sign = conditionSign.value;
-        var modifier = rescaleModifier.value;
+        const subject = rescaleLower.value + "-" + rescaleHigher.value;
+        const sign = conditionSign.value;
+        let modifier = rescaleModifier.value;
         if (sign === "×") {modifyHeights(subject, 0, +modifier);}
         if (sign === "÷") {modifyHeights(subject, 0, (1 / modifier));}
         if (sign === "+") {modifyHeights(subject, +modifier, 1);}
@@ -7586,8 +7684,8 @@ function fantasyMap() {
       var el = viewbox.select("#"+styleElementSelect.value);
       var mod = id === "styleFontPlus" ? 1.1 : 0.9;
       el.selectAll("g").each(function() {
-        var el = d3.select(this);
-        var size = rn(el.attr("data-size") * mod, 2);
+        const el = d3.select(this);
+        let size = rn(el.attr("data-size") * mod, 2);
         if (size < 2) {size = 2;}
         el.attr("data-size", size).attr("font-size", rn((size + (size / scale)) / 2, 2));
       });
@@ -7643,11 +7741,11 @@ function fantasyMap() {
 
   // support save options
   $("#saveDropdown > div").click(function() {
-    var id = this.id;
-    var dns_allow_popup_message = localStorage.getItem("dns_allow_popup_message");
+    const id = this.id;
+    let dns_allow_popup_message = localStorage.getItem("dns_allow_popup_message");
     if (!dns_allow_popup_message) {
       localStorage.clear();
-      var message = "Generator uses pop-up window to download files. ";
+      let message = "Generator uses pop-up window to download files. ";
       message += "Please ensure your browser does not block popups. ";
       message += "Please check browser settings and turn off adBlocker if it is enabled";
       alertMessage.innerHTML = message;
@@ -7687,7 +7785,7 @@ function fantasyMap() {
         let cell = diagram.find(points[i][0],points[i][1]).index;
         // if closest cell is a small lake, try to find a land neighbor
         if (cells[cell].lake === 2) cells[cell].neighbors.forEach(function(n) {
-          if (cells[n].height >= 20) {cell = n; return;}
+          if (cells[n].height >= 20) {cell = n; }
         });
         let region = cells[cell].region;
         if (region === undefined) region = -1;
@@ -7812,15 +7910,15 @@ function fantasyMap() {
 
   // templateEditor Button handlers
   $("#templateTools > button").on("click", function() {
-    var id = this.id;
+    let id = this.id;
     id = id.replace("template", "");
     if (id === "Mountain") {
-      var steps = $("#templateBody > div").length;
+      const steps = $("#templateBody > div").length;
       if (steps > 0) return;
     }
     $("#templateBody").attr("data-changed", 1);
     $("#templateBody").append('<div data-type="' + id + '">' + id + '</div>');
-    var el = $("#templateBody div:last-child");
+    const el = $("#templateBody div:last-child");
     if (id === "Hill" || id === "Pit" || id === "Range" || id === "Trough") {
       var count = '<label>count:<input class="templateElCount" onmouseover="tip(\'Blobs to add\')" type="number" value="1" min="1" max="99"></label>';
     }
@@ -7853,9 +7951,9 @@ function fantasyMap() {
   // fireTemplateElDist selector handlers
   function fireTemplateElDist() {
     if (this.value === "interval") {
-      var interval = prompt("Populate a height interval (e.g. from 17 to 20), without space, but with hyphen", "17-20");
+      const interval = prompt("Populate a height interval (e.g. from 17 to 20), without space, but with hyphen", "17-20");
       if (interval) {
-        var option = '<option value="' + interval + '">' + interval + '</option>';
+        const option = '<option value="' + interval + '">' + interval + '</option>';
         $(this).append(option).val(interval);
       }
     }
@@ -7863,9 +7961,9 @@ function fantasyMap() {
 
   // templateSelect on change listener
   $("#templateSelect").on("input", function() {
-    var steps = $("#templateBody > div").length;
-    var changed = +$("#templateBody").attr("data-changed");
-    var template = this.value;
+    const steps = $("#templateBody > div").length;
+    const changed = +$("#templateBody").attr("data-changed");
+    const template = this.value;
     if (steps && changed === 1) {
       alertMessage.innerHTML = "Are you sure you want to change the base template? All the changes will be lost.";
       $("#alert").dialog({resizable: false, title: "Change Template",
@@ -7875,7 +7973,7 @@ function fantasyMap() {
             $(this).dialog("close");
           },
           Cancel: function() {
-            var prev = $("#templateSelect").attr("data-prev");
+            const prev = $("#templateSelect").attr("data-prev");
             $("#templateSelect").val(prev);
             $(this).dialog("close");
           }
@@ -7994,7 +8092,7 @@ function fantasyMap() {
   // Execute custom template
   $("#templateRun").on("click", function() {
     if (customization !== 1) return;
-    var steps = $("#templateBody > div").length;
+    let steps = $("#templateBody > div").length;
     if (!steps) return;
     heights = new Uint8Array(heights.length); // clean all heights
     for (let step=1; step <= steps; step++) {
@@ -8025,20 +8123,20 @@ function fantasyMap() {
 
   // Save custom template as text file
   $("#templateSave").on("click", function() {
-    var steps = $("#templateBody > div").length;
-    var stepsData = "";
+    const steps = $("#templateBody > div").length;
+    let stepsData = "";
     for (let step=1; step <= steps; step++) {
-      var element = $("#templateBody div:nth-child(" + step + ")");
-      var type = element.attr("data-type");
-      var count = $("#templateBody div:nth-child(" + step + ") .templateElCount").val();
-      var dist = $("#templateBody div:nth-child(" + step + ") .templateElDist").val();
+      const element = $("#templateBody div:nth-child(" + step + ")");
+      const type = element.attr("data-type");
+      let count = $("#templateBody div:nth-child(" + step + ") .templateElCount").val();
+      let dist = $("#templateBody div:nth-child(" + step + ") .templateElDist").val();
       if (!count) {count = "0";}
       if (!dist) {dist = "0";}
       stepsData += type + " " + count + " " + dist + "\r\n";
     }
-    var dataBlob = new Blob([stepsData],{type:"text/plain"});
-    var url = window.URL.createObjectURL(dataBlob);
-    var link = document.createElement("a");
+    const dataBlob = new Blob([stepsData], {type: "text/plain"});
+    const url = window.URL.createObjectURL(dataBlob);
+    const link = document.createElement("a");
     link.download = "template_" + Date.now() + ".txt";
     link.href = url;
     link.click();
@@ -8048,19 +8146,19 @@ function fantasyMap() {
   // Load custom template as text file
   $("#templateLoad").on("click", function() {templateToLoad.click();});
   $("#templateToLoad").change(function() {
-    var fileToLoad = this.files[0];
+    const fileToLoad = this.files[0];
     this.value = "";
-    var fileReader = new FileReader();
+    const fileReader = new FileReader();
     fileReader.onload = function(fileLoadedEvent) {
-      var dataLoaded = fileLoadedEvent.target.result;
-      var data = dataLoaded.split("\r\n");
+      const dataLoaded = fileLoadedEvent.target.result;
+      const data = dataLoaded.split("\r\n");
       $("#templateBody").empty();
       if (data.length > 0) {
         $("#templateBody").attr("data-changed", 1);
         $("#templateSelect").attr("data-prev", "templateCustom").val("templateCustom");
       }
       for (let i=0; i < data.length; i++) {
-        var line = data[i].split(" ");
+        const line = data[i].split(" ");
         addStep(line[0],line[1],line[2]);
       }
     };
@@ -8074,13 +8172,13 @@ function fantasyMap() {
     // turn off paint brushes drag and cursor
     $(".pressed").removeClass('pressed');
     restoreDefaultEvents();
-    var div = d3.select("#colorScheme");
+    const div = d3.select("#colorScheme");
     if (div.selectAll("*").size() === 0) {
       for (let i = 0; i <= 100; i++) {
-        var width = i < 20 || i > 70 ? "1px" : "3px";
+        let width = i < 20 || i > 70 ? "1px" : "3px";
         if (i === 0) width = "4px";
-        var clr = color(1-i/100);
-        var style = "background-color: " + clr + "; width: " + width;
+        const clr = color(1 - i / 100);
+        const style = "background-color: " + clr + "; width: " + width;
         div.append("div").attr("data-color", i).attr("style", style);
       }
       div.selectAll("*").on("touchmove mousemove", showHeight).on("click", assignHeight);
@@ -8101,41 +8199,41 @@ function fantasyMap() {
     resetZoom();
     grid.attr("stroke-width", .2);
     // load image
-    var file = this.files[0];
+    const file = this.files[0];
     this.value = ""; // reset input value to get triggered if the same file is uploaded
-    var reader = new FileReader();
-    var img = new Image;
+    const reader = new FileReader();
+    const img = new Image;
     // draw image
     img.onload = function() {
       ctx.drawImage(img, 0, 0, svgWidth, svgHeight);
       heightsFromImage(+convertColors.value);
       console.timeEnd("loadImage");
-    }
-    reader.onloadend = function() {img.src = reader.result;}
+    };
+    reader.onloadend = function() {img.src = reader.result;};
     reader.readAsDataURL(file);
   });
 
   function heightsFromImage(count) {
-    var imageData = ctx.getImageData(0, 0, svgWidth, svgHeight);
-    var data = imageData.data;
+    const imageData = ctx.getImageData(0, 0, svgWidth, svgHeight);
+    const data = imageData.data;
     $("#landmass > path, .color-div").remove();
     $("#landmass, #colorsUnassigned").fadeIn();
     $("#colorsAssigned").fadeOut();
-    var colors = [],palette = [];
+    const colors = [], palette = [];
     points.map(function(i) {
-      var x = rn(i[0]), y = rn(i[1]);
+      let x = rn(i[0]), y = rn(i[1]);
       if (y == svgHeight) {y--;}
       if (x == svgWidth) {x--;}
-      var p = (x + y * svgWidth) * 4;
-      var r = data[p],g = data[p + 1],b = data[p + 2];
+      const p = (x + y * svgWidth) * 4;
+      const r = data[p], g = data[p + 1], b = data[p + 2];
       colors.push([r, g, b]);
     });
-    var cmap = MMCQ.quantize(colors, count);
+    const cmap = MMCQ.quantize(colors, count);
     heights = new Uint8Array(points.length);
     polygons.map(function(i, d) {
-      var nearest = cmap.nearest(colors[d]);
-      var rgb = "rgb(" + nearest[0] + ", " + nearest[1] + ", " + nearest[2] + ")";
-      var hex = toHEX(rgb);
+      const nearest = cmap.nearest(colors[d]);
+      const rgb = "rgb(" + nearest[0] + ", " + nearest[1] + ", " + nearest[2] + ")";
+      const hex = toHEX(rgb);
       if (palette.indexOf(hex) === -1) {palette.push(hex);}
       landmass.append("path")
         .attr("d", "M" + i.join("L") + "Z").attr("data-i", d)
@@ -8149,13 +8247,13 @@ function fantasyMap() {
   }
 
   function landmassClicked() {
-    var color = d3.select(this).attr("fill");
+    const color = d3.select(this).attr("fill");
     $("#"+color.slice(1)).click();
   }
 
   function selectColor() {
     landmass.selectAll(".selectedCell").classed("selectedCell", 0);
-    var el = d3.select(this);
+    const el = d3.select(this);
     if (el.classed("selectedColor")) {
       el.classed("selectedColor", 0);
     } else {
@@ -8164,11 +8262,11 @@ function fantasyMap() {
       $("#colorScheme .hoveredColor").removeClass("hoveredColor");
       $("#colorsSelectValue").text(0);
       if (el.attr("data-height")) {
-        var height = el.attr("data-height");
+        const height = el.attr("data-height");
         $("#colorScheme div[data-color='" + height + "']").addClass("hoveredColor");
         $("#colorsSelectValue").text(height);
       }
-      var color = "#" + d3.select(this).attr("id");
+      const color = "#" + d3.select(this).attr("id");
       landmass.selectAll("path").classed("selectedCell", 0);
       landmass.selectAll("path[fill='" + color + "']").classed("selectedCell", 1);
     }
@@ -8183,20 +8281,20 @@ function fantasyMap() {
   }
 
   function assignHeight() {
-    var sel = $(".selectedColor")[0];
-    var height = +d3.select(this).attr("data-color");
-    var rgb = color(1 - height / 100);
-    var hex = toHEX(rgb);
+    const sel = $(".selectedColor")[0];
+    const height = +d3.select(this).attr("data-color");
+    const rgb = color(1 - height / 100);
+    const hex = toHEX(rgb);
     sel.style.backgroundColor = rgb;
     sel.setAttribute("data-height", height);
-    var cur = "#" + sel.id;
+    const cur = "#" + sel.id;
     sel.id = hex.substr(1);
     landmass.selectAll(".selectedCell").each(function() {
       d3.select(this).attr("fill", hex).attr("stroke", hex);
       let i = +d3.select(this).attr("data-i");
       heights[i] = height;
     });
-    var parent = sel.parentNode;
+    const parent = sel.parentNode;
     if (parent.id === "colorsUnassigned") {
       colorsAssigned.appendChild(sel);
       $("#colorsAssigned").fadeIn();
@@ -8207,11 +8305,11 @@ function fantasyMap() {
 
   // sort colors based on assigned height
   function sortAssignedColors() {
-    var data = [];
-    var colors = d3.select("#colorsAssigned").selectAll(".color-div");
+    const data = [];
+    const colors = d3.select("#colorsAssigned").selectAll(".color-div");
     colors.each(function(d) {
-      var id = d3.select(this).attr("id");
-      var height = +d3.select(this).attr("data-height");
+      const id = d3.select(this).attr("id");
+      const height = +d3.select(this).attr("data-height");
       data.push({id, height});
     });
     data.sort(function(a, b) {return a.height - b.height}).map(function(i) {
@@ -8221,39 +8319,39 @@ function fantasyMap() {
 
   // auto assign color based on luminosity or hue
   function autoAssing(type) {
-    var imageData = ctx.getImageData(0, 0, svgWidth, svgHeight);
-    var data = imageData.data;
+    const imageData = ctx.getImageData(0, 0, svgWidth, svgHeight);
+    const data = imageData.data;
     $("#landmass > path, .color-div").remove();
     $("#colorsAssigned").fadeIn();
     $("#colorsUnassigned").fadeOut();
     polygons.forEach(function(i, d) {
-      var x = rn(i.data[0]), y = rn(i.data[1]);
+      let x = rn(i.data[0]), y = rn(i.data[1]);
       if (y == svgHeight) y--;
       if (x == svgWidth) x--;
-      var p = (x + y * svgWidth) * 4;
-      var r = data[p],g = data[p + 1],b = data[p + 2];
-      var lab = d3.lab("rgb(" + r + ", " + g + ", " + b + ")");
+      const p = (x + y * svgWidth) * 4;
+      const r = data[p], g = data[p + 1], b = data[p + 2];
+      const lab = d3.lab("rgb(" + r + ", " + g + ", " + b + ")");
       if (type === "hue") {
         var normalized = rn(normalize(lab.b + lab.a / 2, -50, 200), 2);
       } else {
         var normalized = rn(normalize(lab.l, 0, 100), 2);
       }
-      var rgb = color(1 - normalized);
-      var hex = toHEX(rgb);
+      const rgb = color(1 - normalized);
+      const hex = toHEX(rgb);
       heights[d] = normalized * 100;
       landmass.append("path").attr("d", "M" + i.join("L") + "Z").attr("data-i", d).attr("fill", hex).attr("stroke", hex);
     });
     let unique = [...new Set(heights)].sort();
     unique.forEach(function(h) {
-      var rgb = color(1 - h / 100);
-      var hex = toHEX(rgb);
+      const rgb = color(1 - h / 100);
+      const hex = toHEX(rgb);
       $("#colorsAssigned").append('<div class="color-div" id="' + hex.substr(1) + '" data-height="' + h + '" style="background-color: ' + hex + ';"/>');
     });
     $(".color-div").click(selectColor);
   }
 
   function normalize(val, min, max) {
-    var normalized = (val - min) / (max - min);
+    let normalized = (val - min) / (max - min);
     if (normalized < 0) {normalized = 0;}
     if (normalized > 1) {normalized = 1;}
     return normalized;
@@ -8320,25 +8418,25 @@ function fantasyMap() {
     layoutPreset.value = "layoutPolitical";
     $("#countriesBody").empty();
     $("#countriesHeader").children().removeClass("icon-sort-name-up icon-sort-name-down icon-sort-number-up icon-sort-number-down");
-    var totalArea = 0, totalBurgs = 0, unit, areaConv;
+    let totalArea = 0, totalBurgs = 0, unit, areaConv;
     if (areaUnit.value === "square") {unit = " " + distanceUnit.value + "²";} else {unit = " " + areaUnit.value;}
-    var totalPopulation = 0;
+    let totalPopulation = 0;
     for (let s = 0; s < states.length; s++) {
       $("#countriesBody").append('<div class="states" id="state' + s + '"></div>');
-      var el = $("#countriesBody div:last-child");
-      var burgsCount = states[s].burgs;
+      const el = $("#countriesBody div:last-child");
+      const burgsCount = states[s].burgs;
       totalBurgs += burgsCount;
       // calculate user-friendly area and population
-      var area = rn(states[s].area * Math.pow(distanceScale.value, 2));
+      const area = rn(states[s].area * Math.pow(distanceScale.value, 2));
       totalArea += area;
       areaConv = si(area) + unit;
-      var urban = rn(states[s].urbanPopulation * urbanization.value * populationRate.value);
-      var rural = rn(states[s].ruralPopulation * populationRate.value);
+      const urban = rn(states[s].urbanPopulation * urbanization.value * populationRate.value);
+      const rural = rn(states[s].ruralPopulation * populationRate.value);
       var population = (urban + rural) * 1000;
       totalPopulation += population;
-      var populationConv = si(population);
-      var title = '\'Total population: '+populationConv+'; Rural population: '+rural+'K; Urban population: '+urban+'K\'';
-      var neutral = states[s].color === "neutral" || states[s].capital === "neutral";
+      const populationConv = si(population);
+      const title = '\'Total population: ' + populationConv + '; Rural population: ' + rural + 'K; Urban population: ' + urban + 'K\'';
+      let neutral = states[s].color === "neutral" || states[s].capital === "neutral";
       // append elements to countriesBody
       if (!neutral) {
         el.append('<input onmouseover="tip(\'Country color. Click to change\')" class="stateColor" type="color" value="' + states[s].color + '"/>');
@@ -8384,7 +8482,9 @@ function fantasyMap() {
         minHeight: "auto", minWidth: Math.min(svgWidth, 390),
         position: {my: "right top", at: "right-10 top+10", of: "svg"}
       }).on("dialogclose", function() {
-        if (customization === 2 || customization === 3) {$("#countriesManuallyCancel").click()};
+        if (customization === 2 || customization === 3) {
+          $("#countriesManuallyCancel").click()
+        }
       });
     }
     // restore customization Editor version
@@ -8403,25 +8503,25 @@ function fantasyMap() {
     countriesFooterPopulation.innerHTML = si(totalPopulation);
     // handle events
     $(".enlange").click(function() {
-      var s = +(this.parentNode.id).slice(5);
-      var capital = states[s].capital;
-      var l = labels.select("[data-id='" + capital +"']");
-      var x = +l.attr("x"), y = +l.attr("y");
+      const s = +(this.parentNode.id).slice(5);
+      const capital = states[s].capital;
+      const l = labels.select("[data-id='" + capital + "']");
+      const x = +l.attr("x"), y = +l.attr("y");
       zoomTo(x, y, 8, 1600);
     });
     $(".stateName").on("input", function() {
-      var s = +(this.parentNode.id).slice(5);
+      const s = +(this.parentNode.id).slice(5);
       states[s].name = this.value;
       labels.select("#regionLabel"+s).text(this.value);
       if ($("#burgsEditor").is(":visible")) {
         if ($("#burgsEditor").attr("data-state") == s) {
-          var color = '<input title="Country color. Click to change" type="color" class="stateColor" value="' + states[s].color + '"/>';
+          const color = '<input title="Country color. Click to change" type="color" class="stateColor" value="' + states[s].color + '"/>';
           $("div[aria-describedby='burgsEditor'] .ui-dialog-title").text("Burgs of " + this.value).prepend(color);
         }
       }
     }).hover(focusStates, unfocus);
     $(".states > .stateColor").on("change", function() {
-      var s = +(this.parentNode.id).slice(5);
+      const s = +(this.parentNode.id).slice(5);
       states[s].color = this.value;
       regions.selectAll(".region"+s).attr("fill", this.value).attr("stroke", this.value);
       if ($("#burgsEditor").is(":visible")) {
@@ -8431,8 +8531,8 @@ function fantasyMap() {
       }
     });
     $(".stateCapital").on("input", function() {
-      var s = +(this.parentNode.id).slice(5);
-      var capital = states[s].capital;
+      const s = +(this.parentNode.id).slice(5);
+      const capital = states[s].capital;
       manors[capital].name = this.value;
       labels.select("[data-id='" + capital +"']").text(this.value);
       if ($("#burgsEditor").is(":visible")) {
@@ -8467,26 +8567,26 @@ function fantasyMap() {
     });
 
     function selectCapital() {
-      var point = d3.mouse(this);
-      var index = getIndex(point);
-      var x = rn(point[0],2), y = rn(point[1],2);
+      const point = d3.mouse(this);
+      const index = getIndex(point);
+      const x = rn(point[0], 2), y = rn(point[1], 2);
 
       if (cells[index].height < 20) {
         tip("Cannot place capital on the water! Select a land cell");
         return;
       }
-      var state = +$(".selectCapital.pressed").attr("id").replace("selectCapital", "");
-      var oldState = cells[index].region;
+      const state = +$(".selectCapital.pressed").attr("id").replace("selectCapital", "");
+      let oldState = cells[index].region;
       if (oldState === "neutral") {oldState = states.length - 1;}
       if (cells[index].manor !== undefined) {
         // cell has burg
-        var burg = cells[index].manor;
+        const burg = cells[index].manor;
         if (states[oldState].capital === burg) {
           tip("Existing capital cannot be selected as a new state capital! Select other cell");
           return;
         } else {
           // make this burg a new capital
-          var urbanFactor = 0.9; // for old neutrals
+          const urbanFactor = 0.9; // for old neutrals
           manors[burg].region = state;
           if (oldState === "neutral") {manors[burg].population *= (1 / urbanFactor);}
           manors[burg].population *= 2; // give capital x2 population bonus
@@ -8495,18 +8595,18 @@ function fantasyMap() {
         }
       } else {
         // free cell -> create new burg for a capital
-        var closest = cultureTree.find(x, y);
-        var culture = cultureTree.data().indexOf(closest) || 0;
-        var name = generateName(culture);
-        var i = manors.length;
+        const closest = cultureTree.find(x, y);
+        const culture = cultureTree.data().indexOf(closest) || 0;
+        const name = generateName(culture);
+        const i = manors.length;
         cells[index].manor = i;
         states[state].capital = i;
-        var score = cells[index].score;
+        let score = cells[index].score;
         if (score <= 0) {score = rn(Math.random(), 2);}
         if (cells[index].crossroad) {score += cells[index].crossroad;} // crossroads
         if (cells[index].confluence) {score += Math.pow(cells[index].confluence, 0.3);} // confluences
         if (cells[index].port !== undefined) {score *= 3;} // port-capital
-        var population = rn(score, 1);
+        const population = rn(score, 1);
         manors.push({i, cell:index, x, y, region: state, culture, name, population});
         burgIcons.select("#capitals").append("circle").attr("id", "burg"+i).attr("data-id", i).attr("cx", x).attr("cy", y).attr("r", 1).on("click", editBurg);
         burgLabels.select("#capitals").append("text").attr("data-id", i).attr("x", x).attr("y", y).attr("dy", "-0.35em").text(name).on("click", editBurg);
@@ -8526,27 +8626,27 @@ function fantasyMap() {
     }
 
     $(".statePower").on("input", function() {
-      var s = +(this.parentNode.id).slice(5);
+      const s = +(this.parentNode.id).slice(5);
       states[s].power = +this.value;
       regenerateCountries();
     });
     $(".statePopulation").on("change", function() {
-      var s = +(this.parentNode.id).slice(5);
-      var popOr = +$(this).parent().attr("data-population");
-      var popNew = getInteger(this.value);
+      let s = +(this.parentNode.id).slice(5);
+      const popOr = +$(this).parent().attr("data-population");
+      const popNew = getInteger(this.value);
       if (!Number.isInteger(popNew) || popNew < 1000) {
         this.value = si(popOr);
         return;
       }
-      var change = popNew / popOr;
+      const change = popNew / popOr;
       states[s].urbanPopulation = rn(states[s].urbanPopulation * change, 2);
       states[s].ruralPopulation = rn(states[s].ruralPopulation * change, 2);
-      var urban = rn(states[s].urbanPopulation * urbanization.value * populationRate.value);
-      var rural = rn(states[s].ruralPopulation  * populationRate.value);
-      var population = (urban + rural) * 1000;
+      const urban = rn(states[s].urbanPopulation * urbanization.value * populationRate.value);
+      const rural = rn(states[s].ruralPopulation * populationRate.value);
+      const population = (urban + rural) * 1000;
       $(this).parent().attr("data-population", population);
       this.value = si(population);
-      var total = 0;
+      let total = 0;
       $("#countriesBody > div").each(function(e, i) {
         total += +$(this).attr("data-population");
       });
@@ -8600,23 +8700,25 @@ function fantasyMap() {
     $("#burgsEditor").attr("data-state", s);
     $("#burgsBody").empty();
     $("#burgsHeader").children().removeClass("icon-sort-name-up icon-sort-name-down icon-sort-number-up icon-sort-number-down");
-    var region = states[s].capital === "neutral" ? "neutral" : s;
-    var burgs = $.grep(manors, function(e) {return (e.region === region);});
-    var populationArray = [];
+    const region = states[s].capital === "neutral" ? "neutral" : s;
+    const burgs = $.grep(manors, function (e) {
+      return (e.region === region);
+    });
+    const populationArray = [];
     burgs.map(function(b) {
       $("#burgsBody").append('<div class="states" id="burgs' + b.i + '"></div>');
-      var el = $("#burgsBody div:last-child");
+      const el = $("#burgsBody div:last-child");
       el.append('<span title="Click to enlarge the burg" style="padding-right: 2px" class="enlarge icon-globe"></span>');
       el.append('<input title="Burg name. Click and type to change" class="burgName" value="' + b.name + '" autocorrect="off" spellcheck="false"/>');
       el.append('<span title="Burg culture" class="icon-book" style="padding-right: 2px"></span>');
       el.append('<div title="Burg culture" class="burgCulture">' + cultures[b.culture].name + '</div>');
-      var population = b.population * urbanization.value * populationRate.value * 1000;
+      let population = b.population * urbanization.value * populationRate.value * 1000;
       populationArray.push(population);
       population = population > 1e4 ? si(population) : rn(population, -1);
       el.append('<span title="Population" class="icon-male"></span>');
       el.append('<input title="Population. Input to change" class="burgPopulation" value="' + population + '"/>');
-      var capital = states[s].capital;
-      var type = "z-burg"; // usual burg by default
+      const capital = states[s].capital;
+      let type = "z-burg"; // usual burg by default
       if (b.i === capital) {el.append('<span title="Capital" class="icon-star-empty"></span>'); type = "c-capital";}
       else {el.append('<span class="icon-star-empty placeholder"></span>');}
       if (cells[b.cell].port !== undefined) {
@@ -8634,18 +8736,18 @@ function fantasyMap() {
         minHeight: "auto", width: "auto",
         position: {my: "right bottom", at: "right-10 bottom-10", of: "svg"}
       });
-      var color = '<input title="Country color. Click to change" type="color" class="stateColor" value="' + states[s].color + '"/>';
+      const color = '<input title="Country color. Click to change" type="color" class="stateColor" value="' + states[s].color + '"/>';
       if (region !== "neutral") {$("div[aria-describedby='burgsEditor'] .ui-dialog-title").prepend(color);}
     }
     // populate total line on footer
     burgsFooterBurgs.innerHTML = burgs.length;
     burgsFooterCulture.innerHTML = $("#burgsBody div:first-child .burgCulture").text();
-    var avPop = rn(d3.mean(populationArray), -1);
+    const avPop = rn(d3.mean(populationArray), -1);
     burgsFooterPopulation.value = avPop;
     $(".enlarge").click(function() {
-      var b = +(this.parentNode.id).slice(5);
-      var l = labels.select("[data-id='" + b + "']");
-      var x = +l.attr("x"), y = +l.attr("y");
+      const b = +(this.parentNode.id).slice(5);
+      const l = labels.select("[data-id='" + b + "']");
+      const x = +l.attr("x"), y = +l.attr("y");
       zoomTo(x, y, 8, 1600);
     });
 
@@ -8668,7 +8770,7 @@ function fantasyMap() {
     });
 
     $(".burgName").on("input", function() {
-      var b = +(this.parentNode.id).slice(5);
+      const b = +(this.parentNode.id).slice(5);
       manors[b].name = this.value;
       labels.select("[data-id='" + b + "']").text(this.value);
       if (b === s && $("#countriesEditor").is(":visible")) {
@@ -8683,37 +8785,37 @@ function fantasyMap() {
       }
     });
     $(".burgPopulation").on("change", function() {
-      var b = +(this.parentNode.id).slice(5);
-      var pop = getInteger(this.value);
+      const b = +(this.parentNode.id).slice(5);
+      const pop = getInteger(this.value);
       if (!Number.isInteger(pop) || pop < 10) {
-        var orig = rn(manors[b].population * urbanization.value * populationRate.value * 1000, 2);
+        const orig = rn(manors[b].population * urbanization.value * populationRate.value * 1000, 2);
         this.value = si(orig);
         return;
       }
       populationRaw = rn(pop / urbanization.value / populationRate.value / 1000, 2);
-      var change = populationRaw - manors[b].population;
+      const change = populationRaw - manors[b].population;
       manors[b].population = populationRaw;
       $(this).parent().attr("data-population", populationRaw);
       this.value = si(pop);
-      var state = manors[b].region;
+      let state = manors[b].region;
       if (state === "neutral") {state = states.length - 1;}
       states[state].urbanPopulation += change;
       updateCountryPopulationUI(state);
-      var average = states[state].urbanPopulation / states[state].burgs * urbanization.value * populationRate.value * 1000;
+      const average = states[state].urbanPopulation / states[state].burgs * urbanization.value * populationRate.value * 1000;
       burgsFooterPopulation.value = rn(average, -1);
     });
     $("#burgsFooterPopulation").on("change", function() {
-      var state = +$("#burgsEditor").attr("data-state");
-      var newPop = +this.value;
-      var avPop = states[state].urbanPopulation / states[state].burgs * urbanization.value * populationRate.value * 1000;
+      const state = +$("#burgsEditor").attr("data-state");
+      const newPop = +this.value;
+      const avPop = states[state].urbanPopulation / states[state].burgs * urbanization.value * populationRate.value * 1000;
       if (!Number.isInteger(newPop) || newPop < 10) {this.value = rn(avPop, -1); return;}
-      var change = +this.value / avPop;
+      const change = +this.value / avPop;
       $("#burgsBody > div").each(function(e, i) {
-        var b = +(this.id).slice(5);
-        var pop = rn(manors[b].population * change, 2);
+        const b = +(this.id).slice(5);
+        const pop = rn(manors[b].population * change, 2);
         manors[b].population = pop;
         $(this).attr("data-population", pop);
-        var popUI = pop * urbanization.value * populationRate.value * 1000;
+        let popUI = pop * urbanization.value * populationRate.value * 1000;
         popUI = popUI > 1e4 ? si(popUI) : rn(popUI, -1);
         $(this).children().filter(".burgPopulation").val(popUI);
       });
@@ -8722,21 +8824,21 @@ function fantasyMap() {
     });
     $("#burgsBody .icon-trash-empty").on("click", function() {
       alertMessage.innerHTML = `Are you sure you want to remove the burg?`;
-      var b = +(this.parentNode.id).slice(5);
+      const b = +(this.parentNode.id).slice(5);
       $("#alert").dialog({resizable: false, title: "Remove burg",
         buttons: {
           Remove: function() {
             $(this).dialog("close");
-            var state = +$("#burgsEditor").attr("data-state");
+            const state = +$("#burgsEditor").attr("data-state");
             $("#burgs"+b).remove();
-            var cell = manors[b].cell;
+            const cell = manors[b].cell;
             manors[b].region = "removed";
             cells[cell].manor = undefined;
             states[state].burgs = states[state].burgs - 1;
             burgsFooterBurgs.innerHTML = states[state].burgs;
             countriesFooterBurgs.innerHTML = +countriesFooterBurgs.innerHTML - 1;
             states[state].urbanPopulation = states[state].urbanPopulation - manors[b].population;
-            var avPop = states[state].urbanPopulation / states[state].burgs * urbanization.value * populationRate.value * 1000;
+            const avPop = states[state].urbanPopulation / states[state].burgs * urbanization.value * populationRate.value * 1000;
             burgsFooterPopulation.value = rn(avPop, -1);
             if ($("#countriesEditor").is(":visible")) {
               $("#state"+state+" > .stateBurgs").text(states[state].burgs);
@@ -8752,21 +8854,23 @@ function fantasyMap() {
 
   // onhover style functions
   function focusStates() {
-    var s = +(this.parentNode.id).slice(5);
-    var l = labels.select("#regionLabel"+s);
+    const s = +(this.parentNode.id).slice(5);
+    const l = labels.select("#regionLabel" + s);
     l.classed("drag", true);
   }
 
   function focusCapital() {
-    var s = +(this.parentNode.id).slice(5);
-    var capital = states[s].capital;
+    const s = +(this.parentNode.id).slice(5);
+    const capital = states[s].capital;
     labels.select("[data-id='" + capital + "']").classed("drag", true);
     icons.select("[data-id='" + capital + "']").classed("drag", true);
   }
 
   function focusBurgs() {
-    var s = +(this.parentNode.id).slice(5);
-    var stateManors = $.grep(manors, function(e) {return (e.region === s);});
+    const s = +(this.parentNode.id).slice(5);
+    const stateManors = $.grep(manors, function (e) {
+      return (e.region === s);
+    });
     stateManors.map(function(m) {
       labels.select("[data-id='" + m.i + "']").classed("drag", true);
       icons.select("[data-id='" + m.i + "']").classed("drag", true);
@@ -8774,8 +8878,8 @@ function fantasyMap() {
   }
 
   function focusBurg() {
-    var b = +(this.id).slice(5);
-    var l = labels.select("[data-id='" + b + "']");
+    const b = +(this.id).slice(5);
+    const l = labels.select("[data-id='" + b + "']");
     l.classed("drag", true);
   }
 
@@ -8788,11 +8892,11 @@ function fantasyMap() {
 
   // restore saved dialog position on "stable" dialog window open
   $(".stable").on("dialogopen", function(event, ui) {
-    var pos = sessionStorage.getItem(this.id);
+    let pos = sessionStorage.getItem(this.id);
     if (!pos) {return;}
     pos = pos.split(",");
     if (pos[0] > $(window).width() - 100 || pos[1] > $(window).width()  - 40) {return;} // prevent showing out of screen
-    var at = `left+${pos[0]} top+${pos[1]}`;
+    const at = `left+${pos[0]} top+${pos[1]}`;
     $(this).dialog("option", "position", {my: "left top", at: at, of: "svg"});
   });
 
@@ -8837,7 +8941,7 @@ function fantasyMap() {
       const population = (urban + rural) * 1000;
       const populationConv = si(population);
       const title = '\'Total population: '+populationConv+'; Rural population: '+rural+'K; Urban population: '+urban+'K\'';
-      const b = cultures[c].base;
+      let b = cultures[c].base;
       if (b >= nameBases.length) b = 0;
       const base = nameBases[b].name;
       const el = $("#culturesBody div:last-child");
@@ -9073,9 +9177,9 @@ function fantasyMap() {
         data += $(this).attr("data-base") + "\n";
       });
 
-      var dataBlob = new Blob([data],{type:"text/plain"});
-      var url = window.URL.createObjectURL(dataBlob);
-      var link = document.createElement("a");
+      const dataBlob = new Blob([data], {type: "text/plain"});
+      const url = window.URL.createObjectURL(dataBlob);
+      const link = document.createElement("a");
       document.body.appendChild(link);
       link.download = "cultures_data" + Date.now() + ".csv";
       link.href = url;
@@ -9173,7 +9277,7 @@ function fantasyMap() {
         if (name === undefined) {
           text = "Cannot generate examples. Please verify the data";
           break;
-        };
+        }
         if (i !== 0) text += ", ";
         text += name
       }
@@ -9495,9 +9599,9 @@ function fantasyMap() {
   // update only UI and sorting value in countryEditor screen
   function updateCountryPopulationUI(s) {
     if ($("#countriesEditor").is(":visible")) {
-      var urban = rn(states[s].urbanPopulation * +urbanization.value * populationRate.value);
-      var rural = rn(states[s].ruralPopulation  * populationRate.value);
-      var population = (urban + rural) * 1000;
+      const urban = rn(states[s].urbanPopulation * +urbanization.value * populationRate.value);
+      const rural = rn(states[s].ruralPopulation * populationRate.value);
+      const population = (urban + rural) * 1000;
       $("#state"+s).attr("data-population", population);
       $("#state"+s).children().filter(".statePopulation").val(si(population));
     }
@@ -9507,7 +9611,7 @@ function fantasyMap() {
   function updateCountryEditors() {
     if ($("#countriesEditor").is(":visible")) {editCountries();}
     if ($("#burgsEditor").is(":visible")) {
-      var s = +$("#burgsEditor").attr("data-state");
+      const s = +$("#burgsEditor").attr("data-state");
       editBurgs(this, s);
     }
   }
@@ -9566,7 +9670,7 @@ function fantasyMap() {
         c.culture = cultureTree.data().indexOf(closest);
       }
     });
-    states.map(function(s) {recalculateStateData(s.i);})
+    states.map(function(s) {recalculateStateData(s.i);});
     drawRegions();
   }
 
@@ -9639,23 +9743,23 @@ function fantasyMap() {
 
   // handle DOM elements sorting on header click
   $(".sortable").on("click", function() {
-    var el = $(this);
+    const el = $(this);
     // remove sorting for all siglings except of clicked element
     el.siblings().removeClass("icon-sort-name-up icon-sort-name-down icon-sort-number-up icon-sort-number-down");
-    var type = el.hasClass("alphabetically") ? "name" : "number";
-    var state = "no";
+    const type = el.hasClass("alphabetically") ? "name" : "number";
+    let state = "no";
     if (el.is("[class*='down']")) {state = "asc";}
     if (el.is("[class*='up']")) {state = "desc";}
-    var sortby = el.attr("data-sortby");
-    var list = el.parent().next(); // get list container element (e.g. "countriesBody")
-    var lines = list.children("div"); // get list elements
+    const sortby = el.attr("data-sortby");
+    const list = el.parent().next(); // get list container element (e.g. "countriesBody")
+    const lines = list.children("div"); // get list elements
     if (state === "no" || state === "asc") { // sort desc
       el.removeClass("icon-sort-" + type + "-down");
       el.addClass("icon-sort-" + type + "-up");
       lines.sort(function(a, b) {
-        var an = a.getAttribute("data-" + sortby);
+        let an = a.getAttribute("data-" + sortby);
         if (an === "bottom") {return 1;}
-        var bn = b.getAttribute("data-" + sortby);
+        let bn = b.getAttribute("data-" + sortby);
         if (bn === "bottom") {return -1;}
         if (type === "number") {an = +an; bn = +bn;}
         if (an > bn) {return 1;}
@@ -9667,9 +9771,9 @@ function fantasyMap() {
       el.removeClass("icon-sort-" + type + "-up");
       el.addClass("icon-sort-" + type + "-down");
       lines.sort(function(a, b) {
-        var an = a.getAttribute("data-" + sortby);
+        let an = a.getAttribute("data-" + sortby);
         if (an === "bottom") {return 1;}
-        var bn = b.getAttribute("data-" + sortby);
+        let bn = b.getAttribute("data-" + sortby);
         if (bn === "bottom") {return -1;}
         if (type === "number") {an = +an; bn = +bn;}
         if (an < bn) {return 1;}
@@ -9682,12 +9786,12 @@ function fantasyMap() {
 
   // load text file with new burg names
   $("#burgsListToLoad").change(function() {
-    var fileToLoad = this.files[0];
+    const fileToLoad = this.files[0];
     this.value = "";
-    var fileReader = new FileReader();
+    const fileReader = new FileReader();
     fileReader.onload = function(fileLoadedEvent) {
-      var dataLoaded = fileLoadedEvent.target.result;
-      var data = dataLoaded.split("\r\n");
+      const dataLoaded = fileLoadedEvent.target.result;
+      const data = dataLoaded.split("\r\n");
       if (data.length === 0) {return;}
       let change = [];
       let message = `Burgs will be renamed as below. Please confirm`;
@@ -9715,7 +9819,7 @@ function fantasyMap() {
           }
         }
       });
-    }
+    };
     fileReader.readAsText(fileToLoad, "UTF-8");
   });
 
@@ -9819,7 +9923,7 @@ function fantasyMap() {
 
     // opacity
     $("#styleOpacity, #styleFilter").css("display", "block");
-    var opacity = el.attr("opacity") || 1;
+    const opacity = el.attr("opacity") || 1;
     styleOpacityInput.value = styleOpacityOutput.value = opacity;
 
     // filter
@@ -9834,7 +9938,7 @@ function fantasyMap() {
       $("#styleStroke").css("display", "inline-block");
       styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke");
       $("#styleStrokeWidth").css("display", "block");
-      var width = el.attr("stroke-width") || "";
+      const width = el.attr("stroke-width") || "";
       styleStrokeWidthInput.value = styleStrokeWidthOutput.value = width;
     }
 
@@ -9888,7 +9992,7 @@ function fantasyMap() {
 
   $("#styleFillInput").on("input", function() {
     styleFillOutput.value = this.value;
-    var el = svg.select("#"+styleElementSelect.value);
+    const el = svg.select("#" + styleElementSelect.value);
     if (styleElementSelect.value !== "labels") {
       el.attr('fill', this.value);
     } else {
@@ -9976,7 +10080,7 @@ function fantasyMap() {
 
   // Other Options handlers
   $("input, select").on("input change", function() {
-    var id = this.id;
+    const id = this.id;
     if (id === "hideLabels") invokeActiveZooming();
     if (id === "mapWidthInput" || id === "mapHeightInput") {
       changeMapSize();
@@ -9995,7 +10099,7 @@ function fantasyMap() {
     if (id === "manorsInput") {manorsOutput.value = this.value; localStorage.setItem("manors", this.value);}
     if (id === "regionsInput") {
       regionsOutput.value = this.value;
-      var size = rn(6 - this.value / 20);
+      let size = rn(6 - this.value / 20);
       if (size < 3) {size = 3;}
       burgLabels.select("#capitals").attr("data-size", size);
       size = rn(18 - this.value / 6);
@@ -10026,11 +10130,11 @@ function fantasyMap() {
       updateCountryEditors();
     }
     if (id === "distanceUnit" || id === "distanceScale" || id === "areaUnit") {
-      var dUnit = distanceUnit.value;
+      const dUnit = distanceUnit.value;
       if (id === "distanceUnit" && dUnit === "custom_name") {
-        var custom = prompt("Provide a custom name for distance unit");
+        const custom = prompt("Provide a custom name for distance unit");
         if (custom) {
-          var opt = document.createElement("option");
+          const opt = document.createElement("option");
           opt.value = opt.innerHTML = custom;
           distanceUnit.add(opt);
           distanceUnit.value = custom;
@@ -10038,19 +10142,19 @@ function fantasyMap() {
           this.value = "km"; return;
         }
       }
-      var scale = distanceScale.value;
+      const scale = distanceScale.value;
       scaleOutput.value = scale + " " + dUnit;
       ruler.selectAll("g").each(function() {
-        var label;
-        var g = d3.select(this);
-        var area = +g.select("text").attr("data-area");
+        let label;
+        const g = d3.select(this);
+        const area = +g.select("text").attr("data-area");
         if (area) {
-          var areaConv = area * Math.pow(scale, 2); // convert area to distanceScale
-          var unit = areaUnit.value;
+          const areaConv = area * Math.pow(scale, 2); // convert area to distanceScale
+          let unit = areaUnit.value;
           if (unit === "square") {unit = dUnit + "²"} else {unit = areaUnit.value;}
           label = si(areaConv) + " " + unit;
         } else {
-          var dist = +g.select("text").attr("data-dist");
+          const dist = +g.select("text").attr("data-dist");
           label = rn(dist * scale) + " " + dUnit;
         }
         g.select("text").text(label);
@@ -10131,7 +10235,7 @@ function fantasyMap() {
   });
 
   $("#layoutPreset").on("change", function() {
-    var preset = this.value;
+    const preset = this.value;
     $("#mapLayers li").not("#toggleOcean").addClass("buttonoff");
     $("#toggleOcean").removeClass("buttonoff");
     $("#oceanPattern").fadeIn();
@@ -10203,7 +10307,7 @@ function fantasyMap() {
       $('#map-dragged').hide();
       // no files or more than one
       if (e.dataTransfer.items == null || e.dataTransfer.items.length != 1) {return;}
-      var file = e.dataTransfer.items[0].getAsFile();
+      const file = e.dataTransfer.items[0].getAsFile();
       // not a .map file
       if (file.name.indexOf('.map') == -1) {
         alertMessage.innerHTML = 'Please upload a <b>.map</b> file you have previously downloaded';
@@ -10231,6 +10335,8 @@ function tip(tip, main, error) {
   tooltip.text(tip).style("background", error ? red : reg);
   if (main) tooltip.attr("data-main", tip);
 }
+
+window.tip = tip;
 
 $("#optionsContainer *").on("mouseout", function() {
   tooltip.innerHTML = tooltip.getAttribute("data-main");
