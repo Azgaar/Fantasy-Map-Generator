@@ -6921,12 +6921,6 @@ function fantasyMap() {
     if (!labels.select("#burgLabels").size()) {
       labels.append("g").attr("id", "burgLabels");
       $("#labels #capitals, #labels #towns").detach().appendTo($("#burgLabels"));
-      labels.select("#burgLabels").selectAll("text").each(function() {
-        const id = this.getAttribute("id");
-        if (id === null || id === undefined) return;
-        this.removeAttribute("id");
-        this.setAttribute("data-id", +id.replace("manorLabel", ""));
-      });
     }
 
     if (!icons.select("#burgIcons").size()) {
@@ -6945,10 +6939,6 @@ function fantasyMap() {
 
     icons.select("#burgIcons").selectAll("circle").each(function() {
       this.setAttribute("r", this.parentNode.getAttribute("size"));
-      const id = this.getAttribute("id");
-      if (id === null || id === undefined) return;
-      this.removeAttribute("id");
-      this.setAttribute("data-id", +id.replace("manorIcon", ""));
     });
 
     icons.selectAll("use").each(function() {
