@@ -1399,7 +1399,7 @@ function fantasyMap() {
             if (copy.length) return;
             newPoints.push([x1, y1]);
             tempCells.push({index:tempCells.length, data:[x1, y1],height, pit, ctype, fn, harbor, lake, region, culture});
-          };
+          }
         });
       }
       if (lake === 2) { // add potential small lakes
@@ -2082,7 +2082,9 @@ function fantasyMap() {
         var angle = Math.atan2(eY - dY, eX - dX);
         var serpentine = 1 / (r+1);
         var meandr = serpentine + 0.3 + Math.random() * 0.3 * rndFactor;
-        if (Math.random() > 0.5) {side *= -1};
+        if (Math.random() > 0.5) {
+          side *= -1
+        }
         var dist = Math.hypot(eX - dX, eY - dY);
         // if dist is big or river is small add 2 extra points
         if (dist > 8 || (dist > 4 && dataRiver.length < 6)) {
@@ -2092,7 +2094,9 @@ function fantasyMap() {
           var enY = (dY + eY * 2) / 3;
           stX += -Math.sin(angle) * meandr * side;
           stY += Math.cos(angle) * meandr * side;
-          if (Math.random() > 0.8) {side *= -1};
+          if (Math.random() > 0.8) {
+            side *= -1
+          }
           enX += Math.sin(angle) * meandr * side;
           enY += -Math.cos(angle) * meandr * side;
           riverAmended.push([stX, stY],[enX, enY]);
@@ -5073,7 +5077,10 @@ function fantasyMap() {
     const min = nameBases[base].min;
     const d = nameBases[base].d;
     let word = "", variants = data[" "];
-    if (variants === undefined) {error(base); return;};
+    if (variants === undefined) {
+      error(base);
+      return;
+    }
     let cur = variants[rand(variants.length - 1)];
     for (let i=0; i < 21; i++) {
       if (cur === " " && Math.random() < 0.8) {
@@ -5089,7 +5096,10 @@ function fantasyMap() {
         word += cur; // add current el to word
         if (word.length > max) word = "";
       }
-      if (variants === undefined) {error(base); return;};
+      if (variants === undefined) {
+        error(base);
+        return;
+      }
       cur = variants[rand(variants.length - 1)];
     }
     // very rare case, let's just select a random name
@@ -6371,7 +6381,10 @@ function fantasyMap() {
           let font = family.replace(/['"]+/g, '').replace(/ /g, "+");
           let weight = rule.style.getPropertyValue('font-weight');
           if (weight !== "400") font += ":" + weight;
-          if (fonts.indexOf(font) == -1) {fonts.push(font); fetched++};
+          if (fonts.indexOf(font) == -1) {
+            fonts.push(font);
+            fetched++
+          }
         };
         let fetched = 0;
         for (let r of styleSheet.cssRules) {FontRule(r);}
@@ -8386,7 +8399,9 @@ function fantasyMap() {
         minHeight: "auto", minWidth: Math.min(svgWidth, 390),
         position: {my: "right top", at: "right-10 top+10", of: "svg"}
       }).on("dialogclose", function() {
-        if (customization === 2 || customization === 3) {$("#countriesManuallyCancel").click()};
+        if (customization === 2 || customization === 3) {
+          $("#countriesManuallyCancel").click()
+        }
       });
     }
     // restore customization Editor version
@@ -9175,7 +9190,7 @@ function fantasyMap() {
         if (name === undefined) {
           text = "Cannot generate examples. Please verify the data";
           break;
-        };
+        }
         if (i !== 0) text += ", ";
         text += name
       }
