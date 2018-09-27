@@ -6347,12 +6347,12 @@ function fantasyMap() {
 
   // return cell / polly Index or error
   function getIndex(point) {
-    const c = diagram.find(point[0],point[1]);
+    let c = diagram.find(point[0], point[1]);
     if (!c) {
       console.error("Cannot find closest cell for points" + point[0] + ", " + point[1]);
       return;
     }
-    return index = c.index;
+    return c.index;
   }
 
   // re-calculate data for a particular state
