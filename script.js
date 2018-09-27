@@ -6666,7 +6666,6 @@ function fantasyMap() {
   // Code from Kaiido's answer:
   // https://stackoverflow.com/questions/42402584/how-to-use-google-fonts-in-canvas-when-drawing-dom-objects-in-svg
   function GFontToDataURI(url) {
-    "use strict";
     return fetch(url) // first fecth the embed stylesheet page
       .then(resp => resp.text()) // we only need the text of it
       .then(text => {
