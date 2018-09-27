@@ -1512,7 +1512,7 @@ function fantasyMap() {
     history = history.slice(0, historyStage);
     history[historyStage] = heights.slice();
     historyStage++;
-    undo.disabled = templateUndo.disabled = historyStage > 1 ? false : true;
+    undo.disabled = templateUndo.disabled = historyStage <= 1;
     redo.disabled = templateRedo.disabled = true;
     const landMean = Math.trunc(d3.mean(heights));
     const landRatio = rn(landCells / heights.length * 100);
@@ -1526,8 +1526,8 @@ function fantasyMap() {
   // restoreHistory
   function restoreHistory(step) {
     historyStage = step;
-    redo.disabled = templateRedo.disabled = historyStage < history.length ? false : true;
-    undo.disabled = templateUndo.disabled = historyStage > 1 ? false : true;
+    redo.disabled = templateRedo.disabled = historyStage >= history.length;
+    undo.disabled = templateUndo.disabled = historyStage <= 1;
     if (history[historyStage - 1] === undefined) return;
     heights = history[historyStage - 1].slice();
     updateHeightmap();
