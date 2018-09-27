@@ -705,7 +705,7 @@ function fantasyMap() {
         let radius = customization === 2 ? +countriesManuallyBrush.value : +culturesManuallyBrush.value;
         const r = rn(6 / graphSize * radius, 1);
         moveCircle(x1, y1, r);
-        selection = defineBrushSelection(c2, radius);
+        let selection = defineBrushSelection(c2, radius);
         if (selection) {
           if (customization === 2) changeStateForSelection(selection);
           if (customization === 4) changeCultureForSelection(selection);
