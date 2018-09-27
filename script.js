@@ -2770,7 +2770,7 @@ function fantasyMap() {
           amended.push([x, y]);
         }
       }
-      const width = +riverWidthInput.value * 0.6 + Math.random() * 1;
+      const width = +riverWidthInput.value * 0.6 + Math.random();
       const increment = +riverIncrement.value * 0.9 + Math.random() * 0.2;
       riverWidthInput.value = width;
       riverIncrement.value = increment;
