@@ -3547,7 +3547,7 @@ function fantasyMap() {
           Cancel: function() {$(this).dialog("close");}
         }
       });
-      return;
+
     });
 
     $("#burgNameInput").on("input", function() {
@@ -6378,7 +6378,7 @@ function fantasyMap() {
         document.head.removeChild(s);
         return fetched;
       })
-      .catch(function() {return});
+      .catch(function() {});
   }
 
   // Update font list for Label and Burg Editors
@@ -6700,7 +6700,7 @@ function fantasyMap() {
           loadDataFromMap(data);
         }}});
       } else {loadDataFromMap(data);}
-      if (mapVersion.length > 10) {console.error("Cannot load map"); return;}
+      if (mapVersion.length > 10) {console.error("Cannot load map"); }
     };
     fileReader.readAsText(file, "UTF-8");
     if (callback) {callback();}
@@ -7689,7 +7689,7 @@ function fantasyMap() {
         let cell = diagram.find(points[i][0],points[i][1]).index;
         // if closest cell is a small lake, try to find a land neighbor
         if (cells[cell].lake === 2) cells[cell].neighbors.forEach(function(n) {
-          if (cells[n].height >= 20) {cell = n; return;}
+          if (cells[n].height >= 20) {cell = n; }
         });
         let region = cells[cell].region;
         if (region === undefined) region = -1;
