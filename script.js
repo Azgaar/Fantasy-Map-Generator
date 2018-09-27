@@ -20,7 +20,7 @@
   // Get rid of jQuery as d3.js can almost all the same and more
   // Re-build UI on reactive approach, vue.js
 
-"use strict;"
+"use strict;";
 fantasyMap();
 function fantasyMap() {
   // Version control
@@ -306,38 +306,38 @@ function fantasyMap() {
     }
     if (localStorage.getItem("template")) {
       templateInput.value = localStorage.getItem("template");
-      lockTemplateInput.setAttribute("data-locked", 1)
+      lockTemplateInput.setAttribute("data-locked", 1);
       lockTemplateInput.className = "icon-lock";
     }
     if (localStorage.getItem("manors")) {
       manorsInput.value = manorsOutput.value = localStorage.getItem("manors");
-      lockManorsInput.setAttribute("data-locked", 1)
+      lockManorsInput.setAttribute("data-locked", 1);
       lockManorsInput.className = "icon-lock";
     }
     if (localStorage.getItem("regions")) {
       regionsInput.value = regionsOutput.value = localStorage.getItem("regions");
-      lockRegionsInput.setAttribute("data-locked", 1)
+      lockRegionsInput.setAttribute("data-locked", 1);
       lockRegionsInput.className = "icon-lock";
     }
     if (localStorage.getItem("power")) {
       powerInput.value = powerOutput.value = localStorage.getItem("power");
-      lockPowerInput.setAttribute("data-locked", 1)
+      lockPowerInput.setAttribute("data-locked", 1);
       lockPowerInput.className = "icon-lock";
     }
     if (localStorage.getItem("neutral")) neutralInput.value = neutralOutput.value = localStorage.getItem("neutral");
     if (localStorage.getItem("names")) {
       namesInput.value = localStorage.getItem("names");
-      lockNamesInput.setAttribute("data-locked", 1)
+      lockNamesInput.setAttribute("data-locked", 1);
       lockNamesInput.className = "icon-lock";
     }
     if (localStorage.getItem("cultures")) {
       culturesInput.value = culturesOutput.value = localStorage.getItem("cultures");
-      lockCulturesInput.setAttribute("data-locked", 1)
+      lockCulturesInput.setAttribute("data-locked", 1);
       lockCulturesInput.className = "icon-lock";
     }
     if (localStorage.getItem("prec")) {
       precInput.value = precOutput.value = localStorage.getItem("prec");
-      lockPrecInput.setAttribute("data-locked", 1)
+      lockPrecInput.setAttribute("data-locked", 1);
       lockPrecInput.className = "icon-lock";
     }
     if (localStorage.getItem("swampiness")) swampinessInput.value = swampinessOutput.value = localStorage.getItem("swampiness");
@@ -772,7 +772,7 @@ function fantasyMap() {
     selection.map(function(index) {
       // keep stateOld and stateNew as integers!
       const exists = temp.select("path[data-cell='"+index+"']");
-      const region = cells[index].region === "neutral" ? states.length - 1 : cells[index].region
+      const region = cells[index].region === "neutral" ? states.length - 1 : cells[index].region;
       const stateOld = exists.size() ? +exists.attr("data-state") : region;
       if (stateNew === stateOld) return;
       if (states[stateOld].capital === cells[index].manor) return; // not allowed to re-draw calitals
@@ -884,7 +884,7 @@ function fantasyMap() {
         } else {
           type = "border"; // polygon is on border if it has edge without opposite side polygon
         }
-      })
+      });
       cells.push({index: d, data: i.data, height: 0, type, neighbors});
     });
     if (withGrid) {grid.append("path").attr("d", round(gridPath, 1));}
@@ -1032,7 +1032,7 @@ function fantasyMap() {
         const y = Math.floor(Math.random() * graphHeight * (1 - shift * 2) + graphHeight * shift);
         cell = diagram.find(x, y).index;
         limit++;
-      } while (heights[cell] + height > 90 && limit < 100)
+      } while (heights[cell] + height > 90 && limit < 100);
       add(cell, "hill", height);
     }
   }
@@ -2451,7 +2451,7 @@ function fantasyMap() {
     document.getElementById("labelFontSelect").addEventListener("change", function() {
       let group = elSelected.node().parentNode;
       let font = fonts[this.value].split(':')[0].replace(/\+/g, " ");
-      group.setAttribute("font-family", font)
+      group.setAttribute("font-family", font);
       group.setAttribute("data-font", fonts[this.value]);
     });
 
@@ -3266,7 +3266,7 @@ function fantasyMap() {
 
     $("#iconSize").change(function() {
       const group = d3.select(elSelected.node().parentNode);
-      const size = +this.value
+      const size = +this.value;
       group.attr("size", size);
       group.selectAll("*").each(function() {d3.select(this).attr("width", size).attr("height", size)});
     });
@@ -3546,7 +3546,7 @@ function fantasyMap() {
           },
           Cancel: function() {$(this).dialog("close");}
         }
-      })
+      });
       return;
     });
 
@@ -3556,7 +3556,7 @@ function fantasyMap() {
         return;
       }
       const id = +elSelected.attr("data-id");
-      burgLabels.selectAll("[data-id='" + id + "']").text(this.value)
+      burgLabels.selectAll("[data-id='" + id + "']").text(this.value);
       manors[id].name = this.value;
       $("div[aria-describedby='burgEditor'] .ui-dialog-title").text("Edit Burg: " + this.value);
     });
@@ -3565,7 +3565,7 @@ function fantasyMap() {
       const id = +elSelected.attr("data-id");
       const culture = this.id === "burgNameReCulture" ? manors[id].culture : Math.floor(Math.random() * cultures.length);
       const name = generateName(culture);
-      burgLabels.selectAll("[data-id='" + id + "']").text(name)
+      burgLabels.selectAll("[data-id='" + id + "']").text(name);
       manors[id].name = name;
       burgNameInput.value = name;
       $("div[aria-describedby='burgEditor'] .ui-dialog-title").text("Edit Burg: " + name);
@@ -3632,7 +3632,7 @@ function fantasyMap() {
     $("#burgIconSize").on("input", function() {
       const type = elSelected.node().parentNode.id;
       const group = burgIcons.select("#"+type);
-      const size = +this.value
+      const size = +this.value;
       group.attr("size", size);
       group.selectAll("*").each(function() {d3.select(this).attr("r", size)});
     });
@@ -3801,7 +3801,7 @@ function fantasyMap() {
       const sec = pop > 40 ? 1 : Math.random() < pop / 100 ? 1 : 0;
       const thr = sec && Math.random() < 0.8 ? 1 : 0;
       const url = "http://fantasycities.watabou.ru/";
-      let params = `?name=${name}&size=${size}&seed=${s}&hub=${hub}&random=0&continuous=0`
+      let params = `?name=${name}&size=${size}&seed=${s}&hub=${hub}&random=0&continuous=0`;
       params += `&river=${river}&coast=${coast}&citadel=${id&1}&plaza=${sec}&temple=${thr}&walls=${sec}&shantytown=${sec}`;
       const win = window.open(url+params, '_blank');
       win.focus();
@@ -3886,7 +3886,7 @@ function fantasyMap() {
       markerSelectGroup.innerHTML = "";
       d3.select("#defs-markers").selectAll("symbol").each(function() {
         let opt = document.createElement("option");
-        opt.value = opt.innerHTML = this.id
+        opt.value = opt.innerHTML = this.id;
         markerSelectGroup.add(opt);
       });
       let id = elSelected.attr("href").slice(1);
@@ -4146,7 +4146,7 @@ function fantasyMap() {
     function clickMarkerIconTable(e) {
       if (e.target !== e.currentTarget) {
         let table = document.getElementById("markerIconTable");
-        let selected = table.getElementsByClassName("selected")
+        let selected = table.getElementsByClassName("selected");
         if (selected.length) selected[0].removeAttribute("class");
         e.target.className = "selected";
         let id = elSelected.attr("href");
@@ -4355,7 +4355,7 @@ function fantasyMap() {
         if (c.river && c.ctype === 1) score += 1; // estuary is valued
         if (c.flux > 1) score += Math.pow(c.flux, 0.3); // riverbank is valued
         if (c.confluence) score += Math.pow(c.confluence, 0.7); // confluence is valued;
-        const neighbEv = c.neighbors.map(function(n) {if (cells[n].height >= 20) return cells[n].height;})
+        const neighbEv = c.neighbors.map(function(n) {if (cells[n].height >= 20) return cells[n].height;});
         const difEv = c.height - d3.mean(neighbEv);
         // if (!isNaN(difEv)) score += difEv * 10 * (1 - c.height / 100); // local height maximums are valued
       }
@@ -4991,7 +4991,7 @@ function fantasyMap() {
           }
         }
         console.log(names);
-      }
+      };
       request.send(null);
     }
 
@@ -5058,7 +5058,7 @@ function fantasyMap() {
     const error = function(base) {
       tip("Names data for base " + nameBases[base].name + " is incorrect. Please fix in Namesbase Editor");
       editNamesbase();
-    }
+    };
 
     if (method === "selection") {
       if (nameBase[base].length < 1) {error(base); return;}
@@ -5581,7 +5581,7 @@ function fantasyMap() {
         let height = i.height;
         if (height < 20 && !i.lake) return;
         if (i.lake) {
-          const nHeights = i.neighbors.map(function(e) {if (cells[e].height >= 20) return cells[e].height;})
+          const nHeights = i.neighbors.map(function(e) {if (cells[e].height >= 20) return cells[e].height;});
           const mean = d3.mean(nHeights);
           if (!mean) return;
           height = Math.trunc(mean);
@@ -5807,7 +5807,7 @@ function fantasyMap() {
             cells[e].used = 1;
             swamp += drawSwamp(cells[e].data[0],cells[e].data[1]);
           }
-        })
+        });
         g.append("path").attr("d", round(swamp, 1));
       }
 
@@ -6570,7 +6570,7 @@ function fantasyMap() {
   // Code from Kaiido's answer:
   // https://stackoverflow.com/questions/42402584/how-to-use-google-fonts-in-canvas-when-drawing-dom-objects-in-svg
   function GFontToDataURI(url) {
-    "use strict;"
+    "use strict;";
     return fetch(url) // first fecth the embed stylesheet page
       .then(resp => resp.text()) // we only need the text of it
       .then(text => {
@@ -6593,7 +6593,7 @@ function fantasyMap() {
         let fontRules = [],fontProms = [];
 
         for (let r of styleSheet.cssRules) {
-          let fR = FontRule(r)
+          let fR = FontRule(r);
           fontRules.push(fR);
           fontProms.push(
             fetch(fR.url) // fetch the actual font-file (.woff)
@@ -6701,7 +6701,7 @@ function fantasyMap() {
         }}});
       } else {loadDataFromMap(data);}
       if (mapVersion.length > 10) {console.error("Cannot load map"); return;}
-    }
+    };
     fileReader.readAsText(file, "UTF-8");
     if (callback) {callback();}
   }
@@ -7014,7 +7014,7 @@ function fantasyMap() {
     spacing = rn(7.5 * sizeMod / graphSize, 2); // space between points before jirrering
     const radius = spacing / 2; // square radius
     const jittering = radius * 0.9; // max deviation
-    const jitter = function() {return Math.random() * 2 * jittering - jittering;}
+    const jitter = function() {return Math.random() * 2 * jittering - jittering;};
     let points = [];
     for (let y = radius; y < graphHeight; y += spacing) {
       for (let x = radius; x < graphWidth; x += spacing) {
@@ -7463,7 +7463,7 @@ function fantasyMap() {
       If you want to significantly change the hightmap, it may be better to clean up all the secondary data
       and let the system to re-generate it based on the updated hightmap. In case of minor changes, you can keep the data.
       Newly added lands will be considered as neutral. Burgs located on a removed land cells will be deleted.
-      Rivers and small lakes will be re-gerenated based on updated heightmap. Routes won't be regenerated.`
+      Rivers and small lakes will be re-gerenated based on updated heightmap. Routes won't be regenerated.`;
       alertMessage.innerHTML = message;
       $("#alert").dialog({resizable: false, title: "Edit Heightmap",
         buttons: {
@@ -8112,8 +8112,8 @@ function fantasyMap() {
       ctx.drawImage(img, 0, 0, svgWidth, svgHeight);
       heightsFromImage(+convertColors.value);
       console.timeEnd("loadImage");
-    }
-    reader.onloadend = function() {img.src = reader.result;}
+    };
+    reader.onloadend = function() {img.src = reader.result;};
     reader.readAsDataURL(file);
   });
 
@@ -9568,7 +9568,7 @@ function fantasyMap() {
         c.culture = cultureTree.data().indexOf(closest);
       }
     });
-    states.map(function(s) {recalculateStateData(s.i);})
+    states.map(function(s) {recalculateStateData(s.i);});
     drawRegions();
   }
 
@@ -9717,7 +9717,7 @@ function fantasyMap() {
           }
         }
       });
-    }
+    };
     fileReader.readAsText(fileToLoad, "UTF-8");
   });
 
