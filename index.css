@@ -74,7 +74,7 @@ button, select, a {
 }
 
 #regions {
-	stroke-width: 0;
+	stroke-width: 2;
 	stroke: none;
 	fill-rule: evenodd;
 	stroke-linejoin: round;

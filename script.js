@@ -8481,6 +8481,7 @@ function fantasyMap() {
     countriesFooterArea.innerHTML = si(totalArea) + unit;
     countriesFooterPopulation.innerHTML = si(totalPopulation);
     // handle events
+    $("#countriesBody .states").hover(focusOnState, unfocusState);
     $(".enlange").click(function() {
       const s = +(this.parentNode.id).slice(5);
       const capital = states[s].capital;
@@ -8498,7 +8499,7 @@ function fantasyMap() {
           $("div[aria-describedby='burgsEditor'] .ui-dialog-title").text("Burgs of " + this.value).prepend(color);
         }
       }
-    }).hover(focusStates, unfocus);
+    });
     $(".states > .stateColor").on("change", function() {
       const s = +(this.parentNode.id).slice(5);
       states[s].color = this.value;
@@ -8832,10 +8833,16 @@ function fantasyMap() {
   }
 
   // onhover style functions
-  function focusStates() {
-    const s = +(this.parentNode.id).slice(5);
-    const l = labels.select("#regionLabel" + s);
-    l.classed("drag", true);
+  function focusOnState() {
+    const s = +(this.id).slice(5);
+    labels.select("#regionLabel" + s).classed("drag", true);
+    document.getElementsByClassName("region" + s)[0].style.stroke = "#000000";
+  }
+
+  function unfocusState() {
+    const s = +(this.id).slice(5);
+    labels.select("#regionLabel" + s).classed("drag", false);
+    document.getElementsByClassName("region" + s)[0].style.stroke = "none";
   }
 
   function focusCapital() {
