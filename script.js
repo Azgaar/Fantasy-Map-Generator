@@ -2983,7 +2983,7 @@ function fantasyMap() {
     unselect();
     closeDialogs("#routeEditor, .stable");
 
-    if (this !== window) {
+    if (this && this !== window) {
       elSelected = d3.select(this);
       if (!debug.select(".controlPoints").size()) debug.append("g").attr("class", "controlPoints");
       routeDrawPoints();
@@ -3001,7 +3001,7 @@ function fantasyMap() {
           unselect();
         }
       });
-    }
+    } else {elSelected = null;}
 
     if (modules.editRoute) {return;}
     modules.editRoute = true;
@@ -3032,11 +3032,12 @@ function fantasyMap() {
     }
 
     function routeDrawPoints() {
+      if (!elSelected.size()) return;
       const node = elSelected.node();
       const l = node.getTotalLength();
       const parts = (l / 5) >> 0; // number of points
       let inc = l / parts; // increment
-      if (inc === Infinity) {inc = l;} // 2 control points for short routes
+      if (inc === Infinity) inc = l; // 2 control points for short routes
       // draw control points
       for (let i = 0; i <= l; i += inc) {
         const p = node.getPointAtLength(i);
@@ -3081,41 +3082,33 @@ function fantasyMap() {
       routeLength.innerHTML = rn(l * distanceScale.value) + " " + distanceUnit.value;
     }
 
+    function addNewRoute() {
+      let routeType = elSelected && elSelected.node() ? elSelected.node().parentNode.id : "searoutes";
+      const group = routes.select("#"+routeType);
+      const id = routeType + "" + group.selectAll("*").size();
+      elSelected = group.append("path").attr("data-route", "new").attr("id", id).on("click", editRoute);
+      routeUpdateGroups();
+      $("#routeEditor").dialog({
+        title: "Edit Route", minHeight: 30, width: "auto", resizable: false,
+        close: function() {
+          if ($("#addRoute").hasClass('pressed')) completeNewRoute();
+          if ($("#routeSplit").hasClass('pressed')) $("#routeSplit").removeClass('pressed');
+          unselect();
+        }
+      });
+    }
+
     function newRouteAddPoint() {
       const point = d3.mouse(this);
       const x = rn(point[0],2), y = rn(point[1],2);
-      let routeType = routeGroup.value;
-      if (!elSelected) {
-        const index = getIndex(point);
-        const height = cells[index].height;
-        if (height < 20) routeType = "searoutes";
-        if (routeType === "searoutes" && height >= 20) routeType = "roads";
-      }
-      const group = routes.select("#"+routeType);
       addRoutePoint({x, y});
-      if (!elSelected || elSelected.attr("data-route") !== "new") {
-        const id = routeType + "" + group.selectAll("*").size();
-        elSelected = group.append("path").attr("data-route", "new").attr("id", id).on("click", editRoute);
-        routeUpdateGroups();
-        $("#routeEditor").dialog({
-          title: "Edit Route",
-          minHeight: 30, width: "auto", resizable: false,
-          position: {my: "center top+20", at: "top", of: d3.event},
-          close: function() {
-            if ($("#addRoute").hasClass('pressed')) completeNewRoute();
-            if ($("#routeSplit").hasClass('pressed')) $("#routeSplit").removeClass('pressed');
-            unselect();
-          }
-        });
-      } else {
-        routeRedraw();
-      }
+      routeRedraw();
     }
 
     function completeNewRoute() {
       $("#routeNew, #addRoute").removeClass('pressed');
       restoreDefaultEvents();
-      if (!elSelected) return;
+      if (!elSelected.size()) return;
       if (elSelected.attr("data-route") === "new") {
         routeRedraw();
         elSelected.attr("data-route", "");
@@ -3138,14 +3131,10 @@ function fantasyMap() {
     }
 
     function routeUpdateGroups() {
-      const group = d3.select(elSelected.node().parentNode);
-      const type = group.attr("data-type");
       routeGroup.innerHTML = "";
-      routes.selectAll("g").each(function(d) {
-        const el = d3.select(this);
-        if (el.attr("data-type") !== type) {return;}
+      routes.selectAll("g").each(function() {
         const opt = document.createElement("option");
-        opt.value = opt.innerHTML = el.attr("id");
+        opt.value = opt.innerHTML = this.id;
         routeGroup.add(opt);
       });
     }
@@ -3189,6 +3178,7 @@ function fantasyMap() {
         $(".pressed").removeClass('pressed');
         $("#routeNew, #addRoute").addClass('pressed');
         debug.select(".controlPoints").selectAll("*").remove();
+        addNewRoute();
         viewbox.style("cursor", "crosshair").on("click", newRouteAddPoint);
         tip("Click on map to add route point", true);
       }
@@ -6302,7 +6292,7 @@ function fantasyMap() {
       tip("", true);
     }
 
-    // add relief icon on click
+    // add route on click
     $("#addRoute").click(function() {
       if (!modules.editRoute) editRoute();
       $("#routeNew").click();
