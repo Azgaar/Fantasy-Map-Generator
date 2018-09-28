@@ -38,9 +38,6 @@ function fantasyMap() {
   let terrs = viewbox.append("g").attr("id", "terrs");
   let grid = viewbox.append("g").attr("id", "grid");
   let overlay = viewbox.append("g").attr("id", "overlay");
-  let routes = viewbox.append("g").attr("id", "routes");
-  let roads = routes.append("g").attr("id", "roads").attr("data-type", "land");
-  let trails = routes.append("g").attr("id", "trails").attr("data-type", "land");
   let rivers = viewbox.append("g").attr("id", "rivers");
   let terrain = viewbox.append("g").attr("id", "terrain");
   let cults = viewbox.append("g").attr("id", "cults");
@@ -49,8 +46,11 @@ function fantasyMap() {
   let stateBorders = borders.append("g").attr("id", "stateBorders");
   let neutralBorders = borders.append("g").attr("id", "neutralBorders");
   let lakes = viewbox.append("g").attr("id", "lakes");
-  let coastline = viewbox.append("g").attr("id", "coastline");
+  let routes = viewbox.append("g").attr("id", "routes");
+  let roads = routes.append("g").attr("id", "roads").attr("data-type", "land");
+  let trails = routes.append("g").attr("id", "trails").attr("data-type", "land");
   let searoutes = routes.append("g").attr("id", "searoutes").attr("data-type", "sea");
+  let coastline = viewbox.append("g").attr("id", "coastline");
   let labels = viewbox.append("g").attr("id", "labels");
   let burgLabels = labels.append("g").attr("id", "burgLabels");
   let icons = viewbox.append("g").attr("id", "icons");
@@ -2989,7 +2989,7 @@ function fantasyMap() {
       routeDrawPoints();
       routeUpdateGroups();
       let routeType = d3.select(this.parentNode).attr("id");
-      routeType.value = routeType;
+      routeGroup.value = routeType;
 
       $("#routeEditor").dialog({
         title: "Edit Route",
@@ -3097,7 +3097,6 @@ function fantasyMap() {
         const id = routeType + "" + group.selectAll("*").size();
         elSelected = group.append("path").attr("data-route", "new").attr("id", id).on("click", editRoute);
         routeUpdateGroups();
-        routeType.value = routeType;
         $("#routeEditor").dialog({
           title: "Edit Route",
           minHeight: 30, width: "auto", resizable: false,
