@@ -597,7 +597,7 @@ function fantasyMap() {
       const brush = $("#brushesButtons > .pressed");
       const brushId = brush.attr("id");
       if (brushId === "brushRange" || brushId === "brushTrough") return;
-      if (!brush.length && !$("div.selected").length) return;
+      if (customization !== 5 && !brush.length && !$("div.selected").length) return;
       let radius = 0;
       if (customization === 1) {
         radius = brushRadius.value;
@@ -607,6 +607,7 @@ function fantasyMap() {
       }
       else if (customization === 2) radius = countriesManuallyBrush.value;
       else if (customization === 4) radius = culturesManuallyBrush.value;
+      else if (customization === 5) radius = reliefBulkRemoveRadius.value;
 
       const r = rn(6 / graphSize * radius, 1);
       let clr = "#373737";
@@ -618,7 +619,7 @@ function fantasyMap() {
         const culture = +$("div.selected").attr("id").slice(7);
         clr = cultures[culture].color;
       }
-      moveCircle(point[0],point[1],r, clr);
+      moveCircle(point[0], point[1], r, clr);
     }
   }
 
@@ -3345,6 +3346,9 @@ function fantasyMap() {
     const group = elSelected.node().parentNode.id;
     reliefGroup.value = group;
 
+    let bulkRemoveSection = document.getElementById("reliefBulkRemoveSection");
+    if (bulkRemoveSection.style.display != "none") reliefBulkRemove.click();
+
     $("#reliefEditor").dialog({
       title: "Edit relief icon",
       minHeight: 30, width: "auto", resizable: false,
@@ -3368,7 +3372,7 @@ function fantasyMap() {
       const cell = diagram.find(cx, cy).index;
       const height = cell !== undefined ? cells[cell].height : 50;
       elSelected.remove();
-      elSelected = addReliefIcon(height / 100, type, cx, cy);
+      elSelected = addReliefIcon(height / 100, type, cx, cy, cell);
       elSelected.call(d3.drag().on("start", elementDrag));
     });
 
@@ -3412,6 +3416,39 @@ function fantasyMap() {
         }
       });
     });
+
+    $("#reliefBulkRemove").click(function() {
+      $("#reliefEditor > button").not(this).toggle();
+      let section = document.getElementById("reliefBulkRemoveSection");
+      if (section.style.display === "none") {
+        section.style.display = "inline-block";
+        tip("Drag to remove relief icons in radius", true);
+        viewbox.style("cursor", "crosshair").call(d3.drag().on("drag", dragToRemoveReliefIcons));
+        customization = 5;
+      } else {
+        section.style.display = "none";
+        restoreDefaultEvents();
+        customization = 0;
+      }
+    });
+
+    function dragToRemoveReliefIcons() {
+      let point = d3.mouse(this);
+      let cell = diagram.find(point[0], point[1]).index;
+      let radius = +reliefBulkRemoveRadius.value;
+      let r = rn(6 / graphSize * radius, 1);
+      moveCircle(point[0], point[1], r);
+      let selection = defineBrushSelection(cell, radius);
+      if (selection) removeReliefIcons(selection);
+    }
+
+    function removeReliefIcons(selection) {
+      if (selection.length === 0) return;
+      selection.map(function(index) {
+        const selected = terrain.selectAll("g").selectAll("g[data-cell='"+index+"']");
+        selected.remove();
+      });
+    }
 
     $("#reliefRemove").click(function() {
       alertMessage.innerHTML = `Are you sure you want to remove the icon?`;
@@ -4310,6 +4347,9 @@ function fantasyMap() {
 
   // clear elSelected variable
   function unselect() {
+    tip("", true);
+    restoreDefaultEvents();
+    if (customization === 5) customization = 0;
     if (!elSelected) return;
     elSelected.call(d3.drag().on("drag", null)).attr("class", null);
     debug.selectAll("*").remove();
@@ -5833,7 +5873,7 @@ function fantasyMap() {
         h = (height - 55) * 0.12;
         for (let c = 0, a = area; Math.random() < a / 50; c++, a -= 50) {
           if (polygons[cell][c] === undefined) break;
-          const g = mounts.append("g");
+          const g = mounts.append("g").attr("data-cell", cell);
           if (c < 2) {
             cx = p[0] - h / 100 * (1 - c / 10) - c * 2;
             cy = p[1] + h / 400 + c;
@@ -5858,7 +5898,7 @@ function fantasyMap() {
         for (let c = 0, a = area; Math.random() < a / 30; c++, a -= 30) {
           if (land[i].ctype === 1 && c > 0) break;
           if (polygons[cell][c] === undefined) break;
-          const g = hills.append("g");
+          const g = hills.append("g").attr("data-cell", cell);
           if (c < 2) {
             cx = p[0] - h - c * 1.2;
             cy = p[1] + h / 4 + c / 1.6;
@@ -5879,14 +5919,14 @@ function fantasyMap() {
 
       // swamp icons
       if (height >= 21 && height < 22 && swampCount < +swampinessInput.value && land[i].used != 1) {
-        const g = swamps.append("g");
+        const g = swamps.append("g").attr("data-cell", cell);
         swampCount++;
         land[i].used = 1;
         let swamp = drawSwamp(p[0],p[1]);
         land[i].neighbors.forEach(function(e) {
           if (cells[e].height >= 20 && cells[e].height < 30 && !cells[e].river && cells[e].used != 1) {
             cells[e].used = 1;
-            swamp += drawSwamp(cells[e].data[0],cells[e].data[1]);
+            swamp += drawSwamp(cells[e].data[0], cells[e].data[1]);
           }
         });
         g.append("path").attr("d", round(swamp, 1));
@@ -5897,7 +5937,7 @@ function fantasyMap() {
         for (let c = 0, a = area; Math.random() < a / 15; c++, a -= 15) {
           if (land[i].ctype === 1 && c > 0) break;
           if (polygons[cell][c] === undefined) break;
-          const g = forests.append("g");
+          const g = forests.append("g").attr("data-cell", cell);
           if (c === 0) {
             cx = rn(p[0] - 1 - Math.random(), 1);
             cy = p[1] - 2;
@@ -5923,8 +5963,8 @@ function fantasyMap() {
     console.timeEnd('drawRelief');
   }
 
-  function addReliefIcon(height, type, cx, cy) {
-    const g = terrain.select("#" + type).append("g");
+  function addReliefIcon(height, type, cx, cy, cell) {
+    const g = terrain.select("#" + type).append("g").attr("data-cell", cell);
     if (type === "mounts") {
       const h = height >= 0.7 ? (height - 0.55) * 12 : 1.8;
       const rnd = Math.random() * 0.8 + 0.2;
@@ -6173,8 +6213,6 @@ function fantasyMap() {
       if ($(this).hasClass('pressed')) {
         $(".pressed").removeClass('pressed');
         unselect();
-        restoreDefaultEvents();
-        tip("", true);
       } else {
         $(".pressed").removeClass('pressed');
         unselect();
@@ -6283,7 +6321,7 @@ function fantasyMap() {
 
       const x = rn(point[0],2), y = rn(point[1],2);
       const type = reliefGroup.value;
-      addReliefIcon(height / 100, type, x, y);
+      addReliefIcon(height / 100, type, x, y, index);
 
       if (d3.event.shiftKey === false) {
         $("#addRelief").removeClass("pressed");
@@ -7289,7 +7327,6 @@ function fantasyMap() {
       $("div[data-sortby='expansion'],.statePower, .icon-resize-full").addClass("hidden");
       $("div[data-sortby='cells'],.stateCells, .icon-check-empty").removeClass("hidden");
       customization = 0;
-      tip("", true);
       restoreDefaultEvents();
     }
     if (id === "countriesApply") {$("#countriesManuallyCancel").click();}
@@ -8602,7 +8639,6 @@ function fantasyMap() {
       recalculateStateData(state); // calc new state data
       editCountries();
       restoreDefaultEvents();
-      tip("", true);
     }
 
     $(".statePower").on("input", function() {
@@ -8836,13 +8872,15 @@ function fantasyMap() {
   function focusOnState() {
     const s = +(this.id).slice(5);
     labels.select("#regionLabel" + s).classed("drag", true);
-    document.getElementsByClassName("region" + s)[0].style.stroke = "#000000";
+    document.getElementsByClassName("region" + s)[0].style.stroke = "red";
+    document.getElementsByClassName("region" + s)[0].setAttribute("filter", "url(#blur1)");
   }
 
   function unfocusState() {
     const s = +(this.id).slice(5);
     labels.select("#regionLabel" + s).classed("drag", false);
     document.getElementsByClassName("region" + s)[0].style.stroke = "none";
+    document.getElementsByClassName("region" + s)[0].setAttribute("filter", null);
   }
 
   function focusCapital() {
@@ -9134,7 +9172,6 @@ function fantasyMap() {
       $("#culturesManuallyButtons").hide();
       $(".selected").removeClass("selected");
       customization = 0;
-      tip("", true);
       restoreDefaultEvents();
     }
 

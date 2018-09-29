@@ -31,8 +31,8 @@
   <script src="libs/polylabel.min.js"></script>
   <script src="libs/quantize.min.js" defer></script>
   <script src="libs/jquery.ui.touch-punch.min.js" defer></script>
-  <link rel="stylesheet" type="text/css" href="index.css?version=0.60.07b"/>
-  <link rel="stylesheet" type="text/css" href="icons.css?version=0.60.06b"/>
+  <link rel="stylesheet" type="text/css" href="index.css?version=0.60.14b"/>
+  <link rel="stylesheet" type="text/css" href="icons.css?version=0.60.14b"/>
   <link rel="stylesheet" type="text/css" href="libs/jquery-ui.css"/>
 </head>
 <body>
@@ -760,6 +760,7 @@
     </div>
 
     <div id="reliefEditor" class="dialog" style="display: none">
+
       <button id="reliefGroups" onmouseover="tip('Change relief icon')" class="icon-tags"></button>
       <div id="reliefGroupsSelection" style="display: none">
         <select id="reliefGroup" onmouseover="tip('Change relief icon')">
@@ -770,9 +771,17 @@
         </select>
         <i id="reliefRemoveGroup" onmouseover="tip('Remove all icons within selected group')" class="icon-trash pointer"></i>
       </div>
+
       <button id="reliefCopy" onmouseover="tip('Copy the relief icon')" class="icon-clone"></button>
       <button id="reliefAddfromEditor" onmouseover="tip('Add relief Icon')" class="icon-plus"></button>
-      <button id="reliefRemove" onmouseover="tip('Remove the relief icon')" class="icon-trash"></button>
+
+      <button id="reliefBulkRemove" onmouseover="tip('Erase all relief icons in radius')" class="icon-eraser"></button>
+      <div id="reliefBulkRemoveSection" style="display: none">
+        <input id="reliefBulkRemoveRadius" oninput="tip('Eraser brush size: '+this.value); reliefBulkRemoveRadiusNumber.value = this.value" type="range" min="1" max="7" value="3">
+        <input id="reliefBulkRemoveRadiusNumber" oninput="tip('Eraser brush size: '+this.value); reliefBulkRemoveRadius.value = this.value" type="number" min="1" max="7" value="3">
+      </div>
+
+      <button id="reliefRemove" onmouseover="tip('Remove this relief icon')" class="icon-trash"></button>
     </div>
 
     <div id="burgEditor" class="dialog" style="display: none">
@@ -1288,5 +1297,5 @@
     <input type="file" accept=".txt" id="namesbaseToLoad">
   </div>
 
-  <script src="script.js?version=0.60.06b"></script>
+  <script src="script.js?version=0.60.14b"></script>
 </body>

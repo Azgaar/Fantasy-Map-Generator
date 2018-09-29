@@ -231,10 +231,10 @@ div > input[type="number"].editNumber {
 	width: 34px;
 }
 
-#riverEditor>*,
-#routeEditor>*,
-#iconEditor>*,
-#reliefEditor>*,
+#riverEditor > *,
+#routeEditor > *,
+#iconEditor > *,
+#reliefEditor > *,
 #burgEditor * {
 	display: inline-block;
 }
