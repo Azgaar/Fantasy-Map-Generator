@@ -3946,6 +3946,8 @@ function fantasyMap() {
     markerSize.value = elSelected.attr("data-size");
     markerBase.value = symbol.select("path").attr("fill");
     markerFill.value = symbol.select("circle").attr("fill");
+    let opacity = symbol.select("circle").attr("opacity");
+    markerToggleBubble.className = opacity === "0" ? "icon-info" : "icon-info-circled";
 
     let table = document.getElementById("markerIconTable");
     let selected = table.getElementsByClassName("selected");
@@ -4313,6 +4315,20 @@ function fantasyMap() {
     document.getElementById("markerIconStroke").addEventListener("input", function() {
       let id = elSelected.attr("href");
       d3.select("#defs-markers").select(id).select("text").attr("stroke", this.value);
+    });
+
+    // toggle marker bubble display
+    document.getElementById("markerToggleBubble").addEventListener("click", function() {
+      let id = elSelected.attr("href");
+      let show = 1;
+      if (this.className === "icon-info-circled") {
+        this.className = "icon-info";
+        show = 0;
+      } else {
+        this.className = "icon-info-circled";;
+      }
+      d3.select(id).select("circle").attr("opacity", show);
+      d3.select(id).select("path").attr("opacity", show);
     });
 
     // open legendsEditor
