@@ -92,6 +92,7 @@ function fantasyMap() {
   let elSelected;
   let autoResize = true;
   let graphSize;
+  let cellsSpread;
   let cells = [];
   let land = [];
   let riversData = [];
@@ -338,6 +339,12 @@ function fantasyMap() {
     } else {
       graphSize = +sizeInput.value;
     }
+    if (localStorage.getItem("cellsSpread")) {
+      cellsSpread = localStorage.getItem("cellsSpread");
+      cellsSpreadInput.value = cellsSpreadOutput.value = cellsSpread;
+    } else {
+      cellsSpread = +cellsSpreadInput.value;
+    }
     if (localStorage.getItem("template")) {
       templateInput.value = localStorage.getItem("template");
       lockTemplateInput.setAttribute("data-locked", 1);
@@ -394,6 +401,7 @@ function fantasyMap() {
     mapHeightInput.value = window.innerHeight;
     changeMapSize();
     graphSize = sizeInput.value = sizeOutput.value = 1;
+    cellsSpread = cellsSpreadInput.value = cellsSpreadOutput.value = 1;
     $("#options i[class^='icon-lock']").each(function() {
       this.setAttribute("data-locked", 0);
       this.className = "icon-lock-open";
@@ -7140,7 +7148,7 @@ function fantasyMap() {
   // get square grid with some jirrering
   function getJitteredGrid() {
     let sizeMod = rn((graphWidth + graphHeight) / 1500, 2); // screen size modifier
-    spacing = rn(7.5 * sizeMod / graphSize, 2); // space between points before jirrering
+    spacing = rn(7.5 * sizeMod / graphSize / cellsSpread, 2); // space between points before jirrering
     const radius = spacing / 2; // square radius
     const jittering = radius * 0.9; // max deviation
     const jitter = function() {return Math.random() * 2 * jittering - jittering;};
@@ -10126,6 +10134,9 @@ function fantasyMap() {
       autoResize = false;
       localStorage.setItem("mapWidth", mapWidthInput.value);
       localStorage.setItem("mapHeight", mapHeightInput.value);
+    }
+    if (id === 'cellsSpreadInput') {
+      cellsSpread = cellsSpreadOutput.value = +this.value;
     }
     if (id === "sizeInput") {
       graphSize = sizeOutput.value = +this.value;
