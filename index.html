@@ -385,10 +385,20 @@
             <td></td>
             <td onmouseover="tip('Cells density controls underlying graph size and hightly affects performance')">Map cells density</td>
             <td>
-              <input id="sizeInput" type="range" min="1" max="3" value="1">
+              <input id="sizeInput" type="range" min="0.3" max="3" step="0.1" value="1">
             </td>
             <td>
               <output id="sizeOutput">1</output>
+            </td>
+          </tr>
+          <tr>
+            <td></td>
+            <td onmouseover="tip('Cells spread distance')">Spread distance</td>
+            <td>
+              <input id="cellsSpreadInput" type="range" min="0.5" max="2" step="0.1" value="1">
+            </td>
+            <td>
+              <output id="cellsSpreadOutput">1</output>
             </td>
           </tr>
           <tr>
