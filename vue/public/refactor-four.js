@@ -1,3 +1,29 @@
+function restoreDefaultOptions() {
+  // remove ALL saved data from LocalStorage
+  localStorage.clear();
+  // set defaut values
+  mapWidthInput.value = window.innerWidth;
+  mapHeightInput.value = window.innerHeight;
+  changeMapSize();
+  graphSize = sizeInput.value = sizeOutput.value = 1;
+  $("#options i[class^='icon-lock']").each(function() {
+    this.setAttribute("data-locked", 0);
+    this.className = "icon-lock-open";
+    if (this.id === "lockNeutralInput" || this.id === "lockSwampinessInput") {
+      this.setAttribute("data-locked", 1);
+      this.className = "icon-lock";
+    }
+  });
+  neutralInput.value = neutralOutput.value = 200;
+  swampinessInput.value = swampinessOutput.value = 10;
+  outlineLayersInput.value = "-6,-3,-1";
+  transparencyInput.value = transparencyOutput.value = 0;
+  changeDialogsTransparency(0);
+  pngResolutionInput.value = 5;
+  pngResolutionOutput.value = "5x";
+  randomizeOptions();
+}
+
 // Heighmap Template: Volcano
 function templateVolcano(mod) {
   addMountain();

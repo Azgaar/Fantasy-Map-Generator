@@ -2089,3 +2089,155 @@ function templateVolcano(mod) {
       // convert length to distance
       routeLength.innerHTML = rn(l * distanceScale.value) + " " + distanceUnit.value;
     }
+
+    function addRoutePoint(point) {
+      const controlPoints = debug.select(".controlPoints").size()
+        ? debug.select(".controlPoints")
+        : debug.append("g").attr("class", "controlPoints");
+      controlPoints.append("circle")
+        .attr("cx", point.x).attr("cy", point.y).attr("r", 0.35)
+        .call(d3.drag().on("drag", routePointDrag))
+        .on("click", function(d) {
+          if ($("#routeSplit").hasClass('pressed')) {
+            routeSplitInPoint(this);
+          } else {
+            $(this).remove();
+            routeRedraw();
+          }
+        });
+    }
+
+    function routePointDrag() {
+      d3.select(this).attr("cx", d3.event.x).attr("cy", d3.event.y);
+      routeRedraw();
+    }
+
+    function routeRedraw() {
+      let points = [];
+      debug.select(".controlPoints").selectAll("circle").each(function() {
+        const el = d3.select(this);
+        points.push({scX: +el.attr("cx"), scY: +el.attr("cy")});
+      });
+      lineGen.curve(d3.curveCatmullRom.alpha(0.1));
+      elSelected.attr("d", lineGen(points));
+      // get route distance
+      const l = elSelected.node().getTotalLength();
+      routeLength.innerHTML = rn(l * distanceScale.value) + " " + distanceUnit.value;
+    }
+
+    function addNewRoute() {
+      let routeType = elSelected && elSelected.node() ? elSelected.node().parentNode.id : "searoutes";
+      const group = routes.select("#"+routeType);
+      const id = routeType + "" + group.selectAll("*").size();
+      elSelected = group.append("path").attr("data-route", "new").attr("id", id).on("click", editRoute);
+      routeUpdateGroups();
+      $("#routeEditor").dialog({
+        title: "Edit Route", minHeight: 30, width: "auto", resizable: false,
+        close: function() {
+          if ($("#addRoute").hasClass('pressed')) completeNewRoute();
+          if ($("#routeSplit").hasClass('pressed')) $("#routeSplit").removeClass('pressed');
+          unselect();
+        }
+      });
+    }
+
+    function newRouteAddPoint() {
+      const point = d3.mouse(this);
+      const x = rn(point[0],2), y = rn(point[1],2);
+      addRoutePoint({x, y});
+      routeRedraw();
+    }
+
+    function completeNewRoute() {
+      $("#routeNew, #addRoute").removeClass('pressed');
+      restoreDefaultEvents();
+      if (!elSelected.size()) return;
+      if (elSelected.attr("data-route") === "new") {
+        routeRedraw();
+        elSelected.attr("data-route", "");
+        const node = elSelected.node();
+        const l = node.getTotalLength();
+        let pathCells = [];
+        for (let i = 0; i <= l; i ++) {
+          const p = node.getPointAtLength(i);
+          const cell = diagram.find(p.x, p.y);
+          if (!cell) {return;}
+          pathCells.push(cell.index);
+        }
+        const uniqueCells = [...new Set(pathCells)];
+        uniqueCells.map(function(c) {
+          if (cells[c].path !== undefined) {cells[c].path += 1;}
+          else {cells[c].path = 1;}
+        });
+      }
+      tip("", true);
+    }
+
+    function routeUpdateGroups() {
+      routeGroup.innerHTML = "";
+      routes.selectAll("g").each(function() {
+        const opt = document.createElement("option");
+        opt.value = opt.innerHTML = this.id;
+        routeGroup.add(opt);
+      });
+    }
+
+    function routeSplitInPoint(clicked) {
+      const group = d3.select(elSelected.node().parentNode);
+      $("#routeSplit").removeClass('pressed');
+      const points1 = [],points2 = [];
+      let points = points1;
+      debug.select(".controlPoints").selectAll("circle").each(function() {
+        const el = d3.select(this);
+        points.push({scX: +el.attr("cx"), scY: +el.attr("cy")});
+        if (this === clicked) {
+          points = points2;
+          points.push({scX: +el.attr("cx"), scY: +el.attr("cy")});
+        }
+        el.remove();
+      });
+      lineGen.curve(d3.curveCatmullRom.alpha(0.1));
+      elSelected.attr("d", lineGen(points1));
+      const id = routeGroup.value + "" + group.selectAll("*").size();
+      group.append("path").attr("id", id).attr("d", lineGen(points2)).on("click", editRoute);
+      routeDrawPoints();
+    }
+
+    $("#routeGroup").change(function() {
+      $(elSelected.node()).detach().appendTo($("#"+this.value));
+    });
+
+    // open legendsEditor
+    document.getElementById("routeLegend").addEventListener("click", function() {
+      let id = elSelected.attr("id");
+      editLegends(id, id);
+    });
+
+    $("#routeNew").click(function() {
+      if ($(this).hasClass('pressed')) {
+        completeNewRoute();
+      } else {
+        // enter creation mode
+        $(".pressed").removeClass('pressed');
+        $("#routeNew, #addRoute").addClass('pressed');
+        debug.select(".controlPoints").selectAll("*").remove();
+        addNewRoute();
+        viewbox.style("cursor", "crosshair").on("click", newRouteAddPoint);
+        tip("Click on map to add route point", true);
+      }
+    });
+
+    $("#routeRemove").click(function() {
+      alertMessage.innerHTML = `Are you sure you want to remove the route?`;
+      $("#alert").dialog({resizable: false, title: "Remove route",
+        buttons: {
+          Remove: function() {
+            $(this).dialog("close");
+            elSelected.remove();
+            $("#routeEditor").dialog("close");
+          },
+          Cancel: function() {$(this).dialog("close");}
+        }
+      })
+    });
+  }

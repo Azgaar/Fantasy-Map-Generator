@@ -1,318 +1,455 @@
+function editBurg() {
+  if (customization) return;
+  unselect();
+  closeDialogs("#burgEditor, .stable");
+  elSelected = d3.select(this);
+  const id = +elSelected.attr("data-id");
+  if (id === undefined) return;
+  d3.selectAll("[data-id='" + id + "']").call(d3.drag().on("start", elementDrag)).classed("draggable", true);
 
-    function drawIconsList() {
-      let icons = [
-        // emoticons in FF:
-        ["2693", "⚓", "Anchor"],
-        ["26EA", "⛪", "Church"],
-        ["1F3EF", "🏯", "Japanese Castle"],
-        ["1F3F0", "🏰", "Castle"],
-        ["1F5FC", "🗼", "Tower"],
-        ["1F3E0", "🏠", "House"],
-        ["1F3AA", "🎪", "Tent"],
-        ["1F3E8", "🏨", "Hotel"],
-        ["1F4B0", "💰", "Money bag"],
-        ["1F4A8", "💨", "Dashing away"],
-        ["1F334", "🌴", "Palm"],
-        ["1F335", "🌵", "Cactus"],
-        ["1F33E", "🌾", "Sheaf"],
-        ["1F5FB", "🗻", "Mountain"],
-        ["1F30B", "🌋", "Volcano"],
-        ["1F40E", "🐎", "Horse"],
-        ["1F434", "🐴", "Horse Face"],
-        ["1F42E", "🐮", "Cow"],
-        ["1F43A", "🐺", "Wolf Face"],
-        ["1F435", "🐵", "Monkey face"],
-        ["1F437", "🐷", "Pig face"],
-        ["1F414", "🐔", "Chiken"],
-        ["1F411", "🐑", "Eve"],
-        ["1F42B", "🐫", "Camel"],
-        ["1F418", "🐘", "Elephant"],
-        ["1F422", "🐢", "Turtle"],
-        ["1F40C", "🐌", "Snail"],
-        ["1F40D", "🐍", "Snake"],
-        ["1F433", "🐳", "Whale"],
-        ["1F42C", "🐬", "Dolphin"],
-        ["1F420", "🐟", "Fish"],
-        ["1F432", "🐲", "Dragon Head"],
-        ["1F479", "👹", "Ogre"],
-        ["1F47B", "👻", "Ghost"],
-        ["1F47E", "👾", "Alien"],
-        ["1F480", "💀", "Skull"],
-        ["1F374", "🍴", "Fork and knife"],
-        ["1F372", "🍲", "Food"],
-        ["1F35E", "🍞", "Bread"],
-        ["1F357", "🍗", "Poultry leg"],
-        ["1F347", "🍇", "Grapes"],
-        ["1F34F", "🍏", "Apple"],
-        ["1F352", "🍒", "Cherries"],
-        ["1F36F", "🍯", "Honey pot"],
-        ["1F37A", "🍺", "Beer"],
-        ["1F377", "🍷", "Wine glass"],
-        ["1F3BB", "🎻", "Violin"],
-        ["1F3B8", "🎸", "Guitar"],
-        ["26A1", "⚡", "Electricity"],
-        ["1F320", "🌠", "Shooting star"],
-        ["1F319", "🌙", "Crescent moon"],
-        ["1F525", "🔥", "Fire"],
-        ["1F4A7", "💧", "Droplet"],
-        ["1F30A", "🌊", "Wave"],
-        ["231B", "⌛", "Hourglass"],
-        ["1F3C6", "🏆", "Goblet"],
-        ["26F2", "⛲", "Fountain"],
-        ["26F5", "⛵", "Sailboat"],
-        ["26FA", "⛺", "Tend"],
-        ["1F489", "💉", "Syringe"],
-        ["1F4D6", "📚", "Books"],
-        ["1F3AF", "🎯", "Archery"],
-        ["1F52E", "🔮", "Magic ball"],
-        ["1F3AD", "🎭", "Performing arts"],
-        ["1F3A8", "🎨", "Artist palette"],
-        ["1F457", "👗", "Dress"],
-        ["1F451", "👑", "Crown"],
-        ["1F48D", "💍", "Ring"],
-        ["1F48E", "💎", "Gem"],
-        ["1F514", "🔔", "Bell"],
-        ["1F3B2", "🎲", "Die"],
-        // black and white icons in FF:
-        ["26A0", "⚠", "Alert"],
-        ["2317", "⌗", "Hash"],
-        ["2318", "⌘", "POI"],
-        ["2307", "⌇", "Wavy"],
-        ["21E6", "⇦", "Left arrow"],
-        ["21E7", "⇧", "Top arrow"],
-        ["21E8", "⇨", "Right arrow"],
-        ["21E9", "⇩", "Left arrow"],
-        ["21F6", "⇶", "Three arrows"],
-        ["2699", "⚙", "Gear"],
-        ["269B", "⚛", "Atom"],
-        ["0024", "$", "Dollar"],
-        ["2680", "⚀", "Die1"],
-        ["2681", "⚁", "Die2"],
-        ["2682", "⚂", "Die3"],
-        ["2683", "⚃", "Die4"],
-        ["2684", "⚄", "Die5"],
-        ["2685", "⚅", "Die6"],
-        ["26B4", "⚴", "Pallas"],
-        ["26B5", "⚵", "Juno"],
-        ["26B6", "⚶", "Vesta"],
-        ["26B7", "⚷", "Chiron"],
-        ["26B8", "⚸", "Lilith"],
-        ["263F", "☿", "Mercury"],
-        ["2640", "♀", "Venus"],
-        ["2641", "♁", "Earth"],
-        ["2642", "♂", "Mars"],
-        ["2643", "♃", "Jupiter"],
-        ["2644", "♄", "Saturn"],
-        ["2645", "♅", "Uranus"],
-        ["2646", "♆", "Neptune"],
-        ["2647", "♇", "Pluto"],
-        ["26B3", "⚳", "Ceres"],
-        ["2654", "♔", "Chess king"],
-        ["2655", "♕", "Chess queen"],
-        ["2656", "♖", "Chess rook"],
-        ["2657", "♗", "Chess bishop"],
-        ["2658", "♘", "Chess knight"],
-        ["2659", "♙", "Chess pawn"],
-        ["2660", "♠", "Spade"],
-        ["2663", "♣", "Club"],
-        ["2665", "♥", "Heart"],
-        ["2666", "♦", "Diamond"],
-        ["2698", "⚘", "Flower"],
-        ["2625", "☥", "Ankh"],
-        ["2626", "☦", "Orthodox"],
-        ["2627", "☧", "Chi Rho"],
-        ["2628", "☨", "Lorraine"],
-        ["2629", "☩", "Jerusalem"],
-        ["2670", "♰", "Syriac cross"],
-        ["2020", "†", "Dagger"],
-        ["262A", "☪", "Muslim"],
-        ["262D", "☭", "Soviet"],
-        ["262E", "☮", "Peace"],
-        ["262F", "☯", "Yin yang"],
-        ["26A4", "⚤", "Heterosexuality"],
-        ["26A2", "⚢", "Female homosexuality"],
-        ["26A3", "⚣", "Male homosexuality"],
-        ["26A5", "⚥", "Male and female"],
-        ["26AD", "⚭", "Rings"],
-        ["2690", "⚐", "White flag"],
-        ["2691", "⚑", "Black flag"],
-        ["263C", "☼", "Sun"],
-        ["263E", "☾", "Moon"],
-        ["2668", "♨", "Hot springs"],
-        ["2600", "☀", "Black sun"],
-        ["2601", "☁", "Cloud"],
-        ["2602", "☂", "Umbrella"],
-        ["2603", "☃", "Snowman"],
-        ["2604", "☄", "Comet"],
-        ["2605", "★", "Black star"],
-        ["2606", "☆", "White star"],
-        ["269D", "⚝", "Outlined star"],
-        ["2618", "☘", "Shamrock"],
-        ["21AF", "↯", "Lightning"],
-        ["269C", "⚜", "FleurDeLis"],
-        ["2622", "☢", "Radiation"],
-        ["2623", "☣", "Biohazard"],
-        ["2620", "☠", "Skull"],
-        ["2638", "☸", "Dharma"],
-        ["2624", "☤", "Caduceus"],
-        ["2695", "⚕", "Aeculapius staff"],
-        ["269A", "⚚", "Hermes staff"],
-        ["2697", "⚗", "Alembic"],
-        ["266B", "♫", "Music"],
-        ["2702", "✂", "Scissors"],
-        ["2696", "⚖", "Scales"],
-        ["2692", "⚒", "Hammer and pick"],
-        ["2694", "⚔", "Swords"]
-      ];
+  // update Burg details
+  const type = elSelected.node().parentNode.id;
+  const labelGroup = burgLabels.select("#"+type);
+  const iconGroup = burgIcons.select("#"+type);
+  burgNameInput.value = manors[id].name;
+  updateBurgsGroupOptions();
+  burgSelectGroup.value = labelGroup.attr("id");
+  burgSelectDefaultFont.value = fonts.indexOf(labelGroup.attr("data-font"));
+  burgSetLabelSize.value = labelGroup.attr("data-size");
+  burgLabelColorInput.value = toHEX(labelGroup.attr("fill"));
+  burgLabelOpacity.value = labelGroup.attr("opacity") === undefined ? 1 : +labelGroup.attr("opacity");
+  const tr = parseTransform(elSelected.attr("transform"));
+  burgLabelAngle.value = tr[2];
+  burgLabelAngleOutput.innerHTML = Math.abs(+tr[2]) + "°";
+  burgIconSize.value = iconGroup.attr("size");
+  burgIconFillOpacity.value = iconGroup.attr("fill-opacity") === undefined ? 1 : +iconGroup.attr("fill-opacity");
+  burgIconFillColor.value = iconGroup.attr("fill");
+  burgIconStrokeWidth.value = iconGroup.attr("stroke-width");
+  burgIconStrokeOpacity.value = iconGroup.attr("stroke-opacity") === undefined ? 1 : +iconGroup.attr("stroke-opacity");
+  burgIconStrokeColor.value = iconGroup.attr("stroke");
+  const cell = cells[manors[id].cell];
+  if (cell.region !== "neutral" && cell.region !== undefined) {
+    burgToggleCapital.disabled = false;
+    const capital = states[manors[id].region] ? id === states[manors[id].region].capital ? 1 : 0 : 0;
+    d3.select("#burgToggleCapital").classed("pressed", capital);
+  } else {
+    burgToggleCapital.disabled = true;
+    d3.select("#burgToggleCapital").classed("pressed", false);
+  }
+  d3.select("#burgTogglePort").classed("pressed", cell.port !== undefined);
+  burgPopulation.value = manors[id].population;
+  burgPopulationFriendly.value = rn(manors[id].population * urbanization.value * populationRate.value * 1000);
 
-      let table = document.getElementById("markerIconTable"), row = "";
-      table.addEventListener("click", clickMarkerIconTable, false);
-      table.addEventListener("mouseover", hoverMarkerIconTable, false);
-
-      for (let i=0; i < icons.length; i++) {
-        if (i%20 === 0) row = table.insertRow(0);
-        let cell = row.insertCell(0);
-        let icon = String.fromCodePoint(parseInt(icons[i][0],16));
-        cell.innerHTML = icon;
-        cell.id = "markerIcon" + icon.codePointAt();
-        cell.setAttribute("data-desc", icons[i][2]);
-      }
+  $("#burgEditor").dialog({
+    title: "Edit Burg: " + manors[id].name,
+    minHeight: 30, width: "auto", resizable: false,
+    position: {my: "center top+40", at: "top", of: d3.event},
+    close: function() {
+      d3.selectAll("[data-id='" + id + "']").call(d3.drag().on("drag", null)).classed("draggable", false);
+      elSelected = null;
     }
+  });
 
-    function clickMarkerIconTable(e) {
-      if (e.target !== e.currentTarget) {
-        let table = document.getElementById("markerIconTable");
-        let selected = table.getElementsByClassName("selected");
-        if (selected.length) selected[0].removeAttribute("class");
-        e.target.className = "selected";
-        let id = elSelected.attr("href");
-        let icon = e.target.innerHTML;
-        d3.select("#defs-markers").select(id).select("text").text(icon);
-      }
-      e.stopPropagation();
-    }
+  if (modules.editBurg) return;
+  modules.editBurg = true;
 
-    function hoverMarkerIconTable(e) {
-      if (e.target !== e.currentTarget) {
-        let desc = e.target.getAttribute("data-desc");
-        tip(e.target.innerHTML + " " + desc);
-      }
-      e.stopPropagation();
-    }
+  loadDefaultFonts();
 
-    // change marker icon size
-    document.getElementById("markerIconSize").addEventListener("input", function() {
-      let id = elSelected.attr("href");
-      d3.select("#defs-markers").select(id).select("text").attr("font-size", this.value + "px");
-    });
-
-    // change marker icon x shift
-    document.getElementById("markerIconShiftX").addEventListener("input", function() {
-      let id = elSelected.attr("href");
-      d3.select("#defs-markers").select(id).select("text").attr("x", this.value + "%");
-    });
-
-    // change marker icon y shift
-    document.getElementById("markerIconShiftY").addEventListener("input", function() {
-      let id = elSelected.attr("href");
-      d3.select("#defs-markers").select(id).select("text").attr("y", this.value + "%");
-    });
-
-    // apply custom unicode icon on input
-    document.getElementById("markerIconCustom").addEventListener("input", function() {
-      if (!this.value) return;
-      let id = elSelected.attr("href");
-      d3.select("#defs-markers").select(id).select("text").text(this.value);
-    });
-
-    $("#markerStyleButton").click(function() {
-      $("#markerEditor > button").not(this).toggle();
-      $("#markerStyleButtons").toggle();
-    });
-
-    // change marker size
-    document.getElementById("markerSize").addEventListener("input", function() {
-      let id = elSelected.attr("data-id");
-      let used = document.querySelectorAll("use[data-id='"+id+"']");
-      let size = this.value;
-      used.forEach(function(e) {e.setAttribute("data-size", size);});
-      invokeActiveZooming();
-    });
-
-    // change marker base color
-    document.getElementById("markerBase").addEventListener("input", function() {
-      let id = elSelected.attr("href");
-      d3.select(id).select("path").attr("fill", this.value);
-      d3.select(id).select("circle").attr("stroke", this.value);
-    });
-
-    // change marker fill color
-    document.getElementById("markerFill").addEventListener("input", function() {
-      let id = elSelected.attr("href");
-      d3.select(id).select("circle").attr("fill", this.value);
-    });
-
-    // change marker icon y shift
-    document.getElementById("markerIconFill").addEventListener("input", function() {
-      let id = elSelected.attr("href");
-      d3.select("#defs-markers").select(id).select("text").attr("fill", this.value);
-    });
-
-    // change marker icon y shift
-    document.getElementById("markerIconStrokeWidth").addEventListener("input", function() {
-      let id = elSelected.attr("href");
-      d3.select("#defs-markers").select(id).select("text").attr("stroke-width", this.value);
-    });
-
-    // change marker icon y shift
-    document.getElementById("markerIconStroke").addEventListener("input", function() {
-      let id = elSelected.attr("href");
-      d3.select("#defs-markers").select(id).select("text").attr("stroke", this.value);
-    });
-
-    // toggle marker bubble display
-    document.getElementById("markerToggleBubble").addEventListener("click", function() {
-      let id = elSelected.attr("href");
-      let show = 1;
-      if (this.className === "icon-info-circled") {
-        this.className = "icon-info";
-        show = 0;
-      } else {
-        this.className = "icon-info-circled";;
-      }
-      d3.select(id).select("circle").attr("opacity", show);
-      d3.select(id).select("path").attr("opacity", show);
-    });
-
-    // open legendsEditor
-    document.getElementById("markerLegendButton").addEventListener("click", function() {
-      let id = elSelected.attr("id");
-      let symbol = elSelected.attr("href");
-      let icon = d3.select("#defs-markers").select(symbol).select("text").text();
-      let name = "Marker " + icon;
-      editLegends(id, name);
-    });
-
-    // click on master button to add new markers on click
-    document.getElementById("markerAdd").addEventListener("click", function() {
-      document.getElementById("addMarker").click();
-    });
-
-    // remove marker on click
-    document.getElementById("markerRemove").addEventListener("click", function() {
-      alertMessage.innerHTML = "Are you sure you want to remove the marker?";
-      $("#alert").dialog({resizable: false, title: "Remove marker",
-        buttons: {
-          Remove: function() {
-            $(this).dialog("close");
-            elSelected.remove();
-            $("#markerEditor").dialog("close");
-          },
-          Cancel: function() {$(this).dialog("close");}
-        }
-      });
+  function updateBurgsGroupOptions() {
+    burgSelectGroup.innerHTML = "";
+    burgIcons.selectAll("g").each(function(d) {
+      const opt = document.createElement("option");
+      opt.value = opt.innerHTML = d3.select(this).attr("id");
+      burgSelectGroup.add(opt);
     });
   }
+
+  $("#burgEditor > button").not("#burgAddfromEditor").not("#burgRelocate").not("#burgRemove").click(function() {
+    if ($(this).next().is(":visible")) {
+      $("#burgEditor > button").show();
+      $(this).next("div").hide();
+    } else {
+      $("#burgEditor > *").not(this).hide();
+      $(this).next("div").show();
+    }
+  });
+
+  $("#burgEditor > div > button").click(function() {
+    if ($(this).next().is(":visible")) {
+      $("#burgEditor > div > button").show();
+      $(this).parent().prev().show();
+      $(this).next("div").hide();
+    } else {
+      $("#burgEditor > div > button").not(this).hide();
+      $(this).parent().prev().hide();
+      $(this).next("div").show();
+    }
+  });
+
+  $("#burgSelectGroup").change(function() {
+    const id = +elSelected.attr("data-id");
+    const g = this.value;
+    moveBurgToGroup(id, g);
+  });
+
+  $("#burgInputGroup").change(function() {
+    let newGroup = this.value.toLowerCase().replace(/ /g, "_").replace(/[^\w\s]/gi, "");
+    if (Number.isFinite(+newGroup.charAt(0))) newGroup = "g" + newGroup;
+    if (burgLabels.select("#"+newGroup).size()) {
+      tip('The group "'+ newGroup + '" is already exists');
+      return;
+    }
+    burgInputGroup.value = "";
+    // clone old group assigning new id
+    const id = elSelected.node().parentNode.id;
+    const l = burgLabels.select("#"+id).node().cloneNode(false);
+    l.id = newGroup;
+    const i = burgIcons.select("#"+id).node().cloneNode(false);
+    i.id = newGroup;
+    burgLabels.node().insertBefore(l, null);
+    burgIcons.node().insertBefore(i, null);
+    // select new group
+    const opt = document.createElement("option");
+    opt.value = opt.innerHTML = newGroup;
+    burgSelectGroup.add(opt);
+    $("#burgSelectGroup").val(newGroup).change();
+    $("#burgSelectGroup, #burgInputGroup").toggle();
+    updateLabelGroups();
+  });
+
+  $("#burgAddGroup").click(function() {
+    if ($("#burgInputGroup").css("display") === "none") {
+      $("#burgInputGroup").css("display", "inline-block");
+      $("#burgSelectGroup").css("display", "none");
+      burgInputGroup.focus();
+    } else {
+      $("#burgSelectGroup").css("display", "inline-block");
+      $("#burgInputGroup").css("display", "none");
+    }
+  });
+
+  $("#burgRemoveGroup").click(function() {
+    const group = d3.select(elSelected.node().parentNode);
+    const type = group.attr("id");
+    const id = +elSelected.attr("data-id");
+    const count = group.selectAll("*").size();
+    const message = "Are you sure you want to remove all Burgs (" + count + ") of that group?";
+    alertMessage.innerHTML = message;
+    $("#alert").dialog({resizable: false, title: "Remove Burgs",
+      buttons: {
+        Remove: function() {
+          $(this).dialog("close");
+          group.selectAll("*").each(function(d) {
+            const id = +d3.select(this).attr("data-id");
+            if (id === undefined) return;
+            const cell = manors[id].cell;
+            const state = manors[id].region;
+            if (states[state]) {
+              if (states[state].capital === id) states[state].capital = "select";
+              states[state].burgs --;
+            }
+            manors[id].region = "removed";
+            cells[cell].manor = undefined;
+          });
+          burgLabels.select("#"+type).selectAll("*").remove();
+          burgIcons.select("#"+type).selectAll("*").remove();
+          $("#icons g[id*='anchors'] [data-id=" + id + "]").parent().children().remove();
+          closeDialogs(".stable");
+          updateCountryEditors();
+          $("#burgEditor").dialog("close");
+        },
+        Cancel: function() {$(this).dialog("close");}
+      }
+    });
+
+  });
+
+  $("#burgNameInput").on("input", function() {
+    if (this.value === "") {
+      tip("Name should not be blank, set opacity to 0 to hide label or remove button to delete");
+      return;
+    }
+    const id = +elSelected.attr("data-id");
+    burgLabels.selectAll("[data-id='" + id + "']").text(this.value);
+    manors[id].name = this.value;
+    $("div[aria-describedby='burgEditor'] .ui-dialog-title").text("Edit Burg: " + this.value);
+  });
+
+  $("#burgNameReCulture, #burgNameReRandom").click(function() {
+    const id = +elSelected.attr("data-id");
+    const culture = this.id === "burgNameReCulture" ? manors[id].culture : Math.floor(Math.random() * cultures.length);
+    const name = generateName(culture);
+    burgLabels.selectAll("[data-id='" + id + "']").text(name);
+    manors[id].name = name;
+    burgNameInput.value = name;
+    $("div[aria-describedby='burgEditor'] .ui-dialog-title").text("Edit Burg: " + name);
+  });
+
+  $("#burgToggleExternalFont").click(function() {
+    if ($("#burgInputExternalFont").css("display") === "none") {
+      $("#burgInputExternalFont").css("display", "inline-block");
+      $("#burgSelectDefaultFont").css("display", "none");
+      burgInputExternalFont.focus();
+    } else {
+      $("#burgSelectDefaultFont").css("display", "inline-block");
+      $("#burgInputExternalFont").css("display", "none");
+    }
+  });
+
+  $("#burgSelectDefaultFont").change(function() {
+    const type = elSelected.node().parentNode.id;
+    const group = burgLabels.select("#"+type);
+    if (burgSelectDefaultFont.value === "") return;
+    const font = fonts[burgSelectDefaultFont.value].split(':')[0].replace(/\+/g, " ");
+    group.attr("font-family", font).attr("data-font", fonts[burgSelectDefaultFont.value]);
+  });
+
+  $("#burgInputExternalFont").change(function() {
+    fetchFonts(this.value).then(fetched => {
+      if (!fetched) return;
+      burgToggleExternalFont.click();
+      burgInputExternalFont.value = "";
+      if (fetched === 1) $("#burgSelectDefaultFont").val(fonts.length - 1).change();
+    });
+  });
+
+  $("#burgSetLabelSize").on("input", function() {
+    const type = elSelected.node().parentNode.id;
+    const group = burgLabels.select("#"+type);
+    group.attr("data-size", +this.value);
+    invokeActiveZooming();
+  });
+
+  $("#burgLabelColorInput").on("input", function() {
+    const type = elSelected.node().parentNode.id;
+    const group = burgLabels.select("#"+type);
+    group.attr("fill", this.value);
+  });
+
+  $("#burgLabelOpacity").on("input", function() {
+    const type = elSelected.node().parentNode.id;
+    const group = burgLabels.select("#"+type);
+    group.attr("opacity", +this.value);
+  });
+
+  $("#burgLabelAngle").on("input", function() {
+    const id = +elSelected.attr("data-id");
+    const el = burgLabels.select("[data-id='"+ id +"']");
+    const tr = parseTransform(el.attr("transform"));
+    const c = el.node().getBBox();
+    burgLabelAngleOutput.innerHTML = Math.abs(+this.value) + "°";
+    const angle = +this.value;
+    const transform = `translate(${tr[0]},${tr[1]}) rotate(${angle} ${(c.x+c.width/2)} ${(c.y+c.height/2)})`;
+    el.attr("transform", transform);
+  });
+
+  $("#burgIconSize").on("input", function() {
+    const type = elSelected.node().parentNode.id;
+    const group = burgIcons.select("#"+type);
+    const size = +this.value;
+    group.attr("size", size);
+    group.selectAll("*").each(function() {d3.select(this).attr("r", size)});
+  });
+
+  $("#burgIconFillOpacity").on("input", function() {
+    const type = elSelected.node().parentNode.id;
+    const group = burgIcons.select("#"+type);
+    group.attr("fill-opacity", +this.value);
+  });
+
+  $("#burgIconFillColor").on("input", function() {
+    const type = elSelected.node().parentNode.id;
+    const group = burgIcons.select("#"+type);
+    group.attr("fill", this.value);
+  });
+
+  $("#burgIconStrokeWidth").on("input", function() {
+    const type = elSelected.node().parentNode.id;
+    const group = burgIcons.select("#"+type);
+    group.attr("stroke-width", +this.value);
+  });
+
+  $("#burgIconStrokeOpacity").on("input", function() {
+    const type = elSelected.node().parentNode.id;
+    const group = burgIcons.select("#"+type);
+    group.attr("stroke-opacity", +this.value);
+  });
+
+  $("#burgIconStrokeColor").on("input", function() {
+    const type = elSelected.node().parentNode.id;
+    const group = burgIcons.select("#"+type);
+    group.attr("stroke", this.value);
+  });
+
+  $("#burgToggleCapital").click(function() {
+    const id = +elSelected.attr("data-id");
+    const state = manors[id].region;
+    if (states[state] === undefined) return;
+    const capital = states[manors[id].region] ? id === states[manors[id].region].capital ? 0 : 1 : 1;
+    if (capital && states[state].capital !== "select") {
+      // move oldCapital to a town group
+      const oldCapital = states[state].capital;
+      moveBurgToGroup(oldCapital, "towns");
+    }
+    states[state].capital = capital ? id : "select";
+    d3.select("#burgToggleCapital").classed("pressed", capital);
+    const g = capital ? "capitals" : "towns";
+    moveBurgToGroup(id, g);
+  });
+
+  $("#burgTogglePort").click(function() {
+    const id = +elSelected.attr("data-id");
+    const cell = cells[manors[id].cell];
+    const markAsPort = cell.port === undefined ? true : undefined;
+    cell.port = markAsPort;
+    d3.select("#burgTogglePort").classed("pressed", markAsPort);
+    if (markAsPort) {
+      const type = elSelected.node().parentNode.id;
+      const ag = type === "capitals" ? "#capital-anchors" : "#town-anchors";
+      const group = icons.select(ag);
+      const size = +group.attr("size");
+      const x = rn(manors[id].x - size * 0.47, 2);
+      const y = rn(manors[id].y - size * 0.47, 2);
+      group.append("use").attr("xlink:href", "#icon-anchor").attr("data-id", id)
+        .attr("x", x).attr("y", y).attr("width", size).attr("height", size)
+        .on("click", editIcon);
+    } else {
+      $("#icons g[id*='anchors'] [data-id=" + id + "]").remove();
+    }
+  });
+
+  $("#burgPopulation").on("input", function() {
+    const id = +elSelected.attr("data-id");
+    burgPopulationFriendly.value = rn(this.value * urbanization.value * populationRate.value * 1000);
+    manors[id].population = +this.value;
+  });
+
+  $("#burgRelocate").click(function() {
+    if ($(this).hasClass('pressed')) {
+      $(".pressed").removeClass('pressed');
+      restoreDefaultEvents();
+      tip("", true);
+    } else {
+      $(".pressed").removeClass('pressed');
+      const id = elSelected.attr("data-id");
+      $(this).addClass('pressed').attr("data-id", id);
+      viewbox.style("cursor", "crosshair").on("click", relocateBurgOnClick);
+      tip("Click on map to relocate burg. Hold Shift for continuous move", true);
+    }
+  });
+
+  // open legendsEditor
+  document.getElementById("burglLegend").addEventListener("click", function() {
+    let burg = +elSelected.attr("data-id");
+    let id = "burg" + burg;
+    let name = manors[burg].name;
+    editLegends(id, name);
+  });
+
+  // move burg to a different cell
+  function relocateBurgOnClick() {
+    const point = d3.mouse(this);
+    const index = getIndex(point);
+    const i = +$("#burgRelocate").attr("data-id");
+    if (isNaN(i) || !manors[i]) return;
+
+    if (cells[index].height < 20) {
+      tip("Cannot place burg in the water! Select a land cell", null, "error");
+      return;
+    }
+
+    if (cells[index].manor !== undefined && cells[index].manor !== i) {
+      tip("There is already a burg in this cell. Please select a free cell", null, "error");
+      $('#grid').fadeIn();
+      d3.select("#toggleGrid").classed("buttonoff", false);
+      return;
+    }
+
+    let region = cells[index].region;
+    const oldRegion = manors[i].region;
+    // relocating capital to other country you "conquer" target cell
+    if (states[oldRegion] && states[oldRegion].capital === i) {
+      if (region !== oldRegion) {
+        tip("Capital cannot be moved to another country!", null, "error");
+        return;
+      }
+    }
+
+    if (d3.event.shiftKey === false) {
+      $("#burgRelocate").removeClass("pressed");
+      restoreDefaultEvents();
+      tip("", true);
+      if (region !== oldRegion) {
+        recalculateStateData(oldRegion);
+        recalculateStateData(region);
+        updateCountryEditors();
+      }
+    }
+
+    const x = rn(point[0],2), y = rn(point[1],2);
+    burgIcons.select("circle[data-id='"+i+"']").attr("transform", null).attr("cx", x).attr("cy", y);
+    burgLabels.select("text[data-id='"+i+"']").attr("transform", null).attr("x", x).attr("y", y);
+    const anchor = icons.select("use[data-id='"+i+"']");
+    if (anchor.size()) {
+      const size = anchor.attr("width");
+      const xa = rn(x - size * 0.47, 2);
+      const ya = rn(y - size * 0.47, 2);
+      anchor.attr("transform", null).attr("x", xa).attr("y", ya);
+    }
+    cells[index].manor = i;
+    cells[manors[i].cell].manor = undefined;
+    manors[i].x = x, manors[i].y = y, manors[i].region = region, manors[i].cell = index;
+  }
+
+  // open in MFCG
+  $("#burgSeeInMFCG").click(function() {
+    const id = +elSelected.attr("data-id");
+    const name = manors[id].name;
+    const cell = manors[id].cell;
+    const pop = rn(manors[id].population);
+    const size = pop > 65 ? 65 : pop < 6 ? 6 : pop;
+    const s = seed + "" + id;
+    const hub = cells[cell].crossroad > 2 ? 1 : 0;
+    const river = cells[cell].river ? 1 : 0;
+    const coast = cells[cell].port !== undefined ? 1 : 0;
+    const sec = pop > 40 ? 1 : Math.random() < pop / 100 ? 1 : 0;
+    const thr = sec && Math.random() < 0.8 ? 1 : 0;
+    const url = "http://fantasycities.watabou.ru/";
+    let params = `?name=${name}&size=${size}&seed=${s}&hub=${hub}&random=0&continuous=0`;
+    params += `&river=${river}&coast=${coast}&citadel=${id&1}&plaza=${sec}&temple=${thr}&walls=${sec}&shantytown=${sec}`;
+    const win = window.open(url+params, '_blank');
+    win.focus();
+  });
+
+  $("#burgAddfromEditor").click(function() {
+    clickToAdd(); // to load on click event function
+    $("#addBurg").click();
+  });
+
+  $("#burgRemove").click(function() {
+    alertMessage.innerHTML = `Are you sure you want to remove the Burg?`;
+    $("#alert").dialog({resizable: false, title: "Remove Burg",
+      buttons: {
+        Remove: function() {
+          $(this).dialog("close");
+          const id = +elSelected.attr("data-id");
+          d3.selectAll("[data-id='" + id + "']").remove();
+          const cell = manors[id].cell;
+          const state = manors[id].region;
+          if (states[state]) {
+            if (states[state].capital === id) states[state].capital = "select";
+            states[state].burgs --;
+          }
+          manors[id].region = "removed";
+          cells[cell].manor = undefined;
+          closeDialogs(".stable");
+          updateCountryEditors();
+        },
+        Cancel: function() {$(this).dialog("close");}
+      }
+    })
+  });
+}
 
   // clear elSelected variable
   function unselect() {
