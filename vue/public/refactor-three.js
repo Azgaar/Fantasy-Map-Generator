@@ -3297,6 +3297,8 @@ function editBurg() {
 
   // Toggle Options pane
   $("#optionsTrigger").on("click", function() {
+    console.log("open menu")
+
     if (tooltip.getAttribute("data-main") === "Сlick the arrow button to open options") {
       tooltip.setAttribute("data-main", "");
       tooltip.innerHTML = "";
@@ -3311,7 +3313,9 @@ function editBurg() {
       $("#options").fadeOut();
       $("#optionsTrigger").removeClass("icon-left-open").addClass("icon-right-open");
     }
+
   });
+
   $("#collapsible").hover(function() {
     if ($("#optionsTrigger").hasClass("glow")) return;
     if ($("#options").css("display") === "none") {

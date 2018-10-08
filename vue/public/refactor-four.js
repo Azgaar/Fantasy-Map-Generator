@@ -6273,57 +6273,6 @@ function templateVolcano(mod) {
     });
   }
 
-  // Toggle Options pane
-  $("#optionsTrigger").on("click", function() {
-    if (tooltip.getAttribute("data-main") === "Сlick the arrow button to open options") {
-      tooltip.setAttribute("data-main", "");
-      tooltip.innerHTML = "";
-      localStorage.setItem("disable_click_arrow_tooltip", true);
-    }
-    if ($("#options").css("display") === "none") {
-      $("#regenerate").hide();
-      $("#options").fadeIn();
-      $("#layoutTab").click();
-      $("#optionsTrigger").removeClass("icon-right-open glow").addClass("icon-left-open");
-    } else {
-      $("#options").fadeOut();
-      $("#optionsTrigger").removeClass("icon-left-open").addClass("icon-right-open");
-    }
-  });
-  $("#collapsible").hover(function() {
-    if ($("#optionsTrigger").hasClass("glow")) return;
-    if ($("#options").css("display") === "none") {
-      $("#regenerate").show();
-      $("#optionsTrigger").removeClass("glow");
-    }}, function() {
-    $("#regenerate").hide();
-  });
-
-  // move layers on mapLayers dragging (jquery sortable)
-  function moveLayer(event, ui) {
-    const el = getLayer(ui.item.attr("id"));
-    if (el) {
-      const prev = getLayer(ui.item.prev().attr("id"));
-      const next = getLayer(ui.item.next().attr("id"));
-      if (prev) {el.insertAfter(prev);} else if (next) {el.insertBefore(next);}
-    }
-  }
-
-  // define connection between option layer buttons and actual svg groups
-  function getLayer(id) {
-    if (id === "toggleGrid") {return $("#grid");}
-    if (id === "toggleOverlay") {return $("#overlay");}
-    if (id === "toggleHeight") {return $("#terrs");}
-    if (id === "toggleCultures") {return $("#cults");}
-    if (id === "toggleRoutes") {return $("#routes");}
-    if (id === "toggleRivers") {return $("#rivers");}
-    if (id === "toggleCountries") {return $("#regions");}
-    if (id === "toggleBorders") {return $("#borders");}
-    if (id === "toggleRelief") {return $("#terrain");}
-    if (id === "toggleLabels") {return $("#labels");}
-    if (id === "toggleIcons") {return $("#icons");}
-  }
-
   // UI Button handlers
   $("button, a, li, i").on("click", function() {
     const id = this.id;
