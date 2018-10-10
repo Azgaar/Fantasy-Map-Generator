@@ -9,7 +9,7 @@ export default {
   },
   template: `
     <div class="container mx-auto p-4">
-      <div style="display: block; position: absolute; z-index: 2; left: 100px; top: 300px">
+      <div style="display: block; position: absolute; z-index: 2; left: 25px; top: 280px">
         <user-list></user-list>
       </div>
       <div style="display: block; position: absolute; z-index: 1">

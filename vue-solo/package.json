@@ -1,8 +1,8 @@
 {
-  "name": "goodbye-webpack-building-vue-applications-without-webpack",
+  "name": "fantasy map generator",
   "version": "0.1.0",
-  "author": "Markus Oberlehner",
-  "homepage": "https://github.com/maoberlehner/goodbye-webpack-building-vue-applications-without-webpack",
+  "author": "Azgaar",
+  "homepage": "https://github.com/Azgaar/Fantasy-Map-Generator",
   "license": "MIT",
   "private": true,
   "scripts": {
