@@ -1,7 +1,7 @@
 {
-  "name": "fantasy map generator",
+  "name": "fantasy-map-generator",
   "version": "0.1.0",
-  "author": "Azgaar",
+  "author": "azgaar",
   "homepage": "https://github.com/Azgaar/Fantasy-Map-Generator",
   "license": "MIT",
   "private": true,
