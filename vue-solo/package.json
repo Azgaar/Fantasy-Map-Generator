@@ -1,0 +1,14 @@
+{
+  "name": "goodbye-webpack-building-vue-applications-without-webpack",
+  "version": "0.1.0",
+  "author": "Markus Oberlehner",
+  "homepage": "https://github.com/maoberlehner/goodbye-webpack-building-vue-applications-without-webpack",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "browser-sync start --server 'src' --files 'src' --single"
+  },
+  "devDependencies": {
+    "browser-sync": "^2.24.1"
+  }
+}
