@@ -1,5 +1,8 @@
 /* eslint-disable */
 
+import {drawOcean} from '../draw/drawOcean.js';
+import {drawCoastline} from '../draw/drawCoastline.js';
+
 export default {
   name: 'FantasyMapGenerator',
   mounted (){
@@ -301,14 +304,14 @@ export default {
           drawScaleBar();
           defineHeightmap();
           markFeatures();
-          drawOcean();
+          drawOcean(cells,rn,diagram,lineGen,getContinuousLine,oceanLayers);
           elevateLakes();
           resolveDepressionsPrimary();
           reGraph();
           resolveDepressionsSecondary();
           flux();
           addLakes();
-          drawCoastline();
+          drawCoastline(cells,rn,features,lineGen,seed,defs,graphWidth,land,diagram,getContinuousLine,coastline,lakes,landmass,graphHeight,drawDefaultRuler);
           drawRelief();
           generateCultures();
           manorsAndRegions();
@@ -1365,6 +1368,7 @@ export default {
           console.timeEnd("reduceClosedLakes");
         }
 
+        /* moved into the draw folder
         function drawOcean() {
           console.time("drawOcean");
           let limits = [];
@@ -1412,7 +1416,7 @@ export default {
           }
           console.timeEnd("drawOcean");
         }
-
+        */
         // recalculate Voronoi Graph to pack cells
         function reGraph() {
           console.time("reGraph");
@@ -1600,6 +1604,7 @@ export default {
           updateHistory();
         }
 
+        /* moved into the draw folder
         // Detect and draw the coasline
         function drawCoastline() {
           console.time('drawCoastline');
@@ -1679,7 +1684,7 @@ export default {
           drawDefaultRuler(minXedge, maxXedge);
           console.timeEnd('drawCoastline');
         }
-
+        */
         // draw default scale bar
         function drawScaleBar() {
           if ($("#scaleBar").hasClass("hidden")) return; // no need to re-draw hidden element
@@ -6105,7 +6110,7 @@ export default {
           exitCustomization();
           console.time("TOTAL");
           markFeatures();
-          drawOcean();
+          drawOcean(cells,rn,diagram,lineGen,getContinuousLine,oceanLayers);
           elevateLakes();
           resolveDepressionsPrimary();
           reGraph();
