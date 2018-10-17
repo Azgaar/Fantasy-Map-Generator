@@ -1,0 +1,7 @@
+{
+  "name": "azgaars-map-generator",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "npx serve ."
+  }
+}

@@ -19,9 +19,19 @@
   // Use typed arrays instead of array of objects
   // Get rid of jQuery as d3.js can almost all the same and more
   // Re-build UI on reactive approach, vue.js
-
 "use strict";
-fantasyMap();
+
+function loadScript(path) {
+  const script = document.createElement("script");
+  script.addEventListener("load", () => {
+    fantasyMap();
+  });
+  script.src = path;
+  document.body.appendChild(script);
+}
+
+loadScript("./src/loadMapFromUrl.js");
+
 function fantasyMap() {
   // Version control
   const version = "0.60b";
@@ -271,6 +281,8 @@ function fantasyMap() {
   applyDefaultStyle(); // apply style on load
   focusOn(); // based on searchParams focus on point, cell or burg from MFCG
   invokeActiveZooming(); // to hide what need to be hidden
+
+  loadMapFromUrl(uploadFile);
 
   function generate() {
     console.group("Random map");
@@ -6819,6 +6831,7 @@ function fantasyMap() {
       const params = data[0].split("|");
       const mapVersion = params[0] || data[0];
       if (mapVersion !== version) {
+        console.warn("mea culpa", {mapVersion, version})
         let message = `The Map version `;
         // mapVersion reference was not added to downloaded map before v. 0.52b, so I cannot support really old files
         if (mapVersion.length <= 10) {
@@ -6840,6 +6853,7 @@ function fantasyMap() {
       } else {loadDataFromMap(data);}
       if (mapVersion.length > 10) {console.error("Cannot load map"); }
     };
+    console.warn("mea culpa", {file})
     fileReader.readAsText(file, "UTF-8");
     if (callback) {callback();}
   }
