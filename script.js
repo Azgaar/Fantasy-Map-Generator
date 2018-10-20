@@ -19,19 +19,8 @@
   // Use typed arrays instead of array of objects
   // Get rid of jQuery as d3.js can almost all the same and more
   // Re-build UI on reactive approach, vue.js
-"use strict";
 
-function loadScript(path) {
-  const script = document.createElement("script");
-  script.addEventListener("load", () => {
-    fantasyMap();
-  });
-  script.src = path;
-  document.body.appendChild(script);
-}
-
-loadScript("./src/loadMapFromUrl.js");
-
+fantasyMap();
 function fantasyMap() {
   // Version control
   const version = "0.60b";
@@ -276,14 +265,25 @@ function fantasyMap() {
   }
 
   getSeed(); // get and set random generator seed
-  applyNamesData(); // apply default namesbase on load
-  generate(); // generate map on load
-  applyDefaultStyle(); // apply style on load
-  focusOn(); // based on searchParams focus on point, cell or burg from MFCG
-  invokeActiveZooming(); // to hide what need to be hidden
+  
+  const mapLink = params.get("maplink");
+  if (mapLink) {
+    // set up global state
+    applyMapSize();
+    placePoints();
+    calculateVoronoi(points);
 
-  loadMapFromUrl(uploadFile);
-
+    makeFileFromUrl(decodeURIComponent(mapLink)).then(blob => {
+      uploadFile(blob);
+    })
+  } else {
+    applyNamesData(); // apply default namesbase on load
+    generate(); // generate map on load
+    applyDefaultStyle(); // apply style on load
+    focusOn(); // based on searchParams focus on point, cell or burg from MFCG
+    invokeActiveZooming(); // to hide what need to be hidden
+  }
+  
   function generate() {
     console.group("Random map");
     console.time("TOTAL");
@@ -6819,6 +6819,13 @@ function fantasyMap() {
     this.value = "";
     uploadFile(fileToLoad);
   });
+  
+  function makeFileFromUrl(mapLink) {
+    return fetch(mapLink, {
+      method: 'GET',
+      mode: 'cors',
+    }).then(response => response.blob());
+  }
 
   function uploadFile(file, callback) {
     console.time("loadMap");
@@ -6831,7 +6838,6 @@ function fantasyMap() {
       const params = data[0].split("|");
       const mapVersion = params[0] || data[0];
       if (mapVersion !== version) {
-        console.warn("mea culpa", {mapVersion, version})
         let message = `The Map version `;
         // mapVersion reference was not added to downloaded map before v. 0.52b, so I cannot support really old files
         if (mapVersion.length <= 10) {
@@ -6853,7 +6859,6 @@ function fantasyMap() {
       } else {loadDataFromMap(data);}
       if (mapVersion.length > 10) {console.error("Cannot load map"); }
     };
-    console.warn("mea culpa", {file})
     fileReader.readAsText(file, "UTF-8");
     if (callback) {callback();}
   }
