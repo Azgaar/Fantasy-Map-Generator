@@ -19,7 +19,8 @@
   // Use typed arrays instead of array of objects
   // Get rid of jQuery as d3.js can almost all the same and more
   // Re-build UI on reactive approach, vue.js
-
+  
+"use strict";
 fantasyMap();
 function fantasyMap() {
   // Version control
