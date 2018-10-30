@@ -7871,7 +7871,7 @@ function fantasyMap() {
       //       </div>
       //     </div>
       //   </div>
-
+      const linkInputName = "link";
       modal.innerHTML = `    
         <div class="ui-dialog-titlebar ui-widget-header ui-helper-clearfix ui-draggable-handle">
           <span id="ui-id-1" class="ui-dialog-title">
@@ -7891,7 +7891,8 @@ function fantasyMap() {
             <div>Enter link to your map</div>
             <input
               style="width: 24em; margin-top: 0.5em"
-              type="url" 
+              type="url"
+              name="${linkInputName}"
               pattern=".*\\.map"
               placeholder="https://example.com/faerun.map" 
               required
@@ -7907,7 +7908,8 @@ function fantasyMap() {
 
       modal.onsubmit = (event) => {
         event.preventDefault();
-        console.log("ok", event)
+        const formData = new FormData(event.target);
+        console.log("ok", formData.get(linkInputName), event)
         document.body.removeChild(modal);
       }
 
