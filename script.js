@@ -270,12 +270,14 @@ function fantasyMap() {
   const mapLink = params.get("maplink");
   if (mapLink) {
     // set up global state
+    applyNamesData();
     applyMapSize();
     placePoints();
     calculateVoronoi(points);
-
+    
     makeFileFromUrl(decodeURIComponent(mapLink)).then(blob => {
       uploadFile(blob);
+      manorsAndRegions(); // namesBase global state
     })
   } else {
     applyNamesData(); // apply default namesbase on load
