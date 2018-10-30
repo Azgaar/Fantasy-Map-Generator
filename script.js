@@ -278,6 +278,7 @@ function fantasyMap() {
     makeFileFromUrl(decodeURIComponent(mapLink)).then(blob => {
       uploadFile(blob);
       manorsAndRegions(); // namesBase global state
+      cleanData();
     })
   } else {
     applyNamesData(); // apply default namesbase on load
@@ -7049,8 +7050,12 @@ function fantasyMap() {
     points = JSON.parse(data[1]);
     cells = JSON.parse(data[2]);
     manors = JSON.parse(data[3]);
-    if (data[7]) cultures = JSON.parse(data[7]);
-    if (data[7] === undefined) generateCultures();
+    if (data[7]) {
+      cultures = JSON.parse(data[7]);
+      cultureTree = d3.quadtree(cultures.map(c => c.center));
+    } else {
+      generateCultures();
+    }
     if (data[11]) notes = JSON.parse(data[11]);
 
     // place random point
