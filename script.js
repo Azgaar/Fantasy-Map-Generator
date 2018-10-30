@@ -19,7 +19,7 @@
   // Use typed arrays instead of array of objects
   // Get rid of jQuery as d3.js can almost all the same and more
   // Re-build UI on reactive approach, vue.js
-  
+
 "use strict";
 fantasyMap();
 function fantasyMap() {
@@ -270,12 +270,14 @@ function fantasyMap() {
   const mapLink = params.get("maplink");
   if (mapLink) {
     // set up global state
+    applyNamesData();
     applyMapSize();
     placePoints();
     calculateVoronoi(points);
-
+    
     makeFileFromUrl(decodeURIComponent(mapLink)).then(blob => {
       uploadFile(blob);
+      manorsAndRegions(); // namesBase global state
     })
   } else {
     applyNamesData(); // apply default namesbase on load
@@ -7720,6 +7722,7 @@ function fantasyMap() {
       zoom.scaleExtent([1, 20]).scaleTo(svg, 1);
     }
     if (id === "saveButton") {$("#saveDropdown").slideToggle();}
+    if (id === "loadButton") {$("#loadDropdown").slideToggle();}
     if (id === "loadMap") {mapToLoad.click();}
     if (id === "zoomReset") {resetZoom(1000);}
     if (id === "zoomPlus") {

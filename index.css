@@ -845,22 +845,26 @@ div.slider .ui-slider-handle {
 	line-height: 1.6em;
 }
 
-#saveDropdown {
+.dropdown {
+	display: inline-block;
+	/* todo: float: left? */
+}
+
+.dropdown__options {
 	display: none;
 	position: absolute;
-	left: 29%;
 	top: 100%;
 	border: 1px solid #5e4fa2;
 	background-color: #a4879b;
 	width: 44px;
 }
 
-#saveDropdown>div {
+.dropdown__options > div {
 	padding: 2px 4px;
 	cursor: pointer;
 }
 
-#saveDropdown>div:hover {
+.dropdown__options > div:hover {
 	color: white;
 }
 
