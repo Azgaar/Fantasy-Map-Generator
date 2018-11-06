@@ -6,7 +6,9 @@ Project is under active development, check out the work in progress version [her
 
 [![alt tag](https://i0.wp.com/azgaar.files.wordpress.com/2017/03/80k-part.png)](https://azgaar.wordpress.com)
 
- Join our [Reddit community](https://www.reddit.com/r/FantasyMapGenerator) to share the created maps, discuss the Generator, suggest ideas and get a most recent updates. You may also contact me directly via [email](mailto:maxganiev@yandex.com). For bug reports please use the project [issues page](https://github.com/Azgaar/Fantasy-Map-Generator/issues). If you face performance issues, please try to open the page in a small window and use the default graph size only. In Firefox fast map zooming may cause browser crush.
+Join our [Reddit community](https://www.reddit.com/r/FantasyMapGenerator) to share the created maps, discuss the Generator, suggest ideas and get a most recent updates. You may also contact me directly via [email](mailto:maxganiev@yandex.com). For bug reports please use the project [issues page](https://github.com/Azgaar/Fantasy-Map-Generator/issues). If you face performance issues, please try to open the page in a small window and use the default graph size only. In Firefox fast map zooming may cause browser crush.
+
+The desktop application (Electron) is [under development](https://github.com/mamokin/Fantasy-Map-Generator/tree/code-cleanup-from-boilerplate).
 
 _Inspiration:_
 
