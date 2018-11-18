@@ -99,16 +99,6 @@ button, select, a {
   cursor: pointer;
 }
 
-#hills {
-	stroke-width: 0.1px;
-	fill: #999999;
-}
-
-#mounts {
-	stroke-width: 0.1px;
-	fill: white;
-}
-
 .strokes {
 	stroke-width: 0.08px;
 	width: 2px;
@@ -129,17 +119,6 @@ button, select, a {
 #roads, #trails {
 	mask: url(#shape);
 	mask-mode: alpha;
-}
-
-#swamps {
-	stroke-width: 0.05px;
-	fill: none;
-	stroke: #5c5c70;
-}
-
-#forests {
-	stroke-width: 0.1px;
-	stroke: #5c5c70;
 }
 
 #options .pressed {
@@ -234,7 +213,6 @@ div > input[type="number"].editNumber {
 #riverEditor > *,
 #routeEditor > *,
 #iconEditor > *,
-#reliefEditor > *,
 #burgEditor * {
 	display: inline-block;
 }
@@ -812,7 +790,12 @@ body button.noicon {
 .ui-dialog input[type="number"] {
 	width: 28px;
 	height: 12px;
-	cursor: pointer;
+}
+
+.ui-dialog input[type="number"].relief {
+	width: 38px;
+  height: 10px;
+  margin-top: 1px;
 }
 
 .ui-dialog .disabled {
@@ -1424,4 +1407,20 @@ div#legendHeader {
 
 div#legendBody {
   padding: 0 10px;
+}
+
+
+svg.button {
+  position: relative;
+  background-color: transparent;
+  margin: -5px;
+  padding: 0;
+}
+
+#reliefIconsSeletionAny {
+	display: none;
+	font-style: italic;
+	width: 26px;
+	height: 21px;
+	padding: 0;
 }
