@@ -10369,7 +10369,7 @@ function fantasyMap() {
     $("#mapLayers li").not("#toggleOcean").addClass("buttonoff");
     $("#toggleOcean").removeClass("buttonoff");
     $("#oceanPattern").fadeIn();
-    $("#rivers, #terrain, #overlay, #borders, #regions, #icons, #labels, #routes, #grid, #markers").fadeOut();
+    $("#rivers, #terrain, #borders, #regions, #icons, #labels, #routes, #grid, #markers").fadeOut();
     cults.selectAll("path").remove();
     terrs.selectAll("path").remove();
     if (preset === "layoutPolitical") {
