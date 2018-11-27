@@ -7315,7 +7315,7 @@ function fantasyMap() {
     if (id === "toggleHeight") {toggleHeight();}
     if (id === "toggleCountries") {$('#regions').fadeToggle();}
     if (id === "toggleCultures") {toggleCultures();}
-    if (id === "toggleOverlay") {toggleOverlay();}
+    if (id === "toggleOverlay") {toggleOverlay(); return;}
     if (id === "toggleFlux") {toggleFlux();}
     if (parent === "mapLayers" || parent === "styleContent") {$(this).toggleClass("buttonoff");}
     if (id === "randomMap" || id === "regenerate") {
@@ -10366,7 +10366,7 @@ function fantasyMap() {
 
   $("#layoutPreset").on("change", function() {
     const preset = this.value;
-    $("#mapLayers li").not("#toggleOcean").addClass("buttonoff");
+    $("#mapLayers li").not("#toggleOcean, #toggleOverlay").addClass("buttonoff");
     $("#toggleOcean").removeClass("buttonoff");
     $("#oceanPattern").fadeIn();
     $("#rivers, #terrain, #borders, #regions, #icons, #labels, #routes, #grid, #markers").fadeOut();
