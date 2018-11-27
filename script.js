@@ -1,7 +1,6 @@
 // Fantasy Map Generator main script
-// Azgaar (maxganiev@yandex.com). Minsk, 2017-2018
+// MIT License. Author: Azgaar (maxganiev@yandex.com). Minsk, 2017-2018
 // https://github.com/Azgaar/Fantasy-Map-Generator
-// GNU General Public License v3.0
 
 // To programmers:
   // I don't mind of any help with programming
@@ -5921,8 +5920,10 @@ function fantasyMap() {
         overlay.append("use").attr("xlink:href","#rose");
       }
       calculateFriendlyOverlaySize();
+      $("#toggleOverlay").removeClass("buttonoff");
     } else {
       overlay.selectAll("*").remove();
+      $("#toggleOverlay").addClass("buttonoff");
     }
   }
 
