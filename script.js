@@ -3628,6 +3628,7 @@ function fantasyMap() {
     }
     d3.select("#burgTogglePort").classed("pressed", cell.port !== undefined);
     burgPopulation.value = manors[id].population;
+	burgMFCGLink.value = manors[id].link || "Generate";
     burgPopulationFriendly.value = rn(manors[id].population * urbanization.value * populationRate.value * 1000);
 
     $("#burgEditor").dialog({
@@ -3914,6 +3915,11 @@ function fantasyMap() {
       manors[id].population = +this.value;
     });
 
+    $("#burgMFCGLink").on("input", function() {
+      const id = +elSelected.attr("data-id");
+      manors[id].link = this.value;
+    });
+
     $("#burgRelocate").click(function() {
       if ($(this).hasClass('pressed')) {
         $(".pressed").removeClass('pressed');
@@ -3993,22 +3999,35 @@ function fantasyMap() {
 
     // open in MFCG
     $("#burgSeeInMFCG").click(function() {
-      const id = +elSelected.attr("data-id");
-      const name = manors[id].name;
-      const cell = manors[id].cell;
-      const pop = rn(manors[id].population);
-      const size = pop > 65 ? 65 : pop < 6 ? 6 : pop;
-      const s = seed + "" + id;
-      const hub = cells[cell].crossroad > 2 ? 1 : 0;
-      const river = cells[cell].river ? 1 : 0;
-      const coast = cells[cell].port !== undefined ? 1 : 0;
-      const sec = pop > 40 ? 1 : Math.random() < pop / 100 ? 1 : 0;
-      const thr = sec && Math.random() < 0.8 ? 1 : 0;
-      const url = "http://fantasycities.watabou.ru/";
-      let params = `?name=${name}&size=${size}&seed=${s}&hub=${hub}&random=0&continuous=0`;
-      params += `&river=${river}&coast=${coast}&citadel=${id&1}&plaza=${sec}&temple=${thr}&walls=${sec}&shantytown=${sec}`;
-      const win = window.open(url+params, '_blank');
-      win.focus();
+      var win;
+      switch(burgLink.value.toLowerCase()) {
+        case("default"):
+        case("generate"):
+        case("generated"):
+        case("undefined"):
+        case(""):
+          const id = +elSelected.attr("data-id");
+          const name = manors[id].name;
+          const cell = manors[id].cell;
+          const pop = rn(manors[id].population);
+          const size = pop > 65 ? 65 : pop < 6 ? 6 : pop;
+          const s = seed + "" + id;
+          const hub = cells[cell].crossroad > 2 ? 1 : 0;
+          const river = cells[cell].river ? 1 : 0;
+          const coast = cells[cell].port !== undefined ? 1 : 0;
+          const sec = pop > 40 ? 1 : Math.random() < pop / 100 ? 1 : 0;
+          const thr = sec && Math.random() < 0.8 ? 1 : 0;
+          const url = "http://fantasycities.watabou.ru/";
+          let params = `?name=${name}&size=${size}&seed=${s}&hub=${hub}&random=0&continuous=0`;
+          params += `&river=${river}&coast=${coast}&citadel=${id&1}&plaza=${sec}&temple=${thr}&walls=${sec}&shantytown=${sec}`;
+          win = window.open(url+params, '_blank');
+          win.focus();
+          break;
+        default:
+          win = window.open(burgLink.value, '_blank');
+          win.focus();
+		  break;
+      }
     });
 
     $("#burgAddfromEditor").click(function() {
