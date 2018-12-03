@@ -96,7 +96,7 @@ function fantasyMap() {
   let notes = [];
   let queue = [];
   const fonts = ["Almendra+SC", "Georgia", "Times+New+Roman", "Comic+Sans+MS", "Lucida+Sans+Unicode", "Courier+New"];
-
+  
   // Cultures-related data
   let defaultCultures = [];
   let cultures = [];
@@ -3628,7 +3628,7 @@ function fantasyMap() {
     }
     d3.select("#burgTogglePort").classed("pressed", cell.port !== undefined);
     burgPopulation.value = manors[id].population;
-	burgMFCGLink.value = manors[id].link || "Generate";
+	burgLink.value = manors[id].mfcglink || "Generate";
     burgPopulationFriendly.value = rn(manors[id].population * urbanization.value * populationRate.value * 1000);
 
     $("#burgEditor").dialog({
@@ -3915,9 +3915,9 @@ function fantasyMap() {
       manors[id].population = +this.value;
     });
 
-    $("#burgMFCGLink").on("input", function() {
+    $("#burgLink").on("input", function() {
       const id = +elSelected.attr("data-id");
-      manors[id].link = this.value;
+      manors[id].mfcglink = this.value;
     });
 
     $("#burgRelocate").click(function() {
