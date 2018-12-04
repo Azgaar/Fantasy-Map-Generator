@@ -4024,7 +4024,15 @@ function fantasyMap() {
           win.focus();
           break;
         default:
-          win = window.open(burgLink.value, '_blank');
+          if(burgLink.value.length < 4 || burgLink.value[0] != "h" || burgLink.value[1] != "t" || burgLink.value[2] != "t" || burgLink.value[3] != "p") {
+        	  if(burgLink.value[4] !== "?") {
+                win = window.open("http://fantasycities.watabou.ru/?" + burgLink.value, '_blank');
+        	  } else {
+                win = window.open("http://fantasycities.watabou.ru/" + burgLink.value, '_blank');
+        	  }
+          } else {
+            win = window.open(burgLink.value, '_blank');
+          }
           win.focus();
 		  break;
       }
