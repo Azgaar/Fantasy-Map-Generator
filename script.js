@@ -6643,12 +6643,17 @@ function fantasyMap() {
       }
 
       // to fix use elements sizing
-      clone.selectAll("use").each(function() {
+      clone.select("#icons").selectAll("use").each(function() {
         const size = this.parentNode.getAttribute("size") || 1;
         this.setAttribute("width", size + "px");
         this.setAttribute("height", size + "px");
       });
-
+      clone.select("#terrain").selectAll("use").each(function() {
+        const size = this.getAttribute("width") || 1;
+        this.setAttribute("width", size + "px");
+        this.setAttribute("height", size + "px");
+      });
+      
       // clean attributes
       //clone.selectAll("*").each(function() {
       //  const attributes = this.attributes;
