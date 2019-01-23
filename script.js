@@ -1,14 +1,13 @@
 // Fantasy Map Generator main script
-// Azgaar (maxganiev@yandex.com). Minsk, 2017-2018
+// MIT License. Author: Azgaar (maxganiev@yandex.com). Minsk, 2017-2018
 // https://github.com/Azgaar/Fantasy-Map-Generator
-// GNU General Public License v3.0
 
 // To programmers:
   // I don't mind of any help with programming
   // I know the code is badly structurized and it's hard to read it as a single page
   // Meanwhile a core part takes only 300-500 lines
 
-// What should be done generally:
+// What should be done generally (see https://github.com/Azgaar/Fantasy-Map-Generator/issues/153):
   // Refactor the code
   // Modernize the code (ES6)
   // Optimize the code
@@ -24,7 +23,7 @@
 fantasyMap();
 function fantasyMap() {
   // Version control
-  const version = "0.60b";
+  const version = "0.61b";
   document.title += " v. " + version;
 
   // Declare variables
@@ -66,10 +65,6 @@ function fantasyMap() {
   burgLabels.append("g").attr("id", "towns");
   icons.append("g").attr("id", "capital-anchors");
   icons.append("g").attr("id", "town-anchors");
-  terrain.append("g").attr("id", "hills");
-  terrain.append("g").attr("id", "mounts");
-  terrain.append("g").attr("id", "swamps");
-  terrain.append("g").attr("id", "forests");
 
   // append ocean pattern
   oceanPattern.append("rect").attr("fill", "url(#oceanic)").attr("stroke", "none");
@@ -195,10 +190,14 @@ function fantasyMap() {
 
   // Active zooming
   function invokeActiveZooming() {
-    // toggle shade/blur filter on zoom
-    let filter = scale > 2.6 ? "url(#blurFilter)" : "url(#dropShadow)";
-    if (scale > 1.5 && scale <= 2.6) filter = null;
-    coastline.attr("filter", filter);
+
+    if (styleCoastlineAuto.checked) {
+      // toggle shade/blur filter for coatline on zoom
+      let filter = scale > 2.6 ? "url(#blurFilter)" : "url(#dropShadow)";
+      if (scale > 1.5 && scale <= 2.6) filter = null;
+      coastline.attr("filter", filter);
+    }
+
     // rescale lables on zoom (active zooming)
     labels.selectAll("g").each(function(d) {
       const el = d3.select(this);
@@ -240,15 +239,17 @@ function fantasyMap() {
   // Changelog dialog window
   const storedVersion = localStorage.getItem("version"); // show message on load
   if (storedVersion != version) {
-    alertMessage.innerHTML = `<b>2018-29-23</b>:
+    alertMessage.innerHTML = `<b>2018-10-18</b>:
       The <i>Fantasy Map Generator</i> is updated up to version <b>${version}</b>.
       Main changes:<br><br>
-      <li>Map Markers</li>
-      <li>Legend Editor (text notes)</li>
+      <li>New Relief Icons editor</li>
+      <li>Updated Relief Icons</li>
+      <li>UI improvements</li>
+      <li>New cultures</li>
       <li>Bug fixes</li>
-      <br>See a <a href='https://www.reddit.com/r/FantasyMapGenerator/comments/9iarje/update_new_version_is_published_v060b' target='_blank'>dedicated post</a> for the details.
-      <br><br>
-      <i>Join our <a href='https://www.reddit.com/r/FantasyMapGenerator/' target='_blank'>Reddit community</a>
+      <br>See a <a href='https://www.reddit.com/r/FantasyMapGenerator/comments/9y73hd/update_new_version_is_published_v061b/' target='_blank'>dedicated post</a> for the details.
+      <br><br><i>Support the project on <a href='https://www.patreon.com/azgaar' target='_blank'>Patreon</a>.
+      Join our <a href='https://www.reddit.com/r/FantasyMapGenerator/' target='_blank'>Reddit community</a>
       to share created maps, discuss the Generator, report bugs, ask questions and propose new features.
       You may also report bugs <a href='https://github.com/Azgaar/Fantasy-Map-Generator/issues' target='_blank'>here</a>.</i>`;
 
@@ -374,6 +375,17 @@ function fantasyMap() {
       lockPrecInput.setAttribute("data-locked", 1);
       lockPrecInput.className = "icon-lock";
     }
+    if (localStorage.getItem("reliefSize")) {
+      reliefSizeInput.value = reliefSizeOutput.value = localStorage.getItem("reliefSize");
+      lockReliefSizeInput.setAttribute("data-locked", 1);
+      lockReliefSizeInput.className = "icon-lock";
+    }
+    if (localStorage.getItem("reliefDensity")) {
+      reliefDensityInput.value = localStorage.getItem("reliefDensity");
+      reliefDensityOutput.value = rn(reliefDensityInput.value * 100) + "%";
+      lockReliefDensityInput.setAttribute("data-locked", 1);
+      lockReliefDensityInput.className = "icon-lock";
+    }
     if (localStorage.getItem("swampiness")) swampinessInput.value = swampinessOutput.value = localStorage.getItem("swampiness");
     if (localStorage.getItem("outlineLayers")) outlineLayersInput.value = localStorage.getItem("outlineLayers");
     if (localStorage.getItem("pngResolution")) {
@@ -397,13 +409,17 @@ function fantasyMap() {
     $("#options i[class^='icon-lock']").each(function() {
       this.setAttribute("data-locked", 0);
       this.className = "icon-lock-open";
-      if (this.id === "lockNeutralInput" || this.id === "lockSwampinessInput") {
+      const id = this.id;
+      if (id === "lockNeutralInput" || id === "lockSwampinessInput" || id === "lockReliefDensityInput" || id === "lockReliefSizeInput") {
         this.setAttribute("data-locked", 1);
         this.className = "icon-lock";
       }
     });
     neutralInput.value = neutralOutput.value = 200;
-    swampinessInput.value = swampinessOutput.value = 10;
+    reliefSizeInput.value = reliefSizeOutput.value = 1;
+    reliefDensityInput.value = 0.5;
+    reliefDensityOutput.value = "50%";
+    swampinessInput.value = swampinessOutput.value = 50;
     outlineLayersInput.value = "-6,-3,-1";
     transparencyInput.value = transparencyOutput.value = 0;
     changeDialogsTransparency(0);
@@ -420,20 +436,23 @@ function fantasyMap() {
       {name:"Angshire", color:"#fca463", base:1},
       {name:"Luari", color:"#99acfb", base:2},
       {name:"Tallian", color:"#a6d854", base:3},
-      {name:"Toledi", color:"#ffd92f", base:4},
-      {name:"Slovian", color:"#e5c494", base:5},
+      {name:"Astellian", color:"#ffd92f", base:4},
+      {name:"Rusanic", color:"#e5c494", base:5},
       {name:"Norse", color:"#dca3e4", base:6},
       {name:"Elladian", color:"#66c4a0", base:7},
-      {name:"Latian", color:"#ff7174", base:8},
-      {name:"Soomi", color:"#85c8fa", base:9},
+      {name:"Romian", color:"#ff7174", base:8},
+      {name:"Soumi", color:"#85c8fa", base:9},
       {name:"Koryo", color:"#578880", base:10},
       {name:"Hantzu", color:"#becb8d", base:11},
-      {name:"Yamoto", color:"#ffd9da", base:12}
+      {name:"Yamoto", color:"#ffd9da", base:12},
+      {name:"Portuzian", color:"#0c6946", base:13},
+      {name:"Nawatli", color:"#e8f0ee", base:14}
     ];
   }
 
   // apply default names data
   function applyDefaultNamesData() {
+    // name, method, min length, max length, letters to allow dublication, multi-word name rate
     nameBases = [                                                                   // min; max; mean; common
       {name: "German", method: "let-to-syl", min: 4, max: 11, d: "lt", m: 0.1},     // real: 3; 17; 8.6; 8
       {name: "English", method: "let-to-syl", min: 5, max: 10, d: "", m: 0.3},      // real: 4; 13; 7.9; 8
@@ -447,7 +466,9 @@ function fantasyMap() {
       {name: "Finnic", method: "let-to-syl", min: 3, max: 10, d: "aktu", m: 0},     // real: 3; 13; 7.5; 6
       {name: "Korean", method: "let-to-syl", min: 5, max: 10, d: "", m: 0},         // real: 3; 13; 6.8; 7
       {name: "Chinese", method: "let-to-syl", min: 5, max: 9, d: "", m: 0},         // real: 4; 11; 6.9; 6
-      {name: "Japanese", method: "let-to-syl", min: 3, max: 9, d: "", m: 0}         // real: 2; 15; 6.8; 6
+      {name: "Japanese", method: "let-to-syl", min: 3, max: 9, d: "", m: 0},        // real: 2; 15; 6.8; 6
+      {name: "Portuguese", method: "let-to-syl", min: 4, max: 10, d: "r", m: 0.1},  // real: 3; 16; 7.5; 8
+      {name: "Nahuatl", method: "let-to-syl", min: 5, max: 12, d: "l", m: 0}        // real: 5; 18; 9.2; 8
     ];
     nameBase = [
       ["Achern","Aichhalden","Aitern","Albbruck","Alpirsbach","Altensteig","Althengstett","Appenweier","Auggen","Wildbad","Badenen","Badenweiler","Baiersbronn","Ballrechten","Bellingen","Berghaupten","Bernau","Biberach","Biederbach","Binzen","Birkendorf","Birkenfeld","Bischweier","Blumberg","Bollen","Bollschweil","Bonndorf","Bosingen","Braunlingen","Breisach","Breisgau","Breitnau","Brigachtal","Buchenbach","Buggingen","Buhl","Buhlertal","Calw","Dachsberg","Dobel","Donaueschingen","Dornhan","Dornstetten","Dottingen","Dunningen","Durbach","Durrheim","Ebhausen","Ebringen","Efringen","Egenhausen","Ehrenkirchen","Ehrsberg","Eimeldingen","Eisenbach","Elzach","Elztal","Emmendingen","Endingen","Engelsbrand","Enz","Enzklosterle","Eschbronn","Ettenheim","Ettlingen","Feldberg","Fischerbach","Fischingen","Fluorn","Forbach","Freiamt","Freiburg","Freudenstadt","Friedenweiler","Friesenheim","Frohnd","Furtwangen","Gaggenau","Geisingen","Gengenbach","Gernsbach","Glatt","Glatten","Glottertal","Gorwihl","Gottenheim","Grafenhausen","Grenzach","Griesbach","Gutach","Gutenbach","Hag","Haiterbach","Hardt","Harmersbach","Hasel","Haslach","Hausach","Hausen","Hausern","Heitersheim","Herbolzheim","Herrenalb","Herrischried","Hinterzarten","Hochenschwand","Hofen","Hofstetten","Hohberg","Horb","Horben","Hornberg","Hufingen","Ibach","Ihringen","Inzlingen","Kandern","Kappel","Kappelrodeck","Karlsbad","Karlsruhe","Kehl","Keltern","Kippenheim","Kirchzarten","Konigsfeld","Krozingen","Kuppenheim","Kussaberg","Lahr","Lauchringen","Lauf","Laufenburg","Lautenbach","Lauterbach","Lenzkirch","Liebenzell","Loffenau","Loffingen","Lorrach","Lossburg","Mahlberg","Malsburg","Malsch","March","Marxzell","Marzell","Maulburg","Monchweiler","Muhlenbach","Mullheim","Munstertal","Murg","Nagold","Neubulach","Neuenburg","Neuhausen","Neuried","Neuweiler","Niedereschach","Nordrach","Oberharmersbach","Oberkirch","Oberndorf","Oberbach","Oberried","Oberwolfach","Offenburg","Ohlsbach","Oppenau","Ortenberg","otigheim","Ottenhofen","Ottersweier","Peterstal","Pfaffenweiler","Pfalzgrafenweiler","Pforzheim","Rastatt","Renchen","Rheinau","Rheinfelden","Rheinmunster","Rickenbach","Rippoldsau","Rohrdorf","Rottweil","Rummingen","Rust","Sackingen","Sasbach","Sasbachwalden","Schallbach","Schallstadt","Schapbach","Schenkenzell","Schiltach","Schliengen","Schluchsee","Schomberg","Schonach","Schonau","Schonenberg","Schonwald","Schopfheim","Schopfloch","Schramberg","Schuttertal","Schwenningen","Schworstadt","Seebach","Seelbach","Seewald","Sexau","Simmersfeld","Simonswald","Sinzheim","Solden","Staufen","Stegen","Steinach","Steinen","Steinmauern","Straubenhardt","Stuhlingen","Sulz","Sulzburg","Teinach","Tiefenbronn","Tiengen","Titisee","Todtmoos","Todtnau","Todtnauberg","Triberg","Tunau","Tuningen","uhlingen","Unterkirnach","Reichenbach","Utzenfeld","Villingen","Villingendorf","Vogtsburg","Vohrenbach","Waldachtal","Waldbronn","Waldkirch","Waldshut","Wehr","Weil","Weilheim","Weisenbach","Wembach","Wieden","Wiesental","Wildberg","Winzeln","Wittlingen","Wittnau","Wolfach","Wutach","Wutoschingen","Wyhlen","Zavelstein"],
@@ -462,12 +483,15 @@ function fantasyMap() {
       ["Aanekoski","Abjapaluoja","Ahlainen","Aholanvaara","Ahtari","Aijala","Aimala","Akaa","Alajarvi","Alatornio","Alavus","Antsla","Aspo","Bennas","Bjorkoby","Elva","Emasalo","Espoo","Esse","Evitskog","Forssa","Haapajarvi","Haapamaki","Haapavesi","Haapsalu","Haavisto","Hameenlinna","Hameenmaki","Hamina","Hanko","Harjavalta","Hattuvaara","Haukipudas","Hautajarvi","Havumaki","Heinola","Hetta","Hinkabole","Hirmula","Hossa","Huittinen","Husula","Hyryla","Hyvinkaa","Iisalmi","Ikaalinen","Ilmola","Imatra","Inari","Iskmo","Itakoski","Jamsa","Jarvenpaa","Jeppo","Jioesuu","Jiogeva","Joensuu","Jokela","Jokikyla","Jokisuu","Jormua","Juankoski","Jungsund","Jyvaskyla","Kaamasmukka","Kaarina","Kajaani","Kalajoki","Kallaste","Kankaanpaa","Kannus","Kardla","Karesuvanto","Karigasniemi","Karkkila","Karkku","Karksinuia","Karpankyla","Kaskinen","Kasnas","Kauhajoki","Kauhava","Kauniainen","Kauvatsa","Kehra","Keila","Kellokoski","Kelottijarvi","Kemi","Kemijarvi","Kerava","Keuruu","Kiikka","Kiipu","Kilinginiomme","Kiljava","Kilpisjarvi","Kitee","Kiuruvesi","Kivesjarvi","Kiviioli","Kivisuo","Klaukkala","Klovskog","Kohtlajarve","Kokemaki","Kokkola","Kolho","Koria","Koskue","Kotka","Kouva","Kouvola","Kristiina","Kaupunki","Kuhmo","Kunda","Kuopio","Kuressaare","Kurikka","Kusans","Kuusamo","Kylmalankyla","Lahti","Laitila","Lankipohja","Lansikyla","Lappeenranta","Lapua","Laurila","Lautiosaari","Lepsama","Liedakkala","Lieksa","Lihula","Littoinen","Lohja","Loimaa","Loksa","Loviisa","Luohuanylipaa","Lusi","Maardu","Maarianhamina","Malmi","Mantta","Masaby","Masala","Matasvaara","Maula","Miiluranta","Mikkeli","Mioisakula","Munapirtti","Mustvee","Muurahainen","Naantali","Nappa","Narpio","Nickby","Niinimaa","Niinisalo","Nikkila","Nilsia","Nivala","Nokia","Nummela","Nuorgam","Nurmes","Nuvvus","Obbnas","Oitti","Ojakkala","Ollola","onningeby","Orimattila","Orivesi","Otanmaki","Otava","Otepaa","Oulainen","Oulu","Outokumpu","Paavola","Paide","Paimio","Pakankyla","Paldiski","Parainen","Parkano","Parkumaki","Parola","Perttula","Pieksamaki","Pietarsaari","Pioltsamaa","Piolva","Pohjavaara","Porhola","Pori","Porrasa","Porvoo","Pudasjarvi","Purmo","Pussi","Pyhajarvi","Raahe","Raasepori","Raisio","Rajamaki","Rakvere","Rapina","Rapla","Rauma","Rautio","Reposaari","Riihimaki","Rovaniemi","Roykka","Ruonala","Ruottala","Rutalahti","Saarijarvi","Salo","Sastamala","Saue","Savonlinna","Seinajoki","Sillamae","Sindi","Siuntio","Somero","Sompujarvi","Suonenjoki","Suurejaani","Syrjantaka","Tampere","Tamsalu","Tapa","Temmes","Tiorva","Tormasenvaara","Tornio","Tottijarvi","Tulppio","Turenki","Turi","Tuukkala","Tuurala","Tuuri","Tuuski","Ulvila","Unari","Upinniemi","Utti","Uusikaarlepyy","Uusikaupunki","Vaaksy","Vaalimaa","Vaarinmaja","Vaasa","Vainikkala","Valga","Valkeakoski","Vantaa","Varkaus","Vehkapera","Vehmasmaki","Vieki","Vierumaki","Viitasaari","Viljandi","Vilppula","Viohma","Vioru","Virrat","Ylike","Ylivieska","Ylojarvi"],
       ["Sabi","Wiryeseong","Hwando","Gungnae","Ungjin","Wanggeomseong","Ganggyeong","Jochiwon","Cheorwon","Beolgyo","Gangjin","Gampo","Yecheon","Geochang","Janghang","Hadong","Goseong","Yeongdong","Yesan","Sintaein","Geumsan","Boseong","Jangheung","Uiseong","Jumunjin","Janghowon","Hongseong","Gimhwa","Gwangcheon","Guryongpo","Jinyeong","Buan","Damyang","Jangseong","Wando","Angang","Okcheon","Jeungpyeong","Waegwan","Cheongdo","Gwangyang","Gochang","Haenam","Yeonggwang","Hanam","Eumseong","Daejeong","Hanrim","Samrye","Yongjin","Hamyang","Buyeo","Changnyeong","Yeongwol","Yeonmu","Gurye","Hwasun","Hampyeong","Namji","Samnangjin","Dogye","Hongcheon","Munsan","Gapyeong","Ganghwa","Geojin","Sangdong","Jeongseon","Sabuk","Seonghwan","Heunghae","Hapdeok","Sapgyo","Taean","Boeun","Geumwang","Jincheon","Bongdong","Doyang","Geoncheon","Pungsan","Punggi","Geumho","Wonju","Gaun","Hayang","Yeoju","Paengseong","Yeoncheon","Yangpyeong","Ganseong","Yanggu","Yangyang","Inje","Galmal","Pyeongchang","Hwacheon","Hoengseong","Seocheon","Cheongyang","Goesan","Danyang","Hamyeol","Muju","Sunchang","Imsil","Jangsu","Jinan","Goheung","Gokseong","Muan","Yeongam","Jindo","Seonsan","Daegaya","Gunwi","Bonghwa","Seongju","Yeongdeok","Yeongyang","Ulleung","Uljin","Cheongsong","wayang","Namhae","Sancheong","Uiryeong","Gaya","Hapcheon","Wabu","Dongsong","Sindong","Wondeok","Maepo","Anmyeon","Okgu","Sariwon","Dolsan","Daedeok","Gwansan","Geumil","Nohwa","Baeksu","Illo","Jido","Oedong","Ocheon","Yeonil","Hamchang","Pyeonghae","Gijang","Jeonggwan","Aewor","Gujwa","Seongsan","Jeongok","Seonggeo","Seungju","Hongnong","Jangan","Jocheon","Gohan","Jinjeop","Bubal","Beobwon","Yeomchi","Hwado","Daesan","Hwawon","Apo","Nampyeong","Munsan","Sinbuk","Munmak","Judeok","Bongyang","Ungcheon","Yugu","Unbong","Mangyeong","Dong","Naeseo","Sanyang","Soheul","Onsan","Eonyang","Nongong","Dasa","Goa","Jillyang","Bongdam","Naesu","Beomseo","Opo","Gongdo","Jingeon","Onam","Baekseok","Jiksan","Mokcheon","Jori","Anjung","Samho","Ujeong","Buksam","Tongjin","Chowol","Gonjiam","Pogok","Seokjeok","Poseung","Ochang","Hyangnam","Baebang","Gochon","Songak","Samhyang","Yangchon","Osong","Aphae","Ganam","Namyang","Chirwon","Andong","Ansan","Anseong","Anyang","Asan","Boryeong","Bucheon","Busan","Changwon","Cheonan","Cheongju","Chuncheon","Chungju","Daegu","Daejeon","Dangjin","Dongducheon","Donghae","Gangneung","Geoje","Gimcheon","Gimhae","Gimje","Gimpo","Gongju","Goyang","Gumi","Gunpo","Gunsan","Guri","Gwacheon","Gwangju","Gwangju","Gwangmyeong","Gyeongju","Gyeongsan","Gyeryong","Hwaseong","Icheon","Iksan","Incheon","Jecheon","Jeongeup","Jeonju","Jeju","Jinju","Naju","Namyangju","Namwon","Nonsan","Miryang","Mokpo","Mungyeong","Osan","Paju","Pocheon","Pohang","Pyeongtaek","Sacheon","Sangju","Samcheok","Sejong","Seogwipo","Seongnam","Seosan","Seoul","Siheung","Sokcho","Suncheon","Suwon","Taebaek","Tongyeong","Uijeongbu","Uiwang","Ulsan","Yangju","Yangsan","Yeongcheon","Yeongju","Yeosu","Yongin","Chungmu","Daecheon","Donggwangyang","Geumseong","Gyeongseong","Iri","Jangseungpo","Jeomchon","Jeongju","Migeum","Onyang","Samcheonpo","Busan","Busan","Cheongju","Chuncheon","Daegu","Daegu","Daejeon","Daejeon","Gunsan","Gwangju","Gwangju","Gyeongseong","Incheon","Incheon","Iri","Jeonju","Jinhae","Jinju","Masan","Masan","Mokpo","Songjeong","Songtan","Ulsan","Yeocheon","Cheongjin","Gaeseong","Haeju","Hamheung","Heungnam","Jinnampo","Najin","Pyeongyang","Seongjin","Sineuiju","Songnim","Wonsan"],
       ["Anding","Anlu","Anqing","Anshun","Baan","Baixing","Banyang","Baoding","Baoqing","Binzhou","Caozhou","Changbai","Changchun","Changde","Changling","Changsha","Changtu","Changzhou","Chaozhou","Cheli","Chengde","Chengdu","Chenzhou","Chizhou","Chongqing","Chuxiong","Chuzhou","Dading","Dali","Daming","Datong","Daxing","Dean","Dengke","Dengzhou","Deqing","Dexing","Dihua","Dingli","Dongan","Dongchang","Dongchuan","Dongping","Duyun","Fengtian","Fengxiang","Fengyang","Fenzhou","Funing","Fuzhou","Ganzhou","Gaoyao","Gaozhou","Gongchang","Guangnan","Guangning","Guangping","Guangxin","Guangzhou","Guide","Guilin","Guiyang","Hailong","Hailun","Hangzhou","Hanyang","Hanzhong","Heihe","Hejian","Henan","Hengzhou","Hezhong","Huaian","Huaide","Huaiqing","Huanglong","Huangzhou","Huining","Huizhou","Hulan","Huzhou","Jiading","Jian","Jianchang","Jiande","Jiangning","Jiankang","Jianning","Jiaxing","Jiayang","Jilin","Jinan","Jingjiang","Jingzhao","Jingzhou","Jinhua","Jinzhou","Jiujiang","Kaifeng","Kaihua","Kangding","Kuizhou","Laizhou","Lanzhou","Leizhou","Liangzhou","Lianzhou","Liaoyang","Lijiang","Linan","Linhuang","Linjiang","Lintao","Liping","Liuzhou","Longan","Longjiang","Longqing","Longxing","Luan","Lubin","Lubin","Luzhou","Mishan","Nanan","Nanchang","Nandian","Nankang","Nanning","Nanyang","Nenjiang","Ningan","Ningbo","Ningguo","Ninguo","Ningwu","Ningxia","Ningyuan","Pingjiang","Pingle","Pingliang","Pingyang","Puer","Puzhou","Qianzhou","Qingyang","Qingyuan","Qingzhou","Qiongzhou","Qujing","Quzhou","Raozhou","Rende","Ruian","Ruizhou","Runing","Shafeng","Shajing","Shaoqing","Shaowu","Shaoxing","Shaozhou","Shinan","Shiqian","Shouchun","Shuangcheng","Shulei","Shunde","Shunqing","Shuntian","Shuoping","Sicheng","Sien","Sinan","Sizhou","Songjiang","Suiding","Suihua","Suining","Suzhou","Taian","Taibei","Tainan","Taiping","Taiwan","Taiyuan","Taizhou","Taonan","Tengchong","Tieli","Tingzhou","Tongchuan","Tongqing","Tongren","Tongzhou","Weihui","Wensu","Wenzhou","Wuchang","Wuding","Wuzhou","Xian","Xianchun","Xianping","Xijin","Xiliang","Xincheng","Xingan","Xingde","Xinghua","Xingjing","Xingqing","Xingyi","Xingyuan","Xingzhong","Xining","Xinmen","Xiping","Xuanhua","Xunzhou","Xuzhou","Yanan","Yangzhou","Yanji","Yanping","Yanqi","Yanzhou","Yazhou","Yichang","Yidu","Yilan","Yili","Yingchang","Yingde","Yingtian","Yingzhou","Yizhou","Yongchang","Yongping","Yongshun","Yongzhou","Yuanzhou","Yuezhou","Yulin","Yunnan","Yunyang","Zezhou","Zhangde","Zhangzhou","Zhaoqing","Zhaotong","Zhenan","Zhending","Zhengding","Zhenhai","Zhenjiang","Zhenxi","Zhenyun","Zhongshan","Zunyi"],
-      ["Nanporo","Naie","Kamisunagawa","Yuni","Naganuma","Kuriyama","Tsukigata","Urausu","Shintotsukawa","Moseushi","Chippubetsu","Uryu","Hokuryu","Numata","Tobetsu","Suttsu","Kuromatsunai","Rankoshi","Niseko","Kimobetsu","Kyogoku","Kutchan","Kyowa","Iwanai","Shakotan","Furubira","Niki","Yoichi","Toyoura","Toyako","Sobetsu","Shiraoi","Atsuma","Abira","Mukawa","Hidaka","Biratori","Niikappu","Urakawa","Samani","Erimo","Shinhidaka","Matsumae","Fukushima","Shiriuchi","Kikonai","Nanae","Shikabe","Mori","Yakumo","Oshamambe","Esashi","Kaminokuni","Assabu","Otobe","Okushiri","Imakane","Setana","Takasu","Higashikagura","Toma","Pippu","Aibetsu","Kamikawa","Higashikawa","Biei","Kamifurano","Nakafurano","Minamifurano","Horokanai","Wassamu","Kenbuchi","Shimokawa","Bifuka","Nakagawa","Mashike","Obira","Tomamae","Haboro","Enbetsu","Teshio","Hamatonbetsu","Nakatonbetsu","Esashi","Toyotomi","Horonobe","Rebun","Rishiri","Rishirifuji","Bihoro","Tsubetsu","Ozora","Shari","Kiyosato","Koshimizu","Kunneppu","Oketo","Saroma","Engaru","Yubetsu","Takinoue","Okoppe","Omu","Otofuke","Shihoro","Kamishihoro","Shikaoi","Shintoku","Shimizu","Memuro","Taiki","Hiroo","Makubetsu","Ikeda","Toyokoro","Honbetsu","Ashoro","Rikubetsu","Urahoro","Kushiro","Akkeshi","Hamanaka","Shibecha","Teshikaga","Shiranuka","Betsukai","Nakashibetsu","Shibetsu","Rausu","Hiranai","Imabetsu","Sotogahama","Ajigasawa","Fukaura","Fujisaki","Owani","Itayanagi","Tsuruta","Nakadomari","Noheji","Shichinohe","Rokunohe","Yokohama","Tohoku","Oirase","Oma","Sannohe","Gonohe","Takko","Nanbu","Hashikami","Shizukuishi","Kuzumaki","Iwate","Shiwa","Yahaba","Nishiwaga","Kanegasaki","Hiraizumi","Sumita","Otsuchi","Yamada","Iwaizumi","Karumai","Hirono","Ichinohe","Zao","Shichikashuku","Ogawara","Murata","Shibata","Kawasaki","Marumori","Watari","Yamamoto","Matsushima","Shichigahama","Rifu","Taiwa","Osato","Shikama","Kami","Wakuya","Misato","Onagawa","Minamisanriku","Kosaka","Fujisato","Mitane","Happo","Gojome","Hachirogata","Ikawa","Misato","Ugo","Yamanobe","Nakayama","Kahoku","Nishikawa","Asahi","Oe","Oishida","Kaneyama","Mogami","Funagata","Mamurogawa","Takahata","Kawanishi","Oguni","Shirataka","Iide","Mikawa","Shonai","Yuza","Koori","Kunimi","Kawamata","Kagamiishi","Shimogo","Tadami","Minamiaizu","Nishiaizu","Bandai","Inawashiro","Aizubange","Yanaizu","Mishima","Kaneyama","Aizumisato","Yabuki","Tanagura","Yamatsuri","Hanawa","Ishikawa","Asakawa","Furudono","Miharu","Ono","Hirono","Naraha","Tomioka","Okuma","Futaba","Namie","Shinchi","Ibaraki","Oarai","Shirosato","Daigo","Ami","Kawachi","Yachiyo","Goka","Sakai","Tone","Kaminokawa","Mashiko","Motegi","Ichikai","Haga","Mibu","Nogi","Shioya","Takanezawa","Nasu","Nakagawa","Yoshioka","Kanna","Shimonita","Kanra","Nakanojo","Naganohara","Kusatsu","Higashiagatsuma","Minakami","Tamamura","Itakura","Meiwa","Chiyoda","Oizumi","Ora","Ina","Miyoshi","Moroyama","Ogose","Namegawa","Ranzan","Ogawa","Kawajima","Yoshimi","Hatoyama","Tokigawa","Yokoze","Minano","Nagatoro","Ogano","Misato","Kamikawa","Kamisato","Yorii","Miyashiro","Sugito","Matsubushi","Shisui","Sakae","Kozaki","Tako","Tonosho","Kujukuri","Shibayama","Yokoshibahikari","Ichinomiya","Mutsuzawa","Shirako","Nagara","Chonan","Otaki","Onjuku","Kyonan","Mizuho","Hinode","Okutama","Oshima","Hachijo","Aikawa","Hayama","Samukawa","Oiso","Ninomiya","Nakai","Oi","Matsuda","Yamakita","Kaisei","Hakone","Manazuru","Yugawara","Seiro","Tagami","Aga","Izumozaki","Yuzawa","Tsunan","Kamiichi","Tateyama","Nyuzen","Asahi","Kawakita","Tsubata","Uchinada","Shika","Hodatsushimizu","Nakanoto","Anamizu","Noto","Eiheiji","Ikeda","Minamiechizen","Echizen","Mihama","Takahama","Oi","Wakasa","Ichikawamisato","Hayakawa","Minobu","Nanbu","Fujikawa","Showa","Nishikatsura","Fujikawaguchiko","Koumi","Sakuho","Karuizawa","Miyota","Tateshina","Nagawa","Shimosuwa","Fujimi","Tatsuno","Minowa","Iijima","Matsukawa","Takamori","Anan","Agematsu","Nagiso","Kiso","Ikeda","Sakaki","Obuse","Yamanouchi","Shinano","Iizuna","Ginan","Kasamatsu","Yoro","Tarui","Sekigahara","Godo","Wanouchi","Anpachi","Ibigawa","Ono","Ikeda","Kitagata","Sakahogi","Tomika","Kawabe","Hichiso","Yaotsu","Shirakawa","Mitake","Higashiizu","Kawazu","Minamiizu","Matsuzaki","Nishiizu","Kannami","Shimizu","Nagaizumi","Oyama","Yoshida","Kawanehon","Mori","Togo","Toyoyama","Oguchi","Fuso","Oharu","Kanie","Agui","Higashiura","Minamichita","Mihama","Taketoyo","Mihama","Kota","Shitara","Toei","Kisosaki","Toin","Komono","Asahi","Kawagoe","Taki","Meiwa","Odai","Tamaki","Watarai","Taiki","Minamiise","Kihoku","Mihama","Kiho","Hino","Ryuo","Aisho","Toyosato","Kora","Taga","Oyamazaki","Kumiyama","Ide","Ujitawara","Kasagi","Wazuka","Seika","Kyotamba","Ine","Yosano","Shimamoto","Toyono","Nose","Tadaoka","Kumatori","Tajiri","Misaki","Taishi","Kanan","Inagawa","Taka","Inami","Harima","Ichikawa","Fukusaki","Kamikawa","Taishi","Kamigori","Sayo","Kami","Shinonsen","Heguri","Sango","Ikaruga","Ando","Kawanishi","Miyake","Tawaramoto","Takatori","Kanmaki","Oji","Koryo","Kawai","Yoshino","Oyodo","Shimoichi","Kushimoto","Kimino","Katsuragi","Kudoyama","Koya","Yuasa","Hirogawa","Aridagawa","Mihama","Hidaka","Yura","Inami","Minabe","Hidakagawa","Shirahama","Kamitonda","Susami","Nachikatsuura","Taiji","Kozagawa","Iwami","Wakasa","Chizu","Yazu","Misasa","Yurihama","Kotoura","Hokuei","Daisen","Nanbu","Hoki","Nichinan","Hino","Kofu","Okuizumo","Iinan","Kawamoto","Misato","Onan","Tsuwano","Yoshika","Ama","Nishinoshima","Okinoshima","Wake","Hayashima","Satosho","Yakage","Kagamino","Shoo","Nagi","Kumenan","Misaki","Kibichuo","Fuchu","Kaita","Kumano","Saka","Kitahiroshima","Akiota","Osakikamijima","Sera","Jinsekikogen","Suooshima","Waki","Kaminoseki","Tabuse","Hirao","Abu","Katsuura","Kamikatsu","Ishii","Kamiyama","Naka","Mugi","Minami","Kaiyo","Matsushige","Kitajima","Aizumi","Itano","Kamiita","Tsurugi","Higashimiyoshi","Tonosho","Shodoshima","Miki","Naoshima","Utazu","Ayagawa","Kotohira","Tadotsu","Manno","Kamijima","Kumakogen","Masaki","Tobe","Uchiko","Ikata","Kihoku","Matsuno","Ainan","Toyo","Nahari","Tano","Yasuda","Motoyama","Otoyo","Tosa","Ino","Niyodogawa","Nakatosa","Sakawa","Ochi","Yusuhara","Tsuno","Shimanto","Otsuki","Kuroshio","Nakagawa","Umi","Sasaguri","Shime","Sue","Shingu","Hisayama","Kasuya","Ashiya","Mizumaki","Okagaki","Onga","Kotake","Kurate","Keisen","Chikuzen","Tachiarai","Oki","Hirokawa","Kawara","Soeda","Itoda","Kawasaki","Oto","Fukuchi","Kanda","Miyako","Yoshitomi","Koge","Chikujo","Yoshinogari","Kiyama","Kamimine","Miyaki","Genkai","Arita","Omachi","Kohoku","Shiroishi","Tara","Nagayo","Togitsu","Higashisonogi","Kawatana","Hasami","Ojika","Saza","Shinkamigoto","Misato","Gyokuto","Nankan","Nagasu","Nagomi","Ozu","Kikuyo","Minamioguni","Oguni","Takamori","Mifune","Kashima","Mashiki","Kosa","Yamato","Hikawa","Ashikita","Tsunagi","Nishiki","Taragi","Yunomae","Asagiri","Reihoku","Hiji","Kusu","Kokonoe","Mimata","Takaharu","Kunitomi","Aya","Takanabe","Shintomi","Kijo","Kawaminami","Tsuno","Kadogawa","Misato","Takachiho","Hinokage","Gokase","Satsuma","Nagashima","Yusui","Osaki","Higashikushira","Kinko","Minamiosumi","Kimotsuki","Nakatane","Minamitane","Yakushima","Setouchi","Tatsugo","Kikai","Tokunoshima","Amagi","Isen","Wadomari","China","Yoron","Motobu","Kin","Kadena","Chatan","Nishihara","Yonabaru","Haebaru","Kumejima","Yaese","Taketomi","Yonaguni"]
+      ["Nanporo","Naie","Kamisunagawa","Yuni","Naganuma","Kuriyama","Tsukigata","Urausu","Shintotsukawa","Moseushi","Chippubetsu","Uryu","Hokuryu","Numata","Tobetsu","Suttsu","Kuromatsunai","Rankoshi","Niseko","Kimobetsu","Kyogoku","Kutchan","Kyowa","Iwanai","Shakotan","Furubira","Niki","Yoichi","Toyoura","Toyako","Sobetsu","Shiraoi","Atsuma","Abira","Mukawa","Hidaka","Biratori","Niikappu","Urakawa","Samani","Erimo","Shinhidaka","Matsumae","Fukushima","Shiriuchi","Kikonai","Nanae","Shikabe","Mori","Yakumo","Oshamambe","Esashi","Kaminokuni","Assabu","Otobe","Okushiri","Imakane","Setana","Takasu","Higashikagura","Toma","Pippu","Aibetsu","Kamikawa","Higashikawa","Biei","Kamifurano","Nakafurano","Minamifurano","Horokanai","Wassamu","Kenbuchi","Shimokawa","Bifuka","Nakagawa","Mashike","Obira","Tomamae","Haboro","Enbetsu","Teshio","Hamatonbetsu","Nakatonbetsu","Esashi","Toyotomi","Horonobe","Rebun","Rishiri","Rishirifuji","Bihoro","Tsubetsu","Ozora","Shari","Kiyosato","Koshimizu","Kunneppu","Oketo","Saroma","Engaru","Yubetsu","Takinoue","Okoppe","Omu","Otofuke","Shihoro","Kamishihoro","Shikaoi","Shintoku","Shimizu","Memuro","Taiki","Hiroo","Makubetsu","Ikeda","Toyokoro","Honbetsu","Ashoro","Rikubetsu","Urahoro","Kushiro","Akkeshi","Hamanaka","Shibecha","Teshikaga","Shiranuka","Betsukai","Nakashibetsu","Shibetsu","Rausu","Hiranai","Imabetsu","Sotogahama","Ajigasawa","Fukaura","Fujisaki","Owani","Itayanagi","Tsuruta","Nakadomari","Noheji","Shichinohe","Rokunohe","Yokohama","Tohoku","Oirase","Oma","Sannohe","Gonohe","Takko","Nanbu","Hashikami","Shizukuishi","Kuzumaki","Iwate","Shiwa","Yahaba","Nishiwaga","Kanegasaki","Hiraizumi","Sumita","Otsuchi","Yamada","Iwaizumi","Karumai","Hirono","Ichinohe","Zao","Shichikashuku","Ogawara","Murata","Shibata","Kawasaki","Marumori","Watari","Yamamoto","Matsushima","Shichigahama","Rifu","Taiwa","Osato","Shikama","Kami","Wakuya","Misato","Onagawa","Minamisanriku","Kosaka","Fujisato","Mitane","Happo","Gojome","Hachirogata","Ikawa","Misato","Ugo","Yamanobe","Nakayama","Kahoku","Nishikawa","Asahi","Oe","Oishida","Kaneyama","Mogami","Funagata","Mamurogawa","Takahata","Kawanishi","Oguni","Shirataka","Iide","Mikawa","Shonai","Yuza","Koori","Kunimi","Kawamata","Kagamiishi","Shimogo","Tadami","Minamiaizu","Nishiaizu","Bandai","Inawashiro","Aizubange","Yanaizu","Mishima","Kaneyama","Aizumisato","Yabuki","Tanagura","Yamatsuri","Hanawa","Ishikawa","Asakawa","Furudono","Miharu","Ono","Hirono","Naraha","Tomioka","Okuma","Futaba","Namie","Shinchi","Ibaraki","Oarai","Shirosato","Daigo","Ami","Kawachi","Yachiyo","Goka","Sakai","Tone","Kaminokawa","Mashiko","Motegi","Ichikai","Haga","Mibu","Nogi","Shioya","Takanezawa","Nasu","Nakagawa","Yoshioka","Kanna","Shimonita","Kanra","Nakanojo","Naganohara","Kusatsu","Higashiagatsuma","Minakami","Tamamura","Itakura","Meiwa","Chiyoda","Oizumi","Ora","Ina","Miyoshi","Moroyama","Ogose","Namegawa","Ranzan","Ogawa","Kawajima","Yoshimi","Hatoyama","Tokigawa","Yokoze","Minano","Nagatoro","Ogano","Misato","Kamikawa","Kamisato","Yorii","Miyashiro","Sugito","Matsubushi","Shisui","Sakae","Kozaki","Tako","Tonosho","Kujukuri","Shibayama","Yokoshibahikari","Ichinomiya","Mutsuzawa","Shirako","Nagara","Chonan","Otaki","Onjuku","Kyonan","Mizuho","Hinode","Okutama","Oshima","Hachijo","Aikawa","Hayama","Samukawa","Oiso","Ninomiya","Nakai","Oi","Matsuda","Yamakita","Kaisei","Hakone","Manazuru","Yugawara","Seiro","Tagami","Aga","Izumozaki","Yuzawa","Tsunan","Kamiichi","Tateyama","Nyuzen","Asahi","Kawakita","Tsubata","Uchinada","Shika","Hodatsushimizu","Nakanoto","Anamizu","Noto","Eiheiji","Ikeda","Minamiechizen","Echizen","Mihama","Takahama","Oi","Wakasa","Ichikawamisato","Hayakawa","Minobu","Nanbu","Fujikawa","Showa","Nishikatsura","Fujikawaguchiko","Koumi","Sakuho","Karuizawa","Miyota","Tateshina","Nagawa","Shimosuwa","Fujimi","Tatsuno","Minowa","Iijima","Matsukawa","Takamori","Anan","Agematsu","Nagiso","Kiso","Ikeda","Sakaki","Obuse","Yamanouchi","Shinano","Iizuna","Ginan","Kasamatsu","Yoro","Tarui","Sekigahara","Godo","Wanouchi","Anpachi","Ibigawa","Ono","Ikeda","Kitagata","Sakahogi","Tomika","Kawabe","Hichiso","Yaotsu","Shirakawa","Mitake","Higashiizu","Kawazu","Minamiizu","Matsuzaki","Nishiizu","Kannami","Shimizu","Nagaizumi","Oyama","Yoshida","Kawanehon","Mori","Togo","Toyoyama","Oguchi","Fuso","Oharu","Kanie","Agui","Higashiura","Minamichita","Mihama","Taketoyo","Mihama","Kota","Shitara","Toei","Kisosaki","Toin","Komono","Asahi","Kawagoe","Taki","Meiwa","Odai","Tamaki","Watarai","Taiki","Minamiise","Kihoku","Mihama","Kiho","Hino","Ryuo","Aisho","Toyosato","Kora","Taga","Oyamazaki","Kumiyama","Ide","Ujitawara","Kasagi","Wazuka","Seika","Kyotamba","Ine","Yosano","Shimamoto","Toyono","Nose","Tadaoka","Kumatori","Tajiri","Misaki","Taishi","Kanan","Inagawa","Taka","Inami","Harima","Ichikawa","Fukusaki","Kamikawa","Taishi","Kamigori","Sayo","Kami","Shinonsen","Heguri","Sango","Ikaruga","Ando","Kawanishi","Miyake","Tawaramoto","Takatori","Kanmaki","Oji","Koryo","Kawai","Yoshino","Oyodo","Shimoichi","Kushimoto","Kimino","Katsuragi","Kudoyama","Koya","Yuasa","Hirogawa","Aridagawa","Mihama","Hidaka","Yura","Inami","Minabe","Hidakagawa","Shirahama","Kamitonda","Susami","Nachikatsuura","Taiji","Kozagawa","Iwami","Wakasa","Chizu","Yazu","Misasa","Yurihama","Kotoura","Hokuei","Daisen","Nanbu","Hoki","Nichinan","Hino","Kofu","Okuizumo","Iinan","Kawamoto","Misato","Onan","Tsuwano","Yoshika","Ama","Nishinoshima","Okinoshima","Wake","Hayashima","Satosho","Yakage","Kagamino","Shoo","Nagi","Kumenan","Misaki","Kibichuo","Fuchu","Kaita","Kumano","Saka","Kitahiroshima","Akiota","Osakikamijima","Sera","Jinsekikogen","Suooshima","Waki","Kaminoseki","Tabuse","Hirao","Abu","Katsuura","Kamikatsu","Ishii","Kamiyama","Naka","Mugi","Minami","Kaiyo","Matsushige","Kitajima","Aizumi","Itano","Kamiita","Tsurugi","Higashimiyoshi","Tonosho","Shodoshima","Miki","Naoshima","Utazu","Ayagawa","Kotohira","Tadotsu","Manno","Kamijima","Kumakogen","Masaki","Tobe","Uchiko","Ikata","Kihoku","Matsuno","Ainan","Toyo","Nahari","Tano","Yasuda","Motoyama","Otoyo","Tosa","Ino","Niyodogawa","Nakatosa","Sakawa","Ochi","Yusuhara","Tsuno","Shimanto","Otsuki","Kuroshio","Nakagawa","Umi","Sasaguri","Shime","Sue","Shingu","Hisayama","Kasuya","Ashiya","Mizumaki","Okagaki","Onga","Kotake","Kurate","Keisen","Chikuzen","Tachiarai","Oki","Hirokawa","Kawara","Soeda","Itoda","Kawasaki","Oto","Fukuchi","Kanda","Miyako","Yoshitomi","Koge","Chikujo","Yoshinogari","Kiyama","Kamimine","Miyaki","Genkai","Arita","Omachi","Kohoku","Shiroishi","Tara","Nagayo","Togitsu","Higashisonogi","Kawatana","Hasami","Ojika","Saza","Shinkamigoto","Misato","Gyokuto","Nankan","Nagasu","Nagomi","Ozu","Kikuyo","Minamioguni","Oguni","Takamori","Mifune","Kashima","Mashiki","Kosa","Yamato","Hikawa","Ashikita","Tsunagi","Nishiki","Taragi","Yunomae","Asagiri","Reihoku","Hiji","Kusu","Kokonoe","Mimata","Takaharu","Kunitomi","Aya","Takanabe","Shintomi","Kijo","Kawaminami","Tsuno","Kadogawa","Misato","Takachiho","Hinokage","Gokase","Satsuma","Nagashima","Yusui","Osaki","Higashikushira","Kinko","Minamiosumi","Kimotsuki","Nakatane","Minamitane","Yakushima","Setouchi","Tatsugo","Kikai","Tokunoshima","Amagi","Isen","Wadomari","China","Yoron","Motobu","Kin","Kadena","Chatan","Nishihara","Yonabaru","Haebaru","Kumejima","Yaese","Taketomi","Yonaguni"],
+      ["Abrigada","Afonsoeiro","Agueda","Aguiar","Aguilada","Alagoas","Alagoinhas","Albufeira","Alcacovas","Alcanhoes","Alcobaca","Alcochete","Alcoutim","Aldoar","Alexania","Alfeizerao","Algarve","Alenquer","Almada","Almagreira","Almeirim","Alpalhao","Alpedrinha","Alvalade","Alverca","Alvor","Alvorada","Amadora","Amapa","Amieira","Anapolis","Anhangueira","Ansiaes","Apelacao","Aracaju","Aranhas","Arega","Areira","Araguaina","Araruama","Arganil","Armacao","Arouca","Asfontes","Assenceira","Avelar","Aveiro","Azambuja","Azinheira","Azueira","Bahia","Bairros","Balsas","Barcarena","Barreiras","Barreiro","Barretos","Batalha","Beira","Beja","Benavente","Betim","Boticas","Braga","Braganca","Brasilia","Brejo","Cabecao","Cabeceiras","Cabedelo","Cabofrio","Cachoeiras","Cadafais","Calheta","Calihandriz","Calvao","Camacha","Caminha","Campinas","Canidelo","Canha","Canoas","Capinha","Carmoes","Cartaxo","Carvalhal","Carvoeiro","Cascavel","Castanhal","Castelobranco","Caueira","Caxias","Chapadinha","Chaves","Celheiras","Cocais","Coimbra","Comporta","Coentral","Conde","Copacabana","Coqueirinho","Coruche","Corumba","Couco","Cubatao","Curitiba","Damaia","Doisportos","Douradilho","Dourados","Enxames","Enxara","Erada","Erechim","Ericeira","Ermidasdosado","Ervidel","Escalhao","Escariz","Esmoriz","Estombar","Espinhal","Espinho","Esposende","Esquerdinha","Estela","Estoril","Eunapolis","Evora","Famalicao","Famoes","Fanhoes","Fanzeres","Fatela","Fatima","Faro","Felgueiras","Ferreira","Figueira","Flecheiras","Florianopolis","Fornalhas","Fortaleza","Freiria","Freixeira","Frielas","Fronteira","Funchal","Fundao","Gaeiras","Gafanhadaboahora","Goa","Goiania","Gracas","Gradil","Grainho","Gralheira","Guarulhos","Guetim","Guimaraes","Horta","Iguacu","Igrejanova","Ilhavo","Ilheus","Ipanema","Iraja","Itaboral","Itacuruca","Itaguai","Itanhaem","Itapevi","Juazeiro","Lagos","Lavacolchos","Laies","Lamego","Laranjeiras","Leiria","Limoeiro","Linhares","Lisboa","Lomba","Lorvao","Lourencomarques","Lourical","Lourinha","Luziania","Macao","Macapa","Macedo","Machava","Malveira","Manaus","Mangabeira","Mangaratiba","Marambaia","Maranhao","Maringue","Marinhais","Matacaes","Matosinhos","Maxial","Maxias","Mealhada","Meimoa","Meires","Milharado","Mira","Miranda","Mirandela","Mogadouro","Montalegre","Montesinho","Moura","Mourao","Mozelos","Negroes","Neiva","Nespereira","Nilopolis","Niteroi","Nordeste","Obidos","Odemira","Odivelas","Oeiras","Oleiros","Olhao","Olhalvo","Olhomarinho","Olinda","Olival","Oliveira","Oliveirinha","Oporto","Ourem","Ovar","Palhais","Palheiros","Palmeira","Palmela","Palmital","Pampilhosa","Pantanal","Paradinha","Parelheiros","Paripueira","Paudalho","Pedrosinho","Penafiel","Peniche","Pedrogao","Pegoes","Pinhao","Pinheiro","Pinhel","Pombal","Pontal","Pontinha","Portel","Portimao","Poxim","Quarteira","Queijas","Queluz","Quiaios","Ramalhal","Reboleira","Recife","Redinha","Ribadouro","Ribeira","Ribeirao","Rosais","Roteiro","Sabugal","Sacavem","Sagres","Sandim","Sangalhos","Santarem","Santos","Sarilhos","Sarzedas","Satao","Satuba","Seixal","Seixas","Seixezelo","Seixo","Selmes","Sepetiba","Serta","Setubal","Silvares","Silveira","Sinhaem","Sintra","Sobral","Sobralinho","Sorocaba","Tabuacotavir","Tabuleiro","Taveiro","Teixoso","Telhado","Telheiro","Tomar","Torrao","Torreira","Torresvedras","Tramagal","Trancoso","Troviscal","Vagos","Valpacos","Varzea","Vassouras","Velas","Viana","Vidigal","Vidigueira","Vidual","Viladerei","Vilamar","Vimeiro","Vinhais","Vinhos","Viseu","Vitoria","Vlamao","Vouzela"],
+      ["Acaltepec","Acaltepecatl","Acapulco","Acatlan","Acaxochitlan","Ajuchitlan","Atotonilco","Azcapotzalco","Camotlan","Campeche","Chalco","Chapultepec","Chiapan","Chiapas","Chihuahua","Cihuatlan","Cihuatlancihuatl","Coahuila","Coatepec","Coatlan","Coatzacoalcos","Colima","Colotlan","Coyoacan","Cuauhillan","Cuauhnahuac","Cuauhtemoc","Cuernavaca","Ecatepec","Epatlan","Guanajuato","Huaxacac","Huehuetlan","Hueyapan","Ixtapa","Iztaccihuatl","Iztapalapa","Jalisco","Jocotepec","Jocotepecxocotl","Matixco","Mazatlan","Michhuahcan","Michoacan","Michoacanmichin","Minatitlan","Naucalpan","Nayarit","Nezahualcoyotl","Oaxaca","Ocotepec","Ocotlan","Olinalan","Otompan","Popocatepetl","Queretaro","Sonora","Tabasco","Tamaulipas","Tecolotlan","Tenochtitlan","Teocuitlatlan","Teocuitlatlanteotl","Teotlalco","Teotlalcoteotl","Tepotzotlan","Tepoztlantepoztli","Texcoco","Tlachco","Tlalocan","Tlaxcala","Tlaxcallan","Tollocan","Tolutepetl","Tonanytlan","Tototlan","Tuchtlan","Tuxpan","Uaxacac","Xalapa","Xochimilco","Xolotlan","Yaotlan","Yopico","Yucatan","Yztac","Zacatecas","Zacualco"]
     ];
   }
 
   // randomize options if randomization is allowed in option
   function randomizeOptions() {
+    Math.seedrandom(seed); // reset seed to initial one
     const mod = rn((graphWidth + graphHeight) / 1500, 2); // add mod for big screens
     if (lockRegionsInput.getAttribute("data-locked") == 0) regionsInput.value = regionsOutput.value = rand(7, 17);
     if (lockManorsInput.getAttribute("data-locked") == 0) {
@@ -479,12 +503,18 @@ function fantasyMap() {
     if (lockNamesInput.getAttribute("data-locked") == 0) namesInput.value = rand(0, 1);
     if (lockCulturesInput.getAttribute("data-locked") == 0) culturesInput.value = culturesOutput.value = rand(5, 10);
     if (lockPrecInput.getAttribute("data-locked") == 0) precInput.value = precOutput.value = rand(3, 12);
-    if (lockSwampinessInput.getAttribute("data-locked") == 0) swampinessInput.value = swampinessOutput.value = rand(100);
+    if (lockReliefSizeInput.getAttribute("data-locked") == 0) reliefSizeInput.value = reliefSizeOutput.value = rn(Math.random() + rand(0, 2), 1);
+    if (lockReliefDensityInput.getAttribute("data-locked") == 0) {
+      reliefDensityInput.value = rn(Math.random(), 2);
+      reliefDensityOutput.value = rn(reliefDensityInput.value * 100) + "%";
+    }
+    if (lockSwampinessInput.getAttribute("data-locked") == 0) swampinessInput.value = swampinessOutput.value = rand(300);
   }
 
   // Locate points to calculate Voronoi diagram
   function placePoints() {
     console.time("placePoints");
+    Math.seedrandom(seed); // reset seed to initial one
     points = [];
     points = getJitteredGrid();
     heights = new Uint8Array(points.length);
@@ -578,6 +608,8 @@ function fantasyMap() {
       }
     }
 
+    if (customization === 0) debug.selectAll(".circle").remove();
+
     // draw line for ranges placing for heightmap Customization
     if (customization === 1) {
       const line = debug.selectAll(".line");
@@ -607,7 +639,7 @@ function fantasyMap() {
       }
       else if (customization === 2) radius = countriesManuallyBrush.value;
       else if (customization === 4) radius = culturesManuallyBrush.value;
-      else if (customization === 5) radius = reliefBulkRemoveRadius.value;
+      else if (customization === 5) radius = reliefRadius.value;
 
       const r = rn(6 / graphSize * radius, 1);
       let clr = "#373737";
@@ -934,11 +966,11 @@ function fantasyMap() {
     console.time('defineHeightmap');
     if (lockTemplateInput.getAttribute("data-locked") == 0) {
       const rnd = Math.random();
-      if (rnd > 0.95) {templateInput.value = "Volcano";}
-      else if (rnd > 0.75) {templateInput.value = "High Island";}
-      else if (rnd > 0.55) {templateInput.value = "Low Island";}
-      else if (rnd > 0.35) {templateInput.value = "Continents";}
-      else if (rnd > 0.15) {templateInput.value = "Archipelago";}
+      if (rnd > 0.96) {templateInput.value = "Volcano";}
+      else if (rnd > 0.76) {templateInput.value = "High Island";}
+      else if (rnd > 0.56) {templateInput.value = "Low Island";}
+      else if (rnd > 0.40) {templateInput.value = "Continents";}
+      else if (rnd > 0.20) {templateInput.value = "Archipelago";}
       else if (rnd > 0.10) {templateInput.value = "Mainland";}
       else if (rnd > 0.01) {templateInput.value = "Peninsulas";}
       else {templateInput.value = "Atoll";}
@@ -1030,14 +1062,14 @@ function fantasyMap() {
   // Heighmap Template: Mainland
   function templateMainland(mod) {
     addMountain();
-    modifyHeights("all", 10, 1);
-    addHill(30, 0.2);
-    addRange(10);
+    modifyHeights("all", 9, 1);
+    addHill(30, 0.22);
     addPit(20);
-    addHill(10, 0.15);
+    addHill(10, 0.13);
+    addRange(5);
     addRange(-10);
     modifyHeights("land", 0, 0.4);
-    addRange(10);
+    addRange(5);
     smoothHeights(3);
   }
 
@@ -1270,6 +1302,7 @@ function fantasyMap() {
       const land = heights[queue[0]] >= 20;
       let border = cell.type === "border";
       if (border && land) cell.ctype = 2;
+      let cellsNumber = 1;
 
       while (queue.length) {
         const q = queue.pop();
@@ -1283,6 +1316,7 @@ function fantasyMap() {
           if (land === eLand && cells[e].fn === undefined) {
             cells[e].fn = i;
             queue.push(e);
+            cellsNumber++;
           }
           if (land && !eLand) {
             cells[q].ctype = 2;
@@ -1291,7 +1325,7 @@ function fantasyMap() {
           }
         });
       }
-      features.push({i, land, border});
+      features.push({i, land, border, cells: cellsNumber});
 
       // find unmarked cell
       for (let c=0; c < cells.length; c++) {
@@ -1398,12 +1432,16 @@ function fantasyMap() {
   // recalculate Voronoi Graph to pack cells
   function reGraph() {
     console.time("reGraph");
+    Math.seedrandom(seed);
     const tempCells = [], newPoints = []; // to store new data
-    // get average precipitation based on graph size
-    const avPrec = precInput.value / 5000;
-    const smallLakesMax = 500;
+
+    const prec = +precInput.value;
+    const avPrec = prec / 5000; // average precipitation based on graph size
+    const smallLakesMax = 50 * precInput.value; // av. is 350
     let smallLakes = 0;
-    const evaporation = 2;
+    const evaporation = 5 - Math.floor(prec / 5); // from 5 to 1 based on prec; av. is 4
+    const probability = prec / 25; // av. if 0.3;
+
     cells.map(function(i, d) {
       let height = i.height || heights[d];
       if (height > 100) height = 100;
@@ -1415,7 +1453,7 @@ function fantasyMap() {
       const harbor = i.harbor;
       let lake = i.lake;
       // mark potential cells for small lakes to add additional point there
-      if (smallLakes < smallLakesMax && !lake && pit > evaporation && ctype !== 2) {
+      if (smallLakes < smallLakesMax && !lake && pit > evaporation && ctype !== 2 && Math.random() < probability) {
         lake = 2;
         smallLakes++;
       }
@@ -1444,7 +1482,7 @@ function fantasyMap() {
       }
       if (lake === 2) { // add potential small lakes
         polygons[i.index].forEach(function(e) {
-          if (Math.random() > 0.8) return;
+          if (Math.random() < 0.2) return;
           let rnd = Math.random() * 0.6 + 0.8;
           const x1 = rn((e[0] * rnd + i.data[0]) / (1 + rnd), 2);
           rnd = Math.random() * 0.6 + 0.8;
@@ -1452,7 +1490,7 @@ function fantasyMap() {
           copy = $.grep(newPoints, function(c) {return x1 === c[0] && y1 === c[1];});
           if (copy.length) return;
           newPoints.push([x1, y1]);
-          tempCells.push({index:tempCells.length, data:[x1, y1],height, pit, ctype, fn, region, culture});
+          tempCells.push({index:tempCells.length, data:[x1, y1], height, pit, ctype, fn, region, culture});
         });
       }
     });
@@ -1924,21 +1962,21 @@ function fantasyMap() {
     return round(line, 1);
   }
 
-  // temporary elevate lakes to min neighbors heights to correctly flux the water
+  // temporary elevate open lakes to flux the water
   function elevateLakes() {
     console.time('elevateLakes');
-    const lakes = $.grep(cells, function(e, d) {return heights[d] < 20 && !features[e.fn].border;});
+    let max  = points.length / 100; // max cells number to treat lake as open (should be based on biome in the future)
+    const lakes = $.grep(cells, function(e, d) {return heights[d] < 20 && !features[e.fn].border && features[e.fn].cells < max;});
     lakes.sort(function(a, b) {return heights[b.index] - heights[a.index];});
     for (let i=0; i < lakes.length; i++) {
-      const hs = [],id = lakes[i].index;
+      const hs = [], id = lakes[i].index;
       cells[id].height = heights[id]; // use height on object level
       lakes[i].neighbors.forEach(function(n) {
         const nHeight = cells[n].height || heights[n];
-        if (nHeight >= 20) hs.push(nHeight);
+        if (nHeight > 20) hs.push(nHeight - 1);
       });
-      if (hs.length) cells[id].height = d3.min(hs) - 1;
-      if (cells[id].height < 20) cells[id].height = 20;
-      lakes[i].lake = 1;
+      cells[id].height = d3.min(hs) ? d3.min(hs) : 20;
+      lakes[i].lake = 1; // mark as lake
     }
     console.timeEnd('elevateLakes');
   }
@@ -2267,37 +2305,42 @@ function fantasyMap() {
   // add lakes on depressed points on river course
   function addLakes() {
     console.time('addLakes');
-    let smallLakes = 0;
+    let smallLakesMax = 100, smallLakes = 0, added;
     for (let i=0; i < land.length; i++) {
+      let id = land[i].index;
+      added = false; // true if small lake is added;
       // elavate all big lakes
-      if (land[i].lake === 1) {
-        land[i].height = 19;
-        land[i].ctype = -1;
-      }
-      // define eligible small lakes
-      if (land[i].lake === 2 && smallLakes < 100) {
-        if (land[i].river !== undefined) {
-          land[i].height = 19;
-          land[i].ctype = -1;
-          land[i].fn = -1;
-          smallLakes++;
-        } else {
+      if (land[i].lake === 1) {convertToWater(id);}
+      else if (land[i].lake === 2) {
+        // define eligible small lakes
+        if (smallLakes > smallLakesMax) {
           land[i].lake = undefined;
+          continue;
+        }
+        if (land[i].river !== undefined) {addSmallLake(id);}
+        else {
           land[i].neighbors.forEach(function(n) {
-            if (cells[n].lake !== 1 && cells[n].river !== undefined) {
-              cells[n].lake = 2;
-              cells[n].height = 19;
-              cells[n].ctype = -1;
-              cells[n].fn = -1;
-              smallLakes++;
-            } else if (cells[n].lake === 2) {
-              cells[n].lake = undefined;
-            }
+            if (cells[n].lake !== 1 && cells[n].river !== undefined) {addSmallLake(n);}
+            else if (cells[n].lake === 2) {cells[n].lake = undefined;}
           });
+          if (added || Math.random() < 0.9) {land[i].lake = undefined;}
+          else {addSmallLake(id);}
         }
       }
     }
-    console.log( "small lakes: " + smallLakes);
+
+    function convertToWater(n) {
+      cells[n].height = 19;
+      cells[n].ctype = -1;
+    }
+
+    function addSmallLake(n) {
+      convertToWater(n);
+      cells[n].lake = 2;
+      cells[n].fn = -1;
+      smallLakes++;
+      added = true;
+    }
 
     // mark small lakes
     let unmarked = $.grep(land, function(e) {return e.fn === -1});
@@ -2573,7 +2616,7 @@ function fantasyMap() {
         let text = elSelected.text(), x = elSelected.attr("x"), y = elSelected.attr("y");
         elSelected.text(null).attr("data-x", x).attr("data-y", y).attr("x", null).attr("y", null);
         defs.append("path").attr("id", "textPath_" + id).attr("d", path);
-        elSelected.append("textPath").attr("href", pathId).attr("startOffset", "50%").text(text);
+        elSelected.append("textPath").attr("xlink:href", pathId).attr("startOffset", "50%").text(text);
       }
 
       if (!debug.select("circle").size()) {
@@ -2619,14 +2662,14 @@ function fantasyMap() {
     // copy label on click
     document.getElementById("labelCopy").addEventListener("click", function() {
       let group = d3.select(elSelected.node().parentNode);
-      copy = group.append(f => elSelected.node().cloneNode(true));
+      let copy = group.append(f => elSelected.node().cloneNode(true));
       let id = "label" + Date.now().toString().slice(7);
       copy.attr("id", id).attr("class", null).on("click", editLabel);
       let shift = +group.attr("font-size") + 1;
       if (copy.select("textPath").size()) {
         let path = defs.select("#textPath_" + elSelected.attr("id")).attr("d");
         let textPath = defs.append("path").attr("id", "textPath_" + id);
-        copy.select("textPath").attr("href", "#textPath_" + id);
+        copy.select("textPath").attr("xlink:href", "#textPath_" + id);
         let pathArray = path.split(" ");
         let x = +pathArray[0].split(",")[0].slice(1);
         let y = +pathArray[0].split(",")[1];
@@ -3337,44 +3380,158 @@ function fantasyMap() {
   }
 
   function editReliefIcon() {
-    if (customization) return;
-    if (elSelected) if (this.isSameNode(elSelected.node())) return;
-
+    if (customization !== 0 && customization !== 5) return;
     unselect();
     closeDialogs("#reliefEditor, .stable");
-    elSelected = d3.select(this).raise().call(d3.drag().on("start", elementDrag)).classed("draggable", true);
-    const group = elSelected.node().parentNode.id;
-    reliefGroup.value = group;
+    terrain.selectAll("use").call(d3.drag().on("start", elementDrag)).classed("draggable", true);
+    if (this) elSelected = d3.select(this);
 
-    let bulkRemoveSection = document.getElementById("reliefBulkRemoveSection");
-    if (bulkRemoveSection.style.display != "none") reliefBulkRemove.click();
+    if ($("#reliefTools > .pressed").length === 0) $("#reliefIndividual").addClass("pressed");
+    if ($("#reliefBulkAdd").hasClass("pressed")) $("#reliefBulkAdd").click();
+    if ($("#reliefBulkRemove").hasClass("pressed")) $("#reliefBulkRemove").click();
+    if (elSelected) {
+      updateReliefIconSelected();
+      updateReliefSizeInput();
+    }
+
+    function updateReliefIconSelected() {
+      $("#reliefIconsDiv > .pressed").removeClass("pressed");
+      let type = elSelected.attr("data-type");
+      $("#reliefIconsDiv > button[data-type='"+type+"']").addClass("pressed");
+    }
+
+    function updateReliefSizeInput() {
+      let size = +elSelected.attr("data-size");
+      reliefSize.value = reliefSizeNumber.value = size;
+      reliefSize.min = rn(size * 0.2, 2);
+      reliefSize.max = rn(size * 1.8, 2);
+    }
 
     $("#reliefEditor").dialog({
-      title: "Edit relief icon",
+      title: "Edit relief icons",
       minHeight: 30, width: "auto", resizable: false,
       position: {my: "center top+40", at: "top", of: d3.event},
-      close: unselect
+      close: function() {
+        terrain.selectAll("use").call(d3.drag().on("drag", null)).classed("draggable", false);
+        unselect();
+      }
     });
 
-    if (modules.editReliefIcon) {return;}
+    if (modules.editReliefIcon) return;
     modules.editReliefIcon = true;
 
-    $("#reliefGroups").click(function() {
-      $("#reliefEditor > button").not(this).toggle();
-      $("#reliefGroupsSelection").toggle();
+    $("#reliefIndividual").click(function() {
+      $("#reliefTools > .pressed").removeClass("pressed");
+      $(this).addClass("pressed");
+      $("#reliefSizeDiv").show();
+      $("#reliefRadiusDiv, #reliefSpacingDiv, #reliefIconsSeletionAny").hide();
+      updateReliefSizeInput();
+      restoreDefaultEvents();
+      customization = 0;
     });
 
-    $("#reliefGroup").change(function() {
-      const type = this.value;
-      const bbox = elSelected.node().getBBox();
-      const cx = bbox.x;
-      const cy = bbox.y + bbox.height / 2;
-      const cell = diagram.find(cx, cy).index;
-      const height = cell !== undefined ? cells[cell].height : 50;
-      elSelected.remove();
-      elSelected = addReliefIcon(height / 100, type, cx, cy, cell);
-      elSelected.call(d3.drag().on("start", elementDrag));
+    $("#reliefBulkAdd").click(function() {
+      $("#reliefTools > .pressed").removeClass("pressed");
+      $(this).addClass("pressed");
+      $("#reliefSizeDiv, #reliefRadiusDiv, #reliefSpacingDiv").show();
+      $("#reliefIconsSeletionAny").hide();
+      const type = $("#reliefIconsDiv > button.pressed").attr("data-type");
+      if (!type) {
+        $("#reliefIconsDiv > button.pressed").removeClass("pressed");
+        $("#reliefIconsDiv > button")[0].className = "pressed";
+      }
+      viewbox.style("cursor", "crosshair").call(d3.drag().on("start", dragToPlaceReliefIcons));
+      tip("Drag to place relief icons within radius", true);
+      customization = 5;
     });
+
+    function dragToPlaceReliefIcons(selection) {
+      const type = $("#reliefIconsDiv > button.pressed").attr("data-type");
+      if (!type) {tip("Please select an icon type to place!", null, "error"); return;}
+      const radius = +reliefRadius.value;
+      const r = rn(6 / graphSize * radius, 1);
+      const spacing = +reliefSpacing.value;
+      const size = +reliefSize.value;
+      let step = 0;
+
+      // build quadtree
+      const tree = d3.quadtree();
+      const positions = [];
+      terrain.selectAll("use").each(function() {
+        let el = d3.select(this);
+        let x = +el.attr("x") + el.attr("width") / 2;
+        let y = +el.attr("y") + el.attr("height") / 2;
+        tree.add([x, y]);
+        positions.push(+el.attr("y") + +el.attr("height"));
+      });
+
+      d3.event.on("drag", function() {
+        step++;
+        const p = d3.mouse(this);
+        moveCircle(p[0], p[1], r);
+        if (step % 2 !== 1) return;
+
+        for (const [cx, cy] of poissonDiscSampler(p[0]-r, p[1]-r, p[0]+r, p[1]+r, 5)) {
+          let closest = tree.find(cx, cy);
+          if (closest) {
+            let dist = Math.hypot(cx - closest[0], cy - closest[1]);
+            if (dist < spacing) continue;
+          }
+          let h = rn(size / 2 * (Math.random() * 0.4 + 0.8), 2);
+          let z = cy + h;
+          let n = 0;
+
+          for (let i=0; i < positions.length; i++) {
+            n++;
+            if (z < positions[i]) break;
+          }
+
+          tree.add([cx, cy]);
+          positions.push(z);
+          terrain.insert("use", ":nth-child("+n+")").attr("xlink:href", type).attr("data-type", type).attr("x", rn(cx-h, 2)).attr("y", rn(cy-h, 2))
+            .attr("data-size", h*2).attr("width", h*2).attr("height", h*2).on("click", editReliefIcon);
+        }
+      });
+    }
+
+    $("#reliefBulkRemove").click(function() {
+      $("#reliefTools > .pressed").removeClass("pressed");
+      $(this).addClass("pressed");
+      $("#reliefRadiusDiv, #reliefIconsSeletionAny").show();
+      $("#reliefSizeDiv, #reliefSpacingDiv").hide();
+      viewbox.style("cursor", "crosshair").call(d3.drag().on("drag", dragToRemoveReliefIcons));
+      tip("Drag to remove relief icons in radius", true);
+      customization = 5;
+    });
+
+    function dragToRemoveReliefIcons() {
+      const icons = terrain.selectAll("use");
+      const type = $("#reliefIconsDiv > button.pressed").attr("data-type");
+      const radius = +reliefRadius.value;
+      const r = rn(6 / graphSize * radius, 1);
+
+      d3.event.on("drag", function() {
+        const p = d3.mouse(this);
+        moveCircle(p[0], p[1], r);
+
+        icons.each(function() {
+          let el = d3.select(this);
+          if (type) {
+            let t = el.attr("data-type");
+            if (type !== t) return;
+          }
+          let x = +el.attr("x") + el.attr("width") / 2;
+          if (x < p[0] - r) return;
+          if (x > p[0] + r) return;
+          let y = +el.attr("y") + el.attr("height") / 2;
+          if (y < p[1] - r) return;
+          if (y > p[1] + r) return;
+          let dist = Math.hypot(x - p[0], y - p[1]);
+          if (dist > r) return;
+          el.remove();
+        });
+      });
+    }
 
     $("#reliefCopy").click(function() {
       const group = d3.select(elSelected.node().parentNode);
@@ -3390,65 +3547,8 @@ function fantasyMap() {
       copy.addEventListener("click", editReliefIcon);
     });
 
-    $("#reliefAddfromEditor").click(function() {
-      clickToAdd(); // to load on click event function
-      $("#addRelief").click();
-    });
-
-    $("#reliefRemoveGroup").click(function() {
-      const group = d3.select(elSelected.node().parentNode);
-      const count = group.selectAll("*").size();
-      if (count < 2) {
-        group.selectAll("*").remove();
-        $("#labelEditor").dialog("close");
-        return;
-      }
-      const message = "Are you sure you want to remove all '" + reliefGroup.value + "' icons (" + count + ")?";
-      alertMessage.innerHTML = message;
-      $("#alert").dialog({resizable: false, title: "Remove all icons within group",
-        buttons: {
-          Remove: function() {
-            $(this).dialog("close");
-            group.selectAll("*").remove();
-            $("#reliefEditor").dialog("close");
-          },
-          Cancel: function() {$(this).dialog("close");}
-        }
-      });
-    });
-
-    $("#reliefBulkRemove").click(function() {
-      $("#reliefEditor > button").not(this).toggle();
-      let section = document.getElementById("reliefBulkRemoveSection");
-      if (section.style.display === "none") {
-        section.style.display = "inline-block";
-        tip("Drag to remove relief icons in radius", true);
-        viewbox.style("cursor", "crosshair").call(d3.drag().on("drag", dragToRemoveReliefIcons));
-        customization = 5;
-      } else {
-        section.style.display = "none";
-        restoreDefaultEvents();
-        customization = 0;
-      }
-    });
-
-    function dragToRemoveReliefIcons() {
-      let point = d3.mouse(this);
-      let cell = diagram.find(point[0], point[1]).index;
-      let radius = +reliefBulkRemoveRadius.value;
-      let r = rn(6 / graphSize * radius, 1);
-      moveCircle(point[0], point[1], r);
-      let selection = defineBrushSelection(cell, radius);
-      if (selection) removeReliefIcons(selection);
-    }
-
-    function removeReliefIcons(selection) {
-      if (selection.length === 0) return;
-      selection.map(function(index) {
-        const selected = terrain.selectAll("g").selectAll("g[data-cell='"+index+"']");
-        selected.remove();
-      });
-    }
+    $("#reliefMoveFront").click(function() {elSelected.raise();});
+    $("#reliefMoveBack").click(function() {elSelected.lower();});
 
     $("#reliefRemove").click(function() {
       alertMessage.innerHTML = `Are you sure you want to remove the icon?`;
@@ -3463,6 +3563,29 @@ function fantasyMap() {
         }
       })
     });
+
+    $("#reliefSize, #reliefSizeNumber").on("input", function() {
+      if ($("#reliefIndividual").hasClass("pressed")) {
+        let size = +elSelected.attr("data-size");
+        let newSize = +this.value;
+        let shift = (newSize - elSelected.attr("width")) / 2;
+        elSelected.attr("width", newSize).attr("height", newSize).attr("data-size", newSize);
+        let x = +elSelected.attr("x"), y = +elSelected.attr("y");
+        elSelected.attr("x", x - shift).attr("y", y - shift);
+      }
+    });
+
+    $("#reliefIconsDiv > button").on("click", function() {
+      if ($(this).hasClass("pressed")) return;
+      $("#reliefIconsDiv > .pressed").removeClass("pressed");
+      $(this).addClass("pressed");
+      // change individual relief icon
+      if ($("#reliefIndividual").hasClass("pressed")) {
+        let type = $(this).attr("data-type");
+        elSelected.attr("xlink:href", type).attr("data-type", type);
+      }
+    });
+
   }
 
   function editBurg() {
@@ -3933,7 +4056,7 @@ function fantasyMap() {
     });
 
     // update inputs
-    let id = elSelected.attr("href");
+    let id = elSelected.attr("data-id");
     let symbol = d3.select("#defs-markers").select(id);
     let icon = symbol.select("text");
     markerSelectGroup.value = id.slice(1);
@@ -3972,7 +4095,7 @@ function fantasyMap() {
         opt.value = opt.innerHTML = this.id;
         markerSelectGroup.add(opt);
       });
-      let id = elSelected.attr("href").slice(1);
+      let id = elSelected.attr("data-id").slice(1);
       markerSelectGroup.value = id;
     }
 
@@ -3990,7 +4113,7 @@ function fantasyMap() {
 
     // on marker type change
     document.getElementById("markerSelectGroup").addEventListener("change", function() {
-      elSelected.attr("href", "#"+this.value);
+      elSelected.attr("xlink:href", "#"+this.value);
       elSelected.attr("data-id", "#"+this.value);
     });
 
@@ -4004,10 +4127,10 @@ function fantasyMap() {
       }
       markerInputGroup.value = "";
       // clone old group assigning new id
-      let id = elSelected.attr("href");
+      let id = elSelected.attr("data-id");
       let l = d3.select("#defs-markers").select(id).node().cloneNode(true);
       l.id = newGroup;
-      elSelected.attr("href", "#"+newGroup);
+      elSelected.attr("xlink:href", "#"+newGroup);
       elSelected.attr("data-id", "#"+newGroup);
       document.getElementById("defs-markers").insertBefore(l, null);
 
@@ -4027,7 +4150,7 @@ function fantasyMap() {
     });
 
     $("#markerRemoveGroup").click(function() {
-      let id = elSelected.attr("href");
+      let id = elSelected.attr("data-id");
       let used = document.querySelectorAll("use[data-id='"+id+"']");
       let count = used.length === 1 ? "1 element" : used.length + " elements";
       const message = "Are you sure you want to remove the marker (" + count + ")?";
@@ -4232,7 +4355,7 @@ function fantasyMap() {
         let selected = table.getElementsByClassName("selected");
         if (selected.length) selected[0].removeAttribute("class");
         e.target.className = "selected";
-        let id = elSelected.attr("href");
+        let id = elSelected.attr("data-id");
         let icon = e.target.innerHTML;
         d3.select("#defs-markers").select(id).select("text").text(icon);
       }
@@ -4249,26 +4372,26 @@ function fantasyMap() {
 
     // change marker icon size
     document.getElementById("markerIconSize").addEventListener("input", function() {
-      let id = elSelected.attr("href");
+      let id = elSelected.attr("data-id");
       d3.select("#defs-markers").select(id).select("text").attr("font-size", this.value + "px");
     });
 
     // change marker icon x shift
     document.getElementById("markerIconShiftX").addEventListener("input", function() {
-      let id = elSelected.attr("href");
+      let id = elSelected.attr("data-id");
       d3.select("#defs-markers").select(id).select("text").attr("x", this.value + "%");
     });
 
     // change marker icon y shift
     document.getElementById("markerIconShiftY").addEventListener("input", function() {
-      let id = elSelected.attr("href");
+      let id = elSelected.attr("data-id");
       d3.select("#defs-markers").select(id).select("text").attr("y", this.value + "%");
     });
 
     // apply custom unicode icon on input
     document.getElementById("markerIconCustom").addEventListener("input", function() {
       if (!this.value) return;
-      let id = elSelected.attr("href");
+      let id = elSelected.attr("data-id");
       d3.select("#defs-markers").select(id).select("text").text(this.value);
     });
 
@@ -4288,38 +4411,38 @@ function fantasyMap() {
 
     // change marker base color
     document.getElementById("markerBase").addEventListener("input", function() {
-      let id = elSelected.attr("href");
+      let id = elSelected.attr("data-id");
       d3.select(id).select("path").attr("fill", this.value);
       d3.select(id).select("circle").attr("stroke", this.value);
     });
 
     // change marker fill color
     document.getElementById("markerFill").addEventListener("input", function() {
-      let id = elSelected.attr("href");
+      let id = elSelected.attr("data-id");
       d3.select(id).select("circle").attr("fill", this.value);
     });
 
     // change marker icon y shift
     document.getElementById("markerIconFill").addEventListener("input", function() {
-      let id = elSelected.attr("href");
+      let id = elSelected.attr("data-id");
       d3.select("#defs-markers").select(id).select("text").attr("fill", this.value);
     });
 
     // change marker icon y shift
     document.getElementById("markerIconStrokeWidth").addEventListener("input", function() {
-      let id = elSelected.attr("href");
+      let id = elSelected.attr("data-id");
       d3.select("#defs-markers").select(id).select("text").attr("stroke-width", this.value);
     });
 
     // change marker icon y shift
     document.getElementById("markerIconStroke").addEventListener("input", function() {
-      let id = elSelected.attr("href");
+      let id = elSelected.attr("data-id");
       d3.select("#defs-markers").select(id).select("text").attr("stroke", this.value);
     });
 
     // toggle marker bubble display
     document.getElementById("markerToggleBubble").addEventListener("click", function() {
-      let id = elSelected.attr("href");
+      let id = elSelected.attr("data-id");
       let show = 1;
       if (this.className === "icon-info-circled") {
         this.className = "icon-info";
@@ -4334,7 +4457,7 @@ function fantasyMap() {
     // open legendsEditor
     document.getElementById("markerLegendButton").addEventListener("click", function() {
       let id = elSelected.attr("id");
-      let symbol = elSelected.attr("href");
+      let symbol = elSelected.attr("data-id");
       let icon = d3.select("#defs-markers").select(symbol).select("text").text();
       let name = "Marker " + icon;
       editLegends(id, name);
@@ -4403,13 +4526,17 @@ function fantasyMap() {
     const count = +culturesInput.value;
     cultures = d3.shuffle(defaultCultures).slice(0, count);
     const centers = d3.range(cultures.length).map(function(d, i) {
-      const x = Math.floor(Math.random() * graphWidth * 0.8 + graphWidth * 0.1);
-      const y = Math.floor(Math.random() * graphHeight * 0.8 + graphHeight * 0.1);
-      const center = [x, y];
+      const center = placeCulture();
       cultures[i].center = center;
       return center;
     });
     cultureTree = d3.quadtree(centers);
+  }
+
+  // place culture center in a random land cell
+  function placeCulture() {
+    const cell = land[Math.floor(Math.random() * land.length)];
+    return [cell.data[0], cell.data[1]];
   }
 
   function manorsAndRegions() {
@@ -4485,7 +4612,7 @@ function fantasyMap() {
    // calculate population for manors, cells and states
   function calculatePopulation() {
     // neutral population factors < 1 as neutral lands are usually pretty wild
-    const ruralFactor = 0.5, urbanFactor = 0.9;
+    const urbanFactor = 0.9;
 
     // calculate population for each burg (based on trade/people attractors)
     manors.map(function(m) {
@@ -4502,17 +4629,9 @@ function fantasyMap() {
       m.population = rn(score * rnd, 1);
     });
 
-    // calculate rural population for each cell based on area + elevation (elevation to be changed to biome)
-    const graphSizeAdj = 90 / Math.sqrt(cells.length, 2); // adjust to different graphSize
-    land.map(function(l) {
-      let population = 0;
-      const elevationFactor = Math.pow(1 - l.height / 100, 3);
-      population = elevationFactor * l.area * graphSizeAdj;
-      if (l.region === "neutral") population *= ruralFactor;
-      l.pop = rn(population, 1);
-    });
+    calculateRuralPopulation();
 
-    // calculate population for each region
+    // calculate population for each state
     states.map(function(s, i) {
       // define region burgs count
       const burgs = $.grep(manors, function (e) {
@@ -4549,6 +4668,22 @@ function fantasyMap() {
         cells: neutralCells.length, burgs, urbanPopulation: rn(urbanPopulation, 2),
         ruralPopulation: rn(ruralPopulation, 2), area: rn(area)});
     }
+  }
+
+  // calculate rural population for each cell based on area + elevation (to be changed to biome)
+  function calculateRuralPopulation() {
+    // adjust to different graph sizes
+    const graphSizeAdj = 90 / Math.sqrt(cells.length, 2);
+    // neutral population factors < 1 as neutral lands are usually pretty wild
+    const ruralFactor = 0.5;
+
+    land.forEach(function(l) {
+      let population = 0;
+      const elevationFactor = Math.pow(1 - l.height / 100, 3);
+      population = elevationFactor * l.area * graphSizeAdj;
+      if (l.region === "neutral") population *= ruralFactor;
+      l.pop = rn(population, 1);
+    });
   }
 
   function locateCapitals() {
@@ -5072,6 +5207,7 @@ function fantasyMap() {
   // Append burg elements
   function drawManors() {
     console.time('drawManors');
+    const capitals = +regionsInput.value;
     const capitalIcons = burgIcons.select("#capitals");
     const capitalLabels = burgLabels.select("#capitals");
     const townIcons = burgIcons.select("#towns");
@@ -5087,9 +5223,9 @@ function fantasyMap() {
       const x = manors[i].x, y = manors[i].y;
       const cell = manors[i].cell;
       const name = manors[i].name;
-      const ic = i < states.length ? capitalIcons : townIcons;
-      const lb = i < states.length ? capitalLabels : townLabels;
-      const size = i < states.length ? capitalSize : townSize;
+      const ic = i < capitals ? capitalIcons : townIcons;
+      const lb = i < capitals ? capitalLabels : townLabels;
+      const size = i < capitals ? capitalSize : townSize;
       ic.append("circle").attr("id", "burg"+i).attr("data-id", i).attr("cx", x).attr("cy", y).attr("r", size).on("click", editBurg);
       lb.append("text").attr("data-id", i).attr("x", x).attr("y", y).attr("dy", "-0.35em").text(name).on("click", editBurg);
     }
@@ -5311,7 +5447,7 @@ function fantasyMap() {
     labels.select("#countries").selectAll("*").remove();
 
     // arrays to store edge data
-    const edges = [],coastalEdges = [],borderEdges = [],neutralEdges = [];
+    const edges = [], coastalEdges = [], borderEdges = [], neutralEdges = [];
     for (let a=0; a < states.length; a++) {
       edges[a] = [];
       coastalEdges[a] = [];
@@ -5521,6 +5657,13 @@ function fantasyMap() {
       if (name.slice(-3) === "guo") return name;
       if (name.slice(-1) === "g") name = name.slice(0,-1);
       if (Math.random() < 0.3 && name.length < 7) name = name + " Guo"; // 30% for "guo"
+      return name;
+    } else if (base === 14) {
+      // Nahuatl ends on "tlan" or "co"
+      if (name.slice(-4) === "tlan") return name;
+      if (name.slice(-2) === "co") return name;
+      if (Math.random() < 0.3 && vowels.includes(name.slice(-1)) && name.length < 8) name = name + "tlan"; // 25% for "tlan"
+      if (Math.random() < 0.2 && name.length < 10) name = name + "co"; // 20% for "co"
       return name;
     }
 
@@ -5776,10 +5919,11 @@ function fantasyMap() {
         d3.select("#rose").attr("transform", tr);
         overlay.append("use").attr("xlink:href","#rose");
       }
-      overlay.call(d3.drag().on("start", elementDrag));
       calculateFriendlyOverlaySize();
+      $("#toggleOverlay").removeClass("buttonoff");
     } else {
       overlay.selectAll("*").remove();
+      $("#toggleOverlay").addClass("buttonoff");
     }
   }
 
@@ -5834,9 +5978,8 @@ function fantasyMap() {
   }
 
   // close all dialogs except stated
-  function closeDialogs(except) {
-    except = except || "#except";
-    $(".dialog:visible").not(except).each(function(e) {
+  function closeDialogs(except = "#except") {
+    $(".dialog:visible").not(except).each(function() {
       $(this).dialog("close");
     });
   }
@@ -5869,186 +6012,95 @@ function fantasyMap() {
   // Draw the Relief (need to create more beautiness)
   function drawRelief() {
     console.time('drawRelief');
-    let h, count, rnd, cx, cy, swampCount = 0;
-    const hills = terrain.select("#hills");
-    const mounts = terrain.select("#mounts");
-    const swamps = terrain.select("#swamps");
-    const forests = terrain.select("#forests");
-    terrain.selectAll("g").selectAll("g").remove();
+    terrain.selectAll("*").remove();
+    const size = +reliefSizeInput.value;
+    const density = +reliefDensityInput.value;
+    let cx, cy, swampCount = 0, swampMax = +swampinessInput.value;
+    if (density === 0) {
+      console.error("Relief Icons density is set to 0: no icons will be rendered");
+      console.timeEnd('drawRelief');
+      return;
+    }
+    const relief = []; // t: type, c: cell, x: centerX, y: centerY, s: size;
+
     // sort the land to Draw the top element first (reduce the elements overlapping)
-    land.sort(compareY);
+    //land.sort(compareY);
     for (let i = 0; i < land.length; i++) {
       if (land[i].river) continue; // no icons on rivers
-      const cell = land[i].index;
-      const p = d3.polygonCentroid(polygons[cell]); // polygon centroid point
-      if (p === undefined) continue; // something is wrong with data
       const height = land[i].height;
-      const area = land[i].area;
-      if (height >= 70) {
-        // mount icon
-        h = (height - 55) * 0.12;
-        for (let c = 0, a = area; Math.random() < a / 50; c++, a -= 50) {
-          if (polygons[cell][c] === undefined) break;
-          const g = mounts.append("g").attr("data-cell", cell);
-          if (c < 2) {
-            cx = p[0] - h / 100 * (1 - c / 10) - c * 2;
-            cy = p[1] + h / 400 + c;
-          } else {
-            const p2 = polygons[cell][c];
-            cx = (p[0] * 1.2 + p2[0] * 0.8) / 2;
-            cy = (p[1] * 1.2 + p2[1] * 0.8) / 2;
-          }
-          rnd = Math.random() * 0.8 + 0.2;
-          let mount = "M" + cx + "," + cy + " L" + (cx + h / 3 + rnd) + "," + (cy - h / 4 - rnd * 1.2) + " L" + (cx + h / 1.1) + "," + (cy - h) + " L" + (cx + h + rnd) + "," + (cy - h / 1.2 + rnd) + " L" + (cx + h * 2) + "," + cy;
-          let shade = "M" + cx + "," + cy + " L" + (cx + h / 3 + rnd) + "," + (cy - h / 4 - rnd * 1.2) + " L" + (cx + h / 1.1) + "," + (cy - h) + " L" + (cx + h / 1.5) + "," + cy;
-          let dash = "M" + (cx - 0.1) + "," + (cy + 0.3) + " L" + (cx + 2 * h + 0.1) + "," + (cy + 0.3);
-          dash += "M" + (cx + 0.4) + "," + (cy + 0.6) + " L" + (cx + 2 * h - 0.3) + "," + (cy + 0.6);
-          g.append("path").attr("d", round(mount, 1)).attr("stroke", "#5c5c70");
-          g.append("path").attr("d", round(shade, 1)).attr("fill", "#999999");
-          g.append("path").attr("d", round(dash, 1)).attr("class", "strokes");
-        }
-      } else if (height > 50) {
-        // hill icon
-        h = (height - 40) / 10;
-        if (h > 1.7) h = 1.7;
-        for (let c = 0, a = area; Math.random() < a / 30; c++, a -= 30) {
-          if (land[i].ctype === 1 && c > 0) break;
-          if (polygons[cell][c] === undefined) break;
-          const g = hills.append("g").attr("data-cell", cell);
-          if (c < 2) {
-            cx = p[0] - h - c * 1.2;
-            cy = p[1] + h / 4 + c / 1.6;
-          } else {
-            const p2 = polygons[cell][c];
-            cx = (p[0] * 1.2 + p2[0] * 0.8) / 2;
-            cy = (p[1] * 1.2 + p2[1] * 0.8) / 2;
-          }
-          let hill = "M" + cx + "," + cy + " Q" + (cx + h) + "," + (cy - h) + " " + (cx + 2 * h) + "," + cy;
-          let shade = "M" + (cx + 0.6 * h) + "," + (cy + 0.1) + " Q" + (cx + h * 0.95) + "," + (cy - h * 0.91) + " " + (cx + 2 * h * 0.97) + "," + cy;
-          let dash = "M" + (cx - 0.1) + "," + (cy + 0.2) + " L" + (cx + 2 * h + 0.1) + "," + (cy + 0.2);
-          dash += "M" + (cx + 0.4) + "," + (cy + 0.4) + " L" + (cx + 2 * h - 0.3) + "," + (cy + 0.4);
-          g.append("path").attr("d", round(hill, 1)).attr("stroke", "#5c5c70");
-          g.append("path").attr("d", round(shade, 1)).attr("fill", "white");
-          g.append("path").attr("d", round(dash, 1)).attr("class", "strokes");
-        }
-      }
+      if (height >= 70) placeMountainIcon(land[i].index);
+      else if (height > 50) placeHillIcon(land[i].index);
+      else if (height === 21 && swampCount < swampMax) {placeSwampIcon(land[i].index); swampCount++;}
+      else if (height >= 22 && height < 48 && Math.random() * 100 < height) placeForestIcon(land[i].index);
+    }
 
-      // swamp icons
-      if (height >= 21 && height < 22 && swampCount < +swampinessInput.value && land[i].used != 1) {
-        const g = swamps.append("g").attr("data-cell", cell);
-        swampCount++;
-        land[i].used = 1;
-        let swamp = drawSwamp(p[0],p[1]);
-        land[i].neighbors.forEach(function(e) {
-          if (cells[e].height >= 20 && cells[e].height < 30 && !cells[e].river && cells[e].used != 1) {
-            cells[e].used = 1;
-            swamp += drawSwamp(cells[e].data[0], cells[e].data[1]);
-          }
-        });
-        g.append("path").attr("d", round(swamp, 1));
-      }
+    // sort relief icons by Y + Size to render icons on top first
+    relief.sort(function(a,b) {return (a.y + a.s) - (b.y + b.s);});
+    // render relief icons at once
+    terrain.selectAll("use").data(relief).enter().append("use").attr("xlink:href", d => d.t).attr("data-type", d => d.t)
+      .attr("data-cell", d => d.c).attr("x", d => d.x).attr("y", d => d.y)
+      .attr("data-size", d => d.s).attr("width", d => d.s).attr("height", d => d.s).on("click", editReliefIcon);
 
-      // forest icons
-      if (Math.random() < height / 100 && height >= 22 && height < 48) {
-        for (let c = 0, a = area; Math.random() < a / 15; c++, a -= 15) {
-          if (land[i].ctype === 1 && c > 0) break;
-          if (polygons[cell][c] === undefined) break;
-          const g = forests.append("g").attr("data-cell", cell);
-          if (c === 0) {
-            cx = rn(p[0] - 1 - Math.random(), 1);
-            cy = p[1] - 2;
-          } else {
-            const p2 = polygons[cell][c];
-            if (c > 1) {
-              const dist = Math.hypot(p2[0] - polygons[cell][c-1][0],p2[1] - polygons[cell][c-1][1]);
-              if (dist < 2) continue;
-            }
-            cx = (p[0] * 0.5 + p2[0] * 1.5) / 2;
-            cy = (p[1] * 0.5 + p2[1] * 1.5) / 2 - 1;
-          }
-          const forest = "M" + cx + "," + cy + " q-1,0.8 -0.05,1.25 v0.75 h0.1 v-0.75 q0.95,-0.47 -0.05,-1.25 z ";
-          const light = "M" + cx + "," + cy + " q-1,0.8 -0.05,1.25 h0.1 q0.95,-0.47 -0.05,-1.25 z ";
-          const shade = "M" + cx + "," + cy + " q-1,0.8 -0.05,1.25 q-0.2,-0.55 0,-1.1 z ";
-          g.append("path").attr("d", forest);
-          g.append("path").attr("d", light).attr("fill", "white").attr("stroke", "none");
-          g.append("path").attr("d", shade).attr("fill", "#999999").attr("stroke", "none");
-        }
+    function placeMountainIcon(cell) {
+      if (cells[cell].area < 20) return;
+
+      const polygon = polygons[cell];
+      const radius = 2 / density; // 4 on default density 0.5
+      const x = d3.extent(polygon, p => p[0]);
+      const y = d3.extent(polygon, p => p[1]);
+
+      for (const [cx, cy] of poissonDiscSampler(x[0], y[0], x[1], y[1], radius)) {
+        if (d3.polygonContains(polygon, [cx, cy]) === false) continue;
+        let h = (cells[cell].height - 45) * 0.2 * size;
+        relief.push({t: "#relief-mount-1", c: cell, x: rn(cx-h, 2), y: rn(cy-h, 2), s: h*2});
       }
     }
-    terrain.selectAll("g").selectAll("g").on("click", editReliefIcon);
+
+    function placeHillIcon(cell) {
+      if (cells[cell].area < 20) return;
+
+      const polygon = polygons[cell];
+      const radius = 2 / density; // 4 on default density 0.5
+      const x = d3.extent(polygon, p => p[0]);
+      const y = d3.extent(polygon, p => p[1]);
+
+      for (const [cx, cy] of poissonDiscSampler(x[0], y[0], x[1], y[1], radius)) {
+        if (d3.polygonContains(polygon, [cx, cy]) === false) continue;
+        let h = (cells[cell].height - 43) * 0.2 * size;
+        if (cells[cell].area < 40) h *= cells[cell].area / 40;
+        if (h < 2.7) h = 2.7;
+        if (h > 5) h = 5;
+        relief.push({t: "#relief-hill-1", c: cell, x: rn(cx-h, 2), y: rn(cy-h, 2), s: h*2});
+      }
+    }
+
+    function placeSwampIcon(cell) {
+      const polygon = polygons[cell];
+      const radius = 1 / density; // 2 on default density 0.5
+      const x = d3.extent(polygon, p => p[0]);
+      const y = d3.extent(polygon, p => p[1]);
+
+      for (const [cx, cy] of poissonDiscSampler(x[0], y[0], x[1], y[1], radius)) {
+        if (d3.polygonContains(polygon, [cx, cy]) === false) continue;
+        let h = rn(2.2 + Math.random() / 2, 2) * size;
+        relief.push({t: "#relief-swamp-1", c: cell, x: rn(cx-h, 2), y: rn(cy-h, 2), s: h*2});
+      }
+    }
+
+    function placeForestIcon(cell) {
+      const polygon = polygons[cell];
+      let type = cells[cell].height < 42 ? "#relief-deciduous-1" : "#relief-conifer-1";
+      const radius = 1.2 / density; // 2.4 on default density 0.5
+      const x = d3.extent(polygon, p => p[0]);
+      const y = d3.extent(polygon, p => p[1]);
+
+      for (const [cx, cy] of poissonDiscSampler(x[0], y[0], x[1], y[1], radius)) {
+        if (d3.polygonContains(polygon, [cx, cy]) === false) continue;
+        let h = rn((3.4 + Math.random()) * size, 2);
+        relief.push({t: type, c: cell, x: rn(cx-h, 2), y: rn(cy-h, 2), s: h*2});
+      }
+    }
     console.timeEnd('drawRelief');
-  }
-
-  function addReliefIcon(height, type, cx, cy, cell) {
-    const g = terrain.select("#" + type).append("g").attr("data-cell", cell);
-    if (type === "mounts") {
-      const h = height >= 0.7 ? (height - 0.55) * 12 : 1.8;
-      const rnd = Math.random() * 0.8 + 0.2;
-      let mount = "M" + cx + "," + cy + " L" + (cx + h / 3 + rnd) + "," + (cy - h / 4 - rnd * 1.2) + " L" + (cx + h / 1.1) + "," + (cy - h) + " L" + (cx + h + rnd) + "," + (cy - h / 1.2 + rnd) + " L" + (cx + h * 2) + "," + cy;
-      let shade = "M" + cx + "," + cy + " L" + (cx + h / 3 + rnd) + "," + (cy - h / 4 - rnd * 1.2) + " L" + (cx + h / 1.1) + "," + (cy - h) + " L" + (cx + h / 1.5) + "," + cy;
-      let dash = "M" + (cx - 0.1) + "," + (cy + 0.3) + " L" + (cx + 2 * h + 0.1) + "," + (cy + 0.3);
-      dash += "M" + (cx + 0.4) + "," + (cy + 0.6) + " L" + (cx + 2 * h - 0.3) + "," + (cy + 0.6);
-      g.append("path").attr("d", round(mount, 1)).attr("stroke", "#5c5c70");
-      g.append("path").attr("d", round(shade, 1)).attr("fill", "#999999");
-      g.append("path").attr("d", round(dash, 1)).attr("class", "strokes");
-    }
-    if (type === "hills") {
-      let h = height > 0.5 ? (height - 0.4) * 10 : 1.2;
-      if (h > 1.8) h = 1.8;
-      let hill = "M" + cx + "," + cy + " Q" + (cx + h) + "," + (cy - h) + " " + (cx + 2 * h) + "," + cy;
-      let shade = "M" + (cx + 0.6 * h) + "," + (cy + 0.1) + " Q" + (cx + h * 0.95) + "," + (cy - h * 0.91) + " " + (cx + 2 * h * 0.97) + "," + cy;
-      let dash = "M" + (cx - 0.1) + "," + (cy + 0.2) + " L" + (cx + 2 * h + 0.1) + "," + (cy + 0.2);
-      dash += "M" + (cx + 0.4) + "," + (cy + 0.4) + " L" + (cx + 2 * h - 0.3) + "," + (cy + 0.4);
-      g.append("path").attr("d", round(hill, 1)).attr("stroke", "#5c5c70");
-      g.append("path").attr("d", round(shade, 1)).attr("fill", "white");
-      g.append("path").attr("d", round(dash, 1)).attr("class", "strokes");
-    }
-    if (type === "swamps") {
-      const swamp = drawSwamp(cx, cy);
-      g.append("path").attr("d", round(swamp, 1));
-    }
-    if (type === "forests") {
-      const rnd = Math.random();
-      const h = rnd * 0.4 + 0.6;
-      const forest = "M" + cx + "," + cy + " q-1,0.8 -0.05,1.25 v0.75 h0.1 v-0.75 q0.95,-0.47 -0.05,-1.25 z ";
-      const light = "M" + cx + "," + cy + " q-1,0.8 -0.05,1.25 h0.1 q0.95,-0.47 -0.05,-1.25 z ";
-      const shade = "M" + cx + "," + cy + " q-1,0.8 -0.05,1.25 q-0.2,-0.55 0,-1.1 z ";
-      g.append("path").attr("d", forest);
-      g.append("path").attr("d", light).attr("fill", "white").attr("stroke", "none");
-      g.append("path").attr("d", shade).attr("fill", "#999999").attr("stroke", "none");
-    }
-    g.on("click", editReliefIcon);
-    return g;
-  }
-
-  function compareY(a, b) {
-    if (a.data[1] > b.data[1]) return 1;
-    if (a.data[1] < b.data[1]) return -1;
-    return 0;
-  }
-
-  function drawSwamp(x, y) {
-    const h = 0.6;
-    let line = "";
-    for (let c = 0; c < 3; c++) {
-      let cx;
-      let cy;
-      if (c == 0) {
-        cx = x;
-        cy = y - 0.5 - Math.random();
-      }
-      if (c == 1) {
-        cx = x + h + Math.random();
-        cy = y + h + Math.random();
-      }
-      if (c == 2) {
-        cx = x - h - Math.random();
-        cy = y + 2 * h + Math.random();
-      }
-      line += "M" + cx + "," + cy + " H" + (cx - h / 6) + " M" + cx + "," + cy + " H" + (cx + h / 6) + " M" + cx + "," + cy + " L" + (cx - h / 3) + "," + (cy - h / 2) + " M" + cx + "," + cy + " V" + (cy - h / 1.5) + " M" + cx + "," + cy + " L" + (cx + h / 3) + "," + (cy - h / 2);
-      line += "M" + (cx - h) + "," + cy + " H" + (cx - h / 2) + " M" + (cx + h / 2) + "," + cy + " H" + (cx + h);
-    }
-    return line;
   }
 
   function dragged(e) {
@@ -6248,13 +6300,20 @@ function fantasyMap() {
       const last = $("#rivers > path").last();
       const river = last.length ? +last.attr("id").slice(5) + 1 : 0;
       cell.flux = 0.85;
+      let render = true;
       while (cell) {
         cell.river = river;
         const x = cell.data[0], y = cell.data[1];
         dataRiver.push({x, y, cell:index});
         const nHeights = [];
         cell.neighbors.forEach(function(e) {nHeights.push(cells[e].height);});
-        const minId = nHeights.indexOf(d3.min(nHeights));
+        const minHeight = d3.min(nHeights);
+        if (cell.height <= minHeight) {
+          tip(`Cell ${cell.index} is depressed! Please edit the heightmap and allow the system to change heights`);
+          render = false;
+          break;
+        }
+        const minId = nHeights.indexOf(minHeight);
         const min = cell.neighbors[minId];
         const tx = cells[min].data[0], ty = cells[min].data[1];
         if (cells[min].height < 20) {
@@ -6305,45 +6364,12 @@ function fantasyMap() {
           }
         }
       }
+      if (!render) return;
       const rndFactor = 0.2 + Math.random() * 1.6; // random factor in range 0.2-1.8
       var riverAmended = amendRiver(dataRiver, rndFactor);
       var d = drawRiver(riverAmended, 1.3, 1);
       rivers.append("path").attr("d", d).attr("id", "river"+river)
         .attr("data-width", 1.3).attr("data-increment", 1).on("click", editRiver);
-    }
-
-    // add relief icon on click
-    $("#addRelief").click(function() {
-      if ($(this).hasClass('pressed')) {
-        $(".pressed").removeClass('pressed');
-        restoreDefaultEvents();
-      } else {
-        $(".pressed").removeClass('pressed');
-        $(this).addClass('pressed');
-        closeDialogs(".stable");
-        viewbox.style("cursor", "crosshair").on("click", addReliefOnClick);
-        tip("Click on map to place relief icon. Hold Shift to place several", true);
-      }
-    });
-
-    function addReliefOnClick() {
-      const point = d3.mouse(this);
-      const index = getIndex(point);
-      const height = cells[index].height;
-      if (height < 20) {
-        tip("Cannot place icon in the water! Select a land cell");
-        return;
-      }
-
-      const x = rn(point[0],2), y = rn(point[1],2);
-      const type = reliefGroup.value;
-      addReliefIcon(height / 100, type, x, y, index);
-
-      if (d3.event.shiftKey === false) {
-        $("#addRelief").removeClass("pressed");
-        restoreDefaultEvents();
-      }
-      tip("", true);
     }
 
     // add route on click
@@ -6371,7 +6397,8 @@ function fantasyMap() {
       let selected = markerSelectGroup.value;
       let valid = selected && d3.select("#defs-markers").select("#"+selected).size() === 1;
       let symbol = valid ? "#"+selected : "#marker0";
-      let desired = valid ? markers.select("[data-id='" + symbol + "']").attr("data-size") : 1;
+      let added = markers.select("[data-id='" + symbol + "']").size();
+      let desired = valid && added ? markers.select("[data-id='" + symbol + "']").attr("data-size") : 1;
       if (isNaN(desired)) desired = 1;
       let id = "marker" + Date.now().toString().slice(7); // unique id
       let size = desired * 5 + 25 / scale;
@@ -6409,7 +6436,7 @@ function fantasyMap() {
     s.urbanPopulation = rn(burgsPop, 1);
     const regionCells = $.grep(cells, function(e) {return (e.region === state);});
     let cellsPop = 0, area = 0;
-    regionCells.map(function(c) {
+    regionCells.forEach(function(c) {
       cellsPop += c.pop;
       area += c.area;
     });
@@ -6616,12 +6643,17 @@ function fantasyMap() {
       }
 
       // to fix use elements sizing
-      clone.selectAll("use").each(function() {
+      clone.select("#icons").selectAll("use").each(function() {
         const size = this.parentNode.getAttribute("size") || 1;
         this.setAttribute("width", size + "px");
         this.setAttribute("height", size + "px");
       });
-
+      clone.select("#terrain").selectAll("use").each(function() {
+        const size = this.getAttribute("width") || 1;
+        this.setAttribute("width", size + "px");
+        this.setAttribute("height", size + "px");
+      });
+      
       // clean attributes
       //clone.selectAll("*").each(function() {
       //  const attributes = this.attributes;
@@ -6813,32 +6845,35 @@ function fantasyMap() {
     const fileReader = new FileReader();
     fileReader.onload = function(fileLoadedEvent) {
       const dataLoaded = fileLoadedEvent.target.result;
-      const data = dataLoaded.split("\r\n");
       // data convention: 0 - params; 1 - all points; 2 - cells; 3 - manors; 4 - states;
       // 5 - svg; 6 - options; 7 - cultures; 8 - none; 9 - none; 10 - heights; 11 - notes;
-      const params = data[0].split("|");
-      const mapVersion = params[0] || data[0];
-      if (mapVersion !== version) {
-        let message = `The Map version `;
-        // mapVersion reference was not added to downloaded map before v. 0.52b, so I cannot support really old files
-        if (mapVersion.length <= 10) {
-          message +=  `(${mapVersion}) does not match the Generator version (${version}). The map will be auto-updated.
-                      In case of critical issues you may send the .map file
-                      <a href="mailto:maxganiev@yandex.ru?Subject=Map%20update%20request" target="_blank">to me</a>
-                      or just keep using
-                      <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog" target="_blank">an appropriate version</a>
-                      of the Generator`;
-        } else if (!mapVersion || parseFloat(mapVersion) < 0.54) {
-          message += `you are trying to load is too old and cannot be updated. Please re-create the map or just keep using
-                      <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog" target="_blank">an archived version</a>
-                      of the Generator. Please note the Generator is still on demo and a lot of changes are being made every month`;
+      const data = dataLoaded.split("\r\n");
+      const mapVersion = data[0].split("|")[0] || data[0];
+      if (mapVersion === version) {loadDataFromMap(data);}
+      else {
+        let message = ``, load = false;
+        const parsed = parseFloat(mapVersion);
+        // mapVersion reference was not added to downloaded map before v. 0.52b, so we cannot support really old files
+        if (isNaN(parsed)) {
+          message = `The file you are trying to load is not a valid .map file or too old to be used in the current version (${version}).
+                     You may try to open the file in <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog" target="_blank">archived version</a>`;
+        } else if (parsed < 0.55) {
+          message = `The map version you are trying to load (${mapVersion}) is too old and cannot be updated to the current version. Please re-create the map or just keep using
+                     <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog" target="_blank">an archived version</a> of the Generator`;
+        } else {
+          load = true;
+          message =  `The map version (${mapVersion}) does not match the Generator version (${version}). The map will be auto-updated.
+                     In case of critical issues you may send the .map file <a href="mailto:maxganiev@yandex.ru?Subject=Map%20update%20request" target="_blank">to me</a>
+                     or just keep using <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog" target="_blank">an appropriate version</a> of the Generator`;
         }
         alertMessage.innerHTML = message;
-        $("#alert").dialog({title: "Warning", buttons: {OK: function() {
-          loadDataFromMap(data);
-        }}});
-      } else {loadDataFromMap(data);}
-      if (mapVersion.length > 10) {console.error("Cannot load map"); }
+        $("#alert").dialog({title: "Warning", buttons: {
+          OK: function() {
+            $(this).dialog("close");
+            if (load) loadDataFromMap(data);
+          }
+        }});
+      }
     };
     fileReader.readAsText(file, "UTF-8");
     if (callback) {callback();}
@@ -6854,31 +6889,23 @@ function fantasyMap() {
     }
 
     // get options
-    if (data[0] === "0.52b" || data[0] === "0.53b") {
-      customization = 0;
-    } else if (data[6]) {
-      const options = data[6].split("|");
-      customization = +options[0] || 0;
-      if (options[1]) distanceUnit.value = options[1];
-      if (options[2]) distanceScale.value = options[2];
-      if (options[3]) areaUnit.value = options[3];
-      if (options[4]) barSize.value = options[4];
-      if (options[5]) barLabel.value = options[5];
-      if (options[6]) barBackOpacity.value = options[6];
-      if (options[7]) barBackColor.value = options[7];
-      if (options[8]) populationRate.value = options[8];
-      if (options[9]) urbanization.value = options[9];
-    }
+    if (!data[6]) throw new Error("Cannot load the options, check the .map file!");
+    const options = data[6].split("|");
+    customization = +options[0] || 0;
+    if (options[1]) distanceUnit.value = options[1];
+    if (options[2]) distanceScale.value = options[2];
+    if (options[3]) areaUnit.value = options[3];
+    if (options[4]) barSize.value = options[4];
+    if (options[5]) barLabel.value = options[5];
+    if (options[6]) barBackOpacity.value = options[6];
+    if (options[7]) barBackColor.value = options[7];
+    if (options[8]) populationRate.value = options[8];
+    if (options[9]) urbanization.value = options[9];
 
     // replace old svg
     svg.remove();
-    if (data[0] === "0.52b" || data[0] === "0.53b") {
-      states = []; // no states data in old maps
-      document.body.insertAdjacentHTML("afterbegin", data[4]);
-    } else {
-      states = JSON.parse(data[4]);
-      document.body.insertAdjacentHTML("afterbegin", data[5]);
-    }
+    states = JSON.parse(data[4]);
+    document.body.insertAdjacentHTML("afterbegin", data[5]);
 
     svg = d3.select("svg");
 
@@ -6892,9 +6919,11 @@ function fantasyMap() {
 
     // temporary fit loaded svg element to current canvas size
     svg.attr("width", svgWidth).attr("height", svgHeight);
-    if (nWidth !== svgWidth || nHeight !== svgHeight) {
-      alertMessage.innerHTML  = `The loaded map has size ${nWidth} x ${nHeight} pixels, while the current canvas size is ${svgWidth} x ${svgHeight} pixels.
-                                Click "Rescale" to fit the map to the current canvas size. Click "OK" to browse the map without rescaling`;
+    if (nWidth === svgWidth && nHeight === svgHeight) applyLoadedData(data);
+    else {
+      const m = `The loaded map has size ${nWidth} x ${nHeight} pixels, while the current canvas size is ${svgWidth} x ${svgHeight} pixels.
+                 Click "Rescale" to fit the map to the current canvas size. Click "OK" to browse the map without rescaling`;
+      alertMessage.innerHTML  = m;
       $("#alert").dialog({title: "Map size conflict",
         buttons: {
           Rescale: function() {
@@ -6918,8 +6947,6 @@ function fantasyMap() {
           }
         }
       });
-    } else {
-      applyLoadedData(data);
     }
   }
 
@@ -6953,6 +6980,10 @@ function fantasyMap() {
     ruler = viewbox.select("#ruler");
     debug = viewbox.select("#debug");
 
+    const versionN = parseFloat(data[0].split("|")[0]); // map version number
+
+    // version control: ensure required elements are created with correct data
+    // no markers before 0.60
     if (!d3.select("#defs-markers").size()) {
       let symbol = '<g id="defs-markers"><symbol id="marker0" viewBox="0 0 30 30"><path d="M6,19 l9,10 L24,19" fill="#000000" stroke="none"></path><circle cx="15" cy="15" r="10" stroke-width="1" stroke="#000000" fill="#ffffff"></circle><text x="50%" y="50%" fill="#000000" stroke-width="0" stroke="#000000" font-size="22px" dominant-baseline="central">?</text></symbol></g>';
       let cont = document.getElementsByTagName("defs");
@@ -6960,12 +6991,13 @@ function fantasyMap() {
       markers = viewbox.append("g").attr("id", "markers");
     }
 
-    // version control: ensure required groups are created with correct data
+    // old burgLabels (before 0.59)
     if (!labels.select("#burgLabels").size()) {
       labels.append("g").attr("id", "burgLabels");
       $("#labels #capitals, #labels #towns").detach().appendTo($("#burgLabels"));
     }
 
+    // old burgIcons (before 0.59)
     if (!icons.select("#burgIcons").size()) {
       icons.append("g").attr("id", "burgIcons");
       $("#icons #capitals, #icons #towns").detach().appendTo($("#burgIcons"));
@@ -6973,29 +7005,32 @@ function fantasyMap() {
       icons.select("#burgIcons").select("#towns").attr("size", .5).attr("fill-opacity", .7).attr("stroke-opacity", 1);
     }
 
-    icons.selectAll("g").each(function() {
-      const size = this.getAttribute("font-size");
-      if (size === null || size === undefined) return;
-      this.removeAttribute("font-size");
-      this.setAttribute("size", size);
-    });
+    // old icons and labels (before 0.60)
+    if (versionN < 0.60) {
+      icons.selectAll("g").each(function() {
+        const size = this.getAttribute("font-size");
+        if (size === null || size === undefined) return;
+        this.removeAttribute("font-size");
+        this.setAttribute("size", size);
+      });
 
-    icons.select("#burgIcons").selectAll("circle").each(function() {
-      this.setAttribute("r", this.parentNode.getAttribute("size"));
-    });
+      icons.select("#burgIcons").selectAll("circle").each(function() {
+        this.setAttribute("r", this.parentNode.getAttribute("size"));
+      });
 
-    icons.selectAll("use").each(function() {
-      const size = this.parentNode.getAttribute("size");
-      if (size === null || size === undefined) return;
-      this.setAttribute("width", size);
-      this.setAttribute("height", size);
-    });
+      icons.selectAll("use").each(function() {
+        const size = this.parentNode.getAttribute("size");
+        if (size === null || size === undefined) return;
+        this.setAttribute("width", size);
+        this.setAttribute("height", size);
+      });
 
-    if (!labels.select("#countries").size()) {
-      labels.append("g").attr("id", "countries")
-        .attr("fill", "#3e3e4b").attr("opacity", 1)
-        .attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC")
-        .attr("font-size", 14).attr("data-size", 14);
+      if (!labels.select("#countries").size()) {
+        labels.append("g").attr("id", "countries")
+          .attr("fill", "#3e3e4b").attr("opacity", 1)
+          .attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC")
+          .attr("font-size", 14).attr("data-size", 14);
+      }
     }
 
     burgLabels = labels.select("#burgLabels");
@@ -7005,7 +7040,6 @@ function fantasyMap() {
     svg.call(zoom);
     restoreDefaultEvents();
     viewbox.on("touchmove mousemove", moved);
-    overlay.selectAll("*").call(d3.drag().on("start", elementDrag));
     terrain.selectAll("g").selectAll("g").on("click", editReliefIcon);
     labels.selectAll("text").on("click", editLabel);
     icons.selectAll("circle, path, use").on("click", editIcon);
@@ -7028,15 +7062,8 @@ function fantasyMap() {
     cells = JSON.parse(data[2]);
     manors = JSON.parse(data[3]);
     if (data[7]) cultures = JSON.parse(data[7]);
-    if (data[7] === undefined) generateCultures();
+    else generateCultures();
     if (data[11]) notes = JSON.parse(data[11]);
-
-    // place random point
-    function placePoint() {
-      const x = Math.floor(Math.random() * graphWidth * 0.8 + graphWidth * 0.1);
-      const y = Math.floor(Math.random() * graphHeight * 0.8 + graphHeight * 0.1);
-      return [x, y];
-    }
 
     // ensure each culure has a valid namesbase assigned, if not assign first base
     if (!nameBase[0]) applyDefaultNamesData();
@@ -7044,8 +7071,9 @@ function fantasyMap() {
       const b = c.base;
       if (b === undefined) c.base = 0;
       if (!nameBase[b] || !nameBases[b]) c.base = 0;
-      if (c.center === undefined) c.center = placePoint();
+      if (c.center === undefined) c.center = placeCulture();
     });
+
     const graphSizeAdj = 90 / Math.sqrt(cells.length, 2); // adjust to different graphSize
 
     // cells validations
@@ -7088,7 +7116,7 @@ function fantasyMap() {
     calculateVoronoi(newPoints);
 
     // get heights Uint8Array
-    if (data[10]) {heights = new Uint8Array(data[10].split(","));}
+    if (data[10]) heights = new Uint8Array(data[10].split(","));
     else {
       heights = new Uint8Array(points.length);
       for (let i=0; i < points.length; i++) {
@@ -7133,6 +7161,27 @@ function fantasyMap() {
       if (el.style("display") === "none") el.node().style.display = null;
     });
 
+    // show message for Relief Icons to be re-generated
+    if (versionN < 0.61) {
+
+      // append relief icons
+      if (!d3.select("#defs-relief").size()) {
+        let symbols = `<g id="defs-relief"><symbol id="relief-mount-1" viewBox="0 0 100 100"><path d="m3,69 16,-12 31,-32 15,20 30,24" fill="#fff" stroke="#5c5c70" stroke-width="1"></path><path d="m3,69 16,-12 31,-32 -14,44" fill="#999999"></path><path d="m3,71 h92 m-83,3 h83" stroke="#5c5c70" stroke-dasharray="7, 11" stroke-width="1"></path>  </symbol>  <symbol id="relief-hill-1" viewBox="0 0 100 100"><path d="m20,55 q30,-28 60,0" fill="#999999" stroke="#5c5c70"></path><path d="m38,55 q13,-24 40,0" fill="#fff"></path><path d="m20,58 h70 m-62,3 h50" stroke="#5c5c70" stroke-dasharray="7, 11" stroke-width="1"></path>  </symbol>  <symbol id="relief-deciduous-1" viewBox="0 0 100 100"><path d="m50,52 v7 h1 v-7 h-0.5 q13,-7 0,-16 q-13,9 0,16" fill="#fff" stroke="#5c5c70"></path><path d="m50,52 q-12,-7 0,-16 q-3.5,10 0,15.5" fill="#999999"></path>  </symbol>  <symbol id="relief-conifer-1" viewBox="0 0 100 100"><path d="m50,55 v4 h1 v-4 l4.5,0 -4,-8 l3.5,0 -4.5,-9 -4,9 3,0 -3.5,8 7,0" fill="#fff" stroke="#5c5c70"></path><path d="m46,55 l4,-8 -4,0 5,-9 -2.5,9 l1.5,0 -2,8" fill="#999999"></path>  </symbol>  <symbol id="relief-palm-1" viewBox="0 0 100 100"><path d="m 48.1,55.5 2.1,0 c 0,0 1.3,-5.5 1.2,-8.6 0,-3.2 -1.1,-5.5 -1.1,-5.5 l -0.5,-0.4 -0.2,0.1 c 0,0 0.9,2.7 0.5,6.2 -0.5,3.8 -2.1,8.2 -2.1,8.2 z" fill="#5c5c70"></path><path d="m 54.9,48.8 c 0,0 1.9,-2.5 0.3,-5.4 -1.4,-2.6 -4.3,-3.2 -4.3,-3.2 0,0 1.6,-0.6 3.3,-0.3 1.7,0.3 4.1,2.5 4.1,2.5 0,0 -0.6,-3.6 -3.6,-4.4 -2.2,-0.6 -4.2,1.3 -4.2,1.3 0,0 0.3,-1.5 -0.2,-2.9 -0.6,-1.4 -2.6,-1.9 -2.6,-1.9 0,0 0.8,1.1 1.2,2.2 0.3,0.9 0.3,2 0.3,2 0,0 -1.3,-1.8 -3.7,-1.5 -2.5,0.2 -3.7,2.5 -3.7,2.5 0,0 2.3,-0.6 3.4,-0.6 1.1,0.1 2.6,0.8 2.6,0.8 l -0.4,0.2 c 0,0 -1.2,-0.4 -2.7,0.4 -1.9,1.1 -2.9,3.7 -2.9,3.7 0,0 1.4,-1.4 2.3,-1.9 0.5,-0.3 1.8,-0.7 1.8,-0.7 0,0 -0.7,1.3 -0.9,3.1 -0.1,2.5 1.1,4.6 1.1,4.6 0,0 0.1,-3.4 1.2,-5.6 1,-1.9 2.3,-2.6 2.3,-2.6 l 0.4,-0.2 c 0,0 1.5,0.7 2.8,2.8 1,1.7 2.3,5 2.3,5 z" fill="#fff" stroke="#5c5c70" stroke-width=".6"></path><path d="m 47.75,34.61 c 0,0 0.97,1.22 1.22,2.31 0.2,0.89 0.35,2.81 0.35,2.81 0,0 -1.59,-1.5 -3.2,-1.61 -1.82,-0.13 -3.97,1.31 -3.97,1.31 0,0 2.11,-0.49 3.34,-0.47 1.51,0.03 3.33,1.21 3.33,1.21 0,0 -1.7,0.83 -2.57,2.8 -0.88,1.97 -0.34,6.01 -0.34,6.01 0,0 0.04,-2.95 0.94,-4.96 0.8,-1.78 2.11,-2.67 2.44,-2.85 0.66,-0.34 0.49,-1.09 0.49,-1.09 0,0 -0.1,-2.18 -0.52,-3.37 -0.42,-1.21 -1.51,-2.11 -1.51,-2.11 z" fill="#999"></path><path d="m 42,43.7 c 0,0 1.2,-1.1 1.8,-1.5 0.7,-0.4 2,-0.8 2,-0.8 L 46.5,40.5 c 0,0 -0.8,0 -2.3,0.8 -1.3,0.8 -2.2,2.3 -2.2,2.3 z" fill="#999"></path>  </symbol>  <symbol id="relief-swamp-1" viewBox="0 0 100 100"><path d="m50,46 v6 l3,-4 m-3,4 l-3,-4 m-7,4.5 h4 m4,0 h4 m4,0 h4" fill="none" stroke="#5c5c70"></path>  </symbol>  <symbol id="relief-dune-1" viewBox="0 0 100 100"><path d="m 28.7,52.8 c 5,-3.9 10,-8.2 15.8,-8.3 4.5,0 10.8,3.8 15.2,6.5 3.5,2.2 6.8,2 6.8,2" fill="none" stroke="#5c5c70" stroke-width="1.8"></path><path d="m 44.2,47.6 c -3.2,3.2 3.5,5.7 5.9,7.8" fill="none" stroke="#5c5c70"></path></symbol></g>`
+        let cont = document.getElementsByTagName("defs");
+        cont[0].insertAdjacentHTML("afterbegin", symbols);
+      }
+
+      const m = `Version 0.61b introduced a new Relief Icons editor that is not compatible with old relief icons.
+                Click "Update" to re-generate the relief icons using a new algorithm or "Keep" to leave them as they are`;
+      alertMessage2.innerHTML  = m;
+      $("#alert2").dialog({title: "Relief Icons note",
+        buttons: {
+          Update: function() {drawRelief(); $(this).dialog("close");},
+          Keep: function() {$(this).dialog("close");}
+        }
+      });
+    }
+
     invokeActiveZooming();
     console.timeEnd("loadMap");
   }
@@ -7162,13 +7211,14 @@ function fantasyMap() {
     const key = d3.event.keyCode;
     const ctrl = d3.event.ctrlKey;
     const p = d3.mouse(this);
-    if (key === 117) $("#randomMap").click(); // "F6" for new map
+    if (key === 118) $("#randomMap").click(); // "F7" for new map
     else if (key === 27) closeDialogs(); // Escape to close all dialogs
     else if (key === 79) optionsTrigger.click(); // "O" to toggle options
     else if (key === 80) saveAsImage("png"); // "P" to save as PNG
     else if (key === 83) saveAsImage("svg"); // "S" to save as SVG
     else if (key === 77) saveMap(); // "M" to save MAP file
     else if (key === 76) mapToLoad.click(); // "L" to load MAP
+    else if (key === 46) removeElementOnKey(); // "Delete" to remove the selected element
     else if (key === 32) console.table(cells[diagram.find(p[0],p[1]).index]); // Space to log focused cell data
     else if (key === 192) console.log(cells); // "`" to log cells data
     else if (key === 66) console.table(manors); // "B" to log burgs data
@@ -7194,6 +7244,12 @@ function fantasyMap() {
     else if (ctrl && key === 90) undo.click(); // Ctrl + "Z" to toggle undo
     else if (ctrl && key === 89) redo.click(); // Ctrl + "Y" to toggle undo
   });
+
+  // trigger trash button click on "Delete" keypress
+  function removeElementOnKey() {
+    $(".dialog:visible .icon-trash").click();
+    $("button:visible:contains('Remove')").click();
+  }
 
   // Show help
   function showHelp() {
@@ -7243,17 +7299,17 @@ function fantasyMap() {
 
   // define connection between option layer buttons and actual svg groups
   function getLayer(id) {
-    if (id === "toggleGrid") {return $("#grid");}
-    if (id === "toggleOverlay") {return $("#overlay");}
-    if (id === "toggleHeight") {return $("#terrs");}
-    if (id === "toggleCultures") {return $("#cults");}
-    if (id === "toggleRoutes") {return $("#routes");}
-    if (id === "toggleRivers") {return $("#rivers");}
-    if (id === "toggleCountries") {return $("#regions");}
-    if (id === "toggleBorders") {return $("#borders");}
-    if (id === "toggleRelief") {return $("#terrain");}
-    if (id === "toggleLabels") {return $("#labels");}
-    if (id === "toggleIcons") {return $("#icons");}
+    if (id === "toggleGrid") return $("#grid");
+    else if (id === "toggleOverlay") return $("#overlay");
+    else if (id === "toggleHeight") return $("#terrs");
+    else if (id === "toggleCultures") return $("#cults");
+    else if (id === "toggleRoutes") return $("#routes");
+    else if (id === "toggleRivers") return $("#rivers");
+    else if (id === "toggleCountries") return $("#regions");
+    else if (id === "toggleBorders") return $("#borders");
+    else if (id === "toggleRelief") return $("#terrain");
+    else if (id === "toggleLabels") return $("#labels");
+    else if (id === "toggleIcons") return $("#icons");
   }
 
   // UI Button handlers
@@ -7264,7 +7320,7 @@ function fantasyMap() {
     if (id === "toggleHeight") {toggleHeight();}
     if (id === "toggleCountries") {$('#regions').fadeToggle();}
     if (id === "toggleCultures") {toggleCultures();}
-    if (id === "toggleOverlay") {toggleOverlay();}
+    if (id === "toggleOverlay") {toggleOverlay(); return;}
     if (id === "toggleFlux") {toggleFlux();}
     if (parent === "mapLayers" || parent === "styleContent") {$(this).toggleClass("buttonoff");}
     if (id === "randomMap" || id === "regenerate") {
@@ -7278,6 +7334,7 @@ function fantasyMap() {
     if (id === "editCountries") editCountries();
     if (id === "editCultures") editCultures();
     if (id === "editScale" || id === "editScaleCountries" || id === "editScaleBurgs") editScale();
+    if (id === "editReliefIcons") editReliefIcon();
     if (id === "countriesManually") {
       customization = 2;
       tip("Click to select a country, drag the circle to re-assign", true);
@@ -7439,11 +7496,11 @@ function fantasyMap() {
     if (id === "burgNamesImport") burgsListToLoad.click();
 
     if (id === "removeCountries") {
-      alertMessage.innerHTML = `Are you sure you want remove all countries?`;
+      alertMessage.innerHTML = `Are you sure you want delete all countries?`;
       $("#alert").dialog({resizable: false, title: "Remove countries",
         buttons: {
           Cancel: function() {$(this).dialog("close");},
-          Remove: function() {
+          Delete: function() {
             $(this).dialog("close");
             $("#countriesBody").empty();
             manors.map(function(m) {m.region = "neutral";});
@@ -7588,10 +7645,10 @@ function fantasyMap() {
     }
     if (id === "fromHeightmap") {
       const message = `Hightmap is a basic element on which secondary data (rivers, burgs, countries etc) is based.
-      If you want to significantly change the hightmap, it may be better to clean up all the secondary data
-      and let the system to re-generate it based on the updated hightmap. In case of minor changes, you can keep the data.
-      Newly added lands will be considered as neutral. Burgs located on a removed land cells will be deleted.
-      Rivers and small lakes will be re-gerenated based on updated heightmap. Routes won't be regenerated.`;
+      If you want to significantly change the hightmap, it may be better to <i>clean up</i> all the secondary data
+      and let the system to re-generate it based on the updated hightmap. You can <i>keep</i> the generated states and burgs as they are,
+      but in any case rivers, small lakes and relief icons will be re-gerenated based on the updated heightmap. States can be unsignificantly changed.
+      Newly added lands will be considered as neutral. Burgs located on removed land cells will be deleted. Routes won't be regenerated.`;
       alertMessage.innerHTML = message;
       $("#alert").dialog({resizable: false, title: "Edit Heightmap",
         buttons: {
@@ -7811,10 +7868,10 @@ function fantasyMap() {
 
   function editHeightmap(type) {
     closeDialogs();
-    const regionData = [],cultureData = [];
+    const regionData = [], cultureData = [];
     if (type !== "clean") {
       for (let i = 0; i < points.length; i++) {
-        let cell = diagram.find(points[i][0],points[i][1]).index;
+        let cell = diagram.find(points[i][0], points[i][1]).index;
         // if closest cell is a small lake, try to find a land neighbor
         if (cells[cell].lake === 2) cells[cell].neighbors.forEach(function(n) {
           if (cells[n].height >= 20) {cell = n; }
@@ -7826,13 +7883,20 @@ function fantasyMap() {
         if (culture === undefined) culture = -1;
         cultureData.push(culture);
       }
+
+      for (let m = 0; m < manors.length; m++) {
+        let cell = manors[m].cell;
+        // replace cell reference by cell centroid coordinated to find the correct cell later
+        manors[m].cell = d3.polygonCentroid(polygons[cell]);
+      }
+
     } else {undraw();}
     calculateVoronoi(points);
     detectNeighbors("grid");
     drawScaleBar();
     if (type === "keep") {
       svg.selectAll("#lakes, #coastline, #terrain, #rivers, #grid, #terrs, #landmass, #ocean, #regions")
-        .selectAll("path, circle, line").remove();
+        .selectAll("path, circle, line, use").remove();
       svg.select("#shape").remove();
       for (let i = 0; i < points.length; i++) {
         if (regionData[i] !== -1) cells[i].region = regionData[i];
@@ -8079,14 +8143,14 @@ function fantasyMap() {
     }
     if (template === "templateMainland") {
       addStep("Mountain");
-      addStep("Add", 10, "all");
-      addStep("Hill", 30, 0.2);
-      addStep("Range", 10);
+      addStep("Add", 9, "all");
+      addStep("Hill", 30, 0.22);
       addStep("Pit", 20);
-      addStep("Hill", 10, 0.15);
+      addStep("Hill", 10, 0.13);
+      addStep("Range", 5);
       addStep("Trough", 10);
       addStep("Multiply", 0.4, "land");
-      addStep("Range", 10);
+      addStep("Range", 5);
       addStep("Smooth", 3);
     }
     if (template === "templatePeninsulas") {
@@ -8406,7 +8470,7 @@ function fantasyMap() {
     viewbox.selectAll("path, circle, line, text, use, #ruler > g").remove();
     defs.selectAll("*").remove();
     landmass.select("rect").remove();
-    cells = [],land = [],riversData = [],manors = [],states = [],features = [],queue = [];
+    cells = [], land = [], riversData = [], manors = [], states = [], features = [], queue = [];
   }
 
   // Enter Heightmap Customization mode
@@ -9101,13 +9165,10 @@ function fantasyMap() {
         cultureCenters.append("circle").attr("id", "cultureCenter"+c)
           .attr("cx", cultures[c].center[0]).attr("cy", cultures[c].center[1])
           .attr("r", 6).attr("stroke-width", 2).attr("stroke", "#00000080").attr("fill", cultures[c].color)
-          .on("mousemove", cultureCenterTip).on("mouseleave", function() {tip("", true)})
+          .on("mousemove", function() {tip('Drag to move the culture center. Click on the "Re-calculate" button to get cultutes actually changed', true);})
+          .on("mouseleave", function() {tip('', true)})
           .call(d3.drag().on("start", cultureCenterDrag));
       }
-    }
-
-    function cultureCenterTip() {
-      tip('Drag to move culture center and re-calculate cultures', true);
     }
 
     function cultureCenterDrag() {
@@ -9115,12 +9176,14 @@ function fantasyMap() {
       const c = +this.id.slice(13);
 
       d3.event.on("drag", function() {
+        el.attr("cx", d3.event.x).attr("cy", d3.event.y);
+      });
+
+      d3.event.on("end", function() {
         const x = d3.event.x, y = d3.event.y;
-        el.attr("cx", x).attr("cy", y);
         cultures[c].center = [x, y];
         const centers = cultures.map(function(c) {return c.center;});
         cultureTree = d3.quadtree(centers);
-        recalculateCultures();
       });
     }
 
@@ -9191,11 +9254,14 @@ function fantasyMap() {
       restoreDefaultEvents();
     }
 
+    $("#culturesRecalculate").on("click", function() {
+      recalculateCultures();
+      editCultures();
+    });
+
     $("#culturesRandomize").on("click", function() {
       const centers = cultures.map(function(c) {
-        const x = Math.floor(Math.random() * graphWidth * 0.8 + graphWidth * 0.1);
-        const y = Math.floor(Math.random() * graphHeight * 0.8 + graphHeight * 0.1);
-        const center = [x, y];
+        const center = placeCulture();
         c.center = center;
         return center;
       });
@@ -9238,10 +9304,7 @@ function fantasyMap() {
     $("#culturesEditNamesBase").on("click", editNamesbase);
 
     $("#culturesAdd").on("click", function() {
-      const x = Math.floor(Math.random() * graphWidth * 0.8 + graphWidth * 0.1);
-      const y = Math.floor(Math.random() * graphHeight * 0.8 + graphHeight * 0.1);
-      const center = [x, y];
-
+      const center = placeCulture();
       let culture, base, name, color;
       if (cultures.length < defaultCultures.length) {
         // add one of the default cultures
@@ -9259,7 +9322,6 @@ function fantasyMap() {
       cultures.push({name, color, base, center});
       const centers = cultures.map(function(c) {return c.center;});
       cultureTree = d3.quadtree(centers);
-      recalculateCultures();
       editCultures();
     });
   }
@@ -9680,7 +9742,8 @@ function fantasyMap() {
     borders.selectAll("path").remove();
     removeAllLabelsInGroup("countries");
     manors.map(function(m) {
-      const cell = diagram.find(m.x, m.y).index;
+      // find burg cell by its original cell's centroid reference
+      const cell = diagram.find(m.cell[0], m.cell[1]).index;
       if (cells[cell].height < 20) {
         // remove manor in ocean
         m.region = "removed";
@@ -9705,11 +9768,12 @@ function fantasyMap() {
         }
       }
       if (c.culture === undefined) {
-        const closest = cultureTree.find(c.data[0],c.data[1]);
+        const closest = cultureTree.find(c.data[0], c.data[1]);
         c.culture = cultureTree.data().indexOf(closest);
       }
     });
-    states.map(function(s) {recalculateStateData(s.i);});
+    calculateRuralPopulation();
+    states.forEach(function(s) {recalculateStateData(s.i);});
     drawRegions();
   }
 
@@ -10005,6 +10069,12 @@ function fantasyMap() {
       styleOceanBack.value = styleOceanBackOutput.value = svg.style("background-color");
       styleOceanFore.value = styleOceanForeOutput.value = oceanLayers.select("rect").attr("fill");
     }
+
+    if (sel === "coastline") {
+      $("#styleCoastline").css("display", "block");
+      if (styleCoastlineAuto.checked) $("#styleFilter").hide();
+    }
+
   });
 
   // update Label Groups displayed on Style tab
@@ -10100,6 +10170,12 @@ function fantasyMap() {
     styleOverlaySizeFriendly.value = friendly;
   }
 
+  $("#styleOverlayShiftX, #styleOverlayShiftY").on("input", function() {
+    let x = styleOverlayShiftX.value || 0;
+    let y = styleOverlayShiftY.value || 0;
+    overlay.attr("transform", `translate(${x},${y})`);
+  });
+
   $("#styleOceanBack").on("input", function() {
     svg.style("background-color", this.value);
     styleOceanBackOutput.value = this.value;
@@ -10150,6 +10226,26 @@ function fantasyMap() {
     if (id === "neutralInput") {neutralOutput.value = countriesNeutral.value = this.value; localStorage.setItem("neutal", this.value);}
     if (id === "culturesInput") {culturesOutput.value = this.value; localStorage.setItem("cultures", this.value);}
     if (id === "precInput") {precOutput.value = +precInput.value; localStorage.setItem("prec", this.value);}
+    if (id === "reliefDensityInput") {
+      reliefDensityOutput.value = rn(this.value * 100) + "%";
+      localStorage.setItem("reliefDensity", this.value);
+      drawRelief();
+    }
+    if (id === "reliefSizeInput") {
+      let size = +this.value;
+      reliefSizeOutput.value = size;
+      localStorage.setItem("reliefSize", size);
+      terrain.selectAll("use").each(function(d) {
+        let newSize = this.getAttribute("data-size") * size;
+        let shift = (newSize - +this.getAttribute("width")) / 2;
+        this.setAttribute("width", newSize);
+        this.setAttribute("height", newSize);
+        let x = +this.getAttribute("x");
+        let y = +this.getAttribute("y");
+        this.setAttribute("x", x - shift);
+        this.setAttribute("y", y - shift);
+      });
+    }
     if (id === "swampinessInput") {swampinessOutput.value = this.value; localStorage.setItem("swampiness", this.value);}
     if (id === "outlineLayersInput") localStorage.setItem("outlineLayers", this.value);
     if (id === "transparencyInput") changeDialogsTransparency(this.value);
@@ -10275,7 +10371,7 @@ function fantasyMap() {
 
   $("#layoutPreset").on("change", function() {
     const preset = this.value;
-    $("#mapLayers li").not("#toggleOcean").addClass("buttonoff");
+    $("#mapLayers li").not("#toggleOcean, #toggleOverlay").addClass("buttonoff");
     $("#toggleOcean").removeClass("buttonoff");
     $("#oceanPattern").fadeIn();
     $("#rivers, #terrain, #borders, #regions, #icons, #labels, #routes, #grid, #markers").fadeOut();
@@ -10326,6 +10422,68 @@ function fantasyMap() {
     const url = new URL(window.location.href);
     window.location.href = url.pathname + "?seed=" + seed;
   });
+
+  // mbostock's code
+  function* poissonDiscSampler(x0, y0, x1, y1, r, k = 3) {
+    if (!(x1 >= x0) || !(y1 >= y0) || !(r > 0)) throw new Error;
+
+    const width = x1 - x0;
+    const height = y1 - y0;
+    const r2 = r * r;
+    const r2_3 = 3 * r2;
+    const cellSize = r * Math.SQRT1_2;
+    const gridWidth = Math.ceil(width / cellSize);
+    const gridHeight = Math.ceil(height / cellSize);
+    const grid = new Array(gridWidth * gridHeight);
+    const queue = [];
+
+    function far(x, y) {
+      const i = x / cellSize | 0;
+      const j = y / cellSize | 0;
+      const i0 = Math.max(i - 2, 0);
+      const j0 = Math.max(j - 2, 0);
+      const i1 = Math.min(i + 3, gridWidth);
+      const j1 = Math.min(j + 3, gridHeight);
+      for (let j = j0; j < j1; ++j) {
+        const o = j * gridWidth;
+        for (let i = i0; i < i1; ++i) {
+          const s = grid[o + i];
+          if (s) {
+            const dx = s[0] - x;
+            const dy = s[1] - y;
+            if (dx * dx + dy * dy < r2) return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    function sample(x, y) {
+      queue.push(grid[gridWidth * (y / cellSize | 0) + (x / cellSize | 0)] = [x, y]);
+      return [x + x0, y + y0];
+    }
+
+    yield sample(width / 2, height / 2);
+
+    pick: while (queue.length) {
+      const i = Math.random() * queue.length | 0;
+      const parent = queue[i];
+
+      for (let j = 0; j < k; ++j) {
+        const a = 2 * Math.PI * Math.random();
+        const r = Math.sqrt(Math.random() * r2_3 + r2);
+        const x = parent[0] + r * Math.cos(a);
+        const y = parent[1] + r * Math.sin(a);
+        if (0 <= x && x < width && 0 <= y && y < height && far(x, y)) {
+          yield sample(x, y);
+          continue pick;
+        }
+      }
+
+      const r = queue.pop();
+      if (i < queue.length) queue[i] = r;
+    }
+  }
 
   // Pull request from @evyatron
   // https://github.com/Azgaar/Fantasy-Map-Generator/pull/49
@@ -10380,3 +10538,7 @@ window.tip = tip;
 $("#optionsContainer *").on("mouseout", function() {
   tooltip.innerHTML = tooltip.getAttribute("data-main");
 });
+
+ window.onbeforeunload = function() {
+  return "Are you sure you want to navigate away?";
+}
