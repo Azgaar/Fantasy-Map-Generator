@@ -2,6 +2,20 @@
 
 We are using are VueJS as a build tool to help create a modular version of the Fantasy Map Generator so that individual contributors can work with more manageable files.
 
+## Getting Started
+
+```
+yarn
+yarn serve
+```
+
+## Production
+
+```
+yarn build
+```
+
+
 ## Goal
 
 We could divide and conquer in steps.
