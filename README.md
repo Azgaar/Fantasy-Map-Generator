@@ -10,8 +10,6 @@ Join our [Reddit community](https://www.reddit.com/r/FantasyMapGenerator) to sha
 
 You can support the project [on Patreon](https://www.patreon.com/azgaar).
 
-The desktop application (Electron) is [under development](https://github.com/mamokin/Fantasy-Map-Generator/tree/forked-develop).
-
 _Inspiration:_
 
 * Martin O'Leary's [_Generating fantasy maps_](https://mewo2.com/notes/terrain)
