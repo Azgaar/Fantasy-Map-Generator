@@ -4,7 +4,7 @@ Azgaar's _Fantasy Map Generator_. Online tool generating interactive and editabl
 
 Project is under active development, check out the beta version [here](https://azgaar.github.io/Fantasy-Map-Generator). Refer to the [project wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki) for a guidance. Some details are covered in my blog [_Fantasy Maps for fun and glory_](https://azgaar.wordpress.com), you may also keep an eye on my [Trello devboard](https://trello.com/b/7x832DG4/fantasy-map-generator).
 
-[![alt tag](https://i0.wp.com/azgaar.files.wordpress.com/2017/03/80k-part.png)](https://azgaar.wordpress.com)
+[![alt tag](https://i0.wp.com/azgaar.files.wordpress.com/2019/02/just-a-random-map-e1549707885179.jpg)](https://azgaar.wordpress.com)
 
 Join our [Reddit community](https://www.reddit.com/r/FantasyMapGenerator) to share the created maps, discuss the Generator, suggest ideas and get a most recent updates. You may also contact me directly via [email](mailto:maxganiev@yandex.com). For bug reports please use the project [issues page](https://github.com/Azgaar/Fantasy-Map-Generator/issues). If you are facing performance issues, please try to open the page in a small window, toggle off relief icons layes and use the default graph size only. In Firefox fast map zooming may cause browser crash.
 
