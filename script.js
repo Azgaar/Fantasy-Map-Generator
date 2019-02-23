@@ -7041,6 +7041,7 @@ function fantasyMap() {
     restoreDefaultEvents();
     viewbox.on("touchmove mousemove", moved);
     terrain.selectAll("g").selectAll("g").on("click", editReliefIcon);
+    terrain.selectAll("use").on("click", editReliefIcon);
     labels.selectAll("text").on("click", editLabel);
     icons.selectAll("circle, path, use").on("click", editIcon);
     burgLabels.selectAll("text").on("click", editBurg);
