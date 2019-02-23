@@ -3154,26 +3154,26 @@ function fantasyMap() {
     function completeNewRoute() {
       $("#routeNew, #addRoute").removeClass('pressed');
       restoreDefaultEvents();
-      if (!elSelected.size()) return;
-      if (elSelected.attr("data-route") === "new") {
-        routeRedraw();
-        elSelected.attr("data-route", "");
-        const node = elSelected.node();
-        const l = node.getTotalLength();
-        let pathCells = [];
-        for (let i = 0; i <= l; i ++) {
-          const p = node.getPointAtLength(i);
-          const cell = diagram.find(p.x, p.y);
-          if (!cell) {return;}
-          pathCells.push(cell.index);
-        }
-        const uniqueCells = [...new Set(pathCells)];
-        uniqueCells.map(function(c) {
-          if (cells[c].path !== undefined) {cells[c].path += 1;}
-          else {cells[c].path = 1;}
-        });
-      }
       tip("", true);
+
+      const newRoute = d3.select("#routes [data-route='new']");
+      if (!newRoute.size()) return;
+
+      if (elSelected && elSelected.attr("id") === newRoute.attr("id")) routeRedraw();
+      newRoute.attr("data-route", "");
+      const node = newRoute.node();
+      const l = node.getTotalLength();
+      let pathCells = [];
+      for (let i = 0; i <= l; i ++) {
+        const p = node.getPointAtLength(i);
+        const cell = find(p.x, p.y);
+        pathCells.push(cell);
+      }
+      const uniqueCells = [...new Set(pathCells)];
+      uniqueCells.map(function(c) {
+        if (cells[c].path !== undefined) {cells[c].path += 1;}
+        else {cells[c].path = 1;}
+      });
     }
 
     function routeUpdateGroups() {
