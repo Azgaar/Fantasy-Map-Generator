@@ -3166,7 +3166,7 @@ function fantasyMap() {
       let pathCells = [];
       for (let i = 0; i <= l; i ++) {
         const p = node.getPointAtLength(i);
-        const cell = diagram.find(p.x, p.y);
+        const cell = diagram.find(p.x, p.y).index;
         pathCells.push(cell);
       }
       const uniqueCells = [...new Set(pathCells)];
