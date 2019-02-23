@@ -2455,8 +2455,10 @@ function fantasyMap() {
       }
       let group = this.value.toLowerCase().replace(/ /g, "_").replace(/[^\w\s]/gi, "");
       if (Number.isFinite(+group.charAt(0))) group = "g" + group;
-      // if el with this id exists, add size to id
-      while (labels.selectAll("#"+group).size()) {group += "_new";}
+      if (d3.selectAll("#"+group).size()) {
+        tip("Element with this id already exists. Please provide a unique name");
+        return;
+      }
       createNewLabelGroup(group);
     });
 
