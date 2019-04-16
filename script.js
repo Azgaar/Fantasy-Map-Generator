@@ -452,7 +452,7 @@ function fantasyMap() {
 
   // apply default names data
   function applyDefaultNamesData() {
-    // name, method, min length, max length, letters to allow dublication, multi-word name rate
+    // name, method, min length, max length, letters to allow duplication, multi-word name rate
     nameBases = [                                                                   // min; max; mean; common
       {name: "German", method: "let-to-syl", min: 4, max: 11, d: "lt", m: 0.1},     // real: 3; 17; 8.6; 8
       {name: "English", method: "let-to-syl", min: 5, max: 10, d: "", m: 0.3},      // real: 4; 13; 7.9; 8
@@ -730,7 +730,7 @@ function fantasyMap() {
         }
       }
 
-      // Countries / cultures manuall assignment
+      // Countries / cultures manual assignment
       if (customization === 2 || customization === 4) {
         if ($("div.selected").length === 0) return;
         if (c2 === c1) return;
