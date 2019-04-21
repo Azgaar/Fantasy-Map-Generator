@@ -209,4 +209,18 @@
 .icon-smooth:before {font-weight: bold; content: '∼'; }
 .icon-disrupt:before {font-weight: bold; content: '෴'; }
 .icon-if:before {font-style: italic; font-weight: bold; content: 'if'; }
-.icon-arc:before {font-weight: bold; font-size: 1.2em; content: '⌒'; }
+
+.icon-ruler:before {content: 'I'; }
+.icon-curve:before {content: 'C'; }
+.icon-area:before {content: 'O'; }
+
+.icon-ruler:before,
+.icon-curve:before,
+.icon-area:before {
+  font-size: 1.5em;
+  padding: 0;
+  writing-mode: tb-rl;
+  margin-left: 1px;
+  width: 10px;
+  font-family: monospace;
+}

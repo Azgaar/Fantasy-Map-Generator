@@ -314,13 +314,13 @@ body .ui-dialog {
   left: 0;
   outline: 0;
   padding: 0;
-  font-size: 12px;
   background-color: inherit;
 }
 .ui-dialog .ui-dialog-titlebar {
 	padding: .4em 1em;
 	position: relative;
-	font-size: 14px;
+	font-size: 1.2em;
+  min-width: 150px;
 }
 .ui-dialog .ui-dialog-title {
 	float: left;
@@ -330,18 +330,33 @@ body .ui-dialog {
 	overflow: hidden;
 	text-overflow: ellipsis;
 }
-.ui-dialog .ui-dialog-titlebar-close {
+
+.ui-dialog  .ui-dialog-titlebar button {
 	position: absolute;
   right: .5em;
   top: 53%;
   width: 18px;
-  margin: -10px 0 0 0;
   padding: 0;
   height: 18px;
   color: #ffffff;
   background: none;
   font-size: 10px;
+  border: 1px solid #c5c5c5;
 }
+
+.ui-dialog .ui-dialog-titlebar button.ui-dialog-titlebar-collapse {
+  margin: -10px 22px 0 0;
+}
+
+.ui-dialog .ui-dialog-titlebar button.ui-dialog-titlebar-close {
+  margin: -10px 0 0 0;
+}
+
+.ui-dialog  .ui-dialog-titlebar button:active {
+  border: 1px solid #5d4651;
+  color: #5d4651;
+}
+
 .ui-dialog .ui-dialog-content {
 	position: relative;
 	border: 0;

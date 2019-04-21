@@ -1,0 +1,12 @@
+All used textures should be distrubuted under free license
+marble.jpg		https://www.rawpixel.com/image/327647/closeup-marble-textured-background	by Teddy Rawpixel
+marble-blue.jpg		https://www.pexels.com/photo/gray-and-blue-surface-988871/
+timbercut.jpg		https://www.pexels.com/photo/brown-close-up-hd-wallpaper-surface-172289
+antique.jpg		https://www.pexels.com/photo/abstract-ancient-antique-art-235985/
+pergamena.jpg		https://www.freepik.com/free-photo/old-paper-texture-background_1007802.htm
+stone.jpg		https://www.wildtextures.com/free-textures/grungy-yet-elegant-elevation-stone-ii
+mars.jpg		https://www.solarsystemscope.com/textures/download/2k_mars.jpg
+mercury.jpg		https://www.solarsystemscope.com/textures/download/2k_mercury.jpg
+mauritania.jpg		https://go.nasa.gov/2Ugu9M8							NASA Worldview (Jan 24, 2019)
+iran.jpg		https://go.nasa.gov/2FNmiT5							NASA Worldview (Jan 24, 2019)
+spain.jpg		https://go.nasa.gov/2FMDPuu							NASA Worldview (Jan 24, 2019)
