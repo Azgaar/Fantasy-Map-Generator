@@ -115,7 +115,7 @@ setTimeout(showWelcomeMessage, 8000);
 function showWelcomeMessage() {
   // Changelog dialog window
   if (localStorage.getItem("version") != version) {
-    const link = 'https://www.reddit.com/r/FantasyMapGenerator/'; // announcement on Reddit
+    const link = 'https://www.reddit.com/r/FantasyMapGenerator/comments/bfskpi/update_stable_version_is_released_v_08b/?utm_source=share&utm_medium=web2x'; // announcement on Reddit
     alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
 
       This version is <b>not compatible</b> with older <i>.map</i> files. 
