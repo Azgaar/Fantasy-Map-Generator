@@ -69,7 +69,13 @@ function addLabelOnClick() {
   const name = Names.getCulture(culture);
   const id = getNextId("label");
 
-  labels.select("#addedLabels").append("text").attr("id", id)
+  let group = labels.select("#addedLabels");
+  if (!group.size()) group = labels.append("g").attr("id", "addedLabels")
+    .attr("fill", "#3e3e4b").attr("opacity", 1).attr("stroke", "#3a3a3a")
+    .attr("stroke-width", 0).attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC")
+    .attr("font-size", 18).attr("data-size", 18).attr("filter", null);
+
+  group.append("text").attr("id", id)
     .append("textPath").attr("xlink:href", "#textPath_"+id).text(name)
     .attr("startOffset", "50%").attr("font-size", "100%");
 

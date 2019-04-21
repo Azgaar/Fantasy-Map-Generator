@@ -197,7 +197,8 @@ function uploadFile(file, callback) {
     const parsed = parseFloat(mapVersion);
     let message = "", load = false;
     if (isNaN(parsed) || data.length < 26 || !data[5]) {
-      message = `The file you are trying to load is not a valid .map file`;
+      message = `The file you are trying to load is outdated or not a valid .map file.
+                <br>Please try to open it using an ${archive}`;
     } else if (parsed < 0.7) {
       message = `The map version you are trying to load (${mapVersion}) is too old and cannot be updated to the current version.
                 <br>Please keep using an ${archive}`;
