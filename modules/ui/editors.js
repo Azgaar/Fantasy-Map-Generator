@@ -143,6 +143,7 @@ function addBurg(point) {
 
   const population = Math.max((cells.s[cell] + cells.road[cell]) / 3 + i / 1000 + cell % 100 / 1000, .1);
   pack.burgs.push({name, cell, x, y, state, i, culture, feature, capital: false, port: 0, population});
+  cells.burg[cell] = i;
 
   const townSize = burgIcons.select("#towns").attr("size") || 0.5;
   burgIcons.select("#towns").append("circle").attr("id", "burg"+i).attr("data-id", i)

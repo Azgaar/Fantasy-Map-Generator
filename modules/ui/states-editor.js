@@ -467,8 +467,18 @@ function editStates() {
     const basename = center%5 === 0 ? pack.burgs[burg].name : Names.getCulture(culture);
     const name = Names.getState(basename, culture);
     const color = d3.color(d3.scaleSequential(d3.interpolateRainbow)(Math.random())).hex();
+
+    pack.cells.state[center] = pack.states.length;
+    pack.cells.c[center].forEach(c => {
+      if (pack.cells.h[c] < 20) return;
+      if (pack.cells.burg[c]) return;
+      pack.cells.state[c] = pack.states.length;
+    });
     pack.states.push({i:pack.states.length, name, color, expansionism:.5, capital:burg, type:"Generic", center, culture});
-    recalculateStates();
+
+    if (!layerIsOn("toggleStates")) toggleStates(); else drawStatesWithBorders();
+    if (adjustLabels.checked) BurgsAndStates.drawStateLabels();
+    refreshStatesEditor();
   }
 
   function exitAddStateMode() {

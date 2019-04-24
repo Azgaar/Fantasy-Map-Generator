@@ -433,10 +433,10 @@
     void function drawLabels() {
       const g = labels.select("#states"), p = defs.select("#textPaths");
       g.selectAll("text").remove();
-      p.selectAll("path").remove();
+      p.selectAll("path[id*='stateLabel']").remove();
 
       const data = paths.map(p => [round(lineGen(p[1])), "stateLabel"+p[0], states[p[0]].name, p[1]]);
-      p.selectAll("path").data(data).enter().append("path").attr("d", d => d[0]).attr("id", d => "textPath_"+d[1]);
+      p.selectAll(".path").data(data).enter().append("path").attr("d", d => d[0]).attr("id", d => "textPath_"+d[1]);
 
       g.selectAll("text").data(data).enter()
         .append("text").attr("id", d => d[1])
