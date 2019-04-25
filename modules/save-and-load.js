@@ -183,7 +183,7 @@ function saveMap() {
   console.timeEnd("saveMap");
 }
 
-function uploadFile(file, callback) {
+function uploadFile(file, type, callback) {
   console.time("loadMap");
   const fileReader = new FileReader();
   fileReader.onload = function(fileLoadedEvent) {
@@ -213,7 +213,7 @@ function uploadFile(file, callback) {
     }});
   };
 
-  fileReader.readAsText(file, "UTF-8");
+  fileReader.readAsText(file, type);
   if (callback) callback();
 }
 

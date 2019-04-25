@@ -104,11 +104,15 @@ let svgWidth = graphWidth, svgHeight = graphHeight;  // svg canvas resolution, c
 equatorOutput.min = equatorInput.min = graphHeight * -1;
 equatorOutput.max = equatorInput.max = graphHeight * 2;
 
+const url = new URL(window.location.href);
+const params = url.searchParams;
+
 applyDefaultNamesData(); // apply default namesbase on load
 applyDefaultStyle(); // apply style on load
 generate(); // generate map on load
 focusOn(); // based on searchParams focus on point, cell or burg from MFCG
 addDragToUpload(); // allow map loading by drag and drop
+postload(); // postload data from url if exsists
 
 // show message on load if required
 setTimeout(showWelcomeMessage, 8000);
@@ -335,9 +339,6 @@ function applyDefaultStyle() {
 
 // focus on coordinates, cell or burg provided in searchParams
 function focusOn() {
-  const url = new URL(window.location.href);  
-  const params = url.searchParams;
-
   if (params.get("from") === "MFCG") {
     if (params.get("seed").length === 13) {
       // show back burg from MFCG
@@ -530,10 +531,41 @@ function addDragToUpload() {
     }
     // all good - show uploading text and load the map
     $("#map-dragged > p").text("Uploading<span>.</span><span>.</span><span>.</span>");
-    uploadFile(file, function onUploadFinish() {
+    uploadFile(file, "UTF-8", function onUploadFinish() {
       $("#map-dragged > p").text("Drop to upload");
     });
   });
+}
+
+function postload() {
+
+  let success = false;
+  if(params.get("from")==="GIST"){
+    console.time("loadURL");
+    console.log("Loading URL");
+    fetch(params.get("url"))
+    .then(res => res.blob()) // Gets the response and returns it as a blob
+    .then(blob => {
+      console.log("url loaded");
+      let objectURL = URL.createObjectURL(blob);
+      uploadFile(blob, "base64", function onUploadFinish() {
+        $("#map-dragged > p").text("Drop to upload");
+      });
+      console.timeEnd("loadURL");
+    })
+    .catch(err => {
+      console.log("url problem");
+      console.log(err);
+      alertMessage.innerHTML = 'Error: ' + err;
+      $("#alert").dialog({
+        resizable: false, title: "Invalid url",
+        width: 400, buttons: {
+          Close: function() { $(this).dialog("close"); }
+        }, position: {my: "center", at: "center", of: "svg"}
+      });
+      console.timeEnd("loadURL");
+    });
+  }
 }
 
 function generate() {
@@ -577,8 +609,6 @@ function generate() {
 // generate map seed (string!) or get it from URL searchParams
 function generateSeed() {
   const first = !mapHistory[0];
-  const url = new URL(window.location.href);
-  const params = url.searchParams;
   const urlSeed = url.searchParams.get("seed");
   if (first && params.get("from") === "MFCG" && urlSeed.length === 13) seed = urlSeed.slice(0,-4);
   else if (first && urlSeed) seed = urlSeed;
