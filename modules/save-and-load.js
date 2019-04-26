@@ -262,7 +262,7 @@ function parseLoadedData(data) {
       return;
     }
     biomesData.color = biomes[0].split(",");
-    biomesData.habitability = biomes[1].split(",");
+    biomesData.habitability = biomes[1].split(",").map(h => +h);
     biomesData.name = name;
   }()
 
