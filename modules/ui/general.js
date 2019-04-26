@@ -211,6 +211,8 @@ document.addEventListener("keydown", function(event) {
   if (key === 118) regenerateMap(); // "F7" for new map
   else if (key === 27) {closeDialogs(); hideOptions();} // Escape to close all dialogs
   else if (key === 9) {toggleOptions(event); event.preventDefault();} // Tab to toggle options
+  else if (shift && key === 79) saveGeo("osm"); // Shift + "O" to save as OSM
+  else if (shift && key === 74) saveGeo("json"); // Shift + "J" to save as JSON
   else if (ctrl && key === 80) saveAsImage("png"); // Ctrl + "P" to save as PNG
   else if (ctrl && key === 83) saveAsImage("svg"); // Ctrl + "S" to save as SVG
   else if (ctrl && key === 77) saveMap(); // Ctrl + "M" to save MAP file

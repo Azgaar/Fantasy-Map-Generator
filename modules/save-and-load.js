@@ -183,6 +183,48 @@ function saveMap() {
   console.timeEnd("saveMap");
 }
 
+// Save in a geo-format, an lan long global coordinate format
+function saveGeo(type) {
+  if (customization) {tip("Map cannot be saved when is in edit mode, please exit the mode and re-try", false, "error"); return;}
+  console.time("saveOSM");
+  const date = new Date();
+  const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
+  const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
+  const params = [version, license, dateString, seed, graphWidth, graphHeight].join("|");
+  const options = [distanceUnit.value, distanceScale.value, areaUnit.value, heightUnit.value, heightExponent.value, temperatureScale.value, 
+    barSize.value, barLabel.value, barBackOpacity.value, barBackColor.value, barPosX.value, barPosY.value, populationRate.value, urbanization.value, 
+    equatorOutput.value, equidistanceOutput.value, temperatureEquatorOutput.value, temperaturePoleOutput.value, precOutput.value, JSON.stringify(winds, null, 2)].join("|");
+  const coords = JSON.stringify(mapCoordinates, null, 2);
+  const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
+  const notesData = JSON.stringify(notes, null, 2);
+
+  // set transform values to default
+  svg.attr("width", graphWidth).attr("height", graphHeight);
+  const transform = d3.zoomTransform(svg.node());
+  viewbox.attr("transform", null);
+  const svg_xml = (new XMLSerializer()).serializeToString(svg.node());
+
+  let geodata = gen_geodata(type);
+
+  let data = geodata.data;
+  let ext = geodata.ext;
+
+  const dataBlob = new Blob([data], {type: "text/plain"});
+  const dataURL = window.URL.createObjectURL(dataBlob);
+  const link = document.createElement("a");
+  link.download = "fantasy_map_" + Date.now() + ext;
+  link.href = dataURL;
+  document.body.appendChild(link);
+  link.click();
+
+  // restore initial values
+  svg.attr("width", svgWidth).attr("height", svgHeight);
+  zoom.transform(svg, transform);
+
+  window.setTimeout(function() {window.URL.revokeObjectURL(dataURL);}, 2000);
+  console.timeEnd("saveOSM");
+}
+
 function uploadFile(file, callback) {
   console.time("loadMap");
   const fileReader = new FileReader();

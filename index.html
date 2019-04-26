@@ -1078,6 +1078,8 @@
         <button id="saveButton" data-tip="Select file format to save map">Save as</button>
         <div id="saveDropdown">
           <div id="saveMap" data-tip="Save as fully functional map in .map format. Shortcut: Ctrl + M">.map</div>
+          <div id="saveOSM" data-tip="Save as open street map format (osmxml). Shortcut: Shift + O')">.osm</div>
+          <!-- <div id="saveJSON" data-tip="Save as open source json format (geojson) [not great atm]. Shortcut: Shift + J')">.json</div> -->
           <div id="saveSVG" data-tip="Download the map as .svg image (open in browser or Inkscape). Shortcut: Ctrl + S">.svg</div>
           <div id="savePNG" data-tip="Download visible part of the map as image. Texture will not be shown. Shortcut: Ctrl + P">.png</div>
         </div>
@@ -2006,6 +2008,7 @@
   <script src="libs/polylabel.min.js"></script>  
   <script src="libs/jquery-ui.min.js"></script>
   <script src="libs/seedrandom.min.js"></script>
+  <script src="libs/NDSFutility.js"></script>
 
   <script defer src="modules/ui/general.js"></script>
   <script defer src="modules/ui/options.js"></script>
@@ -2032,6 +2035,7 @@
   <script defer src="modules/ui/legends-editor.js"></script>
   <script defer src="modules/ui/editors.js"></script>
   <script defer src="modules/save-and-load.js"></script>
+  <script defer src="modules/geogen.js"></script>
   <script defer src="libs/quantize.min.js"></script>
   <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
 </body>

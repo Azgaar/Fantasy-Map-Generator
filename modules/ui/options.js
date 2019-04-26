@@ -903,6 +903,8 @@ document.getElementById("sticked").addEventListener("click", function(event) {
   else if (id === "loadMap") mapToLoad.click();
   else if (id === "zoomReset") resetZoom(1000);
   else if (id === "saveMap") saveMap();
+  else if (id === "saveOSM") saveGeo("osm");
+  else if (id === "saveJSON") saveGeo("json");  
   else if (id === "saveSVG") saveAsImage("svg");
   else if (id === "savePNG") saveAsImage("png");
   if (id === "saveMap" || id === "saveSVG" || id === "savePNG") toggleSavePane();
