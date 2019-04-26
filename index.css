@@ -904,6 +904,26 @@ div.slider .ui-slider-handle {
 	color: white;
 }
 
+#loadDropdown {
+	display: none;
+	position: absolute;
+	left: 54%;
+	top: 100%;
+	border: 1px solid #5e4fa2;
+	background-color: #a4879b;
+	width: 44px;
+}
+
+#loadDropdown>div {
+	padding: 2px 4px;
+	cursor: pointer;
+}
+
+#loadDropdown>div:hover {
+	color: white;
+}
+
+
 #brushPower,
 #brushRadius {
 	width: 88px;

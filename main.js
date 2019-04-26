@@ -542,7 +542,7 @@ function addDragToUpload() {
 function postload() {
 
   let success = false;
-  if(params.get("from")==="GIST"){
+  if(params.get("from")==="url"){
     console.time("loadURL");
     console.log("Loading URL");
     fetch(params.get("url"))

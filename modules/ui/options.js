@@ -901,7 +901,9 @@ document.getElementById("sticked").addEventListener("click", function(event) {
   const id = event.target.id;
   if (id === "newMapButton") regeneratePrompt();
   else if (id === "saveButton") toggleSavePane();
+  else if (id === "loadButton") toggleLoadPane();
   else if (id === "loadMap") mapToLoad.click();
+  else if (id === "loadURL") loadURL();
   else if (id === "zoomReset") resetZoom(1000);
   else if (id === "saveMap") saveMap();
   else if (id === "saveSVG") saveAsImage("svg");
@@ -946,6 +948,11 @@ function toggleSavePane() {
 
 }
 
+function toggleLoadPane() {
+    if (loadDropdown.style.display === "block") { loadDropdown.style.display = "none"; return; }
+    loadDropdown.style.display = "block";
+}
+
 // load map
 document.getElementById("mapToLoad").addEventListener("change", function() {
   closeDialogs();
@@ -953,3 +960,46 @@ document.getElementById("mapToLoad").addEventListener("change", function() {
   this.value = "";
   uploadFile(fileToLoad);
 });
+// load url
+function loadURL() {
+  let urlLoad = "";
+  // update list of objects
+  let urlObj = document.getElementById("loadURLText");
+  urlLoad = urlObj.value;
+  
+
+  // open a dialog
+  $("#loadURLDialog").dialog({
+    title: "Legends Editor", minWidth: Math.min(svgWidth, 400),
+    position: {my: "center", at: "center", of: "svg"}
+  });
+
+  // add listeners
+  urlObj.addEventListener("input", changedText);
+  document.getElementById("loadURLConfirm").addEventListener("click", triggerURLConfirm);
+
+  function changedText() {
+    urlObj = this.value;
+  }
+
+  function triggerURLConfirm() {
+    urlLoad = document.getElementById("loadURLText").value;
+      if (urlLoad !== "" && urlLoad !== undefined) {
+      console.log (urlLoad);
+      var url = new URL(window.location.href);
+      url.searchParams.set('from', 'url');
+      url.searchParams.set('url', urlLoad);
+      window.location = url;
+    } else {
+      alertMessage.innerHTML = 'Invalid URL.';
+      $("#alert").dialog({title: "Invalid URL", resizable: false, position: {my: "center", at: "center", of: "svg"},
+        buttons: {
+          OK: function() {
+            localStorage.setItem("dns_allow_popup_message", true);
+            $(this).dialog("close");
+          }
+        }
+      });
+    }
+  }
+}

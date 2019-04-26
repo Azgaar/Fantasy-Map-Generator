@@ -1090,7 +1090,12 @@
           <div id="saveSVG" data-tip="Download the map as .svg image (open in browser or Inkscape). Shortcut: Ctrl + S">.svg</div>
           <div id="savePNG" data-tip="Download visible part of the map as image. Texture will not be shown. Shortcut: Ctrl + P">.png</div>
         </div>
-        <button id="loadMap" data-tip="Load fully functional map in a .map format. Shortcut: Ctrl + L">Load</button>
+        <button id="loadButton" data-tip="Select location to load a .map file">Load</button>
+        <div id="loadDropdown">
+          <div id="loadMap" data-tip="Load fully functional map in a .map format. Shortcut: Ctrl + L">local</div>
+          <div id="loadURL" data-tip="Load fully functional map in a .map format for a url.">url</div>
+        </div>
+        
         <button id="zoomReset" data-tip="Reset map zoom. Shortcut: 0">Reset Zoom</button>
       </div>
 
@@ -1968,6 +1973,14 @@
         <button id="addPlanimeter" data-tip="Drag to measure a polygon area (planimeter)" class="icon-area"></button>
         <button id="removeRulers" data-tip="Remove all rulers from the map. Click on ruler label to remove a ruler separately" class="icon-trash"></button>
       </div>
+    </div>
+
+    <div id="loadURLDialog" class="dialog stable textual" style="display: none">
+      <div>
+        <span>URL of .map: </span>
+        <input id="loadURLText" data-tip="Type url of .map file" autocorrect="off" spellcheck="false" style="width: 120px;">
+      </div>
+      <button id="loadURLConfirm" data-tip="Confirm url" class="icon-link"></button>
     </div>
 
     <div id="alert" style="display: none" class="dialog">
