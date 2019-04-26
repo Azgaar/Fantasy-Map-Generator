@@ -378,7 +378,7 @@ function editCultures() {
   }
   
   function addCulture() {
-    const defaultCultures = Cultures.getDefault();    
+    const defaultCultures = Cultures.getDefault();
     let culture, base, name;
     if (pack.cultures.length < defaultCultures.length) {
       // add one of the default cultures

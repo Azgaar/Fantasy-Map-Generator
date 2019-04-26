@@ -167,7 +167,8 @@ function selectStyleElement() {
   if (sel === "gridOverlay") styleGrid.style.display = "block";
   if (sel === "terrain") styleRelief.style.display = "block";
   if (sel === "texture") styleTexture.style.display = "block";
-  if (sel === "routes" || sel === "labels" || sel == "anchors" || sel == "burgIcons" || sel === "lakes") {styleGroup.style.display = "block";}
+  if (sel === "routes" || sel === "labels" || sel == "anchors" || sel == "burgIcons" || sel === "lakes") styleGroup.style.display = "block";
+  if (sel === "markers") styleMarkers.style.display = "block";
  
   if (sel === "population") {
     stylePopulation.style.display = "block";

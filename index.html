@@ -629,14 +629,23 @@
           </tbody>
 
           <tbody id="styleCoastline">
-            <tr data-tip="">
+            <tr data-tip="Allow system to apply filter automatically based on zoom level">
               <td colspan=2>
                 <input id="styleCoastlineAuto" class="checkbox" type="checkbox" checked onchange="$('#styleFilter').toggle();">
-                <label for="styleCoastlineAuto" data-tip="Allow system to apply filter automatically based on zoom level" class="checkbox-label">Automatically change filter on zoom</label>
+                <label for="styleCoastlineAuto" class="checkbox-label">Automatically change filter on zoom</label>
               </td>
             </tr>
           </tbody>
-        
+
+          <tbody id="styleMarkers">
+            <tr data-tip="Rescale Markers on zoom change">
+              <td colspan=2>
+                <input id="styleRescaleMarkers" class="checkbox" type="checkbox" checked onchange="invokeActiveZooming()">
+                <label for="styleRescaleMarkers" class="checkbox-label">Rescale on zoom change</label>
+              </td>
+            </tr>
+          </tbody>
+
           <tbody id="styleTemperature">
             <tr data-tip="Define transparency of temparature leyer. Set to 0 to make it fully transparent">
               <td>Fill opacity</td>

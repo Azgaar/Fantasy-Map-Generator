@@ -10,7 +10,7 @@
     console.time('generateCultures');
     cells = pack.cells;
     cells.culture = new Int8Array(cells.i.length); // cell cultures
-    let count = +culturesInput.value;    
+    let count = +culturesInput.value;
 
     const populated = cells.i.filter(i => cells.s[i]).sort((a, b) => cells.s[b] - cells.s[a]); // cells sorted by population
     if (populated.length < count * 25) {
@@ -38,8 +38,8 @@
       }
     }
 
-    pack.cultures = d3.shuffle(getDefault()).slice(0, count);
-    const centers = d3.quadtree();    
+    pack.cultures = getRandomCultures(count);
+    const centers = d3.quadtree();
     const colors = getColors(count);
 
     pack.cultures.forEach(function(culture, i) {
@@ -59,6 +59,17 @@
     // check whether all bases are valid. If not, load default namesbase
     const invalidBase = pack.cultures.some(c => !nameBase[c.base]);
     if (invalidBase) applyDefaultNamesData();
+
+    function getRandomCultures(c) {
+      const d = getDefault();
+      const cultures = [];
+      while (cultures.length < c) {
+        let culture = d[0];
+        do {culture = d[rand(d.length-1)];} while (Math.random() > culture.odd || cultures.find(c => c.name === culture.name))
+        cultures.push(culture);
+      }
+      return cultures;
+    }
 
     // culture center tends to be placed in a density populated cell
     function placeCultureCenter() {
@@ -99,36 +110,38 @@
 
   const getDefault = function() {
     return [
-      {name:"Shwazen", base:0},
-      {name:"Angshire", base:1},
-      {name:"Luari", base:2},
-      {name:"Tallian", base:3},
-      {name:"Astellian", base:4},
-      {name:"Slovan", base:5},
-      {name:"Norse", base:6},
-      {name:"Elladan", base:7},
-      {name:"Romian", base:8},
-      {name:"Soumi", base:9},
-      {name:"Koryo", base:10},
-      {name:"Hantzu", base:11},
-      {name:"Yamoto", base:12},
-      {name:"Portuzian", base:13},
-      {name:"Nawatli", base:14},
-      {name:"Vengrian", base: 15},
-      {name:"Turchian", base: 16},
-      {name:"Berberan", base: 17},
-      {name:"Eurabic", base: 18},
-      {name:"Inuk", base: 19},
-      {name:"Euskati", base: 20},
-      {name:"Negarian", base: 21},
-      {name:"Keltan", base: 22},
-      {name:"Efratic", base: 23},
-      {name:"Tehrani", base: 24},
-      {name:"Maui", base: 25},
-      {name:"Carnatic", base: 26},
-      {name:"Inqan", base: 27},
-      {name:"Kiswaili", base: 28},
-      {name:"Vietic", base: 29}
+      {name:"Shwazen", base:0, odd: .7},
+      {name:"Angshire", base:1, odd: 1},
+      {name:"Luari", base:2, odd: .6},
+      {name:"Tallian", base:3, odd: .6},
+      {name:"Astellian", base:4, odd: .6},
+      {name:"Slovan", base:5, odd: .7},
+      {name:"Norse", base:6, odd: .7},
+      {name:"Elladan", base:7, odd: .7},
+      {name:"Romian", base:8, odd: .7},
+      {name:"Soumi", base:9, odd: .4},
+      {name:"Koryo", base:10, odd: .5},
+      {name:"Hantzu", base:11, odd: .5},
+      {name:"Yamoto", base:12, odd: .5},
+      {name:"Portuzian", base:13, odd: .4},
+      {name:"Nawatli", base:14, odd: .2},
+      {name:"Vengrian", base: 15, odd: .2},
+      {name:"Turchian", base: 16, odd: .2},
+      {name:"Berberan", base: 17, odd: .2},
+      {name:"Eurabic", base: 18, odd: .2},
+      {name:"Inuk", base: 19, odd: .1},
+      {name:"Euskati", base: 20, odd: .1},
+      {name:"Negarian", base: 21, odd: .05},
+      {name:"Keltan", base: 22, odd: .1},
+      {name:"Efratic", base: 23, odd: .1},
+      {name:"Tehrani", base: 24, odd: .1},
+      {name:"Maui", base: 25, odd: .05},
+      {name:"Carnatic", base: 26, odd: .1},
+      {name:"Inqan", base: 27, odd: .1},
+      {name:"Kiswaili", base: 28, odd: .1},
+      {name:"Vietic", base: 29, odd: .1}//,
+      //{name:"Guantzu", base:30, odd: 1},
+      //{name:"Ulus", base:31, odd: .1}
     ];
   }
 

@@ -276,6 +276,7 @@ function applyDefaultStyle() {
   icons.selectAll("g").attr("opacity", null).attr("fill", "#ffffff").attr("stroke", "#3e3e4b").attr("filter", null).attr("mask", null);
   landmass.attr("opacity", 1).attr("fill", "#eef6fb").attr("filter", null);
   markers.attr("opacity", null).attr("filter", "url(#dropShadow01)");
+  styleRescaleMarkers.checked = true;
   prec.attr("opacity", null).attr("stroke", "#000000").attr("stroke-width", .1).attr("fill", "#003dff").attr("filter", null);
   population.attr("opacity", null).attr("stroke-width", 1.6).attr("stroke-dasharray", null).attr("stroke-linecap", "butt").attr("filter", null);
   population.select("#rural").attr("stroke", "#0000ff");
@@ -335,6 +336,7 @@ function applyDefaultStyle() {
   const stateLabelSize = Math.max(rn(24 - regionsInput.value / 6), 6);
   labels.select("#states").attr("fill", "#3e3e4b").attr("opacity", 1).attr("stroke", "#3a3a3a").attr("stroke-width", 0).attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC").attr("font-size", stateLabelSize).attr("data-size", stateLabelSize).attr("filter", null);
   labels.select("#addedLabels").attr("fill", "#3e3e4b").attr("opacity", 1).attr("stroke", "#3a3a3a").attr("stroke-width", 0).attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC").attr("font-size", 18).attr("data-size", 18).attr("filter", null);
+  invokeActiveZooming();
 }
 
 // focus on coordinates, cell or burg provided in searchParams
@@ -481,7 +483,7 @@ function invokeActiveZooming() {
   }
 
   // rescale map markers
-  if (markers.style("display") !== "none") {
+  if (styleRescaleMarkers.checked && markers.style("display") !== "none") {
     markers.selectAll("use").each(function(d) {
       const x = +this.dataset.x, y = +this.dataset.y, desired = +this.dataset.size;
       const size = Math.max(desired * 5 + 25 / scale, 1);
