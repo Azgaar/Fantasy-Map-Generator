@@ -19,7 +19,7 @@
   // Use typed arrays instead of array of objects
   // Get rid of jQuery as d3.js can almost all the same and more
   // Re-build UI on reactive approach, vue.js
-  
+
 "use strict";
 fantasyMap();
 function fantasyMap() {
@@ -275,7 +275,7 @@ function fantasyMap() {
     placePoints();
     calculateVoronoi(points);
     
-    makeFileFromUrl(decodeURIComponent(mapLink)).then(blob => {
+    makeBlobFromUrl(decodeURIComponent(mapLink)).then(blob => {
       uploadFile(blob);
       manorsAndRegions(); // namesBase global state
       cleanData();
@@ -6824,7 +6824,7 @@ function fantasyMap() {
     uploadFile(fileToLoad);
   });
   
-  function makeFileFromUrl(mapLink) {
+  function makeBlobFromUrl(mapLink) {
     return fetch(mapLink, {
       method: 'GET',
       mode: 'cors',
@@ -7727,7 +7727,8 @@ function fantasyMap() {
       zoom.scaleExtent([1, 20]).scaleTo(svg, 1);
     }
     if (id === "saveButton") {$("#saveDropdown").slideToggle();}
-    if (id === "loadMap") {mapToLoad.click();}
+    if (id === "loadButton") {$("#loadDropdown").slideToggle();}
+
     if (id === "zoomReset") {resetZoom(1000);}
     if (id === "zoomPlus") {
       scale += 1;
@@ -7823,6 +7824,98 @@ function fantasyMap() {
     if (id === "saveSVG") {saveAsImage("svg");}
     if (id === "savePNG") {saveAsImage("png");}
     $("#saveDropdown").slideUp("fast");
+  });
+
+  $('#loadDropdown > div[role="button"]').click(event => {
+    const id = event.target.id;
+    console.log(event, id);
+
+    if (id === "loadMap") {
+      mapToLoad.click();
+    }
+    if (id === "loadMapFromURL") {
+      const modal = document.createElement("form");
+      Object.assign(modal.style, {
+        position: "absolute",
+        left: "50%",
+        top: "50%",
+        transform: "translate3d(-50%, -50%, 0)",
+        border: "1px solid #5e4fa2",
+        boxShadow: "2px 2px 5px -3px #3a2804",
+        padding: "auto",
+        background: "white"
+      });
+      modal.className = "ui-dialog ui-widget ui-widget-content ui-front ui-dialog-buttons"; 
+
+      // <div
+      //   style="height: auto; width: 320px; top: 365.9px; left: 648px;" 
+      //   tabindex="-1" 
+      //   role="dialog" 
+      //   class="ui-dialog ui-widget ui-widget-content ui-front ui-dialog-buttons ui-draggable"
+      //   aria-describedby="alert"
+      //   aria-labelledby="ui-id-1">
+      //     <div class="ui-dialog-titlebar ui-widget-header ui-helper-clearfix ui-draggable-handle"><span id="ui-id-1" class="ui-dialog-title">Map size conflict</span><button type="button" class="ui-button ui-corner-all ui-widget ui-button-icon-only ui-dialog-titlebar-close" title="✖"><span class="ui-button-icon ui-icon ui-icon-closethick"></span><span class="ui-button-icon-space"> </span>✖</button></div><div id="alert" style="width: auto; min-height: 48.8px; max-height: none; height: auto;" class="ui-dialog-content ui-widget-content">
+      //       <p id="alertMessage">
+      //         The loaded map has size 1920 x 1005 pixels, while the current canvas size is 1408 x 1005 pixels.
+      //         Click "Rescale" to fit the map to the current canvas size. Click "OK" to browse the map without rescaling
+      //       </p>
+      //     </div>
+      //     <div class="ui-dialog-buttonpane ui-widget-content ui-helper-clearfix">
+      //       <div class="ui-dialog-buttonset">
+      //         <button type="button" class="ui-button ui-corner-all ui-widget">
+      //           Rescale
+      //         </button>
+      //         <button type="button" class="ui-button ui-corner-all ui-widget">
+      //           OK
+      //         </button>
+      //       </div>
+      //     </div>
+      //   </div>
+      const linkInputName = "link";
+      modal.innerHTML = `    
+        <div class="ui-dialog-titlebar ui-widget-header ui-helper-clearfix ui-draggable-handle">
+          <span id="ui-id-1" class="ui-dialog-title">
+            Load Map
+          </span>
+          <button
+            class="ui-button ui-corner-all ui-widget ui-button-icon-only ui-dialog-titlebar-close"
+            title="✖"
+          >
+            <span class="ui-button-icon ui-icon ui-icon-closethick"></span>
+            <span class="ui-button-icon-space"></span>
+            ✖
+          </button>
+        </div>
+        <div id="alert" style="width: auto; min-height: 48.8px; max-height: none; height: auto;" class="ui-dialog-content ui-widget-content">
+          <label style="display: block;">
+            <div>Enter link to your map</div>
+            <input
+              style="width: 24em; margin-top: 0.5em"
+              type="url"
+              name="${linkInputName}"
+              pattern=".*\\.map"
+              placeholder="https://example.com/faerun.map" 
+              required
+            />
+          </label>
+        </div>
+        <div class="ui-dialog-buttonpane ui-widget-content ui-helper-clearfix">
+          <div class="ui-dialog-buttonset">
+            <button type="submit" class="ui-button">Load</button>
+          </div>
+        </div>
+      `;
+
+      modal.onsubmit = (event) => {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        console.log("ok", formData.get(linkInputName), event)
+        document.body.removeChild(modal);
+      }
+
+      document.body.appendChild(modal);
+    }
+    $("#loadDropdown").slideUp("fast");
   });
 
   // lock / unlock option randomization

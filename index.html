@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +8,7 @@
   <script async src="https://www.googletagmanager.com/gtag/js?id=UA-116735150-1"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
+    function gtag() { dataLayer.push(arguments); }
     gtag('js', new Date());
     gtag('config', 'UA-116735150-1');
   </script>
@@ -20,8 +21,8 @@
   <meta property="og:title" content="Azgaar's Fantasy Map Generator">
   <meta property="og:description" content="Based on Voronoi diagram rendered to svg">
   <meta property="og:image" content="images/preview.png">
-  <link rel="icon" type="image/png" href="images/favicon-32x32.png" sizes="32x32"/>
-  <link rel="icon" type="image/png" href="images/favicon-16x16.png" sizes="16x16"/>
+  <link rel="icon" type="image/png" href="images/favicon-32x32.png" sizes="32x32" />
+  <link rel="icon" type="image/png" href="images/favicon-16x16.png" sizes="16x16" />
   <link rel="canonical" href="https://azgaar.github.io/Fantasy-Map-Generator/">
   <script src="libs/jquery-3.1.1.min.js"></script>
   <script src="libs/d3.v4.min.js"></script>
@@ -31,87 +32,88 @@
   <script src="libs/polylabel.min.js"></script>
   <script src="libs/quantize.min.js" defer></script>
   <script src="libs/jquery.ui.touch-punch.min.js" defer></script>
-  <link rel="stylesheet" type="text/css" href="index.css?version=0.60.14b"/>
-  <link rel="stylesheet" type="text/css" href="icons.css?version=0.60.14b"/>
-  <link rel="stylesheet" type="text/css" href="libs/jquery-ui.css"/>
+  <link rel="stylesheet" type="text/css" href="index.css?version=0.60.14b" />
+  <link rel="stylesheet" type="text/css" href="icons.css?version=0.60.14b" />
+  <link rel="stylesheet" type="text/css" href="libs/jquery-ui.css" />
 </head>
+
 <body>
   <svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" width="100%" height="100%">
     <defs>
       <g id="filters">
         <filter id="blurFilter" x="-1" y="-1" width="100" height="100">
-          <feGaussianBlur in="SourceGraphic" stdDeviation="0.2"/>
+          <feGaussianBlur in="SourceGraphic" stdDeviation="0.2" />
         </filter>
         <filter id="blur1" x="-1" y="-1" width="100" height="100">
-          <feGaussianBlur in="SourceGraphic" stdDeviation="1"/>
+          <feGaussianBlur in="SourceGraphic" stdDeviation="1" />
         </filter>
         <filter id="blur5" x="-1" y="-1" width="100" height="100">
-          <feGaussianBlur in="SourceGraphic" stdDeviation="5"/>
+          <feGaussianBlur in="SourceGraphic" stdDeviation="5" />
         </filter>
         <filter id="blur10" x="-1" y="-1" width="100" height="100">
-          <feGaussianBlur in="SourceGraphic" stdDeviation="10"/>
+          <feGaussianBlur in="SourceGraphic" stdDeviation="10" />
         </filter>
         <filter id="splotch">
-          <feTurbulence type="fractalNoise" baseFrequency=".01" numOctaves="4"/>
-          <feColorMatrix values="0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 -0.9 1.2" result="texture"/>
-          <feComposite in="SourceGraphic" in2="texture" operator="in"/>
+          <feTurbulence type="fractalNoise" baseFrequency=".01" numOctaves="4" />
+          <feColorMatrix values="0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 -0.9 1.2" result="texture" />
+          <feComposite in="SourceGraphic" in2="texture" operator="in" />
         </filter>
         <filter id="bluredSplotch">
-          <feTurbulence type="fractalNoise" baseFrequency=".01" numOctaves="4"/>
-          <feColorMatrix values="0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 -0.9 1.2" result="texture"/>
-          <feComposite in="SourceGraphic" in2="texture" operator="in"/>
-          <feGaussianBlur stdDeviation="4"/>
+          <feTurbulence type="fractalNoise" baseFrequency=".01" numOctaves="4" />
+          <feColorMatrix values="0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 -0.9 1.2" result="texture" />
+          <feComposite in="SourceGraphic" in2="texture" operator="in" />
+          <feGaussianBlur stdDeviation="4" />
         </filter>
         <filter id="dropShadow">
-          <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
-          <feOffset dx="1" dy="2"/>
+          <feGaussianBlur in="SourceAlpha" stdDeviation="2" />
+          <feOffset dx="1" dy="2" />
           <feMerge>
-              <feMergeNode/>
-              <feMergeNode in="SourceGraphic"/>
+            <feMergeNode />
+            <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
         <filter id="dropShadow01">
-          <feGaussianBlur in="SourceAlpha" stdDeviation=".1"/>
-          <feOffset dx=".2" dy=".3"/>
+          <feGaussianBlur in="SourceAlpha" stdDeviation=".1" />
+          <feOffset dx=".2" dy=".3" />
           <feMerge>
-              <feMergeNode/>
-              <feMergeNode in="SourceGraphic"/>
+            <feMergeNode />
+            <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
         <filter id="dropShadow05">
-          <feGaussianBlur in="SourceAlpha" stdDeviation=".5"/>
-          <feOffset dx=".5" dy=".7"/>
+          <feGaussianBlur in="SourceAlpha" stdDeviation=".5" />
+          <feOffset dx=".5" dy=".7" />
           <feMerge>
-              <feMergeNode/>
-              <feMergeNode in="SourceGraphic"/>
+            <feMergeNode />
+            <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
         <filter id="outline">
-          <feGaussianBlur in="SourceAlpha" stdDeviation="1"/>
+          <feGaussianBlur in="SourceAlpha" stdDeviation="1" />
           <feMerge>
-              <feMergeNode/>
-              <feMergeNode in="SourceGraphic"/>
+            <feMergeNode />
+            <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
         <filter id="pencil">
-          <feTurbulence baseFrequency="0.03" numOctaves="6" type="fractalNoise"/>
-          <feDisplacementMap scale="3" in="SourceGraphic" xChannelSelector="R" yChannelSelector="G"/>
+          <feTurbulence baseFrequency="0.03" numOctaves="6" type="fractalNoise" />
+          <feDisplacementMap scale="3" in="SourceGraphic" xChannelSelector="R" yChannelSelector="G" />
         </filter>
         <filter id="turbulence">
-          <feTurbulence baseFrequency="0.1" numOctaves="3" type="fractalNoise"/>
-          <feDisplacementMap scale="10" in="SourceGraphic" xChannelSelector="R" yChannelSelector="G"/>
+          <feTurbulence baseFrequency="0.1" numOctaves="3" type="fractalNoise" />
+          <feDisplacementMap scale="10" in="SourceGraphic" xChannelSelector="R" yChannelSelector="G" />
         </filter>
         <filter id="filter-grayscale">
-          <feColorMatrix values="0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0 0 0 1 0"/>
+          <feColorMatrix values="0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0 0 0 1 0" />
         </filter>
         <filter id="filter-sepia">
-          <feColorMatrix values="0.393 0.769 0.189 0 0 0.349 0.686 0.168 0 0 0.272 0.534 0.131 0 0 0 0 0 1 0"/>
+          <feColorMatrix values="0.393 0.769 0.189 0 0 0.349 0.686 0.168 0 0 0.272 0.534 0.131 0 0 0 0 0 1 0" />
         </filter>
         <filter id="filter-dingy">
-          <feColorMatrix values="1 0 0 0 0 0 1 0 0 0 0 0.3 0.3 0 0 0 0 0 1 0"/>
+          <feColorMatrix values="1 0 0 0 0 0 1 0 0 0 0 0.3 0.3 0 0 0 0 0 1 0" />
         </filter>
         <filter id="filter-tint">
-          <feColorMatrix values="1.1 0 0 0 0  0 1.1 0 0 0  0 0 0.9 0 0  0 0 0 1 0"/>
+          <feColorMatrix values="1.1 0 0 0 0  0 1.1 0 0 0  0 0 0.9 0 0  0 0 0 1 0" />
         </filter>
       </g>
       <g id="deftemp"></g>
@@ -130,54 +132,57 @@
       </g>
       <pattern id="oceanic" width="100" height="100" patternUnits="userSpaceOnUse">
         <filter id='image'>
-          <feImage x="0" y="0" width="100" height="100" xlink:href="data:image/png;base64,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"/>
+          <feImage x="0" y="0" width="100" height="100" xlink:href="data:image/png;base64,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" />
         </filter>
-        <rect width='100' height='100' filter="url(#image)" opacity='0.2'/>
+        <rect width='100' height='100' filter="url(#image)" opacity='0.2' />
       </pattern>
       <pattern id="mottling" width="16" height="9" patternUnits="userSpaceOnUse">
         <filter id='turb'>
-          <feTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='10' stitchTiles='stitch'/>
+          <feTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='10' stitchTiles='stitch' />
         </filter>
-        <rect width='16' height='9' filter="url(#turb)"/>
+        <rect width='16' height='9' filter="url(#turb)" />
       </pattern>
       <g id="rose" stroke-width="1">
         <g id="sL" stroke="#3f3f3f">
-          <line x1="0" y1="-10000" x2="0" y2="10000"/>
-          <line x1="-10000" y1="0" x2="10000" y2="0"/>
+          <line x1="0" y1="-10000" x2="0" y2="10000" />
+          <line x1="-10000" y1="0" x2="10000" y2="0" />
         </g>
-        <use xlink:href="#sL" transform="rotate(45)"/>
-        <use xlink:href="#sL" transform="rotate(22.5)"/>
-        <use xlink:href="#sL" transform="rotate(-22.5)"/>
-        <use xlink:href="#sL" transform="rotate(11.25)"/>
-        <use xlink:href="#sL" transform="rotate(-11.25)"/>
-        <use xlink:href="#sL" transform="rotate(56.25)"/>
-        <use xlink:href="#sL" transform="rotate(-56.25)"/>
+        <use xlink:href="#sL" transform="rotate(45)" />
+        <use xlink:href="#sL" transform="rotate(22.5)" />
+        <use xlink:href="#sL" transform="rotate(-22.5)" />
+        <use xlink:href="#sL" transform="rotate(11.25)" />
+        <use xlink:href="#sL" transform="rotate(-11.25)" />
+        <use xlink:href="#sL" transform="rotate(56.25)" />
+        <use xlink:href="#sL" transform="rotate(-56.25)" />
         <g stroke-width="8">
-          <circle r="9" stroke="#000000" fill="#1b1b1b"/>
+          <circle r="9" stroke="#000000" fill="#1b1b1b" />
           <circle r="75" stroke="#008000" fill="#ffffff" fill-opacity=".1"></circle>
           <circle r="212" stroke="#1b1b1b"></circle>
           <circle r="211" stroke="#008000" fill="#ffffff" fill-opacity=".1"></circle>
         </g>
         <g stroke="#1b1b1b">
-          <circle r="71"/>
-          <circle r="79"/>
-          <circle r="94"/>
-          <circle r="152"/>
-          <circle r="164"/>
-          <circle r="207"/>
-         </g>
-         <g id="s3">
-           <g id="s2">
-             <g id="s1" stroke="#1b1b1b">
-              <path d="M 39.416,95.16 C 33.65,103.95 30.76,110.5 28.93,117.18 C 15.24,113.43 13.54,127.15 23.04,131 C 13.71,145.8 7.84,173.93 0,212 L 0,103 A 103,103 0 0,0 39.416,95.16 z" fill="#47a3d1"/>
-              <path d="M 39.416,95.16 C 33.65,103.95 30.76,110.5 28.93,117.18 C 15.24,113.43 13.54,127.15 23.04,131 C 13.71,145.8 7.84,173.93 0,212 L 0,103 A 103,103 0 0,0 39.416,95.16 z" fill="black" transform="scale(-1,1)"/>
-              <path d="M -31.995,160.849 A 164,164 0 0,0 31.995,160.849 C 18.9,170.1 8.4,176.3 0,207 C -8.4,176.3 -18.9,170.1 -31.995,160.849 z" fill="#c2390f" transform="rotate(22.5)"/>
+          <circle r="71" />
+          <circle r="79" />
+          <circle r="94" />
+          <circle r="152" />
+          <circle r="164" />
+          <circle r="207" />
+        </g>
+        <g id="s3">
+          <g id="s2">
+            <g id="s1" stroke="#1b1b1b">
+              <path d="M 39.416,95.16 C 33.65,103.95 30.76,110.5 28.93,117.18 C 15.24,113.43 13.54,127.15 23.04,131 C 13.71,145.8 7.84,173.93 0,212 L 0,103 A 103,103 0 0,0 39.416,95.16 z"
+                fill="#47a3d1" />
+              <path d="M 39.416,95.16 C 33.65,103.95 30.76,110.5 28.93,117.18 C 15.24,113.43 13.54,127.15 23.04,131 C 13.71,145.8 7.84,173.93 0,212 L 0,103 A 103,103 0 0,0 39.416,95.16 z"
+                fill="black" transform="scale(-1,1)" />
+              <path d="M -31.995,160.849 A 164,164 0 0,0 31.995,160.849 C 18.9,170.1 8.4,176.3 0,207 C -8.4,176.3 -18.9,170.1 -31.995,160.849 z"
+                fill="#c2390f" transform="rotate(22.5)" />
             </g>
-            <use xlink:href="#s1" transform="rotate(45)"/>
+            <use xlink:href="#s1" transform="rotate(45)" />
           </g>
-          <use xlink:href="#s2" transform="rotate(90)"/>
-         </g>
-        <use xlink:href="#s3" transform="scale(-1)"/>
+          <use xlink:href="#s2" transform="rotate(90)" />
+        </g>
+        <use xlink:href="#s3" transform="scale(-1)" />
       </g>
     </defs>
     <g id="initial">
@@ -217,26 +222,34 @@
         </select>
         <p>Displayed layers. Drag to move, click to toggle</p>
         <ul id="mapLayers">
-          <li onmouseover="tip('Toggle Ocean pattern (see Style tab for styling)')" id="toggleOcean" onclick="$('#oceanPattern').fadeToggle()" class="solid">Ocean</li>
-          <li onmouseover="tip('Toggle Heightmap (see Style tab for styling and Customize for editting)')" id="toggleHeight" class="buttonoff">Heightmap</li>
+          <li onmouseover="tip('Toggle Ocean pattern (see Style tab for styling)')" id="toggleOcean" onclick="$('#oceanPattern').fadeToggle()"
+            class="solid">Ocean</li>
+          <li onmouseover="tip('Toggle Heightmap (see Style tab for styling and Customize for editting)')" id="toggleHeight"
+            class="buttonoff">Heightmap</li>
           <li onmouseover="tip('Toggle Grid')" id="toggleGrid" class="buttonoff" onclick="$('#grid').fadeToggle()">Grid</li>
           <li onmouseover="tip('Toggle Overlay (overlay type can be set in Style tab)')" id="toggleOverlay" class="buttonoff">Overlay</li>
-          <li onmouseover="tip('Toggle Cultural map (does not work good when counties layer is on)')" id="toggleCultures" class="buttonoff">Cultures</li>
+          <li onmouseover="tip('Toggle Cultural map (does not work good when counties layer is on)')" id="toggleCultures"
+            class="buttonoff">Cultures</li>
           <li onmouseover="tip('Toggle Routes')" id="toggleRoutes" onclick="$('#routes').fadeToggle()">Routes</li>
           <li onmouseover="tip('Toggle Rivers')" id="toggleRivers" onclick="$('#rivers').fadeToggle()">Rivers</li>
           <li onmouseover="tip('Toggle Countries (open Customize tab for editting)')" id="toggleCountries">Countries</li>
           <li onmouseover="tip('Toggle Borders')" id="toggleBorders" onclick="$('#borders').fadeToggle()">Borders</li>
           <li onmouseover="tip('Toggle Relief icons (draft version)')" id="toggleRelief" onclick="$('#terrain').fadeToggle()">Relief</li>
-          <li onmouseover="tip('Toggle Labels (label groups can be toggled separately in Style tab)')" id="toggleLabels" onclick="$('#labels').fadeToggle()">Labels</li>
+          <li onmouseover="tip('Toggle Labels (label groups can be toggled separately in Style tab)')" id="toggleLabels"
+            onclick="$('#labels').fadeToggle()">Labels</li>
           <li onmouseover="tip('Toggle Burg icons')" id="toggleIcons" onclick="$('#icons').fadeToggle()">Icons</li>
           <li onmouseover="tip('Toggle Markers')" id="toggleMarkers" onclick="$('#markers').fadeToggle()">Markers</li>
         </ul>
         <div id="layoutCheckboxes">
           <input id="toggleTooltips" class="checkbox" type="checkbox" checked onclick="$('#tooltip').fadeToggle()">
-          <label for="toggleTooltips" onmouseover="tip('Toogle tooltip line and legend box')" class="checkbox-label">Show tooltips</label>
-          <label id="optionSeedLabel" onmouseover="tip('Map seed. Please do NOT consider as a save function, seed produces different maps in case of code and options change')" style="margin-left:10px">Map seed:
-            <input id="optionsSeed" onmouseover="tip('Map seed. Please do NOT consider as a save function, seed produces different maps in case of code and options change')" class="pureInput" style="width:50px" value="">
-            <i onmouseover="tip('Click to generate a map for this seed')" id="optionsSeedGenerate" style="margin-left:-3px; color: #5d4651" class="icon-play"></i>
+          <label for="toggleTooltips" onmouseover="tip('Toogle tooltip line and legend box')" class="checkbox-label">Show
+            tooltips</label>
+          <label id="optionSeedLabel" onmouseover="tip('Map seed. Please do NOT consider as a save function, seed produces different maps in case of code and options change')"
+            style="margin-left:10px">Map seed:
+            <input id="optionsSeed" onmouseover="tip('Map seed. Please do NOT consider as a save function, seed produces different maps in case of code and options change')"
+              class="pureInput" style="width:50px" value="">
+            <i onmouseover="tip('Click to generate a map for this seed')" id="optionsSeedGenerate" style="margin-left:-3px; color: #5d4651"
+              class="icon-play"></i>
           </label>
         </div>
       </div>
@@ -277,7 +290,8 @@
             </select><br>
             <br>Size: <input id="styleOverlaySize" type="range" min="2" max="50" step="0.1" value="10">
             <output id="styleOverlaySizeOutput" onmouseover="tip('Overlay size')">10</output>
-            <output id="styleOverlaySizeFriendly" onmouseover="tip('Size between two adjacent cells in map scale')">(52 mi)</output>
+            <output id="styleOverlaySizeFriendly" onmouseover="tip('Size between two adjacent cells in map scale')">(52
+              mi)</output>
           </div>
           <div id="styleOcean">
             <br>Elements:
@@ -285,15 +299,15 @@
             <label for="styleOceanPattern" onmouseover="tip('Toggle ocean pattern')" class="checkbox-label">Pattern</label>
             <input id="styleOceanLayers" class="checkbox" type="checkbox" checked>
             <label for="styleOceanLayers" onmouseover="tip('Toggle ocean layers')" class="checkbox-label">Layers</label><br>
-            Background: <input id="styleOceanBack" type="color" value="#000000"/><output id="styleOceanBackOutput">#000000</output><br>
-            Foreground: <input id="styleOceanFore" type="color" value="#53679f"/><output id="styleOceanForeOutput">#53679f</output>
+            Background: <input id="styleOceanBack" type="color" value="#000000" /><output id="styleOceanBackOutput">#000000</output><br>
+            Foreground: <input id="styleOceanFore" type="color" value="#53679f" /><output id="styleOceanForeOutput">#53679f</output>
           </div>
           <div id="styleFill">
-            Fill: <input id="styleFillInput" type="color" value="#5E4FA2"/>
+            Fill: <input id="styleFillInput" type="color" value="#5E4FA2" />
             <output id="styleFillOutput">#5E4FA2</output>
           </div>
           <div id="styleStroke">
-            Stroke: <input id="styleStrokeInput" type="color" value="#5E4FA2"/>
+            Stroke: <input id="styleStrokeInput" type="color" value="#5E4FA2" />
             <output id="styleStrokeOutput">#5E4FA2</output>
           </div>
           <div id="styleStrokeWidth">
@@ -312,11 +326,14 @@
             </select>
           </div>
           <div id="styleFontSize">
-            <br>Font size: <button class="whiteButton" onmouseover="tip('Multiply all Fonts size by 1.1')" id="styleFontPlus">+</button><button class="whiteButton" onmouseover="tip('Multiply all Fonts size by 0.9')" id="styleFontMinus">-</button>
+            <br>Font size: <button class="whiteButton" onmouseover="tip('Multiply all Fonts size by 1.1')" id="styleFontPlus">+</button><button
+              class="whiteButton" onmouseover="tip('Multiply all Fonts size by 0.9')" id="styleFontMinus">-</button>
           </div>
           <div id="styleSize">
-            <br>Radius: <button class="whiteButton" onmouseover="tip('Multiply Radius by 1.1')" id="styleFillPlus">+</button><button class="whiteButton" onmouseover="tip('Multiply Radius by 0.9')" id="styleFillMinus">-</button>
-            <span> Stroke: </span><button class="whiteButton" onmouseover="tip('Multiply Stroke-width by 1.1')" id="styleStrokePlus">+</button><button class="whiteButton" onmouseover="tip('Multiply Stroke-width by 0.9')" id="styleStrokeMinus">-</button>
+            <br>Radius: <button class="whiteButton" onmouseover="tip('Multiply Radius by 1.1')" id="styleFillPlus">+</button><button
+              class="whiteButton" onmouseover="tip('Multiply Radius by 0.9')" id="styleFillMinus">-</button>
+            <span> Stroke: </span><button class="whiteButton" onmouseover="tip('Multiply Stroke-width by 1.1')" id="styleStrokePlus">+</button><button
+              class="whiteButton" onmouseover="tip('Multiply Stroke-width by 0.9')" id="styleStrokeMinus">-</button>
           </div>
 
           <div id="styleOpacity">
@@ -352,7 +369,8 @@
             <fieldset>
               <legend>Label groups:</legend>
               <input id="hideLabels" class="checkbox" type="checkbox" checked>
-              <label for="hideLabels" onmouseover="tip('Allow system to hide labels if their size in too small on that scale)')" class="checkbox-label">Toggle visibility automatically</label>
+              <label for="hideLabels" onmouseover="tip('Allow system to hide labels if their size in too small on that scale)')"
+                class="checkbox-label">Toggle visibility automatically</label>
               <div id="styleLabelGroupItems"></div>
             </fieldset>
           </div>
@@ -366,7 +384,8 @@
         </div>
       </div>
       <div id="optionsContent" class="tabcontent">
-        <p onmouseover="tip('Map generation setting. Generate a new map to apply the settings')">Generation options (new map to apply):</p>
+        <p onmouseover="tip('Map generation setting. Generate a new map to apply the settings')">Generation options
+          (new map to apply):</p>
         <table>
           <tr>
             <td></td>
@@ -383,7 +402,8 @@
           </tr>
           <tr>
             <td></td>
-            <td onmouseover="tip('Cells density controls underlying graph size and hightly affects performance')">Map cells density</td>
+            <td onmouseover="tip('Cells density controls underlying graph size and hightly affects performance')">Map
+              cells density</td>
             <td>
               <input id="sizeInput" type="range" min="1" max="3" value="1">
             </td>
@@ -393,7 +413,8 @@
           </tr>
           <tr>
             <td>
-              <i onmouseover="tip('Lock to restrict option randomization on new map generation')" data-locked=0 id="lockTemplateInput" class="icon-lock-open"></i>
+              <i onmouseover="tip('Lock to restrict option randomization on new map generation')" data-locked=0 id="lockTemplateInput"
+                class="icon-lock-open"></i>
             </td>
             <td onmouseover="tip('Select template to be used for a Heightmap generation')">Heightmap template</td>
             <td>
@@ -412,7 +433,8 @@
           </tr>
           <tr>
             <td>
-              <i onmouseover="tip('Lock to restrict option randomization on new map generation')" data-locked=0 id="lockManorsInput" class="icon-lock-open"></i>
+              <i onmouseover="tip('Lock to restrict option randomization on new map generation')" data-locked=0 id="lockManorsInput"
+                class="icon-lock-open"></i>
             </td>
             <td onmouseover="tip('Define how many Settlements should be placed')">Burgs count</td>
             <td>
@@ -424,7 +446,8 @@
           </tr>
           <tr>
             <td>
-              <i onmouseover="tip('Lock to restrict option randomization on new map generation')" data-locked=0 id="lockRegionsInput" class="icon-lock-open"></i>
+              <i onmouseover="tip('Lock to restrict option randomization on new map generation')" data-locked=0 id="lockRegionsInput"
+                class="icon-lock-open"></i>
             </td>
             <td onmouseover="tip('Define how many Countries should be created')">States count</td>
             <td>
@@ -436,9 +459,11 @@
           </tr>
           <tr>
             <td>
-              <i onmouseover="tip('Lock to restrict option randomization on new map generation')" data-locked=0 id="lockPowerInput" class="icon-lock-open"></i>
+              <i onmouseover="tip('Lock to restrict option randomization on new map generation')" data-locked=0 id="lockPowerInput"
+                class="icon-lock-open"></i>
             </td>
-            <td onmouseover="tip('Define Countries size variety. Set to 0 to have all countries sized the same')">States disbalance</td>
+            <td onmouseover="tip('Define Countries size variety. Set to 0 to have all countries sized the same')">States
+              disbalance</td>
             <td>
               <input id="powerInput" type="range" min="0" max="10" step="0.2" value="5">
             </td>
@@ -448,7 +473,8 @@
           </tr>
           <tr>
             <td>
-              <i onmouseover="tip('Unlock to allow option randomization on new map generation')" data-locked=1 id="lockNeutralInput" class="icon-lock"></i>
+              <i onmouseover="tip('Unlock to allow option randomization on new map generation')" data-locked=1 id="lockNeutralInput"
+                class="icon-lock"></i>
             </td>
             <td onmouseover="tip('Minimal distance to closest burg to consider land neutral')">Neutral distance</td>
             <td>
@@ -460,9 +486,11 @@
           </tr>
           <tr style="display:none">
             <td>
-              <i onmouseover="tip('Unlock to allow option randomization on new map generation')" data-locked=1 id="lockNamesInput" class="icon-lock"></i>
+              <i onmouseover="tip('Unlock to allow option randomization on new map generation')" data-locked=1 id="lockNamesInput"
+                class="icon-lock"></i>
             </td>
-            <td onmouseover="tip('Define name generation style for burgs. Only the first one works offline')">Burg names style</td>
+            <td onmouseover="tip('Define name generation style for burgs. Only the first one works offline')">Burg
+              names style</td>
             <td>
               <select id="namesInput">
                 <option value=0>Pseudo-real (Culture based simulation; internal generation)</option>
@@ -473,7 +501,8 @@
           </tr>
           <tr>
             <td>
-              <i onmouseover="tip('Lock to restrict option randomization on new map generation')" data-locked=0 id="lockCulturesInput" class="icon-lock-open"></i>
+              <i onmouseover="tip('Lock to restrict option randomization on new map generation')" data-locked=0 id="lockCulturesInput"
+                class="icon-lock-open"></i>
             </td>
             <td onmouseover="tip('Define how many Cultures should be generated')">Cultures count</td>
             <td>
@@ -485,7 +514,8 @@
           </tr>
           <tr>
             <td>
-              <i onmouseover="tip('Lock to restrict option randomization on new map generation')" data-locked=0 id="lockPrecInput" class="icon-lock-open"></i>
+              <i onmouseover="tip('Lock to restrict option randomization on new map generation')" data-locked=0 id="lockPrecInput"
+                class="icon-lock-open"></i>
             </td>
             <td onmouseover="tip('Set precipitation level. Controls river quantity and power')">Precipitation</td>
             <td>
@@ -497,7 +527,8 @@
           </tr>
           <tr>
             <td>
-              <i onmouseover="tip('Unlock to allow option randomization on new map generation')" data-locked=1 id="lockSwampinessInput" class="icon-lock"></i>
+              <i onmouseover="tip('Unlock to allow option randomization on new map generation')" data-locked=1 id="lockSwampinessInput"
+                class="icon-lock"></i>
             </td>
             <td onmouseover="tip('Define the land swampiness. Increase to see more marshes on Relief map')">Swampiness</td>
             <td>
@@ -538,7 +569,8 @@
           </tr>
           <tr>
             <td></td>
-            <td onmouseover="tip('Define relative size of a saved png images. Consider saving big images is slow')">PNG resolution</td>
+            <td onmouseover="tip('Define relative size of a saved png images. Consider saving big images is slow')">PNG
+              resolution</td>
             <td>
               <input id="pngResolutionInput" type="range" min="1" max="10" value="5" oninput="pngResolutionOutput.value = this.value + 'x'">
             </td>
@@ -575,7 +607,8 @@
           <div>
             <button onmouseover="tip('Edit the current Heightmap')" id="fromHeightmap">Edit</button>
             <button onmouseover="tip('Remove all data and start from scratch')" id="fromScratch">Clear all</button>
-            <button class="buttonoff" onmouseover="tip('Finalize the Heightmap. Not allowed if landmass area is insufficient')" id="getMap">Complete</button>
+            <button class="buttonoff" onmouseover="tip('Finalize the Heightmap. Not allowed if landmass area is insufficient')"
+              id="getMap">Complete</button>
           </div>
           <div id="customizationMenu" class="hidden">
             <div id="customizeTools">
@@ -587,13 +620,16 @@
             </div>
             <div id="customizeOptions">
               <input id="renderOcean" class="checkbox" type="checkbox">
-              <label for="renderOcean" onmouseover="tip('Render cells below sea level')" class="checkbox-label">Render ocean cells</label>
+              <label for="renderOcean" onmouseover="tip('Render cells below sea level')" class="checkbox-label">Render
+                ocean cells</label>
               <input id="changeHeights" class="checkbox" type="checkbox">
-              <label for="changeHeights" onmouseover="tip('Allow system to change custom heights if reasonable')" class="checkbox-label">Change heights</label>
+              <label for="changeHeights" onmouseover="tip('Allow system to change custom heights if reasonable')" class="checkbox-label">Change
+                heights</label>
             </div>
             <label onmouseover="tip('Number of Land cells and landmass/ocean ratio')">Landmass:
               <span id="landmassCounter">0</span> (<span id="landmassRatio">0</span>%); Average Elevation: <span id="landmassAverage">0</span>
-            </label><hr>
+            </label>
+            <hr>
           </div>
         </div>
         <div id="addFeature">
@@ -624,26 +660,55 @@
         </div>
       </div>
       <div id="aboutContent" class="tabcontent">
-        <p><a href="https://github.com/Azgaar/Fantasy-Map-Generator" target="_blank">Fantasy Map Generator</a> is an <a href="https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE" target="_blank">open source</a> tool which procedurally generates fantasy maps. You may use auto-generated maps as they are, edit them or even create a map from scratch. Check out the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Quick-Start-Tutorial" target="_blank">quick start tutorial</a> and <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki" target="_blank">project wiki</a> for guidance. Join our <a href="https://www.reddit.com/r/FantasyMapGenerator/" target="_blank">Reddit Community</a> if you have questions, need any help, have a suggestion or just want to share a created map.</p>
-        <p>The project is under active development. For older versions see the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog" target="_blank">changelog</a>. Some details are covered in my <a href="https://azgaar.wordpress.com/" target="_blank">blog</a>. To track the current progress see the <a href="https://trello.com/b/7x832DG4/fantasy-map-generator" target="_blank">devboard</a>.</p>
-        <p>Please report bugs <a href="https://github.com/Azgaar/Fantasy-Map-Generator/issues" target="_blank">here</a>. You may also <a href="mailto:maxganiev@yandex.ru" target="_blank">send me</a> an email.</p>
+        <p><a href="https://github.com/Azgaar/Fantasy-Map-Generator" target="_blank">Fantasy Map Generator</a> is an <a
+            href="https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE" target="_blank">open source</a>
+          tool which procedurally generates fantasy maps. You may use auto-generated maps as they are, edit them or
+          even create a map from scratch. Check out the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Quick-Start-Tutorial"
+            target="_blank">quick start tutorial</a> and <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki"
+            target="_blank">project wiki</a> for guidance. Join our <a href="https://www.reddit.com/r/FantasyMapGenerator/"
+            target="_blank">Reddit Community</a> if you have questions, need any help, have a suggestion or just want
+          to share a created map.</p>
+        <p>The project is under active development. For older versions see the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog"
+            target="_blank">changelog</a>. Some details are covered in my <a href="https://azgaar.wordpress.com/"
+            target="_blank">blog</a>. To track the current progress see the <a href="https://trello.com/b/7x832DG4/fantasy-map-generator"
+            target="_blank">devboard</a>.</p>
+        <p>Please report bugs <a href="https://github.com/Azgaar/Fantasy-Map-Generator/issues" target="_blank">here</a>.
+          You may also <a href="mailto:maxganiev@yandex.ru" target="_blank">send me</a> an email.</p>
         <ul class="share-buttons">
-          <li><a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator%2F&quote=" onmouseover="tip('Share on Facebook')" target="_blank"><img alt="Share on Facebook" src="images/Facebook.png" /></a></li>
-          <li><a href="https://twitter.com/intent/tweet?source=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator&text=%23FantasyMapGenerator%0A%0Ahttps%3A//azgaar.github.io/Fantasy-Map-Generator" target="_blank" onmouseover="tip('Tweet')"><img alt="Tweet" src="images/Twitter.png" /></a></li>
-          <li><a href="http://www.tumblr.com/share?v=3&u=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator" target="_blank" onmouseover="tip('Post to Tumblr')"><img alt="Post to Tumblr" src="images/Tumblr.png" /></a></li>
-          <li><a href="http://pinterest.com/pin/create/button/?url=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator" target="_blank" onmouseover="tip('Pin it')"><img alt="Pin it" src="images/Pinterest.png" /></a></li>
-          <li><a href="http://www.reddit.com/submit?url=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator" target="_blank" onmouseover="tip('Submit to Reddit')"><img alt="Submit to Reddit" src="images/Reddit.png" /></a></li>
+          <li><a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator%2F&quote="
+              onmouseover="tip('Share on Facebook')" target="_blank"><img alt="Share on Facebook" src="images/Facebook.png" /></a></li>
+          <li><a href="https://twitter.com/intent/tweet?source=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator&text=%23FantasyMapGenerator%0A%0Ahttps%3A//azgaar.github.io/Fantasy-Map-Generator"
+              target="_blank" onmouseover="tip('Tweet')"><img alt="Tweet" src="images/Twitter.png" /></a></li>
+          <li><a href="http://www.tumblr.com/share?v=3&u=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator" target="_blank"
+              onmouseover="tip('Post to Tumblr')"><img alt="Post to Tumblr" src="images/Tumblr.png" /></a></li>
+          <li><a href="http://pinterest.com/pin/create/button/?url=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator"
+              target="_blank" onmouseover="tip('Pin it')"><img alt="Pin it" src="images/Pinterest.png" /></a></li>
+          <li><a href="http://www.reddit.com/submit?url=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator" target="_blank"
+              onmouseover="tip('Submit to Reddit')"><img alt="Submit to Reddit" src="images/Reddit.png" /></a></li>
         </ul>
       </div>
       <div id="sticked">
-        <button id="randomMap" onmouseover="tip('Generate a new map based on options. May take about 1 minute. Hotkey: F6')" class="options">New Map</button>
-        <button id="saveButton" onmouseover="tip('Select file format to save map')" class="options">Save as</button>
-        <div id="saveDropdown">
-          <div id="saveMap" onmouseover="tip('Save as fully functional map in .map format. Hotkey: M')">.map</div>
-          <div id="saveSVG" onmouseover="tip('Download the map as .svg image (open in browser or in Inkscape. Hotkey: S)')">.svg</div>
-          <div id="savePNG" onmouseover="tip('Download the visible part of the map as 4K .png image. Please ensure popups are not blocked! Hotkey: P')">.png</div>
-        </div>
-        <button id="loadMap" onmouseover="tip('Load fully functional map in a .map format. Hotkey: L')" class="options">Load</button>
+        <button id="randomMap" onmouseover="tip('Generate a new map based on options. May take about 1 minute. Hotkey: F6')"
+          class="options">New Map</button>
+        <article class="dropdown">
+          <button id="saveButton" onmouseover="tip('Select file format to save map')" class="options">
+            Save as
+          </button>
+          <div id="saveDropdown" class="dropdown__options">
+            <div id="saveMap" onmouseover="tip('Save as fully functional map in .map format. Hotkey: M')">.map</div>
+            <div id="saveSVG" onmouseover="tip('Download the map as .svg image (open in browser or in Inkscape. Hotkey: S)')">.svg</div>
+            <div id="savePNG" onmouseover="tip('Download the visible part of the map as 4K .png image. Please ensure popups are not blocked! Hotkey: P')">.png</div>
+          </div>
+        </article>
+        <article class="dropdown">
+          <button id="loadButton" onmouseover="tip('Load fully functional map in a .map format. Hotkey: L')" class="options">
+            Load
+          </button>
+          <div id="loadDropdown" class="dropdown__options">
+            <div role="button" id="loadMap" onmouseover="tip('Load map from file')">File</div>
+            <div role="button" id="loadMapFromURL" onmouseover="tip('Load map from URL')" class="options">URL</div>
+          </div>
+        </article>
         <button id="zoomReset" onmouseover="tip('Reset map zoom. Hotkey: 0')" class="options">Reset Zoom</button>
       </div>
     </div>
@@ -655,33 +720,38 @@
       <button id="labelGroupButton" onmouseover="tip('Edit label Group')" class="icon-tags"></button>
       <div id="labelGroupButtons" style="display: none">
         <select id="labelGroupSelect" onmouseover="tip('Select Group for this label')"></select>
-        <input id="labelGroupInput" placeholder="new group name" onmouseover="tip('Declare new Group for this label')"/>
+        <input id="labelGroupInput" placeholder="new group name" onmouseover="tip('Declare new Group for this label')" />
         <span id="labelGroupNew" onmouseover="tip('Declare new Group for this label')" class="icon-plus"></span>
         <span id="labelGroupRemove" onmouseover="tip('Remove the Group with all labels')" class="icon-trash"></span>
       </div>
 
       <button id="labelTextButton" onmouseover="tip('Edit label Text')" class="icon-pencil"></button>
       <div id="labelTextButtons" style="display: none">
-        <input id="labelText"/>
+        <input id="labelText" />
         <span id="labelTextRandom" onmouseover="tip('Generate random name')" class="icon-shuffle"></span>
       </div>
 
       <button id="labelFontButton" onmouseover="tip('Select Font for the entire Group')" class="icon-font"></button>
       <div id="labelFontButtons" style="display: none">
-        <span id="labelExternalFont" onmouseover="tip('Fetch fonts by linking @font-face declaration, just populate with font name if using Google font (fonts.google.com)')" class="icon-plus"></span>
+        <span id="labelExternalFont" onmouseover="tip('Fetch fonts by linking @font-face declaration, just populate with font name if using Google font (fonts.google.com)')"
+          class="icon-plus"></span>
         <select id="labelFontSelect" onmouseover="tip('Select one of the default Fonts')"></select>
-        <input id="labelFontInput" placeholder="link to @font-face" onmouseover="tip('Fetch fonts by linking @font-face declaration')"/ class="hidden">
+        <input id="labelFontInput" placeholder="link to @font-face" onmouseover="tip('Fetch fonts by linking @font-face declaration')"/
+          class="hidden">
         <i id="labelSizeIcon" class="icon-text-height"></i>
-        <input id="labelSize" onmouseover="tip('Change Font size for the label Group')" value="14" type="number" min="1" max="100" step=".5" class="editNumber"/>
+        <input id="labelSize" onmouseover="tip('Change Font size for the label Group')" value="14" type="number" min="1"
+          max="100" step=".5" class="editNumber" />
       </div>
 
       <button id="labelStyleButton" onmouseover="tip('Select text color and opacity for the label Group')" class="icon-brush"></button>
       <div id="labelStyleButtons" style="display: none">
         <input id="labelColor" type="color" class="editColor" value="#3e3e4b">
         <i id="labelOpacityIcon" class="icon-adjust hidden"></i>
-        <input id="labelOpacity" onmouseover="tip('Change Opacity for the entire Group')" value="1" type="number" min="0" max="1" step="0.02" class="editNumber">
+        <input id="labelOpacity" onmouseover="tip('Change Opacity for the entire Group')" value="1" type="number" min="0"
+          max="1" step="0.02" class="editNumber">
         <i id="labelShadowIcon" class="icon-clone hidden"></i>
-        <input id="labelShadow" onmouseover="tip('Change Shadow for the entire Group')" value="1" type="number" min="0" max="1" step="0.02" disabled>
+        <input id="labelShadow" onmouseover="tip('Change Shadow for the entire Group')" value="1" type="number" min="0"
+          max="1" step="0.02" disabled>
       </div>
 
       <button id="labelAngleButton" onmouseover="tip('Rotate the label')" class="icon-ccw"></button>
@@ -701,15 +771,18 @@
       <button id="riverWidth" onmouseover="tip('Change river width and widening')" class="icon-sort-alt-up" onclick='$("#riverEditor > *").not(this).not("#riverResizeButtons").toggle();'></button>
       <div id="riverWidthButtons" style="display: none">
         <i id="riverWidthIcon" onmouseover="tip('Change river width')" class="icon-w"></i>
-        <input id="riverWidthInput" onmouseover="tip('Change river width')" value="1" type="range" min="0.2" max="5" step="0.1">
+        <input id="riverWidthInput" onmouseover="tip('Change river width')" value="1" type="range" min="0.2" max="5"
+          step="0.1">
         <i id="riverIncrementIcon" onmouseover="tip('Change river bed increment (widening speed)')" class="icon-i"></i>
-        <input id="riverIncrement" onmouseover="tip('Change river bed increment (widening speed)')" value="1" type="range" min="0.02" max="2" step="0.02">
+        <input id="riverIncrement" onmouseover="tip('Change river bed increment (widening speed)')" value="1" type="range"
+          min="0.02" max="2" step="0.02">
       </div>
       <button id="riverRegenerate" onmouseover="tip('Regenerate river')" class="icon-shuffle"></button>
       <button id="riverResize" onmouseover="tip('Visually transform (rotate, rescale) river')" class="icon-ccw" onclick='$("#riverEditor > *").not(this).not("#riverWidthButtons").toggle();'></button>
       <div id="riverResizeButtons" style="display: none">
         <i id="riverAngleIcon" onmouseover="tip('Rotate river (set angle)')" class="icon-a"></i>
-        <input id="riverAngle" onmouseover="tip('Rotate river (set angle)')" value="0" type="range" min="-90" max="90" step="0.2">
+        <input id="riverAngle" onmouseover="tip('Rotate river (set angle)')" value="0" type="range" min="-90" max="90"
+          step="0.2">
         <span id="riverAngleValue">0°</span>
         <i id="riverScaleIcon" onmouseover="tip('Change river scale')" class="icon-s"></i>
         <input id="riverScale" onmouseover="tip('Change river scale')" value="1" type="number" min="0.1" max="3" step="0.01">
@@ -729,7 +802,8 @@
         </select>
       </div>
       <button id="routeLength">0</button>
-      <button id="routeSplit" onmouseover="tip('Click on a control point to split the route')" class="icon-unlink" onclick="$(this).toggleClass('pressed')"></button>
+      <button id="routeSplit" onmouseover="tip('Click on a control point to split the route')" class="icon-unlink"
+        onclick="$(this).toggleClass('pressed')"></button>
       <button id="routeLegend" onmouseover="tip('Edit free text notes (legend) for the route')" class="icon-edit"></button>
       <button id="routeNew" onmouseover="tip('Create new route clicking on map')" class="icon-map-pin"></button>
       <button id="routeRemove" onmouseover="tip('Remove route')" class="icon-trash"></button>
@@ -743,17 +817,19 @@
       </div>
       <button id="iconColors" onmouseover="tip('Change icon colors')" class="editButton icon-brush"></button>
       <div id="iconColorsSection" style="display: none">
-          <i onmouseover="tip('Change group fill color')" class="icon-f"></i>
-          <input id="iconFillColor" onmouseover="tip('Change group fill color')" type="color" class="editColor" value="#000000">
-          <i onmouseover="tip('Change group stroke color')" class="icon-s"></i>
-          <input id="iconStrokeColor" onmouseover="tip('Change group stroke color')" type="color" class="editColor" value="#000000">
+        <i onmouseover="tip('Change group fill color')" class="icon-f"></i>
+        <input id="iconFillColor" onmouseover="tip('Change group fill color')" type="color" class="editColor" value="#000000">
+        <i onmouseover="tip('Change group stroke color')" class="icon-s"></i>
+        <input id="iconStrokeColor" onmouseover="tip('Change group stroke color')" type="color" class="editColor" value="#000000">
       </div>
       <button id="iconSetSize" onmouseover="tip('Change group size')" class="icon-resize-full"></button>
       <div id="iconSizeSection" style="display: none">
         <i onmouseover="tip('Change size for group icon')" class="icon-s"></i>
-        <input id="iconSize" onmouseover="tip('Change size for group icon')" type="range" class="editRange" value="1" min=".5" max="10" step=".05"></select>
+        <input id="iconSize" onmouseover="tip('Change size for group icon')" type="range" class="editRange" value="1"
+          min=".5" max="10" step=".05"></select>
         <i onmouseover="tip('Change group stroke-width')" class="icon-w"></i>
-        <input id="iconStrokeWidth" onmouseover="tip('Change group stroke-width')" type="number" class="editNumber" value="1" min="0" max="5" step=".02"></select>
+        <input id="iconStrokeWidth" onmouseover="tip('Change group stroke-width')" type="number" class="editNumber"
+          value="1" min="0" max="5" step=".02"></select>
       </div>
       <button id="iconCopy" onmouseover="tip('Copy the icon')" class="icon-clone"></button>
       <button id="iconRemove" onmouseover="tip('Remove icon')" class="icon-trash"></button>
@@ -777,8 +853,10 @@
 
       <button id="reliefBulkRemove" onmouseover="tip('Erase all relief icons in radius')" class="icon-eraser"></button>
       <div id="reliefBulkRemoveSection" style="display: none">
-        <input id="reliefBulkRemoveRadius" oninput="tip('Eraser brush size: '+this.value); reliefBulkRemoveRadiusNumber.value = this.value" type="range" min="1" max="7" value="3">
-        <input id="reliefBulkRemoveRadiusNumber" oninput="tip('Eraser brush size: '+this.value); reliefBulkRemoveRadius.value = this.value" type="number" min="1" max="7" value="3">
+        <input id="reliefBulkRemoveRadius" oninput="tip('Eraser brush size: '+this.value); reliefBulkRemoveRadiusNumber.value = this.value"
+          type="range" min="1" max="7" value="3">
+        <input id="reliefBulkRemoveRadiusNumber" oninput="tip('Eraser brush size: '+this.value); reliefBulkRemoveRadius.value = this.value"
+          type="number" min="1" max="7" value="3">
       </div>
 
       <button id="reliefRemove" onmouseover="tip('Remove this relief icon')" class="icon-trash"></button>
@@ -788,7 +866,8 @@
       <button id="burgGroup" onmouseover="tip('Change Burg Group')" class="icon-tags"></button>
       <div id="burgGroupSection" style="display: none">
         <select id="burgSelectGroup" onmouseover="tip('Select a Group for this Burg')" style="width: 117px;"></select>
-        <input id="burgInputGroup" placeholder="type new Group name" onmouseover="tip('Create new Group for the Burg')" style="display: none; width: 113px;"/>
+        <input id="burgInputGroup" placeholder="type new Group name" onmouseover="tip('Create new Group for the Burg')"
+          style="display: none; width: 113px;" />
         <i id="burgAddGroup" onmouseover="tip('Create new Group for the Burg')" class="icon-plus pointer"></i>
         <i id="burgRemoveGroup" onmouseover="tip('Remove selected Burg Group')" class="icon-trash pointer"></i>
       </div>
@@ -798,27 +877,32 @@
 
         <button id="burgName" onmouseover="tip('Change Burg name')" class="icon-pencil"></button>
         <div id="burgNameSection" style="display: none">
-          <input id="burgNameInput" onmouseover="tip('Populate to rename the Burg')" style="width: 117px"/>
+          <input id="burgNameInput" onmouseover="tip('Populate to rename the Burg')" style="width: 117px" />
           <span id="burgNameReCulture" onmouseover="tip('Generate culture-specific name for the Burg')" class="icon-book pointer"></span>
           <span id="burgNameReRandom" onmouseover="tip('Generate random name for the Burg')" class="icon-globe pointer"></span>
         </div>
         <button id="burgSelectFont" onmouseover="tip('Select font for the Burg Group label')" class="icon-font"></button>
         <div id="burgSelectFontSection" style="display: none">
-          <i id="burgToggleExternalFont" onmouseover="tip('Fetch fonts by linking @font-face declaration, just populate with font name if using Google font (fonts.google.com)')" class="icon-link pointer"></i>
-          <input id="burgInputExternalFont" placeholder="link to @font-face" onmouseover="tip('Fetch fonts by linking @font-face declaration')" style="display: none; width: 113px;"/>
+          <i id="burgToggleExternalFont" onmouseover="tip('Fetch fonts by linking @font-face declaration, just populate with font name if using Google font (fonts.google.com)')"
+            class="icon-link pointer"></i>
+          <input id="burgInputExternalFont" placeholder="link to @font-face" onmouseover="tip('Fetch fonts by linking @font-face declaration')"
+            style="display: none; width: 113px;" />
           <select id="burgSelectDefaultFont" onmouseover="tip('Select a font for the Group')" style="width: 117px;"></select>
         </div>
 
         <button id="burgSetFontSize" onmouseover="tip('Set font size for the Burg Group label')" class="icon-text-height"></button>
         <div id="burgFontSizeSection" style="display: none">
-          <input id="burgSetLabelSize" onmouseover="tip('Set font size for the Burg Group label')" value="14" type="number" min="1" max="100" step=".5" style="width: 117px"/>
+          <input id="burgSetLabelSize" onmouseover="tip('Set font size for the Burg Group label')" value="14" type="number"
+            min="1" max="100" step=".5" style="width: 117px" />
         </div>
 
         <button id="burgLabelColor" onmouseover="tip('Set label color for the Burg Group')" class="icon-brush"></button>
         <div id="burgLabelColorSection" style="display: none">
-          <input onmouseover="tip('Set label color for the Burg Group')" id="burgLabelColorInput" type="color" class="editColor" value="#3e3e4b">
+          <input onmouseover="tip('Set label color for the Burg Group')" id="burgLabelColorInput" type="color" class="editColor"
+            value="#3e3e4b">
           <i onmouseover="tip('Set label opacity for the Burg Group')" class="icon-adjust"></i>
-          <input onmouseover="tip('Set label opacity for the Burg Group')" id="burgLabelOpacity" value="1" type="number" min="0" max="1" step="0.02">
+          <input onmouseover="tip('Set label opacity for the Burg Group')" id="burgLabelOpacity" value="1" type="number"
+            min="0" max="1" step="0.02">
         </div>
 
         <button id="burgLabelRotation" onmouseover="tip('Rotate the label')" class="icon-ccw"></button>
@@ -834,32 +918,41 @@
         <button id="burgIconFill" onmouseover="tip('Change icon fill')" class="icon-dot-circled"></button>
         <div id="burgIconFillSection" style="display: none;">
           <i onmouseover="tip('Change icon size')" class="icon-resize-full"></i>
-          <input id="burgIconSize" onmouseover="tip('Change icon size')" type="range" class="editRange" value="1" min=".1" max="5" step=".05" style="width: 60px;"></select>
+          <input id="burgIconSize" onmouseover="tip('Change icon size')" type="range" class="editRange" value="1" min=".1"
+            max="5" step=".05" style="width: 60px;"></select>
           <i onmouseover="tip('Set icon fill opacity')" class="icon-adjust"></i>
-          <input id="burgIconFillOpacity" onmouseover="tip('Set icon fill opacity')" value="1" type="number" min="0" max="1" step="0.02" style="width: 40px;">
-          <input id="burgIconFillColor" onmouseover="tip('Change icon fill color')" type="color" class="editColor" value="#000000">
+          <input id="burgIconFillOpacity" onmouseover="tip('Set icon fill opacity')" value="1" type="number" min="0"
+            max="1" step="0.02" style="width: 40px;">
+          <input id="burgIconFillColor" onmouseover="tip('Change icon fill color')" type="color" class="editColor"
+            value="#000000">
         </div>
 
         <button id="burgIconStroke" onmouseover="tip('Change icon stroke')" class="icon-circle-empty"></button>
         <div id="burgIconStrokeSection" style="display: none;">
           <i onmouseover="tip('Change icon stroke width')" class="icon-resize-horizontal"></i>
-          <input id="burgIconStrokeWidth" onmouseover="tip('Change icon stroke width')" type="number" value="1" min="0" max="2" step=".02" style="width: 40px;"></select>
+          <input id="burgIconStrokeWidth" onmouseover="tip('Change icon stroke width')" type="number" value="1" min="0"
+            max="2" step=".02" style="width: 40px;"></select>
           <i onmouseover="tip('Set icon stroke opacity')" class="icon-adjust"></i>
-          <input id="burgIconStrokeOpacity" onmouseover="tip('Set icon stroke opacity')" value="1" type="number" min="0" max="1" step="0.02" style="width: 40px;">
-          <input id="burgIconStrokeColor" onmouseover="tip('Change icon stroke color')" type="color" class="editColor" value="#000000">
+          <input id="burgIconStrokeOpacity" onmouseover="tip('Set icon stroke opacity')" value="1" type="number" min="0"
+            max="1" step="0.02" style="width: 40px;">
+          <input id="burgIconStrokeColor" onmouseover="tip('Change icon stroke color')" type="color" class="editColor"
+            value="#000000">
         </div>
       </div>
 
       <button id="burgFeatures" onmouseover="tip('Change Burg features')" class="icon-cog-alt"></button>
       <div id="burgFeaturesSection" style="display: none">
-        <button id="burgToggleCapital" onmouseover="tip('Mark the Burg as country capital. Neutral burg cannot be a capital')" class="icon-star"></button>
+        <button id="burgToggleCapital" onmouseover="tip('Mark the Burg as country capital. Neutral burg cannot be a capital')"
+          class="icon-star"></button>
         <button id="burgTogglePort" onmouseover="tip('Mark the Burg as port (toggle anchor icon)')" class="icon-anchor"></button>
         <i onmouseover="tip('Set Burg population')" class="icon-users"></i>
-        <input id="burgPopulation" onmouseover="tip('Set Burg population (in population points)')" type="number" value="1" min="0" step="1" style="width: 40px;"></select>
+        <input id="burgPopulation" onmouseover="tip('Set Burg population (in population points)')" type="number" value="1"
+          min="0" step="1" style="width: 40px;"></select>
         <output id="burgPopulationFriendly" onmouseover="tip('Burg population (in people)')">1000</output>
       </div>
 
-      <button id="burgSeeInMFCG" onmouseover="tip('See the burg representation in Medieval Fantasy City Generator by watabou')" class="icon-map"></button>
+      <button id="burgSeeInMFCG" onmouseover="tip('See the burg representation in Medieval Fantasy City Generator by watabou')"
+        class="icon-map"></button>
       <button id="burgRelocate" onmouseover="tip('Move burg to a different cell')" class="icon-target"></button>
       <button id="burglLegend" onmouseover="tip('Edit free text notes (legend) for this burg')" class="icon-edit"></button>
       <button id="burgAddfromEditor" onmouseover="tip('Add new Burg')" class="icon-plus"></button>
@@ -871,7 +964,8 @@
       <button id="markerGroup" onmouseover="tip('Change marker type')" class="icon-tags"></button>
       <div id="markerGroupSection" style="display: none">
         <select id="markerSelectGroup" onmouseover="tip('Select type for the selected marker')" style="width: 117px;"></select>
-        <input id="markerInputGroup" placeholder="type new type name" onmouseover="tip('Create new type for selected marker')" style="display: none; width: 113px;"/>
+        <input id="markerInputGroup" placeholder="type new type name" onmouseover="tip('Create new type for selected marker')"
+          style="display: none; width: 113px;" />
         <i id="markerAddGroup" onmouseover="tip('Pick out selected marker into a new type')" class="icon-plus pointer"></i>
         <i id="markerRemoveGroup" onmouseover="tip('Remove all markers of that type')" class="icon-trash pointer"></i>
       </div>
@@ -879,11 +973,14 @@
       <button id="markerIconButton" onmouseover="tip('Change marker icon and edit positioning')" class="icon-star"></button>
       <div id="markerIconButtons" style="display: none">
         <i onmouseover="tip('Change marker icon size')" class="icon-resize-full"></i>
-        <input id="markerIconSize" onmouseover="tip('Change marker icon size')" value="22" type="range" min="10" max="30" step="0.5" class="editRange">
+        <input id="markerIconSize" onmouseover="tip('Change marker icon size')" value="22" type="range" min="10" max="30"
+          step="0.5" class="editRange">
         <i onmouseover="tip('Change marker horizontal shift')" class="icon-resize-horizontal"></i>
-        <input id="markerIconShiftX" onmouseover="tip('Change marker horizontal shift')" value="50" type="number" min="0" max="100" style="width: 38px;">
+        <input id="markerIconShiftX" onmouseover="tip('Change marker horizontal shift')" value="50" type="number" min="0"
+          max="100" style="width: 38px;">
         <i onmouseover="tip('Change marker vertical shift')" class="icon-resize-vertical"></i>
-        <input id="markerIconShiftY" onmouseover="tip('Change marker vertical shift')" value="50" type="number" min="0" max="100" style="width: 38px;">
+        <input id="markerIconShiftY" onmouseover="tip('Change marker vertical shift')" value="50" type="number" min="0"
+          max="100" style="width: 38px;">
         <i onmouseover="tip('Paste custom unicode symbol to use as icon')" class="icon-pencil"></i>
         <input id="markerIconCustom" onmouseover="tip('Paste custom unicode symbol to use as icon')" style="width: 38px;">
         <table id="markerIconTable"></table>
@@ -893,13 +990,17 @@
       <button id="markerStyleButton" onmouseover="tip('Change marker size and colors')" class="icon-brush"></button>
       <div id="markerStyleButtons" style="display: none">
         <i onmouseover="tip('Change marker base style')" class="icon-map-pin"></i>:
-        <input id="markerSize" onmouseover="tip('Change marker size')" value="1" type="range" min="0.1" max="10" step="0.2" class="editRange">
+        <input id="markerSize" onmouseover="tip('Change marker size')" value="1" type="range" min="0.1" max="10" step="0.2"
+          class="editRange">
         <input id="markerBase" onmouseover="tip('Change marker base color')" type="color" class="editColor" value="#ffffff">
         <input id="markerFill" onmouseover="tip('Change marker fill color')" type="color" class="editColor" value="#000000">
         <br><i onmouseover="tip('Change marker icon style')" class="icon-star"></i>:
-        <input id="markerIconFill" onmouseover="tip('Change marker icon fill color')" type="color" class="editColor" value="#000000">
-        <input id="markerIconStrokeWidth" onmouseover="tip('Change marker icon stroke width')" value="0" type="number" min="0" max="2" step="0.1" style="width: 40px;">
-        <input id="markerIconStroke" onmouseover="tip('Change marker icon stroke color')" type="color" class="editColor" value="#000000">
+        <input id="markerIconFill" onmouseover="tip('Change marker icon fill color')" type="color" class="editColor"
+          value="#000000">
+        <input id="markerIconStrokeWidth" onmouseover="tip('Change marker icon stroke width')" value="0" type="number"
+          min="0" max="2" step="0.1" style="width: 40px;">
+        <input id="markerIconStroke" onmouseover="tip('Change marker icon stroke color')" type="color" class="editColor"
+          value="#000000">
       </div>
 
       <button id="markerToggleBubble" onmouseover="tip('Toggle marker bubble display')" class="icon-info-circled"></button>
@@ -923,7 +1024,8 @@
         </select>
       </div>
       <div id="templateTools">
-        <button id="templateMountain" onmouseover="tip('Mountain: high big blob. Can be placed only once and only as a first step')" class="noicon">M</button>
+        <button id="templateMountain" onmouseover="tip('Mountain: high big blob. Can be placed only once and only as a first step')"
+          class="noicon">M</button>
         <button id="templateHill" onmouseover="tip('Hill: small blob')" class="noicon">H</button>
         <button id="templatePit" onmouseover="tip('Pit: round depression')" class="noicon">P</button>
         <button id="templateRange" onmouseover="tip('Range: elongated elevation')" class="noicon">R</button>
@@ -931,7 +1033,8 @@
         <button id="templateStrait" onmouseover="tip('Strait: centered vertical depression')" class="noicon">S</button>
         <button id="templateAdd" onmouseover="tip('Add or subtract value from all heights')" class="noicon">+</button>
         <button id="templateMultiply" onmouseover="tip('Multiply all heights by factor')" class="noicon">*</button>
-        <button id="templateSmooth" onmouseover="tip('Smooth the map replacing cell heights by an average values of its neighbors')" class="noicon">~</button>
+        <button id="templateSmooth" onmouseover="tip('Smooth the map replacing cell heights by an average values of its neighbors')"
+          class="noicon">~</button>
       </div>
       <div id="templateBody" data-changed=0>
         <div data-type="Mountain">Mountain
@@ -942,10 +1045,12 @@
         <button id="templateRun" onmouseover="tip('Apply current template')" class="icon-play-circled2"></button>
         <button id="templateUndo" onmouseover="tip('Undo the latest action')" class="icon-ccw" disabled></button>
         <button id="templateRedo" onmouseover="tip('Redo the action')" class="icon-cw" disabled></button>
-        <button id="templateComplete" onmouseover="tip('Finalize the Heightmap. Not allowed if insufficient land area available')" class="icon-check"></button>
+        <button id="templateComplete" onmouseover="tip('Finalize the Heightmap. Not allowed if insufficient land area available')"
+          class="icon-check"></button>
         <button id="templateSave" onmouseover="tip('Save template')" class="icon-download"></button>
         <button id="templateLoad" onmouseover="tip('Open previously saved template')" class="icon-upload"></button>
-        <button id="templateMail" onclick="window.open('mailto:maxganiev@yandex.com?Subject=Template%20suggestion', '_blank')" onmouseover="tip('Send a template suggestion to me')" class="icon-mail-alt"></button>
+        <button id="templateMail" onclick="window.open('mailto:maxganiev@yandex.com?Subject=Template%20suggestion', '_blank')"
+          onmouseover="tip('Send a template suggestion to me')" class="icon-mail-alt"></button>
       </div>
     </div>
 
@@ -956,12 +1061,14 @@
         <button id="convertAutoHue" onmouseover="tip('Auto-assign colors based on hue')" class="icon-brush"></button>
         <button id="convertColorsMinus" onmouseover="tip('Reduce the number of colors. Minimal number is 3')" class="icon-minus-squared"></button>
         <button id="convertColorsPlus" onmouseover="tip('Increase the number of colors. Maximum number is 256')" class="icon-plus-squared"></button>
-        <input id="convertColors" value="12" style="display: none;"/>
+        <input id="convertColors" value="12" style="display: none;" />
         <button id="convertImageGrid" onmouseover="tip('Toggle grid')" class="icon-eye"></button>
         <button id="convertOverlayButton" onmouseover="tip('Change overlay opacity')" class="icon-clone"></button>
-        <input id="convertOverlay" onmouseover="tip('Change overlay opacity')" type="range" min="0" max="1" step="0.01" value="0" style="display: none;">
+        <input id="convertOverlay" onmouseover="tip('Change overlay opacity')" type="range" min="0" max="1" step="0.01"
+          value="0" style="display: none;">
         <span id="convertOverlayValue" onmouseover="tip('Overlay opacity')" style="display: none;">0</span>
-        <button id="convertComplete" onmouseover="tip('Complete conversion. All unassigned colors will be considered as ocean')" class="icon-check"></button>
+        <button id="convertComplete" onmouseover="tip('Complete conversion. All unassigned colors will be considered as ocean')"
+          class="icon-check"></button>
       </div>
       <div id="colorsSelect">
         <div id="colorScheme"></div>
@@ -985,10 +1092,12 @@
         <button id="brushPit" onmouseover="tip('Click on the map to place a Pit')" class="feature noicon">P</button>
         <button id="brushRange" onmouseover="tip('Select two points to place a Range')" class="feature noicon">R</button>
         <button id="brushTrough" onmouseover="tip('Select two points to place a Trought')" class="feature noicon">T</button>
-    </div>
+      </div>
       <div style="display: table;">
-        <label id="brushRadiusLabel" onmouseover="tip('Set the brush effective radius. Works only with 4 brushes above')" class="disabled italic">R:</label>
-        <input id="brushRadius" oninput="tip('Brush radius: '+this.value)" type="range" min="1" max="10" value="3" class="disabled" disabled>
+        <label id="brushRadiusLabel" onmouseover="tip('Set the brush effective radius. Works only with 4 brushes above')"
+          class="disabled italic">R:</label>
+        <input id="brushRadius" oninput="tip('Brush radius: '+this.value)" type="range" min="1" max="10" value="3"
+          class="disabled" disabled>
         <label onmouseover="tip('Set the brush power in points of height')" class="italic">H:</label>
         <input id="brushPower" oninput="tip('Brush power: '+this.value)" type="range" min="1" max="30" value="5">
       </div>
@@ -996,12 +1105,15 @@
         <button id="undo" onmouseover="tip('Undo the latest action (Ctrl + Z)')" class="icon-ccw" disabled></button>
         <button id="redo" onmouseover="tip('Redo the action (Ctrl + Y)')" class="icon-cw" disabled></button>
         <button id="rescaleButton" onmouseover="tip('Show rescaler slider')" class="icon-exchange"></button>
-        <input id="rescaler" onmouseover="tip('Slide to change map height')" type="range" min="1" max="10" step="0.1" value="5" class="hidden">
+        <input id="rescaler" onmouseover="tip('Slide to change map height')" type="range" min="1" max="10" step="0.1"
+          value="5" class="hidden">
         <button id="rescaleCondButton" onmouseover="tip('Conditional rescaler')" class="icon-if"></button>
         <label class="condition hidden">h ≥</label>
-        <input id="rescaleLower" class="condition hidden" onmouseover="tip('Set lower threshold')" value="20" type="number" min="0" max="100">
+        <input id="rescaleLower" class="condition hidden" onmouseover="tip('Set lower threshold')" value="20" type="number"
+          min="0" max="100">
         <label class="condition hidden">≤</label>
-        <input id="rescaleHigher" class="condition hidden" onmouseover="tip('Set higher threshold')" value="100" type="number" min="1" max="100">
+        <input id="rescaleHigher" class="condition hidden" onmouseover="tip('Set higher threshold')" value="100" type="number"
+          min="1" max="100">
         <label class="condition hidden">⇒</label>
         <select class="condition hidden" id="conditionSign">
           <option value="×" selected>×</option>
@@ -1010,7 +1122,8 @@
           <option value="-">-</option>
           <option value="^">^</option>
         </select>
-        <input id="rescaleModifier" onmouseover="tip('Set modifier value')" type="number" value="0.9" min="0" max="1.5" step="0.01" class="condition hidden">
+        <input id="rescaleModifier" onmouseover="tip('Set modifier value')" type="number" value="0.9" min="0" max="1.5"
+          step="0.01" class="condition hidden">
         <button id="rescaleExecute" onmouseover="tip('Run condition')" class="icon-play-circled2 condition hidden"></button>
         <button id="smoothHeights" onmouseover="tip('Smooth all heights')" class="icon-smooth"></button>
         <button id="disruptHeights" onmouseover="tip('Disrupt (randomize) heights')" class="icon-disrupt"></button>
@@ -1024,13 +1137,19 @@
 
     <div id="countriesEditor" class="dialog stable" style="display: none" data-type="absolute">
       <div id="countriesHeader">
-        <div style="margin-left: 14px" onmouseover="tip('Click to sort alphabetically by country name')" class="sortable alphabetically" data-sortby="country">Country&nbsp;</div>
-        <div style="margin-left: 30px" onmouseover="tip('Click to sort alphabetically by capital name')" class="sortable alphabetically" data-sortby="capital">Capital&nbsp;</div>
-        <div style="margin-left: 24px" onmouseover="tip('Click to sort by country expansion value')" class="sortable hidden" data-sortby="expansion">Expan.&nbsp;</div>
-        <div style="margin-left: 30px" onmouseover="tip('Click to sort by country cells count')" class="sortable" data-sortby="cells">Cells&nbsp;</div>
-        <div style="margin-left: 6px" onmouseover="tip('Click to sort by country burgs count')" class="sortable" data-sortby="burgs">Burgs&nbsp;</div>
+        <div style="margin-left: 14px" onmouseover="tip('Click to sort alphabetically by country name')" class="sortable alphabetically"
+          data-sortby="country">Country&nbsp;</div>
+        <div style="margin-left: 30px" onmouseover="tip('Click to sort alphabetically by capital name')" class="sortable alphabetically"
+          data-sortby="capital">Capital&nbsp;</div>
+        <div style="margin-left: 24px" onmouseover="tip('Click to sort by country expansion value')" class="sortable hidden"
+          data-sortby="expansion">Expan.&nbsp;</div>
+        <div style="margin-left: 30px" onmouseover="tip('Click to sort by country cells count')" class="sortable"
+          data-sortby="cells">Cells&nbsp;</div>
+        <div style="margin-left: 6px" onmouseover="tip('Click to sort by country burgs count')" class="sortable"
+          data-sortby="burgs">Burgs&nbsp;</div>
         <div style="margin-left: 20px" onmouseover="tip('Click to sort by country area')" class="sortable" data-sortby="area">Area&nbsp;</div>
-        <div style="margin-left: 22px" onmouseover="tip('Click to sort by country population')" class="sortable" data-sortby="population">Population&nbsp;</div>
+        <div style="margin-left: 22px" onmouseover="tip('Click to sort by country population')" class="sortable"
+          data-sortby="population">Population&nbsp;</div>
       </div>
       <div id="countriesBody"></div>
       <div id="countriesFooter" class="totalLine">
@@ -1042,47 +1161,59 @@
       <div id="countriesBottom">
         <button id="editScaleCountries" onmouseover="tip('Change demographical and geographical measurements')" class="icon-map-signs"></button>
         <button id="countriesPercentage" onmouseover="tip('Toggle percentage / absolut values views')" class="icon-percent"></button>
-        <button id="countriesRegenerate" onmouseover="tip('Regenerate countries based on amended Expansion values')" class="icon-cog-alt"></button>
+        <button id="countriesRegenerate" onmouseover="tip('Regenerate countries based on amended Expansion values')"
+          class="icon-cog-alt"></button>
         <button id="countriesManually" onmouseover="tip('Manually re-assign countries')" class="icon-brush"></button>
         <div id="countriesManuallyButtons" style="display: none">
           <button id="countriesManuallyComplete" onmouseover="tip('Apply assignment')" class="icon-check"></button>
           <button id="countriesAddM" onmouseover="tip('Proclaim a new country')" class="icon-flag"></button>
           <button id="countriesManuallyCancel" onmouseover="tip('Cancel assignment')" class="icon-cancel"></button>
           <label onmouseover="tip('Set the brush size')" class="italic">Brush size:</label>
-          <input id="countriesManuallyBrush" oninput="tip('Brush size: '+this.value); countriesManuallyBrushNumber.value = this.value" type="range" min="1" max="7" value="3">
-          <input id="countriesManuallyBrushNumber" oninput="tip('Brush size: '+this.value); countriesManuallyBrush.value = this.value" type="number" min="1" max="7" value="3">
+          <input id="countriesManuallyBrush" oninput="tip('Brush size: '+this.value); countriesManuallyBrushNumber.value = this.value"
+            type="range" min="1" max="7" value="3">
+          <input id="countriesManuallyBrushNumber" oninput="tip('Brush size: '+this.value); countriesManuallyBrush.value = this.value"
+            type="number" min="1" max="7" value="3">
         </div>
         <div id="countriesRegenerateButtons" style="display: none">
           <button id="countriesApply" onmouseover="tip('Apply assignment')" class="icon-check"></button>
           <button id="countriesRandomize" onmouseover="tip('Randomize countries Expansion value')" class="icon-shuffle"></button>
           <button id="countriesAddR" onmouseover="tip('Proclaim a new country')" class="icon-flag"></button>
           <label onmouseover="tip('Distance to a consider a land as neutral')" class="italic">Neutral distance:</label>
-          <input id="countriesNeutral" oninput="tip('Neutral distance: '+this.value); countriesNeutralNumber.value = this.value" type="range" min="1" max="500" value="200">
-          <input id="countriesNeutralNumber" oninput="tip('Neutral distance: '+this.value); countriesNeutral.value = this.value" type="number" min="1" max="500" value="200" style="width:42px">
+          <input id="countriesNeutral" oninput="tip('Neutral distance: '+this.value); countriesNeutralNumber.value = this.value"
+            type="range" min="1" max="500" value="200">
+          <input id="countriesNeutralNumber" oninput="tip('Neutral distance: '+this.value); countriesNeutral.value = this.value"
+            type="number" min="1" max="500" value="200" style="width:42px">
         </div>
         <button id="countriesAddG" onmouseover="tip('Proclaim a new country')" class="icon-flag"></button>
         <button id="countriesRegenerateNames" onmouseover="tip('Regenerate countries names')" class="icon-arrows-cw"></button>
         <button id="countriesExport" onmouseover="tip('Save country-related data as a text file (.csv)')" class="icon-download"></button>
-        <button id="burgNamesImport" onmouseover="tip('Load burg names from a text file. Each name should be on a new line!')" class="icon-upload"></button>
+        <button id="burgNamesImport" onmouseover="tip('Load burg names from a text file. Each name should be on a new line!')"
+          class="icon-upload"></button>
         <button id="removeCountries" onmouseover="tip('Remove all countries')" class="icon-trash"></button>
       </div>
     </div>
 
     <div id="burgsEditor" class="dialog stable" style="display: none">
       <div id="burgsHeader">
-        <div style="margin-left: 19px" onmouseover="tip('Click to sort alphabetically by burg name')" class="sortable alphabetically" data-sortby="burg">Burg&nbsp;</div>
-        <div style="margin-left: 29px" onmouseover="tip('Click to sort alphabetically by culture name')" class="sortable alphabetically" data-sortby="culture">Culture&nbsp;</div>
-        <div style="margin-left: 14px" onmouseover="tip('Click to sort by country population')" class="sortable" data-sortby="population">Population&nbsp;</div>
-        <div style="margin-left: 6px" onmouseover="tip('Click to sort by country burg type')" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
+        <div style="margin-left: 19px" onmouseover="tip('Click to sort alphabetically by burg name')" class="sortable alphabetically"
+          data-sortby="burg">Burg&nbsp;</div>
+        <div style="margin-left: 29px" onmouseover="tip('Click to sort alphabetically by culture name')" class="sortable alphabetically"
+          data-sortby="culture">Culture&nbsp;</div>
+        <div style="margin-left: 14px" onmouseover="tip('Click to sort by country population')" class="sortable"
+          data-sortby="population">Population&nbsp;</div>
+        <div style="margin-left: 6px" onmouseover="tip('Click to sort by country burg type')" class="sortable alphabetically"
+          data-sortby="type">Type&nbsp;</div>
       </div>
       <div id="burgsBody"></div>
       <div id="burgsFooter" class="totalLine">
-        <div onmouseover="tip('Burgs number')" style="margin-left: 4px">Burgs:&nbsp;<span onmouseover="tip('Burgs number')" id="burgsFooterBurgs">0</span></div>
+        <div onmouseover="tip('Burgs number')" style="margin-left: 4px">Burgs:&nbsp;<span onmouseover="tip('Burgs number')"
+            id="burgsFooterBurgs">0</span></div>
         <div style="margin-left: 10px">Average burg: &nbsp;
           <span onmouseover="tip('Dominant culture')" class="icon-book"></span>
           <span onmouseover="tip('Dominant culture')" id="burgsFooterCulture">no</span>&nbsp;
           <span onmouseover="tip('Average burg population')" class="icon-male"></span>
-          <input onmouseover="tip('Average burg population. Change to recalculate population for all burgs within country')" id="burgsFooterPopulation" type="number" min="1" max="1000000" step="100" value="0">
+          <input onmouseover="tip('Average burg population. Change to recalculate population for all burgs within country')"
+            id="burgsFooterPopulation" type="number" min="1" max="1000000" step="100" value="0">
         </div>
       </div>
       <div id="burgsBottom">
@@ -1096,16 +1227,21 @@
 
     <div id="culturesEditor" class="dialog stable" style="display: none" data-type="absolute">
       <div id="culturesHeader">
-        <div style="margin-left: 14px" onmouseover="tip('Click to sort by culture name')" class="sortable alphabetically" data-sortby="culture">Culture&nbsp;</div>
-        <div style="margin-left: 16px" onmouseover="tip('Click to sort by culture cells count')" class="sortable" data-sortby="cells">Cells&nbsp;</div>
+        <div style="margin-left: 14px" onmouseover="tip('Click to sort by culture name')" class="sortable alphabetically"
+          data-sortby="culture">Culture&nbsp;</div>
+        <div style="margin-left: 16px" onmouseover="tip('Click to sort by culture cells count')" class="sortable"
+          data-sortby="cells">Cells&nbsp;</div>
         <div style="margin-left: 18px" onmouseover="tip('Click to sort by culture area')" class="sortable" data-sortby="area">Area&nbsp;</div>
-        <div style="margin-left: 30px" onmouseover="tip('Click to sort by culture population')" class="sortable" data-sortby="population">Population&nbsp;</div>
-        <div style="margin-left: 3px" onmouseover="tip('Click to sort by culture namesbase')" class="sortable alphabetically" data-sortby="base">Namesbase&nbsp;</div>
+        <div style="margin-left: 30px" onmouseover="tip('Click to sort by culture population')" class="sortable"
+          data-sortby="population">Population&nbsp;</div>
+        <div style="margin-left: 3px" onmouseover="tip('Click to sort by culture namesbase')" class="sortable alphabetically"
+          data-sortby="base">Namesbase&nbsp;</div>
       </div>
       <div id="culturesBody"></div>
 
       <div id="culturesFooter" class="totalLine">
-        <div onmouseover="tip('Cultures number (active / total)')" style="margin-left: 7px">Cultures:&nbsp;<span id="culturesFooterCultures">0 / 7</span></div>
+        <div onmouseover="tip('Cultures number (active / total)')" style="margin-left: 7px">Cultures:&nbsp;<span id="culturesFooterCultures">0
+            / 7</span></div>
         <div onmouseover="tip('Total Land cells number')" style="margin-left: 7px">Cells:&nbsp;<span id="culturesFooterCells">0</span></div>
         <div onmouseover="tip('Total Land Area')" style="margin-left: 7px">Area:&nbsp;<span id="culturesFooterArea">0</span></div>
         <div onmouseover="tip('Total Population')" style="margin-left: 7px">Population:&nbsp;<span id="culturesFooterPopulation">0</span></div>
@@ -1118,11 +1254,14 @@
           <button id="culturesManuallyComplete" onmouseover="tip('Apply assignment')" class="icon-check"></button>
           <button id="culturesManuallyCancel" onmouseover="tip('Cancel assignment')" class="icon-cancel"></button>
           <label onmouseover="tip('Set the brush size')" class="italic">Brush size:</label>
-          <input id="culturesManuallyBrush" oninput="tip('Brush size: '+this.value); culturesManuallyBrushNumber.value = this.value" type="range" min="1" max="7" value="3">
-          <input id="culturesManuallyBrushNumber" oninput="tip('Brush size: '+this.value); culturesManuallyBrush.value = this.value" type="number" min="1" max="7" value="3">
+          <input id="culturesManuallyBrush" oninput="tip('Brush size: '+this.value); culturesManuallyBrushNumber.value = this.value"
+            type="range" min="1" max="7" value="3">
+          <input id="culturesManuallyBrushNumber" oninput="tip('Brush size: '+this.value); culturesManuallyBrush.value = this.value"
+            type="number" min="1" max="7" value="3">
         </div>
         <button id="culturesRandomize" onmouseover="tip('Randomly re-distribute cultures')" class="icon-shuffle"></button>
-        <button id="culturesRegenerateNames" onmouseover="tip('Re-generate all Burg names based on assigned culture')" class="icon-arrows-cw"></button>
+        <button id="culturesRegenerateNames" onmouseover="tip('Re-generate all Burg names based on assigned culture')"
+          class="icon-arrows-cw"></button>
         <button id="culturesEditNamesBase" onmouseover="tip('Edit a database used for names generation')" class="icon-list-bullet"></button>
         <button id="culturesAdd" onmouseover="tip('Add a new culture')" class="icon-plus"></button>
         <button id="culturesExport" onmouseover="tip('Save cultures-related data as a text file (.csv)')" class="icon-download"></button>
@@ -1134,11 +1273,13 @@
         <span>Select base: </span>
         <select id="namesbaseSelect" onmouseover="tip('Select base to edit')" value="0"></select>
         <span>Base name: </span>
-        <input id="namesbaseName" onmouseover="tip('Type to change a base name')" placeholder="Base name" autocorrect="off" spellcheck="false"/>
+        <input id="namesbaseName" onmouseover="tip('Type to change a base name')" placeholder="Base name" autocorrect="off"
+          spellcheck="false" />
       </div>
       <div id="namesbaseBody">
         <span>Names data:</span><br>
-        <textarea id="namesbaseTextarea" data-base="0" cols="70" rows="10" onmouseover="tip('Names data: a comma separated list of source names used for names generation')" placeholder="Provide a names data: a comma separated list of source names" autocorrect="off" spellcheck="false"></textarea>
+        <textarea id="namesbaseTextarea" data-base="0" cols="70" rows="10" onmouseover="tip('Names data: a comma separated list of source names used for names generation')"
+          placeholder="Provide a names data: a comma separated list of source names" autocorrect="off" spellcheck="false"></textarea>
         <br>
         <div>
           <span>Method: </span><select onmouseover="tip('Select generation method')" id="namesbaseMethod">
@@ -1146,11 +1287,13 @@
             <option value="let-to-syl">Markov let-to-syl</option>
             <option value="syl-to-syl">Markov syl-to-syl</option>
             <option value="selection">Random selection</option>
-          </select><span>   Length: </span>
-          <input id="namesbaseMin" onmouseover="tip('Minimal name length recommendation')" type="number" min="2" max="100" value="4">
+          </select><span> Length: </span>
+          <input id="namesbaseMin" onmouseover="tip('Minimal name length recommendation')" type="number" min="2" max="100"
+            value="4">
           <input id="namesbaseMax" onmouseover="tip('Maximal name length recommendation')" type="number" min="2" value="10">
           <span>Dublication: </span>
-          <input id="namesbaseDouble" onmouseover="tip('Populate with letters that can used twice in a row')" autocorrect="off" spellcheck="false" value="abc">
+          <input id="namesbaseDouble" onmouseover="tip('Populate with letters that can used twice in a row')"
+            autocorrect="off" spellcheck="false" value="abc">
         </div>
         <fieldset>
           <legend>Generated examples: </legend>
@@ -1160,31 +1303,35 @@
       <div id="namesbaseBottom">
         <button id="namesbaseDefault" onmouseover="tip('Restore default namesbase')" class="icon-cancel"></button>
         <button id="namesbaseAdd" onmouseover="tip('Add a new base')" class="icon-plus"></button>
-        <button id="namesbaseUpdateExamples" onmouseover="tip('Re-generate examples based on provided data and generation method')" class="icon-cw"></button>
+        <button id="namesbaseUpdateExamples" onmouseover="tip('Re-generate examples based on provided data and generation method')"
+          class="icon-cw"></button>
         <button id="namesbaseDownload" onmouseover="tip('Download namesbase to PC')" class="icon-download"></button>
         <button id="namesbaseUpload" onmouseover="tip('Upload a namesbase from PC')" class="icon-upload"></button>
-        <button id="namesbaseMail" onclick="window.open('mailto:maxganiev@yandex.com?Subject=Namesbase%20suggestion', '_blank')" onmouseover="tip('Send a namesbase suggestion to me')" class="icon-mail-alt"></button>
+        <button id="namesbaseMail" onclick="window.open('mailto:maxganiev@yandex.com?Subject=Namesbase%20suggestion', '_blank')"
+          onmouseover="tip('Send a namesbase suggestion to me')" class="icon-mail-alt"></button>
       </div>
     </div>
 
-  <div id="legendEditor" class="dialog stable textual" style="display: none">
-    <div>
-      <span>Select object: </span>
-      <select id="legendSelect" onmouseover="tip('Select object')" style="width: 120px;"></select>
-      <span>Object name: </span>
-      <input id="legendName" onmouseover="tip('Type to change object name')" autocorrect="off" spellcheck="false" style="width: 120px;">
+    <div id="legendEditor" class="dialog stable textual" style="display: none">
+      <div>
+        <span>Select object: </span>
+        <select id="legendSelect" onmouseover="tip('Select object')" style="width: 120px;"></select>
+        <span>Object name: </span>
+        <input id="legendName" onmouseover="tip('Type to change object name')" autocorrect="off" spellcheck="false"
+          style="width: 120px;">
+      </div>
+      <div>
+        <span>Legend:</span><br>
+        <textarea id="legendText" cols="70" rows="7" onmouseover="tip('Legend is a free text note, enter any object description you like')"
+          placeholder="Legend is a free text note, enter any object description you like"></textarea>
+      </div>
+      <div>
+        <button id="legendFocus" onmouseover="tip('Focus map on selected object')" class="icon-target"></button>
+        <button id="legendDownload" onmouseover="tip('Download legends to PC')" class="icon-download"></button>
+        <button id="legendUpload" onmouseover="tip('Upload legends from PC')" class="icon-upload"></button>
+        <button id="legendRemove" onmouseover="tip('Remove this note')" class="icon-trash"></button>
+      </div>
     </div>
-    <div>
-      <span>Legend:</span><br>
-      <textarea id="legendText" cols="70" rows="7" onmouseover="tip('Legend is a free text note, enter any object description you like')" placeholder="Legend is a free text note, enter any object description you like"></textarea>
-    </div>
-    <div>
-      <button id="legendFocus" onmouseover="tip('Focus map on selected object')" class="icon-target"></button>
-      <button id="legendDownload" onmouseover="tip('Download legends to PC')" class="icon-download"></button>
-      <button id="legendUpload" onmouseover="tip('Upload legends from PC')" class="icon-upload"></button>
-      <button id="legendRemove" onmouseover="tip('Remove this note')" class="icon-trash"></button>
-    </div>
-  </div>
 
     <div id="scaleEditor" class="dialog stable" style="display: none">
       <div id="scaleBody">
@@ -1204,12 +1351,16 @@
         </div>
         <div>
           <div onmouseover="tip('Select how many distance unit are in one pixel')">1 map pixel =</div>
-          <input id="distanceScale" onmouseover="tip('Select how many distance unit are in one pixel')" type="range" min="0.1" max="10" value="3" step="0.1">
-          <input id="scaleOutput" onmouseover="tip('Enter how many distance unit are in one pixel')" type="text" class="output" value="3 mi">
+          <input id="distanceScale" onmouseover="tip('Select how many distance unit are in one pixel')" type="range"
+            min="0.1" max="10" value="3" step="0.1">
+          <input id="scaleOutput" onmouseover="tip('Enter how many distance unit are in one pixel')" type="text" class="output"
+            value="3 mi">
         </div>
         <div>
-          <div onmouseover="tip('Type area unit name, leave `square` just to add ² to the distance unit selected above')">Area unit: </div>
-          <input id="areaUnit" onmouseover="tip('Type area unit name, leave `square` just to add ² to the distance unit selected above')" type="text" value="square">
+          <div onmouseover="tip('Type area unit name, leave `square` just to add ² to the distance unit selected above')">Area
+            unit: </div>
+          <input id="areaUnit" onmouseover="tip('Type area unit name, leave `square` just to add ² to the distance unit selected above')"
+            type="text" value="square">
         </div>
 
         <div class="scaleHeader">
@@ -1225,9 +1376,12 @@
           </select>
         </div>
         <div>
-          <div onmouseover="tip('Select height exponent, i.e. a value showing altitude change sharpness')">Exponent: </div>
-          <input id="heightExponent" onmouseover="tip('Select height exponent, i.e. a value showing altitude change sharpness')" onchange="heightOutput.value = this.value" type="range" min="1.5" max="2" value="1.73" step="0.01">
-          <input id="heightOutput" onmouseover="tip('Select height exponent, i.e. a value showing altitude change sharpness')" type="text" class="output" value="1.73">
+          <div onmouseover="tip('Select height exponent, i.e. a value showing altitude change sharpness')">Exponent:
+          </div>
+          <input id="heightExponent" onmouseover="tip('Select height exponent, i.e. a value showing altitude change sharpness')"
+            onchange="heightOutput.value = this.value" type="range" min="1.5" max="2" value="1.73" step="0.01">
+          <input id="heightOutput" onmouseover="tip('Select height exponent, i.e. a value showing altitude change sharpness')"
+            type="text" class="output" value="1.73">
         </div>
 
         <div class="scaleHeader">
@@ -1241,11 +1395,13 @@
         </div>
         <div>
           <div onmouseover="tip('Change scale bar label, leave blank to hide label')">Scale bar label: </div>
-          <input id="barLabel" onmouseover="tip('Set scale bar label, leave blank to hide label')" type="text" placeholder="hidden" value="">
+          <input id="barLabel" onmouseover="tip('Set scale bar label, leave blank to hide label')" type="text"
+            placeholder="hidden" value="">
         </div>
         <div>
           <div onmouseover="tip('Set background for Scale bar')">Background opacity: </div>
-          <input id="barBackOpacity" onmouseover="tip('Set Scale bar background opacity')" type="range" min="0" max="1" value="0.2" step="0.01">
+          <input id="barBackOpacity" onmouseover="tip('Set Scale bar background opacity')" type="range" min="0" max="1"
+            value="0.2" step="0.01">
           <input id="barBackColor" onmouseover="tip('Set Scale bar background color')" type="color" value="#ffffff">
         </div>
         <div class="scaleHeader">
@@ -1254,13 +1410,17 @@
         </div>
         <div>
           <div onmouseover="tip('Set how many people are in one population point')">1 population point =</div>
-          <input id="populationRate" onmouseover="tip('Set how many people are in one population point, in Kilos')" type="range" min="0.1" max="10" value="1" step="0.1">
-          <input id="populationRateOutput" onmouseover="tip('Enter the population rate, in Kilos')" type="text" class="output" value="1K">
+          <input id="populationRate" onmouseover="tip('Set how many people are in one population point, in Kilos')"
+            type="range" min="0.1" max="10" value="1" step="0.1">
+          <input id="populationRateOutput" onmouseover="tip('Enter the population rate, in Kilos')" type="text" class="output"
+            value="1K">
         </div>
         <div>
           <div>Urbanization rate: </div>
-          <input id="urbanization" onmouseover="tip('Set the ubranization (burgs population relative to all population) rate')" type="range" min="0.01" max="5" value="1" step="0.01">
-          <input id="urbanizationOutput" onmouseover="tip('Enter the ubranization (burgs population relative to all population) rate')" type="text" class="output" value="1">
+          <input id="urbanization" onmouseover="tip('Set the ubranization (burgs population relative to all population) rate')"
+            type="range" min="0.01" max="5" value="1" step="0.01">
+          <input id="urbanizationOutput" onmouseover="tip('Enter the ubranization (burgs population relative to all population) rate')"
+            type="text" class="output" value="1">
         </div>
       </div>
       <div id="scaleBottom">
@@ -1269,7 +1429,8 @@
         <button id="addOpisometer" onmouseover="tip('Drag to measure curve length with opisometer')" class="icon-brush"></button>
         <button id="addRuler" onmouseover="tip('Click to place additional linear ruler')" class="icon-resize-horizontal"></button>
         <button id="addPlanimeter" onmouseover="tip('Drag to measure a polygon area with planimeter')" class="icon-check-empty"></button>
-        <button id="removeAllRulers" onmouseover="tip('Remove all rulers from the map. Click on ruler label to remove ruler separately')" class="icon-trash"></button>
+        <button id="removeAllRulers" onmouseover="tip('Remove all rulers from the map. Click on ruler label to remove ruler separately')"
+          class="icon-trash"></button>
       </div>
     </div>
 
