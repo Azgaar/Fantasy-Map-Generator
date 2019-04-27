@@ -77,11 +77,11 @@ const natural_types =
 
 
 burgs_groups = [
-    { type: "city", pop: 100000 },
-    { type: "town", pop: 2000 },
-    { type: "village", pop: 100 },
-    { type: "hamlet", pop: 10 },
-    { type: "isolated_dwelling", pop: -1 }
+    { type: "city", pop: 100000, admin_level:8},
+    { type: "town", pop: 2000, admin_level:9},
+    { type: "village", pop: 100, admin_level:10},
+    { type: "hamlet", pop: 10, admin_level:11},
+    { type: "isolated_dwelling", pop: -1, admin_level:11}
 ]
 
 numRegExp = new RegExp("[0-9]+");
@@ -131,6 +131,7 @@ function dataget_settlements() {
     for (let i = 0, c = 0; i < pack.burgs.length; i++) {
         let burg = pack.burgs[i];
         let type = "";
+        let level = "";
         if ("i" in burg) {
             settlements[c] = burg;
             //replace population with actual value, scale * 1000
@@ -139,10 +140,12 @@ function dataget_settlements() {
             for (let t = 0; t < burgs_groups.length; t++) {
                 if (pop > burgs_groups[t].pop) {
                     type = burgs_groups[t].type;
+                    level = burgs_groups[t].admin_level;
                     break;
                 }
             }
             settlements[c].type = type;
+            settlements[c].admin_level = level;
             burgs_groups
             c++;
         }
@@ -287,7 +290,7 @@ function osm_settlements_to_features(data, id, scale) {
         nodes += latlongs_to_nodes(boundry, id);
         id += boundry.length + 1;
         tagcats = {
-            type: "boundry", boundary: "administrative", admin_level: "6",
+            type: "boundry", boundary: "administrative", admin_level: data[i].admin_level,
             name: data[i].name
         };
         tags = gen_tags(tagcats);
@@ -307,7 +310,7 @@ function osm_settlements_to_features(data, id, scale) {
         id++;
 
         tagcats = {
-            type: "boundry", boundary: "administrative", border_type: "city", admin_level: "6", designation: "principal_area",
+            type: "boundry", boundary: "administrative", border_type: "city", admin_level: data[i].admin_level, designation: "principal_area",
             name: data[i].name, long_name: data[i].long_name, "is_in:country": data[i].country, "is_in:country_code": data[i].country_code,
             cell: data[i].cell, region: data[i].region, area: (Math.PI * data.population ^ 2), culture: data[i].culture,
             population: data[i].population, feature: data[i].feature,
@@ -335,8 +338,8 @@ function osm_states_to_features(data, id, scale) {
 
                 start_id = id;
                 tagcats = {
-                    type: "place", place: "region",
-                    region_id: b
+                    region_id: b, border_type: "nation",
+                    boundary: "administrative", admin_level: "2",
                 };
                 let region_tags = gen_tags(tagcats);
                 nodes += latlongs_to_nodes(xypath_to_latlong(boundries[b], scale), id);
@@ -348,26 +351,31 @@ function osm_states_to_features(data, id, scale) {
         if (data[i].center) {
             id++;
             tagcats = {
-                type: "place", place: "country", name: data[i].name,
-                cell: data[i].cell, region: data[i].region, area: (Math.PI * data.population ^ 2), culture: data[i].culture,
-                x: data[i].x, y: data[i].y, center: data[i].center, state_id: data[i].i
+                type: "place", place: "country", name: data[i].name,long_name: data[i].long_name,
+                cell: data[i].cell, region: data[i].region, culture: data[i].culture, 
+                x: data[i].x, y: data[i].y, center: data[i].center, country: data[i].name, country_code: data[i].i,
+                state_id: data[i].i, color: data[i].color, expansionism: data[i].expansionism, capital: data[i].capital,
+                state_type: data[i].type, center: data[i].center, culture: data[i].culture, cells: data[i].cells, area: data[i].area,
+                rural: data[i].rural, urban: data[i].urban, cities: data[i].burgs, x: data[i].x, y: data[i].y
             };
 
             tags = gen_tags(tagcats);
             nodes += latlong_to_node(xy_to_coords(data[i].x * scale, data[i].y * scale), id, tags);
-            members.push({ id: id, type: "node", role: "admin_centre" });
+            members.push({ id: id, type: "node", role: "label" });
             id++;
         }
         tagcats = {
-            type: "multipolygon", boundary: "administrative", border_type: "city", admin_level: "6", designation: "principal_area",
-            name: data[i].name, long_name: data[i].long_name, "country": data[i].name, "country_code": data[i].i,
-
+            type: "boundary", boundary: "administrative", admin_level: "2", 
+            border_type: "country", maritime: "yes",
+            name: data[i].name,long_name: data[i].long_name,
+            cell: data[i].cell, region: data[i].region, culture: data[i].culture,
+            x: data[i].x, y: data[i].y, center: data[i].center, country: data[i].name, country_code: data[i].i,
             state_id: data[i].i, color: data[i].color, expansionism: data[i].expansionism, capital: data[i].capital,
             state_type: data[i].type, center: data[i].center, culture: data[i].culture, cells: data[i].cells, area: data[i].area,
             rural: data[i].rural, urban: data[i].urban, cities: data[i].burgs, x: data[i].x, y: data[i].y
         };
         tags = gen_tags(tagcats);
-        relations += gen_relation(id++, tags, members)
+        relations += gen_relation(id++, tags, members);
 
     }
     return { nodes: nodes, ways: ways, relations: relations, last_id: id };
@@ -392,7 +400,8 @@ function osm_coastlines_to_features(data, id, scale) {
         ways += gen_way(id, start_id, boundry.length, tags);
         members.push({ id: id, type: "way", role: "outer" });
         id++
-        let type = natural_types.land.area[Math.floor((Math.random() * natural_types.land.area.length))];
+        //let type = natural_types.land.area[Math.floor((Math.random() * natural_types.land.area.length))];
+        let type =  natural_types.land.area[4];
         tagcats = {
             type: "natural", natural: type, feature_id: data[i].i
         };
@@ -422,6 +431,7 @@ function osm_lakes_to_features(data, id, scale) {
     let relations = "";
     let tagcats = {};
     for (let i = 0; i < data.length; i++) {
+        let members = [];
         id++;
         boundry = xypath_to_latlong(flatten_svg(data[i].path, 1000), scale);
         start_id = id;
@@ -430,6 +440,17 @@ function osm_lakes_to_features(data, id, scale) {
         let name = type_names[data[i].group][i];
         tagcats = {
             type: "natural", natural: "water", water: "lake",
+            name: name
+        };
+        if (data.group === "salt") {
+            tagcats.salt = "yes";
+        }
+        tags = gen_tags(tagcats);
+        ways += gen_way(id, start_id, boundry.length, tags);
+        members.push({ id: id, type: "way", role: "outer" });
+        id++;
+        tagcats = {
+            type: "multipolygon", natural: "water", water: "lake",
             name: name, body: data[i].body, border: data[i].border,
             cells: data[i].cells, land: data[i].land, mtype: data[i].mtype,
             feature_id: data[i].i
@@ -438,8 +459,7 @@ function osm_lakes_to_features(data, id, scale) {
             tagcats.salt = "yes";
         }
         tags = gen_tags(tagcats);
-        ways += gen_way(id, start_id, boundry.length, tags);
-        id++;
+        relations += gen_relation(id++, tags, members);
     }
     return { nodes: nodes, ways: ways, relations: relations, last_id: id };
 }
