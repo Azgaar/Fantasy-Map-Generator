@@ -139,9 +139,9 @@
       {name:"Carnatic", base: 26, odd: .1},
       {name:"Inqan", base: 27, odd: .1},
       {name:"Kiswaili", base: 28, odd: .1},
-      {name:"Vietic", base: 29, odd: .1}//,
-      //{name:"Guantzu", base:30, odd: 1},
-      //{name:"Ulus", base:31, odd: .1}
+      {name:"Vietic", base: 29, odd: .1},
+      {name:"Guantzu", base:30, odd: 1},
+      {name:"Ulus", base:31, odd: .1}
     ];
   }
 

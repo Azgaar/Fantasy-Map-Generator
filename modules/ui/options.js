@@ -742,8 +742,13 @@ function changeDialogsTransparency(value) {
 }
 
 function changeZoomExtent(value) {
-  zoom.scaleExtent([+zoomExtentMin.value, +zoomExtentMax.value]);
-  zoom.scaleTo(svg, +value);  
+  const min = +zoomExtentMin.value;
+  zoom.scaleExtent([min, +zoomExtentMax.value]);
+  zoom.scaleTo(svg, +value);
+  const x = min < 1 ? (graphWidth / min - graphWidth) / 2 : graphWidth * .2;
+  const y = min < 1 ? (graphHeight / min - graphHeight) / 2 : graphHeight * .2;
+  oceanPattern.select("rect").attr("x", -x).attr("y", -y).attr("width", graphWidth + 2 * x).attr("height", graphHeight + 2 * y);
+  oceanLayers.select("rect").attr("x", -x).attr("y", -y).attr("width", graphWidth + 2 * x).attr("height", graphHeight + 2 * y);
 }
 
 // control sroted options
