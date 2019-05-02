@@ -226,7 +226,7 @@ function applyDefaultNamesData() {
 
 // apply default biomes data
 function applyDefaultBiomesSystem() {
-  const name = ["Marine","Hot desert","Cold desert","Savanna","Grassland","Tropical seasonal forest","Temparate deciduous forest","Tropical rain forest","Temperate rain forest","Taiga","Tundra","Glacier"];
+  const name = ["Marine","Hot desert","Cold desert","Savanna","Grassland","Tropical seasonal forest","Temperate deciduous forest","Tropical rain forest","Temperate rain forest","Taiga","Tundra","Glacier"];
   //const color = ["#53679f","#fbfaae","#e1df9b","#eef586","#bdde82","#b6d95d","#29bc56","#7dcb35","#45b348","#567c2c","#d5d59d","#e6f5fa"];
   const color = ["#53679f","#fbe79f","#b5b887","#d2d082","#c8d68f","#b6d95d","#29bc56","#7dcb35","#45b348","#4b6b32","#96784b","#d5e7eb"];
   
