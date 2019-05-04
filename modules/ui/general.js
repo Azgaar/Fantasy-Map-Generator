@@ -77,10 +77,11 @@ function showMapTooltip(e, i, g) {
   tip(""); // clear tip
   const tag = e.target.tagName;
   const path = e.composedPath ? e.composedPath() : getComposedPath(e.target); // apply polyfill
+  if (!path[path.length - 8]) return;
   const group = path[path.length - 7].id;
   const subgroup = path[path.length - 8].id;
   const land = pack.cells.h[i] >= 20;
-  
+
   // specific elements
   if (group === "rivers") {tip("Click to edit the River"); return;}
   if (group === "routes") {tip("Click to edit the Route"); return;}

@@ -378,6 +378,11 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 	font-size: smaller;
 }
 
+#optionsContent output {
+	text-align: right;
+	font-size: smaller;
+}
+
 #optionsContent input[type="number"] {
 	border: 0;
 	text-align: right;

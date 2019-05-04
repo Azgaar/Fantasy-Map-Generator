@@ -174,9 +174,40 @@
     addStep("Trough", "3-4", "25-35", "5-95", "80-90");
     addStep("Range", "5-6", "30-40", "10-90", "35-65");
   }
+
+  function getBlobPower() {
+    switch (+densityInput.value) {
+      case 1: return .98;
+      case 2: return .985;
+      case 3: return .987;
+      case 4: return .9892;
+      case 5: return .9911;
+      case 6: return .9921;
+      case 7: return .9934;
+      case 8: return .9942;
+      case 9: return .9946;
+      case 10: return .995;
+    }
+  }
+
+  function getLinePower() {
+    switch (+densityInput.value) {
+      case 1: return .81;
+      case 2: return .82;
+      case 3: return .83;
+      case 4: return .84;
+      case 5: return .855;
+      case 6: return .87;
+      case 7: return .885;
+      case 8: return .91;
+      case 9: return .92;
+      case 10: return .93;
+    }
+  }
   
   const addHill = function(count, height, rangeX, rangeY) {
     count = getNumberInRange(count);
+    const power = getBlobPower();
     while (count >= 1 || Math.random() < count) {addOneHill(); count--;}
 
     function addOneHill() {
@@ -198,7 +229,7 @@
 
         for (const c of cells.c[q]) {
           if (change[c]) continue;
-          change[c] = change[q] ** .98 * (Math.random() * .2 + .9);
+          change[c] = change[q] ** power * (Math.random() * .2 + .9);
           if (change[c] > 1) queue.push(c);
         }
       }
@@ -227,7 +258,7 @@
       const queue = [start];
       while (queue.length) {
         const q = queue.shift();
-        h = h ** .98 * (Math.random() * .2 + .9);
+        h = h ** getBlobPower() * (Math.random() * .2 + .9);
         if (h < 1) return;
 
         cells.c[q].forEach(function(c, i) {
@@ -242,13 +273,14 @@
 
   const addRange = function(count, height, rangeX, rangeY) {
     count = getNumberInRange(count);
-    while (count >= 1 || Math.random() < count) {addOneRange(); count--;}    
+    const power = getLinePower();
+    while (count >= 1 || Math.random() < count) {addOneRange(); count--;}
 
     function addOneRange() {
       const used = new Uint8Array(cells.h.length);
       let h = lim(getNumberInRange(height));
 
-      // find start and end points      
+      // find start and end points
       const startX = getPointInRange(rangeX, graphWidth);
       const startY = getPointInRange(rangeY, graphHeight);
       
@@ -260,7 +292,7 @@
         limit++;
       } while ((dist < graphWidth / 8 || dist > graphWidth / 3) && limit < 50)
 
-      let range = getRange(findGridCell(startX, startY), findGridCell(endX, endY));  
+      let range = getRange(findGridCell(startX, startY), findGridCell(endX, endY));
 
       // get main ridge
       function getRange(cur, end) {
@@ -291,11 +323,11 @@
         frontier.forEach(i => {
           cells.h[i] = lim(cells.h[i] + h * (Math.random() * .3 + .85));
         });
-        h = h ** .82 - 1;
+        h = h ** power - 1;
         if (h < 2) break;
         frontier.forEach(f => {
           cells.c[f].forEach(i => {
-            if (!used[i]) {queue.push(i); used[i] = 1;}  
+            if (!used[i]) {queue.push(i); used[i] = 1;}
           });
         });
       }
@@ -316,13 +348,14 @@
 
   const addTrough = function(count, height, rangeX, rangeY) {
     count = getNumberInRange(count);
-    while (count >= 1 || Math.random() < count) {addOneTrough(); count--;}    
+    const power = getLinePower();
+    while (count >= 1 || Math.random() < count) {addOneTrough(); count--;}
 
     function addOneTrough() {
       const used = new Uint8Array(cells.h.length);
       let h = lim(getNumberInRange(height));
 
-      // find start and end points    
+      // find start and end points
       let limit = 0, startX, startY, start, dist = 0, endX, endY;
       do {
         startX = getPointInRange(rangeX, graphWidth);
@@ -370,11 +403,11 @@
         frontier.forEach(i => {
           cells.h[i] = lim(cells.h[i] - h * (Math.random() * .3 + .85));
         });
-        h = h ** .8 - 1;
+        h = h ** power - 1;
         if (h < 2) break;
         frontier.forEach(f => {
           cells.c[f].forEach(i => {
-            if (!used[i]) {queue.push(i); used[i] = 1;}  
+            if (!used[i]) {queue.push(i); used[i] = 1;}
           });
         });
       }
@@ -405,7 +438,7 @@
 
     const start = findGridCell(startX, startY), end = findGridCell(endX, endY);
     let range = getRange(start, end);
-    const query = [];    
+    const query = [];
 
     function getRange(cur, end) {
       const range = [];

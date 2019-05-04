@@ -106,12 +106,12 @@
       const score = new Int16Array(cells.s.map(s => s * Math.random())); // cell score for towns placement
       const sorted = cells.i.filter(i => score[i] > 0 && cells.culture[i]).sort((a, b) => score[b] - score[a]); // filtered and sorted array of indexes
 
-      // burgs number depends on ratio between populated and all cells and burgsDensity input (expected mean ~300))
-      const burgsCount = rn(sorted.length / grid.points.length * manorsInput.value * 1000);
+      let burgsCount = manorsInput.value == 1000 ? rn(sorted.length / 10 / densityInput.value ** .8) : +manorsInput.value;
+      burgsCount += burgs.length;
       const spacing = (graphWidth + graphHeight) * 9 / burgsCount; // base min distance between towns
       const burgsTree = burgs[0];
 
-      for (let i = 0; burgs.length <= burgsCount && i < sorted.length; i++) {
+      for (let i = 0; burgs.length < burgsCount && i < sorted.length; i++) {
         const id = sorted[i], x = cells.p[id][0], y = cells.p[id][1];
         const s = spacing * Math.random() + 0.5; // randomize to make the placement not uniform
         if (burgsTree.find(x, y, s) !== undefined) continue; // to close to existing burg
@@ -124,7 +124,7 @@
         cells.burg[id] = burg;
       }
 
-      if (burgs.length <= burgsCount) console.error(`Cannot place all burgs. Requested ${burgsCount}, placed ${burgs.length-1}`);
+      if (burgs.length < burgsCount) console.error(`Cannot place all burgs. Requested ${burgsCount}, placed ${burgs.length-1}`);
 
       //const min = d3.min(score.filter(s => s)), max = d3.max(score);
       //terrs.selectAll("polygon").data(sorted).enter().append("polygon").attr("points", d => getPackPolygon(d)).attr("fill", d => color(1 - normalize(score[d], min, max)));  

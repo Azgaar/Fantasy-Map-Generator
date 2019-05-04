@@ -590,7 +590,7 @@ const optionsContent = document.getElementById("optionsContent");
 optionsContent.addEventListener("input", function(event) {
   const id = event.target.id, value = event.target.value;
   if (id === "mapWidthInput" || id === "mapHeightInput") mapSizeInputChange();
-  else if (id === "densityInput" || id === "densityOutput") changeCellsDensity(value);
+  else if (id === "densityInput" || id === "densityOutput") changeCellsDensity(+value);
   else if (id === "culturesInput") culturesOutput.value = value;
   else if (id === "culturesOutput") culturesInput.value = value;
   else if (id === "regionsInput" || id === "regionsOutput") changeStatesNumber(value);
@@ -598,8 +598,7 @@ optionsContent.addEventListener("input", function(event) {
   else if (id === "powerOutput") powerInput.value = value;
   else if (id === "neutralInput") neutralOutput.value = value;
   else if (id === "neutralOutput") neutralInput.value = value;
-  else if (id === "manorsInput") manorsOutput.value = value;
-  else if (id === "manorsOutput") manorsInput.value = value;
+  else if (id === "manorsInput") changeBurgsNumberSlider(value);
   else if (id === "uiSizeInput" || id === "uiSizeOutput") changeUIsize(value);
   else if (id === "tooltipSizeInput" || id === "tooltipSizeOutput") changeTooltipSize(value);
   else if (id === "transparencyInput") changeDialogsTransparency(value);
@@ -608,9 +607,10 @@ optionsContent.addEventListener("input", function(event) {
 });
 
 optionsContent.addEventListener("change", function(event) {
-  if (event.target.dataset.stored) lock(event.target.dataset.stored);  
+  if (event.target.dataset.stored) lock(event.target.dataset.stored);
   const id = event.target.id, value = event.target.value;
   if (id === "zoomExtentMin" || id === "zoomExtentMax") changeZoomExtent(value);
+  else if (id === "optionsSeed") generateMapWithSeed();
 });
 
 optionsContent.addEventListener("click", function(event) {
@@ -625,7 +625,7 @@ function mapSizeInputChange() {
     changeMapSize();
     autoResize = false;
     localStorage.setItem("mapWidth", mapWidthInput.value);
-    localStorage.setItem("mapHeight", mapHeightInput.value);  
+    localStorage.setItem("mapHeight", mapHeightInput.value);
 }
 
 // change svg size on manual size change or window resize, do not change graph size
@@ -658,7 +658,7 @@ function toggleFullscreen() {
     mapWidthInput.value = graphWidth;
     mapHeightInput.value = graphHeight;
   }
-  changeMapSize();  
+  changeMapSize();
 }
 
 function generateMapWithSeed() {
@@ -703,16 +703,20 @@ function restoreDefaultZoomExtent() {
 }
 
 function changeCellsDensity(value) {
-  densityInput.value = densityOutput.value = value;
-  if (value == 3) densityOutput.style.color = "red";
-  else if (value == 2) densityOutput.style.color = "yellow";
-  else if (value == 1) densityOutput.style.color = "green";
+  densityOutput.value = value * 10 + "K";
+  if (value > 5) densityOutput.style.color = "#b12117";
+  else if (value > 1) densityOutput.style.color = "#dfdf12";
+  else densityOutput.style.color = "#038603";
 }
 
 function changeStatesNumber(value) {
   regionsInput.value = regionsOutput.value = value;
   burgLabels.select("#capitals").attr("data-size", Math.max(rn(6 - value / 20), 3));
   labels.select("#countries").attr("data-size", Math.max(rn(18 - value / 6), 4));
+}
+
+function changeBurgsNumberSlider(value) {
+  manorsOutput.value = value == 1000 ? "auto" : value;
 }
 
 function changeUIsize(value) {
@@ -785,7 +789,7 @@ function applyStoredOptions() {
 function randomizeOptions() {
   Math.seedrandom(seed); // reset seed to initial one
   if (!locked("regions")) regionsInput.value = regionsOutput.value = rand(12, 17);
-  if (!locked("manors")) manorsInput.value = manorsOutput.value = rn(0.5 + Math.random(), 1);
+  if (!locked("manors")) {manorsInput.value = 1000; manorsOutput.value = "auto";}
   if (!locked("power")) powerInput.value = powerOutput.value = rand(0, 4);
   if (!locked("neutral")) neutralInput.value = neutralOutput.value = rn(0.8 + Math.random(), 1);
   if (!locked("cultures")) culturesInput.value = culturesOutput.value = rand(10, 15);

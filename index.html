@@ -807,14 +807,14 @@
             </td>
           </tr> 
 
-          <tr data-tip="Cells density controls underlying graph size and hightly affects performance">
+          <tr data-tip="Set number of points to be used for graph generation. Highly affects performance">
             <td></td>
-            <td>Cells density</td>
+            <td>Points number</td>
             <td>
-              <input id="densityInput" type="range" min=1 max=3 value=1>
+              <input id="densityInput" type="range" min=1 max=10 value=1>
             </td>
             <td>
-              <input id="densityOutput" type="number" min=1 max=3 value=1>
+              <output id="densityOutput">10K</output>
             </td>
           </tr>
 
@@ -852,7 +852,7 @@
             </td>
           </tr>
           
-          <tr data-tip="Define how many States should be generated">
+          <tr data-tip="Define how many states and capitals should be generated">
             <td>
               <i data-locked=0 id="lock_regions" class="icon-lock-open"></i>
             </td>
@@ -865,7 +865,7 @@
             </td>
           </tr>
 
-          <tr data-tip="Define how much states and cultures size can vary. Defines expansionism value">
+          <tr data-tip="Define how much states and cultures can vary in size. Defines expansionism value">
             <td>
               <i data-locked=0 id="lock_power" class="icon-lock-open"></i>
             </td>
@@ -891,16 +891,16 @@
             </td>
           </tr>
 
-          <tr data-tip="Define how densely settled areas (burgs) should be placed">
+          <tr data-tip="Define how many towns (non-capital burgs) should be generated">
             <td>
               <i data-locked=0 id="lock_manors" class="icon-lock-open"></i>
             </td>
-            <td>Burgs density</td>
+            <td>Towns number</td>
             <td>
-              <input id="manorsInput" data-stored="manors" type="range" min=0.1 max=5 step=.1 value=1>
+              <input id="manorsInput" data-stored="manors" type="range" min=0 max=1000 step=1 value=1000>
             </td>
             <td>
-              <input id="manorsOutput" data-stored="manors" type="number" min=0.1 max=5 step=.1 value=1>
+              <output id="manorsOutput" data-stored="manors" value="auto"></output>
             </td>
           </tr>
 

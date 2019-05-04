@@ -1153,7 +1153,7 @@ function showStatistics() {
   console.log(stats);
 }
 
-function regenerateMap() {
+const regenerateMap = debounce(function() {
   closeDialogs("#worldConfigurator");
   customization = 0;
   undraw();
@@ -1161,7 +1161,7 @@ function regenerateMap() {
   generate();
   restoreLayers();
   if ($("#worldConfigurator").is(":visible")) editWorld();
-}
+}, 500);
 
 // Clear the map
 function undraw() {
