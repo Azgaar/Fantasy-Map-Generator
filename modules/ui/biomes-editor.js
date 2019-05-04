@@ -91,7 +91,7 @@ function editBiomes() {
 
     // add listeners
     body.querySelectorAll("div.biomes").forEach(el => el.addEventListener("mouseenter", ev => biomeHighlightOn(ev)));
-    body.querySelectorAll("div.biomes").forEach(el => el.addEventListener("mouseleave", ev => biomeHighlightOff(ev)));    
+    body.querySelectorAll("div.biomes").forEach(el => el.addEventListener("mouseleave", ev => biomeHighlightOff(ev)));
     body.querySelectorAll("div.biomes").forEach(el => el.addEventListener("click", selectBiomeOnLineClick));
     body.querySelectorAll("div > input[type='color']").forEach(el => el.addEventListener("input", biomeChangeColor));
     body.querySelectorAll("div > input.biomeName").forEach(el => el.addEventListener("input", biomeChangeName));
@@ -129,10 +129,10 @@ function editBiomes() {
 
   function biomeChangeHabitability() {
     const biome = +this.parentNode.dataset.id;
-    const failed = isNaN(+this.value) || +this.value < 0 || +this.value > 999;
+    const failed = isNaN(+this.value) || +this.value < 0 || +this.value > 9999;
     if (failed) {
       this.value = biomesData.habitability[biome];
-      tip("Please provide a valid number in range 0-999", false, "error");
+      tip("Please provide a valid number in range 0-9999", false, "error");
       return;
     }
     biomesData.habitability[biome] = +this.value;
