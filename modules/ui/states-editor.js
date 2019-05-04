@@ -166,7 +166,7 @@ function editStates() {
     const state = +event.target.dataset.id;
     if (customization || !state) return;
     const path = regions.select("#state"+state).attr("d");
-    debug.append("path").attr("class", "highlighted").attr("d", path)
+    debug.append("path").attr("class", "highlight").attr("d", path)
       .attr("stroke", "red").attr("stroke-width", 1).attr("opacity", 1)
       .attr("filter", "url(#blur1)").call(transition);
   }
@@ -187,7 +187,7 @@ function editStates() {
   }
 
   function stateHighlightOff() {
-    debug.selectAll(".highlighted").each(function(el) {
+    debug.selectAll(".highlight").each(function(el) {
       d3.select(this).call(removePath);
     });
   }
