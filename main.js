@@ -753,13 +753,13 @@ function generatePrecipitation() {
   let westerly = [], easterly = [], southerly = 0, northerly = 0;
 
   {// latitude bands
-  // x4 = 0�5� latitude: wet throught the year (rising zone)
-  // x2 = 5�20� latitude: wet summer (rising zone), dry winter (sinking zone)
-  // x1 = 20�30� latitude: dry all year (sinking zone)
-  // x2 = 30�50� latitude: wet winter (rising zone), dry summer (sinking zone)
-  // x3 = 50�60� latitude: wet all year (rising zone)
-  // x2 = 60�70� latitude: wet summer (rising zone), dry winter (sinking zone)
-  // x1 = 70�90� latitude: dry all year (sinking zone)
+  // x4 = 0-5 latitude: wet throught the year (rising zone)
+  // x2 = 5-20 latitude: wet summer (rising zone), dry winter (sinking zone)
+  // x1 = 20-30 latitude: dry all year (sinking zone)
+  // x2 = 30-50 latitude: wet winter (rising zone), dry summer (sinking zone)
+  // x3 = 50-60 latitude: wet all year (rising zone)
+  // x2 = 60-70 latitude: wet summer (rising zone), dry winter (sinking zone)
+  // x1 = 70-90 latitude: dry all year (sinking zone)
   }
   const lalitudeModifier = [4,2,2,2,1,1,2,2,2,2,3,3,2,2,1,1,1,0.5]; // by 5d step
  
@@ -898,7 +898,7 @@ function reGraph() {
   calculateVoronoi(pack, newCells.p);
   cells = pack.cells;
   cells.p = newCells.p; // points coordinates [x, y]
-  cells.g = cells.i.length < 65535 ? Uint16Array.from(newCells.g) : Uint32Array.from(newCells.g); // reference to initial grid cell
+  cells.g = grid.cells.i.length < 65535 ? Uint16Array.from(newCells.g) : Uint32Array.from(newCells.g); // reference to initial grid cell
   cells.q = d3.quadtree(cells.p.map((p, d) => [p[0], p[1], d])); // points quadtree for fast search
   cells.h = new Uint8Array(newCells.h); // heights
   cells.area = new Uint16Array(cells.i.length); // cell area
@@ -1077,7 +1077,7 @@ function resolveDepressions() {
 
 // assign biome id for each cell
 function defineBiomes() {
-  console.time("defineBiomes");  
+  console.time("defineBiomes");
   const cells = pack.cells, f = pack.features;
   cells.biome = new Uint8Array(cells.i.length); // biomes array
 
