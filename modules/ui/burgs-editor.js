@@ -32,13 +32,13 @@ function editBurgs() {
     const selectedState = stateFilter.value || 1;
     stateFilter.options.length = 0; // remove all options
     stateFilter.options.add(new Option("all", -1, false, selectedState == -1));
-    pack.states.forEach(s => stateFilter.options.add(new Option(s.name, s.i, false, s.i == selectedState)));
+    pack.states.filter(s => !s.removed).forEach(s => stateFilter.options.add(new Option(s.name, s.i, false, s.i == selectedState)));
 
     const cultureFilter = document.getElementById("burgsFilterCulture");
     const selectedCulture = cultureFilter.value || -1;
     cultureFilter.options.length = 0; // remove all options
     cultureFilter.options.add(new Option("all", -1, false, selectedCulture == -1));
-    pack.cultures.forEach(c => cultureFilter.options.add(new Option(c.name, c.i, false, c.i == selectedCulture)));
+    pack.cultures.filter(c => !c.removed).forEach(c => cultureFilter.options.add(new Option(c.name, c.i, false, c.i == selectedCulture)));
   }
 
   // add line for each state
