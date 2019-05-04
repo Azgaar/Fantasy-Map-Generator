@@ -232,7 +232,7 @@ function applyDefaultBiomesSystem() {
   const color = ["#53679f","#fbe79f","#b5b887","#d2d082","#c8d68f","#b6d95d","#29bc56","#7dcb35","#45b348","#4b6b32","#96784b","#d5e7eb"];
   
   const i = new Uint8Array(d3.range(0, name.length));
-  const habitability = new Uint8Array([0,2,5,15,25,50,100,80,90,10,2,0]);
+  const habitability = new Uint16Array([0,2,5,15,25,50,100,80,90,10,2,0]);
   const iconsDensity = new Uint8Array([0,3,2,120,120,120,120,150,150,100,5,0]);
   const icons = [{},{dune:1},{dune:1},{acacia:1, grass:9},{grass:1},{acacia:1, palm:1},{deciduous:1},{acacia:7, palm:2, deciduous:1},{deciduous:7, swamp:3},{conifer:1},{grass:1},{}];
   const cost = new Uint8Array([10,200,150,60,50,70,70,80,90,80,100,255]); // biome movement cost

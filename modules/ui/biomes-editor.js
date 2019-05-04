@@ -70,7 +70,7 @@ function editBiomes() {
         <input data-tip="Biome color. Click to change" class="stateColor" type="color" value="${b.color[i]}">
         <input data-tip="Biome name. Click and type to change" class="biomeName" value="${b.name[i]}" autocorrect="off" spellcheck="false">
         <span data-tip="Biome habitability percent">%</span>
-        <input data-tip="Biome habitability percent. Click and set new value to change" type="number" min=0 max=999 step=1 class="biomeHabitability" value=${b.habitability[i]}>
+        <input data-tip="Biome habitability percent. Click and set new value to change" type="number" min=0 max=9999 step=1 class="biomeHabitability" value=${b.habitability[i]}>
         <span data-tip="Cells count" class="icon-check-empty"></span>
         <div data-tip="Cells count" class="biomeCells">${b.cells[i]}</div>
         <span data-tip="Biome area" style="padding-right: 4px" class="icon-map-o"></span>
@@ -140,7 +140,7 @@ function editBiomes() {
     recalculatePopulation();
     refreshBiomesEditor();
   }
- 
+
   function togglePercentageMode() {
     if (body.dataset.type === "absolute") {
       body.dataset.type = "percentage";
