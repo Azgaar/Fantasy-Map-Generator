@@ -1,0 +1,28 @@
+{
+  "name": "fantasy-map-generator",
+  "version": "0.8.19",
+  "description": "Fantasy Map Generator and Editor based on Voronoi diagram",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Azgaar/Fantasy-Map-Generator.git"
+  },
+  "keywords": [
+    "procedural-generation",
+    "map-generation",
+    "javascript",
+    "fantasy-map",
+    "gamedev-tool",
+    "mapmaker",
+    "demo"
+  ],
+  "author": "Azgaar",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Azgaar/Fantasy-Map-Generator/issues"
+  },
+  "homepage": "https://github.com/Azgaar/Fantasy-Map-Generator#readme"
+}
