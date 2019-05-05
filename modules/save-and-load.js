@@ -135,17 +135,18 @@ function GFontToDataURI(url) {
     });
 }
 
-// Save in .map format
-function saveMap() {
+function packageMapData() {
   if (customization) {tip("Map cannot be saved when is in edit mode, please exit the mode and re-try", false, "error"); return;}
   console.time("saveMap");
   const date = new Date();
   const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
   const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
   const params = [version, license, dateString, seed, graphWidth, graphHeight].join("|");
-  const options = [distanceUnit.value, distanceScale.value, areaUnit.value, heightUnit.value, heightExponent.value, temperatureScale.value, 
-    barSize.value, barLabel.value, barBackOpacity.value, barBackColor.value, barPosX.value, barPosY.value, populationRate.value, urbanization.value, 
-    equatorOutput.value, equidistanceOutput.value, temperatureEquatorOutput.value, temperaturePoleOutput.value, precOutput.value, JSON.stringify(winds)].join("|");
+  const options = [
+    distanceUnit.value, distanceScale.value, areaUnit.value, heightUnit.value, heightExponent.value, temperatureScale.value,
+    barSize.value, barLabel.value, barBackOpacity.value, barBackColor.value, barPosX.value, barPosY.value, populationRate.value, urbanization.value,
+    equatorOutput.value, equidistanceOutput.value, temperatureEquatorOutput.value, temperaturePoleOutput.value, precOutput.value, JSON.stringify(winds)
+  ].join("|");
   const coords = JSON.stringify(mapCoordinates);
   const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
   const notesData = JSON.stringify(notes);
@@ -162,11 +163,24 @@ function saveMap() {
   const states = JSON.stringify(pack.states);
   const burgs = JSON.stringify(pack.burgs);
 
-  const data = [params, options, coords, biomes, notesData, svg_xml, 
+  const data = [
+    params, options, coords, biomes, notesData, svg_xml,
     gridGeneral, grid.cells.h, grid.cells.prec, grid.cells.f, grid.cells.t, grid.cells.temp,
     features, cultures, states, burgs,
-    pack.cells.biome, pack.cells.burg, pack.cells.conf, pack.cells.culture, pack.cells.fl, 
-    pack.cells.pop, pack.cells.r, pack.cells.road, pack.cells.s, pack.cells.state].join("\r\n");
+    pack.cells.biome, pack.cells.burg, pack.cells.conf, pack.cells.culture, pack.cells.fl,
+    pack.cells.pop, pack.cells.r, pack.cells.road, pack.cells.s, pack.cells.state
+  ].join("\r\n");
+
+  // restore initial values
+  svg.attr("width", svgWidth).attr("height", svgHeight);
+  zoom.transform(svg, transform);
+
+  return data;
+}
+
+// Save in .map format
+function saveMap() {
+  const data = packageMapData();
   const dataBlob = new Blob([data], {type: "text/plain"});
   const dataURL = window.URL.createObjectURL(dataBlob);
   const link = document.createElement("a");
@@ -175,23 +189,18 @@ function saveMap() {
   document.body.appendChild(link);
   link.click();
 
-  // restore initial values
-  svg.attr("width", svgWidth).attr("height", svgHeight);
-  zoom.transform(svg, transform);
-
   window.setTimeout(function() {window.URL.revokeObjectURL(dataURL);}, 2000);
   console.timeEnd("saveMap");
 }
 
 function uploadFile(file, callback) {
-  console.time("loadMap");
   const fileReader = new FileReader();
   fileReader.onload = function(fileLoadedEvent) {
     const dataLoaded = fileLoadedEvent.target.result;
     const data = dataLoaded.split("\r\n");
 
     const mapVersion = data[0].split("|")[0] || data[0];
-    if (mapVersion === version) {parseLoadedData(data); return;}
+    if (mapVersion === version) {displayMapData(data); return;}
 
     const archive = "<a href='https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog' target='_blank'>archived version</a>";
     const parsed = parseFloat(mapVersion);
@@ -209,7 +218,7 @@ function uploadFile(file, callback) {
     }
     alertMessage.innerHTML = message;
     $("#alert").dialog({title: "Version conflict", buttons: {
-      OK: function() {$(this).dialog("close"); if (load) parseLoadedData(data);}
+      OK: function() {$(this).dialog("close"); if (load) displayMapData(data);}
     }});
   };
 
@@ -217,7 +226,8 @@ function uploadFile(file, callback) {
   if (callback) callback();
 }
 
-function parseLoadedData(data) {
+function displayMapData(data) {
+  console.time("loadMap");
   closeDialogs();
 
   void function parseParameters() {
@@ -368,6 +378,16 @@ function parseLoadedData(data) {
     if (markers.style("display") !== "none") turnButtonOn("toggleMarkers"); else turnButtonOff("toggleMarkers");
     if (ruler.style("display") !== "none") turnButtonOn("toggleRulers"); else turnButtonOff("toggleRulers");
     if (scaleBar.style("display") !== "none") turnButtonOn("toggleScaleBar"); else turnButtonOff("toggleScaleBar");
+  }()
+
+  void function establishHistory() {
+    mapHistory.push({
+      created: Date.now(),
+      height: graphHeight,
+      seed,
+      template: templateInput.value,
+      width: graphWidth,
+    });
   }()
 
   changeMapSize();
