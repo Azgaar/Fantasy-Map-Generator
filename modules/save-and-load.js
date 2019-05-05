@@ -276,54 +276,8 @@ function displayMapData(data) {
     biomesData.name = name;
   }()
 
-  void function replaceSVG() {
-    svg.remove();
-    document.body.insertAdjacentHTML("afterbegin", data[5]);
-  }()
-
-  void function redefineElements() {
-    svg = d3.select("#map");
-    defs = svg.select("#deftemp");
-    viewbox = svg.select("#viewbox");
-    scaleBar = svg.select("#scaleBar");
-    ocean = viewbox.select("#ocean");
-    oceanLayers = ocean.select("#oceanLayers");
-    oceanPattern = ocean.select("#oceanPattern");
-    lakes = viewbox.select("#lakes");
-    landmass = viewbox.select("#landmass");
-    texture = viewbox.select("#texture");
-    terrs = viewbox.select("#terrs");
-    biomes = viewbox.select("#biomes");
-    cells = viewbox.select("#cells");
-    gridOverlay = viewbox.select("#gridOverlay");
-    coordinates = viewbox.select("#coordinates");
-    compass = viewbox.select("#compass");
-    rivers = viewbox.select("#rivers");
-    terrain = viewbox.select("#terrain");
-    cults = viewbox.select("#cults");
-    regions = viewbox.select("#regions");
-    statesBody = regions.select("#statesBody");
-    statesHalo = regions.select("#statesHalo");
-    borders = viewbox.select("#borders");
-    routes = viewbox.select("#routes");
-    roads = routes.select("#roads");
-    trails = routes.select("#trails");
-    searoutes = routes.select("#searoutes");
-    temperature = viewbox.select("#temperature");
-    coastline = viewbox.select("#coastline");
-    prec = viewbox.select("#prec");
-    population = viewbox.select("#population");
-    labels = viewbox.select("#labels");
-    icons = viewbox.select("#icons");
-    burgIcons = icons.select("#burgIcons");
-    anchors = icons.select("#anchors");
-    markers = viewbox.select("#markers");
-    ruler = viewbox.select("#ruler");
-    debug = viewbox.select("#debug");
-    freshwater = lakes.select("#freshwater");
-    salt = lakes.select("#salt");
-    burgLabels = labels.select("#burgLabels");
-  }()
+  replaceSVG(data[5])
+  redefineElements()
 
   void function parseGridData() {
     grid = JSON.parse(data[6]);
@@ -356,43 +310,281 @@ function displayMapData(data) {
     pack.cells.state = Uint8Array.from(data[25].split(","));
   }()
 
-  void function restoreLayersState() {
-    if (texture.style("display") !== "none" && texture.select("image").size()) turnButtonOn("toggleTexture"); else turnButtonOff("toggleTexture");
-    if (terrs.selectAll("*").size()) turnButtonOn("toggleHeight"); else turnButtonOff("toggleHeight");
-    if (biomes.selectAll("*").size()) turnButtonOn("toggleBiomes"); else turnButtonOff("toggleBiomes");
-    if (cells.selectAll("*").size()) turnButtonOn("toggleCells"); else turnButtonOff("toggleCells");
-    if (gridOverlay.selectAll("*").size()) turnButtonOn("toggleGrid"); else turnButtonOff("toggleGrid");
-    if (coordinates.selectAll("*").size()) turnButtonOn("toggleCoordinates"); else turnButtonOff("toggleCoordinates");
-    if (compass.style("display") !== "none" && compass.select("use").size()) turnButtonOn("toggleCompass"); else turnButtonOff("toggleCompass");
-    if (rivers.style("display") !== "none") turnButtonOn("toggleRivers"); else turnButtonOff("toggleRivers");
-    if (terrain.style("display") !== "none" && terrain.selectAll("*").size()) turnButtonOn("toggleRelief"); else turnButtonOff("toggleRelief");
-    if (cults.selectAll("*").size()) turnButtonOn("toggleCultures"); else turnButtonOff("toggleCultures");
-    if (statesBody.selectAll("*").size()) turnButtonOn("toggleStates"); else turnButtonOff("toggleStates");
-    if (borders.style("display") !== "none" && borders.selectAll("*").size()) turnButtonOn("toggleBorders"); else turnButtonOff("toggleBorders");
-    if (routes.style("display") !== "none" && routes.selectAll("path").size()) turnButtonOn("toggleRoutes"); else turnButtonOff("toggleRoutes");
-    if (temperature.selectAll("*").size()) turnButtonOn("toggleTemp"); else turnButtonOff("toggleTemp");
-    if (population.select("#rural").selectAll("*").size()) turnButtonOn("togglePopulation"); else turnButtonOff("togglePopulation");
-    if (prec.selectAll("circle").size()) turnButtonOn("togglePrec"); else turnButtonOff("togglePrec");
-    if (labels.style("display") !== "none") turnButtonOn("toggleLabels"); else turnButtonOff("toggleLabels");
-    if (icons.style("display") !== "none") turnButtonOn("toggleIcons"); else turnButtonOff("toggleIcons");
-    if (markers.style("display") !== "none") turnButtonOn("toggleMarkers"); else turnButtonOff("toggleMarkers");
-    if (ruler.style("display") !== "none") turnButtonOn("toggleRulers"); else turnButtonOff("toggleRulers");
-    if (scaleBar.style("display") !== "none") turnButtonOn("toggleScaleBar"); else turnButtonOff("toggleScaleBar");
-  }()
-
-  void function establishHistory() {
-    mapHistory.push({
-      created: Date.now(),
-      height: graphHeight,
-      seed,
-      template: templateInput.value,
-      width: graphWidth,
-    });
-  }()
+  restoreLayersState()
+  establishHistory()
 
   changeMapSize();
   restoreDefaultEvents();
   invokeActiveZooming();
   tip("Map is loaded");
   console.timeEnd("loadMap");
+}
+
+function packageJsonData() {
+  if (customization) {
+    tip("Map cannot be saved when is in edit mode, please exit the mode and re-try", false, "error");
+    return;
+  }
+
+  console.time("packageJsonData");
+  const now = new Date();
+  // set transform values to default
+  svg.attr("width", graphWidth).attr("height", graphHeight);
+  const transform = d3.zoomTransform(svg.node());
+  viewbox.attr("transform", null);
+
+  const json = {
+    coordinates: mapCoordinates,
+    biomes: {
+      color: biomesData.color,
+      habitability: biomesData.habitability,
+      name: biomesData.name
+    },
+    burgs: pack.burgs,
+    cells: {
+      grid: {
+        f: Array.from(grid.cells.f),
+        h: Array.from(grid.cells.h),
+        prec: Array.from(grid.cells.prec),
+        t: Array.from(grid.cells.t),
+        temp: Array.from(grid.cells.temp),
+      },
+      pack: {
+        biome: Array.from(pack.cells.biome),
+        burg: Array.from(pack.cells.burg),
+        conf: Array.from(pack.cells.conf),
+        culture: Array.from(pack.cells.culture),
+        fl: Array.from(pack.cells.fl),
+        pop: Array.from(pack.cells.pop),
+        r: Array.from(pack.cells.r),
+        road: Array.from(pack.cells.road),
+        s: Array.from(pack.cells.s),
+        state: Array.from(pack.cells.state),
+      },
+    },
+    cultures: pack.cultures,
+    features: pack.features,
+    grid: {
+      boundary: grid.boundary,
+      cellsX: grid.cellsX,
+      cellsY: grid.cellsY,
+      features: grid.features,
+      points: grid.points,
+      spacing: grid.spacing,
+    },
+    meta: {
+      dateString: now.getFullYear() + "-" + (now.getMonth() + 1) + "-" + now.getDate(),
+      graphHeight,
+      graphWidth,
+      license: 'File can be loaded in azgaar.github.io/Fantasy-Map-Generator',
+      seed,
+      version,
+    },
+    notes,
+    options: {
+      areaUnit: areaUnit.value,
+      barBackColor: barBackColor.value,
+      barBackOpacity: barBackOpacity.value,
+      barLabel: barLabel.value,
+      barPosX: barPosX.value,
+      barPosY: barPosY.value,
+      barSize: barSize.value,
+      distanceScale: distanceScale.value,
+      distanceUnit: distanceUnit.value,
+      equatorOutput: equatorOutput.value,
+      equidistanceOutput: equidistanceOutput.value,
+      heightExponent: heightExponent.value,
+      heightUnit: heightUnit.value,
+      populationRate: populationRate.value,
+      precOutput: precOutput.value,
+      temperatureEquatorOutput: temperatureEquatorOutput.value,
+      temperaturePoleOutput: temperaturePoleOutput.value,
+      temperatureScale: temperatureScale.value,
+      urbanization: urbanization.value,
+      winds: JSON.stringify(winds),
+    },
+    states: pack.states,
+    svg: (new XMLSerializer()).serializeToString(svg.node()),
+  }
+
+  // restore initial values
+  svg.attr("width", svgWidth).attr("height", svgHeight);
+  zoom.transform(svg, transform);
+
+  return json;
+}
+
+function displayJsonData(json) {
+  console.time("loadMap");
+  closeDialogs();
+
+  void function parseMeta() {
+    const meta = json.meta
+    if (meta.seed) { optionsSeed.value = seed = meta.seed; }
+    if (meta.graphWidth) graphWidth = meta.graphWidth;
+    if (meta.graphHeight) graphHeight = meta.graphHeight;
+  }()
+
+  void function parseOptions() {
+    const options = json.options;
+    if (options.distanceUnit) distanceUnit.value = distanceUnitOutput.innerHTML = options.distanceUnit;
+    if (options.distanceScale) distanceScale.value = distanceScaleSlider.value = options.distanceScale;
+    if (options.areaUnit) areaUnit.value = options.areaUnit;
+    if (options.heightUnit) heightUnit.value= options.heightUnit;
+    if (options.heightExponent) heightExponent.value = heightExponentSlider.value = options.heightExponent;
+    if (options.temperatureScale) temperatureScale.value = options.temperatureScale;
+    if (options.barSize) barSize.value = barSizeSlider.value = options.barSize;
+    if (options.barLabel !== undefined) barLabel.value = options.barLabel;
+    if (options.barBackOpacity !== undefined) barBackOpacity.value = options.barBackOpacity;
+    if (options.barBackColor) barBackColor.value = options.barBackColor;
+    if (options.barPosX) barPosX.value = options.barPosX;
+    if (options.barPosY) barPosY.value = options.barPosY;
+    if (options.populationRate) populationRate.value = populationRateSlider.value = options.populationRate;
+    if (options.urbanization) urbanization.value = urbanizationSlider.value = options.urbanization;
+    if (options.equatorInput) equatorInput.value = equatorOutput.value = options.equatorInput;
+    if (options.equidistanceInput) equidistanceInput.value = equidistanceOutput.value = options.equidistanceInput;
+    if (options.temperatureEquatorInput) temperatureEquatorInput.value = temperatureEquatorOutput.value = options.temperatureEquatorInput;
+    if (options.temperaturePoleInput) temperaturePoleInput.value = temperaturePoleOutput.value = options.temperaturePoleInput;
+    if (options.precInput) precInput.value = precOutput.value = options.precInput;
+    if (options.winds) winds = JSON.parse(options.winds);
+  }()
+
+  void function parseConfiguration() {
+    if (json.coordinates) mapCoordinates = json.coordinates;
+    if (json.notes) notes = json.notes;
+
+    if (json.biomes.name.length !== biomesData.name.length) {
+      console.error("Biomes data is not correct and will not be loaded");
+      return;
+    }
+    biomesData.color = json.biomes.color
+    biomesData.habitability = json.biomes.habitability
+    biomesData.name = json.biomes.name
+  }()
+
+  replaceSVG(json.svg)
+  redefineElements()
+
+  void function parseGridData() {
+    grid = json.grid;
+    calculateVoronoi(grid, grid.points);
+    grid.cells.h = Uint8Array.from(json.cells.grid.h);
+    grid.cells.prec = Uint8Array.from(json.cells.grid.prec);
+    grid.cells.f = Uint16Array.from(json.cells.grid.f);
+    grid.cells.t = Int8Array.from(json.cells.grid.t);
+    grid.cells.temp = Int8Array.from(json.cells.grid.temp);
+  }()
+
+  void function parsePackData() {
+    pack = {};
+    reGraph();
+    reMarkFeatures();
+    pack.features = json.features;
+    pack.cultures = json.cultures;
+    pack.states = json.states;
+    pack.burgs = json.burgs;
+
+    pack.cells.biome = Uint8Array.from(json.cells.pack.biome);
+    pack.cells.burg = Uint16Array.from(json.cells.pack.burg);
+    pack.cells.conf = Uint8Array.from(json.cells.pack.conf);
+    pack.cells.culture = Uint8Array.from(json.cells.pack.culture);
+    pack.cells.fl = Uint16Array.from(json.cells.pack.fl);
+    pack.cells.pop = Uint16Array.from(json.cells.pack.pop);
+    pack.cells.r = Uint16Array.from(json.cells.pack.r);
+    pack.cells.road = Uint16Array.from(json.cells.pack.road);
+    pack.cells.s = Uint16Array.from(json.cells.pack.s);
+    pack.cells.state = Uint8Array.from(json.cells.pack.state);
+  }()
+
+  restoreLayersState()
+  establishHistory()
+
+  changeMapSize();
+  restoreDefaultEvents();
+  invokeActiveZooming();
+  tip("Map is loaded");
+  console.timeEnd("loadMap");
+}
+
+function replaceSVG(svgMarkup) {
+  svg.remove();
+  document.body.insertAdjacentHTML("afterbegin", svgMarkup);
+}
+
+function redefineElements() {
+  svg = d3.select("#map");
+  defs = svg.select("#deftemp");
+  viewbox = svg.select("#viewbox");
+  scaleBar = svg.select("#scaleBar");
+  ocean = viewbox.select("#ocean");
+  oceanLayers = ocean.select("#oceanLayers");
+  oceanPattern = ocean.select("#oceanPattern");
+  lakes = viewbox.select("#lakes");
+  landmass = viewbox.select("#landmass");
+  texture = viewbox.select("#texture");
+  terrs = viewbox.select("#terrs");
+  biomes = viewbox.select("#biomes");
+  cells = viewbox.select("#cells");
+  gridOverlay = viewbox.select("#gridOverlay");
+  coordinates = viewbox.select("#coordinates");
+  compass = viewbox.select("#compass");
+  rivers = viewbox.select("#rivers");
+  terrain = viewbox.select("#terrain");
+  cults = viewbox.select("#cults");
+  regions = viewbox.select("#regions");
+  statesBody = regions.select("#statesBody");
+  statesHalo = regions.select("#statesHalo");
+  borders = viewbox.select("#borders");
+  routes = viewbox.select("#routes");
+  roads = routes.select("#roads");
+  trails = routes.select("#trails");
+  searoutes = routes.select("#searoutes");
+  temperature = viewbox.select("#temperature");
+  coastline = viewbox.select("#coastline");
+  prec = viewbox.select("#prec");
+  population = viewbox.select("#population");
+  labels = viewbox.select("#labels");
+  icons = viewbox.select("#icons");
+  burgIcons = icons.select("#burgIcons");
+  anchors = icons.select("#anchors");
+  markers = viewbox.select("#markers");
+  ruler = viewbox.select("#ruler");
+  debug = viewbox.select("#debug");
+  freshwater = lakes.select("#freshwater");
+  salt = lakes.select("#salt");
+  burgLabels = labels.select("#burgLabels");
+}
+
+function restoreLayersState() {
+  if (texture.style("display") !== "none" && texture.select("image").size()) turnButtonOn("toggleTexture"); else turnButtonOff("toggleTexture");
+  if (terrs.selectAll("*").size()) turnButtonOn("toggleHeight"); else turnButtonOff("toggleHeight");
+  if (biomes.selectAll("*").size()) turnButtonOn("toggleBiomes"); else turnButtonOff("toggleBiomes");
+  if (cells.selectAll("*").size()) turnButtonOn("toggleCells"); else turnButtonOff("toggleCells");
+  if (gridOverlay.selectAll("*").size()) turnButtonOn("toggleGrid"); else turnButtonOff("toggleGrid");
+  if (coordinates.selectAll("*").size()) turnButtonOn("toggleCoordinates"); else turnButtonOff("toggleCoordinates");
+  if (compass.style("display") !== "none" && compass.select("use").size()) turnButtonOn("toggleCompass"); else turnButtonOff("toggleCompass");
+  if (rivers.style("display") !== "none") turnButtonOn("toggleRivers"); else turnButtonOff("toggleRivers");
+  if (terrain.style("display") !== "none" && terrain.selectAll("*").size()) turnButtonOn("toggleRelief"); else turnButtonOff("toggleRelief");
+  if (cults.selectAll("*").size()) turnButtonOn("toggleCultures"); else turnButtonOff("toggleCultures");
+  if (statesBody.selectAll("*").size()) turnButtonOn("toggleStates"); else turnButtonOff("toggleStates");
+  if (borders.style("display") !== "none" && borders.selectAll("*").size()) turnButtonOn("toggleBorders"); else turnButtonOff("toggleBorders");
+  if (routes.style("display") !== "none" && routes.selectAll("path").size()) turnButtonOn("toggleRoutes"); else turnButtonOff("toggleRoutes");
+  if (temperature.selectAll("*").size()) turnButtonOn("toggleTemp"); else turnButtonOff("toggleTemp");
+  if (population.select("#rural").selectAll("*").size()) turnButtonOn("togglePopulation"); else turnButtonOff("togglePopulation");
+  if (prec.selectAll("circle").size()) turnButtonOn("togglePrec"); else turnButtonOff("togglePrec");
+  if (labels.style("display") !== "none") turnButtonOn("toggleLabels"); else turnButtonOff("toggleLabels");
+  if (icons.style("display") !== "none") turnButtonOn("toggleIcons"); else turnButtonOff("toggleIcons");
+  if (markers.style("display") !== "none") turnButtonOn("toggleMarkers"); else turnButtonOff("toggleMarkers");
+  if (ruler.style("display") !== "none") turnButtonOn("toggleRulers"); else turnButtonOff("toggleRulers");
+  if (scaleBar.style("display") !== "none") turnButtonOn("toggleScaleBar"); else turnButtonOff("toggleScaleBar");
+}
+
+function establishHistory() {
+  mapHistory.push({
+    created: Date.now(),
+    height: graphHeight,
+    seed,
+    template: templateInput.value,
+    width: graphWidth,
+  });
 }
