@@ -101,9 +101,11 @@ oceanLayers.append("rect").attr("id", "oceanBase").attr("x", graphWidth * -.2).a
 equatorOutput.min = equatorInput.min = graphHeight * -1;
 equatorOutput.max = equatorInput.max = graphHeight * 2;
 
+const queryStringParams = new URLSearchParams(window.location.search)
+
 applyDefaultNamesData(); // apply default namesbase on load
 applyDefaultStyle(); // apply style on load
-generate(); // generate map on load
+if (!queryStringParams.has('doNotGenerate')) generate(); // generate map on load
 focusOn(); // based on searchParams focus on point, cell or burg from MFCG
 addDragToUpload(); // allow map loading by drag and drop
 
@@ -115,7 +117,7 @@ function showWelcomeMessage() {
     const link = 'https://www.reddit.com/r/FantasyMapGenerator/comments/bfskpi/update_stable_version_is_released_v_08b/?utm_source=share&utm_medium=web2x'; // announcement on Reddit
     alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
 
-      This version is <b>not compatible</b> with older <i>.map</i> files. 
+      This version is <b>not compatible</b> with older <i>.map</i> files.
       Please use an <a href='https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog' target='_blank'>archived version</a> to open the file.
 
       <ul><a href=${link} target='_blank'>Main changes:</a>
@@ -132,8 +134,8 @@ function showWelcomeMessage() {
         <li>Reworked <a href='https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys' target='_blank'>hotkeys</a></li>
       </ul>
 
-      <p>Join our <a href='https://www.reddit.com/r/FantasyMapGenerator' target='_blank'>Reddit community</a> and 
-      <a href='https://discordapp.com/invite/X7E84HU' target='_blank'>Discord server</a> 
+      <p>Join our <a href='https://www.reddit.com/r/FantasyMapGenerator' target='_blank'>Reddit community</a> and
+      <a href='https://discordapp.com/invite/X7E84HU' target='_blank'>Discord server</a>
       to share created maps, discuss the Generator, report bugs, ask questions and propose new features.</p>
 
       <p>Thanks for all supporters on <a href='https://www.patreon.com/azgaar' target='_blank'>Patreon</a>!</i></p>`;
@@ -221,7 +223,7 @@ function applyDefaultNamesData() {
     ["Abim","Adjumani","Alebtong","Amolatar","Amuria","Amuru","Apac","Arua","Arusha","Babati","Baragoi","Bombo","Budaka","Bugembe","Bugiri","Buikwe","Bukedea","Bukoba","Bukomansimbi","Bukungu","Buliisa","Bundibugyo","Bungoma","Busembatya","Bushenyi","Busia","Busia","Busolwe","Butaleja","Butambala","Butere","Buwenge","Buyende","Dadaab","Dodoma","Dokolo","Eldoret","Elegu","Emali","Embu","Entebbe","Garissa","Gede","Gulu","Handeni","Hima","Hoima","Hola","Ibanda","Iganga","Iringa","Isingiro","Isiolo","Jinja","Kaabong","Kabale","Kaberamaido","Kabuyanda","Kabwohe","Kagadi","Kahama","Kajiado","Kakamega","Kakinga","Kakira","Kakiri","Kakuma","Kalangala","Kaliro","Kalisizo","Kalongo","Kalungu","Kampala","Kamuli","Kamwenge","Kanoni","Kanungu","Kapchorwa","Kapenguria","Kasese","Kasulu","Katakwi","Kayunga","Kericho","Keroka","Kiambu","Kibaale","Kibaha","Kibingo","Kiboga","Kibwezi","Kigoma","Kihiihi","Kilifi","Kira","Kiruhura","Kiryandongo","Kisii","Kisoro","Kisumu","Kitale","Kitgum","Kitui","Koboko","Korogwe","Kotido","Kumi","Kyazanga","Kyegegwa","Kyenjojo","Kyotera","Lamu","Langata","Lindi","Lodwar","Lokichoggio","Londiani","Loyangalani","Lugazi","Lukaya","Luweero","Lwakhakha","Lwengo","Lyantonde","Machakos","Mafinga","Makambako","Makindu","Malaba","Malindi","Manafwa","Mandera","Maralal","Marsabit","Masaka","Masindi","MasindiPort","Masulita","Matugga","Mayuge","Mbale","Mbarara","Mbeya","Meru","Mitooma","Mityana","Mombasa","Morogoro","Moroto","Moshi","Moyale","Moyo","Mpanda","Mpigi","Mpondwe","Mtwara","Mubende","Mukono","Mumias","Muranga","Musoma","Mutomo","Mutukula","Mwanza","Nagongera","Nairobi","Naivasha","Nakapiripirit","Nakaseke","Nakasongola","Nakuru","Namanga","Namayingo","Namutumba","Nansana","Nanyuki","Narok","Naromoru","Nebbi","Ngora","Njeru","Njombe","Nkokonjeru","Ntungamo","Nyahururu","Nyeri","Oyam","Pader","Paidha","Pakwach","Pallisa","Rakai","Ruiru","Rukungiri","Rwimi","Sanga","Sembabule","Shimoni","Shinyanga","Singida","Sironko","Songea","Soroti","Ssabagabo","Sumbawanga","Tabora","Takaungu","Tanga","Thika","Tororo","Tunduma","Vihiga","Voi","Wajir","Wakiso","Watamu","Webuye","Wobulenzi","Wote","Wundanyi","Yumbe","Zanzibar"],
     ["An Khe","An Nhon","Ayun Pa","Ba Don","Ba Ria","Bac Giang","Bac Kan","Bac Lieu","Bac Ninh","Bao Loc","Ben Cat","Ben Tre","Bien Hoa","Bim Son","Binh Long","Binh Minh","Buon Ho","Buon Ma Thuot","Ca Mau","Cai Lay","Cam Pha","Cam Ranh","Can Tho","Cao Bang","Cao Lanh","Chau Doc","Chi Linh","Cua Lo","Da Lat","Da Nang","Di An","Dien Ban","Dien Bien Phu","Dong Ha","Dong Hoi","Dong Trieu","Duyen Hai","Gia Nghia","Gia Rai","Go Cong","Ha Giang","Ha Long","Ha Noi","Ha Tinh","Hai Duong","Hai Phong","Hoa Binh","Hoang Mai","Hoi An","Hong Linh","Hong Ngu","Hue","Hung Yen","Huong Thuy","Huong Tra","Kien Tuong","Kon Tum","Ky Anh","La Gi","Lai Chau","Lang Son","Lao Cai","Long Khanh","Long My","Long Xuyen","Mong Cai","Muong Lay","My Hao","My Tho","Nam Dinh","Nga Bay","Nga Nam","Nghia Lo","Nha Trang","Ninh Binh","Ninh Hoa","Phan Rang Thap Cham","Phan Thiet","Pho Yen","Phu Ly","Phu My","Phu Tho","Phuoc Long","Pleiku","Quang Ngai","Quang Tri","Quang Yen","Quy Nhon","Rach Gia","Sa Dec","Sam Son","Soc Trang","Son La","Son Tay","Song Cau","Song Cong","Tam Diep","Tam Ky","Tan An","Tan Chau","Tan Uyen","Tay Ninh","Thai Binh","Thai Hoa","Thai Nguyen","Thanh Hoa","Thu Dau Mot","Thuan An","Tra Vinh","Tu Son","Tuy Hoa","Tuyen Quang","Uong Bi","Vi Thanh","Viet Tri","Vinh","Vinh Chau","Vinh Long","Vinh Yen","Vung Tau","Yen Bai"],
     ["Chaiwan", "Chekham", "Cheungshawan", "Chingchung", "Chinghoi", "Chingsen", "Chingshing", "Chiunam", "Chiuon", "Chiuyeung", "Chiyuen", "Choihung", "Chuehoi", "Chuiman", "Chungfa", "Chungfu", "Chungsan", "Chunguktsuen", "Dakhing", "Daopo", "Daumun", "Dingwu", "Dinpak", "Donggun", "Dongyuen", "Duenchau", "Fachau", "Fado", "Fanling", "Fatgong", "Fatshan", "Fotan", "Fuktien", "Fumun", "Funggong", "Funghoi", "Fungshun", "Fungtei", "Gamtin", "Gochau", "Goming", "Gonghoi", "Gongshing", "Goyiu", "Hanghau", "Hangmei", "Hashan", "Hengfachuen", "Hengon", "Heungchau", "Heunggong", "Heungkiu", "Hingning", "Hohfuktong", "Hoichue", "Hoifung", "Hoiping", "Hokong", "Hokshan", "Homantin", "Hotin", "Hoyuen", "Hunghom", "Hungshuikiu", "Jiuling", "Kamping", "Kamsheung", "Kamwan", "Kaulongtong", "Keilun", "Kinon", "Kinsang", "Kityeung", "Kongmun", "Kukgong", "Kwaifong", "Kwaihing", "Kwongchau", "Kwongling", "Kwongming", "Kwuntong", "Laichikok", "Laiking", "Laiwan", "Lamtei", "Lamtin", "Leitung", "Leungking", "Limkong", "Linchau", "Linnam", "Linping", "Linshan", "Loding", "Lokcheong", "Lokfu", "Lokmachau", "Longchuen", "Longgong", "Longmun", "Longping", "Longwa", "Longwu", "Lowu", "Luichau", "Lukfung", "Lukho", "Lungmun", "Macheung", "Maliushui", "Maonshan", "Mauming", "Maunam", "Meifoo", "Mingkum", "Mogong", "Mongkok", "Muichau", "Muigong", "Muiyuen", "Naiwai", "Namcheong", "Namhoi", "Namhong", "Namo", "Namsha", "Namshan", "Nganwai", "Ngchuen", "Ngoumun", "Ngwa", "Nngautaukok", "Onting", "Pakwun", "Paotoishan", "Pingshan", "Pingyuen", "Poklo", "Polam", "Pongon", "Poning", "Potau", "Puito", "Punyue", "Saiwanho", "Saiyingpun", "Samshing", "Samshui", "Samtsen", "Samyuenlei", "Sanfung", "Sanhing", "Sanhui", "Sanwai", "Sanwui", "Seiwui", "Shamshuipo", "Shanmei", "Shantau", "Shatin", "Shatinwai", "Shaukeiwan", "Shauking", "Shekkipmei", "Shekmun", "Shekpai", "Sheungshui", "Shingkui", "Shiuhing", "Shundak", "Shunyi", "Shupinwai", "Simshing", "Siuhei", "Siuhong", "Siukwan", "Siulun", "Suikai", "Taihing", "Taikoo", "Taipo", "Taishuihang", "Taiwai", "Taiwo", "Taiwohau", "Tinhau", "Tinho", "Tinking", "Tinshuiwai", "Tiukengleng", "Toishan", "Tongfong", "Tonglowan", "Tsakyoochung", "Tsamgong", "Tsangshing", "Tseungkwano", "Tsihing", "Tsimshatsui", "Tsinggong", "Tsingshantsuen", "Tsingwun", "Tsingyi", "Tsingyuen", "Tsiuchau", "Tsuenshekshan", "Tsuenwan", "Tuenmun", "Tungchung", "Waichap", "Waichau", "Waidong", "Wailoi", "Waishing", "Waiyeung", "Wanchai", "Wanfau", "Wanon", "Wanshing", "Wingon", "Wongchukhang", "Wongpo", "Wongtaisin", "Woping", "Wukaisha", "Yano", "Yaumatei", "Yauoi", "Yautong", "Yenfa", "Yeungchun", "Yeungdong", "Yeunggong", "Yeungsai", "Yeungshan", "Yimtin", "Yingdak", "Yiuping", "Yongshing", "Yongyuen", "Yuenlong", "Yuenshing", "Yuetsau", "Yuknam", "Yunping", "Yuyuen"],
-    ["Adaatsag", "Airag", "Alag Erdene", "Altai", "Altanshiree", "Altantsogts", "Arbulag", "Baatsagaan", "Batnorov", "Batshireet", "Battsengel", "Bayan Adarga", "Bayan Agt", "Bayanbulag", "Bayandalai", "Bayandun", "Bayangovi", "Bayanjargalan", "Bayankhongor", "Bayankhutag", "Bayanlig", "Bayanmonkh", "Bayannuur", "Bayan Ondor", "Bayan Ovoo", "Bayantal", "Bayantsagaan", "Bayantumen", "Bayan Uul", "Bayanzurkh", "Berkh", "Biger", "Binder", "Bogd", "Bombogor", "Bor Ondor", "Bugat", "Bulgan", "Buregkhangai", "Burentogtokh", "Buutsagaan", "Buyant", "Chandmani", "Chandmani Ondor", "Choibalsan", "Chuluunkhoroot", "Chuluut", "Dadal", "Dalanjargalan", "Dalanzadgad", "Darkhan", "Darvi", "Dashbalbar", "Dashinchilen", "Delger", "Delgerekh", "Delgerkhaan", "Delgerkhangai", "Delgertsogt", "Deluun", "Deren", "Dorgon", "Duut", "Erdene", "Erdenebulgan", "Erdeneburen", "Erdenedalai", "Erdenemandal", "Erdenetsogt", "Galshar", "Galt", "Galuut", "Govi Ugtaal", "Gurvan", "Gurvanbulag", "Gurvansaikhan", "Gurvanzagal", "Ikhkhet", "Ikh Tamir", "Ikh Uul", "Jargalan", "Jargalant", "Jargaltkhaan", "Jinst", "Khairkhan", "Khalhgol", "Khaliun", "Khanbogd", "Khangai", "Khangal", "Khankh", "Khankhongor", "Khashaat", "Khatanbulag", "Khatgal", "Kherlen", "Khishig Ondor", "Khokh", "Kholonbuir", "Khongor", "Khotont", "Khovd", "Khovsgol", "Khuld", "Khureemaral", "Khurmen", "Khutag Ondor", "Luus", "Mandakh", "Mandal Ovoo", "Mankhan", "Manlai", "Matad", "Mogod", "Monkhkhairkhan", "Moron", "Most", "Myangad", "Nogoonnuur", "Nomgon", "Norovlin", "Noyon", "Ogii", "Olgii", "Olziit", "Omnodelger", "Ondorkhaan", "Ondorshil", "Ondor Ulaan", "Orgon", "Orkhon", "Rashaant", "Renchinlkhumbe", "Sagsai", "Saikhan", "Saikhandulaan", "Saikhan Ovoo", "Sainshand", "Saintsagaan", "Selenge", "Sergelen", "Sevrei", "Sharga", "Sharyngol", "Shine Ider", "Shinejinst", "Shiveegovi", "Sumber", "Taishir", "Tarialan", "Tariat", "Teshig", "Togrog", "Tolbo", "Tomorbulag", "Tonkhil", "Tosontsengel", "Tsagaandelger", "Tsagaannuur", "Tsagaan Ovoo", "Tsagaan Uur", "Tsakhir", "Tseel", "Tsengel", "Tsenkher", "Tsenkhermandal", "Tsetseg", "Tsetserleg", "Tsogt", "Tsogt Ovoo", "Tsogttsetsii", "Tunel", "Tuvshruulekh", "Ulaanbadrakh", "Ulaankhus", "Ulaan Uul", "Uyench", "Yesonbulag", "Zag", "Zamyn Uud", "Zereg"]    
+    ["Adaatsag", "Airag", "Alag Erdene", "Altai", "Altanshiree", "Altantsogts", "Arbulag", "Baatsagaan", "Batnorov", "Batshireet", "Battsengel", "Bayan Adarga", "Bayan Agt", "Bayanbulag", "Bayandalai", "Bayandun", "Bayangovi", "Bayanjargalan", "Bayankhongor", "Bayankhutag", "Bayanlig", "Bayanmonkh", "Bayannuur", "Bayan Ondor", "Bayan Ovoo", "Bayantal", "Bayantsagaan", "Bayantumen", "Bayan Uul", "Bayanzurkh", "Berkh", "Biger", "Binder", "Bogd", "Bombogor", "Bor Ondor", "Bugat", "Bulgan", "Buregkhangai", "Burentogtokh", "Buutsagaan", "Buyant", "Chandmani", "Chandmani Ondor", "Choibalsan", "Chuluunkhoroot", "Chuluut", "Dadal", "Dalanjargalan", "Dalanzadgad", "Darkhan", "Darvi", "Dashbalbar", "Dashinchilen", "Delger", "Delgerekh", "Delgerkhaan", "Delgerkhangai", "Delgertsogt", "Deluun", "Deren", "Dorgon", "Duut", "Erdene", "Erdenebulgan", "Erdeneburen", "Erdenedalai", "Erdenemandal", "Erdenetsogt", "Galshar", "Galt", "Galuut", "Govi Ugtaal", "Gurvan", "Gurvanbulag", "Gurvansaikhan", "Gurvanzagal", "Ikhkhet", "Ikh Tamir", "Ikh Uul", "Jargalan", "Jargalant", "Jargaltkhaan", "Jinst", "Khairkhan", "Khalhgol", "Khaliun", "Khanbogd", "Khangai", "Khangal", "Khankh", "Khankhongor", "Khashaat", "Khatanbulag", "Khatgal", "Kherlen", "Khishig Ondor", "Khokh", "Kholonbuir", "Khongor", "Khotont", "Khovd", "Khovsgol", "Khuld", "Khureemaral", "Khurmen", "Khutag Ondor", "Luus", "Mandakh", "Mandal Ovoo", "Mankhan", "Manlai", "Matad", "Mogod", "Monkhkhairkhan", "Moron", "Most", "Myangad", "Nogoonnuur", "Nomgon", "Norovlin", "Noyon", "Ogii", "Olgii", "Olziit", "Omnodelger", "Ondorkhaan", "Ondorshil", "Ondor Ulaan", "Orgon", "Orkhon", "Rashaant", "Renchinlkhumbe", "Sagsai", "Saikhan", "Saikhandulaan", "Saikhan Ovoo", "Sainshand", "Saintsagaan", "Selenge", "Sergelen", "Sevrei", "Sharga", "Sharyngol", "Shine Ider", "Shinejinst", "Shiveegovi", "Sumber", "Taishir", "Tarialan", "Tariat", "Teshig", "Togrog", "Tolbo", "Tomorbulag", "Tonkhil", "Tosontsengel", "Tsagaandelger", "Tsagaannuur", "Tsagaan Ovoo", "Tsagaan Uur", "Tsakhir", "Tseel", "Tsengel", "Tsenkher", "Tsenkhermandal", "Tsetseg", "Tsetserleg", "Tsogt", "Tsogt Ovoo", "Tsogttsetsii", "Tunel", "Tuvshruulekh", "Ulaanbadrakh", "Ulaankhus", "Ulaan Uul", "Uyench", "Yesonbulag", "Zag", "Zamyn Uud", "Zereg"]
   ];
 }
 
@@ -230,7 +232,7 @@ function applyDefaultBiomesSystem() {
   const name = ["Marine","Hot desert","Cold desert","Savanna","Grassland","Tropical seasonal forest","Temperate deciduous forest","Tropical rain forest","Temperate rain forest","Taiga","Tundra","Glacier"];
   //const color = ["#53679f","#fbfaae","#e1df9b","#eef586","#bdde82","#b6d95d","#29bc56","#7dcb35","#45b348","#567c2c","#d5d59d","#e6f5fa"];
   const color = ["#53679f","#fbe79f","#b5b887","#d2d082","#c8d68f","#b6d95d","#29bc56","#7dcb35","#45b348","#4b6b32","#96784b","#d5e7eb"];
-  
+
   const i = new Uint8Array(d3.range(0, name.length));
   const habitability = new Uint16Array([0,2,5,15,25,50,100,80,90,10,2,0]);
   const iconsDensity = new Uint8Array([0,3,2,120,120,120,120,150,150,100,5,0]);
@@ -287,7 +289,7 @@ function applyDefaultStyle() {
   roads.attr("opacity", .9).attr("stroke", "#d06324").attr("stroke-width", .45).attr("stroke-dasharray", "1.5").attr("stroke-linecap", "butt").attr("filter", null);
   ruler.attr("opacity", null).attr("filter", null);
   searoutes.attr("opacity", .8).attr("stroke", "#ffffff").attr("stroke-width", .45).attr("stroke-dasharray", "1 2").attr("stroke-linecap", "round").attr("filter", null);
-  
+
   regions.attr("opacity", .4).attr("filter", null);
   temperature.attr("opacity", null).attr("fill", "#000000").attr("stroke-width", 1.8).attr("fill-opacity", .3).attr("font-size", "8px").attr("stroke-dasharray", null).attr("filter", null).attr("mask", null);
   texture.attr("opacity", null).attr("filter", null).attr("mask", "url(#land)");
@@ -309,10 +311,10 @@ function applyDefaultStyle() {
 
   // heightmap style
   terrs.attr("opacity", null).attr("filter", null).attr("mask", "url(#land)").attr("stroke", "none");
-  const changed = styleHeightmapSchemeInput.value !== "bright" || 
-                  styleHeightmapTerracingInput.value != 0 || 
-                  styleHeightmapSkipInput.value != 5 || 
-                  styleHeightmapSimplificationInput.value != 0 || 
+  const changed = styleHeightmapSchemeInput.value !== "bright" ||
+                  styleHeightmapTerracingInput.value != 0 ||
+                  styleHeightmapSkipInput.value != 5 ||
+                  styleHeightmapSimplificationInput.value != 0 ||
                   styleHeightmapCurveInput.value != 0;
   styleHeightmapSchemeInput.value = "bright";
   styleHeightmapTerracingInput.value = styleHeightmapTerracingOutput.value = 0;
@@ -347,7 +349,7 @@ function focusOn() {
       params.set("burg", params.get("seed").slice(-4));
     } else {
       // select burg for MFCG
-      findBurgForMFCG(params); 
+      findBurgForMFCG(params);
       return;
     }
   }
@@ -397,7 +399,7 @@ function findBurgForMFCG(params) {
 
   // select a burg with closest population from selection
   const selected = d3.scan(selection, (a, b) => Math.abs(a.population - size) - Math.abs(b.population - size));
-  const b = selection[selected].i;  
+  const b = selection[selected].i;
   if (!b) {console.error("Cannot select a burg for MFCG"); return;}
   if (size) burgs[b].population = size;
 
@@ -610,7 +612,7 @@ function calculateVoronoi(graph, points) {
   const allPoints = points.concat(grid.boundary);
   const delaunay = Delaunator.from(allPoints);
   console.timeEnd("calculateDelaunay");
-  
+
   console.time("calculateVoronoi");
   const voronoi = Voronoi(delaunay, allPoints, n);
   graph.cells = voronoi.cells;
@@ -762,7 +764,7 @@ function generatePrecipitation() {
   // x1 = 70-90 latitude: dry all year (sinking zone)
   }
   const lalitudeModifier = [4,2,2,2,1,1,2,2,2,2,3,3,2,2,1,1,1,0.5]; // by 5d step
- 
+
   // difine wind directions based on cells latitude and prevailing winds there
   d3.range(0, cells.i.length, cellsX).forEach(function(c, i) {
     const lat = mapCoordinates.latN - i / cellsY * mapCoordinates.latT;
@@ -774,7 +776,7 @@ function generatePrecipitation() {
     if (winds[tier] > 100 && winds[tier] < 260) northerly++;
     else if (winds[tier] > 280 || winds[tier] < 80) southerly++;
   });
-  
+
   // distribute winds by direction
   if (westerly.length) passWind(westerly, 120 * modifier, 1, cellsX);
   if (easterly.length) passWind(easterly, 120 * modifier, -1, cellsX);
@@ -799,7 +801,7 @@ function generatePrecipitation() {
       let humidity = maxPrec - cells.h[first]; // initial water amount
       if (humidity <= 0) continue; // if first cell in row is too elevated cosdired wind dry
       for (let s = 0, current = first; s < steps; s++, current += next) {
-        // no flux on permafrost 
+        // no flux on permafrost
         if (cells.temp[current] < -5) continue;
         // water cell
         if (cells.h[current] < 20) {
@@ -915,7 +917,7 @@ function drawCoastline() {
   const used = new Uint8Array(features.length); // store conneted features
   const largestLand = d3.scan(features.map(f => f.land ? f.cells : 0), (a, b) => b - a);
   const landMask = defs.select("#land");
-  const waterMask = defs.select("#water");  
+  const waterMask = defs.select("#water");
   lineGen.curve(d3.curveBasisClosed);
 
   for (const i of cells.i) {
@@ -1012,7 +1014,7 @@ function reMarkFeatures() {
           cellNumber++;
         }
         if (land && !eLand) {
-          cells.t[q] = 1; 
+          cells.t[q] = 1;
           cells.t[e] = -1;
           cells.harbor[q]++;
           if (!cells.haven[q]) cells.haven[q] = e;

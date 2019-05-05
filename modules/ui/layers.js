@@ -1,7 +1,7 @@
 // UI module stub to control map layers
 "use strict";
 
-// on map regeneration restore layers if they was turned on 
+// on map regeneration restore layers if they was turned on
 function restoreLayers() {
   if (layerIsOn("toggleHeight")) drawHeightmap();
   if (layerIsOn("toggleCells")) drawCells();
@@ -73,13 +73,13 @@ function drawHeightmap() {
   }
 
   let currentLayer = 20;
-  const heights = cells.i.sort((a, b) => cells.h[a] - cells.h[b]); 
+  const heights = cells.i.sort((a, b) => cells.h[a] - cells.h[b]);
   for (const i of heights) {
     const h = cells.h[i];
     if (h > currentLayer) currentLayer += skip;
     if (currentLayer > 100) break; // no layers possible with height > 100
     if (h < currentLayer) continue;
-    if (used[i]) continue; // already marked    
+    if (used[i]) continue; // already marked
     const onborder = cells.c[i].some(n => cells.h[n] < h);
     if (!onborder) continue;
     const vertex = cells.v[i].find(v => vertices.c[v].some(i => cells.h[i] < h));
@@ -122,7 +122,7 @@ function drawHeightmap() {
     const n = simplification + 1; // filter each nth element
     return chain.filter((d, i) => i % n === 0);
   }
-  
+
   console.timeEnd("drawHeightmap");
 }
 
@@ -159,7 +159,7 @@ function drawTemp() {
   const used = new Uint8Array(n); // to detect already passed cells
   const min = d3.min(cells.temp), max = d3.max(cells.temp);
   const step = Math.max(Math.round(Math.abs(min - max) / 5), 1);
-  const isolines = d3.range(min+step, max, step); 
+  const isolines = d3.range(min+step, max, step);
   const chains = [], labels = []; // store label coordinates
 
   for (const i of cells.i) {
@@ -255,7 +255,7 @@ function drawBiomes() {
   const cells = pack.cells, vertices = pack.vertices, n = cells.i.length;
   const used = new Uint8Array(cells.i.length);
   const paths = new Array(biomesData.i.length).fill("");
-  
+
   for (const i of cells.i) {
     if (!cells.biome[i]) continue; // no need to mark water
     if (used[i]) continue; // already marked
@@ -319,7 +319,7 @@ function drawPrec() {
   const data = cells.i.filter(i => cells.h[i] >= 20 && cells.prec[i]);
   prec.selectAll("circle").data(data).enter().append("circle")
     .attr("cx", d => p[d][0]).attr("cy", d => p[d][1]).attr("r", 0)
-    .transition(show).attr("r", d => rn(Math.max(Math.sqrt(cells.prec[d] * .5), .8),2)); 
+    .transition(show).attr("r", d => rn(Math.max(Math.sqrt(cells.prec[d] * .5), .8),2));
 }
 
 function togglePopulation() {
@@ -383,7 +383,7 @@ function toggleCultures() {
 
 function drawCultures() {
   console.time("drawCultures");
-  
+
   cults.selectAll("path").remove();
   const cells = pack.cells, vertices = pack.vertices, cultures = pack.cultures, n = cells.i.length;
   const used = new Uint8Array(cells.i.length);
@@ -444,6 +444,8 @@ function drawStatesWithBorders() {
   regions.selectAll("path").remove();
   borders.selectAll("path").remove();
 
+  if (!pack.cells || !pack.cells.i) return;
+
   const cells = pack.cells, vertices = pack.vertices, states = pack.states, n = cells.i.length;
   const used = new Uint8Array(cells.i.length);
   const body = new Array(states.length).fill(""); // store path around each state
@@ -489,7 +491,7 @@ function drawStatesWithBorders() {
     const chain = []; // vertices chain to form a path
     let land = vertices.c[start].some(c => cells.h[c] >= 20 && cells.state[c] !== t);
     function check(i) {state = cells.state[i]; land = cells.h[i] >= 20;}
-    
+
     for (let i=0, current = start; i === 0 || current !== start && i < 20000; i++) {
       const prev = chain[chain.length - 1] ? chain[chain.length - 1][0] : -1; // previous vertex in chain
       chain.push([current, state, land]); // add current vertex to sequence
@@ -517,7 +519,7 @@ function toggleBorders() {
   } else {
     turnButtonOff("toggleBorders");
     $('#borders').fadeOut();
-  }  
+  }
 }
 
 function toggleGrid() {
@@ -574,7 +576,7 @@ function drawGrid() {
       x0 = x1, y0 = y1;
       return [rn(dx, 2), rn(dy, 2)];
     });
-  }  
+  }
 
   console.timeEnd("drawGrid");
 }
@@ -736,7 +738,7 @@ function toggleIcons() {
   } else {
     turnButtonOff("toggleIcons");
     $('#icons').fadeOut();
-  }  
+  }
 }
 
 function toggleRulers() {
