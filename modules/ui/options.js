@@ -4,7 +4,7 @@
 $("#optionsContainer").draggable({handle: ".drag-trigger", snap: "svg", snapMode: "both"});
 $("#mapLayers").disableSelection();
 
-// show control elements and remove loading screen on map load 
+// show control elements and remove loading screen on map load
 d3.select("#loading").transition().duration(5000).style("opacity", 0).remove();
 d3.select("#initial").transition().duration(5000).attr("opacity", 0).remove();
 d3.select("#optionsContainer").transition().duration(5000).style("opacity", 1);
@@ -14,6 +14,10 @@ d3.select("#tooltip").transition().duration(5000).style("opacity", 1);
 if (localStorage.getItem("disable_click_arrow_tooltip")) {
   clearMainTip();
   optionsTrigger.classList.remove("glow");
+}
+
+function hideLoadingMessage() {
+  d3.select("#loading").remove()
 }
 
 // Show options pane on trigger click
@@ -27,7 +31,7 @@ function showOptions(event) {
   regenerate.style.display = "none";
   options.style.display = "block";
   optionsTrigger.style.display = "none";
-  
+
   if (event) event.stopPropagation();
 }
 
@@ -55,20 +59,20 @@ collapsible.addEventListener("mouseleave", function() {
 });
 
 // Activate options tab on click
-options.querySelector("div.tab").addEventListener("click", function(event) { 
+options.querySelector("div.tab").addEventListener("click", function(event) {
   if (event.target.tagName !== "BUTTON") return;
   const id = event.target.id;
   const active = options.querySelector(".tab > button.active");
   if (active && id === active.id) return; // already active tab is clicked
 
   if (active) active.classList.remove("active");
-  document.getElementById(id).classList.add("active");  
+  document.getElementById(id).classList.add("active");
   options.querySelectorAll(".tabcontent").forEach(e => e.style.display = "none");
 
-  if (id === "styleTab") styleContent.style.display = "block"; else 
-  if (id === "optionsTab") optionsContent.style.display = "block"; else 
-  if (id === "toolsTab" && !customization) toolsContent.style.display = "block"; else 
-  if (id === "toolsTab" && customization) customizationMenu.style.display = "block"; else   
+  if (id === "styleTab") styleContent.style.display = "block"; else
+  if (id === "optionsTab") optionsContent.style.display = "block"; else
+  if (id === "toolsTab" && !customization) toolsContent.style.display = "block"; else
+  if (id === "toolsTab" && customization) customizationMenu.style.display = "block"; else
   if (id === "aboutTab") aboutContent.style.display = "block";
 });
 
@@ -92,7 +96,7 @@ function selectStyleElement() {
   const sel = styleElementSelect.value;
   let el = viewbox.select("#"+sel);
 
-  styleElements.querySelectorAll("tbody").forEach(e => e.style.display = "none"); // hide all sections 
+  styleElements.querySelectorAll("tbody").forEach(e => e.style.display = "none"); // hide all sections
   const off = el.style("display") === "none" || !el.selectAll("*").size(); // check if layer is off
   if (off) {
     styleIsOff.style.display = "block";
@@ -104,7 +108,7 @@ function selectStyleElement() {
   if (sel == "ocean") el = oceanLayers.select("rect");
   else if (sel == "routes" || sel == "labels" || sel == "lakes" || sel == "anchors" || sel == "burgIcons") {
     el = d3.select("#"+sel).select("g#"+group).size()
-      ? d3.select("#"+sel).select("g#"+group) 
+      ? d3.select("#"+sel).select("g#"+group)
       : d3.select("#"+sel).select("g");
   }
 
@@ -161,7 +165,7 @@ function selectStyleElement() {
     styleCompassShiftY.value = tr[1];
     styleCompassSizeInput.value = styleCompassSizeOutput.value = tr[2];
   }
-  
+
   // show specific sections
   if (sel === "terrs") styleHeightmap.style.display = "block";
   if (sel === "gridOverlay") styleGrid.style.display = "block";
@@ -169,15 +173,15 @@ function selectStyleElement() {
   if (sel === "texture") styleTexture.style.display = "block";
   if (sel === "routes" || sel === "labels" || sel == "anchors" || sel == "burgIcons" || sel === "lakes") styleGroup.style.display = "block";
   if (sel === "markers") styleMarkers.style.display = "block";
- 
+
   if (sel === "population") {
     stylePopulation.style.display = "block";
     stylePopulationRuralStrokeInput.value = stylePopulationRuralStrokeOutput.value = population.select("#rural").attr("stroke");
     stylePopulationUrbanStrokeInput.value = stylePopulationUrbanStrokeOutput.value = population.select("#urban").attr("stroke");
     styleStrokeWidth.style.display = "block";
-    styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr("stroke-width") || "";      
+    styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr("stroke-width") || "";
   }
-  
+
   if (sel === "labels") {
     styleFill.style.display = "block";
     styleStroke.style.display = "block";
@@ -234,7 +238,7 @@ function selectStyleElement() {
   if (sel === "temperature") {
     styleStrokeWidth.style.display = "block";
     styleTemperature.style.display = "block";
-    styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr("stroke-width") || ""; 
+    styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr("stroke-width") || "";
     styleTemperatureFillOpacityInput.value = styleTemperatureFillOpacityOutput.value = el.attr("fill-opacity") || .1;
     styleTemperatureFillInput.value = styleTemperatureFillOutput.value = el.attr("fill") || "#000";
     styleTemperatureFontSizeInput.value = styleTemperatureFontSizeOutput.value = el.attr("font-size") || "8px";;
@@ -339,7 +343,7 @@ styleShiftY.addEventListener("input", shiftElement);
 function shiftElement() {
   const x = styleShiftX.value || 0;
   const y = styleShiftY.value || 0;
-  getEl().attr("transform", `translate(${x},${y})`);  
+  getEl().attr("transform", `translate(${x},${y})`);
 }
 
 styleOceanBack.addEventListener("input", function() {
@@ -417,7 +421,7 @@ styleCompassShiftY.addEventListener("input", shiftCompass);
 
 function shiftCompass() {
   const tr = `translate(${styleCompassShiftX.value} ${styleCompassShiftY.value}) scale(${styleCompassSizeInput.value})`;
-  d3.select("#rose").attr("transform", tr); 
+  d3.select("#rose").attr("transform", tr);
 }
 
 styleSelectFont.addEventListener("change", changeFont);
@@ -562,7 +566,7 @@ function textureProvideURL() {
 }
 
 function fetchTextureURL(url) {
-  console.log("Provided URL is", url);  
+  console.log("Provided URL is", url);
   const img = new Image();
   img.onload = function () {
     const canvas = document.getElementById("preview");
@@ -663,7 +667,7 @@ function toggleFullscreen() {
 
 function generateMapWithSeed() {
   if (optionsSeed.value == seed) {
-    tip("The current map already has this seed", false, "error"); 
+    tip("The current map already has this seed", false, "error");
     return;
   }
   regeneratePrompt();
@@ -685,7 +689,7 @@ function showSeedHistoryDialog() {
 // generate map with historycal seed
 function restoreSeed(id) {
   if (mapHistory[id].seed == seed) {
-    tip("The current map is already generated with this seed", null, "error"); 
+    tip("The current map is already generated with this seed", null, "error");
     return;
   }
   optionsSeed.value = mapHistory[id].seed;
@@ -722,7 +726,7 @@ function changeBurgsNumberSlider(value) {
 function changeUIsize(value) {
   uiSizeInput.value = uiSizeOutput.value = value;
   document.getElementsByTagName("body")[0].style.fontSize = value * 11 + "px";
-  document.getElementById("options").style.width = (value - 1) * 300 / 2 + 300 + "px"; 
+  document.getElementById("options").style.width = (value - 1) * 300 / 2 + 300 + "px";
 }
 
 function changeTooltipSize(value) {
@@ -772,7 +776,7 @@ function applyStoredOptions() {
   }
 
   if (localStorage.getItem("winds")) winds = localStorage.getItem("winds").split(",").map(w => +w);
-  
+
   changeDialogsTransparency(localStorage.getItem("transparency") || 30);
   if (localStorage.getItem("uiSize")) changeUIsize(localStorage.getItem("uiSize"));
   if (localStorage.getItem("tooltipSize")) changeTooltipSize(localStorage.getItem("tooltipSize"));
@@ -919,7 +923,7 @@ document.getElementById("sticked").addEventListener("click", function(event) {
 });
 
 function regeneratePrompt() {
-  if (customization) {tip("Please exit the customization mode first", false, "warning"); return;} 
+  if (customization) {tip("Please exit the customization mode first", false, "warning"); return;}
   const workingTime = (Date.now() - last(mapHistory).created) / 60000; // minutes
   if (workingTime < 15) {regenerateMap(); return;}
 
@@ -939,7 +943,7 @@ function toggleSavePane() {
 
   // ask users to allow popups
   if (!localStorage.getItem("dns_allow_popup_message")) {
-    alertMessage.innerHTML = `Generator uses pop-up window to download files. 
+    alertMessage.innerHTML = `Generator uses pop-up window to download files.
     <br>Please ensure your browser does not block popups.
     <br>Please check browser settings and turn off adBlocker if it is enabled`;
 
