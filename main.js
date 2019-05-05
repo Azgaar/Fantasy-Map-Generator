@@ -238,7 +238,7 @@ function applyDefaultBiomesSystem() {
   const iconsDensity = new Uint8Array([0,3,2,120,120,120,120,150,150,100,5,0]);
   const icons = [{},{dune:1},{dune:1},{acacia:1, grass:9},{grass:1},{acacia:1, palm:1},{deciduous:1},{acacia:7, palm:2, deciduous:1},{deciduous:7, swamp:3},{conifer:1},{grass:1},{}];
   const cost = new Uint8Array([10,200,150,60,50,70,70,80,90,80,100,255]); // biome movement cost
-  const biomesMartix = [
+  const biomesMatrix = [
     new Uint8Array([1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]),
     new Uint8Array([3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,9,9,9,9,9,10,10]),
     new Uint8Array([5,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,9,9,9,9,9,10,10,10]),
@@ -255,7 +255,7 @@ function applyDefaultBiomesSystem() {
     icons[i] = parsed;
   }
 
-  return {i, name, color, biomesMartix, habitability, iconsDensity, icons, cost};
+  return {i, name, color, biomesMatrix, habitability, iconsDensity, icons, cost};
 }
 
 // restore initial style
@@ -1098,7 +1098,7 @@ function defineBiomes() {
     if (temperature < -5) return 11; // permafrost biome
     const m = Math.min((moisture + 4) / 5 | 0, 4); // moisture band from 0 to 4
     const t = Math.min(Math.max(20 - temperature, 0), 25); // temparature band from 0 to 25
-    return biomesData.biomesMartix[m][t];
+    return biomesData.biomesMatrix[m][t];
   }
 
   console.timeEnd("defineBiomes");
