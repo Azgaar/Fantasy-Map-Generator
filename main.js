@@ -110,7 +110,7 @@ focusOn(); // based on searchParams focus on point, cell or burg from MFCG
 addDragToUpload(); // allow map loading by drag and drop
 
 // show message on load if required
-setTimeout(showWelcomeMessage, 8000);
+// setTimeout(showWelcomeMessage, 8000);
 function showWelcomeMessage() {
   // Changelog dialog window
   if (localStorage.getItem("version") != version) {
