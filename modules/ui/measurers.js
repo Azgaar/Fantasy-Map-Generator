@@ -8,7 +8,7 @@ function addRuler(x1, y1, x2, y2) {
   const dash = rn(30 / distanceScale.value, 2);
 
   // body
-  const rulerNew = ruler.append("g").call(d3.drag().on("start", dragRuler));
+  const rulerNew = ruler.append("g").attr("class", "ruler").call(d3.drag().on("start", dragRuler));
   rulerNew.append("line").attr("x1", x1).attr("y1", y1).attr("x2", x2).attr("y2", y2).attr("class", "white").attr("stroke-width", size);
   rulerNew.append("line").attr("x1", x1).attr("y1", y1).attr("x2", x2).attr("y2", y2).attr("class", "gray").attr("stroke-width", size).attr("stroke-dasharray", dash);
   rulerNew.append("circle").attr("r", 2 * size).attr("stroke-width", .5 * size).attr("cx", x1).attr("cy", y1).attr("data-edge", "left").call(d3.drag().on("drag", dragRulerEdge));
@@ -115,7 +115,7 @@ function drawOpisometer() {
   const points = [[p0[0], p0[1]]];
   let length = 0;
 
-  const rulerNew = ruler.append("g").call(d3.drag().on("start", dragRuler));
+  const rulerNew = ruler.append("g").attr("class", "opisometer").call(d3.drag().on("start", dragRuler));
   const curve = rulerNew.append("path").attr("class", "white").attr("stroke-width", size);
   const curveGray = rulerNew.append("path").attr("class", "gray").attr("stroke-width", size).attr("stroke-dasharray", dash);
   const text = rulerNew.append("text").attr("dy", "-.3em").attr("font-size", 10 * size).on("click", removeParent);
@@ -198,7 +198,7 @@ function drawPlanimeter() {
   const p0 = d3.mouse(this);
   const points = [[p0[0], p0[1]]];
 
-  const rulerNew = ruler.append("g").call(d3.drag().on("start", dragRuler));
+  const rulerNew = ruler.append("g").attr("class", "planimeter").call(d3.drag().on("start", dragRuler));
   const curve = rulerNew.append("path").attr("class", "planimeter").attr("stroke-width", size);
   const text = rulerNew.append("text").attr("font-size", 10 * size).on("click", removeParent);
 

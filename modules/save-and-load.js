@@ -370,6 +370,18 @@ function parseLoadedData(data) {
     if (scaleBar.style("display") !== "none") turnButtonOn("toggleScaleBar"); else turnButtonOff("toggleScaleBar");
   }()
 
+  void function restoreRulersEvents() {
+    ruler.selectAll("g").call(d3.drag().on("start", dragRuler));
+    ruler.selectAll("text").on("click", removeParent);
+
+    ruler.selectAll("g.ruler circle").call(d3.drag().on("drag", dragRulerEdge));
+    ruler.selectAll("g.ruler circle").call(d3.drag().on("drag", dragRulerEdge));
+    ruler.selectAll("g.ruler rect").call(d3.drag().on("start", rulerCenterDrag));
+
+    ruler.selectAll("g.opisometer circle").call(d3.drag().on("start", dragOpisometerEnd));
+    ruler.selectAll("g.opisometer circle").call(d3.drag().on("start", dragOpisometerEnd));
+  }()
+
   changeMapSize();
   restoreDefaultEvents();
   invokeActiveZooming();
