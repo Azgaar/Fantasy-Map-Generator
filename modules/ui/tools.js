@@ -1,7 +1,7 @@
 // module to control the Tools options (click to edit, to re-geenerate, tp add)
 "use strict";
 
-toolsContent.addEventListener("click", function() {
+toolsContent.addEventListener("click", function(event) {
   if (customization) {tip("Please exit the customization mode first", false, "warning"); return;}
   if (event.target.tagName !== "BUTTON") return;
   const button = event.target.id;

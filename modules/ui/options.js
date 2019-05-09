@@ -575,7 +575,7 @@ function fetchTextureURL(url) {
 
 // Style map filters handler
 mapFilters.addEventListener("click", applyMapFilter);
-function applyMapFilter() {
+function applyMapFilter(event) {
   if (event.target.tagName !== "BUTTON") return;
   const button = event.target;
   svg.attr("filter", null);
