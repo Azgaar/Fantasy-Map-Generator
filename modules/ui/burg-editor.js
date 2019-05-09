@@ -9,7 +9,7 @@ function editBurg() {
   elSelected = burgLabels.select("[data-id='" + id + "']");
   burgLabels.selectAll("text").call(d3.drag().on("start", dragBurgLabel)).classed("draggable", true);
 
-  selectBurgGroup(event.target);
+  selectBurgGroup(d3.event.target);
   document.getElementById("burgNameInput").value = elSelected.text();
   const my = elSelected.attr("id") == d3.event.target.id ? "center bottom" : "center top+10";
   const at = elSelected.attr("id") == d3.event.target.id ? "top" : "bottom";
