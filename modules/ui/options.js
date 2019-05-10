@@ -636,8 +636,8 @@ function changeMapSize() {
   const height = Math.max(svgHeight, graphHeight);
   zoom.translateExtent([[0, 0], [width, height]]);
   landmass.select("rect").attr("width", width).attr("height", height);
-  oceanPattern.select("rect").attr("fill", "url(#oceanic)").attr("width", width).attr("height", height);
-  oceanLayers.select("rect").attr("id", "oceanBase").attr("width", width).attr("height", height);
+  oceanPattern.select("rect").attr("fill", "url(#oceanic)").attr("width", 0).attr("height", 0).attr("width", width).attr("height", height);
+  oceanLayers.select("rect").attr("id", "oceanBase").attr("width", 0).attr("height", 0).attr("width", width).attr("height", height);
   fitScaleBar();
 }
 
