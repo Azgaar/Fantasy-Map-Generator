@@ -623,7 +623,6 @@ optionsContent.addEventListener("click", function(event) {
 
 function mapSizeInputChange() {
     changeMapSize();
-    autoResize = false;
     localStorage.setItem("mapWidth", mapWidthInput.value);
     localStorage.setItem("mapHeight", mapHeightInput.value);
 }
@@ -636,6 +635,9 @@ function changeMapSize() {
   const width = Math.max(svgWidth, graphWidth);
   const height = Math.max(svgHeight, graphHeight);
   zoom.translateExtent([[0, 0], [width, height]]);
+  landmass.select("rect").attr("width", width).attr("height", height);
+  oceanPattern.select("rect").attr("fill", "url(#oceanic)").attr("width", width).attr("height", height);
+  oceanLayers.select("rect").attr("id", "oceanBase").attr("width", width).attr("height", height);
   fitScaleBar();
 }
 
@@ -749,10 +751,6 @@ function changeZoomExtent(value) {
   const min = +zoomExtentMin.value;
   zoom.scaleExtent([min, +zoomExtentMax.value]);
   zoom.scaleTo(svg, +value);
-  const x = min < 1 ? (graphWidth / min - graphWidth) / 2 : graphWidth * .2;
-  const y = min < 1 ? (graphHeight / min - graphHeight) / 2 : graphHeight * .2;
-  oceanPattern.select("rect").attr("x", -x).attr("y", -y).attr("width", graphWidth + 2 * x).attr("height", graphHeight + 2 * y);
-  oceanLayers.select("rect").attr("x", -x).attr("y", -y).attr("width", graphWidth + 2 * x).attr("height", graphHeight + 2 * y);
 }
 
 // control sroted options

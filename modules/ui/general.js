@@ -6,8 +6,6 @@ window.onbeforeunload = () => "Are you sure you want to navigate away?";
 
 // fit full-screen map if window is resized
 $(window).resize(function(e) {
-  // trick to prevent resize on download bar opening
-  if (autoResize === false) return;
   mapWidthInput.value = window.innerWidth;
   mapHeightInput.value = window.innerHeight;
   changeMapSize();

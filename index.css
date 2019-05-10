@@ -25,7 +25,7 @@ button {
 
 #map {
 	position: absolute;
-	background-color: #53679f;
+	background-color: #000000;
 	mask-mode: alpha;
 	mask-clip: no-clip;
 }

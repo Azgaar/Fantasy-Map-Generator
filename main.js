@@ -74,7 +74,7 @@ scaleBar.on("mousemove", function() {tip("Click to open Units Editor");}) // ass
 // main data variables
 let grid = {}; // initial grapg based on jittered square grid and data
 let pack = {}; // packed graph and data
-let seed, mapHistory = [], elSelected, autoResize = true, modules = {}, notes = [];
+let seed, mapHistory = [], elSelected, modules = {}, notes = [];
 let customization = 0; // 0 - no; 1 = heightmap draw; 2 - states draw; 3 - add state/burg; 4 - cultures draw
 let mapCoordinates = {}; // map coordinates on globe
 let winds = [225, 45, 225, 315, 135, 315]; // default wind directions
@@ -92,10 +92,10 @@ const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", zoomed);
 applyStoredOptions();
 let graphWidth = +mapWidthInput.value; // voronoi graph extention, should be stable for each map
 let graphHeight = +mapHeightInput.value;
-let svgWidth = graphWidth, svgHeight = graphHeight;  // svg canvas resolution, can vary for each map
+let svgWidth = graphWidth, svgHeight = graphHeight; // svg canvas resolution, can vary for each map
 landmass.append("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
-oceanPattern.append("rect").attr("fill", "url(#oceanic)").attr("x", graphWidth * -.2).attr("y", graphHeight * -.2).attr("width", graphWidth * 1.4).attr("height", graphHeight * 1.4);
-oceanLayers.append("rect").attr("id", "oceanBase").attr("x", graphWidth * -.2).attr("y", graphHeight * -.2).attr("width", graphWidth * 1.4).attr("height", graphHeight * 1.4);
+oceanPattern.append("rect").attr("fill", "url(#oceanic)").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
+oceanLayers.append("rect").attr("id", "oceanBase").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 
 // equator Y position limits
 equatorOutput.min = equatorInput.min = graphHeight * -1;
@@ -228,7 +228,6 @@ function applyDefaultNamesData() {
 // apply default biomes data
 function applyDefaultBiomesSystem() {
   const name = ["Marine","Hot desert","Cold desert","Savanna","Grassland","Tropical seasonal forest","Temperate deciduous forest","Tropical rain forest","Temperate rain forest","Taiga","Tundra","Glacier"];
-  //const color = ["#53679f","#fbfaae","#e1df9b","#eef586","#bdde82","#b6d95d","#29bc56","#7dcb35","#45b348","#567c2c","#d5d59d","#e6f5fa"];
   const color = ["#53679f","#fbe79f","#b5b887","#d2d082","#c8d68f","#b6d95d","#29bc56","#7dcb35","#45b348","#4b6b32","#96784b","#d5e7eb"];
   
   const i = new Uint8Array(d3.range(0, name.length));
