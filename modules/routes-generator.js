@@ -59,7 +59,7 @@
 
   const getSearoutes = function() {
     console.time("generateSearoutes");
-    const cells = pack.cells, allPorts = pack.burgs.filter(b => b.port != 0 && !b.removed);
+    const cells = pack.cells, allPorts = pack.burgs.filter(b => b.port > 0 && !b.removed);
     if (allPorts.length < 2) return [];
     const bodies = new Set(allPorts.map(b => b.port)); // features with ports
     let from = [], exit = null, path = [], paths = []; // array to store path segments

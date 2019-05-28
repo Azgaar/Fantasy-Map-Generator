@@ -361,13 +361,17 @@ function parseLoadedData(data) {
     if (borders.style("display") !== "none" && borders.selectAll("*").size()) turnButtonOn("toggleBorders"); else turnButtonOff("toggleBorders");
     if (routes.style("display") !== "none" && routes.selectAll("path").size()) turnButtonOn("toggleRoutes"); else turnButtonOff("toggleRoutes");
     if (temperature.selectAll("*").size()) turnButtonOn("toggleTemp"); else turnButtonOff("toggleTemp");
-    if (population.select("#rural").selectAll("*").size()) turnButtonOn("togglePopulation"); else turnButtonOff("togglePopulation");
     if (prec.selectAll("circle").size()) turnButtonOn("togglePrec"); else turnButtonOff("togglePrec");
     if (labels.style("display") !== "none") turnButtonOn("toggleLabels"); else turnButtonOff("toggleLabels");
     if (icons.style("display") !== "none") turnButtonOn("toggleIcons"); else turnButtonOff("toggleIcons");
     if (markers.style("display") !== "none") turnButtonOn("toggleMarkers"); else turnButtonOff("toggleMarkers");
     if (ruler.style("display") !== "none") turnButtonOn("toggleRulers"); else turnButtonOff("toggleRulers");
     if (scaleBar.style("display") !== "none") turnButtonOn("toggleScaleBar"); else turnButtonOff("toggleScaleBar");
+
+    // special case for population bars
+    const populationIsOn = population.selectAll("line").size();
+    if (populationIsOn) drawPopulation();
+    if (populationIsOn) turnButtonOn("togglePopulation"); else turnButtonOff("togglePopulation");
   }()
 
   void function restoreRulersEvents() {
