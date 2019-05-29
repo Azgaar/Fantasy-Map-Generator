@@ -102,19 +102,19 @@ function GFontToDataURI(url) {
       let s = document.createElement('style');
       s.innerHTML = text;
       document.head.appendChild(s);
-      let styleSheet = Array.prototype.filter.call(
-        document.styleSheets,
-        sS => sS.ownerNode === s)[0];
-      let FontRule = rule => {
-        let src = rule.style.getPropertyValue('src');
-        let url = src.split('url(')[1].split(')')[0];
-        return {rule: rule, src: src, url: url.substring(url.length - 1, 1)};
-      };
-      let fontRules = [], fontProms = [];
+      const styleSheet = Array.prototype.filter.call(document.styleSheets, sS => sS.ownerNode === s)[0];
 
-      for (let r of styleSheet.cssRules) {
+      const FontRule = rule => {
+        const src = rule.style.getPropertyValue('src');
+        const url = src ? src.split('url(')[1].split(')')[0] : "";
+        return {rule, src, url: url.substring(url.length - 1, 1)};
+      }
+      const fontProms = [];
+
+      for (const r of styleSheet.cssRules) {
         let fR = FontRule(r);
-        fontRules.push(fR);
+        if (!fR.url) continue;
+
         fontProms.push(
           fetch(fR.url) // fetch the actual font-file (.woff)
           .then(resp => resp.blob())
@@ -125,9 +125,7 @@ function GFontToDataURI(url) {
               f.readAsDataURL(blob);
             })
           })
-          .then(dataURL => {
-            return fR.rule.cssText.replace(fR.url, dataURL);
-          })
+          .then(dataURL => fR.rule.cssText.replace(fR.url, dataURL))
         )
       }
       document.head.removeChild(s); // clean up

@@ -31,14 +31,18 @@ function editBurgs() {
     const stateFilter = document.getElementById("burgsFilterState");
     const selectedState = stateFilter.value || 1;
     stateFilter.options.length = 0; // remove all options
-    stateFilter.options.add(new Option("all", -1, false, selectedState == -1));
-    pack.states.filter(s => !s.removed).forEach(s => stateFilter.options.add(new Option(s.name, s.i, false, s.i == selectedState)));
+    stateFilter.options.add(new Option(`all`, -1, false, selectedState == -1));
+    stateFilter.options.add(new Option(pack.states[0].name, 0, false, !selectedState));
+    const statesSorted = pack.states.filter(s => s.i && !s.removed).sort((a, b) => (a.name > b.name) ? 1 : -1);
+    statesSorted.forEach(s => stateFilter.options.add(new Option(s.name, s.i, false, s.i == selectedState)));
 
     const cultureFilter = document.getElementById("burgsFilterCulture");
     const selectedCulture = cultureFilter.value || -1;
     cultureFilter.options.length = 0; // remove all options
-    cultureFilter.options.add(new Option("all", -1, false, selectedCulture == -1));
-    pack.cultures.filter(c => !c.removed).forEach(c => cultureFilter.options.add(new Option(c.name, c.i, false, c.i == selectedCulture)));
+    cultureFilter.options.add(new Option(`all`, -1, false, selectedCulture == -1));
+    cultureFilter.options.add(new Option(pack.cultures[0].name, 0, false, !selectedCulture));
+    const culturesSorted = pack.cultures.filter(c => c.i && !c.removed).sort((a, b) => (a.name > b.name) ? 1 : -1);
+    culturesSorted.forEach(c => cultureFilter.options.add(new Option(c.name, c.i, false, c.i == selectedCulture)));
   }
 
   // add line for each state
@@ -154,12 +158,13 @@ function editBurgs() {
 
   function toggleCapitalStatus() {
     const burg = +this.parentNode.parentNode.dataset.id, state = pack.burgs[burg].state;
-    if (pack.burgs[burg].capital) {tip("To change capital please assign capital status to another burg", false, "error"); return;}
-    if (!state) {tip("Neutral lands cannot have a capital", false, "error"); return;}
+    if (pack.burgs[burg].capital) {tip("To change capital please assign a capital status to another burg", false, "error"); return;}
+    if (!state) {tip("Neutral lands do not have a capital", false, "error"); return;}
     const old = pack.states[state].capital;
 
     // change statuses
     pack.states[state].capital = burg;
+    pack.states[state].center = pack.burgs[burg].cell;
     pack.burgs[burg].capital = true;
     pack.burgs[old].capital = false;
     moveBurgToGroup(burg, "cities");
