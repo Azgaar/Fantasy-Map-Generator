@@ -8,6 +8,7 @@
     console.time('generateRivers');
     Math.seedrandom(seed);
     const cells = pack.cells, p = cells.p, features = pack.features;
+    resolveDepressions();
     features.forEach(f => {delete f.river; delete f.flux;});
 
     const riversData = []; // rivers data
@@ -18,7 +19,7 @@
 
     void function drainWater() {
       const land = cells.i.filter(isLand).sort(highest);
-    
+
       land.forEach(function(i) {
         cells.fl[i] += grid.cells.prec[cells.g[i]]; // flux from precipitation
         const x = p[i][0], y = p[i][1];
@@ -108,6 +109,27 @@
     }()
   
     console.timeEnd('generateRivers');
+  }
+
+  // depression filling algorithm (for a correct water flux modeling)
+  function resolveDepressions() {
+    console.time('resolveDepressions');
+    const cells = pack.cells;
+    const land = cells.i.filter(i => cells.h[i] >= 20 && cells.h[i] < 95 && !cells.b[i]); // exclude near-border cells
+    land.sort(highest); // highest cells go first
+
+    for (let l = 0, depression = Infinity; depression > 1 && l < 100; l++) {
+      depression = 0;
+      for (const i of land) {
+        const minHeight = d3.min(cells.c[i].map(c => cells.h[c]));
+        if (minHeight === 100) continue; // already max height
+        if (cells.h[i] <= minHeight) {cells.h[i] = minHeight + 1; depression++;}
+      }
+    }
+
+    console.timeEnd('resolveDepressions');
+    //const depressed = cells.i.filter(i => cells.h[i] >= 20  && cells.h[i] < 95 && !cells.b[i] && cells.h[i] <= d3.min(cells.c[i].map(c => cells.h[c])));
+    //debug.selectAll(".deps").data(depressed).enter().append("circle").attr("r", 0.8).attr("cx", d => cells.p[d][0]).attr("cy", d => cells.p[d][1]);
   }
 
   // add more river points on 1/3 and 2/3 of length

@@ -32,7 +32,9 @@ function editWorld() {
     calculateTemperatures();
     generatePrecipitation();
     elevateLakes();
+    const heights = new Uint8Array(pack.cells.h);
     Rivers.generate();
+    pack.cells.h = new Uint8Array(heights);
     defineBiomes();
 
     if (layerIsOn("toggleTemp")) drawTemp();

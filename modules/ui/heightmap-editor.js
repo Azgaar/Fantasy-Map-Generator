@@ -143,9 +143,8 @@ function editHeightmap() {
     drawCoastline();
 
     elevateLakes();
-    resolveDepressions();
     Rivers.generate();
-    
+
     if (!change) {
       for (const i of pack.cells.i) {
         const g = pack.cells.g[i];
@@ -219,7 +218,6 @@ function editHeightmap() {
 
     if (change) {
       elevateLakes();
-      resolveDepressions();
       Rivers.generate();
       defineBiomes();
     }

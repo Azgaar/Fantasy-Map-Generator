@@ -19,7 +19,12 @@ toolsContent.addEventListener("click", function(event) {
   if (button === "regenerateStateLabels") {BurgsAndStates.drawStateLabels(); if (!layerIsOn("toggleLabels")) toggleLabels();} else 
   if (button === "regenerateReliefIcons") {ReliefIcons(); if (!layerIsOn("toggleRelief")) toggleRelief();} else 
   if (button === "regenerateRoutes") {Routes.regenerate(); if (!layerIsOn("toggleRoutes")) toggleRoutes();} else 
-  if (button === "regenerateRivers") {Rivers.generate(); if (!layerIsOn("toggleRivers")) toggleRivers();} else 
+  if (button === "regenerateRivers") {
+    const heights = new Uint8Array(pack.cells.h);
+    Rivers.generate();
+    pack.cells.h = new Uint8Array(heights);
+    if (!layerIsOn("toggleRivers")) toggleRivers();
+  } else
   if (button === "regeneratePopulation") recalculatePopulation();
 
   // Click to Add buttons
