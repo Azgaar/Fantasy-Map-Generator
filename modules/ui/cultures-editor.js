@@ -122,6 +122,7 @@ function editCultures() {
     body.querySelectorAll("div > input.statePower").forEach(el => el.addEventListener("input", cultureChangeExpansionism));
     body.querySelectorAll("div > select.cultureType").forEach(el => el.addEventListener("change", cultureChangeType));
     body.querySelectorAll("div > select.cultureBase").forEach(el => el.addEventListener("click", updateBaseOptions));
+    body.querySelectorAll("div > select.cultureBase").forEach(el => el.addEventListener("change", cultureUpdateBase));
     body.querySelectorAll("div > span.icon-arrows-cw").forEach(el => el.addEventListener("click", cultureRegenerateBurgs));
     body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.addEventListener("click", cultureRemove));
 
@@ -191,6 +192,16 @@ function editCultures() {
     this.parentNode.dataset.base = pack.cultures[culture].base = v;    
     this.options.length = 0;
     nameBases.forEach((b, i) => this.options.add(new Option(b.name, i, false, i === v)));
+  }
+
+  function cultureUpdateBase() {
+    const culture = +this.parentNode.dataset.id;
+    const v = +this.value;
+    pack.cultures.forEach(el => {
+      if (el.i === culture) {
+        el.base = v;
+      }
+    });
   }
 
   function cultureRegenerateBurgs() {
