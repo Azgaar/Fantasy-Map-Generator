@@ -197,11 +197,7 @@ function editCultures() {
   function cultureUpdateBase() {
     const culture = +this.parentNode.dataset.id;
     const v = +this.value;
-    pack.cultures.forEach(el => {
-      if (el.i === culture) {
-        el.base = v;
-      }
-    });
+    pack.cultures.find(el => el.i === culture).base = v;
   }
 
   function cultureRegenerateBurgs() {
