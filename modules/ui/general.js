@@ -261,6 +261,6 @@ document.addEventListener("keydown", function(event) {
   else if (key === 56 || key === 104) zoom.scaleTo(svg, 8); // 8 to zoom to 8
   else if (key === 57 || key === 105) zoom.scaleTo(svg, 9); // 9 to zoom to 9
 
-  else if (ctrl && key === 90) undo.click(); // Ctrl + "Z" to undo
+  else if (ctrl && key === 90) {loadLastBreadCrumb(); undo.click();}// // Ctrl + "Z" to undo
   else if (ctrl && key === 89) redo.click(); // Ctrl + "Y" to redo
 });

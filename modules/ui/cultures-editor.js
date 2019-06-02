@@ -264,6 +264,8 @@ function editCultures() {
 
   // re-calculate cultures
   function recalculateCultures() {
+    saveBreadCrumb();
+
     pack.cells.culture = new Int8Array(pack.cells.i.length);
     pack.cultures.forEach(function(c) {
       if (!c.i || c.removed) return;
@@ -348,6 +350,7 @@ function editCultures() {
   }
 
   function applyCultureManualAssignent() {
+    saveBreadCrumb();
     const changed = cults.select("#temp").selectAll("polygon");
     changed.each(function() {
       const i = +this.dataset.cell;
@@ -378,6 +381,7 @@ function editCultures() {
   }
   
   function addCulture() {
+    saveBreadCrumb();
     const defaultCultures = Cultures.getDefault();
     let culture, base, name;
     if (pack.cultures.length < defaultCultures.length) {
