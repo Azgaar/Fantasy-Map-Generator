@@ -336,7 +336,7 @@
           <option value="rivers">Rivers</option>
           <option value="routes">Routes</option>
           <option value="ruler">Rulers</option>
-          <option value="regions" selected>States</option>
+          <option value="statesBody" selected>States</option>
           <option value="temperature">Temperature</option>
           <option value="texture">Texture</option>
         </select>
@@ -349,7 +349,7 @@
             <tr data-tip="Select element group">
               <td>Group</td>
               <td>
-                <select id="styleGroupSelect"><option value="regions">regions</option></select>
+                <select id="styleGroupSelect"><option value="statesBody">statesBody</option></select>
               </td>
             </tr>
           </tbody>
@@ -358,8 +358,26 @@
             <tr data-tip="Set opacity. 0: transparent, 1: solid">
               <td>Opacity</td>
               <td>
-                <input id="styleOpacityInput" type="range" min="0" max="1" step="0.01" value=".4">
+                <input id="styleOpacityInput" type="range" min=0 max=1 step=0.01 value=.4>
                 <output id="styleOpacityOutput">0.4</output>
+              </td>
+            </tr>
+          </tbody>
+
+          <tbody id="styleStates" style="display: block">
+            <tr data-tip="Set states halo effect width">
+              <td>Halo width</td>
+              <td>
+                <input id="styleStatesHaloWidth" type="range" min=0 max=30 step=.1 value=10>
+                <output id="styleStatesHaloWidthOutput">10</output>
+              </td>
+            </tr>
+
+            <tr data-tip="Set states halo effect opacity. 0: invisible, 1: solid">
+              <td>Halo opacity</td>
+              <td>
+                <input id="styleStatesHaloOpacity" type="range" min=0 max=1 step=0.01 value=.4>
+                <output id="styleStatesHaloOpacityOutput">0.4</output>
               </td>
             </tr>
           </tbody>
@@ -379,7 +397,7 @@
                 <input id="stylePopulationUrbanStrokeInput" type="color" value="#ff0000"/>
                 <output id="stylePopulationUrbanStrokeOutput">#ff0000</output>
               </td>
-            </tr>            
+            </tr>
           </tbody>
 
           <tbody id="styleTexture">
@@ -647,7 +665,7 @@
           </tbody>
 
           <tbody id="styleTemperature">
-            <tr data-tip="Define transparency of temparature leyer. Set to 0 to make it fully transparent">
+            <tr data-tip="Define transparency of temperature leyer. Set to 0 to make it fully transparent">
               <td>Fill opacity</td>
               <td>
                 <input id="styleTemperatureFillOpacityInput" type="range" min=0 max=1 step=.01 value=.3/>
@@ -834,6 +852,7 @@
                 <option value="Mediterranean">Mediterranean</option>
                 <option value="Peninsula">Peninsula</option>
                 <option value="Pangea">Pangea</option>
+                <option value="Isthmus">Isthmus</option>
               </select>
             </td>
             <td></td>
@@ -906,7 +925,7 @@
 
         </table>
 
-        <p data-tip="Interface settings that don't affect generation. Getting applied immediately on change">User Interface:</p>
+        <p data-tip="Interface settings that don't affect generation. They are applied immediately on change">User Interface:</p>
         <table>
           <tr data-tip="Set user interface size">
             <td></td>
@@ -941,7 +960,7 @@
             </td>
           </tr>
 
-          <tr data-tip="Define relative size of a saved png images. Consider saving big images is slow and may cause browser crash">
+          <tr data-tip="Define relative size of a saved png image. Saving big images is slow and may cause a browser crash">
             <td></td>
             <td>PNG resolution</td>
             <td>
@@ -991,7 +1010,7 @@
           <button id="regenerateStateLabels" data-tip="Click to update state labels placement based on current borders">State labels</button>
           <button id="regenerateReliefIcons" data-tip="Click to regenerate all relief icons based on current cell biome and elevation">Relief icons</button>
           <button id="regenerateRoutes" data-tip="Click to regenerate all routes">Routes</button>
-          <button id="regenerateRivers" data-tip="Click to regenerate all rivers">Rivers</button>
+          <button id="regenerateRivers" data-tip="Click to regenerate all rivers. Please note map heights can be changed by water flow">Rivers</button>
           <button id="regeneratePopulation" data-tip="Click to recalculate rural and urban population">Population</button>
         </div>
 
@@ -1044,9 +1063,9 @@
             <input id="renderOcean" class="checkbox" type="checkbox">
             <label for="renderOcean" class="checkbox-label">Render ocean cells</label>
           </div>
-          <div data-tip="Allow system to change custom heights on edit completion if reasonable">
+          <div data-tip="Allow water flow to change heights on heightmap edit completion">
             <input id="changeHeights" class="checkbox" type="checkbox" checked>
-            <label for="changeHeights" class="checkbox-label">Allow to change heights on completion</label>
+            <label for="changeHeights" class="checkbox-label">Allow water erosion</label>
           </div>
         </div>
 
@@ -1555,6 +1574,7 @@
           <option value="templateMediterranean">Mediterranean</option>
           <option value="templatePeninsula">Peninsula</option>
           <option value="templatePangea">Pangea</option>
+          <option value="templateIsthmus">Isthmus</option>
         </select>
       </div>
       <div id="templateTools">
@@ -1643,8 +1663,8 @@
 
       <div id="biomesBottom">
         <button id="biomesEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-        <button id="biomesPercentage" data-tip="Toggle percentage / absolut values views" class="icon-percent"></button>
-        <button id="biomesRestore" data-tip="Restore the defaults and re-define biomes based on current moisture and temparature" class="icon-history"></button>
+        <button id="biomesPercentage" data-tip="Toggle percentage / absolute values views" class="icon-percent"></button>
+        <button id="biomesRestore" data-tip="Restore the defaults and re-define biomes based on current moisture and temperature" class="icon-history"></button>
         <button id="biomesManually" data-tip="Manually re-assign biomes to not follow the default moisture/temperature pattern" class="icon-brush"></button>
         <div id="biomesManuallyButtons" style="display: none">
           <button id="biomesManuallyApply" data-tip="Apply current assignment" class="icon-check"></button>
@@ -1685,9 +1705,9 @@
 
       <div id="statesBottom">
         <button id="statesEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-        <button id="statesPercentage" data-tip="Toggle percentage / absolut values views" class="icon-percent"></button>
+        <button id="statesPercentage" data-tip="Toggle percentage / absolute values views" class="icon-percent"></button>
 
-        <button id="statesRegenerate" data-tip="Show the regeneratation menu" class="icon-cog-alt"></button>
+        <button id="statesRegenerate" data-tip="Show the regeneration menu" class="icon-cog-alt"></button>
         <div id="statesRegenerateButtons" style="display: none">
           <button id="statesRegenerateBack" data-tip="Hide the renegotiation menu" class="icon-cog-alt"></button>
           <button id="regenerateStateNames" data-tip="Regenerate state names based on assigned culture" class="icon-retweet"></button>
@@ -1749,7 +1769,7 @@
         <button id="addNewBurg" data-tip="Add a new burg. Hold Shift to add multiple" class="icon-plus"></button>
         <button id="burgsExport" data-tip="Save burgs-related data as a text file (.csv)" class="icon-download"></button>
         <button id="burgNamesImport" data-tip="Import burg names. Source file should be a plain list of names where each name is on a separate line" class="icon-upload"></button>
-        <button id="burgsRemoveAll" data-tip="Remove all burgs except of capitals. To remove a capital remove its state first" class="icon-trash"></button>
+        <button id="burgsRemoveAll" data-tip="Remove all burgs except for capitals. To remove a capital remove its state first" class="icon-trash"></button>
       </div>
     </div>
 
@@ -1774,7 +1794,7 @@
 
       <div id="culturesBottom">
         <button id="culturesEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-        <button id="culturesPercentage" data-tip="Toggle percentage / absolut values display mode" class="icon-percent"></button>
+        <button id="culturesPercentage" data-tip="Toggle percentage / absolute values display mode" class="icon-percent"></button>
         <button id="culturesRecalculate" data-tip="Re-calculate cultures based on centers placement, expansion and type" class="icon-resize-full-alt"></button>
         <button id="culturesManually" data-tip="Manually re-assign cultures" class="icon-brush"></button>
         <div id="culturesManuallyButtons" style="display: none">
@@ -1805,8 +1825,8 @@
           <span>Name: </span>
           <input id="namesbaseName" data-tip="Type to change a base name" placeholder="Base name" autocorrect="off" spellcheck="false" style="width:12em"/>
           <span>Length: </span>
-          <input id="namesbaseMin" data-tip="Recommended minimal name length" type="number" min=2 max=100>
-          <input id="namesbaseMax" data-tip="Recommended maximal name length" type="number" min=2 value=10>
+          <input id="namesbaseMin" data-tip="Recommended minimum name length" type="number" min=2 max=100>
+          <input id="namesbaseMax" data-tip="Recommended maximum name length" type="number" min=2 value=10>
           <span>Double: </span>
           <input id="namesbaseDouble" data-tip="Populate with letters that can used twice in a row" autocorrect="off" spellcheck="false" style="width:5em">
           <span>Multi: </span>
@@ -1899,7 +1919,7 @@
 
         <div class="unitsHeader" data-tip="Select Temperature scale">
           <span class="icon-asterisk"></span>
-          <div>Temparature:</div>
+          <div>Temperature:</div>
         </div>
 
         <div>

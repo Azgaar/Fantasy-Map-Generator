@@ -22,7 +22,8 @@
       if (rnd < .85) input.value = "Archipelago"; else // 30%
       if (rnd < .90) input.value = "Mediterranean"; else // 5%
       if (rnd < .95) input.value = "Peninsula"; else // 5%
-      if (rnd < .99) input.value = "Pangea"; else // 4%
+      if (rnd < .97) input.value = "Pangea"; else // 2%
+      if (rnd < .99) input.value = "Isthmus"; else // 2%
       input.value = "Atoll"; // 1%
     }
 
@@ -36,6 +37,7 @@
       case "Mediterranean": templateMediterranean(); break;
       case "Peninsula": templatePeninsula(); break;
       case "Pangea": templatePangea(); break;
+      case "Isthmus": templateIsthmus(); break;
     }
 
     console.timeEnd('generateHeightmap');
@@ -173,6 +175,21 @@
     addStep("Trough", "3-4", "25-35", "5-95", "10-20");
     addStep("Trough", "3-4", "25-35", "5-95", "80-90");
     addStep("Range", "5-6", "30-40", "10-90", "35-65");
+  }
+
+  // Heighmap Template: Isthmus
+  function templateIsthmus() {
+    addStep("Hill", "5-10", "15-30", "0-30", "0-20");
+    addStep("Hill", "5-10", "15-30", "10-50", "20-40");
+    addStep("Hill", "5-10", "15-30", "30-70", "40-60");
+    addStep("Hill", "5-10", "15-30", "50-90", "60-80");
+    addStep("Hill", "5-10", "15-30", "70-100", "80-100");
+    addStep("Smooth", 2);
+    addStep("Trough", "4-8", "15-30", "0-30", "0-20");
+    addStep("Trough", "4-8", "15-30", "10-50", "20-40");
+    addStep("Trough", "4-8", "15-30", "30-70", "40-60");
+    addStep("Trough", "4-8", "15-30", "50-90", "60-80");
+    addStep("Trough", "4-8", "15-30", "70-100", "80-100");
   }
 
   function getBlobPower() {

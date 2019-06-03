@@ -287,7 +287,9 @@ function applyDefaultStyle() {
   ruler.attr("opacity", null).attr("filter", null);
   searoutes.attr("opacity", .8).attr("stroke", "#ffffff").attr("stroke-width", .45).attr("stroke-dasharray", "1 2").attr("stroke-linecap", "round").attr("filter", null);
   
-  regions.attr("opacity", .4).attr("filter", null);
+  statesBody.attr("opacity", .4).attr("filter", null);
+  statesHalo.attr("stroke-width", 10).attr("opacity", .4);
+
   temperature.attr("opacity", null).attr("fill", "#000000").attr("stroke-width", 1.8).attr("fill-opacity", .3).attr("font-size", "8px").attr("stroke-dasharray", null).attr("filter", null).attr("mask", null);
   texture.attr("opacity", null).attr("filter", null).attr("mask", "url(#land)");
   texture.select("image").attr("x", 0).attr("y", 0);
@@ -477,7 +479,7 @@ function invokeActiveZooming() {
 
   // change states halo width
   if (!customization) {
-    const haloSize = rn(10 / scale, 1);
+    const haloSize = rn(styleStatesHaloWidth.value / scale, 1);
     statesHalo.attr("stroke-width", haloSize).style("display", haloSize > 3 ? "block" : "none");
   }
 
@@ -559,7 +561,6 @@ function generate() {
   drawCoastline();
 
   elevateLakes();
-  resolveDepressions();
   Rivers.generate();
   defineBiomes();
 
@@ -1051,27 +1052,6 @@ function elevateLakes() {
   }
 
   console.timeEnd('elevateLakes');
-}
-
-// depression filling algorithm (for a correct water flux modeling)
-function resolveDepressions() {
-  console.time('resolveDepressions');
-  const cells = pack.cells;
-  const land = cells.i.filter(i => cells.h[i] >= 20 && cells.h[i] < 95 && !cells.b[i]); // exclude near-border cells
-  land.sort(highest); // highest cells go first
-
-  for (let l = 0, depression = Infinity; depression > 1 && l < 100; l++) {
-    depression = 0;
-    for (const i of land) {
-      const minHeight = d3.min(cells.c[i].map(c => cells.h[c]));
-      if (minHeight === 100) continue; // already max height
-      if (cells.h[i] <= minHeight) {cells.h[i] = minHeight + 1; depression++;}
-    }
-  }
-
-  console.timeEnd('resolveDepressions');
-  //const depressed = cells.i.filter(i => cells.h[i] >= 20  && cells.h[i] < 95 && !cells.b[i] && cells.h[i] <= d3.min(cells.c[i].map(c => cells.h[c])));
-  //debug.selectAll(".deps").data(depressed).enter().append("circle").attr("r", 0.8).attr("cx", d => cells.p[d][0]).attr("cy", d => cells.p[d][1]);
 }
 
 // assign biome id for each cell

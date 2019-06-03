@@ -678,7 +678,7 @@ function toggleTexture() {
     // append default texture image selected by default. Don't append on load to not harm performance
     if (!texture.selectAll("*").size()) {
       const link = getAbsolutePath(styleTextureInput.value);
-      texture.append("image").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%")
+      texture.append("image").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight)
         .attr('xlink:href', link).attr('preserveAspectRatio', "xMidYMid slice");
     }
     $('#texture').fadeIn();

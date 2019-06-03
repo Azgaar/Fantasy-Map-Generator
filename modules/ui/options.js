@@ -175,9 +175,15 @@ function selectStyleElement() {
     stylePopulationRuralStrokeInput.value = stylePopulationRuralStrokeOutput.value = population.select("#rural").attr("stroke");
     stylePopulationUrbanStrokeInput.value = stylePopulationUrbanStrokeOutput.value = population.select("#urban").attr("stroke");
     styleStrokeWidth.style.display = "block";
-    styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr("stroke-width") || "";      
+    styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr("stroke-width") || "";
   }
-  
+
+  if (sel === "statesBody") {
+    styleStates.style.display = "block";
+    styleStatesHaloWidth.value = styleStatesHaloWidthOutput.value = statesHalo.attr("stroke-width");
+    styleStatesHaloOpacity.value = styleStatesHaloOpacityOutput.value = statesHalo.attr("opacity");
+  }
+
   if (sel === "labels") {
     styleFill.style.display = "block";
     styleStroke.style.display = "block";
@@ -306,11 +312,11 @@ styleTextureInput.addEventListener("change", function() {
 });
 
 styleTextureShiftX.addEventListener("input", function() {
-  texture.select("image").attr("x", this.value).attr("width", svgWidth - this.valueAsNumber);
+  texture.select("image").attr("x", this.value).attr("width", graphWidth - this.valueAsNumber);
 });
 
 styleTextureShiftY.addEventListener("input", function() {
-  texture.select("image").attr("y", this.value).attr("height", svgHeight - this.valueAsNumber);
+  texture.select("image").attr("y", this.value).attr("height", graphHeight - this.valueAsNumber);
 });
 
 styleClippingInput.addEventListener("change", function() {
@@ -521,6 +527,16 @@ function changeIconSize(size, group) {
   });;
   styleIconSizeInput.value = size;
 }
+
+styleStatesHaloWidth.addEventListener("input", function() {
+  styleStatesHaloWidthOutput.value = this.value;
+  statesHalo.attr("stroke-width", +this.value);
+});
+
+styleStatesHaloOpacity.addEventListener("input", function() {
+  styleStatesHaloOpacityOutput.value = this.value;
+  statesHalo.attr("opacity", +this.value);
+});
 
 // request to restore default style on button click
 function askToRestoreDefaultStyle() {
