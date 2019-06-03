@@ -638,9 +638,9 @@ optionsContent.addEventListener("click", function(event) {
 });
 
 function mapSizeInputChange() {
-    changeMapSize();
-    localStorage.setItem("mapWidth", mapWidthInput.value);
-    localStorage.setItem("mapHeight", mapHeightInput.value);
+  changeMapSize();
+  localStorage.setItem("mapWidth", mapWidthInput.value);
+  localStorage.setItem("mapHeight", mapHeightInput.value);
 }
 
 // change svg size on manual size change or window resize, do not change graph size

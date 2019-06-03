@@ -104,7 +104,6 @@ button, select, a {
 
 #statesHalo {
 	fill: none;
-	stroke-width: 10;
 	filter: url(#blur5);
 	/*animation: hideshow 3s infinite;*/
 }
