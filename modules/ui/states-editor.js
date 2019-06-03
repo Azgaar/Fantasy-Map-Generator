@@ -138,7 +138,7 @@ function editStates() {
     body.querySelectorAll("div > input.stateName").forEach(el => el.addEventListener("input", stateChangeName));
     body.querySelectorAll("div > input.stateCapital").forEach(el => el.addEventListener("input", stateChangeCapitalName));
     body.querySelectorAll("div > span.icon-star-empty").forEach(el => el.addEventListener("click", stateCapitalZoomIn));
-    body.querySelectorAll("div > select.stateCulture").forEach(el => el.addEventListener("click", stateUpdateCulturesList));
+    body.querySelectorAll("div > select.stateCulture").forEach(el => el.addEventListener("change", stateChangeCulture));
     body.querySelectorAll("div > select.cultureType").forEach(el => el.addEventListener("input", stateChangeType));
     body.querySelectorAll("div > input.statePower").forEach(el => el.addEventListener("input", stateChangeExpansionism));
     body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.addEventListener("click", stateRemove));
@@ -224,12 +224,10 @@ function editStates() {
     zoomTo(x, y, 8, 2000);
   }
 
-  function stateUpdateCulturesList() {
+  function stateChangeCulture() {
     const state = +this.parentNode.dataset.id;
     const v = +this.value;
     this.parentNode.dataset.base = pack.states[state].culture = v;
-    this.options.length = 0;
-    pack.cultures.slice(1).forEach(c => this.options.add(new Option(c.name, c.i, false, c.i === v)));
   }
 
   function stateChangeType() {
@@ -322,7 +320,7 @@ function editStates() {
 
   function randomizeStatesExpansion() {
     pack.states.slice(1).forEach(s => {
-      const expansionism = rn(Math.random() * powerInput.value / 2 + 1, 1);
+      const expansionism = rn(Math.random() * 4 + 1, 1);
       s.expansionism = expansionism;
       body.querySelector("div.states[data-id='"+s.i+"'] > input.statePower").value = expansionism;
     });
