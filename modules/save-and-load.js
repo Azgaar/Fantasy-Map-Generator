@@ -384,6 +384,10 @@ function parseLoadedData(data) {
     ruler.selectAll("g.opisometer circle").call(d3.drag().on("start", dragOpisometerEnd));
   }()
 
+  void function resolveVersionConflicts() {
+    document.getElementById("regions").removeAttribute("opacity"); // 0.8.28b changed opacity slider from regions to statesBody
+  }
+
   changeMapSize();
   restoreDefaultEvents();
   invokeActiveZooming();
