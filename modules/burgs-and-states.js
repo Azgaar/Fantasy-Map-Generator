@@ -6,8 +6,7 @@
 
   const generate = function() {
     console.time("generateBurgsAndStates");
-
-    const cells = pack.cells, vertices = pack.vertices, features = pack.features, cultures = pack.cultures, n = cells.i.length;
+    const cells = pack.cells, cultures = pack.cultures, n = cells.i.length;
 
     cells.burg = new Uint16Array(n); // cell burg
     cells.road = new Uint16Array(n); // cell road power
@@ -19,13 +18,14 @@
     placeTowns();
     const townRoutes = Routes.getTrails();
     specifyBurgs();
+    
     const oceanRoutes = Routes.getSearoutes();
 
     expandStates();
     normalizeStates();
 
     Routes.draw(capitalRoutes, townRoutes, oceanRoutes);
-    drawBurgsWithLabels();
+    drawBurgs();
 
     function placeCapitals() {
       console.time('placeCapitals');
@@ -43,7 +43,7 @@
         } else {
           console.error(`Not enought populated cells (${sorted.length}). Will generate only ${count} states`);      
         }
-      }      
+      }
 
       let burgsTree = d3.quadtree();
       let spacing = (graphWidth + graphHeight) / 2 / count; // min distance between capitals
@@ -133,106 +133,107 @@
       burgs[0] = {name:undefined};
       console.timeEnd('placeTowns'); 
     }
-     
-    // define burg coordinates and define details
-    function specifyBurgs() {
-      console.time("specifyBurgs");
-
-      for (const b of burgs) {
-        if (!b.i) continue;
-        const i = b.cell;
-
-        // asign port status: capital with any harbor and towns with good harbors
-        const port = (b.capital && cells.harbor[i]) || cells.harbor[i] === 1;
-        b.port = port ? cells.f[cells.haven[i]] : 0; // port is defined by feature id it lays on
-
-        // define burg population (keep urbanization at about 10% rate)
-        b.population = rn(Math.max((cells.s[i] + cells.road[i]) / 3 + b.i / 1000 + i % 100 / 1000, .1), 3);
-        if (b.capital) b.population = rn(b.population * 1.3, 3); // increase capital population
-
-        if (port) {
-          b.population = rn(b.population * 1.3, 3); // increase port population
-          const e = cells.v[i].filter(v => vertices.c[v].some(c => c === cells.haven[i])); // vertices of common edge
-          b.x = rn((vertices.p[e[0]][0] + vertices.p[e[1]][0]) / 2, 2);
-          b.y = rn((vertices.p[e[0]][1] + vertices.p[e[1]][1]) / 2, 2);
-          continue;
-        }
-
-        // shift burgs on rivers semi-randomly and just a bit
-        if (cells.r[i]) {
-          const shift = Math.min(cells.fl[i]/150, 1);
-          if (i%2) b.x = rn(b.x + shift, 2); else b.x = rn(b.x - shift, 2);
-          if (cells.r[i]%2) b.y = rn(b.y + shift, 2); else b.y = rn(b.y - shift, 2);
-        }
-
-      }
-      
-      // de-assign port status if it's the only one on feature
-      for (const f of features) {
-        if (!f.i || f.land) continue;
-        const onFeature = burgs.filter(b => b.port === f.i);
-        if (onFeature.length === 1) {
-          onFeature[0].port = 0;
-        }
-      }
-
-      console.timeEnd("specifyBurgs");
-    }
-
-    function drawBurgsWithLabels() {
-      console.time("drawBurgs");
-      
-      // remove old data
-      burgIcons.selectAll("circle").remove();
-      burgLabels.selectAll("text").remove();
-      icons.selectAll("use").remove();
-
-      // capitals
-      const capitals = burgs.filter(b => b.capital);
-      const capitalIcons = burgIcons.select("#cities");
-      const capitalLabels = burgLabels.select("#cities");   
-      const capitalSize = capitalIcons.attr("size") || 1;
-      const capitalAnchors = anchors.selectAll("#cities");
-      const caSize = capitalAnchors.attr("size") || 2;
-
-      capitalIcons.selectAll("circle").data(capitals).enter()
-        .append("circle").attr("id", d => "burg"+d.i).attr("data-id", d => d.i)
-        .attr("cx", d => d.x).attr("cy", d => d.y).attr("r", capitalSize);
-
-      capitalLabels.selectAll("text").data(capitals).enter()
-        .append("text").attr("id", d => "burgLabel"+d.i).attr("data-id", d => d.i)
-        .attr("x", d => d.x).attr("y", d => d.y).attr("dy", `${capitalSize * -1.5}px`).text(d => d.name);
-        
-      capitalAnchors.selectAll("use").data(capitals.filter(c => c.port)).enter()
-        .append("use").attr("xlink:href", "#icon-anchor").attr("data-id", d => d.i)
-        .attr("x", d => rn(d.x - caSize * .47, 2)).attr("y", d => rn(d.y - caSize * .47, 2))
-        .attr("width", caSize).attr("height", caSize); 
-
-      // towns
-      const towns = burgs.filter(b => b.capital === false);
-      const townIcons = burgIcons.select("#towns");
-      const townLabels = burgLabels.select("#towns");
-      const townSize = townIcons.attr("size") || 0.5;
-      const townsAnchors = anchors.selectAll("#towns");
-      const taSize = townsAnchors.attr("size") || 1;
-
-      townIcons.selectAll("circle").data(towns).enter()
-        .append("circle").attr("id", d => "burg"+d.i).attr("data-id", d => d.i)
-        .attr("cx", d => d.x).attr("cy", d => d.y).attr("r", townSize);
-
-      townLabels.selectAll("text").data(towns).enter()
-        .append("text").attr("id", d => "burgLabel"+d.i).attr("data-id", d => d.i)
-        .attr("x", d => d.x).attr("y", d => d.y).attr("dy", `${townSize * -1.5}px`).text(d => d.name);
-
-       townsAnchors.selectAll("use").data(towns.filter(c => c.port)).enter()
-        .append("use").attr("xlink:href", "#icon-anchor").attr("data-id", d => d.i)
-        .attr("x", d => rn(d.x - taSize * .47, 2)).attr("y", d => rn(d.y - taSize * .47, 2))
-        .attr("width", taSize).attr("height", taSize);
-
-      console.timeEnd("drawBurgs");
-    }
 
     console.timeEnd("generateBurgsAndStates");
+  }
+
+  // define burg coordinates and define details
+  const specifyBurgs = function() {
+    console.time("specifyBurgs");
+    const cells = pack.cells, vertices = pack.vertices;
+
+    for (const b of pack.burgs) {
+      if (!b.i) continue;
+      const i = b.cell;
+
+      // asign port status: capital with any harbor and towns with good harbors
+      const port = (b.capital && cells.harbor[i]) || cells.harbor[i] === 1;
+      b.port = port ? cells.f[cells.haven[i]] : 0; // port is defined by feature id it lays on
+
+      // define burg population (keep urbanization at about 10% rate)
+      b.population = rn(Math.max((cells.s[i] + cells.road[i]) / 3 + b.i / 1000 + i % 100 / 1000, .1), 3);
+      if (b.capital) b.population = rn(b.population * 1.3, 3); // increase capital population
+
+      if (port) {
+        b.population = rn(b.population * 1.3, 3); // increase port population
+        const e = cells.v[i].filter(v => vertices.c[v].some(c => c === cells.haven[i])); // vertices of common edge
+        b.x = rn((vertices.p[e[0]][0] + vertices.p[e[1]][0]) / 2, 2);
+        b.y = rn((vertices.p[e[0]][1] + vertices.p[e[1]][1]) / 2, 2);
+        continue;
+      }
+
+      // shift burgs on rivers semi-randomly and just a bit
+      if (cells.r[i]) {
+        const shift = Math.min(cells.fl[i]/150, 1);
+        if (i%2) b.x = rn(b.x + shift, 2); else b.x = rn(b.x - shift, 2);
+        if (cells.r[i]%2) b.y = rn(b.y + shift, 2); else b.y = rn(b.y - shift, 2);
+      }
+
+    }
+
+    // de-assign port status if it's the only one on feature
+    for (const f of pack.features) {
+      if (!f.i || f.land) continue;
+      const onFeature = pack.burgs.filter(b => b.port === f.i);
+      if (onFeature.length === 1) {
+        onFeature[0].port = 0;
+      }
+    }
+
+    console.timeEnd("specifyBurgs");
+  }
+
+  const drawBurgs = function() {
+    console.time("drawBurgs");
+
+    // remove old data
+    burgIcons.selectAll("circle").remove();
+    burgLabels.selectAll("text").remove();
+    icons.selectAll("use").remove();
+
+    // capitals
+    const capitals = pack.burgs.filter(b => b.capital);
+    const capitalIcons = burgIcons.select("#cities");
+    const capitalLabels = burgLabels.select("#cities");   
+    const capitalSize = capitalIcons.attr("size") || 1;
+    const capitalAnchors = anchors.selectAll("#cities");
+    const caSize = capitalAnchors.attr("size") || 2;
+
+    capitalIcons.selectAll("circle").data(capitals).enter()
+      .append("circle").attr("id", d => "burg"+d.i).attr("data-id", d => d.i)
+      .attr("cx", d => d.x).attr("cy", d => d.y).attr("r", capitalSize);
+
+    capitalLabels.selectAll("text").data(capitals).enter()
+      .append("text").attr("id", d => "burgLabel"+d.i).attr("data-id", d => d.i)
+      .attr("x", d => d.x).attr("y", d => d.y).attr("dy", `${capitalSize * -1.5}px`).text(d => d.name);
+      
+    capitalAnchors.selectAll("use").data(capitals.filter(c => c.port)).enter()
+      .append("use").attr("xlink:href", "#icon-anchor").attr("data-id", d => d.i)
+      .attr("x", d => rn(d.x - caSize * .47, 2)).attr("y", d => rn(d.y - caSize * .47, 2))
+      .attr("width", caSize).attr("height", caSize); 
+
+    // towns
+    const towns = pack.burgs.filter(b => b.capital === false);
+    const townIcons = burgIcons.select("#towns");
+    const townLabels = burgLabels.select("#towns");
+    const townSize = townIcons.attr("size") || 0.5;
+    const townsAnchors = anchors.selectAll("#towns");
+    const taSize = townsAnchors.attr("size") || 1;
+
+    townIcons.selectAll("circle").data(towns).enter()
+      .append("circle").attr("id", d => "burg"+d.i).attr("data-id", d => d.i)
+      .attr("cx", d => d.x).attr("cy", d => d.y).attr("r", townSize);
+
+    townLabels.selectAll("text").data(towns).enter()
+      .append("text").attr("id", d => "burgLabel"+d.i).attr("data-id", d => d.i)
+      .attr("x", d => d.x).attr("y", d => d.y).attr("dy", `${townSize * -1.5}px`).text(d => d.name);
+
+     townsAnchors.selectAll("use").data(towns.filter(c => c.port)).enter()
+      .append("use").attr("xlink:href", "#icon-anchor").attr("data-id", d => d.i)
+      .attr("x", d => rn(d.x - taSize * .47, 2)).attr("y", d => rn(d.y - taSize * .47, 2))
+      .attr("width", taSize).attr("height", taSize);
+
+    console.timeEnd("drawBurgs");
   }
 
   // growth algorithm to assign cells to states like we did for cultures
@@ -481,6 +482,6 @@
     console.timeEnd("drawStateLabels");
   }
 
-  return {generate, expandStates, normalizeStates, drawStateLabels};
+  return {generate, expandStates, normalizeStates, drawBurgs, specifyBurgs, drawStateLabels};
 
 })));

@@ -186,7 +186,7 @@
     //debug.selectAll(".text").data(cost).enter().append("text").attr("x", (d, e) => cells.p[e][0]-1).attr("y", (d, e) => cells.p[e][1]-1).text(d => d ? rn(d) : "").attr("font-size", 2);
     console.timeEnd('expandCultures');
   }
-  
+
   function getBiomeCost(c, biome, type) {
     if (cells.biome[pack.cultures[c].center] === biome) return biomesData.cost[biome] / 2; // tiny penalty for native biome
     if (type === "Hunting") return biomesData.cost[biome] * 5; // non-native biome penalty for hunters

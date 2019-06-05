@@ -19,13 +19,10 @@ toolsContent.addEventListener("click", function(event) {
   if (button === "regenerateStateLabels") {BurgsAndStates.drawStateLabels(); if (!layerIsOn("toggleLabels")) toggleLabels();} else 
   if (button === "regenerateReliefIcons") {ReliefIcons(); if (!layerIsOn("toggleRelief")) toggleRelief();} else 
   if (button === "regenerateRoutes") {Routes.regenerate(); if (!layerIsOn("toggleRoutes")) toggleRoutes();} else 
-  if (button === "regenerateRivers") {
-    const heights = new Uint8Array(pack.cells.h);
-    Rivers.generate();
-    pack.cells.h = new Uint8Array(heights);
-    if (!layerIsOn("toggleRivers")) toggleRivers();
-  } else
-  if (button === "regeneratePopulation") recalculatePopulation();
+  if (button === "regenerateRivers") regenerateRivers(); else
+  if (button === "regeneratePopulation") recalculatePopulation(); else
+  if (button === "regenerateBurgs") regenerateBurgs(); else
+  if (button === "regenerateStates") regenerateStates();
 
   // Click to Add buttons
   if (button === "addLabel") toggleAddLabel(); else
@@ -34,6 +31,13 @@ toolsContent.addEventListener("click", function(event) {
   if (button === "addRoute") toggleAddRoute(); else
   if (button === "addMarker") toggleAddMarker();
 });
+
+function regenerateRivers() {
+  const heights = new Uint8Array(pack.cells.h);
+  Rivers.generate();
+  pack.cells.h = new Uint8Array(heights);
+  if (!layerIsOn("toggleRivers")) toggleRivers();
+}
 
 function recalculatePopulation() {
   rankCells();
@@ -45,6 +49,56 @@ function recalculatePopulation() {
     if (b.capital) b.population = rn(b.population * 1.3, 3); // increase capital population
     if (b.port) b.population = rn(b.population * 1.3, 3); // increase port population
   });
+}
+
+function regenerateBurgs() {
+  const cells = pack.cells, states = pack.states;
+  rankCells();
+  cells.burg = new Uint16Array(cells.i.length);
+  const burgs = pack.burgs = [0]; // clear burgs array
+  states.filter(s => s.i).forEach(s => s.capital = 0); // clear capitals
+  const burgsTree = d3.quadtree();
+
+  const score = new Int16Array(cells.s.map(s => s * Math.random())); // cell score for capitals placement
+  const sorted = cells.i.filter(i => score[i] > 0 && cells.culture[i]).sort((a, b) => score[b] - score[a]); // filtered and sorted array of indexes
+  const burgsCount = manorsInput.value == 1000 ? rn(sorted.length / 10 / densityInput.value ** .8) + states.length : +manorsInput.value + states.length;
+  const spacing = (graphWidth + graphHeight) * 9 / burgsCount; // base min distance between towns
+
+  for (let i=0; i < sorted.length && burgs.length < burgsCount; i++) {
+    const id = burgs.length;
+    const cell = sorted[i];
+    const x = cells.p[cell][0], y = cells.p[cell][1];
+
+    const s = spacing * Math.random() + 0.5; // randomize to make the placement not uniform
+    if (burgsTree.find(x, y, s) !== undefined) continue; // to close to existing burg
+
+    const state = cells.state[cell];
+    const capital = !states[state].capital; // if state doesn't have capital, make this burg a capital
+    if (capital) {states[state].capital = id; states[state].cell = cell;}
+
+    const culture = cells.culture[cell];
+    const name = Names.getCulture(culture);
+    burgs.push({cell, x, y, state, i: id, culture, name, capital, feature: cells.f[cell]});
+    burgsTree.add([x, y]);
+    cells.burg[cell] = id;
+  }
+
+  // add a capital at former place for states without added capitals
+  states.filter(s => s.i && !s.removed && !s.capital).forEach(s => {
+    const burg = addBurg([cells.p[s.center][0], cells.p[s.center][1]]); // add new burg
+    s.capital = burg;
+    pack.burgs[burg].capital = true;
+    pack.burgs[burg].state = s.i;
+    moveBurgToGroup(burg, "cities");
+  });
+
+  BurgsAndStates.specifyBurgs();
+  BurgsAndStates.drawBurgs();
+  Routes.regenerate();
+}
+
+function regenerateStates() {
+  
 }
 
 function unpressClickToAddButton() {
