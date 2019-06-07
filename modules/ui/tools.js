@@ -95,10 +95,55 @@ function regenerateBurgs() {
   BurgsAndStates.specifyBurgs();
   BurgsAndStates.drawBurgs();
   Routes.regenerate();
+
+  document.getElementById("statesBodySection").innerHTML = "<i>Please refresh the editor!</i>";
+  document.getElementById("burgsBody").innerHTML = "<i>Please refresh the editor!</i>";
+  document.getElementById("burgsFilterState").options.length = 0;
+  document.getElementById("burgsFilterCulture").options.length = 0;
 }
 
 function regenerateStates() {
-  
+  const burgs = pack.burgs.filter(b => b.i && !b.removed), states = pack.states.filter(s => s.i && !s.removed);
+  const capitalsTree = d3.quadtree();
+  let spacing = (graphWidth + graphHeight) / 2 / states.length; // min distance between capitals
+
+  // turn all old capitals into towns
+  states.forEach(s => {
+    moveBurgToGroup(s.capital, "towns");
+    s.capital = 0;
+  });
+
+  states.forEach(s => {
+    let newCapital = 0, x = 0, y = 0;
+
+    while (!newCapital) {
+      newCapital = burgs[biased(1, burgs.length-1, 3)];
+      x = newCapital.x, y = newCapital.y;
+      if (capitalsTree.find(x, y, spacing) !== undefined) {
+        spacing -= 1;
+        if (spacing < 1) spacing = 1;
+        newCapital = 0;
+      }
+    }
+
+    capitalsTree.add([x, y]);
+    s.capital = newCapital.i;
+    s.center = newCapital.cell;
+    s.culture = newCapital.culture;
+    s.expansionism = rn(Math.random() * powerInput.value / 2 + 1, 1);
+    const basename = newCapital.name.length < 9 && newCapital.cell%5 === 0 ? newCapital.name : Names.getCulture(s.culture, 3, 6, "", 0);
+    s.name = Names.getState(basename, s.culture);
+    moveBurgToGroup(newCapital.i, "cities");
+
+    document.getElementById("statesBodySection").innerHTML = "<i>Please refresh the editor!</i>";
+    document.getElementById("burgsBody").innerHTML = "<i>Please refresh the editor!</i>";
+    document.getElementById("burgsFilterState").options.length = 0;
+    document.getElementById("burgsFilterCulture").options.length = 0;
+  });
+
+  BurgsAndStates.expandStates();
+  if (!layerIsOn("toggleStates")) toggleStates(); else drawStatesWithBorders();
+  BurgsAndStates.drawStateLabels();
 }
 
 function unpressClickToAddButton() {
@@ -172,19 +217,20 @@ function addRiverOnClick() {
   const dataRiver = []; // to store river points
   const river = +getNextId("river").slice(5); // river id
   cells.fl[i] = grid.cells.prec[cells.g[i]]; // initial flux
-  let render = true;
+  let depressed = false;
+  const heights = new Uint8Array(pack.cells.h); // initial heights
 
   while (i) {
     cells.r[i] = river;
     const x = cells.p[i][0], y = cells.p[i][1];
     dataRiver.push({x, y, cell:i});
 
-    const min = cells.c[i][d3.scan(cells.c[i], (a, b) => cells.h[a] - cells.h[b])]; // downhill cell
+    let min = cells.c[i][d3.scan(cells.c[i], (a, b) => cells.h[a] - cells.h[b])]; // downhill cell
 
     if (cells.h[i] <= cells.h[min]) {
-      tip(`Clicked cell is depressed! To resolve edit the heightmap and allow system to change heights`, false, "error");
-      render = false;
-      break;
+      if (depressed) {tip("The heightmap is too depressed, please try again", false, "error"); return;}
+      depressed = Rivers.resolveDepressions();
+      min = cells.c[i][d3.scan(cells.c[i], (a, b) => cells.h[a] - cells.h[b])];
     }
 
     const tx = cells.p[min][0], ty = cells.p[min][1];
@@ -224,12 +270,28 @@ function addRiverOnClick() {
     i = min;
   }
 
-  if (!render) return;
   const points = Rivers.addMeandring(dataRiver, Math.random() * .5 + .1);
   const width = Math.random() * .5 + .9;
   const increment = Math.random() * .4 + .8;
   const d = Rivers.getPath(points, width, increment);
   rivers.append("path").attr("d", d).attr("id", "river"+river).attr("data-width", width).attr("data-increment", increment);
+
+  if (depressed) {
+    if (layerIsOn("toggleHeight")) drawHeightmap();
+    alertMessage.innerHTML = `<p>Heightmap is depressed and the system had to change the heightmap to allow water flux.</p>
+    Would you like to <i>keep</i> the changes or <i>restore</i> the initial heightmap?`;
+
+    $("#alert").dialog({resizable: false, title: "Heightmap is changed", width: 300, modal: true,
+      buttons: {
+        Keep: function() {$(this).dialog("close");},
+        Restore: function() {
+          $(this).dialog("close");
+          pack.cells.h = new Uint8Array(heights);
+          if (layerIsOn("toggleHeight")) drawHeightmap();
+        }
+      }
+    });
+  }
 
   if (d3.event.shiftKey === false) unpressClickToAddButton();
 }

@@ -17,7 +17,7 @@ function editBurgs() {
   });
 
   // add listeners
-  document.getElementById("burgsEditorRefresh").addEventListener("click", burgsEditorAddLines);
+  document.getElementById("burgsEditorRefresh").addEventListener("click", refreshBurgsEditor);
   document.getElementById("burgsFilterState").addEventListener("change", burgsEditorAddLines);
   document.getElementById("burgsFilterCulture").addEventListener("change", burgsEditorAddLines);
   document.getElementById("regenerateBurgNames").addEventListener("click", regenerateNames);
@@ -26,6 +26,11 @@ function editBurgs() {
   document.getElementById("burgNamesImport").addEventListener("click", e => burgsListToLoad.click());
   document.getElementById("burgsListToLoad").addEventListener("change", importBurgNames);
   document.getElementById("burgsRemoveAll").addEventListener("click", triggerAllBurgsRemove);
+
+  function refreshBurgsEditor() {
+    updateFilter();
+    burgsEditorAddLines();
+  }
 
   function updateFilter() {
     const stateFilter = document.getElementById("burgsFilterState");
