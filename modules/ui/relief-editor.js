@@ -5,7 +5,7 @@ function editReliefIcon() {
   if (!layerIsOn("toggleRelief")) toggleRelief();
 
   terrain.selectAll("use").call(d3.drag().on("drag", dragReliefIcon)).classed("draggable", true);
-  elSelected = d3.select(d3.event.target); 
+  elSelected = d3.select(d3.event.target);
 
   restoreEditMode();
   updateReliefIconSelected();
@@ -27,7 +27,7 @@ function editReliefIcon() {
 
   document.getElementById("reliefSize").addEventListener("input", changeIconSize);
   document.getElementById("reliefSizeNumber").addEventListener("input", changeIconSize);
-  reliefIconsDiv.querySelectorAll("button").forEach(el => el.addEventListener("click", changeIcon));
+  reliefIconsDiv.querySelectorAll("svg").forEach(el => el.addEventListener("click", changeIcon));
 
   document.getElementById("reliefCopy").addEventListener("click", copyIcon);
   document.getElementById("reliefMoveFront").addEventListener("click", () => elSelected.raise());
@@ -53,8 +53,8 @@ function editReliefIcon() {
 
   function updateReliefIconSelected() {
     const type = elSelected.attr("data-type");
-    reliefIconsDiv.querySelectorAll("button.pressed").forEach(b => b.classList.remove("pressed"));
-    reliefIconsDiv.querySelector("button[data-type='"+type+"']").classList.add("pressed");
+    reliefIconsDiv.querySelectorAll("svg.pressed").forEach(b => b.classList.remove("pressed"));
+    reliefIconsDiv.querySelector("svg[data-type='"+type+"']").classList.add("pressed");
   }
 
   function updateReliefSizeInput() {
@@ -85,10 +85,10 @@ function editReliefIcon() {
     reliefSpacingDiv.style.display = "block";
     reliefIconsSeletionAny.style.display = "none";
 
-    const pressedType = reliefIconsDiv.querySelector("button.pressed");
+    const pressedType = reliefIconsDiv.querySelector("svg.pressed");
     if (pressedType.id === "reliefIconsSeletionAny") { // in "any" is pressed, select first type
-      reliefIconsSeletionAny.classList.remove("pressed"); 
-      reliefIconsDiv.querySelector("button").classList.add("pressed");
+      reliefIconsSeletionAny.classList.remove("pressed");
+      reliefIconsDiv.querySelector("svg").classList.add("pressed");
     }
 
     viewbox.style("cursor", "crosshair").call(d3.drag().on("start", dragToAdd)).on("touchmove mousemove", moveBrush);
@@ -98,18 +98,18 @@ function editReliefIcon() {
   function moveBrush() {
     showMainTip();
     const point = d3.mouse(this);
-    const radius = +reliefRadius.value;
+    const radius = +reliefRadiusNumber.value;
     moveCircle(point[0], point[1], radius);
   }
 
   function dragToAdd() {
-    const pressed = reliefIconsDiv.querySelector("button.pressed");
+    const pressed = reliefIconsDiv.querySelector("svg.pressed");
     if (!pressed) {tip("Please select an icon", false, error); return;}
 
     const type = pressed.dataset.type;
-    const r = +reliefRadius.value;
-    const spacing = +reliefSpacing.value;
-    const size = +reliefSize.value;
+    const r = +reliefRadiusNumber.value;
+    const spacing = +reliefSpacingNumber.value;
+    const size = +reliefSizeNumber.value;
 
     // build a quadtree
     const tree = d3.quadtree();
@@ -166,10 +166,10 @@ function editReliefIcon() {
   }
 
   function dragToRemove() {
-    const pressed = reliefIconsDiv.querySelector("button.pressed");
+    const pressed = reliefIconsDiv.querySelector("svg.pressed");
     if (!pressed) {tip("Please select an icon", false, error); return;}
 
-    const r = +reliefRadius.value;
+    const r = +reliefRadiusNumber.value;
     const type = pressed.dataset.type;
     const icons = type ? terrain.selectAll("use[data-type='"+type+"']") : terrain.selectAll("use");
     const tree = d3.quadtree();
@@ -187,8 +187,7 @@ function editReliefIcon() {
   }
 
   function changeIconSize() {
-    const size = +reliefSize.value;
-    reliefSize.value = reliefSizeNumber.value = size;
+    const size = +reliefSizeNumber.value;
     if (!reliefIndividual.classList.contains("pressed")) return;
 
     const shift = (size - +elSelected.attr("width")) / 2;
@@ -200,7 +199,7 @@ function editReliefIcon() {
   function changeIcon() {
     if (this.classList.contains("pressed")) return;
 
-    reliefIconsDiv.querySelectorAll("button.pressed").forEach(b => b.classList.remove("pressed"))
+    reliefIconsDiv.querySelectorAll("svg.pressed").forEach(b => b.classList.remove("pressed"))
     this.classList.add("pressed");
 
     if (reliefIndividual.classList.contains("pressed")) {

@@ -217,6 +217,7 @@ function uploadFile(file, callback) {
 
 function parseLoadedData(data) {
   closeDialogs();
+  const reliefIcons = document.getElementById("defs-relief").innerHTML; // save relief icons
 
   void function parseParameters() {
     const params = data[0].split("|");
@@ -385,8 +386,14 @@ function parseLoadedData(data) {
   }()
 
   void function resolveVersionConflicts() {
-    document.getElementById("regions").removeAttribute("opacity"); // 0.8.28b changed opacity slider from regions to statesBody
-  }
+    if (parseFloat(data[0].split("|")[0]) == 0.8) {
+      // 0.9 has additional relief icons to be included into older maps
+      document.getElementById("defs-relief").innerHTML = reliefIcons;
+
+      // 0.8.28b changed opacity slider from regions to statesBody
+      document.getElementById("regions").removeAttribute("opacity");
+    }
+  }()
 
   changeMapSize();
   restoreDefaultEvents();

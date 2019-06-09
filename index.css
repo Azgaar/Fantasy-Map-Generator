@@ -1502,33 +1502,38 @@ svg.button {
 	width: 15em;
 }
 
+#reliefEditor input[type="number"] {
+	width: 3em;
+}
+
 #reliefIconsDiv {
   margin-top: 2px;
-  border: 1px solid #d4d4d4;
-  padding: 2px;
+	padding: 2px;
+	max-width: 30vw;
 }
 
-#reliefIconsDiv > button {
+#reliefIconsDiv > svg {
+	width: 40px;
+	height: 40px;
   border-radius: 15%;
-  border: 1px solid #939393;
-  background-color: #eef6fb;
+  border: 1px solid #a9a9a9;
+	cursor: pointer;
 }
 
-#reliefIconsDiv > button:hover {
+#reliefIconsDiv > svg:hover {
 	border-color: #5c5c5c;
+	background-color: #eef6fb;
 }
 
-#reliefIconsDiv > button.pressed {
-  border: 1.5px outset #a6a6da;
-  background-color: #ecd8d8;
+#reliefIconsDiv > svg.pressed {
+  border: 1px solid #b3352c;
+  background-color: #eef6fb;
 }
 
 #reliefIconsSeletionAny {
 	display: none;
-	font-style: italic;
-	width: 24px;
-	height: 18px;
-	padding: 0;
+  text-anchor: middle;
+  dominant-baseline: central;
 }
 
 #alertMessage {

@@ -7,7 +7,7 @@
 // See also https://github.com/Azgaar/Fantasy-Map-Generator/issues/153
 
 "use strict";
-const version = "0.80b"; // generator version
+const version = "0.9b"; // generator version
 document.title += " v " + version;
 
 // append svg layers (in default order)
@@ -112,29 +112,22 @@ setTimeout(showWelcomeMessage, 8000);
 function showWelcomeMessage() {
   // Changelog dialog window
   if (localStorage.getItem("version") != version) {
-    const link = 'https://www.reddit.com/r/FantasyMapGenerator/comments/bfskpi/update_stable_version_is_released_v_08b/?utm_source=share&utm_medium=web2x'; // announcement on Reddit
+    const link = 'https://www.reddit.com/r/FantasyMapGenerator/comments/bynoz7/update_new_version_is_published_v_09b/'; // announcement on Reddit
     alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
 
-      This version is <b>not compatible</b> with older <i>.map</i> files. 
-      Please use an <a href='https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog' target='_blank'>archived version</a> to open the file.
+      This version is compatible with v 0.8b, but not with older <i>.map</i> files. 
+      Please use an <a href='https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog' target='_blank'>archived version</a> to open old files.
 
       <ul><a href=${link} target='_blank'>Main changes:</a>
-        <li>World size and climate configuration</li>
-        <li>Biomes layer and biomes editor</li>
-        <li>Temperature and precipitation layers</li>
-        <li>Reworked population model (now depends on biome)</li>
-        <li>New states and cultures spread algorithm</li>
-        <li>15 new cultures</li>
-        <li>Texture layer and ability to link a custom texture</li>
-        <li>Seed history (to open previously generated maps)</li>
-        <li>Optimization (faster generation and smoother edit experience)</li>
-        <li>UI and usability changes</li>
-        <li>Reworked <a href='https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys' target='_blank'>hotkeys</a></li>
+        <li>Relief icons by Arzak Rubin</li>
+        <li>Ability to re-generate Burgs</li>
+        <li>Ability to re-generate States</li>
+        <li>Bug fixes</li>
       </ul>
 
       <p>Join our <a href='https://www.reddit.com/r/FantasyMapGenerator' target='_blank'>Reddit community</a> and 
       <a href='https://discordapp.com/invite/X7E84HU' target='_blank'>Discord server</a> 
-      to share created maps, discuss the Generator, report bugs, ask questions and propose new features.</p>
+      to ask questions, share maps, discuss the Generator, report bugs and propose new features.</p>
 
       <p>Thanks for all supporters on <a href='https://www.patreon.com/azgaar' target='_blank'>Patreon</a>!</i></p>`;
 
@@ -233,7 +226,8 @@ function applyDefaultBiomesSystem() {
   const i = new Uint8Array(d3.range(0, name.length));
   const habitability = new Uint16Array([0,2,5,15,25,50,100,80,90,10,2,0]);
   const iconsDensity = new Uint8Array([0,3,2,120,120,120,120,150,150,100,5,0]);
-  const icons = [{},{dune:1},{dune:1},{acacia:1, grass:9},{grass:1},{acacia:1, palm:1},{deciduous:1},{acacia:7, palm:2, deciduous:1},{deciduous:7, swamp:3},{conifer:1},{grass:1},{}];
+  //const icons = [{},{dune:1},{dune:1},{acacia:1, grass:9},{grass:1},{acacia:1, palm:1},{deciduous:1},{acacia:7, palm:2, deciduous:1},{deciduous:7, swamp:3},{conifer:1},{grass:1},{}];
+  const icons = [{},{dune:3, cactus:6, deadTree:1},{dune:9, deadTree:1},{acacia:1, grass:9},{grass:1},{acacia:8, palm:1},{deciduous:1},{acacia:5, palm:3, deciduous:1, swamp:2},{deciduous:5, swamp:3},{conifer:1},{grass:1},{}];
   const cost = new Uint8Array([10,200,150,60,50,70,70,80,90,80,100,255]); // biome movement cost
   const biomesMartix = [
     new Uint8Array([1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]),

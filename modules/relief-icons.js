@@ -34,15 +34,15 @@
         for (const [cx, cy] of poissonDiscSampler(e[0], e[1], e[2], e[3], radius)) {
           if (!d3.polygonContains(polygon, [cx, cy])) continue;
           let h = rn((4 + Math.random()) * size, 2);
-          const icon = getBiomeIcon(biomesData.icons[b]);
+          const icon = getBiomeIcon(i, biomesData.icons[b]);
           if (icon === "#relief-grass-1") h *= 1.3;
           relief.push({t: icon, c: i, x: rn(cx-h, 2), y: rn(cy-h, 2), s: h*2});
         }
       }
 
-      function placeReliefIcons() {
+      function placeReliefIcons(i) {
         const radius = 2 / density;
-        const [icon, h] = getReliefIcon(height);
+        const [icon, h] = getReliefIcon(i, height);
     
         for (const [cx, cy] of poissonDiscSampler(e[0], e[1], e[2], e[3], radius)) {
           if (!d3.polygonContains(polygon, [cx, cy])) continue;
@@ -50,10 +50,11 @@
         }
       }
 
-      function getReliefIcon(h) {
-        const type = h > 70 ? "mount" : "hill";
+      function getReliefIcon(i, h) {
+        const temp = grid.cells.temp[pack.cells.g[i]];
+        const type = h > 70 && temp < 0 ? "mountSnow" : h > 70 ? "mount" : "hill";
         const size = h > 70 ? (h - 45) * mod : Math.min(Math.max((h - 40) * mod, 3), 6);
-        return ["#relief-" + type + "-1", size];
+        return ["#relief-" + type + "-" + getIcon(type), size];
       }
 
     }
@@ -71,8 +72,25 @@
     console.timeEnd('drawRelief');
   }
   
-  function getBiomeIcon(i) {
-    return "#relief-" + i[Math.floor(Math.random() * i.length)] + "-1";
+  function getBiomeIcon(i, b) {
+    let type = b[Math.floor(Math.random() * b.length)];
+    const temp = grid.cells.temp[pack.cells.g[i]];
+    if (type === "conifer" && temp < 0) type = "coniferSnow";
+    return "#relief-" + type + "-" + getIcon(type);
+  }
+
+  function getIcon(type) {
+    switch (type) {
+      case "mount": return rand(2,7);
+      case "mountSnow": return rand(1,6);
+      case "hill": return rand(2,5);
+      case "conifer": return 2;
+      case "coniferSnow": return 1;
+      case "swamp": return rand(2,3);
+      case "cactus": return rand(1,3);
+      case "deadTree": return rand(1,2);
+      default: return 2;
+    }
   }
    
   return ReliefIcons;
