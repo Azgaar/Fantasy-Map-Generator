@@ -48,7 +48,7 @@ function saveBreadCrumb() {
       previousData = previousData.splice(0, half); //HACK - loosing 50% on reaching max...
       localStorage.removeItem("breadCrumb");
     }
-    previousData[previousData.length] = JSON.stringify(data);
+    previousData[previousData.length] = data;
     localStorage.setItem("breadCrumb", JSON.stringify(previousData));
     localStorage.setItem("breadCrumbIndex", previousData.length);
   }
@@ -68,11 +68,10 @@ function loadLastBreadCrumb(){
   console.time("loadLastBreadCrumb");
   const crumbToLoad = getPreviousBreadCrumb();
   if(crumbToLoad){
-    const escape = crumbToLoad.slice(1,crumbToLoad.length-1);
-    const data = escape.split("\\r\\n");
+    const data = crumbToLoad.split("\r\n");
     const mapVersion = data[0].split("|")[0] || data[0];
     if (mapVersion === version) {
-      parseLoadedData(data); // parsing problem when loading blob?
+      parseLoadedData(data);
     }
   }
   console.timeEnd("loadLastBreadCrumb");

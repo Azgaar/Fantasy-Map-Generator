@@ -195,6 +195,7 @@ function uploadFile(file, callback) {
 
     const archive = "<a href='https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog' target='_blank'>archived version</a>";
     const parsed = parseFloat(mapVersion);
+    console.timeEnd("loadMap");
     let message = "", load = false;
     if (isNaN(parsed) || data.length < 26 || !data[5]) {
       message = `The file you are trying to load is outdated or not a valid .map file.
@@ -390,5 +391,4 @@ function parseLoadedData(data) {
   restoreDefaultEvents();
   invokeActiveZooming();
   tip("Map is loaded");
-  console.timeEnd("loadMap");
 }
