@@ -7,8 +7,15 @@
 * - at least you have the ability to revert your last change(s) now! ;)
 * - users can customize the size of this maybe we should give them a hint?
 */
-function saveBreadCrumb() {
+function saveBreadCrumb(newMap) {
   console.time("saveBreadCrumb");
+
+  if(newMap != null && newMap == "newMap"){
+    var emptyDataArray = new Array ();
+    localStorage.setItem("breadCrumb", JSON.stringify(emptyDataArray));
+    localStorage.setItem("breadCrumbIndex", emptyDataArray.length);
+  }
+
   const date = new Date();
   const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
   const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
@@ -50,7 +57,7 @@ function saveBreadCrumb() {
     }
     previousData[previousData.length] = data;
     localStorage.setItem("breadCrumb", JSON.stringify(previousData));
-    localStorage.setItem("breadCrumbIndex", previousData.length);
+    localStorage.setItem("breadCrumbIndex", previousData.length-1);
   }
   catch (e) {
     console.log("Storage failed: " + e);
@@ -114,11 +121,14 @@ function getPreviousBreadCrumb() {
     return null;
   }
 
-  const lastCrumbIndex = localStorage.getItem("breadCrumbIndex");
+  var lastCrumbIndex = parseInt(localStorage.getItem("breadCrumbIndex"), 10);
   if(lastCrumbIndex > 0){
-      localStorage.setItem("breadCrumbIndex", lastCrumbIndex-1);
-      localStorage.setItem("breadCrumb", JSON.stringify(breadCrumbs.slice(0,breadCrumbs.length-1)));
+      lastCrumbIndex -= 1;
+      localStorage.setItem("breadCrumbIndex", lastCrumbIndex);
+      localStorage.setItem("breadCrumb", JSON.stringify(breadCrumbs.slice(0,lastCrumbIndex+1)));
+  }else{
+    return null;
   }
 
-  return breadCrumbs[breadCrumbs.length-1];
+  return breadCrumbs[lastCrumbIndex];
 }

@@ -350,7 +350,6 @@ function editCultures() {
   }
 
   function applyCultureManualAssignent() {
-    saveBreadCrumb();
     const changed = cults.select("#temp").selectAll("polygon");
     changed.each(function() {
       const i = +this.dataset.cell;
@@ -364,6 +363,7 @@ function editCultures() {
       refreshCulturesEditor();
     }
     exitCulturesManualAssignment();
+    saveBreadCrumb("currentMap");
   }
  
   function exitCulturesManualAssignment() {

@@ -569,7 +569,7 @@ function generate() {
   BurgsAndStates.generate();
   BurgsAndStates.drawStateLabels();
   console.timeEnd("TOTAL");
-
+  
   window.setTimeout(() => {
     showStatistics();
     console.groupEnd("Map " + seed);
@@ -1159,8 +1159,11 @@ const regenerateMap = debounce(function() {
   resetZoom(1000);
   generate();
   restoreLayers();
-  if ($("#worldConfigurator").is(":visible")) editWorld();
-}, 500);
+  if ($("#worldConfigurator").is(":visible")){
+    editWorld();
+  }
+  saveBreadCrumb("newMap");
+}, 800);
 
 // Clear the map
 function undraw() {
