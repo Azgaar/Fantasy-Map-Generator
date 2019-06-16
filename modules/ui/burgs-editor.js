@@ -95,7 +95,7 @@ function editBurgs() {
     body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseleave", ev => burgHighlightOff(ev)));
     body.querySelectorAll("div > input.burgName").forEach(el => el.addEventListener("input", changeBurgName));
     body.querySelectorAll("div > span.icon-dot-circled").forEach(el => el.addEventListener("click", zoomIntoBurg));
-    body.querySelectorAll("div > select.burgCulture").forEach(el => el.addEventListener("click", updateCulturesList));
+    body.querySelectorAll("div > select.stateCulture").forEach(el => el.addEventListener("change", changeBurgCulture));
     body.querySelectorAll("div > input.burgPopulation").forEach(el => el.addEventListener("change", changeBurgPopulation));
     body.querySelectorAll("div > span.icon-star-empty").forEach(el => el.addEventListener("click", toggleCapitalStatus));
     body.querySelectorAll("div > span.icon-anchor").forEach(el => el.addEventListener("click", togglePortStatus));
@@ -137,13 +137,11 @@ function editBurgs() {
     zoomTo(x, y, 8, 2000);
   }
 
-  function updateCulturesList() {
+  function changeBurgCulture() {
     const burg = +this.parentNode.dataset.id;
     const v = +this.value;
     pack.burgs[burg].culture = v;
     this.parentNode.dataset.culture = pack.cultures[v].name;
-    this.options.length = 0;
-    pack.cultures.slice(1).forEach(c => this.options.add(new Option(c.name, c.i, false, c.i === v)));
   }
 
   function changeBurgPopulation() {
@@ -339,4 +337,3 @@ function editBurgs() {
   }
 
 }
-
