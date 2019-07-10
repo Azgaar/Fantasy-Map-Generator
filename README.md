@@ -2,7 +2,7 @@
 
 Azgaar's _Fantasy Map Generator_. Online tool generating interactive and highly customizable svg maps based on voronoi diagram.
 
-Project is under development, check out the beta version [here](https://azgaar.github.io/Fantasy-Map-Generator). You can also try an Electron desktop application - download [an archive](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v0.9b) for your architecture, unzip and run the _Azgaar's Fantasy Map Generator.exe_.
+Project is under development, check out the beta version [here](https://azgaar.github.io/Fantasy-Map-Generator). You can also try an Electron desktop application - download [an archive](https://github.com/Azgaar/Fantasy-Map-Generator/releases) for your architecture, unzip and run the _Azgaar's Fantasy Map Generator.exe_.
 
 Refer to the [project wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki) for a guidance. Some details are covered in my blog [_Fantasy Maps for fun and glory_](https://azgaar.wordpress.com), you may also keep an eye on my [Trello devboard](https://trello.com/b/7x832DG4/fantasy-map-generator).
 
