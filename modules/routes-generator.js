@@ -148,6 +148,7 @@
   const regenerate = function() {
     routes.selectAll("path").remove();
     pack.cells.road = new Uint16Array(pack.cells.i.length);
+    pack.cells.crossroad = new Uint16Array(pack.cells.i.length);
     const main = getRoads();
     const small = getTrails();
     const ocean = getSearoutes();
@@ -203,8 +204,8 @@
         if (segment.length) {
           segment.push(current);
           path.push(segment);
-          if (segment[0] !== end) cells.road[segment[0]] += score; // crossroad
-          if (current !== start) cells.road[current] += score; // crossroad
+          if (segment[0] !== end) {cells.road[segment[0]] += score; cells.crossroad[segment[0]] += score;}
+          if (current !== start) {cells.road[current] += score; cells.crossroad[current] += score;}
         }
         segment = [];
         prev = current;

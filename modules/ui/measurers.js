@@ -5,7 +5,7 @@
 function addRuler(x1, y1, x2, y2) {
   const cx = rn((x1 + x2) / 2, 2), cy = rn((y1 + y2) / 2, 2);
   const size = rn(1 / scale ** .3 * 2, 1);
-  const dash = rn(30 / distanceScale.value, 2);
+  const dash = rn(30 / distanceScaleInput.value, 2);
 
   // body
   const rulerNew = ruler.append("g").attr("class", "ruler").call(d3.drag().on("start", dragRuler));
@@ -18,7 +18,7 @@ function addRuler(x1, y1, x2, y2) {
   const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
   const rotate = `rotate(${angle} ${cx} ${cy})`;
   const dist = rn(Math.hypot(x1 - x2, y1 - y2));
-  const label = rn(dist * distanceScale.value) + " " + distanceUnit.value;
+  const label = rn(dist * distanceScaleInput.value) + " " + distanceUnitInput.value;
   rulerNew.append("rect").attr("x", cx - size * 1.5).attr("y", cy - size * 1.5).attr("width", size * 3).attr("height", size * 3).attr("transform", rotate).attr("stroke-width", .5 * size).call(d3.drag().on("start", rulerCenterDrag));
   rulerNew.append("text").attr("x", cx).attr("y", cy).attr("dx", ".3em").attr("dy", "-.3em").attr("transform", rotate).attr("font-size", 10 * size).text(label).on("click", removeParent);
 }
@@ -46,7 +46,7 @@ function dragRulerEdge() {
 
   const cx = rn((x + x0) / 2, 2), cy = rn((y + y0) / 2, 2);
   const dist = Math.hypot(x0 - x, y0 - y);
-  const label = rn(dist * distanceScale.value) + " " + distanceUnit.value;
+  const label = rn(dist * distanceScaleInput.value) + " " + distanceUnitInput.value;
   const atan = x0 > x ? Math.atan2(y0 - y, x0 - x) : Math.atan2(y - y0, x - x0);
   const angle = rn(atan * 180 / Math.PI, 3);
   const rotate = `rotate(${angle} ${cx} ${cy})`;
@@ -76,7 +76,7 @@ function rulerCenterDrag() {
 
     // change first part
     let dist = rn(Math.hypot(x1 - x, y1 - y));
-    let label = rn(dist * distanceScale.value) + " " + distanceUnit.value;
+    let label = rn(dist * distanceScaleInput.value) + " " + distanceUnitInput.value;
     let atan = x1 > x ? Math.atan2(y1 - y, x1 - x) : Math.atan2(y - y1, x - x1);
     xc1 = rn((x + x1) / 2, 2), yc1 = rn((y + y1) / 2, 2);
     r1 = `rotate(${rn(atan * 180 / Math.PI, 3)} ${xc1} ${yc1})`;
@@ -86,7 +86,7 @@ function rulerCenterDrag() {
 
     // change second (new) part
     dist = rn(Math.hypot(x2 - x, y2 - y));
-    label = rn(dist * distanceScale.value) + " " + distanceUnit.value;
+    label = rn(dist * distanceScaleInput.value) + " " + distanceUnitInput.value;
     atan = x2 > x ? Math.atan2(y2 - y, x2 - x) : Math.atan2(y - y2, x - x2);
     xc2 = rn((x + x2) / 2, 2), yc2 = rn((y + y2) / 2, 2);
     r2 = `rotate(${rn(atan * 180 / Math.PI, 3)} ${xc2} ${yc2})`;
@@ -110,7 +110,7 @@ function rulerCenterDrag() {
 function drawOpisometer() {
   lineGen.curve(d3.curveBasis);
   const size = rn(1 / scale ** .3 * 2, 1);
-  const dash = rn(30 / distanceScale.value, 2);
+  const dash = rn(30 / distanceScaleInput.value, 2);
   const p0 = d3.mouse(this);
   const points = [[p0[0], p0[1]]];
   let length = 0;
@@ -131,7 +131,7 @@ function drawOpisometer() {
     curve.attr("d", path);
     curveGray.attr("d", path);
     length = curve.node().getTotalLength();
-    const label = rn(length * distanceScale.value) + " " + distanceUnit.value;
+    const label = rn(length * distanceScaleInput.value) + " " + distanceUnitInput.value;
     text.attr("x", p[0]).attr("y", p[1]).text(label);
   });
 
@@ -176,7 +176,7 @@ function dragOpisometerEnd() {
     curve.attr("d", path);
     curveGray.attr("d", path);
     length = curve.node().getTotalLength();
-    const label = rn(length * distanceScale.value) + " " + distanceUnit.value;
+    const label = rn(length * distanceScaleInput.value) + " " + distanceUnitInput.value;
     text.text(label);
   });
 
@@ -215,20 +215,20 @@ function drawPlanimeter() {
     addPlanimeter.classList.remove("pressed");
 
     const polygonArea = rn(Math.abs(d3.polygonArea(points)));
-    const unit = areaUnit.value === "square" ? " " + distanceUnit.value + "²" : " " + areaUnit.value;
-    const area = si(polygonArea * distanceScale.value ** 2) + " " + unit;
+    const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
+    const area = si(polygonArea * distanceScaleInput.value ** 2) + " " + unit;
     const c = polylabel([points], 1.0); // pole of inaccessibility
     text.attr("x", c[0]).attr("y", c[1]).text(area);
   });
 }
 
-// draw default scale bar
+// draw scale bar
 function drawScaleBar() {
   if (scaleBar.style("display") === "none") return; // no need to re-draw hidden element
   scaleBar.selectAll("*").remove(); // fully redraw every time
 
-  const dScale = distanceScale.value;
-  const unit = distanceUnit.value;
+  const dScale = distanceScaleInput.value;
+  const unit = distanceUnitInput.value;
 
   // calculate size
   const init = 100; // actual length in pixels if scale, dScale and size = 1;
@@ -269,8 +269,8 @@ function drawScaleBar() {
 // fit ScaleBar to map size
 function fitScaleBar() {
   if (!scaleBar.select("rect").size()) return;
-  const px = isNaN(+barPosX.value) ? 100 : barPosX.value / 100;
-  const py = isNaN(+barPosY.value) ? 100 : barPosY.value / 100;
+  const px = isNaN(+barPosX.value) ? 99 : barPosX.value / 100;
+  const py = isNaN(+barPosY.value) ? 99 : barPosY.value / 100;
   const bbox = scaleBar.select("rect").node().getBBox();
   const x = rn(svgWidth * px - bbox.width + 10), y = rn(svgHeight * py - bbox.height + 20);
   scaleBar.attr("transform", `translate(${x},${y})`);

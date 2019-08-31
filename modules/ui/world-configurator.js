@@ -1,6 +1,21 @@
 function editWorld() {
   if (customization) return;
-  $("#worldConfigurator").dialog({title: "Configure World", width: 440});
+  $("#worldConfigurator").dialog({title: "Configure World", resizable: false, width: 460,
+    buttons: {
+      "Whole World": () => applyPreset(100, 50), 
+      "Northern": () => applyPreset(33, 25), 
+      "Tropical": () => applyPreset(33, 50), 
+      "Southern": () => applyPreset(33, 75), 
+      "Restore Winds": restoreDefaultWinds
+    }, open: function() {
+      const buttons = $(this).dialog("widget").find(".ui-dialog-buttonset > button")
+      buttons[0].addEventListener("mousemove", () => tip("Click to set map size to cover the whole World"));
+      buttons[1].addEventListener("mousemove", () => tip("Click to set map size to cover the Northern latitudes"));
+      buttons[2].addEventListener("mousemove", () => tip("Click to set map size to cover the Tropical latitudes"));
+      buttons[3].addEventListener("mousemove", () => tip("Click to set map size to cover the Southern latitudes"));
+      buttons[4].addEventListener("mousemove", () => tip("Click to restore default wind directions"));
+    },
+  });
 
   const globe = d3.select("#globe");
   const clr = d3.scaleSequential(d3.interpolateSpectral);
@@ -16,7 +31,6 @@ function editWorld() {
 
   document.getElementById("worldControls").addEventListener("input", (e) => updateWorld(e.target));
   globe.select("#globeWindArrows").on("click", changeWind);
-  globe.select("#restoreWind").on("click", restoreDefaultWinds);
   globe.select("#globeGraticule").attr("d", round(path(d3.geoGraticule()()))); // globe graticule
   updateWindDirections();
 
@@ -44,30 +58,26 @@ function editWorld() {
   }
 
   function updateGlobePosition() {
-    const eqY = +document.getElementById("equatorOutput").value;
-    const equidistance = document.getElementById("equidistanceOutput");
-    equidistance.min = equidistanceInput.min = Math.max(graphHeight - eqY, eqY);
-    equidistance.max = equidistanceInput.max = equidistance.min * 10;
-    const eqD = +equidistance.value;
+    const size = +document.getElementById("mapSizeOutput").value;
+    const eqD = graphHeight / 2 * 100 / size;
+
     calculateMapCoordinates();
     const mc = mapCoordinates; // shortcut
-
-    const scale = +distanceScale.value, unit = distanceUnit.value;
+    const scale = +distanceScaleInput.value, unit = distanceUnitInput.value;
+    const meridian = toKilometer(eqD * 2 * scale);
     document.getElementById("mapSize").innerHTML = `${graphWidth}x${graphHeight}`;
     document.getElementById("mapSizeFriendly").innerHTML = `${rn(graphWidth * scale)}x${rn(graphHeight * scale)} ${unit}`;
     document.getElementById("meridianLength").innerHTML = rn(eqD * 2);
     document.getElementById("meridianLengthFriendly").innerHTML = `${rn(eqD * 2 * scale)} ${unit}`;
-    document.getElementById("meridianLengthEarth").innerHTML = toKilometer(eqD * 2 * scale);
+    document.getElementById("meridianLengthEarth").innerHTML = meridian ? " = " + rn(meridian / 200) + "%🌏" : "";
     document.getElementById("mapCoordinates").innerHTML = `${lat(mc.latN)} ${Math.abs(rn(mc.lonW))}°W; ${lat(mc.latS)} ${rn(mc.lonE)}°E`;
 
     function toKilometer(v) {
-      let kilometers; // value converted to kilometers
-      if (unit === "km") kilometers = v;
-      else if (unit === "mi") kilometers = v * 1.60934;
-      else if (unit === "lg") kilometers = v * 5.556;
-      else if (unit === "vr") kilometers = v * 1.0668;
-      else return ""; // do not show as distanceUnit is custom
-      return " = " + rn(kilometers / 200) + "%🌏"; // % + Earth icon
+      if (unit === "km") return v;
+      else if (unit === "mi") return v * 1.60934;
+      else if (unit === "lg") return v * 5.556;
+      else if (unit === "vr") return v * 1.0668;
+      return 0; // 0 if distanceUnitInput is a custom unit
     }
 
     function lat(lat) {return lat > 0 ? Math.abs(rn(lat)) + "°N" : Math.abs(rn(lat)) + "°S";} // parse latitude value
@@ -75,7 +85,7 @@ function editWorld() {
     globe.select("#globeArea").attr("d", round(path(area.outline()))); // map area
   }
 
-  function updateGlobeTemperature() {   
+  function updateGlobeTemperature() {
     const tEq = +document.getElementById("temperatureEquatorOutput").value;
     document.getElementById("temperatureEquatorF").innerHTML = rn(tEq * 9/5 + 32);
     const tPole = +document.getElementById("temperaturePoleOutput").value;
@@ -113,4 +123,11 @@ function editWorld() {
     if (update) updateWorld();
   }
 
+  function applyPreset(size, lat) {
+    document.getElementById("mapSizeInput").value = document.getElementById("mapSizeOutput").value = size;
+    document.getElementById("latitudeInput").value = document.getElementById("latitudeOutput").value = lat;
+    lock("mapSize");
+    lock("latitude");
+    updateWorld();
+  }
 }

@@ -12,7 +12,19 @@ function saveAsImage(type) {
   const clone = d3.select("#fantasyMap");
 
   if (type === "svg") clone.select("#viewbox").attr("transform", null); // reset transform to show whole map
-  if (layerIsOn("texture") && type === "png") clone.select("#texture").remove(); // no texture for png
+
+  // remove unused elements
+  if (!clone.select("#terrain").selectAll("use").size()) clone.select("#defs-relief").remove();
+  if (!clone.select("#prec").selectAll("circle").size()) clone.select("#prec").remove();
+  const removeEmptyGroups = function() {
+    let empty = 0;
+    clone.selectAll("g").each(function() {
+      if (!this.hasChildNodes() || this.style.display === "none") {empty++; this.remove();}
+      if (this.hasAttribute("display") && this.style.display === "inline") this.removeAttribute("display");
+    });
+    return empty;
+  }
+  while(removeEmptyGroups()) {removeEmptyGroups();}
 
   // for each g element get inline style
   const emptyG = clone.append("g").node();
@@ -73,9 +85,13 @@ function saveAsImage(type) {
       link.href = url;
       document.body.appendChild(link);
       link.click();
+      tip(`${link.download} is saved. Open "Downloads" screen (crtl + J) to check`, true, "warning");
     }
 
-    window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
+    window.setTimeout(function() {
+      window.URL.revokeObjectURL(url);
+      clearMainTip();
+    }, 3000);
     console.timeEnd("saveAsImage");
   });
 }
@@ -84,14 +100,16 @@ function saveAsImage(type) {
 function getFontsToLoad() {
   const webSafe = ["Georgia", "Times+New+Roman", "Comic+Sans+MS", "Lucida+Sans+Unicode", "Courier+New", "Verdana", "Arial", "Impact"];
 
-  const fontsInUse = []; // to store fonts currently in use
+  const fontsInUse = new Set(); // to store fonts currently in use
   labels.selectAll("g").each(function() {
     const font = this.dataset.font;
     if (!font) return;
     if (webSafe.includes(font)) return; // do not fetch web-safe fonts
-    if (!fontsInUse.includes(font)) fontsInUse.push(font);
+    fontsInUse.add(font);
   });
-  return "https://fonts.googleapis.com/css?family=" + fontsInUse.join("|");
+  const legendFont = legend.attr("data-font");
+  if (!webSafe.includes(legendFont)) fontsInUse.add();
+  return "https://fonts.googleapis.com/css?family=" + [...fontsInUse].join("|");
 }
 
 // code from Kaiido's answer https://stackoverflow.com/questions/42402584/how-to-use-google-fonts-in-canvas-when-drawing-dom-objects-in-svg
@@ -135,15 +153,16 @@ function GFontToDataURI(url) {
 
 // Save in .map format
 function saveMap() {
-  if (customization) {tip("Map cannot be saved when is in edit mode, please exit the mode and re-try", false, "error"); return;}
+  if (customization) {tip("Map cannot be saved when is in edit mode, please exit the mode and retry", false, "error"); return;}
   console.time("saveMap");
+  closeDialogs();
   const date = new Date();
   const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
   const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
   const params = [version, license, dateString, seed, graphWidth, graphHeight].join("|");
-  const options = [distanceUnit.value, distanceScale.value, areaUnit.value, heightUnit.value, heightExponent.value, temperatureScale.value, 
+  const options = [distanceUnitInput.value, distanceScaleInput.value, areaUnit.value, heightUnit.value, heightExponentInput.value, temperatureScale.value, 
     barSize.value, barLabel.value, barBackOpacity.value, barBackColor.value, barPosX.value, barPosY.value, populationRate.value, urbanization.value, 
-    equatorOutput.value, equidistanceOutput.value, temperatureEquatorOutput.value, temperaturePoleOutput.value, precOutput.value, JSON.stringify(winds)].join("|");
+    mapSizeOutput.value, latitudeOutput.value, temperatureEquatorOutput.value, temperaturePoleOutput.value, precOutput.value, JSON.stringify(winds)].join("|");
   const coords = JSON.stringify(mapCoordinates);
   const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
   const notesData = JSON.stringify(notes);
@@ -159,12 +178,16 @@ function saveMap() {
   const cultures = JSON.stringify(pack.cultures);
   const states = JSON.stringify(pack.states);
   const burgs = JSON.stringify(pack.burgs);
+  const religions = JSON.stringify(pack.religions);
+  const provinces = JSON.stringify(pack.provinces);
 
+  // data format as below
   const data = [params, options, coords, biomes, notesData, svg_xml, 
     gridGeneral, grid.cells.h, grid.cells.prec, grid.cells.f, grid.cells.t, grid.cells.temp,
     features, cultures, states, burgs,
     pack.cells.biome, pack.cells.burg, pack.cells.conf, pack.cells.culture, pack.cells.fl, 
-    pack.cells.pop, pack.cells.r, pack.cells.road, pack.cells.s, pack.cells.state].join("\r\n");
+    pack.cells.pop, pack.cells.r, pack.cells.road, pack.cells.s, pack.cells.state, 
+    pack.cells.religion, pack.cells.province, pack.cells.crossroad, religions, provinces].join("\r\n");
   const dataBlob = new Blob([data], {type: "text/plain"});
   const dataURL = window.URL.createObjectURL(dataBlob);
   const link = document.createElement("a");
@@ -172,12 +195,16 @@ function saveMap() {
   link.href = dataURL;
   document.body.appendChild(link);
   link.click();
+  tip(`${link.download} is saved. Open "Downloads" screen (crtl + J) to check`, true, "warning");
 
   // restore initial values
   svg.attr("width", svgWidth).attr("height", svgHeight);
   zoom.transform(svg, transform);
 
-  window.setTimeout(function() {window.URL.revokeObjectURL(dataURL);}, 2000);
+  window.setTimeout(function() {
+    window.URL.revokeObjectURL(dataURL);
+    clearMainTip();
+  }, 3000);
   console.timeEnd("saveMap");
 }
 
@@ -202,11 +229,11 @@ function uploadFile(file, callback) {
                 <br>Please keep using an ${archive}`;
     } else {
       load = true;
-      message =  `The map version (${mapVersion}) does not match the Generator version (${version}). The map will be auto-updated.
-                 <br>In case of issues please keep using an ${archive} of the Generator`;
+      message =  `The map version (${mapVersion}) does not match the Generator version (${version}). 
+                 <br>The map will be auto-updated. In case of issues please keep using an ${archive} of the Generator`;
     }
     alertMessage.innerHTML = message;
-    $("#alert").dialog({title: "Version conflict", buttons: {
+    $("#alert").dialog({title: "Version conflict", width: 380, buttons: {
       OK: function() {$(this).dialog("close"); if (load) parseLoadedData(data);}
     }});
   };
@@ -218,6 +245,7 @@ function uploadFile(file, callback) {
 function parseLoadedData(data) {
   closeDialogs();
   const reliefIcons = document.getElementById("defs-relief").innerHTML; // save relief icons
+  const hatching = document.getElementById("hatching").cloneNode(true); // save hatching
 
   void function parseParameters() {
     const params = data[0].split("|");
@@ -228,22 +256,22 @@ function parseLoadedData(data) {
 
   void function parseOptions() {
     const options = data[1].split("|");
-    if (options[0]) distanceUnit.value = distanceUnitOutput.innerHTML = options[0];
-    if (options[1]) distanceScale.value = distanceScaleSlider.value = options[1];
+    if (options[0]) applyOption(distanceUnitInput, options[0]);
+    if (options[1]) distanceScaleInput.value = distanceScaleOutput.value = options[1];
     if (options[2]) areaUnit.value = options[2];
-    if (options[3]) heightUnit.value= options[3];
-    if (options[4]) heightExponent.value = heightExponentSlider.value = options[4];
+    if (options[3]) applyOption(heightUnit, options[3]);
+    if (options[4]) heightExponentInput.value = heightExponentOutput.value = options[4];
     if (options[5]) temperatureScale.value = options[5];
-    if (options[6]) barSize.value = barSizeSlider.value = options[6];
+    if (options[6]) barSize.value = barSizeOutput.value = options[6];
     if (options[7] !== undefined) barLabel.value = options[7];
     if (options[8] !== undefined) barBackOpacity.value = options[8];
     if (options[9]) barBackColor.value = options[9];
     if (options[10]) barPosX.value = options[10];
     if (options[11]) barPosY.value = options[11];
-    if (options[12]) populationRate.value = populationRateSlider.value = options[12];
-    if (options[13]) urbanization.value = urbanizationSlider.value = options[13];
-    if (options[14]) equatorInput.value = equatorOutput.value = options[14];
-    if (options[15]) equidistanceInput.value = equidistanceOutput.value = options[15];
+    if (options[12]) populationRate.value = populationRateOutput.value = options[12];
+    if (options[13]) urbanization.value = urbanizationOutput.value = options[13];
+    if (options[14]) mapSizeInput.value = mapSizeOutput.value = Math.max(Math.min(options[14], 100), 1);
+    if (options[15]) latitudeInput.value = latitudeOutput.value = Math.max(Math.min(options[15], 100), 0);
     if (options[16]) temperatureEquatorInput.value = temperatureEquatorOutput.value = options[16];
     if (options[17]) temperaturePoleInput.value = temperaturePoleOutput.value = options[17];
     if (options[18]) precInput.value = precOutput.value = options[18];
@@ -255,14 +283,18 @@ function parseLoadedData(data) {
     if (data[4]) notes = JSON.parse(data[4]);
 
     const biomes = data[3].split("|");
-    const name = biomes[2].split(",");
-    if (name.length !== biomesData.name.length) {
-      console.error("Biomes data is not correct and will not be loaded");
-      return;
-    }
+    biomesData = applyDefaultBiomesSystem();
     biomesData.color = biomes[0].split(",");
     biomesData.habitability = biomes[1].split(",").map(h => +h);
-    biomesData.name = name;
+    biomesData.name = biomes[2].split(",");
+
+    // push custom biomes if any
+    for (let i=biomesData.i.length; i < biomesData.name.length; i++) {
+      biomesData.i.push(biomesData.i.length);
+      biomesData.iconsDensity.push(0);
+      biomesData.icons.push([]);
+      biomesData.cost.push(50);
+    }
   }()
 
   void function replaceSVG() {
@@ -275,6 +307,7 @@ function parseLoadedData(data) {
     defs = svg.select("#deftemp");
     viewbox = svg.select("#viewbox");
     scaleBar = svg.select("#scaleBar");
+    legend = svg.select("#legend");
     ocean = viewbox.select("#ocean");
     oceanLayers = ocean.select("#oceanLayers");
     oceanPattern = ocean.select("#oceanPattern");
@@ -289,11 +322,16 @@ function parseLoadedData(data) {
     compass = viewbox.select("#compass");
     rivers = viewbox.select("#rivers");
     terrain = viewbox.select("#terrain");
+    relig = viewbox.select("#relig");
     cults = viewbox.select("#cults");
     regions = viewbox.select("#regions");
     statesBody = regions.select("#statesBody");
     statesHalo = regions.select("#statesHalo");
+    provs = viewbox.select("#provs");
+    zones = viewbox.select("#zones");
     borders = viewbox.select("#borders");
+    stateBorders = borders.select("#stateBorders");
+    provinceBorders = borders.select("#provinceBorders");
     routes = viewbox.select("#routes");
     roads = routes.select("#roads");
     trails = routes.select("#trails");
@@ -308,6 +346,7 @@ function parseLoadedData(data) {
     anchors = icons.select("#anchors");
     markers = viewbox.select("#markers");
     ruler = viewbox.select("#ruler");
+    fogging = viewbox.select("#fogging");
     debug = viewbox.select("#debug");
     freshwater = lakes.select("#freshwater");
     salt = lakes.select("#salt");
@@ -332,17 +371,23 @@ function parseLoadedData(data) {
     pack.cultures = JSON.parse(data[13]);
     pack.states = JSON.parse(data[14]);
     pack.burgs = JSON.parse(data[15]);
+    pack.religions = data[29] ? JSON.parse(data[29]) : [{i: 0, name: "No religion"}];
+    pack.provinces = data[30] ? JSON.parse(data[30]) : [0];
 
-    pack.cells.biome = Uint8Array.from(data[16].split(","));
-    pack.cells.burg = Uint16Array.from(data[17].split(","));
-    pack.cells.conf = Uint8Array.from(data[18].split(","));
-    pack.cells.culture = Uint8Array.from(data[19].split(","));
-    pack.cells.fl = Uint16Array.from(data[20].split(","));
-    pack.cells.pop = Uint16Array.from(data[21].split(","));
-    pack.cells.r = Uint16Array.from(data[22].split(","));
-    pack.cells.road = Uint16Array.from(data[23].split(","));
-    pack.cells.s = Uint16Array.from(data[24].split(","));
-    pack.cells.state = Uint8Array.from(data[25].split(","));
+    const cells = pack.cells;
+    cells.biome = Uint8Array.from(data[16].split(","));
+    cells.burg = Uint16Array.from(data[17].split(","));
+    cells.conf = Uint8Array.from(data[18].split(","));
+    cells.culture = Uint16Array.from(data[19].split(","));
+    cells.fl = Uint16Array.from(data[20].split(","));
+    cells.pop = Uint16Array.from(data[21].split(","));
+    cells.r = Uint16Array.from(data[22].split(","));
+    cells.road = Uint16Array.from(data[23].split(","));
+    cells.s = Uint16Array.from(data[24].split(","));
+    cells.state = Uint16Array.from(data[25].split(","));
+    cells.religion = data[26] ? Uint16Array.from(data[26].split(",")) : new Uint16Array(cells.i.length);
+    cells.province = data[27] ? Uint16Array.from(data[27].split(",")) : new Uint16Array(cells.i.length);
+    cells.crossroad = data[28] ? Uint16Array.from(data[28].split(",")) : new Uint16Array(cells.i.length);
   }()
 
   void function restoreLayersState() {
@@ -355,15 +400,18 @@ function parseLoadedData(data) {
     if (compass.style("display") !== "none" && compass.select("use").size()) turnButtonOn("toggleCompass"); else turnButtonOff("toggleCompass");
     if (rivers.style("display") !== "none") turnButtonOn("toggleRivers"); else turnButtonOff("toggleRivers");
     if (terrain.style("display") !== "none" && terrain.selectAll("*").size()) turnButtonOn("toggleRelief"); else turnButtonOff("toggleRelief");
+    if (relig.selectAll("*").size()) turnButtonOn("toggleReligions"); else turnButtonOff("toggleReligions");
     if (cults.selectAll("*").size()) turnButtonOn("toggleCultures"); else turnButtonOff("toggleCultures");
     if (statesBody.selectAll("*").size()) turnButtonOn("toggleStates"); else turnButtonOff("toggleStates");
-    if (borders.style("display") !== "none" && borders.selectAll("*").size()) turnButtonOn("toggleBorders"); else turnButtonOff("toggleBorders");
+    if (provs.selectAll("*").size()) turnButtonOn("toggleProvinces"); else turnButtonOff("toggleProvinces");
+    if (zones.selectAll("*").size() && zones.style("display") !== "none") turnButtonOn("toggleZones"); else turnButtonOff("toggleZones");
+    if (borders.style("display") !== "none") turnButtonOn("toggleBorders"); else turnButtonOff("toggleBorders");
     if (routes.style("display") !== "none" && routes.selectAll("path").size()) turnButtonOn("toggleRoutes"); else turnButtonOff("toggleRoutes");
     if (temperature.selectAll("*").size()) turnButtonOn("toggleTemp"); else turnButtonOff("toggleTemp");
     if (prec.selectAll("circle").size()) turnButtonOn("togglePrec"); else turnButtonOff("togglePrec");
     if (labels.style("display") !== "none") turnButtonOn("toggleLabels"); else turnButtonOff("toggleLabels");
     if (icons.style("display") !== "none") turnButtonOn("toggleIcons"); else turnButtonOff("toggleIcons");
-    if (markers.style("display") !== "none") turnButtonOn("toggleMarkers"); else turnButtonOff("toggleMarkers");
+    if (markers.selectAll("*").size() && markers.style("display") !== "none") turnButtonOn("toggleMarkers"); else turnButtonOff("toggleMarkers");
     if (ruler.style("display") !== "none") turnButtonOn("toggleRulers"); else turnButtonOff("toggleRulers");
     if (scaleBar.style("display") !== "none") turnButtonOn("toggleScaleBar"); else turnButtonOff("toggleScaleBar");
 
@@ -371,27 +419,89 @@ function parseLoadedData(data) {
     const populationIsOn = population.selectAll("line").size();
     if (populationIsOn) drawPopulation();
     if (populationIsOn) turnButtonOn("togglePopulation"); else turnButtonOff("togglePopulation");
+
+    getCurrentPreset();
   }()
 
   void function restoreRulersEvents() {
     ruler.selectAll("g").call(d3.drag().on("start", dragRuler));
     ruler.selectAll("text").on("click", removeParent);
-
     ruler.selectAll("g.ruler circle").call(d3.drag().on("drag", dragRulerEdge));
     ruler.selectAll("g.ruler circle").call(d3.drag().on("drag", dragRulerEdge));
     ruler.selectAll("g.ruler rect").call(d3.drag().on("start", rulerCenterDrag));
-
     ruler.selectAll("g.opisometer circle").call(d3.drag().on("start", dragOpisometerEnd));
     ruler.selectAll("g.opisometer circle").call(d3.drag().on("start", dragOpisometerEnd));
   }()
 
   void function resolveVersionConflicts() {
-    if (parseFloat(data[0].split("|")[0]) == 0.8) {
+    const version = parseFloat(data[0].split("|")[0]);
+    if (version == 0.8) {
       // 0.9 has additional relief icons to be included into older maps
       document.getElementById("defs-relief").innerHTML = reliefIcons;
+    }
 
-      // 0.8.28b changed opacity slider from regions to statesBody
-      document.getElementById("regions").removeAttribute("opacity");
+    if (version < 1) {
+      // 1.0 adds a new religions layer
+      relig = viewbox.insert("g", "#terrain").attr("id", "cults");
+      Religions.generate();
+
+      // 1.0 adds a legend box
+      legend = svg.append("g").attr("id", "legend");
+      legend.attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC")
+        .attr("font-size", 13).attr("data-size", 13).attr("data-x", 99).attr("data-y", 93)
+        .attr("stroke-width", 2.5).attr("stroke", "#812929").attr("stroke-dasharray", "0 4 10 4").attr("stroke-linecap", "round");
+
+      // 1.0 separated drawBorders fron drawStates()
+      stateBorders = borders.append("g").attr("id", "stateBorders");
+      provinceBorders = borders.append("g").attr("id", "provinceBorders");
+      borders.attr("opacity", null).attr("stroke", null).attr("stroke-width", null).attr("stroke-dasharray", null).attr("stroke-linecap", null).attr("filter", null);
+      stateBorders.attr("opacity", .8).attr("stroke", "#56566d").attr("stroke-width", 1).attr("stroke-dasharray", "2").attr("stroke-linecap", "butt");
+      provinceBorders.attr("opacity", .8).attr("stroke", "#56566d").attr("stroke-width", .5).attr("stroke-dasharray", "1").attr("stroke-linecap", "butt");
+
+      // 1.0 adds state relations, provinces, forms and full names
+      provs = viewbox.insert("g", "#borders").attr("id", "provs").attr("opacity", .6);
+      BurgsAndStates.collectStatistics();
+      BurgsAndStates.generateDiplomacy();
+      BurgsAndStates.defineStateForms();
+      drawStates();
+      BurgsAndStates.generateProvinces();
+      drawBorders();
+      if (!layerIsOn("toggleBorders")) $('#borders').fadeOut();
+      if (!layerIsOn("toggleStates")) regions.attr("display", "none").selectAll("path").remove();
+
+      // 1.0 adds hatching
+      document.getElementsByTagName("defs")[0].appendChild(hatching);
+
+      // 1.0 adds zones layer
+      zones = viewbox.insert("g", "#borders").attr("id", "zones").attr("display", "none");
+      zones.attr("opacity", .6).attr("stroke", null).attr("stroke-width", 0).attr("stroke-dasharray", null).attr("stroke-linecap", "butt");
+      addZone();
+      if (!markers.selectAll("*").size()) {addMarkers(); turnButtonOn("toggleMarkers");}
+
+      // 1.0 add fogging layer (state focus)
+      let fogging = viewbox.insert("g", "#ruler").attr("id", "fogging-cont").attr("mask", "url(#fog)")
+        .append("g").attr("id", "fogging").attr("display", "none");
+      fogging.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
+      defs.append("mask").attr("id", "fog").append("rect").attr("x", 0).attr("y", 0).attr("width", "100%")
+        .attr("height", "100%").attr("fill", "white");
+
+      // 1.0 changes states opacity bask to regions level
+      if (statesBody.attr("opacity")) {
+        regions.attr("opacity", statesBody.attr("opacity"));
+        statesBody.attr("opacity", null);
+      }
+
+      // 1.0 changed labels to multi-lined
+      labels.selectAll("textPath").each(function() {
+        const text = this.textContent;
+        const shift = this.getComputedTextLength() / -1.5;
+        this.innerHTML = `<tspan x="${shift}">${text}</tspan>`;
+      });
+
+      // 1.0 added new biome - Wetland
+      biomesData.name.push("Wetland");
+      biomesData.color.push("#0b9131");
+      biomesData.habitability.push(12);
     }
   }()
 

@@ -45,14 +45,14 @@
 
     const data = chains[base];
     if (!data || data[" "] === undefined) {
-      tip("Namesbase " + base + " is incorrect. Please checl in namesbase editor", false, "error"); 
+      tip("Namesbase " + base + " is incorrect. Please check in namesbase editor", false, "error"); 
       console.error("nameBase " + base + " is incorrect!"); 
       return "ERROR";
     }
 
     if (!min) min = nameBases[base].min;
     if (!max) max = nameBases[base].max;
-    if (!dupl) dupl = nameBases[base].d;
+    if (dupl !== "") dupl = nameBases[base].d;
     if (!multi) multi = nameBases[base].m;
 
     let v = data[" "], cur = v[rand(v.length-1)], w = "";
@@ -82,11 +82,13 @@
       if (r.slice(-1) === " ") return r + c.toUpperCase();
       if (c === "a" && d[i+1] === "e") return r; // "ae" => "e"
       if (c === " " && i+1 === d.length) return r;
-      // remove consonant before 2 consonants
-      if (i+2 < d.length && !vowel(c) && !vowel(d[i+1]) && !vowel(d[i+2])) return r;
+      if (i+2 < d.length && !vowel(c) && !vowel(d[i+1]) && !vowel(d[i+2])) return r; // remove consonant before 2 consonants
       if (i+2 < d.length && c === d[i+1] && c === d[i+2]) return r; // remove tree same letters in a row
       return r + c;
     }, "");
+
+    // join the word if any part has only 1 letter
+    if (name.split(" ").some(part => part.length < 2)) name = name.split(" ").map((p,i) => i ? p.toLowerCase() : p).join("");
 
     if (name.length < 2) name = nameBase[base][rand(nameBase[base].length-1)]; // rare case when no name generated
     return name;
@@ -97,6 +99,15 @@
     if (culture === undefined) {console.error("Please define a culture"); return;}
     const base = pack.cultures[culture].base;
     return getBase(base, min, max, dupl, multi);
+  }
+
+  // generate short name for culture
+  const getCultureShort = function(culture) {
+    if (culture === undefined) {console.error("Please define a culture"); return;}
+    const base = pack.cultures[culture].base;
+    const min = nameBases[base].min-1;
+    const max = Math.max(nameBases[base].max-2, min);
+    return getBase(base, min, max, "", 0);
   }
 
   // generate state name based on capital or random name and culture-specific suffix
@@ -145,8 +156,9 @@
     const s1 = suffix.charAt(0);
     if (name.slice(-1) === s1) name = name.slice(0, -1); // remove name last letter if it's a suffix first letter
     if (vowel(s1) === vowel(name.slice(-1)) && vowel(s1) === vowel(name.slice(-2,-1))) name = name.slice(0, -1); // remove name last char if 2 last chars are the same type as suffix's 1st
+    if (name.slice(-1) === s1) name = name.slice(0, -1); // remove name last letter if it's a suffix first letter
     return name + suffix;
   }
 
-  return {getBase, getCulture, getState, updateChain, updateChains};
+  return {getBase, getCulture, getCultureShort, getState, updateChain, updateChains};
 })));

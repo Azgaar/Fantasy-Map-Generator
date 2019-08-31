@@ -10,19 +10,37 @@ toolsContent.addEventListener("click", function(event) {
   if (button === "editHeightmapButton") editHeightmap(); else
   if (button === "editBiomesButton") editBiomes(); else
   if (button === "editStatesButton") editStates(); else
+  if (button === "editProvincesButton") editProvinces(); else
+  if (button === "editDiplomacyButton") editDiplomacy(); else
   if (button === "editCulturesButton") editCultures(); else
+  if (button === "editReligions") editReligions(); else
   if (button === "editNamesBaseButton") editNamesbase(); else
   if (button === "editBurgsButton") editBurgs(); else
-  if (button === "editUnitsButton") editUnits();
+  if (button === "editUnitsButton") editUnits(); else
+  if (button === "editNotesButton") editNotes(); else
+  if (button === "editZonesButton") editZones();
 
   // Click to Regenerate buttons
-  if (button === "regenerateStateLabels") {BurgsAndStates.drawStateLabels(); if (!layerIsOn("toggleLabels")) toggleLabels();} else 
-  if (button === "regenerateReliefIcons") {ReliefIcons(); if (!layerIsOn("toggleRelief")) toggleRelief();} else 
-  if (button === "regenerateRoutes") {Routes.regenerate(); if (!layerIsOn("toggleRoutes")) toggleRoutes();} else 
-  if (button === "regenerateRivers") regenerateRivers(); else
-  if (button === "regeneratePopulation") recalculatePopulation(); else
-  if (button === "regenerateBurgs") regenerateBurgs(); else
-  if (button === "regenerateStates") regenerateStates();
+  if (event.target.parentNode.id === "regenerateFeature") {
+    if (sessionStorage.getItem("regenerateFeatureDontAsk")) {processFeatureRegeneration(button); return;}
+
+    alertMessage.innerHTML = `Regeneration will remove all the custom changes for the element.<br><br>Are you sure you want to proceed?`
+    $("#alert").dialog({resizable: false, title: "Regenerate element",
+      buttons: {
+        Proceed: function() {processFeatureRegeneration(button); $(this).dialog("close");},
+        Cancel: function() {$(this).dialog("close");}
+      },
+      create: function() {
+        const pane = $(this).dialog("widget").find(".ui-dialog-buttonpane");
+        $('<input id="dontAsk" class="checkbox" type="checkbox"><label for="dontAsk" class="checkbox-label dontAsk"><i>do not ask again</i></label>').prependTo(pane);
+      },
+      close: function() {
+        const box = $(this).dialog("widget").find(".checkbox")[0];
+        if (!box) return;
+        if (box.checked) sessionStorage.setItem("regenerateFeatureDontAsk", true);
+      }
+    });
+  }
 
   // Click to Add buttons
   if (button === "addLabel") toggleAddLabel(); else
@@ -31,6 +49,18 @@ toolsContent.addEventListener("click", function(event) {
   if (button === "addRoute") toggleAddRoute(); else
   if (button === "addMarker") toggleAddMarker();
 });
+
+function processFeatureRegeneration(button) {
+  if (button === "regenerateStateLabels") {BurgsAndStates.drawStateLabels(); if (!layerIsOn("toggleLabels")) toggleLabels();} else 
+  if (button === "regenerateReliefIcons") {ReliefIcons(); if (!layerIsOn("toggleRelief")) toggleRelief();} else 
+  if (button === "regenerateRoutes") {Routes.regenerate(); if (!layerIsOn("toggleRoutes")) toggleRoutes();} else 
+  if (button === "regenerateRivers") regenerateRivers(); else
+  if (button === "regeneratePopulation") recalculatePopulation(); else
+  if (button === "regenerateBurgs") regenerateBurgs(); else
+  if (button === "regenerateStates") regenerateStates(); else
+  if (button === "regenerateProvinces") regenerateProvinces(); else
+  if (button === "regenerateReligions") regenerateReligions();
+}
 
 function regenerateRivers() {
   const heights = new Uint8Array(pack.cells.h);
@@ -45,9 +75,10 @@ function recalculatePopulation() {
     if (!b.i || b.removed) return;
     const i = b.cell;
 
-    b.population = rn(Math.max((pack.cells.s[i] + pack.cells.road[i]) / 3 + b.i / 1000 + i % 100 / 1000, .1), 3);
-    if (b.capital) b.population = rn(b.population * 1.3, 3); // increase capital population
-    if (b.port) b.population = rn(b.population * 1.3, 3); // increase port population
+    b.population = rn(Math.max((pack.cells.s[i] + pack.cells.road[i]) / 8 + b.i / 1000 + i % 100 / 1000, .1), 3);
+    if (b.capital) b.population = b.population * 1.3; // increase capital population
+    if (b.port) b.population = b.population * 1.3; // increase port population
+    b.population = rn(b.population * gauss(2,3,.6,20,3), 3);
   });
 }
 
@@ -62,14 +93,14 @@ function regenerateBurgs() {
   const score = new Int16Array(cells.s.map(s => s * Math.random())); // cell score for capitals placement
   const sorted = cells.i.filter(i => score[i] > 0 && cells.culture[i]).sort((a, b) => score[b] - score[a]); // filtered and sorted array of indexes
   const burgsCount = manorsInput.value == 1000 ? rn(sorted.length / 10 / densityInput.value ** .8) + states.length : +manorsInput.value + states.length;
-  const spacing = (graphWidth + graphHeight) * 9 / burgsCount; // base min distance between towns
+  const spacing = (graphWidth + graphHeight) / 200 / (burgsCount / 500); // base min distance between towns
 
   for (let i=0; i < sorted.length && burgs.length < burgsCount; i++) {
     const id = burgs.length;
     const cell = sorted[i];
     const x = cells.p[cell][0], y = cells.p[cell][1];
 
-    const s = spacing * Math.random() + 0.5; // randomize to make the placement not uniform
+    const s = spacing * gauss(1, .3, .2, 2, 2); // randomize to make the placement not uniform
     if (burgsTree.find(x, y, s) !== undefined) continue; // to close to existing burg
 
     const state = cells.state[cell];
@@ -96,28 +127,29 @@ function regenerateBurgs() {
   BurgsAndStates.drawBurgs();
   Routes.regenerate();
 
-  document.getElementById("statesBodySection").innerHTML = "<i>Please refresh the editor!</i>";
-  document.getElementById("burgsBody").innerHTML = "<i>Please refresh the editor!</i>";
-  document.getElementById("burgsFilterState").options.length = 0;
-  document.getElementById("burgsFilterCulture").options.length = 0;
+  if (document.getElementById("burgsEditorRefresh").offsetParent) burgsEditorRefresh.click();
+  if (document.getElementById("statesEditorRefresh").offsetParent) statesEditorRefresh.click();
 }
 
 function regenerateStates() {
+  Math.seedrandom(Math.floor(Math.random() * 1e9)); // new random seed
   const burgs = pack.burgs.filter(b => b.i && !b.removed), states = pack.states.filter(s => s.i && !s.removed);
+  // burgs sorted by a bit randomized population:
+  const sorted = burgs.map(b => [b.i, b.population * Math.random()]).sort((a, b) => b[1] - a[1]).map(b => b[0]);
   const capitalsTree = d3.quadtree();
   let spacing = (graphWidth + graphHeight) / 2 / states.length; // min distance between capitals
 
   // turn all old capitals into towns
-  states.forEach(s => {
-    moveBurgToGroup(s.capital, "towns");
-    s.capital = 0;
+  burgs.filter(b => b.capital).forEach(b => {
+    moveBurgToGroup(b.i, "towns");
+    b.capital = false;
   });
 
   states.forEach(s => {
     let newCapital = 0, x = 0, y = 0;
 
-    while (!newCapital) {
-      newCapital = burgs[biased(1, burgs.length-1, 3)];
+    for (let i=0; i < sorted.length && !newCapital; i++) {
+      newCapital = burgs[sorted[i]];
       x = newCapital.x, y = newCapital.y;
       if (capitalsTree.find(x, y, spacing) !== undefined) {
         spacing -= 1;
@@ -127,23 +159,44 @@ function regenerateStates() {
     }
 
     capitalsTree.add([x, y]);
+    newCapital.capital = true;
     s.capital = newCapital.i;
     s.center = newCapital.cell;
     s.culture = newCapital.culture;
-    s.expansionism = rn(Math.random() * powerInput.value / 2 + 1, 1);
+    s.expansionism = rn(Math.random() * powerInput.value + 1, 1);
     const basename = newCapital.name.length < 9 && newCapital.cell%5 === 0 ? newCapital.name : Names.getCulture(s.culture, 3, 6, "", 0);
     s.name = Names.getState(basename, s.culture);
+    const nomadic = [1, 2, 3, 4].includes(pack.cells.biome[newCapital.cell]);
+    s.type = nomadic ? "Nomadic" : pack.cultures[s.culture].type === "Nomadic" ? "Generic" : pack.cultures[s.culture].type;
     moveBurgToGroup(newCapital.i, "cities");
-
-    document.getElementById("statesBodySection").innerHTML = "<i>Please refresh the editor!</i>";
-    document.getElementById("burgsBody").innerHTML = "<i>Please refresh the editor!</i>";
-    document.getElementById("burgsFilterState").options.length = 0;
-    document.getElementById("burgsFilterCulture").options.length = 0;
   });
 
+  unfog();
   BurgsAndStates.expandStates();
-  if (!layerIsOn("toggleStates")) toggleStates(); else drawStatesWithBorders();
+  BurgsAndStates.normalizeStates();
+  BurgsAndStates.collectStatistics();
+  BurgsAndStates.assignColors();
+  BurgsAndStates.generateDiplomacy();
+  BurgsAndStates.defineStateForms();
+  BurgsAndStates.generateProvinces(true);
+  if (!layerIsOn("toggleStates")) toggleStates(); else drawStates();
+  if (!layerIsOn("toggleBorders")) toggleBorders(); else drawBorders();
   BurgsAndStates.drawStateLabels();
+
+  if (document.getElementById("burgsEditorRefresh").offsetParent) burgsEditorRefresh.click();
+  if (document.getElementById("statesEditorRefresh").offsetParent) statesEditorRefresh.click();
+}
+
+function regenerateProvinces() {
+  unfog();
+  BurgsAndStates.generateProvinces(true);
+  drawBorders();
+  if (layerIsOn("toggleProvinces")) drawProvinces();
+}
+
+function regenerateReligions() {
+  Religions.generate();
+  if (!layerIsOn("toggleReligions")) toggleReligions(); else drawReligions();
 }
 
 function unpressClickToAddButton() {
@@ -179,12 +232,18 @@ function addLabelOnClick() {
     .attr("stroke-width", 0).attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC")
     .attr("font-size", 18).attr("data-size", 18).attr("filter", null);
 
-  group.append("text").attr("id", id)
-    .append("textPath").attr("xlink:href", "#textPath_"+id).text(name)
-    .attr("startOffset", "50%").attr("font-size", "100%");
+  const example = group.append("text").attr("x", 0).attr("x", 0).text(name);
+  const width = example.node().getBBox().width;
+  const x = width / -2; // x offset;
+  example.remove();
 
-  defs.select("#textPaths").append("path").attr("id", "textPath_"+id)
-    .attr("d", `M${point[0]-60},${point[1]} h${120}`);
+  group.append("text").attr("id", id)
+    .append("textPath").attr("xlink:href", "#textPath_"+id).attr("startOffset", "50%").attr("font-size", "100%")
+    .append("tspan").attr("x", x).text(name);
+
+  defs.select("#textPaths")
+    .append("path").attr("id", "textPath_"+id)
+    .attr("d", `M${point[0]-width},${point[1]} h${width*2}`);
 
   if (d3.event.shiftKey === false) unpressClickToAddButton();
 }

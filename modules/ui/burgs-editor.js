@@ -8,11 +8,13 @@ function editBurgs() {
   const body = document.getElementById("burgsBody");
   updateFilter();
   burgsEditorAddLines();
+  $("#burgsEditor").dialog();
 
   if (modules.editBurgs) return;
   modules.editBurgs = true;
 
-  $("#burgsEditor").dialog({title: "Burgs Editor", width: fitContent(), close: exitAddBurgMode,
+  $("#burgsEditor").dialog({
+    title: "Burgs Editor", resizable: false, width: fitContent(), close: exitAddBurgMode,
     position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
   });
 
@@ -64,7 +66,7 @@ function editBurgs() {
     let lines = "", totalPopulation = 0;
 
     for (const b of filtered) {
-      const population = rn(b.population * populationRate.value * urbanization.value);
+      const population = b.population * populationRate.value * urbanization.value;
       totalPopulation += population;
       const type = b.capital && b.port ? "a-capital-port" : b.capital ? "c-capital" : b.port ? "p-port" : "z-burg";
       const state = pack.states[b.state].name;
@@ -76,7 +78,7 @@ function editBurgs() {
         <span data-tip="Burg state" class="burgState ${showState}">${state}</span>
         <select data-tip="Dominant culture. Click to change" class="stateCulture">${getCultureOptions(b.culture)}</select>
         <span data-tip="Burg population" class="icon-male"></span>
-        <input data-tip="Burg population. Type to change" class="burgPopulation" value=${population}>
+        <input data-tip="Burg population. Type to change" class="burgPopulation" value=${si(population)}>
         <div class="burgType">
           <span data-tip="${b.capital ? ' This burg is a state capital' : 'Click to assign a capital status'}" class="icon-star-empty${b.capital ? '' : ' inactive pointer'}"></span>
           <span data-tip="Click to toggle port status" class="icon-anchor pointer${b.port ? '' : ' inactive'}" style="font-size:.9em"></span>
@@ -88,7 +90,7 @@ function editBurgs() {
 
     // update footer
     burgsFooterBurgs.innerHTML = filtered.length;
-    burgsFooterPopulation.innerHTML = filtered.length ? rn(totalPopulation / filtered.length) : 0;
+    burgsFooterPopulation.innerHTML = filtered.length ? si(totalPopulation / filtered.length) : 0;
 
     // add listeners
     body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseenter", ev => burgHighlightOn(ev)));
@@ -102,7 +104,6 @@ function editBurgs() {
     body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.addEventListener("click", triggerBurgRemove));
 
     applySorting(burgsHeader);
-    $("#burgsEditor").dialog();
   }
 
   function getCultureOptions(culture) {
@@ -147,16 +148,17 @@ function editBurgs() {
   function changeBurgPopulation() {
     const burg = +this.parentNode.dataset.id;
     if (this.value == "" || isNaN(+this.value)) {
-      tip("Please provide a valid number", false, "error");
-      this.value = pack.burgs[burg].population * populationRate.value * urbanization.value;
+      tip("Please provide an integer number", false, "error");
+      this.value = si(pack.burgs[burg].population * populationRate.value * urbanization.value);
       return;
     }
     pack.burgs[burg].population = this.value / populationRate.value / urbanization.value;
     this.parentNode.dataset.population = this.value;
+    this.value = si(this.value);
 
     const population = [];
-    body.querySelectorAll(":scope > div").forEach(el => population.push(+el.dataset.population));
-    pack.burgsFooterPopulation.innerHTML = rn(d3.mean(population));
+    body.querySelectorAll(":scope > div").forEach(el => population.push(+getInteger(el.dataset.population)));
+    burgsFooterPopulation.innerHTML = si(d3.mean(population));
   }
 
   function toggleCapitalStatus() {
@@ -286,14 +288,14 @@ function editBurgs() {
       if (!data.length) {tip("Cannot parse the list, please check the file format", false, "error"); return;}
 
       let change = [];
-      let message = `Burgs will be renamed as below. Please confirm`;
-      message += `<div class="overflow-div"><table class="overflow-table"><tr><th>Id</th><th>Current name</th><th>New Name</th></tr>`;
+      let message = `Burgs will be renamed as below. Please confirm;
+                    <div class="overflow-div"><table class="overflow-table"><tr><th>Id</th><th>Current name</th><th>New Name</th></tr>`;
 
-      for (let i=1; i < data.length && i < pack.burgs.length; i++) {
+      for (let i=0; i < data.length && i <= pack.burgs.length; i++) {
         const v = data[i];
-        if (!v || v == pack.burgs[i].name) continue;
-        change.push({i, name: v});
-        message += `<tr><td style="width:20%">${i}</td><td style="width:40%">${pack.burgs[i].name}</td><td style="width:40%">${v}</td></tr>`;
+        if (!v || !pack.burgs[i+1] || v == pack.burgs[i+1].name) continue;
+        change.push({id:i+1, name: v});
+        message += `<tr><td style="width:20%">${i+1}</td><td style="width:40%">${pack.burgs[i+1].name}</td><td style="width:40%">${v}</td></tr>`;
       }
       message += `</tr></table></div>`;
       alertMessage.innerHTML = message;
@@ -303,7 +305,7 @@ function editBurgs() {
           Cancel: function() {$(this).dialog("close");},
           Confirm: function() {
             for (let i=0; i < change.length; i++) {
-              const id = change[i].i;
+              const id = change[i].id;
               pack.burgs[id].name = change[i].name;
               burgLabels.select("[data-id='" + id + "']").text(change[i].name);
             }
@@ -337,3 +339,4 @@ function editBurgs() {
   }
 
 }
+

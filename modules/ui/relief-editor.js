@@ -12,8 +12,8 @@ function editReliefIcon() {
   updateReliefSizeInput();
 
   $("#reliefEditor").dialog({
-    title: "Edit Relief Icons", resizable: false,
-    position: {my: "center top+40", at: "top", of: d3.event, collision: "fit"},
+    title: "Edit Relief Icons", resizable: false, width: 294,
+    position: {my: "left top", at: "left+10 top+10", of: "#map"},
     close: closeReliefEditor
   });
 
@@ -27,6 +27,7 @@ function editReliefIcon() {
 
   document.getElementById("reliefSize").addEventListener("input", changeIconSize);
   document.getElementById("reliefSizeNumber").addEventListener("input", changeIconSize);
+  document.getElementById("reliefEditorSet").addEventListener("change", changeIconsSet);
   reliefIconsDiv.querySelectorAll("svg").forEach(el => el.addEventListener("click", changeIcon));
 
   document.getElementById("reliefCopy").addEventListener("click", copyIcon);
@@ -53,8 +54,13 @@ function editReliefIcon() {
 
   function updateReliefIconSelected() {
     const type = elSelected.attr("data-type");
+    const button = reliefIconsDiv.querySelector("svg[data-type='"+type+"']");
+
     reliefIconsDiv.querySelectorAll("svg.pressed").forEach(b => b.classList.remove("pressed"));
-    reliefIconsDiv.querySelector("svg[data-type='"+type+"']").classList.add("pressed");
+    button.classList.add("pressed");
+    reliefIconsDiv.querySelectorAll("div").forEach(b => b.style.display = "none");
+    button.parentNode.style.display = "block";
+    reliefEditorSet.value = button.parentNode.dataset.type;
   }
 
   function updateReliefSizeInput() {
@@ -194,6 +200,12 @@ function editReliefIcon() {
     elSelected.attr("width", size).attr("height", size).attr("data-size", size);
     const x = +elSelected.attr("x"), y = +elSelected.attr("y");
     elSelected.attr("x", x-shift).attr("y", y-shift);
+  }
+
+  function changeIconsSet() {
+    const set = reliefEditorSet.value;
+    reliefIconsDiv.querySelectorAll("div").forEach(b => b.style.display = "none");
+    reliefIconsDiv.querySelector("div[data-type='" + set + "']").style.display = "block";
   }
 
   function changeIcon() {

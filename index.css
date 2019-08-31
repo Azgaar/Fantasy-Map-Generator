@@ -41,6 +41,10 @@ button {
 	left: 1em;
 }
 
+#pickerContainer {
+	position: absolute;
+}
+
 input, button, select, a {
 	outline: none;
 }
@@ -92,11 +96,11 @@ button, select, a {
 	stroke-linejoin: round;
 }
 
-#regions, #terrs, #biomes, #tooltip, #temperature, #texture, #landmass	{
+#regions, #provs, #terrs, #biomes, #tooltip, #temperature, #texture, #landmass	{
 	pointer-events: none;
 }
 
-#statesBody {
+#statesBody, #provincesBody {
 	stroke-width: 2;
 	fill-rule: evenodd;
 	mask: url(#land);
@@ -111,6 +115,13 @@ button, select, a {
 #borders {
 	stroke-linejoin: round;
 	fill: none;
+}
+
+#provinceLabels {
+  text-anchor: middle;
+	fill: "#18181a";
+	font-family: "Georgia";
+	font-size: 9px;
 }
 
 @keyframes hideshow {
@@ -183,7 +194,7 @@ i.icon-lock {
 }
 
 #labels {
-	text-anchor: middle;
+	text-anchor: start;
 	dominant-baseline: central;
 	text-shadow: 0 0 4px white;
 	cursor: pointer;
@@ -191,6 +202,7 @@ i.icon-lock {
 
 #burgLabels {
 	dominant-baseline: alphabetic;
+	text-anchor: middle;
 }
 
 #routeLength, #riverLength {
@@ -538,8 +550,8 @@ fieldset {
 	background-color: #997b89;
 	cursor: pointer;
 	padding: 4px;
-	margin: 2px 0;
-	display: inline-block;
+	margin: 2px 3px;
+	float: left;
 	width: 28%;
 	text-align: center;
 }
@@ -643,6 +655,77 @@ fieldset {
 	text-align: center;
 }
 
+.matrix-table {
+  width: 100%;
+  font-size: smaller;
+  text-align: center;
+  border-collapse: collapse;
+}
+
+table.matrix-table th, table.matrix-table td {
+  border: 1px solid #5d4651;
+  height: 2em;
+	padding: .2em;
+	position: relative;
+}
+
+table.matrix-table th {
+	background-color: #302a2a;
+	color: #ffffff;
+}
+
+table.matrix-table tr:hover th {
+  background: #3e3636;
+}
+
+table.matrix-table td:hover {
+	outline: 2px solid #5d4651;
+  outline-offset: -1px;
+  z-index: 1;
+}
+
+table.matrix-table td.Ally {
+  background-color: #73ec73;
+  color: #000000;
+}
+
+table.matrix-table td.Sympathy {
+	background-color:#d4f8aa;
+}
+
+table.matrix-table td.Neutral {
+	background-color:#d8d9d3;
+}
+
+table.matrix-table td.Suspicion {
+	background-color:#f3c7c4;
+}
+
+table.matrix-table td.Enemy {
+	background-color:#ffa39c;
+	color: #af0d23;
+}
+
+table.matrix-table td.Unknown {
+	background-color:#c1bfbf;
+}
+
+table.matrix-table td.Rival {
+	background-color:#bd845c;
+}
+
+table.matrix-table td.Vassal {
+	background-color:#87CEFA;
+}
+
+table.matrix-table td.Suzerain {
+	background-color:#8f8fe1;
+}
+
+table.matrix-table td.x {
+	background-color:#d4ca94;
+}
+
 #sizeOutput {
 	color: green;
 }
@@ -706,26 +789,43 @@ body button.noicon {
 	float: right; 
 }
 
-#templateBody input {
-	width: 36px;
-	height: 12px;
-	border: 0;
+#templateBody input,
+#templateBody select {
+  width: 4em;
+  height: 1em;
+  border: 0;
+  font-size: .95em;
+  background-color: #ffffff95;
+  color: #05044d;
+	font-style: italic;
 	font-family: monospace;
 }
 
 #templateBody select {
-	border: 0;
-	width: 79px;
+	width: 8em;
 	cursor: pointer;
-	font-family: monospace;
-	height: 12px;
 	font-size: .9em;
+}
+
+#templateBody .icon-resize-vertical {
+  cursor: row-resize;
+  font-size: .9em;
+  color: #555555;
+  margin: 1px 1px;
+}
+
+#templateBody .icon-check-empty,
+#templateBody .icon-check {
+  width: 1.1em;
+  cursor: pointer;
+  color: #575957;
+  font-size: .9em;
 }
 
 #controlPoints {
 	fill: #ff0000;
 	stroke: #841f1f;
-	stroke-width: .2;
+	stroke-width: .3;
 	cursor: move;
 	opacity: .8;
 }
@@ -733,8 +833,8 @@ body button.noicon {
 #controlPoints > path {
 	fill: none;
 	stroke: #000000;
-	stroke-width: 1;
-	opacity: .3;
+	stroke-width: 2;
+	opacity: .4;
 	cursor: pointer;
 }
 
@@ -927,10 +1027,22 @@ div.slider .ui-slider-handle {
 	display: none !important;
 }
 
+.burgs-table {
+	max-height: 75vh;
+	overflow-x: hidden;
+	overflow-y: scroll;
+}
+
 .table {
 	max-height: 75vh;
 	overflow-x: hidden;
 	overflow-y: auto;
+}
+
+div.header > div {
+	font-weight: bold;
+	font-size: .9em;
+	display: inline-block;
 }
 
 .sortable {
@@ -957,6 +1069,7 @@ div.states {
 	margin: 1px 0;
 	padding: 0 2px;
 	font-size: .9em;
+	line-height: 15px;
 }
 
 div.states:hover {
@@ -1010,8 +1123,15 @@ div.states>.statePopulation {
 	width: 30px;
 }
 
-div.states .icon-trash-empty {
+div.states .icon-trash-empty,
+div.states .icon-eye,
+div.states .icon-pin {
 	cursor: pointer;
+}
+
+div.states .icon-resize-vertical {
+	cursor: row-resize;
+	font-size: .9em;
 }
 
 div.states>[class^="icon-"] {
@@ -1019,9 +1139,8 @@ div.states>[class^="icon-"] {
 	padding: 0;
 }
 
-div.states>[class="icon-arrows-cw"] {
+div.states > .icon-arrows-cw {
 	color: #67575c;
-	padding: 0 2px 0 0;
 	font-size: 9px;
 	cursor: pointer;
 }
@@ -1037,15 +1156,17 @@ div.states>.small {
 
 div.states>.cultureName {
 	width: 50px;
+	white-space: nowrap;
 }
 
 div.states>.culturePopulation {
 	width: 40px;
 }
 
-div.states > .cultureBase, 
+div.states > .cultureBase,
 div.states > .cultureType,
-div.states > .stateCulture {
+div.states > .stateCulture,
+div.states > .diplomacyRelations {
 	width: 46px;
 	cursor: pointer;
 	border: 0;
@@ -1053,6 +1174,10 @@ div.states > .stateCulture {
 	-webkit-appearance: textfield;
 	-moz-appearance: none;
 	appearance: textfield;
+}
+
+div.states > .cultureBase {
+	width: 6em;
 }
 
 div.states > .burgName,
@@ -1075,12 +1200,20 @@ div.states .burgType > span {
 	transition: 0.2s;
 }
 
-div.states .burgType > span.inactive {
-	color: #dfdbdb;
+div.states span.inactive {
+	color: #c6c2c2;
 }
 
-div.states .burgType > span.inactive:hover {
-	color: #d1d0d0;
+div.states span.inactive:hover {
+	color: #abaaaa;
+}
+
+#diplomacyBodySection > div {
+	cursor: pointer;
+}
+
+div.states > div.stateName {
+	width: 12em;
 }
 
 #burgsFooterPopulation {
@@ -1089,6 +1222,28 @@ div.states .burgType > span.inactive:hover {
 	color: #666666;
 	font-style: italic;
 	line-height: 14px;
+}
+
+div.states>.religionName {
+	width: 11em;
+}
+
+div.states>.religionType {
+	width: 5em;
+	cursor: pointer;
+	border: 0;
+	background-color: transparent;
+	-webkit-appearance: textfield;
+	-moz-appearance: none;
+	appearance: textfield;
+}
+
+div.states>.religionForm {
+	width: 6em;
+}
+
+div.states>.religionDeidy {
+	width: 15em;
 }
 
 .placeholder {
@@ -1103,8 +1258,16 @@ span.ui-dialog-title>input.stateColor {
 }
 
 div.states.selected {
-	border: 1px solid #b28585;
-	background-image: linear-gradient(to right, #e5dada 100%, #f2f2f2 51%, #fcfcfc 0%);
+	border-color: #b28585;
+	background-image: linear-gradient(to right, #f2f2f2 0%, #ebe7e7 50%, #E5DADB 100%);
+}
+
+div.states.Self {
+  border-color: #858b8e;
+  background-image: linear-gradient(to right, #f2f2f2 0%, #b0c6d9 100%);
+	font-style: italic;
+	margin-bottom: .2em;
+	cursor: default !important;
 }
 
 div.states button.selectCapital {
@@ -1118,6 +1281,64 @@ div.states > input.biomeName {
 
 div.states > div.biomeArea {
 	width: 50px;
+}
+
+.zoneFill {
+  stroke: #666666;
+  stroke-width: 2;
+  cursor: pointer;
+}
+
+#pickerHeader {
+	fill: #916e7f;
+	cursor: move;
+}
+
+#pickerLabel {
+  fill: #f8ffff;
+  font-size: 1.2em;
+  font-weight: bold;
+	font-family: Arial, Helvetica, sans-serif;
+	cursor: move !important;
+}
+
+#picker text {
+	cursor: default;
+}
+
+#pickerControls line {
+	stroke: #999999;
+	stroke-width: 2;
+}
+
+#pickerControls circle {
+	fill: #ffeb3b;
+	stroke: #666666;
+	cursor: ew-resize;
+}
+
+#pickerControls circle:hover {
+	fill: #eca116;
+	stroke: #000000;
+}
+
+#pickerColors rect, #pickerHatches rect {
+	cursor: pointer;
+}
+
+#picker rect.selected {
+  outline: 2px dashed #b90c0c;
+  stroke-width: 0;
+}
+
+.hoverButton {
+	position: sticky;
+  margin-left: -1.8em;
+  margin-top: 1px;
+  background-color: #dedede;
+  font-size: 8px;
+  cursor: pointer;
+	padding: 0px 3px !important;
 }
 
 #unitsBody>div>* {
@@ -1148,6 +1369,15 @@ div.states > div.biomeArea {
 #unitsBody>div>input,
 #unitsBody>div>select {
 	border: 1px solid #e9e9e9;
+}
+
+#unitsEditor i.icon-lock-open,
+#unitsEditor i.icon-lock {
+	color: #626573;
+	font-size: .8em;
+	cursor: pointer;
+  position: fixed;
+  margin: .4em 0 0 -.9em;
 }
 
 #distanceUnitOutput {
@@ -1218,19 +1448,12 @@ div.states > div.biomeArea {
 	fill: none;
 }
 
-#coordinates text {
+#coordinateLabels {
 	fill: #333333;
-	stroke: none;
 	font-family: monospace;
 	text-shadow: 0 0 4px white;
-}
-
-#lalitude text {
+	stroke-width: 0;
 	dominant-baseline: central;
-}
-
-#longitude text {
-	dominant-baseline: hanging;
 	text-anchor: middle;
 }
 
@@ -1338,25 +1561,24 @@ input[type="checkbox"] {
 }
 
 .checkbox+.checkbox-label:before {
-	content: '';
-	background: #ece6eb;
-	border-radius: 1px;
-	display: inline-block;
-	vertical-align: text-top;
-	width: 7px;
-	height: 7px;
-	padding: 2px;
-	margin-right: 3px;
+  content: '';
+  display: inline-block;
+  vertical-align: text-top;
+  width: 7px;
+  height: 7px;
+  padding: 2px;
+  margin-right: 3px;
+	border: 1px solid darkgrey;
+  border-radius: 15%;
+	background: white;
 }
 
 .checkbox:checked+.checkbox-label:before {
-	line-height: 8px;
-	font-size: 12px;
-	font-weight: bold;
-	content: '✓';
-	background: #c6b4bb;
-	color: #1c181a;
-	box-shadow: inset 0px 0px 0px 2px #ece6ea;
+  line-height: 8px;
+  font-size: 12px;
+  font-weight: bold;
+  content: '✓';
+  color: #333333;
 }
 
 .shadowed {
@@ -1385,12 +1607,6 @@ input[type="checkbox"] {
 	display: inline-block;
 	vertical-align: middle;
 	height: 100%;
-}
-
-#cultureCenters circle {
-	stroke-width: 2;
-	stroke: #00000080;
-	cursor: pointer;
 }
 
 div.textual select,
@@ -1458,32 +1674,31 @@ div.textual span, .textual legend {
 	fill: none;
 }
 
-div#legend {
+div#notes {
 	display: none;
-	position: fixed;
-	width: 25vw;
-	right: 1vw;
-	top: 1vw;
-	font-size: 1em;
-	border: 1px solid #5e4fa2;
-	background: #cdb99040;
-	box-shadow: 2px 2px 5px -3px #3a2804;
-	white-space: pre-line;
-	-moz-user-select: none;
-	user-select: none;
+  position: fixed;
+  width: 28vw;
+  right: 1vw;
+  top: 1vw;
+  font-size: 1.2em;
+  border: 1px solid #5e4fa2;
+  background: rgba(255, 250, 228, 0.7);
+  box-shadow: 2px 2px 5px -3px #3a2804;
+  white-space: pre-line;
+  -moz-user-select: none;
+  user-select: none;
 }
 
-div#legendHeader {
+div#notesHeader {
 	font-weight: bold;
 	font-size: 1.3em;
 	padding: 0 0 4px 14px;
 	border-bottom: 1px solid #5e4fa2;
 }
 
-div#legendBody {
+div#notesBody {
 	padding: 0 10px;
 }
-
 
 svg.button {
 	position: relative;
@@ -1493,13 +1708,16 @@ svg.button {
 }
 
 #reliefEditor > div > div {
-  width: 4em;
   font-style: italic;
   display: inline-block;
 }
 
+#reliefEditor div.reliefEditorLabel {
+	width: 4em;
+}
+
 #reliefEditor input[type="range"] {
-	width: 15em;
+	width: 16em;
 }
 
 #reliefEditor input[type="number"] {
@@ -1512,22 +1730,24 @@ svg.button {
 	max-width: 30vw;
 }
 
-#reliefIconsDiv > svg {
+#reliefIconsDiv svg {
 	width: 40px;
 	height: 40px;
-  border-radius: 15%;
+	background-color: #e7e6e4;
   border: 1px solid #a9a9a9;
 	cursor: pointer;
 }
 
-#reliefIconsDiv > svg:hover {
+#reliefIconsDiv svg:hover {
 	border-color: #5c5c5c;
 	background-color: #eef6fb;
+	transition: all .3s ease-out 3s;
+	transform: scale(2);
 }
 
-#reliefIconsDiv > svg.pressed {
+#reliefIconsDiv svg.pressed {
   border: 1px solid #b3352c;
-  background-color: #eef6fb;
+  background-color: #f2f2f2;
 }
 
 #reliefIconsSeletionAny {
@@ -1540,6 +1760,7 @@ svg.button {
 	-moz-user-select: text;
 	user-select: text;
 	max-height: 75vh;
+	max-width: 75vw;
 }
 
 #alertMessage ul {
@@ -1558,27 +1779,28 @@ svg.button {
 }
 
 #worldControls {
-	width: 190px;
+	width: 16em;
 	display: inline-block;
-	vertical-align: top;	
+	vertical-align: top;
 }
 
-#worldControls > label {
+#worldControls > div {
 	display: block;
 	margin: 1px 0;
-	font-size: 11px;	
 	padding: 2px 0;
 }
 
 #worldControls input[type="number"] {
 	border: 1px solid #e5e5e5;
 	padding: 0px;
+	width: 3.2em;
 }
 
 #worldControls i.icon-lock-open,
 #worldControls i.icon-lock {
 	color: #626573;
-	font-size: 9px;
+	font-size: .8em;
+	cursor: pointer;
 }
 
 #globe {
@@ -1647,6 +1869,17 @@ svg.button {
 #globeEquator {
 	stroke: red;
 	stroke-width: 1.4;
+}
+
+#legend {
+	cursor: move;
+	-moz-user-select: none;
+	user-select: none;	
+}
+
+.dontAsk {
+	display: inline-block;
+	margin: 10px 0 0 7px;
 }
 
 #debug {

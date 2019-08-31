@@ -181,6 +181,8 @@ function editMarker() {
         ["1F3AA", "🎪", "Tent"],
         ["1F3E8", "🏨", "Hotel"],
         ["1F4B0", "💰", "Money bag"],
+        ["1F6A8", "🚨", "Revolving Light"],
+        ["1F309", "🌉", "Bridge at Night"],
         ["1F4A8", "💨", "Dashing away"],
         ["1F334", "🌴", "Palm"],
         ["1F335", "🌵", "Cactus"],
@@ -217,6 +219,7 @@ function editMarker() {
         ["1F352", "🍒", "Cherries"],
         ["1F36F", "🍯", "Honey pot"],
         ["1F37A", "🍺", "Beer"],
+        ["1F37B", "🍻", "Beers"],
         ["1F377", "🍷", "Wine glass"],
         ["1F3BB", "🎻", "Violin"],
         ["1F3B8", "🎸", "Guitar"],
@@ -248,6 +251,7 @@ function editMarker() {
         ["2317", "⌗", "Hash"],
         ["2318", "⌘", "POI"],
         ["2307", "⌇", "Wavy"],
+        ["27F1", "⟱", "Downwards Quadruple"],
         ["21E6", "⇦", "Left arrow"],
         ["21E7", "⇧", "Top arrow"],
         ["21E8", "⇨", "Right arrow"],
@@ -442,7 +446,7 @@ function editMarker() {
 
   function editMarkerLegend() {
     const id = elSelected.attr("id");
-    editLegends(id, id);
+    editNotes(id, id);
   }
 
   function toggleAddMarker() {

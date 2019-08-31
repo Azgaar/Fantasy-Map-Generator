@@ -1,23 +1,24 @@
 "use strict";
 function editLabel() {
   if (customization) return;
-  closeDialogs(".stable");
+  closeDialogs();
   if (!layerIsOn("toggleLabels")) toggleLabels();
 
-  const node = d3.event.target;
-  elSelected = d3.select(node.parentNode).call(d3.drag().on("start", dragLabel)).classed("draggable", true);
+  const tspan = d3.event.target;
+  const textPath = tspan.parentNode;
+  const text = textPath.parentNode;
+  elSelected = d3.select(text).call(d3.drag().on("start", dragLabel)).classed("draggable", true);
   viewbox.on("touchmove mousemove", showEditorTips);
 
   $("#labelEditor").dialog({
-    title: "Edit Label: " + node.innerHTML, resizable: false,
-    position: {my: "center top+10", at: "bottom", of: node, collision: "fit"},
+    title: "Edit Label", resizable: false,
+    position: {my: "center top+10", at: "bottom", of: text, collision: "fit"},
     close: closeLabelEditor
   });
 
-  debug.append("g").attr("id", "controlPoints").attr("transform", elSelected.attr("transform"));
   drawControlPointsAndLine();
-  selectLabelGroup(node);
-  updateValues(node);
+  selectLabelGroup(text);
+  updateValues(textPath);
 
   if (modules.editLabel) return;
   modules.editLabel = true;
@@ -40,20 +41,21 @@ function editLabel() {
   document.getElementById("labelStartOffset").addEventListener("input", changeStartOffset);
   document.getElementById("labelRelativeSize").addEventListener("input", changeRelativeSize);
 
+  document.getElementById("labelAlign").addEventListener("click", editLabelAlign);
   document.getElementById("labelLegend").addEventListener("click", editLabelLegend);
   document.getElementById("labelRemoveSingle").addEventListener("click", removeLabel);
 
   function showEditorTips() {
     showMainTip();
-    if (d3.event.target.parentNode.id === elSelected.attr("id")) tip("Drag to shift the label"); else
+    if (d3.event.target.parentNode.parentNode.id === elSelected.attr("id")) tip("Drag to shift the label"); else
     if (d3.event.target.parentNode.id === "controlPoints") {
       if (d3.event.target.tagName === "circle") tip("Drag to move, click to delete the control point");
       if (d3.event.target.tagName === "path") tip("Click to add a control point");
     }
   }
 
-  function selectLabelGroup(node) {
-    const group = node.parentNode.parentNode.id;
+  function selectLabelGroup(text) {
+    const group = text.parentNode.id;
     const select = document.getElementById("labelGroupSelect");
     select.options.length = 0; // remove all options
 
@@ -63,23 +65,26 @@ function editLabel() {
     });
   }
 
-  function updateValues(node) {
-    document.getElementById("labelText").value = node.innerHTML;
-    document.getElementById("labelStartOffset").value = parseFloat(node.getAttribute("startOffset"));
-    document.getElementById("labelRelativeSize").value = parseFloat(node.getAttribute("font-size"));  
+  function updateValues(textPath) {
+    document.getElementById("labelText").value = [...textPath.querySelectorAll("tspan")].map(tspan => tspan.textContent).join("|");
+    document.getElementById("labelStartOffset").value = parseFloat(textPath.getAttribute("startOffset"));
+    document.getElementById("labelRelativeSize").value = parseFloat(textPath.getAttribute("font-size"));
   }
 
   function drawControlPointsAndLine() {
+    debug.select("#controlPoints").remove();
+    debug.append("g").attr("id", "controlPoints").attr("transform", elSelected.attr("transform"));
     const path = document.getElementById("textPath_" + elSelected.attr("id"));
     debug.select("#controlPoints").append("path").attr("d", path.getAttribute("d")).on("click", addInterimControlPoint);
     const l = path.getTotalLength();
-    const increment = l / Math.max(Math.ceil(l / 100), 2);
+    if (!l) return;
+    const increment = l / Math.max(Math.ceil(l / 200), 2);
     for (let i=0; i <= l; i += increment) {addControlPoint(path.getPointAtLength(i));}
   }
 
   function addControlPoint(point) {
     debug.select("#controlPoints").append("circle")
-      .attr("cx", point.x).attr("cy", point.y).attr("r", 1)
+      .attr("cx", point.x).attr("cy", point.y).attr("r", 2.5).attr("stroke-width", .8)
       .call(d3.drag().on("drag", dragControlPoint))
       .on("click", clickControlPoint);
   }
@@ -103,7 +108,7 @@ function editLabel() {
   }
 
   function clickControlPoint() {
-    this.remove(); 
+    this.remove();
     redrawLabelPath();
   }
 
@@ -127,7 +132,7 @@ function editLabel() {
 
     const before = ":nth-child(" + (index + 2) + ")";
     debug.select("#controlPoints").insert("circle", before)
-      .attr("cx", point[0]).attr("cy", point[1]).attr("r", 1)
+      .attr("cx", point[0]).attr("cy", point[1]).attr("r", 2.5).attr("stroke-width", .8)
       .call(d3.drag().on("drag", dragControlPoint))
       .on("click", clickControlPoint);
 
@@ -240,12 +245,24 @@ function editLabel() {
   }
   
   function changeText() {
-    const text = document.getElementById("labelText").value;
-    elSelected.select("textPath").text(text);
-    if (elSelected.attr("id").slice(0,10) === "stateLabel") {
-      const id = +elSelected.attr("id").slice(10);
-      pack.states[id].name = text;    
-    }
+    const input = document.getElementById("labelText").value;
+    const el = elSelected.select("textPath").node();
+    const example = d3.select(elSelected.node().parentNode)
+      .append("text").attr("x", 0).attr("x", 0)
+      .attr("font-size", el.getAttribute("font-size")).node();
+
+    const lines = input.split("|");
+    const top = (lines.length - 1) / -2; // y offset
+    const inner = lines.map((l, d) => {
+      example.innerHTML = l;
+      const left = example.getBBox().width / -2; // x offset
+      return `<tspan x="${left}px" dy="${d?1:top}em">${l}</tspan>`;
+    }).join("");
+
+    el.innerHTML = inner;
+    example.remove();
+
+    if (elSelected.attr("id").slice(0,10) === "stateLabel") tip("Use States Editor to change an actual state name, not just a label", false, "warning");
   }
 
   function generateRandomName() {
@@ -282,12 +299,21 @@ function editLabel() {
   function changeRelativeSize() {
     elSelected.select("textPath").attr("font-size", this.value + "%");
     tip("Label relative size: " + this.value + "%");
+    changeText();
+  }
+
+  function editLabelAlign() {
+    const bbox = elSelected.node().getBBox();
+    const c = [bbox.x + bbox.width / 2, bbox.y + bbox.height / 2];
+    const path = defs.select("#textPath_" + elSelected.attr("id"));
+    path.attr("d", `M${c[0]-bbox.width},${c[1]}h${bbox.width*2}`);
+    drawControlPointsAndLine();
   }
 
   function editLabelLegend() {
     const id = elSelected.attr("id");
     const name = elSelected.text();
-    editLegends(id, name);
+    editNotes(id, name);
   }
 
   function removeLabel() {

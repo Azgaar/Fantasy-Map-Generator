@@ -1,7 +1,7 @@
 "use strict";
-function editLegends(id, name) {
+function editNotes(id, name) {
   // update list of objects
-  const select = document.getElementById("legendSelect");
+  const select = document.getElementById("notesSelect");
   for (let i = select.options.length; i < notes.length; i++) {
     select.options.add(new Option(notes[i].id, notes[i].id));
   }
@@ -16,54 +16,59 @@ function editLegends(id, name) {
       select.options.add(new Option(id, id));
     }
     select.value = id;
-    legendName.value = note.name;
-    legendText.value = note.legend;
+    notesName.value = note.name;
+    notesText.value = note.legend;
+  } else {
+    if (!notes.length) {
+      const value = "There are no added notes. Click on element (e.g. label) and add a free text note";
+      document.getElementById("notesText").value = value;
+    }
   }
 
   // open a dialog
-  $("#legendEditor").dialog({
-    title: "Legends Editor", minWidth: Math.min(svgWidth, 400),
+  $("#notesEditor").dialog({
+    title: "Notes Editor", minWidth: Math.min(svgWidth, 400),
     position: {my: "center", at: "center", of: "svg"}
   });
 
-  if (modules.editLegends) return;
-  modules.editLegends = true;
+  if (modules.editNotes) return;
+  modules.editNotes = true;
 
   // add listeners
-  document.getElementById("legendSelect").addEventListener("change", changeObject);
-  document.getElementById("legendName").addEventListener("input", changeName);
-  document.getElementById("legendText").addEventListener("input", changeText);
-  document.getElementById("legendFocus").addEventListener("click", validateHighlightElement);
-  document.getElementById("legendDownload").addEventListener("click", downloadLegends);
-  document.getElementById("legendUpload").addEventListener("click", () => legendsToLoad.click());
+  document.getElementById("notesSelect").addEventListener("change", changeObject);
+  document.getElementById("notesName").addEventListener("input", changeName);
+  document.getElementById("notesText").addEventListener("input", changeText);
+  document.getElementById("notesFocus").addEventListener("click", validateHighlightElement);
+  document.getElementById("notesDownload").addEventListener("click", downloadLegends);
+  document.getElementById("notesUpload").addEventListener("click", () => legendsToLoad.click());
   document.getElementById("legendsToLoad").addEventListener("change", uploadLegends);
-  document.getElementById("legendRemove").addEventListener("click", triggerLegendRemove);
+  document.getElementById("notesRemove").addEventListener("click", triggernotesRemove);
 
   function changeObject() {
     const note = notes.find(note => note.id === this.value);
-    legendName.value = note.name;
-    legendText.value = note.legend;
+    notesName.value = note.name;
+    notesText.value = note.legend;
   }
 
   function changeName() {
-    const id = document.getElementById("legendSelect").value;
+    const id = document.getElementById("notesSelect").value;
     const note = notes.find(note => note.id === id);
     note.name = this.value;
   }
 
   function changeText() {
-    const id = document.getElementById("legendSelect").value;
+    const id = document.getElementById("notesSelect").value;
     const note = notes.find(note => note.id === id);
     note.legend = this.value;
   }
 
   function validateHighlightElement() {
-    const select = document.getElementById("legendSelect");
+    const select = document.getElementById("notesSelect");
     const element = document.getElementById(select.value);
 
     // if element is not found
     if (element === null) {
-      alertMessage.innerHTML = "Related element is not found. Would you like to remove the note (legend item)?";
+      alertMessage.innerHTML = "Related element is not found. Would you like to remove the note?";
       $("#alert").dialog({resizable: false, title: "Element not found",
         buttons: {
           Remove: function() {$(this).dialog("close"); removeLegend();},
@@ -103,7 +108,7 @@ function editLegends(id, name) {
     const dataBlob = new Blob([legendString],{type:"text/plain"});
     const url = window.URL.createObjectURL(dataBlob);
     const link = document.createElement("a");
-    link.download = "legends" + Date.now() + ".txt";
+    link.download = "notes" + Date.now() + ".txt";
     link.href = url;
     link.click();
   }
@@ -116,8 +121,8 @@ function editLegends(id, name) {
       const dataLoaded = fileLoadedEvent.target.result;
       if (dataLoaded) {
         notes = JSON.parse(dataLoaded);
-        document.getElementById("legendSelect").options.length = 0;
-        editLegends(notes[0].id, notes[0].name);
+        document.getElementById("notesSelect").options.length = 0;
+        editNotes(notes[0].id, notes[0].name);
       } else {
         tip("Cannot load a file. Please check the data format", false, "error")
       }
@@ -125,9 +130,9 @@ function editLegends(id, name) {
     fileReader.readAsText(fileToLoad, "UTF-8");
   }
 
-  function triggerLegendRemove() {
-    alertMessage.innerHTML = "Are you sure you want to remove the selected legend?";
-    $("#alert").dialog({resizable: false, title: "Remove legend element",
+  function triggernotesRemove() {
+    alertMessage.innerHTML = "Are you sure you want to remove the selected note?";
+    $("#alert").dialog({resizable: false, title: "Remove note",
       buttons: {
         Remove: function() {$(this).dialog("close"); removeLegend();},
         Keep: function() {$(this).dialog("close");}
@@ -136,12 +141,12 @@ function editLegends(id, name) {
   }
 
   function removeLegend() {
-    const select = document.getElementById("legendSelect");
+    const select = document.getElementById("notesSelect");
     const index = notes.findIndex(n => n.id === select.value);
     notes.splice(index, 1);
     select.options.length = 0;
-    if (!notes.length) {$("#legendEditor").dialog("close"); return;}
-    editLegends(notes[0].id, notes[0].name);
+    if (!notes.length) {$("#notesEditor").dialog("close"); return;}
+    editNotes(notes[0].id, notes[0].name);
   }
 
 }

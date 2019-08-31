@@ -6,11 +6,12 @@ function editHeightmap() {
     alertMessage.innerHTML = `<p>Heightmap is a core element on which all other data (rivers, burgs, states etc) is based.
     So the best edit approach is to <i>erase</i> the secondary data and let the system automatically regenerate it on edit completion.</p> 
 
-    <p>You can also <i>keep</i> all the data as is, but you won't be able to change the coastline.</p>
+    <p>You can also <i>keep</i> all the data, but you won't be able to change the coastline.</p>
 
     <p>If you need to change the coastline and keep the data, you may try the <i>risk</i> edit option. 
-    The secondary data will be kept with burgs placed on water being removed, 
-    but the landmass change can cause unexpected data fluctuation and errors.</p>`;
+    The data will be restored as much as possible, but the coastline change can cause unexpected fluctuations and errors.</p>
+
+    <p>Check out <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization" target="_blank">wiki</a> for guidance.</p>`;
 
     $("#alert").dialog({resizable: false, title: "Edit Heightmap", width: 300,
       buttons: {
@@ -40,7 +41,9 @@ function editHeightmap() {
   document.getElementById("templateRedo").addEventListener("click", () => restoreHistory(edits.n+1));
 
   function enterHeightmapEditMode(type) {
-    editHeightmap.layers = getLayersState();
+    editHeightmap.layers = Array.from(mapLayers.querySelectorAll("li:not(.buttonoff)")).map(node => node.id); // store layers preset
+    editHeightmap.layers.forEach(l => document.getElementById(l).click()); // turn off all layers
+
     customization = 1;
     closeDialogs();
     tip('Heightmap edit mode is active. Click on "Exit Customization" to finalize the heightmap', true);
@@ -74,15 +77,6 @@ function editHeightmap() {
     viewbox.on("touchmove mousemove", moveCursor);
   }
 
-  function getLayersState() {
-    const layers = [];
-    mapLayers.querySelectorAll("li").forEach(l => {
-      if (l.id === "toggleScaleBar") return;
-      if (!l.classList.contains("buttonoff")) {layers.push(l.id); l.click();}
-    });
-    return layers;
-  }
-
   function moveCursor() {
     const p = d3.mouse(this), cell = findGridCell(p[0], p[1]);
     heightmapInfoX.innerHTML = rn(p[0]);
@@ -108,6 +102,7 @@ function editHeightmap() {
     customization = 0;
     customizationMenu.style.display = "none";
     toolsContent.style.display = "block";
+    layersPreset.disabled = false;
     restoreDefaultEvents();
     clearMainTip();
     closeDialogs();
@@ -121,11 +116,14 @@ function editHeightmap() {
     else if (mode === "keep") restoreKeptData();
     else if (mode === "risk") restoreRiskedData();
 
+    // restore initial layers
     terrs.selectAll("*").remove();
     turnButtonOff("toggleHeight");
-    changePreset("landmass");
-    editHeightmap.layers.forEach(l => document.getElementById(l).click());
-    layersPreset.disabled = false;
+    document.getElementById("mapLayers").querySelectorAll("li").forEach(function(e) {
+      if (editHeightmap.layers.includes(e.id) && !layerIsOn(e.id)) e.click(); // turn on
+      else if (!editHeightmap.layers.includes(e.id) && layerIsOn(e.id)) e.click(); // turn off
+    });
+    getCurrentPreset();
   }
 
   function regenerateErasedData() {
@@ -158,7 +156,12 @@ function editHeightmap() {
     Cultures.generate();
     Cultures.expand();
     BurgsAndStates.generate();
+    Religions.generate();
+    drawStates();
+    drawBorders();
     BurgsAndStates.drawStateLabels();
+    addZone();
+    addMarkers();
     console.timeEnd("regenerateErasedData");
     console.groupEnd("Edit Heightmap");
   }
@@ -180,14 +183,17 @@ function editHeightmap() {
     const l = grid.cells.i.length;
     const biome = new Uint8Array(l);
     const conf = new Uint8Array(l);
-    const culture = new Int8Array(l);
     const fl = new Uint16Array(l);
     const pop = new Uint16Array(l);
     const r = new Uint16Array(l);
     const road = new Uint16Array(l);
+    const crossroad = new Uint16Array(l);
     const s = new Uint16Array(l);
-    const state = new Uint8Array(l);
-    const burg = new Uint8Array(l);
+    const burg = new Uint16Array(l);
+    const state = new Uint16Array(l);
+    const province = new Uint16Array(l);
+    const culture = new Uint16Array(l);
+    const religion = new Uint16Array(l);
 
     for (const i of pack.cells.i) {
       const g = pack.cells.g[i];
@@ -198,9 +204,12 @@ function editHeightmap() {
       pop[g] = pack.cells.pop[i];
       r[g] = pack.cells.r[i];
       road[g] = pack.cells.road[i];
+      crossroad[g] = pack.cells.crossroad[i];
       s[g] = pack.cells.s[i];
       state[g] = pack.cells.state[i];
+      province[g] = pack.cells.province[i];
       burg[g] = pack.cells.burg[i];
+      religion[g] = pack.cells.religion[i];
     }
 
     // do not allow to remove land with burgs
@@ -224,12 +233,15 @@ function editHeightmap() {
 
     // assign saved pack data from grid back to pack
     const n = pack.cells.i.length;
-    pack.cells.burg = new Uint16Array(n);
-    pack.cells.culture = new Int8Array(n);
     pack.cells.pop = new Uint16Array(n);
     pack.cells.road = new Uint16Array(n);
+    pack.cells.crossroad = new Uint16Array(n);
     pack.cells.s = new Uint16Array(n);
-    pack.cells.state = new Uint8Array(n);
+    pack.cells.burg = new Uint16Array(n);
+    pack.cells.state = new Uint16Array(n);
+    pack.cells.province = new Uint16Array(n);
+    pack.cells.culture = new Uint16Array(n);
+    pack.cells.religion = new Uint16Array(n);
 
     if (!change) {
       pack.cells.r = new Uint16Array(n);
@@ -255,18 +267,41 @@ function editHeightmap() {
       pack.cells.culture[i] = culture[g];
       pack.cells.pop[i] = pop[g];
       pack.cells.road[i] = road[g];
+      pack.cells.crossroad[i] = crossroad[g];
       pack.cells.s[i] = s[g];
       pack.cells.state[i] = state[g];
+      pack.cells.province[i] = province[g];
+      pack.cells.religion[i] = religion[g];
     }
 
     for (const b of pack.burgs) {
-      if (!b.i) continue;
+      if (!b.i || b.removed) continue;
       b.cell = findCell(b.x, b.y);
       b.feature = pack.cells.f[b.cell];
       pack.cells.burg[b.cell] = b.i;
       if (!b.capital && pack.cells.h[b.cell] < 20) removeBurg(b.i);
       if (b.capital) pack.states[b.state].center = b.cell;
     }
+
+    for (const p of pack.provinces) {
+      if (!p.i || p.removed) continue;
+      const provCells = pack.cells.i.filter(i => pack.cells.province[i] === p.i);
+      if (!provCells.length) {
+        const state = p.state;
+        const stateProvs = pack.states[state].provinces;
+        if (stateProvs.includes(p.i)) pack.states[state].provinces.splice(stateProvs.indexOf(p), 1);
+  
+        p.removed = true;
+        continue;
+      }
+
+      if (p.burg && !pack.burgs[p.burg].removed) p.center = pack.burgs[p.burg].cell;
+      else {p.center = provCells[0]; p.burg = pack.cells.burg[p.center];}
+    }
+
+    BurgsAndStates.drawStateLabels();
+    drawStates();
+    drawBorders();
 
     console.timeEnd("restoreRiskedData");
     console.groupEnd("Edit Heightmap");
@@ -417,9 +452,11 @@ function editHeightmap() {
       d3.event.on("drag", () => {
         const p = d3.mouse(this);
         moveCircle(p[0], p[1], r, "#333");
+        if (~~d3.event.sourceEvent.timeStamp % 5 != 0) return; // slow down the edit
+
         const inRadius = findGridAll(p[0], p[1], r);
         const selection = changeOnlyLand.checked ? inRadius.filter(i => grid.cells.h[i] >= 20) : inRadius;
-        if (selection && selection.length) changeHeightForSelection(selection, start);        
+        if (selection && selection.length) changeHeightForSelection(selection, start);
       });
 
       d3.event.on("end", updateHeightmap);
@@ -497,6 +534,8 @@ function editHeightmap() {
 
   function openTemplateEditor() {
     if ($("#templateEditor").is(":visible")) return;
+    const body = document.getElementById("templateBody");
+
     $("#templateEditor").dialog({
       title: "Template Editor", minHeight: "auto", width: "fit-content", resizable: false,
       position: {my: "right top", at: "right-10 top+10", of: "svg"}
@@ -505,21 +544,40 @@ function editHeightmap() {
     if (modules.openTemplateEditor) return;
     modules.openTemplateEditor = true;
     
-    $("#templateBody").sortable({items: "div:not(.elType)"});
+    $("#templateBody").sortable({items: "div", handle: ".icon-resize-vertical", containment: "parent", axis: "y"});
 
     // add listeners
+    body.addEventListener("click", function(ev) {
+      const el = ev.target;
+      if (el.classList.contains("icon-check")) {
+        el.classList.remove("icon-check");
+        el.classList.add("icon-check-empty");
+        el.parentElement.style.opacity = .5;
+        body.dataset.changed = 1;
+        return;
+      }
+      if (el.classList.contains("icon-check-empty")) {
+        el.classList.add("icon-check");
+        el.classList.remove("icon-check-empty");
+        el.parentElement.style.opacity = 1;
+        return;
+      }
+      if (el.classList.contains("icon-trash-empty")) {
+        el.parentElement.remove(); return;
+      }
+    });
+
     document.getElementById("templateTools").addEventListener("click", e => addStepOnClick(e));
-    document.getElementById("templateSelect").addEventListener("change", e => selectTemplate(e)); 
-    document.getElementById("templateRun").addEventListener("click", executeTemplate); 
-    document.getElementById("templateSave").addEventListener("click", downloadTemplate); 
-    document.getElementById("templateLoad").addEventListener("click", e => templateToLoad.click()); 
-    document.getElementById("templateToLoad").addEventListener("change", uploadTemplate); 
+    document.getElementById("templateSelect").addEventListener("change", e => selectTemplate(e));
+    document.getElementById("templateRun").addEventListener("click", executeTemplate);
+    document.getElementById("templateSave").addEventListener("click", downloadTemplate);
+    document.getElementById("templateLoad").addEventListener("click", e => templateToLoad.click());
+    document.getElementById("templateToLoad").addEventListener("change", uploadTemplate);
 
     function addStepOnClick(e) {
       if (e.target.tagName !== "BUTTON") return;
       const type = e.target.id.replace("template", "");
-      const body = document.getElementById("templateBody");
-      body.setAttribute("data-changed", 1);
+      document.getElementById("templateBody").dataset.changed = 1;
       addStep(type);
     }
 
@@ -540,19 +598,22 @@ function editHeightmap() {
     }
 
     function getStepHTML(type, count, arg3, arg4, arg5) {
-      const Trash = `<i class="icon-trash-empty pointer" data-tip="Remove the step" onclick="this.parentElement.remove()"></i>`;
+      const Trash = `<i class="icon-trash-empty pointer" data-tip="Click to remove the step"></i>`;
+      const Hide = `<div class="icon-check" data-tip="Click to skip the step"></div>`;
+      const Reorder = `<i class="icon-resize-vertical" data-tip="Drag to reorder"></i>`;
+      const common = `<div data-type="${type}">${Hide}<div style="width:4em">${type}</div>${Trash}${Reorder}`;
+
       const TempY = `<span>y:<input class="templateY" data-tip="Placement range percentage along Y axis (minY-maxY)" value=${arg5||"20-80"}></span>`;
       const TempX = `<span>x:<input class="templateX" data-tip="Placement range percentage along X axis (minX-maxX)" value=${arg4||"15-85"}></span>`;
       const Height = `<span>h:<input class="templateHeight" data-tip="Blob maximum height, use hyphen to get a random number in range" value=${arg3||"40-50"}></span>`;
       const Count = `<span>n:<input class="templateCount" data-tip="Blobs to add, use hyphen to get a random number in range" value=${count||"1-2"}></span>`;
-      const Type = `<div class="elType">${type}</div>`;
-      const blob = `<div data-type="${type}">${Type}${Trash}${TempY}${TempX}${Height}${Count}</div>`;
+      const blob = `${common}${TempY}${TempX}${Height}${Count}</div>`;
 
       if (type === "Hill" || type === "Pit" || type === "Range" || type === "Trough") return blob;
-      if (type === "Strait") return `<div data-type="${type}">${Type}${Trash}<span>d:<select class="templateDist" data-tip="Strait direction"><option value="vertical" selected>vertical</option><option value="horizontal">horizontal</option></select></span><span>w:<input class="templateCount" data-tip="Strait width, use hyphen to get a random number in range" value=${count||"2-7"}></span></div>`;
-      if (type === "Add") return `<div data-type="${type}">${Type}${Trash}<span>to:<select class="templateDist" data-tip="Change only land or all cells"><option value="all" selected>all cells</option><option value="land">land only</option><option value="interval">interval</option></select></span><span>v:<input class="templateCount" data-tip="Add value to height of all cells (negative values are allowed)" type="number" value=${count||-10} min=-100 max=100 step=1></span></div>`;
-      if (type === "Multiply") return `<div data-type="${type}">${Type}${Trash}<span>to:<select class="templateDist" data-tip="Change only land or all cells"><option value="all" selected>all cells</option><option value="land">land only</option><option value="interval">interval</option></select></span><span>v:<input class="templateCount" data-tip="Multiply all cells Height by the value" type="number" value=${count||1.1} min=0 max=10 step=.1></span></div>`;
-      if (type === "Smooth") return `<div data-type="${type}">${Type}${Trash}<span>f:<input class="templateCount" data-tip="Set smooth fraction. 1 - full smooth, 2 - half-smooth, etc." type="number" min=1 max=10 value=${count||2}></span></div>`;
+      if (type === "Strait") return `${common}<span>d:<select class="templateDist" data-tip="Strait direction"><option value="vertical" selected>vertical</option><option value="horizontal">horizontal</option></select></span><span>w:<input class="templateCount" data-tip="Strait width, use hyphen to get a random number in range" value=${count||"2-7"}></span></div>`;
+      if (type === "Add") return `${common}<span>to:<select class="templateDist" data-tip="Change only land or all cells"><option value="all" selected>all cells</option><option value="land">land only</option><option value="interval">interval</option></select></span><span>v:<input class="templateCount" data-tip="Add value to height of all cells (negative values are allowed)" type="number" value=${count||-10} min=-100 max=100 step=1></span></div>`;
+      if (type === "Multiply") return `${common}<span>to:<select class="templateDist" data-tip="Change only land or all cells"><option value="all" selected>all cells</option><option value="land">land only</option><option value="interval">interval</option></select></span><span>v:<input class="templateCount" data-tip="Multiply all cells Height by the value" type="number" value=${count||1.1} min=0 max=10 step=.1></span></div>`;
+      if (type === "Smooth") return `${common}<span>f:<input class="templateCount" data-tip="Set smooth fraction. 1 - full smooth, 2 - half-smooth, etc." type="number" min=1 max=10 value=${count||2}></span></div>`;
     }
 
     function setRange(event) {
@@ -569,7 +630,7 @@ function editHeightmap() {
       const body = document.getElementById("templateBody");
       const steps = body.querySelectorAll("div").length;
       const changed = +body.getAttribute("data-changed");
-      const template = e.target.value;      
+      const template = e.target.value;
       if (!steps || !changed) {changeTemplate(template); return;}
 
       alertMessage.innerHTML = "Are you sure you want to select a different template? All changes will be lost.";
@@ -722,6 +783,7 @@ function editHeightmap() {
       grid.cells.h = new Uint8Array(grid.cells.i.length); // clean all heights
 
       for (const s of steps) {
+        if (s.style.opacity == .5) continue;
         const type = s.getAttribute("data-type");
         const elCount = s.querySelector(".templateCount") || "";
         const elHeight = s.querySelector(".templateHeight") || "";
@@ -752,12 +814,13 @@ function editHeightmap() {
 
     function downloadTemplate() {
       const body = document.getElementById("templateBody");
-      body.setAttribute("data-changed", 0);
+      body.dataset.changed = 0;
       const steps = body.querySelectorAll("#templateBody > div");
       if (!steps.length) return;
 
       let stepsData = "";
       for (const s of steps) {
+        if (s.style.opacity == .5) continue;
         const type = s.getAttribute("data-type");
         const elCount = s.querySelector(".templateCount");
         const count = elCount ? elCount.value : "0";

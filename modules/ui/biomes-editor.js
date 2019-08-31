@@ -5,6 +5,8 @@ function editBiomes() {
   if (!layerIsOn("toggleBiomes")) toggleBiomes();
   if (layerIsOn("toggleStates")) toggleStates();
   if (layerIsOn("toggleCultures")) toggleCultures();
+  if (layerIsOn("toggleReligions")) toggleReligions();
+  if (layerIsOn("toggleProvinces")) toggleProvinces();
 
   const body = document.getElementById("biomesBody");
   const animate = d3.transition().duration(2000).ease(d3.easeSinIn);
@@ -14,19 +16,34 @@ function editBiomes() {
   modules.editBiomes = true;
 
   $("#biomesEditor").dialog({
-    title: "Biomes Editor", width: fitContent(), close: closeBiomesEditor,
+    title: "Biomes Editor", resizable: false, width: fitContent(), close: closeBiomesEditor,
     position: {my: "right top", at: "right-10 top+10", of: "svg"}
   });
 
   // add listeners
   document.getElementById("biomesEditorRefresh").addEventListener("click", refreshBiomesEditor);
+  document.getElementById("biomesLegend").addEventListener("click", toggleLegend);
   document.getElementById("biomesPercentage").addEventListener("click", togglePercentageMode);
   document.getElementById("biomesManually").addEventListener("click", enterBiomesCustomizationMode);
   document.getElementById("biomesManuallyApply").addEventListener("click", applyBiomesChange);
-  document.getElementById("biomesManuallyCancel").addEventListener("click", exitBiomesCustomizationMode);
+  document.getElementById("biomesManuallyCancel").addEventListener("click", () => exitBiomesCustomizationMode());
   document.getElementById("biomesRestore").addEventListener("click", restoreInitialBiomes);
+  document.getElementById("biomesAdd").addEventListener("click", addCustomBiome);
   document.getElementById("biomesRegenerateReliefIcons").addEventListener("click", regenerateIcons);
   document.getElementById("biomesExport").addEventListener("click", downloadBiomesData);
+
+  body.addEventListener("click", function(ev) {
+    const el = ev.target, cl = el.classList;
+    if (cl.contains("zoneFill")) biomeChangeColor(el); else
+    if (cl.contains("icon-trash-empty")) removeCustomBiome(el);
+    if (customization === 6) selectBiomeOnLineClick(el);
+  });
+
+  body.addEventListener("change", function(ev) {
+    const el = ev.target, cl = el.classList;
+    if (cl.contains("biomeName")) biomeChangeName(el); else
+    if (cl.contains("biomeHabitability")) biomeChangeHabitability(el);
+  });
 
   function refreshBiomesEditor() {
     biomesCollectStatistics();
@@ -35,10 +52,11 @@ function editBiomes() {
 
   function biomesCollectStatistics() {
     const cells = pack.cells;
-    biomesData.cells = new Uint32Array(biomesData.i.length);
-    biomesData.area = new Uint32Array(biomesData.i.length);
-    biomesData.rural = new Uint32Array(biomesData.i.length);
-    biomesData.urban = new Uint32Array(biomesData.i.length);
+    const array = new Uint8Array(biomesData.i.length);
+    biomesData.cells = Array.from(array);
+    biomesData.area = Array.from(array);
+    biomesData.rural = Array.from(array);
+    biomesData.urban = Array.from(array);
 
     for (const i of cells.i) {
       if (cells.h[i] < 20) continue;
@@ -51,38 +69,39 @@ function editBiomes() {
   }
 
   function biomesEditorAddLines() {
-    const unit = areaUnit.value === "square" ? " " + distanceUnit.value + "²" : " " + areaUnit.value;
+    const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
     const b = biomesData;
     let lines = "", totalArea = 0, totalPopulation = 0;;
 
     for (const i of b.i) {
-      if (!i) continue; // ignore marine (water) biome
-      const area = b.area[i] * distanceScale.value ** 2;
+      if (!i || biomesData.name[i] === "removed") continue; // ignore water and removed biomes
+      const area = b.area[i] * distanceScaleInput.value ** 2;
       const rural = b.rural[i] * populationRate.value;
       const urban = b.urban[i] * populationRate.value * urbanization.value;
-      const population = rural + urban;
+      const population = rn(rural + urban);
       const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}`;
       totalArea += area;
       totalPopulation += population;
 
       lines += `<div class="states biomes" data-id="${i}" data-name="${b.name[i]}" data-habitability="${b.habitability[i]}"
       data-cells=${b.cells[i]} data-area=${area} data-population=${population} data-color=${b.color[i]}>
-        <input data-tip="Biome color. Click to change" class="stateColor" type="color" value="${b.color[i]}">
+        <svg data-tip="Biomes fill style. Click to change" width="9" height="9" style="margin-bottom:-1px"><rect x="0" y="0" width="9" height="9" fill="${b.color[i]}" class="zoneFill"></svg>
         <input data-tip="Biome name. Click and type to change" class="biomeName" value="${b.name[i]}" autocorrect="off" spellcheck="false">
-        <span data-tip="Biome habitability percent">%</span>
-        <input data-tip="Biome habitability percent. Click and set new value to change" type="number" min=0 max=9999 step=1 class="biomeHabitability" value=${b.habitability[i]}>
-        <span data-tip="Cells count" class="icon-check-empty"></span>
-        <div data-tip="Cells count" class="biomeCells">${b.cells[i]}</div>
-        <span data-tip="Biome area" style="padding-right: 4px" class="icon-map-o"></span>
-        <div data-tip="Biome area" class="biomeArea">${si(area) + unit}</div>
-        <span data-tip="${populationTip}" class="icon-male"></span>
-        <div data-tip="${populationTip}" class="biomePopulation">${si(population)}</div>
+        <span data-tip="Biome habitability percent" class="hide">%</span>
+        <input data-tip="Biome habitability percent. Click and set new value to change" type="number" min=0 max=9999 step=1 class="biomeHabitability hide" value=${b.habitability[i]}>
+        <span data-tip="Cells count" class="icon-check-empty hide"></span>
+        <div data-tip="Cells count" class="biomeCells hide">${b.cells[i]}</div>
+        <span data-tip="Biome area" style="padding-right: 4px" class="icon-map-o hide"></span>
+        <div data-tip="Biome area" class="biomeArea hide">${si(area) + unit}</div>
+        <span data-tip="${populationTip}" class="icon-male hide"></span>
+        <div data-tip="${populationTip}" class="biomePopulation hide">${si(population)}</div>
+        ${i>12 && !b.cells[i] ? '<span data-tip="Remove the custom biome" class="icon-trash-empty hide"></span>' : ''}
       </div>`;
     }
     body.innerHTML = lines;
 
     // update footer
-    biomesFooterBiomes.innerHTML = b.i.length - 1;
+    biomesFooterBiomes.innerHTML = body.querySelectorAll(":scope > div").length;
     biomesFooterCells.innerHTML = pack.cells.h.filter(h => h >= 20).length;
     biomesFooterArea.innerHTML = si(totalArea) + unit;
     biomesFooterPopulation.innerHTML = si(totalPopulation);
@@ -92,10 +111,6 @@ function editBiomes() {
     // add listeners
     body.querySelectorAll("div.biomes").forEach(el => el.addEventListener("mouseenter", ev => biomeHighlightOn(ev)));
     body.querySelectorAll("div.biomes").forEach(el => el.addEventListener("mouseleave", ev => biomeHighlightOff(ev)));
-    body.querySelectorAll("div.biomes").forEach(el => el.addEventListener("click", selectBiomeOnLineClick));
-    body.querySelectorAll("div > input[type='color']").forEach(el => el.addEventListener("input", biomeChangeColor));
-    body.querySelectorAll("div > input.biomeName").forEach(el => el.addEventListener("input", biomeChangeName));
-    body.querySelectorAll("div > input.biomeHabitability").forEach(el => el.addEventListener("change", biomeChangeHabitability));
 
     if (body.dataset.type === "percentage") {body.dataset.type = "absolute"; togglePercentageMode();}
     applySorting(biomesHeader);
@@ -115,30 +130,44 @@ function editBiomes() {
     biomes.select("#biome"+biome).transition().attr("stroke-width", .7).attr("stroke", color);
   }
   
-  function biomeChangeColor() {
-    const biome = +this.parentNode.dataset.id;
-    biomesData.color[biome] = this.value;
-    biomes.select("#biome"+biome).attr("fill", this.value).attr("stroke", this.value);  
+  function biomeChangeColor(el) {
+    const currentFill = el.getAttribute("fill");
+    const biome = +el.parentNode.parentNode.dataset.id;
+
+    const callback = function(fill) {
+      el.setAttribute("fill", fill);
+      biomesData.color[biome] = fill;
+      biomes.select("#biome"+biome).attr("fill", fill).attr("stroke", fill);
+    }
+
+    openPicker(currentFill, callback);
   }
   
-  function biomeChangeName() {
-    const biome = +this.parentNode.dataset.id;
-    this.parentNode.dataset.name = this.value;
-    biomesData.name[biome] = this.value;
+  function biomeChangeName(el) {
+    const biome = +el.parentNode.dataset.id;
+    el.parentNode.dataset.name = el.value;
+    biomesData.name[biome] = el.value;
   }
 
-  function biomeChangeHabitability() {
-    const biome = +this.parentNode.dataset.id;
-    const failed = isNaN(+this.value) || +this.value < 0 || +this.value > 9999;
+  function biomeChangeHabitability(el) {
+    const biome = +el.parentNode.dataset.id;
+    const failed = isNaN(+el.value) || +el.value < 0 || +el.value > 9999;
     if (failed) {
-      this.value = biomesData.habitability[biome];
+      el.value = biomesData.habitability[biome];
       tip("Please provide a valid number in range 0-9999", false, "error");
       return;
     }
-    biomesData.habitability[biome] = +this.value;
-    this.parentNode.dataset.habitability = this.value;
+    biomesData.habitability[biome] = +el.value;
+    el.parentNode.dataset.habitability = el.value;
     recalculatePopulation();
     refreshBiomesEditor();
+  }
+
+  function toggleLegend() {
+    if (legend.selectAll("*").size()) {clearLegend(); return;}; // hide legend
+    const d = biomesData;
+    const data = Array.from(d.i).filter(i => d.cells[i]).sort((a, b) => d.area[b] - d.area[a]).map(i => [i, d.color[i], d.name[i]]);
+    drawLegend("Biomes", data);
   }
 
   function togglePercentageMode() {
@@ -159,13 +188,55 @@ function editBiomes() {
     }
   }
 
+  function addCustomBiome() {
+    const b = biomesData, i = biomesData.i.length;
+    b.i.push(i);
+    b.color.push(getRandomColor());
+    b.habitability.push(50);
+    b.name.push("Custom");
+    b.iconsDensity.push(0);
+    b.icons.push([]);
+    b.cost.push(50);
+
+    b.rural.push(0);
+    b.urban.push(0);
+    b.cells.push(0);
+    b.area.push(0);
+
+    const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
+    const line = `<div class="states biomes" data-id="${i}" data-name="${b.name[i]}" data-habitability=${b.habitability[i]} data-cells=0 data-area=0 data-population=0 data-color=${b.color[i]}>
+      <svg data-tip="Biomes fill style. Click to change" width="9" height="9" style="margin-bottom:-1px"><rect x="0" y="0" width="9" height="9" fill="${b.color[i]}" class="zoneFill"></svg>
+      <input data-tip="Biome name. Click and type to change" class="biomeName" value="${b.name[i]}" autocorrect="off" spellcheck="false">
+      <span data-tip="Biome habitability percent" class="hide">%</span>
+      <input data-tip="Biome habitability percent. Click and set new value to change" type="number" min=0 max=9999 step=1 class="biomeHabitability hide" value=${b.habitability[i]}>
+      <span data-tip="Cells count" class="icon-check-empty hide"></span>
+      <div data-tip="Cells count" class="biomeCells hide">${b.cells[i]}</div>
+      <span data-tip="Biome area" style="padding-right: 4px" class="icon-map-o hide"></span>
+      <div data-tip="Biome area" class="biomeArea hide">0 ${unit}</div>
+      <span data-tip="Total population: 0" class="icon-male hide"></span>
+      <div data-tip="Total population: 0" class="biomePopulation hide">0</div>
+      <span data-tip="Remove the custom biome" class="icon-trash-empty hide"></span>
+    </div>`;
+
+    body.insertAdjacentHTML("beforeend", line);
+    biomesFooterBiomes.innerHTML = body.querySelectorAll(":scope > div").length;
+    $("#biomesEditor").dialog({width: fitContent()});
+  }
+
+  function removeCustomBiome(el) {
+    const biome = +el.parentNode.dataset.id;
+    el.parentNode.remove();
+    biomesData.name[biome] = "removed";
+    biomesFooterBiomes.innerHTML = +biomesFooterBiomes.innerHTML - 1;
+  }
+
   function regenerateIcons() {
     ReliefIcons();
     if (!layerIsOn("toggleRelief")) toggleRelief();
   }
 
   function downloadBiomesData() {
-    const unit = areaUnit.value === "square" ? distanceUnit.value + "2" : areaUnit.value;
+    const unit = areaUnit.value === "square" ? distanceUnitInput.value + "2" : areaUnit.value;
     let data = "Id,Biome,Color,Habitability,Cells,Area "+unit+",Population\n"; // headers
 
     body.querySelectorAll(":scope > div").forEach(function(el) {
@@ -185,31 +256,34 @@ function editBiomes() {
     link.download = "biomes_data" + Date.now() + ".csv";
     link.href = url;
     link.click();
-    window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);    
+    window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
   }
 
   function enterBiomesCustomizationMode() {
     if (!layerIsOn("toggleBiomes")) toggleBiomes();
     customization = 6;
     biomes.append("g").attr("id", "temp");
-    body.querySelectorAll("div > *").forEach(e => e.disabled = true);
 
     document.querySelectorAll("#biomesBottom > button").forEach(el => el.style.display = "none");
     document.querySelectorAll("#biomesBottom > div").forEach(el => el.style.display = "block");
     body.querySelector("div.biomes").classList.add("selected");
 
+    biomesEditor.querySelectorAll(".hide").forEach(el => el.classList.add("hidden"));
+    body.querySelectorAll("div > input, select, span, svg").forEach(e => e.style.pointerEvents = "none");
+    biomesFooter.style.display = "none";
+    $("#biomesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg"}});
+
     tip("Click on biome to select, drag the circle to change biome", true);
-    viewbox.style("cursor", "crosshair").call(d3.drag()
-      .on("drag", dragBiomeBrush))
+    viewbox.style("cursor", "crosshair")
       .on("click", selectBiomeOnMapClick)
+      .call(d3.drag().on("start", dragBiomeBrush))
       .on("touchmove mousemove", moveBiomeBrush);
   }
 
-  function selectBiomeOnLineClick() {
-    if (customization !== 6) return;
+  function selectBiomeOnLineClick(line) {
     const selected = body.querySelector("div.selected");
     if (selected) selected.classList.remove("selected");
-    this.classList.add("selected");
+    line.classList.add("selected");
   }
 
   function selectBiomeOnMapClick() {
@@ -225,13 +299,17 @@ function editBiomes() {
   }
 
   function dragBiomeBrush() {
-    const p = d3.mouse(this);
     const r = +biomesManuallyBrush.value;
-    moveCircle(p[0], p[1], r);
-   
-    const found = r > 5 ? findAll(p[0], p[1], r) : [findCell(p[0], p[1], r)];
-    const selection = found.filter(isLand);
-    if (selection) changeBiomeForSelection(selection);    
+
+    d3.event.on("drag", () => {
+      if (!d3.event.dx && !d3.event.dy) return;
+      const p = d3.mouse(this);
+      moveCircle(p[0], p[1], r);
+     
+      const found = r > 5 ? findAll(p[0], p[1], r) : [findCell(p[0], p[1], r)];
+      const selection = found.filter(isLand);
+      if (selection) changeBiomeForSelection(selection);
+    });
   }
 
   // change region within selection
@@ -275,17 +353,23 @@ function editBiomes() {
     exitBiomesCustomizationMode();
   }
 
-  function exitBiomesCustomizationMode() {
+  function exitBiomesCustomizationMode(close) {
     customization = 0;
     biomes.select("#temp").remove();
     removeCircle();
+
     document.querySelectorAll("#biomesBottom > button").forEach(el => el.style.display = "inline-block");
     document.querySelectorAll("#biomesBottom > div").forEach(el => el.style.display = "none");
-    body.querySelectorAll("div > *").forEach(e => e.disabled = false);
+
+    body.querySelectorAll("div > input, select, span, svg").forEach(e => e.style.pointerEvents = "all");
+    biomesEditor.querySelectorAll(".hide").forEach(el => el.classList.remove("hidden"));
+    biomesFooter.style.display = "block";
+    if (!close) $("#biomesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg"}});
+
     restoreDefaultEvents();
     clearMainTip();
     const selected = document.querySelector("#biomesBody > div.selected");
-    if (selected) selected.classList.remove("selected");        
+    if (selected) selected.classList.remove("selected");
   }
   
   function restoreInitialBiomes() {
@@ -297,7 +381,6 @@ function editBiomes() {
   }
 
   function closeBiomesEditor() {
-    //biomes.on("mousemove", null).on("mouseleave", null);
-    exitBiomesCustomizationMode();
+    exitBiomesCustomizationMode("close");
   }
 }

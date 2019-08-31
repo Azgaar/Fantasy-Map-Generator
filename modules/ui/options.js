@@ -67,8 +67,8 @@ options.querySelector("div.tab").addEventListener("click", function(event) {
 
   if (id === "styleTab") styleContent.style.display = "block"; else 
   if (id === "optionsTab") optionsContent.style.display = "block"; else 
-  if (id === "toolsTab" && !customization) toolsContent.style.display = "block"; else 
-  if (id === "toolsTab" && customization) customizationMenu.style.display = "block"; else   
+  if (id === "toolsTab" && (!customization || customization === 10)) toolsContent.style.display = "block"; else 
+  if (id === "toolsTab" && customization && customization !== 10) customizationMenu.style.display = "block"; else
   if (id === "aboutTab") aboutContent.style.display = "block";
 });
 
@@ -90,7 +90,7 @@ function collapse(e) {
 styleElementSelect.addEventListener("change", selectStyleElement);
 function selectStyleElement() {
   const sel = styleElementSelect.value;
-  let el = viewbox.select("#"+sel);
+  let el = d3.select("#"+sel);
 
   styleElements.querySelectorAll("tbody").forEach(e => e.style.display = "none"); // hide all sections 
   const off = el.style("display") === "none" || !el.selectAll("*").size(); // check if layer is off
@@ -102,14 +102,14 @@ function selectStyleElement() {
   // active group element
   const group = styleGroupSelect.value;
   if (sel == "ocean") el = oceanLayers.select("rect");
-  else if (sel == "routes" || sel == "labels" || sel == "lakes" || sel == "anchors" || sel == "burgIcons") {
+  else if (sel == "routes" || sel == "labels" || sel == "lakes" || sel == "anchors" || sel == "burgIcons" || sel == "borders") {
     el = d3.select("#"+sel).select("g#"+group).size()
       ? d3.select("#"+sel).select("g#"+group) 
       : d3.select("#"+sel).select("g");
   }
 
-  if (sel !== "landmass") {
-      // opacity
+  if (sel !== "landmass" && sel !== "legend") {
+    // opacity
     styleOpacity.style.display = "block";
     styleOpacityInput.value = styleOpacityOutput.value = el.attr("opacity") || 1;
 
@@ -120,28 +120,34 @@ function selectStyleElement() {
   }
 
   // fill
-  if (sel === "rivers" || sel === "lakes" || sel === "landmass" || sel === "prec") {
+  if (sel === "rivers" || sel === "lakes" || sel === "landmass" || sel === "prec" || sel === "fogging") {
     styleFill.style.display = "block";
     styleFillInput.value = styleFillOutput.value = el.attr("fill");
   }
 
   // stroke color and width
-  if (sel === "routes" || sel === "lakes" || sel === "borders" || sel === "cults" || sel === "cells" || sel === "gridOverlay" || sel === "coastline" || sel === "prec" || sel === "icons" || sel === "coordinates") {
+  if (sel === "routes" || sel === "lakes" || sel === "borders" || sel === "relig" || sel === "cults" || sel === "cells" || sel === "gridOverlay" || sel === "coastline" || sel === "prec" || sel === "icons" || sel === "coordinates"|| sel === "zones") {
     styleStroke.style.display = "block";
     styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke");
     styleStrokeWidth.style.display = "block";
     styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr("stroke-width") || "";
   }
 
+  // stroke width
+  if (sel === "fogging") {
+    styleStrokeWidth.style.display = "block";
+    styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr("stroke-width") || "";
+  }
+
   // stroke dash
-  if (sel === "routes" || sel === "borders" || sel === "gridOverlay" || sel === "temperature" || sel === "population" || sel === "coordinates") {
+  if (sel === "routes" || sel === "borders" || sel === "gridOverlay" || sel === "temperature" || sel === "legend" || sel === "population" || sel === "coordinates"|| sel === "zones") {
     styleStrokeDash.style.display = "block";
     styleStrokeDasharrayInput.value = el.attr("stroke-dasharray") || "";
     styleStrokeLinecapInput.value = el.attr("stroke-linecap") || "inherit";
   }
 
   // clipping
-  if (sel === "cells" || sel === "gridOverlay" || sel === "coordinates" || sel === "compass" || sel === "terrain" || sel === "temperature" || sel === "routes" || sel === "texture" || sel === "biomes") {
+  if (sel === "cells" || sel === "gridOverlay" || sel === "coordinates" || sel === "compass" || sel === "terrain" || sel === "temperature" || sel === "routes" || sel === "texture" || sel === "biomes"|| sel === "zones") {
     styleClipping.style.display = "block";
     styleClippingInput.value = el.attr("mask") || "";
   }
@@ -167,7 +173,7 @@ function selectStyleElement() {
   if (sel === "gridOverlay") styleGrid.style.display = "block";
   if (sel === "terrain") styleRelief.style.display = "block";
   if (sel === "texture") styleTexture.style.display = "block";
-  if (sel === "routes" || sel === "labels" || sel == "anchors" || sel == "burgIcons" || sel === "lakes") styleGroup.style.display = "block";
+  if (sel === "routes" || sel === "labels" || sel == "anchors" || sel == "burgIcons" || sel === "lakes" || sel === "borders") styleGroup.style.display = "block";
   if (sel === "markers") styleMarkers.style.display = "block";
  
   if (sel === "population") {
@@ -178,7 +184,7 @@ function selectStyleElement() {
     styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr("stroke-width") || "";
   }
 
-  if (sel === "statesBody") {
+  if (sel === "regions") {
     styleStates.style.display = "block";
     styleStatesHaloWidth.value = styleStatesHaloWidthOutput.value = statesHalo.attr("stroke-width");
     styleStatesHaloOpacity.value = styleStatesHaloOpacityOutput.value = statesHalo.attr("opacity");
@@ -226,6 +232,22 @@ function selectStyleElement() {
     styleIconSizeInput.value = el.attr("size") || 2;
   }
 
+  if (sel === "legend") {
+    styleStroke.style.display = "block";
+    styleStrokeWidth.style.display = "block";
+    loadDefaultFonts();
+    styleFont.style.display = "block";
+    styleSize.style.display = "block";
+    styleLegend.style.display = "block";
+
+    styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#111111";
+    styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr("stroke-width") || .5;
+    styleSelectFont.value = fonts.indexOf(el.attr("data-font"));
+    styleInputFont.style.display = "none";
+    styleInputFont.value = "";
+    styleFontSize.value = el.attr("data-size");
+  }
+
   if (sel === "ocean") {
     styleOcean.style.display = "block";
     styleOceanBack.value = styleOceanBackOutput.value = svg.attr("background-color");
@@ -253,7 +275,7 @@ function selectStyleElement() {
 
   // update group options
   styleGroupSelect.options.length = 0; // remove all options
-  if (sel === "routes" || sel === "labels" || sel === "lakes" || sel === "anchors" || sel === "burgIcons") {
+  if (sel === "routes" || sel === "labels" || sel === "lakes" || sel === "anchors" || sel === "burgIcons" || sel === "borders") {
     document.getElementById(sel).querySelectorAll("g").forEach(el => {
       if (el.id === "burgLabels") return;
       const count = el.childElementCount;
@@ -308,7 +330,9 @@ styleFilterInput.addEventListener("change", function() {
 });
 
 styleTextureInput.addEventListener("change", function() {
-  texture.select("image").attr("xlink:href", getAbsolutePath(this.value));
+  if (this.value === "none") texture.select("image").attr("xlink:href", ""); else
+  if (this.value === "default") texture.select("image").attr("xlink:href", getDefaultTexture()); else
+  setBase64Texture(this.value);
 });
 
 styleTextureShiftX.addEventListener("input", function() {
@@ -335,7 +359,7 @@ styleGridSize.addEventListener("input", function() {
 
 function calculateFriendlyGridSize() {
   const size = styleGridSize.value * Math.cos(30 * Math.PI / 180) * 2;;
-  const friendly = "(" + rn(size * distanceScale.value) + " " + distanceUnit.value + ")";
+  const friendly = "(" + rn(size * distanceScaleInput.value) + " " + distanceUnitInput.value + ")";
   styleGridSizeFriendly.value = friendly;
 }
 
@@ -367,6 +391,11 @@ outlineLayersInput.addEventListener("change", function() {
   OceanLayers();
 });
 
+styleReliefSet.addEventListener("change", function() {
+  ReliefIcons(); 
+  if (!layerIsOn("toggleRelief")) toggleRelief();
+});
+
 styleReliefSizeInput.addEventListener("input", function() {
   styleReliefSizeOutput.value = this.value;
   const size = +this.value;
@@ -386,6 +415,7 @@ styleReliefSizeInput.addEventListener("input", function() {
 styleReliefDensityInput.addEventListener("input", function() {
   styleReliefDensityOutput.value = rn(this.value * 100) + "%";
   ReliefIcons();
+  if (!layerIsOn("toggleRelief")) toggleRelief();
 });
 
 styleTemperatureFillOpacityInput.addEventListener("input", function() {
@@ -426,11 +456,26 @@ function shiftCompass() {
   d3.select("#rose").attr("transform", tr); 
 }
 
+styleLegendColItems.addEventListener("input", function() {
+  styleLegendColItemsOutput.value = this.value;
+  redrawLegend();
+});
+
+styleLegendBack.addEventListener("input", function() {
+  legend.select("rect").attr("fill", this.value)
+});
+
+styleLegendOpacity.addEventListener("input", function() {
+  styleLegendOpacityOutput.value = this.value;
+  legend.select("rect").attr("fill-opacity", this.value)
+});
+
 styleSelectFont.addEventListener("change", changeFont);
 function changeFont() {
   const value = styleSelectFont.value;
   const font = fonts[value].split(':')[0].replace(/\+/g, " ");
   getEl().attr("font-family", font).attr("data-font", fonts[value]);
+  if (styleElementSelect.value === "legend") redrawLegend();
 }
 
 styleFontAdd.addEventListener("click", function() {
@@ -471,8 +516,13 @@ styleFontMinus.addEventListener("click", function() {
 });
 
 function changeFontSize(size) {
-  getEl().attr("data-size", size).attr("font-size", rn((size + (size / scale)) / 2, 2));
+  const legend = styleElementSelect.value === "legend";
+  const coords = styleElementSelect.value === "coordinates";
+
+  const desSize = legend ? size : coords ? rn(size / scale ** .8, 2) : rn(size + (size / scale));
+  getEl().attr("data-size", size).attr("font-size", desSize);
   styleFontSize.value = size;
+  if (legend) redrawLegend();
 }
 
 styleRadiusInput.addEventListener("change", function() {
@@ -568,7 +618,7 @@ function textureProvideURL() {
         opt.text = name.slice(0, 20);
         styleTextureInput.add(opt);
         styleTextureInput.value = textureURL.value;
-        texture.select("image").attr('xlink:href', textureURL.value);
+        setBase64Texture(textureURL.value);
         zoom.scaleBy(svg, 1.00001); // enforce browser re-draw
         $(this).dialog("close");
       },
@@ -576,6 +626,20 @@ function textureProvideURL() {
     }
   });
 }
+
+function setBase64Texture(url) {
+  var xhr = new XMLHttpRequest();
+  xhr.onload = function() {
+    var reader = new FileReader();
+    reader.onloadend = function() {
+      texture.select("image").attr("xlink:href", reader.result);
+    }
+    reader.readAsDataURL(xhr.response);
+  };
+  xhr.open('GET', url);
+  xhr.responseType = 'blob';
+  xhr.send();
+};
 
 function fetchTextureURL(url) {
   console.log("Provided URL is", url);  
@@ -610,11 +674,14 @@ optionsContent.addEventListener("input", function(event) {
   else if (id === "culturesInput") culturesOutput.value = value;
   else if (id === "culturesOutput") culturesInput.value = value;
   else if (id === "regionsInput" || id === "regionsOutput") changeStatesNumber(value);
-  else if (id === "powerInput") powerOutput.value = value;
+  else if (id === "provincesInput") provincesOutput.value = value;
+  else if (id === "provincesOutput") provincesOutput.value = value;
+  else if (id === "provincesOutput") powerOutput.value = value;
   else if (id === "powerOutput") powerInput.value = value;
   else if (id === "neutralInput") neutralOutput.value = value;
   else if (id === "neutralOutput") neutralInput.value = value;
   else if (id === "manorsInput") changeBurgsNumberSlider(value);
+  else if (id === "religionsInput") religionsOutput.value = value;
   else if (id === "uiSizeInput" || id === "uiSizeOutput") changeUIsize(value);
   else if (id === "tooltipSizeInput" || id === "tooltipSizeOutput") changeTooltipSize(value);
   else if (id === "transparencyInput") changeDialogsTransparency(value);
@@ -655,6 +722,7 @@ function changeMapSize() {
   oceanPattern.select("rect").attr("x", 0).attr("y", 0).attr("width", width).attr("height", height);
   oceanLayers.select("rect").attr("x", 0).attr("y", 0).attr("width", width).attr("height", height);
   fitScaleBar();
+  fitLegendBox();
 }
 
 // just apply map size that was already set, apply graph size!
@@ -764,66 +832,67 @@ function changeDialogsTransparency(value) {
 }
 
 function changeZoomExtent(value) {
-  const min = +zoomExtentMin.value;
-  zoom.scaleExtent([min, +zoomExtentMax.value]);
-  zoom.scaleTo(svg, +value);
+  const min = Math.max(+zoomExtentMin.value, .01), max = Math.min(+zoomExtentMax.value, 200);
+  zoom.scaleExtent([min, max]);
+  const scale = Math.max(Math.min(+value, 200), .01);
+  zoom.scaleTo(svg, scale);
 }
 
 // control sroted options
 function applyStoredOptions() {
-  for(let i=0; i < localStorage.length; i++){
+  if (!localStorage.getItem("mapWidth") || !localStorage.getItem("mapHeight")) {
+    mapWidthInput.value = window.innerWidth;
+    mapHeightInput.value = window.innerHeight;
+  }
+
+  if (localStorage.getItem("distanceUnit")) applyOption(distanceUnitInput, localStorage.getItem("distanceUnit"));
+  if (localStorage.getItem("heightUnit")) applyOption(heightUnit, localStorage.getItem("heightUnit"));
+
+  for (let i=0; i < localStorage.length; i++) {
     const stored = localStorage.key(i), value = localStorage.getItem(stored);
-    const input = document.getElementById(stored+"Input");
+    const input = document.getElementById(stored+"Input") || document.getElementById(stored);
     const output = document.getElementById(stored+"Output");
     if (input) input.value = value;
     if (output) output.value = value;
     lock(stored);
   }
 
-  if (!localStorage.getItem("mapWidth") || !localStorage.getItem("mapHeight")) {
-    mapWidthInput.value = window.innerWidth;
-    mapHeightInput.value = window.innerHeight;
-  }
-
   if (localStorage.getItem("winds")) winds = localStorage.getItem("winds").split(",").map(w => +w);
-  
-  changeDialogsTransparency(localStorage.getItem("transparency") || 30);
+
+  changeDialogsTransparency(localStorage.getItem("transparency") || 15);
   if (localStorage.getItem("uiSize")) changeUIsize(localStorage.getItem("uiSize"));
   if (localStorage.getItem("tooltipSize")) changeTooltipSize(localStorage.getItem("tooltipSize"));
   if (localStorage.getItem("regions")) changeStatesNumber(localStorage.getItem("regions"));
-
-  if (localStorage.getItem("equator")) {
-    const eqY = +equatorInput.value;
-    equidistanceOutput.min = equidistanceInput.min = Math.max(+mapHeightInput.value - eqY, eqY);
-    equidistanceOutput.max = equidistanceInput.max = equidistanceOutput.min * 10;
-  }
 }
 
-// randomize options if randomization is allowed in option
+// randomize options if randomization is allowed (not locked)
 function randomizeOptions() {
   Math.seedrandom(seed); // reset seed to initial one
-  if (!locked("regions")) regionsInput.value = regionsOutput.value = rand(12, 17);
+
+  // 'Options' settings
+  if (!locked("regions")) regionsInput.value = regionsOutput.value = gauss(15, 3, 2, 30);
+  if (!locked("provinces")) provincesInput.value = provincesOutput.value = gauss(40, 20, 20, 100);
   if (!locked("manors")) {manorsInput.value = 1000; manorsOutput.value = "auto";}
-  if (!locked("power")) powerInput.value = powerOutput.value = rand(0, 4);
-  if (!locked("neutral")) neutralInput.value = neutralOutput.value = rn(0.8 + Math.random(), 1);
-  if (!locked("cultures")) culturesInput.value = culturesOutput.value = rand(10, 15);
+  if (!locked("religions")) religionsInput.value = religionsOutput.value = gauss(6, 2, 3, 20);
+  if (!locked("power")) powerInput.value = powerOutput.value = gauss(3, 2, 0, 10);
+  if (!locked("neutral")) neutralInput.value = neutralOutput.value = rn(1 + Math.random(), 1);
+  if (!locked("cultures")) culturesInput.value = culturesOutput.value = gauss(12, 3, 5, 30);
+
+  // 'Configure World' settings
   if (!locked("prec")) precInput.value = precOutput.value = gauss(100, 40, 0, 500);
   const tMax = +temperatureEquatorOutput.max, tMin = +temperatureEquatorOutput.min; // temperature extremes
   if (!locked("temperatureEquator")) temperatureEquatorOutput.value = temperatureEquatorInput.value = rand(tMax-6, tMax);
   if (!locked("temperaturePole")) temperaturePoleOutput.value = temperaturePoleInput.value = rand(tMin, tMin+10);
-  if (!locked("equator") && !locked("equidistance")) randomizeWorldSize();
-}
+  if (!locked("mapSize")) mapSizeOutput.value = mapSizeInput.value = gauss(50, 20, 15, 100);
+  if (!locked("latitude")) latitudeOutput.value = latitudeInput.value = gauss(50, 20, 15, 100);
 
-// define world size
-function randomizeWorldSize() {
-  const eq = document.getElementById("equatorInput");
-  const eqDI = document.getElementById("equidistanceInput");
-  const eqDO = document.getElementById("equidistanceOutput");
-
-  const eqY = equatorOutput.value = eq.value = rand(+eq.min, +eq.max); // equator Y
-  eqDO.min = eqDI.min = Math.max(graphHeight - eqY, eqY);
-  eqDO.max = eqDI.max = eqDO.min * 10;
-  eqDO.value = eqDI.value = rand(rn(eqDO.min * 1.2), rn(eqDO.min * 4)); // distance from equator to poles
+  // 'Units Editor' settings
+  const US = navigator.language === "en-US";
+  const UK = navigator.language === "en-GB";
+  if (!locked("distanceScale")) distanceScaleOutput.value = distanceScaleInput.value = gauss(3, 1, 1, 5);
+  if (!stored("distanceUnit")) distanceUnitInput.value = distanceUnitOutput.value = US || UK ? "mi" : "km";
+  if (!stored("heightUnit")) heightUnit.value = US || UK ? "ft" : "m";
+  if (!stored("temperatureScale")) temperatureScale.value = US ? "°F" : "°C";
 }
 
 // remove all saved data from LocalStorage and reload the page
@@ -832,9 +901,7 @@ function restoreDefaultOptions() {
   location.reload();
 }
 
-
 // FONTS
-
 // fetch default fonts if not done before
 function loadDefaultFonts() {
   if (!$('link[href="fonts.css"]').length) {

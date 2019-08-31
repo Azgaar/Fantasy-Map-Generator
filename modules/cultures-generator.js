@@ -9,29 +9,29 @@
   const generate = function() {
     console.time('generateCultures');
     cells = pack.cells;
-    cells.culture = new Int8Array(cells.i.length); // cell cultures
+    cells.culture = new Uint16Array(cells.i.length); // cell cultures
     let count = +culturesInput.value;
 
     const populated = cells.i.filter(i => cells.s[i]).sort((a, b) => cells.s[b] - cells.s[a]); // cells sorted by population
     if (populated.length < count * 25) {
       count = Math.floor(populated.length / 50);
       if (!count) {
-        console.error(`There is no populated cells. Cannot generate cultures`);
+        console.warn(`There are no populated cells. Cannot generate cultures`);
         pack.cultures = [{name:"Wildlands", i:0, base:1}];
         alertMessage.innerHTML = `
           The climate is harsh and people cannot live in this world.<br>
           No cultures, states and burgs will be created.<br>
-          Please consider changing the World Configurator settings`;
+          Please consider changing climate settings in the World Configurator`;
         $("#alert").dialog({resizable: false, title: "Extreme climate warning",
           buttons: {Ok: function() {$(this).dialog("close");}}
         });
         return;
       } else {
-        console.error(`Not enought populated cells (${populated.length}). Will generate only ${count} cultures`);
+        console.warn(`Not enought populated cells (${populated.length}). Will generate only ${count} cultures`);
         alertMessage.innerHTML = `
-          There is only ${populated.length} populated cells and it's insufficient livable area.<br>
-          Only ${count} out of ${culturesInput.value} requiested cultures will be generated.<br>
-          Please consider changing the World Configurator settings`;
+          There are only ${populated.length} populated cells and it's insufficient livable area.<br>
+          Only ${count} out of ${culturesInput.value} requested cultures will be generated.<br>
+          Please consider changing climate settings in the World Configurator`;
         $("#alert").dialog({resizable: false, title: "Extreme climate warning",
           buttons: {Ok: function() {$(this).dialog("close");}}
         });
@@ -82,11 +82,12 @@
       return center;
     }
 
+    // set culture type based on culture center position
     function defineCultureType(i) {
       if (cells.h[i] > 50) return "Highland"; // no penalty for hills and moutains, high for other elevations
-      const f = cells.f[cells.haven[i]];
-      if (pack.features[f].type === "lake" && pack.features[f].cells > 5) return "Lake" // low water cross penalty and high for non-along-coastline growth
-      if (cells.harbor[i] === 1) return "Naval"; // low water cross penalty and high for non-along-coastline growth
+      const f = pack.features[cells.f[cells.haven[i]]]; // feature
+      if (f.type === "lake" && f.cells > 5) return "Lake" // low water cross penalty and high for non-along-coastline growth
+      if ((f.cells < 10 && cells.harbor[i]) || (cells.harbor[i] === 1 && Math.random() < .5)) return "Naval"; // low water cross penalty and high for non-along-coastline growth
       if (cells.r[i] && cells.fl[i] > 100) return "River"; // no River cross penalty, penalty for non-River growth
       const b = cells.biome[i];
       if (b === 4 || b === 1 || b === 2) return "Nomadic"; // high penalty in forest biomes and near coastline
@@ -99,9 +100,9 @@
       if (type === "Lake") base = .8; else
       if (type === "Naval") base = 1.5; else
       if (type === "River") base = .9; else
-      if (type === "Nomadic") base = 1.8; else
+      if (type === "Nomadic") base = 1.5; else
       if (type === "Hunting") base = .7; else
-      if (type === "Highland") base = .5;
+      if (type === "Highland") base = 1.2;
       return rn((Math.random() * powerInput.value / 2 + 1) * base, 1);
     }
 
@@ -164,7 +165,7 @@
       cells.c[n].forEach(function(e) {
         const biome = cells.biome[e];
         const biomeCost = getBiomeCost(c, biome, type);
-        const biomeChangeCost = biome === cells.biome[n] ? 0 : 5 * Math.abs(biome - cells.biome[n]); // penalty on biome change
+        const biomeChangeCost = biome === cells.biome[n] ? 0 : 20; // penalty on biome change
         const heightCost = getHeightCost(e, cells.h[e], type);
         const riverCost = getRiverCost(cells.r[e], e, type);
         const typeCost = getTypeCost(cells.t[e], type);
@@ -188,25 +189,28 @@
   }
 
   function getBiomeCost(c, biome, type) {
-    if (cells.biome[pack.cultures[c].center] === biome) return biomesData.cost[biome] / 2; // tiny penalty for native biome
+    if (cells.biome[pack.cultures[c].center] === biome) return 10; // tiny penalty for native biome
     if (type === "Hunting") return biomesData.cost[biome] * 5; // non-native biome penalty for hunters
     if (type === "Nomadic" && biome > 4 && biome < 10) return biomesData.cost[biome] * 10; // forest biome penalty for nomads
     return biomesData.cost[biome] * 2; // general non-native biome penalty
   }
 
   function getHeightCost(i, h, type) {
-    if ((type === "Naval" || type === "Lake") && h < 20) return cells.area[i]; // low sea crossing penalty for Navals
-    if (type === "Nomadic" && h < 20) return cells.area[i] * 50; // giant sea crossing penalty for Navals
-    if (h < 20) return cells.area[i] * 5; // general sea crossing penalty
-    if (type === "Highland" && h < 50) return 30; // penalty for highlanders on lowlands
+    const f = pack.features[cells.f[i]], a = cells.area[i];
+    if (type === "Lake" && f.type === "lake") return 10; // no lake crossing penalty for Lake cultures
+    if (type === "Naval" && h < 20) return a * 2; // low sea/lake crossing penalty for Naval cultures
+    if (type === "Nomadic" && h < 20) return a * 50; // giant sea/lake crossing penalty for Nomads
+    if (h < 20) return a * 6; // general sea/lake crossing penalty
+    if (type === "Highland" && h < 44) return 3000; // giant penalty for highlanders on lowlands
+    if (type === "Highland" && h < 62) return 200; // giant penalty for highlanders on lowhills
     if (type === "Highland") return 0; // no penalty for highlanders on highlands
-    if (h >= 70) return 100; // general mountains crossing penalty
-    if (h >= 50) return 30; // general hills crossing penalty
+    if (h >= 67) return 200; // general mountains crossing penalty
+    if (h >= 44) return 30; // general hills crossing penalty
     return 0;
   }
 
   function getRiverCost(r, i, type) {
-    if (type === "River") return r ? 0 : 50; // penalty for river cultures
+    if (type === "River") return r ? 0 : 100; // penalty for river cultures
     if (!r) return 0; // no penalty for others if there is no river 
     return Math.min(Math.max(cells.fl[i] / 10, 20), 100) // river penalty from 20 to 100 based on flux
   }

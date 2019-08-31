@@ -38,6 +38,7 @@ function editBurg() {
   document.getElementById("burgNameReRandom").addEventListener("click", generateNameRandom);
 
   document.getElementById("burgSeeInMFCG").addEventListener("click", openInMFCG);
+  document.getElementById("burgOpenCOA").addEventListener("click", openInIAHG);
   document.getElementById("burgRelocate").addEventListener("click", toggleRelocateBurg);
   document.getElementById("burglLegend").addEventListener("click", editBurgLegend);
   document.getElementById("burgRemove").addEventListener("click", removeSelectedBurg);
@@ -233,6 +234,12 @@ function editBurg() {
     window.open(url, '_blank');
   }
 
+  function openInIAHG() {
+    const id = elSelected.attr("data-id");
+    const url = `https://ironarachne.com/heraldry/${seed}-b${id}`;
+    window.open(url, '_blank');
+  }
+
   function toggleRelocateBurg() {
     const toggler = document.getElementById("toggleCells");
     document.getElementById("burgRelocate").classList.toggle("pressed");
@@ -299,7 +306,7 @@ function editBurg() {
   function editBurgLegend() {
     const id = elSelected.attr("data-id");
     const name = elSelected.text();
-    editLegends("burg"+id, name);
+    editNotes("burg"+id, name);
   }
 
   function removeSelectedBurg() {

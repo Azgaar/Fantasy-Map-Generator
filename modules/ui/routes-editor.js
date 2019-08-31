@@ -44,14 +44,14 @@ function editRoute(onClick) {
 
   function drawControlPoints(node) {
     const l = node.getTotalLength();
-    const increment = l / Math.ceil(l / 5);
+    const increment = l / Math.ceil(l / 8);
     for (let i=0; i <= l; i += increment) {addControlPoint(node.getPointAtLength(i));}
-    routeLength.innerHTML = rn(l * distanceScale.value) + " " + distanceUnit.value;
+    routeLength.innerHTML = rn(l * distanceScaleInput.value) + " " + distanceUnitInput.value;
   }
   
   function addControlPoint(point) {
     debug.select("#controlPoints").append("circle")
-      .attr("cx", point.x).attr("cy", point.y).attr("r", .5)
+      .attr("cx", point.x).attr("cy", point.y).attr("r", .8)
       .call(d3.drag().on("drag", dragControlPoint))
       .on("click", clickControlPoint);
   }
@@ -76,7 +76,7 @@ function editRoute(onClick) {
 
     const before = ":nth-child(" + (index + 1) + ")";
     debug.select("#controlPoints").insert("circle", before)
-      .attr("cx", point[0]).attr("cy", point[1]).attr("r", .5)
+      .attr("cx", point[0]).attr("cy", point[1]).attr("r", .8)
       .call(d3.drag().on("drag", dragControlPoint))
       .on("click", clickControlPoint);
 
@@ -98,7 +98,7 @@ function editRoute(onClick) {
 
     elSelected.attr("d", round(lineGen(points)));
     const l = elSelected.node().getTotalLength();
-    routeLength.innerHTML = rn(l * distanceScale.value) + " " + distanceUnit.value;    
+    routeLength.innerHTML = rn(l * distanceScaleInput.value) + " " + distanceUnitInput.value;    
   }
 
   function showGroupSection() {
@@ -256,7 +256,7 @@ function editRoute(onClick) {
 
   function editRouteLegend() {
     const id = elSelected.attr("id");
-    editLegends(id, id);
+    editNotes(id, id);
   }
 
   function removeRoute() {

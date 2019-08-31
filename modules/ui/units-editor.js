@@ -12,31 +12,34 @@ function editUnits() {
   });
 
   // add listeners
-  document.getElementById("distanceUnit").addEventListener("change", changeDistanceUnit);
-  document.getElementById("distanceScaleSlider").addEventListener("input", changeDistanceScale);
-  document.getElementById("distanceScale").addEventListener("change", changeDistanceScale);
-  document.getElementById("distanceScale").addEventListener("mouseenter", hideDistanceUnitOutput);
-  document.getElementById("distanceScale").addEventListener("mouseleave", showDistanceUnitOutput);
+  document.getElementById("distanceUnitInput").addEventListener("change", changeDistanceUnit);
+  document.getElementById("distanceScaleOutput").addEventListener("input", changeDistanceScale);
+  document.getElementById("distanceScaleInput").addEventListener("change", changeDistanceScale);
+  document.getElementById("distanceScaleInput").addEventListener("mouseenter", hideDistanceUnitOutput);
+  document.getElementById("distanceScaleInput").addEventListener("mouseleave", showDistanceUnitOutput);
+  document.getElementById("areaUnit").addEventListener("change", () => lock("areaUnit"));
   document.getElementById("heightUnit").addEventListener("change", changeHeightUnit);
-  document.getElementById("heightExponent").addEventListener("input", changeHeightExponent);
-  document.getElementById("heightExponentSlider").addEventListener("input", changeHeightExponent);
-  document.getElementById("temperatureScale").addEventListener("change", () => {if (layerIsOn("toggleTemp")) drawTemp()});
-  document.getElementById("barSizeSlider").addEventListener("input", changeScaleBarSize);
+  document.getElementById("heightExponentInput").addEventListener("input", changeHeightExponent);
+  document.getElementById("heightExponentOutput").addEventListener("input", changeHeightExponent);
+  document.getElementById("temperatureScale").addEventListener("change", changeTemperatureScale);
+  document.getElementById("barSizeOutput").addEventListener("input", changeScaleBarSize);
   document.getElementById("barSize").addEventListener("input", changeScaleBarSize);
-  document.getElementById("barLabel").addEventListener("input", drawScaleBar);
-  document.getElementById("barPosX").addEventListener("input", fitScaleBar);
-  document.getElementById("barPosY").addEventListener("input", fitScaleBar);
-  document.getElementById("barBackOpacity").addEventListener("input", function() {scaleBar.select("rect").attr("opacity", this.value)});
-  document.getElementById("barBackColor").addEventListener("input", function() {scaleBar.select("rect").attr("fill", this.value)});
-  document.getElementById("populationRateSlider").addEventListener("input", changePopulationRate);
+  document.getElementById("barLabel").addEventListener("input", changeScaleBarLabel);
+  document.getElementById("barPosX").addEventListener("input", changeScaleBarPosition);
+  document.getElementById("barPosY").addEventListener("input", changeScaleBarPosition);
+  document.getElementById("barBackOpacity").addEventListener("input", changeScaleBarOpacity);
+  document.getElementById("barBackColor").addEventListener("input", changeScaleBarColor);
+
+  document.getElementById("populationRateOutput").addEventListener("input", changePopulationRate);
   document.getElementById("populationRate").addEventListener("change", changePopulationRate);
-  document.getElementById("urbanizationSlider").addEventListener("input", changeUrbanizationRate);
+  document.getElementById("urbanizationOutput").addEventListener("input", changeUrbanizationRate);
   document.getElementById("urbanization").addEventListener("change", changeUrbanizationRate);
 
   document.getElementById("addLinearRuler").addEventListener("click", addAdditionalRuler);
   document.getElementById("addOpisometer").addEventListener("click", toggleOpisometerMode);
   document.getElementById("addPlanimeter").addEventListener("click", togglePlanimeterMode);
   document.getElementById("removeRulers").addEventListener("click", removeAllRulers);
+  document.getElementById("unitsRestore").addEventListener("click", restoreDefaultUnits);
 
   function changeDistanceUnit() {
     if (this.value === "custom_name") {
@@ -46,6 +49,7 @@ function editUnits() {
     }
 
     document.getElementById("distanceUnitOutput").innerHTML = this.value;
+    lock("distanceUnit");
     drawScaleBar();
     calculateFriendlyGridSize();
   }
@@ -54,13 +58,15 @@ function editUnits() {
     const scale = +this.value;
     if (!scale || isNaN(scale) || scale < 0) {
       tip("Distance scale should be a positive number", false, "error");
-      this.value = document.getElementById("distanceScale").dataset.value;
+      this.value = document.getElementById("distanceScaleInput").dataset.value;
       return;
     }
 
-    document.getElementById("distanceScaleSlider").value = scale;
-    document.getElementById("distanceScale").value = scale;
-    document.getElementById("distanceScale").dataset.value = scale;
+    document.getElementById("distanceScaleOutput").value = scale;
+    document.getElementById("distanceScaleInput").value = scale;
+    document.getElementById("distanceScaleInput").dataset.value = scale;
+    lock("distanceScale");
+
     drawScaleBar();
     calculateFriendlyGridSize();
   }
@@ -69,23 +75,54 @@ function editUnits() {
   function showDistanceUnitOutput() {document.getElementById("distanceUnitOutput").style.opacity = 1;}
 
   function changeHeightUnit() {
-    if (this.value !== "custom_name") return;
-    const custom = prompt("Provide a custom name for height unit");
-    if (custom) this.options.add(new Option(custom, custom, false, true));
-    else this.value = "ft";
+    if (this.value === "custom_name") {
+      const custom = prompt("Provide a custom name for height unit");
+      if (custom) this.options.add(new Option(custom, custom, false, true));
+      else this.value = "ft";
+    }
+
+    lock("heightUnit");
   }
 
   function changeHeightExponent() {
-    document.getElementById("heightExponent").value = this.value;
-    document.getElementById("heightExponentSlider").value = this.value;
+    document.getElementById("heightExponentInput").value = this.value;
+    document.getElementById("heightExponentOutput").value = this.value;
     calculateTemperatures();
+    if (layerIsOn("toggleTemp")) drawTemp();
+    lock("heightExponent");
+  }
+
+  function changeTemperatureScale() {
+    lock("temperatureScale");
     if (layerIsOn("toggleTemp")) drawTemp();
   }
 
   function changeScaleBarSize() {
     document.getElementById("barSize").value = this.value;
-    document.getElementById("barSizeSlider").value = this.value;
+    document.getElementById("barSizeOutput").value = this.value;
     drawScaleBar();
+    lock("barSize");
+  }
+
+  function changeScaleBarPosition() {
+    lock("barPosX");
+    lock("barPosY");
+    fitScaleBar();
+  }
+
+  function changeScaleBarLabel() {
+    lock("barLabel");
+    drawScaleBar();
+  }
+
+  function changeScaleBarOpacity() {
+    scaleBar.select("rect").attr("opacity", this.value);
+    lock("barBackOpacity");
+  }
+
+  function changeScaleBarColor() {
+    scaleBar.select("rect").attr("fill", this.value);
+    lock("barBackColor");
   }
 
   function changePopulationRate() {
@@ -96,9 +133,10 @@ function editUnits() {
       return;
     }
 
-    document.getElementById("populationRateSlider").value = rate;
+    document.getElementById("populationRateOutput").value = rate;
     document.getElementById("populationRate").value = rate;
     document.getElementById("populationRate").dataset.value = rate;
+    lock("populationRate");
   }
 
   function changeUrbanizationRate() {
@@ -109,15 +147,67 @@ function editUnits() {
       return;
     }
 
-    document.getElementById("urbanizationSlider").value = rate;
+    document.getElementById("urbanizationOutput").value = rate;
     document.getElementById("urbanization").value = rate;
     document.getElementById("urbanization").dataset.value = rate;
+    lock("urbanization");
+  }
+
+  function restoreDefaultUnits() {
+    // distanceScale
+    document.getElementById("distanceScaleOutput").value = 3;
+    document.getElementById("distanceScaleInput").value = 3;
+    document.getElementById("distanceScaleInput").dataset.value = 3;
+    unlock("distanceScale");
+
+    // units
+    const US = navigator.language === "en-US";
+    const UK = navigator.language === "en-GB";
+    distanceUnitInput.value = distanceUnitOutput.value = US || UK ? "mi" : "km";
+    heightUnit.value = US || UK ? "ft" : "m";
+    temperatureScale.value = US ? "°F" : "°C";
+    areaUnit.value = "square";
+    localStorage.removeItem("distanceUnit");
+    localStorage.removeItem("heightUnit");
+    localStorage.removeItem("temperatureScale");
+    localStorage.removeItem("areaUnit");
+    calculateFriendlyGridSize();
+
+    // height exponent
+    heightExponentInput.value = heightExponentOutput.value = 1.8;
+    localStorage.removeItem("heightExponent");
+    calculateTemperatures();
+    
+    // scale bar
+    barSizeOutput.value = barSize.value = 2;
+    barLabel.value = "";
+    barBackOpacity.value = .2;
+    barBackColor.value = "#ffffff";
+    barPosX.value = barPosY.value = 99;
+
+    localStorage.removeItem("barSize");
+    localStorage.removeItem("barLabel");
+    localStorage.removeItem("barBackOpacity");
+    localStorage.removeItem("barBackColor");
+    localStorage.removeItem("barPosX");
+    localStorage.removeItem("barPosY");
+    drawScaleBar();
+
+    // population
+    populationRateOutput.value = populationRate.value = 1000;
+    urbanizationOutput.value = urbanization.value = 1000;
+    localStorage.removeItem("populationRate");
+    localStorage.removeItem("urbanization");
   }
 
   function addAdditionalRuler() {
     if (!layerIsOn("toggleRulers")) toggleRulers();
-    const y = rn(Math.random() * graphHeight * .5 + graphHeight * .25);
-    addRuler(graphWidth * .2, y, graphWidth * .8, y);
+    const x = graphWidth/2, y = graphHeight/2;
+    const pt = document.getElementById('map').createSVGPoint();
+    pt.x = x, pt.y = y;
+    const p = pt.matrixTransform(viewbox.node().getScreenCTM().inverse());
+    const dx = rn(graphWidth / 4 / scale), dy = rand(dx / 2, dx * 2) - rand(dx / 2, dx * 2);
+    addRuler(p.x - dx, p.y + dy, p.x + dx, p.y + dy);
   }
 
   function toggleOpisometerMode() {

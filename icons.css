@@ -209,6 +209,7 @@
 .icon-smooth:before {font-weight: bold; content: '∼'; }
 .icon-disrupt:before {font-weight: bold; content: '෴'; }
 .icon-if:before {font-style: italic; font-weight: bold; content: 'if'; }
+.icon-fleur:before {content: '⚜'; font-size: 11px; margin: -2px; }
 
 .icon-ruler:before {content: 'I'; }
 .icon-curve:before {content: 'C'; }

@@ -163,7 +163,7 @@ function editNamesbase() {
       nameBases = [], nameBase = [];
       data.forEach(d => {
         const e = d.split("|");
-        nameBases.push({name:e[0], min:e[1], max:e[2], d:e[3], m:d[4]});
+        nameBases.push({name:e[0], min:e[1], max:e[2], d:e[3], m:e[4]});
         nameBase.push(e[5].split(","));
       });
 

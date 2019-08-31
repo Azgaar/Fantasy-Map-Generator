@@ -68,7 +68,7 @@ function editRiver() {
 
   function drawControlPoints(node) {
     const l = node.getTotalLength() / 2;
-    const segments = Math.ceil(l / 5);
+    const segments = Math.ceil(l / 8);
     const increment = rn(l / segments * 1e5);
     for (let i=increment*segments, c=i; i >= 0; i -= increment, c += increment) {
       const p1 = node.getPointAtLength(i / 1e5);
@@ -80,7 +80,7 @@ function editRiver() {
 
   function addControlPoint(point) {
     debug.select("#controlPoints").append("circle")
-      .attr("cx", point[0]).attr("cy", point[1]).attr("r", .5)
+      .attr("cx", point[0]).attr("cy", point[1]).attr("r", .8)
       .call(d3.drag().on("drag", dragControlPoint))
       .on("click", clickControlPoint);
   }
@@ -106,7 +106,7 @@ function editRiver() {
 
   function updateRiverLength(l = elSelected.node().getTotalLength() / 2) {
     const tr = parseTransform(elSelected.attr("transform"));
-    riverLength.innerHTML = rn(l * tr[5] * distanceScale.value) + " " + distanceUnit.value;
+    riverLength.innerHTML = rn(l * tr[5] * distanceScaleInput.value) + " " + distanceUnitInput.value;
   }
 
   function clickControlPoint() {
@@ -134,7 +134,7 @@ function editRiver() {
 
     const before = ":nth-child(" + (index + 1) + ")";
     debug.select("#controlPoints").insert("circle", before)
-      .attr("cx", point[0]).attr("cy", point[1]).attr("r", .5)
+      .attr("cx", point[0]).attr("cy", point[1]).attr("r", .8)
       .call(d3.drag().on("drag", dragControlPoint))
       .on("click", clickControlPoint);
 
@@ -250,7 +250,7 @@ function editRiver() {
   
   function editRiverLegend() {
     const id = elSelected.attr("id");
-    editLegends(id, id);
+    editNotes(id, id);
   }  
 
   function removeRiver() {

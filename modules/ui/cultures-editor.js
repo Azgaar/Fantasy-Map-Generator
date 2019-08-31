@@ -5,9 +5,10 @@ function editCultures() {
   if (!layerIsOn("toggleCultures")) toggleCultures();
   if (layerIsOn("toggleStates")) toggleStates();
   if (layerIsOn("toggleBiomes")) toggleBiomes();
+  if (layerIsOn("toggleReligions")) toggleReligions();
+  if (layerIsOn("toggleProvinces")) toggleProvinces();
 
   const body = document.getElementById("culturesBody");
-  const animate = d3.transition().duration(2000).ease(d3.easeSinIn);  
   drawCultureCenters();
   refreshCulturesEditor();
 
@@ -15,19 +16,20 @@ function editCultures() {
   modules.editCultures = true;
 
   $("#culturesEditor").dialog({
-    title: "Cultures Editor", width: fitContent(), close: closeCulturesEditor,
+    title: "Cultures Editor", resizable: false, width: fitContent(), close: closeCulturesEditor,
     position: {my: "right top", at: "right-10 top+10", of: "svg"}
   });
 
   // add listeners
   document.getElementById("culturesEditorRefresh").addEventListener("click", refreshCulturesEditor);
+  document.getElementById("culturesLegend").addEventListener("click", toggleLegend);
   document.getElementById("culturesPercentage").addEventListener("click", togglePercentageMode);
-  document.getElementById("culturesRecalculate").addEventListener("click", recalculateCultures);
+  document.getElementById("culturesRecalculate").addEventListener("click", () => recalculateCultures(true));
   document.getElementById("culturesManually").addEventListener("click", enterCultureManualAssignent);
   document.getElementById("culturesManuallyApply").addEventListener("click", applyCultureManualAssignent);
-  document.getElementById("culturesManuallyCancel").addEventListener("click", exitCulturesManualAssignment);
+  document.getElementById("culturesManuallyCancel").addEventListener("click", () => exitCulturesManualAssignment());
   document.getElementById("culturesEditNamesBase").addEventListener("click", editNamesbase);
-  document.getElementById("culturesAdd").addEventListener("click", addCulture);
+  document.getElementById("culturesAdd").addEventListener("click", enterAddCulturesMode);
   document.getElementById("culturesExport").addEventListener("click", downloadCulturesData);
 
   function refreshCulturesEditor() {
@@ -51,15 +53,15 @@ function editCultures() {
 
   // add line for each culture
   function culturesEditorAddLines() {
-    const unit = areaUnit.value === "square" ? " " + distanceUnit.value + "²" : " " + areaUnit.value;
+    const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
     let lines = "", totalArea = 0, totalPopulation = 0;
 
     for (const c of pack.cultures) {
       if (c.removed) continue;
-      const area = c.area * (distanceScale.value ** 2);
+      const area = c.area * (distanceScaleInput.value ** 2);
       const rural = c.rural * populationRate.value;
       const urban = c.urban * populationRate.value * urbanization.value;
-      const population = rural + urban;
+      const population = rn(rural + urban);
       const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}`;
       totalArea += area;
       totalPopulation += population;
@@ -68,18 +70,18 @@ function editCultures() {
         // Uncultured (neutral) line
         lines += `<div class="states" data-id=${c.i} data-name="${c.name}" data-color="" data-cells=${c.cells}
         data-area=${area} data-population=${population} data-base=${c.base} data-type="" data-expansionism="">
-          <input class="stateColor placeholder" type="color">
+          <svg width="9" height="9" class="placeholder"></svg>
           <input data-tip="Culture name. Click and type to change" class="cultureName italic" value="${c.name}" autocorrect="off" spellcheck="false">
-          <span data-tip="Cells count" class="icon-check-empty"></span>
-          <div data-tip="Cells count" class="stateCells">${c.cells}</div>
-          <span class="icon-resize-full placeholder"></span>
-          <input class="statePower placeholder" type="number">
+          <span data-tip="Cells count" class="icon-check-empty hide"></span>
+          <div data-tip="Cells count" class="stateCells hide">${c.cells}</div>
+          <span class="icon-resize-full placeholder hide"></span>
+          <input class="statePower placeholder hide" type="number">
           <select class="cultureType placeholder">${getTypeOptions(c.type)}</select>
-          <span data-tip="Culture area" style="padding-right: 4px" class="icon-map-o"></span>
-          <div data-tip="Culture area" class="biomeArea">${si(area) + unit}</div>
-          <span data-tip="${populationTip}" class="icon-male"></span>
-          <div data-tip="${populationTip}" class="culturePopulation">${si(population)}</div>
-          <span data-tip="Click to re-generate names for burgs with this culture assigned" class="icon-arrows-cw"></span>
+          <span data-tip="Culture area" style="padding-right: 4px" class="icon-map-o hide"></span>
+          <div data-tip="Culture area" class="biomeArea hide">${si(area) + unit}</div>
+          <span data-tip="${populationTip}" class="icon-male hide"></span>
+          <div data-tip="${populationTip}" class="culturePopulation hide">${si(population)}</div>
+          <span data-tip="Click to re-generate names for burgs with this culture assigned" class="icon-arrows-cw hide"></span>
           <select data-tip="Culture namesbase. Click to change" class="cultureBase">${getBaseOptions(c.base)}</select>
         </div>`;
         continue;
@@ -87,20 +89,20 @@ function editCultures() {
 
       lines += `<div class="states cultures" data-id=${c.i} data-name="${c.name}" data-color="${c.color}" data-cells=${c.cells}
       data-area=${area} data-population=${population} data-base=${c.base} data-type=${c.type} data-expansionism=${c.expansionism}>
-        <input data-tip="Culture color. Click to change" class="stateColor" type="color" value="${c.color}">
+        <svg data-tip="Culture fill style. Click to change" width="9" height="9" style="margin-bottom:-1px"><rect x="0" y="0" width="9" height="9" fill="${c.color}" class="zoneFill"></svg>
         <input data-tip="Culture name. Click and type to change" class="cultureName" value="${c.name}" autocorrect="off" spellcheck="false">
-        <span data-tip="Cells count" class="icon-check-empty"></span>
-        <div data-tip="Cells count" class="stateCells">${c.cells}</div>
-        <span data-tip="Culture expansionism (defines competitive size)" class="icon-resize-full"></span>
-        <input data-tip="Expansionism (defines competitive size). Change to re-calculate cultures based on new value" class="statePower" type="number" min=0 max=99 step=.1 value=${c.expansionism}>
-        <select data-tip="Culture type. Change to re-calculate cultures based on new value" class="cultureType">${getTypeOptions(c.type)}</select>
-        <span data-tip="Culture area" style="padding-right: 4px" class="icon-map-o"></span>
-        <div data-tip="Culture area" class="biomeArea">${si(area) + unit}</div>
-        <span data-tip="${populationTip}" class="icon-male"></span>
-        <div data-tip="${populationTip}" class="culturePopulation">${si(population)}</div>
-        <span data-tip="Click to re-generate names for burgs with this culture assigned" class="icon-arrows-cw"></span>
+        <span data-tip="Cells count" class="icon-check-empty hide"></span>
+        <div data-tip="Cells count" class="stateCells hide">${c.cells}</div>
+        <span data-tip="Culture expansionism (defines competitive size)" class="icon-resize-full hide"></span>
+        <input data-tip="Expansionism (defines competitive size)" class="statePower hide" type="number" min=0 max=99 step=.1 value=${c.expansionism}>
+        <select data-tip="Culture type" class="cultureType">${getTypeOptions(c.type)}</select>
+        <span data-tip="Culture area" style="padding-right: 4px" class="icon-map-o hide"></span>
+        <div data-tip="Culture area" class="biomeArea hide">${si(area) + unit}</div>
+        <span data-tip="${populationTip}" class="icon-male hide"></span>
+        <div data-tip="${populationTip}" class="culturePopulation hide">${si(population)}</div>
+        <span data-tip="Click to re-generate names for burgs with this culture assigned" class="icon-arrows-cw hide"></span>
         <select data-tip="Culture namesbase. Change and then click on the Re-generate button to get new names" class="cultureBase">${getBaseOptions(c.base)}</select>
-        <span data-tip="Remove culture" class="icon-trash-empty"></span>
+        <span data-tip="Remove culture" class="icon-trash-empty hide"></span>
       </div>`;
     }
     body.innerHTML = lines;
@@ -117,7 +119,7 @@ function editCultures() {
     body.querySelectorAll("div.cultures").forEach(el => el.addEventListener("mouseenter", ev => cultureHighlightOn(ev)));
     body.querySelectorAll("div.cultures").forEach(el => el.addEventListener("mouseleave", ev => cultureHighlightOff(ev)));
     body.querySelectorAll("div.states").forEach(el => el.addEventListener("click", selectCultureOnLineClick));
-    body.querySelectorAll("div > input[type='color']").forEach(el => el.addEventListener("input", cultureChangeColor));
+    body.querySelectorAll("rect.zoneFill").forEach(el => el.addEventListener("click", cultureChangeColor));
     body.querySelectorAll("div > input.cultureName").forEach(el => el.addEventListener("input", cultureChangeName));
     body.querySelectorAll("div > input.statePower").forEach(el => el.addEventListener("input", cultureChangeExpansionism));
     body.querySelectorAll("div > select.cultureType").forEach(el => el.addEventListener("change", cultureChangeType));
@@ -144,31 +146,40 @@ function editCultures() {
   }
  
   function cultureHighlightOn(event) {
-    if (customization === 4) return;
+    if (!layerIsOn("toggleCultures")) return;
+    if (customization) return;
     const culture = +event.target.dataset.id;
-    const color = d3.interpolateLab(pack.cultures[culture].color, "#ff0000")(.8)
-    cults.select("#culture"+culture).raise().transition(animate).attr("stroke-width", 3).attr("stroke", color);
-    debug.select("#cultureCenter"+culture).raise().transition(animate).attr("r", 8);
+    const animate = d3.transition().duration(2000).ease(d3.easeSinIn);
+    cults.select("#culture"+culture).raise().transition(animate).attr("stroke-width", 2.5).attr("stroke", "#d0240f");
+    debug.select("#cultureCenter"+culture).raise().transition(animate).attr("r", 8).attr("stroke", "#d0240f");
   }
 
   function cultureHighlightOff(event) {
-    if (customization === 4) return;
+    if (!layerIsOn("toggleCultures")) return;
     const culture = +event.target.dataset.id;
-    cults.select("#culture"+culture).transition().attr("stroke-width", .7).attr("stroke", pack.cultures[culture].color);
-    debug.select("#cultureCenter"+culture).transition().attr("r", 6);
+    cults.select("#culture"+culture).transition().attr("stroke-width", null).attr("stroke", null);
+    debug.select("#cultureCenter"+culture).transition().attr("r", 6).attr("stroke", null);
   }
 
   function cultureChangeColor() {
-    const culture = +this.parentNode.dataset.id;
-    pack.cultures[culture].color = this.value;
-    cults.select("#culture"+culture).attr("fill", this.value).attr("stroke", this.value);
-    debug.select("#cultureCenter"+culture).attr("fill", this.value);    
+    const el = this;
+    const currentFill = el.getAttribute("fill");
+    const culture = +el.parentNode.parentNode.dataset.id;
+
+    const callback = function(fill) {
+      el.setAttribute("fill", fill);
+      pack.cultures[culture].color = fill;
+      cults.select("#culture"+culture).attr("fill", fill).attr("stroke", fill);
+      debug.select("#cultureCenter"+culture).attr("fill", fill);
+    }
+
+    openPicker(currentFill, callback);
   }
 
   function cultureChangeName() {
     const culture = +this.parentNode.dataset.id;
     this.parentNode.dataset.name = this.value;
-    pack.cultures[culture].name = this.value;    
+    pack.cultures[culture].name = this.value;
   }
 
   function cultureChangeExpansionism() {
@@ -218,7 +229,8 @@ function editCultures() {
   function drawCultureCenters() {
     const tooltip = 'Drag to move the culture center (ancestral home)';
     debug.select("#cultureCenters").remove();
-    const cultureCenters = debug.append("g").attr("id", "cultureCenters");
+    const cultureCenters = debug.append("g").attr("id", "cultureCenters")
+      .attr("stroke-width", 2).attr("stroke", "#444444").style("cursor", "move");
 
     const data = pack.cultures.filter(c => c.i && !c.removed);
     cultureCenters.selectAll("circle").data(data).enter().append("circle")
@@ -241,7 +253,13 @@ function editCultures() {
       recalculateCultures();
     });
   }
-  
+
+  function toggleLegend() {
+    if (legend.selectAll("*").size()) {clearLegend(); return;}; // hide legend
+    const data = pack.cultures.filter(c => c.i && !c.removed && c.cells).sort((a, b) => b.area - a.area).map(c => [c.i, c.color, c.name]);
+    drawLegend("Cultures", data);
+  }
+
   function togglePercentageMode() {
     if (body.dataset.type === "absolute") {
       body.dataset.type = "percentage";
@@ -261,8 +279,10 @@ function editCultures() {
   }
 
   // re-calculate cultures
-  function recalculateCultures() {
-    pack.cells.culture = new Int8Array(pack.cells.i.length);
+  function recalculateCultures(must) {
+    if (!must && !culturesAutoChange.checked) return;
+
+    pack.cells.culture = new Uint16Array(pack.cells.i.length);
     pack.cultures.forEach(function(c) {
       if (!c.i || c.removed) return;
       pack.cells.culture[c.center] = c.i;
@@ -274,27 +294,32 @@ function editCultures() {
   }
   
   function enterCultureManualAssignent() {
-    if (!layerIsOn("toggleCultures")) toggleCultures();  
+    if (!layerIsOn("toggleCultures")) toggleCultures();
     customization = 4;
     cults.append("g").attr("id", "temp");
-    document.querySelectorAll("#culturesBottom > button").forEach(el => el.style.display = "none");
-    document.getElementById("culturesManuallyButtons").style.display = "inline-block";    
+    document.querySelectorAll("#culturesBottom > *").forEach(el => el.style.display = "none");
+    document.getElementById("culturesManuallyButtons").style.display = "inline-block";
     debug.select("#cultureCenters").style("display", "none");
 
+    culturesEditor.querySelectorAll(".hide").forEach(el => el.classList.add("hidden"));
+    culturesFooter.style.display = "none";
+    culturesHeader.querySelector("div[data-sortby='base']").style.marginLeft = "21px";
+    body.querySelectorAll("div > input, select, span, svg").forEach(e => e.style.pointerEvents = "none");
+    $("#culturesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg"}});
+
     tip("Click on culture to select, drag the circle to change culture", true);
-    viewbox.style("cursor", "crosshair").call(d3.drag()
-      .on("drag", dragCultureBrush))
+    viewbox.style("cursor", "crosshair")
       .on("click", selectCultureOnMapClick)
+      .call(d3.drag().on("start", dragCultureBrush))
       .on("touchmove mousemove", moveCultureBrush);
 
-    body.querySelectorAll("div > *").forEach(e => e.disabled = true);
     body.querySelector("div").classList.add("selected");
   }
 
   function selectCultureOnLineClick(i) {
     if (customization !== 4) return;
     body.querySelector("div.selected").classList.remove("selected");
-    this.classList.add("selected");    
+    this.classList.add("selected");
   }
 
   function selectCultureOnMapClick() {
@@ -310,13 +335,17 @@ function editCultures() {
   }
   
   function dragCultureBrush() {
-    const p = d3.mouse(this);
     const r = +culturesManuallyBrush.value;
-    moveCircle(p[0], p[1], r);
 
-    const found = r > 5 ? findAll(p[0], p[1], r) : [findCell(p[0], p[1], r)];
-    const selection = found.filter(isLand);
-    if (selection) changeCultureForSelection(selection);    
+    d3.event.on("drag", () => {
+      if (!d3.event.dx && !d3.event.dy) return;
+      const p = d3.mouse(this);
+      moveCircle(p[0], p[1], r);
+  
+      const found = r > 5 ? findAll(p[0], p[1], r) : [findCell(p[0], p[1], r)];
+      const selection = found.filter(isLand);
+      if (selection) changeCultureForSelection(selection);
+    });
   }
 
   // change culture within selection
@@ -325,7 +354,7 @@ function editCultures() {
     const selected = body.querySelector("div.selected");
 
     const cultureNew = +selected.dataset.id;
-    const color = pack.cultures[cultureNew].color;
+    const color = pack.cultures[cultureNew].color || "#ffffff";
 
     selection.forEach(function(i) {
       const exists = temp.select("polygon[data-cell='"+i+"']");
@@ -361,13 +390,19 @@ function editCultures() {
     exitCulturesManualAssignment();
   }
  
-  function exitCulturesManualAssignment() {
+  function exitCulturesManualAssignment(close) {
     customization = 0;
     cults.select("#temp").remove();
     removeCircle();
-    document.querySelectorAll("#culturesBottom > button").forEach(el => el.style.display = "inline-block");
+    document.querySelectorAll("#culturesBottom > *").forEach(el => el.style.display = "inline-block");
     document.getElementById("culturesManuallyButtons").style.display = "none";
-    body.querySelectorAll("div > *").forEach(e => e.disabled = false);
+
+    culturesEditor.querySelectorAll(".hide").forEach(el => el.classList.remove("hidden"));
+    culturesFooter.style.display = "block";
+    culturesHeader.querySelector("div[data-sortby='base']").style.marginLeft = "2px";
+    body.querySelectorAll("div > input, select, span, svg").forEach(e => e.style.pointerEvents = "all");
+    if(!close) $("#culturesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg"}});
+
     debug.select("#cultureCenters").style("display", null);
     restoreDefaultEvents();
     clearMainTip();
@@ -375,7 +410,32 @@ function editCultures() {
     if (selected) selected.classList.remove("selected");
   }
   
+  function enterAddCulturesMode() {
+    if (this.classList.contains("pressed")) {exitAddCultureMode(); return;};
+    customization = 9;
+    this.classList.add("pressed");
+    tip("Click on the map to add a new culture", true);
+    viewbox.style("cursor", "crosshair").on("click", addCulture);
+    body.querySelectorAll("div > input, select, span, svg").forEach(e => e.style.pointerEvents = "none");
+  }
+
+  function exitAddCultureMode() {
+    customization = 0;
+    restoreDefaultEvents();
+    clearMainTip();
+    body.querySelectorAll("div > input, select, span, svg").forEach(e => e.style.pointerEvents = "all");
+    if (culturesAdd.classList.contains("pressed")) culturesAdd.classList.remove("pressed");
+  }
+
   function addCulture() {
+    const point = d3.mouse(this);
+    const center = findCell(point[0], point[1]);
+    if (pack.cells.h[center] < 20) {tip("You cannot place culture center into the water. Please click on a land cell", false, "error"); return;}
+    const occupied = pack.cultures.some(c => !c.removed && c.center === center);
+    if (occupied) {tip("This cell is already a culture center. Please select a different cell", false, "error"); return;}
+
+    if (d3.event.shiftKey === false) exitAddCultureMode();
+
     const defaultCultures = Cultures.getDefault();
     let culture, base, name;
     if (pack.cultures.length < defaultCultures.length) {
@@ -391,15 +451,13 @@ function editCultures() {
     }
     const i = pack.cultures.length;
     const color = d3.color(d3.scaleSequential(d3.interpolateRainbow)(Math.random())).hex();
-    const land = pack.cells.i.filter(isLand);
-    const center = land[Math.floor(Math.random() * land.length - 1)];
     pack.cultures.push({name, color, base, center, i, expansionism:1, type:"Generic", cells:0, area:0, rural:0, urban:0});
     drawCultureCenters();
     culturesEditorAddLines();
   }
 
   function downloadCulturesData() {
-    const unit = areaUnit.value === "square" ? distanceUnit.value + "2" : areaUnit.value;
+    const unit = areaUnit.value === "square" ? distanceUnitInput.value + "2" : areaUnit.value;
     let data = "Id,Culture,Color,Cells,Expansionism,Type,Area "+unit+",Population,Namesbase\n"; // headers
     
     body.querySelectorAll(":scope > div").forEach(function(el) {
@@ -427,7 +485,8 @@ function editCultures() {
   
   function closeCulturesEditor() {
     debug.select("#cultureCenters").remove();
-    exitCulturesManualAssignment();
+    exitCulturesManualAssignment("close");
+    exitAddCultureMode()
   }
 
 }
