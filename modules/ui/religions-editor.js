@@ -110,8 +110,8 @@ function editReligions() {
     body.querySelectorAll("div.states").forEach(el => el.addEventListener("click", selectReligionOnLineClick));
     body.querySelectorAll("rect.zoneFill").forEach(el => el.addEventListener("click", religionChangeColor));
     body.querySelectorAll("div > input.religionName").forEach(el => el.addEventListener("input", religionChangeName));
-    body.querySelectorAll("div > select.religionType").forEach(el => el.addEventListener("change", religionChangeType));
-    body.querySelectorAll("div > select.religionForm").forEach(el => el.addEventListener("change", religionChangeForm));
+    body.querySelectorAll("div > select.religionType").forEach(el => el.addEventListener("input", religionChangeType));
+    body.querySelectorAll("div > input.religionForm").forEach(el => el.addEventListener("input", religionChangeForm));
     body.querySelectorAll("div > span.icon-arrows-cw").forEach(el => el.addEventListener("click", regenerateDeity));
     body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.addEventListener("click", religionRemove));
 
