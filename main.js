@@ -122,7 +122,7 @@ setTimeout(showWelcomeMessage, 7000);
 function showWelcomeMessage() {
   // Changelog dialog window
   if (localStorage.getItem("version") != version) {
-    const link = 'https://www.reddit.com/r/FantasyMapGenerator/comments/bynoz7/update_new_version_is_published_v_10/'; // announcement on Reddit
+    const link = 'https://www.reddit.com/r/FantasyMapGenerator/comments/cxu1c5/update_new_version_is_published_v_10'; // announcement on Reddit
     alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
 
       This version is compatible with versions 0.8b and 0.9b, but not with older .map files. 
