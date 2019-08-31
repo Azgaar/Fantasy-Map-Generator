@@ -195,7 +195,7 @@ function editUnits() {
 
     // population
     populationRateOutput.value = populationRate.value = 1000;
-    urbanizationOutput.value = urbanization.value = 1000;
+    urbanizationOutput.value = urbanization.value = 1;
     localStorage.removeItem("populationRate");
     localStorage.removeItem("urbanization");
   }
