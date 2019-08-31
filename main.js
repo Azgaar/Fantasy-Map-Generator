@@ -754,12 +754,12 @@ function calculateTemperatures() {
 
   const tEq = +temperatureEquatorInput.value;
   const tPole = +temperaturePoleInput.value;
-  const tDelta = Math.abs(tEq) + Math.abs(tPole);
+  const tDelta = tEq - tPole;
 
   d3.range(0, cells.i.length, grid.cellsX).forEach(function(r) {
     const y = grid.points[r][1];
-    const deg = mapCoordinates.latN - y / graphHeight * mapCoordinates.latT;
-    const initTemp = tEq - Math.abs(deg) / 90 * tDelta;
+    const lat = Math.abs(mapCoordinates.latN - y / graphHeight * mapCoordinates.latT);
+    const initTemp = tEq - lat / 90 * tDelta;
     for (let i = r; i < r+grid.cellsX; i++) {
       cells.temp[i] = initTemp - convertToFriendly(cells.h[i]);
     }
