@@ -72,7 +72,7 @@ function editReligions() {
           <select data-tip="Religion type" class="religionType">${getTypeOptions(r.type)}</select>
           <input data-tip="Religion form" class="religionForm hide" value="${r.form}" autocorrect="off" spellcheck="false">
           <span data-tip="Click to re-generate supreme deity" class="icon-arrows-cw hide"></span>
-          <input data-tip="Religion supreme deity" class="religionDeidy hide" value="${r.deity?r.deity:''}" autocorrect="off" spellcheck="false">
+          <input data-tip="Religion supreme deity" class="religionDeity hide" value="${r.deity?r.deity:''}" autocorrect="off" spellcheck="false">
           <span data-tip="Religion area" style="padding-right: 4px" class="icon-map-o hide"></span>
           <div data-tip="Religion area" class="biomeArea hide">${si(area) + unit}</div>
           <span data-tip="${populationTip}" class="icon-male hide"></span>
@@ -87,7 +87,7 @@ function editReligions() {
           <select data-tip="Religion type" class="religionType placeholder">${getTypeOptions(r.type)}</select>
           <input data-tip="Religion form" class="religionForm placeholder hide" value="" autocorrect="off" spellcheck="false">
           <span data-tip="Click to re-generate supreme deity" class="icon-arrows-cw placeholder hide"></span>
-          <input data-tip="Religion supreme deity" class="religionDeidy placeholder hide" value="" autocorrect="off" spellcheck="false">
+          <input data-tip="Religion supreme deity" class="religionDeity placeholder hide" value="" autocorrect="off" spellcheck="false">
           <span data-tip="Religion area" style="padding-right: 4px" class="icon-map-o hide"></span>
           <div data-tip="Religion area" class="biomeArea hide">${si(area) + unit}</div>
           <span data-tip="${populationTip}" class="icon-male hide"></span>
@@ -112,6 +112,7 @@ function editReligions() {
     body.querySelectorAll("div > input.religionName").forEach(el => el.addEventListener("input", religionChangeName));
     body.querySelectorAll("div > select.religionType").forEach(el => el.addEventListener("input", religionChangeType));
     body.querySelectorAll("div > input.religionForm").forEach(el => el.addEventListener("input", religionChangeForm));
+    body.querySelectorAll("div > input.religionDeity").forEach(el => el.addEventListener("input", religionChangeDeity));
     body.querySelectorAll("div > span.icon-arrows-cw").forEach(el => el.addEventListener("click", regenerateDeity));
     body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.addEventListener("click", religionRemove));
 
@@ -173,6 +174,12 @@ function editReligions() {
     const religion = +this.parentNode.dataset.id;
     this.parentNode.dataset.form = this.value;
     pack.religions[religion].form = this.value;
+  }
+
+  function religionChangeDeity() {
+    const religion = +this.parentNode.dataset.id;
+    this.parentNode.dataset.deity = this.value;
+    pack.religions[religion].deity = this.value;
   }
 
   function regenerateDeity() {
