@@ -265,8 +265,8 @@ function editBurgs() {
       data += b.port ? "port," : ",";
 
       // add geography data
-      data += (b.x / graphWidth) * mapCoordinates.lonT + mapCoordinates.lonW + ",";
-      data += (b.y / graphHeight) * mapCoordinates.latT + mapCoordinates.latS + ",";
+      data += mapCoordinates.lonW + (b.x / graphWidth) * mapCoordinates.lonT + ",";
+      data += mapCoordinates.latN - (b.y / graphHeight) * mapCoordinates.latT + ","; // this is inverted in QGIS otherwise
       data += parseInt(getFriendlyHeight(pack.cells.h[b.cell])) + "\n";
     });
 

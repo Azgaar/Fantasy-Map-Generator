@@ -1,6 +1,83 @@
 // Functions to save and load the map
 "use strict";
 
+// download map data as GeoJSON
+function saveGeoJSON() {
+
+    let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
+
+
+    const cells = pack.cells;
+    const v = pack.vertices;
+
+    /*
+        my guesses on the cells structure:
+
+        cells.h = height
+        cells.p = coordinates of center point (of the voronoi cell)
+        cells.pop = population
+
+        // from voronoi.js:
+        const cells = {v: [], c: [], b: []}; // voronoi cells: v = cell vertices, c = adjacent cells, b = near-border cell
+        const vertices = {p: [], v: [], c: []}; // cells vertices: p = vertex coordinates, v = neighboring vertices, c = adjacent cells
+
+
+    */
+
+    cells.i.forEach(i => {
+        data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"Polygon\", \"coordinates\": [[";
+        cells.v[i].forEach(n => {
+            let x = mapCoordinates.lonW + (v.p[n][0] / graphWidth) * mapCoordinates.lonT;
+            let y = mapCoordinates.latN - (v.p[n][1] / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
+            data += "["+x+","+y+"],";
+        });
+        // close the ring
+        let x = mapCoordinates.lonW + (v.p[cells.v[i][0]][0] / graphWidth) * mapCoordinates.lonT;
+        let y = mapCoordinates.latN - (v.p[cells.v[i][0]][1] / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
+        data += "["+x+","+y+"]";
+
+        data += "]] },\n   \"properties\": {\n";
+
+        let height = parseInt(getFriendlyHeight(cells.h[i]));
+
+        data += "      \"id\": \""+i+"\",\n";
+        data += "      \"height\": \""+height+"\",\n";
+        data += "      \"biome\": \""+cells.biome[i]+"\",\n";
+        data += "      \"population\": \""+cells.pop[i]+"\",\n";
+        data += "      \"state\": \""+cells.state[i]+"\",\n";
+        data += "      \"province\": \""+cells.province[i]+"\",\n";
+        data += "      \"culture\": \""+cells.culture[i]+"\",\n";
+        data += "      \"religion\": \""+cells.religion[i]+"\"\n";
+        data +="   }\n},\n";
+    });
+
+/*
+    cells.i.forEach(i => {
+        let x = (cells.p[i][0] / graphWidth) * mapCoordinates.lonT + mapCoordinates.lonW;
+        let y = mapCoordinates.latN - (cells.p[i][1] / graphHeight) * mapCoordinates.lonT; // inverted in QGIS otherwise
+        let height = parseInt(getFriendlyHeight(cells.h[i]));
+
+        data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"Point\", \"coordinates\": ["+x+", "+y+", "+height+"] },\n   \"properties\": {\n";
+        data += "      \"id\": \""+i+"\",\n";
+        data += "      \"biome\": \""+cells.biome[i]+"\",\n";
+        data += "      \"height\": \""+cells.h[i]+"\"\n";
+        data +="   }\n},\n";
+    });
+*/
+
+    data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
+    data += "]}";
+
+    const dataBlob = new Blob([data], {type: "application/json"});
+    const url = window.URL.createObjectURL(dataBlob);
+    const link = document.createElement("a");
+    document.body.appendChild(link);
+    link.download = "fantasy_map_" + Date.now() + ".geojson";
+    link.href = url;
+    link.click();
+    window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
+}
+
 // download map as SVG or PNG file
 function saveAsImage(type) {
   console.time("saveAsImage");
@@ -160,8 +237,8 @@ function saveMap() {
   const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
   const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
   const params = [version, license, dateString, seed, graphWidth, graphHeight].join("|");
-  const options = [distanceUnitInput.value, distanceScaleInput.value, areaUnit.value, heightUnit.value, heightExponentInput.value, temperatureScale.value, 
-    barSize.value, barLabel.value, barBackOpacity.value, barBackColor.value, barPosX.value, barPosY.value, populationRate.value, urbanization.value, 
+  const options = [distanceUnitInput.value, distanceScaleInput.value, areaUnit.value, heightUnit.value, heightExponentInput.value, temperatureScale.value,
+    barSize.value, barLabel.value, barBackOpacity.value, barBackColor.value, barPosX.value, barPosY.value, populationRate.value, urbanization.value,
     mapSizeOutput.value, latitudeOutput.value, temperatureEquatorOutput.value, temperaturePoleOutput.value, precOutput.value, JSON.stringify(winds)].join("|");
   const coords = JSON.stringify(mapCoordinates);
   const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
@@ -182,11 +259,11 @@ function saveMap() {
   const provinces = JSON.stringify(pack.provinces);
 
   // data format as below
-  const data = [params, options, coords, biomes, notesData, svg_xml, 
+  const data = [params, options, coords, biomes, notesData, svg_xml,
     gridGeneral, grid.cells.h, grid.cells.prec, grid.cells.f, grid.cells.t, grid.cells.temp,
     features, cultures, states, burgs,
-    pack.cells.biome, pack.cells.burg, pack.cells.conf, pack.cells.culture, pack.cells.fl, 
-    pack.cells.pop, pack.cells.r, pack.cells.road, pack.cells.s, pack.cells.state, 
+    pack.cells.biome, pack.cells.burg, pack.cells.conf, pack.cells.culture, pack.cells.fl,
+    pack.cells.pop, pack.cells.r, pack.cells.road, pack.cells.s, pack.cells.state,
     pack.cells.religion, pack.cells.province, pack.cells.crossroad, religions, provinces].join("\r\n");
   const dataBlob = new Blob([data], {type: "text/plain"});
   const dataURL = window.URL.createObjectURL(dataBlob);
@@ -229,7 +306,7 @@ function uploadFile(file, callback) {
                 <br>Please keep using an ${archive}`;
     } else {
       load = true;
-      message =  `The map version (${mapVersion}) does not match the Generator version (${version}). 
+      message =  `The map version (${mapVersion}) does not match the Generator version (${version}).
                  <br>The map will be auto-updated. In case of issues please keep using an ${archive} of the Generator`;
     }
     alertMessage.innerHTML = message;
