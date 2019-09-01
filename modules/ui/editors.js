@@ -252,9 +252,13 @@ function clearLegend() {
 
 // draw color (fill) picker
 function createPicker() {
+  const pos = () => tip("Drag to change the picker position");
+  const cl = () => tip("Click to close the picker");
+  const closePicker = () => contaiter.style("display", "none");
+
   const contaiter = d3.select("body").append("svg").attr("id", "pickerContainer").attr("width", "100%").attr("height", "100%");
-  const curtain = contaiter.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%").attr("opacity", .2);
-  curtain.on("click", () => contaiter.style("display", "none")).on("mousemove", () => tip("Click to close the picker"));
+  contaiter.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%").attr("opacity", .2)
+    .on("mousemove", cl).on("click", closePicker);
   const picker = contaiter.append("g").attr("id", "picker").call(d3.drag().on("start", dragPicker));
 
   const controls = picker.append("g").attr("id", "pickerControls");
@@ -279,6 +283,24 @@ function createPicker() {
   controls.selectAll("line").on("click", clickPickerControl);
   controls.selectAll("circle").call(d3.drag().on("start", dragPickerControl));
 
+  const spaces = picker.append("foreignObject").attr("id", "pickerSpaces")
+    .attr("x", 4).attr("y", 20).attr("width", 303).attr("height", 20)
+    .on("mousemove", () => tip("Color value in different color spaces. Edit to change"));
+  const html = `
+  <label style="margin-right: 6px">HSL: 
+    <input type="number" id="pickerHSL_H" data-space="hsl" min=0 max=360 value="231">,
+    <input type="number" id="pickerHSL_S" data-space="hsl" min=0 max=100 value="70">, 
+    <input type="number" id="pickerHSL_L" data-space="hsl" min=0 max=100 value="70">
+  </label>
+  <label style="margin-right: 6px">RGB: 
+    <input type="number" id="pickerRGB_R" data-space="rgb" min=0 max=255 value="125">,
+    <input type="number" id="pickerRGB_G" data-space="rgb" min=0 max=255 value="142">, 
+    <input type="number" id="pickerRGB_B" data-space="rgb" min=0 max=255 value="232">
+  </label>
+  <label>HEX: <input type="text" id="pickerHEX"  data-space="hex" style="width:42px" autocorrect="off" spellcheck="false" value="#7d8ee8"></label>`;
+  spaces.node().insertAdjacentHTML('beforeend', html);
+  spaces.selectAll("input").on("change", changePickerSpace);
+
   const colors = picker.append("g").attr("id", "pickerColors").attr("stroke", "#333333");
   const hatches = picker.append("g").attr("id", "pickerHatches").attr("stroke", "#333333");
   const hatching = d3.selectAll("g#hatching > pattern");
@@ -287,12 +309,12 @@ function createPicker() {
   const clr = d3.range(number).map(i => d3.hsl(i/number*360, .7, .7).hex());
   clr.forEach(function(d, i) {
     colors.append("rect").attr("id", "picker_" + d).attr("fill", d).attr("class", i?"":"selected")
-      .attr("x", i*22+4).attr("y", 20).attr("width", 16).attr("height", 16);
+      .attr("x", i*22+4).attr("y", 40).attr("width", 16).attr("height", 16);
   });
 
   hatching.each(function(d, i) {
     hatches.append("rect").attr("id", "picker_" + this.id).attr("fill", "url(#" + this.id + ")")
-      .attr("x", i*22+4).attr("y", 41).attr("width", 16).attr("height", 16);
+      .attr("x", i*22+4).attr("y", 61).attr("width", 16).attr("height", 16);
   });
 
   colors.selectAll("rect").on("click", pickerFillClicked).on("mousemove", () => tip("Click to fill with the color"));
@@ -302,8 +324,10 @@ function createPicker() {
   const bbox = picker.node().getBBox();
   const width = bbox.width + 8;
   const height = bbox.height + 9;
-  const pos = () => tip("Drag to change the picker position");
-  picker.insert("rect", ":first-child").attr("x", 0).attr("y", 0).attr("width", width).attr("height", height).attr("fill", "#ffffff").on("mousemove", pos);
+
+  picker.insert("rect", ":first-child").attr("x", 0).attr("y", 0).attr("width", width).attr("height", height).attr("fill", "#ffffff").attr("stroke", "#5d4651").on("mousemove", pos);
+  picker.insert("text", ":first-child").attr("x", 291).attr("y", -11).attr("id", "pickerCloseText").text("✖");
+  picker.insert("rect", ":first-child").attr("x", 288).attr("y", -21).attr("id", "pickerCloseRect").attr("width", 14).attr("height", 14).on("mousemove", cl).on("click", closePicker);
   picker.insert("text", ":first-child").attr("x", 12).attr("y", -10).attr("id", "pickerLabel").text("Color Picker").on("mousemove", pos);
   picker.insert("rect", ":first-child").attr("x", 0).attr("y", -30).attr("width", width).attr("height", 30).attr("id", "pickerHeader").on("mousemove", pos);
   picker.attr("transform", `translate(${(svgWidth-width)/2},${(svgHeight-height)/2})`);
@@ -312,6 +336,25 @@ function createPicker() {
 function updateSelectedRect(fill) {
   document.getElementById("picker").querySelector("rect.selected").classList.remove("selected");
   document.getElementById("picker").querySelector("rect[fill='"+fill+"']").classList.add("selected");
+}
+
+function updateSpaces() {
+  // hsl
+  const h = getPickerControl(pickerH, 360);
+  const s = getPickerControl(pickerS, 1);
+  const l = getPickerControl(pickerL, 1);
+  pickerHSL_H.value = rn(h);
+  pickerHSL_S.value = rn(s * 100); // multiplied by 100
+  pickerHSL_L.value = rn(l * 100); // multiplied by 100
+
+  // rgb
+  const rgb = d3.color(d3.hsl(h, s, l));
+  pickerRGB_R.value = rgb.r;
+  pickerRGB_G.value = rgb.g;
+  pickerRGB_B.value = rgb.b;
+
+  // hex
+  pickerHEX.value = rgb.hex();
 }
 
 function updatePickerColors() {
@@ -339,6 +382,7 @@ function openPicker(fill, callback) {
     if (!isNaN(hsl.h)) setPickerControl(pickerH, hsl.h, 360);
     if (!isNaN(hsl.s)) setPickerControl(pickerS, hsl.s, 1);
     if (!isNaN(hsl.l)) setPickerControl(pickerL, hsl.l, 1);
+    updateSpaces();
     updatePickerColors();
   }
 
@@ -380,13 +424,20 @@ function dragPicker() {
 }
 
 function pickerFillClicked() {
-  updateSelectedRect(this.getAttribute("fill"));
+  const fill = this.getAttribute("fill");
+  updateSelectedRect(fill);
   openPicker.updateFill();
+
+  const hsl = d3.hsl(fill);
+  if (isNaN(hsl.h)) return; // not a color
+  setPickerControl(pickerH, hsl.h, 360);
+  updateSpaces();
 }
 
 function clickPickerControl() {
   const min = this.getScreenCTM().e;
   this.nextSibling.setAttribute("cx", d3.event.x - min);
+  updateSpaces();
   updatePickerColors();
   openPicker.updateFill();
 }
@@ -398,9 +449,31 @@ function dragPickerControl() {
   d3.event.on("drag", function() {
     const x = Math.max(Math.min(d3.event.x, max), min);
     this.setAttribute("cx", x);
+    updateSpaces();
     updatePickerColors();
     openPicker.updateFill();
   });
+}
+
+function changePickerSpace() {
+  const valid = this.checkValidity();
+  if (!valid) {tip("You must provide a correct value", false, "error"); return;}
+
+  const space = this.dataset.space;
+  const i = Array.from(this.parentNode.querySelectorAll("input")).map(input => input.value); // inputs
+  const fill = space === "hex" ? d3.rgb(this.value) 
+    : space === "rgb" ? d3.rgb(i[0], i[1], i[2]) 
+    : d3.hsl(i[0], i[1]/100, i[2]/100);
+
+  const hsl = d3.hsl(fill);
+  if (isNaN(hsl.l)) {tip("You must provide a correct value", false, "error"); return;}
+  if (!isNaN(hsl.h)) setPickerControl(pickerH, hsl.h, 360);
+  if (!isNaN(hsl.s)) setPickerControl(pickerS, hsl.s, 1);
+  if (!isNaN(hsl.l)) setPickerControl(pickerL, hsl.l, 1);
+
+  updateSpaces();
+  updatePickerColors();
+  openPicker.updateFill();
 }
 
 // remove all fogging

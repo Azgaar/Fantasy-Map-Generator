@@ -391,7 +391,7 @@ function focusOn() {
   }
 
   const b = +params.get("burg");
-  if (b) {
+  if (b && pack.burgs[b]) {
     x = pack.burgs[b].x;
     y = pack.burgs[b].y;
   }

@@ -24,13 +24,14 @@ function getBoundaryPoints(width, height, spacing) {
 // get points on a regular square grid and jitter them a bit
 function getJitteredGrid(width, height, spacing) {
   const radius = spacing / 2; // square radius
-  const jittering = radius * 0.9; // max deviation
-  const jitter = function() {return Math.random() * 2 * jittering - jittering;};
+  const jittering = radius * .9; // max deviation
+  const jitter = () => Math.random() * 2 * jittering - jittering;
+
   let points = [];
   for (let y = radius; y < height; y += spacing) {
     for (let x = radius; x < width; x += spacing) {
-      let xj = rn(x + jitter(), 2);
-      let yj = rn(y + jitter(), 2);
+      const xj = Math.min(rn(x + jitter(), 2), width);
+      const yj = Math.min(rn(y + jitter(), 2), height);
       points.push([xj, yj]);
     }
   }

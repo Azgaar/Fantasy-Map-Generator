@@ -82,9 +82,9 @@ function editHeightmap() {
     heightmapInfoX.innerHTML = rn(p[0]);
     heightmapInfoY.innerHTML = rn(p[1]);
     heightmapInfoCell.innerHTML = cell;
-    heightmapInfoHeight.innerHTML = grid.cells.h[cell];
-
-    tip("Height: " + getFriendlyHeight(grid.cells.h[cell]));
+    const h = grid.cells.h[cell];
+    heightmapInfoHeight.innerHTML = `${h} (${getFriendlyHeight(h)})`;
+    if (tooltip.dataset.main) showMainTip();
 
     // move radius circle if drag mode is active
     const pressed = document.querySelector("#brushesButtons > button.pressed");
@@ -218,6 +218,14 @@ function editHeightmap() {
       if (grid.cells.h[i] < 20) grid.cells.h[i] = 20;
     }
 
+    // save culture centers x and y to restore center cell id after re-graph
+    for (const c of pack.cultures) {
+      if (!c.i || c.removed) continue;
+      const p = pack.cells.p[c.center];
+      c.x = p[0];
+      c.y = p[1];
+    }
+
     markFeatures();
     OceanLayers();
     calculateTemperatures();
@@ -297,6 +305,11 @@ function editHeightmap() {
 
       if (p.burg && !pack.burgs[p.burg].removed) p.center = pack.burgs[p.burg].cell;
       else {p.center = provCells[0]; p.burg = pack.cells.burg[p.center];}
+    }
+
+    for (const c of pack.cultures) {
+      if (!c.i || c.removed) continue;
+      c.center = findCell(c.x, c.y);
     }
 
     BurgsAndStates.drawStateLabels();
@@ -883,7 +896,12 @@ function editHeightmap() {
     setOverlayOpacity(0);
     
     document.getElementById("convertImageLoad").classList.add("glow"); // add glow effect
-    tip('Image Converter is opened. Upload the image and assign the colors to desired heights', true); // main tip
+    tip('Image Converter is opened. Upload the image and assign the colors to desired heights', true, "warn"); // main tip
+
+    // remove all heights
+    grid.cells.h = new Uint8Array(grid.cells.i.length);
+    terrs.selectAll("*").remove();
+    updateHistory();
 
     if (modules.openImageConverter) return;
     modules.openImageConverter = true;
@@ -944,8 +962,8 @@ function editHeightmap() {
       colorsUnassigned.style.display = "block";
       colorsAssigned.style.display = "none";
 
-      const gridColors = grid.points.map(function(p) {
-        const x = Math.floor(p[0]), y = Math.floor(p[1]);
+      const gridColors = grid.points.map(p => {
+        const x = Math.floor(p[0]-.01), y = Math.floor(p[1]-.01);
         const i = (x + y * graphWidth) * 4;
         const r = data[i], g = data[i+1], b = data[i+2];
         return [r, g, b];
@@ -961,7 +979,7 @@ function editHeightmap() {
           return clr;
         }).on("click", mapClicked);
 
-      const unassigned = [...usedColors].sort((a, b) => d3.lab(a).b - d3.lab(b).b);
+      const unassigned = [...usedColors].sort((a, b) => d3.lab(a).l - d3.lab(b).l);
       const unassignedContainer = d3.select("#colorsUnassigned");
       unassignedContainer.selectAll("div").data(unassigned).enter().append("div")
         .attr("data-color", i => i).style("background-color", i => i)
@@ -1002,7 +1020,7 @@ function editHeightmap() {
       const height = +this.getAttribute("data-color");
       const rgb = color(1 - height/100);
 
-      const selectedColor = imageConverter.querySelector("div.selectedColor");      
+      const selectedColor = imageConverter.querySelector("div.selectedColor");
       selectedColor.style.backgroundColor = rgb;
       selectedColor.setAttribute("data-color", rgb);
       selectedColor.setAttribute("data-height", height);
@@ -1027,19 +1045,19 @@ function editHeightmap() {
       unassigned.forEach(function(el) {
         const colorFrom = el.getAttribute("data-color");
         const lab = d3.lab(colorFrom);
-        const normalized = type === "hue" ? rn(normalize(lab.b + lab.a / 2, -50, 200), 2) : rn(normalize(lab.l, 0, 100), 2);
+        const normalized = type === "hue" ? rn(normalize(lab.b + lab.a / 2, -50, 200), 2) : rn(normalize(lab.l, -15, 100), 2);
         const colorTo = color(1 - normalized);
         const heightTo = normalized * 100;
-        
+
         terrs.selectAll("polygon[fill='" + colorFrom + "']").attr("fill", colorTo).attr("data-height", heightTo);
         el.style.backgroundColor = colorTo;
         el.setAttribute("data-color", colorTo);
         el.setAttribute("data-height", heightTo);
-        colorsAssigned.appendChild(el);        
+        colorsAssigned.appendChild(el);
       });
       
       colorsAssigned.style.display = "block";
-      colorsUnassigned.style.display = "none";   
+      colorsUnassigned.style.display = "none";
     }
     
     function changeConvertColorsNumber(change) {
