@@ -442,7 +442,7 @@ function parseLoadedData(data) {
 
     if (version < 1) {
       // 1.0 adds a new religions layer
-      relig = viewbox.insert("g", "#terrain").attr("id", "cults");
+      relig = viewbox.insert("g", "#terrain").attr("id", "relig");
       Religions.generate();
 
       // 1.0 adds a legend box
@@ -502,6 +502,16 @@ function parseLoadedData(data) {
       biomesData.name.push("Wetland");
       biomesData.color.push("#0b9131");
       biomesData.habitability.push(12);
+    }
+
+    if (version == 1) {
+      // v 1.0 initial code had a bug with religion layer id
+      if (!relig.size()) relig = viewbox.insert("g", "#terrain").attr("id", "relig");
+
+      // v 1.0 initially has Sympathy status then relaced with Friendly
+      for (const s of pack.states) {
+        s.diplomacy = s.diplomacy.map(r => r === "Sympathy" ? "Friendly" : r);
+      }
     }
   }()
 

@@ -689,7 +689,7 @@ table.matrix-table td.Ally {
   color: #000000;
 }
 
-table.matrix-table td.Sympathy {
+table.matrix-table td.Friendly {
 	background-color:#d4f8aa;
 }
 
@@ -1391,7 +1391,7 @@ div.states > div.biomeArea {
 }
 
 #unitsBody>div>input[type="number"] {
-	width: 3.6em;
+	width: 4em;
 }
 
 #unitsBody>div>input,

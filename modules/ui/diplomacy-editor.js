@@ -15,11 +15,11 @@ function editDiplomacy() {
   if (layerIsOn("toggleReligions")) toggleReligions();
 
   const body = document.getElementById("diplomacyBodySection");
-  const statuses = ["Ally", "Sympathy", "Neutral", "Suspicion", "Enemy", "Unknown", "Rival", "Vassal", "Suzerain"];
+  const statuses = ["Ally", "Friendly", "Neutral", "Suspicion", "Enemy", "Unknown", "Rival", "Vassal", "Suzerain"];
   const colors = ["#00b300", "#d4f8aa", "#edeee8", "#f3c7c4", "#e64b40", "#a9a9a9", "#ad5a1f", "#87CEFA", "#00008B"];
   refreshDiplomacyEditor();
 
-  tip("Click on a state to see its diplomatical relations", false, "warning");
+  tip("Click on a state to see its diplomatic relations", false, "warning");
   viewbox.style("cursor", "crosshair").on("click", selectStateOnMapClick);
 
   if (modules.editDiplomacy) return;
@@ -213,11 +213,7 @@ function editDiplomacy() {
       message += `<tr><th>${s.name}</th>` + s.diplomacy.filter((v, i) => valid.includes(i)).map(r => `<td class='${r}'>${r}</td>`).join("") + "</tr>";
     });
     message += `</table>`;
-    console.log(alertMessage.innerHTML)
-    console.log(message)
     alertMessage.innerHTML = message;
-    console.log(alertMessage.innerHTML)
-
     $("#alert").dialog({title: "Relations matrix", width: fitContent(), position: {my: "center", at: "center", of: "svg"}, buttons: {}});
   }
 

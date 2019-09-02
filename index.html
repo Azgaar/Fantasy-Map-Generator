@@ -21,7 +21,7 @@
   <link rel="stylesheet" type="text/css" href="libs/jquery-ui.css"/>
 </head>
 <body>
-  <svg id="map" xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" width="100%" height="100%">
+  <svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" id="map" width="100%" height="100%">
     <defs>
       <g id="filters">
         <filter id="blurFilter" x="-1" y="-1" width="100" height="100">
@@ -2735,20 +2735,24 @@
         <div style="margin-left: 18px" data-tip="Click to sort by religion form" class="sortable alphabetically hide" data-sortby="form">Form&nbsp;</div>
         <div style="margin-left: 42px" data-tip="Click to sort by supreme deity" class="sortable alphabetically hide" data-sortby="deity">Supreme Deity&nbsp;</div>
         <div style="margin-left: 92px" data-tip="Click to sort by religion area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
-        <div style="margin-left: 17px" data-tip="Click to sort by religion population" class="sortable hide" data-sortby="population">Population&nbsp;</div>
+        <div style="margin-left: 17px" data-tip="Click to sort by number of believers (religion area population)" class="sortable hide" data-sortby="population">Believers&nbsp;</div>
       </div>
       <div id="religionsBody" class="table" data-type="absolute"></div>
 
       <div id="religionsFooter" class="totalLine">
-        <div data-tip="Religions number" style="margin-left: 12px">Religions:&nbsp;<span id="religionsFooterNumber">0</span></div>
+        <div data-tip="Total number of organized religions" style="margin-left: 12px">Organized:&nbsp;<span id="religionsOrganized">0</span></div>
+        <div data-tip="Total number of heresies" style="margin-left: 12px">Heresies:&nbsp;<span id="religionsHeresies">0</span></div>
+        <div data-tip="Total number of cults" style="margin-left: 12px">Cults:&nbsp;<span id="religionsCults">0</span></div>
+        <div data-tip="Total number of folk religions" style="margin-left: 12px">Folk:&nbsp;<span id="religionsFolk">0</span></div>
         <div data-tip="Total land area" style="margin-left: 12px">Land Area:&nbsp;<span id="religionsFooterArea">0</span></div>
-        <div data-tip="Total population" style="margin-left: 12px">Population:&nbsp;<span id="religionsFooterPopulation">0</span></div>
+        <div data-tip="Total number of believers (population)" style="margin-left: 12px">Believers:&nbsp;<span id="religionsFooterPopulation">0</span></div>
       </div>
 
       <div id="religionsBottom">
         <button id="religionsEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
         <button id="religionsLegend" data-tip="Toggle Legend box" class="icon-list-bullet"></button>
         <button id="religionsPercentage" data-tip="Toggle percentage / absolute values display mode" class="icon-percent"></button>
+        <button id="religionsExtinct" data-tip="Show/hide extinct religions (religions without believers)" class="icon-adjust"></button>
 
         <button id="religionsManually" data-tip="Manually re-assign religions" class="icon-brush"></button>
         <div id="religionsManuallyButtons" style="display: none">
@@ -2785,8 +2789,8 @@
         <i data-locked="0" id="lock_distanceScale" class="icon-lock-open"></i>
         <div data-tip="Select how many distance units are in one pixel">
           <div>1 map pixel =</div>
-          <input id="distanceScaleOutput" type="range" min=.1 max=10 step=.1 value=3>
-          <input id="distanceScaleInput" data-stored="distanceScale" type="number" min=.1 max=10 step=.1 step=.1 value=3 data-value=3>
+          <input id="distanceScaleOutput" type="range" min=.01 max=20 step=.1 value=3>
+          <input id="distanceScaleInput" data-stored="distanceScale" type="number" min=.01 max=100 step=.01 value=3 data-value=3>
           <span id="distanceUnitOutput"></span>
         </div>
 

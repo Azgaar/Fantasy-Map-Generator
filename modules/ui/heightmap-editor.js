@@ -82,8 +82,7 @@ function editHeightmap() {
     heightmapInfoX.innerHTML = rn(p[0]);
     heightmapInfoY.innerHTML = rn(p[1]);
     heightmapInfoCell.innerHTML = cell;
-    const h = grid.cells.h[cell];
-    heightmapInfoHeight.innerHTML = `${h} (${getFriendlyHeight(h)})`;
+    heightmapInfoHeight.innerHTML = `${grid.cells.h[cell]} (${getHeight(grid.cells.h[cell])})`;
     if (tooltip.dataset.main) showMainTip();
 
     // move radius circle if drag mode is active
@@ -91,6 +90,20 @@ function editHeightmap() {
     if (!pressed) return;
     moveCircle(p[0], p[1], brushRadius.valueAsNumber, "#333");
   }
+
+// get user-friendly (real-world) height value from map data
+function getHeight(h) {
+  const unit = heightUnit.value;
+  let unitRatio = 3.281; // default calculations are in feet
+  if (unit === "m") unitRatio = 1; // if meter
+  else if (unit === "f") unitRatio = 0.5468; // if fathom
+
+  let height = -990;
+  if (h >= 20) height = Math.pow(h - 18, +heightExponentInput.value);
+  else if (h < 20 && h > 0) height = (h - 20) / h * 50;
+
+  return rn(height * unitRatio) + " " + unit;
+}
 
   // Exit customization mode
   function finalizeHeightmap() {
