@@ -588,9 +588,9 @@
     const valid = states.filter(s => s.i && !states.removed);
     if (valid.length < 2) return;
 
-    const neibs = {"Ally":1, "Sympathy":2, "Neutral":1, "Suspicion":10, "Rival":9}; // relations to neighbors
-    const neibsOfNeibs = {"Ally":10, "Sympathy":8, "Neutral":5, "Suspicion":1}; // relations to neighbors of neighbors
-    const far = {"Sympathy":1, "Neutral":12, "Suspicion":2, "Unknown":6}; // relations to other
+    const neibs = {"Ally":1, "Friendly":2, "Neutral":1, "Suspicion":10, "Rival":9}; // relations to neighbors
+    const neibsOfNeibs = {"Ally":10, "Friendly":8, "Neutral":5, "Suspicion":1}; // relations to neighbors of neighbors
+    const far = {"Friendly":1, "Neutral":12, "Suspicion":2, "Unknown":6}; // relations to other
     const navals = {"Neutral":1, "Suspicion":2, "Rival":1, "Unknown":1}; // relations of naval powers
 
     valid.forEach(s => s.diplomacy = new Array(states.length).fill("x")); // clear all relationships

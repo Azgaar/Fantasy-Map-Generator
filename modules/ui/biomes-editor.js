@@ -114,7 +114,7 @@ function editBiomes() {
 
     if (body.dataset.type === "percentage") {body.dataset.type = "absolute"; togglePercentageMode();}
     applySorting(biomesHeader);
-    $("#biomesEditor").dialog();
+    $("#biomesEditor").dialog({width: fitContent()});
   }
 
   function biomeHighlightOn(event) {

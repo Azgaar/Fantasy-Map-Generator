@@ -873,13 +873,13 @@ function randomizeOptions() {
   if (!locked("regions")) regionsInput.value = regionsOutput.value = gauss(15, 3, 2, 30);
   if (!locked("provinces")) provincesInput.value = provincesOutput.value = gauss(40, 20, 20, 100);
   if (!locked("manors")) {manorsInput.value = 1000; manorsOutput.value = "auto";}
-  if (!locked("religions")) religionsInput.value = religionsOutput.value = gauss(6, 2, 3, 20);
+  if (!locked("religions")) religionsInput.value = religionsOutput.value = gauss(5, 2, 2, 10);
   if (!locked("power")) powerInput.value = powerOutput.value = gauss(3, 2, 0, 10);
   if (!locked("neutral")) neutralInput.value = neutralOutput.value = rn(1 + Math.random(), 1);
   if (!locked("cultures")) culturesInput.value = culturesOutput.value = gauss(12, 3, 5, 30);
 
   // 'Configure World' settings
-  if (!locked("prec")) precInput.value = precOutput.value = gauss(100, 40, 0, 500);
+  if (!locked("prec")) precInput.value = precOutput.value = gauss(100, 20, 5, 500);
   const tMax = +temperatureEquatorOutput.max, tMin = +temperatureEquatorOutput.min; // temperature extremes
   if (!locked("temperatureEquator")) temperatureEquatorOutput.value = temperatureEquatorInput.value = rand(tMax-6, tMax);
   if (!locked("temperaturePole")) temperaturePoleOutput.value = temperaturePoleInput.value = rand(tMin, tMin+10);

@@ -284,7 +284,7 @@ function applyDefaultStyle() {
 
   coastline.attr("opacity", .5).attr("stroke", "#1f3846").attr("stroke-width", .7).attr("filter", "url(#dropShadow)");
   styleCoastlineAuto.checked = true;
-  relig.attr("opacity", .8).attr("stroke", "#777777").attr("stroke-width", 0).attr("filter", null).attr("fill-rule", "evenodd");
+  relig.attr("opacity", .6).attr("stroke", "#777777").attr("stroke-width", .2).attr("filter", null).attr("fill-rule", "evenodd");
   cults.attr("opacity", .6).attr("stroke", "#777777").attr("stroke-width", .5).attr("filter", null).attr("fill-rule", "evenodd");
   icons.selectAll("g").attr("opacity", null).attr("fill", "#ffffff").attr("stroke", "#3e3e4b").attr("filter", null).attr("mask", null);
   landmass.attr("opacity", 1).attr("fill", "#eef6fb").attr("filter", null);
@@ -391,7 +391,7 @@ function focusOn() {
   }
 
   const b = +params.get("burg");
-  if (b) {
+  if (b && pack.burgs[b]) {
     x = pack.burgs[b].x;
     y = pack.burgs[b].y;
   }
@@ -1186,7 +1186,7 @@ function addMarkers() {
         .attr("xlink:href", "#marker_volcano").attr("data-id", "#marker_volcano")
         .attr("data-x", x).attr("data-y", y).attr("x", x - 15).attr("y", y - 30)
         .attr("data-size", 1).attr("width", 30).attr("height", 30);
-      const height = getFriendlyHeight(cells.h[cell]);
+      const height = getFriendlyHeight([x, y]);
       const proper = Names.getCulture(cells.culture[cell]);
       const name = Math.random() < .3 ? "Mount " + proper : Math.random() > .3 ? proper + " Volcano" : proper;
       notes.push({id, name, legend:`Active volcano. Height: ${height}`});

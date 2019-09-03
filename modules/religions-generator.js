@@ -35,7 +35,7 @@
     Heresy:{"Heresy":1}
   };
 
-  const methods = {"Random + type":3, "Random + ism":1, "Supreme + ism":5, "Faith of + Supreme":3, "Place + ism":1, "Culture + ism":1, "Place + ian + type":6, "Culture + type":4};
+  const methods = {"Random + type":3, "Random + ism":1, "Supreme + ism":5, "Faith of + Supreme":3, "Place + ism":1, "Culture + ism":2, "Place + ian + type":6, "Culture + type":4};
 
   const types = {
     "Shamanism":{"Beliefs":3, "Shamanism":2, "Spirits":1},
@@ -65,7 +65,7 @@
       const form = rw(forms.Folk);
       const name = c.name + " " + rw(types[form]);
       const deity = form === "Animism" ? null : getDeityName(c.i);
-      const color = `url(#hatch${rand(8,13)})`;
+      const color = getRandomColor(); // `url(#hatch${rand(8,13)})`;
       religions.push({i: c.i, name, color, culture: c.i, type:"Folk", form, deity});
     });
 
@@ -85,18 +85,25 @@
       const culture = cells.culture[center];
 
       const deity = form === "Non-theism" ? null : getDeityName(culture);
-      const [name, expansion] = getReligionName(form, deity, center);
+      let [name, expansion] = getReligionName(form, deity, center);
+      if (expansion === "state" && !state) expansion = "global";
+      if (expansion === "culture" && !culture) expansion = "global";
 
-      if (expansion === "state" && state && Math.random() > .5) center = states[state].center;
-      if (expansion === "culture" && culture && Math.random() > .5) center = cultures[culture].center;
+      if (expansion === "state" && Math.random() > .5) center = states[state].center;
+      if (expansion === "culture" && Math.random() > .5) center = cultures[culture].center;
+
       if (!cells.burg[center] && cells.c[center].some(c => cells.burg[c])) center = cells.c[center].find(c => cells.burg[c]);
       const x = cells.p[center][0], y = cells.p[center][1];
 
       const s = spacing * gauss(1, .3, .2, 2, 2); // randomize to make the placement not uniform
       if (religionsTree.find(x, y, s) !== undefined) continue; // to close to existing religion
 
+      // add "Old" to name of the folk religion on this culture
+      const folk = religions.find(r => expansion === "culture" && r.culture === culture && r.type === "Folk");
+      if (folk && folk.name.slice(0,3) !== "Old") folk.name = "Old " + folk.name;
+
       const expansionism = rand(3, 8);
-      const color = `url(#hatch${rand(0,5)})`;
+      const color = getRandomColor(); // `url(#hatch${rand(0,5)})`;
       religions.push({i: religions.length, name, color, culture, type:"Organized", form, deity, expansion, expansionism, center});
       religionsTree.add([x, y]);
       //debug.append("circle").attr("cx", x).attr("cy", y).attr("r", 2).attr("fill", "blue");
@@ -116,7 +123,8 @@
       const deity = getDeityName(culture);
       const name = getCultName(form, center);
       const expansionism = gauss(1.1, .5, 0, 5);
-      religions.push({i: religions.length, name, color: "url(#hatch7)", culture, type:"Cult", form, deity, expansion:"global", expansionism, center});
+      const color = getRandomColor(); // "url(#hatch7)";
+      religions.push({i: religions.length, name, color, culture, type:"Cult", form, deity, expansion:"global", expansionism, center});
       religionsTree.add([x, y]);
       //debug.append("circle").attr("cx", x).attr("cy", y).attr("r", 2).attr("fill", "red");
     }
@@ -137,7 +145,8 @@
         const culture = cells.culture[center];
         const name = getCultName("Heresy", center);
         const expansionism = gauss(1.2, .5, 0, 5);
-        religions.push({i: religions.length, name, color:"url(#hatch6)", culture, type:"Heresy", form:"Heresy", deity: r.deity, expansion:"global", expansionism, center});
+        const color = getRandomColor(); // "url(#hatch6)";
+        religions.push({i: religions.length, name, color, culture, type:"Heresy", form:"Heresy", deity: r.deity, expansion:"global", expansionism, center});
         religionsTree.add([x, y]);
         //debug.append("circle").attr("cx", x).attr("cy", y).attr("r", 2).attr("fill", "green");
       }
@@ -175,34 +184,37 @@
 
     religions.filter(r => r.type === "Organized" || r.type === "Cult").forEach(r => {
       cells.religion[r.center] = r.i;
-      queue.queue({e:r.center, p:0, r:r.i}); 
+      queue.queue({e:r.center, p:0, r:r.i, s: cells.state[r.center], c:r.culture});
       cost[r.center] = 1;
     });
 
     const neutral = cells.i.length / 5000 * 200 * gauss(1, .3, .2, 2, 2) * neutralInput.value; // limit cost for organized religions growth
+    const popCost = d3.max(cells.pop) / 3; // enougth population to spered religion without penalty
 
     while (queue.length) {
-      const next = queue.dequeue(), n = next.e, p = next.p, r = next.r;
+      const next = queue.dequeue(), n = next.e, p = next.p, r = next.r, c = next.c, s = next.s;
       const expansion = religions[r].expansion;
 
       cells.c[n].forEach(function(e) {
-        const cultureCost = expansion === "culture" ? religions[r].culture == cells.culture[e] ? 0 : 20000 : 10;
-        const stateCost = expansion === "state" ? cells.state[religions[r].center] == cells.state[e] ? 0 : 20000 : 10;
-        const biomeCost = cells.road[e] ? 0 : biomesData.cost[cells.biome[e]];
+        if (expansion === "culture" && c !== cells.culture[e]) return;
+        if (expansion === "state" && s !== cells.state[e]) return;
+
+        const cultureCost = c !== cells.culture[e] ? 10 : 0;
+        const stateCost = s !== cells.state[e] ? 10 : 0;
+        const biomeCost = cells.road[e] ? 1 : biomesData.cost[cells.biome[e]];
+        const populationCost = Math.max(rn(popCost - cells.pop[e]), 0);
         const heightCost = Math.max(cells.h[e], 20) - 20;
         const waterCost = cells.h[e] < 20 ? cells.road[e] ? 50 : 1000 : 0;
-        const totalCost = p + (cultureCost + stateCost + biomeCost + heightCost + waterCost) / religions[r].expansionism;
-
+        const totalCost = p + (cultureCost + stateCost + biomeCost + populationCost + heightCost + waterCost) / religions[r].expansionism;
         if (totalCost > neutral) return;
 
         if (!cost[e] || totalCost < cost[e]) {
           if (cells.h[e] >= 20 && cells.culture[e]) cells.religion[e] = r; // assign religion to cell
           cost[e] = totalCost;
-          queue.queue({e, p:totalCost, r});
+          queue.queue({e, p:totalCost, r, c, s});
         }
       });
     }
-    //debug.selectAll(".text").data(cost).enter().append("text").attr("x", (d, e) => cells.p[e][0]-1).attr("y", (d, e) => cells.p[e][1]-1).text(d => d ? rn(d) : "").attr("font-size", 2);
     console.timeEnd("expandReligions");
   }
 
@@ -288,7 +300,7 @@
     if (m === "Random + ism") return [trimVowels(random()) + "ism", "global"];
     if (m === "Supreme + ism" && deity) return [trimVowels(supreme()) + "ism", "global"];
     if (m === "Faith of + Supreme" && deity) return ["Faith of " + supreme(), "global"];
-    if (m === "Place + ism") return [place() + "ism", "global"];
+    if (m === "Place + ism") return [place() + "ism", "state"];
     if (m === "Culture + ism") return [trimVowels(culture()) + "ism", "culture"];
     if (m === "Place + ian + type") return [place("adj") + " " + type(), "state"];
     if (m === "Culture + type") return [culture() + " " + type(), "culture"];

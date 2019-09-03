@@ -14,17 +14,18 @@
 
     const input = document.getElementById("templateInput");
     if (!locked("template")) {
-      const rnd = Math.random();
-      if (rnd < .05) input.value = "Volcano"; else // 5%
-      if (rnd < .25) input.value = "High Island"; else // 20%
-      if (rnd < .35) input.value = "Low Island"; else // 10%
-      if (rnd < .55) input.value = "Continents"; else // 20%
-      if (rnd < .85) input.value = "Archipelago"; else // 30%
-      if (rnd < .90) input.value = "Mediterranean"; else // 5%
-      if (rnd < .95) input.value = "Peninsula"; else // 5%
-      if (rnd < .97) input.value = "Pangea"; else // 2%
-      if (rnd < .99) input.value = "Isthmus"; else // 2%
-      input.value = "Atoll"; // 1%
+      const templates = {
+        "Volcano":      5,
+        "High Island":  22,
+        "Low Island":   10,
+        "Continents":   20,
+        "Archipelago":  32,
+        "Mediterranean":3,
+        "Peninsula":    3,
+        "Pangea":       2,
+        "Isthmus":      2,
+        "Atoll":        1};
+      input.value = rw(templates);
     }
 
     switch (input.value) {

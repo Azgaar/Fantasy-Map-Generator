@@ -151,7 +151,7 @@ function editStates() {
 
     if (body.dataset.type === "percentage") {body.dataset.type = "absolute"; togglePercentageMode();}
     applySorting(statesHeader);
-    $("#statesEditor").dialog();
+    $("#statesEditor").dialog({width: fitContent()});
   }
   
   function getCultureOptions(culture) {

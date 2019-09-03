@@ -689,7 +689,7 @@ table.matrix-table td.Ally {
   color: #000000;
 }
 
-table.matrix-table td.Sympathy {
+table.matrix-table td.Friendly {
 	background-color:#d4f8aa;
 }
 
@@ -1289,8 +1289,13 @@ div.states > div.biomeArea {
   cursor: pointer;
 }
 
+#picker text {
+	cursor: default;
+}
+
 #pickerHeader {
 	fill: #916e7f;
+	stroke: #5d4651;
 	cursor: move;
 }
 
@@ -1302,8 +1307,17 @@ div.states > div.biomeArea {
 	cursor: move !important;
 }
 
-#picker text {
-	cursor: default;
+#pickerCloseRect {
+	cursor: pointer;
+	fill: #916e7f;
+	stroke: #f8ffff;
+}
+
+#pickerCloseText {
+	fill: #f8ffff;
+  font-size: 10px;
+	font-family: Arial, Helvetica, sans-serif;
+	pointer-events: none;
 }
 
 #pickerControls line {
@@ -1320,6 +1334,20 @@ div.states > div.biomeArea {
 #pickerControls circle:hover {
 	fill: #eca116;
 	stroke: #000000;
+}
+
+#pickerSpaces input {
+  height: 8px;
+  width: 16px;
+  font-size: smaller;
+	text-align: center;
+	-moz-appearance: textfield;
+}
+
+#pickerSpaces input::-webkit-inner-spin-button,
+#pickerSpaces input::-webkit-outer-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
 }
 
 #pickerColors rect, #pickerHatches rect {
@@ -1363,7 +1391,7 @@ div.states > div.biomeArea {
 }
 
 #unitsBody>div>input[type="number"] {
-	width: 3.6em;
+	width: 4em;
 }
 
 #unitsBody>div>input,

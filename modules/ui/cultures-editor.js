@@ -129,7 +129,7 @@ function editCultures() {
 
     if (body.dataset.type === "percentage") {body.dataset.type = "absolute"; togglePercentageMode();}
     applySorting(culturesHeader);
-    $("#culturesEditor").dialog();
+    $("#culturesEditor").dialog({width: fitContent()});
   }
 
   function getTypeOptions(type) {
