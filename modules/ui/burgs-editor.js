@@ -186,7 +186,7 @@ function editBurgs() {
     if (!pack.burgs[burg].port) {
       const haven = pack.cells.haven[pack.burgs[burg].cell];
       const port = haven ? pack.cells.f[haven] : -1;
-      if (!haven) tip("Port haven is not found, system won't be able to make a searoute", false, "warning");
+      if (!haven) tip("Port haven is not found, system won't be able to make a searoute", false, "warn");
       pack.burgs[burg].port = port;
 
       const g = pack.burgs[burg].capital ? "cities" : "towns";

@@ -81,9 +81,8 @@ population.append("g").attr("id", "urban");
 fogging.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
 
 // assign events separately as not a viewbox child
-scaleBar.on("mousemove", function() {tip("Click to open Units Editor")});
-legend.on("mousemove", function() {tip("Drag to change the position. Click to hide the legend")})
-  .on("click", () => clearLegend());
+scaleBar.on("mousemove", () => tip("Click to open Units Editor"));
+legend.on("mousemove", () => tip("Drag to change the position. Click to hide the legend")).on("click", () => clearLegend());
 
 // main data variables
 let grid = {}; // initial grapg based on jittered square grid and data
@@ -111,61 +110,52 @@ landmass.append("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr
 oceanPattern.append("rect").attr("fill", "url(#oceanic)").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 oceanLayers.append("rect").attr("id", "oceanBase").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 
-applyDefaultNamesData(); // apply default namesbase on load
-applyDefaultStyle(); // apply style on load
-generate(); // generate map on load
-focusOn(); // based on searchParams focus on point, cell or burg from MFCG
-applyPreset(); // apply saved layers preset on load
+applyDefaultNamesData(); // always apply default namesbase load as namesdata is not stored in .map file
 
-// show message on load if required
-setTimeout(showWelcomeMessage, 7000);
-function showWelcomeMessage() {
-  // Changelog dialog window
-  if (localStorage.getItem("version") != version) {
-    const link = 'https://www.reddit.com/r/FantasyMapGenerator/comments/cxu1c5/update_new_version_is_published_v_10'; // announcement on Reddit
-    alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
+// load linked map from url or generate a random map
+void function checkLoadParameters() {
+  const url = new URL(window.location.href);
+  const maplink = url.searchParams.get("maplink");
 
-      This version is compatible with versions 0.8b and 0.9b, but not with older .map files. 
-      Please use an <a href='https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog' target='_blank'>archived version</a> to open old files.
-
-      <ul><a href=${link} target='_blank'>Main changes:</a>
-        <li>Provinces and Provinces Editor</li>
-        <li>Religions Layer and Religions Editor</li>
-        <li>Full state names (state types)</li>
-        <li>Multi-lined labels</li>
-        <li>State relations (diplomacy)</li>
-        <li>Custom layers (zones)</li>
-        <li>Places of interest (auto-added markers)</li>
-        <li>New color picker and hatching fill</li>
-        <li>Legend boxes</li>
-        <li>World Configurator presets</li>
-        <li>Improved state labels placement</li>
-        <li>Relief icons sets</li>
-        <li>Fogging</li>
-        <li>Custom layer presets</li>
-        <li>Custom biomes</li>
-        <li>State, province and burg COAs</li>
-        <li>Desktop version (see <a href='https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#is-there-a-desktop-version' target='_blank'>here)</a></li>
-      </ul>
-
-      <p>Join our <a href='https://www.reddit.com/r/FantasyMapGenerator' target='_blank'>Reddit community</a> and 
-      <a href='https://discordapp.com/invite/X7E84HU' target='_blank'>Discord server</a> 
-      to ask questions, share maps, discuss the Generator, report bugs and propose new features.</p>
-
-      <p>Thanks for all supporters on <a href='https://www.patreon.com/azgaar' target='_blank'>Patreon</a>!</i></p>`;
-
-    $("#alert").dialog(
-      {resizable: false, title: "Fantasy Map Generator update", width: 310,
-      buttons: {
-        OK: function() {
-          localStorage.clear();
-          localStorage.setItem("version", version);
-          $(this).dialog("close");
-        }
-      },
-      position: {my: "center", at: "center", of: "svg"}
-    });
+  // check if URL is valid
+  if (maplink) {
+    const pattern = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
+    const valid = pattern.test(maplink);
+    if (valid) {loadMapFromURL(maplink, 1); return;} else
+    showUploadErrorMessage("Map link is a valid URL", maplink);
   }
+  generateRandomMapOnLoad();
+}()
+
+function loadMapFromURL(maplink, random) {
+  const URL = decodeURIComponent(maplink);
+  
+  fetch(URL, {method: 'GET', mode: 'cors'})
+    .then(response => {
+      if(response.ok) return response.blob();
+      throw new Error("Cannot load map from URL");
+    }).then(blob => uploadFile(blob))
+    .catch(error => {
+      showUploadErrorMessage(error.message, URL, random);
+      if (random) generateRandomMapOnLoad();
+    });
+}
+
+function showUploadErrorMessage(error, URL, random) {
+  console.log(error);
+  alertMessage.innerHTML = `
+    Cannot load map from the <a href='${URL}' target='_blank'>link provided</a>. 
+    ${random?`A new random map is generated. `:''}
+    Please ensure the linked file is reachable`;
+  $("#alert").dialog({title: "Loading error", width: 320, buttons: {OK: function() {$(this).dialog("close");}}});
+}
+
+function generateRandomMapOnLoad() {
+  applyDefaultStyle(); // apply style
+  generate(); // generate map
+  focusOn(); // based on searchParams focus on point, cell or burg from MFCG
+  applyPreset(); // apply saved layers preset
+  setTimeout(showWelcomeMessage, 7000); // show welcome message if required
 }
 
 function applyDefaultNamesData() {
@@ -431,16 +421,64 @@ function findBurgForMFCG(params) {
 
   const label = burgLabels.select("[data-id='" + b + "']");
   if (label.size()) {
-    tip("Here stands the glorious city of " + burgs[b].name, true, "error");
+    tip("Here stands the glorious city of " + burgs[b].name, true, "success", 10000);
     label.classed("drag", true).on("mouseover", function() {
       d3.select(this).classed("drag", false);
       label.on("mouseover", null);
-      tip("", true);
     });
   }
 
   zoomTo(burgs[b].x, burgs[b].y, 8, 1600);
   invokeActiveZooming();
+}
+
+function showWelcomeMessage() {
+  // Changelog dialog window
+  if (localStorage.getItem("version") != version) {
+    const link = 'https://www.reddit.com/r/FantasyMapGenerator/comments/cxu1c5/update_new_version_is_published_v_10'; // announcement on Reddit
+    alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
+
+      This version is compatible with versions 0.8b and 0.9b, but not with older .map files. 
+      Please use an <a href='https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog' target='_blank'>archived version</a> to open old files.
+
+      <ul><a href=${link} target='_blank'>Main changes:</a>
+        <li>Provinces and Provinces Editor</li>
+        <li>Religions Layer and Religions Editor</li>
+        <li>Full state names (state types)</li>
+        <li>Multi-lined labels</li>
+        <li>State relations (diplomacy)</li>
+        <li>Custom layers (zones)</li>
+        <li>Places of interest (auto-added markers)</li>
+        <li>New color picker and hatching fill</li>
+        <li>Legend boxes</li>
+        <li>World Configurator presets</li>
+        <li>Improved state labels placement</li>
+        <li>Relief icons sets</li>
+        <li>Fogging</li>
+        <li>Custom layer presets</li>
+        <li>Custom biomes</li>
+        <li>State, province and burg COAs</li>
+        <li>Desktop version (see <a href='https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#is-there-a-desktop-version' target='_blank'>here)</a></li>
+      </ul>
+
+      <p>Join our <a href='https://www.reddit.com/r/FantasyMapGenerator' target='_blank'>Reddit community</a> and 
+      <a href='https://discordapp.com/invite/X7E84HU' target='_blank'>Discord server</a> 
+      to ask questions, share maps, discuss the Generator, report bugs and propose new features.</p>
+
+      <p>Thanks for all supporters on <a href='https://www.patreon.com/azgaar' target='_blank'>Patreon</a>!</i></p>`;
+
+    $("#alert").dialog(
+      {resizable: false, title: "Fantasy Map Generator update", width: 310,
+      buttons: {
+        OK: function() {
+          localStorage.clear();
+          localStorage.setItem("version", version);
+          $(this).dialog("close");
+        }
+      },
+      position: {my: "center", at: "center", of: "svg"}
+    });
+  }
 }
 
 function zoomed() {

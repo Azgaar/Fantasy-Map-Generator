@@ -1814,13 +1814,17 @@
 
       <div id="sticked">
         <button id="newMapButton" data-tip="Generate a new map based on options. Shortcut: F7">New Map</button>
-        <button id="saveButton" data-tip="Select file format to save map">Save as</button>
+        <button id="saveButton" data-tip="Select file format to save map">Save</button>
         <div id="saveDropdown">
           <div id="saveMap" data-tip="Save as fully functional map in .map format. Shortcut: Ctrl + M">.map</div>
           <div id="saveSVG" data-tip="Download the map as .svg image (open in browser or Inkscape). Shortcut: Ctrl + S">.svg</div>
           <div id="savePNG" data-tip="Download visible part of the map as image. Texture will not be shown. Shortcut: Ctrl + P">.png</div>
         </div>
-        <button id="loadMap" data-tip="Load fully functional map in a .map format. Shortcut: Ctrl + L">Load</button>
+        <button id="loadButton" data-tip="Load fully functional map in a .map format">Load</button>
+        <div id="loadDropdown">
+          <div id="loadURL" data-tip="Load .map file from URL: Ctrl + U">from URL</div>
+          <div id="loadMap" data-tip="Load .map file from local disk. Shortcut: Ctrl + L">from file</div>
+        </div>
         <button id="zoomReset" data-tip="Reset map zoom. Shortcut: 0">Reset Zoom</button>
       </div>
 
@@ -2945,6 +2949,7 @@
   <script defer src="modules/ui/general.js"></script>
   <script defer src="modules/ui/options.js"></script>
   <script defer src="modules/ui/measurers.js"></script>
+  <script defer src="modules/save-and-load.js"></script>
   <script defer src="main.js?version=1.0"></script>
   <script defer src="modules/relief-icons.js"></script>
   <script defer src="modules/ui/tools.js"></script>
@@ -2969,7 +2974,6 @@
   <script defer src="modules/ui/diplomacy-editor.js"></script>
   <script defer src="modules/ui/zones-editor.js"></script>
   <script defer src="modules/ui/editors.js"></script>
-  <script defer src="modules/save-and-load.js"></script>
   <script defer src="libs/quantize.min.js"></script>
   <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
 </body>

@@ -265,6 +265,8 @@
       const type = states[s].type;
 
       cells.c[n].forEach(function(e) {
+        if (cells.state[e] && e === states[cells.state[e]].center) return; // do not overwrite capital cells
+
         const cultureCost = states[s].culture === cells.culture[e] ? -9 : 700;
         const biomeCost = getBiomeCost(cells.road[e], b, cells.biome[e], type);
         const heightCost = getHeightCost(pack.features[cells.f[e]], cells.h[e], type);
@@ -278,7 +280,6 @@
           if (cells.h[e] >= 20) cells.state[e] = s; // assign state to cell
           cost[e] = totalCost;
           queue.queue({e, p:totalCost, s, b});
-
           //const points = [cells.p[n][0], cells.p[n][1], (cells.p[n][0]+cells.p[e][0])/2, (cells.p[n][1]+cells.p[e][1])/2, cells.p[e][0], cells.p[e][1]];
           //debug.append("text").attr("x", (cells.p[n][0]+cells.p[e][0])/2 - 1).attr("y", (cells.p[n][1]+cells.p[e][1])/2 - 1).text(rn(totalCost-p)).attr("font-size", .8);
           //debug.append("polyline").attr("points", points).attr("marker-mid", "url(#arrow)").attr("opacity", .6);

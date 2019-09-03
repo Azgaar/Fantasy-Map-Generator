@@ -677,6 +677,7 @@ optionsContent.addEventListener("input", function(event) {
   else if (id === "provincesInput") provincesOutput.value = value;
   else if (id === "provincesOutput") provincesOutput.value = value;
   else if (id === "provincesOutput") powerOutput.value = value;
+  else if (id === "powerInput") powerOutput.value = value;
   else if (id === "powerOutput") powerInput.value = value;
   else if (id === "neutralInput") neutralOutput.value = value;
   else if (id === "neutralOutput") neutralInput.value = value;
@@ -991,12 +992,14 @@ document.getElementById("sticked").addEventListener("click", function(event) {
   const id = event.target.id;
   if (id === "newMapButton") regeneratePrompt();
   else if (id === "saveButton") toggleSavePane();
-  else if (id === "loadMap") mapToLoad.click();
+  else if (id === "loadButton") toggleLoadPane();
   else if (id === "zoomReset") resetZoom(1000);
   else if (id === "saveMap") saveMap();
   else if (id === "saveSVG") saveAsImage("svg");
   else if (id === "savePNG") saveAsImage("png");
   if (id === "saveMap" || id === "saveSVG" || id === "savePNG") toggleSavePane();
+  if (id === "loadURL") {loadURL(); toggleLoadPane()}
+  if (id === "loadMap") {mapToLoad.click(); toggleLoadPane()}
 });
 
 function regeneratePrompt() {
@@ -1033,12 +1036,32 @@ function toggleSavePane() {
       }
     });
   }
+}
 
+function toggleLoadPane() {
+  if (loadDropdown.style.display === "block") {loadDropdown.style.display = "none"; return;}
+  loadDropdown.style.display = "block";
+}
+
+function loadURL() {
+  const pattern = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
+  const inner = `Provide URL to a .map file: <input id="mapURL" type="url" style="width: 254px" placeholder="http://www.e-cloud.com/fantasy_map.map"">`;
+  alertMessage.innerHTML = inner;
+  $("#alert").dialog({resizable: false, title: "Load map from URL", width: 280,
+    buttons: {
+      Load: function() {
+        const value = mapURL.value;
+        if (!pattern.test(value)) {tip("Please provide a valid URL", false, "error"); return;}
+        loadMapFromURL(value);
+        $(this).dialog("close");
+      },
+      Cancel: function() {$(this).dialog("close");}
+    }
+  });
 }
 
 // load map
 document.getElementById("mapToLoad").addEventListener("change", function() {
-  closeDialogs();
   const fileToLoad = this.files[0];
   this.value = "";
   uploadFile(fileToLoad);

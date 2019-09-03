@@ -18,16 +18,18 @@ const tooltip = document.getElementById("tooltip");
 document.getElementById("dialogs").addEventListener("mousemove", showDataTip);
 document.getElementById("optionsContainer").addEventListener("mousemove", showDataTip);
 
-function tip(tip = "Tip is undefined", main = false, error = false) {
-  const reg = "linear-gradient(0.1turn, #ffffff00, #5e5c5c66, #ffffff00)";
-  const red = "linear-gradient(0.1turn, #ffffff00, #e3141499, #ffffff00)";
+function tip(tip = "Tip is undefined", main, error, time) {
   tooltip.innerHTML = tip;
-  tooltip.style.background = error ? red : reg;
-  if (main) tooltip.dataset.main = tip;
+  tooltip.style.background = "linear-gradient(0.1turn, #ffffff00, #5e5c5c80, #ffffff00)";
+  if (error === "error") tooltip.style.background = "linear-gradient(0.1turn, #ffffff00, #e11d1dcc, #ffffff00)"; else
+  if (error === "warn") tooltip.style.background = "linear-gradient(0.1turn, #ffffff00, #be5d08cc, #ffffff00)"; else
+  if (error === "success") tooltip.style.background = "linear-gradient(0.1turn, #ffffff00, #127912cc, #ffffff00)";
+
+  if (main) tooltip.dataset.main = tip; // set main tip
+  if (time) setTimeout(tooltip.dataset.main = "", time); // clear main in some time
 }
 
 function showMainTip() {
-  tooltip.style.background = "linear-gradient(0.1turn, #aaffff00, #3a26264d, #ffffff00)";
   tooltip.innerHTML = tooltip.dataset.main;
 }
 
@@ -236,7 +238,8 @@ document.addEventListener("keydown", function(event) {
   else if (ctrl && key === 80) saveAsImage("png"); // Ctrl + "P" to save as PNG
   else if (ctrl && key === 83) saveAsImage("svg"); // Ctrl + "S" to save as SVG
   else if (ctrl && key === 77) saveMap(); // Ctrl + "M" to save MAP file
-  else if (ctrl && key === 76) mapToLoad.click(); // Ctrl + "L" to load MAP
+  else if (ctrl && key === 85) mapToLoad.click(); // Ctrl + "U" to load MAP from URL
+  else if (ctrl && key === 76) mapToLoad.click(); // Ctrl + "L" to load MAP from local file
   else if (key === 46) removeElementOnKey(); // "Delete" to remove the selected element
 
   else if (shift && key === 192) console.log(pack.cells); // Shift + "`" to log cells data

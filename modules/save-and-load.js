@@ -210,6 +210,7 @@ function saveMap() {
 
 function uploadFile(file, callback) {
   console.time("loadMap");
+  closeDialogs();
   const fileReader = new FileReader();
   fileReader.onload = function(fileLoadedEvent) {
     const dataLoaded = fileLoadedEvent.target.result;
@@ -423,7 +424,7 @@ function parseLoadedData(data) {
     getCurrentPreset();
   }()
 
-  void function restoreRulersEvents() {
+  void function restoreEvents() {
     ruler.selectAll("g").call(d3.drag().on("start", dragRuler));
     ruler.selectAll("text").on("click", removeParent);
     ruler.selectAll("g.ruler circle").call(d3.drag().on("drag", dragRulerEdge));
@@ -431,6 +432,9 @@ function parseLoadedData(data) {
     ruler.selectAll("g.ruler rect").call(d3.drag().on("start", rulerCenterDrag));
     ruler.selectAll("g.opisometer circle").call(d3.drag().on("start", dragOpisometerEnd));
     ruler.selectAll("g.opisometer circle").call(d3.drag().on("start", dragOpisometerEnd));
+
+    scaleBar.on("mousemove", () => tip("Click to open Units Editor"));
+    legend.on("mousemove", () => tip("Drag to change the position. Click to hide the legend")).on("click", () => clearLegend());
   }()
 
   void function resolveVersionConflicts() {
@@ -518,6 +522,7 @@ function parseLoadedData(data) {
   changeMapSize();
   restoreDefaultEvents();
   invokeActiveZooming();
-  tip("Map is loaded");
+  tip("Map is successfully loaded", true, "success", 7000);
   console.timeEnd("loadMap");
+  showStatistics();
 }
