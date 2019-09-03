@@ -69,8 +69,6 @@ function getRiverPoints(node) {
 
 function saveGeoJSON_Cells() {
     let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
-    data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"Polygon\", \"coordinates\": [[";
-
 
     const cells = pack.cells;
     const v = pack.vertices;
