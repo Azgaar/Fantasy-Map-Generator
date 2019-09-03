@@ -86,7 +86,7 @@ function editZones() {
     body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseleave", ev => zoneHighlightOff(ev)));
 
     if (body.dataset.type === "percentage") {body.dataset.type = "absolute"; togglePercentageMode();}
-    $("#zonesEditor").dialog();
+    $("#zonesEditor").dialog({width: fitContent()});
   }
 
   function zoneHighlightOn(event) {

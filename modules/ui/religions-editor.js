@@ -25,6 +25,7 @@ function editReligions() {
   document.getElementById("religionsEditorRefresh").addEventListener("click", refreshReligionsEditor);
   document.getElementById("religionsLegend").addEventListener("click", toggleLegend);
   document.getElementById("religionsPercentage").addEventListener("click", togglePercentageMode);
+  document.getElementById("religionsExtinct").addEventListener("click", toggleExtinct);
   document.getElementById("religionsManually").addEventListener("click", enterReligionsManualAssignent);
   document.getElementById("religionsManuallyApply").addEventListener("click", applyReligionsManualAssignent);
   document.getElementById("religionsManuallyCancel").addEventListener("click", () => exitReligionsManualAssignment());
@@ -56,11 +57,13 @@ function editReligions() {
 
     for (const r of pack.religions) {
       if (r.removed) continue;
+
       const area = r.area * (distanceScaleInput.value ** 2);
       const rural = r.rural * populationRate.value;
       const urban = r.urban * populationRate.value * urbanization.value;
       const population = rn(rural + urban);
-      const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}`;
+      if (r.i && !population && body.dataset.extinct !== "show") continue; // hide extinct religions
+      const populationTip = `Believers: ${si(population)}; Rural areas: ${si(rural)}; Urban areas: ${si(urban)}`;
       totalArea += area;
       totalPopulation += population;
 
@@ -98,7 +101,11 @@ function editReligions() {
     body.innerHTML = lines;
 
     // update footer
-    religionsFooterNumber.innerHTML = pack.religions.filter(r => r.i && !r.removed).length;
+    const valid = pack.religions.filter(r => r.i && !r.removed);
+    religionsOrganized.innerHTML = valid.filter(r => r.type === "Organized").length;
+    religionsHeresies.innerHTML = valid.filter(r => r.type === "Heresy").length;
+    religionsCults.innerHTML = valid.filter(r => r.type === "Cult").length;
+    religionsFolk.innerHTML = valid.filter(r => r.type === "Folk").length;
     religionsFooterArea.innerHTML = si(totalArea) + unit;
     religionsFooterPopulation.innerHTML = si(totalPopulation);
     religionsFooterArea.dataset.area = totalArea;
@@ -118,7 +125,7 @@ function editReligions() {
 
     if (body.dataset.type === "percentage") {body.dataset.type = "absolute"; togglePercentageMode();}
     applySorting(religionsHeader);
-    $("#religionsEditor").dialog();
+    $("#religionsEditor").dialog({width: fitContent()});
   }
 
   function getTypeOptions(type) {
@@ -204,7 +211,7 @@ function editReligions() {
   }
 
   function drawReligionCenters() {
-    const tooltip = "Drag to move the religion center";
+    const tooltip = "Drag to move the religion center (it won't affect religions distribution)";
     debug.select("#religionCenters").remove();
     const religionCenters = debug.append("g").attr("id", "religionCenters")
       .attr("stroke-width", 2).attr("stroke", "#444444").style("cursor", "move");
@@ -250,6 +257,11 @@ function editReligions() {
       body.dataset.type = "absolute";
       religionsEditorAddLines();
     }
+  }
+
+  function toggleExtinct() {
+    body.dataset.extinct = body.dataset.extinct !== "show" ? "show" : "hide";
+    religionsEditorAddLines();
   }
 
   function enterReligionsManualAssignent() {
@@ -398,8 +410,8 @@ function editReligions() {
 
   function downloadReligionsData() {
     const unit = areaUnit.value === "square" ? distanceUnitInput.value + "2" : areaUnit.value;
-    let data = "Id,Religion,Color,Type,Form,Deity,Area "+unit+",Population\n"; // headers
-    
+    let data = "Id,Religion,Color,Type,Form,Deity,Area "+unit+",Believers\n"; // headers
+
     body.querySelectorAll(":scope > div").forEach(function(el) {
       data += el.dataset.id + ",";
       data += el.dataset.name + ",";

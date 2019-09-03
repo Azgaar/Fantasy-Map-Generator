@@ -48,7 +48,7 @@ function moved() {
   if (i === undefined) return;
   showNotes(d3.event, i);
   const g = findGridCell(point[0], point[1]); // grid cell id
-  if (tooltip.dataset.main) showMainTip(); else showMapTooltip(d3.event, i, g);
+  if (tooltip.dataset.main) showMainTip(); else showMapTooltip(point, d3.event, i, g);
   if (toolsContent.style.display === "block" && cellInfo.style.display === "block") updateCellInfo(point, i, g);
 }
 
@@ -71,7 +71,7 @@ function showNotes(e, i) {
 }
 
 // show viewbox tooltip if main tooltip is blank
-function showMapTooltip(e, i, g) {
+function showMapTooltip(point, e, i, g) {
   tip(""); // clear tip
   const tag = e.target.tagName;
   const path = e.composedPath ? e.composedPath() : getComposedPath(e.target); // apply polyfill
@@ -116,7 +116,7 @@ function showMapTooltip(e, i, g) {
     tip(prov + state);
   } else
   if (layerIsOn("toggleCultures") && pack.cells.culture[i]) tip("Culture: " + pack.cultures[pack.cells.culture[i]].name); else
-  if (layerIsOn("toggleHeight")) tip("Height: " + getFriendlyHeight(pack.cells.h[i]));
+  if (layerIsOn("toggleHeight")) tip("Height: " + getFriendlyHeight(point));
 }
 
 // get cell info on mouse move
@@ -127,7 +127,8 @@ function updateCellInfo(point, i, g) {
   infoCell.innerHTML = i;
   const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
   infoArea.innerHTML = cells.area[i] ? si(cells.area[i] * distanceScaleInput.value ** 2) + unit : "n/a";
-  infoHeight.innerHTML = getFriendlyHeight(cells.h[i]) + " (" + cells.h[i] + ")";
+  const h = pack.cells.h[i] < 20 ? grid.cells.h[pack.cells.g[i]] : pack.cells.h[i];
+  infoHeight.innerHTML = getFriendlyHeight(point) + " (" + h + ")";
   infoTemp.innerHTML = convertTemperature(grid.cells.temp[g]);
   infoPrec.innerHTML = cells.h[i] >= 20 ? getFriendlyPrecipitation(i) : "n/a";
   infoState.innerHTML = cells.h[i] >= 20 ? cells.state[i] ? `${pack.states[cells.state[i]].fullName} (${cells.state[i]})` : "neutral lands (0)" : "no";
@@ -142,11 +143,15 @@ function updateCellInfo(point, i, g) {
 }
 
 // get user-friendly (real-world) height value from map data
-function getFriendlyHeight(h) {
+function getFriendlyHeight(p) {
   const unit = heightUnit.value;
   let unitRatio = 3.281; // default calculations are in feet
   if (unit === "m") unitRatio = 1; // if meter
   else if (unit === "f") unitRatio = 0.5468; // if fathom
+
+  const packH = pack.cells.h[findCell(p[0], p[1])];
+  const gridH = grid.cells.h[findGridCell(p[0], p[1])];
+  const h = packH < 20 ? gridH : packH;
 
   let height = -990;
   if (h >= 20) height = Math.pow(h - 18, +heightExponentInput.value);
