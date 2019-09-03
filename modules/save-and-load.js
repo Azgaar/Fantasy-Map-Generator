@@ -3,7 +3,28 @@
 
 // download map data as GeoJSON
 function saveGeoJSON() {
+    saveGeoJSON_Cells();
+    //saveGeoJSON_Roads();
+}
 
+function saveGeoJSON_Roads() {
+    // this is work-in-progress
+    roads = routes.select("#roads");
+    trails = routes.select("#trails");
+    searoutes = routes.select("#searoutes");
+
+    console.log(typeof(roads));
+    console.log(roads);
+
+    console.log(routes._groups);
+    console.log(routes._groups[0]);
+    console.log(routes._groups[0][0]);
+    console.log(routes._groups[0][0].childNodes);
+
+}
+
+
+function saveGeoJSON_Cells() {
     let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
 
 
