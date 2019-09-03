@@ -5,6 +5,7 @@
 function saveGeoJSON() {
     saveGeoJSON_Cells();
     //saveGeoJSON_Roads();
+    saveGeoJSON_Rivers();
 }
 
 function saveGeoJSON_Roads() {
@@ -23,9 +24,52 @@ function saveGeoJSON_Roads() {
 
 }
 
+function saveGeoJSON_Rivers() {
+    let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
+    let id = 0;
+
+    rivers._groups[0][0].childNodes.forEach(n => {
+        id++;
+        data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"LineString\", \"coordinates\": ";
+        data += JSON.stringify(getRiverPoints(n));
+        data += " },\n   \"properties\": {\n";
+        data += "      \"id\": \""+id+"\"\n";
+        data +="   }\n},\n";
+    });
+    data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
+    data += "]}";
+
+    const dataBlob = new Blob([data], {type: "application/json"});
+    const url = window.URL.createObjectURL(dataBlob);
+    const link = document.createElement("a");
+    document.body.appendChild(link);
+    link.download = "fmg_rivers_" + Date.now() + ".geojson";
+    link.href = url;
+    link.click();
+    window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
+}
+
+function getRiverPoints(node) {
+    let points = [];
+    const l = node.getTotalLength() / 2; // half-length
+    const increment = 0.5; // defines density of points
+    for (let i=l, c=i; i >= 0; i -= increment, c += increment) {
+        const p1 = node.getPointAtLength(i);
+        const p2 = node.getPointAtLength(c);
+
+        let x = mapCoordinates.lonW + (((p1.x+p2.x)/2) / graphWidth) * mapCoordinates.lonT;
+        let y = mapCoordinates.latN - (((p1.y+p2.y)/2) / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
+
+        points.push([x,y]);
+    }
+    return points;
+}
+
+
 
 function saveGeoJSON_Cells() {
     let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
+    data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"Polygon\", \"coordinates\": [[";
 
 
     const cells = pack.cells;
@@ -93,7 +137,7 @@ function saveGeoJSON_Cells() {
     const url = window.URL.createObjectURL(dataBlob);
     const link = document.createElement("a");
     document.body.appendChild(link);
-    link.download = "fantasy_map_" + Date.now() + ".geojson";
+    link.download = "fmg_cells_" + Date.now() + ".geojson";
     link.href = url;
     link.click();
     window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
