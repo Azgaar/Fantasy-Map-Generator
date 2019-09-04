@@ -151,61 +151,69 @@ function GFontToDataURI(url) {
     });
 }
 
-// Save in .map format
-function saveMap() {
-  if (customization) {tip("Map cannot be saved when is in edit mode, please exit the mode and retry", false, "error"); return;}
+// prepare map data for saving
+function getMapURL() {
   console.time("saveMap");
+
+  return new Promise(resolve => {
+    const date = new Date();
+    const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
+    const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
+    const params = [version, license, dateString, seed, graphWidth, graphHeight].join("|");
+    const options = [distanceUnitInput.value, distanceScaleInput.value, areaUnit.value, heightUnit.value, heightExponentInput.value, temperatureScale.value, 
+      barSize.value, barLabel.value, barBackOpacity.value, barBackColor.value, barPosX.value, barPosY.value, populationRate.value, urbanization.value, 
+      mapSizeOutput.value, latitudeOutput.value, temperatureEquatorOutput.value, temperaturePoleOutput.value, precOutput.value, JSON.stringify(winds)].join("|");
+    const coords = JSON.stringify(mapCoordinates);
+    const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
+    const notesData = JSON.stringify(notes);
+  
+    // set transform values to default
+    svg.attr("width", graphWidth).attr("height", graphHeight);
+    const transform = d3.zoomTransform(svg.node());
+    viewbox.attr("transform", null);
+    const svg_xml = (new XMLSerializer()).serializeToString(svg.node());
+  
+    // restore initial values
+    svg.attr("width", svgWidth).attr("height", svgHeight);
+    zoom.transform(svg, transform);
+  
+    const gridGeneral = JSON.stringify({spacing:grid.spacing, cellsX:grid.cellsX, cellsY:grid.cellsY, boundary:grid.boundary, points:grid.points, features:grid.features});
+    const features = JSON.stringify(pack.features);
+    const cultures = JSON.stringify(pack.cultures);
+    const states = JSON.stringify(pack.states);
+    const burgs = JSON.stringify(pack.burgs);
+    const religions = JSON.stringify(pack.religions);
+    const provinces = JSON.stringify(pack.provinces);
+  
+    // data format as below
+    const data = [params, options, coords, biomes, notesData, svg_xml, 
+      gridGeneral, grid.cells.h, grid.cells.prec, grid.cells.f, grid.cells.t, grid.cells.temp,
+      features, cultures, states, burgs,
+      pack.cells.biome, pack.cells.burg, pack.cells.conf, pack.cells.culture, pack.cells.fl, 
+      pack.cells.pop, pack.cells.r, pack.cells.road, pack.cells.s, pack.cells.state, 
+      pack.cells.religion, pack.cells.province, pack.cells.crossroad, religions, provinces].join("\r\n");
+    const dataBlob = new Blob([data], {type: "text/plain"});
+    const URL = window.URL.createObjectURL(dataBlob);
+  
+    console.timeEnd("saveMap");
+    resolve(URL);
+  });
+
+}
+
+// Save in .map format
+async function saveMap() {
+  if (customization) {tip("Map cannot be saved when is in edit mode, please exit the mode and retry", false, "error"); return;}
   closeDialogs();
-  const date = new Date();
-  const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
-  const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
-  const params = [version, license, dateString, seed, graphWidth, graphHeight].join("|");
-  const options = [distanceUnitInput.value, distanceScaleInput.value, areaUnit.value, heightUnit.value, heightExponentInput.value, temperatureScale.value, 
-    barSize.value, barLabel.value, barBackOpacity.value, barBackColor.value, barPosX.value, barPosY.value, populationRate.value, urbanization.value, 
-    mapSizeOutput.value, latitudeOutput.value, temperatureEquatorOutput.value, temperaturePoleOutput.value, precOutput.value, JSON.stringify(winds)].join("|");
-  const coords = JSON.stringify(mapCoordinates);
-  const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
-  const notesData = JSON.stringify(notes);
 
-  // set transform values to default
-  svg.attr("width", graphWidth).attr("height", graphHeight);
-  const transform = d3.zoomTransform(svg.node());
-  viewbox.attr("transform", null);
-  const svg_xml = (new XMLSerializer()).serializeToString(svg.node());
-
-  const gridGeneral = JSON.stringify({spacing:grid.spacing, cellsX:grid.cellsX, cellsY:grid.cellsY, boundary:grid.boundary, points:grid.points, features:grid.features});
-  const features = JSON.stringify(pack.features);
-  const cultures = JSON.stringify(pack.cultures);
-  const states = JSON.stringify(pack.states);
-  const burgs = JSON.stringify(pack.burgs);
-  const religions = JSON.stringify(pack.religions);
-  const provinces = JSON.stringify(pack.provinces);
-
-  // data format as below
-  const data = [params, options, coords, biomes, notesData, svg_xml, 
-    gridGeneral, grid.cells.h, grid.cells.prec, grid.cells.f, grid.cells.t, grid.cells.temp,
-    features, cultures, states, burgs,
-    pack.cells.biome, pack.cells.burg, pack.cells.conf, pack.cells.culture, pack.cells.fl, 
-    pack.cells.pop, pack.cells.r, pack.cells.road, pack.cells.s, pack.cells.state, 
-    pack.cells.religion, pack.cells.province, pack.cells.crossroad, religions, provinces].join("\r\n");
-  const dataBlob = new Blob([data], {type: "text/plain"});
-  const dataURL = window.URL.createObjectURL(dataBlob);
+  const URL = await getMapURL();
   const link = document.createElement("a");
   link.download = "fantasy_map_" + Date.now() + ".map";
-  link.href = dataURL;
+  link.href = URL;
   document.body.appendChild(link);
   link.click();
-  tip(`${link.download} is saved. Open "Downloads" screen (crtl + J) to check`, true, "warning");
-
-  // restore initial values
-  svg.attr("width", svgWidth).attr("height", svgHeight);
-  zoom.transform(svg, transform);
-
-  window.setTimeout(function() {
-    window.URL.revokeObjectURL(dataURL);
-    clearMainTip();
-  }, 3000);
-  console.timeEnd("saveMap");
+  tip(`${link.download} is saved. Open "Downloads" screen (crtl + J) to check`, true, "success", 7000);
+  window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
 }
 
 function uploadFile(file, callback) {

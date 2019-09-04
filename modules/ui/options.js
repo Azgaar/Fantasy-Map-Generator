@@ -997,9 +997,12 @@ document.getElementById("sticked").addEventListener("click", function(event) {
   else if (id === "saveMap") saveMap();
   else if (id === "saveSVG") saveAsImage("svg");
   else if (id === "savePNG") saveAsImage("png");
-  if (id === "saveMap" || id === "saveSVG" || id === "savePNG") toggleSavePane();
-  if (id === "loadURL") {loadURL(); toggleLoadPane()}
-  if (id === "loadMap") {mapToLoad.click(); toggleLoadPane()}
+  else if (id === "saveDropbox") saveDropbox();
+  if (id === "saveMap" || id === "saveSVG" || id === "savePNG" || id === "saveDropbox") toggleSavePane();
+  if (id === "loadMap") mapToLoad.click()
+  if (id === "loadURL") loadURL();
+  if (id === "loadDropbox") loadDropbox();
+  if (id === "loadURL" || id === "loadMap" || id === "loadDropbox") toggleLoadPane();
 });
 
 function regeneratePrompt() {
@@ -1038,6 +1041,21 @@ function toggleSavePane() {
   }
 }
 
+// async function saveDropbox() {
+//   const filename = "fantasy_map_" + Date.now() + ".map";
+//   const options = {
+//     files: [{'url': '...', 'filename': 'fantasy_map.map'}],
+//     success: function () {alert("Success! Files saved to your Dropbox.")},
+//     progress: function (progress) {console.log(progress)},
+//     cancel: function (cancel) {console.log(cancel)},
+//     error: function (error) {console.log(error)}
+//   };
+
+//   // working file: "https://dl.dropbox.com/s/llg93mwyonyzdmu/test.map?dl=1";
+//   const URL = await getMapURL();
+//   Dropbox.save(URL, filename, options);
+// }
+
 function toggleLoadPane() {
   if (loadDropdown.style.display === "block") {loadDropdown.style.display = "none"; return;}
   loadDropdown.style.display = "block";
@@ -1045,7 +1063,9 @@ function toggleLoadPane() {
 
 function loadURL() {
   const pattern = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
-  const inner = `Provide URL to a .map file: <input id="mapURL" type="url" style="width: 254px" placeholder="http://www.e-cloud.com/fantasy_map.map"">`;
+  const inner = `Provide URL to a .map file: 
+    <input id="mapURL" type="url" style="width: 254px" placeholder="https://e-cloud.com/test.map">
+    <br><i>Please note server should allow CORS for file to be loaded. If CORS is not allowed, save file to Dropbox and provide a direct link</i>`;
   alertMessage.innerHTML = inner;
   $("#alert").dialog({resizable: false, title: "Load map from URL", width: 280,
     buttons: {
@@ -1059,6 +1079,26 @@ function loadURL() {
     }
   });
 }
+
+// function loadDropbox() {
+//     const options = {
+//       success: function(file) {send_files(file)},
+//       cancel: function() {},
+//       linkType: "preview",
+//       multiselect: false,
+//       extensions:['.map'],
+//   };
+//   Dropbox.choose(options);
+
+//   function send_files(file) {
+//     const subject = "Shared File Links";
+//     let body = "";
+//     for (let i=0; i < file.length; i++) {
+//       body += file[i].name + "\n" + file[i].link + "\n\n";
+//     }
+//     location.href = 'mailto:coworker@example.com?Subject=' + escape(subject) + '&body='+ escape(body),'200','200';
+//   }
+// }
 
 // load map
 document.getElementById("mapToLoad").addEventListener("change", function() {

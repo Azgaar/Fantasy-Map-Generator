@@ -395,6 +395,7 @@ function findBurgForMFCG(params) {
   if (pack.burgs.length < 2) {console.error("Cannot select a burg for MFCG"); return;}
 
   const size = +params.get("size");
+  const name = params.get("name");
   let coast = +params.get("coast");
   let port = +params.get("port");
   let river = +params.get("river");
@@ -415,14 +416,15 @@ function findBurgForMFCG(params) {
 
   // select a burg with closest population from selection
   const selected = d3.scan(selection, (a, b) => Math.abs(a.population - size) - Math.abs(b.population - size));
-  const b = selection[selected].i;  
+  const b = selection[selected].i;
   if (!b) {console.error("Cannot select a burg for MFCG"); return;}
   if (size) burgs[b].population = size;
+  if (name) burgs[b].name = name;
 
   const label = burgLabels.select("[data-id='" + b + "']");
   if (label.size()) {
-    tip("Here stands the glorious city of " + burgs[b].name, true, "success", 10000);
-    label.classed("drag", true).on("mouseover", function() {
+    tip("Here stands the glorious city of " + burgs[b].name, true, "success", 12000);
+    label.text(burgs[b].name).classed("drag", true).on("mouseover", function() {
       d3.select(this).classed("drag", false);
       label.on("mouseover", null);
     });
