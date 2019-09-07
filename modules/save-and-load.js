@@ -80,7 +80,7 @@ function getRoadPoints(node) {
     return points;
 }
 
-function getPathPoints(node, increment) {
+function getRiverPoints(node) {
     let points = [];
     const l = node.getTotalLength() / 2; // half-length
     const increment = 0.25; // defines density of points
