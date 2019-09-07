@@ -103,21 +103,22 @@
     // place secondary settlements based on geo and economical evaluation
     function placeTowns() {
       console.time('placeTowns');
-      const score = new Int16Array(cells.s.map(s => s * gauss(1,3,0,20,3))); // cell score for towns placement
-      const sorted = cells.i.filter(i => score[i] > 0 && cells.culture[i]).sort((a, b) => score[b] - score[a]); // filtered and sorted array of indexes
+      const score = new Int16Array(cells.s.map(s => s * gauss(1,3,0,20,3))); // a bit randomized cell score for towns placement
+      const sorted = cells.i.filter(i => !cells.burg[i] && score[i] > 0 && cells.culture[i]).sort((a, b) => score[b] - score[a]); // filtered and sorted array of indexes
 
       const desiredNumber = manorsInput.value == 1000 ? rn(sorted.length / 8 / densityInput.value ** .8) : manorsInput.valueAsNumber;
-      const burgsNumber = Math.min(desiredNumber, sorted.length);
+      const burgsNumber = Math.min(desiredNumber, sorted.length); // towns to generate
       let burgsAdded = 0;
 
       const burgsTree = burgs[0];
       let spacing = (graphWidth + graphHeight) / 150 / (burgsNumber ** .7 / 66); // min distance between towns
 
-      while (burgsAdded < burgsNumber) {
+      while (burgsAdded < burgsNumber && spacing > 1) {
         for (let i=0; burgsAdded < burgsNumber && i < sorted.length; i++) {
+          if (cells.burg[sorted[i]]) continue;
           const cell = sorted[i], x = cells.p[cell][0], y = cells.p[cell][1];
-          const s = spacing * gauss(1, .3, .2, 2, 2); // randomize to make the placement not uniform
-          if (cells.burg[cell] || burgsTree.find(x, y, s) !== undefined) continue; // to close to existing burg
+          const s = spacing * gauss(1, .3, .2, 2, 2); // randomize to make placement not uniform
+          if (burgsTree.find(x, y, s) !== undefined) continue; // to close to existing burg
           const burg = burgs.length;
           const culture = cells.culture[cell];
           const name = Names.getCulture(culture);
@@ -133,11 +134,7 @@
         console.error(`Cannot place all burgs. Requested ${desiredNumber}, placed ${burgsAdded}`);
       }
 
-      //const min = d3.min(score.filter(s => s)), max = d3.max(score);
-      //terrs.selectAll("polygon").data(sorted).enter().append("polygon").attr("points", d => getPackPolygon(d)).attr("fill", d => color(1 - normalize(score[d], min, max)));  
-      //labels.selectAll("text").data(sorted).enter().append("text").attr("x", d => cells.p[d][0]).attr("y", d => cells.p[d][1]).text(d => score[d]).attr("font-size", 2);
-
-      burgs[0] = {name:undefined};
+      burgs[0] = {name:undefined}; // do not store burgsTree anymore
       console.timeEnd('placeTowns');
     }
   }
@@ -823,7 +820,7 @@
     cells.province = new Uint16Array(cells.i.length); // cell state
     const percentage = +provincesInput.value;
     if (states.length < 2 || !percentage) return; // no provinces
-    const max = gauss(400, 50, 300, 500) / percentage ** .5; // max growth in 300-30 range
+    const max = percentage == 100 ? 1000 : gauss(20, 5, 5, 100) * percentage ** .5; // max growth
 
     const forms = {
       Monarchy:{County:11, Earldom:3, Shire:1, Landgrave:1, Margrave:1, Barony:1},

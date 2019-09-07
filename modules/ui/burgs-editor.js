@@ -148,7 +148,7 @@ function editBurgs() {
   function changeBurgPopulation() {
     const burg = +this.parentNode.dataset.id;
     if (this.value == "" || isNaN(+this.value)) {
-      tip("Please provide an integer number", false, "error");
+      tip("Please provide an integer number (like 10000, not 10K)", false, "error");
       this.value = si(pack.burgs[burg].population * populationRate.value * urbanization.value);
       return;
     }

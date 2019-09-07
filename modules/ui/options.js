@@ -4,12 +4,6 @@
 $("#optionsContainer").draggable({handle: ".drag-trigger", snap: "svg", snapMode: "both"});
 $("#mapLayers").disableSelection();
 
-// show control elements and remove loading screen on map load 
-d3.select("#loading").transition().duration(5000).style("opacity", 0).remove();
-d3.select("#initial").transition().duration(5000).attr("opacity", 0).remove();
-d3.select("#optionsContainer").transition().duration(5000).style("opacity", 1);
-d3.select("#tooltip").transition().duration(5000).style("opacity", 1);
-
 // remove glow if tip is aknowledged
 if (localStorage.getItem("disable_click_arrow_tooltip")) {
   clearMainTip();
@@ -723,7 +717,7 @@ function changeMapSize() {
   oceanPattern.select("rect").attr("x", 0).attr("y", 0).attr("width", width).attr("height", height);
   oceanLayers.select("rect").attr("x", 0).attr("y", 0).attr("width", width).attr("height", height);
   fitScaleBar();
-  fitLegendBox();
+  if (window.fitLegendBox) fitLegendBox();
 }
 
 // just apply map size that was already set, apply graph size!
@@ -994,28 +988,29 @@ document.getElementById("sticked").addEventListener("click", function(event) {
   else if (id === "saveButton") toggleSavePane();
   else if (id === "loadButton") toggleLoadPane();
   else if (id === "zoomReset") resetZoom(1000);
+  else if (id === "quickSave") quickSave();
   else if (id === "saveMap") saveMap();
   else if (id === "saveSVG") saveAsImage("svg");
   else if (id === "savePNG") saveAsImage("png");
   else if (id === "saveDropbox") saveDropbox();
-  if (id === "saveMap" || id === "saveSVG" || id === "savePNG" || id === "saveDropbox") toggleSavePane();
-  if (id === "loadMap") mapToLoad.click()
-  if (id === "loadURL") loadURL();
-  if (id === "loadDropbox") loadDropbox();
-  if (id === "loadURL" || id === "loadMap" || id === "loadDropbox") toggleLoadPane();
+  if (id === "quickSave" || id === "saveMap" || id === "saveSVG" || id === "savePNG" || id === "saveDropbox") toggleSavePane();
+  if (id === "loadMap") mapToLoad.click();
+  else if (id === "quickLoad") quickLoad();
+  else if (id === "loadURL") loadURL();
+  else if (id === "loadDropbox") loadDropbox();
+  if (id === "quickLoad" || id === "loadURL" || id === "loadMap" || id === "loadDropbox") toggleLoadPane();
 });
 
 function regeneratePrompt() {
-  if (customization) {tip("Please exit the customization mode first", false, "warning"); return;} 
   const workingTime = (Date.now() - last(mapHistory).created) / 60000; // minutes
-  if (workingTime < 15) {regenerateMap(); return;}
+  if (workingTime < 10) {regenerateMap(); return;}
 
   alertMessage.innerHTML = `Are you sure you want to generate a new map?<br>
   All unsaved changes made to the current map will be lost`;
   $("#alert").dialog({resizable: false, title: "Generate new map",
     buttons: {
       Cancel: function() {$(this).dialog("close");},
-      Generate: regenerateMap
+      Generate: function() {closeDialogs(); regenerateMap();}
     }
   });
 }
@@ -1052,7 +1047,8 @@ function toggleSavePane() {
 //   };
 
 //   // working file: "https://dl.dropbox.com/s/llg93mwyonyzdmu/test.map?dl=1";
-//   const URL = await getMapURL();
+//   const dataBlob = await getMapData();
+//   const URL = window.URL.createObjectURL(dataBlob);
 //   Dropbox.save(URL, filename, options);
 // }
 
@@ -1072,6 +1068,7 @@ function loadURL() {
       Load: function() {
         const value = mapURL.value;
         if (!pattern.test(value)) {tip("Please provide a valid URL", false, "error"); return;}
+        closeDialogs();
         loadMapFromURL(value);
         $(this).dialog("close");
       },
@@ -1104,5 +1101,6 @@ function loadURL() {
 document.getElementById("mapToLoad").addEventListener("change", function() {
   const fileToLoad = this.files[0];
   this.value = "";
+  closeDialogs();
   uploadFile(fileToLoad);
 });

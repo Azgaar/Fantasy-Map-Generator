@@ -8,7 +8,13 @@
 
 "use strict";
 const version = "1.0"; // generator version
-document.title += " v " + version;
+document.title += " v" + version;
+
+// if map version is not stored, clear localStorage and show a message
+if (localStorage.getItem("version") != version) {
+  localStorage.clear();
+  setTimeout(showWelcomeMessage, 8000);
+}
 
 // append svg layers (in default order)
 let svg = d3.select("#map");
@@ -111,20 +117,58 @@ oceanPattern.append("rect").attr("fill", "url(#oceanic)").attr("x", 0).attr("y",
 oceanLayers.append("rect").attr("id", "oceanBase").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 
 applyDefaultNamesData(); // always apply default namesbase load as namesdata is not stored in .map file
+void function removeLoading() {
+  d3.select("#loading").transition().duration(5000).style("opacity", 0).remove();
+  d3.select("#initial").transition().duration(5000).attr("opacity", 0).remove();
+  d3.select("#optionsContainer").transition().duration(3000).style("opacity", 1);
+  d3.select("#tooltip").transition().duration(3000).style("opacity", 1);
+}()
 
-// load linked map from url or generate a random map
+// decide which map should be loaded or generated on page load
 void function checkLoadParameters() {
   const url = new URL(window.location.href);
-  const maplink = url.searchParams.get("maplink");
+  const params = url.searchParams;
 
-  // check if URL is valid
-  if (maplink) {
+  // of there is a valid maplink, try to load .map file from URL
+  if (params.get("maplink")) {
+    console.warn("Load map from URL");
+    const maplink = params.get("maplink");
     const pattern = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
     const valid = pattern.test(maplink);
-    if (valid) {loadMapFromURL(maplink, 1); return;} else
-    showUploadErrorMessage("Map link is a valid URL", maplink);
+    if (valid) {loadMapFromURL(maplink, 1); return;}
+    else showUploadErrorMessage("Map link is not a valid URL", maplink);
   }
-  generateRandomMapOnLoad();
+
+  // if there is a seed (user of MFCG provided), generate map for it
+  if (params.get("seed")) {
+    console.warn("Generate map for seed");
+    generateMapOnLoad();
+    return;
+  }
+
+  // open latest map if option is active and map is stored
+  if (onloadMap.value === "saved") {
+    ldb.get("lastMap", blob => {
+      if (blob) {
+        console.warn("Load last saved map");
+        try {
+          uploadFile(blob);
+        }
+        catch(error) {
+          console.error(error);
+          console.warn("Cannot load stored map, random map to be generated");
+          generateMapOnLoad();
+        }
+      } else {
+        console.error("No map stored, random map to be generated");
+        generateMapOnLoad();
+      }
+    });
+    return;
+  }
+
+  console.warn("Generate random map");
+  generateMapOnLoad();
 }()
 
 function loadMapFromURL(maplink, random) {
@@ -137,25 +181,104 @@ function loadMapFromURL(maplink, random) {
     }).then(blob => uploadFile(blob))
     .catch(error => {
       showUploadErrorMessage(error.message, URL, random);
-      if (random) generateRandomMapOnLoad();
+      if (random) generateMapOnLoad();
     });
 }
 
 function showUploadErrorMessage(error, URL, random) {
-  console.log(error);
+  console.error(error);
   alertMessage.innerHTML = `
     Cannot load map from the <a href='${URL}' target='_blank'>link provided</a>. 
     ${random?`A new random map is generated. `:''}
-    Please ensure the linked file is reachable`;
+    Please ensure the linked file is reachable and CORS is allowed on server side`;
   $("#alert").dialog({title: "Loading error", width: 320, buttons: {OK: function() {$(this).dialog("close");}}});
 }
 
-function generateRandomMapOnLoad() {
+function generateMapOnLoad() {
   applyDefaultStyle(); // apply style
   generate(); // generate map
   focusOn(); // based on searchParams focus on point, cell or burg from MFCG
   applyPreset(); // apply saved layers preset
-  setTimeout(showWelcomeMessage, 7000); // show welcome message if required
+}
+
+// focus on coordinates, cell or burg provided in searchParams
+function focusOn() {
+  const url = new URL(window.location.href);
+  const params = url.searchParams;
+
+  if (params.get("from") === "MFCG") {
+    if (params.get("seed").length === 13) {
+      // show back burg from MFCG
+      params.set("burg", params.get("seed").slice(-4));
+    } else {
+      // select burg for MFCG
+      findBurgForMFCG(params);
+      return;
+    }
+  }
+
+  const s = +params.get("scale") || 8;
+  let x = +params.get("x");
+  let y = +params.get("y");
+
+  const c = +params.get("cell");
+  if (c) {
+    x = pack.cells.p[c][0];
+    y = pack.cells.p[c][1];
+  }
+
+  const b = +params.get("burg");
+  if (b && pack.burgs[b]) {
+    x = pack.burgs[b].x;
+    y = pack.burgs[b].y;
+  }
+
+  if (x && y) zoomTo(x, y, s, 1600);
+}
+
+// find burg for MFCG and focus on it
+function findBurgForMFCG(params) {
+  const cells = pack.cells, burgs = pack.burgs;
+  if (pack.burgs.length < 2) {console.error("Cannot select a burg for MFCG"); return;}
+
+  const size = +params.get("size");
+  const name = params.get("name");
+  let coast = +params.get("coast");
+  let port = +params.get("port");
+  let river = +params.get("river");
+
+  let selection = defineSelection(coast, port, river);
+  if (!selection.length) selection = defineSelection(coast, !port, !river);
+  if (!selection.length) selection = defineSelection(!coast, 0, !river);
+  if (!selection.length) selection = [burgs[1]]; // select first if nothing is found
+
+  function defineSelection(coast, port, river) {
+    if (port && river) return burgs.filter(b => b.port && cells.r[b.cell]);
+    if (!port && coast && river) return burgs.filter(b => !b.port && cells.t[b.cell] === 1 && cells.r[b.cell]);
+    if (!coast && !river) return burgs.filter(b => cells.t[b.cell] !== 1 && !cells.r[b.cell]);
+    if (!coast && river) return burgs.filter(b => cells.t[b.cell] !== 1 && cells.r[b.cell]);
+    if (coast && river) return burgs.filter(b => cells.t[b.cell] === 1 && cells.r[b.cell]);
+    return [];
+  }
+
+  // select a burg with closest population from selection
+  const selected = d3.scan(selection, (a, b) => Math.abs(a.population - size) - Math.abs(b.population - size));
+  const b = selection[selected].i;
+  if (!b) {console.error("Cannot select a burg for MFCG"); return;}
+  if (size) burgs[b].population = size;
+  if (name) burgs[b].name = name;
+
+  const label = burgLabels.select("[data-id='" + b + "']");
+  if (label.size()) {
+    tip("Here stands the glorious city of " + burgs[b].name, true, "success", 12000);
+    label.text(burgs[b].name).classed("drag", true).on("mouseover", function() {
+      d3.select(this).classed("drag", false);
+      label.on("mouseover", null);
+    });
+  }
+
+  zoomTo(burgs[b].x, burgs[b].y, 8, 1600);
+  invokeActiveZooming();
 }
 
 function applyDefaultNamesData() {
@@ -354,133 +477,45 @@ function applyDefaultStyle() {
   fogging.attr("opacity", .8).attr("fill", "#000000").attr("stroke-width", 5);
 }
 
-// focus on coordinates, cell or burg provided in searchParams
-function focusOn() {
-  const url = new URL(window.location.href);
-  const params = url.searchParams;
-
-  if (params.get("from") === "MFCG") {
-    if (params.get("seed").length === 13) {
-      // show back burg from MFCG
-      params.set("burg", params.get("seed").slice(-4));
-    } else {
-      // select burg for MFCG
-      findBurgForMFCG(params);
-      return;
-    }
-  }
-
-  const s = +params.get("scale") || 8;
-  let x = +params.get("x");
-  let y = +params.get("y");
-
-  const c = +params.get("cell");
-  if (c) {
-    x = pack.cells.p[c][0];
-    y = pack.cells.p[c][1];
-  }
-
-  const b = +params.get("burg");
-  if (b && pack.burgs[b]) {
-    x = pack.burgs[b].x;
-    y = pack.burgs[b].y;
-  }
-
-  if (x && y) zoomTo(x, y, s, 1600);
-}
-
-// find burg for MFCG and focus on it
-function findBurgForMFCG(params) {
-  const cells = pack.cells, burgs = pack.burgs;
-  if (pack.burgs.length < 2) {console.error("Cannot select a burg for MFCG"); return;}
-
-  const size = +params.get("size");
-  const name = params.get("name");
-  let coast = +params.get("coast");
-  let port = +params.get("port");
-  let river = +params.get("river");
-
-  let selection = defineSelection(coast, port, river);
-  if (!selection.length) selection = defineSelection(coast, !port, !river);
-  if (!selection.length) selection = defineSelection(!coast, 0, !river);
-  if (!selection.length) selection = [burgs[1]]; // select first if nothing is found
-
-  function defineSelection(coast, port, river) {
-    if (port && river) return burgs.filter(b => b.port && cells.r[b.cell]);
-    if (!port && coast && river) return burgs.filter(b => !b.port && cells.t[b.cell] === 1 && cells.r[b.cell]);
-    if (!coast && !river) return burgs.filter(b => cells.t[b.cell] !== 1 && !cells.r[b.cell]);
-    if (!coast && river) return burgs.filter(b => cells.t[b.cell] !== 1 && cells.r[b.cell]);
-    if (coast && river) return burgs.filter(b => cells.t[b.cell] === 1 && cells.r[b.cell]);
-    return [];
-  }
-
-  // select a burg with closest population from selection
-  const selected = d3.scan(selection, (a, b) => Math.abs(a.population - size) - Math.abs(b.population - size));
-  const b = selection[selected].i;
-  if (!b) {console.error("Cannot select a burg for MFCG"); return;}
-  if (size) burgs[b].population = size;
-  if (name) burgs[b].name = name;
-
-  const label = burgLabels.select("[data-id='" + b + "']");
-  if (label.size()) {
-    tip("Here stands the glorious city of " + burgs[b].name, true, "success", 12000);
-    label.text(burgs[b].name).classed("drag", true).on("mouseover", function() {
-      d3.select(this).classed("drag", false);
-      label.on("mouseover", null);
-    });
-  }
-
-  zoomTo(burgs[b].x, burgs[b].y, 8, 1600);
-  invokeActiveZooming();
-}
-
 function showWelcomeMessage() {
-  // Changelog dialog window
-  if (localStorage.getItem("version") != version) {
-    const link = 'https://www.reddit.com/r/FantasyMapGenerator/comments/cxu1c5/update_new_version_is_published_v_10'; // announcement on Reddit
-    alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
+  const link = 'https://www.reddit.com/r/FantasyMapGenerator/comments/cxu1c5/update_new_version_is_published_v_10'; // announcement on Reddit
+  alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
 
-      This version is compatible with versions 0.8b and 0.9b, but not with older .map files. 
-      Please use an <a href='https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog' target='_blank'>archived version</a> to open old files.
+    This version is compatible with versions 0.8b and 0.9b, but not with older .map files. 
+    Please use an <a href='https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog' target='_blank'>archived version</a> to open old files.
 
-      <ul><a href=${link} target='_blank'>Main changes:</a>
-        <li>Provinces and Provinces Editor</li>
-        <li>Religions Layer and Religions Editor</li>
-        <li>Full state names (state types)</li>
-        <li>Multi-lined labels</li>
-        <li>State relations (diplomacy)</li>
-        <li>Custom layers (zones)</li>
-        <li>Places of interest (auto-added markers)</li>
-        <li>New color picker and hatching fill</li>
-        <li>Legend boxes</li>
-        <li>World Configurator presets</li>
-        <li>Improved state labels placement</li>
-        <li>Relief icons sets</li>
-        <li>Fogging</li>
-        <li>Custom layer presets</li>
-        <li>Custom biomes</li>
-        <li>State, province and burg COAs</li>
-        <li>Desktop version (see <a href='https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#is-there-a-desktop-version' target='_blank'>here)</a></li>
-      </ul>
+    <ul><a href=${link} target='_blank'>Main changes:</a>
+      <li>Provinces and Provinces Editor</li>
+      <li>Religions Layer and Religions Editor</li>
+      <li>Full state names (state types)</li>
+      <li>Multi-lined labels</li>
+      <li>State relations (diplomacy)</li>
+      <li>Custom layers (zones)</li>
+      <li>Places of interest (auto-added markers)</li>
+      <li>New color picker and hatching fill</li>
+      <li>Legend boxes</li>
+      <li>World Configurator presets</li>
+      <li>Improved state labels placement</li>
+      <li>Relief icons sets</li>
+      <li>Fogging</li>
+      <li>Custom layer presets</li>
+      <li>Custom biomes</li>
+      <li>State, province and burg COAs</li>
+      <li>Desktop version (see <a href='https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#is-there-a-desktop-version' target='_blank'>here)</a></li>
+    </ul>
 
-      <p>Join our <a href='https://www.reddit.com/r/FantasyMapGenerator' target='_blank'>Reddit community</a> and 
-      <a href='https://discordapp.com/invite/X7E84HU' target='_blank'>Discord server</a> 
-      to ask questions, share maps, discuss the Generator, report bugs and propose new features.</p>
+    <p>Join our <a href='https://www.reddit.com/r/FantasyMapGenerator' target='_blank'>Reddit community</a> and 
+    <a href='https://discordapp.com/invite/X7E84HU' target='_blank'>Discord server</a> 
+    to ask questions, share maps, discuss the Generator, report bugs and propose new features.</p>
 
-      <p>Thanks for all supporters on <a href='https://www.patreon.com/azgaar' target='_blank'>Patreon</a>!</i></p>`;
+    <p>Thanks for all supporters on <a href='https://www.patreon.com/azgaar' target='_blank'>Patreon</a>!</i></p>`;
 
-    $("#alert").dialog(
-      {resizable: false, title: "Fantasy Map Generator update", width: 310,
-      buttons: {
-        OK: function() {
-          localStorage.clear();
-          localStorage.setItem("version", version);
-          $(this).dialog("close");
-        }
-      },
-      position: {my: "center", at: "center", of: "svg"}
-    });
-  }
+  $("#alert").dialog(
+    {resizable: false, title: "Fantasy Map Generator update", width: 310,
+    buttons: {OK: function() {$(this).dialog("close")}},
+    position: {my: "center", at: "center", of: "svg"},
+    close: () => localStorage.setItem("version", version)}
+  );
 }
 
 function zoomed() {
@@ -601,6 +636,7 @@ void function addDragToUpload() {
     }
     // all good - show uploading text and load the map
     $("#map-dragged > p").text("Uploading<span>.</span><span>.</span><span>.</span>");
+    closeDialogs();
     uploadFile(file, function onUploadFinish() {
       $("#map-dragged > p").text("Drop to upload");
     });
@@ -608,45 +644,65 @@ void function addDragToUpload() {
 }()
 
 function generate() {
-  const timeStart = performance.now();
-  console.time("TOTAL");
-  invokeActiveZooming();
-  generateSeed();
-  console.group("Map " + seed);
-  applyMapSize();
-  randomizeOptions();
-  placePoints();
-  calculateVoronoi(grid, grid.points);
-  drawScaleBar();
-  HeightmapGenerator.generate();
-  markFeatures();
-  openNearSeaLakes();
-  OceanLayers();
-  calculateMapCoordinates();
-  calculateTemperatures();
-  generatePrecipitation();
-  reGraph();
-  drawCoastline();
+  try {
+    const timeStart = performance.now();
+    invokeActiveZooming();
+    generateSeed();
+    console.group("Generated Map " + seed);
+    applyMapSize();
+    randomizeOptions();
+    placePoints();
+    calculateVoronoi(grid, grid.points);
+    drawScaleBar();
+    HeightmapGenerator.generate();
+    markFeatures();
+    openNearSeaLakes();
+    OceanLayers();
+    calculateMapCoordinates();
+    calculateTemperatures();
+    generatePrecipitation();
+    reGraph();
+    drawCoastline();
+  
+    elevateLakes();
+    Rivers.generate();
+    defineBiomes();
+  
+    rankCells();
+    Cultures.generate();
+    Cultures.expand();
+    BurgsAndStates.generate();
+    Religions.generate();
+  
+    drawStates();
+    drawBorders();
+    BurgsAndStates.drawStateLabels();
+    addZone();
+    addMarkers();
 
-  elevateLakes();
-  Rivers.generate();
-  defineBiomes();
+    console.warn(`TOTAL: ${rn((performance.now()-timeStart)/1000,2)}s`);
+    showStatistics();
+    console.groupEnd("Generated Map " + seed);
+  }
+  catch(error) {
+    console.error(error);
+    clearMainTip();
 
-  rankCells();
-  Cultures.generate();
-  Cultures.expand();
-  BurgsAndStates.generate();
-  Religions.generate();
+    const regex =/(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+    const errorNoURL = error.stack.replace(regex, url => '<i>' + last(url.split("/")) + '</i>');
+    const errorParsed = errorNoURL.replace(/at /ig, "<br>&nbsp;&nbsp;at ");
 
-  drawStates();
-  drawBorders();
-  BurgsAndStates.drawStateLabels();
-  addZone();
-  addMarkers();
-
-  console.warn(`TOTAL: ${rn((performance.now()-timeStart)/1000,2)}s`);
-  showStatistics();
-  console.groupEnd("Map " + seed);
+    alertMessage.innerHTML = `An error is occured on map generation. Please retry.
+      <br>If error persists, clear the stored data and try again.
+      <p id="errorBox">${errorParsed}</p>`;
+    $("#alert").dialog({
+      resizable: false, title: "Generation error", maxWidth:500, buttons: {
+        "Clear data": function() {localStorage.clear(); localStorage.setItem("version", version);},
+        Regenerate: function() {regenerateMap(); $(this).dialog("close");}
+      }, position: {my: "center", at: "center", of: "svg"}
+    });
+  }
+  
 }
 
 // generate map seed (string!) or get it from URL searchParams
@@ -1004,13 +1060,16 @@ function drawCoastline() {
     if (start === -1) continue; // cannot start here
     const connectedVertices = connectVertices(start, type);
     used[f] = 1;
-    const points = connectedVertices.map(v => vertices.p[v]);
+    let points = connectedVertices.map(v => vertices.p[v]);
+    const area = d3.polygonArea(points); // area with lakes/islands
+    if (area > 0 && features[f].type === "lake") points = points.reverse();
+    features[f].area = Math.abs(area);
 
     const path = round(lineGen(points));
     const id = features[f].group + features[f].i;
     if (features[f].type === "lake") {
       landMask.append("path").attr("d", path).attr("fill", "black");
-      //waterMask.append("path").attr("d", path).attr("fill", "white"); // uncomment to show over lakes
+      // waterMask.append("path").attr("d", path).attr("fill", "white"); // uncomment to show over lakes
       lakes.select("#"+features[f].group).append("path").attr("d", path).attr("id", id); // draw the lake
     } else {
       landMask.append("path").attr("d", path).attr("fill", "white");
@@ -1046,9 +1105,9 @@ function drawCoastline() {
       const c0 = c[0] >= n || cells.t[c[0]] === t;
       const c1 = c[1] >= n || cells.t[c[1]] === t;
       const c2 = c[2] >= n || cells.t[c[2]] === t;
-      if (v[0] !== prev && c0 !== c1) current = v[0];
-      else if (v[1] !== prev && c1 !== c2) current = v[1];
-      else if (v[2] !== prev && c0 !== c2) current = v[2];
+      if (v[0] !== prev && c0 !== c1) current = v[0]; else
+      if (v[1] !== prev && c1 !== c2) current = v[1]; else
+      if (v[2] !== prev && c0 !== c2) current = v[2];
       if (current === chain[chain.length-1]) {console.error("Next vertex is not found"); break;}
     }
     chain.push(chain[0]); // push first vertex as the last one
@@ -1429,6 +1488,7 @@ function showStatistics() {
 }
 
 const regenerateMap = debounce(function() {
+  console.warn("Generate new random map");
   closeDialogs("#worldConfigurator");
   customization = 0;
   undraw();

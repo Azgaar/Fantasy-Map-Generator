@@ -882,7 +882,7 @@
 
     <div id="collapsible">
       <button id="optionsTrigger" data-tip="Click to show options pane. Shortcut: Tab" class="options glow" onclick="showOptions(event)" style="padding:7px 5px">►</button>
-      <button id="regenerate" data-tip="Click to generate a new map. Shortcut: F7" onclick="regeneratePrompt()" class="options" style="display:none; padding:7px 8px">New Map!</button>
+      <button id="regenerate" data-tip="Click to generate a new map. Shortcut: F2" onclick="regeneratePrompt()" class="options" style="display:none; padding:7px 8px">New Map!</button>
     </div>
 
     <div id="options" style="display:none">
@@ -909,7 +909,8 @@
           <option value="landmass">Pure landmass</option>
           <option hidden value="custom">Custom (not saved)</option>
         </select>
-        <button id="savePreset" data-tip="Click to save displayed layers as a new preset" class="icon-plus styleButton" onclick="savePreset()"></button>
+        <button id="savePresetButton" data-tip="Click to save displayed layers as a new preset" class="icon-plus styleButton" style="display:none" onclick="savePreset()"></button>
+        <button id="removePresetButton" data-tip="Click to remove current custom preset" class="icon-minus styleButton" style="display:none" onclick="removePreset()"></button>
 
         <p data-tip="Click to toggle a layer, drag to raise or lower a layer">Displayed layers:</p>
         <ul data-tip="Click to toggle a layer, drag to raise or lower a layer" id="mapLayers">
@@ -1470,7 +1471,7 @@
       </div>
 
       <div id="optionsContent" class="tabcontent">
-        <p data-tip="Map generation settings. Generate a new map to apply the settings">Map Generation (new map to apply):</p>
+        <p data-tip="Map generation settings. Generate a new map to apply the settings">Map settings (new map to apply):</p>
         <table>
 
           <tr data-tip="Map height and width in pixels. Please consider reducing map size in case of performance issues">
@@ -1563,7 +1564,7 @@
             <td>
               <i data-locked=0 id="lock_provinces" class="icon-lock-open"></i>
             </td>
-            <td>Provinces number</td>
+            <td>Provinces ratio</td>
             <td>
               <input id="provincesInput" data-stored="provinces" type="range" min=0 max=100 value=30>
             </td>
@@ -1585,7 +1586,7 @@
             </td>
           </tr>
 
-          <tr data-tip="Define state and cultures growth rate. Defines how many lands will stay neutral">
+          <tr data-tip="Set state and cultures growth rate. Defines how many lands will stay neutral">
             <td>
               <i data-locked=0 id="lock_neutral" class="icon-lock-open"></i>
             </td>
@@ -1598,7 +1599,7 @@
             </td>
           </tr>
 
-          <tr data-tip="Define how many towns (non-capital burgs) should be generated">
+          <tr data-tip="Define a number of towns to be placed (if suitable area is enougth)">
             <td>
               <i data-locked=0 id="lock_manors" class="icon-lock-open"></i>
             </td>
@@ -1611,7 +1612,7 @@
             </td>
           </tr>
 
-          <tr data-tip="Define how many organized religions and cults should be generated">
+          <tr data-tip="Define how many organized (!) religions and cults should be generated">
             <td>
               <i data-locked=0 id="lock_religions" class="icon-lock-open"></i>
             </td>
@@ -1625,16 +1626,28 @@
           </tr>
         </table>
 
-        <p data-tip="Interface settings that don't affect generation. They are applied immediately on change">User Interface:</p>
+        <p data-tip="Tool settings that don't affect maps. Changes are getting applied immediately">Generator settings:</p>
         <table>
-          <tr data-tip="Set user interface size">
+          <tr data-tip="Set what Generator should do on opening">
+            <td></td>
+            <td>Onload behavior</td>
+            <td>
+              <select id="onloadMap" data-stored="onloadMap">
+                <option value="random" selected>Generate random map</option>
+                <option value="saved">Open last saved map</option>
+              </select>
+            </td>
+            <td></td>
+          </tr>
+
+          <tr data-tip="Set user interface size. Please note browser zoom also affects interface size (Ctrl + or Ctrl - to change)">
             <td></td>
             <td>Interface size</td>
             <td>
-              <input id="uiSizeInput" data-stored="uiSize" type="range" min=.6 max=1.4 step=.1 value=1>
+              <input id="uiSizeInput" data-stored="uiSize" type="range" min=.8 max=2 step=.1 value=1>
             </td>
             <td>
-              <input id="uiSizeOutput" data-stored="uiSize" type="number" min=.6 max=1.4 step=.1 value=1>
+              <input id="uiSizeOutput" data-stored="uiSize" type="number" min=.6 max=2 step=.1 value=1>
             </td>
           </tr>
 
@@ -1819,18 +1832,20 @@
       </div>
 
       <div id="sticked">
-        <button id="newMapButton" data-tip="Generate a new map based on options. Shortcut: F7">New Map</button>
+        <button id="newMapButton" data-tip="Generate a new map based on options. Shortcut: F2">New Map</button>
         <button id="saveButton" data-tip="Select file format to save map">Save</button>
         <div id="saveDropdown">
           <div id="saveMap" data-tip="Download the map as fully functional .map file to your machine. Shortcut: Ctrl + M">.map</div>
           <div id="saveSVG" data-tip="Download the map as vector image (open in browser or Inkscape). Shortcut: Ctrl + S">.svg</div>
-          <div id="savePNG" data-tip="Download visible part of the map as .png image. Texture will not be shown. Shortcut: Ctrl + P">.png</div>
+          <div id="savePNG" data-tip="Download visible part of the map as .png image. Shortcut: Ctrl + P">.png</div>
+          <div id="quickSave" data-tip="Save map to browser storage. Shortcut: F6">storage</div>
           <!-- <div id="saveDropbox" data-tip="Save fully functional .map file to Dropbox. Shortcut: Ctrl + B">Dropbox</div> -->
         </div>
         <button id="loadButton" data-tip="Load fully functional map in a .map format">Load</button>
         <div id="loadDropdown">
-          <div id="loadMap" data-tip="Load .map file from local disk. Shortcut: Ctrl + L">from disk</div>
+          <div id="loadMap" data-tip="Load .map file from local disk. Shortcut: Ctrl + L">from local disk</div>
           <div id="loadURL" data-tip="Load .map file from URL (server should allow CORS). Shortcut: Ctrl + U">from URL</div>
+          <div id="quickLoad" data-tip="Load map from browser storage (if saved before). Shortcut: F9">from storage</div>
           <!-- <div id="loadDropbox" data-tip="Load .map file from Dropbox. Shortcut: Ctrl + D">from Dropbox</div> -->
         </div>
         <button id="zoomReset" data-tip="Reset map zoom. Shortcut: 0">Reset Zoom</button>
@@ -2006,7 +2021,7 @@
         <span id="riverReset" data-tip="Reset transformation to default" class="icon-cancel pointer"></span>
       </div>
 
-      <button id="riverLength" data-tip="Route length in selected units">0</button>
+      <button id="riverLength" data-tip="River length in selected units">0</button>
       <button id="riverCopy" data-tip="Copy river" class="icon-clone"></button>
       <button id="riverNew" data-tip="Create new river clicking on map" class="icon-map-pin"></button>
       <button id="riverLegend" data-tip="Edit free text notes (legend) for the river" class="icon-edit"></button>
@@ -2022,7 +2037,7 @@
         <span id="routeGroupAdd" data-tip="Create new group for this route" class="icon-plus pointer"></span>
         <span id="routeGroupRemove" data-tip="Remove all routes of this group" class="icon-trash-empty pointer"></span>
       </div>
-      <button id="routeLength" data-tip="River length in selected units">0</button>
+      <button id="routeLength" data-tip="Route length in selected units">0</button>
       <button id="routeSplit" data-tip="Click on a control point to split the route" class="icon-unlink"></button>
       <button id="routeLegend" data-tip="Edit free text notes (legend) for the route" class="icon-edit"></button>
       <button id="routeNew" data-tip="Create new route clicking on map" class="icon-map-pin"></button>
@@ -2952,8 +2967,8 @@
   <script src="libs/polylabel.min.js"></script>  
   <script src="libs/jquery-ui.min.js"></script>
   <script src="libs/seedrandom.min.js"></script>
-
   <script src="modules/ui/layers.js"></script>
+
   <script defer src="modules/ui/general.js"></script>
   <script defer src="modules/ui/options.js"></script>
   <script defer src="modules/ui/measurers.js"></script>
