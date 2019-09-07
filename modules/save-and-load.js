@@ -3,9 +3,9 @@
 
 // download map data as GeoJSON
 function saveGeoJSON() {
-    saveGeoJSON_Cells();
-    //saveGeoJSON_Roads();
-    saveGeoJSON_Rivers();
+    //saveGeoJSON_Cells();
+    saveGeoJSON_Roads();
+    //saveGeoJSON_Rivers();
 }
 
 function saveGeoJSON_Roads() {
@@ -13,6 +13,8 @@ function saveGeoJSON_Roads() {
     roads = routes.select("#roads");
     trails = routes.select("#trails");
     searoutes = routes.select("#searoutes");
+
+    console.log(rivers._groups[0][0].childNodes);
 
     console.log(typeof(roads));
     console.log(roads);
@@ -22,18 +24,32 @@ function saveGeoJSON_Roads() {
     console.log(routes._groups[0][0]);
     console.log(routes._groups[0][0].childNodes);
 
+
+    let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
+    let id = 0;
+
+    // roads
+    routes._groups[0][0].childNodes.forEach(n => {
+        id++;
+        n.forEach(x => {
+            console.log(x);
+        });
+        data += JSON.stringify(getRiverPoints(n));
+
+    });
+    console.log(data);
 }
 
 function saveGeoJSON_Rivers() {
     let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
-    let id = 0;
 
     rivers._groups[0][0].childNodes.forEach(n => {
-        id++;
         data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"LineString\", \"coordinates\": ";
         data += JSON.stringify(getRiverPoints(n));
         data += " },\n   \"properties\": {\n";
-        data += "      \"id\": \""+id+"\"\n";
+        data += "      \"id\": \""+n.id+"\",\n";
+        data += "      \"width\": \""+n.dataset.width+"\",\n";
+        data += "      \"increment\": \""+n.dataset.increment+"\"\n";
         data +="   }\n},\n";
     });
     data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
@@ -52,7 +68,7 @@ function saveGeoJSON_Rivers() {
 function getRiverPoints(node) {
     let points = [];
     const l = node.getTotalLength() / 2; // half-length
-    const increment = 0.5; // defines density of points
+    const increment = 0.25; // defines density of points
     for (let i=l, c=i; i >= 0; i -= increment, c += increment) {
         const p1 = node.getPointAtLength(i);
         const p2 = node.getPointAtLength(c);
