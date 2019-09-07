@@ -3,9 +3,9 @@
 
 // download map data as GeoJSON
 function saveGeoJSON() {
-    //saveGeoJSON_Cells();
+    saveGeoJSON_Cells();
     saveGeoJSON_Roads();
-    //saveGeoJSON_Rivers();
+    saveGeoJSON_Rivers();
 }
 
 function saveGeoJSON_Roads() {
@@ -14,30 +14,30 @@ function saveGeoJSON_Roads() {
     trails = routes.select("#trails");
     searoutes = routes.select("#searoutes");
 
-    console.log(rivers._groups[0][0].childNodes);
-
-    console.log(typeof(roads));
-    console.log(roads);
-
-    console.log(routes._groups);
-    console.log(routes._groups[0]);
-    console.log(routes._groups[0][0]);
-    console.log(routes._groups[0][0].childNodes);
-
-
     let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
-    let id = 0;
 
-    // roads
     routes._groups[0][0].childNodes.forEach(n => {
-        id++;
-        n.forEach(x => {
-            console.log(x);
+        //console.log(n.id);
+        n.childNodes.forEach(r => {
+            data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"LineString\", \"coordinates\": ";
+            data += JSON.stringify(getRoadPoints(r));
+            data += " },\n   \"properties\": {\n";
+            data += "      \"id\": \""+r.id+"\",\n";
+            data += "      \"type\": \""+n.id+"\"\n";
+            data +="   }\n},\n";
         });
-        data += JSON.stringify(getRiverPoints(n));
-
     });
-    console.log(data);
+    data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
+    data += "]}";
+
+    const dataBlob = new Blob([data], {type: "application/json"});
+    const url = window.URL.createObjectURL(dataBlob);
+    const link = document.createElement("a");
+    document.body.appendChild(link);
+    link.download = "fmg_routes_" + Date.now() + ".geojson";
+    link.href = url;
+    link.click();
+    window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
 }
 
 function saveGeoJSON_Rivers() {
@@ -65,7 +65,22 @@ function saveGeoJSON_Rivers() {
     window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
 }
 
-function getRiverPoints(node) {
+function getRoadPoints(node) {
+    let points = [];
+    const l = node.getTotalLength();
+    const increment = l / Math.ceil(l / 2);
+    for (let i=0; i <= l; i += increment) {
+        const p = node.getPointAtLength(i);
+
+        let x = mapCoordinates.lonW + (p.x / graphWidth) * mapCoordinates.lonT;
+        let y = mapCoordinates.latN - (p.y / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
+
+        points.push([x,y]);
+    }
+    return points;
+}
+
+function getPathPoints(node, increment) {
     let points = [];
     const l = node.getTotalLength() / 2; // half-length
     const increment = 0.25; // defines density of points
@@ -80,7 +95,6 @@ function getRiverPoints(node) {
     }
     return points;
 }
-
 
 
 function saveGeoJSON_Cells() {

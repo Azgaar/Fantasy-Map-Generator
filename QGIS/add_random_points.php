@@ -76,6 +76,6 @@ for ($i=0; $i<$iterations; $i++) {
     }
 }
 
-echo json_encode($cells);
+echo json_encode($cells, JSON_PRETTY_PRINT);
 
 ?>
