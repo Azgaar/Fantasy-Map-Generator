@@ -668,6 +668,9 @@ function parseLoadedData(data) {
           if (!s.diplomacy) continue;
           s.diplomacy = s.diplomacy.map(r => r === "Sympathy" ? "Friendly" : r);
         }
+
+        // labels should be toggled via style attribute, so remove display attribute
+        labels.attr("display", null);
       }
     }()
 

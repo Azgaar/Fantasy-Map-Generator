@@ -1011,11 +1011,11 @@ function toggleMarkers() {
 function toggleLabels() {
   if (!layerIsOn("toggleLabels")) {
     turnButtonOn("toggleLabels");
-    labels.attr("display", null)
+    labels.style("display", null)
     invokeActiveZooming();
   } else {
     turnButtonOff("toggleLabels");
-    labels.attr("display", "none");
+    labels.style("display", "none");
   }
 }
 
