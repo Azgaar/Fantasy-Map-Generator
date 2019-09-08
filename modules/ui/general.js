@@ -231,11 +231,12 @@ document.addEventListener("keydown", function(event) {
   const active = document.activeElement.tagName;
   if (active === "INPUT" || active === "SELECT" || active === "TEXTAREA") return; // don't trigger if user inputs a text
   if (active === "DIV" && document.activeElement.contentEditable === "true") return; // don't trigger if user inputs a text
-  const key = event.keyCode, ctrl = event.ctrlKey, shift = event.shiftKey;
+  const key = event.keyCode, ctrl = event.ctrlKey, shift = event.shiftKey, meta = event.metaKey;
   if (key === 27) {closeDialogs(); hideOptions();} // Escape to close all dialogs
   else if (key === 9) {toggleOptions(event); event.preventDefault();} // Tab to toggle options
 
   else if (key === 113) regeneratePrompt(); // "F2" for new map
+  else if (key === 46) removeElementOnKey(); // "Delete" to remove the selected element
   else if (key === 117) quickSave(); // "F6" for quick save
   else if (key === 120) quickLoad(); // "F9" for quick load
 
@@ -246,14 +247,34 @@ document.addEventListener("keydown", function(event) {
   else if (ctrl && key === 85) mapToLoad.click(); // Ctrl + "U" to load MAP from URL
   else if (ctrl && key === 76) mapToLoad.click(); // Ctrl + "L" to load MAP from local file
   else if (ctrl && key === 81) toggleSaveReminder(); // Ctrl + "Q" to toggle save reminder
-  else if (key === 46) removeElementOnKey(); // "Delete" to remove the selected element
+  else if (undo.offsetParent && ctrl && key === 90) undo.click(); // Ctrl + "Z" to undo
+  else if (redo.offsetParent && ctrl && key === 89) redo.click(); // Ctrl + "Y" to redo
 
-  else if (shift && key === 192) console.log(pack.cells); // Shift + "`" to log cells data
-  else if (shift && key === 66) console.table(pack.burgs); // Shift + "B" to log burgs data
-  else if (shift && key === 83) console.table(pack.states); // Shift + "S" to log states data
-  else if (shift && key === 67) console.table(pack.cultures); // Shift + "C" to log cultures data
-  else if (shift && key === 82) console.table(pack.religions); // Shift + "R" to log religions data
-  else if (shift && key === 70) console.table(pack.features); // Shift + "F" to log features data
+  else if (shift && key === 72) editHeightmap(); // Shift + "H" to edit Heightmap
+  else if (shift && key === 66) editBiomes(); // Shift + "B" to edit Biomes
+  else if (shift && key === 83) editStates(); // Shift + "S" to edit States
+  else if (shift && key === 80) editProvinces(); // Shift + "P" to edit Provinces
+  else if (shift && key === 68) editDiplomacy(); // Shift + "D" to edit Diplomacy
+  else if (shift && key === 67) editCultures(); // Shift + "C" to edit Cultures
+  else if (shift && key === 78) editNamesbase(); // Shift + "N" to edit Namesbase
+  else if (shift && key === 90) editZones(); // Shift + "Z" to edit Zones
+  else if (shift && key === 82) editReligions(); // Shift + "R" to edit Religions
+  else if (shift && key === 84) editBurgs(); // Shift + "T" to edit Burgs
+  else if (shift && key === 85) editUnits(); // Shift + "U" to edit Units
+  else if (shift && key === 79) editNotes(); // Shift + "O" to edit Notes
+
+  else if (shift && key === 71) toggleAddBurg(); // Shift + "G" to click to add Burg
+  else if (shift && key === 65) toggleAddLabel(); // Shift + "A" to click to add Label
+  else if (shift && key === 73) toggleAddRiver(); // Shift + "I" to click to add River
+  else if (shift && key === 69) toggleAddRoute(); // Shift + "E" to click to add Route
+  else if (shift && key === 75) toggleAddMarker(); // Shift + "K" to click to add Marker
+
+  else if (meta && key === 192) console.log(pack.cells); // Metakey + "`" to log cells data
+  else if (meta && key === 66) console.table(pack.burgs); // Metakey + "B" to log burgs data
+  else if (meta && key === 83) console.table(pack.states); // Metakey + "S" to log states data
+  else if (meta && key === 67) console.table(pack.cultures); // Metakey + "C" to log cultures data
+  else if (meta && key === 82) console.table(pack.religions); // Metakey + "R" to log religions data
+  else if (meta && key === 70) console.table(pack.features); // Metakey + "F" to log features data
 
   else if (key === 88) toggleTexture(); // "X" to toggle Texture layer
   else if (key === 72) toggleHeight(); // "H" to toggle Heightmap layer
@@ -295,10 +316,6 @@ document.addEventListener("keydown", function(event) {
   else if (key === 55 || key === 103) zoom.scaleTo(svg, 7); // 7 to zoom to 7
   else if (key === 56 || key === 104) zoom.scaleTo(svg, 8); // 8 to zoom to 8
   else if (key === 57 || key === 105) zoom.scaleTo(svg, 9); // 9 to zoom to 9
-
-  else if (ctrl && key === 90) undo.click(); // Ctrl + "Z" to undo
-  else if (ctrl && key === 89) redo.click(); // Ctrl + "Y" to redo
-
   else if (ctrl) pressControl(); // Control to toggle mode
 });
 
