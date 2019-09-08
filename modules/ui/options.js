@@ -4,12 +4,6 @@
 $("#optionsContainer").draggable({handle: ".drag-trigger", snap: "svg", snapMode: "both"});
 $("#mapLayers").disableSelection();
 
-// show control elements and remove loading screen on map load
-d3.select("#loading").transition().duration(5000).style("opacity", 0).remove();
-d3.select("#initial").transition().duration(5000).attr("opacity", 0).remove();
-d3.select("#optionsContainer").transition().duration(5000).style("opacity", 1);
-d3.select("#tooltip").transition().duration(5000).style("opacity", 1);
-
 // remove glow if tip is aknowledged
 if (localStorage.getItem("disable_click_arrow_tooltip")) {
   clearMainTip();
@@ -677,6 +671,7 @@ optionsContent.addEventListener("input", function(event) {
   else if (id === "provincesInput") provincesOutput.value = value;
   else if (id === "provincesOutput") provincesOutput.value = value;
   else if (id === "provincesOutput") powerOutput.value = value;
+  else if (id === "powerInput") powerOutput.value = value;
   else if (id === "powerOutput") powerInput.value = value;
   else if (id === "neutralInput") neutralOutput.value = value;
   else if (id === "neutralOutput") neutralInput.value = value;
@@ -722,7 +717,7 @@ function changeMapSize() {
   oceanPattern.select("rect").attr("x", 0).attr("y", 0).attr("width", width).attr("height", height);
   oceanLayers.select("rect").attr("x", 0).attr("y", 0).attr("width", width).attr("height", height);
   fitScaleBar();
-  fitLegendBox();
+  if (window.fitLegendBox) fitLegendBox();
 }
 
 // just apply map size that was already set, apply graph size!
@@ -991,26 +986,32 @@ document.getElementById("sticked").addEventListener("click", function(event) {
   const id = event.target.id;
   if (id === "newMapButton") regeneratePrompt();
   else if (id === "saveButton") toggleSavePane();
-  else if (id === "loadMap") mapToLoad.click();
+  else if (id === "loadButton") toggleLoadPane();
   else if (id === "zoomReset") resetZoom(1000);
+  else if (id === "quickSave") quickSave();
   else if (id === "saveMap") saveMap();
   else if (id === "saveSVG") saveAsImage("svg");
   else if (id === "savePNG") saveAsImage("png");
   else if (id === "saveGeo") saveGeoJSON();
-  if (id === "saveMap" || id === "saveSVG" || id === "savePNG" || id === "saveGeo") toggleSavePane();
+  else if (id === "saveDropbox") saveDropbox();
+  if (id === "quickSave" || id === "saveMap" || id === "saveSVG" || id === "savePNG" || id === "saveGeo" || id === "saveDropbox") toggleSavePane();
+  if (id === "loadMap") mapToLoad.click();
+  else if (id === "quickLoad") quickLoad();
+  else if (id === "loadURL") loadURL();
+  else if (id === "loadDropbox") loadDropbox();
+  if (id === "quickLoad" || id === "loadURL" || id === "loadMap" || id === "loadDropbox") toggleLoadPane();
 });
 
 function regeneratePrompt() {
-  if (customization) {tip("Please exit the customization mode first", false, "warning"); return;}
   const workingTime = (Date.now() - last(mapHistory).created) / 60000; // minutes
-  if (workingTime < 15) {regenerateMap(); return;}
+  if (workingTime < 10) {regenerateMap(); return;}
 
   alertMessage.innerHTML = `Are you sure you want to generate a new map?<br>
   All unsaved changes made to the current map will be lost`;
   $("#alert").dialog({resizable: false, title: "Generate new map",
     buttons: {
       Cancel: function() {$(this).dialog("close");},
-      Generate: regenerateMap
+      Generate: function() {closeDialogs(); regenerateMap();}
     }
   });
 }
@@ -1034,13 +1035,73 @@ function toggleSavePane() {
       }
     });
   }
-
 }
+
+// async function saveDropbox() {
+//   const filename = "fantasy_map_" + Date.now() + ".map";
+//   const options = {
+//     files: [{'url': '...', 'filename': 'fantasy_map.map'}],
+//     success: function () {alert("Success! Files saved to your Dropbox.")},
+//     progress: function (progress) {console.log(progress)},
+//     cancel: function (cancel) {console.log(cancel)},
+//     error: function (error) {console.log(error)}
+//   };
+
+//   // working file: "https://dl.dropbox.com/s/llg93mwyonyzdmu/test.map?dl=1";
+//   const dataBlob = await getMapData();
+//   const URL = window.URL.createObjectURL(dataBlob);
+//   Dropbox.save(URL, filename, options);
+// }
+
+function toggleLoadPane() {
+  if (loadDropdown.style.display === "block") {loadDropdown.style.display = "none"; return;}
+  loadDropdown.style.display = "block";
+}
+
+function loadURL() {
+  const pattern = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
+  const inner = `Provide URL to a .map file:
+    <input id="mapURL" type="url" style="width: 254px" placeholder="https://e-cloud.com/test.map">
+    <br><i>Please note server should allow CORS for file to be loaded. If CORS is not allowed, save file to Dropbox and provide a direct link</i>`;
+  alertMessage.innerHTML = inner;
+  $("#alert").dialog({resizable: false, title: "Load map from URL", width: 280,
+    buttons: {
+      Load: function() {
+        const value = mapURL.value;
+        if (!pattern.test(value)) {tip("Please provide a valid URL", false, "error"); return;}
+        closeDialogs();
+        loadMapFromURL(value);
+        $(this).dialog("close");
+      },
+      Cancel: function() {$(this).dialog("close");}
+    }
+  });
+}
+
+// function loadDropbox() {
+//     const options = {
+//       success: function(file) {send_files(file)},
+//       cancel: function() {},
+//       linkType: "preview",
+//       multiselect: false,
+//       extensions:['.map'],
+//   };
+//   Dropbox.choose(options);
+
+//   function send_files(file) {
+//     const subject = "Shared File Links";
+//     let body = "";
+//     for (let i=0; i < file.length; i++) {
+//       body += file[i].name + "\n" + file[i].link + "\n\n";
+//     }
+//     location.href = 'mailto:coworker@example.com?Subject=' + escape(subject) + '&body='+ escape(body),'200','200';
+//   }
+// }
 
 // load map
 document.getElementById("mapToLoad").addEventListener("change", function() {
-  closeDialogs();
   const fileToLoad = this.files[0];
   this.value = "";
+  closeDialogs();
   uploadFile(fileToLoad);
 });

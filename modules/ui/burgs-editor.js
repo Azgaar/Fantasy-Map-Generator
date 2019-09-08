@@ -108,7 +108,7 @@ function editBurgs() {
 
   function getCultureOptions(culture) {
     let options = "";
-    pack.cultures.slice(1).forEach(c => options += `<option ${c.i === culture ? "selected" : ""} value="${c.i}">${c.name}</option>`);
+    pack.cultures.forEach(c => options += `<option ${c.i === culture ? "selected" : ""} value="${c.i}">${c.name}</option>`);
     return options;
   }
 
@@ -148,7 +148,7 @@ function editBurgs() {
   function changeBurgPopulation() {
     const burg = +this.parentNode.dataset.id;
     if (this.value == "" || isNaN(+this.value)) {
-      tip("Please provide an integer number", false, "error");
+      tip("Please provide an integer number (like 10000, not 10K)", false, "error");
       this.value = si(pack.burgs[burg].population * populationRate.value * urbanization.value);
       return;
     }
@@ -186,7 +186,7 @@ function editBurgs() {
     if (!pack.burgs[burg].port) {
       const haven = pack.cells.haven[pack.burgs[burg].cell];
       const port = haven ? pack.cells.f[haven] : -1;
-      if (!haven) tip("Port haven is not found, system won't be able to make a searoute", false, "warning");
+      if (!haven) tip("Port haven is not found, system won't be able to make a searoute", false, "warn");
       pack.burgs[burg].port = port;
 
       const g = pack.burgs[burg].capital ? "cities" : "towns";
