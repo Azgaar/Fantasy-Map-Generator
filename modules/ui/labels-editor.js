@@ -11,7 +11,7 @@ function editLabel() {
   viewbox.on("touchmove mousemove", showEditorTips);
 
   $("#labelEditor").dialog({
-    title: "Edit Label", resizable: false,
+    title: "Edit Label", resizable: false, width: fitContent(),
     position: {my: "center top+10", at: "bottom", of: text, collision: "fit"},
     close: closeLabelEditor
   });

@@ -1011,11 +1011,11 @@ function toggleMarkers() {
 function toggleLabels() {
   if (!layerIsOn("toggleLabels")) {
     turnButtonOn("toggleLabels");
-    $('#labels').fadeIn();
+    labels.attr("display", null)
     invokeActiveZooming();
   } else {
     turnButtonOff("toggleLabels");
-    $('#labels').fadeOut();
+    labels.attr("display", "none");
   }
 }
 

@@ -1931,7 +1931,7 @@ svg.button {
 
 #errorBox {
   font-size: .9em;
-  font-family: monospace;
+  font-family: Consolas, monospace;
   color: #920303;
   background-color: #dabdbd91;
   padding: 2px;

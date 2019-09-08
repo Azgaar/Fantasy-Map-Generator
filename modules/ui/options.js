@@ -1027,12 +1027,10 @@ function toggleSavePane() {
     <br>Please check browser settings and turn off adBlocker if it is enabled`;
 
     $("#alert").dialog({title: "File saver", resizable: false, position: {my: "center", at: "center", of: "svg"},
-      buttons: {
-        OK: function() {
-          localStorage.setItem("dns_allow_popup_message", true);
-          $(this).dialog("close");
-        }
-      }
+      buttons: {OK: function() {
+        localStorage.setItem("dns_allow_popup_message", true);
+        $(this).dialog("close");
+      }}
     });
   }
 }

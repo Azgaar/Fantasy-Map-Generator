@@ -387,6 +387,146 @@ async function saveMap() {
   window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
 }
 
+// download map data as GeoJSON
+function saveGeoJSON() {
+  alertMessage.innerHTML = `You can export map data in GeoJSON format used in GIS tools such as QGIS.
+  Check out <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export" target="_blank">wiki-page</a> for guidance`;
+
+  $("#alert").dialog({title: "GIS data export", resizable: false, width: 320, position: {my: "center", at: "center", of: "svg"},
+    buttons: {
+      Cells: saveGeoJSON_Cells,
+      Routes: saveGeoJSON_Roads,
+      Rivers: saveGeoJSON_Rivers,
+      Close: function() {$(this).dialog("close");}
+    }
+  });
+}
+
+function saveGeoJSON_Roads() {
+  let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
+
+  routes._groups[0][0].childNodes.forEach(n => {
+    n.childNodes.forEach(r => {
+      data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"LineString\", \"coordinates\": ";
+      data += JSON.stringify(getRoadPoints(r));
+      data += " },\n   \"properties\": {\n";
+      data += "      \"id\": \""+r.id+"\",\n";
+      data += "      \"type\": \""+n.id+"\"\n";
+      data +="   }\n},\n";
+    });
+  });
+  data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
+  data += "]}";
+
+  const dataBlob = new Blob([data], {type: "application/json"});
+  const url = window.URL.createObjectURL(dataBlob);
+  const link = document.createElement("a");
+  document.body.appendChild(link);
+  link.download = "fmg_routes_" + Date.now() + ".geojson";
+  link.href = url;
+  link.click();
+  window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
+}
+
+function saveGeoJSON_Rivers() {
+  let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
+
+  rivers._groups[0][0].childNodes.forEach(n => {
+    data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"LineString\", \"coordinates\": ";
+    data += JSON.stringify(getRiverPoints(n));
+    data += " },\n   \"properties\": {\n";
+    data += "      \"id\": \""+n.id+"\",\n";
+    data += "      \"width\": \""+n.dataset.width+"\",\n";
+    data += "      \"increment\": \""+n.dataset.increment+"\"\n";
+    data +="   }\n},\n";
+  });
+  data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
+  data += "]}";
+
+  const dataBlob = new Blob([data], {type: "application/json"});
+  const url = window.URL.createObjectURL(dataBlob);
+  const link = document.createElement("a");
+  document.body.appendChild(link);
+  link.download = "fmg_rivers_" + Date.now() + ".geojson";
+  link.href = url;
+  link.click();
+  window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
+}
+
+function getRoadPoints(node) {
+  let points = [];
+  const l = node.getTotalLength();
+  const increment = l / Math.ceil(l / 2);
+  for (let i=0; i <= l; i += increment) {
+    const p = node.getPointAtLength(i);
+
+    let x = mapCoordinates.lonW + (p.x / graphWidth) * mapCoordinates.lonT;
+    let y = mapCoordinates.latN - (p.y / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
+
+    points.push([x,y]);
+  }
+  return points;
+}
+
+function getRiverPoints(node) {
+  let points = [];
+  const l = node.getTotalLength() / 2; // half-length
+  const increment = 0.25; // defines density of points
+  for (let i=l, c=i; i >= 0; i -= increment, c += increment) {
+    const p1 = node.getPointAtLength(i);
+    const p2 = node.getPointAtLength(c);
+
+    let x = mapCoordinates.lonW + (((p1.x+p2.x)/2) / graphWidth) * mapCoordinates.lonT;
+    let y = mapCoordinates.latN - (((p1.y+p2.y)/2) / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
+    points.push([x,y]);
+  }
+  return points;
+}
+
+
+function saveGeoJSON_Cells() {
+  let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
+  const cells = pack.cells, v = pack.vertices;
+
+  cells.i.forEach(i => {
+    data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"Polygon\", \"coordinates\": [[";
+    cells.v[i].forEach(n => {
+      let x = mapCoordinates.lonW + (v.p[n][0] / graphWidth) * mapCoordinates.lonT;
+      let y = mapCoordinates.latN - (v.p[n][1] / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
+      data += "["+x+","+y+"],";
+    });
+    // close the ring
+    let x = mapCoordinates.lonW + (v.p[cells.v[i][0]][0] / graphWidth) * mapCoordinates.lonT;
+    let y = mapCoordinates.latN - (v.p[cells.v[i][0]][1] / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
+    data += "["+x+","+y+"]";
+    data += "]] },\n   \"properties\": {\n";
+
+    let height = parseInt(getFriendlyHeight(cells.h[i]));
+
+    data += "      \"id\": \""+i+"\",\n";
+    data += "      \"height\": \""+height+"\",\n";
+    data += "      \"biome\": \""+cells.biome[i]+"\",\n";
+    data += "      \"population\": \""+cells.pop[i]+"\",\n";
+    data += "      \"state\": \""+cells.state[i]+"\",\n";
+    data += "      \"province\": \""+cells.province[i]+"\",\n";
+    data += "      \"culture\": \""+cells.culture[i]+"\",\n";
+    data += "      \"religion\": \""+cells.religion[i]+"\"\n";
+    data +="   }\n},\n";
+  });
+
+  data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
+  data += "]}";
+
+  const dataBlob = new Blob([data], {type: "application/json"});
+  const url = window.URL.createObjectURL(dataBlob);
+  const link = document.createElement("a");
+  document.body.appendChild(link);
+  link.download = "fmg_cells_" + Date.now() + ".geojson";
+  link.href = url;
+  link.click();
+  window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
+}
+
 function uploadFile(file, callback) {
   uploadFile.timeStart = performance.now();
 
@@ -695,6 +835,7 @@ function parseLoadedData(data) {
 
         // v 1.0 initially has Sympathy status then relaced with Friendly
         for (const s of pack.states) {
+          if (!s.diplomacy) continue;
           s.diplomacy = s.diplomacy.map(r => r === "Sympathy" ? "Friendly" : r);
         }
       }
@@ -713,13 +854,9 @@ function parseLoadedData(data) {
     console.error(error);
     clearMainTip();
 
-    const regex =/(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
-    const errorNoURL = error.stack.replace(regex, url => '<i>' + last(url.split("/")) + '</i>');
-    const errorParsed = errorNoURL.replace(/  at /ig, "<br>&nbsp;&nbsp;at ");
-
     alertMessage.innerHTML = `An error is occured on map loading. Select a different file to load,
       <br>generate a new random map or cancel the loading
-      <p id="errorBox">${errorParsed}</p>`;
+      <p id="errorBox">${parseError(error)}</p>`;
     $("#alert").dialog({
       resizable: false, title: "Loading error", maxWidth:500, buttons: {
         "Select file": function() {$(this).dialog("close"); mapToLoad.click();},
