@@ -1,5 +1,5 @@
 // Fantasy Map Generator main script
-// Azgaar (maxganiev@yandex.com). Minsk, 2017-2019
+// Azgaar (azgaar.fmg@yandex.by). Minsk, 2017-2019
 // https://github.com/Azgaar/Fantasy-Map-Generator
 // MIT License
 
@@ -688,17 +688,14 @@ function generate() {
     console.error(error);
     clearMainTip();
 
-    const regex =/(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
-    const errorNoURL = error.stack.replace(regex, url => '<i>' + last(url.split("/")) + '</i>');
-    const errorParsed = errorNoURL.replace(/at /ig, "<br>&nbsp;&nbsp;at ");
-
     alertMessage.innerHTML = `An error is occured on map generation. Please retry.
-      <br>If error persists, clear the stored data and try again.
-      <p id="errorBox">${errorParsed}</p>`;
+      <br>If error is critical, clear the stored data and try again.
+      <p id="errorBox">${parseError(error)}</p>`;
     $("#alert").dialog({
-      resizable: false, title: "Generation error", maxWidth:500, buttons: {
+      resizable: false, title: "Generation error", width:320, buttons: {
         "Clear data": function() {localStorage.clear(); localStorage.setItem("version", version);},
-        Regenerate: function() {regenerateMap(); $(this).dialog("close");}
+        Regenerate: function() {regenerateMap(); $(this).dialog("close");},
+        Ignore: function() {$(this).dialog("close");}
       }, position: {my: "center", at: "center", of: "svg"}
     });
   }

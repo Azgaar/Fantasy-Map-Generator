@@ -2,7 +2,7 @@
 function editDiplomacy() {
   if (customization) return;
   if (pack.states.filter(s => s.i && !s.removed).length < 2) {
-    tip("There should be at least 2 states to edit the diplomacy", false, "Error");
+    tip("There should be at least 2 states to edit the diplomacy", false, "error");
     return;
   }
 

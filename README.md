@@ -12,7 +12,7 @@ Refer to the [project wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki
 
 [![preview](https://cdn.discordapp.com/attachments/587406457725779968/594840632296734720/preview3.png)](https://cdn.discordapp.com/attachments/515359096925454350/593891237984206848/The_Wichin_Island_-_diplomacy.png)
 
-Join our [Reddit community](https://www.reddit.com/r/FantasyMapGenerator) and [Discord server](https://discordapp.com/invite/X7E84HU) to share the created maps, discuss the Generator, suggest ideas and get a most recent updates. You may also contact me directly via [email](mailto:maxganiev@yandex.com). For bug reports please use the project [issues page](https://github.com/Azgaar/Fantasy-Map-Generator/issues) or Discord "Bugs" channel. If you are facing performance issues, please read [the tips](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Tips#performance-tips).
+Join our [Reddit community](https://www.reddit.com/r/FantasyMapGenerator) and [Discord server](https://discordapp.com/invite/X7E84HU) to share the created maps, discuss the Generator, suggest ideas and get a most recent updates. You may also contact me directly via [email](mailto:azgaar.fmg@yandex.by). For bug reports please use the project [issues page](https://github.com/Azgaar/Fantasy-Map-Generator/issues) or Discord "Bugs" channel. If you are facing performance issues, please read [the tips](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Tips#performance-tips).
 
 You can support the project [on Patreon](https://www.patreon.com/azgaar).
 

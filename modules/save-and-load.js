@@ -695,6 +695,7 @@ function parseLoadedData(data) {
 
         // v 1.0 initially has Sympathy status then relaced with Friendly
         for (const s of pack.states) {
+          if (!s.diplomacy) continue;
           s.diplomacy = s.diplomacy.map(r => r === "Sympathy" ? "Friendly" : r);
         }
       }
@@ -713,13 +714,9 @@ function parseLoadedData(data) {
     console.error(error);
     clearMainTip();
 
-    const regex =/(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
-    const errorNoURL = error.stack.replace(regex, url => '<i>' + last(url.split("/")) + '</i>');
-    const errorParsed = errorNoURL.replace(/  at /ig, "<br>&nbsp;&nbsp;at ");
-
     alertMessage.innerHTML = `An error is occured on map loading. Select a different file to load,
       <br>generate a new random map or cancel the loading
-      <p id="errorBox">${errorParsed}</p>`;
+      <p id="errorBox">${parseError(error)}</p>`;
     $("#alert").dialog({
       resizable: false, title: "Loading error", maxWidth:500, buttons: {
         "Select file": function() {$(this).dialog("close"); mapToLoad.click();},

@@ -436,6 +436,8 @@
    
     void function drawLabels() {
       const g = labels.select("#states"), t = defs.select("#textPaths");
+      const displayed = layerIsOn("toggleLabels");
+      if (!displayed) toggleLabels();
 
       if (!list) {
         g.selectAll("text").remove();
@@ -520,6 +522,7 @@
       });
 
       example.remove();
+      if (!displayed) toggleLabels();
     }()
 
     console.timeEnd("drawStateLabels");
@@ -583,6 +586,7 @@
   const generateDiplomacy = function() {
     console.time("generateDiplomacy");
     const cells = pack.cells, states = pack.states;
+    const chronicle = states[0].diplomacy = [];
     const valid = states.filter(s => s.i && !states.removed);
     if (valid.length < 2) return;
 
@@ -592,7 +596,6 @@
     const navals = {"Neutral":1, "Suspicion":2, "Rival":1, "Unknown":1}; // relations of naval powers
 
     valid.forEach(s => s.diplomacy = new Array(states.length).fill("x")); // clear all relationships
-    const chronicle = states[0].diplomacy = [];
     const areaMean = d3.mean(valid.map(s => s.area)); // avarage state area
 
     // generic relations
