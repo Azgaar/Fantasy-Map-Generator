@@ -1,15 +1,14 @@
 // Module to store general UI functions
 "use strict";
 
-// ask before closing the window
-window.onbeforeunload = () => "Are you sure you want to navigate away?";
-
 // fit full-screen map if window is resized
 $(window).resize(function(e) {
   mapWidthInput.value = window.innerWidth;
   mapHeightInput.value = window.innerHeight;
   changeMapSize();
 });
+
+window.onbeforeunload = () => "Are you sure you want to navigate away?";
 
 // Tooltips
 const tooltip = document.getElementById("tooltip");
@@ -18,16 +17,18 @@ const tooltip = document.getElementById("tooltip");
 document.getElementById("dialogs").addEventListener("mousemove", showDataTip);
 document.getElementById("optionsContainer").addEventListener("mousemove", showDataTip);
 
-function tip(tip = "Tip is undefined", main = false, error = false) {
-  const reg = "linear-gradient(0.1turn, #ffffff00, #5e5c5c66, #ffffff00)";
-  const red = "linear-gradient(0.1turn, #ffffff00, #e3141499, #ffffff00)";
+function tip(tip = "Tip is undefined", main, error, time) {
   tooltip.innerHTML = tip;
-  tooltip.style.background = error ? red : reg;
-  if (main) tooltip.dataset.main = tip;
+  tooltip.style.background = "linear-gradient(0.1turn, #ffffff00, #5e5c5c80, #ffffff00)";
+  if (error === "error") tooltip.style.background = "linear-gradient(0.1turn, #ffffff00, #e11d1dcc, #ffffff00)"; else
+  if (error === "warn") tooltip.style.background = "linear-gradient(0.1turn, #ffffff00, #be5d08cc, #ffffff00)"; else
+  if (error === "success") tooltip.style.background = "linear-gradient(0.1turn, #ffffff00, #127912cc, #ffffff00)";
+
+  if (main) tooltip.dataset.main = tip; // set main tip
+  if (time) setTimeout(tooltip.dataset.main = "", time); // clear main in some time
 }
 
 function showMainTip() {
-  tooltip.style.background = "linear-gradient(0.1turn, #aaffff00, #3a26264d, #ffffff00)";
   tooltip.innerHTML = tooltip.dataset.main;
 }
 
@@ -228,15 +229,22 @@ function applyOption(select, option) {
 // Hotkeys, see github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys
 document.addEventListener("keydown", function(event) {
   const active = document.activeElement.tagName;
-  if (active === "INPUT" || active === "SELECT" || active === "TEXTAREA") return; // don't trigger if user inputs a text 
+  if (active === "INPUT" || active === "SELECT" || active === "TEXTAREA") return; // don't trigger if user inputs a text
+  if (active === "DIV" && document.activeElement.contentEditable === "true") return; // don't trigger if user inputs a text
   const key = event.keyCode, ctrl = event.ctrlKey, shift = event.shiftKey;
-  if (key === 118) regeneratePrompt(); // "F7" for new map
-  else if (key === 27) {closeDialogs(); hideOptions();} // Escape to close all dialogs
+  if (key === 27) {closeDialogs(); hideOptions();} // Escape to close all dialogs
   else if (key === 9) {toggleOptions(event); event.preventDefault();} // Tab to toggle options
+
+  else if (key === 113) regeneratePrompt(); // "F2" for new map
+  else if (key === 117) quickSave(); // "F6" for quick save
+  else if (key === 120) quickLoad(); // "F9" for quick load
+
   else if (ctrl && key === 80) saveAsImage("png"); // Ctrl + "P" to save as PNG
   else if (ctrl && key === 83) saveAsImage("svg"); // Ctrl + "S" to save as SVG
   else if (ctrl && key === 77) saveMap(); // Ctrl + "M" to save MAP file
-  else if (ctrl && key === 76) mapToLoad.click(); // Ctrl + "L" to load MAP
+  else if (ctrl && key === 85) mapToLoad.click(); // Ctrl + "U" to load MAP from URL
+  else if (ctrl && key === 76) mapToLoad.click(); // Ctrl + "L" to load MAP from local file
+  else if (ctrl && key === 81) toggleSaveReminder(); // Ctrl + "Q" to toggle save reminder
   else if (key === 46) removeElementOnKey(); // "Delete" to remove the selected element
 
   else if (shift && key === 192) console.log(pack.cells); // Shift + "`" to log cells data

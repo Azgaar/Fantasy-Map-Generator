@@ -219,7 +219,7 @@ function editCultures() {
     cults.select("#culture"+culture).remove();
     debug.select("#cultureCenter"+culture).remove();
 
-    pack.burgs.filter(b => b.culture === culture).forEach(b => b.culture = 0);
+    pack.burgs.filter(b => b.culture == culture).forEach(b => b.culture = 0);
     pack.cells.culture.forEach((c, i) => {if(c === culture) pack.cells.culture[i] = 0;});
     pack.cultures[culture].removed = true;
 

@@ -94,7 +94,7 @@ function editBurg() {
   }
 
   function createNewGroup() {
-    if (!this.value) {tip("Please provide a valid group name"); return;}
+    if (!this.value) {tip("Please provide a valid group name", false, "error"); return;}
     let group = this.value.toLowerCase().replace(/ /g, "_").replace(/[^\w\s]/gi, "");
     if (Number.isFinite(+group.charAt(0))) group = "g" + group;
 

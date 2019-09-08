@@ -22,22 +22,25 @@ function restoreLayers() {
   if (!layerIsOn("toggleStates")) regions.attr("display", "none").selectAll("path").remove();
 }
 
-// layers to be turned on; changable by user
-let presets = {
-  "political": ["toggleBorders", "toggleIcons", "toggleLabels", "toggleRivers", "toggleRoutes", "toggleScaleBar", "toggleStates"],
-  "cultural": ["toggleBorders", "toggleCultures", "toggleIcons", "toggleLabels", "toggleRivers", "toggleRoutes", "toggleScaleBar"],
-  "religions": ["toggleBorders", "toggleIcons", "toggleLabels", "toggleReligions", "toggleRivers", "toggleRoutes", "toggleScaleBar"],
-  "provinces": ["toggleBorders", "toggleIcons", "toggleProvinces", "toggleRivers", "toggleScaleBar"],
-  "biomes": ["toggleBiomes", "toggleRivers", "toggleScaleBar"],
-  "heightmap": ["toggleHeight", "toggleRivers", "toggleScaleBar"],
-  "poi": ["toggleBorders", "toggleHeight", "toggleIcons", "toggleMarkers", "toggleRivers", "toggleRoutes", "toggleScaleBar"],
-  "landmass": ["toggleScaleBar"]
-}
-
 restoreLayers(); // run on-load
+let presets = {}; // global object
 restoreCustomPresets(); // run on-load
 
+function getDefaultPresets() {
+  return {
+    "political": ["toggleBorders", "toggleIcons", "toggleLabels", "toggleRivers", "toggleRoutes", "toggleScaleBar", "toggleStates"],
+    "cultural": ["toggleBorders", "toggleCultures", "toggleIcons", "toggleLabels", "toggleRivers", "toggleRoutes", "toggleScaleBar"],
+    "religions": ["toggleBorders", "toggleIcons", "toggleLabels", "toggleReligions", "toggleRivers", "toggleRoutes", "toggleScaleBar"],
+    "provinces": ["toggleBorders", "toggleIcons", "toggleProvinces", "toggleRivers", "toggleScaleBar"],
+    "biomes": ["toggleBiomes", "toggleRivers", "toggleScaleBar"],
+    "heightmap": ["toggleHeight", "toggleRivers", "toggleScaleBar"],
+    "poi": ["toggleBorders", "toggleHeight", "toggleIcons", "toggleMarkers", "toggleRivers", "toggleRoutes", "toggleScaleBar"],
+    "landmass": ["toggleScaleBar"]
+  }
+}
+
 function restoreCustomPresets() {
+  presets = getDefaultPresets();
   const storedPresets = JSON.parse(localStorage.getItem("presets"));
   if (!storedPresets) return;
 
@@ -45,6 +48,7 @@ function restoreCustomPresets() {
     if (presets[preset]) continue;
     layersPreset.add(new Option(preset, preset));
   }
+
   presets = storedPresets;
 }
 
@@ -62,34 +66,50 @@ function changePreset(preset) {
   });
   layersPreset.value = preset;
   localStorage.setItem("preset", preset);
+
+  const isDefault = getDefaultPresets()[preset];
+  removePresetButton.style.display = isDefault ? "none" : "inline-block";
+  savePresetButton.style.display = "none";
 }
 
 function savePreset() {
-  // don't allow if layers should already esist as a preset
-  if (layersPreset.value !== "custom") {
-    tip(`Current layers are already saved as a "${layersPreset.selectedOptions[0].label}" preset`, false, "error"); 
-    return;
-  }
-
-  // add new preset
   const preset = prompt("Please provide a preset name"); // preset name
   if (!preset) return;
   presets[preset] = Array.from(document.getElementById("mapLayers").querySelectorAll("li:not(.buttonoff)")).map(node => node.id).sort();
   layersPreset.add(new Option(preset, preset, false, true));
   localStorage.setItem("presets", JSON.stringify(presets));
   localStorage.setItem("preset", preset);
+  removePresetButton.style.display = "inline-block";
+  savePresetButton.style.display = "none";
+}
+
+function removePreset() {
+  const preset = layersPreset.value;
+  delete presets[preset];
+  const index = Array.from(layersPreset.options).findIndex(o => o.value === preset);
+  layersPreset.options.remove(index);
+  layersPreset.value = "custom";
+  removePresetButton.style.display = "none";
+  savePresetButton.style.display = "inline-block";
+
+  localStorage.setItem("presets", JSON.stringify(presets));
+  localStorage.removeItem("preset");
 }
 
 function getCurrentPreset() {
   const layers = Array.from(document.getElementById("mapLayers").querySelectorAll("li:not(.buttonoff)")).map(node => node.id).sort();
+  const defaultPresets = getDefaultPresets();
 
   for (const preset in presets) {
     if (JSON.stringify(presets[preset]) !== JSON.stringify(layers)) continue;
     layersPreset.value = preset;
+    removePresetButton.style.display = defaultPresets[preset] ? "none" : "inline-block";
     return;
   }
 
   layersPreset.value = "custom";
+  removePresetButton.style.display = "none";
+  savePresetButton.style.display = "inline-block";
 }
 
 function toggleHeight() {

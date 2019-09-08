@@ -187,20 +187,41 @@ function editDiplomacy() {
     const chronicle = pack.states[0].diplomacy;
     if (!chronicle.length) {tip("Relations history is blank", false, "error"); return;}
 
-    let message = `<div>`;
-    chronicle.forEach(e => {
-      message += `<div style="margin: 0.5em 0">`;
-      e.forEach((l, i) => message += `<div${i ? "" : " style='font-weight:bold'"}>${l}</div>`);
-      message += `</div>`;
+    let message = `<div autocorrect="off" spellcheck="false">`;
+    chronicle.forEach((e, d) => {
+      message += `<div>`;
+      e.forEach((l, i) => message += `<div contenteditable="true" data-id="${d}-${i}"${i ? "" : " style='font-weight:bold'"}>${l}</div>`);
+      message += `&#8205;</div>`;
     });
-    alertMessage.innerHTML = message + `</div>`;
+    alertMessage.innerHTML = message + `</div><i id="info-line">Type to edit. Press Enter to add a new line, empty the element to remove it</i>`;
+    alertMessage.querySelectorAll("div[contenteditable='true']").forEach(el => el.addEventListener("input", changeReliationsHistory));
 
     $("#alert").dialog({title: "Relations history", position: {my: "center", at: "center", of: "svg"},
       buttons: {
+        Save: function() {
+          const text = this.querySelector("div").innerText.split("\n").join("\r\n");
+          const dataBlob = new Blob([text], {type: "text/plain"});
+          const url = window.URL.createObjectURL(dataBlob);
+          const link = document.createElement("a");
+          document.body.appendChild(link);
+          link.download = "state_relations_history" + Date.now() + ".txt";
+          link.href = url;
+          link.click();
+          window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
+        },
         Clear: function() {pack.states[0].diplomacy = []; $(this).dialog("close");},
         Close: function() {$(this).dialog("close");}
       }
     });
+  }
+
+  function changeReliationsHistory() {
+    const i = this.dataset.id.split("-");
+    const group = pack.states[0].diplomacy[i[0]];
+    if (this.innerHTML === "") {
+      group.splice(i[1], 1);
+      this.remove();
+    } else group[i[1]] = this.innerHTML;
   }
 
   function showRelationsMatrix() {

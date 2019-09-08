@@ -996,14 +996,26 @@ div.slider .ui-slider-handle {
 	top: 100%;
 	border: 1px solid #5e4fa2;
 	background-color: #a4879b;
-	width: 44px;
+	width: 5em;
 }
 
+#loadDropdown {
+  display: none;
+  position: absolute;
+  left: 53%;
+  top: 100%;
+  border: 1px solid #5e4fa2;
+  background-color: #a4879b;
+  width: 9em;
+}
+
+#loadDropdown>div,
 #saveDropdown>div {
 	padding: 2px 4px;
 	cursor: pointer;
 }
 
+#loadDropdown>div:hover,
 #saveDropdown>div:hover {
 	color: white;
 }
@@ -1498,6 +1510,7 @@ div.states > div.biomeArea {
 	cursor: default;
 	-moz-user-select: none;
 	user-select: none;
+	pointer-events: none;
 }
 
 #title_name {
@@ -1796,6 +1809,12 @@ svg.button {
 	margin: 10px 0; 
 }
 
+#info-line {
+  font-size: .9em;
+	color: gray;
+	user-select: none;
+}
+
 .optionsSeedRestore {
 	font-size: 12px;
 	cursor: pointer;
@@ -1908,6 +1927,15 @@ svg.button {
 .dontAsk {
 	display: inline-block;
 	margin: 10px 0 0 7px;
+}
+
+#errorBox {
+  font-size: .9em;
+  font-family: monospace;
+  color: #920303;
+  background-color: #dabdbd91;
+  padding: 2px;
+  border: 1px solid #916e7f;
 }
 
 #debug {

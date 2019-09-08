@@ -151,65 +151,75 @@ function GFontToDataURI(url) {
     });
 }
 
-// Save in .map format
-function saveMap() {
-  if (customization) {tip("Map cannot be saved when is in edit mode, please exit the mode and retry", false, "error"); return;}
-  console.time("saveMap");
+// prepare map data for saving
+function getMapData() {
+  if (customization) return false;
+  console.time("createMapDataBlob");
+
+  return new Promise(resolve => {
+    const date = new Date();
+    const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
+    const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
+    const params = [version, license, dateString, seed, graphWidth, graphHeight].join("|");
+    const options = [distanceUnitInput.value, distanceScaleInput.value, areaUnit.value, heightUnit.value, heightExponentInput.value, temperatureScale.value, 
+      barSize.value, barLabel.value, barBackOpacity.value, barBackColor.value, barPosX.value, barPosY.value, populationRate.value, urbanization.value, 
+      mapSizeOutput.value, latitudeOutput.value, temperatureEquatorOutput.value, temperaturePoleOutput.value, precOutput.value, JSON.stringify(winds)].join("|");
+    const coords = JSON.stringify(mapCoordinates);
+    const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
+    const notesData = JSON.stringify(notes);
+  
+    // set transform values to default
+    svg.attr("width", graphWidth).attr("height", graphHeight);
+    const transform = d3.zoomTransform(svg.node());
+    viewbox.attr("transform", null);
+    const svg_xml = (new XMLSerializer()).serializeToString(svg.node());
+  
+    // restore initial values
+    svg.attr("width", svgWidth).attr("height", svgHeight);
+    zoom.transform(svg, transform);
+  
+    const gridGeneral = JSON.stringify({spacing:grid.spacing, cellsX:grid.cellsX, cellsY:grid.cellsY, boundary:grid.boundary, points:grid.points, features:grid.features});
+    const features = JSON.stringify(pack.features);
+    const cultures = JSON.stringify(pack.cultures);
+    const states = JSON.stringify(pack.states);
+    const burgs = JSON.stringify(pack.burgs);
+    const religions = JSON.stringify(pack.religions);
+    const provinces = JSON.stringify(pack.provinces);
+  
+    // data format as below
+    const data = [params, options, coords, biomes, notesData, svg_xml, 
+      gridGeneral, grid.cells.h, grid.cells.prec, grid.cells.f, grid.cells.t, grid.cells.temp,
+      features, cultures, states, burgs,
+      pack.cells.biome, pack.cells.burg, pack.cells.conf, pack.cells.culture, pack.cells.fl, 
+      pack.cells.pop, pack.cells.r, pack.cells.road, pack.cells.s, pack.cells.state, 
+      pack.cells.religion, pack.cells.province, pack.cells.crossroad, religions, provinces].join("\r\n");
+    const blob = new Blob([data], {type: "text/plain"});
+
+    console.timeEnd("createMapDataBlob");
+    resolve(blob);
+  });
+
+}
+
+// Download .map file
+async function saveMap() {
+  if (customization) {tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error"); return;}
   closeDialogs();
-  const date = new Date();
-  const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
-  const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
-  const params = [version, license, dateString, seed, graphWidth, graphHeight].join("|");
-  const options = [distanceUnitInput.value, distanceScaleInput.value, areaUnit.value, heightUnit.value, heightExponentInput.value, temperatureScale.value, 
-    barSize.value, barLabel.value, barBackOpacity.value, barBackColor.value, barPosX.value, barPosY.value, populationRate.value, urbanization.value, 
-    mapSizeOutput.value, latitudeOutput.value, temperatureEquatorOutput.value, temperaturePoleOutput.value, precOutput.value, JSON.stringify(winds)].join("|");
-  const coords = JSON.stringify(mapCoordinates);
-  const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
-  const notesData = JSON.stringify(notes);
 
-  // set transform values to default
-  svg.attr("width", graphWidth).attr("height", graphHeight);
-  const transform = d3.zoomTransform(svg.node());
-  viewbox.attr("transform", null);
-  const svg_xml = (new XMLSerializer()).serializeToString(svg.node());
-
-  const gridGeneral = JSON.stringify({spacing:grid.spacing, cellsX:grid.cellsX, cellsY:grid.cellsY, boundary:grid.boundary, points:grid.points, features:grid.features});
-  const features = JSON.stringify(pack.features);
-  const cultures = JSON.stringify(pack.cultures);
-  const states = JSON.stringify(pack.states);
-  const burgs = JSON.stringify(pack.burgs);
-  const religions = JSON.stringify(pack.religions);
-  const provinces = JSON.stringify(pack.provinces);
-
-  // data format as below
-  const data = [params, options, coords, biomes, notesData, svg_xml, 
-    gridGeneral, grid.cells.h, grid.cells.prec, grid.cells.f, grid.cells.t, grid.cells.temp,
-    features, cultures, states, burgs,
-    pack.cells.biome, pack.cells.burg, pack.cells.conf, pack.cells.culture, pack.cells.fl, 
-    pack.cells.pop, pack.cells.r, pack.cells.road, pack.cells.s, pack.cells.state, 
-    pack.cells.religion, pack.cells.province, pack.cells.crossroad, religions, provinces].join("\r\n");
-  const dataBlob = new Blob([data], {type: "text/plain"});
-  const dataURL = window.URL.createObjectURL(dataBlob);
+  const blob = await getMapData();
+  const URL = window.URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.download = "fantasy_map_" + Date.now() + ".map";
-  link.href = dataURL;
+  link.href = URL;
   document.body.appendChild(link);
   link.click();
-  tip(`${link.download} is saved. Open "Downloads" screen (crtl + J) to check`, true, "warning");
-
-  // restore initial values
-  svg.attr("width", svgWidth).attr("height", svgHeight);
-  zoom.transform(svg, transform);
-
-  window.setTimeout(function() {
-    window.URL.revokeObjectURL(dataURL);
-    clearMainTip();
-  }, 3000);
-  console.timeEnd("saveMap");
+  tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
+  window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
 }
 
 function uploadFile(file, callback) {
-  console.time("loadMap");
+  uploadFile.timeStart = performance.now();
+
   const fileReader = new FileReader();
   fileReader.onload = function(fileLoadedEvent) {
     const dataLoaded = fileLoadedEvent.target.result;
@@ -243,281 +253,386 @@ function uploadFile(file, callback) {
 }
 
 function parseLoadedData(data) {
-  closeDialogs();
-  const reliefIcons = document.getElementById("defs-relief").innerHTML; // save relief icons
-  const hatching = document.getElementById("hatching").cloneNode(true); // save hatching
-
-  void function parseParameters() {
-    const params = data[0].split("|");
-    if (params[3]) {seed = params[3]; optionsSeed.value = seed;}
-    if (params[4]) graphWidth = +params[4];
-    if (params[5]) graphHeight = +params[5];
-  }()
-
-  void function parseOptions() {
-    const options = data[1].split("|");
-    if (options[0]) applyOption(distanceUnitInput, options[0]);
-    if (options[1]) distanceScaleInput.value = distanceScaleOutput.value = options[1];
-    if (options[2]) areaUnit.value = options[2];
-    if (options[3]) applyOption(heightUnit, options[3]);
-    if (options[4]) heightExponentInput.value = heightExponentOutput.value = options[4];
-    if (options[5]) temperatureScale.value = options[5];
-    if (options[6]) barSize.value = barSizeOutput.value = options[6];
-    if (options[7] !== undefined) barLabel.value = options[7];
-    if (options[8] !== undefined) barBackOpacity.value = options[8];
-    if (options[9]) barBackColor.value = options[9];
-    if (options[10]) barPosX.value = options[10];
-    if (options[11]) barPosY.value = options[11];
-    if (options[12]) populationRate.value = populationRateOutput.value = options[12];
-    if (options[13]) urbanization.value = urbanizationOutput.value = options[13];
-    if (options[14]) mapSizeInput.value = mapSizeOutput.value = Math.max(Math.min(options[14], 100), 1);
-    if (options[15]) latitudeInput.value = latitudeOutput.value = Math.max(Math.min(options[15], 100), 0);
-    if (options[16]) temperatureEquatorInput.value = temperatureEquatorOutput.value = options[16];
-    if (options[17]) temperaturePoleInput.value = temperaturePoleOutput.value = options[17];
-    if (options[18]) precInput.value = precOutput.value = options[18];
-    if (options[19]) winds = JSON.parse(options[19]);
-  }()
-
-  void function parseConfiguration() {
-    if (data[2]) mapCoordinates = JSON.parse(data[2]);
-    if (data[4]) notes = JSON.parse(data[4]);
-
-    const biomes = data[3].split("|");
-    biomesData = applyDefaultBiomesSystem();
-    biomesData.color = biomes[0].split(",");
-    biomesData.habitability = biomes[1].split(",").map(h => +h);
-    biomesData.name = biomes[2].split(",");
-
-    // push custom biomes if any
-    for (let i=biomesData.i.length; i < biomesData.name.length; i++) {
-      biomesData.i.push(biomesData.i.length);
-      biomesData.iconsDensity.push(0);
-      biomesData.icons.push([]);
-      biomesData.cost.push(50);
-    }
-  }()
-
-  void function replaceSVG() {
-    svg.remove();
-    document.body.insertAdjacentHTML("afterbegin", data[5]);
-  }()
-
-  void function redefineElements() {
-    svg = d3.select("#map");
-    defs = svg.select("#deftemp");
-    viewbox = svg.select("#viewbox");
-    scaleBar = svg.select("#scaleBar");
-    legend = svg.select("#legend");
-    ocean = viewbox.select("#ocean");
-    oceanLayers = ocean.select("#oceanLayers");
-    oceanPattern = ocean.select("#oceanPattern");
-    lakes = viewbox.select("#lakes");
-    landmass = viewbox.select("#landmass");
-    texture = viewbox.select("#texture");
-    terrs = viewbox.select("#terrs");
-    biomes = viewbox.select("#biomes");
-    cells = viewbox.select("#cells");
-    gridOverlay = viewbox.select("#gridOverlay");
-    coordinates = viewbox.select("#coordinates");
-    compass = viewbox.select("#compass");
-    rivers = viewbox.select("#rivers");
-    terrain = viewbox.select("#terrain");
-    relig = viewbox.select("#relig");
-    cults = viewbox.select("#cults");
-    regions = viewbox.select("#regions");
-    statesBody = regions.select("#statesBody");
-    statesHalo = regions.select("#statesHalo");
-    provs = viewbox.select("#provs");
-    zones = viewbox.select("#zones");
-    borders = viewbox.select("#borders");
-    stateBorders = borders.select("#stateBorders");
-    provinceBorders = borders.select("#provinceBorders");
-    routes = viewbox.select("#routes");
-    roads = routes.select("#roads");
-    trails = routes.select("#trails");
-    searoutes = routes.select("#searoutes");
-    temperature = viewbox.select("#temperature");
-    coastline = viewbox.select("#coastline");
-    prec = viewbox.select("#prec");
-    population = viewbox.select("#population");
-    labels = viewbox.select("#labels");
-    icons = viewbox.select("#icons");
-    burgIcons = icons.select("#burgIcons");
-    anchors = icons.select("#anchors");
-    markers = viewbox.select("#markers");
-    ruler = viewbox.select("#ruler");
-    fogging = viewbox.select("#fogging");
-    debug = viewbox.select("#debug");
-    freshwater = lakes.select("#freshwater");
-    salt = lakes.select("#salt");
-    burgLabels = labels.select("#burgLabels");
-  }()
-
-  void function parseGridData() {
-    grid = JSON.parse(data[6]);
-    calculateVoronoi(grid, grid.points);
-    grid.cells.h = Uint8Array.from(data[7].split(","));
-    grid.cells.prec = Uint8Array.from(data[8].split(","));
-    grid.cells.f = Uint16Array.from(data[9].split(","));
-    grid.cells.t = Int8Array.from(data[10].split(","));
-    grid.cells.temp = Int8Array.from(data[11].split(","));
-  }()
-
-  void function parsePackData() {
-    pack = {};
-    reGraph();
-    reMarkFeatures();
-    pack.features = JSON.parse(data[12]);
-    pack.cultures = JSON.parse(data[13]);
-    pack.states = JSON.parse(data[14]);
-    pack.burgs = JSON.parse(data[15]);
-    pack.religions = data[29] ? JSON.parse(data[29]) : [{i: 0, name: "No religion"}];
-    pack.provinces = data[30] ? JSON.parse(data[30]) : [0];
-
-    const cells = pack.cells;
-    cells.biome = Uint8Array.from(data[16].split(","));
-    cells.burg = Uint16Array.from(data[17].split(","));
-    cells.conf = Uint8Array.from(data[18].split(","));
-    cells.culture = Uint16Array.from(data[19].split(","));
-    cells.fl = Uint16Array.from(data[20].split(","));
-    cells.pop = Uint16Array.from(data[21].split(","));
-    cells.r = Uint16Array.from(data[22].split(","));
-    cells.road = Uint16Array.from(data[23].split(","));
-    cells.s = Uint16Array.from(data[24].split(","));
-    cells.state = Uint16Array.from(data[25].split(","));
-    cells.religion = data[26] ? Uint16Array.from(data[26].split(",")) : new Uint16Array(cells.i.length);
-    cells.province = data[27] ? Uint16Array.from(data[27].split(",")) : new Uint16Array(cells.i.length);
-    cells.crossroad = data[28] ? Uint16Array.from(data[28].split(",")) : new Uint16Array(cells.i.length);
-  }()
-
-  void function restoreLayersState() {
-    if (texture.style("display") !== "none" && texture.select("image").size()) turnButtonOn("toggleTexture"); else turnButtonOff("toggleTexture");
-    if (terrs.selectAll("*").size()) turnButtonOn("toggleHeight"); else turnButtonOff("toggleHeight");
-    if (biomes.selectAll("*").size()) turnButtonOn("toggleBiomes"); else turnButtonOff("toggleBiomes");
-    if (cells.selectAll("*").size()) turnButtonOn("toggleCells"); else turnButtonOff("toggleCells");
-    if (gridOverlay.selectAll("*").size()) turnButtonOn("toggleGrid"); else turnButtonOff("toggleGrid");
-    if (coordinates.selectAll("*").size()) turnButtonOn("toggleCoordinates"); else turnButtonOff("toggleCoordinates");
-    if (compass.style("display") !== "none" && compass.select("use").size()) turnButtonOn("toggleCompass"); else turnButtonOff("toggleCompass");
-    if (rivers.style("display") !== "none") turnButtonOn("toggleRivers"); else turnButtonOff("toggleRivers");
-    if (terrain.style("display") !== "none" && terrain.selectAll("*").size()) turnButtonOn("toggleRelief"); else turnButtonOff("toggleRelief");
-    if (relig.selectAll("*").size()) turnButtonOn("toggleReligions"); else turnButtonOff("toggleReligions");
-    if (cults.selectAll("*").size()) turnButtonOn("toggleCultures"); else turnButtonOff("toggleCultures");
-    if (statesBody.selectAll("*").size()) turnButtonOn("toggleStates"); else turnButtonOff("toggleStates");
-    if (provs.selectAll("*").size()) turnButtonOn("toggleProvinces"); else turnButtonOff("toggleProvinces");
-    if (zones.selectAll("*").size() && zones.style("display") !== "none") turnButtonOn("toggleZones"); else turnButtonOff("toggleZones");
-    if (borders.style("display") !== "none") turnButtonOn("toggleBorders"); else turnButtonOff("toggleBorders");
-    if (routes.style("display") !== "none" && routes.selectAll("path").size()) turnButtonOn("toggleRoutes"); else turnButtonOff("toggleRoutes");
-    if (temperature.selectAll("*").size()) turnButtonOn("toggleTemp"); else turnButtonOff("toggleTemp");
-    if (prec.selectAll("circle").size()) turnButtonOn("togglePrec"); else turnButtonOff("togglePrec");
-    if (labels.style("display") !== "none") turnButtonOn("toggleLabels"); else turnButtonOff("toggleLabels");
-    if (icons.style("display") !== "none") turnButtonOn("toggleIcons"); else turnButtonOff("toggleIcons");
-    if (markers.selectAll("*").size() && markers.style("display") !== "none") turnButtonOn("toggleMarkers"); else turnButtonOff("toggleMarkers");
-    if (ruler.style("display") !== "none") turnButtonOn("toggleRulers"); else turnButtonOff("toggleRulers");
-    if (scaleBar.style("display") !== "none") turnButtonOn("toggleScaleBar"); else turnButtonOff("toggleScaleBar");
-
-    // special case for population bars
-    const populationIsOn = population.selectAll("line").size();
-    if (populationIsOn) drawPopulation();
-    if (populationIsOn) turnButtonOn("togglePopulation"); else turnButtonOff("togglePopulation");
-
-    getCurrentPreset();
-  }()
-
-  void function restoreRulersEvents() {
-    ruler.selectAll("g").call(d3.drag().on("start", dragRuler));
-    ruler.selectAll("text").on("click", removeParent);
-    ruler.selectAll("g.ruler circle").call(d3.drag().on("drag", dragRulerEdge));
-    ruler.selectAll("g.ruler circle").call(d3.drag().on("drag", dragRulerEdge));
-    ruler.selectAll("g.ruler rect").call(d3.drag().on("start", rulerCenterDrag));
-    ruler.selectAll("g.opisometer circle").call(d3.drag().on("start", dragOpisometerEnd));
-    ruler.selectAll("g.opisometer circle").call(d3.drag().on("start", dragOpisometerEnd));
-  }()
-
-  void function resolveVersionConflicts() {
-    const version = parseFloat(data[0].split("|")[0]);
-    if (version == 0.8) {
-      // 0.9 has additional relief icons to be included into older maps
-      document.getElementById("defs-relief").innerHTML = reliefIcons;
-    }
-
-    if (version < 1) {
-      // 1.0 adds a new religions layer
-      relig = viewbox.insert("g", "#terrain").attr("id", "relig");
-      Religions.generate();
-
-      // 1.0 adds a legend box
-      legend = svg.append("g").attr("id", "legend");
-      legend.attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC")
-        .attr("font-size", 13).attr("data-size", 13).attr("data-x", 99).attr("data-y", 93)
-        .attr("stroke-width", 2.5).attr("stroke", "#812929").attr("stroke-dasharray", "0 4 10 4").attr("stroke-linecap", "round");
-
-      // 1.0 separated drawBorders fron drawStates()
-      stateBorders = borders.append("g").attr("id", "stateBorders");
-      provinceBorders = borders.append("g").attr("id", "provinceBorders");
-      borders.attr("opacity", null).attr("stroke", null).attr("stroke-width", null).attr("stroke-dasharray", null).attr("stroke-linecap", null).attr("filter", null);
-      stateBorders.attr("opacity", .8).attr("stroke", "#56566d").attr("stroke-width", 1).attr("stroke-dasharray", "2").attr("stroke-linecap", "butt");
-      provinceBorders.attr("opacity", .8).attr("stroke", "#56566d").attr("stroke-width", .5).attr("stroke-dasharray", "1").attr("stroke-linecap", "butt");
-
-      // 1.0 adds state relations, provinces, forms and full names
-      provs = viewbox.insert("g", "#borders").attr("id", "provs").attr("opacity", .6);
-      BurgsAndStates.collectStatistics();
-      BurgsAndStates.generateDiplomacy();
-      BurgsAndStates.defineStateForms();
-      drawStates();
-      BurgsAndStates.generateProvinces();
-      drawBorders();
-      if (!layerIsOn("toggleBorders")) $('#borders').fadeOut();
-      if (!layerIsOn("toggleStates")) regions.attr("display", "none").selectAll("path").remove();
-
-      // 1.0 adds hatching
-      document.getElementsByTagName("defs")[0].appendChild(hatching);
-
-      // 1.0 adds zones layer
-      zones = viewbox.insert("g", "#borders").attr("id", "zones").attr("display", "none");
-      zones.attr("opacity", .6).attr("stroke", null).attr("stroke-width", 0).attr("stroke-dasharray", null).attr("stroke-linecap", "butt");
-      addZone();
-      if (!markers.selectAll("*").size()) {addMarkers(); turnButtonOn("toggleMarkers");}
-
-      // 1.0 add fogging layer (state focus)
-      let fogging = viewbox.insert("g", "#ruler").attr("id", "fogging-cont").attr("mask", "url(#fog)")
-        .append("g").attr("id", "fogging").attr("display", "none");
-      fogging.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
-      defs.append("mask").attr("id", "fog").append("rect").attr("x", 0).attr("y", 0).attr("width", "100%")
-        .attr("height", "100%").attr("fill", "white");
-
-      // 1.0 changes states opacity bask to regions level
-      if (statesBody.attr("opacity")) {
-        regions.attr("opacity", statesBody.attr("opacity"));
-        statesBody.attr("opacity", null);
+  try {
+    const reliefIcons = document.getElementById("defs-relief").innerHTML; // save relief icons
+    const hatching = document.getElementById("hatching").cloneNode(true); // save hatching
+  
+    void function parseParameters() {
+      const params = data[0].split("|");
+      if (params[3]) {seed = params[3]; optionsSeed.value = seed;}
+      if (params[4]) graphWidth = +params[4];
+      if (params[5]) graphHeight = +params[5];
+    }()
+  
+    console.group("Loaded Map " + seed);
+  
+    void function parseOptions() {
+      const options = data[1].split("|");
+      if (options[0]) applyOption(distanceUnitInput, options[0]);
+      if (options[1]) distanceScaleInput.value = distanceScaleOutput.value = options[1];
+      if (options[2]) areaUnit.value = options[2];
+      if (options[3]) applyOption(heightUnit, options[3]);
+      if (options[4]) heightExponentInput.value = heightExponentOutput.value = options[4];
+      if (options[5]) temperatureScale.value = options[5];
+      if (options[6]) barSize.value = barSizeOutput.value = options[6];
+      if (options[7] !== undefined) barLabel.value = options[7];
+      if (options[8] !== undefined) barBackOpacity.value = options[8];
+      if (options[9]) barBackColor.value = options[9];
+      if (options[10]) barPosX.value = options[10];
+      if (options[11]) barPosY.value = options[11];
+      if (options[12]) populationRate.value = populationRateOutput.value = options[12];
+      if (options[13]) urbanization.value = urbanizationOutput.value = options[13];
+      if (options[14]) mapSizeInput.value = mapSizeOutput.value = Math.max(Math.min(options[14], 100), 1);
+      if (options[15]) latitudeInput.value = latitudeOutput.value = Math.max(Math.min(options[15], 100), 0);
+      if (options[16]) temperatureEquatorInput.value = temperatureEquatorOutput.value = options[16];
+      if (options[17]) temperaturePoleInput.value = temperaturePoleOutput.value = options[17];
+      if (options[18]) precInput.value = precOutput.value = options[18];
+      if (options[19]) winds = JSON.parse(options[19]);
+    }()
+  
+    void function parseConfiguration() {
+      if (data[2]) mapCoordinates = JSON.parse(data[2]);
+      if (data[4]) notes = JSON.parse(data[4]);
+  
+      const biomes = data[3].split("|");
+      biomesData = applyDefaultBiomesSystem();
+      biomesData.color = biomes[0].split(",");
+      biomesData.habitability = biomes[1].split(",").map(h => +h);
+      biomesData.name = biomes[2].split(",");
+  
+      // push custom biomes if any
+      for (let i=biomesData.i.length; i < biomesData.name.length; i++) {
+        biomesData.i.push(biomesData.i.length);
+        biomesData.iconsDensity.push(0);
+        biomesData.icons.push([]);
+        biomesData.cost.push(50);
       }
-
-      // 1.0 changed labels to multi-lined
-      labels.selectAll("textPath").each(function() {
-        const text = this.textContent;
-        const shift = this.getComputedTextLength() / -1.5;
-        this.innerHTML = `<tspan x="${shift}">${text}</tspan>`;
-      });
-
-      // 1.0 added new biome - Wetland
-      biomesData.name.push("Wetland");
-      biomesData.color.push("#0b9131");
-      biomesData.habitability.push(12);
-    }
-
-    if (version == 1) {
-      // v 1.0 initial code had a bug with religion layer id
-      if (!relig.size()) relig = viewbox.insert("g", "#terrain").attr("id", "relig");
-
-      // v 1.0 initially has Sympathy status then relaced with Friendly
-      for (const s of pack.states) {
-        s.diplomacy = s.diplomacy.map(r => r === "Sympathy" ? "Friendly" : r);
+    }()
+  
+    void function replaceSVG() {
+      svg.remove();
+      document.body.insertAdjacentHTML("afterbegin", data[5]);
+    }()
+  
+    void function redefineElements() {
+      svg = d3.select("#map");
+      defs = svg.select("#deftemp");
+      viewbox = svg.select("#viewbox");
+      scaleBar = svg.select("#scaleBar");
+      legend = svg.select("#legend");
+      ocean = viewbox.select("#ocean");
+      oceanLayers = ocean.select("#oceanLayers");
+      oceanPattern = ocean.select("#oceanPattern");
+      lakes = viewbox.select("#lakes");
+      landmass = viewbox.select("#landmass");
+      texture = viewbox.select("#texture");
+      terrs = viewbox.select("#terrs");
+      biomes = viewbox.select("#biomes");
+      cells = viewbox.select("#cells");
+      gridOverlay = viewbox.select("#gridOverlay");
+      coordinates = viewbox.select("#coordinates");
+      compass = viewbox.select("#compass");
+      rivers = viewbox.select("#rivers");
+      terrain = viewbox.select("#terrain");
+      relig = viewbox.select("#relig");
+      cults = viewbox.select("#cults");
+      regions = viewbox.select("#regions");
+      statesBody = regions.select("#statesBody");
+      statesHalo = regions.select("#statesHalo");
+      provs = viewbox.select("#provs");
+      zones = viewbox.select("#zones");
+      borders = viewbox.select("#borders");
+      stateBorders = borders.select("#stateBorders");
+      provinceBorders = borders.select("#provinceBorders");
+      routes = viewbox.select("#routes");
+      roads = routes.select("#roads");
+      trails = routes.select("#trails");
+      searoutes = routes.select("#searoutes");
+      temperature = viewbox.select("#temperature");
+      coastline = viewbox.select("#coastline");
+      prec = viewbox.select("#prec");
+      population = viewbox.select("#population");
+      labels = viewbox.select("#labels");
+      icons = viewbox.select("#icons");
+      burgIcons = icons.select("#burgIcons");
+      anchors = icons.select("#anchors");
+      markers = viewbox.select("#markers");
+      ruler = viewbox.select("#ruler");
+      fogging = viewbox.select("#fogging");
+      debug = viewbox.select("#debug");
+      freshwater = lakes.select("#freshwater");
+      salt = lakes.select("#salt");
+      burgLabels = labels.select("#burgLabels");
+    }()
+  
+    void function parseGridData() {
+      grid = JSON.parse(data[6]);
+      calculateVoronoi(grid, grid.points);
+      grid.cells.h = Uint8Array.from(data[7].split(","));
+      grid.cells.prec = Uint8Array.from(data[8].split(","));
+      grid.cells.f = Uint16Array.from(data[9].split(","));
+      grid.cells.t = Int8Array.from(data[10].split(","));
+      grid.cells.temp = Int8Array.from(data[11].split(","));
+    }()
+  
+    void function parsePackData() {
+      pack = {};
+      reGraph();
+      reMarkFeatures();
+      pack.features = JSON.parse(data[12]);
+      pack.cultures = JSON.parse(data[13]);
+      pack.states = JSON.parse(data[14]);
+      pack.burgs = JSON.parse(data[15]);
+      pack.religions = data[29] ? JSON.parse(data[29]) : [{i: 0, name: "No religion"}];
+      pack.provinces = data[30] ? JSON.parse(data[30]) : [0];
+  
+      const cells = pack.cells;
+      cells.biome = Uint8Array.from(data[16].split(","));
+      cells.burg = Uint16Array.from(data[17].split(","));
+      cells.conf = Uint8Array.from(data[18].split(","));
+      cells.culture = Uint16Array.from(data[19].split(","));
+      cells.fl = Uint16Array.from(data[20].split(","));
+      cells.pop = Uint16Array.from(data[21].split(","));
+      cells.r = Uint16Array.from(data[22].split(","));
+      cells.road = Uint16Array.from(data[23].split(","));
+      cells.s = Uint16Array.from(data[24].split(","));
+      cells.state = Uint16Array.from(data[25].split(","));
+      cells.religion = data[26] ? Uint16Array.from(data[26].split(",")) : new Uint16Array(cells.i.length);
+      cells.province = data[27] ? Uint16Array.from(data[27].split(",")) : new Uint16Array(cells.i.length);
+      cells.crossroad = data[28] ? Uint16Array.from(data[28].split(",")) : new Uint16Array(cells.i.length);
+    }()
+  
+    void function restoreLayersState() {
+      if (texture.style("display") !== "none" && texture.select("image").size()) turnButtonOn("toggleTexture"); else turnButtonOff("toggleTexture");
+      if (terrs.selectAll("*").size()) turnButtonOn("toggleHeight"); else turnButtonOff("toggleHeight");
+      if (biomes.selectAll("*").size()) turnButtonOn("toggleBiomes"); else turnButtonOff("toggleBiomes");
+      if (cells.selectAll("*").size()) turnButtonOn("toggleCells"); else turnButtonOff("toggleCells");
+      if (gridOverlay.selectAll("*").size()) turnButtonOn("toggleGrid"); else turnButtonOff("toggleGrid");
+      if (coordinates.selectAll("*").size()) turnButtonOn("toggleCoordinates"); else turnButtonOff("toggleCoordinates");
+      if (compass.style("display") !== "none" && compass.select("use").size()) turnButtonOn("toggleCompass"); else turnButtonOff("toggleCompass");
+      if (rivers.style("display") !== "none") turnButtonOn("toggleRivers"); else turnButtonOff("toggleRivers");
+      if (terrain.style("display") !== "none" && terrain.selectAll("*").size()) turnButtonOn("toggleRelief"); else turnButtonOff("toggleRelief");
+      if (relig.selectAll("*").size()) turnButtonOn("toggleReligions"); else turnButtonOff("toggleReligions");
+      if (cults.selectAll("*").size()) turnButtonOn("toggleCultures"); else turnButtonOff("toggleCultures");
+      if (statesBody.selectAll("*").size()) turnButtonOn("toggleStates"); else turnButtonOff("toggleStates");
+      if (provs.selectAll("*").size()) turnButtonOn("toggleProvinces"); else turnButtonOff("toggleProvinces");
+      if (zones.selectAll("*").size() && zones.style("display") !== "none") turnButtonOn("toggleZones"); else turnButtonOff("toggleZones");
+      if (borders.style("display") !== "none") turnButtonOn("toggleBorders"); else turnButtonOff("toggleBorders");
+      if (routes.style("display") !== "none" && routes.selectAll("path").size()) turnButtonOn("toggleRoutes"); else turnButtonOff("toggleRoutes");
+      if (temperature.selectAll("*").size()) turnButtonOn("toggleTemp"); else turnButtonOff("toggleTemp");
+      if (prec.selectAll("circle").size()) turnButtonOn("togglePrec"); else turnButtonOff("togglePrec");
+      if (labels.style("display") !== "none") turnButtonOn("toggleLabels"); else turnButtonOff("toggleLabels");
+      if (icons.style("display") !== "none") turnButtonOn("toggleIcons"); else turnButtonOff("toggleIcons");
+      if (markers.selectAll("*").size() && markers.style("display") !== "none") turnButtonOn("toggleMarkers"); else turnButtonOff("toggleMarkers");
+      if (ruler.style("display") !== "none") turnButtonOn("toggleRulers"); else turnButtonOff("toggleRulers");
+      if (scaleBar.style("display") !== "none") turnButtonOn("toggleScaleBar"); else turnButtonOff("toggleScaleBar");
+  
+      // special case for population bars
+      const populationIsOn = population.selectAll("line").size();
+      if (populationIsOn) drawPopulation();
+      if (populationIsOn) turnButtonOn("togglePopulation"); else turnButtonOff("togglePopulation");
+  
+      getCurrentPreset();
+    }()
+  
+    void function restoreEvents() {
+      ruler.selectAll("g").call(d3.drag().on("start", dragRuler));
+      ruler.selectAll("text").on("click", removeParent);
+      ruler.selectAll("g.ruler circle").call(d3.drag().on("drag", dragRulerEdge));
+      ruler.selectAll("g.ruler circle").call(d3.drag().on("drag", dragRulerEdge));
+      ruler.selectAll("g.ruler rect").call(d3.drag().on("start", rulerCenterDrag));
+      ruler.selectAll("g.opisometer circle").call(d3.drag().on("start", dragOpisometerEnd));
+      ruler.selectAll("g.opisometer circle").call(d3.drag().on("start", dragOpisometerEnd));
+  
+      scaleBar.on("mousemove", () => tip("Click to open Units Editor"));
+      legend.on("mousemove", () => tip("Drag to change the position. Click to hide the legend")).on("click", () => clearLegend());
+    }()
+  
+    void function resolveVersionConflicts() {
+      const version = parseFloat(data[0].split("|")[0]);
+      if (version == 0.8) {
+        // 0.9 has additional relief icons to be included into older maps
+        document.getElementById("defs-relief").innerHTML = reliefIcons;
       }
-    }
-  }()
+  
+      if (version < 1) {
+        // 1.0 adds a new religions layer
+        relig = viewbox.insert("g", "#terrain").attr("id", "relig");
+        Religions.generate();
+  
+        // 1.0 adds a legend box
+        legend = svg.append("g").attr("id", "legend");
+        legend.attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC")
+          .attr("font-size", 13).attr("data-size", 13).attr("data-x", 99).attr("data-y", 93)
+          .attr("stroke-width", 2.5).attr("stroke", "#812929").attr("stroke-dasharray", "0 4 10 4").attr("stroke-linecap", "round");
+  
+        // 1.0 separated drawBorders fron drawStates()
+        stateBorders = borders.append("g").attr("id", "stateBorders");
+        provinceBorders = borders.append("g").attr("id", "provinceBorders");
+        borders.attr("opacity", null).attr("stroke", null).attr("stroke-width", null).attr("stroke-dasharray", null).attr("stroke-linecap", null).attr("filter", null);
+        stateBorders.attr("opacity", .8).attr("stroke", "#56566d").attr("stroke-width", 1).attr("stroke-dasharray", "2").attr("stroke-linecap", "butt");
+        provinceBorders.attr("opacity", .8).attr("stroke", "#56566d").attr("stroke-width", .5).attr("stroke-dasharray", "1").attr("stroke-linecap", "butt");
+  
+        // 1.0 adds state relations, provinces, forms and full names
+        provs = viewbox.insert("g", "#borders").attr("id", "provs").attr("opacity", .6);
+        BurgsAndStates.collectStatistics();
+        BurgsAndStates.generateDiplomacy();
+        BurgsAndStates.defineStateForms();
+        drawStates();
+        BurgsAndStates.generateProvinces();
+        drawBorders();
+        if (!layerIsOn("toggleBorders")) $('#borders').fadeOut();
+        if (!layerIsOn("toggleStates")) regions.attr("display", "none").selectAll("path").remove();
+  
+        // 1.0 adds hatching
+        document.getElementsByTagName("defs")[0].appendChild(hatching);
+  
+        // 1.0 adds zones layer
+        zones = viewbox.insert("g", "#borders").attr("id", "zones").attr("display", "none");
+        zones.attr("opacity", .6).attr("stroke", null).attr("stroke-width", 0).attr("stroke-dasharray", null).attr("stroke-linecap", "butt");
+        addZone();
+        if (!markers.selectAll("*").size()) {addMarkers(); turnButtonOn("toggleMarkers");}
+  
+        // 1.0 add fogging layer (state focus)
+        let fogging = viewbox.insert("g", "#ruler").attr("id", "fogging-cont").attr("mask", "url(#fog)")
+          .append("g").attr("id", "fogging").attr("display", "none");
+        fogging.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
+        defs.append("mask").attr("id", "fog").append("rect").attr("x", 0).attr("y", 0).attr("width", "100%")
+          .attr("height", "100%").attr("fill", "white");
+  
+        // 1.0 changes states opacity bask to regions level
+        if (statesBody.attr("opacity")) {
+          regions.attr("opacity", statesBody.attr("opacity"));
+          statesBody.attr("opacity", null);
+        }
+  
+        // 1.0 changed labels to multi-lined
+        labels.selectAll("textPath").each(function() {
+          const text = this.textContent;
+          const shift = this.getComputedTextLength() / -1.5;
+          this.innerHTML = `<tspan x="${shift}">${text}</tspan>`;
+        });
+  
+        // 1.0 added new biome - Wetland
+        biomesData.name.push("Wetland");
+        biomesData.color.push("#0b9131");
+        biomesData.habitability.push(12);
+      }
+  
+      if (version == 1) {
+        // v 1.0 initial code had a bug with religion layer id
+        if (!relig.size()) relig = viewbox.insert("g", "#terrain").attr("id", "relig");
+  
+        // v 1.0 initially has Sympathy status then relaced with Friendly
+        for (const s of pack.states) {
+          s.diplomacy = s.diplomacy.map(r => r === "Sympathy" ? "Friendly" : r);
+        }
+      }
+    }()
+  
+    changeMapSize();
+    if (window.restoreDefaultEvents) restoreDefaultEvents();
+    invokeActiveZooming();
+  
+    console.warn(`TOTAL: ${rn((performance.now()-uploadFile.timeStart)/1000,2)}s`);
+    showStatistics();
+    console.groupEnd("Loaded Map " + seed);
+    tip("Map is successfully loaded", true, "success", 7000);
+  }
+  catch(error) {
+    console.error(error);
+    clearMainTip();
 
-  changeMapSize();
-  restoreDefaultEvents();
-  invokeActiveZooming();
-  tip("Map is loaded");
-  console.timeEnd("loadMap");
+    const regex =/(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+    const errorNoURL = error.stack.replace(regex, url => '<i>' + last(url.split("/")) + '</i>');
+    const errorParsed = errorNoURL.replace(/  at /ig, "<br>&nbsp;&nbsp;at ");
+
+    alertMessage.innerHTML = `An error is occured on map loading. Select a different file to load,
+      <br>generate a new random map or cancel the loading
+      <p id="errorBox">${errorParsed}</p>`;
+    $("#alert").dialog({
+      resizable: false, title: "Loading error", maxWidth:500, buttons: {
+        "Select file": function() {$(this).dialog("close"); mapToLoad.click();},
+        "New map": function() {$(this).dialog("close"); regenerateMap();},
+        Cancel: function() {$(this).dialog("close")}
+      }, position: {my: "center", at: "center", of: "svg"}
+    });
+  }
+
+}
+
+async function quickSave() {
+  const blob = await getMapData();
+  if (blob) ldb.set("lastMap", blob); // auto-save map
+  tip("Map is saved to browser memory", true, "success", 2000);
+}
+
+function quickLoad() {
+  ldb.get("lastMap", blob => {
+    if (blob) {
+      loadMapPrompt(blob);
+    } else {
+      tip("No map stored. Save map to storage first", true, "error", 2000);
+      console.error("No map stored");
+    }
+  });
+}
+
+function loadMapPrompt(blob) {
+  const workingTime = (Date.now() - last(mapHistory).created) / 60000; // minutes
+  if (workingTime < 10) {loadLastSavedMap(); return;}
+
+  alertMessage.innerHTML = `Are you sure you want to load saved map?<br>
+  All unsaved changes made to the current map will be lost`;
+  $("#alert").dialog({resizable: false, title: "Load saved map",
+    buttons: {
+      Cancel: function() {$(this).dialog("close");},
+      Load: function() {loadLastSavedMap(); $(this).dialog("close");}
+    }
+  });
+
+  function loadLastSavedMap() {
+    console.warn("Load last saved map");
+    closeDialogs();
+    try {
+      uploadFile(blob);
+    }
+    catch(error) {
+      console.error(error);
+      tip("Cannot load last saved map", true, "error", 2000);
+    }
+  }
+}
+
+const saveReminder = function() {
+  if (localStorage.getItem("noReminder")) return;
+  const message = ["Please don't forget to save your work as a .map file",
+    "Please remember to save work as a .map file",
+    "Saving in .map format will ensure your data won't be lost in case of issues",
+    "Safety is number one priority. Please save the map",
+    "Don't forget to save your map on a regular basis!",
+    "Just a gentle reminder for you to save the map",
+    "Please forget to save your progress (saving as .map is the best option)",
+    "Don't want to be reminded about need to save? Press CTRL+Q"];
+
+  saveReminder.reminder = setInterval(() => {
+    if (customization) return;
+    tip(ra(message), true, "warn", 2500);
+  }, 1e6);
+  saveReminder.status = 1;
+}
+
+saveReminder();
+
+function toggleSaveReminder() {
+  if (saveReminder.status) {
+    tip("Save reminder is turned off. Press CTRL+Q again to re-initiate", true, "warn", 2000);
+    clearInterval(saveReminder.reminder);
+    localStorage.setItem("noReminder", true);
+    saveReminder.status = 0;
+  } else {
+    tip("Save reminder is turned on. Press CTRL+Q to turn off", true, "warn", 2000);
+    localStorage.removeItem("noReminder");
+    saveReminder();
+  }
 }
