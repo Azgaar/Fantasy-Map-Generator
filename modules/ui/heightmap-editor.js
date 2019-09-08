@@ -403,7 +403,7 @@ function getHeight(h) {
     updateStatistics();
     
     if (document.getElementById("preview")) drawHeightmapPreview(); // update heightmap preview if opened
-    if ($("#perspectivePanel").is(":visible")) drawPerspective(); // update perspective view if opened    
+    if ($("#perspectivePanel").is(":visible")) drawPerspective(); // update perspective view if opened
   }
 
   // restart edits from 1st step
@@ -1103,7 +1103,7 @@ function getHeight(h) {
 
       terrs.selectAll("polygon").remove();
       updateHeightmap();
-    }    
+    }
     
   }
 
@@ -1117,7 +1117,8 @@ function getHeight(h) {
     preview.width = grid.cellsX;
     preview.height = grid.cellsY;
     document.body.insertBefore(preview, optionsContainer);
-    preview.addEventListener("mouseover", () => tip("Heightmap preview. Right click and 'Save image as..' to download the image"));
+    preview.addEventListener("mouseover", () => tip("Heightmap preview. Click to download the image"));
+    preview.addEventListener("click", downloadPreview);
     drawHeightmapPreview();
   }
 
@@ -1135,6 +1136,41 @@ function getHeight(h) {
     });
 
     ctx.putImageData(imageData, 0, 0);
+  }
+
+  function downloadPreview() {
+    const preview = document.getElementById("preview");
+    const dataURL = preview.toDataURL("image/png");
+
+    const img = new Image();
+    img.src = dataURL;
+
+    img.onload = function() {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      canvas.width = svgWidth;
+      canvas.height = svgHeight;
+      document.body.insertBefore(canvas, optionsContainer);
+      ctx.drawImage(img, 0, 0, svgWidth, svgHeight);
+
+      // const imageData = ctx.getImageData(0, 0, svgWidth, svgHeight);
+      // for (let i=0; i < imageData.data.length; i+=4) {
+      //   const v = Math.min(rn(imageData.data[i] * gauss(1, .05, .9, 1.1, 3)), 255);
+      //   imageData.data[i] = v;
+      //   imageData.data[i+1] = v;
+      //   imageData.data[i+2] = v;
+      // }
+      // ctx.putImageData(imageData, 0, 0);
+
+      const imgBig = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.target = "_blank";
+      link.download = "heightmap_" + Date.now() + ".png";
+      link.href = imgBig;
+      document.body.appendChild(link);
+      link.click();
+      canvas.remove();
+    }
   }
 
   function openPerspectivePanel() {
