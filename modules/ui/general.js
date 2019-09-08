@@ -242,6 +242,7 @@ document.addEventListener("keydown", function(event) {
   else if (ctrl && key === 80) saveAsImage("png"); // Ctrl + "P" to save as PNG
   else if (ctrl && key === 83) saveAsImage("svg"); // Ctrl + "S" to save as SVG
   else if (ctrl && key === 77) saveMap(); // Ctrl + "M" to save MAP file
+  else if (ctrl && key === 71) saveGeoJSON(); // Ctrl + "G" to save as GeoJSON
   else if (ctrl && key === 85) mapToLoad.click(); // Ctrl + "U" to load MAP from URL
   else if (ctrl && key === 76) mapToLoad.click(); // Ctrl + "L" to load MAP from local file
   else if (ctrl && key === 81) toggleSaveReminder(); // Ctrl + "Q" to toggle save reminder

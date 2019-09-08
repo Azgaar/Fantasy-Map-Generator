@@ -1,176 +1,6 @@
 // Functions to save and load the map
 "use strict";
 
-// download map data as GeoJSON
-function saveGeoJSON() {
-    saveGeoJSON_Cells();
-    saveGeoJSON_Roads();
-    saveGeoJSON_Rivers();
-}
-
-function saveGeoJSON_Roads() {
-    // this is work-in-progress
-    roads = routes.select("#roads");
-    trails = routes.select("#trails");
-    searoutes = routes.select("#searoutes");
-
-    let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
-
-    routes._groups[0][0].childNodes.forEach(n => {
-        //console.log(n.id);
-        n.childNodes.forEach(r => {
-            data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"LineString\", \"coordinates\": ";
-            data += JSON.stringify(getRoadPoints(r));
-            data += " },\n   \"properties\": {\n";
-            data += "      \"id\": \""+r.id+"\",\n";
-            data += "      \"type\": \""+n.id+"\"\n";
-            data +="   }\n},\n";
-        });
-    });
-    data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
-    data += "]}";
-
-    const dataBlob = new Blob([data], {type: "application/json"});
-    const url = window.URL.createObjectURL(dataBlob);
-    const link = document.createElement("a");
-    document.body.appendChild(link);
-    link.download = "fmg_routes_" + Date.now() + ".geojson";
-    link.href = url;
-    link.click();
-    window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
-}
-
-function saveGeoJSON_Rivers() {
-    let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
-
-    rivers._groups[0][0].childNodes.forEach(n => {
-        data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"LineString\", \"coordinates\": ";
-        data += JSON.stringify(getRiverPoints(n));
-        data += " },\n   \"properties\": {\n";
-        data += "      \"id\": \""+n.id+"\",\n";
-        data += "      \"width\": \""+n.dataset.width+"\",\n";
-        data += "      \"increment\": \""+n.dataset.increment+"\"\n";
-        data +="   }\n},\n";
-    });
-    data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
-    data += "]}";
-
-    const dataBlob = new Blob([data], {type: "application/json"});
-    const url = window.URL.createObjectURL(dataBlob);
-    const link = document.createElement("a");
-    document.body.appendChild(link);
-    link.download = "fmg_rivers_" + Date.now() + ".geojson";
-    link.href = url;
-    link.click();
-    window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
-}
-
-function getRoadPoints(node) {
-    let points = [];
-    const l = node.getTotalLength();
-    const increment = l / Math.ceil(l / 2);
-    for (let i=0; i <= l; i += increment) {
-        const p = node.getPointAtLength(i);
-
-        let x = mapCoordinates.lonW + (p.x / graphWidth) * mapCoordinates.lonT;
-        let y = mapCoordinates.latN - (p.y / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
-
-        points.push([x,y]);
-    }
-    return points;
-}
-
-function getRiverPoints(node) {
-    let points = [];
-    const l = node.getTotalLength() / 2; // half-length
-    const increment = 0.25; // defines density of points
-    for (let i=l, c=i; i >= 0; i -= increment, c += increment) {
-        const p1 = node.getPointAtLength(i);
-        const p2 = node.getPointAtLength(c);
-
-        let x = mapCoordinates.lonW + (((p1.x+p2.x)/2) / graphWidth) * mapCoordinates.lonT;
-        let y = mapCoordinates.latN - (((p1.y+p2.y)/2) / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
-
-        points.push([x,y]);
-    }
-    return points;
-}
-
-
-function saveGeoJSON_Cells() {
-    let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
-
-    const cells = pack.cells;
-    const v = pack.vertices;
-
-    /*
-        my guesses on the cells structure:
-
-        cells.h = height
-        cells.p = coordinates of center point (of the voronoi cell)
-        cells.pop = population
-
-        // from voronoi.js:
-        const cells = {v: [], c: [], b: []}; // voronoi cells: v = cell vertices, c = adjacent cells, b = near-border cell
-        const vertices = {p: [], v: [], c: []}; // cells vertices: p = vertex coordinates, v = neighboring vertices, c = adjacent cells
-
-
-    */
-
-    cells.i.forEach(i => {
-        data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"Polygon\", \"coordinates\": [[";
-        cells.v[i].forEach(n => {
-            let x = mapCoordinates.lonW + (v.p[n][0] / graphWidth) * mapCoordinates.lonT;
-            let y = mapCoordinates.latN - (v.p[n][1] / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
-            data += "["+x+","+y+"],";
-        });
-        // close the ring
-        let x = mapCoordinates.lonW + (v.p[cells.v[i][0]][0] / graphWidth) * mapCoordinates.lonT;
-        let y = mapCoordinates.latN - (v.p[cells.v[i][0]][1] / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
-        data += "["+x+","+y+"]";
-
-        data += "]] },\n   \"properties\": {\n";
-
-        let height = parseInt(getFriendlyHeight(cells.h[i]));
-
-        data += "      \"id\": \""+i+"\",\n";
-        data += "      \"height\": \""+height+"\",\n";
-        data += "      \"biome\": \""+cells.biome[i]+"\",\n";
-        data += "      \"population\": \""+cells.pop[i]+"\",\n";
-        data += "      \"state\": \""+cells.state[i]+"\",\n";
-        data += "      \"province\": \""+cells.province[i]+"\",\n";
-        data += "      \"culture\": \""+cells.culture[i]+"\",\n";
-        data += "      \"religion\": \""+cells.religion[i]+"\"\n";
-        data +="   }\n},\n";
-    });
-
-/*
-    cells.i.forEach(i => {
-        let x = (cells.p[i][0] / graphWidth) * mapCoordinates.lonT + mapCoordinates.lonW;
-        let y = mapCoordinates.latN - (cells.p[i][1] / graphHeight) * mapCoordinates.lonT; // inverted in QGIS otherwise
-        let height = parseInt(getFriendlyHeight(cells.h[i]));
-
-        data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"Point\", \"coordinates\": ["+x+", "+y+", "+height+"] },\n   \"properties\": {\n";
-        data += "      \"id\": \""+i+"\",\n";
-        data += "      \"biome\": \""+cells.biome[i]+"\",\n";
-        data += "      \"height\": \""+cells.h[i]+"\"\n";
-        data +="   }\n},\n";
-    });
-*/
-
-    data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
-    data += "]}";
-
-    const dataBlob = new Blob([data], {type: "application/json"});
-    const url = window.URL.createObjectURL(dataBlob);
-    const link = document.createElement("a");
-    document.body.appendChild(link);
-    link.download = "fmg_cells_" + Date.now() + ".geojson";
-    link.href = url;
-    link.click();
-    window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
-}
-
 // download map as SVG or PNG file
 function saveAsImage(type) {
   console.time("saveAsImage");
@@ -385,6 +215,146 @@ async function saveMap() {
   link.click();
   tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
   window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
+}
+
+// download map data as GeoJSON
+function saveGeoJSON() {
+  alertMessage.innerHTML = `You can export map data in GeoJSON format used in GIS tools such as QGIS.
+  Check out <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export" target="_blank">wiki-page</a> for guidance`;
+
+  $("#alert").dialog({title: "GIS data export", resizable: false, width: 320, position: {my: "center", at: "center", of: "svg"},
+    buttons: {
+      Cells: saveGeoJSON_Cells,
+      Routes: saveGeoJSON_Roads,
+      Rivers: saveGeoJSON_Rivers,
+      Close: function() {$(this).dialog("close");}
+    }
+  });
+}
+
+function saveGeoJSON_Roads() {
+  let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
+
+  routes._groups[0][0].childNodes.forEach(n => {
+    n.childNodes.forEach(r => {
+      data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"LineString\", \"coordinates\": ";
+      data += JSON.stringify(getRoadPoints(r));
+      data += " },\n   \"properties\": {\n";
+      data += "      \"id\": \""+r.id+"\",\n";
+      data += "      \"type\": \""+n.id+"\"\n";
+      data +="   }\n},\n";
+    });
+  });
+  data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
+  data += "]}";
+
+  const dataBlob = new Blob([data], {type: "application/json"});
+  const url = window.URL.createObjectURL(dataBlob);
+  const link = document.createElement("a");
+  document.body.appendChild(link);
+  link.download = "fmg_routes_" + Date.now() + ".geojson";
+  link.href = url;
+  link.click();
+  window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
+}
+
+function saveGeoJSON_Rivers() {
+  let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
+
+  rivers._groups[0][0].childNodes.forEach(n => {
+    data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"LineString\", \"coordinates\": ";
+    data += JSON.stringify(getRiverPoints(n));
+    data += " },\n   \"properties\": {\n";
+    data += "      \"id\": \""+n.id+"\",\n";
+    data += "      \"width\": \""+n.dataset.width+"\",\n";
+    data += "      \"increment\": \""+n.dataset.increment+"\"\n";
+    data +="   }\n},\n";
+  });
+  data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
+  data += "]}";
+
+  const dataBlob = new Blob([data], {type: "application/json"});
+  const url = window.URL.createObjectURL(dataBlob);
+  const link = document.createElement("a");
+  document.body.appendChild(link);
+  link.download = "fmg_rivers_" + Date.now() + ".geojson";
+  link.href = url;
+  link.click();
+  window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
+}
+
+function getRoadPoints(node) {
+  let points = [];
+  const l = node.getTotalLength();
+  const increment = l / Math.ceil(l / 2);
+  for (let i=0; i <= l; i += increment) {
+    const p = node.getPointAtLength(i);
+
+    let x = mapCoordinates.lonW + (p.x / graphWidth) * mapCoordinates.lonT;
+    let y = mapCoordinates.latN - (p.y / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
+
+    points.push([x,y]);
+  }
+  return points;
+}
+
+function getRiverPoints(node) {
+  let points = [];
+  const l = node.getTotalLength() / 2; // half-length
+  const increment = 0.25; // defines density of points
+  for (let i=l, c=i; i >= 0; i -= increment, c += increment) {
+    const p1 = node.getPointAtLength(i);
+    const p2 = node.getPointAtLength(c);
+
+    let x = mapCoordinates.lonW + (((p1.x+p2.x)/2) / graphWidth) * mapCoordinates.lonT;
+    let y = mapCoordinates.latN - (((p1.y+p2.y)/2) / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
+    points.push([x,y]);
+  }
+  return points;
+}
+
+
+function saveGeoJSON_Cells() {
+  let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
+  const cells = pack.cells, v = pack.vertices;
+
+  cells.i.forEach(i => {
+    data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"Polygon\", \"coordinates\": [[";
+    cells.v[i].forEach(n => {
+      let x = mapCoordinates.lonW + (v.p[n][0] / graphWidth) * mapCoordinates.lonT;
+      let y = mapCoordinates.latN - (v.p[n][1] / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
+      data += "["+x+","+y+"],";
+    });
+    // close the ring
+    let x = mapCoordinates.lonW + (v.p[cells.v[i][0]][0] / graphWidth) * mapCoordinates.lonT;
+    let y = mapCoordinates.latN - (v.p[cells.v[i][0]][1] / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
+    data += "["+x+","+y+"]";
+    data += "]] },\n   \"properties\": {\n";
+
+    let height = parseInt(getFriendlyHeight(cells.h[i]));
+
+    data += "      \"id\": \""+i+"\",\n";
+    data += "      \"height\": \""+height+"\",\n";
+    data += "      \"biome\": \""+cells.biome[i]+"\",\n";
+    data += "      \"population\": \""+cells.pop[i]+"\",\n";
+    data += "      \"state\": \""+cells.state[i]+"\",\n";
+    data += "      \"province\": \""+cells.province[i]+"\",\n";
+    data += "      \"culture\": \""+cells.culture[i]+"\",\n";
+    data += "      \"religion\": \""+cells.religion[i]+"\"\n";
+    data +="   }\n},\n";
+  });
+
+  data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
+  data += "]}";
+
+  const dataBlob = new Blob([data], {type: "application/json"});
+  const url = window.URL.createObjectURL(dataBlob);
+  const link = document.createElement("a");
+  document.body.appendChild(link);
+  link.download = "fmg_cells_" + Date.now() + ".geojson";
+  link.href = url;
+  link.click();
+  window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
 }
 
 function uploadFile(file, callback) {
