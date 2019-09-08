@@ -1,6 +1,176 @@
 // Functions to save and load the map
 "use strict";
 
+// download map data as GeoJSON
+function saveGeoJSON() {
+    saveGeoJSON_Cells();
+    saveGeoJSON_Roads();
+    saveGeoJSON_Rivers();
+}
+
+function saveGeoJSON_Roads() {
+    // this is work-in-progress
+    roads = routes.select("#roads");
+    trails = routes.select("#trails");
+    searoutes = routes.select("#searoutes");
+
+    let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
+
+    routes._groups[0][0].childNodes.forEach(n => {
+        //console.log(n.id);
+        n.childNodes.forEach(r => {
+            data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"LineString\", \"coordinates\": ";
+            data += JSON.stringify(getRoadPoints(r));
+            data += " },\n   \"properties\": {\n";
+            data += "      \"id\": \""+r.id+"\",\n";
+            data += "      \"type\": \""+n.id+"\"\n";
+            data +="   }\n},\n";
+        });
+    });
+    data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
+    data += "]}";
+
+    const dataBlob = new Blob([data], {type: "application/json"});
+    const url = window.URL.createObjectURL(dataBlob);
+    const link = document.createElement("a");
+    document.body.appendChild(link);
+    link.download = "fmg_routes_" + Date.now() + ".geojson";
+    link.href = url;
+    link.click();
+    window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
+}
+
+function saveGeoJSON_Rivers() {
+    let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
+
+    rivers._groups[0][0].childNodes.forEach(n => {
+        data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"LineString\", \"coordinates\": ";
+        data += JSON.stringify(getRiverPoints(n));
+        data += " },\n   \"properties\": {\n";
+        data += "      \"id\": \""+n.id+"\",\n";
+        data += "      \"width\": \""+n.dataset.width+"\",\n";
+        data += "      \"increment\": \""+n.dataset.increment+"\"\n";
+        data +="   }\n},\n";
+    });
+    data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
+    data += "]}";
+
+    const dataBlob = new Blob([data], {type: "application/json"});
+    const url = window.URL.createObjectURL(dataBlob);
+    const link = document.createElement("a");
+    document.body.appendChild(link);
+    link.download = "fmg_rivers_" + Date.now() + ".geojson";
+    link.href = url;
+    link.click();
+    window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
+}
+
+function getRoadPoints(node) {
+    let points = [];
+    const l = node.getTotalLength();
+    const increment = l / Math.ceil(l / 2);
+    for (let i=0; i <= l; i += increment) {
+        const p = node.getPointAtLength(i);
+
+        let x = mapCoordinates.lonW + (p.x / graphWidth) * mapCoordinates.lonT;
+        let y = mapCoordinates.latN - (p.y / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
+
+        points.push([x,y]);
+    }
+    return points;
+}
+
+function getRiverPoints(node) {
+    let points = [];
+    const l = node.getTotalLength() / 2; // half-length
+    const increment = 0.25; // defines density of points
+    for (let i=l, c=i; i >= 0; i -= increment, c += increment) {
+        const p1 = node.getPointAtLength(i);
+        const p2 = node.getPointAtLength(c);
+
+        let x = mapCoordinates.lonW + (((p1.x+p2.x)/2) / graphWidth) * mapCoordinates.lonT;
+        let y = mapCoordinates.latN - (((p1.y+p2.y)/2) / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
+
+        points.push([x,y]);
+    }
+    return points;
+}
+
+
+function saveGeoJSON_Cells() {
+    let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
+
+    const cells = pack.cells;
+    const v = pack.vertices;
+
+    /*
+        my guesses on the cells structure:
+
+        cells.h = height
+        cells.p = coordinates of center point (of the voronoi cell)
+        cells.pop = population
+
+        // from voronoi.js:
+        const cells = {v: [], c: [], b: []}; // voronoi cells: v = cell vertices, c = adjacent cells, b = near-border cell
+        const vertices = {p: [], v: [], c: []}; // cells vertices: p = vertex coordinates, v = neighboring vertices, c = adjacent cells
+
+
+    */
+
+    cells.i.forEach(i => {
+        data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"Polygon\", \"coordinates\": [[";
+        cells.v[i].forEach(n => {
+            let x = mapCoordinates.lonW + (v.p[n][0] / graphWidth) * mapCoordinates.lonT;
+            let y = mapCoordinates.latN - (v.p[n][1] / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
+            data += "["+x+","+y+"],";
+        });
+        // close the ring
+        let x = mapCoordinates.lonW + (v.p[cells.v[i][0]][0] / graphWidth) * mapCoordinates.lonT;
+        let y = mapCoordinates.latN - (v.p[cells.v[i][0]][1] / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
+        data += "["+x+","+y+"]";
+
+        data += "]] },\n   \"properties\": {\n";
+
+        let height = parseInt(getFriendlyHeight(cells.h[i]));
+
+        data += "      \"id\": \""+i+"\",\n";
+        data += "      \"height\": \""+height+"\",\n";
+        data += "      \"biome\": \""+cells.biome[i]+"\",\n";
+        data += "      \"population\": \""+cells.pop[i]+"\",\n";
+        data += "      \"state\": \""+cells.state[i]+"\",\n";
+        data += "      \"province\": \""+cells.province[i]+"\",\n";
+        data += "      \"culture\": \""+cells.culture[i]+"\",\n";
+        data += "      \"religion\": \""+cells.religion[i]+"\"\n";
+        data +="   }\n},\n";
+    });
+
+/*
+    cells.i.forEach(i => {
+        let x = (cells.p[i][0] / graphWidth) * mapCoordinates.lonT + mapCoordinates.lonW;
+        let y = mapCoordinates.latN - (cells.p[i][1] / graphHeight) * mapCoordinates.lonT; // inverted in QGIS otherwise
+        let height = parseInt(getFriendlyHeight(cells.h[i]));
+
+        data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"Point\", \"coordinates\": ["+x+", "+y+", "+height+"] },\n   \"properties\": {\n";
+        data += "      \"id\": \""+i+"\",\n";
+        data += "      \"biome\": \""+cells.biome[i]+"\",\n";
+        data += "      \"height\": \""+cells.h[i]+"\"\n";
+        data +="   }\n},\n";
+    });
+*/
+
+    data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
+    data += "]}";
+
+    const dataBlob = new Blob([data], {type: "application/json"});
+    const url = window.URL.createObjectURL(dataBlob);
+    const link = document.createElement("a");
+    document.body.appendChild(link);
+    link.download = "fmg_cells_" + Date.now() + ".geojson";
+    link.href = url;
+    link.click();
+    window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
+}
+
 // download map as SVG or PNG file
 function saveAsImage(type) {
   console.time("saveAsImage");
@@ -161,23 +331,23 @@ function getMapData() {
     const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
     const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
     const params = [version, license, dateString, seed, graphWidth, graphHeight].join("|");
-    const options = [distanceUnitInput.value, distanceScaleInput.value, areaUnit.value, heightUnit.value, heightExponentInput.value, temperatureScale.value, 
-      barSize.value, barLabel.value, barBackOpacity.value, barBackColor.value, barPosX.value, barPosY.value, populationRate.value, urbanization.value, 
+    const options = [distanceUnitInput.value, distanceScaleInput.value, areaUnit.value, heightUnit.value, heightExponentInput.value, temperatureScale.value,
+      barSize.value, barLabel.value, barBackOpacity.value, barBackColor.value, barPosX.value, barPosY.value, populationRate.value, urbanization.value,
       mapSizeOutput.value, latitudeOutput.value, temperatureEquatorOutput.value, temperaturePoleOutput.value, precOutput.value, JSON.stringify(winds)].join("|");
     const coords = JSON.stringify(mapCoordinates);
     const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
     const notesData = JSON.stringify(notes);
-  
+
     // set transform values to default
     svg.attr("width", graphWidth).attr("height", graphHeight);
     const transform = d3.zoomTransform(svg.node());
     viewbox.attr("transform", null);
     const svg_xml = (new XMLSerializer()).serializeToString(svg.node());
-  
+
     // restore initial values
     svg.attr("width", svgWidth).attr("height", svgHeight);
     zoom.transform(svg, transform);
-  
+
     const gridGeneral = JSON.stringify({spacing:grid.spacing, cellsX:grid.cellsX, cellsY:grid.cellsY, boundary:grid.boundary, points:grid.points, features:grid.features});
     const features = JSON.stringify(pack.features);
     const cultures = JSON.stringify(pack.cultures);
@@ -185,13 +355,13 @@ function getMapData() {
     const burgs = JSON.stringify(pack.burgs);
     const religions = JSON.stringify(pack.religions);
     const provinces = JSON.stringify(pack.provinces);
-  
+
     // data format as below
-    const data = [params, options, coords, biomes, notesData, svg_xml, 
+    const data = [params, options, coords, biomes, notesData, svg_xml,
       gridGeneral, grid.cells.h, grid.cells.prec, grid.cells.f, grid.cells.t, grid.cells.temp,
       features, cultures, states, burgs,
-      pack.cells.biome, pack.cells.burg, pack.cells.conf, pack.cells.culture, pack.cells.fl, 
-      pack.cells.pop, pack.cells.r, pack.cells.road, pack.cells.s, pack.cells.state, 
+      pack.cells.biome, pack.cells.burg, pack.cells.conf, pack.cells.culture, pack.cells.fl,
+      pack.cells.pop, pack.cells.r, pack.cells.road, pack.cells.s, pack.cells.state,
       pack.cells.religion, pack.cells.province, pack.cells.crossroad, religions, provinces].join("\r\n");
     const blob = new Blob([data], {type: "text/plain"});
 
@@ -239,7 +409,7 @@ function uploadFile(file, callback) {
                 <br>Please keep using an ${archive}`;
     } else {
       load = true;
-      message =  `The map version (${mapVersion}) does not match the Generator version (${version}). 
+      message =  `The map version (${mapVersion}) does not match the Generator version (${version}).
                  <br>The map will be auto-updated. In case of issues please keep using an ${archive} of the Generator`;
     }
     alertMessage.innerHTML = message;
@@ -256,16 +426,16 @@ function parseLoadedData(data) {
   try {
     const reliefIcons = document.getElementById("defs-relief").innerHTML; // save relief icons
     const hatching = document.getElementById("hatching").cloneNode(true); // save hatching
-  
+
     void function parseParameters() {
       const params = data[0].split("|");
       if (params[3]) {seed = params[3]; optionsSeed.value = seed;}
       if (params[4]) graphWidth = +params[4];
       if (params[5]) graphHeight = +params[5];
     }()
-  
+
     console.group("Loaded Map " + seed);
-  
+
     void function parseOptions() {
       const options = data[1].split("|");
       if (options[0]) applyOption(distanceUnitInput, options[0]);
@@ -289,17 +459,17 @@ function parseLoadedData(data) {
       if (options[18]) precInput.value = precOutput.value = options[18];
       if (options[19]) winds = JSON.parse(options[19]);
     }()
-  
+
     void function parseConfiguration() {
       if (data[2]) mapCoordinates = JSON.parse(data[2]);
       if (data[4]) notes = JSON.parse(data[4]);
-  
+
       const biomes = data[3].split("|");
       biomesData = applyDefaultBiomesSystem();
       biomesData.color = biomes[0].split(",");
       biomesData.habitability = biomes[1].split(",").map(h => +h);
       biomesData.name = biomes[2].split(",");
-  
+
       // push custom biomes if any
       for (let i=biomesData.i.length; i < biomesData.name.length; i++) {
         biomesData.i.push(biomesData.i.length);
@@ -308,12 +478,12 @@ function parseLoadedData(data) {
         biomesData.cost.push(50);
       }
     }()
-  
+
     void function replaceSVG() {
       svg.remove();
       document.body.insertAdjacentHTML("afterbegin", data[5]);
     }()
-  
+
     void function redefineElements() {
       svg = d3.select("#map");
       defs = svg.select("#deftemp");
@@ -364,7 +534,7 @@ function parseLoadedData(data) {
       salt = lakes.select("#salt");
       burgLabels = labels.select("#burgLabels");
     }()
-  
+
     void function parseGridData() {
       grid = JSON.parse(data[6]);
       calculateVoronoi(grid, grid.points);
@@ -374,7 +544,7 @@ function parseLoadedData(data) {
       grid.cells.t = Int8Array.from(data[10].split(","));
       grid.cells.temp = Int8Array.from(data[11].split(","));
     }()
-  
+
     void function parsePackData() {
       pack = {};
       reGraph();
@@ -385,7 +555,7 @@ function parseLoadedData(data) {
       pack.burgs = JSON.parse(data[15]);
       pack.religions = data[29] ? JSON.parse(data[29]) : [{i: 0, name: "No religion"}];
       pack.provinces = data[30] ? JSON.parse(data[30]) : [0];
-  
+
       const cells = pack.cells;
       cells.biome = Uint8Array.from(data[16].split(","));
       cells.burg = Uint16Array.from(data[17].split(","));
@@ -401,7 +571,7 @@ function parseLoadedData(data) {
       cells.province = data[27] ? Uint16Array.from(data[27].split(",")) : new Uint16Array(cells.i.length);
       cells.crossroad = data[28] ? Uint16Array.from(data[28].split(",")) : new Uint16Array(cells.i.length);
     }()
-  
+
     void function restoreLayersState() {
       if (texture.style("display") !== "none" && texture.select("image").size()) turnButtonOn("toggleTexture"); else turnButtonOff("toggleTexture");
       if (terrs.selectAll("*").size()) turnButtonOn("toggleHeight"); else turnButtonOff("toggleHeight");
@@ -426,15 +596,15 @@ function parseLoadedData(data) {
       if (markers.selectAll("*").size() && markers.style("display") !== "none") turnButtonOn("toggleMarkers"); else turnButtonOff("toggleMarkers");
       if (ruler.style("display") !== "none") turnButtonOn("toggleRulers"); else turnButtonOff("toggleRulers");
       if (scaleBar.style("display") !== "none") turnButtonOn("toggleScaleBar"); else turnButtonOff("toggleScaleBar");
-  
+
       // special case for population bars
       const populationIsOn = population.selectAll("line").size();
       if (populationIsOn) drawPopulation();
       if (populationIsOn) turnButtonOn("togglePopulation"); else turnButtonOff("togglePopulation");
-  
+
       getCurrentPreset();
     }()
-  
+
     void function restoreEvents() {
       ruler.selectAll("g").call(d3.drag().on("start", dragRuler));
       ruler.selectAll("text").on("click", removeParent);
@@ -443,36 +613,36 @@ function parseLoadedData(data) {
       ruler.selectAll("g.ruler rect").call(d3.drag().on("start", rulerCenterDrag));
       ruler.selectAll("g.opisometer circle").call(d3.drag().on("start", dragOpisometerEnd));
       ruler.selectAll("g.opisometer circle").call(d3.drag().on("start", dragOpisometerEnd));
-  
+
       scaleBar.on("mousemove", () => tip("Click to open Units Editor"));
       legend.on("mousemove", () => tip("Drag to change the position. Click to hide the legend")).on("click", () => clearLegend());
     }()
-  
+
     void function resolveVersionConflicts() {
       const version = parseFloat(data[0].split("|")[0]);
       if (version == 0.8) {
         // 0.9 has additional relief icons to be included into older maps
         document.getElementById("defs-relief").innerHTML = reliefIcons;
       }
-  
+
       if (version < 1) {
         // 1.0 adds a new religions layer
         relig = viewbox.insert("g", "#terrain").attr("id", "relig");
         Religions.generate();
-  
+
         // 1.0 adds a legend box
         legend = svg.append("g").attr("id", "legend");
         legend.attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC")
           .attr("font-size", 13).attr("data-size", 13).attr("data-x", 99).attr("data-y", 93)
           .attr("stroke-width", 2.5).attr("stroke", "#812929").attr("stroke-dasharray", "0 4 10 4").attr("stroke-linecap", "round");
-  
+
         // 1.0 separated drawBorders fron drawStates()
         stateBorders = borders.append("g").attr("id", "stateBorders");
         provinceBorders = borders.append("g").attr("id", "provinceBorders");
         borders.attr("opacity", null).attr("stroke", null).attr("stroke-width", null).attr("stroke-dasharray", null).attr("stroke-linecap", null).attr("filter", null);
         stateBorders.attr("opacity", .8).attr("stroke", "#56566d").attr("stroke-width", 1).attr("stroke-dasharray", "2").attr("stroke-linecap", "butt");
         provinceBorders.attr("opacity", .8).attr("stroke", "#56566d").attr("stroke-width", .5).attr("stroke-dasharray", "1").attr("stroke-linecap", "butt");
-  
+
         // 1.0 adds state relations, provinces, forms and full names
         provs = viewbox.insert("g", "#borders").attr("id", "provs").attr("opacity", .6);
         BurgsAndStates.collectStatistics();
@@ -483,57 +653,57 @@ function parseLoadedData(data) {
         drawBorders();
         if (!layerIsOn("toggleBorders")) $('#borders').fadeOut();
         if (!layerIsOn("toggleStates")) regions.attr("display", "none").selectAll("path").remove();
-  
+
         // 1.0 adds hatching
         document.getElementsByTagName("defs")[0].appendChild(hatching);
-  
+
         // 1.0 adds zones layer
         zones = viewbox.insert("g", "#borders").attr("id", "zones").attr("display", "none");
         zones.attr("opacity", .6).attr("stroke", null).attr("stroke-width", 0).attr("stroke-dasharray", null).attr("stroke-linecap", "butt");
         addZone();
         if (!markers.selectAll("*").size()) {addMarkers(); turnButtonOn("toggleMarkers");}
-  
+
         // 1.0 add fogging layer (state focus)
         let fogging = viewbox.insert("g", "#ruler").attr("id", "fogging-cont").attr("mask", "url(#fog)")
           .append("g").attr("id", "fogging").attr("display", "none");
         fogging.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
         defs.append("mask").attr("id", "fog").append("rect").attr("x", 0).attr("y", 0).attr("width", "100%")
           .attr("height", "100%").attr("fill", "white");
-  
+
         // 1.0 changes states opacity bask to regions level
         if (statesBody.attr("opacity")) {
           regions.attr("opacity", statesBody.attr("opacity"));
           statesBody.attr("opacity", null);
         }
-  
+
         // 1.0 changed labels to multi-lined
         labels.selectAll("textPath").each(function() {
           const text = this.textContent;
           const shift = this.getComputedTextLength() / -1.5;
           this.innerHTML = `<tspan x="${shift}">${text}</tspan>`;
         });
-  
+
         // 1.0 added new biome - Wetland
         biomesData.name.push("Wetland");
         biomesData.color.push("#0b9131");
         biomesData.habitability.push(12);
       }
-  
+
       if (version == 1) {
         // v 1.0 initial code had a bug with religion layer id
         if (!relig.size()) relig = viewbox.insert("g", "#terrain").attr("id", "relig");
-  
+
         // v 1.0 initially has Sympathy status then relaced with Friendly
         for (const s of pack.states) {
           s.diplomacy = s.diplomacy.map(r => r === "Sympathy" ? "Friendly" : r);
         }
       }
     }()
-  
+
     changeMapSize();
     if (window.restoreDefaultEvents) restoreDefaultEvents();
     invokeActiveZooming();
-  
+
     console.warn(`TOTAL: ${rn((performance.now()-uploadFile.timeStart)/1000,2)}s`);
     showStatistics();
     console.groupEnd("Loaded Map " + seed);

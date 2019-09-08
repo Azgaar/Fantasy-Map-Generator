@@ -252,7 +252,7 @@ function editBurgs() {
   }
 
   function downloadBurgsData() {
-    let data = "Id,Burg,State,Culture,Population,Capital,Port\n"; // headers
+    let data = "Id,Burg,State,Culture,Population,Capital,Port,Longitude,Latitude,Elevation\n"; // headers
     const valid = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
 
     valid.forEach(b => {
@@ -262,7 +262,12 @@ function editBurgs() {
       data += pack.cultures[b.culture].name + ",";
       data += rn(b.population * populationRate.value * urbanization.value) + ",";
       data += b.capital ? "capital," : ",";
-      data += b.port ? "port\n" : "\n";
+      data += b.port ? "port," : ",";
+
+      // add geography data
+      data += mapCoordinates.lonW + (b.x / graphWidth) * mapCoordinates.lonT + ",";
+      data += mapCoordinates.latN - (b.y / graphHeight) * mapCoordinates.latT + ","; // this is inverted in QGIS otherwise
+      data += parseInt(getFriendlyHeight(pack.cells.h[b.cell])) + "\n";
     });
 
     const dataBlob = new Blob([data], {type: "text/plain"});
@@ -315,7 +320,7 @@ function editBurgs() {
         }
       });
     }
-    
+
     fileReader.readAsText(fileToLoad, "UTF-8");
   }
 
@@ -339,4 +344,3 @@ function editBurgs() {
   }
 
 }
-
