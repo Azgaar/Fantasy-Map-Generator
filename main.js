@@ -397,7 +397,7 @@ function applyDefaultStyle() {
 
   coastline.attr("opacity", .5).attr("stroke", "#1f3846").attr("stroke-width", .7).attr("filter", "url(#dropShadow)");
   styleCoastlineAuto.checked = true;
-  relig.attr("opacity", .6).attr("stroke", "#777777").attr("stroke-width", .2).attr("filter", null).attr("fill-rule", "evenodd");
+  relig.attr("opacity", .7).attr("stroke", "#404040").attr("stroke-width", .7).attr("filter", null).attr("fill-rule", "evenodd");
   cults.attr("opacity", .6).attr("stroke", "#777777").attr("stroke-width", .5).attr("filter", null).attr("fill-rule", "evenodd");
   icons.selectAll("g").attr("opacity", null).attr("fill", "#ffffff").attr("stroke", "#3e3e4b").attr("filter", null).attr("mask", null);
   landmass.attr("opacity", 1).attr("fill", "#eef6fb").attr("filter", null);

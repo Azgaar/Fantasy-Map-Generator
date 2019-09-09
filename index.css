@@ -200,6 +200,13 @@ i.icon-lock {
 	cursor: pointer;
 }
 
+#religionInfo {
+	text-align: center;
+  font-family: sans-serif;
+  font-style: italic;
+  font-size: 1.2em;
+}
+
 #burgLabels {
 	dominant-baseline: alphabetic;
 	text-anchor: middle;
@@ -1921,7 +1928,7 @@ svg.button {
 #legend {
 	cursor: move;
 	-moz-user-select: none;
-	user-select: none;	
+	user-select: none;
 }
 
 .dontAsk {

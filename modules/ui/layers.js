@@ -881,7 +881,7 @@ function drawGrid() {
       x0 = x1, y0 = y1;
       return [rn(dx, 2), rn(dy, 2)];
     });
-  }  
+  }
 
   console.timeEnd("drawGrid");
 }

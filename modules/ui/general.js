@@ -231,9 +231,12 @@ document.addEventListener("keydown", function(event) {
   const active = document.activeElement.tagName;
   if (active === "INPUT" || active === "SELECT" || active === "TEXTAREA") return; // don't trigger if user inputs a text
   if (active === "DIV" && document.activeElement.contentEditable === "true") return; // don't trigger if user inputs a text
+  event.preventDefault();
+  event.stopPropagation();
+
   const key = event.keyCode, ctrl = event.ctrlKey, shift = event.shiftKey, meta = event.metaKey;
   if (key === 27) {closeDialogs(); hideOptions();} // Escape to close all dialogs
-  else if (key === 9) {toggleOptions(event); event.preventDefault();} // Tab to toggle options
+  else if (key === 9) toggleOptions(event); // Tab to toggle options
 
   else if (key === 113) regeneratePrompt(); // "F2" for new map
   else if (key === 46) removeElementOnKey(); // "Delete" to remove the selected element

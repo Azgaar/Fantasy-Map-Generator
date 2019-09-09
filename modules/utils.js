@@ -201,7 +201,7 @@ function getRandomColor() {
 
 // mix a color with a random color
 function getMixedColor(color, mix = .2, bright = .3) {
-  const c = color[0] === "#" ? color : getRandomColor(); // if provided color is not hex (e.g. harching), generate random one
+  const c = color && color[0] === "#" ? color : getRandomColor(); // if provided color is not hex (e.g. harching), generate random one
   return d3.color(d3.interpolate(c, getRandomColor())(mix)).brighter(bright).hex();
 }
 

@@ -65,8 +65,8 @@
       const form = rw(forms.Folk);
       const name = c.name + " " + rw(types[form]);
       const deity = form === "Animism" ? null : getDeityName(c.i);
-      const color = getRandomColor(); // `url(#hatch${rand(8,13)})`;
-      religions.push({i: c.i, name, color, culture: c.i, type:"Folk", form, deity});
+      const color = getMixedColor(c.color, .1, 0); // `url(#hatch${rand(8,13)})`;
+      religions.push({i: c.i, name, color, culture: c.i, type:"Folk", form, deity, center: c.center, origin:0});
     });
 
     if (religionsInput.value == 0 || pack.cultures.length < 2) return;
@@ -101,10 +101,11 @@
       // add "Old" to name of the folk religion on this culture
       const folk = religions.find(r => expansion === "culture" && r.culture === culture && r.type === "Folk");
       if (folk && folk.name.slice(0,3) !== "Old") folk.name = "Old " + folk.name;
+      const origin = religions.find(r => r.culture === culture && r.type === "Folk").i || 0;
 
       const expansionism = rand(3, 8);
-      const color = getRandomColor(); // `url(#hatch${rand(0,5)})`;
-      religions.push({i: religions.length, name, color, culture, type:"Organized", form, deity, expansion, expansionism, center});
+      const color = getMixedColor(religions[origin].color, .3, 0); // `url(#hatch${rand(0,5)})`;
+      religions.push({i: religions.length, name, color, culture, type:"Organized", form, deity, expansion, expansionism, center, origin});
       religionsTree.add([x, y]);
       //debug.append("circle").attr("cx", x).attr("cy", y).attr("r", 2).attr("fill", "blue");
     }
@@ -120,11 +121,12 @@
       if (religionsTree.find(x, y, s) !== undefined) continue; // to close to existing religion
 
       const culture = cells.culture[center];
+      const origin = religions.find(r => r.culture === culture && r.type === "Folk").i || 0;
       const deity = getDeityName(culture);
       const name = getCultName(form, center);
       const expansionism = gauss(1.1, .5, 0, 5);
-      const color = getRandomColor(); // "url(#hatch7)";
-      religions.push({i: religions.length, name, color, culture, type:"Cult", form, deity, expansion:"global", expansionism, center});
+      const color = getMixedColor(cultures[culture].color, .5, 0); // "url(#hatch7)";
+      religions.push({i: religions.length, name, color, culture, type:"Cult", form, deity, expansion:"global", expansionism, center, origin});
       religionsTree.add([x, y]);
       //debug.append("circle").attr("cx", x).attr("cy", y).attr("r", 2).attr("fill", "red");
     }
@@ -145,14 +147,15 @@
         const culture = cells.culture[center];
         const name = getCultName("Heresy", center);
         const expansionism = gauss(1.2, .5, 0, 5);
-        const color = getRandomColor(); // "url(#hatch6)";
-        religions.push({i: religions.length, name, color, culture, type:"Heresy", form:"Heresy", deity: r.deity, expansion:"global", expansionism, center});
+        const color = getMixedColor(r.color, .4, .2); // "url(#hatch6)";
+        religions.push({i: religions.length, name, color, culture, type:"Heresy", form:r.form, deity: r.deity, expansion:"global", expansionism, center, origin:r.i});
         religionsTree.add([x, y]);
         //debug.append("circle").attr("cx", x).attr("cy", y).attr("r", 2).attr("fill", "green");
       }
     });
 
     expandHeresies();
+    checkCenters();
 
     console.timeEnd('generateReligions');
   }
@@ -162,22 +165,23 @@
     const r = cells.religion[center];
     const i = religions.length;
     const culture = cells.culture[center];
-    const color = getRandomColor();
+    const color = getMixedColor(religions[r].color, .3, 0);
 
     const type = religions[r].type === "Organized" ? rw({Organized:4, Cult:1, Heresy:2}) : rw({Organized:5, Cult:2});
     const form = rw(forms[type]);
-    const deity = form === "Heresy" ? religions[r].deity : form === "Non-theism" ? null : getDeityName(culture);
-    
+    const deity = type === "Heresy" ? religions[r].deity : form === "Non-theism" ? null : getDeityName(culture);
+
     let name, expansion;
     if (type === "Organized") [name, expansion] = getReligionName(form, deity, center)
     else {name = getCultName(form, center); expansion = "global";}
-
-    religions.push({i, name, color, culture, type, form, deity, expansion, expansionism:0, center, area: 0, rural: 0, urban: 0});
+    const formName = type === "Heresy" ? religions[r].form : form;
+    const code = getCode(name);
+    religions.push({i, name, color, culture, type, form:formName, deity, expansion, expansionism:0, center, cells:0, area:0, rural:0, urban:0, origin:r, code});
+    cells.religion[center] = i;
   }
 
   // growth algorithm to assign cells to religions
   const expandReligions = function() {
-    console.time("expandReligions");
     const cells = pack.cells, religions = pack.religions;
     const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
     const cost = [];
@@ -215,17 +219,15 @@
         }
       });
     }
-    console.timeEnd("expandReligions");
   }
 
-    // growth algorithm to assign cells to heresies
+  // growth algorithm to assign cells to heresies
   const expandHeresies = function() {
-    console.time("expandHeresies");
     const cells = pack.cells, religions = pack.religions;
     const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
     const cost = [];
 
-    religions.filter(r => r.form === "Heresy").forEach(r => {
+    religions.filter(r => r.type === "Heresy").forEach(r => {
       const b = cells.religion[r.center]; // "base" religion id
       cells.religion[r.center] = r.i; // heresy id
       queue.queue({e:r.center, p:0, r:r.i, b}); 
@@ -253,8 +255,31 @@
         }
       });
     }
-    //debug.selectAll(".text").data(cost).enter().append("text").attr("x", (d, e) => cells.p[e][0]-1).attr("y", (d, e) => cells.p[e][1]-1).text(d => d ? rn(d) : "").attr("font-size", 2);
-    console.timeEnd("expandHeresies");
+  }
+
+  function checkCenters() {
+    const cells = pack.cells, religions = pack.religions;
+
+    religions.filter(r => r.i).forEach(r => {
+      r.code = getCode(r.name);
+
+      // move religion center if it's not within religion area after expansion
+      if (cells.religion[r.center] === r.i) return; // in area
+      const religCells = cells.i.filter(i => cells.religion[i] === r.i);
+      if (!religCells.length) return; // extinct religion
+      r.center = religCells.sort((a,b) => b.pop - a.pop)[0];
+    });
+  }
+
+  // assign a unique two-letters code (abbreviation)
+  function getCode(rawName) {
+    const name = rawName.replace("Old ", ""); // remove Old prefix
+    const words = name.split(" "), letters = words.join("");
+    let code = words.length === 2 ? words[0][0]+words[1][0] : letters.slice(0,2);
+    for (let i=1; i < letters.length-1 && pack.religions.some(r => r.code === code); i++) {
+      code = letters[0] + letters[i].toUpperCase();
+    }
+    return code;
   }
 
   // get supreme deity name

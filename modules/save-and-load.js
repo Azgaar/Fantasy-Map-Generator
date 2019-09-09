@@ -671,6 +671,12 @@ function parseLoadedData(data) {
 
         // labels should be toggled via style attribute, so remove display attribute
         labels.attr("display", null);
+
+        // v 1.0 added religions heirarchy tree
+        pack.religions.forEach(r => {
+          r.origin = 0;
+          r.code = r.name.slice(0, 2);
+        });
       }
     }()
 

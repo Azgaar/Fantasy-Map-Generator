@@ -10,8 +10,8 @@ function editReligions() {
 
   const body = document.getElementById("religionsBody");
   const animate = d3.transition().duration(1500).ease(d3.easeSinIn);
-  drawReligionCenters();
   refreshReligionsEditor();
+  drawReligionCenters();
 
   if (modules.editReligions) return;
   modules.editReligions = true;
@@ -25,6 +25,7 @@ function editReligions() {
   document.getElementById("religionsEditorRefresh").addEventListener("click", refreshReligionsEditor);
   document.getElementById("religionsLegend").addEventListener("click", toggleLegend);
   document.getElementById("religionsPercentage").addEventListener("click", togglePercentageMode);
+  document.getElementById("religionsHeirarchy").addEventListener("click", showHierarchy);
   document.getElementById("religionsExtinct").addEventListener("click", toggleExtinct);
   document.getElementById("religionsManually").addEventListener("click", enterReligionsManualAssignent);
   document.getElementById("religionsManuallyApply").addEventListener("click", applyReligionsManualAssignent);
@@ -39,11 +40,12 @@ function editReligions() {
 
   function religionsCollectStatistics() {
     const cells = pack.cells, religions = pack.religions;
-    religions.forEach(r => r.area = r.rural = r.urban = 0);
+    religions.forEach(r => r.cells = r.area = r.rural = r.urban = 0);
 
     for (const i of cells.i) {
       if (cells.h[i] < 20) continue;
       const r = cells.religion[i];
+      religions[r].cells += 1;
       religions[r].area += cells.area[i];
       religions[r].rural += cells.pop[i];
       if (cells.burg[i]) religions[r].urban += pack.burgs[cells.burg[i]].population;
@@ -62,7 +64,7 @@ function editReligions() {
       const rural = r.rural * populationRate.value;
       const urban = r.urban * populationRate.value * urbanization.value;
       const population = rn(rural + urban);
-      if (r.i && !population && body.dataset.extinct !== "show") continue; // hide extinct religions
+      if (r.i && !r.cells && body.dataset.extinct !== "show") continue; // hide extinct religions
       const populationTip = `Believers: ${si(population)}; Rural areas: ${si(rural)}; Urban areas: ${si(urban)}`;
       totalArea += area;
       totalPopulation += population;
@@ -136,18 +138,38 @@ function editReligions() {
   }
 
   function religionHighlightOn(event) {
+    const religion = +event.target.dataset.id;
+    const info = document.getElementById("religionInfo");
+    if (info) {
+      d3.select("#religionHierarchy").select("g[data-id='"+religion+"'] > path")
+        .attr("stroke", "#c13119").attr("stroke-width", 2);
+      const r = pack.religions[religion];
+      const type = r.name.includes(r.type) ? "" 
+        : r.type === "Folk" || r.type === "Organized" 
+        ? ". " + r.type + " religion" : ". " + r.type;
+      const form = r.form === r.type || r.name.includes(r.form) ? "" : ". " + r.form;
+      const rural = r.rural * populationRate.value;
+      const urban = r.urban * populationRate.value * urbanization.value;
+      const population = rural + urban > 0 ? ". " + si(rn(rural + urban)) + " believers" : ". Extinct";
+      info.innerHTML = `${r.name}${type}${form}${population}`;
+    }
+
     if (!layerIsOn("toggleReligions")) return;
     if (customization) return;
-    const religion = +event.target.dataset.id;
     relig.select("#religion"+religion).raise().transition(animate).attr("stroke-width", 2.5).attr("stroke", "#c13119");
-    debug.select("#cultureCenter"+religion).raise().transition(animate).attr("r", 8).attr("stroke", "#c13119");
+    debug.select("#religionsCenter"+religion).raise().transition(animate).attr("r", 8).attr("stroke-width", 2).attr("stroke", "#c13119");
   }
 
   function religionHighlightOff(event) {
-    if (!layerIsOn("toggleReligions")) return;
     const religion = +event.target.dataset.id;
+    const info = document.getElementById("religionInfo");
+    if (info) {
+      d3.select("#religionHierarchy").select("g[data-id='"+religion+"'] > path")
+        .attr("stroke", "#333333").attr("stroke-width", 1);
+      info.innerHTML = "&#8205;";
+    }
     relig.select("#religion"+religion).transition().attr("stroke-width", null).attr("stroke", null);
-    debug.select("#cultureCenter"+religion).transition().attr("r", 6).attr("stroke", null);
+    debug.select("#religionsCenter"+religion).transition().attr("r", 4).attr("stroke-width", 1.2).attr("stroke", null);
   }
 
   function religionChangeColor() {
@@ -159,7 +181,7 @@ function editReligions() {
       el.setAttribute("fill", fill);
       pack.religions[religion].color = fill;
       relig.select("#religion"+religion).attr("fill", fill);
-      debug.select("#cultureCenter"+religion).attr("fill", fill);
+      debug.select("#religionsCenter"+religion).attr("fill", fill);
     }
 
     openPicker(currentFill, callback);
@@ -202,28 +224,37 @@ function editReligions() {
     if (customization) return;
     const religion = +this.parentNode.dataset.id;
     relig.select("#religion"+religion).remove();
-    debug.select("#cultureCenter"+religion).remove();
+    debug.select("#religionsCenter"+religion).remove();
 
     pack.cells.religion.forEach((r, i) => {if(r === religion) pack.cells.religion[i] = 0;});
     pack.religions[religion].removed = true;
+    const origin = pack.religions[religion].origin;
+    pack.religions.forEach(r => {if(r.origin === religion) r.origin = origin;});
 
     refreshReligionsEditor();
   }
 
   function drawReligionCenters() {
-    const tooltip = "Drag to move the religion center (it won't affect religions distribution)";
     debug.select("#religionCenters").remove();
     const religionCenters = debug.append("g").attr("id", "religionCenters")
-      .attr("stroke-width", 2).attr("stroke", "#444444").style("cursor", "move");
+      .attr("stroke-width", 1.2).attr("stroke", "#444444").style("cursor", "move");
 
-    const data = pack.religions.filter(r => r.center && !r.removed);
+    const data = pack.religions.filter(r => r.i && r.center && r.cells && !r.removed);
     religionCenters.selectAll("circle").data(data).enter().append("circle")
-      .attr("id", d => "cultureCenter"+d.i).attr("data-id", d => d.i)
-      .attr("r", 6).attr("fill", d => pack.religions[d.i].color)
+      .attr("id", d => "religionsCenter"+d.i).attr("data-id", d => d.i)
+      .attr("r", 4).attr("fill", d => d.color)
       .attr("cx", d => pack.cells.p[d.center][0]).attr("cy", d => pack.cells.p[d.center][1])
-      .on("mouseenter", d => {tip(tooltip, true); body.querySelector(`div[data-id='${d.i}']`).classList.add("selected"); religionHighlightOn(event);})
-      .on("mouseleave", d => {tip('', true); body.querySelector(`div[data-id='${d.i}']`).classList.remove("selected"); religionHighlightOff(event);})
-      .call(d3.drag().on("start", religionCenterDrag));
+      .on("mouseenter", d => {
+        tip(d.name+ ". Drag to move the religion center", true);
+        const el = body.querySelector(`div[data-id='${d.i}']`);
+        if (el) el.classList.add("selected");
+        religionHighlightOn(event);
+      }).on("mouseleave", d => {
+        tip('', true);
+        const el = body.querySelector(`div[data-id='${d.i}']`)
+        if (el) el.classList.remove("selected");
+        religionHighlightOff(event);
+      }).call(d3.drag().on("start", religionCenterDrag));
   }
 
   function religionCenterDrag() {
@@ -257,6 +288,61 @@ function editReligions() {
       body.dataset.type = "absolute";
       religionsEditorAddLines();
     }
+  }
+
+  function showHierarchy() {
+    // build hierarchy tree
+    const religions = pack.religions.filter(r => !r.removed);
+    const root = d3.stratify().id(d => d.i).parentId(d => d.origin)(religions);
+    const treeWidth = root.leaves().length;
+    const treeHeight = root.height;
+    const width = treeWidth * 40, height = treeHeight * 60;
+
+    const margin = {top: 10, right: 10, bottom: -5, left: 10};
+    const w = width - margin.left - margin.right;
+    const h = height + 30 - margin.top - margin.bottom;
+    const treeLayout = d3.tree().size([w, h]);
+
+    treeLayout(root);
+
+    // prepare svg
+    alertMessage.innerHTML = "<div id='religionInfo'>&#8205;</div>";
+    const svg = d3.select("#alertMessage").insert("svg", "#religionInfo").attr("id", "religionHierarchy")
+      .attr("width", width).attr("height", height).style("text-anchor", "middle");
+    const graph = svg.append("g").attr("transform", `translate(10, -45)`);
+    const links = graph.append("g").attr("fill", "none").attr("stroke", "#aaaaaa");
+    const nodes = graph.append("g");
+
+    // render tree
+    links.selectAll('path').data(root.links()).enter()
+      .append('path').attr("d", d => {return "M" + d.source.x + "," + d.source.y
+          + "C" + d.source.x + "," + (d.source.y * 3 + d.target.y) / 4
+          + " " + d.target.x + "," + (d.source.y * 2 + d.target.y) / 3
+          + " " + d.target.x + "," + d.target.y;});
+
+    const node = nodes.selectAll('g').data(root.descendants()).enter()
+      .append('g').attr("data-id", d => d.data.i)
+      .attr("transform", d => `translate(${d.x}, ${d.y})`)
+      .on("mouseenter", () => religionHighlightOn(event))
+      .on("mouseleave", () => religionHighlightOff(event));
+
+    node.append("path").attr("d", d => {
+        if (d.data.type === "Folk") return "M11.3,0A11.3,11.3,0,1,1,-11.3,0A11.3,11.3,0,1,1,11.3,0"; else // circle
+        if (d.data.type === "Heresy") return "M0,-14L14,0L0,14L-14,0Z"; else // diamond
+        if (d.data.type === "Cult") return "M-6.5,-11.26l13,0l6.5,11.26l-6.5,11.26l-13,0l-6.5,-11.26Z"; else // hex
+        if (!d.data.i) return "M5,0A5,5,0,1,1,-5,0A5,5,0,1,1,5,0"; else // small circle
+        return "M-11,-11h22v22h-22Z"; // square
+      }).attr("stroke", "#333333")
+        .attr("fill", d => d.data.i ? d.data.color : "#ffffff")
+        .attr("stroke-dasharray", d => d.data.cells ? "null" : "1");
+
+    node.append("text").attr("dy", ".35em").style("pointer-events", "none")
+      .text(d => d.data.i ? d.data.code : '');
+
+    $("#alert").dialog({
+      title: "Religions tree", width: fitContent(), resizable: false, 
+      position: {my: "left center", at: "left+10 center", of: "svg"}, buttons: {}
+    });
   }
 
   function toggleExtinct() {
@@ -354,6 +440,7 @@ function editReligions() {
     if (changed.size()) {
       drawReligions();
       refreshReligionsEditor();
+      drawReligionCenters();
     }
     exitReligionsManualAssignment();
   }
@@ -402,10 +489,11 @@ function editReligions() {
     if (occupied) {tip("This cell is already a religion center. Please select a different cell", false, "error"); return;}
 
     if (d3.event.shiftKey === false) exitAddReligionMode();
-
     Religions.add(center);
+
+    drawReligions();
+    refreshReligionsEditor();
     drawReligionCenters();
-    religionsEditorAddLines();
   }
 
   function downloadReligionsData() {

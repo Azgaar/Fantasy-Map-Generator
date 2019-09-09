@@ -1163,8 +1163,7 @@
             <tr data-tip="Set grid cells spacing (size)">
               <td>Size</td>
               <td>
-                <input id="styleGridSize" type="range" min=2 max=50 step=.1 value=10 style="width:42%">
-                <output id="styleGridSizeOutput" data-tip="Grid cells spacing in pixels">10</output>
+                <input id="styleGridSize" type="number" min=2 max=50 step=.001 value=10 >
                 <output id="styleGridSizeFriendly" data-tip="Distance between two adjacent cells in map scale">(52 mi)</output>
               </td>
             </tr>
@@ -1599,7 +1598,7 @@
             </td>
           </tr>
 
-          <tr data-tip="Define a number of towns to be placed (if suitable area is enougth)">
+          <tr data-tip="Define a number of towns to be placed (if enough suitable land exists)">
             <td>
               <i data-locked=0 id="lock_manors" class="icon-lock-open"></i>
             </td>
@@ -2780,7 +2779,8 @@
         <button id="religionsEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
         <button id="religionsLegend" data-tip="Toggle Legend box" class="icon-list-bullet"></button>
         <button id="religionsPercentage" data-tip="Toggle percentage / absolute values display mode" class="icon-percent"></button>
-        <button id="religionsExtinct" data-tip="Show/hide extinct religions (religions without believers)" class="icon-adjust"></button>
+        <button id="religionsHeirarchy" data-tip="Show religions hierarchy tree" class="icon-fork"></button>
+        <button id="religionsExtinct" data-tip="Show/hide extinct religions (religions without cells)" class="icon-adjust"></button>
 
         <button id="religionsManually" data-tip="Manually re-assign religions" class="icon-brush"></button>
         <div id="religionsManuallyButtons" style="display: none">

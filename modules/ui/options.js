@@ -343,17 +343,18 @@ styleClippingInput.addEventListener("change", function() {
 
 styleGridType.addEventListener("change", function() {
   if (layerIsOn("toggleGrid")) drawGrid();
+  calculateFriendlyGridSize();
 });
 
 styleGridSize.addEventListener("input", function() {
   if (layerIsOn("toggleGrid")) drawGrid();
-  styleGridSizeOutput.value = this.value;
   calculateFriendlyGridSize();
 });
 
 function calculateFriendlyGridSize() {
-  const size = styleGridSize.value * Math.cos(30 * Math.PI / 180) * 2;;
-  const friendly = "(" + rn(size * distanceScaleInput.value) + " " + distanceUnitInput.value + ")";
+  const square = styleGridType.value === "square";
+  const size = square ? styleGridSize.value : styleGridSize.value * Math.cos(30 * Math.PI / 180) * 2;
+  const friendly = `${rn(size * distanceScaleInput.value, 2)} ${distanceUnitInput.value}`;
   styleGridSizeFriendly.value = friendly;
 }
 
