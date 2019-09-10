@@ -226,12 +226,16 @@ function applyOption(select, option) {
   select.value = option;
 }
 
+// prevent default browser behavior for FMG-used hotkeys
+document.addEventListener("keydown", event => {
+  if ([112, 113, 117, 120, 9].includes(event.keyCode)) event.preventDefault(); // F1, F2, F6, F9, Tab
+});
+
 // Hotkeys, see github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys
-document.addEventListener("keydown", function(event) {
+document.addEventListener("keyup", event => {
   const active = document.activeElement.tagName;
   if (active === "INPUT" || active === "SELECT" || active === "TEXTAREA") return; // don't trigger if user inputs a text
   if (active === "DIV" && document.activeElement.contentEditable === "true") return; // don't trigger if user inputs a text
-  event.preventDefault();
   event.stopPropagation();
 
   const key = event.keyCode, ctrl = event.ctrlKey, shift = event.shiftKey, meta = event.metaKey;

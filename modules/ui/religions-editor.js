@@ -141,8 +141,7 @@ function editReligions() {
     const religion = +event.target.dataset.id;
     const info = document.getElementById("religionInfo");
     if (info) {
-      d3.select("#religionHierarchy").select("g[data-id='"+religion+"'] > path")
-        .attr("stroke", "#c13119").attr("stroke-width", 2);
+      d3.select("#religionHierarchy").select("g[data-id='"+religion+"'] > path").classed("selected", 1);
       const r = pack.religions[religion];
       const type = r.name.includes(r.type) ? "" 
         : r.type === "Folk" || r.type === "Organized" 
@@ -151,7 +150,8 @@ function editReligions() {
       const rural = r.rural * populationRate.value;
       const urban = r.urban * populationRate.value * urbanization.value;
       const population = rural + urban > 0 ? ". " + si(rn(rural + urban)) + " believers" : ". Extinct";
-      info.innerHTML = `${r.name}${type}${form}${population}`;
+      const hint = ". Drag to change the origin";
+      info.innerHTML = `${r.name}${type}${form}${population}${hint}`;
     }
 
     if (!layerIsOn("toggleReligions")) return;
@@ -164,8 +164,7 @@ function editReligions() {
     const religion = +event.target.dataset.id;
     const info = document.getElementById("religionInfo");
     if (info) {
-      d3.select("#religionHierarchy").select("g[data-id='"+religion+"'] > path")
-        .attr("stroke", "#333333").attr("stroke-width", 1);
+      d3.select("#religionHierarchy").select("g[data-id='"+religion+"'] > path").classed("selected", 0);
       info.innerHTML = "&#8205;";
     }
     relig.select("#religion"+religion).transition().attr("stroke-width", null).attr("stroke", null);
@@ -293,7 +292,7 @@ function editReligions() {
   function showHierarchy() {
     // build hierarchy tree
     const religions = pack.religions.filter(r => !r.removed);
-    const root = d3.stratify().id(d => d.i).parentId(d => d.origin)(religions);
+    let root = d3.stratify().id(d => d.i).parentId(d => d.origin)(religions);
     const treeWidth = root.leaves().length;
     const treeHeight = root.height;
     const width = treeWidth * 40, height = treeHeight * 60;
@@ -303,8 +302,6 @@ function editReligions() {
     const h = height + 30 - margin.top - margin.bottom;
     const treeLayout = d3.tree().size([w, h]);
 
-    treeLayout(root);
-
     // prepare svg
     alertMessage.innerHTML = "<div id='religionInfo'>&#8205;</div>";
     const svg = d3.select("#alertMessage").insert("svg", "#religionInfo").attr("id", "religionHierarchy")
@@ -313,36 +310,63 @@ function editReligions() {
     const links = graph.append("g").attr("fill", "none").attr("stroke", "#aaaaaa");
     const nodes = graph.append("g");
 
-    // render tree
-    links.selectAll('path').data(root.links()).enter()
+    renderTree();
+    function renderTree() {
+      treeLayout(root);
+      links.selectAll('path').data(root.links()).enter()
       .append('path').attr("d", d => {return "M" + d.source.x + "," + d.source.y
           + "C" + d.source.x + "," + (d.source.y * 3 + d.target.y) / 4
           + " " + d.target.x + "," + (d.source.y * 2 + d.target.y) / 3
           + " " + d.target.x + "," + d.target.y;});
 
-    const node = nodes.selectAll('g').data(root.descendants()).enter()
-      .append('g').attr("data-id", d => d.data.i)
-      .attr("transform", d => `translate(${d.x}, ${d.y})`)
-      .on("mouseenter", () => religionHighlightOn(event))
-      .on("mouseleave", () => religionHighlightOff(event));
+      const node = nodes.selectAll('g').data(root.descendants()).enter()
+        .append('g').attr("data-id", d => d.data.i).attr("stroke", "#333333")
+        .attr("transform", d => `translate(${d.x}, ${d.y})`)
+        .on("mouseenter", () => religionHighlightOn(event))
+        .on("mouseleave", () => religionHighlightOff(event))
+        .call(d3.drag().on("start", d => dragToReorigin(d)));
 
-    node.append("path").attr("d", d => {
-        if (d.data.type === "Folk") return "M11.3,0A11.3,11.3,0,1,1,-11.3,0A11.3,11.3,0,1,1,11.3,0"; else // circle
-        if (d.data.type === "Heresy") return "M0,-14L14,0L0,14L-14,0Z"; else // diamond
-        if (d.data.type === "Cult") return "M-6.5,-11.26l13,0l6.5,11.26l-6.5,11.26l-13,0l-6.5,-11.26Z"; else // hex
-        if (!d.data.i) return "M5,0A5,5,0,1,1,-5,0A5,5,0,1,1,5,0"; else // small circle
-        return "M-11,-11h22v22h-22Z"; // square
-      }).attr("stroke", "#333333")
-        .attr("fill", d => d.data.i ? d.data.color : "#ffffff")
-        .attr("stroke-dasharray", d => d.data.cells ? "null" : "1");
+      node.append("path").attr("d", d => {
+          if (d.data.type === "Folk") return "M11.3,0A11.3,11.3,0,1,1,-11.3,0A11.3,11.3,0,1,1,11.3,0"; else // circle
+          if (d.data.type === "Heresy") return "M0,-14L14,0L0,14L-14,0Z"; else // diamond
+          if (d.data.type === "Cult") return "M-6.5,-11.26l13,0l6.5,11.26l-6.5,11.26l-13,0l-6.5,-11.26Z"; else // hex
+          if (!d.data.i) return "M5,0A5,5,0,1,1,-5,0A5,5,0,1,1,5,0"; else // small circle
+          return "M-11,-11h22v22h-22Z"; // square
+        }).attr("fill", d => d.data.i ? d.data.color : "#ffffff")
+          .attr("stroke-dasharray", d => d.data.cells ? "null" : "1");
 
-    node.append("text").attr("dy", ".35em").style("pointer-events", "none")
-      .text(d => d.data.i ? d.data.code : '');
+      node.append("text").attr("dy", ".35em").text(d => d.data.i ? d.data.code : '');
+    }
 
     $("#alert").dialog({
       title: "Religions tree", width: fitContent(), resizable: false, 
-      position: {my: "left center", at: "left+10 center", of: "svg"}, buttons: {}
+      position: {my: "left center", at: "left+10 center", of: "svg"}, buttons: {},
+      close: () => {alertMessage.innerHTML = "";}
     });
+
+    function dragToReorigin(d) {
+      console.log("dragToReorigin");
+      const originLine = graph.append("path")
+        .attr("class", "dragLine").attr("d", `M${d.x},${d.y}L${d.x},${d.y}`);
+
+      d3.event.on("drag", () => {
+        originLine.attr("d", `M${d.x},${d.y}L${d3.event.x},${d3.event.y}`)
+      });
+
+      d3.event.on("end", () => {
+        originLine.remove();
+        const selected = graph.select("path.selected");
+        if (!selected.size()) return;
+        const religion = d.data.i;
+        const oldOrigin = d.data.origin;
+        let newOrigin = selected.datum().data.i;
+        if (newOrigin == oldOrigin) return; // already child of the selected node
+        if (d.descendants().some(node => node.id == newOrigin)) return; // cannot be a child of its own child
+        if (newOrigin == religion) newOrigin = 0; // move to top
+        pack.religions[religion].origin = d.data.origin = newOrigin; // change data
+        showHierarchy() // update hierarchy
+      });
+    }
   }
 
   function toggleExtinct() {

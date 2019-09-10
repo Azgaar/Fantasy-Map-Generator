@@ -186,13 +186,21 @@ function getMapData() {
     const religions = JSON.stringify(pack.religions);
     const provinces = JSON.stringify(pack.provinces);
 
+    // store name array only if it is not the same as default
+    const defaultNB = Names.getNameBase();
+    const namesData = nameBases.map((b,i) => {
+      const names = defaultNB[i] && defaultNB[i].join("") === nameBase[i].join("") ? "" : nameBase[i];
+      return `${b.name}|${b.min}|${b.max}|${b.d}|${b.m}|${names}`;
+    }).join("/");
+
     // data format as below
     const data = [params, options, coords, biomes, notesData, svg_xml,
       gridGeneral, grid.cells.h, grid.cells.prec, grid.cells.f, grid.cells.t, grid.cells.temp,
       features, cultures, states, burgs,
       pack.cells.biome, pack.cells.burg, pack.cells.conf, pack.cells.culture, pack.cells.fl,
       pack.cells.pop, pack.cells.r, pack.cells.road, pack.cells.s, pack.cells.state,
-      pack.cells.religion, pack.cells.province, pack.cells.crossroad, religions, provinces].join("\r\n");
+      pack.cells.religion, pack.cells.province, pack.cells.crossroad, religions, provinces,
+      namesData].join("\r\n");
     const blob = new Blob([data], {type: "text/plain"});
 
     console.timeEnd("createMapDataBlob");
@@ -540,6 +548,16 @@ function parseLoadedData(data) {
       cells.religion = data[26] ? Uint16Array.from(data[26].split(",")) : new Uint16Array(cells.i.length);
       cells.province = data[27] ? Uint16Array.from(data[27].split(",")) : new Uint16Array(cells.i.length);
       cells.crossroad = data[28] ? Uint16Array.from(data[28].split(",")) : new Uint16Array(cells.i.length);
+
+      if (data[31]) {
+        const namesDL = data[31].split("/");
+        namesDL.forEach((d, i) => {
+          const e = d.split("|");
+          if (!e.length) return;
+          nameBases[i] = {name:e[0], min:e[1], max:e[2], d:e[3], m:e[4]};
+          if(e[5]) nameBase[i] = e[5].split(",");
+        });
+      }
     }()
 
     void function restoreLayersState() {

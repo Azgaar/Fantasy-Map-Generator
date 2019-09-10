@@ -120,7 +120,8 @@
       if (religionsTree.find(x, y, s) !== undefined) continue; // to close to existing religion
 
       const culture = cells.culture[center];
-      const origin = religions.find(r => r.culture === culture && r.type === "Folk").i || 0;
+      const folk = religions.find(r => r.culture === culture && r.type === "Folk");
+      const origin = folk ? folk.i : 0;
       const deity = getDeityName(culture);
       const name = getCultName(form, center);
       const expansionism = gauss(1.1, .5, 0, 5);

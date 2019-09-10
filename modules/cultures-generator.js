@@ -58,7 +58,10 @@
 
     // check whether all bases are valid. If not, load default namesbase
     const invalidBase = pack.cultures.some(c => !nameBase[c.base]);
-    if (invalidBase) applyDefaultNamesData();
+    if (invalidBase) {
+      nameBases = Names.getNameBases();
+      nameBase = Names.getNameBase();
+    }
 
     function getRandomCultures(c) {
       const d = getDefault();

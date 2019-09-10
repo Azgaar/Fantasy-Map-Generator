@@ -204,7 +204,31 @@ i.icon-lock {
 	text-align: center;
   font-family: sans-serif;
   font-style: italic;
-  font-size: 1.2em;
+  font-size: 1.1em;
+}
+
+#religionHierarchy .selected {
+	stroke: #c13119;
+	stroke-width: 1;
+	cursor: move;
+}
+
+#religionHierarchy text {
+	pointer-events: none;
+	user-select: none;
+	stroke: none;
+}
+
+.dragLine {
+	marker-end: url(#end-arrow);
+	stroke: #333333;
+	stroke-dasharray: 5;
+	stroke-dashoffset: 100;
+	animation: dash 8s linear backwards;
+}
+
+@keyframes dash {
+  to {stroke-dashoffset: 0}
 }
 
 #burgLabels {
