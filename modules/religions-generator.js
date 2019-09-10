@@ -99,15 +99,14 @@
       if (religionsTree.find(x, y, s) !== undefined) continue; // to close to existing religion
 
       // add "Old" to name of the folk religion on this culture
-      const folk = religions.find(r => expansion === "culture" && r.culture === culture && r.type === "Folk");
-      if (folk && folk.name.slice(0,3) !== "Old") folk.name = "Old " + folk.name;
-      const origin = religions.find(r => r.culture === culture && r.type === "Folk").i || 0;
+      const folk = religions.find(r => r.culture === culture && r.type === "Folk");
+      if (folk && expansion === "culture" && folk.name.slice(0,3) !== "Old") folk.name = "Old " + folk.name;
+      const origin = folk ? folk.i : 0;
 
       const expansionism = rand(3, 8);
       const color = getMixedColor(religions[origin].color, .3, 0); // `url(#hatch${rand(0,5)})`;
       religions.push({i: religions.length, name, color, culture, type:"Organized", form, deity, expansion, expansionism, center, origin});
       religionsTree.add([x, y]);
-      //debug.append("circle").attr("cx", x).attr("cy", y).attr("r", 2).attr("fill", "blue");
     }
 
     // generate cults
