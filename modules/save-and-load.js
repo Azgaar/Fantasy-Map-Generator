@@ -691,7 +691,7 @@ function parseLoadedData(data) {
         labels.attr("display", null);
 
         // v 1.0 added religions heirarchy tree
-        pack.religions.forEach(r => {
+        pack.religions.filter(r => r.i).forEach(r => {
           r.origin = 0;
           r.code = r.name.slice(0, 2);
         });
