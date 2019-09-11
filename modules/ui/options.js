@@ -802,9 +802,10 @@ function changeBurgsNumberSlider(value) {
 }
 
 function changeUIsize(value) {
+  if (isNaN(+value) || +value > 4 || +value < .5) return;
   uiSizeInput.value = uiSizeOutput.value = value;
   document.getElementsByTagName("body")[0].style.fontSize = value * 11 + "px";
-  document.getElementById("options").style.width = (value - 1) * 300 + 300 + "px";
+  document.getElementById("options").style.width = value * 300 + "px";
 }
 
 function changeTooltipSize(value) {
@@ -860,7 +861,7 @@ function applyStoredOptions() {
   if (localStorage.getItem("regions")) changeStatesNumber(localStorage.getItem("regions"));
 
   if (localStorage.getItem("uiSize")) changeUIsize(localStorage.getItem("uiSize"));
-  else changeUIsize(Math.max(Math.min(rn(window.innerWidth / 1024, 1), 3), 1));
+  else changeUIsize(Math.max(Math.min(rn(svgWidth / 1024, 1), 3), 1));
 }
 
 // randomize options if randomization is allowed (not locked)
