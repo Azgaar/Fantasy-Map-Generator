@@ -230,7 +230,7 @@ function saveGeoJSON() {
   alertMessage.innerHTML = `You can export map data in GeoJSON format used in GIS tools such as QGIS.
   Check out <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export" target="_blank">wiki-page</a> for guidance`;
 
-  $("#alert").dialog({title: "GIS data export", resizable: false, width: 320, position: {my: "center", at: "center", of: "svg"},
+  $("#alert").dialog({title: "GIS data export", resizable: false, width: "32em", position: {my: "center", at: "center", of: "svg"},
     buttons: {
       Cells: saveGeoJSON_Cells,
       Routes: saveGeoJSON_Roads,
@@ -391,7 +391,7 @@ function uploadFile(file, callback) {
                  <br>The map will be auto-updated. In case of issues please keep using an ${archive} of the Generator`;
     }
     alertMessage.innerHTML = message;
-    $("#alert").dialog({title: "Version conflict", width: 380, buttons: {
+    $("#alert").dialog({title: "Version conflict", width: "38em", buttons: {
       OK: function() {$(this).dialog("close"); if (load) parseLoadedData(data);}
     }});
   };
@@ -715,7 +715,7 @@ function parseLoadedData(data) {
       <br>generate a new random map or cancel the loading
       <p id="errorBox">${parseError(error)}</p>`;
     $("#alert").dialog({
-      resizable: false, title: "Loading error", maxWidth:500, buttons: {
+      resizable: false, title: "Loading error", maxWidth:"50em", buttons: {
         "Select file": function() {$(this).dialog("close"); mapToLoad.click();},
         "New map": function() {$(this).dialog("close"); regenerateMap();},
         Cancel: function() {$(this).dialog("close")}

@@ -1328,7 +1328,7 @@ div.states > div.biomeArea {
 
 #pickerLabel {
 	fill: #f8ffff;
-	font-size: 1.2em;
+	font-size: 12px;
 	font-weight: bold;
 	font-family: Arial, Helvetica, sans-serif;
 	cursor: move !important;
@@ -1366,7 +1366,7 @@ div.states > div.biomeArea {
 #pickerSpaces input {
 	height: 8px;
 	width: 16px;
-	font-size: smaller;
+	font-size: 9px;
 	text-align: center;
 	-moz-appearance: textfield;
 }

@@ -862,7 +862,7 @@ function applyStoredOptions() {
   if (localStorage.getItem("regions")) changeStatesNumber(localStorage.getItem("regions"));
 
   if (localStorage.getItem("uiSize")) changeUIsize(localStorage.getItem("uiSize"));
-  else changeUIsize(Math.max(Math.min(rn(mapWidthInput.value / 1024, 1), 3), 1));
+  else changeUIsize(Math.max(Math.min(rn(mapWidthInput.value / 1230, 1), 3), 1));
 }
 
 // randomize options if randomization is allowed (not locked)

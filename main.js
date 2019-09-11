@@ -190,7 +190,7 @@ function showUploadErrorMessage(error, URL, random) {
     Cannot load map from the <a href='${URL}' target='_blank'>link provided</a>.
     ${random?`A new random map is generated. `:''}
     Please ensure the linked file is reachable and CORS is allowed on server side`;
-  $("#alert").dialog({title: "Loading error", width: 320, buttons: {OK: function() {$(this).dialog("close");}}});
+  $("#alert").dialog({title: "Loading error", width: "32em", buttons: {OK: function() {$(this).dialog("close");}}});
 }
 
 function generateMapOnLoad() {
@@ -437,7 +437,7 @@ function showWelcomeMessage() {
     <p>Thanks for all supporters on <a href='https://www.patreon.com/azgaar' target='_blank'>Patreon</a>!</i></p>`;
 
   $("#alert").dialog(
-    {resizable: false, title: "Fantasy Map Generator update", width: 310,
+    {resizable: false, title: "Fantasy Map Generator update", width: "31em",
     buttons: {OK: function() {$(this).dialog("close")}},
     position: {my: "center", at: "center", of: "svg"},
     close: () => localStorage.setItem("version", version)}
@@ -554,7 +554,7 @@ void function addDragToUpload() {
       alertMessage.innerHTML = 'Please upload a <b>.map</b> file you have previously downloaded';
       $("#alert").dialog({
         resizable: false, title: "Invalid file format",
-        width: 400, buttons: {
+        width: "40em", buttons: {
           Close: function() { $(this).dialog("close"); }
         }, position: {my: "center", at: "center", of: "svg"}
       });
@@ -618,7 +618,7 @@ function generate() {
       <br>If error is critical, clear the stored data and try again.
       <p id="errorBox">${parseError(error)}</p>`;
     $("#alert").dialog({
-      resizable: false, title: "Generation error", width:320, buttons: {
+      resizable: false, title: "Generation error", width:"32em", buttons: {
         "Clear data": function() {localStorage.clear(); localStorage.setItem("version", version);},
         Regenerate: function() {regenerateMap(); $(this).dialog("close");},
         Ignore: function() {$(this).dialog("close");}
