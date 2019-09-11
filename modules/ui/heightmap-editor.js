@@ -13,7 +13,7 @@ function editHeightmap() {
 
     <p>Check out <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization" target="_blank">wiki</a> for guidance.</p>`;
 
-    $("#alert").dialog({resizable: false, title: "Edit Heightmap", width: 300,
+    $("#alert").dialog({resizable: false, title: "Edit Heightmap", width: "28em",
       buttons: {
         Erase: function() {enterHeightmapEditMode("erase");},
         Keep: function() {enterHeightmapEditMode("keep");},

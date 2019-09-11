@@ -15,8 +15,6 @@ function editUnits() {
   document.getElementById("distanceUnitInput").addEventListener("change", changeDistanceUnit);
   document.getElementById("distanceScaleOutput").addEventListener("input", changeDistanceScale);
   document.getElementById("distanceScaleInput").addEventListener("change", changeDistanceScale);
-  document.getElementById("distanceScaleInput").addEventListener("mouseenter", hideDistanceUnitOutput);
-  document.getElementById("distanceScaleInput").addEventListener("mouseleave", showDistanceUnitOutput);
   document.getElementById("areaUnit").addEventListener("change", () => lock("areaUnit"));
   document.getElementById("heightUnit").addEventListener("change", changeHeightUnit);
   document.getElementById("heightExponentInput").addEventListener("input", changeHeightExponent);
@@ -45,10 +43,8 @@ function editUnits() {
     if (this.value === "custom_name") {
       const custom = prompt("Provide a custom name for distance unit");
       if (custom) this.options.add(new Option(custom, custom, false, true));
-      else {this.value = document.getElementById("distanceUnitOutput").innerHTML; return;};
     }
 
-    document.getElementById("distanceUnitOutput").innerHTML = this.value;
     lock("distanceUnit");
     drawScaleBar();
     calculateFriendlyGridSize();
@@ -70,9 +66,6 @@ function editUnits() {
     drawScaleBar();
     calculateFriendlyGridSize();
   }
-
-  function hideDistanceUnitOutput() {document.getElementById("distanceUnitOutput").style.opacity = .2;}
-  function showDistanceUnitOutput() {document.getElementById("distanceUnitOutput").style.opacity = 1;}
 
   function changeHeightUnit() {
     if (this.value === "custom_name") {
@@ -163,7 +156,7 @@ function editUnits() {
     // units
     const US = navigator.language === "en-US";
     const UK = navigator.language === "en-GB";
-    distanceUnitInput.value = distanceUnitOutput.value = US || UK ? "mi" : "km";
+    distanceUnitInput.value = US || UK ? "mi" : "km";
     heightUnit.value = US || UK ? "ft" : "m";
     temperatureScale.value = US ? "°F" : "°C";
     areaUnit.value = "square";

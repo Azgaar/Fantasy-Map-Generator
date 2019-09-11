@@ -89,13 +89,13 @@ function editCultures() {
 
       lines += `<div class="states cultures" data-id=${c.i} data-name="${c.name}" data-color="${c.color}" data-cells=${c.cells}
       data-area=${area} data-population=${population} data-base=${c.base} data-type=${c.type} data-expansionism=${c.expansionism}>
-        <svg data-tip="Culture fill style. Click to change" width="9" height="9" style="margin-bottom:-1px"><rect x="0" y="0" width="9" height="9" fill="${c.color}" class="zoneFill"></svg>
+        <svg data-tip="Culture fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${c.color}" class="zoneFill"></svg>
         <input data-tip="Culture name. Click and type to change" class="cultureName" value="${c.name}" autocorrect="off" spellcheck="false">
         <span data-tip="Cells count" class="icon-check-empty hide"></span>
         <div data-tip="Cells count" class="stateCells hide">${c.cells}</div>
-        <span data-tip="Culture expansionism (defines competitive size)" class="icon-resize-full hide"></span>
-        <input data-tip="Expansionism (defines competitive size)" class="statePower hide" type="number" min=0 max=99 step=.1 value=${c.expansionism}>
-        <select data-tip="Culture type" class="cultureType">${getTypeOptions(c.type)}</select>
+        <span data-tip="Culture expansionism. Defines competitive size" class="icon-resize-full hide"></span>
+        <input data-tip="Culture expansionism. Defines competitive size. Click to change" class="statePower hide" type="number" min=0 max=99 step=.1 value=${c.expansionism}>
+        <select data-tip="Culture type. Defines growth model. Click to change" class="cultureType">${getTypeOptions(c.type)}</select>
         <span data-tip="Culture area" style="padding-right: 4px" class="icon-map-o hide"></span>
         <div data-tip="Culture area" class="biomeArea hide">${si(area) + unit}</div>
         <span data-tip="${populationTip}" class="icon-male hide"></span>

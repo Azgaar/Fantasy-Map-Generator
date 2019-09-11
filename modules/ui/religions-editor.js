@@ -72,7 +72,7 @@ function editReligions() {
       if (r.i) {
         lines += `<div class="states religions" data-id=${r.i} data-name="${r.name}" data-color="${r.color}" data-area=${area} 
           data-population=${population} data-type=${r.type} data-form=${r.form} data-deity="${r.deity?r.deity:''}" data-expansionism=${r.expansionism}>
-          <svg data-tip="Religion fill style. Click to change" width="9" height="9" style="margin-bottom:-1px"><rect x="0" y="0" width="9" height="9" fill="${r.color}" class="zoneFill"></svg>
+          <svg data-tip="Religion fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${r.color}" class="zoneFill"></svg>
           <input data-tip="Religion name. Click and type to change" class="religionName" value="${r.name}" autocorrect="off" spellcheck="false">
           <select data-tip="Religion type" class="religionType">${getTypeOptions(r.type)}</select>
           <input data-tip="Religion form" class="religionForm hide" value="${r.form}" autocorrect="off" spellcheck="false">
@@ -291,6 +291,7 @@ function editReligions() {
 
   function showHierarchy() {
     // build hierarchy tree
+    pack.religions[0].origin = null;
     const religions = pack.religions.filter(r => !r.removed);
     let root = d3.stratify().id(d => d.i).parentId(d => d.origin)(religions);
     const treeWidth = root.leaves().length;
@@ -360,9 +361,9 @@ function editReligions() {
         const religion = d.data.i;
         const oldOrigin = d.data.origin;
         let newOrigin = selected.datum().data.i;
-        if (newOrigin == oldOrigin) return; // already child of the selected node
-        if (d.descendants().some(node => node.id == newOrigin)) return; // cannot be a child of its own child
+        if (newOrigin == oldOrigin) return; // already a child of the selected node
         if (newOrigin == religion) newOrigin = 0; // move to top
+        if (newOrigin && d.descendants().some(node => node.id == newOrigin)) return; // cannot be a child of its own child
         pack.religions[religion].origin = d.data.origin = newOrigin; // change data
         showHierarchy() // update hierarchy
       });

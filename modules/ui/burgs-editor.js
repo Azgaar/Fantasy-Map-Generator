@@ -75,7 +75,6 @@ function editBurgs() {
       lines += `<div class="states" data-id=${b.i} data-name=${b.name} data-state=${state} data-culture=${culture} data-population=${population} data-type=${type}>
         <span data-tip="Click to zoom into view" class="icon-dot-circled pointer"></span>
         <input data-tip="Burg name. Click and type to change" class="burgName" value="${b.name}" autocorrect="off" spellcheck="false">
-        <span data-tip="Burg state" class="burgState ${showState}">${state}</span>
         <select data-tip="Dominant culture. Click to change" class="stateCulture">${getCultureOptions(b.culture)}</select>
         <span data-tip="Burg population" class="icon-male"></span>
         <input data-tip="Burg population. Type to change" class="burgPopulation" value=${si(population)}>
@@ -83,6 +82,7 @@ function editBurgs() {
           <span data-tip="${b.capital ? ' This burg is a state capital' : 'Click to assign a capital status'}" class="icon-star-empty${b.capital ? '' : ' inactive pointer'}"></span>
           <span data-tip="Click to toggle port status" class="icon-anchor pointer${b.port ? '' : ' inactive'}" style="font-size:.9em"></span>
         </div>
+        <span data-tip="Burg state" class="burgState ${showState}">${state}</span>
         <span data-tip="Remove burg" class="icon-trash-empty"></span>
       </div>`;
     }

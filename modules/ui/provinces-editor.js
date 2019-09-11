@@ -106,7 +106,7 @@ function editProvinces() {
       const capital = p.burg ? pack.burgs[p.burg].name : '';
       const focused = defs.select("#fog #focusProvince"+p.i).size();
       lines += `<div class="states" data-id=${p.i} data-name=${p.name} data-form=${p.formName} data-color="${p.color}" data-capital="${capital}" data-state="${stateName}" data-area=${area} data-population=${population}>
-        <svg data-tip="Province fill style. Click to change" width="9" height="9" style="margin-bottom:-1px"><rect x="0" y="0" width="9" height="9" fill="${p.color}" class="zoneFill"></svg>
+        <svg data-tip="Province fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${p.color}" class="zoneFill"></svg>
         <input data-tip="Province name. Click and type to change" class="stateName" value="${p.name}" autocorrect="off" spellcheck="false">
         <span data-tip="Click to re-generate province name" class="icon-arrows-cw stateName hoverButton placeholder"></span>
         <span data-tip="Click to open province COA in the Iron Arachne Heraldry Generator" class="icon-fleur pointer hide"></span>

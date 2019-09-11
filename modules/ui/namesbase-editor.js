@@ -27,7 +27,7 @@ function editNamesbase() {
   updateInputs();
 
   $("#namesbaseEditor").dialog({
-    title: "Namesbase Editor", width: 468,
+    title: "Namesbase Editor", width: "42.5em",
     position: {my: "center", at: "center", of: "svg"}
   });
 

@@ -804,7 +804,7 @@ function changeBurgsNumberSlider(value) {
 function changeUIsize(value) {
   uiSizeInput.value = uiSizeOutput.value = value;
   document.getElementsByTagName("body")[0].style.fontSize = value * 11 + "px";
-  document.getElementById("options").style.width = (value - 1) * 300 / 2 + 300 + "px";
+  document.getElementById("options").style.width = (value - 1) * 300 + 300 + "px";
 }
 
 function changeTooltipSize(value) {
@@ -856,9 +856,11 @@ function applyStoredOptions() {
   if (localStorage.getItem("winds")) winds = localStorage.getItem("winds").split(",").map(w => +w);
 
   changeDialogsTransparency(localStorage.getItem("transparency") || 15);
-  if (localStorage.getItem("uiSize")) changeUIsize(localStorage.getItem("uiSize"));
   if (localStorage.getItem("tooltipSize")) changeTooltipSize(localStorage.getItem("tooltipSize"));
   if (localStorage.getItem("regions")) changeStatesNumber(localStorage.getItem("regions"));
+
+  if (localStorage.getItem("uiSize")) changeUIsize(localStorage.getItem("uiSize"));
+  else changeUIsize(Math.max(Math.min(rn(window.innerWidth / 1024, 1), 3), 1));
 }
 
 // randomize options if randomization is allowed (not locked)
@@ -886,7 +888,7 @@ function randomizeOptions() {
   const US = navigator.language === "en-US";
   const UK = navigator.language === "en-GB";
   if (!locked("distanceScale")) distanceScaleOutput.value = distanceScaleInput.value = gauss(3, 1, 1, 5);
-  if (!stored("distanceUnit")) distanceUnitInput.value = distanceUnitOutput.value = US || UK ? "mi" : "km";
+  if (!stored("distanceUnit")) distanceUnitInput.value = US || UK ? "mi" : "km";
   if (!stored("heightUnit")) heightUnit.value = US || UK ? "ft" : "m";
   if (!stored("temperatureScale")) temperatureScale.value = US ? "°F" : "°C";
 }

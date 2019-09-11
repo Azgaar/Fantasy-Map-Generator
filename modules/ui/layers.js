@@ -104,6 +104,7 @@ function getCurrentPreset() {
     if (JSON.stringify(presets[preset]) !== JSON.stringify(layers)) continue;
     layersPreset.value = preset;
     removePresetButton.style.display = defaultPresets[preset] ? "none" : "inline-block";
+    savePresetButton.style.display = "none";
     return;
   }
 
@@ -944,6 +945,9 @@ function toggleCompass() {
       const tr = `translate(80 80) scale(.25)`;
       d3.select("#rose").attr("transform", tr);
       compass.append("use").attr("xlink:href","#rose");
+      // prolongate rose lines
+      svg.select("g#rose > g#sL > line#sL1").attr("y1", -19000).attr("y2", 19000);
+      svg.select("g#rose > g#sL > line#sL2").attr("x1", -19000).attr("x2", 19000);
     }
   } else {
     $('#compass').fadeOut();

@@ -69,7 +69,10 @@
       religions.push({i: c.i, name, color, culture: c.i, type:"Folk", form, deity, center: c.center, origin:0});
     });
 
-    if (religionsInput.value == 0 || pack.cultures.length < 2) return;
+    if (religionsInput.value == 0 || pack.cultures.length < 2) {
+      religions.filter(r => r.i).forEach(r => r.code = getCode(r.name));
+      return;
+    }
 
     const sorted = cells.i.filter(i => cells.s[i] > 2).sort((a, b) => cells.s[b] - cells.s[a]); // filtered and sorted array of indexes
     const religionsTree = d3.quadtree();

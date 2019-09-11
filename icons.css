@@ -193,10 +193,10 @@
 .icon-percent:before { content: '\f295'; } /* '' */
 
 /* Amended FA icons */
-.icon-sort-name-up:after { font-size: 9px; content: '\f15d'; }
-.icon-sort-name-down:after { font-size: 9px; content: '\f15e'; }
-.icon-sort-number-up:after { font-size: 9px; content: '\f162'; }
-.icon-sort-number-down:after { font-size: 9px; content: '\f163'; }
+.icon-sort-name-up:after { font-size: .9em; content: '\f15d'; }
+.icon-sort-name-down:after { font-size: .9em; content: '\f15e'; }
+.icon-sort-number-up:after { font-size: .9em; content: '\f162'; }
+.icon-sort-number-down:after { font-size: .9em; content: '\f163'; }
 
 /* Custom icons */
 .icon-w:before { font-style: italic; content: 'w:'; }
@@ -209,7 +209,7 @@
 .icon-smooth:before {font-weight: bold; content: '∼'; }
 .icon-disrupt:before {font-weight: bold; content: '෴'; }
 .icon-if:before {font-style: italic; font-weight: bold; content: 'if'; }
-.icon-fleur:before {content: '⚜'; font-size: 11px; margin: -2px; }
+.icon-fleur:before {content: '⚜'; font-size: 1.1em; margin: -2px; }
 
 .icon-ruler:before {content: 'I'; }
 .icon-curve:before {content: 'C'; }
@@ -222,6 +222,6 @@
   padding: 0;
   writing-mode: tb-rl;
   margin-left: 1px;
-  width: 10px;
+  width: .6em;
   font-family: monospace;
 }
