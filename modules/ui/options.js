@@ -678,7 +678,7 @@ optionsContent.addEventListener("input", function(event) {
   else if (id === "neutralOutput") neutralInput.value = value;
   else if (id === "manorsInput") changeBurgsNumberSlider(value);
   else if (id === "religionsInput") religionsOutput.value = value;
-  else if (id === "uiSizeInput" || id === "uiSizeOutput") changeUIsize(value);
+  else if (id === "uiSizeInput") uiSizeOutput.value = value;
   else if (id === "tooltipSizeInput" || id === "tooltipSizeOutput") changeTooltipSize(value);
   else if (id === "transparencyInput") changeDialogsTransparency(value);
   else if (id === "pngResolutionInput") pngResolutionOutput.value = value;
@@ -690,6 +690,7 @@ optionsContent.addEventListener("change", function(event) {
   const id = event.target.id, value = event.target.value;
   if (id === "zoomExtentMin" || id === "zoomExtentMax") changeZoomExtent(value);
   else if (id === "optionsSeed") generateMapWithSeed();
+  else if (id === "uiSizeInput" || id === "uiSizeOutput") changeUIsize(value);
 });
 
 optionsContent.addEventListener("click", function(event) {

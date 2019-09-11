@@ -415,7 +415,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 	border: 0;
 	text-align: right;
 	background-color: transparent;
-	width: 30px;
+	width: 3.3em;
 	-moz-appearance: textfield;
 }
 
