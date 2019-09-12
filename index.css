@@ -195,7 +195,7 @@ i.icon-lock {
 	text-align: center;
 	font-family: sans-serif;
 	font-style: italic;
-	font-size: 1.1em;
+	font-size: 12px;
 }
 
 #religionHierarchy .selected {
@@ -208,6 +208,7 @@ i.icon-lock {
 	pointer-events: none;
 	user-select: none;
 	stroke: none;
+	font-size: 11px;
 }
 
 .dragLine {
