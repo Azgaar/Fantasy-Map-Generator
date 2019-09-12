@@ -169,8 +169,9 @@
   }
 
   // generato name for the map
-  const getMapName = function() {
-    if (locked("mapName")) return;
+  const getMapName = function(force) {
+    if (!force && locked("mapName")) return;
+    if (force && locked("mapName")) unlock("mapName");
     const base = Math.random() < .7 ? 2 : Math.random() < .5 ? rand(0, 6) : rand(0, 31);
     if (!nameBases[base]) {tip("Namebase is not found", false, "error"); return ""};
     const min = nameBases[base].min-1;
