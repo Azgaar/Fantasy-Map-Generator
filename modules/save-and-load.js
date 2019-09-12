@@ -69,7 +69,7 @@ function saveAsImage(type) {
       img.onload = function() {
         window.URL.revokeObjectURL(url);
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        link.download = "fantasy_map_" + Date.now() + ".png";
+        link.download = getFileName() + ".png";
         canvas.toBlob(function(blob) {
            link.href = window.URL.createObjectURL(blob);
            document.body.appendChild(link);
@@ -81,7 +81,7 @@ function saveAsImage(type) {
         });
       }
     } else {
-      link.download = "fantasy_map_" + Date.now() + ".svg";
+      link.download = getFileName() + ".svg";
       link.href = url;
       document.body.appendChild(link);
       link.click();
@@ -161,9 +161,13 @@ function getMapData() {
     const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
     const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
     const params = [version, license, dateString, seed, graphWidth, graphHeight].join("|");
-    const options = [distanceUnitInput.value, distanceScaleInput.value, areaUnit.value, heightUnit.value, heightExponentInput.value, temperatureScale.value,
-      barSize.value, barLabel.value, barBackOpacity.value, barBackColor.value, barPosX.value, barPosY.value, populationRate.value, urbanization.value,
-      mapSizeOutput.value, latitudeOutput.value, temperatureEquatorOutput.value, temperaturePoleOutput.value, precOutput.value, JSON.stringify(winds)].join("|");
+    const options = [distanceUnitInput.value, distanceScaleInput.value, areaUnit.value, 
+      heightUnit.value, heightExponentInput.value, temperatureScale.value,
+      barSize.value, barLabel.value, barBackOpacity.value, barBackColor.value, 
+      barPosX.value, barPosY.value, populationRate.value, urbanization.value,
+      mapSizeOutput.value, latitudeOutput.value, temperatureEquatorOutput.value, 
+      temperaturePoleOutput.value, precOutput.value, JSON.stringify(winds),
+      mapName.value].join("|");
     const coords = JSON.stringify(mapCoordinates);
     const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
     const notesData = JSON.stringify(notes);
@@ -217,7 +221,7 @@ async function saveMap() {
   const blob = await getMapData();
   const URL = window.URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.download = "fantasy_map_" + Date.now() + ".map";
+  link.download = getFileName() + ".map";
   link.href = URL;
   document.body.appendChild(link);
   link.click();
@@ -260,7 +264,7 @@ function saveGeoJSON_Roads() {
   const url = window.URL.createObjectURL(dataBlob);
   const link = document.createElement("a");
   document.body.appendChild(link);
-  link.download = "fmg_routes_" + Date.now() + ".geojson";
+  link.download = getFileName("Routes") + ".geojson";
   link.href = url;
   link.click();
   window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
@@ -285,7 +289,7 @@ function saveGeoJSON_Rivers() {
   const url = window.URL.createObjectURL(dataBlob);
   const link = document.createElement("a");
   document.body.appendChild(link);
-  link.download = "fmg_rivers_" + Date.now() + ".geojson";
+  link.download = getFileName("Rivers") + ".geojson";
   link.href = url;
   link.click();
   window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
@@ -359,7 +363,7 @@ function saveGeoJSON_Cells() {
   const url = window.URL.createObjectURL(dataBlob);
   const link = document.createElement("a");
   document.body.appendChild(link);
-  link.download = "fmg_cells_" + Date.now() + ".geojson";
+  link.download = getFileName("Cells") + ".geojson";
   link.href = url;
   link.click();
   window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
@@ -436,6 +440,7 @@ function parseLoadedData(data) {
       if (options[17]) temperaturePoleInput.value = temperaturePoleOutput.value = options[17];
       if (options[18]) precInput.value = precOutput.value = options[18];
       if (options[19]) winds = JSON.parse(options[19]);
+      if (options[20]) mapName.value = options[20];
     }()
 
     void function parseConfiguration() {
@@ -799,4 +804,15 @@ function toggleSaveReminder() {
     localStorage.removeItem("noReminder");
     saveReminder();
   }
+}
+
+function getFileName(dataType) {
+  const name = mapName.value;
+  const type = dataType ? dataType + " " : "";
+  const date = new Date();
+  const datFormatter = new Intl.DateTimeFormat("en", {month: "short", day: "numeric"});
+  const timeFormatter = new Intl.DateTimeFormat("ru", {hour: "numeric", minute: "numeric"});
+  const day = datFormatter.format(date).replace(" ", "");
+  const time = timeFormatter.format(date).replace(":", "-");
+  return name + " " + type + day + " " + time;
 }

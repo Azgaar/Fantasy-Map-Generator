@@ -252,7 +252,7 @@ function editBurgs() {
   }
 
   function downloadBurgsData() {
-    let data = "Id,Burg,State,Culture,Population,Capital,Port,Longitude,Latitude,Elevation\n"; // headers
+    let data = "Id,Burg,State,Culture,Population,Longitude,Latitude,Elevation ("+heightUnit.value+"),Capital,Port\n"; // headers
     const valid = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
 
     valid.forEach(b => {
@@ -261,20 +261,22 @@ function editBurgs() {
       data += pack.states[b.state].name + ",";
       data += pack.cultures[b.culture].name + ",";
       data += rn(b.population * populationRate.value * urbanization.value) + ",";
-      data += b.capital ? "capital," : ",";
-      data += b.port ? "port," : ",";
 
       // add geography data
       data += mapCoordinates.lonW + (b.x / graphWidth) * mapCoordinates.lonT + ",";
       data += mapCoordinates.latN - (b.y / graphHeight) * mapCoordinates.latT + ","; // this is inverted in QGIS otherwise
-      data += parseInt(getFriendlyHeight(pack.cells.h[b.cell])) + "\n";
+      data += parseInt(getHeight(pack.cells.h[b.cell])) + ",";
+
+      // add status data
+      data += b.capital ? "capital," : ",";
+      data += b.port ? "port\n" : "\n";
     });
 
     const dataBlob = new Blob([data], {type: "text/plain"});
     const url = window.URL.createObjectURL(dataBlob);
     const link = document.createElement("a");
     document.body.appendChild(link);
-    link.download = "burgs_data" + Date.now() + ".csv";
+    link.download = getFileName("Burgs") + ".csv";
     link.href = url;
     link.click();
     window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);

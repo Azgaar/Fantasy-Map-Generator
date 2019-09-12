@@ -482,7 +482,7 @@ function editProvinces() {
     const url = window.URL.createObjectURL(dataBlob);
     const link = document.createElement("a");
     document.body.appendChild(link);
-    link.download = "provinces_data" + Date.now() + ".csv";
+    link.download = getFileName("Provinces") + ".csv";
     link.href = url;
     link.click();
     window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);

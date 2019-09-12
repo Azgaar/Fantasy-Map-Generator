@@ -143,7 +143,7 @@ function editNamesbase() {
     const dataBlob = new Blob([data.join("\r\n")], {type:"text/plain"});
     const url = window.URL.createObjectURL(dataBlob);
     const link = document.createElement("a");
-    link.download = "namesbase" + Date.now() + ".txt";
+    link.download = getFileName("Namesbase") + ".txt";
     link.href = url;
     link.click();
   }

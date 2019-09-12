@@ -540,7 +540,7 @@ function editReligions() {
     const url = window.URL.createObjectURL(dataBlob);
     const link = document.createElement("a");
     document.body.appendChild(link);
-    link.download = "religions_data" + Date.now() + ".csv";
+    link.download = getFileName("Religions") + ".csv";
     link.href = url;
     link.click();
     window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);

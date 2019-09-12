@@ -394,7 +394,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 
 #options input[type="number"] {
 	height: 1.3em;
-	line-height: 14px;
+	line-height: 1.2em;
 	font-size: .8em;
 }
 
@@ -439,8 +439,11 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 
 #optionsContent input.long {
 	width: 100%;
-	background-color: white;
-	text-align: center;
+  background-color: white;
+  text-align: left;
+  padding-left: 0.4em;
+  box-sizing: border-box;
+  height: 1.5em;
 }
 
 #optionsContent input[type="range"] {

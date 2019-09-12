@@ -108,7 +108,7 @@ function editNotes(id, name) {
     const dataBlob = new Blob([legendString],{type:"text/plain"});
     const url = window.URL.createObjectURL(dataBlob);
     const link = document.createElement("a");
-    link.download = "notes" + Date.now() + ".txt";
+    link.download = getFileName("Notes") + ".txt";
     link.href = url;
     link.click();
   }

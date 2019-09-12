@@ -145,14 +145,17 @@ function updateCellInfo(point, i, g) {
 
 // get user-friendly (real-world) height value from map data
 function getFriendlyHeight(p) {
+  const packH = pack.cells.h[findCell(p[0], p[1])];
+  const gridH = grid.cells.h[findGridCell(p[0], p[1])];
+  const h = packH < 20 ? gridH : packH;
+  return getHeight(h);
+}
+
+function getHeight(h) {
   const unit = heightUnit.value;
   let unitRatio = 3.281; // default calculations are in feet
   if (unit === "m") unitRatio = 1; // if meter
   else if (unit === "f") unitRatio = 0.5468; // if fathom
-
-  const packH = pack.cells.h[findCell(p[0], p[1])];
-  const gridH = grid.cells.h[findGridCell(p[0], p[1])];
-  const h = packH < 20 ? gridH : packH;
 
   let height = -990;
   if (h >= 20) height = Math.pow(h - 18, +heightExponentInput.value);

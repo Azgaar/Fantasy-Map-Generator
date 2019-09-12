@@ -1150,19 +1150,30 @@ function getHeight(h) {
       document.body.insertBefore(canvas, optionsContainer);
       ctx.drawImage(img, 0, 0, svgWidth, svgHeight);
 
-      // const imageData = ctx.getImageData(0, 0, svgWidth, svgHeight);
-      // for (let i=0; i < imageData.data.length; i+=4) {
-      //   const v = Math.min(rn(imageData.data[i] * gauss(1, .05, .9, 1.1, 3)), 255);
-      //   imageData.data[i] = v;
-      //   imageData.data[i+1] = v;
-      //   imageData.data[i+2] = v;
-      // }
-      // ctx.putImageData(imageData, 0, 0);
+      const simplex = new SimplexNoise(); // SimplexNoise by Jonas Wagner
+      const noise = (nx, ny) => simplex.noise2D(nx, ny) / 2 + .5;
+
+      const imageData = ctx.getImageData(0, 0, svgWidth, svgHeight);
+      for (let i=0; i < imageData.data.length; i+=4) {
+        const v = imageData.data[i];
+        if (v < 51) {
+          // water
+          imageData.data[i] = imageData.data[i+1] = imageData.data[i+2] = 46;
+          continue;
+        }
+
+        const x = i / 4 % svgWidth, y = Math.floor(i / 4 / svgWidth);
+        const nx = x / svgWidth - .5, ny = y / svgHeight - .5;
+        const n = noise(4 * nx, 4 * ny) / 4 + noise(16 * nx, 16 * ny) / 16;
+        const nv = Math.max(Math.min((v + 255 * n) / 2, 255), 51);
+        imageData.data[i] = imageData.data[i+1] = imageData.data[i+2] = nv;
+      }
+      ctx.putImageData(imageData, 0, 0);
 
       const imgBig = canvas.toDataURL("image/png");
       const link = document.createElement("a");
       link.target = "_blank";
-      link.download = "heightmap_" + Date.now() + ".png";
+      link.download = getFileName("Heightmap") + ".png";
       link.href = imgBig;
       document.body.appendChild(link);
       link.click();

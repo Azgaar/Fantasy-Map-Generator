@@ -605,6 +605,7 @@ function generate() {
     BurgsAndStates.drawStateLabels();
     addZone();
     addMarkers();
+    Names.getMapName();
 
     console.warn(`TOTAL: ${rn((performance.now()-timeStart)/1000,2)}s`);
     showStatistics();

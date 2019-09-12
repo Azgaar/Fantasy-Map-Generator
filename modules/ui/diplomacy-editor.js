@@ -204,7 +204,7 @@ function editDiplomacy() {
           const url = window.URL.createObjectURL(dataBlob);
           const link = document.createElement("a");
           document.body.appendChild(link);
-          link.download = "state_relations_history" + Date.now() + ".txt";
+          link.download = getFileName("Relations history") + ".txt";
           link.href = url;
           link.click();
           window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
@@ -252,7 +252,7 @@ function editDiplomacy() {
     const url = window.URL.createObjectURL(dataBlob);
     const link = document.createElement("a");
     document.body.appendChild(link);
-    link.download = "state_relations_data" + Date.now() + ".csv";
+    link.download = getFileName("Relations") + ".csv";
     link.href = url;
     link.click();
     window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
