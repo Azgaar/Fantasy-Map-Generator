@@ -1776,7 +1776,6 @@
           <button data-tip="Open template editor" id="applyTemplate" style="display: none">Template Editor</button>
           <button data-tip="Open Image Converter" id="convertImage" style="display: none">Image Converter</button>
           <button data-tip="Render heightmap data as a small monochrome image" id="heightmapPreview">Heightmap Preview</button>
-          <button data-tip="Render heightmap in perspective" id="perspectiveView">Perspective View</button>
         </div>
 
         <div id="customizeOptions">
@@ -2401,8 +2400,8 @@
       </div>
 
       <div data-tip="Set opacity of the loaded image" style="padding-top: 4px"><i>Overlay opacity:</i><br>
-        <input id="convertOverlay" type="range" min=0 max=1 step=.01 value=0 style="width: 8em">
-        <input id="convertOverlayNumber" type="number" min=0 max=1 step=.01 value=0 style="width: 3.5em; border: 1px solid #d4d4d4">
+        <input id="convertOverlay" type="range" min=0 max=1 step=.01 value=0 style="width: 11.5em">
+        <input id="convertOverlayNumber" type="number" min=0 max=1 step=.01 value=0 style="width: 3.5em">
       </div>
 
       <div data-tip="Select a color below and assign a height value for it" id="colorsSelect" style="display: none">
@@ -2419,10 +2418,6 @@
         <i>Unassigned colors: </i><br>
       </div>
 
-    </div>
-
-    <div id="perspectivePanel" class="dialog stable" style="display: none">
-      <canvas id="perspective" width="480" height="150"></canvas>
     </div>
 
     <div id="biomesEditor" class="dialog stable" style="display: none">

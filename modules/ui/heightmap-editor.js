@@ -34,7 +34,6 @@ function editHeightmap() {
   document.getElementById("applyTemplate").addEventListener("click", openTemplateEditor);
   document.getElementById("convertImage").addEventListener("click", openImageConverter);
   document.getElementById("heightmapPreview").addEventListener("click", toggleHeightmapPreview);
-  document.getElementById("perspectiveView").addEventListener("click", openPerspectivePanel);
   document.getElementById("finalizeHeightmap").addEventListener("click", finalizeHeightmap);
   document.getElementById("renderOcean").addEventListener("click", mockHeightmap);
   document.getElementById("templateUndo").addEventListener("click", () => restoreHistory(edits.n-1));
@@ -389,7 +388,6 @@ function getHeight(h) {
     if (!noStat) updateStatistics();
 
     if (document.getElementById("preview")) drawHeightmapPreview(); // update heightmap preview if opened
-    if ($("#perspectivePanel").is(":visible")) drawPerspective(); // update perspective view if opened
   }
 
   // restoreHistory
@@ -403,7 +401,6 @@ function getHeight(h) {
     updateStatistics();
     
     if (document.getElementById("preview")) drawHeightmapPreview(); // update heightmap preview if opened
-    if ($("#perspectivePanel").is(":visible")) drawPerspective(); // update perspective view if opened
   }
 
   // restart edits from 1st step
@@ -896,7 +893,7 @@ function getHeight(h) {
     closeDialogs("#imageConverter");
 
     $("#imageConverter").dialog({
-      title: "Image Converter", minHeight: "auto", width: "22.5em", resizable: false,
+      title: "Image Converter", minHeight: "auto", width: "19.5em", resizable: false,
       position: {my: "right top", at: "right-10 top+10", of: "svg"}
     }).on('dialogclose', closeImageConverter);
 
@@ -924,7 +921,7 @@ function getHeight(h) {
       const container = d3.select("#colorScheme");
       container.selectAll("div").data(d3.range(101)).enter().append("div").attr("data-color", i => i)
         .style("background-color", i => color(1-i/100))
-        .style("width", i => i < 20 || i > 70 ? "3px" : "1px")
+        .style("width", i => i < 20 || i > 70 ? ".2em" : ".1em")
         .on("touchmove mousemove", showPalleteHeight).on("click", assignHeight);
     }()
 
@@ -1172,69 +1169,5 @@ function getHeight(h) {
       canvas.remove();
     }
   }
-
-  function openPerspectivePanel() {
-    if ($("#perspectivePanel").is(":visible")) return;
-    $("#perspectivePanel").dialog({
-      title: "Perspective View", minHeight: "auto", width: 510, height: 200,
-      position: {my: "center center", at: "center center", of: "svg"}
-    });
-
-    drawPerspective();
-  }
-
-  function drawPerspective() {
-    const width = 320, height = 180;
-    const wRatio = graphWidth / width, hRatio = graphHeight / height;
-    const lineCount = 320, lineGranularity = 90;
-    const perspective = document.getElementById("perspective");
-    const pContext = perspective.getContext("2d");
-    const lines = [];
-
-    let i = lineCount;
-    while (i--) {
-      const x = i / lineCount * width | 0;
-      const canvasPoints = [];
-      lines.push(canvasPoints);
-      let j = Math.floor(lineGranularity);
-      while (j--) {
-        const y = j / lineGranularity * height | 0;
-        let index = findGridCell(x * wRatio, y * hRatio);
-        let h = grid.cells.h[index] - 20;
-        if (h < 1) h = 0;
-        canvasPoints.push([x, y, h]);
-      }
-    }
-
-    pContext.clearRect(0, 0, perspective.width, perspective.height);
-    for (let canvasPoints of lines) {
-      for (let i = 0; i < canvasPoints.length - 1; i++) {
-        const pt1 = canvasPoints[i];
-        const pt2 = canvasPoints[i + 1];
-        const avHeight = (pt1[2] + pt2[2]) / 200;
-        pContext.beginPath();
-        pContext.moveTo(...transformPt(pt1));
-        pContext.lineTo(...transformPt(pt2));
-        let clr = "rgb(81, 103, 169)"; // water
-        if (avHeight !== 0) {clr = color(1 - avHeight - 0.2);}
-        pContext.strokeStyle = clr;
-        pContext.stroke();
-      }
-      for (let i = 0; i < canvasPoints.length - 1; i++) {
-
-      }
-    }
-  }
-
-  function transformPt(pt) {
-    const width = 320, maxHeight = 0.2;
-    var [x, y] = projectIsometric(pt[0],pt[1]);
-    return [x + width / 2 + 10, y + 10 - pt[2] * maxHeight];
-  }
-
-  function projectIsometric(x, y) {
-    const scale = 1, yProj = 4;
-    return [(x - y) * scale, (x + y) / yProj * scale];
-  }  
 
 }

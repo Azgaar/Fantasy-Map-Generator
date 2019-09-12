@@ -586,6 +586,7 @@ styleStatesHaloOpacity.addEventListener("input", function() {
 
 // request to restore default style on button click
 function askToRestoreDefaultStyle() {
+  if (customization) {tip("Please exit the customization mode first", false, "error"); return;}
   alertMessage.innerHTML = "Are you sure you want to restore default style for all elements?";
   $("#alert").dialog({resizable: false, title: "Restore default style",
     buttons: {

@@ -885,16 +885,16 @@ body button.noicon {
 }
 
 .color-div {
-	width: 32px;
-	height: 12px;
+	width: 2.7em;
+	height: 1.1em;
 	display: inline-block;
-	margin: 1px 2px;
+	margin: .1em .2em;
 	border: 1px #c5c5c5 groove;
 	cursor: pointer;
 }
 
 #colorsSelect div {
-	height: 18px;
+	height: 1.7em;
 	display: inline-block;
 	cursor: pointer;
 }
