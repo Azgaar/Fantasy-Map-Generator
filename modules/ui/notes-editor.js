@@ -27,7 +27,7 @@ function editNotes(id, name) {
 
   // open a dialog
   $("#notesEditor").dialog({
-    title: "Notes Editor", minWidth: Math.min(svgWidth, 400),
+    title: "Notes Editor", minWidth: "40em",
     position: {my: "center", at: "center", of: "svg"}
   });
 

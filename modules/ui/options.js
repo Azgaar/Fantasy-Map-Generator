@@ -61,8 +61,9 @@ options.querySelector("div.tab").addEventListener("click", function(event) {
 
   if (id === "styleTab") styleContent.style.display = "block"; else
   if (id === "optionsTab") optionsContent.style.display = "block"; else
-  if (id === "toolsTab" && (!customization || customization === 10)) toolsContent.style.display = "block"; else
-  if (id === "toolsTab" && customization && customization !== 10) customizationMenu.style.display = "block"; else
+  if (id === "toolsTab") customization === 1 
+    ? customizationMenu.style.display = "block" 
+    : toolsContent.style.display = "block"; else
   if (id === "aboutTab") aboutContent.style.display = "block";
 });
 
@@ -601,9 +602,9 @@ function askToRestoreDefaultStyle() {
 // request a URL to image to be used as a texture
 function textureProvideURL() {
   alertMessage.innerHTML = `Provide an image URL to be used as a texture:
-                            <input id="textureURL" type="url" style="width: 254px" placeholder="http://www.example.com/image.jpg" oninput="fetchTextureURL(this.value)">
+                            <input id="textureURL" type="url" style="width: 24em" placeholder="http://www.example.com/image.jpg" oninput="fetchTextureURL(this.value)">
                             <div style="border: 1px solid darkgrey; height: 144px; margin-top: 2px"><canvas id="preview" width="256px" height="144px"></canvas></div>`;
-  $("#alert").dialog({resizable: false, title: "Load custom texture", width: 280,
+  $("#alert").dialog({resizable: false, title: "Load custom texture", width: "26em",
     buttons: {
       Apply: function() {
         const name = textureURL.value.split("/").pop();
@@ -679,6 +680,7 @@ optionsContent.addEventListener("input", function(event) {
   else if (id === "manorsInput") changeBurgsNumberSlider(value);
   else if (id === "religionsInput") religionsOutput.value = value;
   else if (id === "uiSizeInput") uiSizeOutput.value = value;
+  else if (id === "uiSizeOutput") changeUIsize(value);
   else if (id === "tooltipSizeInput" || id === "tooltipSizeOutput") changeTooltipSize(value);
   else if (id === "transparencyInput") changeDialogsTransparency(value);
   else if (id === "pngResolutionInput") pngResolutionOutput.value = value;
@@ -690,7 +692,7 @@ optionsContent.addEventListener("change", function(event) {
   const id = event.target.id, value = event.target.value;
   if (id === "zoomExtentMin" || id === "zoomExtentMax") changeZoomExtent(value);
   else if (id === "optionsSeed") generateMapWithSeed();
-  else if (id === "uiSizeInput" || id === "uiSizeOutput") changeUIsize(value);
+  else if (id === "uiSizeInput") changeUIsize(value);
 });
 
 optionsContent.addEventListener("click", function(event) {
@@ -862,7 +864,7 @@ function applyStoredOptions() {
   if (localStorage.getItem("regions")) changeStatesNumber(localStorage.getItem("regions"));
 
   if (localStorage.getItem("uiSize")) changeUIsize(localStorage.getItem("uiSize"));
-  else changeUIsize(Math.max(Math.min(rn(mapWidthInput.value / 1230, 1), 3), 1));
+  else changeUIsize(Math.max(Math.min(rn(mapWidthInput.value / 1280, 1), 2.5), 1));
 }
 
 // randomize options if randomization is allowed (not locked)
@@ -1064,10 +1066,10 @@ function toggleLoadPane() {
 function loadURL() {
   const pattern = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
   const inner = `Provide URL to a .map file:
-    <input id="mapURL" type="url" style="width: 254px" placeholder="https://e-cloud.com/test.map">
+    <input id="mapURL" type="url" style="width: 24em" placeholder="https://e-cloud.com/test.map">
     <br><i>Please note server should allow CORS for file to be loaded. If CORS is not allowed, save file to Dropbox and provide a direct link</i>`;
   alertMessage.innerHTML = inner;
-  $("#alert").dialog({resizable: false, title: "Load map from URL", width: 280,
+  $("#alert").dialog({resizable: false, title: "Load map from URL", width: "26em",
     buttons: {
       Load: function() {
         const value = mapURL.value;

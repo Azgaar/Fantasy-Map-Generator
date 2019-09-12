@@ -418,7 +418,7 @@ function getHeight(h) {
   function openBrushesPanel() {
     if ($("#brushesPanel").is(":visible")) return;
     $("#brushesPanel").dialog({
-      title: "Paint Brushes", minHeight: 40, width: "auto", maxWidth: 200, resizable: false,
+      title: "Paint Brushes", resizable: false,
       position: {my: "right top", at: "right-10 top+10", of: "svg"}
     }).on('dialogclose', exitBrushMode);
 

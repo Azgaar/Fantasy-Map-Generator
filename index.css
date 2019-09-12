@@ -761,17 +761,17 @@ table.matrix-table td.x {
 }
 
 body button.noicon {
-	width: 24px;
-	height: 20px;
-	margin: 1px;
-	padding: 1px 6px;
-	float: left;
+	width: 1.8em;
+  height: 1.6em;
+  margin: 1px;
+  padding: .1em .5em;
+  float: left;
+  font-size: 1.2em;
 	font-family: Copperplate, monospace;
 }
 
 #brushesButtons > button {
 	padding: 0;
-	width: 25px;
 }
 
 #brushesButtons svg {
@@ -785,16 +785,16 @@ body button.noicon {
 
 #templateEditor #templateTools {
 	display: inline-block;
-	margin-bottom: -3px;
+	margin-bottom: -.3em;
 }
 
 #templateBody>div {
-	border: 1px solid #a3a3a3;
-	border-radius: 1px;
-	background-image: linear-gradient(to right, #ffffff 0%, #fafafa 51%, #ebebeb 100%);
-	margin: 1px 1px;
-	padding: 1px 2px;
-	height: 13px;
+  border: 1px solid #a3a3a3;
+  border-radius: 1px;
+  background-image: linear-gradient(to right, #ffffff 0%, #fafafa 51%, #ebebeb 100%);
+  margin: 1px 1px;
+  padding: .1em .2em;
+  height: 1.2em;
 }
 
 #templateBody>div:hover {
@@ -950,7 +950,7 @@ i.resetButton:active {
 	outline: none;
 	height: 2px;
 	background: #d4d4d4;
-	top: -4px;
+	top: -.35em;
 	position: relative;
 	appearance: none;
 	-webkit-appearance: none;
@@ -959,8 +959,8 @@ i.resetButton:active {
 .ui-dialog input[type="range"]::-webkit-slider-thumb {
 	-webkit-appearance: none;
 	border-radius: 15%;
-	width: 10px;
-	height: 10px;
+  width: 1em;
+  height: 1em;
 	background: #e9e9e9;
 	border: 1px solid #9b9b9b;
 	cursor: pointer;
@@ -969,8 +969,8 @@ i.resetButton:active {
 .ui-dialog input[type="range"]::-moz-range-thumb {
 	appearance: none;
 	border-radius: 15%;
-	width: 10px;
-	height: 10px;
+  width: 1em;
+  height: 1em;
 	background: #e9e9e9;
 	border: 1px solid #9b9b9b;
 	cursor: pointer;
@@ -1044,13 +1044,13 @@ div.slider .ui-slider-handle {
 
 #brushPower,
 #brushRadius {
-	width: 88px;
+	width: 8em;
 }
 
 #rescaleHigher,
 #rescaleLower,
 #rescaleModifier {
-	width: 40px;
+	width: 3.7em;
 }
 
 .italic {
@@ -1363,11 +1363,16 @@ div.states > div.biomeArea {
 	stroke: #000000;
 }
 
+#pickerControls,
+#pickerSpaces {
+	font-size: 11px;
+}
+
 #pickerSpaces input {
 	height: 8px;
 	width: 16px;
-	font-size: 9px;
 	text-align: center;
+	font-size: 9px;
 	-moz-appearance: textfield;
 }
 
@@ -1625,18 +1630,17 @@ input[type="checkbox"] {
 	content: '';
 	display: inline-block;
 	vertical-align: text-top;
-	width: 7px;
-	height: 7px;
-	padding: 2px;
-	margin-right: 3px;
+  width: .6em;
+  height: .6em;
+  padding: .2em;
+  margin-right: .2em;
 	border: 1px solid darkgrey;
 	border-radius: 15%;
 	background: white;
 }
 
 .checkbox:checked+.checkbox-label:before {
-	line-height: 8px;
-	font-size: 12px;
+	line-height: .8em;
 	font-weight: bold;
 	content: '✓';
 	color: #333333;
@@ -1679,7 +1683,6 @@ div.textual textarea {
 div.textual input {
 	font-family: Copperplate, monospace;
 	outline: none;
-	height: 12px;
 }
 
 div.textual fieldset {
@@ -1688,7 +1691,7 @@ div.textual fieldset {
 }
 
 div.textual span, .textual legend {
-	font-size: 9px;
+	font-size: .8em;
 	font-weight: bold;
 }
 
@@ -1788,7 +1791,6 @@ svg.button {
 #reliefIconsDiv {
 	margin-top: 2px;
 	padding: 2px;
-	max-width: 30vw;
 }
 
 #reliefIconsDiv svg {

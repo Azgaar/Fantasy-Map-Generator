@@ -340,7 +340,7 @@ function addRiverOnClick() {
     alertMessage.innerHTML = `<p>Heightmap is depressed and the system had to change the heightmap to allow water flux.</p>
     Would you like to <i>keep</i> the changes or <i>restore</i> the initial heightmap?`;
 
-    $("#alert").dialog({resizable: false, title: "Heightmap is changed", width: 300, modal: true,
+    $("#alert").dialog({resizable: false, title: "Heightmap is changed", width: "30em", modal: true,
       buttons: {
         Keep: function() {$(this).dialog("close");},
         Restore: function() {
