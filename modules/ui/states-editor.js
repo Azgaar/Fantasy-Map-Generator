@@ -433,7 +433,6 @@ function editStates() {
     document.getElementById("statesHalo").style.display = "none";
 
     statesEditor.querySelectorAll(".hide").forEach(el => el.classList.add("hidden"));
-    statesBodySection.querySelectorAll("input.stateName").forEach(el => el.style.width = "7em");
     statesFooter.style.display = "none";
     body.querySelectorAll("div > input, select, span, svg").forEach(e => e.style.pointerEvents = "none");
     $("#statesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});
@@ -598,7 +597,6 @@ function editStates() {
     document.getElementById("statesHalo").style.display = "block";
 
     statesEditor.querySelectorAll(".hide:not(.show)").forEach(el => el.classList.remove("hidden"));
-    statesBodySection.querySelectorAll("input.stateName").forEach(el => el.style.width = "");
     statesFooter.style.display = "block";
     body.querySelectorAll("div > input, select, span, svg").forEach(e => e.style.pointerEvents = "all");
     if(!close) $("#statesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});

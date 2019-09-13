@@ -302,6 +302,7 @@ function editCultures() {
     debug.select("#cultureCenters").style("display", "none");
 
     culturesEditor.querySelectorAll(".hide").forEach(el => el.classList.add("hidden"));
+    culturesHeader.querySelector("div[data-sortby='type']").style.left = "6.8em";
     culturesFooter.style.display = "none";
     culturesHeader.querySelector("div[data-sortby='base']").style.marginLeft = "21px";
     body.querySelectorAll("div > input, select, span, svg").forEach(e => e.style.pointerEvents = "none");
@@ -398,6 +399,7 @@ function editCultures() {
     document.getElementById("culturesManuallyButtons").style.display = "none";
 
     culturesEditor.querySelectorAll(".hide").forEach(el => el.classList.remove("hidden"));
+    culturesHeader.querySelector("div[data-sortby='type']").style.left = "15.8em";
     culturesFooter.style.display = "block";
     culturesHeader.querySelector("div[data-sortby='base']").style.marginLeft = "2px";
     body.querySelectorAll("div > input, select, span, svg").forEach(e => e.style.pointerEvents = "all");

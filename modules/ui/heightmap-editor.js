@@ -1114,7 +1114,7 @@ function getHeight(h) {
     preview.width = grid.cellsX;
     preview.height = grid.cellsY;
     document.body.insertBefore(preview, optionsContainer);
-    preview.addEventListener("mouseover", () => tip("Heightmap preview. Click to download the image"));
+    preview.addEventListener("mouseover", () => tip("Heightmap preview. Click to download a screen-sized image"));
     preview.addEventListener("click", downloadPreview);
     drawHeightmapPreview();
   }

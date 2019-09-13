@@ -110,11 +110,11 @@ function editProvinces() {
         <input data-tip="Province name. Click and type to change" class="stateName" value="${p.name}" autocorrect="off" spellcheck="false">
         <span data-tip="Click to re-generate province name" class="icon-arrows-cw stateName hoverButton placeholder"></span>
         <span data-tip="Click to open province COA in the Iron Arachne Heraldry Generator" class="icon-fleur pointer hide"></span>
-        <input data-tip="Province form name. Click and type to change" class="stateForm" value="${p.formName}" autocorrect="off" spellcheck="false">
+        <input data-tip="Province form name. Click and type to change" class="stateForm hide" value="${p.formName}" autocorrect="off" spellcheck="false">
         <span data-tip="Click to re-generate form name" class="icon-arrows-cw stateForm hoverButton placeholder"></span>
         <span data-tip="Province capital. Click to zoom into view" class="icon-star-empty pointer hide ${p.burg?'':'placeholder'}"></span>
         <select data-tip="Province capital. Click to select from burgs within the state. No capital means the province is governed from the state capital" class="cultureBase hide ${p.burgs.length?'':'placeholder'}">${p.burgs.length ? getCapitalOptions(p.burgs, p.burg) : ''}</select>
-        <input data-tip="Province owner" class="provinceOwner" value="${stateName}" disabled hide">
+        <input data-tip="Province owner" class="provinceOwner" value="${stateName}" disabled">
         <span data-tip="Province area" style="padding-right: 4px" class="icon-map-o hide"></span>
         <div data-tip="Province area" class="biomeArea hide">${si(area) + unit}</div>
         <span data-tip="${populationTip}" class="icon-male hide"></span>
@@ -291,6 +291,7 @@ function editProvinces() {
     document.getElementById("provincesManuallyButtons").style.display = "inline-block";
 
     provincesEditor.querySelectorAll(".hide").forEach(el => el.classList.add("hidden"));
+    provincesHeader.querySelector("div[data-sortby='state']").style.left = "7.7em";
     provincesFooter.style.display = "none";
     body.querySelectorAll("div > input, select, span, svg").forEach(e => e.style.pointerEvents = "none");
     $("#provincesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});
@@ -399,6 +400,7 @@ function editProvinces() {
     document.getElementById("provincesManuallyButtons").style.display = "none";
 
     provincesEditor.querySelectorAll(".hide:not(.show)").forEach(el => el.classList.remove("hidden"));
+    provincesHeader.querySelector("div[data-sortby='state']").style.left = "22em";
     provincesFooter.style.display = "block";
     body.querySelectorAll("div > input, select, span, svg").forEach(e => e.style.pointerEvents = "all");
     if(!close) $("#provincesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});
