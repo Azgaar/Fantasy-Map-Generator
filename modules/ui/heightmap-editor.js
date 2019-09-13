@@ -11,10 +11,13 @@ function editHeightmap() {
     <p>If you need to change the coastline and keep the data, you may try the <i>risk</i> edit option. 
     The data will be restored as much as possible, but the coastline change can cause unexpected fluctuations and errors.</p>
 
-    <p>Check out <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization" target="_blank">wiki</a> for guidance.</p>`;
+    <p>Check out <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization" target="_blank">wiki</a> for guidance.</p>
+    
+    <p>Please save the map before edditing the heightmap!</p>`;
 
     $("#alert").dialog({resizable: false, title: "Edit Heightmap", width: "28em",
       buttons: {
+        Save: function() {saveMap();},
         Erase: function() {enterHeightmapEditMode("erase");},
         Keep: function() {enterHeightmapEditMode("keep");},
         Risk: function() {enterHeightmapEditMode("risk");},
