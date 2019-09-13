@@ -154,6 +154,9 @@ function editReligions() {
       info.innerHTML = `${r.name}${type}${form}${population}${hint}`;
     }
 
+    const el = body.querySelector(`div[data-id='${religion}']`);
+    if (el) el.classList.add("active");
+
     if (!layerIsOn("toggleReligions")) return;
     if (customization) return;
     relig.select("#religion"+religion).raise().transition(animate).attr("stroke-width", 2.5).attr("stroke", "#c13119");
@@ -167,6 +170,10 @@ function editReligions() {
       d3.select("#religionHierarchy").select("g[data-id='"+religion+"'] > path").classed("selected", 0);
       info.innerHTML = "&#8205;";
     }
+
+    const el = body.querySelector(`div[data-id='${religion}']`)
+    if (el) el.classList.remove("active");
+
     relig.select("#religion"+religion).transition().attr("stroke-width", null).attr("stroke", null);
     debug.select("#religionsCenter"+religion).transition().attr("r", 4).attr("stroke-width", 1.2).attr("stroke", null);
   }
@@ -245,13 +252,9 @@ function editReligions() {
       .attr("cx", d => pack.cells.p[d.center][0]).attr("cy", d => pack.cells.p[d.center][1])
       .on("mouseenter", d => {
         tip(d.name+ ". Drag to move the religion center", true);
-        const el = body.querySelector(`div[data-id='${d.i}']`);
-        if (el) el.classList.add("selected");
         religionHighlightOn(event);
       }).on("mouseleave", d => {
         tip('', true);
-        const el = body.querySelector(`div[data-id='${d.i}']`)
-        if (el) el.classList.remove("selected");
         religionHighlightOff(event);
       }).call(d3.drag().on("start", religionCenterDrag));
   }
@@ -293,7 +296,7 @@ function editReligions() {
     // build hierarchy tree
     pack.religions[0].origin = null;
     const religions = pack.religions.filter(r => !r.removed);
-    let root = d3.stratify().id(d => d.i).parentId(d => d.origin)(religions);
+    const root = d3.stratify().id(d => d.i).parentId(d => d.origin)(religions);
     const treeWidth = root.leaves().length;
     const treeHeight = root.height;
     const width = treeWidth * 40, height = treeHeight * 60;
@@ -304,7 +307,7 @@ function editReligions() {
     const treeLayout = d3.tree().size([w, h]);
 
     // prepare svg
-    alertMessage.innerHTML = "<div id='religionInfo'>&#8205;</div>";
+    alertMessage.innerHTML = "<div id='religionInfo' class='chartInfo'>&#8205;</div>";
     const svg = d3.select("#alertMessage").insert("svg", "#religionInfo").attr("id", "religionHierarchy")
       .attr("width", width).attr("height", height).style("text-anchor", "middle");
     const graph = svg.append("g").attr("transform", `translate(10, -45)`);

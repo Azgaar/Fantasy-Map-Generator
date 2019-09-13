@@ -22,6 +22,7 @@ function editProvinces() {
   document.getElementById("provincesEditorRefresh").addEventListener("click", refreshProvincesEditor);
   document.getElementById("provincesFilterState").addEventListener("change", provincesEditorAddLines);
   document.getElementById("provincesPercentage").addEventListener("click", togglePercentageMode);
+  document.getElementById("provincesChart").addEventListener("click", showChart);
   document.getElementById("provincesToggleLabels").addEventListener("click", toggleLabels);
   document.getElementById("provincesExport").addEventListener("click", downloadProvincesData);
   document.getElementById("provincesRemoveAll").addEventListener("click", removeAllProvinces);
@@ -151,17 +152,25 @@ function editProvinces() {
 
   function provinceHighlightOn(event) {
     if (!customization) event.target.querySelectorAll(".hoverButton").forEach(el => el.classList.remove("placeholder"));
+
+    const province = +event.target.dataset.id;
+    const el = body.querySelector(`div[data-id='${province}']`);
+    if (el) el.classList.add("active");
+
     if (!layerIsOn("toggleProvinces")) return;
     if (customization) return;
-    const province = +event.target.dataset.id;
     const animate = d3.transition().duration(2000).ease(d3.easeSinIn);
     provs.select("#province"+province).raise().transition(animate).attr("stroke-width", 2.5).attr("stroke", "#d0240f");
   }
 
   function provinceHighlightOff(event) {
     if (!customization) event.target.querySelectorAll(".hoverButton").forEach(el => el.classList.add("placeholder"));
-    if (!layerIsOn("toggleProvinces")) return;
+
     const province = +event.target.dataset.id;
+    const el = body.querySelector(`div[data-id='${province}']`);
+    if (el) el.classList.remove("active");
+
+    if (!layerIsOn("toggleProvinces")) return;
     provs.select("#province"+province).transition().attr("stroke-width", null).attr("stroke", null);
   }
 
@@ -270,6 +279,119 @@ function editProvinces() {
       body.dataset.type = "absolute";
       provincesEditorAddLines();
     }
+  }
+
+  function showChart() {
+    // build hierarchy tree
+    const states = pack.states.map(s => {
+      return {id:s.i, state: s.i?0:null, color: s.i && s.color[0] === "#" ? d3.color(s.color).darker() : "#666"}
+    });
+    const provinces = pack.provinces.filter(p => p.i && !p.removed);
+    provinces.forEach(p => p.id = p.i + states.length - 1);
+    const data = states.concat(provinces);
+    const root = d3.stratify().parentId(d => d.state)(data).sum(d => d.area);
+
+    const width = 800, height = 300;
+    const margin = {top: 10, right: 10, bottom: 0, left: 10};
+    const w = width - margin.left - margin.right;
+    const h = height - margin.top - margin.bottom;
+    const treeLayout = d3.treemap().size([w, h]).padding(2);
+
+    // prepare svg
+    alertMessage.innerHTML = `<select id="provincesTreeType" style="display:block; margin-left:13px; font-size:11px">
+      <option value="area" selected>Area</option>
+      <option value="population">Total population</option>
+      <option value="rural">Rural population</option>
+      <option value="urban">Urban population</option>
+    </select>`;
+    alertMessage.innerHTML += `<div id='provinceInfo' class='chartInfo'>&#8205;</div>`;
+    const svg = d3.select("#alertMessage").insert("svg", "#provinceInfo").attr("id", "provincesTree")
+      .attr("width", width).attr("height", height).attr("font-size", "10px");
+    const graph = svg.append("g").attr("transform", `translate(10, 0)`);
+    document.getElementById("provincesTreeType").addEventListener("change", updateChart);
+
+    treeLayout(root);
+
+    const node = graph.selectAll("g").data(root.leaves()).enter()
+      .append("g").attr("data-id", d => d.data.i)
+      .on("mouseenter", d => showInfo(event, d))
+      .on("mouseleave", d => hideInfo(event, d));
+
+    function showInfo(ev, d) {
+      d3.select(ev.target).select("rect").classed("selected", 1);
+      const name = d.data.fullName;
+      const state = pack.states[d.data.state].fullName;
+
+      const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
+      const area = d.data.area * (distanceScaleInput.value ** 2) + unit;
+      const rural = rn(d.data.rural * populationRate.value);
+      const urban = rn(d.data.urban * populationRate.value * urbanization.value);
+
+      const value = provincesTreeType.value === "area" ? "Area: " + area
+        : provincesTreeType.value === "rural" ? "Rural population: " + si(rural)
+        : provincesTreeType.value === "urban" ? "Urban population: " + si(urban)
+        : "Population: " + si(rural + urban);
+
+      provinceInfo.innerHTML = `${name}. ${state}. ${value}`;
+      provinceHighlightOn(ev);
+    }
+
+    function hideInfo(ev) {
+      provinceHighlightOff(ev);
+      if (!document.getElementById("provinceInfo")) return;
+      provinceInfo.innerHTML = "&#8205;";
+      d3.select(ev.target).select("rect").classed("selected", 0);
+    }
+
+    node.append("rect").attr("stroke", d => d.parent.data.color)
+      .attr("stroke-width", 1).attr("fill", d => d.data.color)
+      .attr("x", d => d.x0).attr("y", d => d.y0)
+      .attr("width", d => d.x1 - d.x0).attr("height", d => d.y1 - d.y0);
+
+    node.append("text").attr("dx", ".2em").attr("dy", "1em")
+      .attr("x", d => d.x0).attr("y", d => d.y0);
+
+    function hideNonfittingLabels() {
+      node.select("text").each(function(d) {
+        this.innerHTML = d.data.name;
+        let b = this.getBBox();
+        if (b.y + b.height > d.y1 + 1) this.innerHTML = "";
+
+        while(b.width > 0 && b.x + b.width > d.x1) {
+          if (this.innerHTML.length < 3) {this.innerHTML = ""; break;}
+          this.innerHTML = this.innerHTML.slice(0, -2) + "…";
+          b = this.getBBox();
+        }
+      })
+
+    }
+
+    function updateChart() {
+      const value = this.value === "area" ? d => d.area
+        : this.value === "rural" ? d => d.rural
+        : this.value === "urban" ? d => d.urban
+        : d => d.rural + d.urban;
+  
+      const newRoot = d3.stratify().parentId(d => d.state)(data).sum(value);
+      node.data(treeLayout(newRoot).leaves())
+
+      node.select("rect").transition().duration(1500)
+        .attr("x", d => d.x0).attr("y", d => d.y0)
+        .attr("width", d => d.x1 - d.x0).attr("height", d => d.y1 - d.y0);
+
+      node.select("text").attr("opacity", 1).transition().duration(1500)
+        .attr("x", d => d.x0).attr("y", d => d.y0);
+
+      setTimeout(hideNonfittingLabels, 2000);
+    }
+
+    $("#alert").dialog({
+      title: "Provinces chart", width: fitContent(), resizable: false, 
+      position: {my: "left center", at: "left+10 center", of: "svg"}, buttons: {},
+      close: () => {alertMessage.innerHTML = "";}
+    });
+
+    hideNonfittingLabels();
   }
 
   function toggleLabels() {

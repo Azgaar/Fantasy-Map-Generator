@@ -191,7 +191,7 @@ i.icon-lock {
 	cursor: pointer;
 }
 
-#religionInfo {
+.chartInfo {
 	text-align: center;
 	font-family: sans-serif;
 	font-style: italic;
@@ -204,11 +204,22 @@ i.icon-lock {
 	cursor: move;
 }
 
-#religionHierarchy text {
+#religionHierarchy text,
+#provincesTree text {
 	pointer-events: none;
 	user-select: none;
 	stroke: none;
 	font-size: 11px;
+}
+
+#provincesTree .selected {
+	stroke: #c13119;
+	stroke-width: 2;
+}
+
+#provincesTree .selected {
+	stroke: #c13119;
+	stroke-width: 2;
 }
 
 .dragLine {
@@ -1291,6 +1302,11 @@ div.states>.religionDeity {
 div.states.selected {
 	border-color: #b28585;
 	background-image: linear-gradient(to right, #f2f2f2 0%, #ebe7e7 50%, #E5DADB 100%);
+}
+
+div.states.active {
+  border: 1px solid #c4c4c4;
+  background-image: linear-gradient(to right, #dedede 100%, #f2f2f2 50%, #fcfcfc 0%);
 }
 
 div.states.Self {
