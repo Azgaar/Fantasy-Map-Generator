@@ -52,7 +52,9 @@ function saveAsImage(type) {
   // load fonts as dataURI so they will be available in downloaded svg/png
   GFontToDataURI(getFontsToLoad()).then(cssRules => {
     clone.select("defs").append("style").text(cssRules.join('\n'));
-    const svg_xml = (new XMLSerializer()).serializeToString(clone.node());
+    clone.append("metadata").text("<dc:format>image/svg+xml</dc:format>");
+    const serialized = (new XMLSerializer()).serializeToString(clone.node());
+    const svg_xml = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>` + serialized;
     clone.remove();
     const blob = new Blob([svg_xml], {type: 'image/svg+xml;charset=utf-8'});
     const url = window.URL.createObjectURL(blob);
