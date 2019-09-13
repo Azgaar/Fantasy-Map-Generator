@@ -291,7 +291,7 @@ function editProvinces() {
     const data = states.concat(provinces);
     const root = d3.stratify().parentId(d => d.state)(data).sum(d => d.area);
 
-    const width = 800, height = 300;
+    const width = 300 + 300 * uiSizeOutput.value, height = 90 + 90 * uiSizeOutput.value;
     const margin = {top: 10, right: 10, bottom: 0, left: 10};
     const w = width - margin.left - margin.right;
     const h = height - margin.top - margin.bottom;
@@ -357,7 +357,7 @@ function editProvinces() {
         let b = this.getBBox();
         if (b.y + b.height > d.y1 + 1) this.innerHTML = "";
 
-        while(b.width > 0 && b.x + b.width > d.x1) {
+        for(let i=0; i < 15 && b.width > 0 && b.x + b.width > d.x1; i++) {
           if (this.innerHTML.length < 3) {this.innerHTML = ""; break;}
           this.innerHTML = this.innerHTML.slice(0, -2) + "…";
           b = this.getBBox();
@@ -386,8 +386,8 @@ function editProvinces() {
     }
 
     $("#alert").dialog({
-      title: "Provinces chart", width: fitContent(), resizable: false, 
-      position: {my: "left center", at: "left+10 center", of: "svg"}, buttons: {},
+      title: "Provinces chart", width: fitContent(),
+      position: {my: "left bottom", at: "left+10 bottom-10", of: "svg"}, buttons: {},
       close: () => {alertMessage.innerHTML = "";}
     });
 
