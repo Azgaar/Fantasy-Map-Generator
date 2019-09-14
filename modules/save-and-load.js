@@ -3,11 +3,9 @@
 
 // download map data as GeoJSON
 function saveGeoJSON() {
-/*
     saveGeoJSON_Cells();
     saveGeoJSON_Roads();
     saveGeoJSON_Rivers();
-*/
     saveGeoJSON_Markers();
 }
 
