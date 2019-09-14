@@ -850,8 +850,8 @@ function drawGrid() {
     const d = points.map(p => "M" + p + hex).join("");
     gridOverlay.append("path").attr("d", d);
   } else if (type === "square") {
-    const pathX = d3.range(size, svgWidth, size).map(x => "M" + rn(x, 2) + ",0v" + svgHeight);
-    const pathY = d3.range(size, svgHeight, size).map(y => "M0," + rn(y, 2) + "h" + svgWidth);
+    const pathX = d3.range(size, svgWidth, size).map(x => "M" + rn(x, 2) + ",0v" + svgHeight).join(" ");
+    const pathY = d3.range(size, svgHeight, size).map(y => "M0," + rn(y, 2) + "h" + svgWidth).join(" ");
     gridOverlay.append("path").attr("d", pathX + pathY);
   }
 

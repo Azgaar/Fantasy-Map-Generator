@@ -268,9 +268,9 @@ function drawScaleBar() {
 
 // fit ScaleBar to map size
 function fitScaleBar() {
-  if (!scaleBar.select("rect").size()) return;
-  const px = isNaN(+barPosX.value) ? 99 : barPosX.value / 100;
-  const py = isNaN(+barPosY.value) ? 99 : barPosY.value / 100;
+  if (!scaleBar.select("rect").size() || scaleBar.style("display") === "none") return;
+  const px = isNaN(+barPosX.value) ? .99 : barPosX.value / 100;
+  const py = isNaN(+barPosY.value) ? .99 : barPosY.value / 100;
   const bbox = scaleBar.select("rect").node().getBBox();
   const x = rn(svgWidth * px - bbox.width + 10), y = rn(svgHeight * py - bbox.height + 20);
   scaleBar.attr("transform", `translate(${x},${y})`);

@@ -327,7 +327,7 @@
     if (m === "Random + type") return [random() + " " + type(), "global"];
     if (m === "Random + ism") return [trimVowels(random()) + "ism", "global"];
     if (m === "Supreme + ism" && deity) return [trimVowels(supreme()) + "ism", "global"];
-    if (m === "Faith of + Supreme" && deity) return [ra(['Faith', 'Way', 'Word']) + " of " + supreme(), "global"];
+    if (m === "Faith of + Supreme" && deity) return [ra(['Faith', 'Way', 'Path', 'Word', 'Witnesses']) + " of " + supreme(), "global"];
     if (m === "Place + ism") return [place() + "ism", "state"];
     if (m === "Culture + ism") return [trimVowels(culture()) + "ism", "culture"];
     if (m === "Place + ian + type") return [place("adj") + " " + type(), "state"];
