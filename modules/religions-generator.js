@@ -35,7 +35,7 @@
     Heresy:{"Heresy":1}
   };
 
-  const methods = {"Random + type":3, "Random + ism":1, "Supreme + ism":5, "Faith of + Supreme":3, "Place + ism":1, "Culture + ism":2, "Place + ian + type":6, "Culture + type":4};
+  const methods = {"Random + type":3, "Random + ism":1, "Supreme + ism":5, "Faith of + Supreme":5, "Place + ism":1, "Culture + ism":2, "Place + ian + type":6, "Culture + type":4};
 
   const types = {
     "Shamanism":{"Beliefs":3, "Shamanism":2, "Spirits":1},
@@ -327,7 +327,7 @@
     if (m === "Random + type") return [random() + " " + type(), "global"];
     if (m === "Random + ism") return [trimVowels(random()) + "ism", "global"];
     if (m === "Supreme + ism" && deity) return [trimVowels(supreme()) + "ism", "global"];
-    if (m === "Faith of + Supreme" && deity) return ["Faith of " + supreme(), "global"];
+    if (m === "Faith of + Supreme" && deity) return [ra(['Faith', 'Way', 'Word']) + " of " + supreme(), "global"];
     if (m === "Place + ism") return [place() + "ism", "state"];
     if (m === "Culture + ism") return [trimVowels(culture()) + "ism", "culture"];
     if (m === "Place + ian + type") return [place("adj") + " " + type(), "state"];

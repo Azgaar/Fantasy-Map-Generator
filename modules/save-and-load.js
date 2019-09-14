@@ -155,7 +155,6 @@ function GFontToDataURI(url) {
 
 // prepare map data for saving
 function getMapData() {
-  if (customization) return false;
   console.time("createMapDataBlob");
 
   return new Promise(resolve => {
@@ -218,7 +217,7 @@ function getMapData() {
 // Download .map file
 async function saveMap() {
   if (customization) {tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error"); return;}
-  closeDialogs();
+  closeDialogs("#alert");
 
   const blob = await getMapData();
   const URL = window.URL.createObjectURL(blob);
@@ -327,6 +326,92 @@ function getRiverPoints(node) {
   return points;
 }
 
+async function quickSave() {
+  if (customization) {tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error"); return;}
+  const blob = await getMapData();
+  if (blob) ldb.set("lastMap", blob); // auto-save map
+  tip("Map is saved to browser memory", true, "success", 2000);
+}
+
+function quickLoad() {
+  ldb.get("lastMap", blob => {
+    if (blob) {
+      loadMapPrompt(blob);
+    } else {
+      tip("No map stored. Save map to storage first", true, "error", 2000);
+      console.error("No map stored");
+    }
+  });
+}
+
+function loadMapPrompt(blob) {
+  const workingTime = (Date.now() - last(mapHistory).created) / 60000; // minutes
+  if (workingTime < 5) {loadLastSavedMap(); return;}
+
+  alertMessage.innerHTML = `Are you sure you want to load saved map?<br>
+  All unsaved changes made to the current map will be lost`;
+  $("#alert").dialog({resizable: false, title: "Load saved map",
+    buttons: {
+      Cancel: function() {$(this).dialog("close");},
+      Load: function() {loadLastSavedMap(); $(this).dialog("close");}
+    }
+  });
+
+  function loadLastSavedMap() {
+    console.warn("Load last saved map");
+    try {
+      uploadFile(blob);
+    }
+    catch(error) {
+      console.error(error);
+      tip("Cannot load last saved map", true, "error", 2000);
+    }
+  }
+}
+
+const saveReminder = function() {
+  if (localStorage.getItem("noReminder")) return;
+  const message = ["Please don't forget to save your work as a .map file",
+    "Please remember to save work as a .map file",
+    "Saving in .map format will ensure your data won't be lost in case of issues",
+    "Safety is number one priority. Please save the map",
+    "Don't forget to save your map on a regular basis!",
+    "Just a gentle reminder for you to save the map",
+    "Please forget to save your progress (saving as .map is the best option)",
+    "Don't want to be reminded about need to save? Press CTRL+Q"];
+
+  saveReminder.reminder = setInterval(() => {
+    if (customization) return;
+    tip(ra(message), true, "warn", 2500);
+  }, 1e6);
+  saveReminder.status = 1;
+}
+
+saveReminder();
+
+function toggleSaveReminder() {
+  if (saveReminder.status) {
+    tip("Save reminder is turned off. Press CTRL+Q again to re-initiate", true, "warn", 2000);
+    clearInterval(saveReminder.reminder);
+    localStorage.setItem("noReminder", true);
+    saveReminder.status = 0;
+  } else {
+    tip("Save reminder is turned on. Press CTRL+Q to turn off", true, "warn", 2000);
+    localStorage.removeItem("noReminder");
+    saveReminder();
+  }
+}
+
+function getFileName(dataType) {
+  const name = mapName.value;
+  const type = dataType ? dataType + " " : "";
+  const date = new Date();
+  const datFormatter = new Intl.DateTimeFormat("en", {month: "short", day: "numeric"});
+  const timeFormatter = new Intl.DateTimeFormat("ru", {hour: "numeric", minute: "numeric"});
+  const day = datFormatter.format(date).replace(" ", "");
+  const time = timeFormatter.format(date).replace(":", "-");
+  return name + " " + type + day + " " + time;
+}
 
 function saveGeoJSON_Cells() {
   let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
@@ -408,6 +493,11 @@ function uploadFile(file, callback) {
 
 function parseLoadedData(data) {
   try {
+    // exit customization
+    closeDialogs();
+    customization = 0;
+    if (customizationMenu.offsetParent) styleTab.click();
+
     const reliefIcons = document.getElementById("defs-relief").innerHTML; // save relief icons
     const hatching = document.getElementById("hatching").cloneNode(true); // save hatching
 
@@ -732,91 +822,4 @@ function parseLoadedData(data) {
     });
   }
 
-}
-
-async function quickSave() {
-  const blob = await getMapData();
-  if (blob) ldb.set("lastMap", blob); // auto-save map
-  tip("Map is saved to browser memory", true, "success", 2000);
-}
-
-function quickLoad() {
-  ldb.get("lastMap", blob => {
-    if (blob) {
-      loadMapPrompt(blob);
-    } else {
-      tip("No map stored. Save map to storage first", true, "error", 2000);
-      console.error("No map stored");
-    }
-  });
-}
-
-function loadMapPrompt(blob) {
-  const workingTime = (Date.now() - last(mapHistory).created) / 60000; // minutes
-  if (workingTime < 10) {loadLastSavedMap(); return;}
-
-  alertMessage.innerHTML = `Are you sure you want to load saved map?<br>
-  All unsaved changes made to the current map will be lost`;
-  $("#alert").dialog({resizable: false, title: "Load saved map",
-    buttons: {
-      Cancel: function() {$(this).dialog("close");},
-      Load: function() {loadLastSavedMap(); $(this).dialog("close");}
-    }
-  });
-
-  function loadLastSavedMap() {
-    console.warn("Load last saved map");
-    closeDialogs();
-    try {
-      uploadFile(blob);
-    }
-    catch(error) {
-      console.error(error);
-      tip("Cannot load last saved map", true, "error", 2000);
-    }
-  }
-}
-
-const saveReminder = function() {
-  if (localStorage.getItem("noReminder")) return;
-  const message = ["Please don't forget to save your work as a .map file",
-    "Please remember to save work as a .map file",
-    "Saving in .map format will ensure your data won't be lost in case of issues",
-    "Safety is number one priority. Please save the map",
-    "Don't forget to save your map on a regular basis!",
-    "Just a gentle reminder for you to save the map",
-    "Please forget to save your progress (saving as .map is the best option)",
-    "Don't want to be reminded about need to save? Press CTRL+Q"];
-
-  saveReminder.reminder = setInterval(() => {
-    if (customization) return;
-    tip(ra(message), true, "warn", 2500);
-  }, 1e6);
-  saveReminder.status = 1;
-}
-
-saveReminder();
-
-function toggleSaveReminder() {
-  if (saveReminder.status) {
-    tip("Save reminder is turned off. Press CTRL+Q again to re-initiate", true, "warn", 2000);
-    clearInterval(saveReminder.reminder);
-    localStorage.setItem("noReminder", true);
-    saveReminder.status = 0;
-  } else {
-    tip("Save reminder is turned on. Press CTRL+Q to turn off", true, "warn", 2000);
-    localStorage.removeItem("noReminder");
-    saveReminder();
-  }
-}
-
-function getFileName(dataType) {
-  const name = mapName.value;
-  const type = dataType ? dataType + " " : "";
-  const date = new Date();
-  const datFormatter = new Intl.DateTimeFormat("en", {month: "short", day: "numeric"});
-  const timeFormatter = new Intl.DateTimeFormat("ru", {hour: "numeric", minute: "numeric"});
-  const day = datFormatter.format(date).replace(" ", "");
-  const time = timeFormatter.format(date).replace(":", "-");
-  return name + " " + type + day + " " + time;
 }

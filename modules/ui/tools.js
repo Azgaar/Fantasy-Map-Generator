@@ -30,14 +30,15 @@ toolsContent.addEventListener("click", function(event) {
         Proceed: function() {processFeatureRegeneration(button); $(this).dialog("close");},
         Cancel: function() {$(this).dialog("close");}
       },
-      create: function() {
+      open: function() {
         const pane = $(this).dialog("widget").find(".ui-dialog-buttonpane");
-        $('<input id="dontAsk" class="checkbox" type="checkbox"><label for="dontAsk" class="checkbox-label dontAsk"><i>do not ask again</i></label>').prependTo(pane);
+        $('<span><input id="dontAsk" class="checkbox" type="checkbox"><label for="dontAsk" class="checkbox-label dontAsk"><i>do not ask again</i></label><span>').prependTo(pane);
       },
       close: function() {
         const box = $(this).dialog("widget").find(".checkbox")[0];
         if (!box) return;
         if (box.checked) sessionStorage.setItem("regenerateFeatureDontAsk", true);
+        $(this).dialog("destroy");
       }
     });
   }

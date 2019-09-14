@@ -1012,7 +1012,7 @@ document.getElementById("sticked").addEventListener("click", function(event) {
 
 function regeneratePrompt() {
   const workingTime = (Date.now() - last(mapHistory).created) / 60000; // minutes
-  if (workingTime < 10) {regenerateMap(); return;}
+  if (workingTime < 5) {regenerateMap(); return;}
 
   alertMessage.innerHTML = `Are you sure you want to generate a new map?<br>
   All unsaved changes made to the current map will be lost`;
@@ -1043,22 +1043,6 @@ function toggleSavePane() {
   }
 }
 
-// async function saveDropbox() {
-//   const filename = "fantasy_map_" + Date.now() + ".map";
-//   const options = {
-//     files: [{'url': '...', 'filename': 'fantasy_map.map'}],
-//     success: function () {alert("Success! Files saved to your Dropbox.")},
-//     progress: function (progress) {console.log(progress)},
-//     cancel: function (cancel) {console.log(cancel)},
-//     error: function (error) {console.log(error)}
-//   };
-
-//   // working file: "https://dl.dropbox.com/s/llg93mwyonyzdmu/test.map?dl=1";
-//   const dataBlob = await getMapData();
-//   const URL = window.URL.createObjectURL(dataBlob);
-//   Dropbox.save(URL, filename, options);
-// }
-
 function toggleLoadPane() {
   if (loadDropdown.style.display === "block") {loadDropdown.style.display = "none"; return;}
   loadDropdown.style.display = "block";
@@ -1075,7 +1059,6 @@ function loadURL() {
       Load: function() {
         const value = mapURL.value;
         if (!pattern.test(value)) {tip("Please provide a valid URL", false, "error"); return;}
-        closeDialogs();
         loadMapFromURL(value);
         $(this).dialog("close");
       },
@@ -1083,26 +1066,6 @@ function loadURL() {
     }
   });
 }
-
-// function loadDropbox() {
-//     const options = {
-//       success: function(file) {send_files(file)},
-//       cancel: function() {},
-//       linkType: "preview",
-//       multiselect: false,
-//       extensions:['.map'],
-//   };
-//   Dropbox.choose(options);
-
-//   function send_files(file) {
-//     const subject = "Shared File Links";
-//     let body = "";
-//     for (let i=0; i < file.length; i++) {
-//       body += file[i].name + "\n" + file[i].link + "\n\n";
-//     }
-//     location.href = 'mailto:coworker@example.com?Subject=' + escape(subject) + '&body='+ escape(body),'200','200';
-//   }
-// }
 
 // load map
 document.getElementById("mapToLoad").addEventListener("change", function() {

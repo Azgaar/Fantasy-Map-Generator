@@ -13,11 +13,10 @@ function editHeightmap() {
 
     <p>Check out <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization" target="_blank">wiki</a> for guidance.</p>
     
-    <p>Please save the map before edditing the heightmap!</p>`;
+    <p>Please <span class="pseudoLink" onclick=saveMap(); editHeightmap();>save the map</span> before edditing the heightmap!</p>`;
 
     $("#alert").dialog({resizable: false, title: "Edit Heightmap", width: "28em",
       buttons: {
-        Save: function() {saveMap();},
         Erase: function() {enterHeightmapEditMode("erase");},
         Keep: function() {enterHeightmapEditMode("keep");},
         Risk: function() {enterHeightmapEditMode("risk");},

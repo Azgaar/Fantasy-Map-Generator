@@ -1854,6 +1854,11 @@ svg.button {
 	margin: 10px 0; 
 }
 
+.pseudoLink {
+	cursor: pointer;
+  text-decoration: underline;
+}
+
 #info-line {
 	font-size: .9em;
 	color: gray;
@@ -1971,7 +1976,7 @@ svg.button {
 
 .dontAsk {
 	display: inline-block;
-	margin: 10px 0 0 7px;
+	margin: .9em 0 0 .6em;
 }
 
 #errorBox {
@@ -1985,7 +1990,7 @@ svg.button {
 
 #debug {
 	font-size: 1px;
-	opacity: 0.8;
+	opacity: .8;
 }
 
 @media print {
