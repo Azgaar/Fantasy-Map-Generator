@@ -59,7 +59,8 @@ function processFeatureRegeneration(button) {
   if (button === "regenerateBurgs") regenerateBurgs(); else
   if (button === "regenerateStates") regenerateStates(); else
   if (button === "regenerateProvinces") regenerateProvinces(); else
-  if (button === "regenerateReligions") regenerateReligions();
+  if (button === "regenerateReligions") regenerateReligions(); else
+  if (button === "regenerateMarkers") regenerateMarkers();
 }
 
 function regenerateRivers() {
@@ -197,6 +198,11 @@ function regenerateProvinces() {
 function regenerateReligions() {
   Religions.generate();
   if (!layerIsOn("toggleReligions")) toggleReligions(); else drawReligions();
+}
+
+function regenerateMarkers() {
+  markers.selectAll("use").remove();
+  addMarkers(gauss(1, .5, .3, 5, 2));
 }
 
 function unpressClickToAddButton() {

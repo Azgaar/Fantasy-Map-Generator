@@ -1769,8 +1769,7 @@ div#notes {
 	background: rgba(255, 250, 228, 0.7);
 	box-shadow: 2px 2px 5px -3px #3a2804;
 	white-space: pre-line;
-	-moz-user-select: none;
-	user-select: none;
+	pointer-events: none;
 }
 
 div#notesHeader {

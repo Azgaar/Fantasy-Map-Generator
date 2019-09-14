@@ -1192,13 +1192,13 @@ function addZone() {
 }
 
 // add some markers as an example
-function addMarkers() {
+function addMarkers(number = 1) {
   console.time("addMarkers");
   const cells = pack.cells;
 
   void function addVolcanoes() {
     let mounts = Array.from(cells.i).filter(i => cells.h[i] > 70).sort((a, b) => cells.h[b] - cells.h[a]);
-    let count = mounts.length < 10 ? 0 : Math.ceil(mounts.length / 300);
+    let count = mounts.length < 10 ? 0 : Math.ceil(mounts.length / 300 * number);
     if (count) addMarker("volcano", "🌋", 52, 52, 17.5);
 
     while (count) {
@@ -1219,7 +1219,7 @@ function addMarkers() {
 
   void function addHotSprings() {
     let springs = Array.from(cells.i).filter(i => cells.h[i] > 50).sort((a, b) => cells.h[b]-cells.h[a]);
-    let count = springs.length < 30 ? 0 : Math.ceil(springs.length / 1000);
+    let count = springs.length < 30 ? 0 : Math.ceil(springs.length / 1000 * number);
     if (count) addMarker("hot_springs", "♨", 50, 50, 19.5);
 
     while (count) {
@@ -1240,7 +1240,7 @@ function addMarkers() {
 
   void function addMines() {
     let hills = Array.from(cells.i).filter(i => cells.h[i] > 47 && cells.burg[i]);
-    let count = !hills.length ? 0 : Math.ceil(hills.length / 7);
+    let count = !hills.length ? 0 : Math.ceil(hills.length / 7 * number);
     if (!count) return;
 
     addMarker("mine", "⚒", 50, 50, 20);
@@ -1272,7 +1272,7 @@ function addMarkers() {
       .filter(i => cells.burg[i] && cells.h[i] >= 20 && cells.r[i] && cells.fl[i] > meanFlux && cells.road[i] > meanRoad)
       .sort((a, b) => (cells.road[b] + cells.fl[b] / 10) - (cells.road[a] + cells.fl[a] / 10));
 
-    let count = !bridges.length ? 0 : Math.ceil(bridges.length / 12);
+    let count = !bridges.length ? 0 : Math.ceil(bridges.length / 12 * number);
     if (count) addMarker("bridge", "🌉", 50, 50, 16.5);
 
     while (count) {
@@ -1296,14 +1296,14 @@ function addMarkers() {
     const maxRoad = d3.max(cells.road) * .9;
     let taverns = Array.from(cells.i).filter(i => cells.crossroad[i] && cells.h[i] >= 20 && cells.road[i] > maxRoad);
     if (!taverns.length) return;
+    const count = Math.ceil(4 * number);
     addMarker("inn", "🍻", 50, 50, 17.5);
 
     const color = ["Dark", "Light", "Bright", "Golden", "White", "Black", "Red", "Pink", "Purple", "Blue", "Green", "Yellow", "Amber", "Orange", "Brown", "Grey"];
     const animal = ["Antelope", "Ape", "Badger", "Bear", "Beaver", "Bison", "Boar", "Buffalo", "Cat", "Crane", "Crocodile", "Crow", "Deer", "Dog", "Eagle", "Elk", "Fox", "Goat", "Goose", "Hare", "Hawk", "Heron", "Horse", "Hyena", "Ibis", "Jackal", "Jaguar", "Lark", "Leopard", "Lion", "Mantis", "Marten", "Moose", "Mule", "Narwhal", "Owl", "Panther", "Rat", "Raven", "Rook", "Scorpion", "Shark", "Sheep", "Snake", "Spider", "Swan", "Tiger", "Turtle", "Wolf", "Wolverine", "Camel", "Falcon", "Hound", "Ox"];
     const adj = ["New", "Good", "High", "Old", "Great", "Big", "Major", "Happy", "Main", "Huge", "Far", "Beautiful", "Fair", "Prime", "Ancient", "Golden", "Proud", "Lucky", "Fat", "Honest", "Giant", "Distant", "Friendly", "Loud", "Hungry", "Magical", "Superior", "Peaceful", "Frozen", "Divine", "Favorable", "Brave", "Sunny", "Flying"];
 
-
-    for (let i=0; i < taverns.length && i < 4; i++) {
+    for (let i=0; i < taverns.length && i < count; i++) {
       const cell = taverns.splice(Math.floor(Math.random() * taverns.length), 1);
       const x = cells.p[cell][0], y = cells.p[cell][1];
       const id = getNextId("markerElement");
@@ -1323,8 +1323,9 @@ function addMarkers() {
     const lands = cells.i.filter(i => cells.harbor[i] > 6 && cells.c[i].some(c => cells.h[c] < 20 && cells.road[c]));
     const lighthouses = Array.from(lands).map(i => [i, cells.v[i][cells.c[i].findIndex(c => cells.h[c] < 20 && cells.road[c])]]);
     if (lighthouses.length) addMarker("lighthouse", "🚨", 50, 50, 16);
+    const count = Math.ceil(4 * number);
 
-    for (let i=0; i < lighthouses.length && i < 4; i++) {
+    for (let i=0; i < lighthouses.length && i < count; i++) {
       const cell = lighthouses[i][0], vertex = lighthouses[i][1];
       const x = pack.vertices.p[vertex][0], y = pack.vertices.p[vertex][1];
       const id = getNextId("markerElement");
@@ -1342,8 +1343,9 @@ function addMarkers() {
   void function addWaterfalls() {
     const waterfalls = cells.i.filter(i => cells.r[i] && cells.h[i] > 70);
     if (waterfalls.length) addMarker("waterfall", "⟱", 50, 54, 16.5);
+    const count = Math.ceil(3 * number);
 
-    for (let i=0; i < waterfalls.length && i < 3; i++) {
+    for (let i=0; i < waterfalls.length && i < count; i++) {
       const cell = waterfalls[i];
       const x = cells.p[cell][0], y = cells.p[cell][1];
       const id = getNextId("markerElement");
@@ -1360,7 +1362,7 @@ function addMarkers() {
 
   void function addBattlefields() {
     let battlefields = Array.from(cells.i).filter(i => cells.pop[i] > 2 && cells.h[i] < 50 && cells.h[i] > 25);
-    let count = battlefields.length < 100 ? 0 : Math.ceil(battlefields.length / 500);
+    let count = battlefields.length < 100 ? 0 : Math.ceil(battlefields.length / 500 * number);
     const era = Names.getCulture(0, 3, 7, "", 0) + " Era";
     if (count) addMarker("battlefield", "⚔", 50, 50, 20);
 
