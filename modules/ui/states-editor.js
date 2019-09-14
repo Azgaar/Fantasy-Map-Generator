@@ -91,24 +91,24 @@ function editStates() {
           <span class="icon-star-empty placeholder hide"></span>
           <input class="stateCapital placeholder hide">
           <select class="stateCulture placeholder hide">${getCultureOptions(0)}</select>
-          <select class="cultureType ${hidden} placeholder show hide">${getTypeOptions(0)}</select>
-          <span class="icon-resize-full ${hidden} placeholder show hide"></span>
-          <input class="statePower ${hidden} placeholder show hide" type="number" value=0>
-          <span data-tip="Cells count" class="icon-check-empty ${hidden} show hide"></span>
-          <div data-tip="Cells count" class="stateCells ${hidden} show hide">${s.cells}</div>
           <span data-tip="Burgs count" style="padding-right: 1px" class="icon-dot-circled hide"></span>
           <div data-tip="Burgs count" class="stateBurgs hide">${s.burgs}</div>
           <span data-tip="State area" style="padding-right: 4px" class="icon-map-o hide"></span>
           <div data-tip="State area" class="biomeArea hide">${si(area) + unit}</div>
           <span data-tip="${populationTip}" class="icon-male hide"></span>
           <div data-tip="${populationTip}" class="culturePopulation hide">${si(population)}</div>
+          <select class="cultureType ${hidden} placeholder show hide">${getTypeOptions(0)}</select>
+          <span class="icon-resize-full ${hidden} placeholder show hide"></span>
+          <input class="statePower ${hidden} placeholder show hide" type="number" value=0>
+          <span data-tip="Cells count" class="icon-check-empty ${hidden} show hide"></span>
+          <div data-tip="Cells count" class="stateCells ${hidden} show hide">${s.cells}</div>
         </div>`;
         continue;
       }
       const capital = pack.burgs[s.capital].name;
       lines += `<div class="states" data-id=${s.i} data-name="${s.name}" data-form="${s.formName}" data-capital="${capital}" data-color="${s.color}" data-cells=${s.cells}
         data-area=${area} data-population=${population} data-burgs=${s.burgs} data-culture=${pack.cultures[s.culture].name} data-type=${s.type} data-expansionism=${s.expansionism}>
-        <svg data-tip="State fill style. Click to change" width="9" height="9" style="margin-bottom:-1px"><rect x="0" y="0" width="9" height="9" fill="${s.color}" class="zoneFill"></svg>
+        <svg data-tip="State fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${s.color}" class="zoneFill"></svg>
         <input data-tip="State name. Click and type to change" class="stateName" value="${s.name}" autocorrect="off" spellcheck="false">
         <span data-tip="Click to re-generate name" class="icon-arrows-cw stateName hoverButton placeholder"></span>
         <span data-tip="Click to open state COA in the Iron Arachne Heraldry Generator" class="icon-fleur pointer hide"></span>
@@ -117,17 +117,17 @@ function editStates() {
         <span data-tip="State capital. Click to zoom into view" class="icon-star-empty pointer hide"></span>
         <input data-tip="Capital name. Click and type to rename" class="stateCapital hide" value="${capital}" autocorrect="off" spellcheck="false"/>
         <select data-tip="Dominant culture. Click to change" class="stateCulture hide">${getCultureOptions(s.culture)}</select>
-        <select data-tip="State type. Click to change" class="cultureType ${hidden} show hide">${getTypeOptions(s.type)}</select>
-        <span data-tip="State expansionism" class="icon-resize-full ${hidden} show hide"></span>
-        <input data-tip="Expansionism (defines competitive size). Change to re-calculate states based on new value" class="statePower ${hidden} show hide" type="number" min=0 max=99 step=.1 value=${s.expansionism}>
-        <span data-tip="Cells count" class="icon-check-empty ${hidden} show hide"></span>
-        <div data-tip="Cells count" class="stateCells ${hidden} show hide">${s.cells}</div>
         <span data-tip="Burgs count" style="padding-right: 1px" class="icon-dot-circled hide"></span>
         <div data-tip="Burgs count" class="stateBurgs hide">${s.burgs}</div>
         <span data-tip="State area" style="padding-right: 4px" class="icon-map-o hide"></span>
         <div data-tip="State area" class="biomeArea hide">${si(area) + unit}</div>
         <span data-tip="${populationTip}" class="icon-male hide"></span>
         <div data-tip="${populationTip}" class="culturePopulation hide">${si(population)}</div>
+        <select data-tip="State type. Defines growth model. Click to change" class="cultureType ${hidden} show hide">${getTypeOptions(s.type)}</select>
+        <span data-tip="State expansionism" class="icon-resize-full ${hidden} show hide"></span>
+        <input data-tip="Expansionism (defines competitive size). Change to re-calculate states based on new value" class="statePower ${hidden} show hide" type="number" min=0 max=99 step=.1 value=${s.expansionism}>
+        <span data-tip="Cells count" class="icon-check-empty ${hidden} show hide"></span>
+        <div data-tip="Cells count" class="stateCells ${hidden} show hide">${s.cells}</div>
         <span data-tip="Toggle state focus" class="icon-pin ${focused?'':' inactive'} hide"></span>
         <span data-tip="Remove the state" class="icon-trash-empty hide"></span>
       </div>`;
@@ -690,7 +690,7 @@ function editStates() {
     const url = window.URL.createObjectURL(dataBlob);
     const link = document.createElement("a");
     document.body.appendChild(link);
-    link.download = "states_data" + Date.now() + ".csv";
+    link.download = getFileName("States") + ".csv";
     link.href = url;
     link.click();
     window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);

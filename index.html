@@ -10,7 +10,7 @@
   <meta name="google" content="notranslate">
   <meta property="og:url" content="https://azgaar.github.io/Fantasy-Map-Generator">
   <meta property="og:title" content="Azgaar's Fantasy Map Generator">
-  <meta property="og:description" content="Based on Voronoi diagram rendered to svg">
+  <meta property="og:description" content="Web application generating interactive and customizable maps">
   <meta property="og:image" content="images/preview.png">
   <link rel="icon" type="image/png" href="images/favicon-32x32.png" sizes="32x32"/>
   <link rel="icon" type="image/png" href="images/favicon-16x16.png" sizes="16x16"/>
@@ -819,8 +819,8 @@
 
       <g id="rose" stroke-width="1">
         <g id="sL" stroke="#3f3f3f">
-          <line x1="0" y1="-10000000" x2="0" y2="10000000"/>
-          <line x1="-10000000" y1="0" x2="10000000" y2="0"/>
+          <line id="sL1" x1="0" y1="-2000" x2="0" y2="2000"/>
+          <line id="sL2" x1="-2000" y1="0" x2="2000" y2="0"/>
         </g>
         <use xlink:href="#sL" transform="rotate(45)"/>
         <use xlink:href="#sL" transform="rotate(22.5)"/>
@@ -857,8 +857,8 @@
         <use xlink:href="#s3" transform="scale(-1)"/>
       </g>
 
-      <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-        <path d="M 0 0 L 10 5 L 0 10 z" />
+      <marker id="end-arrow" viewBox="0 -5 10 10" refX="6" markerWidth="7" markerHeight="7" orient="auto">
+        <path d="M0,-5L10,0L0,5" fill="#000"></path>
       </marker>
 
     </defs>
@@ -881,8 +881,8 @@
   <div id="optionsContainer" style="opacity:0">
 
     <div id="collapsible">
-      <button id="optionsTrigger" data-tip="Click to show options pane. Shortcut: Tab" class="options glow" onclick="showOptions(event)" style="padding:7px 5px">►</button>
-      <button id="regenerate" data-tip="Click to generate a new map. Shortcut: F2" onclick="regeneratePrompt()" class="options" style="display:none; padding:7px 8px">New Map!</button>
+      <button id="optionsTrigger" data-tip="Click to show options pane. Shortcut: Tab" class="options glow" onclick="showOptions(event)" style="padding:.6em .45em">►</button>
+      <button id="regenerate" data-tip="Click to generate a new map. Shortcut: F2" onclick="regeneratePrompt()" class="options" style="display:none; padding:.6em 1em">New Map!</button>
     </div>
 
     <div id="options" style="display:none">
@@ -909,8 +909,8 @@
           <option value="landmass">Pure landmass</option>
           <option hidden value="custom">Custom (not saved)</option>
         </select>
-        <button id="savePresetButton" data-tip="Click to save displayed layers as a new preset" class="icon-plus styleButton" style="display:none" onclick="savePreset()"></button>
-        <button id="removePresetButton" data-tip="Click to remove current custom preset" class="icon-minus styleButton" style="display:none" onclick="removePreset()"></button>
+        <button id="savePresetButton" data-tip="Click to save displayed layers as a new preset" class="icon-plus presetButton" style="display:none" onclick="savePreset()"></button>
+        <button id="removePresetButton" data-tip="Click to remove current custom preset" class="icon-minus presetButton" style="display:none" onclick="removePreset()"></button>
 
         <p data-tip="Click to toggle a layer, drag to raise or lower a layer">Displayed layers:</p>
         <ul data-tip="Click to toggle a layer, drag to raise or lower a layer" id="mapLayers">
@@ -1163,8 +1163,7 @@
             <tr data-tip="Set grid cells spacing (size)">
               <td>Size</td>
               <td>
-                <input id="styleGridSize" type="range" min=2 max=50 step=.1 value=10 style="width:42%">
-                <output id="styleGridSizeOutput" data-tip="Grid cells spacing in pixels">10</output>
+                <input id="styleGridSize" type="number" min=2 max=50 step=.001 value=10 >
                 <output id="styleGridSizeFriendly" data-tip="Distance between two adjacent cells in map scale">(52 mi)</output>
               </td>
             </tr>
@@ -1512,6 +1511,19 @@
             </td>
           </tr>
 
+          <tr data-tip="Click to set up map name to be used for downloaded files">
+            <td>
+              <i data-locked=0 id="lock_mapName" class="icon-lock-open"></i>
+            </td>
+            <td>Map name</td>
+            <td>
+              <input id="mapName" data-stored="mapName" class="long" autocorrect="off" spellcheck="false" type="text">
+            </td>
+            <td>
+              <i data-tip="Regenerate map name" onclick="Names.getMapName(true)" class="icon-arrows-cw"></i>
+            </td>
+          </tr>
+
           <tr data-tip="Select template to be used for a Heightmap generation">
             <td>
               <i data-locked=0 id="lock_template" class="icon-lock-open"></i>
@@ -1529,6 +1541,7 @@
                 <option value="Peninsula">Peninsula</option>
                 <option value="Pangea">Pangea</option>
                 <option value="Isthmus">Isthmus</option>
+                <option value="Shattered">Shattered</option>
               </select>
             </td>
             <td></td>
@@ -1599,7 +1612,7 @@
             </td>
           </tr>
 
-          <tr data-tip="Define a number of towns to be placed (if suitable area is enougth)">
+          <tr data-tip="Define a number of towns to be placed (if enough suitable land exists)">
             <td>
               <i data-locked=0 id="lock_manors" class="icon-lock-open"></i>
             </td>
@@ -1644,21 +1657,21 @@
             <td></td>
             <td>Interface size</td>
             <td>
-              <input id="uiSizeInput" data-stored="uiSize" type="range" min=.8 max=2 step=.1 value=1>
+              <input id="uiSizeInput" data-stored="uiSize" type="range" min=.6 max=3 step=.1 value=1>
             </td>
             <td>
-              <input id="uiSizeOutput" data-stored="uiSize" type="number" min=.6 max=2 step=.1 value=1>
+              <input id="uiSizeOutput" data-stored="uiSize" type="number" min=.6 max=3 step=.1 value=1>
             </td>
           </tr>
 
-          <tr data-tip="Set tooltips size">
+          <tr data-tip="Set tooltip size">
             <td></td>
-            <td>Tooltips size</td>
+            <td>Tooltip size</td>
             <td>
-              <input id="tooltipSizeInput" data-stored="tooltipSize" type="range" min=4 max=24 value=14>
+              <input id="tooltipSizeInput" data-stored="tooltipSize" type="range" min=4 max=32 value=14>
             </td>
             <td>
-              <input id="tooltipSizeOutput" data-stored="tooltipSize" type="number" min=4 max=24 value=14>
+              <input id="tooltipSizeOutput" data-stored="tooltipSize" type="number" min=4 max=32 value=14>
             </td>
           </tr>
 
@@ -1734,6 +1747,7 @@
           <button id="regenerateStates" data-tip="Click to select new capitals and regenerate states. Burgs will remain as they are">States</button>
           <button id="regenerateProvinces" data-tip="Click to regenerate provinces. States will remain as they are">Provinces</button>
           <button id="regenerateReligions" data-tip="Click to regenerate religions">Religions</button>
+          <button id="regenerateMarkers" data-tip="Click to regenerate markers">Markers</button>
         </div>
 
         <div id="addFeature">
@@ -1777,7 +1791,6 @@
           <button data-tip="Open template editor" id="applyTemplate" style="display: none">Template Editor</button>
           <button data-tip="Open Image Converter" id="convertImage" style="display: none">Image Converter</button>
           <button data-tip="Render heightmap data as a small monochrome image" id="heightmapPreview">Heightmap Preview</button>
-          <button data-tip="Render heightmap in perspective" id="perspectiveView">Perspective View</button>
         </div>
 
         <div id="customizeOptions">
@@ -1796,7 +1809,7 @@
         <div>
           <p>Statistics:</p>
           <span>Land cells: </span><span id="landmassCounter">0</span>
-          <span style="margin-left:8px">Mean height: </span><span id="landmassAverage">0</span>
+          <span style="margin-left:.9em">Mean height: </span><span id="landmassAverage">0</span>
         </div>
 
         <div>
@@ -1916,7 +1929,7 @@
         <div data-tip="Map coordinates on globe"><i>Coords:</i> <span id="mapCoordinates"></span></div>
       </div>
 
-      <svg id="globe" width="240" height="240" viewBox="-20 -25 240 240">
+      <svg id="globe" width="22em" height="22em" viewBox="-20 -25 240 240">
         <defs>
           <linearGradient id="temperatureGradient" x1="0" x2="0" y1="0" y2="1">
             <stop class="tempGradient90" offset="0%" stop-color="blue"/>
@@ -1975,8 +1988,8 @@
       <button id="labelGroupShow" data-tip="Show the group selection" class="icon-tags"></button>
       <div id="labelGroupSection" style="display: none">
         <button id="labelGroupHide" data-tip="Hide the group selection" class="icon-tags"></button>
-        <select id="labelGroupSelect" data-tip="Select a group for this label" style="width:113px"></select>
-        <input id="labelGroupInput" placeholder="new group name" data-tip="Provide a name for the new group" style="display:none; width:109px; height:10px"/>
+        <select id="labelGroupSelect" data-tip="Select a group for this label" style="width:10em"></select>
+        <input id="labelGroupInput" placeholder="new group name" data-tip="Provide a name for the new group" style="display:none; width:10em">
         <span id="labelGroupNew" data-tip="Create new group for this label" class="icon-plus pointer"></span>
         <span id="labelGroupRemove" data-tip="Remove the Group with all labels" class="icon-trash-empty pointer"></span>
       </div>
@@ -1984,16 +1997,16 @@
       <button id="labelTextShow" data-tip="Show the edit label text section" class="icon-pencil"></button>
       <div id="labelTextSection" style="display: none">
         <button id="labelTextHide" data-tip="Hide the edit label text section" class="icon-pencil"></button>
-        <input id="labelText" data-tip='Type to change the label. Enter "|" to move to a new line' style="width: 121px; height:12px"/>
+        <input id="labelText" data-tip='Type to change the label. Enter "|" to move to a new line' style="width: 12em">
         <span id="labelTextRandom" data-tip="Generate random name" class="icon-shuffle pointer"></span>
       </div>
 
       <button id="labelSizeShow" data-tip="Show the font size section" class="icon-text-height"></button>
       <div id="labelSizeSection" style="display: none">
         <button id="labelSizeHide" data-tip="Hide the font size section" class="icon-text-height"></button>
-        <input id="labelStartOffset" data-tip="Set starting offset for the particular label" type="range" min=20 max=80 style="width:79px">
+        <input id="labelStartOffset" data-tip="Set starting offset for the particular label" type="range" min=20 max=80 style="width:8em">
         <i class="icon-text-height"></i>
-        <input id="labelRelativeSize" data-tip="Set relative size for the particular label" type="number" min=30 max=300 step=1 style="width:36px">
+        <input id="labelRelativeSize" data-tip="Set relative size for the particular label" type="number" min=30 max=300 step=1 style="width:3.2em">
       </div>
 
       <button id="labelAlign" data-tip="Turn text path into a straight line" class="icon-resize-horizontal"></button>
@@ -2018,7 +2031,7 @@
         <input id="riverAngle" data-tip="Rotate river by angle" type="range" min="-90" max=90 step=.2>
         <span id="riverAngleValue">0&#8457;</span>
         <i id="riverScaleIcon" class="icon-s"></i>
-        <input id="riverScale" data-tip="Change river scale" value="1" type="number" min=.1 max=3 step=.01>
+        <input id="riverScale" data-tip="Change river scale" value="1" type="number" style="width:3.5em" min=.1 max=3 step=.01>
         <span id="riverReset" data-tip="Reset transformation to default" class="icon-cancel pointer"></span>
       </div>
 
@@ -2033,8 +2046,8 @@
       <button id="routeGroupsShow" data-tip="Show the group selection" class="icon-tags"></button>
       <div id="routeGroupsSelection" style="display: none">
         <button id="routeGroupsHide" data-tip="Hide the group section" class="icon-tags"></button>
-        <select id="routeGroup" data-tip="Select a group for this route" style="width:135px"></select>
-        <input id="routeGroupName" placeholder="new group name" data-tip="Provide a name for the new group" style="display:none; width:131px; height:10px"/>
+        <select id="routeGroup" data-tip="Select a group for this route" style="width:12em"></select>
+        <input id="routeGroupName" placeholder="new group name" data-tip="Provide a name for the new group" style="display:none; width:12em"/>
         <span id="routeGroupAdd" data-tip="Create new group for this route" class="icon-plus pointer"></span>
         <span id="routeGroupRemove" data-tip="Remove all routes of this group" class="icon-trash-empty pointer"></span>
       </div>
@@ -2181,8 +2194,8 @@
       <button id="burgGroupShow" data-tip="Show group change section" class="icon-tags"></button>
       <div id="burgGroupSection" style="display: none">
         <button id="burgGroupHide" data-tip="Hide group change section" class="icon-tags"></button>
-        <select id="burgSelectGroup" data-tip="Select a group for this burg" style="width: 117px;"></select>
-        <input id="burgInputGroup" placeholder="new group name" data-tip="Create new Group for the Burg" style="display: none; width: 113px; height: 10px"/>
+        <select id="burgSelectGroup" data-tip="Select a group for this burg" style="width: 10em;"></select>
+        <input id="burgInputGroup" placeholder="new group name" data-tip="Create new Group for the Burg" style="display: none; width: 10em"/>
         <i id="burgAddGroup" data-tip="Create new group for the burg" class="icon-plus pointer"></i>
         <i id="burgRemoveGroup" data-tip="Remove selected burg group" class="icon-trash pointer"></i>
       </div>
@@ -2190,7 +2203,7 @@
       <button id="burgNameShow" data-tip="Show name change section" class="icon-pencil"></button>
       <div id="burgNameSection" style="display: none">
         <button id="burgNameHide" data-tip="Hide name change section" class="icon-pencil"></button>
-        <input id="burgNameInput" data-tip="Populate to rename the burg" style="height: 12px"/>
+        <input id="burgNameInput" data-tip="Populate to rename the burg"/>
         <span id="burgNameReCulture" data-tip="Generate culture-specific name for the burg" class="icon-book pointer"></span>
         <span id="burgNameReRandom" data-tip="Generate random name for the burg" class="icon-globe pointer"></span>
       </div>
@@ -2206,8 +2219,8 @@
 
       <button id="markerGroup" data-tip="Change marker type" class="icon-tags"></button>
       <div id="markerGroupSection" style="display: none">
-        <select id="markerSelectGroup" data-tip="Select type for the selected marker" style="width: 117px; height: 18px"></select>
-        <input id="markerInputGroup" data-tip="Create new type for selected marker" placeholder="type new name" style="display: none; width: 113px;  height: 12px"/>
+        <select id="markerSelectGroup" data-tip="Select type for the selected marker" style="width: 10em"></select>
+        <input id="markerInputGroup" data-tip="Create new type for selected marker" placeholder="type new name" style="display: none; width: 10em"/>
         <i id="markerAddGroup" data-tip="Create new markers type" class="icon-plus pointer"></i>
         <i id="markerRemoveGroup" data-tip="Remove all markers of that type" class="icon-trash pointer"></i>
       </div>
@@ -2247,43 +2260,43 @@
     <div id="brushesPanel" class="dialog stable" style="display: none">
       <div id="brushesButtons" style="display: inline-block">
         <button id="brushRaise" data-tip="Raise brush: increase height of cells in radius by Power value">
-          <svg viewBox="15 15 70 70" height="14" width="22">
+          <svg viewBox="15 15 70 70" height="1em" width="1.6em">
             <path d="m20,39 h60 M50,85 v-35 l-12,8 m12,-8 l12,8" fill="none" stroke="#000" stroke-width="5"></path>
           </svg>
         </button>
 
         <button id="brushElevate" data-tip="Elevate brush: drag to gradually increase height of cells in radius by Power value">
-          <svg viewBox="15 15 70 70" height="14" width="22">
+          <svg viewBox="15 15 70 70" height="1em" width="1.6em">
             <path d="m20,50 q30,-35 60,0 M50,85 v-35 l-12,8 m12,-8 l12,8" fill="none" stroke="#000" stroke-width="5"></path>
           </svg>
         </button>
 
         <button id="brushLower" data-tip="Lower brush: drag to decrease height of cells in radius by Power value">
-          <svg viewBox="15 15 70 70" height="14" width="22">
+          <svg viewBox="15 15 70 70" height="1em" width="1.6em">
             <path d="M50,30 v35 l-12,-8 m12,8 l12,-8 M20,78 h60" fill="none" stroke="#000" stroke-width="5"></path>
           </svg>
         </button>
 
         <button id="brushDepress" data-tip="Depress brush: drag to gradually decrease height of cells in radius by Power value">
-          <svg viewBox="15 15 70 70" height="14" width="22">
+          <svg viewBox="15 15 70 70" height="1em" width="1.6em">
             <path d="M50,30 v35 l-12,-8 m12,8 l12,-8 M20,63 q30,35 60,0" fill="none" stroke="#000" stroke-width="5"></path>
           </svg>
         </button>
 
         <button id="brushAlign" data-tip="Align brush: drag to set height of cells in radius to height of the cell at mousepoint">
-          <svg viewBox="15 15 70 70" height="14" width="22">
+          <svg viewBox="15 15 70 70" height="1em" width="1.6em">
             <path d="m20,50 h56 m0,20 h-56" fill="none" stroke="#000" stroke-width="5"></path>
           </svg>
         </button>
 
         <button id="brushSmooth" data-tip="Smooth brush: drag to level height of cells in radius to height of adjacent cells">
-          <svg viewBox="15 15 70 70" height="14" width="22">
+          <svg viewBox="15 15 70 70" height="1em" width="1.6em">
             <path d="m15,60 q15,-15 30,0 q15,15 35,0" fill="none" stroke="#000" stroke-width="5"></path>
           </svg>
         </button>
 
         <button id="brushDisrupt" data-tip="Disrupt brush: drag to randomize height of cells in radius based on Power value">
-          <svg viewBox="15 15 70 70" height="14" width="22">
+          <svg viewBox="15 15 70 70" height="1em" width="1.6em">
             <path d="m15,63 l15,-13 15,20 15,-20 15,19 15,-14" fill="none" stroke="#000" stroke-width="5"></path>
           </svg>
         </button>
@@ -2355,6 +2368,7 @@
           <option value="templatePeninsula">Peninsula</option>
           <option value="templatePangea">Pangea</option>
           <option value="templateIsthmus">Isthmus</option>
+          <option value="templateShattered">Shattered</option>
         </select>
       </div>
       <div id="templateTools">
@@ -2367,7 +2381,7 @@
         <button id="templateMultiply" data-tip="Multiply all heights in range by factor" class="noicon">*</button>
         <button id="templateSmooth" data-tip="Smooth the map replacing cell heights by an average values of its neighbors" class="noicon">~</button>
       </div>
-      <div id="templateBody" data-changed=0 class="table">
+      <div id="templateBody" data-changed=0 class="table" style="padding:2px 0">
         <div data-type="Hill">
           <div class="icon-check" data-tip="Click to skip the step"></div>
           <div style="width:4em">Hill</div>
@@ -2401,9 +2415,9 @@
         <button id="convertComplete" data-tip="Complete the assignment. All unassigned colors will be considered as ocean" class="icon-check"></button>
       </div>
 
-      <div data-tip="Set opacity of the loaded image" style="padding-top: 4px"><i>Overlay opacity:</i>
-        <input id="convertOverlay" type="range" min=0 max=1 step=.01 value=0 style="width: 8em">
-        <input id="convertOverlayNumber" type="number" min=0 max=1 step=.01 value=0 style="width: 3.5em; border: 1px solid #d4d4d4">
+      <div data-tip="Set opacity of the loaded image" style="padding-top: 4px"><i>Overlay opacity:</i><br>
+        <input id="convertOverlay" type="range" min=0 max=1 step=.01 value=0 style="width: 11.5em">
+        <input id="convertOverlayNumber" type="number" min=0 max=1 step=.01 value=0 style="width: 3.5em">
       </div>
 
       <div data-tip="Select a color below and assign a height value for it" id="colorsSelect" style="display: none">
@@ -2422,17 +2436,13 @@
 
     </div>
 
-    <div id="perspectivePanel" class="dialog stable" style="display: none">
-      <canvas id="perspective" width="480" height="150"></canvas>
-    </div>
-
     <div id="biomesEditor" class="dialog stable" style="display: none">
-      <div id="biomesHeader">
-        <div style="margin-left: 12px" data-tip="Click to sort by biome name" class="sortable alphabetically" data-sortby="name">Biome&nbsp;</div>
-        <div style="margin-left: 70px" data-tip="Click to sort by biome habitability" class="sortable hide" data-sortby="habitability">Habitability&nbsp;</div>
-        <div style="margin-left: 8px" data-tip="Click to sort by biome cells number" class="sortable hide icon-sort-number-down" data-sortby="cells">Cells&nbsp;</div>
-        <div style="margin-left: 24px" data-tip="Click to sort by biome area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
-        <div style="margin-left: 17px" data-tip="Click to sort by biome population" class="sortable hide" data-sortby="population">Population&nbsp;</div>
+      <div id="biomesHeader" class="header">
+        <div style="left:1.4em" data-tip="Click to sort by biome name" class="sortable alphabetically" data-sortby="name">Biome&nbsp;</div>
+        <div style="left:12em" data-tip="Click to sort by biome habitability" class="sortable hide" data-sortby="habitability">Habitability&nbsp;</div>
+        <div style="left:19em" data-tip="Click to sort by biome cells number" class="sortable hide icon-sort-number-down" data-sortby="cells">Cells&nbsp;</div>
+        <div style="left:25em" data-tip="Click to sort by biome area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
+        <div style="left:30em" data-tip="Click to sort by biome population" class="sortable hide" data-sortby="population">Population&nbsp;</div>
       </div>
 
       <div id="biomesBody" class="table" data-type="absolute"></div>
@@ -2466,17 +2476,17 @@
     </div>
 
     <div id="statesEditor" class="dialog stable" style="display: none">
-      <div id="statesHeader">
-        <div style="margin-left: 12px" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">State&nbsp;</div>
-        <div style="margin-left: 44px" data-tip="Click to sort by state form name" class="sortable alphabetically" data-sortby="form">Form&nbsp;</div>
-        <div style="margin-left: 41px" data-tip="Click to sort by capital name" class="sortable alphabetically hide" data-sortby="capital">Capital&nbsp;</div>
-        <div style="margin-left: 24px" data-tip="Click to sort by state dominant culture" class="sortable alphabetically hide" data-sortby="culture">Culture&nbsp;</div>
-        <div style="margin-left: 9px" data-tip="Click to sort by state type" class="sortable alphabetically hidden show hide" data-sortby="type">Type&nbsp;</div>
-        <div style="margin-left: 19px" data-tip="Click to sort by state expansion value" class="sortable hidden show hide" data-sortby="expansionism">Expan.&nbsp;</div>
-        <div style="margin-left: 12px" data-tip="Click to sort by state cells count" class="sortable hidden show hide" data-sortby="cells">Cells&nbsp;</div>
-        <div style="margin-left: 11px" data-tip="Click to sort by state burgs count" class="sortable hide" data-sortby="burgs">Burgs&nbsp;</div>
-        <div style="margin-left: 20px" data-tip="Click to sort by state area" class="sortable hide icon-sort-number-down" data-sortby="area">Area&nbsp;</div>
-        <div style="margin-left: 18px" data-tip="Click to sort by state population" class="sortable hide" data-sortby="population">Population&nbsp;</div>
+      <div id="statesHeader" class="header">
+        <div style="left:1.4em" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">State&nbsp;</div>
+        <div style="left:8.7em" data-tip="Click to sort by state form name" class="sortable alphabetically" data-sortby="form">Form&nbsp;</div>
+        <div style="left:16em" data-tip="Click to sort by capital name" class="sortable alphabetically hide" data-sortby="capital">Capital&nbsp;</div>
+        <div style="left:22.3em" data-tip="Click to sort by state dominant culture" class="sortable alphabetically hide" data-sortby="culture">Culture&nbsp;</div>
+        <div style="left:27em" data-tip="Click to sort by state burgs count" class="sortable hide" data-sortby="burgs">Burgs&nbsp;</div>
+        <div style="left:32.5em" data-tip="Click to sort by state area" class="sortable hide icon-sort-number-down" data-sortby="area">Area&nbsp;</div>
+        <div style="left:37em" data-tip="Click to sort by state population" class="sortable hide" data-sortby="population">Population&nbsp;</div>
+        <div style="left:43.5em" data-tip="Click to sort by state type" class="sortable alphabetically hidden show hide" data-sortby="type">Type&nbsp;</div>
+        <div style="left:47em" data-tip="Click to sort by state expansion value" class="sortable hidden show hide" data-sortby="expansionism">Expansion&nbsp;</div>
+        <div style="left:53.5em" data-tip="Click to sort by state cells count" class="sortable hidden show hide" data-sortby="cells">Cells&nbsp;</div>
       </div>
 
       <div id="statesBodySection" class="table" data-type="absolute"></div>
@@ -2531,12 +2541,12 @@
 
     <div id="provincesEditor" class="dialog stable" style="display: none">
       <div id="provincesHeader" class="header">
-        <div style="margin-left: 12px" data-tip="Click to sort by province name" class="sortable alphabetically" data-sortby="name">Province&nbsp;</div>
-        <div style="margin-left: 27px" data-tip="Click to sort by province form name" class="sortable alphabetically hide" data-sortby="form">Form&nbsp;</div>
-        <div style="margin-left: 41px" data-tip="Click to sort by province capital" class="sortable alphabetically hide" data-sortby="capital">Capital&nbsp;</div>
-        <div style="margin-left: 24px" data-tip="Click to sort by province owner" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
-        <div style="margin-left: 31px" data-tip="Click to sort by province area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
-        <div style="margin-left: 27px" data-tip="Click to sort by province population" class="sortable hide" data-sortby="population">Population&nbsp;</div>
+        <div style="left:1.4em" data-tip="Click to sort by province name" class="sortable alphabetically" data-sortby="name">Province&nbsp;</div>
+        <div style="left:8.5em" data-tip="Click to sort by province form name" class="sortable alphabetically hide" data-sortby="form">Form&nbsp;</div>
+        <div style="left:15.9em" data-tip="Click to sort by province capital" class="sortable alphabetically hide" data-sortby="capital">Capital&nbsp;</div>
+        <div style="left:22em" data-tip="Click to sort by province owner" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
+        <div style="left:30em" data-tip="Click to sort by province area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
+        <div style="left:35.3em" data-tip="Click to sort by province population" class="sortable hide" data-sortby="population">Population&nbsp;</div>
       </div>
 
       <div id="provincesBodySection" class="table" data-type="absolute"></div>
@@ -2550,6 +2560,7 @@
       <div id="provincesBottom">
         <button id="provincesEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
         <button id="provincesPercentage" data-tip="Toggle percentage / absolute values views" class="icon-percent"></button>
+        <button id="provincesChart" data-tip="Show provinces chart" class="icon-chart-area"></button>
         <button id="provincesToggleLabels" data-tip="Toggle province labels" class="icon-font"></button>
         <button id="provincesExport" data-tip="Save provinces-related data as a text file (.csv)" class="icon-download"></button>
 
@@ -2572,9 +2583,9 @@
     </div>
 
     <div id="diplomacyEditor" class="dialog stable" style="display: none">
-      <div id="diplomacyHeader">
-        <div style="margin-left: 2px" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">State&nbsp;</div>
-        <div style="margin-left: 9em" data-tip="Click to sort by diplomatical relations" class="sortable alphabetically icon-sort-name-up" data-sortby="relations">Relations&nbsp;</div>
+      <div id="diplomacyHeader" class="header">
+        <div style="left:.2em" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">State&nbsp;</div>
+        <div style="left:12.4em" data-tip="Click to sort by diplomatical relations" class="sortable alphabetically icon-sort-name-up" data-sortby="relations">Relations&nbsp;</div>
       </div>
 
       <div id="diplomacyBodySection" class="table"></div>
@@ -2589,21 +2600,21 @@
     </div>
 
     <div id="burgsEditor" class="dialog stable" style="display: none">
-      <div id="burgsHeader">
-        <div style="margin-left: 12px" data-tip="Click to sort by burg name" class="sortable alphabetically" data-sortby="name">Burg&nbsp;</div>
-        <div id="burgStateHeader" style="margin-left: 35px" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
-        <div style="margin-left: 33px" data-tip="Click to sort by culture name" class="sortable alphabetically" data-sortby="culture">Culture&nbsp;</div>
-        <div style="margin-left: 3px" data-tip="Click to sort by burg population" class="sortable" data-sortby="population">Population&nbsp;</div>
-        <div style="margin-left: 12px" data-tip="Click to sort by burg type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
+      <div id="burgsHeader" class="header">
+        <div style="left:1.4em" data-tip="Click to sort by burg name" class="sortable alphabetically" data-sortby="name">Burg&nbsp;</div>
+        <div style="left:7.7em" data-tip="Click to sort by culture name" class="sortable alphabetically" data-sortby="culture">Culture&nbsp;</div>
+        <div style="left:12em" data-tip="Click to sort by burg population" class="sortable" data-sortby="population">Population&nbsp;</div>
+        <div style="left:18.7em" data-tip="Click to sort by burg type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
+        <div style="left:22em" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="state" id="burgStateHeader">State&nbsp;</div>
       </div>
 
       <div id="burgsBody" class="burgs-table"></div>
 
       <div id="burgsFilters" data-tip="Apply a filter">
         <span>State: </span>
-        <select id="burgsFilterState" style="width:33%"></select>
+        <select id="burgsFilterState" style="width:28%"></select>
         <span>Culture:</span>
-        <select id="burgsFilterCulture" style="width:33%"></select>
+        <select id="burgsFilterCulture" style="width:28%"></select>
       </div>
 
       <div id="burgsFooter" class="totalLine">
@@ -2622,14 +2633,14 @@
     </div>
 
     <div id="culturesEditor" class="dialog stable" style="display: none">
-      <div id="culturesHeader">
-        <div style="margin-left: 12px" data-tip="Click to sort by culture name" class="sortable alphabetically" data-sortby="name">Culture&nbsp;</div>
-        <div style="margin-left: 15px" data-tip="Click to sort by culture cells count" class="sortable hide" data-sortby="cells">Cells&nbsp;</div>
-        <div style="margin-left: 12px" data-tip="Click to sort by expansionism" class="sortable hide" data-sortby="expansionism">Expan.&nbsp;</div>
-        <div style="margin-left: 14px" data-tip="Click to sort by type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
-        <div style="margin-left: 31px" data-tip="Click to sort by culture area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
-        <div style="margin-left: 17px" data-tip="Click to sort by culture population" class="sortable hide icon-sort-number-down" data-sortby="population">Population&nbsp;</div>
-        <div style="margin-left: 2px" data-tip="Click to sort by culture namesbase" class="sortable" data-sortby="base">Namesbase&nbsp;</div>
+      <div id="culturesHeader" class="header">
+        <div style="left:1.4em" data-tip="Click to sort by culture name" class="sortable alphabetically" data-sortby="name">Culture&nbsp;</div>
+        <div style="left:6.7em" data-tip="Click to sort by culture cells count" class="sortable hide" data-sortby="cells">Cells&nbsp;</div>
+        <div style="left:11em" data-tip="Click to sort by expansionism" class="sortable hide" data-sortby="expansionism">Expan.&nbsp;</div>
+        <div style="left:15.8em" data-tip="Click to sort by type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
+        <div style="left:22.2em" data-tip="Click to sort by culture area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
+        <div style="left:26.8em" data-tip="Click to sort by culture population" class="sortable hide icon-sort-number-down" data-sortby="population">Population&nbsp;</div>
+        <div style="left:33.8em" data-tip="Click to sort by culture namesbase" class="sortable" data-sortby="base">Namesbase&nbsp;</div>
       </div>
       <div id="culturesBody" class="table" data-type="absolute"></div>
 
@@ -2702,10 +2713,10 @@
 
     <div id="zonesEditor" class="dialog stable" style="display: none">
       <div id="customHeader" class="header">
-        <div style="margin-left: 15px" data-tip="Zone description">Description&nbsp;</div>
-        <div style="margin-left: 51px" data-tip="Zone cells count" class="hide">Cells&nbsp;</div>
-        <div style="margin-left: 31px" data-tip="Zone area" class="hide">Area&nbsp;</div>
-        <div style="margin-left: 22px" data-tip="Zone population" class="hide">Population&nbsp;</div>
+        <div style="left:1.4em" data-tip="Zone description">Description&nbsp;</div>
+        <div style="left:13em" data-tip="Zone cells count" class="hide">Cells&nbsp;</div>
+        <div style="left:19em" data-tip="Zone area" class="hide">Area&nbsp;</div>
+        <div style="left:24em" data-tip="Zone population" class="hide">Population&nbsp;</div>
       </div>
 
       <div id="zonesBodySection" class="table" data-type="absolute"></div>
@@ -2740,16 +2751,16 @@
     <div id="notesEditor" class="dialog stable textual" style="display: none">
       <div>
         <span>Select object: </span>
-        <select id="notesSelect" data-tip="Select object" style="width: 120px;"></select>
+        <select id="notesSelect" data-tip="Select object" style="width: 12em"></select>
         <span>Object name: </span>
-        <input id="notesName" data-tip="Type to change object name" autocorrect="off" spellcheck="false" style="width: 120px;">
+        <input id="notesName" data-tip="Type to change object name" autocorrect="off" spellcheck="false" style="width: 12em">
       </div>
       <div>
         <span>Legend:</span><br>
         <textarea id="notesText" cols="70" rows="7" data-tip="Type object description" placeholder="Type object description"></textarea>
       </div>
       <div>
-        <button id="notesFocus" data-tip="Focus map on selected object" class="icon-target"></button>
+        <button id="notesFocus" data-tip="Focus on selected object" class="icon-target"></button>
         <button id="notesDownload" data-tip="Download notes to PC" class="icon-download"></button>
         <button id="notesUpload" data-tip="Upload notes from PC" class="icon-upload"></button>
         <button id="notesRemove" data-tip="Remove this note" class="icon-trash"></button>
@@ -2757,13 +2768,13 @@
     </div>
 
     <div id="religionsEditor" class="dialog stable" style="display: none">
-      <div id="religionsHeader">
-        <div style="margin-left: 12px" data-tip="Click to sort by religion name" class="sortable alphabetically" data-sortby="name">Religion&nbsp;</div>
-        <div style="margin-left: 68px" data-tip="Click to sort by religion type" class="sortable alphabetically icon-sort-name-down" data-sortby="type">Type&nbsp;</div>
-        <div style="margin-left: 18px" data-tip="Click to sort by religion form" class="sortable alphabetically hide" data-sortby="form">Form&nbsp;</div>
-        <div style="margin-left: 42px" data-tip="Click to sort by supreme deity" class="sortable alphabetically hide" data-sortby="deity">Supreme Deity&nbsp;</div>
-        <div style="margin-left: 92px" data-tip="Click to sort by religion area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
-        <div style="margin-left: 17px" data-tip="Click to sort by number of believers (religion area population)" class="sortable hide" data-sortby="population">Believers&nbsp;</div>
+      <div id="religionsHeader" class="header">
+        <div style="left:1.4em" data-tip="Click to sort by religion name" class="sortable alphabetically" data-sortby="name">Religion&nbsp;</div>
+        <div style="left:12.6em" data-tip="Click to sort by religion type" class="sortable alphabetically icon-sort-name-down" data-sortby="type">Type&nbsp;</div>
+        <div style="left:18em" data-tip="Click to sort by religion form" class="sortable alphabetically hide" data-sortby="form">Form&nbsp;</div>
+        <div style="left:25.1em" data-tip="Click to sort by supreme deity" class="sortable alphabetically hide" data-sortby="deity">Supreme Deity&nbsp;</div>
+        <div style="left:42.1em" data-tip="Click to sort by religion area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
+        <div style="left:47em" data-tip="Click to sort by number of believers (religion area population)" class="sortable hide" data-sortby="population">Believers&nbsp;</div>
       </div>
       <div id="religionsBody" class="table" data-type="absolute"></div>
 
@@ -2780,7 +2791,8 @@
         <button id="religionsEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
         <button id="religionsLegend" data-tip="Toggle Legend box" class="icon-list-bullet"></button>
         <button id="religionsPercentage" data-tip="Toggle percentage / absolute values display mode" class="icon-percent"></button>
-        <button id="religionsExtinct" data-tip="Show/hide extinct religions (religions without believers)" class="icon-adjust"></button>
+        <button id="religionsHeirarchy" data-tip="Show religions hierarchy tree" class="icon-fork"></button>
+        <button id="religionsExtinct" data-tip="Show/hide extinct religions (religions without cells)" class="icon-adjust"></button>
 
         <button id="religionsManually" data-tip="Manually re-assign religions" class="icon-brush"></button>
         <div id="religionsManuallyButtons" style="display: none">
@@ -2819,7 +2831,6 @@
           <div>1 map pixel =</div>
           <input id="distanceScaleOutput" type="range" min=.01 max=20 step=.1 value=3>
           <input id="distanceScaleInput" data-stored="distanceScale" type="number" min=.01 max=100 step=.01 value=3 data-value=3>
-          <span id="distanceUnitOutput"></span>
         </div>
 
         <div data-tip='Area unit name, type "square" to add ² to the distance unit'>
@@ -2968,6 +2979,7 @@
   <script src="libs/polylabel.min.js"></script>
   <script src="libs/jquery-ui.min.js"></script>
   <script src="libs/seedrandom.min.js"></script>
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.3.0/simplex-noise.js"></script> -->
   <script src="modules/ui/layers.js"></script>
 
   <script defer src="modules/ui/general.js"></script>

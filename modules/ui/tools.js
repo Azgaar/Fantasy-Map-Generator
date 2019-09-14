@@ -30,14 +30,15 @@ toolsContent.addEventListener("click", function(event) {
         Proceed: function() {processFeatureRegeneration(button); $(this).dialog("close");},
         Cancel: function() {$(this).dialog("close");}
       },
-      create: function() {
+      open: function() {
         const pane = $(this).dialog("widget").find(".ui-dialog-buttonpane");
-        $('<input id="dontAsk" class="checkbox" type="checkbox"><label for="dontAsk" class="checkbox-label dontAsk"><i>do not ask again</i></label>').prependTo(pane);
+        $('<span><input id="dontAsk" class="checkbox" type="checkbox"><label for="dontAsk" class="checkbox-label dontAsk"><i>do not ask again</i></label><span>').prependTo(pane);
       },
       close: function() {
         const box = $(this).dialog("widget").find(".checkbox")[0];
         if (!box) return;
         if (box.checked) sessionStorage.setItem("regenerateFeatureDontAsk", true);
+        $(this).dialog("destroy");
       }
     });
   }
@@ -59,7 +60,8 @@ function processFeatureRegeneration(button) {
   if (button === "regenerateBurgs") regenerateBurgs(); else
   if (button === "regenerateStates") regenerateStates(); else
   if (button === "regenerateProvinces") regenerateProvinces(); else
-  if (button === "regenerateReligions") regenerateReligions();
+  if (button === "regenerateReligions") regenerateReligions(); else
+  if (button === "regenerateMarkers") regenerateMarkers();
 }
 
 function regenerateRivers() {
@@ -197,6 +199,11 @@ function regenerateProvinces() {
 function regenerateReligions() {
   Religions.generate();
   if (!layerIsOn("toggleReligions")) toggleReligions(); else drawReligions();
+}
+
+function regenerateMarkers() {
+  markers.selectAll("use").remove();
+  addMarkers(gauss(1, .5, .3, 5, 2));
 }
 
 function unpressClickToAddButton() {
@@ -340,7 +347,7 @@ function addRiverOnClick() {
     alertMessage.innerHTML = `<p>Heightmap is depressed and the system had to change the heightmap to allow water flux.</p>
     Would you like to <i>keep</i> the changes or <i>restore</i> the initial heightmap?`;
 
-    $("#alert").dialog({resizable: false, title: "Heightmap is changed", width: 300, modal: true,
+    $("#alert").dialog({resizable: false, title: "Heightmap is changed", width: "30em", modal: true,
       buttons: {
         Keep: function() {$(this).dialog("close");},
         Restore: function() {

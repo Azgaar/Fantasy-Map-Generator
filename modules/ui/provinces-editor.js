@@ -22,6 +22,7 @@ function editProvinces() {
   document.getElementById("provincesEditorRefresh").addEventListener("click", refreshProvincesEditor);
   document.getElementById("provincesFilterState").addEventListener("change", provincesEditorAddLines);
   document.getElementById("provincesPercentage").addEventListener("click", togglePercentageMode);
+  document.getElementById("provincesChart").addEventListener("click", showChart);
   document.getElementById("provincesToggleLabels").addEventListener("click", toggleLabels);
   document.getElementById("provincesExport").addEventListener("click", downloadProvincesData);
   document.getElementById("provincesRemoveAll").addEventListener("click", removeAllProvinces);
@@ -106,15 +107,15 @@ function editProvinces() {
       const capital = p.burg ? pack.burgs[p.burg].name : '';
       const focused = defs.select("#fog #focusProvince"+p.i).size();
       lines += `<div class="states" data-id=${p.i} data-name=${p.name} data-form=${p.formName} data-color="${p.color}" data-capital="${capital}" data-state="${stateName}" data-area=${area} data-population=${population}>
-        <svg data-tip="Province fill style. Click to change" width="9" height="9" style="margin-bottom:-1px"><rect x="0" y="0" width="9" height="9" fill="${p.color}" class="zoneFill"></svg>
+        <svg data-tip="Province fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${p.color}" class="zoneFill"></svg>
         <input data-tip="Province name. Click and type to change" class="stateName" value="${p.name}" autocorrect="off" spellcheck="false">
         <span data-tip="Click to re-generate province name" class="icon-arrows-cw stateName hoverButton placeholder"></span>
         <span data-tip="Click to open province COA in the Iron Arachne Heraldry Generator" class="icon-fleur pointer hide"></span>
-        <input data-tip="Province form name. Click and type to change" class="stateForm" value="${p.formName}" autocorrect="off" spellcheck="false">
+        <input data-tip="Province form name. Click and type to change" class="stateForm hide" value="${p.formName}" autocorrect="off" spellcheck="false">
         <span data-tip="Click to re-generate form name" class="icon-arrows-cw stateForm hoverButton placeholder"></span>
         <span data-tip="Province capital. Click to zoom into view" class="icon-star-empty pointer hide ${p.burg?'':'placeholder'}"></span>
         <select data-tip="Province capital. Click to select from burgs within the state. No capital means the province is governed from the state capital" class="cultureBase hide ${p.burgs.length?'':'placeholder'}">${p.burgs.length ? getCapitalOptions(p.burgs, p.burg) : ''}</select>
-        <input data-tip="Province owner" class="provinceOwner" value="${stateName}" disabled hide">
+        <input data-tip="Province owner" class="provinceOwner" value="${stateName}" disabled">
         <span data-tip="Province area" style="padding-right: 4px" class="icon-map-o hide"></span>
         <div data-tip="Province area" class="biomeArea hide">${si(area) + unit}</div>
         <span data-tip="${populationTip}" class="icon-male hide"></span>
@@ -151,17 +152,25 @@ function editProvinces() {
 
   function provinceHighlightOn(event) {
     if (!customization) event.target.querySelectorAll(".hoverButton").forEach(el => el.classList.remove("placeholder"));
+
+    const province = +event.target.dataset.id;
+    const el = body.querySelector(`div[data-id='${province}']`);
+    if (el) el.classList.add("active");
+
     if (!layerIsOn("toggleProvinces")) return;
     if (customization) return;
-    const province = +event.target.dataset.id;
     const animate = d3.transition().duration(2000).ease(d3.easeSinIn);
     provs.select("#province"+province).raise().transition(animate).attr("stroke-width", 2.5).attr("stroke", "#d0240f");
   }
 
   function provinceHighlightOff(event) {
     if (!customization) event.target.querySelectorAll(".hoverButton").forEach(el => el.classList.add("placeholder"));
-    if (!layerIsOn("toggleProvinces")) return;
+
     const province = +event.target.dataset.id;
+    const el = body.querySelector(`div[data-id='${province}']`);
+    if (el) el.classList.remove("active");
+
+    if (!layerIsOn("toggleProvinces")) return;
     provs.select("#province"+province).transition().attr("stroke-width", null).attr("stroke", null);
   }
 
@@ -272,6 +281,119 @@ function editProvinces() {
     }
   }
 
+  function showChart() {
+    // build hierarchy tree
+    const states = pack.states.map(s => {
+      return {id:s.i, state: s.i?0:null, color: s.i && s.color[0] === "#" ? d3.color(s.color).darker() : "#666"}
+    });
+    const provinces = pack.provinces.filter(p => p.i && !p.removed);
+    provinces.forEach(p => p.id = p.i + states.length - 1);
+    const data = states.concat(provinces);
+    const root = d3.stratify().parentId(d => d.state)(data).sum(d => d.area);
+
+    const width = 300 + 300 * uiSizeOutput.value, height = 90 + 90 * uiSizeOutput.value;
+    const margin = {top: 10, right: 10, bottom: 0, left: 10};
+    const w = width - margin.left - margin.right;
+    const h = height - margin.top - margin.bottom;
+    const treeLayout = d3.treemap().size([w, h]).padding(2);
+
+    // prepare svg
+    alertMessage.innerHTML = `<select id="provincesTreeType" style="display:block; margin-left:13px; font-size:11px">
+      <option value="area" selected>Area</option>
+      <option value="population">Total population</option>
+      <option value="rural">Rural population</option>
+      <option value="urban">Urban population</option>
+    </select>`;
+    alertMessage.innerHTML += `<div id='provinceInfo' class='chartInfo'>&#8205;</div>`;
+    const svg = d3.select("#alertMessage").insert("svg", "#provinceInfo").attr("id", "provincesTree")
+      .attr("width", width).attr("height", height).attr("font-size", "10px");
+    const graph = svg.append("g").attr("transform", `translate(10, 0)`);
+    document.getElementById("provincesTreeType").addEventListener("change", updateChart);
+
+    treeLayout(root);
+
+    const node = graph.selectAll("g").data(root.leaves()).enter()
+      .append("g").attr("data-id", d => d.data.i)
+      .on("mouseenter", d => showInfo(event, d))
+      .on("mouseleave", d => hideInfo(event, d));
+
+    function showInfo(ev, d) {
+      d3.select(ev.target).select("rect").classed("selected", 1);
+      const name = d.data.fullName;
+      const state = pack.states[d.data.state].fullName;
+
+      const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
+      const area = d.data.area * (distanceScaleInput.value ** 2) + unit;
+      const rural = rn(d.data.rural * populationRate.value);
+      const urban = rn(d.data.urban * populationRate.value * urbanization.value);
+
+      const value = provincesTreeType.value === "area" ? "Area: " + area
+        : provincesTreeType.value === "rural" ? "Rural population: " + si(rural)
+        : provincesTreeType.value === "urban" ? "Urban population: " + si(urban)
+        : "Population: " + si(rural + urban);
+
+      provinceInfo.innerHTML = `${name}. ${state}. ${value}`;
+      provinceHighlightOn(ev);
+    }
+
+    function hideInfo(ev) {
+      provinceHighlightOff(ev);
+      if (!document.getElementById("provinceInfo")) return;
+      provinceInfo.innerHTML = "&#8205;";
+      d3.select(ev.target).select("rect").classed("selected", 0);
+    }
+
+    node.append("rect").attr("stroke", d => d.parent.data.color)
+      .attr("stroke-width", 1).attr("fill", d => d.data.color)
+      .attr("x", d => d.x0).attr("y", d => d.y0)
+      .attr("width", d => d.x1 - d.x0).attr("height", d => d.y1 - d.y0);
+
+    node.append("text").attr("dx", ".2em").attr("dy", "1em")
+      .attr("x", d => d.x0).attr("y", d => d.y0);
+
+    function hideNonfittingLabels() {
+      node.select("text").each(function(d) {
+        this.innerHTML = d.data.name;
+        let b = this.getBBox();
+        if (b.y + b.height > d.y1 + 1) this.innerHTML = "";
+
+        for(let i=0; i < 15 && b.width > 0 && b.x + b.width > d.x1; i++) {
+          if (this.innerHTML.length < 3) {this.innerHTML = ""; break;}
+          this.innerHTML = this.innerHTML.slice(0, -2) + "…";
+          b = this.getBBox();
+        }
+      })
+
+    }
+
+    function updateChart() {
+      const value = this.value === "area" ? d => d.area
+        : this.value === "rural" ? d => d.rural
+        : this.value === "urban" ? d => d.urban
+        : d => d.rural + d.urban;
+  
+      const newRoot = d3.stratify().parentId(d => d.state)(data).sum(value);
+      node.data(treeLayout(newRoot).leaves())
+
+      node.select("rect").transition().duration(1500)
+        .attr("x", d => d.x0).attr("y", d => d.y0)
+        .attr("width", d => d.x1 - d.x0).attr("height", d => d.y1 - d.y0);
+
+      node.select("text").attr("opacity", 1).transition().duration(1500)
+        .attr("x", d => d.x0).attr("y", d => d.y0);
+
+      setTimeout(hideNonfittingLabels, 2000);
+    }
+
+    $("#alert").dialog({
+      title: "Provinces chart", width: fitContent(),
+      position: {my: "left bottom", at: "left+10 bottom-10", of: "svg"}, buttons: {},
+      close: () => {alertMessage.innerHTML = "";}
+    });
+
+    hideNonfittingLabels();
+  }
+
   function toggleLabels() {
     const hidden = provs.select("#provinceLabels").style("display") === "none";
     provs.select("#provinceLabels").style("display", `${hidden ? "block" : "none"}`);
@@ -291,6 +413,7 @@ function editProvinces() {
     document.getElementById("provincesManuallyButtons").style.display = "inline-block";
 
     provincesEditor.querySelectorAll(".hide").forEach(el => el.classList.add("hidden"));
+    provincesHeader.querySelector("div[data-sortby='state']").style.left = "7.7em";
     provincesFooter.style.display = "none";
     body.querySelectorAll("div > input, select, span, svg").forEach(e => e.style.pointerEvents = "none");
     $("#provincesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});
@@ -399,6 +522,7 @@ function editProvinces() {
     document.getElementById("provincesManuallyButtons").style.display = "none";
 
     provincesEditor.querySelectorAll(".hide:not(.show)").forEach(el => el.classList.remove("hidden"));
+    provincesHeader.querySelector("div[data-sortby='state']").style.left = "22em";
     provincesFooter.style.display = "block";
     body.querySelectorAll("div > input, select, span, svg").forEach(e => e.style.pointerEvents = "all");
     if(!close) $("#provincesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});
@@ -482,7 +606,7 @@ function editProvinces() {
     const url = window.URL.createObjectURL(dataBlob);
     const link = document.createElement("a");
     document.body.appendChild(link);
-    link.download = "provinces_data" + Date.now() + ".csv";
+    link.download = getFileName("Provinces") + ".csv";
     link.href = url;
     link.click();
     window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);

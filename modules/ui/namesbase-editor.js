@@ -27,17 +27,14 @@ function editNamesbase() {
   updateInputs();
 
   $("#namesbaseEditor").dialog({
-    title: "Namesbase Editor", width: 468,
+    title: "Namesbase Editor", width: "42.5em",
     position: {my: "center", at: "center", of: "svg"}
   });
 
   function createBasesList() {
     const select = document.getElementById("namesbaseSelect");
     select.innerHTML = "";
-    nameBases.forEach(function(b, i) {
-      const option = new Option(b.name, i);
-      select.options.add(option);
-    });
+    nameBases.forEach((b, i) => select.options.add(new Option(b.name, i)));
   }
 
   function updateInputs() {
@@ -130,7 +127,8 @@ function editNamesbase() {
       buttons: {
         Restore: function() {
           $(this).dialog("close");
-          applyDefaultNamesData();
+          nameBases = Names.getNameBases();
+          nameBase = Names.getNameBase();
           createBasesList();
           updateInputs();
           Names.updateChains();
@@ -145,7 +143,7 @@ function editNamesbase() {
     const dataBlob = new Blob([data.join("\r\n")], {type:"text/plain"});
     const url = window.URL.createObjectURL(dataBlob);
     const link = document.createElement("a");
-    link.download = "namesbase" + Date.now() + ".txt";
+    link.download = getFileName("Namesbase") + ".txt";
     link.href = url;
     link.click();
   }

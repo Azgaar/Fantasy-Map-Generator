@@ -335,21 +335,21 @@ body .ui-dialog {
 	position: absolute;
   right: .5em;
   top: 53%;
-  width: 18px;
   padding: 0;
-  height: 18px;
+  width: 1.8em;
+  height: 1.8em;
   color: #ffffff;
   background: none;
-  font-size: 10px;
+  font-size: .75em;
   border: 1px solid #c5c5c5;
 }
 
 .ui-dialog .ui-dialog-titlebar button.ui-dialog-titlebar-collapse {
-  margin: -10px 22px 0 0;
+  margin: -1em 2.2em 0 0;
 }
 
 .ui-dialog .ui-dialog-titlebar button.ui-dialog-titlebar-close {
-  margin: -10px 0 0 0;
+	margin: -1em 0 0;
 }
 
 .ui-dialog  .ui-dialog-titlebar button:active {
@@ -362,6 +362,7 @@ body .ui-dialog {
 	border: 0;
 	padding: .5em 1em;
 	background: none;
+	overflow: auto;
 }
 .ui-dialog .ui-dialog-buttonpane {
 	text-align: left;

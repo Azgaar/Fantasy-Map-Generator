@@ -61,8 +61,9 @@ options.querySelector("div.tab").addEventListener("click", function(event) {
 
   if (id === "styleTab") styleContent.style.display = "block"; else
   if (id === "optionsTab") optionsContent.style.display = "block"; else
-  if (id === "toolsTab" && (!customization || customization === 10)) toolsContent.style.display = "block"; else
-  if (id === "toolsTab" && customization && customization !== 10) customizationMenu.style.display = "block"; else
+  if (id === "toolsTab") customization === 1 
+    ? customizationMenu.style.display = "block" 
+    : toolsContent.style.display = "block"; else
   if (id === "aboutTab") aboutContent.style.display = "block";
 });
 
@@ -343,17 +344,18 @@ styleClippingInput.addEventListener("change", function() {
 
 styleGridType.addEventListener("change", function() {
   if (layerIsOn("toggleGrid")) drawGrid();
+  calculateFriendlyGridSize();
 });
 
 styleGridSize.addEventListener("input", function() {
   if (layerIsOn("toggleGrid")) drawGrid();
-  styleGridSizeOutput.value = this.value;
   calculateFriendlyGridSize();
 });
 
 function calculateFriendlyGridSize() {
-  const size = styleGridSize.value * Math.cos(30 * Math.PI / 180) * 2;;
-  const friendly = "(" + rn(size * distanceScaleInput.value) + " " + distanceUnitInput.value + ")";
+  const square = styleGridType.value === "square";
+  const size = square ? styleGridSize.value : styleGridSize.value * Math.cos(30 * Math.PI / 180) * 2;
+  const friendly = `${rn(size * distanceScaleInput.value, 2)} ${distanceUnitInput.value}`;
   styleGridSizeFriendly.value = friendly;
 }
 
@@ -584,6 +586,7 @@ styleStatesHaloOpacity.addEventListener("input", function() {
 
 // request to restore default style on button click
 function askToRestoreDefaultStyle() {
+  if (customization) {tip("Please exit the customization mode first", false, "error"); return;}
   alertMessage.innerHTML = "Are you sure you want to restore default style for all elements?";
   $("#alert").dialog({resizable: false, title: "Restore default style",
     buttons: {
@@ -600,9 +603,9 @@ function askToRestoreDefaultStyle() {
 // request a URL to image to be used as a texture
 function textureProvideURL() {
   alertMessage.innerHTML = `Provide an image URL to be used as a texture:
-                            <input id="textureURL" type="url" style="width: 254px" placeholder="http://www.example.com/image.jpg" oninput="fetchTextureURL(this.value)">
+                            <input id="textureURL" type="url" style="width: 24em" placeholder="http://www.example.com/image.jpg" oninput="fetchTextureURL(this.value)">
                             <div style="border: 1px solid darkgrey; height: 144px; margin-top: 2px"><canvas id="preview" width="256px" height="144px"></canvas></div>`;
-  $("#alert").dialog({resizable: false, title: "Load custom texture", width: 280,
+  $("#alert").dialog({resizable: false, title: "Load custom texture", width: "26em",
     buttons: {
       Apply: function() {
         const name = textureURL.value.split("/").pop();
@@ -677,7 +680,8 @@ optionsContent.addEventListener("input", function(event) {
   else if (id === "neutralOutput") neutralInput.value = value;
   else if (id === "manorsInput") changeBurgsNumberSlider(value);
   else if (id === "religionsInput") religionsOutput.value = value;
-  else if (id === "uiSizeInput" || id === "uiSizeOutput") changeUIsize(value);
+  else if (id === "uiSizeInput") uiSizeOutput.value = value;
+  else if (id === "uiSizeOutput") changeUIsize(value);
   else if (id === "tooltipSizeInput" || id === "tooltipSizeOutput") changeTooltipSize(value);
   else if (id === "transparencyInput") changeDialogsTransparency(value);
   else if (id === "pngResolutionInput") pngResolutionOutput.value = value;
@@ -689,6 +693,7 @@ optionsContent.addEventListener("change", function(event) {
   const id = event.target.id, value = event.target.value;
   if (id === "zoomExtentMin" || id === "zoomExtentMax") changeZoomExtent(value);
   else if (id === "optionsSeed") generateMapWithSeed();
+  else if (id === "uiSizeInput") changeUIsize(value);
 });
 
 optionsContent.addEventListener("click", function(event) {
@@ -801,9 +806,10 @@ function changeBurgsNumberSlider(value) {
 }
 
 function changeUIsize(value) {
+  if (isNaN(+value) || +value > 4 || +value < .5) return;
   uiSizeInput.value = uiSizeOutput.value = value;
   document.getElementsByTagName("body")[0].style.fontSize = value * 11 + "px";
-  document.getElementById("options").style.width = (value - 1) * 300 / 2 + 300 + "px";
+  document.getElementById("options").style.width = value * 300 + "px";
 }
 
 function changeTooltipSize(value) {
@@ -855,9 +861,11 @@ function applyStoredOptions() {
   if (localStorage.getItem("winds")) winds = localStorage.getItem("winds").split(",").map(w => +w);
 
   changeDialogsTransparency(localStorage.getItem("transparency") || 15);
-  if (localStorage.getItem("uiSize")) changeUIsize(localStorage.getItem("uiSize"));
   if (localStorage.getItem("tooltipSize")) changeTooltipSize(localStorage.getItem("tooltipSize"));
   if (localStorage.getItem("regions")) changeStatesNumber(localStorage.getItem("regions"));
+
+  if (localStorage.getItem("uiSize")) changeUIsize(localStorage.getItem("uiSize"));
+  else changeUIsize(Math.max(Math.min(rn(mapWidthInput.value / 1280, 1), 2.5), 1));
 }
 
 // randomize options if randomization is allowed (not locked)
@@ -885,7 +893,7 @@ function randomizeOptions() {
   const US = navigator.language === "en-US";
   const UK = navigator.language === "en-GB";
   if (!locked("distanceScale")) distanceScaleOutput.value = distanceScaleInput.value = gauss(3, 1, 1, 5);
-  if (!stored("distanceUnit")) distanceUnitInput.value = distanceUnitOutput.value = US || UK ? "mi" : "km";
+  if (!stored("distanceUnit")) distanceUnitInput.value = US || UK ? "mi" : "km";
   if (!stored("heightUnit")) heightUnit.value = US || UK ? "ft" : "m";
   if (!stored("temperatureScale")) temperatureScale.value = US ? "°F" : "°C";
 }
@@ -1004,7 +1012,7 @@ document.getElementById("sticked").addEventListener("click", function(event) {
 
 function regeneratePrompt() {
   const workingTime = (Date.now() - last(mapHistory).created) / 60000; // minutes
-  if (workingTime < 10) {regenerateMap(); return;}
+  if (workingTime < 5) {regenerateMap(); return;}
 
   alertMessage.innerHTML = `Are you sure you want to generate a new map?<br>
   All unsaved changes made to the current map will be lost`;
@@ -1035,22 +1043,6 @@ function toggleSavePane() {
   }
 }
 
-// async function saveDropbox() {
-//   const filename = "fantasy_map_" + Date.now() + ".map";
-//   const options = {
-//     files: [{'url': '...', 'filename': 'fantasy_map.map'}],
-//     success: function () {alert("Success! Files saved to your Dropbox.")},
-//     progress: function (progress) {console.log(progress)},
-//     cancel: function (cancel) {console.log(cancel)},
-//     error: function (error) {console.log(error)}
-//   };
-
-//   // working file: "https://dl.dropbox.com/s/llg93mwyonyzdmu/test.map?dl=1";
-//   const dataBlob = await getMapData();
-//   const URL = window.URL.createObjectURL(dataBlob);
-//   Dropbox.save(URL, filename, options);
-// }
-
 function toggleLoadPane() {
   if (loadDropdown.style.display === "block") {loadDropdown.style.display = "none"; return;}
   loadDropdown.style.display = "block";
@@ -1059,15 +1051,14 @@ function toggleLoadPane() {
 function loadURL() {
   const pattern = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
   const inner = `Provide URL to a .map file:
-    <input id="mapURL" type="url" style="width: 254px" placeholder="https://e-cloud.com/test.map">
+    <input id="mapURL" type="url" style="width: 24em" placeholder="https://e-cloud.com/test.map">
     <br><i>Please note server should allow CORS for file to be loaded. If CORS is not allowed, save file to Dropbox and provide a direct link</i>`;
   alertMessage.innerHTML = inner;
-  $("#alert").dialog({resizable: false, title: "Load map from URL", width: 280,
+  $("#alert").dialog({resizable: false, title: "Load map from URL", width: "26em",
     buttons: {
       Load: function() {
         const value = mapURL.value;
         if (!pattern.test(value)) {tip("Please provide a valid URL", false, "error"); return;}
-        closeDialogs();
         loadMapFromURL(value);
         $(this).dialog("close");
       },
@@ -1075,26 +1066,6 @@ function loadURL() {
     }
   });
 }
-
-// function loadDropbox() {
-//     const options = {
-//       success: function(file) {send_files(file)},
-//       cancel: function() {},
-//       linkType: "preview",
-//       multiselect: false,
-//       extensions:['.map'],
-//   };
-//   Dropbox.choose(options);
-
-//   function send_files(file) {
-//     const subject = "Shared File Links";
-//     let body = "";
-//     for (let i=0; i < file.length; i++) {
-//       body += file[i].name + "\n" + file[i].link + "\n\n";
-//     }
-//     location.href = 'mailto:coworker@example.com?Subject=' + escape(subject) + '&body='+ escape(body),'200','200';
-//   }
-// }
 
 // load map
 document.getElementById("mapToLoad").addEventListener("change", function() {

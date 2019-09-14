@@ -1,6 +1,6 @@
 function editWorld() {
   if (customization) return;
-  $("#worldConfigurator").dialog({title: "Configure World", resizable: false, width: 460,
+  $("#worldConfigurator").dialog({title: "Configure World", resizable: false, width: "42em",
     buttons: {
       "Whole World": () => applyPreset(100, 50), 
       "Northern": () => applyPreset(33, 25), 

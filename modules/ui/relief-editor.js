@@ -12,7 +12,7 @@ function editReliefIcon() {
   updateReliefSizeInput();
 
   $("#reliefEditor").dialog({
-    title: "Edit Relief Icons", resizable: false, width: 294,
+    title: "Edit Relief Icons", resizable: false, width: "27em",
     position: {my: "left top", at: "left+10 top+10", of: "#map"},
     close: closeReliefEditor
   });

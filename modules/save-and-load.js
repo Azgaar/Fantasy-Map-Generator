@@ -222,7 +222,9 @@ function saveAsImage(type) {
   // load fonts as dataURI so they will be available in downloaded svg/png
   GFontToDataURI(getFontsToLoad()).then(cssRules => {
     clone.select("defs").append("style").text(cssRules.join('\n'));
-    const svg_xml = (new XMLSerializer()).serializeToString(clone.node());
+    clone.append("metadata").text("<dc:format>image/svg+xml</dc:format>");
+    const serialized = (new XMLSerializer()).serializeToString(clone.node());
+    const svg_xml = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>` + serialized;
     clone.remove();
     const blob = new Blob([svg_xml], {type: 'image/svg+xml;charset=utf-8'});
     const url = window.URL.createObjectURL(blob);
@@ -239,7 +241,7 @@ function saveAsImage(type) {
       img.onload = function() {
         window.URL.revokeObjectURL(url);
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        link.download = "fantasy_map_" + Date.now() + ".png";
+        link.download = getFileName() + ".png";
         canvas.toBlob(function(blob) {
            link.href = window.URL.createObjectURL(blob);
            document.body.appendChild(link);
@@ -251,7 +253,7 @@ function saveAsImage(type) {
         });
       }
     } else {
-      link.download = "fantasy_map_" + Date.now() + ".svg";
+      link.download = getFileName() + ".svg";
       link.href = url;
       document.body.appendChild(link);
       link.click();
@@ -323,7 +325,6 @@ function GFontToDataURI(url) {
 
 // prepare map data for saving
 function getMapData() {
-  if (customization) return false;
   console.time("createMapDataBlob");
 
   return new Promise(resolve => {
@@ -331,9 +332,13 @@ function getMapData() {
     const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
     const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
     const params = [version, license, dateString, seed, graphWidth, graphHeight].join("|");
-    const options = [distanceUnitInput.value, distanceScaleInput.value, areaUnit.value, heightUnit.value, heightExponentInput.value, temperatureScale.value,
-      barSize.value, barLabel.value, barBackOpacity.value, barBackColor.value, barPosX.value, barPosY.value, populationRate.value, urbanization.value,
-      mapSizeOutput.value, latitudeOutput.value, temperatureEquatorOutput.value, temperaturePoleOutput.value, precOutput.value, JSON.stringify(winds)].join("|");
+    const options = [distanceUnitInput.value, distanceScaleInput.value, areaUnit.value, 
+      heightUnit.value, heightExponentInput.value, temperatureScale.value,
+      barSize.value, barLabel.value, barBackOpacity.value, barBackColor.value, 
+      barPosX.value, barPosY.value, populationRate.value, urbanization.value,
+      mapSizeOutput.value, latitudeOutput.value, temperatureEquatorOutput.value, 
+      temperaturePoleOutput.value, precOutput.value, JSON.stringify(winds),
+      mapName.value].join("|");
     const coords = JSON.stringify(mapCoordinates);
     const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
     const notesData = JSON.stringify(notes);
@@ -356,13 +361,21 @@ function getMapData() {
     const religions = JSON.stringify(pack.religions);
     const provinces = JSON.stringify(pack.provinces);
 
+    // store name array only if it is not the same as default
+    const defaultNB = Names.getNameBase();
+    const namesData = nameBases.map((b,i) => {
+      const names = defaultNB[i] && defaultNB[i].join("") === nameBase[i].join("") ? "" : nameBase[i];
+      return `${b.name}|${b.min}|${b.max}|${b.d}|${b.m}|${names}`;
+    }).join("/");
+
     // data format as below
     const data = [params, options, coords, biomes, notesData, svg_xml,
       gridGeneral, grid.cells.h, grid.cells.prec, grid.cells.f, grid.cells.t, grid.cells.temp,
       features, cultures, states, burgs,
       pack.cells.biome, pack.cells.burg, pack.cells.conf, pack.cells.culture, pack.cells.fl,
       pack.cells.pop, pack.cells.r, pack.cells.road, pack.cells.s, pack.cells.state,
-      pack.cells.religion, pack.cells.province, pack.cells.crossroad, religions, provinces].join("\r\n");
+      pack.cells.religion, pack.cells.province, pack.cells.crossroad, religions, provinces,
+      namesData].join("\r\n");
     const blob = new Blob([data], {type: "text/plain"});
 
     console.timeEnd("createMapDataBlob");
@@ -374,12 +387,12 @@ function getMapData() {
 // Download .map file
 async function saveMap() {
   if (customization) {tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error"); return;}
-  closeDialogs();
+  closeDialogs("#alert");
 
   const blob = await getMapData();
   const URL = window.URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.download = "fantasy_map_" + Date.now() + ".map";
+  link.download = getFileName() + ".map";
   link.href = URL;
   document.body.appendChild(link);
   link.click();
@@ -392,7 +405,7 @@ function saveGeoJSON() {
   alertMessage.innerHTML = `You can export map data in GeoJSON format used in GIS tools such as QGIS.
   Check out <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export" target="_blank">wiki-page</a> for guidance`;
 
-  $("#alert").dialog({title: "GIS data export", resizable: false, width: 320, position: {my: "center", at: "center", of: "svg"},
+  $("#alert").dialog({title: "GIS data export", resizable: false, width: "32em", position: {my: "center", at: "center", of: "svg"},
     buttons: {
       Cells: saveGeoJSON_Cells,
       Routes: saveGeoJSON_Roads,
@@ -422,7 +435,7 @@ function saveGeoJSON_Roads() {
   const url = window.URL.createObjectURL(dataBlob);
   const link = document.createElement("a");
   document.body.appendChild(link);
-  link.download = "fmg_routes_" + Date.now() + ".geojson";
+  link.download = getFileName("Routes") + ".geojson";
   link.href = url;
   link.click();
   window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
@@ -447,7 +460,7 @@ function saveGeoJSON_Rivers() {
   const url = window.URL.createObjectURL(dataBlob);
   const link = document.createElement("a");
   document.body.appendChild(link);
-  link.download = "fmg_rivers_" + Date.now() + ".geojson";
+  link.download = getFileName("Rivers") + ".geojson";
   link.href = url;
   link.click();
   window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
@@ -483,6 +496,92 @@ function getRiverPoints(node) {
   return points;
 }
 
+async function quickSave() {
+  if (customization) {tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error"); return;}
+  const blob = await getMapData();
+  if (blob) ldb.set("lastMap", blob); // auto-save map
+  tip("Map is saved to browser memory", true, "success", 2000);
+}
+
+function quickLoad() {
+  ldb.get("lastMap", blob => {
+    if (blob) {
+      loadMapPrompt(blob);
+    } else {
+      tip("No map stored. Save map to storage first", true, "error", 2000);
+      console.error("No map stored");
+    }
+  });
+}
+
+function loadMapPrompt(blob) {
+  const workingTime = (Date.now() - last(mapHistory).created) / 60000; // minutes
+  if (workingTime < 5) {loadLastSavedMap(); return;}
+
+  alertMessage.innerHTML = `Are you sure you want to load saved map?<br>
+  All unsaved changes made to the current map will be lost`;
+  $("#alert").dialog({resizable: false, title: "Load saved map",
+    buttons: {
+      Cancel: function() {$(this).dialog("close");},
+      Load: function() {loadLastSavedMap(); $(this).dialog("close");}
+    }
+  });
+
+  function loadLastSavedMap() {
+    console.warn("Load last saved map");
+    try {
+      uploadFile(blob);
+    }
+    catch(error) {
+      console.error(error);
+      tip("Cannot load last saved map", true, "error", 2000);
+    }
+  }
+}
+
+const saveReminder = function() {
+  if (localStorage.getItem("noReminder")) return;
+  const message = ["Please don't forget to save your work as a .map file",
+    "Please remember to save work as a .map file",
+    "Saving in .map format will ensure your data won't be lost in case of issues",
+    "Safety is number one priority. Please save the map",
+    "Don't forget to save your map on a regular basis!",
+    "Just a gentle reminder for you to save the map",
+    "Please forget to save your progress (saving as .map is the best option)",
+    "Don't want to be reminded about need to save? Press CTRL+Q"];
+
+  saveReminder.reminder = setInterval(() => {
+    if (customization) return;
+    tip(ra(message), true, "warn", 2500);
+  }, 1e6);
+  saveReminder.status = 1;
+}
+
+saveReminder();
+
+function toggleSaveReminder() {
+  if (saveReminder.status) {
+    tip("Save reminder is turned off. Press CTRL+Q again to re-initiate", true, "warn", 2000);
+    clearInterval(saveReminder.reminder);
+    localStorage.setItem("noReminder", true);
+    saveReminder.status = 0;
+  } else {
+    tip("Save reminder is turned on. Press CTRL+Q to turn off", true, "warn", 2000);
+    localStorage.removeItem("noReminder");
+    saveReminder();
+  }
+}
+
+function getFileName(dataType) {
+  const name = mapName.value;
+  const type = dataType ? dataType + " " : "";
+  const date = new Date();
+  const datFormatter = new Intl.DateTimeFormat("en", {month: "short", day: "numeric"});
+  const timeFormatter = new Intl.DateTimeFormat("ru", {hour: "numeric", minute: "numeric"});
+  const day = datFormatter.format(date).replace(" ", "");
+  const time = timeFormatter.format(date).replace(":", "-");
+  return name + " " + type + day + " " + time;
+}
 
 function saveGeoJSON_Cells() {
   let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
@@ -521,7 +620,7 @@ function saveGeoJSON_Cells() {
   const url = window.URL.createObjectURL(dataBlob);
   const link = document.createElement("a");
   document.body.appendChild(link);
-  link.download = "fmg_cells_" + Date.now() + ".geojson";
+  link.download = getFileName("Cells") + ".geojson";
   link.href = url;
   link.click();
   window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
@@ -553,7 +652,7 @@ function uploadFile(file, callback) {
                  <br>The map will be auto-updated. In case of issues please keep using an ${archive} of the Generator`;
     }
     alertMessage.innerHTML = message;
-    $("#alert").dialog({title: "Version conflict", width: 380, buttons: {
+    $("#alert").dialog({title: "Version conflict", width: "38em", buttons: {
       OK: function() {$(this).dialog("close"); if (load) parseLoadedData(data);}
     }});
   };
@@ -564,6 +663,11 @@ function uploadFile(file, callback) {
 
 function parseLoadedData(data) {
   try {
+    // exit customization
+    closeDialogs();
+    customization = 0;
+    if (customizationMenu.offsetParent) styleTab.click();
+
     const reliefIcons = document.getElementById("defs-relief").innerHTML; // save relief icons
     const hatching = document.getElementById("hatching").cloneNode(true); // save hatching
 
@@ -598,6 +702,7 @@ function parseLoadedData(data) {
       if (options[17]) temperaturePoleInput.value = temperaturePoleOutput.value = options[17];
       if (options[18]) precInput.value = precOutput.value = options[18];
       if (options[19]) winds = JSON.parse(options[19]);
+      if (options[20]) mapName.value = options[20];
     }()
 
     void function parseConfiguration() {
@@ -710,6 +815,16 @@ function parseLoadedData(data) {
       cells.religion = data[26] ? Uint16Array.from(data[26].split(",")) : new Uint16Array(cells.i.length);
       cells.province = data[27] ? Uint16Array.from(data[27].split(",")) : new Uint16Array(cells.i.length);
       cells.crossroad = data[28] ? Uint16Array.from(data[28].split(",")) : new Uint16Array(cells.i.length);
+
+      if (data[31]) {
+        const namesDL = data[31].split("/");
+        namesDL.forEach((d, i) => {
+          const e = d.split("|");
+          if (!e.length) return;
+          nameBases[i] = {name:e[0], min:e[1], max:e[2], d:e[3], m:e[4]};
+          if(e[5]) nameBase[i] = e[5].split(",");
+        });
+      }
     }()
 
     void function restoreLayersState() {
@@ -838,6 +953,17 @@ function parseLoadedData(data) {
           if (!s.diplomacy) continue;
           s.diplomacy = s.diplomacy.map(r => r === "Sympathy" ? "Friendly" : r);
         }
+
+        // labels should be toggled via style attribute, so remove display attribute
+        labels.attr("display", null);
+
+        // v 1.0 added religions heirarchy tree
+        if (pack.religions[1] && !pack.religions[1].code) {
+          pack.religions.filter(r => r.i).forEach(r => {
+            r.origin = 0;
+            r.code = r.name.slice(0, 2);
+          });
+        }
       }
     }()
 
@@ -858,7 +984,7 @@ function parseLoadedData(data) {
       <br>generate a new random map or cancel the loading
       <p id="errorBox">${parseError(error)}</p>`;
     $("#alert").dialog({
-      resizable: false, title: "Loading error", maxWidth:500, buttons: {
+      resizable: false, title: "Loading error", maxWidth:"50em", buttons: {
         "Select file": function() {$(this).dialog("close"); mapToLoad.click();},
         "New map": function() {$(this).dialog("close"); regenerateMap();},
         Cancel: function() {$(this).dialog("close")}
@@ -866,80 +992,4 @@ function parseLoadedData(data) {
     });
   }
 
-}
-
-async function quickSave() {
-  const blob = await getMapData();
-  if (blob) ldb.set("lastMap", blob); // auto-save map
-  tip("Map is saved to browser memory", true, "success", 2000);
-}
-
-function quickLoad() {
-  ldb.get("lastMap", blob => {
-    if (blob) {
-      loadMapPrompt(blob);
-    } else {
-      tip("No map stored. Save map to storage first", true, "error", 2000);
-      console.error("No map stored");
-    }
-  });
-}
-
-function loadMapPrompt(blob) {
-  const workingTime = (Date.now() - last(mapHistory).created) / 60000; // minutes
-  if (workingTime < 10) {loadLastSavedMap(); return;}
-
-  alertMessage.innerHTML = `Are you sure you want to load saved map?<br>
-  All unsaved changes made to the current map will be lost`;
-  $("#alert").dialog({resizable: false, title: "Load saved map",
-    buttons: {
-      Cancel: function() {$(this).dialog("close");},
-      Load: function() {loadLastSavedMap(); $(this).dialog("close");}
-    }
-  });
-
-  function loadLastSavedMap() {
-    console.warn("Load last saved map");
-    closeDialogs();
-    try {
-      uploadFile(blob);
-    }
-    catch(error) {
-      console.error(error);
-      tip("Cannot load last saved map", true, "error", 2000);
-    }
-  }
-}
-
-const saveReminder = function() {
-  if (localStorage.getItem("noReminder")) return;
-  const message = ["Please don't forget to save your work as a .map file",
-    "Please remember to save work as a .map file",
-    "Saving in .map format will ensure your data won't be lost in case of issues",
-    "Safety is number one priority. Please save the map",
-    "Don't forget to save your map on a regular basis!",
-    "Just a gentle reminder for you to save the map",
-    "Please forget to save your progress (saving as .map is the best option)",
-    "Don't want to be reminded about need to save? Press CTRL+Q"];
-
-  saveReminder.reminder = setInterval(() => {
-    if (customization) return;
-    tip(ra(message), true, "warn", 2500);
-  }, 1e6);
-  saveReminder.status = 1;
-}
-
-saveReminder();
-
-function toggleSaveReminder() {
-  if (saveReminder.status) {
-    tip("Save reminder is turned off. Press CTRL+Q again to re-initiate", true, "warn", 2000);
-    clearInterval(saveReminder.reminder);
-    localStorage.setItem("noReminder", true);
-    saveReminder.status = 0;
-  } else {
-    tip("Save reminder is turned on. Press CTRL+Q to turn off", true, "warn", 2000);
-    localStorage.removeItem("noReminder");
-    saveReminder();
-  }
 }

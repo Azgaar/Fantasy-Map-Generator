@@ -201,7 +201,7 @@ function getRandomColor() {
 
 // mix a color with a random color
 function getMixedColor(color, mix = .2, bright = .3) {
-  const c = color[0] === "#" ? color : getRandomColor(); // if provided color is not hex (e.g. harching), generate random one
+  const c = color && color[0] === "#" ? color : getRandomColor(); // if provided color is not hex (e.g. harching), generate random one
   return d3.color(d3.interpolate(c, getRandomColor())(mix)).brighter(bright).hex();
 }
 
@@ -478,7 +478,7 @@ function analizeNamesbase() {
       if (string[i] === string[i-1]) doubleArray[string[i]]++;
     }
     for (const l in doubleArray) {if(doubleArray[l] > size/35) double += l;}
-    const multi = rn(d3.mean(d.map(n => (n.match(/ /g)||[]).length)),2);
+    const multi = rn(d3.mean(d.map(n => (n.match(/ /g)||[]).length-1)),2);
     result.push({name:b.name, size, min, max, mean, median, common, double, multi});
   });
   console.table(result);

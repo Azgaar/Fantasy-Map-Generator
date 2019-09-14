@@ -104,6 +104,7 @@ function getCurrentPreset() {
     if (JSON.stringify(presets[preset]) !== JSON.stringify(layers)) continue;
     layersPreset.value = preset;
     removePresetButton.style.display = defaultPresets[preset] ? "none" : "inline-block";
+    savePresetButton.style.display = "none";
     return;
   }
 
@@ -849,8 +850,8 @@ function drawGrid() {
     const d = points.map(p => "M" + p + hex).join("");
     gridOverlay.append("path").attr("d", d);
   } else if (type === "square") {
-    const pathX = d3.range(size, svgWidth, size).map(x => "M" + rn(x, 2) + ",0v" + svgHeight);
-    const pathY = d3.range(size, svgHeight, size).map(y => "M0," + rn(y, 2) + "h" + svgWidth);
+    const pathX = d3.range(size, svgWidth, size).map(x => "M" + rn(x, 2) + ",0v" + svgHeight).join(" ");
+    const pathY = d3.range(size, svgHeight, size).map(y => "M0," + rn(y, 2) + "h" + svgWidth).join(" ");
     gridOverlay.append("path").attr("d", pathX + pathY);
   }
 
@@ -881,7 +882,7 @@ function drawGrid() {
       x0 = x1, y0 = y1;
       return [rn(dx, 2), rn(dy, 2)];
     });
-  }  
+  }
 
   console.timeEnd("drawGrid");
 }
@@ -944,6 +945,9 @@ function toggleCompass() {
       const tr = `translate(80 80) scale(.25)`;
       d3.select("#rose").attr("transform", tr);
       compass.append("use").attr("xlink:href","#rose");
+      // prolongate rose lines
+      svg.select("g#rose > g#sL > line#sL1").attr("y1", -19000).attr("y2", 19000);
+      svg.select("g#rose > g#sL > line#sL2").attr("x1", -19000).attr("x2", 19000);
     }
   } else {
     $('#compass').fadeOut();
@@ -1011,11 +1015,11 @@ function toggleMarkers() {
 function toggleLabels() {
   if (!layerIsOn("toggleLabels")) {
     turnButtonOn("toggleLabels");
-    labels.attr("display", null)
+    labels.style("display", null)
     invokeActiveZooming();
   } else {
     turnButtonOff("toggleLabels");
-    labels.attr("display", "none");
+    labels.style("display", "none");
   }
 }
 

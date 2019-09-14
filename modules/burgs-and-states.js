@@ -762,9 +762,11 @@
 
       if (s.form === "Monarchy") {
         const form = monarchy[expTiers[s.i]];
-        // Default name depend on exponent tier, some culture bases have special names for tiers
-        if (form === "Duchy" && s.neighbors.size > 1 && rand(6) < s.neighbors.size && s.diplomacy.includes("Vassal")) return "Marches"; // some vassal dutchies on borderland
-        if (Math.random() < .3 && s.diplomacy.includes("Vassal")) return "Protectorate"; // some vassals
+        // Default name depends on exponent tier, some culture bases have special names for tiers
+        if (s.diplomacy) {
+          if (form === "Duchy" && s.neighbors.size > 1 && rand(6) < s.neighbors.size && s.diplomacy.includes("Vassal")) return "Marches"; // some vassal dutchies on borderland
+          if (Math.random() < .3 && s.diplomacy.includes("Vassal")) return "Protectorate"; // some vassals
+        }
 
         if (base === 16 && (form === "Empire" || form === "Kingdom")) return "Sultanate"; // Turkic
         if (base === 5 && (form === "Empire" || form === "Kingdom")) return "Tsardom"; // Ruthenian

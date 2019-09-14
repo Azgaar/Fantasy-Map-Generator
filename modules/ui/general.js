@@ -145,14 +145,17 @@ function updateCellInfo(point, i, g) {
 
 // get user-friendly (real-world) height value from map data
 function getFriendlyHeight(p) {
+  const packH = pack.cells.h[findCell(p[0], p[1])];
+  const gridH = grid.cells.h[findGridCell(p[0], p[1])];
+  const h = packH < 20 ? gridH : packH;
+  return getHeight(h);
+}
+
+function getHeight(h) {
   const unit = heightUnit.value;
   let unitRatio = 3.281; // default calculations are in feet
   if (unit === "m") unitRatio = 1; // if meter
   else if (unit === "f") unitRatio = 0.5468; // if fathom
-
-  const packH = pack.cells.h[findCell(p[0], p[1])];
-  const gridH = grid.cells.h[findGridCell(p[0], p[1])];
-  const h = packH < 20 ? gridH : packH;
 
   let height = -990;
   if (h >= 20) height = Math.pow(h - 18, +heightExponentInput.value);
@@ -226,14 +229,21 @@ function applyOption(select, option) {
   select.value = option;
 }
 
+// prevent default browser behavior for FMG-used hotkeys
+document.addEventListener("keydown", event => {
+  if ([112, 113, 117, 120, 9].includes(event.keyCode)) event.preventDefault(); // F1, F2, F6, F9, Tab
+});
+
 // Hotkeys, see github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys
-document.addEventListener("keydown", function(event) {
+document.addEventListener("keyup", event => {
   const active = document.activeElement.tagName;
   if (active === "INPUT" || active === "SELECT" || active === "TEXTAREA") return; // don't trigger if user inputs a text
   if (active === "DIV" && document.activeElement.contentEditable === "true") return; // don't trigger if user inputs a text
+  event.stopPropagation();
+
   const key = event.keyCode, ctrl = event.ctrlKey, shift = event.shiftKey, meta = event.metaKey;
   if (key === 27) {closeDialogs(); hideOptions();} // Escape to close all dialogs
-  else if (key === 9) {toggleOptions(event); event.preventDefault();} // Tab to toggle options
+  else if (key === 9) toggleOptions(event); // Tab to toggle options
 
   else if (key === 113) regeneratePrompt(); // "F2" for new map
   else if (key === 46) removeElementOnKey(); // "Delete" to remove the selected element

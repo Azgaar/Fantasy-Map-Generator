@@ -75,7 +75,6 @@ function editBurgs() {
       lines += `<div class="states" data-id=${b.i} data-name=${b.name} data-state=${state} data-culture=${culture} data-population=${population} data-type=${type}>
         <span data-tip="Click to zoom into view" class="icon-dot-circled pointer"></span>
         <input data-tip="Burg name. Click and type to change" class="burgName" value="${b.name}" autocorrect="off" spellcheck="false">
-        <span data-tip="Burg state" class="burgState ${showState}">${state}</span>
         <select data-tip="Dominant culture. Click to change" class="stateCulture">${getCultureOptions(b.culture)}</select>
         <span data-tip="Burg population" class="icon-male"></span>
         <input data-tip="Burg population. Type to change" class="burgPopulation" value=${si(population)}>
@@ -83,6 +82,7 @@ function editBurgs() {
           <span data-tip="${b.capital ? ' This burg is a state capital' : 'Click to assign a capital status'}" class="icon-star-empty${b.capital ? '' : ' inactive pointer'}"></span>
           <span data-tip="Click to toggle port status" class="icon-anchor pointer${b.port ? '' : ' inactive'}" style="font-size:.9em"></span>
         </div>
+        <span data-tip="Burg state" class="burgState ${showState}">${state}</span>
         <span data-tip="Remove burg" class="icon-trash-empty"></span>
       </div>`;
     }
@@ -252,7 +252,7 @@ function editBurgs() {
   }
 
   function downloadBurgsData() {
-    let data = "Id,Burg,State,Culture,Population,Capital,Port,Longitude,Latitude,Elevation\n"; // headers
+    let data = "Id,Burg,State,Culture,Population,Longitude,Latitude,Elevation ("+heightUnit.value+"),Capital,Port\n"; // headers
     const valid = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
 
     valid.forEach(b => {
@@ -261,20 +261,22 @@ function editBurgs() {
       data += pack.states[b.state].name + ",";
       data += pack.cultures[b.culture].name + ",";
       data += rn(b.population * populationRate.value * urbanization.value) + ",";
-      data += b.capital ? "capital," : ",";
-      data += b.port ? "port," : ",";
 
       // add geography data
       data += mapCoordinates.lonW + (b.x / graphWidth) * mapCoordinates.lonT + ",";
       data += mapCoordinates.latN - (b.y / graphHeight) * mapCoordinates.latT + ","; // this is inverted in QGIS otherwise
-      data += parseInt(getFriendlyHeight(pack.cells.h[b.cell])) + "\n";
+      data += parseInt(getHeight(pack.cells.h[b.cell])) + ",";
+
+      // add status data
+      data += b.capital ? "capital," : ",";
+      data += b.port ? "port\n" : "\n";
     });
 
     const dataBlob = new Blob([data], {type: "text/plain"});
     const url = window.URL.createObjectURL(dataBlob);
     const link = document.createElement("a");
     document.body.appendChild(link);
-    link.download = "burgs_data" + Date.now() + ".csv";
+    link.download = getFileName("Burgs") + ".csv";
     link.href = url;
     link.click();
     window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
