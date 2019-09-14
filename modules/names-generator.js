@@ -79,7 +79,9 @@
     let name = [...w].reduce(function(r, c, i, d) {
       if (c === d[i+1] && !dupl.includes(c)) return r; // duplication is not allowed
       if (!r.length) return c.toUpperCase();
-      if (r.slice(-1) === " ") return r + c.toUpperCase();
+      if (r.slice(-1) === "-" && c === " ") return r; // remove space after hyphen
+      if (r.slice(-1) === " ") return r + c.toUpperCase(); // capitalize letter after space
+      if (r.slice(-1) === "-") return r + c.toUpperCase(); // capitalize letter after hyphen
       if (c === "a" && d[i+1] === "e") return r; // "ae" => "e"
       if (c === " " && i+1 === d.length) return r;
       if (i+2 < d.length && !vowel(c) && !vowel(d[i+1]) && !vowel(d[i+2])) return r; // remove consonant before 2 consonants

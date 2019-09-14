@@ -16,6 +16,8 @@ function editDiplomacy() {
 
   const body = document.getElementById("diplomacyBodySection");
   const statuses = ["Ally", "Friendly", "Neutral", "Suspicion", "Enemy", "Unknown", "Rival", "Vassal", "Suzerain"];
+  const description = [" is an ally of ", " is friendly to ", " is neutral to ", " is suspicious of ", 
+    " is at war with ", " does not know about ", " is a rival of ", " is a vassal of ", " is suzerain to "];
   const colors = ["#00b300", "#d4f8aa", "#edeee8", "#f3c7c4", "#e64b40", "#a9a9a9", "#ad5a1f", "#87CEFA", "#00008B"];
   refreshDiplomacyEditor();
 
@@ -47,19 +49,23 @@ function editDiplomacy() {
     const states = pack.states;
     const selectedLine = body.querySelector("div.Self");
     const sel = selectedLine ? +selectedLine.dataset.id : states.find(s => s.i && !s.removed).i;
+    const selName = states[sel].fullName;
 
     let lines = `<div class="states Self" data-id=${sel}>
-      <div data-tip="Selected state" style="width: 100%">${states[sel].fullName}</div>
+      <div data-tip="List below shows relations to ${selName}" style="width: 100%">${selName}</div>
     </div>`;
 
     for (const s of states) {
       if (!s.i || s.removed || s.i === sel) continue;
-      const color = colors[statuses.indexOf(s.diplomacy[sel])];
+      const relation = s.diplomacy[sel];
+      const index = statuses.indexOf(relation);
+      const color = colors[index];
+      const tip = s.fullName + description[index] + selName;
 
-      lines += `<div class="states" data-id=${s.i} data-name="${s.fullName}" data-relations="${s.diplomacy[sel]}">
-        <div data-tip="Click to show relations for this state" class="stateName">${s.fullName}</div>
-        <input data-tip="Relations color" class="stateColor" type="color" value="${color}" disabled>
-        <select data-tip="Diplomacal relations. Click to change" class="diplomacyRelations">${getRelations(s.diplomacy[sel])}</select>
+      lines += `<div class="states" data-id=${s.i} data-name="${s.fullName}" data-relations="${relation}">
+        <div data-tip="${tip}. Click to see relations to ${s.name}" class="stateName">${s.fullName}</div>
+        <input data-tip="${tip}. Click to see relations to ${s.name}" class="stateColor" type="color" value="${color}" disabled>
+        <select data-tip="Click to change ${getAdjective(s.name)} relations to ${selName}" class="diplomacyRelations">${getRelations(relation)}</select>
       </div>`;
     }
     body.innerHTML = lines;
@@ -150,32 +156,48 @@ function editDiplomacy() {
   }
 
   function diplomacyChangeRelations() {
-    const states = pack.states;
+    const states = pack.states, chronicle = states[0].diplomacy;
     const selectedLine = body.querySelector("div.Self");
-    const sel = selectedLine ? +selectedLine.dataset.id : states.find(s => s.i && !s.removed).i;
-    if (!sel) return;
-    const state = +this.parentNode.dataset.id;
-    const rel = this.value, oldRel = states[state].diplomacy[sel];
-    states[state].diplomacy[sel] = rel;
-    this.parentNode.dataset.relations = rel;
-    
-    const statusTo = rel === "Vassal" ? "Suzerain" : rel === "Suzerain" ? "Vassal" : rel;
-    states[sel].diplomacy[state] = statusTo;
+    const object = selectedLine ? +selectedLine.dataset.id : states.find(s => s.i && !s.removed).i;
+    if (!object) return;
+    const objectName = states[object].name; // object of relations change
+
+    const subject = +this.parentNode.dataset.id;
+    const subjectName = states[subject].name; // subject of relations change - actor
+
+    const oldRel = states[subject].diplomacy[object];
+    const rel = this.value;
+    states[subject].diplomacy[object] = rel;
+    states[object].diplomacy[subject] = rel === "Vassal" ? "Suzerain" : rel === "Suzerain" ? "Vassal" : rel;
 
     // update relation history
-    const change = [`Relations change`, `${states[sel].name}-${trimVowels(states[state].name)}ian relations changed to ${rel}`];
-    const vassal = [`Vassalization`, `${states[state].name} became a vassal of ${states[sel].name}`];
-    const vassalized = [`Vassalization`, `${states[state].name} vassalized ${states[sel].name}`];
-    const war = [`War declaration`, `${states[sel].name} declared a war on its enemy ${states[state].name}`];
-    const peace = [`War termination`, `${states[sel].name} and ${states[state].name} agreed to cease fire and signed a peace treaty`];
-    peace.push(rel === "Vassal" ? vassal[1] : rel === "Suzerain" ? vassalized[1] : change[1]);
+    const change = () => [`Relations change`, `${subjectName}-${getAdjective(objectName)} relations changed to ${rel.toLowerCase()}`];
+    const ally = () => [`Defence pact`, `${subjectName} entered into defensive pact with ${objectName}`];
+    const vassal = () => [`Vassalization`, `${subjectName} became a vassal of ${objectName}`];
+    const suzerain = () => [`Vassalization`, `${subjectName} vassalized ${objectName}`];
+    const rival = () => [`Rivalization`, `${subjectName} and ${objectName} became rivals`];
+    const unknown = () => [`Relations severance`, `${subjectName} recalled their ambassadors and wiped all the records about ${objectName}`];
+    const war = () => [`War declaration`, `${subjectName} declared a war on its enemy ${objectName}`];
+    const peace = () => {
+      const treaty = `${subjectName} and ${objectName} agreed to cease fire and signed a peace treaty`;
+      const changed = rel === "Ally" ? ally() 
+        : rel === "Vassal" ? vassal() 
+        : rel === "Suzerain" ? suzerain() 
+        : rel === "Unknown" ? unknown() 
+        : change();
+      return [`War termination`, treaty, changed[1]];
+    }
 
-    if (oldRel === "Enemy") states[0].diplomacy.push(peace);
-    else states[0].diplomacy.push(rel === "Vassal" ? vassal : rel === "Suzerain" ? vassalized : rel === "Enemy" ? war : change);
+    if (oldRel === "Enemy") chronicle.push(peace()); else
+    if (rel === "Enemy") chronicle.push(war()); else
+    if (rel === "Vassal") chronicle.push(vassal()); else
+    if (rel === "Suzerain") chronicle.push(suzerain()); else
+    if (rel === "Ally") chronicle.push(ally()); else
+    if (rel === "Unknown") chronicle.push(unknown()); else
+    if (rel === "Rival") chronicle.push(rival()); else
+    chronicle.push(change());
 
-    const color = colors[statuses.indexOf(rel)];
-    this.parentNode.querySelector("input.stateColor").value = color;
-    showStateRelations();
+    refreshDiplomacyEditor();
   }
 
   function regenerateRelations() {
@@ -228,13 +250,19 @@ function editDiplomacy() {
     const states = pack.states.filter(s => s.i && !s.removed);
     const valid = states.map(s => s.i);
 
-    let message = `<table class="matrix-table"><tr><th></th>`;
-    message += states.map(s => `<th>${s.name}</th>`).join("") + `</tr>`; // headers
+    let message = `<table class="matrix-table"><tr><th data-tip='&#8205;'></th>`;
+    message += states.map(s => `<th data-tip='See relations to ${s.fullName}'>${s.name}</th>`).join("") + `</tr>`; // headers
     states.forEach(s => {
-      message += `<tr><th>${s.name}</th>` + s.diplomacy.filter((v, i) => valid.includes(i)).map(r => `<td class='${r}'>${r}</td>`).join("") + "</tr>";
+      message += `<tr><th data-tip='See relations of ${s.fullName}'>${s.name}</th>` + s.diplomacy
+        .filter((v, i) => valid.includes(i)).map((r, i) => {
+          const desc = description[statuses.indexOf(r)];
+          const tip = desc ? s.fullName + desc + pack.states[valid[i]].fullName : '&#8205;';
+          return `<td data-tip='${tip}' class='${r}'>${r}</td>`
+        }).join("") + "</tr>";
     });
     message += `</table>`;
     alertMessage.innerHTML = message;
+    
     $("#alert").dialog({title: "Relations matrix", width: fitContent(), position: {my: "center", at: "center", of: "svg"}, buttons: {}});
   }
 
