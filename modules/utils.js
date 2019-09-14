@@ -478,7 +478,7 @@ function analizeNamesbase() {
       if (string[i] === string[i-1]) doubleArray[string[i]]++;
     }
     for (const l in doubleArray) {if(doubleArray[l] > size/35) double += l;}
-    const multi = rn(d3.mean(d.map(n => (n.match(/ /g)||[]).length)),2);
+    const multi = rn(d3.mean(d.map(n => (n.match(/ /g)||[]).length-1)),2);
     result.push({name:b.name, size, min, max, mean, median, common, double, multi});
   });
   console.table(result);

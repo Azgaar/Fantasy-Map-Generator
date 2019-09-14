@@ -793,9 +793,12 @@ body button.noicon {
 	pointer-events: none;
 }
 
-#brushesPanel>div,
-#templateEditor>div {
+#brushesPanel > div {
 	margin: 2px 0;
+}
+
+#templateEditor > div {
+	margin: 1px 0;
 }
 
 #templateEditor #templateTools {
@@ -803,7 +806,7 @@ body button.noicon {
 	margin-bottom: -.3em;
 }
 
-#templateBody>div {
+#templateBody > div {
   border: 1px solid #a3a3a3;
   border-radius: 1px;
   background-image: linear-gradient(to right, #ffffff 0%, #fafafa 51%, #ebebeb 100%);
@@ -812,7 +815,7 @@ body button.noicon {
   height: 1.2em;
 }
 
-#templateBody>div:hover {
+#templateBody > div:hover {
 	border-color: #808080;
 	background-image: linear-gradient(to right, #fcfcfc 0%, #ededed 51%, #dedede 100%);
 }
@@ -823,7 +826,7 @@ body button.noicon {
 
 #templateBody > div > span {
 	float: right;
-	margin: 0 1px 0 .5m;
+	margin: 0 1px 0 .5px;
 }
 
 #templateBody > div > i {
@@ -844,6 +847,7 @@ body button.noicon {
 
 #templateBody select {
 	width: 8em;
+	height: 1.4em;
 	cursor: pointer;
 	font-size: .9em;
 }

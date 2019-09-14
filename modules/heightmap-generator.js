@@ -8,8 +8,7 @@
 
   const generate = function() {
     console.time('generateHeightmap');
-    cells = grid.cells;
-    p = grid.points;
+    cells = grid.cells, p = grid.points;
     cells.h = new Uint8Array(grid.points.length);
 
     const input = document.getElementById("templateInput");
@@ -19,12 +18,13 @@
         "High Island":  22,
         "Low Island":   10,
         "Continents":   20,
-        "Archipelago":  32,
+        "Archipelago":  30,
         "Mediterranean":3,
         "Peninsula":    3,
         "Pangea":       2,
         "Isthmus":      2,
-        "Atoll":        1};
+        "Atoll":        1,
+        "Shattered":    2};
       input.value = rw(templates);
     }
 
@@ -39,6 +39,7 @@
       case "Peninsula": templatePeninsula(); break;
       case "Pangea": templatePangea(); break;
       case "Isthmus": templateIsthmus(); break;
+      case "Shattered": templateShattered(); break;
     }
 
     console.timeEnd('generateHeightmap');
@@ -191,6 +192,14 @@
     addStep("Trough", "4-8", "15-30", "30-70", "40-60");
     addStep("Trough", "4-8", "15-30", "50-90", "60-80");
     addStep("Trough", "4-8", "15-30", "70-100", "80-100");
+  }
+
+  // Heighmap Template: Shattered
+  function templateShattered() {
+    addStep("Hill", "8", "35-40", "15-85", "30-70");
+    addStep("Trough", "10-20", "40-50", "5-95", "5-95");
+    addStep("Range", "5-7", "30-40", "10-90", "20-80");
+    addStep("Pit", "12-20", "30-40", "15-85", "20-80");
   }
 
   function getBlobPower() {

@@ -570,7 +570,7 @@ function getHeight(h) {
     if (modules.openTemplateEditor) return;
     modules.openTemplateEditor = true;
     
-    $("#templateBody").sortable({items: "div", handle: ".icon-resize-vertical", containment: "parent", axis: "y"});
+    $("#templateBody").sortable({items: "> div", handle: ".icon-resize-vertical", containment: "#templateBody", axis: "y"});
 
     // add listeners
     body.addEventListener("click", function(ev) {
@@ -797,6 +797,13 @@ function getHeight(h) {
         addStep("Trough", "4-8", "15-30", "30-70", "40-60");
         addStep("Trough", "4-8", "15-30", "50-90", "60-80");
         addStep("Trough", "4-8", "15-30", "70-100", "80-100");
+      }
+
+      else if (template === "templateShattered") {
+        addStep("Hill", "8", "35-40", "15-85", "30-70");
+        addStep("Trough", "10-20", "40-50", "5-95", "5-95");
+        addStep("Range", "5-7", "30-40", "10-90", "20-80");
+        addStep("Pit", "12-20", "30-40", "15-85", "20-80");
       }
 
     }
