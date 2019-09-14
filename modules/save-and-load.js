@@ -16,12 +16,6 @@ function saveGeoJSON_Markers() {
     let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
 
     markers._groups[0][0].childNodes.forEach(n => {
-        console.log(n);
-        console.log("id = "+n.id);
-        console.log("type = "+n.dataset.id.substring(8));
-        console.log("x = "+n.dataset.x);
-        console.log("y = "+n.dataset.y);
-
         let x = mapCoordinates.lonW + (n.dataset.x / graphWidth) * mapCoordinates.lonT;
         let y = mapCoordinates.latN - (n.dataset.y / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
 
