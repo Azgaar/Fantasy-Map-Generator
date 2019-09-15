@@ -60,8 +60,6 @@ function editBurgs() {
     if (selectedState != -1) filtered = filtered.filter(b => b.state === selectedState); // filtered by state
     if (selectedCulture != -1) filtered = filtered.filter(b => b.culture === selectedCulture); // filtered by culture
 
-    const showState = selectedState == -1 ? "visible" : "hidden";
-    document.getElementById("burgStateHeader").style.display = `${selectedState == -1 ? "inline-block" : "none"}`;
     body.innerHTML = "";
     let lines = "", totalPopulation = 0;
 
@@ -70,11 +68,15 @@ function editBurgs() {
       totalPopulation += population;
       const type = b.capital && b.port ? "a-capital-port" : b.capital ? "c-capital" : b.port ? "p-port" : "z-burg";
       const state = pack.states[b.state].name;
+      const prov = pack.cells.province[b.cell];
+      const province = prov ? pack.provinces[prov].name : "";
       const culture = pack.cultures[b.culture].name;
 
-      lines += `<div class="states" data-id=${b.i} data-name=${b.name} data-state=${state} data-culture=${culture} data-population=${population} data-type=${type}>
+      lines += `<div class="states" data-id=${b.i} data-name=${b.name} data-state=${state} data-province=${province} data-culture=${culture} data-population=${population} data-type=${type}>
         <span data-tip="Click to zoom into view" class="icon-dot-circled pointer"></span>
         <input data-tip="Burg name. Click and type to change" class="burgName" value="${b.name}" autocorrect="off" spellcheck="false">
+        <input data-tip="Burg province" class="burgState" value="${province}" disabled>
+        <input data-tip="Burg state" class="burgState" value="${state}" disabled>
         <select data-tip="Dominant culture. Click to change" class="stateCulture">${getCultureOptions(b.culture)}</select>
         <span data-tip="Burg population" class="icon-male"></span>
         <input data-tip="Burg population. Type to change" class="burgPopulation" value=${si(population)}>
@@ -82,7 +84,6 @@ function editBurgs() {
           <span data-tip="${b.capital ? ' This burg is a state capital' : 'Click to assign a capital status'}" class="icon-star-empty${b.capital ? '' : ' inactive pointer'}"></span>
           <span data-tip="Click to toggle port status" class="icon-anchor pointer${b.port ? '' : ' inactive'}" style="font-size:.9em"></span>
         </div>
-        <span data-tip="Burg state" class="burgState ${showState}">${state}</span>
         <span data-tip="Remove burg" class="icon-trash-empty"></span>
       </div>`;
     }
@@ -226,7 +227,6 @@ function editBurgs() {
     this.classList.add("pressed");
     tip("Click on the map to create a new burg. Hold Shift to add multiple", true);
     viewbox.style("cursor", "crosshair").on("click", addBurgOnClick);
-    body.querySelectorAll("div > *").forEach(e => e.disabled = true);
   }
 
   function addBurgOnClick() {
@@ -246,20 +246,22 @@ function editBurgs() {
     customization = 0;
     restoreDefaultEvents();
     clearMainTip();
-    body.querySelectorAll("div > *").forEach(e => e.disabled = false);
     if (addBurgTool.classList.contains("pressed")) addBurgTool.classList.remove("pressed");
     if (addNewBurg.classList.contains("pressed")) addNewBurg.classList.remove("pressed");
   }
 
   function downloadBurgsData() {
-    let data = "Id,Burg,State,Culture,Population,Longitude,Latitude,Elevation ("+heightUnit.value+"),Capital,Port\n"; // headers
+    let data = "Id,Burg,Province,State,Culture,Religion,Population,Longitude,Latitude,Elevation ("+heightUnit.value+"),Capital,Port\n"; // headers
     const valid = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
 
     valid.forEach(b => {
       data += b.i + ",";
       data += b.name + ",";
-      data += pack.states[b.state].name + ",";
+      const province = pack.cells.province[b.cell];
+      data += province ? pack.provinces[province].fullName + "," : ",";
+      data += b.state ? pack.states[b.state].fullName : pack.states[b.state].name + ",";
       data += pack.cultures[b.culture].name + ",";
+      data += pack.religions[pack.cells.religion[b.cell]].name + ",";
       data += rn(b.population * populationRate.value * urbanization.value) + ",";
 
       // add geography data

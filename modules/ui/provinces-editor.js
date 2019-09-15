@@ -379,7 +379,7 @@ function editProvinces() {
         .attr("x", d => d.x0).attr("y", d => d.y0)
         .attr("width", d => d.x1 - d.x0).attr("height", d => d.y1 - d.y0);
 
-      node.select("text").attr("opacity", 1).transition().duration(1500)
+      node.select("text").transition().duration(1500)
         .attr("x", d => d.x0).attr("y", d => d.y0);
 
       setTimeout(hideNonfittingLabels, 2000);

@@ -150,8 +150,8 @@ function editReligions() {
       const rural = r.rural * populationRate.value;
       const urban = r.urban * populationRate.value * urbanization.value;
       const population = rural + urban > 0 ? ". " + si(rn(rural + urban)) + " believers" : ". Extinct";
-      const hint = ". Drag to change the origin";
-      info.innerHTML = `${r.name}${type}${form}${population}${hint}`;
+      info.innerHTML = `${r.name}${type}${form}${population}`;
+      tip("Drag to change parent. Hold CTRL and click to change abbrebiation");
     }
 
     const el = body.querySelector(`div[data-id='${religion}']`);
@@ -169,6 +169,7 @@ function editReligions() {
     if (info) {
       d3.select("#religionHierarchy").select("g[data-id='"+religion+"'] > path").classed("selected", 0);
       info.innerHTML = "&#8205;";
+      tip("");
     }
 
     const el = body.querySelector(`div[data-id='${religion}']`)
@@ -318,7 +319,7 @@ function editReligions() {
     function renderTree() {
       treeLayout(root);
       links.selectAll('path').data(root.links()).enter()
-      .append('path').attr("d", d => {return "M" + d.source.x + "," + d.source.y
+        .append('path').attr("d", d => {return "M" + d.source.x + "," + d.source.y
           + "C" + d.source.x + "," + (d.source.y * 3 + d.target.y) / 4
           + " " + d.target.x + "," + (d.source.y * 2 + d.target.y) / 3
           + " " + d.target.x + "," + d.target.y;});
@@ -349,7 +350,8 @@ function editReligions() {
     });
 
     function dragToReorigin(d) {
-      console.log("dragToReorigin");
+      if (d3.event.sourceEvent.ctrlKey) {changeReligionCode(d); return;}
+
       const originLine = graph.append("path")
         .attr("class", "dragLine").attr("d", `M${d.x},${d.y}L${d.x},${d.y}`);
 
@@ -370,6 +372,13 @@ function editReligions() {
         pack.religions[religion].origin = d.data.origin = newOrigin; // change data
         showHierarchy() // update hierarchy
       });
+    }
+
+    function changeReligionCode(d) {
+      const code = prompt(`Please provide an abbreviation for ${d.data.name}`, d.data.code);
+      if (!code) return;
+      pack.religions[d.data.i].code = code;
+      nodes.select("g[data-id='"+d.data.i+"']").select("text").text(code);
     }
   }
 
