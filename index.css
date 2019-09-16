@@ -219,11 +219,7 @@ i.icon-lock {
 	stroke-width: 1;
 }
 
-#provincesTree .selected {
-	stroke: #c13119;
-	stroke-width: 2;
-}
-
+#statesTree circle.selected,
 #provincesTree .selected {
 	stroke: #c13119;
 	stroke-width: 2;
