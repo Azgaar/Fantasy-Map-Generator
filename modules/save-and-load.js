@@ -377,7 +377,7 @@ const saveReminder = function() {
     "Safety is number one priority. Please save the map",
     "Don't forget to save your map on a regular basis!",
     "Just a gentle reminder for you to save the map",
-    "Please forget to save your progress (saving as .map is the best option)",
+    "Please don't forget to save your progress (saving as .map is the best option)",
     "Don't want to be reminded about need to save? Press CTRL+Q"];
 
   saveReminder.reminder = setInterval(() => {

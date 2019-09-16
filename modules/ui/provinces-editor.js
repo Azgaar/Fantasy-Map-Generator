@@ -30,7 +30,7 @@ function editProvinces() {
   document.getElementById("provincesManuallyApply").addEventListener("click", applyProvincesManualAssignent);
   document.getElementById("provincesManuallyCancel").addEventListener("click", () => exitProvincesManualAssignment());
   document.getElementById("provincesAdd").addEventListener("click", enterAddProvinceMode);
-  
+
   body.addEventListener("click", function(ev) {
     if (customization) return;
     const el = ev.target, cl = el.classList, line = el.parentNode, p = +line.dataset.id;
@@ -373,7 +373,7 @@ function editProvinces() {
         : d => d.rural + d.urban;
   
       const newRoot = d3.stratify().parentId(d => d.state)(data).sum(value);
-      node.data(treeLayout(newRoot).leaves())
+      node.data(treeLayout(newRoot).leaves());
 
       node.select("rect").transition().duration(1500)
         .attr("x", d => d.x0).attr("y", d => d.y0)

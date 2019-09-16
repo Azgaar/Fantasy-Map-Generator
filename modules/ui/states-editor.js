@@ -24,6 +24,7 @@ function editStates() {
   document.getElementById("statesEditorRefresh").addEventListener("click", refreshStatesEditor);
   document.getElementById("statesLegend").addEventListener("click", toggleLegend);
   document.getElementById("statesPercentage").addEventListener("click", togglePercentageMode);
+  document.getElementById("statesChart").addEventListener("click", showStatesChart);
   document.getElementById("statesRegenerate").addEventListener("click", openRegenerationMenu);
   document.getElementById("statesRegenerateBack").addEventListener("click", exitRegenerationMenu);
   document.getElementById("statesRecalculate").addEventListener("click", () => recalculateStates(true));
@@ -385,6 +386,102 @@ function editStates() {
       body.dataset.type = "absolute";
       statesEditorAddLines();
     }
+  }
+
+  function showStatesChart() {
+    // build hierarchy tree
+    const data = pack.states.filter(s => !s.removed);
+    const root = d3.stratify().id(d => d.i).parentId(d => d.i ? 0 : null)(data)
+      .sum(d => d.area).sort((a, b) => b.value - a.value);
+
+    const width = 150 + 200 * uiSizeOutput.value, height = 150 + 200 * uiSizeOutput.value;
+    const margin = {top: 0, right: -50, bottom: 0, left: -50};
+    const w = width - margin.left - margin.right;
+    const h = height - margin.top - margin.bottom;
+    const treeLayout = d3.pack().size([w, h]).padding(3);
+
+    // prepare svg
+    alertMessage.innerHTML = `<select id="statesTreeType" style="display:block; margin-left:13px; font-size:11px">
+      <option value="area" selected>Area</option>
+      <option value="population">Total population</option>
+      <option value="rural">Rural population</option>
+      <option value="urban">Urban population</option>
+      <option value="burgs">Burgs number</option>
+    </select>`;
+    alertMessage.innerHTML += `<div id='statesInfo' class='chartInfo'>&#8205;</div>`;
+    const svg = d3.select("#alertMessage").insert("svg", "#statesInfo").attr("id", "statesTree")
+      .attr("width", width).attr("height", height).style("font-family", "Almendra SC")
+      .attr("text-anchor", "middle").attr("dominant-baseline", "central");
+    const graph = svg.append("g").attr("transform", `translate(-50, 0)`);
+    document.getElementById("statesTreeType").addEventListener("change", updateChart);
+
+    treeLayout(root);
+
+    const node = graph.selectAll("g").data(root.leaves()).enter()
+      .append("g").attr("transform", d => `translate(${d.x},${d.y})`)
+      .attr("data-id", d => d.data.id)
+      .on("mouseenter", d => showInfo(event, d))
+      .on("mouseleave", d => hideInfo(event, d));
+
+    node.append("circle").attr("fill", d => d.data.color).attr("r", d => d.r);
+
+    const exp = /(?=[A-Z][^A-Z])/g;
+    const lp = n => d3.max(n.split(exp).map(p => p.length)) + 1; // longest name part + 1
+
+    node.append("text")
+      .style("font-size", d => rn(d.r ** .97 * 4 / lp(d.data.name), 2) + "px")
+      .selectAll("tspan").data(d => d.data.name.split(exp))
+      .join("tspan").attr("x", 0).text(d => d)
+      .attr("dy", (d, i, n) => `${i ? 1 : (n.length-1) / -2}em`);
+
+    function showInfo(ev, d) {
+      d3.select(ev.target).select("circle").classed("selected", 1);
+      const state = d.data.fullName;
+
+      const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
+      const area = d.data.area * (distanceScaleInput.value ** 2) + unit;
+      const rural = rn(d.data.rural * populationRate.value);
+      const urban = rn(d.data.urban * populationRate.value * urbanization.value);
+
+      const option = statesTreeType.value;
+      const value = option === "area" ? "Area: " + area
+        : option === "rural" ? "Rural population: " + si(rural)
+        : option === "urban" ? "Urban population: " + si(urban)
+        : option === "burgs" ? "Burgs number: " + d.data.burgs
+        : "Population: " + si(rural + urban);
+
+      statesInfo.innerHTML = `${state}. ${value}`;
+      stateHighlightOn(ev);
+    }
+
+    function hideInfo(ev) {
+      stateHighlightOff(ev);
+      if (!document.getElementById("statesInfo")) return;
+      statesInfo.innerHTML = "&#8205;";
+      d3.select(ev.target).select("circle").classed("selected", 0);
+    }
+
+    function updateChart() {
+      const value = this.value === "area" ? d => d.area
+        : this.value === "rural" ? d => d.rural
+        : this.value === "urban" ? d => d.urban
+        : this.value === "burgs" ? d => d.burgs
+        : d => d.rural + d.urban;
+
+      root.sum(value);
+      node.data(treeLayout(root).leaves());
+
+      node.transition().duration(1500).attr("transform", d => `translate(${d.x},${d.y})`)
+      node.select("circle").transition().duration(1500).attr("r", d => d.r);
+      node.select("text").transition().duration(1500)
+        .style("font-size", d => rn(d.r ** .97 * 4 / lp(d.data.name), 2) + "px");
+    }
+
+    $("#alert").dialog({
+      title: "States bubble chart", width: fitContent(),
+      position: {my: "left bottom", at: "left+10 bottom-10", of: "svg"}, buttons: {},
+      close: () => {alertMessage.innerHTML = "";}
+    });
   }
 
   function openRegenerationMenu() {

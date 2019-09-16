@@ -151,7 +151,7 @@ function editReligions() {
       const urban = r.urban * populationRate.value * urbanization.value;
       const population = rural + urban > 0 ? ". " + si(rn(rural + urban)) + " believers" : ". Extinct";
       info.innerHTML = `${r.name}${type}${form}${population}`;
-      tip("Drag to change parent. Hold CTRL and click to change abbrebiation");
+      tip("Drag to change parent. Hold CTRL and click to change abbreviation");
     }
 
     const el = body.querySelector(`div[data-id='${religion}']`);
