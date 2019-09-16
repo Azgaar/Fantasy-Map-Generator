@@ -267,11 +267,11 @@ function editBurgs() {
       // add geography data
       data += mapCoordinates.lonW + (b.x / graphWidth) * mapCoordinates.lonT + ",";
       data += mapCoordinates.latN - (b.y / graphHeight) * mapCoordinates.latT + ","; // this is inverted in QGIS otherwise
-      data += parseInt(getHeight(pack.cells.h[b.cell])) + ",";
+      data += parseInt(getFriendlyHeight([b.x,b.y])) + ",";
 
       // add status data
-      data += b.capital ? "capital," : ",";
-      data += b.port ? "port\n" : "\n";
+      data += b.capital ? "true," : "false,";
+      data += b.port ? "true\n" : "false\n";
     });
 
     const dataBlob = new Blob([data], {type: "text/plain"});
