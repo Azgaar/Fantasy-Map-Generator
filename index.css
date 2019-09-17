@@ -205,6 +205,7 @@ i.icon-lock {
 }
 
 #religionHierarchy text,
+#statesTree text,
 #provincesTree text {
 	pointer-events: none;
 	user-select: none;
@@ -212,11 +213,13 @@ i.icon-lock {
 	font-size: 11px;
 }
 
-#provincesTree .selected {
-	stroke: #c13119;
-	stroke-width: 2;
+#statesTree circle {
+	filter: url(#dropShadow05);
+	stroke: #666666;
+	stroke-width: 1;
 }
 
+#statesTree circle.selected,
 #provincesTree .selected {
 	stroke: #c13119;
 	stroke-width: 2;
