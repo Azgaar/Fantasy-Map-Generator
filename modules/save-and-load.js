@@ -436,6 +436,7 @@ function saveGeoJSON_Cells() {
     data += "      \"id\": \""+i+"\",\n";
     data += "      \"height\": \""+height+"\",\n";
     data += "      \"biome\": \""+cells.biome[i]+"\",\n";
+    data += "      \"type\": \""+pack.features[cells.f[i]].type+"\",\n";
     data += "      \"population\": \""+getFriendlyPopulation(i)+"\",\n";
     data += "      \"state\": \""+cells.state[i]+"\",\n";
     data += "      \"province\": \""+cells.province[i]+"\",\n";
