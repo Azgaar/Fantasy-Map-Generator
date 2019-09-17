@@ -259,7 +259,7 @@ function editBurgs() {
       data += b.name + ",";
       const province = pack.cells.province[b.cell];
       data += province ? pack.provinces[province].fullName + "," : ",";
-      data += b.state ? pack.states[b.state].fullName : pack.states[b.state].name + ",";
+      data += b.state ? pack.states[b.state].fullName +"," : pack.states[b.state].name + ",";
       data += pack.cultures[b.culture].name + ",";
       data += pack.religions[pack.cells.religion[b.cell]].name + ",";
       data += rn(b.population * populationRate.value * urbanization.value) + ",";
