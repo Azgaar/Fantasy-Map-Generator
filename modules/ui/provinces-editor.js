@@ -286,8 +286,10 @@ function editProvinces() {
     const states = pack.states.map(s => {
       return {id:s.i, state: s.i?0:null, color: s.i && s.color[0] === "#" ? d3.color(s.color).darker() : "#666"}
     });
-    const provinces = pack.provinces.filter(p => p.i && !p.removed);
-    provinces.forEach(p => p.id = p.i + states.length - 1);
+    const provinces = pack.provinces.filter(p => p.i && !p.removed).map(p => {
+      return {id:p.i+states.length-1, i:p.i, state:p.state, color:p.color, 
+        name:p.name, fullName:p.fullName, area:p.area, urban:p.urban, rural:p.rural}
+    });
     const data = states.concat(provinces);
     const root = d3.stratify().parentId(d => d.state)(data).sum(d => d.area);
 
@@ -371,9 +373,9 @@ function editProvinces() {
         : this.value === "rural" ? d => d.rural
         : this.value === "urban" ? d => d.urban
         : d => d.rural + d.urban;
-  
-      const newRoot = d3.stratify().parentId(d => d.state)(data).sum(value);
-      node.data(treeLayout(newRoot).leaves());
+
+      root.sum(value);
+      node.data(treeLayout(root).leaves());
 
       node.select("rect").transition().duration(1500)
         .attr("x", d => d.x0).attr("y", d => d.y0)

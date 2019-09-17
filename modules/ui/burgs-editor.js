@@ -20,6 +20,7 @@ function editBurgs() {
 
   // add listeners
   document.getElementById("burgsEditorRefresh").addEventListener("click", refreshBurgsEditor);
+  document.getElementById("burgsChart").addEventListener("click", showBurgsChart);  
   document.getElementById("burgsFilterState").addEventListener("change", burgsEditorAddLines);
   document.getElementById("burgsFilterCulture").addEventListener("change", burgsEditorAddLines);
   document.getElementById("regenerateBurgNames").addEventListener("click", regenerateNames);
@@ -250,6 +251,133 @@ function editBurgs() {
     if (addNewBurg.classList.contains("pressed")) addNewBurg.classList.remove("pressed");
   }
 
+  function showBurgsChart() {
+    // build hierarchy tree
+    const states = pack.states.map(s => {
+      const color = s.color ? s.color : "#ccc";
+      const name = s.fullName ? s.fullName : s.name;
+      return {id:s.i, state: s.i ? 0 : null, color, name}
+    });
+    const burgs = pack.burgs.filter(b => b.i && !b.removed).map(b => {
+      const id = b.i+states.length-1;
+      const population = b.population;
+      const capital = b.capital;
+      const province = pack.cells.province[b.cell];
+      const parent = province ? province + states.length-1 : b.state;
+      return {id, i:b.i, state:b.state, culture:b.culture, province, parent, name:b.name, population, capital, x:b.x, y:b.y}
+    });
+    const data = states.concat(burgs);
+
+    const root = d3.stratify().parentId(d => d.state)(data)
+      .sum(d => d.population).sort((a, b) => b.value - a.value);
+
+    const width = 150 + 200 * uiSizeOutput.value, height = 150 + 200 * uiSizeOutput.value;
+    const margin = {top: 0, right: -50, bottom: -10, left: -50};
+    const w = width - margin.left - margin.right;
+    const h = height - margin.top - margin.bottom;
+    const treeLayout = d3.pack().size([w, h]).padding(3);
+
+    // prepare svg
+    alertMessage.innerHTML = `<select id="burgsTreeType" style="display:block; margin-left:13px; font-size:11px">
+      <option value="states" selected>Group by state</option>
+      <option value="cultures">Group by culture</option>
+      <option value="parent">Group by province and state</option>
+      <option value="provinces">Group by province</option></select>`;
+    alertMessage.innerHTML += `<div id='burgsInfo' class='chartInfo'>&#8205;</div>`;
+    const svg = d3.select("#alertMessage").insert("svg", "#burgsInfo").attr("id", "burgsTree")
+      .attr("width", width).attr("height", height-10).attr("stroke-width", 2);
+    const graph = svg.append("g").attr("transform", `translate(-50, -10)`);
+    document.getElementById("burgsTreeType").addEventListener("change", updateChart);
+
+    treeLayout(root);
+
+    const node = graph.selectAll("circle").data(root.leaves())
+      .join("circle").attr("data-id", d => d.data.i)
+      .attr("r", d => d.r).attr("fill", d => d.parent.data.color)
+      .attr("cx", d => d.x).attr("cy", d => d.y)
+      .on("mouseenter", d => showInfo(event, d))
+      .on("mouseleave", d => hideInfo(event, d))
+      .on("click", d => zoomTo(d.data.x, d.data.y, 8, 2000));
+
+    function showInfo(ev, d) {
+      d3.select(ev.target).transition().duration(1500).attr("stroke", "#c13119");
+      const name = d.data.name;
+      const parent = d.parent.data.name;
+      const population = si(d.value * populationRate.value * urbanization.value);
+
+      burgsInfo.innerHTML = `${name}. ${parent}. Population: ${population}`;
+      burgHighlightOn(ev);
+      tip("Click to zoom into view");
+    }
+
+    function hideInfo(ev) {
+      burgHighlightOff(ev);
+      if (!document.getElementById("burgsInfo")) return;
+      burgsInfo.innerHTML = "&#8205;";
+      d3.select(ev.target).transition().attr("stroke", "null");
+      tip("");
+    }
+
+    function updateChart() {
+      const getStatesData = () => pack.states.map(s => {
+        const color = s.color ? s.color : "#ccc";
+        const name = s.fullName ? s.fullName : s.name;
+        return {id:s.i, state: s.i ? 0 : null, color, name}
+      });
+
+      const getCulturesData = () => pack.cultures.map(c => {
+        const color = c.color ? c.color : "#ccc";
+        return {id:c.i, culture: c.i ? 0 : null, color, name:c.name}
+      });
+
+      const getParentData = () => {
+        const states = pack.states.map(s => {
+          const color = s.color ? s.color : "#ccc";
+          const name = s.fullName ? s.fullName : s.name;
+          return {id:s.i, parent: s.i ? 0 : null, color, name}
+        });
+        const provinces = pack.provinces.filter(p => p.i && !p.removed).map(p => {
+          return {id:p.i + states.length-1, parent: p.state, color:p.color, name:p.fullName}
+        });
+        return states.concat(provinces);
+      }
+
+      const getProvincesData = () => pack.provinces.map(p => {
+        const color = p.color ? p.color : "#ccc";
+        const name = p.fullName ? p.fullName : p.name;
+        return {id:p.i ? p.i : 0, province: p.i ? 0 : null, color, name}
+      });
+
+      const value = d => {
+        if (this.value === "states") return d.state;
+        if (this.value === "cultures") return d.culture;
+        if (this.value === "parent") return d.parent;
+        if (this.value === "provinces") return d.province;
+      }
+
+      const base = this.value === "states" ? getStatesData() 
+        : this.value === "cultures" ? getCulturesData() 
+        : this.value === "parent" ? getParentData() : getProvincesData();
+      burgs.forEach(b => b.id = b.i+base.length-1);
+
+      const data = base.concat(burgs);
+
+      const root = d3.stratify().parentId(d => value(d))(data)
+        .sum(d => d.population).sort((a, b) => b.value - a.value);
+
+      node.data(treeLayout(root).leaves()).transition().duration(2000)
+        .attr("data-id", d => d.data.i).attr("fill", d => d.parent.data.color)
+        .attr("cx", d => d.x).attr("cy", d => d.y).attr("r", d => d.r);
+    }
+
+    $("#alert").dialog({
+      title: "Burgs bubble chart", width: fitContent(),
+      position: {my: "left bottom", at: "left+10 bottom-10", of: "svg"}, buttons: {},
+      close: () => {alertMessage.innerHTML = "";}
+    });
+
+  }
+
   function downloadBurgsData() {
     let data = "Id,Burg,Province,State,Culture,Religion,Population,Longitude,Latitude,Elevation ("+heightUnit.value+"),Capital,Port\n"; // headers
     const valid = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
@@ -259,7 +387,7 @@ function editBurgs() {
       data += b.name + ",";
       const province = pack.cells.province[b.cell];
       data += province ? pack.provinces[province].fullName + "," : ",";
-      data += b.state ? pack.states[b.state].fullName : pack.states[b.state].name + ",";
+      data += b.state ? pack.states[b.state].fullName +"," : pack.states[b.state].name + ",";
       data += pack.cultures[b.culture].name + ",";
       data += pack.religions[pack.cells.religion[b.cell]].name + ",";
       data += rn(b.population * populationRate.value * urbanization.value) + ",";

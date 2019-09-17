@@ -419,7 +419,7 @@ function editStates() {
 
     const node = graph.selectAll("g").data(root.leaves()).enter()
       .append("g").attr("transform", d => `translate(${d.x},${d.y})`)
-      .attr("data-id", d => d.data.id)
+      .attr("data-id", d => d.data.i)
       .on("mouseenter", d => showInfo(event, d))
       .on("mouseleave", d => hideInfo(event, d));
 

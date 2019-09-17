@@ -162,11 +162,11 @@ function getMapData() {
     const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
     const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
     const params = [version, license, dateString, seed, graphWidth, graphHeight].join("|");
-    const options = [distanceUnitInput.value, distanceScaleInput.value, areaUnit.value, 
+    const options = [distanceUnitInput.value, distanceScaleInput.value, areaUnit.value,
       heightUnit.value, heightExponentInput.value, temperatureScale.value,
-      barSize.value, barLabel.value, barBackOpacity.value, barBackColor.value, 
+      barSize.value, barLabel.value, barBackOpacity.value, barBackColor.value,
       barPosX.value, barPosY.value, populationRate.value, urbanization.value,
-      mapSizeOutput.value, latitudeOutput.value, temperatureEquatorOutput.value, 
+      mapSizeOutput.value, latitudeOutput.value, temperatureEquatorOutput.value,
       temperaturePoleOutput.value, precOutput.value, JSON.stringify(winds),
       mapName.value].join("|");
     const coords = JSON.stringify(mapCoordinates);
@@ -240,9 +240,55 @@ function saveGeoJSON() {
       Cells: saveGeoJSON_Cells,
       Routes: saveGeoJSON_Roads,
       Rivers: saveGeoJSON_Rivers,
+      Markers: saveGeoJSON_Markers,
       Close: function() {$(this).dialog("close");}
     }
   });
+}
+
+
+function saveGeoJSON_Cells() {
+  let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
+  const cells = pack.cells, v = pack.vertices;
+
+  cells.i.forEach(i => {
+    data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"Polygon\", \"coordinates\": [[";
+    cells.v[i].forEach(n => {
+      let x = mapCoordinates.lonW + (v.p[n][0] / graphWidth) * mapCoordinates.lonT;
+      let y = mapCoordinates.latN - (v.p[n][1] / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
+      data += "["+x+","+y+"],";
+    });
+    // close the ring
+    let x = mapCoordinates.lonW + (v.p[cells.v[i][0]][0] / graphWidth) * mapCoordinates.lonT;
+    let y = mapCoordinates.latN - (v.p[cells.v[i][0]][1] / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
+    data += "["+x+","+y+"]";
+    data += "]] },\n   \"properties\": {\n";
+
+    let height = parseInt(getFriendlyHeight([cells.p[i][0],cells.p[i][1]]));
+
+    data += "      \"id\": \""+i+"\",\n";
+    data += "      \"height\": \""+height+"\",\n";
+    data += "      \"biome\": \""+cells.biome[i]+"\",\n";
+    data += "      \"type\": \""+pack.features[cells.f[i]].type+"\",\n";
+    data += "      \"population\": \""+getFriendlyPopulation(i)+"\",\n";
+    data += "      \"state\": \""+cells.state[i]+"\",\n";
+    data += "      \"province\": \""+cells.province[i]+"\",\n";
+    data += "      \"culture\": \""+cells.culture[i]+"\",\n";
+    data += "      \"religion\": \""+cells.religion[i]+"\"\n";
+    data +="   }\n},\n";
+  });
+
+  data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
+  data += "]}";
+
+  const dataBlob = new Blob([data], {type: "application/json"});
+  const url = window.URL.createObjectURL(dataBlob);
+  const link = document.createElement("a");
+  document.body.appendChild(link);
+  link.download = getFileName("Cells") + ".geojson";
+  link.href = url;
+  link.click();
+  window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
 }
 
 function saveGeoJSON_Roads() {
@@ -291,6 +337,34 @@ function saveGeoJSON_Rivers() {
   const link = document.createElement("a");
   document.body.appendChild(link);
   link.download = getFileName("Rivers") + ".geojson";
+  link.href = url;
+  link.click();
+  window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
+}
+
+function saveGeoJSON_Markers() {
+
+  let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
+
+  markers._groups[0][0].childNodes.forEach(n => {
+      let x = mapCoordinates.lonW + (n.dataset.x / graphWidth) * mapCoordinates.lonT;
+      let y = mapCoordinates.latN - (n.dataset.y / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
+
+      data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"Point\", \"coordinates\": ["+x+", "+y+"]";
+      data += " },\n   \"properties\": {\n";
+      data += "      \"id\": \""+n.id+"\",\n";
+      data += "      \"type\": \""+n.dataset.id.substring(8)+"\"\n";
+      data +="   }\n},\n";
+
+  });
+  data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
+  data += "]}";
+
+  const dataBlob = new Blob([data], {type: "application/json"});
+  const url = window.URL.createObjectURL(dataBlob);
+  const link = document.createElement("a");
+  document.body.appendChild(link);
+  link.download = getFileName("Markers") + ".geojson";
   link.href = url;
   link.click();
   window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
@@ -411,49 +485,6 @@ function getFileName(dataType) {
   const day = datFormatter.format(date).replace(" ", "");
   const time = timeFormatter.format(date).replace(":", "-");
   return name + " " + type + day + " " + time;
-}
-
-function saveGeoJSON_Cells() {
-  let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
-  const cells = pack.cells, v = pack.vertices;
-
-  cells.i.forEach(i => {
-    data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"Polygon\", \"coordinates\": [[";
-    cells.v[i].forEach(n => {
-      let x = mapCoordinates.lonW + (v.p[n][0] / graphWidth) * mapCoordinates.lonT;
-      let y = mapCoordinates.latN - (v.p[n][1] / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
-      data += "["+x+","+y+"],";
-    });
-    // close the ring
-    let x = mapCoordinates.lonW + (v.p[cells.v[i][0]][0] / graphWidth) * mapCoordinates.lonT;
-    let y = mapCoordinates.latN - (v.p[cells.v[i][0]][1] / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
-    data += "["+x+","+y+"]";
-    data += "]] },\n   \"properties\": {\n";
-
-    let height = parseInt(getFriendlyHeight(cells.h[i]));
-
-    data += "      \"id\": \""+i+"\",\n";
-    data += "      \"height\": \""+height+"\",\n";
-    data += "      \"biome\": \""+cells.biome[i]+"\",\n";
-    data += "      \"population\": \""+cells.pop[i]+"\",\n";
-    data += "      \"state\": \""+cells.state[i]+"\",\n";
-    data += "      \"province\": \""+cells.province[i]+"\",\n";
-    data += "      \"culture\": \""+cells.culture[i]+"\",\n";
-    data += "      \"religion\": \""+cells.religion[i]+"\"\n";
-    data +="   }\n},\n";
-  });
-
-  data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
-  data += "]}";
-
-  const dataBlob = new Blob([data], {type: "application/json"});
-  const url = window.URL.createObjectURL(dataBlob);
-  const link = document.createElement("a");
-  document.body.appendChild(link);
-  link.download = getFileName("Cells") + ".geojson";
-  link.href = url;
-  link.click();
-  window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
 }
 
 function uploadFile(file, callback) {
