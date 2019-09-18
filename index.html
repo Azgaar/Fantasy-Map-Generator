@@ -1553,11 +1553,29 @@
             </td>
             <td>Cultures number</td>
             <td>
-              <input id="culturesInput" data-stored="cultures" type="range" min=1 max=30 value=14>
+              <input id="culturesInput" data-stored="cultures" type="range" min=1 max=32 value=14>
             </td>
             <td>
-              <input id="culturesOutput" data-stored="cultures" type="number" min=1 max=30 value=14>
+              <input id="culturesOutput" data-stored="cultures" type="number" min=1 max=32 value=14>
             </td>
+          </tr>
+
+          <tr data-tip="Select a set of cultures to be used for names and cultures generation">
+            <td>
+              <i data-locked=0 id="lock_culturesSet" class="icon-lock-open"></i>
+            </td>
+            <td>Cultures set</td>
+            <td>
+              <select id="culturesSet" data-stored="culturesSet">
+                <option value="world" data-max="32" selected>All-world</option>
+                <option value="european" data-max="15">European</option>
+                <option value="oriental" data-max="13">Oriental</option>
+                <option value="english" data-max="10">English</option>
+                <!-- <option value="high" data-max="16">High Fantasy</option> -->
+                <!-- <option value="dark" data-max="16">Dark Fantasy</option> -->
+              </select>
+            </td>
+            <td></td>
           </tr>
 
           <tr data-tip="Define how many states and capitals should be generated">

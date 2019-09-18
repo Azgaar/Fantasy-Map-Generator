@@ -487,6 +487,8 @@ function editMarker() {
       buttons: {
         Remove: function() {
           $(this).dialog("close");
+          const index = notes.findIndex(n => n.id === elSelected.attr("id"));
+          if (index != -1) notes.splice(index, 1);
           elSelected.remove();
           $("#markerEditor").dialog("close");
         },

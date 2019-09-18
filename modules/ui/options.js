@@ -670,6 +670,7 @@ optionsContent.addEventListener("input", function(event) {
   else if (id === "densityInput" || id === "densityOutput") changeCellsDensity(+value);
   else if (id === "culturesInput") culturesOutput.value = value;
   else if (id === "culturesOutput") culturesInput.value = value;
+  else if (id === "culturesSet") changeCultureSet();
   else if (id === "regionsInput" || id === "regionsOutput") changeStatesNumber(value);
   else if (id === "provincesInput") provincesOutput.value = value;
   else if (id === "provincesOutput") provincesOutput.value = value;
@@ -795,6 +796,12 @@ function changeCellsDensity(value) {
   else densityOutput.style.color = "#038603";
 }
 
+function changeCultureSet() {
+  const max = culturesSet.selectedOptions[0].dataset.max;
+  culturesInput.max = culturesOutput.max = max
+  if (+culturesOutput.value > +max) culturesInput.value = culturesOutput.value = max;
+}
+
 function changeStatesNumber(value) {
   regionsInput.value = regionsOutput.value = value;
   burgLabels.select("#capitals").attr("data-size", Math.max(rn(6 - value / 20), 3));
@@ -880,6 +887,7 @@ function randomizeOptions() {
   if (!locked("power")) powerInput.value = powerOutput.value = gauss(3, 2, 0, 10);
   if (!locked("neutral")) neutralInput.value = neutralOutput.value = rn(1 + Math.random(), 1);
   if (!locked("cultures")) culturesInput.value = culturesOutput.value = gauss(12, 3, 5, 30);
+  changeCultureSet();
 
   // 'Configure World' settings
   if (!locked("prec")) precInput.value = precOutput.value = gauss(100, 20, 5, 500);

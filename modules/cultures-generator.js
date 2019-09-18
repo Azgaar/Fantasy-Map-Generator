@@ -64,11 +64,14 @@
     }
 
     function getRandomCultures(c) {
-      const d = getDefault();
+      const d = getDefault(), n = d.length-1;
+      const count = Math.min(c, d.length);
       const cultures = [];
-      while (cultures.length < c) {
-        let culture = d[0];
-        do {culture = d[rand(d.length-1)];} while (Math.random() > culture.odd || cultures.find(c => c.name === culture.name))
+      while (cultures.length < count) {
+        let culture = d[rand(n)];
+        do {
+          culture = d[rand(n)];
+        } while (Math.random() > culture.odd || cultures.find(c => c.name === culture.name))
         cultures.push(culture);
       }
       return cultures;
@@ -113,6 +116,61 @@
   }
 
   const getDefault = function() {
+    if (culturesSet.value === "european") {
+      return [
+        {name:"Shwazen", base:0, odd: 1},
+        {name:"Angshire", base:1, odd: 1},
+        {name:"Luari", base:2, odd: 1},
+        {name:"Tallian", base:3, odd: 1},
+        {name:"Astellian", base:4, odd: 1},
+        {name:"Slovan", base:5, odd: 1},
+        {name:"Norse", base:6, odd: 1},
+        {name:"Elladan", base:7, odd: 1},
+        {name:"Romian", base:8, odd: .2},
+        {name:"Soumi", base:9, odd: 1},
+        {name:"Portuzian", base:13, odd: 1},
+        {name:"Vengrian", base: 15, odd: 1},
+        {name:"Turchian", base: 16, odd: .05},
+        {name:"Euskati", base: 20, odd: .05},
+        {name:"Keltan", base: 22, odd: .05}
+      ];
+    }
+
+    if (culturesSet.value === "oriental") {
+      return [
+        {name:"Koryo", base:10, odd: 1},
+        {name:"Hantzu", base:11, odd: 1},
+        {name:"Yamoto", base:12, odd: 1},
+        {name:"Turchian", base: 16, odd: 1},
+        {name:"Berberan", base: 17, odd: .2},
+        {name:"Eurabic", base: 18, odd: 1},
+        {name:"Efratic", base: 23, odd: .1},
+        {name:"Tehrani", base: 24, odd: 1},
+        {name:"Maui", base: 25, odd: .2},
+        {name:"Carnatic", base: 26, odd: .5},
+        {name:"Vietic", base: 29, odd: .8},
+        {name:"Guantzu", base:30, odd: .5},
+        {name:"Ulus", base:31, odd: 1}
+      ];
+    }
+
+    if (culturesSet.value === "english") {
+      const getName = () => Names.getBase(1, 5, 9, "", 0);
+      return [
+        {name:getName(), base:1, odd: 1},
+        {name:getName(), base:1, odd: 1},
+        {name:getName(), base:1, odd: 1},
+        {name:getName(), base:1, odd: 1},
+        {name:getName(), base:1, odd: 1},
+        {name:getName(), base:1, odd: 1},
+        {name:getName(), base:1, odd: 1},
+        {name:getName(), base:1, odd: 1},
+        {name:getName(), base:1, odd: 1},
+        {name:getName(), base:1, odd: 1}
+      ];
+    }
+
+    // all-world
     return [
       {name:"Shwazen", base:0, odd: .7},
       {name:"Angshire", base:1, odd: 1},
@@ -123,28 +181,28 @@
       {name:"Norse", base:6, odd: .7},
       {name:"Elladan", base:7, odd: .7},
       {name:"Romian", base:8, odd: .7},
-      {name:"Soumi", base:9, odd: .4},
-      {name:"Koryo", base:10, odd: .5},
-      {name:"Hantzu", base:11, odd: .5},
-      {name:"Yamoto", base:12, odd: .5},
+      {name:"Soumi", base:9, odd: .3},
+      {name:"Koryo", base:10, odd: .1},
+      {name:"Hantzu", base:11, odd: .1},
+      {name:"Yamoto", base:12, odd: .1},
       {name:"Portuzian", base:13, odd: .4},
-      {name:"Nawatli", base:14, odd: .2},
+      {name:"Nawatli", base:14, odd: .1},
       {name:"Vengrian", base: 15, odd: .2},
       {name:"Turchian", base: 16, odd: .2},
-      {name:"Berberan", base: 17, odd: .2},
+      {name:"Berberan", base: 17, odd: .1},
       {name:"Eurabic", base: 18, odd: .2},
-      {name:"Inuk", base: 19, odd: .1},
-      {name:"Euskati", base: 20, odd: .1},
+      {name:"Inuk", base: 19, odd: .05},
+      {name:"Euskati", base: 20, odd: .05},
       {name:"Negarian", base: 21, odd: .05},
-      {name:"Keltan", base: 22, odd: .1},
-      {name:"Efratic", base: 23, odd: .1},
+      {name:"Keltan", base: 22, odd: .05},
+      {name:"Efratic", base: 23, odd: .05},
       {name:"Tehrani", base: 24, odd: .1},
       {name:"Maui", base: 25, odd: .05},
-      {name:"Carnatic", base: 26, odd: .1},
-      {name:"Inqan", base: 27, odd: .1},
+      {name:"Carnatic", base: 26, odd: .05},
+      {name:"Inqan", base: 27, odd: .05},
       {name:"Kiswaili", base: 28, odd: .1},
       {name:"Vietic", base: 29, odd: .1},
-      {name:"Guantzu", base:30, odd: 1},
+      {name:"Guantzu", base:30, odd: .1},
       {name:"Ulus", base:31, odd: .1}
     ];
   }

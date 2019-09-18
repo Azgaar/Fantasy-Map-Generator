@@ -603,7 +603,7 @@ function generate() {
     drawStates();
     drawBorders();
     BurgsAndStates.drawStateLabels();
-    addZone();
+    addZones();
     addMarkers();
     Names.getMapName();
 
@@ -1176,19 +1176,36 @@ function rankCells() {
 }
 
 // add a zone as an example: rebels along one border
-function addZone() {
-  const cells = pack.cells, states = pack.states;
-  const state = states.find(s => s.i && s.neighbors.size > 0 && s.neighbors.values().next().value);
-  if (!state) return;
+function addZones() {
+  console.time("addZones");
+  const data = [], cells = pack.cells, states = pack.states;
 
-  const neib = state.neighbors.values().next().value;
-  const data = cells.i.filter(i => cells.state[i] === state.i && cells.c[i].some(c => cells.state[c] === neib));
+  void function addRebels() {
+    const state = states.find(s => s.i && s.neighbors.size > 0 && s.neighbors.values().next().value);
+    if (!state) return;
+  
+    const neib = state.neighbors.values().next().value;
+    const cellsArray = cells.i.filter(i => cells.state[i] === state.i && cells.c[i].some(c => cells.state[c] === neib));
 
-  const rebels = rw({Rebels:5, Insurgents:2, Recusants:1, Mutineers:1, Rioters:1, Dissenters:1, Secessionists:1, Insurrection:2, Rebellion:1, Conspiracy:2});
-  const name = getAdjective(states[neib].name) + " " + rebels;
+    const rebels = rw({"Rebels":5, "Insurgents":2, "Recusants":1, 
+        "Mutineers":1, "Rioters":1, "Dissenters":1, "Secessionists":1, 
+        "Insurrection":2, "Rebellion":1, "Conspiracy":2});
+    const name = getAdjective(states[neib].name) + " " + rebels;
+    data.push({name, cells:cellsArray, fill:"url(#hatch3)"});
+  }()
 
-  const zone = zones.append("g").attr("id", "zone0").attr("data-description", name).attr("data-cells", data).attr("fill", "url(#hatch3)");
-  zone.selectAll("polygon").data(data).enter().append("polygon").attr("points", d => getPackPolygon(d)).attr("id", d => "zone0_"+d);
+  // void function addDisease() {
+
+  // }()
+
+  void function drawZones() {
+    zones.selectAll("g").data(data).enter().append("g")
+      .attr("id", (d, i) => "zone"+i).attr("data-description", d => d.name).attr("data-cells", d => d.cells.join(",")).attr("fill", d => d.fill)
+      .selectAll("polygon").data(d => d.cells).enter().append("polygon")
+      .attr("points", d => getPackPolygon(d)).attr("id", function(d) {return this.parentNode.id+"_"+d});
+  }()
+
+  console.timeEnd("addZones");
 }
 
 // add some markers as an example

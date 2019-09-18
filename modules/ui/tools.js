@@ -202,7 +202,12 @@ function regenerateReligions() {
 }
 
 function regenerateMarkers() {
-  markers.selectAll("use").remove();
+  // remove existing markers and assigned notes
+  markers.selectAll("use").each(function() {
+    const index = notes.findIndex(n => n.id === this.id);
+    if (index != -1) notes.splice(index, 1);
+  }).remove();
+
   addMarkers(gauss(1, .5, .3, 5, 2));
 }
 
