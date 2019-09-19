@@ -776,7 +776,7 @@ function parseLoadedData(data) {
         // 1.0 adds zones layer
         zones = viewbox.insert("g", "#borders").attr("id", "zones").attr("display", "none");
         zones.attr("opacity", .6).attr("stroke", null).attr("stroke-width", 0).attr("stroke-dasharray", null).attr("stroke-linecap", "butt");
-        addZone();
+        addZones();
         if (!markers.selectAll("*").size()) {addMarkers(); turnButtonOn("toggleMarkers");}
 
         // 1.0 add fogging layer (state focus)

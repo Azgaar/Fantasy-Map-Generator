@@ -1175,11 +1175,13 @@ function rankCells() {
   console.timeEnd('rankCells');
 }
 
-// add a zone as an example: rebels along one border
+// add a some zones
 function addZones() {
   console.time("addZones");
-  const data = [], cells = pack.cells, states = pack.states;
+  const data = [], cells = pack.cells, states = pack.states, burgs = pack.burgs;
+  //const used = new Uint8Array(cells.i.length); // to store used cells
 
+  // rebels along a state border
   void function addRebels() {
     const state = states.find(s => s.i && s.neighbors.size > 0 && s.neighbors.values().next().value);
     if (!state) return;
@@ -1191,16 +1193,78 @@ function addZones() {
         "Mutineers":1, "Rioters":1, "Dissenters":1, "Secessionists":1, 
         "Insurrection":2, "Rebellion":1, "Conspiracy":2});
     const name = getAdjective(states[neib].name) + " " + rebels;
-    data.push({name, cells:cellsArray, fill:"url(#hatch3)"});
+    data.push({name, type:"Rebels", cells:cellsArray, fill:"url(#hatch3)"});
   }()
 
-  // void function addDisease() {
+  // disease starting in a random city
+  void function addDisease() {
+    const burg = ra(burgs.filter(b => b.i && !b.removed)); // random burg
+    if (!burg) return;
 
-  // }()
+    const cellsArray = [], cost = [], power = rand(20, 40);
+    const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
+    queue.queue({e:burg.cell, p:0});
+
+    while (queue.length) {
+      const next = queue.dequeue();
+      if (cells.burg[next.e] || cells.pop[next.e]) cellsArray.push(next.e);
+
+      cells.c[next.e].forEach(function(e) {
+        const r = cells.road[next.e];
+        const c = r ? Math.max(10 - r, 1) : 100;
+        const p = next.p + c;
+        if (p > power) return;
+
+        if (!cost[e] || p < cost[e]) {
+          cost[e] = p;
+          queue.queue({e, p});
+        }
+      });
+    }
+
+    const adjective = () => ra(["Great", "Silent", "Severe", "Blind", "Unknown", "Loud", "Deadly", "Burning", "Bloody", "Brutal", "Fatal"]);
+    const animal = () => ra(["Ape", "Bear", "Boar", "Cat", "Cow", "Dog", "Pig", "Fox", "Bird", "Horse", "Rat", "Raven", "Sheep", "Spider", "Wolf"]);
+    const color = () => ra(["Golden", "White", "Black", "Red", "Pink", "Purple", "Blue", "Green", "Yellow", "Amber", "Orange", "Brown", "Grey"]);
+
+    const type = rw({"Fever":5, "Pestilence":2, "Flu":2, "Pox":2, "Smallpox":2, "Plague":4, "Cholera":2, "Ague":1, "Dropsy":1, "Leprosy":2});
+    const name = rw({[color()]:4, [animal()]:2, [adjective()]:1}) + " " + type;
+    data.push({name, type:"Disease", cells:cellsArray, fill:"url(#hatch12)"});
+  }()
+
+  // disaster starting in a random city
+  void function addDisaster() {
+    const burg = ra(burgs.filter(b => b.i && !b.removed)); // random burg
+    if (!burg) return;
+
+    const cellsArray = [], cost = [], power = rand(10, 30);
+    const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
+    queue.queue({e:burg.cell, p:0});
+
+    while (queue.length) {
+      const next = queue.dequeue();
+      if (cells.burg[next.e] || cells.pop[next.e]) cellsArray.push(next.e);
+
+      cells.c[next.e].forEach(function(e) {
+        const c = rand(1, 10);
+        const p = next.p + c;
+        if (p > power) return;
+
+        if (!cost[e] || p < cost[e]) {
+          cost[e] = p;
+          queue.queue({e, p});
+        }
+      });
+    }
+
+    // Volcanic Eruption, Fault Line, Avalanche, Tsunami
+    const type = rw({"Famine":5, "Drought":3, "Dearth":1, "Earthquake":3, "Tornadoes":1, "Wildfires":1, "Flood":3});
+    data.push({name:type, type:"Disaster", cells:cellsArray, fill:"url(#hatch5)"});
+  }()
 
   void function drawZones() {
     zones.selectAll("g").data(data).enter().append("g")
-      .attr("id", (d, i) => "zone"+i).attr("data-description", d => d.name).attr("data-cells", d => d.cells.join(",")).attr("fill", d => d.fill)
+      .attr("id", (d, i) => "zone"+i).attr("data-description", d => d.name).attr("data-type", d => d.type)
+      .attr("data-cells", d => d.cells.join(",")).attr("fill", d => d.fill)
       .selectAll("polygon").data(d => d.cells).enter().append("polygon")
       .attr("points", d => getPackPolygon(d)).attr("id", function(d) {return this.parentNode.id+"_"+d});
   }()

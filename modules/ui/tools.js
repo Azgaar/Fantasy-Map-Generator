@@ -249,6 +249,7 @@ function addLabelOnClick() {
   const x = width / -2; // x offset;
   example.remove();
 
+  group.classed("hidden", false);
   group.append("text").attr("id", id)
     .append("textPath").attr("xlink:href", "#textPath_"+id).attr("startOffset", "50%").attr("font-size", "100%")
     .append("tspan").attr("x", x).text(name);

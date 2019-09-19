@@ -174,7 +174,7 @@ function getHeight(h) {
     drawStates();
     drawBorders();
     BurgsAndStates.drawStateLabels();
-    addZone();
+    addZones();
     addMarkers();
     console.timeEnd("regenerateErasedData");
     console.groupEnd("Edit Heightmap");
