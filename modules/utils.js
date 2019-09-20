@@ -43,12 +43,13 @@ function findGridCell(x, y) {
   return Math.floor(Math.min(y / grid.spacing, grid.cellsY -1)) * grid.cellsX + Math.floor(Math.min(x / grid.spacing, grid.cellsX-1));
 }
 
-// return array of cell indexes in radius  on a regular square grid
+// return array of cell indexes in radius on a regular square grid
 function findGridAll(x, y, radius) {
   const c = grid.cells.c;
-  let found = [findGridCell(x, y)];
   let r = Math.floor(radius / grid.spacing);
-  if (r > 0) found = found.concat(c[found[0]]); 
+  let found = [findGridCell(x, y)];
+  if (!r || radius === 1) return found;
+  if (r > 0) found = found.concat(c[found[0]]);
   if (r > 1) {
     let frontier = c[found[0]];
     while (r > 1) {
@@ -68,7 +69,6 @@ function findGridAll(x, y, radius) {
   }
   
   return found;
-
 }
 
 // return closest pack points quadtree datum

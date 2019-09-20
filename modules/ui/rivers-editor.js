@@ -34,6 +34,7 @@ function editRiver() {
   document.getElementById("riverScale").addEventListener("input", changeScale);
   document.getElementById("riverReset").addEventListener("click", resetTransformation);
 
+  document.getElementById("riverEditStyle").addEventListener("click", () => editStyle("rivers"));
   document.getElementById("riverCopy").addEventListener("click", copyRiver);
   document.getElementById("riverNew").addEventListener("click", toggleRiverCreationMode);
   document.getElementById("riverLegend").addEventListener("click", editRiverLegend);

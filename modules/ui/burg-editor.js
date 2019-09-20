@@ -14,6 +14,8 @@ function editBurg() {
   const my = elSelected.attr("id") == d3.event.target.id ? "center bottom" : "center top+10";
   const at = elSelected.attr("id") == d3.event.target.id ? "top" : "bottom";
 
+  document.getElementById("burgEditAnchorStyle").style.display = +pack.burgs[id].port ? "inline-block" : "none";
+
   $("#burgEditor").dialog({
     title: "Edit Burg: " + elSelected.text(), resizable: false,
     position: {my, at, of: d3.event.target, collision: "fit"},
@@ -36,6 +38,12 @@ function editBurg() {
   document.getElementById("burgNameInput").addEventListener("input", changeName);
   document.getElementById("burgNameReCulture").addEventListener("click", generateNameCulture);
   document.getElementById("burgNameReRandom").addEventListener("click", generateNameRandom);
+
+  document.getElementById("burgStyleShow").addEventListener("click", showStyleSection);
+  document.getElementById("burgStyleHide").addEventListener("click", hideStyleSection);
+  document.getElementById("burgEditLabelStyle").addEventListener("click", editGroupLabelStyle);
+  document.getElementById("burgEditIconStyle").addEventListener("click", editGroupIconStyle);
+  document.getElementById("burgEditAnchorStyle").addEventListener("click", editGroupAnchorStyle);
 
   document.getElementById("burgSeeInMFCG").addEventListener("click", openInMFCG);
   document.getElementById("burgOpenCOA").addEventListener("click", openInIAHG);
@@ -209,6 +217,31 @@ function editBurg() {
     const base = rand(nameBase.length-1);
     burgNameInput.value = Names.getBase(base);
     changeName();
+  }
+
+  function showStyleSection() {
+    document.querySelectorAll("#burgEditor > button").forEach(el => el.style.display = "none");
+    document.getElementById("burgStyleSection").style.display = "inline-block";
+  }
+
+  function hideStyleSection() {
+    document.querySelectorAll("#burgEditor > button").forEach(el => el.style.display = "inline-block");
+    document.getElementById("burgStyleSection").style.display = "none";
+  }
+
+  function editGroupLabelStyle() {
+    const g = elSelected.node().parentNode.id;
+    editStyle("labels", g);
+  }
+
+  function editGroupIconStyle() {
+    const g = elSelected.node().parentNode.id;
+    editStyle("burgIcons", g);
+  }
+
+  function editGroupAnchorStyle() {
+    const g = elSelected.node().parentNode.id;
+    editStyle("anchors", g);
   }
 
   function openInMFCG() {

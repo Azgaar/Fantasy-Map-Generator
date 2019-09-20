@@ -22,6 +22,7 @@ function editStates() {
 
   // add listeners
   document.getElementById("statesEditorRefresh").addEventListener("click", refreshStatesEditor);
+  document.getElementById("statesEditStyle").addEventListener("click", () => editStyle("regions"));
   document.getElementById("statesLegend").addEventListener("click", toggleLegend);
   document.getElementById("statesPercentage").addEventListener("click", togglePercentageMode);
   document.getElementById("statesChart").addEventListener("click", showStatesChart);

@@ -23,6 +23,7 @@ function editReligions() {
 
   // add listeners
   document.getElementById("religionsEditorRefresh").addEventListener("click", refreshReligionsEditor);
+  document.getElementById("religionsEditStyle").addEventListener("click", () => editStyle("relig"));
   document.getElementById("religionsLegend").addEventListener("click", toggleLegend);
   document.getElementById("religionsPercentage").addEventListener("click", togglePercentageMode);
   document.getElementById("religionsHeirarchy").addEventListener("click", showHierarchy);

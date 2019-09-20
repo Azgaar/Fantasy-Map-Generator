@@ -22,6 +22,7 @@ function editBiomes() {
 
   // add listeners
   document.getElementById("biomesEditorRefresh").addEventListener("click", refreshBiomesEditor);
+  document.getElementById("biomesEditStyle").addEventListener("click", () => editStyle("biomes"));
   document.getElementById("biomesLegend").addEventListener("click", toggleLegend);
   document.getElementById("biomesPercentage").addEventListener("click", togglePercentageMode);
   document.getElementById("biomesManually").addEventListener("click", enterBiomesCustomizationMode);

@@ -20,6 +20,7 @@ function editProvinces() {
 
   // add listeners
   document.getElementById("provincesEditorRefresh").addEventListener("click", refreshProvincesEditor);
+  document.getElementById("provincesEditStyle").addEventListener("click", () => editStyle("provs"));
   document.getElementById("provincesFilterState").addEventListener("change", provincesEditorAddLines);
   document.getElementById("provincesPercentage").addEventListener("click", togglePercentageMode);
   document.getElementById("provincesChart").addEventListener("click", showChart);
@@ -552,7 +553,7 @@ function editProvinces() {
     const oldProvince = cells.province[center];
     if (oldProvince && provinces[oldProvince].center === center) {tip("The cell is already a center of a different province. Select other cell", false, "error"); return;}
     const state = cells.state[center];
-    if (!state) {tip("You cannot create a province in neutral lands> Please assign this land to a state first", false, "error"); return;}
+    if (!state) {tip("You cannot create a province in neutral lands. Please assign this land to a state first", false, "error"); return;}
 
     if (d3.event.shiftKey === false) exitAddProvinceMode();
 
@@ -640,7 +641,7 @@ function editProvinces() {
 
   function closeProvincesEditor() {
     if (customization === 11) exitProvincesManualAssignment("close");
-    if (customization === 12) exitAddStateMode();
+    if (customization === 12) exitAddProvinceMode();
   }
 
 }

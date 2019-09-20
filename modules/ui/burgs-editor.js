@@ -20,7 +20,7 @@ function editBurgs() {
 
   // add listeners
   document.getElementById("burgsEditorRefresh").addEventListener("click", refreshBurgsEditor);
-  document.getElementById("burgsChart").addEventListener("click", showBurgsChart);  
+  document.getElementById("burgsChart").addEventListener("click", showBurgsChart);
   document.getElementById("burgsFilterState").addEventListener("change", burgsEditorAddLines);
   document.getElementById("burgsFilterCulture").addEventListener("change", burgsEditorAddLines);
   document.getElementById("regenerateBurgNames").addEventListener("click", regenerateNames);

@@ -30,6 +30,8 @@ function editRoute(onClick) {
   document.getElementById("routeGroupName").addEventListener("change", createNewGroup);
   document.getElementById("routeGroupRemove").addEventListener("click", removeRouteGroup);
   document.getElementById("routeGroupsHide").addEventListener("click", hideGroupSection);
+
+  document.getElementById("routeEditStyle").addEventListener("click", editGroupStyle);
   document.getElementById("routeSplit").addEventListener("click", toggleRouteSplitMode);
   document.getElementById("routeLegend").addEventListener("click", editRouteLegend);
   document.getElementById("routeNew").addEventListener("click", toggleRouteCreationMode);
@@ -189,7 +191,12 @@ function editRoute(onClick) {
         },
         Cancel: function() {$(this).dialog("close");}
       }
-    });   
+    });
+  }
+
+  function editGroupStyle() {
+    const g = elSelected.node().parentNode.id;
+    editStyle("routes", g);
   }
 
   function toggleRouteSplitMode() {

@@ -34,6 +34,7 @@ function editDiplomacy() {
 
   // add listeners
   document.getElementById("diplomacyEditorRefresh").addEventListener("click", refreshDiplomacyEditor);
+  document.getElementById("diplomacyEditStyle").addEventListener("click", () => editStyle("regions"));
   document.getElementById("diplomacyRegenerate").addEventListener("click", regenerateRelations);
   document.getElementById("diplomacyMatrix").addEventListener("click", showRelationsMatrix);
   document.getElementById("diplomacyHistory").addEventListener("click", showRelationsHistory);

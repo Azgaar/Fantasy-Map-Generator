@@ -30,6 +30,7 @@ function editReliefIcon() {
   document.getElementById("reliefEditorSet").addEventListener("change", changeIconsSet);
   reliefIconsDiv.querySelectorAll("svg").forEach(el => el.addEventListener("click", changeIcon));
 
+  document.getElementById("reliefEditStyle").addEventListener("click", () => editStyle("terrain"));
   document.getElementById("reliefCopy").addEventListener("click", copyIcon);
   document.getElementById("reliefMoveFront").addEventListener("click", () => elSelected.raise());
   document.getElementById("reliefMoveBack").addEventListener("click", () => elSelected.lower());

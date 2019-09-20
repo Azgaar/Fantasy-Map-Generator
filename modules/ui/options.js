@@ -59,6 +59,7 @@ options.querySelector("div.tab").addEventListener("click", function(event) {
   document.getElementById(id).classList.add("active");
   options.querySelectorAll(".tabcontent").forEach(e => e.style.display = "none");
 
+  if (id === "layersTab") layersContent.style.display = "block"; else
   if (id === "styleTab") styleContent.style.display = "block"; else
   if (id === "optionsTab") optionsContent.style.display = "block"; else
   if (id === "toolsTab") customization === 1 
@@ -79,6 +80,22 @@ function collapse(e) {
     section.style.display = "none";
     trigger.classList.replace("icon-up-open", "icon-down-open");
   }
+}
+
+// select element to be edited
+function editStyle(element, group) {
+  showOptions();
+  styleTab.click();
+  styleElementSelect.value = element;
+  if (group) styleGroupSelect.options.add(new Option(group, group, true, true));
+  selectStyleElement();
+
+  styleElementSelect.classList.add("glow");
+  if (group) styleGroupSelect.classList.add("glow");
+  setTimeout(() => {
+    styleElementSelect.classList.remove("glow");
+    if (group) styleGroupSelect.classList.remove("glow");
+  }, 1500);
 }
 
 // Toggle style sections on element select
@@ -804,6 +821,7 @@ function changeCultureSet() {
 
 function changeStatesNumber(value) {
   regionsInput.value = regionsOutput.value = value;
+  regionsOutput.style.color = +value ? null : "#b12117";
   burgLabels.select("#capitals").attr("data-size", Math.max(rn(6 - value / 20), 3));
   labels.select("#countries").attr("data-size", Math.max(rn(18 - value / 6), 4));
 }

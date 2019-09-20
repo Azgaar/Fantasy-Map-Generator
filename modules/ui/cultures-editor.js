@@ -22,6 +22,7 @@ function editCultures() {
 
   // add listeners
   document.getElementById("culturesEditorRefresh").addEventListener("click", refreshCulturesEditor);
+  document.getElementById("culturesEditStyle").addEventListener("click", () => editStyle("cults"));
   document.getElementById("culturesLegend").addEventListener("click", toggleLegend);
   document.getElementById("culturesPercentage").addEventListener("click", togglePercentageMode);
   document.getElementById("culturesRecalculate").addEventListener("click", () => recalculateCultures(true));
