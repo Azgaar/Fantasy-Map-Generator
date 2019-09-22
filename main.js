@@ -603,8 +603,8 @@ function generate() {
     drawStates();
     drawBorders();
     BurgsAndStates.drawStateLabels();
-    addZones();
     addMarkers();
+    addZones();
     Names.getMapName();
 
     console.warn(`TOTAL: ${rn((performance.now()-timeStart)/1000,2)}s`);
@@ -1176,16 +1176,21 @@ function rankCells() {
 }
 
 // add a some zones
-function addZones() {
+function addZones(number = 1) {
   console.time("addZones");
   const data = [], cells = pack.cells, states = pack.states, burgs = pack.burgs;
-  //const used = new Uint8Array(cells.i.length); // to store used cells
+  const used = new Uint8Array(cells.i.length); // to store used cells
 
-  // rebels along a state border
-  void function addRebels() {
+  if (Math.random() < .8 * number) addRebels(); // rebels along a state border
+  for (let i=0; i < rn(Math.random() * 1.8 * number); i++) addDisease(); // disease starting in a random city
+  for (let i=0; i < rn(Math.random() * 1.8 * number); i++) addDisaster(); // disaster starting in a random city
+  for (let i=0; i < rn(Math.random() * 1.8 * number); i++) addEruption(); // volcanic eruption afecing cells aroung volcanoes
+  for (let i=0; i < rn(Math.random() * 1.4 * number); i++) addFault(); // fault line
+    
+  function addRebels() {
     const state = states.find(s => s.i && s.neighbors.size > 0 && s.neighbors.values().next().value);
     if (!state) return;
-  
+
     const neib = state.neighbors.values().next().value;
     const cellsArray = cells.i.filter(i => cells.state[i] === state.i && cells.c[i].some(c => cells.state[c] === neib));
 
@@ -1194,10 +1199,9 @@ function addZones() {
         "Insurrection":2, "Rebellion":1, "Conspiracy":2});
     const name = getAdjective(states[neib].name) + " " + rebels;
     data.push({name, type:"Rebels", cells:cellsArray, fill:"url(#hatch3)"});
-  }()
+  }
 
-  // disease starting in a random city
-  void function addDisease() {
+  function addDisease() {
     const burg = ra(burgs.filter(b => b.i && !b.removed)); // random burg
     if (!burg) return;
 
@@ -1208,6 +1212,7 @@ function addZones() {
     while (queue.length) {
       const next = queue.dequeue();
       if (cells.burg[next.e] || cells.pop[next.e]) cellsArray.push(next.e);
+      used[next.e] = 1;
 
       cells.c[next.e].forEach(function(e) {
         const r = cells.road[next.e];
@@ -1229,20 +1234,20 @@ function addZones() {
     const type = rw({"Fever":5, "Pestilence":2, "Flu":2, "Pox":2, "Smallpox":2, "Plague":4, "Cholera":2, "Ague":1, "Dropsy":1, "Leprosy":2});
     const name = rw({[color()]:4, [animal()]:2, [adjective()]:1}) + " " + type;
     data.push({name, type:"Disease", cells:cellsArray, fill:"url(#hatch12)"});
-  }()
+  }
 
-  // disaster starting in a random city
-  void function addDisaster() {
+  function addDisaster() {
     const burg = ra(burgs.filter(b => b.i && !b.removed)); // random burg
     if (!burg) return;
 
-    const cellsArray = [], cost = [], power = rand(10, 30);
+    const cellsArray = [], cost = [], power = rand(5, 28);
     const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
     queue.queue({e:burg.cell, p:0});
 
     while (queue.length) {
       const next = queue.dequeue();
       if (cells.burg[next.e] || cells.pop[next.e]) cellsArray.push(next.e);
+      used[next.e] = 1;
 
       cells.c[next.e].forEach(function(e) {
         const c = rand(1, 10);
@@ -1256,10 +1261,64 @@ function addZones() {
       });
     }
 
-    // Volcanic Eruption, Fault Line, Avalanche, Tsunami
+    // Avalanche, Tsunami
     const type = rw({"Famine":5, "Drought":3, "Dearth":1, "Earthquake":3, "Tornadoes":1, "Wildfires":1, "Flood":3});
-    data.push({name:type, type:"Disaster", cells:cellsArray, fill:"url(#hatch5)"});
-  }()
+    const name = getAdjective(burg.name) + " " + type;
+    data.push({name, type:"Disaster", cells:cellsArray, fill:"url(#hatch5)"});
+  }
+
+  function addEruption() {
+    const volcanoes = [];
+    markers.selectAll("use[data-id='#marker_volcano']").each(function() {
+      volcanoes.push(this.dataset.cell);
+    });
+    if (!volcanoes.length) return;
+
+    const cell = +ra(volcanoes);
+    const id = markers.select("use[data-cell='"+cell+"']").attr("id");
+    const note = notes.filter(n => n.id === id);
+
+    if (note[0]) note[0].legend = note[0].legend.replace("Active volcano", "Erupting volcano");
+    const name = note[0] ? note[0].name.replace(" Volcano", "") + " Eruption" : "Volcano Eruption";
+
+    const cellsArray = [], queue = [cell], power = rand(10, 30);
+
+    while (queue.length) {
+      const q = Math.random() < .5 ? queue.shift() : queue.pop();
+      cellsArray.push(q);
+      if (cellsArray.length > power) break;
+      cells.c[q].forEach(e => {
+        if (used[e]) return;
+        used[e] = 1;
+        queue.push(e);
+      });
+    }
+
+    data.push({name, type:"Disaster", cells:cellsArray, fill:"url(#hatch7)"});
+  }
+
+  function addFault() {
+    const elevated = cells.i.filter(i => cells.h[i] > 50 && cells.h[i] < 70 && !used[i]);
+    if (!elevated.length) return;
+
+    const cell = ra(elevated);
+    const cellsArray = [], queue = [cell], power = rand(3, 15);
+
+    while (queue.length) {
+      const q = queue.pop();
+      cellsArray.push(q);
+      if (cellsArray.length > power) break;
+      cells.c[q].forEach(e => {
+        if (used[e]) return;
+        used[e] = 1;
+        queue.push(e);
+      });
+    }
+
+    const proper = getAdjective(Names.getCultureShort(cells.culture[cell]));
+    const name = proper + " Fault";
+    data.push({name, type:"Disaster", cells:cellsArray, fill:"url(#hatch2)"});
+  }
 
   void function drawZones() {
     zones.selectAll("g").data(data).enter().append("g")
@@ -1286,7 +1345,7 @@ function addMarkers(number = 1) {
       const cell = mounts.splice(biased(0, mounts.length-1, 5), 1);
       const x = cells.p[cell][0], y = cells.p[cell][1];
       const id = getNextId("markerElement");
-      markers.append("use").attr("id", id)
+      markers.append("use").attr("id", id).attr("data-cell", cell)
         .attr("xlink:href", "#marker_volcano").attr("data-id", "#marker_volcano")
         .attr("data-x", x).attr("data-y", y).attr("x", x - 15).attr("y", y - 30)
         .attr("data-size", 1).attr("width", 30).attr("height", 30);
@@ -1313,7 +1372,7 @@ function addMarkers(number = 1) {
         .attr("data-size", 1).attr("width", 30).attr("height", 30);
 
       const proper = Names.getCulture(cells.culture[cell]);
-      const temp = convertTemperature(gauss(25,15,20,100));
+      const temp = convertTemperature(gauss(30,15,20,100));
       notes.push({id, name: proper + " Hot Springs", legend:`A hot springs area. Temperature: ${temp}`});
       count--;
     }
