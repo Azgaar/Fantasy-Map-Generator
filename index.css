@@ -1185,6 +1185,11 @@ div.states .icon-pin {
 	cursor: pointer;
 }
 
+div.states .icon-flag-empty {
+	cursor: pointer;
+	font-size: .9em;
+}
+
 div.states .icon-resize-vertical {
 	cursor: row-resize;
 	font-size: .9em;

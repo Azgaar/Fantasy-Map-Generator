@@ -18,13 +18,14 @@ function clicked() {
   const el = d3.event.target; 
   if (!el || !el.parentElement || !el.parentElement.parentElement) return;
   const parent = el.parentElement, grand = parent.parentElement;
-  if (parent.id === "rivers") editRiver(); else
-  if (grand.id === "routes") editRoute(); else
-  if (el.tagName === "tspan" && grand.parentNode.parentNode.id === "labels") editLabel(); else
-  if (grand.id === "burgLabels") editBurg(); else
-  if (grand.id === "burgIcons") editBurg(); else
-  if (parent.id === "terrain") editReliefIcon(); else
-  if (parent.id === "markers") editMarker();
+  if (parent.id === "rivers") editRiver();
+  else if (grand.id === "routes") editRoute();
+  else if (el.tagName === "tspan" && grand.parentNode.parentNode.id === "labels") editLabel();
+  else if (grand.id === "burgLabels") editBurg();
+  else if (grand.id === "burgIcons") editBurg();
+  else if (parent.id === "terrain") editReliefIcon();
+  else if (parent.id === "markers") editMarker(); 
+  // else if (grand.id === "lakes") editLake();
 }
 
 // clear elSelected variable

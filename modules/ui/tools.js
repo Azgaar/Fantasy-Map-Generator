@@ -61,7 +61,8 @@ function processFeatureRegeneration(button) {
   if (button === "regenerateStates") regenerateStates(); else
   if (button === "regenerateProvinces") regenerateProvinces(); else
   if (button === "regenerateReligions") regenerateReligions(); else
-  if (button === "regenerateMarkers") regenerateMarkers();
+  if (button === "regenerateMarkers") regenerateMarkers(); else
+  if (button === "regenerateZones") regenerateZones();
 }
 
 function regenerateRivers() {
@@ -94,7 +95,7 @@ function regenerateBurgs() {
 
   const score = new Int16Array(cells.s.map(s => s * Math.random())); // cell score for capitals placement
   const sorted = cells.i.filter(i => score[i] > 0 && cells.culture[i]).sort((a, b) => score[b] - score[a]); // filtered and sorted array of indexes
-  const burgsCount = manorsInput.value == 1000 ? rn(sorted.length / 10 / densityInput.value ** .8) + states.length : +manorsInput.value + states.length;
+  const burgsCount = manorsInput.value == 1000 ? rn(sorted.length / 10 / (grid.points.length / 10000) ** .8) + states.length : +manorsInput.value + states.length;
   const spacing = (graphWidth + graphHeight) / 200 / (burgsCount / 500); // base min distance between towns
 
   for (let i=0; i < sorted.length && burgs.length < burgsCount; i++) {
@@ -217,6 +218,12 @@ function regenerateMarkers() {
   }).remove();
 
   addMarkers(gauss(1, .5, .3, 5, 2));
+}
+
+function regenerateZones() {
+  zones.selectAll("g").remove(); // remove existing zones
+  addZones(gauss(1, .5, .6, 5, 2));
+  if (document.getElementById("zonesEditorRefresh").offsetParent) zonesEditorRefresh.click();
 }
 
 function unpressClickToAddButton() {

@@ -106,7 +106,7 @@
       const score = new Int16Array(cells.s.map(s => s * gauss(1,3,0,20,3))); // a bit randomized cell score for towns placement
       const sorted = cells.i.filter(i => !cells.burg[i] && score[i] > 0 && cells.culture[i]).sort((a, b) => score[b] - score[a]); // filtered and sorted array of indexes
 
-      const desiredNumber = manorsInput.value == 1000 ? rn(sorted.length / 8 / densityInput.value ** .8) : manorsInput.valueAsNumber;
+      const desiredNumber = manorsInput.value == 1000 ? rn(sorted.length / 8 / (grid.points.length / 10000) ** .8) : manorsInput.valueAsNumber;
       const burgsNumber = Math.min(desiredNumber, sorted.length); // towns to generate
       let burgsAdded = 0;
 

@@ -8,6 +8,7 @@
   <meta name="author" content="Azgaar (Max Ganiev)">
   <meta name="description" content="Azgaar's Fantasy Map Generator and Editor">
   <meta name="google" content="notranslate">
+  <meta name="google-site-verification" content="6N9TRdPptDN1dCZKaMA5zJ-_UmNQE-3c4VizSlQcEeU"/>
   <meta property="og:url" content="https://azgaar.github.io/Fantasy-Map-Generator">
   <meta property="og:title" content="Azgaar's Fantasy Map Generator">
   <meta property="og:description" content="Web application generating interactive and customizable maps">
@@ -1769,6 +1770,7 @@
           <button id="regenerateProvinces" data-tip="Click to regenerate provinces. States will remain as they are">Provinces</button>
           <button id="regenerateReligions" data-tip="Click to regenerate religions">Religions</button>
           <button id="regenerateMarkers" data-tip="Click to regenerate markers">Markers</button>
+          <button id="regenerateZones" data-tip="Click to regenerate zones">Zones</button>
         </div>
 
         <div id="addFeature">
@@ -2772,6 +2774,7 @@
       </div>
 
       <div id="zonesBottom">
+        <button id="zonesEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
         <button id="zonesEditStyle" data-tip="Edit zones style in Style Editor" class="icon-adjust"></button>
         <button id="zonesLegend" data-tip="Toggle Legend box" class="icon-list-bullet"></button>
         <button id="zonesPercentage" data-tip="Toggle percentage / absolute values views" class="icon-percent"></button>
@@ -3043,6 +3046,7 @@
   <script defer src="modules/ui/cultures-editor.js"></script>
   <script defer src="modules/ui/namesbase-editor.js"></script>
   <script defer src="modules/ui/routes-editor.js"></script>
+  <script defer src="modules/ui/lakes-editor.js"></script>
   <script defer src="modules/ui/labels-editor.js"></script>
   <script defer src="modules/ui/rivers-editor.js"></script>
   <script defer src="modules/ui/relief-editor.js"></script>

@@ -38,6 +38,7 @@ function editProvinces() {
     if (cl.contains("zoneFill")) changeFill(el); else
     if (cl.contains("icon-fleur")) provinceOpenCOA(p); else
     if (cl.contains("icon-star-empty")) capitalZoomIn(p); else
+    if (cl.contains("icon-flag-empty")) declareProvinceIndependence(p); else
     if (cl.contains("icon-pin")) focusOn(p, cl); else
     if (cl.contains("icon-trash-empty")) removeProvince(p);
     if (cl.contains("hoverButton") && cl.contains("stateName")) regenerateName(p, line); else
@@ -106,6 +107,7 @@ function editProvinces() {
 
       const stateName = pack.states[p.state].name;
       const capital = p.burg ? pack.burgs[p.burg].name : '';
+      const separable = p.burg && p.burg !== pack.states[p.state].capital;
       const focused = defs.select("#fog #focusProvince"+p.i).size();
       lines += `<div class="states" data-id=${p.i} data-name=${p.name} data-form=${p.formName} data-color="${p.color}" data-capital="${capital}" data-state="${stateName}" data-area=${area} data-population=${population}>
         <svg data-tip="Province fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${p.color}" class="zoneFill"></svg>
@@ -121,6 +123,7 @@ function editProvinces() {
         <div data-tip="Province area" class="biomeArea hide">${si(area) + unit}</div>
         <span data-tip="${populationTip}" class="icon-male hide"></span>
         <div data-tip="${populationTip}" class="culturePopulation hide">${si(population)}</div>
+        <span data-tip="Declare province independence" class="icon-flag-empty ${separable ? '' : 'placeholder'} hide"></span>
         <span data-tip="Toggle province focus" class="icon-pin ${focused?'':' inactive'} hide"></span>
         <span data-tip="Remove the province" class="icon-trash-empty hide"></span>
       </div>`;
@@ -200,6 +203,67 @@ function editProvinces() {
     const l = burgLabels.select("[data-id='" + capital + "']");
     const x = +l.attr("x"), y = +l.attr("y");
     zoomTo(x, y, 8, 2000);
+  }
+
+  function declareProvinceIndependence(p) {
+    const states = pack.states, provinces = pack.provinces, cells = pack.cells;
+    const oldState = pack.provinces[p].state;
+    const newState = pack.states.length;
+
+    // turn burg into a capital
+    const burg = provinces[p].burg;
+    if (!burg) return;
+    pack.burgs[burg].capital = true;
+    pack.burgs[burg].state = newState;
+    moveBurgToGroup(burg, "cities");
+
+    // difine new state attributes
+    const center = provinces[p].center;
+    const culture = cells.culture[center];
+    const name = provinces[p].name;
+    const color = getRandomColor();
+
+    // update cells
+    cells.i.filter(i => cells.province[i] === p).forEach(i => {
+        cells.province[i] = 0;
+        cells.state[i] = newState;
+    });
+
+    // update diplomacy and reverse relations
+    const diplomacy = states.map(s => {
+      if (!s.i) return "x";
+      let relations = states[oldState].diplomacy[s.i]; // relations between Nth state and old overlord
+      if (s.i === oldState) relations = "Enemy"; // new state is Enemy to its old overlord
+      else if (relations === "Ally") relations = "Suspicion";
+      else if (relations === "Friendly") relations = "Suspicion";
+      else if (relations === "Suspicion") relations = "Neutral";
+      else if (relations === "Enemy") relations = "Friendly";
+      else if (relations === "Rival") relations = "Friendly";
+      else if (relations === "Vassal") relations = "Suspicion";
+      else if (relations === "Suzerain") relations = "Enemy";
+      s.diplomacy.push(relations);
+      return relations;
+    });
+    diplomacy.push("x");
+    states[0].diplomacy.push([`Independance declaration`, `${name} declared its independance from ${states[oldState].name}`]);
+
+    // create new state
+    states.push({i:newState, name, diplomacy, provinces:[], color, expansionism:.5, capital:burg, type:"Generic", center, culture});
+    BurgsAndStates.collectStatistics();
+    BurgsAndStates.defineStateForms([newState]);
+
+    if (layerIsOn("toggleProvinces")) toggleProvinces();
+    if (!layerIsOn("toggleStates")) toggleStates(); else drawStates();
+    if (!layerIsOn("toggleBorders")) toggleBorders(); else drawBorders();
+    BurgsAndStates.drawStateLabels([newState, oldState]);
+
+    // remove old province
+    unfocus(p);
+    if (states[oldState].provinces.includes(p)) states[oldState].provinces.splice(states[oldState].provinces.indexOf(p), 1);
+    provinces[p].removed = true;
+
+    closeDialogs();
+    editStates();
   }
 
   function focusOn(p, cl) {

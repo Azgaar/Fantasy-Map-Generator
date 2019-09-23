@@ -14,6 +14,7 @@ function editZones() {
   });
 
   // add listeners
+  document.getElementById("zonesEditorRefresh").addEventListener("click", zonesEditorAddLines);
   document.getElementById("zonesEditStyle").addEventListener("click", () => editStyle("zones"));
   document.getElementById("zonesLegend").addEventListener("click", toggleLegend);
   document.getElementById("zonesPercentage").addEventListener("click", togglePercentageMode);

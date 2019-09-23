@@ -388,6 +388,11 @@ function getAdjective(string) {
   if (Math.random() < .5 && string.slice(-4) === "land") return string + "ic";
   if (string.slice(-4) === " Guo") string = string.slice(0, -4);
 
+  // don't change is name ends on suffix
+  if (string.slice(-2) === "an") return string;
+  if (string.slice(-3) === "ese") return string;
+  if (string.slice(-1) === "i") return string;
+
   const end = string.slice(-1); // last letter of string
   if (end === "a") return string += "n";
   if (end === "i") return string += "an";

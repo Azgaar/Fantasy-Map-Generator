@@ -643,7 +643,7 @@ function editStates() {
       const provCells = cells.i.filter(i => cells.province[i] === p);
       const provStates = [...new Set(provCells.map(i => cells.state[i]))];
 
-      // assign province its center owner; if center is neutral, remove province
+      // assign province to its center owner; if center is neutral, remove province
       const owner = cells.state[provinces[p].center];
       if (owner) {
         const name = provinces[p].name;
@@ -715,46 +715,73 @@ function editStates() {
   }
 
   function addState() {
+    const states = pack.states, burgs = pack.burgs, cells = pack.cells;
     const point = d3.mouse(this);
     const center = findCell(point[0], point[1]);
-    if (pack.cells.h[center] < 20) {tip("You cannot place state into the water. Please click on a land cell", false, "error"); return;}
-    let burg = pack.cells.burg[center];
-    if (burg && pack.burgs[burg].capital) {tip("Existing capital cannot be selected as a new state capital! Select other cell", false, "error"); return;}
+    if (cells.h[center] < 20) {tip("You cannot place state into the water. Please click on a land cell", false, "error"); return;}
+    let burg = cells.burg[center];
+    if (burg && burgs[burg].capital) {tip("Existing capital cannot be selected as a new state capital! Select other cell", false, "error"); return;}
     if (!burg) burg = addBurg(point); // add new burg
 
+    const oldState = cells.state[center];
+    const newState = states.length;
+
     // turn burg into a capital
-    pack.burgs[burg].capital = true;
-    pack.burgs[burg].state = pack.states.length;
+    burgs[burg].capital = true;
+    burgs[burg].state = newState;
     moveBurgToGroup(burg, "cities");
 
     if (d3.event.shiftKey === false) exitAddStateMode();
 
-    const i = pack.states.length;
-    const culture = pack.cells.culture[center];
-    const basename = center%5 === 0 ? pack.burgs[burg].name : Names.getCulture(culture);
+    const culture = cells.culture[center];
+    const basename = center%5 === 0 ? burgs[burg].name : Names.getCulture(culture);
     const name = Names.getState(basename, culture);
-    const color = d3.color(d3.scaleSequential(d3.interpolateRainbow)(Math.random())).hex();
-    const diplomacy = pack.states.map(s => s.i ? "Neutral" : "x")
-    diplomacy.push("x");
-    pack.states.forEach(s => {if (s.i) {s.diplomacy.push("Neutral");}});
-    const provinces = [];
+    const color = getRandomColor();
 
-    const affected = [pack.states.length, pack.cells.state[center]];
+    // update diplomacy and reverse relations
+    const diplomacy = states.map(s => {
+      if (!s.i) return "x";
+      if (!oldState) {
+        s.diplomacy.push("Neutral");
+        return "Neutral";
+      }
 
-    pack.cells.state[center] = pack.states.length;
-    pack.cells.c[center].forEach(c => {
-      if (pack.cells.h[c] < 20) return;
-      if (pack.cells.burg[c]) return;
-      affected.push(pack.cells.state[c]);
-      pack.cells.state[c] = pack.states.length;
+      let relations = states[oldState].diplomacy[s.i]; // relations between Nth state and old overlord
+      if (s.i === oldState) relations = "Enemy"; // new state is Enemy to its old overlord
+      else if (relations === "Ally") relations = "Suspicion";
+      else if (relations === "Friendly") relations = "Suspicion";
+      else if (relations === "Suspicion") relations = "Neutral";
+      else if (relations === "Enemy") relations = "Friendly";
+      else if (relations === "Rival") relations = "Friendly";
+      else if (relations === "Vassal") relations = "Suspicion";
+      else if (relations === "Suzerain") relations = "Enemy";
+      s.diplomacy.push(relations);
+      return relations;
     });
-    pack.states.push({i, name, diplomacy, provinces, color, expansionism:.5, capital:burg, type:"Generic", center, culture});
-    BurgsAndStates.collectStatistics();
-    BurgsAndStates.defineStateForms([i]);
+    diplomacy.push("x");
+    states[0].diplomacy.push([`Independance declaration`, `${name} declared its independance from ${states[oldState].name}`]);
 
+    const affectedStates = [newState, oldState];
+    const affectedProvinces = [cells.province[center]];
+    cells.state[center] = newState;
+    cells.province[center] = 0;
+    cells.c[center].forEach(c => {
+      if (cells.h[c] < 20) return;
+      if (cells.burg[c]) return;
+      affectedStates.push(cells.state[c]);
+      affectedProvinces.push(cells.province[c]);
+      cells.state[c] = newState;
+      cells.province[c] = 0;
+    });
+    states.push({i:newState, name, diplomacy, provinces:[], color, expansionism:.5, capital:burg, type:"Generic", center, culture});
+    BurgsAndStates.collectStatistics();
+    BurgsAndStates.defineStateForms([newState]);
+    adjustProvinces([...new Set(affectedProvinces)]);
+
+    if (layerIsOn("toggleProvinces")) toggleProvinces();
     if (!layerIsOn("toggleStates")) toggleStates(); else drawStates();
     if (!layerIsOn("toggleBorders")) toggleBorders(); else drawBorders();
-    BurgsAndStates.drawStateLabels(affected);
+    BurgsAndStates.drawStateLabels([...new Set(affectedStates)]);
     statesEditorAddLines();
   }
 
