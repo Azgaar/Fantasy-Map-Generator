@@ -360,7 +360,7 @@ function editZones() {
 
   function changePopulation(zone) {
     const dataCells = zones.select("#"+zone).attr("data-cells");
-    const cells = dataCells ? dataCells.split(",").map(i => +i) : [];
+    const cells = dataCells ? dataCells.split(",").map(i => +i).filter(i => pack.cells.pop[i]) : [];
     if (!cells.length) {tip("Zone does not have any cells, cannot change population", false, "error"); return;}
     const burgs = pack.burgs.filter(b => !b.removed && cells.includes(b.cell));
 
