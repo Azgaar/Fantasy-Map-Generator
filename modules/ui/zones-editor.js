@@ -27,6 +27,7 @@ function editZones() {
 
   body.addEventListener("click", function(ev) {
     const el = ev.target, cl = el.classList, zone = el.parentNode.dataset.id;
+    if (cl.contains("culturePopulation")) {changePopulation(zone); return;}
     if (cl.contains("icon-trash-empty")) {zoneRemove(zone); return;}
     if (cl.contains("icon-eye")) {toggleVisibility(el); return;}
     if (cl.contains("icon-pin")) {focusOnZone(zone, cl); return;}
@@ -52,7 +53,7 @@ function editZones() {
       const rural = d3.sum(c.map(i => pack.cells.pop[i])) * populationRate.value;
       const urban = d3.sum(c.map(i => pack.cells.burg[i]).map(b => pack.burgs[b].population)) * populationRate.value * urbanization.value;
       const population = rural + urban;
-      const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}`;
+      const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}. Click to change`;
       const inactive = this.style.display === "none";
       const focused = defs.select("#fog #focus"+this.id).size();
 
@@ -355,6 +356,65 @@ function editZones() {
 
   function toggleEraseMode() {
     this.classList.toggle("pressed");
+  }
+
+  function changePopulation(zone) {
+    const dataCells = zones.select("#"+zone).attr("data-cells");
+    const cells = dataCells ? dataCells.split(",").map(i => +i) : [];
+    if (!cells.length) {tip("Zone does not have any cells, cannot change population", false, "error"); return;}
+    const burgs = pack.burgs.filter(b => !b.removed && cells.includes(b.cell));
+
+    const rural = rn(d3.sum(cells.map(i => pack.cells.pop[i])) * populationRate.value);
+    const urban = rn(d3.sum(cells.map(i => pack.cells.burg[i]).map(b => pack.burgs[b].population)) * populationRate.value * urbanization.value);
+    const total = rural + urban;
+    const l = n => Number(n).toLocaleString();
+
+    alertMessage.innerHTML = `
+    Rural: <input type="number" min=0 step=1 id="ruralPop" value=${rural} style="width:6em">
+    Urban: <input type="number" min=0 step=1 id="urbanPop" value=${urban} style="width:6em" ${burgs.length?'':"disabled"}>
+    <p>Total population: ${l(total)} ⇒ <span id="totalPop">${l(total)}</span> (<span id="totalPopPerc">100</span>%)</p>`;
+
+    const update = function() {
+      const totalNew = ruralPop.valueAsNumber + urbanPop.valueAsNumber;
+      if (isNaN(totalNew)) return;
+      totalPop.innerHTML = l(totalNew);
+      totalPopPerc.innerHTML = rn(totalNew / total * 100);
+    }
+
+    ruralPop.oninput = () => update();
+    urbanPop.oninput = () => update();
+
+    $("#alert").dialog({
+      resizable: false, title: "Change zone population", width: "24em", buttons: {
+        Apply: function() {applyPopulationChange(); $(this).dialog("close");},
+        Cancel: function() {$(this).dialog("close");}
+      }, position: {my: "center", at: "center", of: "svg"}
+    });
+
+    function applyPopulationChange() {
+      const ruralChange = rn(ruralPop.value / rural, 4);
+      if (isFinite(ruralChange) && ruralChange !== 1) {
+        cells.forEach(i => pack.cells.pop[i] *= ruralChange);
+      }
+      if (!isFinite(ruralChange) && +ruralPop.value > 0) {
+        const points = ruralPop.value / populationRate.value;
+        const pop = rn(points / cells.length);
+        cells.forEach(i => pack.cells.pop[i] = pop);
+      }
+
+      const urbanChange = rn(urbanPop.value / urban, 4);
+      if (isFinite(urbanChange) && urbanChange !== 1) {
+        burgs.forEach(b => b.population *= urbanChange);
+      }
+      if (!isFinite(urbanChange) && +urbanPop.value > 0) {
+        const points = urbanPop.value / populationRate.value / urbanization.value;
+        const population = rn(points / burgs.length);
+        burgs.forEach(b => b.population = population);
+      }
+
+      zonesEditorAddLines();
+    }
+
   }
 
   function zoneRemove(zone) {

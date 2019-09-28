@@ -39,6 +39,7 @@ function editProvinces() {
     if (cl.contains("icon-fleur")) provinceOpenCOA(p); else
     if (cl.contains("icon-star-empty")) capitalZoomIn(p); else
     if (cl.contains("icon-flag-empty")) declareProvinceIndependence(p); else
+    if (cl.contains("culturePopulation")) changePopulation(p); else
     if (cl.contains("icon-pin")) focusOn(p, cl); else
     if (cl.contains("icon-trash-empty")) removeProvince(p);
     if (cl.contains("hoverButton") && cl.contains("stateName")) regenerateName(p, line); else
@@ -264,6 +265,64 @@ function editProvinces() {
 
     closeDialogs();
     editStates();
+  }
+
+  function changePopulation(province) {
+    const p = pack.provinces[province];
+    if (!p.cells) {tip("Province does not have any cells, cannot change population", false, "error"); return;}
+    const rural = rn(p.rural * populationRate.value);
+    const urban = rn(p.urban * populationRate.value * urbanization.value);
+    const total = rural + urban;
+    const l = n => Number(n).toLocaleString();
+
+    alertMessage.innerHTML = `
+    Rural: <input type="number" min=0 step=1 id="ruralPop" value=${rural} style="width:6em">
+    Urban: <input type="number" min=0 step=1 id="urbanPop" value=${urban} style="width:6em" ${p.burgs.length?'':"disabled"}>
+    <p>Total population: ${l(total)} ⇒ <span id="totalPop">${l(total)}</span> (<span id="totalPopPerc">100</span>%)</p>`;
+
+    const update = function() {
+      const totalNew = ruralPop.valueAsNumber + urbanPop.valueAsNumber;
+      if (isNaN(totalNew)) return;
+      totalPop.innerHTML = l(totalNew);
+      totalPopPerc.innerHTML = rn(totalNew / total * 100);
+    }
+
+    ruralPop.oninput = () => update();
+    urbanPop.oninput = () => update();
+
+    $("#alert").dialog({
+      resizable: false, title: "Change province population", width: "24em", buttons: {
+        Apply: function() {applyPopulationChange(); $(this).dialog("close");},
+        Cancel: function() {$(this).dialog("close");}
+      }, position: {my: "center", at: "center", of: "svg"}
+    });
+
+    function applyPopulationChange() {
+      const ruralChange = rn(ruralPop.value / rural, 4);
+      if (isFinite(ruralChange) && ruralChange !== 1) {
+        const cells = pack.cells.i.filter(i => pack.cells.province[i] === province);
+        cells.forEach(i => pack.cells.pop[i] *= ruralChange);
+      }
+      if (!isFinite(ruralChange) && +ruralPop.value > 0) {
+        const points = ruralPop.value / populationRate.value;
+        const cells = pack.cells.i.filter(i => pack.cells.province[i] === province);
+        const pop = rn(points / cells.length);
+        cells.forEach(i => pack.cells.pop[i] = pop);
+      }
+
+      const urbanChange = rn(urbanPop.value / urban, 4);
+      if (isFinite(urbanChange) && urbanChange !== 1) {
+        p.burgs.forEach(b => pack.burgs[b].population *= urbanChange);
+      }
+      if (!isFinite(urbanChange) && +urbanPop.value > 0) {
+        const points = urbanPop.value / populationRate.value / urbanization.value;
+        const population = rn(points / burgs.length);
+        p.burgs.forEach(b => pack.burgs[b].population = population);
+      }
+
+      refreshProvincesEditor();
+    }
+
   }
 
   function focusOn(p, cl) {

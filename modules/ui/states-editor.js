@@ -297,16 +297,17 @@ function editStates() {
     const rural = rn(s.rural * populationRate.value);
     const urban = rn(s.urban * populationRate.value * urbanization.value);
     const total = rural + urban;
+    const l = n => Number(n).toLocaleString();
 
     alertMessage.innerHTML = `
-    Rural: <input type="number" min=0 step=1 id="ruralPop" value=${rural} style="width:6em" ${s.cells?'':"disabled"}>
+    Rural: <input type="number" min=0 step=1 id="ruralPop" value=${rural} style="width:6em">
     Urban: <input type="number" min=0 step=1 id="urbanPop" value=${urban} style="width:6em" ${s.burgs?'':"disabled"}>
-    <p>Total population: ${total} ⇒ <span id="totalPop">${total}</span> (<span id="totalPopPerc">100</span>%)</p>`;
+    <p>Total population: ${l(total)} ⇒ <span id="totalPop">${l(total)}</span> (<span id="totalPopPerc">100</span>%)</p>`;
 
     const update = function() {
       const totalNew = ruralPop.valueAsNumber + urbanPop.valueAsNumber;
       if (isNaN(totalNew)) return;
-      totalPop.innerHTML = totalNew;
+      totalPop.innerHTML = l(totalNew);
       totalPopPerc.innerHTML = rn(totalNew / total * 100);
     }
 
@@ -314,7 +315,7 @@ function editStates() {
     urbanPop.oninput = () => update();
 
     $("#alert").dialog({
-      resizable: false, title: "Change state population", width: "23em", buttons: {
+      resizable: false, title: "Change state population", width: "24em", buttons: {
         Apply: function() {applyPopulationChange(); $(this).dialog("close");},
         Cancel: function() {$(this).dialog("close");}
       }, position: {my: "center", at: "center", of: "svg"}
