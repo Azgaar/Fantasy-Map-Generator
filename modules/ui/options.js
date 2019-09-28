@@ -114,7 +114,7 @@ function selectStyleElement() {
   // active group element
   const group = styleGroupSelect.value;
   if (sel == "ocean") el = oceanLayers.select("rect");
-  else if (sel == "routes" || sel == "labels" || sel == "lakes" || sel == "anchors" || sel == "burgIcons" || sel == "borders") {
+  else if (sel == "routes" || sel == "labels" || sel === "coastline" || sel == "lakes" || sel == "anchors" || sel == "burgIcons" || sel == "borders") {
     el = d3.select("#"+sel).select("g#"+group).size()
       ? d3.select("#"+sel).select("g#"+group)
       : d3.select("#"+sel).select("g");
@@ -185,7 +185,7 @@ function selectStyleElement() {
   if (sel === "gridOverlay") styleGrid.style.display = "block";
   if (sel === "terrain") styleRelief.style.display = "block";
   if (sel === "texture") styleTexture.style.display = "block";
-  if (sel === "routes" || sel === "labels" || sel == "anchors" || sel == "burgIcons" || sel === "lakes" || sel === "borders") styleGroup.style.display = "block";
+  if (sel === "routes" || sel === "labels" || sel == "anchors" || sel == "burgIcons" || sel === "coastline" || sel === "lakes" || sel === "borders") styleGroup.style.display = "block";
   if (sel === "markers") styleMarkers.style.display = "block";
 
   if (sel === "population") {
@@ -267,8 +267,10 @@ function selectStyleElement() {
   }
 
   if (sel === "coastline") {
-    styleCoastline.style.display = "block";
-    if (styleCoastlineAuto.checked) styleFilter.style.display = "none";
+    if (styleGroupSelect.value === "sea_island") {
+      styleCoastline.style.display = "block";
+      if (styleCoastlineAuto.checked) styleFilter.style.display = "none";
+    }
   }
 
   if (sel === "temperature") {
@@ -287,7 +289,7 @@ function selectStyleElement() {
 
   // update group options
   styleGroupSelect.options.length = 0; // remove all options
-  if (sel === "routes" || sel === "labels" || sel === "lakes" || sel === "anchors" || sel === "burgIcons" || sel === "borders") {
+  if (sel === "routes" || sel === "labels" || sel === "coastline" || sel === "lakes" || sel === "anchors" || sel === "burgIcons" || sel === "borders") {
     document.getElementById(sel).querySelectorAll("g").forEach(el => {
       if (el.id === "burgLabels") return;
       const count = el.childElementCount;

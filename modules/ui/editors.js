@@ -15,9 +15,12 @@ function restoreDefaultEvents() {
 
 // on viewbox click event - run function based on target
 function clicked() {
-  const el = d3.event.target; 
+  const el = d3.event.target;
   if (!el || !el.parentElement || !el.parentElement.parentElement) return;
   const parent = el.parentElement, grand = parent.parentElement;
+  const p = d3.mouse(this);
+  const i = findCell(p[0], p[1]);
+
   if (parent.id === "rivers") editRiver();
   else if (grand.id === "routes") editRoute();
   else if (el.tagName === "tspan" && grand.parentNode.parentNode.id === "labels") editLabel();
@@ -25,7 +28,12 @@ function clicked() {
   else if (grand.id === "burgIcons") editBurg();
   else if (parent.id === "terrain") editReliefIcon();
   else if (parent.id === "markers") editMarker(); 
-  // else if (grand.id === "lakes") editLake();
+  else if (grand.id === "coastline") editCoastline();
+  else if (pack.cells.t[i] === 1) {
+    const node = document.getElementById("island_"+pack.cells.f[i]);
+    editCoastline(node);
+  }
+  else if (grand.id === "lakes") editLake();
 }
 
 // clear elSelected variable

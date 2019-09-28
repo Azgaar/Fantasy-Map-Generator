@@ -108,7 +108,7 @@ function regenerateBurgs() {
 
     const state = cells.state[cell];
     const capital = !states[state].capital; // if state doesn't have capital, make this burg a capital
-    if (capital) {states[state].capital = id; states[state].cell = cell;}
+    if (capital) {states[state].capital = id; states[state].center = cell;}
 
     const culture = cells.culture[cell];
     const name = Names.getCulture(culture);
@@ -121,6 +121,7 @@ function regenerateBurgs() {
   states.filter(s => s.i && !s.removed && !s.capital).forEach(s => {
     const burg = addBurg([cells.p[s.center][0], cells.p[s.center][1]]); // add new burg
     s.capital = burg;
+    s.center = pack.burgs[burg].cell;
     pack.burgs[burg].capital = true;
     pack.burgs[burg].state = s.i;
     moveBurgToGroup(burg, "cities");

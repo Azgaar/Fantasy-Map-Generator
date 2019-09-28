@@ -636,8 +636,6 @@ function parseLoadedData(data) {
       ruler = viewbox.select("#ruler");
       fogging = viewbox.select("#fogging");
       debug = viewbox.select("#debug");
-      freshwater = lakes.select("#freshwater");
-      salt = lakes.select("#salt");
       burgLabels = labels.select("#burgLabels");
     }()
 
@@ -825,6 +823,28 @@ function parseLoadedData(data) {
             r.code = r.name.slice(0, 2);
           });
         }
+
+        // v 1.1 added new lake and coast groups
+        if (!document.getElementById("sinkhole")) {
+          lakes.append("g").attr("id", "sinkhole");
+          lakes.append("g").attr("id", "frozen");
+          lakes.append("g").attr("id", "lava");
+          lakes.select("#sinkhole").attr("opacity", 1).attr("fill", "#5bc9fd").attr("stroke", "#53a3b0").attr("stroke-width", .7).attr("filter", null);
+          lakes.select("#frozen").attr("opacity", .95).attr("fill", "#cdd4e7").attr("stroke", "#cfe0eb").attr("stroke-width", 0).attr("filter", null);
+          lakes.select("#lava").attr("opacity", .7).attr("fill", "#90270d").attr("stroke", "#f93e0c").attr("stroke-width", 2).attr("filter", "url(#crumpled)");
+
+          coastline.append("g").attr("id", "sea_island");
+          coastline.append("g").attr("id", "lake_island");
+          coastline.select("#sea_island").attr("opacity", .5).attr("stroke", "#1f3846").attr("stroke-width", .7).attr("filter", "url(#dropShadow)");
+          coastline.select("#lake_island").attr("opacity", 1).attr("stroke", "#7c8eaf").attr("stroke-width", .35).attr("filter", null);
+        }
+
+        // v 1.1 features stores more data
+        defs.select("#land").selectAll("path").remove();
+        defs.select("#water").selectAll("path").remove();
+        coastline.selectAll("path").remove();
+        lakes.selectAll("path").remove();
+        drawCoastline();
       }
     }()
 

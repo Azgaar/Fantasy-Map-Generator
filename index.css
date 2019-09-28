@@ -80,6 +80,11 @@ button, select, a {
 	fill-rule: evenodd;
 }
 
+#lakes,
+#coastline {
+	cursor: pointer;
+}
+
 #temperature {
 	fill-rule: evenodd;
 	font-family: sans-serif;
@@ -242,7 +247,10 @@ i.icon-lock {
 	text-anchor: middle;
 }
 
-#routeLength, #riverLength {
+#routeLength, 
+#riverLength,
+#lakeArea,
+#coastlineArea {
 	background-color: #eeeeee;
 	border: 1px solid #a5a5a5;
 	line-height: 1.3em;
@@ -875,7 +883,7 @@ body button.noicon {
 #controlPoints {
 	fill: #ff0000;
 	stroke: #841f1f;
-	stroke-width: .3;
+	stroke-width: .25;
 	cursor: move;
 	opacity: .8;
 }
@@ -886,6 +894,25 @@ body button.noicon {
 	stroke-width: 2;
 	opacity: .4;
 	cursor: pointer;
+}
+
+#vertices > circle {
+	fill: #ff0000;
+	stroke: #841f1f;
+	stroke-width: .1;
+	cursor: move;
+	opacity: .8;
+}
+
+#vertices > polygon {
+	fill: none;
+	stroke: #808080;
+	stroke-width: .1;
+}
+
+#controlPoints > circle:hover,
+#vertices> circle:hover {
+	stroke: #2c0808;
 }
 
 .drag-trigger {

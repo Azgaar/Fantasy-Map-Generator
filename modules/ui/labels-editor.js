@@ -183,11 +183,15 @@ function editLabel() {
 
   function createNewGroup() {
     if (!this.value) {tip("Please provide a valid group name"); return;}
-    let group = this.value.toLowerCase().replace(/ /g, "_").replace(/[^\w\s]/gi, "");
-    if (Number.isFinite(+group.charAt(0))) group = "g" + group;
+    const group = this.value.toLowerCase().replace(/ /g, "_").replace(/[^\w\s]/gi, "");
 
     if (document.getElementById(group)) {
       tip("Element with this id already exists. Please provide a unique name", false, "error");
+      return;
+    }
+
+    if (Number.isFinite(+group.charAt(0))) {
+      tip("Group name should start with a letter", false, "error");
       return;
     }
 

@@ -523,12 +523,13 @@ function toggleReligions(event) {
   }
 }
 
-function drawReligions(event) {
+function drawReligions() {
   console.time("drawReligions");
 
   relig.selectAll("path").remove();
-  const cells = pack.cells, vertices = pack.vertices, religions = pack.religions, n = cells.i.length;
+  const cells = pack.cells, vertices = pack.vertices, religions = pack.religions, features = pack.features, n = cells.i.length;
   const used = new Uint8Array(cells.i.length);
+  const fUsed = []; // already added features like lakes
   const paths = new Array(religions.length).fill("");
 
   for (const i of cells.i) {
@@ -536,9 +537,17 @@ function drawReligions(event) {
     if (used[i]) continue;
     used[i] = 1;
     const r = cells.religion[i];
-    const onborder = cells.c[i].some(n => cells.religion[n] !== r);
-    if (!onborder) continue;
-    const vertex = cells.v[i].find(v => vertices.c[v].some(i => cells.religion[i] !== r));
+    const onborder = cells.c[i].filter(n => cells.religion[n] !== r);
+    if (!onborder.length) continue;
+    const f = cells.f[onborder[0]];
+    if (fUsed[f]) continue;
+    if (features[f].type === "lake") {
+      paths[r] += defs.select("mask#land > path#land_"+f).attr("d");
+      fUsed[f] = 1;
+      continue;
+    }
+
+    const vertex = cells.v[i].find(v => vertices.c[v].some(n => cells.religion[n] !== r));
     const chain = connectVertices(vertex, r);
     if (chain.length < 3) continue;
     const points = chain.map(v => vertices.p[v]);

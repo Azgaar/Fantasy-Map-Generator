@@ -1,39 +1,36 @@
 "use strict";
-function editLake() {
+function editCoastline(node = d3.event.target) {
   if (customization) return;
   closeDialogs(".stable");
   if (layerIsOn("toggleCells")) toggleCells();
 
-  $("#lakeEditor").dialog({
-    title: "Edit Lake", resizable: false,
+  $("#coastlineEditor").dialog({
+    title: "Edit Coastline", resizable: false,
     position: {my: "center top+20", at: "top", of: d3.event, collision: "fit"},
-    close: closeLakesEditor
+    close: closeCoastlineEditor
   });
 
-  const node = d3.event.target;
   debug.append("g").attr("id", "vertices");
   elSelected = d3.select(node);
-  selectLakeGroup(node);
-  drawLakeVertices();
+  selectCoastlineGroup(node);
+  drawCoastlineVertices();
   viewbox.on("touchmove mousemove", null);
 
-  if (modules.editLake) return;
-  modules.editLake = true;
+  if (modules.editCoastline) return;
+  modules.editCoastline = true;
 
   // add listeners
-  document.getElementById("lakeGroupsShow").addEventListener("click", showGroupSection);
-  document.getElementById("lakeGroup").addEventListener("change", changeLakeGroup);
-  document.getElementById("lakeGroupAdd").addEventListener("click", toggleNewGroupInput);
-  document.getElementById("lakeGroupName").addEventListener("change", createNewGroup);
-  document.getElementById("lakeGroupRemove").addEventListener("click", removeLakeGroup);
-  document.getElementById("lakeGroupsHide").addEventListener("click", hideGroupSection);
+  document.getElementById("coastlineGroupsShow").addEventListener("click", showGroupSection);
+  document.getElementById("coastlineGroup").addEventListener("change", changeCoastlineGroup);
+  document.getElementById("coastlineGroupAdd").addEventListener("click", toggleNewGroupInput);
+  document.getElementById("coastlineGroupName").addEventListener("change", createNewGroup);
+  document.getElementById("coastlineGroupRemove").addEventListener("click", removeCoastlineGroup);
+  document.getElementById("coastlineGroupsHide").addEventListener("click", hideGroupSection);
+  document.getElementById("coastlineEditStyle").addEventListener("click", editGroupStyle);
 
-  document.getElementById("lakeEditStyle").addEventListener("click", editGroupStyle);
-  document.getElementById("lakeLegend").addEventListener("click", editLakeLegend);
-
-  function drawLakeVertices() {
+  function drawCoastlineVertices() {
     const f = +elSelected.attr("data-f"); // feature id
-    const v = pack.features[f].vertices; // lake outer vertices
+    const v = pack.features[f].vertices; // coastline outer vertices
 
     const c = [... new Set(v.map(v => pack.vertices.c[v]).flat())];
     debug.select("#vertices").selectAll("polygon").data(c).enter().append("polygon")
@@ -46,7 +43,7 @@ function editLake() {
 
     const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
     const area = pack.features[f].area;
-    lakeArea.innerHTML = si(area * distanceScaleInput.value ** 2) + unit;
+    coastlineArea.innerHTML = si(area * distanceScaleInput.value ** 2) + unit;
   }
 
   function dragVertex() {
@@ -56,10 +53,10 @@ function editLake() {
     const v = +this.dataset.v;
     pack.vertices.p[v] = [x, y];
     debug.select("#vertices").selectAll("polygon").attr("points", d => getPackPolygon(d));
-    redrawLake();
+    redrawCoastline();
   }
 
-  function redrawLake() {
+  function redrawCoastline() {
     lineGen.curve(d3.curveBasisClosed);
     const f = +elSelected.attr("data-f");
     const vertices = pack.features[f].vertices;
@@ -67,47 +64,48 @@ function editLake() {
     const d = round(lineGen(points));
     elSelected.attr("d", d);
     defs.select("mask#land > path#land_"+f).attr("d", d); // update land mask
+    defs.select("mask#water > path#water_"+f).attr("d", d); // update water mask
 
     const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
     const area = Math.abs(d3.polygonArea(points));
-    lakeArea.innerHTML = si(area * distanceScaleInput.value ** 2) + unit;
+    coastlineArea.innerHTML = si(area * distanceScaleInput.value ** 2) + unit;
   }
 
   function showGroupSection() {
-    document.querySelectorAll("#lakeEditor > button").forEach(el => el.style.display = "none");
-    document.getElementById("lakeGroupsSelection").style.display = "inline-block";
+    document.querySelectorAll("#coastlineEditor > button").forEach(el => el.style.display = "none");
+    document.getElementById("coastlineGroupsSelection").style.display = "inline-block";
   }
 
   function hideGroupSection() {
-    document.querySelectorAll("#lakeEditor > button").forEach(el => el.style.display = "inline-block");
-    document.getElementById("lakeGroupsSelection").style.display = "none";
-    document.getElementById("lakeGroupName").style.display = "none";
-    document.getElementById("lakeGroupName").value = "";
-    document.getElementById("lakeGroup").style.display = "inline-block"; 
+    document.querySelectorAll("#coastlineEditor > button").forEach(el => el.style.display = "inline-block");
+    document.getElementById("coastlineGroupsSelection").style.display = "none";
+    document.getElementById("coastlineGroupName").style.display = "none";
+    document.getElementById("coastlineGroupName").value = "";
+    document.getElementById("coastlineGroup").style.display = "inline-block"; 
   }
 
-  function selectLakeGroup(node) {
+  function selectCoastlineGroup(node) {
     const group = node.parentNode.id;
-    const select = document.getElementById("lakeGroup");
+    const select = document.getElementById("coastlineGroup");
     select.options.length = 0; // remove all options
 
-    lakes.selectAll("g").each(function() {
+    coastline.selectAll("g").each(function() {
       select.options.add(new Option(this.id, this.id, false, this.id === group));
     });
   }
 
-  function changeLakeGroup() {
+  function changeCoastlineGroup() {
     document.getElementById(this.value).appendChild(elSelected.node());
   }
 
   function toggleNewGroupInput() {
-    if (lakeGroupName.style.display === "none") {
-      lakeGroupName.style.display = "inline-block";
-      lakeGroupName.focus();
-      lakeGroup.style.display = "none";
+    if (coastlineGroupName.style.display === "none") {
+      coastlineGroupName.style.display = "inline-block";
+      coastlineGroupName.focus();
+      coastlineGroup.style.display = "none";
     } else {
-      lakeGroupName.style.display = "none";
-      lakeGroup.style.display = "inline-block";
+      coastlineGroupName.style.display = "none";
+      coastlineGroup.style.display = "inline-block";
     }   
   }
 
@@ -127,49 +125,49 @@ function editLake() {
 
     // just rename if only 1 element left
     const oldGroup = elSelected.node().parentNode;
-    const basic = ["freshwater", "salt", "sinkhole", "frozen", "lava"].includes(oldGroup.id);
+    const basic = ["sea_island", "lake_island"].includes(oldGroup.id);
     if (!basic && oldGroup.childElementCount === 1) {
-      document.getElementById("lakeGroup").selectedOptions[0].remove();
-      document.getElementById("lakeGroup").options.add(new Option(group, group, false, true));
+      document.getElementById("coastlineGroup").selectedOptions[0].remove();
+      document.getElementById("coastlineGroup").options.add(new Option(group, group, false, true));
       oldGroup.id = group;
       toggleNewGroupInput();
-      document.getElementById("lakeGroupName").value = "";
+      document.getElementById("coastlineGroupName").value = "";
       return;
     }
 
     // create a new group
     const newGroup = elSelected.node().parentNode.cloneNode(false);
-    document.getElementById("lakes").appendChild(newGroup);
+    document.getElementById("coastline").appendChild(newGroup);
     newGroup.id = group;
-    document.getElementById("lakeGroup").options.add(new Option(group, group, false, true));
+    document.getElementById("coastlineGroup").options.add(new Option(group, group, false, true));
     document.getElementById(group).appendChild(elSelected.node());
 
     toggleNewGroupInput();
-    document.getElementById("lakeGroupName").value = "";
+    document.getElementById("coastlineGroupName").value = "";
   }
   
-  function removeLakeGroup() {
+  function removeCoastlineGroup() {
     const group = elSelected.node().parentNode.id;
-    if (["freshwater", "salt", "sinkhole", "frozen", "lava"].includes(group)) {
+    if (["sea_island", "lake_island"].includes(group)) {
       tip("This is one of the default groups, it cannot be removed", false, "error");
       return;
     }
 
     const count = elSelected.node().parentNode.childElementCount;
     alertMessage.innerHTML = `Are you sure you want to remove the group? 
-      All lakes of the group (${count}) will be turned into Freshwater`;
-    $("#alert").dialog({resizable: false, title: "Remove lake group", width:"26em",
+      All coastline elements of the group (${count}) will be moved under <i>sea_island</i> group`;
+    $("#alert").dialog({resizable: false, title: "Remove coastline group", width:"26em",
       buttons: {
         Remove: function() {
           $(this).dialog("close");
-          const freshwater = document.getElementById("freshwater");
+          const sea = document.getElementById("sea_island");
           const groupEl = document.getElementById(group);
           while (groupEl.childNodes.length) {
-            freshwater.appendChild(groupEl.childNodes[0]);
+            sea.appendChild(groupEl.childNodes[0]);
           }
           groupEl.remove();
-          document.getElementById("lakeGroup").selectedOptions[0].remove();
-          document.getElementById("lakeGroup").value = "freshwater";
+          document.getElementById("coastlineGroup").selectedOptions[0].remove();
+          document.getElementById("coastlineGroup").value = "sea_island";
         },
         Cancel: function() {$(this).dialog("close");}
       }
@@ -178,15 +176,10 @@ function editLake() {
 
   function editGroupStyle() {
     const g = elSelected.node().parentNode.id;
-    editStyle("lakes", g);
+    editStyle("coastline", g);
   }
 
-  function editLakeLegend() {
-    const id = elSelected.attr("id");
-    editNotes(id, id);
-  }
-
-  function closeLakesEditor() {
+  function closeCoastlineEditor() {
     debug.select("#vertices").remove();
     unselect();
   }

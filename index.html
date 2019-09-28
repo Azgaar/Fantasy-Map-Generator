@@ -130,7 +130,7 @@
       <g id="hatching">
         <pattern id="hatch0" patternUnits="userSpaceOnUse" width="4" height="4">
           <line x1="0" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:2"/>
-        </pattern>;
+        </pattern>
 
         <pattern id="hatch1" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
           <line x1="0" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:2"/>
@@ -2086,6 +2086,35 @@
       <button id="routeRemove" data-tip="Remove route. Shortcut: Delete" class="icon-trash"></button>
     </div>
 
+    <div id="lakeEditor" class="dialog" style="display: none">
+      <button id="lakeGroupsShow" data-tip="Show the group selection" class="icon-tags"></button>
+      <div id="lakeGroupsSelection" style="display: none">
+        <button id="lakeGroupsHide" data-tip="Hide the group section" class="icon-tags"></button>
+        <select id="lakeGroup" data-tip="Select a group for this lake" style="width:9em"></select>
+        <input id="lakeGroupName" placeholder="new group name" data-tip="Provide a name for the new group" style="display:none; width:9em"/>
+        <span id="lakeGroupAdd" data-tip="Create new group for this lake" class="icon-plus pointer"></span>
+        <span id="lakeGroupRemove" data-tip="Remove the group" class="icon-trash-empty pointer"></span>
+      </div>
+
+      <button id="lakeEditStyle" data-tip="Edit lake group style in Style Editor" class="icon-brush"></button>
+      <button id="lakeArea" data-tip="Lake area in selected units">0</button>
+      <button id="lakeLegend" data-tip="Edit free text notes (legend) for the lake" class="icon-edit"></button>
+    </div>
+
+    <div id="coastlineEditor" class="dialog" style="display: none">
+      <button id="coastlineGroupsShow" data-tip="Show the group selection" class="icon-tags"></button>
+      <div id="coastlineGroupsSelection" style="display: none">
+        <button id="coastlineGroupsHide" data-tip="Hide the group section" class="icon-tags"></button>
+        <select id="coastlineGroup" data-tip="Select a group for this coastline" style="width:9em"></select>
+        <input id="coastlineGroupName" placeholder="new group name" data-tip="Provide a name for the new group" style="display:none; width:9em"/>
+        <span id="coastlineGroupAdd" data-tip="Create new group for this coastline" class="icon-plus pointer"></span>
+        <span id="coastlineGroupRemove" data-tip="Remove the group" class="icon-trash-empty pointer"></span>
+      </div>
+
+      <button id="coastlineEditStyle" data-tip="Edit coastline group style in Style Editor" class="icon-brush"></button>
+      <button id="coastlineArea" data-tip="Lake area in selected units">0</button>
+    </div>
+
     <div id="reliefEditor" class="dialog" style="display: none">
 
       <div id="reliefTools" data-tip="Select mode of operation">
@@ -2446,8 +2475,7 @@
         <button id="convertImageLoad" data-tip="Load image to convert" class="icon-upload"></button>
         <button id="convertAutoLum" data-tip="Auto-assign colors based on liminosity (good to monochrome images)" class="icon-adjust"></button>
         <button id="convertAutoHue" data-tip="Auto-assign colors based on hue (good to colored images)" class="icon-brush"></button>
-        <button id="convertColorsMinus" data-tip="Reduce the number of colors. Minimal number is 3" class="icon-minus-squared"></button>
-        <button id="convertColorsPlus" data-tip="Increase the number of colors. Maximum number is 256" class="icon-plus-squared"></button>
+        <button id="convertColorsButton" data-tip="Set number of colors" class="icon-signal"></button>
         <input id="convertColors" value="18" style="display: none"/>
         <button id="convertComplete" data-tip="Complete the assignment. All unassigned colors will be considered as ocean" class="icon-check"></button>
       </div>
@@ -3027,7 +3055,6 @@
   <script src="libs/polylabel.min.js"></script>
   <script src="libs/jquery-ui.min.js"></script>
   <script src="libs/seedrandom.min.js"></script>
-  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.3.0/simplex-noise.js"></script> -->
   <script src="modules/ui/layers.js"></script>
 
   <script defer src="modules/ui/general.js"></script>
@@ -3047,6 +3074,7 @@
   <script defer src="modules/ui/namesbase-editor.js"></script>
   <script defer src="modules/ui/routes-editor.js"></script>
   <script defer src="modules/ui/lakes-editor.js"></script>
+  <script defer src="modules/ui/coastline-editor.js"></script>
   <script defer src="modules/ui/labels-editor.js"></script>
   <script defer src="modules/ui/rivers-editor.js"></script>
   <script defer src="modules/ui/relief-editor.js"></script>

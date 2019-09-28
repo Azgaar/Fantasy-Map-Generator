@@ -45,7 +45,7 @@ function showDataTip(e) {
 
 function moved() {
   const point = d3.mouse(this);
-  const i = findCell(point[0], point[1]); // pack ell id
+  const i = findCell(point[0], point[1]); // pack cell id
   if (i === undefined) return;
   showNotes(d3.event, i);
   const g = findGridCell(point[0], point[1]); // grid cell id
@@ -80,6 +80,7 @@ function showMapTooltip(point, e, i, g) {
   const group = path[path.length - 7].id;
   const subgroup = path[path.length - 8].id;
   const land = pack.cells.h[i] >= 20;
+  //const type = pack.features[cells.f[i]].type;
 
   // specific elements
   if (group === "rivers") {tip("Click to edit the River"); return;}
@@ -96,8 +97,8 @@ function showMapTooltip(point, e, i, g) {
   }
   if (subgroup === "burgIcons") {tip("Click to edit the Burg"); return;}
   if (subgroup === "burgLabels") {tip("Click to edit the Burg"); return;}
-  if (subgroup === "freshwater" && !land) {tip("Freshwater lake"); return;}
-  if (subgroup === "salt" && !land) {tip("Salt lake"); return;}
+  if (group === "lakes" && !land) {tip(`${capitalize(subgroup)} lake. Click to edit`); return;}
+  if (group === "coastline") {tip("Click to edit the coastline"); return;}
   if (group === "zones") {tip(path[path.length-8].dataset.description); return;}
 
   // covering elements
@@ -118,6 +119,7 @@ function showMapTooltip(point, e, i, g) {
   } else
   if (layerIsOn("toggleCultures") && pack.cells.culture[i]) tip("Culture: " + pack.cultures[pack.cells.culture[i]].name); else
   if (layerIsOn("toggleHeight")) tip("Height: " + getFriendlyHeight(point));
+  //if (pack.cells.t[i] === 1 && !tooltip.textContent) tip("Click to edit the coastline");
 }
 
 // get cell info on mouse move
