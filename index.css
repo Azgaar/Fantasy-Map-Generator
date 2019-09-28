@@ -692,7 +692,7 @@ fieldset {
 }
 
 #styleElements .whiteButton {
-	padding: 0 9px;
+	padding: 0 .8em;
 	border: 0;
 	background-color: #ffffff !important;
 }
@@ -1249,6 +1249,7 @@ div.states>.cultureName {
 
 div.states>.culturePopulation {
 	width: 4em;
+	cursor: pointer;
 }
 
 div.states > .cultureBase,

@@ -824,6 +824,16 @@ function parseLoadedData(data) {
           });
         }
 
+        if (!document.getElementById("freshwater")) {
+          lakes.append("g").attr("id", "freshwater");
+          lakes.select("#freshwater").attr("opacity", .5).attr("fill", "#a6c1fd").attr("stroke", "#5f799d").attr("stroke-width", .7).attr("filter", null);
+        }
+
+        if (!document.getElementById("salt")) {
+          lakes.append("g").attr("id", "salt");
+          lakes.select("#salt").attr("opacity", .5).attr("fill", "#409b8a").attr("stroke", "#388985").attr("stroke-width", .7).attr("filter", null);
+        }
+
         // v 1.1 added new lake and coast groups
         if (!document.getElementById("sinkhole")) {
           lakes.append("g").attr("id", "sinkhole");

@@ -43,6 +43,7 @@ function editStates() {
     if (cl.contains("zoneFill")) stateChangeFill(el); else
     if (cl.contains("icon-fleur")) stateOpenCOA(state); else
     if (cl.contains("icon-star-empty")) stateCapitalZoomIn(state); else
+    if (cl.contains("culturePopulation")) changePopulation(state); else
     if (cl.contains("icon-pin")) focusOnState(state, cl); else
     if (cl.contains("icon-trash-empty")) stateRemove(state); else
     if (cl.contains("hoverButton") && cl.contains("stateName")) regenerateName(state, line); else
@@ -76,7 +77,7 @@ function editStates() {
       const rural = s.rural * populationRate.value;
       const urban = s.urban * populationRate.value * urbanization.value;
       const population = rn(rural + urban);
-      const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}`;
+      const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}. Click to change`;
       totalArea += area;
       totalPopulation += population;
       totalBurgs += s.burgs;
@@ -288,6 +289,65 @@ function editStates() {
   function stateOpenCOA(state) {
     const url = `https://ironarachne.com/heraldry/${seed}-s${state}`;
     window.open(url, '_blank');
+  }
+
+  function changePopulation(state) {
+    const s = pack.states[state];
+    if (!s.cells) {tip("State does not have any cells, cannot change population", false, "error"); return;}
+    const rural = rn(s.rural * populationRate.value);
+    const urban = rn(s.urban * populationRate.value * urbanization.value);
+    const total = rural + urban;
+
+    alertMessage.innerHTML = `
+    Rural: <input type="number" min=0 step=1 id="ruralPop" value=${rural} style="width:6em" ${s.cells?'':"disabled"}>
+    Urban: <input type="number" min=0 step=1 id="urbanPop" value=${urban} style="width:6em" ${s.burgs?'':"disabled"}>
+    <p>Total population: ${total} ⇒ <span id="totalPop">${total}</span> (<span id="totalPopPerc">100</span>%)</p>`;
+
+    const update = function() {
+      const totalNew = ruralPop.valueAsNumber + urbanPop.valueAsNumber;
+      if (isNaN(totalNew)) return;
+      totalPop.innerHTML = totalNew;
+      totalPopPerc.innerHTML = rn(totalNew / total * 100);
+    }
+
+    ruralPop.oninput = () => update();
+    urbanPop.oninput = () => update();
+
+    $("#alert").dialog({
+      resizable: false, title: "Change state population", width: "23em", buttons: {
+        Apply: function() {applyPopulationChange(); $(this).dialog("close");},
+        Cancel: function() {$(this).dialog("close");}
+      }, position: {my: "center", at: "center", of: "svg"}
+    });
+
+    function applyPopulationChange() {
+      const ruralChange = rn(ruralPop.value / rural, 4);
+      if (isFinite(ruralChange) && ruralChange !== 1) {
+        const cells = pack.cells.i.filter(i => pack.cells.state[i] === state);
+        cells.forEach(i => pack.cells.pop[i] *= ruralChange);
+      }
+      if (!isFinite(ruralChange) && +ruralPop.value > 0) {
+        const points = ruralPop.value / populationRate.value;
+        const cells = pack.cells.i.filter(i => pack.cells.state[i] === state);
+        const pop = rn(points / cells.length);
+        cells.forEach(i => pack.cells.pop[i] = pop);
+      }
+
+      const urbanChange = rn(urbanPop.value / urban, 4);
+      if (isFinite(urbanChange) && urbanChange !== 1) {
+        const burgs = pack.burgs.filter(b => !b.removed && b.state === state);
+        burgs.forEach(b => b.population *= urbanChange);
+      }
+      if (!isFinite(urbanChange) && +urbanPop.value > 0) {
+        const points = urbanPop.value / populationRate.value / urbanization.value;
+        const burgs = pack.burgs.filter(b => !b.removed && b.state === state);
+        const population = rn(points / burgs.length);
+        burgs.forEach(b => b.population = population);
+      }
+
+      refreshStatesEditor();
+    }
+
   }
 
   function stateCapitalZoomIn(state) {
