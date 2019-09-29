@@ -32,7 +32,8 @@ function editCoastline(node = d3.event.target) {
     const f = +elSelected.attr("data-f"); // feature id
     const v = pack.features[f].vertices; // coastline outer vertices
 
-    const c = [... new Set(v.map(v => pack.vertices.c[v]).flat())];
+    const l = pack.cells.i.length;
+    const c = [... new Set(v.map(v => pack.vertices.c[v]).flat())].filter(c => c < l);
     debug.select("#vertices").selectAll("polygon").data(c).enter().append("polygon")
       .attr("points", d => getPackPolygon(d)).attr("data-c", d => d);
 
