@@ -269,7 +269,8 @@ function editProvinces() {
 
   function changePopulation(province) {
     const p = pack.provinces[province];
-    if (!p.cells) {tip("Province does not have any cells, cannot change population", false, "error"); return;}
+    const cells = pack.cells.i.filter(i => pack.cells.province[i] === province);
+    if (!cells.length) {tip("Province does not have any cells, cannot change population", false, "error"); return;}
     const rural = rn(p.rural * populationRate.value);
     const urban = rn(p.urban * populationRate.value * urbanization.value);
     const total = rural + urban;
@@ -300,12 +301,10 @@ function editProvinces() {
     function applyPopulationChange() {
       const ruralChange = rn(ruralPop.value / rural, 4);
       if (isFinite(ruralChange) && ruralChange !== 1) {
-        const cells = pack.cells.i.filter(i => pack.cells.province[i] === province);
         cells.forEach(i => pack.cells.pop[i] *= ruralChange);
       }
       if (!isFinite(ruralChange) && +ruralPop.value > 0) {
         const points = ruralPop.value / populationRate.value;
-        const cells = pack.cells.i.filter(i => pack.cells.province[i] === province);
         const pop = rn(points / cells.length);
         cells.forEach(i => pack.cells.pop[i] = pop);
       }
