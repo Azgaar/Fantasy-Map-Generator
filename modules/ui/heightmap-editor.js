@@ -62,7 +62,7 @@ function editHeightmap() {
     } else if (type === "risk") {
       terrs.attr("mask", null);
       defs.selectAll("#land, #water").selectAll("path").remove();
-      viewbox.selectAll("#coastline *, #lakes *, #oceanLayers path").remove();
+      viewbox.selectAll("#coastline path, #lakes path, #oceanLayers path").remove();
       changeOnlyLand.checked = false;
     }
 
