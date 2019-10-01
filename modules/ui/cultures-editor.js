@@ -22,6 +22,7 @@ function editCultures() {
 
   // add listeners
   document.getElementById("culturesEditorRefresh").addEventListener("click", refreshCulturesEditor);
+  document.getElementById("culturesEditStyle").addEventListener("click", () => editStyle("cults"));
   document.getElementById("culturesLegend").addEventListener("click", toggleLegend);
   document.getElementById("culturesPercentage").addEventListener("click", togglePercentageMode);
   document.getElementById("culturesRecalculate").addEventListener("click", () => recalculateCultures(true));
@@ -62,7 +63,7 @@ function editCultures() {
       const rural = c.rural * populationRate.value;
       const urban = c.urban * populationRate.value * urbanization.value;
       const population = rn(rural + urban);
-      const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}`;
+      const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}. Click to edit`;
       totalArea += area;
       totalPopulation += population;
 
@@ -124,6 +125,7 @@ function editCultures() {
     body.querySelectorAll("div > input.statePower").forEach(el => el.addEventListener("input", cultureChangeExpansionism));
     body.querySelectorAll("div > select.cultureType").forEach(el => el.addEventListener("change", cultureChangeType));
     body.querySelectorAll("div > select.cultureBase").forEach(el => el.addEventListener("change", cultureChangeBase));
+    body.querySelectorAll("div > div.culturePopulation").forEach(el => el.addEventListener("click", changePopulation));
     body.querySelectorAll("div > span.icon-arrows-cw").forEach(el => el.addEventListener("click", cultureRegenerateBurgs));
     body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.addEventListener("click", cultureRemove));
 
@@ -200,6 +202,66 @@ function editCultures() {
     const culture = +this.parentNode.dataset.id;
     const v = +this.value;
     this.parentNode.dataset.base = pack.cultures[culture].base = v;
+  }
+
+  function changePopulation() {
+    const culture = +this.parentNode.dataset.id;
+    const c = pack.cultures[culture];
+    if (!c.cells) {tip("Culture does not have any cells, cannot change population", false, "error"); return;}
+    const rural = rn(c.rural * populationRate.value);
+    const urban = rn(c.urban * populationRate.value * urbanization.value);
+    const total = rural + urban;
+    const l = n => Number(n).toLocaleString();
+    const burgs = pack.burgs.filter(b => !b.removed && b.culture === culture);
+
+    alertMessage.innerHTML = `
+    Rural: <input type="number" min=0 step=1 id="ruralPop" value=${rural} style="width:6em">
+    Urban: <input type="number" min=0 step=1 id="urbanPop" value=${urban} style="width:6em" ${burgs.length?'':"disabled"}>
+    <p>Total population: ${l(total)} ⇒ <span id="totalPop">${l(total)}</span> (<span id="totalPopPerc">100</span>%)</p>`;
+
+    const update = function() {
+      const totalNew = ruralPop.valueAsNumber + urbanPop.valueAsNumber;
+      if (isNaN(totalNew)) return;
+      totalPop.innerHTML = l(totalNew);
+      totalPopPerc.innerHTML = rn(totalNew / total * 100);
+    }
+
+    ruralPop.oninput = () => update();
+    urbanPop.oninput = () => update();
+
+    $("#alert").dialog({
+      resizable: false, title: "Change culture population", width: "24em", buttons: {
+        Apply: function() {applyPopulationChange(); $(this).dialog("close");},
+        Cancel: function() {$(this).dialog("close");}
+      }, position: {my: "center", at: "center", of: "svg"}
+    });
+
+    function applyPopulationChange() {
+      const ruralChange = rn(ruralPop.value / rural, 4);
+      if (isFinite(ruralChange) && ruralChange !== 1) {
+        const cells = pack.cells.i.filter(i => pack.cells.culture[i] === culture);
+        cells.forEach(i => pack.cells.pop[i] *= ruralChange);
+      }
+      if (!isFinite(ruralChange) && +ruralPop.value > 0) {
+        const points = ruralPop.value / populationRate.value;
+        const cells = pack.cells.i.filter(i => pack.cells.culture[i] === culture);
+        const pop = rn(points / cells.length);
+        cells.forEach(i => pack.cells.pop[i] = pop);
+      }
+
+      const urbanChange = rn(urbanPop.value / urban, 4);
+      if (isFinite(urbanChange) && urbanChange !== 1) {
+        burgs.forEach(b => b.population *= urbanChange);
+      }
+      if (!isFinite(urbanChange) && +urbanPop.value > 0) {
+        const points = urbanPop.value / populationRate.value / urbanization.value;
+        const population = rn(points / burgs.length);
+        burgs.forEach(b => b.population = population);
+      }
+
+      refreshCulturesEditor();
+    }
+
   }
 
   function cultureRegenerateBurgs() {

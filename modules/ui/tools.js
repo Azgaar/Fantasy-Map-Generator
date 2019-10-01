@@ -61,7 +61,8 @@ function processFeatureRegeneration(button) {
   if (button === "regenerateStates") regenerateStates(); else
   if (button === "regenerateProvinces") regenerateProvinces(); else
   if (button === "regenerateReligions") regenerateReligions(); else
-  if (button === "regenerateMarkers") regenerateMarkers();
+  if (button === "regenerateMarkers") regenerateMarkers(); else
+  if (button === "regenerateZones") regenerateZones();
 }
 
 function regenerateRivers() {
@@ -94,7 +95,7 @@ function regenerateBurgs() {
 
   const score = new Int16Array(cells.s.map(s => s * Math.random())); // cell score for capitals placement
   const sorted = cells.i.filter(i => score[i] > 0 && cells.culture[i]).sort((a, b) => score[b] - score[a]); // filtered and sorted array of indexes
-  const burgsCount = manorsInput.value == 1000 ? rn(sorted.length / 10 / densityInput.value ** .8) + states.length : +manorsInput.value + states.length;
+  const burgsCount = manorsInput.value == 1000 ? rn(sorted.length / 10 / (grid.points.length / 10000) ** .8) + states.length : +manorsInput.value + states.length;
   const spacing = (graphWidth + graphHeight) / 200 / (burgsCount / 500); // base min distance between towns
 
   for (let i=0; i < sorted.length && burgs.length < burgsCount; i++) {
@@ -107,7 +108,7 @@ function regenerateBurgs() {
 
     const state = cells.state[cell];
     const capital = !states[state].capital; // if state doesn't have capital, make this burg a capital
-    if (capital) {states[state].capital = id; states[state].cell = cell;}
+    if (capital) {states[state].capital = id; states[state].center = cell;}
 
     const culture = cells.culture[cell];
     const name = Names.getCulture(culture);
@@ -120,6 +121,7 @@ function regenerateBurgs() {
   states.filter(s => s.i && !s.removed && !s.capital).forEach(s => {
     const burg = addBurg([cells.p[s.center][0], cells.p[s.center][1]]); // add new burg
     s.capital = burg;
+    s.center = pack.burgs[burg].cell;
     pack.burgs[burg].capital = true;
     pack.burgs[burg].state = s.i;
     moveBurgToGroup(burg, "cities");
@@ -135,11 +137,18 @@ function regenerateBurgs() {
 
 function regenerateStates() {
   Math.seedrandom(Math.floor(Math.random() * 1e9)); // new random seed
-  const burgs = pack.burgs.filter(b => b.i && !b.removed), states = pack.states.filter(s => s.i && !s.removed);
-  // burgs sorted by a bit randomized population:
+  const burgs = pack.burgs.filter(b => b.i && !b.removed);
+  if (!burgs.length) {
+    tip("No burgs to generate states. Please create burgs first", false, "error");
+    return;
+  }
+  if (burgs.length < +regionsInput.value) {
+    tip(`Not enought burgs to generate ${regionsInput.value} states. Will generate only ${burgs.length} states`, false, "warn");
+  }
+
+  // burg ids sorted by a bit randomized population:
   const sorted = burgs.map(b => [b.i, b.population * Math.random()]).sort((a, b) => b[1] - a[1]).map(b => b[0]);
   const capitalsTree = d3.quadtree();
-  let spacing = (graphWidth + graphHeight) / 2 / states.length; // min distance between capitals
 
   // turn all old capitals into towns
   burgs.filter(b => b.capital).forEach(b => {
@@ -147,30 +156,31 @@ function regenerateStates() {
     b.capital = false;
   });
 
-  states.forEach(s => {
-    let newCapital = 0, x = 0, y = 0;
+  const neutral = pack.states[0].name;
+  const count = Math.min(+regionsInput.value, burgs.length);
+  let spacing = (graphWidth + graphHeight) / 2 / count; // min distance between capitals
+  pack.states = d3.range(count).map(i => {
+    if (!i) return {i, name: neutral};
 
-    for (let i=0; i < sorted.length && !newCapital; i++) {
-      newCapital = burgs[sorted[i]];
-      x = newCapital.x, y = newCapital.y;
-      if (capitalsTree.find(x, y, spacing) !== undefined) {
-        spacing -= 1;
-        if (spacing < 1) spacing = 1;
-        newCapital = 0;
-      }
+    let capital = null, x = 0, y = 0;
+    for (let i=0; i < sorted.length; i++) {
+      capital = burgs[sorted[i]];
+      x = capital.x, y = capital.y;
+      if (capitalsTree.find(x, y, spacing) === undefined) break;
+      spacing = Math.max(spacing - 1, 1);
     }
 
     capitalsTree.add([x, y]);
-    newCapital.capital = true;
-    s.capital = newCapital.i;
-    s.center = newCapital.cell;
-    s.culture = newCapital.culture;
-    s.expansionism = rn(Math.random() * powerInput.value + 1, 1);
-    const basename = newCapital.name.length < 9 && newCapital.cell%5 === 0 ? newCapital.name : Names.getCulture(s.culture, 3, 6, "", 0);
-    s.name = Names.getState(basename, s.culture);
-    const nomadic = [1, 2, 3, 4].includes(pack.cells.biome[newCapital.cell]);
-    s.type = nomadic ? "Nomadic" : pack.cultures[s.culture].type === "Nomadic" ? "Generic" : pack.cultures[s.culture].type;
-    moveBurgToGroup(newCapital.i, "cities");
+    capital.capital = true;
+    moveBurgToGroup(capital.i, "cities");
+
+    const culture = capital.culture;
+    const basename = capital.name.length < 9 && capital.cell%5 === 0 ? capital.name : Names.getCulture(culture, 3, 6, "", 0);
+    const name = Names.getState(basename, culture);
+    const nomadic = [1, 2, 3, 4].includes(pack.cells.biome[capital.cell]);
+    const type = nomadic ? "Nomadic" : pack.cultures[culture].type === "Nomadic" ? "Generic" : pack.cultures[culture].type;
+    const expansionism = rn(Math.random() * powerInput.value + 1, 1);
+    return {i, name, type, capital:capital.i, center:capital.cell, culture, expansionism};
   });
 
   unfog();
@@ -202,8 +212,19 @@ function regenerateReligions() {
 }
 
 function regenerateMarkers() {
-  markers.selectAll("use").remove();
+  // remove existing markers and assigned notes
+  markers.selectAll("use").each(function() {
+    const index = notes.findIndex(n => n.id === this.id);
+    if (index != -1) notes.splice(index, 1);
+  }).remove();
+
   addMarkers(gauss(1, .5, .3, 5, 2));
+}
+
+function regenerateZones() {
+  zones.selectAll("g").remove(); // remove existing zones
+  addZones(gauss(1, .5, .6, 5, 2));
+  if (document.getElementById("zonesEditorRefresh").offsetParent) zonesEditorRefresh.click();
 }
 
 function unpressClickToAddButton() {
@@ -244,6 +265,7 @@ function addLabelOnClick() {
   const x = width / -2; // x offset;
   example.remove();
 
+  group.classed("hidden", false);
   group.append("text").attr("id", id)
     .append("textPath").attr("xlink:href", "#textPath_"+id).attr("startOffset", "50%").attr("font-size", "100%")
     .append("tspan").attr("x", x).text(name);

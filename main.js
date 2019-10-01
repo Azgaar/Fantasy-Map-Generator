@@ -7,7 +7,7 @@
 // See also https://github.com/Azgaar/Fantasy-Map-Generator/issues/153
 
 "use strict";
-const version = "1.0"; // generator version
+const version = "1.1"; // generator version
 document.title += " v" + version;
 
 // if map version is not stored, clear localStorage and show a message
@@ -64,8 +64,14 @@ let fogging = viewbox.append("g").attr("id", "fogging-cont").attr("mask", "url(#
 let ruler = viewbox.append("g").attr("id", "ruler").attr("display", "none");
 let debug = viewbox.append("g").attr("id", "debug");
 
-let freshwater = lakes.append("g").attr("id", "freshwater");
-let salt = lakes.append("g").attr("id", "salt");
+// lake and coast groups
+lakes.append("g").attr("id", "freshwater");
+lakes.append("g").attr("id", "salt");
+lakes.append("g").attr("id", "sinkhole");
+lakes.append("g").attr("id", "frozen");
+lakes.append("g").attr("id", "lava");
+coastline.append("g").attr("id", "sea_island");
+coastline.append("g").attr("id", "lake_island");
 
 labels.append("g").attr("id", "states");
 labels.append("g").attr("id", "addedLabels");
@@ -321,8 +327,6 @@ function applyDefaultStyle() {
   compass.attr("opacity", .8).attr("transform", null).attr("filter", null).attr("mask", "url(#water)").attr("shape-rendering", "optimizespeed");
   if (!d3.select("#initial").size()) d3.select("#rose").attr("transform", "translate(80 80) scale(.25)");
 
-  coastline.attr("opacity", .5).attr("stroke", "#1f3846").attr("stroke-width", .7).attr("filter", "url(#dropShadow)");
-  styleCoastlineAuto.checked = true;
   relig.attr("opacity", .7).attr("stroke", "#404040").attr("stroke-width", .7).attr("filter", null).attr("fill-rule", "evenodd");
   cults.attr("opacity", .6).attr("stroke", "#777777").attr("stroke-width", .5).attr("filter", null).attr("fill-rule", "evenodd");
   icons.selectAll("g").attr("opacity", null).attr("fill", "#ffffff").attr("stroke", "#3e3e4b").attr("filter", null).attr("mask", null);
@@ -334,8 +338,15 @@ function applyDefaultStyle() {
   population.select("#rural").attr("stroke", "#0000ff");
   population.select("#urban").attr("stroke", "#ff0000");
 
-  freshwater.attr("opacity", .5).attr("fill", "#a6c1fd").attr("stroke", "#5f799d").attr("stroke-width", .7).attr("filter", null);
-  salt.attr("opacity", .5).attr("fill", "#409b8a").attr("stroke", "#388985").attr("stroke-width", .7).attr("filter", null);
+  lakes.select("#freshwater").attr("opacity", .5).attr("fill", "#a6c1fd").attr("stroke", "#5f799d").attr("stroke-width", .7).attr("filter", null);
+  lakes.select("#salt").attr("opacity", .5).attr("fill", "#409b8a").attr("stroke", "#388985").attr("stroke-width", .7).attr("filter", null);
+  lakes.select("#sinkhole").attr("opacity", 1).attr("fill", "#5bc9fd").attr("stroke", "#53a3b0").attr("stroke-width", .7).attr("filter", null);
+  lakes.select("#frozen").attr("opacity", .95).attr("fill", "#cdd4e7").attr("stroke", "#cfe0eb").attr("stroke-width", 0).attr("filter", null);
+  lakes.select("#lava").attr("opacity", .7).attr("fill", "#90270d").attr("stroke", "#f93e0c").attr("stroke-width", 2).attr("filter", "url(#crumpled)");
+
+  coastline.select("#sea_island").attr("opacity", .5).attr("stroke", "#1f3846").attr("stroke-width", .7).attr("filter", "url(#dropShadow)");
+  coastline.select("#lake_island").attr("opacity", 1).attr("stroke", "#7c8eaf").attr("stroke-width", .35).attr("filter", null);
+  styleCoastlineAuto.checked = true;
 
   terrain.attr("opacity", null).attr("filter", null).attr("mask", null);
   rivers.attr("opacity", null).attr("fill", "#5d97bb").attr("filter", null);
@@ -404,30 +415,21 @@ function applyDefaultStyle() {
 }
 
 function showWelcomeMessage() {
-  const link = 'https://www.reddit.com/r/FantasyMapGenerator/comments/cxu1c5/update_new_version_is_published_v_10'; // announcement on Reddit
+  const link = 'https://www.reddit.com/r/FantasyMapGenerator/comments/daf6g2/update_new_version_is_published_v_11'; // announcement on Reddit
   alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
-
-    This version is compatible with versions 0.8b and 0.9b, but not with older .map files.
-    Please use an <a href='https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog' target='_blank'>archived version</a> to open old files.
+    This version is compatible with <a href='https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog' target='_blank'>previous version</a>, 
+    loaded <i>.map</i> files will be auto-updated.
 
     <ul><a href=${link} target='_blank'>Main changes:</a>
-      <li>Provinces and Provinces Editor</li>
-      <li>Religions Layer and Religions Editor</li>
-      <li>Full state names (state types)</li>
-      <li>Multi-lined labels</li>
-      <li>State relations (diplomacy)</li>
-      <li>Custom layers (zones)</li>
-      <li>Places of interest (auto-added markers)</li>
-      <li>New color picker and hatching fill</li>
-      <li>Legend boxes</li>
-      <li>World Configurator presets</li>
-      <li>Improved state labels placement</li>
-      <li>Relief icons sets</li>
-      <li>Fogging</li>
-      <li>Custom layer presets</li>
-      <li>Custom biomes</li>
-      <li>State, province and burg COAs</li>
-      <li>Desktop version (see <a href='https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#is-there-a-desktop-version' target='_blank'>here)</a></li>
+      <li>Lake Editor</li>
+      <li>Coastline Editor</li>
+      <li>New lake groups (types)</li>
+      <li>Culture presets</li>
+      <li>Provinces, states and burgs charts</li>
+      <li>Editable religions tree</li>
+      <li>Data export in geojson format</li>
+      <li>Map quick save and quick load</li>
+      <li>Map loading from URL</li>
     </ul>
 
     <p>Join our <a href='https://www.reddit.com/r/FantasyMapGenerator' target='_blank'>Reddit community</a> and
@@ -437,7 +439,7 @@ function showWelcomeMessage() {
     <p>Thanks for all supporters on <a href='https://www.patreon.com/azgaar' target='_blank'>Patreon</a>!</i></p>`;
 
   $("#alert").dialog(
-    {resizable: false, title: "Fantasy Map Generator update", width: "31em",
+    {resizable: false, title: "Fantasy Map Generator update", width: "28em",
     buttons: {OK: function() {$(this).dialog("close")}},
     position: {my: "center", at: "center", of: "svg"},
     close: () => localStorage.setItem("version", version)}
@@ -487,7 +489,7 @@ function invokeActiveZooming() {
     // toggle shade/blur filter for coatline on zoom
     let filter = scale > 2.6 ? "url(#blurFilter)" : "url(#dropShadow)";
     if (scale > 1.5 && scale <= 2.6) filter = null;
-    coastline.attr("filter", filter);
+    coastline.select("#sea_island").attr("filter", filter);
   }
 
   // rescale lables on zoom
@@ -603,8 +605,8 @@ function generate() {
     drawStates();
     drawBorders();
     BurgsAndStates.drawStateLabels();
-    addZone();
     addMarkers();
+    addZones();
     Names.getMapName();
 
     console.warn(`TOTAL: ${rn((performance.now()-timeStart)/1000,2)}s`);
@@ -646,7 +648,7 @@ function generateSeed() {
 // Place points to calculate Voronoi diagram
 function placePoints() {
   console.time("placePoints");
-  const cellsDesired = 10000 * densityInput.value; // generate 10k points for graphSize = 1
+  const cellsDesired = 10000 * densityInput.value; // generate 10k points for each densityInput point
   const spacing = grid.spacing = rn(Math.sqrt(graphWidth * graphHeight / cellsDesired), 2); // spacing between points before jirrering
   grid.boundary = getBoundaryPoints(graphWidth, graphHeight, spacing);
   grid.points = getJitteredGrid(graphWidth, graphHeight, spacing); // jittered square grid
@@ -982,23 +984,29 @@ function drawCoastline() {
     const type = features[f].type === "lake" ? 1 : -1; // type value to search for
     const start = findStart(i, type);
     if (start === -1) continue; // cannot start here
-    const connectedVertices = connectVertices(start, type);
+    let vchain = connectVertices(start, type);
+    if (features[f].type === "lake") relax(vchain, 1.2);
     used[f] = 1;
-    let points = connectedVertices.map(v => vertices.p[v]);
+    let points = vchain.map(v => vertices.p[v]);
     const area = d3.polygonArea(points); // area with lakes/islands
-    if (area > 0 && features[f].type === "lake") points = points.reverse();
+    if (area > 0 && features[f].type === "lake") {
+      points = points.reverse();
+      vchain = vchain.reverse();
+    }
+
     features[f].area = Math.abs(area);
+    features[f].vertices = vchain;
 
     const path = round(lineGen(points));
-    const id = features[f].group + features[f].i;
     if (features[f].type === "lake") {
-      landMask.append("path").attr("d", path).attr("fill", "black");
-      // waterMask.append("path").attr("d", path).attr("fill", "white"); // uncomment to show over lakes
-      lakes.select("#"+features[f].group).append("path").attr("d", path).attr("id", id); // draw the lake
+      landMask.append("path").attr("d", path).attr("fill", "black").attr("id", "land_"+f);
+      // waterMask.append("path").attr("d", path).attr("fill", "white").attr("id", "water_"+id); // uncomment to show over lakes
+      lakes.select("#"+features[f].group).append("path").attr("d", path).attr("id", "lake_"+f).attr("data-f", f); // draw the lake
     } else {
-      landMask.append("path").attr("d", path).attr("fill", "white");
-      waterMask.append("path").attr("d", path).attr("fill", "black");
-      coastline.append("path").attr("d", path).attr("id", id); // draw the coastline
+      landMask.append("path").attr("d", path).attr("fill", "white").attr("id", "land_"+f);
+      waterMask.append("path").attr("d", path).attr("fill", "black").attr("id", "water_"+f);
+      const g = features[f].group === "lake_island" ? "lake_island" : "sea_island";
+      coastline.select("#"+g).append("path").attr("d", path).attr("id", "island_"+f).attr("data-f", f); // draw the coastline
     }
 
     // draw ruler to cover the biggest land piece
@@ -1034,8 +1042,26 @@ function drawCoastline() {
       if (v[2] !== prev && c0 !== c2) current = v[2];
       if (current === chain[chain.length-1]) {console.error("Next vertex is not found"); break;}
     }
-    chain.push(chain[0]); // push first vertex as the last one
+    //chain.push(chain[0]); // push first vertex as the last one
     return chain;
+  }
+
+  // move vertices that are too close to already added ones
+  function relax(vchain, r) {
+    const p = vertices.p, tree = d3.quadtree();
+
+    for (let i=0; i < vchain.length; i++) {
+      const v = vchain[i];
+      let [x, y] = [p[v][0], p[v][1]];
+      if (i && vchain[i+1] && tree.find(x, y, r) !== undefined) {
+        const v1 = vchain[i-1], v2 = vchain[i+1];
+        const [x1, y1] = [p[v1][0], p[v1][1]];
+        const [x2, y2] = [p[v2][0], p[v2][1]];
+        [x, y] = [(x1 + x2) / 2, (y1 + y2) / 2];
+        p[v] = [x, y];
+      }
+      tree.add([x, y]);
+    }
   }
 
   console.timeEnd('drawCoastline');
@@ -1045,18 +1071,17 @@ function drawCoastline() {
 function reMarkFeatures() {
   console.time("reMarkFeatures");
   const cells = pack.cells, features = pack.features = [0];
-  const continentCells = grid.cells.i.length / 10, islandCell = continentCells / 50;
   cells.f = new Uint16Array(cells.i.length); // cell feature number
   cells.t = new Int8Array(cells.i.length); // cell type: 1 = land along coast; -1 = water along coast;
   cells.haven = new Uint16Array(cells.i.length); // cell haven (opposite water cell);
   cells.harbor = new Uint16Array(cells.i.length); // cell harbor (number of adjacent water cells);
 
   for (let i=1, queue=[0]; queue[0] !== -1; i++) {
-    cells.f[queue[0]] = i; // feature number
-    const land = cells.h[queue[0]] >= 20;
+    const start = queue[0]; // first cell
+    cells.f[start] = i; // assign feature number
+    const land = cells.h[start] >= 20;
     let border = false; // true if feature touches map border
     let cellNumber = 1; // to count cells number in a feature
-    const temp = grid.cells.temp[cells.g[queue[0]]]; // first cell temparature
 
     while (queue.length) {
       const q = queue.pop();
@@ -1082,11 +1107,28 @@ function reMarkFeatures() {
 
     const type = land ? "island" : border ? "ocean" : "lake";
     let group;
-    if (type === "lake") group = temp < 25 ? "freshwater" : "salt"; else
-    if (type === "ocean") group = "ocean"; else
-    if (type === "island") group = cellNumber > continentCells ? "continent" : cellNumber > islandCell ? "island" : "isle";
-    features.push({i, land, border, type, cells: cellNumber, group});
+    if (type === "lake") group = defineLakeGroup(start, cellNumber);
+    else if (type === "ocean") group = "ocean"; 
+    else if (type === "island") group = defineIslandGroup(start, cellNumber);
+    features.push({i, land, border, type, cells: cellNumber, firstCell: start, group});
     queue[0] = cells.f.findIndex(f => !f); // find unmarked cell
+  }
+
+  function defineLakeGroup(cell, number) {
+    const temp = grid.cells.temp[cells.g[cell]];
+    if (temp > 24) return "salt";
+    if (temp < -3) return "frozen";
+    const height = d3.max(cells.c[cell].map(c => cells.h[c]));
+    if (height > 69 && number < 3 && cell%5 === 0) return "sinkhole";
+    if (height > 69 && number < 10 && cell%5 === 0) return "lava";
+    return "freshwater";
+  }
+
+  function defineIslandGroup(cell, number) {
+    if (cell && features[cells.f[cell-1]].type === "lake") return "lake_island";
+    if (number > grid.cells.i.length / 10) return "continent";
+    if (number > grid.cells.i.length / 1000) return "island";
+    return "isle";
   }
 
   console.timeEnd("reMarkFeatures");
@@ -1128,15 +1170,15 @@ function defineBiomes() {
     cells.biome[i] = getBiomeId(moist, temp, cells.h[i]);
   }
 
-  function getBiomeId(moisture, temperature, height) {
-    if (temperature < -5) return 11; // permafrost biome
-    if (moisture > 40 && height < 25 || moisture > 24 && height > 24) return 12; // wetland biome
-    const m = Math.min(moisture / 5 | 0, 4); // moisture band from 0 to 4
-    const t = Math.min(Math.max(20 - temperature, 0), 25); // temparature band from 0 to 25
-    return biomesData.biomesMartix[m][t];
-  }
-
   console.timeEnd("defineBiomes");
+}
+
+function getBiomeId(moisture, temperature, height) {
+  if (temperature < -5) return 11; // permafrost biome
+  if (moisture > 40 && height < 25 || moisture > 24 && height > 24) return 12; // wetland biome
+  const m = Math.min(moisture / 5 | 0, 4); // moisture band from 0 to 4
+  const t = Math.min(Math.max(20 - temperature, 0), 25); // temparature band from 0 to 25
+  return biomesData.biomesMartix[m][t];
 }
 
 // assess cells suitability to calculate population and rand cells for culture center and burgs placement
@@ -1160,7 +1202,9 @@ function rankCells() {
       const type = f[cells.f[cells.haven[i]]].type;
       const group = f[cells.f[cells.haven[i]]].group;
       if (type === "lake") {
-        if (group === "salt") s += 10; else s += 30; // lake coast is valued
+        // lake coast is valued
+        if (group === "freshwater") s += 30;
+        else if (group !== "lava") s += 10;
       } else {
         s += 5; // ocean coast is valued
         if (cells.harbor[i] === 1) s += 20; // safe sea harbor is valued
@@ -1175,23 +1219,7 @@ function rankCells() {
   console.timeEnd('rankCells');
 }
 
-// add a zone as an example: rebels along one border
-function addZone() {
-  const cells = pack.cells, states = pack.states;
-  const state = states.find(s => s.i && s.neighbors.size > 0 && s.neighbors.values().next().value);
-  if (!state) return;
-
-  const neib = state.neighbors.values().next().value;
-  const data = cells.i.filter(i => cells.state[i] === state.i && cells.c[i].some(c => cells.state[c] === neib));
-
-  const rebels = rw({Rebels:5, Insurgents:2, Recusants:1, Mutineers:1, Rioters:1, Dissenters:1, Secessionists:1, Insurrection:2, Rebellion:1, Conspiracy:2});
-  const name = getAdjective(states[neib].name) + " " + rebels;
-
-  const zone = zones.append("g").attr("id", "zone0").attr("data-description", name).attr("data-cells", data).attr("fill", "url(#hatch3)");
-  zone.selectAll("polygon").data(data).enter().append("polygon").attr("points", d => getPackPolygon(d)).attr("id", d => "zone0_"+d);
-}
-
-// add some markers as an example
+// generate some markers
 function addMarkers(number = 1) {
   console.time("addMarkers");
   const cells = pack.cells;
@@ -1205,7 +1233,7 @@ function addMarkers(number = 1) {
       const cell = mounts.splice(biased(0, mounts.length-1, 5), 1);
       const x = cells.p[cell][0], y = cells.p[cell][1];
       const id = getNextId("markerElement");
-      markers.append("use").attr("id", id)
+      markers.append("use").attr("id", id).attr("data-cell", cell)
         .attr("xlink:href", "#marker_volcano").attr("data-id", "#marker_volcano")
         .attr("data-x", x).attr("data-y", y).attr("x", x - 15).attr("y", y - 30)
         .attr("data-size", 1).attr("width", 30).attr("height", 30);
@@ -1232,7 +1260,7 @@ function addMarkers(number = 1) {
         .attr("data-size", 1).attr("width", 30).attr("height", 30);
 
       const proper = Names.getCulture(cells.culture[cell]);
-      const temp = convertTemperature(gauss(25,15,20,100));
+      const temp = convertTemperature(gauss(30,15,20,100));
       notes.push({id, name: proper + " Hot Springs", legend:`A hot springs area. Temperature: ${temp}`});
       count--;
     }
@@ -1394,6 +1422,326 @@ function addMarkers(number = 1) {
   }
 
   console.timeEnd("addMarkers");
+}
+
+// regenerate some zones
+function addZones(number = 1) {
+  console.time("addZones");
+  const data = [], cells = pack.cells, states = pack.states, burgs = pack.burgs;
+  const used = new Uint8Array(cells.i.length); // to store used cells
+
+  for (let i=0; i < rn(Math.random() * 1.8 * number); i++) addInvasion(); // invasion of enemy lands
+  for (let i=0; i < rn(Math.random() * 1.6 * number); i++) addRebels(); // rebels along a state border
+  for (let i=0; i < rn(Math.random() * 1.6 * number); i++) addProselytism(); // proselitism of organized religion
+  for (let i=0; i < rn(Math.random() * 1.6 * number); i++) addCrusade(); // crusade on heresy lands
+  for (let i=0; i < rn(Math.random() * 1.8 * number); i++) addDisease(); // disease starting in a random city
+  for (let i=0; i < rn(Math.random() * 1.4 * number); i++) addDisaster(); // disaster starting in a random city
+  for (let i=0; i < rn(Math.random() * 1.4 * number); i++) addEruption(); // volcanic eruption aroung volcano
+  for (let i=0; i < rn(Math.random() * 1.0 * number); i++) addAvalanche(); // avalanche impacting highland road
+  for (let i=0; i < rn(Math.random() * 1.4 * number); i++) addFault(); // fault line in elevated areas
+  for (let i=0; i < rn(Math.random() * 1.4 * number); i++) addFlood() // flood on river banks
+  for (let i=0; i < rn(Math.random() * 1.2 * number); i++) addTsunami() // tsunami starting near coast
+
+  function addInvasion() {
+    const atWar = states.filter(s => s.diplomacy && s.diplomacy.some(d => d === "Enemy"));
+    if (!atWar.length) return;
+
+    const invader = ra(atWar);
+    const target = invader.diplomacy.findIndex(d => d === "Enemy");
+
+    const cell = ra(cells.i.filter(i => cells.state[i] === target && cells.c[i].some(c => cells.state[c] === invader.i)));
+    if (!cell) return;
+
+    const cellsArray = [], queue = [cell], power = rand(5, 30);
+
+    while (queue.length) {
+      const q = Math.random() < .4 ? queue.shift() : queue.pop();
+      cellsArray.push(q);
+      if (cellsArray.length > power) break;
+
+      cells.c[q].forEach(e => {
+        if (used[e]) return;
+        if (cells.state[e] !== target) return;
+        used[e] = 1;
+        queue.push(e);
+      });
+    }
+
+    const invasion = rw({"Invasion":4, "Occupation":3, "Raid":2, "Conquest":2, 
+      "Subjugation":1, "Foray":1, "Irruption":1, "Incursion":2, "Pillage":1, "Intervention":1});
+    const name = getAdjective(invader.name) + " " + invasion;
+    data.push({name, type:"Invasion", cells:cellsArray, fill:"url(#hatch1)"});
+  }
+
+  function addRebels() {
+    const state = ra(states.filter(s => s.i && Array.from(s.neighbors).some(n => n)));
+    if (!state) return;
+
+    const neib = ra(Array.from(state.neighbors).filter(n => n));
+    const cell = cells.i.find(i => cells.state[i] === state.i && cells.c[i].some(c => cells.state[c] === neib));
+    const cellsArray = [], queue = [cell], power = rand(10, 30);
+
+    while (queue.length) {
+      const q = queue.shift();
+      cellsArray.push(q);
+      if (cellsArray.length > power) break;
+
+      cells.c[q].forEach(e => {
+        if (used[e]) return;
+        if (cells.state[e] !== state.i) return;
+        used[e] = 1;
+        if (e%4 !== 0 && !cells.c[e].some(c => cells.state[c] === neib)) return;
+        queue.push(e);
+      });
+    }
+
+    const rebels = rw({"Rebels":5, "Insurgents":2, "Recusants":1, 
+        "Mutineers":1, "Rioters":1, "Dissenters":1, "Secessionists":1, 
+        "Insurrection":2, "Rebellion":1, "Conspiracy":2});
+    const name = getAdjective(states[neib].name) + " " + rebels;
+    data.push({name, type:"Rebels", cells:cellsArray, fill:"url(#hatch3)"});
+  }
+
+  function addProselytism() {
+    const organized = ra(pack.religions.filter(r => r.type === "Organized"));
+    if (!organized) return;
+
+    const cell = ra(cells.i.filter(i => cells.religion[i] && cells.religion[i] !== organized.i && cells.c[i].some(c => cells.religion[c] === organized.i)));
+    if (!cell) return;
+    const target = cells.religion[cell];
+    const cellsArray = [], queue = [cell], power = rand(10, 30);
+
+    while (queue.length) {
+      const q = queue.shift();
+      cellsArray.push(q);
+      if (cellsArray.length > power) break;
+
+      cells.c[q].forEach(e => {
+        if (used[e]) return;
+        if (cells.religion[e] !== target) return;
+        if (cells.h[e] < 20) return;
+        used[e] = 1;
+        //if (e%2 !== 0 && !cells.c[e].some(c => cells.state[c] === neib)) return;
+        queue.push(e);
+      });
+    }
+
+    const name = getAdjective(organized.name.split(" ")[0]) + " Proselytism";
+    data.push({name, type:"Proselytism", cells:cellsArray, fill:"url(#hatch6)"});
+  }
+
+  function addCrusade() {
+    const heresy = ra(pack.religions.filter(r => r.type === "Heresy"));
+    if (!heresy) return;
+
+    const cellsArray = cells.i.filter(i => !used[i] && cells.religion[i] === heresy.i);
+    if (!cellsArray.length) return;
+    cellsArray.forEach(i => used[i] = 1);
+
+    const name = getAdjective(heresy.name.split(" ")[0]) + " Crusade";
+    data.push({name, type:"Crusade", cells:cellsArray, fill:"url(#hatch6)"});
+  }
+
+  function addDisease() {
+    const burg = ra(burgs.filter(b => !used[b.cell] && b.i && !b.removed)); // random burg
+    if (!burg) return;
+
+    const cellsArray = [], cost = [], power = rand(20, 37);
+    const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
+    queue.queue({e:burg.cell, p:0});
+
+    while (queue.length) {
+      const next = queue.dequeue();
+      if (cells.burg[next.e] || cells.pop[next.e]) cellsArray.push(next.e);
+      used[next.e] = 1;
+
+      cells.c[next.e].forEach(function(e) {
+        const r = cells.road[next.e];
+        const c = r ? Math.max(10 - r, 1) : 100;
+        const p = next.p + c;
+        if (p > power) return;
+
+        if (!cost[e] || p < cost[e]) {
+          cost[e] = p;
+          queue.queue({e, p});
+        }
+      });
+    }
+
+    const adjective = () => ra(["Great", "Silent", "Severe", "Blind", "Unknown", "Loud", "Deadly", "Burning", "Bloody", "Brutal", "Fatal"]);
+    const animal = () => ra(["Ape", "Bear", "Boar", "Cat", "Cow", "Dog", "Pig", "Fox", "Bird", "Horse", "Rat", "Raven", "Sheep", "Spider", "Wolf"]);
+    const color = () => ra(["Golden", "White", "Black", "Red", "Pink", "Purple", "Blue", "Green", "Yellow", "Amber", "Orange", "Brown", "Grey"]);
+
+    const type = rw({"Fever":5, "Pestilence":2, "Flu":2, "Pox":2, "Smallpox":2, "Plague":4, "Cholera":2, "Ague":1, "Dropsy":1, "Leprosy":2});
+    const name = rw({[color()]:4, [animal()]:2, [adjective()]:1}) + " " + type;
+    data.push({name, type:"Disease", cells:cellsArray, fill:"url(#hatch12)"});
+  }
+
+  function addDisaster() {
+    const burg = ra(burgs.filter(b => !used[b.cell] && b.i && !b.removed)); // random burg
+    if (!burg) return;
+
+    const cellsArray = [], cost = [], power = rand(5, 25);
+    const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
+    queue.queue({e:burg.cell, p:0});
+
+    while (queue.length) {
+      const next = queue.dequeue();
+      if (cells.burg[next.e] || cells.pop[next.e]) cellsArray.push(next.e);
+      used[next.e] = 1;
+
+      cells.c[next.e].forEach(function(e) {
+        const c = rand(1, 10);
+        const p = next.p + c;
+        if (p > power) return;
+
+        if (!cost[e] || p < cost[e]) {
+          cost[e] = p;
+          queue.queue({e, p});
+        }
+      });
+    }
+
+    const type = rw({"Famine":5, "Dearth":1, "Drought":3, "Earthquake":3, "Tornadoes":1, "Wildfires":1});
+    const name = getAdjective(burg.name) + " " + type;
+    data.push({name, type:"Disaster", cells:cellsArray, fill:"url(#hatch5)"});
+  }
+
+  function addEruption() {
+    const volcanoes = [];
+    markers.selectAll("use[data-id='#marker_volcano']").each(function() {
+      volcanoes.push(this.dataset.cell);
+    });
+    if (!volcanoes.length) return;
+
+    const cell = +ra(volcanoes);
+    const id = markers.select("use[data-cell='"+cell+"']").attr("id");
+    const note = notes.filter(n => n.id === id);
+
+    if (note[0]) note[0].legend = note[0].legend.replace("Active volcano", "Erupting volcano");
+    const name = note[0] ? note[0].name.replace(" Volcano", "") + " Eruption" : "Volcano Eruption";
+
+    const cellsArray = [], queue = [cell], power = rand(10, 30);
+
+    while (queue.length) {
+      const q = Math.random() < .5 ? queue.shift() : queue.pop();
+      cellsArray.push(q);
+      if (cellsArray.length > power) break;
+      cells.c[q].forEach(e => {
+        if (used[e]) return;
+        used[e] = 1;
+        queue.push(e);
+      });
+    }
+
+    data.push({name, type:"Disaster", cells:cellsArray, fill:"url(#hatch7)"});
+  }
+
+  function addAvalanche() {
+    const roads = cells.i.filter(i => !used[i] && cells.road[i] && cells.h[i] >= 70);
+    if (!roads.length) return;
+
+    const cell = +ra(roads);
+    const cellsArray = [], queue = [cell], power = rand(3, 15);
+
+    while (queue.length) {
+      const q = Math.random() < .3 ? queue.shift() : queue.pop();
+      cellsArray.push(q);
+      if (cellsArray.length > power) break;
+      cells.c[q].forEach(e => {
+        if (used[e] || cells.h[e] < 65) return;
+        used[e] = 1;
+        queue.push(e);
+      });
+    }
+
+    const proper = getAdjective(Names.getCultureShort(cells.culture[cell]));
+    const name = proper + " Avalanche";
+    data.push({name, type:"Disaster", cells:cellsArray, fill:"url(#hatch5)"});
+  }
+
+  function addFault() {
+    const elevated = cells.i.filter(i => !used[i] && cells.h[i] > 50 && cells.h[i] < 70);
+    if (!elevated.length) return;
+
+    const cell = ra(elevated);
+    const cellsArray = [], queue = [cell], power = rand(3, 15);
+
+    while (queue.length) {
+      const q = queue.pop();
+      if (cells.h[q] >= 20) cellsArray.push(q);
+      if (cellsArray.length > power) break;
+      cells.c[q].forEach(e => {
+        if (used[e] || cells.r[e]) return;
+        used[e] = 1;
+        queue.push(e);
+      });
+    }
+
+    const proper = getAdjective(Names.getCultureShort(cells.culture[cell]));
+    const name = proper + " Fault";
+    data.push({name, type:"Disaster", cells:cellsArray, fill:"url(#hatch2)"});
+  }
+
+  function addFlood() {
+    const fl = cells.fl.filter(fl => fl), meanFlux = d3.mean(fl), maxFlux = d3.max(fl), flux = (maxFlux - meanFlux) / 2 + meanFlux;
+    const rivers = cells.i.filter(i => !used[i] && cells.h[i] < 50 && cells.r[i] && cells.fl[i] > flux && cells.burg[i]);
+    if (!rivers.length) return;
+
+    const cell = +ra(rivers), river = cells.r[cell];
+    const cellsArray = [], queue = [cell], power = rand(5, 30);
+
+    while (queue.length) {
+      const q = queue.pop();
+      cellsArray.push(q);
+      if (cellsArray.length > power) break;
+
+      cells.c[q].forEach(e => {
+        if (used[e] || cells.h[e] < 20 || cells.r[e] !== river || cells.h[e] > 50 || cells.fl[e] < meanFlux) return;
+        used[e] = 1;
+        queue.push(e);
+      });
+    }
+
+    const name = getAdjective(burgs[cells.burg[cell]].name) + " Flood";
+    data.push({name, type:"Disaster", cells:cellsArray, fill:"url(#hatch13)"});
+  }
+
+  function addTsunami() {
+    const coastal = cells.i.filter(i => !used[i] && cells.t[i] === -1 && pack.features[cells.f[i]].type !== "lake");
+    if (!coastal.length) return;
+
+    const cell = +ra(coastal);
+    const cellsArray = [], queue = [cell], power = rand(10, 30);
+
+    while (queue.length) {
+      const q = queue.shift();
+      if (cells.t[q] === 1) cellsArray.push(q);
+      if (cellsArray.length > power) break;
+
+      cells.c[q].forEach(e => {
+        if (used[e]) return;
+        if (cells.h[e] >= 20 && !cells.t[e]) return;
+        if (pack.features[cells.f[e]].type === "lake") return;
+        used[e] = 1;
+        queue.push(e);
+      });
+    }
+
+    const proper = getAdjective(Names.getCultureShort(cells.culture[cell]));
+    const name = proper + " Tsunami";
+    data.push({name, type:"Disaster", cells:cellsArray, fill:"url(#hatch13)"});
+  }
+
+  void function drawZones() {
+    zones.selectAll("g").data(data).enter().append("g")
+      .attr("id", (d, i) => "zone"+i).attr("data-description", d => d.name).attr("data-type", d => d.type)
+      .attr("data-cells", d => d.cells.join(",")).attr("fill", d => d.fill)
+      .selectAll("polygon").data(d => d.cells).enter().append("polygon")
+      .attr("points", d => getPackPolygon(d)).attr("id", function(d) {return this.parentNode.id+"_"+d});
+  }()
+
+  console.timeEnd("addZones");
 }
 
 // show map stats on generation complete

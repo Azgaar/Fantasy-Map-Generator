@@ -45,7 +45,7 @@ function showDataTip(e) {
 
 function moved() {
   const point = d3.mouse(this);
-  const i = findCell(point[0], point[1]); // pack ell id
+  const i = findCell(point[0], point[1]); // pack cell id
   if (i === undefined) return;
   showNotes(d3.event, i);
   const g = findGridCell(point[0], point[1]); // grid cell id
@@ -80,6 +80,7 @@ function showMapTooltip(point, e, i, g) {
   const group = path[path.length - 7].id;
   const subgroup = path[path.length - 8].id;
   const land = pack.cells.h[i] >= 20;
+  //const type = pack.features[cells.f[i]].type;
 
   // specific elements
   if (group === "rivers") {tip("Click to edit the River"); return;}
@@ -96,8 +97,8 @@ function showMapTooltip(point, e, i, g) {
   }
   if (subgroup === "burgIcons") {tip("Click to edit the Burg"); return;}
   if (subgroup === "burgLabels") {tip("Click to edit the Burg"); return;}
-  if (subgroup === "freshwater" && !land) {tip("Freshwater lake"); return;}
-  if (subgroup === "salt" && !land) {tip("Salt lake"); return;}
+  if (group === "lakes" && !land) {tip(`${capitalize(subgroup)} lake. Click to edit`); return;}
+  if (group === "coastline") {tip("Click to edit the coastline"); return;}
   if (group === "zones") {tip(path[path.length-8].dataset.description); return;}
 
   // covering elements
@@ -118,6 +119,7 @@ function showMapTooltip(point, e, i, g) {
   } else
   if (layerIsOn("toggleCultures") && pack.cells.culture[i]) tip("Culture: " + pack.cultures[pack.cells.culture[i]].name); else
   if (layerIsOn("toggleHeight")) tip("Height: " + getFriendlyHeight(point));
+  //if (pack.cells.t[i] === 1 && !tooltip.textContent) tip("Click to edit the coastline");
 }
 
 // get cell info on mouse move
@@ -229,6 +231,42 @@ function applyOption(select, option) {
   select.value = option;
 }
 
+// show info about the generator in a popup
+function showInfo() {
+  const Discord = link("https://discordapp.com/invite/X7E84HU", "Discord");
+  const Reddit = link("https://www.reddit.com/r/FantasyMapGenerator", "Reddit")
+  const Patreon = link("https://www.patreon.com/azgaar", "Patreon");
+  const Trello = link("https://trello.com/b/7x832DG4/fantasy-map-generator", "Trello");
+
+  const QuickStart = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Quick-Start-Tutorial", "Quick start tutorial");
+  const QAA = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A", "Q&A page");
+
+  alertMessage.innerHTML = `
+    <b>Fantasy Map Generator</b> (FMG) is an open-source application, it means the code is published an anyone can use it. 
+    In case of FMG is also means that you own all created maps and can use them as you wish, you can even sell them.
+
+    <p>The development is supported by community, you can donate on ${Patreon}.
+    You can also help creating overviews, tutorials and spreding the word about the Generator.</p>
+
+    <p>The best way to get help is to contact the community on ${Discord} and ${Reddit}. 
+    Before asking questions, please check out the ${QuickStart} and the ${QAA}.</p>
+
+    <p>You can track the development process on ${Trello}.</p>
+
+    Links:
+    <ul style="columns:2">
+      <li>${link("https://github.com/Azgaar/Fantasy-Map-Generator", "GitHub repository")}</li>
+      <li>${link("https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE", "License")}</li>
+      <li>${link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "Changelog")}</li>
+      <li>${link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys", "Hotkeys")}</li>
+    </ul>`;
+
+  $("#alert").dialog({resizable: false, title: document.title, width: "28em",
+    buttons: {OK: function() {$(this).dialog("close");}},
+    position: {my: "center", at: "center", of: "svg"}
+  });
+}
+
 // prevent default browser behavior for FMG-used hotkeys
 document.addEventListener("keydown", event => {
   if ([112, 113, 117, 120, 9].includes(event.keyCode)) event.preventDefault(); // F1, F2, F6, F9, Tab
@@ -242,13 +280,14 @@ document.addEventListener("keyup", event => {
   event.stopPropagation();
 
   const key = event.keyCode, ctrl = event.ctrlKey, shift = event.shiftKey, meta = event.metaKey;
-  if (key === 27) {closeDialogs(); hideOptions();} // Escape to close all dialogs
-  else if (key === 9) toggleOptions(event); // Tab to toggle options
-
+  if (key === 112) showInfo(); // "F1" to show info
   else if (key === 113) regeneratePrompt(); // "F2" for new map
-  else if (key === 46) removeElementOnKey(); // "Delete" to remove the selected element
+  else if (key === 113) regeneratePrompt(); // "F2" for a new map
   else if (key === 117) quickSave(); // "F6" for quick save
   else if (key === 120) quickLoad(); // "F9" for quick load
+  else if (key === 9) toggleOptions(event); // Tab to toggle options
+  else if (key === 27) {closeDialogs(); hideOptions();} // Escape to close all dialogs
+  else if (key === 46) removeElementOnKey(); // "Delete" to remove the selected element
 
   else if (ctrl && key === 80) saveAsImage("png"); // Ctrl + "P" to save as PNG
   else if (ctrl && key === 83) saveAsImage("svg"); // Ctrl + "S" to save as SVG

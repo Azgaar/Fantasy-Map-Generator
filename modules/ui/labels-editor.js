@@ -34,7 +34,9 @@ function editLabel() {
   document.getElementById("labelTextShow").addEventListener("click", showTextSection);
   document.getElementById("labelTextHide").addEventListener("click", hideTextSection);
   document.getElementById("labelText").addEventListener("input", changeText);
-  document.getElementById("labelTextRandom").addEventListener("click", generateRandomName); 
+  document.getElementById("labelTextRandom").addEventListener("click", generateRandomName);
+
+  document.getElementById("labelEditStyle").addEventListener("click", editGroupStyle);
 
   document.getElementById("labelSizeShow").addEventListener("click", showSizeSection);
   document.getElementById("labelSizeHide").addEventListener("click", hideSizeSection);
@@ -181,11 +183,15 @@ function editLabel() {
 
   function createNewGroup() {
     if (!this.value) {tip("Please provide a valid group name"); return;}
-    let group = this.value.toLowerCase().replace(/ /g, "_").replace(/[^\w\s]/gi, "");
-    if (Number.isFinite(+group.charAt(0))) group = "g" + group;
+    const group = this.value.toLowerCase().replace(/ /g, "_").replace(/[^\w\s]/gi, "");
 
     if (document.getElementById(group)) {
       tip("Element with this id already exists. Please provide a unique name", false, "error");
+      return;
+    }
+
+    if (Number.isFinite(+group.charAt(0))) {
+      tip("Group name should start with a letter", false, "error");
       return;
     }
 
@@ -279,6 +285,11 @@ function editLabel() {
     }
     document.getElementById("labelText").value = name;
     changeText();
+  }
+
+  function editGroupStyle() {
+    const g = elSelected.node().parentNode.id;
+    editStyle("labels", g);
   }
 
   function showSizeSection() {

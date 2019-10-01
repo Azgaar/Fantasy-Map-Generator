@@ -246,6 +246,51 @@ function saveGeoJSON() {
   });
 }
 
+
+function saveGeoJSON_Cells() {
+  let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
+  const cells = pack.cells, v = pack.vertices;
+
+  cells.i.forEach(i => {
+    data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"Polygon\", \"coordinates\": [[";
+    cells.v[i].forEach(n => {
+      let x = mapCoordinates.lonW + (v.p[n][0] / graphWidth) * mapCoordinates.lonT;
+      let y = mapCoordinates.latN - (v.p[n][1] / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
+      data += "["+x+","+y+"],";
+    });
+    // close the ring
+    let x = mapCoordinates.lonW + (v.p[cells.v[i][0]][0] / graphWidth) * mapCoordinates.lonT;
+    let y = mapCoordinates.latN - (v.p[cells.v[i][0]][1] / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
+    data += "["+x+","+y+"]";
+    data += "]] },\n   \"properties\": {\n";
+
+    let height = parseInt(getFriendlyHeight([cells.p[i][0],cells.p[i][1]]));
+
+    data += "      \"id\": \""+i+"\",\n";
+    data += "      \"height\": \""+height+"\",\n";
+    data += "      \"biome\": \""+cells.biome[i]+"\",\n";
+    data += "      \"type\": \""+pack.features[cells.f[i]].type+"\",\n";
+    data += "      \"population\": \""+getFriendlyPopulation(i)+"\",\n";
+    data += "      \"state\": \""+cells.state[i]+"\",\n";
+    data += "      \"province\": \""+cells.province[i]+"\",\n";
+    data += "      \"culture\": \""+cells.culture[i]+"\",\n";
+    data += "      \"religion\": \""+cells.religion[i]+"\"\n";
+    data +="   }\n},\n";
+  });
+
+  data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
+  data += "]}";
+
+  const dataBlob = new Blob([data], {type: "application/json"});
+  const url = window.URL.createObjectURL(dataBlob);
+  const link = document.createElement("a");
+  document.body.appendChild(link);
+  link.download = getFileName("Cells") + ".geojson";
+  link.href = url;
+  link.click();
+  window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
+}
+
 function saveGeoJSON_Roads() {
   let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
 
@@ -292,6 +337,34 @@ function saveGeoJSON_Rivers() {
   const link = document.createElement("a");
   document.body.appendChild(link);
   link.download = getFileName("Rivers") + ".geojson";
+  link.href = url;
+  link.click();
+  window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
+}
+
+function saveGeoJSON_Markers() {
+
+  let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
+
+  markers._groups[0][0].childNodes.forEach(n => {
+      let x = mapCoordinates.lonW + (n.dataset.x / graphWidth) * mapCoordinates.lonT;
+      let y = mapCoordinates.latN - (n.dataset.y / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
+
+      data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"Point\", \"coordinates\": ["+x+", "+y+"]";
+      data += " },\n   \"properties\": {\n";
+      data += "      \"id\": \""+n.id+"\",\n";
+      data += "      \"type\": \""+n.dataset.id.substring(8)+"\"\n";
+      data +="   }\n},\n";
+
+  });
+  data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
+  data += "]}";
+
+  const dataBlob = new Blob([data], {type: "application/json"});
+  const url = window.URL.createObjectURL(dataBlob);
+  const link = document.createElement("a");
+  document.body.appendChild(link);
+  link.download = getFileName("Markers") + ".geojson";
   link.href = url;
   link.click();
   window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
@@ -412,78 +485,6 @@ function getFileName(dataType) {
   const day = datFormatter.format(date).replace(" ", "");
   const time = timeFormatter.format(date).replace(":", "-");
   return name + " " + type + day + " " + time;
-}
-
-function saveGeoJSON_Cells() {
-  let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
-  const cells = pack.cells, v = pack.vertices;
-
-  cells.i.forEach(i => {
-    data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"Polygon\", \"coordinates\": [[";
-    cells.v[i].forEach(n => {
-      let x = mapCoordinates.lonW + (v.p[n][0] / graphWidth) * mapCoordinates.lonT;
-      let y = mapCoordinates.latN - (v.p[n][1] / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
-      data += "["+x+","+y+"],";
-    });
-    // close the ring
-    let x = mapCoordinates.lonW + (v.p[cells.v[i][0]][0] / graphWidth) * mapCoordinates.lonT;
-    let y = mapCoordinates.latN - (v.p[cells.v[i][0]][1] / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
-    data += "["+x+","+y+"]";
-    data += "]] },\n   \"properties\": {\n";
-
-    let height = parseInt(getFriendlyHeight([cells.p[i][0],cells.p[i][1]]));
-
-    data += "      \"id\": \""+i+"\",\n";
-    data += "      \"height\": \""+height+"\",\n";
-    data += "      \"biome\": \""+cells.biome[i]+"\",\n";
-    data += "      \"type\": \""+pack.features[cells.f[i]].type+"\",\n";
-    data += "      \"population\": \""+getFriendlyPopulation(i)+"\",\n";
-    data += "      \"state\": \""+cells.state[i]+"\",\n";
-    data += "      \"province\": \""+cells.province[i]+"\",\n";
-    data += "      \"culture\": \""+cells.culture[i]+"\",\n";
-    data += "      \"religion\": \""+cells.religion[i]+"\"\n";
-    data +="   }\n},\n";
-  });
-
-  data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
-  data += "]}";
-
-  const dataBlob = new Blob([data], {type: "application/json"});
-  const url = window.URL.createObjectURL(dataBlob);
-  const link = document.createElement("a");
-  document.body.appendChild(link);
-  link.download = getFileName("Cells") + ".geojson";
-  link.href = url;
-  link.click();
-  window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
-}
-
-function saveGeoJSON_Markers() {
-
-    let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
-
-    markers._groups[0][0].childNodes.forEach(n => {
-        let x = mapCoordinates.lonW + (n.dataset.x / graphWidth) * mapCoordinates.lonT;
-        let y = mapCoordinates.latN - (n.dataset.y / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
-
-        data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"Point\", \"coordinates\": ["+x+", "+y+"]";
-        data += " },\n   \"properties\": {\n";
-        data += "      \"id\": \""+n.id+"\",\n";
-        data += "      \"type\": \""+n.dataset.id.substring(8)+"\"\n";
-        data +="   }\n},\n";
-
-    });
-    data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
-    data += "]}";
-
-    const dataBlob = new Blob([data], {type: "application/json"});
-    const url = window.URL.createObjectURL(dataBlob);
-    const link = document.createElement("a");
-    document.body.appendChild(link);
-    link.download = getFileName("Markers") + ".geojson";
-    link.href = url;
-    link.click();
-    window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
 }
 
 function uploadFile(file, callback) {
@@ -635,8 +636,6 @@ function parseLoadedData(data) {
       ruler = viewbox.select("#ruler");
       fogging = viewbox.select("#fogging");
       debug = viewbox.select("#debug");
-      freshwater = lakes.select("#freshwater");
-      salt = lakes.select("#salt");
       burgLabels = labels.select("#burgLabels");
     }()
 
@@ -775,7 +774,7 @@ function parseLoadedData(data) {
         // 1.0 adds zones layer
         zones = viewbox.insert("g", "#borders").attr("id", "zones").attr("display", "none");
         zones.attr("opacity", .6).attr("stroke", null).attr("stroke-width", 0).attr("stroke-dasharray", null).attr("stroke-linecap", "butt");
-        addZone();
+        addZones();
         if (!markers.selectAll("*").size()) {addMarkers(); turnButtonOn("toggleMarkers");}
 
         // 1.0 add fogging layer (state focus)
@@ -824,6 +823,38 @@ function parseLoadedData(data) {
             r.code = r.name.slice(0, 2);
           });
         }
+
+        if (!document.getElementById("freshwater")) {
+          lakes.append("g").attr("id", "freshwater");
+          lakes.select("#freshwater").attr("opacity", .5).attr("fill", "#a6c1fd").attr("stroke", "#5f799d").attr("stroke-width", .7).attr("filter", null);
+        }
+
+        if (!document.getElementById("salt")) {
+          lakes.append("g").attr("id", "salt");
+          lakes.select("#salt").attr("opacity", .5).attr("fill", "#409b8a").attr("stroke", "#388985").attr("stroke-width", .7).attr("filter", null);
+        }
+
+        // v 1.1 added new lake and coast groups
+        if (!document.getElementById("sinkhole")) {
+          lakes.append("g").attr("id", "sinkhole");
+          lakes.append("g").attr("id", "frozen");
+          lakes.append("g").attr("id", "lava");
+          lakes.select("#sinkhole").attr("opacity", 1).attr("fill", "#5bc9fd").attr("stroke", "#53a3b0").attr("stroke-width", .7).attr("filter", null);
+          lakes.select("#frozen").attr("opacity", .95).attr("fill", "#cdd4e7").attr("stroke", "#cfe0eb").attr("stroke-width", 0).attr("filter", null);
+          lakes.select("#lava").attr("opacity", .7).attr("fill", "#90270d").attr("stroke", "#f93e0c").attr("stroke-width", 2).attr("filter", "url(#crumpled)");
+
+          coastline.append("g").attr("id", "sea_island");
+          coastline.append("g").attr("id", "lake_island");
+          coastline.select("#sea_island").attr("opacity", .5).attr("stroke", "#1f3846").attr("stroke-width", .7).attr("filter", "url(#dropShadow)");
+          coastline.select("#lake_island").attr("opacity", 1).attr("stroke", "#7c8eaf").attr("stroke-width", .35).attr("filter", null);
+        }
+
+        // v 1.1 features stores more data
+        defs.select("#land").selectAll("path").remove();
+        defs.select("#water").selectAll("path").remove();
+        coastline.selectAll("path").remove();
+        lakes.selectAll("path").remove();
+        drawCoastline();
       }
     }()
 

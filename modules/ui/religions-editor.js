@@ -23,6 +23,7 @@ function editReligions() {
 
   // add listeners
   document.getElementById("religionsEditorRefresh").addEventListener("click", refreshReligionsEditor);
+  document.getElementById("religionsEditStyle").addEventListener("click", () => editStyle("relig"));
   document.getElementById("religionsLegend").addEventListener("click", toggleLegend);
   document.getElementById("religionsPercentage").addEventListener("click", togglePercentageMode);
   document.getElementById("religionsHeirarchy").addEventListener("click", showHierarchy);
@@ -65,7 +66,7 @@ function editReligions() {
       const urban = r.urban * populationRate.value * urbanization.value;
       const population = rn(rural + urban);
       if (r.i && !r.cells && body.dataset.extinct !== "show") continue; // hide extinct religions
-      const populationTip = `Believers: ${si(population)}; Rural areas: ${si(rural)}; Urban areas: ${si(urban)}`;
+      const populationTip = `Believers: ${si(population)}; Rural areas: ${si(rural)}; Urban areas: ${si(urban)}. Click to change`;
       totalArea += area;
       totalPopulation += population;
 
@@ -123,6 +124,7 @@ function editReligions() {
     body.querySelectorAll("div > input.religionForm").forEach(el => el.addEventListener("input", religionChangeForm));
     body.querySelectorAll("div > input.religionDeity").forEach(el => el.addEventListener("input", religionChangeDeity));
     body.querySelectorAll("div > span.icon-arrows-cw").forEach(el => el.addEventListener("click", regenerateDeity));
+    body.querySelectorAll("div > div.culturePopulation").forEach(el => el.addEventListener("click", changePopulation));
     body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.addEventListener("click", religionRemove));
 
     if (body.dataset.type === "percentage") {body.dataset.type = "absolute"; togglePercentageMode();}
@@ -225,6 +227,67 @@ function editReligions() {
     this.parentNode.dataset.deity = deity;
     pack.religions[religion].deity = deity;
     this.nextElementSibling.value = deity;
+  }
+
+  function changePopulation() {
+    const religion = +this.parentNode.dataset.id;
+    const r = pack.religions[religion];
+    if (!r.cells) {tip("Religion does not have any cells, cannot change population", false, "error"); return;}
+    const rural = rn(r.rural * populationRate.value);
+    const urban = rn(r.urban * populationRate.value * urbanization.value);
+    const total = rural + urban;
+    const l = n => Number(n).toLocaleString();
+    const burgs = pack.burgs.filter(b => !b.removed && pack.cells.religion[b.cell] === religion);
+
+    alertMessage.innerHTML = `<p><i>Please note all population of religion territory is considered 
+    believers of this religion. It means believers number change will directly change population</i></p>
+    Rural: <input type="number" min=0 step=1 id="ruralPop" value=${rural} style="width:6em">
+    Urban: <input type="number" min=0 step=1 id="urbanPop" value=${urban} style="width:6em" ${burgs.length?'':"disabled"}>
+    <p>Total believers: ${l(total)} ⇒ <span id="totalPop">${l(total)}</span> (<span id="totalPopPerc">100</span>%)</p>`;
+
+    const update = function() {
+      const totalNew = ruralPop.valueAsNumber + urbanPop.valueAsNumber;
+      if (isNaN(totalNew)) return;
+      totalPop.innerHTML = l(totalNew);
+      totalPopPerc.innerHTML = rn(totalNew / total * 100);
+    }
+
+    ruralPop.oninput = () => update();
+    urbanPop.oninput = () => update();
+
+    $("#alert").dialog({
+      resizable: false, title: "Change believers number", width: "24em", buttons: {
+        Apply: function() {applyPopulationChange(); $(this).dialog("close");},
+        Cancel: function() {$(this).dialog("close");}
+      }, position: {my: "center", at: "center", of: "svg"}
+    });
+
+    function applyPopulationChange() {
+      const ruralChange = rn(ruralPop.value / rural, 4);
+      if (isFinite(ruralChange) && ruralChange !== 1) {
+        const cells = pack.cells.i.filter(i => pack.cells.religion[i] === religion);
+        cells.forEach(i => pack.cells.pop[i] *= ruralChange);
+      }
+      if (!isFinite(ruralChange) && +ruralPop.value > 0) {
+        const points = ruralPop.value / populationRate.value;
+        const cells = pack.cells.i.filter(i => pack.cells.religion[i] === religion);
+        const pop = rn(points / cells.length);
+        cells.forEach(i => pack.cells.pop[i] = pop);
+      }
+
+      const urbanChange = rn(urbanPop.value / urban, 4);
+      if (isFinite(urbanChange) && urbanChange !== 1) {
+        burgs.forEach(b => b.population *= urbanChange);
+      }
+      if (!isFinite(urbanChange) && +urbanPop.value > 0) {
+        const points = urbanPop.value / populationRate.value / urbanization.value;
+        const population = rn(points / burgs.length);
+        burgs.forEach(b => b.population = population);
+      }
+
+      refreshReligionsEditor();
+    }
+
   }
 
   function religionRemove() {

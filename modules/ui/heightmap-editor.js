@@ -11,8 +11,8 @@ function editHeightmap() {
     <p>If you need to change the coastline and keep the data, you may try the <i>risk</i> edit option. 
     The data will be restored as much as possible, but the coastline change can cause unexpected fluctuations and errors.</p>
 
-    <p>Check out <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization" target="_blank">wiki</a> for guidance.</p>
-    
+    <p>Check out ${link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization", "wiki")} for guidance.</p>
+
     <p>Please <span class="pseudoLink" onclick=saveMap(); editHeightmap();>save the map</span> before edditing the heightmap!</p>`;
 
     $("#alert").dialog({resizable: false, title: "Edit Heightmap", width: "28em",
@@ -62,7 +62,7 @@ function editHeightmap() {
     } else if (type === "risk") {
       terrs.attr("mask", null);
       defs.selectAll("#land, #water").selectAll("path").remove();
-      viewbox.selectAll("#coastline *, #lakes *, #oceanLayers path").remove();
+      viewbox.selectAll("#coastline path, #lakes path, #oceanLayers path").remove();
       changeOnlyLand.checked = false;
     }
 
@@ -174,8 +174,8 @@ function getHeight(h) {
     drawStates();
     drawBorders();
     BurgsAndStates.drawStateLabels();
-    addZone();
     addMarkers();
+    addZones();
     console.timeEnd("regenerateErasedData");
     console.groupEnd("Edit Heightmap");
   }
@@ -193,7 +193,6 @@ function getHeight(h) {
     terrs.attr("mask", "url(#land)");
 
     // assign pack data to grid cells
-    const change = changeHeights.checked;
     const l = grid.cells.i.length;
     const biome = new Uint8Array(l);
     const conf = new Uint8Array(l);
@@ -247,10 +246,9 @@ function getHeight(h) {
     reGraph();
     drawCoastline();
 
-    if (change) {
+    if (changeHeights.checked) {
       elevateLakes();
       Rivers.generate();
-      defineBiomes();
     }
 
     // assign saved pack data from grid back to pack
@@ -265,25 +263,21 @@ function getHeight(h) {
     pack.cells.culture = new Uint16Array(n);
     pack.cells.religion = new Uint16Array(n);
 
-    if (!change) {
-      pack.cells.r = new Uint16Array(n);
-      pack.cells.conf = new Uint8Array(n);
-      pack.cells.fl = new Uint16Array(n);
-      pack.cells.biome = new Uint8Array(n);
-    }
+    pack.cells.r = new Uint16Array(n);
+    pack.cells.conf = new Uint8Array(n);
+    pack.cells.fl = new Uint16Array(n);
+    pack.cells.biome = new Uint8Array(n);
 
     for (const i of pack.cells.i) {
       const g = pack.cells.g[i];
       const land = pack.cells.h[i] >= 20;
 
-      if (!change) {
-        pack.cells.r[i] = r[g];
-        pack.cells.conf[i] = conf[g];
-        pack.cells.fl[i] = fl[g];
-        if (land && !biome[g]) pack.cells.biome[i] = getBiomeId(grid.cells.prec[g], grid.cells.temp[g]); else 
-        if (!land && biome[g]) pack.cells.biome[i] = 0; else
-        pack.cells.biome[i] = biome[g];
-      }
+      pack.cells.r[i] = r[g];
+      pack.cells.conf[i] = conf[g];
+      pack.cells.fl[i] = fl[g];
+      if (land && !biome[g]) pack.cells.biome[i] = getBiomeId(grid.cells.prec[g], grid.cells.temp[g]);
+      else if (!land && biome[g]) pack.cells.biome[i] = 0;
+      else pack.cells.biome[i] = biome[g];
 
       if (!land) continue;
       pack.cells.culture[i] = culture[g];
@@ -939,8 +933,7 @@ function getHeight(h) {
     document.getElementById("imageToLoad").addEventListener("change", loadImage);
     document.getElementById("convertAutoLum").addEventListener("click", () => autoAssing("lum"));
     document.getElementById("convertAutoHue").addEventListener("click", () => autoAssing("hue"));
-    document.getElementById("convertColorsPlus").addEventListener("click", () => changeConvertColorsNumber(1));
-    document.getElementById("convertColorsMinus").addEventListener("click", () => changeConvertColorsNumber(-1));
+    document.getElementById("convertColorsButton").addEventListener("click", setConvertColorsNumber);
     document.getElementById("convertComplete").addEventListener("click", () => $("#imageConverter").dialog("close"));
     document.getElementById("convertOverlay").addEventListener("input", function() {setOverlayOpacity(this.value)});
     document.getElementById("convertOverlayNumber").addEventListener("input", function() {setOverlayOpacity(this.value)});
@@ -1003,6 +996,8 @@ function getHeight(h) {
       unassignedContainer.selectAll("div").data(unassigned).enter().append("div")
         .attr("data-color", i => i).style("background-color", i => i)
         .attr("class", "color-div").on("click", colorClicked);
+
+      convertColors.value = unassigned.length;
     }
 
     function mapClicked() {
@@ -1078,9 +1073,11 @@ function getHeight(h) {
       colorsAssigned.style.display = "block";
       colorsUnassigned.style.display = "none";
     }
-    
-    function changeConvertColorsNumber(change) {
-      const number = Math.max(Math.min(+convertColors.value + change, 255), 3);
+
+    function setConvertColorsNumber() {
+      const number = +prompt(`Please provide a desired number of colors. Min value is 3, max is 255. An actual number depends on color scheme and may vary from desired number`, 
+        convertColors.value);
+      if (Number.isNaN(number) || number < 3 || number > 255) {tip("The number should be an integer in 3-255 range", false, "error"); return;}
       convertColors.value = number;
       heightsFromImage(number);
     }

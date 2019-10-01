@@ -22,6 +22,7 @@ function editBiomes() {
 
   // add listeners
   document.getElementById("biomesEditorRefresh").addEventListener("click", refreshBiomesEditor);
+  document.getElementById("biomesEditStyle").addEventListener("click", () => editStyle("biomes"));
   document.getElementById("biomesLegend").addEventListener("click", toggleLegend);
   document.getElementById("biomesPercentage").addEventListener("click", togglePercentageMode);
   document.getElementById("biomesManually").addEventListener("click", enterBiomesCustomizationMode);
@@ -88,7 +89,7 @@ function editBiomes() {
         <svg data-tip="Biomes fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${b.color[i]}" class="zoneFill"></svg>
         <input data-tip="Biome name. Click and type to change" class="biomeName" value="${b.name[i]}" autocorrect="off" spellcheck="false">
         <span data-tip="Biome habitability percent" class="hide">%</span>
-        <input data-tip="Biome habitability percent. Click and set new value to change" type="number" min=0 max=9999 step=1 class="biomeHabitability hide" value=${b.habitability[i]}>
+        <input data-tip="Biome habitability percent. Click and set new value to change" type="number" min=0 max=9999 class="biomeHabitability hide" value=${b.habitability[i]}>
         <span data-tip="Cells count" class="icon-check-empty hide"></span>
         <div data-tip="Cells count" class="biomeCells hide">${b.cells[i]}</div>
         <span data-tip="Biome area" style="padding-right: 4px" class="icon-map-o hide"></span>

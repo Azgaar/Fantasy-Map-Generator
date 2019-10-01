@@ -30,6 +30,8 @@ function editRoute(onClick) {
   document.getElementById("routeGroupName").addEventListener("change", createNewGroup);
   document.getElementById("routeGroupRemove").addEventListener("click", removeRouteGroup);
   document.getElementById("routeGroupsHide").addEventListener("click", hideGroupSection);
+
+  document.getElementById("routeEditStyle").addEventListener("click", editGroupStyle);
   document.getElementById("routeSplit").addEventListener("click", toggleRouteSplitMode);
   document.getElementById("routeLegend").addEventListener("click", editRouteLegend);
   document.getElementById("routeNew").addEventListener("click", toggleRouteCreationMode);
@@ -141,14 +143,17 @@ function editRoute(onClick) {
   
   function createNewGroup() {
     if (!this.value) {tip("Please provide a valid group name"); return;}
-    let group = this.value.toLowerCase().replace(/ /g, "_").replace(/[^\w\s]/gi, "");
-    if (Number.isFinite(+group.charAt(0))) group = "g" + group;
+    const group = this.value.toLowerCase().replace(/ /g, "_").replace(/[^\w\s]/gi, "");
 
     if (document.getElementById(group)) {
       tip("Element with this id already exists. Please provide a unique name", false, "error");
       return;
     }
-    
+
+    if (Number.isFinite(+group.charAt(0))) {
+      tip("Group name should start with a letter", false, "error");
+      return;
+    }
     // just rename if only 1 element left
     const oldGroup = elSelected.node().parentNode;
     const basic = ["roads", "trails", "searoutes"].includes(oldGroup.id);
@@ -189,7 +194,12 @@ function editRoute(onClick) {
         },
         Cancel: function() {$(this).dialog("close");}
       }
-    });   
+    });
+  }
+
+  function editGroupStyle() {
+    const g = elSelected.node().parentNode.id;
+    editStyle("routes", g);
   }
 
   function toggleRouteSplitMode() {

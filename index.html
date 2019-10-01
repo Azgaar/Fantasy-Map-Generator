@@ -8,6 +8,7 @@
   <meta name="author" content="Azgaar (Max Ganiev)">
   <meta name="description" content="Azgaar's Fantasy Map Generator and Editor">
   <meta name="google" content="notranslate">
+  <meta name="google-site-verification" content="6N9TRdPptDN1dCZKaMA5zJ-_UmNQE-3c4VizSlQcEeU"/>
   <meta property="og:url" content="https://azgaar.github.io/Fantasy-Map-Generator">
   <meta property="og:title" content="Azgaar's Fantasy Map Generator">
   <meta property="og:description" content="Web application generating interactive and customizable maps">
@@ -16,8 +17,8 @@
   <link rel="icon" type="image/png" href="images/favicon-16x16.png" sizes="16x16"/>
   <link rel="canonical" href="https://azgaar.github.io/Fantasy-Map-Generator/">
 
-  <link rel="stylesheet" type="text/css" href="index.css?version=1.0"/>
-  <link rel="stylesheet" type="text/css" href="icons.css?version=1.0"/>
+  <link rel="stylesheet" type="text/css" href="index.css?version=1.1"/>
+  <link rel="stylesheet" type="text/css" href="icons.css?version=1.1"/>
   <link rel="stylesheet" type="text/css" href="libs/jquery-ui.css"/>
 </head>
 <body>
@@ -129,7 +130,7 @@
       <g id="hatching">
         <pattern id="hatch0" patternUnits="userSpaceOnUse" width="4" height="4">
           <line x1="0" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:2"/>
-        </pattern>;
+        </pattern>
 
         <pattern id="hatch1" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
           <line x1="0" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:2"/>
@@ -874,7 +875,7 @@
   <div id="loading" style="opacity:1">
     <div id="title_name">Azgaar's</div>
     <div id="title">Fantasy Map Generator</div>
-    <div id="version">v. 1.0</div>
+    <div id="version">v. 1.1</div>
     <p id="loading-text">LOADING<span>.</span><span>.</span><span>.</span></p>
   </div>
 
@@ -890,13 +891,14 @@
 
       <div class="tab">
         <button id="optionsHide" data-tip="Click to hide options pane. Shortcut: Tab to close this or Esc to close all dialogs" class="options" onclick="hideOptions(event)">◄</button>
-        <button id="styleTab" data-tip="Click to open style menu" class="options active">Style</button>
+        <button id="layersTab" data-tip="Click to change map layers" class="options active">Layers</button>
+        <button id="styleTab" data-tip="Click to open style editor" class="options">Style</button>
         <button id="optionsTab" data-tip="Click to change generation and UI options" class="options">Options</button>
         <button id="toolsTab" data-tip="Click to open tools menu" class="options">Tools</button>
         <button id="aboutTab" data-tip="Click to see Generator info" class="options">About</button>
       </div>
 
-      <div id="styleContent" class="tabcontent" style="display: block">
+      <div id="layersContent" class="tabcontent" style="display: block">
         <p data-tip="Select a map layers preset" style="display: inline-block;">Layers preset:</p>
         <select data-tip="Select a map layers preset" id="layersPreset" onchange="changePreset(this.value)" style="width:45%">
           <option value="political" selected>Political map</option>
@@ -912,34 +914,36 @@
         <button id="savePresetButton" data-tip="Click to save displayed layers as a new preset" class="icon-plus presetButton" style="display:none" onclick="savePreset()"></button>
         <button id="removePresetButton" data-tip="Click to remove current custom preset" class="icon-minus presetButton" style="display:none" onclick="removePreset()"></button>
 
-        <p data-tip="Click to toggle a layer, drag to raise or lower a layer">Displayed layers:</p>
-        <ul data-tip="Click to toggle a layer, drag to raise or lower a layer" id="mapLayers">
-          <li id="toggleTexture" data-tip="Texture overlay: click to toggle, drag to raise or lower the layer. Shortcut: X" class="buttonoff" onclick="toggleTexture()">Te<u>x</u>ture</li>
-          <li id="toggleHeight" data-tip="Heightmap: click to toggle, drag to raise or lower the layer. Shortcut: H" class="buttonoff" onclick="toggleHeight()"><u>H</u>eightmap</li>
-          <li id="toggleBiomes" data-tip="Biomes: click to toggle, drag to raise or lower the layer. Shortcut: B" class="buttonoff" onclick="toggleBiomes()"><u>B</u>iomes</li>
-          <li id="toggleCells" data-tip="Cells structure: click to toggle, drag to raise or lower the layer. Shortcut: E" class="buttonoff" onclick="toggleCells()">C<u>e</u>lls</li>
-          <li id="toggleGrid" data-tip="Grid: click to toggle, drag to raise or lower. Select type in styles dropdown below. Shortcut: G" class="buttonoff" onclick="toggleGrid()"><u>G</u>rid</li>
-          <li id="toggleCoordinates" data-tip="Coordinate grid: click to toggle, drag to raise or lower the layer. Shortcut: O" class="buttonoff" onclick="toggleCoordinates()">C<u>o</u>ordinates</li>
-          <li id="toggleCompass" data-tip="Wind (Compass) Rose: click to toggle, drag to raise or lower the layer. Shortcut: W" class="buttonoff" onclick="toggleCompass()"><u>W</u>ind Rose</li>
-          <li id="toggleRivers" data-tip="Rivers: click to toggle, drag to raise or lower the layer. Shortcut: V" onclick="toggleRivers()">Ri<u>v</u>ers</li>
-          <li id="toggleRelief" data-tip="Relief and biome icons: click to toggle, drag to raise or lower the layer. Shortcut: F" class="buttonoff" onclick="toggleRelief()">Relie<u>f</u></li>
-          <li id="toggleReligions" data-tip="Religions: click to toggle, drag to raise or lower the layer. Shortcut: R" class="buttonoff" onclick="toggleReligions()"><u>R</u>eligions</li>
-          <li id="toggleCultures" data-tip="Cultures: click to toggle, drag to raise or lower the layer. Shortcut: C" class="buttonoff" onclick="toggleCultures()"><u>C</u>ultures</li>
-          <li id="toggleStates" data-tip="States: click to toggle, drag to raise or lower the layer. Shortcut: S" onclick="toggleStates()"><u>S</u>tates</li>
-          <li id="toggleProvinces" data-tip="Provinces: click to toggle, drag to raise or lower the layer. Shortcut: N" class="buttonoff" onclick="toggleProvinces()">Provi<u>n</u>ces</li>
-          <li id="toggleZones" data-tip="Zones: click to toggle, drag to raise or lower the layer. Shortcut: Z" class="buttonoff" onclick="toggleZones()"><u>Z</u>ones</li>
-          <li id="toggleBorders" data-tip="State borders: click to toggle, drag to raise or lower the layer. Shortcut: D" onclick="toggleBorders()">Bor<u>d</u>ers</li>
-          <li id="toggleRoutes"data-tip="Trade routes: click to toggle, drag to raise or lower the layer. Shortcut: U" onclick="toggleRoutes()">Ro<u>u</u>tes</li>
-          <li id="toggleTemp" data-tip="Temperature map: click to toggle, drag to raise or lower the layer. Shortcut: T" class="buttonoff" onclick="toggleTemp()"><u>T</u>emperature</li>
-          <li id="togglePopulation" data-tip="Population map: click to toggle, drag to raise or lower the layer. Shortcut: P" class="buttonoff" onclick="togglePopulation()"><u>P</u>opulation</li>
-          <li id="togglePrec" data-tip="Precipitation map: click to toggle, drag to raise or lower the layer. Shortcut: A" class="buttonoff" onclick="togglePrec()">Precipit<u>a</u>tion</li>
-          <li id="toggleLabels" data-tip="Labels: click to toggle, drag to raise or lower the layer. Shortcut: L" onclick="toggleLabels()"><u>L</u>abels</li>
-          <li id="toggleIcons" data-tip="Burg icons: click to toggle, drag to raise or lower the layer. Shortcut: I" onclick="toggleIcons()"><u>I</u>cons</li>
-          <li id="toggleMarkers" data-tip="Markers: click to toggle, drag to raise or lower the layer. Shortcut: M" class="buttonoff" onclick="toggleMarkers()"><u>M</u>arkers</li>
-          <li id="toggleRulers" data-tip="Rulers: click to toggle, drag to move, click on label to delete. Shortcut: = (equal)" class="buttonoff" onclick="toggleRulers()">Rulers</li>
-          <li id="toggleScaleBar" data-tip="Scale Bar: click to toggle, drag to move. Shortcut: - (minus)" onclick="toggleScaleBar()" class="solid">Scale Bar</li>
+        <p data-tip="Click to toggle a layer, drag to raise or lower a layer. Ctrl + click to edit layer style">Displayed layers and layers order:</p>
+        <ul data-tip="Click to toggle a layer, drag to raise or lower a layer. Ctrl + click to edit layer style" id="mapLayers">
+          <li id="toggleTexture" data-tip="Texture overlay: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: X" class="buttonoff" onclick="toggleTexture(event)">Te<u>x</u>ture</li>
+          <li id="toggleHeight" data-tip="Heightmap: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: H" class="buttonoff" onclick="toggleHeight(event)"><u>H</u>eightmap</li>
+          <li id="toggleBiomes" data-tip="Biomes: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: B" class="buttonoff" onclick="toggleBiomes(event)"><u>B</u>iomes</li>
+          <li id="toggleCells" data-tip="Cells structure: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: E" class="buttonoff" onclick="toggleCells(event)">C<u>e</u>lls</li>
+          <li id="toggleGrid" data-tip="Grid: click to toggle, drag to raise or lower. Select type in styles dropdown below. Ctrl + click to edit layer style. Shortcut: G" class="buttonoff" onclick="toggleGrid(event)"><u>G</u>rid</li>
+          <li id="toggleCoordinates" data-tip="Coordinate grid: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: O" class="buttonoff" onclick="toggleCoordinates(event)">C<u>o</u>ordinates</li>
+          <li id="toggleCompass" data-tip="Wind (Compass) Rose: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: W" class="buttonoff" onclick="toggleCompass(event)"><u>W</u>ind Rose</li>
+          <li id="toggleRivers" data-tip="Rivers: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: V" onclick="toggleRivers(event)">Ri<u>v</u>ers</li>
+          <li id="toggleRelief" data-tip="Relief and biome icons: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: F" class="buttonoff" onclick="toggleRelief(event)">Relie<u>f</u></li>
+          <li id="toggleReligions" data-tip="Religions: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: R" class="buttonoff" onclick="toggleReligions(event)"><u>R</u>eligions</li>
+          <li id="toggleCultures" data-tip="Cultures: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: C" class="buttonoff" onclick="toggleCultures(event)"><u>C</u>ultures</li>
+          <li id="toggleStates" data-tip="States: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: S" onclick="toggleStates(event)"><u>S</u>tates</li>
+          <li id="toggleProvinces" data-tip="Provinces: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: N" class="buttonoff" onclick="toggleProvinces(event)">Provi<u>n</u>ces</li>
+          <li id="toggleZones" data-tip="Zones: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: Z" class="buttonoff" onclick="toggleZones(event)"><u>Z</u>ones</li>
+          <li id="toggleBorders" data-tip="State borders: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: D" onclick="toggleBorders(event)">Bor<u>d</u>ers</li>
+          <li id="toggleRoutes"data-tip="Trade routes: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: U" onclick="toggleRoutes(event)">Ro<u>u</u>tes</li>
+          <li id="toggleTemp" data-tip="Temperature map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: T" class="buttonoff" onclick="toggleTemp(event)"><u>T</u>emperature</li>
+          <li id="togglePopulation" data-tip="Population map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: P" class="buttonoff" onclick="togglePopulation(event)"><u>P</u>opulation</li>
+          <li id="togglePrec" data-tip="Precipitation map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: A" class="buttonoff" onclick="togglePrec(event)">Precipit<u>a</u>tion</li>
+          <li id="toggleLabels" data-tip="Labels: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: L" onclick="toggleLabels(event)"><u>L</u>abels</li>
+          <li id="toggleIcons" data-tip="Burg icons: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: I" onclick="toggleIcons(event)"><u>I</u>cons</li>
+          <li id="toggleMarkers" data-tip="Markers: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: M" class="buttonoff" onclick="toggleMarkers(event)"><u>M</u>arkers</li>
+          <li id="toggleRulers" data-tip="Rulers: click to toggle, drag to move, click on label to delete. Ctrl + click to edit layer style. Shortcut: = (equal)" class="buttonoff" onclick="toggleRulers(event)">Rulers</li>
+          <li id="toggleScaleBar" data-tip="Scale Bar: click to toggle, drag to move. Ctrl + click to edit style. Shortcut: - (minus)" onclick="toggleScaleBar(event)" class="solid">Scale Bar</li>
         </ul>
+      </div>
 
+      <div id="styleContent" class="tabcontent">
         <p data-tip="Select an element to edit its style" style="display: inline-block;">Select element:</p>
         <select data-tip="Select an element to edit its style (list is ordered alphabetically)" id="styleElementSelect" style="width:42%">
           <option value="anchors">Anchor Icons</option>
@@ -980,7 +984,7 @@
 
           <tbody id="styleGroup">
             <tr data-tip="Select element group">
-              <td>Group</td>
+              <td><b>Group</b></td>
               <td>
                 <select id="styleGroupSelect"><option value="regions">regions</option></select>
               </td>
@@ -1460,7 +1464,7 @@
         </table>
 
         <div id="mapFilters" data-tip="Set a filter to be applied to the map in general">
-          <p>Toggle filters:</p>
+          <p>Toggle global filters:</p>
           <button id="grayscale" class="radio">Grayscale</button>
           <button id="sepia" class="radio">Sepia</button>
           <button id="dingy" class="radio">Dingy</button>
@@ -1553,11 +1557,29 @@
             </td>
             <td>Cultures number</td>
             <td>
-              <input id="culturesInput" data-stored="cultures" type="range" min=1 max=30 value=14>
+              <input id="culturesInput" data-stored="cultures" type="range" min=1 max=32 value=14>
             </td>
             <td>
-              <input id="culturesOutput" data-stored="cultures" type="number" min=1 max=30 value=14>
+              <input id="culturesOutput" data-stored="cultures" type="number" min=1 max=32 value=14>
             </td>
+          </tr>
+
+          <tr data-tip="Select a set of cultures to be used for names and cultures generation">
+            <td>
+              <i data-locked=0 id="lock_culturesSet" class="icon-lock-open"></i>
+            </td>
+            <td>Cultures set</td>
+            <td>
+              <select id="culturesSet" data-stored="culturesSet">
+                <option value="world" data-max="32" selected>All-world</option>
+                <option value="european" data-max="15">European</option>
+                <option value="oriental" data-max="13">Oriental</option>
+                <option value="english" data-max="10">English</option>
+                <!-- <option value="high" data-max="16">High Fantasy</option> -->
+                <!-- <option value="dark" data-max="16">Dark Fantasy</option> -->
+              </select>
+            </td>
+            <td></td>
           </tr>
 
           <tr data-tip="Define how many states and capitals should be generated">
@@ -1748,6 +1770,7 @@
           <button id="regenerateProvinces" data-tip="Click to regenerate provinces. States will remain as they are">Provinces</button>
           <button id="regenerateReligions" data-tip="Click to regenerate religions">Religions</button>
           <button id="regenerateMarkers" data-tip="Click to regenerate markers">Markers</button>
+          <button id="regenerateZones" data-tip="Click to regenerate zones">Zones</button>
         </div>
 
         <div id="addFeature">
@@ -1823,7 +1846,7 @@
       </div>
 
       <div id="aboutContent" class="tabcontent">
-        <p><a href="https://github.com/Azgaar/Fantasy-Map-Generator" target="_blank">Fantasy Map Generator</a> is a free <a href="https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE" target="_blank">open source</a> tool which procedurally generates fantasy maps. You may use auto-generated maps as they are, edit them or even create a new map from scratch. Check out the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Quick-Start-Tutorial" target="_blank">quick start tutorial</a> and <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki" target="_blank">project wiki</a> for guidance.</p>
+        <p><a href="https://github.com/Azgaar/Fantasy-Map-Generator" target="_blank">Fantasy Map Generator</a> is a free <a href="https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE" target="_blank">open source</a> tool which procedurally generates fantasy maps. You may use auto-generated maps as they are, edit them or even create a new map from scratch. Check out the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Quick-Start-Tutorial" target="_blank">quick start tutorial</a> and <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A" target="_blank">Q&A</a> for guidance.</p>
         <p>Join our <a href='https://discordapp.com/invite/X7E84HU' target='_blank'>Discord server</a> and <a href="https://www.reddit.com/r/FantasyMapGenerator/" target="_blank">Reddit community</a> to ask questions, get help and share created maps. You may support the project on <a href='https://www.patreon.com/azgaar' target='_blank'>Patreon</a>.</p>
         <p>The project is under active development. For older versions see the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog" target="_blank">changelog</a>. To track the development progress see the <a href="https://trello.com/b/7x832DG4/fantasy-map-generator" target="_blank">devboard</a>. Please report bugs <a href="https://github.com/Azgaar/Fantasy-Map-Generator/issues" target="_blank">here</a>. You can also contact me directly via <a href="mailto:azgaar.fmg@yandex.by" target="_blank">email</a>.</p>
         <p>A special thanks to all supporters! <i data-tip="Click to see supporters names" class="collapsible icon-down-open pointer"></i></p>
@@ -2001,6 +2024,8 @@
         <span id="labelTextRandom" data-tip="Generate random name" class="icon-shuffle pointer"></span>
       </div>
 
+      <button id="labelEditStyle" data-tip="Edit label group style in Style Editor" class="icon-brush"></button>
+
       <button id="labelSizeShow" data-tip="Show the font size section" class="icon-text-height"></button>
       <div id="labelSizeSection" style="display: none">
         <button id="labelSizeHide" data-tip="Hide the font size section" class="icon-text-height"></button>
@@ -2035,6 +2060,7 @@
         <span id="riverReset" data-tip="Reset transformation to default" class="icon-cancel pointer"></span>
       </div>
 
+      <button id="riverEditStyle" data-tip="Edit style for all rivers in Style Editor" class="icon-brush"></button>
       <button id="riverLength" data-tip="River length in selected units">0</button>
       <button id="riverCopy" data-tip="Copy river" class="icon-clone"></button>
       <button id="riverNew" data-tip="Create new river clicking on map" class="icon-map-pin"></button>
@@ -2051,11 +2077,42 @@
         <span id="routeGroupAdd" data-tip="Create new group for this route" class="icon-plus pointer"></span>
         <span id="routeGroupRemove" data-tip="Remove all routes of this group" class="icon-trash-empty pointer"></span>
       </div>
+
+      <button id="routeEditStyle" data-tip="Edit route group style in Style Editor" class="icon-brush"></button>
       <button id="routeLength" data-tip="Route length in selected units">0</button>
       <button id="routeSplit" data-tip="Click on a control point to split the route" class="icon-unlink"></button>
       <button id="routeLegend" data-tip="Edit free text notes (legend) for the route" class="icon-edit"></button>
       <button id="routeNew" data-tip="Create new route clicking on map" class="icon-map-pin"></button>
       <button id="routeRemove" data-tip="Remove route. Shortcut: Delete" class="icon-trash"></button>
+    </div>
+
+    <div id="lakeEditor" class="dialog" style="display: none">
+      <button id="lakeGroupsShow" data-tip="Show the group selection" class="icon-tags"></button>
+      <div id="lakeGroupsSelection" style="display: none">
+        <button id="lakeGroupsHide" data-tip="Hide the group section" class="icon-tags"></button>
+        <select id="lakeGroup" data-tip="Select a group for this lake" style="width:9em"></select>
+        <input id="lakeGroupName" placeholder="new group name" data-tip="Provide a name for the new group" style="display:none; width:9em"/>
+        <span id="lakeGroupAdd" data-tip="Create new group for this lake" class="icon-plus pointer"></span>
+        <span id="lakeGroupRemove" data-tip="Remove the group" class="icon-trash-empty pointer"></span>
+      </div>
+
+      <button id="lakeEditStyle" data-tip="Edit lake group style in Style Editor" class="icon-brush"></button>
+      <button id="lakeArea" data-tip="Lake area in selected units">0</button>
+      <button id="lakeLegend" data-tip="Edit free text notes (legend) for the lake" class="icon-edit"></button>
+    </div>
+
+    <div id="coastlineEditor" class="dialog" style="display: none">
+      <button id="coastlineGroupsShow" data-tip="Show the group selection" class="icon-tags"></button>
+      <div id="coastlineGroupsSelection" style="display: none">
+        <button id="coastlineGroupsHide" data-tip="Hide the group section" class="icon-tags"></button>
+        <select id="coastlineGroup" data-tip="Select a group for this coastline" style="width:9em"></select>
+        <input id="coastlineGroupName" placeholder="new group name" data-tip="Provide a name for the new group" style="display:none; width:9em"/>
+        <span id="coastlineGroupAdd" data-tip="Create new group for this coastline" class="icon-plus pointer"></span>
+        <span id="coastlineGroupRemove" data-tip="Remove the group" class="icon-trash-empty pointer"></span>
+      </div>
+
+      <button id="coastlineEditStyle" data-tip="Edit coastline group style in Style Editor" class="icon-brush"></button>
+      <button id="coastlineArea" data-tip="Lake area in selected units">0</button>
     </div>
 
     <div id="reliefEditor" class="dialog" style="display: none">
@@ -2183,6 +2240,7 @@
       </div>
 
       <div id="reliefBottom">
+        <button id="reliefEditStyle" data-tip="Edit Relief Icons style in Style Editor" class="icon-brush"></button>
         <button id="reliefCopy" data-tip="Copy selected relief icon" class="icon-clone"></button>
         <button id="reliefMoveFront" data-tip="Move selected relief icon to front" class="icon-level-up"></button>
         <button id="reliefMoveBack" data-tip="Move selected relief icon back" class="icon-level-down"></button>
@@ -2206,6 +2264,14 @@
         <input id="burgNameInput" data-tip="Populate to rename the burg"/>
         <span id="burgNameReCulture" data-tip="Generate culture-specific name for the burg" class="icon-book pointer"></span>
         <span id="burgNameReRandom" data-tip="Generate random name for the burg" class="icon-globe pointer"></span>
+      </div>
+
+      <button id="burgStyleShow" data-tip="Show style edit section" class="icon-brush"></button>
+      <div id="burgStyleSection" style="display: none">
+        <button id="burgStyleHide" data-tip="Hide style edit section" class="icon-brush"></button>
+        <button id="burgEditLabelStyle" data-tip="Edit label style for burg group in Style Editor" class="icon-font"></button>
+        <button id="burgEditIconStyle" data-tip="Edit icon style for burg group in Style Editor" class="icon-dot-circled"></button>
+        <button id="burgEditAnchorStyle" data-tip="Edit port icon (anchor) style for burg group in Style Editor" class="icon-anchor"></button>        
       </div>
 
       <button id="burgSeeInMFCG" data-tip="Open the burg representation in the Medieval Fantasy City Generator by Watabou" class="icon-map-o"></button>
@@ -2304,8 +2370,8 @@
 
       <div id="brushesSliders" style="display: none">
         <div data-tip="Change brush size. Shortcut: + (increase), – (decrease)" style="padding-bottom: 1px"><div style="width:3.2em; display: inline-block"><i>Radius:</i></div>
-          <input id="brushRadius" oninput="tip('Brush radius: '+this.value); brushRadiusNumber.value = this.value" type="range" min=5 max=50 value=25>
-          <input id="brushRadiusNumber" oninput="tip('Brush radius: '+this.value); brushRadius.value = this.value" type="number" min=5 max=50 value=25 style="border: 1px solid #d4d4d4">
+          <input id="brushRadius" oninput="tip('Brush radius: '+this.value); brushRadiusNumber.value = this.value" type="range" min=1 max=50 value=25>
+          <input id="brushRadiusNumber" oninput="tip('Brush radius: '+this.value); brushRadius.value = this.value" type="number" min=1 max=50 value=25 style="border: 1px solid #d4d4d4">
         </div>
 
         <div data-tip="Set the brush power"><div style="width:3.2em; display: inline-block"><i>Power:</i></div>
@@ -2409,8 +2475,7 @@
         <button id="convertImageLoad" data-tip="Load image to convert" class="icon-upload"></button>
         <button id="convertAutoLum" data-tip="Auto-assign colors based on liminosity (good to monochrome images)" class="icon-adjust"></button>
         <button id="convertAutoHue" data-tip="Auto-assign colors based on hue (good to colored images)" class="icon-brush"></button>
-        <button id="convertColorsMinus" data-tip="Reduce the number of colors. Minimal number is 3" class="icon-minus-squared"></button>
-        <button id="convertColorsPlus" data-tip="Increase the number of colors. Maximum number is 256" class="icon-plus-squared"></button>
+        <button id="convertColorsButton" data-tip="Set number of colors" class="icon-signal"></button>
         <input id="convertColors" value="18" style="display: none"/>
         <button id="convertComplete" data-tip="Complete the assignment. All unassigned colors will be considered as ocean" class="icon-check"></button>
       </div>
@@ -2456,6 +2521,7 @@
 
       <div id="biomesBottom">
         <button id="biomesEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
+        <button id="biomesEditStyle" data-tip="Edit biomes style in Style Editor" class="icon-adjust"></button>
         <button id="biomesLegend" data-tip="Toggle Legend box" class="icon-list-bullet"></button>
         <button id="biomesPercentage" data-tip="Toggle percentage / absolute values views" class="icon-percent"></button>
         <button id="biomesManually" data-tip="Manually re-assign biomes to not follow the default moisture/temperature pattern" class="icon-brush"></button>
@@ -2501,6 +2567,7 @@
 
       <div id="statesBottom">
         <button id="statesEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
+        <button id="statesEditStyle" data-tip="Edit states style in Style Editor" class="icon-adjust"></button>
         <button id="statesLegend" data-tip="Toggle Legend box" class="icon-list-bullet"></button>
         <button id="statesPercentage" data-tip="Toggle percentage / absolute values views" class="icon-percent"></button>
         <button id="statesChart" data-tip="Show states bubble chart" class="icon-chart-area"></button>
@@ -2560,6 +2627,7 @@
 
       <div id="provincesBottom">
         <button id="provincesEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
+        <button id="provincesEditStyle" data-tip="Edit provinces style in Style Editor" class="icon-adjust"></button>
         <button id="provincesPercentage" data-tip="Toggle percentage / absolute values views" class="icon-percent"></button>
         <button id="provincesChart" data-tip="Show provinces chart" class="icon-chart-area"></button>
         <button id="provincesToggleLabels" data-tip="Toggle province labels" class="icon-font"></button>
@@ -2593,6 +2661,7 @@
 
       <div id="diplomacyBottom" style="margin-top: .1em">
         <button id="diplomacyEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
+        <button id="diplomacyEditStyle" data-tip="Edit states (including diplomacy view) style in Style Editor" class="icon-adjust"></button>
         <button id="diplomacyRegenerate" data-tip="Regenerate diplomatical relations" class="icon-retweet"></button>
         <button id="diplomacyHistory" data-tip="Show relations history" class="icon-hourglass-1"></button>
         <button id="diplomacyMatrix" data-tip="Show relations matrix" class="icon-list-bullet"></button>
@@ -2602,7 +2671,7 @@
 
     <div id="burgsEditor" class="dialog stable" style="display: none">
       <div id="burgsHeader" class="header">
-        <div style="left:1.4em" data-tip="Click to sort by burg name" class="sortable alphabetically" data-sortby="name">Burg&nbsp;</div>
+        <div style="left:1.4em" data-tip="Click to sort by burg name" class="sortable alphabetically icon-sort-name-up" data-sortby="name">Burg&nbsp;</div>
         <div style="left:7.6em" data-tip="Click to sort by province name" class="sortable alphabetically" data-sortby="province">Province&nbsp;</div>
         <div style="left:14em" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
         <div style="left:20.1em" data-tip="Click to sort by culture name" class="sortable alphabetically" data-sortby="culture">Culture&nbsp;</div>
@@ -2626,6 +2695,7 @@
 
       <div id="burgsBottom">
         <button id="burgsEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
+        <button id="burgsChart" data-tip="Show burgs bubble chart" class="icon-chart-area"></button>
         <button id="regenerateBurgNames" data-tip="Regenerate burg names based on assigned culture" class="icon-retweet"></button>
         <button id="addNewBurg" data-tip="Add a new burg. Hold Shift to add multiple" class="icon-plus"></button>
         <button id="burgsExport" data-tip="Save burgs-related data as a text file (.csv)" class="icon-download"></button>
@@ -2655,6 +2725,7 @@
 
       <div id="culturesBottom">
         <button id="culturesEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
+        <button id="culturesEditStyle" data-tip="Edit cultures style in Style Editor" class="icon-adjust"></button>
         <button id="culturesLegend" data-tip="Toggle Legend box" class="icon-list-bullet"></button>
         <button id="culturesPercentage" data-tip="Toggle percentage / absolute values display mode" class="icon-percent"></button>
         <button id="culturesManually" data-tip="Manually re-assign cultures" class="icon-brush"></button>
@@ -2731,6 +2802,8 @@
       </div>
 
       <div id="zonesBottom">
+        <button id="zonesEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
+        <button id="zonesEditStyle" data-tip="Edit zones style in Style Editor" class="icon-adjust"></button>
         <button id="zonesLegend" data-tip="Toggle Legend box" class="icon-list-bullet"></button>
         <button id="zonesPercentage" data-tip="Toggle percentage / absolute values views" class="icon-percent"></button>
 
@@ -2791,10 +2864,11 @@
 
       <div id="religionsBottom">
         <button id="religionsEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
+        <button id="religionsEditStyle" data-tip="Edit religions style in Style Editor" class="icon-adjust"></button>
         <button id="religionsLegend" data-tip="Toggle Legend box" class="icon-list-bullet"></button>
         <button id="religionsPercentage" data-tip="Toggle percentage / absolute values display mode" class="icon-percent"></button>
-        <button id="religionsHeirarchy" data-tip="Show religions hierarchy tree" class="icon-fork"></button>
-        <button id="religionsExtinct" data-tip="Show/hide extinct religions (religions without cells)" class="icon-adjust"></button>
+        <button id="religionsHeirarchy" data-tip="Show religions hierarchy tree" class="icon-sitemap"></button>
+        <button id="religionsExtinct" data-tip="Show/hide extinct religions (religions without cells)" class="icon-eye-off"></button>
 
         <button id="religionsManually" data-tip="Manually re-assign religions" class="icon-brush"></button>
         <div id="religionsManuallyButtons" style="display: none">
@@ -2981,7 +3055,6 @@
   <script src="libs/polylabel.min.js"></script>
   <script src="libs/jquery-ui.min.js"></script>
   <script src="libs/seedrandom.min.js"></script>
-  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.3.0/simplex-noise.js"></script> -->
   <script src="modules/ui/layers.js"></script>
 
   <script defer src="modules/ui/general.js"></script>
@@ -3000,6 +3073,8 @@
   <script defer src="modules/ui/cultures-editor.js"></script>
   <script defer src="modules/ui/namesbase-editor.js"></script>
   <script defer src="modules/ui/routes-editor.js"></script>
+  <script defer src="modules/ui/lakes-editor.js"></script>
+  <script defer src="modules/ui/coastline-editor.js"></script>
   <script defer src="modules/ui/labels-editor.js"></script>
   <script defer src="modules/ui/rivers-editor.js"></script>
   <script defer src="modules/ui/relief-editor.js"></script>

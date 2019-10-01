@@ -59,6 +59,7 @@ options.querySelector("div.tab").addEventListener("click", function(event) {
   document.getElementById(id).classList.add("active");
   options.querySelectorAll(".tabcontent").forEach(e => e.style.display = "none");
 
+  if (id === "layersTab") layersContent.style.display = "block"; else
   if (id === "styleTab") styleContent.style.display = "block"; else
   if (id === "optionsTab") optionsContent.style.display = "block"; else
   if (id === "toolsTab") customization === 1 
@@ -81,6 +82,22 @@ function collapse(e) {
   }
 }
 
+// select element to be edited
+function editStyle(element, group) {
+  showOptions();
+  styleTab.click();
+  styleElementSelect.value = element;
+  if (group) styleGroupSelect.options.add(new Option(group, group, true, true));
+  selectStyleElement();
+
+  styleElementSelect.classList.add("glow");
+  if (group) styleGroupSelect.classList.add("glow");
+  setTimeout(() => {
+    styleElementSelect.classList.remove("glow");
+    if (group) styleGroupSelect.classList.remove("glow");
+  }, 1500);
+}
+
 // Toggle style sections on element select
 styleElementSelect.addEventListener("change", selectStyleElement);
 function selectStyleElement() {
@@ -97,7 +114,7 @@ function selectStyleElement() {
   // active group element
   const group = styleGroupSelect.value;
   if (sel == "ocean") el = oceanLayers.select("rect");
-  else if (sel == "routes" || sel == "labels" || sel == "lakes" || sel == "anchors" || sel == "burgIcons" || sel == "borders") {
+  else if (sel == "routes" || sel == "labels" || sel === "coastline" || sel == "lakes" || sel == "anchors" || sel == "burgIcons" || sel == "borders") {
     el = d3.select("#"+sel).select("g#"+group).size()
       ? d3.select("#"+sel).select("g#"+group)
       : d3.select("#"+sel).select("g");
@@ -168,7 +185,7 @@ function selectStyleElement() {
   if (sel === "gridOverlay") styleGrid.style.display = "block";
   if (sel === "terrain") styleRelief.style.display = "block";
   if (sel === "texture") styleTexture.style.display = "block";
-  if (sel === "routes" || sel === "labels" || sel == "anchors" || sel == "burgIcons" || sel === "lakes" || sel === "borders") styleGroup.style.display = "block";
+  if (sel === "routes" || sel === "labels" || sel == "anchors" || sel == "burgIcons" || sel === "coastline" || sel === "lakes" || sel === "borders") styleGroup.style.display = "block";
   if (sel === "markers") styleMarkers.style.display = "block";
 
   if (sel === "population") {
@@ -250,8 +267,10 @@ function selectStyleElement() {
   }
 
   if (sel === "coastline") {
-    styleCoastline.style.display = "block";
-    if (styleCoastlineAuto.checked) styleFilter.style.display = "none";
+    if (styleGroupSelect.value === "sea_island") {
+      styleCoastline.style.display = "block";
+      if (styleCoastlineAuto.checked) styleFilter.style.display = "none";
+    }
   }
 
   if (sel === "temperature") {
@@ -270,7 +289,7 @@ function selectStyleElement() {
 
   // update group options
   styleGroupSelect.options.length = 0; // remove all options
-  if (sel === "routes" || sel === "labels" || sel === "lakes" || sel === "anchors" || sel === "burgIcons" || sel === "borders") {
+  if (sel === "routes" || sel === "labels" || sel === "coastline" || sel === "lakes" || sel === "anchors" || sel === "burgIcons" || sel === "borders") {
     document.getElementById(sel).querySelectorAll("g").forEach(el => {
       if (el.id === "burgLabels") return;
       const count = el.childElementCount;
@@ -670,6 +689,7 @@ optionsContent.addEventListener("input", function(event) {
   else if (id === "densityInput" || id === "densityOutput") changeCellsDensity(+value);
   else if (id === "culturesInput") culturesOutput.value = value;
   else if (id === "culturesOutput") culturesInput.value = value;
+  else if (id === "culturesSet") changeCultureSet();
   else if (id === "regionsInput" || id === "regionsOutput") changeStatesNumber(value);
   else if (id === "provincesInput") provincesOutput.value = value;
   else if (id === "provincesOutput") provincesOutput.value = value;
@@ -795,8 +815,15 @@ function changeCellsDensity(value) {
   else densityOutput.style.color = "#038603";
 }
 
+function changeCultureSet() {
+  const max = culturesSet.selectedOptions[0].dataset.max;
+  culturesInput.max = culturesOutput.max = max
+  if (+culturesOutput.value > +max) culturesInput.value = culturesOutput.value = max;
+}
+
 function changeStatesNumber(value) {
   regionsInput.value = regionsOutput.value = value;
+  regionsOutput.style.color = +value ? null : "#b12117";
   burgLabels.select("#capitals").attr("data-size", Math.max(rn(6 - value / 20), 3));
   labels.select("#countries").attr("data-size", Math.max(rn(18 - value / 6), 4));
 }
@@ -880,6 +907,7 @@ function randomizeOptions() {
   if (!locked("power")) powerInput.value = powerOutput.value = gauss(3, 2, 0, 10);
   if (!locked("neutral")) neutralInput.value = neutralOutput.value = rn(1 + Math.random(), 1);
   if (!locked("cultures")) culturesInput.value = culturesOutput.value = gauss(12, 3, 5, 30);
+  changeCultureSet();
 
   // 'Configure World' settings
   if (!locked("prec")) precInput.value = precOutput.value = gauss(100, 20, 5, 500);

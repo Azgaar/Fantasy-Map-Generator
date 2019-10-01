@@ -80,6 +80,11 @@ button, select, a {
 	fill-rule: evenodd;
 }
 
+#lakes,
+#coastline {
+	cursor: pointer;
+}
+
 #temperature {
 	fill-rule: evenodd;
 	font-family: sans-serif;
@@ -242,7 +247,10 @@ i.icon-lock {
 	text-anchor: middle;
 }
 
-#routeLength, #riverLength {
+#routeLength, 
+#riverLength,
+#lakeArea,
+#coastlineArea {
 	background-color: #eeeeee;
 	border: 1px solid #a5a5a5;
 	line-height: 1.3em;
@@ -252,7 +260,7 @@ i.icon-lock {
 #brushCircle {
 	stroke: #373737;
 	stroke-width: 1.5px;
-	stroke-dasharray: 6;
+	stroke-dasharray: 7;
 	stroke-linecap: butt;
 	fill: none;
 }
@@ -474,13 +482,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 	font-weight: bold;
 }
 
-#styleContent button.styleButton {
-	font-size: 70%;
-	border-radius: 15%;
-	margin: 0;
-}
-
-#styleContent button.presetButton {
+#layersContent button.presetButton {
   position: absolute;
   height: 2em;
   border-radius: 15%;
@@ -488,6 +490,13 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   font-size: .7em;
 }
 
+#styleContent button.styleButton {
+	font-size: 70%;
+	border-radius: 15%;
+	margin: 0;
+}
+
+#layersContent button.active,
 #styleContent button:active {
 	transform: translate(0px, 1px);
 }
@@ -531,9 +540,10 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 }
 
 .tab > button.options {
-	width: 23.25%;
+	/* width: 23.25%; */
+	width: 18.6%;
 	height: 100%;
-	padding: 7px 10px;
+	padding: 7px 0px;
 }
 
 button.options {
@@ -682,7 +692,7 @@ fieldset {
 }
 
 #styleElements .whiteButton {
-	padding: 0 9px;
+	padding: 0 .8em;
 	border: 0;
 	background-color: #ffffff !important;
 }
@@ -873,7 +883,7 @@ body button.noicon {
 #controlPoints {
 	fill: #ff0000;
 	stroke: #841f1f;
-	stroke-width: .3;
+	stroke-width: .25;
 	cursor: move;
 	opacity: .8;
 }
@@ -884,6 +894,25 @@ body button.noicon {
 	stroke-width: 2;
 	opacity: .4;
 	cursor: pointer;
+}
+
+#vertices > circle {
+	fill: #ff0000;
+	stroke: #841f1f;
+	stroke-width: .1;
+	cursor: move;
+	opacity: .8;
+}
+
+#vertices > polygon {
+	fill: none;
+	stroke: #808080;
+	stroke-width: .1;
+}
+
+#controlPoints > circle:hover,
+#vertices> circle:hover {
+	stroke: #2c0808;
 }
 
 .drag-trigger {
@@ -1183,6 +1212,11 @@ div.states .icon-pin {
 	cursor: pointer;
 }
 
+div.states .icon-flag-empty {
+	cursor: pointer;
+	font-size: .9em;
+}
+
 div.states .icon-resize-vertical {
 	cursor: row-resize;
 	font-size: .9em;
@@ -1215,6 +1249,7 @@ div.states>.cultureName {
 
 div.states>.culturePopulation {
 	width: 4em;
+	cursor: pointer;
 }
 
 div.states > .cultureBase,
