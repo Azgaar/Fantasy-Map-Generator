@@ -263,7 +263,7 @@ function getHeight(h) {
 
     // assign saved pack data from grid back to pack
     const n = pack.cells.i.length;
-    pack.cells.pop = new Uint16Array(n);
+    pack.cells.pop = new Float32Array(n);
     pack.cells.road = new Uint16Array(n);
     pack.cells.crossroad = new Uint16Array(n);
     pack.cells.s = new Uint16Array(n);

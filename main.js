@@ -1186,7 +1186,7 @@ function rankCells() {
   console.time('rankCells');
   const cells = pack.cells, f = pack.features;
   cells.s = new Int16Array(cells.i.length); // cell suitability array
-  cells.pop = new Uint16Array(cells.i.length); // cell population array
+  cells.pop = new Float32Array(cells.i.length); // cell population array
 
   const flMean = d3.median(cells.fl.filter(f => f)), flMax = d3.max(cells.fl) + d3.max(cells.conf); // to normalize flux
   const areaMean = d3.mean(cells.area); // to adjust population by cell area

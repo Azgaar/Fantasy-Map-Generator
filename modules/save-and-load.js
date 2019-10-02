@@ -198,12 +198,15 @@ function getMapData() {
       return `${b.name}|${b.min}|${b.max}|${b.d}|${b.m}|${names}`;
     }).join("/");
 
+    // round population to save resources
+    const pop = Array.from(pack.cells.pop).map(p => rn(p, 4));
+
     // data format as below
     const data = [params, options, coords, biomes, notesData, svg_xml,
       gridGeneral, grid.cells.h, grid.cells.prec, grid.cells.f, grid.cells.t, grid.cells.temp,
       features, cultures, states, burgs,
       pack.cells.biome, pack.cells.burg, pack.cells.conf, pack.cells.culture, pack.cells.fl,
-      pack.cells.pop, pack.cells.r, pack.cells.road, pack.cells.s, pack.cells.state,
+      pop, pack.cells.r, pack.cells.road, pack.cells.s, pack.cells.state,
       pack.cells.religion, pack.cells.province, pack.cells.crossroad, religions, provinces,
       namesData].join("\r\n");
     const blob = new Blob([data], {type: "text/plain"});
@@ -666,7 +669,7 @@ function parseLoadedData(data) {
       cells.conf = Uint8Array.from(data[18].split(","));
       cells.culture = Uint16Array.from(data[19].split(","));
       cells.fl = Uint16Array.from(data[20].split(","));
-      cells.pop = Uint16Array.from(data[21].split(","));
+      cells.pop = Float32Array.from(data[21].split(","));
       cells.r = Uint16Array.from(data[22].split(","));
       cells.road = Uint16Array.from(data[23].split(","));
       cells.s = Uint16Array.from(data[24].split(","));

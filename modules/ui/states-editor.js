@@ -331,7 +331,7 @@ function editStates() {
     });
 
     function applyPopulationChange() {
-      const ruralChange = rn(ruralPop.value / rural, 4);
+      const ruralChange = ruralPop.value / rural;
       if (isFinite(ruralChange) && ruralChange !== 1) {
         const cells = pack.cells.i.filter(i => pack.cells.state[i] === state);
         cells.forEach(i => pack.cells.pop[i] *= ruralChange);
@@ -339,19 +339,19 @@ function editStates() {
       if (!isFinite(ruralChange) && +ruralPop.value > 0) {
         const points = ruralPop.value / populationRate.value;
         const cells = pack.cells.i.filter(i => pack.cells.state[i] === state);
-        const pop = rn(points / cells.length);
+        const pop = points / cells.length;
         cells.forEach(i => pack.cells.pop[i] = pop);
       }
 
-      const urbanChange = rn(urbanPop.value / urban, 4);
+      const urbanChange = urbanPop.value / urban;
       if (isFinite(urbanChange) && urbanChange !== 1) {
         const burgs = pack.burgs.filter(b => !b.removed && b.state === state);
-        burgs.forEach(b => b.population *= urbanChange);
+        burgs.forEach(b => b.population = rn(b.population * urbanChange, 4));
       }
       if (!isFinite(urbanChange) && +urbanPop.value > 0) {
         const points = urbanPop.value / populationRate.value / urbanization.value;
         const burgs = pack.burgs.filter(b => !b.removed && b.state === state);
-        const population = rn(points / burgs.length);
+        const population = rn(points / burgs.length, 4);
         burgs.forEach(b => b.population = population);
       }
 

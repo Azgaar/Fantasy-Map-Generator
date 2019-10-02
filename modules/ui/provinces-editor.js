@@ -114,9 +114,9 @@ function editProvinces() {
       const focused = defs.select("#fog #focusProvince"+p.i).size();
       lines += `<div class="states" data-id=${p.i} data-name=${p.name} data-form=${p.formName} data-color="${p.color}" data-capital="${capital}" data-state="${stateName}" data-area=${area} data-population=${population}>
         <svg data-tip="Province fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${p.color}" class="zoneFill"></svg>
-        <input data-tip="Province name. Click and type to change" class="name pointer" value="${p.name}" readonly>
+        <input data-tip="Province name. Click to change" class="name pointer" value="${p.name}" readonly>
         <span data-tip="Click to open province COA in the Iron Arachne Heraldry Generator. Ctrl + click to change the seed" class="icon-fleur pointer hide"></span>
-        <input data-tip="Province form name. Click and type to change" class="name pointer hide" value="${p.formName}" readonly>
+        <input data-tip="Province form name. Click to change" class="name pointer hide" value="${p.formName}" readonly>
         <span data-tip="Province capital. Click to zoom into view" class="icon-star-empty pointer hide ${p.burg?'':'placeholder'}"></span>
         <select data-tip="Province capital. Click to select from burgs within the state. No capital means the province is governed from the state capital" class="cultureBase hide ${p.burgs.length?'':'placeholder'}">${p.burgs.length ? getCapitalOptions(p.burgs, p.burg) : ''}</select>
         <input data-tip="Province owner" class="provinceOwner" value="${stateName}" disabled">
@@ -305,7 +305,7 @@ function editProvinces() {
     });
 
     function applyPopulationChange() {
-      const ruralChange = rn(ruralPop.value / rural, 4);
+      const ruralChange = ruralPop.value / rural;
       if (isFinite(ruralChange) && ruralChange !== 1) {
         cells.forEach(i => pack.cells.pop[i] *= ruralChange);
       }
@@ -315,13 +315,13 @@ function editProvinces() {
         cells.forEach(i => pack.cells.pop[i] = pop);
       }
 
-      const urbanChange = rn(urbanPop.value / urban, 4);
+      const urbanChange = urbanPop.value / urban;
       if (isFinite(urbanChange) && urbanChange !== 1) {
-        p.burgs.forEach(b => pack.burgs[b].population *= urbanChange);
+        p.burgs.forEach(b => pack.burgs[b].population = rn(pack.burgs[b].population * urbanChange, 4));
       }
       if (!isFinite(urbanChange) && +urbanPop.value > 0) {
         const points = urbanPop.value / populationRate.value / urbanization.value;
-        const population = rn(points / burgs.length);
+        const population = rn(points / burgs.length, 4);
         p.burgs.forEach(b => pack.burgs[b].population = population);
       }
 
