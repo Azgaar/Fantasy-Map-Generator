@@ -62,7 +62,7 @@ function editHeightmap() {
     } else if (type === "risk") {
       terrs.attr("mask", null);
       defs.selectAll("#land, #water").selectAll("path").remove();
-      viewbox.selectAll("#coastline *, #lakes *, #oceanLayers path").remove();
+      viewbox.selectAll("#coastline path, #lakes path, #oceanLayers path").remove();
       changeOnlyLand.checked = false;
     }
 
@@ -239,6 +239,16 @@ function getHeight(h) {
       c.y = p[1];
     }
 
+    // recalculate zones to grid
+    zones.selectAll("g").each(function() {
+      const zone = d3.select(this);
+      const dataCells = zone.attr("data-cells");
+      const cells = dataCells ? dataCells.split(",").map(i => +i) : [];
+      const g = cells.map(i => pack.cells.g[i]);
+      zone.attr("data-cells", g);
+      zone.selectAll("*").remove();
+    });
+
     markFeatures();
     OceanLayers();
     calculateTemperatures();
@@ -323,6 +333,20 @@ function getHeight(h) {
     BurgsAndStates.drawStateLabels();
     drawStates();
     drawBorders();
+
+    // restore zones from grid
+    zones.selectAll("g").each(function() {
+      const zone = d3.select(this);
+      const g = zone.attr("data-cells");
+      const gCells = g ? g.split(",").map(i => +i) : [];
+      const cells = pack.cells.i.filter(i => gCells.includes(pack.cells.g[i]));
+
+      zone.attr("data-cells", cells);
+      zone.selectAll("*").remove();
+      const base = zone.attr("id") + "_"; // id generic part
+      zone.selectAll("*").data(cells).enter().append("polygon")
+        .attr("points", d => getPackPolygon(d)).attr("id", d => base + d);
+    });
 
     console.timeEnd("restoreRiskedData");
     console.groupEnd("Edit Heightmap");

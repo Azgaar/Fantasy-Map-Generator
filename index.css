@@ -184,8 +184,7 @@ i.icon-lock {
 #riverEditor > *,
 #routeEditor > *,
 #labelEditor div, 
-#markerEditor div,
-#burgEditor * {
+#markerEditor div {
 	display: inline-block;
 }
 
@@ -1206,6 +1205,7 @@ div.states>.statePopulation {
 	width: 3em;
 }
 
+div.states .icon-pencil,
 div.states .icon-trash-empty,
 div.states .icon-eye,
 div.states .icon-pin {
@@ -1244,7 +1244,6 @@ div.states>.small {
 
 div.states>.cultureName {
 	width: 5em;
-	white-space: nowrap;
 }
 
 div.states>.culturePopulation {
@@ -1301,16 +1300,39 @@ div.states span.inactive:hover {
 	cursor: pointer;
 }
 
-div.states > div.stateName {
-	width: 12em;
-}
-
 #burgsFooterPopulation {
 	border: 0;
 	width: 50px;
 	color: #666666;
 	font-style: italic;
 	line-height: 1.4em;
+}
+
+#stateNameEditor input,
+#provinceNameEditor input {
+	padding-left: .3em;
+}
+
+#stateNameEditor div.label,
+#provinceNameEditor div.label,
+#burgBody div.label {
+	display: inline-block;
+  width: 5.5em;
+}
+
+.burgFeature {
+	font-size: 1.2em;
+  padding: 1px 2px;
+	color: #555;
+	cursor: pointer;
+}
+
+.burgFeature.inactive {
+	color: #ddd;
+}
+
+.burgFeature.inactive:hover {
+  color: #abaaaa;
 }
 
 div.states>.religionName {

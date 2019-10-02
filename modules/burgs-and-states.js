@@ -84,7 +84,7 @@
         b.culture = cells.culture[b.cell];
         b.name = Names.getCultureShort(b.culture);
         b.feature = cells.f[b.cell];
-        b.capital = true;
+        b.capital = 1;
 
         // states data
         const expansionism = rn(Math.random() * powerInput.value + 1, 1);
@@ -122,7 +122,7 @@
           const burg = burgs.length;
           const culture = cells.culture[cell];
           const name = Names.getCulture(culture);
-          burgs.push({cell, x, y, state: 0, i: burg, culture, name, capital: false, feature:cells.f[cell]});
+          burgs.push({cell, x, y, state: 0, i: burg, culture, name, capital: 0, feature:cells.f[cell]});
           burgsTree.add([x, y]);
           cells.burg[cell] = burg;
           burgsAdded++;
@@ -161,19 +161,19 @@
         const e = cells.v[i].filter(v => vertices.c[v].some(c => c === cells.haven[i])); // vertices of common edge
         b.x = rn((vertices.p[e[0]][0] + vertices.p[e[1]][0]) / 2, 2);
         b.y = rn((vertices.p[e[0]][1] + vertices.p[e[1]][1]) / 2, 2);
-        continue;
       }
 
       // add random factor
       b.population = rn(b.population * gauss(2,3,.6,20,3), 3);
 
       // shift burgs on rivers semi-randomly and just a bit
-      if (cells.r[i]) {
+      if (!port && cells.r[i]) {
         const shift = Math.min(cells.fl[i]/150, 1);
         if (i%2) b.x = rn(b.x + shift, 2); else b.x = rn(b.x - shift, 2);
         if (cells.r[i]%2) b.y = rn(b.y + shift, 2); else b.y = rn(b.y - shift, 2);
       }
 
+      defineFeatures(b);
     }
 
     // de-assign port status if it's the only one on feature
@@ -186,6 +186,15 @@
     }
 
     console.timeEnd("specifyBurgs");
+  }
+
+  const defineFeatures = function(b) {
+    const pop = b.population;
+    b.citadel = pop > 50 && Math.random() < .75 || Math.random() < .5 ? 1 : 0;
+    b.plaza = pop > 50 || pop > 30 && Math.random() < .75 || pop > 10 && Math.random() < .5 || Math.random() < .25 ? 1 : 0;
+    b.walls = b.capital || pop > 30 || pop > 20 && Math.random() < .75 || pop > 10 && Math.random() < .5 || Math.random() < .2 ? 1 : 0;
+    b.shanty = pop > 30 || pop > 20 && Math.random() < .75 || b.walls && Math.random() < .75 ? 1 : 0;
+    b.temple = pop > 100 || pop > 80 && Math.random() < .75 || pop > 50 && Math.random() < .5 ? 1 : 0;
   }
 
   const drawBurgs = function() {
@@ -218,7 +227,7 @@
       .attr("width", caSize).attr("height", caSize); 
 
     // towns
-    const towns = pack.burgs.filter(b => b.capital === false);
+    const towns = pack.burgs.filter(b => !b.capital);
     const townIcons = burgIcons.select("#towns");
     const townLabels = burgLabels.select("#towns");
     const townSize = townIcons.attr("size") || 0.5;
@@ -978,18 +987,11 @@
       }
     });
 
-    //if (s.i == 1) debug.append("circle").attr("cx", cells.p[n][0]).attr("cy", cells.p[n][1]).attr("r", .5);
-    //debug.append("text").attr("x", cells.p[n][0]).attr("y", cells.p[n][1]).text(s.i).attr("font-size", 3);
-
-    // debug.selectAll(".text").data(cells.i).enter().append("text")
-    //   .attr("x", d => cells.p[d][0]).attr("y", d => cells.p[d][1])
-    //   .text(d => cells.province[d] ? cells.province[d] : null).attr("font-size", 3);
-
     console.timeEnd("generateProvinces");
   }
 
   return {generate, expandStates, normalizeStates, assignColors, 
-    drawBurgs, specifyBurgs, drawStateLabels, collectStatistics, 
+    drawBurgs, specifyBurgs, defineFeatures, drawStateLabels, collectStatistics, 
     generateDiplomacy, defineStateForms, getFullName, generateProvinces};
 
 })));

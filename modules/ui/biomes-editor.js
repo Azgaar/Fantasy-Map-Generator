@@ -36,6 +36,7 @@ function editBiomes() {
   body.addEventListener("click", function(ev) {
     const el = ev.target, cl = el.classList;
     if (cl.contains("zoneFill")) biomeChangeColor(el); else
+    if (cl.contains("icon-info-circled")) openWiki(el); else
     if (cl.contains("icon-trash-empty")) removeCustomBiome(el);
     if (customization === 6) selectBiomeOnLineClick(el);
   });
@@ -96,6 +97,7 @@ function editBiomes() {
         <div data-tip="Biome area" class="biomeArea hide">${si(area) + unit}</div>
         <span data-tip="${populationTip}" class="icon-male hide"></span>
         <div data-tip="${populationTip}" class="biomePopulation hide">${si(population)}</div>
+        <span data-tip="Open Wikipedia articale about the biome" class="icon-info-circled pointer hide"></span>
         ${i>12 && !b.cells[i] ? '<span data-tip="Remove the custom biome" class="icon-trash-empty hide"></span>' : ''}
       </div>`;
     }
@@ -162,6 +164,28 @@ function editBiomes() {
     el.parentNode.dataset.habitability = el.value;
     recalculatePopulation();
     refreshBiomesEditor();
+  }
+
+  function openWiki(el) {
+    const name = el.parentNode.dataset.name;
+    if (name === "Custom" || !name) {tip("Please provide a biome name", false, "error"); return;}
+    const wiki = "https://en.wikipedia.org/wiki/";
+
+    switch (name) {
+      case "Hot desert": openURL(wiki + "Desert_climate#Hot_desert_climates");
+      case "Cold desert": openURL(wiki + "Desert_climate#Cold_desert_climates");
+      case "Savanna": openURL(wiki + "Tropical_and_subtropical_grasslands,_savannas,_and_shrublands");
+      case "Grassland": openURL(wiki + "Temperate_grasslands,_savannas,_and_shrublands");
+      case "Tropical seasonal forest": openURL(wiki + "Seasonal_tropical_forest");
+      case "Temperate deciduous forest": openURL(wiki + "Temperate_deciduous_forest");
+      case "Tropical rainforest": openURL(wiki + "Tropical_rainforest");
+      case "Temperate rainforest": openURL(wiki + "Temperate_rainforest");
+      case "Taiga": openURL(wiki + "Taiga");
+      case "Tundra": openURL(wiki + "Tundra");
+      case "Glacier": openURL(wiki + "Glacier");
+      case "Wetland": openURL(wiki + "Wetland");
+      default: openURL(`https://en.wikipedia.org/w/index.php?search=${name}`);
+    }
   }
 
   function toggleLegend() {

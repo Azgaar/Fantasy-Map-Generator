@@ -211,7 +211,8 @@ function editZones() {
       zone.attr("data-cells", cells);
       zone.selectAll("*").remove();
       const base = zone.attr("id") + "_"; // id generic part
-      zone.selectAll("*").data(cells).enter().append("polygon").attr("points", d => getPackPolygon(d)).attr("id", d => base + d);
+      zone.selectAll("*").data(cells).enter().append("polygon")
+        .attr("points", d => getPackPolygon(d)).attr("id", d => base + d);
     });
 
     exitZonesManualAssignment();

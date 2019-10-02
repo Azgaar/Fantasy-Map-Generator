@@ -36,20 +36,17 @@ function editProvinces() {
     if (customization) return;
     const el = ev.target, cl = el.classList, line = el.parentNode, p = +line.dataset.id;
     if (cl.contains("zoneFill")) changeFill(el); else
-    if (cl.contains("icon-fleur")) provinceOpenCOA(p); else
+    if (cl.contains("name")) editProvinceName(p); else
+    if (cl.contains("icon-fleur")) provinceOpenCOA(ev, p); else
     if (cl.contains("icon-star-empty")) capitalZoomIn(p); else
     if (cl.contains("icon-flag-empty")) declareProvinceIndependence(p); else
     if (cl.contains("culturePopulation")) changePopulation(p); else
     if (cl.contains("icon-pin")) focusOn(p, cl); else
     if (cl.contains("icon-trash-empty")) removeProvince(p);
-    if (cl.contains("hoverButton") && cl.contains("stateName")) regenerateName(p, line); else
-    if (cl.contains("hoverButton") && cl.contains("stateForm")) regenerateForm(p, line);
   });
 
   body.addEventListener("input", function(ev) {
     const el = ev.target, cl = el.classList, line = el.parentNode, p = +line.dataset.id;
-    if (cl.contains("stateName")) changeName(p, line, el.value); else
-    if (cl.contains("stateForm")) changeForm(p, line, el.value); else
     if (cl.contains("cultureBase")) changeCapital(p, line, el.value);
   });
 
@@ -62,7 +59,7 @@ function editProvinces() {
   function collectStatistics() {
     const cells = pack.cells, provinces = pack.provinces;
     provinces.forEach(p => {
-      if (!p.i) return;
+      if (!p.i || p.removed) return;
       p.area = p.rural = p.urban = 0;
       p.burgs = [];
     });
@@ -77,6 +74,11 @@ function editProvinces() {
       provinces[p].urban += pack.burgs[cells.burg[i]].population;
       provinces[p].burgs.push(cells.burg[i]);
     }
+
+    provinces.forEach(p => {
+      if (!p.i || p.removed) return;
+      if (!p.burg && p.burgs.length) p.burg = p.burgs[0];
+    });
   }
 
   function updateFilter() {
@@ -112,11 +114,9 @@ function editProvinces() {
       const focused = defs.select("#fog #focusProvince"+p.i).size();
       lines += `<div class="states" data-id=${p.i} data-name=${p.name} data-form=${p.formName} data-color="${p.color}" data-capital="${capital}" data-state="${stateName}" data-area=${area} data-population=${population}>
         <svg data-tip="Province fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${p.color}" class="zoneFill"></svg>
-        <input data-tip="Province name. Click and type to change" class="stateName" value="${p.name}" autocorrect="off" spellcheck="false">
-        <span data-tip="Click to re-generate province name" class="icon-arrows-cw stateName hoverButton placeholder"></span>
-        <span data-tip="Click to open province COA in the Iron Arachne Heraldry Generator" class="icon-fleur pointer hide"></span>
-        <input data-tip="Province form name. Click and type to change" class="stateForm hide" value="${p.formName}" autocorrect="off" spellcheck="false">
-        <span data-tip="Click to re-generate form name" class="icon-arrows-cw stateForm hoverButton placeholder"></span>
+        <input data-tip="Province name. Click and type to change" class="name pointer" value="${p.name}" readonly>
+        <span data-tip="Click to open province COA in the Iron Arachne Heraldry Generator. Ctrl + click to change the seed" class="icon-fleur pointer hide"></span>
+        <input data-tip="Province form name. Click and type to change" class="name pointer hide" value="${p.formName}" readonly>
         <span data-tip="Province capital. Click to zoom into view" class="icon-star-empty pointer hide ${p.burg?'':'placeholder'}"></span>
         <select data-tip="Province capital. Click to select from burgs within the state. No capital means the province is governed from the state capital" class="cultureBase hide ${p.burgs.length?'':'placeholder'}">${p.burgs.length ? getCapitalOptions(p.burgs, p.burg) : ''}</select>
         <input data-tip="Province owner" class="provinceOwner" value="${stateName}" disabled">
@@ -156,8 +156,6 @@ function editProvinces() {
   }
 
   function provinceHighlightOn(event) {
-    if (!customization) event.target.querySelectorAll(".hoverButton").forEach(el => el.classList.remove("placeholder"));
-
     const province = +event.target.dataset.id;
     const el = body.querySelector(`div[data-id='${province}']`);
     if (el) el.classList.add("active");
@@ -169,8 +167,6 @@ function editProvinces() {
   }
 
   function provinceHighlightOff(event) {
-    if (!customization) event.target.querySelectorAll(".hoverButton").forEach(el => el.classList.add("placeholder"));
-
     const province = +event.target.dataset.id;
     const el = body.querySelector(`div[data-id='${province}']`);
     if (el) el.classList.remove("active");
@@ -194,9 +190,17 @@ function editProvinces() {
     openPicker(currentFill, callback);
   }
 
-  function provinceOpenCOA(p) {
-    const url = `https://ironarachne.com/heraldry/${seed}-p${p}`;
-    window.open(url, '_blank');
+  function provinceOpenCOA(event, p) {
+    const defSeed = `${seed}-p${p}`;
+
+    if (event.ctrlKey) {
+      const newSeed = prompt(`Please provide an Iron Arachne Heraldry Generator seed. `+ 
+        `Default seed is a combination of FMG map seed and province id (${defSeed})`, pack.provinces[p].IAHG || defSeed);
+      if (newSeed && newSeed != defSeed) pack.provinces[p].IAHG = newSeed; else return;
+    }
+
+    const s = pack.provinces[p].IAHG || defSeed;
+    openURL("https://ironarachne.com/heraldry/" + s);
   }
 
   function capitalZoomIn(p) {
@@ -211,16 +215,18 @@ function editProvinces() {
     const oldState = pack.provinces[p].state;
     const newState = pack.states.length;
 
-    // turn burg into a capital
+    // turn province burg into a capital
     const burg = provinces[p].burg;
     if (!burg) return;
-    pack.burgs[burg].capital = true;
-    pack.burgs[burg].state = newState;
+    pack.burgs[burg].capital = 1;
     moveBurgToGroup(burg, "cities");
 
+    // move all burgs to a new state
+    provinces[p].burgs.forEach(b => pack.burgs[b].state = newState);
+
     // difine new state attributes
-    const center = provinces[p].center;
-    const culture = cells.culture[center];
+    const center = pack.burgs[burg].cell;
+    const culture = pack.burgs[burg].culture;
     const name = provinces[p].name;
     const color = getRandomColor();
 
@@ -358,28 +364,69 @@ function editProvinces() {
     refreshProvincesEditor();
   }
 
-  function changeName(p, line, value) {
-    pack.provinces[p].name = line.querySelector(".stateName").value = line.dataset.name = value;
-    pack.provinces[p].fullName = value + " " + pack.provinces[p].formName;
-    provs.select("#provinceLabel"+p).text(value);
-  }
+  function editProvinceName(province) {
+    const p = pack.provinces[province];
+    document.getElementById("provinceNameEditor").dataset.province = province;
+    document.getElementById("provinceNameEditorShort").value = p.name;
+    applyOption(provinceNameEditorSelectForm, p.formName)
+    document.getElementById("provinceNameEditorFull").value = p.fullName;
 
-  function regenerateName(p, line) {
-    const c = pack.cells.culture[pack.provinces[p].center];
-    const name = Names.getState(Names.getCultureShort(c), c);
-    changeName(p, line, name);
-  }
+    $("#provinceNameEditor").dialog({
+      resizable: false, title: "Change province name", width: "22em", buttons: {
+        Apply: function() {applyNameChange(p); $(this).dialog("close");},
+        Cancel: function() {$(this).dialog("close");}
+      }, position: {my: "center", at: "center", of: "svg"}
+    });
 
-  function changeForm(p, line, value) {
-    pack.provinces[p].formName = line.querySelector(".stateForm").value = line.dataset.form = value;
-    pack.provinces[p].fullName = pack.provinces[p].name + " " + value;
-  }
+    if (modules.editProvinceName) return;
+    modules.editProvinceName = true;
 
-  function regenerateForm(p, line) {
-    const forms = ["County", "Earldom", "Shire", "Landgrave", 'Margrave', "Barony", "Province", 
-      "Department", "Governorate", "State", "Canton", "Prefecture", "Parish", "Deanery", 
-      "Council", "District", "Republic", "Territory", "Land", "Region"];
-    changeForm(p, line, ra(forms));
+    // add listeners
+    document.getElementById("provinceNameEditorShortCulture").addEventListener("click", regenerateShortNameCuture);
+    document.getElementById("provinceNameEditorShortRandom").addEventListener("click", regenerateShortNameRandom);
+    document.getElementById("provinceNameEditorAddForm").addEventListener("click", addCustomForm);
+    document.getElementById("provinceNameEditorFullRegenerate").addEventListener("click", regenerateFullName);
+
+    function regenerateShortNameCuture() {
+      const province = +provinceNameEditor.dataset.province;
+      const culture = pack.cells.culture[pack.provinces[province].center];
+      const name = Names.getState(Names.getCultureShort(culture), culture);
+      document.getElementById("provinceNameEditorShort").value = name;
+    }
+
+    function regenerateShortNameRandom() {
+      const base = rand(nameBase.length-1);
+      const name = Names.getState(Names.getBase(base), undefined, base);
+      document.getElementById("provinceNameEditorShort").value = name;
+    }
+
+    function addCustomForm() {
+      const value = provinceNameEditorCustomForm.value;
+      const displayed = provinceNameEditorCustomForm.style.display === "inline-block";
+      provinceNameEditorCustomForm.style.display = displayed ? "none" : "inline-block";
+      provinceNameEditorSelectForm.style.display = displayed ? "inline-block" : "none";
+      if (displayed && value) applyOption(provinceNameEditorSelectForm, value);
+    }
+
+    function regenerateFullName() {
+      const short = document.getElementById("provinceNameEditorShort").value;
+      const form = document.getElementById("provinceNameEditorSelectForm").value;
+      document.getElementById("provinceNameEditorFull").value = getFullName();
+
+      function getFullName() {
+        if (!form) return short;
+        if (!short && form) return "The " + form;
+        return short + " " + form;
+      }
+    }
+
+    function applyNameChange(p) {
+      p.name = document.getElementById("provinceNameEditorShort").value;
+      p.formName = document.getElementById("provinceNameEditorSelectForm").value;
+      p.fullName = document.getElementById("provinceNameEditorFull").value;
+      provs.select("#provinceLabel"+p.i).text(p.name);
+      refreshProvincesEditor();
+    }
   }
 
   function changeCapital(p, line, value) {

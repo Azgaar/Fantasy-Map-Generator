@@ -126,7 +126,8 @@ function addBurg(point) {
   const feature = cells.f[cell];
 
   const population = Math.max((cells.s[cell] + cells.road[cell]) / 3 + i / 1000 + cell % 100 / 1000, .1);
-  pack.burgs.push({name, cell, x, y, state, i, culture, feature, capital: false, port: 0, population});
+
+  pack.burgs.push({name, cell, x, y, state, i, culture, feature, capital: 0, port: 0, population});
   cells.burg[cell] = i;
 
   const townSize = burgIcons.select("#towns").attr("size") || 0.5;
@@ -135,6 +136,7 @@ function addBurg(point) {
   burgLabels.select("#towns").append("text").attr("id", "burgLabel"+i).attr("data-id", i)
     .attr("x", x).attr("y", y).attr("dy", `${townSize * -1.5}px`).text(name);
 
+  BurgsAndStates.defineFeatures(pack.burgs[i]);
   return i;
 }
 
@@ -171,6 +173,40 @@ function removeBurg(id) {
   pack.burgs[id].removed = true;
   const cell = pack.burgs[id].cell;
   pack.cells.burg[cell] = 0;
+}
+
+function toggleCapital(burg) {
+  const state = pack.burgs[burg].state;
+  if (!state) {tip("Neutral lands cannot have a capital", false, "error"); return;}
+  if (pack.burgs[burg].capital) {tip("To change capital please assign a capital status to another burg of this state", false, "error"); return;}
+  const old = pack.states[state].capital;
+
+  // change statuses
+  pack.states[state].capital = burg;
+  pack.states[state].center = pack.burgs[burg].cell;
+  pack.burgs[burg].capital = 1;
+  pack.burgs[old].capital = 0;
+  moveBurgToGroup(burg, "cities");
+  moveBurgToGroup(old, "towns");
+}
+
+function togglePort(burg) {
+  const anchor = document.querySelector("#anchors [data-id='" + burg + "']");
+  if (anchor) anchor.remove();
+  const b = pack.burgs[burg];
+  if (b.port) {b.port = 0; return;} // not a port anymore
+
+  const haven = pack.cells.haven[b.cell];
+  const port = haven ? pack.cells.f[haven] : -1;
+  if (!haven) tip("Port haven is not found, system won't be able to make a searoute", false, "warn");
+  b.port = port;
+
+  const g = b.capital ? "cities" : "towns";
+  const group = anchors.select("g#"+g);
+  const size = +group.attr("size");
+  group.append("use").attr("xlink:href", "#icon-anchor").attr("data-id", burg)
+    .attr("x", rn(b.x - size * .47, 2)).attr("y", rn(b.y - size * .47, 2))
+    .attr("width", size).attr("height", size);
 }
 
 // draw legend box

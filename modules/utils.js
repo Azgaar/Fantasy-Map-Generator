@@ -537,6 +537,11 @@ function parseError(error) {
   return errorParsed;
 }
 
+// open URL in a new tab or window
+function openURL(url) {
+  window.open(url, '_blank');
+}
+
 // polyfills
 if (Array.prototype.flat === undefined) {
   Array.prototype.flat = function() {
