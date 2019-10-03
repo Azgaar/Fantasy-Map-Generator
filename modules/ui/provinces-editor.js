@@ -45,7 +45,7 @@ function editProvinces() {
     if (cl.contains("icon-trash-empty")) removeProvince(p);
   });
 
-  body.addEventListener("input", function(ev) {
+  body.addEventListener("change", function(ev) {
     const el = ev.target, cl = el.classList, line = el.parentNode, p = +line.dataset.id;
     if (cl.contains("cultureBase")) changeCapital(p, line, el.value);
   });
