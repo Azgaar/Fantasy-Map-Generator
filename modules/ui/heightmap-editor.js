@@ -947,7 +947,7 @@ function getHeight(h) {
     void function createColorPallete() {
       const container = d3.select("#colorScheme");
       container.selectAll("div").data(d3.range(101)).enter().append("div").attr("data-color", i => i)
-        .style("background-color", i => color(1-i/100))
+        .style("background-color", i => color(1-(i < 20 ? i-5 : i) / 100))
         .style("width", i => i < 20 || i > 70 ? ".2em" : ".1em")
         .on("touchmove mousemove", showPalleteHeight).on("click", assignHeight);
     }()
@@ -1056,8 +1056,7 @@ function getHeight(h) {
 
     function assignHeight() {
       const height = +this.getAttribute("data-color");
-      const rgb = color(1 - height/100);
-
+      const rgb = color(1 - (height < 20 ? height-5 : height) / 100);
       const selectedColor = imageConverter.querySelector("div.selectedColor");
       selectedColor.style.backgroundColor = rgb;
       selectedColor.setAttribute("data-color", rgb);
@@ -1084,7 +1083,7 @@ function getHeight(h) {
         const colorFrom = el.getAttribute("data-color");
         const lab = d3.lab(colorFrom);
         const normalized = type === "hue" ? rn(normalize(lab.b + lab.a / 2, -50, 200), 2) : rn(normalize(lab.l, -15, 100), 2);
-        const colorTo = color(1 - normalized);
+        const colorTo = color(1 - (normalized < .2 ? normalized-.05 : normalized));
         const heightTo = normalized * 100;
 
         terrs.selectAll("polygon[fill='" + colorFrom + "']").attr("fill", colorTo).attr("data-height", heightTo);

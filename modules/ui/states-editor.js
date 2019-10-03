@@ -53,8 +53,12 @@ function editStates() {
     const el = ev.target, cl = el.classList, line = el.parentNode, state = +line.dataset.id;
     if (cl.contains("stateCapital")) stateChangeCapitalName(state, line, el.value); else
     if (cl.contains("cultureType")) stateChangeType(state, line, el.value); else
-    if (cl.contains("stateCulture")) stateChangeCulture(state, line, el.value); else
     if (cl.contains("statePower")) stateChangeExpansionism(state, line, el.value);
+  });
+
+  body.addEventListener("change", function(ev) {
+    const el = ev.target, cl = el.classList, line = el.parentNode, state = +line.dataset.id;
+    if (cl.contains("stateCulture")) stateChangeCulture(state, line, el.value);
   });
 
   function refreshStatesEditor() {
@@ -243,7 +247,7 @@ function editStates() {
     }
 
     function regenerateShortNameRandom() {
-      const base = rand(nameBase.length-1);
+      const base = rand(nameBases.length-1);
       const name = Names.getState(Names.getBase(base), undefined, base);
       document.getElementById("stateNameEditorShort").value = name;
     }

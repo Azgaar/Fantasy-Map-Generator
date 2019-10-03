@@ -192,9 +192,9 @@ function getMapData() {
     const provinces = JSON.stringify(pack.provinces);
 
     // store name array only if it is not the same as default
-    const defaultNB = Names.getNameBase();
+    const defaultNB = Names.getNameBases();
     const namesData = nameBases.map((b,i) => {
-      const names = defaultNB[i] && defaultNB[i].join("") === nameBase[i].join("") ? "" : nameBase[i];
+      const names = defaultNB[i] && defaultNB[i].b === b.b ? "" : b.b;
       return `${b.name}|${b.min}|${b.max}|${b.d}|${b.m}|${names}`;
     }).join("/");
 
@@ -683,8 +683,8 @@ function parseLoadedData(data) {
         namesDL.forEach((d, i) => {
           const e = d.split("|");
           if (!e.length) return;
-          nameBases[i] = {name:e[0], min:e[1], max:e[2], d:e[3], m:e[4]};
-          if(e[5]) nameBase[i] = e[5].split(",");
+          const b = e[5].split(",").length > 2 || !nameBases[i] ? e[5] : nameBases[i].b;
+          nameBases[i] = {name:e[0], min:e[1], max:e[2], d:e[3], m:e[4], b};
         });
       }
     }()

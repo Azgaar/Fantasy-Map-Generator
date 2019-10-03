@@ -465,7 +465,8 @@ function getNumberInRange(r) {
 function analizeNamesbase() {
   const result = [];
   nameBases.forEach((b,i) => {
-    const d = nameBase[i];
+    const string = nameBases[i].b;
+    const d = string.split(",");
     const size = d.length;
     const ar = d.map(n => n.length);
     const min = d3.min(ar);
@@ -475,7 +476,6 @@ function analizeNamesbase() {
     const lengths = new Uint8Array(max);
     ar.forEach(l => lengths[l]++);
     const common = d3.scan(lengths, (a,b) => b-a);
-    const string = d.join("");
     const doubleArray = [];
     let double = "";
     for (let i=0; i<string.length; i++) {

@@ -228,7 +228,7 @@ function editBurg(id) {
   }
 
   function generateNameRandom() {
-    const base = rand(nameBase.length-1);
+    const base = rand(nameBases.length-1);
     burgName.value = Names.getBase(base);
     changeName();
   }
@@ -305,10 +305,7 @@ function editBurg(id) {
     const temple = +burg.temple;
     const shanty = +burg.shanty;
 
-    const url = `http://fantasycities.watabou.ru/?
-      name=${name}&size=${size}&seed=${s}&hub=${hub}&random=0&continuous=0
-      &river=${river}&coast=${coast}
-      &citadel=${citadel}&plaza=${plaza}&temple=${temple}&walls=${walls}&shantytown=${shanty}`;
+    const url = `http://fantasycities.watabou.ru/?name=${name}&size=${size}&seed=${s}&hub=${hub}&random=0&continuous=0&river=${river}&coast=${coast}&citadel=${citadel}&plaza=${plaza}&temple=${temple}&walls=${walls}&shantytown=${shanty}`;
     openURL(url);
   }
 

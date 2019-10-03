@@ -104,7 +104,7 @@ let customization = 0; // 0 - no; 1 = heightmap draw; 2 - states draw; 3 - add s
 let mapCoordinates = {}; // map coordinates on globe
 let winds = [225, 45, 225, 315, 135, 315]; // default wind directions
 let biomesData = applyDefaultBiomesSystem();
-let nameBases = Names.getNameBases(), nameBase = Names.getNameBase(); // cultures-related data
+let nameBases = Names.getNameBases(); // cultures-related data
 const fonts = ["Almendra+SC", "Georgia", "Arial", "Times+New+Roman", "Comic+Sans+MS", "Lucida+Sans+Unicode", "Courier+New"]; // default web-safe fonts
 
 let color = d3.scaleSequential(d3.interpolateSpectral); // default color scheme

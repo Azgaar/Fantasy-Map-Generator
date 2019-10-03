@@ -50,21 +50,17 @@
       culture.type = defineCultureType(c);
       culture.expansionism = defineCultureExpansionism(culture.type);
       cells.culture[c] = i+1;
-      //debug.append("text").attr("stroke", "#000").attr("font-size", "10").attr("font-family", "Almendra SC").attr("x", cells.p[c][0]).attr("y", cells.p[c][1]).text(culture.type);
     });
 
     // the first culture with id 0 is for wildlands
     pack.cultures.unshift({name:"Wildlands", i:0, base:1});
 
     // check whether all bases are valid. If not, load default namesbase
-    const invalidBase = pack.cultures.some(c => !nameBase[c.base]);
-    if (invalidBase) {
-      nameBases = Names.getNameBases();
-      nameBase = Names.getNameBase();
-    }
+    const invalidBase = pack.cultures.some(c => !nameBases[c.base]);
+    if (invalidBase) nameBases = Names.getNameBases();
 
     function getRandomCultures(c) {
-      const d = getDefault(), n = d.length-1;
+      const d = getDefault(c), n = d.length-1;
       const count = Math.min(c, d.length);
       const cultures = [];
       while (cultures.length < count) {
@@ -115,7 +111,7 @@
     console.timeEnd('generateCultures');
   }
 
-  const getDefault = function() {
+  const getDefault = function(count) {
     if (culturesSet.value === "european") {
       return [
         {name:"Shwazen", base:0, odd: 1},
@@ -168,6 +164,114 @@
         {name:getName(), base:1, odd: 1},
         {name:getName(), base:1, odd: 1}
       ];
+    }
+
+    if (culturesSet.value === "highFantasy") {
+      return [
+        {name:ra(["Umbar","Vanya","Wroda","Cronmi","Etarn","Fauln","Gondin","Hernami","Ithinda","Jaundal"]), base:32, odd: 1},
+        {name:ra(["Mithlun","Deru","Baen","Nimic","Amdar","Nevaer","Pendra","Morid","Enad","Tullid"]), base:32, odd: .8},
+        {name:ra(["Kelim","Lemra","Ondan","Quixot","Ranoy","Hondan","Talmun","Arba","Gruni","Tacha"]), base:32, odd: .5},
+        {name:Names.getBaseShort(32), base:32, odd: .2},
+        // Human African cultures (Swahili, Nigerian)
+        {name:ra(["Unbu","Fala","Yabir","Nadi","Turu","Nubir","Bertu","Swada","Guon","Duir"]), base:ra([28,21]), odd: .5},
+        {name:ra(["Misaad","Tiga","Yana","Julo","Tanu","Danga","Ezaza","Yud","Oroba","Zula"]), base:ra([28,21]), odd: .3},
+        {name:Names.getBaseShort(28), base:28, odd: .1},
+        // Human oriental cultures (Chinese, Korean, Japanese)
+        {name:ra(["Quian","Nihan", "Akai","Huin","Jandai","Kuita","Feng","Sang","Yuhong","Zhonyu"]), base:ra([11,10,12]), odd: .5},
+        {name:ra(["Jumun", "Usei","Rinu","Yataro","Jaelin","Sasung","Oyo","Yaun","Lamlei","Ochato"]), base:ra([11,10,12]), odd: .3},
+        {name:Names.getBaseShort(11), base:11, odd: .1},
+        // Human nomadic cultures (Berber, Arabic, Turkish, Mongolian)
+        {name:ra(["Yird","Zaja","Omuk","Daziji","Harad", "Burja","Khosat","Ongal","Jingan", "Bagharin"]), base:ra([17,18,16,31]), odd: .5},
+        {name:ra(["Dal", "Qeduin","Damar","Yeduin","Buzakh","Argol","Monthar","Suul", "Azurid","Oran"]), base:ra([17,18,16,31]), odd: .3},
+        {name:Names.getBaseShort(31), base:31, odd: .1},
+        // Elven cultures (Elven, Dark Elven)
+        {name:ra(["Lossal","Aeval","Alar","Taltari","Elavar","Selane","Lahsa","Vendilae","Endaree","Altawe","Aldar"]), base:33, odd: .9},
+        {name:ra(["Dokkal","Drauga","Ulsin","Undril","Eldazan","Velas","Waendir","Cindil","Dhantyr","Uldar"]), base:34, odd: .9},
+        {name:Names.getBaseShort(33), base:33, odd: .1},
+        {name:Names.getBaseShort(34), base:34, odd: .1},
+        // Dwarven cultures
+        {name:ra(["Garadur","Kalemund","Khazram","Norgath","Zardum","Ulthar","Tumunz","Shatharn","Nuldalar","Azkadun"]), base:35, odd: 1},
+        {name:Names.getBaseShort(35), base:35, odd: .1},
+        // Orcic cultures
+        {name:ra(["Oruk","Ulg","Quigg","Rughar","Rikagh","Brundh","Kaldag","Umogg","Verug","Rekh"]), base:37, odd: .8},
+        {name:Names.getBaseShort(37), base:37, odd: .1},
+        // Goblin cultures
+        {name:ra(["Grubi","Gobbun","Bogog","Katong","Ziggag","Nildac","Blygg","Yagnob","Dulb","Gibog"]), base:36, odd: .7},
+        {name:Names.getBaseShort(36), base:36, odd: .1},
+        // Draconic cultures
+        {name:ra(["Drache","Alduun","Tiranax","Firosos","Daavor","Sakaal","Oruniin","Rigaal","Diiru","Velrit"]), base:39, odd: .3},
+        {name:Names.getBaseShort(39), base:39, odd: .05},
+        // Arachnid cultures
+        {name:ra(["Aranee","Yoraz","Zhizu","On'Omi","Xantha","Qalan","Yeqir","Zheer","Shirrox","Khra'La"]), base:40, odd: .2},
+        {name:Names.getBaseShort(40), base:40, odd: .05},
+        // Serpents (snakes) cultures
+        {name:ra(["Najar","Saj","Vultess","Solkush","Vekis","Zeriss","Ci'Kush","Kophyss","Sal'Har","Surresh"]), base:41, odd: .2},
+        {name:Names.getBaseShort(41), base:41, odd: .05},
+        // Giants cultures
+        {name:ra(["Gorth","Volkar","Barak","Suvrok","Dughal","Ranag","Undur","Kakarn","Dalken","Grimgar"]), base:38, odd: .2},
+        {name:Names.getBaseShort(38), base:38, odd: .05}
+      ];
+    }
+
+    if (culturesSet.value === "darkFantasy") {
+      const west = ra([0,1,2,3,4,6]); // real-world western
+      const east = ra([10,11,12,26,29,30]); // real-world oriental
+      const randReal = rand(31); // reql-world random
+      const randFantasy = rand(35, 39); // fantasy random (except frequently used)
+
+      return [
+        {name:ra(["Gluum","Dregg","Crimna","Grimmer","Plagan","Gretan","Maeldar","Peyon","Waeri","Creven"]), base:32, odd: 1},
+        {name:Names.getBaseShort(32), base:32, odd: .4},
+        {name:Names.getBaseShort(west), base:west, odd: .4},
+        {name:Names.getBaseShort(west), base:west, odd: 4},
+        {name:Names.getBaseShort(west), base:west, odd: .4},
+        {name:Names.getBaseShort(east), base:east, odd: .4},
+        {name:Names.getBaseShort(randReal), base:randReal, odd: .4},
+        {name:Names.getBaseShort(randReal), base:randReal, odd: .4},
+        {name:Names.getBaseShort(randFantasy), base:randFantasy, odd: .4},
+        {name:ra(["Drauer","Svartal","Ulsin","Druchan","Eldazar","Velaz","Waendir","Cryndil","Vhantyr","Uldaga"]), base: 34, odd: .8},
+        {name:Names.getBaseShort(34), base:34, odd: .2},
+        {name:ra(["Necrin","Yoraz","Zhizu","On'Omi","Xantha","Qalan","Yeqir","Zheer","Shirrox","Khra'La"]), base:40, odd: .6},
+        {name:Names.getBaseShort(40), base:40, odd: .1},
+        {name:ra(["Najaq","Saja","Zultesh","Solkuss","Sekrys","Verish","Ji'Suu","Kophress","Sul'Vhas","Surraj"]), base:41, odd: .6},
+        {name:Names.getBaseShort(41), base:41, odd: .1}
+      ]
+    }
+
+    if (culturesSet.value === "lowFantasy") {
+      return [
+        // real-world cultures
+        {name:ra(["Misaad","Tiga","Yana","Julo","Tanu","Danga","Ezaza","Yud","Oroba","Zula"]), base:ra([28,21]), odd: .7},
+        {name:ra(["Unbu","Fala","Yabir","Nadi","Turu","Nubir","Bertu","Swada","Guon","Duir"]), base:ra([28,21]), odd: .4},
+        {name:ra(["Jumun", "Usei","Rinu","Yataro","Jaelin","Sasung","Oyo","Yaun","Lamlei","Ochato"]), base:ra([11,10,12]), odd: .7},
+        {name:ra(["Quian","Nihan", "Akai","Huin","Jandai","Kuita","Feng","Sang","Yuhong","Zhonyu"]), base:ra([11,10,12]), odd: .4},
+        {name:ra(["Dal", "Qeduin","Damar","Yeduin","Buzakh","Argol","Monthar","Suul", "Azurid","Oran"]), base:ra([18,16,31]), odd: .7},
+        {name:ra(["Yird","Zaja","Omuk","Daziji","Harad", "Burja","Khosat","Ongal","Jingan", "Bagharin"]), base:ra([18,16,31]), odd: .4},
+        {name:ra(["Muerid","Atau","Olvid","Carani","Incora","Fastama","Tusange","Captiur","Tristei","Duila"]), base:ra([2,3,4]), odd: .6},
+        {name:ra(["Vergen","Todir","Angest","Duncein","Mordane","Ungeran","Slaktan","Pijini","Joldamor","Kelfang"]), base:ra([0,6]), odd: .5},
+        {name:ra(["Vaer","Hayal","Fajalan","Banta","Feled","Unohda","Kuolemi","Hatamur","Inhortu","Rienau"]), base:ra([9,15]),odd: .5},
+        {name:ra(["Semerta","Rezyn","Stragh","Otchza","Rabini","Yamak","Nocht","Erstoz","Vozha","Vukod"]), base:5, odd: .6},
+        {name:ra(["Itzil","Itoza","Beldur","Minaz","Etsipian","Gurean","Morrai","Hiloga","Gurrusi","Beldurn"]), base:20, odd: .2},
+        {name:ra(["Kongji","Qishin","Moushi","Wuhui","Zhaozei","Tushada","Shai","Xingzhi","Jukong","Tiantao"]), base:ra([30, 11]), odd: .5},
+        // human cultures
+        {name:ra(["Mithlun","Deru","Baen","Nimic","Amdar","Nevaer","Pendra"]), base:32, odd: 1},
+        {name:ra(["Morid","Enad","Tullid","Kelim","Lemra","Ondan","Fargunia"]), base:32, odd: 1},
+        {name:ra(["Quixot","Ranoy","Hondan","Talmun","Arba","Gruni","Tacha"]), base:32, odd: 1},
+        {name:ra(["Gluum","Dregg","Crimna","Grimmer","Plagan","Gretan","Jaundal"]), base:32, odd: .5},
+        {name:ra(["Cronmi","Etarn","Fauln","Gondin","Hernami","Ithinda"]), base:32, odd: .5},
+        {name:ra(["Peyon","Waeri","Creven","Umbar","Vanya","Wroda","Maeldar"]), base:32, odd: .5},
+        // non-human cultures
+        {name:ra(["Lossal","Aeval","Alar","Taltari","Elavar","Selane","Lahsa","Vendilae","Endaree","Altawe","Aldar"]), base:33, odd: .2},
+        {name:ra(["Garadur","Kalemund","Khazram","Norgath","Zardum","Ulthar","Tumunz","Shatharn","Nuldalar","Azkadun"]), base:35, odd: .2},
+        {name:ra(["Gorth","Volkar","Barak","Suvrok","Dughal","Ranag","Undur","Kakarn","Dalken","Grimgar"]), base:38, odd: .2}
+      ]
+    }
+
+    if (culturesSet.value === "random") {
+      return d3.range(count).map(i => {
+        const rnd = rand(41);
+        return {name:Names.getBaseShort(rnd), base:rnd, odd: 1}
+      });
     }
 
     // all-world
