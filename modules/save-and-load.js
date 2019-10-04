@@ -806,7 +806,7 @@ function parseLoadedData(data) {
         biomesData.habitability.push(12);
       }
 
-      if (version == 1) {
+      if (version < 1.1) {
         // v 1.0 initial code had a bug with religion layer id
         if (!relig.size()) relig = viewbox.insert("g", "#terrain").attr("id", "relig");
 
