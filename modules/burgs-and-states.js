@@ -780,6 +780,7 @@
         if (base === 16 && (form === "Empire" || form === "Kingdom")) return "Sultanate"; // Turkic
         if (base === 5 && (form === "Empire" || form === "Kingdom")) return "Tsardom"; // Ruthenian
         if (base === 31 && (form === "Empire" || form === "Kingdom")) return "Khaganate"; // Mongolian
+        if (base === 12 && (form === "Kingdom" || form === "Grand Duchy")) return "Shogunate"; // Japanese
         if ([18, 17].includes(base) && form === "Empire") return "Caliphate"; // Arabic, Berber
         if (base === 18 && (form === "Grand Duchy" || form === "Duchy")) return "Emirate"; // Arabic
         if (base === 7 && (form === "Grand Duchy" || form === "Duchy")) return "Despotate"; // Greek
@@ -820,7 +821,7 @@
     if (!s.formName) return s.name;
     if (!s.name && s.formName) return "The " + s.formName;
     // state forms requiring Adjective + Name, all other forms use scheme Form + Of + Name
-    const adj = ["Empire", "Sultanate", "Khaganate", "Caliphate", "Despotate", "Theocracy", "Oligarchy", "Union", "Confederation", "Trade Company", "League", "Tetrarchy", "Triumvirate", "Diarchy", "Horde"];
+    const adj = ["Empire", "Sultanate", "Khaganate", "Shogunate", "Caliphate", "Despotate", "Theocracy", "Oligarchy", "Union", "Confederation", "Trade Company", "League", "Tetrarchy", "Triumvirate", "Diarchy", "Horde"];
     return adj.includes(s.formName) ? getAdjective(s.name) + " " + s.formName : s.formName + " of " + s.name;
   }
 
