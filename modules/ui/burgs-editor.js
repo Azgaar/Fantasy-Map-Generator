@@ -368,7 +368,7 @@ function editBurgs() {
   }
 
   function downloadBurgsData() {
-    let data = "Id,Burg,Province,State,Culture,Religion,Population,Longitude,Latitude,Elevation ("+heightUnit.value+"),Capital,Port\n"; // headers
+    let data = "Id,Burg,Province,State,Culture,Religion,Population,Longitude,Latitude,Elevation ("+heightUnit.value+"),Capital,Port,Citadel,Walls,Plaza,Temple,Shanty\n"; // headers
     const valid = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
 
     valid.forEach(b => {
@@ -388,7 +388,13 @@ function editBurgs() {
 
       // add status data
       data += b.capital ? "capital," : ",";
-      data += b.port ? "port\n" : "\n";
+      data += b.port ? "port," : ",";
+      data += b.citadel ? "citadel," : ",";
+      data += b.walls ? "walls," : ",";
+      data += b.plaza ? "plaza," : ",";
+      data += b.temple ? "temple," : ",";
+      data += b.shanty ? "shanty\n" : "\n";
+
     });
 
     const dataBlob = new Blob([data], {type: "text/plain"});
