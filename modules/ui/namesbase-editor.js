@@ -40,7 +40,7 @@ function editNamesbase() {
   function updateInputs() {
     const base = +document.getElementById("namesbaseSelect").value;
     if (!nameBases[base]) {tip(`Namesbase ${base} is not defined`, false, "error"); return;}
-    document.getElementById("namesbaseTextarea").value = nameBase[base].join(", ");
+    document.getElementById("namesbaseTextarea").value = nameBases[base].b;
     document.getElementById("namesbaseName").value = nameBases[base].name;
     document.getElementById("namesbaseMin").value = nameBases[base].min;
     document.getElementById("namesbaseMax").value = nameBases[base].max;
@@ -66,13 +66,13 @@ function editNamesbase() {
 
   function updateNamesData() {
     const base = +document.getElementById("namesbaseSelect").value;
-    const data = document.getElementById("namesbaseTextarea").value.replace(/ /g, "").split(",");
-    if (data.length < 3) {
+    const b = document.getElementById("namesbaseTextarea").value.replace(/ /g, "");
+    if (b.split(",").length < 3) {
       tip("The names data provided is not correct", false, "error");
-      document.getElementById("namesbaseTextarea").value = nameBase[base].join(", ");
+      document.getElementById("namesbaseTextarea").value = nameBases[base].b;
       return;
     }
-    nameBase[base] = data;
+    nameBases[base].b = b;
     Names.updateChain(base);
   }
 
@@ -108,11 +108,11 @@ function editNamesbase() {
   
   function namesbaseAdd() {
     const base = nameBases.length;
-    nameBases.push({name: "Base" + base, min: 5, max: 12, d: "", m: 0});
-    nameBase[base] = ["This", "is", "an", "example", "data", "Please", "replace", "with", "an", "actual", "names", "data", "with", "at", "least", "100", "names"];
+    const b = "This,is,an,example,of,name,base,showing,correct,format,It,should,have,at,least,one,hundred,names,separated,with,comma";
+    nameBases.push({name: "Base" + base, min: 5, max: 12, d: "", m: 0, b});
     document.getElementById("namesbaseSelect").add(new Option("Base" + base, base));
     document.getElementById("namesbaseSelect").value = base;
-    document.getElementById("namesbaseTextarea").value = nameBase[base].join(", ");
+    document.getElementById("namesbaseTextarea").value = b;
     document.getElementById("namesbaseName").value = "Base" + base;
     document.getElementById("namesbaseMin").value = 5;
     document.getElementById("namesbaseMax").value = 12;
@@ -127,19 +127,18 @@ function editNamesbase() {
       buttons: {
         Restore: function() {
           $(this).dialog("close");
+          Names.clearChains();
           nameBases = Names.getNameBases();
-          nameBase = Names.getNameBase();
           createBasesList();
           updateInputs();
-          Names.updateChains();
         },
         Cancel: function() {$(this).dialog("close");}
       }
-    });  
+    });
   }
-  
+
   function namesbaseDownload() {
-    const data = nameBases.map((b,i) => `${b.name}|${b.min}|${b.max}|${b.d}|${b.m}|${nameBase[i]}`);
+    const data = nameBases.map((b,i) => `${b.name}|${b.min}|${b.max}|${b.d}|${b.m}|${b.b}`);
     const dataBlob = new Blob([data.join("\r\n")], {type:"text/plain"});
     const url = window.URL.createObjectURL(dataBlob);
     const link = document.createElement("a");
@@ -158,18 +157,17 @@ function editNamesbase() {
       const data = dataLoaded.split("\r\n");
       if (!data || !data[0]) {tip("Cannot load a namesbase. Please check the data format", false, "error"); return;}
 
-      nameBases = [], nameBase = [];
+      Names.clearChains();
+      nameBases = [];
       data.forEach(d => {
         const e = d.split("|");
-        nameBases.push({name:e[0], min:e[1], max:e[2], d:e[3], m:e[4]});
-        nameBase.push(e[5].split(","));
+        nameBases.push({name:e[0], min:e[1], max:e[2], d:e[3], m:e[4], b:e[5]});
       });
 
       createBasesList();
       updateInputs();
-      Names.updateChains();
     };
 
-    fileReader.readAsText(fileToLoad, "UTF-8");    
+    fileReader.readAsText(fileToLoad, "UTF-8");
   } 
 }

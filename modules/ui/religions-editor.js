@@ -120,7 +120,7 @@ function editReligions() {
     body.querySelectorAll("div.states").forEach(el => el.addEventListener("click", selectReligionOnLineClick));
     body.querySelectorAll("rect.zoneFill").forEach(el => el.addEventListener("click", religionChangeColor));
     body.querySelectorAll("div > input.religionName").forEach(el => el.addEventListener("input", religionChangeName));
-    body.querySelectorAll("div > select.religionType").forEach(el => el.addEventListener("input", religionChangeType));
+    body.querySelectorAll("div > select.religionType").forEach(el => el.addEventListener("change", religionChangeType));
     body.querySelectorAll("div > input.religionForm").forEach(el => el.addEventListener("input", religionChangeForm));
     body.querySelectorAll("div > input.religionDeity").forEach(el => el.addEventListener("input", religionChangeDeity));
     body.querySelectorAll("div > span.icon-arrows-cw").forEach(el => el.addEventListener("click", regenerateDeity));
@@ -263,7 +263,7 @@ function editReligions() {
     });
 
     function applyPopulationChange() {
-      const ruralChange = rn(ruralPop.value / rural, 4);
+      const ruralChange = ruralPop.value / rural;
       if (isFinite(ruralChange) && ruralChange !== 1) {
         const cells = pack.cells.i.filter(i => pack.cells.religion[i] === religion);
         cells.forEach(i => pack.cells.pop[i] *= ruralChange);
@@ -275,13 +275,13 @@ function editReligions() {
         cells.forEach(i => pack.cells.pop[i] = pop);
       }
 
-      const urbanChange = rn(urbanPop.value / urban, 4);
+      const urbanChange = urbanPop.value / urban;
       if (isFinite(urbanChange) && urbanChange !== 1) {
-        burgs.forEach(b => b.population *= urbanChange);
+        burgs.forEach(b => b.population = rn(b.population * urbanChange, 4));
       }
       if (!isFinite(urbanChange) && +urbanPop.value > 0) {
         const points = urbanPop.value / populationRate.value / urbanization.value;
-        const population = rn(points / burgs.length);
+        const population = rn(points / burgs.length, 4);
         burgs.forEach(b => b.population = population);
       }
 

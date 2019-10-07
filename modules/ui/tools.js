@@ -15,7 +15,7 @@ toolsContent.addEventListener("click", function(event) {
   if (button === "editCulturesButton") editCultures(); else
   if (button === "editReligions") editReligions(); else
   if (button === "editNamesBaseButton") editNamesbase(); else
-  if (button === "editBurgsButton") editBurgs(); else
+  if (button === "overviewBurgsButton") editBurgs(); else
   if (button === "editUnitsButton") editUnits(); else
   if (button === "editNotesButton") editNotes(); else
   if (button === "editZonesButton") editZones();
@@ -122,7 +122,7 @@ function regenerateBurgs() {
     const burg = addBurg([cells.p[s.center][0], cells.p[s.center][1]]); // add new burg
     s.capital = burg;
     s.center = pack.burgs[burg].cell;
-    pack.burgs[burg].capital = true;
+    pack.burgs[burg].capital = 1;
     pack.burgs[burg].state = s.i;
     moveBurgToGroup(burg, "cities");
   });
@@ -153,7 +153,7 @@ function regenerateStates() {
   // turn all old capitals into towns
   burgs.filter(b => b.capital).forEach(b => {
     moveBurgToGroup(b.i, "towns");
-    b.capital = false;
+    b.capital = 0;
   });
 
   const neutral = pack.states[0].name;
@@ -171,7 +171,7 @@ function regenerateStates() {
     }
 
     capitalsTree.add([x, y]);
-    capital.capital = true;
+    capital.capital = 1;
     moveBurgToGroup(capital.i, "cities");
 
     const culture = capital.culture;

@@ -17,8 +17,8 @@
   <link rel="icon" type="image/png" href="images/favicon-16x16.png" sizes="16x16"/>
   <link rel="canonical" href="https://azgaar.github.io/Fantasy-Map-Generator/">
 
-  <link rel="stylesheet" type="text/css" href="index.css?version=1.1"/>
-  <link rel="stylesheet" type="text/css" href="icons.css?version=1.1"/>
+  <link rel="stylesheet" type="text/css" href="index.css?version=1.1.09"/>
+  <link rel="stylesheet" type="text/css" href="icons.css?version=1.1.09"/>
   <link rel="stylesheet" type="text/css" href="libs/jquery-ui.css"/>
 </head>
 <body>
@@ -203,6 +203,9 @@
         <symbol id="icon-anchor" viewBox="0 0 30 28">
           <title>Port</title>
           <path d="M15 4c0-0.547-0.453-1-1-1s-1 0.453-1 1 0.453 1 1 1 1-0.453 1-1zM28 18.5v5.5c0 0.203-0.125 0.391-0.313 0.469-0.063 0.016-0.125 0.031-0.187 0.031-0.125 0-0.25-0.047-0.359-0.141l-1.453-1.453c-2.453 2.953-6.859 4.844-11.688 4.844s-9.234-1.891-11.688-4.844l-1.453 1.453c-0.094 0.094-0.234 0.141-0.359 0.141-0.063 0-0.125-0.016-0.187-0.031-0.187-0.078-0.313-0.266-0.313-0.469v-5.5c0-0.281 0.219-0.5 0.5-0.5h5.5c0.203 0 0.391 0.125 0.469 0.313s0.031 0.391-0.109 0.547l-1.563 1.563c1.406 1.891 4.109 3.266 7.203 3.687v-10.109h-3c-0.547 0-1-0.453-1-1v-2c0-0.547 0.453-1 1-1h3v-2.547c-1.188-0.688-2-1.969-2-3.453 0-2.203 1.797-4 4-4s4 1.797 4 4c0 1.484-0.812 2.766-2 3.453v2.547h3c0.547 0 1 0.453 1 1v2c0 0.547-0.453 1-1 1h-3v10.109c3.094-0.422 5.797-1.797 7.203-3.687l-1.563-1.563c-0.141-0.156-0.187-0.359-0.109-0.547s0.266-0.313 0.469-0.313h5.5c0.281 0 0.5 0.219 0.5 0.5z"></path>
+        </symbol>
+        <symbol id="icon-store" viewBox="0 0 616 512">
+            <path d="M602 118.6L537.1 15C531.3 5.7 521 0 510 0H106C95 0 84.7 5.7 78.9 15L14 118.6c-33.5 53.5-3.8 127.9 58.8 136.4 4.5.6 9.1.9 13.7.9 29.6 0 55.8-13 73.8-33.1 18 20.1 44.3 33.1 73.8 33.1 29.6 0 55.8-13 73.8-33.1 18 20.1 44.3 33.1 73.8 33.1 29.6 0 55.8-13 73.8-33.1 18.1 20.1 44.3 33.1 73.8 33.1 4.7 0 9.2-.3 13.7-.9 62.8-8.4 92.6-82.8 59-136.4zM529.5 288c-10 0-19.9-1.5-29.5-3.8V384H116v-99.8c-9.6 2.2-19.5 3.8-29.5 3.8-6 0-12.1-.4-18-1.2-5.6-.8-11.1-2.1-16.4-3.6V480c0 17.7 14.3 32 32 32h448c17.7 0 32-14.3 32-32V283.2c-5.4 1.6-10.8 2.9-16.4 3.6-6.1.8-12.1 1.2-18.2 1.2z"></path>
         </symbol>
       </g>
       <g id="defs-relief">
@@ -1575,8 +1578,10 @@
                 <option value="european" data-max="15">European</option>
                 <option value="oriental" data-max="13">Oriental</option>
                 <option value="english" data-max="10">English</option>
-                <!-- <option value="high" data-max="16">High Fantasy</option> -->
-                <!-- <option value="dark" data-max="16">Dark Fantasy</option> -->
+                <option value="antique" data-max="10">Antique</option>
+                <option value="highFantasy" data-max="23">High Fantasy</option>
+                <option value="darkFantasy" data-max="18">Dark Fantasy</option>
+                <option value="random" data-max="100">Random</option>
               </select>
             </td>
             <td></td>
@@ -1742,7 +1747,7 @@
       </div>
 
       <div id="toolsContent" class="tabcontent">
-        <div id="openEditor">
+        <div>
           <p>Click to configure:</p>
           <button id="editHeightmapButton" data-tip="Click to open Heightmap customization menu. Shortcut: Shift + H">Heightmap</button>
           <button id="editBiomesButton" data-tip="Click to open Biomes Editor. Shortcut: Shift + B">Biomes</button>
@@ -1753,9 +1758,17 @@
           <button id="editNamesBaseButton" data-tip="Click to open Namesbase Editor. Shortcut: Shift + N">Namesbase</button>
           <button id="editZonesButton" data-tip="Click to open Zones Editor. Shortcut: Shift + Z">Zones</button>
           <button id="editReligions" data-tip="Click to open Religions Editor. Shortcut: Shift + R">Religions</button>
-          <button id="editBurgsButton" data-tip="Click to open Burgs Editor. Shortcut: Shift + T">Burgs</button>
           <button id="editUnitsButton" data-tip="Click to open Units Editor. Shortcut: Shift + U">Units</button>
           <button id="editNotesButton" data-tip="Click to open Notes Editor. Shortcut: Shift + O">Notes</button>
+        </div>
+
+        <div>
+          <p>Click to overview:</p>
+          <button id="overviewBurgsButton" data-tip="Click to open Burgs Overview. Shortcut: Shift + T">Burgs</button>
+          <!-- <button id="overviewLandmassedButton" data-tip="Click to open Landmasses Overview. Shortcut: Shift + L">Landmasses</button> -->
+          <!-- <button id="overviewWaterbodiesButton" data-tip="Click to open Waterbodies Overview. Shortcut: Shift + W">Waterbodies</button> -->
+          <!-- <button id="overviewRiversButton" data-tip="Click to open Rivers Overview. Shortcut: Shift + V">Rivers</button> -->
+          <!-- <button id="overviewRoutesButton" data-tip="Click to open Routes Overview. Shortcut: Shift + U">Routes</button> -->
         </div>
 
         <div id="regenerateFeature">
@@ -2249,36 +2262,56 @@
     </div>
 
     <div id="burgEditor" class="dialog" style="display: none">
-      <button id="burgGroupShow" data-tip="Show group change section" class="icon-tags"></button>
-      <div id="burgGroupSection" style="display: none">
-        <button id="burgGroupHide" data-tip="Hide group change section" class="icon-tags"></button>
-        <select id="burgSelectGroup" data-tip="Select a group for this burg" style="width: 10em;"></select>
-        <input id="burgInputGroup" placeholder="new group name" data-tip="Create new Group for the Burg" style="display: none; width: 10em"/>
-        <i id="burgAddGroup" data-tip="Create new group for the burg" class="icon-plus pointer"></i>
-        <i id="burgRemoveGroup" data-tip="Remove selected burg group" class="icon-trash pointer"></i>
+
+      <div id="burgBody" style="padding-bottom: .3em">
+        <div style="padding: .1em">
+          <div class="label">Name:</div>
+          <input id="burgName" data-tip="Type to rename the burg" autocorrect="off" spellcheck="false" style="width: 7em">
+          <span id="burgNameReCulture" data-tip="Generate culture-specific name for the burg" class="icon-book pointer"></span>
+          <span id="burgNameReRandom" data-tip="Generate random name for the burg" class="icon-globe pointer"></span>
+        </div>
+
+        <div style="padding: .1em">
+          <div class="label">Population:</div>
+          <input id="burgPopulation" data-tip="Set burg population" type="number" min=0 step=1 style="width: 7em">
+        </div>
+
+        <div style="padding: .1em">
+          <div class="label">Features:</div>
+          <span id="burgCapital" data-tip="Shows whether the burg is a state capital. Click to toggle" data-feature="capital" class="burgFeature icon-star"></span>
+          <span id="burgPort" data-tip="Shows whether the burg is a port. Click to toggle" data-feature="port" class="burgFeature icon-anchor"></span>
+          <span id="burgCitadel" data-tip="Shows whether the burg has a citadel (castle). Click to toggle" data-feature="citadel" class="burgFeature icon-chess-rook" style="font-size: 1.1em"></span>
+          <span id="burgWalls" data-tip="Shows whether the burg has walls. Click to toggle" data-feature="walls" class="burgFeature icon-fort-awesome"></span>
+          <span id="burgPlaza" data-tip="Shows whether the burg has a plaza (marketplace). Click to toggle" data-feature="plaza" class="burgFeature icon-store" style="font-size: 1em"></span>
+          <span id="burgTemple" data-tip="Shows whether the burg has a place of worship. Click to toggle" data-feature="temple" class="burgFeature icon-bank" style="font-size: 1.1em; margin-left: 3px"></span>
+          <span id="burgShanty" data-tip="Shows whether the burg has a shanty town. Click to toggle" data-feature="shanty" class="burgFeature icon-campground" style="font-size: 1em"></span>
+        </div>
       </div>
 
-      <button id="burgNameShow" data-tip="Show name change section" class="icon-pencil"></button>
-      <div id="burgNameSection" style="display: none">
-        <button id="burgNameHide" data-tip="Hide name change section" class="icon-pencil"></button>
-        <input id="burgNameInput" data-tip="Populate to rename the burg"/>
-        <span id="burgNameReCulture" data-tip="Generate culture-specific name for the burg" class="icon-book pointer"></span>
-        <span id="burgNameReRandom" data-tip="Generate random name for the burg" class="icon-globe pointer"></span>
+      <div id="burgBottom">
+        <button id="burgGroupShow" data-tip="Show group change section" class="icon-tags"></button>
+        <div id="burgGroupSection" style="display: none">
+          <button id="burgGroupHide" data-tip="Hide group change section" class="icon-tags"></button>
+          <select id="burgSelectGroup" data-tip="Select a group for this burg" style="width: 10em;"></select>
+          <input id="burgInputGroup" placeholder="new group name" data-tip="Create new Group for the Burg" style="display: none; width: 10em"/>
+          <i id="burgAddGroup" data-tip="Create new group for the burg" class="icon-plus pointer"></i>
+          <i id="burgRemoveGroup" data-tip="Remove selected burg group" class="icon-trash pointer"></i>
+        </div>
+  
+        <button id="burgStyleShow" data-tip="Show style edit section" class="icon-brush"></button>
+        <div id="burgStyleSection" style="display: none">
+          <button id="burgStyleHide" data-tip="Hide style edit section" class="icon-brush"></button>
+          <button id="burgEditLabelStyle" data-tip="Edit label style for burg group in Style Editor" class="icon-font"></button>
+          <button id="burgEditIconStyle" data-tip="Edit icon style for burg group in Style Editor" class="icon-dot-circled"></button>
+          <button id="burgEditAnchorStyle" data-tip="Edit port icon (anchor) style for burg group in Style Editor" class="icon-anchor"></button>        
+        </div>
+  
+        <button id="burgSeeInMFCG" data-tip="Open burg in the Medieval Fantasy City Generator by Watabou. Ctrl + click to change the seed" class="icon-map-o"></button>
+        <button id="burgOpenCOA" data-tip="Open burg's COA in the Iron Arachne Heraldry Generator. Ctrl + click to change the seed" class="icon-fleur"></button>
+        <button id="burgRelocate" data-tip="Relocate burg" class="icon-target"></button>
+        <button id="burglLegend" data-tip="Edit free text notes (legend) for this burg" class="icon-edit"></button>
+        <button id="burgRemove" data-tip="Remove non-capital burg. Shortcut: Delete" class="icon-trash"></button>
       </div>
-
-      <button id="burgStyleShow" data-tip="Show style edit section" class="icon-brush"></button>
-      <div id="burgStyleSection" style="display: none">
-        <button id="burgStyleHide" data-tip="Hide style edit section" class="icon-brush"></button>
-        <button id="burgEditLabelStyle" data-tip="Edit label style for burg group in Style Editor" class="icon-font"></button>
-        <button id="burgEditIconStyle" data-tip="Edit icon style for burg group in Style Editor" class="icon-dot-circled"></button>
-        <button id="burgEditAnchorStyle" data-tip="Edit port icon (anchor) style for burg group in Style Editor" class="icon-anchor"></button>        
-      </div>
-
-      <button id="burgSeeInMFCG" data-tip="Open the burg representation in the Medieval Fantasy City Generator by Watabou" class="icon-map-o"></button>
-      <button id="burgOpenCOA" data-tip="Open burg's COA in the Iron Arachne Heraldry Generator" class="icon-fleur"></button>
-      <button id="burgRelocate" data-tip="Relocate burg" class="icon-target"></button>
-      <button id="burglLegend" data-tip="Edit free text notes (legend) for this burg" class="icon-edit"></button>
-      <button id="burgRemove" data-tip="Remove non-capital burg. Shortcut: Delete" class="icon-trash"></button>
     </div>
 
     <div id="markerEditor" class="dialog" style="display: none">
@@ -2545,7 +2578,7 @@
       <div id="statesHeader" class="header">
         <div style="left:1.4em" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">State&nbsp;</div>
         <div style="left:8.7em" data-tip="Click to sort by state form name" class="sortable alphabetically" data-sortby="form">Form&nbsp;</div>
-        <div style="left:16em" data-tip="Click to sort by capital name" class="sortable alphabetically hide" data-sortby="capital">Capital&nbsp;</div>
+        <div style="left:15.9em" data-tip="Click to sort by capital name" class="sortable alphabetically hide" data-sortby="capital">Capital&nbsp;</div>
         <div style="left:22.3em" data-tip="Click to sort by state dominant culture" class="sortable alphabetically hide" data-sortby="culture">Culture&nbsp;</div>
         <div style="left:27em" data-tip="Click to sort by state burgs count" class="sortable hide" data-sortby="burgs">Burgs&nbsp;</div>
         <div style="left:32.5em" data-tip="Click to sort by state area" class="sortable hide icon-sort-number-down" data-sortby="area">Area&nbsp;</div>
@@ -2604,6 +2637,73 @@
 
         <button id="statesAdd" data-tip="Add a new state. Hold Shift to add multiple" class="icon-plus"></button>
         <button id="statesExport" data-tip="Save state-related data as a text file (.csv)" class="icon-download"></button>
+      </div>
+    </div>
+
+    <div id="stateNameEditor" class="dialog" data-state="0" style="display: none">
+      <div style="padding: .1em">
+        <div data-tip="State short name" class="label">Short name:</div>
+        <input id="stateNameEditorShort" data-tip="Type to change the short name" autocorrect="off" spellcheck="false" style="width: 11em">
+        <span id="stateNameEditorShortCulture" data-tip="Generate culture-specific name" class="icon-book pointer"></span>
+        <span id="stateNameEditorShortRandom" data-tip="Generate random name" class="icon-globe pointer"></span>
+      </div>
+
+      <div style="padding: .1em" data-tip="Select form name">
+        <div data-tip="State form name" class="label">Form name:</div>
+        <select id="stateNameEditorSelectForm" style="display: inline-block; width: 11.7em; height: 1.645em">
+          <option value="Beylik">Beylik</option>
+          <option value="Caliphate">Caliphate</option>
+          <option value="City-state">City-state</option>
+          <option value="Commonwealth">Commonwealth</option>
+          <option value="Confederation">Confederation</option>
+          <option value="Despotate">Despotate</option>
+          <option value="Diarchy">Diarchy</option>
+          <option value="Diocese">Diocese</option>
+          <option value="Duchy">Duchy</option>
+          <option value="Emirate">Emirate</option>
+          <option value="Empire">Empire</option>
+          <option value="Eparchy">Eparchy</option>
+          <option value="Federation">Federation</option>
+          <option value="Free City">Free City</option>
+          <option value="Grand Duchy">Grand Duchy</option>
+          <option value="Heptarchy">Heptarchy</option>
+          <option value="Horde">Horde</option>
+          <option value="Imamah">Imamah</option>
+          <option value="Khaganate">Khaganate</option>
+          <option value="Kingdom">Kingdom</option>
+          <option value="League">League</option>
+          <option value="Marches">Marches</option>
+          <option value="Oligarchy">Oligarchy</option>
+          <option value="Principality">Principality</option>
+          <option value="Protectorate">Protectorate</option>
+          <option value="Republic">Republic</option>
+          <option value="Satrapy">Satrapy</option>
+          <option value="Shogunate">Shogunate</option>
+          <option value="Sultanate">Sultanate</option>
+          <option value="Tetrarchy">Tetrarchy</option>
+          <option value="Theocracy">Theocracy</option>
+          <option value="Trade Company">Trade Company</option>
+          <option value="Triumvirate">Triumvirate</option>
+          <option value="Tsardom">Tsardom</option>
+          <option value="Ulus">Ulus</option>
+          <option value="Union">Union</option>
+          <option value="United Kingdom">United Kingdom</option>
+          <option value="United Provinces">United Provinces</option>
+          <option value="United Republic">United Republic</option>
+        </select>
+        <input id="stateNameEditorCustomForm" placeholder="type form name" data-tip="Create custom state form name" style="display: none; width: 11em;">
+        <span id="stateNameEditorAddForm" data-tip="Click to add custom state form name to the list" class="icon-plus pointer"></span>
+      </div>
+
+      <div style="padding: .1em">
+        <div data-tip="State full name" class="label">Full name:</div>
+        <input id="stateNameEditorFull" data-tip="Type to change the full name" autocorrect="off" spellcheck="false" style="width: 11em">
+        <span id="stateNameEditorFullRegenerate" data-tip="Click to re-generate full name" data-tick="0" class="icon-arrows-cw pointer"></span>
+      </div>
+
+      <div data-tip="Uncheck to not update state label on name change" style="padding: .2em">
+        <input id="stateNameEditorUpdateLabel" class="checkbox" type="checkbox" checked>
+        <label for="stateNameEditorUpdateLabel" class="checkbox-label"><i>Update label</i></label>
       </div>
     </div>
 
@@ -2701,6 +2801,49 @@
         <button id="burgsExport" data-tip="Save burgs-related data as a text file (.csv)" class="icon-download"></button>
         <button id="burgNamesImport" data-tip="Import burg names. Source file should be a plain list of names where each name is on a separate line" class="icon-upload"></button>
         <button id="burgsRemoveAll" data-tip="Remove all burgs except for capitals. To remove a capital remove its state first" class="icon-trash"></button>
+      </div>
+    </div>
+
+    <div id="provinceNameEditor" class="dialog" data-province="0" style="display: none">
+      <div style="padding: .1em">
+        <div data-tip="Province short name" class="label">Short name:</div>
+        <input id="provinceNameEditorShort" data-tip="Type to change the short name" autocorrect="off" spellcheck="false" style="width: 11em">
+        <span id="provinceNameEditorShortCulture" data-tip="Generate culture-specific name" class="icon-book pointer"></span>
+        <span id="provinceNameEditorShortRandom" data-tip="Generate random name" class="icon-globe pointer"></span>
+      </div>
+
+      <div style="padding: .1em" data-tip="Select form name">
+        <div data-tip="Province form name" class="label">Form name:</div>
+        <select id="provinceNameEditorSelectForm" style="display: inline-block; width: 11.7em; height: 1.645em">
+          <option value="Barony">Barony</option>
+          <option value="Canton">Canton</option>
+          <option value="Council">Council</option>
+          <option value="County">County</option>
+          <option value="Deanery">Deanery</option>
+          <option value="Department">Department</option>
+          <option value="District">District</option>
+          <option value="Earldom">Earldom</option>
+          <option value="Governorate">Governorate</option>
+          <option value="Land">Land</option>
+          <option value="Landgrave">Landgrave</option>
+          <option value="Margrave">Margrave</option>
+          <option value="Parish">Parish</option>
+          <option value="Prefecture">Prefecture</option>
+          <option value="Province">Province</option>
+          <option value="Region">Region</option>
+          <option value="Republic">Republic</option>
+          <option value="Shire">Shire</option>
+          <option value="State">State</option>
+          <option value="Territory">Territory</option>
+        </select>
+        <input id="provinceNameEditorCustomForm" placeholder="type form name" data-tip="Create custom province form name" style="display: none; width: 11em;">
+        <span id="provinceNameEditorAddForm" data-tip="Click to add custom province form name to the list" class="icon-plus pointer"></span>
+      </div>
+
+      <div style="padding: .1em">
+        <div data-tip="Province full name" class="label">Full name:</div>
+        <input id="provinceNameEditorFull" data-tip="Type to change the full name" autocorrect="off" spellcheck="false" style="width: 11em">
+        <span id="provinceNameEditorFullRegenerate" data-tip="Click to re-generate full name" class="icon-arrows-cw pointer"></span>
       </div>
     </div>
 
@@ -2936,7 +3079,7 @@
         </div>
 
         <div class="unitsHeader" data-tip="Select Temperature scale">
-          <span class="icon-asterisk"></span>
+          <span class="icon-temperature-high"></span>
           <div>Temperature:</div>
         </div>
 
@@ -3002,8 +3145,8 @@
 
       <div id="unitsBottom">
         <button id="addLinearRuler" data-tip="Click to place a linear measurer (ruler)" class="icon-ruler"></button>
-        <button id="addOpisometer" data-tip="Drag to measure a curve length (opisometer)" class="icon-curve"></button>
-        <button id="addPlanimeter" data-tip="Drag to measure a polygon area (planimeter)" class="icon-area"></button>
+        <button id="addOpisometer" data-tip="Drag to measure a curve length (opisometer)" class="icon-drafting-compass"></button>
+        <button id="addPlanimeter" data-tip="Drag to measure a polygon area (planimeter)" class="icon-draw-polygon"></button>
         <button id="removeRulers" data-tip="Remove all rulers from the map. Click on ruler label to remove a ruler separately" class="icon-trash"></button>
         <button id="unitsRestore" data-tip="Restore default units settings" class="icon-ccw"></button>
       </div>
@@ -3013,9 +3156,6 @@
       <p id="alertMessage">Warning!</p>
     </div>
 
-    <div id="alert2" style="display: none">
-      <p id="alertMessage2">Warning!</p>
-    </div>
   </div>
 
   <div id="map-dragged" class="shadowed" style="display: none">
@@ -3089,5 +3229,4 @@
   <script defer src="modules/ui/editors.js"></script>
   <script defer src="libs/quantize.min.js"></script>
   <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
-  <!-- <script defer src="https://www.dropbox.com/static/api/2/dropins.js" id="dropboxjs" data-app-key="a0ls5yab5ly1ot5"></script> -->
 </body>

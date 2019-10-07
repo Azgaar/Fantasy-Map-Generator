@@ -465,7 +465,8 @@ function getNumberInRange(r) {
 function analizeNamesbase() {
   const result = [];
   nameBases.forEach((b,i) => {
-    const d = nameBase[i];
+    const string = nameBases[i].b;
+    const d = string.split(",");
     const size = d.length;
     const ar = d.map(n => n.length);
     const min = d3.min(ar);
@@ -475,7 +476,6 @@ function analizeNamesbase() {
     const lengths = new Uint8Array(max);
     ar.forEach(l => lengths[l]++);
     const common = d3.scan(lengths, (a,b) => b-a);
-    const string = d.join("");
     const doubleArray = [];
     let double = "";
     for (let i=0; i<string.length; i++) {
@@ -535,6 +535,11 @@ function parseError(error) {
   const errorNoURL = errorString.replace(regex, url => '<i>' + last(url.split("/")) + '</i>');
   const errorParsed = errorNoURL.replace(/at /ig, "<br>&nbsp;&nbsp;at ");
   return errorParsed;
+}
+
+// open URL in a new tab or window
+function openURL(url) {
+  window.open(url, '_blank');
 }
 
 // polyfills

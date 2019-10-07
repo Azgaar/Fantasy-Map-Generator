@@ -41,23 +41,24 @@ function editStates() {
   body.addEventListener("click", function(ev) {
     const el = ev.target, cl = el.classList, line = el.parentNode, state = +line.dataset.id;
     if (cl.contains("zoneFill")) stateChangeFill(el); else
-    if (cl.contains("icon-fleur")) stateOpenCOA(state); else
+    if (cl.contains("name")) editStateName(state); else
+    if (cl.contains("icon-fleur")) stateOpenCOA(ev, state); else
     if (cl.contains("icon-star-empty")) stateCapitalZoomIn(state); else
     if (cl.contains("culturePopulation")) changePopulation(state); else
     if (cl.contains("icon-pin")) focusOnState(state, cl); else
-    if (cl.contains("icon-trash-empty")) stateRemove(state); else
-    if (cl.contains("hoverButton") && cl.contains("stateName")) regenerateName(state, line); else
-    if (cl.contains("hoverButton") && cl.contains("stateForm")) regenerateForm(state, line);
+    if (cl.contains("icon-trash-empty")) stateRemove(state);
   });
 
   body.addEventListener("input", function(ev) {
     const el = ev.target, cl = el.classList, line = el.parentNode, state = +line.dataset.id;
-    if (cl.contains("stateName")) stateChangeName(state, line, el.value); else
-    if (cl.contains("stateForm")) stateChangeForm(state, line, el.value); else
     if (cl.contains("stateCapital")) stateChangeCapitalName(state, line, el.value); else
     if (cl.contains("cultureType")) stateChangeType(state, line, el.value); else
-    if (cl.contains("stateCulture")) stateChangeCulture(state, line, el.value); else
     if (cl.contains("statePower")) stateChangeExpansionism(state, line, el.value);
+  });
+
+  body.addEventListener("change", function(ev) {
+    const el = ev.target, cl = el.classList, line = el.parentNode, state = +line.dataset.id;
+    if (cl.contains("stateCulture")) stateChangeCulture(state, line, el.value);
   });
 
   function refreshStatesEditor() {
@@ -88,7 +89,7 @@ function editStates() {
         lines += `<div class="states" data-id=${s.i} data-name="${s.name}" data-cells=${s.cells} data-area=${area} 
         data-population=${population} data-burgs=${s.burgs} data-color="" data-form="" data-capital="" data-culture="" data-type="" data-expansionism="">
           <svg width="9" height="9" class="placeholder"></svg>
-          <input data-tip="State name. Click and type to change" class="stateName italic" value="${s.name}" autocorrect="off" spellcheck="false">
+          <input data-tip="Neutral lands name. Click to change" class="stateName name pointer italic" value="${s.name}" readonly>
           <span class="icon-fleur placeholder hide"></span>
           <input class="stateForm placeholder" value="none">
           <span class="icon-star-empty placeholder hide"></span>
@@ -96,8 +97,8 @@ function editStates() {
           <select class="stateCulture placeholder hide">${getCultureOptions(0)}</select>
           <span data-tip="Burgs count" style="padding-right: 1px" class="icon-dot-circled hide"></span>
           <div data-tip="Burgs count" class="stateBurgs hide">${s.burgs}</div>
-          <span data-tip="State area" style="padding-right: 4px" class="icon-map-o hide"></span>
-          <div data-tip="State area" class="biomeArea hide">${si(area) + unit}</div>
+          <span data-tip="Neutral lands area" style="padding-right: 4px" class="icon-map-o hide"></span>
+          <div data-tip="Neutral lands area" class="biomeArea hide">${si(area) + unit}</div>
           <span data-tip="${populationTip}" class="icon-male hide"></span>
           <div data-tip="${populationTip}" class="culturePopulation hide">${si(population)}</div>
           <select class="cultureType ${hidden} placeholder show hide">${getTypeOptions(0)}</select>
@@ -111,12 +112,10 @@ function editStates() {
       const capital = pack.burgs[s.capital].name;
       lines += `<div class="states" data-id=${s.i} data-name="${s.name}" data-form="${s.formName}" data-capital="${capital}" data-color="${s.color}" data-cells=${s.cells}
         data-area=${area} data-population=${population} data-burgs=${s.burgs} data-culture=${pack.cultures[s.culture].name} data-type=${s.type} data-expansionism=${s.expansionism}>
-        <svg data-tip="State fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${s.color}" class="zoneFill"></svg>
-        <input data-tip="State name. Click and type to change" class="stateName" value="${s.name}" autocorrect="off" spellcheck="false">
-        <span data-tip="Click to re-generate name" class="icon-arrows-cw stateName hoverButton placeholder"></span>
-        <span data-tip="Click to open state COA in the Iron Arachne Heraldry Generator" class="icon-fleur pointer hide"></span>
-        <input data-tip="State form name. Click and type to change" class="stateForm" value="${s.formName}" autocorrect="off" spellcheck="false">
-        <span data-tip="Click to re-generate form name" class="icon-arrows-cw stateForm hoverButton placeholder"></span>
+        <svg data-tip="State fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${s.color}" class="zoneFill"></svg>      
+        <input data-tip="State name. Click to change" class="stateName name pointer" value="${s.name}" readonly>
+        <span data-tip="Click to open state COA in the Iron Arachne Heraldry Generator. Ctrl + click to change the seed" class="icon-fleur pointer hide"></span>       
+        <input data-tip="State form name. Click to change" class="stateForm name pointer" value="${s.formName}" readonly>
         <span data-tip="State capital. Click to zoom into view" class="icon-star-empty pointer hide"></span>
         <input data-tip="Capital name. Click and type to rename" class="stateCapital hide" value="${capital}" autocorrect="off" spellcheck="false"/>
         <select data-tip="Dominant culture. Click to change" class="stateCulture hide">${getCultureOptions(s.culture)}</select>
@@ -171,7 +170,6 @@ function editStates() {
   }
 
   function stateHighlightOn(event) {
-    if (!customization) event.target.querySelectorAll(".hoverButton").forEach(el => el.classList.remove("placeholder"));
     if (!layerIsOn("toggleStates")) return;
     const state = +event.target.dataset.id;
     if (customization || !state) return;
@@ -197,7 +195,6 @@ function editStates() {
   }
 
   function stateHighlightOff() {
-    event.target.querySelectorAll(".hoverButton").forEach(el => el.classList.add("placeholder"));
     debug.selectAll(".highlight").each(function(el) {
       d3.select(this).call(removePath);
     });
@@ -219,63 +216,71 @@ function editStates() {
     openPicker(currentFill, callback);
   }
 
-  function stateChangeName(state, line, value) {
-    const oldName = pack.states[state].name;
-    pack.states[state].name = line.dataset.name = value;
-    pack.states[state].fullName = BurgsAndStates.getFullName(pack.states[state]);
-    changeLabel(state, oldName, value);
-  }
+  function editStateName(state) {
+    const s = pack.states[state];
+    document.getElementById("stateNameEditor").dataset.state = state;
+    document.getElementById("stateNameEditorShort").value = s.name || "";
+    applyOption(stateNameEditorSelectForm, s.formName);
+    document.getElementById("stateNameEditorFull").value = s.fullName || "";
 
-  function regenerateName(state, line) {
-    const culture = pack.states[state].culture;
-    const oldName = pack.states[state].name;
-    const newName = Names.getState(Names.getCultureShort(culture), culture);
-    pack.states[state].name = line.dataset.name = line.querySelector(".stateName").value = newName;
-    pack.states[state].fullName = BurgsAndStates.getFullName(pack.states[state]);
-    changeLabel(state, oldName, newName);
-  }
+    $("#stateNameEditor").dialog({
+      resizable: false, title: "Change state name", width: "22em", buttons: {
+        Apply: function() {applyNameChange(s); $(this).dialog("close");},
+        Cancel: function() {$(this).dialog("close");}
+      }, position: {my: "center", at: "center", of: "svg"}
+    });
 
-  function stateChangeForm(state, line, value) {
-    const oldForm = pack.states[state].formName;
-    pack.states[state].formName = line.dataset.form = value;
-    pack.states[state].fullName = BurgsAndStates.getFullName(pack.states[state]);
-    changeLabel(state, oldForm, value, true);
-  }
+    if (modules.editStateName) return;
+    modules.editStateName = true;
 
-  function regenerateForm(state, line) {
-    const oldForm = pack.states[state].formName;
-    let newForm = oldForm;
+    // add listeners
+    document.getElementById("stateNameEditorShortCulture").addEventListener("click", regenerateShortNameCuture);
+    document.getElementById("stateNameEditorShortRandom").addEventListener("click", regenerateShortNameRandom);
+    document.getElementById("stateNameEditorAddForm").addEventListener("click", addCustomForm);
+    document.getElementById("stateNameEditorFullRegenerate").addEventListener("click", regenerateFullName);
 
-    for (let i=0; newForm === oldForm && i < 50; i++) {
-      BurgsAndStates.defineStateForms([state]);
-      newForm = pack.states[state].formName;
+    function regenerateShortNameCuture() {
+      const state = +stateNameEditor.dataset.state;
+      const culture = pack.states[state].culture;
+      const name = Names.getState(Names.getCultureShort(culture), culture);
+      document.getElementById("stateNameEditorShort").value = name;
     }
 
-    line.dataset.form = line.querySelector(".stateForm").value = newForm;
-    changeLabel(state, oldForm, newForm, true);
-  }
-
-  function changeLabel(state, oldName, newName, form) {
-    const label = document.getElementById("stateLabel"+state);
-    if (!label) return;
-
-    const tspan = Array.from(label.querySelectorAll('tspan'));
-    const tspanAdj = !form && oldName && newName && pack.states[state].formName ? tspan.find(el => el.textContent.includes(getAdjective(oldName))) : null;
-    const tspanName = tspanAdj || !oldName || !newName ? null : tspan.find(el => el.textContent.includes(oldName));
-
-    if (tspanAdj) {
-      tspanAdj.textContent = tspanAdj.textContent.replace(getAdjective(oldName), getAdjective(newName));
-      const l = tspanAdj.getComputedTextLength();
-      tspanAdj.setAttribute("x", l / -2);
-    } if (tspanName) {
-      tspanName.textContent = tspanName.textContent.replace(oldName, newName);
-      const l = tspanName.getComputedTextLength();
-      tspanName.setAttribute("x", l / -2);
-    } else {
-      BurgsAndStates.drawStateLabels([state]);
+    function regenerateShortNameRandom() {
+      const base = rand(nameBases.length-1);
+      const name = Names.getState(Names.getBase(base), undefined, base);
+      document.getElementById("stateNameEditorShort").value = name;
     }
 
-    tip("State label is automatically changed. To make a custom change click on a label and edit the text there", false, "warn");
+    function addCustomForm() {
+      const value = stateNameEditorCustomForm.value;
+      const displayed = stateNameEditorCustomForm.style.display === "inline-block";
+      stateNameEditorCustomForm.style.display = displayed ? "none" : "inline-block";
+      stateNameEditorSelectForm.style.display = displayed ? "inline-block" : "none";
+      if (displayed && value) applyOption(stateNameEditorSelectForm, value);
+    }
+
+    function regenerateFullName() {
+      const short = document.getElementById("stateNameEditorShort").value;
+      const form = document.getElementById("stateNameEditorSelectForm").value;
+      document.getElementById("stateNameEditorFull").value = getFullName();
+
+      function getFullName() {
+        if (!form) return short;
+        if (!short && form) return "The " + form;
+        const tick = +stateNameEditorFullRegenerate.dataset.tick;
+        stateNameEditorFullRegenerate.dataset.tick = tick+1;
+        return tick%2 ? getAdjective(short) + " " + form : form + " of " + short;
+      }
+    }
+
+    function applyNameChange(s) {
+      s.name = document.getElementById("stateNameEditorShort").value;
+      s.formName = document.getElementById("stateNameEditorSelectForm").value;
+      s.fullName = document.getElementById("stateNameEditorFull").value;
+      if (stateNameEditorUpdateLabel.checked) BurgsAndStates.drawStateLabels([s.i]);
+      refreshStatesEditor();
+    }
   }
 
   function stateChangeCapitalName(state, line, value) {
@@ -286,9 +291,17 @@ function editStates() {
     document.querySelector("#burgLabel"+capital).textContent = value;
   }
 
-  function stateOpenCOA(state) {
-    const url = `https://ironarachne.com/heraldry/${seed}-s${state}`;
-    window.open(url, '_blank');
+  function stateOpenCOA(event, state) {
+    const defSeed = `${seed}-s${state}`;
+
+    if (event.ctrlKey) {
+      const newSeed = prompt(`Please provide an Iron Arachne Heraldry Generator seed. `+ 
+        `Default seed is a combination of FMG map seed and province id (${defSeed})`, pack.states[state].IAHG || defSeed);
+      if (newSeed && newSeed != defSeed) pack.states[state].IAHG = newSeed; else return;
+    }
+
+    const s = pack.states[state].IAHG || defSeed;
+    openURL("https://ironarachne.com/heraldry/" + s);
   }
 
   function changePopulation(state) {
@@ -322,7 +335,7 @@ function editStates() {
     });
 
     function applyPopulationChange() {
-      const ruralChange = rn(ruralPop.value / rural, 4);
+      const ruralChange = ruralPop.value / rural;
       if (isFinite(ruralChange) && ruralChange !== 1) {
         const cells = pack.cells.i.filter(i => pack.cells.state[i] === state);
         cells.forEach(i => pack.cells.pop[i] *= ruralChange);
@@ -330,19 +343,19 @@ function editStates() {
       if (!isFinite(ruralChange) && +ruralPop.value > 0) {
         const points = ruralPop.value / populationRate.value;
         const cells = pack.cells.i.filter(i => pack.cells.state[i] === state);
-        const pop = rn(points / cells.length);
+        const pop = points / cells.length;
         cells.forEach(i => pack.cells.pop[i] = pop);
       }
 
-      const urbanChange = rn(urbanPop.value / urban, 4);
+      const urbanChange = urbanPop.value / urban;
       if (isFinite(urbanChange) && urbanChange !== 1) {
         const burgs = pack.burgs.filter(b => !b.removed && b.state === state);
-        burgs.forEach(b => b.population *= urbanChange);
+        burgs.forEach(b => b.population = rn(b.population * urbanChange, 4));
       }
       if (!isFinite(urbanChange) && +urbanPop.value > 0) {
         const points = urbanPop.value / populationRate.value / urbanization.value;
         const burgs = pack.burgs.filter(b => !b.removed && b.state === state);
-        const population = rn(points / burgs.length);
+        const population = rn(points / burgs.length, 4);
         burgs.forEach(b => b.population = population);
       }
 
@@ -413,7 +426,7 @@ function editStates() {
     });
 
     const capital = pack.states[state].capital;
-    pack.burgs[capital].capital = false;
+    pack.burgs[capital].capital = 0;
     pack.burgs[capital].state = 0;
     moveBurgToGroup(capital, "towns");
 
@@ -788,7 +801,7 @@ function editStates() {
     const newState = states.length;
 
     // turn burg into a capital
-    burgs[burg].capital = true;
+    burgs[burg].capital = 1;
     burgs[burg].state = newState;
     moveBurgToGroup(burg, "cities");
 

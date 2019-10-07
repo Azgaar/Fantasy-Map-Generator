@@ -104,7 +104,7 @@ let customization = 0; // 0 - no; 1 = heightmap draw; 2 - states draw; 3 - add s
 let mapCoordinates = {}; // map coordinates on globe
 let winds = [225, 45, 225, 315, 135, 315]; // default wind directions
 let biomesData = applyDefaultBiomesSystem();
-let nameBases = Names.getNameBases(), nameBase = Names.getNameBase(); // cultures-related data
+let nameBases = Names.getNameBases(); // cultures-related data
 const fonts = ["Almendra+SC", "Georgia", "Arial", "Times+New+Roman", "Comic+Sans+MS", "Lucida+Sans+Unicode", "Courier+New"]; // default web-safe fonts
 
 let color = d3.scaleSequential(d3.interpolateSpectral); // default color scheme
@@ -1186,7 +1186,7 @@ function rankCells() {
   console.time('rankCells');
   const cells = pack.cells, f = pack.features;
   cells.s = new Int16Array(cells.i.length); // cell suitability array
-  cells.pop = new Uint16Array(cells.i.length); // cell population array
+  cells.pop = new Float32Array(cells.i.length); // cell population array
 
   const flMean = d3.median(cells.fl.filter(f => f)), flMax = d3.max(cells.fl) + d3.max(cells.conf); // to normalize flux
   const areaMean = d3.mean(cells.area); // to adjust population by cell area

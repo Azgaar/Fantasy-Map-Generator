@@ -14,7 +14,7 @@ function editBurgs() {
   modules.editBurgs = true;
 
   $("#burgsEditor").dialog({
-    title: "Burgs Editor", resizable: false, width: fitContent(), close: exitAddBurgMode,
+    title: "Burgs Overview", resizable: false, width: fitContent(), close: exitAddBurgMode,
     position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
   });
 
@@ -78,13 +78,14 @@ function editBurgs() {
         <input data-tip="Burg name. Click and type to change" class="burgName" value="${b.name}" autocorrect="off" spellcheck="false">
         <input data-tip="Burg province" class="burgState" value="${province}" disabled>
         <input data-tip="Burg state" class="burgState" value="${state}" disabled>
-        <select data-tip="Dominant culture. Click to change" class="stateCulture">${getCultureOptions(b.culture)}</select>
+        <select data-tip="Dominant culture. Click to change burg culture (to change cell cultrure use Cultures Editor)" class="stateCulture">${getCultureOptions(b.culture)}</select>
         <span data-tip="Burg population" class="icon-male"></span>
         <input data-tip="Burg population. Type to change" class="burgPopulation" value=${si(population)}>
         <div class="burgType">
           <span data-tip="${b.capital ? ' This burg is a state capital' : 'Click to assign a capital status'}" class="icon-star-empty${b.capital ? '' : ' inactive pointer'}"></span>
           <span data-tip="Click to toggle port status" class="icon-anchor pointer${b.port ? '' : ' inactive'}" style="font-size:.9em"></span>
         </div>
+        <span data-tip="Edit burg" class="icon-pencil"></span>
         <span data-tip="Remove burg" class="icon-trash-empty"></span>
       </div>`;
     }
@@ -103,6 +104,7 @@ function editBurgs() {
     body.querySelectorAll("div > input.burgPopulation").forEach(el => el.addEventListener("change", changeBurgPopulation));
     body.querySelectorAll("div > span.icon-star-empty").forEach(el => el.addEventListener("click", toggleCapitalStatus));
     body.querySelectorAll("div > span.icon-anchor").forEach(el => el.addEventListener("click", togglePortStatus));
+    body.querySelectorAll("div > span.icon-pencil").forEach(el => el.addEventListener("click", openBurgEditor));
     body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.addEventListener("click", triggerBurgRemove));
 
     applySorting(burgsHeader);
@@ -164,51 +166,38 @@ function editBurgs() {
   }
 
   function toggleCapitalStatus() {
-    const burg = +this.parentNode.parentNode.dataset.id, state = pack.burgs[burg].state;
-    if (pack.burgs[burg].capital) {tip("To change capital please assign a capital status to another burg", false, "error"); return;}
-    if (!state) {tip("Neutral lands do not have a capital", false, "error"); return;}
-    const old = pack.states[state].capital;
-
-    // change statuses
-    pack.states[state].capital = burg;
-    pack.states[state].center = pack.burgs[burg].cell;
-    pack.burgs[burg].capital = true;
-    pack.burgs[old].capital = false;
-    moveBurgToGroup(burg, "cities");
-    moveBurgToGroup(old, "towns");
-
+    const burg = +this.parentNode.parentNode.dataset.id;
+    toggleCapital(burg);
     burgsEditorAddLines();
   }
 
   function togglePortStatus() {
     const burg = +this.parentNode.parentNode.dataset.id;
-    const anchor = document.querySelector("#anchors [data-id='" + burg + "']");
-    if (anchor) anchor.remove();
+    togglePort(burg);
+    if (this.classList.contains("inactive")) this.classList.remove("inactive");
+    else this.classList.add("inactive");
+  }
 
-    if (!pack.burgs[burg].port) {
-      const haven = pack.cells.haven[pack.burgs[burg].cell];
-      const port = haven ? pack.cells.f[haven] : -1;
-      if (!haven) tip("Port haven is not found, system won't be able to make a searoute", false, "warn");
-      pack.burgs[burg].port = port;
-
-      const g = pack.burgs[burg].capital ? "cities" : "towns";
-      const group = anchors.select("g#"+g);
-      const size = +group.attr("size");
-      group.append("use").attr("xlink:href", "#icon-anchor").attr("data-id", burg)
-        .attr("x", rn(pack.burgs[burg].x - size * .47, 2)).attr("y", rn(pack.burgs[burg].y - size * .47, 2))
-        .attr("width", size).attr("height", size);
-    } else {
-      pack.burgs[burg].port = 0;
-    }
-
-    burgsEditorAddLines();
+  function openBurgEditor() {
+    const burg = +this.parentNode.dataset.id;
+    editBurg(burg);
   }
 
   function triggerBurgRemove() {
     const burg = +this.parentNode.dataset.id;
     if (pack.burgs[burg].capital) {tip("You cannot remove the capital. Please change the capital first", false, "error"); return;}
-    removeBurg(burg);
-    burgsEditorAddLines();
+
+    alertMessage.innerHTML = "Are you sure you want to remove the burg?";
+    $("#alert").dialog({resizable: false, title: "Remove burg",
+      buttons: {
+        Remove: function() {
+          $(this).dialog("close");
+          removeBurg(burg);
+          burgsEditorAddLines();
+        },
+        Cancel: function() {$(this).dialog("close");}
+      }
+    });
   }
 
   function regenerateNames() {
@@ -226,7 +215,7 @@ function editBurgs() {
     if (this.classList.contains("pressed")) {exitAddBurgMode(); return;};
     customization = 3;
     this.classList.add("pressed");
-    tip("Click on the map to create a new burg. Hold Shift to add multiple", true);
+    tip("Click on the map to create a new burg. Hold Shift to add multiple", true, "warn");
     viewbox.style("cursor", "crosshair").on("click", addBurgOnClick);
   }
 
@@ -379,7 +368,7 @@ function editBurgs() {
   }
 
   function downloadBurgsData() {
-    let data = "Id,Burg,Province,State,Culture,Religion,Population,Longitude,Latitude,Elevation ("+heightUnit.value+"),Capital,Port\n"; // headers
+    let data = "Id,Burg,Province,State,Culture,Religion,Population,Longitude,Latitude,Elevation ("+heightUnit.value+"),Capital,Port,Citadel,Walls,Plaza,Temple,Shanty\n"; // headers
     const valid = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
 
     valid.forEach(b => {
@@ -399,7 +388,13 @@ function editBurgs() {
 
       // add status data
       data += b.capital ? "capital," : ",";
-      data += b.port ? "port\n" : "\n";
+      data += b.port ? "port," : ",";
+      data += b.citadel ? "citadel," : ",";
+      data += b.walls ? "walls," : ",";
+      data += b.plaza ? "plaza," : ",";
+      data += b.temple ? "temple," : ",";
+      data += b.shanty ? "shanty\n" : "\n";
+
     });
 
     const dataBlob = new Blob([data], {type: "text/plain"});

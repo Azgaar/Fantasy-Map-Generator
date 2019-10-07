@@ -64,7 +64,7 @@ function editDiplomacy() {
       const tip = s.fullName + description[index] + selName;
 
       lines += `<div class="states" data-id=${s.i} data-name="${s.fullName}" data-relations="${relation}">
-        <div data-tip="${tip}. Click to see relations to ${s.name}" class="stateName">${s.fullName}</div>
+        <div data-tip="${tip}. Click to see relations to ${s.name}" style="width:12em">${s.fullName}</div>
         <input data-tip="${tip}. Click to see relations to ${s.name}" class="stateColor" type="color" value="${color}" disabled>
         <select data-tip="Click to change ${getAdjective(s.name)} relations to ${selName}" class="diplomacyRelations">${getRelations(relation)}</select>
       </div>`;

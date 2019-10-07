@@ -239,6 +239,16 @@ function getHeight(h) {
       c.y = p[1];
     }
 
+    // recalculate zones to grid
+    zones.selectAll("g").each(function() {
+      const zone = d3.select(this);
+      const dataCells = zone.attr("data-cells");
+      const cells = dataCells ? dataCells.split(",").map(i => +i) : [];
+      const g = cells.map(i => pack.cells.g[i]);
+      zone.attr("data-cells", g);
+      zone.selectAll("*").remove();
+    });
+
     markFeatures();
     OceanLayers();
     calculateTemperatures();
@@ -253,7 +263,7 @@ function getHeight(h) {
 
     // assign saved pack data from grid back to pack
     const n = pack.cells.i.length;
-    pack.cells.pop = new Uint16Array(n);
+    pack.cells.pop = new Float32Array(n);
     pack.cells.road = new Uint16Array(n);
     pack.cells.crossroad = new Uint16Array(n);
     pack.cells.s = new Uint16Array(n);
@@ -323,6 +333,20 @@ function getHeight(h) {
     BurgsAndStates.drawStateLabels();
     drawStates();
     drawBorders();
+
+    // restore zones from grid
+    zones.selectAll("g").each(function() {
+      const zone = d3.select(this);
+      const g = zone.attr("data-cells");
+      const gCells = g ? g.split(",").map(i => +i) : [];
+      const cells = pack.cells.i.filter(i => gCells.includes(pack.cells.g[i]));
+
+      zone.attr("data-cells", cells);
+      zone.selectAll("*").remove();
+      const base = zone.attr("id") + "_"; // id generic part
+      zone.selectAll("*").data(cells).enter().append("polygon")
+        .attr("points", d => getPackPolygon(d)).attr("id", d => base + d);
+    });
 
     console.timeEnd("restoreRiskedData");
     console.groupEnd("Edit Heightmap");
@@ -923,7 +947,7 @@ function getHeight(h) {
     void function createColorPallete() {
       const container = d3.select("#colorScheme");
       container.selectAll("div").data(d3.range(101)).enter().append("div").attr("data-color", i => i)
-        .style("background-color", i => color(1-i/100))
+        .style("background-color", i => color(1-(i < 20 ? i-5 : i) / 100))
         .style("width", i => i < 20 || i > 70 ? ".2em" : ".1em")
         .on("touchmove mousemove", showPalleteHeight).on("click", assignHeight);
     }()
@@ -1032,8 +1056,7 @@ function getHeight(h) {
 
     function assignHeight() {
       const height = +this.getAttribute("data-color");
-      const rgb = color(1 - height/100);
-
+      const rgb = color(1 - (height < 20 ? height-5 : height) / 100);
       const selectedColor = imageConverter.querySelector("div.selectedColor");
       selectedColor.style.backgroundColor = rgb;
       selectedColor.setAttribute("data-color", rgb);
@@ -1060,7 +1083,7 @@ function getHeight(h) {
         const colorFrom = el.getAttribute("data-color");
         const lab = d3.lab(colorFrom);
         const normalized = type === "hue" ? rn(normalize(lab.b + lab.a / 2, -50, 200), 2) : rn(normalize(lab.l, -15, 100), 2);
-        const colorTo = color(1 - normalized);
+        const colorTo = color(1 - (normalized < .2 ? normalized-.05 : normalized));
         const heightTo = normalized * 100;
 
         terrs.selectAll("polygon[fill='" + colorFrom + "']").attr("fill", colorTo).attr("data-height", heightTo);

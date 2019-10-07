@@ -211,7 +211,8 @@ function editZones() {
       zone.attr("data-cells", cells);
       zone.selectAll("*").remove();
       const base = zone.attr("id") + "_"; // id generic part
-      zone.selectAll("*").data(cells).enter().append("polygon").attr("points", d => getPackPolygon(d)).attr("id", d => base + d);
+      zone.selectAll("*").data(cells).enter().append("polygon")
+        .attr("points", d => getPackPolygon(d)).attr("id", d => base + d);
     });
 
     exitZonesManualAssignment();
@@ -392,7 +393,7 @@ function editZones() {
     });
 
     function applyPopulationChange() {
-      const ruralChange = rn(ruralPop.value / rural, 4);
+      const ruralChange = ruralPop.value / rural;
       if (isFinite(ruralChange) && ruralChange !== 1) {
         cells.forEach(i => pack.cells.pop[i] *= ruralChange);
       }
@@ -402,13 +403,13 @@ function editZones() {
         cells.forEach(i => pack.cells.pop[i] = pop);
       }
 
-      const urbanChange = rn(urbanPop.value / urban, 4);
+      const urbanChange = urbanPop.value / urban;
       if (isFinite(urbanChange) && urbanChange !== 1) {
-        burgs.forEach(b => b.population *= urbanChange);
+        burgs.forEach(b => b.population = rn(b.population * urbanChange, 4));
       }
       if (!isFinite(urbanChange) && +urbanPop.value > 0) {
         const points = urbanPop.value / populationRate.value / urbanization.value;
-        const population = rn(points / burgs.length);
+        const population = rn(points / burgs.length, 4);
         burgs.forEach(b => b.population = population);
       }
 

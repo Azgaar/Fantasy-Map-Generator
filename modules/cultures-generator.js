@@ -50,21 +50,17 @@
       culture.type = defineCultureType(c);
       culture.expansionism = defineCultureExpansionism(culture.type);
       cells.culture[c] = i+1;
-      //debug.append("text").attr("stroke", "#000").attr("font-size", "10").attr("font-family", "Almendra SC").attr("x", cells.p[c][0]).attr("y", cells.p[c][1]).text(culture.type);
     });
 
     // the first culture with id 0 is for wildlands
     pack.cultures.unshift({name:"Wildlands", i:0, base:1});
 
     // check whether all bases are valid. If not, load default namesbase
-    const invalidBase = pack.cultures.some(c => !nameBase[c.base]);
-    if (invalidBase) {
-      nameBases = Names.getNameBases();
-      nameBase = Names.getNameBase();
-    }
+    const invalidBase = pack.cultures.some(c => !nameBases[c.base]);
+    if (invalidBase) nameBases = Names.getNameBases();
 
     function getRandomCultures(c) {
-      const d = getDefault(), n = d.length-1;
+      const d = getDefault(c), n = d.length-1;
       const count = Math.min(c, d.length);
       const cultures = [];
       while (cultures.length < count) {
@@ -115,7 +111,7 @@
     console.timeEnd('generateCultures');
   }
 
-  const getDefault = function() {
+  const getDefault = function(count) {
     if (culturesSet.value === "european") {
       return [
         {name:"Shwazen", base:0, odd: 1},
@@ -170,6 +166,118 @@
       ];
     }
 
+    if (culturesSet.value === "antique") {
+      return [
+        {name:"Roman", base:8, odd: 1},
+        {name:"Roman", base:8, odd: 1},
+        {name:"Roman", base:8, odd: 1},
+        {name:"Roman", base:8, odd: 1},
+        {name:"Hellenic", base:7, odd: 1}, // Greek
+        {name:"Hellenic", base:7, odd: 1}, // Greek
+        {name:"Macedonian", base:7, odd: .5}, // Greek
+        {name:"Celtic", base:22, odd: 1},
+        {name:"Germanic", base:0, odd: 1},
+        {name:"Persian", base:24, odd: .8}, // Iranian
+        {name:"Scythian", base:24, odd: .5}, // Iranian
+        {name:"Cantabrian", base: 20, odd: .5}, // Basque
+        {name:"Estian", base: 9, odd: .2}, // Finnic
+        {name:"Carthaginian", base: 17, odd: .3}, // Berber (the closest we have)
+        {name:"Mesopotamian", base: 23, odd: .2} // Mesopotamian
+      ];
+    }
+
+    if (culturesSet.value === "highFantasy") {
+      return [
+        // fantasy races
+        {name:"Quenian", base: 33, odd: 1}, // Elves
+        {name:"Eldar", base: 33, odd: 1}, // Elves
+        {name:"Lorian", base: 33, odd: .5}, // Elves
+        {name:"Trow", base: 34, odd: .9}, // Dark Elves
+        {name:"Dokalfar", base: 34, odd: .3}, // Dark Elves
+        {name:"Durinn", base: 35, odd: 1}, // Dwarven
+        {name:"Khazadur", base: 35, odd: 1}, // Dwarven
+        {name:"Kobblin", base: 36, odd: 1}, // Goblin
+        {name:"Uruk", base: 37, odd: 1}, // Orc
+        {name:"Ugluk", base: 37, odd: .7}, // Orc
+        {name:"Yotunn", base: 38, odd: .9}, // Giant
+        {name:"Drake", base: 39, odd: .7}, // Draconic
+        {name:"Rakhnid", base: 40, odd: .9}, // Arachnid
+        {name:"Aj'Snaga", base: 41, odd: .9}, // Serpents
+        // common fantasy human
+        {name:"Gozdor", base:32, odd: 1},
+        {name:"Anor", base:32, odd: 1},
+        {name:"Dail", base:32, odd: 1},
+        {name:"Duland", base:32, odd: 1},
+        {name:"Rohand", base:32, odd: 1},
+        // rare real-world western
+        {name:"Norse", base:6, odd: .5},
+        {name:"Izenlute", base:0, odd: .1},
+        {name:"Lurian", base:2, odd: .1},
+        {name:"Getalian", base:3, odd: .1},
+        {name:"Astelan", base:4, odd: .05},
+        // rare real-world exotic
+        {name:"Yoruba", base:21, odd: .05},
+        {name:"Ryoko", base:10, odd: .05},
+        {name:"Toyamo", base:12, odd: .05},
+        {name:"Guan-Tsu", base:30, odd: .05},
+        {name:"Ulus-Khan", base:31, odd: .05},
+        {name:"Turan", base: 16, odd: .05},
+        {name:"Al'Uma", base: 18, odd: .05},
+        {name:"Druidas", base: 22, odd: .05},
+        {name:"Gorodian", base:5, odd: .05}
+      ];
+    }
+
+    if (culturesSet.value === "darkFantasy") {
+      return [
+        // common real-world English
+        {name:"Angshire", base:1, odd: 1},
+        {name:"Enlandic", base:1, odd: 1},
+        {name:"Westen", base:1, odd: 1},
+        {name:"Nortumbic", base:1, odd: 1},
+        {name:"Mercian", base:1, odd: 1},
+        {name:"Kentian", base:1, odd: 1},
+        // rare real-world western
+        {name:"Norse", base:6, odd: .7},
+        {name:"Schwarzen", base:0, odd: .3},
+        {name:"Luarian", base:2, odd: .3},
+        {name:"Hetallian", base:3, odd: .3},
+        {name:"Astellian", base:4, odd: .3},
+        // rare real-world exotic
+        {name:"Kiswaili", base:28, odd: .05},
+        {name:"Yoruba", base:21, odd: .05},
+        {name:"Koryo", base:10, odd: .05},
+        {name:"Hantzu", base:11, odd: .05},
+        {name:"Yamoto", base:12, odd: .05},
+        {name:"Guantzu", base:30, odd: .05},
+        {name:"Ulus", base:31, odd: .05},
+        {name:"Turan", base: 16, odd: .05},
+        {name:"Berberan", base: 17, odd: .05},
+        {name:"Eurabic", base: 18, odd: .05},
+        {name:"Slovan", base:5, odd: .05},
+        {name:"Keltan", base: 22, odd: .1},
+        {name:"Elladan", base:7, odd: .2},
+        {name:"Romian", base:8, odd: .2},
+        // fantasy races
+        {name:"Eldar", base: 33, odd: .5}, // Elves
+        {name:"Trow", base: 34, odd: .8}, // Dark Elves
+        {name:"Durinn", base: 35, odd: .8}, // Dwarven
+        {name:"Kobblin", base: 36, odd: .8}, // Goblin
+        {name:"Uruk", base: 37, odd: .8}, // Orc
+        {name:"Yotunn", base: 38, odd: .8}, // Giant
+        {name:"Drake", base: 39, odd: .9}, // Draconic
+        {name:"Rakhnid", base: 40, odd: .9}, // Arachnid
+        {name:"Aj'Snaga", base: 41, odd: .9}, // Serpents
+      ]
+    }
+
+    if (culturesSet.value === "random") {
+      return d3.range(count).map(i => {
+        const rnd = rand(41);
+        return {name:Names.getBaseShort(rnd), base:rnd, odd: 1}
+      });
+    }
+
     // all-world
     return [
       {name:"Shwazen", base:0, odd: .7},
@@ -193,7 +301,7 @@
       {name:"Eurabic", base: 18, odd: .2},
       {name:"Inuk", base: 19, odd: .05},
       {name:"Euskati", base: 20, odd: .05},
-      {name:"Negarian", base: 21, odd: .05},
+      {name:"Yoruba", base: 21, odd: .05},
       {name:"Keltan", base: 22, odd: .05},
       {name:"Efratic", base: 23, odd: .05},
       {name:"Tehrani", base: 24, odd: .1},
