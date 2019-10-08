@@ -869,7 +869,7 @@ function editStates() {
   
   function downloadStatesData() {
     const unit = areaUnit.value === "square" ? distanceUnitInput.value + "2" : areaUnit.value;
-    let data = "Id,State,Color,Capital,Culture,Type,Expansionism,Cells,Burgs,Area "+unit+",Population,Rural Population,Urban Population\n"; // headers
+    let data = "Id,State,Color,Capital,Culture,Type,Expansionism,Cells,Burgs,Area "+unit+",Total Population,Rural Population,Urban Population\n"; // headers
 
     body.querySelectorAll(":scope > div").forEach(function(el) {
       let key = parseInt(el.dataset.id)
@@ -885,7 +885,7 @@ function editStates() {
       data += el.dataset.area + ",";
       data += el.dataset.population + ",";
       data += `${Math.round(pack.states[key].rural*populationRate.value)},`;
-      data += `${Math.round(pack.states[key].urban*populationRate.value)}\n`;
+      data += `${Math.round(pack.states[key].urban*populationRate.value * urbanization.value)}\n`;
     });
 
     const dataBlob = new Blob([data], {type: "text/plain"});
