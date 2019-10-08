@@ -761,9 +761,10 @@ function editProvinces() {
 
   function downloadProvincesData() {
     const unit = areaUnit.value === "square" ? distanceUnitInput.value + "2" : areaUnit.value;
-    let data = "Id,Province,Form,State,Color,Capital,Area "+unit+",Population\n"; // headers
+    let data = "Id,Province,Form,State,Color,Capital,Area "+unit+",Population,Rural Population,Urban Population\n"; // headers
 
     body.querySelectorAll(":scope > div").forEach(function(el) {
+      let key = parseInt(el.dataset.id)
       data += el.dataset.id + ",";
       data += el.dataset.name + ",";
       data += el.dataset.form + ",";
@@ -771,7 +772,9 @@ function editProvinces() {
       data += el.dataset.color + ",";
       data += el.dataset.capital + ",";
       data += el.dataset.area + ",";
-      data += el.dataset.population + "\n";
+      data += el.dataset.population + ",";
+      data += `${Math.floor(pack.provinces[key].rural*populationRate.value)},`
+      data += `${Math.floor(pack.provinces[key].urban*populationRate.value)}\n`
     });
 
     const dataBlob = new Blob([data], {type: "text/plain"});
