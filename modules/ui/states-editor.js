@@ -872,6 +872,7 @@ function editStates() {
     let data = "Id,State,Color,Capital,Culture,Type,Expansionism,Cells,Burgs,Area "+unit+",Population,Rural Population,Urban Population\n"; // headers
 
     body.querySelectorAll(":scope > div").forEach(function(el) {
+      let key = parseInt(el.dataset.id)
       data += el.dataset.id + ",";
       data += el.dataset.name + ",";
       data += el.dataset.color + ",";
@@ -883,8 +884,8 @@ function editStates() {
       data += el.dataset.burgs + ",";
       data += el.dataset.area + ",";
       data += el.dataset.population + ",";
-      data += `${Math.floor(pack.states[key].rural*populationRate.value)},`;
-      data += `${Math.floor(pack.states[key].urban*populationRate.value)}\n`;
+      data += `${Math.round(pack.states[key].rural*populationRate.value)},`;
+      data += `${Math.round(pack.states[key].urban*populationRate.value)}\n`;
     });
 
     const dataBlob = new Blob([data], {type: "text/plain"});

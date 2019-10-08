@@ -773,8 +773,8 @@ function editProvinces() {
       data += el.dataset.capital + ",";
       data += el.dataset.area + ",";
       data += el.dataset.population + ",";
-      data += `${Math.floor(pack.provinces[key].rural*populationRate.value)},`
-      data += `${Math.floor(pack.provinces[key].urban*populationRate.value)}\n`
+      data += `${Math.round(pack.provinces[key].rural*populationRate.value)},`
+      data += `${Math.round(pack.provinces[key].urban*populationRate.value)}\n`
     });
 
     const dataBlob = new Blob([data], {type: "text/plain"});
