@@ -70,6 +70,20 @@ function removeCircle() {
   if (document.getElementById("brushCircle")) document.getElementById("brushCircle").remove();
 }
 
+function hideCircle() {
+  let circle = document.getElementById("brushCircle");
+  if (circle) {
+    circle.style.display = "none";
+  }
+}
+
+function showCircle() {
+  let circle = document.getElementById("brushCircle");
+  if (circle) {
+    circle.style.display = "";
+  }
+}
+
 // get browser-defined fit-content
 function fitContent() {
   return !window.chrome ? "-moz-max-content" : "fit-content";
