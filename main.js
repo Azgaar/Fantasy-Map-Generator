@@ -1383,7 +1383,7 @@ function addZones(number = 1) {
     }
 
     const invasion = rw({"Invasion":4, "Occupation":3, "Raid":2, "Conquest":2, 
-      "Subjugation":1, "Foray":1, "Irruption":1, "Incursion":2, "Pillage":1, "Intervention":1});
+      "Subjugation":1, "Irruption":1, "Foray":1, "Incursion":2, "Pillage":1, "Intervention":1});
     const name = getAdjective(invader.name) + " " + invasion;
     data.push({name, type:"Invasion", cells:cellsArray, fill:"url(#hatch1)"});
   }

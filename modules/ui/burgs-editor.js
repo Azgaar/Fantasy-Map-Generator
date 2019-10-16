@@ -368,7 +368,11 @@ function editBurgs() {
   }
 
   function downloadBurgsData() {
+<<<<<<< HEAD
     let data = "Id,Burg,Province,State,Culture,Religion,Population,Longitude,Latitude,Elevation ("+heightUnit.value+"),Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town\n"; // headers
+=======
+    let data = "Id,Burg,Province,State,Culture,Religion,Population,Longitude,Latitude,Elevation ("+heightUnit.value+"),Capital,Port,Citadel,Walls,Plaza,Temple,Shanty\n"; // headers
+>>>>>>> 40f4f308142aebc86427c252046d3d53df81b1cc
     const valid = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
 
     valid.forEach(b => {
@@ -393,7 +397,12 @@ function editBurgs() {
       data += b.walls ? "walls," : ",";
       data += b.plaza ? "plaza," : ",";
       data += b.temple ? "temple," : ",";
+<<<<<<< HEAD
       data += b.shanty ? "shanty town\n" : "\n";
+=======
+      data += b.shanty ? "shanty\n" : "\n";
+
+>>>>>>> 40f4f308142aebc86427c252046d3d53df81b1cc
     });
 
     const name = getFileName("Burgs") + ".csv";
