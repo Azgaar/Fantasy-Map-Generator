@@ -103,7 +103,7 @@ function showMapTooltip(point, e, i, g) {
 
   // covering elements
   if (layerIsOn("togglePrec") && land) tip("Annual Precipitation: "+ getFriendlyPrecipitation(i)); else
-  if (layerIsOn("togglePopulation")) tip("Population: "+ getFriendlyPopulation(i)); else
+  if (layerIsOn("togglePopulation")) tip(getPopulationTip(i)); else
   if (layerIsOn("toggleTemp")) tip("Temperature: " + convertTemperature(grid.cells.temp[g])); else
   if (layerIsOn("toggleBiomes") && pack.cells.biome[i]) tip("Biome: " + biomesData.name[pack.cells.biome[i]]); else
   if (layerIsOn("toggleReligions") && pack.cells.religion[i]) {
@@ -119,7 +119,6 @@ function showMapTooltip(point, e, i, g) {
   } else
   if (layerIsOn("toggleCultures") && pack.cells.culture[i]) tip("Culture: " + pack.cultures[pack.cells.culture[i]].name); else
   if (layerIsOn("toggleHeight")) tip("Height: " + getFriendlyHeight(point));
-  //if (pack.cells.t[i] === 1 && !tooltip.textContent) tip("Click to edit the coastline");
 }
 
 // get cell info on mouse move
@@ -176,7 +175,13 @@ function getFriendlyPrecipitation(i) {
 function getFriendlyPopulation(i) {
   const rural = pack.cells.pop[i] * populationRate.value;
   const urban = pack.cells.burg[i] ? pack.burgs[pack.cells.burg[i]].population * populationRate.value * urbanization.value : 0;  
-  return si(rural+urban);
+  return `${si(rural+urban)} (${si(rural)} rural, urban ${si(urban)})`;
+}
+
+function getPopulationTip(i) {
+  const rural = pack.cells.pop[i] * populationRate.value;
+  const urban = pack.cells.burg[i] ? pack.burgs[pack.cells.burg[i]].population * populationRate.value * urbanization.value : 0;  
+  return `Cell population: ${si(rural+urban)}; Rural: ${si(rural)}; Urban: ${si(urban)}`;
 }
 
 // assign lock behavior
@@ -225,10 +230,10 @@ function stored(option) {
 }
 
 // apply drop-down menu option. If the value is not in options, add it
-function applyOption(select, option) {
-  const custom = !Array.from(select.options).some(o => o.value == option);
-  if (custom) select.options.add(new Option(option, option));
-  select.value = option;
+function applyOption(select, id, name = id) {
+  const custom = !Array.from(select.options).some(o => o.value == id);
+  if (custom) select.options.add(new Option(name, id));
+  select.value = id;
 }
 
 // show info about the generator in a popup

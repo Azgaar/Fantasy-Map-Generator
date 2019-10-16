@@ -28,7 +28,7 @@
   const getTrails = function() {
     console.time("generateTrails");
     const cells = pack.cells, burgs = pack.burgs.filter(b => b.i && !b.removed);
-    if (burgs.length < 2) return []; // not enought capitals to build main roads
+    if (burgs.length < 2) return []; // not enought burgs to build trails
 
     let paths = []; // array to store path segments
     for (const f of pack.features.filter(f => f.land)) {
@@ -38,12 +38,14 @@
       isle.forEach(function(b, i) {
         let path = [];
         if (!i) {
+          // build trail from the first burg on island to the farthest one on the same island
           const farthest = d3.scan(isle, (a, c) => ((c.y - b.y) ** 2 + (c.x - b.x) ** 2) - ((a.y - b.y) ** 2 + (a.x - b.x) ** 2));
           const to = isle[farthest].cell;
           if (cells.road[to]) return;
           const [from, exit] = findLandPath(b.cell, to, null);
           path = restorePath(b.cell, exit, "small", from);
         } else {
+          // build trail from all other burgs to the closest road on the same island
           if (cells.road[b.cell]) return;
           const [from, exit] = findLandPath(b.cell, null, true);
           if (exit === null) return;
@@ -157,12 +159,11 @@
 
   return {getRoads, getTrails, getSearoutes, draw, regenerate};
 
-  // Dijkstra's algorithm to find a land path
+  // Find a land path to a specific cell (exit), to a closest road (toRoad), or to all reachable cells (null, null)
   function findLandPath(start, exit = null, toRoad = null) {
     const cells = pack.cells;
     const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
     const cost = [], from = [];
-    const basicCost = 10;
     queue.queue({e: start, p: 0});
 
     while (queue.length) {
@@ -171,9 +172,10 @@
 
       for (const c of cells.c[n]) {
         if (cells.h[c] < 20) continue; // ignore water cells
-        const habitedCost = 100 - biomesData.habitability[cells.biome[c]];
-        const heightCost = Math.abs(cells.h[c] - cells.h[n]) * 10;
-        const cellCoast = basicCost + habitedCost + heightCost;
+        const stateChangeCost = cells.state && cells.state[c] !== cells.state[n] ? 400 : 0; // trails tend to lay within the same state
+        const habitedCost = Math.max(100 - biomesData.habitability[cells.biome[c]], 0); // routes tend to lay within populated areas
+        const heightChangeCost = Math.abs(cells.h[c] - cells.h[n]) * 10; // routes tend to avoid elevation changes
+        const cellCoast = 10 + stateChangeCost + habitedCost + heightChangeCost;
         const totalCost = p + (cells.road[c] || cells.burg[c] ? cellCoast / 3 : cellCoast);
 
         if (from[c] || totalCost >= cost[c]) continue;

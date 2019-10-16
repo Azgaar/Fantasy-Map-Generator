@@ -26,8 +26,8 @@ function editBurgs() {
   document.getElementById("regenerateBurgNames").addEventListener("click", regenerateNames);
   document.getElementById("addNewBurg").addEventListener("click", enterAddBurgMode);
   document.getElementById("burgsExport").addEventListener("click", downloadBurgsData);
-  document.getElementById("burgNamesImport").addEventListener("click", e => burgsListToLoad.click());
-  document.getElementById("burgsListToLoad").addEventListener("change", importBurgNames);
+  document.getElementById("burgNamesImport").addEventListener("click", renameBurgsInBulk);
+  document.getElementById("burgsListToLoad").addEventListener("change", function() {uploadFile(this, importBurgNames)});
   document.getElementById("burgsRemoveAll").addEventListener("click", triggerAllBurgsRemove);
 
   function refreshBurgsEditor() {
@@ -368,7 +368,7 @@ function editBurgs() {
   }
 
   function downloadBurgsData() {
-    let data = "Id,Burg,Province,State,Culture,Religion,Population,Longitude,Latitude,Elevation ("+heightUnit.value+"),Capital,Port\n"; // headers
+    let data = "Id,Burg,Province,State,Culture,Religion,Population,Longitude,Latitude,Elevation ("+heightUnit.value+"),Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town\n"; // headers
     const valid = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
 
     valid.forEach(b => {
@@ -388,61 +388,70 @@ function editBurgs() {
 
       // add status data
       data += b.capital ? "capital," : ",";
-      data += b.port ? "port\n" : "\n";
+      data += b.port ? "port," : ",";
+      data += b.citadel ? "citadel," : ",";
+      data += b.walls ? "walls," : ",";
+      data += b.plaza ? "plaza," : ",";
+      data += b.temple ? "temple," : ",";
+      data += b.shanty ? "shanty town\n" : "\n";
     });
 
-    const dataBlob = new Blob([data], {type: "text/plain"});
-    const url = window.URL.createObjectURL(dataBlob);
-    const link = document.createElement("a");
-    document.body.appendChild(link);
-    link.download = getFileName("Burgs") + ".csv";
-    link.href = url;
-    link.click();
-    window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
+    const name = getFileName("Burgs") + ".csv";
+    downloadFile(data, name);
   }
 
-  function importBurgNames() {
-    const el = document.getElementById("burgsListToLoad");
-    const fileToLoad = el.files[0];
-    el.value = "";
+  function renameBurgsInBulk() {
+    const message = `Download burgs list as a text file, make changes and re-upload the file. 
+    If you do not want to change the name, just leave it as is`;
+    alertMessage.innerHTML = message;
 
-    const fileReader = new FileReader();
-
-    fileReader.onload = function(e) {
-      const dataLoaded = e.target.result;
-      const data = dataLoaded.split("\r\n");
-      if (!data.length) {tip("Cannot parse the list, please check the file format", false, "error"); return;}
-
-      let change = [];
-      let message = `Burgs will be renamed as below. Please confirm;
-                    <div class="overflow-div"><table class="overflow-table"><tr><th>Id</th><th>Current name</th><th>New Name</th></tr>`;
-
-      for (let i=0; i < data.length && i <= pack.burgs.length; i++) {
-        const v = data[i];
-        if (!v || !pack.burgs[i+1] || v == pack.burgs[i+1].name) continue;
-        change.push({id:i+1, name: v});
-        message += `<tr><td style="width:20%">${i+1}</td><td style="width:40%">${pack.burgs[i+1].name}</td><td style="width:40%">${v}</td></tr>`;
+    $("#alert").dialog({title: "Burgs bulk renaming", width:"22em",
+      position: {my: "center", at: "center", of: "svg"},
+      buttons: {
+        Download: function() {
+          const data = pack.burgs.filter(b => b.i && !b.removed).map(b => b.name).join("\r\n");
+          const name = getFileName("Burg names") + ".txt";
+          downloadFile(data, name);
+        },
+        Upload: () => burgsListToLoad.click(),
+        Cancel: function() {$(this).dialog("close");}
       }
-      message += `</tr></table></div>`;
-      alertMessage.innerHTML = message;
+    });
+  }
 
-      $("#alert").dialog({title: "Burgs bulk renaming", position: {my: "center", at: "center", of: "svg"},
-        buttons: {
-          Cancel: function() {$(this).dialog("close");},
-          Confirm: function() {
-            for (let i=0; i < change.length; i++) {
-              const id = change[i].id;
-              pack.burgs[id].name = change[i].name;
-              burgLabels.select("[data-id='" + id + "']").text(change[i].name);
-            }
-            $(this).dialog("close");
-            burgsEditorAddLines();
-          }
-        }
-      });
+  function importBurgNames(dataLoaded) {
+    if (!dataLoaded) {tip("Cannot load the file, please check the format", false, "error"); return;}
+    const data = dataLoaded.split("\r\n");
+    if (!data.length) {tip("Cannot parse the list, please check the file format", false, "error"); return;}
+
+    let change = [], message = `Burgs will be renamed as below. Please confirm`;
+    message += `<table class="overflow-table"><tr><th>Id</th><th>Current name</th><th>New Name</th></tr>`;
+    const burgs = pack.burgs.filter(b => b.i && !b.removed);
+    for (let i=0; i < data.length && i <= burgs.length; i++) {
+      const v = data[i];
+      if (!v || !burgs[i] || v == burgs[i].name) continue;
+      change.push({id:burgs[i].i, name: v});
+      message += `<tr><td style="width:20%">${burgs[i].i}</td><td style="width:40%">${burgs[i].name}</td><td style="width:40%">${v}</td></tr>`;
     }
+    message += `</tr></table>`;
+    if (!change.length) message = "No changes found in the file. Please change some names to get a result"
+    alertMessage.innerHTML = message;
 
-    fileReader.readAsText(fileToLoad, "UTF-8");
+    $("#alert").dialog({title: "Burgs bulk renaming", width:"22em",
+      position: {my: "center", at: "center", of: "svg"},
+      buttons: {
+        Cancel: function() {$(this).dialog("close");},
+        Confirm: function() {
+          for (let i=0; i < change.length; i++) {
+            const id = change[i].id;
+            pack.burgs[id].name = change[i].name;
+            burgLabels.select("[data-id='" + id + "']").text(change[i].name);
+          }
+          $(this).dialog("close");
+          burgsEditorAddLines();
+        }
+      }
+    });
   }
 
   function triggerAllBurgsRemove() {

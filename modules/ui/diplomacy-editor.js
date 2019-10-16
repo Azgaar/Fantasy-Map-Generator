@@ -222,15 +222,9 @@ function editDiplomacy() {
     $("#alert").dialog({title: "Relations history", position: {my: "center", at: "center", of: "svg"},
       buttons: {
         Save: function() {
-          const text = this.querySelector("div").innerText.split("\n").join("\r\n");
-          const dataBlob = new Blob([text], {type: "text/plain"});
-          const url = window.URL.createObjectURL(dataBlob);
-          const link = document.createElement("a");
-          document.body.appendChild(link);
-          link.download = getFileName("Relations history") + ".txt";
-          link.href = url;
-          link.click();
-          window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
+          const data = this.querySelector("div").innerText.split("\n").join("\r\n");
+          const name = getFileName("Relations history") + ".txt";
+          downloadFile(data, name);
         },
         Clear: function() {pack.states[0].diplomacy = []; $(this).dialog("close");},
         Close: function() {$(this).dialog("close");}
@@ -277,14 +271,8 @@ function editDiplomacy() {
       data += s.name + "," + rels.join(",") + "\n";
     });
 
-    const dataBlob = new Blob([data], {type: "text/plain"});
-    const url = window.URL.createObjectURL(dataBlob);
-    const link = document.createElement("a");
-    document.body.appendChild(link);
-    link.download = getFileName("Relations") + ".csv";
-    link.href = url;
-    link.click();
-    window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
+    const name = getFileName("Relations") + ".csv";
+    downloadFile(data, name);
   }
 
   function closeDiplomacyEditor() {

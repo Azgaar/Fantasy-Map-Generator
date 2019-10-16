@@ -405,7 +405,7 @@ function editProvinces() {
       const displayed = provinceNameEditorCustomForm.style.display === "inline-block";
       provinceNameEditorCustomForm.style.display = displayed ? "none" : "inline-block";
       provinceNameEditorSelectForm.style.display = displayed ? "inline-block" : "none";
-      if (displayed && value) applyOption(provinceNameEditorSelectForm, value);
+      if (displayed) applyOption(provinceNameEditorSelectForm, value);
     }
 
     function regenerateFullName() {
@@ -761,9 +761,10 @@ function editProvinces() {
 
   function downloadProvincesData() {
     const unit = areaUnit.value === "square" ? distanceUnitInput.value + "2" : areaUnit.value;
-    let data = "Id,Province,Form,State,Color,Capital,Area "+unit+",Population\n"; // headers
+    let data = "Id,Province,Form,State,Color,Capital,Area "+unit+",Total Population,Rural Population,Urban Population\n"; // headers
 
     body.querySelectorAll(":scope > div").forEach(function(el) {
+      let key = parseInt(el.dataset.id)
       data += el.dataset.id + ",";
       data += el.dataset.name + ",";
       data += el.dataset.form + ",";
@@ -771,17 +772,13 @@ function editProvinces() {
       data += el.dataset.color + ",";
       data += el.dataset.capital + ",";
       data += el.dataset.area + ",";
-      data += el.dataset.population + "\n";
+      data += el.dataset.population + ",";
+      data += `${Math.round(pack.provinces[key].rural*populationRate.value)},`
+      data += `${Math.round(pack.provinces[key].urban*populationRate.value * urbanization.value)}\n`
     });
 
-    const dataBlob = new Blob([data], {type: "text/plain"});
-    const url = window.URL.createObjectURL(dataBlob);
-    const link = document.createElement("a");
-    document.body.appendChild(link);
-    link.download = getFileName("Provinces") + ".csv";
-    link.href = url;
-    link.click();
-    window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
+    const name = getFileName("Provinces") + ".csv";
+    downloadFile(data, name);
   }
 
   function removeAllProvinces() {

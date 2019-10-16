@@ -41,7 +41,7 @@ function editNotes(id, name) {
   document.getElementById("notesFocus").addEventListener("click", validateHighlightElement);
   document.getElementById("notesDownload").addEventListener("click", downloadLegends);
   document.getElementById("notesUpload").addEventListener("click", () => legendsToLoad.click());
-  document.getElementById("legendsToLoad").addEventListener("change", uploadLegends);
+  document.getElementById("legendsToLoad").addEventListener("change", function() {uploadFile(this, uploadLegends)});
   document.getElementById("notesRemove").addEventListener("click", triggernotesRemove);
 
   function changeObject() {
@@ -104,30 +104,16 @@ function editNotes(id, name) {
   }
 
   function downloadLegends() {
-    const legendString = JSON.stringify(notes);
-    const dataBlob = new Blob([legendString],{type:"text/plain"});
-    const url = window.URL.createObjectURL(dataBlob);
-    const link = document.createElement("a");
-    link.download = getFileName("Notes") + ".txt";
-    link.href = url;
-    link.click();
+    const data = JSON.stringify(notes);
+    const name = getFileName("Notes") + ".txt";
+    downloadFile(data, name);
   }
 
-  function uploadLegends() {
-    const fileToLoad = this.files[0];
-    this.value = "";
-    const fileReader = new FileReader();
-    fileReader.onload = function(fileLoadedEvent) {
-      const dataLoaded = fileLoadedEvent.target.result;
-      if (dataLoaded) {
-        notes = JSON.parse(dataLoaded);
-        document.getElementById("notesSelect").options.length = 0;
-        editNotes(notes[0].id, notes[0].name);
-      } else {
-        tip("Cannot load a file. Please check the data format", false, "error")
-      }
-    }
-    fileReader.readAsText(fileToLoad, "UTF-8");
+  function uploadLegends(dataLoaded) {
+    if (!dataLoaded) {tip("Cannot load the file. Please check the data format", false, "error"); return;}
+    notes = JSON.parse(dataLoaded);
+    document.getElementById("notesSelect").options.length = 0;
+    editNotes(notes[0].id, notes[0].name);
   }
 
   function triggernotesRemove() {

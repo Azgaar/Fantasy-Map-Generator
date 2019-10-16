@@ -166,104 +166,108 @@
       ];
     }
 
+    if (culturesSet.value === "antique") {
+      return [
+        {name:"Roman", base:8, odd: 1},
+        {name:"Roman", base:8, odd: 1},
+        {name:"Roman", base:8, odd: 1},
+        {name:"Roman", base:8, odd: 1},
+        {name:"Hellenic", base:7, odd: 1}, // Greek
+        {name:"Hellenic", base:7, odd: 1}, // Greek
+        {name:"Macedonian", base:7, odd: .5}, // Greek
+        {name:"Celtic", base:22, odd: 1},
+        {name:"Germanic", base:0, odd: 1},
+        {name:"Persian", base:24, odd: .8}, // Iranian
+        {name:"Scythian", base:24, odd: .5}, // Iranian
+        {name:"Cantabrian", base: 20, odd: .5}, // Basque
+        {name:"Estian", base: 9, odd: .2}, // Finnic
+        {name:"Carthaginian", base: 17, odd: .3}, // Berber (the closest we have)
+        {name:"Mesopotamian", base: 23, odd: .2} // Mesopotamian
+      ];
+    }
+
     if (culturesSet.value === "highFantasy") {
       return [
-        {name:ra(["Umbar","Vanya","Wroda","Cronmi","Etarn","Fauln","Gondin","Hernami","Ithinda","Jaundal"]), base:32, odd: 1},
-        {name:ra(["Mithlun","Deru","Baen","Nimic","Amdar","Nevaer","Pendra","Morid","Enad","Tullid"]), base:32, odd: .8},
-        {name:ra(["Kelim","Lemra","Ondan","Quixot","Ranoy","Hondan","Talmun","Arba","Gruni","Tacha"]), base:32, odd: .5},
-        {name:Names.getBaseShort(32), base:32, odd: .2},
-        // Human African cultures (Swahili, Nigerian)
-        {name:ra(["Unbu","Fala","Yabir","Nadi","Turu","Nubir","Bertu","Swada","Guon","Duir"]), base:ra([28,21]), odd: .5},
-        {name:ra(["Misaad","Tiga","Yana","Julo","Tanu","Danga","Ezaza","Yud","Oroba","Zula"]), base:ra([28,21]), odd: .3},
-        {name:Names.getBaseShort(28), base:28, odd: .1},
-        // Human oriental cultures (Chinese, Korean, Japanese)
-        {name:ra(["Quian","Nihan", "Akai","Huin","Jandai","Kuita","Feng","Sang","Yuhong","Zhonyu"]), base:ra([11,10,12]), odd: .5},
-        {name:ra(["Jumun", "Usei","Rinu","Yataro","Jaelin","Sasung","Oyo","Yaun","Lamlei","Ochato"]), base:ra([11,10,12]), odd: .3},
-        {name:Names.getBaseShort(11), base:11, odd: .1},
-        // Human nomadic cultures (Berber, Arabic, Turkish, Mongolian)
-        {name:ra(["Yird","Zaja","Omuk","Daziji","Harad", "Burja","Khosat","Ongal","Jingan", "Bagharin"]), base:ra([17,18,16,31]), odd: .5},
-        {name:ra(["Dal", "Qeduin","Damar","Yeduin","Buzakh","Argol","Monthar","Suul", "Azurid","Oran"]), base:ra([17,18,16,31]), odd: .3},
-        {name:Names.getBaseShort(31), base:31, odd: .1},
-        // Elven cultures (Elven, Dark Elven)
-        {name:ra(["Lossal","Aeval","Alar","Taltari","Elavar","Selane","Lahsa","Vendilae","Endaree","Altawe","Aldar"]), base:33, odd: .9},
-        {name:ra(["Dokkal","Drauga","Ulsin","Undril","Eldazan","Velas","Waendir","Cindil","Dhantyr","Uldar"]), base:34, odd: .9},
-        {name:Names.getBaseShort(33), base:33, odd: .1},
-        {name:Names.getBaseShort(34), base:34, odd: .1},
-        // Dwarven cultures
-        {name:ra(["Garadur","Kalemund","Khazram","Norgath","Zardum","Ulthar","Tumunz","Shatharn","Nuldalar","Azkadun"]), base:35, odd: 1},
-        {name:Names.getBaseShort(35), base:35, odd: .1},
-        // Orcic cultures
-        {name:ra(["Oruk","Ulg","Quigg","Rughar","Rikagh","Brundh","Kaldag","Umogg","Verug","Rekh"]), base:37, odd: .8},
-        {name:Names.getBaseShort(37), base:37, odd: .1},
-        // Goblin cultures
-        {name:ra(["Grubi","Gobbun","Bogog","Katong","Ziggag","Nildac","Blygg","Yagnob","Dulb","Gibog"]), base:36, odd: .7},
-        {name:Names.getBaseShort(36), base:36, odd: .1},
-        // Draconic cultures
-        {name:ra(["Drache","Alduun","Tiranax","Firosos","Daavor","Sakaal","Oruniin","Rigaal","Diiru","Velrit"]), base:39, odd: .3},
-        {name:Names.getBaseShort(39), base:39, odd: .05},
-        // Arachnid cultures
-        {name:ra(["Aranee","Yoraz","Zhizu","On'Omi","Xantha","Qalan","Yeqir","Zheer","Shirrox","Khra'La"]), base:40, odd: .2},
-        {name:Names.getBaseShort(40), base:40, odd: .05},
-        // Serpents (snakes) cultures
-        {name:ra(["Najar","Saj","Vultess","Solkush","Vekis","Zeriss","Ci'Kush","Kophyss","Sal'Har","Surresh"]), base:41, odd: .2},
-        {name:Names.getBaseShort(41), base:41, odd: .05},
-        // Giants cultures
-        {name:ra(["Gorth","Volkar","Barak","Suvrok","Dughal","Ranag","Undur","Kakarn","Dalken","Grimgar"]), base:38, odd: .2},
-        {name:Names.getBaseShort(38), base:38, odd: .05}
+        // fantasy races
+        {name:"Quenian", base: 33, odd: 1}, // Elves
+        {name:"Eldar", base: 33, odd: 1}, // Elves
+        {name:"Lorian", base: 33, odd: .5}, // Elves
+        {name:"Trow", base: 34, odd: .9}, // Dark Elves
+        {name:"Dokalfar", base: 34, odd: .3}, // Dark Elves
+        {name:"Durinn", base: 35, odd: 1}, // Dwarven
+        {name:"Khazadur", base: 35, odd: 1}, // Dwarven
+        {name:"Kobblin", base: 36, odd: 1}, // Goblin
+        {name:"Uruk", base: 37, odd: 1}, // Orc
+        {name:"Ugluk", base: 37, odd: .7}, // Orc
+        {name:"Yotunn", base: 38, odd: .9}, // Giant
+        {name:"Drake", base: 39, odd: .7}, // Draconic
+        {name:"Rakhnid", base: 40, odd: .9}, // Arachnid
+        {name:"Aj'Snaga", base: 41, odd: .9}, // Serpents
+        // common fantasy human
+        {name:"Gozdor", base:32, odd: 1},
+        {name:"Anor", base:32, odd: 1},
+        {name:"Dail", base:32, odd: 1},
+        {name:"Duland", base:32, odd: 1},
+        {name:"Rohand", base:32, odd: 1},
+        // rare real-world western
+        {name:"Norse", base:6, odd: .5},
+        {name:"Izenlute", base:0, odd: .1},
+        {name:"Lurian", base:2, odd: .1},
+        {name:"Getalian", base:3, odd: .1},
+        {name:"Astelan", base:4, odd: .05},
+        // rare real-world exotic
+        {name:"Yoruba", base:21, odd: .05},
+        {name:"Ryoko", base:10, odd: .05},
+        {name:"Toyamo", base:12, odd: .05},
+        {name:"Guan-Tsu", base:30, odd: .05},
+        {name:"Ulus-Khan", base:31, odd: .05},
+        {name:"Turan", base: 16, odd: .05},
+        {name:"Al'Uma", base: 18, odd: .05},
+        {name:"Druidas", base: 22, odd: .05},
+        {name:"Gorodian", base:5, odd: .05}
       ];
     }
 
     if (culturesSet.value === "darkFantasy") {
-      const west = ra([0,1,2,3,4,6]); // real-world western
-      const east = ra([10,11,12,26,29,30]); // real-world oriental
-      const randReal = rand(31); // reql-world random
-      const randFantasy = rand(35, 39); // fantasy random (except frequently used)
-
       return [
-        {name:ra(["Gluum","Dregg","Crimna","Grimmer","Plagan","Gretan","Maeldar","Peyon","Waeri","Creven"]), base:32, odd: 1},
-        {name:Names.getBaseShort(32), base:32, odd: .4},
-        {name:Names.getBaseShort(west), base:west, odd: .4},
-        {name:Names.getBaseShort(west), base:west, odd: 4},
-        {name:Names.getBaseShort(west), base:west, odd: .4},
-        {name:Names.getBaseShort(east), base:east, odd: .4},
-        {name:Names.getBaseShort(randReal), base:randReal, odd: .4},
-        {name:Names.getBaseShort(randReal), base:randReal, odd: .4},
-        {name:Names.getBaseShort(randFantasy), base:randFantasy, odd: .4},
-        {name:ra(["Drauer","Svartal","Ulsin","Druchan","Eldazar","Velaz","Waendir","Cryndil","Vhantyr","Uldaga"]), base: 34, odd: .8},
-        {name:Names.getBaseShort(34), base:34, odd: .2},
-        {name:ra(["Necrin","Yoraz","Zhizu","On'Omi","Xantha","Qalan","Yeqir","Zheer","Shirrox","Khra'La"]), base:40, odd: .6},
-        {name:Names.getBaseShort(40), base:40, odd: .1},
-        {name:ra(["Najaq","Saja","Zultesh","Solkuss","Sekrys","Verish","Ji'Suu","Kophress","Sul'Vhas","Surraj"]), base:41, odd: .6},
-        {name:Names.getBaseShort(41), base:41, odd: .1}
-      ]
-    }
-
-    if (culturesSet.value === "lowFantasy") {
-      return [
-        // real-world cultures
-        {name:ra(["Misaad","Tiga","Yana","Julo","Tanu","Danga","Ezaza","Yud","Oroba","Zula"]), base:ra([28,21]), odd: .7},
-        {name:ra(["Unbu","Fala","Yabir","Nadi","Turu","Nubir","Bertu","Swada","Guon","Duir"]), base:ra([28,21]), odd: .4},
-        {name:ra(["Jumun", "Usei","Rinu","Yataro","Jaelin","Sasung","Oyo","Yaun","Lamlei","Ochato"]), base:ra([11,10,12]), odd: .7},
-        {name:ra(["Quian","Nihan", "Akai","Huin","Jandai","Kuita","Feng","Sang","Yuhong","Zhonyu"]), base:ra([11,10,12]), odd: .4},
-        {name:ra(["Dal", "Qeduin","Damar","Yeduin","Buzakh","Argol","Monthar","Suul", "Azurid","Oran"]), base:ra([18,16,31]), odd: .7},
-        {name:ra(["Yird","Zaja","Omuk","Daziji","Harad", "Burja","Khosat","Ongal","Jingan", "Bagharin"]), base:ra([18,16,31]), odd: .4},
-        {name:ra(["Muerid","Atau","Olvid","Carani","Incora","Fastama","Tusange","Captiur","Tristei","Duila"]), base:ra([2,3,4]), odd: .6},
-        {name:ra(["Vergen","Todir","Angest","Duncein","Mordane","Ungeran","Slaktan","Pijini","Joldamor","Kelfang"]), base:ra([0,6]), odd: .5},
-        {name:ra(["Vaer","Hayal","Fajalan","Banta","Feled","Unohda","Kuolemi","Hatamur","Inhortu","Rienau"]), base:ra([9,15]),odd: .5},
-        {name:ra(["Semerta","Rezyn","Stragh","Otchza","Rabini","Yamak","Nocht","Erstoz","Vozha","Vukod"]), base:5, odd: .6},
-        {name:ra(["Itzil","Itoza","Beldur","Minaz","Etsipian","Gurean","Morrai","Hiloga","Gurrusi","Beldurn"]), base:20, odd: .2},
-        {name:ra(["Kongji","Qishin","Moushi","Wuhui","Zhaozei","Tushada","Shai","Xingzhi","Jukong","Tiantao"]), base:ra([30, 11]), odd: .5},
-        // human cultures
-        {name:ra(["Mithlun","Deru","Baen","Nimic","Amdar","Nevaer","Pendra"]), base:32, odd: 1},
-        {name:ra(["Morid","Enad","Tullid","Kelim","Lemra","Ondan","Fargunia"]), base:32, odd: 1},
-        {name:ra(["Quixot","Ranoy","Hondan","Talmun","Arba","Gruni","Tacha"]), base:32, odd: 1},
-        {name:ra(["Gluum","Dregg","Crimna","Grimmer","Plagan","Gretan","Jaundal"]), base:32, odd: .5},
-        {name:ra(["Cronmi","Etarn","Fauln","Gondin","Hernami","Ithinda"]), base:32, odd: .5},
-        {name:ra(["Peyon","Waeri","Creven","Umbar","Vanya","Wroda","Maeldar"]), base:32, odd: .5},
-        // non-human cultures
-        {name:ra(["Lossal","Aeval","Alar","Taltari","Elavar","Selane","Lahsa","Vendilae","Endaree","Altawe","Aldar"]), base:33, odd: .2},
-        {name:ra(["Garadur","Kalemund","Khazram","Norgath","Zardum","Ulthar","Tumunz","Shatharn","Nuldalar","Azkadun"]), base:35, odd: .2},
-        {name:ra(["Gorth","Volkar","Barak","Suvrok","Dughal","Ranag","Undur","Kakarn","Dalken","Grimgar"]), base:38, odd: .2}
+        // common real-world English
+        {name:"Angshire", base:1, odd: 1},
+        {name:"Enlandic", base:1, odd: 1},
+        {name:"Westen", base:1, odd: 1},
+        {name:"Nortumbic", base:1, odd: 1},
+        {name:"Mercian", base:1, odd: 1},
+        {name:"Kentian", base:1, odd: 1},
+        // rare real-world western
+        {name:"Norse", base:6, odd: .7},
+        {name:"Schwarzen", base:0, odd: .3},
+        {name:"Luarian", base:2, odd: .3},
+        {name:"Hetallian", base:3, odd: .3},
+        {name:"Astellian", base:4, odd: .3},
+        // rare real-world exotic
+        {name:"Kiswaili", base:28, odd: .05},
+        {name:"Yoruba", base:21, odd: .05},
+        {name:"Koryo", base:10, odd: .05},
+        {name:"Hantzu", base:11, odd: .05},
+        {name:"Yamoto", base:12, odd: .05},
+        {name:"Guantzu", base:30, odd: .05},
+        {name:"Ulus", base:31, odd: .05},
+        {name:"Turan", base: 16, odd: .05},
+        {name:"Berberan", base: 17, odd: .05},
+        {name:"Eurabic", base: 18, odd: .05},
+        {name:"Slovan", base:5, odd: .05},
+        {name:"Keltan", base: 22, odd: .1},
+        {name:"Elladan", base:7, odd: .2},
+        {name:"Romian", base:8, odd: .2},
+        // fantasy races
+        {name:"Eldar", base: 33, odd: .5}, // Elves
+        {name:"Trow", base: 34, odd: .8}, // Dark Elves
+        {name:"Durinn", base: 35, odd: .8}, // Dwarven
+        {name:"Kobblin", base: 36, odd: .8}, // Goblin
+        {name:"Uruk", base: 37, odd: .8}, // Orc
+        {name:"Yotunn", base: 38, odd: .8}, // Giant
+        {name:"Drake", base: 39, odd: .9}, // Draconic
+        {name:"Rakhnid", base: 40, odd: .9}, // Arachnid
+        {name:"Aj'Snaga", base: 41, odd: .9}, // Serpents
       ]
     }
 
@@ -297,7 +301,7 @@
       {name:"Eurabic", base: 18, odd: .2},
       {name:"Inuk", base: 19, odd: .05},
       {name:"Euskati", base: 20, odd: .05},
-      {name:"Negarian", base: 21, odd: .05},
+      {name:"Yoruba", base: 21, odd: .05},
       {name:"Keltan", base: 22, odd: .05},
       {name:"Efratic", base: 23, odd: .05},
       {name:"Tehrani", base: 24, odd: .1},
@@ -380,10 +384,10 @@
     return Math.min(Math.max(cells.fl[i] / 10, 20), 100) // river penalty from 20 to 100 based on flux
   }
 
-  function getTypeCost(ctype, type) {
-    if (ctype === 1) return type === "Naval" || type === "Lake" ? 0 : type === "Nomadic" ? 60 : 20; // penalty for coastline
-    if (ctype === 2) return type === "Naval" || type === "Nomadic" ? 30 : 0; // low penalty for land level 2 for Navals and nomads
-    if (ctype !== -1) return type === "Naval" || type === "Lake" ? 100 : 0;  // penalty for mainland for navals
+  function getTypeCost(t, type) {
+    if (t === 1) return type === "Naval" || type === "Lake" ? 0 : type === "Nomadic" ? 60 : 20; // penalty for coastline
+    if (t === 2) return type === "Naval" || type === "Nomadic" ? 30 : 0; // low penalty for land level 2 for Navals and nomads
+    if (t !== -1) return type === "Naval" || type === "Lake" ? 100 : 0;  // penalty for mainland for navals
     return 0;
   }
 

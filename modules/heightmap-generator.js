@@ -231,7 +231,7 @@
       case 10: return .93;
     }
   }
-  
+
   const addHill = function(count, height, rangeX, rangeY) {
     count = getNumberInRange(count);
     const power = getBlobPower();

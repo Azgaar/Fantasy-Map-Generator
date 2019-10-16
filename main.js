@@ -157,7 +157,7 @@ void function checkLoadParameters() {
       if (blob) {
         console.warn("Load last saved map");
         try {
-          uploadFile(blob);
+          uploadMap(blob);
         }
         catch(error) {
           console.error(error);
@@ -183,7 +183,7 @@ function loadMapFromURL(maplink, random) {
     .then(response => {
       if(response.ok) return response.blob();
       throw new Error("Cannot load map from URL");
-    }).then(blob => uploadFile(blob))
+    }).then(blob => uploadMap(blob))
     .catch(error => {
       showUploadErrorMessage(error.message, URL, random);
       if (random) generateMapOnLoad();
@@ -200,7 +200,7 @@ function showUploadErrorMessage(error, URL, random) {
 }
 
 function generateMapOnLoad() {
-  applyDefaultStyle(); // apply style
+  applyStyleOnLoad(); // apply default of previously selected style
   generate(); // generate map
   focusOn(); // based on searchParams focus on point, cell or burg from MFCG
   applyPreset(); // apply saved layers preset
@@ -315,105 +315,6 @@ function applyDefaultBiomesSystem() {
   return {i:d3.range(0, name.length), name, color, biomesMartix, habitability, iconsDensity, icons, cost};
 }
 
-// restore initial style
-function applyDefaultStyle() {
-  biomes.attr("opacity", null).attr("filter", null);
-  stateBorders.attr("opacity", .8).attr("stroke", "#56566d").attr("stroke-width", 1).attr("stroke-dasharray", "2").attr("stroke-linecap", "butt").attr("filter", null);
-  provinceBorders.attr("opacity", .8).attr("stroke", "#56566d").attr("stroke-width", .2).attr("stroke-dasharray", "1").attr("stroke-linecap", "butt").attr("filter", null);
-  cells.attr("opacity", null).attr("stroke", "#808080").attr("stroke-width", .1).attr("filter", null).attr("mask", null);
-
-  gridOverlay.attr("opacity", .8).attr("stroke", "#808080").attr("stroke-width", .5).attr("stroke-dasharray", null).attr("transform", null).attr("filter", null).attr("mask", null);
-  coordinates.attr("opacity", 1).attr("data-size", 12).attr("font-size", 12).attr("stroke", "#d4d4d4").attr("stroke-width", 1).attr("stroke-dasharray", 5).attr("filter", null).attr("mask", null);
-  compass.attr("opacity", .8).attr("transform", null).attr("filter", null).attr("mask", "url(#water)").attr("shape-rendering", "optimizespeed");
-  if (!d3.select("#initial").size()) d3.select("#rose").attr("transform", "translate(80 80) scale(.25)");
-
-  relig.attr("opacity", .7).attr("stroke", "#404040").attr("stroke-width", .7).attr("filter", null).attr("fill-rule", "evenodd");
-  cults.attr("opacity", .6).attr("stroke", "#777777").attr("stroke-width", .5).attr("filter", null).attr("fill-rule", "evenodd");
-  icons.selectAll("g").attr("opacity", null).attr("fill", "#ffffff").attr("stroke", "#3e3e4b").attr("filter", null).attr("mask", null);
-  landmass.attr("opacity", 1).attr("fill", "#eef6fb").attr("filter", null);
-  markers.attr("opacity", null).attr("filter", "url(#dropShadow01)");
-  styleRescaleMarkers.checked = true;
-  prec.attr("opacity", null).attr("stroke", "#000000").attr("stroke-width", .1).attr("fill", "#003dff").attr("filter", null);
-  population.attr("opacity", null).attr("stroke-width", 1.6).attr("stroke-dasharray", null).attr("stroke-linecap", "butt").attr("filter", null);
-  population.select("#rural").attr("stroke", "#0000ff");
-  population.select("#urban").attr("stroke", "#ff0000");
-
-  lakes.select("#freshwater").attr("opacity", .5).attr("fill", "#a6c1fd").attr("stroke", "#5f799d").attr("stroke-width", .7).attr("filter", null);
-  lakes.select("#salt").attr("opacity", .5).attr("fill", "#409b8a").attr("stroke", "#388985").attr("stroke-width", .7).attr("filter", null);
-  lakes.select("#sinkhole").attr("opacity", 1).attr("fill", "#5bc9fd").attr("stroke", "#53a3b0").attr("stroke-width", .7).attr("filter", null);
-  lakes.select("#frozen").attr("opacity", .95).attr("fill", "#cdd4e7").attr("stroke", "#cfe0eb").attr("stroke-width", 0).attr("filter", null);
-  lakes.select("#lava").attr("opacity", .7).attr("fill", "#90270d").attr("stroke", "#f93e0c").attr("stroke-width", 2).attr("filter", "url(#crumpled)");
-
-  coastline.select("#sea_island").attr("opacity", .5).attr("stroke", "#1f3846").attr("stroke-width", .7).attr("filter", "url(#dropShadow)");
-  coastline.select("#lake_island").attr("opacity", 1).attr("stroke", "#7c8eaf").attr("stroke-width", .35).attr("filter", null);
-  styleCoastlineAuto.checked = true;
-
-  terrain.attr("opacity", null).attr("filter", null).attr("mask", null);
-  rivers.attr("opacity", null).attr("fill", "#5d97bb").attr("filter", null);
-  roads.attr("opacity", .9).attr("stroke", "#d06324").attr("stroke-width", .7).attr("stroke-dasharray", "2").attr("stroke-linecap", "butt").attr("filter", null);
-  ruler.attr("opacity", null).attr("filter", null);
-  searoutes.attr("opacity", .8).attr("stroke", "#ffffff").attr("stroke-width", .45).attr("stroke-dasharray", "1 2").attr("stroke-linecap", "round").attr("filter", null);
-
-  regions.attr("opacity", .4).attr("filter", null);
-  statesHalo.attr("stroke-width", 10).attr("opacity", 1);
-  provs.attr("opacity", .6).attr("filter", null);
-
-  temperature.attr("opacity", null).attr("fill", "#000000").attr("stroke-width", 1.8).attr("fill-opacity", .3).attr("font-size", "8px").attr("stroke-dasharray", null).attr("filter", null).attr("mask", null);
-  texture.attr("opacity", null).attr("filter", null).attr("mask", "url(#land)");
-  texture.select("image").attr("x", 0).attr("y", 0);
-  zones.attr("opacity", .6).attr("stroke", "#333333").attr("stroke-width", 0).attr("stroke-dasharray", null).attr("stroke-linecap", "butt").attr("filter", null).attr("mask", null);
-  trails.attr("opacity", .9).attr("stroke", "#d06324").attr("stroke-width", .25).attr("stroke-dasharray", ".8 1.6").attr("stroke-linecap", "butt").attr("filter", null);
-
-  // ocean and svg default style
-  svg.attr("background-color", "#000000").attr("filter", null);
-  const mapFilter = document.querySelector("#mapFilters .pressed");
-  if (mapFilter) mapFilter.classList.remove("pressed");
-  ocean.attr("opacity", null);
-  oceanLayers.select("rect").attr("fill", "#53679f");
-  oceanLayers.attr("filter", null);
-  oceanPattern.attr("opacity", null);
-  oceanLayers.selectAll("path").attr("display", null);
-  styleOceanPattern.value = "url(#pattern1)";
-  svg.select("#oceanic rect").attr("filter", "url(#pattern1)");
-
-  // heightmap style
-  terrs.attr("opacity", null).attr("filter", null).attr("mask", "url(#land)").attr("stroke", "none");
-  const changed = styleHeightmapSchemeInput.value !== "bright" ||
-                  styleHeightmapTerracingInput.value != 0 ||
-                  styleHeightmapSkipInput.value != 5 ||
-                  styleHeightmapSimplificationInput.value != 0 ||
-                  styleHeightmapCurveInput.value != 0;
-  styleHeightmapSchemeInput.value = "bright";
-  styleHeightmapTerracingInput.value = styleHeightmapTerracingOutput.value = 0;
-  styleHeightmapSkipInput.value = styleHeightmapSkipOutput.value = 5;
-  styleHeightmapSimplificationInput.value = styleHeightmapSimplificationOutput.value = 0;
-  styleHeightmapCurveInput.value = 0;
-  if (changed) drawHeightmap();
-
-  // legend
-  legend.attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC").attr("font-size", 13).attr("data-size", 13).attr("data-x", 99).attr("data-y", 93).attr("stroke-width", 2.5).attr("stroke", "#812929").attr("stroke-dasharray", "0 4 10 4").attr("stroke-linecap", "round");
-  styleLegendBack.value = "#ffffff";
-  styleLegendOpacity.value = styleLegendOpacityOutput.value = .8;
-  styleLegendColItems.value = styleLegendColItemsOutput.value = 8;
-  if (legend.selectAll("*").size() && window.redrawLegend) redrawLegend();
-
-  const citiesSize = Math.max(rn(8 - regionsInput.value / 20), 3);
-  burgLabels.select("#cities").attr("fill", "#3e3e4b").attr("opacity", 1).attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC").attr("font-size", citiesSize).attr("data-size", citiesSize);
-  burgIcons.select("#cities").attr("opacity", 1).attr("size", 1).attr("stroke-width", .24).attr("fill", "#ffffff").attr("stroke", "#3e3e4b").attr("fill-opacity", .7).attr("stroke-dasharray", "").attr("stroke-linecap", "butt");
-  anchors.select("#cities").attr("opacity", 1).attr("fill", "#ffffff").attr("stroke", "#3e3e4b").attr("stroke-width", 1.2).attr("size", 2);
-
-  burgLabels.select("#towns").attr("fill", "#3e3e4b").attr("opacity", 1).attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC").attr("font-size", 3).attr("data-size", 4);
-  burgIcons.select("#towns").attr("opacity", 1).attr("size", .5).attr("stroke-width", .12).attr("fill", "#ffffff").attr("stroke", "#3e3e4b").attr("fill-opacity", .7).attr("stroke-dasharray", "").attr("stroke-linecap", "butt");
-  anchors.select("#towns").attr("opacity", 1).attr("fill", "#ffffff").attr("stroke", "#3e3e4b").attr("stroke-width", 1.2).attr("size", 1);
-
-  const stateLabelSize = Math.max(rn(24 - regionsInput.value / 6), 6);
-  labels.select("#states").attr("fill", "#3e3e4b").attr("opacity", 1).attr("stroke", "#3a3a3a").attr("stroke-width", 0).attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC").attr("font-size", stateLabelSize).attr("data-size", stateLabelSize).attr("filter", null);
-  labels.select("#addedLabels").attr("fill", "#3e3e4b").attr("opacity", 1).attr("stroke", "#3a3a3a").attr("stroke-width", 0).attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC").attr("font-size", 18).attr("data-size", 18).attr("filter", null);
-  invokeActiveZooming();
-
-  fogging.attr("opacity", .8).attr("fill", "#000000").attr("stroke-width", 5);
-}
-
 function showWelcomeMessage() {
   const link = 'https://www.reddit.com/r/FantasyMapGenerator/comments/daf6g2/update_new_version_is_published_v_11'; // announcement on Reddit
   alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
@@ -450,6 +351,8 @@ function zoomed() {
   const transform = d3.event.transform;
   const scaleDiff = scale - transform.k;
   const positionDiff = viewX - transform.x | viewY - transform.y;
+  if (!positionDiff && !scaleDiff) return;
+
   scale = transform.k;
   viewX = transform.x;
   viewY = transform.y;
@@ -462,6 +365,16 @@ function zoomed() {
   if (scaleDiff) {
     invokeActiveZooming();
     drawScaleBar();
+  }
+
+  // zoom image converter overlay
+  const canvas = document.getElementById("canvas");
+  if (canvas && +canvas.style.opacity) {
+    const img = document.getElementById("image");
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.setTransform(scale, 0, 0, scale, viewX, viewY);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
   }
 }
 
@@ -485,10 +398,9 @@ function getViewBoxExtent() {
 
 // active zooming feature
 function invokeActiveZooming() {
-  if (styleCoastlineAuto.checked) {
+  if (coastline.select("#sea_island").size() && +coastline.select("#sea_island").attr("auto-filter")) {
     // toggle shade/blur filter for coatline on zoom
-    let filter = scale > 2.6 ? "url(#blurFilter)" : "url(#dropShadow)";
-    if (scale > 1.5 && scale <= 2.6) filter = null;
+    const filter = scale > 1.5 && scale <= 2.6 ? null : scale > 2.6 ? "url(#blurFilter)" : "url(#dropShadow)";
     coastline.select("#sea_island").attr("filter", filter);
   }
 
@@ -509,12 +421,12 @@ function invokeActiveZooming() {
 
   // change states halo width
   if (!customization) {
-    const haloSize = rn(styleStatesHaloWidth.value / scale, 1);
+    const haloSize = rn(statesHalo.attr("data-width") / scale, 1);
     statesHalo.attr("stroke-width", haloSize).style("display", haloSize > 3 ? "block" : "none");
   }
 
   // rescale map markers
-  if (styleRescaleMarkers.checked && markers.style("display") !== "none") {
+  if (+markers.attr("rescale") && markers.style("display") !== "none") {
     markers.selectAll("use").each(function(d) {
       const x = +this.dataset.x, y = +this.dataset.y, desired = +this.dataset.size;
       const size = Math.max(desired * 5 + 25 / scale, 1);
@@ -565,7 +477,7 @@ void function addDragToUpload() {
     // all good - show uploading text and load the map
     $("#map-dragged > p").text("Uploading<span>.</span><span>.</span><span>.</span>");
     closeDialogs();
-    uploadFile(file, function onUploadFinish() {
+    uploadMap(file, function onUploadFinish() {
       $("#map-dragged > p").text("Drop to upload");
     });
   });
@@ -601,6 +513,9 @@ function generate() {
     Cultures.expand();
     BurgsAndStates.generate();
     Religions.generate();
+    BurgsAndStates.defineStateForms();
+    BurgsAndStates.generateProvinces();
+    BurgsAndStates.defineBurgFeatures();
 
     drawStates();
     drawBorders();
@@ -697,7 +612,10 @@ function markFeatures() {
           cells.f[e] = i;
           queue.push(e);
         }
-        if (land && !eLand) {cells.t[q] = 1; cells.t[e] = -1;}
+        if (land && !eLand) {
+          cells.t[q] = 1; 
+          cells.t[e] = -1;
+        }
       });
     }
     const type = land ? "island" : border ? "ocean" : "lake";
@@ -1072,7 +990,7 @@ function reMarkFeatures() {
   console.time("reMarkFeatures");
   const cells = pack.cells, features = pack.features = [0];
   cells.f = new Uint16Array(cells.i.length); // cell feature number
-  cells.t = new Int8Array(cells.i.length); // cell type: 1 = land along coast; -1 = water along coast;
+  cells.t = new Int16Array(cells.i.length); // cell type: 1 = land along coast; -1 = water along coast;
   cells.haven = new Uint16Array(cells.i.length); // cell haven (opposite water cell);
   cells.harbor = new Uint16Array(cells.i.length); // cell harbor (number of adjacent water cells);
 
@@ -1088,11 +1006,6 @@ function reMarkFeatures() {
       if (cells.b[q]) border = true;
       cells.c[q].forEach(function(e) {
         const eLand = cells.h[e] >= 20;
-        if (land === eLand && cells.f[e] === 0) {
-          cells.f[e] = i;
-          queue.push(e);
-          cellNumber++;
-        }
         if (land && !eLand) {
           cells.t[q] = 1;
           cells.t[e] = -1;
@@ -1101,6 +1014,11 @@ function reMarkFeatures() {
         } else if (land && eLand) {
           if (!cells.t[e] && cells.t[q] === 1) cells.t[e] = 2;
           else if (!cells.t[q] && cells.t[e] === 1) cells.t[q] = 2;
+        }
+        if (land === eLand && cells.f[e] === 0) {
+          cells.f[e] = i;
+          queue.push(e);
+          cellNumber++;
         }
       });
     }
@@ -1140,15 +1058,12 @@ function elevateLakes() {
   console.time('elevateLakes');
   const cells = pack.cells, features = pack.features;
   const maxCells = cells.i.length / 100; // size limit; let big lakes be closed (endorheic)
-  const lakes = cells.i
-    .filter(i => features[cells.f[i]].group === "freshwater" && features[cells.f[i]].cells < maxCells)
-    .sort(highest); // highest cells go first
-
-  for (const i of lakes) {
-    //debug.append("circle").attr("cx", cells.p[i][0]).attr("cy", cells.p[i][1]).attr("r", 1).attr("fill", "blue");
-    const hs = cells.c[i].filter(isLand).map(c => cells.h[c]);
-    cells.h[i] = Math.max(d3.min(hs) - 5, 20) || 20;
-  }
+  cells.i.forEach(i => {
+    if (cells.h[i] >= 20) return;
+    if (features[cells.f[i]].group !== "freshwater" || features[cells.f[i]].cells > maxCells) return;
+    cells.h[i] = 20;
+    //debug.append("circle").attr("cx", cells.p[i][0]).attr("cy", cells.p[i][1]).attr("r", .5).attr("fill", "blue");
+  });
 
   console.timeEnd('elevateLakes');
 }
@@ -1721,7 +1636,7 @@ function addZones(number = 1) {
 
       cells.c[q].forEach(e => {
         if (used[e]) return;
-        if (cells.h[e] >= 20 && !cells.t[e]) return;
+        if (cells.t[e] > 2) return;
         if (pack.features[cells.f[e]].type === "lake") return;
         used[e] = 1;
         queue.push(e);
@@ -1756,7 +1671,9 @@ function showStatistics() {
   States: ${pack.states.length-1}
   Provinces: ${pack.provinces.length-1}
   Burgs: ${pack.burgs.length-1}
-  Religions: ${pack.religions.length-1}`;
+  Religions: ${pack.religions.length-1}
+  Culture set: ${culturesSet.selectedOptions[0].innerText}
+  Cultures: ${pack.cultures.length-1}`;
   mapHistory.push({seed, width:graphWidth, height:graphHeight, template, created: Date.now()});
   console.log(stats);
 }

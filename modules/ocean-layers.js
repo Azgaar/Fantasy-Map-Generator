@@ -6,8 +6,8 @@
 
   let cells, vertices, pointsN, used;
 
-  var OceanLayers = function OceanLayers() {
-    const outline = outlineLayersInput.value;
+  const OceanLayers = function OceanLayers() {
+    const outline = oceanLayers.attr("layers");
     if (outline === "none") return;
     console.time("drawOceanLayers");
 
@@ -21,18 +21,16 @@
 
     for (const i of cells.i) {
       const t = cells.t[i];
+      if (t > 0) continue;
       if (used[i] || !limits.includes(t)) continue;
       const start = findStart(i, t);
       if (!start) continue;
       used[i] = 1;
-      //debug.append("circle").attr("r", 3).attr("cx", vertices.p[start.c][0]).attr("cy", vertices.p[start.c][1]).attr("fill", "red").attr("stroke", "black").attr("stroke-width", .3);
-
       const chain = connectVertices(start, t); // vertices chain to form a path
       const relaxation = 1 + t * -2; // select only n-th point
       const relaxed = chain.filter((v, i) => i % relaxation === 0 || vertices.c[v].some(c => c >= pointsN));
       if (relaxed.length >= 3) chains.push([t, relaxed.map(v => vertices.p[v])]);
     }
-    //debug.selectAll("text").data(cells.i).enter().append("text").attr("font-size", 2).attr("x", d => grid.points[d][0]).attr("y", d => grid.points[d][1]).text(d => cells.t[d]+","+used[d]);
 
     for (const t of limits) {
       const path = chains.filter(c => c[0] === t).map(c => round(lineGen(c[1]))).join();

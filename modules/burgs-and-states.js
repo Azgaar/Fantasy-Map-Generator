@@ -16,20 +16,17 @@
     const capitalRoutes = Routes.getRoads();
 
     placeTowns();
+    expandStates();
+    normalizeStates();
     const townRoutes = Routes.getTrails();
     specifyBurgs();
 
     const oceanRoutes = Routes.getSearoutes();
 
-    expandStates();
-    normalizeStates();
     collectStatistics();
     assignColors();
 
     generateDiplomacy();
-    defineStateForms();
-    generateProvinces();
-
     Routes.draw(capitalRoutes, townRoutes, oceanRoutes);
     drawBurgs();
 
@@ -106,7 +103,7 @@
       const score = new Int16Array(cells.s.map(s => s * gauss(1,3,0,20,3))); // a bit randomized cell score for towns placement
       const sorted = cells.i.filter(i => !cells.burg[i] && score[i] > 0 && cells.culture[i]).sort((a, b) => score[b] - score[a]); // filtered and sorted array of indexes
 
-      const desiredNumber = manorsInput.value == 1000 ? rn(sorted.length / 8 / (grid.points.length / 10000) ** .8) : manorsInput.valueAsNumber;
+      const desiredNumber = manorsInput.value == 1000 ? rn(sorted.length / 5 / (grid.points.length / 10000) ** .8) : manorsInput.valueAsNumber;
       const burgsNumber = Math.min(desiredNumber, sorted.length); // towns to generate
       let burgsAdded = 0;
 
@@ -172,8 +169,6 @@
         if (i%2) b.x = rn(b.x + shift, 2); else b.x = rn(b.x - shift, 2);
         if (cells.r[i]%2) b.y = rn(b.y + shift, 2); else b.y = rn(b.y - shift, 2);
       }
-
-      defineFeatures(b);
     }
 
     // de-assign port status if it's the only one on feature
@@ -188,13 +183,17 @@
     console.timeEnd("specifyBurgs");
   }
 
-  const defineFeatures = function(b) {
-    const pop = b.population;
-    b.citadel = pop > 50 && Math.random() < .75 || Math.random() < .5 ? 1 : 0;
-    b.plaza = pop > 50 || pop > 30 && Math.random() < .75 || pop > 10 && Math.random() < .5 || Math.random() < .25 ? 1 : 0;
-    b.walls = b.capital || pop > 30 || pop > 20 && Math.random() < .75 || pop > 10 && Math.random() < .5 || Math.random() < .2 ? 1 : 0;
-    b.shanty = pop > 30 || pop > 20 && Math.random() < .75 || b.walls && Math.random() < .75 ? 1 : 0;
-    b.temple = pop > 100 || pop > 80 && Math.random() < .75 || pop > 50 && Math.random() < .5 ? 1 : 0;
+  const defineBurgFeatures = function() {
+    pack.burgs.filter(b => b.i && !b.removed).forEach(b => {
+      const pop = b.population;
+      b.citadel = b.capital || pop > 50 && Math.random() < .75 || Math.random() < .5 ? 1 : 0;
+      b.plaza = pop > 50 || pop > 30 && Math.random() < .75 || pop > 10 && Math.random() < .5 || Math.random() < .25 ? 1 : 0;
+      b.walls = b.capital || pop > 30 || pop > 20 && Math.random() < .75 || pop > 10 && Math.random() < .5 || Math.random() < .2 ? 1 : 0;
+      b.shanty = pop > 30 || pop > 20 && Math.random() < .75 || b.walls && Math.random() < .75 ? 1 : 0;
+      const religion = pack.cells.religion[b.cell];
+      const theocracy = pack.states[b.state].form === "Theocracy";
+      b.temple = religion && theocracy || pop > 50 || pop > 35 && Math.random() < .75 || pop > 20 && Math.random() < .5 ? 1 : 0;
+    });
   }
 
   const drawBurgs = function() {
@@ -208,7 +207,7 @@
     // capitals
     const capitals = pack.burgs.filter(b => b.capital);
     const capitalIcons = burgIcons.select("#cities");
-    const capitalLabels = burgLabels.select("#cities");   
+    const capitalLabels = burgLabels.select("#cities");
     const capitalSize = capitalIcons.attr("size") || 1;
     const capitalAnchors = anchors.selectAll("#cities");
     const caSize = capitalAnchors.attr("size") || 2;
@@ -274,7 +273,7 @@
         if (cells.state[e] && e === states[cells.state[e]].center) return; // do not overwrite capital cells
 
         const cultureCost = states[s].culture === cells.culture[e] ? -9 : 700;
-        const biomeCost = getBiomeCost(cells.road[e], b, cells.biome[e], type);
+        const biomeCost = getBiomeCost(b, cells.biome[e], type);
         const heightCost = getHeightCost(pack.features[cells.f[e]], cells.h[e], type);
         const riverCost = getRiverCost(cells.r[e], e, type);
         const typeCost = getTypeCost(cells.t[e], type);
@@ -286,18 +285,13 @@
           if (cells.h[e] >= 20) cells.state[e] = s; // assign state to cell
           cost[e] = totalCost;
           queue.queue({e, p:totalCost, s, b});
-          //const points = [cells.p[n][0], cells.p[n][1], (cells.p[n][0]+cells.p[e][0])/2, (cells.p[n][1]+cells.p[e][1])/2, cells.p[e][0], cells.p[e][1]];
-          //debug.append("text").attr("x", (cells.p[n][0]+cells.p[e][0])/2 - 1).attr("y", (cells.p[n][1]+cells.p[e][1])/2 - 1).text(rn(totalCost-p)).attr("font-size", .8);
-          //debug.append("polyline").attr("points", points).attr("marker-mid", "url(#arrow)").attr("opacity", .6);
         }
       });
     }
 
-    //debug.selectAll(".text").data(cost).enter().append("text").attr("x", (d, e) => cells.p[e][0]-1).attr("y", (d, e) => cells.p[e][1]-1).text(d => d ? rn(d) : "").attr("font-size", 2);  
     burgs.filter(b => b.i && !b.removed).forEach(b => b.state = cells.state[b.cell]); // assign state to burgs
 
-    function getBiomeCost(r, b, biome, type) {
-      if (r > 5) return 0; // no penalty if there is a road;
+    function getBiomeCost(b, biome, type) {
       if (b === biome) return 10; // tiny penalty for native biome
       if (type === "Hunting") return biomesData.cost[biome] * 2; // non-native biome penalty for hunters
       if (type === "Nomadic" && biome > 4 && biome < 10) return biomesData.cost[biome] * 3; // forest biome penalty for nomads
@@ -322,10 +316,10 @@
       return Math.min(Math.max(cells.fl[i] / 10, 20), 100) // river penalty from 20 to 100 based on flux
     }
 
-    function getTypeCost(ctype, type) {
-      if (ctype === 1) return type === "Naval" || type === "Lake" ? 0 : type === "Nomadic" ? 60 : 20; // penalty for coastline
-      if (ctype === 2) return type === "Naval" || type === "Nomadic" ? 30 : 0; // low penalty for land level 2 for Navals and nomads
-      if (ctype !== -1) return type === "Naval" || type === "Lake" ? 100 : 0;  // penalty for mainland for navals
+    function getTypeCost(t, type) {
+      if (t === 1) return type === "Naval" || type === "Lake" ? 0 : type === "Nomadic" ? 60 : 20; // penalty for coastline
+      if (t === 2) return type === "Naval" || type === "Nomadic" ? 30 : 0; // low penalty for land level 2 for Navals and nomads
+      if (t !== -1) return type === "Naval" || type === "Lake" ? 100 : 0;  // penalty for mainland for navals
       return 0;
     }
 
@@ -449,6 +443,7 @@
       if (!displayed) toggleLabels();
 
       if (!list) {
+        // remove all labels and textpaths
         g.selectAll("text").remove();
         t.selectAll("path[id*='stateLabel']").remove();
       }
@@ -740,8 +735,8 @@
     const states = pack.states.filter(s => s.i && !s.removed);
     if (states.length < 1) return;
 
-    const generic = {Monarchy:25, Republic:2, Union:1, Theocracy:2};
-    const naval = {Monarchy:25, Republic:8, Union:3, Theocracy:1};
+    const generic = {Monarchy:25, Republic:2, Union:1};
+    const naval = {Monarchy:25, Republic:8, Union:3};
     const genericArray = [], navalArray = []; // turn weighted array into simple array
     for (const t in generic) {for (let j=0; j < generic[t]; j++) {genericArray.push(t);}}
     for (const t in naval) {for (let j=0; j < naval[t]; j++) {navalArray.push(t);}}
@@ -760,7 +755,9 @@
 
     for (const s of states) {
       if (list && !list.includes(s.i)) continue;
-      s.form = s.type === "Naval" ? ra(navalArray) : ra(genericArray);
+      const religion = pack.cells.religion[s.center];
+      const theocracy = religion && pack.religions[religion].expansion === "state" || (Math.random() < .1 && pack.religions[religion].type === "Organized");
+      s.form = theocracy ? "Theocracy" : s.type === "Naval" ? ra(navalArray) : ra(genericArray);
       s.formName = selectForm(s);
       s.fullName = getFullName(s);
     }
@@ -780,6 +777,7 @@
         if (base === 16 && (form === "Empire" || form === "Kingdom")) return "Sultanate"; // Turkic
         if (base === 5 && (form === "Empire" || form === "Kingdom")) return "Tsardom"; // Ruthenian
         if (base === 31 && (form === "Empire" || form === "Kingdom")) return "Khaganate"; // Mongolian
+        if (base === 12 && (form === "Kingdom" || form === "Grand Duchy")) return "Shogunate"; // Japanese
         if ([18, 17].includes(base) && form === "Empire") return "Caliphate"; // Arabic, Berber
         if (base === 18 && (form === "Grand Duchy" || form === "Duchy")) return "Emirate"; // Arabic
         if (base === 7 && (form === "Grand Duchy" || form === "Duchy")) return "Despotate"; // Greek
@@ -804,7 +802,7 @@
       if (s.form === "Union") return rw(union);
 
       if (s.form === "Theocracy") {
-        // Default name is "Theocracy", some culture bases have special names
+        // default name is "Theocracy", some culture bases have special names
         if ([0, 1, 2, 3, 4, 6, 8, 9, 13, 15, 20].includes(base)) return "Diocese"; // Euporean
         if ([7, 5].includes(base)) return "Eparchy"; // Greek, Ruthenian
         if ([21, 16].includes(base)) return "Imamah"; // Nigerian, Turkish
@@ -820,7 +818,7 @@
     if (!s.formName) return s.name;
     if (!s.name && s.formName) return "The " + s.formName;
     // state forms requiring Adjective + Name, all other forms use scheme Form + Of + Name
-    const adj = ["Empire", "Sultanate", "Khaganate", "Caliphate", "Despotate", "Theocracy", "Oligarchy", "Union", "Confederation", "Trade Company", "League", "Tetrarchy", "Triumvirate", "Diarchy", "Horde"];
+    const adj = ["Empire", "Sultanate", "Khaganate", "Shogunate", "Caliphate", "Despotate", "Theocracy", "Oligarchy", "Union", "Confederation", "Trade Company", "League", "Tetrarchy", "Triumvirate", "Diarchy", "Horde"];
     return adj.includes(s.formName) ? getAdjective(s.name) + " " + s.formName : s.formName + " of " + s.name;
   }
 
@@ -910,7 +908,6 @@
       const max = d3.max(competitors);
       if (buddies >= max) continue;
       cells.province[i] = adversaries[competitors.indexOf(max)];
-      //debug.append("circle").attr("cx", cells.p[i][0]).attr("cy", cells.p[i][1]).attr("r", .5);
     }
 
     // add "wild" provinces if some cells don't have a province assigned
@@ -925,16 +922,12 @@
         const center = burgCell ? burgCell : stateNoProvince[0];
         const burg = burgCell ? cells.burg[burgCell] : 0;
         cells.province[center] = province;
-        //debug.append("circle").attr("cx", cells.p[center][0]).attr("cy", cells.p[center][1]).attr("r", .3).attr("fill", "blue");
 
         // expand province
         const cost = []; cost[center] = 1;
         queue.queue({e:center, p:0});
         while (queue.length) {
           const next = queue.dequeue(), n = next.e, p = next.p;
-
-          // debug.append("circle").attr("cx", cells.p[n][0]).attr("cy", cells.p[n][1]).attr("r", .5);
-          // debug.append("text").attr("x", cells.p[n][0]).attr("y", cells.p[n][1]).text(p).attr("font-size", 2).attr("fill", "white");
 
           cells.c[n].forEach(function(e) {
             if (cells.province[e]) return;
@@ -991,7 +984,7 @@
   }
 
   return {generate, expandStates, normalizeStates, assignColors, 
-    drawBurgs, specifyBurgs, defineFeatures, drawStateLabels, collectStatistics, 
+    drawBurgs, specifyBurgs, defineBurgFeatures, drawStateLabels, collectStatistics, 
     generateDiplomacy, defineStateForms, getFullName, generateProvinces};
 
 })));

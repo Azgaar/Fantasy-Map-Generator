@@ -134,10 +134,10 @@ function drawHeightmap() {
   const paths = new Array(101).fill("");
 
   const scheme = getColorScheme();
-  const terracing = +styleHeightmapTerracingInput.value / 10; // add additional shifted darker layer for pseudo-3d effect
-  const skip = +styleHeightmapSkipOutput.value + 1;
-  const simplification = +styleHeightmapSimplificationInput.value;
-  switch (+styleHeightmapCurveInput.value) {
+  const terracing = terrs.attr("terracing") / 10; // add additional shifted darker layer for pseudo-3d effect
+  const skip = +terrs.attr("skip") + 1;
+  const simplification = +terrs.attr("relax");
+  switch (+terrs.attr("curve")) {
     case 0: lineGen.curve(d3.curveBasisClosed); break;
     case 1: lineGen.curve(d3.curveLinear); break;
     case 2: lineGen.curve(d3.curveStep); break;
@@ -199,11 +199,12 @@ function drawHeightmap() {
 }
 
 function getColorScheme() {
-  const scheme = styleHeightmapSchemeInput.value;
+  const scheme = terrs.attr("scheme");
   if (scheme === "bright") return d3.scaleSequential(d3.interpolateSpectral);
   if (scheme === "light") return d3.scaleSequential(d3.interpolateRdYlGn);
   if (scheme === "green") return d3.scaleSequential(d3.interpolateGreens);
   if (scheme === "monochrome") return d3.scaleSequential(d3.interpolateGreys);
+  return d3.scaleSequential(d3.interpolateSpectral);
 }
 
 function getColor(value, scheme = getColorScheme()) {
@@ -977,12 +978,11 @@ function toggleCompass(event) {
     turnButtonOn("toggleCompass");
     $('#compass').fadeIn();
     if (!compass.selectAll("*").size()) {
-      const tr = `translate(80 80) scale(.25)`;
-      d3.select("#rose").attr("transform", tr);
       compass.append("use").attr("xlink:href","#rose");
       // prolongate rose lines
       svg.select("g#rose > g#sL > line#sL1").attr("y1", -19000).attr("y2", 19000);
       svg.select("g#rose > g#sL > line#sL2").attr("x1", -19000).attr("x2", 19000);
+      shiftCompass();
     }
     if (event && event.ctrlKey) editStyle("compass");
   } else {
@@ -1010,8 +1010,11 @@ function toggleTexture(event) {
     turnButtonOn("toggleTexture");
     // append default texture image selected by default. Don't append on load to not harm performance
     if (!texture.selectAll("*").size()) {
-      texture.append("image").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight)
-        .attr('xlink:href', getDefaultTexture()).attr('preserveAspectRatio', "xMidYMid slice");
+      const x = +styleTextureShiftX.value, y = +styleTextureShiftY.value;
+      const href = styleTextureInput.value === "default" ? getDefaultTexture() : setBase64Texture(styleTextureInput.value);
+      texture.append("image").attr("id", "textureImage")
+        .attr("x", x).attr("y", y).attr("width", graphWidth - x).attr("height", graphHeight - y)
+        .attr("xlink:href", href).attr("preserveAspectRatio", "xMidYMid slice");
     }
     $('#texture').fadeIn();
     zoom.scaleBy(svg, 1.00001); // enforce browser re-draw
