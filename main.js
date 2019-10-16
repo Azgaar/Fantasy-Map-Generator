@@ -1383,7 +1383,7 @@ function addZones(number = 1) {
     }
 
     const invasion = rw({"Invasion":4, "Occupation":3, "Raid":2, "Conquest":2, 
-      "Subjugation":1, "Irruption":1, "Foray":1, "Incursion":2, "Pillage":1, "Intervention":1});
+      "Subjugation":1, "Foray":1, "Skirmishes":1, "Incursion":2, "Pillaging":1, "Intervention":1});
     const name = getAdjective(invader.name) + " " + invasion;
     data.push({name, type:"Invasion", cells:cellsArray, fill:"url(#hatch1)"});
   }
@@ -1410,9 +1410,8 @@ function addZones(number = 1) {
       });
     }
 
-    const rebels = rw({"Rebels":5, "Insurgents":2, "Recusants":1, 
-        "Mutineers":1, "Rioters":1, "Dissenters":1, "Secessionists":1, 
-        "Insurrection":2, "Rebellion":1, "Conspiracy":2});
+    const rebels = rw({"Rebels":5, "Insurgents":2, "Mutineers":1, "Rioters":1, "Separatists":1, 
+      "Secessionists":1, "Insurrection":2, "Rebellion":1, "Conspiracy":2});
     const name = getAdjective(states[neib].name) + " " + rebels;
     data.push({name, type:"Rebels", cells:cellsArray, fill:"url(#hatch3)"});
   }
@@ -1487,7 +1486,7 @@ function addZones(number = 1) {
     const animal = () => ra(["Ape", "Bear", "Boar", "Cat", "Cow", "Dog", "Pig", "Fox", "Bird", "Horse", "Rat", "Raven", "Sheep", "Spider", "Wolf"]);
     const color = () => ra(["Golden", "White", "Black", "Red", "Pink", "Purple", "Blue", "Green", "Yellow", "Amber", "Orange", "Brown", "Grey"]);
 
-    const type = rw({"Fever":5, "Pestilence":2, "Flu":2, "Pox":2, "Smallpox":2, "Plague":4, "Cholera":2, "Ague":1, "Dropsy":1, "Leprosy":2});
+    const type = rw({"Fever":5, "Pestilence":2, "Flu":2, "Pox":2, "Smallpox":2, "Plague":4, "Cholera":2, "Dropsy":1, "Leprosy":2});
     const name = rw({[color()]:4, [animal()]:2, [adjective()]:1}) + " " + type;
     data.push({name, type:"Disease", cells:cellsArray, fill:"url(#hatch12)"});
   }
