@@ -41,9 +41,8 @@ function render() {
   _3dpreviewRenderer.render(_3dpreviewScene, _3dpreviewCamera);
 }
 
-function start3dpreview(canvas) {
-  _3dpreviewScene = new THREE.Scene();
-
+function check3dCamera(canvas) {
+// workaround to fix camera problems
   var resetCamera = 0;
   if (!_3dpreviewCamera) {
     resetCamera = 1;
@@ -57,6 +56,22 @@ function start3dpreview(canvas) {
     _3dpreviewCamera.position.z = 800;
     _3dpreviewCamera.position.y = 1000;
   }
+}
+
+function removeMesh() {
+  _3dpreviewScene.remove(_3dmesh);
+  _3dmesh.geometry.dispose();
+  _3dmesh.material.dispose();
+  _3dmesh = undefined;
+  _3dgeometry = undefined;
+  _3dmaterial = undefined;
+  _3dtexture = undefined;
+}
+
+function start3dpreview(canvas) {
+  _3dpreviewScene = new THREE.Scene();
+
+  check3dCamera(canvas);
 
   _3dpreviewRenderer = new THREE.WebGLRenderer({ canvas: canvas });
   _3dpreviewControls = new THREE.OrbitControls( _3dpreviewCamera, _3dpreviewRenderer.domElement );
@@ -66,7 +81,6 @@ function start3dpreview(canvas) {
 
   document.body.appendChild(_3dpreviewRenderer.domElement);
 
-//  _3dpreviewControls.addEventListener( 'change', render );
   _3danimationFrame = requestAnimationFrame(render);
 }
 
@@ -75,13 +89,7 @@ function stop3dpreview() {
     cancelAnimationFrame(_3danimationFrame);
     _3danimationFrame = null;
   }
-  _3dpreviewScene.remove(_3dmesh);
-  _3dmesh.geometry.dispose();
-  _3dmesh.material.dispose();
-  _3dmesh = undefined;
-  _3dgeometry = undefined;
-  _3dmaterial = undefined;
-  _3dtexture = undefined;
+  removeMesh();
 
   _3dpreviewScene = null;
   _3dpreviewRenderer = null;
@@ -89,13 +97,8 @@ function stop3dpreview() {
 }
 
 function update3dpreview(canvas) {
-  _3dpreviewScene.remove(_3dmesh);
-  _3dmesh.geometry.dispose();
-  _3dmesh.material.dispose();
-  _3dmesh = undefined;
-  _3dgeometry = undefined;
-  _3dmaterial = undefined;
-  _3dtexture = undefined;
+  removeMesh();
+  check3dCamera(canvas);
 
   _3dpreviewRenderer.setSize(canvas.width, canvas.height);
   addMesh(graphWidth, graphHeight, grid.cellsX, grid.cellsY);

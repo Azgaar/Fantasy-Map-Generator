@@ -53,6 +53,12 @@ function getSVGImage(type, width, height) {
   if (!clone.select("#prec").selectAll("circle").size()) clone.select("#prec").remove();
   if (!clone.select("#scaleBar").selectAll("use").size()) clone.select("#scaleBar").remove();
 
+  // default to water - on Firefox, ocean pattern appears as alternating blocks of ocean and water pattern
+  const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+  if (isFirefox) {
+    if (!clone.select("#oceanPattern").selectAll("use").size()) clone.select("#oceanPattern").remove();
+  }
+
   const removeEmptyGroups = function() {
     let empty = 0;
     clone.selectAll("g").each(function() {
@@ -76,7 +82,7 @@ function getSVGImage(type, width, height) {
       if (key === "mask-image" && value !== defaultStyles.getPropertyValue(key)) {
         style += "mask-image: url('#land');";
         continue;
-      }
+      }    
       if (key === "cursor") continue; // cursor should be default
       if (this.hasAttribute(key)) continue; // don't add style if there is the same attribute
       if (value === defaultStyles.getPropertyValue(key)) continue;
@@ -140,6 +146,5 @@ function getHeightmap() {
 }
 
 function getPreviewTexture(width, height) {
-
   return getSVGImage("svg", width, height);
 }

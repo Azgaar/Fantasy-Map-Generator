@@ -1251,16 +1251,26 @@ function getHeight(h) {
     _3dpreview.height = 800 / (graphWidth / graphHeight);
  
     $("#_3dpreviewEditor").dialog({
-      title: "3D Preview", width: _3dpreview.width, height: _3dpreview.height+50, resizable: true, 
-      resizeStop: function(event, ui) { 
-                    var _3dpreview = document.getElementById("_3dpreview");
-                    _3dpreview.width = ui.size.width;
-                    _3dpreview.height = ui.size.height-50;
-                    update3dpreview(_3dpreview); 
-                  }
+      title: "3D Preview", width: _3dpreview.width, height: _3dpreview.height, resizable: true
     }).on('dialogclose', close3dPreview);
 
+    var titleBar = document.getElementById("_3dpreviewEditor").previousSibling;
+    $("#_3dpreviewEditor").dialog( "option", "height", _3dpreview.height + titleBar.clientHeight + 2 );
+
+    $("#_3dpreviewEditor").on("dialogresizestop", function(event, ui) { 
+      var titleBar = document.getElementById("_3dpreviewEditor").previousSibling;
+
+      var _3dpreview = document.getElementById("_3dpreview");
+      _3dpreview.width = ui.size.width;
+      _3dpreview.height = (ui.size.height - titleBar.clientHeight);
+      hideCircle();
+      update3dpreview(_3dpreview); 
+      showCircle();
+    });
+
+    hideCircle();
     start3dpreview(_3dpreview);
+    showCircle();
 
     var _3dpreviewContainer = document.getElementById("_3dpreviewContainer");
     _3dpreviewContainer.appendChild(_3dpreview);
