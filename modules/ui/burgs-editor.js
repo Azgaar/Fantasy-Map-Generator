@@ -397,12 +397,7 @@ function editBurgs() {
       data += b.walls ? "walls," : ",";
       data += b.plaza ? "plaza," : ",";
       data += b.temple ? "temple," : ",";
-<<<<<<< HEAD
       data += b.shanty ? "shanty town\n" : "\n";
-=======
-      data += b.shanty ? "shanty\n" : "\n";
-
->>>>>>> 40f4f308142aebc86427c252046d3d53df81b1cc
     });
 
     const name = getFileName("Burgs") + ".csv";
