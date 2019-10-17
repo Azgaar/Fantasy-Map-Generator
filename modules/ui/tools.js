@@ -96,7 +96,7 @@ function regenerateBurgs() {
   const score = new Int16Array(cells.s.map(s => s * Math.random())); // cell score for capitals placement
   const sorted = cells.i.filter(i => score[i] > 0 && cells.culture[i]).sort((a, b) => score[b] - score[a]); // filtered and sorted array of indexes
   const burgsCount = manorsInput.value == 1000 ? rn(sorted.length / 5 / (grid.points.length / 10000) ** .8) + states.length : +manorsInput.value + states.length;
-  const spacing = (graphWidth + graphHeight) / 150 / (burgsNumber ** .7 / 66); // base min distance between towns
+  const spacing = (graphWidth + graphHeight) / 150 / (burgsCount ** .7 / 66); // base min distance between towns
 
   for (let i=0; i < sorted.length && burgs.length < burgsCount; i++) {
     const id = burgs.length;
