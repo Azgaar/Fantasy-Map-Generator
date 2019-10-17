@@ -2011,6 +2011,15 @@ svg.button {
 	stroke-width: 1.4;
 }
 
+#_3dpreview {
+}
+
+#_3dpreviewEditor {
+	overflow-y: initial;
+	overflow-x: initial;
+	padding: 0px;
+}
+
 #legend {
 	cursor: move;
 	-moz-user-select: none;
