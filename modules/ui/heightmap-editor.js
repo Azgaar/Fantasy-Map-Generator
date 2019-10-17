@@ -40,6 +40,7 @@ function editHeightmap() {
   document.getElementById("applyTemplate").addEventListener("click", openTemplateEditor);
   document.getElementById("convertImage").addEventListener("click", openImageConverter);
   document.getElementById("heightmapPreview").addEventListener("click", toggleHeightmapPreview);
+  document.getElementById("heightmap3DView").addEventListener("click", toggleHeightmap3dView);
   document.getElementById("finalizeHeightmap").addEventListener("click", finalizeHeightmap);
   document.getElementById("renderOcean").addEventListener("click", mockHeightmap);
   document.getElementById("templateUndo").addEventListener("click", () => restoreHistory(edits.n-1));
@@ -126,6 +127,8 @@ function getHeight(h) {
 
     restartHistory();
     if (document.getElementById("preview")) document.getElementById("preview").remove();
+    if (document.getElementById("_3dpreview")) { toggleHeightmap3dView(); };
+
 
     const mode = heightmapEditMode.innerHTML;
     if (mode === "erase") regenerateErasedData();
@@ -372,6 +375,9 @@ function getHeight(h) {
 
     mockHeightmap();
     updateHistory();
+    hideCircle();
+    update3dpreview(_3dpreview);
+    showCircle();
   }
 
   // draw or update heightmap
@@ -412,6 +418,7 @@ function getHeight(h) {
     if (!noStat) updateStatistics();
 
     if (document.getElementById("preview")) drawHeightmapPreview(); // update heightmap preview if opened
+    if (document.getElementById("_3dpreview")) draw3dPreview();     // update 3d heightmap preview if opened
   }
 
   // restoreHistory
@@ -425,6 +432,7 @@ function getHeight(h) {
     updateStatistics();
     
     if (document.getElementById("preview")) drawHeightmapPreview(); // update heightmap preview if opened
+    if (document.getElementById("_3dpreview")) draw3dPreview();     // update 3d heightmap preview if opened
   }
 
   // restart edits from 1st step
@@ -864,6 +872,7 @@ function getHeight(h) {
 
       updateStatistics();
       mockHeightmap();
+      update3dpreview(document.getElementById("_3dpreview"));
     }
 
     function downloadTemplate() {
@@ -1207,4 +1216,60 @@ function getHeight(h) {
     }
   }
 
+
+  function draw3dPreview() {
+    var _3dpreview = document.getElementById("_3dpreview");
+    hideCircle();
+    update3dpreview(_3dpreview); 
+    showCircle();
+  }
+
+  function close3dPreview() {
+    if (document.getElementById("_3dpreview")) {
+      stop3dpreview();
+
+      document.getElementById("_3dpreview").remove();
+    }
+  }
+
+  function toggleHeightmap3dView() {
+    if (document.getElementById("_3dpreview")) {
+      close3dPreview();
+      $("#_3dpreviewEditor").dialog("close");
+
+      return;
+    }
+
+    var _3dpreview = document.createElement("canvas");
+    _3dpreview.id = "_3dpreview";
+    _3dpreview.top = 0;
+    _3dpreview.left = 0;
+    _3dpreview.width = 800;
+    _3dpreview.height = 800 / (graphWidth / graphHeight);
+ 
+    $("#_3dpreviewEditor").dialog({
+      title: "3D Preview", width: _3dpreview.width, height: _3dpreview.height, resizable: true
+    }).on('dialogclose', close3dPreview);
+
+    var titleBar = document.getElementById("_3dpreviewEditor").previousSibling;
+    $("#_3dpreviewEditor").dialog( "option", "height", _3dpreview.height + titleBar.clientHeight + 2 );
+
+    $("#_3dpreviewEditor").on("dialogresizestop", function(event, ui) { 
+      var titleBar = document.getElementById("_3dpreviewEditor").previousSibling;
+
+      var _3dpreview = document.getElementById("_3dpreview");
+      _3dpreview.width = ui.size.width;
+      _3dpreview.height = (ui.size.height - titleBar.clientHeight);
+      hideCircle();
+      update3dpreview(_3dpreview); 
+      showCircle();
+    });
+
+    hideCircle();
+    start3dpreview(_3dpreview);
+    showCircle();
+
+    var _3dpreviewContainer = document.getElementById("_3dpreviewContainer");
+    _3dpreviewContainer.appendChild(_3dpreview);
+  }
 }
