@@ -29,6 +29,7 @@ input {
 	background-color: #000000;
 	mask-mode: alpha;
 	mask-clip: no-clip;
+	fill-rule: evenodd;
 }
 
 #canvas {
@@ -47,7 +48,7 @@ input {
 	position: absolute;
 }
 
-input, button, select, a {
+input, button, select, a, textarea {
 	outline: none;
 }
 
@@ -72,30 +73,22 @@ button, select, a {
 
 #biomes {
 	stroke-width: .7;
-	fill-rule: evenodd;
 }
 
 #landmass {
 	mask: url(#land);
-	fill-rule: evenodd;
 }
 
-#lakes,
-#coastline {
+#lakes, #coastline {
 	cursor: pointer;
 }
 
 #temperature {
-	fill-rule: evenodd;
 	font-family: sans-serif;
 	font-weight: 700;
 	text-anchor: middle;
 	dominant-baseline: central;
 	text-shadow: 0px 0px 10px white;
-}
-
-#oceanLayers {
-	fill-rule: evenodd;
 }
 
 #coastline {
@@ -109,7 +102,7 @@ button, select, a {
 
 #statesBody, #provincesBody {
 	stroke-width: 2;
-	fill-rule: evenodd;
+
 	mask: url(#land);
 }
 
@@ -696,15 +689,8 @@ fieldset {
 	background-color: #ffffff !important;
 }
 
-.overflow-div {
-	height: 300px;
-	overflow-y: auto;
-	user-select: text;
-}
-
 .overflow-table {
 	width: 100%;
-	font-size: smaller;
 	text-align: center;
 }
 
@@ -997,7 +983,6 @@ i.resetButton:active {
 }
 
 .ui-dialog input[type="range"] {
-	outline: none;
 	height: 2px;
 	background: #d4d4d4;
 	top: -.35em;
@@ -1575,7 +1560,7 @@ div.states > div.biomeArea {
 
 #ruler .planimeter {
 	fill: lightblue;
-	fill-rule: evenodd;
+
 	fill-opacity: 0.5;
 	stroke: #737373;
 }
@@ -1761,12 +1746,10 @@ input[type="checkbox"] {
 div.textual select,
 div.textual textarea {
 	font-family: Copperplate, monospace;
-	outline: none;
 }
 
 div.textual input {
 	font-family: Copperplate, monospace;
-	outline: none;
 }
 
 div.textual fieldset {

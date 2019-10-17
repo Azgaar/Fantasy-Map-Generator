@@ -139,9 +139,10 @@ function addBurg(point) {
   const state = cells.state[cell];
   const feature = cells.f[cell];
 
+  const temple = pack.states[state].form === "Theocracy";
   const population = Math.max((cells.s[cell] + cells.road[cell]) / 3 + i / 1000 + cell % 100 / 1000, .1);
 
-  pack.burgs.push({name, cell, x, y, state, i, culture, feature, capital: 0, port: 0, population});
+  pack.burgs.push({name, cell, x, y, state, i, culture, feature, capital: 0, port: 0, temple, population});
   cells.burg[cell] = i;
 
   const townSize = burgIcons.select("#towns").attr("size") || 0.5;
@@ -150,7 +151,7 @@ function addBurg(point) {
   burgLabels.select("#towns").append("text").attr("id", "burgLabel"+i).attr("data-id", i)
     .attr("x", x).attr("y", y).attr("dy", `${townSize * -1.5}px`).text(name);
 
-  BurgsAndStates.defineFeatures(pack.burgs[i]);
+  BurgsAndStates.defineBurgFeatures(pack.burgs[i]);
   return i;
 }
 
@@ -268,7 +269,8 @@ function drawLegend(name, data) {
   const width = bbox.width + colOffset * 2;
   const height = bbox.height + colOffset / 2 + vOffset;
 
-  legend.insert("rect", ":first-child").attr("x", 0).attr("y", 0).attr("width", width).attr("height", height)
+  legend.insert("rect", ":first-child").attr("id", "legendBox")
+    .attr("x", 0).attr("y", 0).attr("width", width).attr("height", height)
     .attr("fill", backClr).attr("fill-opacity", opacity);
 
   fitLegendBox();
@@ -286,6 +288,7 @@ function fitLegendBox() {
 
 // draw legend with the same data, but using different settings
 function redrawLegend() {
+  if (!legend.select("rect").size()) return;
   const name = legend.select("#legendLabel").text();
   const data = legend.attr("data").split("|").map(l => l.split(","));
   drawLegend(name, data);
@@ -540,4 +543,32 @@ function unfog() {
   defs.select("#fog").selectAll("path").remove();
   fogging.selectAll("path").remove();
   fogging.attr("display", "none");
+}
+
+function getFileName(dataType) {
+  const name = mapName.value;
+  const type = dataType ? dataType + " " : "";
+  const date = new Date();
+  const datFormatter = new Intl.DateTimeFormat("en", {month: "short", day: "numeric"});
+  const timeFormatter = new Intl.DateTimeFormat("ru", {hour: "numeric", minute: "numeric"});
+  const day = datFormatter.format(date).replace(" ", "");
+  const time = timeFormatter.format(date).replace(":", "-");
+  return name + " " + type + day + " " + time;
+}
+
+function downloadFile(data, name, type = "text/plain") {
+  const dataBlob = new Blob([data], {type});
+  const url = window.URL.createObjectURL(dataBlob);
+  const link = document.createElement("a");
+  link.download = name;
+  link.href = url;
+  link.click();
+  window.setTimeout(() => window.URL.revokeObjectURL(url), 2000);
+}
+
+function uploadFile(el, callback) {
+  const fileReader = new FileReader();
+  fileReader.readAsText(el.files[0], "UTF-8");
+  el.value = "";
+  fileReader.onload = loaded => callback(loaded.target.result);
 }

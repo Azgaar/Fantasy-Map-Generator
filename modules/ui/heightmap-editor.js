@@ -2,6 +2,10 @@
 "use strict";
 
 function editHeightmap() {
+  const heights = viewbox.select("#heights").size()
+    ? viewbox.select("#heights")
+    : viewbox.insert("g", "#terrs").attr("id", "heights");
+
   void function selectEditMode() {
     alertMessage.innerHTML = `<p>Heightmap is a core element on which all other data (rivers, burgs, states etc) is based.
     So the best edit approach is to <i>erase</i> the secondary data and let the system automatically regenerate it on edit completion.</p> 
@@ -54,14 +58,12 @@ function editHeightmap() {
     heightmapEditMode.innerHTML = type;
 
     if (type === "erase") {
-      terrs.attr("mask", null);
       undraw();
       changeOnlyLand.checked = false;
     } else if (type === "keep") {
       viewbox.selectAll("#landmass, #lakes").attr("display", "none");
       changeOnlyLand.checked = true;
     } else if (type === "risk") {
-      terrs.attr("mask", null);
       defs.selectAll("#land, #water").selectAll("path").remove();
       viewbox.selectAll("#coastline path, #lakes path, #oceanLayers path").remove();
       changeOnlyLand.checked = false;
@@ -109,7 +111,7 @@ function getHeight(h) {
 
   // Exit customization mode
   function finalizeHeightmap() {
-    if (terrs.selectAll("*").size() < 200) {
+    if (heights.selectAll("*").size() < 200) {
       tip("Insufficient land area! There should be at least 200 land cells to finalize the heightmap", null, "error");
       return;
     }
@@ -134,7 +136,7 @@ function getHeight(h) {
     else if (mode === "risk") restoreRiskedData();
 
     // restore initial layers
-    terrs.selectAll("*").remove();
+    heights.selectAll("*").remove();
     turnButtonOff("toggleHeight");
     document.getElementById("mapLayers").querySelectorAll("li").forEach(function(e) {
       if (editHeightmap.layers.includes(e.id) && !layerIsOn(e.id)) e.click(); // turn on
@@ -146,7 +148,6 @@ function getHeight(h) {
   function regenerateErasedData() {
     console.group("Edit Heightmap");
     console.time("regenerateErasedData");
-    terrs.attr("mask", "url(#land)");
 
     const change = changeHeights.checked;
     markFeatures();
@@ -174,6 +175,10 @@ function getHeight(h) {
     Cultures.expand();
     BurgsAndStates.generate();
     Religions.generate();
+    BurgsAndStates.defineStateForms();
+    BurgsAndStates.generateProvinces();
+    BurgsAndStates.defineBurgFeatures();
+
     drawStates();
     drawBorders();
     BurgsAndStates.drawStateLabels();
@@ -193,7 +198,6 @@ function getHeight(h) {
   function restoreRiskedData() {
     console.group("Edit Heightmap");
     console.time("restoreRiskedData");
-    terrs.attr("mask", "url(#land)");
 
     // assign pack data to grid cells
     const l = grid.cells.i.length;
@@ -380,7 +384,7 @@ function getHeight(h) {
   function mockHeightmap() {
     const data = renderOcean.checked ? grid.cells.i : grid.cells.i.filter(i => grid.cells.h[i] >= 20);
     const scheme = getColorScheme();
-    terrs.selectAll("polygon").data(data).join("polygon").attr("points", d => getGridPolygon(d))
+    heights.selectAll("polygon").data(data).join("polygon").attr("points", d => getGridPolygon(d))
       .attr("id", d => "cell"+d).attr("fill", d => getColor(grid.cells.h[d], scheme));
   }
 
@@ -390,9 +394,9 @@ function getHeight(h) {
     const scheme = getColorScheme();
 
     selection.forEach(function(i) {
-      let cell = terrs.select("#cell"+i);
+      let cell = heights.select("#cell"+i);
       if (!ocean && grid.cells.h[i] < 20) {cell.remove(); return;}
-      if (!cell.size()) cell = terrs.append("polygon").attr("points", getGridPolygon(i)).attr("id", "cell"+i);
+      if (!cell.size()) cell = heights.append("polygon").attr("points", getGridPolygon(i)).attr("id", "cell"+i);
       cell.attr("fill", getColor(grid.cells.h[i], scheme));
     });
   }
@@ -577,10 +581,10 @@ function getHeight(h) {
       const someHeights = grid.cells.h.some(h => h);
       if (!someHeights) {tip("Heightmap is already cleared, please do not click twice if not required", false, "error"); return;}
       grid.cells.h = new Uint8Array(grid.cells.i.length);
-      terrs.selectAll("*").remove();
+      heights.selectAll("*").remove();
       updateHistory();
     }
-    
+
   }
 
   function openTemplateEditor() {
@@ -622,8 +626,8 @@ function getHeight(h) {
     document.getElementById("templateSelect").addEventListener("change", e => selectTemplate(e));
     document.getElementById("templateRun").addEventListener("click", executeTemplate);
     document.getElementById("templateSave").addEventListener("click", downloadTemplate);
-    document.getElementById("templateLoad").addEventListener("click", e => templateToLoad.click());
-    document.getElementById("templateToLoad").addEventListener("change", uploadTemplate);
+    document.getElementById("templateLoad").addEventListener("click", () => templateToLoad.click());
+    document.getElementById("templateToLoad").addEventListener("change", function() {uploadFile(this, uploadTemplate)});
 
     function addStepOnClick(e) {
       if (e.target.tagName !== "BUTTON") return;
@@ -877,7 +881,7 @@ function getHeight(h) {
       const steps = body.querySelectorAll("#templateBody > div");
       if (!steps.length) return;
 
-      let stepsData = "";
+      let data = "";
       for (const s of steps) {
         if (s.style.opacity == .5) continue;
         const type = s.getAttribute("data-type");
@@ -890,37 +894,23 @@ function getHeight(h) {
         const x = templateX ? templateX.value : "0";
         const templateY = s.querySelector(".templateY");
         const y = templateY ? templateY.value : "0";
-        stepsData += `${type} ${count} ${arg3} ${x} ${y}\r\n`;
+        data += `${type} ${count} ${arg3} ${x} ${y}\r\n`;
       }
 
-      const dataBlob = new Blob([stepsData], {type: "text/plain"});
-      const url = window.URL.createObjectURL(dataBlob);
-      const link = document.createElement("a");
-      link.download = "template_" + Date.now() + ".txt";
-      link.href = url;
-      link.click();
+      const name = "template_" + Date.now() + ".txt";
+      downloadFile(data, name);
     }
 
-    function uploadTemplate(c) {
-      const body = document.getElementById("templateBody");
-      const el = document.getElementById("templateToLoad");
-      const fileToLoad = el.files[0];
-      el.value = "";
-      const fileReader = new FileReader();
-
-      fileReader.onload = function(e) {
-        const dataLoaded = e.target.result;
-        const steps = dataLoaded.split("\r\n");
-        if (!steps.length) {tip("Cannot parse the template, please check the file", false, "error"); return;}
-        body.innerHTML = "";
-        for (const s of steps) {
-          const step = s.split(" ");
-          if (step.length !== 5) {console.error("Cannot parse step, wrong arguments count", s); continue;}
-          addStep(step[0], step[1], step[2], step[3], step[4]);
-        }
+    function uploadTemplate(dataLoaded) {
+      const steps = dataLoaded.split("\r\n");
+      if (!steps.length) {tip("Cannot parse the template, please check the file", false, "error"); return;}
+      templateBody.innerHTML = "";
+      for (const s of steps) {
+        const step = s.split(" ");
+        if (step.length !== 5) {console.error("Cannot parse step, wrong arguments count", s); continue;}
+        addStep(step[0], step[1], step[2], step[3], step[4]);
       }
-      
-      fileReader.readAsText(fileToLoad, "UTF-8");
+
     }
   }
 
@@ -939,14 +929,20 @@ function getHeight(h) {
     canvas.width = graphWidth;
     canvas.height = graphHeight;
     document.body.insertBefore(canvas, optionsContainer);
+
+    const img = new Image;
+    img.id = "image";
+    img.style.display = "none";
+    document.body.appendChild(img);
+
     setOverlayOpacity(0);
-    
+
     document.getElementById("convertImageLoad").classList.add("glow"); // add glow effect
     tip('Image Converter is opened. Upload the image and assign the colors to desired heights', true, "warn"); // main tip
 
     // remove all heights
     grid.cells.h = new Uint8Array(grid.cells.i.length);
-    terrs.selectAll("*").remove();
+    heights.selectAll("*").remove();
     updateHistory();
 
     if (modules.openImageConverter) return;
@@ -982,7 +978,6 @@ function getHeight(h) {
       const file = this.files[0];
       this.value = ""; // reset input value to get triggered if the file is re-uploaded
       const reader = new FileReader();
-      const img = new Image;
 
       img.onload = function() {
         const ctx = document.getElementById("canvas").getContext("2d");
@@ -1001,7 +996,7 @@ function getHeight(h) {
       const imageData = ctx.getImageData(0, 0, graphWidth, graphHeight);
       const data = imageData.data;
 
-      terrs.selectAll("*").remove();
+      heights.selectAll("*").remove();
       d3.select("#imageConverter").selectAll("div.color-div").remove();
       colorsSelect.style.display = "block";
       colorsUnassigned.style.display = "block";
@@ -1017,7 +1012,8 @@ function getHeight(h) {
       const cmap = MMCQ.quantize(gridColors, count);
       const usedColors = new Set();
 
-      terrs.selectAll("polygon").data(grid.cells.i).join("polygon").attr("points", d => getGridPolygon(d))
+      heights.selectAll("polygon").data(grid.cells.i).join("polygon")
+        .attr("points", d => getGridPolygon(d))
         .attr("id", d => "cell"+d).attr("fill", d => {
           const clr = `rgb(${cmap.nearest(gridColors[d])})`;
           usedColors.add(clr);
@@ -1040,7 +1036,7 @@ function getHeight(h) {
     }
 
     function colorClicked() {
-      terrs.selectAll(".selectedCell").attr("class", null);
+      heights.selectAll(".selectedCell").attr("class", null);
       const unselect = this.classList.contains("selectedColor");
 
       const selectedColor = imageConverter.querySelector("div.selectedColor");
@@ -1059,8 +1055,8 @@ function getHeight(h) {
       }
 
       const color = this.getAttribute("data-color");
-      terrs.selectAll("polygon.selectedCell").classed("selectedCell", 0);
-      terrs.selectAll("polygon[fill='" + color + "']").classed("selectedCell", 1);
+      heights.selectAll("polygon.selectedCell").classed("selectedCell", 0);
+      heights.selectAll("polygon[fill='" + color + "']").classed("selectedCell", 1);
     }
 
     function assignHeight() {
@@ -1071,7 +1067,7 @@ function getHeight(h) {
       selectedColor.setAttribute("data-color", rgb);
       selectedColor.setAttribute("data-height", height);
 
-      terrs.selectAll(".selectedCell").each(function() {
+      heights.selectAll(".selectedCell").each(function() {
         this.setAttribute("fill", rgb); 
         this.setAttribute("data-height", height);
       });
@@ -1095,7 +1091,7 @@ function getHeight(h) {
         const colorTo = color(1 - (normalized < .2 ? normalized-.05 : normalized));
         const heightTo = normalized * 100;
 
-        terrs.selectAll("polygon[fill='" + colorFrom + "']").attr("fill", colorTo).attr("data-height", heightTo);
+        heights.selectAll("polygon[fill='" + colorFrom + "']").attr("fill", colorTo).attr("data-height", heightTo);
         el.style.backgroundColor = colorTo;
         el.setAttribute("data-color", colorTo);
         el.setAttribute("data-height", heightTo);
@@ -1107,9 +1103,9 @@ function getHeight(h) {
     }
 
     function setConvertColorsNumber() {
-      const number = +prompt(`Please provide a desired number of colors. Min value is 3, max is 255. An actual number depends on color scheme and may vary from desired number`, 
-        convertColors.value);
-      if (Number.isNaN(number) || number < 3 || number > 255) {tip("The number should be an integer in 3-255 range", false, "error"); return;}
+      const text = "Please provide a desired number of colors. Min value is 3, max is 255. An actual number depends on color scheme and may vary from desired number";
+      const number = Math.max(Math.min(+prompt(text, convertColors.value), 255), 3);
+      if (Number.isNaN(number)) {tip("The number should be an integer", false, "error"); return;}
       convertColors.value = number;
       heightsFromImage(number);
     }
@@ -1122,6 +1118,8 @@ function getHeight(h) {
     function closeImageConverter() {
       const canvas = document.getElementById("canvas");
       if (canvas) canvas.remove(); else return;
+      const img = document.getElementById("image");
+      if (img) img.remove(); else return;
 
       d3.select("#imageConverter").selectAll("div.color-div").remove();
       colorsAssigned.style.display = "none";
@@ -1130,13 +1128,13 @@ function getHeight(h) {
       viewbox.style("cursor", "default").on(".drag", null);
       tip('Heightmap edit mode is active. Click on "Exit Customization" to finalize the heightmap', true);
 
-      terrs.selectAll("polygon").each(function() {
+      heights.selectAll("polygon").each(function() {
         const height = +this.getAttribute("data-height") || 0;
         const i = +this.id.slice(4);
         grid.cells.h[i] = height;
       });
 
-      terrs.selectAll("polygon").remove();
+      heights.selectAll("polygon").remove();
       updateHeightmap();
     }
     
@@ -1210,7 +1208,6 @@ function getHeight(h) {
 
       const imgBig = canvas.toDataURL("image/png");
       const link = document.createElement("a");
-      link.target = "_blank";
       link.download = getFileName("Heightmap") + ".png";
       link.href = imgBig;
       document.body.appendChild(link);

@@ -66,9 +66,9 @@ function processFeatureRegeneration(button) {
 }
 
 function regenerateRivers() {
-  const heights = new Uint8Array(pack.cells.h);
+  const heights = new Float32Array(pack.cells.h);
   Rivers.generate();
-  pack.cells.h = new Uint8Array(heights);
+  pack.cells.h = new Float32Array(heights);
   if (!layerIsOn("toggleRivers")) toggleRivers();
 }
 
@@ -95,8 +95,8 @@ function regenerateBurgs() {
 
   const score = new Int16Array(cells.s.map(s => s * Math.random())); // cell score for capitals placement
   const sorted = cells.i.filter(i => score[i] > 0 && cells.culture[i]).sort((a, b) => score[b] - score[a]); // filtered and sorted array of indexes
-  const burgsCount = manorsInput.value == 1000 ? rn(sorted.length / 10 / (grid.points.length / 10000) ** .8) + states.length : +manorsInput.value + states.length;
-  const spacing = (graphWidth + graphHeight) / 200 / (burgsCount / 500); // base min distance between towns
+  const burgsCount = manorsInput.value == 1000 ? rn(sorted.length / 5 / (grid.points.length / 10000) ** .8) + states.length : +manorsInput.value + states.length;
+  const spacing = (graphWidth + graphHeight) / 150 / (burgsNumber ** .7 / 66); // base min distance between towns
 
   for (let i=0; i < sorted.length && burgs.length < burgsCount; i++) {
     const id = burgs.length;
@@ -128,6 +128,7 @@ function regenerateBurgs() {
   });
 
   BurgsAndStates.specifyBurgs();
+  BurgsAndStates.defineBurgFeatures();
   BurgsAndStates.drawBurgs();
   Routes.regenerate();
 
@@ -156,6 +157,25 @@ function regenerateStates() {
     b.capital = 0;
   });
 
+  unfog();
+
+  // if desired states number is 0
+  if (regionsInput.value == 0) {
+    tip(`Cannot generate zero states. Please check the <i>States Number</i> option`, false, "warn");
+    pack.states = pack.states.slice(0,1); // remove all except of neutrals
+    pack.states[0].diplomacy = []; // clear diplomacy
+    pack.provinces = [0]; // remove all provinces
+    pack.cells.state = new Uint16Array(pack.cells.i.length); // reset cells data
+    borders.selectAll("path").remove(); // remove borders
+    regions.selectAll("path").remove(); // remove states fill
+    labels.select("#states").selectAll("text"); // remove state labels
+    defs.select("#textPaths").selectAll("path[id*='stateLabel']").remove(); // remove state labels paths
+
+    if (document.getElementById("burgsEditorRefresh").offsetParent) burgsEditorRefresh.click();
+    if (document.getElementById("statesEditorRefresh").offsetParent) statesEditorRefresh.click();
+    return;
+  }
+
   const neutral = pack.states[0].name;
   const count = Math.min(+regionsInput.value, burgs.length);
   let spacing = (graphWidth + graphHeight) / 2 / count; // min distance between capitals
@@ -183,7 +203,6 @@ function regenerateStates() {
     return {i, name, type, capital:capital.i, center:capital.cell, culture, expansionism};
   });
 
-  unfog();
   BurgsAndStates.expandStates();
   BurgsAndStates.normalizeStates();
   BurgsAndStates.collectStatistics();
@@ -374,7 +393,7 @@ function addRiverOnClick() {
         Keep: function() {$(this).dialog("close");},
         Restore: function() {
           $(this).dialog("close");
-          pack.cells.h = new Uint8Array(heights);
+          pack.cells.h = new Float32Array(heights);
           if (layerIsOn("toggleHeight")) drawHeightmap();
         }
       }

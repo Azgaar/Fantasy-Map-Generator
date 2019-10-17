@@ -20,8 +20,8 @@ function editNamesbase() {
   document.getElementById("namesbaseAdd").addEventListener("click", namesbaseAdd);
   document.getElementById("namesbaseDefault").addEventListener("click", namesbaseRestoreDefault);
   document.getElementById("namesbaseDownload").addEventListener("click", namesbaseDownload);
-  document.getElementById("namesbaseUpload").addEventListener("click", e => namesbaseToLoad.click());
-  document.getElementById("namesbaseToLoad").addEventListener("change", namesbaseUpload);
+  document.getElementById("namesbaseUpload").addEventListener("click", () => namesbaseToLoad.click());
+  document.getElementById("namesbaseToLoad").addEventListener("change", function() {uploadFile(this, namesbaseUpload)});
 
   createBasesList();
   updateInputs();
@@ -138,36 +138,23 @@ function editNamesbase() {
   }
 
   function namesbaseDownload() {
-    const data = nameBases.map((b,i) => `${b.name}|${b.min}|${b.max}|${b.d}|${b.m}|${b.b}`);
-    const dataBlob = new Blob([data.join("\r\n")], {type:"text/plain"});
-    const url = window.URL.createObjectURL(dataBlob);
-    const link = document.createElement("a");
-    link.download = getFileName("Namesbase") + ".txt";
-    link.href = url;
-    link.click();
+    const data = nameBases.map((b,i) => `${b.name}|${b.min}|${b.max}|${b.d}|${b.m}|${b.b}`).join("\r\n");
+    const name = getFileName("Namesbase") + ".txt";
+    downloadFile(data, name);
   }
 
-  function namesbaseUpload() {
-    const fileToLoad = this.files[0];
-    this.value = "";
-    const fileReader = new FileReader();
+  function namesbaseUpload(dataLoaded) {
+    const data = dataLoaded.split("\r\n");
+    if (!data || !data[0]) {tip("Cannot load a namesbase. Please check the data format", false, "error"); return;}
 
-    fileReader.onload = function(fileLoadedEvent) {
-      const dataLoaded = fileLoadedEvent.target.result;
-      const data = dataLoaded.split("\r\n");
-      if (!data || !data[0]) {tip("Cannot load a namesbase. Please check the data format", false, "error"); return;}
+    Names.clearChains();
+    nameBases = [];
+    data.forEach(d => {
+      const e = d.split("|");
+      nameBases.push({name:e[0], min:e[1], max:e[2], d:e[3], m:e[4], b:e[5]});
+    });
 
-      Names.clearChains();
-      nameBases = [];
-      data.forEach(d => {
-        const e = d.split("|");
-        nameBases.push({name:e[0], min:e[1], max:e[2], d:e[3], m:e[4], b:e[5]});
-      });
-
-      createBasesList();
-      updateInputs();
-    };
-
-    fileReader.readAsText(fileToLoad, "UTF-8");
-  } 
+    createBasesList();
+    updateInputs();
+  }
 }

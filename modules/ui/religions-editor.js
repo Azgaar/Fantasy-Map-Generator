@@ -611,14 +611,8 @@ function editReligions() {
       data += el.dataset.population + "\n";
     });
 
-    const dataBlob = new Blob([data], {type: "text/plain"});
-    const url = window.URL.createObjectURL(dataBlob);
-    const link = document.createElement("a");
-    document.body.appendChild(link);
-    link.download = getFileName("Religions") + ".csv";
-    link.href = url;
-    link.click();
-    window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
+    const name = getFileName("Religions") + ".csv";
+    downloadFile(data, name);
   }
   
   function closeReligionsEditor() {
