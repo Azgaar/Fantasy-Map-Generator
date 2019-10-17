@@ -7,11 +7,11 @@
 // See also https://github.com/Azgaar/Fantasy-Map-Generator/issues/153
 
 "use strict";
-const version = "1.1"; // generator version
+const version = "1.11"; // generator version
 document.title += " v" + version;
 
 // if map version is not stored, clear localStorage and show a message
-if (localStorage.getItem("version") != version) {
+if (rn(localStorage.getItem("version"),1) !== rn(version,1)) {
   localStorage.clear();
   setTimeout(showWelcomeMessage, 8000);
 }

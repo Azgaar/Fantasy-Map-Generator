@@ -825,13 +825,14 @@ function parseLoadedData(data) {
         drawCoastline();
       }
 
-      if (version < 1.2) {
-        // v 1.1 added new attributes
+      if (version < 1.11) {
+        // v 1.11 added new attributes
         terrs.attr("scheme", "bright").attr("terracing", 0).attr("skip", 5).attr("relax", 0).attr("curve", 0);
         svg.select("#oceanic > rect").attr("id", "oceanicPattern");
         oceanLayers.attr("layers", "-6,-3,-1");
+        gridOverlay.attr("type", "pointyHex").attr("size", 10);
 
-        // v 1.1 added cultures heirarchy tree
+        // v 1.11 added cultures heirarchy tree
         if (pack.cultures[1] && !pack.cultures[1].code) {
           pack.cultures.filter(c => c.i).forEach(c => {
             c.origin = 0;
