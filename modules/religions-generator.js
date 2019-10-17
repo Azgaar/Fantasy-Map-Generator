@@ -74,7 +74,10 @@
       return;
     }
 
-    const sorted = cells.i.filter(i => cells.s[i] > 2).sort((a, b) => cells.s[b] - cells.s[a]); // filtered and sorted array of indexes
+    const burgs = pack.burgs.filter(b => b.i && !b.removed);
+    const sorted = burgs.length > +religionsInput.value
+      ? burgs.sort((a, b) => b.population - a.population).map(b => b.cell)
+      : cells.i.filter(i => cells.s[i] > 2).sort((a, b) => cells.s[b] - cells.s[a]);
     const religionsTree = d3.quadtree();
     const spacing = (graphWidth + graphHeight) / 6 / religionsInput.value; // base min distance between towns
     const cultsCount = Math.floor(rand(10, 40) / 100 * religionsInput.value);
@@ -264,6 +267,7 @@
     const cells = pack.cells, religions = pack.religions;
 
     religions.filter(r => r.i).forEach(r => {
+      // generate religion code (abbreviation)
       r.code = getCode(r.name);
 
       // move religion center if it's not within religion area after expansion

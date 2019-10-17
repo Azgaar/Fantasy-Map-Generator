@@ -51,7 +51,7 @@ function saveAsImage(type) {
 
   // load fonts as dataURI so they will be available in downloaded svg/png
   GFontToDataURI(getFontsToLoad()).then(cssRules => {
-    clone.select("defs").append("style").text(cssRules.join('\n'));
+    if (cssRules) clone.select("defs").append("style").text(cssRules.join('\n'));
     clone.append("metadata").text("<dc:format>image/svg+xml</dc:format>");
     const serialized = (new XMLSerializer()).serializeToString(clone.node());
     const svg_xml = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>` + serialized;
@@ -59,7 +59,6 @@ function saveAsImage(type) {
     const blob = new Blob([svg_xml], {type: 'image/svg+xml;charset=utf-8'});
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.target = "_blank";
 
     if (type === "png") {
       const canvas = document.createElement("canvas");
@@ -111,11 +110,13 @@ function getFontsToLoad() {
   });
   const legendFont = legend.attr("data-font");
   if (!webSafe.includes(legendFont)) fontsInUse.add();
-  return "https://fonts.googleapis.com/css?family=" + [...fontsInUse].join("|");
+  const fonts = [...fontsInUse];
+  return fonts.length ? "https://fonts.googleapis.com/css?family=" + fonts.join("|") : null;
 }
 
 // code from Kaiido's answer https://stackoverflow.com/questions/42402584/how-to-use-google-fonts-in-canvas-when-drawing-dom-objects-in-svg
 function GFontToDataURI(url) {
+  if (!url) return Promise.resolve();
   return fetch(url) // first fecth the embed stylesheet page
     .then(resp => resp.text()) // we only need the text of it
     .then(text => {
@@ -284,14 +285,8 @@ function saveGeoJSON_Cells() {
   data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
   data += "]}";
 
-  const dataBlob = new Blob([data], {type: "application/json"});
-  const url = window.URL.createObjectURL(dataBlob);
-  const link = document.createElement("a");
-  document.body.appendChild(link);
-  link.download = getFileName("Cells") + ".geojson";
-  link.href = url;
-  link.click();
-  window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
+  const name = getFileName("Cells") + ".geojson";
+  downloadFile(data, name, "application/json");
 }
 
 function saveGeoJSON_Roads() {
@@ -310,14 +305,8 @@ function saveGeoJSON_Roads() {
   data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
   data += "]}";
 
-  const dataBlob = new Blob([data], {type: "application/json"});
-  const url = window.URL.createObjectURL(dataBlob);
-  const link = document.createElement("a");
-  document.body.appendChild(link);
-  link.download = getFileName("Routes") + ".geojson";
-  link.href = url;
-  link.click();
-  window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
+  const name = getFileName("Routes") + ".geojson";
+  downloadFile(data, name, "application/json");
 }
 
 function saveGeoJSON_Rivers() {
@@ -335,18 +324,11 @@ function saveGeoJSON_Rivers() {
   data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
   data += "]}";
 
-  const dataBlob = new Blob([data], {type: "application/json"});
-  const url = window.URL.createObjectURL(dataBlob);
-  const link = document.createElement("a");
-  document.body.appendChild(link);
-  link.download = getFileName("Rivers") + ".geojson";
-  link.href = url;
-  link.click();
-  window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
+  const name = getFileName("Rivers") + ".geojson";
+  downloadFile(data, name, "application/json");
 }
 
 function saveGeoJSON_Markers() {
-
   let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
 
   markers._groups[0][0].childNodes.forEach(n => {
@@ -363,14 +345,8 @@ function saveGeoJSON_Markers() {
   data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
   data += "]}";
 
-  const dataBlob = new Blob([data], {type: "application/json"});
-  const url = window.URL.createObjectURL(dataBlob);
-  const link = document.createElement("a");
-  document.body.appendChild(link);
-  link.download = getFileName("Markers") + ".geojson";
-  link.href = url;
-  link.click();
-  window.setTimeout(function() {window.URL.revokeObjectURL(url);}, 2000);
+  const name = getFileName("Markers") + ".geojson";
+  downloadFile(data, name, "application/json");
 }
 
 function getRoadPoints(node) {
@@ -437,7 +413,7 @@ function loadMapPrompt(blob) {
   function loadLastSavedMap() {
     console.warn("Load last saved map");
     try {
-      uploadFile(blob);
+      uploadMap(blob);
     }
     catch(error) {
       console.error(error);
@@ -479,19 +455,8 @@ function toggleSaveReminder() {
   }
 }
 
-function getFileName(dataType) {
-  const name = mapName.value;
-  const type = dataType ? dataType + " " : "";
-  const date = new Date();
-  const datFormatter = new Intl.DateTimeFormat("en", {month: "short", day: "numeric"});
-  const timeFormatter = new Intl.DateTimeFormat("ru", {hour: "numeric", minute: "numeric"});
-  const day = datFormatter.format(date).replace(" ", "");
-  const time = timeFormatter.format(date).replace(":", "-");
-  return name + " " + type + day + " " + time;
-}
-
-function uploadFile(file, callback) {
-  uploadFile.timeStart = performance.now();
+function uploadMap(file, callback) {
+  uploadMap.timeStart = performance.now();
 
   const fileReader = new FileReader();
   fileReader.onload = function(fileLoadedEvent) {
@@ -859,13 +824,21 @@ function parseLoadedData(data) {
         lakes.selectAll("path").remove();
         drawCoastline();
       }
+
+      if (version < 1.2) {
+        // v 1.1 added new attributes
+        terrs.attr("scheme", "bright").attr("terracing", 0).attr("skip", 5).attr("relax", 0).attr("curve", 0);
+        svg.select("#oceanic > rect").attr("id", "oceanicPattern");
+        oceanLayers.attr("layers", "-6,-3,-1");
+      }
+
     }()
 
     changeMapSize();
     if (window.restoreDefaultEvents) restoreDefaultEvents();
     invokeActiveZooming();
 
-    console.warn(`TOTAL: ${rn((performance.now()-uploadFile.timeStart)/1000,2)}s`);
+    console.warn(`TOTAL: ${rn((performance.now()-uploadMap.timeStart)/1000,2)}s`);
     showStatistics();
     console.groupEnd("Loaded Map " + seed);
     tip("Map is successfully loaded", true, "success", 7000);

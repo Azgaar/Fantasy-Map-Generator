@@ -8,7 +8,23 @@
     console.time('generateRivers');
     Math.seedrandom(seed);
     const cells = pack.cells, p = cells.p, features = pack.features;
-    resolveDepressions();
+
+    // build distance field in cells from water (cells.t)
+    void function markupLand() {
+      const q = t => cells.i.filter(i => cells.t[i] === t);
+      for (let t = 2, queue = q(t); queue.length; t++, queue = q(t)) {
+        queue.forEach(i => cells.c[i].forEach(c => {
+          if (!cells.t[c]) cells.t[c] = t+1;
+        }));
+      }
+    }()
+
+    // height with added t value to make map less depressed
+    const h = Array.from(cells.h)
+      .map((h, i) => h < 20 || cells.t[i] < 1 ? h : h + cells.t[i] / 100)
+      .map((h, i) => h < 20 || cells.t[i] < 1 ? h : h + d3.mean(cells.c[i].map(c => cells.t[c])) / 10000);
+
+    resolveDepressions(h);
     features.forEach(f => {delete f.river; delete f.flux;});
 
     const riversData = []; // rivers data
@@ -18,8 +34,7 @@
     let riverNext = 1; // first river id is 1, not 0
 
     void function drainWater() {
-      const land = cells.i.filter(isLand).sort(highest);
-
+      const land = cells.i.filter(i => h[i] >= 20).sort((a,b) => h[b] - h[a]);
       land.forEach(function(i) {
         cells.fl[i] += grid.cells.prec[cells.g[i]]; // flux from precipitation
         const x = p[i][0], y = p[i][1];
@@ -38,8 +53,9 @@
           return;
         }
 
-        const min = cells.c[i][d3.scan(cells.c[i], (a, b) => cells.h[a] - cells.h[b])]; // downhill cell
-    
+        //const min = cells.c[i][d3.scan(cells.c[i], (a, b) => h[a] - h[b])]; // downhill cell
+        let min = cells.c[i][d3.scan(cells.c[i], (a, b) => h[a] - h[b])]; // downhill cell
+
         // allow only one river can flow thought a lake
         const cf = features[cells.f[i]]; // current cell feature
         if (cf.river && cf.river !== cells.r[i]) {
@@ -47,7 +63,7 @@
         }
     
         if (cells.fl[i] < 30) {
-          if (cells.h[min] >= 20) cells.fl[min] += cells.fl[i];
+          if (h[min] >= 20) cells.fl[min] += cells.fl[i];
           return; // flux is too small to operate as river
         }
     
@@ -66,7 +82,7 @@
         } else cells.r[min] = cells.r[i]; // assign the river to the downhill cell
 
         const nx = p[min][0], ny = p[min][1];
-        if (cells.h[min] < 20) {
+        if (h[min] < 20) {
           // pour water to the sea haven
           riversData.push({river: cells.r[i], cell: cells.haven[i], x: nx, y: ny});
         } else {
@@ -107,34 +123,36 @@
         .append("path").attr("d", d => d[1]).attr("id", d => "river"+d[0])
         .attr("data-width", d => d[2]).attr("data-increment", d => d[3]);
     }()
-  
+
     console.timeEnd('generateRivers');
   }
 
   // depression filling algorithm (for a correct water flux modeling)
-  const resolveDepressions = function() {
+  const resolveDepressions = function(h) {
     console.time('resolveDepressions');
     const cells = pack.cells;
-    const land = cells.i.filter(i => cells.h[i] >= 20 && cells.h[i] < 95 && !cells.b[i]); // exclude near-border cells
-    land.sort(highest); // highest cells go first
+    const land = cells.i.filter(i => h[i] >= 20 && h[i] < 100 && !cells.b[i]); // exclude near-border cells
+    land.sort((a,b) => h[b] - h[a]); // highest cells go first
     let depressed = false;
+    const depressions = [];
 
-    for (let l = 0, depression = Infinity; depression > 1 && l < 100; l++) {
+    for (let l = 0, depression = Infinity; depression && l < 100; l++) {
       depression = 0;
       for (const i of land) {
-        const minHeight = d3.min(cells.c[i].map(c => cells.h[c]));
+        const minHeight = d3.min(cells.c[i].map(c => h[c]));
         if (minHeight === 100) continue; // already max height
-        if (cells.h[i] <= minHeight) {
-          cells.h[i] = minHeight + 1; 
+        if (h[i] <= minHeight) {
+          h[i] = minHeight + 1;
           depression++;
           depressed = true;
         }
       }
+      depressions.push(depression);
     }
 
+    console.log(depressions);
+
     console.timeEnd('resolveDepressions');
-    //const depressed = cells.i.filter(i => cells.h[i] >= 20  && cells.h[i] < 95 && !cells.b[i] && cells.h[i] <= d3.min(cells.c[i].map(c => cells.h[c])));
-    //debug.selectAll(".deps").data(depressed).enter().append("circle").attr("r", 0.8).attr("cx", d => cells.p[d][0]).attr("cy", d => cells.p[d][1]);
     return depressed;
   }
 
