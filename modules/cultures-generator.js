@@ -38,25 +38,28 @@
       }
     }
 
-    pack.cultures = getRandomCultures(count);
+    const cultures = pack.cultures = getRandomCultures(count);
     const centers = d3.quadtree();
     const colors = getColors(count);
 
-    pack.cultures.forEach(function(culture, i) {
+    cultures.forEach(function(culture, i) {
       const c = culture.center = placeCultureCenter();
       centers.add(cells.p[c]);
       culture.i = i+1;
+      delete culture.odd;
       culture.color = colors[i];
       culture.type = defineCultureType(c);
       culture.expansionism = defineCultureExpansionism(culture.type);
+      culture.origin = 0;
+      culture.code = getCode(culture.name);
       cells.culture[c] = i+1;
     });
 
     // the first culture with id 0 is for wildlands
-    pack.cultures.unshift({name:"Wildlands", i:0, base:1});
+    cultures.unshift({name:"Wildlands", i:0, base:1, origin:null});
 
     // check whether all bases are valid. If not, load default namesbase
-    const invalidBase = pack.cultures.some(c => !nameBases[c.base]);
+    const invalidBase = cultures.some(c => !nameBases[c.base]);
     if (invalidBase) nameBases = Names.getNameBases();
 
     function getRandomCultures(c) {
@@ -109,6 +112,36 @@
     }
 
     console.timeEnd('generateCultures');
+  }
+
+  // assign a unique two-letters code (abbreviation)
+  function getCode(name) {
+    const words = name.split(" "), letters = words.join("");
+    let code = words.length === 2 ? words[0][0]+words[1][0] : letters.slice(0,2);
+    for (let i=1; i < letters.length-1 && pack.cultures.some(c => c.code === code); i++) {
+      code = letters[0] + letters[i].toUpperCase();
+    }
+    return code;
+  }
+
+  const add = function(center) {
+    const defaultCultures = getDefault();
+    let culture, base, name;
+    if (pack.cultures.length < defaultCultures.length) {
+      // add one of the default cultures
+      culture = pack.cultures.length;
+      base = defaultCultures[culture].base;
+      name = defaultCultures[culture].name;
+    } else {
+      // add random culture besed on one of the current ones
+      culture = rand(pack.cultures.length - 1);
+      name = Names.getCulture(culture, 5, 8, "");
+      base = pack.cultures[culture].base;
+    }
+    const code = getCode(name);
+    const i = pack.cultures.length;
+    const color = d3.color(d3.scaleSequential(d3.interpolateRainbow)(Math.random())).hex();
+    pack.cultures.push({name, color, base, center, i, expansionism:1, type:"Generic", cells:0, area:0, rural:0, urban:0, origin:0, code});
   }
 
   const getDefault = function(count) {
@@ -391,6 +424,6 @@
     return 0;
   }
 
-  return {generate, expand, getDefault};
+  return {generate, add, expand, getDefault};
 
 })));

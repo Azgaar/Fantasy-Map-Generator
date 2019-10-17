@@ -1136,6 +1136,7 @@ function rankCells() {
 
 // generate some markers
 function addMarkers(number = 1) {
+  if (!number) return;
   console.time("addMarkers");
   const cells = pack.cells;
 

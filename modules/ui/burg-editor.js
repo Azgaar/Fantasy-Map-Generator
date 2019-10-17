@@ -287,7 +287,7 @@ function editBurg(id) {
       const newSeed = prompt(`Please provide a Medieval Fantasy City Generator seed. `+ 
         `Seed should be a number. Default seed is FMG map seed + burg id padded to 4 chars with zeros (${defSeed}). `+
         `Please note that if seed is custom, "Overworld" button from MFCG will open a different map`, burg.MFCG || defSeed);
-      if (newSeed && newSeed != defSeed) burg.MFCG = newSeed; else return;
+      if (newSeed) burg.MFCG = newSeed; else return;
     }
 
     const name = elSelected.text();
@@ -309,7 +309,7 @@ function editBurg(id) {
     openURL(url);
   }
 
-  function openInIAHG() {
+  function openInIAHG(event) {
     const id = elSelected.attr("data-id");
     const burg = pack.burgs[id];
     const defSeed = `${seed}-b${id}`;
@@ -317,7 +317,7 @@ function editBurg(id) {
     if (event.ctrlKey) {
       const newSeed = prompt(`Please provide an Iron Arachne Heraldry Generator seed. `+ 
         `Default seed is a combination of FMG map seed and burg id (${defSeed})`, burg.IAHG || defSeed);
-      if (newSeed && newSeed != defSeed) burg.IAHG = newSeed; else return;
+      if (newSeed) burg.IAHG = newSeed; else return;
     }
 
     const s = burg.IAHG || defSeed;

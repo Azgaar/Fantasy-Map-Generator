@@ -830,6 +830,14 @@ function parseLoadedData(data) {
         terrs.attr("scheme", "bright").attr("terracing", 0).attr("skip", 5).attr("relax", 0).attr("curve", 0);
         svg.select("#oceanic > rect").attr("id", "oceanicPattern");
         oceanLayers.attr("layers", "-6,-3,-1");
+
+        // v 1.1 added cultures heirarchy tree
+        if (pack.cultures[1] && !pack.cultures[1].code) {
+          pack.cultures.filter(c => c.i).forEach(c => {
+            c.origin = 0;
+            c.code = c.name.slice(0, 2);
+          });
+        }
       }
 
     }()

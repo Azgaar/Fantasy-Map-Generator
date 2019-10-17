@@ -195,13 +195,13 @@ i.icon-lock {
 	font-size: 12px;
 }
 
-#religionHierarchy .selected {
+#hierarchy .selected {
 	stroke: #c13119;
 	stroke-width: 1;
 	cursor: move;
 }
 
-#religionHierarchy text,
+#hierarchy text,
 #statesTree text,
 #provincesTree text {
 	pointer-events: none;

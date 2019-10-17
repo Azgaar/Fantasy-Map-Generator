@@ -143,7 +143,7 @@ function editReligions() {
     const religion = +event.target.dataset.id;
     const info = document.getElementById("religionInfo");
     if (info) {
-      d3.select("#religionHierarchy").select("g[data-id='"+religion+"'] > path").classed("selected", 1);
+      d3.select("#hierarchy").select("g[data-id='"+religion+"'] > path").classed("selected", 1);
       const r = pack.religions[religion];
       const type = r.name.includes(r.type) ? "" 
         : r.type === "Folk" || r.type === "Organized" 
@@ -153,7 +153,7 @@ function editReligions() {
       const urban = r.urban * populationRate.value * urbanization.value;
       const population = rural + urban > 0 ? ". " + si(rn(rural + urban)) + " believers" : ". Extinct";
       info.innerHTML = `${r.name}${type}${form}${population}`;
-      tip("Drag to change parent. Hold CTRL and click to change abbreviation");
+      tip("Drag to change parent, drag to itself to move to the top level. Hold CTRL and click to change abbreviation");
     }
 
     const el = body.querySelector(`div[data-id='${religion}']`);
@@ -169,7 +169,7 @@ function editReligions() {
     const religion = +event.target.dataset.id;
     const info = document.getElementById("religionInfo");
     if (info) {
-      d3.select("#religionHierarchy").select("g[data-id='"+religion+"'] > path").classed("selected", 0);
+      d3.select("#hierarchy").select("g[data-id='"+religion+"'] > path").classed("selected", 0);
       info.innerHTML = "&#8205;";
       tip("");
     }
@@ -372,7 +372,7 @@ function editReligions() {
 
     // prepare svg
     alertMessage.innerHTML = "<div id='religionInfo' class='chartInfo'>&#8205;</div>";
-    const svg = d3.select("#alertMessage").insert("svg", "#religionInfo").attr("id", "religionHierarchy")
+    const svg = d3.select("#alertMessage").insert("svg", "#religionInfo").attr("id", "hierarchy")
       .attr("width", width).attr("height", height).style("text-anchor", "middle");
     const graph = svg.append("g").attr("transform", `translate(10, -45)`);
     const links = graph.append("g").attr("fill", "none").attr("stroke", "#aaaaaa");
@@ -413,7 +413,7 @@ function editReligions() {
     });
 
     function dragToReorigin(d) {
-      if (d3.event.sourceEvent.ctrlKey) {changeReligionCode(d); return;}
+      if (d3.event.sourceEvent.ctrlKey) {changeCode(d); return;}
 
       const originLine = graph.append("path")
         .attr("class", "dragLine").attr("d", `M${d.x},${d.y}L${d.x},${d.y}`);
@@ -437,7 +437,7 @@ function editReligions() {
       });
     }
 
-    function changeReligionCode(d) {
+    function changeCode(d) {
       const code = prompt(`Please provide an abbreviation for ${d.data.name}`, d.data.code);
       if (!code) return;
       pack.religions[d.data.i].code = code;

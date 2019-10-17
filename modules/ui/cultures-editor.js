@@ -25,6 +25,7 @@ function editCultures() {
   document.getElementById("culturesEditStyle").addEventListener("click", () => editStyle("cults"));
   document.getElementById("culturesLegend").addEventListener("click", toggleLegend);
   document.getElementById("culturesPercentage").addEventListener("click", togglePercentageMode);
+  document.getElementById("culturesHeirarchy").addEventListener("click", showHierarchy);
   document.getElementById("culturesRecalculate").addEventListener("click", () => recalculateCultures(true));
   document.getElementById("culturesManually").addEventListener("click", enterCultureManualAssignent);
   document.getElementById("culturesManuallyApply").addEventListener("click", applyCultureManualAssignent);
@@ -148,17 +149,35 @@ function editCultures() {
   }
  
   function cultureHighlightOn(event) {
+    const culture = +event.target.dataset.id;
+    const info = document.getElementById("cultureInfo");
+    if (info) {
+      d3.select("#hierarchy").select("g[data-id='"+culture+"'] > path").classed("selected", 1);
+      const c = pack.cultures[culture];
+      const rural = c.rural * populationRate.value;
+      const urban = c.urban * populationRate.value * urbanization.value;
+      const population = rural + urban > 0 ? si(rn(rural + urban)) + " people" : "Extinct";
+      info.innerHTML = `${c.name} culture. ${c.type}. ${population}`;
+      tip("Drag to change parent, drag to itself to move to the top level. Hold CTRL and click to change abbreviation");
+    }
+
     if (!layerIsOn("toggleCultures")) return;
     if (customization) return;
-    const culture = +event.target.dataset.id;
     const animate = d3.transition().duration(2000).ease(d3.easeSinIn);
     cults.select("#culture"+culture).raise().transition(animate).attr("stroke-width", 2.5).attr("stroke", "#d0240f");
     debug.select("#cultureCenter"+culture).raise().transition(animate).attr("r", 8).attr("stroke", "#d0240f");
   }
 
   function cultureHighlightOff(event) {
-    if (!layerIsOn("toggleCultures")) return;
     const culture = +event.target.dataset.id;
+    const info = document.getElementById("cultureInfo");
+    if (info) {
+      d3.select("#hierarchy").select("g[data-id='"+culture+"'] > path").classed("selected", 0);
+      info.innerHTML = "&#8205;";
+      tip("");
+    }
+
+    if (!layerIsOn("toggleCultures")) return;
     cults.select("#culture"+culture).transition().attr("stroke-width", null).attr("stroke", null);
     debug.select("#cultureCenter"+culture).transition().attr("r", 6).attr("stroke", null);
   }
@@ -340,6 +359,99 @@ function editCultures() {
     }
   }
 
+  function showHierarchy() {
+    // build hierarchy tree
+    pack.cultures[0].origin = null;
+    const cultures = pack.cultures.filter(c => !c.removed);
+    const root = d3.stratify().id(d => d.i).parentId(d => d.origin)(cultures);
+    const treeWidth = root.leaves().length;
+    const treeHeight = root.height;
+    const width = treeWidth * 40, height = treeHeight * 60;
+
+    const margin = {top: 10, right: 10, bottom: -5, left: 10};
+    const w = width - margin.left - margin.right;
+    const h = height + 30 - margin.top - margin.bottom;
+    const treeLayout = d3.tree().size([w, h]);
+
+    // prepare svg
+    alertMessage.innerHTML = "<div id='cultureInfo' class='chartInfo'>&#8205;</div>";
+    const svg = d3.select("#alertMessage").insert("svg", "#cultureInfo").attr("id", "hierarchy")
+      .attr("width", width).attr("height", height).style("text-anchor", "middle");
+    const graph = svg.append("g").attr("transform", `translate(10, -45)`);
+    const links = graph.append("g").attr("fill", "none").attr("stroke", "#aaaaaa");
+    const nodes = graph.append("g");
+
+    renderTree();
+    function renderTree() {
+      treeLayout(root);
+      links.selectAll('path').data(root.links()).enter()
+        .append('path').attr("d", d => {return "M" + d.source.x + "," + d.source.y
+          + "C" + d.source.x + "," + (d.source.y * 3 + d.target.y) / 4
+          + " " + d.target.x + "," + (d.source.y * 2 + d.target.y) / 3
+          + " " + d.target.x + "," + d.target.y;});
+
+      const node = nodes.selectAll('g').data(root.descendants()).enter()
+        .append('g').attr("data-id", d => d.data.i).attr("stroke", "#333333")
+        .attr("transform", d => `translate(${d.x}, ${d.y})`)
+        .on("mouseenter", () => cultureHighlightOn(event))
+        .on("mouseleave", () => cultureHighlightOff(event))
+        .call(d3.drag().on("start", d => dragToReorigin(d)));
+
+      node.append("path").attr("d", d => {
+        if (!d.data.i) return "M5,0A5,5,0,1,1,-5,0A5,5,0,1,1,5,0"; else // small circle
+        if (d.data.type === "Generic") return "M11.3,0A11.3,11.3,0,1,1,-11.3,0A11.3,11.3,0,1,1,11.3,0"; else // circle
+        if (d.data.type === "River") return "M0,-14L14,0L0,14L-14,0Z"; else // diamond
+        if (d.data.type === "Lake") return "M-6.5,-11.26l13,0l6.5,11.26l-6.5,11.26l-13,0l-6.5,-11.26Z"; else // hexagon
+        if (d.data.type === "Naval") return "M-11,-11h22v22h-22Z"; // square
+        if (d.data.type === "Highland") return "M-11,-11l11,2l11,-2l-2,11l2,11l-11,-2l-11,2l2,-11Z"; // concave square
+        if (d.data.type === "Nomadic") return "M-4.97,-12.01 l9.95,0 l7.04,7.04 l0,9.95 l-7.04,7.04 l-9.95,0 l-7.04,-7.04 l0,-9.95Z"; // octagon
+        if (d.data.type === "Hunting") return "M0,-14l14,11l-6,14h-16l-6,-14Z"; // pentagon
+        return "M-11,-11h22v22h-22Z"; // square
+      }).attr("fill", d => d.data.i ? d.data.color : "#ffffff")
+        .attr("stroke-dasharray", d => d.data.cells ? "null" : "1");
+
+      node.append("text").attr("dy", ".35em").text(d => d.data.i ? d.data.code : '');
+    }
+
+    $("#alert").dialog({
+      title: "Cultures tree", width: fitContent(), resizable: false, 
+      position: {my: "left center", at: "left+10 center", of: "svg"}, buttons: {},
+      close: () => {alertMessage.innerHTML = "";}
+    });
+
+    function dragToReorigin(d) {
+      if (d3.event.sourceEvent.ctrlKey) {changeCode(d); return;}
+
+      const originLine = graph.append("path")
+        .attr("class", "dragLine").attr("d", `M${d.x},${d.y}L${d.x},${d.y}`);
+
+      d3.event.on("drag", () => {
+        originLine.attr("d", `M${d.x},${d.y}L${d3.event.x},${d3.event.y}`)
+      });
+
+      d3.event.on("end", () => {
+        originLine.remove();
+        const selected = graph.select("path.selected");
+        if (!selected.size()) return;
+        const culture = d.data.i;
+        const oldOrigin = d.data.origin;
+        let newOrigin = selected.datum().data.i;
+        if (newOrigin == oldOrigin) return; // already a child of the selected node
+        if (newOrigin == culture) newOrigin = 0; // move to top
+        if (newOrigin && d.descendants().some(node => node.id == newOrigin)) return; // cannot be a child of its own child
+        pack.cultures[culture].origin = d.data.origin = newOrigin; // change data
+        showHierarchy() // update hierarchy
+      });
+    }
+
+    function changeCode(d) {
+      const code = prompt(`Please provide an abbreviation for culture: ${d.data.name}`, d.data.code);
+      if (!code) return;
+      pack.cultures[d.data.i].code = code;
+      nodes.select("g[data-id='"+d.data.i+"']").select("text").text(code);
+    }
+  }
+
   // re-calculate cultures
   function recalculateCultures(must) {
     if (!must && !culturesAutoChange.checked) return;
@@ -499,23 +611,8 @@ function editCultures() {
     if (occupied) {tip("This cell is already a culture center. Please select a different cell", false, "error"); return;}
 
     if (d3.event.shiftKey === false) exitAddCultureMode();
+    Cultures.add(center);
 
-    const defaultCultures = Cultures.getDefault();
-    let culture, base, name;
-    if (pack.cultures.length < defaultCultures.length) {
-      // add one of the default cultures
-      culture = pack.cultures.length;
-      base = defaultCultures[culture].base;
-      name = defaultCultures[culture].name;
-    } else {
-      // add random culture besed on one of the current ones
-      culture = rand(pack.cultures.length - 1);
-      name = Names.getCulture(culture, 5, 8, "");
-      base = pack.cultures[culture].base;
-    }
-    const i = pack.cultures.length;
-    const color = d3.color(d3.scaleSequential(d3.interpolateRainbow)(Math.random())).hex();
-    pack.cultures.push({name, color, base, center, i, expansionism:1, type:"Generic", cells:0, area:0, rural:0, urban:0});
     drawCultureCenters();
     culturesEditorAddLines();
   }

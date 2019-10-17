@@ -952,7 +952,7 @@
           <option value="styleDefault" data-system=1 selected>Default</option>
           <option value="styleGloom" data-system=1>Gloom</option>
           <option value="styleAncient" data-system=1>Ancient</option>
-          <option value="styleMonochrome" data-system=1>Monochrome</option>
+          <option value="styleMonochrome" data-system=1>Monochrome (for heightmap)</option>
           <option value="styleClean" data-system=1>Clean</option>
         </select>
         <button id="addStyleButton" data-tip="Click to save current style as a new preset" class="icon-plus styleButton" style="display: inline-block" onclick="addStylePreset()"></button>
@@ -1793,8 +1793,8 @@
           <button id="regenerateStates" data-tip="Click to select new capitals and regenerate states. Burgs will remain as they are">States</button>
           <button id="regenerateProvinces" data-tip="Click to regenerate provinces. States will remain as they are">Provinces</button>
           <button id="regenerateReligions" data-tip="Click to regenerate religions">Religions</button>
-          <button id="regenerateMarkers" data-tip="Click to regenerate markers">Markers</button>
-          <button id="regenerateZones" data-tip="Click to regenerate zones">Zones</button>
+          <button id="regenerateMarkers" data-tip="Click to regenerate markers. Hold Ctrl and click to set markers number multiplier">Markers</button>
+          <button id="regenerateZones" data-tip="Click to regenerate zones. Hold Ctrl and click to set zones number multiplier">Zones</button>
         </div>
 
         <div id="addFeature">
@@ -1880,7 +1880,8 @@
           Sasquatch, Shawn Spencer, Sizz_TV, Timothée CALLET, UTG community, Vlad Tomash, Wil Sisney, William Merriott, Xariun,
           Gun Metal Games, Scott Marner, Spencer Sherman, Valerii Matskevych, Alloyed Clavicle, Stewart Walsh, Ruthlyn Mollett (Javan),
           Benjamin Mair-Pratt, Diagonath, Alexander Thomas, Ashley Wilson-Savoury, William Henry, Preston Brooks, JOSHUA QUALTIERI,
-          Hilton Williams, Katharina Haase, Hisham Bedri, Ian arless, Karnat, Bird, Kevin and many others!</p>
+          Hilton Williams, Katharina Haase, Hisham Bedri, Ian arless, Karnat, Bird, Kevin, Jessica Thomas, Steve Hyatt, Logicspren, 
+          Alfred García, Jonathan Killstring, John Ackley, Invad3r233, Norbert Žigmund, Jennifer, PoliticsBuff and many others!</p>
 
         <ul class="share-buttons">
           <li><a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator%2F&quote=" data-tip="Share on Facebook" target="_blank"><img alt="Share on Facebook" src="images/Facebook.png" /></a></li>
@@ -2891,6 +2892,7 @@
         <button id="culturesEditStyle" data-tip="Edit cultures style in Style Editor" class="icon-adjust"></button>
         <button id="culturesLegend" data-tip="Toggle Legend box" class="icon-list-bullet"></button>
         <button id="culturesPercentage" data-tip="Toggle percentage / absolute values display mode" class="icon-percent"></button>
+        <button id="culturesHeirarchy" data-tip="Show cultures hierarchy tree" class="icon-sitemap"></button>
         <button id="culturesManually" data-tip="Manually re-assign cultures" class="icon-brush"></button>
         <div id="culturesManuallyButtons" style="display: none">
           <label data-tip="Change brush size. Shortcut: + (increase), – (decrease)" class="italic">Brush size:

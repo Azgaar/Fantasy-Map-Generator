@@ -22,12 +22,12 @@ toolsContent.addEventListener("click", function(event) {
 
   // Click to Regenerate buttons
   if (event.target.parentNode.id === "regenerateFeature") {
-    if (sessionStorage.getItem("regenerateFeatureDontAsk")) {processFeatureRegeneration(button); return;}
+    if (sessionStorage.getItem("regenerateFeatureDontAsk")) {processFeatureRegeneration(event, button); return;}
 
     alertMessage.innerHTML = `Regeneration will remove all the custom changes for the element.<br><br>Are you sure you want to proceed?`
     $("#alert").dialog({resizable: false, title: "Regenerate element",
       buttons: {
-        Proceed: function() {processFeatureRegeneration(button); $(this).dialog("close");},
+        Proceed: function() {processFeatureRegeneration(event, button); $(this).dialog("close");},
         Cancel: function() {$(this).dialog("close");}
       },
       open: function() {
@@ -51,7 +51,7 @@ toolsContent.addEventListener("click", function(event) {
   if (button === "addMarker") toggleAddMarker();
 });
 
-function processFeatureRegeneration(button) {
+function processFeatureRegeneration(event, button) {
   if (button === "regenerateStateLabels") {BurgsAndStates.drawStateLabels(); if (!layerIsOn("toggleLabels")) toggleLabels();} else 
   if (button === "regenerateReliefIcons") {ReliefIcons(); if (!layerIsOn("toggleRelief")) toggleRelief();} else 
   if (button === "regenerateRoutes") {Routes.regenerate(); if (!layerIsOn("toggleRoutes")) toggleRoutes();} else 
@@ -61,8 +61,8 @@ function processFeatureRegeneration(button) {
   if (button === "regenerateStates") regenerateStates(); else
   if (button === "regenerateProvinces") regenerateProvinces(); else
   if (button === "regenerateReligions") regenerateReligions(); else
-  if (button === "regenerateMarkers") regenerateMarkers(); else
-  if (button === "regenerateZones") regenerateZones();
+  if (button === "regenerateMarkers") regenerateMarkers(event); else
+  if (button === "regenerateZones") regenerateZones(event);
 }
 
 function regenerateRivers() {
@@ -230,19 +230,43 @@ function regenerateReligions() {
   if (!layerIsOn("toggleReligions")) toggleReligions(); else drawReligions();
 }
 
-function regenerateMarkers() {
-  // remove existing markers and assigned notes
+function regenerateMarkers(event) {
+  let number = gauss(1, .5, .3, 5, 2);
+
+  if (event.ctrlKey) {
+    const numberManual = prompt("Please provide markers number multiplier", 1);
+    if (numberManual === null || numberManual === "" || isNaN(+numberManual)) {
+      tip("The number provided is invalid, please try again and provide a valid number", false, "error", 4000);
+      return;
+    }
+
+    number = Math.min(+numberManual, 100);
+  }
+
+  // remove existing markers and assigned notes  
   markers.selectAll("use").each(function() {
     const index = notes.findIndex(n => n.id === this.id);
     if (index != -1) notes.splice(index, 1);
   }).remove();
 
-  addMarkers(gauss(1, .5, .3, 5, 2));
+  addMarkers(number);
 }
 
-function regenerateZones() {
+function regenerateZones(event) {
+  let number = gauss(1, .5, .6, 5, 2);
+
+  if (event.ctrlKey) {
+    const numberManual = prompt("Please provide zones number multiplier", 1);
+    if (numberManual === null || numberManual === "" || isNaN(+numberManual)) {
+      tip("The number provided is invalid, please try again and provide a valid number", false, "error", 4000);
+      return;
+    }
+
+    number = Math.min(+numberManual, 100);
+  }
+
   zones.selectAll("g").remove(); // remove existing zones
-  addZones(gauss(1, .5, .6, 5, 2));
+  addZones(number);
   if (document.getElementById("zonesEditorRefresh").offsetParent) zonesEditorRefresh.click();
 }
 
