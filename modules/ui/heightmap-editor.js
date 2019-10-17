@@ -375,9 +375,7 @@ function getHeight(h) {
 
     mockHeightmap();
     updateHistory();
-    hideCircle();
-    update3dpreview(_3dpreview);
-    showCircle();
+    draw3dPreview();
   }
 
   // draw or update heightmap
@@ -1252,14 +1250,14 @@ function getHeight(h) {
     }).on('dialogclose', close3dPreview);
 
     var titleBar = document.getElementById("_3dpreviewEditor").previousSibling;
-    $("#_3dpreviewEditor").dialog( "option", "height", _3dpreview.height + titleBar.clientHeight + 2 );
+    $("#_3dpreviewEditor").dialog( "option", "height", _3dpreview.height + titleBar.clientHeight + 3);
 
     $("#_3dpreviewEditor").on("dialogresizestop", function(event, ui) { 
       var titleBar = document.getElementById("_3dpreviewEditor").previousSibling;
 
       var _3dpreview = document.getElementById("_3dpreview");
       _3dpreview.width = ui.size.width;
-      _3dpreview.height = (ui.size.height - titleBar.clientHeight);
+      _3dpreview.height = (ui.size.height - (titleBar.clientHeight + 3));
       hideCircle();
       update3dpreview(_3dpreview); 
       showCircle();
