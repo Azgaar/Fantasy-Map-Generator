@@ -137,7 +137,7 @@ function addBurg(point) {
   burgLabels.select("#towns").append("text").attr("id", "burgLabel"+i).attr("data-id", i)
     .attr("x", x).attr("y", y).attr("dy", `${townSize * -1.5}px`).text(name);
 
-  BurgsAndStates.defineFeatures(pack.burgs[i]);
+  BurgsAndStates.defineBurgFeatures(pack.burgs[i]);
   return i;
 }
 
