@@ -873,6 +873,7 @@ function parseLoadedData(data) {
         // v 1.11 replaced "display" attribute by "display" style
         viewbox.selectAll("g").each(function() {
           if (this.hasAttribute("display")) this.removeAttribute("display");
+          fogging.style("display", "none");
         });
       }
 
