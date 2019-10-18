@@ -7,7 +7,7 @@ function restoreLayers() {
   if (layerIsOn("toggleCells")) drawCells();
   if (layerIsOn("toggleGrid")) drawGrid();
   if (layerIsOn("toggleCoordinates")) drawCoordinates();
-  if (layerIsOn("toggleCompass")) compass.attr("display", "block");
+  if (layerIsOn("toggleCompass")) compass.style("display", "block");
   if (layerIsOn("toggleTemp")) drawTemp();
   if (layerIsOn("togglePrec")) drawPrec();
   if (layerIsOn("togglePopulation")) drawPopulation();
@@ -19,7 +19,7 @@ function restoreLayers() {
 
   // states are getting rendered each time, if it's not required than layers should be hidden
   if (!layerIsOn("toggleBorders")) $('#borders').fadeOut();
-  if (!layerIsOn("toggleStates")) regions.attr("display", "none").selectAll("path").remove();
+  if (!layerIsOn("toggleStates")) regions.style("display", "none").selectAll("path").remove();
 }
 
 restoreLayers(); // run on-load
@@ -383,14 +383,14 @@ function togglePrec(event) {
     const hide = d3.transition().duration(1000).ease(d3.easeSinIn);
     prec.selectAll("text").attr("opacity", 1).transition(hide).attr("opacity", 0);
     prec.selectAll("circle").transition(hide).attr("r", 0).remove();
-    prec.transition().delay(1000).attr("display", "none");
+    prec.transition().delay(1000).style("display", "none");
   }
 }
 
 function drawPrec() {
   prec.selectAll("circle").remove();
   const cells = grid.cells, p = grid.points;
-  prec.attr("display", "block");
+  prec.style("display", "block");
   const show = d3.transition().duration(800).ease(d3.easeSinIn);
   prec.selectAll("text").attr("opacity", 0).transition(show).attr("opacity", 1);
 
@@ -583,12 +583,12 @@ function drawReligions() {
 function toggleStates(event) {
   if (!layerIsOn("toggleStates")) {
     turnButtonOn("toggleStates");
-    regions.attr("display", null);
+    regions.style("display", null);
     drawStates();
     if (event && event.ctrlKey) editStyle("regions");
   } else {
     if (event && event.ctrlKey) {editStyle("regions"); return;}
-    regions.attr("display", "none").selectAll("path").remove();
+    regions.style("display", "none").selectAll("path").remove();
     turnButtonOff("toggleStates");
   }
 }

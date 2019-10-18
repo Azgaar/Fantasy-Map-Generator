@@ -70,20 +70,6 @@ function removeCircle() {
   if (document.getElementById("brushCircle")) document.getElementById("brushCircle").remove();
 }
 
-function hideCircle() {
-  let circle = document.getElementById("brushCircle");
-  if (circle) {
-    circle.style.display = "none";
-  }
-}
-
-function showCircle() {
-  let circle = document.getElementById("brushCircle");
-  if (circle) {
-    circle.style.display = "";
-  }
-}
-
 // get browser-defined fit-content
 function fitContent() {
   return !window.chrome ? "-moz-max-content" : "fit-content";
@@ -542,7 +528,7 @@ function changePickerSpace() {
 function unfog() {
   defs.select("#fog").selectAll("path").remove();
   fogging.selectAll("path").remove();
-  fogging.attr("display", "none");
+  fogging.style("display", "none");
 }
 
 function getFileName(dataType) {

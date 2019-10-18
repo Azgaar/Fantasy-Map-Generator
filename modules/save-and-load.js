@@ -1,115 +1,145 @@
 // Functions to save and load the map
 "use strict";
 
-// download map as SVG or PNG file
-function saveAsImage(type) {
-  console.time("saveAsImage");
+// download map as SVG
+async function saveSVG() {
+  console.time("saveSVG");
+  const url = await getMapURL("svg");
+  const link = document.createElement("a");
+  link.download = getFileName() + ".svg";
+  link.href = url;
+  document.body.appendChild(link);
+  link.click();
 
-  // clone svg
-  const cloneEl = document.getElementById("map").cloneNode(true);
+  tip(`${link.download} is saved. Open "Downloads" screen (crtl + J) to check`, true, "warning", 5000);
+  console.timeEnd("saveSVG");
+}
+
+// download map as PNG
+async function savePNG() {
+  console.time("savePNG");
+  const url = await getMapURL("png");
+
+  const link = document.createElement("a");
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  canvas.width = svgWidth * pngResolutionInput.value;
+  canvas.height = svgHeight * pngResolutionInput.value;
+  const img = new Image();
+  img.src = url;
+
+  img.onload = function() {
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    link.download = getFileName() + ".png";
+    canvas.toBlob(function(blob) {
+        link.href = window.URL.createObjectURL(blob);
+        document.body.appendChild(link);
+        link.click();
+        window.setTimeout(function() {
+          canvas.remove();
+          window.URL.revokeObjectURL(link.href);
+          tip(`${link.download} is saved. Open "Downloads" screen (crtl + J) to check`, true, "warning", 5000);
+        }, 1000);
+    });
+  }
+
+  console.timeEnd("savePNG");
+}
+
+// parse map svg to object url
+async function getMapURL(type) {
+  const cloneEl = document.getElementById("map").cloneNode(true); // clone svg
   cloneEl.id = "fantasyMap";
-  document.getElementsByTagName("body")[0].appendChild(cloneEl);
-  const clone = d3.select("#fantasyMap");
+  document.body.appendChild(cloneEl);
+  const clone = d3.select(cloneEl);
+  clone.select("#debug").remove();
 
-  if (type === "svg") clone.select("#viewbox").attr("transform", null); // reset transform to show whole map
+  const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+  if (isFirefox && type === "mesh") clone.select("#oceanPattern").remove();
+  if (type !== "png") clone.select("#viewbox").attr("transform", null); // reset transform to show whole map
+  if (type === "svg") removeUnusedElements(clone);
+  if (type === "mesh") updateMeshCells(clone);
+  inlineStyle(clone);
 
-  // remove unused elements
-  if (!clone.select("#terrain").selectAll("use").size()) clone.select("#defs-relief").remove();
-  if (!clone.select("#prec").selectAll("circle").size()) clone.select("#prec").remove();
-  const removeEmptyGroups = function() {
-    let empty = 0;
+  const fontStyle = await GFontToDataURI(getFontsToLoad()); // load non-standard fonts
+  if (fontStyle) clone.select("defs").append("style").text(fontStyle.join('\n')); // add font to style
+
+  clone.append("metadata").text("<dc:format>image/svg+xml</dc:format>");
+  const serialized = (new XMLSerializer()).serializeToString(clone.node());
+  const svg_xml = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>` + serialized;
+  clone.remove();
+  const blob = new Blob([svg_xml], {type: 'image/svg+xml;charset=utf-8'});
+  const url = window.URL.createObjectURL(blob);
+  window.setTimeout(() => window.URL.revokeObjectURL(url), 5000);
+  return url;
+}
+
+// remove hidden g elements and g elements without children to make downloaded svg smaller in size
+function removeUnusedElements(clone) {
+  if (!terrain.selectAll("use").size()) clone.select("#defs-relief").remove();
+  if (markers.style("display") === "none") clone.select("#defs-markers").remove();
+
+  for (let empty = 1; empty;) {
+    empty = 0;
     clone.selectAll("g").each(function() {
       if (!this.hasChildNodes() || this.style.display === "none") {empty++; this.remove();}
       if (this.hasAttribute("display") && this.style.display === "inline") this.removeAttribute("display");
     });
-    return empty;
   }
-  while(removeEmptyGroups()) {removeEmptyGroups();}
+}
 
-  // for each g element get inline style
+function updateMeshCells(clone) {
+  const data = renderOcean.checked ? grid.cells.i : grid.cells.i.filter(i => grid.cells.h[i] >= 20);
+  const scheme = getColorScheme();
+  clone.select("#heights").attr("filter", "url(#blur1)");
+  clone.select("#heights").selectAll("polygon").data(data).join("polygon").attr("points", d => getGridPolygon(d))
+    .attr("id", d => "cell"+d).attr("stroke", d => getColor(grid.cells.h[d], scheme));
+}
+
+// for each g element get inline style
+function inlineStyle(clone) {
   const emptyG = clone.append("g").node();
   const defaultStyles = window.getComputedStyle(emptyG);
-  clone.selectAll("g, #ruler > g > *, #scaleBar > text").each(function(d) {
+
+  clone.selectAll("g, #ruler > g > *, #scaleBar > text").each(function() {
     const compStyle = window.getComputedStyle(this);
     let style = "";
+
     for (let i=0; i < compStyle.length; i++) {
       const key = compStyle[i];
       const value = compStyle.getPropertyValue(key);
+
       // Firefox mask hack
       if (key === "mask-image" && value !== defaultStyles.getPropertyValue(key)) {
         style += "mask-image: url('#land');";
         continue;
       }
+
       if (key === "cursor") continue; // cursor should be default
       if (this.hasAttribute(key)) continue; // don't add style if there is the same attribute
       if (value === defaultStyles.getPropertyValue(key)) continue;
       style += key + ':' + value + ';';
     }
+
     if (style != "") this.setAttribute('style', style);
   });
+
   emptyG.remove();
-
-  // load fonts as dataURI so they will be available in downloaded svg/png
-  GFontToDataURI(getFontsToLoad()).then(cssRules => {
-    if (cssRules) clone.select("defs").append("style").text(cssRules.join('\n'));
-    clone.append("metadata").text("<dc:format>image/svg+xml</dc:format>");
-    const serialized = (new XMLSerializer()).serializeToString(clone.node());
-    const svg_xml = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>` + serialized;
-    clone.remove();
-    const blob = new Blob([svg_xml], {type: 'image/svg+xml;charset=utf-8'});
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-
-    if (type === "png") {
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      canvas.width = svgWidth * pngResolutionInput.value;
-      canvas.height = svgHeight * pngResolutionInput.value;
-      const img = new Image();
-      img.src = url;
-      img.onload = function() {
-        window.URL.revokeObjectURL(url);
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        link.download = getFileName() + ".png";
-        canvas.toBlob(function(blob) {
-           link.href = window.URL.createObjectURL(blob);
-           document.body.appendChild(link);
-           link.click();
-           window.setTimeout(function() {
-             canvas.remove();
-             window.URL.revokeObjectURL(link.href);
-           }, 1000);
-        });
-      }
-    } else {
-      link.download = getFileName() + ".svg";
-      link.href = url;
-      document.body.appendChild(link);
-      link.click();
-      tip(`${link.download} is saved. Open "Downloads" screen (crtl + J) to check`, true, "warning");
-    }
-
-    window.setTimeout(function() {
-      window.URL.revokeObjectURL(url);
-      clearMainTip();
-    }, 3000);
-    console.timeEnd("saveAsImage");
-  });
 }
 
 // get non-standard fonts used for labels to fetch them from web
 function getFontsToLoad() {
-  const webSafe = ["Georgia", "Times+New+Roman", "Comic+Sans+MS", "Lucida+Sans+Unicode", "Courier+New", "Verdana", "Arial", "Impact"];
+  const webSafe = ["Georgia", "Times+New+Roman", "Comic+Sans+MS", "Lucida+Sans+Unicode", "Courier+New", "Verdana", "Arial", "Impact"]; // fonts to not fetch
 
   const fontsInUse = new Set(); // to store fonts currently in use
   labels.selectAll("g").each(function() {
+    if (!this.hasChildNodes()) return;
     const font = this.dataset.font;
-    if (!font) return;
-    if (webSafe.includes(font)) return; // do not fetch web-safe fonts
+    if (!font || webSafe.includes(font)) return;
     fontsInUse.add(font);
   });
   const legendFont = legend.attr("data-font");
-  if (!webSafe.includes(legendFont)) fontsInUse.add();
+  if (legend.node().hasChildNodes() && !webSafe.includes(legendFont)) fontsInUse.add(legendFont);
   const fonts = [...fontsInUse];
   return fonts.length ? "https://fonts.googleapis.com/css?family=" + fonts.join("|") : null;
 }
@@ -839,6 +869,11 @@ function parseLoadedData(data) {
             c.code = c.name.slice(0, 2);
           });
         }
+
+        // v 1.11 replaced "display" attribute by "display" style
+        viewbox.selectAll("g").each(function() {
+          if (this.hasAttribute("display")) this.removeAttribute("display");
+        });
       }
 
     }()

@@ -336,7 +336,7 @@ function editProvinces() {
 
     if (inactive) {
       if (defs.select("#fog #focusProvince"+p).size()) return;
-      fogging.attr("display", "block");
+      fogging.style("display", "block");
       const path = provs.select("#province"+p).attr("d");
       defs.select("#fog").append("path").attr("d", path).attr("fill", "black").attr("id", "focusProvince"+p);
       fogging.append("path").attr("d", path).attr("id", "focusProvinceHalo"+p)
@@ -347,7 +347,7 @@ function editProvinces() {
   function unfocus(p) {
     defs.select("#focusProvince"+p).remove();
     fogging.select("#focusProvinceHalo"+p).remove();
-    if (!defs.selectAll("#fog path").size()) fogging.attr("display", "none"); // all items are de-focused
+    if (!defs.selectAll("#fog path").size()) fogging.style("display", "none"); // all items are de-focused
   }
 
   function removeProvince(p) {

@@ -61,7 +61,7 @@ function editHeightmap() {
       undraw();
       changeOnlyLand.checked = false;
     } else if (type === "keep") {
-      viewbox.selectAll("#landmass, #lakes").attr("display", "none");
+      viewbox.selectAll("#landmass, #lakes").style("display", "none");
       changeOnlyLand.checked = true;
     } else if (type === "risk") {
       defs.selectAll("#land, #water").selectAll("path").remove();
@@ -95,19 +95,19 @@ function editHeightmap() {
     moveCircle(p[0], p[1], brushRadius.valueAsNumber, "#333");
   }
 
-// get user-friendly (real-world) height value from map data
-function getHeight(h) {
-  const unit = heightUnit.value;
-  let unitRatio = 3.281; // default calculations are in feet
-  if (unit === "m") unitRatio = 1; // if meter
-  else if (unit === "f") unitRatio = 0.5468; // if fathom
+  // get user-friendly (real-world) height value from map data
+  function getHeight(h) {
+    const unit = heightUnit.value;
+    let unitRatio = 3.281; // default calculations are in feet
+    if (unit === "m") unitRatio = 1; // if meter
+    else if (unit === "f") unitRatio = 0.5468; // if fathom
 
-  let height = -990;
-  if (h >= 20) height = Math.pow(h - 18, +heightExponentInput.value);
-  else if (h < 20 && h > 0) height = (h - 20) / h * 50;
+    let height = -990;
+    if (h >= 20) height = Math.pow(h - 18, +heightExponentInput.value);
+    else if (h < 20 && h > 0) height = (h - 20) / h * 50;
 
-  return rn(height * unitRatio) + " " + unit;
-}
+    return rn(height * unitRatio) + " " + unit;
+  }
 
   // Exit customization mode
   function finalizeHeightmap() {
@@ -127,7 +127,7 @@ function getHeight(h) {
 
     restartHistory();
     if (document.getElementById("preview")) document.getElementById("preview").remove();
-    if (document.getElementById("_3dpreview")) { toggleHeightmap3dView(); };
+    if (document.getElementById("_3dpreview")) toggleHeightmap3dView();
 
 
     const mode = heightmapEditMode.innerHTML;
@@ -189,7 +189,7 @@ function getHeight(h) {
   }
 
   function restoreKeptData() {
-    viewbox.selectAll("#landmass, #lakes").attr("display", null);
+    viewbox.selectAll("#landmass, #lakes").style("display", null);
     for (const i of pack.cells.i) {
       pack.cells.h[i] = grid.cells.h[pack.cells.g[i]];
     }
@@ -375,7 +375,6 @@ function getHeight(h) {
 
     mockHeightmap();
     updateHistory();
-    draw3dPreview();
   }
 
   // draw or update heightmap
@@ -413,10 +412,11 @@ function getHeight(h) {
 
     undo.disabled = templateUndo.disabled = edits.n <= 1;
     redo.disabled = templateRedo.disabled = true;
-    if (!noStat) updateStatistics();
-
-    if (document.getElementById("preview")) drawHeightmapPreview(); // update heightmap preview if opened
-    if (document.getElementById("_3dpreview")) draw3dPreview();     // update 3d heightmap preview if opened
+    if (!noStat) {
+      updateStatistics();
+      if (document.getElementById("preview")) drawHeightmapPreview(); // update heightmap preview if opened
+      if (document.getElementById("_3dpreview")) update3dpreview(_3dpreview); // update 3d heightmap preview if opened
+    }
   }
 
   // restoreHistory
@@ -430,7 +430,7 @@ function getHeight(h) {
     updateStatistics();
     
     if (document.getElementById("preview")) drawHeightmapPreview(); // update heightmap preview if opened
-    if (document.getElementById("_3dpreview")) draw3dPreview();     // update 3d heightmap preview if opened
+    if (document.getElementById("_3dpreview")) update3dpreview(_3dpreview); // update 3d heightmap preview if opened
   }
 
   // restart edits from 1st step
@@ -870,7 +870,8 @@ function getHeight(h) {
 
       updateStatistics();
       mockHeightmap();
-      update3dpreview(document.getElementById("_3dpreview"));
+      if (document.getElementById("preview")) drawHeightmapPreview(); // update heightmap preview if opened
+      if (document.getElementById("_3dpreview")) update3dpreview(_3dpreview); // update 3d heightmap preview if opened
     }
 
     function downloadTemplate() {
@@ -1135,7 +1136,6 @@ function getHeight(h) {
       heights.selectAll("polygon").remove();
       updateHeightmap();
     }
-    
   }
 
   function toggleHeightmapPreview() {
@@ -1183,27 +1183,6 @@ function getHeight(h) {
       canvas.height = svgHeight;
       document.body.insertBefore(canvas, optionsContainer);
       ctx.drawImage(img, 0, 0, svgWidth, svgHeight);
-
-      // const simplex = new SimplexNoise(); // SimplexNoise by Jonas Wagner
-      // const noise = (nx, ny) => simplex.noise2D(nx, ny) / 2 + .5;
-
-      // const imageData = ctx.getImageData(0, 0, svgWidth, svgHeight);
-      // for (let i=0; i < imageData.data.length; i+=4) {
-      //   const v = imageData.data[i];
-      //   if (v < 51) {
-      //     // water
-      //     // imageData.data[i] = imageData.data[i+1] = imageData.data[i+2] = 46;
-      //     continue;
-      //   }
-
-      //   const x = i / 4 % svgWidth, y = Math.floor(i / 4 / svgWidth);
-      //   const nx = x / svgWidth - .5, ny = y / svgHeight - .5;
-      //   const n = noise(4 * nx, 4 * ny) / 4 + noise(16 * nx, 16 * ny) / 16;
-      //   const nv = Math.max(Math.min((v + 255 * n) / 2, 255), 51);
-      //   imageData.data[i] = imageData.data[i+1] = imageData.data[i+2] = nv;
-      // }
-      // ctx.putImageData(imageData, 0, 0);
-
       const imgBig = canvas.toDataURL("image/png");
       const link = document.createElement("a");
       link.download = getFileName("Heightmap") + ".png";
@@ -1214,60 +1193,36 @@ function getHeight(h) {
     }
   }
 
-
-  function draw3dPreview() {
-    var _3dpreview = document.getElementById("_3dpreview");
-    hideCircle();
-    update3dpreview(_3dpreview); 
-    showCircle();
-  }
-
-  function close3dPreview() {
-    if (document.getElementById("_3dpreview")) {
-      stop3dpreview();
-
-      document.getElementById("_3dpreview").remove();
-    }
-  }
-
+  // 3D previewer
   function toggleHeightmap3dView() {
     if (document.getElementById("_3dpreview")) {
-      close3dPreview();
       $("#_3dpreviewEditor").dialog("close");
-
       return;
     }
 
-    var _3dpreview = document.createElement("canvas");
-    _3dpreview.id = "_3dpreview";
-    _3dpreview.top = 0;
-    _3dpreview.left = 0;
-    _3dpreview.width = 800;
-    _3dpreview.height = 800 / (graphWidth / graphHeight);
- 
+    const canvas = document.createElement("canvas");
+    canvas.id = "_3dpreview";
+    canvas.style.display = "block";
+    canvas.width = parseFloat(_3dpreviewEditor.style.width) || graphWidth / 3;
+    canvas.height = canvas.width / (graphWidth / graphHeight);
+    document.getElementById("_3dpreviewEditor").appendChild(canvas);
+    start3dpreview(canvas);
+
     $("#_3dpreviewEditor").dialog({
-      title: "3D Preview", width: _3dpreview.width, height: _3dpreview.height, resizable: true
-    }).on('dialogclose', close3dPreview);
-
-    var titleBar = document.getElementById("_3dpreviewEditor").previousSibling;
-    $("#_3dpreviewEditor").dialog( "option", "height", _3dpreview.height + titleBar.clientHeight + 3);
-
-    $("#_3dpreviewEditor").on("dialogresizestop", function(event, ui) { 
-      var titleBar = document.getElementById("_3dpreviewEditor").previousSibling;
-
-      var _3dpreview = document.getElementById("_3dpreview");
-      _3dpreview.width = ui.size.width;
-      _3dpreview.height = (ui.size.height - (titleBar.clientHeight + 3));
-      hideCircle();
-      update3dpreview(_3dpreview); 
-      showCircle();
+      title: "3D Preview", resizable: true,
+      position: {my: "left bottom", at: "left+10 bottom-10", of: "svg"},
+      resizeStop: resize3dpreview, close: close3dPreview
     });
 
-    hideCircle();
-    start3dpreview(_3dpreview);
-    showCircle();
+    function resize3dpreview() {
+      canvas.width = parseFloat(_3dpreviewEditor.style.width);
+      canvas.height = parseFloat(_3dpreviewEditor.style.height) - 2;
+      update3dpreview(canvas);
+    }
 
-    var _3dpreviewContainer = document.getElementById("_3dpreviewContainer");
-    _3dpreviewContainer.appendChild(_3dpreview);
+    function close3dPreview() {
+      stop3dpreview();
+      canvas.remove();
+    }
   }
 }

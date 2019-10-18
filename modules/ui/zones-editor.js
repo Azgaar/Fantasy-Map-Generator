@@ -264,13 +264,13 @@ function editZones() {
       const data = dataCells.split(",").map(c => +c);
       const g = defs.select("#fog").append("g").attr("fill", "black").attr("stroke", "black").attr("id", "focus"+zone);
       g.selectAll("path").data(data).enter().append("path").attr("d", d => "M" + getPackPolygon(d) + "Z");
-      fogging.attr("display", "block");
+      fogging.style("display", "block");
     } else unfocus(zone);
   }
 
   function unfocus(z) {
     defs.select("#focus"+z).remove();
-    if (!defs.selectAll("#fog path").size()) fogging.attr("display", "none"); // all states are de-focused
+    if (!defs.selectAll("#fog path").size()) fogging.style("display", "none"); // all states are de-focused
   }
 
   function toggleLegend() {

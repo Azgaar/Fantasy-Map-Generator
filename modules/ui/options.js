@@ -346,8 +346,8 @@ document.getElementById("sticked").addEventListener("click", function(event) {
   else if (id === "zoomReset") resetZoom(1000);
   else if (id === "quickSave") quickSave();
   else if (id === "saveMap") saveMap();
-  else if (id === "saveSVG") saveAsImage("svg");
-  else if (id === "savePNG") saveAsImage("png");
+  else if (id === "saveSVG") saveSVG();
+  else if (id === "savePNG") savePNG();
   else if (id === "saveGeo") saveGeoJSON();
   else if (id === "saveDropbox") saveDropbox();
   if (id === "quickSave" || id === "saveMap" || id === "saveSVG" || id === "savePNG" || id === "saveGeo" || id === "saveDropbox") toggleSavePane();

@@ -393,7 +393,7 @@ function editStates() {
 
     if (inactive) {
       if (defs.select("#fog #focusState"+state).size()) return;
-      fogging.attr("display", "block");
+      fogging.style("display", "block");
       const path = statesBody.select("#state"+state).attr("d");
       defs.select("#fog").append("path").attr("d", path).attr("fill", "black").attr("id", "focusState"+state);
       fogging.append("path").attr("d", path).attr("id", "focusStateHalo"+state)
@@ -404,7 +404,7 @@ function editStates() {
   function unfocus(s) {
     defs.select("#focusState"+s).remove();
     fogging.select("#focusStateHalo"+s).remove();
-    if (!defs.selectAll("#fog path").size()) fogging.attr("display", "none"); // all items are de-focused
+    if (!defs.selectAll("#fog path").size()) fogging.style("display", "none"); // all items are de-focused
   }
 
   function stateRemove(state) {
