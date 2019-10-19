@@ -16,7 +16,24 @@
   <link rel="icon" type="image/png" href="images/favicon-32x32.png" sizes="32x32"/>
   <link rel="icon" type="image/png" href="images/favicon-16x16.png" sizes="16x16"/>
   <link rel="canonical" href="https://azgaar.github.io/Fantasy-Map-Generator/">
-  <link rel="preload" href="index.css?version=1.1.09" as="style" onload="this.onload=null; this.rel='stylesheet'">
+
+  <style type="text/css">
+    body {margin: 0; font-size: 11px;}
+    #map {position: absolute;}
+    #initial {fill: none; stroke: black; pointer-events: none;}
+    #init-rose {animation: 20s infinite spin; opacity: .7; transform-origin: center;}
+    @keyframes spin {0% {transform: rotate(0deg);} 100% {transform: rotate(359deg);}}
+    #loading {opacity:1; color:#fff5da; text-align:center; text-shadow:0px 1px 4px #4c3a35; width:80%; max-width:600px; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); pointer-events:none;}
+    #loading-text {font-size: 1.8em; margin: 0.2em 0 0 1em;}
+    #title_name {text-align: left;font-size: 3em;margin-left: 5%;}
+    #title {font-size: 7em;margin: -12px 0 -6px 0;}
+    #version {text-align: right;font-size: 2em;margin-right: 3%;}
+    #loading-text > span {font-size: 1.3em; padding-left: 1px; line-height: 0px;}
+    #loading-text > span, #uploading-map span {animation: 3s infinite both blink;}
+    #loading-text span:nth-child(2) {animation-delay: 1s;}
+    #loading-text span:nth-child(3) {animation-delay: 2s;}
+    @keyframes blink {0% {opacity: 0;} 20% {opacity: 1;} 100% {opacity: .1;}}
+  </style>
 </head>
 <body>
   <svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" id="map" width="100%" height="100%">
@@ -872,7 +889,7 @@
     </g>
   </svg>
 
-  <div id="loading" style="opacity:1">
+  <div id="loading">
     <div id="title_name">Azgaar's</div>
     <div id="title">Fantasy Map Generator</div>
     <div id="version">v. 1.1</div>
@@ -3212,7 +3229,7 @@
 
   <div id="tooltip" style="opacity:0" data-main="Сlick the arrow button for options. Zoom in to see the map in details">Сlick the arrow button for options. Zoom in to see the map in details</div>
 
-  <div id="fileInputs" class="hidden">
+  <div id="fileInputs" style="display: none">
     <input type="file" accept=".map" id="mapToLoad">
     <input type="file" accept=".txt,.csv" id="burgsListToLoad">
     <input type="file" accept=".txt" id="legendsToLoad">
@@ -3222,6 +3239,7 @@
     <input type="file" accept=".json" id="styleToLoad">
   </div>
 
+  <link rel="preload" href="index.css?version=1.1.09" as="style" onload="this.onload=null; this.rel='stylesheet'">
   <link rel="preload" href="icons.css?version=1.1.09" as="style" onload="this.onload=null; this.rel='stylesheet'">
   <link rel="preload" href="libs/jquery-ui.css" as="style" onload="this.onload=null; this.rel='stylesheet'">
 

@@ -6,10 +6,8 @@
 }
 
 body {
-	margin: 0;
 	border: 0;
 	height: 100%;
-	font-size: 11px;
 }
 
 input, select, button {
@@ -25,7 +23,6 @@ input {
 }
 
 #map {
-	position: absolute;
 	background-color: #000000;
 	mask-mode: alpha;
 	mask-clip: no-clip;
@@ -1588,85 +1585,6 @@ div.states > div.biomeArea {
 	stroke-width: 0;
 	dominant-baseline: central;
 	text-anchor: middle;
-}
-
-#loading {
-	font-size: 11px;
-	color: #fff5da;
-	text-align: center;
-	text-shadow: 0px 1px 4px #4c3a35;
-	width: 80%;
-	max-width: 600px;
-	position: fixed;
-	top: 50%;
-	left: 50%;
-	transform: translate(-50%, -50%);
-	cursor: default;
-	-moz-user-select: none;
-	user-select: none;
-	pointer-events: none;
-}
-
-#title_name {
-	text-align: left;
-	font-size: 3em;
-	margin-left: 5%;
-}
-
-#title {
-	font-size: 7em;
-	margin: -12px 0 -6px 0;
-}
-
-#version {
-	text-align: right;
-	font-size: 2em;
-	margin-right: 3%;
-}
-
-#loading-text {
-	font-size: 1.8em;
-	margin: 0.2em 0 0 1em;
-}
-
-p#loading-text > span {
-	font-size: 1.3em;
-	padding-left: 1px;
-	line-height: 0px;
-}
-
-#initial {
-	fill: none;
-	stroke: black;
-}
-
-#init-rose {
-	animation: 20s infinite spin;
-	opacity: .7;
-	transform-origin: center;
-}
-
-@keyframes spin {
-	0% {transform: rotate(0deg);}
-	100% {transform: rotate(359deg);}
-}
-
-#loading-text > span, #uploading-map span {
-	animation: 3s infinite both blink;
-}
-
-#loading-text span:nth-child(2) {
-	animation-delay: 1s;
-}
-
-#loading-text span:nth-child(3) {
-	animation-delay: 2s;
-}
-
-@keyframes blink {
-	0% {opacity: 0;}
-	20% {opacity: 1;}
-	100% {opacity: .1;}
 }
 
 ul.share-buttons {

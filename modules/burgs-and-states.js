@@ -592,7 +592,6 @@
     const cells = pack.cells, states = pack.states;
     const chronicle = states[0].diplomacy = [];
     const valid = states.filter(s => s.i && !states.removed);
-    if (valid.length < 2) return;
 
     const neibs = {"Ally":1, "Friendly":2, "Neutral":1, "Suspicion":10, "Rival":9}; // relations to neighbors
     const neibsOfNeibs = {"Ally":10, "Friendly":8, "Neutral":5, "Suspicion":1}; // relations to neighbors of neighbors
@@ -600,6 +599,7 @@
     const navals = {"Neutral":1, "Suspicion":2, "Rival":1, "Unknown":1}; // relations of naval powers
 
     valid.forEach(s => s.diplomacy = new Array(states.length).fill("x")); // clear all relationships
+    if (valid.length < 2) return; // no states to renerate relations with
     const areaMean = d3.mean(valid.map(s => s.area)); // avarage state area
 
     // generic relations
