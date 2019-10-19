@@ -1194,7 +1194,7 @@ function editHeightmap() {
   }
 
   // 3D previewer
-  function toggleHeightmap3dView() {
+  async function toggleHeightmap3dView() {
     if (document.getElementById("_3dpreview")) {
       $("#_3dpreviewEditor").dialog("close");
       return;
@@ -1205,12 +1205,17 @@ function editHeightmap() {
     canvas.style.display = "block";
     canvas.width = parseFloat(_3dpreviewEditor.style.width) || graphWidth / 3;
     canvas.height = canvas.width / (graphWidth / graphHeight);
+    const started = await start3dpreview(canvas);
+    if (!started) return;
     document.getElementById("_3dpreviewEditor").appendChild(canvas);
-    start3dpreview(canvas);
+    canvas.onmouseenter = () => {
+      canvas.dataset.hovered ? tip("") : tip("Left mouse to change angle, middle mouse or mousewheel to zoom, right mouse to pan");
+      canvas.dataset.hovered = 1;
+    };
 
     $("#_3dpreviewEditor").dialog({
       title: "3D Preview", resizable: true,
-      position: {my: "left bottom", at: "left+10 bottom-10", of: "svg"},
+      position: {my: "left bottom", at: "left+10 bottom-20", of: "svg"},
       resizeStop: resize3dpreview, close: close3dPreview
     });
 
