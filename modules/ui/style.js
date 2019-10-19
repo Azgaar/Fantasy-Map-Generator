@@ -659,6 +659,7 @@ function applyStyleOnLoad() {
     stylePreset.value = preset;
     stylePreset.dataset.old = preset;
   } else {
+    stylePreset.value = "styleDefault";
     stylePreset.dataset.old = preset;
     applyDefaultStyle();
   }
