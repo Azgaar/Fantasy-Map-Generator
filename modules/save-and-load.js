@@ -56,6 +56,7 @@ async function getMapURL(type) {
 
   const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
   if (isFirefox && type === "mesh") clone.select("#oceanPattern").remove();
+  if (type === "mesh") clone.attr("width", graphWidth).attr("height", graphHeight);
   if (type !== "png") clone.select("#viewbox").attr("transform", null); // reset transform to show whole map
   if (type === "svg") removeUnusedElements(clone);
   if (type === "mesh") updateMeshCells(clone);
