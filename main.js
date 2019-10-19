@@ -123,10 +123,10 @@ oceanPattern.append("rect").attr("fill", "url(#oceanic)").attr("x", 0).attr("y",
 oceanLayers.append("rect").attr("id", "oceanBase").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 
 void function removeLoading() {
-  d3.select("#loading").transition().duration(5000).style("opacity", 0).remove();
-  d3.select("#initial").transition().duration(5000).attr("opacity", 0).remove();
+  d3.select("#loading").transition().duration(4000).style("opacity", 0).remove();
+  d3.select("#initial").transition().duration(4000).attr("opacity", 0).remove();
   d3.select("#optionsContainer").transition().duration(3000).style("opacity", 1);
-  d3.select("#tooltip").transition().duration(3000).style("opacity", 1);
+  d3.select("#tooltip").transition().duration(4000).style("opacity", 1);
 }()
 
 // decide which map should be loaded or generated on page load
