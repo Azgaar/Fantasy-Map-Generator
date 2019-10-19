@@ -875,6 +875,8 @@ function parseLoadedData(data) {
         viewbox.selectAll("g").each(function() {
           if (this.hasAttribute("display")) this.removeAttribute("display");
           fogging.style("display", "none");
+          prec.style("display", "none");
+          ruler.style("display", "none");
         });
       }
 
