@@ -268,7 +268,7 @@ async function saveMap() {
 // download map data as GeoJSON
 function saveGeoJSON() {
   alertMessage.innerHTML = `You can export map data in GeoJSON format used in GIS tools such as QGIS.
-  Check out <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export" target="_blank">wiki-page</a> for guidance`;
+  Check out ${link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export", "wiki-page")} for guidance`;
 
   $("#alert").dialog({title: "GIS data export", resizable: false, width: "32em", position: {my: "center", at: "center", of: "svg"},
     buttons: {
@@ -497,7 +497,7 @@ function uploadMap(file, callback) {
     const mapVersion = data[0].split("|")[0] || data[0];
     if (mapVersion === version) {parseLoadedData(data); return;}
 
-    const archive = "<a href='https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog' target='_blank'>archived version</a>";
+    const archive = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "archived version");
     const parsed = parseFloat(mapVersion);
     let message = "", load = false;
     if (isNaN(parsed) || data.length < 26 || !data[5]) {

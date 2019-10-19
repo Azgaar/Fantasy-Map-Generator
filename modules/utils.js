@@ -551,11 +551,6 @@ function parseError(error) {
   return errorParsed;
 }
 
-// open URL in a new tab or window
-function openURL(url) {
-  window.open(url, '_blank');
-}
-
 // polyfills
 if (Array.prototype.flat === undefined) {
   Array.prototype.flat = function() {
@@ -581,9 +576,14 @@ function getAbsolutePath(href) {
   return link.href;
 }
 
+// open URL in a new tab or window
+function openURL(url) {
+  window.open(url, '_blank');
+}
+
 // wrap URL into html a element
 function link(URL, description) {
-  return `<a href="${URL}" target="_blank">${description}</a>`
+  return `<a href="${URL}" rel="noopener" target="_blank">${description}</a>`
 }
 
 // localStorageDB

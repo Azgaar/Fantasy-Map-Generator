@@ -192,8 +192,7 @@ function loadMapFromURL(maplink, random) {
 
 function showUploadErrorMessage(error, URL, random) {
   console.error(error);
-  alertMessage.innerHTML = `
-    Cannot load map from the <a href='${URL}' target='_blank'>link provided</a>.
+  alertMessage.innerHTML = `Cannot load map from the ${link(URL, "link provided")}.
     ${random?`A new random map is generated. `:''}
     Please ensure the linked file is reachable and CORS is allowed on server side`;
   $("#alert").dialog({title: "Loading error", width: "32em", buttons: {OK: function() {$(this).dialog("close");}}});
@@ -316,12 +315,16 @@ function applyDefaultBiomesSystem() {
 }
 
 function showWelcomeMessage() {
-  const link = 'https://www.reddit.com/r/FantasyMapGenerator/comments/daf6g2/update_new_version_is_published_v_11'; // announcement on Reddit
-  alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
-    This version is compatible with <a href='https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog' target='_blank'>previous version</a>, 
-    loaded <i>.map</i> files will be auto-updated.
+  const post = link("https://www.reddit.com/r/FantasyMapGenerator/comments/daf6g2/update_new_version_is_published_v_11", "Main changes:"); // announcement on Reddit
+  const changelog = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "previous version");
+  const reddit = link("https://www.reddit.com/r/FantasyMapGenerator", "Reddit community");
+  const discord = link("https://discordapp.com/invite/X7E84HU", "Discord server");
+  const patreon = link("https://www.patreon.com/azgaar", "Patreon");
 
-    <ul><a href=${link} target='_blank'>Main changes:</a>
+  alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
+    This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
+
+    <ul>${post}
       <li>Lake Editor</li>
       <li>Coastline Editor</li>
       <li>New lake groups (types)</li>
@@ -333,11 +336,8 @@ function showWelcomeMessage() {
       <li>Map loading from URL</li>
     </ul>
 
-    <p>Join our <a href='https://www.reddit.com/r/FantasyMapGenerator' target='_blank'>Reddit community</a> and
-    <a href='https://discordapp.com/invite/X7E84HU' target='_blank'>Discord server</a>
-    to ask questions, share maps, discuss the Generator, report bugs and propose new features.</p>
-
-    <p>Thanks for all supporters on <a href='https://www.patreon.com/azgaar' target='_blank'>Patreon</a>!</i></p>`;
+    <p>Join our ${reddit} and ${discord} to ask questions, share maps, discuss the Generator, report bugs and propose new features.</p>
+    <p>Thanks for all supporters on ${patreon}!</i></p>`;
 
   $("#alert").dialog(
     {resizable: false, title: "Fantasy Map Generator update", width: "28em",
