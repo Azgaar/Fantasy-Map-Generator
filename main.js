@@ -315,7 +315,7 @@ function applyDefaultBiomesSystem() {
 }
 
 function showWelcomeMessage() {
-  const post = link("https://www.reddit.com/r/FantasyMapGenerator/comments/daf6g2/update_new_version_is_published_v_12", "Main changes:"); // announcement on Reddit
+  const post = link("https://www.reddit.com/r/FantasyMapGenerator/comments/dlow3k/update_new_version_is_published_v_12", "Main changes:"); // announcement on Reddit
   const changelog = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "previous version");
   const reddit = link("https://www.reddit.com/r/FantasyMapGenerator", "Reddit community");
   const discord = link("https://discordapp.com/invite/X7E84HU", "Discord server");
