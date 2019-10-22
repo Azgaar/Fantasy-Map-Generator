@@ -348,6 +348,7 @@ document.getElementById("sticked").addEventListener("click", function(event) {
   else if (id === "saveMap") saveMap();
   else if (id === "saveSVG") saveSVG();
   else if (id === "savePNG") savePNG();
+  else if (id === "saveJPEG") saveJPEG();
   else if (id === "saveGeo") saveGeoJSON();
   else if (id === "saveDropbox") saveDropbox();
   if (id === "quickSave" || id === "saveMap" || id === "saveSVG" || id === "savePNG" || id === "saveGeo" || id === "saveDropbox") toggleSavePane();
@@ -423,3 +424,46 @@ document.getElementById("mapToLoad").addEventListener("change", function() {
   closeDialogs();
   uploadMap(fileToLoad);
 });
+
+// View mode
+viewMode.addEventListener("click", changeViewMode);
+function changeViewMode(event) {
+  if (event.target.tagName !== "BUTTON") return;
+  const button = event.target;
+
+  enterStandardView();
+  if (button.classList.contains("pressed")) {
+    button.classList.remove("pressed");
+    viewStandard.classList.add("pressed");
+  } else {
+    viewMode.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
+    button.classList.add("pressed");
+    if (button.id !== "viewStandard") enter3dView(button.id);
+  }
+}
+
+function enterStandardView() {
+  if (!document.getElementById("canvas3d")) return;
+  document.getElementById("canvas3d").remove();
+  stop3d();
+}
+
+async function enter3dView(type) {
+  const canvas = document.createElement("canvas");
+  canvas.id = "canvas3d";
+  canvas.style.display = "block";
+  canvas.width = svgWidth;
+  canvas.height = svgHeight;
+  canvas.style.position = "absolute";
+  canvas.style.display = "none";
+  canvas.dataset.type = type;
+  const started = type === "viewGlobe" ? await startGlobe(canvas) : await start3d(canvas);
+  if (!started) return;
+  canvas.style.display = "block";
+  document.body.insertBefore(canvas, optionsContainer);
+  canvas.onmouseenter = () => {
+    const help = "Left mouse to change angle, middle mouse / mousewheel to zoom, right mouse to pan.\r\n<b>R</b> to toggle rotation. <b>U</b> to update. <b>S</b> to get a screenshot";
+    +canvas.dataset.hovered > 2 ? tip("") : tip(help);
+    canvas.dataset.hovered = (+canvas.dataset.hovered|0) + 1;
+  };
+}

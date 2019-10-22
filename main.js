@@ -7,7 +7,7 @@
 // See also https://github.com/Azgaar/Fantasy-Map-Generator/issues/153
 
 "use strict";
-const version = "1.11"; // generator version
+const version = "1.2"; // generator version
 document.title += " v" + version;
 
 // if map version is not stored, clear localStorage and show a message
@@ -315,7 +315,7 @@ function applyDefaultBiomesSystem() {
 }
 
 function showWelcomeMessage() {
-  const post = link("https://www.reddit.com/r/FantasyMapGenerator/comments/daf6g2/update_new_version_is_published_v_11", "Main changes:"); // announcement on Reddit
+  const post = link("https://www.reddit.com/r/FantasyMapGenerator/comments/daf6g2/update_new_version_is_published_v_12", "Main changes:"); // announcement on Reddit
   const changelog = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "previous version");
   const reddit = link("https://www.reddit.com/r/FantasyMapGenerator", "Reddit community");
   const discord = link("https://discordapp.com/invite/X7E84HU", "Discord server");
@@ -325,15 +325,8 @@ function showWelcomeMessage() {
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
 
     <ul>${post}
-      <li>Lake Editor</li>
-      <li>Coastline Editor</li>
-      <li>New lake groups (types)</li>
-      <li>Culture presets</li>
-      <li>Provinces, states and burgs charts</li>
-      <li>Editable religions tree</li>
-      <li>Data export in geojson format</li>
-      <li>Map quick save and quick load</li>
-      <li>Map loading from URL</li>
+      <li>3d scene</li>
+      <li>Globe view</li>
     </ul>
 
     <p>Join our ${reddit} and ${discord} to ask questions, share maps, discuss the Generator, report bugs and propose new features.</p>
@@ -1686,6 +1679,8 @@ const regenerateMap = debounce(function() {
   resetZoom(1000);
   generate();
   restoreLayers();
+  const canvas3d = document.getElementById("canvas3d");
+  if (canvas3d) update3dPreview(canvas3d);
   if ($("#worldConfigurator").is(":visible")) editWorld();
 }, 500);
 

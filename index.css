@@ -584,6 +584,13 @@ button.active {
 	padding: 4px 0;
 }
 
+#viewMode > button {
+	padding: .35em;
+	margin: .2em .3em;
+	float: left;
+	width: 30.7%;
+}
+
 fieldset {
 	border: 1px solid #5d4651;
 }
@@ -604,8 +611,9 @@ fieldset {
 	color: grey;
 }
 
-.tabcontent li:hover {
-	background-color: #a8879d;
+.tabcontent li:hover,
+.tabcontent button:hover {
+	box-shadow: 0 0 2px 2px #5d465117;
 }
 
 #optionsContainer span {
@@ -1280,6 +1288,23 @@ div.states span.inactive:hover {
 
 #diplomacyBodySection > div {
 	cursor: pointer;
+}
+
+#diplomacySelect {
+	position: absolute;
+	background-color: #ffffff;
+	border: 1px solid #1891ff;
+	width: 23%;
+	left: 70.5%;
+}
+
+#diplomacySelect > div {
+	width: 100%;
+}
+
+#diplomacySelect > div:hover {
+	background-color: #1891ff;
+	color: #ffffff;
 }
 
 #burgsFooterPopulation {

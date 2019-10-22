@@ -11,7 +11,7 @@ async function saveSVG() {
   document.body.appendChild(link);
   link.click();
 
-  tip(`${link.download} is saved. Open "Downloads" screen (crtl + J) to check`, true, "warning", 5000);
+  tip(`${link.download} is saved. Open "Downloads" screen (crtl + J) to check`, true, "success", 5000);
   console.timeEnd("saveSVG");
 }
 
@@ -38,12 +38,39 @@ async function savePNG() {
         window.setTimeout(function() {
           canvas.remove();
           window.URL.revokeObjectURL(link.href);
-          tip(`${link.download} is saved. Open "Downloads" screen (crtl + J) to check`, true, "warning", 5000);
+          tip(`${link.download} is saved. Open "Downloads" screen (crtl + J) to check`, true, "success", 5000);
         }, 1000);
     });
   }
 
   console.timeEnd("savePNG");
+}
+
+// download map as JPEG
+async function saveJPEG() {
+  console.time("saveJPEG");
+  const url = await getMapURL("png");
+
+  const canvas = document.createElement("canvas");
+  canvas.width = svgWidth * pngResolutionInput.value;
+  canvas.height = svgHeight * pngResolutionInput.value;
+  const img = new Image();
+  img.src = url;
+
+  img.onload = async function() {
+    canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+    const quality = Math.min(rn(1 - pngResolutionInput.value / 20, 2), .92);
+    const URL = await canvas.toDataURL("image/jpeg", quality);
+    const link = document.createElement("a");
+    link.download = getFileName() + ".jpeg";
+    link.href = URL;
+    document.body.appendChild(link);
+    link.click();
+    tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
+    window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
+  }
+
+  console.timeEnd("saveJPEG");
 }
 
 // parse map svg to object url
@@ -59,7 +86,7 @@ async function getMapURL(type) {
   if (type === "mesh") clone.attr("width", graphWidth).attr("height", graphHeight);
   if (type !== "png") clone.select("#viewbox").attr("transform", null); // reset transform to show whole map
   if (type === "svg") removeUnusedElements(clone);
-  if (type === "mesh") updateMeshCells(clone);
+  if (customization && type === "mesh") updateMeshCells(clone);
   inlineStyle(clone);
 
   const fontStyle = await GFontToDataURI(getFontsToLoad()); // load non-standard fonts
@@ -777,8 +804,8 @@ function parseLoadedData(data) {
         if (!markers.selectAll("*").size()) {addMarkers(); turnButtonOn("toggleMarkers");}
 
         // 1.0 add fogging layer (state focus)
-        let fogging = viewbox.insert("g", "#ruler").attr("id", "fogging-cont").attr("mask", "url(#fog)")
-          .append("g").attr("id", "fogging").attr("display", "none");
+        fogging = viewbox.insert("g", "#ruler").attr("id", "fogging-cont").attr("mask", "url(#fog)")
+          .append("g").attr("id", "fogging").style("display", "none");
         fogging.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
         defs.append("mask").attr("id", "fog").append("rect").attr("x", 0).attr("y", 0).attr("width", "100%")
           .attr("height", "100%").attr("fill", "white");
@@ -873,11 +900,14 @@ function parseLoadedData(data) {
 
         // v 1.11 replaced "display" attribute by "display" style
         viewbox.selectAll("g").each(function() {
-          if (this.hasAttribute("display")) this.removeAttribute("display");
-          fogging.style("display", "none");
-          prec.style("display", "none");
-          ruler.style("display", "none");
+          if (this.hasAttribute("display")) {
+            this.removeAttribute("display"); 
+            this.style.display = "none";
+          }
         });
+
+        // v 1.11 had an issue with fogging being displayed on load
+        unfog();
       }
 
     }()

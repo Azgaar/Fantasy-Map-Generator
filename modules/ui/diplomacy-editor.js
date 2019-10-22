@@ -39,6 +39,7 @@ function editDiplomacy() {
   document.getElementById("diplomacyMatrix").addEventListener("click", showRelationsMatrix);
   document.getElementById("diplomacyHistory").addEventListener("click", showRelationsHistory);
   document.getElementById("diplomacyExport").addEventListener("click", downloadDiplomacyData);
+  document.getElementById("diplomacySelect").addEventListener("click", diplomacyChangeRelations);
 
   function refreshDiplomacyEditor() {
     diplomacyEditorAddLines();
@@ -52,6 +53,11 @@ function editDiplomacy() {
     const sel = selectedLine ? +selectedLine.dataset.id : states.find(s => s.i && !s.removed).i;
     const selName = states[sel].fullName;
 
+    // move select drop-down back to initial place
+    const select = document.getElementById("diplomacySelect");
+    body.parentNode.insertBefore(select, body);
+    select.style.display = "none";
+
     let lines = `<div class="states Self" data-id=${sel}>
       <div data-tip="List below shows relations to ${selName}" style="width: 100%">${selName}</div>
     </div>`;
@@ -62,11 +68,15 @@ function editDiplomacy() {
       const index = statuses.indexOf(relation);
       const color = colors[index];
       const tip = s.fullName + description[index] + selName;
+      const tipSelect = `${tip}. Click to see relations to ${s.name}`;
+      const tipChange = `${tip}. Click to change relations to ${selName}`;
 
       lines += `<div class="states" data-id=${s.i} data-name="${s.fullName}" data-relations="${relation}">
-        <div data-tip="${tip}. Click to see relations to ${s.name}" style="width:12em">${s.fullName}</div>
-        <input data-tip="${tip}. Click to see relations to ${s.name}" class="stateColor" type="color" value="${color}" disabled>
-        <select data-tip="Click to change ${getAdjective(s.name)} relations to ${selName}" class="diplomacyRelations">${getRelations(relation)}</select>
+        <div data-tip="${tipSelect}" style="width:12em">${s.fullName}</div>
+        <svg data-tip="${tipChange}" width=".9em" height=".9em" style="margin-bottom:-1px" class="changeRelations">
+          <rect x="0" y="0" width="100%" height="100%" fill="${color}" class="zoneFill" style="pointer-events: none"></rect>
+        </svg>
+        <input data-tip="${tipChange}" class="changeRelations diplomacyRelations" value="${relation}" readonly/>
       </div>`;
     }
     body.innerHTML = lines;
@@ -75,8 +85,7 @@ function editDiplomacy() {
     body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseenter", ev => stateHighlightOn(ev)));
     body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseleave", ev => stateHighlightOff(ev)));
     body.querySelectorAll("div.states").forEach(el => el.addEventListener("click", selectStateOnLineClick));
-    body.querySelectorAll("div > select.diplomacyRelations").forEach(el => el.addEventListener("click", ev => ev.stopPropagation()));
-    body.querySelectorAll("div > select.diplomacyRelations").forEach(el => el.addEventListener("change", diplomacyChangeRelations));
+    body.querySelectorAll(".changeRelations").forEach(el => el.addEventListener("click", toggleDiplomacySelect));
 
     applySorting(diplomacyHeader);
     $("#diplomacyEditor").dialog();
@@ -111,12 +120,6 @@ function editDiplomacy() {
     debug.selectAll(".highlight").each(function(el) {
       d3.select(this).call(removePath);
     });
-  }
-
-  function getRelations(relations) {
-    let options = "";
-    statuses.forEach(s => options += `<option ${relations === s ? "selected" : ""} value="${s}">${s}</option>`);
-    return options;
   }
 
   function showStateRelations() {
@@ -156,18 +159,33 @@ function editDiplomacy() {
     refreshDiplomacyEditor();
   }
 
-  function diplomacyChangeRelations() {
+  function toggleDiplomacySelect(event) {
+    event.stopPropagation();
+    const select = document.getElementById("diplomacySelect");
+    const show = select.style.display === "none";
+    if (!show) {select.style.display = "none"; return;}
+    event.target.parentNode.insertBefore(select, event.target);
+    select.style.display = "block";
+  }
+
+  function diplomacyChangeRelations(event) {
+    event.stopPropagation();
+    const select = document.getElementById("diplomacySelect");
+    select.style.display = "none";
+
+    const subject = +event.target.parentElement.parentElement.dataset.id;
+    const rel = event.target.innerHTML;
+    body.parentNode.insertBefore(select, body);
+
     const states = pack.states, chronicle = states[0].diplomacy;
     const selectedLine = body.querySelector("div.Self");
     const object = selectedLine ? +selectedLine.dataset.id : states.find(s => s.i && !s.removed).i;
     if (!object) return;
     const objectName = states[object].name; // object of relations change
-
-    const subject = +this.parentNode.dataset.id;
     const subjectName = states[subject].name; // subject of relations change - actor
 
     const oldRel = states[subject].diplomacy[object];
-    const rel = this.value;
+    if (rel === oldRel) return;
     states[subject].diplomacy[object] = rel;
     states[object].diplomacy[subject] = rel === "Vassal" ? "Suzerain" : rel === "Suzerain" ? "Vassal" : rel;
 

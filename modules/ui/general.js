@@ -279,13 +279,14 @@ document.addEventListener("keydown", event => {
 
 // Hotkeys, see github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys
 document.addEventListener("keyup", event => {
-  const active = document.activeElement.tagName;
+  if (!window.closeDialogs) return; // not all modules are loaded
+  const canvas3d = document.getElementById("canvas3d"); // check if 3d mode is active
+  const active = canvas3d ? null : document.activeElement.tagName;
   if (active === "INPUT" || active === "SELECT" || active === "TEXTAREA") return; // don't trigger if user inputs a text
   if (active === "DIV" && document.activeElement.contentEditable === "true") return; // don't trigger if user inputs a text
   event.stopPropagation();
 
   const key = event.keyCode, ctrl = event.ctrlKey, shift = event.shiftKey, meta = event.metaKey;
-  const tdMode = document.getElementById("_3dpreview");
 
   if (key === 112) showInfo(); // "F1" to show info
   else if (key === 113) regeneratePrompt(); // "F2" for new map
@@ -296,7 +297,12 @@ document.addEventListener("keyup", event => {
   else if (key === 27) {closeDialogs(); hideOptions();} // Escape to close all dialogs
   else if (key === 46) removeElementOnKey(); // "Delete" to remove the selected element
 
+  else if (key === 83 && canvas3d) saveScreenshot(); // "S" to save a screenshot
+  else if (key === 82 && canvas3d) toggleRotation(); // "R" to toggle 3d rotation
+  else if (key === 85 && canvas3d && customization !== 1) update3d(); // "U" to update 3d view
+
   else if (ctrl && key === 80) savePNG(); // Ctrl + "P" to save as PNG
+  else if (ctrl && key === 71) saveJPEG(); // Ctrl + "J" to save as JPEG
   else if (ctrl && key === 83) saveSVG(); // Ctrl + "S" to save as SVG
   else if (ctrl && key === 77) saveMap(); // Ctrl + "M" to save MAP file
   else if (ctrl && key === 71) saveGeoJSON(); // Ctrl + "G" to save as GeoJSON
@@ -357,10 +363,10 @@ document.addEventListener("keyup", event => {
   else if (key === 187) toggleRulers(); // Equal (=) to toggle Rulers
   else if (key === 189) toggleScaleBar(); // Minus (-) to toggle Scale bar
 
-  else if (key === 37 && !tdMode) zoom.translateBy(svg, 10, 0); // Left to scroll map left
-  else if (key === 39 && !tdMode) zoom.translateBy(svg, -10, 0); // Right to scroll map right
-  else if (key === 38 && !tdMode) zoom.translateBy(svg, 0, 10); // Up to scroll map up
-  else if (key === 40 && !tdMode) zoom.translateBy(svg, 0, -10); // Up to scroll map up
+  else if (key === 37) zoom.translateBy(svg, 10, 0); // Left to scroll map left
+  else if (key === 39) zoom.translateBy(svg, -10, 0); // Right to scroll map right
+  else if (key === 38) zoom.translateBy(svg, 0, 10); // Up to scroll map up
+  else if (key === 40) zoom.translateBy(svg, 0, -10); // Up to scroll map up
   else if (key === 107 || key === 109) pressNumpadSign(key); // Numpad Plus/Minus to zoom map or change brush size
   else if (key === 48 || key === 96) resetZoom(1000); // 0 to reset zoom
   else if (key === 49 || key === 97) zoom.scaleTo(svg, 1); // 1 to zoom to 1

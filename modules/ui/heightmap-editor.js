@@ -127,7 +127,7 @@ function editHeightmap() {
 
     restartHistory();
     if (document.getElementById("preview")) document.getElementById("preview").remove();
-    if (document.getElementById("_3dpreview")) toggleHeightmap3dView();
+    if (document.getElementById("canvas3d")) toggleHeightmap3dView();
 
 
     const mode = heightmapEditMode.innerHTML;
@@ -415,7 +415,7 @@ function editHeightmap() {
     if (!noStat) {
       updateStatistics();
       if (document.getElementById("preview")) drawHeightmapPreview(); // update heightmap preview if opened
-      if (document.getElementById("_3dpreview")) update3dpreview(_3dpreview); // update 3d heightmap preview if opened
+      if (document.getElementById("canvas3d")) update3dPreview(canvas3d); // update 3d heightmap preview if opened
     }
   }
 
@@ -430,7 +430,7 @@ function editHeightmap() {
     updateStatistics();
     
     if (document.getElementById("preview")) drawHeightmapPreview(); // update heightmap preview if opened
-    if (document.getElementById("_3dpreview")) update3dpreview(_3dpreview); // update 3d heightmap preview if opened
+    if (document.getElementById("canvas3d")) update3dPreview(canvas3d); // update 3d heightmap preview if opened
   }
 
   // restart edits from 1st step
@@ -871,7 +871,7 @@ function editHeightmap() {
       updateStatistics();
       mockHeightmap();
       if (document.getElementById("preview")) drawHeightmapPreview(); // update heightmap preview if opened
-      if (document.getElementById("_3dpreview")) update3dpreview(_3dpreview); // update 3d heightmap preview if opened
+      if (document.getElementById("canvas3d")) update3dPreview(canvas3d); // update 3d heightmap preview if opened
     }
 
     function downloadTemplate() {
@@ -1195,38 +1195,38 @@ function editHeightmap() {
 
   // 3D previewer
   async function toggleHeightmap3dView() {
-    if (document.getElementById("_3dpreview")) {
-      $("#_3dpreviewEditor").dialog("close");
+    if (document.getElementById("canvas3d")) {
+      $("#preview3d").dialog("close");
       return;
     }
 
     const canvas = document.createElement("canvas");
-    canvas.id = "_3dpreview";
+    canvas.id = "canvas3d";
     canvas.style.display = "block";
-    canvas.width = parseFloat(_3dpreviewEditor.style.width) || graphWidth / 3;
+    canvas.width = parseFloat(preview3d.style.width) || graphWidth / 3;
     canvas.height = canvas.width / (graphWidth / graphHeight);
-    const started = await start3dpreview(canvas);
+    const started = await start3d(canvas);
     if (!started) return;
-    document.getElementById("_3dpreviewEditor").appendChild(canvas);
+    document.getElementById("preview3d").appendChild(canvas);
     canvas.onmouseenter = () => {
-      canvas.dataset.hovered ? tip("") : tip("Left mouse to change angle, middle mouse or mousewheel to zoom, right mouse to pan");
-      canvas.dataset.hovered = 1;
+      +canvas.dataset.hovered > 2 ? tip("") : tip("Left mouse to change angle, middle mouse or mousewheel to zoom, right mouse to pan. R to toggle rotation");
+      canvas.dataset.hovered = (+canvas.dataset.hovered|0) + 1;
     };
 
-    $("#_3dpreviewEditor").dialog({
+    $("#preview3d").dialog({
       title: "3D Preview", resizable: true,
       position: {my: "left bottom", at: "left+10 bottom-20", of: "svg"},
-      resizeStop: resize3dpreview, close: close3dPreview
+      resizeStop: resize3d, close: close3dPreview
     });
 
-    function resize3dpreview() {
-      canvas.width = parseFloat(_3dpreviewEditor.style.width);
-      canvas.height = parseFloat(_3dpreviewEditor.style.height) - 2;
-      update3dpreview(canvas);
+    function resize3d() {
+      canvas.width = parseFloat(preview3d.style.width);
+      canvas.height = parseFloat(preview3d.style.height) - 2;
+      update3dPreview(canvas);
     }
 
     function close3dPreview() {
-      stop3dpreview();
+      stop3d();
       canvas.remove();
     }
   }

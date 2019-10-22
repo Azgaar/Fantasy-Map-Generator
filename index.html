@@ -18,7 +18,7 @@
   <link rel="canonical" href="https://azgaar.github.io/Fantasy-Map-Generator/">
 
   <style type="text/css">
-    body {margin: 0; font-size: 11px;}
+    body {margin: 0; font-size: 11px; overflow: hidden;}
     #map {position: absolute;}
     #initial {fill: none; stroke: black; pointer-events: none;}
     #init-rose {animation: 20s infinite spin; opacity: .7; transform-origin: center;}
@@ -34,11 +34,11 @@
     #loading-text span:nth-child(3) {animation-delay: 2s;}
     @keyframes blink {0% {opacity: 0;} 20% {opacity: 1;} 100% {opacity: .1;}}
   </style>
-  <link rel="preload" href="index.css?version=1.1.09" as="style" onload="this.onload=null; this.rel='stylesheet'">
-  <link rel="preload" href="icons.css?version=1.1.09" as="style" onload="this.onload=null; this.rel='stylesheet'">
-  <link rel="preload" href="libs/jquery-ui.css" as="style" onload="this.onload=null; this.rel='stylesheet'">
-  <link rel="stylesheet" href="index.css?version=1.1.09">
-  <link rel="stylesheet" href="icons.css?version=1.1.09">
+  <link rel="preload" href="index.css?version=1.2" as="style">
+  <link rel="preload" href="icons.css?version=1.2" as="style">
+  <link rel="preload" href="libs/jquery-ui.css" as="style">
+  <link rel="stylesheet" href="index.css?version=1.2">
+  <link rel="stylesheet" href="icons.css?version=1.2">
   <link rel="stylesheet" href="libs/jquery-ui.css">
 
 </head>
@@ -899,7 +899,7 @@
   <div id="loading">
     <div id="title_name">Azgaar's</div>
     <div id="title">Fantasy Map Generator</div>
-    <div id="version">v. 1.1</div>
+    <div id="version">v. 1.2</div>
     <p id="loading-text">LOADING<span>.</span><span>.</span><span>.</span></p>
   </div>
 
@@ -931,6 +931,7 @@
           <option value="provinces">Provinces map</option>
           <option value="biomes">Biomes map</option>
           <option value="heightmap">Heightmap</option>
+          <option value="physical">Physical map</option>
           <option value="poi">Places of interest</option>
           <option value="landmass">Pure landmass</option>
           <option hidden value="custom">Custom (not saved)</option>
@@ -965,6 +966,13 @@
           <li id="toggleRulers" data-tip="Rulers: click to toggle, drag to move, click on label to delete. Ctrl + click to edit layer style. Shortcut: = (equal)" class="buttonoff" onclick="toggleRulers(event)">Rulers</li>
           <li id="toggleScaleBar" data-tip="Scale Bar: click to toggle, drag to move. Ctrl + click to edit style. Shortcut: - (minus)" onclick="toggleScaleBar(event)" class="solid">Scale Bar</li>
         </ul>
+
+        <div id="viewMode" data-tip="Set view node">
+          <p>View mode:</p>
+          <button data-tip="Standard view mode that allows to edit the map" id="viewStandard" class="pressed">Standard</button>
+          <button data-tip="Map presentation in 3D scene. Works best for heightmap. Cannot be used for editing" id="view3D">3D scene</button>
+          <button data-tip="Project map on globe as if it represents whole world. Cannot be used for editing" id="viewGlobe">Globe</button>
+        </div>
       </div>
 
       <div id="styleContent" class="tabcontent">
@@ -1745,9 +1753,9 @@
             </td>
           </tr>
 
-          <tr data-tip="Define relative size of a saved png image. Saving big images is slow and may cause a browser crash">
+          <tr data-tip="Define relative size of a saved png/jpeg image. Saving big images is slow and may cause a browser crash!">
             <td></td>
-            <td>PNG resolution</td>
+            <td>PNG/JPEG size</td>
             <td>
               <input id="pngResolutionInput" data-stored="pngResolution" type="range" min=1 max=8 value=5>
             </td>
@@ -1859,7 +1867,7 @@
           <button data-tip="Open template editor" id="applyTemplate" style="display: none">Template Editor</button>
           <button data-tip="Open Image Converter" id="convertImage" style="display: none">Image Converter</button>
           <button data-tip="Render heightmap data as a small monochrome image" id="heightmapPreview">Heightmap Preview</button>
-          <button data-tip="View heightmap data in 3D" id="heightmap3DView">3D</button>
+          <button data-tip="Preview heightmap in 3D scene" id="heightmap3DView">3D</button>
         </div>
 
         <div id="customizeOptions">
@@ -1920,7 +1928,8 @@
         <div id="saveDropdown">
           <div id="saveMap" data-tip="Download the map as fully functional .map file to your machine. Shortcut: Ctrl + M">.map</div>
           <div id="saveSVG" data-tip="Download the map as vector image (open in browser or Inkscape). Shortcut: Ctrl + S">.svg</div>
-          <div id="savePNG" data-tip="Download visible part of the map as .png image. Shortcut: Ctrl + P">.png</div>
+          <div id="savePNG" data-tip="Download visible part of the map as .png (lossless compressed) image. Shortcut: Ctrl + P">.png</div>
+          <div id="saveJPEG" data-tip="Download visible part of the map as .jpeg (lossy compressed) image. Shortcut: Ctrl + J">.jpeg</div>
           <div id="saveGeo" data-tip="Download map data in GeoJSON format. Shortcut: Ctrl + G">.json</div>
           <div id="quickSave" data-tip="Save map to browser storage. Shortcut: F6">storage</div>
           <!-- <div id="saveDropbox" data-tip="Save fully functional .map file to Dropbox. Shortcut: Ctrl + B">Dropbox</div> -->
@@ -2608,8 +2617,6 @@
 
     </div>
 
-    <div id="_3dpreviewEditor" class="dialog stable" style="display: none; padding: 0px"></div>
-
     <div id="statesEditor" class="dialog stable" style="display: none">
       <div id="statesHeader" class="header">
         <div style="left:1.4em" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">State&nbsp;</div>
@@ -2798,6 +2805,18 @@
       <div id="diplomacyHeader" class="header">
         <div style="left:.2em" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">State&nbsp;</div>
         <div style="left:12.4em" data-tip="Click to sort by diplomatical relations" class="sortable alphabetically" data-sortby="relations">Relations&nbsp;</div>
+      </div>
+
+      <div id="diplomacySelect">
+        <div data-tip="Ally means states formed a defensive pact and will protect each other in case of third party aggression">Ally</div>
+        <div data-tip="State is friendly to anouther state when they share some common interests">Friendly</div>
+        <div data-tip="Neutral means states relations are neither positive nor negative">Neutral</div>
+        <div data-tip="Suspicion means shate has a cautious distrust of another state">Suspicion</div>
+        <div data-tip="Enemies are states at war with each other">Enemy</div>
+        <div data-tip="Relations are unknown if states do not have enought information about each other">Unknown</div>
+        <div data-tip="Rivalry is a state of competing for dominance in the region">Rival</div>
+        <div data-tip="Vassal is a state having obligation to its suzerain">Vassal</div>
+        <div data-tip="Suzerain is a state having some control over its vassals">Suzerain</div>
       </div>
 
       <div id="diplomacyBodySection" class="table"></div>
@@ -3219,6 +3238,8 @@
       </div>
     </div>
 
+    <div id="preview3d" class="dialog stable" style="display: none; padding: 0px"></div>
+
     <div id="alert" style="display: none" class="dialog">
       <p id="alertMessage">Warning!</p>
     </div>
@@ -3296,7 +3317,7 @@
   <script defer src="modules/ui/diplomacy-editor.js"></script>
   <script defer src="modules/ui/zones-editor.js"></script>
   <script defer src="modules/ui/editors.js"></script>
-  <script defer src="modules/ui/3dpreview.js"></script>
+  <script defer src="modules/ui/3d.js"></script>
   <script defer src="libs/quantize.min.js"></script>
   <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
 </body>
