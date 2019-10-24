@@ -57,11 +57,12 @@ function editProvinces() {
   }
 
   function collectStatistics() {
-    const cells = pack.cells, provinces = pack.provinces;
+    const cells = pack.cells, provinces = pack.provinces, burgs = pack.burgs;
     provinces.forEach(p => {
       if (!p.i || p.removed) return;
       p.area = p.rural = p.urban = 0;
       p.burgs = [];
+      if (p.burg && !burgs[p.burg] || burgs[p.burg].removed) p.burg = 0;
     });
 
     for (const i of cells.i) {
@@ -71,7 +72,7 @@ function editProvinces() {
       provinces[p].area += cells.area[i];
       provinces[p].rural += cells.pop[i];
       if (!cells.burg[i]) continue;
-      provinces[p].urban += pack.burgs[cells.burg[i]].population;
+      provinces[p].urban += burgs[cells.burg[i]].population;
       provinces[p].burgs.push(cells.burg[i]);
     }
 

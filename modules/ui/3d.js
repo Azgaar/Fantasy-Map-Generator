@@ -190,7 +190,7 @@ async function startGlobe(canvas) {
 // create globe mesh just from svg
 async function addGlobe3dMesh() {
   threeD.material = new THREE.MeshLambertMaterial();
-  const url = await getMapURL("mesh");
+  const url = await getMapURL("mesh", "globe");
   threeD.material.map = new THREE.TextureLoader().load(url, render);
   threeD.mesh = new THREE.Mesh(new THREE.SphereBufferGeometry(1, 64, 64), threeD.material);
   threeD.scene.add(threeD.mesh);

@@ -360,6 +360,7 @@ function editReligions() {
     // build hierarchy tree
     pack.religions[0].origin = null;
     const religions = pack.religions.filter(r => !r.removed);
+    if (religions.length < 3) {tip("Not enough religions to show hierarchy", false, "error"); return;}
     const root = d3.stratify().id(d => d.i).parentId(d => d.origin)(religions);
     const treeWidth = root.leaves().length;
     const treeHeight = root.height;

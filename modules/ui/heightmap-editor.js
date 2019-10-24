@@ -2,10 +2,6 @@
 "use strict";
 
 function editHeightmap() {
-  const heights = viewbox.select("#heights").size()
-    ? viewbox.select("#heights")
-    : viewbox.insert("g", "#terrs").attr("id", "heights");
-
   void function selectEditMode() {
     alertMessage.innerHTML = `<p>Heightmap is a core element on which all other data (rivers, burgs, states etc) is based.
     So the best edit approach is to <i>erase</i> the secondary data and let the system automatically regenerate it on edit completion.</p> 
@@ -31,6 +27,7 @@ function editHeightmap() {
 
   let edits = [];
   restartHistory();
+  viewbox.insert("g", "#terrs").attr("id", "heights");
 
   if (modules.editHeightmap) return;
   modules.editHeightmap = true;
@@ -111,7 +108,7 @@ function editHeightmap() {
 
   // Exit customization mode
   function finalizeHeightmap() {
-    if (heights.selectAll("*").size() < 200) {
+    if (viewbox.select("#heights").selectAll("*").size() < 200) {
       tip("Insufficient land area! There should be at least 200 land cells to finalize the heightmap", null, "error");
       return;
     }
@@ -136,7 +133,7 @@ function editHeightmap() {
     else if (mode === "risk") restoreRiskedData();
 
     // restore initial layers
-    heights.selectAll("*").remove();
+    viewbox.select("#heights").remove();
     turnButtonOff("toggleHeight");
     document.getElementById("mapLayers").querySelectorAll("li").forEach(function(e) {
       if (editHeightmap.layers.includes(e.id) && !layerIsOn(e.id)) e.click(); // turn on
@@ -381,7 +378,7 @@ function editHeightmap() {
   function mockHeightmap() {
     const data = renderOcean.checked ? grid.cells.i : grid.cells.i.filter(i => grid.cells.h[i] >= 20);
     const scheme = getColorScheme();
-    heights.selectAll("polygon").data(data).join("polygon").attr("points", d => getGridPolygon(d))
+    viewbox.select("#heights").selectAll("polygon").data(data).join("polygon").attr("points", d => getGridPolygon(d))
       .attr("id", d => "cell"+d).attr("fill", d => getColor(grid.cells.h[d], scheme));
   }
 
@@ -391,9 +388,9 @@ function editHeightmap() {
     const scheme = getColorScheme();
 
     selection.forEach(function(i) {
-      let cell = heights.select("#cell"+i);
+      let cell = viewbox.select("#heights").select("#cell"+i);
       if (!ocean && grid.cells.h[i] < 20) {cell.remove(); return;}
-      if (!cell.size()) cell = heights.append("polygon").attr("points", getGridPolygon(i)).attr("id", "cell"+i);
+      if (!cell.size()) cell = viewbox.select("#heights").append("polygon").attr("points", getGridPolygon(i)).attr("id", "cell"+i);
       cell.attr("fill", getColor(grid.cells.h[i], scheme));
     });
   }
@@ -579,7 +576,7 @@ function editHeightmap() {
       const someHeights = grid.cells.h.some(h => h);
       if (!someHeights) {tip("Heightmap is already cleared, please do not click twice if not required", false, "error"); return;}
       grid.cells.h = new Uint8Array(grid.cells.i.length);
-      heights.selectAll("*").remove();
+      viewbox.select("#heights").selectAll("*").remove();
       updateHistory();
     }
 
@@ -941,7 +938,7 @@ function editHeightmap() {
 
     // remove all heights
     grid.cells.h = new Uint8Array(grid.cells.i.length);
-    heights.selectAll("*").remove();
+    viewbox.select("#heights").selectAll("*").remove();
     updateHistory();
 
     if (modules.openImageConverter) return;
@@ -995,7 +992,7 @@ function editHeightmap() {
       const imageData = ctx.getImageData(0, 0, graphWidth, graphHeight);
       const data = imageData.data;
 
-      heights.selectAll("*").remove();
+      viewbox.select("#heights").selectAll("*").remove();
       d3.select("#imageConverter").selectAll("div.color-div").remove();
       colorsSelect.style.display = "block";
       colorsUnassigned.style.display = "block";
@@ -1011,7 +1008,7 @@ function editHeightmap() {
       const cmap = MMCQ.quantize(gridColors, count);
       const usedColors = new Set();
 
-      heights.selectAll("polygon").data(grid.cells.i).join("polygon")
+      viewbox.select("#heights").selectAll("polygon").data(grid.cells.i).join("polygon")
         .attr("points", d => getGridPolygon(d))
         .attr("id", d => "cell"+d).attr("fill", d => {
           const clr = `rgb(${cmap.nearest(gridColors[d])})`;
@@ -1035,7 +1032,7 @@ function editHeightmap() {
     }
 
     function colorClicked() {
-      heights.selectAll(".selectedCell").attr("class", null);
+      viewbox.select("#heights").selectAll(".selectedCell").attr("class", null);
       const unselect = this.classList.contains("selectedColor");
 
       const selectedColor = imageConverter.querySelector("div.selectedColor");
@@ -1054,8 +1051,8 @@ function editHeightmap() {
       }
 
       const color = this.getAttribute("data-color");
-      heights.selectAll("polygon.selectedCell").classed("selectedCell", 0);
-      heights.selectAll("polygon[fill='" + color + "']").classed("selectedCell", 1);
+      viewbox.select("#heights").selectAll("polygon.selectedCell").classed("selectedCell", 0);
+      viewbox.select("#heights").selectAll("polygon[fill='" + color + "']").classed("selectedCell", 1);
     }
 
     function assignHeight() {
@@ -1066,7 +1063,7 @@ function editHeightmap() {
       selectedColor.setAttribute("data-color", rgb);
       selectedColor.setAttribute("data-height", height);
 
-      heights.selectAll(".selectedCell").each(function() {
+      viewbox.select("#heights").selectAll(".selectedCell").each(function() {
         this.setAttribute("fill", rgb); 
         this.setAttribute("data-height", height);
       });
@@ -1090,7 +1087,7 @@ function editHeightmap() {
         const colorTo = color(1 - (normalized < .2 ? normalized-.05 : normalized));
         const heightTo = normalized * 100;
 
-        heights.selectAll("polygon[fill='" + colorFrom + "']").attr("fill", colorTo).attr("data-height", heightTo);
+        viewbox.select("#heights").selectAll("polygon[fill='" + colorFrom + "']").attr("fill", colorTo).attr("data-height", heightTo);
         el.style.backgroundColor = colorTo;
         el.setAttribute("data-color", colorTo);
         el.setAttribute("data-height", heightTo);
@@ -1127,13 +1124,13 @@ function editHeightmap() {
       viewbox.style("cursor", "default").on(".drag", null);
       tip('Heightmap edit mode is active. Click on "Exit Customization" to finalize the heightmap', true);
 
-      heights.selectAll("polygon").each(function() {
+      viewbox.select("#heights").selectAll("polygon").each(function() {
         const height = +this.getAttribute("data-height") || 0;
         const i = +this.id.slice(4);
         grid.cells.h[i] = height;
       });
 
-      heights.selectAll("polygon").remove();
+      viewbox.select("#heights").selectAll("polygon").remove();
       updateHeightmap();
     }
   }

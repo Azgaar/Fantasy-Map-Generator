@@ -304,6 +304,9 @@ function editCultures() {
     pack.cells.culture.forEach((c, i) => {if(c === culture) pack.cells.culture[i] = 0;});
     pack.cultures[culture].removed = true;
 
+    const origin = pack.cultures[culture].origin;
+    pack.cultures.forEach(c => {if(c.origin === culture) c.origin = origin;});
+
     refreshCulturesEditor();
   }
 
@@ -363,6 +366,7 @@ function editCultures() {
     // build hierarchy tree
     pack.cultures[0].origin = null;
     const cultures = pack.cultures.filter(c => !c.removed);
+    if (cultures.length < 3) {tip("Not enough cultures to show hierarchy", false, "error"); return;}
     const root = d3.stratify().id(d => d.i).parentId(d => d.origin)(cultures);
     const treeWidth = root.leaves().length;
     const treeHeight = root.height;
@@ -452,7 +456,6 @@ function editCultures() {
     }
   }
 
-  // re-calculate cultures
   function recalculateCultures(must) {
     if (!must && !culturesAutoChange.checked) return;
 
@@ -508,7 +511,7 @@ function editCultures() {
     body.querySelector("div.selected").classList.remove("selected");
     body.querySelector("div[data-id='"+culture+"']").classList.add("selected");
   }
-  
+
   function dragCultureBrush() {
     const r = +culturesManuallyBrush.value;
 
@@ -523,7 +526,6 @@ function editCultures() {
     });
   }
 
-  // change culture within selection
   function changeCultureForSelection(selection) {
     const temp = cults.select("#temp");
     const selected = body.querySelector("div.selected");
@@ -564,7 +566,7 @@ function editCultures() {
     }
     exitCulturesManualAssignment();
   }
- 
+
   function exitCulturesManualAssignment(close) {
     customization = 0;
     cults.select("#temp").remove();
@@ -637,7 +639,7 @@ function editCultures() {
     const name = getFileName("Cultures") + ".csv";
     downloadFile(data, name);
   }
-  
+
   function closeCulturesEditor() {
     debug.select("#cultureCenters").remove();
     exitCulturesManualAssignment("close");

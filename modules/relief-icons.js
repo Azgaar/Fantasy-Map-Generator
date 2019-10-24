@@ -4,13 +4,12 @@
     (global.ReliefIcons = factory());
 }(this, (function () {'use strict';
 
-  var ReliefIcons = function ReliefIcons() {
+  const ReliefIcons = function() {
     console.time('drawRelief');
     terrain.selectAll("*").remove();
-    const density = +styleReliefDensityInput.value;
-    if (!density) return;
-
-    const size = 1.6, mod = .2 * size; // size modifier;s
+    const density = terrain.attr("density") || .4;
+    const size = 1.6 * (terrain.attr("size") || 1);
+    const mod = .2 * size; // size modifier;s
     const relief = []; // t: type, c: cell, x: centerX, y: centerY, s: size;
     const cells = pack.cells;
 
@@ -106,9 +105,10 @@
   }
 
   function getIcon(type) {
-    if (styleReliefSet.value === "simple") return "#relief-" + getOldIcon(type) + "-1";
-    if (styleReliefSet.value === "colored") return "#relief-" + type + "-" + getVariant(type);
-    if (styleReliefSet.value === "gray") return "#relief-" + type + "-" + getVariant(type) + "-bw";
+    const set = terrain.attr("set") || "simple";
+    if (set === "simple") return "#relief-" + getOldIcon(type) + "-1";
+    if (set === "colored") return "#relief-" + type + "-" + getVariant(type);
+    if (set === "gray") return "#relief-" + type + "-" + getVariant(type) + "-bw";
     return "#relief-" + getOldIcon(type) + "-1"; // simple
   }
 

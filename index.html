@@ -1249,7 +1249,7 @@
                   <td>Style</td>
                   <td>
                     <select id="styleReliefSet">
-                      <option value="simple" selected>Old</option>
+                      <option value="simple" selected>Simple</option>
                       <option value="gray">Gray</option>
                       <option value="colored">Colored</option>
                     </select>
@@ -1520,9 +1520,9 @@
         <p data-tip="Map generation settings. Generate a new map to apply the settings">Map settings (new map to apply):</p>
         <table>
 
-          <tr data-tip="Map height and width in pixels. Please consider reducing map size in case of performance issues">
+          <tr data-tip="Canvas height and width in pixels, please keep at your screen size or less to improve performance">
             <td></td>
-            <td>Map size</td>
+            <td>Canvas size</td>
             <td>
               <span data-tip="Map width in pixels">width</span>
               <input data-tip="Map width in pixels" id="mapWidthInput" class="paired" type="number" min=240 value=960>
@@ -1530,11 +1530,11 @@
               <input data-tip="Map height in pixels" id="mapHeightInput" class="paired" type="number" min=135 value=540>
             </td>
             <td>
-              <i data-tip="Toggle between screen size and initial map size" id="toggleFullscreen" class="icon-resize-full-alt"></i>
+              <i data-tip="Toggle between screen size and initial canvas size" id="toggleFullscreen" class="icon-resize-full-alt"></i>
             </td>
           </tr>
 
-          <tr data-tip="Map seed number. Seed produces the same map only if map size and options are the same">
+          <tr data-tip="Map seed number. Seed produces the same map only if canvas size and options are the same">
             <td>
               <i data-tip="Click to generate a map for this seed" id="optionsSeedGenerate"></i>
             </td>
@@ -1581,7 +1581,7 @@
                 <option value="Volcano">Volcano</option>
                 <option value="High Island">High Island</option>
                 <option value="Low Island">Low Island</option>
-                <option value="Continents">Continents</option>
+                <option value="Continents">Two Continents</option>
                 <option value="Archipelago">Archipelago</option>
                 <option value="Atoll">Atoll</option>
                 <option value="Mediterranean">Mediterranean</option>
@@ -1692,7 +1692,7 @@
             </td>
           </tr>
 
-          <tr data-tip="Define how many organized (!) religions and cults should be generated">
+          <tr data-tip="Define how many organized religions and cults should be generated. Cultures will have their own folk religions in any case">
             <td>
               <i data-locked=0 id="lock_religions" class="icon-lock-open"></i>
             </td>
@@ -1805,6 +1805,7 @@
         <div>
           <p>Click to overview:</p>
           <button id="overviewBurgsButton" data-tip="Click to open Burgs Overview. Shortcut: Shift + T">Burgs</button>
+          <button id="overviewCellsButton" data-tip="Click to open Cell details view. Shortcut: Shift + E">Cells</button>
           <!-- <button id="overviewLandmassedButton" data-tip="Click to open Landmasses Overview. Shortcut: Shift + L">Landmasses</button> -->
           <!-- <button id="overviewWaterbodiesButton" data-tip="Click to open Waterbodies Overview. Shortcut: Shift + W">Waterbodies</button> -->
           <!-- <button id="overviewRiversButton" data-tip="Click to open Rivers Overview. Shortcut: Shift + V">Rivers</button> -->
@@ -1833,30 +1834,6 @@
           <button id="addRiver" data-tip="Click on map to place a river. Hold Shift to add multiple. Shortcut: Shift + I">River</button>
           <button id="addRoute" data-tip="Click on map to place a route. Shortcut: Shift + E">Route</button>
           <button id="addMarker" data-tip="Click on map to place a marker. Hold Shift to add multiple. Shortcut: Shift + K">Marker</button>
-        </div>
-
-        <p>Cell info: <i data-tip="Click to toggle the section" class="collapsible icon-down-open pointer"></i></p>
-        <div id="cellInfo" style="display: none">
-          <div>
-            Coord: <span id="infoX">0</span>/<span id="infoY">0</span><br>
-            Cell: <span id="infoCell">0</span><br>
-            Area: <span id="infoArea">0</span><br>
-          </div>
-          <div>
-            Type: <span id="infoFeature">n/a</span><br>
-            Precip: <span id="infoPrec">0</span><br>
-            Population: <span id="infoPopulation">0</span>
-          </div>
-          <div>
-            Height: <span id="infoHeight">0</span><br>
-            Temperature: <span id="infoTemp">0</span><br>
-            Biome: <span id="infoBiome">n/a</span><br>
-            State: <span id="infoState">n/a</span><br>
-            Province: <span id="infoProvince">n/a</span><br>
-            Culture: <span id="infoCulture">n/a</span><br>
-            Religion: <span id="infoReligion">n/a</span><br>
-            Burg: <span id="infoBurg">n/a</span>
-          </div>
         </div>
       </div>
 
@@ -1995,8 +1972,8 @@
             <input id="precOutput" data-stored="prec" type="range" min="0" max="500" value="50">
           </label>
         </div>
-        <div data-tip="Map size. Can be changed in general options">
-          <i>Map size:</i><br>
+        <div data-tip="Canvas size. Can be changed in general options on new map generation">
+          <i>Canvas size:</i><br>
           <span id="mapSize"></span> px = <span id="mapSizeFriendly"></span>
         </div>
         <div>
@@ -2503,7 +2480,7 @@
           <option value="templateVolcano">Volcano</option>
           <option value="templateHighIsland">High Island</option>
           <option value="templateLowIsland">Low Island</option>
-          <option value="templateContinents">Continents</option>
+          <option value="templateContinents">Two Continents</option>
           <option value="templateArchipelago">Archipelago</option>
           <option value="templateAtoll">Atoll</option>
           <option value="templateMediterranean">Mediterranean</option>
@@ -3236,6 +3213,23 @@
         <button id="styleSaverLoad" data-tip="Open previously downloaded style file" class="icon-upload"></button>
         <button id="styleSaverCA" data-tip="Find or share custom style preset on Cartography Assets portal" class="icon-drafting-compass" onclick="openURL('https://www.cartographyassets.com/assets/categories/azgaar-generator.87')"></button>
       </div>
+    </div>
+
+    <div id="cellInfo" style="display: none" class="dialog stable">
+      <p><b>Cell:</b> <span id="infoCell">0</span></p>
+      <p><b>Coord:</b> <span id="infoX">0</span>/<span id="infoY">0</span></p>
+      <p><b>Area:</b> <span id="infoArea">0</span></p>
+      <p><b>Type:</b> <span id="infoFeature">n/a</span></p>
+      <p><b>Precipitation:</b> <span id="infoPrec">0</span></p>
+      <p><b>Population:</b> <span id="infoPopulation">0</span></p>
+      <p><b>Height:</b> <span id="infoHeight">0</span></p>
+      <p><b>Temperature:</b> <span id="infoTemp">0</span></p>
+      <p><b>Biome:</b> <span id="infoBiome">n/a</span></p>
+      <p><b>State:</b> <span id="infoState">n/a</span></p>
+      <p><b>Province:</b> <span id="infoProvince">n/a</span></p>
+      <p><b>Culture:</b> <span id="infoCulture">n/a</span></p>
+      <p><b>Religion:</b> <span id="infoReligion">n/a</span></p>
+      <p><b>Burg:</b> <span id="infoBurg">n/a</span></p>
     </div>
 
     <div id="preview3d" class="dialog stable" style="display: none; padding: 0px"></div>

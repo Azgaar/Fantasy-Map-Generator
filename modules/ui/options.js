@@ -133,26 +133,33 @@ function mapSizeInputChange() {
 
 // change svg size on manual size change or window resize, do not change graph size
 function changeMapSize() {
-  svgWidth = +mapWidthInput.value;
-  svgHeight = +mapHeightInput.value;
+  const svgWidth = Math.min(+mapWidthInput.value, window.innerWidth);
+  const svgHeight = Math.min(+mapHeightInput.value, window.innerHeight);
   svg.attr("width", svgWidth).attr("height", svgHeight);
-  const width = Math.max(svgWidth, graphWidth);
-  const height = Math.max(svgHeight, graphHeight);
-  zoom.translateExtent([[0, 0], [width, height]]);
-  landmass.select("rect").attr("x", 0).attr("y", 0).attr("width", width).attr("height", height);
-  oceanPattern.select("rect").attr("x", 0).attr("y", 0).attr("width", width).attr("height", height);
-  oceanLayers.select("rect").attr("x", 0).attr("y", 0).attr("width", width).attr("height", height);
+
+  const maxWidth = Math.max(+mapWidthInput.value, graphWidth);
+  const maxHeight = Math.max(+mapHeightInput.value, graphHeight);
+  zoom.translateExtent([[0, 0], [maxWidth, maxHeight]]);
+  landmass.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
+  oceanPattern.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
+  oceanLayers.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
+  defs.select("#mapClip > rect").attr("width", maxWidth).attr("height", maxHeight);
+
   fitScaleBar();
   if (window.fitLegendBox) fitLegendBox();
 }
 
-// just apply map size that was already set, apply graph size!
+// just apply canvas size that was already set
 function applyMapSize() {
-  svgWidth = graphWidth = +mapWidthInput.value;
-  svgHeight = graphHeight = +mapHeightInput.value;
+  graphWidth = +mapWidthInput.value;
+  graphHeight = +mapHeightInput.value;
+  svgWidth = Math.min(graphWidth, window.innerWidth)
+  svgHeight = Math.min(graphHeight, window.innerHeight)
   svg.attr("width", svgWidth).attr("height", svgHeight);
   zoom.translateExtent([[0, 0],[graphWidth, graphHeight]]).scaleExtent([1, 20]).scaleTo(svg, 1);
-  viewbox.attr("transform", null);
+  viewbox.attr("transform", null).attr("clip-path", "url(#mapClip)");
+  defs.append("clipPath").attr("id", "mapClip").append("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
+  //zoom.translateExtent([[-svgWidth*.2, -graphHeight*.2], [svgWidth*1.2, graphHeight*1.2]]);
 }
 
 function toggleFullscreen() {

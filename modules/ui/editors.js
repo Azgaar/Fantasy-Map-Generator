@@ -262,7 +262,7 @@ function drawLegend(name, data) {
   fitLegendBox();
 }
 
-// fit Legend box to map size
+// fit Legend box to canvas size
 function fitLegendBox() {
   if (!legend.selectAll("*").size()) return;
   const px = isNaN(+legend.attr("data-x")) ? 99 : legend.attr("data-x") / 100;

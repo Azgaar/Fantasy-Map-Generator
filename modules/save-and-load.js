@@ -74,7 +74,7 @@ async function saveJPEG() {
 }
 
 // parse map svg to object url
-async function getMapURL(type) {
+async function getMapURL(type, subtype) {
   const cloneEl = document.getElementById("map").cloneNode(true); // clone svg
   cloneEl.id = "fantasyMap";
   document.body.appendChild(cloneEl);
@@ -83,6 +83,7 @@ async function getMapURL(type) {
 
   const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
   if (isFirefox && type === "mesh") clone.select("#oceanPattern").remove();
+  if (subtype === "globe") clone.select("#scaleBar").remove();
   if (type === "mesh") clone.attr("width", graphWidth).attr("height", graphHeight);
   if (type !== "png") clone.select("#viewbox").attr("transform", null); // reset transform to show whole map
   if (type === "svg") removeUnusedElements(clone);
@@ -551,7 +552,7 @@ function uploadMap(file, callback) {
 function parseLoadedData(data) {
   try {
     // exit customization
-    closeDialogs();
+    if (window.closeDialogs) closeDialogs();
     customization = 0;
     if (customizationMenu.offsetParent) styleTab.click();
 
@@ -908,12 +909,18 @@ function parseLoadedData(data) {
 
         // v 1.11 had an issue with fogging being displayed on load
         unfog();
+
+        // v 1.2 added new terrain attributes
+        if (!terrain.attr("set")) terrain.attr("set", "simple");
+        if (!terrain.attr("size")) terrain.attr("size", 1);
+        if (!terrain.attr("density")) terrain.attr("density", .4);
       }
 
     }()
 
     changeMapSize();
     if (window.restoreDefaultEvents) restoreDefaultEvents();
+    focusOn(); // based on searchParams focus on point, cell or burg
     invokeActiveZooming();
 
     console.warn(`TOTAL: ${rn((performance.now()-uploadMap.timeStart)/1000,2)}s`);

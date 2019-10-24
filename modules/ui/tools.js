@@ -15,10 +15,11 @@ toolsContent.addEventListener("click", function(event) {
   if (button === "editCulturesButton") editCultures(); else
   if (button === "editReligions") editReligions(); else
   if (button === "editNamesBaseButton") editNamesbase(); else
-  if (button === "overviewBurgsButton") editBurgs(); else
   if (button === "editUnitsButton") editUnits(); else
   if (button === "editNotesButton") editNotes(); else
-  if (button === "editZonesButton") editZones();
+  if (button === "editZonesButton") editZones(); else
+  if (button === "overviewBurgsButton") editBurgs(); else
+  if (button === "overviewCellsButton") viewCellDetails();
 
   // Click to Regenerate buttons
   if (event.target.parentNode.id === "regenerateFeature") {
@@ -90,7 +91,8 @@ function regenerateBurgs() {
   rankCells();
   cells.burg = new Uint16Array(cells.i.length);
   const burgs = pack.burgs = [0]; // clear burgs array
-  states.filter(s => s.i).forEach(s => s.capital = 0); // clear capitals
+  states.filter(s => s.i).forEach(s => s.capital = 0); // clear state capitals
+  pack.provinces.filter(p => p.i).forEach(p => p.burg = 0); // clear province capitals
   const burgsTree = d3.quadtree();
 
   const score = new Int16Array(cells.s.map(s => s * Math.random())); // cell score for capitals placement
@@ -477,4 +479,8 @@ function addMarkerOnClick() {
     .attr("data-size", desired).attr("width", size).attr("height", size);
 
   if (d3.event.shiftKey === false) unpressClickToAddButton();
+}
+
+function viewCellDetails() {
+  $("#cellInfo").dialog({resizable: false, width: "22em", title: "Cell Details"});
 }

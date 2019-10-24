@@ -461,7 +461,9 @@ function drawCells() {
 }
 
 function toggleCultures(event) {
-  if (!cults.selectAll("path").size()) {
+  const cultures = pack.cultures.filter(c => c.i && !c.removed);
+  const empty = !cults.selectAll("path").size();
+  if (empty && cultures.length) {
     turnButtonOn("toggleCultures");
     drawCultures();
     if (event && event.ctrlKey) editStyle("cults");
@@ -472,7 +474,7 @@ function toggleCultures(event) {
   }
 }
 
-function drawCultures(event) {
+function drawCultures() {
   console.time("drawCultures");
   
   cults.selectAll("path").remove();
@@ -520,7 +522,8 @@ function drawCultures(event) {
 }
 
 function toggleReligions(event) {
-  if (!relig.selectAll("path").size()) {
+  const religions = pack.religions.filter(r => r.i && !r.removed);
+  if (!relig.selectAll("path").size() && religions.length) {
     turnButtonOn("toggleReligions");
     drawReligions();
     if (event && event.ctrlKey) editStyle("relig");

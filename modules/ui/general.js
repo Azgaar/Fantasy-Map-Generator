@@ -50,7 +50,7 @@ function moved() {
   showNotes(d3.event, i);
   const g = findGridCell(point[0], point[1]); // grid cell id
   if (tooltip.dataset.main) showMainTip(); else showMapTooltip(point, d3.event, i, g);
-  if (toolsContent.style.display === "block" && cellInfo.style.display === "block") updateCellInfo(point, i, g);
+  if (cellInfo.offsetParent) updateCellInfo(point, i, g);
 }
 
 // show note box on hover (if any)

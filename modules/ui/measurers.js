@@ -266,7 +266,7 @@ function drawScaleBar() {
   fitScaleBar();
 }
 
-// fit ScaleBar to map size
+// fit ScaleBar to canvas size
 function fitScaleBar() {
   if (!scaleBar.select("rect").size() || scaleBar.style("display") === "none") return;
   const px = isNaN(+barPosX.value) ? .99 : barPosX.value / 100;
