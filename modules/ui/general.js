@@ -80,10 +80,9 @@ function showMapTooltip(point, e, i, g) {
   const group = path[path.length - 7].id;
   const subgroup = path[path.length - 8].id;
   const land = pack.cells.h[i] >= 20;
-  //const type = pack.features[cells.f[i]].type;
 
   // specific elements
-  if (group === "rivers") {tip("Click to edit the River"); return;}
+  if (group === "rivers") {tip(getRiverName(e.target.id) + "Click to edit"); return;}
   if (group === "routes") {tip("Click to edit the Route"); return;}
   if (group === "terrain") {tip("Click to edit the Relief Icon"); return;}
   if (subgroup === "burgLabels" || subgroup === "burgIcons") {tip("Click to open Burg Editor"); return;}
@@ -121,6 +120,11 @@ function showMapTooltip(point, e, i, g) {
   if (layerIsOn("toggleHeight")) tip("Height: " + getFriendlyHeight(point));
 }
 
+function getRiverName(id) {
+  const r = pack.rivers.find(r => r.i == id.slice(5));
+  return r ? r.name + " " + r.type + ". " : "";
+}
+
 // get cell info on mouse move
 function updateCellInfo(point, i, g) {
   const cells = pack.cells;
@@ -133,6 +137,7 @@ function updateCellInfo(point, i, g) {
   infoHeight.innerHTML = getFriendlyHeight(point) + " (" + h + ")";
   infoTemp.innerHTML = convertTemperature(grid.cells.temp[g]);
   infoPrec.innerHTML = cells.h[i] >= 20 ? getFriendlyPrecipitation(i) : "n/a";
+  infoRiver.innerHTML = cells.h[i] >= 20 && cells.r[i] ? getRiverInfo(cells.r[i]) : "no";
   infoState.innerHTML = cells.h[i] >= 20 ? cells.state[i] ? `${pack.states[cells.state[i]].fullName} (${cells.state[i]})` : "neutral lands (0)" : "no";
   infoProvince.innerHTML = cells.province[i] ? `${pack.provinces[cells.province[i]].fullName} (${cells.province[i]})` : "no";
   infoCulture.innerHTML = cells.culture[i] ? `${pack.cultures[cells.culture[i]].name} (${cells.culture[i]})` : "no";
@@ -169,6 +174,11 @@ function getHeight(h) {
 function getFriendlyPrecipitation(i) {
   const prec = grid.cells.prec[pack.cells.g[i]];
   return prec * 100 + " mm";
+}
+
+function getRiverInfo(id) {
+  const r = pack.rivers.find(r => r.i == id);
+  return r ? `${r.name} ${r.type} (${id})` : "n/a";
 }
 
 // get user-friendly (real-world) population value from map data
@@ -274,6 +284,7 @@ function showInfo() {
 
 // prevent default browser behavior for FMG-used hotkeys
 document.addEventListener("keydown", event => {
+  if (event.altKey && event.keyCode !== 18) event.preventDefault(); // disallowalt key combinations
   if ([112, 113, 117, 120, 9].includes(event.keyCode)) event.preventDefault(); // F1, F2, F6, F9, Tab
 });
 
@@ -286,7 +297,7 @@ document.addEventListener("keyup", event => {
   if (active === "DIV" && document.activeElement.contentEditable === "true") return; // don't trigger if user inputs a text
   event.stopPropagation();
 
-  const key = event.keyCode, ctrl = event.ctrlKey, shift = event.shiftKey, meta = event.metaKey;
+  const key = event.keyCode, ctrl = event.ctrlKey || event.metaKey, shift = event.shiftKey, alt = event.altKey;
 
   if (key === 112) showInfo(); // "F1" to show info
   else if (key === 113) regeneratePrompt(); // "F2" for new map
@@ -321,22 +332,23 @@ document.addEventListener("keyup", event => {
   else if (shift && key === 78) editNamesbase(); // Shift + "N" to edit Namesbase
   else if (shift && key === 90) editZones(); // Shift + "Z" to edit Zones
   else if (shift && key === 82) editReligions(); // Shift + "R" to edit Religions
-  else if (shift && key === 84) editBurgs(); // Shift + "T" to edit Burgs
-  else if (shift && key === 85) editUnits(); // Shift + "U" to edit Units
+  else if (shift && key === 81) editUnits(); // Shift + "Q" to edit Units
   else if (shift && key === 79) editNotes(); // Shift + "O" to edit Notes
+  else if (shift && key === 84) overviewBurgs(); // Shift + "T" to open Burgs overview
+  else if (shift && key === 86) overviewRivers(); // Shift + "V" to open Rivers overview
+  else if (shift && key === 69) viewCellDetails(); // Shift + "E" to open Cell Details
 
-  else if (shift && key === 71) toggleAddBurg(); // Shift + "G" to click to add Burg
-  else if (shift && key === 65) toggleAddLabel(); // Shift + "A" to click to add Label
-  else if (shift && key === 73) toggleAddRiver(); // Shift + "I" to click to add River
-  else if (shift && key === 69) toggleAddRoute(); // Shift + "E" to click to add Route
-  else if (shift && key === 75) toggleAddMarker(); // Shift + "K" to click to add Marker
+  else if (shift && key === 49) toggleAddBurg(); // Shift + "1" to click to add Burg
+  else if (shift && key === 50) toggleAddLabel(); // Shift + "2" to click to add Label
+  else if (shift && key === 51) toggleAddRiver(); // Shift + "3" to click to add River
+  else if (shift && key === 52) toggleAddRoute(); // Shift + "4" to click to add Route
+  else if (shift && key === 53) toggleAddMarker(); // Shift + "5" to click to add Marker
 
-  else if (meta && key === 192) console.log(pack.cells); // Metakey + "`" to log cells data
-  else if (meta && key === 66) console.table(pack.burgs); // Metakey + "B" to log burgs data
-  else if (meta && key === 83) console.table(pack.states); // Metakey + "S" to log states data
-  else if (meta && key === 67) console.table(pack.cultures); // Metakey + "C" to log cultures data
-  else if (meta && key === 82) console.table(pack.religions); // Metakey + "R" to log religions data
-  else if (meta && key === 70) console.table(pack.features); // Metakey + "F" to log features data
+  else if (alt && key === 66) console.table(pack.burgs); // Alt + "B" to log burgs data
+  else if (alt && key === 83) console.table(pack.states); // Alt + "S" to log states data
+  else if (alt && key === 67) console.table(pack.cultures); // Alt + "C" to log cultures data
+  else if (alt && key === 82) console.table(pack.religions); // Alt + "R" to log religions data
+  else if (alt && key === 70) console.table(pack.features); // Alt + "F" to log features data
 
   else if (key === 88) toggleTexture(); // "X" to toggle Texture layer
   else if (key === 72) toggleHeight(); // "H" to toggle Heightmap layer

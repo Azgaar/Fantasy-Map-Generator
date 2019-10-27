@@ -30,7 +30,7 @@ function editBurg(id) {
   document.getElementById("burgAddGroup").addEventListener("click", toggleNewGroupInput);
   document.getElementById("burgRemoveGroup").addEventListener("click", removeBurgsGroup);
 
-  document.getElementById("burgName").addEventListener("input", changeName); 
+  document.getElementById("burgName").addEventListener("input", changeName);
   document.getElementById("burgNameReCulture").addEventListener("click", generateNameCulture);
   document.getElementById("burgNameReRandom").addEventListener("click", generateNameRandom);
   document.getElementById("burgPopulation").addEventListener("change", changePopulation);

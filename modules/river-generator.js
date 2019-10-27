@@ -73,12 +73,16 @@
           riversData.push({river: riverNext, cell: i, x, y});
           riverNext++;
         }
-    
+
         if (cells.r[min]) { // downhill cell already has river assigned
           if (cells.fl[min] < cells.fl[i]) {
-            cells.conf[min] = cells.fl[min];  // confluence
+            cells.conf[min] = cells.fl[min]; // mark confluence
+            if (h[min] >= 20) riversData.find(r => r.river === cells.r[min]).parent = cells.r[i]; // min river is a tributary of current river
             cells.r[min] = cells.r[i]; // re-assign river if downhill part has less flux
-          } else cells.conf[min] += cells.fl[i]; // confluence
+          } else {
+            cells.conf[min] += cells.fl[i]; // mark confluence
+            if (h[min] >= 20) riversData.find(r => r.river === cells.r[i]).parent = cells.r[min]; // current river is a tributary of min river
+          }
         } else cells.r[min] = cells.r[i]; // assign the river to the downhill cell
 
         const nx = p[min][0], ny = p[min][1];
@@ -99,25 +103,29 @@
 
       });
     }()
-  
-    void function drawRivers() {
-      const riverPaths = []; // to store data for all rivers
+
+    void function defineRivers() {
+      pack.rivers = []; // rivers data
+      const riverPaths = []; // temporary data for all rivers
 
       for (let r = 1; r <= riverNext; r++) {
         const riverSegments = riversData.filter(d => d.river === r);
-    
+
         if (riverSegments.length > 2) {
           const riverEnhanced = addMeandring(riverSegments);
-          const width = rn(0.8 + Math.random() * 0.4, 1); // river width modifier
-          const increment = rn(0.8 + Math.random() * 0.6, 1); // river bed widening modifier
-          const path = getPath(riverEnhanced, width, increment);
+          const width = rn(.8 + Math.random() * .4, 1); // river width modifier
+          const increment = rn(.8 + Math.random() * .6, 1); // river bed widening modifier
+          const [path, length] = getPath(riverEnhanced, width, increment);
           riverPaths.push([r, path, width, increment]);
+          const parent = riverSegments[0].parent || 0;
+          pack.rivers.push({i:r, parent, length, source:riverSegments[0].cell, mouth:last(riverSegments).cell});
         } else {
           // remove too short rivers
           riverSegments.filter(s => cells.r[s.cell] === r).forEach(s => cells.r[s.cell] = 0);
         }
       }
 
+      // drawRivers
       rivers.selectAll("path").remove();
       rivers.selectAll("path").data(riverPaths).enter()
         .append("path").attr("d", d => d[1]).attr("id", d => "river"+d[0])
@@ -129,12 +137,10 @@
 
   // depression filling algorithm (for a correct water flux modeling)
   const resolveDepressions = function(h) {
-    console.time('resolveDepressions');
     const cells = pack.cells;
     const land = cells.i.filter(i => h[i] >= 20 && h[i] < 100 && !cells.b[i]); // exclude near-border cells
     land.sort((a,b) => h[b] - h[a]); // highest cells go first
     let depressed = false;
-    const depressions = [];
 
     for (let l = 0, depression = Infinity; depression && l < 100; l++) {
       depression = 0;
@@ -147,12 +153,8 @@
           depressed = true;
         }
       }
-      depressions.push(depression);
     }
 
-    console.log(depressions);
-
-    console.timeEnd('resolveDepressions');
     return depressed;
   }
 
@@ -242,9 +244,56 @@
     const right = lineGen(riverPointsRight);
     let left = lineGen(riverPointsLeft);
     left = left.substring(left.indexOf("C"));
-    return round(right + left, 2);
+    return [round(right + left, 2), rn(riverLength, 2)];
   }
 
-  return {generate, resolveDepressions, addMeandring, getPath};
+  const specify = function() {
+    if (!pack.rivers.length) return;
+    const smallLength = pack.rivers.map(r => r.length||0).sort((a,b) => a-b)[Math.ceil(pack.rivers.length * .15)];
+    const smallType = {"Creek":9, "River":3, "Brook":3, "Stream":1}; // weighted small river types
+
+    for (const r of pack.rivers) {
+      r.basin = getBasin(r.i, r.parent);
+      r.name = getName(r.mouth);
+      const small = r.length < smallLength;
+      r.type = r.parent && !(r.i%6) ? small ? "Branch" : "Fork" : small ? rw(smallType) : "River";
+    }
+
+    return;
+    const basins = [...(new Set(pack.rivers.map(r=>r.basin)))];
+    const colors = getColors(basins.length);
+    basins.forEach((b,i) => {
+      pack.rivers.filter(r => r.basin === b).forEach(r => {
+        rivers.select("#river"+r.i).attr("fill", colors[i]);
+      });
+    });
+
+  }
+
+  const getName = function(cell) {
+    return Names.getCulture(pack.cells.culture[cell]);
+  }
+
+  // remove river and all its tributaries
+  const remove = function(id) {
+    const riversToRemove = pack.rivers.filter(r => r.i === id || getBasin(r.i, r.parent, id) === id).map(r => r.i);
+    riversToRemove.forEach(r => rivers.select("#river"+r).remove());
+    pack.cells.r.forEach((r, i) => {
+      if (r && riversToRemove.includes(r)) pack.cells.r[i] = 0;
+    });
+    pack.rivers = pack.rivers.filter(r => !riversToRemove.includes(r.i));
+  }
+
+  const getBasin = function(r, p, e) {
+    while (p) {
+      const parent = pack.rivers.find(r => r.i === p);
+      if (parent) r = parent.i;
+      p = parent ? parent.parent : 0;
+      if (r === e) return r;
+    }
+    return r;
+  }
+
+  return {generate, resolveDepressions, addMeandring, getPath, specify, getName, getBasin, remove};
 
 })));

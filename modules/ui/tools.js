@@ -18,7 +18,8 @@ toolsContent.addEventListener("click", function(event) {
   if (button === "editUnitsButton") editUnits(); else
   if (button === "editNotesButton") editNotes(); else
   if (button === "editZonesButton") editZones(); else
-  if (button === "overviewBurgsButton") editBurgs(); else
+  if (button === "overviewBurgsButton") overviewBurgs(); else
+  if (button === "overviewRiversButton") overviewRivers(); else
   if (button === "overviewCellsButton") viewCellDetails();
 
   // Click to Regenerate buttons
@@ -67,9 +68,13 @@ function processFeatureRegeneration(event, button) {
 }
 
 function regenerateRivers() {
-  const heights = new Float32Array(pack.cells.h);
+  elevateLakes();
   Rivers.generate();
-  pack.cells.h = new Float32Array(heights);
+  for (const i of pack.cells.i) {
+    const f = pack.features[pack.cells.f[i]]; // feature
+    if (f.group === "freshwater") pack.cells.h[i] = 19; // de-elevate lakes
+  }
+  Rivers.specify();
   if (!layerIsOn("toggleRivers")) toggleRivers();
 }
 
@@ -134,7 +139,7 @@ function regenerateBurgs() {
   BurgsAndStates.drawBurgs();
   Routes.regenerate();
 
-  if (document.getElementById("burgsEditorRefresh").offsetParent) burgsEditorRefresh.click();
+  if (document.getElementById("burgsOverviewRefresh").offsetParent) burgsOverviewRefresh.click();
   if (document.getElementById("statesEditorRefresh").offsetParent) statesEditorRefresh.click();
 }
 
@@ -173,7 +178,7 @@ function regenerateStates() {
     labels.select("#states").selectAll("text"); // remove state labels
     defs.select("#textPaths").selectAll("path[id*='stateLabel']").remove(); // remove state labels paths
 
-    if (document.getElementById("burgsEditorRefresh").offsetParent) burgsEditorRefresh.click();
+    if (document.getElementById("burgsOverviewRefresh").offsetParent) burgsOverviewRefresh.click();
     if (document.getElementById("statesEditorRefresh").offsetParent) statesEditorRefresh.click();
     return;
   }
@@ -216,7 +221,7 @@ function regenerateStates() {
   if (!layerIsOn("toggleBorders")) toggleBorders(); else drawBorders();
   BurgsAndStates.drawStateLabels();
 
-  if (document.getElementById("burgsEditorRefresh").offsetParent) burgsEditorRefresh.click();
+  if (document.getElementById("burgsOverviewRefresh").offsetParent) burgsOverviewRefresh.click();
   if (document.getElementById("statesEditorRefresh").offsetParent) statesEditorRefresh.click();
 }
 
@@ -325,19 +330,24 @@ function addLabelOnClick() {
 function toggleAddBurg() {
   unpressClickToAddButton();
   document.getElementById("addBurgTool").classList.add("pressed");
-  editBurgs();
+  overviewBurgs();
   document.getElementById("addNewBurg").click();
 }
 
 function toggleAddRiver() {
   const pressed = document.getElementById("addRiver").classList.contains("pressed");
-  if (pressed) {unpressClickToAddButton(); return;}
+  if (pressed) {
+    unpressClickToAddButton();
+    document.getElementById("addNewRiver").classList.remove("pressed");
+    return;
+  }
 
   addFeature.querySelectorAll("button.pressed").forEach(b => b.classList.remove("pressed"));
   addRiver.classList.add('pressed');
+  document.getElementById("addNewRiver").classList.add("pressed");
   closeDialogs(".stable");
   viewbox.style("cursor", "crosshair").on("click", addRiverOnClick);
-  tip("Click on map to place new river or extend an existing one. Hold Shift to place multiple rivers", true);
+  tip("Click on map to place new river or extend an existing one. Hold Shift to place multiple rivers", true, "warn");
   if (!layerIsOn("toggleRivers")) toggleRivers();
 }
 
@@ -348,57 +358,55 @@ function addRiverOnClick() {
   if (cells.r[i] || cells.h[i] < 20 || cells.b[i]) return;
 
   const dataRiver = []; // to store river points
-  const river = +getNextId("river").slice(5); // river id
+  let river = +getNextId("river").slice(5); // river id
   cells.fl[i] = grid.cells.prec[cells.g[i]]; // initial flux
-  let depressed = false;
-  const heights = new Uint8Array(pack.cells.h); // initial heights
+
+  // height with added t value to make map less depressed
+  const h = Array.from(cells.h)
+    .map((h, i) => h < 20 || cells.t[i] < 1 ? h : h + cells.t[i] / 100)
+    .map((h, i) => h < 20 || cells.t[i] < 1 ? h : h + d3.mean(cells.c[i].map(c => cells.t[c])) / 10000);
+  Rivers.resolveDepressions(h);
 
   while (i) {
     cells.r[i] = river;
     const x = cells.p[i][0], y = cells.p[i][1];
     dataRiver.push({x, y, cell:i});
 
-    let min = cells.c[i][d3.scan(cells.c[i], (a, b) => cells.h[a] - cells.h[b])]; // downhill cell
-
-    if (cells.h[i] <= cells.h[min]) {
-      if (depressed) {tip("The heightmap is too depressed, please try again", false, "error"); return;}
-      depressed = Rivers.resolveDepressions();
-      min = cells.c[i][d3.scan(cells.c[i], (a, b) => cells.h[a] - cells.h[b])];
-    }
-
+    const min = cells.c[i][d3.scan(cells.c[i], (a, b) => h[a] - h[b])]; // downhill cell
+    if (h[i] <= h[min]) {tip(`Cell ${i} is depressed, river cannot flow further`, false, "error"); return;}
     const tx = cells.p[min][0], ty = cells.p[min][1];
 
-    if (cells.h[min] < 20) {
-      const px = (x + tx) / 2;
-      const py = (y + ty) / 2;
-      dataRiver.push({x: px, y: py, cell:i});
+    if (h[min] < 20) {
+      // pour to water body
+      dataRiver.push({x: tx, y: ty, cell:i});
       break;
     }
 
     if (!cells.r[min]) {
+      // continue if next cell has not river
       cells.fl[min] += cells.fl[i];
       i = min;
       continue;
     }
 
+    // hadnle case when lowest cell already has a river
     const r = cells.r[min];
-    const riverCellsUpper = cells.i.filter(i => cells.r[i] === r && cells.h[i] > cells.h[min]);
+    const riverCells = cells.i.filter(i => cells.r[i] === r);
+    const riverCellsUpper = riverCells.filter(i => h[i] > h[min]);
 
-    // new river is not perspective
+    // finish new river if old river is longer
     if (dataRiver.length <= riverCellsUpper.length) {
       cells.conf[min] += cells.fl[i];
       dataRiver.push({x: tx, y: ty, cell: min});
+      dataRiver[0].parent = r; // new river is tributary
       break;
     }
 
-    // new river is more perspective
+    // extend old river
     rivers.select("#river"+r).remove();
-    riverCellsUpper.forEach(i => cells.r[i] = 0);
-    if (riverCellsUpper.length > 1) {
-      // redraw upper part of the old river
-    }
-
-    cells.conf[min] = cells.fl[min];
+    cells.i.filter(i => cells.r[i] === river).forEach(i => cells.r[i] = r);
+    riverCells.forEach(i => cells.r[i] = 0);
+    river = r;
     cells.fl[min] = cells.fl[i] + grid.cells.prec[cells.g[min]];
     i = min;
   }
@@ -406,27 +414,30 @@ function addRiverOnClick() {
   const points = Rivers.addMeandring(dataRiver, Math.random() * .5 + .1);
   const width = Math.random() * .5 + .9;
   const increment = Math.random() * .4 + .8;
-  const d = Rivers.getPath(points, width, increment);
-  rivers.append("path").attr("d", d).attr("id", "river"+river).attr("data-width", width).attr("data-increment", increment);
+  const [path, length] = Rivers.getPath(points, width, increment);
+  rivers.append("path").attr("d", path).attr("id", "river"+river).attr("data-width", width).attr("data-increment", increment);
 
-  if (depressed) {
-    if (layerIsOn("toggleHeight")) drawHeightmap();
-    alertMessage.innerHTML = `<p>Heightmap is depressed and the system had to change the heightmap to allow water flux.</p>
-    Would you like to <i>keep</i> the changes or <i>restore</i> the initial heightmap?`;
-
-    $("#alert").dialog({resizable: false, title: "Heightmap is changed", width: "30em", modal: true,
-      buttons: {
-        Keep: function() {$(this).dialog("close");},
-        Restore: function() {
-          $(this).dialog("close");
-          pack.cells.h = new Float32Array(heights);
-          if (layerIsOn("toggleHeight")) drawHeightmap();
-        }
-      }
-    });
+  // add new river to data or change extended river attributes
+  const r = pack.rivers.find(r => r.i === river);
+  if (r) {
+    r.source = dataRiver[0].cell;
+    r.length = length;
+  } else {
+    const parent = dataRiver[0].parent || 0;
+    const basin = Rivers.getBasin(river, parent);
+    const source = dataRiver[0].cell;
+    const mouth = last(dataRiver).cell;
+    const name = Rivers.getName(mouth);
+    const smallLength = pack.rivers.map(r => r.length||0).sort((a,b) => a-b)[Math.ceil(pack.rivers.length * .15)];
+    const type = length < smallLength ? rw({"Creek":9, "River":3, "Brook":3, "Stream":1}) : "River";
+    pack.rivers.push({i:river, parent, length, source, mouth, basin, name, type});
   }
 
-  if (d3.event.shiftKey === false) unpressClickToAddButton();
+  if (d3.event.shiftKey === false) {
+    unpressClickToAddButton();
+    document.getElementById("addNewRiver").classList.remove("pressed");
+    if (addNewRiver.offsetParent) riversOverviewRefresh.click();
+  }
 }
 
 function toggleAddRoute() {
@@ -482,5 +493,8 @@ function addMarkerOnClick() {
 }
 
 function viewCellDetails() {
-  $("#cellInfo").dialog({resizable: false, width: "22em", title: "Cell Details"});
+  $("#cellInfo").dialog({
+    resizable: false, width: "22em", title: "Cell Details",
+    position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
+  });
 }

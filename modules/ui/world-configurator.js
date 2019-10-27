@@ -48,6 +48,7 @@ function editWorld() {
     elevateLakes();
     const heights = new Uint8Array(pack.cells.h);
     Rivers.generate();
+    Rivers.specify();
     pack.cells.h = new Float32Array(heights);
     defineBiomes();
 

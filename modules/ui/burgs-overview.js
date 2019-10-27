@@ -1,28 +1,28 @@
 "use strict";
-function editBurgs() {
+function overviewBurgs() {
   if (customization) return;
-  closeDialogs("#burgsEditor, .stable");
+  closeDialogs("#burgsOverview, .stable");
   if (!layerIsOn("toggleIcons")) toggleIcons();
   if (!layerIsOn("toggleLabels")) toggleLabels();
 
   const body = document.getElementById("burgsBody");
   updateFilter();
-  burgsEditorAddLines();
-  $("#burgsEditor").dialog();
+  burgsOverviewAddLines();
+  $("#burgsOverview").dialog();
 
-  if (modules.editBurgs) return;
-  modules.editBurgs = true;
+  if (modules.overviewBurgs) return;
+  modules.overviewBurgs = true;
 
-  $("#burgsEditor").dialog({
+  $("#burgsOverview").dialog({
     title: "Burgs Overview", resizable: false, width: fitContent(), close: exitAddBurgMode,
     position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
   });
 
   // add listeners
-  document.getElementById("burgsEditorRefresh").addEventListener("click", refreshBurgsEditor);
+  document.getElementById("burgsOverviewRefresh").addEventListener("click", refreshBurgsEditor);
   document.getElementById("burgsChart").addEventListener("click", showBurgsChart);
-  document.getElementById("burgsFilterState").addEventListener("change", burgsEditorAddLines);
-  document.getElementById("burgsFilterCulture").addEventListener("change", burgsEditorAddLines);
+  document.getElementById("burgsFilterState").addEventListener("change", burgsOverviewAddLines);
+  document.getElementById("burgsFilterCulture").addEventListener("change", burgsOverviewAddLines);
   document.getElementById("regenerateBurgNames").addEventListener("click", regenerateNames);
   document.getElementById("addNewBurg").addEventListener("click", enterAddBurgMode);
   document.getElementById("burgsExport").addEventListener("click", downloadBurgsData);
@@ -32,7 +32,7 @@ function editBurgs() {
 
   function refreshBurgsEditor() {
     updateFilter();
-    burgsEditorAddLines();
+    burgsOverviewAddLines();
   }
 
   function updateFilter() {
@@ -53,8 +53,8 @@ function editBurgs() {
     culturesSorted.forEach(c => cultureFilter.options.add(new Option(c.name, c.i, false, c.i == selectedCulture)));
   }
 
-  // add line for each state
-  function burgsEditorAddLines() {
+  // add line for each burg
+  function burgsOverviewAddLines() {
     const selectedState = +document.getElementById("burgsFilterState").value;
     const selectedCulture = +document.getElementById("burgsFilterCulture").value;
     let filtered = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
@@ -168,7 +168,7 @@ function editBurgs() {
   function toggleCapitalStatus() {
     const burg = +this.parentNode.parentNode.dataset.id;
     toggleCapital(burg);
-    burgsEditorAddLines();
+    burgsOverviewAddLines();
   }
 
   function togglePortStatus() {
@@ -193,7 +193,7 @@ function editBurgs() {
         Remove: function() {
           $(this).dialog("close");
           removeBurg(burg);
-          burgsEditorAddLines();
+          burgsOverviewAddLines();
         },
         Cancel: function() {$(this).dialog("close");}
       }
@@ -228,7 +228,7 @@ function editBurgs() {
 
     if (d3.event.shiftKey === false) {
       exitAddBurgMode();
-      burgsEditorAddLines();
+      burgsOverviewAddLines();
     }
   }
 
@@ -448,7 +448,7 @@ function editBurgs() {
             burgLabels.select("[data-id='" + id + "']").text(change[i].name);
           }
           $(this).dialog("close");
-          burgsEditorAddLines();
+          burgsOverviewAddLines();
         }
       }
     });
@@ -470,7 +470,7 @@ function editBurgs() {
 
   function removeAllBurgs() {
     pack.burgs.filter(b => b.i && !b.capital).forEach(b => removeBurg(b.i));
-    burgsEditorAddLines();
+    burgsOverviewAddLines();
   }
 
 }

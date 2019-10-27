@@ -7,11 +7,11 @@
 // See also https://github.com/Azgaar/Fantasy-Map-Generator/issues/153
 
 "use strict";
-const version = "1.2"; // generator version
+const version = "1.21"; // generator version
 document.title += " v" + version;
 
 // if map version is not stored, clear localStorage and show a message
-if (rn(localStorage.getItem("version"),1) !== rn(version,1)) {
+if (rn(localStorage.getItem("version"), 2) !== rn(version, 2)) {
   localStorage.clear();
   setTimeout(showWelcomeMessage, 8000);
 }
@@ -325,9 +325,17 @@ function showWelcomeMessage() {
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
 
     <ul>${post}
-      <li>3d scene</li>
-      <li>Globe view</li>
+      <li>3d scene and Globe view</li>
+      <li>Ability to save map as JPEG image</li>
+      <li>Diplomacy Editor enhancements</li>
+      <li>Rivers Overview screen [v 1.21] <b>*</b></li>
     </ul>
+
+    <p style="color:#990000; font-style: italic"><b>*</b> It's recommended to regenerate rivers to get clean data for Rivers Overview.<p>
+
+    <p class="announcement">We are happy to invite you to participate in our first map making contest! 
+    Valuable prizes for winners and our respect for all participants. 
+    See ${link("https://www.reddit.com/r/FantasyMapGenerator/comments/dn2sqv/azgaars_fantasy_map_generator_mapmaking_contest/", "Reddit post")} for the details.</p>
 
     <p>Join our ${reddit} and ${discord} to ask questions, share maps, discuss the Generator, report bugs and propose new features.</p>
     <p>Thanks for all supporters on ${patreon}!</i></p>`;
@@ -513,6 +521,8 @@ function generate() {
     drawStates();
     drawBorders();
     BurgsAndStates.drawStateLabels();
+
+    Rivers.specify();
     addMarkers();
     addZones();
     Names.getMapName();
@@ -1222,9 +1232,9 @@ function addMarkers(number = 1) {
         .attr("data-size", 1).attr("width", 30).attr("height", 30);
 
       const burg = pack.burgs[cells.burg[cell]];
-      const river = Names.getCulture(cells.culture[cell]); // river name
-      const name = Math.random() < .2 ? river : burg.name;
-      notes.push({id, name:`${name} Bridge`, legend:`A stone bridge over the ${river} River near ${burg.name}`});
+      const river = pack.rivers.find(r => r.i === pack.cells.r[cell]);
+      const name = Math.random() < .2 ? river.name : burg.name;
+      notes.push({id, name:`${name} Bridge`, legend:`A stone bridge over the ${river.name} ${river.type} near ${burg.name}`});
       count--;
     }
   }()

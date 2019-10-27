@@ -19,6 +19,7 @@ function editCultures() {
     title: "Cultures Editor", resizable: false, width: fitContent(), close: closeCulturesEditor,
     position: {my: "right top", at: "right-10 top+10", of: "svg"}
   });
+  body.focus();
 
   // add listeners
   document.getElementById("culturesEditorRefresh").addEventListener("click", refreshCulturesEditor);

@@ -383,7 +383,7 @@ function createPicker() {
 
 function updateSelectedRect(fill) {
   document.getElementById("picker").querySelector("rect.selected").classList.remove("selected");
-  document.getElementById("picker").querySelector("rect[fill='"+fill+"']").classList.add("selected");
+  document.getElementById("picker").querySelector("rect[fill='"+fill.toLowerCase()+"']").classList.add("selected");
 }
 
 function updateSpaces() {
@@ -557,4 +557,26 @@ function uploadFile(el, callback) {
   fileReader.readAsText(el.files[0], "UTF-8");
   el.value = "";
   fileReader.onload = loaded => callback(loaded.target.result);
+}
+
+function highlightElement(element) {
+  if (debug.select(".highlighted").size()) return; // allow only 1 highlight element simultaniosly
+  const box = element.getBBox();
+  const transform = element.getAttribute("transform") || null;
+  const enter = d3.transition().duration(1000).ease(d3.easeBounceOut);
+  const exit = d3.transition().duration(500).ease(d3.easeLinear);
+
+  const highlight = debug.append("rect").attr("x", box.x).attr("y", box.y)
+    .attr("width", box.width).attr("height", box.height).attr("transform", transform);
+
+  highlight.classed("highlighted", 1)
+    .transition(enter).style("outline-offset", "0px")
+    .transition(exit).style("outline-color", "transparent").delay(1000).remove();
+
+  const tr = parseTransform(transform);
+  let x = box.x + box.width / 2;
+  if (tr[0]) x += tr[0];
+  let y = box.y + box.height / 2;
+  if (tr[1]) y += tr[1];
+  if (scale >= 2) zoomTo(x, y, scale, 1600);
 }

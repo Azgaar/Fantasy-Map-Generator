@@ -4,16 +4,12 @@
 function editHeightmap() {
   void function selectEditMode() {
     alertMessage.innerHTML = `<p>Heightmap is a core element on which all other data (rivers, burgs, states etc) is based.
-    So the best edit approach is to <i>erase</i> the secondary data and let the system automatically regenerate it on edit completion.</p> 
-
-    <p>You can also <i>keep</i> all the data, but you won't be able to change the coastline.</p>
-
-    <p>If you need to change the coastline and keep the data, you may try the <i>risk</i> edit option. 
-    The data will be restored as much as possible, but the coastline change can cause unexpected fluctuations and errors.</p>
-
-    <p>Check out ${link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization", "wiki")} for guidance.</p>
-
-    <p>Please <span class="pseudoLink" onclick=saveMap(); editHeightmap();>save the map</span> before edditing the heightmap!</p>`;
+      So the best edit approach is to <i>erase</i> the secondary data and let the system automatically regenerate it on edit completion.</p> 
+      <p>You can also <i>keep</i> all the data, but you won't be able to change the coastline.</p>
+      <p>If you need to change the coastline and keep the data, you may try the <i>risk</i> edit option. 
+      The data will be restored as much as possible, but the coastline change can cause unexpected fluctuations and errors.</p>
+      <p>Check out ${link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization", "wiki")} for guidance.</p>
+      <p>Please <span class="pseudoLink" onclick=saveMap(); editHeightmap();>save the map</span> before edditing the heightmap!</p>`;
 
     $("#alert").dialog({resizable: false, title: "Edit Heightmap", width: "28em",
       buttons: {
@@ -179,6 +175,8 @@ function editHeightmap() {
     drawStates();
     drawBorders();
     BurgsAndStates.drawStateLabels();
+
+    Rivers.specify();
     addMarkers();
     addZones();
     console.timeEnd("regenerateErasedData");
@@ -338,6 +336,8 @@ function editHeightmap() {
     drawStates();
     drawBorders();
 
+    if (changeHeights.checked) Rivers.specify();
+
     // restore zones from grid
     zones.selectAll("g").each(function() {
       const zone = d3.select(this);
@@ -378,8 +378,9 @@ function editHeightmap() {
   function mockHeightmap() {
     const data = renderOcean.checked ? grid.cells.i : grid.cells.i.filter(i => grid.cells.h[i] >= 20);
     const scheme = getColorScheme();
-    viewbox.select("#heights").selectAll("polygon").data(data).join("polygon").attr("points", d => getGridPolygon(d))
-      .attr("id", d => "cell"+d).attr("fill", d => getColor(grid.cells.h[d], scheme));
+    viewbox.select("#heights").selectAll("polygon").data(data).join("polygon")
+      .attr("points", d => getGridPolygon(d)).attr("id", d => "cell"+d)
+      .attr("fill", d => getColor(grid.cells.h[d], scheme));
   }
 
   // draw or update heightmap for a selection of cells
@@ -456,11 +457,11 @@ function editHeightmap() {
     document.getElementById("redo").addEventListener("click", () => restoreHistory(edits.n+1));  
     document.getElementById("rescaleShow").addEventListener("click", () => {
       document.getElementById("modifyButtons").style.display = "none";
-      document.getElementById("rescaleSection").style.display = "block";    
+      document.getElementById("rescaleSection").style.display = "block";
     });
     document.getElementById("rescaleHide").addEventListener("click", () => {
       document.getElementById("modifyButtons").style.display = "block";
-      document.getElementById("rescaleSection").style.display = "none";    
+      document.getElementById("rescaleSection").style.display = "none";
     }); 
     document.getElementById("rescaler").addEventListener("change", (e) => rescale(e.target.valueAsNumber));
     document.getElementById("rescaleCondShow").addEventListener("click", () => {

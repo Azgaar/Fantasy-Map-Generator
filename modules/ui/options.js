@@ -143,7 +143,7 @@ function changeMapSize() {
   landmass.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
   oceanPattern.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
   oceanLayers.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
-  defs.select("#mapClip > rect").attr("width", maxWidth).attr("height", maxHeight);
+  //defs.select("#mapClip > rect").attr("width", maxWidth).attr("height", maxHeight);
 
   fitScaleBar();
   if (window.fitLegendBox) fitLegendBox();
@@ -157,8 +157,8 @@ function applyMapSize() {
   svgHeight = Math.min(graphHeight, window.innerHeight)
   svg.attr("width", svgWidth).attr("height", svgHeight);
   zoom.translateExtent([[0, 0],[graphWidth, graphHeight]]).scaleExtent([1, 20]).scaleTo(svg, 1);
-  viewbox.attr("transform", null).attr("clip-path", "url(#mapClip)");
-  defs.append("clipPath").attr("id", "mapClip").append("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
+  //viewbox.attr("transform", null).attr("clip-path", "url(#mapClip)");
+  //defs.append("clipPath").attr("id", "mapClip").append("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
   //zoom.translateExtent([[-svgWidth*.2, -graphHeight*.2], [svgWidth*1.2, graphHeight*1.2]]);
 }
 
@@ -348,22 +348,9 @@ function restoreDefaultOptions() {
 document.getElementById("sticked").addEventListener("click", function(event) {
   const id = event.target.id;
   if (id === "newMapButton") regeneratePrompt();
-  else if (id === "saveButton") toggleSavePane();
-  else if (id === "loadButton") toggleLoadPane();
+  else if (id === "saveButton") showSavePane();
+  else if (id === "loadButton") showLoadPane();
   else if (id === "zoomReset") resetZoom(1000);
-  else if (id === "quickSave") quickSave();
-  else if (id === "saveMap") saveMap();
-  else if (id === "saveSVG") saveSVG();
-  else if (id === "savePNG") savePNG();
-  else if (id === "saveJPEG") saveJPEG();
-  else if (id === "saveGeo") saveGeoJSON();
-  else if (id === "saveDropbox") saveDropbox();
-  if (id === "quickSave" || id === "saveMap" || id === "saveSVG" || id === "savePNG" || id === "saveGeo" || id === "saveDropbox") toggleSavePane();
-  if (id === "loadMap") mapToLoad.click();
-  else if (id === "quickLoad") quickLoad();
-  else if (id === "loadURL") loadURL();
-  else if (id === "loadDropbox") loadDropbox();
-  if (id === "quickLoad" || id === "loadURL" || id === "loadMap" || id === "loadDropbox") toggleLoadPane();
 });
 
 function regeneratePrompt() {
@@ -381,28 +368,34 @@ function regeneratePrompt() {
   });
 }
 
-function toggleSavePane() {
-  if (saveDropdown.style.display === "block") {saveDropdown.style.display = "none"; return;}
-  saveDropdown.style.display = "block";
-
-  // ask users to allow popups
-  if (!localStorage.getItem("dns_allow_popup_message")) {
-    alertMessage.innerHTML = `Generator uses pop-up window to download files.
-    <br>Please ensure your browser does not block popups.
-    <br>Please check browser settings and turn off adBlocker if it is enabled`;
-
-    $("#alert").dialog({title: "File saver", resizable: false, position: {my: "center", at: "center", of: "svg"},
-      buttons: {OK: function() {
-        localStorage.setItem("dns_allow_popup_message", true);
-        $(this).dialog("close");
-      }}
-    });
-  }
+function showSavePane() {
+  $("#saveMapData").dialog({title: "Save map", resizable: false, width: "27em", 
+    position: {my: "center", at: "center", of: "svg"},
+    buttons: {Close: function() {$(this).dialog("close");}}
+  });
 }
 
-function toggleLoadPane() {
-  if (loadDropdown.style.display === "block") {loadDropdown.style.display = "none"; return;}
-  loadDropdown.style.display = "block";
+// download map data as GeoJSON
+function saveGeoJSON() {
+  alertMessage.innerHTML = `You can export map data in GeoJSON format used in GIS tools such as QGIS.
+  Check out ${link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export", "wiki-page")} for guidance`;
+
+  $("#alert").dialog({title: "GIS data export", resizable: false, width: "35em", position: {my: "center", at: "center", of: "svg"},
+    buttons: {
+      Cells: saveGeoJSON_Cells,
+      Routes: saveGeoJSON_Roads,
+      Rivers: saveGeoJSON_Rivers,
+      Markers: saveGeoJSON_Markers,
+      Close: function() {$(this).dialog("close");}
+    }
+  });
+}
+
+function showLoadPane() {
+  $("#loadMapData").dialog({title: "Load map", resizable: false, width: "17em", 
+    position: {my: "center", at: "center", of: "svg"},
+    buttons: {Close: function() {$(this).dialog("close");}}
+  });
 }
 
 function loadURL() {
@@ -411,7 +404,7 @@ function loadURL() {
     <input id="mapURL" type="url" style="width: 24em" placeholder="https://e-cloud.com/test.map">
     <br><i>Please note server should allow CORS for file to be loaded. If CORS is not allowed, save file to Dropbox and provide a direct link</i>`;
   alertMessage.innerHTML = inner;
-  $("#alert").dialog({resizable: false, title: "Load map from URL", width: "26em",
+  $("#alert").dialog({resizable: false, title: "Load map from URL", width: "27em",
     buttons: {
       Load: function() {
         const value = mapURL.value;

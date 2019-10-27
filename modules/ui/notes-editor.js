@@ -7,7 +7,8 @@ function editNotes(id, name) {
   }
 
   // select an object
-  if (id) {
+  if (notes.length) {
+    if (!id) id = notes[0].id;
     let note = notes.find(note => note.id === id);
     if (note === undefined) {
       if (!name) name = id;
@@ -79,28 +80,6 @@ function editNotes(id, name) {
     }
     
     highlightElement(element); // if element is found
-  }
-
-  function highlightElement(element) {
-    if (debug.select(".highlighted").size()) return; // allow only 1 highlight element simultaniosly
-    const box = element.getBBox();
-    const transform = element.getAttribute("transform") || null;
-    const t = d3.transition().duration(1000).ease(d3.easeBounceOut);
-    const r = d3.transition().duration(500).ease(d3.easeLinear);
-
-    const highlight = debug.append("rect").attr("x", box.x).attr("y", box.y)
-      .attr("width", box.width).attr("height", box.height).attr("transform", transform);
-
-    highlight.classed("highlighted", 1)
-      .transition(t).style("outline-offset", "0px")
-      .transition(r).style("outline-color", "transparent").remove();
-
-    const tr = parseTransform(transform);
-    let x = box.x + box.width / 2;
-    if (tr[0]) x += tr[0];
-    let y = box.y + box.height / 2;
-    if (tr[1]) y += tr[1];
-    if (scale >= 2) zoomTo(x, y, scale, 1600);
   }
 
   function downloadLegends() {

@@ -250,6 +250,7 @@ function getMapData() {
     const burgs = JSON.stringify(pack.burgs);
     const religions = JSON.stringify(pack.religions);
     const provinces = JSON.stringify(pack.provinces);
+    const rivers = JSON.stringify(pack.rivers);
 
     // store name array only if it is not the same as default
     const defaultNB = Names.getNameBases();
@@ -268,7 +269,7 @@ function getMapData() {
       pack.cells.biome, pack.cells.burg, pack.cells.conf, pack.cells.culture, pack.cells.fl,
       pop, pack.cells.r, pack.cells.road, pack.cells.s, pack.cells.state,
       pack.cells.religion, pack.cells.province, pack.cells.crossroad, religions, provinces,
-      namesData].join("\r\n");
+      namesData, rivers].join("\r\n");
     const blob = new Blob([data], {type: "text/plain"});
 
     console.timeEnd("createMapDataBlob");
@@ -292,23 +293,6 @@ async function saveMap() {
   tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
   window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
 }
-
-// download map data as GeoJSON
-function saveGeoJSON() {
-  alertMessage.innerHTML = `You can export map data in GeoJSON format used in GIS tools such as QGIS.
-  Check out ${link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export", "wiki-page")} for guidance`;
-
-  $("#alert").dialog({title: "GIS data export", resizable: false, width: "32em", position: {my: "center", at: "center", of: "svg"},
-    buttons: {
-      Cells: saveGeoJSON_Cells,
-      Routes: saveGeoJSON_Roads,
-      Rivers: saveGeoJSON_Rivers,
-      Markers: saveGeoJSON_Markers,
-      Close: function() {$(this).dialog("close");}
-    }
-  });
-}
-
 
 function saveGeoJSON_Cells() {
   let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
@@ -686,6 +670,7 @@ function parseLoadedData(data) {
       pack.burgs = JSON.parse(data[15]);
       pack.religions = data[29] ? JSON.parse(data[29]) : [{i: 0, name: "No religion"}];
       pack.provinces = data[30] ? JSON.parse(data[30]) : [0];
+      pack.rivers = data[32] ? JSON.stringify(data[32]) : [];
 
       const cells = pack.cells;
       cells.biome = Uint8Array.from(data[16].split(","));
@@ -899,14 +884,6 @@ function parseLoadedData(data) {
           });
         }
 
-        // v 1.11 replaced "display" attribute by "display" style
-        viewbox.selectAll("g").each(function() {
-          if (this.hasAttribute("display")) {
-            this.removeAttribute("display"); 
-            this.style.display = "none";
-          }
-        });
-
         // v 1.11 had an issue with fogging being displayed on load
         unfog();
 
@@ -914,6 +891,30 @@ function parseLoadedData(data) {
         if (!terrain.attr("set")) terrain.attr("set", "simple");
         if (!terrain.attr("size")) terrain.attr("size", 1);
         if (!terrain.attr("density")) terrain.attr("density", .4);
+      }
+
+      if (version < 1.21) {
+        // v 1.11 replaced "display" attribute by "display" style
+        viewbox.selectAll("g").each(function() {
+          if (this.hasAttribute("display")) {
+            this.removeAttribute("display");
+            this.style.display = "none";
+          }
+        });
+
+        // v 1.21 added rivers data to pack
+
+        pack.rivers = []; // rivers data
+        rivers.selectAll("path").each(function() {
+          const i = +this.id.slice(5);
+          const length = this.getTotalLength() / 2;
+          const s = this.getPointAtLength(length), e = this.getPointAtLength(0);
+          const source = findCell(s.x, s.y), mouth = findCell(e.x, e.y);
+          const name = Rivers.getName(mouth);
+          const type = length < 25 ? rw({"Creek":9, "River":3, "Brook":3, "Stream":1}) : "River";
+          pack.rivers.push({i, parent:0, length, source, mouth, basin:i, name, type});
+        });
+
       }
 
     }()

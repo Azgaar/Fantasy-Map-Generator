@@ -1798,17 +1798,17 @@
           <button id="editNamesBaseButton" data-tip="Click to open Namesbase Editor. Shortcut: Shift + N">Namesbase</button>
           <button id="editZonesButton" data-tip="Click to open Zones Editor. Shortcut: Shift + Z">Zones</button>
           <button id="editReligions" data-tip="Click to open Religions Editor. Shortcut: Shift + R">Religions</button>
-          <button id="editUnitsButton" data-tip="Click to open Units Editor. Shortcut: Shift + U">Units</button>
+          <button id="editUnitsButton" data-tip="Click to open Units Editor. Shortcut: Shift + Q">Units</button>
           <button id="editNotesButton" data-tip="Click to open Notes Editor. Shortcut: Shift + O">Notes</button>
         </div>
 
         <div>
           <p>Click to overview:</p>
           <button id="overviewBurgsButton" data-tip="Click to open Burgs Overview. Shortcut: Shift + T">Burgs</button>
+          <button id="overviewRiversButton" data-tip="Click to open Rivers Overview. Shortcut: Shift + V">Rivers</button>
           <button id="overviewCellsButton" data-tip="Click to open Cell details view. Shortcut: Shift + E">Cells</button>
           <!-- <button id="overviewLandmassedButton" data-tip="Click to open Landmasses Overview. Shortcut: Shift + L">Landmasses</button> -->
           <!-- <button id="overviewWaterbodiesButton" data-tip="Click to open Waterbodies Overview. Shortcut: Shift + W">Waterbodies</button> -->
-          <!-- <button id="overviewRiversButton" data-tip="Click to open Rivers Overview. Shortcut: Shift + V">Rivers</button> -->
           <!-- <button id="overviewRoutesButton" data-tip="Click to open Routes Overview. Shortcut: Shift + U">Routes</button> -->
         </div>
 
@@ -1817,7 +1817,7 @@
           <button id="regenerateStateLabels" data-tip="Click to update state labels placement based on current borders">State labels</button>
           <button id="regenerateReliefIcons" data-tip="Click to regenerate all relief icons based on current cell biome and elevation">Relief icons</button>
           <button id="regenerateRoutes" data-tip="Click to regenerate all routes">Routes</button>
-          <button id="regenerateRivers" data-tip="Click to regenerate all rivers">Rivers</button>
+          <button id="regenerateRivers" data-tip="Click to regenerate all rivers (restore default state)">Rivers</button>
           <button id="regeneratePopulation" data-tip="Click to recalculate rural and urban population">Population</button>
           <button id="regenerateBurgs" data-tip="Click to regenerate all burgs and routes. States will remain as they are">Burgs</button>
           <button id="regenerateStates" data-tip="Click to select new capitals and regenerate states. Burgs will remain as they are">States</button>
@@ -1829,11 +1829,11 @@
 
         <div id="addFeature">
           <p>Click to add:</p>
-          <button id="addBurgTool" data-tip="Click on map to place a burg. Hold Shift to add multiple. Shortcut: Shift + G">Burg</button>
-          <button id="addLabel" data-tip="Click on map to place label. Hold Shift to add multiple. Shortcut: Shift + A">Label</button>
-          <button id="addRiver" data-tip="Click on map to place a river. Hold Shift to add multiple. Shortcut: Shift + I">River</button>
-          <button id="addRoute" data-tip="Click on map to place a route. Shortcut: Shift + E">Route</button>
-          <button id="addMarker" data-tip="Click on map to place a marker. Hold Shift to add multiple. Shortcut: Shift + K">Marker</button>
+          <button id="addBurgTool" data-tip="Click on map to place a burg. Hold Shift to add multiple. Shortcut: Shift + 1">Burg</button>
+          <button id="addLabel" data-tip="Click on map to place label. Hold Shift to add multiple. Shortcut: Shift + 2">Label</button>
+          <button id="addRiver" data-tip="Click on map to place a river. Hold Shift to add multiple. Shortcut: Shift + 3">River</button>
+          <button id="addRoute" data-tip="Click on map to place a route. Shortcut: Shift + 4">Route</button>
+          <button id="addMarker" data-tip="Click on map to place a marker. Hold Shift to add multiple. Shortcut: Shift + 5">Marker</button>
         </div>
       </div>
 
@@ -1901,23 +1901,8 @@
 
       <div id="sticked">
         <button id="newMapButton" data-tip="Generate a new map based on options. Shortcut: F2">New Map</button>
-        <button id="saveButton" data-tip="Select file format to save map">Save</button>
-        <div id="saveDropdown">
-          <div id="saveMap" data-tip="Download the map as fully functional .map file to your machine. Shortcut: Ctrl + M">.map</div>
-          <div id="saveSVG" data-tip="Download the map as vector image (open in browser or Inkscape). Shortcut: Ctrl + S">.svg</div>
-          <div id="savePNG" data-tip="Download visible part of the map as .png (lossless compressed) image. Shortcut: Ctrl + P">.png</div>
-          <div id="saveJPEG" data-tip="Download visible part of the map as .jpeg (lossy compressed) image. Shortcut: Ctrl + J">.jpeg</div>
-          <div id="saveGeo" data-tip="Download map data in GeoJSON format. Shortcut: Ctrl + G">.json</div>
-          <div id="quickSave" data-tip="Save map to browser storage. Shortcut: F6">storage</div>
-          <!-- <div id="saveDropbox" data-tip="Save fully functional .map file to Dropbox. Shortcut: Ctrl + B">Dropbox</div> -->
-        </div>
+        <button id="saveButton" data-tip="Select format to save map">Save</button>
         <button id="loadButton" data-tip="Load fully functional map in a .map format">Load</button>
-        <div id="loadDropdown">
-          <div id="loadMap" data-tip="Load .map file from local disk. Shortcut: Ctrl + L">from local disk</div>
-          <div id="loadURL" data-tip="Load .map file from URL (server should allow CORS). Shortcut: Ctrl + U">from URL</div>
-          <div id="quickLoad" data-tip="Load map from browser storage (if saved before). Shortcut: F9">from storage</div>
-          <!-- <div id="loadDropbox" data-tip="Load .map file from Dropbox. Shortcut: Ctrl + D">from Dropbox</div> -->
-        </div>
         <button id="zoomReset" data-tip="Reset map zoom. Shortcut: 0">Reset Zoom</button>
       </div>
 
@@ -1931,16 +1916,16 @@
       <div id="worldControls">
         <div>
           <i data-locked=0 id="lock_temperatureEquator" class="icon-lock-open"></i>
-          <label data-tip="Set temerature at equator">
+          <label data-tip="Set temperature at equator">
             <i>Equator:</i>
-            <input id="temperatureEquatorInput" data-stored="temperatureEquator"  type="number" min="-30" max="30">°C =
+            <input id="temperatureEquatorInput" data-stored="temperatureEquator" type="number" min="-30" max="30">°C =
             <span id="temperatureEquatorF"></span>°F
             <input id="temperatureEquatorOutput" data-stored="temperatureEquator" type="range" min="-30" max="30"/>
           </label>
         </div>
         <div>
           <i data-locked=0 id="lock_temperaturePole" class="icon-lock-open"></i>
-          <label data-tip="Set temerature at poles">
+          <label data-tip="Set temperature at poles">
             <i>Poles:</i>
             <input id="temperaturePoleInput" data-stored="temperaturePole" type="number" min="-30" max="30">°C =
             <span id="temperaturePoleF"></span>°F
@@ -2073,29 +2058,26 @@
     </div>
 
     <div id="riverEditor" class="dialog" style="display: none">
-      <button id="riverWidthShow" data-tip="Show the river width and widening change section" class="icon-resize-full"></button>
+      <button id="riverNameShow" data-tip="Show river name section" class="icon-font"></button>
+      <div id="riverNameSection" style="display: none">
+        <button id="riverNameHide" data-tip="Hide the river name section" class="icon-font"></button>
+        <input id="riverName" data-tip="Change river proper name" style="width: 8em">
+        <input id="riverType" data-tip="Change river type name" style="width: 6em">
+        <span id="riverNameCulture" data-tip="Generate culture-specific name for the river" class="icon-book pointer"></span>
+        <span id="riverNameRandom" data-tip="Generate random name for the river" class="icon-globe pointer"></span>
+      </div>
+
+      <button id="riverWidthShow" data-tip="Show river width and widening change section" class="icon-resize-full"></button>
       <div id="riverWidthSection" style="display: none">
         <button id="riverWidthHide" data-tip="Hide the river width and widening change section" class="icon-resize-full"></button>
         <i id="riverWidthIcon" class="icon-w"></i>
-        <input id="riverWidthInput" data-tip="Change river width" value="1" type="range" min=.2 max=5 step=.1>
+        <input id="riverWidthInput" data-tip="Change river width" value="1" type="range" min=.2 max=10 step=.1>
         <i id="riverIncrementIcon" class="icon-i"></i>
-        <input id="riverIncrement" data-tip="Change river bed increment (widening speed)" type="range" min=.02 max=2 step=.02>
-      </div>
-
-      <button id="riverResizeShow" data-tip="Show river transformation section" class="icon-ccw"></button>
-      <div id="riverResizeSection" style="display: none">
-        <button id="riverResizeHide" data-tip="Hide river transformation section" class="icon-ccw"></button>
-        <i id="riverAngleIcon" class="icon-a"></i>
-        <input id="riverAngle" data-tip="Rotate river by angle" type="range" min="-90" max=90 step=.2>
-        <span id="riverAngleValue">0&#8457;</span>
-        <i id="riverScaleIcon" class="icon-s"></i>
-        <input id="riverScale" data-tip="Change river scale" value="1" type="number" style="width:3.5em" min=.1 max=3 step=.01>
-        <span id="riverReset" data-tip="Reset transformation to default" class="icon-cancel pointer"></span>
+        <input id="riverIncrement" data-tip="Change river bed increment (widening speed)" type="range" min=.01 max=3 step=.01>
       </div>
 
       <button id="riverEditStyle" data-tip="Edit style for all rivers in Style Editor" class="icon-brush"></button>
       <button id="riverLength" data-tip="River length in selected units">0</button>
-      <button id="riverCopy" data-tip="Copy river" class="icon-clone"></button>
       <button id="riverNew" data-tip="Create new river clicking on map" class="icon-map-pin"></button>
       <button id="riverLegend" data-tip="Edit free text notes (legend) for the river" class="icon-edit"></button>
       <button id="riverRemove" data-tip="Remove river. Shortcut: Delete" class="icon-trash"></button>
@@ -2808,41 +2790,6 @@
       </div>
     </div>
 
-    <div id="burgsEditor" class="dialog stable" style="display: none">
-      <div id="burgsHeader" class="header">
-        <div style="left:1.4em" data-tip="Click to sort by burg name" class="sortable alphabetically icon-sort-name-up" data-sortby="name">Burg&nbsp;</div>
-        <div style="left:7.6em" data-tip="Click to sort by province name" class="sortable alphabetically" data-sortby="province">Province&nbsp;</div>
-        <div style="left:14em" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
-        <div style="left:20.1em" data-tip="Click to sort by culture name" class="sortable alphabetically" data-sortby="culture">Culture&nbsp;</div>
-        <div style="left:24.7em" data-tip="Click to sort by burg population" class="sortable" data-sortby="population">Population&nbsp;</div>
-        <div style="left:31.2em" data-tip="Click to sort by burg type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
-      </div>
-
-      <div id="burgsBody" class="burgs-table"></div>
-
-      <div id="burgsFilters" data-tip="Apply a filter">
-        <span>State: </span>
-        <select id="burgsFilterState" style="width:28%"></select>
-        <span>Culture:</span>
-        <select id="burgsFilterCulture" style="width:28%"></select>
-      </div>
-
-      <div id="burgsFooter" class="totalLine">
-        <div data-tip="Burgs displayed" style="margin-left: 4px">Burgs:&nbsp;<span id="burgsFooterBurgs">0</span></div>
-        <div data-tip="Average population" style="margin-left: 14px">Average population:&nbsp;<span id="burgsFooterPopulation">0</span></div>
-      </div>
-
-      <div id="burgsBottom">
-        <button id="burgsEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-        <button id="burgsChart" data-tip="Show burgs bubble chart" class="icon-chart-area"></button>
-        <button id="regenerateBurgNames" data-tip="Regenerate burg names based on assigned culture" class="icon-retweet"></button>
-        <button id="addNewBurg" data-tip="Add a new burg. Hold Shift to add multiple" class="icon-plus"></button>
-        <button id="burgsExport" data-tip="Save burgs-related data as a text file (.csv)" class="icon-download"></button>
-        <button id="burgNamesImport" data-tip="Rename burgs in bulk" class="icon-upload"></button>
-        <button id="burgsRemoveAll" data-tip="Remove all burgs except for capitals. To remove a capital remove its state first" class="icon-trash"></button>
-      </div>
-    </div>
-
     <div id="provinceNameEditor" class="dialog" data-province="0" style="display: none">
       <div style="padding: .1em">
         <div data-tip="Province short name" class="label">Short name:</div>
@@ -3014,7 +2961,7 @@
         <span>Select object: </span>
         <select id="notesSelect" data-tip="Select object" style="width: 12em"></select>
         <span>Object name: </span>
-        <input id="notesName" data-tip="Type to change object name" autocorrect="off" spellcheck="false" style="width: 12em">
+        <input id="notesName" data-tip="Type to change object name" autocorrect="off" spellcheck="false" style="width: 17em">
       </div>
       <div>
         <span>Legend:</span><br>
@@ -3195,6 +3142,64 @@
       </div>
     </div>
 
+    <div id="burgsOverview" class="dialog stable" style="display: none">
+      <div id="burgsHeader" class="header">
+        <div style="left:1.4em" data-tip="Click to sort by burg name" class="sortable alphabetically icon-sort-name-up" data-sortby="name">Burg&nbsp;</div>
+        <div style="left:7.6em" data-tip="Click to sort by province name" class="sortable alphabetically" data-sortby="province">Province&nbsp;</div>
+        <div style="left:14em" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
+        <div style="left:20.1em" data-tip="Click to sort by culture name" class="sortable alphabetically" data-sortby="culture">Culture&nbsp;</div>
+        <div style="left:24.7em" data-tip="Click to sort by burg population" class="sortable" data-sortby="population">Population&nbsp;</div>
+        <div style="left:31.2em" data-tip="Click to sort by burg type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
+      </div>
+
+      <div id="burgsBody" class="burgs-table"></div>
+
+      <div id="burgsFilters" data-tip="Apply a filter">
+        <span>State: </span>
+        <select id="burgsFilterState" style="width:28%"></select>
+        <span>Culture:</span>
+        <select id="burgsFilterCulture" style="width:28%"></select>
+      </div>
+
+      <div id="burgsFooter" class="totalLine">
+        <div data-tip="Burgs displayed" style="margin-left: 4px">Burgs:&nbsp;<span id="burgsFooterBurgs">0</span></div>
+        <div data-tip="Average population" style="margin-left: 14px">Average population:&nbsp;<span id="burgsFooterPopulation">0</span></div>
+      </div>
+
+      <div id="burgsBottom">
+        <button id="burgsOverviewRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
+        <button id="burgsChart" data-tip="Show burgs bubble chart" class="icon-chart-area"></button>
+        <button id="regenerateBurgNames" data-tip="Regenerate burg names based on assigned culture" class="icon-retweet"></button>
+        <button id="addNewBurg" data-tip="Add a new burg. Hold Shift to add multiple" class="icon-plus"></button>
+        <button id="burgsExport" data-tip="Save burgs-related data as a text file (.csv)" class="icon-download"></button>
+        <button id="burgNamesImport" data-tip="Rename burgs in bulk" class="icon-upload"></button>
+        <button id="burgsRemoveAll" data-tip="Remove all burgs except for capitals. To remove a capital remove its state first" class="icon-trash"></button>
+      </div>
+    </div>
+
+    <div id="riversOverview" class="dialog stable" style="display: none">
+      <div id="riversHeader" class="header">
+        <div style="left:1.4em" data-tip="Click to sort by river name" class="sortable alphabetically" data-sortby="name">River&nbsp;</div>
+        <div style="left:7.7em" data-tip="Click to sort by river type name" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
+        <div style="left:12.9em" data-tip="Click to sort by river length" class="sortable icon-sort-number-down" data-sortby="length">Length&nbsp;</div>
+        <div style="left:18.2em" data-tip="Click to sort by river basin" class="sortable alphabetically" data-sortby="basin">Basin&nbsp;</div>
+      </div>
+
+      <div id="riversBody" class="burgs-table"></div>
+
+      <div id="riversFooter" class="totalLine">
+        <div data-tip="Rivers number" style="margin-left: 4px">Rivers:&nbsp;<span id="riversFooterNumber">0</span></div>
+        <div data-tip="Average length" style="margin-left: 14px">Average length:&nbsp;<span id="riversFooterLength">0</span></div>
+      </div>
+
+      <div id="riversBottom">
+        <button id="riversOverviewRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
+        <button id="addNewRiver" data-tip="Add a new river. Hold Shift to add multiple" class="icon-plus"></button>
+        <button id="riversExport" data-tip="Save rivers-related data as a text file (.csv)" class="icon-download"></button>
+        <button id="riversRemoveAll" data-tip="Remove all rivers" class="icon-trash"></button>
+      </div>
+    </div>
+
     <div id="styleSaver" class="dialog stable textual" style="display: none">
       <div id="styleSaverHeader" style="padding:2px 0">
         <span>Preset name:</span>
@@ -3221,6 +3226,7 @@
       <p><b>Area:</b> <span id="infoArea">0</span></p>
       <p><b>Type:</b> <span id="infoFeature">n/a</span></p>
       <p><b>Precipitation:</b> <span id="infoPrec">0</span></p>
+      <p><b>River:</b> <span id="infoRiver">no</span></p>
       <p><b>Population:</b> <span id="infoPopulation">0</span></p>
       <p><b>Height:</b> <span id="infoHeight">0</span></p>
       <p><b>Temperature:</b> <span id="infoTemp">0</span></p>
@@ -3230,6 +3236,28 @@
       <p><b>Culture:</b> <span id="infoCulture">n/a</span></p>
       <p><b>Religion:</b> <span id="infoReligion">n/a</span></p>
       <p><b>Burg:</b> <span id="infoBurg">n/a</span></p>
+    </div>
+
+    <div id="saveMapData" style="display: none" class="dialog">
+      <div style="margin-bottom: .3em">Please select a saving variant:</div>
+      <div>
+        <button onclick="saveMap()" data-tip="Download the map as fully-functional .map file to your machine. Shortcut: Ctrl + M">.map</button>
+        <button onclick="saveSVG()" data-tip="Download the map as vector image (open in browser or Inkscape). Shortcut: Ctrl + S">.svg</button>
+        <button onclick="savePNG()" data-tip="Download visible part of the map as .png (lossless compressed) image. Shortcut: Ctrl + P">.png</button>
+        <button onclick="saveJPEG()" data-tip="Download visible part of the map as .jpeg (lossy compressed) image. Shortcut: Ctrl + J">.jpeg</button>
+        <button onclick="saveGeoJSON()" data-tip="Download map data in GeoJSON format. Shortcut: Ctrl + G">.json</button>
+        <button onclick="quickSave()" data-tip="Save fully-functional map to browser storage. Shortcut: F6">storage</button>
+      </div>
+      <p style="font-style: italic">Generator uses pop-up window to download files. Please ensure your browser does not block popups</p>
+    </div>
+
+    <div id="loadMapData" style="display: none" class="dialog">
+      <div style="margin-bottom: .3em">Load map from:</div>
+      <div>
+        <button onclick="mapToLoad.click()" data-tip="Load .map file from local disk. Shortcut: Ctrl + L">local disk</button>
+        <button onclick="loadURL()" data-tip="Load .map file from URL (server should allow CORS). Shortcut: Ctrl + U">URL</button>
+        <button onclick="quickLoad()" data-tip="Load map from browser storage (if saved before). Shortcut: F9">storage</button>
+      </div>
     </div>
 
     <div id="preview3d" class="dialog stable" style="display: none; padding: 0px"></div>
@@ -3292,7 +3320,6 @@
   <script defer src="modules/ui/heightmap-editor.js"></script>
   <script defer src="modules/ui/states-editor.js"></script>
   <script defer src="modules/ui/provinces-editor.js"></script>
-  <script defer src="modules/ui/burgs-editor.js"></script>
   <script defer src="modules/ui/biomes-editor.js"></script>
   <script defer src="modules/ui/cultures-editor.js"></script>
   <script defer src="modules/ui/namesbase-editor.js"></script>
@@ -3305,11 +3332,12 @@
   <script defer src="modules/ui/religions-editor.js"></script>
   <script defer src="modules/ui/markers-editor.js"></script>
   <script defer src="modules/ui/burg-editor.js"></script>
-  <script defer src="modules/ui/burgs-editor.js"></script>
   <script defer src="modules/ui/units-editor.js"></script>
   <script defer src="modules/ui/notes-editor.js"></script>
   <script defer src="modules/ui/diplomacy-editor.js"></script>
   <script defer src="modules/ui/zones-editor.js"></script>
+  <script defer src="modules/ui/burgs-overview.js"></script>
+  <script defer src="modules/ui/rivers-overview.js"></script>
   <script defer src="modules/ui/editors.js"></script>
   <script defer src="modules/ui/3d.js"></script>
   <script defer src="libs/quantize.min.js"></script>

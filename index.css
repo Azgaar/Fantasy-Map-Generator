@@ -593,7 +593,7 @@ button.active {
 
 #viewMode > button {
 	padding: .35em;
-	margin: .2em .3em;
+	margin: .2em .3em .6em .3em;
 	float: left;
 	width: 30.7%;
 }
@@ -1287,6 +1287,10 @@ div.states span.inactive:hover {
 	color: #abaaaa;
 }
 
+div.states>input.riverType {
+	width: 5em;
+}
+
 #diplomacyBodySection > div {
 	cursor: pointer;
 }
@@ -1974,6 +1978,13 @@ svg.button {
 	background-color: #dabdbd91;
 	padding: 2px;
 	border: 1px solid #916e7f;
+}
+
+.announcement {
+	background-color: #a18888;
+	color: white;
+	padding: .4em .5em;
+	border: dashed 1px #5d4651;
 }
 
 #debug {

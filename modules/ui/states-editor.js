@@ -872,7 +872,7 @@ function editStates() {
     let data = "Id,State,Color,Capital,Culture,Type,Expansionism,Cells,Burgs,Area "+unit+",Total Population,Rural Population,Urban Population\n"; // headers
 
     body.querySelectorAll(":scope > div").forEach(function(el) {
-      let key = parseInt(el.dataset.id)
+      const key = parseInt(el.dataset.id);
       data += el.dataset.id + ",";
       data += el.dataset.name + ",";
       data += el.dataset.color + ",";
