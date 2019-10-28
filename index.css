@@ -1987,6 +1987,10 @@ svg.button {
 	border: dashed 1px #5d4651;
 }
 
+#threeDOptions {
+	background-color: #a48b95;
+}
+
 #debug {
 	font-size: 1px;
 	opacity: .8;

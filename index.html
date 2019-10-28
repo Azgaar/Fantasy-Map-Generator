@@ -2536,6 +2536,54 @@
 
     </div>
 
+    <div id="threeDOptions" class="dialog stable" style="display: none">
+      <table>
+      <tbody id="threeDBody">
+        <tr data-tip="Adjust to change how high mountains and raised areas appear to be">
+          <td>Height scale:</td><td><input id="threeDHeightScale" type="range" min="1" max="200" value="50"></td>
+        </tr>
+        <tr p-tip="Change the scene background color">
+          <td>Scene background color:</td><td><input id="threeDBackgroundColor" type="color" value="#000000"/>
+          <output id="threeDBackgroundColorOutput">#000000</output></td>
+        </tr>
+        <tr data-tip="Enable/disable spotlight and set distance (for shadows)">
+          <td><input id="threeDSpotlight" type="checkbox" class="checkbox" checked>
+          <label for="threeDSpotlight" class="checkbox-label">Spotlight:</label></td>
+        </tr>
+        <tr>
+          <td>Spotlight distance: </td>
+          <td><input id="threeDSpotlightDistance" type="range" min="500" max="5000" value="1000"></td>
+        </tr>
+        <tr data-tip="Enable/disable shadows">
+          <td><input id="threeDShadows" type="checkbox" class="checkbox" checked>
+          <label for="threeDShadows" class="checkbox-label">Shadows</label></td>
+        </tr>
+        <tr p-tip="Enable/disable fog and set distance and color">
+          <td><input id="threeDFog" type="checkbox" class="checkbox">
+          <label for="threeDFog" class="checkbox-label">Show fog</label></td>
+          <td>Color: <input id="threeDFogColor" type="color" value="#cccccc"/>
+          <output id="threeDFogColorOutput">#cccccc</output></td>
+        </tr>
+        <tr>
+          <td>Fog distance: </td>
+          <td><input id="threeDFogDistance" type="range" min="0" max="3000" value="500"></td>
+        </tr>
+        <tr data-tip="Enable/disable skybox">
+          <td><input id="threeDSkybox" type="checkbox" class="checkbox">
+          <label for="threeDSkybox" class="checkbox-label">Show skybox</label></td>
+        </tr>
+        <tr data-tip="Skybox image used for texture">
+          <td>Skybox image: </td>
+          <td><input id="threeDSkyboxURL" type="text" placeholder="http://www.example.com/skybox.jpg" size=35></td>
+        </tr>
+        <tr data-tip="Enable/disable extended water">
+          <td><input id="threeDExtendedWater" type="checkbox" class="checkbox">
+          <label for="threeDExtendedWater" class="checkbox-label">Extended water</label></td>
+        </tr>
+      </tbody>
+      </table>
+    </div>
+
     <div id="biomesEditor" class="dialog stable" style="display: none">
       <div id="biomesHeader" class="header">
         <div style="left:1.4em" data-tip="Click to sort by biome name" class="sortable alphabetically" data-sortby="name">Biome&nbsp;</div>

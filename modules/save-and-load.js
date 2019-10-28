@@ -73,6 +73,40 @@ async function saveJPEG() {
   console.timeEnd("saveJPEG");
 }
 
+async function getWater(width, height) {
+  const cloneEl = document.getElementById("map").cloneNode(true); // clone svg
+  cloneEl.id = "fantasyMap";
+  document.body.appendChild(cloneEl);
+  const clone = d3.select(cloneEl);
+  clone.select("#debug").remove();
+
+  clone.attr("width", graphWidth).attr("height", graphHeight);
+
+  clone.select("#oceanPattern").select("rect").attr("x", 0).attr("y", 0).attr("width", width).attr("height", height);
+  clone.select("#oceanLayers").select("rect").attr("x", 0).attr("y", 0).attr("width", width).attr("height", height);
+
+  const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+  if (isFirefox) clone.select("#oceanPattern").remove();
+  clone.select("#viewbox").attr("transform", null); // reset transform to show whole map
+
+  clone.selectAll("g").each(function() {
+    if (this.id !== "oceanPattern" && this.id !== "oceanLayers" && this.id !== "oceanBase" && this.id !== "viewbox" && this.id !== "ocean")
+      this.remove();
+  });
+
+  // remove the layers, but keep the background colour
+  clone.select("#oceanLayers").selectAll("path").remove();
+
+  clone.append("metadata").text("<dc:format>image/svg+xml</dc:format>");
+  const serialized = (new XMLSerializer()).serializeToString(clone.node());
+  const svg_xml = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>` + serialized;
+  clone.remove();
+  const blob = new Blob([svg_xml], {type: 'image/svg+xml;charset=utf-8'});
+  const url = window.URL.createObjectURL(blob);
+  window.setTimeout(() => window.URL.revokeObjectURL(url), 5000);
+  return url;
+}
+
 // parse map svg to object url
 async function getMapURL(type, subtype) {
   const cloneEl = document.getElementById("map").cloneNode(true); // clone svg
@@ -84,7 +118,14 @@ async function getMapURL(type, subtype) {
   const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
   if (isFirefox && type === "mesh") clone.select("#oceanPattern").remove();
   if (subtype === "globe") clone.select("#scaleBar").remove();
-  if (type === "mesh") clone.attr("width", graphWidth).attr("height", graphHeight);
+  if (type === "mesh") {
+    clone.attr("width", graphWidth).attr("height", graphHeight);
+
+    if (threeDExtendedWater.checked && subtype !== "globe")  {
+      clone.select("#oceanBase").attr("opacity", 0);
+      clone.select("#oceanPattern").attr("opacity", 0);
+    }
+  }
   if (type !== "png") clone.select("#viewbox").attr("transform", null); // reset transform to show whole map
   if (type === "svg") removeUnusedElements(clone);
   if (customization && type === "mesh") updateMeshCells(clone);
@@ -886,7 +927,6 @@ function parseLoadedData(data) {
 
         // v 1.11 had an issue with fogging being displayed on load
         unfog();
-
         // v 1.2 added new terrain attributes
         if (!terrain.attr("set")) terrain.attr("set", "simple");
         if (!terrain.attr("size")) terrain.attr("size", 1);

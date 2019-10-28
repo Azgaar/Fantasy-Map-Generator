@@ -466,4 +466,5 @@ async function enter3dView(type) {
     +canvas.dataset.hovered > 2 ? tip("") : tip(help);
     canvas.dataset.hovered = (+canvas.dataset.hovered|0) + 1;
   };
+  show3doptions(type);
 }
