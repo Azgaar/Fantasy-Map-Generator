@@ -285,10 +285,11 @@
   }
 
   const getBasin = function(r, p, e) {
-    while (p) {
+    while (p && r !== p) {
       const parent = pack.rivers.find(r => r.i === p);
-      if (parent) r = parent.i;
-      p = parent ? parent.parent : 0;
+      if (!parent) return r;
+      r = parent.i;
+      p = parent.parent;
       if (r === e) return r;
     }
     return r;
