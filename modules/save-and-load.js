@@ -670,7 +670,7 @@ function parseLoadedData(data) {
       pack.burgs = JSON.parse(data[15]);
       pack.religions = data[29] ? JSON.parse(data[29]) : [{i: 0, name: "No religion"}];
       pack.provinces = data[30] ? JSON.parse(data[30]) : [0];
-      pack.rivers = data[32] ? JSON.stringify(data[32]) : [];
+      pack.rivers = data[32] ? JSON.parse(data[32]) : [];
 
       const cells = pack.cells;
       cells.biome = Uint8Array.from(data[16].split(","));
