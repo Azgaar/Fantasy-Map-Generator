@@ -284,7 +284,7 @@ function showInfo() {
 
 // prevent default browser behavior for FMG-used hotkeys
 document.addEventListener("keydown", event => {
-  if (event.altKey && event.keyCode !== 18) event.preventDefault(); // disallowalt key combinations
+  if (event.altKey && event.keyCode !== 18) event.preventDefault(); // disallow alt key combinations
   if ([112, 113, 117, 120, 9].includes(event.keyCode)) event.preventDefault(); // F1, F2, F6, F9, Tab
 });
 
@@ -307,18 +307,8 @@ document.addEventListener("keyup", event => {
   else if (key === 9) toggleOptions(event); // Tab to toggle options
   else if (key === 27) {closeDialogs(); hideOptions();} // Escape to close all dialogs
   else if (key === 46) removeElementOnKey(); // "Delete" to remove the selected element
+  else if (key === 79 && canvas3d) toggle3dOptions(); // "O" to toggle 3d options
 
-  else if (key === 83 && canvas3d) saveScreenshot(); // "S" to save a screenshot
-  else if (key === 82 && canvas3d) toggleRotation(); // "R" to toggle 3d rotation
-  else if (key === 85 && canvas3d && customization !== 1) update3d(); // "U" to update 3d view
-
-  else if (ctrl && key === 80) savePNG(); // Ctrl + "P" to save as PNG
-  else if (ctrl && key === 71) saveJPEG(); // Ctrl + "J" to save as JPEG
-  else if (ctrl && key === 83) saveSVG(); // Ctrl + "S" to save as SVG
-  else if (ctrl && key === 77) saveMap(); // Ctrl + "M" to save MAP file
-  else if (ctrl && key === 71) saveGeoJSON(); // Ctrl + "G" to save as GeoJSON
-  else if (ctrl && key === 85) mapToLoad.click(); // Ctrl + "U" to load MAP from URL
-  else if (ctrl && key === 76) mapToLoad.click(); // Ctrl + "L" to load MAP from local file
   else if (ctrl && key === 81) toggleSaveReminder(); // Ctrl + "Q" to toggle save reminder
   else if (undo.offsetParent && ctrl && key === 90) undo.click(); // Ctrl + "Z" to undo
   else if (redo.offsetParent && ctrl && key === 89) redo.click(); // Ctrl + "Y" to redo

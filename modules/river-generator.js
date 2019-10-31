@@ -4,7 +4,7 @@
     (global.Rivers = factory());
 }(this, (function () {'use strict';
 
-  const generate = function Rivers() {
+  const generate = function() {
     console.time('generateRivers');
     Math.seedrandom(seed);
     const cells = pack.cells, p = cells.p, features = pack.features;
@@ -285,11 +285,11 @@
   }
 
   const getBasin = function(r, p, e) {
-    while (p) {
+    while (p && r !== p && r !== e) {
       const parent = pack.rivers.find(r => r.i === p);
-      if (parent) r = parent.i;
-      p = parent ? parent.parent : 0;
-      if (r === e) return r;
+      if (!parent) return r;
+      r = parent.i;
+      p = parent.parent;
     }
     return r;
   }

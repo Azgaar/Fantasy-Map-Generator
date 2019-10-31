@@ -298,7 +298,7 @@ function applyStoredOptions() {
 
   if (localStorage.getItem("winds")) winds = localStorage.getItem("winds").split(",").map(w => +w);
 
-  changeDialogsTransparency(localStorage.getItem("transparency") || 15);
+  changeDialogsTransparency(localStorage.getItem("transparency") || 5);
   if (localStorage.getItem("tooltipSize")) changeTooltipSize(localStorage.getItem("tooltipSize"));
   if (localStorage.getItem("regions")) changeStatesNumber(localStorage.getItem("regions"));
 
@@ -444,8 +444,9 @@ function changeViewMode(event) {
 
 function enterStandardView() {
   if (!document.getElementById("canvas3d")) return;
+  ThreeD.stop();
   document.getElementById("canvas3d").remove();
-  stop3d();
+  if (options3dUpdate.offsetParent) $("#options3d").dialog("close");
 }
 
 async function enter3dView(type) {
@@ -457,13 +458,101 @@ async function enter3dView(type) {
   canvas.style.position = "absolute";
   canvas.style.display = "none";
   canvas.dataset.type = type;
-  const started = type === "viewGlobe" ? await startGlobe(canvas) : await start3d(canvas);
+  const started = await ThreeD.create(canvas, type);
   if (!started) return;
   canvas.style.display = "block";
   document.body.insertBefore(canvas, optionsContainer);
   canvas.onmouseenter = () => {
-    const help = "Left mouse to change angle, middle mouse / mousewheel to zoom, right mouse to pan.\r\n<b>R</b> to toggle rotation. <b>U</b> to update. <b>S</b> to get a screenshot";
+    const help = "Left mouse to change angle, middle mouse / mousewheel to zoom, right mouse to pan. <b>O</b> to toggle options";
     +canvas.dataset.hovered > 2 ? tip("") : tip(help);
     canvas.dataset.hovered = (+canvas.dataset.hovered|0) + 1;
   };
+  toggle3dOptions();
+}
+
+function toggle3dOptions() {
+  if (options3dUpdate.offsetParent) {$("#options3d").dialog("close"); return;}
+  $("#options3d").dialog({
+    title: "3D mode settings", resizable: false, width: fitContent(),
+    position: {my: "right top", at: "right-40 top+10", of: "svg", collision: "fit"}
+  });
+
+  updateValues();
+
+  if (modules.options3d) return;
+  modules.options3d = true;
+
+  document.getElementById("options3dUpdate").addEventListener("click", ThreeD.update);
+  document.getElementById("options3dSave").addEventListener("click", ThreeD.saveScreenshot);
+
+  document.getElementById("options3dScaleRange").addEventListener("input", changeHeightScale);
+  document.getElementById("options3dScaleNumber").addEventListener("change", changeHeightScale);
+  document.getElementById("options3dLightnessRange").addEventListener("input", changeLightness);
+  document.getElementById("options3dLightnessNumber").addEventListener("change", changeLightness);
+  document.getElementById("options3dSunX").addEventListener("change", changeSunPosition);
+  document.getElementById("options3dSunY").addEventListener("change", changeSunPosition);
+  document.getElementById("options3dSunZ").addEventListener("change", changeSunPosition);
+  document.getElementById("options3dMeshRotationRange").addEventListener("input", changeRotation);
+  document.getElementById("options3dMeshRotationNumber").addEventListener("change", changeRotation);
+  document.getElementById("options3dGlobeRotationRange").addEventListener("input", changeRotation);
+  document.getElementById("options3dGlobeRotationNumber").addEventListener("change", changeRotation);
+  document.getElementById("options3dMeshSkyMode").addEventListener("change", toggleSkyMode);
+  document.getElementById("options3dMeshSky").addEventListener("input", changeColors);
+  document.getElementById("options3dMeshWater").addEventListener("input", changeColors);
+  document.getElementById("options3dGlobeResolution").addEventListener("change", changeResolution);
+
+  function updateValues() {
+    const globe = document.getElementById("canvas3d").dataset.type === "viewGlobe";
+    options3dMesh.style.display = globe ? "none" : "block";
+    options3dGlobe.style.display = globe ? "block" : "none";
+    options3dScaleRange.value = options3dScaleNumber.value = ThreeD.options.scale;
+    options3dLightnessRange.value = options3dLightnessNumber.value = ThreeD.options.lightness * 100;
+    options3dSunX.value = ThreeD.options.sun.x;
+    options3dSunY.value = ThreeD.options.sun.y;
+    options3dSunZ.value = ThreeD.options.sun.z;
+    options3dMeshRotationRange.value = options3dMeshRotationNumber.value = ThreeD.options.rotateMesh;
+    options3dGlobeRotationRange.value = options3dGlobeRotationNumber.value = ThreeD.options.rotateGlobe;
+    options3dMeshSkyMode.value = ThreeD.options.extendedWater;
+    options3dColorSection.style.display = ThreeD.options.extendedWater ? "block" : "none";
+    options3dMeshSky.value = ThreeD.options.skyColor;
+    options3dMeshWater.value = ThreeD.options.waterColor;
+    options3dGlobeResolution.value = ThreeD.options.resolution;
+  }
+
+  function changeHeightScale() {
+    options3dScaleRange.value = options3dScaleNumber.value = this.value;
+    ThreeD.setScale(+this.value);
+  }
+
+  function changeLightness() {
+    options3dLightnessRange.value = options3dLightnessNumber.value = this.value;
+    ThreeD.setLightness(this.value / 100);
+  }
+
+  function changeSunPosition() {
+    const x = +options3dSunX.value;
+    const y = +options3dSunY.value;
+    const z = +options3dSunZ.value;
+    ThreeD.setSun(x, y, z);
+  }
+
+  function changeRotation() {
+    (this.nextElementSibling || this.previousElementSibling).value = this.value;
+    const speed = +this.value;
+    ThreeD.setRotation(speed);
+  }
+
+  function toggleSkyMode() {
+    const hide = ThreeD.options.extendedWater;
+    options3dColorSection.style.display = hide ? "none" : "block";
+    ThreeD.toggleSky();
+  }
+
+  function changeColors() {
+    ThreeD.setColors(options3dMeshSky.value, options3dMeshWater.value);
+  }
+
+  function changeResolution() {
+    ThreeD.setResolution(this.value);
+  }
 }

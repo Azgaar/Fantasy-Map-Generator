@@ -558,6 +558,9 @@
       }
     }
 
+    // convert neighbors Set object into array
+    states.forEach(s => s.neighbors = Array.from(s.neighbors));
+
     console.timeEnd("collectStatistics");
   }
 
@@ -568,7 +571,7 @@
     // assin basic color using greedy coloring algorithm
     pack.states.forEach(s => {
       if (!s.i || s.removed) return;
-      const neibs = Array.from(s.neighbors);
+      const neibs = s.neighbors;
       s.color = colors.find(c => neibs.every(n => pack.states[n].color !== c));
       if (!s.color) s.color = getRandomColor();
       colors.push(colors.shift());
@@ -633,8 +636,8 @@
         };
 
         const naval = states[f].type === "Naval" && states[t].type === "Naval" && cells.f[states[f].center] !== cells.f[states[t].center];
-        const neib = naval ? false : states[f].neighbors.has(t); 
-        const neibOfNeib = naval || neib ? false : [...states[f].neighbors].map(n => [...states[n].neighbors]).join().includes(t);
+        const neib = naval ? false : states[f].neighbors.includes(t);
+        const neibOfNeib = naval || neib ? false : states[f].neighbors.map(n => states[n].neighbors).join().includes(t);
 
         let status = naval ? rw(navals) : neib ? rw(neibs) : neibOfNeib ? rw(neibsOfNeibs) : rw(far);
 
@@ -770,7 +773,7 @@
         const form = monarchy[expTiers[s.i]];
         // Default name depends on exponent tier, some culture bases have special names for tiers
         if (s.diplomacy) {
-          if (form === "Duchy" && s.neighbors.size > 1 && rand(6) < s.neighbors.size && s.diplomacy.includes("Vassal")) return "Marches"; // some vassal dutchies on borderland
+          if (form === "Duchy" && s.neighbors.length > 1 && rand(6) < s.neighbors.length && s.diplomacy.includes("Vassal")) return "Marches"; // some vassal dutchies on borderland
           if (Math.random() < .3 && s.diplomacy.includes("Vassal")) return "Protectorate"; // some vassals
         }
 

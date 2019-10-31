@@ -970,8 +970,8 @@
         <div id="viewMode" data-tip="Set view node">
           <p>View mode:</p>
           <button data-tip="Standard view mode that allows to edit the map" id="viewStandard" class="pressed">Standard</button>
-          <button data-tip="Map presentation in 3D scene. Works best for heightmap. Cannot be used for editing" id="view3D">3D scene</button>
-          <button data-tip="Project map on globe as if it represents whole world. Cannot be used for editing" id="viewGlobe">Globe</button>
+          <button data-tip="Map presentation in 3D scene. Works best for heightmap. Cannot be used for editing" id="viewMesh">3D scene</button>
+          <button data-tip="Project map on globe. Cannot be used for editing" id="viewGlobe">Globe</button>
         </div>
       </div>
 
@@ -3238,14 +3238,79 @@
       <p><b>Burg:</b> <span id="infoBurg">n/a</span></p>
     </div>
 
+    <div id="options3d" class="dialog stable" style="display: none">
+
+      <div id="options3dMesh" style="display: none">
+        <div data-tip="Set map rotation speed. Set to 0 is you want to toggle off the rotation">
+          <div>Rotation:</div>
+          <input id="options3dMeshRotationRange" type="range" min=0 max=10 step=.1>
+          <input id="options3dMeshRotationNumber" type="number" min=0 max=10 step=.1 style="width:3em">
+        </div>
+
+        <div data-tip="Set height scale">
+          <div>Height scale:</div>
+          <input id="options3dScaleRange" type="range" min=0 max=100>
+          <input id="options3dScaleNumber" type="number" min=0 max=1000 style="width:3em">
+        </div>
+
+        <div data-tip="Set scene lightness">
+          <div>Lightness:</div>
+          <input id="options3dLightnessRange" type="range" min=0 max=100>
+          <input id="options3dLightnessNumber" type="number" min=0 max=500 style="width:3em">
+        </div>
+
+        <div data-tip="Set sun position (x, y, z) to define shadows">
+          <div>Sun position:</div>
+          <input id="options3dSunX" type="number" min=-2500 max=2500 step=100 style="width:4.7em">
+          <input id="options3dSunY" type="number" min=0 max=5000 step=100 style="width:4.7em">
+          <input id="options3dSunZ" type="number" min=-1500 max=1500 step=100 style="width:4.7em">
+        </div>
+
+        <div data-tip="Toggle sky mode" style="margin: .6em 0 .3em -.2em">
+          <input id="options3dMeshSkyMode" class="checkbox" type="checkbox">
+          <label for="options3dMeshSkyMode" class="checkbox-label"><i>Show sky and extend water</i></label>
+        </div>
+
+        <div data-tip="Set sky and water color" id="options3dColorSection" style="display: none">
+          <span>Sky:</span><input id="options3dMeshSky" type="color" style="width: 4.4em; border: 0; padding: 0; margin: 0 .2em">
+          <span>Water:</span><input id="options3dMeshWater" type="color" style="width: 4.4em; border: 0; padding: 0; margin: 0 .2em">
+        </div>
+      </div>
+
+      <div id="options3dGlobe" style="display: none">
+        <div data-tip="Set globe rotation speed. Set to 0 is you want to toggle off the rotation">
+          <div>Rotation:</div>
+          <input id="options3dGlobeRotationRange" type="range" min=0 max=10 step=.1>
+          <input id="options3dGlobeRotationNumber" type="number" min=0 max=10 step=.1 style="width:3em">
+        </div>
+
+        <div data-tip="Set globe texture resolution">
+          <div>Texture resolution:</div>
+          <select id="options3dGlobeResolution" style="width: 5em">
+            <option value="0.5">0.5x</option>
+            <option value="1">1x</option>
+            <option value="2">2x</option>
+            <option value="4">4x</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="options3dBottom" style="margin-top: .2em">
+        <button id="options3dUpdate" data-tip="Update the scene" class="icon-cw"></button>
+        <button id="options3dSave" data-tip="Save screenshot of the 3d scene" class="icon-download"></button>
+      </div>
+    </div>
+
+    <div id="preview3d" class="dialog stable" style="display: none; padding: 0px"></div>
+
     <div id="saveMapData" style="display: none" class="dialog">
       <div style="margin-bottom: .3em">Please select a saving variant:</div>
       <div>
-        <button onclick="saveMap()" data-tip="Download the map as fully-functional .map file to your machine. Shortcut: Ctrl + M">.map</button>
-        <button onclick="saveSVG()" data-tip="Download the map as vector image (open in browser or Inkscape). Shortcut: Ctrl + S">.svg</button>
-        <button onclick="savePNG()" data-tip="Download visible part of the map as .png (lossless compressed) image. Shortcut: Ctrl + P">.png</button>
-        <button onclick="saveJPEG()" data-tip="Download visible part of the map as .jpeg (lossy compressed) image. Shortcut: Ctrl + J">.jpeg</button>
-        <button onclick="saveGeoJSON()" data-tip="Download map data in GeoJSON format. Shortcut: Ctrl + G">.json</button>
+        <button onclick="saveMap()" data-tip="Download the map as fully-functional .map file to your machine">.map</button>
+        <button onclick="saveSVG()" data-tip="Download the map as vector image (open in browser or Inkscape)">.svg</button>
+        <button onclick="savePNG()" data-tip="Download visible part of the map as .png (lossless compressed)">.png</button>
+        <button onclick="saveJPEG()" data-tip="Download visible part of the map as .jpeg (lossy compressed) image">.jpeg</button>
+        <button onclick="saveGeoJSON()" data-tip="Download map data in GeoJSON format">.json</button>
         <button onclick="quickSave()" data-tip="Save fully-functional map to browser storage. Shortcut: F6">storage</button>
       </div>
       <p style="font-style: italic">Generator uses pop-up window to download files. Please ensure your browser does not block popups</p>
@@ -3254,13 +3319,11 @@
     <div id="loadMapData" style="display: none" class="dialog">
       <div style="margin-bottom: .3em">Load map from:</div>
       <div>
-        <button onclick="mapToLoad.click()" data-tip="Load .map file from local disk. Shortcut: Ctrl + L">local disk</button>
-        <button onclick="loadURL()" data-tip="Load .map file from URL (server should allow CORS). Shortcut: Ctrl + U">URL</button>
-        <button onclick="quickLoad()" data-tip="Load map from browser storage (if saved before). Shortcut: F9">storage</button>
+        <button onclick="mapToLoad.click()" data-tip="Load .map file from local disk">local disk</button>
+        <button onclick="loadURL()" data-tip="Load .map file from URL (server should allow CORS)">URL</button>
+        <button onclick="quickLoad()" data-tip="Load map from browser storage (if saved before)">storage</button>
       </div>
     </div>
-
-    <div id="preview3d" class="dialog stable" style="display: none; padding: 0px"></div>
 
     <div id="alert" style="display: none" class="dialog">
       <p id="alertMessage">Warning!</p>

@@ -413,7 +413,7 @@ function editHeightmap() {
     if (!noStat) {
       updateStatistics();
       if (document.getElementById("preview")) drawHeightmapPreview(); // update heightmap preview if opened
-      if (document.getElementById("canvas3d")) update3dPreview(canvas3d); // update 3d heightmap preview if opened
+      if (document.getElementById("canvas3d")) ThreeD.redraw(); // update 3d heightmap preview if opened
     }
   }
 
@@ -428,7 +428,7 @@ function editHeightmap() {
     updateStatistics();
     
     if (document.getElementById("preview")) drawHeightmapPreview(); // update heightmap preview if opened
-    if (document.getElementById("canvas3d")) update3dPreview(canvas3d); // update 3d heightmap preview if opened
+    if (document.getElementById("canvas3d")) ThreeD.redraw(); // update 3d heightmap preview if opened
   }
 
   // restart edits from 1st step
@@ -869,7 +869,7 @@ function editHeightmap() {
       updateStatistics();
       mockHeightmap();
       if (document.getElementById("preview")) drawHeightmapPreview(); // update heightmap preview if opened
-      if (document.getElementById("canvas3d")) update3dPreview(canvas3d); // update 3d heightmap preview if opened
+      if (document.getElementById("canvas3d")) ThreeD.redraw(); // update 3d heightmap preview if opened
     }
 
     function downloadTemplate() {
@@ -1203,13 +1203,15 @@ function editHeightmap() {
     canvas.style.display = "block";
     canvas.width = parseFloat(preview3d.style.width) || graphWidth / 3;
     canvas.height = canvas.width / (graphWidth / graphHeight);
-    const started = await start3d(canvas);
+    const started = ThreeD.create(canvas);
     if (!started) return;
+
     document.getElementById("preview3d").appendChild(canvas);
     canvas.onmouseenter = () => {
       +canvas.dataset.hovered > 2 ? tip("") : tip("Left mouse to change angle, middle mouse or mousewheel to zoom, right mouse to pan. R to toggle rotation");
       canvas.dataset.hovered = (+canvas.dataset.hovered|0) + 1;
     };
+    show3dOptions();
 
     $("#preview3d").dialog({
       title: "3D Preview", resizable: true,
@@ -1220,11 +1222,11 @@ function editHeightmap() {
     function resize3d() {
       canvas.width = parseFloat(preview3d.style.width);
       canvas.height = parseFloat(preview3d.style.height) - 2;
-      update3dPreview(canvas);
+      ThreeD.redraw();
     }
 
     function close3dPreview() {
-      stop3d();
+      ThreeD.stop();
       canvas.remove();
     }
   }

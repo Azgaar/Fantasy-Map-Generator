@@ -84,6 +84,7 @@ async function getMapURL(type, subtype) {
   const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
   if (isFirefox && type === "mesh") clone.select("#oceanPattern").remove();
   if (subtype === "globe") clone.select("#scaleBar").remove();
+  if (subtype === "noWater") {clone.select("#oceanBase").attr("opacity", 0); clone.select("#oceanPattern").attr("opacity", 0);}
   if (type === "mesh") clone.attr("width", graphWidth).attr("height", graphHeight);
   if (type !== "png") clone.select("#viewbox").attr("transform", null); // reset transform to show whole map
   if (type === "svg") removeUnusedElements(clone);
@@ -670,7 +671,7 @@ function parseLoadedData(data) {
       pack.burgs = JSON.parse(data[15]);
       pack.religions = data[29] ? JSON.parse(data[29]) : [{i: 0, name: "No religion"}];
       pack.provinces = data[30] ? JSON.parse(data[30]) : [0];
-      pack.rivers = data[32] ? JSON.stringify(data[32]) : [];
+      pack.rivers = data[32] ? JSON.parse(data[32]) : [];
 
       const cells = pack.cells;
       cells.biome = Uint8Array.from(data[16].split(","));
@@ -746,7 +747,7 @@ function parseLoadedData(data) {
 
     void function resolveVersionConflicts() {
       const version = parseFloat(data[0].split("|")[0]);
-      if (version == 0.8) {
+      if (version < 0.9) {
         // 0.9 has additional relief icons to be included into older maps
         document.getElementById("defs-relief").innerHTML = reliefIcons;
       }
@@ -915,6 +916,18 @@ function parseLoadedData(data) {
           pack.rivers.push({i, parent:0, length, source, mouth, basin:i, name, type});
         });
 
+      }
+
+      if (version < 1.22) {
+        // v 1.21 had incorrect style formatting
+        localStorage.removeItem("styleClean");
+        localStorage.removeItem("styleGloom");
+        localStorage.removeItem("styleAncient");
+        localStorage.removeItem("styleMonochrome");
+        addDefaulsStyles();
+
+        // v 1.22 changed state neighbors from Set object to array
+        BurgsAndStates.collectStatistics();
       }
 
     }()

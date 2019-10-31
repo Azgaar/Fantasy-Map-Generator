@@ -7,7 +7,7 @@
 // See also https://github.com/Azgaar/Fantasy-Map-Generator/issues/153
 
 "use strict";
-const version = "1.21"; // generator version
+const version = "1.22"; // generator version
 document.title += " v" + version;
 
 // if map version is not stored, clear localStorage and show a message
@@ -1233,8 +1233,9 @@ function addMarkers(number = 1) {
 
       const burg = pack.burgs[cells.burg[cell]];
       const river = pack.rivers.find(r => r.i === pack.cells.r[cell]);
-      const name = Math.random() < .2 ? river.name : burg.name;
-      notes.push({id, name:`${name} Bridge`, legend:`A stone bridge over the ${river.name} ${river.type} near ${burg.name}`});
+      const riverName = river ? `${river.name} ${river.type}` : "river";
+      const name = river && Math.random() < .2 ? river.name : burg.name;
+      notes.push({id, name:`${name} Bridge`, legend:`A stone bridge over the ${riverName} near ${burg.name}`});
       count--;
     }
   }()
@@ -1393,10 +1394,10 @@ function addZones(number = 1) {
   }
 
   function addRebels() {
-    const state = ra(states.filter(s => s.i && Array.from(s.neighbors).some(n => n)));
+    const state = ra(states.filter(s => s.i && s.neighbors.some(n => n)));
     if (!state) return;
 
-    const neib = ra(Array.from(state.neighbors).filter(n => n));
+    const neib = ra(state.neighbors.filter(n => n));
     const cell = cells.i.find(i => cells.state[i] === state.i && cells.c[i].some(c => cells.state[c] === neib));
     const cellsArray = [], queue = [cell], power = rand(10, 30);
 
@@ -1683,14 +1684,14 @@ function showStatistics() {
 
 const regenerateMap = debounce(function() {
   console.warn("Generate new random map");
-  closeDialogs("#worldConfigurator");
+  closeDialogs("#worldConfigurator, #options3d");
   customization = 0;
   undraw();
   resetZoom(1000);
   generate();
   restoreLayers();
   const canvas3d = document.getElementById("canvas3d");
-  if (canvas3d) update3dPreview(canvas3d);
+  if (canvas3d) ThreeD.redraw();
   if ($("#worldConfigurator").is(":visible")) editWorld();
 }, 500);
 

@@ -71,7 +71,7 @@ function changePreset(preset) {
   const isDefault = getDefaultPresets()[preset];
   removePresetButton.style.display = isDefault ? "none" : "inline-block";
   savePresetButton.style.display = "none";
-  if (document.getElementById("canvas3d")) setTimeout(update3d, 300);
+  if (document.getElementById("canvas3d")) setTimeout(ThreeD.update(), 400);
 }
 
 function savePreset() {
@@ -114,11 +114,6 @@ function getCurrentPreset() {
   removePresetButton.style.display = "none";
   savePresetButton.style.display = "inline-block";
 }
-
-// update 3d view is layer is toggled
-document.getElementById("mapLayers").addEventListener("click", () => {
-  if (document.getElementById("canvas3d")) setTimeout(update3d, 300);
-});
 
 function toggleHeight(event) {
   if (!terrs.selectAll("*").size()) {
