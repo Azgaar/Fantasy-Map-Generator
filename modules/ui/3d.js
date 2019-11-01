@@ -260,7 +260,7 @@ async function updateGlobeTexure(addMesh) {
   const mapHeight = rn(mapCoordinates.latT / 180 * height);
   const mapWidth = world ? mapHeight * 2 : rn(graphWidth / graphHeight * mapHeight);
   const dy = world ? 0 : (90 - mapCoordinates.latN) / 180 * height;
-  const dx = mapWidth / 4;
+  const dx = world ? 0 : mapWidth / 4;
 
   // draw map on canvas
   const ctx = document.createElement("canvas").getContext("2d");
