@@ -226,7 +226,7 @@
       .attr("width", caSize).attr("height", caSize); 
 
     // towns
-    const towns = pack.burgs.filter(b => !b.capital);
+    const towns = pack.burgs.filter(b => b.i && !b.capital);
     const townIcons = burgIcons.select("#towns");
     const townLabels = burgLabels.select("#towns");
     const townSize = townIcons.attr("size") || 0.5;
