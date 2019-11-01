@@ -62,6 +62,7 @@
     // add folk religions
     pack.cultures.forEach(c => {
       if (!c.i) {religions.push({i: 0, name: "No religion"}); return;}
+      if (c.removed) return;
       const form = rw(forms.Folk);
       const name = c.name + " " + rw(types[form]);
       const deity = form === "Animism" ? null : getDeityName(c.i);
