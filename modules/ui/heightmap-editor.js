@@ -1211,7 +1211,6 @@ function editHeightmap() {
       +canvas.dataset.hovered > 2 ? tip("") : tip("Left mouse to change angle, middle mouse or mousewheel to zoom, right mouse to pan. R to toggle rotation");
       canvas.dataset.hovered = (+canvas.dataset.hovered|0) + 1;
     };
-    show3dOptions();
 
     $("#preview3d").dialog({
       title: "3D Preview", resizable: true,
