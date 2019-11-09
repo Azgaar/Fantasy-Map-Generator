@@ -54,51 +54,46 @@ function editBiomes() {
 
   function biomesCollectStatistics() {
     const cells = pack.cells;
-    const array = new Uint8Array(biomesData.i.length);
-    biomesData.cells = Array.from(array);
-    biomesData.area = Array.from(array);
-    biomesData.rural = Array.from(array);
-    biomesData.urban = Array.from(array);
+
+    biomesData.biomeList.forEach((biome) => {
+      biome.resetStatistics();
+    });
 
     for (const i of cells.i) {
       if (cells.h[i] < 20) continue;
-      const b = cells.biome[i];
-      biomesData.cells[b] += 1;
-      biomesData.area[b] += cells.area[i];
-      biomesData.rural[b] += cells.pop[i];
-      if (cells.burg[i]) biomesData.urban[b] += pack.burgs[cells.burg[i]].population;
+      biomesData.biomeList[cells.biome[i]].addCell(i, cells);
     }
   }
 
   function biomesEditorAddLines() {
     const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
-    const b = biomesData;
+    const l = biomesData.biomeList;
     let lines = "", totalArea = 0, totalPopulation = 0;;
 
-    for (const i of b.i) {
-      if (!i || biomesData.name[i] === "removed") continue; // ignore water and removed biomes
-      const area = b.area[i] * distanceScaleInput.value ** 2;
-      const rural = b.rural[i] * populationRate.value;
-      const urban = b.urban[i] * populationRate.value * urbanization.value;
+    for (const b of l) {
+      if (!b.id || b.name === "removed") continue; // ignore water and removed biomes
+      const area = b.area * distanceScaleInput.value ** 2;
+      const rural = b.rural * populationRate.value;
+      const urban = b.urban * populationRate.value * urbanization.value;
       const population = rn(rural + urban);
       const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}`;
       totalArea += area;
       totalPopulation += population;
 
-      lines += `<div class="states biomes" data-id="${i}" data-name="${b.name[i]}" data-habitability="${b.habitability[i]}"
-      data-cells=${b.cells[i]} data-area=${area} data-population=${population} data-color=${b.color[i]}>
-        <svg data-tip="Biomes fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${b.color[i]}" class="zoneFill"></svg>
-        <input data-tip="Biome name. Click and type to change" class="biomeName" value="${b.name[i]}" autocorrect="off" spellcheck="false">
+      lines += `<div class="states biomes" data-id="${b.id}" data-name="${b.name}" data-habitability="${b.habitability}"
+      data-cells=${b.cells} data-area=${area} data-population=${population} data-color=${b.color}>
+        <svg data-tip="Biomes fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${b.color}" class="zoneFill"></svg>
+        <input data-tip="Biome name. Click and type to change" class="biomeName" value="${b.name}" autocorrect="off" spellcheck="false">
         <span data-tip="Biome habitability percent" class="hide">%</span>
-        <input data-tip="Biome habitability percent. Click and set new value to change" type="number" min=0 max=9999 class="biomeHabitability hide" value=${b.habitability[i]}>
+        <input data-tip="Biome habitability percent. Click and set new value to change" type="number" min=0 max=9999 class="biomeHabitability hide" value=${b.habitability}>
         <span data-tip="Cells count" class="icon-check-empty hide"></span>
-        <div data-tip="Cells count" class="biomeCells hide">${b.cells[i]}</div>
+        <div data-tip="Cells count" class="biomeCells hide">${b.cells}</div>
         <span data-tip="Biome area" style="padding-right: 4px" class="icon-map-o hide"></span>
         <div data-tip="Biome area" class="biomeArea hide">${si(area) + unit}</div>
         <span data-tip="${populationTip}" class="icon-male hide"></span>
         <div data-tip="${populationTip}" class="biomePopulation hide">${si(population)}</div>
         <span data-tip="Open Wikipedia articale about the biome" class="icon-info-circled pointer hide"></span>
-        ${i>12 && !b.cells[i] ? '<span data-tip="Remove the custom biome" class="icon-trash-empty hide"></span>' : ''}
+        ${b.id>12 && !b.cells ? '<span data-tip="Remove the custom biome" class="icon-trash-empty hide"></span>' : ''}
       </div>`;
     }
     body.innerHTML = lines;
@@ -129,7 +124,7 @@ function editBiomes() {
   function biomeHighlightOff(event) {
     if (customization === 6) return;
     const biome = +event.target.dataset.id;
-    const color = biomesData.color[biome];
+    const color = biomesData.biomeList[biome].color;
     biomes.select("#biome"+biome).transition().attr("stroke-width", .7).attr("stroke", color);
   }
   
@@ -139,7 +134,7 @@ function editBiomes() {
 
     const callback = function(fill) {
       el.setAttribute("fill", fill);
-      biomesData.color[biome] = fill;
+      biomesData.biomeList[biome].color = fill;
       biomes.select("#biome"+biome).attr("fill", fill).attr("stroke", fill);
     }
 
@@ -149,18 +144,18 @@ function editBiomes() {
   function biomeChangeName(el) {
     const biome = +el.parentNode.dataset.id;
     el.parentNode.dataset.name = el.value;
-    biomesData.name[biome] = el.value;
+    biomesData.biomeList[biome].name = el.value;
   }
 
   function biomeChangeHabitability(el) {
     const biome = +el.parentNode.dataset.id;
     const failed = isNaN(+el.value) || +el.value < 0 || +el.value > 9999;
     if (failed) {
-      el.value = biomesData.habitability[biome];
+      el.value = biomesData.biomeList[biome].habitability;
       tip("Please provide a valid number in range 0-9999", false, "error");
       return;
     }
-    biomesData.habitability[biome] = +el.value;
+    biomesData.biomeList[biome].habitability = +el.value;
     el.parentNode.dataset.habitability = el.value;
     recalculatePopulation();
     refreshBiomesEditor();
@@ -191,7 +186,10 @@ function editBiomes() {
   function toggleLegend() {
     if (legend.selectAll("*").size()) {clearLegend(); return;}; // hide legend
     const d = biomesData;
-    const data = Array.from(d.i).filter(i => d.cells[i]).sort((a, b) => d.area[b] - d.area[a]).map(i => [i, d.color[i], d.name[i]]);
+    const data = Array.from(d.biomeList)  //shallow copy existing array
+      .filter(i => i.cells)               //remove biomes with 0 cells
+      .sort((a, b) => b.area - a.area)    //sort by size
+      .map(i => [i.id, i.color, i.name]); //return index, color, and name
     drawLegend("Biomes", data);
   }
 
@@ -214,28 +212,18 @@ function editBiomes() {
   }
 
   function addCustomBiome() {
-    const b = biomesData, i = biomesData.i.length;
-    b.i.push(i);
-    b.color.push(getRandomColor());
-    b.habitability.push(50);
-    b.name.push("Custom");
-    b.iconsDensity.push(0);
-    b.icons.push([]);
-    b.cost.push(50);
-
-    b.rural.push(0);
-    b.urban.push(0);
-    b.cells.push(0);
-    b.area.push(0);
+    const b = biomesData.biomeList, i = b.length;
+    b.push(new Biome("Custom", getRandomColor(), 50))
+    b[i].id = i; //don't forget the ID!
 
     const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
-    const line = `<div class="states biomes" data-id="${i}" data-name="${b.name[i]}" data-habitability=${b.habitability[i]} data-cells=0 data-area=0 data-population=0 data-color=${b.color[i]}>
-      <svg data-tip="Biomes fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${b.color[i]}" class="zoneFill"></svg>
-      <input data-tip="Biome name. Click and type to change" class="biomeName" value="${b.name[i]}" autocorrect="off" spellcheck="false">
+    const line = `<div class="states biomes" data-id="${b[i].id}" data-name="${b[i].name}" data-habitability=${b[i].habitability} data-cells=0 data-area=0 data-population=0 data-color=${b[i].color}>
+      <svg data-tip="Biomes fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${b[i].color}" class="zoneFill"></svg>
+      <input data-tip="Biome name. Click and type to change" class="biomeName" value="${b[i].name}" autocorrect="off" spellcheck="false">
       <span data-tip="Biome habitability percent" class="hide">%</span>
-      <input data-tip="Biome habitability percent. Click and set new value to change" type="number" min=0 max=9999 step=1 class="biomeHabitability hide" value=${b.habitability[i]}>
+      <input data-tip="Biome habitability percent. Click and set new value to change" type="number" min=0 max=9999 step=1 class="biomeHabitability hide" value=${b[i].habitability}>
       <span data-tip="Cells count" class="icon-check-empty hide"></span>
-      <div data-tip="Cells count" class="biomeCells hide">${b.cells[i]}</div>
+      <div data-tip="Cells count" class="biomeCells hide">${b[i].cells}</div>
       <span data-tip="Biome area" style="padding-right: 4px" class="icon-map-o hide"></span>
       <div data-tip="Biome area" class="biomeArea hide">0 ${unit}</div>
       <span data-tip="Total population: 0" class="icon-male hide"></span>
@@ -251,7 +239,7 @@ function editBiomes() {
   function removeCustomBiome(el) {
     const biome = +el.parentNode.dataset.id;
     el.parentNode.remove();
-    biomesData.name[biome] = "removed";
+    biomesData.biomeList[biome].name = "removed";
     biomesFooterBiomes.innerHTML = +biomesFooterBiomes.innerHTML - 1;
   }
 
@@ -337,7 +325,7 @@ function editBiomes() {
     const selected = body.querySelector("div.selected");
 
     const biomeNew = selected.dataset.id;
-    const color = biomesData.color[biomeNew];
+    const color = biomesData.biomeList[biomeNew].color;
 
     selection.forEach(function(i) {
       const exists = temp.select("polygon[data-cell='"+i+"']");

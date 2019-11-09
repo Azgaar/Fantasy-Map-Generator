@@ -18,7 +18,7 @@
       if (height < 20) continue; // no icons on water
       if (cells.r[i]) continue; // no icons on rivers 
       const b = cells.biome[i];
-      if (height < 50 && biomesData.iconsDensity[b] === 0) continue; // no icons for this biome
+      if (height < 50 && biomesData.biomeList[b].icons.density === 0) continue; // no icons for this biome
       const polygon = getPackPolygon(i);
       const x = d3.extent(polygon, p => p[0]), y = d3.extent(polygon, p => p[1]);
       const e = [Math.ceil(x[0]), Math.ceil(y[0]), Math.floor(x[1]), Math.floor(y[1])]; // polygon box
@@ -26,14 +26,14 @@
       if (height < 50) placeBiomeIcons(i, b); else placeReliefIcons(i);
 
       function placeBiomeIcons() {
-        const iconsDensity = biomesData.iconsDensity[b] / 100;
+        const iconsDensity = biomesData.biomeList[b].icons.density / 100;
         const radius = 2 / iconsDensity / density;
         if (Math.random() > iconsDensity * 10) return;
 
         for (const [cx, cy] of poissonDiscSampler(e[0], e[1], e[2], e[3], radius)) {
           if (!d3.polygonContains(polygon, [cx, cy])) continue;
           let h = rn((4 + Math.random()) * size, 2);
-          const icon = getBiomeIcon(i, biomesData.icons[b]);
+          const icon = getBiomeIcon(i, biomesData.biomeList[b].icons.probability);
           if (icon === "#relief-grass-1") h *= 1.3;
           relief.push({i: icon, x: rn(cx-h, 2), y: rn(cy-h, 2), s: h*2});
         }

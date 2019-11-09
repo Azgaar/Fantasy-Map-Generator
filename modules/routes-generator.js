@@ -173,7 +173,7 @@
       for (const c of cells.c[n]) {
         if (cells.h[c] < 20) continue; // ignore water cells
         const stateChangeCost = cells.state && cells.state[c] !== cells.state[n] ? 400 : 0; // trails tend to lay within the same state
-        const habitedCost = Math.max(100 - biomesData.habitability[cells.biome[c]], 0); // routes tend to lay within populated areas
+        const habitedCost = Math.max(100 - biomesData.biomeList[cells.biome[c]].habitability, 0); // routes tend to lay within populated areas
         const heightChangeCost = Math.abs(cells.h[c] - cells.h[n]) * 10; // routes tend to avoid elevation changes
         const cellCoast = 10 + stateChangeCost + habitedCost + heightChangeCost;
         const totalCost = p + (cells.road[c] || cells.burg[c] ? cellCoast / 3 : cellCoast);

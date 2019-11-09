@@ -96,6 +96,47 @@ fogging.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("hei
 scaleBar.on("mousemove", () => tip("Click to open Units Editor"));
 legend.on("mousemove", () => tip("Drag to change the position. Click to hide the legend")).on("click", () => clearLegend());
 
+class Icons {
+  constructor(iconList = {}, density = 0){
+    this.density = density;
+    this.probability = [];
+
+    for(var item in iconList) {
+        if ( iconList.hasOwnProperty(item) ) { // Safety
+            for( var i=0; i<iconList[item]; i++ ) {
+                this.probability.push(item);
+            }
+        }
+    }
+  }
+}
+
+class Biome {
+  constructor(name, color, habitability, icons = new Icons(), cost = 50){
+    this.name = name;
+    this.color = color;
+    this.habitability = habitability;
+    this.icons = icons;
+    this.cost = cost;
+
+    this.resetStatistics();
+  }
+
+  resetStatistics(){
+    this.cells = 0;
+    this.area = 0;
+    this.rural = 0;
+    this.urban = 0;
+  }
+
+  addCell(cell, cells){
+    this.cells += 1;
+    this.area += cells.area[cell];
+    this.rural += cells.pop[cell];
+    if (cells.burg[cell]) this.urban += pack.burgs[cells.burg[cell]].population;
+  }
+}
+
 // main data variables
 let grid = {}; // initial grapg based on jittered square grid and data
 let pack = {}; // packed graph and data
@@ -287,12 +328,29 @@ function findBurgForMFCG(params) {
 
 // apply default biomes data
 function applyDefaultBiomesSystem() {
-  const name = ["Marine","Hot desert","Cold desert","Savanna","Grassland","Tropical seasonal forest","Temperate deciduous forest","Tropical rainforest","Temperate rainforest","Taiga","Tundra","Glacier","Wetland"];
-  const color = ["#53679f","#fbe79f","#b5b887","#d2d082","#c8d68f","#b6d95d","#29bc56","#7dcb35","#409c43","#4b6b32","#96784b","#d5e7eb","#0b9131"];
-  const habitability = [0,2,5,20,30,50,100,80,90,10,2,0,12];
-  const iconsDensity = [0,3,2,120,120,120,120,150,150,100,5,0,150];
-  const icons = [{},{dune:3, cactus:6, deadTree:1},{dune:9, deadTree:1},{acacia:1, grass:9},{grass:1},{acacia:8, palm:1},{deciduous:1},{acacia:5, palm:3, deciduous:1, swamp:1},{deciduous:6, swamp:1},{conifer:1},{grass:1},{},{swamp:1}];
-  const cost = [10,200,150,60,50,70,70,80,90,80,100,255,150]; // biome movement cost
+  const biomeList = [
+    new Biome ("Marine", "#53679f", 0, new Icons({}, 0), 10),
+    new Biome ("Hot desert", "#fbe79f", 2, new Icons({dune:3, cactus:6, deadTree:1}, 3), 200),
+    new Biome ("Cold desert", "#b5b887", 5, new Icons({dune:9, deadTree:1}, 2), 150),
+    new Biome ("Savanna", "#d2d082", 20, new Icons({acacia:1, grass:9}, 120), 60),
+    new Biome ("Grassland", "#c8d68f", 30, new Icons({grass:1}, 120), 50),
+    new Biome ("Tropical seasonal forest", "#b6d95d", 50, new Icons({acacia:8, palm:1}, 120), 70),
+    new Biome ("Temperate deciduous forest", "#29bc56", 100, new Icons({deciduous:1}, 120), 70),
+    new Biome ("Tropical rainforest", "#7dcb35", 80, new Icons({acacia:5, palm:3, deciduous:1, swamp:1}, 150), 80),
+    new Biome ("Temperate rainforest", "#409c43", 90, new Icons({deciduous:6, swamp:1}, 150), 90),
+    new Biome ("Taiga", "#4b6b32", 10, new Icons({conifer:1}, 100), 80),
+    new Biome ("Tundra", "#96784b", 2, new Icons({grass:1}, 5), 100),
+    new Biome ("Glacier", "#d5e7eb", 0, new Icons({}, 0), 255),
+    new Biome ("Wetland", "#0b9131", 12, new Icons({swamp:1}, 150), 150),
+  ];
+
+  //it is occasionally useful to have the "ID" be in the object
+  biomeList.forEach((e, i) => {e.id = i;});
+
+  const MARINE = 0;
+  const PERMAFROST = 11;
+  const WETLANDS = 12;
+
   const biomesMartix = [
     // hot ↔ cold; dry ↕ wet
     new Uint8Array([1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]),
@@ -302,16 +360,7 @@ function applyDefaultBiomesSystem() {
     new Uint8Array([7,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,9,9,9,9,9,9,10,10,10])
   ];
 
-  // parse icons weighted array into a simple array
-  for (let i=0; i < icons.length; i++) {
-    const parsed = [];
-    for (const icon in icons[i]) {
-      for (let j = 0; j < icons[i][icon]; j++) {parsed.push(icon);}
-    }
-    icons[i] = parsed;
-  }
-
-  return {i:d3.range(0, name.length), name, color, biomesMartix, habitability, iconsDensity, icons, cost};
+  return {biomeList, biomesMartix};
 }
 
 function showWelcomeMessage() {
@@ -1110,7 +1159,7 @@ function rankCells() {
   const areaMean = d3.mean(cells.area); // to adjust population by cell area
 
   for (const i of cells.i) {
-    let s = +biomesData.habitability[cells.biome[i]]; // base suitability derived from biome habitability
+    let s = +biomesData.biomeList[cells.biome[i]].habitability; // base suitability derived from biome habitability
     if (!s) continue; // uninhabitable biomes has 0 suitability
     s += normalize(cells.fl[i] + cells.conf[i], flMean, flMax) * 250; // big rivers and confluences are valued
     s -= (cells.h[i] - 50) / 5; // low elevation is valued, high is not;

@@ -392,9 +392,9 @@
 
   function getBiomeCost(c, biome, type) {
     if (cells.biome[pack.cultures[c].center] === biome) return 10; // tiny penalty for native biome
-    if (type === "Hunting") return biomesData.cost[biome] * 5; // non-native biome penalty for hunters
-    if (type === "Nomadic" && biome > 4 && biome < 10) return biomesData.cost[biome] * 10; // forest biome penalty for nomads
-    return biomesData.cost[biome] * 2; // general non-native biome penalty
+    if (type === "Hunting") return biomesData.biomeList[biome].cost * 5; // non-native biome penalty for hunters
+    if (type === "Nomadic" && biome > 4 && biome < 10) return biomesData.biomeList[biome].cost * 10; // forest biome penalty for nomads
+    return biomesData.biomeList[biome].cost * 2; // general non-native biome penalty
   }
 
   function getHeightCost(i, h, type) {

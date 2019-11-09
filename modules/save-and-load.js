@@ -231,7 +231,8 @@ function getMapData() {
       temperaturePoleOutput.value, precOutput.value, JSON.stringify(winds),
       mapName.value].join("|");
     const coords = JSON.stringify(mapCoordinates);
-    const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
+    const b = biomesData.biomeList
+    const biomes = [b.map(i => i.color), b.map(i => i.habitability), b.map(i => i.name)].join("|");
     const notesData = JSON.stringify(notes);
 
     // set transform values to default
@@ -583,18 +584,30 @@ function parseLoadedData(data) {
       if (data[4]) notes = JSON.parse(data[4]);
 
       const biomes = data[3].split("|");
-      biomesData = applyDefaultBiomesSystem();
-      biomesData.color = biomes[0].split(",");
-      biomesData.habitability = biomes[1].split(",").map(h => +h);
-      biomesData.name = biomes[2].split(",");
+      _biomesData = applyDefaultBiomesSystem();
 
-      // push custom biomes if any
-      for (let i=biomesData.i.length; i < biomesData.name.length; i++) {
-        biomesData.i.push(biomesData.i.length);
-        biomesData.iconsDensity.push(0);
-        biomesData.icons.push([]);
-        biomesData.cost.push(50);
+      const colorsList = biomes[0].split(",");
+      const habitabilityList = biomes[1].split(",").map(h => +h);
+      const namesList = biomes[2].split(",");
+
+      biomesData = [];
+
+      for (let i = 0; i < namesList.length; i++){
+        const name = namesList[i];
+        const color = colorsList[i];
+        const habitability = habitabilityList[i];
+        let icons;
+        if (i < _biomesData.biomeList.length){
+          icons = _biomesData.biomeList[i].icons;
+          cost = _biomesData.biomeList[i].cost;
+        }
+        else{
+          icons = new Icons({}, 0);
+          cost = 50;
+        }
+        biomesData.push(new Biome(name, color, habitability, icons, cost));
       }
+
     }()
 
     void function replaceSVG() {
@@ -811,9 +824,7 @@ function parseLoadedData(data) {
         });
 
         // 1.0 added new biome - Wetland
-        biomesData.name.push("Wetland");
-        biomesData.color.push("#0b9131");
-        biomesData.habitability.push(12);
+        biomesData.biomeList.push("Wetland", "#0b9131", 12);
       }
 
       if (version < 1.1) {
