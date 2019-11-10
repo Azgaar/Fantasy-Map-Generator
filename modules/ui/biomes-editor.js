@@ -117,45 +117,44 @@ function editBiomes() {
 
   function biomeHighlightOn(event) {
     if (customization === 6) return;
-    const biome = +event.target.dataset.id;
-    biomes.select("#biome"+biome).raise().transition(animate).attr("stroke-width", 2).attr("stroke", "#cd4c11");
+    const biome = biomesData.biomeList[+event.target.dataset.id];
+    biomes.select("#biome"+biome.id).raise().transition(animate).attr("stroke-width", 2).attr("stroke", "#cd4c11");
   }
 
   function biomeHighlightOff(event) {
     if (customization === 6) return;
-    const biome = +event.target.dataset.id;
-    const color = biomesData.biomeList[biome].color;
-    biomes.select("#biome"+biome).transition().attr("stroke-width", .7).attr("stroke", color);
+    const biome = biomesData.biomeList[+event.target.dataset.id];
+    biomes.select("#biome"+biome.id).transition().attr("stroke-width", .7).attr("stroke", biome.color);
   }
   
   function biomeChangeColor(el) {
     const currentFill = el.getAttribute("fill");
-    const biome = +el.parentNode.parentNode.dataset.id;
+    const biome = biomesData.biomeList[+el.parentNode.parentNode.dataset.id];
 
     const callback = function(fill) {
       el.setAttribute("fill", fill);
-      biomesData.biomeList[biome].color = fill;
-      biomes.select("#biome"+biome).attr("fill", fill).attr("stroke", fill);
+      biome.color = fill;
+      biomes.select("#biome"+biome.id).attr("fill", biome.color).attr("stroke", fill);
     }
 
     openPicker(currentFill, callback);
   }
   
   function biomeChangeName(el) {
-    const biome = +el.parentNode.dataset.id;
+    const biome = biomesData.biomeList[+el.parentNode.dataset.id];
     el.parentNode.dataset.name = el.value;
-    biomesData.biomeList[biome].name = el.value;
+    biome.name = el.value;
   }
 
   function biomeChangeHabitability(el) {
-    const biome = +el.parentNode.dataset.id;
+    const biome = biomesData.biomeList[+el.parentNode.dataset.id];
     const failed = isNaN(+el.value) || +el.value < 0 || +el.value > 9999;
     if (failed) {
-      el.value = biomesData.biomeList[biome].habitability;
+      el.value = biome.habitability;
       tip("Please provide a valid number in range 0-9999", false, "error");
       return;
     }
-    biomesData.biomeList[biome].habitability = +el.value;
+    biome.habitability = +el.value;
     el.parentNode.dataset.habitability = el.value;
     recalculatePopulation();
     refreshBiomesEditor();
@@ -237,9 +236,9 @@ function editBiomes() {
   }
 
   function removeCustomBiome(el) {
-    const biome = +el.parentNode.dataset.id;
+    const biome = biomesData.biomeList[+el.parentNode.dataset.id];
     el.parentNode.remove();
-    biomesData.biomeList[biome].name = "removed";
+    biome.name = "removed";
     biomesFooterBiomes.innerHTML = +biomesFooterBiomes.innerHTML - 1;
   }
 
@@ -324,17 +323,17 @@ function editBiomes() {
     const temp = biomes.select("#temp");
     const selected = body.querySelector("div.selected");
 
-    const biomeNew = selected.dataset.id;
-    const color = biomesData.biomeList[biomeNew].color;
+    const biomeNew = biomesData.biomeList[+selected.dataset.id];
+    const color = biomeNew.color;
 
     selection.forEach(function(i) {
       const exists = temp.select("polygon[data-cell='"+i+"']");
       const biomeOld = exists.size() ? +exists.attr("data-biome") : pack.cells.biome[i];
-      if (biomeNew === biomeOld) return;
+      if (biomeNew.id === biomeOld) return;
 
       // change of append new element
-      if (exists.size()) exists.attr("data-biome", biomeNew).attr("fill", color).attr("stroke", color);
-      else temp.append("polygon").attr("data-cell", i).attr("data-biome", biomeNew).attr("points", getPackPolygon(i)).attr("fill", color).attr("stroke", color);
+      if (exists.size()) exists.attr("data-biome", biomeNew.id).attr("fill", color).attr("stroke", color);
+      else temp.append("polygon").attr("data-cell", i).attr("data-biome", biomeNew.id).attr("points", getPackPolygon(i)).attr("fill", color).attr("stroke", color);
     });
   }
 
