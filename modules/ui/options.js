@@ -432,6 +432,7 @@ function changeViewMode(event) {
   const button = event.target;
 
   enterStandardView();
+
   if (button.classList.contains("pressed")) {
     button.classList.remove("pressed");
     viewStandard.classList.add("pressed");
@@ -442,7 +443,20 @@ function changeViewMode(event) {
   }
 }
 
+function disable3dViews() {
+  viewMesh.disabled = true;
+  viewGlobe.disabled = true;
+}
+
+function enable3dViews() {
+  viewMesh.disabled = false;
+  viewGlobe.disabled = false;
+}
+
 function enterStandardView() {
+  viewMode.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
+  viewStandard.classList.add("pressed");
+
   if (!document.getElementById("canvas3d")) return;
   ThreeD.stop();
   document.getElementById("canvas3d").remove();
