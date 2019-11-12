@@ -11,7 +11,7 @@ async function saveSVG() {
   document.body.appendChild(link);
   link.click();
 
-  tip(`${link.download} is saved. Open "Downloads" screen (crtl + J) to check`, true, "success", 5000);
+  tip(`${link.download} is saved. Open "Downloads" screen (crtl + J) to check. You can set image scale in options`, true, "success", 5000);
   console.timeEnd("saveSVG");
 }
 
@@ -38,7 +38,7 @@ async function savePNG() {
         window.setTimeout(function() {
           canvas.remove();
           window.URL.revokeObjectURL(link.href);
-          tip(`${link.download} is saved. Open "Downloads" screen (crtl + J) to check`, true, "success", 5000);
+          tip(`${link.download} is saved. Open "Downloads" screen (crtl + J) to check. You can set image scale in options`, true, "success", 5000);
         }, 1000);
     });
   }
