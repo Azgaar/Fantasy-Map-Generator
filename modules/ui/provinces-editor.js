@@ -644,7 +644,7 @@ function editProvinces() {
     const provinceNew = +selected.dataset.id;
     const state = pack.provinces[provinceNew].state;
     const fill = pack.provinces[provinceNew].color || "#ffffff";
-    const stroke = d3.color(fill).darker(.2).hex();
+    const stroke = fill.startsWith("#") ? d3.color(fill).darker(.2).hex() : "#000000";
 
     selection.forEach(i => {
       if (!pack.cells.state[i] || pack.cells.state[i] !== state) return;

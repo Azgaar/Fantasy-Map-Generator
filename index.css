@@ -43,6 +43,7 @@ input {
 
 #pickerContainer {
 	position: absolute;
+	z-index: 100;
 }
 
 input, button, select, a, textarea {
