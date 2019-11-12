@@ -347,9 +347,10 @@ function applyDefaultBiomesSystem() {
   //it is occasionally useful to have the "ID" be in the object
   pack.biomes.forEach((e, i) => {e.id = i;});
 
-  const MARINE = 0;
-  const PERMAFROST = 11;
-  const WETLANDS = 12;
+  // For sanity
+  // console.assert(pack.biomes[0].name == "Marine");
+  // console.assert(pack.biomes[11].name == "Glacier");
+  // console.assert(pack.biomes[12].name == "Wetland");
 
   pack.biomesMartix = [
     // hot ↔ cold; dry ↕ wet
