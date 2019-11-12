@@ -544,6 +544,7 @@ function parseLoadedData(data) {
 
     const reliefIcons = document.getElementById("defs-relief").innerHTML; // save relief icons
     const hatching = document.getElementById("hatching").cloneNode(true); // save hatching
+    pack = {};
 
     void function parseParameters() {
       const params = data[0].split("|");
@@ -673,7 +674,6 @@ function parseLoadedData(data) {
     }()
 
     void function parsePackData() {
-      pack = {};
       reGraph();
       reMarkFeatures();
       pack.features = JSON.parse(data[12]);
