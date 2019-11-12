@@ -584,30 +584,28 @@ function parseLoadedData(data) {
       if (data[4]) notes = JSON.parse(data[4]);
 
       const biomes = data[3].split("|");
-      _biomesData = applyDefaultBiomesSystem();
-
       const colorsList = biomes[0].split(",");
       const habitabilityList = biomes[1].split(",").map(h => +h);
       const namesList = biomes[2].split(",");
 
-      biomesData = [];
+      biomesData = applyDefaultBiomesSystem();
+      const initialBiomes = biomesData.biomeList.length;
 
       for (let i = 0; i < namesList.length; i++){
         const name = namesList[i];
         const color = colorsList[i];
         const habitability = habitabilityList[i];
         let icons;
-        if (i < _biomesData.biomeList.length){
-          icons = _biomesData.biomeList[i].icons;
-          cost = _biomesData.biomeList[i].cost;
+        if (i < initialBiomes){
+          biomesData.biomeList[i].name = namesList[i];
+          biomesData.biomeList[i].color = colorsList[i];
+          biomesData.biomeList[i].habitability = habitabilityList[i];
         }
         else{
-          icons = new Icons({}, 0);
-          cost = 50;
+          biomesData.biomeList.push(new Biome(name, color, habitability));
+          biomesData.biomeList[i].id = i; //don't forget the id!
         }
-        biomesData.push(new Biome(name, color, habitability, icons, cost));
       }
-
     }()
 
     void function replaceSVG() {
