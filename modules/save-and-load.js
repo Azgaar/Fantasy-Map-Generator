@@ -231,7 +231,7 @@ function getMapData() {
       temperaturePoleOutput.value, precOutput.value, JSON.stringify(winds),
       mapName.value].join("|");
     const coords = JSON.stringify(mapCoordinates);
-    const b = biomesData.biomeList
+    const b = pack.biomes
     const biomes = [b.map(i => i.color), b.map(i => i.habitability), b.map(i => i.name)].join("|");
     const notesData = JSON.stringify(notes);
 
@@ -588,8 +588,8 @@ function parseLoadedData(data) {
       const habitabilityList = biomes[1].split(",").map(h => +h);
       const namesList = biomes[2].split(",");
 
-      biomesData = applyDefaultBiomesSystem();
-      const initialBiomes = biomesData.biomeList.length;
+      applyDefaultBiomesSystem();
+      const initialBiomes = pack.biomes.length;
 
       for (let i = 0; i < namesList.length; i++){
         const name = namesList[i];
@@ -597,13 +597,13 @@ function parseLoadedData(data) {
         const habitability = habitabilityList[i];
         let icons;
         if (i < initialBiomes){
-          biomesData.biomeList[i].name = namesList[i];
-          biomesData.biomeList[i].color = colorsList[i];
-          biomesData.biomeList[i].habitability = habitabilityList[i];
+          pack.biomes[i].name = namesList[i];
+          pack.biomes[i].color = colorsList[i];
+          pack.biomes[i].habitability = habitabilityList[i];
         }
         else{
-          biomesData.biomeList.push(new Biome(name, color, habitability));
-          biomesData.biomeList[i].id = i; //don't forget the id!
+          pack.biomes.push(new Biome(name, color, habitability));
+          pack.biomes[i].id = i; //don't forget the id!
         }
       }
     }()
@@ -822,7 +822,8 @@ function parseLoadedData(data) {
         });
 
         // 1.0 added new biome - Wetland
-        biomesData.biomeList.push("Wetland", "#0b9131", 12);
+        pack.biomes.push(new Biome("Wetland", "#0b9131", 12, new Icons({swamp:1}, 150), 150));
+        pack.biomes[12].id = 12;
       }
 
       if (version < 1.1) {

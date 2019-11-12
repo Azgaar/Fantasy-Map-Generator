@@ -17,7 +17,7 @@
       const height = cells.h[i];
       if (height < 20) continue; // no icons on water
       if (cells.r[i]) continue; // no icons on rivers 
-      const b = biomesData.biomeList[cells.biome[i]];
+      const b = pack.biomes[cells.biome[i]];
       if (height < 50 && b.icons.density === 0) continue; // no icons for this biome
       const polygon = getPackPolygon(i);
       const x = d3.extent(polygon, p => p[0]), y = d3.extent(polygon, p => p[1]);

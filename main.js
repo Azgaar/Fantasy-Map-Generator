@@ -144,7 +144,7 @@ let seed, mapHistory = [], elSelected, modules = {}, notes = [];
 let customization = 0; // 0 - no; 1 = heightmap draw; 2 - states draw; 3 - add state/burg; 4 - cultures draw
 let mapCoordinates = {}; // map coordinates on globe
 let winds = [225, 45, 225, 315, 135, 315]; // default wind directions
-let biomesData = applyDefaultBiomesSystem();
+applyDefaultBiomesSystem();
 let nameBases = Names.getNameBases(); // cultures-related data
 const fonts = ["Almendra+SC", "Georgia", "Arial", "Times+New+Roman", "Comic+Sans+MS", "Lucida+Sans+Unicode", "Courier+New"]; // default web-safe fonts
 
@@ -328,7 +328,7 @@ function findBurgForMFCG(params) {
 
 // apply default biomes data
 function applyDefaultBiomesSystem() {
-  const biomeList = [
+  pack.biomes = [
     new Biome ("Marine", "#53679f", 0, new Icons({}, 0), 10),
     new Biome ("Hot desert", "#fbe79f", 2, new Icons({dune:3, cactus:6, deadTree:1}, 3), 200),
     new Biome ("Cold desert", "#b5b887", 5, new Icons({dune:9, deadTree:1}, 2), 150),
@@ -345,13 +345,13 @@ function applyDefaultBiomesSystem() {
   ];
 
   //it is occasionally useful to have the "ID" be in the object
-  biomeList.forEach((e, i) => {e.id = i;});
+  pack.biomes.forEach((e, i) => {e.id = i;});
 
   const MARINE = 0;
   const PERMAFROST = 11;
   const WETLANDS = 12;
 
-  const biomesMartix = [
+  pack.biomesMartix = [
     // hot ↔ cold; dry ↕ wet
     new Uint8Array([1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]),
     new Uint8Array([3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,9,9,9,9,9,10,10]),
@@ -359,8 +359,6 @@ function applyDefaultBiomesSystem() {
     new Uint8Array([5,6,6,6,6,6,6,8,8,8,8,8,8,8,8,8,8,9,9,9,9,9,9,10,10,10]),
     new Uint8Array([7,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,9,9,9,9,9,9,10,10,10])
   ];
-
-  return {biomeList, biomesMartix};
 }
 
 function showWelcomeMessage() {
@@ -1145,7 +1143,7 @@ function getBiomeId(moisture, temperature, height) {
   if (moisture > 40 && height < 25 || moisture > 24 && height > 24) return 12; // wetland biome
   const m = Math.min(moisture / 5 | 0, 4); // moisture band from 0 to 4
   const t = Math.min(Math.max(20 - temperature, 0), 25); // temparature band from 0 to 25
-  return biomesData.biomesMartix[m][t];
+  return pack.biomesMartix[m][t];
 }
 
 // assess cells suitability to calculate population and rand cells for culture center and burgs placement
@@ -1159,7 +1157,7 @@ function rankCells() {
   const areaMean = d3.mean(cells.area); // to adjust population by cell area
 
   for (const i of cells.i) {
-    let s = +biomesData.biomeList[cells.biome[i]].habitability; // base suitability derived from biome habitability
+    let s = +pack.biomes[cells.biome[i]].habitability; // base suitability derived from biome habitability
     if (!s) continue; // uninhabitable biomes has 0 suitability
     s += normalize(cells.fl[i] + cells.conf[i], flMean, flMax) * 250; // big rivers and confluences are valued
     s -= (cells.h[i] - 50) / 5; // low elevation is valued, high is not;

@@ -333,7 +333,7 @@ function drawBiomes() {
   biomes.selectAll("path").remove();
   const cells = pack.cells, vertices = pack.vertices, n = cells.i.length;
   const used = new Uint8Array(cells.i.length);
-  const paths = new Array(biomesData.biomeList.length).fill("");
+  const paths = new Array(pack.biomes.length).fill("");
   
   for (const i of cells.i) {
     if (!cells.biome[i]) continue; // no need to mark water
@@ -350,7 +350,7 @@ function drawBiomes() {
 
   paths.forEach(function(d, i) {
     if (d.length < 10) return;
-    biomes.append("path").attr("d", d).attr("fill", biomesData.biomeList[i].color).attr("stroke", biomesData.biomeList[i].color).attr("id", "biome"+i);
+    biomes.append("path").attr("d", d).attr("fill", pack.biomes[i].color).attr("stroke", pack.biomes[i].color).attr("id", "biome"+i);
   });
 
   // connect vertices to chain

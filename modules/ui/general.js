@@ -104,7 +104,7 @@ function showMapTooltip(point, e, i, g) {
   if (layerIsOn("togglePrec") && land) tip("Annual Precipitation: "+ getFriendlyPrecipitation(i)); else
   if (layerIsOn("togglePopulation")) tip(getPopulationTip(i)); else
   if (layerIsOn("toggleTemp")) tip("Temperature: " + convertTemperature(grid.cells.temp[g])); else
-  if (layerIsOn("toggleBiomes") && pack.cells.biome[i]) tip("Biome: " + biomesData.biomeList[pack.cells.biome[i]].name); else
+  if (layerIsOn("toggleBiomes") && pack.cells.biome[i]) tip("Biome: " + pack.biomes[pack.cells.biome[i]].name); else
   if (layerIsOn("toggleReligions") && pack.cells.religion[i]) {
     const religion = pack.religions[pack.cells.religion[i]];
     const type = religion.type === "Cult" || religion.type == "Heresy" ? religion.type : religion.type + " religion";
@@ -146,7 +146,7 @@ function updateCellInfo(point, i, g) {
   infoBurg.innerHTML = cells.burg[i] ? pack.burgs[cells.burg[i]].name + " (" + cells.burg[i] + ")" : "no";
   const f = cells.f[i];
   infoFeature.innerHTML = f ? pack.features[f].group + " (" + f + ")" : "n/a";
-  infoBiome.innerHTML = biomesData.biomeList[cells.biome[i]].name;
+  infoBiome.innerHTML = pack.biomes[cells.biome[i]].name;
 }
 
 // get user-friendly (real-world) height value from map data
