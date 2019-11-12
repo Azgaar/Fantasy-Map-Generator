@@ -128,8 +128,11 @@ function getRiverName(id) {
 // get cell info on mouse move
 function updateCellInfo(point, i, g) {
   const cells = pack.cells;
-  infoX.innerHTML = rn(point[0]);
-  infoY.innerHTML = rn(point[1]);
+  const x = infoX.innerHTML = rn(point[0]);
+  const y = infoY.innerHTML = rn(point[1]);
+  infoLat.innerHTML = toDMS(mapCoordinates.latN - (y / graphHeight) * mapCoordinates.latT, "lat");
+  infoLon.innerHTML = toDMS(mapCoordinates.lonW + (x / graphWidth) * mapCoordinates.lonT, "lon");
+
   infoCell.innerHTML = i;
   const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
   infoArea.innerHTML = cells.area[i] ? si(cells.area[i] * distanceScaleInput.value ** 2) + unit : "n/a";
@@ -147,6 +150,16 @@ function updateCellInfo(point, i, g) {
   const f = cells.f[i];
   infoFeature.innerHTML = f ? pack.features[f].group + " (" + f + ")" : "n/a";
   infoBiome.innerHTML = biomesData.name[cells.biome[i]];
+}
+
+// convert coordinate to DMS format
+function toDMS(coord, c) {
+  const degrees = Math.floor(Math.abs(coord));
+  const minutesNotTruncated = (Math.abs(coord) - degrees) * 60;
+  const minutes = Math.floor(minutesNotTruncated);
+  const seconds = Math.floor((minutesNotTruncated - minutes) * 60);
+  const cardinal = c === "lat" ? coord >= 0 ? "N" : "S" : coord >= 0 ? "E" : "W";
+  return degrees + "° " + minutes + "′ " + seconds + "″ " + cardinal;
 }
 
 // get user-friendly (real-world) height value from map data

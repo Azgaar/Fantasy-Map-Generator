@@ -307,9 +307,20 @@ function editHeightmap() {
       pack.cells.religion[i] = religion[g];
     }
 
+    // find closest land cell to burg
+    const findBurgCell = function(x, y) {
+      let i = findCell(x, y);
+      if (pack.cells.h[i] >= 20) return i;
+      const dist = pack.cells.c[i].map(c => 
+        pack.cells.h[c] < 20 ? Infinity : (pack.cells.p[c][0] - x) ** 2 + (pack.cells.p[c][1] - y) ** 2
+      );
+      return pack.cells.c[i][d3.scan(dist)];
+    }
+
+    // find best cell for burgs
     for (const b of pack.burgs) {
       if (!b.i || b.removed) continue;
-      b.cell = findCell(b.x, b.y);
+      b.cell = findBurgCell(b.x, b.y);
       b.feature = pack.cells.f[b.cell];
       pack.cells.burg[b.cell] = b.i;
       if (!b.capital && pack.cells.h[b.cell] < 20) removeBurg(b.i);
