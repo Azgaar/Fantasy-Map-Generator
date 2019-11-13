@@ -234,15 +234,13 @@ function getMapData() {
     const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
     const notesData = JSON.stringify(notes);
 
-    // set transform values to default
-    svg.attr("width", graphWidth).attr("height", graphHeight);
-    const transform = d3.zoomTransform(svg.node());
-    viewbox.attr("transform", null);
-    const svg_xml = (new XMLSerializer()).serializeToString(svg.node());
+    const cloneEl = document.getElementById("map").cloneNode(true); // clone svg
 
-    // restore initial values
-    svg.attr("width", svgWidth).attr("height", svgHeight);
-    zoom.transform(svg, transform);
+    // set transform values to default
+    cloneEl.setAttribute("width", graphWidth);
+    cloneEl.setAttribute("height", graphHeight);
+    cloneEl.querySelector("#viewbox").setAttribute("transform", null);
+    const svg_xml = (new XMLSerializer()).serializeToString(cloneEl);
 
     const gridGeneral = JSON.stringify({spacing:grid.spacing, cellsX:grid.cellsX, cellsY:grid.cellsY, boundary:grid.boundary, points:grid.points, features:grid.features});
     const features = JSON.stringify(pack.features);

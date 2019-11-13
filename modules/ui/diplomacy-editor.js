@@ -52,11 +52,7 @@ function editDiplomacy() {
     const selectedLine = body.querySelector("div.Self");
     const sel = selectedLine ? +selectedLine.dataset.id : states.find(s => s.i && !s.removed).i;
     const selName = states[sel].fullName;
-
-    // move select drop-down back to initial place
-    const select = document.getElementById("diplomacySelect");
-    body.parentNode.insertBefore(select, body);
-    select.style.display = "none";
+    diplomacySelect.style.display = "none";
 
     let lines = `<div class="states Self" data-id=${sel}>
       <div data-tip="List below shows relations to ${selName}" style="width: 100%">${selName}</div>
@@ -164,18 +160,18 @@ function editDiplomacy() {
     const select = document.getElementById("diplomacySelect");
     const show = select.style.display === "none";
     if (!show) {select.style.display = "none"; return;}
-    event.target.parentNode.insertBefore(select, event.target);
     select.style.display = "block";
+    const input = event.target.closest("div").querySelector("input");
+    select.style.left = input.getBoundingClientRect().left + "px";
+    select.style.top = input.getBoundingClientRect().bottom + "px";
+    body.dataset.state = event.target.closest("div.states").dataset.id;
   }
 
   function diplomacyChangeRelations(event) {
     event.stopPropagation();
-    const select = document.getElementById("diplomacySelect");
-    select.style.display = "none";
-
-    const subject = +event.target.parentElement.parentElement.dataset.id;
+    diplomacySelect.style.display = "none";
+    const subject = body.dataset.state;
     const rel = event.target.innerHTML;
-    body.parentNode.insertBefore(select, body);
 
     const states = pack.states, chronicle = states[0].diplomacy;
     const selectedLine = body.querySelector("div.Self");

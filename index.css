@@ -1297,20 +1297,22 @@ div.states>input.riverType {
 }
 
 #diplomacySelect {
-	position: absolute;
+	width: 5em;
+	margin: .1em 0 0 -.3em;
+	position: fixed;
 	background-color: #ffffff;
 	border: 1px solid #1891ff;
-	width: 23%;
-	left: 70.5%;
 }
 
 #diplomacySelect > div {
 	width: 100%;
+	padding-left: .3em;
 }
 
 #diplomacySelect > div:hover {
 	background-color: #1891ff;
 	color: #ffffff;
+	width: calc(100% - .3em);
 }
 
 #burgsFooterPopulation {
