@@ -157,7 +157,7 @@ function editHeightmap() {
     drawCoastline();
 
     elevateLakes();
-    Rivers.generate();
+    Rivers.generate(change);
 
     if (!change) {
       for (const i of pack.cells.i) {
@@ -265,7 +265,7 @@ function editHeightmap() {
 
     if (changeHeights.checked) {
       elevateLakes();
-      Rivers.generate();
+      Rivers.generate(changeHeights.checked);
     }
 
     // assign saved pack data from grid back to pack

@@ -4,7 +4,7 @@
     (global.Rivers = factory());
 }(this, (function () {'use strict';
 
-  const generate = function() {
+  const generate = function(changeHeights = true) {
     console.time('generateRivers');
     Math.seedrandom(seed);
     const cells = pack.cells, p = cells.p, features = pack.features;
@@ -132,6 +132,9 @@
         .attr("data-width", d => d[2]).attr("data-increment", d => d[3]);
     }()
 
+    // apply change heights as basic one
+    if (changeHeights) cells.h = Uint8Array.from(h);
+
     console.timeEnd('generateRivers');
   }
 
@@ -148,7 +151,7 @@
         const minHeight = d3.min(cells.c[i].map(c => h[c]));
         if (minHeight === 100) continue; // already max height
         if (h[i] <= minHeight) {
-          h[i] = minHeight + 1;
+          h[i] = Math.min(minHeight + 1, 100);
           depression++;
           depressed = true;
         }
