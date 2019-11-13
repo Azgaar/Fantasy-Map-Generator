@@ -302,7 +302,7 @@ function editCultures() {
     debug.select("#cultureCenter"+culture).remove();
 
     pack.burgs.filter(b => b.culture == culture).forEach(b => b.culture = 0);
-    pack.states.forEach((s, i) => {if(s.culture === culture) pack.states[i].culture = 0;});
+    pack.states.forEach((s, i) => {if(s.culture === culture) s.culture = 0;});
     pack.cells.culture.forEach((c, i) => {if(c === culture) pack.cells.culture[i] = 0;});
     pack.cultures[culture].removed = true;
 
