@@ -158,7 +158,7 @@ function editStates() {
   
   function getCultureOptions(culture) {
     let options = "";
-    pack.cultures.slice(1).forEach(c => options += `<option ${c.i === culture ? "selected" : ""} value="${c.i}">${c.name}</option>`);
+    pack.cultures.forEach(c => {if (!c.removed) { options += `<option ${c.i === culture ? "selected" : ""} value="${c.i}">${c.name}</option>` }});
     return options;
   }
 
