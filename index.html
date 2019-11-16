@@ -953,12 +953,12 @@
           <li id="toggleReligions" data-tip="Religions: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: R" class="buttonoff" onclick="toggleReligions(event)"><u>R</u>eligions</li>
           <li id="toggleCultures" data-tip="Cultures: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: C" class="buttonoff" onclick="toggleCultures(event)"><u>C</u>ultures</li>
           <li id="toggleStates" data-tip="States: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: S" onclick="toggleStates(event)"><u>S</u>tates</li>
-          <li id="toggleProvinces" data-tip="Provinces: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: N" class="buttonoff" onclick="toggleProvinces(event)">Provi<u>n</u>ces</li>
+          <li id="toggleProvinces" data-tip="Provinces: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: P" class="buttonoff" onclick="toggleProvinces(event)"><u>P</u>rovinces</li>
           <li id="toggleZones" data-tip="Zones: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: Z" class="buttonoff" onclick="toggleZones(event)"><u>Z</u>ones</li>
           <li id="toggleBorders" data-tip="State borders: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: D" onclick="toggleBorders(event)">Bor<u>d</u>ers</li>
           <li id="toggleRoutes"data-tip="Trade routes: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: U" onclick="toggleRoutes(event)">Ro<u>u</u>tes</li>
           <li id="toggleTemp" data-tip="Temperature map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: T" class="buttonoff" onclick="toggleTemp(event)"><u>T</u>emperature</li>
-          <li id="togglePopulation" data-tip="Population map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: P" class="buttonoff" onclick="togglePopulation(event)"><u>P</u>opulation</li>
+          <li id="togglePopulation" data-tip="Population map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: N" class="buttonoff" onclick="togglePopulation(event)">Populatio<u>n</u></li>
           <li id="togglePrec" data-tip="Precipitation map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: A" class="buttonoff" onclick="togglePrec(event)">Precipit<u>a</u>tion</li>
           <li id="toggleLabels" data-tip="Labels: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: L" onclick="toggleLabels(event)"><u>L</u>abels</li>
           <li id="toggleIcons" data-tip="Burg icons: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: I" onclick="toggleIcons(event)"><u>I</u>cons</li>
@@ -2746,8 +2746,8 @@
         <button id="provincesManually" data-tip="Manually re-assign provinces" class="icon-brush"></button>
         <div id="provincesManuallyButtons" style="display: none">
           <label data-tip="Change brush size. Shortcut: + (increase), – (decrease)" class="italic">Brush size:
-            <input id="provincesManuallyBrush" oninput="tip('Brush size: '+this.value); provincesManuallyBrushNumber.value = this.value" type="range" min=5 max=99 value=15 style="width:5em">
-            <input id="provincesManuallyBrushNumber" oninput="tip('Brush size: '+this.value); provincesManuallyBrush.value = this.value" type="number" min=5 max=99 value=15>
+            <input id="provincesManuallyBrush" oninput="tip('Brush size: '+this.value); provincesManuallyBrushNumber.value = this.value" type="range" min=5 max=99 value=8 style="width:5em">
+            <input id="provincesManuallyBrushNumber" oninput="tip('Brush size: '+this.value); provincesManuallyBrush.value = this.value" type="number" min=5 max=99 value=8>
           </label><br>
           <button id="provincesManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
           <button id="provincesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>

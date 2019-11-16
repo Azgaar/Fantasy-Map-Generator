@@ -577,6 +577,10 @@ function editProvinces() {
     if (!layerIsOn("toggleProvinces")) toggleProvinces();
     if (!layerIsOn("toggleBorders")) toggleBorders();
 
+    // make province and state borders more visible
+    provinceBorders.select("path").attr("stroke", "#000").attr("stroke-width", .5);
+    stateBorders.select("path").attr("stroke", "#000").attr("stroke-width", 1.2);
+
     customization = 11;
     provs.select("g#provincesBody").append("g").attr("id", "temp");
     provs.select("g#provincesBody").append("g").attr("id", "centers")
@@ -598,6 +602,7 @@ function editProvinces() {
       .on("touchmove mousemove", moveBrush);
 
     body.querySelector("div").classList.add("selected");
+    selectProvince(+body.querySelector("div").dataset.id);
   }
 
   function selectProvinceOnLineClick() {
@@ -605,6 +610,7 @@ function editProvinces() {
     if (this.parentNode.id !== "provincesBodySection") return;
     body.querySelector("div.selected").classList.remove("selected");
     this.classList.add("selected");
+    selectProvince(+this.dataset.id);
   }
 
   function selectProvinceOnMapClick() {
@@ -620,6 +626,13 @@ function editProvinces() {
 
     body.querySelector("div.selected").classList.remove("selected");
     editorLine.classList.add("selected");
+    selectProvince(province);
+  }
+
+  function selectProvince(p) {
+    debug.selectAll("path.selected").remove();
+    const path = provs.select("#province"+p).attr("d");
+    debug.append("path").attr("class", "selected").attr("d", path);
   }
 
   function dragBrush() {
@@ -644,7 +657,6 @@ function editProvinces() {
     const provinceNew = +selected.dataset.id;
     const state = pack.provinces[provinceNew].state;
     const fill = pack.provinces[provinceNew].color || "#ffffff";
-    const stroke = fill.startsWith("#") ? d3.color(fill).darker(.2).hex() : "#000000";
 
     selection.forEach(i => {
       if (!pack.cells.state[i] || pack.cells.state[i] !== state) return;
@@ -659,10 +671,14 @@ function editProvinces() {
       }
 
       // change of append new element
-      if (exists.size()) exists.attr("data-province", provinceNew).attr("fill", fill).attr("stroke", stroke);
-      else temp.append("polygon").attr("points", getPackPolygon(i))
-        .attr("data-cell", i).attr("data-province", provinceNew)
-        .attr("fill", fill).attr("stroke", stroke);
+      if (exists.size()) {
+        if (pack.cells.province[i] === provinceNew) exists.remove();
+        else exists.attr("data-province", provinceNew).attr("fill", fill);
+      } else {
+        temp.append("polygon").attr("points", getPackPolygon(i))
+          .attr("data-cell", i).attr("data-province", provinceNew)
+          .attr("fill", fill).attr("stroke", "#555");
+      }
     });
   }
 
@@ -690,6 +706,11 @@ function editProvinces() {
     provs.select("#temp").remove();
     provs.select("#centers").remove();
     removeCircle();
+
+    // restore borders style
+    provinceBorders.select("path").attr("stroke", null).attr("stroke-width", null);
+    stateBorders.select("path").attr("stroke", null).attr("stroke-width", null);
+    debug.selectAll("path.selected").remove();
 
     document.querySelectorAll("#provincesBottom > *").forEach(el => el.style.display = "inline-block");
     document.getElementById("provincesManuallyButtons").style.display = "none";

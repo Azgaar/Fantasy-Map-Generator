@@ -364,13 +364,13 @@ document.addEventListener("keyup", event => {
   else if (key === 70) toggleRelief(); // "F" to toggle Relief icons layer
   else if (key === 67) toggleCultures(); // "C" to toggle Cultures layer
   else if (key === 83) toggleStates(); // "S" to toggle States layer
-  else if (key === 78) toggleProvinces(); // "N" to toggle Provinces layer
+  else if (key === 80) toggleProvinces(); // "P" to toggle Provinces layer
   else if (key === 90) toggleZones(); // "Z" to toggle Zones
   else if (key === 68) toggleBorders(); // "D" to toggle Borders layer
   else if (key === 82) toggleReligions(); // "R" to toggle Religions layer
   else if (key === 85) toggleRoutes(); // "U" to toggle Routes layer
   else if (key === 84) toggleTemp(); // "T" to toggle Temperature layer
-  else if (key === 80) togglePopulation(); // "P" to toggle Population layer
+  else if (key === 78) togglePopulation(); // "N" to toggle Population layer
   else if (key === 65) togglePrec(); // "A" to toggle Precipitation layer
   else if (key === 76) toggleLabels(); // "L" to toggle Labels layer
   else if (key === 73) toggleIcons(); // "I" to toggle Icons layer

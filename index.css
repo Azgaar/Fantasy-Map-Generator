@@ -106,7 +106,7 @@ button, select, a {
 }
 
 #statesBody, #provincesBody {
-	stroke-width: 2;
+	stroke-width: .6;
 	fill-rule: evenodd;
 	mask: url(#land);
 }
@@ -963,6 +963,12 @@ body button.noicon {
 	font-family: monospace;
 	font-weight: bold;
 	top: -3px;
+}
+
+#debug path.selected {
+	stroke-width: .8;
+	stroke: #da3126;
+	fill: none;
 }
 
 .selectedCell {
