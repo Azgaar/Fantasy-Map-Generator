@@ -427,68 +427,81 @@ document.getElementById("mapToLoad").addEventListener("change", function() {
 
 // View mode
 viewMode.addEventListener("click", changeViewMode);
-function changeViewMode(event) {
-  if (event.target.tagName !== "BUTTON") return;
+function changeViewMode() {
   const button = event.target;
-
+  if (button.tagName !== "BUTTON") return;
+  const pressed = button.classList.contains("pressed");
   enterStandardView();
 
-  if (button.classList.contains("pressed")) {
-    button.classList.remove("pressed");
-    viewStandard.classList.add("pressed");
-  } else {
-    viewMode.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
+  if (!pressed && button.id !== "viewStandard") {
+    viewStandard.classList.remove("pressed");
     button.classList.add("pressed");
-    if (button.id !== "viewStandard") enter3dView(button.id);
+    enter3dView(button.id);
   }
-}
-
-function disable3dViews() {
-  viewMesh.disabled = true;
-  viewGlobe.disabled = true;
-}
-
-function enable3dViews() {
-  viewMesh.disabled = false;
-  viewGlobe.disabled = false;
 }
 
 function enterStandardView() {
   viewMode.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
+  heightmap3DView.classList.remove("pressed");
   viewStandard.classList.add("pressed");
 
   if (!document.getElementById("canvas3d")) return;
   ThreeD.stop();
   document.getElementById("canvas3d").remove();
   if (options3dUpdate.offsetParent) $("#options3d").dialog("close");
+  if (preview3d.offsetParent) $("#preview3d").dialog("close");
 }
 
 async function enter3dView(type) {
   const canvas = document.createElement("canvas");
   canvas.id = "canvas3d";
-  canvas.style.display = "block";
-  canvas.width = svgWidth;
-  canvas.height = svgHeight;
-  canvas.style.position = "absolute";
-  canvas.style.display = "none";
   canvas.dataset.type = type;
+
+  if (type === "heightmap3DView") {
+    canvas.width = parseFloat(preview3d.style.width) || graphWidth / 3;
+    canvas.height = canvas.width / (graphWidth / graphHeight);
+    canvas.style.display = "block";
+  } else {
+    canvas.width = svgWidth;
+    canvas.height = svgHeight;
+    canvas.style.position = "absolute";
+    canvas.style.display = "none";
+  }
+
   const started = await ThreeD.create(canvas, type);
   if (!started) return;
+
   canvas.style.display = "block";
-  document.body.insertBefore(canvas, optionsContainer);
   canvas.onmouseenter = () => {
     const help = "Left mouse to change angle, middle mouse / mousewheel to zoom, right mouse to pan. <b>O</b> to toggle options";
     +canvas.dataset.hovered > 2 ? tip("") : tip(help);
     canvas.dataset.hovered = (+canvas.dataset.hovered|0) + 1;
   };
+
+  if (type === "heightmap3DView") {
+    document.getElementById("preview3d").appendChild(canvas);
+    $("#preview3d").dialog({
+      title: "3D Preview", resizable: true,
+      position: {my: "left bottom", at: "left+10 bottom-20", of: "svg"},
+      resizeStop: resize3d, close: enterStandardView
+    });
+  } else document.body.insertBefore(canvas, optionsContainer);
+
   toggle3dOptions();
+}
+
+function resize3d() {
+  const canvas = document.getElementById("canvas3d");
+  canvas.width = parseFloat(preview3d.style.width);
+  canvas.height = parseFloat(preview3d.style.height) - 2;
+  ThreeD.redraw();
 }
 
 function toggle3dOptions() {
   if (options3dUpdate.offsetParent) {$("#options3d").dialog("close"); return;}
   $("#options3d").dialog({
     title: "3D mode settings", resizable: false, width: fitContent(),
-    position: {my: "right top", at: "right-40 top+10", of: "svg", collision: "fit"}
+    position: {my: "right top", at: "right-30 top+10", of: "svg", collision: "fit"}
   });
 
   updateValues();

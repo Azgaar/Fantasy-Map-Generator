@@ -33,7 +33,7 @@ function editHeightmap() {
   document.getElementById("applyTemplate").addEventListener("click", openTemplateEditor);
   document.getElementById("convertImage").addEventListener("click", openImageConverter);
   document.getElementById("heightmapPreview").addEventListener("click", toggleHeightmapPreview);
-  document.getElementById("heightmap3DView").addEventListener("click", toggleHeightmap3dView);
+  document.getElementById("heightmap3DView").addEventListener("click", changeViewMode);
   document.getElementById("finalizeHeightmap").addEventListener("click", finalizeHeightmap);
   document.getElementById("renderOcean").addEventListener("click", mockHeightmap);
   document.getElementById("templateUndo").addEventListener("click", () => restoreHistory(edits.n-1));
@@ -42,9 +42,6 @@ function editHeightmap() {
   function enterHeightmapEditMode(type) {
     editHeightmap.layers = Array.from(mapLayers.querySelectorAll("li:not(.buttonoff)")).map(node => node.id); // store layers preset
     editHeightmap.layers.forEach(l => document.getElementById(l).click()); // turn off all layers
-
-    enterStandardView();
-    disable3dViews();
 
     customization = 1;
     closeDialogs();
@@ -112,8 +109,6 @@ function editHeightmap() {
       return;
     }
 
-    enable3dViews();
-
     customization = 0;
     customizationMenu.style.display = "none";
     toolsContent.style.display = "block";
@@ -125,8 +120,7 @@ function editHeightmap() {
 
     restartHistory();
     if (document.getElementById("preview")) document.getElementById("preview").remove();
-    if (document.getElementById("canvas3d")) toggleHeightmap3dView();
-
+    if (document.getElementById("canvas3d")) enterStandardView();
 
     const mode = heightmapEditMode.innerHTML;
     if (mode === "erase") regenerateErasedData();
@@ -981,7 +975,9 @@ function editHeightmap() {
     document.getElementById("convertOverlayNumber").addEventListener("input", function() {setOverlayOpacity(this.value)});
 
     function showPalleteHeight() {
-      colorsSelectValue.innerHTML = this.getAttribute("data-color");
+      const height = +this.getAttribute("data-color");
+      colorsSelectValue.innerHTML = height;
+      colorsSelectFriendly.innerHTML = getHeight(height);
       const former = colorScheme.querySelector(".hoveredColor")
       if (former) former.className = "";
       this.className = "hoveredColor";
@@ -1056,15 +1052,16 @@ function editHeightmap() {
       if (selectedColor) selectedColor.classList.remove("selectedColor");
       const hoveredColor = colorScheme.querySelector("div.hoveredColor");
       if (hoveredColor) hoveredColor.classList.remove("hoveredColor");
-      colorsSelectValue.innerHTML = "";
+      colorsSelectValue.innerHTML = colorsSelectFriendly.innerHTML = 0;
 
       if (unselect) return;
       this.classList.add("selectedColor");
 
-      if (this.getAttribute("data-height")) {
-        const height = this.getAttribute("data-height");
+      if (this.dataset.height) {
+        const height = +this.dataset.height;
         colorScheme.querySelector(`div[data-color="${height}"]`).classList.add("hoveredColor");
         colorsSelectValue.innerHTML = height;
+        colorsSelectFriendly.innerHTML = getHeight(height);
       }
 
       const color = this.getAttribute("data-color");
@@ -1073,7 +1070,7 @@ function editHeightmap() {
     }
 
     function assignHeight() {
-      const height = +this.getAttribute("data-color");
+      const height = +this.dataset.color;
       const rgb = color(1 - (height < 20 ? height-5 : height) / 100);
       const selectedColor = imageConverter.querySelector("div.selectedColor");
       selectedColor.style.backgroundColor = rgb;
@@ -1081,7 +1078,7 @@ function editHeightmap() {
       selectedColor.setAttribute("data-height", height);
 
       viewbox.select("#heights").selectAll(".selectedCell").each(function() {
-        this.setAttribute("fill", rgb); 
+        this.setAttribute("fill", rgb);
         this.setAttribute("data-height", height);
       });
 
@@ -1097,20 +1094,32 @@ function editHeightmap() {
       const unassigned = colorsUnassigned.querySelectorAll("div");
       if (!unassigned.length) {tip("No unassigned colors. Please load an image and click the button again", false, "error"); return;}
 
-      unassigned.forEach(function(el) {
-        const colorFrom = el.getAttribute("data-color");
+      const assinged = []; // assigned heights
+      unassigned.forEach(el => {
+        const colorFrom = el.dataset.color;
         const lab = d3.lab(colorFrom);
         const normalized = type === "hue" ? rn(normalize(lab.b + lab.a / 2, -50, 200), 2) : rn(normalize(lab.l, -15, 100), 2);
-        const colorTo = color(1 - (normalized < .2 ? normalized-.05 : normalized));
-        const heightTo = normalized * 100;
+        let heightTo = rn(normalized * 100);
+        if (assinged[heightTo] && heightTo < 100) heightTo += 1; // if height is already added, try increated one
+        if (assinged[heightTo] && heightTo < 100) heightTo += 1; // if height is already added, try increated one
+        if (assinged[heightTo] && heightTo > 3) heightTo -= 3; // if increased one is also added, try decreased one
+        if (assinged[heightTo] && heightTo > 1) heightTo -= 1; // if increased one is also added, try decreased one
 
+        const colorTo = color(1 - (heightTo < 20 ? (heightTo-5)/100 : heightTo/100));
         viewbox.select("#heights").selectAll("polygon[fill='" + colorFrom + "']").attr("fill", colorTo).attr("data-height", heightTo);
-        el.style.backgroundColor = colorTo;
-        el.setAttribute("data-color", colorTo);
-        el.setAttribute("data-height", heightTo);
+
+        if (assinged[heightTo]) {el.remove(); return;} // if color is already added, remove it
+        el.style.backgroundColor = el.dataset.color = colorTo;
+        el.dataset.height = heightTo;
         colorsAssigned.appendChild(el);
+        assinged[heightTo] = true;
       });
-      
+
+      // sort assigned colors by height
+      Array.from(colorsAssigned.children).sort((a, b) => {
+        return +a.dataset.height - +b.dataset.height;
+      }).forEach(line => colorsAssigned.appendChild(line));
+
       colorsAssigned.style.display = "block";
       colorsUnassigned.style.display = "none";
     }
@@ -1137,12 +1146,12 @@ function editHeightmap() {
       d3.select("#imageConverter").selectAll("div.color-div").remove();
       colorsAssigned.style.display = "none";
       colorsUnassigned.style.display = "none";
-      colorsSelectValue.innerHTML = "";
+      colorsSelectValue.innerHTML = colorsSelectFriendly.innerHTML = 0;
       viewbox.style("cursor", "default").on(".drag", null);
       tip('Heightmap edit mode is active. Click on "Exit Customization" to finalize the heightmap', true);
 
       viewbox.select("#heights").selectAll("polygon").each(function() {
-        const height = +this.getAttribute("data-height") || 0;
+        const height = +this.dataset.height || 0;
         const i = +this.id.slice(4);
         grid.cells.h[i] = height;
       });
@@ -1207,42 +1216,4 @@ function editHeightmap() {
     }
   }
 
-  // 3D previewer
-  async function toggleHeightmap3dView() {
-    if (document.getElementById("canvas3d")) {
-      $("#preview3d").dialog("close");
-      return;
-    }
-
-    const canvas = document.createElement("canvas");
-    canvas.id = "canvas3d";
-    canvas.style.display = "block";
-    canvas.width = parseFloat(preview3d.style.width) || graphWidth / 3;
-    canvas.height = canvas.width / (graphWidth / graphHeight);
-    const started = ThreeD.create(canvas);
-    if (!started) return;
-
-    document.getElementById("preview3d").appendChild(canvas);
-    canvas.onmouseenter = () => {
-      +canvas.dataset.hovered > 2 ? tip("") : tip("Left mouse to change angle, middle mouse or mousewheel to zoom, right mouse to pan. R to toggle rotation");
-      canvas.dataset.hovered = (+canvas.dataset.hovered|0) + 1;
-    };
-
-    $("#preview3d").dialog({
-      title: "3D Preview", resizable: true,
-      position: {my: "left bottom", at: "left+10 bottom-20", of: "svg"},
-      resizeStop: resize3d, close: close3dPreview
-    });
-
-    function resize3d() {
-      canvas.width = parseFloat(preview3d.style.width);
-      canvas.height = parseFloat(preview3d.style.height) - 2;
-      ThreeD.redraw();
-    }
-
-    function close3dPreview() {
-      ThreeD.stop();
-      canvas.remove();
-    }
-  }
 }

@@ -957,14 +957,6 @@ body button.noicon {
 	margin: 6px 1px 4px 1px;
 }
 
-#colorsSelectValue {
-	font-size: larger;
-	position: relative;
-	font-family: monospace;
-	font-weight: bold;
-	top: -3px;
-}
-
 #debug path.selected {
 	stroke-width: .8;
 	stroke: #da3126;

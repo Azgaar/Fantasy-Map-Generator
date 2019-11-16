@@ -305,7 +305,7 @@ document.addEventListener("keydown", event => {
 document.addEventListener("keyup", event => {
   if (!window.closeDialogs) return; // not all modules are loaded
   const canvas3d = document.getElementById("canvas3d"); // check if 3d mode is active
-  const active = canvas3d ? null : document.activeElement.tagName;
+  const active = document.activeElement.tagName;
   if (active === "INPUT" || active === "SELECT" || active === "TEXTAREA") return; // don't trigger if user inputs a text
   if (active === "DIV" && document.activeElement.contentEditable === "true") return; // don't trigger if user inputs a text
   event.stopPropagation();

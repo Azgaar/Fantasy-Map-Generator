@@ -1690,12 +1690,11 @@ const regenerateMap = debounce(function() {
   resetZoom(1000);
   generate();
   restoreLayers();
-  const canvas3d = document.getElementById("canvas3d");
-  if (canvas3d) ThreeD.redraw();
+  if (ThreeD.options.isOn) ThreeD.redraw();
   if ($("#worldConfigurator").is(":visible")) editWorld();
 }, 500);
 
-// Clear the map
+// clear the map
 function undraw() {
   viewbox.selectAll("path, circle, polygon, line, text, use, #zones > g, #ruler > g").remove();
   defs.selectAll("path, clipPath").remove();

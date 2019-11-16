@@ -14,6 +14,7 @@ let Renderer, scene, camera, controls, animationFrame, material, texture,
 
 // initiate 3d scene
 const create = async function(canvas, type = "viewMesh") {
+  options.isOn = true;
   options.isGlobe = type === "viewGlobe";
   return options.isGlobe ? newGlobe(canvas) : newMesh(canvas);
 }
@@ -57,6 +58,8 @@ const stop = function() {
   texture = undefined;
   geometry = undefined;
   mesh = undefined;
+
+  ThreeD.options.isOn = false;
 }
 
 const setScale = function(scale) {
@@ -81,10 +84,11 @@ const setSun = function(x, y, z) {
 }
 
 const setRotation = function(speed) {
+  cancelAnimationFrame(animationFrame);
   if (options.isGlobe) options.rotateGlobe = speed; else options.rotateMesh = speed;
   controls.autoRotateSpeed = speed;
   controls.autoRotate = Boolean(controls.autoRotateSpeed);
-  controls.autoRotate ? animate() : cancelAnimationFrame(animationFrame);
+  if (controls.autoRotate) animate();
 }
 
 const toggleSky = function() {
