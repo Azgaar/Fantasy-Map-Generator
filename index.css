@@ -1249,9 +1249,9 @@ div.states > .diplomacyRelations {
 	cursor: pointer;
 	border: 0;
 	background-color: transparent;
-	-webkit-appearance: textfield;
+	-webkit-appearance: none;
 	-moz-appearance: none;
-	appearance: textfield;
+	appearance: none;
 }
 
 div.states > .cultureBase {
@@ -1357,9 +1357,9 @@ div.states>.religionType {
 	cursor: pointer;
 	border: 0;
 	background-color: transparent;
-	-webkit-appearance: textfield;
+	-webkit-appearance: none;
 	-moz-appearance: none;
-	appearance: textfield;
+	appearance: none;
 }
 
 div.states>.religionForm {
