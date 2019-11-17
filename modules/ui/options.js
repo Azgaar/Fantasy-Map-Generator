@@ -2,6 +2,7 @@
 "use strict";
 
 $("#optionsContainer").draggable({handle: ".drag-trigger", snap: "svg", snapMode: "both"});
+$("#exitCustomization").draggable({handle: "div"});
 $("#mapLayers").disableSelection();
 
 // remove glow if tip is aknowledged

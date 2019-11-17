@@ -526,7 +526,23 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 	color: white;
 }
 
-.glow {
+#exitCustomization {
+	position: absolute;
+	display: none;
+}
+
+#exitCustomization > div {
+	width: 12em;
+	background: #5d4651;
+	cursor: move;
+}
+
+#finalizeHeightmap {
+	width: 100%;
+	border: none;
+	padding: .45em .75em;
+	margin: .4em 0;
+	font-family: Consolas, monospace;
 	animation: glowing 2s infinite;
 }
 

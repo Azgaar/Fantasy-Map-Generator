@@ -16,6 +16,7 @@ const tooltip = document.getElementById("tooltip");
 // show tip for non-svg elemets with data-tip
 document.getElementById("dialogs").addEventListener("mousemove", showDataTip);
 document.getElementById("optionsContainer").addEventListener("mousemove", showDataTip);
+document.getElementById("exitCustomization").addEventListener("mousemove", showDataTip);
 
 function tip(tip = "Tip is undefined", main, error, time) {
   tooltip.innerHTML = tip;

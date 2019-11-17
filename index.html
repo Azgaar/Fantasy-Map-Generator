@@ -1872,8 +1872,6 @@
           <span>Cell: </span><span id="heightmapInfoCell"></span><br>
           <span>Height: </span><span id="heightmapInfoHeight"></span>
         </div>
-
-        <button data-tip="Finalize the heightmap and exit the edit mode" id="finalizeHeightmap" class="glow">Exit Customization</button>
       </div>
 
       <div id="aboutContent" class="tabcontent">
@@ -1907,6 +1905,13 @@
         <button id="zoomReset" data-tip="Reset map zoom. Shortcut: 0">Reset Zoom</button>
       </div>
 
+    </div>
+
+  </div>
+
+  <div id="exitCustomization">
+    <div data-tip="Drag to move the pane">
+      <button data-tip="Finalize the heightmap and exit the edit mode" id="finalizeHeightmap">Exit Customization</button>
     </div>
   </div>
 
@@ -1963,10 +1968,10 @@
           <span id="mapSize"></span> px = <span id="mapSizeFriendly"></span>
         </div>
         <div>
-          <i data-tip="Length of Medirian. Almost half of the equator length">Meridian length:</i><br>
-          <span id="meridianLength" data-tip="Length of Medirian in pixels"></span> px =
-          <span id="meridianLengthFriendly" data-tip="Length of Medirian is friendly units (depends on user configuration)"></span>
-          <span id="meridianLengthEarth" data-tip="Fantasy world medirian length relative to real-world Earth (20k km)"></span>
+          <i data-tip="Length of Meridian. Almost half of the equator length">Meridian length:</i><br>
+          <span id="meridianLength" data-tip="Length of Meridian in pixels"></span> px =
+          <span id="meridianLengthFriendly" data-tip="Length of Meridian is friendly units (depends on user configuration)"></span>
+          <span id="meridianLengthEarth" data-tip="Fantasy world Meridian length relative to real-world Earth (20k km)"></span>
         </div>
         <div data-tip="Map coordinates on globe"><i>Coords:</i> <span id="mapCoordinates"></span></div>
       </div>
