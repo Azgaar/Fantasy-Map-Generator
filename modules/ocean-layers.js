@@ -49,9 +49,9 @@
 
   function randomizeOutline() {
     const limits = [];
-    let odd = 0.2
+    let odd = .2
     for (let l = -9; l < 0; l++) {
-      if (Math.random() < odd) {odd = 0.2; limits.push(l);}
+      if (P(odd)) {odd = .2; limits.push(l);}
       else {odd *= 2;}
     }
     return limits;

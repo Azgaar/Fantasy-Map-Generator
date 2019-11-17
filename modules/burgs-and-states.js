@@ -186,13 +186,13 @@
   const defineBurgFeatures = function() {
     pack.burgs.filter(b => b.i && !b.removed).forEach(b => {
       const pop = b.population;
-      b.citadel = b.capital || pop > 50 && Math.random() < .75 || Math.random() < .5 ? 1 : 0;
-      b.plaza = pop > 50 || pop > 30 && Math.random() < .75 || pop > 10 && Math.random() < .5 || Math.random() < .25 ? 1 : 0;
-      b.walls = b.capital || pop > 30 || pop > 20 && Math.random() < .75 || pop > 10 && Math.random() < .5 || Math.random() < .2 ? 1 : 0;
-      b.shanty = pop > 30 || pop > 20 && Math.random() < .75 || b.walls && Math.random() < .75 ? 1 : 0;
+      b.citadel = b.capital || pop > 50 && P(.75) || P(.5) ? 1 : 0;
+      b.plaza = pop > 50 || pop > 30 && P(.75) || pop > 10 && P(.5) || P(.25) ? 1 : 0;
+      b.walls = b.capital || pop > 30 || pop > 20 && P(.75) || pop > 10 && P(.5) || P(.2) ? 1 : 0;
+      b.shanty = pop > 30 || pop > 20 && P(.75) || b.walls && P(.75) ? 1 : 0;
       const religion = pack.cells.religion[b.cell];
       const theocracy = pack.states[b.state].form === "Theocracy";
-      b.temple = religion && theocracy || pop > 50 || pop > 35 && Math.random() < .75 || pop > 20 && Math.random() < .5 ? 1 : 0;
+      b.temple = religion && theocracy || pop > 50 || pop > 35 && P(.75) || pop > 20 && P(.5) ? 1 : 0;
     });
   }
 
@@ -642,7 +642,7 @@
         let status = naval ? rw(navals) : neib ? rw(neibs) : neibOfNeib ? rw(neibsOfNeibs) : rw(far);
 
         // add Vassal
-        if (neib && Math.random() < .8 && states[f].area > areaMean && states[t].area < areaMean && states[f].area / states[t].area > 2) status = "Vassal";
+        if (neib && P(.8) && states[f].area > areaMean && states[t].area < areaMean && states[f].area / states[t].area > 2) status = "Vassal";
         states[f].diplomacy[t] = status === "Vassal" ? "Suzerain" : status;
         states[t].diplomacy[f] = status;
       }
@@ -707,7 +707,7 @@
       ad.forEach((r, d) => {
         if (r !== "Ally" || states[d].diplomacy.includes("Vassal") || defenders.includes(d)) return;
         const name = states[d].name;
-        if (states[d].diplomacy[defender] !== "Rival" && (Math.random() < .2 || ap <= dp * 1.2)) {war.push(`${an}'s ally ${name} avoided entering the war`); return;}
+        if (states[d].diplomacy[defender] !== "Rival" && (P(.2) || ap <= dp * 1.2)) {war.push(`${an}'s ally ${name} avoided entering the war`); return;}
         const allies = states[d].diplomacy.map((r, d) => r === "Ally" ? d : 0).filter(d => d);
         if (allies.some(ally => defenders.includes(ally))) {war.push(`${an}'s ally ${name} did not join the war as its allies are in war on both sides`); return;};
 
@@ -759,7 +759,7 @@
     for (const s of states) {
       if (list && !list.includes(s.i)) continue;
       const religion = pack.cells.religion[s.center];
-      const theocracy = religion && pack.religions[religion].expansion === "state" || (Math.random() < .1 && pack.religions[religion].type === "Organized");
+      const theocracy = religion && pack.religions[religion].expansion === "state" || (P(.1) && pack.religions[religion].type === "Organized");
       s.form = theocracy ? "Theocracy" : s.type === "Naval" ? ra(navalArray) : ra(genericArray);
       s.formName = selectForm(s);
       s.fullName = getFullName(s);
@@ -767,14 +767,14 @@
 
     function selectForm(s) {
       const base = pack.cultures[s.culture].base;
-      if (s.type === "Nomadic" && Math.random() < .3) return "Horde"; // some nomadic states
+      if (s.type === "Nomadic" && P(.3)) return "Horde"; // some nomadic states
 
       if (s.form === "Monarchy") {
         const form = monarchy[expTiers[s.i]];
         // Default name depends on exponent tier, some culture bases have special names for tiers
         if (s.diplomacy) {
           if (form === "Duchy" && s.neighbors.length > 1 && rand(6) < s.neighbors.length && s.diplomacy.includes("Vassal")) return "Marches"; // some vassal dutchies on borderland
-          if (Math.random() < .3 && s.diplomacy.includes("Vassal")) return "Protectorate"; // some vassals
+          if (P(.3) && s.diplomacy.includes("Vassal")) return "Protectorate"; // some vassals
         }
 
         if (base === 16 && (form === "Empire" || form === "Kingdom")) return "Sultanate"; // Turkic
@@ -797,7 +797,7 @@
             s.name = pack.burgs[s.capital].name;
             return "Free City";
           }
-          if (Math.random() < .3) return "City-state";
+          if (P(.3)) return "City-state";
         }
         return rw(republic);
       }
@@ -861,7 +861,7 @@
         const center = stateBurgs[i].cell;
         const burg = stateBurgs[i].i;
         const c = stateBurgs[i].culture;
-        const name = Math.random() < .5 ? Names.getState(Names.getCultureShort(c), c) : stateBurgs[i].name;
+        const name = P(.5) ? Names.getState(Names.getCultureShort(c), c) : stateBurgs[i].name;
         const formName = rw(form);
         form[formName] += 5;
         const fullName = name + " " + formName;
@@ -950,12 +950,12 @@
 
         // generate "wild" province name
         const c = cells.culture[center];
-        const name = burgCell && Math.random() < .5 ? burgs[burg].name : Names.getState(Names.getCultureShort(c), c);
+        const name = burgCell && P(.5) ? burgs[burg].name : Names.getState(Names.getCultureShort(c), c);
         const f = pack.features[cells.f[center]];
         const provCells = stateNoProvince.filter(i => cells.province[i] === province);
         const singleIsle = provCells.length === f.cells && !provCells.find(i => cells.f[i] !== f.i);
         const isleGroup = !singleIsle && !provCells.find(i => pack.features[cells.f[i]].group !== "isle");
-        const colony = !singleIsle && !isleGroup && Math.random() < .5 && !isPassable(s.center, center);
+        const colony = !singleIsle && !isleGroup && P(.5) && !isPassable(s.center, center);
         const formName = singleIsle ? "Island" : isleGroup ? "Islands" : colony ? "Colony" : rw(forms["Wild"]);
         const fullName = name + " " + formName;
         const color = getMixedColor(s.color);

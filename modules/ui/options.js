@@ -318,16 +318,13 @@ function randomizeOptions() {
   if (!locked("power")) powerInput.value = powerOutput.value = gauss(3, 2, 0, 10);
   if (!locked("neutral")) neutralInput.value = neutralOutput.value = rn(1 + Math.random(), 1);
   if (!locked("cultures")) culturesInput.value = culturesOutput.value = gauss(12, 3, 5, 30);
-  if (!locked("culturesSet")) culturesSet.value = ra(Array.from(culturesSet.options)).value;
-  changeCultureSet();
+  if (!locked("culturesSet")) randomizeCultureSet();
 
   // 'Configure World' settings
   if (!locked("prec")) precInput.value = precOutput.value = gauss(120, 20, 5, 500);
   const tMax = +temperatureEquatorOutput.max, tMin = +temperatureEquatorOutput.min; // temperature extremes
   if (!locked("temperatureEquator")) temperatureEquatorOutput.value = temperatureEquatorInput.value = rand(tMax-6, tMax);
   if (!locked("temperaturePole")) temperaturePoleOutput.value = temperaturePoleInput.value = rand(tMin, tMin+10);
-  if (!locked("mapSize")) mapSizeOutput.value = mapSizeInput.value = gauss(50, 20, 15, 100);
-  if (!locked("latitude")) latitudeOutput.value = latitudeInput.value = gauss(50, 20, 15, 100);
 
   // 'Units Editor' settings
   const US = navigator.language === "en-US";
@@ -336,6 +333,21 @@ function randomizeOptions() {
   if (!stored("distanceUnit")) distanceUnitInput.value = US || UK ? "mi" : "km";
   if (!stored("heightUnit")) heightUnit.value = US || UK ? "ft" : "m";
   if (!stored("temperatureScale")) temperatureScale.value = US ? "°F" : "°C";
+}
+
+// select culture set pseudo-randomly
+function randomizeCultureSet() {
+  const sets = {
+    "world":       25,
+    "european":    20,
+    "oriental":    10,
+    "english":     10,
+    "antique":     5,
+    "highFantasy": 22,
+    "darkFantasy": 6,
+    "random":      2};
+  culturesSet.value = rw(sets);
+  changeCultureSet();
 }
 
 // remove all saved data from LocalStorage and reload the page

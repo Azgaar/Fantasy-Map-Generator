@@ -178,13 +178,13 @@
       const sin = Math.sin(angle), cos = Math.cos(angle);
       const serpentine = 1 / (s + 1) + 0.3;
       const meandr = serpentine + Math.random() * rndFactor;
-      if (Math.random() < 0.5) side *= -1; // change meandring direction in 50%
+      if (P(.5)) side *= -1; // change meandring direction in 50%
       const dist2 = (eX - sX) ** 2 + (eY - sY) ** 2;
       // if dist2 is big or river is small add extra points at 1/3 and 2/3 of segment
       if (dist2 > 64 || (dist2 > 16 && segments.length < 6)) {
         const p1x = (sX * 2 + eX) / 3 + side * -sin * meandr;
         const p1y = (sY * 2 + eY) / 3 + side * cos * meandr;
-        if (Math.random() < 0.2) side *= -1; // change 2nd extra point meandring direction in 20%
+        if (P(.2)) side *= -1; // change 2nd extra point meandring direction in 20%
         const p2x = (sX + eX * 2) / 3 + side * sin * meandr;
         const p2y = (sY + eY * 2) / 3 + side * cos * meandr;
         riverEnhanced.push([p1x, p1y], [p2x, p2y]);

@@ -14,17 +14,17 @@
     const input = document.getElementById("templateInput");
     if (!locked("template")) {
       const templates = {
-        "Volcano":      5,
+        "Volcano":      3,
         "High Island":  22,
-        "Low Island":   10,
+        "Low Island":   9,
         "Continents":   20,
-        "Archipelago":  30,
+        "Archipelago":  25,
         "Mediterranean":3,
         "Peninsula":    3,
-        "Pangea":       2,
+        "Pangea":       5,
         "Isthmus":      2,
         "Atoll":        1,
-        "Shattered":    2};
+        "Shattered":    7};
       input.value = rw(templates);
     }
 
@@ -235,7 +235,7 @@
   const addHill = function(count, height, rangeX, rangeY) {
     count = getNumberInRange(count);
     const power = getBlobPower();
-    while (count >= 1 || Math.random() < count) {addOneHill(); count--;}
+    while (count > 0) {addOneHill(); count--;}
 
     function addOneHill() {
       const change = new Uint8Array( cells.h.length);
@@ -268,7 +268,7 @@
 
   const addPit = function(count, height, rangeX, rangeY) {
     count = getNumberInRange(count);
-    while (count >= 1 || Math.random() < count) {addOnePit(); count--;}
+    while (count > 0) {addOnePit(); count--;}
 
     function addOnePit() {
       const used = new Uint8Array(cells.h.length);
@@ -301,7 +301,7 @@
   const addRange = function(count, height, rangeX, rangeY) {
     count = getNumberInRange(count);
     const power = getLinePower();
-    while (count >= 1 || Math.random() < count) {addOneRange(); count--;}
+    while (count > 0) {addOneRange(); count--;}
 
     function addOneRange() {
       const used = new Uint8Array(cells.h.length);
@@ -376,7 +376,7 @@
   const addTrough = function(count, height, rangeX, rangeY) {
     count = getNumberInRange(count);
     const power = getLinePower();
-    while (count >= 1 || Math.random() < count) {addOneTrough(); count--;}
+    while (count > 0) {addOneTrough(); count--;}
 
     function addOneTrough() {
       const used = new Uint8Array(cells.h.length);
@@ -455,7 +455,7 @@
 
   const addStrait = function(width, direction = "vertical") {
     width = Math.min(getNumberInRange(width), grid.cellsX/3);
-    if (width < 1 && Math.random() < width) return;
+    if (width < 1 && P(width)) return;
     const used = new Uint8Array(cells.h.length);
     const vert = direction === "vertical";
     const startX = vert ? Math.floor(Math.random() * graphWidth * .4 + graphWidth * .3) : 5;

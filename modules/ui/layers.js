@@ -947,7 +947,7 @@ function drawCoordinates() {
 
   const desired = +coordinates.attr("data-size"); // desired label size
   coordinates.attr("font-size", Math.max(rn(desired / scale ** .8, 2), .1)); // actual label size
-  const graticule = d3.geoGraticule().extent([[mapCoordinates.lonW, mapCoordinates.latN], [mapCoordinates.lonE, mapCoordinates.latS]])
+  const graticule = d3.geoGraticule().extent([[mapCoordinates.lonW, mapCoordinates.latN], [mapCoordinates.lonE+.1, mapCoordinates.latS+.1]])
     .stepMajor([400, 400]).stepMinor([step, step]);
   const projection = d3.geoEquirectangular().fitSize([graphWidth, graphHeight], graticule());
 

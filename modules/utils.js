@@ -217,11 +217,17 @@ function convertTemperature(c) {
 
 // random number in a range
 function rand(min, max) {
-  if (min === undefined && !max === undefined) return Math.random();
+  if (min === undefined && max === undefined) return Math.random();
   if (max === undefined) {max = min; min = 0;}
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+// probability shorthand
+function P(probability) {
+  return Math.random() < probability;
+}
+
+// random number (normal or gaussian distribution)
 function gauss(expected = 100, deviation = 30, min = 0, max = 300, round = 0) {
   return rn(Math.max(Math.min(d3.randomNormal(expected, deviation)(), max), min), round);
 }
@@ -380,7 +386,7 @@ function getAdjective(string) {
   // special cases for some suffixes
   if (string.length > 8 && string.slice(-6) === "orszag") return string.slice(0, -6);
   if (string.length > 6 && string.slice(-4) === "stan") return string.slice(0, -4);
-  if (Math.random() < .5 && string.slice(-4) === "land") return string + "ic";
+  if (P(.5) && string.slice(-4) === "land") return string + "ic";
   if (string.slice(-4) === " Guo") string = string.slice(0, -4);
 
   // don't change is name ends on suffix
@@ -447,9 +453,9 @@ function lim(v) {
 // get number from string in format "1-3" or "2" or "0.5"
 function getNumberInRange(r) {
   if (typeof r !== "string") {console.error("The value should be a string", r); return 0;}
-  if (!isNaN(+r)) return +r;
+  if (!isNaN(+r)) return ~~r + +P(r - ~~r);
   const sign = r[0] === "-" ? -1 : 1;
-  if (isNaN(+r[0])) r = r.slice(1);  
+  if (isNaN(+r[0])) r = r.slice(1);
   const range = r.includes("-") ? r.split("-") : null;
   if (!range) {console.error("Cannot parse the number. Check the format", r); return 0;}
   const count = rand(range[0] * sign, +range[1]);

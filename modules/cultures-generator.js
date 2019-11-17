@@ -92,7 +92,7 @@
       if (cells.h[i] > 50) return "Highland"; // no penalty for hills and moutains, high for other elevations
       const f = pack.features[cells.f[cells.haven[i]]]; // feature
       if (f.type === "lake" && f.cells > 5) return "Lake" // low water cross penalty and high for non-along-coastline growth
-      if ((f.cells < 10 && cells.harbor[i]) || (cells.harbor[i] === 1 && Math.random() < .5)) return "Naval"; // low water cross penalty and high for non-along-coastline growth
+      if ((f.cells < 10 && cells.harbor[i]) || (cells.harbor[i] === 1 && P(.5))) return "Naval"; // low water cross penalty and high for non-along-coastline growth
       if (cells.r[i] && cells.fl[i] > 100) return "River"; // no River cross penalty, penalty for non-River growth
       const b = cells.biome[i];
       if (b === 4 || b === 1 || b === 2) return "Nomadic"; // high penalty in forest biomes and near coastline

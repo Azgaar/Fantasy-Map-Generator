@@ -749,8 +749,7 @@ function editStates() {
       const center = burgCell ? burgCell : provCells[0];
       const burg = burgCell ? cells.burg[burgCell] : 0;
 
-      const name = burgCell && Math.random() < .7 
-        ? getAdjective(pack.burgs[burg].name) 
+      const name = burgCell && P(.7) ? getAdjective(pack.burgs[burg].name) 
         : getAdjective(states[state].name) + " " + provinces[initProv].name.split(" ").slice(-1)[0];
       const formName = name.split(" ").length > 1 ? provinces[initProv].formName : rw(form);
       const fullName = name + " " + formName;

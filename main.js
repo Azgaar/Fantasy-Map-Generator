@@ -499,6 +499,7 @@ function generate() {
     markFeatures();
     openNearSeaLakes();
     OceanLayers();
+    defineMapSize();
     calculateMapCoordinates();
     calculateTemperatures();
     generatePrecipitation();
@@ -674,6 +675,38 @@ function openNearSeaLakes() {
   }
 
   console.timeEnd("openLakes");
+}
+
+// define map size and position based on template and random factor
+function defineMapSize() {
+  const [size, latitude] = getSizeAndLatitude();
+  if (!locked("mapSize")) mapSizeOutput.value = mapSizeInput.value = size;
+  if (!locked("latitude")) latitudeOutput.value = latitudeInput.value = latitude;
+
+  function getSizeAndLatitude() {
+    const template = document.getElementById("templateInput").value; // heightmap template
+    const part = grid.features.some(f => f.land && f.border); // if land goes over map borders
+    const max = part ? 85 : 100; // max size
+    const lat = part ? gauss(P(.5) ? 30 : 70, 15, 15, 85) : gauss(50, 20, 0, 100); // latiture shift
+
+    if (!part) {
+      if (template === "Pangea") return [100, 50];
+      if (template === "Shattered" && P(.8)) return [100, 50];
+      if (template === "Continents" && P(.7)) return [100, 50];
+      if (template === "Archipelago" && P(.35)) return [100, 50];
+      if (template === "High Island" && P(.3)) return [100, 50];
+      if (template === "Low Island" && P(.1)) return [100, 50];
+    }
+
+    if (template === "Pangea") return [gauss(75, 20, 30, max), lat];
+    if (template === "Volcano") return [gauss(40, 25, 10, max), lat];
+    if (template === "Mediterranean") return [gauss(40, 30, 15, 80), lat];
+    if (template === "Peninsula") return [gauss(15, 15, 5, 80), lat];
+    if (template === "Isthmus") return [gauss(20, 20, 3, 80), lat];
+    if (template === "Atoll") return [gauss(10, 10, 2, max), lat];
+
+    return [gauss(50, 20, 15, max), lat]; // Continents, Archipelago, High Island, Low Island
+  }
 }
 
 // calculate map position on globe
@@ -1158,7 +1191,7 @@ function addMarkers(number = 1) {
         .attr("data-size", 1).attr("width", 30).attr("height", 30);
       const height = getFriendlyHeight([x, y]);
       const proper = Names.getCulture(cells.culture[cell]);
-      const name = Math.random() < .3 ? "Mount " + proper : Math.random() > .3 ? proper + " Volcano" : proper;
+      const name = P(.3) ? "Mount " + proper : Math.random() > .3 ? proper + " Volcano" : proper;
       notes.push({id, name, legend:`Active volcano. Height: ${height}`});
       count--;
     }
@@ -1234,7 +1267,7 @@ function addMarkers(number = 1) {
       const burg = pack.burgs[cells.burg[cell]];
       const river = pack.rivers.find(r => r.i === pack.cells.r[cell]);
       const riverName = river ? `${river.name} ${river.type}` : "river";
-      const name = river && Math.random() < .2 ? river.name : burg.name;
+      const name = river && P(.2) ? river.name : burg.name;
       notes.push({id, name:`${name} Bridge`, legend:`A stone bridge over the ${riverName} near ${burg.name}`});
       count--;
     }
@@ -1261,8 +1294,8 @@ function addMarkers(number = 1) {
         .attr("data-x", x).attr("data-y", y).attr("x", x - 15).attr("y", y - 30)
         .attr("data-size", 1).attr("width", 30).attr("height", 30);
 
-      const type = Math.random() > .7 ? "inn" : "tavern";
-      const name = Math.random() < .5 ? ra(color) + " " + ra(animal) : Math.random() < .6 ? ra(adj) + " " + ra(animal) : ra(adj) + " " + capitalize(type);
+      const type = P(.3) ? "inn" : "tavern";
+      const name = P(.5) ? ra(color) + " " + ra(animal) : P(.6) ? ra(adj) + " " + ra(animal) : ra(adj) + " " + capitalize(type);
       notes.push({id, name: "The " + name, legend:`A big and famous roadside ${type}`});
     }
   }()
@@ -1375,7 +1408,7 @@ function addZones(number = 1) {
     const cellsArray = [], queue = [cell], power = rand(5, 30);
 
     while (queue.length) {
-      const q = Math.random() < .4 ? queue.shift() : queue.pop();
+      const q = P(.4) ? queue.shift() : queue.pop();
       cellsArray.push(q);
       if (cellsArray.length > power) break;
 
@@ -1543,7 +1576,7 @@ function addZones(number = 1) {
     const cellsArray = [], queue = [cell], power = rand(10, 30);
 
     while (queue.length) {
-      const q = Math.random() < .5 ? queue.shift() : queue.pop();
+      const q = P(.5) ? queue.shift() : queue.pop();
       cellsArray.push(q);
       if (cellsArray.length > power) break;
       cells.c[q].forEach(e => {
@@ -1564,7 +1597,7 @@ function addZones(number = 1) {
     const cellsArray = [], queue = [cell], power = rand(3, 15);
 
     while (queue.length) {
-      const q = Math.random() < .3 ? queue.shift() : queue.pop();
+      const q = P(.3) ? queue.shift() : queue.pop();
       cellsArray.push(q);
       if (cellsArray.length > power) break;
       cells.c[q].forEach(e => {
@@ -1668,10 +1701,11 @@ function showStatistics() {
   const template = templateInput.value;
   const templateRandom = locked("template") ? "" : "(random)";
   const stats = `  Seed: ${seed}
-  Size: ${graphWidth}x${graphHeight}
+  Canvas size: ${graphWidth}x${graphHeight}
   Template: ${template} ${templateRandom}
   Points: ${grid.points.length}
   Cells: ${pack.cells.i.length}
+  Map size: ${mapSizeOutput.value}%
   States: ${pack.states.length-1}
   Provinces: ${pack.provinces.length-1}
   Burgs: ${pack.burgs.length-1}

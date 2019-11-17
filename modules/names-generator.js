@@ -137,17 +137,17 @@
 
     if (base === 5 && ["sk", "ev", "ov"].includes(name.slice(-2))) name = name.slice(0,-2); // remove -sk/-ev/-ov for Ruthenian
     else if (base === 12) return vowel(name.slice(-1)) ? name : name + "u"; // Japanese ends on any vowel or -u
-    else if (base === 18 && Math.random() < .4) name = vowel(name.slice(0,1).toLowerCase()) ? "Al" + name.toLowerCase() : "Al " + name; // Arabic starts with -Al
+    else if (base === 18 && P(.4)) name = vowel(name.slice(0,1).toLowerCase()) ? "Al" + name.toLowerCase() : "Al " + name; // Arabic starts with -Al
 
     // no suffix for fantasy bases
     if (base > 32 && base < 42) return name;
 
     // define if suffix should be used
     if (name.length > 3 && vowel(name.slice(-1))) {
-      if (vowel(name.slice(-2,-1)) && Math.random() < .85) name = name.slice(0,-2); // 85% for vv
-      else if (Math.random() < .7) name = name.slice(0,-1); // ~60% for cv
+      if (vowel(name.slice(-2,-1)) && P(.85)) name = name.slice(0,-2); // 85% for vv
+      else if (P(.7)) name = name.slice(0,-1); // ~60% for cv
       else return name;
-    } else if (Math.random() < .4) return name; // 60% for cc and vc
+    } else if (P(.4)) return name; // 60% for cc and vc
   
     // define suffix
     let suffix = "ia"; // standard suffix
@@ -187,17 +187,17 @@
   const getMapName = function(force) {
     if (!force && locked("mapName")) return;
     if (force && locked("mapName")) unlock("mapName");
-    const base = Math.random() < .7 ? 2 : Math.random() < .5 ? rand(0, 6) : rand(0, 31);
+    const base = P(.7) ? 2 : P(.5) ? rand(0, 6) : rand(0, 31);
     if (!nameBases[base]) {tip("Namebase is not found", false, "error"); return ""};
     const min = nameBases[base].min-1;
     const max = Math.max(nameBases[base].max-3, min);
     const baseName = getBase(base, min, max, "", 0);
-    const name = Math.random() < .7 ? addSuffix(baseName) : baseName;
+    const name = P(.7) ? addSuffix(baseName) : baseName;
     mapName.value = name;
   }
 
   function addSuffix(name) {
-    const suffix = Math.random() < .8 ? "ia" : "land";
+    const suffix = P(.8) ? "ia" : "land";
     if (suffix === "ia" && name.length > 6) name = name.slice(0, -(name.length-3)); else
     if (suffix === "land" && name.length > 6) name = name.slice(0, -(name.length-5));
     return validateSuffix(name, suffix);

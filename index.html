@@ -1520,14 +1520,14 @@
         <p data-tip="Map generation settings. Generate a new map to apply the settings">Map settings (new map to apply):</p>
         <table>
 
-          <tr data-tip="Canvas height and width in pixels, please keep at your screen size or less to improve performance">
+          <tr data-tip="Canvas size in pixels, keep equal to screen size or less to improve performance. Please note the best aspect ratio for maps is 2:1">
             <td></td>
             <td>Canvas size</td>
             <td>
-              <span data-tip="Map width in pixels">width</span>
-              <input data-tip="Map width in pixels" id="mapWidthInput" class="paired" type="number" min=240 value=960>
-              <span data-tip="Map height in pixels">height</span>
-              <input data-tip="Map height in pixels" id="mapHeightInput" class="paired" type="number" min=135 value=540>
+              <span>width</span>
+              <input id="mapWidthInput" class="paired" type="number" min=240 value=960>
+              <span>height</span>
+              <input id="mapHeightInput" class="paired" type="number" min=135 value=540>
             </td>
             <td>
               <i data-tip="Toggle between screen size and initial canvas size" id="toggleFullscreen" class="icon-resize-full-alt"></i>
