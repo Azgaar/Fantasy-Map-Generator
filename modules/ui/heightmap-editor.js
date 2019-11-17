@@ -536,8 +536,8 @@ function editHeightmap() {
       if (brush === "brushLower") s.forEach(i => h[i] = lim(h[i] - power)); else
       if (brush === "brushDepress") s.forEach((i,d) => h[i] = lim(h[i] - interpolate(d/Math.max(s.length-1, 1)))); else
       if (brush === "brushAlign") s.forEach(i => h[i] = lim(h[start])); else
-      if (brush === "brushSmooth") s.forEach(i => h[i] = rn((d3.mean(grid.cells.c[i].filter(i => land ? h[i] >= 20 : 1).map(c => h[c])) + h[i]*(10-power)) / (11-power),1)); else
-      if (brush === "brushDisrupt") s.forEach(i => h[i] = h[i] < 17 ? h[i] : lim(h[i] + power/2 - Math.random()*power));
+      if (brush === "brushSmooth") s.forEach(i => h[i] = rn((d3.mean(grid.cells.c[i].filter(i => land ? h[i] >= 20 : 1).map(c => h[c])) + h[i]*(10-power) + .6) / (11-power),1)); else
+      if (brush === "brushDisrupt") s.forEach(i => h[i] = h[i] < 15 ? h[i] : lim(h[i] + power/1.6 - Math.random()*power));
 
       mockHeightmapSelection(s);
       // updateHistory(); uncomment to update history every step
@@ -573,12 +573,12 @@ function editHeightmap() {
     }
 
     function smoothAllHeights() {
-      HeightmapGenerator.smooth(4);
+      HeightmapGenerator.smooth(4, 1.5);
       updateHeightmap();
     }
 
     function disruptAllHeights() {
-      grid.cells.h = grid.cells.h.map(h => h < 17 ? h : lim(h + 2 - Math.random()*4));
+      grid.cells.h = grid.cells.h.map(h => h < 15 ? h : lim(h + 2.5 - Math.random() * 4));
       updateHeightmap();
     }
   

@@ -515,11 +515,11 @@
     }
   }
 
-  const smooth = function(fr = 2) {
+  const smooth = function(fr = 2, add = 0) {
     cells.h = cells.h.map((h, i) => {
       const a = [h];
       cells.c[i].forEach(c => a.push(cells.h[c]));
-      return lim((h * (fr-1) + d3.mean(a)) / fr);
+      return lim((h * (fr-1) + d3.mean(a) + add) / fr);
     });
   }
 
