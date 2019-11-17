@@ -687,25 +687,25 @@ function defineMapSize() {
     const template = document.getElementById("templateInput").value; // heightmap template
     const part = grid.features.some(f => f.land && f.border); // if land goes over map borders
     const max = part ? 85 : 100; // max size
-    const lat = part ? gauss(P(.5) ? 30 : 70, 15, 15, 85) : gauss(50, 20, 0, 100); // latiture shift
+    const lat = part ? gauss(P(.5) ? 30 : 70, 15, 20, 80) : gauss(50, 20, 15, 85); // latiture shift
 
     if (!part) {
       if (template === "Pangea") return [100, 50];
-      if (template === "Shattered" && P(.8)) return [100, 50];
-      if (template === "Continents" && P(.7)) return [100, 50];
+      if (template === "Shattered" && P(.7)) return [100, 50];
+      if (template === "Continents" && P(.5)) return [100, 50];
       if (template === "Archipelago" && P(.35)) return [100, 50];
-      if (template === "High Island" && P(.3)) return [100, 50];
+      if (template === "High Island" && P(.25)) return [100, 50];
       if (template === "Low Island" && P(.1)) return [100, 50];
     }
 
     if (template === "Pangea") return [gauss(75, 20, 30, max), lat];
-    if (template === "Volcano") return [gauss(40, 25, 10, max), lat];
-    if (template === "Mediterranean") return [gauss(40, 30, 15, 80), lat];
+    if (template === "Volcano") return [gauss(30, 20, 10, max), lat];
+    if (template === "Mediterranean") return [gauss(30, 30, 15, 80), lat];
     if (template === "Peninsula") return [gauss(15, 15, 5, 80), lat];
     if (template === "Isthmus") return [gauss(20, 20, 3, 80), lat];
     if (template === "Atoll") return [gauss(10, 10, 2, max), lat];
 
-    return [gauss(50, 20, 15, max), lat]; // Continents, Archipelago, High Island, Low Island
+    return [gauss(40, 20, 15, max), lat]; // Continents, Archipelago, High Island, Low Island
   }
 }
 
