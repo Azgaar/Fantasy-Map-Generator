@@ -67,15 +67,18 @@ function editHeightmap() {
     convertImage.style.display = type === "keep" ? "none" : "inline-block";
 
     // show finalize button
-    const box = exitCustomization.getBoundingClientRect();
-    exitCustomization.style.opacity = 0;
-    exitCustomization.style.right = (svgWidth + box.width) / 2 + "px";
-    exitCustomization.style.bottom = (svgHeight + box.height) / 2 + "px";
-    exitCustomization.style.transform = "scale(2)";
-    exitCustomization.style.display = "block";
-    d3.select("#exitCustomization")
-      .transition().duration(1000).style("opacity", 1)
-      .transition().duration(2000).ease(d3.easeSinInOut).style("right", "10px").style("bottom", "10px").style("transform", "scale(1)");
+    if (!sessionStorage.getItem("noExitButtonAnimation")) {
+      sessionStorage.setItem("noExitButtonAnimation", true);
+      exitCustomization.style.opacity = 0;
+      const width = 12 * uiSizeOutput.value * 11;
+      exitCustomization.style.right = (svgWidth - width) / 2 + "px";
+      exitCustomization.style.bottom = svgHeight / 2 + "px";
+      exitCustomization.style.transform = "scale(2)";
+      exitCustomization.style.display = "block";
+      d3.select("#exitCustomization")
+        .transition().duration(1000).style("opacity", 1)
+        .transition().duration(2000).ease(d3.easeSinInOut).style("right", "10px").style("bottom", "10px").style("transform", "scale(1)");
+    } else exitCustomization.style.display = "block";
 
     openBrushesPanel();
     turnButtonOn("toggleHeight");

@@ -527,6 +527,8 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 }
 
 #exitCustomization {
+	right: 10px;
+	bottom: 10px;
 	position: absolute;
 	display: none;
 }
