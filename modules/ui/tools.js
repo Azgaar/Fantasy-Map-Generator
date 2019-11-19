@@ -114,7 +114,7 @@ function regenerateBurgs() {
     if (burgsTree.find(x, y, s) !== undefined) continue; // to close to existing burg
 
     const state = cells.state[cell];
-    const capital = !states[state].capital; // if state doesn't have capital, make this burg a capital
+    const capital = state > 0 ? !states[state].capital : 0; // if state doesn't have capital, make this burg a capital, no capital for neutral lands
     if (capital) {states[state].capital = id; states[state].center = cell;}
 
     const culture = cells.culture[cell];
