@@ -275,10 +275,24 @@ function editStates() {
     }
 
     function applyNameChange(s) {
-      s.name = document.getElementById("stateNameEditorShort").value;
-      s.formName = document.getElementById("stateNameEditorSelectForm").value;
-      s.fullName = document.getElementById("stateNameEditorFull").value;
-      if (stateNameEditorUpdateLabel.checked) BurgsAndStates.drawStateLabels([s.i]);
+      const nameInput = document.getElementById("stateNameEditorShort");
+      const formSelect = document.getElementById("stateNameEditorSelectForm");
+      const fullNameInput = document.getElementById("stateNameEditorFull");
+
+      const nameChanged = nameInput.value !== s.name;
+      const formChanged = formSelect.value !== s.formName;
+      const fullNameChanged = fullNameInput.value !== s.fullName;
+      const changed = nameChanged || formChanged || fullNameChanged;
+
+      if (formChanged) {
+        const form = formSelect.selectedOptions[0].dataset.form || null;
+        if (form) s.form = form;
+      }
+
+      s.name = nameInput.value;
+      s.formName = formSelect.value;
+      s.fullName = fullNameInput.value;
+      if (changed && stateNameEditorUpdateLabel.checked) BurgsAndStates.drawStateLabels([s.i]);
       refreshStatesEditor();
     }
   }

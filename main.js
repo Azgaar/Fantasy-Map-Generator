@@ -115,9 +115,8 @@ let scale = 1, viewX = 0, viewY = 0;
 const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", zoomed);
 
 applyStoredOptions();
-let graphWidth = +mapWidthInput.value; // voronoi graph extention, should be stable for each map
-let graphHeight = +mapHeightInput.value;
-let svgWidth = graphWidth, svgHeight = graphHeight; // svg canvas resolution, can vary for each map
+let graphWidth = +mapWidthInput.value, graphHeight = +mapHeightInput.value; // voronoi graph extention, cannot be changed arter generation
+let svgWidth = graphWidth, svgHeight = graphHeight; // svg canvas resolution, can be changed
 landmass.append("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 oceanPattern.append("rect").attr("fill", "url(#oceanic)").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 oceanLayers.append("rect").attr("id", "oceanBase").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);

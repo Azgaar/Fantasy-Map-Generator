@@ -3,6 +3,7 @@
 
 // fit full-screen map if window is resized
 $(window).resize(function(e) {
+  if (localStorage.getItem("mapWidth") && localStorage.getItem("mapHeight")) return;
   mapWidthInput.value = window.innerWidth;
   mapHeightInput.value = window.innerHeight;
   changeMapSize();

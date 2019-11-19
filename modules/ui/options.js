@@ -134,8 +134,8 @@ function mapSizeInputChange() {
 
 // change svg size on manual size change or window resize, do not change graph size
 function changeMapSize() {
-  const svgWidth = Math.min(+mapWidthInput.value, window.innerWidth);
-  const svgHeight = Math.min(+mapHeightInput.value, window.innerHeight);
+  svgWidth = Math.min(+mapWidthInput.value, window.innerWidth);
+  svgHeight = Math.min(+mapHeightInput.value, window.innerHeight);
   svg.attr("width", svgWidth).attr("height", svgHeight);
 
   const maxWidth = Math.max(+mapWidthInput.value, graphWidth);

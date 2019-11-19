@@ -758,6 +758,15 @@
 
     for (const s of states) {
       if (list && !list.includes(s.i)) continue;
+
+      // some nomadic states
+      if (s.type === "Nomadic" && P(.8)) {
+        s.form = "Horde";
+        s.formName = expTiers[s.i] > 2 ? "United Hordes" : "Horde";
+        s.fullName = getFullName(s);
+        continue;
+      }
+
       const religion = pack.cells.religion[s.center];
       const theocracy = religion && pack.religions[religion].expansion === "state" || (P(.1) && pack.religions[religion].type === "Organized");
       s.form = theocracy ? "Theocracy" : s.type === "Naval" ? ra(navalArray) : ra(genericArray);
@@ -767,7 +776,6 @@
 
     function selectForm(s) {
       const base = pack.cultures[s.culture].base;
-      if (s.type === "Nomadic" && P(.3)) return "Horde"; // some nomadic states
 
       if (s.form === "Monarchy") {
         const form = monarchy[expTiers[s.i]];
@@ -842,7 +850,8 @@
       Republic:{Province:6, Department:2, Governorate:2, State:1, Canton:1, Prefecture:1},
       Theocracy:{Parish:5, Deanery:3, Province:2, Council:1, District:1},
       Union:{Province:2, State:1, Canton:1, Republic:1, County:1},
-      Wild:{Territory:6, Land:3, Province:1, Region:1}
+      Wild:{Territory:10, Land:5, Province:2, Region:2, Tribe:1, Clan:1},
+      Horde:{Horde:1}
     }
 
     // generate provinces for a selected burgs

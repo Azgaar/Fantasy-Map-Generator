@@ -1520,7 +1520,7 @@
         <p data-tip="Map generation settings. Generate a new map to apply the settings">Map settings (new map to apply):</p>
         <table>
 
-          <tr data-tip="Canvas size in pixels, keep equal to screen size or less to improve performance. The best aspect ratio for maps is 2:1">
+          <tr data-tip="Canvas size in pixels. Defines map size on generation, then map size cannot be changed and canvas size changes only visible area. Keep canvas size equal to screen size or less to improve performance. The best aspect ratio for maps is 2:1">
             <td></td>
             <td>Canvas size</td>
             <td>
@@ -2661,51 +2661,52 @@
         <div data-tip="State form name" class="label">Form name:</div>
         <select id="stateNameEditorSelectForm" style="display: inline-block; width: 11.7em; height: 1.645em">
           <option value="">blank</option>
-          <option value="Beylik">Beylik</option>
-          <option value="Caliphate">Caliphate</option>
-          <option value="City-state">City-state</option>
-          <option value="Commonwealth">Commonwealth</option>
-          <option value="Confederacy">Confederacy</option>
-          <option value="Confederation">Confederation</option>
-          <option value="Conglomerate">Conglomerate</option>
-          <option value="Despotate">Despotate</option>
-          <option value="Diarchy">Diarchy</option>
-          <option value="Diocese">Diocese</option>
-          <option value="Duchy">Duchy</option>
-          <option value="Emirate">Emirate</option>
-          <option value="Empire">Empire</option>
-          <option value="Eparchy">Eparchy</option>
-          <option value="Federation">Federation</option>
-          <option value="Free City">Free City</option>
-          <option value="Grand Duchy">Grand Duchy</option>
-          <option value="Heptarchy">Heptarchy</option>
-          <option value="Horde">Horde</option>
-          <option value="Imamah">Imamah</option>
-          <option value="Khaganate">Khaganate</option>
-          <option value="Kingdom">Kingdom</option>
-          <option value="League">League</option>
-          <option value="Marches">Marches</option>
-          <option value="Oligarchy">Oligarchy</option>
-          <option value="Principality">Principality</option>
-          <option value="Protectorate">Protectorate</option>
-          <option value="Republic">Republic</option>
-          <option value="Satrapy">Satrapy</option>
-          <option value="Shogunate">Shogunate</option>
-          <option value="Sultanate">Sultanate</option>
-          <option value="Tetrarchy">Tetrarchy</option>
-          <option value="Theocracy">Theocracy</option>
-          <option value="Trade Company">Trade Company</option>
-          <option value="Tribes">Tribes</option>
-          <option value="Triumvirate">Triumvirate</option>
-          <option value="Tsardom">Tsardom</option>
-          <option value="Ulus">Ulus</option>
-          <option value="Union">Union</option>
-          <option value="United Hordes">United Hordes</option>
-          <option value="United Kingdom">United Kingdom</option>
-          <option value="United Provinces">United Provinces</option>
-          <option value="United Republic">United Republic</option>
-          <option value="United States">United States</option>
-          <option value="United Tribes">United Tribes</option>
+          <option data-form="Monarchy" value="Beylik">Beylik</option>
+          <option data-form="Theocracy" value="Caliphate">Caliphate</option>
+          <option data-form="Republic" value="City-state">City-state</option>
+          <option data-form="Union" value="Commonwealth">Commonwealth</option>
+          <option data-form="Union" value="Confederacy">Confederacy</option>
+          <option data-form="Union" value="Confederation">Confederation</option>
+          <option data-form="Union" value="Conglomerate">Conglomerate</option>
+          <option data-form="Monarchy" value="Despotate">Despotate</option>
+          <option data-form="Republic" value="Diarchy">Diarchy</option>
+          <option data-form="Theocracy" value="Diocese">Diocese</option>
+          <option data-form="Monarchy" value="Duchy">Duchy</option>
+          <option data-form="Monarchy" value="Emirate">Emirate</option>
+          <option data-form="Monarchy" value="Empire">Empire</option>
+          <option data-form="Theocracy" value="Eparchy">Eparchy</option>
+          <option data-form="Republic" value="Federation">Federation</option>
+          <option data-form="Republic" value="Free City">Free City</option>
+          <option data-form="Monarchy" value="Grand Duchy">Grand Duchy</option>
+          <option data-form="Monarchy" value="Heptarchy">Heptarchy</option>
+          <option data-form="Horde" value="Horde">Horde</option>
+          <option data-form="Theocracy" value="Imamah">Imamah</option>
+          <option data-form="Monarchy" value="Khaganate">Khaganate</option>
+          <option data-form="Monarchy" value="Khanate">Khanate</option>
+          <option data-form="Monarchy" value="Kingdom">Kingdom</option>
+          <option data-form="Union" value="League">League</option>
+          <option data-form="Monarchy" value="Marches">Marches</option>
+          <option data-form="Republic" value="Oligarchy">Oligarchy</option>
+          <option data-form="Monarchy" value="Principality">Principality</option>
+          <option data-form="Republic" value="Protectorate">Protectorate</option>
+          <option data-form="Republic" value="Republic">Republic</option>
+          <option data-form="Monarchy" value="Satrapy">Satrapy</option>
+          <option data-form="Monarchy" value="Shogunate">Shogunate</option>
+          <option data-form="Monarchy" value="Sultanate">Sultanate</option>
+          <option data-form="Republic" value="Tetrarchy">Tetrarchy</option>
+          <option data-form="Theocracy" value="Theocracy">Theocracy</option>
+          <option data-form="Republic" value="Trade Company">Trade Company</option>
+          <option data-form="Wild" value="Tribes">Tribes</option>
+          <option data-form="Republic" value="Triumvirate">Triumvirate</option>
+          <option data-form="Monarchy" value="Tsardom">Tsardom</option>
+          <option data-form="Monarchy" value="Ulus">Ulus</option>
+          <option data-form="Union" value="Union">Union</option>
+          <option data-form="Horde" value="United Hordes">United Hordes</option>
+          <option data-form="Union" value="United Kingdom">United Kingdom</option>
+          <option data-form="Union" value="United Provinces">United Provinces</option>
+          <option data-form="Union" value="United Republic">United Republic</option>
+          <option data-form="Union" value="United States">United States</option>
+          <option data-form="Wild" value="United Tribes">United Tribes</option>
         </select>
         <input id="stateNameEditorCustomForm" placeholder="type form name" data-tip="Create custom state form name" style="display: none; width: 11em;">
         <span id="stateNameEditorAddForm" data-tip="Click to add custom state form name to the list" class="icon-plus pointer"></span>
@@ -3302,7 +3303,7 @@
           </select>
         </div>
 
-        <div data-tip="Equirectangular projection is used: distortion is max on poles. Use map with aspect ratio 2:1 for best result" style="font-style: italic; margin: .2em 0">Equirectangular projection is used</div>
+        <div data-tip="Equirectangular projection is used: distortion is maximum on poles. Use map with aspect ratio 2:1 for best result" style="font-style: italic; margin: .2em 0">Equirectangular projection is used</div>
       </div>
 
       <div id="options3dBottom" style="margin-top: .2em">
