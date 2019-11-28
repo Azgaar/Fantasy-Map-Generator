@@ -7,7 +7,7 @@
 // See also https://github.com/Azgaar/Fantasy-Map-Generator/issues/153
 
 "use strict";
-const version = "1.22"; // generator version
+const version = "1.23"; // generator version
 document.title += " v" + version;
 
 // if map version is not stored, clear localStorage and show a message
@@ -30,6 +30,7 @@ let landmass = viewbox.append("g").attr("id", "landmass");
 let texture = viewbox.append("g").attr("id", "texture");
 let terrs = viewbox.append("g").attr("id", "terrs");
 let biomes = viewbox.append("g").attr("id", "biomes");
+let biomesBody = biomes.append("g").attr("id", "biomesBody");
 let cells = viewbox.append("g").attr("id", "cells");
 let gridOverlay = viewbox.append("g").attr("id", "gridOverlay");
 let coordinates = viewbox.append("g").attr("id", "coordinates");
@@ -37,7 +38,9 @@ let compass = viewbox.append("g").attr("id", "compass");
 let rivers = viewbox.append("g").attr("id", "rivers");
 let terrain = viewbox.append("g").attr("id", "terrain");
 let relig = viewbox.append("g").attr("id", "relig");
+let religionsBody = relig.append("g").attr("id", "religionsBody");
 let cults = viewbox.append("g").attr("id", "cults");
+let culturesBody = cults.append("g").attr("id", "culturesBody");
 let regions = viewbox.append("g").attr("id", "regions");
 let statesBody = regions.append("g").attr("id", "statesBody");
 let statesHalo = regions.append("g").attr("id", "statesHalo");
@@ -328,13 +331,11 @@ function showWelcomeMessage() {
       <li>Ability to save map as JPEG image</li>
       <li>Diplomacy Editor enhancements</li>
       <li>Rivers Overview screen [v 1.21] <b>*</b></li>
+      <li>Fix for religions overflowing into lakes.</li>
+      <li>Religions, cultures, and biomes follow water boundaries.</li>
     </ul>
 
     <p style="color:#990000; font-style: italic"><b>*</b> It's recommended to regenerate rivers to get clean data for Rivers Overview.<p>
-
-    <p class="announcement">We are happy to invite you to participate in our first map making contest! 
-    Valuable prizes for winners and our respect for all participants. 
-    See ${link("https://www.reddit.com/r/FantasyMapGenerator/comments/dn2sqv/azgaars_fantasy_map_generator_mapmaking_contest/", "Reddit post")} for the details.</p>
 
     <p>Join our ${reddit} and ${discord} to ask questions, share maps, discuss the Generator, report bugs and propose new features.</p>
     <p>Thanks for all supporters on ${patreon}!</i></p>`;

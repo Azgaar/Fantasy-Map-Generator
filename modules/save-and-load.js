@@ -928,6 +928,12 @@ function parseLoadedData(data) {
         BurgsAndStates.collectStatistics();
       }
 
+      if (version < 1.23) {
+        culturesBody = cults.append("g").attr("id", "culturesBody");
+        biomesBody = biomes.append("g").attr("id", "biomesBody");
+        religionsBody = relig.append("g").attr("id", "religionsBody");
+      }
+
     }()
 
     changeMapSize();

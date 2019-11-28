@@ -318,7 +318,7 @@ function drawTemp() {
 }
 
 function toggleBiomes(event) {
-  if (!biomes.selectAll("path").size()) {
+  if (!layerIsOn("toggleBiomes")) {
     turnButtonOn("toggleBiomes");
     drawBiomes();
     if (event && event.ctrlKey) editStyle("biomes");
@@ -331,45 +331,56 @@ function toggleBiomes(event) {
 
 function drawBiomes() {
   biomes.selectAll("path").remove();
+
   const cells = pack.cells, vertices = pack.vertices, n = cells.i.length;
   const used = new Uint8Array(cells.i.length);
-  const paths = new Array(biomesData.i.length).fill("");
-  
+  const vArray = new Array(biomesData.i.length); // store vertices array
+  const body = new Array(biomesData.i.length).fill(""); // store path around each biome
+  const gap = new Array(biomesData.i.length).fill(""); // store path along water for each biome to fill the gaps
+
   for (const i of cells.i) {
-    if (!cells.biome[i]) continue; // no need to mark water
-    if (used[i]) continue; // already marked
+    if (!cells.biome[i] || used[i]) continue;
     const b = cells.biome[i];
     const onborder = cells.c[i].some(n => cells.biome[n] !== b);
     if (!onborder) continue;
-    const edgeVerticle = cells.v[i].find(v => vertices.c[v].some(i => cells.biome[i] !== b));
-    const chain = connectVertices(edgeVerticle, b);
+
+    const borderWith = cells.c[i].map(c => cells.biome[c]).find(n => n !== b);
+    const vertex = cells.v[i].find(v => vertices.c[v].some(i => cells.biome[i] === borderWith));
+    const chain = connectVertices(vertex, b, borderWith);
     if (chain.length < 3) continue;
-    const points = chain.map(v => vertices.p[v]);
-    paths[b] += "M" + points.join("L") + "Z";
+    const points = chain.map(v => vertices.p[v[0]]);
+    if (!vArray[b]) vArray[b] = [];
+    vArray[b].push(points);
+    body[b] += "M" + points.join("L");
+    gap[b] += "M" + vertices.p[chain[0][0]] + chain.reduce((r,v,i,d) => !i ? r : !v[2] ? r + "L" + vertices.p[v[0]] : d[i+1] && !d[i+1][2] ? r + "M" +  vertices.p[v[0]] : r, "");
   }
 
-  paths.forEach(function(d, i) {
-    if (d.length < 10) return;
-    biomes.append("path").attr("d", d).attr("fill", biomesData.color[i]).attr("stroke", biomesData.color[i]).attr("id", "biome"+i);
-  });
+  const bodyData = body.map((p, i) => [p.length > 10 ? p : null, i, biomesData.color[i]]).filter(d => d[0]);
+  biomesBody.selectAll("path").data(bodyData).enter().append("path").attr("d", d => d[0]).attr("fill", d => d[2]).attr("stroke", "none").attr("id", d => "biome"+d[1]);
+  const gapData = gap.map((p, i) => [p.length > 10 ? p : null, i, biomesData.color[i]]).filter(d => d[0]);
+  biomesBody.selectAll(".path").data(gapData).enter().append("path").attr("d", d => d[0]).attr("fill", "none").attr("stroke", d => d[2]).attr("id", d => "biome-gap"+d[1]).attr("stroke-width", "10px");
 
   // connect vertices to chain
-  function connectVertices(start, b) {
+  function connectVertices(start, t, biome) {
     const chain = []; // vertices chain to form a path
+    let land = vertices.c[start].some(c => cells.h[c] >= 20 && cells.biome[c] !== t);
+    function check(i) {biome = cells.biome[i]; land = cells.h[i] >= 20;}
+    
     for (let i=0, current = start; i === 0 || current !== start && i < 20000; i++) {
-      const prev = chain[chain.length - 1]; // previous vertex in chain
-      chain.push(current); // add current vertex to sequence
+      const prev = chain[chain.length - 1] ? chain[chain.length - 1][0] : -1; // previous vertex in chain
+      chain.push([current, biome, land]); // add current vertex to sequence
       const c = vertices.c[current]; // cells adjacent to vertex
-      c.filter(c => cells.biome[c] === b).forEach(c => used[c] = 1);
-      const c0 = c[0] >= n || cells.biome[c[0]] !== b;
-      const c1 = c[1] >= n || cells.biome[c[1]] !== b;
-      const c2 = c[2] >= n || cells.biome[c[2]] !== b;
+      c.filter(c => cells.biome[c] === t).forEach(c => used[c] = 1);
+      const c0 = c[0] >= n || cells.biome[c[0]] !== t;
+      const c1 = c[1] >= n || cells.biome[c[1]] !== t;
+      const c2 = c[2] >= n || cells.biome[c[2]] !== t;
       const v = vertices.v[current]; // neighboring vertices
-      if (v[0] !== prev && c0 !== c1) current = v[0];
-      else if (v[1] !== prev && c1 !== c2) current = v[1];
-      else if (v[2] !== prev && c0 !== c2) current = v[2];
-      if (current === chain[chain.length - 1]) {console.error("Next vertex is not found"); break;}
+      if (v[0] !== prev && c0 !== c1) {current = v[0]; check(c0 ? c[0] : c[1]);} else
+      if (v[1] !== prev && c1 !== c2) {current = v[1]; check(c1 ? c[1] : c[2]);} else
+      if (v[2] !== prev && c0 !== c2) {current = v[2]; check(c2 ? c[2] : c[0]);}
+      if (current === chain[chain.length - 1][0]) {console.error("Next vertex is not found"); break;}
     }
+    chain.push([start, biome, land]); // add starting vertex to sequence to close the path
     return chain;
   }
 }
@@ -456,9 +467,7 @@ function drawCells() {
 }
 
 function toggleCultures(event) {
-  const cultures = pack.cultures.filter(c => c.i && !c.removed);
-  const empty = !cults.selectAll("path").size();
-  if (empty && cultures.length) {
+  if (!layerIsOn("toggleCultures")) {
     turnButtonOn("toggleCultures");
     drawCultures();
     if (event && event.ctrlKey) editStyle("cults");
@@ -471,54 +480,67 @@ function toggleCultures(event) {
 
 function drawCultures() {
   console.time("drawCultures");
-  
+
   cults.selectAll("path").remove();
   const cells = pack.cells, vertices = pack.vertices, cultures = pack.cultures, n = cells.i.length;
   const used = new Uint8Array(cells.i.length);
-  const paths = new Array(cultures.length).fill("");
+  const vArray = new Array(cultures.length); // store vertices array
+  const body = new Array(cultures.length).fill(""); // store path around each culture
+  const gap = new Array(cultures.length).fill(""); // store path along water for each culture to fill the gaps
 
   for (const i of cells.i) {
     if (!cells.culture[i]) continue;
     if (used[i]) continue;
     used[i] = 1;
     const c = cells.culture[i];
-    const onborder = cells.c[i].some(n => cells.culture[n] !== c);
-    if (!onborder) continue;
-    const vertex = cells.v[i].find(v => vertices.c[v].some(i => cells.culture[i] !== c));
-    const chain = connectVertices(vertex, c);
+    const onborder = cells.c[i].filter(n => cells.culture[n] !== c);
+    if (!onborder.length) continue;
+    const borderWith = cells.c[i].map(c => cells.culture[c]).find(n => n !== c);
+    const vertex = cells.v[i].find(v => vertices.c[v].some(i => cells.culture[i] === borderWith));
+    const chain = connectVertices(vertex, c, borderWith);
     if (chain.length < 3) continue;
-    const points = chain.map(v => vertices.p[v]);
-    paths[c] += "M" + points.join("L") + "Z";
+    const points = chain.map(v => vertices.p[v[0]]);
+    if (!vArray[c]) vArray[c] = [];
+    vArray[c].push(points);
+    body[c] += "M" + points.join("L");
+    gap[c] += "M" + vertices.p[chain[0][0]] + chain.reduce((r2,v,i,d) => !i ? r2 : !v[2] ? r2 + "L" + vertices.p[v[0]] : d[i+1] && !d[i+1][2] ? r2 + "M" +  vertices.p[v[0]] : r2, "");
   }
 
-  const data = paths.map((p, i) => [p, i]).filter(d => d[0].length > 10);
-  cults.selectAll("path").data(data).enter().append("path").attr("d", d => d[0]).attr("fill", d => cultures[d[1]].color).attr("id", d => "culture"+d[1]);
+  const bodyData = body.map((p, i) => [p.length > 10 ? p : null, i, cultures[i].color]).filter(d => d[0]);
+  culturesBody.selectAll("path").data(bodyData).enter().append("path").attr("d", d => d[0]).attr("fill", d => d[2]).attr("stroke", "none").attr("id", d => "culture"+d[1]);
+  const gapData = gap.map((p, i) => [p.length > 10 ? p : null, i, cultures[i].color]).filter(d => d[0]);
+  culturesBody.selectAll(".path").data(gapData).enter().append("path").attr("d", d => d[0]).attr("fill", "none").attr("stroke", d => d[2]).attr("id", d => "culture-gap"+d[1]).attr("stroke-width", "10px");
 
   // connect vertices to chain
-  function connectVertices(start, t) {
+  function connectVertices(start, t, culture) {
     const chain = []; // vertices chain to form a path
+    let land = vertices.c[start].some(c => cells.h[c] >= 20 && cells.culture[c] !== t);
+    function check(i) {culture = cells.culture[i]; land = cells.h[i] >= 20;}
+
     for (let i=0, current = start; i === 0 || current !== start && i < 20000; i++) {
-      const prev = chain[chain.length - 1]; // previous vertex in chain
-      chain.push(current); // add current vertex to sequence
+      const prev = chain[chain.length - 1] ? chain[chain.length - 1][0] : -1; // previous vertex in chain
+      chain.push([current, culture, land]); // add current vertex to sequence
       const c = vertices.c[current]; // cells adjacent to vertex
       c.filter(c => cells.culture[c] === t).forEach(c => used[c] = 1);
       const c0 = c[0] >= n || cells.culture[c[0]] !== t;
       const c1 = c[1] >= n || cells.culture[c[1]] !== t;
       const c2 = c[2] >= n || cells.culture[c[2]] !== t;
       const v = vertices.v[current]; // neighboring vertices
-      if (v[0] !== prev && c0 !== c1) current = v[0];
-      else if (v[1] !== prev && c1 !== c2) current = v[1];
-      else if (v[2] !== prev && c0 !== c2) current = v[2];
-      if (current === chain[chain.length - 1]) {console.error("Next vertex is not found"); break;}
+      if (v[0] !== prev && c0 !== c1) {current = v[0]; check(c0 ? c[0] : c[1]);} else
+      if (v[1] !== prev && c1 !== c2) {current = v[1]; check(c1 ? c[1] : c[2]);} else
+      if (v[2] !== prev && c0 !== c2) {current = v[2]; check(c2 ? c[2] : c[0]);}
+      if (current === chain[chain.length - 1][0]) {console.error("Next vertex is not found"); break;}
+
     }
     return chain;
   }
+ 
   console.timeEnd("drawCultures");
 }
 
 function toggleReligions(event) {
   const religions = pack.religions.filter(r => r.i && !r.removed);
-  if (!relig.selectAll("path").size() && religions.length) {
+  if (!layerIsOn("toggleReligions")) {
     turnButtonOn("toggleReligions");
     drawReligions();
     if (event && event.ctrlKey) editStyle("relig");
@@ -558,9 +580,9 @@ function drawReligions() {
   }
 
   const bodyData = body.map((p, i) => [p.length > 10 ? p : null, i, religions[i].color]).filter(d => d[0]);
-  relig.selectAll("path").data(bodyData).enter().append("path").attr("d", d => d[0]).attr("fill", d => d[2]).attr("stroke", "none").attr("id", d => "religion"+d[1]);
+  religionsBody.selectAll("path").data(bodyData).enter().append("path").attr("d", d => d[0]).attr("fill", d => d[2]).attr("stroke", "none").attr("id", d => "religion"+d[1]);
   const gapData = gap.map((p, i) => [p.length > 10 ? p : null, i, religions[i].color]).filter(d => d[0]);
-  relig.selectAll(".path").data(gapData).enter().append("path").attr("d", d => d[0]).attr("fill", "none").attr("stroke", d => d[2]).attr("id", d => "religion-gap"+d[1]).attr("stroke-width", "10px");
+  religionsBody.selectAll(".path").data(gapData).enter().append("path").attr("d", d => d[0]).attr("fill", "none").attr("stroke", d => d[2]).attr("id", d => "religion-gap"+d[1]).attr("stroke-width", "10px");
 
   // connect vertices to chain
   function connectVertices(start, t, religion) {

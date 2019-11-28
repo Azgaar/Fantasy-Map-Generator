@@ -105,7 +105,7 @@ button, select, a {
 	pointer-events: none;
 }
 
-#statesBody, #provincesBody, #relig, #biomes, #cults {
+#statesBody, #provincesBody, #religionsBody, #biomesBody, #culturesBody {
 	stroke-width: .6;
 	fill-rule: evenodd;
 	mask: url(#land);
