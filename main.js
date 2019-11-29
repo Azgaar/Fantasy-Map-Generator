@@ -332,11 +332,6 @@ function showWelcomeMessage() {
 
     <p style="color:#990000; font-style: italic"><b>*</b> It's recommended to regenerate rivers to get clean data for Rivers Overview.<p>
 
-    <p class="announcement">We are happy to invite you to participate in our first map making contest! 
-    Valuable prizes for winners and our respect for all participants. 
-    See ${link("https://www.reddit.com/r/FantasyMapGenerator/comments/dn2sqv/azgaars_fantasy_map_generator_mapmaking_contest/", "Reddit post")} for the details.</p>
-
-    <p>Join our ${reddit} and ${discord} to ask questions, share maps, discuss the Generator, report bugs and propose new features.</p>
     <p>Thanks for all supporters on ${patreon}!</i></p>`;
 
   $("#alert").dialog(
@@ -981,7 +976,7 @@ function drawCoastline() {
   // connect vertices to chain
   function connectVertices(start, t) {
     const chain = []; // vertices chain to form a path
-    for (let i=0, current = start; i === 0 || current !== start && i < 10000; i++) {
+    for (let i=0, current = start; i === 0 || current !== start && i < 50000; i++) {
       const prev = chain[chain.length-1]; // previous vertex in chain
       //d3.select("#labels").append("text").attr("x", vertices.p[current][0]).attr("y", vertices.p[current][1]).text(i).attr("font-size", "1px");
       chain.push(current); // add current vertex to sequence
@@ -1026,7 +1021,7 @@ function reMarkFeatures() {
   const cells = pack.cells, features = pack.features = [0];
   cells.f = new Uint16Array(cells.i.length); // cell feature number
   cells.t = new Int16Array(cells.i.length); // cell type: 1 = land along coast; -1 = water along coast;
-  cells.haven = new Uint16Array(cells.i.length); // cell haven (opposite water cell);
+  cells.haven = new Uint32Array(cells.i.length); // cell haven (opposite water cell);
   cells.harbor = new Uint16Array(cells.i.length); // cell harbor (number of adjacent water cells);
 
   for (let i=1, queue=[0]; queue[0] !== -1; i++) {
