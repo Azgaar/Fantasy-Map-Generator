@@ -1021,8 +1021,8 @@ function reMarkFeatures() {
   const cells = pack.cells, features = pack.features = [0];
   cells.f = new Uint16Array(cells.i.length); // cell feature number
   cells.t = new Int16Array(cells.i.length); // cell type: 1 = land along coast; -1 = water along coast;
-  cells.haven = new Uint32Array(cells.i.length); // cell haven (opposite water cell);
-  cells.harbor = new Uint16Array(cells.i.length); // cell harbor (number of adjacent water cells);
+  cells.haven = cells.i.length < 65535 ? new Uint16Array(cells.i.length) : new Uint32Array(cells.i.length);// cell haven (opposite water cell);
+  cells.harbor = new Uint8Array(cells.i.length); // cell harbor (number of adjacent water cells);
 
   for (let i=1, queue=[0]; queue[0] !== -1; i++) {
     const start = queue[0]; // first cell
