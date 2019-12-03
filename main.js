@@ -327,10 +327,8 @@ function showWelcomeMessage() {
       <li>3d scene and Globe view</li>
       <li>Ability to save map as JPEG image</li>
       <li>Diplomacy Editor enhancements</li>
-      <li>Rivers Overview screen [v 1.21] <b>*</b></li>
+      <li>Rivers Overview screen</li>
     </ul>
-
-    <p style="color:#990000; font-style: italic"><b>*</b> It's recommended to regenerate rivers to get clean data for Rivers Overview.<p>
 
     <p>Thanks for all supporters on ${patreon}!</i></p>`;
 

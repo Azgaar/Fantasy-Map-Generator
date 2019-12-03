@@ -85,8 +85,11 @@ async function getMapURL(type, subtype) {
   if (isFirefox && type === "mesh") clone.select("#oceanPattern").remove();
   if (subtype === "globe") clone.select("#scaleBar").remove();
   if (subtype === "noWater") {clone.select("#oceanBase").attr("opacity", 0); clone.select("#oceanPattern").attr("opacity", 0);}
-  if (type === "mesh") clone.attr("width", graphWidth).attr("height", graphHeight);
-  if (type !== "png") clone.select("#viewbox").attr("transform", null); // reset transform to show whole map
+  if (type !== "png") {
+    // reset transform to show the whole map
+    clone.attr("width", graphWidth).attr("height", graphHeight);
+    clone.select("#viewbox").attr("transform", null);
+  }
   if (type === "svg") removeUnusedElements(clone);
   if (customization && type === "mesh") updateMeshCells(clone);
   inlineStyle(clone);
