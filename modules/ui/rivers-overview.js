@@ -19,6 +19,7 @@ function overviewRivers() {
   // add listeners
   document.getElementById("riversOverviewRefresh").addEventListener("click", riversOverviewAddLines);
   document.getElementById("addNewRiver").addEventListener("click", toggleAddRiver);
+  document.getElementById("riversBasinHighlight").addEventListener("click", toggleBasinsHightlight);
   document.getElementById("riversExport").addEventListener("click", downloadRiversData);
   document.getElementById("riversRemoveAll").addEventListener("click", triggerAllRiversRemove);
 
@@ -97,6 +98,23 @@ function overviewRivers() {
     const r = +this.parentNode.dataset.id;
     const river = rivers.select("#river"+r).node();
     highlightElement(river);
+  }
+
+  function toggleBasinsHightlight() {
+    if (rivers.attr("data-basin") === "hightlighted") {
+      rivers.selectAll("*").attr("fill", null);
+      rivers.attr("data-basin", null);
+    } else {
+      rivers.attr("data-basin", "hightlighted");
+      const basins = [...(new Set(pack.rivers.map(r=>r.basin)))];
+      const colors = getColors(basins.length);
+  
+      basins.forEach((b,i) => {
+        pack.rivers.filter(r => r.basin === b).forEach(r => {
+          rivers.select("#river"+r.i).attr("fill", colors[i]);
+        });
+      });
+    }
   }
 
   function downloadRiversData() {
