@@ -261,16 +261,6 @@
       const small = r.length < smallLength;
       r.type = r.parent && !(r.i%6) ? small ? "Branch" : "Fork" : small ? rw(smallType) : "River";
     }
-
-    //return;
-    const basins = [...(new Set(pack.rivers.map(r=>r.basin)))];
-    const colors = getColors(basins.length);
-    basins.forEach((b,i) => {
-      pack.rivers.filter(r => r.basin === b).forEach(r => {
-        rivers.select("#river"+r.i).attr("fill", colors[i]);
-      });
-    });
-
   }
 
   const getName = function(cell) {
