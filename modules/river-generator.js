@@ -262,7 +262,7 @@
       r.type = r.parent && !(r.i%6) ? small ? "Branch" : "Fork" : small ? rw(smallType) : "River";
     }
 
-    return;
+    //return;
     const basins = [...(new Set(pack.rivers.map(r=>r.basin)))];
     const colors = getColors(basins.length);
     basins.forEach((b,i) => {

@@ -66,6 +66,9 @@ function editHeightmap() {
     applyTemplate.style.display = type === "keep" ? "none" : "inline-block";
     convertImage.style.display = type === "keep" ? "none" : "inline-block";
 
+    // hide erosion checkbox if mode is Keep
+    changeHeightsBox.style.display = type === "keep" ? "none" : "inline-block";
+
     // show finalize button
     if (!sessionStorage.getItem("noExitButtonAnimation")) {
       sessionStorage.setItem("noExitButtonAnimation", true);
@@ -212,10 +215,7 @@ function editHeightmap() {
     // assign pack data to grid cells
     const l = grid.cells.i.length;
     const biome = new Uint8Array(l);
-    const conf = new Uint8Array(l);
-    const fl = new Uint16Array(l);
     const pop = new Uint16Array(l);
-    const r = new Uint16Array(l);
     const road = new Uint16Array(l);
     const crossroad = new Uint16Array(l);
     const s = new Uint16Array(l);
@@ -225,14 +225,16 @@ function editHeightmap() {
     const culture = new Uint16Array(l);
     const religion = new Uint16Array(l);
 
+    // rivers data, stored only if changeHeights is unchecked
+    const fl = new Uint16Array(l);
+    const r = new Uint16Array(l);
+    const conf = new Uint8Array(l);
+
     for (const i of pack.cells.i) {
       const g = pack.cells.g[i];
       biome[g] = pack.cells.biome[i];
-      conf[g] = pack.cells.conf[i];
       culture[g] = pack.cells.culture[i];
-      fl[g] = pack.cells.fl[i];
       pop[g] = pack.cells.pop[i];
-      r[g] = pack.cells.r[i];
       road[g] = pack.cells.road[i];
       crossroad[g] = pack.cells.crossroad[i];
       s[g] = pack.cells.s[i];
@@ -240,6 +242,12 @@ function editHeightmap() {
       province[g] = pack.cells.province[i];
       burg[g] = pack.cells.burg[i];
       religion[g] = pack.cells.religion[i];
+
+      if (!changeHeights.checked) {
+        fl[g] = pack.cells.fl[i];
+        r[g] = pack.cells.r[i];
+        conf[g] = pack.cells.conf[i];
+      }
     }
 
     // do not allow to remove land with burgs
@@ -289,22 +297,29 @@ function editHeightmap() {
     pack.cells.province = new Uint16Array(n);
     pack.cells.culture = new Uint16Array(n);
     pack.cells.religion = new Uint16Array(n);
-
-    pack.cells.r = new Uint16Array(n);
-    pack.cells.conf = new Uint8Array(n);
-    pack.cells.fl = new Uint16Array(n);
     pack.cells.biome = new Uint8Array(n);
+
+    if (!changeHeights.checked) {
+      pack.cells.r = new Uint16Array(n);
+      pack.cells.conf = new Uint8Array(n);
+      pack.cells.fl = new Uint16Array(n);
+    }
 
     for (const i of pack.cells.i) {
       const g = pack.cells.g[i];
       const land = pack.cells.h[i] >= 20;
 
-      pack.cells.r[i] = r[g];
-      pack.cells.conf[i] = conf[g];
-      pack.cells.fl[i] = fl[g];
+      // check biome
       if (land && !biome[g]) pack.cells.biome[i] = getBiomeId(grid.cells.prec[g], grid.cells.temp[g]);
       else if (!land && biome[g]) pack.cells.biome[i] = 0;
       else pack.cells.biome[i] = biome[g];
+
+      // rivers data
+      if (!changeHeights.checked) {
+        pack.cells.r[i] = r[g];
+        pack.cells.conf[i] = conf[g];
+        pack.cells.fl[i] = fl[g];
+      }
 
       if (!land) continue;
       pack.cells.culture[i] = culture[g];
