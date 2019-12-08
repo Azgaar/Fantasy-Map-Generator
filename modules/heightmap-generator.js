@@ -11,24 +11,7 @@
     cells = grid.cells, p = grid.points;
     cells.h = new Uint8Array(grid.points.length);
 
-    const input = document.getElementById("templateInput");
-    if (!locked("template")) {
-      const templates = {
-        "Volcano":      3,
-        "High Island":  22,
-        "Low Island":   9,
-        "Continents":   20,
-        "Archipelago":  25,
-        "Mediterranean":3,
-        "Peninsula":    3,
-        "Pangea":       5,
-        "Isthmus":      2,
-        "Atoll":        1,
-        "Shattered":    7};
-      input.value = rw(templates);
-    }
-
-    switch (input.value) {
+    switch (document.getElementById("templateInput").value) {
       case "Volcano": templateVolcano(); break;
       case "High Island": templateHighIsland(); break;
       case "Low Island": templateLowIsland(); break;

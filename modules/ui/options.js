@@ -123,6 +123,7 @@ optionsContent.addEventListener("click", function(event) {
   if (id === "toggleFullscreen") toggleFullscreen();
   else if (id === "optionsSeedGenerate") generateMapWithSeed();
   else if (id === "optionsMapHistory") showSeedHistoryDialog();
+  else if (id === "optionsCopySeed") copyMapURL();
   else if (id === "zoomExtentDefault") restoreDefaultZoomExtent();
 });
 
@@ -217,6 +218,16 @@ function restoreDefaultZoomExtent() {
   zoom.scaleExtent([1, 20]).scaleTo(svg, 1);
 }
 
+function copyMapURL() {
+  const search = `?seed=${optionsSeed.value}&width=${graphWidth}&height=${graphHeight}`;
+  navigator.clipboard.writeText("https://azgaar.github.io/Fantasy-Map-Generator/"+search)
+  .then(() => {
+    tip("Map URL is copied to clipboard", false, "success", 3000);
+    window.history.pushState({}, null, search);
+  })
+  .catch(err => tip("Could not copy URL: "+err, false, "error", 5000));
+}
+
 function changeCellsDensity(value) {
   densityOutput.value = value * 10 + "K";
   if (value > 5) densityOutput.style.color = "#b12117";
@@ -275,7 +286,7 @@ function changeZoomExtent(value) {
   zoom.scaleTo(svg, scale);
 }
 
-// control sroted options
+// control stored options logic
 function applyStoredOptions() {
   if (!localStorage.getItem("mapWidth") || !localStorage.getItem("mapHeight")) {
     mapWidthInput.value = window.innerWidth;
@@ -305,35 +316,62 @@ function applyStoredOptions() {
 
   if (localStorage.getItem("uiSize")) changeUIsize(localStorage.getItem("uiSize"));
   else changeUIsize(Math.max(Math.min(rn(mapWidthInput.value / 1280, 1), 2.5), 1));
+
+  // search params overwrite stored and default options
+  const params = new URL(window.location.href).searchParams;
+  const width = +params.get("width");
+  const height = +params.get("height");
+  if (width) mapWidthInput.value = width;
+  if (height) mapHeightInput.value = height;
 }
 
-// randomize options if randomization is allowed (not locked)
+// randomize options if randomization is allowed (not locked or default=1)
 function randomizeOptions() {
   Math.seedrandom(seed); // reset seed to initial one
+  const randomize = new URL(window.location.href).searchParams.get("seed"); // ignore stored options if seed is provided
 
   // 'Options' settings
-  if (!locked("regions")) regionsInput.value = regionsOutput.value = gauss(15, 3, 2, 30);
-  if (!locked("provinces")) provincesInput.value = provincesOutput.value = gauss(40, 20, 20, 100);
-  if (!locked("manors")) {manorsInput.value = 1000; manorsOutput.value = "auto";}
-  if (!locked("religions")) religionsInput.value = religionsOutput.value = gauss(5, 2, 2, 10);
-  if (!locked("power")) powerInput.value = powerOutput.value = gauss(3, 2, 0, 10);
-  if (!locked("neutral")) neutralInput.value = neutralOutput.value = rn(1 + Math.random(), 1);
-  if (!locked("cultures")) culturesInput.value = culturesOutput.value = gauss(12, 3, 5, 30);
-  if (!locked("culturesSet")) randomizeCultureSet();
+  if (randomize || !locked("template")) randomizeHeightmapTemplate();
+  if (randomize || !locked("regions")) regionsInput.value = regionsOutput.value = gauss(15, 3, 2, 30);
+  if (randomize || !locked("provinces")) provincesInput.value = provincesOutput.value = gauss(40, 20, 20, 100);
+  if (randomize || !locked("manors")) {manorsInput.value = 1000; manorsOutput.value = "auto";}
+  if (randomize || !locked("religions")) religionsInput.value = religionsOutput.value = gauss(5, 2, 2, 10);
+  if (randomize || !locked("power")) powerInput.value = powerOutput.value = gauss(3, 2, 0, 10);
+  if (randomize || !locked("neutral")) neutralInput.value = neutralOutput.value = rn(1 + Math.random(), 1);
+  if (randomize || !locked("cultures")) culturesInput.value = culturesOutput.value = gauss(12, 3, 5, 30);
+  if (randomize || !locked("culturesSet")) randomizeCultureSet();
 
   // 'Configure World' settings
-  if (!locked("prec")) precInput.value = precOutput.value = gauss(120, 20, 5, 500);
+  if (randomize || !locked("prec")) precInput.value = precOutput.value = gauss(120, 20, 5, 500);
   const tMax = +temperatureEquatorOutput.max, tMin = +temperatureEquatorOutput.min; // temperature extremes
-  if (!locked("temperatureEquator")) temperatureEquatorOutput.value = temperatureEquatorInput.value = rand(tMax-6, tMax);
-  if (!locked("temperaturePole")) temperaturePoleOutput.value = temperaturePoleInput.value = rand(tMin, tMin+10);
+  if (randomize || !locked("temperatureEquator")) temperatureEquatorOutput.value = temperatureEquatorInput.value = rand(tMax-6, tMax);
+  if (randomize || !locked("temperaturePole")) temperaturePoleOutput.value = temperaturePoleInput.value = rand(tMin, tMin+10);
 
   // 'Units Editor' settings
   const US = navigator.language === "en-US";
   const UK = navigator.language === "en-GB";
-  if (!locked("distanceScale")) distanceScaleOutput.value = distanceScaleInput.value = gauss(3, 1, 1, 5);
+  if (randomize || !locked("distanceScale")) distanceScaleOutput.value = distanceScaleInput.value = gauss(3, 1, 1, 5);
   if (!stored("distanceUnit")) distanceUnitInput.value = US || UK ? "mi" : "km";
   if (!stored("heightUnit")) heightUnit.value = US || UK ? "ft" : "m";
   if (!stored("temperatureScale")) temperatureScale.value = US ? "°F" : "°C";
+}
+
+// select heightmap template pseudo-randomly
+function randomizeHeightmapTemplate() {
+  const templates = {
+    "Volcano":      3,
+    "High Island":  22,
+    "Low Island":   9,
+    "Continents":   20,
+    "Archipelago":  25,
+    "Mediterranean":3,
+    "Peninsula":    3,
+    "Pangea":       5,
+    "Isthmus":      2,
+    "Atoll":        1,
+    "Shattered":    7
+  };
+  document.getElementById("templateInput").value = rw(templates);
 }
 
 // select culture set pseudo-randomly
