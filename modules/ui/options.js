@@ -219,11 +219,12 @@ function restoreDefaultZoomExtent() {
 }
 
 function copyMapURL() {
-  const search = `?seed=${optionsSeed.value}&width=${graphWidth}&height=${graphHeight}`;
+  const locked = document.querySelectorAll("i.icon-lock").length; // check if some options are locked
+  const search = `?seed=${optionsSeed.value}&width=${graphWidth}&height=${graphHeight}${locked?'':'&options=default'}`;
   navigator.clipboard.writeText("https://azgaar.github.io/Fantasy-Map-Generator/"+search)
   .then(() => {
     tip("Map URL is copied to clipboard", false, "success", 3000);
-    window.history.pushState({}, null, search);
+    //window.history.pushState({}, null, search);
   })
   .catch(err => tip("Could not copy URL: "+err, false, "error", 5000));
 }
@@ -323,12 +324,13 @@ function applyStoredOptions() {
   const height = +params.get("height");
   if (width) mapWidthInput.value = width;
   if (height) mapHeightInput.value = height;
+  //window.history.pushState({}, null, "?");
 }
 
-// randomize options if randomization is allowed (not locked or default=1)
+// randomize options if randomization is allowed (not locked or options='default')
 function randomizeOptions() {
   Math.seedrandom(seed); // reset seed to initial one
-  const randomize = new URL(window.location.href).searchParams.get("seed"); // ignore stored options if seed is provided
+  const randomize = new URL(window.location.href).searchParams.get("options") === "default"; // ignore stored options
 
   // 'Options' settings
   if (randomize || !locked("template")) randomizeHeightmapTemplate();

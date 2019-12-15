@@ -40,7 +40,7 @@ function editStates() {
 
   body.addEventListener("click", function(ev) {
     const el = ev.target, cl = el.classList, line = el.parentNode, state = +line.dataset.id;
-    if (cl.contains("zoneFill")) stateChangeFill(el); else
+    if (cl.contains("fillRect")) stateChangeFill(el); else
     if (cl.contains("name")) editStateName(state); else
     if (cl.contains("icon-fleur")) stateOpenCOA(ev, state); else
     if (cl.contains("icon-star-empty")) stateCapitalZoomIn(state); else
@@ -112,9 +112,9 @@ function editStates() {
       const capital = pack.burgs[s.capital].name;
       lines += `<div class="states" data-id=${s.i} data-name="${s.name}" data-form="${s.formName}" data-capital="${capital}" data-color="${s.color}" data-cells=${s.cells}
         data-area=${area} data-population=${population} data-burgs=${s.burgs} data-culture=${pack.cultures[s.culture].name} data-type=${s.type} data-expansionism=${s.expansionism}>
-        <svg data-tip="State fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${s.color}" class="zoneFill"></svg>      
+        <svg data-tip="State fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${s.color}" class="fillRect pointer"></svg>
         <input data-tip="State name. Click to change" class="stateName name pointer" value="${s.name}" readonly>
-        <span data-tip="Click to open state COA in the Iron Arachne Heraldry Generator. Ctrl + click to change the seed" class="icon-fleur pointer hide"></span>       
+        <span data-tip="Click to open state COA in the Iron Arachne Heraldry Generator. Ctrl + click to change the seed" class="icon-fleur pointer hide"></span>
         <input data-tip="State form name. Click to change" class="stateForm name pointer" value="${s.formName}" readonly>
         <span data-tip="State capital. Click to zoom into view" class="icon-star-empty pointer hide"></span>
         <input data-tip="Capital name. Click and type to rename" class="stateCapital hide" value="${capital}" autocorrect="off" spellcheck="false"/>

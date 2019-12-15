@@ -31,7 +31,7 @@ function editZones() {
     if (cl.contains("icon-trash-empty")) {zoneRemove(zone); return;}
     if (cl.contains("icon-eye")) {toggleVisibility(el); return;}
     if (cl.contains("icon-pin")) {focusOnZone(zone, cl); return;}
-    if (cl.contains("zoneFill")) {changeFill(el); return;}
+    if (cl.contains("fillRect")) {changeFill(el); return;}
     if (customization) selectZone(el);
   });
 
@@ -58,7 +58,7 @@ function editZones() {
       const focused = defs.select("#fog #focus"+this.id).size();
 
       lines += `<div class="states" data-id="${this.id}" data-fill="${fill}" data-description="${description}" data-cells=${c.length} data-area=${area} data-population=${population}>
-        <svg data-tip="Zone fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${fill}" class="zoneFill"></svg>
+        <svg data-tip="Zone fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${fill}" class="fillRect pointer"></svg>
         <input data-tip="Zone description. Click and type to change" class="religionName" value="${description}" autocorrect="off" spellcheck="false">
         <span data-tip="Cells count" class="icon-check-empty hide"></span>
         <div data-tip="Cells count" class="stateCells hide">${c.length}</div>
@@ -314,7 +314,7 @@ function editZones() {
     const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
 
     const line = `<div class="states" data-id="${id}" data-fill="${fill}" data-description="${description}" data-cells=0 data-area=0 data-population=0>
-      <svg data-tip="Zone fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${fill}" class="zoneFill"></svg>
+      <svg data-tip="Zone fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${fill}" class="fillRect pointer"></svg>
       <input data-tip="Zone description. Click and type to change" class="religionName" value="${description}" autocorrect="off" spellcheck="false">
       <span data-tip="Cells count" class="icon-check-empty hide"></span>
       <div data-tip="Cells count" class="stateCells hide">0</div>

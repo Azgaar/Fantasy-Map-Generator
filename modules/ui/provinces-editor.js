@@ -35,7 +35,7 @@ function editProvinces() {
   body.addEventListener("click", function(ev) {
     if (customization) return;
     const el = ev.target, cl = el.classList, line = el.parentNode, p = +line.dataset.id;
-    if (cl.contains("zoneFill")) changeFill(el); else
+    if (cl.contains("fillRect")) changeFill(el); else
     if (cl.contains("name")) editProvinceName(p); else
     if (cl.contains("icon-fleur")) provinceOpenCOA(ev, p); else
     if (cl.contains("icon-star-empty")) capitalZoomIn(p); else
@@ -114,7 +114,7 @@ function editProvinces() {
       const separable = p.burg && p.burg !== pack.states[p.state].capital;
       const focused = defs.select("#fog #focusProvince"+p.i).size();
       lines += `<div class="states" data-id=${p.i} data-name=${p.name} data-form=${p.formName} data-color="${p.color}" data-capital="${capital}" data-state="${stateName}" data-area=${area} data-population=${population}>
-        <svg data-tip="Province fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${p.color}" class="zoneFill"></svg>
+        <svg data-tip="Province fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${p.color}" class="fillRect pointer"></svg>
         <input data-tip="Province name. Click to change" class="name pointer" value="${p.name}" readonly>
         <span data-tip="Click to open province COA in the Iron Arachne Heraldry Generator. Ctrl + click to change the seed" class="icon-fleur pointer hide"></span>
         <input data-tip="Province form name. Click to change" class="name pointer hide" value="${p.formName}" readonly>

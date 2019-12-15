@@ -396,9 +396,8 @@ function getAdjective(string) {
 
   const end = string.slice(-1); // last letter of string
   if (end === "a") return string += "n";
-  if (end === "i") return string += "an";
   if (end === "o") return string = trimVowels(string) + "an";
-  if (end === "c" || end === "y" || end === "u") return string += "an";
+  if (vowel(end) || end === "c") return string += "an"; // ceiuy
   if (end === "m" || end === "n") return string += "ese";
   if (end === "q") return string += "i";
   return trimVowels(string) + "ian";

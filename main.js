@@ -516,6 +516,7 @@ function generate() {
     BurgsAndStates.drawStateLabels();
 
     Rivers.specify();
+    //calculateMilitaryForces();
     addMarkers();
     addZones();
     Names.getMapName();
@@ -1160,6 +1161,83 @@ function rankCells() {
   }
 
   console.timeEnd('rankCells');
+}
+
+// calculate army and fleet based on state cells polulation 
+function calculateMilitaryForces() {
+  const cells = pack.cells, states = pack.states;
+  const valid = states.filter(s => s.i && !s.removed); // valid states
+  valid.forEach(s => s.military = {infantry:0, cavalry:0, archers:0, reserve:0, fleet:0});
+
+  for (const i of cells.i) {
+    const s = states[cells.state[i]]; // cell state
+    if (!s.i || s.removed) continue;
+
+    let m = cells.pop[i] / 100; // basic army is 1% of rural population
+    if (cells.culture[i] !== s.culture) m = s.form === "Union" ? m / 1.2 : m / 2; // non-dominant culture
+    if (cells.religion[i] !== cells.religion[s.center]) m = s.form === "Theocracy" ? m / 2.2 : m / 1.4; // non-dominant religion
+    if (cells.f[i] !== cells.f[s.center]) m = s.type === "Naval" ? m / 1.2 : m / 1.8; // different landmass
+
+    let infantry = m * .5; // basic infantry is 50% of army
+    let archers = m * .25; // basic archers is 25% of army
+    let cavalry = m * .25; // basic cavalry is 25% of army
+
+    if ([1, 2, 3, 4].includes(cells.biome[i])) {cavalry *= 3; infantry /= 5; archers /= 2;} else // "nomadic" biomes have lots of cavalry
+    if ([7, 8, 9, 12].includes(cells.biome[i])) {cavalry /= 2.5; infantry *= 1.2; archers *= 1.2;} // "wet" biomes have reduced number of cavalry
+
+    s.military.infantry += infantry; 
+    s.military.archers += archers;
+    s.military.cavalry += cavalry;
+    s.military.reserve += m * 3 + cells.pop[i] * .02; // reserve is ~5% of population
+  }
+
+  for (const b of pack.burgs) {
+    if (!b.i || b.removed || !b.state) continue;
+    const s = states[b.state]; // burg state
+
+    let m = b.population / 50; // basic army is 2% of urban population
+    if (b.capital) m *= 2; // capital has household troops
+    if (b.culture !== s.culture) m = s.form === "Union" ? m / 1.2 : m / 2; // non-dominant culture
+    if (cells.religion[b.cell] !== cells.religion[s.center]) m = s.form === "Theocracy" ? m / 2.2 : m / 1.4; // non-dominant religion
+    if (cells.f[b.cell] !== cells.f[s.center]) m = s.type === "Naval" ? m / 1.2 : m / 1.8; // different landmass
+
+    let infantry = m * .6; // basic infantry is 60% of army
+    let archers = m * .3; // basic archers is 3% of army
+    let cavalry = m * .1; // basic cavalry is 10% of army
+
+    const biome = cells.biome[b.cell]; // burg biome
+    if ([1, 2, 3, 4].includes(biome)) {cavalry *= 3; infantry /= 2;} else // "nomadic" biomes have lots of cavalry
+    if ([7, 8, 9, 12].includes(biome)) {cavalry /= 4; infantry *= 1.2; archers *= 1.4;} // "wet" biomes have reduced number of cavalry
+
+    s.military.infantry += infantry;
+    s.military.archers += archers;
+    s.military.cavalry += cavalry;
+    s.military.reserve += m * 2 + b.population * .01; // reserve is ~5% of population
+
+    if (!b.port) continue; // only ports have fleet
+    let ships = b.capital ? b.population / 3 : b.population / 5; // ~1 ship per 5 population points
+    if (s.type === "Naval") ships *= 1.8; // "naval" states have more ships
+    s.military.fleet += ~~ships + +P(ships % 1);
+  }
+
+  const expn = d3.sum(valid.map(s => s.expansionism)); // total expansion
+  const area = d3.sum(valid.map(s => s.area)); // total area
+  const rate = {x:0, Ally:-.2, Friendly:-.1, Neutral:0, Suspicion:.1, Enemy:1, Unknown:0, Rival:.5, Vassal:.5, Suzerain:-.5};
+
+  valid.forEach(s => {
+    const m = s.military, d = s.diplomacy;
+    const expansionRate = Math.min(Math.max((s.expansionism / expn) / (s.area / area), .25), 4); // how much state expansionism is relized
+    const diplomacyRate = d.some(d => d === "Enemy") ? 1 : d.some(d => d === "Rival") ? .8 : d.some(d => d === "Suspicion") ? .5 : .1; // peacefulness
+    const neighborsRate = Math.min(Math.max(s.neighbors.map(n => n ? pack.states[n].diplomacy[s.i] : "Suspicion").reduce((s, r) => s += rate[r], .5), .3), 3); // neighbors rate
+    m.alert = rn(expansionRate * diplomacyRate * neighborsRate, 2); // war alert rate (army modifier)
+
+    m.infantry = rn(m.infantry * m.alert, 3);
+    m.cavalry = rn(m.cavalry * m.alert, 3);
+    m.archers = rn(m.archers * m.alert, 3);
+    m.reserve = rn(m.reserve, 3);
+  });
+
+  console.table(valid.map(s=>[s.name, s.military.alert, s.military.infantry, s.military.archers, s.military.cavalry, s.military.reserve, rn(s.military.reserve/(s.urban+s.rural)*100,2)+"%", s.military.fleet]));
 }
 
 // generate some markers

@@ -73,7 +73,7 @@ function editReligions() {
       if (r.i) {
         lines += `<div class="states religions" data-id=${r.i} data-name="${r.name}" data-color="${r.color}" data-area=${area} 
           data-population=${population} data-type=${r.type} data-form=${r.form} data-deity="${r.deity?r.deity:''}" data-expansionism=${r.expansionism}>
-          <svg data-tip="Religion fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${r.color}" class="zoneFill"></svg>
+          <svg data-tip="Religion fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${r.color}" class="fillRect pointer"></svg>
           <input data-tip="Religion name. Click and type to change" class="religionName" value="${r.name}" autocorrect="off" spellcheck="false">
           <select data-tip="Religion type" class="religionType">${getTypeOptions(r.type)}</select>
           <input data-tip="Religion form" class="religionForm hide" value="${r.form}" autocorrect="off" spellcheck="false">
@@ -118,7 +118,7 @@ function editReligions() {
     body.querySelectorAll("div.religions").forEach(el => el.addEventListener("mouseenter", ev => religionHighlightOn(ev)));
     body.querySelectorAll("div.religions").forEach(el => el.addEventListener("mouseleave", ev => religionHighlightOff(ev)));
     body.querySelectorAll("div.states").forEach(el => el.addEventListener("click", selectReligionOnLineClick));
-    body.querySelectorAll("rect.zoneFill").forEach(el => el.addEventListener("click", religionChangeColor));
+    body.querySelectorAll("rect.fillRect").forEach(el => el.addEventListener("click", religionChangeColor));
     body.querySelectorAll("div > input.religionName").forEach(el => el.addEventListener("input", religionChangeName));
     body.querySelectorAll("div > select.religionType").forEach(el => el.addEventListener("change", religionChangeType));
     body.querySelectorAll("div > input.religionForm").forEach(el => el.addEventListener("input", religionChangeForm));

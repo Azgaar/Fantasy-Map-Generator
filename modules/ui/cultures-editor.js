@@ -92,7 +92,7 @@ function editCultures() {
 
       lines += `<div class="states cultures" data-id=${c.i} data-name="${c.name}" data-color="${c.color}" data-cells=${c.cells}
       data-area=${area} data-population=${population} data-base=${c.base} data-type=${c.type} data-expansionism=${c.expansionism}>
-        <svg data-tip="Culture fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${c.color}" class="zoneFill"></svg>
+        <svg data-tip="Culture fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${c.color}" class="fillRect pointer"></svg>
         <input data-tip="Culture name. Click and type to change" class="cultureName" value="${c.name}" autocorrect="off" spellcheck="false">
         <span data-tip="Cells count" class="icon-check-empty hide"></span>
         <div data-tip="Cells count" class="stateCells hide">${c.cells}</div>
@@ -122,7 +122,7 @@ function editCultures() {
     body.querySelectorAll("div.cultures").forEach(el => el.addEventListener("mouseenter", ev => cultureHighlightOn(ev)));
     body.querySelectorAll("div.cultures").forEach(el => el.addEventListener("mouseleave", ev => cultureHighlightOff(ev)));
     body.querySelectorAll("div.states").forEach(el => el.addEventListener("click", selectCultureOnLineClick));
-    body.querySelectorAll("rect.zoneFill").forEach(el => el.addEventListener("click", cultureChangeColor));
+    body.querySelectorAll("rect.fillRect").forEach(el => el.addEventListener("click", cultureChangeColor));
     body.querySelectorAll("div > input.cultureName").forEach(el => el.addEventListener("input", cultureChangeName));
     body.querySelectorAll("div > input.statePower").forEach(el => el.addEventListener("input", cultureChangeExpansionism));
     body.querySelectorAll("div > select.cultureType").forEach(el => el.addEventListener("change", cultureChangeType));

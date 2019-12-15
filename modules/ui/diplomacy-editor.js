@@ -70,7 +70,7 @@ function editDiplomacy() {
       lines += `<div class="states" data-id=${s.i} data-name="${s.fullName}" data-relations="${relation}">
         <div data-tip="${tipSelect}" style="width:12em">${s.fullName}</div>
         <svg data-tip="${tipChange}" width=".9em" height=".9em" style="margin-bottom:-1px" class="changeRelations">
-          <rect x="0" y="0" width="100%" height="100%" fill="${color}" class="zoneFill" style="pointer-events: none"></rect>
+          <rect x="0" y="0" width="100%" height="100%" fill="${color}" class="fillRect pointer" style="pointer-events: none"></rect>
         </svg>
         <input data-tip="${tipChange}" class="changeRelations diplomacyRelations" value="${relation}" readonly/>
       </div>`;

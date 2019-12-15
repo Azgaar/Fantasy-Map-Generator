@@ -20,6 +20,7 @@ toolsContent.addEventListener("click", function(event) {
   if (button === "editZonesButton") editZones(); else
   if (button === "overviewBurgsButton") overviewBurgs(); else
   if (button === "overviewRiversButton") overviewRivers(); else
+  if (button === "overviewMilitaryButton") overviewMilitary(); else
   if (button === "overviewCellsButton") viewCellDetails();
 
   // Click to Regenerate buttons

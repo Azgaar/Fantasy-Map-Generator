@@ -1544,7 +1544,7 @@
             </td>
             <td>
               <i data-tip="Show seed history to apply a previous seed" id="optionsMapHistory" class="icon-history"></i>
-              <i data-tip="Copy map seed as URL. It will produce the same map only if map was generated with default options" id="optionsCopySeed" class="icon-docs"></i>
+              <i data-tip="Copy map seed as URL. It will produce the same map only if options are default or the same" id="optionsCopySeed" class="icon-docs"></i>
             </td>
           </tr>
 
@@ -1807,6 +1807,7 @@
           <p>Click to overview:</p>
           <button id="overviewBurgsButton" data-tip="Click to open Burgs Overview. Shortcut: Shift + T">Burgs</button>
           <button id="overviewRiversButton" data-tip="Click to open Rivers Overview. Shortcut: Shift + V">Rivers</button>
+          <!-- <button id="overviewMilitaryButton" data-tip="Click to open Military Forces Overview. Shortcut: Shift + M">Military</button> -->
           <button id="overviewCellsButton" data-tip="Click to open Cell details view. Shortcut: Shift + E">Cells</button>
           <!-- <button id="overviewLandmassedButton" data-tip="Click to open Landmasses Overview. Shortcut: Shift + L">Landmasses</button> -->
           <!-- <button id="overviewWaterbodiesButton" data-tip="Click to open Waterbodies Overview. Shortcut: Shift + W">Waterbodies</button> -->
@@ -3211,6 +3212,31 @@
       </div>
     </div>
 
+    <div id="militaryOverview" class="dialog stable" style="display: none">
+      <div id="militaryHeader" class="header">
+        <div style="left:1.4em" data-tip="State name. Click to sort" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
+        <div style="left: 7.8em" data-tip="State infantry number. Click to sort" class="sortable" data-sortby="infantry">Infantry&nbsp;</div>
+        <div style="left: 13em" data-tip="State archers number. Click to sort" class="sortable" data-sortby="archers">Archers&nbsp;</div>
+        <div style="left: 18em" data-tip="State cavalry number. Click to sort" class="sortable" data-sortby="cavalry">Cavalry&nbsp;</div>
+        <div style="left: 23em" data-tip="Number of ships in navy. Click to sort" class="sortable" data-sortby="fleet">Fleet&nbsp;</div>
+        <div style="left: 27em" data-tip="Total military personnel (including ships crew). Click to sort" class="sortable icon-sort-number-down" data-sortby="total">Total&nbsp;</div>
+        <div style="left: 31.4em" data-tip="Military personnel rate (% of state population). Depends on diplomatic situation. Click to sort" class="sortable" data-sortby="rate">Rate&nbsp;</div>
+        <div style="left: 36em" data-tip="State manpower (reserve). Click to sort" class="sortable" data-sortby="reserve">Reserve&nbsp;</div>
+      </div>
+
+      <div id="militaryBody" class="table" data-type="absolute"></div>
+
+      <div id="militaryFooter" class="totalLine">
+        <div data-tip="States number" style="margin-left: 4px">States:&nbsp;<span id="militaryFooterStates">0</span></div>
+        <div data-tip="Average military per state" style="margin-left: 14px">Average military:&nbsp;<span id="militaryFooterAverage">0</span></div>
+      </div>
+
+      <div id="militaryBottom">
+        <button id="militaryOverviewRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
+        <button id="militaryExport" data-tip="Save military-related data as a text file (.csv)" class="icon-download"></button>
+      </div>
+    </div>
+
     <div id="styleSaver" class="dialog stable textual" style="display: none">
       <div id="styleSaverHeader" style="padding:2px 0">
         <span>Preset name:</span>
@@ -3415,6 +3441,7 @@
   <script defer src="modules/ui/zones-editor.js"></script>
   <script defer src="modules/ui/burgs-overview.js"></script>
   <script defer src="modules/ui/rivers-overview.js"></script>
+  <!-- <script defer src="modules/ui/military-overview.js"></script> -->
   <script defer src="modules/ui/editors.js"></script>
   <script defer src="modules/ui/3d.js"></script>
   <script defer src="libs/quantize.min.js"></script>

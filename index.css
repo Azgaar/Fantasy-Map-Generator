@@ -1178,13 +1178,6 @@ div.states>input {
 	border: 0;
 }
 
-div.states>input.stateColor {
-	width: .9em;
-	height: .9em;
-	padding: 0px;
-	margin-right: -1px;
-}
-
 div.states div {
 	width: 3.2em;
 }
@@ -1425,10 +1418,21 @@ div.states > div.biomeArea {
 	width: 5em;
 }
 
-.zoneFill {
+rect.fillRect {
 	stroke: #666666;
 	stroke-width: 2;
-	cursor: pointer;
+}
+
+#militaryBody div.states > div {
+	width: 4em;
+}
+
+#militaryBody div.states > input.militaryArmy {
+	width: 5em;
+}
+
+#militaryBody div.states > input.militaryFleet {
+	width: 3.3em;
 }
 
 #picker text {
