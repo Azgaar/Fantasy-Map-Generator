@@ -221,7 +221,7 @@ function restoreDefaultZoomExtent() {
 function copyMapURL() {
   const locked = document.querySelectorAll("i.icon-lock").length; // check if some options are locked
   const search = `?seed=${optionsSeed.value}&width=${graphWidth}&height=${graphHeight}${locked?'':'&options=default'}`;
-  navigator.clipboard.writeText("https://azgaar.github.io/Fantasy-Map-Generator/"+search)
+  navigator.clipboard.writeText(location.host+location.pathname+search)
   .then(() => {
     tip("Map URL is copied to clipboard", false, "success", 3000);
     //window.history.pushState({}, null, search);
