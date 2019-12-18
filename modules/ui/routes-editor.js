@@ -7,7 +7,7 @@ function editRoute(onClick) {
 
   $("#routeEditor").dialog({
     title: "Edit Route", resizable: false,
-    position: {my: "center top+20", at: "top", of: d3.event, collision: "fit"},
+    position: {my: "center top+60", at: "top", of: d3.event, collision: "fit"},
     close: closeRoutesEditor
   });
 

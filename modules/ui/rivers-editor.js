@@ -10,10 +10,11 @@ function editRiver(id) {
   viewbox.on("touchmove mousemove", showEditorTips);
   debug.append("g").attr("id", "controlPoints").attr("transform", elSelected.attr("transform"));
   drawControlPoints(node);
+  updateRiverName(node);
 
   $("#riverEditor").dialog({
     title: "Edit River", resizable: false,
-    position: {my: "center top+20", at: "top", of: node, collision: "fit"},
+    position: {my: "center top+80", at: "top", of: node, collision: "fit"},
     close: closeRiverEditor
   });
 
@@ -42,6 +43,13 @@ function editRiver(id) {
     showMainTip();
     if (d3.event.target.parentNode.id === elSelected.attr("id")) tip("Drag to move, click to add a control point"); else
     if (d3.event.target.parentNode.id === "controlPoints") tip("Drag to move, click to delete the control point");
+  }
+
+  function updateRiverName(node) {
+    const river = +node.id.slice(5);
+    const r = pack.rivers.find(r => r.i === river);
+    riverName.value = r.name;
+    riverType.value = r.type;
   }
 
   function drawControlPoints(node) {

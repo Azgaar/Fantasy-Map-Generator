@@ -10,7 +10,7 @@ function editBurg(id) {
   burgLabels.selectAll("text").call(d3.drag().on("start", dragBurgLabel)).classed("draggable", true);
   updateBurgValues();
 
-  const my = id || d3.event.target.tagName === "text" ? "center bottom" : "center top+10";
+  const my = id || d3.event.target.tagName === "text" ? "center bottom-20" : "center top+20";
   const at = id ? "center" : d3.event.target.tagName === "text" ? "top" : "bottom";
   const of = id ? "svg" : d3.event.target;
 
