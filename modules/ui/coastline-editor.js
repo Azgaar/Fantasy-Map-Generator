@@ -82,7 +82,7 @@ function editCoastline(node = d3.event.target) {
     document.getElementById("coastlineGroupsSelection").style.display = "none";
     document.getElementById("coastlineGroupName").style.display = "none";
     document.getElementById("coastlineGroupName").value = "";
-    document.getElementById("coastlineGroup").style.display = "inline-block"; 
+    document.getElementById("coastlineGroup").style.display = "inline-block";
   }
 
   function selectCoastlineGroup(node) {
@@ -107,7 +107,7 @@ function editCoastline(node = d3.event.target) {
     } else {
       coastlineGroupName.style.display = "none";
       coastlineGroup.style.display = "inline-block";
-    }   
+    }
   }
 
   function createNewGroup() {
@@ -146,7 +146,7 @@ function editCoastline(node = d3.event.target) {
     toggleNewGroupInput();
     document.getElementById("coastlineGroupName").value = "";
   }
-  
+
   function removeCoastlineGroup() {
     const group = elSelected.node().parentNode.id;
     if (["sea_island", "lake_island"].includes(group)) {
@@ -155,7 +155,7 @@ function editCoastline(node = d3.event.target) {
     }
 
     const count = elSelected.node().parentNode.childElementCount;
-    alertMessage.innerHTML = `Are you sure you want to remove the group? 
+    alertMessage.innerHTML = `Are you sure you want to remove the group?
       All coastline elements of the group (${count}) will be moved under <i>sea_island</i> group`;
     $("#alert").dialog({resizable: false, title: "Remove coastline group", width:"26em",
       buttons: {

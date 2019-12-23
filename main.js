@@ -610,7 +610,7 @@ function markFeatures() {
           queue.push(e);
         }
         if (land && !eLand) {
-          cells.t[q] = 1; 
+          cells.t[q] = 1;
           cells.t[e] = -1;
         }
       });
@@ -1055,7 +1055,7 @@ function reMarkFeatures() {
     const type = land ? "island" : border ? "ocean" : "lake";
     let group;
     if (type === "lake") group = defineLakeGroup(start, cellNumber);
-    else if (type === "ocean") group = "ocean"; 
+    else if (type === "ocean") group = "ocean";
     else if (type === "island") group = defineIslandGroup(start, cellNumber);
     features.push({i, land, border, type, cells: cellNumber, firstCell: start, group});
     queue[0] = cells.f.findIndex(f => !f); // find unmarked cell
@@ -1163,7 +1163,7 @@ function rankCells() {
   console.timeEnd('rankCells');
 }
 
-// calculate army and fleet based on state cells polulation 
+// calculate army and fleet based on state cells polulation
 function calculateMilitaryForces() {
   const cells = pack.cells, states = pack.states;
   const valid = states.filter(s => s.i && !s.removed); // valid states
@@ -1185,7 +1185,7 @@ function calculateMilitaryForces() {
     if ([1, 2, 3, 4].includes(cells.biome[i])) {cavalry *= 3; infantry /= 5; archers /= 2;} else // "nomadic" biomes have lots of cavalry
     if ([7, 8, 9, 12].includes(cells.biome[i])) {cavalry /= 2.5; infantry *= 1.2; archers *= 1.2;} // "wet" biomes have reduced number of cavalry
 
-    s.military.infantry += infantry; 
+    s.military.infantry += infantry;
     s.military.archers += archers;
     s.military.cavalry += cavalry;
     s.military.reserve += m * 3 + cells.pop[i] * .02; // reserve is ~5% of population
@@ -1490,7 +1490,7 @@ function addZones(number = 1) {
       });
     }
 
-    const invasion = rw({"Invasion":4, "Occupation":3, "Raid":2, "Conquest":2, 
+    const invasion = rw({"Invasion":4, "Occupation":3, "Raid":2, "Conquest":2,
       "Subjugation":1, "Foray":1, "Skirmishes":1, "Incursion":2, "Pillaging":1, "Intervention":1});
     const name = getAdjective(invader.name) + " " + invasion;
     data.push({name, type:"Invasion", cells:cellsArray, fill:"url(#hatch1)"});
@@ -1518,7 +1518,7 @@ function addZones(number = 1) {
       });
     }
 
-    const rebels = rw({"Rebels":5, "Insurgents":2, "Mutineers":1, "Rioters":1, "Separatists":1, 
+    const rebels = rw({"Rebels":5, "Insurgents":2, "Mutineers":1, "Rioters":1, "Separatists":1,
       "Secessionists":1, "Insurrection":2, "Rebellion":1, "Conspiracy":2});
     const name = getAdjective(states[neib].name) + " " + rebels;
     data.push({name, type:"Rebels", cells:cellsArray, fill:"url(#hatch3)"});

@@ -5,9 +5,9 @@
 }(this, (function () {'use strict';
 
   // name generation approach and relative chance to be selected
-  const approach = {"Number":1, "Being":3, "Adjective":5, "Color + Animal":5, 
-    "Adjective + Animal":5, "Adjective + Being":5, "Adjective + Genitive":1, 
-    "Color + Being":3, "Color + Genitive":3, "Being + of + Genitive":2, "Being + of the + Genitive":1, 
+  const approach = {"Number":1, "Being":3, "Adjective":5, "Color + Animal":5,
+    "Adjective + Animal":5, "Adjective + Being":5, "Adjective + Genitive":1,
+    "Color + Being":3, "Color + Genitive":3, "Being + of + Genitive":2, "Being + of the + Genitive":1,
     "Animal + of + Genitive":1, "Adjective + Being + of + Genitive":2, "Adjective + Animal + of + Genitive":2};
 
   // turn weighted array into simple array
@@ -237,7 +237,7 @@
     religions.filter(r => r.type === "Heresy").forEach(r => {
       const b = cells.religion[r.center]; // "base" religion id
       cells.religion[r.center] = r.i; // heresy id
-      queue.queue({e:r.center, p:0, r:r.i, b}); 
+      queue.queue({e:r.center, p:0, r:r.i, b});
       cost[r.center] = 1;
     });
 
@@ -308,10 +308,10 @@
     if (a === "Adjective + Being") return ra(base.adjective) + " " + ra(base.being);
     if (a === "Adjective + Genitive") return ra(base.adjective) + " " + ra(base.genitive);
     if (a === "Color + Being") return ra(base.color) + " " + ra(base.being);
-    if (a === "Color + Genitive") return ra(base.color) + " " + ra(base.genitive); 
+    if (a === "Color + Genitive") return ra(base.color) + " " + ra(base.genitive);
     if (a === "Being + of + Genitive") return ra(base.being) + " of " + ra(base.genitive);
     if (a === "Being + of the + Genitive") return ra(base.being) + " of the " + ra(base.theGenitive);
-    if (a === "Animal + of + Genitive") return ra(base.animal) + " of " + ra(base.genitive); 
+    if (a === "Animal + of + Genitive") return ra(base.animal) + " of " + ra(base.genitive);
     if (a === "Adjective + Being + of + Genitive") return ra(base.adjective) + " " + ra(base.being) + " of " + ra(base.genitive);
     if (a === "Adjective + Animal + of + Genitive") return ra(base.adjective) + " " + ra(base.animal) + " of " + ra(base.genitive);
   }

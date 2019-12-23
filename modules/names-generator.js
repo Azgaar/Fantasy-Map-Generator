@@ -45,8 +45,8 @@
 
     const data = chains[base];
     if (!data || data[" "] === undefined) {
-      tip("Namesbase " + base + " is incorrect. Please check in namesbase editor", false, "error"); 
-      console.error("Namebase " + base + " is incorrect!"); 
+      tip("Namesbase " + base + " is incorrect. Please check in namesbase editor", false, "error");
+      console.error("Namebase " + base + " is incorrect!");
       return "ERROR";
     }
 
@@ -115,7 +115,7 @@
   // generate short name for base
   const getBaseShort = function(base) {
     if (nameBases[base] === undefined) {
-      tip(`Namebase for culture ${pack.cultures[culture].name} does not exist. 
+      tip(`Namebase for culture ${pack.cultures[culture].name} does not exist.
         Please upload custom namebases of change the base in Cultures Editor`, false, "error");
       base = 1;
     }
@@ -148,7 +148,7 @@
       else if (P(.7)) name = name.slice(0,-1); // ~60% for cv
       else return name;
     } else if (P(.4)) return name; // 60% for cc and vc
-  
+
     // define suffix
     let suffix = "ia"; // standard suffix
 
@@ -202,7 +202,7 @@
     if (suffix === "land" && name.length > 6) name = name.slice(0, -(name.length-5));
     return validateSuffix(name, suffix);
   }
-  
+
   const getNameBases = function() {
     // name, min length, max length, letters to allow duplication, multi-word name rate
     return [

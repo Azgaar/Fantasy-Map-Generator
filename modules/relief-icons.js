@@ -16,7 +16,7 @@
     for (const i of cells.i) {
       const height = cells.h[i];
       if (height < 20) continue; // no icons on water
-      if (cells.r[i]) continue; // no icons on rivers 
+      if (cells.r[i]) continue; // no icons on rivers
       const b = cells.biome[i];
       if (height < 50 && biomesData.iconsDensity[b] === 0) continue; // no icons for this biome
       const polygon = getPackPolygon(i);
@@ -42,7 +42,7 @@
       function placeReliefIcons(i) {
         const radius = 2 / density;
         const [icon, h] = getReliefIcon(i, height);
-    
+
         for (const [cx, cy] of poissonDiscSampler(e[0], e[1], e[2], e[3], radius)) {
           if (!d3.polygonContains(polygon, [cx, cy])) continue;
           relief.push({i: icon, x: rn(cx-h, 2), y: rn(cy-h, 2), s: h*2});

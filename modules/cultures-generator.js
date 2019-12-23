@@ -5,7 +5,7 @@
 }(this, (function () {'use strict';
 
   let cells;
- 
+
   const generate = function() {
     console.time('generateCultures');
     cells = pack.cells;
@@ -99,7 +99,7 @@
       if (b === 3 || b === 9 || b === 10) return "Hunting"; // high penalty in non-native biomes
       return "Generic";
     }
-    
+
     function defineCultureExpansionism(type) {
       let base = 1; // Generic
       if (type === "Lake") base = .8; else
@@ -348,7 +348,7 @@
     ];
   }
 
-  // expand cultures across the map (Dijkstra-like algorithm) 
+  // expand cultures across the map (Dijkstra-like algorithm)
   const expand = function() {
     console.time('expandCultures');
     cells = pack.cells;
@@ -358,7 +358,7 @@
       if (!c.i || c.removed) return;
       queue.queue({e:c.center, p:0, c:c.i});
     });
-    
+
     const neutral = cells.i.length / 5000 * 3000 * neutralInput.value; // limit cost for culture growth
     const cost = [];
     while (queue.length) {
@@ -413,7 +413,7 @@
 
   function getRiverCost(r, i, type) {
     if (type === "River") return r ? 0 : 100; // penalty for river cultures
-    if (!r) return 0; // no penalty for others if there is no river 
+    if (!r) return 0; // no penalty for others if there is no river
     return Math.min(Math.max(cells.fl[i] / 10, 20), 100) // river penalty from 20 to 100 based on flux
   }
 

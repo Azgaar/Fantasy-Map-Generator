@@ -87,7 +87,7 @@
     chain.push(chain[0]); // push first vertex as the last one
     return chain;
   }
-  
+
   return OceanLayers;
 
 })));

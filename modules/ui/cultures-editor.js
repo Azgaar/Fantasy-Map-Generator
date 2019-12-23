@@ -142,13 +142,13 @@ function editCultures() {
     types.forEach(t => options += `<option ${type === t ? "selected" : ""} value="${t}">${t}</option>`);
     return options;
   }
-  
+
   function getBaseOptions(base) {
     let options = "";
     nameBases.forEach((n, i) => options += `<option ${base === i ? "selected" : ""} value="${i}">${n.name}</option>`);
     return options;
   }
- 
+
   function cultureHighlightOn(event) {
     const culture = +event.target.dataset.id;
     const info = document.getElementById("cultureInfo");
@@ -420,7 +420,7 @@ function editCultures() {
     }
 
     $("#alert").dialog({
-      title: "Cultures tree", width: fitContent(), resizable: false, 
+      title: "Cultures tree", width: fitContent(), resizable: false,
       position: {my: "left center", at: "left+10 center", of: "svg"}, buttons: {},
       close: () => {alertMessage.innerHTML = "";}
     });
@@ -471,7 +471,7 @@ function editCultures() {
     pack.burgs.forEach(b => b.culture = pack.cells.culture[b.cell]);
     refreshCulturesEditor();
   }
-  
+
   function enterCultureManualAssignent() {
     if (!layerIsOn("toggleCultures")) toggleCultures();
     customization = 4;
@@ -521,7 +521,7 @@ function editCultures() {
       if (!d3.event.dx && !d3.event.dy) return;
       const p = d3.mouse(this);
       moveCircle(p[0], p[1], r);
-  
+
       const found = r > 5 ? findAll(p[0], p[1], r) : [findCell(p[0], p[1], r)];
       const selection = found.filter(isLand);
       if (selection) changeCultureForSelection(selection);
@@ -589,7 +589,7 @@ function editCultures() {
     const selected = body.querySelector("div.selected");
     if (selected) selected.classList.remove("selected");
   }
-  
+
   function enterAddCulturesMode() {
     if (this.classList.contains("pressed")) {exitAddCultureMode(); return;};
     customization = 9;
@@ -624,7 +624,7 @@ function editCultures() {
   function downloadCulturesData() {
     const unit = areaUnit.value === "square" ? distanceUnitInput.value + "2" : areaUnit.value;
     let data = "Id,Culture,Color,Cells,Expansionism,Type,Area "+unit+",Population,Namesbase\n"; // headers
-    
+
     body.querySelectorAll(":scope > div").forEach(function(el) {
       data += el.dataset.id + ",";
       data += el.dataset.name + ",";

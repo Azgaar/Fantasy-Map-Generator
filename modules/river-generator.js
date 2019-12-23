@@ -44,9 +44,9 @@
           if (cells.r[i]) {
             const to = [];
             const min = Math.min(y, graphHeight - y, x, graphWidth - x);
-            if (min === y) {to[0] = x; to[1] = 0;} else 
-            if (min === graphHeight - y) {to[0] = x; to[1] = graphHeight;} else 
-            if (min === x) {to[0] = 0; to[1] = y;} else 
+            if (min === y) {to[0] = x; to[1] = 0;} else
+            if (min === graphHeight - y) {to[0] = x; to[1] = graphHeight;} else
+            if (min === x) {to[0] = 0; to[1] = y;} else
             if (min === graphWidth - x) {to[0] = graphWidth; to[1] = y;}
             riversData.push({river: cells.r[i], cell: i, x: to[0], y: to[1]});
           }
@@ -59,14 +59,14 @@
         // allow only one river can flow thought a lake
         const cf = features[cells.f[i]]; // current cell feature
         if (cf.river && cf.river !== cells.r[i]) {
-          cells.fl[i] = 0; 
+          cells.fl[i] = 0;
         }
-    
+
         if (cells.fl[i] < 30) {
           if (h[min] >= 20) cells.fl[min] += cells.fl[i];
           return; // flux is too small to operate as river
         }
-    
+
         // Proclaim a new river
         if (!cells.r[i]) {
           cells.r[i] = riverNext;
@@ -165,14 +165,14 @@
   const addMeandring = function(segments, rndFactor = 0.3) {
     const riverEnhanced = []; // to store enhanced segments
     let side = 1; // to control meandring direction
-  
+
     for (let s = 0; s < segments.length; s++) {
       const sX = segments[s].x, sY = segments[s].y; // segment start coordinates
       const c = pack.cells.conf[segments[s].cell] || 0; // if segment is river confluence
       riverEnhanced.push([sX, sY, c]);
-  
+
       if (s+1 === segments.length) break; // do not enhance last segment
-  
+
       const eX = segments[s+1].x, eY = segments[s+1].y; // segment end coordinates
       const angle = Math.atan2(eY - sY, eX - sX);
       const sin = Math.sin(angle), cos = Math.cos(angle);
@@ -194,13 +194,13 @@
         const p1y = (sY + eY) / 2 + side * cos * meandr;
         riverEnhanced.push([p1x, p1y]);
       }
-  
+
     }
     return riverEnhanced;
   }
 
   const getPath = function(points, width = 1, increment = 1) {
-    let offset, extraOffset = .1; // starting river width (to make river source visible)  
+    let offset, extraOffset = .1; // starting river width (to make river source visible)
     const riverLength = points.reduce((s, v, i, p) => s + (i ? Math.hypot(v[0] - p[i-1][0], v[1] - p[i-1][1]) : 0), 0); // summ of segments length
     const widening = rn((1000 + (riverLength * 30)) * increment);
     const riverPointsLeft = [], riverPointsRight = []; // store points on both sides to build a valid polygon
@@ -215,7 +215,7 @@
     riverPointsLeft.push([xLeft, yLeft]);
     let xRight = x + sin * extraOffset, yRight = y + -cos * extraOffset;
     riverPointsRight.unshift([xRight, yRight]);
-  
+
     // middle points
     for (let p = 1; p < last; p++) {
       x = points[p][0], y = points[p][1], c = points[p][2] || 0;
@@ -231,7 +231,7 @@
       xRight = x + sin * offset, yRight = y + -cos * offset;
       riverPointsRight.unshift([xRight, yRight]);
     }
-  
+
     // end point
     x = points[last][0], y = points[last][1], c = points[last][2];
     if (c) extraOffset += Math.atan(c * 10 / widening); // add extra width on river confluence
@@ -241,7 +241,7 @@
     riverPointsLeft.push([xLeft, yLeft]);
     xRight = x + sin * offset, yRight = y + -cos * offset;
     riverPointsRight.unshift([xRight, yRight]);
-  
+
     // generate polygon path and return
     lineGen.curve(d3.curveCatmullRom.alpha(0.1));
     const right = lineGen(riverPointsRight);
