@@ -842,7 +842,7 @@
     const provinces = pack.provinces = [0];
     cells.province = new Uint16Array(cells.i.length); // cell state
     const percentage = +provincesInput.value;
-    if (states.length < 2 || !percentage) return; // no provinces
+    if (states.length < 2 || !percentage) {states.forEach(s => s.provinces = []); return;} // no provinces
     const max = percentage == 100 ? 1000 : gauss(20, 5, 5, 100) * percentage ** .5; // max growth
 
     const forms = {
