@@ -58,9 +58,9 @@
     // the first culture with id 0 is for wildlands
     cultures.unshift({name:"Wildlands", i:0, base:1, origin:null});
 
-    // check whether all bases are valid. If not, load default namesbase
-    const invalidBase = cultures.some(c => !nameBases[c.base]);
-    if (invalidBase) nameBases = Names.getNameBases();
+    // make sure all bases exist in nameBases
+    if (!nameBases.length) {console.error("Name base is empty, default nameBases will be applied"); nameBases = Names.getNameBases();}
+    cultures.forEach(c => c.base = c.base % nameBases.length);
 
     function getRandomCultures(c) {
       const d = getDefault(c), n = d.length-1;
@@ -70,7 +70,7 @@
         let culture = d[rand(n)];
         do {
           culture = d[rand(n)];
-        } while (Math.random() > culture.odd || cultures.find(c => c.name === culture.name))
+        } while (!P(culture.odd) || cultures.find(c => c.name === culture.name))
         cultures.push(culture);
       }
       return cultures;
@@ -306,7 +306,7 @@
 
     if (culturesSet.value === "random") {
       return d3.range(count).map(i => {
-        const rnd = rand(41);
+        const rnd = rand(nameBases.length-1);
         return {name:Names.getBaseShort(rnd), base:rnd, odd: 1}
       });
     }
