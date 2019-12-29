@@ -39,7 +39,7 @@ function editDiplomacy() {
   document.getElementById("diplomacyMatrix").addEventListener("click", showRelationsMatrix);
   document.getElementById("diplomacyHistory").addEventListener("click", showRelationsHistory);
   document.getElementById("diplomacyExport").addEventListener("click", downloadDiplomacyData);
-  document.getElementById("diplomacySelect").addEventListener("click", diplomacyChangeRelations);
+  document.getElementById("diplomacySelect").addEventListener("mouseup", diplomacyChangeRelations);
 
   function refreshDiplomacyEditor() {
     diplomacyEditorAddLines();
@@ -170,7 +170,7 @@ function editDiplomacy() {
   function diplomacyChangeRelations(event) {
     event.stopPropagation();
     diplomacySelect.style.display = "none";
-    const subject = body.dataset.state;
+    const subject = +body.dataset.state;
     const rel = event.target.innerHTML;
 
     const states = pack.states, chronicle = states[0].diplomacy;
@@ -195,10 +195,10 @@ function editDiplomacy() {
     const war = () => [`War declaration`, `${subjectName} declared a war on its enemy ${objectName}`];
     const peace = () => {
       const treaty = `${subjectName} and ${objectName} agreed to cease fire and signed a peace treaty`;
-      const changed = rel === "Ally" ? ally() 
-        : rel === "Vassal" ? vassal() 
-        : rel === "Suzerain" ? suzerain() 
-        : rel === "Unknown" ? unknown() 
+      const changed = rel === "Ally" ? ally()
+        : rel === "Vassal" ? vassal()
+        : rel === "Suzerain" ? suzerain()
+        : rel === "Unknown" ? unknown()
         : change();
       return [`War termination`, treaty, changed[1]];
     }

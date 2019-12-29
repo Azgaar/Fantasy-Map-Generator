@@ -470,6 +470,7 @@ function editCultures() {
     drawCultures();
     pack.burgs.forEach(b => b.culture = pack.cells.culture[b.cell]);
     refreshCulturesEditor();
+    document.querySelector("input.statePower").focus(); // to not trigger hotkeys
   }
 
   function enterCultureManualAssignent() {
