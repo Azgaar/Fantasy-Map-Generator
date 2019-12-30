@@ -2,9 +2,8 @@
 function editNotes(id, name) {
   // update list of objects
   const select = document.getElementById("notesSelect");
-  for (let i = select.options.length; i < notes.length; i++) {
-    select.options.add(new Option(notes[i].id, notes[i].id));
-  }
+  select.options.length = 0;
+  for (const note of notes) {select.options.add(new Option(note.id, note.id));}
 
   // select an object
   if (notes.length) {
@@ -47,6 +46,7 @@ function editNotes(id, name) {
 
   function changeObject() {
     const note = notes.find(note => note.id === this.value);
+    if (!note) return;
     notesName.value = note.name;
     notesText.value = note.legend;
   }
