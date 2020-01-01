@@ -478,9 +478,9 @@
           cells.h[e] **= exp;
           if (cells.h[e] > 100) cells.h[e] = 5;
         });
-
-        range = query.slice();
       });
+      range = query.slice();
+      
       width--;
     }
   }
