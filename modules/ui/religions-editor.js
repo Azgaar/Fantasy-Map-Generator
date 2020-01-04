@@ -414,7 +414,7 @@ function editReligions() {
     });
 
     function dragToReorigin(d) {
-      if (d3.event.sourceEvent.ctrlKey) {changeCode(d); return;}
+      if (isCtrlClick(d3.event.sourceEvent)) {changeCode(d); return;}
 
       const originLine = graph.append("path")
         .attr("class", "dragLine").attr("d", `M${d.x},${d.y}L${d.x},${d.y}`);

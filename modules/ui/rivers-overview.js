@@ -81,7 +81,7 @@ function overviewRivers() {
   }
 
   function regenerateRiverName(event) {
-    if (!event.ctrlKey) return;
+    if (!isCtrlClick(event)) return;
     const river = +this.parentNode.dataset.id;
     const r = pack.rivers.find(r => r.i === river);
     r.name = this.value = this.parentNode.dataset.name = Rivers.getName(r.mouth);
