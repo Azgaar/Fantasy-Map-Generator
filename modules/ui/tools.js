@@ -241,7 +241,7 @@ function regenerateReligions() {
 function regenerateMarkers(event) {
   let number = gauss(1, .5, .3, 5, 2);
 
-  if (event.ctrlKey) {
+  if (isCtrlClick(event)) {
     const numberManual = prompt("Please provide markers number multiplier", 1);
     if (numberManual === null || numberManual === "" || isNaN(+numberManual)) {
       tip("The number provided is invalid, please try again and provide a valid number", false, "error", 4000);
@@ -263,7 +263,7 @@ function regenerateMarkers(event) {
 function regenerateZones(event) {
   let number = gauss(1, .5, .6, 5, 2);
 
-  if (event.ctrlKey) {
+  if (isCtrlClick(event)) {
     const numberManual = prompt("Please provide zones number multiplier", 1);
     if (numberManual === null || numberManual === "" || isNaN(+numberManual)) {
       tip("The number provided is invalid, please try again and provide a valid number", false, "error", 4000);

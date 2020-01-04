@@ -194,7 +194,7 @@ function editProvinces() {
   function provinceOpenCOA(event, p) {
     const defSeed = `${seed}-p${p}`;
 
-    if (event.ctrlKey) {
+    if (isCtrlClick(event)) {
       const newSeed = prompt(`Please provide an Iron Arachne Heraldry Generator seed. `+ 
         `Default seed is a combination of FMG map seed and province id (${defSeed})`, pack.provinces[p].IAHG || defSeed);
       if (newSeed && newSeed != defSeed) pack.provinces[p].IAHG = newSeed; else return;

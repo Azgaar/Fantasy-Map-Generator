@@ -308,7 +308,7 @@ function editStates() {
   function stateOpenCOA(event, state) {
     const defSeed = `${seed}-s${state}`;
 
-    if (event.ctrlKey) {
+    if (isCtrlClick(event)) {
       const newSeed = prompt(`Please provide an Iron Arachne Heraldry Generator seed. `+ 
         `Default seed is a combination of FMG map seed and province id (${defSeed})`, pack.states[state].IAHG || defSeed);
       if (newSeed && newSeed != defSeed) pack.states[state].IAHG = newSeed; else return;
