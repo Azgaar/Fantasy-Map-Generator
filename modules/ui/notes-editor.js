@@ -6,7 +6,7 @@ function editNotes(id, name) {
   for (const note of notes) {select.options.add(new Option(note.id, note.id));}
 
   // select an object
-  if (notes.length) {
+  if (notes.length || id) {
     if (!id) id = notes[0].id;
     let note = notes.find(note => note.id === id);
     if (note === undefined) {
@@ -19,10 +19,9 @@ function editNotes(id, name) {
     notesName.value = note.name;
     notesText.value = note.legend;
   } else {
-    if (!notes.length) {
-      const value = "There are no added notes. Click on element (e.g. label) and add a free text note";
-      document.getElementById("notesText").value = value;
-    }
+    const value = "There are no added notes. Click on element (e.g. label) and add a free text note";
+    document.getElementById("notesText").value = value;
+    document.getElementById("notesName").value = "";
   }
 
   // open a dialog
