@@ -53,12 +53,14 @@ function editNotes(id, name) {
   function changeName() {
     const id = document.getElementById("notesSelect").value;
     const note = notes.find(note => note.id === id);
+    if (!note) return;
     note.name = this.value;
   }
 
   function changeText() {
     const id = document.getElementById("notesSelect").value;
     const note = notes.find(note => note.id === id);
+    if (!note) return;
     note.legend = this.value;
   }
 
