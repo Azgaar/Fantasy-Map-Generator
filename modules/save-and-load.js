@@ -23,8 +23,9 @@ async function savePNG() {
   const link = document.createElement("a");
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
-  canvas.width = svgWidth * pngResolutionInput.value;
-  canvas.height = svgHeight * pngResolutionInput.value;
+
+  canvas.width = mapWidthInput.value * pngResolutionInput.value;
+  canvas.height = mapHeightInput.value * pngResolutionInput.value;
   const img = new Image();
   img.src = url;
 
@@ -52,8 +53,8 @@ async function saveJPEG() {
   const url = await getMapURL("png");
 
   const canvas = document.createElement("canvas");
-  canvas.width = svgWidth * pngResolutionInput.value;
-  canvas.height = svgHeight * pngResolutionInput.value;
+  canvas.width = mapWidthInput.value * pngResolutionInput.value;
+  canvas.height = mapHeightInput.value * pngResolutionInput.value;
   const img = new Image();
   img.src = url;
 
@@ -75,10 +76,11 @@ async function saveJPEG() {
 
 // parse map svg to object url
 async function getMapURL(type, subtype) {
-  const cloneEl = document.getElementById("map").cloneNode(true); // clone svg
+  const cloneEl = document.getElementById("map").cloneNode(true); // clone svg  
   cloneEl.id = "fantasyMap";
   document.body.appendChild(cloneEl);
   const clone = d3.select(cloneEl);
+  clone.attr("width", mapWidthInput.value).attr("height", mapHeightInput.value);
   clone.select("#debug").remove();
 
   const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;

@@ -598,3 +598,20 @@ function isCtrlClick(event) {
 
 // localStorageDB
 !function(){function e(t,o){return n?void(n.transaction("s").objectStore("s").get(t).onsuccess=function(e){var t=e.target.result&&e.target.result.v||null;o(t)}):void setTimeout(function(){e(t,o)},100)}var t=window.indexedDB||window.mozIndexedDB||window.webkitIndexedDB||window.msIndexedDB;if(!t)return void console.error("indexDB not supported");var n,o={k:"",v:""},r=t.open("d2",1);r.onsuccess=function(e){n=this.result},r.onerror=function(e){console.error("indexedDB request error"),console.log(e)},r.onupgradeneeded=function(e){n=null;var t=e.target.result.createObjectStore("s",{keyPath:"k"});t.transaction.oncomplete=function(e){n=e.target.db}},window.ldb={get:e,set:function(e,t){o.k=e,o.v=t,n.transaction("s","readwrite").objectStore("s").put(o)}}}();
+
+
+function copyStylesInline(destinationNode, sourceNode) {
+  var containerElements = ["svg", "g"];
+  for (var cd = 0; cd < destinationNode.childNodes.length; cd++) {
+    var child = destinationNode.childNodes[cd];
+    if (containerElements.indexOf(child.tagName) != -1) {
+      copyStylesInline(child, sourceNode.childNodes[cd]);
+      continue;
+    }
+    var style = sourceNode.childNodes[cd].style && (sourceNode.childNodes[cd].currentStyle || window.getComputedStyle(sourceNode.childNodes[cd]));
+    if (style == "undefined" || style == null) continue;
+    for (var st = 0; st < style.length; st++) {
+      child.style.setProperty(style[st], style.getPropertyValue(style[st]));
+    }
+  }
+}
