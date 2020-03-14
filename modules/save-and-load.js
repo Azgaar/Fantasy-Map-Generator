@@ -962,3 +962,217 @@ function parseLoadedData(data) {
   }
 
 }
+
+// export the map for our game engine
+async function customExport () {
+  if (customization) {tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error"); return;}
+  closeDialogs("#alert");
+
+  drawProvinces();
+
+  const landmassImage = await getMapImageBase64(["landmass"]);
+  const provincesImage = await getMapImageBase64(["provs"]);
+
+  const blob = await getMapExportData(landmassImage, provincesImage);
+  const URL = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.download = getFileName() + ".json";
+  link.href = URL;
+  document.body.appendChild(link);
+  link.click();
+  tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
+  window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
+}
+
+function getMapImageBase64 (visibles) {
+  return new Promise(async resolve => {
+    const url = await getMapLayerURL("png", null, visibles);  
+    const canvas = document.createElement("canvas");
+    canvas.width = mapWidthInput.value * pngResolutionInput.value;
+    canvas.height = mapHeightInput.value * pngResolutionInput.value;
+
+    const ctx = canvas.getContext("2d");
+    
+    const img = new Image();
+    img.src = url;
+
+    img.onload = function() {
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL());
+    }
+  });  
+}
+
+// parse map svg to object url
+async function getMapLayerURL(type, subtype, visibles) {
+  const cloneEl = document.getElementById("map").cloneNode(true); // clone svg  
+  cloneEl.id = "fantasyMap";
+  document.body.appendChild(cloneEl);
+  const clone = d3.select(cloneEl);
+  clone.attr("width", mapWidthInput.value).attr("height", mapHeightInput.value).attr("background-color", "transparent");
+  clone.select("#debug").remove();
+  clone.select('#ruler').remove();
+  clone.select('#scaleBar').remove();
+
+  const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+  if (isFirefox && type === "mesh") clone.select("#oceanPattern").remove();
+  
+  if (subtype === "noWater") {clone.select("#oceanBase").attr("opacity", 0); clone.select("#oceanPattern").attr("opacity", 0);}
+  if (type !== "png") {
+    // reset transform to show the whole map
+    clone.attr("width", graphWidth).attr("height", graphHeight);
+    clone.select("#viewbox").attr("transform", null);
+  }
+  if (type === "svg") removeUnusedElements(clone);
+  if (customization && type === "mesh") updateMeshCells(clone);
+
+  const LAYERS = ["ocean", "lake", "landmass", "texture", "terrs", "biomes", "cells", "gridOverlay", "coordinates", "compass",
+    "rivers", "terrain", "relig", "cults", "regions", "statesBody", "statesHalo", "provs", "zones", "borders", "stateBorders",
+    "provinceBorders", "routes", "roads", "trails", "searoutes", "temperature", "coastline", "prec", "population", "labels",
+    "icons", "burgIcons", "anchors", "markers", "fogging-cont", "fogging"];
+
+  LAYERS.forEach((layer) => {
+    if (visibles.indexOf(layer) < 0) {
+      clone.select('#' + layer).remove();
+    } else {
+      clone.select('#' + layer).attr("opacity", 1);
+    }
+  });
+
+  inlineStyle(clone);
+
+  const fontStyle = await GFontToDataURI(getFontsToLoad()); // load non-standard fonts
+  if (fontStyle) clone.select("defs").append("style").text(fontStyle.join('\n')); // add font to style
+
+  clone.append("metadata").text("<dc:format>image/svg+xml</dc:format>");
+  const serialized = (new XMLSerializer()).serializeToString(clone.node());
+  const svg_xml = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>` + serialized;
+  clone.remove();
+  const blob = new Blob([svg_xml], {type: 'image/svg+xml;charset=utf-8'});
+  const url = window.URL.createObjectURL(blob);
+  window.setTimeout(() => window.URL.revokeObjectURL(url), 5000);
+  return url;
+}
+
+function getMapExportData (landmassImage, provincesImage) {
+  console.time("getMapExportData");
+
+  return new Promise(resolve => {
+    const date = new Date();
+    const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
+    const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
+
+    const params = { version, license, dateString, seed, graphWidth, graphHeight };
+
+    const options = { 
+      distanceUnitInput: distanceUnitInput.value, 
+      distanceScaleInput: distanceScaleInput.value, 
+      areaUnit: areaUnit.value,
+      heightUnit: heightUnit.value, 
+      heightExponentInput: heightExponentInput.value, 
+      temperatureScale: temperatureScale.value,
+      barSize: barSize.value, 
+      barLabel: barLabel.value, 
+      barBackOpacity: barBackOpacity.value, 
+      barBackColor: barBackColor.value,
+      barPosX: barPosX.value, 
+      barPosY: barPosY.value, 
+      populationRate: populationRate.value, 
+      urbanization: urbanization.value,
+      mapSizeOutput: mapSizeOutput.value, 
+      latitudeOutput: latitudeOutput.value, 
+      temperatureEquatorOutput: temperatureEquatorOutput.value,
+      temperaturePoleOutput: temperaturePoleOutput.value, 
+      precOutput: precOutput.value, 
+      winds,
+      mapName: mapName.value
+    };
+
+    const coords = mapCoordinates;
+
+    const biomes = {
+      color: biomesData.color, 
+      habitability: biomesData.habitability, 
+      name: biomesData.name
+    };
+
+    const notesData = notes;
+
+    const cloneEl = document.getElementById("map").cloneNode(true); // clone svg
+
+    // set transform values to default
+    cloneEl.setAttribute("width", graphWidth);
+    cloneEl.setAttribute("height", graphHeight);
+    cloneEl.querySelector("#viewbox").setAttribute("transform", null);
+    const svg_xml = (new XMLSerializer()).serializeToString(cloneEl);
+
+    const gridGeneral = {spacing:grid.spacing, cellsX:grid.cellsX, cellsY:grid.cellsY, boundary:grid.boundary, points:grid.points, features:grid.features};
+    const features = pack.features;
+    const cultures = pack.cultures;
+    const states = pack.states;
+    const burgs = pack.burgs;
+    const religions = pack.religions;
+    const provinces = pack.provinces;
+    const rivers = pack.rivers;
+
+    // store name array only if it is not the same as default
+    const defaultNB = Names.getNameBases();
+    const namesData = nameBases.map((b,i) => {
+      const names = defaultNB[i] && defaultNB[i].b === b.b ? "" : b.b;
+      return `${b.name}|${b.min}|${b.max}|${b.d}|${b.m}|${names}`;
+    });
+
+    // round population to save resources
+    const pop = Array.from(pack.cells.pop).map(p => rn(p, 4));
+
+    // data format as below    
+    const data = JSON.stringify(
+      {
+        params,
+        options,
+        coords,
+        biomes,
+        notesData,
+        gridGeneral,
+        grid: {
+          cells: {
+            h: grid.cells.h,
+            prec: grid.cells.prec,
+            f: grid.cells.f,
+            t: grid.cells.t, 
+            temp: grid.cells.temp
+          }
+        },
+        features,
+        cultures,
+        states,
+        burgs,
+        pack: {
+          cells: {
+            r: pack.cells.r, 
+            road: pack.cells.road, 
+            s: pack.cells.s, 
+            state: pack.cells.state,
+            religion: pack.cells.religion, 
+            province: pack.cells.province, 
+            crossroad: pack.cells.crossroad
+          }          
+        },        
+        pop,
+        religions,
+        provinces,
+        namesData,
+        rivers,
+        landmassImage,
+        provincesImage
+      }, 
+      null, 
+      2
+    );
+      
+    const blob = new Blob([data], {type: "text/plain"});
+
+    console.timeEnd("getMapExportData");
+    resolve(blob);
+  });
+}
