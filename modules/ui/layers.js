@@ -399,7 +399,7 @@ function drawPrec() {
   const data = cells.i.filter(i => cells.h[i] >= 20 && cells.prec[i]);
   prec.selectAll("circle").data(data).enter().append("circle")
     .attr("cx", d => p[d][0]).attr("cy", d => p[d][1]).attr("r", 0)
-    .transition(show).attr("r", d => rn(Math.max(Math.sqrt(cells.prec[d] * .5), .8),2)); 
+    .transition(show).attr("r", d => rn(Math.max(Math.sqrt(cells.prec[d] * .5), .8),2));
 }
 
 function togglePopulation(event) {

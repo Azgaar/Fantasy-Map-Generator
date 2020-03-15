@@ -25,7 +25,7 @@
     @keyframes spin {0% {transform: rotate(0deg);} 100% {transform: rotate(359deg);}}
     #loading {opacity:1; font-size: 11px; color:#fff5da; text-align:center; text-shadow:0px 1px 4px #4c3a35; width:80%; max-width:600px; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); pointer-events:none;}
     #loading-text {font-size: 1.8em; margin: 0.2em 0 0 1em;}
-    #title_name {text-align: left;font-size: 3em;margin-left: 5%;}
+    #titleName {text-align: left;font-size: 3em;margin-left: 5%;}
     #title {font-size: 7em;margin: -12px 0 -6px 0;}
     #version {text-align: right;font-size: 2em;margin-right: 3%;}
     #loading-text > span {font-size: 1.3em; padding-left: 1px; line-height: 0px;}
@@ -897,29 +897,29 @@
   </svg>
 
   <div id="loading">
-    <div id="title_name">Azgaar's</div>
-    <div id="title">Fantasy Map Generator</div>
-    <div id="version">v. 1.2</div>
-    <p id="loading-text">LOADING<span>.</span><span>.</span><span>.</span></p>
+    <div id="titleName"><t data-t="titleName">Azgaar's</t></div>
+    <div id="title"><t data-t="title">Fantasy Map Generator</t></div>
+    <div id="version"><t data-t="version">v. </t>1.2</div>
+    <p id="loading-text"><t data-t="loading">LOADING</t><span>.</span><span>.</span><span>.</span></p>
   </div>
 
   <div id="optionsContainer" style="opacity:0">
 
     <div id="collapsible">
-      <button id="optionsTrigger" data-tip="Click to show options pane. Shortcut: Tab" class="options glow" onclick="showOptions(event)" style="padding:.6em .45em">►</button>
-      <button id="regenerate" data-tip="Click to generate a new map. Shortcut: F2" onclick="regeneratePrompt()" class="options" style="display:none; padding:.6em 1em">New Map!</button>
+      <button id="optionsTrigger" data-t="tipOptionsTrigger" data-tip="Click to show options pane. Shortcut: Tab" class="options glow" onclick="showOptions(event)" style="padding:.6em .45em">►</button>
+      <button id="regenerate" data-t="tipRegenerate" data-tip="Click to generate a new map. Shortcut: F2" onclick="regeneratePrompt()" class="options" style="display:none; padding:.6em 1em"><t data-t="newMap">New Map!</t></button>
     </div>
 
     <div id="options" style="display:none">
-      <div class="drag-trigger" data-tip="Drag to move options pane"></div>
+      <div class="drag-trigger" data-t="optionsDragTrigger" data-tip="Drag to move options pane"></div>
 
       <div class="tab">
-        <button id="optionsHide" data-tip="Click to hide options pane. Shortcut: Tab to close this or Esc to close all dialogs" class="options" onclick="hideOptions(event)">◄</button>
-        <button id="layersTab" data-tip="Click to change map layers" class="options active">Layers</button>
-        <button id="styleTab" data-tip="Click to open style editor" class="options">Style</button>
-        <button id="optionsTab" data-tip="Click to change generation and UI options" class="options">Options</button>
-        <button id="toolsTab" data-tip="Click to open tools menu" class="options">Tools</button>
-        <button id="aboutTab" data-tip="Click to see Generator info" class="options">About</button>
+        <button id="optionsHide" data-t="optionsHide" data-tip="Click to hide options pane. Shortcut: Tab to close this or Esc to close all dialogs" class="options" onclick="hideOptions(event)">◄</button>
+        <button id="layersTab" data-t="layersTab" data-tip="Click to change map layers" class="options active"><t data-t="layers">Layers</t></button>
+        <button id="styleTab" data-t="styleTab" data-tip="Click to open style editor" class="options"><t data-t="style">Style</t></button>
+        <button id="optionsTab" data-t="optionsTab" data-tip="Click to change generation and UI options" class="options"><t data-t="options">Options</t></button>
+        <button id="toolsTab" data-t="toolsTab" data-tip="Click to open tools menu" class="options"><t data-t="tools">Tools</t></button>
+        <button id="aboutTab" data-t="aboutTab" data-tip="Click to see Generator info" class="options"><t data-t="about">About</t></button>
       </div>
 
       <div id="layersContent" class="tabcontent" style="display: block">
@@ -964,7 +964,7 @@
           <li id="toggleIcons" data-tip="Burg icons: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: I" onclick="toggleIcons(event)"><u>I</u>cons</li>
           <li id="toggleMarkers" data-tip="Markers: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: M" class="buttonoff" onclick="toggleMarkers(event)"><u>M</u>arkers</li>
           <li id="toggleRulers" data-tip="Rulers: click to toggle, drag to move, click on label to delete. Ctrl + click to edit layer style. Shortcut: = (equal)" class="buttonoff" onclick="toggleRulers(event)">Rulers</li>
-          <li id="toggleScaleBar" data-tip="Scale Bar: click to toggle, drag to move. Ctrl + click to edit style. Shortcut: - (minus)" onclick="toggleScaleBar(event)" class="solid">Scale Bar</li>
+          <li id="toggleScaleBar" data-tip="Scale Bar: click to toggle. Ctrl + click to edit style. Shortcut: - (minus)" onclick="toggleScaleBar(event)" class="solid">Scale Bar</li>
         </ul>
 
         <div id="viewMode" data-tip="Set view node">
@@ -1520,14 +1520,14 @@
         <p data-tip="Map generation settings. Generate a new map to apply the settings">Map settings (new map to apply):</p>
         <table>
 
-          <tr data-tip="Canvas size in pixels. Defines map size on generation, then map size cannot be changed and canvas size changes only visible area. Keep canvas size equal to screen size or less to improve performance. The best aspect ratio for maps is 2:1">
+          <tr data-tip="Canvas width and height in pixels. Defines map size on generation, then map size cannot be changed and canvas size changes only visible area. Keep canvas size equal to screen size or less to improve performance. The best aspect ratio for maps is 2:1">
             <td></td>
             <td>Canvas size</td>
             <td>
-              <span>width</span>
               <input id="mapWidthInput" class="paired" type="number" min=240 value=960>
-              <span>height</span>
+              <span>x</span>
               <input id="mapHeightInput" class="paired" type="number" min=135 value=540>
+              <span>px</span>
             </td>
             <td>
               <i data-tip="Toggle between screen size and initial canvas size" id="toggleFullscreen" class="icon-resize-full-alt"></i>
@@ -1779,10 +1779,20 @@
             </td>
           </tr>
 
+          <tr data-tip="Select language (please note not all languages are fully supported). Reload the page to apply">
+            <td></td>
+            <td>Language</td>
+            <td>
+              <select id="selectLanguage" data-stored="lang">
+                <option value="en" selected>English (100%)</option>
+                <option value="ru">Русский (1%)</option>
+              </select>
+            </td>
+            <td></td>
+          </tr>
         </table>
 
-        <button id="configureWorld" data-tip="Click to open world configurator to setup position on globe and world climate" onclick="editWorld()">Configure World</button>
-
+        <button id="configureWorld" data-tip="Click to open world configurator to setup map position on Globe and World climate" onclick="editWorld()">Configure World</button>
         <button id="optionsReset" data-tip="Click to restore default options (page will be reloaded)" onclick="restoreDefaultOptions()">Reset to defaults</button>
 
       </div>
@@ -1807,7 +1817,7 @@
           <p>Click to overview:</p>
           <button id="overviewBurgsButton" data-tip="Click to open Burgs Overview. Shortcut: Shift + T">Burgs</button>
           <button id="overviewRiversButton" data-tip="Click to open Rivers Overview. Shortcut: Shift + V">Rivers</button>
-          <!-- <button id="overviewMilitaryButton" data-tip="Click to open Military Forces Overview. Shortcut: Shift + M">Military</button> -->
+          <button id="overviewMilitaryButton" data-tip="Click to open Military Forces Overview. Shortcut: Shift + M">Military</button>
           <button id="overviewCellsButton" data-tip="Click to open Cell details view. Shortcut: Shift + E">Cells</button>
           <!-- <button id="overviewLandmassedButton" data-tip="Click to open Landmasses Overview. Shortcut: Shift + L">Landmasses</button> -->
           <!-- <button id="overviewWaterbodiesButton" data-tip="Click to open Waterbodies Overview. Shortcut: Shift + W">Waterbodies</button> -->
@@ -1879,7 +1889,7 @@
       <div id="aboutContent" class="tabcontent">
         <p><a href="https://github.com/Azgaar/Fantasy-Map-Generator" target="_blank">Fantasy Map Generator</a> is a free <a href="https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE" target="_blank">open source</a> tool which procedurally generates fantasy maps. You may use auto-generated maps as they are, edit them or even create a new map from scratch. Check out the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Quick-Start-Tutorial" target="_blank">quick start tutorial</a>, <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A" target="_blank">Q&A</a> and <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys" target="_blank">hotkeys</a> for guidance.</p>
         <p>Join our <a href='https://discordapp.com/invite/X7E84HU' target='_blank'>Discord server</a> and <a href="https://www.reddit.com/r/FantasyMapGenerator/" target="_blank">Reddit community</a> to ask questions, get help and share created maps. You may support the project on <a href='https://www.patreon.com/azgaar' target='_blank'>Patreon</a>.</p>
-        <p>The project is under active development. For older versions see the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog" target="_blank">changelog</a>. To track the development progress see the <a href="https://trello.com/b/7x832DG4/fantasy-map-generator" target="_blank">devboard</a>. Please report bugs <a href="https://github.com/Azgaar/Fantasy-Map-Generator/issues" target="_blank">here</a>. You can also contact me directly via <a href="mailto:azgaar.fmg@yandex.by" target="_blank">email</a>.</p>
+        <p>The project is under active development. Creator and main maintainer: Azgaar. For older versions see the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog" target="_blank">changelog</a>. To track the development progress see the <a href="https://trello.com/b/7x832DG4/fantasy-map-generator" target="_blank">devboard</a>. Please report bugs <a href="https://github.com/Azgaar/Fantasy-Map-Generator/issues" target="_blank">here</a>. You can also contact me directly via <a href="mailto:azgaar.fmg@yandex.by" target="_blank">email</a>.</p>
         <p>Special thanks to all supporters on Patreon! <i data-tip="Click to see supporters names" class="collapsible icon-down-open pointer"></i></p>
         <p style="display:none">Patreon Supporters: Aaron Meyer, Ahmad Amerih, AstralJacks, aymeric, Billy Dean Goehring, Branndon Edwards,
           Chase Mayers, Curt Flood, cyninge, Dino Princip, E.M. White, es, Fondue, Fritjof Olsson, Gatsu, Johan Fröberg, Jonathan Moore,
@@ -1887,10 +1897,12 @@
           Sasquatch, Shawn Spencer, Sizz_TV, Timothée CALLET, UTG community, Vlad Tomash, Wil Sisney, William Merriott, Xariun,
           Gun Metal Games, Scott Marner, Spencer Sherman, Valerii Matskevych, Alloyed Clavicle, Stewart Walsh, Ruthlyn Mollett (Javan),
           Benjamin Mair-Pratt, Diagonath, Alexander Thomas, Ashley Wilson-Savoury, William Henry, Preston Brooks, JOSHUA QUALTIERI,
-          Hilton Williams, Katharina Haase, Hisham Bedri, Ian arless, Karnat, Bird, Kevin, Jessica Thomas, Steve Hyatt, Logicspren, 
-          Alfred García, Jonathan Killstring, John Ackley, Invad3r233, Norbert Žigmund, Jennifer, PoliticsBuff, _gfx_, Maggie, 
-          Connor McMartin, Jared McDaris, BlastWind, Franc Casanova Ferrer, Dead & Devil, Michael Carmody, Valerie Elise, naikibens220, 
-          Jordon Phillips, William Pucs, The Dungeon Masters, Brady R Rathbun, J, Shadow, Matthew Tiffany and many others!</p>
+          Hilton Williams, Katharina Haase, Hisham Bedri, Ian arless, Karnat, Bird, Kevin, Jessica Thomas, Steve Hyatt, Logicspren,
+          Alfred García, Jonathan Killstring, John Ackley, Invad3r233, Norbert Žigmund, Jennifer, PoliticsBuff, _gfx_, Maggie,
+          Connor McMartin, Jared McDaris, BlastWind, Franc Casanova Ferrer, Dead & Devil, Michael Carmody, Valerie Elise, naikibens220,
+          Jordon Phillips, William Pucs, The Dungeon Masters, Brady R Rathbun, J, Shadow, Matthew Tiffany, Huw Williams, Joseph Hamilton,
+          FlippantFeline, Tamashi Toh, kms, Stephen Herron, MidnightMoon, Whakomatic x, Barished, Aaron bateson, Brice Moss, Diklyquill, 
+          PatronUser, Michael Greiner, Steven Bennett, Jacob Harrington and many others!</p>
 
         <ul class="share-buttons">
           <li><a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator%2F&quote=" data-tip="Share on Facebook" target="_blank"><img alt="Share on Facebook" src="images/Facebook.png" /></a></li>
@@ -2292,9 +2304,9 @@
           <span id="burgCapital" data-tip="Shows whether the burg is a state capital. Click to toggle" data-feature="capital" class="burgFeature icon-star"></span>
           <span id="burgPort" data-tip="Shows whether the burg is a port. Click to toggle" data-feature="port" class="burgFeature icon-anchor"></span>
           <span id="burgCitadel" data-tip="Shows whether the burg has a citadel (castle). Click to toggle" data-feature="citadel" class="burgFeature icon-chess-rook" style="font-size: 1.1em"></span>
-          <span id="burgWalls" data-tip="Shows whether the burg has walls. Click to toggle" data-feature="walls" class="burgFeature icon-fort-awesome"></span>
-          <span id="burgPlaza" data-tip="Shows whether the burg has a plaza (marketplace). Click to toggle" data-feature="plaza" class="burgFeature icon-store" style="font-size: 1em"></span>
-          <span id="burgTemple" data-tip="Shows whether the burg has a place of worship. Click to toggle" data-feature="temple" class="burgFeature icon-bank" style="font-size: 1.1em; margin-left: 3px"></span>
+          <span id="burgWalls" data-tip="Shows whether the burg is walled. Click to toggle" data-feature="walls" class="burgFeature icon-fort-awesome"></span>
+          <span id="burgPlaza" data-tip="Shows whether the burg is a trade center (has big marketplace). Click to toggle" data-feature="plaza" class="burgFeature icon-store" style="font-size: 1em"></span>
+          <span id="burgTemple" data-tip="Shows whether the burg is a religious center. Click to toggle" data-feature="temple" class="burgFeature icon-chess-bishop" style="font-size: 1.1em; margin-left: 3px"></span>
           <span id="burgShanty" data-tip="Shows whether the burg has a shanty town. Click to toggle" data-feature="shanty" class="burgFeature icon-campground" style="font-size: 1em"></span>
         </div>
       </div>
@@ -2318,7 +2330,7 @@
         </div>
   
         <button id="burgSeeInMFCG" data-tip="Open burg in the Medieval Fantasy City Generator by Watabou. Ctrl + click to change the seed" class="icon-map-o"></button>
-        <button id="burgOpenCOA" data-tip="Open burg's COA in the Iron Arachne Heraldry Generator. Ctrl + click to change the seed" class="icon-fleur"></button>
+        <button id="burgOpenCOA" data-tip="Open burg's COA in the Iron Arachne Heraldry Generator. Ctrl + click to change the seed" class="icon-shield-alt"></button>
         <button id="burgRelocate" data-tip="Relocate burg" class="icon-target"></button>
         <button id="burglLegend" data-tip="Edit free text notes (legend) for this burg" class="icon-edit"></button>
         <button id="burgRemove" data-tip="Remove non-capital burg. Shortcut: Delete" class="icon-trash"></button>
@@ -2365,6 +2377,28 @@
       <button id="markerLegendButton" data-tip="Edit place legend (free text notes)" class="icon-edit"></button>
       <button id="markerAdd" data-tip="Add additional marker of that type" class="icon-plus"></button>
       <button id="markerRemove" data-tip="Remove the marker. Shortcut: Delete" class="icon-trash"></button>
+    </div>
+
+    <div id="regimentEditor" class="dialog" style="display: none">
+
+      <div id="regimentBody">
+        <div>
+          <button id="regimentType" data-tip="Regiment type (land or naval). Click to change"></button>
+          <input id="regimentName" data-tip="Type to rename the regiment" autocorrect="off" spellcheck="false" style="width: 13em">
+          <i id="regimentNameRestore" data-tip="Click to restore regiment's default name" class="icon-ccw pointer"></i>
+        </div>
+
+        <div id="regimentComposition" style="padding: .1em"></div>
+      </div>
+
+      <div id="regimentBottom">
+        <button id="regimentAdd" data-tip="Create new regiment or fleet" class="icon-user-plus"></button>
+        <button id="regimentSplit" data-tip="Split regiment into 2 separate ones" class="icon-half"></button>
+        <button id="regimentAttach" data-tip="Attach regiment to another one (include this regiment to another one)" class="icon-attach"></button>
+        <button id="regimentRegenerateLegend" data-tip="Regenerate legend for this regiment" class="icon-retweet"></button>
+        <button id="regimentLegend" data-tip="Edit free text notes (legend) for this regiment" class="icon-edit"></button>
+        <button id="regimentRemove" data-tip="Remove regiment. Shortcut: Delete" class="icon-trash"></button>
+      </div>
     </div>
 
     <div id="brushesPanel" class="dialog stable" style="display: none">
@@ -2509,7 +2543,8 @@
         <button id="templateRedo" data-tip="Redo the action" class="icon-cw" disabled></button>
         <button id="templateSave" data-tip="Download the template as a text file" class="icon-download"></button>
         <button id="templateLoad" data-tip="Open previously downloaded template" class="icon-upload"></button>
-        <button id="templateCA" data-tip="Find or share custom template on Cartography Assets portal" class="icon-drafting-compass" onclick="openURL('https://www.cartographyassets.com/assets/categories/azgaar-generator.87')"></button>
+        <button id="templateCA" data-tip="Find or share custom template on Cartography Assets portal" class="icon-drafting-compass" onclick="openURL('https://www.cartographyassets.com/assets/categories/templates.89')"></button>
+        <button id="templateTutorial" data-tip="Open Template Editor Tutorial" class="icon-info" onclick="openURL('https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-template-editor')"></button>
       </div>
     </div>
 
@@ -2548,7 +2583,7 @@
 
     <div id="biomesEditor" class="dialog stable" style="display: none">
       <div id="biomesHeader" class="header">
-        <div style="left:1.4em" data-tip="Click to sort by biome name" class="sortable alphabetically" data-sortby="name">Biome&nbsp;</div>
+        <div style="left:1.8em" data-tip="Click to sort by biome name" class="sortable alphabetically" data-sortby="name">Biome&nbsp;</div>
         <div style="left:12em" data-tip="Click to sort by biome habitability" class="sortable hide" data-sortby="habitability">Habitability&nbsp;</div>
         <div style="left:19em" data-tip="Click to sort by biome cells number" class="sortable hide icon-sort-number-down" data-sortby="cells">Cells&nbsp;</div>
         <div style="left:25em" data-tip="Click to sort by biome area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
@@ -2588,11 +2623,11 @@
 
     <div id="statesEditor" class="dialog stable" style="display: none">
       <div id="statesHeader" class="header">
-        <div style="left:1.4em" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">State&nbsp;</div>
-        <div style="left:8.7em" data-tip="Click to sort by state form name" class="sortable alphabetically" data-sortby="form">Form&nbsp;</div>
-        <div style="left:15.9em" data-tip="Click to sort by capital name" class="sortable alphabetically hide" data-sortby="capital">Capital&nbsp;</div>
-        <div style="left:22.3em" data-tip="Click to sort by state dominant culture" class="sortable alphabetically hide" data-sortby="culture">Culture&nbsp;</div>
-        <div style="left:27em" data-tip="Click to sort by state burgs count" class="sortable hide" data-sortby="burgs">Burgs&nbsp;</div>
+        <div style="left:1.8em" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">State&nbsp;</div>
+        <div style="left:9em" data-tip="Click to sort by state form name" class="sortable alphabetically" data-sortby="form">Form&nbsp;</div>
+        <div style="left:16.3em" data-tip="Click to sort by capital name" class="sortable alphabetically hide" data-sortby="capital">Capital&nbsp;</div>
+        <div style="left:22.2em" data-tip="Click to sort by state dominant culture" class="sortable alphabetically hide" data-sortby="culture">Culture&nbsp;</div>
+        <div style="left:27.2em" data-tip="Click to sort by state burgs count" class="sortable hide" data-sortby="burgs">Burgs&nbsp;</div>
         <div style="left:32.5em" data-tip="Click to sort by state area" class="sortable hide icon-sort-number-down" data-sortby="area">Area&nbsp;</div>
         <div style="left:37em" data-tip="Click to sort by state population" class="sortable hide" data-sortby="population">Population&nbsp;</div>
         <div style="left:43.5em" data-tip="Click to sort by state type" class="sortable alphabetically hidden show hide" data-sortby="type">Type&nbsp;</div>
@@ -2662,7 +2697,7 @@
 
       <div style="padding: .1em" data-tip="Select form name">
         <div data-tip="State form name" class="label">Form name:</div>
-        <select id="stateNameEditorSelectForm" style="display: inline-block; width: 11.7em; height: 1.645em">
+        <select id="stateNameEditorSelectForm" style="width: 11em">
           <option value="">blank</option>
           <option data-form="Monarchy" value="Beylik">Beylik</option>
           <option data-form="Theocracy" value="Caliphate">Caliphate</option>
@@ -2729,7 +2764,7 @@
 
     <div id="provincesEditor" class="dialog stable" style="display: none">
       <div id="provincesHeader" class="header">
-        <div style="left:1.4em" data-tip="Click to sort by province name" class="sortable alphabetically" data-sortby="name">Province&nbsp;</div>
+        <div style="left:1.8em" data-tip="Click to sort by province name" class="sortable alphabetically" data-sortby="name">Province&nbsp;</div>
         <div style="left:8.5em" data-tip="Click to sort by province form name" class="sortable alphabetically hide" data-sortby="form">Form&nbsp;</div>
         <div style="left:15.9em" data-tip="Click to sort by province capital" class="sortable alphabetically hide" data-sortby="capital">Capital&nbsp;</div>
         <div style="left:22em" data-tip="Click to sort by province owner" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
@@ -2781,7 +2816,7 @@
         <div data-tip="Ally means states formed a defensive pact and will protect each other in case of third party aggression">Ally</div>
         <div data-tip="State is friendly to anouther state when they share some common interests">Friendly</div>
         <div data-tip="Neutral means states relations are neither positive nor negative">Neutral</div>
-        <div data-tip="Suspicion means shate has a cautious distrust of another state">Suspicion</div>
+        <div data-tip="Suspicion means state has a cautious distrust of another state">Suspicion</div>
         <div data-tip="Enemies are states at war with each other">Enemy</div>
         <div data-tip="Relations are unknown if states do not have enought information about each other">Unknown</div>
         <div data-tip="Rivalry is a state of competing for dominance in the region">Rival</div>
@@ -2848,11 +2883,11 @@
 
     <div id="culturesEditor" class="dialog stable" style="display: none">
       <div id="culturesHeader" class="header">
-        <div style="left:1.4em" data-tip="Click to sort by culture name" class="sortable alphabetically" data-sortby="name">Culture&nbsp;</div>
+        <div style="left:1.8em" data-tip="Click to sort by culture name" class="sortable alphabetically" data-sortby="name">Culture&nbsp;</div>
         <div style="left:6.7em" data-tip="Click to sort by culture cells count" class="sortable hide" data-sortby="cells">Cells&nbsp;</div>
-        <div style="left:11em" data-tip="Click to sort by expansionism" class="sortable hide" data-sortby="expansionism">Expan.&nbsp;</div>
-        <div style="left:15.8em" data-tip="Click to sort by type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
-        <div style="left:22.2em" data-tip="Click to sort by culture area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
+        <div style="left:11.2em" data-tip="Click to sort by expansionism" class="sortable hide" data-sortby="expansionism">Expan.&nbsp;</div>
+        <div style="left:16.6em" data-tip="Click to sort by type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
+        <div style="left:22.9em" data-tip="Click to sort by culture area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
         <div style="left:26.8em" data-tip="Click to sort by culture population" class="sortable hide icon-sort-number-down" data-sortby="population">Population&nbsp;</div>
         <div style="left:33.8em" data-tip="Click to sort by culture namesbase" class="sortable" data-sortby="base">Namesbase&nbsp;</div>
       </div>
@@ -2930,7 +2965,7 @@
 
     <div id="zonesEditor" class="dialog stable" style="display: none">
       <div id="customHeader" class="header">
-        <div style="left:1.4em" data-tip="Zone description">Description&nbsp;</div>
+        <div style="left:1.8em" data-tip="Zone description">Description&nbsp;</div>
         <div style="left:13em" data-tip="Zone cells count" class="hide">Cells&nbsp;</div>
         <div style="left:19em" data-tip="Zone area" class="hide">Area&nbsp;</div>
         <div style="left:24em" data-tip="Zone population" class="hide">Population&nbsp;</div>
@@ -2988,7 +3023,7 @@
 
     <div id="religionsEditor" class="dialog stable" style="display: none">
       <div id="religionsHeader" class="header">
-        <div style="left:1.4em" data-tip="Click to sort by religion name" class="sortable alphabetically" data-sortby="name">Religion&nbsp;</div>
+        <div style="left:1.8em" data-tip="Click to sort by religion name" class="sortable alphabetically" data-sortby="name">Religion&nbsp;</div>
         <div style="left:12.6em" data-tip="Click to sort by religion type" class="sortable alphabetically icon-sort-name-down" data-sortby="type">Type&nbsp;</div>
         <div style="left:18em" data-tip="Click to sort by religion form" class="sortable alphabetically hide" data-sortby="form">Form&nbsp;</div>
         <div style="left:25.1em" data-tip="Click to sort by supreme deity" class="sortable alphabetically hide" data-sortby="deity">Supreme Deity&nbsp;</div>
@@ -3073,7 +3108,7 @@
           </select>
         </div>
 
-        <div data-tip="Set height exponent, i.e. a value showing altitude change sharpness">
+        <div data-tip="Set height exponent, i.e. a value for altitude change sharpness. Altitude affects temperature and hence biomes">
           <div>Exponent:</div>
           <input id="heightExponentOutput" type="range" min=1.5 max=2.1 value=1.8 step=.01>
           <input id="heightExponentInput" data-stored="heightExponent" type="number" min=1.5 max=2.1 value=1.8 step=.01>
@@ -3122,8 +3157,8 @@
 
         <div data-tip="Set position of the Scale bar bottom right corner in percents">
           <div>Bar position:</div>
-          <i>x:</i><input id="barPosX" data-stored="barPosX" type="number" min=0 max=100 step=.1 value=99>
-          <i>y:</i><input id="barPosY" data-stored="barPosY" type="number" min=0 max=100 step=.1 value=99>
+          x:<input id="barPosX" data-stored="barPosX" type="number" min=0 max=100 step=.1 value=99>
+          y:<input id="barPosY" data-stored="barPosY" type="number" min=0 max=100 step=.1 value=99>
         </div>
 
         <div class="unitsHeader">
@@ -3133,8 +3168,8 @@
 
         <div data-tip="Set how many people are in one population point">
           <div>1 population point =</div>
-          <input id="populationRateOutput" type="range" min=10 max=9990 step=10 value=1000>
-          <input id="populationRate" data-stored="populationRate" type="number" min=10 max=9990 step=10 value=1000 data-value=1000>
+          <input id="populationRateOutput" type="range" min=10 max=9990 step=10 value=1000 style="width:6em">
+          <input id="populationRate" data-stored="populationRate" type="number" min=10 max=9990 step=10 value=1000 data-value=1000 style="width:4.5em">
         </div>
 
         <div data-tip="Set ubranization rate: burgs population relative to all population">
@@ -3155,7 +3190,7 @@
 
     <div id="burgsOverview" class="dialog stable" style="display: none">
       <div id="burgsHeader" class="header">
-        <div style="left:1.4em" data-tip="Click to sort by burg name" class="sortable alphabetically icon-sort-name-up" data-sortby="name">Burg&nbsp;</div>
+        <div style="left:1.8em" data-tip="Click to sort by burg name" class="sortable alphabetically icon-sort-name-up" data-sortby="name">Burg&nbsp;</div>
         <div style="left:7.6em" data-tip="Click to sort by province name" class="sortable alphabetically" data-sortby="province">Province&nbsp;</div>
         <div style="left:14em" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
         <div style="left:20.1em" data-tip="Click to sort by culture name" class="sortable alphabetically" data-sortby="culture">Culture&nbsp;</div>
@@ -3190,7 +3225,7 @@
 
     <div id="riversOverview" class="dialog stable" style="display: none">
       <div id="riversHeader" class="header">
-        <div style="left:1.4em" data-tip="Click to sort by river name" class="sortable alphabetically" data-sortby="name">River&nbsp;</div>
+        <div style="left:1.8em" data-tip="Click to sort by river name" class="sortable alphabetically" data-sortby="name">River&nbsp;</div>
         <div style="left:7.7em" data-tip="Click to sort by river type name" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
         <div style="left:12.9em" data-tip="Click to sort by river length" class="sortable icon-sort-number-down" data-sortby="length">Length&nbsp;</div>
         <div style="left:18.2em" data-tip="Click to sort by river basin" class="sortable alphabetically" data-sortby="basin">Basin&nbsp;</div>
@@ -3214,27 +3249,46 @@
 
     <div id="militaryOverview" class="dialog stable" style="display: none">
       <div id="militaryHeader" class="header">
-        <div style="left:1.4em" data-tip="State name. Click to sort" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
-        <div style="left: 7.8em" data-tip="State infantry number. Click to sort" class="sortable" data-sortby="infantry">Infantry&nbsp;</div>
-        <div style="left: 13em" data-tip="State archers number. Click to sort" class="sortable" data-sortby="archers">Archers&nbsp;</div>
-        <div style="left: 18em" data-tip="State cavalry number. Click to sort" class="sortable" data-sortby="cavalry">Cavalry&nbsp;</div>
-        <div style="left: 23em" data-tip="Number of ships in navy. Click to sort" class="sortable" data-sortby="fleet">Fleet&nbsp;</div>
-        <div style="left: 27em" data-tip="Total military personnel (including ships crew). Click to sort" class="sortable icon-sort-number-down" data-sortby="total">Total&nbsp;</div>
-        <div style="left: 31.4em" data-tip="Military personnel rate (% of state population). Depends on diplomatic situation. Click to sort" class="sortable" data-sortby="rate">Rate&nbsp;</div>
-        <div style="left: 36em" data-tip="State manpower (reserve). Click to sort" class="sortable" data-sortby="reserve">Reserve&nbsp;</div>
+        <div data-tip="State name. Click to sort" style="left:1.8em; width: 7.4em;" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
+        <div data-tip="Total military personnel (considering crew). Click to sort" id="militaryTotal" class="sortable icon-sort-number-down" data-sortby="total">Total&nbsp;</div>
+        <div data-tip="State population. Click to sort" style="width: 6.5em; margin-left: -1em" class="sortable" data-sortby="population">Population&nbsp;</div>
+        <div data-tip="Military personnel rate (% of state population). Depends on war alert. Click to sort" style="width: 3.7em" class="sortable" data-sortby="rate">Rate&nbsp;</div>
+        <div data-tip="War Alert. Modifier to military forces number, depends of political situation. Click to sort" class="sortable" data-sortby="alert">War Alert&nbsp;</div>
       </div>
 
       <div id="militaryBody" class="table" data-type="absolute"></div>
 
       <div id="militaryFooter" class="totalLine">
         <div data-tip="States number" style="margin-left: 4px">States:&nbsp;<span id="militaryFooterStates">0</span></div>
-        <div data-tip="Average military per state" style="margin-left: 14px">Average military:&nbsp;<span id="militaryFooterAverage">0</span></div>
+        <div data-tip="Average military forces per state" style="margin-left: 14px">Average forces:&nbsp;<span id="militaryFooterForces">0</span></div>
+        <div data-tip="Average forces rate per state" style="margin-left: 14px">Average rate:&nbsp;<span id="militaryFooterRate">0%</span></div>
+        <div data-tip="Average War Alert" style="margin-left: 14px">Average alert:&nbsp;<span id="militaryFooterAlert">0</span></div>
       </div>
 
       <div id="militaryBottom">
         <button id="militaryOverviewRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
+        <button id="militaryOptionsButton" data-tip="Edit Military units" class="icon-cog"></button>
+        <button id="militaryOverviewRecalculate" data-tip="Recalculate military forces based on current options" class="icon-retweet"></button>
         <button id="militaryExport" data-tip="Save military-related data as a text file (.csv)" class="icon-download"></button>
+        <button id="militaryVisualize" data-tip="Show armies on the map" class="icon-user-shield"></button>
       </div>
+    </div>
+
+    <div id="militaryOptions" class="dialog stable" style="display: none">
+      <table id="militaryOptionsTable">
+        <thead>
+          <tr>
+            <th data-tip="Unit name. If name is changed for existing unit, old unit will be replaced">Military unit</th>
+            <th data-tip="Conscription percentage for rural population">Rural %</th>
+            <th data-tip="Conscription percentage for urban population">Urban %</th>
+            <th data-tip="Average number of people in crew">Crew</th>
+            <th data-tip="Unit type to apply special rules on forces recalculation">Type</th>
+            <th data-tip="Check if unit is separate and can be stacked only with units of the same type">S</th>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
     </div>
 
     <div id="styleSaver" class="dialog stable textual" style="display: none">
@@ -3266,7 +3320,8 @@
       <p><b>Precipitation:</b> <span id="infoPrec">0</span></p>
       <p><b>River:</b> <span id="infoRiver">no</span></p>
       <p><b>Population:</b> <span id="infoPopulation">0</span></p>
-      <p><b>Height:</b> <span id="infoHeight">0</span></p>
+      <p><b>Elevation:</b> <span id="infoEvelation">0</span></p>
+      <p><b>Depth:</b> <span id="infoDepth">0</span></p>
       <p><b>Temperature:</b> <span id="infoTemp">0</span></p>
       <p><b>Biome:</b> <span id="infoBiome">n/a</span></p>
       <p><b>State:</b> <span id="infoState">n/a</span></p>
@@ -3310,8 +3365,8 @@
         </div>
 
         <div data-tip="Set sky and water color" id="options3dColorSection" style="display: none">
-          <span>Sky:</span><input id="options3dMeshSky" type="color" style="width: 4.4em; border: 0; padding: 0; margin: 0 .2em">
-          <span>Water:</span><input id="options3dMeshWater" type="color" style="width: 4.4em; border: 0; padding: 0; margin: 0 .2em">
+          <span>Sky:</span><input id="options3dMeshSky" type="color" style="width: 4.4em; height: 1em; border: 0; padding: 0; margin: 0 .2em">
+          <span>Water:</span><input id="options3dMeshWater" type="color" style="width: 4.4em; height: 1em; border: 0; padding: 0; margin: 0 .2em">
         </div>
       </div>
 
@@ -3337,6 +3392,7 @@
 
       <div id="options3dBottom" style="margin-top: .2em">
         <button id="options3dUpdate" data-tip="Update the scene" class="icon-cw"></button>
+        <button data-tip="Configure world and map size and climate settings" onclick="editWorld()" class="icon-globe"></button>
         <button id="options3dSave" data-tip="Save screenshot of the 3d scene" class="icon-download"></button>
       </div>
     </div>
@@ -3392,6 +3448,7 @@
     <input type="file" accept=".json" id="styleToLoad">
   </div>
 
+  <script src="libs/translate.js"></script>
   <script src="libs/jquery-3.1.1.min.js"></script>
   <script src="libs/d3.min.js"></script>
   <script src="libs/priority-queue.min.js"></script>
@@ -3406,6 +3463,7 @@
   <script src="modules/burgs-and-states.js"></script>
   <script src="modules/routes-generator.js"></script>
   <script src="modules/religions-generator.js"></script>
+  <script src="modules/military-generator.js"></script>
   <script src="libs/polylabel.min.js"></script>
   <script src="libs/jquery-ui.min.js"></script>
   <script src="libs/seedrandom.min.js"></script>
@@ -3441,7 +3499,8 @@
   <script defer src="modules/ui/zones-editor.js"></script>
   <script defer src="modules/ui/burgs-overview.js"></script>
   <script defer src="modules/ui/rivers-overview.js"></script>
-  <!-- <script defer src="modules/ui/military-overview.js"></script> -->
+  <script defer src="modules/ui/military-overview.js"></script>
+  <script defer src="modules/ui/regiment-editor.js"></script>
   <script defer src="modules/ui/editors.js"></script>
   <script defer src="modules/ui/3d.js"></script>
   <script defer src="libs/quantize.min.js"></script>

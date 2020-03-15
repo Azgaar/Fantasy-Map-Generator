@@ -17,7 +17,7 @@ function restoreDefaultEvents() {
 function clicked() {
   const el = d3.event.target;
   if (!el || !el.parentElement || !el.parentElement.parentElement) return;
-  const parent = el.parentElement, grand = parent.parentElement;
+  const parent = el.parentElement, grand = parent.parentElement, great = grand.parentElement;
   const p = d3.mouse(this);
   const i = findCell(p[0], p[1]);
 
@@ -27,8 +27,9 @@ function clicked() {
   else if (grand.id === "burgLabels") editBurg();
   else if (grand.id === "burgIcons") editBurg();
   else if (parent.id === "terrain") editReliefIcon();
-  else if (parent.id === "markers") editMarker(); 
+  else if (parent.id === "markers") editMarker();
   else if (grand.id === "coastline") editCoastline();
+  else if (great.id === "armies") editRegiment();
   else if (pack.cells.t[i] === 1) {
     const node = document.getElementById("island_"+pack.cells.f[i]);
     editCoastline(node);

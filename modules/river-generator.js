@@ -117,8 +117,9 @@
           const increment = rn(.8 + Math.random() * .6, 1); // river bed widening modifier
           const [path, length] = getPath(riverEnhanced, width, increment);
           riverPaths.push([r, path, width, increment]);
-          const parent = riverSegments[0].parent || 0;
-          pack.rivers.push({i:r, parent, length, source:riverSegments[0].cell, mouth:last(riverSegments).cell});
+          const source = riverSegments[0], mouth = riverSegments[riverSegments.length-2];
+          const parent = source.parent || 0;
+          pack.rivers.push({i:r, parent, length, source:source.cell, mouth:mouth.cell});
         } else {
           // remove too short rivers
           riverSegments.filter(s => cells.r[s.cell] === r).forEach(s => cells.r[s.cell] = 0);
@@ -258,6 +259,7 @@
     for (const r of pack.rivers) {
       r.basin = getBasin(r.i, r.parent);
       r.name = getName(r.mouth);
+      //debug.append("circle").attr("cx", pack.cells.p[r.mouth][0]).attr("cy", pack.cells.p[r.mouth][1]).attr("r", 2);
       const small = r.length < smallLength;
       r.type = r.parent && !(r.i%6) ? small ? "Branch" : "Fork" : small ? rw(smallType) : "River";
     }

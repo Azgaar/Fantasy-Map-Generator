@@ -20,7 +20,7 @@ function showOptions(event) {
   }
 
   regenerate.style.display = "none";
-  options.style.display = "block";
+  document.getElementById("options").style.display = "block";
   optionsTrigger.style.display = "none";
 
   if (event) event.stopPropagation();
@@ -28,21 +28,21 @@ function showOptions(event) {
 
 // Hide options pane on trigger click
 function hideOptions(event) {
-  options.style.display = "none";
+  document.getElementById("options").style.display = "none";
   optionsTrigger.style.display = "block";
   if (event) event.stopPropagation();
 }
 
 // To toggle options on hotkey press
 function toggleOptions(event) {
-  if (options.style.display === "none") showOptions(event);
+  if (document.getElementById("options").style.display === "none") showOptions(event);
   else hideOptions(event);
 }
 
 // Toggle "New Map!" pane on hover
 optionsTrigger.addEventListener("mouseenter", function() {
   if (optionsTrigger.classList.contains("glow")) return;
-  if (options.style.display === "none") regenerate.style.display = "block";
+  if (document.getElementById("options").style.display === "none") regenerate.style.display = "block";
 });
 
 collapsible.addEventListener("mouseleave", function() {
@@ -50,15 +50,15 @@ collapsible.addEventListener("mouseleave", function() {
 });
 
 // Activate options tab on click
-options.querySelector("div.tab").addEventListener("click", function(event) {
+document.getElementById("options").querySelector("div.tab").addEventListener("click", function(event) {
   if (event.target.tagName !== "BUTTON") return;
   const id = event.target.id;
-  const active = options.querySelector(".tab > button.active");
+  const active = document.getElementById("options").querySelector(".tab > button.active");
   if (active && id === active.id) return; // already active tab is clicked
 
   if (active) active.classList.remove("active");
   document.getElementById(id).classList.add("active");
-  options.querySelectorAll(".tabcontent").forEach(e => e.style.display = "none");
+  document.getElementById("options").querySelectorAll(".tabcontent").forEach(e => e.style.display = "none");
 
   if (id === "layersTab") layersContent.style.display = "block"; else
   if (id === "styleTab") styleContent.style.display = "block"; else
@@ -69,7 +69,7 @@ options.querySelector("div.tab").addEventListener("click", function(event) {
   if (id === "aboutTab") aboutContent.style.display = "block";
 });
 
-options.querySelectorAll("i.collapsible").forEach(el => el.addEventListener("click", collapse));
+document.getElementById("options").querySelectorAll("i.collapsible").forEach(el => el.addEventListener("click", collapse));
 function collapse(e) {
   const trigger = e.target;
   const section = trigger.parentElement.nextElementSibling;
@@ -309,7 +309,8 @@ function applyStoredOptions() {
     if(stored.slice(0,5) === "style") applyOption(stylePreset, stored, stored.slice(5));
   }
 
-  if (localStorage.getItem("winds")) winds = localStorage.getItem("winds").split(",").map(w => +w);
+  if (localStorage.getItem("winds")) options.winds = localStorage.getItem("winds").split(",").map(w => +w);
+  if (localStorage.getItem("military")) options.military = JSON.parse(localStorage.getItem("military"));
 
   changeDialogsTransparency(localStorage.getItem("transparency") || 5);
   if (localStorage.getItem("tooltipSize")) changeTooltipSize(localStorage.getItem("tooltipSize"));

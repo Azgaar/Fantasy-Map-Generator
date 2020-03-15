@@ -226,12 +226,12 @@ function getMapData() {
     const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
     const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
     const params = [version, license, dateString, seed, graphWidth, graphHeight].join("|");
-    const options = [distanceUnitInput.value, distanceScaleInput.value, areaUnit.value,
+    const settings = [distanceUnitInput.value, distanceScaleInput.value, areaUnit.value,
       heightUnit.value, heightExponentInput.value, temperatureScale.value,
       barSize.value, barLabel.value, barBackOpacity.value, barBackColor.value,
       barPosX.value, barPosY.value, populationRate.value, urbanization.value,
       mapSizeOutput.value, latitudeOutput.value, temperatureEquatorOutput.value,
-      temperaturePoleOutput.value, precOutput.value, JSON.stringify(winds),
+      temperaturePoleOutput.value, precOutput.value, JSON.stringify(options.winds),
       mapName.value].join("|");
     const coords = JSON.stringify(mapCoordinates);
     const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
@@ -265,7 +265,7 @@ function getMapData() {
     const pop = Array.from(pack.cells.pop).map(p => rn(p, 4));
 
     // data format as below
-    const data = [params, options, coords, biomes, notesData, svg_xml,
+    const data = [params, settings, coords, biomes, notesData, svg_xml,
       gridGeneral, grid.cells.h, grid.cells.prec, grid.cells.f, grid.cells.t, grid.cells.temp,
       features, cultures, states, burgs,
       pack.cells.biome, pack.cells.burg, pack.cells.conf, pack.cells.culture, pack.cells.fl,
@@ -554,29 +554,29 @@ function parseLoadedData(data) {
 
     console.group("Loaded Map " + seed);
 
-    void function parseOptions() {
-      const options = data[1].split("|");
-      if (options[0]) applyOption(distanceUnitInput, options[0]);
-      if (options[1]) distanceScaleInput.value = distanceScaleOutput.value = options[1];
-      if (options[2]) areaUnit.value = options[2];
-      if (options[3]) applyOption(heightUnit, options[3]);
-      if (options[4]) heightExponentInput.value = heightExponentOutput.value = options[4];
-      if (options[5]) temperatureScale.value = options[5];
-      if (options[6]) barSize.value = barSizeOutput.value = options[6];
-      if (options[7] !== undefined) barLabel.value = options[7];
-      if (options[8] !== undefined) barBackOpacity.value = options[8];
-      if (options[9]) barBackColor.value = options[9];
-      if (options[10]) barPosX.value = options[10];
-      if (options[11]) barPosY.value = options[11];
-      if (options[12]) populationRate.value = populationRateOutput.value = options[12];
-      if (options[13]) urbanization.value = urbanizationOutput.value = options[13];
-      if (options[14]) mapSizeInput.value = mapSizeOutput.value = Math.max(Math.min(options[14], 100), 1);
-      if (options[15]) latitudeInput.value = latitudeOutput.value = Math.max(Math.min(options[15], 100), 0);
-      if (options[16]) temperatureEquatorInput.value = temperatureEquatorOutput.value = options[16];
-      if (options[17]) temperaturePoleInput.value = temperaturePoleOutput.value = options[17];
-      if (options[18]) precInput.value = precOutput.value = options[18];
-      if (options[19]) winds = JSON.parse(options[19]);
-      if (options[20]) mapName.value = options[20];
+    void function parseSettings() {
+      const settings = data[1].split("|");
+      if (settings[0]) applyOption(distanceUnitInput, settings[0]);
+      if (settings[1]) distanceScaleInput.value = distanceScaleOutput.value = settings[1];
+      if (settings[2]) areaUnit.value = settings[2];
+      if (settings[3]) applyOption(heightUnit, settings[3]);
+      if (settings[4]) heightExponentInput.value = heightExponentOutput.value = settings[4];
+      if (settings[5]) temperatureScale.value = settings[5];
+      if (settings[6]) barSize.value = barSizeOutput.value = settings[6];
+      if (settings[7] !== undefined) barLabel.value = settings[7];
+      if (settings[8] !== undefined) barBackOpacity.value = settings[8];
+      if (settings[9]) barBackColor.value = settings[9];
+      if (settings[10]) barPosX.value = settings[10];
+      if (settings[11]) barPosY.value = settings[11];
+      if (settings[12]) populationRate.value = populationRateOutput.value = settings[12];
+      if (settings[13]) urbanization.value = urbanizationOutput.value = settings[13];
+      if (settings[14]) mapSizeInput.value = mapSizeOutput.value = Math.max(Math.min(settings[14], 100), 1);
+      if (settings[15]) latitudeInput.value = latitudeOutput.value = Math.max(Math.min(settings[15], 100), 0);
+      if (settings[16]) temperatureEquatorInput.value = temperatureEquatorOutput.value = settings[16];
+      if (settings[17]) temperaturePoleInput.value = temperaturePoleOutput.value = settings[17];
+      if (settings[18]) precInput.value = precOutput.value = settings[18];
+      if (settings[19]) options.winds = JSON.parse(settings[19]);
+      if (settings[20]) mapName.value = settings[20];
     }()
 
     void function parseConfiguration() {
@@ -929,6 +929,14 @@ function parseLoadedData(data) {
 
         // v 1.22 changed state neighbors from Set object to array
         BurgsAndStates.collectStatistics();
+      }
+
+      if (version < 1.3) {
+        // v 1.3 added ports attribute to pack.features
+        for (const f of pack.features) {
+          if (!f.i) continue;
+          f.ports = pack.burgs.filter(b => !b.removed && b.port === f.i).length;
+        }
       }
 
     }()

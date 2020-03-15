@@ -26,6 +26,7 @@
     collectStatistics();
     assignColors();
 
+    generateCampaigns();
     generateDiplomacy();
     Routes.draw(capitalRoutes, townRoutes, oceanRoutes);
     drawBurgs();
@@ -145,15 +146,20 @@
       if (!b.i) continue;
       const i = b.cell;
 
-      // asign port status: capital with any harbor and towns with good harbors
-      const port = (b.capital && cells.harbor[i]) || cells.harbor[i] === 1;
-      b.port = port ? cells.f[cells.haven[i]] : 0; // port is defined by feature id it lays on
+      // asign port status
+      if (cells.haven[i]) {
+        const f = cells.f[cells.haven[i]]; // water body id
+        // port is a capital with any harbor OR town with good harbor
+        const port = pack.features[f].cells > 1 && ((b.capital && cells.harbor[i]) || cells.harbor[i] === 1);
+        b.port = port ? f : 0; // port is defined by water body id it lays on
+        if (port) {pack.features[f].ports += 1; pack.features[b.feature].ports += 1;}
+      } else b.port = 0;
 
       // define burg population (keep urbanization at about 10% rate)
       b.population = rn(Math.max((cells.s[i] + cells.road[i]) / 8 + b.i / 1000 + i % 100 / 1000, .1), 3);
       if (b.capital) b.population = rn(b.population * 1.3, 3); // increase capital population
 
-      if (port) {
+      if (b.port) {
         b.population = b.population * 1.3; // increase port population
         const e = cells.v[i].filter(v => vertices.c[v].some(c => c === cells.haven[i])); // vertices of common edge
         b.x = rn((vertices.p[e[0]][0] + vertices.p[e[1]][0]) / 2, 2);
@@ -164,7 +170,7 @@
       b.population = rn(b.population * gauss(2,3,.6,20,3), 3);
 
       // shift burgs on rivers semi-randomly and just a bit
-      if (!port && cells.r[i]) {
+      if (!b.port && cells.r[i]) {
         const shift = Math.min(cells.fl[i]/150, 1);
         if (i%2) b.x = rn(b.x + shift, 2); else b.x = rn(b.x - shift, 2);
         if (cells.r[i]%2) b.y = rn(b.y + shift, 2); else b.y = rn(b.y - shift, 2);
@@ -173,11 +179,11 @@
 
     // de-assign port status if it's the only one on feature
     for (const f of pack.features) {
-      if (!f.i || f.land) continue;
-      const onFeature = pack.burgs.filter(b => b.port === f.i);
-      if (onFeature.length === 1) {
-        onFeature[0].port = 0;
-      }
+      if (!f.i || f.land || f.ports !== 1) continue;
+      const port = pack.burgs.find(b => b.port === f.i);
+      port.port = 0;
+      f.port = 0;
+      pack.features[port.feature].ports -= 1;
     }
 
     console.timeEnd("specifyBurgs");
@@ -589,6 +595,20 @@
     console.timeEnd("assignColors");
   }
 
+  // generate historical wars
+  const generateCampaigns = function() {
+    const wars = {"War":4, "Conflict":2, "Campaign":4, "Invasion":2, "Rebellion":2, "Conquest":2, "Intervention":1, "Expedition":1, "Crusade":1};
+
+    pack.states.forEach(s => {
+      if (!s.i || s.removed) return;
+      s.campaigns = (s.neighbors||[0]).map(i => {
+        const name = i && P(.8) ? pack.states[i].name : Names.getCultureShort(s.culture);
+        const start = gauss(options.year-100, 150, 1, options.year-6), end = start + gauss(4, 5, 1, options.year - start - 1);
+        return {name:getAdjective(name) + " " + rw(wars), start, end};
+      }).sort((a, b) => a.start - b.start);
+    });
+  }
+
   // generate Diplomatic Relationships
   const generateDiplomacy = function() {
     console.time("generateDiplomacy");
@@ -666,6 +686,9 @@
 
       // start a war
       const war = [`${an}-${trimVowels(dn)}ian War`,`${an} declared a war on its rival ${dn}`];
+      const start = options.year - gauss(2, 2, 0, 5);
+      states[attacker].campaigns.push({name: `${trimVowels(dn)}ian War`, start, end:options.year});
+      states[defender].campaigns.push({name: `${trimVowels(an)}ian War`, start, end:options.year});
 
       // attacker vassals join the war
       ad.forEach((r, d) => {if (r === "Suzerain") {
@@ -997,6 +1020,6 @@
 
   return {generate, expandStates, normalizeStates, assignColors,
     drawBurgs, specifyBurgs, defineBurgFeatures, drawStateLabels, collectStatistics,
-    generateDiplomacy, defineStateForms, getFullName, generateProvinces};
+    generateCampaigns, generateDiplomacy, defineStateForms, getFullName, generateProvinces};
 
 })));

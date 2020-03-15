@@ -58,6 +58,7 @@ let labels = viewbox.append("g").attr("id", "labels");
 let icons = viewbox.append("g").attr("id", "icons");
 let burgIcons = icons.append("g").attr("id", "burgIcons");
 let anchors = icons.append("g").attr("id", "anchors");
+let armies = viewbox.append("g").attr("id", "armies");
 let markers = viewbox.append("g").attr("id", "markers").style("display", "none");
 let fogging = viewbox.append("g").attr("id", "fogging-cont").attr("mask", "url(#fog)")
   .append("g").attr("id", "fogging").style("display", "none");
@@ -101,8 +102,7 @@ let grid = {}; // initial grapg based on jittered square grid and data
 let pack = {}; // packed graph and data
 let seed, mapHistory = [], elSelected, modules = {}, notes = [];
 let customization = 0; // 0 - no; 1 = heightmap draw; 2 - states draw; 3 - add state/burg; 4 - cultures draw
-let mapCoordinates = {}; // map coordinates on globe
-let winds = [225, 45, 225, 315, 135, 315]; // default wind directions
+
 let biomesData = applyDefaultBiomesSystem();
 let nameBases = Names.getNameBases(); // cultures-related data
 const fonts = ["Almendra+SC", "Georgia", "Arial", "Times+New+Roman", "Comic+Sans+MS", "Lucida+Sans+Unicode", "Courier+New"]; // default web-safe fonts
@@ -113,6 +113,23 @@ const lineGen = d3.line().curve(d3.curveBasis); // d3 line generator with defaul
 // d3 zoom behavior
 let scale = 1, viewX = 0, viewY = 0;
 const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", zoomed);
+
+// default options
+let options = {}; // options object
+let mapCoordinates = {}; // map coordinates on globe
+options.winds = [225, 45, 225, 315, 135, 315]; // default wind directions
+options.military = [
+  {name:"infantry", rural:.25, urban:.2, crew:1, type:"melee", separate:0},
+  {name:"archers", rural:.12, urban:.2, crew:1, type:"ranged", separate:0},
+  {name:"cavalry", rural:.12, urban:.03, crew:3, type:"mounted", separate:0},
+  {name:"artillery", rural:0, urban:.03, crew:8, type:"machinery", separate:0},
+  {name:"fleet", rural:0, urban:.015, crew:100, type:"naval", separate:1}
+];
+
+// woldbuilding options
+options.year = rand(100, 2000); // current year
+options.era = Names.getBaseShort(P(.7) ? 1 : rand(nameBases.length)) + " Era"; // current era name, global for all cultures
+options.eraShort = options.era[0] + "E"; // short name for era
 
 applyStoredOptions();
 let graphWidth = +mapWidthInput.value, graphHeight = +mapHeightInput.value; // voronoi graph extention, cannot be changed arter generation
@@ -516,7 +533,8 @@ function generate() {
     BurgsAndStates.drawStateLabels();
 
     Rivers.specify();
-    //calculateMilitaryForces();
+
+    Military.generate();
     addMarkers();
     addZones();
     Names.getMapName();
@@ -730,7 +748,8 @@ function calculateTemperatures() {
     const lat = Math.abs(mapCoordinates.latN - y / graphHeight * mapCoordinates.latT);
     const initTemp = tEq - lat / 90 * tDelta;
     for (let i = r; i < r+grid.cellsX; i++) {
-      cells.temp[i] = initTemp - convertToFriendly(cells.h[i]);
+      const temp = initTemp - convertToFriendly(cells.h[i]);
+      cells.temp[i] = Math.max(Math.min(temp, 127), -128);
     }
   });
 
@@ -772,10 +791,10 @@ function generatePrecipitation() {
     const band = (Math.abs(lat) - 1) / 5 | 0;
     const latMod = lalitudeModifier[band];
     const tier = Math.abs(lat - 89) / 30 | 0; // 30d tiers from 0 to 5 from N to S
-    if (winds[tier] > 40 && winds[tier] < 140) westerly.push([c, latMod, tier]);
-    else if (winds[tier] > 220 && winds[tier] < 320) easterly.push([c + cellsX -1, latMod, tier]);
-    if (winds[tier] > 100 && winds[tier] < 260) northerly++;
-    else if (winds[tier] > 280 || winds[tier] < 80) southerly++;
+    if (options.winds[tier] > 40 && options.winds[tier] < 140) westerly.push([c, latMod, tier]);
+    else if (options.winds[tier] > 220 && options.winds[tier] < 320) easterly.push([c + cellsX -1, latMod, tier]);
+    if (options.winds[tier] > 100 && options.winds[tier] < 260) northerly++;
+    else if (options.winds[tier] > 280 || options.winds[tier] < 80) southerly++;
   });
 
   // distribute winds by direction
@@ -1057,7 +1076,7 @@ function reMarkFeatures() {
     if (type === "lake") group = defineLakeGroup(start, cellNumber);
     else if (type === "ocean") group = "ocean";
     else if (type === "island") group = defineIslandGroup(start, cellNumber);
-    features.push({i, land, border, type, cells: cellNumber, firstCell: start, group});
+    features.push({i, land, border, type, cells: cellNumber, firstCell: start, group, ports:0});
     queue[0] = cells.f.findIndex(f => !f); // find unmarked cell
   }
 
@@ -1163,88 +1182,11 @@ function rankCells() {
   console.timeEnd('rankCells');
 }
 
-// calculate army and fleet based on state cells polulation
-function calculateMilitaryForces() {
-  const cells = pack.cells, states = pack.states;
-  const valid = states.filter(s => s.i && !s.removed); // valid states
-  valid.forEach(s => s.military = {infantry:0, cavalry:0, archers:0, reserve:0, fleet:0});
-
-  for (const i of cells.i) {
-    const s = states[cells.state[i]]; // cell state
-    if (!s.i || s.removed) continue;
-
-    let m = cells.pop[i] / 100; // basic army is 1% of rural population
-    if (cells.culture[i] !== s.culture) m = s.form === "Union" ? m / 1.2 : m / 2; // non-dominant culture
-    if (cells.religion[i] !== cells.religion[s.center]) m = s.form === "Theocracy" ? m / 2.2 : m / 1.4; // non-dominant religion
-    if (cells.f[i] !== cells.f[s.center]) m = s.type === "Naval" ? m / 1.2 : m / 1.8; // different landmass
-
-    let infantry = m * .5; // basic infantry is 50% of army
-    let archers = m * .25; // basic archers is 25% of army
-    let cavalry = m * .25; // basic cavalry is 25% of army
-
-    if ([1, 2, 3, 4].includes(cells.biome[i])) {cavalry *= 3; infantry /= 5; archers /= 2;} else // "nomadic" biomes have lots of cavalry
-    if ([7, 8, 9, 12].includes(cells.biome[i])) {cavalry /= 2.5; infantry *= 1.2; archers *= 1.2;} // "wet" biomes have reduced number of cavalry
-
-    s.military.infantry += infantry;
-    s.military.archers += archers;
-    s.military.cavalry += cavalry;
-    s.military.reserve += m * 3 + cells.pop[i] * .02; // reserve is ~5% of population
-  }
-
-  for (const b of pack.burgs) {
-    if (!b.i || b.removed || !b.state) continue;
-    const s = states[b.state]; // burg state
-
-    let m = b.population / 50; // basic army is 2% of urban population
-    if (b.capital) m *= 2; // capital has household troops
-    if (b.culture !== s.culture) m = s.form === "Union" ? m / 1.2 : m / 2; // non-dominant culture
-    if (cells.religion[b.cell] !== cells.religion[s.center]) m = s.form === "Theocracy" ? m / 2.2 : m / 1.4; // non-dominant religion
-    if (cells.f[b.cell] !== cells.f[s.center]) m = s.type === "Naval" ? m / 1.2 : m / 1.8; // different landmass
-
-    let infantry = m * .6; // basic infantry is 60% of army
-    let archers = m * .3; // basic archers is 3% of army
-    let cavalry = m * .1; // basic cavalry is 10% of army
-
-    const biome = cells.biome[b.cell]; // burg biome
-    if ([1, 2, 3, 4].includes(biome)) {cavalry *= 3; infantry /= 2;} else // "nomadic" biomes have lots of cavalry
-    if ([7, 8, 9, 12].includes(biome)) {cavalry /= 4; infantry *= 1.2; archers *= 1.4;} // "wet" biomes have reduced number of cavalry
-
-    s.military.infantry += infantry;
-    s.military.archers += archers;
-    s.military.cavalry += cavalry;
-    s.military.reserve += m * 2 + b.population * .01; // reserve is ~5% of population
-
-    if (!b.port) continue; // only ports have fleet
-    let ships = b.capital ? b.population / 3 : b.population / 5; // ~1 ship per 5 population points
-    if (s.type === "Naval") ships *= 1.8; // "naval" states have more ships
-    s.military.fleet += ~~ships + +P(ships % 1);
-  }
-
-  const expn = d3.sum(valid.map(s => s.expansionism)); // total expansion
-  const area = d3.sum(valid.map(s => s.area)); // total area
-  const rate = {x:0, Ally:-.2, Friendly:-.1, Neutral:0, Suspicion:.1, Enemy:1, Unknown:0, Rival:.5, Vassal:.5, Suzerain:-.5};
-
-  valid.forEach(s => {
-    const m = s.military, d = s.diplomacy;
-    const expansionRate = Math.min(Math.max((s.expansionism / expn) / (s.area / area), .25), 4); // how much state expansionism is relized
-    const diplomacyRate = d.some(d => d === "Enemy") ? 1 : d.some(d => d === "Rival") ? .8 : d.some(d => d === "Suspicion") ? .5 : .1; // peacefulness
-    const neighborsRate = Math.min(Math.max(s.neighbors.map(n => n ? pack.states[n].diplomacy[s.i] : "Suspicion").reduce((s, r) => s += rate[r], .5), .3), 3); // neighbors rate
-    m.alert = rn(expansionRate * diplomacyRate * neighborsRate, 2); // war alert rate (army modifier)
-
-    m.infantry = rn(m.infantry * m.alert, 3);
-    m.cavalry = rn(m.cavalry * m.alert, 3);
-    m.archers = rn(m.archers * m.alert, 3);
-    m.reserve = rn(m.reserve, 3);
-  });
-
-  console.table(valid.map(s=>[s.name, s.military.alert, s.military.infantry, s.military.archers, s.military.cavalry, s.military.reserve, rn(s.military.reserve/(s.urban+s.rural)*100,2)+"%", s.military.fleet]));
-}
-
 // generate some markers
 function addMarkers(number = 1) {
   if (!number) return;
   console.time("addMarkers");
-  const cells = pack.cells;
+  const cells = pack.cells, states = pack.states;
 
   void function addVolcanoes() {
     let mounts = Array.from(cells.i).filter(i => cells.h[i] > 70).sort((a, b) => cells.h[b] - cells.h[a]);
@@ -1306,7 +1248,7 @@ function addMarkers(number = 1) {
         .attr("data-size", 1).attr("width", 30).attr("height", 30);
       const resource = rw(resources);
       const burg = pack.burgs[cells.burg[cell]];
-      const name = `${burg.name} - ${resource} mining town`;
+      const name = `${burg.name} — ${resource} mining town`;
       const population = rn(burg.population * populationRate.value * urbanization.value);
       const legend = `${burg.name} is a mining town of ${population} people just nearby the ${resource} mine`;
       notes.push({id, name, legend});
@@ -1412,9 +1354,8 @@ function addMarkers(number = 1) {
   }()
 
   void function addBattlefields() {
-    let battlefields = Array.from(cells.i).filter(i => cells.pop[i] > 2 && cells.h[i] < 50 && cells.h[i] > 25);
+    let battlefields = Array.from(cells.i).filter(i => cells.state[i] && cells.pop[i] > 2 && cells.h[i] < 50 && cells.h[i] > 25);
     let count = battlefields.length < 100 ? 0 : Math.ceil(battlefields.length / 500 * number);
-    const era = Names.getCulture(0, 3, 7, "", 0) + " Era";
     if (count) addMarker("battlefield", "⚔", 50, 50, 20);
 
     while (count) {
@@ -1426,9 +1367,11 @@ function addMarkers(number = 1) {
         .attr("data-x", x).attr("data-y", y).attr("x", x - 15).attr("y", y - 30)
         .attr("data-size", 1).attr("width", 30).attr("height", 30);
 
+      const campaign = ra(states[cells.state[cell]].campaigns);
+      const date = generateDate(campaign.start, campaign.end);
       const name = Names.getCulture(cells.culture[cell]) + " Battlefield";
-      const date = new Date(rand(100, 1000),rand(12),rand(31)).toLocaleDateString("en", {year:'numeric', month:'long', day:'numeric'}) + " " + era;
-      notes.push({id, name, legend:`A historical battlefield spot. \r\nDate: ${date}`});
+      const legend = `A historical battle of the ${campaign.name}. \r\nDate: ${date} ${options.era}`;
+      notes.push({id, name, legend});
       count--;
     }
   }()
@@ -1800,7 +1743,7 @@ const regenerateMap = debounce(function() {
 
 // clear the map
 function undraw() {
-  viewbox.selectAll("path, circle, polygon, line, text, use, #zones > g, #ruler > g").remove();
+  viewbox.selectAll("path, circle, polygon, line, text, use, #zones > g, #armies > g, #ruler > g").remove();
   defs.selectAll("path, clipPath").remove();
   notes = [];
   unfog();

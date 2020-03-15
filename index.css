@@ -10,16 +10,36 @@ body {
 	height: 100%;
 }
 
+t {
+	pointer-events: none;
+}
+
 input, select, button {
 	font-size: 1em;
 }
 
+input, select, textarea {
+	border: 0.5px solid #DBDFE6;
+	border-radius: .5px;
+	box-sizing: border-box;
+}
+
 select {
 	height: 1.6em;
+	border-top-color: #abadb3;
+	padding: 0;
+	text-indent: 0px;
 }
 
 input {
-	height: 1.1em;
+	border-top-color: #abadb3;
+	padding: 2px;
+	text-indent: 1px;
+}
+
+textarea {
+	padding: 2px;
+	text-indent: 1px;
 }
 
 #map {
@@ -50,11 +70,7 @@ input, button, select, a, textarea {
 	outline: none;
 }
 
-button, select, a {
-	cursor: pointer;
-}
-
-.pointer {
+button, select, a, .pointer {
 	cursor: pointer;
 }
 
@@ -79,7 +95,7 @@ button, select, a {
 	fill-rule: evenodd;
 }
 
-#lakes, #coastline {
+#lakes, #coastline, #armies {
 	cursor: pointer;
 }
 
@@ -101,7 +117,7 @@ button, select, a {
 	stroke-linejoin: round;
 }
 
-#regions, #provs, #terrs, #biomes, #tooltip, #temperature, #texture, #landmass	{
+#regions, #cults, #relig, #biomes, #provs, #terrs, #biomes, #tooltip, #temperature, #texture, #landmass {
 	pointer-events: none;
 }
 
@@ -193,6 +209,29 @@ i.icon-lock {
 	cursor: pointer;
 }
 
+#armies rect {
+	stroke-width: .3;
+	stroke: #000;
+}
+
+#armies text {
+	pointer-events: none;
+	user-select: none;
+	stroke: none;
+	fill: #fff;
+	text-shadow: 0 0 4px #000;
+	font-size: 6px;
+	dominant-baseline: central;
+	text-anchor: middle;
+	font-family: Helvetica;
+}
+
+#regimentBase {
+	stroke-width: .3;
+	stroke: #000;
+	cursor: move;
+}
+
 .chartInfo {
 	text-align: center;
 	font-family: sans-serif;
@@ -231,8 +270,8 @@ i.icon-lock {
 	marker-end: url(#end-arrow);
 	stroke: #333333;
 	stroke-dasharray: 5;
-	stroke-dashoffset: 100;
-	animation: dash 8s linear backwards;
+	stroke-dashoffset: 1000;
+	animation: dash 80s linear backwards;
 }
 
 @keyframes dash {
@@ -375,6 +414,8 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 	-moz-appearance: none;
 	-webkit-appearance: none;
 	margin-left: 0;
+	border: 0;
+	padding: 0;
 }
 
 #options input[type="range"]::-webkit-slider-thumb {
@@ -412,17 +453,12 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 }
 
 #options input[type="number"] {
-	height: 1.3em;
-	line-height: 1.2em;
 	font-size: .8em;
 }
 
 #options input[type="text"] {
 	border: 0px;
-	padding-left: 3px;
 	width: 62%;
-	height: 1.1em;
-	line-height: 1.3em;
 	font-size: smaller;
 }
 
@@ -441,8 +477,8 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 
 #optionsContent input[type=number]::-webkit-inner-spin-button, 
 #optionsContent input[type=number]::-webkit-outer-spin-button { 
-	-webkit-appearance: none; 
-	margin: 0; 
+	-webkit-appearance: none;
+	margin: 0;
 }
 
 #optionsContent input[type="number"]:hover {
@@ -450,8 +486,6 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 }
 
 #optionsContent input.paired {
-	width: 2.5em;
-	margin-left: -.3em;
 	text-align: center;
 	background-color: white;
 }
@@ -460,8 +494,6 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 	width: 100%;
   background-color: white;
   text-align: left;
-  padding-left: 0.4em;
-  box-sizing: border-box;
   height: 1.5em;
 }
 
@@ -509,7 +541,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 #styleElements input[type="number"] {
 	width: 52px;
 	border: 0;
-	padding-left: 2.5px;	
+	padding-left: 2.5px;
 }
 
 #sticked button {
@@ -1006,6 +1038,7 @@ i.resetButton:active {
 }
 
 .ui-dialog input[type="range"] {
+	padding: 0;
 	height: 2px;
 	background: #d4d4d4;
 	top: -.35em;
@@ -1035,8 +1068,7 @@ i.resetButton:active {
 }
 
 .ui-dialog input[type="number"] {
-	width: 2.5em;
-	height: 1.1em;
+	width: 3.5em;
 }
 
 .ui-dialog .disabled {
@@ -1136,6 +1168,9 @@ div.header > div {
 	font-size: .9em;
 	display: inline-block;
 	position: sticky;
+	white-space: nowrap;
+	overflow-x: hidden;
+	vertical-align: bottom;
 }
 
 .sortable {
@@ -1182,15 +1217,8 @@ div.states div {
 	width: 3.2em;
 }
 
-div.states .statePower {
-	width: 3.2em;
-	line-height: 1.4em;
-	-moz-appearance: textfield;
-}
-
-div.states .biomeHabitability {
-	width: 3.6em;
-	line-height: 1.4em;
+div.states .statePower, div.states .biomeHabitability {
+	width: 4em;
 	-moz-appearance: textfield;
 }
 
@@ -1209,13 +1237,9 @@ div.states>.statePopulation {
 div.states .icon-pencil,
 div.states .icon-trash-empty,
 div.states .icon-eye,
-div.states .icon-pin {
-	cursor: pointer;
-}
-
+div.states .icon-pin,
 div.states .icon-flag-empty {
 	cursor: pointer;
-	font-size: .9em;
 }
 
 div.states .icon-resize-vertical {
@@ -1332,16 +1356,20 @@ div.states>input.riverType {
 	line-height: 1.4em;
 }
 
-#stateNameEditor input,
-#provinceNameEditor input {
-	padding-left: .3em;
-}
-
 #stateNameEditor div.label,
 #provinceNameEditor div.label,
-#burgBody div.label {
+#burgBody div.label,
+#regimentBody div.label {
 	display: inline-block;
   width: 5.5em;
+}
+
+#regimentBody div {
+	margin: .1em 0;
+}
+
+#regimentBody input[type="number"] {
+	width: 5em;
 }
 
 .burgFeature {
@@ -1423,16 +1451,17 @@ rect.fillRect {
 	stroke-width: 2;
 }
 
+#militaryHeader > div {
+	width: 5.2em;
+}
+
+#militaryBody div.states > input {
+	-moz-appearance: textfield;
+}
+
+#militaryBody div.states > input,
 #militaryBody div.states > div {
-	width: 4em;
-}
-
-#militaryBody div.states > input.militaryArmy {
 	width: 5em;
-}
-
-#militaryBody div.states > input.militaryFleet {
-	width: 3.3em;
 }
 
 #picker text {
@@ -1522,6 +1551,7 @@ rect.fillRect {
 
 #unitsBody>div>* {
 	display: inline-block;
+	margin-bottom: .2em;
 }
 
 .unitsHeader {
@@ -1550,7 +1580,6 @@ rect.fillRect {
 	width: 11.32em;
 }
 
-
 #unitsBody>div>input[type="number"] {
 	width: 3.4em;
 }
@@ -1570,8 +1599,9 @@ rect.fillRect {
 }
 
 #barBackColor {
-	width: 3.45em;
+	width: 3.5em;
 	padding: 0px;
+	height: 1.2em;
 }
 
 #ruler {
@@ -1625,6 +1655,20 @@ rect.fillRect {
 	fill: #353540;
 	text-anchor: middle;
 	font-family: Georgia;
+}
+
+#militaryOptionsTable select {
+	border: 1px solid #d4d4d4;
+}
+
+#militaryOptionsTable input {
+	width: 9em;
+	padding-left: 3px;
+	border: 1px solid #d4d4d4;
+}
+
+#militaryOptionsTable input[type="number"] {
+	width: 4em;
 }
 
 #gridOverlay {

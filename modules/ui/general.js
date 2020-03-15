@@ -39,10 +39,14 @@ function clearMainTip() {
   tooltip.innerHTML = "";
 }
 
+// show tip at the bottom of the screen, consider possible translation
 function showDataTip(e) {
   if (!e.target) return;
-  if (e.target.dataset.tip) {tip(e.target.dataset.tip); return;};
-  if (e.target.parentNode.dataset.tip) tip(e.target.parentNode.dataset.tip);
+  let dataTip = e.target.dataset.tip;
+  if (!dataTip && e.target.parentNode.dataset.tip) dataTip = e.target.parentNode.dataset.tip;
+  if (!dataTip) return;
+  const tooltip = lang === "en" ? dataTip : translate(e.target.dataset.t || e.target.parentNode.dataset.t, dataTip);
+  tip(tooltip);
 }
 
 function moved() {
@@ -84,6 +88,7 @@ function showMapTooltip(point, e, i, g) {
   const land = pack.cells.h[i] >= 20;
 
   // specific elements
+  if (group === "armies") {tip(e.target.dataset.name + ". Click to edit"); return;}
   if (group === "rivers") {tip(getRiverName(e.target.id) + "Click to edit"); return;}
   if (group === "routes") {tip("Click to edit the Route"); return;}
   if (group === "terrain") {tip("Click to edit the Relief Icon"); return;}
@@ -132,14 +137,15 @@ function updateCellInfo(point, i, g) {
   const cells = pack.cells;
   const x = infoX.innerHTML = rn(point[0]);
   const y = infoY.innerHTML = rn(point[1]);
+  const f = cells.f[i];
   infoLat.innerHTML = toDMS(mapCoordinates.latN - (y / graphHeight) * mapCoordinates.latT, "lat");
   infoLon.innerHTML = toDMS(mapCoordinates.lonW + (x / graphWidth) * mapCoordinates.lonT, "lon");
 
   infoCell.innerHTML = i;
   const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
   infoArea.innerHTML = cells.area[i] ? si(cells.area[i] * distanceScaleInput.value ** 2) + unit : "n/a";
-  const h = pack.cells.h[i] < 20 ? grid.cells.h[pack.cells.g[i]] : pack.cells.h[i];
-  infoHeight.innerHTML = getFriendlyHeight(point) + " (" + h + ")";
+  infoEvelation.innerHTML = getElevation(pack.features[f], pack.cells.h[i]);
+  infoDepth.innerHTML = getDepth(pack.features[f], pack.cells.h[i], point);
   infoTemp.innerHTML = convertTemperature(grid.cells.temp[g]);
   infoPrec.innerHTML = cells.h[i] >= 20 ? getFriendlyPrecipitation(i) : "n/a";
   infoRiver.innerHTML = cells.h[i] >= 20 && cells.r[i] ? getRiverInfo(cells.r[i]) : "no";
@@ -149,7 +155,6 @@ function updateCellInfo(point, i, g) {
   infoReligion.innerHTML = cells.religion[i] ? `${pack.religions[cells.religion[i]].name} (${cells.religion[i]})` : "no";
   infoPopulation.innerHTML = getFriendlyPopulation(i);
   infoBurg.innerHTML = cells.burg[i] ? pack.burgs[cells.burg[i]].name + " (" + cells.burg[i] + ")" : "no";
-  const f = cells.f[i];
   infoFeature.innerHTML = f ? pack.features[f].group + " (" + f + ")" : "n/a";
   infoBiome.innerHTML = biomesData.name[cells.biome[i]];
 }
@@ -164,6 +169,26 @@ function toDMS(coord, c) {
   return degrees + "° " + minutes + "′ " + seconds + "″ " + cardinal;
 }
 
+// get surface elevation
+function getElevation(f, h) {
+  if (f.land) return getHeight(h) + " (" + h + ")"; // land: usual height
+  if (f.border) return "0 " + heightUnit.value; // ocean: 0
+
+  // lake: lowest coast height - 1
+  const lakeCells = Array.from(pack.cells.i.filter(i => pack.cells.f[i] === f.i));
+  const heights = lakeCells.map(i => pack.cells.c[i].map(c => pack.cells.h[c])).flat().filter(h => h > 19);
+  const elevation = (d3.min(heights)||20) - 1;
+  return getHeight(elevation) + " (" + elevation + ")";
+}
+
+// get water depth
+function getDepth(f, h, p) {
+  if (f.land) return "0 " + heightUnit.value; // land: 0
+  if (!f.border) return getHeight(h, "abs"); // lake: pack abs height
+  const gridH = grid.cells.h[findGridCell(p[0], p[1])];
+  return getHeight(gridH, "abs"); // ocean: grig height
+}
+
 // get user-friendly (real-world) height value from map data
 function getFriendlyHeight(p) {
   const packH = pack.cells.h[findCell(p[0], p[1])];
@@ -172,7 +197,7 @@ function getFriendlyHeight(p) {
   return getHeight(h);
 }
 
-function getHeight(h) {
+function getHeight(h, abs) {
   const unit = heightUnit.value;
   let unitRatio = 3.281; // default calculations are in feet
   if (unit === "m") unitRatio = 1; // if meter
@@ -182,6 +207,7 @@ function getHeight(h) {
   if (h >= 20) height = Math.pow(h - 18, +heightExponentInput.value);
   else if (h < 20 && h > 0) height = (h - 20) / h * 50;
 
+  if (abs) height = Math.abs(height);
   return rn(height * unitRatio) + " " + unit;
 }
 
@@ -216,7 +242,7 @@ document.querySelectorAll("[data-locked]").forEach(function(e) {
     else tip("Click to lock the option and always use the current value on new map generation");
     event.stopPropagation();
   });
-  
+
   e.addEventListener("click", function(event) {
     const id = (this.id).slice(5);
     if (this.className === "icon-lock") unlock(id);
@@ -341,7 +367,7 @@ document.addEventListener("keyup", event => {
   else if (shift && key === 79) editNotes(); // Shift + "O" to edit Notes
   else if (shift && key === 84) overviewBurgs(); // Shift + "T" to open Burgs overview
   else if (shift && key === 86) overviewRivers(); // Shift + "V" to open Rivers overview
-  //else if (shift && key === 77) overviewMilitary(); // Shift + "M" to open Military overview
+  else if (shift && key === 77) overviewMilitary(); // Shift + "M" to open Military overview
   else if (shift && key === 69) viewCellDetails(); // Shift + "E" to open Cell Details
 
   else if (shift && key === 49) toggleAddBurg(); // Shift + "1" to click to add Burg
