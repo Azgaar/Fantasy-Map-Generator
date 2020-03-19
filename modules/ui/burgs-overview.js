@@ -112,7 +112,7 @@ function overviewBurgs() {
 
   function getCultureOptions(culture) {
     let options = "";
-    pack.cultures.forEach(c => options += `<option ${c.i === culture ? "selected" : ""} value="${c.i}">${c.name}</option>`);
+    pack.cultures.filter(c => !c.removed).forEach(c => options += `<option ${c.i === culture ? "selected" : ""} value="${c.i}">${c.name}</option>`);
     return options;
   }
 
