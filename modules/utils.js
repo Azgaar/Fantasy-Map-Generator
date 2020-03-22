@@ -250,11 +250,11 @@ function round(s, d = 1) {
 
 // corvent number to short string with SI postfix
 function si(n) {
-  if (n >= 1e9) {return rn(n / 1e9, 1) + "B";}
-  if (n >= 1e8) {return rn(n / 1e6) + "M";}
-  if (n >= 1e6) {return rn(n / 1e6, 1) + "M";}
-  if (n >= 1e4) {return rn(n / 1e3) + "K";}
-  if (n >= 1e3) {return rn(n / 1e3, 1) + "K";}
+  if (n >= 1e9) return rn(n / 1e9, 1) + "B";
+  if (n >= 1e8) return rn(n / 1e6) + "M";
+  if (n >= 1e6) return rn(n / 1e6, 1) + "M";
+  if (n >= 1e4) return rn(n / 1e3) + "K";
+  if (n >= 1e3) return rn(n / 1e3, 1) + "K";
   return rn(n);
 }
 

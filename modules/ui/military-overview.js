@@ -25,9 +25,8 @@ function overviewMilitary() {
   document.getElementById("militaryExport").addEventListener("click", downloadMilitaryData);
 
   body.addEventListener("change", function(ev) {
-    const el = ev.target, line = el.parentNode, state = +line.dataset.id, type = el.dataset.type;
-    if (type && type !== "alert") changeForces(state, line, type, +el.value); else
-    if (type === "alert") changeAlert(state, line, +el.value);
+    const el = ev.target, line = el.parentNode, state = +line.dataset.id;
+    changeAlert(state, line, +el.value);
   });
 
   // update military types in header and tooltips
@@ -57,7 +56,7 @@ function overviewMilitary() {
       const rate = total / population * 100;
 
       const sortData = options.military.map(u => `data-${u.name}="${getForces(u)}"`).join(" ");
-      const lineData = options.military.map(u => `<input data-type="${u.name}" data-tip="State ${u.name} units number" type="number" min=0 step=1 value="${getForces(u)}">`).join(" ");
+      const lineData = options.military.map(u => `<div data-type="${u.name}" data-tip="State ${u.name} units number">${getForces(u)}</div>`).join(" ");
 
       lines += `<div class="states" data-id=${s.i} data-state="${s.name}" ${sortData} data-total="${total}" data-population="${population}" data-rate="${rate}" data-alert="${s.alert}">
         <svg data-tip="${s.fullName}" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${s.color}" class="fillRect"></svg>
@@ -66,7 +65,7 @@ function overviewMilitary() {
         <div data-type="total" data-tip="Total state military personnel (considering crew)"><b>${si(total)}</b></div>
         <div data-tip="State population">${si(population)}</div>
         <div data-type="rate" data-tip="Military personnel rate (% of state population). Depends on war alert">${rn(rate, 2)}%</div>
-        <input data-type="alert" data-tip="War Alert. Modifier to military forces number, depends of political situation" type="number" min=0 step=.01 value="${rn(s.alert, 2)}">
+        <input data-type="alert" data-tip="War Alert. Editable modifier to military forces number, depends of political situation" type="number" min=0 step=.01 value="${rn(s.alert, 2)}">
       </div>`;
     }
     body.insertAdjacentHTML("beforeend", lines);
@@ -78,30 +77,27 @@ function overviewMilitary() {
     applySorting(militaryHeader);
   }
 
-  function changeForces(state, line, type, value) {
-    const s = pack.states[state];
-    if (!s.military.alert) {tip("Value won't be applied as War Alert is 0. Change Alert value to positive first", false, "error"); return;}
-
-    line.dataset[type] = value;
-    s.military[type] = value / populationRate.value / s.military.alert;
-    updateTotal(s.military, line);
-    updateFooter();
-  }
-
   function changeAlert(state, line, alert) {
     const s = pack.states[state];
-    s.military.alert = line.dataset.alert = alert;
-    const getForces = u => rn(s.military[u.name] * alert * populationRate.value)||0;
-    options.military.forEach(u => line.dataset[u.name] = line.querySelector(`input[data-type='${u.name}']`).value = getForces(u));
-    updateTotal(s.military, line);
-    updateFooter();
-  }
+    const dif = s.alert || alert ? alert / s.alert : 0; // modifier
+    s.alert = line.dataset.alert = alert;
 
-  function updateTotal(m, line) {
-    line.dataset.total = rn(d3.sum(options.military.map(u => (m[u.name]||0) * u.crew)) * m.alert * populationRate.value);
-    line.dataset.rate = line.dataset.total / line.dataset.population * 100;
-    line.querySelector("div[data-type='total']>b").innerHTML = si(line.dataset.total);
-    line.querySelector("div[data-type='rate']").innerHTML = rn(line.dataset.rate, 2) + "%";
+    s.military.forEach(r => {
+      Object.keys(r.u).forEach(u => r.u[u] = rn(r.u[u] * dif)); // change units value
+      r.a = d3.sum(Object.values(r.u)); // change total
+      armies.select(`g>g#regiment${s.i}-${r.i}>text`).text(Military.getTotal(r)); // change icon text
+    });
+
+    const getForces = u => s.military.reduce((s, r) => s+(r.u[u.name]||0), 0);
+    options.military.forEach(u => line.dataset[u.name] = line.querySelector(`div[data-type='${u.name}']`).innerHTML = getForces(u));
+
+    const population = rn((s.rural + s.urban * urbanization.value) * populationRate.value);
+    const total = line.dataset.total = options.military.reduce((s, u) => s + getForces(u) * u.crew, 0);
+    const rate = line.dataset.rate = total / population * 100;
+    line.querySelector("div[data-type='total']>b").innerHTML = si(total);
+    line.querySelector("div[data-type='rate']").innerHTML = rn(rate, 2) + "%";
+
+    updateFooter();
   }
 
   function updateFooter() {
@@ -138,7 +134,7 @@ function overviewMilitary() {
   }
 
   function stateHighlightOff() {
-    debug.selectAll(".highlight").each(function(el) {
+    debug.selectAll(".highlight").each(function() {
       d3.select(this).call(removePath);
     });
   }
@@ -159,7 +155,7 @@ function overviewMilitary() {
         Cancel: function() {$(this).dialog("close");}
       }, open: function() {
         const buttons = $(this).dialog("widget").find(".ui-dialog-buttonset > button");
-        buttons[0].addEventListener("mousemove", () => tip("Apply military units settings. All forces will be recalculated!"));
+        buttons[0].addEventListener("mousemove", () => tip("Apply military units settings. <span style='color:#cb5858'>All forces will be recalculated!</span>"));
         buttons[1].addEventListener("mousemove", () => tip("Add new military unit to the table"));
         buttons[2].addEventListener("mousemove", () => tip("Restore default military units and settings"));
         buttons[3].addEventListener("mousemove", () => tip("Close the window without saving the changes"));
@@ -201,7 +197,7 @@ function overviewMilitary() {
         return {name:name.replace(/[&\/\\#, +()$~%.'":*?<>{}]/g, '_'), rural:+rural||0, urban:+urban||0, crew:+crew||0, type, separate:+separate||0};
       });
       localStorage.setItem("military", JSON.stringify(options.military));
-      calculateMilitaryForces();
+      Military.generate();
       updateHeaders();
       addLines();
     }
@@ -209,8 +205,17 @@ function overviewMilitary() {
   }
 
   function militaryRecalculate() {
-    calculateMilitaryForces();
-    addLines();
+    alertMessage.innerHTML = "Are you sure you want to recalculate military forces for all states?";
+    $("#alert").dialog({resizable: false, title: "Remove regiment",
+      buttons: {
+        Recalculate: function() {
+          $(this).dialog("close");
+          Military.generate();
+          addLines();
+        },
+        Cancel: function() {$(this).dialog("close");}
+      }
+    });
   }
 
   function downloadMilitaryData() {
@@ -223,7 +228,7 @@ function overviewMilitary() {
       data += units.map(u => el.dataset[u]).join(",") + ",";
       data += el.dataset.total + ",";
       data += el.dataset.population + ",";
-      data += el.dataset.rate + ",";
+      data += rn(el.dataset.rate,2) + "%,";
       data += el.dataset.alert + "\n";
     });
 

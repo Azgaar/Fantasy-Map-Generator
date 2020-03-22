@@ -7,7 +7,7 @@
   let cells, p, states;
 
   const generate = function() {
-    console.time("calculateMilitaryForces");
+    console.time("generateMilitaryForces");
     cells = pack.cells, p = cells.p, states = pack.states;
     const valid = states.filter(s => s.i && !s.removed); // valid states
 
@@ -142,13 +142,14 @@
       }
     }
 
+    armies.selectAll("g").remove(); // clear armies layer
     const expected = 3 * populationRate.value; // expected regiment size
     const mergeable = (n, s) => (!n.s && !s.s) || n.u === s.u;
     // get regiments for each state
     valid.forEach(s => {
       s.military = createRegiments(s.temp.platoons, s);
       delete s.temp; // do not store temp data
-      drawRegiments(s.military, s.i, s.color);
+      drawRegiments(s.military, s.i);
     });
 
     function createRegiments(nodes, s) {
@@ -184,34 +185,54 @@
       // generate name for regiments
       regiments.forEach(r => {
         r.name = getName(r, regiments);
+        r.icon = getEmblem(r);
         generateNote(r, s);
       });
 
       return regiments;
     }
 
-    console.timeEnd("calculateMilitaryForces");
+    console.timeEnd("generateMilitaryForces");
   }
 
-  function drawRegiments(regiments, s, color) {
-    const size = 3;
-    const army = armies.append("g").attr("id", "army"+s).attr("fill", color);
-    const g = army.selectAll("g").data(regiments).enter().append("g").attr("id", d => "regiment"+s+"-"+d.i);
-    g.append("rect").attr("data-name", d => d.name).attr("data-state", s).attr("data-id", d => d.i)
-      .attr("x", d => d.n ? d.x-size*2 : d.x-size*3).attr("y", d => d.y-size)
-      .attr("width", d => d.n ? size*4 : size*6).attr("height", size*2);
-    g.append("text").attr("x", d => d.x).attr("y", d => d.y).text(d => d.a);
+  function drawRegiments(regiments, s) {
+    const size = +armies.attr("data-size");
+    const w = d => d.n ? size * 4 : size * 6;
+    const h = size * 2;
+    const x = d => rn(d.x - w(d) / 2, 2);
+    const y = d => rn(d.y - size, 2);
+
+    const baseColor = pack.states[s].color[0] === "#" ? pack.states[s].color : "#999";
+    const darkerColor = d3.color(baseColor).darker().hex();
+    const army = armies.append("g").attr("id", "army"+s).attr("fill", baseColor);
+
+    const g = army.selectAll("g").data(regiments).enter().append("g")
+      .attr("id", d => "regiment"+s+"-"+d.i).attr("data-name", d => d.name).attr("data-state", s).attr("data-id", d => d.i);
+    g.append("rect").attr("x", d => x(d)).attr("y", d => y(d)).attr("width", d => w(d)).attr("height", h);
+    g.append("text").attr("x", d => d.x).attr("y", d => d.y).text(d => getTotal(d));
+    g.append("rect").attr("fill", darkerColor).attr("x", d => x(d)-h).attr("y", d => y(d)).attr("width", h).attr("height", h);
+    g.append("text").attr("class", "regimentIcon").attr("x", d => x(d)-size).attr("y", d => d.y).text(d => d.icon);
   }
 
   const drawRegiment = function(reg, s, x = reg.x, y = reg.y) {
-    const size = 3;
+    const size = +armies.attr("data-size");
+    const w = reg.n ? size * 4 : size * 6;
+    const h = size * 2;
+    const x1 = rn(x - w / 2, 2);
+    const y1 = rn(y - size, 2);
 
-    const g = armies.select("g#army"+s).append("g").attr("id", "regiment"+s+"-"+reg.i);
-    g.append("rect").attr("data-name", reg.name).attr("data-state", s).attr("data-id", reg.i)
-      .attr("x", reg.n ? x-size*2 : x-size*3).attr("y", y-size)
-      .attr("width", reg.n ? size*4 : size*6).attr("height", size*2);
-    g.append("text").attr("x", x).attr("y", y).text(reg.a);
+    const army = armies.select("g#army"+s);
+    const darkerColor = d3.color(army.attr("fill")).darker().hex();
+
+    const g = army.append("g").attr("id", "regiment"+s+"-"+reg.i).attr("data-name", reg.name).attr("data-state", s).attr("data-id", reg.i);
+    g.append("rect").attr("x", x1).attr("y", y1).attr("width", w).attr("height", h);
+    g.append("text").attr("x", x).attr("y", y).text(getTotal(reg));
+    g.append("rect").attr("fill", darkerColor).attr("x", x1-h).attr("y", y1).attr("width", h).attr("height", h);
+    g.append("text").attr("class", "regimentIcon").attr("x", x1-size).attr("y", y).text(reg.icon);
   }
+
+  // utilize si function to make regiment total text fit regiment box
+  const getTotal = reg => reg.a > (reg.n ? 999 : 99999) ? si(reg.a) : reg.a;
 
   const getName = function(r, regiments) {
     const proper = r.n ? null : 
@@ -220,6 +241,18 @@
     const number = nth(regiments.filter(reg => reg.n === r.n && reg.i < r.i).length+1);
     const form = r.n ? "Fleet" : "Regiment";
     return `${number}${proper?` (${proper}) `:` `}${form}`;
+  }
+
+  // get default regiment emblem
+  const getEmblem = function(r) {
+    if (r.n) return "🌊";
+    if (!Object.values(r.u).length) return "🛡️";
+    const mainUnit = Object.entries(r.u).sort((a,b) => b[1]-a[1])[0][0];
+    const type = options.military.find(u => u.name === mainUnit).type;
+    if (type === "ranged") return "🏹";
+    if (type === "mounted") return "🐴";
+    if (type === "machinery") return "💣";
+    else return "⚔️";
   }
 
   const generateNote = function(r, s) {
@@ -231,11 +264,12 @@
     const troops = `\r\n\r\nRegiment composition:\r\n${composition}.`;
 
     const campaign = ra(s.campaigns);
-    const year = rand(campaign.start, campaign.end);
-    const legend = `Regiment was formed in ${year} ${options.era} during the ${campaign.name}. ${station}${troops}`;
-    notes.push({id:`regiment${s.i}-${r.i}`, name:r.name, legend});
+    const year = campaign ? rand(campaign.start, campaign.end) : gauss(options.year-100, 150, 1, options.year-6);
+    const conflict = campaign ? ` during the ${campaign.name}` : "";
+    const legend = `Regiment was formed in ${year} ${options.era}${conflict}. ${station}${troops}`;
+    notes.push({id:`regiment${s.i}-${r.i}`, name:`${r.icon} ${r.name}`, legend});
   }
 
-  return {generate, getName, generateNote, drawRegiment};
+  return {generate, getName, generateNote, drawRegiment, getTotal, getEmblem};
 
 })));

@@ -37,6 +37,10 @@ input {
 	text-indent: 1px;
 }
 
+input:read-only {
+	cursor: default;
+}
+
 textarea {
 	padding: 2px;
 	text-indent: 1px;
@@ -119,6 +123,11 @@ button, select, a, .pointer {
 
 #regions, #cults, #relig, #biomes, #provs, #terrs, #biomes, #tooltip, #temperature, #texture, #landmass {
 	pointer-events: none;
+}
+
+#armies text {
+	pointer-events: none;
+	user-select: none;
 }
 
 #statesBody, #provincesBody, #relig, #biomes, #cults {
@@ -207,29 +216,6 @@ i.icon-lock {
 	dominant-baseline: central;
 	text-shadow: 0 0 4px white;
 	cursor: pointer;
-}
-
-#armies rect {
-	stroke-width: .3;
-	stroke: #000;
-}
-
-#armies text {
-	pointer-events: none;
-	user-select: none;
-	stroke: none;
-	fill: #fff;
-	text-shadow: 0 0 4px #000;
-	font-size: 6px;
-	dominant-baseline: central;
-	text-anchor: middle;
-	font-family: Helvetica;
-}
-
-#regimentBase {
-	stroke-width: .3;
-	stroke: #000;
-	cursor: move;
 }
 
 .chartInfo {

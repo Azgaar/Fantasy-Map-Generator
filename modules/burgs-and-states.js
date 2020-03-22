@@ -595,13 +595,14 @@
     console.timeEnd("assignColors");
   }
 
-  // generate historical wars
+  // generate historical conflicts of each state
   const generateCampaigns = function() {
     const wars = {"War":4, "Conflict":2, "Campaign":4, "Invasion":2, "Rebellion":2, "Conquest":2, "Intervention":1, "Expedition":1, "Crusade":1};
 
     pack.states.forEach(s => {
       if (!s.i || s.removed) return;
-      s.campaigns = (s.neighbors||[0]).map(i => {
+      const n = s.neighbors.length ? s.neighbors : [0];
+      s.campaigns = n.map(i => {
         const name = i && P(.8) ? pack.states[i].name : Names.getCultureShort(s.culture);
         const start = gauss(options.year-100, 150, 1, options.year-6), end = start + gauss(4, 5, 1, options.year - start - 1);
         return {name:getAdjective(name) + " " + rw(wars), start, end};

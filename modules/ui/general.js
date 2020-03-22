@@ -88,7 +88,7 @@ function showMapTooltip(point, e, i, g) {
   const land = pack.cells.h[i] >= 20;
 
   // specific elements
-  if (group === "armies") {tip(e.target.dataset.name + ". Click to edit"); return;}
+  if (group === "armies") {tip(e.target.parentNode.dataset.name + ". Click to edit"); return;}
   if (group === "rivers") {tip(getRiverName(e.target.id) + "Click to edit"); return;}
   if (group === "routes") {tip("Click to edit the Route"); return;}
   if (group === "terrain") {tip("Click to edit the Relief Icon"); return;}

@@ -45,6 +45,20 @@
 <body>
   <svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" id="map" width="100%" height="100%">
     <defs>
+      <style type="text/css">
+        #armies rect {stroke-width: .3; stroke: #000;}
+        #armies text {
+          stroke: none;
+          fill: #fff;
+          text-shadow: 0 0 4px #000;
+          dominant-baseline: central;
+          text-anchor: middle;
+          font-family: Helvetica;
+          fill-opacity: 1;
+        }
+        #armies text.regimentIcon {font-size: .8em;}
+      </style>
+
       <g id="filters">
         <filter id="blurFilter" x="-1" y="-1" width="100" height="100">
           <feGaussianBlur in="SourceGraphic" stdDeviation="0.2"/>
@@ -890,7 +904,7 @@
     <g id="viewbox"></g>
     <g id="scaleBar" onclick="editUnits()"></g>
     <g id="initial" opacity=1>
-      <rect x="-1%" y="-1%" width="102%" height="102%" fill="#53679f"></rect>
+      <rect x="-1%" y="-1%" width="102%" height="102%" fill="#466eab"></rect>
       <rect x="-1%" y="-1%" width="102%" height="102%" fill="url(#oceanic)"></rect>
       <use xlink:href="#rose" id="init-rose" x="50%" y="50%"></use>
     </g>
@@ -1188,8 +1202,8 @@
             <tr data-tip="Set foreground color. Visible if opacity > 0">
               <td>Foreground</td>
               <td>
-                <input id="styleOceanFore" type="color" value="#53679f"/>
-                <output id="styleOceanForeOutput">#53679f</output>
+                <input id="styleOceanFore" type="color" value="#466eab"/>
+                <output id="styleOceanForeOutput">#466eab</output>
               </td>
             </tr>
 
@@ -2388,6 +2402,12 @@
           <i id="regimentNameRestore" data-tip="Click to restore regiment's default name" class="icon-ccw pointer"></i>
         </div>
 
+        <div data-tip="Regiment emblem. Paste any Unicode symbol or select from the predefined list">
+          <div class="label italic">Emblem:</div>
+          <input id="regimentEmblem" style="width:5em">
+          <button id="regimentEmblemSelect" style="padding: 0; width: 4.5em">select</button>
+        </div>
+
         <div id="regimentComposition" style="padding: .1em"></div>
       </div>
 
@@ -3270,7 +3290,6 @@
         <button id="militaryOptionsButton" data-tip="Edit Military units" class="icon-cog"></button>
         <button id="militaryOverviewRecalculate" data-tip="Recalculate military forces based on current options" class="icon-retweet"></button>
         <button id="militaryExport" data-tip="Save military-related data as a text file (.csv)" class="icon-download"></button>
-        <button id="militaryVisualize" data-tip="Show armies on the map" class="icon-user-shield"></button>
       </div>
     </div>
 
@@ -3283,7 +3302,7 @@
             <th data-tip="Conscription percentage for urban population">Urban %</th>
             <th data-tip="Average number of people in crew">Crew</th>
             <th data-tip="Unit type to apply special rules on forces recalculation">Type</th>
-            <th data-tip="Check if unit is separate and can be stacked only with units of the same type">S</th>
+            <th data-tip="Check if unit is separate and can be stacked only with units of the same type">Sep.</th>
           </tr>
         </thead>
         <tbody>

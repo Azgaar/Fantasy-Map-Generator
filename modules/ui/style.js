@@ -693,6 +693,8 @@ function addDefaulsStyles() {
 
 // set default style
 function applyDefaultStyle() {
+  armies.attr("font-size", 6).attr("data-size", 3);
+
   biomes.attr("opacity", null).attr("filter", null).attr("mask", null);
   stateBorders.attr("opacity", .8).attr("stroke", "#56566d").attr("stroke-width", 1).attr("stroke-dasharray", "2").attr("stroke-linecap", "butt").attr("filter", null);
   provinceBorders.attr("opacity", .8).attr("stroke", "#56566d").attr("stroke-width", .2).attr("stroke-dasharray", "1").attr("stroke-linecap", "butt").attr("filter", null);
@@ -742,7 +744,7 @@ function applyDefaultStyle() {
   // ocean and svg default style
   svg.attr("background-color", "#000000").attr("data-filter", null).attr("filter", null);
   ocean.attr("opacity", null);
-  oceanLayers.select("rect").attr("fill", "#53679f");
+  oceanLayers.select("rect").attr("fill", "#466eab"); // old color #53679f
   oceanLayers.attr("filter", null).attr("layers", "-6,-3,-1");
   oceanPattern.attr("opacity", null);
   svg.select("#oceanicPattern").attr("filter", "url(#pattern1)");
