@@ -334,9 +334,9 @@ function drawBiomes() {
   const cells = pack.cells, vertices = pack.vertices, n = cells.i.length;
   const used = new Uint8Array(cells.i.length);
   const paths = new Array(biomesData.i.length).fill("");
-  
+
   for (const i of cells.i) {
-    if (!cells.biome[i]) continue; // no need to mark water
+    if (!cells.biome[i]) continue; // no need to mark marine biome (liquid water)
     if (used[i]) continue; // already marked
     const b = cells.biome[i];
     const onborder = cells.c[i].some(n => cells.biome[n] !== b);

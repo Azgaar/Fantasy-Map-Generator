@@ -1189,7 +1189,8 @@ div.states:hover {
 }
 
 div.states > *,
-div.states sup {
+div.states sup,
+div.totalLine > div {
 	display: inline-block;
 }
 
@@ -1415,6 +1416,7 @@ div.states.Self {
 	border-color: #858b8e;
 	background-image: linear-gradient(to right, #f2f2f2 0%, #b0c6d9 100%);
 	font-style: italic;
+	font-weight: bold;
 	margin-bottom: .2em;
 	cursor: default !important;
 }
@@ -1437,7 +1439,8 @@ rect.fillRect {
 	stroke-width: 2;
 }
 
-#militaryHeader > div {
+#militaryHeader > div,
+#regimentsHeader > div {
 	width: 5.2em;
 }
 
@@ -1446,7 +1449,8 @@ rect.fillRect {
 }
 
 #militaryBody div.states > input,
-#militaryBody div.states > div {
+#militaryBody div.states > div,
+#regimentsBody div.states > div {
 	width: 5em;
 }
 

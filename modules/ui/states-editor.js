@@ -173,30 +173,20 @@ function editStates() {
     if (!layerIsOn("toggleStates")) return;
     const state = +event.target.dataset.id;
     if (customization || !state) return;
-    const path = statesBody.select("#state"+state).attr("d");
-    debug.append("path").attr("class", "highlight").attr("d", path)
+    const d = regions.select("#state"+state).attr("d");
+
+    const path = debug.append("path").attr("class", "highlight").attr("d", d)
       .attr("fill", "none").attr("stroke", "red").attr("stroke-width", 1).attr("opacity", 1)
-      .attr("filter", "url(#blur1)").call(transition);
-  }
+      .attr("filter", "url(#blur1)");
 
-  function transition(path) {
-    const duration = (path.node().getTotalLength() + 5000) / 2;
-    path.transition().duration(duration).attrTween("stroke-dasharray", tweenDash);
-  }
-
-  function tweenDash() {
-    const l = this.getTotalLength();
+    const l = path.node().getTotalLength(), dur = (l + 5000) / 2;
     const i = d3.interpolateString("0," + l, l + "," + l);
-    return t => i(t);
-  }
-  
-  function removePath(path) {
-    path.transition().duration(1000).attr("opacity", 0).remove();
+    path.transition().duration(dur).attrTween("stroke-dasharray", function() {return t => i(t)});
   }
 
-  function stateHighlightOff() {
-    debug.selectAll(".highlight").each(function(el) {
-      d3.select(this).call(removePath);
+  function stateHighlightOff(event) {
+    debug.selectAll(".highlight").each(function() {
+      d3.select(this).transition().duration(1000).attr("opacity", 0).remove();
     });
   }
 

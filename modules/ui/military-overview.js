@@ -20,6 +20,7 @@ function overviewMilitary() {
 
   // add listeners
   document.getElementById("militaryOverviewRefresh").addEventListener("click", addLines);
+  document.getElementById("militaryPercentage").addEventListener("click", togglePercentageMode);
   document.getElementById("militaryOptionsButton").addEventListener("click", militaryCustomize);
   document.getElementById("militaryOverviewRecalculate").addEventListener("click", militaryRecalculate);
   document.getElementById("militaryExport").addEventListener("click", downloadMilitaryData);
@@ -27,6 +28,11 @@ function overviewMilitary() {
   body.addEventListener("change", function(ev) {
     const el = ev.target, line = el.parentNode, state = +line.dataset.id;
     changeAlert(state, line, +el.value);
+  });
+
+  body.addEventListener("click", function(ev) {
+    const el = ev.target, line = el.parentNode, state = +line.dataset.id;
+    if (el.tagName === "SPAN") overviewRegiments(state);
   });
 
   // update military types in header and tooltips
@@ -62,10 +68,11 @@ function overviewMilitary() {
         <svg data-tip="${s.fullName}" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${s.color}" class="fillRect"></svg>
         <input data-tip="${s.fullName}" style="width:6em" value="${s.name}" readonly>
         ${lineData}
-        <div data-type="total" data-tip="Total state military personnel (considering crew)"><b>${si(total)}</b></div>
-        <div data-tip="State population">${si(population)}</div>
+        <div data-type="total" data-tip="Total state military personnel (considering crew)" style="font-weight: bold">${si(total)}</div>
+        <div data-type="population" data-tip="State population">${si(population)}</div>
         <div data-type="rate" data-tip="Military personnel rate (% of state population). Depends on war alert">${rn(rate, 2)}%</div>
-        <input data-type="alert" data-tip="War Alert. Editable modifier to military forces number, depends of political situation" type="number" min=0 step=.01 value="${rn(s.alert, 2)}">
+        <input data-tip="War Alert. Editable modifier to military forces number, depends of political situation" style="width:4.1em" type="number" min=0 step=.01 value="${rn(s.alert, 2)}">
+        <span data-tip="Show regiments list" class="icon-list-bullet pointer"></span>
       </div>`;
     }
     body.insertAdjacentHTML("beforeend", lines);
@@ -74,6 +81,8 @@ function overviewMilitary() {
     // add listeners
     body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseenter", ev => stateHighlightOn(ev)));
     body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseleave", ev => stateHighlightOff(ev)));
+
+    if (body.dataset.type === "percentage") {body.dataset.type = "absolute"; togglePercentageMode();}
     applySorting(militaryHeader);
   }
 
@@ -103,7 +112,9 @@ function overviewMilitary() {
   function updateFooter() {
     const lines = Array.from(body.querySelectorAll(":scope > div"));
     const statesNumber = militaryFooterStates.innerHTML = pack.states.filter(s => s.i && !s.removed).length;
-    militaryFooterForces.innerHTML = si(d3.sum(lines.map(el => el.dataset.total)) / statesNumber);
+    const total = d3.sum(lines.map(el => el.dataset.total));
+    militaryFooterForcesTotal.innerHTML = si(total);
+    militaryFooterForces.innerHTML = si(total / statesNumber);
     militaryFooterRate.innerHTML = rn(d3.sum(lines.map(el => el.dataset.rate)) / statesNumber, 2) + "%";
     militaryFooterAlert.innerHTML = rn(d3.sum(lines.map(el => el.dataset.alert)) / statesNumber, 2);
   }
@@ -112,31 +123,51 @@ function overviewMilitary() {
     if (!layerIsOn("toggleStates")) return;
     const state = +event.target.dataset.id;
     if (customization || !state) return;
-    const path = regions.select("#state"+state).attr("d");
-    debug.append("path").attr("class", "highlight").attr("d", path)
+    const d = regions.select("#state"+state).attr("d");
+
+    const path = debug.append("path").attr("class", "highlight").attr("d", d)
       .attr("fill", "none").attr("stroke", "red").attr("stroke-width", 1).attr("opacity", 1)
-      .attr("filter", "url(#blur1)").call(transition);
-  }
+      .attr("filter", "url(#blur1)");
 
-  function transition(path) {
-    const duration = (path.node().getTotalLength() + 5000) / 2;
-    path.transition().duration(duration).attrTween("stroke-dasharray", tweenDash);
-  }
-
-  function tweenDash() {
-    const l = this.getTotalLength();
+    const l = path.node().getTotalLength(), dur = (l + 5000) / 2;
     const i = d3.interpolateString("0," + l, l + "," + l);
-    return t => i(t);
+    path.transition().duration(dur).attrTween("stroke-dasharray", function() {return t => i(t)});
+
+    armies.select("#army"+state).transition().duration(dur).style("fill", "#ff0000");
   }
 
-  function removePath(path) {
-    path.transition().duration(1000).attr("opacity", 0).remove();
-  }
-
-  function stateHighlightOff() {
+  function stateHighlightOff(event) {
     debug.selectAll(".highlight").each(function() {
-      d3.select(this).call(removePath);
+      d3.select(this).transition().duration(1000).attr("opacity", 0).remove();
     });
+
+    const state = +event.target.dataset.id;
+    armies.select("#army"+state).transition().duration(1000).style("fill", null);
+  }
+
+  function togglePercentageMode() {
+    if (body.dataset.type === "absolute") {
+      body.dataset.type = "percentage";
+      const lines = body.querySelectorAll(":scope > div");
+      const array = Array.from(lines), cache = [];
+
+      const total = function(type) {
+        if (cache[type]) cache[type];
+        cache[type] = d3.sum(array.map(el => +el.dataset[type]));
+        return cache[type];
+      }
+
+      lines.forEach(function(el) {
+        el.querySelectorAll("div").forEach(function(div) {
+          const type = div.dataset.type;
+          if (type === "rate") return;
+          div.textContent = rn(+el.dataset[type] / total(type) * 100) + "%";
+        });
+      });
+    } else {
+      body.dataset.type = "absolute";
+      addLines();
+    }
   }
 
   function militaryCustomize() {

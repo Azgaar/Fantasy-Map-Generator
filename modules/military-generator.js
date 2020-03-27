@@ -153,6 +153,7 @@
     });
 
     function createRegiments(nodes, s) {
+      if (!nodes.length) return [];
       nodes.sort((a,b) => a.a - b.a);
       const tree = d3.quadtree(nodes, d => d.x, d => d.y);
       nodes.forEach(n => {

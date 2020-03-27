@@ -311,7 +311,7 @@ function editHeightmap() {
       const land = pack.cells.h[i] >= 20;
 
       // check biome
-      if (land && !biome[g]) pack.cells.biome[i] = getBiomeId(grid.cells.prec[g], grid.cells.temp[g]);
+      if (!biome[g]) pack.cells.biome[i] = getBiomeId(grid.cells.prec[g], grid.cells.temp[g]);
       else if (!land && biome[g]) pack.cells.biome[i] = 0;
       else pack.cells.biome[i] = biome[g];
 

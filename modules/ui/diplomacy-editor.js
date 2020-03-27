@@ -68,6 +68,7 @@ function editDiplomacy() {
       const tipChange = `${tip}. Click to change relations to ${selName}`;
 
       lines += `<div class="states" data-id=${s.i} data-name="${s.fullName}" data-relations="${relation}">
+        <span data-tip="${tipSelect}" class="icon-right-open"></span>
         <div data-tip="${tipSelect}" style="width:12em">${s.fullName}</div>
         <svg data-tip="${tipChange}" width=".9em" height=".9em" style="margin-bottom:-1px" class="changeRelations">
           <rect x="0" y="0" width="100%" height="100%" fill="${color}" class="fillRect pointer" style="pointer-events: none"></rect>
@@ -91,30 +92,20 @@ function editDiplomacy() {
     if (!layerIsOn("toggleStates")) return;
     const state = +event.target.dataset.id;
     if (customization || !state) return;
-    const path = regions.select("#state"+state).attr("d");
-    debug.append("path").attr("class", "highlight").attr("d", path)
+    const d = regions.select("#state"+state).attr("d");
+
+    const path = debug.append("path").attr("class", "highlight").attr("d", d)
       .attr("fill", "none").attr("stroke", "red").attr("stroke-width", 1).attr("opacity", 1)
-      .attr("filter", "url(#blur1)").call(transition);
-  }
+      .attr("filter", "url(#blur1)");
 
-  function transition(path) {
-    const duration = (path.node().getTotalLength() + 5000) / 2;
-    path.transition().duration(duration).attrTween("stroke-dasharray", tweenDash);
-  }
-
-  function tweenDash() {
-    const l = this.getTotalLength();
+    const l = path.node().getTotalLength(), dur = (l + 5000) / 2;
     const i = d3.interpolateString("0," + l, l + "," + l);
-    return t => i(t);
-  }
-  
-  function removePath(path) {
-    path.transition().duration(1000).attr("opacity", 0).remove();
+    path.transition().duration(dur).attrTween("stroke-dasharray", function() {return t => i(t)});
   }
 
-  function stateHighlightOff() {
-    debug.selectAll(".highlight").each(function(el) {
-      d3.select(this).call(removePath);
+  function stateHighlightOff(event) {
+    debug.selectAll(".highlight").each(function() {
+      d3.select(this).transition().duration(1000).attr("opacity", 0).remove();
     });
   }
 

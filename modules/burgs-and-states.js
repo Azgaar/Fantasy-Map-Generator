@@ -137,22 +137,24 @@
     }
   }
 
-  // define burg coordinates and define details
+  // define burg coordinates, port status and define details
   const specifyBurgs = function() {
     console.time("specifyBurgs");
-    const cells = pack.cells, vertices = pack.vertices;
+    const cells = pack.cells, vertices = pack.vertices, features = pack.features;
+    checkAccessibility();
 
     for (const b of pack.burgs) {
       if (!b.i) continue;
       const i = b.cell;
 
       // asign port status
-      if (cells.haven[i]) {
-        const f = cells.f[cells.haven[i]]; // water body id
+      const haven = cells.haven[i];
+      if (haven && cells.biome[haven] === 0) {
+        const f = cells.f[haven]; // water body id
         // port is a capital with any harbor OR town with good harbor
-        const port = pack.features[f].cells > 1 && ((b.capital && cells.harbor[i]) || cells.harbor[i] === 1);
+        const port = features[f].cells > 1 && ((b.capital && cells.harbor[i]) || cells.harbor[i] === 1);
         b.port = port ? f : 0; // port is defined by water body id it lays on
-        if (port) {pack.features[f].ports += 1; pack.features[b.feature].ports += 1;}
+        if (port) {features[f].ports += 1; features[b.feature].ports += 1;}
       } else b.port = 0;
 
       // define burg population (keep urbanization at about 10% rate)
@@ -178,12 +180,43 @@
     }
 
     // de-assign port status if it's the only one on feature
-    for (const f of pack.features) {
+    for (const f of features) {
       if (!f.i || f.land || f.ports !== 1) continue;
       const port = pack.burgs.find(b => b.port === f.i);
       port.port = 0;
       f.port = 0;
-      pack.features[port.feature].ports -= 1;
+      features[port.feature].ports -= 1;
+    }
+
+    // separate arctic seas for correct searoutes generation
+    function checkAccessibility() {
+      const oceanCells = cells.i.filter(i => cells.h[i] < 20 && features[cells.f[i]].type === "ocean");
+      const marked = [];
+      let firstCell = oceanCells.find(i => !marked[i]);
+
+      while (firstCell !== undefined) {
+        const queue = [firstCell];
+        const f = features[cells.f[firstCell]]; // old feature
+        const i = last(features).i+1; // new feature id to assign
+        const biome = cells.biome[firstCell];
+        marked[firstCell] = 1;
+        let cellNumber = 1;
+
+        while (queue.length) {
+          for (const c of cells.c[queue.pop()]) {
+            if (cells.biome[c] !== biome || cells.h[c] >= 20) continue;
+            if (marked[c]) continue;
+            queue.push(c);
+            cells.f[c] = i;
+            marked[c] = 1;
+            cellNumber++;
+          }
+        }
+
+        const group = biome ? "frozen " + f.group : f.group;
+        features.push({i, parent:f.i, land:false, border:true, type:"ocean", cells: cellNumber, firstCell, group, ports:0});
+        firstCell = oceanCells.find(i => !marked[i]);
+      }
     }
 
     console.timeEnd("specifyBurgs");
@@ -274,16 +307,19 @@
     while (queue.length) {
       const next = queue.dequeue(), n = next.e, p = next.p, s = next.s, b = next.b;
       const type = states[s].type;
+      const culture = states[s].culture;
 
       cells.c[n].forEach(function(e) {
         if (cells.state[e] && e === states[cells.state[e]].center) return; // do not overwrite capital cells
 
-        const cultureCost = states[s].culture === cells.culture[e] ? -9 : 700;
+        const cultureCost = culture === cells.culture[e] ? -9 : 100;
+        const populationCost = cells.s[e] ? 20 - cells.s[e] : 2500;
         const biomeCost = getBiomeCost(b, cells.biome[e], type);
         const heightCost = getHeightCost(pack.features[cells.f[e]], cells.h[e], type);
         const riverCost = getRiverCost(cells.r[e], e, type);
         const typeCost = getTypeCost(cells.t[e], type);
-        const totalCost = p + (10 + cultureCost + biomeCost + heightCost + riverCost + typeCost) / states[s].expansionism;
+        const cellCost = Math.max(cultureCost + populationCost + biomeCost + heightCost + riverCost + typeCost, 0);
+        const totalCost = p + 10 + cellCost / states[s].expansionism;
 
         if (totalCost > neutral) return;
 
@@ -325,7 +361,7 @@
     function getTypeCost(t, type) {
       if (t === 1) return type === "Naval" || type === "Lake" ? 0 : type === "Nomadic" ? 60 : 20; // penalty for coastline
       if (t === 2) return type === "Naval" || type === "Nomadic" ? 30 : 0; // low penalty for land level 2 for Navals and nomads
-      if (t !== -1) return type === "Naval" || type === "Lake" ? 100 : 0;  // penalty for mainland for navals
+      if (t !== -1) return type === "Naval" || type === "Lake" ? 100 : 0; // penalty for mainland for navals
       return 0;
     }
 

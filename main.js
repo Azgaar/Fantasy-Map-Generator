@@ -308,9 +308,8 @@ function applyDefaultBiomesSystem() {
   const habitability = [0,4,10,22,30,50,100,80,90,12,4,0,12];
   const iconsDensity = [0,3,2,120,120,120,120,150,150,100,5,0,150];
   const icons = [{},{dune:3, cactus:6, deadTree:1},{dune:9, deadTree:1},{acacia:1, grass:9},{grass:1},{acacia:8, palm:1},{deciduous:1},{acacia:5, palm:3, deciduous:1, swamp:1},{deciduous:6, swamp:1},{conifer:1},{grass:1},{},{swamp:1}];
-  const cost = [10,200,150,60,50,70,70,80,90,80,100,255,150]; // biome movement cost
-  const biomesMartix = [
-    // hot ↔ cold; dry ↕ wet
+  const cost = [10,200,150,60,50,70,70,80,90,200,1000,5000,150]; // biome movement cost
+  const biomesMartix = [ // hot ↔ cold; dry ↕ wet
     new Uint8Array([1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]),
     new Uint8Array([3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,9,9,9,9,9,10,10]),
     new Uint8Array([5,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,9,9,9,9,9,10,10,10]),
@@ -742,14 +741,14 @@ function calculateTemperatures() {
   const tEq = +temperatureEquatorInput.value;
   const tPole = +temperaturePoleInput.value;
   const tDelta = tEq - tPole;
+  const int = d3.easePolyInOut.exponent(.5); // interpolation function
 
   d3.range(0, cells.i.length, grid.cellsX).forEach(function(r) {
     const y = grid.points[r][1];
-    const lat = Math.abs(mapCoordinates.latN - y / graphHeight * mapCoordinates.latT);
-    const initTemp = tEq - lat / 90 * tDelta;
+    const lat = Math.abs(mapCoordinates.latN - y / graphHeight * mapCoordinates.latT); // [0; 90]
+    const initTemp = tEq - int(lat / 90) * tDelta;
     for (let i = r; i < r+grid.cellsX; i++) {
-      const temp = initTemp - convertToFriendly(cells.h[i]);
-      cells.temp[i] = Math.max(Math.min(temp, 127), -128);
+      cells.temp[i] = Math.max(Math.min(initTemp - convertToFriendly(cells.h[i]), 127), -128);
     }
   });
 
@@ -1036,7 +1035,7 @@ function drawCoastline() {
 // Re-mark features (ocean, lakes, islands)
 function reMarkFeatures() {
   console.time("reMarkFeatures");
-  const cells = pack.cells, features = pack.features = [0];
+  const cells = pack.cells, features = pack.features = [0], temp = grid.cells.temp;
   cells.f = new Uint16Array(cells.i.length); // cell feature number
   cells.t = new Int16Array(cells.i.length); // cell type: 1 = land along coast; -1 = water along coast;
   cells.haven = cells.i.length < 65535 ? new Uint16Array(cells.i.length) : new Uint32Array(cells.i.length);// cell haven (opposite water cell);
@@ -1046,6 +1045,7 @@ function reMarkFeatures() {
     const start = queue[0]; // first cell
     cells.f[start] = i; // assign feature number
     const land = cells.h[start] >= 20;
+    //const frozen = !land && temp[cells.g[start]] < -5; // check if water is frozen
     let border = false; // true if feature touches map border
     let cellNumber = 1; // to count cells number in a feature
 
@@ -1063,9 +1063,10 @@ function reMarkFeatures() {
           if (!cells.t[e] && cells.t[q] === 1) cells.t[e] = 2;
           else if (!cells.t[q] && cells.t[e] === 1) cells.t[q] = 2;
         }
-        if (land === eLand && cells.f[e] === 0) {
-          cells.f[e] = i;
+        if (!cells.f[e] && land === eLand) {
+          //if (!land && frozen !== temp[cells.g[e]] < -5) return;
           queue.push(e);
+          cells.f[e] = i;
           cellNumber++;
         }
       });
@@ -1073,21 +1074,26 @@ function reMarkFeatures() {
 
     const type = land ? "island" : border ? "ocean" : "lake";
     let group;
-    if (type === "lake") group = defineLakeGroup(start, cellNumber);
-    else if (type === "ocean") group = "ocean";
+    if (type === "lake") group = defineLakeGroup(start, cellNumber, temp[cells.g[start]]);
+    else if (type === "ocean") group = defineOceanGroup(cellNumber);
     else if (type === "island") group = defineIslandGroup(start, cellNumber);
     features.push({i, land, border, type, cells: cellNumber, firstCell: start, group, ports:0});
     queue[0] = cells.f.findIndex(f => !f); // find unmarked cell
   }
 
-  function defineLakeGroup(cell, number) {
-    const temp = grid.cells.temp[cells.g[cell]];
+  function defineLakeGroup(cell, number, temp) {
     if (temp > 24) return "salt";
     if (temp < -3) return "frozen";
     const height = d3.max(cells.c[cell].map(c => cells.h[c]));
     if (height > 69 && number < 3 && cell%5 === 0) return "sinkhole";
     if (height > 69 && number < 10 && cell%5 === 0) return "lava";
     return "freshwater";
+  }
+
+  function defineOceanGroup(number) {
+    if (number > grid.cells.i.length / 25) return "ocean";
+    if (number > grid.cells.i.length / 100) return "sea";
+    return "gulf";
   }
 
   function defineIslandGroup(cell, number) {
@@ -1124,12 +1130,13 @@ function defineBiomes() {
 
   for (const i of cells.i) {
     if (f[cells.f[i]].group === "freshwater") cells.h[i] = 19; // de-elevate lakes
-    if (cells.h[i] < 20) continue; // water cells have biome 0
+    const temp = grid.cells.temp[cells.g[i]]; // temperature
+
+    if (cells.h[i] < 20 && temp > -6) continue; // liquid water cells have biome 0
     let moist = grid.cells.prec[cells.g[i]];
     if (cells.r[i]) moist += Math.max(cells.fl[i] / 20, 2);
     const n = cells.c[i].filter(isLand).map(c => grid.cells.prec[cells.g[c]]).concat([moist]);
     moist = rn(4 + d3.mean(n));
-    const temp = grid.cells.temp[cells.g[i]]; // flux from precipitation
     cells.biome[i] = getBiomeId(moist, temp, cells.h[i]);
   }
 
@@ -1138,6 +1145,7 @@ function defineBiomes() {
 
 function getBiomeId(moisture, temperature, height) {
   if (temperature < -5) return 11; // permafrost biome
+  if (height < 20) return 0; // liquid water cells have marine biome
   if (moisture > 40 && height < 25 || moisture > 24 && height > 24) return 12; // wetland biome
   const m = Math.min(moisture / 5 | 0, 4); // moisture band from 0 to 4
   const t = Math.min(Math.max(20 - temperature, 0), 25); // temparature band from 0 to 25

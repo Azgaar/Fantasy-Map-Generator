@@ -1960,7 +1960,7 @@
         </div>
         <div>
           <i data-locked=0 id="lock_temperaturePole" class="icon-lock-open"></i>
-          <label data-tip="Set temperature at poles">
+          <label data-tip="Set temperature near poles">
             <i>Poles:</i>
             <input id="temperaturePoleInput" data-stored="temperaturePole" type="number" min="-30" max="30">°C =
             <span id="temperaturePoleF"></span>°F
@@ -2832,6 +2832,8 @@
         <div style="left:12.4em" data-tip="Click to sort by diplomatical relations" class="sortable alphabetically" data-sortby="relations">Relations&nbsp;</div>
       </div>
 
+      <div id="diplomacyBodySection" class="table"></div>
+
       <div id="diplomacySelect">
         <div data-tip="Ally means states formed a defensive pact and will protect each other in case of third party aggression">Ally</div>
         <div data-tip="State is friendly to anouther state when they share some common interests">Friendly</div>
@@ -2843,8 +2845,6 @@
         <div data-tip="Vassal is a state having obligation to its suzerain">Vassal</div>
         <div data-tip="Suzerain is a state having some control over its vassals">Suzerain</div>
       </div>
-
-      <div id="diplomacyBodySection" class="table"></div>
 
       <div id="diplomacyBottom" style="margin-top: .1em">
         <button id="diplomacyEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
@@ -3280,16 +3280,36 @@
 
       <div id="militaryFooter" class="totalLine">
         <div data-tip="States number" style="margin-left: 4px">States:&nbsp;<span id="militaryFooterStates">0</span></div>
+        <div data-tip="Total military forces" style="margin-left: 14px">Total forces:&nbsp;<span id="militaryFooterForcesTotal">0</span></div>
         <div data-tip="Average military forces per state" style="margin-left: 14px">Average forces:&nbsp;<span id="militaryFooterForces">0</span></div>
         <div data-tip="Average forces rate per state" style="margin-left: 14px">Average rate:&nbsp;<span id="militaryFooterRate">0%</span></div>
         <div data-tip="Average War Alert" style="margin-left: 14px">Average alert:&nbsp;<span id="militaryFooterAlert">0</span></div>
       </div>
 
       <div id="militaryBottom">
-        <button id="militaryOverviewRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
+        <button id="militaryOverviewRefresh" data-tip="Refresh the overview screen" class="icon-cw"></button>
         <button id="militaryOptionsButton" data-tip="Edit Military units" class="icon-cog"></button>
+        <button id="militaryPercentage" data-tip="Toggle percentage / absolute values views" class="icon-percent"></button>
         <button id="militaryOverviewRecalculate" data-tip="Recalculate military forces based on current options" class="icon-retweet"></button>
         <button id="militaryExport" data-tip="Save military-related data as a text file (.csv)" class="icon-download"></button>
+      </div>
+    </div>
+
+    <div id="regimentsOverview" class="dialog stable" style="display: none">
+      <div id="regimentsHeader" class="header">
+        <div data-tip="State name. Click to sort" style="left:1.8em; width: 9em" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
+        <div data-tip="Regiment emblem and name. Click to sort by name" style="width: 12em" class="sortable alphabetically" data-sortby="name">Name&nbsp;</div>
+        <div data-tip="Total military personnel (not considering crew). Click to sort" style="margin-left: .8em" id="regimentsTotal" class="sortable icon-sort-number-down" data-sortby="total">Total&nbsp;</div>
+      </div>
+
+      <div id="regimentsBody" class="table" data-type="absolute"></div>
+
+      <div id="regimentsBottom">
+        <button id="regimentsOverviewRefresh" data-tip="Refresh the overview screen" class="icon-cw"></button>
+        <button id="regimentsPercentage" data-tip="Toggle percentage / absolute values views" class="icon-percent"></button>
+        <button id="regimentsAddNew" data-tip="Add new Regiment" class="icon-user-plus"></button>
+        <button id="regimentsExport" data-tip="Save military-related data as a text file (.csv)" class="icon-download"></button>
+        <div data-tip="Select state" style="display:inline-block"><span>State: </span><select id="regimentsFilter"></select></div>
       </div>
     </div>
 
@@ -3519,6 +3539,7 @@
   <script defer src="modules/ui/burgs-overview.js"></script>
   <script defer src="modules/ui/rivers-overview.js"></script>
   <script defer src="modules/ui/military-overview.js"></script>
+  <script defer src="modules/ui/regiments-overview.js"></script>
   <script defer src="modules/ui/regiment-editor.js"></script>
   <script defer src="modules/ui/editors.js"></script>
   <script defer src="modules/ui/3d.js"></script>
