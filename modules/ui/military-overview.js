@@ -4,6 +4,7 @@ function overviewMilitary() {
   closeDialogs("#militaryOverview, .stable");
   if (!layerIsOn("toggleStates")) toggleStates();
   if (!layerIsOn("toggleBorders")) toggleBorders();
+  if (!layerIsOn("toggleMilitary")) toggleMilitary();
 
   const body = document.getElementById("militaryBody");
   addLines();
@@ -22,6 +23,7 @@ function overviewMilitary() {
   document.getElementById("militaryOverviewRefresh").addEventListener("click", addLines);
   document.getElementById("militaryPercentage").addEventListener("click", togglePercentageMode);
   document.getElementById("militaryOptionsButton").addEventListener("click", militaryCustomize);
+  document.getElementById("militaryRegimentsList").addEventListener("click", () => overviewRegiments(-1));
   document.getElementById("militaryOverviewRecalculate").addEventListener("click", militaryRecalculate);
   document.getElementById("militaryExport").addEventListener("click", downloadMilitaryData);
 
@@ -120,9 +122,11 @@ function overviewMilitary() {
   }
 
   function stateHighlightOn(event) {
-    if (!layerIsOn("toggleStates")) return;
     const state = +event.target.dataset.id;
     if (customization || !state) return;
+    armies.select("#army"+state).transition().duration(2000).style("fill", "#ff0000");
+
+    if (!layerIsOn("toggleStates")) return;
     const d = regions.select("#state"+state).attr("d");
 
     const path = debug.append("path").attr("class", "highlight").attr("d", d)
@@ -132,8 +136,6 @@ function overviewMilitary() {
     const l = path.node().getTotalLength(), dur = (l + 5000) / 2;
     const i = d3.interpolateString("0," + l, l + "," + l);
     path.transition().duration(dur).attrTween("stroke-dasharray", function() {return t => i(t)});
-
-    armies.select("#army"+state).transition().duration(dur).style("fill", "#ff0000");
   }
 
   function stateHighlightOff(event) {
@@ -161,7 +163,7 @@ function overviewMilitary() {
         el.querySelectorAll("div").forEach(function(div) {
           const type = div.dataset.type;
           if (type === "rate") return;
-          div.textContent = rn(+el.dataset[type] / total(type) * 100) + "%";
+          div.textContent = total(type) ? rn(+el.dataset[type] / total(type) * 100) + "%" : "0%";
         });
       });
     } else {
@@ -181,7 +183,7 @@ function overviewMilitary() {
       position: {my: "center", at: "center", of: "svg"},
       buttons: {
         Apply: function() {applyMilitaryOptions(); $(this).dialog("close");},
-        Add: () => addUnitLine({name: "custom", rural: 0.2, urban: 0.5, crew: 1, type: "default"}),
+        Add: () => addUnitLine({name: "custom"+rand(1000), rural: .2, urban: .5, crew: 1, type: "default"}),
         Restore: restoreDefaultUnits,
         Cancel: function() {$(this).dialog("close");}
       }, open: function() {
@@ -215,11 +217,7 @@ function overviewMilitary() {
 
     function restoreDefaultUnits() {
       removeUnitLines();
-      [{name:"infantry", rural:.25, urban:.2, crew:1, type:"melee", separate:0},
-      {name:"archers", rural:.12, urban:.2, crew:1, type:"ranged", separate:0},
-      {name:"cavalry", rural:.12, urban:.03, crew:3, type:"mounted", separate:0},
-      {name:"artillery", rural:0, urban:.03, crew:8, type:"machinery", separate:0},
-      {name:"fleet", rural:0, urban:.015, crew:100, type:"naval", separate:1}].map(u => addUnitLine(u));
+      Military.getDefaultOptions().map(u => addUnitLine(u));
     }
 
     function applyMilitaryOptions() {
@@ -236,7 +234,7 @@ function overviewMilitary() {
   }
 
   function militaryRecalculate() {
-    alertMessage.innerHTML = "Are you sure you want to recalculate military forces for all states?";
+    alertMessage.innerHTML = "Are you sure you want to recalculate military forces for all states?<br>Regiments for all states will be regenerated";
     $("#alert").dialog({resizable: false, title: "Remove regiment",
       buttons: {
         Recalculate: function() {

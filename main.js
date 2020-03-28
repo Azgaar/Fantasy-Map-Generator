@@ -7,7 +7,7 @@
 // See also https://github.com/Azgaar/Fantasy-Map-Generator/issues/153
 
 "use strict";
-const version = "1.22"; // generator version
+const version = "1.3"; // generator version
 document.title += " v" + version;
 
 // if map version is not stored, clear localStorage and show a message
@@ -58,7 +58,7 @@ let labels = viewbox.append("g").attr("id", "labels");
 let icons = viewbox.append("g").attr("id", "icons");
 let burgIcons = icons.append("g").attr("id", "burgIcons");
 let anchors = icons.append("g").attr("id", "anchors");
-let armies = viewbox.append("g").attr("id", "armies");
+let armies = viewbox.append("g").attr("id", "armies").style("display", "none");
 let markers = viewbox.append("g").attr("id", "markers").style("display", "none");
 let fogging = viewbox.append("g").attr("id", "fogging-cont").attr("mask", "url(#fog)")
   .append("g").attr("id", "fogging").style("display", "none");
@@ -118,13 +118,6 @@ const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", zoomed);
 let options = {}; // options object
 let mapCoordinates = {}; // map coordinates on globe
 options.winds = [225, 45, 225, 315, 135, 315]; // default wind directions
-options.military = [
-  {name:"infantry", rural:.25, urban:.2, crew:1, type:"melee", separate:0},
-  {name:"archers", rural:.12, urban:.2, crew:1, type:"ranged", separate:0},
-  {name:"cavalry", rural:.12, urban:.03, crew:3, type:"mounted", separate:0},
-  {name:"artillery", rural:0, urban:.03, crew:8, type:"machinery", separate:0},
-  {name:"fleet", rural:0, urban:.015, crew:100, type:"naval", separate:1}
-];
 
 // woldbuilding options
 options.year = rand(100, 2000); // current year
@@ -330,7 +323,7 @@ function applyDefaultBiomesSystem() {
 }
 
 function showWelcomeMessage() {
-  const post = link("https://www.reddit.com/r/FantasyMapGenerator/comments/dlow3k/update_new_version_is_published_v_12", "Main changes:"); // announcement on Reddit
+  const post = link("https://www.reddit.com/r/FantasyMapGenerator/comments/dlow3k/update_new_version_is_published_v_13", "Main changes:"); // announcement on Reddit
   const changelog = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "previous version");
   const reddit = link("https://www.reddit.com/r/FantasyMapGenerator", "Reddit community");
   const discord = link("https://discordapp.com/invite/X7E84HU", "Discord server");
@@ -340,13 +333,15 @@ function showWelcomeMessage() {
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
 
     <ul>${post}
-      <li>3d scene and Globe view</li>
-      <li>Ability to save map as JPEG image</li>
-      <li>Diplomacy Editor enhancements</li>
-      <li>Rivers Overview screen</li>
+      <li>Military Forces generation</li>
+      <li>Military Forces overview</li>
+      <li>Military Units editor</li>
+      <li>Regiments editor</li>
     </ul>
 
-    <p>Thanks for all supporters on ${patreon}!</i></p>`;
+    <p>Join our ${discord} and ${reddit} to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
+
+    <span>Thanks for all supporters on ${patreon}!</i></span>`;
 
   $("#alert").dialog(
     {resizable: false, title: "Fantasy Map Generator update", width: "28em",

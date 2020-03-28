@@ -10,10 +10,19 @@
     console.time("generateMilitaryForces");
     cells = pack.cells, p = cells.p, states = pack.states;
     const valid = states.filter(s => s.i && !s.removed); // valid states
+    if (!options.military) options.military = getDefaultOptions();
 
     const expn = d3.sum(valid.map(s => s.expansionism)); // total expansion
     const area = d3.sum(valid.map(s => s.area)); // total area
     const rate = {x:0, Ally:-.2, Friendly:-.1, Neutral:0, Suspicion:.1, Enemy:1, Unknown:0, Rival:.5, Vassal:.5, Suzerain:-.5};
+
+    const stateModifier = {
+      "melee":    {"Nomadic":.5,  "Highland":1.2, "Lake":1,   "Naval":.7,   "Hunting":1.2,  "River":1.1},
+      "ranged":   {"Nomadic":.9,  "Highland":1.3, "Lake":1,   "Naval":.8,   "Hunting":2,    "River":.8},
+      "mounted":  {"Nomadic":2.3, "Highland":.6,  "Lake":.7,  "Naval":.3,   "Hunting":.7,   "River":.8},
+      "machinery":{"Nomadic":.8,  "Highland":1.4, "Lake":1.1, "Naval":1.4,  "Hunting":.4,   "River":1.1},
+      "naval":    {"Nomadic":.5,  "Highland":.5,  "Lake":1.2, "Naval":1.8,  "Hunting":.7,   "River":1.2}
+    };
 
     valid.forEach(s => {
       const temp = s.temp = {}, d = s.diplomacy;
@@ -25,19 +34,10 @@
 
       // apply overall state modifiers for unit types based on state features
       for (const unit of options.military) {
-        let modifier = 1;
-
-        if (unit.type === "mounted") {
-          if (s.type === "Naval") modifier /= 1.4;
-          if (s.form === "Horde") modifier *= 2;
-        } else if (unit.type === "ranged") {
-          if (s.type === "Hunting") modifier *= 1.4;
-        } else if (unit.type === "naval") {
-          if (s.type === "Naval") modifier *= 2; else
-          if (s.type === "River") modifier *= 1.2; else
-          if (s.type === "Nomadic") modifier /= 1.4;
-          if (s.form === "Republic") modifier *= 1.2;
-        }
+        if (!stateModifier[unit.type]) continue;
+        let modifier = stateModifier[unit.type][s.type] || 1;
+        if (unit.type === "mounted" && s.form === "Horde") modifier *= 2; else
+        if (unit.type === "naval" && s.form === "Republic") modifier *= 1.2;
         temp[unit.name] = modifier * s.alert;
       }
 
@@ -76,9 +76,10 @@
           if (u.type === "ranged") army *= 1.4; else
           if (u.type === "mounted") army /= 3;
         }
-  
+
         if (highland) { // highlands special rules
-          if (u.type === "ranged") army *= 2; else
+          if (u.type === "melee") army *= 1.2; else
+          if (u.type === "ranged") army *= 1.6; else
           if (u.type === "mounted") army /= 3;
         }
 
@@ -93,41 +94,41 @@
     for (const b of pack.burgs) {
       if (!b.i || b.removed || !b.state || !b.population) continue;
       const s = states[b.state]; // burg state
-  
+
       let m = b.population * urbanization.value / 100; // basic urban army in percentages
       if (b.capital) m *= 1.2; // capital has household troops
       if (b.culture !== s.culture) m = s.form === "Union" ? m / 1.2 : m / 2; // non-dominant culture
       if (cells.religion[b.cell] !== cells.religion[s.center]) m = s.form === "Theocracy" ? m / 2.2 : m / 1.4; // non-dominant religion
       if (cells.f[b.cell] !== cells.f[s.center]) m = s.type === "Naval" ? m / 1.2 : m / 1.8; // different landmass
-  
+
       const biome = cells.biome[b.cell]; // burg biome
       const nomadic = [1, 2, 3, 4].includes(biome);
       const wetland = [7, 8, 9, 12].includes(biome);
       const highland = cells.h[b.cell] >= 70;
-  
+
       for (const u of options.military) {
         const perc = +u.urban;
         if (isNaN(perc) || perc <= 0) continue;
         let army = m * perc; // basic army for rural cell
-  
+
         if (u.type === "naval") {
           if (!b.port) continue; // only ports have naval units
           army *= normalizeNaval(pack.features[b.port].ports);
         }
-  
+
         if (nomadic) { // "nomadic" biomes special rules
           if (u.type === "melee") army /= 3; else
           if (u.type === "machinery") army /= 2; else
           if (u.type === "mounted") army *= 3;
         }
-  
+
         if (wetland) { // "wet" biomes special rules
           if (u.type === "melee") army *= 1.2; else
           if (u.type === "ranged") army *= 1.4; else
           if (u.type === "machinery") army *= 1.2; else
           if (u.type === "mounted") army /= 4;
         }
-  
+
         if (highland) { // highlands special rules
           if (u.type === "ranged") army *= 2; else
           if (u.type === "naval") army /= 3; else
@@ -196,8 +197,18 @@
     console.timeEnd("generateMilitaryForces");
   }
 
-  function drawRegiments(regiments, s) {
-    const size = +armies.attr("data-size");
+  const getDefaultOptions = function() {
+    return [
+      {name:"infantry", rural:.25, urban:.2, crew:1, type:"melee", separate:0},
+      {name:"archers", rural:.12, urban:.2, crew:1, type:"ranged", separate:0},
+      {name:"cavalry", rural:.12, urban:.03, crew:3, type:"mounted", separate:0},
+      {name:"artillery", rural:0, urban:.03, crew:8, type:"machinery", separate:0},
+      {name:"fleet", rural:0, urban:.015, crew:100, type:"naval", separate:1}
+    ];
+  }
+
+  const drawRegiments = function(regiments, s) {
+    const size = +armies.attr("box-size");
     const w = d => d.n ? size * 4 : size * 6;
     const h = size * 2;
     const x = d => rn(d.x - w(d) / 2, 2);
@@ -216,7 +227,7 @@
   }
 
   const drawRegiment = function(reg, s, x = reg.x, y = reg.y) {
-    const size = +armies.attr("data-size");
+    const size = +armies.attr("box-size");
     const w = reg.n ? size * 4 : size * 6;
     const h = size * 2;
     const x1 = rn(x - w / 2, 2);
@@ -236,7 +247,7 @@
   const getTotal = reg => reg.a > (reg.n ? 999 : 99999) ? si(reg.a) : reg.a;
 
   const getName = function(r, regiments) {
-    const proper = r.n ? null : 
+    const proper = r.n ? null :
       cells.province[r.cell] ? pack.provinces[cells.province[r.cell]].name :
       cells.burg[r.cell] ? pack.burgs[cells.burg[r.cell]].name : null
     const number = nth(regiments.filter(reg => reg.n === r.n && reg.i < r.i).length+1);
@@ -271,6 +282,6 @@
     notes.push({id:`regiment${s.i}-${r.i}`, name:`${r.icon} ${r.name}`, legend});
   }
 
-  return {generate, getName, generateNote, drawRegiment, getTotal, getEmblem};
+  return {generate, getDefaultOptions, getName, generateNote, drawRegiments, drawRegiment, getTotal, getEmblem};
 
 })));

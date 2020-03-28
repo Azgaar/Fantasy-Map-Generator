@@ -2,9 +2,10 @@
 function overviewRegiments(state) {
   if (customization) return;
   closeDialogs(".stable");
+  if (!layerIsOn("toggleMilitary")) toggleMilitary();
 
   const body = document.getElementById("regimentsBody");
-  updateFilter();
+  updateFilter(state);
   addLines();
   $("#regimentsOverview").dialog();
 
@@ -13,21 +14,16 @@ function overviewRegiments(state) {
   updateHeaders();
 
   $("#regimentsOverview").dialog({
-    title: "Regiments Overview", resizable: false, width: fitContent(),
-    position: {my: "center", at: "center", of: "svg"}
+    title: "Military Overview", resizable: false, width: fitContent(),
+    position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
   });
 
   // add listeners
   document.getElementById("regimentsOverviewRefresh").addEventListener("click", addLines);
   document.getElementById("regimentsPercentage").addEventListener("click", togglePercentageMode);
-  document.getElementById("regimentsAddNew").addEventListener("click", toggleAddRegiment);
+  document.getElementById("regimentsAddNew").addEventListener("click", toggleAdd);
   document.getElementById("regimentsExport").addEventListener("click", downloadRegimentsData);
-  document.getElementById("regimentsFilter").addEventListener("change", filterRegiments);
-
-  body.addEventListener("click", function(ev) {
-    const el = ev.target, line = el.parentNode, state = +line.dataset.id;
-    //if (el.tagName === "SPAN") showRegimentList(state);
-  });
+  document.getElementById("regimentsFilter").addEventListener("change", addLines);
 
   // update military types in header and tooltips
   function updateHeaders() {
@@ -45,6 +41,7 @@ function overviewRegiments(state) {
 
   // add line for each state
   function addLines() {
+    const state = +regimentsFilter.value;
     body.innerHTML = "";
     let lines = "";
     const regiments = [];
@@ -64,7 +61,7 @@ function overviewRegiments(state) {
           <input data-tip="Regiment's name" style="width:13em" value="${r.name}" readonly>
           ${lineData}
           <div data-type="total" data-tip="Total military personnel (not considering crew)" style="font-weight: bold">${r.a}</div>
-          <span data-tip="Edit regiment" class="icon-pencil pointer"></span>
+          <span data-tip="Edit regiment" onclick="editRegiment('#regiment${s.i}-${r.i}')" class="icon-pencil pointer"></span>
         </div>`;
 
         regiments.push(r);
@@ -86,17 +83,12 @@ function overviewRegiments(state) {
     body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseleave", ev => regimentHighlightOff(ev)));
   }
 
-  function updateFilter() {
+  function updateFilter(state) {
     const filter = document.getElementById("regimentsFilter");
     filter.options.length = 0; // remove all options
     filter.options.add(new Option(`all`, -1, false, state === -1));
     const statesSorted = pack.states.filter(s => s.i && !s.removed).sort((a, b) => (a.name > b.name) ? 1 : -1);
     statesSorted.forEach(s => filter.options.add(new Option(s.name, s.i, false, s.i == state)));
-  }
-
-  function filterRegiments() {
-    state = +this.value;
-    addLines();
   }
 
   function regimentHighlightOn(event) {
@@ -128,7 +120,7 @@ function overviewRegiments(state) {
         el.querySelectorAll("div").forEach(function(div) {
           const type = div.dataset.type;
           if (type === "rate") return;
-          div.textContent = rn(+el.dataset[type] / total(type) * 100) + "%";
+          div.textContent = total(type) ? rn(+el.dataset[type] / total(type) * 100) + "%" : "0%";
         });
       });
     } else {
@@ -137,8 +129,35 @@ function overviewRegiments(state) {
     }
   }
 
-  function toggleAddRegiment() {
+  function toggleAdd() {
+    document.getElementById("regimentsAddNew").classList.toggle("pressed");
+    if (document.getElementById("regimentsAddNew").classList.contains("pressed")) {
+      viewbox.style("cursor", "crosshair").on("click", addRegimentOnClick);
+      tip("Click on map to create new regiment or fleet", true);
+      if (regimentAdd.offsetParent) regimentAdd.classList.add("pressed");
+    } else {
+      clearMainTip();
+      viewbox.on("click", clicked).style("cursor", "default");
+      addLines();
+      if (regimentAdd.offsetParent) regimentAdd.classList.remove("pressed");
+    }
+  }
 
+  function addRegimentOnClick() {
+    const state = +regimentsFilter.value;
+    if (state === -1) {tip("Please select state from the list", false, "error"); return;}
+
+    const point = d3.mouse(this);
+    const cell = findCell(point[0], point[1]);
+    const x = pack.cells.p[cell][0], y = pack.cells.p[cell][1];
+    const military = pack.states[state].military;
+    const i = military.length ? last(military).i + 1 : 0;
+    const n = +(pack.cells.h[cell] < 20); // naval or land
+    const reg = {a:0, cell, i, n, u:{}, x, y, icon:"🛡️"};
+    reg.name = Military.getName(reg, military);
+    military.push(reg);
+    Military.drawRegiment(reg, state);
+    toggleAdd();
   }
 
   function downloadRegimentsData() {

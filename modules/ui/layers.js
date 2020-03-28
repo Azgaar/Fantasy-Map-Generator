@@ -36,6 +36,7 @@ function getDefaultPresets() {
     "heightmap": ["toggleHeight", "toggleRivers"],
     "physical": ["toggleCoordinates", "toggleHeight", "toggleRivers", "toggleScaleBar"],
     "poi": ["toggleBorders", "toggleHeight", "toggleIcons", "toggleMarkers", "toggleRivers", "toggleRoutes", "toggleScaleBar"],
+    "military": ["toggleBorders", "toggleIcons", "toggleLabels", "toggleMilitary", "toggleRivers", "toggleRoutes", "toggleScaleBar", "toggleStates"],
     "landmass": ["toggleScaleBar"]
   }
 }
@@ -1055,6 +1056,18 @@ function toggleRoutes(event) {
     if (event && isCtrlClick(event)) {editStyle("routes"); return;}
     $('#routes').fadeOut();
     turnButtonOff("toggleRoutes");
+  }
+}
+
+function toggleMilitary() {
+  if (!layerIsOn("toggleMilitary")) {
+    turnButtonOn("toggleMilitary");
+    $('#armies').fadeIn();
+    if (event && isCtrlClick(event)) editStyle("armies");
+  } else {
+    if (event && isCtrlClick(event)) {editStyle("armies"); return;}
+    $('#armies').fadeOut();
+    turnButtonOff("toggleMilitary");
   }
 }
 

@@ -64,6 +64,7 @@ function processFeatureRegeneration(event, button) {
   if (button === "regenerateStates") regenerateStates(); else
   if (button === "regenerateProvinces") regenerateProvinces(); else
   if (button === "regenerateReligions") regenerateReligions(); else
+  if (button === "regenerateMilitary") regenerateMilitary(); else
   if (button === "regenerateMarkers") regenerateMarkers(event); else
   if (button === "regenerateZones") regenerateZones(event);
 }
@@ -236,6 +237,12 @@ function regenerateProvinces() {
 function regenerateReligions() {
   Religions.generate();
   if (!layerIsOn("toggleReligions")) toggleReligions(); else drawReligions();
+}
+
+function regenerateMilitary() {
+  Military.generate();
+  if (!layerIsOn("toggleMilitary")) toggleMilitary();
+  if (document.getElementById("militaryOverviewRefresh").offsetParent) militaryOverviewRefresh.click();
 }
 
 function regenerateMarkers(event) {

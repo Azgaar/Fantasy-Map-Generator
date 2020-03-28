@@ -34,31 +34,17 @@
     #loading-text span:nth-child(3) {animation-delay: 2s;}
     @keyframes blink {0% {opacity: 0;} 20% {opacity: 1;} 100% {opacity: .1;}}
   </style>
-  <link rel="preload" href="index.css?version=1.2" as="style">
-  <link rel="preload" href="icons.css?version=1.2" as="style">
+  <link rel="preload" href="index.css?version=1.3" as="style">
+  <link rel="preload" href="icons.css?version=1.3" as="style">
   <link rel="preload" href="libs/jquery-ui.css" as="style">
-  <link rel="stylesheet" href="index.css?version=1.2">
-  <link rel="stylesheet" href="icons.css?version=1.2">
+  <link rel="stylesheet" href="index.css?version=1.3">
+  <link rel="stylesheet" href="icons.css?version=1.3">
   <link rel="stylesheet" href="libs/jquery-ui.css">
 
 </head>
 <body>
   <svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" id="map" width="100%" height="100%">
     <defs>
-      <style type="text/css">
-        #armies rect {stroke-width: .3; stroke: #000;}
-        #armies text {
-          stroke: none;
-          fill: #fff;
-          text-shadow: 0 0 4px #000;
-          dominant-baseline: central;
-          text-anchor: middle;
-          font-family: Helvetica;
-          fill-opacity: 1;
-        }
-        #armies text.regimentIcon {font-size: .8em;}
-      </style>
-
       <g id="filters">
         <filter id="blurFilter" x="-1" y="-1" width="100" height="100">
           <feGaussianBlur in="SourceGraphic" stdDeviation="0.2"/>
@@ -913,7 +899,7 @@
   <div id="loading">
     <div id="titleName"><t data-t="titleName">Azgaar's</t></div>
     <div id="title"><t data-t="title">Fantasy Map Generator</t></div>
-    <div id="version"><t data-t="version">v. </t>1.2</div>
+    <div id="version"><t data-t="version">v. </t>1.3</div>
     <p id="loading-text"><t data-t="loading">LOADING</t><span>.</span><span>.</span><span>.</span></p>
   </div>
 
@@ -947,6 +933,7 @@
           <option value="heightmap">Heightmap</option>
           <option value="physical">Physical map</option>
           <option value="poi">Places of interest</option>
+          <option value="military">Military map</option>
           <option value="landmass">Pure landmass</option>
           <option hidden value="custom">Custom (not saved)</option>
         </select>
@@ -976,7 +963,8 @@
           <li id="togglePrec" data-tip="Precipitation map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: A" class="buttonoff" onclick="togglePrec(event)">Precipit<u>a</u>tion</li>
           <li id="toggleLabels" data-tip="Labels: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: L" onclick="toggleLabels(event)"><u>L</u>abels</li>
           <li id="toggleIcons" data-tip="Burg icons: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: I" onclick="toggleIcons(event)"><u>I</u>cons</li>
-          <li id="toggleMarkers" data-tip="Markers: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: M" class="buttonoff" onclick="toggleMarkers(event)"><u>M</u>arkers</li>
+          <li id="toggleMilitary" data-tip="Military forces: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: M" class="buttonoff" onclick="toggleMilitary(event)"><u>M</u>ilitary</li>
+          <li id="toggleMarkers" data-tip="Markers: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: K" class="buttonoff" onclick="toggleMarkers(event)">Mar<u>k</u>ers</li>
           <li id="toggleRulers" data-tip="Rulers: click to toggle, drag to move, click on label to delete. Ctrl + click to edit layer style. Shortcut: = (equal)" class="buttonoff" onclick="toggleRulers(event)">Rulers</li>
           <li id="toggleScaleBar" data-tip="Scale Bar: click to toggle. Ctrl + click to edit style. Shortcut: - (minus)" onclick="toggleScaleBar(event)" class="solid">Scale Bar</li>
         </ul>
@@ -1019,6 +1007,7 @@
           <option value="landmass">Landmass</option>
           <option value="legend">Legend</option>
           <option value="markers">Markers</option>
+          <option value="armies">Military</option>
           <option value="ocean">Ocean</option>
           <option value="population">Population</option>
           <option value="prec">Precipitation</option>
@@ -1459,6 +1448,23 @@
             </tr>
           </tbody>
 
+          <tbody id="styleArmies">
+            <tr data-tip="Set fill transparency. Set to 0 to make it fully transparent">
+              <td>Fill opacity</td>
+              <td>
+                <input id="styleArmiesFillOpacity" type="range" min=0 max=1 step=.01 value=1>
+                <output id="styleArmiesFillOpacityOutput">1</output>
+              </td>
+            </tr>
+            <tr data-tip="Set regiment box size. All regiments will be redrawn on change (position will defaulted)">
+              <td>Box Size</td>
+              <td>
+                <input id="styleArmiesSize" type="range" min=1 max=10 step=.1 value=3>
+                <output id="styleArmiesSizeOutput">3</output>
+              </td>
+            </tr>
+          </tbody>
+
           <tbody id="styleFilter" style="display: block">
             <tr data-tip="Select filter for element. Please note filters may cause performance issues!">
               <td>Filter</td>
@@ -1502,13 +1508,13 @@
           </tbody>
 
           <tbody id="styleMarkers">
-              <tr data-tip="Try to keep the same size on any map scale, turn off to get size change depending on scale">
-                <td colspan=2>
-                  <input id="styleRescaleMarkers" class="checkbox" type="checkbox">
-                  <label for="styleRescaleMarkers" class="checkbox-label">Keep initial size on zoom change</label>
-                </td>
-              </tr>
-            </tbody>
+            <tr data-tip="Try to keep the same size on any map scale, turn off to get size change depending on scale">
+              <td colspan=2>
+                <input id="styleRescaleMarkers" class="checkbox" type="checkbox">
+                <label for="styleRescaleMarkers" class="checkbox-label">Keep initial size on zoom change</label>
+              </td>
+            </tr>
+          </tbody>
 
           <tbody id="styleVisibility">
             <tr data-tip="Define displayed label groups">
@@ -1849,6 +1855,7 @@
           <button id="regenerateStates" data-tip="Click to select new capitals and regenerate states. Burgs will remain as they are">States</button>
           <button id="regenerateProvinces" data-tip="Click to regenerate provinces. States will remain as they are">Provinces</button>
           <button id="regenerateReligions" data-tip="Click to regenerate religions">Religions</button>
+          <button id="regenerateMilitary" data-tip="Click to recalculate military forces and regenerate regiments based on current military options">Military</button>
           <button id="regenerateMarkers" data-tip="Click to regenerate markers. Hold Ctrl and click to set markers number multiplier">Markers</button>
           <button id="regenerateZones" data-tip="Click to regenerate zones. Hold Ctrl and click to set zones number multiplier">Zones</button>
         </div>
@@ -3289,6 +3296,7 @@
       <div id="militaryBottom">
         <button id="militaryOverviewRefresh" data-tip="Refresh the overview screen" class="icon-cw"></button>
         <button id="militaryOptionsButton" data-tip="Edit Military units" class="icon-cog"></button>
+        <button id="militaryRegimentsList" data-tip="Show regiments list" class="icon-list-bullet"></button>
         <button id="militaryPercentage" data-tip="Toggle percentage / absolute values views" class="icon-percent"></button>
         <button id="militaryOverviewRecalculate" data-tip="Recalculate military forces based on current options" class="icon-retweet"></button>
         <button id="militaryExport" data-tip="Save military-related data as a text file (.csv)" class="icon-download"></button>
@@ -3308,8 +3316,8 @@
         <button id="regimentsOverviewRefresh" data-tip="Refresh the overview screen" class="icon-cw"></button>
         <button id="regimentsPercentage" data-tip="Toggle percentage / absolute values views" class="icon-percent"></button>
         <button id="regimentsAddNew" data-tip="Add new Regiment" class="icon-user-plus"></button>
-        <button id="regimentsExport" data-tip="Save military-related data as a text file (.csv)" class="icon-download"></button>
         <div data-tip="Select state" style="display:inline-block"><span>State: </span><select id="regimentsFilter"></select></div>
+        <button id="regimentsExport" data-tip="Save military-related data as a text file (.csv)" class="icon-download"></button>
       </div>
     </div>
 
@@ -3487,7 +3495,7 @@
     <input type="file" accept=".json" id="styleToLoad">
   </div>
 
-  <script src="libs/translate.js"></script>
+  <!-- <script src="libs/translate.js"></script> -->
   <script src="libs/jquery-3.1.1.min.js"></script>
   <script src="libs/d3.min.js"></script>
   <script src="libs/priority-queue.min.js"></script>

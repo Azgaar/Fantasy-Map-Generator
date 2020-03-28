@@ -231,7 +231,7 @@ function getMapData() {
       barSize.value, barLabel.value, barBackOpacity.value, barBackColor.value,
       barPosX.value, barPosY.value, populationRate.value, urbanization.value,
       mapSizeOutput.value, latitudeOutput.value, temperatureEquatorOutput.value,
-      temperaturePoleOutput.value, precOutput.value, JSON.stringify(options.winds),
+      temperaturePoleOutput.value, precOutput.value, JSON.stringify(options),
       mapName.value].join("|");
     const coords = JSON.stringify(mapCoordinates);
     const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
@@ -575,7 +575,7 @@ function parseLoadedData(data) {
       if (settings[16]) temperatureEquatorInput.value = temperatureEquatorOutput.value = settings[16];
       if (settings[17]) temperaturePoleInput.value = temperaturePoleOutput.value = settings[17];
       if (settings[18]) precInput.value = precOutput.value = settings[18];
-      if (settings[19]) options.winds = JSON.parse(settings[19]);
+      if (settings[19]) options = JSON.parse(settings[19]);
       if (settings[20]) mapName.value = settings[20];
     }()
 
@@ -721,6 +721,7 @@ function parseLoadedData(data) {
       if (prec.selectAll("circle").size()) turnButtonOn("togglePrec"); else turnButtonOff("togglePrec");
       if (labels.style("display") !== "none") turnButtonOn("toggleLabels"); else turnButtonOff("toggleLabels");
       if (icons.style("display") !== "none") turnButtonOn("toggleIcons"); else turnButtonOff("toggleIcons");
+      if (armies.selectAll("*").size() && armies.style("display") !== "none") turnButtonOn("toggleMilitary"); else turnButtonOff("toggleMilitary");
       if (markers.selectAll("*").size() && markers.style("display") !== "none") turnButtonOn("toggleMarkers"); else turnButtonOff("toggleMarkers");
       if (ruler.style("display") !== "none") turnButtonOn("toggleRulers"); else turnButtonOff("toggleRulers");
       if (scaleBar.style("display") !== "none") turnButtonOn("toggleScaleBar"); else turnButtonOff("toggleScaleBar");
@@ -774,6 +775,7 @@ function parseLoadedData(data) {
         // 1.0 adds state relations, provinces, forms and full names
         provs = viewbox.insert("g", "#borders").attr("id", "provs").attr("opacity", .6);
         BurgsAndStates.collectStatistics();
+        BurgsAndStates.generateCampaigns();
         BurgsAndStates.generateDiplomacy();
         BurgsAndStates.defineStateForms();
         drawStates();
@@ -905,7 +907,6 @@ function parseLoadedData(data) {
         });
 
         // v 1.21 added rivers data to pack
-
         pack.rivers = []; // rivers data
         rivers.selectAll("path").each(function() {
           const i = +this.id.slice(5);
@@ -937,6 +938,24 @@ function parseLoadedData(data) {
           if (!f.i) continue;
           f.ports = pack.burgs.filter(b => !b.removed && b.port === f.i).length;
         }
+
+        // v 1.3 added global options object
+        const winds = options.slice(); // previostly wnd was saved in settings[19]
+        const year = rand(100, 2000);
+        const era = Names.getBaseShort(P(.7) ? 1 : rand(nameBases.length)) + " Era";
+        const eraShort = era[0] + "E";
+        const military = Military.getDefaultOptions();
+        options = {winds, year, era, eraShort, military};
+
+        // v 1.3 added campaings data for all states
+        BurgsAndStates.generateCampaigns();
+
+        // v 1.3 added militry layer
+        svg.select("defs").append("style").text(armiesStyle()); // add armies style
+        armies = viewbox.insert("g", "#icons").attr("id", "armies");
+        armies.attr("opacity", 1).attr("fill-opacity", 1).attr("font-size", 6).attr("box-size", 3).attr("stroke", "#000").attr("stroke-width", .3);
+        turnButtonOn("toggleMilitary");
+        Military.generate();
       }
 
     }()

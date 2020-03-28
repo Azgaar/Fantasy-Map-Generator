@@ -74,7 +74,7 @@
 
       // directly connect first port with the farthest one on the same island to remove gap
       void function() {
-        if (pack.features[f].type === "lake") return;
+        if (!pack.features[f] || pack.features[f].type === "lake") return;
         const portsOnIsland = ports.filter(b => cells.f[b.cell] === cells.f[first]);
         if (portsOnIsland.length < 4) return;
         const opposite = ports[d3.scan(portsOnIsland, (a, b) => ((b.y - ports[0].y) ** 2 + (b.x - ports[0].x) ** 2) - ((a.y - ports[0].y) ** 2 + (a.x - ports[0].x) ** 2))].cell;

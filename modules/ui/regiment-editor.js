@@ -1,12 +1,12 @@
 "use strict";
-function editRegiment() {
+function editRegiment(selector) {
   if (customization) return;
   closeDialogs(".stable");
-  // if (!layerIsOn("toggleArmies")) toggleArmies();
+  if (!layerIsOn("toggleMilitary")) toggleMilitary();
 
   armies.selectAll(":scope > g").classed("draggable", true);
   armies.selectAll(":scope > g > g").call(d3.drag().on("drag", dragRegiment));
-  elSelected = d3.event.target.parentElement; // select g element
+  elSelected = selector ? document.querySelector(selector) : d3.event.target.parentElement; // select g element
   if (!pack.states[elSelected.dataset.state]) return;
   if (!regiment()) return;
   updateRegimentData(regiment());

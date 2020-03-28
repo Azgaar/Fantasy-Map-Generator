@@ -45,8 +45,8 @@ function showDataTip(e) {
   let dataTip = e.target.dataset.tip;
   if (!dataTip && e.target.parentNode.dataset.tip) dataTip = e.target.parentNode.dataset.tip;
   if (!dataTip) return;
-  const tooltip = lang === "en" ? dataTip : translate(e.target.dataset.t || e.target.parentNode.dataset.t, dataTip);
-  tip(tooltip);
+  //const tooltip = lang === "en" ? dataTip : translate(e.target.dataset.t || e.target.parentNode.dataset.t, dataTip);
+  tip(dataTip);
 }
 
 function moved() {
@@ -403,7 +403,8 @@ document.addEventListener("keyup", event => {
   else if (key === 65) togglePrec(); // "A" to toggle Precipitation layer
   else if (key === 76) toggleLabels(); // "L" to toggle Labels layer
   else if (key === 73) toggleIcons(); // "I" to toggle Icons layer
-  else if (key === 77) toggleMarkers(); // "M" to toggle Markers layer
+  else if (key === 77) toggleMilitary(); // "M" to toggle Military layer
+  else if (key === 75) toggleMarkers(); // "K" to toggle Markers layer
   else if (key === 187) toggleRulers(); // Equal (=) to toggle Rulers
   else if (key === 189) toggleScaleBar(); // Minus (-) to toggle Scale bar
 
