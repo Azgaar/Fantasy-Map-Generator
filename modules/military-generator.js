@@ -112,7 +112,7 @@
         let army = m * perc; // basic army for rural cell
 
         if (u.type === "naval") {
-          if (!b.port) continue; // only ports have naval units
+          if (!b.port || b.port < 1) continue; // only ports have naval units
           army *= normalizeNaval(pack.features[b.port].ports);
         }
 
