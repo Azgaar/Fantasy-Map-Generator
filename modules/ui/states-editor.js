@@ -46,7 +46,7 @@ function editStates() {
     if (cl.contains("icon-star-empty")) stateCapitalZoomIn(state); else
     if (cl.contains("culturePopulation")) changePopulation(state); else
     if (cl.contains("icon-pin")) focusOnState(state, cl); else
-    if (cl.contains("icon-trash-empty")) stateRemove(state);
+    if (cl.contains("icon-trash-empty")) stateRemovePrompt(state);
   });
 
   body.addEventListener("input", function(ev) {
@@ -411,8 +411,22 @@ function editStates() {
     if (!defs.selectAll("#fog path").size()) fogging.style("display", "none"); // all items are de-focused
   }
 
-  function stateRemove(state) {
+  function stateRemovePrompt(state) {
     if (customization) return;
+
+    alertMessage.innerHTML = "Are you sure you want to remove the state? <br>This action cannot be reverted";
+    $("#alert").dialog({resizable: false, title: "Remove state",
+      buttons: {
+        Remove: function() {
+          $(this).dialog("close");
+          stateRemove(state);
+        },
+        Cancel: function() {$(this).dialog("close");}
+      }
+    });
+  }
+
+  function stateRemove(state) {
     statesBody.select("#state"+state).remove();
     statesBody.select("#state-gap"+state).remove();
     statesHalo.select("#state-border"+state).remove();
