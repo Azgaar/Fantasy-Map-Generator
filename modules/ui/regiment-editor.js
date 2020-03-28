@@ -75,7 +75,7 @@ function editRegiment(selector) {
     reg.n = +!reg.n;
     document.getElementById("regimentType").className = reg.n ? "icon-anchor" :"icon-users";
 
-    const size = +armies.attr("data-size");
+    const size = +armies.attr("box-size");
     const baseRect = elSelected.querySelectorAll("rect")[0];
     const iconRect = elSelected.querySelectorAll("rect")[1];
     const icon = elSelected.querySelector(".regimentIcon");
@@ -84,6 +84,7 @@ function editRegiment(selector) {
     baseRect.setAttribute("width", reg.n ? size*4 : size*6);
     iconRect.setAttribute("x", x - size*2);
     icon.setAttribute("x", x - size);
+    elSelected.querySelector("text").innerHTML = Military.getTotal(reg);
   }
 
   function changeName() {
@@ -141,6 +142,7 @@ function editRegiment(selector) {
     reg.a = d3.sum(Object.values(reg.u));
     elSelected.querySelector("text").innerHTML = Military.getTotal(reg);
     if (militaryOverviewRefresh.offsetParent) militaryOverviewRefresh.click();
+    if (regimentsOverviewRefresh.offsetParent) regimentsOverviewRefresh.click();
   }
 
   function splitRegiment() {
@@ -161,6 +163,7 @@ function editRegiment(selector) {
     Military.drawRegiment(reg, state, reg.x, reg.y-6); // draw old reg above
     Military.drawRegiment(newReg, state, reg.x, reg.y+6); // draw new reg below
 
+    if (regimentsOverviewRefresh.offsetParent) regimentsOverviewRefresh.click();
     $("#regimentEditor").dialog("close");
   }
 
@@ -186,6 +189,7 @@ function editRegiment(selector) {
     reg.name = Military.getName(reg, military);
     military.push(reg);
     Military.drawRegiment(reg, state);
+    if (regimentsOverviewRefresh.offsetParent) regimentsOverviewRefresh.click();
     toggleAdd();
   }
 
@@ -227,6 +231,7 @@ function editRegiment(selector) {
     if (index != -1) notes.splice(index, 1);
     elSelected.remove();
 
+    if (regimentsOverviewRefresh.offsetParent) regimentsOverviewRefresh.click();
     $("#regimentEditor").dialog("close");
   }
 
@@ -258,6 +263,7 @@ function editRegiment(selector) {
           elSelected.remove();
 
           if (militaryOverviewRefresh.offsetParent) militaryOverviewRefresh.click();
+          if (regimentsOverviewRefresh.offsetParent) regimentsOverviewRefresh.click();
           $("#regimentEditor").dialog("close");
         },
         Cancel: function() {$(this).dialog("close");}
