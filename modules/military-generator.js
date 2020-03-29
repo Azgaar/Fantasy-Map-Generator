@@ -181,7 +181,7 @@
       const regiments = nodes.filter(n => n.t).sort((a,b) => b.t - a.t).map((r, i) => {
         const u = {}; u[r.u] = r.a;
         (r.childen||[]).forEach(n => u[n.u] = u[n.u] ? u[n.u] += n.a : n.a);
-        return {i, a:r.t, cell:r.cell, x:r.x, y:r.y, u, n:r.n, name};
+        return {i, a:r.t, cell:r.cell, x:r.x, y:r.y, bx:r.x, by:r.y, u, n:r.n, name};
       });
 
       // generate name for regiments
@@ -226,21 +226,21 @@
     g.append("text").attr("class", "regimentIcon").attr("x", d => x(d)-size).attr("y", d => d.y).text(d => d.icon);
   }
 
-  const drawRegiment = function(reg, s, x = reg.x, y = reg.y) {
+  const drawRegiment = function(reg, s) {
     const size = +armies.attr("box-size");
     const w = reg.n ? size * 4 : size * 6;
     const h = size * 2;
-    const x1 = rn(x - w / 2, 2);
-    const y1 = rn(y - size, 2);
+    const x1 = rn(reg.x - w / 2, 2);
+    const y1 = rn(reg.y - size, 2);
 
     const army = armies.select("g#army"+s);
     const darkerColor = d3.color(army.attr("fill")).darker().hex();
 
     const g = army.append("g").attr("id", "regiment"+s+"-"+reg.i).attr("data-name", reg.name).attr("data-state", s).attr("data-id", reg.i);
     g.append("rect").attr("x", x1).attr("y", y1).attr("width", w).attr("height", h);
-    g.append("text").attr("x", x).attr("y", y).text(getTotal(reg));
+    g.append("text").attr("x", reg.x).attr("y", reg.y).text(getTotal(reg));
     g.append("rect").attr("fill", darkerColor).attr("x", x1-h).attr("y", y1).attr("width", h).attr("height", h);
-    g.append("text").attr("class", "regimentIcon").attr("x", x1-size).attr("y", y).text(reg.icon);
+    g.append("text").attr("class", "regimentIcon").attr("x", x1-size).attr("y", reg.y).text(reg.icon);
   }
 
   // utilize si function to make regiment total text fit regiment box
