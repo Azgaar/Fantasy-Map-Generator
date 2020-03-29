@@ -216,15 +216,18 @@ function regenerateStates() {
   BurgsAndStates.normalizeStates();
   BurgsAndStates.collectStatistics();
   BurgsAndStates.assignColors();
+  BurgsAndStates.generateCampaigns();
   BurgsAndStates.generateDiplomacy();
   BurgsAndStates.defineStateForms();
   BurgsAndStates.generateProvinces(true);
   if (!layerIsOn("toggleStates")) toggleStates(); else drawStates();
   if (!layerIsOn("toggleBorders")) toggleBorders(); else drawBorders();
   BurgsAndStates.drawStateLabels();
+  Military.generate();
 
   if (document.getElementById("burgsOverviewRefresh").offsetParent) burgsOverviewRefresh.click();
   if (document.getElementById("statesEditorRefresh").offsetParent) statesEditorRefresh.click();
+  if (document.getElementById("militaryOverviewRefresh").offsetParent) militaryOverviewRefresh.click();
 }
 
 function regenerateProvinces() {
