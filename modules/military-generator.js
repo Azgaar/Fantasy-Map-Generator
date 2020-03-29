@@ -248,8 +248,8 @@
 
   const getName = function(r, regiments) {
     const proper = r.n ? null :
-      cells.province[r.cell] ? pack.provinces[cells.province[r.cell]].name :
-      cells.burg[r.cell] ? pack.burgs[cells.burg[r.cell]].name : null
+      cells.province[r.cell] && pack.provinces[cells.province[r.cell]] ? pack.provinces[cells.province[r.cell]].name :
+      cells.burg[r.cell] && pack.burgs[cells.burg[r.cell]] ? pack.burgs[cells.burg[r.cell]].name : null
     const number = nth(regiments.filter(reg => reg.n === r.n && reg.i < r.i).length+1);
     const form = r.n ? "Fleet" : "Regiment";
     return `${number}${proper?` (${proper}) `:` `}${form}`;
@@ -268,8 +268,8 @@
   }
 
   const generateNote = function(r, s) {
-    const base = cells.burg[r.cell] ? pack.burgs[cells.burg[r.cell]].name :
-      cells.province[r.cell] ? pack.provinces[cells.province[r.cell]].fullName : null;
+    const base = cells.burg[r.cell] && pack.burgs[cells.burg[r.cell]] ? pack.burgs[cells.burg[r.cell]].name :
+      cells.province[r.cell] && pack.provinces[cells.province[r.cell]] ? pack.provinces[cells.province[r.cell]].fullName : null;
     const station = base ? `${r.name} is ${r.n ? "based" : "stationed"} in ${base}. ` : null;
 
     const composition = Object.keys(r.u).map(t => ` — ${t}: ${r.u[t]}`).join("\r\n");

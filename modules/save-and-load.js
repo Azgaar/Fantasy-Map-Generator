@@ -960,6 +960,62 @@ function parseLoadedData(data) {
 
     }()
 
+    void function checkDataIntegrity() {
+      const cells = pack.cells;
+
+      const invalidStates = [...new Set(cells.state)].filter(s => !pack.states[s] || pack.states[s].removed);
+      invalidStates.forEach(s => {
+        const invalidCells = cells.i.filter(i => cells.state[i] === s);
+        invalidCells.forEach(i => cells.state[i] = 0);
+        console.error("Data Integrity Check. Invalid state", s, "is assigned to cells", invalidCells);
+      });
+
+      const invalidProvinces = [...new Set(cells.province)].filter(p => p && (!pack.provinces[p] || pack.provinces[p].removed));
+      invalidProvinces.forEach(p => {
+        const invalidCells = cells.i.filter(i => cells.province[i] === p);
+        invalidCells.forEach(i => cells.province[i] = 0);
+        console.error("Data Integrity Check. Invalid province", p, "is assigned to cells", invalidCells);
+      });
+
+      const invalidCultures = [...new Set(cells.culture)].filter(c => !pack.cultures[c] || pack.cultures[c].removed);
+      invalidCultures.forEach(c => {
+        const invalidCells = cells.i.filter(i => cells.culture[i] === c);
+        invalidCells.forEach(i => cells.province[i] = 0);
+        console.error("Data Integrity Check. Invalid culture", c, "is assigned to cells", invalidCells);
+      });
+
+      const invalidReligions = [...new Set(cells.religion)].filter(r => !pack.religions[r] || pack.religions[r].removed);
+      invalidReligions.forEach(r => {
+        const invalidCells = cells.i.filter(i => cells.religion[i] === r);
+        invalidCells.forEach(i => cells.religion[i] = 0);
+        console.error("Data Integrity Check. Invalid religion", c, "is assigned to cells", invalidCells);
+      });
+
+      const invalidFeatures = [...new Set(cells.f)].filter(f => f && !pack.features[f]);
+      invalidFeatures.forEach(f => {
+        const invalidCells = cells.i.filter(i => cells.f[i] === f);
+        // No fix as for now
+        console.error("Data Integrity Check. Invalid feature", f, "is assigned to cells", invalidCells);
+      });
+
+      const invalidBurgs = [...new Set(cells.burg)].filter(b => b && (!pack.burgs[b] || pack.burgs[b].removed));
+      invalidBurgs.forEach(b => {
+        const invalidCells = cells.i.filter(i => cells.burg[i] === b);
+        invalidCells.forEach(i => cells.burg[i] = 0);
+        console.error("Data Integrity Check. Invalid burg", b, "is assigned to cells", invalidCells);
+      });
+
+      pack.burgs.forEach(b => {
+        if (!b.i || b.removed) return;
+        if (b.port < 0) {console.error("Data Integrity Check. Burg", b.i, "has invalid port value", b.port); b.port = 0;}
+        if (b.cell < cells.i.length) return;
+        console.error("Data Integrity Check. Burg", b.i, "is linked to invalid cell", b.cell);
+        b.cell = findCell(b.x, b.y);
+        cells.i.filter(i => cells.burg[i] === b.i).forEach(i => cells.burg[i] = 0);
+        cells.burg[b.cell] = b.i;
+      });
+    }()
+
     changeMapSize();
     if (window.restoreDefaultEvents) restoreDefaultEvents();
     focusOn(); // based on searchParams focus on point, cell or burg
