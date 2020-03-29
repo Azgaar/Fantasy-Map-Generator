@@ -448,41 +448,42 @@ function invokeActiveZooming() {
   }
 }
 
-// Pull request from @evyatron
+// add drag to upload logic, pull request from @evyatron
 void function addDragToUpload() {
-  document.addEventListener('dragover', function(e) {
+  document.addEventListener("dragover", function(e) {
     e.stopPropagation();
     e.preventDefault();
-    $('#map-dragged').show();
+    document.getElementById("mapOverlay").style.display = null;
   });
 
   document.addEventListener('dragleave', function(e) {
-    $('#map-dragged').hide();
+    document.getElementById("mapOverlay").style.display = "none";
   });
 
-  document.addEventListener('drop', function(e) {
+  document.addEventListener("drop", function(e) {
     e.stopPropagation();
     e.preventDefault();
-    $('#map-dragged').hide();
-    // no files or more than one
-    if (e.dataTransfer.items == null || e.dataTransfer.items.length != 1) {return;}
+
+    const overlay = document.getElementById("mapOverlay");
+    overlay.style.display = "none";
+    if (e.dataTransfer.items == null || e.dataTransfer.items.length !== 1) return; // no files or more than one
     const file = e.dataTransfer.items[0].getAsFile();
-    // not a .map file
-    if (file.name.indexOf('.map') == -1) {
+    if (file.name.indexOf('.map') == -1) { // not a .map file
       alertMessage.innerHTML = 'Please upload a <b>.map</b> file you have previously downloaded';
       $("#alert").dialog({
-        resizable: false, title: "Invalid file format",
-        width: "40em", buttons: {
-          Close: function() { $(this).dialog("close"); }
-        }, position: {my: "center", at: "center", of: "svg"}
+        resizable: false, title: "Invalid file format", position: {my: "center", at: "center", of: "svg"},
+        buttons: {Close: function() {$(this).dialog("close");}}
       });
       return;
     }
+
     // all good - show uploading text and load the map
-    $("#map-dragged > p").text("Uploading<span>.</span><span>.</span><span>.</span>");
-    closeDialogs();
-    uploadMap(file, function onUploadFinish() {
-      $("#map-dragged > p").text("Drop to upload");
+    overlay.style.display = null;
+    overlay.innerHTML = "Uploading<span>.</span><span>.</span><span>.</span>";
+    if (closeDialogs) closeDialogs();
+    uploadMap(file, () => {
+      overlay.style.display = "none";
+      overlay.innerHTML = "Drop a .map file to open";
     });
   });
 }()

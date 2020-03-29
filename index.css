@@ -1720,34 +1720,6 @@ input[type="checkbox"] {
 	color: #333333;
 }
 
-.shadowed {
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	z-index: 10;
-	pointer-events: none;
-	text-align: center;
-	background: rgba(0, 0, 0, .5);
-}
-
-#map-dragged p {
-	font-size: 2.4em;
-	color: #fff5da;
-	text-shadow: 0px 1px 4px #4c3a35;
-}
-
-#map-dragged p:before {
-	content: '';
-	display: inline-block;
-	vertical-align: middle;
-	height: 100%;
-}
-
 div.textual select,
 div.textual textarea {
 	font-family: Copperplate, monospace;
@@ -2042,6 +2014,24 @@ svg.button {
 	color: white;
 	padding: .4em .5em;
 	border: dashed 1px #5d4651;
+}
+
+#mapOverlay {
+	position: absolute;
+	display: flex;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	align-items: center;
+	justify-content: center;
+	z-index: 10;
+	pointer-events: none;
+	text-align: center;
+	background: rgba(0, 0, 0, .5);
+	font-size: 2.4em;
+	color: #fff5da;
+	text-shadow: 0px 1px 4px #4c3a35;
 }
 
 #debug {

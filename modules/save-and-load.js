@@ -242,7 +242,7 @@ function getMapData() {
     // set transform values to default
     cloneEl.setAttribute("width", graphWidth);
     cloneEl.setAttribute("height", graphHeight);
-    cloneEl.querySelector("#viewbox").setAttribute("transform", null);
+    cloneEl.querySelector("#viewbox").removeAttribute("transform");
     const svg_xml = (new XMLSerializer()).serializeToString(cloneEl);
 
     const gridGeneral = JSON.stringify({spacing:grid.spacing, cellsX:grid.cellsX, cellsY:grid.cellsY, boundary:grid.boundary, points:grid.points, features:grid.features});
@@ -505,6 +505,7 @@ function uploadMap(file, callback) {
 
   const fileReader = new FileReader();
   fileReader.onload = function(fileLoadedEvent) {
+    if (callback) callback();
     const dataLoaded = fileLoadedEvent.target.result;
     const data = dataLoaded.split("\r\n");
 
@@ -532,7 +533,6 @@ function uploadMap(file, callback) {
   };
 
   fileReader.readAsText(file, "UTF-8");
-  if (callback) callback();
 }
 
 function parseLoadedData(data) {

@@ -29,9 +29,9 @@
     #title {font-size: 7em;margin: -12px 0 -6px 0;}
     #version {text-align: right;font-size: 2em;margin-right: 3%;}
     #loading-text > span {font-size: 1.3em; padding-left: 1px; line-height: 0px;}
-    #loading-text > span, #uploading-map span {animation: 3s infinite both blink;}
-    #loading-text span:nth-child(2) {animation-delay: 1s;}
-    #loading-text span:nth-child(3) {animation-delay: 2s;}
+    #loading-text > span, #mapOverlay > span {animation: 3s infinite both blink;}
+    #loading-text span:nth-child(2), #mapOverlay > span:nth-child(2) {animation-delay: 1s;}
+    #loading-text span:nth-child(3), #mapOverlay > span:nth-child(3) {animation-delay: 2s;}
     @keyframes blink {0% {opacity: 0;} 20% {opacity: 1;} 100% {opacity: .1;}}
   </style>
   <link rel="preload" href="index.css?version=1.3" as="style">
@@ -1922,7 +1922,7 @@
           Alfred García, Jonathan Killstring, John Ackley, Invad3r233, Norbert Žigmund, Jennifer, PoliticsBuff, _gfx_, Maggie,
           Connor McMartin, Jared McDaris, BlastWind, Franc Casanova Ferrer, Dead & Devil, Michael Carmody, Valerie Elise, naikibens220,
           Jordon Phillips, William Pucs, The Dungeon Masters, Brady R Rathbun, J, Shadow, Matthew Tiffany, Huw Williams, Joseph Hamilton,
-          FlippantFeline, Tamashi Toh, kms, Stephen Herron, MidnightMoon, Whakomatic x, Barished, Aaron bateson, Brice Moss, Diklyquill, 
+          FlippantFeline, Tamashi Toh, kms, Stephen Herron, MidnightMoon, Whakomatic x, Barished, Aaron bateson, Brice Moss, Diklyquill,
           PatronUser, Michael Greiner, Steven Bennett, Jacob Harrington and many others!</p>
 
         <ul class="share-buttons">
@@ -2341,15 +2341,15 @@
           <i id="burgAddGroup" data-tip="Create new group for the burg" class="icon-plus pointer"></i>
           <i id="burgRemoveGroup" data-tip="Remove selected burg group" class="icon-trash pointer"></i>
         </div>
-  
+
         <button id="burgStyleShow" data-tip="Show style edit section" class="icon-brush"></button>
         <div id="burgStyleSection" style="display: none">
           <button id="burgStyleHide" data-tip="Hide style edit section" class="icon-brush"></button>
           <button id="burgEditLabelStyle" data-tip="Edit label style for burg group in Style Editor" class="icon-font"></button>
           <button id="burgEditIconStyle" data-tip="Edit icon style for burg group in Style Editor" class="icon-dot-circled"></button>
-          <button id="burgEditAnchorStyle" data-tip="Edit port icon (anchor) style for burg group in Style Editor" class="icon-anchor"></button>        
+          <button id="burgEditAnchorStyle" data-tip="Edit port icon (anchor) style for burg group in Style Editor" class="icon-anchor"></button>
         </div>
-  
+
         <button id="burgSeeInMFCG" data-tip="Open burg in the Medieval Fantasy City Generator by Watabou. Ctrl + click to change the seed" class="icon-map-o"></button>
         <button id="burgOpenCOA" data-tip="Open burg's COA in the Iron Arachne Heraldry Generator. Ctrl + click to change the seed" class="icon-shield-alt"></button>
         <button id="burgRelocate" data-tip="Relocate burg" class="icon-target"></button>
@@ -3474,16 +3474,14 @@
 
   </div>
 
-  <div id="map-dragged" class="shadowed" style="display: none">
-    <p>Drop a .map file to open</p>
-  </div>
-
   <div id="notes">
     <div id="notesHeader"></div>
     <div id="notesBody"></div>
   </div>
 
   <div id="tooltip" style="opacity:0" data-main="Сlick the arrow button for options. Zoom in to see the map in details">Сlick the arrow button for options. Zoom in to see the map in details</div>
+
+  <div id="mapOverlay" style="display: none">Drop a .map file to open</div>
 
   <div id="fileInputs" style="display: none">
     <input type="file" accept=".map" id="mapToLoad">

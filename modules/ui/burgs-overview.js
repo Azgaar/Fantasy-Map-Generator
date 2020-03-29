@@ -303,7 +303,7 @@ function overviewBurgs() {
       burgHighlightOff(ev);
       if (!document.getElementById("burgsInfo")) return;
       burgsInfo.innerHTML = "&#8205;";
-      d3.select(ev.target).transition().attr("stroke", "null");
+      d3.select(ev.target).transition().attr("stroke", null);
       tip("");
     }
 
