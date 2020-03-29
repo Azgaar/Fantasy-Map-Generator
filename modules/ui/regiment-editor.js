@@ -142,17 +142,16 @@ function editRegiment(selector) {
 
   function splitRegiment() {
     const reg = regiment(), u1 = reg.u;
-    if (reg.a < 2) return; // nothing to split
-
     const state = elSelected.dataset.state, military = pack.states[state].military;
     const i = last(military).i + 1, u2 = Object.assign({}, u1); // u clone
 
-    Object.keys(u1).forEach(u => u1[u] = Math.ceil(u1[u]/2)); // halved old reg
     Object.keys(u2).forEach(u => u2[u] = Math.floor(u2[u]/2)); // halved new reg
-    reg.a = d3.sum(Object.values(u1)); // old reg total
     const a = d3.sum(Object.values(u2)); // new reg total
+    if (!a) {tip("Not enough forces to split", false, "error"); return}; // nothing to add
 
     // update old regiment
+    Object.keys(u1).forEach(u => u1[u] = Math.ceil(u1[u]/2)); // halved old reg
+    reg.a = d3.sum(Object.values(u1)); // old reg total
     regimentComposition.querySelectorAll("input").forEach(el => el.value = reg.u[el.dataset.u]||0);
     elSelected.querySelector("text").innerHTML = Military.getTotal(reg);
 
