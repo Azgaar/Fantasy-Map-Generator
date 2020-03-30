@@ -116,7 +116,10 @@ function editRegiment(selector) {
     container.addEventListener("click", e => clickEmblem(e), false);
     alertMessage.appendChild(container);
 
-    $("#alert").dialog({resizable: false, width: fitContent(), title: "Select emblem"});
+    $("#alert").dialog({
+      resizable: false, width: fitContent(), title: "Select emblem",
+      buttons: {Close: function() {$(this).dialog("close");}}
+    });
 
     function showTip(e) {
       if (e.target.tagName !== "SPAN") return;
