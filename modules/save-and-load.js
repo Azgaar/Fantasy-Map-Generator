@@ -933,12 +933,6 @@ function parseLoadedData(data) {
       }
 
       if (version < 1.3) {
-        // v 1.3 added ports attribute to pack.features
-        for (const f of pack.features) {
-          if (!f.i) continue;
-          f.ports = pack.burgs.filter(b => !b.removed && b.port === f.i).length;
-        }
-
         // v 1.3 added global options object
         const winds = options.slice(); // previostly wnd was saved in settings[19]
         const year = rand(100, 2000);

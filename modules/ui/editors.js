@@ -172,9 +172,10 @@ function removeBurg(id) {
   if (label) label.remove();
   if (icon) icon.remove();
   if (anchor) anchor.remove();
-  pack.burgs[id].removed = true;
-  const cell = pack.burgs[id].cell;
-  pack.cells.burg[cell] = 0;
+
+  const cells = pack.cells, burg = pack.burgs[id];
+  burg.removed = true;
+  cells.burg[burg.cell] = 0;
 }
 
 function toggleCapital(burg) {

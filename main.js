@@ -1073,7 +1073,7 @@ function reMarkFeatures() {
     if (type === "lake") group = defineLakeGroup(start, cellNumber, temp[cells.g[start]]);
     else if (type === "ocean") group = defineOceanGroup(cellNumber);
     else if (type === "island") group = defineIslandGroup(start, cellNumber);
-    features.push({i, land, border, type, cells: cellNumber, firstCell: start, group, ports:0});
+    features.push({i, land, border, type, cells: cellNumber, firstCell: start, group});
     queue[0] = cells.f.findIndex(f => !f); // find unmarked cell
   }
 

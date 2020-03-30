@@ -141,7 +141,37 @@
   const specifyBurgs = function() {
     console.time("specifyBurgs");
     const cells = pack.cells, vertices = pack.vertices, features = pack.features;
-    checkAccessibility();
+
+    // separate arctic seas for correct searoutes generation
+    void function checkAccessibility() {
+      const oceanCells = cells.i.filter(i => cells.h[i] < 20 && features[cells.f[i]].type === "ocean");
+      const marked = [];
+      let firstCell = oceanCells.find(i => !marked[i]);
+
+      while (firstCell !== undefined) {
+        const queue = [firstCell];
+        const f = features[cells.f[firstCell]]; // old feature
+        const i = last(features).i+1; // new feature id to assign
+        const biome = cells.biome[firstCell];
+        marked[firstCell] = 1;
+        let cellNumber = 1;
+
+        while (queue.length) {
+          for (const c of cells.c[queue.pop()]) {
+            if (cells.biome[c] !== biome || cells.h[c] >= 20) continue;
+            if (marked[c]) continue;
+            queue.push(c);
+            cells.f[c] = i;
+            marked[c] = 1;
+            cellNumber++;
+          }
+        }
+
+        const group = biome ? "frozen " + f.group : f.group;
+        features.push({i, parent:f.i, land:false, border:f.border, type:"ocean", cells: cellNumber, firstCell, group});
+        firstCell = oceanCells.find(i => !marked[i]);
+      }
+    }()
 
     for (const b of pack.burgs) {
       if (!b.i) continue;
@@ -154,7 +184,6 @@
         // port is a capital with any harbor OR town with good harbor
         const port = features[f].cells > 1 && ((b.capital && cells.harbor[i]) || cells.harbor[i] === 1);
         b.port = port ? f : 0; // port is defined by water body id it lays on
-        if (port) {features[f].ports += 1; features[b.feature].ports += 1;}
       } else b.port = 0;
 
       // define burg population (keep urbanization at about 10% rate)
@@ -180,43 +209,11 @@
     }
 
     // de-assign port status if it's the only one on feature
+    const ports = pack.burgs.filter(b => !b.removed && b.port > 0);
     for (const f of features) {
-      if (!f.i || f.land || f.ports !== 1) continue;
-      const port = pack.burgs.find(b => b.port === f.i);
-      port.port = 0;
-      f.port = 0;
-      features[port.feature].ports -= 1;
-    }
-
-    // separate arctic seas for correct searoutes generation
-    function checkAccessibility() {
-      const oceanCells = cells.i.filter(i => cells.h[i] < 20 && features[cells.f[i]].type === "ocean");
-      const marked = [];
-      let firstCell = oceanCells.find(i => !marked[i]);
-
-      while (firstCell !== undefined) {
-        const queue = [firstCell];
-        const f = features[cells.f[firstCell]]; // old feature
-        const i = last(features).i+1; // new feature id to assign
-        const biome = cells.biome[firstCell];
-        marked[firstCell] = 1;
-        let cellNumber = 1;
-
-        while (queue.length) {
-          for (const c of cells.c[queue.pop()]) {
-            if (cells.biome[c] !== biome || cells.h[c] >= 20) continue;
-            if (marked[c]) continue;
-            queue.push(c);
-            cells.f[c] = i;
-            marked[c] = 1;
-            cellNumber++;
-          }
-        }
-
-        const group = biome ? "frozen " + f.group : f.group;
-        features.push({i, parent:f.i, land:false, border:true, type:"ocean", cells: cellNumber, firstCell, group, ports:0});
-        firstCell = oceanCells.find(i => !marked[i]);
-      }
+      if (!f.i || f.land || f.border) continue;
+      const featurePorts = ports.filter(b => b.port === f.i);
+      if (featurePorts.length === 1) featurePorts[0].port = 0;
     }
 
     console.timeEnd("specifyBurgs");

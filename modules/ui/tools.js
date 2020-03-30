@@ -136,6 +136,7 @@ function regenerateBurgs() {
     moveBurgToGroup(burg, "cities");
   });
 
+  pack.features.forEach(f => {if (f.port) f.port = 0}); // reset features ports counter
   BurgsAndStates.specifyBurgs();
   BurgsAndStates.defineBurgFeatures();
   BurgsAndStates.drawBurgs();

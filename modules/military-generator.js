@@ -29,7 +29,7 @@
       const expansionRate = Math.min(Math.max((s.expansionism / expn) / (s.area / area), .25), 4); // how much state expansionism is realized
       const diplomacyRate = d.some(d => d === "Enemy") ? 1 : d.some(d => d === "Rival") ? .8 : d.some(d => d === "Suspicion") ? .5 : .1; // peacefulness
       const neighborsRate = Math.min(Math.max(s.neighbors.map(n => n ? pack.states[n].diplomacy[s.i] : "Suspicion").reduce((s, r) => s += rate[r], .5), .3), 3); // neighbors rate
-      s.alert = rn(expansionRate * diplomacyRate * neighborsRate, 2); // war alert rate (army modifier)
+      s.alert = Math.min(Math.max(rn(expansionRate * diplomacyRate * neighborsRate, 2), .1), 5); // war alert rate (army modifier)
       temp.platoons = [];
 
       // apply overall state modifiers for unit types based on state features
@@ -42,9 +42,6 @@
       }
 
     });
-
-    const portsMod = d3.max(pack.features.map(f => f.land ? 0 : f.ports)) * .75;
-    const normalizeNaval = ports => normalize(ports, 0, portsMod);
 
     for (const i of cells.i) {
       if (!cells.pop[i]) continue;
@@ -111,10 +108,7 @@
         if (isNaN(perc) || perc <= 0) continue;
         let army = m * perc; // basic army for rural cell
 
-        if (u.type === "naval") {
-          if (!b.port || !pack.features[b.port] || b.port < 1) continue; // only ports have naval units
-          army *= normalizeNaval(pack.features[b.port].ports);
-        }
+        if (u.type === "naval" && !b.port) continue; // only ports produce naval units
 
         if (nomadic) { // "nomadic" biomes special rules
           if (u.type === "melee") army /= 3; else

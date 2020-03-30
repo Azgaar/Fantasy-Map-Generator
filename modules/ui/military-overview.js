@@ -105,7 +105,7 @@ function overviewMilitary() {
     const population = rn((s.rural + s.urban * urbanization.value) * populationRate.value);
     const total = line.dataset.total = options.military.reduce((s, u) => s + getForces(u) * u.crew, 0);
     const rate = line.dataset.rate = total / population * 100;
-    line.querySelector("div[data-type='total']>b").innerHTML = si(total);
+    line.querySelector("div[data-type='total']").innerHTML = si(total);
     line.querySelector("div[data-type='rate']").innerHTML = rn(rate, 2) + "%";
 
     updateFooter();
