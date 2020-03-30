@@ -645,6 +645,7 @@ function parseLoadedData(data) {
       icons = viewbox.select("#icons");
       burgIcons = icons.select("#burgIcons");
       anchors = icons.select("#anchors");
+      armies = viewbox.select("#armies");
       markers = viewbox.select("#markers");
       ruler = viewbox.select("#ruler");
       fogging = viewbox.select("#fogging");
