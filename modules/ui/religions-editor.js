@@ -293,15 +293,26 @@ function editReligions() {
   function religionRemove() {
     if (customization) return;
     const religion = +this.parentNode.dataset.id;
-    relig.select("#religion"+religion).remove();
-    debug.select("#religionsCenter"+religion).remove();
 
-    pack.cells.religion.forEach((r, i) => {if(r === religion) pack.cells.religion[i] = 0;});
-    pack.religions[religion].removed = true;
-    const origin = pack.religions[religion].origin;
-    pack.religions.forEach(r => {if(r.origin === religion) r.origin = origin;});
+    alertMessage.innerHTML = "Are you sure you want to remove the religion? <br>This action cannot be reverted";
+    $("#alert").dialog({resizable: false, title: "Remove religion",
+      buttons: {
+        Remove: function() {
+          relig.select("#religion"+religion).remove();
+          relig.select("#religion-gap"+religion).remove();
+          debug.select("#religionsCenter"+religion).remove();
 
-    refreshReligionsEditor();
+          pack.cells.religion.forEach((r, i) => {if(r === religion) pack.cells.religion[i] = 0;});
+          pack.religions[religion].removed = true;
+          const origin = pack.religions[religion].origin;
+          pack.religions.forEach(r => {if(r.origin === religion) r.origin = origin;});
+      
+          refreshReligionsEditor();
+          $(this).dialog("close");
+        },
+        Cancel: function() {$(this).dialog("close");}
+      }
+    });
   }
 
   function drawReligionCenters() {

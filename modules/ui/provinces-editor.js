@@ -39,7 +39,7 @@ function editProvinces() {
     if (cl.contains("name")) editProvinceName(p); else
     if (cl.contains("icon-coa")) provinceOpenCOA(ev, p); else
     if (cl.contains("icon-star-empty")) capitalZoomIn(p); else
-    if (cl.contains("icon-flag-empty")) declareProvinceIndependence(p); else
+    if (cl.contains("icon-flag-empty")) triggerIndependencePromps(p); else
     if (cl.contains("culturePopulation")) changePopulation(p); else
     if (cl.contains("icon-pin")) focusOn(p, cl); else
     if (cl.contains("icon-trash-empty")) removeProvince(p);
@@ -211,6 +211,19 @@ function editProvinces() {
     zoomTo(x, y, 8, 2000);
   }
 
+  function triggerIndependencePromps(p) {
+    alertMessage.innerHTML = "Are you sure you want to declare province independence? <br>It will turn province into a new state";
+    $("#alert").dialog({resizable: false, title: "Declare independence",
+      buttons: {
+        Declare: function() {
+          declareProvinceIndependence(p);
+          $(this).dialog("close");
+        },
+        Cancel: function() {$(this).dialog("close");}
+      }
+    });
+  }
+
   function declareProvinceIndependence(p) {
     const states = pack.states, provinces = pack.provinces, cells = pack.cells;
     const oldState = pack.provinces[p].state;
@@ -352,17 +365,29 @@ function editProvinces() {
   }
 
   function removeProvince(p) {
-    pack.cells.province.forEach((province, i) => {if(province === p) pack.cells.province[i] = 0;});
-    const state = pack.provinces[p].state;
-    if (pack.states[state].provinces.includes(p)) pack.states[state].provinces.splice(pack.states[state].provinces.indexOf(p), 1);
-    pack.provinces[p].removed = true;
-    unfocus(p);
 
-    const g = provs.select("#provincesBody");
-    g.select("#province"+p).remove();
-    g.select("#province-gap"+p).remove();
-    if (!layerIsOn("toggleBorders")) toggleBorders(); else drawBorders();
-    refreshProvincesEditor();
+    alertMessage.innerHTML = `Are you sure you want to remove the province? <br>This action cannot be reverted`;
+    $("#alert").dialog({resizable: false, title: "Remove province",
+      buttons: {
+        Remove: function() {
+          pack.cells.province.forEach((province, i) => {if(province === p) pack.cells.province[i] = 0;});
+          const state = pack.provinces[p].state;
+          if (pack.states[state].provinces.includes(p)) pack.states[state].provinces.splice(pack.states[state].provinces.indexOf(p), 1);
+          pack.provinces[p].removed = true;
+          unfocus(p);
+      
+          const g = provs.select("#provincesBody");
+          g.select("#province"+p).remove();
+          g.select("#province-gap"+p).remove();
+          if (!layerIsOn("toggleBorders")) toggleBorders(); else drawBorders();
+          refreshProvincesEditor();
+          $(this).dialog("close");
+        },
+        Cancel: function() {$(this).dialog("close");}
+      }
+    });
+    
+
   }
 
   function editProvinceName(province) {
@@ -804,7 +829,7 @@ function editProvinces() {
   }
 
   function removeAllProvinces() {
-    alertMessage.innerHTML = `Are you sure you want to remove all provinces?`;
+    alertMessage.innerHTML = `Are you sure you want to remove all provinces? <br>This action cannot be reverted`;
     $("#alert").dialog({resizable: false, title: "Remove all provinces",
       buttons: {
         Remove: function() {
