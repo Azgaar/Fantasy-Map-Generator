@@ -164,6 +164,7 @@ function editRegiment(selector) {
     const newReg = {a, cell:reg.cell, i, n:reg.n, u:u2, x:reg.x, y:y(reg.x, reg.y), bx:reg.bx, by:reg.by, icon: reg.icon};
     newReg.name = Military.getName(newReg, military);
     military.push(newReg);
+    Military.generateNote(newReg, pack.states[state]); // add legend
     Military.drawRegiment(newReg, state); // draw new reg below
 
     if (regimentsOverviewRefresh.offsetParent) regimentsOverviewRefresh.click();
@@ -190,6 +191,7 @@ function editRegiment(selector) {
     const reg = {a:0, cell, i, n, u:{}, x, y, bx:x, by:y, icon:"🛡️"};
     reg.name = Military.getName(reg, military);
     military.push(reg);
+    Military.generateNote(reg, pack.states[state]); // add legend
     Military.drawRegiment(reg, state);
     if (regimentsOverviewRefresh.offsetParent) regimentsOverviewRefresh.click();
     toggleAdd();

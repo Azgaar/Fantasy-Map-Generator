@@ -156,6 +156,7 @@ function overviewRegiments(state) {
     const reg = {a:0, cell, i, n, u:{}, x, y, bx:x, by:y, icon:"🛡️"};
     reg.name = Military.getName(reg, military);
     military.push(reg);
+    Military.generateNote(reg, pack.states[state]); // add legend
     Military.drawRegiment(reg, state);
     toggleAdd();
   }

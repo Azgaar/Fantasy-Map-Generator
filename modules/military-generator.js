@@ -137,7 +137,14 @@
       }
     }
 
-    armies.selectAll("g").remove(); // clear armies layer
+    void function removeExistingRegiments() {
+      armies.selectAll("g > g").each(function() {
+        const index = notes.findIndex(n => n.id === this.id);
+        if (index != -1) notes.splice(index, 1);
+      });
+      armies.selectAll("g").remove();
+    }()
+
     const expected = 3 * populationRate.value; // expected regiment size
     const mergeable = (n, s) => (!n.s && !s.s) || n.u === s.u;
     // get regiments for each state
@@ -264,17 +271,28 @@
   const generateNote = function(r, s) {
     const base = cells.burg[r.cell] && pack.burgs[cells.burg[r.cell]] ? pack.burgs[cells.burg[r.cell]].name :
       cells.province[r.cell] && pack.provinces[cells.province[r.cell]] ? pack.provinces[cells.province[r.cell]].fullName : null;
-    const station = base ? `${r.name} is ${r.n ? "based" : "stationed"} in ${base}. ` : null;
+    const station = base ? `${r.name} is ${r.n ? "based" : "stationed"} in ${base}. ` : "";
 
-    const composition = Object.keys(r.u).map(t => ` — ${t}: ${r.u[t]}`).join("\r\n");
-    const troops = `\r\n\r\nRegiment composition:\r\n${composition}.`;
+    const composition = r.a ? Object.keys(r.u).map(t => `— ${t}: ${r.u[t]}`).join("\r\n") : null;
+    const troops = composition ? `\r\n\r\nRegiment composition:\r\n${composition}.` : "";
 
-    const campaign = ra(s.campaigns);
+    const campaign = s.campaigns ? ra(s.campaigns) : null;
     const year = campaign ? rand(campaign.start, campaign.end) : gauss(options.year-100, 150, 1, options.year-6);
     const conflict = campaign ? ` during the ${campaign.name}` : "";
     const legend = `Regiment was formed in ${year} ${options.era}${conflict}. ${station}${troops}`;
     notes.push({id:`regiment${s.i}-${r.i}`, name:`${r.icon} ${r.name}`, legend});
   }
+
+  // const updateNote = function(r, s) {
+  //   const id = `regiment${s}-${r.i}`;
+  //   const note = notes.find(n => n.id === id);
+  //   if (!note) return;
+
+  //   const oldComposition = note.legend.split("composition:\r\n")[1]||"".split(".")[0];
+  //   if (!oldComposition) return;
+  //   const newComposition = Object.keys(r.u).map(t => `— ${t}: ${r.u[t]}`).join("\r\n") + ".";
+  //   note.legend = note.legend.replace(oldComposition, newComposition);
+  // }
 
   return {generate, getDefaultOptions, getName, generateNote, drawRegiments, drawRegiment, getTotal, getEmblem};
 
