@@ -207,6 +207,15 @@ function editStates() {
   }
 
   function editStateName(state) {
+
+    //Reset input value and close add mode
+    stateNameEditorCustomForm.value = "";
+    const addModeActive = stateNameEditorCustomForm.style.display === "inline-block";
+    if (addModeActive) {
+      stateNameEditorCustomForm.style.display = "none";
+      stateNameEditorSelectForm.style.display = "inline-block";
+    }
+
     const s = pack.states[state];
     document.getElementById("stateNameEditor").dataset.state = state;
     document.getElementById("stateNameEditorShort").value = s.name || "";
@@ -244,10 +253,11 @@ function editStates() {
 
     function addCustomForm() {
       const value = stateNameEditorCustomForm.value;
-      const displayed = stateNameEditorCustomForm.style.display === "inline-block";
-      stateNameEditorCustomForm.style.display = displayed ? "none" : "inline-block";
-      stateNameEditorSelectForm.style.display = displayed ? "inline-block" : "none";
-      if (displayed) applyOption(stateNameEditorSelectForm, value);
+      const addModeActive = stateNameEditorCustomForm.style.display === "inline-block";
+      stateNameEditorCustomForm.style.display = addModeActive ? "none" : "inline-block";
+      stateNameEditorSelectForm.style.display = addModeActive ? "inline-block" : "none";
+      if (addModeActive) applyOption(stateNameEditorSelectForm, value);
+      stateNameEditorCustomForm.value = "";
     }
 
     function regenerateFullName() {
