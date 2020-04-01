@@ -36,6 +36,7 @@ function getDefaultPresets() {
     "heightmap": ["toggleHeight", "toggleRivers"],
     "physical": ["toggleCoordinates", "toggleHeight", "toggleRivers", "toggleScaleBar"],
     "poi": ["toggleBorders", "toggleHeight", "toggleIcons", "toggleMarkers", "toggleRivers", "toggleRoutes", "toggleScaleBar"],
+    "military": ["toggleBorders", "toggleIcons", "toggleLabels", "toggleMilitary", "toggleRivers", "toggleRoutes", "toggleScaleBar", "toggleStates"],
     "landmass": ["toggleScaleBar"]
   }
 }
@@ -334,9 +335,9 @@ function drawBiomes() {
   const cells = pack.cells, vertices = pack.vertices, n = cells.i.length;
   const used = new Uint8Array(cells.i.length);
   const paths = new Array(biomesData.i.length).fill("");
-  
+
   for (const i of cells.i) {
-    if (!cells.biome[i]) continue; // no need to mark water
+    if (!cells.biome[i]) continue; // no need to mark marine biome (liquid water)
     if (used[i]) continue; // already marked
     const b = cells.biome[i];
     const onborder = cells.c[i].some(n => cells.biome[n] !== b);
@@ -399,7 +400,7 @@ function drawPrec() {
   const data = cells.i.filter(i => cells.h[i] >= 20 && cells.prec[i]);
   prec.selectAll("circle").data(data).enter().append("circle")
     .attr("cx", d => p[d][0]).attr("cy", d => p[d][1]).attr("r", 0)
-    .transition(show).attr("r", d => rn(Math.max(Math.sqrt(cells.prec[d] * .5), .8),2)); 
+    .transition(show).attr("r", d => rn(Math.max(Math.sqrt(cells.prec[d] * .5), .8),2));
 }
 
 function togglePopulation(event) {
@@ -1055,6 +1056,18 @@ function toggleRoutes(event) {
     if (event && isCtrlClick(event)) {editStyle("routes"); return;}
     $('#routes').fadeOut();
     turnButtonOff("toggleRoutes");
+  }
+}
+
+function toggleMilitary() {
+  if (!layerIsOn("toggleMilitary")) {
+    turnButtonOn("toggleMilitary");
+    $('#armies').fadeIn();
+    if (event && isCtrlClick(event)) editStyle("armies");
+  } else {
+    if (event && isCtrlClick(event)) {editStyle("armies"); return;}
+    $('#armies').fadeOut();
+    turnButtonOff("toggleMilitary");
   }
 }
 

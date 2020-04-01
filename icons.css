@@ -250,7 +250,9 @@
 .icon-smooth:before {font-weight: bold;content:'∼';}
 .icon-disrupt:before {font-weight: bold;content:'෴';}
 .icon-if:before {font-style: italic; font-weight: bold;content:'if';}
-.icon-fleur:before {content: '⚜'; font-size: 1.1em; margin: -2px;}
+/* .icon-coa:before {content: '⚜'; font-size: 1.1em; margin: -2px;} */
+.icon-coa:before {content:'\f3ed'; font-size: .9em; color: #999;} /* '' */
+.icon-half:before {font-weight: bold;content:'½';}
 .icon-curve:before {content: 'C';}
 .icon-area:before {content: 'O';}
 .icon-curve:before,

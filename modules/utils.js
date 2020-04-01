@@ -232,6 +232,11 @@ function gauss(expected = 100, deviation = 30, min = 0, max = 300, round = 0) {
   return rn(Math.max(Math.min(d3.randomNormal(expected, deviation)(), max), min), round);
 }
 
+// get integer from float as floor + P(fractional)
+function Pint(float) {
+  return ~~float + +P(float % 1);
+}
+
 // round value to d decimals
 function rn(v, d = 0) {
   const m = Math.pow(10, d);
@@ -245,11 +250,11 @@ function round(s, d = 1) {
 
 // corvent number to short string with SI postfix
 function si(n) {
-  if (n >= 1e9) {return rn(n / 1e9, 1) + "B";}
-  if (n >= 1e8) {return rn(n / 1e6) + "M";}
-  if (n >= 1e6) {return rn(n / 1e6, 1) + "M";}
-  if (n >= 1e4) {return rn(n / 1e3) + "K";}
-  if (n >= 1e3) {return rn(n / 1e3, 1) + "K";}
+  if (n >= 1e9) return rn(n / 1e9, 1) + "B";
+  if (n >= 1e8) return rn(n / 1e6) + "M";
+  if (n >= 1e6) return rn(n / 1e6, 1) + "M";
+  if (n >= 1e4) return rn(n / 1e3) + "K";
+  if (n >= 1e3) return rn(n / 1e3, 1) + "K";
   return rn(n);
 }
 
@@ -402,6 +407,9 @@ function getAdjective(string) {
   if (end === "q") return string += "i";
   return trimVowels(string) + "ian";
 }
+
+// get ordinal out of integer: 1 => 1st
+const nth = n => n+(["st","nd","rd"][((n+90)%100-10)%10-1]||"th");
 
 // split string into 2 almost equal parts not breaking words
 function splitInTwo(str) {
@@ -594,6 +602,10 @@ function link(URL, description) {
 function isCtrlClick(event) {
   // meta key is cmd key on MacOs
   return event.ctrlKey || event.metaKey;
+}
+
+function generateDate(from = 100, to = 1000) {
+  return new Date(rand(from, to),rand(12),rand(31)).toLocaleDateString("en", {year:'numeric', month:'long', day:'numeric'});
 }
 
 // localStorageDB

@@ -7,7 +7,7 @@
 // See also https://github.com/Azgaar/Fantasy-Map-Generator/issues/153
 
 "use strict";
-const version = "1.22"; // generator version
+const version = "1.3"; // generator version
 document.title += " v" + version;
 
 // if map version is not stored, clear localStorage and show a message
@@ -58,6 +58,7 @@ let labels = viewbox.append("g").attr("id", "labels");
 let icons = viewbox.append("g").attr("id", "icons");
 let burgIcons = icons.append("g").attr("id", "burgIcons");
 let anchors = icons.append("g").attr("id", "anchors");
+let armies = viewbox.append("g").attr("id", "armies").style("display", "none");
 let markers = viewbox.append("g").attr("id", "markers").style("display", "none");
 let fogging = viewbox.append("g").attr("id", "fogging-cont").attr("mask", "url(#fog)")
   .append("g").attr("id", "fogging").style("display", "none");
@@ -101,8 +102,7 @@ let grid = {}; // initial grapg based on jittered square grid and data
 let pack = {}; // packed graph and data
 let seed, mapHistory = [], elSelected, modules = {}, notes = [];
 let customization = 0; // 0 - no; 1 = heightmap draw; 2 - states draw; 3 - add state/burg; 4 - cultures draw
-let mapCoordinates = {}; // map coordinates on globe
-let winds = [225, 45, 225, 315, 135, 315]; // default wind directions
+
 let biomesData = applyDefaultBiomesSystem();
 let nameBases = Names.getNameBases(); // cultures-related data
 const fonts = ["Almendra+SC", "Georgia", "Arial", "Times+New+Roman", "Comic+Sans+MS", "Lucida+Sans+Unicode", "Courier+New"]; // default web-safe fonts
@@ -113,6 +113,16 @@ const lineGen = d3.line().curve(d3.curveBasis); // d3 line generator with defaul
 // d3 zoom behavior
 let scale = 1, viewX = 0, viewY = 0;
 const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", zoomed);
+
+// default options
+let options = {}; // options object
+let mapCoordinates = {}; // map coordinates on globe
+options.winds = [225, 45, 225, 315, 135, 315]; // default wind directions
+
+// woldbuilding options
+options.year = rand(100, 2000); // current year
+options.era = Names.getBaseShort(P(.7) ? 1 : rand(nameBases.length)) + " Era"; // current era name, global for all cultures
+options.eraShort = options.era[0] + "E"; // short name for era
 
 applyStoredOptions();
 let graphWidth = +mapWidthInput.value, graphHeight = +mapHeightInput.value; // voronoi graph extention, cannot be changed arter generation
@@ -287,13 +297,12 @@ function findBurgForMFCG(params) {
 // apply default biomes data
 function applyDefaultBiomesSystem() {
   const name = ["Marine","Hot desert","Cold desert","Savanna","Grassland","Tropical seasonal forest","Temperate deciduous forest","Tropical rainforest","Temperate rainforest","Taiga","Tundra","Glacier","Wetland"];
-  const color = ["#53679f","#fbe79f","#b5b887","#d2d082","#c8d68f","#b6d95d","#29bc56","#7dcb35","#409c43","#4b6b32","#96784b","#d5e7eb","#0b9131"];
+  const color = ["#466eab","#fbe79f","#b5b887","#d2d082","#c8d68f","#b6d95d","#29bc56","#7dcb35","#409c43","#4b6b32","#96784b","#d5e7eb","#0b9131"];
   const habitability = [0,4,10,22,30,50,100,80,90,12,4,0,12];
   const iconsDensity = [0,3,2,120,120,120,120,150,150,100,5,0,150];
   const icons = [{},{dune:3, cactus:6, deadTree:1},{dune:9, deadTree:1},{acacia:1, grass:9},{grass:1},{acacia:8, palm:1},{deciduous:1},{acacia:5, palm:3, deciduous:1, swamp:1},{deciduous:6, swamp:1},{conifer:1},{grass:1},{},{swamp:1}];
-  const cost = [10,200,150,60,50,70,70,80,90,80,100,255,150]; // biome movement cost
-  const biomesMartix = [
-    // hot ↔ cold; dry ↕ wet
+  const cost = [10,200,150,60,50,70,70,80,90,200,1000,5000,150]; // biome movement cost
+  const biomesMartix = [ // hot ↔ cold; dry ↕ wet
     new Uint8Array([1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]),
     new Uint8Array([3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,9,9,9,9,9,10,10]),
     new Uint8Array([5,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,9,9,9,9,9,10,10,10]),
@@ -314,7 +323,7 @@ function applyDefaultBiomesSystem() {
 }
 
 function showWelcomeMessage() {
-  const post = link("https://www.reddit.com/r/FantasyMapGenerator/comments/dlow3k/update_new_version_is_published_v_12", "Main changes:"); // announcement on Reddit
+  const post = link("https://www.reddit.com/r/FantasyMapGenerator/comments/dlow3k/update_new_version_is_published_v_13", "Main changes:"); // announcement on Reddit
   const changelog = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "previous version");
   const reddit = link("https://www.reddit.com/r/FantasyMapGenerator", "Reddit community");
   const discord = link("https://discordapp.com/invite/X7E84HU", "Discord server");
@@ -324,13 +333,15 @@ function showWelcomeMessage() {
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
 
     <ul>${post}
-      <li>3d scene and Globe view</li>
-      <li>Ability to save map as JPEG image</li>
-      <li>Diplomacy Editor enhancements</li>
-      <li>Rivers Overview screen</li>
+      <li>Military Forces generation</li>
+      <li>Military Forces overview</li>
+      <li>Military Units editor</li>
+      <li>Regiments editor</li>
     </ul>
 
-    <p>Thanks for all supporters on ${patreon}!</i></p>`;
+    <p>Join our ${discord} and ${reddit} to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
+
+    <span>Thanks for all supporters on ${patreon}!</i></span>`;
 
   $("#alert").dialog(
     {resizable: false, title: "Fantasy Map Generator update", width: "28em",
@@ -437,41 +448,42 @@ function invokeActiveZooming() {
   }
 }
 
-// Pull request from @evyatron
+// add drag to upload logic, pull request from @evyatron
 void function addDragToUpload() {
-  document.addEventListener('dragover', function(e) {
+  document.addEventListener("dragover", function(e) {
     e.stopPropagation();
     e.preventDefault();
-    $('#map-dragged').show();
+    document.getElementById("mapOverlay").style.display = null;
   });
 
   document.addEventListener('dragleave', function(e) {
-    $('#map-dragged').hide();
+    document.getElementById("mapOverlay").style.display = "none";
   });
 
-  document.addEventListener('drop', function(e) {
+  document.addEventListener("drop", function(e) {
     e.stopPropagation();
     e.preventDefault();
-    $('#map-dragged').hide();
-    // no files or more than one
-    if (e.dataTransfer.items == null || e.dataTransfer.items.length != 1) {return;}
+
+    const overlay = document.getElementById("mapOverlay");
+    overlay.style.display = "none";
+    if (e.dataTransfer.items == null || e.dataTransfer.items.length !== 1) return; // no files or more than one
     const file = e.dataTransfer.items[0].getAsFile();
-    // not a .map file
-    if (file.name.indexOf('.map') == -1) {
+    if (file.name.indexOf('.map') == -1) { // not a .map file
       alertMessage.innerHTML = 'Please upload a <b>.map</b> file you have previously downloaded';
       $("#alert").dialog({
-        resizable: false, title: "Invalid file format",
-        width: "40em", buttons: {
-          Close: function() { $(this).dialog("close"); }
-        }, position: {my: "center", at: "center", of: "svg"}
+        resizable: false, title: "Invalid file format", position: {my: "center", at: "center", of: "svg"},
+        buttons: {Close: function() {$(this).dialog("close");}}
       });
       return;
     }
+
     // all good - show uploading text and load the map
-    $("#map-dragged > p").text("Uploading<span>.</span><span>.</span><span>.</span>");
-    closeDialogs();
-    uploadMap(file, function onUploadFinish() {
-      $("#map-dragged > p").text("Drop to upload");
+    overlay.style.display = null;
+    overlay.innerHTML = "Uploading<span>.</span><span>.</span><span>.</span>";
+    if (closeDialogs) closeDialogs();
+    uploadMap(file, () => {
+      overlay.style.display = "none";
+      overlay.innerHTML = "Drop a .map file to open";
     });
   });
 }()
@@ -516,7 +528,8 @@ function generate() {
     BurgsAndStates.drawStateLabels();
 
     Rivers.specify();
-    //calculateMilitaryForces();
+
+    Military.generate();
     addMarkers();
     addZones();
     Names.getMapName();
@@ -724,13 +737,14 @@ function calculateTemperatures() {
   const tEq = +temperatureEquatorInput.value;
   const tPole = +temperaturePoleInput.value;
   const tDelta = tEq - tPole;
+  const int = d3.easePolyInOut.exponent(.5); // interpolation function
 
   d3.range(0, cells.i.length, grid.cellsX).forEach(function(r) {
     const y = grid.points[r][1];
-    const lat = Math.abs(mapCoordinates.latN - y / graphHeight * mapCoordinates.latT);
-    const initTemp = tEq - lat / 90 * tDelta;
+    const lat = Math.abs(mapCoordinates.latN - y / graphHeight * mapCoordinates.latT); // [0; 90]
+    const initTemp = tEq - int(lat / 90) * tDelta;
     for (let i = r; i < r+grid.cellsX; i++) {
-      cells.temp[i] = initTemp - convertToFriendly(cells.h[i]);
+      cells.temp[i] = Math.max(Math.min(initTemp - convertToFriendly(cells.h[i]), 127), -128);
     }
   });
 
@@ -772,10 +786,10 @@ function generatePrecipitation() {
     const band = (Math.abs(lat) - 1) / 5 | 0;
     const latMod = lalitudeModifier[band];
     const tier = Math.abs(lat - 89) / 30 | 0; // 30d tiers from 0 to 5 from N to S
-    if (winds[tier] > 40 && winds[tier] < 140) westerly.push([c, latMod, tier]);
-    else if (winds[tier] > 220 && winds[tier] < 320) easterly.push([c + cellsX -1, latMod, tier]);
-    if (winds[tier] > 100 && winds[tier] < 260) northerly++;
-    else if (winds[tier] > 280 || winds[tier] < 80) southerly++;
+    if (options.winds[tier] > 40 && options.winds[tier] < 140) westerly.push([c, latMod, tier]);
+    else if (options.winds[tier] > 220 && options.winds[tier] < 320) easterly.push([c + cellsX -1, latMod, tier]);
+    if (options.winds[tier] > 100 && options.winds[tier] < 260) northerly++;
+    else if (options.winds[tier] > 280 || options.winds[tier] < 80) southerly++;
   });
 
   // distribute winds by direction
@@ -1017,7 +1031,7 @@ function drawCoastline() {
 // Re-mark features (ocean, lakes, islands)
 function reMarkFeatures() {
   console.time("reMarkFeatures");
-  const cells = pack.cells, features = pack.features = [0];
+  const cells = pack.cells, features = pack.features = [0], temp = grid.cells.temp;
   cells.f = new Uint16Array(cells.i.length); // cell feature number
   cells.t = new Int16Array(cells.i.length); // cell type: 1 = land along coast; -1 = water along coast;
   cells.haven = cells.i.length < 65535 ? new Uint16Array(cells.i.length) : new Uint32Array(cells.i.length);// cell haven (opposite water cell);
@@ -1027,6 +1041,7 @@ function reMarkFeatures() {
     const start = queue[0]; // first cell
     cells.f[start] = i; // assign feature number
     const land = cells.h[start] >= 20;
+    //const frozen = !land && temp[cells.g[start]] < -5; // check if water is frozen
     let border = false; // true if feature touches map border
     let cellNumber = 1; // to count cells number in a feature
 
@@ -1044,9 +1059,10 @@ function reMarkFeatures() {
           if (!cells.t[e] && cells.t[q] === 1) cells.t[e] = 2;
           else if (!cells.t[q] && cells.t[e] === 1) cells.t[q] = 2;
         }
-        if (land === eLand && cells.f[e] === 0) {
-          cells.f[e] = i;
+        if (!cells.f[e] && land === eLand) {
+          //if (!land && frozen !== temp[cells.g[e]] < -5) return;
           queue.push(e);
+          cells.f[e] = i;
           cellNumber++;
         }
       });
@@ -1054,21 +1070,26 @@ function reMarkFeatures() {
 
     const type = land ? "island" : border ? "ocean" : "lake";
     let group;
-    if (type === "lake") group = defineLakeGroup(start, cellNumber);
-    else if (type === "ocean") group = "ocean";
+    if (type === "lake") group = defineLakeGroup(start, cellNumber, temp[cells.g[start]]);
+    else if (type === "ocean") group = defineOceanGroup(cellNumber);
     else if (type === "island") group = defineIslandGroup(start, cellNumber);
     features.push({i, land, border, type, cells: cellNumber, firstCell: start, group});
     queue[0] = cells.f.findIndex(f => !f); // find unmarked cell
   }
 
-  function defineLakeGroup(cell, number) {
-    const temp = grid.cells.temp[cells.g[cell]];
+  function defineLakeGroup(cell, number, temp) {
     if (temp > 24) return "salt";
     if (temp < -3) return "frozen";
     const height = d3.max(cells.c[cell].map(c => cells.h[c]));
     if (height > 69 && number < 3 && cell%5 === 0) return "sinkhole";
     if (height > 69 && number < 10 && cell%5 === 0) return "lava";
     return "freshwater";
+  }
+
+  function defineOceanGroup(number) {
+    if (number > grid.cells.i.length / 25) return "ocean";
+    if (number > grid.cells.i.length / 100) return "sea";
+    return "gulf";
   }
 
   function defineIslandGroup(cell, number) {
@@ -1105,12 +1126,13 @@ function defineBiomes() {
 
   for (const i of cells.i) {
     if (f[cells.f[i]].group === "freshwater") cells.h[i] = 19; // de-elevate lakes
-    if (cells.h[i] < 20) continue; // water cells have biome 0
+    const temp = grid.cells.temp[cells.g[i]]; // temperature
+
+    if (cells.h[i] < 20 && temp > -6) continue; // liquid water cells have biome 0
     let moist = grid.cells.prec[cells.g[i]];
     if (cells.r[i]) moist += Math.max(cells.fl[i] / 20, 2);
     const n = cells.c[i].filter(isLand).map(c => grid.cells.prec[cells.g[c]]).concat([moist]);
     moist = rn(4 + d3.mean(n));
-    const temp = grid.cells.temp[cells.g[i]]; // flux from precipitation
     cells.biome[i] = getBiomeId(moist, temp, cells.h[i]);
   }
 
@@ -1119,6 +1141,7 @@ function defineBiomes() {
 
 function getBiomeId(moisture, temperature, height) {
   if (temperature < -5) return 11; // permafrost biome
+  if (height < 20) return 0; // liquid water cells have marine biome
   if (moisture > 40 && height < 25 || moisture > 24 && height > 24) return 12; // wetland biome
   const m = Math.min(moisture / 5 | 0, 4); // moisture band from 0 to 4
   const t = Math.min(Math.max(20 - temperature, 0), 25); // temparature band from 0 to 25
@@ -1163,88 +1186,11 @@ function rankCells() {
   console.timeEnd('rankCells');
 }
 
-// calculate army and fleet based on state cells polulation
-function calculateMilitaryForces() {
-  const cells = pack.cells, states = pack.states;
-  const valid = states.filter(s => s.i && !s.removed); // valid states
-  valid.forEach(s => s.military = {infantry:0, cavalry:0, archers:0, reserve:0, fleet:0});
-
-  for (const i of cells.i) {
-    const s = states[cells.state[i]]; // cell state
-    if (!s.i || s.removed) continue;
-
-    let m = cells.pop[i] / 100; // basic army is 1% of rural population
-    if (cells.culture[i] !== s.culture) m = s.form === "Union" ? m / 1.2 : m / 2; // non-dominant culture
-    if (cells.religion[i] !== cells.religion[s.center]) m = s.form === "Theocracy" ? m / 2.2 : m / 1.4; // non-dominant religion
-    if (cells.f[i] !== cells.f[s.center]) m = s.type === "Naval" ? m / 1.2 : m / 1.8; // different landmass
-
-    let infantry = m * .5; // basic infantry is 50% of army
-    let archers = m * .25; // basic archers is 25% of army
-    let cavalry = m * .25; // basic cavalry is 25% of army
-
-    if ([1, 2, 3, 4].includes(cells.biome[i])) {cavalry *= 3; infantry /= 5; archers /= 2;} else // "nomadic" biomes have lots of cavalry
-    if ([7, 8, 9, 12].includes(cells.biome[i])) {cavalry /= 2.5; infantry *= 1.2; archers *= 1.2;} // "wet" biomes have reduced number of cavalry
-
-    s.military.infantry += infantry;
-    s.military.archers += archers;
-    s.military.cavalry += cavalry;
-    s.military.reserve += m * 3 + cells.pop[i] * .02; // reserve is ~5% of population
-  }
-
-  for (const b of pack.burgs) {
-    if (!b.i || b.removed || !b.state) continue;
-    const s = states[b.state]; // burg state
-
-    let m = b.population / 50; // basic army is 2% of urban population
-    if (b.capital) m *= 2; // capital has household troops
-    if (b.culture !== s.culture) m = s.form === "Union" ? m / 1.2 : m / 2; // non-dominant culture
-    if (cells.religion[b.cell] !== cells.religion[s.center]) m = s.form === "Theocracy" ? m / 2.2 : m / 1.4; // non-dominant religion
-    if (cells.f[b.cell] !== cells.f[s.center]) m = s.type === "Naval" ? m / 1.2 : m / 1.8; // different landmass
-
-    let infantry = m * .6; // basic infantry is 60% of army
-    let archers = m * .3; // basic archers is 3% of army
-    let cavalry = m * .1; // basic cavalry is 10% of army
-
-    const biome = cells.biome[b.cell]; // burg biome
-    if ([1, 2, 3, 4].includes(biome)) {cavalry *= 3; infantry /= 2;} else // "nomadic" biomes have lots of cavalry
-    if ([7, 8, 9, 12].includes(biome)) {cavalry /= 4; infantry *= 1.2; archers *= 1.4;} // "wet" biomes have reduced number of cavalry
-
-    s.military.infantry += infantry;
-    s.military.archers += archers;
-    s.military.cavalry += cavalry;
-    s.military.reserve += m * 2 + b.population * .01; // reserve is ~5% of population
-
-    if (!b.port) continue; // only ports have fleet
-    let ships = b.capital ? b.population / 3 : b.population / 5; // ~1 ship per 5 population points
-    if (s.type === "Naval") ships *= 1.8; // "naval" states have more ships
-    s.military.fleet += ~~ships + +P(ships % 1);
-  }
-
-  const expn = d3.sum(valid.map(s => s.expansionism)); // total expansion
-  const area = d3.sum(valid.map(s => s.area)); // total area
-  const rate = {x:0, Ally:-.2, Friendly:-.1, Neutral:0, Suspicion:.1, Enemy:1, Unknown:0, Rival:.5, Vassal:.5, Suzerain:-.5};
-
-  valid.forEach(s => {
-    const m = s.military, d = s.diplomacy;
-    const expansionRate = Math.min(Math.max((s.expansionism / expn) / (s.area / area), .25), 4); // how much state expansionism is relized
-    const diplomacyRate = d.some(d => d === "Enemy") ? 1 : d.some(d => d === "Rival") ? .8 : d.some(d => d === "Suspicion") ? .5 : .1; // peacefulness
-    const neighborsRate = Math.min(Math.max(s.neighbors.map(n => n ? pack.states[n].diplomacy[s.i] : "Suspicion").reduce((s, r) => s += rate[r], .5), .3), 3); // neighbors rate
-    m.alert = rn(expansionRate * diplomacyRate * neighborsRate, 2); // war alert rate (army modifier)
-
-    m.infantry = rn(m.infantry * m.alert, 3);
-    m.cavalry = rn(m.cavalry * m.alert, 3);
-    m.archers = rn(m.archers * m.alert, 3);
-    m.reserve = rn(m.reserve, 3);
-  });
-
-  console.table(valid.map(s=>[s.name, s.military.alert, s.military.infantry, s.military.archers, s.military.cavalry, s.military.reserve, rn(s.military.reserve/(s.urban+s.rural)*100,2)+"%", s.military.fleet]));
-}
-
 // generate some markers
 function addMarkers(number = 1) {
   if (!number) return;
   console.time("addMarkers");
-  const cells = pack.cells;
+  const cells = pack.cells, states = pack.states;
 
   void function addVolcanoes() {
     let mounts = Array.from(cells.i).filter(i => cells.h[i] > 70).sort((a, b) => cells.h[b] - cells.h[a]);
@@ -1306,7 +1252,7 @@ function addMarkers(number = 1) {
         .attr("data-size", 1).attr("width", 30).attr("height", 30);
       const resource = rw(resources);
       const burg = pack.burgs[cells.burg[cell]];
-      const name = `${burg.name} - ${resource} mining town`;
+      const name = `${burg.name} — ${resource} mining town`;
       const population = rn(burg.population * populationRate.value * urbanization.value);
       const legend = `${burg.name} is a mining town of ${population} people just nearby the ${resource} mine`;
       notes.push({id, name, legend});
@@ -1412,9 +1358,8 @@ function addMarkers(number = 1) {
   }()
 
   void function addBattlefields() {
-    let battlefields = Array.from(cells.i).filter(i => cells.pop[i] > 2 && cells.h[i] < 50 && cells.h[i] > 25);
+    let battlefields = Array.from(cells.i).filter(i => cells.state[i] && cells.pop[i] > 2 && cells.h[i] < 50 && cells.h[i] > 25);
     let count = battlefields.length < 100 ? 0 : Math.ceil(battlefields.length / 500 * number);
-    const era = Names.getCulture(0, 3, 7, "", 0) + " Era";
     if (count) addMarker("battlefield", "⚔", 50, 50, 20);
 
     while (count) {
@@ -1426,9 +1371,11 @@ function addMarkers(number = 1) {
         .attr("data-x", x).attr("data-y", y).attr("x", x - 15).attr("y", y - 30)
         .attr("data-size", 1).attr("width", 30).attr("height", 30);
 
+      const campaign = ra(states[cells.state[cell]].campaigns);
+      const date = generateDate(campaign.start, campaign.end);
       const name = Names.getCulture(cells.culture[cell]) + " Battlefield";
-      const date = new Date(rand(100, 1000),rand(12),rand(31)).toLocaleDateString("en", {year:'numeric', month:'long', day:'numeric'}) + " " + era;
-      notes.push({id, name, legend:`A historical battlefield spot. \r\nDate: ${date}`});
+      const legend = `A historical battle of the ${campaign.name}. \r\nDate: ${date} ${options.era}`;
+      notes.push({id, name, legend});
       count--;
     }
   }()
@@ -1800,7 +1747,7 @@ const regenerateMap = debounce(function() {
 
 // clear the map
 function undraw() {
-  viewbox.selectAll("path, circle, polygon, line, text, use, #zones > g, #ruler > g").remove();
+  viewbox.selectAll("path, circle, polygon, line, text, use, #zones > g, #armies > g, #ruler > g").remove();
   defs.selectAll("path, clipPath").remove();
   notes = [];
   unfog();

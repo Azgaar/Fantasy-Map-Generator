@@ -298,18 +298,27 @@ function editCultures() {
   function cultureRemove() {
     if (customization === 4) return;
     const culture = +this.parentNode.dataset.id;
-    cults.select("#culture"+culture).remove();
-    debug.select("#cultureCenter"+culture).remove();
 
-    pack.burgs.filter(b => b.culture == culture).forEach(b => b.culture = 0);
-    pack.states.forEach((s, i) => {if(s.culture === culture) s.culture = 0;});
-    pack.cells.culture.forEach((c, i) => {if(c === culture) pack.cells.culture[i] = 0;});
-    pack.cultures[culture].removed = true;
-
-    const origin = pack.cultures[culture].origin;
-    pack.cultures.forEach(c => {if(c.origin === culture) c.origin = origin;});
-
-    refreshCulturesEditor();
+    alertMessage.innerHTML = "Are you sure you want to remove the culture? <br>This action cannot be reverted";
+    $("#alert").dialog({resizable: false, title: "Remove culture",
+      buttons: {
+        Remove: function() {
+          cults.select("#culture"+culture).remove();
+          debug.select("#cultureCenter"+culture).remove();
+      
+          pack.burgs.filter(b => b.culture == culture).forEach(b => b.culture = 0);
+          pack.states.forEach((s, i) => {if(s.culture === culture) s.culture = 0;});
+          pack.cells.culture.forEach((c, i) => {if(c === culture) pack.cells.culture[i] = 0;});
+          pack.cultures[culture].removed = true;
+      
+          const origin = pack.cultures[culture].origin;
+          pack.cultures.forEach(c => {if(c.origin === culture) c.origin = origin;});
+          refreshCulturesEditor();
+          $(this).dialog("close");
+        },
+        Cancel: function() {$(this).dialog("close");}
+      }
+    });
   }
 
   function drawCultureCenters() {

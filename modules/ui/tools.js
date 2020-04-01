@@ -64,6 +64,7 @@ function processFeatureRegeneration(event, button) {
   if (button === "regenerateStates") regenerateStates(); else
   if (button === "regenerateProvinces") regenerateProvinces(); else
   if (button === "regenerateReligions") regenerateReligions(); else
+  if (button === "regenerateMilitary") regenerateMilitary(); else
   if (button === "regenerateMarkers") regenerateMarkers(event); else
   if (button === "regenerateZones") regenerateZones(event);
 }
@@ -135,6 +136,7 @@ function regenerateBurgs() {
     moveBurgToGroup(burg, "cities");
   });
 
+  pack.features.forEach(f => {if (f.port) f.port = 0}); // reset features ports counter
   BurgsAndStates.specifyBurgs();
   BurgsAndStates.defineBurgFeatures();
   BurgsAndStates.drawBurgs();
@@ -215,15 +217,18 @@ function regenerateStates() {
   BurgsAndStates.normalizeStates();
   BurgsAndStates.collectStatistics();
   BurgsAndStates.assignColors();
+  BurgsAndStates.generateCampaigns();
   BurgsAndStates.generateDiplomacy();
   BurgsAndStates.defineStateForms();
   BurgsAndStates.generateProvinces(true);
   if (!layerIsOn("toggleStates")) toggleStates(); else drawStates();
   if (!layerIsOn("toggleBorders")) toggleBorders(); else drawBorders();
   BurgsAndStates.drawStateLabels();
+  Military.generate();
 
   if (document.getElementById("burgsOverviewRefresh").offsetParent) burgsOverviewRefresh.click();
   if (document.getElementById("statesEditorRefresh").offsetParent) statesEditorRefresh.click();
+  if (document.getElementById("militaryOverviewRefresh").offsetParent) militaryOverviewRefresh.click();
 }
 
 function regenerateProvinces() {
@@ -236,6 +241,12 @@ function regenerateProvinces() {
 function regenerateReligions() {
   Religions.generate();
   if (!layerIsOn("toggleReligions")) toggleReligions(); else drawReligions();
+}
+
+function regenerateMilitary() {
+  Military.generate();
+  if (!layerIsOn("toggleMilitary")) toggleMilitary();
+  if (document.getElementById("militaryOverviewRefresh").offsetParent) militaryOverviewRefresh.click();
 }
 
 function regenerateMarkers(event) {

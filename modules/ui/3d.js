@@ -6,7 +6,7 @@
 
 // set default options
 const options = {scale: 50, lightness: .7, shadow: .5, sun: {x: 100, y: 600, z: 1000}, rotateMesh: 0, rotateGlobe: .5,
-  skyColor: "#9ecef5", waterColor: "#53679f", extendedWater: 0, resolution: 2};
+  skyColor: "#9ecef5", waterColor: "#466eab", extendedWater: 0, resolution: 2};
 
 // set variables
 let Renderer, scene, camera, controls, animationFrame, material, texture,

@@ -112,7 +112,7 @@ function overviewBurgs() {
 
   function getCultureOptions(culture) {
     let options = "";
-    pack.cultures.forEach(c => options += `<option ${c.i === culture ? "selected" : ""} value="${c.i}">${c.name}</option>`);
+    pack.cultures.filter(c => !c.removed).forEach(c => options += `<option ${c.i === culture ? "selected" : ""} value="${c.i}">${c.name}</option>`);
     return options;
   }
 
@@ -303,7 +303,7 @@ function overviewBurgs() {
       burgHighlightOff(ev);
       if (!document.getElementById("burgsInfo")) return;
       burgsInfo.innerHTML = "&#8205;";
-      d3.select(ev.target).transition().attr("stroke", "null");
+      d3.select(ev.target).transition().attr("stroke", null);
       tip("");
     }
 

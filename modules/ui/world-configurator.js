@@ -8,13 +8,13 @@ function editWorld() {
       "Southern": () => applyPreset(33, 75), 
       "Restore Winds": restoreDefaultWinds
     }, open: function() {
-      const buttons = $(this).dialog("widget").find(".ui-dialog-buttonset > button")
+      const buttons = $(this).dialog("widget").find(".ui-dialog-buttonset > button");
       buttons[0].addEventListener("mousemove", () => tip("Click to set map size to cover the whole World"));
       buttons[1].addEventListener("mousemove", () => tip("Click to set map size to cover the Northern latitudes"));
       buttons[2].addEventListener("mousemove", () => tip("Click to set map size to cover the Tropical latitudes"));
       buttons[3].addEventListener("mousemove", () => tip("Click to set map size to cover the Southern latitudes"));
       buttons[4].addEventListener("mousemove", () => tip("Click to restore default wind directions"));
-    },
+    }
   });
 
   const globe = d3.select("#globe");
@@ -56,6 +56,7 @@ function editWorld() {
     if (layerIsOn("togglePrec")) drawPrec();
     if (layerIsOn("toggleBiomes")) drawBiomes();
     if (layerIsOn("toggleCoordinates")) drawCoordinates();
+    if (document.getElementById("canvas3d")) setTimeout(ThreeD.update(), 500);
   }
 
   function updateGlobePosition() {
@@ -100,26 +101,26 @@ function editWorld() {
   function updateWindDirections() {
     globe.select("#globeWindArrows").selectAll("path").each(function(d, i) {
       const tr = parseTransform(this.getAttribute("transform"));
-      this.setAttribute("transform", `rotate(${winds[i]} ${tr[1]} ${tr[2]})`);
+      this.setAttribute("transform", `rotate(${options.winds[i]} ${tr[1]} ${tr[2]})`);
     });
   }
 
   function changeWind() {
     const arrow = d3.event.target.nextElementSibling;
     const tier = +arrow.dataset.tier;
-    winds[tier] = (winds[tier] + 45) % 360;
+    options.winds[tier] = (options.winds[tier] + 45) % 360;
     const tr = parseTransform(arrow.getAttribute("transform"));
-    arrow.setAttribute("transform", `rotate(${winds[tier]} ${tr[1]} ${tr[2]})`);
-    localStorage.setItem("winds", winds);
+    arrow.setAttribute("transform", `rotate(${options.winds[tier]} ${tr[1]} ${tr[2]})`);
+    localStorage.setItem("winds", options.winds);
     const mapTiers = d3.range(mapCoordinates.latN, mapCoordinates.latS, -30).map(c => (90-c) / 30 | 0);
     if (mapTiers.includes(tier)) updateWorld();
   }
-  
+
   function restoreDefaultWinds() {
     const defaultWinds = [225, 45, 225, 315, 135, 315];
     const mapTiers = d3.range(mapCoordinates.latN, mapCoordinates.latS, -30).map(c => (90-c) / 30 | 0);
-    const update = mapTiers.some(t => winds[t] != defaultWinds[t]);
-    winds = defaultWinds;
+    const update = mapTiers.some(t => options.winds[t] != defaultWinds[t]);
+    options.winds = defaultWinds;
     updateWindDirections();
     if (update) updateWorld();
   }

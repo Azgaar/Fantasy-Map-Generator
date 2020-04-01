@@ -3,8 +3,8 @@
 
 function editHeightmap() {
   void function selectEditMode() {
-    alertMessage.innerHTML = `<p>Heightmap is a core element on which all other data (rivers, burgs, states etc) is based.
-      So the best edit approach is to <i>erase</i> the secondary data and let the system automatically regenerate it on edit completion.</p> 
+    alertMessage.innerHTML = `<span>Heightmap is a core element on which all other data (rivers, burgs, states etc) is based.
+      So the best edit approach is to <i>erase</i> the secondary data and let the system automatically regenerate it on edit completion.</span> 
       <p>You can also <i>keep</i> all the data, but you won't be able to change the coastline.</p>
       <p>If you need to change the coastline and keep the data, you may try the <i>risk</i> edit option. 
       The data will be restored as much as possible, but the coastline change can cause unexpected fluctuations and errors.</p>
@@ -128,8 +128,7 @@ function editHeightmap() {
 
     customization = 0;
     customizationMenu.style.display = "none";
-    if (options.querySelector(".tab > button.active").id === "toolsTab")
-      toolsContent.style.display = "block";
+    if (document.getElementById("options").querySelector(".tab > button.active").id === "toolsTab") toolsContent.style.display = "block";
     layersPreset.disabled = false;
     exitCustomization.style.display = "none"; // hide finalize button
     restoreDefaultEvents();
@@ -195,6 +194,7 @@ function editHeightmap() {
     BurgsAndStates.drawStateLabels();
 
     Rivers.specify();
+    Military.generate();
     addMarkers();
     addZones();
     console.timeEnd("regenerateErasedData");
@@ -307,10 +307,11 @@ function editHeightmap() {
 
     for (const i of pack.cells.i) {
       const g = pack.cells.g[i];
+      if (pack.features[pack.cells.f[i]].group === "freshwater") pack.cells.h[i] = 19; // de-elevate lakes
       const land = pack.cells.h[i] >= 20;
 
       // check biome
-      if (land && !biome[g]) pack.cells.biome[i] = getBiomeId(grid.cells.prec[g], grid.cells.temp[g]);
+      if (!biome[g]) pack.cells.biome[i] = getBiomeId(grid.cells.prec[g], grid.cells.temp[g]);
       else if (!land && biome[g]) pack.cells.biome[i] = 0;
       else pack.cells.biome[i] = biome[g];
 

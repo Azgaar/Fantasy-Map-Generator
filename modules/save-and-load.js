@@ -226,12 +226,12 @@ function getMapData() {
     const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
     const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
     const params = [version, license, dateString, seed, graphWidth, graphHeight].join("|");
-    const options = [distanceUnitInput.value, distanceScaleInput.value, areaUnit.value,
+    const settings = [distanceUnitInput.value, distanceScaleInput.value, areaUnit.value,
       heightUnit.value, heightExponentInput.value, temperatureScale.value,
       barSize.value, barLabel.value, barBackOpacity.value, barBackColor.value,
       barPosX.value, barPosY.value, populationRate.value, urbanization.value,
       mapSizeOutput.value, latitudeOutput.value, temperatureEquatorOutput.value,
-      temperaturePoleOutput.value, precOutput.value, JSON.stringify(winds),
+      temperaturePoleOutput.value, precOutput.value, JSON.stringify(options),
       mapName.value].join("|");
     const coords = JSON.stringify(mapCoordinates);
     const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
@@ -242,7 +242,7 @@ function getMapData() {
     // set transform values to default
     cloneEl.setAttribute("width", graphWidth);
     cloneEl.setAttribute("height", graphHeight);
-    cloneEl.querySelector("#viewbox").setAttribute("transform", null);
+    cloneEl.querySelector("#viewbox").removeAttribute("transform");
     const svg_xml = (new XMLSerializer()).serializeToString(cloneEl);
 
     const gridGeneral = JSON.stringify({spacing:grid.spacing, cellsX:grid.cellsX, cellsY:grid.cellsY, boundary:grid.boundary, points:grid.points, features:grid.features});
@@ -265,7 +265,7 @@ function getMapData() {
     const pop = Array.from(pack.cells.pop).map(p => rn(p, 4));
 
     // data format as below
-    const data = [params, options, coords, biomes, notesData, svg_xml,
+    const data = [params, settings, coords, biomes, notesData, svg_xml,
       gridGeneral, grid.cells.h, grid.cells.prec, grid.cells.f, grid.cells.t, grid.cells.temp,
       features, cultures, states, burgs,
       pack.cells.biome, pack.cells.burg, pack.cells.conf, pack.cells.culture, pack.cells.fl,
@@ -505,6 +505,7 @@ function uploadMap(file, callback) {
 
   const fileReader = new FileReader();
   fileReader.onload = function(fileLoadedEvent) {
+    if (callback) callback();
     const dataLoaded = fileLoadedEvent.target.result;
     const data = dataLoaded.split("\r\n");
 
@@ -532,7 +533,6 @@ function uploadMap(file, callback) {
   };
 
   fileReader.readAsText(file, "UTF-8");
-  if (callback) callback();
 }
 
 function parseLoadedData(data) {
@@ -554,29 +554,29 @@ function parseLoadedData(data) {
 
     console.group("Loaded Map " + seed);
 
-    void function parseOptions() {
-      const options = data[1].split("|");
-      if (options[0]) applyOption(distanceUnitInput, options[0]);
-      if (options[1]) distanceScaleInput.value = distanceScaleOutput.value = options[1];
-      if (options[2]) areaUnit.value = options[2];
-      if (options[3]) applyOption(heightUnit, options[3]);
-      if (options[4]) heightExponentInput.value = heightExponentOutput.value = options[4];
-      if (options[5]) temperatureScale.value = options[5];
-      if (options[6]) barSize.value = barSizeOutput.value = options[6];
-      if (options[7] !== undefined) barLabel.value = options[7];
-      if (options[8] !== undefined) barBackOpacity.value = options[8];
-      if (options[9]) barBackColor.value = options[9];
-      if (options[10]) barPosX.value = options[10];
-      if (options[11]) barPosY.value = options[11];
-      if (options[12]) populationRate.value = populationRateOutput.value = options[12];
-      if (options[13]) urbanization.value = urbanizationOutput.value = options[13];
-      if (options[14]) mapSizeInput.value = mapSizeOutput.value = Math.max(Math.min(options[14], 100), 1);
-      if (options[15]) latitudeInput.value = latitudeOutput.value = Math.max(Math.min(options[15], 100), 0);
-      if (options[16]) temperatureEquatorInput.value = temperatureEquatorOutput.value = options[16];
-      if (options[17]) temperaturePoleInput.value = temperaturePoleOutput.value = options[17];
-      if (options[18]) precInput.value = precOutput.value = options[18];
-      if (options[19]) winds = JSON.parse(options[19]);
-      if (options[20]) mapName.value = options[20];
+    void function parseSettings() {
+      const settings = data[1].split("|");
+      if (settings[0]) applyOption(distanceUnitInput, settings[0]);
+      if (settings[1]) distanceScaleInput.value = distanceScaleOutput.value = settings[1];
+      if (settings[2]) areaUnit.value = settings[2];
+      if (settings[3]) applyOption(heightUnit, settings[3]);
+      if (settings[4]) heightExponentInput.value = heightExponentOutput.value = settings[4];
+      if (settings[5]) temperatureScale.value = settings[5];
+      if (settings[6]) barSize.value = barSizeOutput.value = settings[6];
+      if (settings[7] !== undefined) barLabel.value = settings[7];
+      if (settings[8] !== undefined) barBackOpacity.value = settings[8];
+      if (settings[9]) barBackColor.value = settings[9];
+      if (settings[10]) barPosX.value = settings[10];
+      if (settings[11]) barPosY.value = settings[11];
+      if (settings[12]) populationRate.value = populationRateOutput.value = settings[12];
+      if (settings[13]) urbanization.value = urbanizationOutput.value = settings[13];
+      if (settings[14]) mapSizeInput.value = mapSizeOutput.value = Math.max(Math.min(settings[14], 100), 1);
+      if (settings[15]) latitudeInput.value = latitudeOutput.value = Math.max(Math.min(settings[15], 100), 0);
+      if (settings[16]) temperatureEquatorInput.value = temperatureEquatorOutput.value = settings[16];
+      if (settings[17]) temperaturePoleInput.value = temperaturePoleOutput.value = settings[17];
+      if (settings[18]) precInput.value = precOutput.value = settings[18];
+      if (settings[19]) options = JSON.parse(settings[19]);
+      if (settings[20]) mapName.value = settings[20];
     }()
 
     void function parseConfiguration() {
@@ -645,6 +645,7 @@ function parseLoadedData(data) {
       icons = viewbox.select("#icons");
       burgIcons = icons.select("#burgIcons");
       anchors = icons.select("#anchors");
+      armies = viewbox.select("#armies");
       markers = viewbox.select("#markers");
       ruler = viewbox.select("#ruler");
       fogging = viewbox.select("#fogging");
@@ -721,6 +722,7 @@ function parseLoadedData(data) {
       if (prec.selectAll("circle").size()) turnButtonOn("togglePrec"); else turnButtonOff("togglePrec");
       if (labels.style("display") !== "none") turnButtonOn("toggleLabels"); else turnButtonOff("toggleLabels");
       if (icons.style("display") !== "none") turnButtonOn("toggleIcons"); else turnButtonOff("toggleIcons");
+      if (armies.selectAll("*").size() && armies.style("display") !== "none") turnButtonOn("toggleMilitary"); else turnButtonOff("toggleMilitary");
       if (markers.selectAll("*").size() && markers.style("display") !== "none") turnButtonOn("toggleMarkers"); else turnButtonOff("toggleMarkers");
       if (ruler.style("display") !== "none") turnButtonOn("toggleRulers"); else turnButtonOff("toggleRulers");
       if (scaleBar.style("display") !== "none") turnButtonOn("toggleScaleBar"); else turnButtonOff("toggleScaleBar");
@@ -774,6 +776,7 @@ function parseLoadedData(data) {
         // 1.0 adds state relations, provinces, forms and full names
         provs = viewbox.insert("g", "#borders").attr("id", "provs").attr("opacity", .6);
         BurgsAndStates.collectStatistics();
+        BurgsAndStates.generateCampaigns();
         BurgsAndStates.generateDiplomacy();
         BurgsAndStates.defineStateForms();
         drawStates();
@@ -905,7 +908,6 @@ function parseLoadedData(data) {
         });
 
         // v 1.21 added rivers data to pack
-
         pack.rivers = []; // rivers data
         rivers.selectAll("path").each(function() {
           const i = +this.id.slice(5);
@@ -931,6 +933,82 @@ function parseLoadedData(data) {
         BurgsAndStates.collectStatistics();
       }
 
+      if (version < 1.3) {
+        // v 1.3 added global options object
+        const winds = options.slice(); // previostly wnd was saved in settings[19]
+        const year = rand(100, 2000);
+        const era = Names.getBaseShort(P(.7) ? 1 : rand(nameBases.length)) + " Era";
+        const eraShort = era[0] + "E";
+        const military = Military.getDefaultOptions();
+        options = {winds, year, era, eraShort, military};
+
+        // v 1.3 added campaings data for all states
+        BurgsAndStates.generateCampaigns();
+
+        // v 1.3 added militry layer
+        svg.select("defs").append("style").text(armiesStyle()); // add armies style
+        armies = viewbox.insert("g", "#icons").attr("id", "armies");
+        armies.attr("opacity", 1).attr("fill-opacity", 1).attr("font-size", 6).attr("box-size", 3).attr("stroke", "#000").attr("stroke-width", .3);
+        turnButtonOn("toggleMilitary");
+        Military.generate();
+      }
+
+    }()
+
+    void function checkDataIntegrity() {
+      const cells = pack.cells;
+
+      const invalidStates = [...new Set(cells.state)].filter(s => !pack.states[s] || pack.states[s].removed);
+      invalidStates.forEach(s => {
+        const invalidCells = cells.i.filter(i => cells.state[i] === s);
+        invalidCells.forEach(i => cells.state[i] = 0);
+        console.error("Data Integrity Check. Invalid state", s, "is assigned to cells", invalidCells);
+      });
+
+      const invalidProvinces = [...new Set(cells.province)].filter(p => p && (!pack.provinces[p] || pack.provinces[p].removed));
+      invalidProvinces.forEach(p => {
+        const invalidCells = cells.i.filter(i => cells.province[i] === p);
+        invalidCells.forEach(i => cells.province[i] = 0);
+        console.error("Data Integrity Check. Invalid province", p, "is assigned to cells", invalidCells);
+      });
+
+      const invalidCultures = [...new Set(cells.culture)].filter(c => !pack.cultures[c] || pack.cultures[c].removed);
+      invalidCultures.forEach(c => {
+        const invalidCells = cells.i.filter(i => cells.culture[i] === c);
+        invalidCells.forEach(i => cells.province[i] = 0);
+        console.error("Data Integrity Check. Invalid culture", c, "is assigned to cells", invalidCells);
+      });
+
+      const invalidReligions = [...new Set(cells.religion)].filter(r => !pack.religions[r] || pack.religions[r].removed);
+      invalidReligions.forEach(r => {
+        const invalidCells = cells.i.filter(i => cells.religion[i] === r);
+        invalidCells.forEach(i => cells.religion[i] = 0);
+        console.error("Data Integrity Check. Invalid religion", c, "is assigned to cells", invalidCells);
+      });
+
+      const invalidFeatures = [...new Set(cells.f)].filter(f => f && !pack.features[f]);
+      invalidFeatures.forEach(f => {
+        const invalidCells = cells.i.filter(i => cells.f[i] === f);
+        // No fix as for now
+        console.error("Data Integrity Check. Invalid feature", f, "is assigned to cells", invalidCells);
+      });
+
+      const invalidBurgs = [...new Set(cells.burg)].filter(b => b && (!pack.burgs[b] || pack.burgs[b].removed));
+      invalidBurgs.forEach(b => {
+        const invalidCells = cells.i.filter(i => cells.burg[i] === b);
+        invalidCells.forEach(i => cells.burg[i] = 0);
+        console.error("Data Integrity Check. Invalid burg", b, "is assigned to cells", invalidCells);
+      });
+
+      pack.burgs.forEach(b => {
+        if (!b.i || b.removed) return;
+        if (b.port < 0) {console.error("Data Integrity Check. Burg", b.i, "has invalid port value", b.port); b.port = 0;}
+        if (b.cell < cells.i.length) return;
+        console.error("Data Integrity Check. Burg", b.i, "is linked to invalid cell", b.cell);
+        b.cell = findCell(b.x, b.y);
+        cells.i.filter(i => cells.burg[i] === b.i).forEach(i => cells.burg[i] = 0);
+        cells.burg[b.cell] = b.i;
+      });
     }()
 
     changeMapSize();

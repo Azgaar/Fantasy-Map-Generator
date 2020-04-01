@@ -64,43 +64,49 @@
     const cells = pack.cells, allPorts = pack.burgs.filter(b => b.port > 0 && !b.removed);
     if (allPorts.length < 2) return [];
     const bodies = new Set(allPorts.map(b => b.port)); // features with ports
-    let from = [], exit = null, path = [], paths = []; // array to store path segments
+    let paths = []; // array to store path segments
 
     bodies.forEach(function(f) {
       const ports = allPorts.filter(b => b.port === f);
       if (ports.length < 2) return;
       const first = ports[0].cell;
+      const farthest = ports[d3.scan(ports, (a, b) => ((b.y - ports[0].y) ** 2 + (b.x - ports[0].x) ** 2) - ((a.y - ports[0].y) ** 2 + (a.x - ports[0].x) ** 2))].cell;
 
       // directly connect first port with the farthest one on the same island to remove gap
-      if (pack.features[f].type !== "lake") {
+      void function() {
+        if (!pack.features[f] || pack.features[f].type === "lake") return;
         const portsOnIsland = ports.filter(b => cells.f[b.cell] === cells.f[first]);
-        if (portsOnIsland.length > 3) {
-          const opposite = ports[d3.scan(portsOnIsland, (a, b) => ((b.y - ports[0].y) ** 2 + (b.x - ports[0].x) ** 2) - ((a.y - ports[0].y) ** 2 + (a.x - ports[0].x) ** 2))].cell;
-          //debug.append("circle").attr("r", 1).attr("fill", "blue").attr("cx", pack.cells.p[first][0]).attr("cy", pack.cells.p[first][1])
-          //debug.append("circle").attr("r", 1).attr("fill", "green").attr("cx", pack.cells.p[opposite][0]).attr("cy", pack.cells.p[opposite][1])
-          [from, exit] = findOceanPath(opposite, first);
-          from[first] = cells.haven[first];
-          path = restorePath(opposite, first, "ocean", from);
-          paths = paths.concat(path);
-        }
-      }
+        if (portsOnIsland.length < 4) return;
+        const opposite = ports[d3.scan(portsOnIsland, (a, b) => ((b.y - ports[0].y) ** 2 + (b.x - ports[0].x) ** 2) - ((a.y - ports[0].y) ** 2 + (a.x - ports[0].x) ** 2))].cell;
+        //debug.append("circle").attr("cx", pack.cells.p[opposite][0]).attr("cy", pack.cells.p[opposite][1]).attr("r", 1);
+        //debug.append("circle").attr("cx", pack.cells.p[first][0]).attr("cy", pack.cells.p[first][1]).attr("fill", "red").attr("r", 1);
+        const [from, exit, passable] = findOceanPath(opposite, first);
+        if (!passable) return;
+        from[first] = cells.haven[first];
+        const path = restorePath(opposite, first, "ocean", from);
+        paths = paths.concat(path);
+      }()
 
       // directly connect first port with the farthest one
-      const farthest = ports[d3.scan(ports, (a, b) => ((b.y - ports[0].y) ** 2 + (b.x - ports[0].x) ** 2) - ((a.y - ports[0].y) ** 2 + (a.x - ports[0].x) ** 2))].cell;
-      [from, exit] = findOceanPath(farthest, first);
-      from[first] = cells.haven[first];
-      path = restorePath(farthest, first, "ocean", from);
-      paths = paths.concat(path);
+      void function() {
+        const [from, exit, passable] = findOceanPath(farthest, first);
+        if (!passable) return;
+        from[first] = cells.haven[first];
+        const path = restorePath(farthest, first, "ocean", from);
+        paths = paths.concat(path);
+      }()
 
       // indirectly connect first port with all other ports
-      if (ports.length < 3) return;
-      for (const p of ports) {
-        if (p.cell === first || p.cell === farthest) continue;
-        [from, exit] = findOceanPath(p.cell, first, true);
-        //from[exit] = cells.haven[exit];
-        const path = restorePath(p.cell, exit, "ocean", from);
-        paths = paths.concat(path);
-      }
+      void function() {
+        if (ports.length < 3) return;
+        for (const p of ports) {
+          if (p.cell === first || p.cell === farthest) continue;
+          const [from, exit, passable] = findOceanPath(p.cell, first, true);
+          if (!passable) continue;
+          const path = restorePath(p.cell, exit, "ocean", from);
+          paths = paths.concat(path);
+        }
+      }()
 
     });
 
@@ -173,9 +179,11 @@
       for (const c of cells.c[n]) {
         if (cells.h[c] < 20) continue; // ignore water cells
         const stateChangeCost = cells.state && cells.state[c] !== cells.state[n] ? 400 : 0; // trails tend to lay within the same state
-        const habitedCost = Math.max(100 - biomesData.habitability[cells.biome[c]], 0); // routes tend to lay within populated areas
+        const habitability = biomesData.habitability[cells.biome[c]];
+        const habitedCost = habitability ? Math.max(100 - habitability, 0) : 400; // routes tend to lay within populated areas
         const heightChangeCost = Math.abs(cells.h[c] - cells.h[n]) * 10; // routes tend to avoid elevation changes
-        const cellCoast = 10 + stateChangeCost + habitedCost + heightChangeCost;
+        const heightCost = cells.h[c] > 80 ? cells.h[c] : 0; // routes tend to avoid mountainous areas
+        const cellCoast = 10 + stateChangeCost + habitedCost + heightChangeCost + heightCost;
         const totalCost = p + (cells.road[c] || cells.burg[c] ? cellCoast / 3 : cellCoast);
 
         if (from[c] || totalCost >= cost[c]) continue;
@@ -234,22 +242,21 @@
 
     while (queue.length) {
       const next = queue.dequeue(), n = next.e, p = next.p;
-      if (toRoute && n !== start && cells.road[n]) return [from, n];
+      if (toRoute && n !== start && cells.road[n]) return [from, n, true];
 
       for (const c of cells.c[n]) {
+        if (c === exit) {from[c] = n; return [from, exit, true];}
         if (cells.h[c] >= 20) continue; // ignore land cells
         const dist2 = (cells.p[c][1] - cells.p[n][1]) ** 2 + (cells.p[c][0] - cells.p[n][0]) ** 2;
         const totalCost = p + (cells.road[c] ? 1 + dist2 / 2 : dist2 + (cells.t[c] ? 1 : 100));
 
         if (from[c] || totalCost >= cost[c]) continue;
-        from[c] = n;
-        if (c === exit) return [from, exit];
-        cost[c] = totalCost;
+        from[c] = n, cost[c] = totalCost;
         queue.queue({e: c, p: totalCost});
       }
 
     }
-    return [from, exit];
+    return [from, exit, false];
   }
 
 })));

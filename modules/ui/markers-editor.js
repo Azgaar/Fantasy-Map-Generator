@@ -170,7 +170,7 @@ function editMarker() {
   }
 
   function drawIconsList() {
-    let icons = [
+    const icons = [
         // emoticons in FF:
         ["2693", "⚓", "Anchor"],
         ["26EA", "⛪", "Church"],

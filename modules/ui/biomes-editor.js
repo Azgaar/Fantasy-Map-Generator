@@ -97,7 +97,7 @@ function editBiomes() {
         <div data-tip="Biome area" class="biomeArea hide">${si(area) + unit}</div>
         <span data-tip="${populationTip}" class="icon-male hide"></span>
         <div data-tip="${populationTip}" class="biomePopulation hide">${si(population)}</div>
-        <span data-tip="Open Wikipedia articale about the biome" class="icon-info-circled pointer hide"></span>
+        <span data-tip="Open Wikipedia article about the biome" class="icon-info-circled pointer hide"></span>
         ${i>12 && !b.cells[i] ? '<span data-tip="Remove the custom biome" class="icon-trash-empty hide"></span>' : ''}
       </div>`;
     }

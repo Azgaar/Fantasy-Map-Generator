@@ -37,9 +37,9 @@ function editProvinces() {
     const el = ev.target, cl = el.classList, line = el.parentNode, p = +line.dataset.id;
     if (cl.contains("fillRect")) changeFill(el); else
     if (cl.contains("name")) editProvinceName(p); else
-    if (cl.contains("icon-fleur")) provinceOpenCOA(ev, p); else
+    if (cl.contains("icon-coa")) provinceOpenCOA(ev, p); else
     if (cl.contains("icon-star-empty")) capitalZoomIn(p); else
-    if (cl.contains("icon-flag-empty")) declareProvinceIndependence(p); else
+    if (cl.contains("icon-flag-empty")) triggerIndependencePromps(p); else
     if (cl.contains("culturePopulation")) changePopulation(p); else
     if (cl.contains("icon-pin")) focusOn(p, cl); else
     if (cl.contains("icon-trash-empty")) removeProvince(p);
@@ -116,7 +116,7 @@ function editProvinces() {
       lines += `<div class="states" data-id=${p.i} data-name=${p.name} data-form=${p.formName} data-color="${p.color}" data-capital="${capital}" data-state="${stateName}" data-area=${area} data-population=${population}>
         <svg data-tip="Province fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${p.color}" class="fillRect pointer"></svg>
         <input data-tip="Province name. Click to change" class="name pointer" value="${p.name}" readonly>
-        <span data-tip="Click to open province COA in the Iron Arachne Heraldry Generator. Ctrl + click to change the seed" class="icon-fleur pointer hide"></span>
+        <span data-tip="Click to open province COA in the Iron Arachne Heraldry Generator. Ctrl + click to change the seed" class="icon-coa pointer hide"></span>
         <input data-tip="Province form name. Click to change" class="name pointer hide" value="${p.formName}" readonly>
         <span data-tip="Province capital. Click to zoom into view" class="icon-star-empty pointer hide ${p.burg?'':'placeholder'}"></span>
         <select data-tip="Province capital. Click to select from burgs within the state. No capital means the province is governed from the state capital" class="cultureBase hide ${p.burgs.length?'':'placeholder'}">${p.burgs.length ? getCapitalOptions(p.burgs, p.burg) : ''}</select>
@@ -209,6 +209,19 @@ function editProvinces() {
     const l = burgLabels.select("[data-id='" + capital + "']");
     const x = +l.attr("x"), y = +l.attr("y");
     zoomTo(x, y, 8, 2000);
+  }
+
+  function triggerIndependencePromps(p) {
+    alertMessage.innerHTML = "Are you sure you want to declare province independence? <br>It will turn province into a new state";
+    $("#alert").dialog({resizable: false, title: "Declare independence",
+      buttons: {
+        Declare: function() {
+          declareProvinceIndependence(p);
+          $(this).dialog("close");
+        },
+        Cancel: function() {$(this).dialog("close");}
+      }
+    });
   }
 
   function declareProvinceIndependence(p) {
@@ -352,17 +365,29 @@ function editProvinces() {
   }
 
   function removeProvince(p) {
-    pack.cells.province.forEach((province, i) => {if(province === p) pack.cells.province[i] = 0;});
-    const state = pack.provinces[p].state;
-    if (pack.states[state].provinces.includes(p)) pack.states[state].provinces.splice(pack.states[state].provinces.indexOf(p), 1);
-    pack.provinces[p].removed = true;
-    unfocus(p);
 
-    const g = provs.select("#provincesBody");
-    g.select("#province"+p).remove();
-    g.select("#province-gap"+p).remove();
-    if (!layerIsOn("toggleBorders")) toggleBorders(); else drawBorders();
-    refreshProvincesEditor();
+    alertMessage.innerHTML = `Are you sure you want to remove the province? <br>This action cannot be reverted`;
+    $("#alert").dialog({resizable: false, title: "Remove province",
+      buttons: {
+        Remove: function() {
+          pack.cells.province.forEach((province, i) => {if(province === p) pack.cells.province[i] = 0;});
+          const state = pack.provinces[p].state;
+          if (pack.states[state].provinces.includes(p)) pack.states[state].provinces.splice(pack.states[state].provinces.indexOf(p), 1);
+          pack.provinces[p].removed = true;
+          unfocus(p);
+      
+          const g = provs.select("#provincesBody");
+          g.select("#province"+p).remove();
+          g.select("#province-gap"+p).remove();
+          if (!layerIsOn("toggleBorders")) toggleBorders(); else drawBorders();
+          refreshProvincesEditor();
+          $(this).dialog("close");
+        },
+        Cancel: function() {$(this).dialog("close");}
+      }
+    });
+    
+
   }
 
   function editProvinceName(province) {
@@ -804,7 +829,7 @@ function editProvinces() {
   }
 
   function removeAllProvinces() {
-    alertMessage.innerHTML = `Are you sure you want to remove all provinces?`;
+    alertMessage.innerHTML = `Are you sure you want to remove all provinces? <br>This action cannot be reverted`;
     $("#alert").dialog({resizable: false, title: "Remove all provinces",
       buttons: {
         Remove: function() {
