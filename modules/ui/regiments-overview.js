@@ -14,7 +14,7 @@ function overviewRegiments(state) {
   updateHeaders();
 
   $("#regimentsOverview").dialog({
-    title: "Military Overview", resizable: false, width: fitContent(),
+    title: "Regiments Overview", resizable: false, width: fitContent(),
     position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
   });
 
