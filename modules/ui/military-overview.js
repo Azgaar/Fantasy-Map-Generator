@@ -173,7 +173,7 @@ function overviewMilitary() {
   }
 
   function militaryCustomize() {
-    const types = ["default", "melee", "ranged", "mounted", "machinery", "naval"];
+    const types = ["melee", "ranged", "mounted", "machinery", "naval"];
     const table = document.getElementById("militaryOptions").querySelector("tbody");
     removeUnitLines();
     options.military.map(u => addUnitLine(u));
@@ -183,7 +183,7 @@ function overviewMilitary() {
       position: {my: "center", at: "center", of: "svg"},
       buttons: {
         Apply: function() {applyMilitaryOptions(); $(this).dialog("close");},
-        Add: () => addUnitLine({name: "custom"+rand(1000), rural: .2, urban: .5, crew: 1, type: "default"}),
+        Add: () => addUnitLine({name: "custom"+rand(1000), rural: .2, urban: .5, crew: 1, type: "melee"}),
         Restore: restoreDefaultUnits,
         Cancel: function() {$(this).dialog("close");}
       }, open: function() {
