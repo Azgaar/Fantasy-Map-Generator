@@ -18,7 +18,7 @@ function editDiplomacy() {
   const statuses = ["Ally", "Friendly", "Neutral", "Suspicion", "Enemy", "Unknown", "Rival", "Vassal", "Suzerain"];
   const description = [" is an ally of ", " is friendly to ", " is neutral to ", " is suspicious of ", 
     " is at war with ", " does not know about ", " is a rival of ", " is a vassal of ", " is suzerain to "];
-  const colors = ["#00b300", "#d4f8aa", "#edeee8", "#f3c7c4", "#e64b40", "#a9a9a9", "#ad5a1f", "#87CEFA", "#00008B"];
+  const colors = ["#00b300", "#d4f8aa", "#edeee8", "#eeafaa", "#e64b40", "#a9a9a9", "#ad5a1f", "#87CEFA", "#00008B"];
   refreshDiplomacyEditor();
 
   tip("Click on a state to see its diplomatic relations", false, "warning");
