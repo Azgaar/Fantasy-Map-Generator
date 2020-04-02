@@ -118,7 +118,10 @@ function editRegiment(selector) {
 
     $("#alert").dialog({
       resizable: false, width: fitContent(), title: "Select emblem",
-      buttons: {Close: function() {$(this).dialog("close");}}
+      buttons: {
+        Emojipedia: function() {openURL("https://emojipedia.org/");},
+        Close: function() {$(this).dialog("close");}
+    }
     });
 
     function showTip(e) {

@@ -21,7 +21,11 @@
       "ranged":   {"Nomadic":.9,  "Highland":1.3, "Lake":1,   "Naval":.8,   "Hunting":2,    "River":.8},
       "mounted":  {"Nomadic":2.3, "Highland":.6,  "Lake":.7,  "Naval":.3,   "Hunting":.7,   "River":.8},
       "machinery":{"Nomadic":.8,  "Highland":1.4, "Lake":1.1, "Naval":1.4,  "Hunting":.4,   "River":1.1},
-      "naval":    {"Nomadic":.5,  "Highland":.5,  "Lake":1.2, "Naval":1.8,  "Hunting":.7,   "River":1.2}
+      "naval":    {"Nomadic":.5,  "Highland":.5,  "Lake":1.2, "Naval":1.8,  "Hunting":.7,   "River":1.2},
+      // non-default generic:
+      "armored":  {"Nomadic":1,   "Highland":.5,  "Lake":1,   "Naval":1,    "Hunting":.7,   "River":1.1},
+      "aviation": {"Nomadic":.5,  "Highland":.5,  "Lake":1.2, "Naval":1.2,  "Hunting":.6,   "River":1.2},
+      "magical":  {"Nomadic":1,   "Highland":2,   "Lake":1,   "Naval":1,    "Hunting":1,    "River":1}
     };
 
     valid.forEach(s => {
@@ -59,7 +63,7 @@
 
       for (const u of options.military) {
         const perc = +u.rural;
-        if (isNaN(perc) || perc <= 0) continue;
+        if (isNaN(perc) || perc <= 0 || !s.temp[u.name]) continue;
 
         let army = m * perc; // basic army for rural cell
         if (nomadic) { // "nomadic" biomes special rules
@@ -105,7 +109,7 @@
 
       for (const u of options.military) {
         const perc = +u.urban;
-        if (isNaN(perc) || perc <= 0) continue;
+        if (isNaN(perc) || perc <= 0 || !s.temp[u.name]) continue;
         let army = m * perc; // basic army for rural cell
 
         if (u.type === "naval" && !b.port) continue; // only ports produce naval units
@@ -113,20 +117,24 @@
         if (nomadic) { // "nomadic" biomes special rules
           if (u.type === "melee") army /= 3; else
           if (u.type === "machinery") army /= 2; else
-          if (u.type === "mounted") army *= 3;
+          if (u.type === "mounted") army *= 3; else
+          if (u.type === "armored") army *= 2;
         }
 
         if (wetland) { // "wet" biomes special rules
           if (u.type === "melee") army *= 1.2; else
           if (u.type === "ranged") army *= 1.4; else
           if (u.type === "machinery") army *= 1.2; else
-          if (u.type === "mounted") army /= 4;
+          if (u.type === "mounted") army /= 4; else
+          if (u.type === "armored") army /= 3;
         }
 
         if (highland) { // highlands special rules
           if (u.type === "ranged") army *= 2; else
           if (u.type === "naval") army /= 3; else
-          if (u.type === "mounted") army /= 3;
+          if (u.type === "mounted") army /= 3; else
+          if (u.type === "armored") army /= 2; else
+          if (u.type === "magical") army *= 2;
         }
 
         const t = rn(army * s.temp[u.name] * populationRate.value);
@@ -265,6 +273,9 @@
     if (type === "ranged") return "🏹";
     if (type === "mounted") return "🐴";
     if (type === "machinery") return "💣";
+    if (type === "armored") return "🐢";
+    if (type === "aviation") return "🦅";
+    if (type === "magical") return "🔮";
     else return "⚔️";
   }
 

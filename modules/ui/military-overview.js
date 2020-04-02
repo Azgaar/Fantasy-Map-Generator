@@ -173,7 +173,7 @@ function overviewMilitary() {
   }
 
   function militaryCustomize() {
-    const types = ["melee", "ranged", "mounted", "machinery", "naval"];
+    const types = ["melee", "ranged", "mounted", "machinery", "naval", "armored", "aviation", "magical"];
     const table = document.getElementById("militaryOptions").querySelector("tbody");
     removeUnitLines();
     options.military.map(u => addUnitLine(u));
@@ -182,8 +182,8 @@ function overviewMilitary() {
       title: "Edit Military Units", resizable: false, width: fitContent(),
       position: {my: "center", at: "center", of: "svg"},
       buttons: {
-        Apply: function() {applyMilitaryOptions(); $(this).dialog("close");},
-        Add: () => addUnitLine({name: "custom"+rand(1000), rural: .2, urban: .5, crew: 1, type: "melee"}),
+        Apply: applyMilitaryOptions,
+        Add: () => addUnitLine({name: "custom"+militaryOptionsTable.rows.length, rural: .2, urban: .5, crew: 1, type: "melee"}),
         Restore: restoreDefaultUnits,
         Cancel: function() {$(this).dialog("close");}
       }, open: function() {
@@ -221,9 +221,17 @@ function overviewMilitary() {
     }
 
     function applyMilitaryOptions() {
-      options.military = Array.from(table.querySelectorAll("tr")).map(r => {
+      const unitLines = Array.from(table.querySelectorAll("tr"));
+      const names = unitLines.map(r => r.querySelector("input").value.replace(/[&\/\\#, +()$~%.'":*?<>{}]/g, '_'));
+      if (new Set(names).size !== names.length) {
+        tip("All units should have unique names", false, "error");
+        return;
+      }
+
+      $("#militaryOptions").dialog("close");
+      options.military = unitLines.map((r, i) => {
         const [name, rural, urban, crew, type, separate] = Array.from(r.querySelectorAll("input, select")).map(d => d.value||d.checked);
-        return {name:name.replace(/[&\/\\#, +()$~%.'":*?<>{}]/g, '_'), rural:+rural||0, urban:+urban||0, crew:+crew||0, type, separate:+separate||0};
+        return {name:names[i], rural:+rural||0, urban:+urban||0, crew:+crew||0, type, separate:+separate||0};
       });
       localStorage.setItem("military", JSON.stringify(options.military));
       Military.generate();
