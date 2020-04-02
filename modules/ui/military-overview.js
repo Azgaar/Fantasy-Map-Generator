@@ -207,7 +207,7 @@ function overviewMilitary() {
         <td><input data-tip="Enter average number of people in crew" type="number" min=1 step=1 value="${u.crew}"></td>
         <td><select data-tip="Select unit type to apply special rules on forces recalculation">${types.map(t => `<option ${u.type === t ? "selected" : ""} value="${t}">${t}</option>`).join(" ")}</select></td>
         <td data-tip="Check if unit is separate and can be stacked only with units of the same type">
-          <input id="${u.name}Separate" type="checkbox" class="checkbox" checked=${u.separate}>
+          <input id="${u.name}Separate" type="checkbox" class="checkbox" ${u.separate ? "checked" : ""}>
           <label for="${u.name}Separate" class="checkbox-label"></label>
         </td>
         <td data-tip="Remove the unit"><span data-tip="Remove unit type" class="icon-trash-empty pointer" onclick="this.parentElement.parentElement.remove();"></span></td>
@@ -230,7 +230,7 @@ function overviewMilitary() {
 
       $("#militaryOptions").dialog("close");
       options.military = unitLines.map((r, i) => {
-        const [name, rural, urban, crew, type, separate] = Array.from(r.querySelectorAll("input, select")).map(d => d.value||d.checked);
+        const [name, rural, urban, crew, type, separate] = Array.from(r.querySelectorAll("input, select")).map(d => d.type === "checkbox" ? d.checked : d.value);
         return {name:names[i], rural:+rural||0, urban:+urban||0, crew:+crew||0, type, separate:+separate||0};
       });
       localStorage.setItem("military", JSON.stringify(options.military));
