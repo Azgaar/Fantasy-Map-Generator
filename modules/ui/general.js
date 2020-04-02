@@ -338,7 +338,10 @@ document.addEventListener("keyup", event => {
   if (active === "DIV" && document.activeElement.contentEditable === "true") return; // don't trigger if user inputs a text
   event.stopPropagation();
 
-  const key = event.keyCode, ctrl = event.ctrlKey || event.metaKey, shift = event.shiftKey, alt = event.altKey;
+  const key = event.keyCode;
+  const ctrl = event.ctrlKey || event.metaKey || key === 17;
+  const shift = event.shiftKey || key === 16;
+  const alt = event.altKey || key === 18;
 
   if (key === 112) showInfo(); // "F1" to show info
   else if (key === 113) regeneratePrompt(); // "F2" for new map
