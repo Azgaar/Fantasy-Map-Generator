@@ -242,7 +242,11 @@
     const x1 = rn(reg.x - w / 2, 2);
     const y1 = rn(reg.y - size, 2);
 
-    const army = armies.select("g#army"+s);
+    let army = armies.select("g#army"+s);
+    if (!army.size()) {
+      const baseColor = pack.states[s].color[0] === "#" ? pack.states[s].color : "#999";
+      army = armies.append("g").attr("id", "army"+s).attr("fill", baseColor);
+    }
     const darkerColor = d3.color(army.attr("fill")).darker().hex();
 
     const g = army.append("g").attr("id", "regiment"+s+"-"+reg.i).attr("data-name", reg.name).attr("data-state", s).attr("data-id", reg.i);
