@@ -292,7 +292,7 @@ function editBurg(id) {
     } else openMFCG();
 
     function openMFCG(seed) {
-      if (!seed) openURL(burg.MFCGlink);
+      if (!seed) {openURL(burg.MFCGlink); return;}
       const name = elSelected.text();
       const size = Math.max(Math.min(rn(burg.population), 65), 6);
   
