@@ -287,11 +287,12 @@ function editBurg(id) {
         Seed should be a number. Default seed is FMG map seed + burg id padded to 4 chars with zeros (${defSeed}). <br>
         Please note that if seed is custom, "Overworld" button from MFCG will open a different map`, {default:burg.MFCG||defSeed, step:1, min:1, max:1e13-1}, v => {
         burg.MFCG = v;
-        openMFCG();
+        openMFCG(v);
       });
     } else openMFCG();
 
-    function openMFCG() {
+    function openMFCG(seed) {
+      if (!seed) openURL(burg.MFCGlink);
       const name = elSelected.text();
       const size = Math.max(Math.min(rn(burg.population), 65), 6);
   

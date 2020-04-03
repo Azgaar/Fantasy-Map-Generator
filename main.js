@@ -279,12 +279,14 @@ function findBurgForMFCG(params) {
   const b = selection[selected].i;
   if (!b) {console.error("Cannot select a burg for MFCG"); return;}
 
-  const referrer = new URL(document.referrer).searchParams;
-  for (let p of referrer) {
+  const referrer = new URL(document.referrer);
+  for (let p of referrer.searchParams) {
     if (p[0] === "size") burgs[b].population = +p[1]; else
+    if (p[0] === "seed") burgs[b].MFCG = +p[1]; else
     if (p[0] === "shantytown") burgs[b].shanty = +p[1]; else
     burgs[b][p[0]] = p[1];
   }
+  burgs[b].MFCGlink = document.referrer;
 
   const label = burgLabels.select("[data-id='" + b + "']");
   if (label.size()) {
