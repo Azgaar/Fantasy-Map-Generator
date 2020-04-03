@@ -269,7 +269,7 @@ function editProvinces() {
     states[0].diplomacy.push([`Independance declaration`, `${name} declared its independance from ${states[oldState].name}`]);
 
     // create new state
-    states.push({i:newState, name, diplomacy, provinces:[], color, expansionism:.5, capital:burg, type:"Generic", center, culture, military:[]});
+    states.push({i:newState, name, diplomacy, provinces:[], color, expansionism:.5, capital:burg, type:"Generic", center, culture, military:[], alert:1});
     BurgsAndStates.collectStatistics();
     BurgsAndStates.defineStateForms([newState]);
 

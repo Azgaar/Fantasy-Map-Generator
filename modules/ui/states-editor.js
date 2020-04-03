@@ -874,7 +874,7 @@ function editStates() {
       cells.state[c] = newState;
       cells.province[c] = 0;
     });
-    states.push({i:newState, name, diplomacy, provinces:[], color, expansionism:.5, capital:burg, type:"Generic", center, culture, military:[]});
+    states.push({i:newState, name, diplomacy, provinces:[], color, expansionism:.5, capital:burg, type:"Generic", center, culture, military:[], alert:1});
     BurgsAndStates.collectStatistics();
     BurgsAndStates.defineStateForms([newState]);
     adjustProvinces([...new Set(affectedProvinces)]);
