@@ -276,30 +276,31 @@ function findBurgForMFCG(params) {
 
   // select a burg with closest population from selection
   const selected = d3.scan(selection, (a, b) => Math.abs(a.population - size) - Math.abs(b.population - size));
-  const b = selection[selected].i;
-  if (!b) {console.error("Cannot select a burg for MFCG"); return;}
+  const burgId = selection[selected].i;
+  if (!burgId) {console.error("Cannot select a burg for MFCG"); return;}
 
+  const b = burgs[burgId];
   const referrer = new URL(document.referrer);
   for (let p of referrer.searchParams) {
-    if (p[0] === "size") burgs[b].population = +p[1]; else
-    if (p[0] === "seed") burgs[b].MFCG = +p[1]; else
-    if (p[0] === "shantytown") burgs[b].shanty = +p[1]; else
-    burgs[b][p[0]] = p[1];
+    if (p[0] === "size") b.population = +p[1]; else
+    if (p[0] === "seed") b.MFCG = +p[1]; else
+    if (p[0] === "shantytown") b.shanty = +p[1]; else
+    b[p[0]] = p[1];
   }
-  burgs[b].MFCGlink = document.referrer;
+  b.MFCGlink = document.referrer; // set direct link to MFCG
+  b.name = params.get("name");
 
   const label = burgLabels.select("[data-id='" + b + "']");
   if (label.size()) {
-    tip("Here stands the glorious city of " + burgs[b].name, true, "success", 12000);
-    label.text(burgs[b].name).classed("drag", true).on("mouseover", function() {
+    label.text(b.name).classed("drag", true).on("mouseover", function() {
       d3.select(this).classed("drag", false);
       label.on("mouseover", null);
     });
   }
 
-  burgs[b].MFCG = +seed;
-  zoomTo(burgs[b].x, burgs[b].y, 8, 1600);
+  zoomTo(b.x, b.y, 8, 1600);
   invokeActiveZooming();
+  tip("Here stands the glorious city of " + b.name, true, "success", 15000);
 }
 
 // apply default biomes data
