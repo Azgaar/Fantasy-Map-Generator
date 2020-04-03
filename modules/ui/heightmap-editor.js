@@ -711,12 +711,13 @@ function editHeightmap() {
 
     function setRange(event) {
       if (event.target.value !== "interval") return;
-      const interval = prompt("Set a height interval. E.g. '17-20'. Avoid space, use hyphen as a separator");
-      if (!interval || interval === "") return;
-      const opt = document.createElement("option");
-      opt.value = opt.innerHTML = interval;
-      event.target.add(opt);
-      event.target.value = interval;
+
+      prompt("Set a height interval. Avoid space, use hyphen as a separator", {default:"17-20"}, v => {
+        const opt = document.createElement("option");
+        opt.value = opt.innerHTML = v;
+        event.target.add(opt);
+        event.target.value = v;
+      });
     }
 
     function selectTemplate(e) {

@@ -76,14 +76,14 @@ function changePreset(preset) {
 }
 
 function savePreset() {
-  const preset = prompt("Please provide a preset name"); // preset name
-  if (!preset) return;
-  presets[preset] = Array.from(document.getElementById("mapLayers").querySelectorAll("li:not(.buttonoff)")).map(node => node.id).sort();
-  layersPreset.add(new Option(preset, preset, false, true));
-  localStorage.setItem("presets", JSON.stringify(presets));
-  localStorage.setItem("preset", preset);
-  removePresetButton.style.display = "inline-block";
-  savePresetButton.style.display = "none";
+  prompt("Please provide a preset name", {default:""}, preset => {
+    presets[preset] = Array.from(document.getElementById("mapLayers").querySelectorAll("li:not(.buttonoff)")).map(node => node.id).sort();
+    layersPreset.add(new Option(preset, preset, false, true));
+    localStorage.setItem("presets", JSON.stringify(presets));
+    localStorage.setItem("preset", preset);
+    removePresetButton.style.display = "inline-block";
+    savePresetButton.style.display = "none";
+  });
 }
 
 function removePreset() {

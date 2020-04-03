@@ -193,15 +193,15 @@ function editProvinces() {
 
   function provinceOpenCOA(event, p) {
     const defSeed = `${seed}-p${p}`;
+    const openIAHG = () => openURL("https://ironarachne.com/heraldry/" + (pack.provinces[p].IAHG || defSeed));
 
     if (isCtrlClick(event)) {
-      const newSeed = prompt(`Please provide an Iron Arachne Heraldry Generator seed. `+ 
-        `Default seed is a combination of FMG map seed and province id (${defSeed})`, pack.provinces[p].IAHG || defSeed);
-      if (newSeed && newSeed != defSeed) pack.provinces[p].IAHG = newSeed; else return;
-    }
-
-    const s = pack.provinces[p].IAHG || defSeed;
-    openURL("https://ironarachne.com/heraldry/" + s);
+      prompt(`Please provide an Iron Arachne Heraldry Generator seed. <br>Default seed is a combination of FMG map seed and province id (${defSeed})`, 
+      {default:pack.provinces[p].IAHG || defSeed}, v => {
+        if (v && v != defSeed) pack.provinces[p].IAHG = v;
+        openIAHG();
+      });
+    } else openIAHG();
   }
 
   function capitalZoomIn(p) {

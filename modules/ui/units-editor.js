@@ -41,8 +41,13 @@ function editUnits() {
 
   function changeDistanceUnit() {
     if (this.value === "custom_name") {
-      const custom = prompt("Provide a custom name for distance unit");
-      if (custom) this.options.add(new Option(custom, custom, false, true));
+      prompt("Provide a custom name for a distance unit", {default:""}, custom => {
+        this.options.add(new Option(custom, custom, false, true));
+        lock("distanceUnit");
+        drawScaleBar();
+        calculateFriendlyGridSize();
+      });
+      return;
     }
 
     lock("distanceUnit");
@@ -69,9 +74,11 @@ function editUnits() {
 
   function changeHeightUnit() {
     if (this.value === "custom_name") {
-      const custom = prompt("Provide a custom name for height unit");
-      if (custom) this.options.add(new Option(custom, custom, false, true));
-      else this.value = "ft";
+      prompt("Provide a custom name for a height unit", {default:""}, custom => {
+        this.options.add(new Option(custom, custom, false, true));
+        lock("heightUnit");
+      });
+      return;
     }
 
     lock("heightUnit");

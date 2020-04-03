@@ -281,46 +281,49 @@ function editBurg(id) {
   function openInMFCG(event) {
     const id = elSelected.attr("data-id");
     const burg = pack.burgs[id];
-    const defSeed = seed + id.padStart(4, 0);
+    const defSeed = +(seed + id.padStart(4, 0));
     if (isCtrlClick(event)) {
-      const newSeed = prompt(`Please provide a Medieval Fantasy City Generator seed. `+
-        `Seed should be a number. Default seed is FMG map seed + burg id padded to 4 chars with zeros (${defSeed}). `+
-        `Please note that if seed is custom, "Overworld" button from MFCG will open a different map`, burg.MFCG || defSeed);
-      if (newSeed) burg.MFCG = newSeed; else return;
+      prompt(`Please provide a Medieval Fantasy City Generator seed. <br>
+        Seed should be a number. Default seed is FMG map seed + burg id padded to 4 chars with zeros (${defSeed}). <br>
+        Please note that if seed is custom, "Overworld" button from MFCG will open a different map`, {default:burg.MFCG||defSeed, step:1, min:1, max:1e13-1}, v => {
+        burg.MFCG = v;
+        openMFCG();
+      });
+    } else openMFCG();
+
+    function openMFCG() {
+      const name = elSelected.text();
+      const size = Math.max(Math.min(rn(burg.population), 65), 6);
+  
+      const s = burg.MFCG || defSeed;
+      const cell = burg.cell;
+      const hub = +pack.cells.road[cell] > 50;
+      const river = pack.cells.r[cell] ? 1 : 0;
+  
+      const coast = +burg.port;
+      const citadel = +burg.citadel;
+      const walls = +burg.walls;
+      const plaza = +burg.plaza;
+      const temple = +burg.temple;
+      const shanty = +burg.shanty;
+
+      const site = "http://fantasycities.watabou.ru/";
+      const url = `${site}?name=${name}&size=${size}&seed=${s}&hub=${hub}&random=0&continuous=0&river=${river}&coast=${coast}&citadel=${citadel}&plaza=${plaza}&temple=${temple}&walls=${walls}&shantytown=${shanty}`;
+      openURL(url);
     }
-
-    const name = elSelected.text();
-    const size = Math.max(Math.min(rn(burg.population), 65), 6);
-
-    const s = burg.MFCG || defSeed;
-    const cell = burg.cell;
-    const hub = +pack.cells.road[cell] > 50;
-    const river = pack.cells.r[cell] ? 1 : 0;
-
-    const coast = +burg.port;
-    const citadel = +burg.citadel;
-    const walls = +burg.walls;
-    const plaza = +burg.plaza;
-    const temple = +burg.temple;
-    const shanty = +burg.shanty;
-
-    const url = `http://fantasycities.watabou.ru/?name=${name}&size=${size}&seed=${s}&hub=${hub}&random=0&continuous=0&river=${river}&coast=${coast}&citadel=${citadel}&plaza=${plaza}&temple=${temple}&walls=${walls}&shantytown=${shanty}`;
-    openURL(url);
   }
 
   function openInIAHG(event) {
-    const id = elSelected.attr("data-id");
-    const burg = pack.burgs[id];
-    const defSeed = `${seed}-b${id}`;
+    const id = elSelected.attr("data-id"), burg = pack.burgs[id], defSeed = `${seed}-b${id}`;
+    const openIAHG = () => openURL("https://ironarachne.com/heraldry/" + (burg.IAHG || defSeed));
 
     if (isCtrlClick(event)) {
-      const newSeed = prompt(`Please provide an Iron Arachne Heraldry Generator seed. `+
-        `Default seed is a combination of FMG map seed and burg id (${defSeed})`, burg.IAHG || defSeed);
-      if (newSeed) burg.IAHG = newSeed; else return;
-    }
-
-    const s = burg.IAHG || defSeed;
-    openURL("https://ironarachne.com/heraldry/" + s);
+      prompt(`Please provide an Iron Arachne Heraldry Generator seed. <br>Default seed is a combination of FMG map seed and burg id (${defSeed})`, 
+      {default:burg.IAHG || defSeed}, v => {
+        if (v && v != defSeed) burg.IAHG = v;
+        openIAHG();
+      });
+    } else openIAHG();
   }
 
   function toggleRelocateBurg() {

@@ -254,11 +254,11 @@ function findBurgForMFCG(params) {
   const cells = pack.cells, burgs = pack.burgs;
   if (pack.burgs.length < 2) {console.error("Cannot select a burg for MFCG"); return;}
 
+  // used for selection
   const size = +params.get("size");
-  const name = params.get("name");
-  let coast = +params.get("coast");
-  let port = +params.get("port");
-  let river = +params.get("river");
+  const coast = +params.get("coast");
+  const port = +params.get("port");
+  const river = +params.get("river");
 
   let selection = defineSelection(coast, port, river);
   if (!selection.length) selection = defineSelection(coast, !port, !river);
@@ -278,8 +278,13 @@ function findBurgForMFCG(params) {
   const selected = d3.scan(selection, (a, b) => Math.abs(a.population - size) - Math.abs(b.population - size));
   const b = selection[selected].i;
   if (!b) {console.error("Cannot select a burg for MFCG"); return;}
-  if (size) burgs[b].population = size;
-  if (name) burgs[b].name = name;
+
+  const referrer = new URL(document.referrer).searchParams;
+  for (let p of referrer) {
+    if (p[0] === "size") burgs[b].population = +p[1]; else
+    if (p[0] === "shantytown") burgs[b].shanty = +p[1]; else
+    burgs[b][p[0]] = p[1];
+  }
 
   const label = burgLabels.select("[data-id='" + b + "']");
   if (label.size()) {
@@ -290,6 +295,7 @@ function findBurgForMFCG(params) {
     });
   }
 
+  burgs[b].MFCG = +seed;
   zoomTo(burgs[b].x, burgs[b].y, 8, 1600);
   invokeActiveZooming();
 }
@@ -1242,7 +1248,7 @@ function addMarkers(number = 1) {
     addMarker("mine", "⚒", 50, 50, 20);
     const resources = {"salt":5, "gold":2, "silver":4, "copper":2, "iron":3, "lead":1, "tin":1};
 
-    while (count) {
+    while (count && hills.length) {
       const cell = hills.splice(Math.floor(Math.random() * hills.length), 1);
       const x = cells.p[cell][0], y = cells.p[cell][1];
       const id = getNextId("markerElement");

@@ -250,43 +250,39 @@ function regenerateMilitary() {
 }
 
 function regenerateMarkers(event) {
-  let number = gauss(1, .5, .3, 5, 2);
-
   if (isCtrlClick(event)) {
-    const numberManual = prompt("Please provide markers number multiplier", 1);
-    if (numberManual === null || numberManual === "" || isNaN(+numberManual)) {
-      tip("The number provided is invalid, please try again and provide a valid number", false, "error", 4000);
-      return;
-    }
+    prompt("Please provide markers number multiplier", {default:1, step:.01, min:0, max:100}, v => {
+      if (v === null || v === "" || isNaN(+v)) return;
+      addNumberOfMarkers(Math.min(+v, 100));
+    });
+  } else addNumberOfMarkers(gauss(1, .5, .3, 5, 2));
 
-    number = Math.min(+numberManual, 100);
+  function addNumberOfMarkers(number) {
+    // remove existing markers and assigned notes
+    markers.selectAll("use").each(function() {
+      const index = notes.findIndex(n => n.id === this.id);
+      if (index != -1) notes.splice(index, 1);
+    }).remove();
+
+    addMarkers(number);
+    if (!layerIsOn("toggleMarkers")) toggleMarkers();
   }
-
-  // remove existing markers and assigned notes  
-  markers.selectAll("use").each(function() {
-    const index = notes.findIndex(n => n.id === this.id);
-    if (index != -1) notes.splice(index, 1);
-  }).remove();
-
-  addMarkers(number);
 }
 
 function regenerateZones(event) {
-  let number = gauss(1, .5, .6, 5, 2);
-
   if (isCtrlClick(event)) {
-    const numberManual = prompt("Please provide zones number multiplier", 1);
-    if (numberManual === null || numberManual === "" || isNaN(+numberManual)) {
-      tip("The number provided is invalid, please try again and provide a valid number", false, "error", 4000);
-      return;
-    }
+    prompt("Please provide zones number multiplier", {default:1, step:.01, min:0, max:100}, v => {
+      if (v === null || v === "" || isNaN(+v)) return;
+      addNumberOfZones(Math.min(+v, 100));
+    });
+  } else addNumberOfZones(gauss(1, .5, .6, 5, 2));
 
-    number = Math.min(+numberManual, 100);
+  function addNumberOfZones(number) {
+    zones.selectAll("g").remove(); // remove existing zones
+    addZones(number);
+    if (document.getElementById("zonesEditorRefresh").offsetParent) zonesEditorRefresh.click();
+    if (!layerIsOn("toggleZones")) toggleZones();
   }
-
-  zones.selectAll("g").remove(); // remove existing zones
-  addZones(number);
-  if (document.getElementById("zonesEditorRefresh").offsetParent) zonesEditorRefresh.click();
 }
 
 function unpressClickToAddButton() {

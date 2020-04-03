@@ -3473,6 +3473,15 @@
       <p id="alertMessage">Warning!</p>
     </div>
 
+    <dialog id="prompt" style="border: solid 1px #5e4fa2; user-select: none;">
+      <form method="dialog">
+        <div id="dialogText" style="padding-bottom: .4em; font-family: sans-serif"></div>
+        <input id="promptInput" type="number" step=.01 placeholder="type value" autocomplete="off" required>
+        <button type="submit" value="yes">Confirm</button>
+        <button value="no" formnovalidate>Cancel</button>
+      </form>
+    </dialog>
+
   </div>
 
   <div id="notes">

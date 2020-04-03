@@ -450,10 +450,10 @@ function editReligions() {
     }
 
     function changeCode(d) {
-      const code = prompt(`Please provide an abbreviation for ${d.data.name}`, d.data.code);
-      if (!code) return;
-      pack.religions[d.data.i].code = code;
-      nodes.select("g[data-id='"+d.data.i+"']").select("text").text(code);
+      prompt(`Please provide an abbreviation for ${d.data.name}`, {default:d.data.code}, v => {
+        pack.religions[d.data.i].code = v;
+        nodes.select("g[data-id='"+d.data.i+"']").select("text").text(v);
+      });
     }
   }
 

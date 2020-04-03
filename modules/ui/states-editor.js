@@ -307,15 +307,15 @@ function editStates() {
 
   function stateOpenCOA(event, state) {
     const defSeed = `${seed}-s${state}`;
+    const openIAHG = () => openURL("https://ironarachne.com/heraldry/" + (pack.states[state].IAHG || defSeed));
 
     if (isCtrlClick(event)) {
-      const newSeed = prompt(`Please provide an Iron Arachne Heraldry Generator seed. `+ 
-        `Default seed is a combination of FMG map seed and province id (${defSeed})`, pack.states[state].IAHG || defSeed);
-      if (newSeed && newSeed != defSeed) pack.states[state].IAHG = newSeed; else return;
-    }
-
-    const s = pack.states[state].IAHG || defSeed;
-    openURL("https://ironarachne.com/heraldry/" + s);
+      prompt(`Please provide an Iron Arachne Heraldry Generator seed. <br>Default seed is a combination of FMG map seed and state id (${defSeed})`, 
+      {default:pack.states[state].IAHG || defSeed}, v => {
+        if (v && v != defSeed) pack.states[state].IAHG = v;
+        openIAHG();
+      });
+    } else openIAHG();
   }
 
   function changePopulation(state) {

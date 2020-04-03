@@ -460,10 +460,10 @@ function editCultures() {
     }
 
     function changeCode(d) {
-      const code = prompt(`Please provide an abbreviation for culture: ${d.data.name}`, d.data.code);
-      if (!code) return;
-      pack.cultures[d.data.i].code = code;
-      nodes.select("g[data-id='"+d.data.i+"']").select("text").text(code);
+      prompt(`Please provide an abbreviation for culture: ${d.data.name}`, {default:d.data.code}, v => {
+        pack.cultures[d.data.i].code = v;
+        nodes.select("g[data-id='"+d.data.i+"']").select("text").text(v);
+      });
     }
   }
 
