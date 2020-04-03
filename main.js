@@ -282,10 +282,11 @@ function findBurgForMFCG(params) {
   const b = burgs[burgId];
   const referrer = new URL(document.referrer);
   for (let p of referrer.searchParams) {
+    if (p[0] === "name") b.name = p[1]; else
     if (p[0] === "size") b.population = +p[1]; else
     if (p[0] === "seed") b.MFCG = +p[1]; else
     if (p[0] === "shantytown") b.shanty = +p[1]; else
-    b[p[0]] = p[1];
+    b[p[0]] = +p[1]; // other parameters
   }
   b.MFCGlink = document.referrer; // set direct link to MFCG
   if (params.get("name") && params.get("name") != "null") b.name = params.get("name");
