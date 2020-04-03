@@ -288,7 +288,7 @@ function findBurgForMFCG(params) {
     b[p[0]] = p[1];
   }
   b.MFCGlink = document.referrer; // set direct link to MFCG
-  b.name = params.get("name");
+  b.name = params.get("name") || referrer.searchParams.get("name");
 
   const label = burgLabels.select("[data-id='" + burgId + "']");
   if (label.size()) {
