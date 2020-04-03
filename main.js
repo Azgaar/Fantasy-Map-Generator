@@ -290,7 +290,7 @@ function findBurgForMFCG(params) {
   b.MFCGlink = document.referrer; // set direct link to MFCG
   b.name = params.get("name");
 
-  const label = burgLabels.select("[data-id='" + b + "']");
+  const label = burgLabels.select("[data-id='" + burgId + "']");
   if (label.size()) {
     label.text(b.name).classed("drag", true).on("mouseover", function() {
       d3.select(this).classed("drag", false);
