@@ -338,6 +338,7 @@ function showWelcomeMessage() {
   const reddit = link("https://www.reddit.com/r/FantasyMapGenerator", "Reddit community");
   const discord = link("https://discordapp.com/invite/X7E84HU", "Discord server");
   const patreon = link("https://www.patreon.com/azgaar", "Patreon");
+  const desktop = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#is-there-a-desktop-version", "desktop application");
 
   alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
@@ -348,6 +349,8 @@ function showWelcomeMessage() {
       <li>Military Units editor</li>
       <li>Regiments editor</li>
     </ul>
+
+    <p>You can can also download a ${desktop}.</p>
 
     <p>Join our ${discord} and ${reddit} to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
 
