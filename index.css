@@ -1507,9 +1507,7 @@ rect.fillRect {
 }
 
 #pickerSpaces input {
-	height: 8px;
-	width: 16px;
-	text-align: center;
+	width: 22px;
 	font-size: 9px;
 	-moz-appearance: textfield;
 }

@@ -309,7 +309,7 @@ function createPicker() {
   const contaiter = d3.select("body").append("svg").attr("id", "pickerContainer").attr("width", "100%").attr("height", "100%");
   contaiter.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%").attr("opacity", .2)
     .on("mousemove", cl).on("click", closePicker);
-  const picker = contaiter.append("g").attr("id", "picker").call(d3.drag().on("start", dragPicker));
+  const picker = contaiter.append("g").attr("id", "picker").call(d3.drag().filter(() => event.target.tagName !== "INPUT").on("start", dragPicker));
 
   const controls = picker.append("g").attr("id", "pickerControls");
   const h = controls.append("g");
@@ -347,7 +347,7 @@ function createPicker() {
     <input type="number" id="pickerRGB_G" data-space="rgb" min=0 max=255 value="142">, 
     <input type="number" id="pickerRGB_B" data-space="rgb" min=0 max=255 value="232">
   </label>
-  <label>HEX: <input type="text" id="pickerHEX"  data-space="hex" style="width:42px" autocorrect="off" spellcheck="false" value="#7d8ee8"></label>`;
+  <label>HEX: <input type="text" id="pickerHEX" data-space="hex" style="width:42px" autocorrect="off" spellcheck="false" value="#7d8ee8"></label>`;
   spaces.node().insertAdjacentHTML('beforeend', html);
   spaces.selectAll("input").on("change", changePickerSpace);
 
