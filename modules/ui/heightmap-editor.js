@@ -1158,11 +1158,11 @@ function editHeightmap() {
     }
 
     function setConvertColorsNumber() {
-      const text = "Please provide a desired number of colors. Min value is 3, max is 255. An actual number depends on color scheme and may vary from desired number";
-      const number = Math.max(Math.min(+prompt(text, convertColors.value), 255), 3);
-      if (Number.isNaN(number)) {tip("The number should be an integer", false, "error"); return;}
-      convertColors.value = number;
-      heightsFromImage(number);
+      prompt(`Please provide a desired number of colors. <br>An actual number depends on color scheme and may vary from desired`, 
+      {default:convertColors.value, step:1, min:3, max:255}, number => {
+        convertColors.value = number;
+        heightsFromImage(number);
+      });
     }
 
     function setOverlayOpacity(v) {
