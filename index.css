@@ -566,6 +566,10 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 	animation: glowing 2s infinite;
 }
 
+.glow {
+	animation: glowing 3s infinite;
+}
+
 @keyframes glowing {
 	0% {box-shadow: 0 0 -4px #ded2d8;}
 	50% {box-shadow: 0 0 8px #F44336;}
@@ -2012,6 +2016,24 @@ svg.button {
 	color: white;
 	padding: .4em .5em;
 	border: dashed 1px #5d4651;
+}
+
+#prompt {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	max-width: 21em;
+	background-color: #fff;
+	padding: 1.2em;
+	border: solid 1px #000;
+	font-size: 1.2em;
+}
+
+#promptTest {
+	padding: 0 0 .6em 0;
+	font-weight: bold;
+	font-family: sans-serif;
 }
 
 #mapOverlay {

@@ -456,6 +456,41 @@ function drawCells() {
   cells.append("path").attr("d", path);
 }
 
+function drawSeaIce() {
+  const seaIce = viewbox.append("g").attr("id", "seaIce").attr("fill", "#e8f0f6").attr("stroke", "#e8f0f6").attr("filter", "url(#dropShadow05)");//.attr("opacity", .8);
+  for (const i of grid.cells.i) {
+    const t = grid.cells.temp[i] ;
+    if (t > 2) continue;
+    if (t > -5 && grid.cells.h[i] >= 20) continue;
+    if (t < -5) drawpolygon(i);
+    if (P(normalize(t, -5.5, 2.5))) continue; // t[-5; 2]
+    const size = t < -14 ? 0 : t > -6 ? (7 + t) / 10 : (15 + t) / 100; // [0; 1], where 0 = full size, 1 = zero size
+    resizePolygon(i, rn(size * (.2 + rand() * .9), 2));
+  }
+
+  // -9: .06
+  // -8: .07
+  // -7: .08
+  // -6: .09
+
+  // -5: .2
+  // -4: .3
+  // -3: .4
+  // -2: .5
+  // -1: .6
+  //  0: .7
+
+  function drawpolygon(i) {
+    seaIce.append("polygon").attr("points", getGridPolygon(i));
+  }
+
+  function resizePolygon(i, s) {
+    const c = grid.points[i];
+    const points = getGridPolygon(i).map(p => [p[0] + (c[0]-p[0]) * s, p[1] + (c[1]-p[1]) * s]);
+    seaIce.append("polygon").attr("points", points);
+  }
+}
+
 function toggleCultures(event) {
   const cultures = pack.cultures.filter(c => c.i && !c.removed);
   const empty = !cults.selectAll("path").size();

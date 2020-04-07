@@ -896,12 +896,13 @@ function editStates() {
   
   function downloadStatesData() {
     const unit = areaUnit.value === "square" ? distanceUnitInput.value + "2" : areaUnit.value;
-    let data = "Id,State,Color,Capital,Culture,Type,Expansionism,Cells,Burgs,Area "+unit+",Total Population,Rural Population,Urban Population\n"; // headers
+    let data = "Id,State,Form,Color,Capital,Culture,Type,Expansionism,Cells,Burgs,Area "+unit+",Total Population,Rural Population,Urban Population\n"; // headers
 
     body.querySelectorAll(":scope > div").forEach(function(el) {
       const key = parseInt(el.dataset.id);
       data += el.dataset.id + ",";
       data += el.dataset.name + ",";
+      data += el.dataset.form + ",";
       data += el.dataset.color + ",";
       data += el.dataset.capital + ",";
       data += el.dataset.culture + ",";

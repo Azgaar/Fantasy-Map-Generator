@@ -126,6 +126,11 @@ function editHeightmap() {
       return;
     }
 
+    if (document.getElementById("imageConverter").offsetParent) {
+      tip("Please exit the Image Conversion mode first", null, "error");
+      return;
+    }
+
     customization = 0;
     customizationMenu.style.display = "none";
     if (document.getElementById("options").querySelector(".tab > button.active").id === "toolsTab") toolsContent.style.display = "block";
@@ -960,8 +965,9 @@ function editHeightmap() {
 
     $("#imageConverter").dialog({
       title: "Image Converter", minHeight: "auto", width: "19.5em", resizable: false,
-      position: {my: "right top", at: "right-10 top+10", of: "svg"}
-    }).on('dialogclose', closeImageConverter);
+      position: {my: "right top", at: "right-10 top+10", of: "svg"},
+      beforeClose: closeImageConverter
+    });
 
     // create canvas for image
     const canvas = document.createElement("canvas");
@@ -978,7 +984,7 @@ function editHeightmap() {
     setOverlayOpacity(0);
 
     document.getElementById("convertImageLoad").classList.add("glow"); // add glow effect
-    tip('Image Converter is opened. Upload the image and assign the colors to desired heights', true, "warn"); // main tip
+    tip('Image Converter is opened. Upload the image and assign the height for each of the colors', true, "warn"); // main tip
 
     // remove all heights
     grid.cells.h = new Uint8Array(grid.cells.i.length);
@@ -1003,7 +1009,8 @@ function editHeightmap() {
     document.getElementById("convertAutoLum").addEventListener("click", () => autoAssing("lum"));
     document.getElementById("convertAutoHue").addEventListener("click", () => autoAssing("hue"));
     document.getElementById("convertColorsButton").addEventListener("click", setConvertColorsNumber);
-    document.getElementById("convertComplete").addEventListener("click", () => $("#imageConverter").dialog("close"));
+    document.getElementById("convertComplete").addEventListener("click", applyConversion);
+    document.getElementById("convertCancel").addEventListener("click", cancelConversion);
     document.getElementById("convertOverlay").addEventListener("input", function() {setOverlayOpacity(this.value)});
     document.getElementById("convertOverlayNumber").addEventListener("input", function() {setOverlayOpacity(this.value)});
 
@@ -1170,7 +1177,25 @@ function editHeightmap() {
       document.getElementById("canvas").style.opacity = v;
     }
 
-    function closeImageConverter() {
+    function applyConversion() {
+      viewbox.select("#heights").selectAll("polygon").each(function() {
+        const height = +this.dataset.height || 0;
+        const i = +this.id.slice(4);
+        grid.cells.h[i] = height;
+      });
+
+      viewbox.select("#heights").selectAll("polygon").remove();
+      updateHeightmap();
+      restoreImageConverterState();
+    }
+
+    function cancelConversion() {
+      restoreImageConverterState();
+      viewbox.select("#heights").selectAll("polygon").remove();
+      restoreHistory(edits.n-1);
+    }
+
+    function restoreImageConverterState() {
       const canvas = document.getElementById("canvas");
       if (canvas) canvas.remove(); else return;
       const img = document.getElementById("image");
@@ -1182,15 +1207,30 @@ function editHeightmap() {
       colorsSelectValue.innerHTML = colorsSelectFriendly.innerHTML = 0;
       viewbox.style("cursor", "default").on(".drag", null);
       tip('Heightmap edit mode is active. Click on "Exit Customization" to finalize the heightmap', true);
+      $("#imageConverter").dialog("destroy");
+    }
 
-      viewbox.select("#heights").selectAll("polygon").each(function() {
-        const height = +this.dataset.height || 0;
-        const i = +this.id.slice(4);
-        grid.cells.h[i] = height;
+    function closeImageConverter(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      alertMessage.innerHTML = 'Are you sure you want to close the Image Converter? Click "Cancel" to geck back to convertion. Click "Complete" to apply the conversion. Click "Close" to exit conversion mode and restore previous heightmap';
+      $("#alert").dialog({resizable: false, title: "Close Image Converter",
+        buttons: {
+          Cancel: function() {
+            $(this).dialog("close");
+          },
+          Complete: function() {
+            $(this).dialog("close");
+            applyConversion();
+          },
+          Close: function() {
+            $(this).dialog("close");
+            restoreImageConverterState();
+            viewbox.select("#heights").selectAll("polygon").remove();
+            restoreHistory(edits.n-1);
+          }
+        }
       });
-
-      viewbox.select("#heights").selectAll("polygon").remove();
-      updateHeightmap();
     }
   }
 

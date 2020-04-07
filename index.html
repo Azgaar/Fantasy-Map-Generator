@@ -1022,6 +1022,7 @@
           <option value="texture">Texture</option>
           <option value="compass">Wind Rose</option>
           <option value="zones">Zones</option>
+          <option value="seaIce">Ice</option>
         </select>
         <!-- <button id="restoreStyle" data-tip="Click to restore default style for all elements" class="icon-ccw styleButton" onclick="askToRestoreDefaultStyle()"></button> -->
 
@@ -2584,7 +2585,8 @@
         <button id="convertAutoHue" data-tip="Auto-assign colors based on hue (good to colored images)" class="icon-brush"></button>
         <button id="convertColorsButton" data-tip="Set number of colors" class="icon-signal"></button>
         <input id="convertColors" value="18" style="display: none"/>
-        <button id="convertComplete" data-tip="Complete the assignment. All unassigned colors will be considered as ocean" class="icon-check"></button>
+        <button id="convertComplete" data-tip="Complete the conversion. All unassigned colors will be considered as ocean" class="icon-check"></button>
+        <button id="convertCancel" data-tip="Cancel the conversion. Previous heoghtmap will be restored" class="icon-cancel"></button>
       </div>
 
       <div data-tip="Set opacity of the loaded image" style="padding-top: 4px"><i>Overlay opacity:</i><br>
@@ -3473,14 +3475,14 @@
       <p id="alertMessage">Warning!</p>
     </div>
 
-    <dialog id="prompt" style="border: solid 1px #5e4fa2; user-select: none;">
-      <form method="dialog">
-        <div id="dialogText" style="padding-bottom: .4em; font-family: sans-serif"></div>
+    <div id="prompt" style="display: none" class="dialog">
+      <form id="promptForm">
+        <div id="promptTest"></div>
         <input id="promptInput" type="number" step=.01 placeholder="type value" autocomplete="off" required>
-        <button type="submit" value="yes">Confirm</button>
-        <button value="no" formnovalidate>Cancel</button>
+        <button type="submit">Confirm</button>
+        <button type="button" id="promptCancel" formnovalidate>Cancel</button>
       </form>
-    </dialog>
+    </div>
 
   </div>
 

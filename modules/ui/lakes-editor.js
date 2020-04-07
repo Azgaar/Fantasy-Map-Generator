@@ -127,7 +127,7 @@ function editLake() {
 
     // just rename if only 1 element left
     const oldGroup = elSelected.node().parentNode;
-    const basic = ["freshwater", "salt", "sinkhole", "frozen", "lava"].includes(oldGroup.id);
+    const basic = ["freshwater", "salt", "sinkhole", "frozen", "lava", "dry"].includes(oldGroup.id);
     if (!basic && oldGroup.childElementCount === 1) {
       document.getElementById("lakeGroup").selectedOptions[0].remove();
       document.getElementById("lakeGroup").options.add(new Option(group, group, false, true));
@@ -150,7 +150,7 @@ function editLake() {
   
   function removeLakeGroup() {
     const group = elSelected.node().parentNode.id;
-    if (["freshwater", "salt", "sinkhole", "frozen", "lava"].includes(group)) {
+    if (["freshwater", "salt", "sinkhole", "frozen", "lava", "dry"].includes(group)) {
       tip("This is one of the default groups, it cannot be removed", false, "error");
       return;
     }

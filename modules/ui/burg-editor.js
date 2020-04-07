@@ -283,9 +283,10 @@ function editBurg(id) {
     const burg = pack.burgs[id];
     const defSeed = +(seed + id.padStart(4, 0));
     if (isCtrlClick(event)) {
-      prompt(`Please provide a Medieval Fantasy City Generator seed. <br>
-        Seed should be a number. Default seed is FMG map seed + burg id padded to 4 chars with zeros (${defSeed}). <br>
-        Please note that if seed is custom, "Overworld" button from MFCG will open a different map`, {default:burg.MFCG||defSeed, step:1, min:1, max:1e13-1}, v => {
+      prompt(`Please provide a Medieval Fantasy City Generator seed. 
+        Seed should be a number. Default seed is FMG map seed + burg id padded to 4 chars with zeros (${defSeed}). 
+        Please note that if seed is custom, "Overworld" button from MFCG will open a different map`,
+        {default:burg.MFCG||defSeed, step:1, min:1, max:1e13-1}, v => {
         burg.MFCG = v;
         openMFCG(v);
       });

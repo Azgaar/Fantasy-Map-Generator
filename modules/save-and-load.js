@@ -953,6 +953,14 @@ function parseLoadedData(data) {
         Military.generate();
       }
 
+      if (version < 1.35) {
+        // v 1.35 added dry lakes
+        if (!lakes.select("#dry").size()) {
+          lakes.append("g").attr("id", "dry");
+          lakes.select("#dry").attr("opacity", 1).attr("fill", "#c9bfa7").attr("stroke", "#8e816f").attr("stroke-width", .7).attr("filter", null);
+        }
+      }
+
     }()
 
     void function checkDataIntegrity() {

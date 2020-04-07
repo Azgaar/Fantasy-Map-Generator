@@ -609,25 +609,34 @@ function generateDate(from = 100, to = 1000) {
 }
 
 // prompt replacer (prompt does not work in Electron)
-window.prompt = function(dialogText = "Please provide an input", options = {default:1, step:.01, min:0, max:100}, callback) {
-  if (options.default === undefined) {console.error("Prompt: options object does not have default value defined"); return;}
-  const modal = document.getElementById("prompt");
-  const input = modal.querySelector("#promptInput");
-  modal.querySelector("#dialogText").innerHTML = dialogText;
-  const type = typeof(options.default) === "number" ? "number" : "text";
-  input.type = type;
-  if (options.step !== undefined) input.step = options.step;
-  if (options.min !== undefined) input.min = options.min;
-  if (options.max !== undefined) input.max = options.max;
-  input.placeholder = "type a " + type;
-  input.value = options.default;
-  modal.showModal();
+void function() {
+  const prompt = document.getElementById("prompt");
+  const form = prompt.querySelector("#promptForm");
 
-  modal.addEventListener("close", () => {
-    if (callback && modal.returnValue === "yes") callback(input.value);
-    input.value = modal.returnValue = "";
-  }, {once: true});
-}
+  window.prompt = function(promptTest = "Please provide an input", options = {default:1, step:.01, min:0, max:100}, callback) {
+    if (options.default === undefined) {console.error("Prompt: options object does not have default value defined"); return;}
+    const input = prompt.querySelector("#promptInput");
+    prompt.querySelector("#promptTest").innerHTML = promptTest;
+    const type = typeof(options.default) === "number" ? "number" : "text";
+    input.type = type;
+    if (options.step !== undefined) input.step = options.step;
+    if (options.min !== undefined) input.min = options.min;
+    if (options.max !== undefined) input.max = options.max;
+    input.placeholder = "type a " + type;
+    input.value = options.default;
+    prompt.style.display = "block";
+
+    form.addEventListener("submit", event => {
+      prompt.style.display = "none";
+      const v = type === "number" ? +input.value : input.value;
+      event.preventDefault();
+      if (callback) callback(v);
+    }, {once: true});
+  }
+
+  const cancel = prompt.querySelector("#promptCancel");
+  cancel.addEventListener("click", () => prompt.style.display = "none");
+}()
 
 // localStorageDB
 !function(){function e(t,o){return n?void(n.transaction("s").objectStore("s").get(t).onsuccess=function(e){var t=e.target.result&&e.target.result.v||null;o(t)}):void setTimeout(function(){e(t,o)},100)}var t=window.indexedDB||window.mozIndexedDB||window.webkitIndexedDB||window.msIndexedDB;if(!t)return void console.error("indexDB not supported");var n,o={k:"",v:""},r=t.open("d2",1);r.onsuccess=function(e){n=this.result},r.onerror=function(e){console.error("indexedDB request error"),console.log(e)},r.onupgradeneeded=function(e){n=null;var t=e.target.result.createObjectStore("s",{keyPath:"k"});t.transaction.oncomplete=function(e){n=e.target.db}},window.ldb={get:e,set:function(e,t){o.k=e,o.v=t,n.transaction("s","readwrite").objectStore("s").put(o)}}}();

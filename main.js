@@ -71,6 +71,7 @@ lakes.append("g").attr("id", "salt");
 lakes.append("g").attr("id", "sinkhole");
 lakes.append("g").attr("id", "frozen");
 lakes.append("g").attr("id", "lava");
+lakes.append("g").attr("id", "dry");
 coastline.append("g").attr("id", "sea_island");
 coastline.append("g").attr("id", "lake_island");
 
@@ -526,6 +527,7 @@ function generate() {
     elevateLakes();
     Rivers.generate();
     defineBiomes();
+    //drawSeaIce();
 
     rankCells();
     Cultures.generate();
@@ -1091,6 +1093,7 @@ function reMarkFeatures() {
   }
 
   function defineLakeGroup(cell, number, temp) {
+    if (temp > 31) return "dry";
     if (temp > 24) return "salt";
     if (temp < -3) return "frozen";
     const height = d3.max(cells.c[cell].map(c => cells.h[c]));
@@ -1153,7 +1156,7 @@ function defineBiomes() {
 }
 
 function getBiomeId(moisture, temperature, height) {
-  if (temperature < -5) return 11; // permafrost biome
+  if (temperature < -5) return 11; // permafrost biome, including sea ice
   if (height < 20) return 0; // liquid water cells have marine biome
   if (moisture > 40 && height < 25 || moisture > 24 && height > 24) return 12; // wetland biome
   const m = Math.min(moisture / 5 | 0, 4); // moisture band from 0 to 4
@@ -1184,7 +1187,7 @@ function rankCells() {
       if (type === "lake") {
         // lake coast is valued
         if (group === "freshwater") s += 30;
-        else if (group !== "lava") s += 10;
+        else if (group !== "lava" && group !== "dry") s += 10;
       } else {
         s += 5; // ocean coast is valued
         if (cells.harbor[i] === 1) s += 20; // safe sea harbor is valued
@@ -1210,7 +1213,7 @@ function addMarkers(number = 1) {
     let count = mounts.length < 10 ? 0 : Math.ceil(mounts.length / 300 * number);
     if (count) addMarker("volcano", "🌋", 52, 52, 17.5);
 
-    while (count) {
+    while (count && mounts.length) {
       const cell = mounts.splice(biased(0, mounts.length-1, 5), 1);
       const x = cells.p[cell][0], y = cells.p[cell][1];
       const id = getNextId("markerElement");
@@ -1231,7 +1234,7 @@ function addMarkers(number = 1) {
     let count = springs.length < 30 ? 0 : Math.ceil(springs.length / 1000 * number);
     if (count) addMarker("hot_springs", "♨", 50, 50, 19.5);
 
-    while (count) {
+    while (count && springs.length) {
       const cell = springs.splice(biased(1, springs.length-1, 3), 1);
       const x = cells.p[cell][0], y = cells.p[cell][1];
       const id = getNextId("markerElement");
@@ -1284,7 +1287,7 @@ function addMarkers(number = 1) {
     let count = !bridges.length ? 0 : Math.ceil(bridges.length / 12 * number);
     if (count) addMarker("bridge", "🌉", 50, 50, 16.5);
 
-    while (count) {
+    while (count && bridges.length) {
       const cell = bridges.splice(0, 1);
       const x = cells.p[cell][0], y = cells.p[cell][1];
       const id = getNextId("markerElement");
@@ -1375,7 +1378,7 @@ function addMarkers(number = 1) {
     let count = battlefields.length < 100 ? 0 : Math.ceil(battlefields.length / 500 * number);
     if (count) addMarker("battlefield", "⚔", 50, 50, 20);
 
-    while (count) {
+    while (count && battlefields.length) {
       const cell = battlefields.splice(Math.floor(Math.random() * battlefields.length), 1);
       const x = cells.p[cell][0], y = cells.p[cell][1];
       const id = getNextId("markerElement");

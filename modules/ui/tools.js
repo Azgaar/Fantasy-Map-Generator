@@ -250,12 +250,8 @@ function regenerateMilitary() {
 }
 
 function regenerateMarkers(event) {
-  if (isCtrlClick(event)) {
-    prompt("Please provide markers number multiplier", {default:1, step:.01, min:0, max:100}, v => {
-      if (v === null || v === "" || isNaN(+v)) return;
-      addNumberOfMarkers(Math.min(+v, 100));
-    });
-  } else addNumberOfMarkers(gauss(1, .5, .3, 5, 2));
+  if (isCtrlClick(event)) prompt("Please provide markers number multiplier", {default:1, step:.01, min:0, max:100}, v => addNumberOfMarkers(v));
+  else addNumberOfMarkers(gauss(1, .5, .3, 5, 2));
 
   function addNumberOfMarkers(number) {
     // remove existing markers and assigned notes
@@ -270,12 +266,8 @@ function regenerateMarkers(event) {
 }
 
 function regenerateZones(event) {
-  if (isCtrlClick(event)) {
-    prompt("Please provide zones number multiplier", {default:1, step:.01, min:0, max:100}, v => {
-      if (v === null || v === "" || isNaN(+v)) return;
-      addNumberOfZones(Math.min(+v, 100));
-    });
-  } else addNumberOfZones(gauss(1, .5, .6, 5, 2));
+  if (isCtrlClick(event)) prompt("Please provide zones number multiplier", {default:1, step:.01, min:0, max:100}, v => addNumberOfZones(v));
+  else addNumberOfZones(gauss(1, .5, .6, 5, 2));
 
   function addNumberOfZones(number) {
     zones.selectAll("g").remove(); // remove existing zones
