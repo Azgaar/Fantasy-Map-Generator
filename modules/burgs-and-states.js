@@ -916,7 +916,9 @@
     states.forEach(s => {
       s.provinces = [];
       if (!s.i || s.removed) return;
-      const stateBurgs = burgs.filter(b => b.state === s.i && !b.removed).sort((a, b) => b.population * gauss(1, .2, .5, 1.5, 3) - a.population);
+      const stateBurgs = burgs.filter(b => b.state === s.i && !b.removed)
+        .sort((a, b) => b.population * gauss(1, .2, .5, 1.5, 3) - a.population)
+        .sort((a, b) => b.capital - a.capital);
       if (stateBurgs.length < 2) return; // at least 2 provinces are required
       const provincesNumber = Math.max(Math.ceil(stateBurgs.length * percentage / 100), 2);
       const form = Object.assign({}, forms[s.form]);

@@ -125,7 +125,7 @@ function editProvinces() {
         <div data-tip="Province area" class="biomeArea hide">${si(area) + unit}</div>
         <span data-tip="${populationTip}" class="icon-male hide"></span>
         <div data-tip="${populationTip}" class="culturePopulation hide">${si(population)}</div>
-        <span data-tip="Declare province independence (turn province into a new state)" class="icon-flag-empty ${separable ? '' : 'placeholder'} hide"></span>
+        <span data-tip="Declare province independence (turn non-capital province with burgs into a new state)" class="icon-flag-empty ${separable ? '' : 'placeholder'} hide"></span>
         <span data-tip="Toggle province focus" class="icon-pin ${focused?'':' inactive'} hide"></span>
         <span data-tip="Remove the province" class="icon-trash-empty hide"></span>
       </div>`;
@@ -226,6 +226,8 @@ function editProvinces() {
 
   function declareProvinceIndependence(p) {
     const states = pack.states, provinces = pack.provinces, cells = pack.cells;
+    if (provinces[p].burgs.some(b => pack.burgs[b].capital)) {tip("Cannot declare independence of a province having capital burg. Please change capital first", false, "error"); return;}
+
     const oldState = pack.provinces[p].state;
     const newState = pack.states.length;
 
