@@ -153,12 +153,13 @@ function changeMapSize() {
 
 // just apply canvas size that was already set
 function applyMapSize() {
+  const zoomMin = +zoomExtentMin.value, zoomMax = +zoomExtentMax.value;
   graphWidth = +mapWidthInput.value;
   graphHeight = +mapHeightInput.value;
-  svgWidth = Math.min(graphWidth, window.innerWidth)
-  svgHeight = Math.min(graphHeight, window.innerHeight)
+  svgWidth = Math.min(graphWidth, window.innerWidth);
+  svgHeight = Math.min(graphHeight, window.innerHeight);
   svg.attr("width", svgWidth).attr("height", svgHeight);
-  zoom.translateExtent([[0, 0],[graphWidth, graphHeight]]).scaleExtent([1, 20]).scaleTo(svg, 1);
+  zoom.translateExtent([[0, 0],[graphWidth, graphHeight]]).scaleExtent([zoomMin, zoomMax]).scaleTo(svg, zoomMin);
   //viewbox.attr("transform", null).attr("clip-path", "url(#mapClip)");
   //defs.append("clipPath").attr("id", "mapClip").append("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
   //zoom.translateExtent([[-svgWidth*.2, -graphHeight*.2], [svgWidth*1.2, graphHeight*1.2]]);
