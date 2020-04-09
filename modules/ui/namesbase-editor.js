@@ -144,7 +144,7 @@ function editNamesbase() {
       "<span style='color:green'>[good]</span>";
 
     alertMessage.innerHTML = `<div style="line-height: 1.6em; max-width: 20em">
-      <div>Namesnase length: ${l} ${lengthStat}</div>
+      <div>Namesbase length: ${l} ${lengthStat}</div>
       <div>Namesbase range: ${Object.keys(chain).length-1} ${rangeStat}</div>
       <div>Namesbase depth: ${depth} ${depthStat}</div>
       <div>Non-basic chars: ${nonLatin}</div>
