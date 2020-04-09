@@ -18,6 +18,7 @@ function editNamesbase() {
   document.getElementById("namesbaseDouble").addEventListener("input", updateBaseDublication);
   document.getElementById("namesbaseMulti").addEventListener("input", updateBaseMiltiwordRate);
   document.getElementById("namesbaseAdd").addEventListener("click", namesbaseAdd);
+  document.getElementById("namesbaseAnalize").addEventListener("click", analizeNamesbase);
   document.getElementById("namesbaseDefault").addEventListener("click", namesbaseRestoreDefault);
   document.getElementById("namesbaseDownload").addEventListener("click", namesbaseDownload);
   document.getElementById("namesbaseUpload").addEventListener("click", () => namesbaseToLoad.click());
@@ -105,7 +106,63 @@ function editNamesbase() {
     const base = +document.getElementById("namesbaseSelect").value;
     nameBases[base].m = +this.value;
   }
-  
+
+  function analizeNamesbase() {
+    const string = document.getElementById("namesbaseTextarea").value;
+    if (!string) {tip("Names data field should not be empty", false, "error"); return;}
+    const base = string.toLowerCase();
+    const array = base.split(",");
+    const l = array.length;
+    if (!l) {tip("Names data should not be empty", false, "error"); return;}
+
+    const wordsLength = array.map(n => n.length);
+    const multi = rn(d3.mean(array.map(n => (n.match(/ /i)||[]).length)) * 100, 2);
+    const geminate = array.map(name => name.match(/[^\w\s]|(.)(?=\1)/g)||[]).flat();
+    const doubled = ([...new Set(geminate)].filter(l => geminate.filter(d => d === l).length > 3)||["none"]).join("");
+    const chain = Names.calculateChain(string);
+    const depth = rn(d3.mean(Object.keys(chain).map(key => chain[key].filter(c => c !== " ").length)));
+    const nonLatin = (string.match(/[^\u0000-\u007f]/g)||["none"]).join("");
+
+    const lengthStat = 
+      l < 30 ? "<span style='color:red'>[not enough]</span>" :
+      l < 150 ? "<span style='color:darkred'>[low]</span>" :
+      l < 150 ? "<span style='color:orange'>[low]</span>" :
+      l < 400 ? "<span style='color:green'>[good]</span>" :
+      l < 600 ? "<span style='color:orange'>[overmuch]</span>" :
+      "<span style='color:darkred'>[overmuch]</span>";
+
+    const rangeStat = 
+      l < 10 ? "<span style='color:red'>[low]</span>" :
+      l < 15 ? "<span style='color:darkred'>[low]</span>" :
+      l < 20 ? "<span style='color:orange'>[low]</span>" :
+      "<span style='color:green'>[good]</span>";
+
+    const depthStat = 
+      l < 15 ? "<span style='color:red'>[low]</span>" :
+      l < 20 ? "<span style='color:darkred'>[low]</span>" :
+      l < 25 ? "<span style='color:orange'>[low]</span>" :
+      "<span style='color:green'>[good]</span>";
+
+    alertMessage.innerHTML = `<div style="line-height: 1.6em; max-width: 20em">
+      <div>Namesnase length: ${l} ${lengthStat}</div>
+      <div>Namesbase range: ${Object.keys(chain).length-1} ${rangeStat}</div>
+      <div>Namesbase depth: ${depth} ${depthStat}</div>
+      <div>Non-basic chars: ${nonLatin}</div>
+      <hr>
+      <div>Min name length: ${d3.min(wordsLength)}</div>
+      <div>Max name length: ${d3.max(wordsLength)}</div>
+      <div>Mean name length: ${rn(d3.mean(wordsLength), 1)}</div>
+      <div>Median name length: ${d3.median(wordsLength)}</div>
+      <div>Doubled chars: ${doubled}</div>
+      <div>Multi-word names: ${multi}%</div>
+    </div>`;
+    $("#alert").dialog({
+      resizable: false, title: "Data Analysis",
+      position: {my: "left top-30", at: "right+10 top", of: "#namesbaseEditor"},
+      buttons: {OK: function() {$(this).dialog("close");}}
+    });
+  }
+
   function namesbaseAdd() {
     const base = nameBases.length;
     const b = "This,is,an,example,of,name,base,showing,correct,format,It,should,have,at,least,one,hundred,names,separated,with,comma";

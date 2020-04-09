@@ -7,9 +7,9 @@
   let chains = [];
 
   // calculate Markov chain for a namesbase
-  const calculateChain = function(b) {
+  const calculateChain = function(string) {
     const chain = [];
-    const d = nameBases[b].b.toLowerCase().replace(/,/g, " ");
+    const d = string.toLowerCase().replace(/,/g, " ");
 
     for (let i = -1, str = ""; i < d.length - 2; i += str.length, str = "") {
       let v = 0, f = " ";
@@ -33,7 +33,7 @@
   }
 
   // update chain for specific base
-  const updateChain = (i) => chains[i] = nameBases[i] || nameBases[i].b ? calculateChain(i) : null;
+  const updateChain = (i) => chains[i] = nameBases[i] || nameBases[i].b ? calculateChain(nameBases[i].b) : null;
 
   // update chains for all used bases
   const clearChains = () => chains = [];
@@ -67,7 +67,7 @@
           cur = "";
           v = data[" "];
         } else {
-          v = data[cur.slice(-1)];
+          v = data[cur.slice(-1)] || data[" "];
         }
       }
 
@@ -255,5 +255,5 @@
     ];
   }
 
-  return {getBase, getCulture, getCultureShort, getBaseShort, getState, updateChain, clearChains, getNameBases, getMapName};
+  return {getBase, getCulture, getCultureShort, getBaseShort, getState, updateChain, clearChains, getNameBases, getMapName, calculateChain};
 })));

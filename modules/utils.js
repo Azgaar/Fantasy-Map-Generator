@@ -471,34 +471,6 @@ function getNumberInRange(r) {
 }
 
 // helper function non-used for the generation
-function analizeNamesbase() {
-  const result = [];
-  nameBases.forEach((b,i) => {
-    const string = nameBases[i].b;
-    const d = string.split(",");
-    const size = d.length;
-    const ar = d.map(n => n.length);
-    const min = d3.min(ar);
-    const max = d3.max(ar);
-    const mean = rn(d3.mean(ar), 1);
-    const median = d3.median(ar);
-    const lengths = new Uint8Array(max);
-    ar.forEach(l => lengths[l]++);
-    const common = d3.scan(lengths, (a,b) => b-a);
-    const doubleArray = [];
-    let double = "";
-    for (let i=0; i<string.length; i++) {
-      if (!doubleArray[string[i]]) doubleArray[string[i]] = 0;
-      if (string[i] === string[i-1]) doubleArray[string[i]]++;
-    }
-    for (const l in doubleArray) {if(doubleArray[l] > size/35) double += l;}
-    const multi = rn(d3.mean(d.map(n => (n.match(/ /g)||[]).length-1)),2);
-    result.push({name:b.name, size, min, max, mean, median, common, double, multi});
-  });
-  console.table(result);
-}
-
-// helper function non-used for the generation
 function drawCellsValue(data) {
   debug.selectAll("text").remove();
   debug.selectAll("text").data(data).enter().append("text")

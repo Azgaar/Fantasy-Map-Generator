@@ -44,6 +44,8 @@ input:read-only {
 textarea {
 	padding: 2px;
 	text-indent: 1px;
+	box-sizing: border-box;
+	width: 100%;
 }
 
 #map {
