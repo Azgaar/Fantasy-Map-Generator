@@ -328,7 +328,7 @@ function editRegiment(selector) {
   function closeEditor() {
     armies.selectAll(":scope > g").classed("draggable", false);
     armies.selectAll("g>g").call(d3.drag().on("drag", null));
-    viewbox.select("g#regimentBase").remove();
+    viewbox.selectAll("g#regimentBase").remove();
     document.getElementById("regimentAdd").classList.remove("pressed");
     document.getElementById("regimentAttach").classList.remove("pressed");
     restoreDefaultEvents();
