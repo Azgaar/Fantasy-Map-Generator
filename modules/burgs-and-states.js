@@ -299,7 +299,7 @@
       queue.queue({e:s.center, p:0, s:s.i, b});
       cost[s.center] = 1;
     });
-    const neutral = cells.i.length / 5000 * 2000 * neutralInput.value * statesNeutral.value; // limit cost for state growth
+    const neutral = cells.i.length / 5000 * 2500 * neutralInput.value * statesNeutral.value; // limit cost for state growth
 
     while (queue.length) {
       const next = queue.dequeue(), n = next.e, p = next.p, s = next.s, b = next.b;
@@ -310,7 +310,7 @@
         if (cells.state[e] && e === states[cells.state[e]].center) return; // do not overwrite capital cells
 
         const cultureCost = culture === cells.culture[e] ? -9 : 100;
-        const populationCost = cells.s[e] ? 20 - cells.s[e] : 2500;
+        const populationCost = cells.h[e] < 20 ? 0 : cells.s[e] ? Math.max(20 - cells.s[e], 0) : 5000;
         const biomeCost = getBiomeCost(b, cells.biome[e], type);
         const heightCost = getHeightCost(pack.features[cells.f[e]], cells.h[e], type);
         const riverCost = getRiverCost(cells.r[e], e, type);

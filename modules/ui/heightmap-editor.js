@@ -100,7 +100,7 @@ function editHeightmap() {
     if (tooltip.dataset.main) showMainTip();
 
     // move radius circle if drag mode is active
-    const pressed = document.querySelector("#brushesButtons > button.pressed");
+    const pressed = document.getElementById("brushesButtons").querySelector("button.pressed");
     if (!pressed) return;
     moveCircle(p[0], p[1], brushRadius.valueAsNumber, "#333");
   }
@@ -151,7 +151,8 @@ function editHeightmap() {
     else if (mode === "risk") restoreRiskedData();
 
     // restore initial layers
-    viewbox.select("#heights").remove();
+    //viewbox.select("#heights").remove();
+    document.getElementById("heights").remove();
     turnButtonOff("toggleHeight");
     document.getElementById("mapLayers").querySelectorAll("li").forEach(function(e) {
       if (editHeightmap.layers.includes(e.id) && !layerIsOn(e.id)) e.click(); // turn on
