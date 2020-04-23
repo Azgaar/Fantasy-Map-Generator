@@ -38,9 +38,12 @@ function showBattleScreen(attacker, defender) {
   }
 
   function addRegiment(div, regiment) {
-    const reg = document.createElement("div");
-    reg.innerHTML = regiment.name;
-    div.append(reg);
+    let line = `<tr><th>${regiment.name}</th>`;
+    for (const u of options.military) {
+      line += `<th>${regiment.u[u.name]||0}</th>`;
+    }
+    line += `<th>${regiment.a||0}</th></tr>`;
+    div.querySelector("tbody").insertAdjacentHTML("beforebegin", line);
   }
 
   function closeBattleScreen() {
