@@ -30,6 +30,7 @@ function editRoute(onClick) {
   document.getElementById("routeGroupName").addEventListener("change", createNewGroup);
   document.getElementById("routeGroupRemove").addEventListener("click", removeRouteGroup);
   document.getElementById("routeGroupsHide").addEventListener("click", hideGroupSection);
+  document.getElementById("routeElevationProfile").addEventListener("click", showElevationProfile);
 
   document.getElementById("routeEditStyle").addEventListener("click", editGroupStyle);
   document.getElementById("routeSplit").addEventListener("click", toggleRouteSplitMode);
@@ -101,6 +102,15 @@ function editRoute(onClick) {
     elSelected.attr("d", round(lineGen(points)));
     const l = elSelected.node().getTotalLength();
     routeLength.innerHTML = rn(l * distanceScaleInput.value) + " " + distanceUnitInput.value;    
+ 
+    if (modules.elevation) {
+      showEPForRoute(elSelected.node());
+    }
+  }
+
+  function showElevationProfile() {
+    modules.elevation = true;
+    showEPForRoute(node);
   }
 
   function showGroupSection() {
