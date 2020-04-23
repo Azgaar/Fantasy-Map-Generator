@@ -11,6 +11,7 @@
     if (outline === "none") return;
     console.time("drawOceanLayers");
 
+    lineGen.curve(d3.curveBasisClosed);
     cells = grid.cells, pointsN = grid.cells.i.length, vertices = grid.vertices;
     const limits = outline === "random" ? randomizeOutline() : outline.split(",").map(s => +s);
     markupOcean(limits);
@@ -29,7 +30,8 @@
       const chain = connectVertices(start, t); // vertices chain to form a path
       const relaxation = 1 + t * -2; // select only n-th point
       const relaxed = chain.filter((v, i) => i % relaxation === 0 || vertices.c[v].some(c => c >= pointsN));
-      if (relaxed.length >= 3) chains.push([t, relaxed.map(v => vertices.p[v])]);
+      const points = clipPoly(relaxed.map(v => vertices.p[v]), 1);
+      if (relaxed.length >= 3) chains.push([t, points]);
     }
 
     for (const t of limits) {
@@ -57,8 +59,8 @@
     return limits;
   }
 
+  // Define grid ocean cells type based on distance form land
   function markupOcean(limits) {
-    // Define ocean cells type based on distance form land
     for (let t = -2; t >= limits[0]-1; t--) {
       for (let i = 0; i < pointsN; i++) {
         if (cells.t[i] !== t+1) continue;

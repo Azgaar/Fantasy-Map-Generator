@@ -26,6 +26,7 @@ function clicked() {
   else if (el.tagName === "tspan" && grand.parentNode.parentNode.id === "labels") editLabel();
   else if (grand.id === "burgLabels") editBurg();
   else if (grand.id === "burgIcons") editBurg();
+  else if (parent.id === "ice") editIce();
   else if (parent.id === "terrain") editReliefIcon();
   else if (parent.id === "markers") editMarker();
   else if (grand.id === "coastline") editCoastline();
@@ -581,4 +582,43 @@ function highlightElement(element) {
   let y = box.y + box.height / 2;
   if (tr[1]) y += tr[1];
   if (scale >= 2) zoomTo(x, y, scale, 1600);
+}
+
+function selectIcon(initial, callback) {
+  if (!callback) return;
+  $("#iconSelector").dialog();
+
+  const table = document.getElementById("iconTable");
+  const input = document.getElementById("iconInput");
+  input.value = initial;
+
+  if (!table.innerHTML) {
+    const icons = ["⚔️","🏹","🐴","💣","🌊","🎯","⚓","🔮","📯","⚒️","🛡️","👑","⚜️",
+      "☠️","🎆","🗡️","🔪","⛏️","🔥","🩸","💧","🐾","🎪","🏰","🏯","⛓️","❤️","💘","💜","📜","🔔",
+      "🔱","💎","🌈","🌠","✨","💥","☀️","🌙","⚡","❄️","♨️","🎲","🚨","🌉","🗻","🌋","🧱",
+      "⚖️","✂️","🎵","👗","🎻","🎨","🎭","⛲","💉","📖","📕","🎁","💍","⏳","🕸️","⚗️","☣️","☢️",
+      "🔰","🎖️","🚩","🏳️","🏴","💪","✊","👊","🤜","🤝","🙏","🧙","🧙‍♀️","💂","🤴","🧛","🧟","🧞","🧝","👼",
+      "👻","👺","👹","🦄","🐲","🐉","🐎","🦓","🐺","🦊","🐱","🐈","🦁","🐯","🐅","🐆","🐕","🦌","🐵","🐒","🦍",
+      "🦅","🕊️","🐓","🦇","🦜","🐦","🦉","🐮","🐄","🐂","🐃","🐷","🐖","🐗","🐏","🐑","🐐","🐫","🦒","🐘","🦏","🐭","🐁","🐀",
+      "🐹","🐰","🐇","🦔","🐸","🐊","🐢","🦎","🐍","🐳","🐬","🦈","🐠","🐙","🦑","🐌","🦋","🐜","🐝","🐞","🦗","🕷️","🦂","🦀",
+      "🌳","🌲","🎄","🌴","🍂","🍁","🌵","☘️","🍀","🌿","🌱","🌾","🍄","🌽","🌸","🌹","🌻",
+      "🍒","🍏","🍇","🍉","🍅","🍓","🥔","🥕","🥩","🍗","🍞","🍻","🍺","🍲","🍷"
+    ];
+
+    let row = "";
+    for (let i=0; i < icons.length; i++) {
+      if (i%17 === 0) row = table.insertRow(i/17|0);
+      const cell = row.insertCell(i%17);
+      cell.innerHTML = icons[i];
+    }
+  }
+
+  table.onclick = e => {if (e.target.tagName === "TD") {input.value = e.target.innerHTML; callback(input.value)}};
+  table.onmouseover = e => {if (e.target.tagName === "TD") tip(`Click to select ${e.target.innerHTML} icon`)};
+
+  $("#iconSelector").dialog({width: fitContent(), title: "Select Icon",
+  buttons: {
+    Apply: function() {callback(input.value||"⠀"); $(this).dialog("close")},
+    Close: function() {callback(initial); $(this).dialog("close")}}
+  });
 }

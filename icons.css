@@ -264,3 +264,4 @@
   width: .6em;
   font-family: monospace;
 }
+.icon-die:before {content:'🎲';}

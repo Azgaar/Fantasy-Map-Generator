@@ -294,13 +294,14 @@ function editBurg(id) {
 
     function openMFCG(seed) {
       if (!seed && burg.MFCGlink) {openURL(burg.MFCGlink); return;}
+      const cells = pack.cells;
       const name = elSelected.text();
       const size = Math.max(Math.min(rn(burg.population), 65), 6);
   
       const s = burg.MFCG || defSeed;
       const cell = burg.cell;
-      const hub = +pack.cells.road[cell] > 50;
-      const river = pack.cells.r[cell] ? 1 : 0;
+      const hub = +cells.road[cell] > 50;
+      const river = cells.r[cell] ? 1 : 0;
   
       const coast = +burg.port;
       const citadel = +burg.citadel;
@@ -309,8 +310,31 @@ function editBurg(id) {
       const temple = +burg.temple;
       const shanty = +burg.shanty;
 
+      const sea = coast && cells.haven[burg.cell] ? getSeaDirections(burg.cell) : "";
+      function getSeaDirections(i) {
+        const p1 = cells.p[i];
+        const p2 = cells.p[cells.haven[i]];
+        let deg = Math.atan2(p2[1] - p1[1], p2[0] - p1[0]) * 180 / Math.PI - 90;
+        if (deg < 0) deg += 360;
+        let norm = rn(normalize(deg, 0, 360) * 8) / 4;
+        if (norm === 2) norm = 0;
+        return "sea="+norm;
+        // debug.selectAll("*").remove();
+        // pack.burgs.filter(b => b.port).forEach(b => {
+        //   var p1 = pack.cells.p[b.cell];
+        //   var p2 = pack.cells.p[pack.cells.haven[b.cell]];
+        //   var deg = Math.atan2(p2[1] - p1[1], p2[0] - p1[0]) * 180 / Math.PI - 90;
+        //   if (deg < 0) deg += 360;
+        //   var norm = rn(normalize(deg, 0, 360) * 8) / 4;
+        //   if (norm === 2) norm = 0;
+        //   debug.append("line").attr("x1", p1[0]).attr("y1", p1[1]).attr("x2", p2[0]).attr("y2", p2[1]).attr("stroke", "red").attr("stroke-width", .2);
+        //   debug.append("circle").attr("cx", b.x).attr("cy", b.y).attr("r", .4);
+        //   debug.append("text").attr("x", b.x+1).attr("y", b.y).attr("font-size", 2).text(rn(norm, 2));
+        // });
+      }
+
       const site = "http://fantasycities.watabou.ru/";
-      const url = `${site}?name=${name}&size=${size}&seed=${s}&hub=${hub}&random=0&continuous=0&river=${river}&coast=${coast}&citadel=${citadel}&plaza=${plaza}&temple=${temple}&walls=${walls}&shantytown=${shanty}`;
+      const url = `${site}?name=${name}&size=${size}&seed=${s}&hub=${hub}&random=0&continuous=0&river=${river}&coast=${coast}&citadel=${citadel}&plaza=${plaza}&temple=${temple}&walls=${walls}&shantytown=${shanty}${sea}`;
       openURL(url);
     }
   }

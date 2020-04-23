@@ -296,6 +296,33 @@ async function saveMap() {
   window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
 }
 
+// Send .map file to server [test function]
+async function sendToURL(URL = "http://localhost:8000/upload.php") {
+  if (customization) {tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error"); return;}
+  closeDialogs("#alert");
+
+  const blob = await getMapData();
+  const xhr = new XMLHttpRequest();
+  xhr.open("POST", URL, true);
+  //xhr.setRequestHeader("Content-Type", "blob"); // set request header
+  xhr.onload = e => console.log("onload", e.responseText);
+  xhr.onreadystatechange = () => {if (xhr.readyState === 4 && xhr.status === 200) tip(`File is sent to cloud storage`, true, "success", 7000);}
+  xhr.send(blob);
+}
+
+// Load .map file from server [test function]
+async function loadFromCloud() {
+  ldb.get("lastMap", blob => {
+    if (blob) {
+      loadMapPrompt(blob);
+    } else {
+      tip("No map stored. Save map to storage first", true, "error", 2000);
+      console.error("No map stored");
+    }
+  });
+  uploadMap(blob);
+}
+
 function saveGeoJSON_Cells() {
   let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
   const cells = pack.cells, v = pack.vertices;
@@ -617,6 +644,7 @@ function parseLoadedData(data) {
       texture = viewbox.select("#texture");
       terrs = viewbox.select("#terrs");
       biomes = viewbox.select("#biomes");
+      ice = viewbox.select("#ice");
       cells = viewbox.select("#cells");
       gridOverlay = viewbox.select("#gridOverlay");
       coordinates = viewbox.select("#coordinates");
@@ -953,11 +981,33 @@ function parseLoadedData(data) {
         Military.generate();
       }
 
-      if (version < 1.35) {
+      if (version < 1.4) {
         // v 1.35 added dry lakes
         if (!lakes.select("#dry").size()) {
           lakes.append("g").attr("id", "dry");
           lakes.select("#dry").attr("opacity", 1).attr("fill", "#c9bfa7").attr("stroke", "#8e816f").attr("stroke-width", .7).attr("filter", null);
+        }
+
+        // v 1.4 added ice layer
+        ice = viewbox.insert("g", "#coastline").attr("id", "ice").style("display", "none");
+        ice.attr("opacity", null).attr("fill", "#e8f0f6").attr("stroke", "#e8f0f6").attr("stroke-width", 1).attr("filter", "url(#dropShadow05)");
+        drawIce();
+
+        // v 1.4 added icon and power attributes for units
+        for (const unit of options.military) {
+          if (!unit.icon) unit.icon = getUnitIcon(unit.type);
+          if (!unit.power) unit.power = unit.crew;
+        }
+
+        function getUnitIcon(type) {
+          if (type === "naval") return "🌊";
+          if (type === "ranged") return "🏹";
+          if (type === "mounted") return "🐴";
+          if (type === "machinery") return "💣";
+          if (type === "armored") return "🐢";
+          if (type === "aviation") return "🦅";
+          if (type === "magical") return "🔮";
+          else return "⚔️";
         }
       }
 

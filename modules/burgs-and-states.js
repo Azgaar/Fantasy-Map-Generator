@@ -187,7 +187,7 @@
       } else b.port = 0;
 
       // define burg population (keep urbanization at about 10% rate)
-      b.population = rn(Math.max((cells.s[i] + cells.road[i]) / 8 + b.i / 1000 + i % 100 / 1000, .1), 3);
+      b.population = rn(Math.max((cells.s[i] + cells.road[i] / 2) / 8 + b.i / 1000 + i % 100 / 1000, .1), 3);
       if (b.capital) b.population = rn(b.population * 1.3, 3); // increase capital population
 
       if (b.port) {
@@ -420,7 +420,7 @@
             const passableLake = features[cells.f[c]].type === "lake" && features[cells.f[c]].cells < maxLake;
             if (cells.b[c] || (cells.state[c] !== state && !passableLake)) {hull.add(cells.v[q][d]); return;}
             const nC = cells.c[c].filter(n => cells.state[n] === state);
-            const intersected = intersect(nQ, nC).length
+            const intersected = common(nQ, nC).length
             if (hull.size > 20 && !intersected && !passableLake) {hull.add(cells.v[q][d]); return;}
             if (used[c]) return;
             used[c] = 1;
@@ -810,7 +810,7 @@
     });
 
     const monarchy = ["Duchy", "Grand Duchy", "Principality", "Kingdom", "Empire"]; // per expansionism tier
-    const republic = {Republic:70, Federation:2, Oligarchy:2, Tetrarchy:1, Triumvirate:1, Diarchy:1, "Trade Company":3}; // weighted random
+    const republic = {Republic:75, Federation:4, Oligarchy:2, Tetrarchy:1, Triumvirate:1, Diarchy:1, "Trade Company":4, Junta:1}; // weighted random
     const union = {Union:3, League:4, Confederation:1, "United Kingdom":1, "United Republic":1, "United Provinces":2, Commonwealth:1, Heptarchy:1}; // weighted random
 
     for (const s of states) {
@@ -870,11 +870,13 @@
       if (s.form === "Union") return rw(union);
 
       if (s.form === "Theocracy") {
-        // default name is "Theocracy", some culture bases have special names
-        if ([0, 1, 2, 3, 4, 6, 8, 9, 13, 15, 20].includes(base)) return "Diocese"; // Euporean
-        if ([7, 5].includes(base)) return "Eparchy"; // Greek, Ruthenian
-        if ([21, 16].includes(base)) return "Imamah"; // Nigerian, Turkish
-        if ([18, 17, 28].includes(base)) return "Caliphate"; // Arabic, Berber, Swahili
+        // default name is "Theocracy"
+        if (P(.5) && [0, 1, 2, 3, 4, 6, 8, 9, 13, 15, 20].includes(base)) return "Diocese"; // Euporean
+        if (P(.9) && [7, 5].includes(base)) return "Eparchy"; // Greek, Ruthenian
+        if (P(.9) && [21, 16].includes(base)) return "Imamah"; // Nigerian, Turkish
+        if (P(.8) && [18, 17, 28].includes(base)) return "Caliphate"; // Arabic, Berber, Swahili
+        if (P(.02)) return "Thearchy"; // "Thearchy" in very rare case
+        if (P(.05)) return "See"; // "See" in rare case
         return "Theocracy";
       }
     }

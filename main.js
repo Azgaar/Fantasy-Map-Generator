@@ -7,7 +7,7 @@
 // See also https://github.com/Azgaar/Fantasy-Map-Generator/issues/153
 
 "use strict";
-const version = "1.3"; // generator version
+const version = "1.4"; // generator version
 document.title += " v" + version;
 
 // if map version is not stored, clear localStorage and show a message
@@ -52,6 +52,7 @@ let trails = routes.append("g").attr("id", "trails");
 let searoutes = routes.append("g").attr("id", "searoutes");
 let temperature = viewbox.append("g").attr("id", "temperature");
 let coastline = viewbox.append("g").attr("id", "coastline");
+let ice = viewbox.append("g").attr("id", "ice").style("display", "none");
 let prec = viewbox.append("g").attr("id", "prec").style("display", "none");
 let population = viewbox.append("g").attr("id", "population");
 let labels = viewbox.append("g").attr("id", "labels");
@@ -220,7 +221,7 @@ function focusOn() {
   const url = new URL(window.location.href);
   const params = url.searchParams;
 
-  if (params.get("from") === "MFCG") {
+  if (params.get("from") === "MFCG" && document.referrer) {
     if (params.get("seed").length === 13) {
       // show back burg from MFCG
       params.set("burg", params.get("seed").slice(-4));
@@ -313,12 +314,12 @@ function applyDefaultBiomesSystem() {
   const iconsDensity = [0,3,2,120,120,120,120,150,150,100,5,0,150];
   const icons = [{},{dune:3, cactus:6, deadTree:1},{dune:9, deadTree:1},{acacia:1, grass:9},{grass:1},{acacia:8, palm:1},{deciduous:1},{acacia:5, palm:3, deciduous:1, swamp:1},{deciduous:6, swamp:1},{conifer:1},{grass:1},{},{swamp:1}];
   const cost = [10,200,150,60,50,70,70,80,90,200,1000,5000,150]; // biome movement cost
-  const biomesMartix = [ // hot ↔ cold; dry ↕ wet
-    new Uint8Array([1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]),
-    new Uint8Array([3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,9,9,9,9,9,10,10]),
+  const biomesMartix = [ // hot ↔ cold [>19°C; <-4°C]; dry ↕ wet
+    new Uint8Array([1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,10]),
+    new Uint8Array([3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,9,9,9,9,10,10,10]),
     new Uint8Array([5,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,9,9,9,9,9,10,10,10]),
     new Uint8Array([5,6,6,6,6,6,6,8,8,8,8,8,8,8,8,8,8,9,9,9,9,9,9,10,10,10]),
-    new Uint8Array([7,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,9,9,9,9,9,9,10,10,10])
+    new Uint8Array([7,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,9,9,9,9,9,9,9,10,10])
   ];
 
   // parse icons weighted array into a simple array
@@ -527,7 +528,7 @@ function generate() {
     elevateLakes();
     Rivers.generate();
     defineBiomes();
-    //drawSeaIce();
+    drawIce();
 
     rankCells();
     Cultures.generate();
@@ -701,8 +702,9 @@ function openNearSeaLakes() {
 // define map size and position based on template and random factor
 function defineMapSize() {
   const [size, latitude] = getSizeAndLatitude();
-  if (!locked("mapSize")) mapSizeOutput.value = mapSizeInput.value = size;
-  if (!locked("latitude")) latitudeOutput.value = latitudeInput.value = latitude;
+  const randomize = new URL(window.location.href).searchParams.get("options") === "default"; // ignore stored options
+  if (randomize || !locked("mapSize")) mapSizeOutput.value = mapSizeInput.value = size;
+  if (randomize || !locked("latitude")) latitudeOutput.value = latitudeInput.value = latitude;
 
   function getSizeAndLatitude() {
     const template = document.getElementById("templateInput").value; // heightmap template
@@ -963,7 +965,7 @@ function drawCoastline() {
     let vchain = connectVertices(start, type);
     if (features[f].type === "lake") relax(vchain, 1.2);
     used[f] = 1;
-    let points = vchain.map(v => vertices.p[v]);
+    let points = clipPoly(vchain.map(v => vertices.p[v]), 1);
     const area = d3.polygonArea(points); // area with lakes/islands
     if (area > 0 && features[f].type === "lake") {
       points = points.reverse();
@@ -1056,7 +1058,6 @@ function reMarkFeatures() {
     const start = queue[0]; // first cell
     cells.f[start] = i; // assign feature number
     const land = cells.h[start] >= 20;
-    //const frozen = !land && temp[cells.g[start]] < -5; // check if water is frozen
     let border = false; // true if feature touches map border
     let cellNumber = 1; // to count cells number in a feature
 
@@ -1075,7 +1076,6 @@ function reMarkFeatures() {
           else if (!cells.t[q] && cells.t[e] === 1) cells.t[q] = 2;
         }
         if (!cells.f[e] && land === eLand) {
-          //if (!land && frozen !== temp[cells.g[e]] < -5) return;
           queue.push(e);
           cells.f[e] = i;
           cellNumber++;
@@ -1137,28 +1137,32 @@ function elevateLakes() {
 // assign biome id for each cell
 function defineBiomes() {
   console.time("defineBiomes");
-  const cells = pack.cells, f = pack.features;
+  const cells = pack.cells, f = pack.features, temp = grid.cells.temp, prec = grid.cells.prec;
   cells.biome = new Uint8Array(cells.i.length); // biomes array
 
   for (const i of cells.i) {
-    if (f[cells.f[i]].group === "freshwater") cells.h[i] = 19; // de-elevate lakes
-    const temp = grid.cells.temp[cells.g[i]]; // temperature
+    if (f[cells.f[i]].group === "freshwater") cells.h[i] = 19; // de-elevate lakes; here to save some resources
+    const t = temp[cells.g[i]]; // cell temperature
+    const h = cells.h[i]; // cell height
+    const m = h < 20 ? 0 : calculateMoisture(i); // cell moisture
+    cells.biome[i] = getBiomeId(m, t, h);
+  }
 
-    if (cells.h[i] < 20 && temp > -6) continue; // liquid water cells have biome 0
-    let moist = grid.cells.prec[cells.g[i]];
+  function calculateMoisture(i) {
+    let moist = prec[cells.g[i]];
     if (cells.r[i]) moist += Math.max(cells.fl[i] / 20, 2);
-    const n = cells.c[i].filter(isLand).map(c => grid.cells.prec[cells.g[c]]).concat([moist]);
-    moist = rn(4 + d3.mean(n));
-    cells.biome[i] = getBiomeId(moist, temp, cells.h[i]);
+    const n = cells.c[i].filter(isLand).map(c => prec[cells.g[c]]).concat([moist]);
+    return rn(4 + d3.mean(n));
   }
 
   console.timeEnd("defineBiomes");
 }
 
+// assign biome id to a cell
 function getBiomeId(moisture, temperature, height) {
   if (temperature < -5) return 11; // permafrost biome, including sea ice
-  if (height < 20) return 0; // liquid water cells have marine biome
-  if (moisture > 40 && height < 25 || moisture > 24 && height > 24) return 12; // wetland biome
+  if (height < 20) return 0; // marine biome: liquid water cells
+  if (moisture > 40 && temperature > -2 && (height < 25 || moisture > 24 && height > 24)) return 12; // wetland biome
   const m = Math.min(moisture / 5 | 0, 4); // moisture band from 0 to 4
   const t = Math.min(Math.max(20 - temperature, 0), 25); // temparature band from 0 to 25
   return biomesData.biomesMartix[m][t];
@@ -1211,20 +1215,15 @@ function addMarkers(number = 1) {
   void function addVolcanoes() {
     let mounts = Array.from(cells.i).filter(i => cells.h[i] > 70).sort((a, b) => cells.h[b] - cells.h[a]);
     let count = mounts.length < 10 ? 0 : Math.ceil(mounts.length / 300 * number);
-    if (count) addMarker("volcano", "🌋", 52, 52, 17.5);
+    if (count) addMarker("volcano", "🌋", 52, 50, 13);
 
     while (count && mounts.length) {
       const cell = mounts.splice(biased(0, mounts.length-1, 5), 1);
       const x = cells.p[cell][0], y = cells.p[cell][1];
-      const id = getNextId("markerElement");
-      markers.append("use").attr("id", id).attr("data-cell", cell)
-        .attr("xlink:href", "#marker_volcano").attr("data-id", "#marker_volcano")
-        .attr("data-x", x).attr("data-y", y).attr("x", x - 15).attr("y", y - 30)
-        .attr("data-size", 1).attr("width", 30).attr("height", 30);
-      const height = getFriendlyHeight([x, y]);
+      const id = appendMarker(cell, "volcano");
       const proper = Names.getCulture(cells.culture[cell]);
       const name = P(.3) ? "Mount " + proper : Math.random() > .3 ? proper + " Volcano" : proper;
-      notes.push({id, name, legend:`Active volcano. Height: ${height}`});
+      notes.push({id, name, legend:`Active volcano. Height: ${getFriendlyHeight([x, y])}`});
       count--;
     }
   }()
@@ -1232,17 +1231,11 @@ function addMarkers(number = 1) {
   void function addHotSprings() {
     let springs = Array.from(cells.i).filter(i => cells.h[i] > 50).sort((a, b) => cells.h[b]-cells.h[a]);
     let count = springs.length < 30 ? 0 : Math.ceil(springs.length / 1000 * number);
-    if (count) addMarker("hot_springs", "♨", 50, 50, 19.5);
+    if (count) addMarker("hot_springs", "♨️", 50, 52, 12.5);
 
     while (count && springs.length) {
       const cell = springs.splice(biased(1, springs.length-1, 3), 1);
-      const x = cells.p[cell][0], y = cells.p[cell][1];
-      const id = getNextId("markerElement");
-      markers.append("use").attr("id", id)
-        .attr("xlink:href", "#marker_hot_springs").attr("data-id", "#marker_hot_springs")
-        .attr("data-x", x).attr("data-y", y).attr("x", x - 15).attr("y", y - 30)
-        .attr("data-size", 1).attr("width", 30).attr("height", 30);
-
+      const id = appendMarker(cell, "hot_springs");
       const proper = Names.getCulture(cells.culture[cell]);
       const temp = convertTemperature(gauss(30,15,20,100));
       notes.push({id, name: proper + " Hot Springs", legend:`A hot springs area. Temperature: ${temp}`});
@@ -1255,17 +1248,12 @@ function addMarkers(number = 1) {
     let count = !hills.length ? 0 : Math.ceil(hills.length / 7 * number);
     if (!count) return;
 
-    addMarker("mine", "⚒", 50, 50, 20);
+    addMarker("mine", "⛏️", 48, 50, 13.5);
     const resources = {"salt":5, "gold":2, "silver":4, "copper":2, "iron":3, "lead":1, "tin":1};
 
     while (count && hills.length) {
       const cell = hills.splice(Math.floor(Math.random() * hills.length), 1);
-      const x = cells.p[cell][0], y = cells.p[cell][1];
-      const id = getNextId("markerElement");
-      markers.append("use").attr("id", id)
-        .attr("xlink:href", "#marker_mine").attr("data-id", "#marker_mine")
-        .attr("data-x", x).attr("data-y", y).attr("x", x - 15).attr("y", y - 30)
-        .attr("data-size", 1).attr("width", 30).attr("height", 30);
+      const id = appendMarker(cell, "mine");
       const resource = rw(resources);
       const burg = pack.burgs[cells.burg[cell]];
       const name = `${burg.name} — ${resource} mining town`;
@@ -1285,17 +1273,11 @@ function addMarkers(number = 1) {
       .sort((a, b) => (cells.road[b] + cells.fl[b] / 10) - (cells.road[a] + cells.fl[a] / 10));
 
     let count = !bridges.length ? 0 : Math.ceil(bridges.length / 12 * number);
-    if (count) addMarker("bridge", "🌉", 50, 50, 16.5);
+    if (count) addMarker("bridge", "🌉", 50, 50, 14);
 
     while (count && bridges.length) {
       const cell = bridges.splice(0, 1);
-      const x = cells.p[cell][0], y = cells.p[cell][1];
-      const id = getNextId("markerElement");
-      markers.append("use").attr("id", id)
-        .attr("xlink:href", "#marker_bridge").attr("data-id", "#marker_bridge")
-        .attr("data-x", x).attr("data-y", y).attr("x", x - 15).attr("y", y - 30)
-        .attr("data-size", 1).attr("width", 30).attr("height", 30);
-
+      const id = appendMarker(cell, "bridge");
       const burg = pack.burgs[cells.burg[cell]];
       const river = pack.rivers.find(r => r.i === pack.cells.r[cell]);
       const riverName = river ? `${river.name} ${river.type}` : "river";
@@ -1310,7 +1292,7 @@ function addMarkers(number = 1) {
     let taverns = Array.from(cells.i).filter(i => cells.crossroad[i] && cells.h[i] >= 20 && cells.road[i] > maxRoad);
     if (!taverns.length) return;
     const count = Math.ceil(4 * number);
-    addMarker("inn", "🍻", 50, 50, 17.5);
+    addMarker("inn", "🍻", 50, 50, 14.5);
 
     const color = ["Dark", "Light", "Bright", "Golden", "White", "Black", "Red", "Pink", "Purple", "Blue", "Green", "Yellow", "Amber", "Orange", "Brown", "Grey"];
     const animal = ["Antelope", "Ape", "Badger", "Bear", "Beaver", "Bison", "Boar", "Buffalo", "Cat", "Crane", "Crocodile", "Crow", "Deer", "Dog", "Eagle", "Elk", "Fox", "Goat", "Goose", "Hare", "Hawk", "Heron", "Horse", "Hyena", "Ibis", "Jackal", "Jaguar", "Lark", "Leopard", "Lion", "Mantis", "Marten", "Moose", "Mule", "Narwhal", "Owl", "Panther", "Rat", "Raven", "Rook", "Scorpion", "Shark", "Sheep", "Snake", "Spider", "Swan", "Tiger", "Turtle", "Wolf", "Wolverine", "Camel", "Falcon", "Hound", "Ox"];
@@ -1318,14 +1300,7 @@ function addMarkers(number = 1) {
 
     for (let i=0; i < taverns.length && i < count; i++) {
       const cell = taverns.splice(Math.floor(Math.random() * taverns.length), 1);
-      const x = cells.p[cell][0], y = cells.p[cell][1];
-      const id = getNextId("markerElement");
-
-      markers.append("use").attr("id", id)
-        .attr("xlink:href", "#marker_inn").attr("data-id", "#marker_inn")
-        .attr("data-x", x).attr("data-y", y).attr("x", x - 15).attr("y", y - 30)
-        .attr("data-size", 1).attr("width", 30).attr("height", 30);
-
+      const id = appendMarker(cell, "inn");
       const type = P(.3) ? "inn" : "tavern";
       const name = P(.5) ? ra(color) + " " + ra(animal) : P(.6) ? ra(adj) + " " + ra(animal) : ra(adj) + " " + capitalize(type);
       notes.push({id, name: "The " + name, legend:`A big and famous roadside ${type}`});
@@ -1340,14 +1315,7 @@ function addMarkers(number = 1) {
 
     for (let i=0; i < lighthouses.length && i < count; i++) {
       const cell = lighthouses[i][0], vertex = lighthouses[i][1];
-      const x = pack.vertices.p[vertex][0], y = pack.vertices.p[vertex][1];
-      const id = getNextId("markerElement");
-
-      markers.append("use").attr("id", id)
-        .attr("xlink:href", "#marker_lighthouse").attr("data-id", "#marker_lighthouse")
-        .attr("data-x", x).attr("data-y", y).attr("x", x - 15).attr("y", y - 30)
-        .attr("data-size", 1).attr("width", 30).attr("height", 30);
-
+      const id = appendMarker(cell, "lighthouse");
       const proper = cells.burg[cell] ? pack.burgs[cells.burg[cell]].name : Names.getCulture(cells.culture[cell]);
       notes.push({id, name: getAdjective(proper) + " Lighthouse" + name, legend:`A lighthouse to keep the navigation safe`});
     }
@@ -1360,14 +1328,7 @@ function addMarkers(number = 1) {
 
     for (let i=0; i < waterfalls.length && i < count; i++) {
       const cell = waterfalls[i];
-      const x = cells.p[cell][0], y = cells.p[cell][1];
-      const id = getNextId("markerElement");
-
-      markers.append("use").attr("id", id)
-        .attr("xlink:href", "#marker_waterfall").attr("data-id", "#marker_waterfall")
-        .attr("data-x", x).attr("data-y", y).attr("x", x - 15).attr("y", y - 30)
-        .attr("data-size", 1).attr("width", 30).attr("height", 30);
-
+      const id = appendMarker(cell, "waterfall");
       const proper = cells.burg[cell] ? pack.burgs[cells.burg[cell]].name : Names.getCulture(cells.culture[cell]);
       notes.push({id, name: getAdjective(proper) + " Waterfall" + name, legend:`An extremely beautiful waterfall`});
     }
@@ -1376,17 +1337,11 @@ function addMarkers(number = 1) {
   void function addBattlefields() {
     let battlefields = Array.from(cells.i).filter(i => cells.state[i] && cells.pop[i] > 2 && cells.h[i] < 50 && cells.h[i] > 25);
     let count = battlefields.length < 100 ? 0 : Math.ceil(battlefields.length / 500 * number);
-    if (count) addMarker("battlefield", "⚔", 50, 50, 20);
+    if (count) addMarker("battlefield", "⚔️", 50, 52, 12);
 
     while (count && battlefields.length) {
       const cell = battlefields.splice(Math.floor(Math.random() * battlefields.length), 1);
-      const x = cells.p[cell][0], y = cells.p[cell][1];
-      const id = getNextId("markerElement");
-      markers.append("use").attr("id", id)
-        .attr("xlink:href", "#marker_battlefield").attr("data-id", "#marker_battlefield")
-        .attr("data-x", x).attr("data-y", y).attr("x", x - 15).attr("y", y - 30)
-        .attr("data-size", 1).attr("width", 30).attr("height", 30);
-
+      const id = appendMarker(cell, "battlefield");
       const campaign = ra(states[cells.state[cell]].campaigns);
       const date = generateDate(campaign.start, campaign.end);
       const name = Names.getCulture(cells.culture[cell]) + " Battlefield";
@@ -1405,6 +1360,19 @@ function addMarkers(number = 1) {
     symbol.append("circle").attr("cx", 15).attr("cy", 15).attr("r", 10).attr("fill", "#ffffff").attr("stroke", "#000000").attr("stroke-width", 1);
     symbol.append("text").attr("x", x+"%").attr("y", y+"%").attr("fill", "#000000").attr("stroke", "#3200ff").attr("stroke-width", 0)
       .attr("font-size", size+"px").attr("dominant-baseline", "central").text(icon);
+  }
+
+  function appendMarker(cell, type) {
+    const x = cells.p[cell][0], y = cells.p[cell][1];
+    const id = getNextId("markerElement");
+    const name = "#marker_" + type;
+
+    markers.append("use").attr("id", id)
+      .attr("xlink:href", name).attr("data-id", name)
+      .attr("data-x", x).attr("data-y", y).attr("x", x - 15).attr("y", y - 30)
+      .attr("data-size", 1).attr("width", 30).attr("height", 30);
+
+    return id;
   }
 
   console.timeEnd("addMarkers");
@@ -1593,14 +1561,11 @@ function addZones(number = 1) {
   }
 
   function addEruption() {
-    const volcanoes = [];
-    markers.selectAll("use[data-id='#marker_volcano']").each(function() {
-      volcanoes.push(this.dataset.cell);
-    });
-    if (!volcanoes.length) return;
+    const volcano = document.getElementById("markers").querySelector("use[data-id='#marker_volcano']");
+    if (!volcano) return;
 
-    const cell = +ra(volcanoes);
-    const id = markers.select("use[data-cell='"+cell+"']").attr("id");
+    const x = +volcano.dataset.x, y = +volcano.dataset.y, cell = findCell(x, y);
+    const id = volcano.id;
     const note = notes.filter(n => n.id === id);
 
     if (note[0]) note[0].legend = note[0].legend.replace("Active volcano", "Erupting volcano");
@@ -1613,7 +1578,7 @@ function addZones(number = 1) {
       cellsArray.push(q);
       if (cellsArray.length > power) break;
       cells.c[q].forEach(e => {
-        if (used[e]) return;
+        if (used[e] || cells.h[e] < 20) return;
         used[e] = 1;
         queue.push(e);
       });

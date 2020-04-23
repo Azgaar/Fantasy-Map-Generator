@@ -208,11 +208,11 @@
 
   const getDefaultOptions = function() {
     return [
-      {name:"infantry", rural:.25, urban:.2, crew:1, type:"melee", separate:0},
-      {name:"archers", rural:.12, urban:.2, crew:1, type:"ranged", separate:0},
-      {name:"cavalry", rural:.12, urban:.03, crew:3, type:"mounted", separate:0},
-      {name:"artillery", rural:0, urban:.03, crew:8, type:"machinery", separate:0},
-      {name:"fleet", rural:0, urban:.015, crew:100, type:"naval", separate:1}
+      {icon: "⚔️", name:"infantry",  rural:.25,  urban:.2,   crew:1,   power:1,  type:"melee",     separate:0},
+      {icon: "🏹", name:"archers",   rural:.12,  urban:.2,   crew:1,   power:1,  type:"ranged",    separate:0},
+      {icon: "🐴", name:"cavalry",   rural:.12,  urban:.03,  crew:3,   power:4,  type:"mounted",   separate:0},
+      {icon: "💣", name:"artillery", rural:0,    urban:.03,  crew:8,   power:12, type:"machinery", separate:0},
+      {icon: "🌊", name:"fleet",     rural:0,    urban:.015, crew:100, power:50, type:"naval",     separate:1}
     ];
   }
 
@@ -271,16 +271,11 @@
   // get default regiment emblem
   const getEmblem = function(r) {
     if (r.n) return "🌊";
-    if (!Object.values(r.u).length) return "🛡️";
-    const mainUnit = Object.entries(r.u).sort((a,b) => b[1]-a[1])[0][0];
-    const type = options.military.find(u => u.name === mainUnit).type;
-    if (type === "ranged") return "🏹";
-    if (type === "mounted") return "🐴";
-    if (type === "machinery") return "💣";
-    if (type === "armored") return "🐢";
-    if (type === "aviation") return "🦅";
-    if (type === "magical") return "🔮";
-    else return "⚔️";
+    if (!Object.values(r.u).length) return "🔰"; // regiment without troops
+    if (cells.burg[r.cell] && pack.burgs[cells.burg[r.cell]].capital) return "👑"; // "Royal" regiment based in capital
+    const mainUnit = Object.entries(r.u).sort((a,b) => b[1]-a[1])[0][0]; // unit with more troops in regiment
+    const unit = options.military.find(u => u.name === mainUnit);
+    return unit.icon;
   }
 
   const generateNote = function(r, s) {
