@@ -2122,9 +2122,14 @@
 
       <button id="riverEditStyle" data-tip="Edit style for all rivers in Style Editor" class="icon-brush"></button>
       <button id="riverLength" data-tip="River length in selected units">0</button>
+      <button id="riverElevationProfile" data-tip="Show the elevation profile for the river" class="icon-chart-area"></button>
       <button id="riverNew" data-tip="Create new river clicking on map" class="icon-map-pin"></button>
       <button id="riverLegend" data-tip="Edit free text notes (legend) for the river" class="icon-edit"></button>
       <button id="riverRemove" data-tip="Remove river. Shortcut: Delete" class="icon-trash"></button>
+    </div>
+
+    <div id="elevationProfile" class="dialog" style="display: none" width="100%">
+      <div id="elevationGraph" data-tip="Elevation profile"></div>
     </div>
 
     <div id="routeEditor" class="dialog" style="display: none">
@@ -2139,6 +2144,7 @@
 
       <button id="routeEditStyle" data-tip="Edit route group style in Style Editor" class="icon-brush"></button>
       <button id="routeLength" data-tip="Route length in selected units">0</button>
+      <button id="routeElevationProfile" data-tip="Show the elevation profile for the route" class="icon-chart-area"></button>
       <button id="routeSplit" data-tip="Click on a control point to split the route" class="icon-unlink"></button>
       <button id="routeLegend" data-tip="Edit free text notes (legend) for the route" class="icon-edit"></button>
       <button id="routeNew" data-tip="Create new route clicking on map" class="icon-map-pin"></button>
@@ -3542,6 +3548,7 @@
   <script defer src="modules/ui/biomes-editor.js"></script>
   <script defer src="modules/ui/cultures-editor.js"></script>
   <script defer src="modules/ui/namesbase-editor.js"></script>
+  <script defer src="modules/ui/elevation-profile.js"></script>
   <script defer src="modules/ui/routes-editor.js"></script>
   <script defer src="modules/ui/lakes-editor.js"></script>
   <script defer src="modules/ui/coastline-editor.js"></script>

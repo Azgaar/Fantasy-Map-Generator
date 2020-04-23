@@ -33,6 +33,7 @@ function editRiver(id) {
   document.getElementById("riverWidthHide").addEventListener("click", hideRiverWidth);
   document.getElementById("riverWidthInput").addEventListener("input", changeWidth);
   document.getElementById("riverIncrement").addEventListener("input", changeIncrement);
+  document.getElementById("riverElevationProfile").addEventListener("click", showElevationProfile);
   
   document.getElementById("riverEditStyle").addEventListener("click", () => editStyle("rivers"));
   document.getElementById("riverNew").addEventListener("click", toggleRiverCreationMode);
@@ -94,6 +95,10 @@ function editRiver(id) {
     const [d, length] = Rivers.getPath(points, +riverWidthInput.value, +riverIncrement.value);
     elSelected.attr("d", d);
     updateRiverLength(length);
+
+    if (modules.elevation) {
+      showEPForRiver(elSelected.node());
+    }
   }
 
   function updateRiverLength(l = elSelected.node().getTotalLength() / 2) {
@@ -174,6 +179,11 @@ function editRiver(id) {
     const river = +elSelected.attr("id").slice(5);
     const r = pack.rivers.find(r => r.i === river);
     if (r) r.name = riverName.value = Names.getBase(rand(nameBases.length-1));
+  }
+
+  function showElevationProfile() {
+    modules.elevation = true;
+    showEPForRiver(node);
   }
 
   function showRiverWidth() {
