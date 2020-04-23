@@ -34,11 +34,11 @@
     #loading-text span:nth-child(3), #mapOverlay > span:nth-child(3) {animation-delay: 2s;}
     @keyframes blink {0% {opacity: 0;} 20% {opacity: 1;} 100% {opacity: .1;}}
   </style>
-  <link rel="preload" href="index.css?version=1.3" as="style">
-  <link rel="preload" href="icons.css?version=1.3" as="style">
+  <link rel="preload" href="index.css?version=1.4" as="style">
+  <link rel="preload" href="icons.css?version=1.4" as="style">
   <link rel="preload" href="libs/jquery-ui.css" as="style">
-  <link rel="stylesheet" href="index.css?version=1.3">
-  <link rel="stylesheet" href="icons.css?version=1.3">
+  <link rel="stylesheet" href="index.css?version=1.4">
+  <link rel="stylesheet" href="icons.css?version=1.4">
   <link rel="stylesheet" href="libs/jquery-ui.css">
 
 </head>
@@ -899,7 +899,7 @@
   <div id="loading">
     <div id="titleName"><t data-t="titleName">Azgaar's</t></div>
     <div id="title"><t data-t="title">Fantasy Map Generator</t></div>
-    <div id="version"><t data-t="version">v. </t>1.3</div>
+    <div id="version"><t data-t="version">v. </t>1.4</div>
     <p id="loading-text"><t data-t="loading">LOADING</t><span>.</span><span>.</span><span>.</span></p>
   </div>
 
@@ -960,6 +960,7 @@
           <li id="toggleRoutes"data-tip="Trade routes: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: U" onclick="toggleRoutes(event)">Ro<u>u</u>tes</li>
           <li id="toggleTemp" data-tip="Temperature map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: T" class="buttonoff" onclick="toggleTemp(event)"><u>T</u>emperature</li>
           <li id="togglePopulation" data-tip="Population map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: N" class="buttonoff" onclick="togglePopulation(event)">Populatio<u>n</u></li>
+          <li id="toggleIce" data-tip="Icebergs and glaciers: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: J" class="buttonoff" onclick="toggleIce(event)">Ice</li>
           <li id="togglePrec" data-tip="Precipitation map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: A" class="buttonoff" onclick="togglePrec(event)">Precipit<u>a</u>tion</li>
           <li id="toggleLabels" data-tip="Labels: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: L" onclick="toggleLabels(event)"><u>L</u>abels</li>
           <li id="toggleIcons" data-tip="Burg icons: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: I" onclick="toggleIcons(event)"><u>I</u>cons</li>
@@ -1002,6 +1003,7 @@
           <option value="fogging">Fogging</option>
           <option value="gridOverlay">Grid</option>
           <option value="terrs">Heightmap</option>
+          <option value="ice">Ice</option>
           <option value="labels">Labels</option>
           <option value="lakes">Lakes</option>
           <option value="landmass">Landmass</option>
@@ -1022,7 +1024,6 @@
           <option value="texture">Texture</option>
           <option value="compass">Wind Rose</option>
           <option value="zones">Zones</option>
-          <option value="seaIce">Ice</option>
         </select>
         <!-- <button id="restoreStyle" data-tip="Click to restore default style for all elements" class="icon-ccw styleButton" onclick="askToRestoreDefaultStyle()"></button> -->
 
@@ -1857,6 +1858,7 @@
           <button id="regenerateProvinces" data-tip="Click to regenerate provinces. States will remain as they are">Provinces</button>
           <button id="regenerateReligions" data-tip="Click to regenerate religions">Religions</button>
           <button id="regenerateMilitary" data-tip="Click to recalculate military forces based on current military options">Military</button>
+          <button id="regenerateIce" data-tip="Click to icebergs and glaciers">Ice</button>
           <button id="regenerateMarkers" data-tip="Click to regenerate markers. Hold Ctrl and click to set markers number multiplier">Markers</button>
           <button id="regenerateZones" data-tip="Click to regenerate zones. Hold Ctrl and click to set zones number multiplier">Zones</button>
         </div>
@@ -2160,6 +2162,14 @@
       <button id="lakeLegend" data-tip="Edit free text notes (legend) for the lake" class="icon-edit"></button>
     </div>
 
+    <div id="iceEditor" class="dialog" style="display: none">
+      <button id="iceEditStyle" data-tip="Edit style in Style Editor" class="icon-brush"></button>
+      <button id="iceRandomize" data-tip="Randomize Iceberd shape" class="icon-shuffle"></button>
+      <input id="iceSize" data-tip="Change Iceberg size" type="range" min=".05" max="1" step=".01">
+      <button id="iceNew" data-tip="Add an Iceberg (click on map)" class="icon-plus"></button>
+      <button id="iceRemove" data-tip="Remove the element. Shortcut: Delete" class="icon-trash"></button>
+    </div>
+
     <div id="coastlineEditor" class="dialog" style="display: none">
       <button id="coastlineGroupsShow" data-tip="Show the group selection" class="icon-tags"></button>
       <div id="coastlineGroupsSelection" style="display: none">
@@ -2373,15 +2383,13 @@
       <button id="markerIcon" data-tip="Change marker icon and edit positioning" class="icon-star"></button>
       <div id="markerIconSection" style="display: none">
         <i data-tip="Change marker icon size" class="icon-resize-full"></i>
-        <input id="markerIconSize" data-tip="Change marker icon size" type="range" min=10 max=30 step=.5 value=22 style="width:12em">
+        <input id="markerIconSize" data-tip="Change marker icon size" type="range" min=5 max=30 step=.5 value=22 style="width:12em"><br>
+        <i data-tip="Marker Icon" class="icon-info"></i>
+        <button id="markerIconSelect" data-tip="Click to select icon"></button>
         <i data-tip="Change marker horizontal shift" class="icon-resize-horizontal"></i>
         <input id="markerIconShiftX" data-tip="Change icon horizontal shift" type="number" value=50 style="width:3em">
         <i data-tip="Change marker vertical shift" class="icon-resize-vertical"></i>
         <input id="markerIconShiftY" data-tip="Change vertical shift" type="number" min=0 max=100 value=50 style="width:3em">
-        <span data-tip="Paste custom unicode symbol to use as icon">Paste here:</span>
-        <input id="markerIconCustom" data-tip="Paste custom unicode symbol to use as icon" style="width:3em">
-        <table id="markerIconTable"></table>
-        <div style="font-style: italic; color: darkgrey;">Emojis look different in different browsers. Visit <a href="https://emojipedia.org/" rel="noopener" target="_blank">Emojipedia</a> to check and find more</div>
       </div>
 
       <button id="markerStyle" data-tip="Change marker size and colors" class="icon-brush"></button>
@@ -2421,12 +2429,29 @@
       </div>
 
       <div id="regimentBottom">
+        <button id="regimentAttack" data-tip="Attack other regiment" class="icon-target"></button>
         <button id="regimentAdd" data-tip="Create new regiment or fleet" class="icon-user-plus"></button>
         <button id="regimentSplit" data-tip="Split regiment into 2 separate ones" class="icon-half"></button>
         <button id="regimentAttach" data-tip="Attach regiment to another one (include this regiment to another one)" class="icon-attach"></button>
         <button id="regimentRegenerateLegend" data-tip="Regenerate legend for this regiment" class="icon-retweet"></button>
         <button id="regimentLegend" data-tip="Edit free text notes (legend) for this regiment" class="icon-edit"></button>
         <button id="regimentRemove" data-tip="Remove regiment. Shortcut: Delete" class="icon-trash"></button>
+      </div>
+    </div>
+
+    <div id="battleScreen" class="dialog" style="display: none">
+      <div id="battleBody">
+        <div style="font-size:1.2em; font-weight: bold"><div style="width: 1.2em; display: inline-block">⚔</div><span>Attackers</span></div>
+        <table id="battleAttackers" style="padding: .2em .6em .2em .6em; border: 1px solid #ccc; margin: .0 0 .4em 0"><thead><tr></tr></thead><tbody></tbody></table>
+        <div style="font-size:1.2em; font-weight: bold"><div style="width: 1.2em; display: inline-block">🛡</div><span>Defenders</span></div>
+        <table id="battleDefenders" style="padding: .2em .6em .2em .6em; border: 1px solid #ccc; margin: .0 0 .4em 0"><thead><tr></tr></thead><tbody></tbody></table>
+      </div>
+
+      <div id="battleBottom">
+        <button id="battleRoll" data-tip="Roll dice to randomize sides power and battle phase" class="icon-die"></button>
+        <button id="battleNext" data-tip="Calculate and apply phase results" class="icon-play"></button>
+        <button id="battleApply" data-tip="Apply battle results" class="icon-check"></button>
+        <button id="battleCancel" data-tip="Cancel battle results and restore initial troop value" class="icon-cancel"></button>
       </div>
     </div>
 
@@ -2839,7 +2864,7 @@
     <div id="diplomacyEditor" class="dialog stable" style="display: none">
       <div id="diplomacyHeader" class="header">
         <div style="left:.2em" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">State&nbsp;</div>
-        <div style="left:12.4em" data-tip="Click to sort by diplomatical relations" class="sortable alphabetically" data-sortby="relations">Relations&nbsp;</div>
+        <div style="left:13.4em" data-tip="Click to sort by diplomatical relations" class="sortable alphabetically" data-sortby="relations">Relations&nbsp;</div>
       </div>
 
 	    <div id="diplomacyBodySection" class="table"></div>
@@ -3329,10 +3354,12 @@
       <table id="militaryOptionsTable">
         <thead>
           <tr>
-            <th data-tip="Unit name. If name is changed for existing unit, old unit will be replaced">Military unit</th>
+            <th data-tip="Unit icon">Icon</th>
+            <th data-tip="Unit name. If name is changed for existing unit, old unit will be replaced">Unit name</th>
             <th data-tip="Conscription percentage for rural population">Rural %</th>
             <th data-tip="Conscription percentage for urban population">Urban %</th>
-            <th data-tip="Average number of people in crew">Crew</th>
+            <th data-tip="Average number of people in crew (used for total personnel calculation)">Crew</th>
+            <th data-tip="Unit military power (used for battle simulation)">Power</th>
             <th data-tip="Unit type to apply special rules on forces recalculation">Type</th>
             <th data-tip="Check if unit is separate and can be stacked only with units of the same type">Sep.</th>
           </tr>
@@ -3380,6 +3407,15 @@
       <p><b>Culture:</b> <span id="infoCulture">n/a</span></p>
       <p><b>Religion:</b> <span id="infoReligion">n/a</span></p>
       <p><b>Burg:</b> <span id="infoBurg">n/a</span></p>
+    </div>
+
+    <div id="iconSelector" style="display: none" class="dialog">
+      <table id="iconTable" class="table pointer" style="font-size: 2em; text-align: center"></table>
+      <div style="font-style: italic; font-size: 1.2em; margin: .4em 0 0 .4em">
+        <span>Select from the list or paste a Unicode character here: </span>
+        <input id="iconInput" style="width: 2em">
+        <span>. See <a href="https://emojipedia.org" target="_blank">Emojipedia</a> for reference</span>
+      </div>
     </div>
 
     <div id="options3d" class="dialog stable" style="display: none">
@@ -3523,6 +3559,7 @@
   <script src="modules/religions-generator.js"></script>
   <script src="modules/military-generator.js"></script>
   <script src="libs/polylabel.min.js"></script>
+  <script src="libs/lineclip.js"></script>
   <script src="libs/jquery-ui.min.js"></script>
   <script src="libs/seedrandom.min.js"></script>
   <script src="modules/ui/layers.js"></script>
@@ -3532,7 +3569,7 @@
   <script defer src="modules/ui/style.js"></script>
   <script defer src="modules/ui/measurers.js"></script>
   <script defer src="modules/save-and-load.js"></script>
-  <script defer src="main.js?version=1.0"></script>
+  <script defer src="main.js?version=1.4"></script>
   <script defer src="modules/relief-icons.js"></script>
   <script defer src="modules/ui/tools.js"></script>
   <script defer src="modules/ui/world-configurator.js"></script>
@@ -3543,6 +3580,7 @@
   <script defer src="modules/ui/cultures-editor.js"></script>
   <script defer src="modules/ui/namesbase-editor.js"></script>
   <script defer src="modules/ui/routes-editor.js"></script>
+  <script defer src="modules/ui/ice-editor.js"></script>
   <script defer src="modules/ui/lakes-editor.js"></script>
   <script defer src="modules/ui/coastline-editor.js"></script>
   <script defer src="modules/ui/labels-editor.js"></script>
@@ -3560,6 +3598,7 @@
   <script defer src="modules/ui/military-overview.js"></script>
   <script defer src="modules/ui/regiments-overview.js"></script>
   <script defer src="modules/ui/regiment-editor.js"></script>
+  <script defer src="modules/ui/battle-screen.js"></script>
   <script defer src="modules/ui/editors.js"></script>
   <script defer src="modules/ui/3d.js"></script>
   <script defer src="libs/quantize.min.js"></script>

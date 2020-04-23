@@ -183,7 +183,7 @@ function overviewMilitary() {
       position: {my: "center", at: "center", of: "svg"},
       buttons: {
         Apply: applyMilitaryOptions,
-        Add: () => addUnitLine({name: "custom"+militaryOptionsTable.rows.length, rural: .2, urban: .5, crew: 1, type: "melee"}),
+        Add: () => addUnitLine({icon: "🛡️", name: "custom"+militaryOptionsTable.rows.length, rural: .2, urban: .5, crew: 1, power: 1, type: "melee"}),
         Restore: restoreDefaultUnits,
         Cancel: function() {$(this).dialog("close");}
       }, open: function() {
@@ -200,19 +200,20 @@ function overviewMilitary() {
     }
 
     function addUnitLine(u) {
-      const row = `<tr>
+      const row = document.createElement("tr");
+      row.innerHTML = `<td><button type="button" data-tip="Click to select unit icon">${u.icon||" "}</button></td>
         <td><input data-tip="Type unit name. If name is changed for existing unit, old unit will be replaced" value="${u.name}"></td>
         <td><input data-tip="Enter conscription percentage for rural population" type="number" min=0 max=100 step=.01 value="${u.rural}"></td>
         <td><input data-tip="Enter conscription percentage for urban population" type="number" min=0 max=100 step=.01 value="${u.urban}"></td>
-        <td><input data-tip="Enter average number of people in crew" type="number" min=1 step=1 value="${u.crew}"></td>
+        <td><input data-tip="Enter average number of people in crew (used for total personnel calculation)" type="number" min=1 step=1 value="${u.crew}"></td>
+        <td><input data-tip="Enter military power (used for battle simulation)" type="number" min=0 step=.1 value="${u.power}"></td>
         <td><select data-tip="Select unit type to apply special rules on forces recalculation">${types.map(t => `<option ${u.type === t ? "selected" : ""} value="${t}">${t}</option>`).join(" ")}</select></td>
         <td data-tip="Check if unit is separate and can be stacked only with units of the same type">
           <input id="${u.name}Separate" type="checkbox" class="checkbox" ${u.separate ? "checked" : ""}>
-          <label for="${u.name}Separate" class="checkbox-label"></label>
-        </td>
-        <td data-tip="Remove the unit"><span data-tip="Remove unit type" class="icon-trash-empty pointer" onclick="this.parentElement.parentElement.remove();"></span></td>
-      </tr>`;
-      table.insertAdjacentHTML("beforeend", row);
+          <label for="${u.name}Separate" class="checkbox-label"></label></td>
+        <td data-tip="Remove the unit"><span data-tip="Remove unit type" class="icon-trash-empty pointer" onclick="this.parentElement.parentElement.remove();"></span></td>`;
+      row.querySelector("button").addEventListener("click", function(e) {selectIcon(this.innerHTML, v => this.innerHTML = v)});
+      table.appendChild(row);
     }
 
     function restoreDefaultUnits() {
@@ -230,8 +231,14 @@ function overviewMilitary() {
 
       $("#militaryOptions").dialog("close");
       options.military = unitLines.map((r, i) => {
-        const [name, rural, urban, crew, type, separate] = Array.from(r.querySelectorAll("input, select")).map(d => d.type === "checkbox" ? d.checked : d.value);
-        return {name:names[i], rural:+rural||0, urban:+urban||0, crew:+crew||0, type, separate:+separate||0};
+        const [icon, name, rural, urban, crew, power, type, separate] = Array.from(r.querySelectorAll("input, select, button")).map(d => {
+          let value = d.value;
+          if (d.type === "number") value = +d.value || 0;
+          if (d.type === "checkbox") value = +d.checked || 0;
+          if (d.type === "button") value = d.innerHTML || "⠀";
+          return value;
+        });
+        return {icon, name:names[i], rural, urban, crew, power, type, separate};
       });
       localStorage.setItem("military", JSON.stringify(options.military));
       Military.generate();

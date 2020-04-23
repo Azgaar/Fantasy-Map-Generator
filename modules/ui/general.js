@@ -106,6 +106,7 @@ function showMapTooltip(point, e, i, g) {
   if (group === "lakes" && !land) {tip(`${capitalize(subgroup)} lake. Click to edit`); return;}
   if (group === "coastline") {tip("Click to edit the coastline"); return;}
   if (group === "zones") {tip(path[path.length-8].dataset.description); return;}
+  if (group === "ice") {tip("Click to edit the Ice"); return;}
 
   // covering elements
   if (layerIsOn("togglePrec") && land) tip("Annual Precipitation: "+ getFriendlyPrecipitation(i)); else
@@ -403,6 +404,7 @@ document.addEventListener("keyup", event => {
   else if (key === 85) toggleRoutes(); // "U" to toggle Routes layer
   else if (key === 84) toggleTemp(); // "T" to toggle Temperature layer
   else if (key === 78) togglePopulation(); // "N" to toggle Population layer
+  else if (key === 74) toggleIce(); // "J" to toggle Ice layer
   else if (key === 65) togglePrec(); // "A" to toggle Precipitation layer
   else if (key === 76) toggleLabels(); // "L" to toggle Labels layer
   else if (key === 73) toggleIcons(); // "I" to toggle Icons layer

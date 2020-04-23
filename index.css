@@ -60,13 +60,6 @@ textarea {
 	pointer-events: none;
 }
 
-#preview {
-	position: absolute;
-	bottom: 1em;
-	left: 1em;
-	cursor: pointer;
-}
-
 #pickerContainer {
 	position: absolute;
 	z-index: 100;
@@ -101,7 +94,7 @@ button, select, a, .pointer {
 	fill-rule: evenodd;
 }
 
-#lakes, #coastline, #armies {
+#lakes, #coastline, #armies, #ice {
 	cursor: pointer;
 }
 
@@ -1151,6 +1144,7 @@ div.slider .ui-slider-handle {
 
 .table {
 	max-height: 75vh;
+	max-width: 75vw;
 	overflow-x: hidden;
 	overflow-y: auto;
 }
@@ -1657,7 +1651,6 @@ rect.fillRect {
 
 #militaryOptionsTable input {
 	width: 9em;
-	padding-left: 3px;
 	border: 1px solid #d4d4d4;
 }
 
@@ -1758,24 +1751,6 @@ div.textual span, .textual legend {
 
 #markerEditor > button {
 	vertical-align: top;
-}
-
-#markerIconTable {
-	font-size: 1.6em;
-	cursor: pointer;
-}
-
-#markerIconTable td:hover {
-	transition: .1s;
-	color: #3c3ca9;
-}
-
-#markerIconTable td:active {
-	transform: translate(0px, 1px);
-}
-
-#markerIconTable td.selected {
-	outline: 1px solid #9b9b9b;
 }
 
 .highlighted {
@@ -2025,7 +2000,7 @@ svg.button {
 	left: 50%;
 	top: 50%;
 	transform: translate(-50%, -50%);
-	max-width: 21em;
+	max-width: 22em;
 	background-color: #fff;
 	padding: 1.2em;
 	border: solid 1px #000;

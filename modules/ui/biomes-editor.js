@@ -215,6 +215,8 @@ function editBiomes() {
 
   function addCustomBiome() {
     const b = biomesData, i = biomesData.i.length;
+    if (i > 254) {tip("Maximum number of biomes reached (255), data cleansing is required", false, "error"); return;}
+
     b.i.push(i);
     b.color.push(getRandomColor());
     b.habitability.push(50);

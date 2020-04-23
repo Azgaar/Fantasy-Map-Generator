@@ -32,10 +32,10 @@ function getDefaultPresets() {
     "cultural": ["toggleBorders", "toggleCultures", "toggleIcons", "toggleLabels", "toggleRivers", "toggleRoutes", "toggleScaleBar"],
     "religions": ["toggleBorders", "toggleIcons", "toggleLabels", "toggleReligions", "toggleRivers", "toggleRoutes", "toggleScaleBar"],
     "provinces": ["toggleBorders", "toggleIcons", "toggleProvinces", "toggleRivers", "toggleScaleBar"],
-    "biomes": ["toggleBiomes", "toggleRivers", "toggleScaleBar"],
+    "biomes": ["toggleBiomes", "toggleIce", "toggleRivers", "toggleScaleBar"],
     "heightmap": ["toggleHeight", "toggleRivers"],
     "physical": ["toggleCoordinates", "toggleHeight", "toggleRivers", "toggleScaleBar"],
-    "poi": ["toggleBorders", "toggleHeight", "toggleIcons", "toggleMarkers", "toggleRivers", "toggleRoutes", "toggleScaleBar"],
+    "poi": ["toggleBorders", "toggleHeight", "toggleIce", "toggleIcons", "toggleMarkers", "toggleRivers", "toggleRoutes", "toggleScaleBar"],
     "military": ["toggleBorders", "toggleIcons", "toggleLabels", "toggleMilitary", "toggleRivers", "toggleRoutes", "toggleScaleBar", "toggleStates"],
     "landmass": ["toggleScaleBar"]
   }
@@ -345,7 +345,7 @@ function drawBiomes() {
     const edgeVerticle = cells.v[i].find(v => vertices.c[v].some(i => cells.biome[i] !== b));
     const chain = connectVertices(edgeVerticle, b);
     if (chain.length < 3) continue;
-    const points = chain.map(v => vertices.p[v]);
+    const points = clipPoly(chain.map(v => vertices.p[v]), 1);
     paths[b] += "M" + points.join("L") + "Z";
   }
 
@@ -456,38 +456,77 @@ function drawCells() {
   cells.append("path").attr("d", path);
 }
 
-function drawSeaIce() {
-  const seaIce = viewbox.append("g").attr("id", "seaIce").attr("fill", "#e8f0f6").attr("stroke", "#e8f0f6").attr("filter", "url(#dropShadow05)");//.attr("opacity", .8);
-  for (const i of grid.cells.i) {
-    const t = grid.cells.temp[i] ;
-    if (t > 2) continue;
-    if (t > -5 && grid.cells.h[i] >= 20) continue;
-    if (t < -5) drawpolygon(i);
-    if (P(normalize(t, -5.5, 2.5))) continue; // t[-5; 2]
-    const size = t < -14 ? 0 : t > -6 ? (7 + t) / 10 : (15 + t) / 100; // [0; 1], where 0 = full size, 1 = zero size
-    resizePolygon(i, rn(size * (.2 + rand() * .9), 2));
+function toggleIce() {
+  if (!layerIsOn("toggleIce")) {
+    turnButtonOn("toggleIce");
+    $('#ice').fadeIn();
+    if (event && isCtrlClick(event)) editStyle("ice");
+  } else {
+    if (event && isCtrlClick(event)) {editStyle("ice"); return;}
+    $('#ice').fadeOut();
+    turnButtonOff("toggleIce");
   }
+}
 
-  // -9: .06
-  // -8: .07
-  // -7: .08
-  // -6: .09
+function drawIce() {
+  const cells = grid.cells, vertices = grid.vertices, n = cells.i.length, temp = cells.temp, h = cells.h;
+  const used = new Uint8Array(cells.i.length);
+  Math.seedrandom(seed);
 
-  // -5: .2
-  // -4: .3
-  // -3: .4
-  // -2: .5
-  // -1: .6
-  //  0: .7
+  const shieldMin = -6; // min temp to form ice shield (glacier)
+  const icebergMax = 2; // max temp to form an iceberg
 
-  function drawpolygon(i) {
-    seaIce.append("polygon").attr("points", getGridPolygon(i));
+  for (const i of grid.cells.i) {
+    const t = temp[i];
+    if (t > icebergMax) continue; // too warm: no ice
+    if (t > shieldMin && h[i] >= 20) continue; // non-glacier land: no ice
+
+    if (t <= shieldMin) {
+      // very cold: ice shield
+      if (used[i]) continue; // already rendered
+      const onborder = cells.c[i].some(n => temp[n] > shieldMin);
+      if (!onborder) continue; // need to start from onborder cell
+      const vertex = cells.v[i].find(v => vertices.c[v].some(i => temp[i] > shieldMin));
+      const chain = connectVertices(vertex);
+      if (chain.length < 3) continue;
+      const points = clipPoly(chain.map(v => vertices.p[v]));
+      ice.append("polygon").attr("points", points).attr("type", "iceShield");
+      continue;
+    }
+
+    // mildly cold: iceberd
+    if (P(normalize(t, -7, 2.5))) continue; // t[-5; 2] cold: skip some cells
+    if (grid.features[cells.f[i]].type === "lake") continue; // lake: no icebers
+    let size = (6.5 + t) / 10; // iceberg size: 0 = full size, 1 = zero size
+    if (cells.t[i] === -1) size *= 1.3; // coasline: smaller icebers
+    size = Math.min(size * (.4 + rand() * 1.2), .95); // randomize iceberd size
+    resizePolygon(i, size);
   }
 
   function resizePolygon(i, s) {
     const c = grid.points[i];
-    const points = getGridPolygon(i).map(p => [p[0] + (c[0]-p[0]) * s, p[1] + (c[1]-p[1]) * s]);
-    seaIce.append("polygon").attr("points", points);
+    const points = getGridPolygon(i).map(p => [(p[0] + (c[0]-p[0]) * s)|0, (p[1] + (c[1]-p[1]) * s)|0]);
+    ice.append("polygon").attr("points", points).attr("cell", i).attr("size", rn(1-s, 2));
+  }
+
+  // connect vertices to chain
+  function connectVertices(start) {
+    const chain = []; // vertices chain to form a path
+    for (let i=0, current = start; i === 0 || current !== start && i < 20000; i++) {
+      const prev = last(chain); // previous vertex in chain
+      chain.push(current); // add current vertex to sequence
+      const c = vertices.c[current]; // cells adjacent to vertex
+      c.filter(c => temp[c] <= shieldMin).forEach(c => used[c] = 1);
+      const c0 = c[0] >= n || temp[c[0]] > shieldMin;
+      const c1 = c[1] >= n || temp[c[1]] > shieldMin;
+      const c2 = c[2] >= n || temp[c[2]] > shieldMin;
+      const v = vertices.v[current]; // neighboring vertices
+      if (v[0] !== prev && c0 !== c1) current = v[0];
+      else if (v[1] !== prev && c1 !== c2) current = v[1];
+      else if (v[2] !== prev && c0 !== c2) current = v[2];
+      if (current === chain[chain.length - 1]) {console.error("Next vertex is not found"); break;}
+    }
+    return chain;
   }
 }
 

@@ -965,7 +965,7 @@ function editHeightmap() {
     closeDialogs("#imageConverter");
 
     $("#imageConverter").dialog({
-      title: "Image Converter", minHeight: "auto", width: "19.5em", resizable: false,
+      title: "Image Converter", maxHeight: svgHeight*.75, minHeight: "auto", width: "19.5em", resizable: false,
       position: {my: "right top", at: "right-10 top+10", of: "svg"},
       beforeClose: closeImageConverter
     });
