@@ -952,8 +952,6 @@ function drawCoastline() {
   const waterMask = defs.select("#water");
   lineGen.curve(d3.curveBasisClosed);
 
-  zoom.translateExtent([[-200, -200],[graphWidth+200, graphHeight+200]]);
-
   for (const i of cells.i) {
     const startFromEdge = !i && cells.h[i] >= 20;
     if (!startFromEdge && cells.t[i] !== -1 && cells.t[i] !== 1) continue; // non-edge cell

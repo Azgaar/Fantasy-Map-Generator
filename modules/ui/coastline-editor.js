@@ -61,7 +61,7 @@ function editCoastline(node = d3.event.target) {
     lineGen.curve(d3.curveBasisClosed);
     const f = +elSelected.attr("data-f");
     const vertices = pack.features[f].vertices;
-    const points = vertices.map(v => pack.vertices.p[v]);
+    const points = clipPoly(vertices.map(v => pack.vertices.p[v]), 1);
     const d = round(lineGen(points));
     elSelected.attr("d", d);
     defs.select("mask#land > path#land_"+f).attr("d", d); // update land mask

@@ -118,6 +118,7 @@ optionsContent.addEventListener("click", function(event) {
   else if (id === "optionsMapHistory") showSeedHistoryDialog();
   else if (id === "optionsCopySeed") copyMapURL();
   else if (id === "zoomExtentDefault") restoreDefaultZoomExtent();
+  else if (id === "translateExtent") toggleTranslateExtent(event.target);
 });
 
 function mapSizeInputChange() {
@@ -138,7 +139,6 @@ function changeMapSize() {
   landmass.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
   oceanPattern.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
   oceanLayers.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
-  //defs.select("#mapClip > rect").attr("width", maxWidth).attr("height", maxHeight);
 
   fitScaleBar();
   if (window.fitLegendBox) fitLegendBox();
@@ -152,10 +152,7 @@ function applyMapSize() {
   svgWidth = Math.min(graphWidth, window.innerWidth);
   svgHeight = Math.min(graphHeight, window.innerHeight);
   svg.attr("width", svgWidth).attr("height", svgHeight);
-  zoom.translateExtent([[0, 0],[graphWidth, graphHeight]]).scaleExtent([zoomMin, zoomMax]).scaleTo(svg, zoomMin);
-  //viewbox.attr("transform", null).attr("clip-path", "url(#mapClip)");
-  //defs.append("clipPath").attr("id", "mapClip").append("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
-  //zoom.translateExtent([[-svgWidth*.2, -graphHeight*.2], [svgWidth*1.2, graphHeight*1.2]]);
+  zoom.translateExtent([[0, 0], [graphWidth, graphHeight]]).scaleExtent([zoomMin, zoomMax]).scaleTo(svg, zoomMin);
 }
 
 function toggleFullscreen() {
@@ -169,6 +166,12 @@ function toggleFullscreen() {
     mapHeightInput.value = graphHeight;
   }
   changeMapSize();
+}
+
+function toggleTranslateExtent(el) {
+  const on = el.dataset.on = +!(+el.dataset.on);
+  if (on) zoom.translateExtent([[-graphWidth/2, -graphHeight/2], [graphWidth*1.5, graphHeight*1.5]]);
+  else zoom.translateExtent([[0, 0], [graphWidth, graphHeight]]);
 }
 
 function generateMapWithSeed() {

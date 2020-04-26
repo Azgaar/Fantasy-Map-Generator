@@ -1797,7 +1797,8 @@
               <input data-tip="Maximal possible zoom level (should be > 1)" id="zoomExtentMax" class="paired" type="number" min=1 max=50 value=20>
             </td>
             <td>
-              <i data-tip="Restore default [1, 20] zoom extent" id="zoomExtentDefault" class="icon-ccw"></i>
+              <i data-tip="Restore default zoom extent (1, 20)" id="zoomExtentDefault" class="icon-ccw"></i>
+              <i data-tip="Allow to drag map beyond canvas borders" id="translateExtent" data-on=0 class="icon-hand-paper-o"></i>
             </td>
           </tr>
 
@@ -2186,7 +2187,7 @@
       </div>
 
       <button id="coastlineEditStyle" data-tip="Edit coastline group style in Style Editor" class="icon-brush"></button>
-      <button id="coastlineArea" data-tip="Lake area in selected units">0</button>
+      <button id="coastlineArea" data-tip="Landmass area in selected units">0</button>
     </div>
 
     <div id="reliefEditor" class="dialog" style="display: none">
