@@ -48,13 +48,13 @@ function lineclip(points, bbox, result) {
 }
 
 // Sutherland-Hodgeman polygon clipping algorithm
-function polygonclip(points, bbox, secure = false) {
+function polygonclip(points, bbox, secure = 0) {
     var result, edge, prev, prevInside, inter, i, p, inside;
 
     // clip against each side of the clip rectangle
     for (edge = 1; edge <= 8; edge *= 2) {
         result = [];
-        prev = points[points.length - 1];
+        prev = points[points.length-1];
         prevInside = !(bitCode(prev, bbox) & edge);
 
         for (i = 0; i < points.length; i++) {
@@ -62,10 +62,10 @@ function polygonclip(points, bbox, secure = false) {
             inside = !(bitCode(p, bbox) & edge);
             inter = inside !== prevInside; // segment goes through the clip window
 
-            if (secure && inter && inside && i) result.push(points[i-1]); // add previous point in secure mode (to get a correct d3 curve)
-            if (inter) result.push(intersect(prev, p, edge, bbox)); // add an intersection point
+            const pi = intersect(prev, p, edge, bbox);
+            if (inter) result.push(pi); // add an intersection point
+            if (secure && inter) result.push(pi, pi); // add additional intersection points to secure correct d3 curve
             if (inside) result.push(p); // add a point if it's inside
-            else if (secure && prevInside) result.push(p); // // add an outside point if in secure mode (to get a correct d3 curve)
 
             prev = p;
             prevInside = inside;
@@ -73,6 +73,7 @@ function polygonclip(points, bbox, secure = false) {
         points = result;
         if (!points.length) break;
     }
+    //result.forEach(p => debug.append("circle").attr("cx", p[0]).attr("cy", p[1]).attr("r", .6).attr("fill", "red"));
     return result;
 }
 

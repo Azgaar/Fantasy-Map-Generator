@@ -326,13 +326,13 @@ div.tab > button#optionsHide {
 .tab {
 	overflow: hidden;
 	border-bottom: 1px solid #5d4651;
-	height: 2.3em;
+	height: 2.2em;
 }
 
 #options p {
 	font-style: italic;
 	font-weight: bold;
-	margin-bottom: 0;
+	margin: .8em 0 0 0;
 }
 
 #aboutContent {
@@ -346,6 +346,7 @@ div.tab > button#optionsHide {
 #aboutContent a {
 	color: #1d1b1c;
 	font-weight: bold;
+	text-decoration: underline;
 }
 
 #optionsContent span {
@@ -572,10 +573,9 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 }
 
 .tab > button.options {
-	/* width: 23.25%; */
 	width: 18.6%;
 	height: 100%;
-	padding: 7px 0px;
+	padding: 6px 0px;
 }
 
 button.options {
@@ -943,18 +943,18 @@ body button.noicon {
 }
 
 .drag-trigger {
-	border-left: 12px solid transparent;
-	border-right: 12px solid #916e7f;
-	border-top: 12px solid transparent;
+	border-left: 1em solid transparent;
+	border-right: 1em solid #000;
+	border-top: 1em solid transparent;
 	position: absolute;
-	right: 0;
-	top: 100%;
-	margin-top: -12px;
+	right: -1px;
+	bottom: -1px;
+	opacity: .3;
 }
 
 .drag-trigger:hover {
 	cursor: move;
-	border-right-color: #5e4fa2;
+	opacity: .6;
 }
 
 .tint {
@@ -1684,7 +1684,7 @@ ul.share-buttons li {
 }
 
 ul.share-buttons img {
-	width: 18px;
+	width: 2em;
 }
 
 input[type="checkbox"] {

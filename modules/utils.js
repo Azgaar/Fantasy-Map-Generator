@@ -376,13 +376,13 @@ function common(a, b) {
 }
 
 // clip polygon by graph bbox
-function clipPoly(points, secure = false) {
+function clipPoly(points, secure = 0) {
   return polygonclip(points, [0, 0, graphWidth, graphHeight], secure);
 }
 
-// check if char is vowel
+// check if char is vowel or can serve as vowel
 function vowel(c) {
-  return "aeiouy".includes(c);
+  return `aeiouyɑ'əøɛœæɶɒɨɪɔɐʊɤɯаоиеёэыуюяàèìòùỳẁȁȅȉȍȕáéíóúýẃőűâêîôûŷŵäëïöüÿẅãẽĩõũỹąęįǫųāēīōūȳăĕĭŏŭǎěǐǒǔȧėȯẏẇạẹịọụỵẉḛḭṵṳ`.includes(c);
 }
 
 // remove vowels from the end of the string

@@ -2,45 +2,35 @@
 
 function showEPForRoute(node) {
   const points = [];
-  var prevB=0, i=0, j=0, b=0, ma=0, mi=100, h=0;
   debug.select("#controlPoints").selectAll("circle").each(function() {
-    i = findCell(this.getAttribute("cx"), this.getAttribute("cy"));
+    const i = findCell(this.getAttribute("cx"), this.getAttribute("cy"));
     points.push(i);
   });
 
   const routeLen = node.getTotalLength() * distanceScaleInput.value;
-
   showElevationProfile(points, routeLen, false);
 }
 
 function showEPForRiver(node) {
   const points = [];
-  var prevB=0, i=0, j=0, b=0, ma=0, mi=100, h=0;
   debug.select("#controlPoints").selectAll("circle").each(function() {
-    i = findCell(this.getAttribute("cx"), this.getAttribute("cy"));
+    const i = findCell(this.getAttribute("cx"), this.getAttribute("cy"));
     points.push(i);
   });
 
   const riverLen = (node.getTotalLength() / 2) * distanceScaleInput.value;
-
   showElevationProfile(points, riverLen, true);
 }
 
 function resizeElevationProfile() {
 }
 
-function closeElevationProfile() {
-  modules.elevation = false;
-}
-
 function showElevationProfile(data, routeLen, isRiver) {
-// data is an array of cell indexes, routeLen is the distance, isRiver should be true for rivers, false otherwise
+  // data is an array of cell indexes, routeLen is the distance, isRiver should be true for rivers, false otherwise
   document.getElementById("elevationGraph").innerHTML = "";
 
   $("#elevationProfile").dialog({
-    title: "Elevation profile", resizable: false,
-    width: window.width,
-    close: closeElevationProfile,
+    title: "Elevation profile", resizable: false, width: window.width,
     position: {my: "left top", at: "left+20 bottom-240", of: window, collision: "fit"}
   });
 

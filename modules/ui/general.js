@@ -223,16 +223,20 @@ function getRiverInfo(id) {
   return r ? `${r.name} ${r.type} (${id})` : "n/a";
 }
 
+function getCellPopulation(i) {
+  const rural = pack.cells.pop[i] * populationRate.value;
+  const urban = pack.cells.burg[i] ? pack.burgs[pack.cells.burg[i]].population * populationRate.value * urbanization.value : 0;
+  return [rural, urban];
+}
+
 // get user-friendly (real-world) population value from map data
 function getFriendlyPopulation(i) {
-  const rural = pack.cells.pop[i] * populationRate.value;
-  const urban = pack.cells.burg[i] ? pack.burgs[pack.cells.burg[i]].population * populationRate.value * urbanization.value : 0;  
+  const [rural, urban] = getCellPopulation(i);
   return `${si(rural+urban)} (${si(rural)} rural, urban ${si(urban)})`;
 }
 
 function getPopulationTip(i) {
-  const rural = pack.cells.pop[i] * populationRate.value;
-  const urban = pack.cells.burg[i] ? pack.burgs[pack.cells.burg[i]].population * populationRate.value * urbanization.value : 0;  
+  const [rural, urban] = getCellPopulation(i);
   return `Cell population: ${si(rural+urban)}; Rural: ${si(rural)}; Urban: ${si(urban)}`;
 }
 

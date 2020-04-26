@@ -260,7 +260,7 @@ function drawTemp() {
   temperature.append("path").attr("d", `M0,0 h${svgWidth} v${svgHeight} h${-svgWidth} Z`).attr("fill", scheme(1 - (min - tMin) / delta)).attr("stroke", "none");
 
   for (const t of isolines) {
-    const path = chains.filter(c => c[0] === t).map(c => round(lineGen(c[1]))).join();
+    const path = chains.filter(c => c[0] === t).map(c => round(lineGen(c[1]))).join("");
     if (!path) continue;
     const fill = scheme(1 - (t - tMin) / delta), stroke = d3.color(fill).darker(.2);
     temperature.append("path").attr("d", path).attr("fill", fill).attr("stroke", stroke);

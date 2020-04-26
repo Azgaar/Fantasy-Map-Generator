@@ -691,7 +691,7 @@
 
         const naval = states[f].type === "Naval" && states[t].type === "Naval" && cells.f[states[f].center] !== cells.f[states[t].center];
         const neib = naval ? false : states[f].neighbors.includes(t);
-        const neibOfNeib = naval || neib ? false : states[f].neighbors.map(n => states[n].neighbors).join().includes(t);
+        const neibOfNeib = naval || neib ? false : states[f].neighbors.map(n => states[n].neighbors).join("").includes(t);
 
         let status = naval ? rw(navals) : neib ? rw(neibs) : neibOfNeib ? rw(neibsOfNeibs) : rw(far);
 

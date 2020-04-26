@@ -326,6 +326,7 @@ async function loadFromCloud() {
 function saveGeoJSON_Cells() {
   let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
   const cells = pack.cells, v = pack.vertices;
+  const getPopulation = i => {const [r, u] = getCellPopulation(i); return rn(r+u)};
 
   cells.i.forEach(i => {
     data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"Polygon\", \"coordinates\": [[";
@@ -340,13 +341,13 @@ function saveGeoJSON_Cells() {
     data += "["+x+","+y+"]";
     data += "]] },\n   \"properties\": {\n";
 
-    let height = parseInt(getFriendlyHeight([cells.p[i][0],cells.p[i][1]]));
+    const height = parseInt(getFriendlyHeight([cells.p[i][0],cells.p[i][1]]));
 
     data += "      \"id\": \""+i+"\",\n";
     data += "      \"height\": \""+height+"\",\n";
     data += "      \"biome\": \""+cells.biome[i]+"\",\n";
     data += "      \"type\": \""+pack.features[cells.f[i]].type+"\",\n";
-    data += "      \"population\": \""+getFriendlyPopulation(i)+"\",\n";
+    data += "      \"population\": \""+getPopulation(i)+"\",\n";
     data += "      \"state\": \""+cells.state[i]+"\",\n";
     data += "      \"province\": \""+cells.province[i]+"\",\n";
     data += "      \"culture\": \""+cells.culture[i]+"\",\n";

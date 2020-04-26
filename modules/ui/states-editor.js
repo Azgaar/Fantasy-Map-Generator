@@ -184,7 +184,7 @@ function editStates() {
     path.transition().duration(dur).attrTween("stroke-dasharray", function() {return t => i(t)});
   }
 
-  function stateHighlightOff(event) {
+  function stateHighlightOff() {
     debug.selectAll(".highlight").each(function() {
       d3.select(this).transition().duration(1000).attr("opacity", 0).remove();
     });
@@ -201,6 +201,12 @@ function editStates() {
       statesBody.select("#state-gap"+state).attr("stroke", fill);
       const halo = d3.color(fill) ? d3.color(fill).darker().hex() : "#666666";
       statesHalo.select("#state-border"+state).attr("stroke", halo);
+
+      // recolor regiments
+      const solidColor = fill[0] === "#" ? fill : "#999";
+      const darkerColor = d3.color(solidColor).darker().hex();
+      armies.select("#army"+state).attr("fill", solidColor);
+      armies.select("#army"+state).selectAll("g > rect:nth-of-type(2)").attr("fill", darkerColor);
     }
 
     openPicker(currentFill, callback);
