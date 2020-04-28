@@ -215,7 +215,7 @@ function editRegiment(selector) {
       .style("dominant-baseline", "central").style("text-anchor", "middle")
       .transition(attack).attr("font-size", 1000).attr("opacity", 0).remove();
 
-    tip("", false);
+    clearMainTip();
     $("#regimentEditor").dialog("close");
   }
 

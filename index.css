@@ -942,6 +942,25 @@ body button.noicon {
 	stroke: #2c0808;
 }
 
+#battleBody > table {
+	padding: .2em .6em .2em .6em;
+	border: 1px solid #ccc;
+	margin: 0 0 .4em 0;
+	display: block;
+	overflow: auto;
+	max-height: 34vh;
+}
+
+#battleBody > table .regiment {
+	width: 13em;
+	font-weight: bold;
+}
+
+tr.battleCasualties, tr.battleSurvivors {
+	font-style: italic;
+	font-size: .9em;
+}
+
 .drag-trigger {
 	border-left: 1em solid transparent;
 	border-right: 1em solid #000;

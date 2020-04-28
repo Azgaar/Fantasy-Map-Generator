@@ -293,7 +293,15 @@ async function saveMap() {
   document.body.appendChild(link);
   link.click();
   tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
-  window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
+  window.URL.revokeObjectURL(URL);
+
+  // send saved files count and size to server for usage analysis (for the future Cloud storage)
+  publicstorage.get("fmg").then(fmg => {
+    if (!fmg) return;
+    fmg.size = (fmg.size * fmg.maps + blob.size) / (fmg.maps + 1);
+    fmg.maps += 1;
+    publicstorage.set("fmg", fmg).then(fmg => console.log(fmg));
+  });
 }
 
 // Send .map file to server [test function]

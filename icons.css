@@ -265,3 +265,11 @@
   font-family: monospace;
 }
 .icon-die:before {content:'🎲';}
+
+.icon-button-plus:before {content:'➕'; padding-right: .4em;}
+.icon-button-die:before {content:'🎲'; padding-right: .4em;}
+.icon-button-power:before {content:'💪'; padding-right: .6em;}
+.icon-button-skirmish:before {content:'🎯'; padding-right: .4em;}
+.icon-button-melee:before {content:'🗡'; padding-right: .4em;}
+.icon-button-pursue:before {content:'🐎'; padding-right: .4em;}
+.icon-button-retreat:before {content:'🏳️'; padding-right: .4em;}

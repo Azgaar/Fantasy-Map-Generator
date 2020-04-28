@@ -1,5 +1,4 @@
 "use strict";
-
 function showEPForRoute(node) {
   const points = [];
   debug.select("#controlPoints").selectAll("circle").each(function() {
@@ -34,7 +33,7 @@ function showElevationProfile(data, routeLen, isRiver) {
     position: {my: "left top", at: "left+20 bottom-240", of: window, collision: "fit"}
   });
 
-  // Azgaar asked if we can prevent river graphs from showing rivers as flowing uphill
+  // prevent river graphs from showing rivers as flowing uphill
   var slope = 0;
   if (isRiver) {
     if (pack.cells.h[data[0]] < pack.cells.h[data[data.length-1]]) {
@@ -73,10 +72,6 @@ function showElevationProfile(data, routeLen, isRiver) {
     j++;
   }
 
-  const heightDiff = ma-mi+1;
-
-
-//  const w = document.getElementById("elevationProfile").clientWidth - 32;
   const w = window.innerWidth-280;
   h = 100;
 
@@ -88,10 +83,7 @@ function showElevationProfile(data, routeLen, isRiver) {
   chart.append("defs").append("marker").attr("id", "arrowhead").attr("orient", "auto").attr("markerWidth", "2").attr("markerHeight", "4").attr("refX", "0.1").attr("refY", "2").append("path").attr("d", "M0,0 V4 L2,2 Z");
 
   // main graph line
-  var lineFunc = d3.line()
-    .x(function(d) { return d.x * w / points.length + xOffset})
-    .y(function(d) { return h-d.y + yOffset });
-
+  var lineFunc = d3.line().x(d => d.x * w / points.length + xOffset).y(d => h-d.y + yOffset);
   chart.append("path").attr("d", lineFunc(points)).attr("stroke", "purple").attr("fill", "none").attr("id", "elevationLine");
 
   // y-axis labels for starting and ending heights

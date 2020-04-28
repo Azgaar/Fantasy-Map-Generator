@@ -2445,15 +2445,30 @@
       </div>
     </div>
 
-    <div id="battleScreen" class="dialog" style="display: none">
+    <div id="battleScreen" class="dialog stable" style="display: none">
       <div id="battleBody">
-        <div style="font-size:1.2em; font-weight: bold"><div style="width: 1.2em; display: inline-block">⚔</div><span>Attackers</span></div>
-        <table id="battleAttackers" style="padding: .2em .6em .2em .6em; border: 1px solid #ccc; margin: .0 0 .4em 0"><thead><tr></tr></thead><tbody></tbody></table>
-        <div style="font-size:1.2em; font-weight: bold"><div style="width: 1.2em; display: inline-block">🛡</div><span>Defenders</span></div>
-        <table id="battleDefenders" style="padding: .2em .6em .2em .6em; border: 1px solid #ccc; margin: .0 0 .4em 0"><thead><tr></tr></thead><tbody></tbody></table>
+        <div style="font-size:1.2em; font-weight: bold">
+          <div style="width: 1.2em; display: inline-block">⚔</div><span>Attackers</span>
+          <div style="float: right; font-size: .7em">
+            <span data-tip="Attackers power considering phase and randon factor" style="padding: .2em" class="icon-button-power">43</span>
+            <button data-tip="Battle phase. Click to change" class="icon-button-pursue"></button>
+            <button data-tip="Random factor for attackers. Click to re-roll" style="padding: .1em .2em" class="icon-button-die">12</button>
+          </div>
+        </div>
+        <table id="battleAttackers"><thead><tr></tr></thead><tbody></tbody></table>
+        <div style="font-size:1.2em; font-weight: bold">
+          <div style="width: 1.2em; display: inline-block">🛡</div><span>Defenders</span>
+          <div style="float: right; font-size: .7em">
+            <span data-tip="Defenders power considering phase and randon factor" style="padding: .2em" class="icon-button-power">65</span>
+            <button data-tip="Battle phase. Click to change" class="icon-button-skirmish"></button>
+            <button data-tip="Random factor for defenders. Click to re-roll" style="padding: .1em .2em" class="icon-button-die">05</button>
+          </div>
+        </div>
+        <table id="battleDefenders"><thead><tr></tr></thead><tbody></tbody></table>
       </div>
 
       <div id="battleBottom">
+        <button id="battleAddRegiment" data-tip="Add regiment to the battle" class="icon-user-plus"></button>
         <button id="battleRoll" data-tip="Roll dice to randomize sides power and battle phase" class="icon-die"></button>
         <button id="battleNext" data-tip="Calculate and apply phase results" class="icon-play"></button>
         <button id="battleApply" data-tip="Apply battle results" class="icon-check"></button>
@@ -3360,8 +3375,8 @@
           <tr>
             <th data-tip="Unit icon">Icon</th>
             <th data-tip="Unit name. If name is changed for existing unit, old unit will be replaced">Unit name</th>
-            <th data-tip="Conscription percentage for rural population">Rural %</th>
-            <th data-tip="Conscription percentage for urban population">Urban %</th>
+            <th data-tip="Conscription percentage for rural population">Rural</th>
+            <th data-tip="Conscription percentage for urban population">Urban</th>
             <th data-tip="Average number of people in crew (used for total personnel calculation)">Crew</th>
             <th data-tip="Unit military power (used for battle simulation)">Power</th>
             <th data-tip="Unit type to apply special rules on forces recalculation">Type</th>
@@ -3608,4 +3623,5 @@
   <script defer src="modules/ui/3d.js"></script>
   <script defer src="libs/quantize.min.js"></script>
   <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
+  <script defer src="libs/publicstorage.js"></script>
 </body>
