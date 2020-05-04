@@ -583,6 +583,7 @@ button.options {
 	font-weight: bold;
 	float: left;
 	border: none;
+	border-radius: 0;
 	padding: 8px 10px;
 	transition: 0.2s;
 }
@@ -945,10 +946,11 @@ body button.noicon {
 #battleBody > table {
 	padding: .2em .6em .2em .6em;
 	border: 1px solid #ccc;
-	margin: 0 0 .4em 0;
+	margin: .2em 0 .4em 0;
 	display: block;
 	overflow: auto;
 	max-height: 34vh;
+	width: 100%;
 }
 
 #battleBody > table .regiment {
@@ -959,6 +961,45 @@ body button.noicon {
 tr.battleCasualties, tr.battleSurvivors {
 	font-style: italic;
 	font-size: .9em;
+}
+
+#battleBody div.battlePhases {
+	position: absolute;
+	background-color: #fff;
+}
+
+#battleBody div.battlePhases > button {
+	width: 3.2em;
+	display: block;
+	margin: .2em 0;
+}
+
+div#regimentSelectorBody {
+	max-height: 50vh;
+	font-size: .9em;
+}
+
+div#regimentSelectorBody > div {
+	padding: .1em;
+	border: 1px solid #fff;
+}
+
+div#regimentSelectorBody > div:hover {
+	border: 1px solid #ccc;
+}
+
+div#regimentSelectorBody > div.selected {
+	border: 1px solid #b28585;
+}
+
+div#regimentSelectorBody > div.inactive {
+	background-color: #eee;
+	color: #aaa;
+}
+
+div#regimentSelectorBody > div > div {
+	display: inline-block;
+	pointer-events: none;
 }
 
 .drag-trigger {

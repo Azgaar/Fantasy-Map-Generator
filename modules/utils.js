@@ -232,7 +232,7 @@ function gauss(expected = 100, deviation = 30, min = 0, max = 300, round = 0) {
   return rn(Math.max(Math.min(d3.randomNormal(expected, deviation)(), max), min), round);
 }
 
-// get integer from float as floor + P(fractional)
+/** This is a description of the foo function. */
 function Pint(float) {
   return ~~float + +P(float % 1);
 }

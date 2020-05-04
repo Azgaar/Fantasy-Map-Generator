@@ -1018,6 +1018,9 @@ function parseLoadedData(data) {
           if (type === "magical") return "🔮";
           else return "⚔️";
         }
+
+        // 1.4 added state reference for regiments
+        pack.states.filter(s => s.military).forEach(s => s.military.forEach(r => r.state = s.i));
       }
 
     }()

@@ -31,6 +31,7 @@ function editProvinces() {
   document.getElementById("provincesManuallyApply").addEventListener("click", applyProvincesManualAssignent);
   document.getElementById("provincesManuallyCancel").addEventListener("click", () => exitProvincesManualAssignment());
   document.getElementById("provincesAdd").addEventListener("click", enterAddProvinceMode);
+  document.getElementById("provincesRecolor").addEventListener("click", recolorProvinces);
 
   body.addEventListener("click", function(ev) {
     if (customization) return;
@@ -806,6 +807,20 @@ function editProvinces() {
     clearMainTip();
     body.querySelectorAll("div > input, select, span, svg").forEach(e => e.style.pointerEvents = "all");
     if (provincesAdd.classList.contains("pressed")) provincesAdd.classList.remove("pressed");
+  }
+
+  function recolorProvinces() {
+    const state = +document.getElementById("provincesFilterState").value;
+
+    pack.provinces.forEach(p => {
+      if (!p || p.removed) return;
+      if (state !== -1 && p.state !== state) return;
+      const stateColor = pack.states[p.state].color;
+      const rndColor = getRandomColor();
+      p.color = stateColor[0] === "#" ? d3.color(d3.interpolate(stateColor, rndColor)(.2)).hex() : rndColor;
+    });
+
+    if (!layerIsOn("toggleProvinces")) toggleProvinces(); else drawProvinces();
   }
 
   function downloadProvincesData() {

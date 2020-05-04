@@ -33,15 +33,15 @@
       const relaxed = chain.filter((v, i) => !(i%relax) || vertices.c[v].some(c => c >= pointsN));
       if (relaxed.length < 4) continue;
       const points = clipPoly(relaxed.map(v => vertices.p[v]), 1);
-      const inside = d3.polygonContains(points, grid.points[i]);
-      chains.push([t, points, inside]);
+      //const inside = d3.polygonContains(points, grid.points[i]);
+      chains.push([t, points]); //chains.push([t, points, inside]);
     }
 
-    const bbox = `M0,0h${graphWidth}v${graphHeight}h${-graphWidth}Z`;
+    //const bbox = `M0,0h${graphWidth}v${graphHeight}h${-graphWidth}Z`;
     for (const t of limits) {
       const layer = chains.filter(c => c[0] === t);
       let path = layer.map(c => round(lineGen(c[1]))).join("");
-      if (layer.every(c => !c[2])) path = bbox + path; // add outer ring if all segments are outside (works not for all cases)
+      //if (layer.every(c => !c[2])) path = bbox + path; // add outer ring if all segments are outside (works not for all cases)
       if (path) oceanLayers.append("path").attr("d", path).attr("fill", "#ecf2f9").style("opacity", opacity);
     }
 

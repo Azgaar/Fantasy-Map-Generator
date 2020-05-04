@@ -2448,32 +2448,60 @@
     <div id="battleScreen" class="dialog stable" style="display: none">
       <div id="battleBody">
         <div style="font-size:1.2em; font-weight: bold">
-          <div style="width: 1.2em; display: inline-block">⚔</div><span>Attackers</span>
+          <span>Attackers</span>
           <div style="float: right; font-size: .7em">
-            <span data-tip="Attackers power considering phase and randon factor" style="padding: .2em" class="icon-button-power">43</span>
-            <button data-tip="Battle phase. Click to change" class="icon-button-pursue"></button>
-            <button data-tip="Random factor for attackers. Click to re-roll" style="padding: .1em .2em" class="icon-button-die">12</button>
+            <meter id="battleMorale_attackers" data-tip="Attackers morale: " min=0 max=100 low=33 high=66 optimum=80 style="padding: .1em"></meter>
+            <div id="battlePower_attackers" data-tip="Attackers strength during this phase" style="width: 3.2em; display: inline-block; text-align: center" class="icon-button-power"></div>
+            <div style="display: inline-block;">
+              <button id="battlePhase_attackers" data-tip="Battle phase. Click to change" class="icon-button-pursue" style="width: 3.2em"></button>
+              <div class="battlePhases" style="display: none">
+                <button data-tip="Skirmish phase. Ranged units excel" data-phase="skirmish" class="icon-button-skirmish"></button>
+                <button data-tip="Melee phase. Melee units excel" data-phase="melee" class="icon-button-melee"></button>
+                <button data-tip="Pursue phase. Mounted units excel" data-phase="pursue" class="icon-button-pursue"></button>
+                <button data-tip="Retreat phase. All units strength reduced" data-phase="retreat" class="icon-button-retreat"></button>
+              </div>
+            </div>
+            <button id="battleDie_attackers" data-tip="Random factor for attackers. Click to re-roll" style="padding: .1em .2em; width: 3.2em" class="icon-button-die"></button>
           </div>
         </div>
-        <table id="battleAttackers"><thead><tr></tr></thead><tbody></tbody></table>
+        <table id="battleAttackers"></table>
         <div style="font-size:1.2em; font-weight: bold">
-          <div style="width: 1.2em; display: inline-block">🛡</div><span>Defenders</span>
+          <span></span>Defenders</span>
           <div style="float: right; font-size: .7em">
-            <span data-tip="Defenders power considering phase and randon factor" style="padding: .2em" class="icon-button-power">65</span>
-            <button data-tip="Battle phase. Click to change" class="icon-button-skirmish"></button>
-            <button data-tip="Random factor for defenders. Click to re-roll" style="padding: .1em .2em" class="icon-button-die">05</button>
+            <meter id="battleMorale_defenders" data-tip="Defenders morale: " min=0 max=100 low=33 high=66 optimum=80 style="padding: .1em"></meter>
+            <div id="battlePower_defenders" data-tip="Defenders strength during this phase" style="width: 3.2em; display: inline-block; text-align: center" class="icon-button-power"></div>
+            <div style="display: inline-block;">
+              <button id="battlePhase_defenders" data-tip="Battle phase. Click to change" class="icon-button-pursue" style="width: 3.2em"></button>
+              <div class="battlePhases" style="display: none">
+                <button data-tip="Skirmish phase. Ranged units excel" data-phase="skirmish" class="icon-button-skirmish"></button>
+                <button data-tip="Melee phase. Melee units excel" data-phase="melee" class="icon-button-melee"></button>
+                <button data-tip="Pursue phase. Mounted units excel" data-phase="pursue" class="icon-button-pursue"></button>
+                <button data-tip="Retreat phase. All units strength reduced" data-phase="retreat" class="icon-button-retreat"></button>
+              </div>
+            </div>
+            <button id="battleDie_defenders" data-tip="Random factor for defenders. Click to re-roll" style="padding: .1em .2em; width: 3.2em" class="icon-button-die"></button>
           </div>
         </div>
-        <table id="battleDefenders"><thead><tr></tr></thead><tbody></tbody></table>
+        <table id="battleDefenders"></table>
       </div>
 
       <div id="battleBottom">
         <button id="battleAddRegiment" data-tip="Add regiment to the battle" class="icon-user-plus"></button>
-        <button id="battleRoll" data-tip="Roll dice to randomize sides power and battle phase" class="icon-die"></button>
-        <button id="battleNext" data-tip="Calculate and apply phase results" class="icon-play"></button>
-        <button id="battleApply" data-tip="Apply battle results" class="icon-check"></button>
-        <button id="battleCancel" data-tip="Cancel battle results and restore initial troop value" class="icon-cancel"></button>
+        <button id="battleRoll" data-tip="Roll dice to update random factor" class="icon-die"></button>
+        <button id="battleRun" data-tip="Iterate battle" class="icon-play"></button>
+        <button id="battleApply" data-tip="Apply battle results and close the screen" class="icon-check"></button>
+        <button id="battleCancel" data-tip="Cancel battle results and close the screen" class="icon-cancel"></button>
       </div>
+    </div>
+
+    <div id="regimentSelectorScreen" class="dialog" style="display: none">
+      <div id="regimentSelectorHeader" class="header">
+        <div style="left: 1.2em;" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
+        <div style="left: 9.2em;" data-tip="Click to sort by regiment name" class="sortable alphabetically" data-sortby="regiment">Regiment&nbsp;</div>
+        <div style="left: 22.4em;" data-tip="Click to sort by total military forces" class="sortable" data-sortby="total">Total&nbsp;</div>
+        <div style="left: 28em;" data-tip="Click to sort by distance to the battlefield" class="sortable icon-sort-number-up" data-sortby="distance">Distance&nbsp;</div>
+      </div>
+      <div id="regimentSelectorBody"></div>
     </div>
 
     <div id="brushesPanel" class="dialog stable" style="display: none">
@@ -2859,6 +2887,7 @@
       <div id="provincesBottom">
         <button id="provincesEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
         <button id="provincesEditStyle" data-tip="Edit provinces style in Style Editor" class="icon-adjust"></button>
+        <button id="provincesRecolor" data-tip="Recolor listed provinces based on state color" class="icon-paint-roller"></button>
         <button id="provincesPercentage" data-tip="Toggle percentage / absolute values views" class="icon-percent"></button>
         <button id="provincesChart" data-tip="Show provinces chart" class="icon-chart-area"></button>
         <button id="provincesToggleLabels" data-tip="Toggle province labels" class="icon-font"></button>
@@ -3247,7 +3276,7 @@
           <input id="populationRate" data-stored="populationRate" type="number" min=10 max=9990 step=10 value=1000 data-value=1000 style="width:4.5em">
         </div>
 
-        <div data-tip="Set ubranization rate: burgs population relative to all population">
+        <div data-tip="Set urbranization rate: burgs population relative to all population">
           <div>Urbanization rate:</div>
           <input id="urbanizationOutput" type="range" min=.01 max=5 step=.01 value=1>
           <input id="urbanization" data-stored="urbanization" type="number" min=.01 max=5 step=.01 value=1 data-value=1>

@@ -930,5 +930,6 @@ function editStates() {
     if (customization === 2) exitStatesManualAssignment("close");
     if (customization === 3) exitAddStateMode();
     debug.selectAll(".highlight").remove();
+    body.innerHTML = "";
   }
 }

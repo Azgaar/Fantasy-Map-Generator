@@ -1167,7 +1167,7 @@ function editHeightmap() {
 
     function setConvertColorsNumber() {
       prompt(`Please provide a desired number of colors. <br>An actual number depends on color scheme and may vary from desired`, 
-      {default:convertColors.value, step:1, min:3, max:255}, number => {
+      {default:+convertColors.value, step:1, min:3, max:255}, number => {
         convertColors.value = number;
         heightsFromImage(number);
       });

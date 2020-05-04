@@ -190,7 +190,7 @@
       const regiments = nodes.filter(n => n.t).sort((a,b) => b.t - a.t).map((r, i) => {
         const u = {}; u[r.u] = r.a;
         (r.childen||[]).forEach(n => u[n.u] = u[n.u] ? u[n.u] += n.a : n.a);
-        return {i, a:r.t, cell:r.cell, x:r.x, y:r.y, bx:r.x, by:r.y, u, n:r.n, name};
+        return {i, a:r.t, cell:r.cell, x:r.x, y:r.y, bx:r.x, by:r.y, u, n:r.n, name, state: s.i};
       });
 
       // generate name for regiments
@@ -210,9 +210,9 @@
     return [
       {icon: "⚔️", name:"infantry",  rural:.25,  urban:.2,   crew:1,   power:1,  type:"melee",     separate:0},
       {icon: "🏹", name:"archers",   rural:.12,  urban:.2,   crew:1,   power:1,  type:"ranged",    separate:0},
-      {icon: "🐴", name:"cavalry",   rural:.12,  urban:.03,  crew:3,   power:4,  type:"mounted",   separate:0},
-      {icon: "💣", name:"artillery", rural:0,    urban:.03,  crew:8,   power:12, type:"machinery", separate:0},
-      {icon: "🌊", name:"fleet",     rural:0,    urban:.015, crew:100, power:50, type:"naval",     separate:1}
+      {icon: "🐴", name:"cavalry",   rural:.12,  urban:.03,  crew:2,   power:2,  type:"mounted",   separate:0},
+      {icon: "💣", name:"artillery", rural:0,    urban:.03,  crew:8,   power:12,  type:"machinery", separate:0},
+      {icon: "🌊", name:"fleet",     rural:0,    urban:.015, crew:100, power:50,  type:"naval",     separate:1}
     ];
   }
 
@@ -254,6 +254,26 @@
     g.append("text").attr("x", reg.x).attr("y", reg.y).text(getTotal(reg));
     g.append("rect").attr("fill", darkerColor).attr("x", x1-h).attr("y", y1).attr("width", h).attr("height", h);
     g.append("text").attr("class", "regimentIcon").attr("x", x1-size).attr("y", reg.y).text(reg.icon);
+  }
+
+  // move one regiment to another
+  const moveRegiment = function(reg, x, y) {
+    const el = armies.select("g#army"+reg.state).select("g#regiment"+reg.state+"-"+reg.i);
+    if (!el.size()) return;
+
+    const duration = Math.hypot(reg.x - x, reg.y - y) * 8;
+    reg.x = x; reg.y = y;
+    const size = +armies.attr("box-size");
+    const w = reg.n ? size * 4 : size * 6;
+    const h = size * 2;
+    const x1 = x => rn(x - w / 2, 2);
+    const y1 = y => rn(y - size, 2);
+
+    const move = d3.transition().duration(duration).ease(d3.easeSinInOut);
+    el.select("rect").transition(move).attr("x", x1(x)).attr("y", y1(y));
+    el.select("text").transition(move).attr("x", x).attr("y", y);
+    el.selectAll("rect:nth-of-type(2)").transition(move).attr("x", x1(x)-h).attr("y", y1(y));
+    el.select(".regimentIcon").transition(move).attr("x", x1(x)-size).attr("y", y);
   }
 
   // utilize si function to make regiment total text fit regiment box
@@ -304,6 +324,6 @@
   //   note.legend = note.legend.replace(oldComposition, newComposition);
   // }
 
-  return {generate, getDefaultOptions, getName, generateNote, drawRegiments, drawRegiment, getTotal, getEmblem};
+  return {generate, getDefaultOptions, getName, generateNote, drawRegiments, drawRegiment, moveRegiment, getTotal, getEmblem};
 
 })));
