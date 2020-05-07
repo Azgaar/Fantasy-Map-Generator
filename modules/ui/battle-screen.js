@@ -23,8 +23,9 @@ class Battle {
     this.getInitialMorale();
 
     $("#battleScreen").dialog({
-      title: this.name, resizable: false, width: fitContent(), close: this.closeBattleScreen,
-      position: {my: "center", at: "center", of: "#map"}
+      title: this.name, resizable: false, width: fitContent(),
+      position: {my: "center", at: "center", of: "#map"},
+      close: () => Battle.prototype.context.cancelResults()
     });
 
     if (modules.Battle) return;
@@ -332,7 +333,8 @@ class Battle {
       Military.moveRegiment(r, r.x + rand(30) - 15, r.y + rand(30) - 15);
     });
 
-    $("#battleScreen").dialog("close");
+    $("#battleScreen").dialog("destroy");
+    this.cleanData();
   }
 
   cancelResults() {
@@ -342,15 +344,15 @@ class Battle {
     });
 
     $("#battleScreen").dialog("close");
+    this.cleanData();
   }
 
-  closeBattleScreen() {
+  cleanData() {
     battleAttackers.innerHTML = battleDefenders.innerHTML = ""; // clean DOM
     customization = 0; // exit edit mode
 
     // clean temp data
-    const context = Battle.prototype.context;
-    context.attackers.regiments.concat(context.defenders.regiments).forEach(r => {
+    this.attackers.regiments.concat(this.defenders.regiments).forEach(r => {
       delete r.px;
       delete r.py;
       delete r.casualties;
