@@ -1718,6 +1718,10 @@ rect.fillRect {
 	width: 4em;
 }
 
+#militaryOptionsTable button {
+	width: 100%;
+}
+
 #gridOverlay {
 	fill: none;
 }

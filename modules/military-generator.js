@@ -88,7 +88,7 @@
         if (!t) continue;
         let x = p[i][0], y = p[i][1], n = 0;
         if (u.type === "naval") {let haven = cells.haven[i]; x = p[haven][0], y = p[haven][1]; n = 1}; // place naval to sea
-        s.temp.platoons.push({cell: i, a:t, t, x, y, u:u.name, n, s:u.separate});
+        s.temp.platoons.push({cell: i, a:t, t, x, y, u:u.name, n, s:u.separate, type:u.type});
       }
     }
 
@@ -140,8 +140,8 @@
         const t = rn(army * s.temp[u.name] * populationRate.value);
         if (!t) continue;
         let x = p[b.cell][0], y = p[b.cell][1], n = 0;
-        if (u.type === "naval") {let haven = cells.haven[b.cell]; x = p[haven][0], y = p[haven][1]; n = 1}; // place naval to sea
-        s.temp.platoons.push({cell: b.cell, a:t, t, x, y, u:u.name, n, s:u.separate});
+        if (u.type === "naval") {let haven = cells.haven[b.cell]; x = p[haven][0], y = p[haven][1]; n = 1}; // place naval in sea cell
+        s.temp.platoons.push({cell: b.cell, a:t, t, x, y, u:u.name, n, s:u.separate, type:u.type});
       }
     }
 
@@ -154,7 +154,8 @@
     }()
 
     const expected = 3 * populationRate.value; // expected regiment size
-    const mergeable = (n, s) => (!n.s && !s.s) || n.u === s.u;
+    const mergeable = (n0, n1) => (!n0.s && !n1.s) || n0.type === n1.type; // check if regiments can be merged
+
     // get regiments for each state
     valid.forEach(s => {
       s.military = createRegiments(s.temp.platoons, s);
@@ -164,7 +165,7 @@
 
     function createRegiments(nodes, s) {
       if (!nodes.length) return [];
-      nodes.sort((a,b) => a.a - b.a);
+      nodes.sort((a,b) => a.a - b.a); // form regiments in cells with most troops
       const tree = d3.quadtree(nodes, d => d.x, d => d.y);
       nodes.forEach(n => {
         tree.remove(n);
@@ -186,7 +187,7 @@
         n0.t = 0;
       }
 
-      // parse regiments data to easy-readable json
+      // parse regiments data
       const regiments = nodes.filter(n => n.t).sort((a,b) => b.t - a.t).map((r, i) => {
         const u = {}; u[r.u] = r.a;
         (r.childen||[]).forEach(n => u[n.u] = u[n.u] ? u[n.u] += n.a : n.a);
@@ -208,9 +209,9 @@
 
   const getDefaultOptions = function() {
     return [
-      {icon: "⚔️", name:"infantry",  rural:.25,  urban:.2,   crew:1,   power:1,  type:"melee",     separate:0},
-      {icon: "🏹", name:"archers",   rural:.12,  urban:.2,   crew:1,   power:1,  type:"ranged",    separate:0},
-      {icon: "🐴", name:"cavalry",   rural:.12,  urban:.03,  crew:2,   power:2,  type:"mounted",   separate:0},
+      {icon: "⚔️", name:"infantry",  rural:.25,  urban:.2,   crew:1,   power:1,  type:"melee",      separate:0},
+      {icon: "🏹", name:"archers",   rural:.12,  urban:.2,   crew:1,   power:1,  type:"ranged",     separate:0},
+      {icon: "🐴", name:"cavalry",   rural:.12,  urban:.03,  crew:2,   power:2,  type:"mounted",    separate:0},
       {icon: "💣", name:"artillery", rural:0,    urban:.03,  crew:8,   power:12,  type:"machinery", separate:0},
       {icon: "🌊", name:"fleet",     rural:0,    urban:.015, crew:100, power:50,  type:"naval",     separate:1}
     ];
@@ -290,9 +291,8 @@
 
   // get default regiment emblem
   const getEmblem = function(r) {
-    if (r.n) return "🌊";
-    if (!Object.values(r.u).length) return "🔰"; // regiment without troops
-    if (cells.burg[r.cell] && pack.burgs[cells.burg[r.cell]].capital) return "👑"; // "Royal" regiment based in capital
+    if (!r.n && !Object.values(r.u).length) return "🔰"; // "Newbie" regiment without troops
+    if (!r.n && pack.states[r.state].form === "Monarchy" && cells.burg[r.cell] && pack.burgs[cells.burg[r.cell]].capital) return "👑"; // "Royal" regiment based in capital
     const mainUnit = Object.entries(r.u).sort((a,b) => b[1]-a[1])[0][0]; // unit with more troops in regiment
     const unit = options.military.find(u => u.name === mainUnit);
     return unit.icon;
