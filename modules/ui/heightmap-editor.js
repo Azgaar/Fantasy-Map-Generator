@@ -185,7 +185,6 @@ function editHeightmap() {
     }
 
     defineBiomes();
-
     rankCells();
     Cultures.generate();
     Cultures.expand();
@@ -354,6 +353,8 @@ function editHeightmap() {
       if (!b.i || b.removed) continue;
       b.cell = findBurgCell(b.x, b.y);
       b.feature = pack.cells.f[b.cell];
+      //if (b.port) b.port = pack.cells.f[pack.cells.haven[b.cell]]; // water body id
+
       pack.cells.burg[b.cell] = b.i;
       if (!b.capital && pack.cells.h[b.cell] < 20) removeBurg(b.i);
       if (b.capital) pack.states[b.state].center = b.cell;

@@ -140,46 +140,15 @@
   // define burg coordinates, port status and define details
   const specifyBurgs = function() {
     console.time("specifyBurgs");
-    const cells = pack.cells, vertices = pack.vertices, features = pack.features;
-
-    // separate arctic seas for correct searoutes generation
-    void function checkAccessibility() {
-      const oceanCells = cells.i.filter(i => cells.h[i] < 20 && features[cells.f[i]].type === "ocean");
-      const marked = [];
-      let firstCell = oceanCells.find(i => !marked[i]);
-
-      while (firstCell !== undefined) {
-        const queue = [firstCell];
-        const f = features[cells.f[firstCell]]; // old feature
-        const i = last(features).i+1; // new feature id to assign
-        const biome = cells.biome[firstCell];
-        marked[firstCell] = 1;
-        let cellNumber = 1;
-
-        while (queue.length) {
-          for (const c of cells.c[queue.pop()]) {
-            if (cells.biome[c] !== biome || cells.h[c] >= 20) continue;
-            if (marked[c]) continue;
-            queue.push(c);
-            cells.f[c] = i;
-            marked[c] = 1;
-            cellNumber++;
-          }
-        }
-
-        const group = biome ? "frozen " + f.group : f.group;
-        features.push({i, parent:f.i, land:false, border:f.border, type:"ocean", cells: cellNumber, firstCell, group});
-        firstCell = oceanCells.find(i => !marked[i]);
-      }
-    }()
+    const cells = pack.cells, vertices = pack.vertices, features = pack.features, temp = grid.cells.temp;
 
     for (const b of pack.burgs) {
       if (!b.i) continue;
       const i = b.cell;
 
-      // asign port status
+      // asign port status to some coastline burgs with temp > 0 °C
       const haven = cells.haven[i];
-      if (haven && cells.biome[haven] === 0) {
+      if (haven && temp[cells.g[i]] > 0) {
         const f = cells.f[haven]; // water body id
         // port is a capital with any harbor OR town with good harbor
         const port = features[f].cells > 1 && ((b.capital && cells.harbor[i]) || cells.harbor[i] === 1);

@@ -832,11 +832,9 @@ function parseLoadedData(data) {
         if (!markers.selectAll("*").size()) {addMarkers(); turnButtonOn("toggleMarkers");}
 
         // 1.0 add fogging layer (state focus)
-        fogging = viewbox.insert("g", "#ruler").attr("id", "fogging-cont").attr("mask", "url(#fog)")
-          .append("g").attr("id", "fogging").style("display", "none");
+        fogging = viewbox.insert("g", "#ruler").attr("id", "fogging-cont").attr("mask", "url(#fog)").append("g").attr("id", "fogging").style("display", "none");
         fogging.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
-        defs.append("mask").attr("id", "fog").append("rect").attr("x", 0).attr("y", 0).attr("width", "100%")
-          .attr("height", "100%").attr("fill", "white");
+        defs.append("mask").attr("id", "fog").append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%").attr("fill", "white");
 
         // 1.0 changes states opacity bask to regions level
         if (statesBody.attr("opacity")) {

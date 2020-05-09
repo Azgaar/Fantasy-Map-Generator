@@ -42,7 +42,7 @@ function editProvinces() {
     if (cl.contains("icon-star-empty")) capitalZoomIn(p); else
     if (cl.contains("icon-flag-empty")) triggerIndependencePromps(p); else
     if (cl.contains("culturePopulation")) changePopulation(p); else
-    if (cl.contains("icon-pin")) focusOn(p, cl); else
+    if (cl.contains("icon-pin")) toggleFog(p, cl); else
     if (cl.contains("icon-trash-empty")) removeProvince(p);
   });
 
@@ -282,7 +282,7 @@ function editProvinces() {
     BurgsAndStates.drawStateLabels([newState, oldState]);
 
     // remove old province
-    unfocus(p);
+    unfog("focusProvince"+p);
     if (states[oldState].provinces.includes(p)) states[oldState].provinces.splice(states[oldState].provinces.indexOf(p), 1);
     provinces[p].removed = true;
 
@@ -347,24 +347,10 @@ function editProvinces() {
 
   }
 
-  function focusOn(p, cl) {
-    const inactive = cl.contains("inactive");
+  function toggleFog(p, cl) {
+    const path = provs.select("#province"+p).attr("d"), id = "focusProvince"+p;
+    cl.contains("inactive") ? fog(id, path) : unfog(id);
     cl.toggle("inactive");
-
-    if (inactive) {
-      if (defs.select("#fog #focusProvince"+p).size()) return;
-      fogging.style("display", "block");
-      const path = provs.select("#province"+p).attr("d");
-      defs.select("#fog").append("path").attr("d", path).attr("fill", "black").attr("id", "focusProvince"+p);
-      fogging.append("path").attr("d", path).attr("id", "focusProvinceHalo"+p)
-        .attr("fill", "none").attr("stroke", pack.provinces[p].color).attr("filter", "url(#blur5)");
-    } else unfocus(p);
-  }
-
-  function unfocus(p) {
-    defs.select("#focusProvince"+p).remove();
-    fogging.select("#focusProvinceHalo"+p).remove();
-    if (!defs.selectAll("#fog path").size()) fogging.style("display", "none"); // all items are de-focused
   }
 
   function removeProvince(p) {
@@ -377,7 +363,7 @@ function editProvinces() {
           const state = pack.provinces[p].state;
           if (pack.states[state].provinces.includes(p)) pack.states[state].provinces.splice(pack.states[state].provinces.indexOf(p), 1);
           pack.provinces[p].removed = true;
-          unfocus(p);
+          unfog("focusProvince"+p);
       
           const g = provs.select("#provincesBody");
           g.select("#province"+p).remove();
@@ -853,7 +839,7 @@ function editProvinces() {
           $(this).dialog("close");
           pack.provinces.filter(p => p.i).forEach(p => {
             p.removed = true;
-            unfocus(p.i);
+            unfog("focusProvince"+p.i);
           });
           pack.cells.i.forEach(i => pack.cells.province[i] = 0);
           pack.states.filter(s => s.i && !s.removed).forEach(s => s.provinces = []);

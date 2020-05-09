@@ -460,6 +460,7 @@ function toggleIce() {
   if (!layerIsOn("toggleIce")) {
     turnButtonOn("toggleIce");
     $('#ice').fadeIn();
+    if (!ice.selectAll("*").size()) drawIce();
     if (event && isCtrlClick(event)) editStyle("ice");
   } else {
     if (event && isCtrlClick(event)) {editStyle("ice"); return;}
@@ -473,7 +474,7 @@ function drawIce() {
   const used = new Uint8Array(cells.i.length);
   Math.seedrandom(seed);
 
-  const shieldMin = -6; // min temp to form ice shield (glacier)
+  const shieldMin = -6; // max temp to form ice shield (glacier)
   const icebergMax = 2; // max temp to form an iceberg
 
   for (const i of grid.cells.i) {

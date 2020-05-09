@@ -61,8 +61,7 @@ let burgIcons = icons.append("g").attr("id", "burgIcons");
 let anchors = icons.append("g").attr("id", "anchors");
 let armies = viewbox.append("g").attr("id", "armies").style("display", "none");
 let markers = viewbox.append("g").attr("id", "markers").style("display", "none");
-let fogging = viewbox.append("g").attr("id", "fogging-cont").attr("mask", "url(#fog)")
-  .append("g").attr("id", "fogging").style("display", "none");
+let fogging = viewbox.append("g").attr("id", "fogging-cont").attr("mask", "url(#fog)").append("g").attr("id", "fogging").style("display", "none");
 let ruler = viewbox.append("g").attr("id", "ruler").style("display", "none");
 let debug = viewbox.append("g").attr("id", "debug");
 
@@ -94,6 +93,7 @@ population.append("g").attr("id", "urban");
 
 // fogging
 fogging.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
+fogging.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%").attr("fill", "#e8f0f6").attr("filter", "url(#splotch)");
 
 // assign events separately as not a viewbox child
 scaleBar.on("mousemove", () => tip("Click to open Units Editor"));
@@ -335,7 +335,7 @@ function applyDefaultBiomesSystem() {
 }
 
 function showWelcomeMessage() {
-  const post = link("https://www.reddit.com/r/FantasyMapGenerator/comments/ft5b41/update_new_version_is_published_military_update_v/", "Main changes:"); // announcement on Reddit
+  const post = link("https://www.reddit.com/r/FantasyMapGenerator/comments/ft5b41/update_new_version_is_published_military_update_v14/", "Main changes:"); // announcement on Reddit
   const changelog = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "previous version");
   const reddit = link("https://www.reddit.com/r/FantasyMapGenerator", "Reddit community");
   const discord = link("https://discordapp.com/invite/X7E84HU", "Discord server");
@@ -346,10 +346,10 @@ function showWelcomeMessage() {
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
 
     <ul>${post}
-      <li>Military Forces generation</li>
-      <li>Military Forces overview</li>
-      <li>Military Units editor</li>
-      <li>Regiments editor</li>
+      <li>Battle simulation</li>
+      <li>Ice layer and Ice editor</li>
+      <li>Route Elevation profile</li>
+      <li>Name generator improvement</li>
     </ul>
 
     <p>You can can also download a ${desktop}.</p>
@@ -528,7 +528,6 @@ function generate() {
     elevateLakes();
     Rivers.generate();
     defineBiomes();
-    drawIce();
 
     rankCells();
     Cultures.generate();
