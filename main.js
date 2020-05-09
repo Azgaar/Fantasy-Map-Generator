@@ -350,6 +350,7 @@ function showWelcomeMessage() {
       <li>Ice layer and Ice editor</li>
       <li>Route Elevation profile</li>
       <li>Name generator improvement</li>
+      <li>Fogging style change</li>
     </ul>
 
     <p>You can can also download a ${desktop}.</p>
