@@ -476,7 +476,6 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 	width: 100%;
   background-color: white;
   text-align: left;
-  height: 1.5em;
 }
 
 #optionsContent input[type="range"] {

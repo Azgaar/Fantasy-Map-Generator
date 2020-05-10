@@ -102,7 +102,7 @@ legend.on("mousemove", () => tip("Drag to change the position. Click to hide the
 // main data variables
 let grid = {}; // initial grapg based on jittered square grid and data
 let pack = {}; // packed graph and data
-let seed, mapHistory = [], elSelected, modules = {}, notes = [];
+let seed, mapId, mapHistory = [], elSelected, modules = {}, notes = [];
 let customization = 0; // 0 - no; 1 = heightmap draw; 2 - states draw; 3 - add state/burg; 4 - cultures draw
 
 let biomesData = applyDefaultBiomesSystem();
@@ -120,11 +120,6 @@ const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", zoomed);
 let options = {}; // options object
 let mapCoordinates = {}; // map coordinates on globe
 options.winds = [225, 45, 225, 315, 135, 315]; // default wind directions
-
-// woldbuilding options
-options.year = rand(100, 2000); // current year
-options.era = Names.getBaseShort(P(.7) ? 1 : rand(nameBases.length)) + " Era"; // current era name, global for all cultures
-options.eraShort = options.era[0] + "E"; // short name for era
 
 applyStoredOptions();
 let graphWidth = +mapWidthInput.value, graphHeight = +mapHeightInput.value; // voronoi graph extention, cannot be changed arter generation
@@ -1699,18 +1694,20 @@ function showStatistics() {
   const template = templateInput.value;
   const templateRandom = locked("template") ? "" : "(random)";
   const stats = `  Seed: ${seed}
-  Canvas size: ${graphWidth}x${graphHeight}
-  Template: ${template} ${templateRandom}
-  Points: ${grid.points.length}
-  Cells: ${pack.cells.i.length}
-  Map size: ${mapSizeOutput.value}%
-  States: ${pack.states.length-1}
-  Provinces: ${pack.provinces.length-1}
-  Burgs: ${pack.burgs.length-1}
-  Religions: ${pack.religions.length-1}
-  Culture set: ${culturesSet.selectedOptions[0].innerText}
-  Cultures: ${pack.cultures.length-1}`;
-  mapHistory.push({seed, width:graphWidth, height:graphHeight, template, created: Date.now()});
+    Canvas size: ${graphWidth}x${graphHeight}
+    Template: ${template} ${templateRandom}
+    Points: ${grid.points.length}
+    Cells: ${pack.cells.i.length}
+    Map size: ${mapSizeOutput.value}%
+    States: ${pack.states.length-1}
+    Provinces: ${pack.provinces.length-1}
+    Burgs: ${pack.burgs.length-1}
+    Religions: ${pack.religions.length-1}
+    Culture set: ${culturesSet.selectedOptions[0].innerText}
+    Cultures: ${pack.cultures.length-1}`;
+
+  mapId = Date.now(); // unique map id is it's creation date number
+  mapHistory.push({seed, width:graphWidth, height:graphHeight, template, created:mapId});
   console.log(stats);
 }
 

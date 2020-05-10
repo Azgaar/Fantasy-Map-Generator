@@ -1581,7 +1581,7 @@
             </td>
           </tr>
 
-          <tr data-tip="Click to set up map name to be used for downloaded files">
+          <tr data-tip="Define map name (will be used to name downloaded files)">
             <td>
               <i data-locked=0 id="lock_mapName" class="icon-lock-open"></i>
             </td>
@@ -1591,6 +1591,20 @@
             </td>
             <td>
               <i data-tip="Regenerate map name" onclick="Names.getMapName(true)" class="icon-arrows-cw"></i>
+            </td>
+          </tr>
+
+          <tr data-tip="Define current year and era name">
+            <td>
+              <i data-locked=0 id="lock_era" class="icon-lock-open"></i>
+            </td>
+            <td>Year and era</td>
+            <td>
+              <input id="yearInput" data-stored="year" type="number" step=1 class="paired" style="width: 24%; float: left; font-size: smaller">
+              <input id="eraInput" data-stored="era" autocorrect="off" spellcheck="false" type="text" style="width: 75%; float: right" class="long">
+            </td>
+            <td>
+              <i id="optionsEraRegenerate" data-tip="Regenerate era" class="icon-arrows-cw"></i>
             </td>
           </tr>
 
@@ -1685,7 +1699,7 @@
               <input id="powerInput" data-stored="power" type="range" min=0 max=10 step=.2 value=5>
             </td>
             <td>
-              <input id="powerOutput" data-stored="power" type="number" min=0 max=10 step=.2 value=5>
+              <input id="powerOutput" data-stored="power" type="number" min=0 max=10 step=.1 value=5>
             </td>
           </tr>
 

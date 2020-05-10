@@ -225,7 +225,7 @@ function getMapData() {
     const date = new Date();
     const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
     const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
-    const params = [version, license, dateString, seed, graphWidth, graphHeight].join("|");
+    const params = [version, license, dateString, seed, graphWidth, graphHeight, mapId].join("|");
     const settings = [distanceUnitInput.value, distanceScaleInput.value, areaUnit.value,
       heightUnit.value, heightExponentInput.value, temperatureScale.value,
       barSize.value, barLabel.value, barBackOpacity.value, barBackColor.value,
@@ -586,6 +586,7 @@ function parseLoadedData(data) {
       if (params[3]) {seed = params[3]; optionsSeed.value = seed;}
       if (params[4]) graphWidth = +params[4];
       if (params[5]) graphHeight = +params[5];
+      mapId = params[6] ? +params[6] : Date.now();
     }()
 
     console.group("Loaded Map " + seed);

@@ -117,6 +117,7 @@ optionsContent.addEventListener("click", function(event) {
   else if (id === "optionsSeedGenerate") generateMapWithSeed();
   else if (id === "optionsMapHistory") showSeedHistoryDialog();
   else if (id === "optionsCopySeed") copyMapURL();
+  else if (id === "optionsEraRegenerate") regenerateEra();
   else if (id === "zoomExtentDefault") restoreDefaultZoomExtent();
   else if (id === "translateExtent") toggleTranslateExtent(event.target);
 });
@@ -354,6 +355,9 @@ function randomizeOptions() {
   if (!stored("distanceUnit")) distanceUnitInput.value = US || UK ? "mi" : "km";
   if (!stored("heightUnit")) heightUnit.value = US || UK ? "ft" : "m";
   if (!stored("temperatureScale")) temperatureScale.value = US ? "°F" : "°C";
+
+  // World settings
+  generateEra();
 }
 
 // select heightmap template pseudo-randomly
@@ -387,6 +391,21 @@ function randomizeCultureSet() {
     "random":      2};
   culturesSet.value = rw(sets);
   changeCultureSet();
+}
+
+// generate current year and era name
+function generateEra() {
+  if (!stored("year")) yearInput.value = rand(100, 2000); // current year
+  if (!stored("era")) eraInput.value = Names.getBaseShort(P(.7) ? 1 : rand(nameBases.length)) + " Era";
+  options.year = yearInput.value;
+  options.era = eraInput.value;
+  options.eraShort = options.era.split(" ").map(w => w[0].toUpperCase()).join(""); // short name for era
+}
+
+function regenerateEra() {
+  unlock("era");
+  options.era = eraInput.value = Names.getBaseShort(P(.7) ? 1 : rand(nameBases.length)) + " Era";
+  options.eraShort = options.era.split(" ").map(w => w[0].toUpperCase()).join("");
 }
 
 // remove all saved data from LocalStorage and reload the page

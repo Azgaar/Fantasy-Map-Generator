@@ -339,10 +339,7 @@ class Battle {
 
   cancelResults() {
     // move regiments back to initial positions
-    this.attackers.regiments.concat(this.defenders.regiments).forEach(r => {
-      Military.moveRegiment(r, r.px, r.py);
-    });
-
+    this.attackers.regiments.concat(this.defenders.regiments).forEach(r => Military.moveRegiment(r, r.px, r.py));
     $("#battleScreen").dialog("close");
     this.cleanData();
   }
