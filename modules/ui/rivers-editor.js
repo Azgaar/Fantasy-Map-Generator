@@ -55,7 +55,7 @@ function editRiver(id) {
 
   function drawControlPoints(node) {
     const l = node.getTotalLength() / 2;
-    const segments = Math.ceil(l / 8);
+    const segments = Math.ceil(l / 4);
     const increment = rn(l / segments * 1e5);
     for (let i=increment*segments, c=i; i >= 0; i -= increment, c += increment) {
       const p1 = node.getPointAtLength(i / 1e5);
@@ -183,7 +183,7 @@ function editRiver(id) {
 
   function showElevationProfile() {
     modules.elevation = true;
-    showEPForRiver(node);
+    showEPForRiver(elSelected.node());
   }
 
   function showRiverWidth() {

@@ -1,4 +1,5 @@
 "use strict";
+
 function showEPForRoute(node) {
   const points = [];
   debug.select("#controlPoints").selectAll("circle").each(function() {
@@ -21,7 +22,8 @@ function showEPForRiver(node) {
   showElevationProfile(points, riverLen, true);
 }
 
-function resizeElevationProfile() {
+function closeElevationProfile() {
+  modules.elevation = false;
 }
 
 function showElevationProfile(data, routeLen, isRiver) {
@@ -30,6 +32,7 @@ function showElevationProfile(data, routeLen, isRiver) {
 
   $("#elevationProfile").dialog({
     title: "Elevation profile", resizable: false, width: window.width,
+    close: closeElevationProfile,
     position: {my: "left top", at: "left+20 bottom-240", of: window, collision: "fit"}
   });
 
@@ -43,13 +46,16 @@ function showElevationProfile(data, routeLen, isRiver) {
     }
   }
 
+  // points is a chart (x going right, y going up) as opposed to the screen (x going right, y going down)
   const points = [];
-  var prevB=0, prevH=-1, i=0, j=0, cell=0, b=0, ma=0, mi=100, h=0;
+  var prevB=0, prevH=-1, i=0, j=0, cell=0, b=0, biome, ma=0, mi=100, h=0;
   for (var i=0; i<data.length; i++) {
     cell = data[i];
 
     h = pack.cells.h[cell];
     if (h < 20) h = 20;
+
+    biome = pack.cells.biome[cell];
 
     // check for river up-hill
     if (prevH != -1) {
@@ -68,7 +74,7 @@ function showElevationProfile(data, routeLen, isRiver) {
     b = pack.cells.burg[cell];
     if (b == prevB) b = 0;
     else prevB = b;
-    points.push({x:j, y:h, b:b});
+    points.push({x:j, y:h, b:b, biome:biome});
     j++;
   }
 
@@ -78,13 +84,48 @@ function showElevationProfile(data, routeLen, isRiver) {
   const xOffset = 100;
   const yOffset = 80;
 
-  var chart = d3.select("#elevationGraph").append("svg").attr("width", w+200).attr("height", h+yOffset).attr("id", "elevationGraph");
+  const chart = d3.select("#elevationGraph").append("svg").attr("width", w+200).attr("height", h+yOffset).attr("id", "elevationGraph");
   // arrow-head definition
   chart.append("defs").append("marker").attr("id", "arrowhead").attr("orient", "auto").attr("markerWidth", "2").attr("markerHeight", "4").attr("refX", "0.1").attr("refY", "2").append("path").attr("d", "M0,0 V4 L2,2 Z");
 
-  // main graph line
-  var lineFunc = d3.line().x(d => d.x * w / points.length + xOffset).y(d => h-d.y + yOffset);
-  chart.append("path").attr("d", lineFunc(points)).attr("stroke", "purple").attr("fill", "none").attr("id", "elevationLine");
+  const skyGradient = d3.scaleSequential(d3.interpolateBlues);
+  const skydef = chart.select("defs").append("linearGradient").attr("id", "skydef").attr("x1", "0%").attr("y1", "0%").attr("x2", "0%").attr("y2", "100%");
+  skydef.append("stop").attr("offset", "0%").attr("style", "stop-color:"+skyGradient(0.90)+";stop-opacity:1");
+  skydef.append("stop").attr("offset", "100%").attr("style", "stop-color:"+skyGradient(0.25)+";stop-opacity:1");
+  const sky = chart.append("g").append("rect").attr("y", yOffset).attr("x", xOffset).attr("width", w).attr("height", h).attr("fill", "url(#skydef)");
+
+  // biome colors
+  for (var k=0; k<biomesData.color.length; k++) {
+    var grad = chart.select("defs").append("linearGradient").attr("id", "grad"+k).attr("x1", "0%").attr("y1", "0%").attr("x2", "0%").attr("y2", "100%");
+    grad.append("stop").attr("offset", "0%").attr("style", "stop-color:"+biomesData.color[k]+";stop-opacity:1");
+    grad.append("stop").attr("offset", "100%").attr("style", "stop-color:"+biomesData.color[k]+";stop-opacity:1");
+  }
+
+  var xscale = d3.scaleLinear().domain([0, points.length]).range([0, w]);
+  var yscale = d3.scaleLinear().domain([0, 100]).range([h, 0]);
+
+  points.push({x:points[points.length-1].x+1, y:points[points.length-1].y, biome:points[points.length-1].biome});
+
+  var poly=[];
+  for(var k=0; k<points.length-1; k++) {
+    poly=[];
+
+    const b=points[k].biome;
+    poly.push({x:points[k].x, y:0}); 
+    poly.push({x:points[k].x, y:points[k].y});
+    poly.push({x:points[k+1].x, y:points[k+1].y});
+    poly.push({x:points[k+1].x, y:0});
+    poly.push({x:points[k].x, y:0});
+
+    const he = points[k].y;
+
+    chart.append("g").selectAll("polygon").data([poly]).enter().append("polygon").attr("data-tip", biomesData.name[b]+" (" + getHeight(he)+")").attr("stroke", biomesData.color[b]).attr("fill", "url(#grad"+b+")").attr("points", function(d) {
+      return d.map(function(d) {
+        return [xscale(d.x)+xOffset,yscale(d.y)+yOffset].join(",");
+      }).join(" ");
+    });
+  }
+  points.pop();
 
   // y-axis labels for starting and ending heights
   chart.append("text").attr("id", "epy0").attr("x", xOffset-10).attr("y", h-points[0].y + yOffset).attr("text-anchor", "end");
@@ -103,22 +144,20 @@ function showElevationProfile(data, routeLen, isRiver) {
   }
   
   // x-axis label for start, quarter, halfway and three-quarter, and end
-  chart.append("text").attr("id", "epx1").attr("x", xOffset).attr("y", h+yOffset).attr("text-anchor", "middle");
-  chart.append("text").attr("id", "epx2").attr("x", w / 4 + xOffset).attr("y", h+yOffset).attr("text-anchor", "middle");
-  chart.append("text").attr("id", "epx3").attr("x", w / 2 + xOffset).attr("y", h+yOffset).attr("text-anchor", "middle");
-  chart.append("text").attr("id", "epx4").attr("x", w / 4*3 + xOffset).attr("y", h+yOffset).attr("text-anchor", "middle");
-  chart.append("text").attr("id", "epx5").attr("x", w + xOffset).attr("y", h+yOffset).attr("text-anchor", "middle");
+  chart.append("text").attr("id", "epx1").attr("x", xOffset-20).attr("y", h+yOffset-5).attr("text-anchor", "middle");
+  chart.append("text").attr("id", "epx2").attr("x", w / 4 + xOffset).attr("y", h+yOffset-5).attr("text-anchor", "middle");
+  chart.append("text").attr("id", "epx3").attr("x", w / 2 + xOffset).attr("y", h+yOffset-5).attr("text-anchor", "middle");
+  chart.append("text").attr("id", "epx4").attr("x", w / 4*3 + xOffset).attr("y", h+yOffset-5).attr("text-anchor", "middle");
+  chart.append("text").attr("id", "epx5").attr("x", w + xOffset + 10).attr("y", h+yOffset-5).attr("text-anchor", "middle");
   document.getElementById("epx1").innerHTML = "0 " + distanceUnitInput.value;
   document.getElementById("epx2").innerHTML = rn(routeLen / 4) + " " + distanceUnitInput.value;
   document.getElementById("epx3").innerHTML = rn(routeLen / 2) + " " + distanceUnitInput.value;
   document.getElementById("epx4").innerHTML = rn(routeLen / 4*3) + " " + distanceUnitInput.value;
   document.getElementById("epx5").innerHTML = rn(routeLen) + " " + distanceUnitInput.value;
 
-  chart.append("path").attr("id", "epx11").attr("d", "M" + (xOffset).toString() + ",0L" + (xOffset).toString() +"," + (h+yOffset-15).toString()).attr("stroke", "lightgray").attr("stroke-width", "1");
   chart.append("path").attr("id", "epx12").attr("d", "M" + (w / 4 + xOffset).toString() + "," + (h+yOffset-15).toString() + "L" + (w / 4 + xOffset).toString() + ",0").attr("stroke", "lightgray").attr("stroke-width", "1");
   chart.append("path").attr("id", "epx13").attr("d", "M" + (w / 2 + xOffset).toString() + "," + (h+yOffset-15).toString() + "L" + (w / 2 + xOffset).toString() + ",0").attr("stroke", "lightgray").attr("stroke-width", "1");
   chart.append("path").attr("id", "epx14").attr("d", "M" + (w / 4*3 + xOffset).toString() + "," + (h+yOffset-15).toString() + "L" + (w / 4*3 + xOffset).toString() + ",0").attr("stroke", "lightgray").attr("stroke-width", "1");
-  chart.append("path").attr("id", "epx15").attr("d", "M" + (w + xOffset).toString() + ",0L" + (w + xOffset).toString() +"," + (h+yOffset-15).toString()).attr("stroke", "lightgray").attr("stroke-width", "1");
 
   // draw city labels - try to avoid putting labels over one another
   var y1 = 0;
