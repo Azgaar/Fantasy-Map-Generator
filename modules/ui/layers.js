@@ -16,6 +16,7 @@ function restoreLayers() {
   if (layerIsOn("toggleCultures")) drawCultures();
   if (layerIsOn("toggleProvinces")) drawProvinces();
   if (layerIsOn("toggleReligions")) drawReligions();
+  if (layerIsOn("toggleIce")) drawIce();
 
   // states are getting rendered each time, if it's not required than layers should be hidden
   if (!layerIsOn("toggleBorders")) $('#borders').fadeOut();
@@ -28,13 +29,13 @@ restoreCustomPresets(); // run on-load
 
 function getDefaultPresets() {
   return {
-    "political": ["toggleBorders", "toggleIcons", "toggleLabels", "toggleRivers", "toggleRoutes", "toggleScaleBar", "toggleStates"],
+    "political": ["toggleBorders", "toggleIcons", "toggleIce", "toggleLabels", "toggleRivers", "toggleRoutes", "toggleScaleBar", "toggleStates"],
     "cultural": ["toggleBorders", "toggleCultures", "toggleIcons", "toggleLabels", "toggleRivers", "toggleRoutes", "toggleScaleBar"],
     "religions": ["toggleBorders", "toggleIcons", "toggleLabels", "toggleReligions", "toggleRivers", "toggleRoutes", "toggleScaleBar"],
     "provinces": ["toggleBorders", "toggleIcons", "toggleProvinces", "toggleRivers", "toggleScaleBar"],
     "biomes": ["toggleBiomes", "toggleIce", "toggleRivers", "toggleScaleBar"],
     "heightmap": ["toggleHeight", "toggleRivers"],
-    "physical": ["toggleCoordinates", "toggleHeight", "toggleRivers", "toggleScaleBar"],
+    "physical": ["toggleCoordinates", "toggleHeight", "toggleIce", "toggleRivers", "toggleScaleBar"],
     "poi": ["toggleBorders", "toggleHeight", "toggleIce", "toggleIcons", "toggleMarkers", "toggleRivers", "toggleRoutes", "toggleScaleBar"],
     "military": ["toggleBorders", "toggleIcons", "toggleLabels", "toggleMilitary", "toggleRivers", "toggleRoutes", "toggleScaleBar", "toggleStates"],
     "landmass": ["toggleScaleBar"]

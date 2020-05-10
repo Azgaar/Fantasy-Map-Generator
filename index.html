@@ -1776,17 +1776,6 @@
             </td>
           </tr>
 
-          <tr data-tip="Define scale of a saved png/jpeg image (e.g. 5x). Saving big images is slow and may cause a browser crash!">
-            <td></td>
-            <td>PNG/JPEG scale</td>
-            <td>
-              <input id="pngResolutionInput" data-stored="pngResolution" type="range" min=1 max=8 value=1>
-            </td>
-            <td>
-              <input id="pngResolutionOutput" data-stored="pngResolution" type="number" min=1 max=8 value=1>
-            </td>
-          </tr>
-
           <tr data-tip="Set minimum and maximum possible zoom level">
             <td></td>
             <td>Zoom extent</td>
@@ -3535,7 +3524,7 @@
     <div id="preview3d" class="dialog stable" style="display: none; padding: 0px"></div>
 
     <div id="saveMapData" style="display: none" class="dialog">
-      <div style="margin-bottom: .3em">Please select a saving variant:</div>
+      <div style="margin-bottom: .3em; font-weight: bold">Please select saving variant:</div>
       <div>
         <button onclick="saveMap()" data-tip="Download the map as fully-functional .map file to your machine">.map</button>
         <button onclick="saveSVG()" data-tip="Download the map as vector image (open in browser or Inkscape)">.svg</button>
@@ -3545,6 +3534,11 @@
         <button onclick="quickSave()" data-tip="Save fully-functional map to browser storage. Shortcut: F6">storage</button>
       </div>
       <p style="font-style: italic">Generator uses pop-up window to download files. Please ensure your browser does not block popups</p>
+      <div data-tip="Define scale of a saved png/jpeg image (e.g. 5x). Saving big images is slow and may cause a browser crash!" style="margin-bottom: .3em">
+        PNG / JPEG scale:
+        <input id="pngResolutionInput" data-stored="pngResolution" type="range" min=1 max=8 value=1 style="width: 10.8em">
+        <input id="pngResolutionOutput" data-stored="pngResolution" type="number" min=1 max=8 value=1>
+      </div>
     </div>
 
     <div id="loadMapData" style="display: none" class="dialog">
