@@ -33,7 +33,7 @@ function showElevationProfile(data, routeLen, isRiver) {
   $("#elevationProfile").dialog({
     title: "Elevation profile", resizable: false, width: window.width,
     close: closeElevationProfile,
-    position: {my: "left top", at: "left+20 bottom-240", of: window, collision: "fit"}
+    position: {my: "left top", at: "left+20 bottom-340", of: window, collision: "fit"}
   });
 
   // prevent river graphs from showing rivers as flowing uphill
@@ -84,7 +84,7 @@ function showElevationProfile(data, routeLen, isRiver) {
   const xOffset = 100;
   const yOffset = 80;
 
-  const chart = d3.select("#elevationGraph").append("svg").attr("width", w+200).attr("height", h+yOffset).attr("id", "elevationGraph");
+  const chart = d3.select("#elevationGraph").append("svg").attr("width", w+200).attr("height", h+yOffset+60).attr("id", "elevationGraph");
   // arrow-head definition
   chart.append("defs").append("marker").attr("id", "arrowhead").attr("orient", "auto").attr("markerWidth", "2").attr("markerHeight", "4").attr("refX", "0.1").attr("refY", "2").append("path").attr("d", "M0,0 V4 L2,2 Z");
 
@@ -94,38 +94,42 @@ function showElevationProfile(data, routeLen, isRiver) {
   skydef.append("stop").attr("offset", "100%").attr("style", "stop-color:"+skyGradient(0.25)+";stop-opacity:1");
   const sky = chart.append("g").append("rect").attr("y", yOffset).attr("x", xOffset).attr("width", w).attr("height", h).attr("fill", "url(#skydef)");
 
-  // biome colors
-  for (var k=0; k<biomesData.color.length; k++) {
-    var grad = chart.select("defs").append("linearGradient").attr("id", "grad"+k).attr("x1", "0%").attr("y1", "0%").attr("x2", "0%").attr("y2", "100%");
-    grad.append("stop").attr("offset", "0%").attr("style", "stop-color:"+biomesData.color[k]+";stop-opacity:1");
-    grad.append("stop").attr("offset", "100%").attr("style", "stop-color:"+biomesData.color[k]+";stop-opacity:1");
-  }
+  var landdef = chart.select("defs").append("linearGradient").attr("id", "landdef").attr("x1", "0%").attr("y1", "0%").attr("x2", "0%").attr("y2", "100%");
+  landdef.append("stop").attr("offset", "0%").attr("style", "stop-color:rgb(224,255,224);stop-opacity:1");
+//  landdef.append("stop").attr("offset", "0%").attr("style", "stop-color:rgb(0,192,64);stop-opacity:1");
+  landdef.append("stop").attr("offset", "100%").attr("style", "stop-color:rgb(0,192,64);stop-opacity:1");
 
   var xscale = d3.scaleLinear().domain([0, points.length]).range([0, w]);
   var yscale = d3.scaleLinear().domain([0, 100]).range([h, 0]);
 
+  // complete the polygon
   points.push({x:points[points.length-1].x+1, y:points[points.length-1].y, biome:points[points.length-1].biome});
+  points.push({x:points[points.length-1].x, y:0, biome:points[points.length-1].biome});
+  points.push({x:0, y:0, biome:points[points.length-1].biome});
+  points.push({x:0, y:points[0].y, biome:points[points.length-1].biome});
 
-  var poly=[];
-  for(var k=0; k<points.length-1; k++) {
-    poly=[];
+  // land
+  chart.append("g").selectAll("polygon").data([points]).enter().append("polygon").attr("fill", "url(#landdef)").attr("points", function(d) {
+    return d.map(function(d) {
+      return [xscale(d.x)+xOffset,yscale(d.y)+yOffset].join(",");
+    }).join(" ");
+  });
 
-    const b=points[k].biome;
-    poly.push({x:points[k].x, y:0}); 
-    poly.push({x:points[k].x, y:points[k].y});
-    poly.push({x:points[k+1].x, y:points[k+1].y});
-    poly.push({x:points[k+1].x, y:0});
-    poly.push({x:points[k].x, y:0});
-
-    const he = points[k].y;
-
-    chart.append("g").selectAll("polygon").data([poly]).enter().append("polygon").attr("data-tip", biomesData.name[b]+" (" + getHeight(he)+")").attr("stroke", biomesData.color[b]).attr("fill", "url(#grad"+b+")").attr("points", function(d) {
-      return d.map(function(d) {
-        return [xscale(d.x)+xOffset,yscale(d.y)+yOffset].join(",");
-      }).join(" ");
-    });
-  }
   points.pop();
+  points.pop();
+  points.pop();
+
+  // biome / heights
+  const g = chart.append("g");
+  for(var k=0; k<points.length-1; k++) {
+    const x = xscale(points[k].x)+xOffset;
+    const y = yOffset+120;
+    const c = biomesData.color[points[k].biome];
+    const dataTip = biomesData.name[points[k].biome]+" (" + getHeight(points[k].y)+")";
+
+    g.append("rect").attr("stroke", c).attr("fill", c).attr("x", x).attr("y", y).attr("width", xscale(1)).attr("height", 40).attr("data-tip", dataTip);
+  }
+  points.pop(); // remove the fake last section we added
 
   // y-axis labels for starting and ending heights
   chart.append("text").attr("id", "epy0").attr("x", xOffset-10).attr("y", h-points[0].y + yOffset).attr("text-anchor", "end");
