@@ -1174,6 +1174,7 @@ function rankCells() {
   const areaMean = d3.mean(cells.area); // to adjust population by cell area
 
   for (const i of cells.i) {
+    if (cells.h[i] < 20) continue; // no population in water
     let s = +biomesData.habitability[cells.biome[i]]; // base suitability derived from biome habitability
     if (!s) continue; // uninhabitable biomes has 0 suitability
     if (flMean) s += normalize(cells.fl[i] + cells.conf[i], flMean, flMax) * 250; // big rivers and confluences are valued

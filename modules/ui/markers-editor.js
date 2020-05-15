@@ -135,14 +135,18 @@ function editMarker() {
     const id = elSelected.attr("data-id");
     const used = document.querySelectorAll("use[data-id='"+id+"']");
     const count = used.length === 1 ? "1 element" : used.length + " elements";
-    alertMessage.innerHTML = "Are you sure you want to remove the marker (" + count + ")?";
+    alertMessage.innerHTML = "Are you sure you want to remove all markers of that type (" + count + ")?";
 
-    $("#alert").dialog({resizable: false, title: "Remove marker",
+    $("#alert").dialog({resizable: false, title: "Remove marker type",
       buttons: {
         Remove: function() {
           $(this).dialog("close");
           if (id !== "#marker0") d3.select("#defs-markers").select(id).remove();
-          used.forEach(e => e.remove());
+          used.forEach(e => {
+            const index = notes.findIndex(n => n.id === e.id);
+            if (index != -1) notes.splice(index, 1);
+            e.remove();
+          });
           updateGroupOptions();
           updateGroupOptions();
           $("#markerEditor").dialog("close");
@@ -185,12 +189,6 @@ function editMarker() {
   function changeIconShiftY() {
     const id = elSelected.attr("data-id");
     d3.select("#defs-markers").select(id).select("text").attr("y", this.value + "%");
-  }
-
-  function applyCustomUnicodeIcon() {
-    if (!this.value) return;
-    const id = elSelected.attr("data-id");
-    d3.select("#defs-markers").select(id).select("text").text(this.value);
   }
 
   function toggleStyleSection() {

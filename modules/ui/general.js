@@ -463,3 +463,9 @@ function pressControl() {
     zonesRemove.classList.contains("pressed") ? zonesRemove.classList.remove("pressed") : zonesRemove.classList.add("pressed");
   }
 }
+
+// trigger trash button click on "Delete" keypress
+function removeElementOnKey() {
+  $(".dialog:visible .fastDelete").click();
+  $("button:visible:contains('Remove')").click();
+}

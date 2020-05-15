@@ -41,7 +41,7 @@ function editNotes(id, name) {
   document.getElementById("notesDownload").addEventListener("click", downloadLegends);
   document.getElementById("notesUpload").addEventListener("click", () => legendsToLoad.click());
   document.getElementById("legendsToLoad").addEventListener("change", function() {uploadFile(this, uploadLegends)});
-  document.getElementById("notesRemove").addEventListener("click", triggernotesRemove);
+  document.getElementById("notesRemove").addEventListener("click", triggerNotesRemove);
 
   function changeObject() {
     const note = notes.find(note => note.id === this.value);
@@ -96,7 +96,7 @@ function editNotes(id, name) {
     editNotes(notes[0].id, notes[0].name);
   }
 
-  function triggernotesRemove() {
+  function triggerNotesRemove() {
     alertMessage.innerHTML = "Are you sure you want to remove the selected note?";
     $("#alert").dialog({resizable: false, title: "Remove note",
       buttons: {

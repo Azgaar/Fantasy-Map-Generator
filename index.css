@@ -60,6 +60,13 @@ textarea {
 	pointer-events: none;
 }
 
+#preview {
+	position: absolute;
+	bottom: 1em;
+	left: 1em;
+	cursor: pointer;
+}
+
 #pickerContainer {
 	position: absolute;
 	z-index: 100;
@@ -1021,8 +1028,8 @@ div#regimentSelectorBody > div > div {
 }
 
 .color-div {
-	width: 2.7em;
-	height: 1.1em;
+	width: 2.5em;
+	height: 1em;
 	display: inline-block;
 	margin: .1em .2em;
 	border: 1px #c5c5c5 groove;

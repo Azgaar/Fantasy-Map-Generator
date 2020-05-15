@@ -111,12 +111,6 @@ function applySorting(headers) {
   }).forEach(line => list.appendChild(line));
 }
 
-// trigger trash button click on "Delete" keypress
-function removeElementOnKey() {
-  $(".dialog:visible .icon-trash").click();
-  $("button:visible:contains('Remove')").click();
-}
-
 function addBurg(point) {
   const cells = pack.cells;
   const x = rn(point[0], 2), y = rn(point[1], 2);

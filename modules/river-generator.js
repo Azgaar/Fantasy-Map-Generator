@@ -271,10 +271,14 @@
 
   // remove river and all its tributaries
   const remove = function(id) {
+    const cells = pack.cells;
     const riversToRemove = pack.rivers.filter(r => r.i === id || getBasin(r.i, r.parent, id) === id).map(r => r.i);
     riversToRemove.forEach(r => rivers.select("#river"+r).remove());
-    pack.cells.r.forEach((r, i) => {
-      if (r && riversToRemove.includes(r)) pack.cells.r[i] = 0;
+    cells.r.forEach((r, i) => {
+      if (!r || !riversToRemove.includes(r)) return;
+      cells.r[i] = 0;
+      cells.fl[i] = grid.cells.prec[cells.g[i]];
+      cells.conf[i] = 0;
     });
     pack.rivers = pack.rivers.filter(r => !riversToRemove.includes(r.i));
   }

@@ -2103,7 +2103,7 @@
 
       <button id="labelAlign" data-tip="Turn text path into a straight line" class="icon-resize-horizontal"></button>
       <button id="labelLegend" data-tip="Edit free text notes (legend) for this label" class="icon-edit"></button>
-      <button id="labelRemoveSingle" data-tip="Remove the label. Shortcut: Delete" class="icon-trash"></button>
+      <button id="labelRemoveSingle" data-tip="Remove the label. Shortcut: Delete" class="icon-trash fastDelete"></button>
     </div>
 
     <div id="riverEditor" class="dialog" style="display: none">
@@ -2130,7 +2130,7 @@
       <button id="riverElevationProfile" data-tip="Show the elevation profile for the river" class="icon-chart-area"></button>
       <button id="riverNew" data-tip="Create new river clicking on map" class="icon-map-pin"></button>
       <button id="riverLegend" data-tip="Edit free text notes (legend) for the river" class="icon-edit"></button>
-      <button id="riverRemove" data-tip="Remove river. Shortcut: Delete" class="icon-trash"></button>
+      <button id="riverRemove" data-tip="Remove river. Shortcut: Delete" class="icon-trash fastDelete"></button>
     </div>
 
     <div id="elevationProfile" class="dialog" style="display: none" width="100%">
@@ -2153,7 +2153,7 @@
       <button id="routeSplit" data-tip="Click on a control point to split the route" class="icon-unlink"></button>
       <button id="routeLegend" data-tip="Edit free text notes (legend) for the route" class="icon-edit"></button>
       <button id="routeNew" data-tip="Create new route clicking on map" class="icon-map-pin"></button>
-      <button id="routeRemove" data-tip="Remove route. Shortcut: Delete" class="icon-trash"></button>
+      <button id="routeRemove" data-tip="Remove route. Shortcut: Delete" class="icon-trash fastDelete"></button>
     </div>
 
     <div id="lakeEditor" class="dialog" style="display: none">
@@ -2176,7 +2176,7 @@
       <button id="iceRandomize" data-tip="Randomize Iceberd shape" class="icon-shuffle"></button>
       <input id="iceSize" data-tip="Change Iceberg size" type="range" min=".05" max="1" step=".01">
       <button id="iceNew" data-tip="Add an Iceberg (click on map)" class="icon-plus"></button>
-      <button id="iceRemove" data-tip="Remove the element. Shortcut: Delete" class="icon-trash"></button>
+      <button id="iceRemove" data-tip="Remove the element. Shortcut: Delete" class="icon-trash fastDelete"></button>
     </div>
 
     <div id="coastlineEditor" class="dialog" style="display: none">
@@ -2322,7 +2322,7 @@
         <button id="reliefCopy" data-tip="Copy selected relief icon" class="icon-clone"></button>
         <button id="reliefMoveFront" data-tip="Move selected relief icon to front" class="icon-level-up"></button>
         <button id="reliefMoveBack" data-tip="Move selected relief icon back" class="icon-level-down"></button>
-        <button id="reliefRemove" data-tip="Remove selected relief icon. Shortcut: Delete" class="icon-trash"></button>
+        <button id="reliefRemove" data-tip="Remove selected relief icon. Shortcut: Delete" class="icon-trash fastDelete"></button>
       </div>
     </div>
 
@@ -2375,7 +2375,7 @@
         <button id="burgOpenCOA" data-tip="Open burg's COA in the Iron Arachne Heraldry Generator. Ctrl + click to change the seed" class="icon-shield-alt"></button>
         <button id="burgRelocate" data-tip="Relocate burg" class="icon-target"></button>
         <button id="burglLegend" data-tip="Edit free text notes (legend) for this burg" class="icon-edit"></button>
-        <button id="burgRemove" data-tip="Remove non-capital burg. Shortcut: Delete" class="icon-trash"></button>
+        <button id="burgRemove" data-tip="Remove non-capital burg. Shortcut: Delete" class="icon-trash fastDelete"></button>
       </div>
     </div>
 
@@ -2416,7 +2416,7 @@
       <button id="markerToggleBubble" data-tip="Toggle pin (bubble) display" class="icon-info-circled"></button>
       <button id="markerLegendButton" data-tip="Edit place legend (free text notes)" class="icon-edit"></button>
       <button id="markerAdd" data-tip="Add additional marker of that type" class="icon-plus"></button>
-      <button id="markerRemove" data-tip="Remove the marker. Shortcut: Delete" class="icon-trash"></button>
+      <button id="markerRemove" data-tip="Remove the marker. Shortcut: Delete" class="icon-trash fastDelete"></button>
     </div>
 
     <div id="regimentEditor" class="dialog" style="display: none">
@@ -2444,7 +2444,7 @@
         <button id="regimentAttach" data-tip="Attach regiment to another one (include this regiment to another one)" class="icon-attach"></button>
         <button id="regimentRegenerateLegend" data-tip="Regenerate legend for this regiment" class="icon-retweet"></button>
         <button id="regimentLegend" data-tip="Edit free text notes (legend) for this regiment" class="icon-edit"></button>
-        <button id="regimentRemove" data-tip="Remove regiment. Shortcut: Delete" class="icon-trash"></button>
+        <button id="regimentRemove" data-tip="Remove regiment. Shortcut: Delete" class="icon-trash fastDelete"></button>
       </div>
     </div>
 
@@ -2660,8 +2660,8 @@
         <button id="convertImageLoad" data-tip="Load image to convert" class="icon-upload"></button>
         <button id="convertAutoLum" data-tip="Auto-assign colors based on liminosity (good to monochrome images)" class="icon-adjust"></button>
         <button id="convertAutoHue" data-tip="Auto-assign colors based on hue (good to colored images)" class="icon-brush"></button>
-        <button id="convertColorsButton" data-tip="Set number of colors" class="icon-signal"></button>
-        <input id="convertColors" value="18" style="display: none"/>
+        <button id="convertColorsButton" data-tip="Set maximum number of colors" class="icon-signal"></button>
+        <input id="convertColors" value="128" style="display: none"/>
         <button id="convertComplete" data-tip="Complete the conversion. All unassigned colors will be considered as ocean" class="icon-check"></button>
         <button id="convertCancel" data-tip="Cancel the conversion. Previous heightmap will be restored" class="icon-cancel"></button>
       </div>
@@ -2675,7 +2675,7 @@
         <i>Set height: </i>
         <span id="colorsSelectValue"></span>
         <span>(<span id="colorsSelectFriendly">0</span>)</span><br>
-        <div id="colorScheme"></div>
+        <div id="imageConverterPalette"></div>
       </div>
 
       <div data-tip="Select a color to re-assign the height value" id="colorsAssigned" style="display: none">
@@ -3124,7 +3124,7 @@
         <button id="notesFocus" data-tip="Focus on selected object" class="icon-target"></button>
         <button id="notesDownload" data-tip="Download notes to PC" class="icon-download"></button>
         <button id="notesUpload" data-tip="Upload notes from PC" class="icon-upload"></button>
-        <button id="notesRemove" data-tip="Remove this note" class="icon-trash"></button>
+        <button id="notesRemove" data-tip="Remove this note" class="icon-trash fastDelete"></button>
       </div>
     </div>
 
@@ -3658,7 +3658,6 @@
   <script defer src="modules/ui/battle-screen.js"></script>
   <script defer src="modules/ui/editors.js"></script>
   <script defer src="modules/ui/3d.js"></script>
-  <script defer src="libs/quantize.min.js"></script>
+  <script defer src="libs/rgbquant.js"></script>
   <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
-  <script defer src="libs/publicstorage.js"></script>
 </body>
