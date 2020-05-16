@@ -49,14 +49,14 @@ function showElevationProfile(data, routeLen, isRiver) {
   }
 
   const chartWidth = window.innerWidth-280;
-  const chartHeight = 200; // height of our land/sea profile, excluding the biomes data below
+  const chartHeight = 300; // height of our land/sea profile, excluding the biomes data below
 
   const xOffset = 160;
-  const yOffset = 140;  // this is our drawing starting point from top-left (y = 0) of SVG
+  const yOffset = 70;  // this is our drawing starting point from top-left (y = 0) of SVG
 
   const biomesHeight = 40;
 
-  let chartData = {biome:[], burg:[], cell:[], height:[], mi:1000000, ma:0, points:[] }
+  let chartData = {biome:[], burg:[], cell:[], height:[], mi:1000000, ma:0, mih: 100, mah: 0, points:[] }
   for (let i=0, prevB=0, prevH=-1; i<data.length; i++) {
     let cell = data[i];
 
@@ -83,6 +83,8 @@ function showElevationProfile(data, routeLen, isRiver) {
     chartData.cell[i] = cell;
     let sh = getHeight(h);
     chartData.height[i] = parseInt(sh.substr(0, sh.indexOf(' ')));
+    chartData.mih = Math.min(chartData.mih, h);
+    chartData.mah = Math.max(chartData.mah, h);
     chartData.mi = Math.min(chartData.mi, chartData.height[i]);
     chartData.ma = Math.max(chartData.ma, chartData.height[i]);
   }
@@ -107,9 +109,12 @@ function showElevationProfile(data, routeLen, isRiver) {
     // arrow-head definition
     chart.append("defs").append("marker").attr("id", "arrowhead").attr("orient", "auto").attr("markerWidth", "2").attr("markerHeight", "4").attr("refX", "0.1").attr("refY", "2").append("path").attr("d", "M0,0 V4 L2,2 Z").attr("fill", "darkgray");
   
+    let colors = getColorScheme();
     var landdef = chart.select("defs").append("linearGradient").attr("id", "landdef").attr("x1", "0%").attr("y1", "0%").attr("x2", "0%").attr("y2", "100%");
-    landdef.append("stop").attr("offset", "0%").attr("style", "stop-color:rgb(64,255,128);stop-opacity:1");
-    landdef.append("stop").attr("offset", "100%").attr("style", "stop-color:rgb(0,192,64);stop-opacity:1");
+    for (let k=chartData.mah; k >= chartData.mih; k--) {
+      let perc = 1 - (k - chartData.mih)  / (chartData.mah - chartData.mih);
+      landdef.append("stop").attr("offset", perc*100 + "%").attr("style", "stop-color:" + getColor(k, colors) + ";stop-opacity:1");
+    }
   
     // land
     let curve = d3.line().curve(d3.curveBasis); // see https://github.com/d3/d3-shape#curves
