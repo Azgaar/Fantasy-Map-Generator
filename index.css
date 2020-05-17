@@ -1028,10 +1028,10 @@ div#regimentSelectorBody > div > div {
 }
 
 .color-div {
-	width: 2.5em;
+	width: 3em;
 	height: 1em;
 	display: inline-block;
-	margin: .1em .2em;
+	margin: 0 .16em;
 	border: 1px #c5c5c5 groove;
 	cursor: pointer;
 }

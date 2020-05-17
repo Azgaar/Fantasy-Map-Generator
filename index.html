@@ -1883,8 +1883,8 @@
           <button data-tip="Display brushes panel" id="paintBrushes">Paint Brushes</button>
           <button data-tip="Open template editor" id="applyTemplate" style="display: none">Template Editor</button>
           <button data-tip="Open Image Converter" id="convertImage" style="display: none">Image Converter</button>
-          <button data-tip="Render heightmap data as a small monochrome image" id="heightmapPreview">Heightmap Preview</button>
-          <button data-tip="Preview heightmap in 3D scene" id="heightmap3DView">3D</button>
+          <button data-tip="Render heightmap data as a small monochrome image" id="heightmapPreview">Preview</button>
+          <button data-tip="Preview heightmap in 3D scene" id="heightmap3DView">3D scene</button>
         </div>
 
         <div id="customizeOptions">
@@ -2674,17 +2674,18 @@
 
       <div id="convertImageButtons">
         <button id="convertImageLoad" data-tip="Load image to convert" class="icon-upload"></button>
-        <button id="convertAutoLum" data-tip="Auto-assign colors based on liminosity (good to monochrome images)" class="icon-adjust"></button>
-        <button id="convertAutoHue" data-tip="Auto-assign colors based on hue (good to colored images)" class="icon-brush"></button>
+        <button id="convertAutoLum" data-tip="Auto-assign colors based on liminosity (good for monochrome images)" class="icon-adjust"></button>
+        <button id="convertAutoHue" data-tip="Auto-assign colors based on hue (good for colored images)" class="icon-paint-roller"></button>
+        <button id="convertAutoFMG" data-tip="Auto-assign colors using generator scheme (for exported colored heightmaps)" class="icon-layer-group"></button>
         <button id="convertColorsButton" data-tip="Set maximum number of colors" class="icon-signal"></button>
-        <input id="convertColors" value="128" style="display: none"/>
+        <input id="convertColors" value="100" style="display: none"/>
         <button id="convertComplete" data-tip="Complete the conversion. All unassigned colors will be considered as ocean" class="icon-check"></button>
         <button id="convertCancel" data-tip="Cancel the conversion. Previous heightmap will be restored" class="icon-cancel"></button>
       </div>
 
-      <div data-tip="Set opacity of the loaded image" style="padding-top: 4px"><i>Overlay opacity:</i><br>
-        <input id="convertOverlay" type="range" min=0 max=1 step=.01 value=0 style="width: 11.5em">
-        <input id="convertOverlayNumber" type="number" min=0 max=1 step=.01 value=0 style="width: 3.5em">
+      <div data-tip="Set opacity of the loaded image" style="padding-top: .4em"><i>Overlay opacity:</i><br>
+        <input id="convertOverlay" type="range" min=0 max=1 step=.01 value=0 style="width: 12.6em">
+        <input id="convertOverlayNumber" type="number" min=0 max=1 step=.01 value=0 style="width: 4.2em">
       </div>
 
       <div data-tip="Select a color below and assign a height value for it" id="colorsSelect" style="display: none">
@@ -2695,11 +2696,11 @@
       </div>
 
       <div data-tip="Select a color to re-assign the height value" id="colorsAssigned" style="display: none">
-        <i>Assigned colors: </i><br>
+        <i>Assigned colors (<span id="colorsAssignedNumber"></span>):</i><br>
       </div>
 
       <div data-tip="Select a color to assign a height value" id="colorsUnassigned" style="display: none">
-        <i>Unassigned colors: </i><br>
+        <i>Unassigned colors (<span id="colorsUnassignedNumber"></span>):</i><br>
       </div>
 
     </div>

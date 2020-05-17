@@ -101,11 +101,9 @@ function editRoute(onClick) {
 
     elSelected.attr("d", round(lineGen(points)));
     const l = elSelected.node().getTotalLength();
-    routeLength.innerHTML = rn(l * distanceScaleInput.value) + " " + distanceUnitInput.value;    
- 
-    if (modules.elevation) {
-      showEPForRoute(elSelected.node());
-    }
+    routeLength.innerHTML = rn(l * distanceScaleInput.value) + " " + distanceUnitInput.value;
+
+    if (modules.elevation) showEPForRoute(elSelected.node());
   }
 
   function showElevationProfile() {
