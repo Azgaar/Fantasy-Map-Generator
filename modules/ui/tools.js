@@ -158,8 +158,8 @@ function regenerateStates() {
     tip(`Not enought burgs to generate ${regionsInput.value} states. Will generate only ${burgs.length} states`, false, "warn");
   }
 
-  // burg ids sorted by a bit randomized population:
-  const sorted = burgs.map(b => [b.i, b.population * Math.random()]).sort((a, b) => b[1] - a[1]).map(b => b[0]);
+  // burg local ids sorted by a bit randomized population:
+  const sorted = burgs.map((b, i) => [i, b.population * Math.random()]).sort((a, b) => b[1] - a[1]).map(b => b[0]);
   const capitalsTree = d3.quadtree();
 
   // turn all old capitals into towns
@@ -194,8 +194,8 @@ function regenerateStates() {
     if (!i) return {i, name: neutral};
 
     let capital = null, x = 0, y = 0;
-    for (let i=0; i < sorted.length; i++) {
-      capital = burgs[sorted[i]];
+    for (const i of sorted) {
+      capital = burgs[i];
       x = capital.x, y = capital.y;
       if (capitalsTree.find(x, y, spacing) === undefined) break;
       spacing = Math.max(spacing - 1, 1);
