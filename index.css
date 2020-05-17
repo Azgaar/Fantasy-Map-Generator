@@ -2103,16 +2103,12 @@ svg.button {
 
 .epgrid line {
   stroke: lightgrey;
-  stroke-opacity: 0.7;
+  stroke-opacity: .7;
   shape-rendering: crispEdges;
 }
 
 .epgrid path {
   stroke-width: 0;
-}
-
-.centered {
-	text-align: center;
 }
 
 #debug {
