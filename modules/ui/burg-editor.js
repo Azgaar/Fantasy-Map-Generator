@@ -318,7 +318,17 @@ function editBurg(id) {
         if (deg < 0) deg += 360;
         let norm = rn(normalize(deg, 0, 360) * 8) / 4;
         if (norm === 2) norm = 0;
-        return "sea="+norm;
+        switch(norm) {
+          case 0 : return "&southSea=1";
+          case 0.25 : return "&southSea=1&westSea=1";
+          case 0.50 : return "&westSea=1";
+          case 0.75 : return "&westSea=1&northSea=1";
+          case 1 : return "&northSea=1";
+          case 1.25 : return "&northSea=1&eastSea=1";
+          case 1.5 : return "&eastSea=1";
+          case 1.75 : return "&eastSea=1&southSea=1";
+        }
+        return "&sea="+norm;
         // debug.selectAll("*").remove();
         // pack.burgs.filter(b => b.port).forEach(b => {
         //   var p1 = pack.cells.p[b.cell];
