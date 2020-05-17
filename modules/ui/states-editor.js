@@ -215,8 +215,7 @@ function editStates() {
   }
 
   function editStateName(state) {
-
-    //Reset input value and close add mode
+    // reset input value and close add mode
     stateNameEditorCustomForm.value = "";
     const addModeActive = stateNameEditorCustomForm.style.display === "inline-block";
     if (addModeActive) {
@@ -244,6 +243,7 @@ function editStates() {
     document.getElementById("stateNameEditorShortCulture").addEventListener("click", regenerateShortNameCuture);
     document.getElementById("stateNameEditorShortRandom").addEventListener("click", regenerateShortNameRandom);
     document.getElementById("stateNameEditorAddForm").addEventListener("click", addCustomForm);
+    document.getElementById("stateNameEditorCustomForm").addEventListener("change", addCustomForm);
     document.getElementById("stateNameEditorFullRegenerate").addEventListener("click", regenerateFullName);
 
     function regenerateShortNameCuture() {
@@ -264,7 +264,7 @@ function editStates() {
       const addModeActive = stateNameEditorCustomForm.style.display === "inline-block";
       stateNameEditorCustomForm.style.display = addModeActive ? "none" : "inline-block";
       stateNameEditorSelectForm.style.display = addModeActive ? "inline-block" : "none";
-      if (addModeActive) applyOption(stateNameEditorSelectForm, value);
+      if (value && addModeActive) applyOption(stateNameEditorSelectForm, value);
       stateNameEditorCustomForm.value = "";
     }
 
