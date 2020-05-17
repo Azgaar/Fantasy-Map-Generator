@@ -2111,6 +2111,10 @@ svg.button {
   stroke-width: 0;
 }
 
+.centered {
+	text-align: center;
+}
+
 #debug {
 	font-size: 1px;
 	opacity: .8;
