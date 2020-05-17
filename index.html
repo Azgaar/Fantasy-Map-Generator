@@ -2134,23 +2134,23 @@
     </div>
 
     <div id="elevationProfile" class="dialog" style="display: none" width="100%">
-      <div data-tip="Set height scale">
-        <div>Height scale:</div>
-        <div><input id="epScaleRange" type="range" min=1 max=100 value=50></div>
-
-        <div>Curve:</div>
-        <div>
-          <select id="epCurve">
-            <option>Linear</option>
-            <option selected>Basis spline</option>
-            <option>Bundle</option>
-            <option>Cubic Catmull-Rom</option>
-            <option>Monotone X</option>
-            <option>Natural</option>
-          </select>
+      <div id="elevationGraph" data-tip="Elevation profile"></div>
+      <div class="centered">
+        <div id="epControls">
+          <span data-tip="Set height scale">Height scale: <input id="epScaleRange" type="range" min=1 max=100 value=50></span>
+          <span data-tip="Set curve profile">Curve:
+            <select id="epCurve">
+              <option>Linear</option>
+                <option selected>Basis spline</option>
+              <option>Bundle</option>
+              <option>Cubic Catmull-Rom</option>
+              <option>Monotone X</option>
+              <option>Natural</option>
+            </select>
+          </span>
+          <span><button id="epSave" data-tip="Download the chart data as a CSV file" class="icon-download"></button></span>
         </div>
       </div>
-      <div id="elevationGraph" data-tip="Elevation profile"></div>
     </div>
 
     <div id="routeEditor" class="dialog" style="display: none">
