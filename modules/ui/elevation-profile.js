@@ -49,7 +49,7 @@ function showElevationProfile(data, routeLen, isRiver) {
   const chartHeight = 300; // height of our land/sea profile, excluding the biomes data below
 
   const xOffset = 80;
-  const yOffset = 20;  // this is our drawing starting point from top-left (y = 0) of SVG
+  const yOffset = 80;  // this is our drawing starting point from top-left (y = 0) of SVG
 
   const biomesHeight = 40;
 
