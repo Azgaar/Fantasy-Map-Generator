@@ -322,7 +322,7 @@ function loadTHREE() {
 }
 
 function OrbitControls(camera, domElement) {
-  if (THREE.OrbitControls) new THREE.OrbitControls(camera, domElement);
+  if (THREE.OrbitControls) return new THREE.OrbitControls(camera, domElement);
 
   return new Promise(resolve => {
     const script = document.createElement('script');
