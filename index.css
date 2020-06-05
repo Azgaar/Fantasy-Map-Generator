@@ -969,12 +969,14 @@ tr.battleCasualties, tr.battleSurvivors {
 	font-size: .9em;
 }
 
-#battleBody div.battlePhases {
-	position: absolute;
-	background-color: #fff;
+#battleBody div.battlePhases,
+#battleBottom div.battleTypes {
+	position: fixed;
+	background-color: #ffffff30;
 }
 
-#battleBody div.battlePhases > button {
+#battleBody div.battlePhases > button,
+#battleBottom div.battleTypes > button {
 	width: 3.2em;
 	display: block;
 	margin: .2em 0;

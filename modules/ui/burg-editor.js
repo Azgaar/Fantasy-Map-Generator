@@ -316,35 +316,12 @@ function editBurg(id) {
         const p2 = cells.p[cells.haven[i]];
         let deg = Math.atan2(p2[1] - p1[1], p2[0] - p1[0]) * 180 / Math.PI - 90;
         if (deg < 0) deg += 360;
-        let norm = rn(normalize(deg, 0, 360) * 8) / 4;
-        if (norm === 2) norm = 0;
-        switch(norm) {
-          case 0 : return "&southSea=1";
-          case 0.25 : return "&southSea=1&westSea=1";
-          case 0.50 : return "&westSea=1";
-          case 0.75 : return "&westSea=1&northSea=1";
-          case 1 : return "&northSea=1";
-          case 1.25 : return "&northSea=1&eastSea=1";
-          case 1.5 : return "&eastSea=1";
-          case 1.75 : return "&eastSea=1&southSea=1";
-        }
+        const norm = rn(normalize(deg, 0, 360) * 2, 2); // 0 = south, 0.5 = west, 1 = north, 1.5 = east
         return "&sea="+norm;
-        // debug.selectAll("*").remove();
-        // pack.burgs.filter(b => b.port).forEach(b => {
-        //   var p1 = pack.cells.p[b.cell];
-        //   var p2 = pack.cells.p[pack.cells.haven[b.cell]];
-        //   var deg = Math.atan2(p2[1] - p1[1], p2[0] - p1[0]) * 180 / Math.PI - 90;
-        //   if (deg < 0) deg += 360;
-        //   var norm = rn(normalize(deg, 0, 360) * 8) / 4;
-        //   if (norm === 2) norm = 0;
-        //   debug.append("line").attr("x1", p1[0]).attr("y1", p1[1]).attr("x2", p2[0]).attr("y2", p2[1]).attr("stroke", "red").attr("stroke-width", .2);
-        //   debug.append("circle").attr("cx", b.x).attr("cy", b.y).attr("r", .4);
-        //   debug.append("text").attr("x", b.x+1).attr("y", b.y).attr("font-size", 2).text(rn(norm, 2));
-        // });
       }
 
-      const site = "http://fantasycities.watabou.ru/";
-      const url = `${site}?name=${name}&size=${size}&seed=${s}&hub=${hub}&random=0&continuous=0&river=${river}&coast=${coast}&citadel=${citadel}&plaza=${plaza}&temple=${temple}&walls=${walls}&shantytown=${shanty}${sea}`;
+      const site = "http://fantasycities.watabou.ru/?random=0&continuous=0";
+      const url = `${site}&name=${name}&size=${size}&seed=${s}&hub=${hub}&river=${river}&coast=${coast}&citadel=${citadel}&plaza=${plaza}&temple=${temple}&walls=${walls}&shantytown=${shanty}${sea}`;
       openURL(url);
     }
   }
