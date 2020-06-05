@@ -47,7 +47,7 @@ function editRoute(onClick) {
 
   function drawControlPoints(node) {
     const l = node.getTotalLength();
-    const increment = l / Math.ceil(l / 8);
+    const increment = l / Math.ceil(l / 4);
     for (let i=0; i <= l; i += increment) {addControlPoint(node.getPointAtLength(i));}
     routeLength.innerHTML = rn(l * distanceScaleInput.value) + " " + distanceUnitInput.value;
   }
@@ -101,16 +101,14 @@ function editRoute(onClick) {
 
     elSelected.attr("d", round(lineGen(points)));
     const l = elSelected.node().getTotalLength();
-    routeLength.innerHTML = rn(l * distanceScaleInput.value) + " " + distanceUnitInput.value;    
- 
-    if (modules.elevation) {
-      showEPForRoute(elSelected.node());
-    }
+    routeLength.innerHTML = rn(l * distanceScaleInput.value) + " " + distanceUnitInput.value;
+
+    if (modules.elevation) showEPForRoute(elSelected.node());
   }
 
   function showElevationProfile() {
     modules.elevation = true;
-    showEPForRoute(node);
+    showEPForRoute(elSelected.node());
   }
 
   function showGroupSection() {

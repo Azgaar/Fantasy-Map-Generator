@@ -351,7 +351,8 @@ function saveGeoJSON_Cells() {
     data += "      \"state\": \""+cells.state[i]+"\",\n";
     data += "      \"province\": \""+cells.province[i]+"\",\n";
     data += "      \"culture\": \""+cells.culture[i]+"\",\n";
-    data += "      \"religion\": \""+cells.religion[i]+"\"\n";
+    data += "      \"religion\": \""+cells.religion[i]+"\",\n";
+    data += "      \"neighbors\": ["+cells.c[i]+"]\n";
     data +="   }\n},\n";
   });
 

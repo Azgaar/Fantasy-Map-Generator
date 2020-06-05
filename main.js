@@ -343,7 +343,8 @@ function showWelcomeMessage() {
     <ul>${post}
       <li>Battle simulation</li>
       <li>Ice layer and Ice editor</li>
-      <li>Route Elevation profile</li>
+      <li>Route and River Elevation profile</li>
+      <li>Image Converter enhancement</li>
       <li>Name generator improvement</li>
       <li>Fogging style change</li>
     </ul>

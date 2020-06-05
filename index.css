@@ -114,7 +114,7 @@ button, select, a, .pointer {
 	fill-rule: evenodd;
 }
 
-#oceanLayers {
+#oceanLayers, #terrs {
 	fill-rule: evenodd;
 }
 
@@ -1028,10 +1028,10 @@ div#regimentSelectorBody > div > div {
 }
 
 .color-div {
-	width: 2.5em;
+	width: 3em;
 	height: 1em;
 	display: inline-block;
-	margin: .1em .2em;
+	margin: 0 .16em;
 	border: 1px #c5c5c5 groove;
 	cursor: pointer;
 }
@@ -2099,6 +2099,16 @@ svg.button {
 	font-size: 2.4em;
 	color: #fff5da;
 	text-shadow: 0px 1px 4px #4c3a35;
+}
+
+.epgrid line {
+  stroke: lightgrey;
+  stroke-opacity: .7;
+  shape-rendering: crispEdges;
+}
+
+.epgrid path {
+  stroke-width: 0;
 }
 
 #debug {

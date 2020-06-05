@@ -304,7 +304,7 @@
     const station = base ? `${r.name} is ${r.n ? "based" : "stationed"} in ${base}. ` : "";
 
     const composition = r.a ? Object.keys(r.u).map(t => `— ${t}: ${r.u[t]}`).join("\r\n") : null;
-    const troops = composition ? `\r\n\r\nRegiment composition:\r\n${composition}.` : "";
+    const troops = composition ? `\r\n\r\nRegiment composition in ${options.year} ${options.eraShort}:\r\n${composition}.` : "";
 
     const campaign = s.campaigns ? ra(s.campaigns) : null;
     const year = campaign ? rand(campaign.start, campaign.end) : gauss(options.year-100, 150, 1, options.year-6);

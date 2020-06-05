@@ -1883,8 +1883,8 @@
           <button data-tip="Display brushes panel" id="paintBrushes">Paint Brushes</button>
           <button data-tip="Open template editor" id="applyTemplate" style="display: none">Template Editor</button>
           <button data-tip="Open Image Converter" id="convertImage" style="display: none">Image Converter</button>
-          <button data-tip="Render heightmap data as a small monochrome image" id="heightmapPreview">Heightmap Preview</button>
-          <button data-tip="Preview heightmap in 3D scene" id="heightmap3DView">3D</button>
+          <button data-tip="Render heightmap data as a small monochrome image" id="heightmapPreview">Preview</button>
+          <button data-tip="Preview heightmap in 3D scene" id="heightmap3DView">3D scene</button>
         </div>
 
         <div id="customizeOptions">
@@ -2135,6 +2135,22 @@
 
     <div id="elevationProfile" class="dialog" style="display: none" width="100%">
       <div id="elevationGraph" data-tip="Elevation profile"></div>
+      <div style="text-align: center">
+        <div id="epControls">
+          <span data-tip="Set height scale">Height scale: <input id="epScaleRange" type="range" min=1 max=100 value=50></span>
+          <span data-tip="Set curve profile">Curve:
+            <select id="epCurve">
+              <option>Linear</option>
+                <option selected>Basis spline</option>
+              <option>Bundle</option>
+              <option>Cubic Catmull-Rom</option>
+              <option>Monotone X</option>
+              <option>Natural</option>
+            </select>
+          </span>
+          <span><button id="epSave" data-tip="Download the chart data as a CSV file" class="icon-download"></button></span>
+        </div>
+      </div>
     </div>
 
     <div id="routeEditor" class="dialog" style="display: none">
@@ -2492,8 +2508,8 @@
         <button id="battleAddRegiment" data-tip="Add regiment to the battle" class="icon-user-plus"></button>
         <button id="battleRoll" data-tip="Roll dice to update random factor" class="icon-die"></button>
         <button id="battleRun" data-tip="Iterate battle" class="icon-play"></button>
-        <button id="battleApply" data-tip="Apply battle results and close the screen" class="icon-check"></button>
-        <button id="battleCancel" data-tip="Cancel battle results and close the screen" class="icon-cancel"></button>
+        <button id="battleApply" data-tip="End battle: apply current results and close the screen" class="icon-check"></button>
+        <button id="battleCancel" data-tip="Cancel battle: roll back results and close the screen" class="icon-cancel"></button>
       </div>
     </div>
 
@@ -2658,17 +2674,18 @@
 
       <div id="convertImageButtons">
         <button id="convertImageLoad" data-tip="Load image to convert" class="icon-upload"></button>
-        <button id="convertAutoLum" data-tip="Auto-assign colors based on liminosity (good to monochrome images)" class="icon-adjust"></button>
-        <button id="convertAutoHue" data-tip="Auto-assign colors based on hue (good to colored images)" class="icon-brush"></button>
+        <button id="convertAutoLum" data-tip="Auto-assign colors based on liminosity (good for monochrome images)" class="icon-adjust"></button>
+        <button id="convertAutoHue" data-tip="Auto-assign colors based on hue (good for colored images)" class="icon-paint-roller"></button>
+        <button id="convertAutoFMG" data-tip="Auto-assign colors using generator scheme (for exported colored heightmaps)" class="icon-layer-group"></button>
         <button id="convertColorsButton" data-tip="Set maximum number of colors" class="icon-signal"></button>
-        <input id="convertColors" value="128" style="display: none"/>
+        <input id="convertColors" value="100" style="display: none"/>
         <button id="convertComplete" data-tip="Complete the conversion. All unassigned colors will be considered as ocean" class="icon-check"></button>
         <button id="convertCancel" data-tip="Cancel the conversion. Previous heightmap will be restored" class="icon-cancel"></button>
       </div>
 
-      <div data-tip="Set opacity of the loaded image" style="padding-top: 4px"><i>Overlay opacity:</i><br>
-        <input id="convertOverlay" type="range" min=0 max=1 step=.01 value=0 style="width: 11.5em">
-        <input id="convertOverlayNumber" type="number" min=0 max=1 step=.01 value=0 style="width: 3.5em">
+      <div data-tip="Set opacity of the loaded image" style="padding-top: .4em"><i>Overlay opacity:</i><br>
+        <input id="convertOverlay" type="range" min=0 max=1 step=.01 value=0 style="width: 12.6em">
+        <input id="convertOverlayNumber" type="number" min=0 max=1 step=.01 value=0 style="width: 4.2em">
       </div>
 
       <div data-tip="Select a color below and assign a height value for it" id="colorsSelect" style="display: none">
@@ -2679,11 +2696,11 @@
       </div>
 
       <div data-tip="Select a color to re-assign the height value" id="colorsAssigned" style="display: none">
-        <i>Assigned colors: </i><br>
+        <i>Assigned colors (<span id="colorsAssignedNumber"></span>):</i><br>
       </div>
 
       <div data-tip="Select a color to assign a height value" id="colorsUnassigned" style="display: none">
-        <i>Unassigned colors: </i><br>
+        <i>Unassigned colors (<span id="colorsUnassignedNumber"></span>):</i><br>
       </div>
 
     </div>
@@ -2853,7 +2870,7 @@
           <option data-form="Union" value="United States">United States</option>
           <option data-form="Wild" value="United Tribes">United Tribes</option>
         </select>
-        <input id="stateNameEditorCustomForm" placeholder="type form name" data-tip="Create custom state form name" style="display: none; width: 11em;">
+        <input id="stateNameEditorCustomForm" placeholder="type form name" data-tip="Enter custom form name" style="display: none; width: 11em;">
         <span id="stateNameEditorAddForm" data-tip="Click to add custom state form name to the list" class="icon-plus pointer"></span>
       </div>
 

@@ -11,8 +11,8 @@ class Battle {
     this.y = defender.y;
     this.name = this.getBattleName();
     this.iteration = 0;
-    this.attackers = {regiments:[], distances:[], morale:100};
-    this.defenders = {regiments:[], distances:[], morale:100};
+    this.attackers = {regiments:[], distances:[], morale:100, casualties:0};
+    this.defenders = {regiments:[], distances:[], morale:100, casualties:0};
 
     this.addHeaders();
     this.addRegiment("attackers", attacker);
@@ -260,6 +260,8 @@ class Battle {
 
     this.calculateCasualties("attackers", casualtiesA);
     this.calculateCasualties("defenders", casualtiesD);
+    this.attackers.casualties += casualtiesA;
+    this.defenders.casualties += casualtiesD;
 
     // change morale
     this.attackers.morale = Math.max(this.attackers.morale - casualtiesA * 100, 0);
@@ -326,12 +328,79 @@ class Battle {
   }
 
   applyResults() {
-    this.attackers.regiments.concat(this.defenders.regiments).forEach(r => {
+    const battleName = this.name;
+    const maxCasualties = Math.max(this.attackers.casualties, this.attackers.casualties);
+    const relativeCasualties = this.defenders.casualties / (this.attackers.casualties + this.attackers.casualties);
+    const battleStatus = getBattleStatus(relativeCasualties, maxCasualties);
+    function getBattleStatus(relative, max) {
+      if (isNaN(relative)) return ["standoff", "standoff"]; // if no casualties at all
+      if (max < .05) return ["minor skirmishes", "minor skirmishes"];
+      if (relative > 95) return ["attackers flawless victory", "disorderly retreat of defenders"];
+      if (relative > .7) return ["attackers decisive victory", "defenders disastrous defeat"];
+      if (relative > .6) return ["attackers victory", "defenders defeat"];
+      if (relative > .4) return ["stalemate", "stalemate"];
+      if (relative > .3) return ["attackers defeat", "defenders victory"];
+      if (relative > 0.5) return ["attackers disastrous defeat", "decisive victory of defenders"];
+      if (relative >= 0) return ["attackers disorderly retreat", "flawless victory of defenders"];
+      return ["stalemate", "stalemate"]; // exception
+    }
+
+    this.attackers.regiments.forEach(r => applyResultForSide(r, "attackers"));
+    this.defenders.regiments.forEach(r => applyResultForSide(r, "defenders"));
+
+    function applyResultForSide(r, side) {
+      const id = "regiment" + r.state + "-" + r.i;
+
+      // add result to regiment note
+      const note = notes.find(n => n.id === id);
+      if (note) {
+        const status = side === "attackers" ? battleStatus[0] : battleStatus[1];
+        const losses = r.a ? Math.abs(d3.sum(Object.values(r.casualties))) / r.a : 1;
+        const regStatus =
+          losses === 1 ? "is destroyed" :
+          losses > .8 ? "is almost completely destroyed" :
+          losses > .5 ? "suffered terrible losses" :
+          losses > .3 ? "suffered severe losses" :
+          losses > .2 ? "suffered heavy losses" :
+          losses > .05 ? "suffered significant losses" :
+          losses > 0 ? "suffered unsignificant losses" :
+          "left the battle without loss";
+        const casualties = Object.keys(r.casualties).map(t => r.casualties[t] ? `${Math.abs(r.casualties[t])} ${t}` : null).filter(c => c).join(", ");
+        const casualtiesText = casualties ? " Casualties: " + casualties : "";
+        const legend = `\r\n\r\n${battleName} (${options.year} ${options.eraShort}): ${status}. The regiment ${regStatus}.${casualtiesText}`;
+        note.legend += legend;
+      }
+
       r.u = Object.assign({}, r.survivors);
       r.a = d3.sum(Object.values(r.u)); // reg total
-      armies.select(`g#regiment${r.state}-${r.i} > text`).text(Military.getTotal(r)); // update reg box
-      Military.moveRegiment(r, r.x + rand(30) - 15, r.y + rand(30) - 15);
-    });
+      armies.select(`g#${id} > text`).text(Military.getTotal(r)); // update reg box
+      Military.moveRegiment(r, r.x + rand(20) - 10, r.y + rand(20) - 10);
+    }
+
+    // append battlefield marker
+    void function addMarkerSymbol() {
+      if (svg.select("#defs-markers").select("#marker_battlefield").size()) return;
+      const symbol = svg.select("#defs-markers").append("symbol").attr("id", "marker_battlefield").attr("viewBox", "0 0 30 30");
+      symbol.append("path").attr("d", "M6,19 l9,10 L24,19").attr("fill", "#000000").attr("stroke", "none");
+      symbol.append("circle").attr("cx", 15).attr("cy", 15).attr("r", 10).attr("fill", "#ffffff").attr("stroke", "#000000").attr("stroke-width", 1);
+      symbol.append("text").attr("x", "50%").attr("y", "52%").attr("fill", "#000000").attr("stroke", "#3200ff").attr("stroke-width", 0)
+        .attr("font-size", "12px").attr("dominant-baseline", "central").text("⚔️");
+    }()
+
+    const getSide = (regs, n) => regs.length > 1 ? 
+      `${n ? "regiments" : "forces"} of ${[... new Set(regs.map(r => pack.states[r.state].name))].join(", ")}` :
+      getAdjective(pack.states[regs[0].state].name) + " " + regs[0].name;
+    const getLosses = casualties => Math.min(rn(casualties * 100), 100);
+
+    const legend = `${this.name} took place in ${options.year} ${options.eraShort}. It was fought between ${getSide(this.attackers.regiments, 1)} and ${getSide(this.defenders.regiments, 0)}. The battle ended in ${battleStatus[+P(.7)]}.
+      \r\nAttackers losses: ${getLosses(this.attackers.casualties)}%, defenders losses: ${getLosses(this.defenders.casualties)}%`;
+    const id = getNextId("markerElement");
+    notes.push({id, name:this.name, legend});
+
+    markers.append("use").attr("id", id)
+      .attr("xlink:href", "#marker_battlefield").attr("data-id", "#marker_battlefield")
+      .attr("data-x", this.x).attr("data-y", this.y).attr("x", this.x - 15).attr("y", this.y - 30)
+      .attr("data-size", 1).attr("width", 30).attr("height", 30);
 
     $("#battleScreen").dialog("destroy");
     this.cleanData();
