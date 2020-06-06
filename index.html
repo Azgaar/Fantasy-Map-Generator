@@ -2481,7 +2481,7 @@
         </template>
 
         <template id="battlePhases_siege_attackers">
-          <button data-tip="Blockade phase. Hold the blockade and wait" data-phase="blockade" class="icon-button-blockade"></button>
+          <button data-tip="Blockade phase. Prepare or hold the blockade" data-phase="blockade" class="icon-button-blockade"></button>
           <button data-tip="Bombardment phase. Attack enemy with machinery units" data-phase="bombardment" class="icon-button-bombardment"></button>
           <button data-tip="Storming phase. Storm enemy town. Melee units excel" data-phase="storming" class="icon-button-storming"></button>
           <button data-tip="Looting phase. Plunder the town. Units strength increased" data-phase="looting" class="icon-button-looting"></button>
@@ -2493,7 +2493,7 @@
           <button data-tip="Sortie phase. Make a sortie from besieged town. Melee units excel" data-phase="sortie" class="icon-button-sortie"></button>
           <button data-tip="Bombardment phase. Attack enemy with machinery units" data-phase="bombardment" class="icon-button-bombardment"></button>
           <button data-tip="Defense phase. Ranged and melee units excel" data-phase="defense" class="icon-button-defense"></button>
-          <button data-tip="Surrendering phase. Give up the defence. Units strength reduced" data-phase="surrendering" class="icon-button-surrendering"></button>
+          <button data-tip="Surrendering phase. Give up the defense. Units strength reduced" data-phase="surrendering" class="icon-button-surrendering"></button>
           <button data-tip="Pursue phase. Mounted units excel" data-phase="pursue" class="icon-button-pursue"></button>
         </template>
 
@@ -2512,17 +2512,18 @@
         </template>
 
         <template id="battlePhases_landing_attackers">
-          <button data-tip="Landing phase. Units strength reduced" data-phase="skirmish" class="icon-button-landing"></button>
+          <button data-tip="Landing phase. Amphibious attack. Units are vulnerable against prepared defense" data-phase="landing" class="icon-button-landing"></button>
           <button data-tip="Melee phase. Melee units excel" data-phase="melee" class="icon-button-melee"></button>
           <button data-tip="Pursue phase. Mounted units excel" data-phase="pursue" class="icon-button-pursue"></button>
-          <button data-tip="Retreat phase. Units strength reduced" data-phase="retreat" class="icon-button-retreat"></button>
+          <button data-tip="Flee phase. Units strength reduced" data-phase="flee" class="icon-button-flee"></button>
         </template>
 
         <template id="battlePhases_landing_defenders">
-          <button data-tip="Shock phase. Units strength reduced" data-phase="shock" class="icon-button-shock"></button>
-          <button data-tip="Defense phase. Units strength increased" data-phase="defense" class="icon-button-defense"></button>
+          <button data-tip="Shock phase. Units are not prepared for a defense" data-phase="shock" class="icon-button-shock"></button>
+          <button data-tip="Defense phase. Prepared defense. Units strength increased" data-phase="defense" class="icon-button-defense"></button>
           <button data-tip="Melee phase. Melee units excel" data-phase="melee" class="icon-button-melee"></button>
-          <button data-tip="Pursue phase. Mounted units excel" data-phase="pursue" class="icon-button-pursue"></button>
+          <button data-tip="Waiting phase. Cannot pursue fleeing naval" data-phase="waiting" class="icon-button-waiting"></button>
+          <button data-tip="Pursue phase. Try to intercept fleeing attackers. Mounted units excel" data-phase="pursue" class="icon-button-pursue"></button>
           <button data-tip="Retreat phase. Units strength reduced" data-phase="retreat" class="icon-button-retreat"></button>
         </template>
 

@@ -288,6 +288,10 @@
 
 .icon-button-surprise:before {content:'⚡'; padding-right: .4em;}
 .icon-button-shock:before {content:'💫'; padding-right: .4em;}
+
+.icon-button-flee:before {content:'⛵'; padding-right: .4em;}
+.icon-button-waiting:before {content:'⌛'; padding-right: .4em;}
+
 .icon-button-maneuvering:before {content:'💢'; padding-right: .4em;}
 .icon-button-dogfight:before {content:'🐕'; padding-right: .4em;}
 
