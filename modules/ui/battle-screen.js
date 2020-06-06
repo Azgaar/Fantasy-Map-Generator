@@ -608,8 +608,8 @@ class Battle {
           losses > .05 ? "suffered significant losses" :
           losses > 0 ? "suffered unsignificant losses" :
           "left the battle without loss";
-        const casualties = Object.keys(r.casualties).map(t => r.casualties[t] ? `${Math.abs(r.casualties[t])} ${t}` : null).filter(c => c).join(", ");
-        const casualtiesText = casualties ? " Casualties: " + casualties : "";
+        const casualties = Object.keys(r.casualties).map(t => r.casualties[t] ? `${Math.abs(r.casualties[t])} ${t}` : null).filter(c => c);
+        const casualtiesText = casualties.length ? " Casualties: " + list(casualties) + "." : "";
         const legend = `\r\n\r\n${battleName} (${options.year} ${options.eraShort}): ${status}. The regiment ${regStatus}.${casualtiesText}`;
         note.legend += legend;
       }
@@ -631,11 +631,11 @@ class Battle {
     }()
 
     const getSide = (regs, n) => regs.length > 1 ? 
-      `${n ? "regiments" : "forces"} of ${[... new Set(regs.map(r => pack.states[r.state].name))].join(", ")}` :
+      `${n ? "regiments" : "forces"} of ${list([... new Set(regs.map(r => pack.states[r.state].name))])}` :
       getAdjective(pack.states[regs[0].state].name) + " " + regs[0].name;
     const getLosses = casualties => Math.min(rn(casualties * 100), 100);
 
-    const legend = `${this.name} took place in ${options.year} ${options.eraShort}. It was fought between ${getSide(this.attackers.regiments, 1)} and ${getSide(this.defenders.regiments, 0)}. The battle ended in ${battleStatus[+P(.7)]}.
+    const legend = `${this.name} took place in ${options.year} ${options.eraShort}. It was fought between ${getSide(this.attackers.regiments, 1)} and ${getSide(this.defenders.regiments, 0)}. The ${this.type} ended in ${battleStatus[+P(.7)]}.
       \r\nAttackers losses: ${getLosses(this.attackers.casualties)}%, defenders losses: ${getLosses(this.defenders.casualties)}%`;
     const id = getNextId("markerElement");
     notes.push({id, name:this.name, legend});
