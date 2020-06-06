@@ -271,12 +271,10 @@
 .icon-button-skirmish:before {content:'🎯'; padding-right: .4em;}
 .icon-button-pursue:before {content:'🐎'; padding-right: .4em;}
 .icon-button-retreat:before {content:'🏳️'; padding-right: .4em;}
-
 .icon-button-shelling:before {content:'💣'; padding-right: .4em;}
 .icon-button-boarding:before {content:'⚔️'; padding-right: .4em;}
 .icon-button-chase:before {content:'⛵'; padding-right: .4em;}
 .icon-button-withdrawal:before {content:'🏳️'; padding-right: .4em;}
-
 .icon-button-bombardment:before {content:'💣'; padding-right: .4em;}
 .icon-button-blockade:before {content:'⏳'; padding-right: .4em;}
 .icon-button-sheltering:before {content:'🔒'; padding-right: .4em;}
@@ -285,13 +283,10 @@
 .icon-button-storming:before {content:'⚔️'; padding-right: .4em;}
 .icon-button-looting:before {content:'☠️'; padding-right: .4em;}
 .icon-button-surrendering:before {content:'🏳️'; padding-right: .4em;}
-
 .icon-button-surprise:before {content:'⚡'; padding-right: .4em;}
 .icon-button-shock:before {content:'💫'; padding-right: .4em;}
-
 .icon-button-flee:before {content:'⛵'; padding-right: .4em;}
 .icon-button-waiting:before {content:'⌛'; padding-right: .4em;}
-
 .icon-button-maneuvering:before {content:'💢'; padding-right: .4em;}
 .icon-button-dogfight:before {content:'🐕'; padding-right: .4em;}
 

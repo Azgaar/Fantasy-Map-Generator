@@ -61,19 +61,14 @@ class Battle {
     const attacker = this.attackers.regiments[0];
     const defender = this.defenders.regiments[0];
     const getType = () => {
-      if (attacker.n && defender.n) return "naval"; // attacker and defender are navals
-      if (!defender.n && pack.burgs[pack.cells.burg[this.cell]].walls) return "siege"; // defender is in walled town
-      if (P(.1) && [5,6,7,8,9,12].includes(pack.cells.biome[this.cell])) return "ambush"; // 20% if defenders are in forest or marshes
-
       const typesA = Object.keys(attacker.u).map(name => options.military.find(u => u.name === name).type);
       const typesD = Object.keys(defender.u).map(name => options.military.find(u => u.name === name).type);
 
-      // if attacked is naval with non-naval units and defender is not naval
-      if (attacker.n && !defender.n && typesA.some(t => t !== "naval")) return "landing";
-
-      // if attacked and defender have only aviation units
-      if (typesA.every(t => t === "aviation") && typesD.every(t => t === "aviation")) return "air";
-
+      if (attacker.n && defender.n) return "naval"; // attacker and defender are navals
+      if (typesA.every(t => t === "aviation") && typesD.every(t => t === "aviation")) return "air"; // if attacked and defender have only aviation units
+      if (attacker.n && !defender.n && typesA.some(t => t !== "naval")) return "landing"; // if attacked is naval with non-naval units and defender is not naval
+      if (!defender.n && pack.burgs[pack.cells.burg[this.cell]].walls) return "siege"; // defender is in walled town
+      if (P(.1) && [5,6,7,8,9,12].includes(pack.cells.biome[this.cell])) return "ambush"; // 20% if defenders are in forest or marshes
       return "field";
     }
 
@@ -289,7 +284,11 @@ class Battle {
       // langing phases
       "landing": {"melee":.8, "ranged":.6, "mounted":.6, "machinery":.5, "naval":.5, "armored":.5, "aviation":.5, "magical":.6}, // reduced
       "flee": {"melee":.1, "ranged":.01, "mounted":.5, "machinery":.01, "naval":.5, "armored":.1, "aviation":.2, "magical":.05}, // reduced
-      "waiting": {"melee":.05, "ranged":.5, "mounted":.05, "machinery":.5, "naval":2, "armored":.05, "aviation":.5, "magical":.5} // reduced
+      "waiting": {"melee":.05, "ranged":.5, "mounted":.05, "machinery":.5, "naval":2, "armored":.05, "aviation":.5, "magical":.5}, // reduced
+
+      // air battle phases
+      "maneuvering": {"melee":0, "ranged":.1, "mounted":0, "machinery":.2, "naval":0, "armored":0, "aviation":1, "magical":.2}, // aviation
+      "dogfight": {"melee":0, "ranged":.1, "mounted":0, "machinery":.1, "naval":0, "armored":0, "aviation":2, "magical":.1} // aviation
     };
 
     const forces = this.getJoinedForces(this[side].regiments);
@@ -433,9 +432,15 @@ class Battle {
     }
 
     const getAirBattlePhase = () => {
-      // 🎯 maneuvering, 🐕 dogfight, 🏳️ retreat / 🐎 pursue
-      
+      const prev = [this.attackers.phase || "maneuvering", this.defenders.phase || "maneuvering"]; // previous phase
 
+      // chance if moral < 25
+      if (P(1 - morale[0] / 25)) return ["retreat", "pursue"];
+      if (P(1 - morale[1] / 25)) return ["pursue", "retreat"];
+
+      if (prev[0] === "maneuvering" && P(1-i/10)) return ["maneuvering", "maneuvering"];
+
+      return ["dogfight", "dogfight"]; // default option
     }
 
     const phase = function(type) {
@@ -473,12 +478,9 @@ class Battle {
 
     // casualties modifier for phase
     const phase = {
-      "skirmish":.1, "melee":.2, "pursue":.3, "retreat":.3,
-      "boarding":.2, "shelling":.1, "chase":.03, "withdrawal": .03,
+      "skirmish":.1, "melee":.2, "pursue":.3, "retreat":.3, "boarding":.2, "shelling":.1, "chase":.03, "withdrawal": .03,
       "blockade":0, "sheltering":0, "sortie":.1, "bombardment":.05, "storming":.2, "defense":.2, "looting":.5, "surrendering":.5,
-      "surprise":.3, "shock":.3,
-      "landing":.3, "flee":0, "waiting":0
-    };
+      "surprise":.3, "shock":.3, "landing":.3, "flee":0, "waiting":0, "maneuvering":.1, "dogfight":.2};
 
     const casualties = Math.random() * (Math.max(phase[this.attackers.phase], phase[this.defenders.phase])); // total casualties, ~10% per iteration
     const casualtiesA = casualties * defense / (attack + defense); // attackers casualties, ~5% per iteration
