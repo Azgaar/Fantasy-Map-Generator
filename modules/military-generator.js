@@ -28,6 +28,18 @@
       "magical":  {"Nomadic":1,   "Highland":2,   "Lake":1,   "Naval":1,    "Hunting":1,    "River":1}
     };
 
+    const cellTypeModifier = {
+      "nomadic": {"melee":.2, "ranged":.5, "mounted":3, "machinery":.4, "naval":.3, "armored":1.6, "aviation":1, "magical":.5},
+      "wetland": {"melee":.8, "ranged":2, "mounted":0.3, "machinery":1.2, "naval":1.0, "armored":0.2, "aviation":.5, "magical":0.5},
+      "highland": {"melee":1.2, "ranged":1.6, "mounted":0.3, "machinery":3, "naval":1.0, "armored":0.8, "aviation":.3, "magical":2}
+    }
+
+    const burgTypeModifier = {
+      "nomadic": {"melee":.3, "ranged":.8, "mounted":3, "machinery":.4, "naval":1.0, "armored":1.6, "aviation":1, "magical":0.5},
+      "wetland": {"melee":1, "ranged":1.6, "mounted":.2, "machinery":1.2, "naval":1.0, "armored":0.2, "aviation":0.5, "magical":0.5},
+      "highland": {"melee":1.2, "ranged":2, "mounted":.3, "machinery":3, "naval":1.0, "armored":0.8, "aviation":0.3, "magical":2}
+    }
+
     valid.forEach(s => {
       const temp = s.temp = {}, d = s.diplomacy;
       const expansionRate = Math.min(Math.max((s.expansionism / expn) / (s.area / area), .25), 4); // how much state expansionism is realized
@@ -47,6 +59,13 @@
 
     });
 
+    const getType = cell => {
+      if ([1, 2, 3, 4].includes(cells.biome[cell])) return "nomadic";
+      if ([7, 8, 9, 12].includes(cells.biome[cell])) return "wetland";
+      if (cells.h[cell] >= 70) return "highland";
+      return "generic";
+    }
+
     for (const i of cells.i) {
       if (!cells.pop[i]) continue;
       const s = states[cells.state[i]]; // cell state
@@ -56,35 +75,15 @@
       if (cells.culture[i] !== s.culture) m = s.form === "Union" ? m / 1.2 : m / 2; // non-dominant culture
       if (cells.religion[i] !== cells.religion[s.center]) m = s.form === "Theocracy" ? m / 2.2 : m / 1.4; // non-dominant religion
       if (cells.f[i] !== cells.f[s.center]) m = s.type === "Naval" ? m / 1.2 : m / 1.8; // different landmass
-
-      const nomadic = [1, 2, 3, 4].includes(cells.biome[i]);
-      const wetland = [7, 8, 9, 12].includes(cells.biome[i]);
-      const highland = cells.h[i] >= 70;
+      const type = getType(i);
 
       for (const u of options.military) {
         const perc = +u.rural;
         if (isNaN(perc) || perc <= 0 || !s.temp[u.name]) continue;
 
-        let army = m * perc; // basic army for rural cell
-        if (nomadic) { // "nomadic" biomes special rules
-          if (u.type === "melee") army /= 5; else
-          if (u.type === "ranged") army /= 2; else
-          if (u.type === "mounted") army *= 3;
-        }
-
-        if (wetland) { // "wet" biomes special rules
-          if (u.type === "melee") army *= 1.2; else
-          if (u.type === "ranged") army *= 1.4; else
-          if (u.type === "mounted") army /= 3;
-        }
-
-        if (highland) { // highlands special rules
-          if (u.type === "melee") army *= 1.2; else
-          if (u.type === "ranged") army *= 1.6; else
-          if (u.type === "mounted") army /= 3;
-        }
-
-        const t = rn(army * s.temp[u.name] * populationRate.value);
+        const mod = type === "generic" ? 1 : cellTypeModifier[type][u.type] // cell specific modifier
+        const army = m * perc * mod; // rural cell army
+        const t = rn(army * s.temp[u.name] * populationRate.value); // total troops
         if (!t) continue;
         let x = p[i][0], y = p[i][1], n = 0;
         if (u.type === "naval") {let haven = cells.haven[i]; x = p[haven][0], y = p[haven][1]; n = 1}; // place naval to sea
@@ -101,43 +100,16 @@
       if (b.culture !== s.culture) m = s.form === "Union" ? m / 1.2 : m / 2; // non-dominant culture
       if (cells.religion[b.cell] !== cells.religion[s.center]) m = s.form === "Theocracy" ? m / 2.2 : m / 1.4; // non-dominant religion
       if (cells.f[b.cell] !== cells.f[s.center]) m = s.type === "Naval" ? m / 1.2 : m / 1.8; // different landmass
-
-      const biome = cells.biome[b.cell]; // burg biome
-      const nomadic = [1, 2, 3, 4].includes(biome);
-      const wetland = [7, 8, 9, 12].includes(biome);
-      const highland = cells.h[b.cell] >= 70;
+      const type = getType(b.cell);
 
       for (const u of options.military) {
+        if (u.type === "naval" && !b.port) continue; // only ports produce naval units
         const perc = +u.urban;
         if (isNaN(perc) || perc <= 0 || !s.temp[u.name]) continue;
-        let army = m * perc; // basic army for rural cell
 
-        if (u.type === "naval" && !b.port) continue; // only ports produce naval units
-
-        if (nomadic) { // "nomadic" biomes special rules
-          if (u.type === "melee") army /= 3; else
-          if (u.type === "machinery") army /= 2; else
-          if (u.type === "mounted") army *= 3; else
-          if (u.type === "armored") army *= 2;
-        }
-
-        if (wetland) { // "wet" biomes special rules
-          if (u.type === "melee") army *= 1.2; else
-          if (u.type === "ranged") army *= 1.4; else
-          if (u.type === "machinery") army *= 1.2; else
-          if (u.type === "mounted") army /= 4; else
-          if (u.type === "armored") army /= 3;
-        }
-
-        if (highland) { // highlands special rules
-          if (u.type === "ranged") army *= 2; else
-          if (u.type === "naval") army /= 3; else
-          if (u.type === "mounted") army /= 3; else
-          if (u.type === "armored") army /= 2; else
-          if (u.type === "magical") army *= 2;
-        }
-
-        const t = rn(army * s.temp[u.name] * populationRate.value);
+        const mod = type === "generic" ? 1 : burgTypeModifier[type][u.type] // cell specific modifier
+        const army = m * perc * mod; // urban cell army
+        const t = rn(army * s.temp[u.name] * populationRate.value); // total troops
         if (!t) continue;
         let x = p[b.cell][0], y = p[b.cell][1], n = 0;
         if (u.type === "naval") {let haven = cells.haven[b.cell]; x = p[haven][0], y = p[haven][1]; n = 1}; // place naval in sea cell
@@ -312,17 +284,6 @@
     const legend = `Regiment was formed in ${year} ${options.era}${conflict}. ${station}${troops}`;
     notes.push({id:`regiment${s.i}-${r.i}`, name:`${r.icon} ${r.name}`, legend});
   }
-
-  // const updateNote = function(r, s) {
-  //   const id = `regiment${s}-${r.i}`;
-  //   const note = notes.find(n => n.id === id);
-  //   if (!note) return;
-
-  //   const oldComposition = note.legend.split("composition:\r\n")[1]||"".split(".")[0];
-  //   if (!oldComposition) return;
-  //   const newComposition = Object.keys(r.u).map(t => `— ${t}: ${r.u[t]}`).join("\r\n") + ".";
-  //   note.legend = note.legend.replace(oldComposition, newComposition);
-  // }
 
   return {generate, getDefaultOptions, getName, generateNote, drawRegiments, drawRegiment, moveRegiment, getTotal, getEmblem};
 
