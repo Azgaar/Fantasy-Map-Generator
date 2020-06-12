@@ -188,8 +188,8 @@
     console.timeEnd("specifyBurgs");
   }
 
-  const defineBurgFeatures = function() {
-    pack.burgs.filter(b => b.i && !b.removed).forEach(b => {
+  const defineBurgFeatures = function(newburg) {
+    pack.burgs.filter(b => newburg ? b.i == newburg.i : (b.i && !b.removed)).forEach(b => {
       const pop = b.population;
       b.citadel = b.capital || pop > 50 && P(.75) || P(.5) ? 1 : 0;
       b.plaza = pop > 50 || pop > 30 && P(.75) || pop > 10 && P(.5) || P(.25) ? 1 : 0;
