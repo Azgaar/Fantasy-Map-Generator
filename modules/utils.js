@@ -416,6 +416,12 @@ function getAdjective(string) {
 // get ordinal out of integer: 1 => 1st
 const nth = n => n+(["st","nd","rd"][((n+90)%100-10)%10-1]||"th");
 
+// conjunct array: [A,B,C] => "A, B and C"
+function list(array) {
+  const conjunction = new Intl.ListFormat(window.lang || "en", {style:"long", type:"conjunction"});
+  return conjunction.format(array);
+}
+
 // split string into 2 almost equal parts not breaking words
 function splitInTwo(str) {
   const half = str.length / 2;

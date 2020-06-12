@@ -37,11 +37,11 @@ class Battle {
     // add listeners
     document.getElementById("battleType").addEventListener("click", ev => this.toggleChange(ev));
     document.getElementById("battleType").nextElementSibling.addEventListener("click", ev => Battle.prototype.context.changeType(ev));
-    document.getElementById("battleNameShow").addEventListener("click", () => this.showNameSection());
-    document.getElementById("battleNamePlace").addEventListener("change", ev => this.place = ev.target.value);
-    document.getElementById("battleNameFull").addEventListener("change", ev => this.changeName(ev));
-    document.getElementById("battleNameCulture").addEventListener("click", () => this.generateName(Names.getCulture(pack.cells.culture[this.cell], null, null, "")));
-    document.getElementById("battleNameRandom").addEventListener("click", () => this.generateName(Names.getBase(rand(nameBases.length-1))));
+    document.getElementById("battleNameShow").addEventListener("click", () => Battle.prototype.context.showNameSection());
+    document.getElementById("battleNamePlace").addEventListener("change", ev => Battle.prototype.context.place = ev.target.value);
+    document.getElementById("battleNameFull").addEventListener("change", ev => Battle.prototype.context.changeName(ev));
+    document.getElementById("battleNameCulture").addEventListener("click", () => Battle.prototype.context.generateName("culture"));
+    document.getElementById("battleNameRandom").addEventListener("click", () => Battle.prototype.context.generateName("random"));
     document.getElementById("battleNameHide").addEventListener("click", this.hideNameSection);
     document.getElementById("battleAddRegiment").addEventListener("click", this.addSide);
     document.getElementById("battleRoll").addEventListener("click", () => Battle.prototype.context.randomize());
@@ -61,19 +61,14 @@ class Battle {
     const attacker = this.attackers.regiments[0];
     const defender = this.defenders.regiments[0];
     const getType = () => {
-      if (attacker.n && defender.n) return "naval"; // attacker and defender are navals
-      if (!defender.n && pack.burgs[pack.cells.burg[this.cell]].walls) return "siege"; // defender is in walled town
-      if (P(.1) && [5,6,7,8,9,12].includes(pack.cells.biome[this.cell])) return "ambush"; // 20% if defenders are in forest or marshes
-
       const typesA = Object.keys(attacker.u).map(name => options.military.find(u => u.name === name).type);
       const typesD = Object.keys(defender.u).map(name => options.military.find(u => u.name === name).type);
 
-      // if attacked is naval with non-naval units and defender is not naval
-      if (attacker.n && !defender.n && typesA.some(t => t !== "naval")) return "landing";
-
-      // if attacked and defender have only aviation units
-      if (typesA.every(t => t === "aviation") && typesD.every(t => t === "aviation")) return "air";
-
+      if (attacker.n && defender.n) return "naval"; // attacker and defender are navals
+      if (typesA.every(t => t === "aviation") && typesD.every(t => t === "aviation")) return "air"; // if attacked and defender have only aviation units
+      if (attacker.n && !defender.n && typesA.some(t => t !== "naval")) return "landing"; // if attacked is naval with non-naval units and defender is not naval
+      if (!defender.n && pack.burgs[pack.cells.burg[this.cell]].walls) return "siege"; // defender is in walled town
+      if (P(.1) && [5,6,7,8,9,12].includes(pack.cells.biome[this.cell])) return "ambush"; // 20% if defenders are in forest or marshes
       return "field";
     }
 
@@ -136,8 +131,8 @@ class Battle {
       <text x="0" y="1.04em" style="">${regiment.icon}</text></svg>`;
     const body = `<tbody id="battle${state.i}-${regiment.i}">`;
 
-    let initial = `<tr class="battleInitial"><td>${icon}</td><td class="regiment">${regiment.name.slice(0, 24)}</td>`;
-    let casualties = `<tr class="battleCasualties"><td></td><td>${state.fullName.slice(0, 26)}</td>`;
+    let initial = `<tr class="battleInitial"><td>${icon}</td><td class="regiment" data-tip="${regiment.name}">${regiment.name.slice(0, 24)}</td>`;
+    let casualties = `<tr class="battleCasualties"><td></td><td data-tip="${state.fullName}">${state.fullName.slice(0, 26)}</td>`;
     let survivors = `<tr class="battleSurvivors"><td></td><td data-tip="Supply line length, affects morale">Distance to base: ${distance} ${distanceUnitInput.value}</td>`;
 
     for (const u of options.military) {
@@ -239,7 +234,10 @@ class Battle {
     $("#battleScreen").dialog({"title":this.name});
   }
 
-  generateName(place) {
+  generateName(type) {
+    const place = type === "culture" 
+      ? Names.getCulture(pack.cells.culture[this.cell], null, null, "")
+      : Names.getBase(rand(nameBases.length-1));
     document.getElementById("battleNamePlace").value = this.place = place;
     document.getElementById("battleNameFull").value = this.name = this.defineName();
     $("#battleScreen").dialog({"title":this.name});
@@ -280,8 +278,17 @@ class Battle {
       "surrendering": {"melee":.1, "ranged":.1, "mounted":.05, "machinery":.01, "naval":.01, "armored":.02, "aviation":.01, "magical":.03}, // reduced
 
       // ambush phases
-      "surprise": {"melee":2.2, "ranged":3, "mounted":1.5, "machinery":1.3, "naval":1, "armored":1.3, "aviation":1, "magical":2}, // increased
-      "shock": {"melee":.8, "ranged":.8, "mounted":.6, "machinery":.5, "naval":.5, "armored":.1, "aviation":.5, "magical":.7} // reduced
+      "surprise": {"melee":2, "ranged":2.4, "mounted":1, "machinery":1, "naval":1, "armored":1, "aviation":.8, "magical":1.2}, // increased
+      "shock": {"melee":.5, "ranged":.5, "mounted":.5, "machinery":.4, "naval":.3, "armored":.1, "aviation":.4, "magical":.5}, // reduced
+
+      // langing phases
+      "landing": {"melee":.8, "ranged":.6, "mounted":.6, "machinery":.5, "naval":.5, "armored":.5, "aviation":.5, "magical":.6}, // reduced
+      "flee": {"melee":.1, "ranged":.01, "mounted":.5, "machinery":.01, "naval":.5, "armored":.1, "aviation":.2, "magical":.05}, // reduced
+      "waiting": {"melee":.05, "ranged":.5, "mounted":.05, "machinery":.5, "naval":2, "armored":.05, "aviation":.5, "magical":.5}, // reduced
+
+      // air battle phases
+      "maneuvering": {"melee":0, "ranged":.1, "mounted":0, "machinery":.2, "naval":0, "armored":0, "aviation":1, "magical":.2}, // aviation
+      "dogfight": {"melee":0, "ranged":.1, "mounted":0, "machinery":.1, "naval":0, "armored":0, "aviation":2, "magical":.1} // aviation
     };
 
     const forces = this.getJoinedForces(this[side].regiments);
@@ -406,13 +413,34 @@ class Battle {
     }
 
     const getLandingPhase = () => {
-      // ⚓ landing / 💫 shock OR 🛡️ defense, ⚔️ melee, 🏳️ retreat / 🐎 pursue
+      const prev = [this.attackers.phase || "landing", this.defenders.phase || "defense"]; // previous phase
 
+      if (prev[1] === "waiting") return ["flee", "waiting"];
+      if (prev[1] === "pursue") return ["flee", P(.3) ? "pursue" : "waiting"];
+      if (prev[1] === "retreat") return ["pursue", "retreat"];
+
+      if (prev[0] === "landing") {
+        const attackers = P(i/2) ? "melee" : "landing";
+        const defenders = i ? prev[1] : P(.5) ? "defense" : "shock";
+        return [attackers, defenders];
+      }
+
+      if (P(1 - morale[0] / 40)) return ["flee", "pursue"]; // chance if moral < 40
+      if (P(1 - morale[1] / 25)) return ["pursue", "retreat"]; // chance if moral < 25
+
+      return ["melee", "melee"]; // default option
     }
 
     const getAirBattlePhase = () => {
-      // 🎯 maneuvering, 🐕 dogfight, 🏳️ retreat / 🐎 pursue
+      const prev = [this.attackers.phase || "maneuvering", this.defenders.phase || "maneuvering"]; // previous phase
 
+      // chance if moral < 25
+      if (P(1 - morale[0] / 25)) return ["retreat", "pursue"];
+      if (P(1 - morale[1] / 25)) return ["pursue", "retreat"];
+
+      if (prev[0] === "maneuvering" && P(1-i/10)) return ["maneuvering", "maneuvering"];
+
+      return ["dogfight", "dogfight"]; // default option
     }
 
     const phase = function(type) {
@@ -429,10 +457,14 @@ class Battle {
 
     this.attackers.phase = phase[0];
     this.defenders.phase = phase[1];
-    document.getElementById("battlePhase_attackers").className = "icon-button-" + this.attackers.phase;
-    document.getElementById("battlePhase_defenders").className = "icon-button-" + this.defenders.phase;
-    document.getElementById("battlePhase_attackers").dataset.tip = battleBody.querySelector(".battlePhases > [data-phase='"+phase[0]+"']").dataset.tip;
-    document.getElementById("battlePhase_defenders").dataset.tip = battleBody.querySelector(".battlePhases > [data-phase='"+phase[1]+"']").dataset.tip;
+
+    const buttonA = document.getElementById("battlePhase_attackers");
+    buttonA.className = "icon-button-" + this.attackers.phase;
+    buttonA.dataset.tip = buttonA.nextElementSibling.querySelector("[data-phase='"+phase[0]+"']").dataset.tip;
+
+    const buttonD = document.getElementById("battlePhase_defenders");
+    buttonD.className = "icon-button-" + this.defenders.phase;
+    buttonD.dataset.tip = buttonD.nextElementSibling.querySelector("[data-phase='"+phase[1]+"']").dataset.tip;
   }
 
   run() {
@@ -442,19 +474,17 @@ class Battle {
 
     // calculate casualties
     const attack = this.attackers.power * (this.attackers.die / 10 + .4);
-    const defence = this.defenders.power * (this.defenders.die / 10 + .4);
+    const defense = this.defenders.power * (this.defenders.die / 10 + .4);
 
     // casualties modifier for phase
     const phase = {
-      "skirmish":.1, "melee":.2, "pursue":.3, "retreat":.3,
-      "boarding":.2, "shelling":.1, "chase":.03, "withdrawal": .03,
+      "skirmish":.1, "melee":.2, "pursue":.3, "retreat":.3, "boarding":.2, "shelling":.1, "chase":.03, "withdrawal": .03,
       "blockade":0, "sheltering":0, "sortie":.1, "bombardment":.05, "storming":.2, "defense":.2, "looting":.5, "surrendering":.5,
-      "surprise":.3, "shock":.3
-    };
+      "surprise":.3, "shock":.3, "landing":.3, "flee":0, "waiting":0, "maneuvering":.1, "dogfight":.2};
 
     const casualties = Math.random() * (Math.max(phase[this.attackers.phase], phase[this.defenders.phase])); // total casualties, ~10% per iteration
-    const casualtiesA = casualties * defence / (attack + defence); // attackers casualties, ~5% per iteration
-    const casualtiesD = casualties * attack / (attack + defence); // defenders casualties, ~5% per iteration
+    const casualtiesA = casualties * defense / (attack + defense); // attackers casualties, ~5% per iteration
+    const casualtiesD = casualties * attack / (attack + defense); // defenders casualties, ~5% per iteration
 
     this.calculateCasualties("attackers", casualtiesA);
     this.calculateCasualties("defenders", casualtiesD);
@@ -578,8 +608,8 @@ class Battle {
           losses > .05 ? "suffered significant losses" :
           losses > 0 ? "suffered unsignificant losses" :
           "left the battle without loss";
-        const casualties = Object.keys(r.casualties).map(t => r.casualties[t] ? `${Math.abs(r.casualties[t])} ${t}` : null).filter(c => c).join(", ");
-        const casualtiesText = casualties ? " Casualties: " + casualties : "";
+        const casualties = Object.keys(r.casualties).map(t => r.casualties[t] ? `${Math.abs(r.casualties[t])} ${t}` : null).filter(c => c);
+        const casualtiesText = casualties.length ? " Casualties: " + list(casualties) + "." : "";
         const legend = `\r\n\r\n${battleName} (${options.year} ${options.eraShort}): ${status}. The regiment ${regStatus}.${casualtiesText}`;
         note.legend += legend;
       }
@@ -601,11 +631,11 @@ class Battle {
     }()
 
     const getSide = (regs, n) => regs.length > 1 ? 
-      `${n ? "regiments" : "forces"} of ${[... new Set(regs.map(r => pack.states[r.state].name))].join(", ")}` :
+      `${n ? "regiments" : "forces"} of ${list([... new Set(regs.map(r => pack.states[r.state].name))])}` :
       getAdjective(pack.states[regs[0].state].name) + " " + regs[0].name;
     const getLosses = casualties => Math.min(rn(casualties * 100), 100);
 
-    const legend = `${this.name} took place in ${options.year} ${options.eraShort}. It was fought between ${getSide(this.attackers.regiments, 1)} and ${getSide(this.defenders.regiments, 0)}. The battle ended in ${battleStatus[+P(.7)]}.
+    const legend = `${this.name} took place in ${options.year} ${options.eraShort}. It was fought between ${getSide(this.attackers.regiments, 1)} and ${getSide(this.defenders.regiments, 0)}. The ${this.type} ended in ${battleStatus[+P(.7)]}.
       \r\nAttackers losses: ${getLosses(this.attackers.casualties)}%, defenders losses: ${getLosses(this.defenders.casualties)}%`;
     const id = getNextId("markerElement");
     notes.push({id, name:this.name, legend});

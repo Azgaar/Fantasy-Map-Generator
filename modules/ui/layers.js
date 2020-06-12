@@ -1263,6 +1263,7 @@ function getLayer(id) {
   if (id === "toggleTemp") return $("#temperature");
   if (id === "togglePrec") return $("#prec");
   if (id === "togglePopulation") return $("#population");
+  if (id === "toggleIce") return $("#ice");
   if (id === "toggleTexture") return $("#texture");
   if (id === "toggleLabels") return $("#labels");
   if (id === "toggleIcons") return $("#icons");
