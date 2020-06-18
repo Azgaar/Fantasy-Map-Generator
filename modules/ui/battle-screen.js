@@ -48,6 +48,7 @@ class Battle {
     document.getElementById("battleRun").addEventListener("click", () => Battle.prototype.context.run());
     document.getElementById("battleApply").addEventListener("click", () => Battle.prototype.context.applyResults());
     document.getElementById("battleCancel").addEventListener("click", () => Battle.prototype.context.cancelResults());
+    document.getElementById("battleWiki").addEventListener("click", () => wiki("Battle-Simulator"));
 
     document.getElementById("battlePhase_attackers").addEventListener("click", ev => this.toggleChange(ev));
     document.getElementById("battlePhase_attackers").nextElementSibling.addEventListener("click", ev => Battle.prototype.context.changePhase(ev, "attackers"));
@@ -293,7 +294,7 @@ class Battle {
 
     const forces = this.getJoinedForces(this[side].regiments);
     const phase = this[side].phase;
-    const adjuster = populationRate.value / 10; // population adjuster, by default 100
+    const adjuster = Math.max(populationRate.value / 10, 10); // population adjuster, by default 100
     this[side].power = d3.sum(options.military.map(u => (forces[u.name] || 0) * u.power * scheme[phase][u.type])) / adjuster;
     const UIvalue = this[side].power ? Math.max(this[side].power|0, 1) : 0;
     document.getElementById("battlePower_"+side).innerHTML = UIvalue;

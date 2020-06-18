@@ -26,6 +26,7 @@ function overviewMilitary() {
   document.getElementById("militaryRegimentsList").addEventListener("click", () => overviewRegiments(-1));
   document.getElementById("militaryOverviewRecalculate").addEventListener("click", militaryRecalculate);
   document.getElementById("militaryExport").addEventListener("click", downloadMilitaryData);
+  document.getElementById("militaryWiki").addEventListener("click", () => wiki("Military-Forces"));
 
   body.addEventListener("change", function(ev) {
     const el = ev.target, line = el.parentNode, state = +line.dataset.id;

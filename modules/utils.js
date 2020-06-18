@@ -418,6 +418,7 @@ const nth = n => n+(["st","nd","rd"][((n+90)%100-10)%10-1]||"th");
 
 // conjunct array: [A,B,C] => "A, B and C"
 function list(array) {
+  if (!Intl.ListFormat) return array.join(", ");
   const conjunction = new Intl.ListFormat(window.lang || "en", {style:"long", type:"conjunction"});
   return conjunction.format(array);
 }
@@ -574,7 +575,12 @@ function getAbsolutePath(href) {
 
 // open URL in a new tab or window
 function openURL(url) {
-  window.open(url, '_blank');
+  window.open(url, "_blank");
+}
+
+// open project wiki-page
+function wiki(page) {
+  window.open("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/" + page, "_blank");
 }
 
 // wrap URL into html a element
