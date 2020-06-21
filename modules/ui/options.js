@@ -411,7 +411,7 @@ function regenerateEra() {
 }
 
 function changeYear() {
-  if (!yearInputthis.value) return;
+  if (!yearInput.value) return;
   if (isNaN(+yearInput.value)) {tip("Current year should be a number", false, "error"); return;}
   options.year = +yearInput.value;
 }
