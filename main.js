@@ -330,7 +330,7 @@ function applyDefaultBiomesSystem() {
 }
 
 function showWelcomeMessage() {
-  const post = link("https://www.reddit.com/r/FantasyMapGenerator/comments/ft5b41/update_new_version_is_published_military_update_v14/", "Main changes:"); // announcement on Reddit
+  const post = link("https://www.reddit.com/r/FantasyMapGenerator/comments/ft5b41/update_new_version_is_published_into_the_battle_v14/", "Main changes:"); // announcement on Reddit
   const changelog = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "previous version");
   const reddit = link("https://www.reddit.com/r/FantasyMapGenerator", "Reddit community");
   const discord = link("https://discordapp.com/invite/X7E84HU", "Discord server");
@@ -344,10 +344,11 @@ function showWelcomeMessage() {
       <li>Military forces changes (${link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Military-Forces", "detailed description")})</li>
       <li>Battle simulation (${link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Battle-Simulator", "detailed description")})</li>
       <li>Ice layer and Ice editor</li>
-      <li>Route and River Elevation profile</li>
+      <li>Route and River Elevation profile (by EvolvedExperiment)</li>
       <li>Image Converter enhancement</li>
       <li>Name generator improvement</li>
-      <li>Fogging style change</li>
+      <li>Improved integration with City Generator</li>
+      <li>Fogging restyle</li>
     </ul>
 
     <p>You can can also download a ${desktop}.</p>

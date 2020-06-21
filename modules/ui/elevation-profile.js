@@ -244,8 +244,7 @@ function showElevationProfile(data, routeLen, isRiver) {
     const add = 15;
 
     let xwidth = chartData.points[1][0] - chartData.points[0][0];
-    for (let k=0; k<chartData.points.length; k++)
-    {
+    for (let k=0; k<chartData.points.length; k++) {
       if (chartData.burg[k] > 0) {
         let b = chartData.burg[k];
 
@@ -269,9 +268,7 @@ function showElevationProfile(data, routeLen, isRiver) {
     document.getElementById("epScaleRange").removeEventListener("change", draw);
     document.getElementById("epCurve").removeEventListener("change", draw);
     document.getElementById("epSave").removeEventListener("click", downloadCSV);
-
     document.getElementById("elevationGraph").innerHTML = "";
-
     modules.elevation = false;
   }
 }

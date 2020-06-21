@@ -2465,7 +2465,7 @@
     </div>
 
     <div id="battleScreen" class="dialog stable" style="display: none">
-      <div id="battleBody" class="overflow>
+      <div id="battleBody" class="overflow">
         <template id="battlePhases_field">
           <button data-tip="Skirmish phase. Ranged units excel" data-phase="skirmish" class="icon-button-skirmish"></button>
           <button data-tip="Melee phase. Melee units excel" data-phase="melee" class="icon-button-melee"></button>
@@ -2534,7 +2534,7 @@
           <button data-tip="Retreat phase. Units strength reduced" data-phase="retreat" class="icon-button-retreat"></button>
         </template>
 
-        <div style="font-size:1.2em; font-weight: bold">
+        <div style="font-size:1.2em; font-weight: bold; width: unset">
           <span>Attackers</span>
           <div style="float: right; font-size: .7em">
             <meter id="battleMorale_attackers" data-tip="Attackers morale: " min=0 max=100 low=33 high=66 optimum=80></meter>
@@ -2547,7 +2547,7 @@
           </div>
         </div>
         <table id="battleAttackers"></table>
-        <div style="font-size:1.2em; font-weight: bold">
+        <div style="font-size:1.2em; font-weight: bold; width: unset">
           <span></span>Defenders</span>
           <div style="float: right; font-size: .7em">
             <meter id="battleMorale_defenders" data-tip="Defenders morale: " min=0 max=100 low=33 high=66 optimum=80></meter>
