@@ -296,33 +296,6 @@ async function saveMap() {
   window.URL.revokeObjectURL(URL);
 }
 
-// Send .map file to server [test function]
-async function sendToURL(URL = "http://localhost:8000/upload.php") {
-  if (customization) {tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error"); return;}
-  closeDialogs("#alert");
-
-  const blob = await getMapData();
-  const xhr = new XMLHttpRequest();
-  xhr.open("POST", URL, true);
-  //xhr.setRequestHeader("Content-Type", "blob"); // set request header
-  xhr.onload = e => console.log("onload", e.responseText);
-  xhr.onreadystatechange = () => {if (xhr.readyState === 4 && xhr.status === 200) tip(`File is sent to cloud storage`, true, "success", 7000);}
-  xhr.send(blob);
-}
-
-// Load .map file from server [test function]
-async function loadFromCloud() {
-  ldb.get("lastMap", blob => {
-    if (blob) {
-      loadMapPrompt(blob);
-    } else {
-      tip("No map stored. Save map to storage first", true, "error", 2000);
-      console.error("No map stored");
-    }
-  });
-  uploadMap(blob);
-}
-
 function saveGeoJSON_Cells() {
   let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
   const cells = pack.cells, v = pack.vertices;
