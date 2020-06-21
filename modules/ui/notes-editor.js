@@ -18,6 +18,7 @@ function editNotes(id, name) {
     select.value = id;
     notesName.value = note.name;
     notesText.value = note.legend;
+    showNote(note);
   } else {
     const value = "There are no added notes. Click on element (e.g. label) and add a free text note";
     document.getElementById("notesText").value = value;
@@ -37,11 +38,18 @@ function editNotes(id, name) {
   document.getElementById("notesSelect").addEventListener("change", changeObject);
   document.getElementById("notesName").addEventListener("input", changeName);
   document.getElementById("notesText").addEventListener("input", changeText);
+  document.getElementById("notesPin").addEventListener("click", () => options.pinNotes = !options.pinNotes);
   document.getElementById("notesFocus").addEventListener("click", validateHighlightElement);
   document.getElementById("notesDownload").addEventListener("click", downloadLegends);
   document.getElementById("notesUpload").addEventListener("click", () => legendsToLoad.click());
   document.getElementById("legendsToLoad").addEventListener("change", function() {uploadFile(this, uploadLegends)});
   document.getElementById("notesRemove").addEventListener("click", triggerNotesRemove);
+
+  function showNote(note) {
+    document.getElementById("notes").style.display = "block";
+    document.getElementById("notesHeader").innerHTML = note.name;
+    document.getElementById("notesBody").innerHTML = note.legend;
+  }
 
   function changeObject() {
     const note = notes.find(note => note.id === this.value);
@@ -55,6 +63,7 @@ function editNotes(id, name) {
     const note = notes.find(note => note.id === id);
     if (!note) return;
     note.name = this.value;
+    showNote(note);
   }
 
   function changeText() {
@@ -62,6 +71,7 @@ function editNotes(id, name) {
     const note = notes.find(note => note.id === id);
     if (!note) return;
     note.legend = this.value;
+    showNote(note);
   }
 
   function validateHighlightElement() {

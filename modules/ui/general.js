@@ -61,6 +61,7 @@ function moved() {
 
 // show note box on hover (if any)
 function showNotes(e, i) {
+  if (notesEditor.offsetParent) return;
   let id = e.target.id || e.target.parentNode.id || e.target.parentNode.parentNode.id;
   if (e.target.parentNode.parentNode.id === "burgLabels") id = "burg" + e.target.dataset.id; else
   if (e.target.parentNode.parentNode.id === "burgIcons") id = "burg" + e.target.dataset.id;
@@ -70,7 +71,7 @@ function showNotes(e, i) {
     document.getElementById("notes").style.display = "block";
     document.getElementById("notesHeader").innerHTML = note.name;
     document.getElementById("notesBody").innerHTML = note.legend;
-  } else {
+  } else if (!options.pinNotes) {
     document.getElementById("notes").style.display = "none";
     document.getElementById("notesHeader").innerHTML = "";
     document.getElementById("notesBody").innerHTML = "";
