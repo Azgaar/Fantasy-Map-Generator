@@ -30,7 +30,7 @@ function editZones() {
     if (cl.contains("culturePopulation")) {changePopulation(zone); return;}
     if (cl.contains("icon-trash-empty")) {zoneRemove(zone); return;}
     if (cl.contains("icon-eye")) {toggleVisibility(el); return;}
-    if (cl.contains("icon-pin")) {focusOnZone(zone, cl); return;}
+    if (cl.contains("icon-pin")) {toggleFog(zone, cl); return;}
     if (cl.contains("fillRect")) {changeFill(el); return;}
     if (customization) selectZone(el);
   });
@@ -194,7 +194,7 @@ function editZones() {
     zones.selectAll("g").each(function() {
       if (this.dataset.cells) return;
       // all zone cells are removed
-      unfocus(this.id);
+      unfog("focusZone"+this.id);
       this.style.display = "block";
     });
 
@@ -253,24 +253,13 @@ function editZones() {
     el.classList.toggle("inactive");
   }
 
-  function focusOnZone(zone, cl) {
-    const inactive = cl.contains("inactive");
+  function toggleFog(z, cl) {
+    const dataCells = zones.select("#"+z).attr("data-cells");
+    if (!dataCells) return;
+
+    const path = "M" + dataCells.split(",").map(c => getPackPolygon(+c)).join("M") + "Z", id = "focusZone"+z;
+    cl.contains("inactive") ? fog(id, path) : unfog(id);
     cl.toggle("inactive");
-
-    if (inactive) {
-      if (defs.select("#fog #focus"+zone).size()) return;
-      const dataCells = zones.select("#"+zone).attr("data-cells");
-      if (!dataCells) return;
-      const data = dataCells.split(",").map(c => +c);
-      const g = defs.select("#fog").append("g").attr("fill", "black").attr("stroke", "black").attr("id", "focus"+zone);
-      g.selectAll("path").data(data).enter().append("path").attr("d", d => "M" + getPackPolygon(d) + "Z");
-      fogging.style("display", "block");
-    } else unfocus(zone);
-  }
-
-  function unfocus(z) {
-    defs.select("#focus"+z).remove();
-    if (!defs.selectAll("#fog path").size()) fogging.style("display", "none"); // all states are de-focused
   }
 
   function toggleLegend() {
@@ -414,7 +403,7 @@ function editZones() {
 
   function zoneRemove(zone) {
     zones.select("#"+zone).remove();
-    unfocus(zone);
+    unfog("focusZone"+zone);
     zonesEditorAddLines();
   }
 

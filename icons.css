@@ -250,7 +250,6 @@
 .icon-smooth:before {font-weight: bold;content:'∼';}
 .icon-disrupt:before {font-weight: bold;content:'⥄';}
 .icon-if:before {font-style: italic; font-weight: bold;content:'if';}
-/* .icon-coa:before {content: '⚜'; font-size: 1.1em; margin: -2px;} */
 .icon-coa:before {content:'\f3ed'; font-size: .9em; color: #999;} /* '' */
 .icon-half:before {font-weight: bold;content:'½';}
 .icon-curve:before {content: 'C';}
@@ -264,3 +263,36 @@
   width: .6em;
   font-family: monospace;
 }
+.icon-die:before {content:'🎲';}
+.icon-button-die:before {content:'🎲'; padding-right: .4em;}
+.icon-button-power:before {content:'💪'; padding-right: .6em;}
+
+.icon-button-melee:before {content:'⚔️'; padding-right: .4em;}
+.icon-button-skirmish:before {content:'🎯'; padding-right: .4em;}
+.icon-button-pursue:before {content:'🐎'; padding-right: .4em;}
+.icon-button-retreat:before {content:'🏳️'; padding-right: .4em;}
+.icon-button-shelling:before {content:'💣'; padding-right: .4em;}
+.icon-button-boarding:before {content:'⚔️'; padding-right: .4em;}
+.icon-button-chase:before {content:'⛵'; padding-right: .4em;}
+.icon-button-withdrawal:before {content:'🏳️'; padding-right: .4em;}
+.icon-button-bombardment:before {content:'💣'; padding-right: .4em;}
+.icon-button-blockade:before {content:'⏳'; padding-right: .4em;}
+.icon-button-sheltering:before {content:'🔒'; padding-right: .4em;}
+.icon-button-sortie:before {content:'🚪'; padding-right: .4em;}
+.icon-button-defense:before {content:'🛡️'; padding-right: .4em;}
+.icon-button-storming:before {content:'⚔️'; padding-right: .4em;}
+.icon-button-looting:before {content:'☠️'; padding-right: .4em;}
+.icon-button-surrendering:before {content:'🏳️'; padding-right: .4em;}
+.icon-button-surprise:before {content:'⚡'; padding-right: .4em;}
+.icon-button-shock:before {content:'💫'; padding-right: .4em;}
+.icon-button-flee:before {content:'⛵'; padding-right: .4em;}
+.icon-button-waiting:before {content:'⌛'; padding-right: .4em;}
+.icon-button-maneuvering:before {content:'💢'; padding-right: .4em;}
+.icon-button-dogfight:before {content:'🐕'; padding-right: .4em;}
+
+.icon-button-field:before {content:'🗡️'; padding-right: .4em;}
+.icon-button-naval:before {content:'🌊'; padding-right: .4em;}
+.icon-button-siege:before {content:'🏰'; padding-right: .4em;}
+.icon-button-ambush:before {content:'🌳'; padding-right: .4em;}
+.icon-button-landing:before {content:'⚓'; padding-right: .4em;}
+.icon-button-air:before {content:'💨'; padding-right: .4em;}

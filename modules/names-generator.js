@@ -8,25 +8,41 @@
 
   // calculate Markov chain for a namesbase
   const calculateChain = function(string) {
-    const chain = [];
-    const d = string.toLowerCase().replace(/,/g, " ");
+    const chain = [], array = string.split(",");
 
-    for (let i = -1, str = ""; i < d.length - 2; i += str.length, str = "") {
-      let v = 0, f = " ";
+    for (const n of array) {
+      let name = n.trim().toLowerCase();
+      const basic = !(/[^\u0000-\u007f]/.test(name)); // basic chars and English rules can be applied
 
-      for (let c=i+1; str.length < 5; c++) {
-        if (d[c] === undefined) break;
-        str += d[c];
-        if (str === " ") break;
-        if (d[c] !== "o" && d[c] !== "e" && vowel(d[c]) && d[c+1] === d[c]) break;
-        if (d[c+2] === " ") {str += d[c+1]; break;}
-        if (vowel(d[c])) v++;
-        if (v && vowel(d[c+2])) break;
+      // split word into pseudo-syllables
+      for (let i=-1, syllable = ""; i < name.length; i += (syllable.length||1), syllable = "") {
+        let prev = name[i] || ""; // pre-onset letter
+        let v = 0; // 0 if no vowels in syllable
+
+        for (let c=i+1; name[c] && syllable.length < 5; c++) {
+          const that = name[c], next = name[c+1]; // next char
+          syllable += that;
+          if (syllable === " " || syllable === "-") break; // syllable starts with space or hyphen
+          if (!next || next === " " || next === "-") break; // no need to check
+
+          if (vowel(that)) v = 1; // check if letter is vowel
+
+          // do not split some diphthongs
+          if (that === "y" && next === "e") continue; // 'ye'
+          if (basic) { // English-like
+            if (that === "o" && next === "o") continue; // 'oo'
+            if (that === "e" && next === "e") continue; // 'ee'
+            if (that === "a" && next === "e") continue; // 'ae'
+            if (that === "c" && next === "h") continue; // 'ch'
+          }
+
+          if (vowel(that) === next) break; // two same vowels in a row
+          if (v && vowel(name[c+2])) break; // syllable has vowel and additional vowel is expected soon
+        }
+
+        if (chain[prev] === undefined) chain[prev] = [];
+        chain[prev].push(syllable);
       }
-
-      if (i >= 0) f = d[i];
-      if (chain[f] === undefined) chain[f] = [];
-      chain[f].push(str);
     }
 
     return chain;
@@ -39,12 +55,12 @@
   const clearChains = () => chains = [];
 
   // generate name using Markov's chain
-  const getBase = function(base, min, max, dupl, multi) {
+  const getBase = function(base, min, max, dupl) {
     if (base === undefined) {console.error("Please define a base"); return;}
     if (!chains[base]) updateChain(base);
 
     const data = chains[base];
-    if (!data || data[" "] === undefined) {
+    if (!data || data[""] === undefined) {
       tip("Namesbase " + base + " is incorrect. Please check in namesbase editor", false, "error");
       console.error("Namebase " + base + " is incorrect!");
       return "ERROR";
@@ -53,31 +69,26 @@
     if (!min) min = nameBases[base].min;
     if (!max) max = nameBases[base].max;
     if (dupl !== "") dupl = nameBases[base].d;
-    if (!multi) multi = nameBases[base].m;
 
-    let v = data[" "], cur = v[rand(v.length-1)], w = "";
-    for (let i=0; i < 21; i++) {
-      if (cur === " " && Math.random() > multi) {
-        if (w.length < min) {cur = ""; w = ""; v = data[" "];} else break;
+    let v = data[""], cur = ra(v), w = "";
+    for (let i=0; i < 20; i++) {
+      if (cur === "") { // end of word
+        if (w.length < min) {cur = ""; w = ""; v = data[""];} else break;
       } else {
-        if ((w+cur).length > max) {
+        if (w.length + cur.length > max) { // word too long
           if (w.length < min) w += cur;
           break;
-        } else if (cur === " " && w.length+1 < min) {
-          cur = "";
-          v = data[" "];
-        } else {
-          v = data[cur.slice(-1)] || data[" "];
-        }
+        } else v = data[last(cur)] || data[""];
       }
 
       w += cur;
-      cur = v[rand(v.length - 1)];
+      cur = ra(v);
     }
 
     // parse word to get a final name
     const l = last(w); // last letter
-    if (l === "'" || l === " ") w = w.slice(0,-1); // not allow apostrophe and space at the end
+    if (l === "'" || l === " " || l === "-") w = w.slice(0,-1); // not allow some characters at the end
+    const basic = !(/[^\u0000-\u007f]/.test(w)); // true if word has only basic characters
 
     let name = [...w].reduce(function(r, c, i, d) {
       if (c === d[i+1] && !dupl.includes(c)) return r; // duplication is not allowed
@@ -86,8 +97,8 @@
       if (r.slice(-1) === " ") return r + c.toUpperCase(); // capitalize letter after space
       if (r.slice(-1) === "-") return r + c.toUpperCase(); // capitalize letter after hyphen
       if (c === "a" && d[i+1] === "e") return r; // "ae" => "e"
-      if (i+1 < d.length && !vowel(c) && !vowel(d[i-1]) && !vowel(d[i+1])) return r; // remove consonant between 2 consonants
-      if (i+2 < d.length && c === d[i+1] && c === d[i+2]) return r; // remove tree same letters in a row
+      if (basic && i+1 < d.length && !vowel(c) && !vowel(d[i-1]) && !vowel(d[i+1])) return r; // remove consonant between 2 consonants
+      if (i+2 < d.length && c === d[i+1] && c === d[i+2]) return r; // remove three same letters in a row
       return r + c;
     }, "");
 
@@ -95,7 +106,7 @@
     if (name.split(" ").some(part => part.length < 2)) name = name.split(" ").map((p,i) => i ? p.toLowerCase() : p).join("");
 
     if (name.length < 2) {
-      console.error("Name is too short! Random name to be selected");
+      console.error("Name is too short! Random name will be selected");
       name = ra(nameBases[base].b.split(","));
     }
 
@@ -103,10 +114,10 @@
   }
 
   // generate name for culture
-  const getCulture = function(culture, min, max, dupl, multi) {
+  const getCulture = function(culture, min, max, dupl) {
     if (culture === undefined) {console.error("Please define a culture"); return;}
     const base = pack.cultures[culture].base;
-    return getBase(base, min, max, dupl, multi);
+    return getBase(base, min, max, dupl);
   }
 
   // generate short name for culture
@@ -206,7 +217,7 @@
   }
 
   const getNameBases = function() {
-    // name, min length, max length, letters to allow duplication, multi-word name rate
+    // name, min length, max length, letters to allow duplication, multi-word name rate [deprecated]
     return [
       // real-world bases by Azgaar:
       {name: "German", i: 0, min: 5, max: 12, d: "lt", m: 0, b: "Achern,Aichhalden,Aitern,Albbruck,Alpirsbach,Altensteig,Althengstett,Appenweier,Auggen,Wildbad,Badenen,Badenweiler,Baiersbronn,Ballrechten,Bellingen,Berghaupten,Bernau,Biberach,Biederbach,Binzen,Birkendorf,Birkenfeld,Bischweier,Blumberg,Bollen,Bollschweil,Bonndorf,Bosingen,Braunlingen,Breisach,Breisgau,Breitnau,Brigachtal,Buchenbach,Buggingen,Buhl,Buhlertal,Calw,Dachsberg,Dobel,Donaueschingen,Dornhan,Dornstetten,Dottingen,Dunningen,Durbach,Durrheim,Ebhausen,Ebringen,Efringen,Egenhausen,Ehrenkirchen,Ehrsberg,Eimeldingen,Eisenbach,Elzach,Elztal,Emmendingen,Endingen,Engelsbrand,Enz,Enzklosterle,Eschbronn,Ettenheim,Ettlingen,Feldberg,Fischerbach,Fischingen,Fluorn,Forbach,Freiamt,Freiburg,Freudenstadt,Friedenweiler,Friesenheim,Frohnd,Furtwangen,Gaggenau,Geisingen,Gengenbach,Gernsbach,Glatt,Glatten,Glottertal,Gorwihl,Gottenheim,Grafenhausen,Grenzach,Griesbach,Gutach,Gutenbach,Hag,Haiterbach,Hardt,Harmersbach,Hasel,Haslach,Hausach,Hausen,Hausern,Heitersheim,Herbolzheim,Herrenalb,Herrischried,Hinterzarten,Hochenschwand,Hofen,Hofstetten,Hohberg,Horb,Horben,Hornberg,Hufingen,Ibach,Ihringen,Inzlingen,Kandern,Kappel,Kappelrodeck,Karlsbad,Karlsruhe,Kehl,Keltern,Kippenheim,Kirchzarten,Konigsfeld,Krozingen,Kuppenheim,Kussaberg,Lahr,Lauchringen,Lauf,Laufenburg,Lautenbach,Lauterbach,Lenzkirch,Liebenzell,Loffenau,Loffingen,Lorrach,Lossburg,Mahlberg,Malsburg,Malsch,March,Marxzell,Marzell,Maulburg,Monchweiler,Muhlenbach,Mullheim,Munstertal,Murg,Nagold,Neubulach,Neuenburg,Neuhausen,Neuried,Neuweiler,Niedereschach,Nordrach,Oberharmersbach,Oberkirch,Oberndorf,Oberbach,Oberried,Oberwolfach,Offenburg,Ohlsbach,Oppenau,Ortenberg,otigheim,Ottenhofen,Ottersweier,Peterstal,Pfaffenweiler,Pfalzgrafenweiler,Pforzheim,Rastatt,Renchen,Rheinau,Rheinfelden,Rheinmunster,Rickenbach,Rippoldsau,Rohrdorf,Rottweil,Rummingen,Rust,Sackingen,Sasbach,Sasbachwalden,Schallbach,Schallstadt,Schapbach,Schenkenzell,Schiltach,Schliengen,Schluchsee,Schomberg,Schonach,Schonau,Schonenberg,Schonwald,Schopfheim,Schopfloch,Schramberg,Schuttertal,Schwenningen,Schworstadt,Seebach,Seelbach,Seewald,Sexau,Simmersfeld,Simonswald,Sinzheim,Solden,Staufen,Stegen,Steinach,Steinen,Steinmauern,Straubenhardt,Stuhlingen,Sulz,Sulzburg,Teinach,Tiefenbronn,Tiengen,Titisee,Todtmoos,Todtnau,Todtnauberg,Triberg,Tunau,Tuningen,uhlingen,Unterkirnach,Reichenbach,Utzenfeld,Villingen,Villingendorf,Vogtsburg,Vohrenbach,Waldachtal,Waldbronn,Waldkirch,Waldshut,Wehr,Weil,Weilheim,Weisenbach,Wembach,Wieden,Wiesental,Wildberg,Winzeln,Wittlingen,Wittnau,Wolfach,Wutach,Wutoschingen,Wyhlen,Zavelstein"},

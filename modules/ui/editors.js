@@ -26,6 +26,7 @@ function clicked() {
   else if (el.tagName === "tspan" && grand.parentNode.parentNode.id === "labels") editLabel();
   else if (grand.id === "burgLabels") editBurg();
   else if (grand.id === "burgIcons") editBurg();
+  else if (parent.id === "ice") editIce();
   else if (parent.id === "terrain") editReliefIcon();
   else if (parent.id === "markers") editMarker();
   else if (grand.id === "coastline") editCoastline();
@@ -108,12 +109,6 @@ function applySorting(headers) {
     const bn = name ? b.dataset[sortby] : +b.dataset[sortby];
     return (an > bn ? 1 : an < bn ? -1 : 0) * desc;
   }).forEach(line => list.appendChild(line));
-}
-
-// trigger trash button click on "Delete" keypress
-function removeElementOnKey() {
-  $(".dialog:visible .icon-trash").click();
-  $("button:visible:contains('Remove')").click();
 }
 
 function addBurg(point) {
@@ -376,7 +371,7 @@ function createPicker() {
   const height = bbox.height + 9;
 
   picker.insert("rect", ":first-child").attr("x", 0).attr("y", 0).attr("width", width).attr("height", height).attr("fill", "#ffffff").attr("stroke", "#5d4651").on("mousemove", pos);
-  picker.insert("text", ":first-child").attr("x", 291).attr("y", -11).attr("id", "pickerCloseText").text("✖");
+  picker.insert("text", ":first-child").attr("x", 291).attr("y", -10).attr("id", "pickerCloseText").text("✕");
   picker.insert("rect", ":first-child").attr("x", 288).attr("y", -21).attr("id", "pickerCloseRect").attr("width", 14).attr("height", 14).on("mousemove", cl).on("click", closePicker);
   picker.insert("text", ":first-child").attr("x", 12).attr("y", -10).attr("id", "pickerLabel").text("Color Picker").on("mousemove", pos);
   picker.insert("rect", ":first-child").attr("x", 0).attr("y", -30).attr("width", width).attr("height", 30).attr("id", "pickerHeader").on("mousemove", pos);
@@ -526,11 +521,26 @@ function changePickerSpace() {
   openPicker.updateFill();
 }
 
-// remove all fogging
-function unfog() {
-  defs.select("#fog").selectAll("path").remove();
-  fogging.selectAll("path").remove();
-  fogging.style("display", "none");
+// add fogging
+function fog(id, path) {
+  if (defs.select("#fog #"+id).size()) return;
+  const fadeIn = d3.transition().duration(2000).ease(d3.easeSinInOut);
+  if (defs.select("#fog path").size()) {
+    defs.select("#fog").append("path").attr("d", path).attr("id", id).attr("opacity", 0).transition(fadeIn).attr("opacity", 1);
+  } else {
+    defs.select("#fog").append("path").attr("d", path).attr("id", id).attr("opacity", 1);
+    const opacity = fogging.attr("opacity");
+    fogging.style("display", "block").attr("opacity", 0).transition(fadeIn).attr("opacity", opacity);
+  }
+}
+
+// remove fogging
+function unfog(id) {
+  let el = defs.select("#fog #"+id);
+  if (!id || !el.size()) el = defs.select("#fog").selectAll("path");
+
+  el.remove();
+  if (!defs.selectAll("#fog path").size()) fogging.style("display", "none");
 }
 
 function getFileName(dataType) {
@@ -581,4 +591,43 @@ function highlightElement(element) {
   let y = box.y + box.height / 2;
   if (tr[1]) y += tr[1];
   if (scale >= 2) zoomTo(x, y, scale, 1600);
+}
+
+function selectIcon(initial, callback) {
+  if (!callback) return;
+  $("#iconSelector").dialog();
+
+  const table = document.getElementById("iconTable");
+  const input = document.getElementById("iconInput");
+  input.value = initial;
+
+  if (!table.innerHTML) {
+    const icons = ["⚔️","🏹","🐴","💣","🌊","🎯","⚓","🔮","📯","⚒️","🛡️","👑","⚜️",
+      "☠️","🎆","🗡️","🔪","⛏️","🔥","🩸","💧","🐾","🎪","🏰","🏯","⛓️","❤️","💘","💜","📜","🔔",
+      "🔱","💎","🌈","🌠","✨","💥","☀️","🌙","⚡","❄️","♨️","🎲","🚨","🌉","🗻","🌋","🧱",
+      "⚖️","✂️","🎵","👗","🎻","🎨","🎭","⛲","💉","📖","📕","🎁","💍","⏳","🕸️","⚗️","☣️","☢️",
+      "🔰","🎖️","🚩","🏳️","🏴","💪","✊","👊","🤜","🤝","🙏","🧙","🧙‍♀️","💂","🤴","🧛","🧟","🧞","🧝","👼",
+      "👻","👺","👹","🦄","🐲","🐉","🐎","🦓","🐺","🦊","🐱","🐈","🦁","🐯","🐅","🐆","🐕","🦌","🐵","🐒","🦍",
+      "🦅","🕊️","🐓","🦇","🦜","🐦","🦉","🐮","🐄","🐂","🐃","🐷","🐖","🐗","🐏","🐑","🐐","🐫","🦒","🐘","🦏","🐭","🐁","🐀",
+      "🐹","🐰","🐇","🦔","🐸","🐊","🐢","🦎","🐍","🐳","🐬","🦈","🐠","🐙","🦑","🐌","🦋","🐜","🐝","🐞","🦗","🕷️","🦂","🦀",
+      "🌳","🌲","🎄","🌴","🍂","🍁","🌵","☘️","🍀","🌿","🌱","🌾","🍄","🌽","🌸","🌹","🌻",
+      "🍒","🍏","🍇","🍉","🍅","🍓","🥔","🥕","🥩","🍗","🍞","🍻","🍺","🍲","🍷"
+    ];
+
+    let row = "";
+    for (let i=0; i < icons.length; i++) {
+      if (i%17 === 0) row = table.insertRow(i/17|0);
+      const cell = row.insertCell(i%17);
+      cell.innerHTML = icons[i];
+    }
+  }
+
+  table.onclick = e => {if (e.target.tagName === "TD") {input.value = e.target.innerHTML; callback(input.value)}};
+  table.onmouseover = e => {if (e.target.tagName === "TD") tip(`Click to select ${e.target.innerHTML} icon`)};
+
+  $("#iconSelector").dialog({width: fitContent(), title: "Select Icon",
+  buttons: {
+    Apply: function() {callback(input.value||"⠀"); $(this).dialog("close")},
+    Close: function() {callback(initial); $(this).dialog("close")}}
+  });
 }

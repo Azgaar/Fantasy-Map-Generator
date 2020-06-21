@@ -101,7 +101,7 @@ button, select, a, .pointer {
 	fill-rule: evenodd;
 }
 
-#lakes, #coastline, #armies {
+#lakes, #coastline, #armies, #ice {
 	cursor: pointer;
 }
 
@@ -114,7 +114,7 @@ button, select, a, .pointer {
 	fill-rule: evenodd;
 }
 
-#oceanLayers {
+#oceanLayers, #terrs {
 	fill-rule: evenodd;
 }
 
@@ -123,7 +123,7 @@ button, select, a, .pointer {
 	stroke-linejoin: round;
 }
 
-#regions, #cults, #relig, #biomes, #provs, #terrs, #biomes, #tooltip, #temperature, #texture, #landmass {
+#regions, #cults, #relig, #biomes, #provs, #terrs, #biomes, #tooltip, #temperature, #texture, #landmass, #fogging {
 	pointer-events: none;
 }
 
@@ -333,13 +333,13 @@ div.tab > button#optionsHide {
 .tab {
 	overflow: hidden;
 	border-bottom: 1px solid #5d4651;
-	height: 2.3em;
+	height: 2.2em;
 }
 
 #options p {
 	font-style: italic;
 	font-weight: bold;
-	margin-bottom: 0;
+	margin: .8em 0 0 0;
 }
 
 #aboutContent {
@@ -353,6 +353,7 @@ div.tab > button#optionsHide {
 #aboutContent a {
 	color: #1d1b1c;
 	font-weight: bold;
+	text-decoration: underline;
 }
 
 #optionsContent span {
@@ -482,7 +483,6 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 	width: 100%;
   background-color: white;
   text-align: left;
-  height: 1.5em;
 }
 
 #optionsContent input[type="range"] {
@@ -579,10 +579,9 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 }
 
 .tab > button.options {
-	/* width: 23.25%; */
 	width: 18.6%;
 	height: 100%;
-	padding: 7px 0px;
+	padding: 6px 0px;
 }
 
 button.options {
@@ -590,6 +589,7 @@ button.options {
 	font-weight: bold;
 	float: left;
 	border: none;
+	border-radius: 0;
 	padding: 8px 10px;
 	transition: 0.2s;
 }
@@ -949,19 +949,80 @@ body button.noicon {
 	stroke: #2c0808;
 }
 
+#battleBody > table {
+	padding: .2em .6em .2em .6em;
+	border: 1px solid #ccc;
+	margin: .2em 0 .4em 0;
+	display: block;
+	overflow: auto;
+	max-height: 34vh;
+	width: 100%;
+}
+
+#battleBody > table .regiment {
+	width: 13em;
+	font-weight: bold;
+}
+
+tr.battleCasualties, tr.battleSurvivors {
+	font-style: italic;
+	font-size: .9em;
+}
+
+#battleBody div.battlePhases,
+#battleBottom div.battleTypes {
+	position: fixed;
+	background-color: #ffffff30;
+}
+
+#battleBody div.battlePhases > button,
+#battleBottom div.battleTypes > button {
+	width: 3.2em;
+	display: block;
+	margin: .2em 0;
+}
+
+div#regimentSelectorBody {
+	max-height: 50vh;
+	font-size: .9em;
+}
+
+div#regimentSelectorBody > div {
+	padding: .1em;
+	border: 1px solid #fff;
+}
+
+div#regimentSelectorBody > div:hover {
+	border: 1px solid #ccc;
+}
+
+div#regimentSelectorBody > div.selected {
+	border: 1px solid #b28585;
+}
+
+div#regimentSelectorBody > div.inactive {
+	background-color: #eee;
+	color: #aaa;
+}
+
+div#regimentSelectorBody > div > div {
+	display: inline-block;
+	pointer-events: none;
+}
+
 .drag-trigger {
-	border-left: 12px solid transparent;
-	border-right: 12px solid #916e7f;
-	border-top: 12px solid transparent;
+	border-left: 1em solid transparent;
+	border-right: 1em solid #000;
+	border-top: 1em solid transparent;
 	position: absolute;
-	right: 0;
-	top: 100%;
-	margin-top: -12px;
+	right: -1px;
+	bottom: -1px;
+	opacity: .3;
 }
 
 .drag-trigger:hover {
 	cursor: move;
-	border-right-color: #5e4fa2;
+	opacity: .6;
 }
 
 .tint {
@@ -969,10 +1030,10 @@ body button.noicon {
 }
 
 .color-div {
-	width: 2.7em;
-	height: 1.1em;
+	width: 3em;
+	height: 1em;
 	display: inline-block;
-	margin: .1em .2em;
+	margin: 0 .16em;
 	border: 1px #c5c5c5 groove;
 	cursor: pointer;
 }
@@ -1151,8 +1212,19 @@ div.slider .ui-slider-handle {
 
 .table {
 	max-height: 75vh;
+	max-width: 75vw;
 	overflow-x: hidden;
 	overflow-y: auto;
+}
+
+.overflow {
+	max-width: 93vw;
+	overflow: auto;
+	max-height: 75vh;
+}
+
+.overflow > div {
+	width: max-content;
 }
 
 div.header > div {
@@ -1657,12 +1729,15 @@ rect.fillRect {
 
 #militaryOptionsTable input {
 	width: 9em;
-	padding-left: 3px;
 	border: 1px solid #d4d4d4;
 }
 
 #militaryOptionsTable input[type="number"] {
 	width: 4em;
+}
+
+#militaryOptionsTable button {
+	width: 100%;
 }
 
 #gridOverlay {
@@ -1691,7 +1766,7 @@ ul.share-buttons li {
 }
 
 ul.share-buttons img {
-	width: 18px;
+	width: 2em;
 }
 
 input[type="checkbox"] {
@@ -1760,24 +1835,6 @@ div.textual span, .textual legend {
 	vertical-align: top;
 }
 
-#markerIconTable {
-	font-size: 1.6em;
-	cursor: pointer;
-}
-
-#markerIconTable td:hover {
-	transition: .1s;
-	color: #3c3ca9;
-}
-
-#markerIconTable td:active {
-	transform: translate(0px, 1px);
-}
-
-#markerIconTable td.selected {
-	outline: 1px solid #9b9b9b;
-}
-
 .highlighted {
 	outline-width: 2px;
 	outline-style: dashed;
@@ -1808,7 +1865,9 @@ div#notesHeader {
 }
 
 div#notesBody {
-	padding: 0 10px;
+	padding: 0 1em;
+	max-height: 80vh;
+	overflow: auto;
 }
 
 svg.button {
@@ -2025,7 +2084,7 @@ svg.button {
 	left: 50%;
 	top: 50%;
 	transform: translate(-50%, -50%);
-	max-width: 21em;
+	max-width: 22em;
 	background-color: #fff;
 	padding: 1.2em;
 	border: solid 1px #000;
@@ -2054,6 +2113,16 @@ svg.button {
 	font-size: 2.4em;
 	color: #fff5da;
 	text-shadow: 0px 1px 4px #4c3a35;
+}
+
+.epgrid line {
+  stroke: lightgrey;
+  stroke-opacity: .7;
+  shape-rendering: crispEdges;
+}
+
+.epgrid path {
+  stroke-width: 0;
 }
 
 #debug {

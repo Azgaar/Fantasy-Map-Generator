@@ -31,6 +31,7 @@ function editProvinces() {
   document.getElementById("provincesManuallyApply").addEventListener("click", applyProvincesManualAssignent);
   document.getElementById("provincesManuallyCancel").addEventListener("click", () => exitProvincesManualAssignment());
   document.getElementById("provincesAdd").addEventListener("click", enterAddProvinceMode);
+  document.getElementById("provincesRecolor").addEventListener("click", recolorProvinces);
 
   body.addEventListener("click", function(ev) {
     if (customization) return;
@@ -41,7 +42,7 @@ function editProvinces() {
     if (cl.contains("icon-star-empty")) capitalZoomIn(p); else
     if (cl.contains("icon-flag-empty")) triggerIndependencePromps(p); else
     if (cl.contains("culturePopulation")) changePopulation(p); else
-    if (cl.contains("icon-pin")) focusOn(p, cl); else
+    if (cl.contains("icon-pin")) toggleFog(p, cl); else
     if (cl.contains("icon-trash-empty")) removeProvince(p);
   });
 
@@ -113,7 +114,7 @@ function editProvinces() {
       const capital = p.burg ? pack.burgs[p.burg].name : '';
       const separable = p.burg && p.burg !== pack.states[p.state].capital;
       const focused = defs.select("#fog #focusProvince"+p.i).size();
-      lines += `<div class="states" data-id=${p.i} data-name=${p.name} data-form=${p.formName} data-color="${p.color}" data-capital="${capital}" data-state="${stateName}" data-area=${area} data-population=${population}>
+      lines += `<div class="states" data-id=${p.i} data-name="${p.name}" data-form="${p.formName}" data-color="${p.color}" data-capital="${capital}" data-state="${stateName}" data-area=${area} data-population=${population}>
         <svg data-tip="Province fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${p.color}" class="fillRect pointer"></svg>
         <input data-tip="Province name. Click to change" class="name pointer" value="${p.name}" readonly>
         <span data-tip="Click to open province COA in the Iron Arachne Heraldry Generator. Ctrl + click to change the seed" class="icon-coa pointer hide"></span>
@@ -281,7 +282,7 @@ function editProvinces() {
     BurgsAndStates.drawStateLabels([newState, oldState]);
 
     // remove old province
-    unfocus(p);
+    unfog("focusProvince"+p);
     if (states[oldState].provinces.includes(p)) states[oldState].provinces.splice(states[oldState].provinces.indexOf(p), 1);
     provinces[p].removed = true;
 
@@ -346,24 +347,10 @@ function editProvinces() {
 
   }
 
-  function focusOn(p, cl) {
-    const inactive = cl.contains("inactive");
+  function toggleFog(p, cl) {
+    const path = provs.select("#province"+p).attr("d"), id = "focusProvince"+p;
+    cl.contains("inactive") ? fog(id, path) : unfog(id);
     cl.toggle("inactive");
-
-    if (inactive) {
-      if (defs.select("#fog #focusProvince"+p).size()) return;
-      fogging.style("display", "block");
-      const path = provs.select("#province"+p).attr("d");
-      defs.select("#fog").append("path").attr("d", path).attr("fill", "black").attr("id", "focusProvince"+p);
-      fogging.append("path").attr("d", path).attr("id", "focusProvinceHalo"+p)
-        .attr("fill", "none").attr("stroke", pack.provinces[p].color).attr("filter", "url(#blur5)");
-    } else unfocus(p);
-  }
-
-  function unfocus(p) {
-    defs.select("#focusProvince"+p).remove();
-    fogging.select("#focusProvinceHalo"+p).remove();
-    if (!defs.selectAll("#fog path").size()) fogging.style("display", "none"); // all items are de-focused
   }
 
   function removeProvince(p) {
@@ -376,7 +363,7 @@ function editProvinces() {
           const state = pack.provinces[p].state;
           if (pack.states[state].provinces.includes(p)) pack.states[state].provinces.splice(pack.states[state].provinces.indexOf(p), 1);
           pack.provinces[p].removed = true;
-          unfocus(p);
+          unfog("focusProvince"+p);
       
           const g = provs.select("#provincesBody");
           g.select("#province"+p).remove();
@@ -808,6 +795,20 @@ function editProvinces() {
     if (provincesAdd.classList.contains("pressed")) provincesAdd.classList.remove("pressed");
   }
 
+  function recolorProvinces() {
+    const state = +document.getElementById("provincesFilterState").value;
+
+    pack.provinces.forEach(p => {
+      if (!p || p.removed) return;
+      if (state !== -1 && p.state !== state) return;
+      const stateColor = pack.states[p.state].color;
+      const rndColor = getRandomColor();
+      p.color = stateColor[0] === "#" ? d3.color(d3.interpolate(stateColor, rndColor)(.2)).hex() : rndColor;
+    });
+
+    if (!layerIsOn("toggleProvinces")) toggleProvinces(); else drawProvinces();
+  }
+
   function downloadProvincesData() {
     const unit = areaUnit.value === "square" ? distanceUnitInput.value + "2" : areaUnit.value;
     let data = "Id,Province,Form,State,Color,Capital,Area "+unit+",Total Population,Rural Population,Urban Population\n"; // headers
@@ -838,7 +839,7 @@ function editProvinces() {
           $(this).dialog("close");
           pack.provinces.filter(p => p.i).forEach(p => {
             p.removed = true;
-            unfocus(p.i);
+            unfog("focusProvince"+p.i);
           });
           pack.cells.i.forEach(i => pack.cells.province[i] = 0);
           pack.states.filter(s => s.i && !s.removed).forEach(s => s.provinces = []);

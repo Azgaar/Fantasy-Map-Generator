@@ -140,46 +140,15 @@
   // define burg coordinates, port status and define details
   const specifyBurgs = function() {
     console.time("specifyBurgs");
-    const cells = pack.cells, vertices = pack.vertices, features = pack.features;
-
-    // separate arctic seas for correct searoutes generation
-    void function checkAccessibility() {
-      const oceanCells = cells.i.filter(i => cells.h[i] < 20 && features[cells.f[i]].type === "ocean");
-      const marked = [];
-      let firstCell = oceanCells.find(i => !marked[i]);
-
-      while (firstCell !== undefined) {
-        const queue = [firstCell];
-        const f = features[cells.f[firstCell]]; // old feature
-        const i = last(features).i+1; // new feature id to assign
-        const biome = cells.biome[firstCell];
-        marked[firstCell] = 1;
-        let cellNumber = 1;
-
-        while (queue.length) {
-          for (const c of cells.c[queue.pop()]) {
-            if (cells.biome[c] !== biome || cells.h[c] >= 20) continue;
-            if (marked[c]) continue;
-            queue.push(c);
-            cells.f[c] = i;
-            marked[c] = 1;
-            cellNumber++;
-          }
-        }
-
-        const group = biome ? "frozen " + f.group : f.group;
-        features.push({i, parent:f.i, land:false, border:f.border, type:"ocean", cells: cellNumber, firstCell, group});
-        firstCell = oceanCells.find(i => !marked[i]);
-      }
-    }()
+    const cells = pack.cells, vertices = pack.vertices, features = pack.features, temp = grid.cells.temp;
 
     for (const b of pack.burgs) {
       if (!b.i) continue;
       const i = b.cell;
 
-      // asign port status
+      // asign port status to some coastline burgs with temp > 0 °C
       const haven = cells.haven[i];
-      if (haven && cells.biome[haven] === 0) {
+      if (haven && temp[cells.g[i]] > 0) {
         const f = cells.f[haven]; // water body id
         // port is a capital with any harbor OR town with good harbor
         const port = features[f].cells > 1 && ((b.capital && cells.harbor[i]) || cells.harbor[i] === 1);
@@ -187,7 +156,7 @@
       } else b.port = 0;
 
       // define burg population (keep urbanization at about 10% rate)
-      b.population = rn(Math.max((cells.s[i] + cells.road[i]) / 8 + b.i / 1000 + i % 100 / 1000, .1), 3);
+      b.population = rn(Math.max((cells.s[i] + cells.road[i] / 2) / 8 + b.i / 1000 + i % 100 / 1000, .1), 3);
       if (b.capital) b.population = rn(b.population * 1.3, 3); // increase capital population
 
       if (b.port) {
@@ -219,8 +188,8 @@
     console.timeEnd("specifyBurgs");
   }
 
-  const defineBurgFeatures = function() {
-    pack.burgs.filter(b => b.i && !b.removed).forEach(b => {
+  const defineBurgFeatures = function(newburg) {
+    pack.burgs.filter(b => newburg ? b.i == newburg.i : (b.i && !b.removed)).forEach(b => {
       const pop = b.population;
       b.citadel = b.capital || pop > 50 && P(.75) || P(.5) ? 1 : 0;
       b.plaza = pop > 50 || pop > 30 && P(.75) || pop > 10 && P(.5) || P(.25) ? 1 : 0;
@@ -420,7 +389,7 @@
             const passableLake = features[cells.f[c]].type === "lake" && features[cells.f[c]].cells < maxLake;
             if (cells.b[c] || (cells.state[c] !== state && !passableLake)) {hull.add(cells.v[q][d]); return;}
             const nC = cells.c[c].filter(n => cells.state[n] === state);
-            const intersected = intersect(nQ, nC).length
+            const intersected = common(nQ, nC).length
             if (hull.size > 20 && !intersected && !passableLake) {hull.add(cells.v[q][d]); return;}
             if (used[c]) return;
             used[c] = 1;
@@ -691,7 +660,7 @@
 
         const naval = states[f].type === "Naval" && states[t].type === "Naval" && cells.f[states[f].center] !== cells.f[states[t].center];
         const neib = naval ? false : states[f].neighbors.includes(t);
-        const neibOfNeib = naval || neib ? false : states[f].neighbors.map(n => states[n].neighbors).join().includes(t);
+        const neibOfNeib = naval || neib ? false : states[f].neighbors.map(n => states[n].neighbors).join("").includes(t);
 
         let status = naval ? rw(navals) : neib ? rw(neibs) : neibOfNeib ? rw(neibsOfNeibs) : rw(far);
 
@@ -810,7 +779,7 @@
     });
 
     const monarchy = ["Duchy", "Grand Duchy", "Principality", "Kingdom", "Empire"]; // per expansionism tier
-    const republic = {Republic:70, Federation:2, Oligarchy:2, Tetrarchy:1, Triumvirate:1, Diarchy:1, "Trade Company":3}; // weighted random
+    const republic = {Republic:75, Federation:4, Oligarchy:2, Tetrarchy:1, Triumvirate:1, Diarchy:1, "Trade Company":4, Junta:1}; // weighted random
     const union = {Union:3, League:4, Confederation:1, "United Kingdom":1, "United Republic":1, "United Provinces":2, Commonwealth:1, Heptarchy:1}; // weighted random
 
     for (const s of states) {
@@ -870,11 +839,13 @@
       if (s.form === "Union") return rw(union);
 
       if (s.form === "Theocracy") {
-        // default name is "Theocracy", some culture bases have special names
-        if ([0, 1, 2, 3, 4, 6, 8, 9, 13, 15, 20].includes(base)) return "Diocese"; // Euporean
-        if ([7, 5].includes(base)) return "Eparchy"; // Greek, Ruthenian
-        if ([21, 16].includes(base)) return "Imamah"; // Nigerian, Turkish
-        if ([18, 17, 28].includes(base)) return "Caliphate"; // Arabic, Berber, Swahili
+        // default name is "Theocracy"
+        if (P(.5) && [0, 1, 2, 3, 4, 6, 8, 9, 13, 15, 20].includes(base)) return "Diocese"; // Euporean
+        if (P(.9) && [7, 5].includes(base)) return "Eparchy"; // Greek, Ruthenian
+        if (P(.9) && [21, 16].includes(base)) return "Imamah"; // Nigerian, Turkish
+        if (P(.8) && [18, 17, 28].includes(base)) return "Caliphate"; // Arabic, Berber, Swahili
+        if (P(.02)) return "Thearchy"; // "Thearchy" in very rare case
+        if (P(.05)) return "See"; // "See" in rare case
         return "Theocracy";
       }
     }

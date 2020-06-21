@@ -225,7 +225,7 @@ function getMapData() {
     const date = new Date();
     const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
     const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
-    const params = [version, license, dateString, seed, graphWidth, graphHeight].join("|");
+    const params = [version, license, dateString, seed, graphWidth, graphHeight, mapId].join("|");
     const settings = [distanceUnitInput.value, distanceScaleInput.value, areaUnit.value,
       heightUnit.value, heightExponentInput.value, temperatureScale.value,
       barSize.value, barLabel.value, barBackOpacity.value, barBackColor.value,
@@ -294,19 +294,12 @@ async function saveMap() {
   link.click();
   tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
   window.URL.revokeObjectURL(URL);
-
-  // send saved files count and size to server for usage analysis (for the future Cloud storage)
-  publicstorage.get("fmg").then(fmg => {
-    if (!fmg) return;
-    fmg.size = (fmg.size * fmg.maps + blob.size) / (fmg.maps + 1);
-    fmg.maps += 1;
-    publicstorage.set("fmg", fmg).then(fmg => console.log(fmg));
-  });
 }
 
 function saveGeoJSON_Cells() {
   let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
   const cells = pack.cells, v = pack.vertices;
+  const getPopulation = i => {const [r, u] = getCellPopulation(i); return rn(r+u)};
 
   cells.i.forEach(i => {
     data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"Polygon\", \"coordinates\": [[";
@@ -321,17 +314,18 @@ function saveGeoJSON_Cells() {
     data += "["+x+","+y+"]";
     data += "]] },\n   \"properties\": {\n";
 
-    let height = parseInt(getFriendlyHeight([cells.p[i][0],cells.p[i][1]]));
+    const height = parseInt(getFriendlyHeight([cells.p[i][0],cells.p[i][1]]));
 
     data += "      \"id\": \""+i+"\",\n";
     data += "      \"height\": \""+height+"\",\n";
     data += "      \"biome\": \""+cells.biome[i]+"\",\n";
     data += "      \"type\": \""+pack.features[cells.f[i]].type+"\",\n";
-    data += "      \"population\": \""+getFriendlyPopulation(i)+"\",\n";
+    data += "      \"population\": \""+getPopulation(i)+"\",\n";
     data += "      \"state\": \""+cells.state[i]+"\",\n";
     data += "      \"province\": \""+cells.province[i]+"\",\n";
     data += "      \"culture\": \""+cells.culture[i]+"\",\n";
-    data += "      \"religion\": \""+cells.religion[i]+"\"\n";
+    data += "      \"religion\": \""+cells.religion[i]+"\",\n";
+    data += "      \"neighbors\": ["+cells.c[i]+"]\n";
     data +="   }\n},\n";
   });
 
@@ -558,6 +552,7 @@ function parseLoadedData(data) {
       if (params[3]) {seed = params[3]; optionsSeed.value = seed;}
       if (params[4]) graphWidth = +params[4];
       if (params[5]) graphHeight = +params[5];
+      mapId = params[6] ? +params[6] : Date.now();
     }()
 
     console.group("Loaded Map " + seed);
@@ -625,6 +620,7 @@ function parseLoadedData(data) {
       texture = viewbox.select("#texture");
       terrs = viewbox.select("#terrs");
       biomes = viewbox.select("#biomes");
+      ice = viewbox.select("#ice");
       cells = viewbox.select("#cells");
       gridOverlay = viewbox.select("#gridOverlay");
       coordinates = viewbox.select("#coordinates");
@@ -803,11 +799,9 @@ function parseLoadedData(data) {
         if (!markers.selectAll("*").size()) {addMarkers(); turnButtonOn("toggleMarkers");}
 
         // 1.0 add fogging layer (state focus)
-        fogging = viewbox.insert("g", "#ruler").attr("id", "fogging-cont").attr("mask", "url(#fog)")
-          .append("g").attr("id", "fogging").style("display", "none");
+        fogging = viewbox.insert("g", "#ruler").attr("id", "fogging-cont").attr("mask", "url(#fog)").append("g").attr("id", "fogging").style("display", "none");
         fogging.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
-        defs.append("mask").attr("id", "fog").append("rect").attr("x", 0).attr("y", 0).attr("width", "100%")
-          .attr("height", "100%").attr("fill", "white");
+        defs.append("mask").attr("id", "fog").append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%").attr("fill", "white");
 
         // 1.0 changes states opacity bask to regions level
         if (statesBody.attr("opacity")) {
@@ -961,12 +955,37 @@ function parseLoadedData(data) {
         Military.generate();
       }
 
-      if (version < 1.35) {
+      if (version < 1.4) {
         // v 1.35 added dry lakes
         if (!lakes.select("#dry").size()) {
           lakes.append("g").attr("id", "dry");
           lakes.select("#dry").attr("opacity", 1).attr("fill", "#c9bfa7").attr("stroke", "#8e816f").attr("stroke-width", .7).attr("filter", null);
         }
+
+        // v 1.4 added ice layer
+        ice = viewbox.insert("g", "#coastline").attr("id", "ice").style("display", "none");
+        ice.attr("opacity", null).attr("fill", "#e8f0f6").attr("stroke", "#e8f0f6").attr("stroke-width", 1).attr("filter", "url(#dropShadow05)");
+        drawIce();
+
+        // v 1.4 added icon and power attributes for units
+        for (const unit of options.military) {
+          if (!unit.icon) unit.icon = getUnitIcon(unit.type);
+          if (!unit.power) unit.power = unit.crew;
+        }
+
+        function getUnitIcon(type) {
+          if (type === "naval") return "🌊";
+          if (type === "ranged") return "🏹";
+          if (type === "mounted") return "🐴";
+          if (type === "machinery") return "💣";
+          if (type === "armored") return "🐢";
+          if (type === "aviation") return "🦅";
+          if (type === "magical") return "🔮";
+          else return "⚔️";
+        }
+
+        // 1.4 added state reference for regiments
+        pack.states.filter(s => s.military).forEach(s => s.military.forEach(r => r.state = s.i));
       }
 
     }()

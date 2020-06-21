@@ -45,7 +45,7 @@ function editStates() {
     if (cl.contains("icon-coa")) stateOpenCOA(ev, state); else
     if (cl.contains("icon-star-empty")) stateCapitalZoomIn(state); else
     if (cl.contains("culturePopulation")) changePopulation(state); else
-    if (cl.contains("icon-pin")) focusOnState(state, cl); else
+    if (cl.contains("icon-pin")) toggleFog(state, cl); else
     if (cl.contains("icon-trash-empty")) stateRemovePrompt(state);
   });
 
@@ -171,6 +171,8 @@ function editStates() {
 
   function stateHighlightOn(event) {
     if (!layerIsOn("toggleStates")) return;
+    if (defs.select("#fog path").size()) return;
+
     const state = +event.target.dataset.id;
     if (customization || !state) return;
     const d = regions.select("#state"+state).attr("d");
@@ -184,7 +186,7 @@ function editStates() {
     path.transition().duration(dur).attrTween("stroke-dasharray", function() {return t => i(t)});
   }
 
-  function stateHighlightOff(event) {
+  function stateHighlightOff() {
     debug.selectAll(".highlight").each(function() {
       d3.select(this).transition().duration(1000).attr("opacity", 0).remove();
     });
@@ -201,14 +203,19 @@ function editStates() {
       statesBody.select("#state-gap"+state).attr("stroke", fill);
       const halo = d3.color(fill) ? d3.color(fill).darker().hex() : "#666666";
       statesHalo.select("#state-border"+state).attr("stroke", halo);
+
+      // recolor regiments
+      const solidColor = fill[0] === "#" ? fill : "#999";
+      const darkerColor = d3.color(solidColor).darker().hex();
+      armies.select("#army"+state).attr("fill", solidColor);
+      armies.select("#army"+state).selectAll("g > rect:nth-of-type(2)").attr("fill", darkerColor);
     }
 
     openPicker(currentFill, callback);
   }
 
   function editStateName(state) {
-
-    //Reset input value and close add mode
+    // reset input value and close add mode
     stateNameEditorCustomForm.value = "";
     const addModeActive = stateNameEditorCustomForm.style.display === "inline-block";
     if (addModeActive) {
@@ -236,6 +243,7 @@ function editStates() {
     document.getElementById("stateNameEditorShortCulture").addEventListener("click", regenerateShortNameCuture);
     document.getElementById("stateNameEditorShortRandom").addEventListener("click", regenerateShortNameRandom);
     document.getElementById("stateNameEditorAddForm").addEventListener("click", addCustomForm);
+    document.getElementById("stateNameEditorCustomForm").addEventListener("change", addCustomForm);
     document.getElementById("stateNameEditorFullRegenerate").addEventListener("click", regenerateFullName);
 
     function regenerateShortNameCuture() {
@@ -256,7 +264,7 @@ function editStates() {
       const addModeActive = stateNameEditorCustomForm.style.display === "inline-block";
       stateNameEditorCustomForm.style.display = addModeActive ? "none" : "inline-block";
       stateNameEditorSelectForm.style.display = addModeActive ? "inline-block" : "none";
-      if (addModeActive) applyOption(stateNameEditorSelectForm, value);
+      if (value && addModeActive) applyOption(stateNameEditorSelectForm, value);
       stateNameEditorCustomForm.value = "";
     }
 
@@ -399,26 +407,11 @@ function editStates() {
     recalculateStates();
   }
 
-  function focusOnState(state, cl) {
+  function toggleFog(state, cl) {
     if (customization) return;
-
-    const inactive = cl.contains("inactive");
+    const path = statesBody.select("#state"+state).attr("d"), id = "focusState"+state;
+    cl.contains("inactive") ? fog(id, path) : unfog(id);
     cl.toggle("inactive");
-
-    if (inactive) {
-      if (defs.select("#fog #focusState"+state).size()) return;
-      fogging.style("display", "block");
-      const path = statesBody.select("#state"+state).attr("d");
-      defs.select("#fog").append("path").attr("d", path).attr("fill", "black").attr("id", "focusState"+state);
-      fogging.append("path").attr("d", path).attr("id", "focusStateHalo"+state)
-        .attr("fill", "none").attr("stroke", pack.states[state].color).attr("filter", "url(#blur5)");
-    } else unfocus(state);
-  }
-
-  function unfocus(s) {
-    defs.select("#focusState"+s).remove();
-    fogging.select("#focusStateHalo"+s).remove();
-    if (!defs.selectAll("#fog path").size()) fogging.style("display", "none"); // all items are de-focused
   }
 
   function stateRemovePrompt(state) {
@@ -440,7 +433,7 @@ function editStates() {
     statesBody.select("#state"+state).remove();
     statesBody.select("#state-gap"+state).remove();
     statesHalo.select("#state-border"+state).remove();
-    unfocus(state);
+    unfog("focusState"+state);
     const label = document.querySelector("#stateLabel"+state);
     if (label) label.remove();
     pack.burgs.forEach(b => {if(b.state === state) b.state = 0;});
@@ -453,10 +446,30 @@ function editStates() {
       pack.cells.province.forEach((pr, i) => {if(pr === p) pack.cells.province[i] = 0;});
     });
 
+    // remove military
+    pack.states[state].military.forEach(m => {
+      const id = `regiment${state}-${m.i}`;
+      const index = notes.findIndex(n => n.id === id);
+      if (index != -1) notes.splice(index, 1);
+    });
+    armies.select("g#army"+state).remove();
+
+    const military = pack.states[elSelected.dataset.state].military;
+    const regIndex = military.indexOf(regiment());
+    if (regIndex === -1) return;
+    military.splice(regIndex, 1);
+
+    const index = notes.findIndex(n => n.id === elSelected.id);
+    if (index != -1) notes.splice(index, 1);
+    elSelected.remove();
+
     const capital = pack.states[state].capital;
     pack.burgs[capital].capital = 0;
     pack.burgs[capital].state = 0;
     moveBurgToGroup(capital, "towns");
+
+    // clean state object
+    pack.states[state].military = [];
 
     debug.selectAll(".highlight").remove();
     if (!layerIsOn("toggleStates")) toggleStates(); else drawStates();
@@ -924,5 +937,6 @@ function editStates() {
     if (customization === 2) exitStatesManualAssignment("close");
     if (customization === 3) exitAddStateMode();
     debug.selectAll(".highlight").remove();
+    body.innerHTML = "";
   }
 }

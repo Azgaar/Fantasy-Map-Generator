@@ -11,6 +11,7 @@
     if (outline === "none") return;
     console.time("drawOceanLayers");
 
+    lineGen.curve(d3.curveBasisClosed);
     cells = grid.cells, pointsN = grid.cells.i.length, vertices = grid.vertices;
     const limits = outline === "random" ? randomizeOutline() : outline.split(",").map(s => +s);
     markupOcean(limits);
@@ -27,15 +28,21 @@
       if (!start) continue;
       used[i] = 1;
       const chain = connectVertices(start, t); // vertices chain to form a path
-      const relaxation = 1 + t * -2; // select only n-th point
-      const relaxed = chain.filter((v, i) => i % relaxation === 0 || vertices.c[v].some(c => c >= pointsN));
-      if (relaxed.length >= 3) chains.push([t, relaxed.map(v => vertices.p[v])]);
+      if (chain.length < 4) continue;
+      const relax = 1 + t * -2; // select only n-th point
+      const relaxed = chain.filter((v, i) => !(i%relax) || vertices.c[v].some(c => c >= pointsN));
+      if (relaxed.length < 4) continue;
+      const points = clipPoly(relaxed.map(v => vertices.p[v]), 1);
+      //const inside = d3.polygonContains(points, grid.points[i]);
+      chains.push([t, points]); //chains.push([t, points, inside]);
     }
 
+    //const bbox = `M0,0h${graphWidth}v${graphHeight}h${-graphWidth}Z`;
     for (const t of limits) {
-      const path = chains.filter(c => c[0] === t).map(c => round(lineGen(c[1]))).join();
+      const layer = chains.filter(c => c[0] === t);
+      let path = layer.map(c => round(lineGen(c[1]))).join("");
+      //if (layer.every(c => !c[2])) path = bbox + path; // add outer ring if all segments are outside (works not for all cases)
       if (path) oceanLayers.append("path").attr("d", path).attr("fill", "#ecf2f9").style("opacity", opacity);
-      // For each layer there should outer ring. If no, layer will be upside down. Need to fix it in the future
     }
 
     // find eligible cell vertex to start path detection
@@ -57,8 +64,8 @@
     return limits;
   }
 
+  // Define grid ocean cells type based on distance form land
   function markupOcean(limits) {
-    // Define ocean cells type based on distance form land
     for (let t = -2; t >= limits[0]-1; t--) {
       for (let i = 0; i < pointsN; i++) {
         if (cells.t[i] !== t+1) continue;

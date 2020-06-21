@@ -65,6 +65,7 @@ function processFeatureRegeneration(event, button) {
   if (button === "regenerateProvinces") regenerateProvinces(); else
   if (button === "regenerateReligions") regenerateReligions(); else
   if (button === "regenerateMilitary") regenerateMilitary(); else
+  if (button === "regenerateIce") regenerateIce(); else
   if (button === "regenerateMarkers") regenerateMarkers(event); else
   if (button === "regenerateZones") regenerateZones(event);
 }
@@ -86,7 +87,7 @@ function recalculatePopulation() {
     if (!b.i || b.removed) return;
     const i = b.cell;
 
-    b.population = rn(Math.max((pack.cells.s[i] + pack.cells.road[i]) / 8 + b.i / 1000 + i % 100 / 1000, .1), 3);
+    b.population = rn(Math.max((pack.cells.s[i] + pack.cells.road[i] / 2) / 8 + b.i / 1000 + i % 100 / 1000, .1), 3);
     if (b.capital) b.population = b.population * 1.3; // increase capital population
     if (b.port) b.population = b.population * 1.3; // increase port population
     b.population = rn(b.population * gauss(2,3,.6,20,3), 3);
@@ -157,8 +158,8 @@ function regenerateStates() {
     tip(`Not enought burgs to generate ${regionsInput.value} states. Will generate only ${burgs.length} states`, false, "warn");
   }
 
-  // burg ids sorted by a bit randomized population:
-  const sorted = burgs.map(b => [b.i, b.population * Math.random()]).sort((a, b) => b[1] - a[1]).map(b => b[0]);
+  // burg local ids sorted by a bit randomized population:
+  const sorted = burgs.map((b, i) => [i, b.population * Math.random()]).sort((a, b) => b[1] - a[1]).map(b => b[0]);
   const capitalsTree = d3.quadtree();
 
   // turn all old capitals into towns
@@ -193,8 +194,8 @@ function regenerateStates() {
     if (!i) return {i, name: neutral};
 
     let capital = null, x = 0, y = 0;
-    for (let i=0; i < sorted.length; i++) {
-      capital = burgs[sorted[i]];
+    for (const i of sorted) {
+      capital = burgs[i];
       x = capital.x, y = capital.y;
       if (capitalsTree.find(x, y, spacing) === undefined) break;
       spacing = Math.max(spacing - 1, 1);
@@ -247,6 +248,12 @@ function regenerateMilitary() {
   Military.generate();
   if (!layerIsOn("toggleMilitary")) toggleMilitary();
   if (document.getElementById("militaryOverviewRefresh").offsetParent) militaryOverviewRefresh.click();
+}
+
+function regenerateIce() {
+  if (!layerIsOn("toggleIce")) toggleIce();
+  ice.selectAll("*").remove();
+  drawIce();
 }
 
 function regenerateMarkers(event) {

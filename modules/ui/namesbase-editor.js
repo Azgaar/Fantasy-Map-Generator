@@ -16,7 +16,6 @@ function editNamesbase() {
   document.getElementById("namesbaseMin").addEventListener("input", updateBaseMin);
   document.getElementById("namesbaseMax").addEventListener("input", updateBaseMax);
   document.getElementById("namesbaseDouble").addEventListener("input", updateBaseDublication);
-  document.getElementById("namesbaseMulti").addEventListener("input", updateBaseMiltiwordRate);
   document.getElementById("namesbaseAdd").addEventListener("click", namesbaseAdd);
   document.getElementById("namesbaseAnalize").addEventListener("click", analizeNamesbase);
   document.getElementById("namesbaseDefault").addEventListener("click", namesbaseRestoreDefault);
@@ -46,7 +45,6 @@ function editNamesbase() {
     document.getElementById("namesbaseMin").value = nameBases[base].min;
     document.getElementById("namesbaseMax").value = nameBases[base].max;
     document.getElementById("namesbaseDouble").value = nameBases[base].d;
-    document.getElementById("namesbaseMulti").value = nameBases[base].m;
     updateExamples();
   }
 
@@ -67,10 +65,9 @@ function editNamesbase() {
 
   function updateNamesData() {
     const base = +document.getElementById("namesbaseSelect").value;
-    const b = document.getElementById("namesbaseTextarea").value.replace(/ /g, "");
+    const b = document.getElementById("namesbaseTextarea").value;
     if (b.split(",").length < 3) {
-      tip("The names data provided is not correct", false, "error");
-      document.getElementById("namesbaseTextarea").value = nameBases[base].b;
+      tip("The names data provided is too short of incorrect", false, "error");
       return;
     }
     nameBases[base].b = b;
@@ -99,12 +96,6 @@ function editNamesbase() {
   function updateBaseDublication() {
     const base = +document.getElementById("namesbaseSelect").value;
     nameBases[base].d = this.value;
-  }
-
-  function updateBaseMiltiwordRate() {
-    if (isNaN(+this.value) || +this.value < 0 || +this.value > 1) {tip("Please provide a number within [0-1] range", false, "error"); return;}
-    const base = +document.getElementById("namesbaseSelect").value;
-    nameBases[base].m = +this.value;
   }
 
   function analizeNamesbase() {
@@ -174,7 +165,6 @@ function editNamesbase() {
     document.getElementById("namesbaseMin").value = 5;
     document.getElementById("namesbaseMax").value = 12;
     document.getElementById("namesbaseDouble").value = "";
-    document.getElementById("namesbaseMulti").value = 0;
     document.getElementById("namesbaseExamples").innerHTML = "Please provide names data";
   }
 

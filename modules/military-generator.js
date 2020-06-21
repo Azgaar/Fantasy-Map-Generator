@@ -28,6 +28,18 @@
       "magical":  {"Nomadic":1,   "Highland":2,   "Lake":1,   "Naval":1,    "Hunting":1,    "River":1}
     };
 
+    const cellTypeModifier = {
+      "nomadic": {"melee":.2, "ranged":.5, "mounted":3, "machinery":.4, "naval":.3, "armored":1.6, "aviation":1, "magical":.5},
+      "wetland": {"melee":.8, "ranged":2, "mounted":0.3, "machinery":1.2, "naval":1.0, "armored":0.2, "aviation":.5, "magical":0.5},
+      "highland": {"melee":1.2, "ranged":1.6, "mounted":0.3, "machinery":3, "naval":1.0, "armored":0.8, "aviation":.3, "magical":2}
+    }
+
+    const burgTypeModifier = {
+      "nomadic": {"melee":.3, "ranged":.8, "mounted":3, "machinery":.4, "naval":1.0, "armored":1.6, "aviation":1, "magical":0.5},
+      "wetland": {"melee":1, "ranged":1.6, "mounted":.2, "machinery":1.2, "naval":1.0, "armored":0.2, "aviation":0.5, "magical":0.5},
+      "highland": {"melee":1.2, "ranged":2, "mounted":.3, "machinery":3, "naval":1.0, "armored":0.8, "aviation":0.3, "magical":2}
+    }
+
     valid.forEach(s => {
       const temp = s.temp = {}, d = s.diplomacy;
       const expansionRate = Math.min(Math.max((s.expansionism / expn) / (s.area / area), .25), 4); // how much state expansionism is realized
@@ -47,6 +59,13 @@
 
     });
 
+    const getType = cell => {
+      if ([1, 2, 3, 4].includes(cells.biome[cell])) return "nomadic";
+      if ([7, 8, 9, 12].includes(cells.biome[cell])) return "wetland";
+      if (cells.h[cell] >= 70) return "highland";
+      return "generic";
+    }
+
     for (const i of cells.i) {
       if (!cells.pop[i]) continue;
       const s = states[cells.state[i]]; // cell state
@@ -56,39 +75,19 @@
       if (cells.culture[i] !== s.culture) m = s.form === "Union" ? m / 1.2 : m / 2; // non-dominant culture
       if (cells.religion[i] !== cells.religion[s.center]) m = s.form === "Theocracy" ? m / 2.2 : m / 1.4; // non-dominant religion
       if (cells.f[i] !== cells.f[s.center]) m = s.type === "Naval" ? m / 1.2 : m / 1.8; // different landmass
-
-      const nomadic = [1, 2, 3, 4].includes(cells.biome[i]);
-      const wetland = [7, 8, 9, 12].includes(cells.biome[i]);
-      const highland = cells.h[i] >= 70;
+      const type = getType(i);
 
       for (const u of options.military) {
         const perc = +u.rural;
         if (isNaN(perc) || perc <= 0 || !s.temp[u.name]) continue;
 
-        let army = m * perc; // basic army for rural cell
-        if (nomadic) { // "nomadic" biomes special rules
-          if (u.type === "melee") army /= 5; else
-          if (u.type === "ranged") army /= 2; else
-          if (u.type === "mounted") army *= 3;
-        }
-
-        if (wetland) { // "wet" biomes special rules
-          if (u.type === "melee") army *= 1.2; else
-          if (u.type === "ranged") army *= 1.4; else
-          if (u.type === "mounted") army /= 3;
-        }
-
-        if (highland) { // highlands special rules
-          if (u.type === "melee") army *= 1.2; else
-          if (u.type === "ranged") army *= 1.6; else
-          if (u.type === "mounted") army /= 3;
-        }
-
-        const t = rn(army * s.temp[u.name] * populationRate.value);
+        const mod = type === "generic" ? 1 : cellTypeModifier[type][u.type] // cell specific modifier
+        const army = m * perc * mod; // rural cell army
+        const t = rn(army * s.temp[u.name] * populationRate.value); // total troops
         if (!t) continue;
         let x = p[i][0], y = p[i][1], n = 0;
         if (u.type === "naval") {let haven = cells.haven[i]; x = p[haven][0], y = p[haven][1]; n = 1}; // place naval to sea
-        s.temp.platoons.push({cell: i, a:t, t, x, y, u:u.name, n, s:u.separate});
+        s.temp.platoons.push({cell: i, a:t, t, x, y, u:u.name, n, s:u.separate, type:u.type});
       }
     }
 
@@ -101,47 +100,20 @@
       if (b.culture !== s.culture) m = s.form === "Union" ? m / 1.2 : m / 2; // non-dominant culture
       if (cells.religion[b.cell] !== cells.religion[s.center]) m = s.form === "Theocracy" ? m / 2.2 : m / 1.4; // non-dominant religion
       if (cells.f[b.cell] !== cells.f[s.center]) m = s.type === "Naval" ? m / 1.2 : m / 1.8; // different landmass
-
-      const biome = cells.biome[b.cell]; // burg biome
-      const nomadic = [1, 2, 3, 4].includes(biome);
-      const wetland = [7, 8, 9, 12].includes(biome);
-      const highland = cells.h[b.cell] >= 70;
+      const type = getType(b.cell);
 
       for (const u of options.military) {
+        if (u.type === "naval" && !b.port) continue; // only ports produce naval units
         const perc = +u.urban;
         if (isNaN(perc) || perc <= 0 || !s.temp[u.name]) continue;
-        let army = m * perc; // basic army for rural cell
 
-        if (u.type === "naval" && !b.port) continue; // only ports produce naval units
-
-        if (nomadic) { // "nomadic" biomes special rules
-          if (u.type === "melee") army /= 3; else
-          if (u.type === "machinery") army /= 2; else
-          if (u.type === "mounted") army *= 3; else
-          if (u.type === "armored") army *= 2;
-        }
-
-        if (wetland) { // "wet" biomes special rules
-          if (u.type === "melee") army *= 1.2; else
-          if (u.type === "ranged") army *= 1.4; else
-          if (u.type === "machinery") army *= 1.2; else
-          if (u.type === "mounted") army /= 4; else
-          if (u.type === "armored") army /= 3;
-        }
-
-        if (highland) { // highlands special rules
-          if (u.type === "ranged") army *= 2; else
-          if (u.type === "naval") army /= 3; else
-          if (u.type === "mounted") army /= 3; else
-          if (u.type === "armored") army /= 2; else
-          if (u.type === "magical") army *= 2;
-        }
-
-        const t = rn(army * s.temp[u.name] * populationRate.value);
+        const mod = type === "generic" ? 1 : burgTypeModifier[type][u.type] // cell specific modifier
+        const army = m * perc * mod; // urban cell army
+        const t = rn(army * s.temp[u.name] * populationRate.value); // total troops
         if (!t) continue;
         let x = p[b.cell][0], y = p[b.cell][1], n = 0;
-        if (u.type === "naval") {let haven = cells.haven[b.cell]; x = p[haven][0], y = p[haven][1]; n = 1}; // place naval to sea
-        s.temp.platoons.push({cell: b.cell, a:t, t, x, y, u:u.name, n, s:u.separate});
+        if (u.type === "naval") {let haven = cells.haven[b.cell]; x = p[haven][0], y = p[haven][1]; n = 1}; // place naval in sea cell
+        s.temp.platoons.push({cell: b.cell, a:t, t, x, y, u:u.name, n, s:u.separate, type:u.type});
       }
     }
 
@@ -154,7 +126,8 @@
     }()
 
     const expected = 3 * populationRate.value; // expected regiment size
-    const mergeable = (n, s) => (!n.s && !s.s) || n.u === s.u;
+    const mergeable = (n0, n1) => (!n0.s && !n1.s) || n0.type === n1.type; // check if regiments can be merged
+
     // get regiments for each state
     valid.forEach(s => {
       s.military = createRegiments(s.temp.platoons, s);
@@ -164,7 +137,7 @@
 
     function createRegiments(nodes, s) {
       if (!nodes.length) return [];
-      nodes.sort((a,b) => a.a - b.a);
+      nodes.sort((a,b) => a.a - b.a); // form regiments in cells with most troops
       const tree = d3.quadtree(nodes, d => d.x, d => d.y);
       nodes.forEach(n => {
         tree.remove(n);
@@ -186,11 +159,11 @@
         n0.t = 0;
       }
 
-      // parse regiments data to easy-readable json
+      // parse regiments data
       const regiments = nodes.filter(n => n.t).sort((a,b) => b.t - a.t).map((r, i) => {
         const u = {}; u[r.u] = r.a;
         (r.childen||[]).forEach(n => u[n.u] = u[n.u] ? u[n.u] += n.a : n.a);
-        return {i, a:r.t, cell:r.cell, x:r.x, y:r.y, bx:r.x, by:r.y, u, n:r.n, name};
+        return {i, a:r.t, cell:r.cell, x:r.x, y:r.y, bx:r.x, by:r.y, u, n:r.n, name, state: s.i};
       });
 
       // generate name for regiments
@@ -208,11 +181,11 @@
 
   const getDefaultOptions = function() {
     return [
-      {name:"infantry", rural:.25, urban:.2, crew:1, type:"melee", separate:0},
-      {name:"archers", rural:.12, urban:.2, crew:1, type:"ranged", separate:0},
-      {name:"cavalry", rural:.12, urban:.03, crew:3, type:"mounted", separate:0},
-      {name:"artillery", rural:0, urban:.03, crew:8, type:"machinery", separate:0},
-      {name:"fleet", rural:0, urban:.015, crew:100, type:"naval", separate:1}
+      {icon: "⚔️", name:"infantry",  rural:.25,  urban:.2,   crew:1,   power:1,  type:"melee",      separate:0},
+      {icon: "🏹", name:"archers",   rural:.12,  urban:.2,   crew:1,   power:1,  type:"ranged",     separate:0},
+      {icon: "🐴", name:"cavalry",   rural:.12,  urban:.03,  crew:2,   power:2,  type:"mounted",    separate:0},
+      {icon: "💣", name:"artillery", rural:0,    urban:.03,  crew:8,   power:12,  type:"machinery", separate:0},
+      {icon: "🌊", name:"fleet",     rural:0,    urban:.015, crew:100, power:50,  type:"naval",     separate:1}
     ];
   }
 
@@ -256,6 +229,26 @@
     g.append("text").attr("class", "regimentIcon").attr("x", x1-size).attr("y", reg.y).text(reg.icon);
   }
 
+  // move one regiment to another
+  const moveRegiment = function(reg, x, y) {
+    const el = armies.select("g#army"+reg.state).select("g#regiment"+reg.state+"-"+reg.i);
+    if (!el.size()) return;
+
+    const duration = Math.hypot(reg.x - x, reg.y - y) * 8;
+    reg.x = x; reg.y = y;
+    const size = +armies.attr("box-size");
+    const w = reg.n ? size * 4 : size * 6;
+    const h = size * 2;
+    const x1 = x => rn(x - w / 2, 2);
+    const y1 = y => rn(y - size, 2);
+
+    const move = d3.transition().duration(duration).ease(d3.easeSinInOut);
+    el.select("rect").transition(move).attr("x", x1(x)).attr("y", y1(y));
+    el.select("text").transition(move).attr("x", x).attr("y", y);
+    el.selectAll("rect:nth-of-type(2)").transition(move).attr("x", x1(x)-h).attr("y", y1(y));
+    el.select(".regimentIcon").transition(move).attr("x", x1(x)-size).attr("y", y);
+  }
+
   // utilize si function to make regiment total text fit regiment box
   const getTotal = reg => reg.a > (reg.n ? 999 : 99999) ? si(reg.a) : reg.a;
 
@@ -270,17 +263,11 @@
 
   // get default regiment emblem
   const getEmblem = function(r) {
-    if (r.n) return "🌊";
-    if (!Object.values(r.u).length) return "🛡️";
-    const mainUnit = Object.entries(r.u).sort((a,b) => b[1]-a[1])[0][0];
-    const type = options.military.find(u => u.name === mainUnit).type;
-    if (type === "ranged") return "🏹";
-    if (type === "mounted") return "🐴";
-    if (type === "machinery") return "💣";
-    if (type === "armored") return "🐢";
-    if (type === "aviation") return "🦅";
-    if (type === "magical") return "🔮";
-    else return "⚔️";
+    if (!r.n && !Object.values(r.u).length) return "🔰"; // "Newbie" regiment without troops
+    if (!r.n && pack.states[r.state].form === "Monarchy" && cells.burg[r.cell] && pack.burgs[cells.burg[r.cell]].capital) return "👑"; // "Royal" regiment based in capital
+    const mainUnit = Object.entries(r.u).sort((a,b) => b[1]-a[1])[0][0]; // unit with more troops in regiment
+    const unit = options.military.find(u => u.name === mainUnit);
+    return unit.icon;
   }
 
   const generateNote = function(r, s) {
@@ -289,7 +276,7 @@
     const station = base ? `${r.name} is ${r.n ? "based" : "stationed"} in ${base}. ` : "";
 
     const composition = r.a ? Object.keys(r.u).map(t => `— ${t}: ${r.u[t]}`).join("\r\n") : null;
-    const troops = composition ? `\r\n\r\nRegiment composition:\r\n${composition}.` : "";
+    const troops = composition ? `\r\n\r\nRegiment composition in ${options.year} ${options.eraShort}:\r\n${composition}.` : "";
 
     const campaign = s.campaigns ? ra(s.campaigns) : null;
     const year = campaign ? rand(campaign.start, campaign.end) : gauss(options.year-100, 150, 1, options.year-6);
@@ -298,17 +285,6 @@
     notes.push({id:`regiment${s.i}-${r.i}`, name:`${r.icon} ${r.name}`, legend});
   }
 
-  // const updateNote = function(r, s) {
-  //   const id = `regiment${s}-${r.i}`;
-  //   const note = notes.find(n => n.id === id);
-  //   if (!note) return;
-
-  //   const oldComposition = note.legend.split("composition:\r\n")[1]||"".split(".")[0];
-  //   if (!oldComposition) return;
-  //   const newComposition = Object.keys(r.u).map(t => `— ${t}: ${r.u[t]}`).join("\r\n") + ".";
-  //   note.legend = note.legend.replace(oldComposition, newComposition);
-  // }
-
-  return {generate, getDefaultOptions, getName, generateNote, drawRegiments, drawRegiment, getTotal, getEmblem};
+  return {generate, getDefaultOptions, getName, generateNote, drawRegiments, drawRegiment, moveRegiment, getTotal, getEmblem};
 
 })));

@@ -34,11 +34,11 @@
     #loading-text span:nth-child(3), #mapOverlay > span:nth-child(3) {animation-delay: 2s;}
     @keyframes blink {0% {opacity: 0;} 20% {opacity: 1;} 100% {opacity: .1;}}
   </style>
-  <link rel="preload" href="index.css?version=1.3" as="style">
-  <link rel="preload" href="icons.css?version=1.3" as="style">
+  <link rel="preload" href="index.css?version=1.4" as="style">
+  <link rel="preload" href="icons.css?version=1.4" as="style">
   <link rel="preload" href="libs/jquery-ui.css" as="style">
-  <link rel="stylesheet" href="index.css?version=1.3">
-  <link rel="stylesheet" href="icons.css?version=1.3">
+  <link rel="stylesheet" href="index.css?version=1.4">
+  <link rel="stylesheet" href="icons.css?version=1.4">
   <link rel="stylesheet" href="libs/jquery-ui.css">
 
 </head>
@@ -214,8 +214,8 @@
         <mask id="water">
           <rect x="0" y="0" width="100%" height="100%" fill="white"></rect>
         </mask>
-        <mask id="fog">
-          <rect x="0" y="0" width="100%" height="100%" fill="white"></rect>
+        <mask id="fog" style="stroke-width: 10; stroke: black; stroke-linejoin: round; stroke-opacity: .1;">
+          <rect x="0" y="0" width="100%" height="100%" fill="white" stroke="none"></rect>
         </mask>
         <g id="textPaths"></g>
         <g id="statePaths"></g>
@@ -899,7 +899,7 @@
   <div id="loading">
     <div id="titleName"><t data-t="titleName">Azgaar's</t></div>
     <div id="title"><t data-t="title">Fantasy Map Generator</t></div>
-    <div id="version"><t data-t="version">v. </t>1.3</div>
+    <div id="version"><t data-t="version">v. </t>1.4</div>
     <p id="loading-text"><t data-t="loading">LOADING</t><span>.</span><span>.</span><span>.</span></p>
   </div>
 
@@ -960,6 +960,7 @@
           <li id="toggleRoutes"data-tip="Trade routes: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: U" onclick="toggleRoutes(event)">Ro<u>u</u>tes</li>
           <li id="toggleTemp" data-tip="Temperature map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: T" class="buttonoff" onclick="toggleTemp(event)"><u>T</u>emperature</li>
           <li id="togglePopulation" data-tip="Population map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: N" class="buttonoff" onclick="togglePopulation(event)">Populatio<u>n</u></li>
+          <li id="toggleIce" data-tip="Icebergs and glaciers: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: J" class="buttonoff" onclick="toggleIce(event)">Ice</li>
           <li id="togglePrec" data-tip="Precipitation map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: A" class="buttonoff" onclick="togglePrec(event)">Precipit<u>a</u>tion</li>
           <li id="toggleLabels" data-tip="Labels: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: L" onclick="toggleLabels(event)"><u>L</u>abels</li>
           <li id="toggleIcons" data-tip="Burg icons: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: I" onclick="toggleIcons(event)"><u>I</u>cons</li>
@@ -1002,6 +1003,7 @@
           <option value="fogging">Fogging</option>
           <option value="gridOverlay">Grid</option>
           <option value="terrs">Heightmap</option>
+          <option value="ice">Ice</option>
           <option value="labels">Labels</option>
           <option value="lakes">Lakes</option>
           <option value="landmass">Landmass</option>
@@ -1022,7 +1024,6 @@
           <option value="texture">Texture</option>
           <option value="compass">Wind Rose</option>
           <option value="zones">Zones</option>
-          <option value="seaIce">Ice</option>
         </select>
         <!-- <button id="restoreStyle" data-tip="Click to restore default style for all elements" class="icon-ccw styleButton" onclick="askToRestoreDefaultStyle()"></button> -->
 
@@ -1580,7 +1581,7 @@
             </td>
           </tr>
 
-          <tr data-tip="Click to set up map name to be used for downloaded files">
+          <tr data-tip="Define map name (will be used to name downloaded files)">
             <td>
               <i data-locked=0 id="lock_mapName" class="icon-lock-open"></i>
             </td>
@@ -1590,6 +1591,20 @@
             </td>
             <td>
               <i data-tip="Regenerate map name" onclick="Names.getMapName(true)" class="icon-arrows-cw"></i>
+            </td>
+          </tr>
+
+          <tr data-tip="Define current year and era name">
+            <td>
+              <i data-locked=0 id="lock_era" class="icon-lock-open"></i>
+            </td>
+            <td>Year and era</td>
+            <td>
+              <input id="yearInput" data-stored="year" type="number" step=1 class="paired" style="width: 24%; float: left; font-size: smaller">
+              <input id="eraInput" data-stored="era" autocorrect="off" spellcheck="false" type="text" style="width: 75%; float: right" class="long">
+            </td>
+            <td>
+              <i id="optionsEraRegenerate" data-tip="Regenerate era" class="icon-arrows-cw"></i>
             </td>
           </tr>
 
@@ -1684,7 +1699,7 @@
               <input id="powerInput" data-stored="power" type="range" min=0 max=10 step=.2 value=5>
             </td>
             <td>
-              <input id="powerOutput" data-stored="power" type="number" min=0 max=10 step=.2 value=5>
+              <input id="powerOutput" data-stored="power" type="number" min=0 max=10 step=.1 value=5>
             </td>
           </tr>
 
@@ -1775,17 +1790,6 @@
             </td>
           </tr>
 
-          <tr data-tip="Define scale of a saved png/jpeg image (e.g. 5x). Saving big images is slow and may cause a browser crash!">
-            <td></td>
-            <td>PNG/JPEG scale</td>
-            <td>
-              <input id="pngResolutionInput" data-stored="pngResolution" type="range" min=1 max=8 value=1>
-            </td>
-            <td>
-              <input id="pngResolutionOutput" data-stored="pngResolution" type="number" min=1 max=8 value=1>
-            </td>
-          </tr>
-
           <tr data-tip="Set minimum and maximum possible zoom level">
             <td></td>
             <td>Zoom extent</td>
@@ -1796,7 +1800,8 @@
               <input data-tip="Maximal possible zoom level (should be > 1)" id="zoomExtentMax" class="paired" type="number" min=1 max=50 value=20>
             </td>
             <td>
-              <i data-tip="Restore default [1, 20] zoom extent" id="zoomExtentDefault" class="icon-ccw"></i>
+              <i data-tip="Restore default zoom extent (1, 20)" id="zoomExtentDefault" class="icon-ccw"></i>
+              <i data-tip="Allow to drag map beyond canvas borders" id="translateExtent" data-on=0 class="icon-hand-paper-o"></i>
             </td>
           </tr>
 
@@ -1857,6 +1862,7 @@
           <button id="regenerateProvinces" data-tip="Click to regenerate provinces. States will remain as they are">Provinces</button>
           <button id="regenerateReligions" data-tip="Click to regenerate religions">Religions</button>
           <button id="regenerateMilitary" data-tip="Click to recalculate military forces based on current military options">Military</button>
+          <button id="regenerateIce" data-tip="Click to icebergs and glaciers">Ice</button>
           <button id="regenerateMarkers" data-tip="Click to regenerate markers. Hold Ctrl and click to set markers number multiplier">Markers</button>
           <button id="regenerateZones" data-tip="Click to regenerate zones. Hold Ctrl and click to set zones number multiplier">Zones</button>
         </div>
@@ -1877,8 +1883,8 @@
           <button data-tip="Display brushes panel" id="paintBrushes">Paint Brushes</button>
           <button data-tip="Open template editor" id="applyTemplate" style="display: none">Template Editor</button>
           <button data-tip="Open Image Converter" id="convertImage" style="display: none">Image Converter</button>
-          <button data-tip="Render heightmap data as a small monochrome image" id="heightmapPreview">Heightmap Preview</button>
-          <button data-tip="Preview heightmap in 3D scene" id="heightmap3DView">3D</button>
+          <button data-tip="Render heightmap data as a small monochrome image" id="heightmapPreview">Preview</button>
+          <button data-tip="Preview heightmap in 3D scene" id="heightmap3DView">3D scene</button>
         </div>
 
         <div id="customizeOptions">
@@ -1910,22 +1916,21 @@
 
       <div id="aboutContent" class="tabcontent">
         <p><a href="https://github.com/Azgaar/Fantasy-Map-Generator" target="_blank">Fantasy Map Generator</a> is a free <a href="https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE" target="_blank">open source</a> tool which procedurally generates fantasy maps. You may use auto-generated maps as they are, edit them or even create a new map from scratch. Check out the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Quick-Start-Tutorial" target="_blank">quick start tutorial</a>, <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A" target="_blank">Q&A</a> and <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys" target="_blank">hotkeys</a> for guidance.</p>
-        <p>Join our <a href='https://discordapp.com/invite/X7E84HU' target='_blank'>Discord server</a> and <a href="https://www.reddit.com/r/FantasyMapGenerator/" target="_blank">Reddit community</a> to ask questions, get help and share created maps. You may support the project on <a href='https://www.patreon.com/azgaar' target='_blank'>Patreon</a>.</p>
-        <p>The project is under active development. Creator and main maintainer: Azgaar. For older versions see the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog" target="_blank">changelog</a>. To track the development progress see the <a href="https://trello.com/b/7x832DG4/fantasy-map-generator" target="_blank">devboard</a>. Please report bugs <a href="https://github.com/Azgaar/Fantasy-Map-Generator/issues" target="_blank">here</a>. You can also contact me directly via <a href="mailto:azgaar.fmg@yandex.by" target="_blank">email</a>.</p>
-        <p>Special thanks to all supporters on Patreon! <i data-tip="Click to see supporters names" class="collapsible icon-down-open pointer"></i></p>
-        <p style="display:none">Patreon Supporters: Aaron Meyer, Ahmad Amerih, AstralJacks, aymeric, Billy Dean Goehring, Branndon Edwards,
-          Chase Mayers, Curt Flood, cyninge, Dino Princip, E.M. White, es, Fondue, Fritjof Olsson, Gatsu, Johan Fröberg, Jonathan Moore,
-          Joseph Miranda, Kate, KC138, Luke Nelson, Markus Finster, Massimo Vella, Mikey, Nathan Mitchell, Paavi1, Pat, Ryan Westcott,
-          Sasquatch, Shawn Spencer, Sizz_TV, Timothée CALLET, UTG community, Vlad Tomash, Wil Sisney, William Merriott, Xariun,
-          Gun Metal Games, Scott Marner, Spencer Sherman, Valerii Matskevych, Alloyed Clavicle, Stewart Walsh, Ruthlyn Mollett (Javan),
-          Benjamin Mair-Pratt, Diagonath, Alexander Thomas, Ashley Wilson-Savoury, William Henry, Preston Brooks, JOSHUA QUALTIERI,
-          Hilton Williams, Katharina Haase, Hisham Bedri, Ian arless, Karnat, Bird, Kevin, Jessica Thomas, Steve Hyatt, Logicspren,
-          Alfred García, Jonathan Killstring, John Ackley, Invad3r233, Norbert Žigmund, Jennifer, PoliticsBuff, _gfx_, Maggie,
-          Connor McMartin, Jared McDaris, BlastWind, Franc Casanova Ferrer, Dead & Devil, Michael Carmody, Valerie Elise, naikibens220,
-          Jordon Phillips, William Pucs, The Dungeon Masters, Brady R Rathbun, J, Shadow, Matthew Tiffany, Huw Williams, Joseph Hamilton,
-          FlippantFeline, Tamashi Toh, kms, Stephen Herron, MidnightMoon, Whakomatic x, Barished, Aaron bateson, Brice Moss, Diklyquill,
-          PatronUser, Michael Greiner, Steven Bennett, Jacob Harrington, Miguel C., Reya C., Giant Monster Games, Noirbard, Brian Drennen, 
-          Ben Craigie, Alex Smolin and many others!</p>
+        <p>Join our <a href='https://discordapp.com/invite/X7E84HU' target='_blank'>Discord server</a> and <a href="https://www.reddit.com/r/FantasyMapGenerator/" target="_blank">Reddit community</a> to ask questions, get help and share maps.</p>
+        <p>The project is under active development. Creator and main maintainer: Azgaar. To track the development progress see the <a href="https://trello.com/b/7x832DG4/fantasy-map-generator" target="_blank">devboard</a>. For older versions see the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog" target="_blank">changelog</a>. Please report bugs <a href="https://github.com/Azgaar/Fantasy-Map-Generator/issues" target="_blank">here</a>. You can also contact me directly via <a href="mailto:azgaar.fmg@yandex.by" target="_blank">email</a>.</p>
+        <div style="background-color: #e85b46; padding: .4em; width: max-content; margin: .6em auto 0 auto; border: 1px solid #943838">
+          <a href="https://www.patreon.com/azgaar" target="_blank" style="color: white; text-decoration: none; font-family: sans-serif">
+            <div>
+              <div style="width: .8em; display: inline-block; padding: 0 .2em; fill: white">
+                <svg viewBox="0 0 569 546">
+                  <circle cx="362.589996" cy="204.589996" data-fill="1" id="Oval" r="204.589996"></circle>
+                  <rect data-fill="2" height="545.799988" id="Rectangle" width="100" x="0" y="0"></rect>
+                </svg>
+              </div>SUPPORT ON PATREON
+            </div>
+          </a>
+        </div>
+        <p>Special thanks to <a data-tip="Click to see list of supporters" onclick="showSupporters()">all supporters</a> on Patreon!</p>
 
         <ul class="share-buttons">
           <li><a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator%2F&quote=" data-tip="Share on Facebook" target="_blank"><img alt="Share on Facebook" src="images/Facebook.png" /></a></li>
@@ -2098,7 +2103,7 @@
 
       <button id="labelAlign" data-tip="Turn text path into a straight line" class="icon-resize-horizontal"></button>
       <button id="labelLegend" data-tip="Edit free text notes (legend) for this label" class="icon-edit"></button>
-      <button id="labelRemoveSingle" data-tip="Remove the label. Shortcut: Delete" class="icon-trash"></button>
+      <button id="labelRemoveSingle" data-tip="Remove the label. Shortcut: Delete" class="icon-trash fastDelete"></button>
     </div>
 
     <div id="riverEditor" class="dialog" style="display: none">
@@ -2122,9 +2127,30 @@
 
       <button id="riverEditStyle" data-tip="Edit style for all rivers in Style Editor" class="icon-brush"></button>
       <button id="riverLength" data-tip="River length in selected units">0</button>
+      <button id="riverElevationProfile" data-tip="Show the elevation profile for the river" class="icon-chart-area"></button>
       <button id="riverNew" data-tip="Create new river clicking on map" class="icon-map-pin"></button>
       <button id="riverLegend" data-tip="Edit free text notes (legend) for the river" class="icon-edit"></button>
-      <button id="riverRemove" data-tip="Remove river. Shortcut: Delete" class="icon-trash"></button>
+      <button id="riverRemove" data-tip="Remove river. Shortcut: Delete" class="icon-trash fastDelete"></button>
+    </div>
+
+    <div id="elevationProfile" class="dialog" style="display: none" width="100%">
+      <div id="elevationGraph" data-tip="Elevation profile"></div>
+      <div style="text-align: center">
+        <div id="epControls">
+          <span data-tip="Set height scale">Height scale: <input id="epScaleRange" type="range" min=1 max=100 value=50></span>
+          <span data-tip="Set curve profile">Curve:
+            <select id="epCurve">
+              <option>Linear</option>
+                <option selected>Basis spline</option>
+              <option>Bundle</option>
+              <option>Cubic Catmull-Rom</option>
+              <option>Monotone X</option>
+              <option>Natural</option>
+            </select>
+          </span>
+          <span><button id="epSave" data-tip="Download the chart data as a CSV file" class="icon-download"></button></span>
+        </div>
+      </div>
     </div>
 
     <div id="routeEditor" class="dialog" style="display: none">
@@ -2139,10 +2165,11 @@
 
       <button id="routeEditStyle" data-tip="Edit route group style in Style Editor" class="icon-brush"></button>
       <button id="routeLength" data-tip="Route length in selected units">0</button>
+      <button id="routeElevationProfile" data-tip="Show the elevation profile for the route" class="icon-chart-area"></button>
       <button id="routeSplit" data-tip="Click on a control point to split the route" class="icon-unlink"></button>
       <button id="routeLegend" data-tip="Edit free text notes (legend) for the route" class="icon-edit"></button>
       <button id="routeNew" data-tip="Create new route clicking on map" class="icon-map-pin"></button>
-      <button id="routeRemove" data-tip="Remove route. Shortcut: Delete" class="icon-trash"></button>
+      <button id="routeRemove" data-tip="Remove route. Shortcut: Delete" class="icon-trash fastDelete"></button>
     </div>
 
     <div id="lakeEditor" class="dialog" style="display: none">
@@ -2160,6 +2187,14 @@
       <button id="lakeLegend" data-tip="Edit free text notes (legend) for the lake" class="icon-edit"></button>
     </div>
 
+    <div id="iceEditor" class="dialog" style="display: none">
+      <button id="iceEditStyle" data-tip="Edit style in Style Editor" class="icon-brush"></button>
+      <button id="iceRandomize" data-tip="Randomize Iceberd shape" class="icon-shuffle"></button>
+      <input id="iceSize" data-tip="Change Iceberg size" type="range" min=".05" max="1" step=".01">
+      <button id="iceNew" data-tip="Add an Iceberg (click on map)" class="icon-plus"></button>
+      <button id="iceRemove" data-tip="Remove the element. Shortcut: Delete" class="icon-trash fastDelete"></button>
+    </div>
+
     <div id="coastlineEditor" class="dialog" style="display: none">
       <button id="coastlineGroupsShow" data-tip="Show the group selection" class="icon-tags"></button>
       <div id="coastlineGroupsSelection" style="display: none">
@@ -2171,7 +2206,7 @@
       </div>
 
       <button id="coastlineEditStyle" data-tip="Edit coastline group style in Style Editor" class="icon-brush"></button>
-      <button id="coastlineArea" data-tip="Lake area in selected units">0</button>
+      <button id="coastlineArea" data-tip="Landmass area in selected units">0</button>
     </div>
 
     <div id="reliefEditor" class="dialog" style="display: none">
@@ -2303,7 +2338,7 @@
         <button id="reliefCopy" data-tip="Copy selected relief icon" class="icon-clone"></button>
         <button id="reliefMoveFront" data-tip="Move selected relief icon to front" class="icon-level-up"></button>
         <button id="reliefMoveBack" data-tip="Move selected relief icon back" class="icon-level-down"></button>
-        <button id="reliefRemove" data-tip="Remove selected relief icon. Shortcut: Delete" class="icon-trash"></button>
+        <button id="reliefRemove" data-tip="Remove selected relief icon. Shortcut: Delete" class="icon-trash fastDelete"></button>
       </div>
     </div>
 
@@ -2356,7 +2391,7 @@
         <button id="burgOpenCOA" data-tip="Open burg's COA in the Iron Arachne Heraldry Generator. Ctrl + click to change the seed" class="icon-shield-alt"></button>
         <button id="burgRelocate" data-tip="Relocate burg" class="icon-target"></button>
         <button id="burglLegend" data-tip="Edit free text notes (legend) for this burg" class="icon-edit"></button>
-        <button id="burgRemove" data-tip="Remove non-capital burg. Shortcut: Delete" class="icon-trash"></button>
+        <button id="burgRemove" data-tip="Remove non-capital burg. Shortcut: Delete" class="icon-trash fastDelete"></button>
       </div>
     </div>
 
@@ -2373,15 +2408,13 @@
       <button id="markerIcon" data-tip="Change marker icon and edit positioning" class="icon-star"></button>
       <div id="markerIconSection" style="display: none">
         <i data-tip="Change marker icon size" class="icon-resize-full"></i>
-        <input id="markerIconSize" data-tip="Change marker icon size" type="range" min=10 max=30 step=.5 value=22 style="width:12em">
+        <input id="markerIconSize" data-tip="Change marker icon size" type="range" min=5 max=30 step=.5 value=22 style="width:12em"><br>
+        <i data-tip="Marker Icon" class="icon-info"></i>
+        <button id="markerIconSelect" data-tip="Click to select icon"></button>
         <i data-tip="Change marker horizontal shift" class="icon-resize-horizontal"></i>
         <input id="markerIconShiftX" data-tip="Change icon horizontal shift" type="number" value=50 style="width:3em">
         <i data-tip="Change marker vertical shift" class="icon-resize-vertical"></i>
         <input id="markerIconShiftY" data-tip="Change vertical shift" type="number" min=0 max=100 value=50 style="width:3em">
-        <span data-tip="Paste custom unicode symbol to use as icon">Paste here:</span>
-        <input id="markerIconCustom" data-tip="Paste custom unicode symbol to use as icon" style="width:3em">
-        <table id="markerIconTable"></table>
-        <div style="font-style: italic; color: darkgrey;">Emojis look different in different browsers. Visit <a href="https://emojipedia.org/" rel="noopener" target="_blank">Emojipedia</a> to check and find more</div>
       </div>
 
       <button id="markerStyle" data-tip="Change marker size and colors" class="icon-brush"></button>
@@ -2399,7 +2432,7 @@
       <button id="markerToggleBubble" data-tip="Toggle pin (bubble) display" class="icon-info-circled"></button>
       <button id="markerLegendButton" data-tip="Edit place legend (free text notes)" class="icon-edit"></button>
       <button id="markerAdd" data-tip="Add additional marker of that type" class="icon-plus"></button>
-      <button id="markerRemove" data-tip="Remove the marker. Shortcut: Delete" class="icon-trash"></button>
+      <button id="markerRemove" data-tip="Remove the marker. Shortcut: Delete" class="icon-trash fastDelete"></button>
     </div>
 
     <div id="regimentEditor" class="dialog" style="display: none">
@@ -2417,17 +2450,155 @@
           <button id="regimentEmblemSelect" style="padding: 0; width: 4.5em">select</button>
         </div>
 
-        <div id="regimentComposition" style="padding: .1em"></div>
+        <div id="regimentComposition" class="table"></div>
       </div>
 
       <div id="regimentBottom">
+        <button id="regimentAttack" data-tip="Attack foreign regiment" class="icon-target"></button>
         <button id="regimentAdd" data-tip="Create new regiment or fleet" class="icon-user-plus"></button>
         <button id="regimentSplit" data-tip="Split regiment into 2 separate ones" class="icon-half"></button>
         <button id="regimentAttach" data-tip="Attach regiment to another one (include this regiment to another one)" class="icon-attach"></button>
         <button id="regimentRegenerateLegend" data-tip="Regenerate legend for this regiment" class="icon-retweet"></button>
         <button id="regimentLegend" data-tip="Edit free text notes (legend) for this regiment" class="icon-edit"></button>
-        <button id="regimentRemove" data-tip="Remove regiment. Shortcut: Delete" class="icon-trash"></button>
+        <button id="regimentRemove" data-tip="Remove regiment. Shortcut: Delete" class="icon-trash fastDelete"></button>
       </div>
+    </div>
+
+    <div id="battleScreen" class="dialog stable" style="display: none">
+      <div id="battleBody" class="overflow">
+        <template id="battlePhases_field">
+          <button data-tip="Skirmish phase. Ranged units excel" data-phase="skirmish" class="icon-button-skirmish"></button>
+          <button data-tip="Melee phase. Melee units excel" data-phase="melee" class="icon-button-melee"></button>
+          <button data-tip="Pursue phase. Mounted units excel" data-phase="pursue" class="icon-button-pursue"></button>
+          <button data-tip="Retreat phase. Units strength reduced" data-phase="retreat" class="icon-button-retreat"></button>
+        </template>
+
+        <template id="battlePhases_naval">
+          <button data-tip="Shelling phase. Naval artillery bombardment of enemy fleet" data-phase="shelling" class="icon-button-shelling"></button>
+          <button data-tip="Boarding phase. Melee units go aboard" data-phase="boarding" class="icon-button-boarding"></button>
+          <button data-tip="Сhase phase. Naval units pursue and rarely shell enemy fleet" data-phase="chase" class="icon-button-chase"></button>
+          <button data-tip="Withdrawal phase. Naval units try to escape enemy fleet" data-phase="withdrawal" class="icon-button-withdrawal"></button>
+        </template>
+
+        <template id="battlePhases_siege_attackers">
+          <button data-tip="Blockade phase. Prepare or hold the blockade" data-phase="blockade" class="icon-button-blockade"></button>
+          <button data-tip="Bombardment phase. Attack enemy with machinery units" data-phase="bombardment" class="icon-button-bombardment"></button>
+          <button data-tip="Storming phase. Storm enemy town. Melee units excel" data-phase="storming" class="icon-button-storming"></button>
+          <button data-tip="Looting phase. Plunder the town. Units strength increased" data-phase="looting" class="icon-button-looting"></button>
+          <button data-tip="Retreat phase. Units strength reduced" data-phase="retreat" class="icon-button-retreat"></button>
+        </template>
+
+        <template id="battlePhases_siege_defenders">
+          <button data-tip="Sheltering phase. Hide behind the walls and wait" data-phase="sheltering" class="icon-button-sheltering"></button>
+          <button data-tip="Sortie phase. Make a sortie from besieged town. Melee units excel" data-phase="sortie" class="icon-button-sortie"></button>
+          <button data-tip="Bombardment phase. Attack enemy with machinery units" data-phase="bombardment" class="icon-button-bombardment"></button>
+          <button data-tip="Defense phase. Ranged and melee units excel" data-phase="defense" class="icon-button-defense"></button>
+          <button data-tip="Surrendering phase. Give up the defense. Units strength reduced" data-phase="surrendering" class="icon-button-surrendering"></button>
+          <button data-tip="Pursue phase. Mounted units excel" data-phase="pursue" class="icon-button-pursue"></button>
+        </template>
+
+        <template id="battlePhases_ambush_attackers">
+          <button data-tip="Shock phase. Units strength reduced" data-phase="shock" class="icon-button-shock"></button>
+          <button data-tip="Melee phase. Melee units excel" data-phase="melee" class="icon-button-melee"></button>
+          <button data-tip="Pursue phase. Mounted units excel" data-phase="pursue" class="icon-button-pursue"></button>
+          <button data-tip="Retreat phase. Units strength reduced" data-phase="retreat" class="icon-button-retreat"></button>
+        </template>
+
+        <template id="battlePhases_ambush_defenders">
+          <button data-tip="Surprice attack phase. Units strength increased, ranged units excel" data-phase="surprise" class="icon-button-surprise"></button>
+          <button data-tip="Melee phase. Melee units excel" data-phase="melee" class="icon-button-melee"></button>
+          <button data-tip="Pursue phase. Mounted units excel" data-phase="pursue" class="icon-button-pursue"></button>
+          <button data-tip="Retreat phase. Units strength reduced" data-phase="retreat" class="icon-button-retreat"></button>
+        </template>
+
+        <template id="battlePhases_landing_attackers">
+          <button data-tip="Landing phase. Amphibious attack. Units are vulnerable against prepared defense" data-phase="landing" class="icon-button-landing"></button>
+          <button data-tip="Melee phase. Melee units excel" data-phase="melee" class="icon-button-melee"></button>
+          <button data-tip="Pursue phase. Mounted units excel" data-phase="pursue" class="icon-button-pursue"></button>
+          <button data-tip="Flee phase. Units strength reduced" data-phase="flee" class="icon-button-flee"></button>
+        </template>
+
+        <template id="battlePhases_landing_defenders">
+          <button data-tip="Shock phase. Units are not prepared for a defense" data-phase="shock" class="icon-button-shock"></button>
+          <button data-tip="Defense phase. Prepared defense. Units strength increased" data-phase="defense" class="icon-button-defense"></button>
+          <button data-tip="Melee phase. Melee units excel" data-phase="melee" class="icon-button-melee"></button>
+          <button data-tip="Waiting phase. Cannot pursue fleeing naval" data-phase="waiting" class="icon-button-waiting"></button>
+          <button data-tip="Pursue phase. Try to intercept fleeing attackers. Mounted units excel" data-phase="pursue" class="icon-button-pursue"></button>
+          <button data-tip="Retreat phase. Units strength reduced" data-phase="retreat" class="icon-button-retreat"></button>
+        </template>
+
+        <template id="battlePhases_air">
+          <button data-tip="Maneuvering phase. Units strength reduced" data-phase="maneuvering" class="icon-button-maneuvering"></button>
+          <button data-tip="Dogfight phase. Units strength increased" data-phase="dogfight" class="icon-button-dogfight"></button>
+          <button data-tip="Pursue phase. Units strength increased" data-phase="pursue" class="icon-button-pursue"></button>
+          <button data-tip="Retreat phase. Units strength reduced" data-phase="retreat" class="icon-button-retreat"></button>
+        </template>
+
+        <div style="font-size:1.2em; font-weight: bold; width: unset">
+          <span>Attackers</span>
+          <div style="float: right; font-size: .7em">
+            <meter id="battleMorale_attackers" data-tip="Attackers morale: " min=0 max=100 low=33 high=66 optimum=80></meter>
+            <div id="battlePower_attackers" data-tip="Attackers strength during this phase. Strength defines dealt damage" style="width: 3.2em; display: inline-block; text-align: center" class="icon-button-power"></div>
+            <div style="display: inline-block;">
+              <button id="battlePhase_attackers" style="width: 3.2em"></button>
+              <div class="battlePhases" style="display: none"></div>
+            </div>
+            <button id="battleDie_attackers" data-tip="Random factor for attackers. Click to re-roll" style="padding: .1em .2em; width: 3.2em" class="icon-button-die"></button>
+          </div>
+        </div>
+        <table id="battleAttackers"></table>
+        <div style="font-size:1.2em; font-weight: bold; width: unset">
+          <span></span>Defenders</span>
+          <div style="float: right; font-size: .7em">
+            <meter id="battleMorale_defenders" data-tip="Defenders morale: " min=0 max=100 low=33 high=66 optimum=80></meter>
+            <div id="battlePower_defenders" data-tip="Defenders strength during this phase. Strength defines dealt damage" style="width: 3.2em; display: inline-block; text-align: center" class="icon-button-power"></div>
+            <div style="display: inline-block;">
+              <button id="battlePhase_defenders" style="width: 3.2em"></button>
+              <div class="battlePhases" style="display: none"></div>
+            </div>
+            <button id="battleDie_defenders" data-tip="Random factor for defenders. Click to re-roll" style="padding: .1em .2em; width: 3.2em" class="icon-button-die"></button>
+          </div>
+        </div>
+        <table id="battleDefenders"></table>
+      </div>
+
+      <div id="battleBottom">
+        <button id="battleType" data-tip="Battle type. Click to change"></button>
+        <div class="battleTypes" style="display: none">
+          <button data-tip="Field Battle: a standard type of combat" data-type="field" class="icon-button-field"></button>
+          <button data-tip="Naval Battle: naval units combat" data-type="naval" class="icon-button-naval"></button>
+          <button data-tip="Siege: burg blockade and storming" data-type="siege" class="icon-button-siege"></button>
+          <button data-tip="Ambush: surprise attack" data-type="ambush" class="icon-button-ambush"></button>
+          <button data-tip="Landing: amphibious attack" data-type="landing" class="icon-button-landing"></button>
+          <button data-tip="Air Battle: maneuring fight of avia units" data-type="air" class="icon-button-air"></button>
+        </div>
+
+        <button id="battleNameShow" data-tip="Set battle name" class="icon-font"></button>
+        <div id="battleNameSection" style="display: none">
+          <button id="battleNameHide" data-tip="Hide the battle name section" class="icon-font"></button>
+          <input id="battleNamePlace" data-tip="Type place name"" style="width: 30%">
+          <input id="battleNameFull" data-tip="Type full battle name"" style="width: 46%">
+          <button id="battleNameCulture" data-tip="Generate culture-specific name for place and battle" class="icon-book"></button>
+          <button id="battleNameRandom" data-tip="Generate random name for place and battle" class="icon-globe"></button>
+        </div>
+
+        <button id="battleAddRegiment" data-tip="Add regiment to the battle" class="icon-user-plus"></button>
+        <button id="battleRoll" data-tip="Roll dice to update random factor" class="icon-die"></button>
+        <button id="battleRun" data-tip="Iterate battle" class="icon-play"></button>
+        <button id="battleApply" data-tip="End battle: apply current results and close the screen" class="icon-check"></button>
+        <button id="battleCancel" data-tip="Cancel battle: roll back results and close the screen" class="icon-cancel"></button>
+        <button id="battleWiki" data-tip="Open Battle Simulation Tutorial" class="icon-info"></button>
+      </div>
+    </div>
+
+    <div id="regimentSelectorScreen" class="dialog" style="display: none">
+      <div id="regimentSelectorHeader" class="header">
+        <div style="left: 1.2em;" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
+        <div style="left: 9.2em;" data-tip="Click to sort by regiment name" class="sortable alphabetically" data-sortby="regiment">Regiment&nbsp;</div>
+        <div style="left: 22.4em;" data-tip="Click to sort by total military forces" class="sortable" data-sortby="total">Total&nbsp;</div>
+        <div style="left: 28em;" data-tip="Click to sort by distance to the battlefield" class="sortable icon-sort-number-up" data-sortby="distance">Distance&nbsp;</div>
+      </div>
+      <div id="regimentSelectorBody"></div>
     </div>
 
     <div id="brushesPanel" class="dialog stable" style="display: none">
@@ -2573,7 +2744,7 @@
         <button id="templateSave" data-tip="Download the template as a text file" class="icon-download"></button>
         <button id="templateLoad" data-tip="Open previously downloaded template" class="icon-upload"></button>
         <button id="templateCA" data-tip="Find or share custom template on Cartography Assets portal" class="icon-drafting-compass" onclick="openURL('https://www.cartographyassets.com/assets/categories/templates.89')"></button>
-        <button id="templateTutorial" data-tip="Open Template Editor Tutorial" class="icon-info" onclick="openURL('https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-template-editor')"></button>
+        <button id="templateTutorial" data-tip="Open Template Editor Tutorial" class="icon-info" onclick="wiki('Heightmap-template-editor')"></button>
       </div>
     </div>
 
@@ -2581,32 +2752,33 @@
 
       <div id="convertImageButtons">
         <button id="convertImageLoad" data-tip="Load image to convert" class="icon-upload"></button>
-        <button id="convertAutoLum" data-tip="Auto-assign colors based on liminosity (good to monochrome images)" class="icon-adjust"></button>
-        <button id="convertAutoHue" data-tip="Auto-assign colors based on hue (good to colored images)" class="icon-brush"></button>
-        <button id="convertColorsButton" data-tip="Set number of colors" class="icon-signal"></button>
-        <input id="convertColors" value="18" style="display: none"/>
+        <button id="convertAutoLum" data-tip="Auto-assign colors based on liminosity (good for monochrome images)" class="icon-adjust"></button>
+        <button id="convertAutoHue" data-tip="Auto-assign colors based on hue (good for colored images)" class="icon-paint-roller"></button>
+        <button id="convertAutoFMG" data-tip="Auto-assign colors using generator scheme (for exported colored heightmaps)" class="icon-layer-group"></button>
+        <button id="convertColorsButton" data-tip="Set maximum number of colors" class="icon-signal"></button>
+        <input id="convertColors" value="100" style="display: none"/>
         <button id="convertComplete" data-tip="Complete the conversion. All unassigned colors will be considered as ocean" class="icon-check"></button>
-        <button id="convertCancel" data-tip="Cancel the conversion. Previous heoghtmap will be restored" class="icon-cancel"></button>
+        <button id="convertCancel" data-tip="Cancel the conversion. Previous heightmap will be restored" class="icon-cancel"></button>
       </div>
 
-      <div data-tip="Set opacity of the loaded image" style="padding-top: 4px"><i>Overlay opacity:</i><br>
-        <input id="convertOverlay" type="range" min=0 max=1 step=.01 value=0 style="width: 11.5em">
-        <input id="convertOverlayNumber" type="number" min=0 max=1 step=.01 value=0 style="width: 3.5em">
+      <div data-tip="Set opacity of the loaded image" style="padding-top: .4em"><i>Overlay opacity:</i><br>
+        <input id="convertOverlay" type="range" min=0 max=1 step=.01 value=0 style="width: 12.6em">
+        <input id="convertOverlayNumber" type="number" min=0 max=1 step=.01 value=0 style="width: 4.2em">
       </div>
 
       <div data-tip="Select a color below and assign a height value for it" id="colorsSelect" style="display: none">
         <i>Set height: </i>
         <span id="colorsSelectValue"></span>
         <span>(<span id="colorsSelectFriendly">0</span>)</span><br>
-        <div id="colorScheme"></div>
+        <div id="imageConverterPalette"></div>
       </div>
 
       <div data-tip="Select a color to re-assign the height value" id="colorsAssigned" style="display: none">
-        <i>Assigned colors: </i><br>
+        <i>Assigned colors (<span id="colorsAssignedNumber"></span>):</i><br>
       </div>
 
       <div data-tip="Select a color to assign a height value" id="colorsUnassigned" style="display: none">
-        <i>Unassigned colors: </i><br>
+        <i>Unassigned colors (<span id="colorsUnassignedNumber"></span>):</i><br>
       </div>
 
     </div>
@@ -2776,7 +2948,7 @@
           <option data-form="Union" value="United States">United States</option>
           <option data-form="Wild" value="United Tribes">United Tribes</option>
         </select>
-        <input id="stateNameEditorCustomForm" placeholder="type form name" data-tip="Create custom state form name" style="display: none; width: 11em;">
+        <input id="stateNameEditorCustomForm" placeholder="type form name" data-tip="Enter custom form name" style="display: none; width: 11em;">
         <span id="stateNameEditorAddForm" data-tip="Click to add custom state form name to the list" class="icon-plus pointer"></span>
       </div>
 
@@ -2813,6 +2985,7 @@
       <div id="provincesBottom">
         <button id="provincesEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
         <button id="provincesEditStyle" data-tip="Edit provinces style in Style Editor" class="icon-adjust"></button>
+        <button id="provincesRecolor" data-tip="Recolor listed provinces based on state color" class="icon-paint-roller"></button>
         <button id="provincesPercentage" data-tip="Toggle percentage / absolute values views" class="icon-percent"></button>
         <button id="provincesChart" data-tip="Show provinces chart" class="icon-chart-area"></button>
         <button id="provincesToggleLabels" data-tip="Toggle province labels" class="icon-font"></button>
@@ -2839,7 +3012,7 @@
     <div id="diplomacyEditor" class="dialog stable" style="display: none">
       <div id="diplomacyHeader" class="header">
         <div style="left:.2em" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">State&nbsp;</div>
-        <div style="left:12.4em" data-tip="Click to sort by diplomatical relations" class="sortable alphabetically" data-sortby="relations">Relations&nbsp;</div>
+        <div style="left:13.4em" data-tip="Click to sort by diplomatical relations" class="sortable alphabetically" data-sortby="relations">Relations&nbsp;</div>
       </div>
 
 	    <div id="diplomacyBodySection" class="table"></div>
@@ -2973,9 +3146,7 @@
           <input id="namesbaseMin" data-tip="Recommended minimum name length" type="number" min=2 max=100>
           <input id="namesbaseMax" data-tip="Recommended maximum name length" type="number" min=2 value=10>
           <span>Double: </span>
-          <input id="namesbaseDouble" data-tip="Populate with letters that can used twice in a row" autocorrect="off" spellcheck="false" style="width:5em">
-          <span>Multi: </span>
-          <input id="namesbaseMulti" data-tip="Multi-word names rate. 1 - allow all multi-word names, 0 - all names should spelled as a single word" type="number" min=0 max=1 step=.1 value=0 style="width:3.6em">
+          <input id="namesbaseDouble" data-tip="Populate with letters that can used twice in a row (geminates)" autocorrect="off" spellcheck="false" style="width:10em">
         </div>
         <fieldset>
           <legend>Generated examples: </legend>
@@ -3048,7 +3219,7 @@
         <button id="notesFocus" data-tip="Focus on selected object" class="icon-target"></button>
         <button id="notesDownload" data-tip="Download notes to PC" class="icon-download"></button>
         <button id="notesUpload" data-tip="Upload notes from PC" class="icon-upload"></button>
-        <button id="notesRemove" data-tip="Remove this note" class="icon-trash"></button>
+        <button id="notesRemove" data-tip="Remove this note" class="icon-trash fastDelete"></button>
       </div>
     </div>
 
@@ -3203,7 +3374,7 @@
           <input id="populationRate" data-stored="populationRate" type="number" min=10 max=9990 step=10 value=1000 data-value=1000 style="width:4.5em">
         </div>
 
-        <div data-tip="Set ubranization rate: burgs population relative to all population">
+        <div data-tip="Set urbranization rate: burgs population relative to all population">
           <div>Urbanization rate:</div>
           <input id="urbanizationOutput" type="range" min=.01 max=5 step=.01 value=1>
           <input id="urbanization" data-stored="urbanization" type="number" min=.01 max=5 step=.01 value=1 data-value=1>
@@ -3279,15 +3450,17 @@
     </div>
 
     <div id="militaryOverview" class="dialog stable" style="display: none">
-      <div id="militaryHeader" class="header">
-        <div data-tip="State name. Click to sort" style="left:1.8em; width: 7.4em;" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
-        <div data-tip="Total military personnel (considering crew). Click to sort" id="militaryTotal" class="sortable icon-sort-number-down" data-sortby="total">Total&nbsp;</div>
-        <div data-tip="State population. Click to sort" style="width: 6.5em; margin-left: -1em" class="sortable" data-sortby="population">Population&nbsp;</div>
-        <div data-tip="Military personnel rate (% of state population). Depends on war alert. Click to sort" style="width: 3.7em" class="sortable" data-sortby="rate">Rate&nbsp;</div>
-        <div data-tip="War Alert. Modifier to military forces number, depends of political situation. Click to sort" class="sortable" data-sortby="alert">War Alert&nbsp;</div>
+      <div class="overflow">
+        <div id="militaryHeader" class="header">
+          <div data-tip="State name. Click to sort" style="margin-left: 1.8em; width: 5.6em" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
+          <div data-tip="Total military personnel (considering crew). Click to sort" id="militaryTotal" class="sortable icon-sort-number-down" data-sortby="total">Total&nbsp;</div>
+          <div data-tip="State population. Click to sort" style="width: 6.5em; margin-left: -1em" class="sortable" data-sortby="population">Population&nbsp;</div>
+          <div data-tip="Military personnel rate (% of state population). Depends on war alert. Click to sort" style="width: 3.7em" class="sortable" data-sortby="rate">Rate&nbsp;</div>
+          <div data-tip="War Alert. Modifier to military forces number, depends of political situation. Click to sort" class="sortable" data-sortby="alert">War Alert&nbsp;</div>
+        </div>
+  
+        <div id="militaryBody" data-type="absolute"></div>
       </div>
-
-      <div id="militaryBody" class="table" data-type="absolute"></div>
 
       <div id="militaryFooter" class="totalLine">
         <div data-tip="States number" style="margin-left: 4px">States:&nbsp;<span id="militaryFooterStates">0</span></div>
@@ -3304,17 +3477,20 @@
         <button id="militaryPercentage" data-tip="Toggle percentage / absolute values views" class="icon-percent"></button>
         <button id="militaryOverviewRecalculate" data-tip="Recalculate military forces based on current options" class="icon-retweet"></button>
         <button id="militaryExport" data-tip="Save military-related data as a text file (.csv)" class="icon-download"></button>
+        <button id="militaryWiki" data-tip="Open Military Forces Tutorial" class="icon-info"></button>
       </div>
     </div>
 
     <div id="regimentsOverview" class="dialog stable" style="display: none">
-      <div id="regimentsHeader" class="header">
-        <div data-tip="State name. Click to sort" style="left:1.8em; width: 9em" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
-        <div data-tip="Regiment emblem and name. Click to sort by name" style="width: 12em" class="sortable alphabetically" data-sortby="name">Name&nbsp;</div>
-        <div data-tip="Total military personnel (not considering crew). Click to sort" style="margin-left: .8em" id="regimentsTotal" class="sortable icon-sort-number-down" data-sortby="total">Total&nbsp;</div>
+      <div class="overflow">
+        <div id="regimentsHeader" class="header">
+          <div data-tip="State name. Click to sort" style="left:1.8em; width: 9em" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
+          <div data-tip="Regiment emblem and name. Click to sort by name" style="width: 12em" class="sortable alphabetically" data-sortby="name">Name&nbsp;</div>
+          <div data-tip="Total military personnel (not considering crew). Click to sort" style="margin-left: .8em" id="regimentsTotal" class="sortable icon-sort-number-down" data-sortby="total">Total&nbsp;</div>
+        </div>
+  
+        <div id="regimentsBody" data-type="absolute"></div>
       </div>
-
-      <div id="regimentsBody" class="table" data-type="absolute"></div>
 
       <div id="regimentsBottom">
         <button id="regimentsOverviewRefresh" data-tip="Refresh the overview screen" class="icon-cw"></button>
@@ -3326,20 +3502,24 @@
     </div>
 
     <div id="militaryOptions" class="dialog stable" style="display: none">
-      <table id="militaryOptionsTable">
-        <thead>
-          <tr>
-            <th data-tip="Unit name. If name is changed for existing unit, old unit will be replaced">Military unit</th>
-            <th data-tip="Conscription percentage for rural population">Rural %</th>
-            <th data-tip="Conscription percentage for urban population">Urban %</th>
-            <th data-tip="Average number of people in crew">Crew</th>
-            <th data-tip="Unit type to apply special rules on forces recalculation">Type</th>
-            <th data-tip="Check if unit is separate and can be stacked only with units of the same type">Sep.</th>
-          </tr>
-        </thead>
-        <tbody>
-        </tbody>
-      </table>
+      <div class="table">
+        <table id="militaryOptionsTable">
+          <thead>
+            <tr>
+              <th data-tip="Unit icon">Icon</th>
+              <th data-tip="Unit name. If name is changed for existing unit, old unit will be replaced">Unit name</th>
+              <th data-tip="Conscription percentage for rural population">Rural</th>
+              <th data-tip="Conscription percentage for urban population">Urban</th>
+              <th data-tip="Average number of people in crew (used for total personnel calculation)">Crew</th>
+              <th data-tip="Unit military power (used for battle simulation)">Power</th>
+              <th data-tip="Unit type to apply special rules on forces recalculation">Type</th>
+              <th data-tip="Check if unit is separate and can be stacked only with units of the same type">Sep.</th>
+            </tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <div id="styleSaver" class="dialog stable textual" style="display: none">
@@ -3380,6 +3560,15 @@
       <p><b>Culture:</b> <span id="infoCulture">n/a</span></p>
       <p><b>Religion:</b> <span id="infoReligion">n/a</span></p>
       <p><b>Burg:</b> <span id="infoBurg">n/a</span></p>
+    </div>
+
+    <div id="iconSelector" style="display: none" class="dialog">
+      <table id="iconTable" class="table pointer" style="font-size: 2em; text-align: center"></table>
+      <div style="font-style: italic; font-size: 1.2em; margin: .4em 0 0 .4em">
+        <span>Select from the list or paste a Unicode character here: </span>
+        <input id="iconInput" style="width: 2em">
+        <span>. See <a href="https://emojipedia.org" target="_blank">Emojipedia</a> for reference</span>
+      </div>
     </div>
 
     <div id="options3d" class="dialog stable" style="display: none">
@@ -3451,7 +3640,7 @@
     <div id="preview3d" class="dialog stable" style="display: none; padding: 0px"></div>
 
     <div id="saveMapData" style="display: none" class="dialog">
-      <div style="margin-bottom: .3em">Please select a saving variant:</div>
+      <div style="margin-bottom: .3em; font-weight: bold">Please select saving variant:</div>
       <div>
         <button onclick="saveMap()" data-tip="Download the map as fully-functional .map file to your machine">.map</button>
         <button onclick="saveSVG()" data-tip="Download the map as vector image (open in browser or Inkscape)">.svg</button>
@@ -3461,6 +3650,11 @@
         <button onclick="quickSave()" data-tip="Save fully-functional map to browser storage. Shortcut: F6">storage</button>
       </div>
       <p style="font-style: italic">Generator uses pop-up window to download files. Please ensure your browser does not block popups</p>
+      <div data-tip="Define scale of a saved png/jpeg image (e.g. 5x). Saving big images is slow and may cause a browser crash!" style="margin-bottom: .3em">
+        PNG / JPEG scale:
+        <input id="pngResolutionInput" data-stored="pngResolution" type="range" min=1 max=8 value=1 style="width: 10.8em">
+        <input id="pngResolutionOutput" data-stored="pngResolution" type="number" min=1 max=8 value=1>
+      </div>
     </div>
 
     <div id="loadMapData" style="display: none" class="dialog">
@@ -3523,6 +3717,7 @@
   <script src="modules/religions-generator.js"></script>
   <script src="modules/military-generator.js"></script>
   <script src="libs/polylabel.min.js"></script>
+  <script src="libs/lineclip.js"></script>
   <script src="libs/jquery-ui.min.js"></script>
   <script src="libs/seedrandom.min.js"></script>
   <script src="modules/ui/layers.js"></script>
@@ -3532,7 +3727,7 @@
   <script defer src="modules/ui/style.js"></script>
   <script defer src="modules/ui/measurers.js"></script>
   <script defer src="modules/save-and-load.js"></script>
-  <script defer src="main.js?version=1.0"></script>
+  <script defer src="main.js?version=1.4"></script>
   <script defer src="modules/relief-icons.js"></script>
   <script defer src="modules/ui/tools.js"></script>
   <script defer src="modules/ui/world-configurator.js"></script>
@@ -3542,7 +3737,9 @@
   <script defer src="modules/ui/biomes-editor.js"></script>
   <script defer src="modules/ui/cultures-editor.js"></script>
   <script defer src="modules/ui/namesbase-editor.js"></script>
+  <script defer src="modules/ui/elevation-profile.js"></script>
   <script defer src="modules/ui/routes-editor.js"></script>
+  <script defer src="modules/ui/ice-editor.js"></script>
   <script defer src="modules/ui/lakes-editor.js"></script>
   <script defer src="modules/ui/coastline-editor.js"></script>
   <script defer src="modules/ui/labels-editor.js"></script>
@@ -3560,9 +3757,10 @@
   <script defer src="modules/ui/military-overview.js"></script>
   <script defer src="modules/ui/regiments-overview.js"></script>
   <script defer src="modules/ui/regiment-editor.js"></script>
+  <script defer src="modules/ui/battle-screen.js"></script>
   <script defer src="modules/ui/editors.js"></script>
   <script defer src="modules/ui/3d.js"></script>
-  <script defer src="libs/quantize.min.js"></script>
+  <script defer src="libs/rgbquant.js"></script>
   <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
   <script defer src="libs/publicstorage.js"></script>
 </body>

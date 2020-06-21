@@ -232,7 +232,7 @@ function gauss(expected = 100, deviation = 30, min = 0, max = 300, round = 0) {
   return rn(Math.max(Math.min(d3.randomNormal(expected, deviation)(), max), min), round);
 }
 
-// get integer from float as floor + P(fractional)
+/** This is a description of the foo function. */
 function Pint(float) {
   return ~~float + +P(float % 1);
 }
@@ -370,14 +370,19 @@ function biased(min, max, ex) {
 }
 
 // return array of values common for both array a and array b
-function intersect(a, b) {
+function common(a, b) {
   const setB = new Set(b);
   return [...new Set(a)].filter(a => setB.has(a));
 }
 
-// check if char is vowel
+// clip polygon by graph bbox
+function clipPoly(points, secure = 0) {
+  return polygonclip(points, [0, 0, graphWidth, graphHeight], secure);
+}
+
+// check if char is vowel or can serve as vowel
 function vowel(c) {
-  return "aeiouy".includes(c);
+  return `aeiouyɑ'əøɛœæɶɒɨɪɔɐʊɤɯаоиеёэыуюяàèìòùỳẁȁȅȉȍȕáéíóúýẃőűâêîôûŷŵäëïöüÿẅãẽĩõũỹąęįǫųāēīōūȳăĕĭŏŭǎěǐǒǔȧėȯẏẇạẹịọụỵẉḛḭṵṳ`.includes(c);
 }
 
 // remove vowels from the end of the string
@@ -410,6 +415,13 @@ function getAdjective(string) {
 
 // get ordinal out of integer: 1 => 1st
 const nth = n => n+(["st","nd","rd"][((n+90)%100-10)%10-1]||"th");
+
+// conjunct array: [A,B,C] => "A, B and C"
+function list(array) {
+  if (!Intl.ListFormat) return array.join(", ");
+  const conjunction = new Intl.ListFormat(window.lang || "en", {style:"long", type:"conjunction"});
+  return conjunction.format(array);
+}
 
 // split string into 2 almost equal parts not breaking words
 function splitInTwo(str) {
@@ -563,7 +575,12 @@ function getAbsolutePath(href) {
 
 // open URL in a new tab or window
 function openURL(url) {
-  window.open(url, '_blank');
+  window.open(url, "_blank");
+}
+
+// open project wiki-page
+function wiki(page) {
+  window.open("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/" + page, "_blank");
 }
 
 // wrap URL into html a element
@@ -610,5 +627,5 @@ void function() {
   cancel.addEventListener("click", () => prompt.style.display = "none");
 }()
 
-// localStorageDB
-!function(){function e(t,o){return n?void(n.transaction("s").objectStore("s").get(t).onsuccess=function(e){var t=e.target.result&&e.target.result.v||null;o(t)}):void setTimeout(function(){e(t,o)},100)}var t=window.indexedDB||window.mozIndexedDB||window.webkitIndexedDB||window.msIndexedDB;if(!t)return void console.error("indexDB not supported");var n,o={k:"",v:""},r=t.open("d2",1);r.onsuccess=function(e){n=this.result},r.onerror=function(e){console.error("indexedDB request error"),console.log(e)},r.onupgradeneeded=function(e){n=null;var t=e.target.result.createObjectStore("s",{keyPath:"k"});t.transaction.oncomplete=function(e){n=e.target.db}},window.ldb={get:e,set:function(e,t){o.k=e,o.v=t,n.transaction("s","readwrite").objectStore("s").put(o)}}}();
+// indexedDB; ldb object
+!function(){function e(t,o){return n?void(n.transaction("s").objectStore("s").get(t).onsuccess=function(e){var t=e.target.result&&e.target.result.v||null;o(t)}):void setTimeout(function(){e(t,o)},100)}var t=window.indexedDB||window.mozIndexedDB||window.webkitIndexedDB||window.msIndexedDB;if(!t)return void console.error("indexedDB not supported");var n,o={k:"",v:""},r=t.open("d2",1);r.onsuccess=function(e){n=this.result},r.onerror=function(e){console.error("indexedDB request error"),console.log(e)},r.onupgradeneeded=function(e){n=null;var t=e.target.result.createObjectStore("s",{keyPath:"k"});t.transaction.oncomplete=function(e){n=e.target.db}},window.ldb={get:e,set:function(e,t){o.k=e,o.v=t,n.transaction("s","readwrite").objectStore("s").put(o)}}}();
