@@ -446,10 +446,30 @@ function editStates() {
       pack.cells.province.forEach((pr, i) => {if(pr === p) pack.cells.province[i] = 0;});
     });
 
+    // remove military
+    pack.states[state].military.forEach(m => {
+      const id = `regiment${state}-${m.i}`;
+      const index = notes.findIndex(n => n.id === id);
+      if (index != -1) notes.splice(index, 1);
+    });
+    armies.select("g#army"+state).remove();
+
+    const military = pack.states[elSelected.dataset.state].military;
+    const regIndex = military.indexOf(regiment());
+    if (regIndex === -1) return;
+    military.splice(regIndex, 1);
+
+    const index = notes.findIndex(n => n.id === elSelected.id);
+    if (index != -1) notes.splice(index, 1);
+    elSelected.remove();
+
     const capital = pack.states[state].capital;
     pack.burgs[capital].capital = 0;
     pack.burgs[capital].state = 0;
     moveBurgToGroup(capital, "towns");
+
+    // clean state object
+    pack.states[state].military = [];
 
     debug.selectAll(".highlight").remove();
     if (!layerIsOn("toggleStates")) toggleStates(); else drawStates();

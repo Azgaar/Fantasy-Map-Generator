@@ -2450,7 +2450,7 @@
           <button id="regimentEmblemSelect" style="padding: 0; width: 4.5em">select</button>
         </div>
 
-        <div id="regimentComposition" style="padding: .1em"></div>
+        <div id="regimentComposition" class="table"></div>
       </div>
 
       <div id="regimentBottom">
@@ -2465,7 +2465,7 @@
     </div>
 
     <div id="battleScreen" class="dialog stable" style="display: none">
-      <div id="battleBody">
+      <div id="battleBody" class="overflow>
         <template id="battlePhases_field">
           <button data-tip="Skirmish phase. Ranged units excel" data-phase="skirmish" class="icon-button-skirmish"></button>
           <button data-tip="Melee phase. Melee units excel" data-phase="melee" class="icon-button-melee"></button>
@@ -3450,15 +3450,17 @@
     </div>
 
     <div id="militaryOverview" class="dialog stable" style="display: none">
-      <div id="militaryHeader" class="header">
-        <div data-tip="State name. Click to sort" style="left:1.8em; width: 7.4em;" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
-        <div data-tip="Total military personnel (considering crew). Click to sort" id="militaryTotal" class="sortable icon-sort-number-down" data-sortby="total">Total&nbsp;</div>
-        <div data-tip="State population. Click to sort" style="width: 6.5em; margin-left: -1em" class="sortable" data-sortby="population">Population&nbsp;</div>
-        <div data-tip="Military personnel rate (% of state population). Depends on war alert. Click to sort" style="width: 3.7em" class="sortable" data-sortby="rate">Rate&nbsp;</div>
-        <div data-tip="War Alert. Modifier to military forces number, depends of political situation. Click to sort" class="sortable" data-sortby="alert">War Alert&nbsp;</div>
+      <div class="overflow">
+        <div id="militaryHeader" class="header">
+          <div data-tip="State name. Click to sort" style="margin-left: 1.8em; width: 5.6em" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
+          <div data-tip="Total military personnel (considering crew). Click to sort" id="militaryTotal" class="sortable icon-sort-number-down" data-sortby="total">Total&nbsp;</div>
+          <div data-tip="State population. Click to sort" style="width: 6.5em; margin-left: -1em" class="sortable" data-sortby="population">Population&nbsp;</div>
+          <div data-tip="Military personnel rate (% of state population). Depends on war alert. Click to sort" style="width: 3.7em" class="sortable" data-sortby="rate">Rate&nbsp;</div>
+          <div data-tip="War Alert. Modifier to military forces number, depends of political situation. Click to sort" class="sortable" data-sortby="alert">War Alert&nbsp;</div>
+        </div>
+  
+        <div id="militaryBody" data-type="absolute"></div>
       </div>
-
-      <div id="militaryBody" class="table" data-type="absolute"></div>
 
       <div id="militaryFooter" class="totalLine">
         <div data-tip="States number" style="margin-left: 4px">States:&nbsp;<span id="militaryFooterStates">0</span></div>
@@ -3480,13 +3482,15 @@
     </div>
 
     <div id="regimentsOverview" class="dialog stable" style="display: none">
-      <div id="regimentsHeader" class="header">
-        <div data-tip="State name. Click to sort" style="left:1.8em; width: 9em" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
-        <div data-tip="Regiment emblem and name. Click to sort by name" style="width: 12em" class="sortable alphabetically" data-sortby="name">Name&nbsp;</div>
-        <div data-tip="Total military personnel (not considering crew). Click to sort" style="margin-left: .8em" id="regimentsTotal" class="sortable icon-sort-number-down" data-sortby="total">Total&nbsp;</div>
+      <div class="overflow">
+        <div id="regimentsHeader" class="header">
+          <div data-tip="State name. Click to sort" style="left:1.8em; width: 9em" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
+          <div data-tip="Regiment emblem and name. Click to sort by name" style="width: 12em" class="sortable alphabetically" data-sortby="name">Name&nbsp;</div>
+          <div data-tip="Total military personnel (not considering crew). Click to sort" style="margin-left: .8em" id="regimentsTotal" class="sortable icon-sort-number-down" data-sortby="total">Total&nbsp;</div>
+        </div>
+  
+        <div id="regimentsBody" data-type="absolute"></div>
       </div>
-
-      <div id="regimentsBody" class="table" data-type="absolute"></div>
 
       <div id="regimentsBottom">
         <button id="regimentsOverviewRefresh" data-tip="Refresh the overview screen" class="icon-cw"></button>
@@ -3498,22 +3502,24 @@
     </div>
 
     <div id="militaryOptions" class="dialog stable" style="display: none">
-      <table id="militaryOptionsTable">
-        <thead>
-          <tr>
-            <th data-tip="Unit icon">Icon</th>
-            <th data-tip="Unit name. If name is changed for existing unit, old unit will be replaced">Unit name</th>
-            <th data-tip="Conscription percentage for rural population">Rural</th>
-            <th data-tip="Conscription percentage for urban population">Urban</th>
-            <th data-tip="Average number of people in crew (used for total personnel calculation)">Crew</th>
-            <th data-tip="Unit military power (used for battle simulation)">Power</th>
-            <th data-tip="Unit type to apply special rules on forces recalculation">Type</th>
-            <th data-tip="Check if unit is separate and can be stacked only with units of the same type">Sep.</th>
-          </tr>
-        </thead>
-        <tbody>
-        </tbody>
-      </table>
+      <div class="table">
+        <table id="militaryOptionsTable">
+          <thead>
+            <tr>
+              <th data-tip="Unit icon">Icon</th>
+              <th data-tip="Unit name. If name is changed for existing unit, old unit will be replaced">Unit name</th>
+              <th data-tip="Conscription percentage for rural population">Rural</th>
+              <th data-tip="Conscription percentage for urban population">Urban</th>
+              <th data-tip="Average number of people in crew (used for total personnel calculation)">Crew</th>
+              <th data-tip="Unit military power (used for battle simulation)">Power</th>
+              <th data-tip="Unit type to apply special rules on forces recalculation">Type</th>
+              <th data-tip="Check if unit is separate and can be stacked only with units of the same type">Sep.</th>
+            </tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <div id="styleSaver" class="dialog stable textual" style="display: none">
