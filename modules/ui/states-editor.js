@@ -454,15 +454,6 @@ function editStates() {
     });
     armies.select("g#army"+state).remove();
 
-    const military = pack.states[elSelected.dataset.state].military;
-    const regIndex = military.indexOf(regiment());
-    if (regIndex === -1) return;
-    military.splice(regIndex, 1);
-
-    const index = notes.findIndex(n => n.id === elSelected.id);
-    if (index != -1) notes.splice(index, 1);
-    elSelected.remove();
-
     const capital = pack.states[state].capital;
     pack.burgs[capital].capital = 0;
     pack.burgs[capital].state = 0;
