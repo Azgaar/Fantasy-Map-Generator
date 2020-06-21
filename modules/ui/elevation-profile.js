@@ -83,7 +83,7 @@ function showElevationProfile(data, routeLen, isRiver) {
     chartData.ma = Math.max(chartData.ma, chartData.height[i]);
   }
 
-  if (lastBurgIndex != 0 && lastBurgCell == chartData.cell[data.length-1] && lastBurgIndex < data.length) {
+  if (lastBurgIndex != 0 && lastBurgCell == chartData.cell[data.length-1] && lastBurgIndex < data.length-1) {
     chartData.burg[data.length-1] = chartData.burg[lastBurgIndex];
     chartData.burg[lastBurgIndex] = 0;
   }
