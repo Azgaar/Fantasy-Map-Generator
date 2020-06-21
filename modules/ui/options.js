@@ -399,7 +399,7 @@ function randomizeCultureSet() {
 function generateEra() {
   if (!stored("year")) yearInput.value = rand(100, 2000); // current year
   if (!stored("era")) eraInput.value = Names.getBaseShort(P(.7) ? 1 : rand(nameBases.length)) + " Era";
-  options.year = yearInput.value;
+  options.year = +yearInput.value;
   options.era = eraInput.value;
   options.eraShort = options.era.split(" ").map(w => w[0].toUpperCase()).join(""); // short name for era
 }
