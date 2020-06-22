@@ -937,7 +937,7 @@ function parseLoadedData(data) {
 
       if (version < 1.3) {
         // v 1.3 added global options object
-        const winds = options.slice(); // previostly wnd was saved in settings[19]
+        const winds = options.slice(); // previostly wind was saved in settings[19]
         const year = rand(100, 2000);
         const era = Names.getBaseShort(P(.7) ? 1 : rand(nameBases.length)) + " Era";
         const eraShort = era[0] + "E";
@@ -1047,6 +1047,11 @@ function parseLoadedData(data) {
     }()
 
     changeMapSize();
+
+    // set options
+    yearInput.value = options.year;
+    eraInput.value = options.era;
+
     if (window.restoreDefaultEvents) restoreDefaultEvents();
     focusOn(); // based on searchParams focus on point, cell or burg
     invokeActiveZooming();

@@ -5,6 +5,18 @@ function editNotes(id, name) {
   select.options.length = 0;
   for (const note of notes) {select.options.add(new Option(note.id, note.id));}
 
+  // initiate pell (html editor)
+  const editor = Pell.init({
+    element: document.getElementById("notesText"),
+    onChange: html => {
+      const id = document.getElementById("notesSelect").value;
+      const note = notes.find(note => note.id === id);
+      if (!note) return;
+      note.legend = html;
+      showNote(note);
+    }
+  });
+
   // select an object
   if (notes.length || id) {
     if (!id) id = notes[0].id;
@@ -17,18 +29,18 @@ function editNotes(id, name) {
     }
     select.value = id;
     notesName.value = note.name;
-    notesText.value = note.legend;
+    editor.content.innerHTML = note.legend;
     showNote(note);
   } else {
-    const value = "There are no added notes. Click on element (e.g. label) and add a free text note";
-    document.getElementById("notesText").value = value;
+    editor.content.innerHTML = "There are no added notes. Click on element (e.g. label) and add a free text note";
     document.getElementById("notesName").value = "";
   }
 
   // open a dialog
   $("#notesEditor").dialog({
     title: "Notes Editor", minWidth: "40em",
-    position: {my: "center", at: "center", of: "svg"}
+    position: {my: "center", at: "center", of: "svg"},
+    close: () => notesText.innerHTML = ""
   });
 
   if (modules.editNotes) return;
@@ -37,7 +49,6 @@ function editNotes(id, name) {
   // add listeners
   document.getElementById("notesSelect").addEventListener("change", changeObject);
   document.getElementById("notesName").addEventListener("input", changeName);
-  document.getElementById("notesText").addEventListener("input", changeText);
   document.getElementById("notesPin").addEventListener("click", () => options.pinNotes = !options.pinNotes);
   document.getElementById("notesFocus").addEventListener("click", validateHighlightElement);
   document.getElementById("notesDownload").addEventListener("click", downloadLegends);
@@ -55,7 +66,7 @@ function editNotes(id, name) {
     const note = notes.find(note => note.id === this.value);
     if (!note) return;
     notesName.value = note.name;
-    notesText.value = note.legend;
+    editor.content.innerHTML = note.legend;
   }
 
   function changeName() {
@@ -63,14 +74,6 @@ function editNotes(id, name) {
     const note = notes.find(note => note.id === id);
     if (!note) return;
     note.name = this.value;
-    showNote(note);
-  }
-
-  function changeText() {
-    const id = document.getElementById("notesSelect").value;
-    const note = notes.find(note => note.id === id);
-    if (!note) return;
-    note.legend = this.value;
     showNote(note);
   }
 

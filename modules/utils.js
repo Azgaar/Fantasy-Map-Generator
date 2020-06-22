@@ -602,10 +602,10 @@ void function() {
   const prompt = document.getElementById("prompt");
   const form = prompt.querySelector("#promptForm");
 
-  window.prompt = function(promptTest = "Please provide an input", options = {default:1, step:.01, min:0, max:100}, callback) {
+  window.prompt = function(promptText = "Please provide an input", options = {default:1, step:.01, min:0, max:100}, callback) {
     if (options.default === undefined) {console.error("Prompt: options object does not have default value defined"); return;}
     const input = prompt.querySelector("#promptInput");
-    prompt.querySelector("#promptTest").innerHTML = promptTest;
+    prompt.querySelector("#promptText").innerHTML = promptText;
     const type = typeof(options.default) === "number" ? "number" : "text";
     input.type = type;
     if (options.step !== undefined) input.step = options.step;
