@@ -3211,10 +3211,7 @@
         <span>Object name: </span>
         <input id="notesName" data-tip="Type to change object name" autocorrect="off" spellcheck="false" style="width: 17em">
       </div>
-      <div>
-        <span>Note:</span><br>
-        <textarea id="notesText" rows="7" data-tip="Type object description" placeholder="Type object description"></textarea>
-      </div>
+      <div id="notesText" data-tip="Type and style object description" style="padding: .4em 0"></div>
       <div>
         <button id="notesFocus" data-tip="Focus on selected object" class="icon-target"></button>
         <button id="notesPin" data-tip="Toggle notes box dispay: hide or do not hide the box on mouse move" class="icon-pin"></button>
@@ -3673,7 +3670,7 @@
 
     <div id="prompt" style="display: none" class="dialog">
       <form id="promptForm">
-        <div id="promptTest"></div>
+        <div id="promptText"></div>
         <input id="promptInput" type="number" step=.01 placeholder="type value" autocomplete="off" required>
         <button type="submit">Confirm</button>
         <button type="button" id="promptCancel" formnovalidate>Cancel</button>
@@ -3763,5 +3760,5 @@
   <script defer src="modules/ui/3d.js"></script>
   <script defer src="libs/rgbquant.js"></script>
   <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
-  <script defer src="libs/publicstorage.js"></script>
+  <script defer src="libs/pell.js"></script>
 </body>
