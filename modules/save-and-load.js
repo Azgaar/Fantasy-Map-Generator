@@ -526,7 +526,7 @@ function uploadMap(file, callback) {
     } else {
       load = true;
       message =  `The map version (${mapVersion}) does not match the Generator version (${version}).
-                 <br>The map will be auto-updated. In case of issues please keep using an ${archive} of the Generator`;
+                 <br>Click OK to get map auto-updated. In case of issues please keep using an ${archive} of the Generator`;
     }
     alertMessage.innerHTML = message;
     $("#alert").dialog({title: "Version conflict", width: "38em", buttons: {
