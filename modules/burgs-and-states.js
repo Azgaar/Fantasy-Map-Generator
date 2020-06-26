@@ -42,7 +42,7 @@
       if (sorted.length < count * 10) {
         count = Math.floor(sorted.length / 10);
         if (!count) {console.warn(`There is no populated cells. Cannot generate states`); return burgs;}
-        else {console.warn(`Not enought populated cells (${sorted.length}). Will generate only ${count} states`);}
+        else {console.warn(`Not enough populated cells (${sorted.length}). Will generate only ${count} states`);}
       }
 
       let burgsTree = d3.quadtree();

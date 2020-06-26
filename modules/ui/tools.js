@@ -155,7 +155,7 @@ function regenerateStates() {
     return;
   }
   if (burgs.length < +regionsInput.value) {
-    tip(`Not enought burgs to generate ${regionsInput.value} states. Will generate only ${burgs.length} states`, false, "warn");
+    tip(`Not enough burgs to generate ${regionsInput.value} states. Will generate only ${burgs.length} states`, false, "warn");
   }
 
   // burg local ids sorted by a bit randomized population:

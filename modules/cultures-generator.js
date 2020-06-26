@@ -27,7 +27,7 @@
         });
         return;
       } else {
-        console.warn(`Not enought populated cells (${populated.length}). Will generate only ${count} cultures`);
+        console.warn(`Not enough populated cells (${populated.length}). Will generate only ${count} cultures`);
         alertMessage.innerHTML = `
           There are only ${populated.length} populated cells and it's insufficient livable area.<br>
           Only ${count} out of ${culturesInput.value} requested cultures will be generated.<br>
