@@ -355,7 +355,7 @@ const sourceDataForReference = {
   NeedToAdd!: "Neutral means states relations are neither positive nor negative",
   NeedToAdd!: "Suspicion means shate has a cautious distrust of another state",
   NeedToAdd!: "Enemies are states at war with each other",
-  NeedToAdd!: "Relations are unknown if states do not have enought information about each other",
+  NeedToAdd!: "Relations are unknown if states do not have enough information about each other",
   NeedToAdd!: "Rivalry is a state of competing for dominance in the region",
   NeedToAdd!: "Vassal is a state having obligation to its suzerain",
   NeedToAdd!: "Suzerain is a state having some control over its vassals",
