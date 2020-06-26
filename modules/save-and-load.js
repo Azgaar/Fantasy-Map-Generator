@@ -526,7 +526,7 @@ function uploadMap(file, callback) {
     } else {
       load = true;
       message =  `The map version (${mapVersion}) does not match the Generator version (${version}).
-                 <br>The map will be auto-updated. In case of issues please keep using an ${archive} of the Generator`;
+                 <br>Click OK to get map auto-updated. In case of issues please keep using an ${archive} of the Generator`;
     }
     alertMessage.innerHTML = message;
     $("#alert").dialog({title: "Version conflict", width: "38em", buttons: {
@@ -937,7 +937,7 @@ function parseLoadedData(data) {
 
       if (version < 1.3) {
         // v 1.3 added global options object
-        const winds = options.slice(); // previostly wnd was saved in settings[19]
+        const winds = options.slice(); // previostly wind was saved in settings[19]
         const year = rand(100, 2000);
         const era = Names.getBaseShort(P(.7) ? 1 : rand(nameBases.length)) + " Era";
         const eraShort = era[0] + "E";
@@ -1047,6 +1047,11 @@ function parseLoadedData(data) {
     }()
 
     changeMapSize();
+
+    // set options
+    yearInput.value = options.year;
+    eraInput.value = options.era;
+
     if (window.restoreDefaultEvents) restoreDefaultEvents();
     focusOn(); // based on searchParams focus on point, cell or burg
     invokeActiveZooming();

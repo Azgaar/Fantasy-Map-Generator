@@ -109,6 +109,8 @@ optionsContent.addEventListener("change", function(event) {
   if (id === "zoomExtentMin" || id === "zoomExtentMax") changeZoomExtent(value);
   else if (id === "optionsSeed") generateMapWithSeed();
   else if (id === "uiSizeInput") changeUIsize(value);
+  else if (id === "yearInput") changeYear();
+  else if (id === "eraInput") changeEra();
 });
 
 optionsContent.addEventListener("click", function(event) {
@@ -397,7 +399,7 @@ function randomizeCultureSet() {
 function generateEra() {
   if (!stored("year")) yearInput.value = rand(100, 2000); // current year
   if (!stored("era")) eraInput.value = Names.getBaseShort(P(.7) ? 1 : rand(nameBases.length)) + " Era";
-  options.year = yearInput.value;
+  options.year = +yearInput.value;
   options.era = eraInput.value;
   options.eraShort = options.era.split(" ").map(w => w[0].toUpperCase()).join(""); // short name for era
 }
@@ -406,6 +408,18 @@ function regenerateEra() {
   unlock("era");
   options.era = eraInput.value = Names.getBaseShort(P(.7) ? 1 : rand(nameBases.length)) + " Era";
   options.eraShort = options.era.split(" ").map(w => w[0].toUpperCase()).join("");
+}
+
+function changeYear() {
+  if (!yearInput.value) return;
+  if (isNaN(+yearInput.value)) {tip("Current year should be a number", false, "error"); return;}
+  options.year = +yearInput.value;
+}
+
+function changeEra() {
+  if (!eraInput.value) return;
+  lock("era");
+  options.era = eraInput.value;
 }
 
 // remove all saved data from LocalStorage and reload the page

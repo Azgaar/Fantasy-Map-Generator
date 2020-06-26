@@ -2412,9 +2412,9 @@
         <i data-tip="Marker Icon" class="icon-info"></i>
         <button id="markerIconSelect" data-tip="Click to select icon"></button>
         <i data-tip="Change marker horizontal shift" class="icon-resize-horizontal"></i>
-        <input id="markerIconShiftX" data-tip="Change icon horizontal shift" type="number" value=50 style="width:3em">
+        <input id="markerIconShiftX" data-tip="Change icon horizontal shift" type="number" value=50>
         <i data-tip="Change marker vertical shift" class="icon-resize-vertical"></i>
-        <input id="markerIconShiftY" data-tip="Change vertical shift" type="number" min=0 max=100 value=50 style="width:3em">
+        <input id="markerIconShiftY" data-tip="Change vertical shift" type="number" min=0 max=100 value=50>
       </div>
 
       <button id="markerStyle" data-tip="Change marker size and colors" class="icon-brush"></button>
@@ -2538,7 +2538,7 @@
           <span>Attackers</span>
           <div style="float: right; font-size: .7em">
             <meter id="battleMorale_attackers" data-tip="Attackers morale: " min=0 max=100 low=33 high=66 optimum=80></meter>
-            <div id="battlePower_attackers" data-tip="Attackers strength during this phase. Strength defines dealt damage" style="width: 3.2em; display: inline-block; text-align: center" class="icon-button-power"></div>
+            <div id="battlePower_attackers" data-tip="Attackers strength during this phase. Strength defines dealt damage" style="display: inline-block; text-align: center" class="icon-button-power"></div>
             <div style="display: inline-block;">
               <button id="battlePhase_attackers" style="width: 3.2em"></button>
               <div class="battlePhases" style="display: none"></div>
@@ -2551,7 +2551,7 @@
           <span></span>Defenders</span>
           <div style="float: right; font-size: .7em">
             <meter id="battleMorale_defenders" data-tip="Defenders morale: " min=0 max=100 low=33 high=66 optimum=80></meter>
-            <div id="battlePower_defenders" data-tip="Defenders strength during this phase. Strength defines dealt damage" style="width: 3.2em; display: inline-block; text-align: center" class="icon-button-power"></div>
+            <div id="battlePower_defenders" data-tip="Defenders strength during this phase. Strength defines dealt damage" style="display: inline-block; text-align: center" class="icon-button-power"></div>
             <div style="display: inline-block;">
               <button id="battlePhase_defenders" style="width: 3.2em"></button>
               <div class="battlePhases" style="display: none"></div>
@@ -3209,14 +3209,12 @@
         <span>Select object: </span>
         <select id="notesSelect" data-tip="Select object" style="width: 12em"></select>
         <span>Object name: </span>
-        <input id="notesName" data-tip="Type to change object name" autocorrect="off" spellcheck="false" style="width: 17em">
+        <input id="notesName" data-tip="Type to change object name" autocorrect="off" spellcheck="false" style="width: 16em">
       </div>
-      <div>
-        <span>Legend:</span><br>
-        <textarea id="notesText" rows="7" data-tip="Type object description" placeholder="Type object description"></textarea>
-      </div>
+      <div id="notesText" data-tip="Type and style object description" style="padding: .4em 0"></div>
       <div>
         <button id="notesFocus" data-tip="Focus on selected object" class="icon-target"></button>
+        <button id="notesPin" data-tip="Toggle notes box dispay: hide or do not hide the box on mouse move" class="icon-pin"></button>
         <button id="notesDownload" data-tip="Download notes to PC" class="icon-download"></button>
         <button id="notesUpload" data-tip="Upload notes from PC" class="icon-upload"></button>
         <button id="notesRemove" data-tip="Remove this note" class="icon-trash fastDelete"></button>
@@ -3672,7 +3670,7 @@
 
     <div id="prompt" style="display: none" class="dialog">
       <form id="promptForm">
-        <div id="promptTest"></div>
+        <div id="promptText"></div>
         <input id="promptInput" type="number" step=.01 placeholder="type value" autocomplete="off" required>
         <button type="submit">Confirm</button>
         <button type="button" id="promptCancel" formnovalidate>Cancel</button>
@@ -3762,5 +3760,5 @@
   <script defer src="modules/ui/3d.js"></script>
   <script defer src="libs/rgbquant.js"></script>
   <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
-  <script defer src="libs/publicstorage.js"></script>
+  <script defer src="libs/pell.js"></script>
 </body>

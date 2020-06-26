@@ -117,7 +117,7 @@ let scale = 1, viewX = 0, viewY = 0;
 const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", zoomed);
 
 // default options
-let options = {}; // options object
+let options = {pinNotes:false}; // options object
 let mapCoordinates = {}; // map coordinates on globe
 options.winds = [225, 45, 225, 315, 135, 315]; // default wind directions
 
