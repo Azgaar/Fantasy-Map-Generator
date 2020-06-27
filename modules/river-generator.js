@@ -56,7 +56,7 @@
         //const min = cells.c[i][d3.scan(cells.c[i], (a, b) => h[a] - h[b])]; // downhill cell
         let min = cells.c[i][d3.scan(cells.c[i], (a, b) => h[a] - h[b])]; // downhill cell
 
-        // allow only one river can flow thought a lake
+        // allow only one river can flow through a lake
         const cf = features[cells.f[i]]; // current cell feature
         if (cf.river && cf.river !== cells.r[i]) {
           cells.fl[i] = 0;

@@ -8,7 +8,7 @@
     console.time("generateMainRoads");
     const cells = pack.cells, burgs = pack.burgs.filter(b => b.i && !b.removed);
     const capitals = burgs.filter(b => b.capital);
-    if (capitals.length < 2) return []; // not enought capitals to build main roads
+    if (capitals.length < 2) return []; // not enough capitals to build main roads
     const paths = []; // array to store path segments
 
     for (const b of capitals) {
@@ -28,7 +28,7 @@
   const getTrails = function() {
     console.time("generateTrails");
     const cells = pack.cells, burgs = pack.burgs.filter(b => b.i && !b.removed);
-    if (burgs.length < 2) return []; // not enought burgs to build trails
+    if (burgs.length < 2) return []; // not enough burgs to build trails
 
     let paths = []; // array to store path segments
     for (const f of pack.features.filter(f => f.land)) {
