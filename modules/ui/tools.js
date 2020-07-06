@@ -55,15 +55,16 @@ toolsContent.addEventListener("click", function(event) {
 });
 
 function processFeatureRegeneration(event, button) {
-  if (button === "regenerateStateLabels") {BurgsAndStates.drawStateLabels(); if (!layerIsOn("toggleLabels")) toggleLabels();} else 
-  if (button === "regenerateReliefIcons") {ReliefIcons(); if (!layerIsOn("toggleRelief")) toggleRelief();} else 
-  if (button === "regenerateRoutes") {Routes.regenerate(); if (!layerIsOn("toggleRoutes")) toggleRoutes();} else 
+  if (button === "regenerateStateLabels") {BurgsAndStates.drawStateLabels(); if (!layerIsOn("toggleLabels")) toggleLabels();} else
+  if (button === "regenerateReliefIcons") {ReliefIcons(); if (!layerIsOn("toggleRelief")) toggleRelief();} else
+  if (button === "regenerateRoutes") {Routes.regenerate(); if (!layerIsOn("toggleRoutes")) toggleRoutes();} else
   if (button === "regenerateRivers") regenerateRivers(); else
   if (button === "regeneratePopulation") recalculatePopulation(); else
   if (button === "regenerateBurgs") regenerateBurgs(); else
   if (button === "regenerateStates") regenerateStates(); else
   if (button === "regenerateProvinces") regenerateProvinces(); else
   if (button === "regenerateReligions") regenerateReligions(); else
+  if (button === "regenerateCultures") regenerateCultures(); else
   if (button === "regenerateMilitary") regenerateMilitary(); else
   if (button === "regenerateIce") regenerateIce(); else
   if (button === "regenerateMarkers") regenerateMarkers(event); else
@@ -242,6 +243,12 @@ function regenerateProvinces() {
 function regenerateReligions() {
   Religions.generate();
   if (!layerIsOn("toggleReligions")) toggleReligions(); else drawReligions();
+}
+
+function regenerateCultures() {
+  Cultures.generate();
+  Cultures.expand();
+  if (!layerIsOn("toggleCultures")) toggleCultures(); else drawCultures();
 }
 
 function regenerateMilitary() {
