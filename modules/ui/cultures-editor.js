@@ -38,6 +38,7 @@ function editCultures() {
   function refreshCulturesEditor() {
     culturesCollectStatistics();
     culturesEditorAddLines();
+    drawCultureCenters();
   }
 
   function culturesCollectStatistics() {
