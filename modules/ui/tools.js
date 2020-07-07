@@ -249,6 +249,7 @@ function regenerateCultures() {
   Cultures.generate();
   Cultures.expand();
   if (!layerIsOn("toggleCultures")) toggleCultures(); else drawCultures();
+  if (document.getElementById("culturesEditorRefresh").offsetParent) culturesEditorRefresh.click();
 }
 
 function regenerateMilitary() {
