@@ -357,23 +357,24 @@
   // cell or center cell's (respectively) culture.
   const resetCultures = function () {
     console.time('resetCulturesForBurgsAndStates');
-    // Pull out index 0 nodes so iterators don't touch them.
-    const burgTreeNode = pack.burgs.shift();
-    const neutralsStateNode = pack.states.shift();
 
     // Assign the culture associated with the burgs cell.
-    pack.burgs = pack.burgs.map( (burg) => {
+    pack.burgs = pack.burgs.map( (burg, index) => {
+      // Ignore metadata burg
+      if(index === 0) {
+        return burg;
+      }
       return {...burg, culture: pack.cells.culture[burg.cell]};
     });
 
     // Assign the culture associated with the states' center cell.
-    pack.states = pack.states.map( (state) => {
+    pack.states = pack.states.map( (state, index) => {
+      // Ignore neutrals state
+      if(index === 0) {
+        return state;
+      }
       return {...state, culture: pack.cells.culture[state.center]};
     });
-
-    // Prepend the index 0 nodes back onto the packgroups.
-    pack.burgs.unshift(burgTreeNode);
-    pack.states.unshift(neutralsStateNode);
 
     console.timeEnd('resetCulturesForBurgsAndStates');
   }
