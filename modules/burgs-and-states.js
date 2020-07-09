@@ -355,8 +355,8 @@
 
   // Resets the cultures of all burgs and states to their
   // cell or center cell's (respectively) culture.
-  const resetCultures = function () {
-    console.time('resetCulturesForBurgsAndStates');
+  const updateCultures = function () {
+    console.time('updateCulturesForBurgsAndStates');
 
     // Assign the culture associated with the burgs cell.
     pack.burgs = pack.burgs.map( (burg, index) => {
@@ -376,7 +376,7 @@
       return {...state, culture: pack.cells.culture[state.center]};
     });
 
-    console.timeEnd('resetCulturesForBurgsAndStates');
+    console.timeEnd('updateCulturesForBurgsAndStates');
   }
 
   // calculate and draw curved state labels for a list of states
@@ -1053,6 +1053,6 @@
 
   return {generate, expandStates, normalizeStates, assignColors,
     drawBurgs, specifyBurgs, defineBurgFeatures, drawStateLabels, collectStatistics,
-    generateCampaigns, generateDiplomacy, defineStateForms, getFullName, generateProvinces, resetCultures};
+    generateCampaigns, generateDiplomacy, defineStateForms, getFullName, generateProvinces, updateCultures};
 
 })));
