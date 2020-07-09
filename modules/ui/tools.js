@@ -248,7 +248,8 @@ function regenerateReligions() {
 function regenerateCultures() {
   Cultures.generate();
   Cultures.expand();
-  BurgsAndStates.resetCultures();
+  BurgsAndStates.updateCultures();
+  Religions.updateCultures();
   if (!layerIsOn("toggleCultures")) toggleCultures(); else drawCultures();
   refreshAllEditors();
 }
