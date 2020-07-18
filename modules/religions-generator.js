@@ -279,6 +279,17 @@
     });
   }
 
+  function updateCultures() {
+    console.time('updateCulturesForReligions');
+    pack.religions = pack.religions.map( (religion, index) => {
+      if(index === 0) {
+        return religion;
+      }
+      return {...religion, culture: pack.cells.culture[religion.center]};
+    });
+    console.timeEnd('updateCulturesForReligions');
+  }
+
   // assign a unique two-letters code (abbreviation)
   function getCode(rawName) {
     const name = rawName.replace("Old ", ""); // remove Old prefix
@@ -350,6 +361,6 @@
     return type() + " of the " + generateMeaning();
   };
 
-  return {generate, add, getDeityName, expandReligions};
+  return {generate, add, getDeityName, expandReligions, updateCultures};
 
 })));

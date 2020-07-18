@@ -631,3 +631,16 @@ function selectIcon(initial, callback) {
     Close: function() {callback(initial); $(this).dialog("close")}}
   });
 }
+
+// Calls the refresh functionality on all editors currently open.
+function refreshAllEditors() {
+  console.time('refreshAllEditors');
+  if (document.getElementById('culturesEditorRefresh').offsetParent) culturesEditorRefresh.click();
+  if (document.getElementById('biomesEditorRefresh').offsetParent) biomesEditorRefresh.click();
+  if (document.getElementById('diplomacyEditorRefresh').offsetParent) diplomacyEditorRefresh.click();
+  if (document.getElementById('provincesEditorRefresh').offsetParent) provincesEditorRefresh.click();
+  if (document.getElementById('religionsEditorRefresh').offsetParent) religionsEditorRefresh.click();
+  if (document.getElementById('statesEditorRefresh').offsetParent) statesEditorRefresh.click();
+  if (document.getElementById('zonesEditorRefresh').offsetParent) zonesEditorRefresh.click();
+  console.timeEnd('refreshAllEditors');
+}
