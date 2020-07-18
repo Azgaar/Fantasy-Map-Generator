@@ -353,6 +353,32 @@
     console.timeEnd("normalizeStates");
   }
 
+  // Resets the cultures of all burgs and states to their
+  // cell or center cell's (respectively) culture.
+  const updateCultures = function () {
+    console.time('updateCulturesForBurgsAndStates');
+
+    // Assign the culture associated with the burgs cell.
+    pack.burgs = pack.burgs.map( (burg, index) => {
+      // Ignore metadata burg
+      if(index === 0) {
+        return burg;
+      }
+      return {...burg, culture: pack.cells.culture[burg.cell]};
+    });
+
+    // Assign the culture associated with the states' center cell.
+    pack.states = pack.states.map( (state, index) => {
+      // Ignore neutrals state
+      if(index === 0) {
+        return state;
+      }
+      return {...state, culture: pack.cells.culture[state.center]};
+    });
+
+    console.timeEnd('updateCulturesForBurgsAndStates');
+  }
+
   // calculate and draw curved state labels for a list of states
   const drawStateLabels = function(list) {
     console.time("drawStateLabels");
@@ -1029,6 +1055,6 @@
 
   return {generate, expandStates, normalizeStates, assignColors,
     drawBurgs, specifyBurgs, defineBurgFeatures, drawStateLabels, collectStatistics,
-    generateCampaigns, generateDiplomacy, defineStateForms, getFullName, generateProvinces};
+    generateCampaigns, generateDiplomacy, defineStateForms, getFullName, generateProvinces, updateCultures};
 
 })));
