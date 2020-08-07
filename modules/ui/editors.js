@@ -546,7 +546,7 @@ function unfog(id) {
 function getFileName(dataType) {
   const name = mapName.value;
   const type = dataType ? dataType + " " : "";
-  const dateString = new Date().toISOString().replace(/:[0-9]+\..*/, "").replaceAll(/[T:]/g, "-");
+  const dateString = new Date().toISOString().replace(/:[0-9]+\..*/, "").replace(/[T:]/g, "-");
   return name + " " + type + dateString;
 }
 
