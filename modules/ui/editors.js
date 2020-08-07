@@ -546,12 +546,8 @@ function unfog(id) {
 function getFileName(dataType) {
   const name = mapName.value;
   const type = dataType ? dataType + " " : "";
-  const date = new Date();
-  const datFormatter = new Intl.DateTimeFormat("en", {month: "short", day: "numeric"});
-  const timeFormatter = new Intl.DateTimeFormat("ru", {hour: "numeric", minute: "numeric"});
-  const day = datFormatter.format(date).replace(" ", "");
-  const time = timeFormatter.format(date).replace(":", "-");
-  return name + " " + type + day + " " + time;
+  const dateString = new Date().toISOString().replace(/:[0-9]+\..*/, "").replaceAll(/[T:]/g, "-");
+  return name + " " + type + dateString;
 }
 
 function downloadFile(data, name, type = "text/plain") {
