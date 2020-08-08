@@ -544,9 +544,18 @@ function unfog(id) {
 }
 
 function getFileName(dataType) {
+  const formatTime = (time) => {
+    return (time < 10) ? "0" + time : time;
+  };
   const name = mapName.value;
   const type = dataType ? dataType + " " : "";
-  const dateString = new Date().toISOString().replace(/:[0-9]+\..*/, "").replace(/[T:]/g, "-");
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = formatTime(date.getMonth());
+  const day = formatTime(date.getDay());
+  const hour = formatTime(date.getHours());
+  const minutes = formatTime(date.getMinutes());
+  const dateString = [year, month, day, hour, minutes].join('-');
   return name + " " + type + dateString;
 }
 
