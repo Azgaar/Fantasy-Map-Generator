@@ -551,8 +551,8 @@ function getFileName(dataType) {
   const type = dataType ? dataType + " " : "";
   const date = new Date();
   const year = date.getFullYear();
-  const month = formatTime(date.getMonth());
-  const day = formatTime(date.getDay());
+  const month = formatTime(date.getMonth() + 1);
+  const day = formatTime(date.getDate());
   const hour = formatTime(date.getHours());
   const minutes = formatTime(date.getMinutes());
   const dateString = [year, month, day, hour, minutes].join('-');
