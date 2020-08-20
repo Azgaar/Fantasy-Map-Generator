@@ -99,8 +99,6 @@ optionsContent.addEventListener("input", function(event) {
   else if (id === "uiSizeOutput") changeUIsize(value);
   else if (id === "tooltipSizeInput" || id === "tooltipSizeOutput") changeTooltipSize(value);
   else if (id === "transparencyInput") changeDialogsTransparency(value);
-  else if (id === "pngResolutionInput") pngResolutionOutput.value = value;
-  else if (id === "pngResolutionOutput") pngResolutionInput.value = value;
 });
 
 optionsContent.addEventListener("change", function(event) {
