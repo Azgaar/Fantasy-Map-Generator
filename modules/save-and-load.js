@@ -154,6 +154,15 @@ function inlineStyle(clone) {
       style += key + ':' + value + ';';
     }
 
+    for (const key in compStyle) {
+      const value = compStyle.getPropertyValue(key);
+
+      if (key === "cursor") continue; // cursor should be default
+      if (this.hasAttribute(key)) continue; // don't add style if there is the same attribute
+      if (value === defaultStyles.getPropertyValue(key)) continue;
+      style += key + ':' + value + ';';
+    }
+
     if (style != "") this.setAttribute('style', style);
   });
 
