@@ -9,7 +9,7 @@ $(window).resize(function(e) {
   changeMapSize();
 });
 
-window.onbeforeunload = () => "Are you sure you want to navigate away?";
+//window.onbeforeunload = () => "Are you sure you want to navigate away?";
 
 // Tooltips
 const tooltip = document.getElementById("tooltip");
