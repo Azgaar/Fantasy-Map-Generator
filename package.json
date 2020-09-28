@@ -1,0 +1,19 @@
+{
+  "name": "azgaar-desktop",
+  "productName": "Azgaar for Desktop",
+  "version": "0.1.0",
+  "description": "A port of Azgaar's Fantasy Map Generator to Electron",
+  "main": "esm-bridge.js",
+  "scripts": {
+    "start": "electron .",
+    "rebuild": "electron-rebuild"
+  },
+  "author": {
+    "name": ""
+  },
+  "dependencies": {
+    "electron": "^10.1.2",
+    "esm": "^3.2.25"
+  },
+  "devDependencies": {}
+}
