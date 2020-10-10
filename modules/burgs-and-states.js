@@ -32,7 +32,7 @@
     drawBurgs();
 
     function placeCapitals() {
-      console.time('placeCapitals');
+      DEBUG && console.time('placeCapitals');
       let count = +regionsInput.value;
       let burgs = [0];
 
@@ -41,8 +41,8 @@
 
       if (sorted.length < count * 10) {
         count = Math.floor(sorted.length / 10);
-        if (!count) {console.warn(`There is no populated cells. Cannot generate states`); return burgs;}
-        else {console.warn(`Not enough populated cells (${sorted.length}). Will generate only ${count} states`);}
+        if (!count) {WARN && console.warn(`There is no populated cells. Cannot generate states`); return burgs;}
+        else {WARN && console.warn(`Not enough populated cells (${sorted.length}). Will generate only ${count} states`);}
       }
 
       let burgsTree = d3.quadtree();
@@ -57,20 +57,20 @@
         }
 
         if (i === sorted.length - 1) {
-          console.warn("Cannot place capitals with current spacing. Trying again with reduced spacing");
+          WARN && console.warn("Cannot place capitals with current spacing. Trying again with reduced spacing");
           burgsTree = d3.quadtree();
           i = -1, burgs = [0], spacing /= 1.2;
         }
       }
 
       burgs[0] = burgsTree;
-      console.timeEnd('placeCapitals');
+      DEBUG && console.timeEnd('placeCapitals');
       return burgs;
     }
 
     // For each capital create a state
     function createStates() {
-      console.time('createStates');
+      DEBUG && console.time('createStates');
       const states = [{i:0, name: "Neutrals"}];
       const colors = getColors(burgs.length-1);
 
@@ -94,13 +94,13 @@
         cells.burg[b.cell] = i;
       });
 
-      console.timeEnd('createStates');
+      DEBUG && console.timeEnd('createStates');
       return states;
     }
 
     // place secondary settlements based on geo and economical evaluation
     function placeTowns() {
-      console.time('placeTowns');
+      DEBUG && console.time('placeTowns');
       const score = new Int16Array(cells.s.map(s => s * gauss(1,3,0,20,3))); // a bit randomized cell score for towns placement
       const sorted = cells.i.filter(i => !cells.burg[i] && score[i] > 0 && cells.culture[i]).sort((a, b) => score[b] - score[a]); // filtered and sorted array of indexes
 
@@ -129,17 +129,17 @@
       }
 
       if (manorsInput.value != 1000 && burgsAdded < desiredNumber) {
-        console.error(`Cannot place all burgs. Requested ${desiredNumber}, placed ${burgsAdded}`);
+        ERROR && console.error(`Cannot place all burgs. Requested ${desiredNumber}, placed ${burgsAdded}`);
       }
 
       burgs[0] = {name:undefined}; // do not store burgsTree anymore
-      console.timeEnd('placeTowns');
+      DEBUG && console.timeEnd('placeTowns');
     }
   }
 
   // define burg coordinates, port status and define details
   const specifyBurgs = function() {
-    console.time("specifyBurgs");
+    DEBUG && console.time("specifyBurgs");
     const cells = pack.cells, vertices = pack.vertices, features = pack.features, temp = grid.cells.temp;
 
     for (const b of pack.burgs) {
@@ -185,7 +185,7 @@
       if (featurePorts.length === 1) featurePorts[0].port = 0;
     }
 
-    console.timeEnd("specifyBurgs");
+    DEBUG && console.timeEnd("specifyBurgs");
   }
 
   const defineBurgFeatures = function(newburg) {
@@ -202,7 +202,7 @@
   }
 
   const drawBurgs = function() {
-    console.time("drawBurgs");
+    DEBUG && console.time("drawBurgs");
 
     // remove old data
     burgIcons.selectAll("circle").remove();
@@ -251,12 +251,12 @@
       .attr("x", d => rn(d.x - taSize * .47, 2)).attr("y", d => rn(d.y - taSize * .47, 2))
       .attr("width", taSize).attr("height", taSize);
 
-    console.timeEnd("drawBurgs");
+    DEBUG && console.timeEnd("drawBurgs");
   }
 
   // growth algorithm to assign cells to states like we did for cultures
   const expandStates = function() {
-    console.time("expandStates");
+    DEBUG && console.time("expandStates");
     const cells = pack.cells, states = pack.states, cultures = pack.cultures, burgs = pack.burgs;
 
     cells.state = new Uint16Array(cells.i.length); // cell state
@@ -331,11 +331,11 @@
       return 0;
     }
 
-    console.timeEnd("expandStates");
+    DEBUG && console.timeEnd("expandStates");
   }
 
   const normalizeStates = function() {
-    console.time("normalizeStates");
+    DEBUG && console.time("normalizeStates");
     const cells = pack.cells, burgs = pack.burgs;
 
     for (const i of cells.i) {
@@ -350,13 +350,13 @@
       cells.state[i] = cells.state[adversaries[0]];
       //debug.append("circle").attr("cx", cells.p[i][0]).attr("cy", cells.p[i][1]).attr("r", .5).attr("fill", "red");
     }
-    console.timeEnd("normalizeStates");
+    DEBUG && console.timeEnd("normalizeStates");
   }
 
   // Resets the cultures of all burgs and states to their
   // cell or center cell's (respectively) culture.
   const updateCultures = function () {
-    console.time('updateCulturesForBurgsAndStates');
+    DEBUG && console.time('updateCulturesForBurgsAndStates');
 
     // Assign the culture associated with the burgs cell.
     pack.burgs = pack.burgs.map( (burg, index) => {
@@ -376,12 +376,12 @@
       return {...state, culture: pack.cells.culture[state.center]};
     });
 
-    console.timeEnd('updateCulturesForBurgsAndStates');
+    DEBUG && console.timeEnd('updateCulturesForBurgsAndStates');
   }
 
   // calculate and draw curved state labels for a list of states
   const drawStateLabels = function(list) {
-    console.time("drawStateLabels");
+    DEBUG && console.time("drawStateLabels");
     const cells = pack.cells, features = pack.features, states = pack.states;
     const paths = []; // text paths
     lineGen.curve(d3.curveBundle.beta(1));
@@ -563,12 +563,12 @@
       if (!displayed) toggleLabels();
     }()
 
-    console.timeEnd("drawStateLabels");
+    DEBUG && console.timeEnd("drawStateLabels");
   }
 
   // calculate states data like area, population etc.
   const collectStatistics = function() {
-    console.time("collectStatistics");
+    DEBUG && console.time("collectStatistics");
     const cells = pack.cells, states = pack.states;
     states.forEach(s => {
       s.cells = s.area = s.burgs = s.rural = s.urban = 0;
@@ -595,11 +595,11 @@
     // convert neighbors Set object into array
     states.forEach(s => s.neighbors = Array.from(s.neighbors));
 
-    console.timeEnd("collectStatistics");
+    DEBUG && console.timeEnd("collectStatistics");
   }
 
   const assignColors = function() {
-    console.time("assignColors");
+    DEBUG && console.time("assignColors");
     const colors = ["#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854", "#ffd92f"]; // d3.schemeSet2;
 
     // assin basic color using greedy coloring algorithm
@@ -620,7 +620,7 @@
       });
     });
 
-    console.timeEnd("assignColors");
+    DEBUG && console.timeEnd("assignColors");
   }
 
   // generate historical conflicts of each state
@@ -641,7 +641,7 @@
 
   // generate Diplomatic Relationships
   const generateDiplomacy = function() {
-    console.time("generateDiplomacy");
+    DEBUG && console.time("generateDiplomacy");
     const cells = pack.cells, states = pack.states;
     const chronicle = states[0].diplomacy = [];
     const valid = states.filter(s => s.i && !states.removed);
@@ -782,13 +782,13 @@
       chronicle.push(war); // add a record to diplomatical history
     }
 
-    console.timeEnd("generateDiplomacy");
+    DEBUG && console.timeEnd("generateDiplomacy");
     //console.table(states.map(s => s.diplomacy));
   }
 
   // select a forms for listed or all valid states
   const defineStateForms = function(list) {
-    console.time("defineStateForms");
+    DEBUG && console.time("defineStateForms");
     const states = pack.states.filter(s => s.i && !s.removed);
     if (states.length < 1) return;
 
@@ -878,7 +878,7 @@
       }
     }
 
-    console.timeEnd("defineStateForms");
+    DEBUG && console.timeEnd("defineStateForms");
   }
 
   const getFullName = function(s) {
@@ -890,7 +890,7 @@
   }
 
   const generateProvinces = function(regenerate) {
-    console.time("generateProvinces");
+    DEBUG && console.time("generateProvinces");
     const localSeed = regenerate ? Math.floor(Math.random() * 1e9).toString() : seed;
     Math.seedrandom(localSeed);
 
@@ -1050,7 +1050,7 @@
       }
     });
 
-    console.timeEnd("generateProvinces");
+    DEBUG && console.timeEnd("generateProvinces");
   }
 
   return {generate, expandStates, normalizeStates, assignColors,

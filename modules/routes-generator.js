@@ -5,7 +5,7 @@
 }(this, (function () {'use strict';
 
   const getRoads = function() {
-    console.time("generateMainRoads");
+    DEBUG && console.time("generateMainRoads");
     const cells = pack.cells, burgs = pack.burgs.filter(b => b.i && !b.removed);
     const capitals = burgs.filter(b => b.capital);
     if (capitals.length < 2) return []; // not enough capitals to build main roads
@@ -21,12 +21,12 @@
     }
 
     cells.i.forEach(i => cells.s[i] += cells.road[i] / 2); // add roads to suitability score
-    console.timeEnd("generateMainRoads");
+    DEBUG && console.timeEnd("generateMainRoads");
     return paths;
   }
 
   const getTrails = function() {
-    console.time("generateTrails");
+    DEBUG && console.time("generateTrails");
     const cells = pack.cells, burgs = pack.burgs.filter(b => b.i && !b.removed);
     if (burgs.length < 2) return []; // not enough burgs to build trails
 
@@ -55,12 +55,12 @@
       });
     }
 
-    console.timeEnd("generateTrails");
+    DEBUG && console.timeEnd("generateTrails");
     return paths;
   }
 
   const getSearoutes = function() {
-    console.time("generateSearoutes");
+    DEBUG && console.time("generateSearoutes");
     const allPorts = pack.burgs.filter(b => b.port > 0 && !b.removed);
     if (allPorts.length < 2) return [];
 
@@ -93,12 +93,12 @@
 
     });
 
-    console.timeEnd("generateSearoutes");
+    DEBUG && console.timeEnd("generateSearoutes");
     return paths;
   }
 
   const draw = function(main, small, ocean) {
-    console.time("drawRoutes");
+    DEBUG && console.time("drawRoutes");
     const cells = pack.cells, burgs = pack.burgs;
     lineGen.curve(d3.curveCatmullRom.alpha(0.1));
 
@@ -133,7 +133,7 @@
         return [x, y];
       })), 1));
 
-    console.timeEnd("drawRoutes");
+    DEBUG && console.timeEnd("drawRoutes");
   }
 
   const regenerate = function() {

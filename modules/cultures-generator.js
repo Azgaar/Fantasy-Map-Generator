@@ -7,7 +7,7 @@
   let cells;
 
   const generate = function() {
-    console.time('generateCultures');
+    DEBUG && console.time('generateCultures');
     cells = pack.cells;
     cells.culture = new Uint16Array(cells.i.length); // cell cultures
     let count = Math.min(+culturesInput.value, +culturesSet.selectedOptions[0].dataset.max);
@@ -16,7 +16,7 @@
     if (populated.length < count * 25) {
       count = Math.floor(populated.length / 50);
       if (!count) {
-        console.warn(`There are no populated cells. Cannot generate cultures`);
+        WARN && console.warn(`There are no populated cells. Cannot generate cultures`);
         pack.cultures = [{name:"Wildlands", i:0, base:1}];
         alertMessage.innerHTML = `
           The climate is harsh and people cannot live in this world.<br>
@@ -27,7 +27,7 @@
         });
         return;
       } else {
-        console.warn(`Not enough populated cells (${populated.length}). Will generate only ${count} cultures`);
+        WARN && console.warn(`Not enough populated cells (${populated.length}). Will generate only ${count} cultures`);
         alertMessage.innerHTML = `
           There are only ${populated.length} populated cells and it's insufficient livable area.<br>
           Only ${count} out of ${culturesInput.value} requested cultures will be generated.<br>
@@ -68,7 +68,7 @@
     cultures.unshift({name:"Wildlands", i:0, base:1, origin:null});
 
     // make sure all bases exist in nameBases
-    if (!nameBases.length) {console.error("Name base is empty, default nameBases will be applied"); nameBases = Names.getNameBases();}
+    if (!nameBases.length) {ERROR && console.error("Name base is empty, default nameBases will be applied"); nameBases = Names.getNameBases();}
     cultures.forEach(c => c.base = c.base % nameBases.length);
 
     function getRandomCultures(c) {
@@ -108,7 +108,7 @@
       return rn((Math.random() * powerInput.value / 2 + 1) * base, 1);
     }
 
-    console.timeEnd('generateCultures');
+    DEBUG && console.timeEnd('generateCultures');
   }
 
   // assign a unique two-letters code (abbreviation)
@@ -355,7 +355,7 @@
 
   // expand cultures across the map (Dijkstra-like algorithm)
   const expand = function() {
-    console.time('expandCultures');
+    DEBUG && console.time('expandCultures');
     cells = pack.cells;
 
     const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
@@ -392,7 +392,7 @@
       });
     }
     //debug.selectAll(".text").data(cost).enter().append("text").attr("x", (d, e) => cells.p[e][0]-1).attr("y", (d, e) => cells.p[e][1]-1).text(d => d ? rn(d) : "").attr("font-size", 2);
-    console.timeEnd('expandCultures');
+    DEBUG && console.timeEnd('expandCultures');
   }
 
   function getBiomeCost(c, biome, type) {

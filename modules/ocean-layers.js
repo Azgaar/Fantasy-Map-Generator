@@ -9,7 +9,7 @@
   const OceanLayers = function OceanLayers() {
     const outline = oceanLayers.attr("layers");
     if (outline === "none") return;
-    console.time("drawOceanLayers");
+    DEBUG && console.time("drawOceanLayers");
 
     lineGen.curve(d3.curveBasisClosed);
     cells = grid.cells, pointsN = grid.cells.i.length, vertices = grid.vertices;
@@ -51,7 +51,7 @@
       return cells.v[i][cells.c[i].findIndex(c => cells.t[c] < t || !cells.t[c])];
     }
 
-    console.timeEnd("drawOceanLayers");
+    DEBUG && console.timeEnd("drawOceanLayers");
   }
 
   function randomizeOutline() {
@@ -89,7 +89,7 @@
       if (v[0] !== undefined && v[0] !== prev && c0 !== c1) current = v[0];
       else if (v[1] !== undefined && v[1] !== prev && c1 !== c2) current = v[1];
       else if (v[2] !== undefined && v[2] !== prev && c0 !== c2) current = v[2];
-      if (current === chain[chain.length - 1]) {console.error("Next vertex is not found"); break;}
+      if (current === chain[chain.length - 1]) {ERROR && console.error("Next vertex is not found"); break;}
     }
     chain.push(chain[0]); // push first vertex as the last one
     return chain;

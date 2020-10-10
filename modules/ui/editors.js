@@ -141,7 +141,7 @@ function moveBurgToGroup(id, g) {
   const label = document.querySelector("#burgLabels [data-id='" + id + "']");
   const icon = document.querySelector("#burgIcons [data-id='" + id + "']");
   const anchor = document.querySelector("#anchors [data-id='" + id + "']");
-  if (!label || !icon) {console.error("Cannot find label or icon elements"); return;}
+  if (!label || !icon) {ERROR && console.error("Cannot find label or icon elements"); return;}
 
   document.querySelector("#burgLabels > #"+g).appendChild(label);
   document.querySelector("#burgIcons > #"+g).appendChild(icon);
@@ -639,7 +639,7 @@ function selectIcon(initial, callback) {
 
 // Calls the refresh functionality on all editors currently open.
 function refreshAllEditors() {
-  console.time('refreshAllEditors');
+  DEBUG && console.time('refreshAllEditors');
   if (document.getElementById('culturesEditorRefresh').offsetParent) culturesEditorRefresh.click();
   if (document.getElementById('biomesEditorRefresh').offsetParent) biomesEditorRefresh.click();
   if (document.getElementById('diplomacyEditorRefresh').offsetParent) diplomacyEditorRefresh.click();
@@ -647,5 +647,5 @@ function refreshAllEditors() {
   if (document.getElementById('religionsEditorRefresh').offsetParent) religionsEditorRefresh.click();
   if (document.getElementById('statesEditorRefresh').offsetParent) statesEditorRefresh.click();
   if (document.getElementById('zonesEditorRefresh').offsetParent) zonesEditorRefresh.click();
-  console.timeEnd('refreshAllEditors');
+  DEBUG && console.timeEnd('refreshAllEditors');
 }

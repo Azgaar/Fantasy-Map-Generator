@@ -54,7 +54,7 @@
   };
 
   const generate = function() {
-    console.time('generateReligions');
+    DEBUG && console.time('generateReligions');
     const cells = pack.cells, states = pack.states, cultures = pack.cultures;
     const religions = pack.religions = [];
     cells.religion = new Uint16Array(cells.culture); // cell religion; initially based on culture
@@ -164,7 +164,7 @@
     expandHeresies();
     checkCenters();
 
-    console.timeEnd('generateReligions');
+    DEBUG && console.timeEnd('generateReligions');
   }
 
   const add = function(center) {
@@ -280,14 +280,14 @@
   }
 
   function updateCultures() {
-    console.time('updateCulturesForReligions');
+    DEBUG && console.time('updateCulturesForReligions');
     pack.religions = pack.religions.map( (religion, index) => {
       if(index === 0) {
         return religion;
       }
       return {...religion, culture: pack.cells.culture[religion.center]};
     });
-    console.timeEnd('updateCulturesForReligions');
+    DEBUG && console.timeEnd('updateCulturesForReligions');
   }
 
   // assign a unique two-letters code (abbreviation)
@@ -303,7 +303,7 @@
 
   // get supreme deity name
   const getDeityName = function(culture) {
-    if (culture === undefined) {console.error("Please define a culture"); return;}
+    if (culture === undefined) {ERROR && console.error("Please define a culture"); return;}
     const meaning = generateMeaning();
     const cultureName = Names.getCulture(culture, null, null, "", .8);
     return cultureName + ", The " + meaning;

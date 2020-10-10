@@ -10,6 +10,11 @@
 const version = "1.4"; // generator version
 document.title += " v" + version;
 
+// Switches to disable/enable logging levels
+var DEBUG = 0;
+var WARN = 0;
+var ERROR = 0;
+
 // if map version is not stored, clear localStorage and show a message
 if (rn(localStorage.getItem("version"), 2) !== rn(version, 2)) {
   localStorage.clear();
@@ -142,7 +147,7 @@ void function checkLoadParameters() {
 
   // of there is a valid maplink, try to load .map file from URL
   if (params.get("maplink")) {
-    console.warn("Load map from URL");
+    WARN && console.error("Load map from URL");
     const maplink = params.get("maplink");
     const pattern = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
     const valid = pattern.test(maplink);
@@ -152,7 +157,7 @@ void function checkLoadParameters() {
 
   // if there is a seed (user of MFCG provided), generate map for it
   if (params.get("seed")) {
-    console.warn("Generate map for seed");
+    WARN && console.error("Generate map for seed");
     generateMapOnLoad();
     return;
   }
@@ -161,24 +166,24 @@ void function checkLoadParameters() {
   if (onloadMap.value === "saved") {
     ldb.get("lastMap", blob => {
       if (blob) {
-        console.warn("Load last saved map");
+        WARN && console.error("Load last saved map");
         try {
           uploadMap(blob);
         }
         catch(error) {
-          console.error(error);
-          console.warn("Cannot load stored map, random map to be generated");
+          ERROR && console.error(error);
+          WARN && console.error("Cannot load stored map, random map to be generated");
           generateMapOnLoad();
         }
       } else {
-        console.error("No map stored, random map to be generated");
+        ERROR && console.error("No map stored, random map to be generated");
         generateMapOnLoad();
       }
     });
     return;
   }
 
-  console.warn("Generate random map");
+  WARN && console.error("Generate random map");
   generateMapOnLoad();
 }()
 
@@ -197,7 +202,7 @@ function loadMapFromURL(maplink, random) {
 }
 
 function showUploadErrorMessage(error, URL, random) {
-  console.error(error);
+  ERROR && console.error(error);
   alertMessage.innerHTML = `Cannot load map from the ${link(URL, "link provided")}.
     ${random?`A new random map is generated. `:''}
     Please ensure the linked file is reachable and CORS is allowed on server side`;
@@ -249,7 +254,7 @@ function focusOn() {
 // find burg for MFCG and focus on it
 function findBurgForMFCG(params) {
   const cells = pack.cells, burgs = pack.burgs;
-  if (pack.burgs.length < 2) {console.error("Cannot select a burg for MFCG"); return;}
+  if (pack.burgs.length < 2) {ERROR && console.error("Cannot select a burg for MFCG"); return;}
 
   // used for selection
   const size = +params.get("size");
@@ -274,7 +279,7 @@ function findBurgForMFCG(params) {
   // select a burg with closest population from selection
   const selected = d3.scan(selection, (a, b) => Math.abs(a.population - size) - Math.abs(b.population - size));
   const burgId = selection[selected].i;
-  if (!burgId) {console.error("Cannot select a burg for MFCG"); return;}
+  if (!burgId) {ERROR && console.error("Cannot select a burg for MFCG"); return;}
 
   const b = burgs[burgId];
   const referrer = new URL(document.referrer);
@@ -507,7 +512,7 @@ function generate() {
     const timeStart = performance.now();
     invokeActiveZooming();
     generateSeed();
-    console.group("Generated Map " + seed);
+    DEBUG && console.group("Generated Map " + seed);
     applyMapSize();
     randomizeOptions();
     placePoints();
@@ -548,12 +553,12 @@ function generate() {
     addZones();
     Names.getMapName();
 
-    console.warn(`TOTAL: ${rn((performance.now()-timeStart)/1000,2)}s`);
+    WARN && console.error(`TOTAL: ${rn((performance.now()-timeStart)/1000,2)}s`);
     showStatistics();
-    console.groupEnd("Generated Map " + seed);
+    DEBUG && console.groupEnd("Generated Map " + seed);
   }
   catch(error) {
-    console.error(error);
+    ERROR && console.error(error);
     clearMainTip();
 
     alertMessage.innerHTML = `An error is occured on map generation. Please retry.
@@ -586,35 +591,35 @@ function generateSeed() {
 
 // Place points to calculate Voronoi diagram
 function placePoints() {
-  console.time("placePoints");
+  DEBUG && console.time("placePoints");
   const cellsDesired = 10000 * densityInput.value; // generate 10k points for each densityInput point
   const spacing = grid.spacing = rn(Math.sqrt(graphWidth * graphHeight / cellsDesired), 2); // spacing between points before jirrering
   grid.boundary = getBoundaryPoints(graphWidth, graphHeight, spacing);
   grid.points = getJitteredGrid(graphWidth, graphHeight, spacing); // jittered square grid
   grid.cellsX = Math.floor((graphWidth + 0.5 * spacing) / spacing);
   grid.cellsY = Math.floor((graphHeight + 0.5 * spacing) / spacing);
-  console.timeEnd("placePoints");
+  DEBUG && console.timeEnd("placePoints");
 }
 
 // calculate Delaunay and then Voronoi diagram
 function calculateVoronoi(graph, points) {
-  console.time("calculateDelaunay");
+  DEBUG && console.time("calculateDelaunay");
   const n = points.length;
   const allPoints = points.concat(grid.boundary);
   const delaunay = Delaunator.from(allPoints);
-  console.timeEnd("calculateDelaunay");
+  DEBUG && console.timeEnd("calculateDelaunay");
 
-  console.time("calculateVoronoi");
+  DEBUG && console.time("calculateVoronoi");
   const voronoi = Voronoi(delaunay, allPoints, n);
   graph.cells = voronoi.cells;
   graph.cells.i = n < 65535 ? Uint16Array.from(d3.range(n)) : Uint32Array.from(d3.range(n)); // array of indexes
   graph.vertices = voronoi.vertices;
-  console.timeEnd("calculateVoronoi");
+  DEBUG && console.timeEnd("calculateVoronoi");
 }
 
 // Mark features (ocean, lakes, islands)
 function markFeatures() {
-  console.time("markFeatures");
+  DEBUG && console.time("markFeatures");
   Math.seedrandom(seed); // restart Math.random() to get the same result on heightmap edit in Erase mode
   const cells = grid.cells, heights = grid.cells.h;
   cells.f = new Uint16Array(cells.i.length); // cell feature number
@@ -648,7 +653,7 @@ function markFeatures() {
     queue[0] = cells.f.findIndex(f => !f); // find unmarked cell
   }
 
-  console.timeEnd("markFeatures");
+  DEBUG && console.timeEnd("markFeatures");
 }
 
 // How to handle lakes generated near seas? They can be both open or closed.
@@ -658,7 +663,7 @@ function openNearSeaLakes() {
   if (templateInput.value === "Atoll") return; // no need for Atolls
   const cells = grid.cells, features = grid.features;
   if (!features.find(f => f.type === "lake")) return; // no lakes
-  console.time("openLakes");
+  DEBUG && console.time("openLakes");
   const limit = 50; // max height that can be breached by water
 
   for (let t = 0, removed = true; t < 5 && removed; t++) {
@@ -694,7 +699,7 @@ function openNearSeaLakes() {
     return true;
   }
 
-  console.timeEnd("openLakes");
+  DEBUG && console.timeEnd("openLakes");
 }
 
 // define map size and position based on template and random factor
@@ -745,7 +750,7 @@ function calculateMapCoordinates() {
 
 // temperature model
 function calculateTemperatures() {
-  console.time('calculateTemperatures');
+  DEBUG && console.time('calculateTemperatures');
   const cells = grid.cells;
   cells.temp = new Int8Array(cells.i.length); // temperature array
 
@@ -771,12 +776,12 @@ function calculateTemperatures() {
     return rn(height / 1000 * 6.5);
   }
 
-  console.timeEnd('calculateTemperatures');
+  DEBUG && console.timeEnd('calculateTemperatures');
 }
 
 // simplest precipitation model
 function generatePrecipitation() {
-  console.time('generatePrecipitation');
+  DEBUG && console.time('generatePrecipitation');
   prec.selectAll("*").remove();
   const cells = grid.cells;
   cells.prec = new Uint8Array(cells.i.length); // precipitation array
@@ -887,12 +892,12 @@ function generatePrecipitation() {
     if (southerly) wind.append("text").attr("x", graphWidth / 2).attr("y", graphHeight - 20).text("\u21C8");
   }();
 
-  console.timeEnd('generatePrecipitation');
+  DEBUG && console.timeEnd('generatePrecipitation');
 }
 
 // recalculate Voronoi Graph to pack cells
 function reGraph() {
-  console.time("reGraph");
+  DEBUG && console.time("reGraph");
   let cells = grid.cells, points = grid.points, features = grid.features;
   const newCells = {p:[], g:[], h:[], t:[], f:[], r:[], biome:[]}; // to store new data
   const spacing2 = grid.spacing ** 2;
@@ -936,12 +941,12 @@ function reGraph() {
   cells.area = new Uint16Array(cells.i.length); // cell area
   cells.i.forEach(i => cells.area[i] = Math.abs(d3.polygonArea(getPackPolygon(i))));
 
-  console.timeEnd("reGraph");
+  DEBUG && console.timeEnd("reGraph");
 }
 
 // Detect and draw the coasline
 function drawCoastline() {
-  console.time('drawCoastline');
+  DEBUG && console.time('drawCoastline');
   reMarkFeatures();
   const cells = pack.cells, vertices = pack.vertices, n = cells.i.length, features = pack.features;
   const used = new Uint8Array(features.length); // store conneted features
@@ -1016,7 +1021,7 @@ function drawCoastline() {
       if (v[0] !== prev && c0 !== c1) current = v[0]; else
       if (v[1] !== prev && c1 !== c2) current = v[1]; else
       if (v[2] !== prev && c0 !== c2) current = v[2];
-      if (current === chain[chain.length-1]) {console.error("Next vertex is not found"); break;}
+      if (current === chain[chain.length-1]) {ERROR && console.error("Next vertex is not found"); break;}
     }
     //chain.push(chain[0]); // push first vertex as the last one
     return chain;
@@ -1040,12 +1045,12 @@ function drawCoastline() {
     }
   }
 
-  console.timeEnd('drawCoastline');
+  DEBUG && console.timeEnd('drawCoastline');
 }
 
 // Re-mark features (ocean, lakes, islands)
 function reMarkFeatures() {
-  console.time("reMarkFeatures");
+  DEBUG && console.time("reMarkFeatures");
   const cells = pack.cells, features = pack.features = [0], temp = grid.cells.temp;
   cells.f = new Uint16Array(cells.i.length); // cell feature number
   cells.t = new Int16Array(cells.i.length); // cell type: 1 = land along coast; -1 = water along coast;
@@ -1113,13 +1118,13 @@ function reMarkFeatures() {
     return "isle";
   }
 
-  console.timeEnd("reMarkFeatures");
+  DEBUG && console.timeEnd("reMarkFeatures");
 }
 
 // temporary elevate some lakes to resolve depressions and flux the water to form an open (exorheic) lake
 function elevateLakes() {
   if (templateInput.value === "Atoll") return; // no need for Atolls
-  console.time('elevateLakes');
+  DEBUG && console.time('elevateLakes');
   const cells = pack.cells, features = pack.features;
   const maxCells = cells.i.length / 100; // size limit; let big lakes be closed (endorheic)
   cells.i.forEach(i => {
@@ -1129,12 +1134,12 @@ function elevateLakes() {
     //debug.append("circle").attr("cx", cells.p[i][0]).attr("cy", cells.p[i][1]).attr("r", .5).attr("fill", "blue");
   });
 
-  console.timeEnd('elevateLakes');
+  DEBUG && console.timeEnd('elevateLakes');
 }
 
 // assign biome id for each cell
 function defineBiomes() {
-  console.time("defineBiomes");
+  DEBUG && console.time("defineBiomes");
   const cells = pack.cells, f = pack.features, temp = grid.cells.temp, prec = grid.cells.prec;
   cells.biome = new Uint8Array(cells.i.length); // biomes array
 
@@ -1153,7 +1158,7 @@ function defineBiomes() {
     return rn(4 + d3.mean(n));
   }
 
-  console.timeEnd("defineBiomes");
+  DEBUG && console.timeEnd("defineBiomes");
 }
 
 // assign biome id to a cell
@@ -1168,7 +1173,7 @@ function getBiomeId(moisture, temperature, height) {
 
 // assess cells suitability to calculate population and rand cells for culture center and burgs placement
 function rankCells() {
-  console.time('rankCells');
+  DEBUG && console.time('rankCells');
   const cells = pack.cells, f = pack.features;
   cells.s = new Int16Array(cells.i.length); // cell suitability array
   cells.pop = new Float32Array(cells.i.length); // cell population array
@@ -1202,13 +1207,13 @@ function rankCells() {
     cells.pop[i] = cells.s[i] > 0 ? cells.s[i] * cells.area[i] / areaMean : 0;
   }
 
-  console.timeEnd('rankCells');
+  DEBUG && console.timeEnd('rankCells');
 }
 
 // generate some markers
 function addMarkers(number = 1) {
   if (!number) return;
-  console.time("addMarkers");
+  DEBUG && console.time("addMarkers");
   const cells = pack.cells, states = pack.states;
 
   void function addVolcanoes() {
@@ -1374,12 +1379,12 @@ function addMarkers(number = 1) {
     return id;
   }
 
-  console.timeEnd("addMarkers");
+  DEBUG && console.timeEnd("addMarkers");
 }
 
 // regenerate some zones
 function addZones(number = 1) {
-  console.time("addZones");
+  DEBUG && console.time("addZones");
   const data = [], cells = pack.cells, states = pack.states, burgs = pack.burgs;
   const used = new Uint8Array(cells.i.length); // to store used cells
 
@@ -1690,7 +1695,7 @@ function addZones(number = 1) {
       .attr("points", d => getPackPolygon(d)).attr("id", function(d) {return this.parentNode.id+"_"+d});
   }()
 
-  console.timeEnd("addZones");
+  DEBUG && console.timeEnd("addZones");
 }
 
 // show map stats on generation complete
@@ -1712,11 +1717,11 @@ function showStatistics() {
 
   mapId = Date.now(); // unique map id is it's creation date number
   mapHistory.push({seed, width:graphWidth, height:graphHeight, template, created:mapId});
-  console.log(stats);
+  DEBUG && console.log(stats);
 }
 
 const regenerateMap = debounce(function() {
-  console.warn("Generate new random map");
+  WARN && console.error("Generate new random map");
   closeDialogs("#worldConfigurator, #options3d");
   customization = 0;
   undraw();
