@@ -8,8 +8,8 @@
     const cells = {v: [], c: [], b: []}; // voronoi cells: v = cell vertices, c = adjacent cells, b = near-border cell
     const vertices = {p: [], v: [], c: []}; // cells vertices: p = vertex coordinates, v = neighboring vertices, c = adjacent cells
 
-    var triangles = delaunay.triangles.length;
-    for (let e=0; e < triangles; e++) {
+    var trianglesLength = delaunay.triangles.length;
+    for (let e=0; e < trianglesLength; e++) {
 
       const p = delaunay.triangles[nextHalfedge(e)];
       if (p < pointsN && !cells.c[p]) {
@@ -51,8 +51,8 @@
     }
 
     function triangleCenter(t) {
-      let vertices = pointsOfTriangle(t).map(p => points[p]);
-      return circumcenter(vertices[0], vertices[1], vertices[2]);
+      let vertexPoints = pointsOfTriangle(t).map(p => points[p]);
+      return circumcenter(vertexPoints[0], vertexPoints[1], vertexPoints[2]);
     }
 
     return {cells, vertices}
