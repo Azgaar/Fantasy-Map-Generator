@@ -25,7 +25,7 @@
 
       if (height < 50) placeBiomeIcons(i, b); else placeReliefIcons(i);
 
-      function placeBiomeIcons() {
+      function placeBiomeIcons(i, b) {
         const iconsDensity = biomesData.iconsDensity[b] / 100;
         const radius = 2 / iconsDensity / density;
         if (Math.random() > iconsDensity * 10) return;
