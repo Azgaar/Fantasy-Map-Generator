@@ -115,7 +115,8 @@
   function getCode(name) {
     const words = name.split(" "), letters = words.join("");
     let code = words.length === 2 ? words[0][0]+words[1][0] : letters.slice(0,2);
-    for (let i=1; i < letters.length-1 && pack.cultures.some(c => c.code === code); i++) {
+    let numberOfLetters = letters.length;
+    for (let i=1; i < numberOfLetters-1 && pack.cultures.some(c => c.code === code); i++) {
       code = letters[0] + letters[i].toUpperCase();
     }
     return code;

@@ -295,7 +295,8 @@ function applyStoredOptions() {
   if (localStorage.getItem("distanceUnit")) applyOption(distanceUnitInput, localStorage.getItem("distanceUnit"));
   if (localStorage.getItem("heightUnit")) applyOption(heightUnit, localStorage.getItem("heightUnit"));
 
-  for (let i=0; i < localStorage.length; i++) {
+  let localStorageLength = localStorage.length;
+  for (let i=0; i < localStorageLength; i++) {
     const stored = localStorage.key(i), value = localStorage.getItem(stored);
     const input = document.getElementById(stored+"Input") || document.getElementById(stored);
     const output = document.getElementById(stored+"Output");

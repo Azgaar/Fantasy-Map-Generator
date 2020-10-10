@@ -457,7 +457,8 @@ function ra(array) {
 function rw(object) {
   const array = [];
   for (const key in object) {
-    for (let i=0; i < object[key]; i++) {
+    let objectKey = object[key];
+    for (let i=0; i < objectKey; i++) {
       array.push(key);
     }
   };

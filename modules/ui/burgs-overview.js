@@ -422,12 +422,14 @@ function overviewBurgs() {
   function importBurgNames(dataLoaded) {
     if (!dataLoaded) {tip("Cannot load the file, please check the format", false, "error"); return;}
     const data = dataLoaded.split("\r\n");
-    if (!data.length) {tip("Cannot parse the list, please check the file format", false, "error"); return;}
+    let dataLength = data.length;
+    let numberOfBurgs = burgs.length;
+    if (!dataLength) {tip("Cannot parse the list, please check the file format", false, "error"); return;}
 
     let change = [], message = `Burgs will be renamed as below. Please confirm`;
     message += `<table class="overflow-table"><tr><th>Id</th><th>Current name</th><th>New Name</th></tr>`;
     const burgs = pack.burgs.filter(b => b.i && !b.removed);
-    for (let i=0; i < data.length && i <= burgs.length; i++) {
+    for (let i=0; i < dataLength && i <= numberOfBurgs; i++) {
       const v = data[i];
       if (!v || !burgs[i] || v == burgs[i].name) continue;
       change.push({id:burgs[i].i, name: v});
@@ -442,7 +444,8 @@ function overviewBurgs() {
       buttons: {
         Cancel: function() {$(this).dialog("close");},
         Confirm: function() {
-          for (let i=0; i < change.length; i++) {
+          let changeLength = change.length;
+          for (let i=0; i < changeLength; i++) {
             const id = change[i].id;
             pack.burgs[id].name = change[i].name;
             burgLabels.select("[data-id='" + id + "']").text(change[i].name);

@@ -728,7 +728,7 @@ function drawStates() {
     const chain = []; // vertices chain to form a path
     let land = vertices.c[start].some(c => cells.h[c] >= 20 && cells.state[c] !== t);
     function check(i) {state = cells.state[i]; land = cells.h[i] >= 20;}
-    
+
     for (let i=0, current = start; i === 0 || current !== start && i < 20000; i++) {
       const prev = chain[chain.length - 1] ? chain[chain.length - 1][0] : -1; // previous vertex in chain
       chain.push([current, state, land]); // add current vertex to sequence
@@ -760,7 +760,7 @@ function drawBorders() {
   const sUsed = new Array(pack.states.length).fill("").map(a => []);
   const pUsed = new Array(pack.provinces.length).fill("").map(a => []);
 
-  for (let i=0; i < cells.i.length; i++) {
+  for (let i=0; i < n; i++) {
     if (!cells.state[i]) continue;
     const p = cells.province[i];
     const s = cells.state[i];

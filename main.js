@@ -323,10 +323,12 @@ function applyDefaultBiomesSystem() {
   ];
 
   // parse icons weighted array into a simple array
-  for (let i=0; i < icons.length; i++) {
+  var iconsNum = icons.length;
+  for (let i=0; i < iconsNum; i++) {
     const parsed = [];
     for (const icon in icons[i]) {
-      for (let j = 0; j < icons[i][icon]; j++) {parsed.push(icon);}
+      var iconVal = icons[i][icon];
+      for (let j = 0; j < iconVal; j++) {parsed.push(icon);}
     }
     icons[i] = parsed;
   }
@@ -763,7 +765,8 @@ function calculateTemperatures() {
     const y = grid.points[r][1];
     const lat = Math.abs(mapCoordinates.latN - y / graphHeight * mapCoordinates.latT); // [0; 90]
     const initTemp = tEq - int(lat / 90) * tDelta;
-    for (let i = r; i < r+grid.cellsX; i++) {
+    let rPlusCellsX = r+grid.cellsX;
+    for (let i = r; i < rPlusCellsX; i++) {
       cells.temp[i] = Math.max(Math.min(initTemp - convertToFriendly(cells.h[i]), 127), -128);
     }
   });
@@ -1030,8 +1033,8 @@ function drawCoastline() {
   // move vertices that are too close to already added ones
   function relax(vchain, r) {
     const p = vertices.p, tree = d3.quadtree();
-
-    for (let i=0; i < vchain.length; i++) {
+    var vchainLength = vchain.length;
+    for (let i=0; i < vchainLength; i++) {
       const v = vchain[i];
       let [x, y] = [p[v][0], p[v][1]];
       if (i && vchain[i+1] && tree.find(x, y, r) !== undefined) {
@@ -1302,7 +1305,8 @@ function addMarkers(number = 1) {
     const animal = ["Antelope", "Ape", "Badger", "Bear", "Beaver", "Bison", "Boar", "Buffalo", "Cat", "Crane", "Crocodile", "Crow", "Deer", "Dog", "Eagle", "Elk", "Fox", "Goat", "Goose", "Hare", "Hawk", "Heron", "Horse", "Hyena", "Ibis", "Jackal", "Jaguar", "Lark", "Leopard", "Lion", "Mantis", "Marten", "Moose", "Mule", "Narwhal", "Owl", "Panther", "Rat", "Raven", "Rook", "Scorpion", "Shark", "Sheep", "Snake", "Spider", "Swan", "Tiger", "Turtle", "Wolf", "Wolverine", "Camel", "Falcon", "Hound", "Ox"];
     const adj = ["New", "Good", "High", "Old", "Great", "Big", "Major", "Happy", "Main", "Huge", "Far", "Beautiful", "Fair", "Prime", "Ancient", "Golden", "Proud", "Lucky", "Fat", "Honest", "Giant", "Distant", "Friendly", "Loud", "Hungry", "Magical", "Superior", "Peaceful", "Frozen", "Divine", "Favorable", "Brave", "Sunny", "Flying"];
 
-    for (let i=0; i < taverns.length && i < count; i++) {
+    let numberOfTaverns = taverns.length;
+    for (let i=0; i < numberOfTaverns && i < count; i++) {
       const cell = taverns.splice(Math.floor(Math.random() * taverns.length), 1);
       const id = appendMarker(cell, "inn");
       const type = P(.3) ? "inn" : "tavern";
@@ -1317,7 +1321,8 @@ function addMarkers(number = 1) {
     if (lighthouses.length) addMarker("lighthouse", "🚨", 50, 50, 16);
     const count = Math.ceil(4 * number);
 
-    for (let i=0; i < lighthouses.length && i < count; i++) {
+    let numberOfLighthouses = lighthouses.length;
+    for (let i=0; i < numberOfLighthouses && i < count; i++) {
       const cell = lighthouses[i][0], vertex = lighthouses[i][1];
       const id = appendMarker(cell, "lighthouse");
       const proper = cells.burg[cell] ? pack.burgs[cells.burg[cell]].name : Names.getCulture(cells.culture[cell]);
@@ -1330,7 +1335,8 @@ function addMarkers(number = 1) {
     if (waterfalls.length) addMarker("waterfall", "⟱", 50, 54, 16.5);
     const count = Math.ceil(3 * number);
 
-    for (let i=0; i < waterfalls.length && i < count; i++) {
+    let numberOfWaterfalls = waterfalls.length;
+    for (let i=0; i < numberOfWaterfalls && i < count; i++) {
       const cell = waterfalls[i];
       const id = appendMarker(cell, "waterfall");
       const proper = cells.burg[cell] ? pack.burgs[cells.burg[cell]].name : Names.getCulture(cells.culture[cell]);

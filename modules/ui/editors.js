@@ -620,7 +620,8 @@ function selectIcon(initial, callback) {
     ];
 
     let row = "";
-    for (let i=0; i < icons.length; i++) {
+    let numberOfIcons = icons.length;
+    for (let i=0; i < numberOfIcons; i++) {
       if (i%17 === 0) row = table.insertRow(i/17|0);
       const cell = row.insertCell(i%17);
       cell.innerHTML = icons[i];

@@ -66,7 +66,8 @@
 
   // Define grid ocean cells type based on distance form land
   function markupOcean(limits) {
-    for (let t = -2; t >= limits[0]-1; t--) {
+    let limits0 = limits[0];
+    for (let t = -2; t >= limits0-1; t--) {
       for (let i = 0; i < pointsN; i++) {
         if (cells.t[i] !== t+1) continue;
         cells.c[i].forEach(function(e) {if (!cells.t[e]) cells.t[e] = t;});

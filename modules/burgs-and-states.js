@@ -112,7 +112,8 @@
       let spacing = (graphWidth + graphHeight) / 150 / (burgsNumber ** .7 / 66); // min distance between towns
 
       while (burgsAdded < burgsNumber && spacing > 1) {
-        for (let i=0; burgsAdded < burgsNumber && i < sorted.length; i++) {
+        let sortedArrayLength = sorted.length;
+        for (let i=0; burgsAdded < burgsNumber && i < sortedArrayLength; i++) {
           if (cells.burg[sorted[i]]) continue;
           const cell = sorted[i], x = cells.p[cell][0], y = cells.p[cell][1];
           const s = spacing * gauss(1, .3, .2, 2, 2); // randomize to make placement not uniform
@@ -656,18 +657,19 @@
     const areaMean = d3.mean(valid.map(s => s.area)); // avarage state area
 
     // generic relations
-    for (let f=1; f < states.length; f++) {
+    let numberOfStates = states.length;
+    for (let f=1; f < numberOfStates; f++) {
       if (states[f].removed) continue;
 
       if (states[f].diplomacy.includes("Vassal")) {
         // Vassals copy relations from their Suzerains
         const suzerain = states[f].diplomacy.indexOf("Vassal");
 
-        for (let i=1; i < states.length; i++) {
+        for (let i=1; i < numberOfStates; i++) {
           if (i === f || i === suzerain) continue;
           states[f].diplomacy[i] = states[suzerain].diplomacy[i];
           if (states[suzerain].diplomacy[i] === "Suzerain") states[f].diplomacy[i] = "Ally";
-          for (let e=1; e < states.length; e++) {
+          for (let e=1; e < numberOfStates; e++) {
             if (e === f || e === suzerain) continue;
             if (states[e].diplomacy[suzerain] === "Suzerain" || states[e].diplomacy[suzerain] === "Vassal") continue;
             states[e].diplomacy[f] = states[e].diplomacy[suzerain];
@@ -676,7 +678,7 @@
         continue;
       }
 
-      for (let t=f+1; t < states.length; t++) {
+      for (let t=f+1; t < numberOfStates; t++) {
         if (states[t].removed) continue;
 
         if (states[t].diplomacy.includes("Vassal")) {
@@ -699,7 +701,7 @@
     }
 
     // declare wars
-    for (let attacker=1; attacker < states.length; attacker++) {
+    for (let attacker=1; attacker < numberOfStates; attacker++) {
       const ad = states[attacker].diplomacy; // attacker relations;
       if (states[attacker].removed) continue;
       if (!ad.includes("Rival")) continue; // no rivals to attack

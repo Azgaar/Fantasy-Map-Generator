@@ -52,7 +52,8 @@ function showElevationProfile(data, routeLen, isRiver) {
   let lastBurgCell = 0;
   let burgCount = 0;
   let chartData = {biome:[], burg:[], cell:[], height:[], mi:1000000, ma:0, mih: 100, mah: 0, points:[]};
-  for (let i=0, prevB=0, prevH=-1; i  <data.length; i++) {
+  let dataLength = data.length;
+  for (let i=0, prevB=0, prevH=-1; i < dataLength; i++) {
     let cell = data[i];
     let h = pack.cells.h[cell];
     if (h < 20) h = 20;
@@ -93,7 +94,8 @@ function showElevationProfile(data, routeLen, isRiver) {
   function downloadCSV() {
     let data = "Point,X,Y,Cell,Height,Height value,Population,Burg,Burg population,Biome,Biome color,Culture,Culture color,Religion,Religion color,Province,Province color,State,State color\n"; // headers
 
-    for (let k=0; k < chartData.points.length; k++) {
+    let numberOfPoints = chartData.points.length;
+    for (let k=0; k < numberOfPoints; k++) {
       let cell = chartData.cell[k];
       let burg = pack.cells.burg[cell];
       let biome = pack.cells.biome[cell];
@@ -136,15 +138,16 @@ function showElevationProfile(data, routeLen, isRiver) {
   }
 
   function draw() {
+    let dataLength = data.length;
     chartData.points = [];
     let heightScale = 100 / parseInt(epScaleRange.value);
 
     heightScale *= .9; // curves cause the heights to go slightly higher, adjust here
 
-    const xscale = d3.scaleLinear().domain([0, data.length]).range([0, chartWidth]);
+    const xscale = d3.scaleLinear().domain([0, dataLength]).range([0, chartWidth]);
     const yscale = d3.scaleLinear().domain([0, chartData.ma * heightScale]).range([chartHeight, 0]);
 
-    for (let i=0; i<data.length; i++) {
+    for (let i=0; i < dataLength; i++) {
       chartData.points.push([xscale(i) + xOffset, yscale(chartData.height[i]) + yOffset]);
     }
 
@@ -157,12 +160,16 @@ function showElevationProfile(data, routeLen, isRiver) {
     let colors = getColorScheme();
     const landdef = chart.select("defs").append("linearGradient").attr("id", "landdef").attr("x1", "0%").attr("y1", "0%").attr("x2", "0%").attr("y2", "100%");
 
-    if (chartData.mah == chartData.mih) {
-      landdef.append("stop").attr("offset", "0%").attr("style", "stop-color:" + getColor(chartData.mih, colors) + ";stop-opacity:1");
-      landdef.append("stop").attr("offset", "100%").attr("style", "stop-color:" + getColor(chartData.mah, colors) + ";stop-opacity:1");
+    let mihChartData = chartData.mih;
+    let mahChartData = chartData.mah;
+
+    if (chartData.mah == mihChartData) {
+      landdef.append("stop").attr("offset", "0%").attr("style", "stop-color:" + getColor(mihChartData, colors) + ";stop-opacity:1");
+      landdef.append("stop").attr("offset", "100%").attr("style", "stop-color:" + getColor(mahChartData, colors) + ";stop-opacity:1");
     } else {
-      for (let k=chartData.mah; k >= chartData.mih; k--) {
-        let perc = 1 - (k - chartData.mih)  / (chartData.mah - chartData.mih);
+
+      for (let k=mahChartData; k >= mihChartData; k--) {
+        let perc = 1 - (k - mihChartData)  / (mahChartData - mihChartData);
         landdef.append("stop").attr("offset", perc*100 + "%").attr("style", "stop-color:" + getColor(k, colors) + ";stop-opacity:1");
       }
     }
@@ -263,13 +270,14 @@ function showElevationProfile(data, routeLen, isRiver) {
     const add = 15;
 
     let xwidth = chartData.points[1][0] - chartData.points[0][0];
-    for (let k=0; k<chartData.points.length; k++) {
+    let numberOfPoints = chartData.points.length;
+    for (let k=0; k < numberOfPoints; k++) {
       if (chartData.burg[k] > 0) {
         let b = chartData.burg[k];
 
         let x1 = chartData.points[k][0]; // left side of graph by default
         if (k > 0) x1 += xwidth/2; // center it if not first
-        if (k == chartData.points.length-1) x1 = chartWidth + xOffset; // right part of graph
+        if (k == numberOfPoints-1) x1 = chartWidth + xOffset; // right part of graph
         y1+=add;
         if (y1 >= yOffset) y1 = add;
 

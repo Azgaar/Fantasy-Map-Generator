@@ -167,7 +167,8 @@
     const riverEnhanced = []; // to store enhanced segments
     let side = 1; // to control meandring direction
 
-    for (let s = 0; s < segments.length; s++) {
+    let numberOfSegments = segments.length;
+    for (let s = 0; s < numberOfSegments; s++) {
       const sX = segments[s].x, sY = segments[s].y; // segment start coordinates
       const c = pack.cells.conf[segments[s].cell] || 0; // if segment is river confluence
       riverEnhanced.push([sX, sY, c]);

@@ -138,7 +138,8 @@ function inlineStyle(clone) {
     const compStyle = window.getComputedStyle(this);
     let style = "";
 
-    for (let i=0; i < compStyle.length; i++) {
+    let compStyleLength = compStyle.length;
+    for (let i=0; i < compStyleLength; i++) {
       const key = compStyle[i];
       const value = compStyle.getPropertyValue(key);
 
@@ -602,7 +603,8 @@ function parseLoadedData(data) {
       biomesData.name = biomes[2].split(",");
 
       // push custom biomes if any
-      for (let i=biomesData.i.length; i < biomesData.name.length; i++) {
+      let biomeNamesLength = biomesData.name.length;
+      for (let i=biomesData.i.length; i < biomeNamesLength; i++) {
         biomesData.i.push(biomesData.i.length);
         biomesData.iconsDensity.push(0);
         biomesData.icons.push([]);

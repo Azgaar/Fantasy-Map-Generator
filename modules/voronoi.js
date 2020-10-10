@@ -8,7 +8,8 @@
     const cells = {v: [], c: [], b: []}; // voronoi cells: v = cell vertices, c = adjacent cells, b = near-border cell
     const vertices = {p: [], v: [], c: []}; // cells vertices: p = vertex coordinates, v = neighboring vertices, c = adjacent cells
 
-    for (let e=0; e < delaunay.triangles.length; e++) {
+    var triangles = delaunay.triangles.length;
+    for (let e=0; e < triangles; e++) {
 
       const p = delaunay.triangles[nextHalfedge(e)];
       if (p < pointsN && !cells.c[p]) {
@@ -67,13 +68,15 @@
   function prevHalfedge(e) {return (e % 3 === 0) ? e+2 : e-1;}
 
   function circumcenter(a, b, c) {
-    let ad = a[0]*a[0] + a[1]*a[1],
-        bd = b[0]*b[0] + b[1]*b[1],
-        cd = c[0]*c[0] + c[1]*c[1];
-    let D = 2 * (a[0] * (b[1] - c[1]) + b[0] * (c[1] - a[1]) + c[0] * (a[1] - b[1]));
+    let a0 = a[0], b0 = b[0], c0 = c[0],
+        a1 = a[1], b1 = b[1], c1 = c[1];
+    let ad = a0*a0 + a1*a1,
+        bd = b0*b0 + b1*b1,
+        cd = c0*c0 + c1*c1;
+    let D = 2 * (a0 * (b1 - c1) + b0 * (c1 - a1) + c0 * (a1 - b1));
     return [
-      Math.floor(1/D * (ad * (b[1] - c[1]) + bd * (c[1] - a[1]) + cd * (a[1] - b[1]))),
-      Math.floor(1/D * (ad * (c[0] - b[0]) + bd * (a[0] - c[0]) + cd * (b[0] - a[0])))
+      Math.floor(1/D * (ad * (b1 - c1) + bd * (c1 - a1) + cd * (a1 - b1))),
+      Math.floor(1/D * (ad * (c0 - b0) + bd * (a0 - c0) + cd * (b0 - a0)))
     ];
   }
 

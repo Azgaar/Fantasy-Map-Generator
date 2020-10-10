@@ -109,7 +109,8 @@ function regenerateBurgs() {
   const burgsCount = manorsInput.value == 1000 ? rn(sorted.length / 5 / (grid.points.length / 10000) ** .8) + states.length : +manorsInput.value + states.length;
   const spacing = (graphWidth + graphHeight) / 150 / (burgsCount ** .7 / 66); // base min distance between towns
 
-  for (let i=0; i < sorted.length && burgs.length < burgsCount; i++) {
+  let sortedLength = sorted.length;
+  for (let i=0; i < sortedLength && burgs.length < burgsCount; i++) {
     const id = burgs.length;
     const cell = sorted[i];
     const x = cells.p[cell][0], y = cells.p[cell][1];

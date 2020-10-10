@@ -181,7 +181,8 @@ function editBurg(id) {
     const basic = group.id === "cities" || group.id === "towns";
 
     const burgsInGroup = [];
-    for (let i=0; i < group.children.length; i++) {
+    let numberOfChildren = group.children.length;
+    for (let i=0; i < numberOfChildren; i++) {
       burgsInGroup.push(+group.children[i].dataset.id);
     }
     const burgsToRemove = burgsInGroup.filter(b => !pack.burgs[b].capital);

@@ -15,7 +15,8 @@
       const basic = !(/[^\u0000-\u007f]/.test(name)); // basic chars and English rules can be applied
 
       // split word into pseudo-syllables
-      for (let i=-1, syllable = ""; i < name.length; i += (syllable.length||1), syllable = "") {
+      let nameLength = name.length;
+      for (let i=-1, syllable = ""; i < nameLength; i += (syllable.length||1), syllable = "") {
         let prev = name[i] || ""; // pre-onset letter
         let v = 0; // 0 if no vowels in syllable
 

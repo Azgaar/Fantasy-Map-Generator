@@ -13,7 +13,8 @@
   // turn weighted array into simple array
   const approaches = [];
   for (const a in approach) {
-    for (let j=0; j < approach[a]; j++) {
+    let approachA = approach[a];
+    for (let j=0; j < approachA; j++) {
       approaches.push(a);
     }
   }
@@ -295,7 +296,8 @@
     const name = rawName.replace("Old ", ""); // remove Old prefix
     const words = name.split(" "), letters = words.join("");
     let code = words.length === 2 ? words[0][0]+words[1][0] : letters.slice(0,2);
-    for (let i=1; i < letters.length-1 && pack.religions.some(r => r.code === code); i++) {
+    let numberOfLetters = letters.length;
+    for (let i=1; i < numberOfLetters-1 && pack.religions.some(r => r.code === code); i++) {
       code = letters[0] + letters[i].toUpperCase();
     }
     return code;

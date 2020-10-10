@@ -70,13 +70,14 @@
 
     bodies.forEach(function(f) {
       const ports = allPorts.filter(b => b.port === f); // all ports on the same feature
-      if (ports.length < 2) return;
+      let numberOfPorts = ports.length;
+      if (numberOfPorts < 2) return;
 
-      for (let s=0; s < ports.length; s++) {
+      for (let s=0; s < numberOfPorts; s++) {
         const source = ports[s].cell;
         if (connected[source]) continue;
 
-        for (let t=s+1; t < ports.length; t++) {
+        for (let t=s+1; t < numberOfPorts; t++) {
           const target = ports[t].cell;
           if (connected[target]) continue;
 

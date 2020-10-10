@@ -1111,7 +1111,8 @@ function addFonts(url) {
 // Update font list for Label and Burg Editors
 function updateFontOptions() {
   styleSelectFont.innerHTML = "";
-  for (let i=0; i < fonts.length; i++) {
+  let numberOfFonts = fonts.length;
+  for (let i=0; i < numberOfFonts; i++) {
     const opt = document.createElement('option');
     opt.value = i;
     const font = fonts[i].split(':')[0].replace(/\+/g, " ");
