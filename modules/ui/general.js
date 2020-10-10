@@ -63,8 +63,8 @@ function moved() {
 function showNotes(e, i) {
   if (notesEditor.offsetParent) return;
   let id = e.target.id || e.target.parentNode.id || e.target.parentNode.parentNode.id;
-  if (e.target.parentNode.parentNode.id === "burgLabels") id = "burg" + e.target.dataset.id; else
-  if (e.target.parentNode.parentNode.id === "burgIcons") id = "burg" + e.target.dataset.id;
+  if (e.target.parentNode.parentNode.id === "burgLabels" || e.target.parentNode.parentNode.id === "burgIcons") id
+    = "burg" + e.target.dataset.id;
 
   const note = notes.find(note => note.id === id);
   if (note !== undefined && note.legend !== "") {
