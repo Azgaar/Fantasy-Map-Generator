@@ -51,7 +51,7 @@ function editRoute(onClick) {
     for (let i=0; i <= l; i += increment) {addControlPoint(node.getPointAtLength(i));}
     routeLength.innerHTML = rn(l * distanceScaleInput.value) + " " + distanceUnitInput.value;
   }
-  
+
   function addControlPoint(point) {
     debug.select("#controlPoints").append("circle")
       .attr("cx", point.x).attr("cy", point.y).attr("r", .8)
@@ -219,7 +219,7 @@ function editRoute(onClick) {
     if (routeSplit.classList.contains("pressed")) splitRoute(this);
     else {this.remove(); redrawRoute();}
   }
-  
+
   function splitRoute(clicked) {
     lineGen.curve(d3.curveCatmullRom.alpha(.1));
     const group = d3.select(elSelected.node().parentNode);

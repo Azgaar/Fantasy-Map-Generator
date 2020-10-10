@@ -255,5 +255,4 @@ function editReliefIcon() {
     unselect();
     clearMainTip();
   }
-
 }

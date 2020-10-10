@@ -114,7 +114,7 @@ function editNamesbase() {
     const depth = rn(d3.mean(Object.keys(chain).map(key => chain[key].filter(c => c !== " ").length)));
     const nonLatin = (string.match(/[^\u0000-\u007f]/g)||["none"]).join("");
 
-    const lengthStat = 
+    const lengthStat =
       l < 30 ? "<span style='color:red'>[not enough]</span>" :
       l < 150 ? "<span style='color:darkred'>[low]</span>" :
       l < 150 ? "<span style='color:orange'>[low]</span>" :
@@ -122,13 +122,13 @@ function editNamesbase() {
       l < 600 ? "<span style='color:orange'>[overmuch]</span>" :
       "<span style='color:darkred'>[overmuch]</span>";
 
-    const rangeStat = 
+    const rangeStat =
       l < 10 ? "<span style='color:red'>[low]</span>" :
       l < 15 ? "<span style='color:darkred'>[low]</span>" :
       l < 20 ? "<span style='color:orange'>[low]</span>" :
       "<span style='color:green'>[good]</span>";
 
-    const depthStat = 
+    const depthStat =
       l < 15 ? "<span style='color:red'>[low]</span>" :
       l < 20 ? "<span style='color:darkred'>[low]</span>" :
       l < 25 ? "<span style='color:orange'>[low]</span>" :

@@ -861,4 +861,3 @@ function editProvinces() {
   }
 
 }
-

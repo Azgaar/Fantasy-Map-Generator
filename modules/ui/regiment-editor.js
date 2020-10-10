@@ -343,5 +343,4 @@ function editRegiment(selector) {
     restoreDefaultEvents();
     elSelected = null;
   }
-
 }

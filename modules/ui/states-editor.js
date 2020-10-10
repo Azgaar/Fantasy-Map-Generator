@@ -897,7 +897,7 @@ function editStates() {
     body.querySelectorAll("div > input, select, span, svg").forEach(e => e.style.pointerEvents = "all");
     if (statesAdd.classList.contains("pressed")) statesAdd.classList.remove("pressed");
   }
-  
+
   function downloadStatesData() {
     const unit = areaUnit.value === "square" ? distanceUnitInput.value + "2" : areaUnit.value;
     let data = "Id,State,Form,Color,Capital,Culture,Type,Expansionism,Cells,Burgs,Area "+unit+",Total Population,Rural Population,Urban Population\n"; // headers

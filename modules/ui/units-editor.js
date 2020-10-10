@@ -251,7 +251,4 @@ function editUnits() {
       }
     });
   }
-
-
 }
-

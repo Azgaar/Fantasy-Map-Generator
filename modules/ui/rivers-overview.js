@@ -171,5 +171,4 @@ function overviewRivers() {
     rivers.selectAll("*").remove();
     riversOverviewAddLines();
   }
-
 }

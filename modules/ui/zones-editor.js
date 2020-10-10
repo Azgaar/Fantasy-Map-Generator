@@ -406,5 +406,4 @@ function editZones() {
     unfog("focusZone"+zone);
     zonesEditorAddLines();
   }
-
 }

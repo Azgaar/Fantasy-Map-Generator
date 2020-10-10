@@ -626,11 +626,10 @@ function editReligions() {
     const name = getFileName("Religions") + ".csv";
     downloadFile(data, name);
   }
-  
+
   function closeReligionsEditor() {
     debug.select("#religionCenters").remove();
     exitReligionsManualAssignment("close");
     exitAddReligionMode();
   }
-
 }

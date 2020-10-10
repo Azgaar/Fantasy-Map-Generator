@@ -92,7 +92,7 @@ function editNotes(id, name) {
       });
       return;
     }
-    
+
     highlightElement(element); // if element is found
   }
 
@@ -127,5 +127,4 @@ function editNotes(id, name) {
     if (!notes.length) {$("#notesEditor").dialog("close"); return;}
     editNotes(notes[0].id, notes[0].name);
   }
-
 }

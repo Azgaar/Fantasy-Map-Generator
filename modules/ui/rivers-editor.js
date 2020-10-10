@@ -288,5 +288,4 @@ function editRiver(id) {
     debug.select("#controlPoints").remove();
     unselect();
   }
-
 }

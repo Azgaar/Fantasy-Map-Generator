@@ -147,7 +147,7 @@ function editLake() {
     toggleNewGroupInput();
     document.getElementById("lakeGroupName").value = "";
   }
-  
+
   function removeLakeGroup() {
     const group = elSelected.node().parentNode.id;
     if (["freshwater", "salt", "sinkhole", "frozen", "lava", "dry"].includes(group)) {
