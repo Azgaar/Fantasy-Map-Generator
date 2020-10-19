@@ -509,7 +509,7 @@ document.getElementById("mapToLoad").addEventListener("change", function() {
 
 // View mode
 viewMode.addEventListener("click", changeViewMode);
-function changeViewMode() {
+function changeViewMode(event) {
   const button = event.target;
   if (button.tagName !== "BUTTON") return;
   const pressed = button.classList.contains("pressed");
