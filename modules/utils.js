@@ -471,14 +471,14 @@ function lim(v) {
 
 // get number from string in format "1-3" or "2" or "0.5"
 function getNumberInRange(r) {
-  if (typeof r !== "string") {console.error("The value should be a string", r); return 0;}
+  if (typeof r !== "string") {ERROR && console.error("The value should be a string", r); return 0;}
   if (!isNaN(+r)) return ~~r + +P(r - ~~r);
   const sign = r[0] === "-" ? -1 : 1;
   if (isNaN(+r[0])) r = r.slice(1);
   const range = r.includes("-") ? r.split("-") : null;
-  if (!range) {console.error("Cannot parse the number. Check the format", r); return 0;}
+  if (!range) {ERROR && console.error("Cannot parse the number. Check the format", r); return 0;}
   const count = rand(range[0] * sign, +range[1]);
-  if (isNaN(count) || count < 0) {console.error("Cannot parse number. Check the format", r); return 0;}
+  if (isNaN(count) || count < 0) {ERROR && console.error("Cannot parse number. Check the format", r); return 0;}
   return count;
 }
 
@@ -603,7 +603,7 @@ void function() {
   const form = prompt.querySelector("#promptForm");
 
   window.prompt = function(promptText = "Please provide an input", options = {default:1, step:.01, min:0, max:100}, callback) {
-    if (options.default === undefined) {console.error("Prompt: options object does not have default value defined"); return;}
+    if (options.default === undefined) {ERROR && console.error("Prompt: options object does not have default value defined"); return;}
     const input = prompt.querySelector("#promptInput");
     prompt.querySelector("#promptText").innerHTML = promptText;
     const type = typeof(options.default) === "number" ? "number" : "text";
@@ -628,4 +628,4 @@ void function() {
 }()
 
 // indexedDB; ldb object
-!function(){function e(t,o){return n?void(n.transaction("s").objectStore("s").get(t).onsuccess=function(e){var t=e.target.result&&e.target.result.v||null;o(t)}):void setTimeout(function(){e(t,o)},100)}var t=window.indexedDB||window.mozIndexedDB||window.webkitIndexedDB||window.msIndexedDB;if(!t)return void console.error("indexedDB not supported");var n,o={k:"",v:""},r=t.open("d2",1);r.onsuccess=function(e){n=this.result},r.onerror=function(e){console.error("indexedDB request error"),console.log(e)},r.onupgradeneeded=function(e){n=null;var t=e.target.result.createObjectStore("s",{keyPath:"k"});t.transaction.oncomplete=function(e){n=e.target.db}},window.ldb={get:e,set:function(e,t){o.k=e,o.v=t,n.transaction("s","readwrite").objectStore("s").put(o)}}}();
+!function(){function e(t,o){return n?void(n.transaction("s").objectStore("s").get(t).onsuccess=function(e){var t=e.target.result&&e.target.result.v||null;o(t)}):void setTimeout(function(){e(t,o)},100)}var t=window.indexedDB||window.mozIndexedDB||window.webkitIndexedDB||window.msIndexedDB;if(!t)return void ERROR && console.error("indexedDB not supported");var n,o={k:"",v:""},r=t.open("d2",1);r.onsuccess=function(e){n=this.result},r.onerror=function(e){ERROR && console.error("indexedDB request error"),INFO && console.log(e)},r.onupgradeneeded=function(e){n=null;var t=e.target.result.createObjectStore("s",{keyPath:"k"});t.transaction.oncomplete=function(e){n=e.target.db}},window.ldb={get:e,set:function(e,t){o.k=e,o.v=t,n.transaction("s","readwrite").objectStore("s").put(o)}}}();

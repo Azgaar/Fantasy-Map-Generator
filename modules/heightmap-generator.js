@@ -7,7 +7,7 @@
   let cells, p;
 
   const generate = function() {
-    console.time('generateHeightmap');
+    TIME && console.time('generateHeightmap');
     cells = grid.cells, p = grid.points;
     cells.h = new Uint8Array(grid.points.length);
 
@@ -25,7 +25,7 @@
       case "Shattered": templateShattered(); break;
     }
 
-    console.timeEnd('generateHeightmap');
+    TIME && console.timeEnd('generateHeightmap');
   }
 
   // parse template step
@@ -507,7 +507,7 @@
   }
 
   function getPointInRange(range, length) {
-    if (typeof range !== "string") {console.error("Range should be a string"); return;}
+    if (typeof range !== "string") {ERROR && console.error("Range should be a string"); return;}
     const min = range.split("-")[0]/100 || 0;
     const max = range.split("-")[1]/100 || 100;
     return rand(min * length, max * length);

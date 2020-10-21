@@ -5,7 +5,7 @@
 }(this, (function () {'use strict';
 
   const generate = function(changeHeights = true) {
-    console.time('generateRivers');
+    TIME && console.time('generateRivers');
     Math.seedrandom(seed);
     const cells = pack.cells, p = cells.p, features = pack.features;
 
@@ -136,7 +136,7 @@
     // apply change heights as basic one
     if (changeHeights) cells.h = Uint8Array.from(h);
 
-    console.timeEnd('generateRivers');
+    TIME && console.timeEnd('generateRivers');
   }
 
   // depression filling algorithm (for a correct water flux modeling)
