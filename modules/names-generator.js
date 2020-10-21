@@ -56,13 +56,13 @@
 
   // generate name using Markov's chain
   const getBase = function(base, min, max, dupl) {
-    if (base === undefined) {console.error("Please define a base"); return;}
+    if (base === undefined) {ERROR && console.error("Please define a base"); return;}
     if (!chains[base]) updateChain(base);
 
     const data = chains[base];
     if (!data || data[""] === undefined) {
       tip("Namesbase " + base + " is incorrect. Please check in namesbase editor", false, "error");
-      console.error("Namebase " + base + " is incorrect!");
+      ERROR && console.error("Namebase " + base + " is incorrect!");
       return "ERROR";
     }
 
@@ -106,7 +106,7 @@
     if (name.split(" ").some(part => part.length < 2)) name = name.split(" ").map((p,i) => i ? p.toLowerCase() : p).join("");
 
     if (name.length < 2) {
-      console.error("Name is too short! Random name will be selected");
+      ERROR && console.error("Name is too short! Random name will be selected");
       name = ra(nameBases[base].b.split(","));
     }
 
@@ -115,14 +115,14 @@
 
   // generate name for culture
   const getCulture = function(culture, min, max, dupl) {
-    if (culture === undefined) {console.error("Please define a culture"); return;}
+    if (culture === undefined) {ERROR && console.error("Please define a culture"); return;}
     const base = pack.cultures[culture].base;
     return getBase(base, min, max, dupl);
   }
 
   // generate short name for culture
   const getCultureShort = function(culture) {
-    if (culture === undefined) {console.error("Please define a culture"); return;}
+    if (culture === undefined) {ERROR && console.error("Please define a culture"); return;}
     return getBaseShort(pack.cultures[culture].base);
   }
 
@@ -139,8 +139,8 @@
 
   // generate state name based on capital or random name and culture-specific suffix
   const getState = function(name, culture, base) {
-    if (name === undefined) {console.error("Please define a base name"); return;}
-    if (culture === undefined && base === undefined) {console.error("Please define a culture"); return;}
+    if (name === undefined) {ERROR && console.error("Please define a base name"); return;}
+    if (culture === undefined && base === undefined) {ERROR && console.error("Please define a culture"); return;}
     if (base === undefined) base = pack.cultures[culture].base;
 
     // exclude endings inappropriate for states name
