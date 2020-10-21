@@ -164,7 +164,7 @@ function editHeightmap() {
   }
 
   function regenerateErasedData() {
-    GROUP && console.group("Edit Heightmap");
+    INFO && console.group("Edit Heightmap");
     TIME && console.time("regenerateErasedData");
 
     const change = changeHeights.checked;
@@ -205,7 +205,7 @@ function editHeightmap() {
     addMarkers();
     addZones();
     TIME && console.timeEnd("regenerateErasedData");
-    GROUP && console.groupEnd("Edit Heightmap");
+    INFO && console.groupEnd("Edit Heightmap");
   }
 
   function restoreKeptData() {
@@ -216,7 +216,7 @@ function editHeightmap() {
   }
 
   function restoreRiskedData() {
-    GROUP && console.group("Edit Heightmap");
+    INFO && console.group("Edit Heightmap");
     TIME && console.time("restoreRiskedData");
 
     // assign pack data to grid cells
@@ -402,7 +402,7 @@ function editHeightmap() {
     });
 
     TIME && console.timeEnd("restoreRiskedData");
-    GROUP && console.groupEnd("Edit Heightmap");
+    INFO && console.groupEnd("Edit Heightmap");
   }
 
   // trigger heightmap redraw and history update if at least 1 cell is changed

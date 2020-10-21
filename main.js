@@ -11,11 +11,10 @@ const version = "1.4"; // generator version
 document.title += " v" + version;
 
 // Switches to disable/enable logging features
-var LOG = 0;
-var TIME = 0;
-var GROUP = 0;
-var WARN = 0;
-var ERROR = 0;
+const INFO = 0;
+const TIME = 0;
+const WARN = 1;
+const ERROR = 1;
 
 // if map version is not stored, clear localStorage and show a message
 if (rn(localStorage.getItem("version"), 2) !== rn(version, 2)) {
@@ -514,7 +513,7 @@ function generate() {
     const timeStart = performance.now();
     invokeActiveZooming();
     generateSeed();
-    GROUP && console.group("Generated Map " + seed);
+    INFO && console.group("Generated Map " + seed);
     applyMapSize();
     randomizeOptions();
     placePoints();
@@ -557,7 +556,7 @@ function generate() {
 
     WARN && console.warn(`TOTAL: ${rn((performance.now()-timeStart)/1000,2)}s`);
     showStatistics();
-    GROUP && console.groupEnd("Generated Map " + seed);
+    INFO && console.groupEnd("Generated Map " + seed);
   }
   catch(error) {
     ERROR && console.error(error);
@@ -1719,7 +1718,7 @@ function showStatistics() {
 
   mapId = Date.now(); // unique map id is it's creation date number
   mapHistory.push({seed, width:graphWidth, height:graphHeight, template, created:mapId});
-  LOG && console.log(stats);
+  INFO && console.log(stats);
 }
 
 const regenerateMap = debounce(function() {

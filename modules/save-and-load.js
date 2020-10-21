@@ -564,7 +564,7 @@ function parseLoadedData(data) {
       mapId = params[6] ? +params[6] : Date.now();
     }()
 
-    GROUP && console.group("Loaded Map " + seed);
+    INFO && console.group("Loaded Map " + seed);
 
     void function parseSettings() {
       const settings = data[1].split("|");
@@ -1067,7 +1067,7 @@ function parseLoadedData(data) {
 
     WARN && console.warn(`TOTAL: ${rn((performance.now()-uploadMap.timeStart)/1000,2)}s`);
     showStatistics();
-    GROUP && console.groupEnd("Loaded Map " + seed);
+    INFO && console.groupEnd("Loaded Map " + seed);
     tip("Map is successfully loaded", true, "success", 7000);
   }
   catch(error) {
