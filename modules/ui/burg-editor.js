@@ -141,7 +141,7 @@ function editBurg(id) {
     const label = document.querySelector("#burgLabels [data-id='" + id + "']");
     const icon = document.querySelector("#burgIcons [data-id='" + id + "']");
     const anchor = document.querySelector("#anchors [data-id='" + id + "']");
-    if (!label || !icon) {console.error("Cannot find label or icon elements"); return;}
+    if (!label || !icon) {ERROR && console.error("Cannot find label or icon elements"); return;}
 
     const labelG = document.querySelector("#burgLabels > #"+oldGroup);
     const iconG = document.querySelector("#burgIcons > #"+oldGroup);

@@ -653,7 +653,7 @@ function setBase64Texture(url) {
 };
 
 function fetchTextureURL(url) {
-  console.log("Provided URL is", url);
+  LOG && console.log("Provided URL is", url);
   const img = new Image();
   img.onload = function () {
     const canvas = document.getElementById("texturePreview");

@@ -5,7 +5,7 @@
 }(this, (function () {'use strict';
 
   const ReliefIcons = function() {
-    console.time('drawRelief');
+    TIME && console.time('drawRelief');
     terrain.selectAll("*").remove();
     const density = terrain.attr("density") || .4;
     const size = 1.6 * (terrain.attr("size") || 1);
@@ -69,7 +69,7 @@
       terrain.html(reliefHTML);
     }()
 
-    console.timeEnd('drawRelief');
+    TIME && console.timeEnd('drawRelief');
   }
 
   function getBiomeIcon(i, b) {

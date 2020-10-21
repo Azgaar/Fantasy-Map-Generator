@@ -7,7 +7,7 @@
   let cells, p, states;
 
   const generate = function() {
-    console.time("generateMilitaryForces");
+    TIME && console.time("generateMilitaryForces");
     cells = pack.cells, p = cells.p, states = pack.states;
     const valid = states.filter(s => s.i && !s.removed); // valid states
     if (!options.military) options.military = getDefaultOptions();
@@ -176,7 +176,7 @@
       return regiments;
     }
 
-    console.timeEnd("generateMilitaryForces");
+    TIME && console.timeEnd("generateMilitaryForces");
   }
 
   const getDefaultOptions = function() {

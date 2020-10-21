@@ -131,7 +131,7 @@ function toggleHeight(event) {
 }
 
 function drawHeightmap() {
-  console.time("drawHeightmap");
+  TIME && console.time("drawHeightmap");
   terrs.selectAll("*").remove();
   const cells = pack.cells, vertices = pack.vertices, n = cells.i.length;
   const used = new Uint8Array(cells.i.length);
@@ -188,7 +188,7 @@ function drawHeightmap() {
       if (v[0] !== prev && c0 !== c1) current = v[0];
       else if (v[1] !== prev && c1 !== c2) current = v[1];
       else if (v[2] !== prev && c0 !== c2) current = v[2];
-      if (current === chain[chain.length - 1]) {console.error("Next vertex is not found"); break;}
+      if (current === chain[chain.length - 1]) {ERROR && console.error("Next vertex is not found"); break;}
     }
     return chain;
   }
@@ -199,7 +199,7 @@ function drawHeightmap() {
     return chain.filter((d, i) => i % n === 0);
   }
   
-  console.timeEnd("drawHeightmap");
+  TIME && console.timeEnd("drawHeightmap");
 }
 
 function getColorScheme() {
@@ -228,7 +228,7 @@ function toggleTemp(event) {
 }
 
 function drawTemp() {
-  console.time("drawTemp");
+  TIME && console.time("drawTemp");
   temperature.selectAll("*").remove();
   lineGen.curve(d3.curveBasisClosed);
   const scheme = d3.scaleSequential(d3.interpolateSpectral);
@@ -311,12 +311,12 @@ function drawTemp() {
       if (v[0] !== prev && c0 !== c1) current = v[0];
       else if (v[1] !== prev && c1 !== c2) current = v[1];
       else if (v[2] !== prev && c0 !== c2) current = v[2];
-      if (current === chain[chain.length - 1]) {console.error("Next vertex is not found"); break;}
+      if (current === chain[chain.length - 1]) {ERROR && console.error("Next vertex is not found"); break;}
     }
     chain.push(start);
     return chain;
   }
-  console.timeEnd("drawTemp");
+  TIME && console.timeEnd("drawTemp");
 }
 
 function toggleBiomes(event) {
@@ -370,7 +370,7 @@ function drawBiomes() {
       if (v[0] !== prev && c0 !== c1) current = v[0];
       else if (v[1] !== prev && c1 !== c2) current = v[1];
       else if (v[2] !== prev && c0 !== c2) current = v[2];
-      if (current === chain[chain.length - 1]) {console.error("Next vertex is not found"); break;}
+      if (current === chain[chain.length - 1]) {ERROR && console.error("Next vertex is not found"); break;}
     }
     return chain;
   }
@@ -526,7 +526,7 @@ function drawIce() {
       if (v[0] !== prev && c0 !== c1) current = v[0];
       else if (v[1] !== prev && c1 !== c2) current = v[1];
       else if (v[2] !== prev && c0 !== c2) current = v[2];
-      if (current === chain[chain.length - 1]) {console.error("Next vertex is not found"); break;}
+      if (current === chain[chain.length - 1]) {ERROR && console.error("Next vertex is not found"); break;}
     }
     return chain;
   }
@@ -547,7 +547,7 @@ function toggleCultures(event) {
 }
 
 function drawCultures() {
-  console.time("drawCultures");
+  TIME && console.time("drawCultures");
   
   cults.selectAll("path").remove();
   const cells = pack.cells, vertices = pack.vertices, cultures = pack.cultures, n = cells.i.length;
@@ -586,11 +586,11 @@ function drawCultures() {
       if (v[0] !== prev && c0 !== c1) current = v[0];
       else if (v[1] !== prev && c1 !== c2) current = v[1];
       else if (v[2] !== prev && c0 !== c2) current = v[2];
-      if (current === chain[chain.length - 1]) {console.error("Next vertex is not found"); break;}
+      if (current === chain[chain.length - 1]) {ERROR && console.error("Next vertex is not found"); break;}
     }
     return chain;
   }
-  console.timeEnd("drawCultures");
+  TIME && console.timeEnd("drawCultures");
 }
 
 function toggleReligions(event) {
@@ -607,7 +607,7 @@ function toggleReligions(event) {
 }
 
 function drawReligions() {
-  console.time("drawReligions");
+  TIME && console.time("drawReligions");
 
   relig.selectAll("path").remove();
   const cells = pack.cells, vertices = pack.vertices, religions = pack.religions, features = pack.features, n = cells.i.length;
@@ -657,12 +657,12 @@ function drawReligions() {
       if (v[0] !== prev && c0 !== c1) {current = v[0]; check(c0 ? c[0] : c[1]);} else
       if (v[1] !== prev && c1 !== c2) {current = v[1]; check(c1 ? c[1] : c[2]);} else
       if (v[2] !== prev && c0 !== c2) {current = v[2]; check(c2 ? c[2] : c[0]);}
-      if (current === chain[chain.length - 1][0]) {console.error("Next vertex is not found"); break;}
+      if (current === chain[chain.length - 1][0]) {ERROR && console.error("Next vertex is not found"); break;}
 
     }
     return chain;
   }
-  console.timeEnd("drawReligions");
+  TIME && console.timeEnd("drawReligions");
 }
 
 function toggleStates(event) {
@@ -680,7 +680,7 @@ function toggleStates(event) {
 
 // draw states
 function drawStates() {
-  console.time("drawStates");
+  TIME && console.time("drawStates");
   regions.selectAll("path").remove();
 
   const cells = pack.cells, vertices = pack.vertices, states = pack.states, n = cells.i.length;
@@ -741,18 +741,18 @@ function drawStates() {
       if (v[0] !== prev && c0 !== c1) {current = v[0]; check(c0 ? c[0] : c[1]);} else
       if (v[1] !== prev && c1 !== c2) {current = v[1]; check(c1 ? c[1] : c[2]);} else
       if (v[2] !== prev && c0 !== c2) {current = v[2]; check(c2 ? c[2] : c[0]);}
-      if (current === chain[chain.length - 1][0]) {console.error("Next vertex is not found"); break;}
+      if (current === chain[chain.length - 1][0]) {ERROR && console.error("Next vertex is not found"); break;}
     }
     chain.push([start, state, land]); // add starting vertex to sequence to close the path
     return chain;
   }
   invokeActiveZooming();
-  console.timeEnd("drawStates");
+  TIME && console.timeEnd("drawStates");
 }
 
 // draw state and province borders
 function drawBorders() {
-  console.time("drawBorders");
+  TIME && console.time("drawBorders");
   borders.selectAll("path").remove();
 
   const cells = pack.cells, vertices = pack.vertices, n = cells.i.length;
@@ -807,7 +807,7 @@ function drawBorders() {
 
     // find starting vertex
     for (let i=0; i < 1000; i++) {
-      if (i === 999) console.error("Find starting vertex: limit is reached", current, f, t);
+      if (i === 999) ERROR && console.error("Find starting vertex: limit is reached", current, f, t);
       const p = chain[chain.length-2] || -1; // previous vertex
       const v = vertices.v[current], c = vertices.c[current]; 
 
@@ -825,7 +825,7 @@ function drawBorders() {
     chain = [current]; // vertices chain to form a path
     // find path
     for (let i=0; i < 1000; i++) {
-      if (i === 999) console.error("Find path: limit is reached", current, f, t);
+      if (i === 999) ERROR && console.error("Find path: limit is reached", current, f, t);
       const p = chain[chain.length-2] || -1; // previous vertex
       const v = vertices.v[current], c = vertices.c[current];
       c.filter(c => array[c] === t).forEach(c => used[f][c] = t);
@@ -845,7 +845,7 @@ function drawBorders() {
     return chain;
   }
 
-  console.timeEnd("drawBorders");
+  TIME && console.timeEnd("drawBorders");
 }
 
 function toggleBorders(event) {
@@ -873,7 +873,7 @@ function toggleProvinces(event) {
 }
 
 function drawProvinces() {
-  console.time("drawProvinces");
+  TIME && console.time("drawProvinces");
   const labelsOn = provs.attr("data-labels") == 1;
   provs.selectAll("*").remove();
 
@@ -937,12 +937,12 @@ function drawProvinces() {
       if (v[0] !== prev && c0 !== c1) {current = v[0]; check(c0 ? c[0] : c[1]);} else
       if (v[1] !== prev && c1 !== c2) {current = v[1]; check(c1 ? c[1] : c[2]);} else
       if (v[2] !== prev && c0 !== c2) {current = v[2]; check(c2 ? c[2] : c[0]);}
-      if (current === chain[chain.length-1][0]) {console.error("Next vertex is not found"); break;}
+      if (current === chain[chain.length-1][0]) {ERROR && console.error("Next vertex is not found"); break;}
     }
     chain.push([start, province, land]); // add starting vertex to sequence to close the path
     return chain;
   }
-  console.timeEnd("drawProvinces");
+  TIME && console.timeEnd("drawProvinces");
 }
 
 function toggleGrid(event) {
@@ -959,7 +959,7 @@ function toggleGrid(event) {
 }
 
 function drawGrid() {
-  console.time("drawGrid");
+  TIME && console.time("drawGrid");
   gridOverlay.selectAll("*").remove();
   const type = styleGridType.value;
   const size = Math.max(+styleGridSize.value, 2);
@@ -1003,7 +1003,7 @@ function drawGrid() {
     });
   }
 
-  console.timeEnd("drawGrid");
+  TIME && console.timeEnd("drawGrid");
 }
 
 function toggleCoordinates(event) {

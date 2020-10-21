@@ -3,7 +3,7 @@
 
 // download map as SVG
 async function saveSVG() {
-  console.time("saveSVG");
+  TIME && console.time("saveSVG");
   const url = await getMapURL("svg");
   const link = document.createElement("a");
   link.download = getFileName() + ".svg";
@@ -12,12 +12,12 @@ async function saveSVG() {
   link.click();
 
   tip(`${link.download} is saved. Open "Downloads" screen (crtl + J) to check. You can set image scale in options`, true, "success", 5000);
-  console.timeEnd("saveSVG");
+  TIME && console.timeEnd("saveSVG");
 }
 
 // download map as PNG
 async function savePNG() {
-  console.time("savePNG");
+  TIME && console.time("savePNG");
   const url = await getMapURL("png");
 
   const link = document.createElement("a");
@@ -43,12 +43,12 @@ async function savePNG() {
     });
   }
 
-  console.timeEnd("savePNG");
+  TIME && console.timeEnd("savePNG");
 }
 
 // download map as JPEG
 async function saveJPEG() {
-  console.time("saveJPEG");
+  TIME && console.time("saveJPEG");
   const url = await getMapURL("png");
 
   const canvas = document.createElement("canvas");
@@ -70,7 +70,7 @@ async function saveJPEG() {
     window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
   }
 
-  console.timeEnd("saveJPEG");
+  TIME && console.timeEnd("saveJPEG");
 }
 
 // parse map svg to object url
@@ -228,7 +228,7 @@ function GFontToDataURI(url) {
 
 // prepare map data for saving
 function getMapData() {
-  console.time("createMapDataBlob");
+  TIME && console.time("createMapDataBlob");
 
   return new Promise(resolve => {
     const date = new Date();
@@ -283,7 +283,7 @@ function getMapData() {
       namesData, rivers].join("\r\n");
     const blob = new Blob([data], {type: "text/plain"});
 
-    console.timeEnd("createMapDataBlob");
+    TIME && console.timeEnd("createMapDataBlob");
     resolve(blob);
   });
 
@@ -448,7 +448,7 @@ function quickLoad() {
       loadMapPrompt(blob);
     } else {
       tip("No map stored. Save map to storage first", true, "error", 2000);
-      console.error("No map stored");
+      ERROR && console.error("No map stored");
     }
   });
 }
@@ -467,12 +467,12 @@ function loadMapPrompt(blob) {
   });
 
   function loadLastSavedMap() {
-    console.warn("Load last saved map");
+    WARN && console.warn("Load last saved map");
     try {
       uploadMap(blob);
     }
     catch(error) {
-      console.error(error);
+      ERROR && console.error(error);
       tip("Cannot load last saved map", true, "error", 2000);
     }
   }
@@ -564,7 +564,7 @@ function parseLoadedData(data) {
       mapId = params[6] ? +params[6] : Date.now();
     }()
 
-    console.group("Loaded Map " + seed);
+    GROUP && console.group("Loaded Map " + seed);
 
     void function parseSettings() {
       const settings = data[1].split("|");
@@ -1006,49 +1006,49 @@ function parseLoadedData(data) {
       invalidStates.forEach(s => {
         const invalidCells = cells.i.filter(i => cells.state[i] === s);
         invalidCells.forEach(i => cells.state[i] = 0);
-        console.error("Data Integrity Check. Invalid state", s, "is assigned to cells", invalidCells);
+        ERROR && console.error("Data Integrity Check. Invalid state", s, "is assigned to cells", invalidCells);
       });
 
       const invalidProvinces = [...new Set(cells.province)].filter(p => p && (!pack.provinces[p] || pack.provinces[p].removed));
       invalidProvinces.forEach(p => {
         const invalidCells = cells.i.filter(i => cells.province[i] === p);
         invalidCells.forEach(i => cells.province[i] = 0);
-        console.error("Data Integrity Check. Invalid province", p, "is assigned to cells", invalidCells);
+        ERROR && console.error("Data Integrity Check. Invalid province", p, "is assigned to cells", invalidCells);
       });
 
       const invalidCultures = [...new Set(cells.culture)].filter(c => !pack.cultures[c] || pack.cultures[c].removed);
       invalidCultures.forEach(c => {
         const invalidCells = cells.i.filter(i => cells.culture[i] === c);
         invalidCells.forEach(i => cells.province[i] = 0);
-        console.error("Data Integrity Check. Invalid culture", c, "is assigned to cells", invalidCells);
+        ERROR && console.error("Data Integrity Check. Invalid culture", c, "is assigned to cells", invalidCells);
       });
 
       const invalidReligions = [...new Set(cells.religion)].filter(r => !pack.religions[r] || pack.religions[r].removed);
       invalidReligions.forEach(r => {
         const invalidCells = cells.i.filter(i => cells.religion[i] === r);
         invalidCells.forEach(i => cells.religion[i] = 0);
-        console.error("Data Integrity Check. Invalid religion", c, "is assigned to cells", invalidCells);
+        ERROR && console.error("Data Integrity Check. Invalid religion", c, "is assigned to cells", invalidCells);
       });
 
       const invalidFeatures = [...new Set(cells.f)].filter(f => f && !pack.features[f]);
       invalidFeatures.forEach(f => {
         const invalidCells = cells.i.filter(i => cells.f[i] === f);
         // No fix as for now
-        console.error("Data Integrity Check. Invalid feature", f, "is assigned to cells", invalidCells);
+        ERROR && console.error("Data Integrity Check. Invalid feature", f, "is assigned to cells", invalidCells);
       });
 
       const invalidBurgs = [...new Set(cells.burg)].filter(b => b && (!pack.burgs[b] || pack.burgs[b].removed));
       invalidBurgs.forEach(b => {
         const invalidCells = cells.i.filter(i => cells.burg[i] === b);
         invalidCells.forEach(i => cells.burg[i] = 0);
-        console.error("Data Integrity Check. Invalid burg", b, "is assigned to cells", invalidCells);
+        ERROR && console.error("Data Integrity Check. Invalid burg", b, "is assigned to cells", invalidCells);
       });
 
       pack.burgs.forEach(b => {
         if (!b.i || b.removed) return;
-        if (b.port < 0) {console.error("Data Integrity Check. Burg", b.i, "has invalid port value", b.port); b.port = 0;}
+        if (b.port < 0) {ERROR && console.error("Data Integrity Check. Burg", b.i, "has invalid port value", b.port); b.port = 0;}
         if (b.cell < cells.i.length) return;
-        console.error("Data Integrity Check. Burg", b.i, "is linked to invalid cell", b.cell);
+        ERROR && console.error("Data Integrity Check. Burg", b.i, "is linked to invalid cell", b.cell);
         b.cell = findCell(b.x, b.y);
         cells.i.filter(i => cells.burg[i] === b.i).forEach(i => cells.burg[i] = 0);
         cells.burg[b.cell] = b.i;
@@ -1065,13 +1065,13 @@ function parseLoadedData(data) {
     focusOn(); // based on searchParams focus on point, cell or burg
     invokeActiveZooming();
 
-    console.warn(`TOTAL: ${rn((performance.now()-uploadMap.timeStart)/1000,2)}s`);
+    WARN && console.warn(`TOTAL: ${rn((performance.now()-uploadMap.timeStart)/1000,2)}s`);
     showStatistics();
-    console.groupEnd("Loaded Map " + seed);
+    GROUP && console.groupEnd("Loaded Map " + seed);
     tip("Map is successfully loaded", true, "success", 7000);
   }
   catch(error) {
-    console.error(error);
+    ERROR && console.error(error);
     clearMainTip();
 
     alertMessage.innerHTML = `An error is occured on map loading. Select a different file to load,
