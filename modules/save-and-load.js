@@ -286,7 +286,6 @@ function getMapData() {
     TIME && console.timeEnd("createMapDataBlob");
     resolve(blob);
   });
-
 }
 
 // Download .map file
@@ -306,116 +305,103 @@ async function saveMap() {
 }
 
 function saveGeoJSON_Cells() {
-  let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
-  const cells = pack.cells, v = pack.vertices;
+  const json = {type: "FeatureCollection", features: []};
+  const cells = pack.cells;
   const getPopulation = i => {const [r, u] = getCellPopulation(i); return rn(r+u)};
+  const getHeight = i => parseInt(getFriendlyHeight([cells.p[i][0],cells.p[i][1]]));
 
   cells.i.forEach(i => {
-    data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"Polygon\", \"coordinates\": [[";
-    cells.v[i].forEach(n => {
-      let x = mapCoordinates.lonW + (v.p[n][0] / graphWidth) * mapCoordinates.lonT;
-      let y = mapCoordinates.latN - (v.p[n][1] / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
-      data += "["+x+","+y+"],";
-    });
-    // close the ring
-    let x = mapCoordinates.lonW + (v.p[cells.v[i][0]][0] / graphWidth) * mapCoordinates.lonT;
-    let y = mapCoordinates.latN - (v.p[cells.v[i][0]][1] / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
-    data += "["+x+","+y+"]";
-    data += "]] },\n   \"properties\": {\n";
+    const coordinates = getCellPoints(cells.v[i]);
+    const height = getHeight(i);
+    const biome = cells.biome[i];
+    const type = pack.features[cells.f[i]].type;
+    const population = getPopulation(i);
+    const state = cells.state[i];
+    const province = cells.province[i];
+    const culture = cells.culture[i];
+    const religion = cells.religion[i];
+    const neighbors = cells.c[i];
 
-    const height = parseInt(getFriendlyHeight([cells.p[i][0],cells.p[i][1]]));
-
-    data += "      \"id\": \""+i+"\",\n";
-    data += "      \"height\": \""+height+"\",\n";
-    data += "      \"biome\": \""+cells.biome[i]+"\",\n";
-    data += "      \"type\": \""+pack.features[cells.f[i]].type+"\",\n";
-    data += "      \"population\": \""+getPopulation(i)+"\",\n";
-    data += "      \"state\": \""+cells.state[i]+"\",\n";
-    data += "      \"province\": \""+cells.province[i]+"\",\n";
-    data += "      \"culture\": \""+cells.culture[i]+"\",\n";
-    data += "      \"religion\": \""+cells.religion[i]+"\",\n";
-    data += "      \"neighbors\": ["+cells.c[i]+"]\n";
-    data +="   }\n},\n";
+    const properties = {id:i, height, biome, type, population, state, province, culture, religion, neighbors}
+    const feature = {type: "Feature", geometry: {type: "Polygon", coordinates}, properties};
+    json.features.push(feature);
   });
-
-  data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
-  data += "]}";
 
   const name = getFileName("Cells") + ".geojson";
-  downloadFile(data, name, "application/json");
+  downloadFile(JSON.stringify(json), name, "application/json");
 }
 
-function saveGeoJSON_Roads() {
-  let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
+function saveGeoJSON_Routes() {
+  const json = {type: "FeatureCollection", features: []};
 
-  routes._groups[0][0].childNodes.forEach(n => {
-    n.childNodes.forEach(r => {
-      data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"LineString\", \"coordinates\": ";
-      data += JSON.stringify(getRoadPoints(r));
-      data += " },\n   \"properties\": {\n";
-      data += "      \"id\": \""+r.id+"\",\n";
-      data += "      \"type\": \""+n.id+"\"\n";
-      data +="   }\n},\n";
-    });
+  routes.selectAll("g > path").each(function() {
+    const coordinates = getRoutePoints(this);
+    const id = this.id;
+    const type = this.parentElement.id;
+
+    const feature = {type: "Feature", geometry: {type: "LineString", coordinates}, properties: {id, type}};
+    json.features.push(feature);
   });
-  data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
-  data += "]}";
 
   const name = getFileName("Routes") + ".geojson";
-  downloadFile(data, name, "application/json");
+  downloadFile(JSON.stringify(json), name, "application/json");
 }
 
 function saveGeoJSON_Rivers() {
-  let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
+  const json = {type: "FeatureCollection", features: []};
 
-  rivers._groups[0][0].childNodes.forEach(n => {
-    data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"LineString\", \"coordinates\": ";
-    data += JSON.stringify(getRiverPoints(n));
-    data += " },\n   \"properties\": {\n";
-    data += "      \"id\": \""+n.id+"\",\n";
-    data += "      \"width\": \""+n.dataset.width+"\",\n";
-    data += "      \"increment\": \""+n.dataset.increment+"\"\n";
-    data +="   }\n},\n";
+  rivers.selectAll("path").each(function() {
+    const coordinates = getRiverPoints(this);
+    const id = this.id;
+    const width = +this.dataset.increment;
+    const increment = +this.dataset.increment;
+    const river = pack.rivers.find(r => r.i === +id.slice(5));
+    const name = river ? river.name : "";
+    const type = river ? river.type : "";
+    const i = river ? river.i : "";
+    const basin = river ? river.basin : "";
+
+    const feature = {type: "Feature", geometry: {type: "LineString", coordinates}, properties: {id, i, basin, name, type, width, increment}};
+    json.features.push(feature);
   });
-  data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
-  data += "]}";
 
   const name = getFileName("Rivers") + ".geojson";
-  downloadFile(data, name, "application/json");
+  downloadFile(JSON.stringify(json), name, "application/json");
 }
 
 function saveGeoJSON_Markers() {
-  let data = "{ \"type\": \"FeatureCollection\", \"features\": [\n";
+  const json = {type: "FeatureCollection", features: []};
 
-  markers._groups[0][0].childNodes.forEach(n => {
-      let x = mapCoordinates.lonW + (n.dataset.x / graphWidth) * mapCoordinates.lonT;
-      let y = mapCoordinates.latN - (n.dataset.y / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
+  markers.selectAll("use").each(function() {
+    const coordinates = getQGIScoordinates(this.dataset.x, this.dataset.y);
+    const id = this.id;
+    const type = (this.dataset.id).substring(1);
+    const icon = document.getElementById(type).textContent;
+    const note = notes.length ? notes.find(note => note.id === this.id) : null;
+    const name = note ? note.name : "";
+    const legend = note ? note.legend : "";
 
-      data += "{\n   \"type\": \"Feature\",\n   \"geometry\": { \"type\": \"Point\", \"coordinates\": ["+x+", "+y+"]";
-      data += " },\n   \"properties\": {\n";
-      data += "      \"id\": \""+n.id+"\",\n";
-      data += "      \"type\": \""+n.dataset.id.substring(8)+"\"\n";
-      data +="   }\n},\n";
-
+    const feature = {type: "Feature", geometry: {type: "Point", coordinates}, properties: {id, type, icon, name, legend}};
+    json.features.push(feature);
   });
-  data = data.substring(0, data.length - 2)+"\n"; // remove trailing comma
-  data += "]}";
 
   const name = getFileName("Markers") + ".geojson";
-  downloadFile(data, name, "application/json");
+  downloadFile(JSON.stringify(json), name, "application/json");
 }
 
-function getRoadPoints(node) {
+function getCellPoints(vertices) {
+  const p = pack.vertices.p;
+  const points = vertices.map(n => getQGIScoordinates(p[n][0] / graphWidth, p[n][1] / graphHeight));
+  return points.concat([points[0]]);
+}
+
+function getRoutePoints(node) {
   let points = [];
   const l = node.getTotalLength();
   const increment = l / Math.ceil(l / 2);
   for (let i=0; i <= l; i += increment) {
     const p = node.getPointAtLength(i);
-
-    let x = mapCoordinates.lonW + (p.x / graphWidth) * mapCoordinates.lonT;
-    let y = mapCoordinates.latN - (p.y / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
-
-    points.push([x,y]);
+    points.push(getQGIScoordinates(p.x, p.y));
   }
   return points;
 }
@@ -427,9 +413,7 @@ function getRiverPoints(node) {
   for (let i=l, c=i; i >= 0; i -= increment, c += increment) {
     const p1 = node.getPointAtLength(i);
     const p2 = node.getPointAtLength(c);
-
-    let x = mapCoordinates.lonW + (((p1.x+p2.x)/2) / graphWidth) * mapCoordinates.lonT;
-    let y = mapCoordinates.latN - (((p1.y+p2.y)/2) / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
+    const [x, y] = getQGIScoordinates((p1.x + p2.x) / 2, (p1.y + p2.y) / 2);
     points.push([x,y]);
   }
   return points;

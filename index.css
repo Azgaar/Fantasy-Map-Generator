@@ -833,7 +833,7 @@ body button.noicon {
 }
 
 #brushesButtons > button {
-	padding: 0;
+	padding: .3em;
 }
 
 #brushesButtons svg {
@@ -1088,6 +1088,7 @@ i.resetButton:active {
 	box-shadow: inset 1px 1px 0 0 #ccc;
 	border-color: #a6a6da;
 	background-color: #ecd8d8;
+	border-radius: 10%;
 }
 
 .ui-dialog input[type="range"] {
@@ -1187,7 +1188,7 @@ div.slider .ui-slider-handle {
 
 #brushPower,
 #brushRadius {
-	width: 8em;
+	width: 12em;
 }
 
 #rescaleHigher,
@@ -1261,7 +1262,7 @@ div.states {
 	line-height: 1.5em;
 }
 
-div.states:hover {
+div.states:hover, div.states.hovered {
 	border: 1px solid #c4c4c4;
 	background-image: linear-gradient(to right, #dedede 100%, #f2f2f2 50%, #fcfcfc 0%);
 }

@@ -27,7 +27,7 @@ function tip(tip = "Tip is undefined", main, type, time) {
   if (type === "success") tooltip.style.background = "linear-gradient(0.1turn, #ffffff00, #127912cc, #ffffff00)";
 
   if (main) tooltip.dataset.main = tip; // set main tip
-  if (time) setTimeout(tooltip.dataset.main = "", time); // clear main in some time
+  if (time) setTimeout(() => tooltip.dataset.main = "", time); // clear main in some time
 }
 
 function showMainTip() {
@@ -49,7 +49,8 @@ function showDataTip(e) {
   tip(dataTip);
 }
 
-function moved() {
+const moved = debounce(mouseMove, 100);
+function mouseMove() {
   const point = d3.mouse(this);
   const i = findCell(point[0], point[1]); // pack cell id
   if (i === undefined) return;
@@ -89,11 +90,28 @@ function showMapTooltip(point, e, i, g) {
   const land = pack.cells.h[i] >= 20;
 
   // specific elements
-  if (group === "armies") {tip(e.target.parentNode.dataset.name + ". Click to edit"); return;}
-  if (group === "rivers") {tip(getRiverName(e.target.id) + "Click to edit"); return;}
+  if (group === "armies") {
+    tip(e.target.parentNode.dataset.name + ". Click to edit");
+    return;
+  }
+  if (group === "rivers") {
+    const river = +e.target.id.slice(5);
+    const r = pack.rivers.find(r => r.i === river);
+    const name = r ? r.name + " " + r.type : "";
+    tip(name + ". Click to edit");
+    if (riversOverview.offsetParent) highlightEditorLine(riversOverview, river, 5000);
+    return;
+  }
   if (group === "routes") {tip("Click to edit the Route"); return;}
   if (group === "terrain") {tip("Click to edit the Relief Icon"); return;}
-  if (subgroup === "burgLabels" || subgroup === "burgIcons") {tip("Click to open Burg Editor"); return;}
+  if (subgroup === "burgLabels" || subgroup === "burgIcons") {
+    const burg = +path[path.length - 10].dataset.id;
+    const b = pack.burgs[burg];
+    const population = si(b.population * populationRate.value * urbanization.value);
+    tip(`${b.name}. Population: ${population}. Click to edit`);
+    if (burgsOverview.offsetParent) highlightEditorLine(burgsOverview, burg, 5000);
+    return;
+  }
   if (group === "labels") {tip("Click to edit the Label"); return;}
   if (group === "markers") {tip("Click to edit the Marker"); return;}
   if (group === "ruler") {
@@ -106,32 +124,54 @@ function showMapTooltip(point, e, i, g) {
   if (subgroup === "burgLabels") {tip("Click to edit the Burg"); return;}
   if (group === "lakes" && !land) {tip(`${capitalize(subgroup)} lake. Click to edit`); return;}
   if (group === "coastline") {tip("Click to edit the coastline"); return;}
-  if (group === "zones") {tip(path[path.length-8].dataset.description); return;}
+  if (group === "zones") {
+    const zone = path[path.length-8];
+    tip(zone.dataset.description);
+    if (zonesEditor.offsetParent) highlightEditorLine(zonesEditor, zone.id, 5000);
+    return;
+  }
   if (group === "ice") {tip("Click to edit the Ice"); return;}
 
   // covering elements
   if (layerIsOn("togglePrec") && land) tip("Annual Precipitation: "+ getFriendlyPrecipitation(i)); else
   if (layerIsOn("togglePopulation")) tip(getPopulationTip(i)); else
   if (layerIsOn("toggleTemp")) tip("Temperature: " + convertTemperature(grid.cells.temp[g])); else
-  if (layerIsOn("toggleBiomes") && pack.cells.biome[i]) tip("Biome: " + biomesData.name[pack.cells.biome[i]]); else
+  if (layerIsOn("toggleBiomes") && pack.cells.biome[i]) {
+    const biome = pack.cells.biome[i]
+    tip("Biome: " + biomesData.name[biome]);
+    if (biomesEditor.offsetParent) highlightEditorLine(biomesEditor, biome);
+  } else
   if (layerIsOn("toggleReligions") && pack.cells.religion[i]) {
-    const religion = pack.religions[pack.cells.religion[i]];
-    const type = religion.type === "Cult" || religion.type == "Heresy" ? religion.type : religion.type + " religion";
-    tip(type + ": " + religion.name);
+    const religion = pack.cells.religion[i];
+    const r = pack.religions[religion];
+    const type = r.type === "Cult" || r.type == "Heresy" ? r.type : r.type + " religion";
+    tip(type + ": " + r.name);
+    if (religionsEditor.offsetParent) highlightEditorLine(religionsEditor, religion);
   } else
   if (pack.cells.state[i] && (layerIsOn("toggleProvinces") || layerIsOn("toggleStates"))) {
-    const state = pack.states[pack.cells.state[i]].fullName;
+    const state = pack.cells.state[i];
+    const stateName = pack.states[state].fullName;
     const province = pack.cells.province[i];
     const prov = province ? pack.provinces[province].fullName + ", " : "";
-    tip(prov + state);
+    tip(prov + stateName);
+    if (statesEditor.offsetParent) highlightEditorLine(statesEditor, state);
+    if (diplomacyEditor.offsetParent) highlightEditorLine(diplomacyEditor, state);
+    if (militaryOverview.offsetParent) highlightEditorLine(militaryOverview, state);
+    if (provincesEditor.offsetParent) highlightEditorLine(provincesEditor, province);
   } else
-  if (layerIsOn("toggleCultures") && pack.cells.culture[i]) tip("Culture: " + pack.cultures[pack.cells.culture[i]].name); else
+  if (layerIsOn("toggleCultures") && pack.cells.culture[i]) {
+    const culture = pack.cells.culture[i];
+    tip("Culture: " + pack.cultures[culture].name);
+    if (culturesEditor.offsetParent) highlightEditorLine(culturesEditor, culture);
+  } else
   if (layerIsOn("toggleHeight")) tip("Height: " + getFriendlyHeight(point));
 }
 
-function getRiverName(id) {
-  const r = pack.rivers.find(r => r.i == id.slice(5));
-  return r ? r.name + " " + r.type + ". " : "";
+function highlightEditorLine(editor, id, timeout = 15000) {
+  Array.from(editor.getElementsByClassName("states hovered")).forEach(el => el.classList.remove("hovered")); // clear all hovered
+  const hovered = Array.from(editor.querySelectorAll("div")).find(el => el.dataset.id == id);
+  if (hovered) hovered.classList.add("hovered"); // add hovered class
+  if (timeout) setTimeout(() => hovered.classList.remove("hovered"), timeout);
 }
 
 // get cell info on mouse move

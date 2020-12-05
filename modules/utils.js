@@ -516,26 +516,15 @@ function getNextId(core, i = 1) {
   return core + i;
 }
 
-// from https://davidwalsh.name/javascript-debounce-function
-function debounce(func, wait, immediate) {
-  var timeout;
-  return function() {
-    var context = this, args = arguments;
-    var later = function() {
-      timeout = null;
-      if (!immediate) func.apply(context, args);
-    }
-    var callNow = immediate && !timeout;
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-    if (callNow) func.apply(context, args);
-  }
-}
+function debounce(f, ms) {
+  let isCooldown = false;
 
-// pause/block JS execution for a while
-function sleep(delay) {
-  const start = new Date().getTime();
-  while (new Date().getTime() < start + delay);
+  return function() {
+    if (isCooldown) return;
+    f.apply(this, arguments);
+    isCooldown = true;
+    setTimeout(() => isCooldown = false, ms);
+  };
 }
 
 // parse error to get the readable string in Chrome and Firefox
@@ -595,6 +584,12 @@ function isCtrlClick(event) {
 
 function generateDate(from = 100, to = 1000) {
   return new Date(rand(from, to),rand(12),rand(31)).toLocaleDateString("en", {year:'numeric', month:'long', day:'numeric'});
+}
+
+function getQGIScoordinates(x, y) {
+  const cx = mapCoordinates.lonW + (x / graphWidth) * mapCoordinates.lonT;
+  const cy = mapCoordinates.latN - (y / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
+  return [cx, cy];
 }
 
 // prompt replacer (prompt does not work in Electron)
