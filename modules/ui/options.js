@@ -86,7 +86,9 @@ function showSupporters() {
     Seth Fusion,Adam Butler,Gus,StroboWolf,Sadie Blackthorne,Zewen Senpai,Dell McKnight,Oneiris,Darinius Dragonclaw Studios,Christopher Whitney,Rhodes HvZ,
     Jeppe Skov Jensen,María Martín López,Martin Seeger,Annie Rishor,Aram Sabatés,MadNomadMedia,Eric Foley,Vito Martono,James H. Anthony,Kevin Cossutta,
     Thirty-OneR ,ThatGuyGW ,Dee Chiu,MontyBoosh ,Achillain ,Jaden ,SashaTK,Steve Johnson,Eric Foley,Vito Martono,James H. Anthony,Kevin Cossutta,Thirty-OneR,
-    ThatGuyGW,Dee Chiu,MontyBoosh,Achillain,Jaden,SashaTK,Steve Johnson,Pierrick Bertrand,Jared Kennedy,Dylan Devenny,Kyle Robertson,Andrew Rostaing,Daniel Gill`;
+    ThatGuyGW,Dee Chiu,MontyBoosh,Achillain,Jaden,SashaTK,Steve Johnson,Pierrick Bertrand,Jared Kennedy,Dylan Devenny,Kyle Robertson,Andrew Rostaing,Daniel Gill,
+    Char, Jack, Barna Csíkos, Ian Rousseau, Nicholas Grabstas, Tom Van Orden jr, Bryan Brake, Akylos, Riley Seaman`;
+
   const array = supporters.replace(/(?:\r\n|\r|\n)/g, "").split(",").map(v => capitalize(v.trim())).sort();
   alertMessage.innerHTML = "<ul style='column-count: 5; column-gap: 2em'>" + array.map(n => `<li>${n}</li>`).join("") + "</ul>";
   $("#alert").dialog({resizable: false,title: "Patreon Supporters",width: "54vw",position: {my: "center",at: "center",of: "svg"}});
@@ -481,7 +483,7 @@ function saveGeoJSON() {
   $("#alert").dialog({title: "GIS data export", resizable: false, width: "35em", position: {my: "center", at: "center", of: "svg"},
     buttons: {
       Cells: saveGeoJSON_Cells,
-      Routes: saveGeoJSON_Roads,
+      Routes: saveGeoJSON_Routes,
       Rivers: saveGeoJSON_Rivers,
       Markers: saveGeoJSON_Markers,
       Close: function() {$(this).dialog("close");}

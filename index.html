@@ -7,8 +7,6 @@
   <meta name="application-name" content="Azgaar's Fantasy Map Generator">
   <meta name="author" content="Azgaar (Max Ganiev)">
   <meta name="description" content="Azgaar's Fantasy Map Generator and Editor">
-  <meta name="google" content="notranslate">
-  <meta name="google-site-verification" content="6N9TRdPptDN1dCZKaMA5zJ-_UmNQE-3c4VizSlQcEeU"/>
   <meta property="og:url" content="https://azgaar.github.io/Fantasy-Map-Generator">
   <meta property="og:title" content="Azgaar's Fantasy Map Generator">
   <meta property="og:description" content="Web application generating interactive and customizable maps">
@@ -34,13 +32,9 @@
     #loading-text span:nth-child(3), #mapOverlay > span:nth-child(3) {animation-delay: 2s;}
     @keyframes blink {0% {opacity: 0;} 20% {opacity: 1;} 100% {opacity: .1;}}
   </style>
-  <link rel="preload" href="index.css?version=1.4" as="style">
-  <link rel="preload" href="icons.css?version=1.4" as="style">
-  <link rel="preload" href="libs/jquery-ui.css" as="style">
   <link rel="stylesheet" href="index.css?version=1.4">
   <link rel="stylesheet" href="icons.css?version=1.4">
   <link rel="stylesheet" href="libs/jquery-ui.css">
-
 </head>
 <body>
   <svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" id="map" width="100%" height="100%">
@@ -2649,8 +2643,8 @@
 
       <div id="brushesSliders" style="display: none">
         <div data-tip="Change brush size. Shortcut: + (increase), – (decrease)" style="padding-bottom: 1px"><div style="width:3.2em; display: inline-block"><i>Radius:</i></div>
-          <input id="brushRadius" oninput="tip('Brush radius: '+this.value); brushRadiusNumber.value = this.value" type="range" min=1 max=50 value=25>
-          <input id="brushRadiusNumber" oninput="tip('Brush radius: '+this.value); brushRadius.value = this.value" type="number" min=1 max=50 value=25 style="border: 1px solid #d4d4d4">
+          <input id="brushRadius" oninput="tip('Brush radius: '+this.value); brushRadiusNumber.value = this.value" type="range" min=1 max=99 value=25>
+          <input id="brushRadiusNumber" oninput="tip('Brush radius: '+this.value); brushRadius.value = this.value" type="number" min=1 max=99 value=25 style="border: 1px solid #d4d4d4">
         </div>
 
         <div data-tip="Set the brush power"><div style="width:3.2em; display: inline-block"><i>Power:</i></div>
@@ -2659,7 +2653,7 @@
         </div>
       </div>
 
-      <div data-tip="Allow brush to change only land cells and hence restrict the coastline modification">
+      <div data-tip="Allow brush to change only land cells and hence restrict the coastline modification" style="margin-bottom: .6em">
         <input id="changeOnlyLand" class="checkbox" type="checkbox">
         <label for="changeOnlyLand" class="checkbox-label"><i>change only land cells</i></label>
       </div>
