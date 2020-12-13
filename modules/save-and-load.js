@@ -311,7 +311,7 @@ function saveGeoJSON_Cells() {
   const getHeight = i => parseInt(getFriendlyHeight([cells.p[i][0],cells.p[i][1]]));
 
   cells.i.forEach(i => {
-    const coordinates = getCellPoints(cells.v[i]);
+    const coordinates = getCellCoordinates(cells.v[i]);
     const height = getHeight(i);
     const biome = cells.biome[i];
     const type = pack.features[cells.f[i]].type;
@@ -389,10 +389,10 @@ function saveGeoJSON_Markers() {
   downloadFile(JSON.stringify(json), name, "application/json");
 }
 
-function getCellPoints(vertices) {
+function getCellCoordinates(vertices) {
   const p = pack.vertices.p;
-  const points = vertices.map(n => getQGIScoordinates(p[n][0] / graphWidth, p[n][1] / graphHeight));
-  return points.concat([points[0]]);
+  const coordinates = vertices.map(n => getQGIScoordinates(p[n][0], p[n][1]));
+  return coordinates.concat([coordinates[0]]);
 }
 
 function getRoutePoints(node) {
