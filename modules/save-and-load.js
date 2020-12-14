@@ -392,7 +392,7 @@ function saveGeoJSON_Markers() {
 function getCellCoordinates(vertices) {
   const p = pack.vertices.p;
   const coordinates = vertices.map(n => getQGIScoordinates(p[n][0], p[n][1]));
-  return coordinates.concat([coordinates[0]]);
+  return [coordinates.concat([coordinates[0]])];
 }
 
 function getRoutePoints(node) {
