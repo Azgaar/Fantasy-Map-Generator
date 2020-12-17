@@ -328,7 +328,7 @@ function editBurg(id) {
 
   function openInIAHG(event) {
     const id = elSelected.attr("data-id"), burg = pack.burgs[id], defSeed = `${seed}-b${id}`;
-    const openIAHG = () => openURL("https://ironarachne.com/heraldry/" + (burg.IAHG || defSeed));
+    const openIAHG = () => openURL("https://ironarachne.com/#/heraldry/" + (burg.IAHG || defSeed));
 
     if (isCtrlClick(event)) {
       prompt(`Please provide an Iron Arachne Heraldry Generator seed. <br>Default seed is a combination of FMG map seed and burg id (${defSeed})`, 

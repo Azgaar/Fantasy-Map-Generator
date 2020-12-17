@@ -315,7 +315,7 @@ function editStates() {
 
   function stateOpenCOA(event, state) {
     const defSeed = `${seed}-s${state}`;
-    const openIAHG = () => openURL("https://ironarachne.com/heraldry/" + (pack.states[state].IAHG || defSeed));
+    const openIAHG = () => openURL("https://ironarachne.com/#/heraldry/" + (pack.states[state].IAHG || defSeed));
 
     if (isCtrlClick(event)) {
       prompt(`Please provide an Iron Arachne Heraldry Generator seed. <br>Default seed is a combination of FMG map seed and state id (${defSeed})`, 
