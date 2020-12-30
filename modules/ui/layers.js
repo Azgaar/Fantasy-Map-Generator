@@ -257,8 +257,8 @@ function drawTemp() {
     addLabel(points, t);
   }
 
-  // min temp isoline covers all map
-  temperature.append("path").attr("d", `M0,0 h${svgWidth} v${svgHeight} h${-svgWidth} Z`).attr("fill", scheme(1 - (min - tMin) / delta)).attr("stroke", "none");
+  // min temp isoline covers all graph
+  temperature.append("path").attr("d", `M0,0 h${graphWidth} v${graphHeight} h${-graphWidth} Z`).attr("fill", scheme(1 - (min - tMin) / delta)).attr("stroke", "none");
 
   for (const t of isolines) {
     const path = chains.filter(c => c[0] === t).map(c => round(lineGen(c[1]))).join("");
@@ -1064,9 +1064,6 @@ function toggleCompass(event) {
     $('#compass').fadeIn();
     if (!compass.selectAll("*").size()) {
       compass.append("use").attr("xlink:href","#rose");
-      // prolongate rose lines
-      svg.select("g#rose > g#sL > line#sL1").attr("y1", -19000).attr("y2", 19000);
-      svg.select("g#rose > g#sL > line#sL2").attr("x1", -19000).attr("x2", 19000);
       shiftCompass();
     }
     if (event && isCtrlClick(event)) editStyle("compass");
