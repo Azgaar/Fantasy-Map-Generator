@@ -962,7 +962,7 @@ function drawGrid() {
   TIME && console.time("drawGrid");
   gridOverlay.selectAll("*").remove();
   const type = styleGridType.value;
-  const size = Math.max(+styleGridSize.value, 2);
+  const size = Math.max(+styleGridSize.value || +gridOverlay.attr("size"), 2);
   if (type === "pointyHex" || type === "flatHex") {
     const points = getHexGridPoints(size, type);
     const hex = "m" + getHex(size, type).slice(0, 4).join("l");

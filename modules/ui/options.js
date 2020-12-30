@@ -158,6 +158,8 @@ function changeMapSize() {
   landmass.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
   oceanPattern.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
   oceanLayers.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
+  fogging.selectAll("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
+  defs.select("mask#fog > rect").attr("width", maxWidth).attr("height", maxHeight);
 
   fitScaleBar();
   if (window.fitLegendBox) fitLegendBox();
