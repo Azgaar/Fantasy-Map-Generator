@@ -87,7 +87,8 @@ function showSupporters() {
     Jeppe Skov Jensen,María Martín López,Martin Seeger,Annie Rishor,Aram Sabatés,MadNomadMedia,Eric Foley,Vito Martono,James H. Anthony,Kevin Cossutta,
     Thirty-OneR ,ThatGuyGW ,Dee Chiu,MontyBoosh ,Achillain ,Jaden ,SashaTK,Steve Johnson,Eric Foley,Vito Martono,James H. Anthony,Kevin Cossutta,Thirty-OneR,
     ThatGuyGW,Dee Chiu,MontyBoosh,Achillain,Jaden,SashaTK,Steve Johnson,Pierrick Bertrand,Jared Kennedy,Dylan Devenny,Kyle Robertson,Andrew Rostaing,Daniel Gill,
-    Char, Jack, Barna Csíkos, Ian Rousseau, Nicholas Grabstas, Tom Van Orden jr, Bryan Brake, Akylos, Riley Seaman`;
+    Char, Jack, Barna Csíkos, Ian Rousseau, Nicholas Grabstas, Tom Van Orden jr, Bryan Brake, Akylos, Riley Seaman,
+    MaxOliver, Evan-DiLeo, Alex Debus, Joshua Vaught, Kyle S, Eric Moore, Dean Dunakin, Uniquenameosaurus, WarWizardGames`;
 
   const array = supporters.replace(/(?:\r\n|\r|\n)/g, "").split(",").map(v => capitalize(v.trim())).sort();
   alertMessage.innerHTML = "<ul style='column-count: 5; column-gap: 2em'>" + array.map(n => `<li>${n}</li>`).join("") + "</ul>";
