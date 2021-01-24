@@ -1124,6 +1124,7 @@ function reMarkFeatures() {
 
 // temporary elevate some lakes to resolve depressions and flux the water to form an open (exorheic) lake
 function elevateLakes() {
+  return;
   if (templateInput.value === "Atoll") return; // no need for Atolls
   TIME && console.time('elevateLakes');
   const cells = pack.cells, features = pack.features;
@@ -1145,7 +1146,7 @@ function defineBiomes() {
   cells.biome = new Uint8Array(cells.i.length); // biomes array
 
   for (const i of cells.i) {
-    if (f[cells.f[i]].group === "freshwater") cells.h[i] = 19; // de-elevate lakes; here to save some resources
+    // if (f[cells.f[i]].group === "freshwater") cells.h[i] = 19; // de-elevate lakes; here to save some resources
     const t = temp[cells.g[i]]; // cell temperature
     const h = cells.h[i]; // cell height
     const m = h < 20 ? 0 : calculateMoisture(i); // cell moisture
