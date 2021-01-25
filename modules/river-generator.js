@@ -35,21 +35,24 @@
 
     void function drainWater() {
       const land = cells.i.filter(i => h[i] >= 20).sort((a,b) => h[b] - h[a]);
-      const lakes = features.filter(f => f.type === "lake" && f.group === "freshwater").sort((a,b) => b.height - a.height);
-
-      const flowDown = function(min, mFlux, iFlux, ri, i = 0, 
-        wetCB = (iFlux, ri, nx, ny, i) => {
-        // pour water to the sea haven
-        riversData.push({river: ri, cell: cells.haven[i], x: nx, y: ny});
-        const mf = features[cells.f[min]]; // feature of min cell
-        if (mf.type === "lake") {
-          if (!mf.river || iFlux > mf.flux) {
-            mf.river = ri; // pour water to temporaly elevated lake
-            mf.flux = iFlux; // entering flux
-          }
-          mf.totalFlux += iFlux;
+      const outlets = new Uint32Array(features.length);
+      // enumerate lake outlet positions
+      features.filter(f => f.type === "lake" && (f.group === "freshwater" || f.group === "frozen")).forEach(l => {
+        let outlet = 0;
+        if (l.shoreline) {
+          outlet = l.shoreline[d3.scan(l.shoreline, (a,b) => h[a] - h[b])];
+        } else {
+          WARN && console.warn('Re-scanning shoreline of a lake');
+          const shallows = cells.i.filter(j => cells.t[j] === -1 && cells.f[j] === l.i);
+          let shoreline = [];
+          shallows.map(w => cells.c[w]).forEach(cList => cList.forEach(s => shoreline.push(s)));
+          outlet = shoreline[d3.scan(shoreline, (a,b) => h[a] - h[b])];
         }
-      }){
+        outlets[l.i] = outlet;
+        delete l.shoreline // cleanup temp data once used
+      });
+
+      const flowDown = function(min, mFlux, iFlux, ri, i = 0){
         let terminus = false;
         if (cells.r[min]) { // downhill cell already has river assigned
           if (mFlux < iFlux) {
@@ -65,7 +68,16 @@
         
         const nx = p[min][0], ny = p[min][1];
         if (h[min] < 20) {
-          wetCB(iFlux, ri, nx, ny, i);
+          // pour water to the sea haven
+          riversData.push({river: ri, cell: cells.haven[i], x: nx, y: ny});
+          const mf = features[cells.f[min]]; // feature of min cell
+          if (mf.type === "lake") {
+            if (!mf.river || iFlux > mf.flux) {
+              mf.river = ri; // pour water to temporaly elevated lake
+              mf.flux = iFlux; // entering flux
+            }
+            mf.totalFlux += iFlux;
+          }
           terminus = true;
         } else {
           cells.fl[min] += iFlux; // propagate flux
@@ -77,6 +89,28 @@
       land.forEach(function(i) {
         cells.fl[i] += grid.cells.prec[cells.g[i]]; // flux from precipitation
         const x = p[i][0], y = p[i][1];
+
+        // lake outlets draw from lake
+        let n = -1, out2 = 0;
+        while (outlets.includes(i, n+1)) {
+          n = outlets.indexOf(i, n+1);
+          const l = features[n];
+          if ( ! l ) {continue;}
+          let ri = l.river;
+          const j = cells.haven[i];
+          if (cells.r[j]) {
+            ri = cells.r[j];
+          } else {
+            //TODO optionally string along river
+            // cells.r[j] = ri;
+            cells.r[j] = riverNext;
+            riversData.push({river: riverNext, cell: j, x: p[j][0], y: p[j][1]});
+            riverNext++;
+          }
+          flowDown(i, cells.fl[i], l.totalFlux, cells.r[j]);
+          // prevent dropping imediately back into the lake
+          out2 = cells.c[i].filter(c => h[c] >= 20).sort((a,b) => h[a] - h[b])[0]; // downhill land cell
+        }
 
         // near-border cell: pour out of the screen
         if (cells.b[i]) {
@@ -92,7 +126,7 @@
           return;
         }
 
-        const min = cells.c[i][d3.scan(cells.c[i], (a, b) => h[a] - h[b])]; // downhill cell
+        const min = out2 ? out2 : cells.c[i][d3.scan(cells.c[i], (a, b) => h[a] - h[b])]; // downhill cell
         // let min = cells.c[i][d3.scan(cells.c[i], (a, b) => h[a] - h[b])]; // downhill cell
 
         if (cells.fl[i] < 30) {
@@ -109,49 +143,6 @@
 
         flowDown(min, cells.fl[min], cells.fl[i], cells.r[i], i);
 
-      });
-      
-      lakes.forEach( l => { // drain lakes
-        const lakeFlux = features[l.i].totalFlux;
-        let outlet = 0;
-        if (l.shoreline) {
-          outlet = l.shoreline[d3.scan(l.shoreline, (a,b) => h[a] - h[b])];
-        } else {
-          WARN && console.warn('Re-scanning shoreline of a lake');
-          const shallows = cells.i.filter(j => cells.t[j] === -1 && cells.f[j] === l.i);
-          let shoreline = l.firstCell - 1;
-          shallows.map(w => cells.c[w]).forEach(cList => shoreline += cList);
-          outlet = shoreline[d3.scan(shoreline, (a,b) => h[a] - h[b])];
-        }
-        if (!outlet) return; // depressed lake is endorheic
-        let ri = l.river
-        if(l.cells > 1) {
-          const j = cells.haven[outlet];
-          // if (features[cells.f[i]].totalFlux > l.flux * 2) {
-            ri = ++riverNext;
-          // } else {
-            //TODO String the river along to the exit
-          // }
-          // assign river to come out of the lake
-          cells.r[j] = ri;
-          riversData.push({river: ri, cell: j, x: p[j][0], y: p[j][1]});
-        }
-        flowDown(outlet, cells.fl[outlet], lakeFlux, ri, 0, (a,b,c,d) => {});
-        // two segments, so it doesn't return-stub
-        // lowest land neighbour
-        let next = cells.c[outlet].filter(c => h[c] >= 20).sort((a,b) => h[a] - h[b])[0];
-        flowDown(next, cells.fl[next], cells.fl[outlet], cells.r[outlet], outlet, (a,b,c,d) => {});
-        
-        // Keep going all the way
-        let min = cells.c[next][d3.scan(cells.c[next], (a,b) => h[a] - h[b])];
-        while (h[min] >= 20){
-          let i = min;
-          min = cells.c[i][d3.scan(cells.c[i], (a,b) => h[a] - h[b])];
-          if (flowDown(min, cells.conf[min] ? cells.fl[min] - cells.conf[min] : cells.fl[min], lakeFlux, ri, i)) 
-            break;
-        }
-
-        delete l.shoreline; // cleanup temp passed data
       });
     }()
 
@@ -194,10 +185,11 @@
   const resolveDepressions = function(h) {
     const cells = pack.cells;
     const land = cells.i.filter(i => h[i] >= 20 && h[i] < 100 && !cells.b[i]); // exclude near-border cells
-    const lakes = pack.features.filter(f => f.type === "lake" && f.group === "freshwater"); // to keep lakes flat
+    const lakes = pack.features.filter(f => f.type === "lake" && (f.group === "freshwater" || f.group === "frozen")); // to keep lakes flat
     lakes.forEach(l => {
       l.shoreline = [l.firstCell - 1]; 
       l.height = 21;
+      l.totalFlux = grid.cells.prec[cells.g[l.firstCell]];
     });
     for (let i of land.filter(i => cells.t[i] === 1)) { // select shoreline cells
       cells.c[i].map(c => pack.features[cells.f[c]]).forEach(cf => {
