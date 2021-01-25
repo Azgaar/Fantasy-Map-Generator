@@ -38,7 +38,7 @@
       const outlets = new Uint32Array(features.length);
       // enumerate lake outlet positions
       features.filter(f => f.type === "lake" && (f.group === "freshwater" || f.group === "frozen")).forEach(l => {
-        let outlet = 0;
+        let outlet;
         if (l.shoreline) {
           outlet = l.shoreline[d3.scan(l.shoreline, (a,b) => h[a] - h[b])];
         } else {
@@ -96,13 +96,44 @@
           n = outlets.indexOf(i, n+1);
           const l = features[n];
           if ( ! l ) {continue;}
-          let ri = l.river;
           const j = cells.haven[i];
-          if (cells.r[j]) {
-            ri = cells.r[j];
+          if (l.flux *2 >= l.totalFlux) { // flow through chain lakes especially
+            if(cells.r[j] !== l.river) {
+              cells.r[j] = l.river;
+              riversData.push({river: l.river, cell: j, x: p[j][0], y: p[j][1]});
+              // path that river across the lake
+              const queue = new PriorityQueue({comparator: (a,b) => a.p - b.p})
+              const cost = [], from = [];
+              let end;
+              queue.queue({e: j, p: 0});
+              pathSeek:
+              while (queue.length) {
+                const next = queue.dequeue(), n = next.e, p = next.p;
+                for (const c of cells.c[n]) {
+                  if (cells.h[c] >= 20) continue;
+                  if (cells.r[c] === l.river) {
+                    from[c] = n;
+                    end = c;
+                    break pathSeek;
+                  }
+                  const dist2 = (p[c][1] - p[n][1]) ** 2 + (p[c][0] - p[n][0]) ** 2;
+                  const totalCost = p + dist2 + (cells.t[c] ? 3 : 1); // prefer depths to keep away from edge
+                  if (from[c] && totalCost >= cost[c]) continue;
+                  from[c] = n, cost[c] = totalCost;
+                  queue.queue({e: c, p: totalCost});
+                }
+              }
+              let segment = [], current = end;
+              pathDraw:
+              for (let ii = 0, limit = 100; ii < limit; i++) {
+                if (!from[current]) break;
+                current = from[current];
+                cells.r[current] = l.river;
+                riversData.push({river: l.river, cell: current, x: p[current][0], y: p[current][1]})
+                segment.push(current);
+              }
+            }
           } else {
-            //TODO optionally string along river
-            // cells.r[j] = ri;
             cells.r[j] = riverNext;
             riversData.push({river: riverNext, cell: j, x: p[j][0], y: p[j][1]});
             riverNext++;
