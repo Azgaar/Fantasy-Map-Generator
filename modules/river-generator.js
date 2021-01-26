@@ -66,10 +66,10 @@
           }
         } else cells.r[min] = ri; // assign the river to the downhill cell
         
-        const nx = p[min][0], ny = p[min][1];
         if (h[min] < 20) {
           // pour water to the sea haven
-          riversData.push({river: ri, cell: cells.haven[i], x: nx, y: ny});
+          const oh = i ? cells.haven[i] : min;
+          riversData.push({river: ri, cell: oh, x: p[oh][0], y: p[oh][1]});
           const mf = features[cells.f[min]]; // feature of min cell
           if (mf.type === "lake") {
             if (!mf.river || iFlux > mf.flux) {
@@ -81,7 +81,7 @@
           terminus = true;
         } else {
           cells.fl[min] += iFlux; // propagate flux
-          riversData.push({river: ri, cell: min, x: nx, y: ny}); // add next River segment
+          riversData.push({river: ri, cell: min, x: p[min][0], y: p[min][1]}); // add next River segment
         }
         return terminus;
       }
@@ -97,46 +97,20 @@
           const l = features[n];
           if ( ! l ) {continue;}
           const j = cells.haven[i];
-          if (l.flux *2 >= l.totalFlux) { // flow through chain lakes especially
-            if(cells.r[j] !== l.river) {
+          if(cells.r[j] === l.river) {
+          } else {
+            let touch = false;
+            for (const c of cells.c[j]){
+              if (cells.r[c] === l.river) touch = true;
+            }
+            if (touch) {
               cells.r[j] = l.river;
               riversData.push({river: l.river, cell: j, x: p[j][0], y: p[j][1]});
-              // path that river across the lake
-              const queue = new PriorityQueue({comparator: (a,b) => a.p - b.p})
-              const cost = [], from = [];
-              let end;
-              queue.queue({e: j, p: 0});
-              pathSeek:
-              while (queue.length) {
-                const next = queue.dequeue(), n = next.e, p = next.p;
-                for (const c of cells.c[n]) {
-                  if (cells.h[c] >= 20) continue;
-                  if (cells.r[c] === l.river) {
-                    from[c] = n;
-                    end = c;
-                    break pathSeek;
-                  }
-                  const dist2 = (p[c][1] - p[n][1]) ** 2 + (p[c][0] - p[n][0]) ** 2;
-                  const totalCost = p + dist2 + (cells.t[c] ? 3 : 1); // prefer depths to keep away from edge
-                  if (from[c] && totalCost >= cost[c]) continue;
-                  from[c] = n, cost[c] = totalCost;
-                  queue.queue({e: c, p: totalCost});
-                }
-              }
-              let segment = [], current = end;
-              pathDraw:
-              for (let ii = 0, limit = 100; ii < limit; i++) {
-                if (!from[current]) break;
-                current = from[current];
-                cells.r[current] = l.river;
-                riversData.push({river: l.river, cell: current, x: p[current][0], y: p[current][1]})
-                segment.push(current);
-              }
+            } else {
+              cells.r[j] = riverNext;
+              riversData.push({river: riverNext, cell: j, x: p[j][0], y: p[j][1]});
+              riverNext++;
             }
-          } else {
-            cells.r[j] = riverNext;
-            riversData.push({river: riverNext, cell: j, x: p[j][0], y: p[j][1]});
-            riverNext++;
           }
           flowDown(i, cells.fl[i], l.totalFlux, cells.r[j]);
           // prevent dropping imediately back into the lake
