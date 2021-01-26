@@ -176,7 +176,6 @@ function editHeightmap() {
     reGraph();
     drawCoastline();
 
-    elevateLakes();
     Rivers.generate(change);
 
     if (!change) {
@@ -289,7 +288,7 @@ function editHeightmap() {
     drawCoastline();
 
     if (changeHeights.checked) {
-      elevateLakes();
+      // elevateLakes();
       Rivers.generate(changeHeights.checked);
     }
 
@@ -314,7 +313,7 @@ function editHeightmap() {
 
     for (const i of pack.cells.i) {
       const g = pack.cells.g[i];
-      if (pack.features[pack.cells.f[i]].group === "freshwater") pack.cells.h[i] = 19; // de-elevate lakes
+      // if (pack.features[pack.cells.f[i]].group === "freshwater") pack.cells.h[i] = 19; // de-elevate lakes
       const land = pack.cells.h[i] >= 20;
 
       // check biome
