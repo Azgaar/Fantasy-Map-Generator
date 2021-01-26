@@ -2383,7 +2383,7 @@
         </div>
 
         <button id="burgSeeInMFCG" data-tip="Open burg in the Medieval Fantasy City Generator by Watabou. Ctrl + click to change the seed" class="icon-map-o"></button>
-        <button id="burgOpenCOA" data-tip="Open burg's COA in the Iron Arachne Heraldry Generator. Ctrl + click to change the seed" class="icon-shield-alt"></button>
+        <button id="burgOpenCOA" data-tip="Open burg's COA. Ctrl + click to change the seed" class="icon-shield-alt"></button>
         <button id="burgRelocate" data-tip="Relocate burg" class="icon-target"></button>
         <button id="burglLegend" data-tip="Edit free text notes (legend) for this burg" class="icon-edit"></button>
         <button id="burgRemove" data-tip="Remove non-capital burg. Shortcut: Delete" class="icon-trash fastDelete"></button>
@@ -3258,6 +3258,13 @@
       </div>
     </div>
 
+    <div id="emblemsEditor" class="dialog" style="display: none">
+      <div id="emblemsBody">
+        <embed id="emblemsEmbed" type="image/svg+xml" width="200" height="200">
+      </div>
+      <input type="text" value=""/>
+    </div>
+
     <div id="unitsEditor" class="dialog stable" style="display: none">
       <div id="unitsBody" style="margin-left:1.1em">
         <div class="unitsHeader" style="margin-top:.4em">
@@ -3709,6 +3716,7 @@
   <script src="modules/routes-generator.js"></script>
   <script src="modules/religions-generator.js"></script>
   <script src="modules/military-generator.js"></script>
+  <script src="modules/coa-generator.js"></script>
   <script src="libs/polylabel.min.js"></script>
   <script src="libs/lineclip.js"></script>
   <script src="libs/jquery-ui.min.js"></script>

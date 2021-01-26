@@ -1391,6 +1391,11 @@ div.states>input.riverType {
 	width: 5em;
 }
 
+div.states>embed.emblemIcon {
+	margin: -.4em 0;
+	cursor: pointer;
+}
+
 #diplomacyBodySection > div {
 	cursor: pointer;
 }

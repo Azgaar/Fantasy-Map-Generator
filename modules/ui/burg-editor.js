@@ -43,7 +43,7 @@ function editBurg(id) {
   document.getElementById("burgEditAnchorStyle").addEventListener("click", editGroupAnchorStyle);
 
   document.getElementById("burgSeeInMFCG").addEventListener("click", openInMFCG);
-  document.getElementById("burgOpenCOA").addEventListener("click", openInIAHG);
+  document.getElementById("burgOpenCOA").addEventListener("click", editCOA);
   document.getElementById("burgRelocate").addEventListener("click", toggleRelocateBurg);
   document.getElementById("burglLegend").addEventListener("click", editBurgLegend);
   document.getElementById("burgRemove").addEventListener("click", removeSelectedBurg);
@@ -326,17 +326,10 @@ function editBurg(id) {
     }
   }
 
-  function openInIAHG(event) {
-    const id = elSelected.attr("data-id"), burg = pack.burgs[id], defSeed = `${seed}-b${id}`;
-    const openIAHG = () => openURL("https://ironarachne.com/#/heraldry/" + (burg.IAHG || defSeed));
-
-    if (isCtrlClick(event)) {
-      prompt(`Please provide an Iron Arachne Heraldry Generator seed. <br>Default seed is a combination of FMG map seed and burg id (${defSeed})`, 
-      {default:burg.IAHG || defSeed}, v => {
-        if (v && v != defSeed) burg.IAHG = v;
-        openIAHG();
-      });
-    } else openIAHG();
+  function editCOA() {
+    const id = elSelected.attr("data-id"), burg = pack.burgs[id];
+    const coa = COA.toString(burg.coa);
+    openURL("http://azgaar.github.io/Armoria/?coa=" + coa);
   }
 
   function toggleRelocateBurg() {

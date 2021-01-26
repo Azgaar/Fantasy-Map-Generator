@@ -90,7 +90,9 @@
         const name = Names.getState(basename, b.culture);
         const nomadic = [1, 2, 3, 4].includes(cells.biome[b.cell]);
         const type = nomadic ? "Nomadic" : cultures[b.culture].type === "Nomadic" ? "Generic" : cultures[b.culture].type;
-        states.push({i, color: colors[i-1], name, expansionism, capital: i, type, center: b.cell, culture: b.culture});
+        const coa = COA.generate(null);
+        coa.shield = getShield(b.culture, null);
+        states.push({i, color: colors[i-1], name, expansionism, capital: i, type, center: b.cell, culture: b.culture, coa});
         cells.burg[b.cell] = i;
       });
 
@@ -135,6 +137,12 @@
       burgs[0] = {name:undefined}; // do not store burgsTree anymore
       TIME && console.timeEnd('placeTowns');
     }
+  }
+
+  function getShield(culture, state) {
+    if (pack.cultures[culture].shield) return pack.cultures[culture].shield;
+    if (state) return pack.states[state].coa.shield;
+    return "heater";
   }
 
   // define burg coordinates, port status and define details
@@ -189,15 +197,20 @@
   }
 
   const defineBurgFeatures = function(newburg) {
+    const cells = pack.cells;
     pack.burgs.filter(b => newburg ? b.i == newburg.i : (b.i && !b.removed)).forEach(b => {
       const pop = b.population;
       b.citadel = b.capital || pop > 50 && P(.75) || P(.5) ? 1 : 0;
       b.plaza = pop > 50 || pop > 30 && P(.75) || pop > 10 && P(.5) || P(.25) ? 1 : 0;
       b.walls = b.capital || pop > 30 || pop > 20 && P(.75) || pop > 10 && P(.5) || P(.2) ? 1 : 0;
       b.shanty = pop > 30 || pop > 20 && P(.75) || b.walls && P(.75) ? 1 : 0;
-      const religion = pack.cells.religion[b.cell];
+      const religion = cells.religion[b.cell];
       const theocracy = pack.states[b.state].form === "Theocracy";
       b.temple = religion && theocracy || pop > 50 || pop > 35 && P(.75) || pop > 20 && P(.5) ? 1 : 0;
+      const province = cells.province[b.cell];
+      const parentCOA = province ? pack.provinces[province].coa : pack.states[b.state].coa;
+      b.coa = COA.generate(parentCOA);
+      b.coa.shield = getShield(b.culture, b.state);
     });
   }
 
@@ -933,7 +946,9 @@
         form[formName] += 5;
         const fullName = name + " " + formName;
         const color = getMixedColor(s.color);
-        provinces.push({i:province, state:s.i, center, burg, name, formName, fullName, color});
+        const coa = COA.generate(s.coa);
+        coa.shield = getShield(s.culture, s.i);
+        provinces.push({i:province, state:s.i, center, burg, name, formName, fullName, color, coa});
       }
     });
 
@@ -1026,7 +1041,8 @@
         const formName = singleIsle ? "Island" : isleGroup ? "Islands" : colony ? "Colony" : rw(forms["Wild"]);
         const fullName = name + " " + formName;
         const color = getMixedColor(s.color);
-        provinces.push({i:province, state:s.i, center, burg, name, formName, fullName, color});
+        const coa = COA.generate(s.coa);
+        provinces.push({i:province, state:s.i, center, burg, name, formName, fullName, color, coa});
         s.provinces.push(province);
 
         // check if there is a land way within the same state between two cells
