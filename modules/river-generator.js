@@ -91,17 +91,19 @@
         const x = p[i][0], y = p[i][1];
 
         // lake outlets draw from lake
-        let n = -1, out2 = 0;
-        while (outlets.includes(i, n+1)) {
-          n = outlets.indexOf(i, n+1);
+        let out2;
+        for (let n = outlets.indexOf(i); n !== -1; n = outlets.indexOf(i, n+1)) { // in case multiple lakes share outlet
           const l = features[n];
           if ( ! l ) {continue;}
           const j = cells.haven[i];
-          if(cells.r[j] === l.river) {
-          } else {
+          // allow chain lakes to retain identity
+          if(cells.r[j] !== l.river) {
             let touch = false;
             for (const c of cells.c[j]){
-              if (cells.r[c] === l.river) touch = true;
+              if (cells.r[c] === l.river) {
+                touch = true;
+                break;
+              }
             }
             if (touch) {
               cells.r[j] = l.river;
@@ -114,7 +116,7 @@
           }
           flowDown(i, cells.fl[i], l.totalFlux, cells.r[j]);
           // prevent dropping imediately back into the lake
-          out2 = cells.c[i].filter(c => h[c] >= 20).sort((a,b) => h[a] - h[b])[0]; // downhill land cell
+          out2 = cells.c[i].filter(c => cells.f[c] !== cells.f[j]).sort((a,b) => h[a] - h[b])[0]; // downhill cell not in the source lake
         }
 
         // near-border cell: pour out of the screen
@@ -203,10 +205,6 @@
         }
       })
     }
-    lakes.forEach(copy => {
-      pack.features[copy.i].height = copy.height;
-      pack.features[copy.i].shoreline = copy.shoreline;
-    }); // write to real data
     land.sort((a,b) => h[b] - h[a]); // highest cells go first
     let depressed = false;
 
@@ -221,11 +219,9 @@
           depressed = true;
         }
       }
-      // write changed
-      depression && lakes.forEach(copy => pack.features[copy.i].height = copy.height);
       for (const i of land) {
         const minHeight = d3.min(cells.c[i].map(c => cells.t[c] > 0 ? h[c] : 
-          pack.features[cells.f[c]].height || h[c] // NB undefined is falsy
+          pack.features[cells.f[c]].height || h[c] // NB undefined is falsy (a || b is short for a ? a : b)
           ));
         if (minHeight === 100) continue; // already max height
         if (h[i] <= minHeight) {

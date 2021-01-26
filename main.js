@@ -530,7 +530,6 @@ function generate() {
     reGraph();
     drawCoastline();
 
-    elevateLakes();
     Rivers.generate();
     defineBiomes();
 
