@@ -1391,9 +1391,20 @@ div.states>input.riverType {
 	width: 5em;
 }
 
-div.states>embed.emblemIcon {
-	margin: -.4em 0;
+div.states > .coaIcon {
+	width: 1.4em;
+	height: 1.4em;
+	margin: -.3em 0;
 	cursor: pointer;
+	transition: all .4s ease-in-out;
+}
+
+div.states > .coaIcon:hover {
+	transform: scale(8);
+}
+
+div.states > .coaIcon > use {
+	pointer-events: none;
 }
 
 #diplomacyBodySection > div {
@@ -1536,6 +1547,29 @@ rect.fillRect {
 #militaryBody div.states > div,
 #regimentsBody div.states > div {
 	width: 5em;
+}
+
+#emblemBody > div {
+	padding: 1px 3px;
+	transition: all .3s ease-out;
+}
+
+#emblemBody > div.active {
+	background-color: #54ca7728;
+}
+
+#emblemArmiger {
+	text-align: center;
+	display: block;
+}
+
+#emblemBody .label {
+	width: 5.5em;
+	display: inline-block;
+}
+
+#emblemBody select {
+	width: 8em;
 }
 
 #picker text {

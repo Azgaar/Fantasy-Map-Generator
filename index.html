@@ -2821,7 +2821,7 @@
     <div id="statesEditor" class="dialog stable" style="display: none">
       <div id="statesHeader" class="header">
         <div style="left:1.8em" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">State&nbsp;</div>
-        <div style="left:9em" data-tip="Click to sort by state form name" class="sortable alphabetically" data-sortby="form">Form&nbsp;</div>
+        <div style="left:9.7em" data-tip="Click to sort by state form name" class="sortable alphabetically" data-sortby="form">Form&nbsp;</div>
         <div style="left:16.3em" data-tip="Click to sort by capital name" class="sortable alphabetically hide" data-sortby="capital">Capital&nbsp;</div>
         <div style="left:22.2em" data-tip="Click to sort by state dominant culture" class="sortable alphabetically hide" data-sortby="culture">Culture&nbsp;</div>
         <div style="left:27.2em" data-tip="Click to sort by state burgs count" class="sortable hide" data-sortby="burgs">Burgs&nbsp;</div>
@@ -3258,11 +3258,25 @@
       </div>
     </div>
 
-    <div id="emblemsEditor" class="dialog" style="display: none">
-      <div id="emblemsBody">
-        <embed id="emblemsEmbed" type="image/svg+xml" width="200" height="200">
+    <div id="emblemEditor" class="dialog stable" style="display: none">
+      <svg viewBox="0 0 200 200"><use id="emblemImage"></use></svg>
+      <div id="emblemBody">
+        <div>
+          <b id="emblemArmiger"></b>
+        </div>
+        <div data-tip="Select state">
+          <div class="label">State:</div>
+          <select id="emblemStates"></select>
+        </div>
+        <div data-tip="Select province in state">
+          <div class="label">Province:</div>
+          <select id="emblemProvinces"></select>
+        </div>
+        <div data-tip="Select burg in province or state">
+          <div class="label">Burg:</div>
+          <select id="emblemBurgs"></select>
+        </div>
       </div>
-      <input type="text" value=""/>
     </div>
 
     <div id="unitsEditor" class="dialog stable" style="display: none">
@@ -3640,16 +3654,17 @@
     <div id="preview3d" class="dialog stable" style="display: none; padding: 0px"></div>
 
     <div id="saveMapData" style="display: none" class="dialog">
-      <div style="margin-bottom: .3em; font-weight: bold">Please select saving variant:</div>
+      <div style="margin-bottom: .3em; font-weight: bold">Please select saving method:</div>
       <div>
-        <button onclick="saveMap()" data-tip="Download the map as fully-functional .map file to your machine">.map</button>
+        <button onclick="saveMap()" data-tip="Download the project in internal .map format (reliable). Then open via 'Load' in menu">.map</button>
         <button onclick="saveSVG()" data-tip="Download the map as vector image (open in browser or Inkscape)">.svg</button>
         <button onclick="savePNG()" data-tip="Download visible part of the map as .png (lossless compressed)">.png</button>
         <button onclick="saveJPEG()" data-tip="Download visible part of the map as .jpeg (lossy compressed) image">.jpeg</button>
         <button onclick="saveGeoJSON()" data-tip="Download map data in GeoJSON format">.json</button>
-        <button onclick="quickSave()" data-tip="Save fully-functional map to browser storage. Shortcut: F6">storage</button>
+        <button onclick="quickSave()" data-tip="Save the project to browser storage (unreliable). Shortcut: F6">storage</button>
       </div>
-      <p style="font-style: italic">Generator uses pop-up window to download files. Please ensure your browser does not block popups</p>
+      <p style="font-style: italic">Keep noted that the only reliable project saving method is having .map file stored on your machine. There is no way to restore map if .map file is lost. We don't keep any data on our side.</p>
+      <p style="font-style: italic">Generator uses pop-up window to download files. Please ensure your browser does not block popups.</p>
       <div data-tip="Define scale of a saved png/jpeg image (e.g. 5x). Saving big images is slow and may cause a browser crash!" style="margin-bottom: .3em">
         PNG / JPEG scale:
         <input id="pngResolutionInput" data-stored="pngResolution" type="range" min=1 max=8 value=1 style="width: 10.8em" oninput="pngResolutionOutput.value = this.value">
@@ -3699,6 +3714,569 @@
     <input type="file" accept=".txt" id="namesbaseToLoad">
     <input type="file" accept=".json" id="styleToLoad">
   </div>
+
+  <svg id="coaDefs" width="0" height="0" style="position: absolute">
+    <defs>
+      <g id="shields">
+        <clipPath id="heater"><path d="m25,25 h150 v50 a150,150,0,0,1,-75,125 a150,150,0,0,1,-75,-125 z" /></clipPath>
+        <clipPath id="spanish"><path d="m25,25 h150 v100 a75,75,0,0,1,-150,0 z" /></clipPath>
+        <clipPath id="french"><path d="m 25,25 h 150 v 139.15 c 0,41.745 -66,18.15 -75,36.3 -9,-18.15 -75,5.445 -75,-36.3 v 0 z" /></clipPath>
+
+        <clipPath id="horsehead"><path d="m 20,40 c 0,60 40,80 40,100 0,10 -4,15 -0.35,30 C 65,185.7 81,200 100,200 c 19.1,0 35.3,-14.6 40.5,-30.4 C 144.2,155 140,150 140,140 140,120 180,100 180,40 142.72,40 150,15 100,15 55,15 55,40 20,40 Z" /></clipPath>
+        <clipPath id="horsehead2"><path d="M60 20c-5 20-10 35-35 55 25 35 35 65 30 100 20 0 35 10 45 26 10-16 30-26 45-26-5-35 5-65 30-100a87 87 0 01-35-55c-25 3-55 3-80 0z" /></clipPath>
+        <clipPath id="polish"><path d="m 90.3,6.3 c -12.7,0 -20.7,10.9 -40.5,14 0,11.8 -4.9,23.5 -11.4,31.1 0,0 12.7,6 12.7,19.3 C 51.1,90.8 30,90.8 30,90.8 c 0,0 -3.6,7.4 -3.6,22.4 0,34.3 23.1,60.2 40.7,68.2 17.6,8 27.7,11.4 32.9,18.6 5.2,-7.3 15.3,-10.7 32.8,-18.6 17.6,-8 40.7,-33.9 40.7,-68.2 0,-15 -3.6,-22.4 -3.6,-22.4 0,0 -21.1,0 -21.1,-20.1 0,-13.3 12.7,-19.3 12.7,-19.3 C 155.1,43.7 150.2,32.1 150.2,20.3 130.4,17.2 122.5,6.3 109.7,6.3 102.5,6.3 100,10 100,10 c 0,0 -2.5,-3.7 -9.7,-3.7 z" /></clipPath>
+        <clipPath id="hessen"><path d="M170 20c4 5 8 13 15 20 0 0-10 0-10 15 0 100-15 140-75 145-65-5-75-45-75-145 0-15-10-15-10-15l15-20c0 15 10-5 70-5s70 20 70 5z" /></clipPath>
+        <clipPath id="swiss"><path d="m 25,20 c -0.1,0 25.2,8.5 37.6,8.5 C 75.1,28.5 99.1,20 100,20 c 0.6,0 24.9,8.5 37.3,8.5 C 149.8,28.5 174.4,20 175,20 l -0.3,22.6 C 173.2,160.3 100,200 100,200 100,200 26.5,160.9 25.2,42.6 Z" /></clipPath>
+
+        <clipPath id="boeotian"><path d="M150 115c-5 0-10-5-10-15s5-15 10-15c10 0 7 10 15 10 10 0 0-30 0-30-10-25-30-55-65-55S45 40 35 65c0 0-10 30 0 30 8 0 5-10 15-10 5 0 10 5 10 15s-5 15-10 15c-10 0-7-10-15-10-10 0 0 30 0 30 10 25 30 55 65 55s55-30 65-55c0 0 10-30 0-30-8 0-5 10-15 10z" /></clipPath>
+        <clipPath id="roman"><path d="m 160,170 c -40,20 -80,20 -120,0 V 30 C 80,10 120,10 160,30 Z" /></clipPath>
+        <clipPath id="kite"><path d="m 53.3,46.4 c 0,4.1 1,12.3 1,12.3 7.1,55.7 45.7,141.3 45.7,141.3 0,0 38.6,-85.6 45.7,-141.2 0,0 1,-8.1 1,-12.3 C 146.7,20.9 125.8,0.1 100,0.1 74.2,0.1 53.3,20.9 53.3,46.4 Z" /></clipPath>
+        <clipPath id="oldFrench"><path d="m25,25 h150 v75 a100,100,0,0,1,-75,100 a100,100,0,0,1,-75,-100 z" /></clipPath>
+        <clipPath id="renaissance"><path d="M 25,33.9 C 33.4,50.3 36.2,72.9 36.2,81.7 36.2,109.9 25,122.6 25,141 c 0,29.4 24.9,44.1 40.2,47.7 15.3,3.7 29.3,0 34.8,11.3 5.5,-11.3 19.6,-7.6 34.8,-11.3 C 150.1,185 175,170.3 175,141 c 0,-18.4 -11.2,-31.1 -11.2,-59.3 0,-8.8 2.8,-31.3 11.2,-47.7 L 155.7,14.4 C 138.2,21.8 119.3,25.7 100,25.7 c -19.3,0 -38.2,-3.9 -55.7,-11.3 z" /></clipPath>
+        <clipPath id="baroque"><path d="m 100,25 c 18,0 50,2 75,14 v 37 l -2.7,3.2 c -4.9,5.4 -6.6,9.6 -6.7,16.2 0,6.5 2,11.6 6.9,17.2 l 2.8,3.1 v 10.2 c 0,17.7 -2.2,27.7 -7.8,35.9 -5,7.3 -11.7,11.3 -32.3,19.4 -12.6,5 -20.2,8.8 -28.6,14.5 C 103.3,198 100,200 100,200 c 0,0 -2.8,-2.3 -6.4,-4.7 C 85.6,189.8 78,186 65,180.9 32.4,168.1 26.9,160.9 25.8,129.3 L 25,116 l 3.3,-3.3 c 4.8,-5.2 7,-10.7 7,-17.3 0,-6.8 -1.8,-11.1 -6.5,-16.1 L 25,76 V 39 C 50,27 82,25 100,25 Z" /></clipPath>
+
+        <clipPath id="targe"><path d="m 20,35 c 15,0 115,-60 155,-10 -5,10 -15,15 -10,50 5,45 10,70 -10,90 C 125,195 75,195 50,175 25,150 30,130 35,85 50,95 65,85 65,70 65,50 50,45 40,50 30,55 27,65 30,70 23,73 20,70 14,70 11,60 20,45 20,35 Z" /></clipPath>
+        <clipPath id="targe2"><path d="m 84,32.2 c 6.2,-1 19.5,-31.4 94.1,-20.2 -30.57,33.64 -21.66,67.37 -11.2,95 20.2,69.5 -41.17549,84.7 -66.88,84.7 C 74.32,191.7071 8.38,168.95 32,105.9 36.88,92.88 31,89 31,82.6 35.15,82.262199 56.79,86.17 56.5,69.8 56.20,52.74 42.2,47.9 25.9,55.2 25.9,51.4 39.8,6.7 84,32.2 Z" /></clipPath>
+        <clipPath id="pavise"><path d="M95 7L39.9 37.3a10 10 0 00-5.1 9.5L46 180c.4 5.2 3.7 10 9 10h90c5.3 0 9.6-4.8 10-10l10.6-133.2a10 10 0 00-5-9.5L105 7c-4.2-2.3-6.2-2.3-10 0z" /></clipPath>
+        <clipPath id="wedged"><path d="m 51.2,19 h 96.4 c 3.1,12.7 10.7,20.9 26.5,20.8 C 175.7,94.5 165.3,144.3 100,200 43.5,154.2 22.8,102.8 25.1,39.7 37,38.9 47.1,34.7 51.2,19 Z" /></clipPath>
+
+        <clipPath id="round"><path d="m 185,100 a 85,85 0 0 1 -85,85 85,85 0 0 1 -85,-85 85,85 0 0 1 85,-85 85,85 0 0 1 85,85" /></clipPath>
+        <clipPath id="oval"><path d="m 32.3,99.5 a 67.7,93.7 0 1 1 0,1.3 z" /></clipPath>
+        <clipPath id="vesicaPiscis"><path d="M 100,0 C 63.9,20.4 41,58.5 41,100 c 0,41.5 22.9,79.6 59,100 36.1,-20.4 59,-58.5 59,-100 C 159,58.5 136.1,20.4 100,0 Z" /></clipPath>
+        <clipPath id="square"><path d="M 25,25 H 175 V 175 H 25 Z" /></clipPath>
+        <clipPath id="diamond"><path d="M 25,100 100,200 175,100 100,0 Z" /></clipPath>
+        <clipPath id="no"><path d="m0,0 h200 v200 h-200 z" /></clipPath>
+
+        <clipPath id="flag"><path d="M 10,40 h180 v120 h-180 Z" /></clipPath>
+        <clipPath id="pennon"><path d="M 10,40 l190,60 -190,60 Z" /></clipPath>
+        <clipPath id="guidon"><path d="M 10,40 h190 l-65,60 65,60 h-190 Z" /></clipPath>
+        <clipPath id="banner"><path d="m 25,25 v 170 l 25,-40 25,40 25,-40 25,40 25,-40 25,40 V 25 Z" /></clipPath>
+        <clipPath id="dovetail"><path d="m 25,25 v 175 l 75,-40 75,40 V 25 Z" /></clipPath>
+        <clipPath id="gonfalon"><path d="m 25,25 v 125 l 75,50 75,-50 V 25 Z" /></clipPath>
+        <clipPath id="pennant"><path d="M 25,15 100,200 175,15 Z" /></clipPath>
+
+        <clipPath id="fantasy1"><path d="M 100,5 C 85,30 40,35 15,40 c 40,35 20,90 40,115 15,25 40,30 45,45 5,-15 30,-20 45,-45 20,-25 0,-80 40,-115 C 160,35 115,30 100,5 Z" /></clipPath>
+        <clipPath id="fantasy2"><path d="m 152,21 c 0,0 -27,14 -52,-4 C 75,35 48,21 48,21 50,45 30,55 30,75 60,75 60,115 32,120 c 3,40 53,50 68,80 15,-30 65,-40 68,-80 -28,-5 -28,-45 2,-45 C 170,55 150,45 152,21 Z" /></clipPath>
+        <clipPath id="fantasy3"><path d="M 167,67 C 165,0 35,0 33,67 c 32,-7 27,53 -3,43 -5,45 60,65 70,90 10,-25 75,-47.51058 70,-90 -30,10 -35,-50 -3,-43 z" /></clipPath>
+        <clipPath id="fantasy4"><path d="M100 9C55 48 27 27 13 39c23 50 3 119 49 150 14 9 28 11 38 11s27-4 38-11c55-39 24-108 49-150-14-12-45 7-87-30z" /></clipPath>
+        <clipPath id="fantasy5"><path d="M 100,0 C 75,25 30,25 30,25 c 0,69 20,145 70,175 50,-30 71,-106 70,-175 0,0 -45,0 -70,-25 z" /></clipPath>
+
+        <clipPath id="noldor"><path d="m 55,75 h 2 c 3,-25 38,-10 3,20 15,50 30,75 40,105 10,-30 25,-55 40,-105 -35,-30 0,-45 3,-20 h 2 C 150,30 110,20 100,0 90,20 50,30 55,75 Z" /></clipPath>
+        <clipPath id="gondor"><path d="m 100,200 c 15,-15 38,-35 45,-60 h 5 V 30 h -5 C 133,10 67,10 55,30 h -5 v 110 h 5 c 7,25 30,45 45,60 z" /></clipPath>
+        <clipPath id="easterling"><path d="M 160,185 C 120,170 80,170 40,185 V 15 c 40,15 80,15 120,0 z" /></clipPath>
+        <clipPath id="erebor"><path d="M25 135 V60 l22-13 16-37 h75 l15 37 22 13 v75l-22 18-16 37 H63l-16-37z" /></clipPath>
+        <clipPath id="ironHills"><path d="m 30,25 60,-10 10,10 10,-10 60,10 -5,125 -65,50 -65,-50 z" /></clipPath>
+        <clipPath id="urukHai"><path d="M 30,60 C 40,60 60,50 60,20 l -5,-3 45,-17 75,40 -5,5 -35,155 -5,-35 H 70 v 35 z" /></clipPath>
+        <clipPath id="moriaOrc"><path d="M45 35c5 3 7 10 13 9h19c4-2 7-4 9-9 6 1 9 9 16 11 7-2 14 0 21 0 6-3 6-10 10-15 2-5 1-10-2-15-2-4-5-14-4-16 3 6 7 11 12 14 7 3 3 12 7 16 3 6 4 12 9 18 2 4 6 8 5 14 0 6-1 12 3 18-3 6-2 13-1 20 1 6-2 12-1 18 0 6-3 13 0 18 8 4 0 8-5 7-4 3-9 3-13 9-5 5-5 13-8 19 0 6 0 15-7 16-1 6-7 6-10 12-1-6 0-6-2-9l2-19c2-4 5-12-3-12-4-5-11-5-15 1l-13-18c-3-4-2 9-3 12 2 2-4-6-7-5-8-2-8 7-11 11-2 4-5 10-8 9 3-10 3-16 1-23-1-4 2-9-4-11 0-6 1-13-2-19-4-2-9-6-13-7V91c4-7-5-13 0-19-3-7 2-11 2-18-1-6 1-12 3-17v-1z" /></clipPath>
+      </g>
+
+      <g id="gradients">
+        <linearGradient id="luster" x1="0%" y1="100%" x2="95%" y2="10%">
+          <stop stop-color="#000" stop-opacity=".3" offset="0" />
+          <stop stop-color="#ccc" stop-opacity="0" offset=".8" />
+          <stop stop-color="#fff" stop-opacity=".2" offset="1" />
+        </linearGradient>
+        <radialGradient id="spotlight" cx="35%" cy="35%" r="100%">
+          <stop stop-color="#fff" stop-opacity=".3" offset="0" />
+          <stop stop-color="#fff" stop-opacity=".15" offset=".2" />
+          <stop stop-color="#000" stop-opacity="0" offset=".7" />
+        </radialGradient>
+        <radialGradient id="backlight" cx="100%" cy="100%" r="150%">
+          <stop stop-color="#fff" stop-opacity=".3" offset="0" />
+          <stop stop-color="#fff" stop-opacity=".15" offset=".25" />
+          <stop stop-color="#000" stop-opacity="0" offset="1" />
+        </radialGradient>
+        <linearGradient id="brink" x1="0%" y1="100%" x2="100%" y2="100%">
+          <stop stop-color="#fff" stop-opacity=".3" offset="0" />
+          <stop stop-color="#000" stop-opacity=".2" offset=".5" />
+        </linearGradient>
+      </g>
+
+      <g id="diapers">
+        <pattern id="sulzbach" width=".101" height=".101" viewBox="0 0 100 100" patternTransform="rotate(45)">
+          <g fill="#000" stroke="none" opacity=".08">
+            <circle cx="50" cy="50" r="6" />
+            <circle cx="0" cy="0" r="6" />
+            <circle cx="100" cy="0" r="6" />
+            <circle cx="100" cy="100" r="6" />
+            <circle cx="0" cy="100" r="6" />
+          </g>
+          <g fill="none" stroke="#000" stroke-width="4" opacity=".08">
+            <path d="m6 80v-60" />
+            <path d="m20 6h60" />
+            <path d="m94 20v60" />
+            <path d="m80 94h-60" />
+            <path d="m6 6c11.787 2.9106 18.776 10.599 22 22-13.205-3.8261-19.647-11.696-22-22z" />
+            <path d="m28 72c-2.9106 11.787-10.599 18.776-22 22 3.8261-13.205 11.696-19.647 22-22z" />
+            <path d="m94 6c-2.9106 11.787-10.599 18.776-22 22 3.8261-13.205 11.696-19.647 22-22z" />
+            <path d="m72 72c11.787 2.9106 18.776 10.599 22 22-13.205-3.8261-19.647-11.696-22-22z" />
+          </g>
+        </pattern>
+        <pattern id="sennwald" width=".101" height=".101" viewBox="0 0 100 100" patternTransform="rotate(45)">
+          <g fill="none" stroke="#000" opacity=".2">
+            <path d="M6 6 h88 v88 H6 z" />
+            <path d="M29.8 47c-22.6 1-9.3 35.9 10 23.5-2.6 19 32.2 21.8 25.8-4.4 21 7.7 30.5-26.4 4-24.4C92 21.7 44.4 4.3 47.6 31.2 45 7.4 3.3 26.5 30 46.9z" />
+            <path d="M59.6 45a11 10.5 38.5 11-19 9.5 11 10.5 38.5 1119-9.4z" />
+          </g>
+        </pattern>
+        <pattern id="tessellation" width=".125" height=".125" viewBox="0 0 84 84">
+          <path
+            fill="#222"
+            opacity=".1"
+            stroke-width="2"
+            fill-rule="evenodd"
+            d="M84 23c-4.417 0-8-3.584-8-7.998V8h-7.002C64.58 8 61 4.42 61 0H23c0 4.417-3.584 8-7.998 8H8v7.002C8 19.42 4.42 23 0 23v38c4.417 0 8 3.584 8 7.998V76h7.002C19.42 76 23 79.58 23 84h38c0-4.417 3.584-8 7.998-8H76v-7.002C76 64.58 79.58 61 84 61V23zM59.05 83H43V66.95c5.054-.5 9-4.764 9-9.948V52h5.002c5.18 0 9.446-3.947 9.95-9H83v16.05c-5.054.5-9 4.764-9 9.948V74h-5.002c-5.18 0-9.446 3.947-9.95 9zm-34.1 0H41V66.95c-5.053-.502-9-4.768-9-9.948V52h-5.002c-5.184 0-9.447-3.946-9.95-9H1v16.05c5.053.502 9 4.768 9 9.948V74h5.002c5.184 0 9.447 3.946 9.95 9zm0-82H41v16.05c-5.054.5-9 4.764-9 9.948V32h-5.002c-5.18 0-9.446 3.947-9.95 9H1V24.95c5.054-.5 9-4.764 9-9.948V10h5.002c5.18 0 9.446-3.947 9.95-9zm34.1 0H43v16.05c5.053.502 9 4.768 9 9.948V32h5.002c5.184 0 9.447 3.946 9.95 9H83V24.95c-5.053-.502-9-4.768-9-9.948V10h-5.002c-5.184 0-9.447-3.946-9.95-9zM50 50v7.002C50 61.42 46.42 65 42 65c-4.417 0-8-3.584-8-7.998V50h-7.002C22.58 50 19 46.42 19 42c0-4.417 3.584-8 7.998-8H34v-7.002C34 22.58 37.58 19 42 19c4.417 0 8 3.584 8 7.998V34h7.002C61.42 34 65 37.58 65 42c0 4.417-3.584 8-7.998 8H50z"
+          />
+        </pattern>
+        <pattern id="nourse" width=".25" height=".25" viewBox="0 0 26 26">
+          <g fill="none" stroke="#000" stroke-width="1" opacity=".06">
+            <path d="M26 1h-.2A25 25 0 001 26M25.2 26A25 25 0 000 1" />
+            <path d="M1 0v.2a25 25 0 0025 25" />
+            <path d="M0 25.2h.2A25 25 0 0025.2 0" />
+            <path stroke-width=".4" d="M10.5 10.6h5v5h-5z" />
+            <path stroke-width=".5" d="M11 10c0-3.2 4.1-3.2 4 0M15 16.2c0 3.4-4 3.3-4 0M16.2 11c3.2.2 3.1 4.3 0 4.1M9.9 15.1c-3.3 0-3.3-4 0-4" />
+            <g fill="#000" stroke="none">
+              <circle cx="21.9" cy="19.7" r="1" />
+              <circle cx="20" cy="20.7" r="1" />
+              <circle cx="21.9" cy="21.9" r="1" />
+              <circle cx="5" cy="7.2" r="1" />
+              <circle cx="6.9" cy="6.1" r="1" />
+              <circle cx="5" cy="5" r="1" />
+              <circle cx="21.9" cy="4.9" r="1" />
+              <circle cx="20" cy="6" r="1" />
+              <circle cx="21.9" cy="7.1" r="1" />
+              <circle cx="4.9" cy="22" r="1" />
+              <circle cx="6.9" cy="20.9" r="1" />
+              <circle cx="4.9" cy="19.8" r="1" />
+              <circle cx="12" cy="14.2" r=".9" />
+              <circle cx="14.1" cy="14.2" r=".9" />
+              <circle cx="12" cy="12" r=".9" />
+              <circle cx="14.1" cy="12" r=".9" />
+              <circle cx="1.8" cy="13.1" r=".8" />
+              <circle cx=".9" cy="14.6" r=".8" />
+              <circle cx=".9" cy="11.6" r=".8" />
+              <circle cx="24.3" cy="13.1" r=".8" />
+              <circle cx="25.2" cy="14.6" r=".8" />
+              <circle cx="25.2" cy="11.6" r=".8" />
+              <circle cx="13" cy="24.3" r=".8" />
+              <circle cx="14.6" cy="25.1" r=".8" />
+              <circle cx="11.5" cy="25.1" r=".8" />
+              <circle cx="13" cy="1.8" r=".8" />
+              <circle cx="11.4" cy="1" r=".8" />
+              <circle cx="14.6" cy="1" r=".8" />
+            </g>
+          </g>
+        </pattern>
+      </g>
+
+      <g id="patterns">
+        <!-- Semy of Charges -->
+        <template id="semy">
+          <pattern id="{id}" width=.134 height=.1787 viewBox="0 0 150 200" stroke="#000">
+            <rect x=0 y=0 width=150 height=200 fill="{c1}" stroke="none"/>
+            <g fill="{c2}">
+              <g transform="translate(-60,-50)"><charge></g>
+              <g transform="translate(10,50)"><charge></g>
+            </g>
+          </pattern>
+        </template>
+
+        <!-- Furs -->
+        <template id="vair">
+          <pattern id="{id}" width=.125 height=.25 viewBox="0 0 25 50" stroke="#000" stroke-width=.2>
+            <rect x=0 y=0 width=25 height=25 fill="{c2}" stroke="none"/>
+            <path d="m12.5,0 l6.25,6.25 v12.5 l6.25,6.25 h-25 l6.25,-6.25 v-12.5 z" fill="{c1}"/>
+            <rect x=0 y=25 width=25 height=25 fill="{c1}" stroke-width=1 stroke="none"/>
+            <path d="m25,25 l-6.25,6.25 v12.5 l-6.25,6.25 l-6.25,-6.25 v-12.5 l-6.25,-6.25 z" fill="{c2}"/>
+          </pattern>
+        </template>
+        <template id="vairInPale">
+          <pattern id="{id}" width=.125 height=.125 viewBox="0 0 25 25">
+            <rect x=0 y=0 width="100%" height="100%" fill="{c2}"/>
+            <path d="m12.5,0 l6.25,6.25 v12.5 l6.25,6.25 h-25 l6.25,-6.25 v-12.5 z" fill="{c1}" stroke="#000" stroke-width=".2"/>
+          </pattern>
+        </template>
+        <template id="vairEnPointe">
+          <pattern id="{id}" width=.125 height=.25 viewBox="0 0 25 50">
+            <rect x=0 y=0 width=25 height=25 fill="{c2}"/>
+            <path d="m12.5,0 l6.25,6.25 v12.5 l6.25,6.25 h-25 l6.25,-6.25 v-12.5 z" fill="{c1}"/>
+            <rect x=0 y=25 width=25 height=25 fill="{c1}" stroke-width=1 stroke="{c1}"/>
+            <path d="m12.5,25 l6.25,6.25 v12.5 l6.25,6.25 h-25 l6.25,-6.25 v-12.5 z" fill="{c2}"/>
+          </pattern>
+        </template>
+        <template id="ermine">
+          <pattern id="{id}" width=".125" height=".125" viewBox="0 0 25 25" fill="{c2}">
+            <rect x=0 y=0 width=25 height=25 fill="{c1}"/>
+            <path d="m19.1,14.8 c-0.7,2.9 -2.1,5 -3.5,6.5 0.6,-0.1 1.3,-0.6 2,-0.9 -0.4,0.8 -0.8,1.4 -1.2,2.1 0.2,-0.1 1,-0.8 2,-1.8 0.2,1.4 0.4,2.9 0.7,3.9 0.3,-0.9 0.5,-2.5 0.7,-3.9 0.6,0.6 1.2,1.3 2.1,1.8 l -1.2,-2.2 c 0.6,0.3 1.3,0.8 1.9,1 -1.5,-1.6 -2.8,-3.6 -3.5,-6.5z"/>
+            <path d="m16.1,14.9 c-0.1,-0.2 -1,0.4 -1.5,-0.8 1.2,1.1 2.5,-1.2 3.5,0.4 0.3,0.7 -1.1,1.8 -2,0.4z"/>
+            <path d="m21.9,14.9 c.1,-.2 1,0.4 1.5,-0.8 -1.2,1.1 -2.5,-1.2 -3.5,0.4 -0.3,0.7 1.1,1.8 2,0.4z"/>
+            <path d="m19.4,12.4 c-0.2,-0.1 0.7,-0.7 -0.6,-1.4 1.1,1.2 -2,1.7 -0.3,2.9 0.7,0.4 2.4,-0.5 0.9,-1.5z"/>
+            <path d="M5.8,4.6 C5.1,7.5 3.7,9.5 2.3,11 2.9,10.9 3.6,10.5 4.2,10.1 3.8,10.9 3.4,11.5 3,12.2 3.3,12.1 4,11.4 5.1,10.4 c 0.2,1.4 0.4,2.9 0.7,3.9 0.3,-0.9 0.5,-2.5 0.7,-3.9 0.6,0.6 1.2,1.3 2.1,1.8 L 7.3,10 c 0.6,0.3 1.3,0.8 1.9,1 C7.7,9.5 6.4,7.5 5.8,4.6Z"/>
+            <path d="M2.9,4.7 C2.8,4.6 1.9,5.1 1.3,4 2.6,5.1 3.8,2.8 4.9,4.3 5.2,5 3.8,6.1 2.9,4.7Z"/>
+            <path d="M8.6,4.7 C8.7,4.5 9.6,5.1 10.1,3.9 8.9,5.1 7.6,2.7 6.6,4.3 6.3,5 7.7,6.1 8.6,4.7Z"/>
+            <path d="M6.1,2.2 C 5.9,2.1 6.8,1.5 5.5,0.8 6.6,2.1 3.5,2.6 5.2,3.7 5.9,4.1 7.6,3.3 6.1,2.2Z"/>
+          </pattern>
+        </template>
+
+        <!-- Patterns -->
+        <template id="chequy">
+          <pattern id="{id}" width=.25 height=.25 viewBox="0 0 50 50" fill="{c2}">
+            <rect x=0 y=0 width=50 height=50 />
+            <rect x=0 y=0 width=25 height=25 fill="{c1}"/>
+            <rect x=25 y=25 width=25 height=25 fill="{c1}"/>
+          </pattern>
+        </template>
+        <template id="lozengy">
+          <pattern id="{id}" width=.125 height=.125 viewBox="0 0 50 50">
+            <rect x=0 y=0 width=50 height=50 fill="{c1}"/>
+            <polygon points="25,0 50,25 25,50 0,25" fill="{c2}"/>
+          </pattern>
+        </template>
+        <template id="fusily">
+          <pattern id="{id}" width=.125 height=.25 viewBox="0 0 50 100">
+            <rect x=0 y=0 width=50 height=100 fill="{c1}"/>
+            <polygon points="25,0 50,50 25,100 0,50" fill="{c2}"/>
+          </pattern>
+        </template>
+        <template id="pally">
+          <pattern id="{id}" width=.5 height=.125 viewBox="0 0 100 25">
+            <rect x=0 y=0 width=100 height=25 fill="{c1}"/>
+            <rect x=25 y=0 width=25 height=25 fill="{c2}"/>
+            <rect x=75 y=0 width=25 height=25 fill="{c2}"/>
+          </pattern>
+        </template>
+        <template id="barry">
+          <pattern id="{id}" width=.125 height=.5 viewBox="0 0 25 100">
+            <rect x=0 y=0 width=25 height=100 fill="{c2}"/>
+            <rect x=0 y=25 width=25 height=25 fill="{c1}"/>
+            <rect x=0 y=75 width=25 height=25 fill="{c1}"/>
+          </pattern>
+        </template>
+        <template id="gemelles">
+          <pattern id="{id}" width=.125 height=.5 viewBox="0 0 25 100">
+            <rect x=0 y=0 width=25 height=100 fill="{c2}"/>
+            <rect x=0 y=35 width=25 height=10 fill="{c1}"/>
+            <rect x=0 y=55 width=25 height=10 fill="{c1}"/>
+          </pattern>
+        </template>
+        <template id="bendy">
+          <pattern id="{id}" width=.36 height=.36 viewBox="0 0 50 50" patternTransform="rotate(45)">
+            <rect x=0 y=0 width=50 height=50 fill="{c2}"/>
+            <line x1=0 y1=37.5 x2=50 y2=37.5 stroke="{c1}" stroke-width=25 />
+          </pattern>
+        </template>
+        <template id="bendySinister">
+          <pattern id="{id}" width=.36 height=.36 viewBox="0 0 50 50" patternTransform="rotate(-45)">
+            <rect x=0 y=0 width=50 height=50 fill="{c2}"/>
+            <line x1=0 y1=37.5 x2=50 y2=37.5 stroke="{c1}" stroke-width=25 />
+          </pattern>
+        </template>
+        <template id="palyBendy">
+          <pattern id="{id}" width=.125 height=.25 viewBox="0 0 50 100" patternTransform="translate(22,44) rotate(-26.5)">
+            <rect x=0 y=0 width=50 height=100 fill="{c1}"/>
+            <polygon points="25,0 50,50 25,100 0,50" fill="{c2}"/>
+          </pattern>
+        </template>
+        <template id="pappellony">
+          <pattern id="{id}" width=.125 height=.125 viewBox="0 0 100 100">
+            <rect x=0 y=0 width=100 height=100 fill="{c1}"/>
+            <circle cx=0 cy=51 r=45 stroke="{c2}" fill="{c1}" stroke-width=10></circle>
+            <circle cx=100 cy=51 r=45 stroke="{c2}" fill="{c1}" stroke-width=10></circle>
+            <circle cx=50 cy=1 r=45 stroke="{c2}" fill="{c1}" stroke-width=10></circle>
+          </pattern>
+        </template>
+        <template id="masoned">
+          <pattern id="{id}" width=.125 height=.125 viewBox="0 0 100 100" fill="none">
+            <rect x=0 y=0 width=100 height=100 fill="{c1}"/>
+            <rect x=0 y=0 width=100 height=50 stroke="{c2}" stroke-width=4 />
+            <line x1=50 y1=50 x2=50 y2=100 stroke="{c2}" stroke-width=5 />
+          </pattern>
+        </template>
+        <template id="fretty">
+          <pattern id="{id}" width=.28 height=.28 viewBox="0 0 200 200" patternTransform="translate(-19,21) rotate(45)" stroke="#000" stroke-width=2>
+            <rect x=0 y=0 width=200 height=200 stroke="none" fill="{c1}"/>
+            <rect x=0 y=35 width=200 height=30 stroke="none" fill="{c2}"/>
+            <rect x=0 y=135 width=200 height=30 stroke="none" fill="{c2}"/>
+            <rect x=35 y=0 width=30 height=200 stroke="none" fill="{c2}"/>
+            <rect x=135 y=0 width=30 height=200 stroke="none" fill="{c2}"/>
+            <line x1=0 y1=35 x2=35 y2=35 /><line x1=0 y1=65 x2=35 y2=65 />
+            <line x1=35 y1=165 x2=35 y2=200 /><line x1=65 y1=165 x2=65 y2=200 />
+            <line x1=135 y1=0 x2=135 y2=35 /><line x1=165 y1=0 x2=165 y2=35 />
+            <line x1=135 y1=65 x2=135 y2=200 /><line x1=165 y1=65 x2=165 y2=200 />
+            <line x1=35 y1=0 x2=35 y2=135 /><line x1=65 y1=0 x2=65 y2=135 />
+            <line x1=65 y1=35 x2=200 y2=35 /><line x1=65 y1=65 x2=200 y2=65 />
+            <line x1=0 y1=135 x2=135 y2=135 /><line x1=0 y1=165 x2=135 y2=165 />
+            <line x1=165 y1=135 x2=200 y2=135 /><line x1=165 y1=165 x2=200 y2=165 />
+          </pattern>
+        </template>
+
+        <!-- Generated patterns -->
+      </g>
+
+      <g id="lines">
+        <path id="straight" d="m 0,100 v15 h 200 v -15 z" />
+        <path id="engrailed" d="m 0,95 a 6.25,6.25 0 0 0 12.5,0 6.25,6.25 0 0 0 12.5,0 6.25,6.25 0 0 0 12.5,0 6.25,6.25 0 0 0 12.5,0 6.25,6.25 0 0 0 12.5,0 6.25,6.25 0 0 0 12.5,0 6.25,6.25 0 0 0 12.5,0 6.25,6.25 0 0 0 12.5,0 6.25,6.25 0 0 0 12.5,0 6.25,6.25 0 0 0 12.5,0 6.25,6.25 0 0 0 12.5,0 6.25,6.25 0 0 0 12.5,0 6.25,6.25 0 0 0 12.5,0 6.25,6.25 0 0 0 12.5,0 6.25,6.25 0 0 0 12.5,0 6.25,6.25 0 0 0 12.5,0 v 20 H 0 Z" />
+        <path id="invecked" d="M0,102.5 a6.25,6.25,0,0,1,12.5,0 a6.25,6.25,0,0,1,12.5,0 a6.25,6.25,0,0,1,12.5,0 a6.25,6.25,0,0,1,12.5,0 a6.25,6.25,0,0,1,12.5,0 a6.25,6.25,0,0,1,12.5,0 a6.25,6.25,0,0,1,12.5,0 a6.25,6.25,0,0,1,12.5,0 a6.25,6.25,0,0,1,12.5,0 a6.25,6.25,0,0,1,12.5,0 a6.25,6.25,0,0,1,12.5,0 a6.25,6.25,0,0,1,12.5,0 a6.25,6.25,0,0,1,12.5,0 a6.25,6.25,0,0,1,12.5,0 a6.25,6.25,0,0,1,12.5,0 a6.25,6.25,0,0,1,12.5,0 v12.5 H0 z" />
+        <path id="embattled" d="M 0,105 H 2.5 V 95 h 15 v 10 h 15 V 95 h 15 v 10 h 15 V 95 h 15 v 10 h 15 V 95 h 15 v 10 h 15 V 95 h 15 v 10 h 15 V 95 h 15 v 10 h 15 V 95 h 15 v 10 h 2.5 v 10 H 0 Z" />
+        <path id="wavy" d="m 200,115 v -15 c -8.9,3.5 -16,3.1 -25,0 -8.9,-3.5 -16,-3.1 -25,0 -8.9,3.5 -16,3.2 -25,0 -8.9,-3.5 -16,-3.2 -25,0 -8.9,3.5 -16,3.1 -25,0 -8.9,-3.5 -16,-3.1 -25,0 -8.9,3.5 -16,3.2 -25,0 -8.9,-3.5 -16,-3.2 -25,0 v 15 z" />
+        <path id="raguly" d="m 200,95 h -3 l -5,10 h -10 l 5,-10 h -10 l -5,10 h -10 l 5,-10 h -10 l -5,10 h -10 l 5,-10 h -10 l -5,10 h -10 l 5,-10 h -10 l -5,10 h -10 l 5,-10 H 97 l -5,10 H 82 L 87,95 H 77 l -5,10 H 62 L 67,95 H 57 l -5,10 H 42 L 47,95 H 37 l -5,10 H 22 L 27,95 H 17 l -5,10 H 2 L 7,95 H 0 v 20 h 200 z" />
+        <path id="dancetty" d="m 0,105 10,-15 15,20 15,-20 15,20 15,-20 15,20 15,-20 15,20 15,-20 15,20 15,-20 15,20 15,-20 10,15 v 10 H 0 Z" />
+        <path id="dentilly" d="M 180,105 170,95 v 10 L 160,95 v 10 L 150,95 v 10 L 140,95 v 10 L 130,95 v 10 L 120,95 v 10 L 110,95 v 10 L 100,95 v 10 L 90,95 v 10 L 80,95 v 10 L 70,95 v 10 L 60,95 v 10 L 50,95 v 10 L 40,95 v 10 L 30,95 v 10 L 20,95 v 10 L 10,95 v 10 L 0,95 v 20 H 200 V 105 L 190,95 v 10 L 180,95 Z" />
+        <path id="angled" d="m 0,95 h 100 v 10 h 100 v 10 H 0 Z" />
+        <path id="urdy" d="m 200,90 -5,5 v 10 l -5,5 -5,-5 V 95 l -5,-5 -5,5 v 10 l -5,5 -5,-5 V 95 l -5,-5 -5,5 v 10 l -5,5 -5,-5 V 95 l -5,-5 -5,5 v 10 l -5,6 -5,-6 V 95 l -5,-5 -5,5 v 10 l -5,5 -5,-5 V 95 l -5,-5 -5,5 v 10 l -5,5 -5,-5 V 95 l -5,-5 -5,5 v 10 l -5,6 -5,-6 V 95 l -5,-5 -5,5 v 10 l -5,5 -5,-5 V 95 l -5,-5 -5,5 v 10 l -5,5 -5,-5 V 95 l -5,-5 -5,5 v 10 l -5,5 -5,-5 V 95 L 0,90 v 25 h 200" />
+        <path id="indented" d="m 100,95 5,10 5,-10 5,10 5,-10 5,10 5,-10 5,10 5,-10 5,10 5,-10 5,10 5,-10 5,10 5,-10 5,10 5,-10 5,10 5,-10 5,10 5,-10 v 20 H 0 V 95 l 5,10 5,-10 5,10 5,-10 5,10 5,-10 5,10 5,-10 5,10 5,-10 5,10 5,-10 5,10 5,-10 5,10 5,-10 5,10 5,-10 5,10 z" />
+        <path id="bevilled" d="m 0,92.5 h 110 l -20,15 H 200 V 115 H 0 Z" />
+        <path id="nowy" d="m 0,95 h 80 c 0,0 0.1,20.1 20,20 19.9,-0.1 20,-20 20,-20 h 80 v 20 H 0 Z" />
+        <path id="nowyReversed" d="m 200,105 h -80 c 0,0 -0.1,-20.1 -20,-20 -19.9,0.1 -20,20 -20,20 H 0 v 10 h 200 z" />
+        <path id="potenty" d="m 3,95 v 5 h 5 v 5 H 0 v 10 h 200 l 0.5,-10 H 193 v -5 h 5 v -5 h -15 v 5 h 5 v 5 h -15 v -5 h 5 v -5 h -15 v 5 h 5 v 5 h -15 v -5 h 5 v -5 h -15 v 5 h 5 v 5 h -15 v -5 h 5 v -5 h -15 v 5 h 5 v 5 h -15 v -5 h 5 v -5 h -15 v 5 h 5 v 5 H 100.5 93 v -5 h 5 V 95 H 83 v 5 h 5 v 5 H 73 v -5 h 5 V 95 H 63 v 5 h 5 v 5 H 53 v -5 h 5 V 95 H 43 v 5 h 5 v 5 H 33 v -5 h 5 V 95 H 23 v 5 h 5 v 5 H 13 v -5 h 5 v -5 z" />
+        <path id="potentyDexter" d="m 200,105 h -2 v -10 0 0 h -10 v 5 h 5 v 5 H 183 V 95 h -10 v 5 h 5 v 5 H 168 V 95 h -10 v 5 h 5 v 5 H 153 V 95 h -10 v 5 h 5 v 5 H 138 V 95 h -10 v 5 h 5 v 5 H 123 V 95 h -10 v 5 h 5 v 5 h -10 v 0 0 -10 H 98 v 5 h 5 v 5 H 93 V 95 H 83 v 5 h 5 v 5 H 78 V 95 H 68 v 5 h 5 v 5 H 63 V 95 H 53 v 5 h 5 v 5 H 48 V 95 H 38 v 5 h 5 v 5 H 33 V 95 H 23 v 5 h 5 v 5 H 18 V 95 H 8 v 5 h 5 v 5 H 3 V 95 H 0 v 20 h 200 z" />
+        <path id="potentySinister" d="m 2.5,95 v 10 H 0 v 10 h 202.5 v -15 h 5 v -5 h -10 v 10 h -10 v -5 h 5 v -5 h -10 v 10 h -10 v -5 h 5 v -5 h -10 v 10 h -10 v -5 h 5 v -5 h -10 v 10 h -10 v -5 h 5 v -5 h -10 v 10 h -10 v -5 h 5 v -5 h -10 v 10 h -10 v -5 h 5 v -5 h -10 v 10 h -10 v -5 h 5 v -5 h -10 v 10 h -10 v -5 h 5 v -5 h -10 v 10 h -10 v -5 h 5 v -5 h -10 v 10 h -10 v -5 h 5 v -5 h -10 v 10 h -10 v -5 h 5 v -5 h -10 v 10 h -10 v -5 h 5 v -5 h -10 v 10 h -10 v -5 h 5 v -5 z" />
+        <path id="embattledGhibellin" d="M 200,200 V 100 l -5,-5 v 10 l -5,-5 -5,5 V 95 l -5,5 -5,-5 v 10 l -5,-5 -5,5 V 95 l -5,5 -5,-5 v 10 l -5,-5 -5,5 V 95 l -5,5 -5,-5 v 10 l -5,-5 -5,5 V 95 l -5,5 -5,-5 v 10 l -5,-5 -5,5 V 95 l -5,5 -5,-5 v 10 l -5,-5 -5,5 V 95 l -5,5 -5,-5 v 10 l -5,-5 -5,5 V 95 l -5,5 -5,-5 v 10 l -5,-5 -5,5 V 95 l -5,5 -5,-5 v 10 l -5,-5 -5,5 V 95 l -5,5 -5,-5 v 10 l -5,-5 -5,5 V 95 l -5,5 v 15 h 200" />
+        <path id="embattledNotched" d="m 200,105 h -5 V 95 l -5,5 -5,-5 v 10 h -5 V 95 l -5,5 -5,-5 v 10 h -5 V 95 l -5,5 -5,-5 v 10 h -5 V 95 l -5,5 -5,-5 v 10 h -5 V 95 l -5,5 -5,-5 v 10 h -5 V 95 l -5,5 -5,-5 v 10 h -5 V 95 l -5,5 -5,-5 v 10 H 90 V 95 l -5,5 -5,-5 v 10 H 75 V 95 l -5,5 -5,-5 v 10 H 60 V 95 l -5,5 -5,-5 v 10 H 45 V 95 l -5,5 -5,-5 v 10 H 30 V 95 l -5,5 -5,-5 v 10 H 15 V 95 l -5,5 -5,-5 v 10 H 0 v 10 h 200" />
+        <path id="embattledGrady" d="m 0,95 v 20 H 200 V 95 h -2.5 v 5 h -5 v 5 h -5 v -5 h -5 v -5 h -5 v 5 h -5 v 5 h -5 v -5 h -5 v -5 h -5 v 5 h -5 v 5 h -5 v -5 h -5 v -5 h -5 v 5 h -5 v 5 h -5 v -5 h -5 v -5 h -5 v 5 h -5 v 5 h -5 v -5 h -5 v -5 h -5 v 5 h -5 v 5 h -5 v -5 h -5 v -5 h -5 v 5 h -5 v 5 h -5 v -5 h -5 v -5 h -5 v 5 h -5 v 5 h -5 v -5 h -5 v -5 h -5 v 5 h -5 v 5 h -5 v -5 h -5 v -5 h -5 v 5 h -5 v 5 h -5 v -5 h -5 v -5 z" />
+        <path id="dovetailed" d="m 200,95 h -7 l 4,10 h -14 l 4,-10 h -14 l 4,10 h -14 l 4,-10 h -14 l 4,10 h -14 l 4,-10 h -14 l 4,10 h -14 l 4,-10 h -14 l 4,10 h -14 l 4,-10 H 93 l 4,10 H 83 L 87,95 H 73 l 4,10 H 63 L 67,95 H 53 l 4,10 H 43 L 47,95 H 33 l 4,10 H 23 L 27,95 H 13 l 4,10 H 3 L 7,95 H 0 v 20 h 200" />
+        <path id="dovetailedIndented" d="m 200,100 -7,-5 4,10 -7,-5 -7,5 4,-10 -7,5 -7,-5 4,10 -7,-5 -7,5 4,-10 -7,5 -7,-5 4,10 -7,-5 -7,5 4,-10 -7,5 -7,-5 4,10 -7,-5 -7,5 4,-10 -7,5 -7,-5 4,10 -7,-5 -7,5 4,-10 -7,5 -7,-5 4,10 -7,-5 -7,5 4,-10 -7,5 -7,-5 4,10 -7,-5 -7,5 4,-10 -7,5 -7,-5 4,10 -7,-5 -7,5 4,-10 -7,5 -7,-5 4,10 -7,-5 -7,5 4,-10 -7,5 -7,-5 4,10 -7,-5 -7,5 4,-10 -7,5 v 15 h 200" />
+        <path id="nebuly" d="m 13.1,89.8 c -4.1,0 -7.3,2 -7.3,4.5 0,1.2 0.7,2.3 1.8,3.1 1.2,0.7 1.9,1.8 1.9,3 0,2.5 -3.2,4.5 -7.3,4.5 -0.5,0 -2.2,-0.2 -2.2,-0.2 V 115 h 200 v -10.1 c -3.7,-0.2 -6.7,-2.2 -6.7,-4.5 0,-1.2 0.7,-2.3 1.9,-3 1.2,-0.8 1.8,-1.9 1.8,-3.1 0,-2.5 -3.2,-4.5 -7.2,-4.5 -4.1,0 -7.3,2 -7.3,4.5 0,1.2 0.7,2.3 1.8,3.1 1.2,0.7 1.9,1.8 1.9,3 0,2.5 -3.3,4.5 -7.3,4.5 -4,0 -7.3,-2 -7.3,-4.5 0,-1.2 0.7,-2.3 1.9,-3 1.2,-0.8 1.8,-1.9 1.8,-3.1 0,-2.5 -3.2,-4.5 -7.2,-4.5 -4.1,0 -7.3,2 -7.3,4.5 0,1.2 0.7,2.3 1.8,3.1 1.2,0.7 1.9,1.8 1.9,3 -1.5,4.1 -4.2,4.4 -8.8,4.5 -4.7,-0.1 -8.7,-1.5 -8.9,-4.5 0,-1.2 0.7,-2.3 1.9,-3 1.2,-0.8 1.9,-1.9 1.9,-3.1 0,-2.5 -3.3,-4.5 -7.3,-4.5 -4.1,0 -7.3,2 -7.3,4.5 0,1.2 0.7,2.3 1.8,3.1 1.2,0.7 1.9,1.8 1.9,3 0,2.5 -3.3,4.5 -7.3,4.5 -4,0 -7.3,-2 -7.3,-4.5 0,-1.2 0.7,-2.3 1.9,-3 1.2,-0.8 1.9,-1.9 1.9,-3.1 0,-2.5 -3.3,-4.5 -7.3,-4.5 -4.1,0 -7.3,2 -7.3,4.5 0,1.2 0.7,2.3 1.8,3.1 1.2,0.7 1.9,1.8 1.9,3 0,2.5 -3.3,4.5 -7.3,4.5 -4,0 -7.3,-2 -7.3,-4.5 0,-1.2 0.7,-2.3 1.9,-3 1.2,-0.8 1.9,-1.9 1.9,-3.1 0,-2.5 -3.3,-4.5 -7.3,-4.5 -4.1,0 -7.3,2 -7.3,4.5 0,1.2 0.7,2.3 1.8,3.1 1.2,0.7 1.9,1.8 1.9,3 0,2.5 -3.3,4.5 -7.3,4.5 -4,0 -7.3,-2 -7.3,-4.5 0,-1.2 0.7,-2.3 1.9,-3 1.2,-0.8 1.9,-1.9 1.9,-3.1 0,-2.5 -3.3,-4.5 -7.3,-4.5 -4.1,0 -7.3,2 -7.3,4.5 0,1.2 0.7,2.3 1.8,3.1 1.2,0.7 1.9,1.8 1.9,3 0,2.5 -3.3,4.5 -7.3,4.5 -4,0 -7.3,-2 -7.3,-4.5 0,-1.2 0.7,-2.3 1.9,-3 1.2,-0.8 1.9,-1.9 1.9,-3.1 0,-2.5 -3.3,-4.5 -7.3,-4.5 -4.1,0 -7.3,2 -7.3,4.5 0,1.2 0.7,2.3 1.8,3.1 1.2,0.7 1.9,1.8 1.9,3 0,2.5 -3.3,4.5 -7.3,4.5 -4,0 -7.3,-2 -7.3,-4.5 0,-1.2 0.7,-2.3 1.9,-3 1.2,-0.8 1.9,-1.9 1.9,-3.1 0,-2.5 -3.3,-4.5 -7.3,-4.5 -4.1,0 -7.3,2 -7.3,4.5 0,1.2 0.7,2.3 1.8,3.1 1.2,0.7 1.9,1.8 1.9,3 0,2.5 -3.3,4.5 -7.3,4.5 -4,0 -7.3,-2 -7.3,-4.5 0,-1.2 0.7,-2.3 1.9,-3 1.2,-0.8 1.9,-1.9 1.9,-3.1 0,-2.5 -3.3,-4.5 -7.3,-4.5 z"/>
+        <path id="rayonne" d="M0 115l-.1-6 .2.8c1.3-1 2.3-2.5 2.9-4.4.5-2 .4-3.9-.3-5.4-.7-1.5-.8-3.4-.3-5.4A9 9 0 015.5 90c-.7 1.5-.8 3.4-.3 5.4.5 2 1.7 3.6 3.1 4.6a9 9 0 013.1 4.6c.5 2 .4 3.9-.3 5.4a9 9 0 003.1-4.6c.5-2 .4-3.9-.3-5.4-.7-1.5-.8-3.4-.3-5.4.5-2 1.7-3.6 3.1-4.6-.7 1.5-.8 3.4-.3 5.4.5 2 1.7 3.6 3.1 4.6a9 9 0 013.1 4.6c.5 2 .4 3.9-.3 5.4a9 9 0 003.1-4.6c.5-2 .4-3.9-.3-5.4-.7-1.5-.8-3.4-.3-5.4.5-2 1.7-3.6 3.1-4.6-.7 1.5-.8 3.4-.3 5.4.5 2 1.7 3.6 3.1 4.6a9 9 0 013.1 4.6c.5 2 .4 3.9-.3 5.4a9 9 0 003.1-4.6c.5-2 .4-3.9-.3-5.4-.7-1.5-.8-3.4-.3-5.4.5-2 1.7-3.6 3.1-4.6-.7 1.5-.8 3.4-.3 5.4.5 2 1.7 3.6 3.1 4.6a9 9 0 013.1 4.6c.5 2 .4 3.9-.3 5.4a9 9 0 003.1-4.6c.5-2 .4-3.9-.3-5.4-.7-1.5-.8-3.4-.3-5.4.5-2 1.7-3.6 3.1-4.6-.7 1.5-.8 3.4-.3 5.4.5 2 1.7 3.6 3.1 4.6a9 9 0 013.1 4.6c.5 2 .4 3.9-.3 5.4a9 9 0 003.1-4.6c.5-2 .4-3.9-.3-5.4-.7-1.5-.8-3.4-.3-5.4.5-2 1.7-3.6 3.1-4.6-.7 1.5-.8 3.4-.3 5.4.5 2 1.7 3.6 3.1 4.6a9 9 0 013.1 4.6c.5 2 .4 3.9-.3 5.4a9 9 0 003.1-4.6c.5-2 .4-3.9-.3-5.4-.7-1.5-.8-3.4-.3-5.4.5-2 1.7-3.6 3.1-4.6-.7 1.5-.8 3.4-.3 5.4.5 2 1.7 3.6 3.1 4.6a9 9 0 013.1 4.6c.5 2 .4 3.9-.3 5.4a9 9 0 003.1-4.6c.5-2 .4-3.9-.3-5.4-.7-1.5-.8-3.4-.3-5.4.5-2 1.7-3.6 3.1-4.6-.7 1.5-.8 3.4-.3 5.4.5 2 1.7 3.6 3.1 4.6a9 9 0 013.1 4.6c.5 2 .4 3.9-.3 5.4a9 9 0 003.1-4.6c.5-2 .4-3.9-.3-5.4-.7-1.5-.8-3.4-.3-5.4.5-2 1.7-3.6 3.1-4.6-.7 1.5-.8 3.4-.3 5.4.5 2 2.1 3.1 3.1 4.6 1 1.6 2.4 3.1 2.7 4.8.3 1.7.3 3.3 0 5.2 1.3-1 2.6-2.7 3.2-4.6.5-2 .4-3.9-.3-5.4-.7-1.5-.8-3.4-.3-5.4.5-2 1.7-3.6 3.1-4.6-.7 1.5-.8 3.4-.3 5.4.5 2 1.7 3.6 3.1 4.6a9 9 0 013.1 4.6c.5 2 .4 3.9-.3 5.4a9 9 0 003.1-4.6c.5-2 .4-3.9-.3-5.4-.7-1.5-.8-3.4-.3-5.4.5-2 1.7-3.6 3.1-4.6-.7 1.5-.8 3.4-.3 5.4.5 2 1.7 3.6 3.1 4.6a9 9 0 013.1 4.6c.5 2 .4 3.9-.3 5.4a9 9 0 003.1-4.6c.5-2 .4-3.9-.3-5.4-.7-1.5-.8-3.4-.3-5.4.5-2 1.7-3.6 3.1-4.6-.7 1.5-.8 3.4-.3 5.4.5 2 1.7 3.6 3.1 4.6a9 9 0 013.1 4.6c.5 2 .4 3.9-.3 5.4a9 9 0 003.1-4.6c.5-2 .4-3.9-.3-5.4-.7-1.5-.8-3.4-.3-5.4.5-2 1.7-3.6 3.1-4.6-.7 1.5-.8 3.4-.3 5.4.5 2 1.7 3.6 3.1 4.6a9 9 0 013.1 4.6c.5 2 .4 3.9-.3 5.4a9 9 0 003.1-4.6c.5-2 .4-3.9-.3-5.4-.7-1.5-.8-3.4-.3-5.4.5-2 1.7-3.6 3.1-4.6-.7 1.5-.8 3.4-.3 5.4.5 2 1.7 3.6 3.1 4.6a9 9 0 013.1 4.6c.5 2 .4 3.9-.3 5.4a9 9 0 003.1-4.6c.5-2 .4-3.9-.3-5.4-.7-1.5-.8-3.4-.3-5.4.5-2 1.7-3.6 3.1-4.6-.7 1.5-.8 3.4-.3 5.4.5 2 1.7 3.6 3.1 4.6a9 9 0 013.1 4.6c.5 2 .4 3.9-.3 5.4a9 9 0 003.1-4.6c.5-2 .4-3.9-.3-5.4-.7-1.5-.8-3.4-.3-5.4.5-2 1.7-3.6 3.1-4.6-.7 1.5-.8 3.4-.3 5.4.5 2 1.7 3.6 3.1 4.6a9 9 0 013.1 4.6c.5 2 .4 3.9-.3 5.4a9 9 0 003.1-4.6c.5-2 .4-3.9-.3-5.4-.7-1.5-.8-3.4-.3-5.4.5-2 1.7-3.6 3.1-4.6-.7 1.5-.8 3.4-.3 5.4.5 2 1.7 3.6 3.1 4.6a9 9 0 013.1 4.6c.5 2 .4 3.9-.3 5.4a9 9 0 003.1-4.6c.5-2 .4-3.9-.3-5.4-.7-1.5-.8-3.4-.3-5.4.5-2 1.7-3.6 3.1-4.6-.7 1.5-.8 3.4-.3 5.4.75 2.79 2.72 4.08 4.45 5.82L200 115z"/>
+        <path id="seaWaves" d="m 28.83,94.9 c -4.25,0 -7.16,3.17 -8.75,5.18 -1.59,2.01 -4.5,5.18 -8.75,5.18 -2.16,0 -3.91,-1.63 -3.91,-3.64 0,-2.01 1.44,-3.6 3.6,-3.6 0.7,0 1.36,0.17 1.93,0.48 -0.33,-2.03 -2.19,-3.56 -4.45,-3.56 -4.24,0 -6.91,3.13 -8.5,5.13 V 115 h 200 v -14.89 c -1.59,2.01 -4.5,5.18 -8.75,5.18 -2.16,0 -3.91,-1.63 -3.91,-3.64 0,-2.01 1.75,-3.64 3.91,-3.64 0.7,0 1.36,0.17 1.93,0.48 -0.34,-2.01 -2.2,-3.55 -4.46,-3.55 -4.25,0 -7.16,3.17 -8.75,5.18 -1.59,2.01 -4.5,5.18 -8.75,5.18 -2.16,0 -3.91,-1.63 -3.91,-3.64 0,-2.01 1.75,-3.64 3.91,-3.64 0.7,0 1.36,0.17 1.93,0.48 -0.34,-2.01 -2.21,-3.55 -4.46,-3.55 -4.25,0 -7.16,3.17 -8.75,5.18 -1.59,2.01 -4.5,5.18 -8.75,5.18 -2.16,0 -3.91,-1.63 -3.91,-3.64 0,-2.01 1.75,-3.64 3.91,-3.64 0.7,0 1.36,0.17 1.93,0.48 -0.34,-2.01 -2.21,-3.55 -4.46,-3.55 -4.25,0 -7.16,3.17 -8.75,5.18 -1.59,2.01 -4.5,5.18 -8.75,5.18 -2.16,0 -3.91,-1.63 -3.91,-3.64 0,-2.01 1.75,-3.64 3.91,-3.64 0.7,0 1.36,0.17 1.93,0.48 -0.34,-2.01 -2.2,-3.55 -4.46,-3.55 -4.25,0 -7.16,3.17 -8.75,5.18 -1.59,2.01 -4.5,5.18 -8.75,5.18 -2.16,0 -3.91,-1.63 -3.91,-3.64 0,-2.01 1.44,-3.6 3.6,-3.6 0.7,0 1.36,0.17 1.93,0.48 -0.34,-2.01 -2.21,-3.55 -4.46,-3.55 -4.25,0 -6.6,3.09 -8.19,5.09 -1.59,2.01 -4.5,5.18 -8.75,5.18 -2.16,0 -3.91,-1.63 -3.91,-3.64 0,-2.01 1.75,-3.64 3.91,-3.64 0.7,0 1.36,0.17 1.93,0.48 -0.34,-2.01 -2.21,-3.55 -4.46,-3.55 -4.25,0 -7.16,3.17 -8.75,5.18 -1.59,2.01 -4.5,5.18 -8.75,5.18 -2.16,0 -3.91,-1.63 -3.91,-3.64 0,-2.01 1.75,-3.64 3.91,-3.64 0.7,0 1.36,0.17 1.93,0.48 -0.34,-2.01 -2.2,-3.55 -4.46,-3.55 -4.25,0 -7.16,3.17 -8.75,5.18 -1.59,2.01 -4.5,5.18 -8.75,5.18 -2.16,0 -3.91,-1.63 -3.91,-3.64 0,-2.01 1.75,-3.64 3.91,-3.64 0.7,0 1.36,0.17 1.93,0.48 -0.34,-2.01 -2.2,-3.55 -4.46,-3.55 -4.25,0 -7.16,3.17 -8.75,5.18 -1.59,2.01 -4.5,5.18 -8.75,5.18 -2.16,0 -3.91,-1.63 -3.91,-3.64 0,-2.01 1.75,-3.64 3.91,-3.64 0.7,0 1.36,0.17 1.93,0.48 -0.34,-2.01 -2.21,-3.55 -4.46,-3.55 z"/>
+        <path id="dragonTeeth" d="M 9.4,85 C 6.5,88.1 4.1,92.9 3,98.8 1.9,104.6 2.3,110.4 3.8,115 2.4,113.5 0,106.6 0,109.3 v 5.7 h 200 v -5.7 c -1.1,-2.4 -2,-5.1 -2.6,-8 -1.1,-5.9 -0.7,-11.6 0.8,-16.2 -2.9,3.1 -5.3,7.9 -6.4,13.8 -1.1,5.9 -0.7,11.6 0.8,16.2 -2.9,-3.1 -5.3,-7.9 -6.4,-13.8 -1.1,-5.9 -0.7,-11.6 0.8,-16.2 -2.9,3.1 -5.3,7.9 -6.4,13.8 -1.1,5.9 -0.7,11.6 0.8,16.2 -2.9,-3.1 -5.3,-7.9 -6.4,-13.8 -1.1,-5.9 -0.7,-11.6 0.8,-16.2 -2.9,3.1 -5.3,7.9 -6.4,13.8 -1.1,5.9 -0.7,11.6 0.8,16.2 -2.9,-3.1 -5.3,-7.9 -6.4,-13.8 -1.1,-5.9 -0.7,-11.6 0.8,-16.2 -2.9,3.1 -5.3,7.9 -6.4,13.8 -1.1,5.9 -0.7,11.6 0.8,16.2 -2.9,-3.1 -5.3,-7.9 -6.4,-13.8 -1.1,-5.9 -0.7,-11.6 0.8,-16.2 -2.9,3.1 -5.3,7.9 -6.4,13.8 -1.1,5.9 -0.7,11.6 0.8,16.2 -2.9,-3.1 -5.3,-7.9 -6.4,-13.8 -1.1,-5.9 -0.7,-11.6 0.8,-16.2 -2.9,3.1 -5.3,7.9 -6.4,13.8 -1.1,5.9 -0.7,11.6 0.8,16.2 -2.9,-3.1 -5.3,-7.9 -6.4,-13.8 -1.1,-5.9 -0.7,-11.6 0.8,-16.2 -2.9,3.1 -5.3,7.9 -6.4,13.8 -1.1,5.9 -0.7,11.6 0.8,16.2 -2.9,-3.1 -5.3,-7.9 -6.4,-13.8 -1.1,-5.9 -0.7,-11.6 0.8,-16.2 -2.9,3.1 -5.3,7.9 -6.4,13.8 -1.1,5.9 -0.7,11.6 0.8,16.2 -2.9,-3.1 -5.3,-7.9 -6.4,-13.8 -1.1,-5.9 -0.7,-11.6 0.8,-16.2 -2.9,3.1 -5.3,7.9 -6.4,13.8 -1.1,5.9 -0.7,11.6 0.8,16.2 -1.4,-1.5 -2.8,-3.9 -3.8,-6.1 -1.1,-2.4 -2.3,-6.1 -2.6,-7.7 -0.2,-5.9 0.2,-11.7 1.7,-16.3 -3,3.1 -5.3,7.9 -6.4,13.8 -1.1,5.8 -0.7,11.6 0.8,16.2 -2.9,-3.1 -5.3,-7.9 -6.4,-13.8 -1,-5.8 -0.7,-11.6 0.9,-16.2 -3,3.1 -5.3,7.9 -6.4,13.8 -1.1,5.8 -0.7,11.6 0.8,16.2 -2.9,-3.1 -5.3,-7.9 -6.4,-13.8 -1.1,-5.8 -0.7,-11.6 0.9,-16.2 -3,3.1 -5.3,7.9 -6.4,13.8 -1.1,5.8 -0.7,11.6 0.8,16.2 -2.9,-3.1 -5.3,-7.9 -6.4,-13.8 C 63,95.4 63.4,89.6 64.9,85 c -2.9,3.1 -5.3,7.9 -6.3,13.8 -1.1,5.8 -0.7,11.6 0.8,16.2 -3,-3.1 -5.3,-7.9 -6.4,-13.8 -1.1,-5.8 -0.7,-11.6 0.8,-16.2 -2.9,3.1 -5.3,7.9 -6.4,13.8 -1,5.8 -0.6,11.6 0.9,16.2 -3,-3.1 -5.3,-7.9 -6.4,-13.8 -1.1,-5.8 -0.7,-11.6 0.8,-16.2 -2.9,3.1 -5.3,7.9 -6.4,13.8 -1,5.8 -0.7,11.6 0.9,16.2 -3,-3.1 -5.3,-7.9 -6.4,-13.8 -1.1,-5.8 -0.7,-11.6 0.8,-16.2 -2.9,3.1 -5.3,7.9 -6.4,13.8 -1.1,5.8 -0.7,11.6 0.9,16.2 -3,-3.1 -5.3,-7.9 -6.4,-13.8 C 18.6,95.4 19,89.6 20.5,85 17.6,88.1 15.2,92.9 14.1,98.8 13,104.6 13.4,110.4 14.9,115 12,111.9 9.6,107.1 8.6,101.2 7.5,95.4 7.9,89.6 9.4,85 Z"/>
+        <path id="firTrees" d="m 3.9,90 -4,7 2,-0.5 L 0,100 v 15 h 200 v -15 l -1.9,-3.5 2,0.5 -4,-7 -4,7 2,-0.5 -4,7 2,-0.5 -4,7 -4,-7 2,0.5 -4,-7 2,0.5 -4,-7 -4,7 2,-0.5 -4,7 2,-0.5 -4,7 -4,-7 2,0.5 -4,-7 2,0.5 -4,-7 -4,7 2,-0.5 -4,7 2,-0.5 -4,7 -4,-7 2,0.5 -4,-7 2,0.5 -4.1,-7 -4,7 2,-0.5 -4,7 2,-0.5 -4,7 -4,-7 2,0.5 -4,-7 2,0.5 -4,-7 -4,7 2,-0.5 -4,7 2,-0.5 -4,7 -4,-7 2,0.5 -4,-7 2,0.5 -4,-7 -4,7 2,-0.5 -4,7 2,-0.5 -4,7 -4,-7 2,0.5 -4,-7 2,0.5 -4,-7 -4,7 2,-0.5 -4,7 2,-0.5 -4,7 -4,-7 2,0.5 -4,-7 2,0.5 -4,-7 -4,7 2,-0.5 -4,7 2,-0.5 -4,7 -4,-7 2,0.5 -4,-7 2,0.5 -4,-7 -4,7 2,-0.5 -4,7 2,-0.5 -4,7 -4,-7 2,0.5 -4,-7 2,0.5 -4.1,-7 -4,7 2,-0.5 -4,7 2,-0.5 -4,7 -4,-7 2,0.5 -4,-7 2,0.5 -4,-7 -4,7 2,-0.5 -4,7 2,-0.5 -4,7 -4,-7 2,0.5 -4,-7 2,0.5 -4,-7 -4,7 2,-0.5 -4,7 2,-0.5 -4,7 -4,-7 2,0.5 -4,-7 2,0.5 z" />
+        <path id="flechy" d="m 0,100 h 85 l 15,-15 15,15 h 85 v 15 H 0 Z" />
+        <path id="barby" d="m 0,100 h 85 l 15,15 15,-15 h 85 v 15 H 0 Z" />
+        <path id="enclavy" d="M 0,100 H 85 V 85 h 30 v 15 h 85 v 15 H 0 Z" />
+        <path id="escartely" d="m 0,100 h 85 v 15 h 30 v -15 h 85 v 15 H 0 Z" />
+        <path id="arched" d="m 100,95 c 40,-0.2 100,20 100,20 H 0 c 0,0 60,-19.8 100,-20 z" />
+        <path id="archedReversed" d="m 0,85 c 0,0 60,20.2 100,20 40,-0.2 100,-20 100,-20 v 30 H 0 Z" />
+      </g>
+
+      <g id="divisions">
+        <!-- Lined Divisions -->
+        <template id="perFess">
+          <path dpath="{line}" />
+          <rect x="0" y="115" width="200" height="85" />
+        </template>
+        <template id="perPale">
+          <path dpath="{line}" transform="rotate(-90)" transform-origin="center" />
+          <rect x="115" y="0" width="85" height="200" />
+        </template>
+        <template id="perBend">
+          <path dpath="{line}" transform="rotate(45) scale(1.1)" transform-origin="center" />
+          <rect x="0" y="115" width="200" height="85" transform="rotate(45) scale(1.1)" transform-origin="center" />
+        </template>
+        <template id="perBendSinister">
+          <path dpath="{line}" transform="rotate(-45) scale(1.1)" transform-origin="center" />
+          <rect x="0" y="115" width="200" height="85" transform="rotate(-45) scale(1.1)" transform-origin="center" />
+        </template>
+        <template id="perChevron">
+          <path dpath="{line}" transform="translate(-70.7,70.7) rotate(-45) scale(-1,1)" transform-origin="center" />
+          <polygon points="20,200 100,120 180,200" />
+          <path dpath="{line}" transform="translate(70.7,70.7) rotate(45)" transform-origin="center" />
+        </template>
+        <template id="perChevronReversed">
+          <path dpath="{line}" transform="translate(-70.7,-70.7) rotate(225) scale(1,1)" transform-origin="center" />
+          <polygon points="21,0 100,79 179,0" />
+          <path dpath="{line}" transform="translate(70.7,-70.7) rotate(-225) scale(-1,1)" transform-origin="center" />
+        </template>
+        <template id="perCross">
+          <rect x="100" y="0" width="100" height="92.5" />
+          <rect x="0" y="107.5" width="100" height="92.5" />
+          <path dpath="{line}" transform="translate(0,50) scale(.5001,.5001)" />
+          <path dpath="{line}" transform="translate(50,0) scale(-.5001,-.5001)" transform-origin="center" />
+        </template>
+        <template id="perPile">
+          <path dpath="{line}" transform="translate(-35,15) rotate(66.8) scale(-1,1)" transform-origin="center" />
+          <path dpath="{line}" transform="translate(35,15) rotate(-66.8)" transform-origin="center" />
+          <polygon points="0,0 86,200 114,200 200,0 200,200 0,200" />
+        </template>
+
+        <!-- Straight line Divisions -->
+        <template id="perSaltire"><polygon points="0,0 0,200 200,0 200,200" /></template>
+        <template id="gyronny"><polygon points="0,0 200,200 200,100 0,100" /><polygon points="200,0 0,200 100,200 100,0" /></template>
+        <template id="chevronny"><path d="M0,80 100,-15 200,80 200,120 100,25 0,120z M0,160 100,65 200,160 200,200 100,105 0,200z M0,240 100,145 200,240 0,240z" /></template>
+      </g>
+
+      <g id="ordinaries">
+        <!-- Lined Ordinaries -->
+        <template id="fess">
+          <path dpath="{line}" transform="translate(0,-25)" />
+          <path dpath="{line}" transform="translate(0,25) rotate(180.00001)" transform-origin="center" />
+          <rect x="0" y="88" width="200" height="24" stroke="none" />
+        </template>
+        <template id="pale">
+          <path dpath="{line}" transform="rotate(-90) translate(0,-25)" transform-origin="center" />
+          <path dpath="{line}" transform="rotate(90) translate(0,-25)" transform-origin="center" />
+          <rect x="88" y="0" width="24" height="200" stroke="none" />
+        </template>
+        <template id="bend">
+          <path dpath="{line}" transform="rotate(45) translate(0,-25) scale(1.1,1)" transform-origin="center" />
+          <path dpath="{line}" transform="rotate(225) translate(0,-25) scale(1.1,1)" transform-origin="center" />
+          <rect x="0" y="88" width="200" height="24" transform="rotate(45) scale(1.1,1)" transform-origin="center" stroke="none" />
+        </template>
+        <template id="bendSinister">
+          <path dpath="{line}" transform="rotate(-45) translate(0,-25) scale(1.1,1)" transform-origin="center" />
+          <path dpath="{line}" transform="rotate(-225) translate(0,-25) scale(1.1,1)" transform-origin="center" />
+          <rect x="0" y="88" width="200" height="24" transform="rotate(-45) scale(1.1,1)" transform-origin="center" stroke="none" />
+        </template>
+        <template id="chief">
+          <path dpath="{line}" transform="translate(0,-25) rotate(180.00001)" transform-origin="center" />
+          <rect x="0" y="0" width="200" height="62" stroke="none" />
+        </template>
+        <template id="bar">
+          <path dpath="{line}" transform="translate(0,-12.5)" transform-origin="center" />
+          <path dpath="{line}" transform="translate(0,12.5) rotate(180.00001)" transform-origin="center" />
+          <rect x="0" y="94" width="200" height="12" stroke="none" />
+        </template>
+        <template id="gemelle">
+          <path dpath="{line}" transform="translate(0,-22.5)" />
+          <path dpath="{line}" transform="translate(0,22.5) rotate(180.00001)" transform-origin="center" />
+        </template>
+        <template id="fessCotissed">
+          <path dpath="{line}" transform="translate(0,-35) scale(1,.5)" transform-origin="center" />
+          <path dpath="{line}" transform="translate(0,35) rotate(180.0001) scale(1,.5)" transform-origin="center" />
+          <rect x="0" y="80" width="200" height="40" />
+        </template>
+        <template id="fessDoubleCotissed">
+          <rect x="0" y="85" width="200" height="30" />
+          <rect x="0" y="72.5" width="200" height="7.5" />
+          <rect x="0" y="120" width="200" height="7.5" />
+          <path dpath="{line}" transform="translate(0,-40) scale(1,.5)" transform-origin="center" />
+          <path dpath="{line}" transform="translate(0,40) rotate(180.0001) scale(1,.5)" transform-origin="center" />
+        </template>
+        <template id="bendlet">
+          <path dpath="{line}" transform="rotate(45) translate(0,-16) scale(1.1,1)" transform-origin="center" />
+          <path dpath="{line}" transform="rotate(225) translate(0,-16) scale(1.1,1)" transform-origin="center" />
+          <rect x="0" y="94" width="200" height="12" transform="rotate(45) scale(1.1,1)" transform-origin="center" stroke="none" />
+        </template>
+        <template id="bendletSinister">
+          <path dpath="{line}" transform="rotate(-45) translate(0,-16) scale(1.1,1)" transform-origin="center" />
+          <path dpath="{line}" transform="rotate(-225) translate(0,-16) scale(1.1,1)" transform-origin="center" />
+          <rect x="0" y="94" width="200" height="12" transform="rotate(-45) scale(1.1,1)" transform-origin="center" stroke="none" />
+        </template>
+        <template id="terrace">
+          <path dpath="{line}" transform="translate(0,50)" />
+          <rect x="0" y="164" width="200" height="36" stroke="none" />
+        </template>
+        <template id="cross">
+          <path dpath="{line}" transform="translate(0,-14.5)" transform-origin="center" />
+          <path dpath="{line}" transform="rotate(180) translate(0,-14.5)" transform-origin="center" />
+          <path dpath="{line}" transform="rotate(-90) translate(0,-14.5)" transform-origin="center" />
+          <path dpath="{line}" transform="rotate(-270) translate(0,-14.5)" transform-origin="center" />
+        </template>
+        <template id="crossParted">
+          <path dpath="{line}" transform="translate(0,-20)" transform-origin="center" />
+          <path dpath="{line}" transform="rotate(180) translate(0,-20)" transform-origin="center" />
+          <path dpath="{line}" transform="rotate(-90) translate(0,-20)" transform-origin="center" />
+          <path dpath="{line}" transform="rotate(-270) translate(0,-20)" transform-origin="center" />
+        </template>
+        <template id="saltire">
+          <path dpath="{line}" transform="rotate(45) translate(0,-14.5) scale(1.1,1)" transform-origin="center" />
+          <path dpath="{line}" transform="rotate(225) translate(0,-14.5) scale(1.1,1)" transform-origin="center" />
+          <path dpath="{line}" transform="rotate(-45) translate(0,-14.5) scale(1.1,1)" transform-origin="center" />
+          <path dpath="{line}" transform="rotate(-225) translate(0,-14.5) scale(1.1,1)" transform-origin="center" />
+        </template>
+        <template id="saltireParted">
+          <path dpath="{line}" transform="rotate(45) translate(0,-20) scale(1.1,1)" transform-origin="center" />
+          <path dpath="{line}" transform="rotate(225) translate(0,-20) scale(1.1,1)" transform-origin="center" />
+          <path dpath="{line}" transform="rotate(-45) translate(0,-20) scale(1.1,1)" transform-origin="center" />
+          <path dpath="{line}" transform="rotate(-225) translate(0,-20) scale(1.1,1)" transform-origin="center" />
+        </template>
+
+        <!-- Solid Ordinaries -->
+        <template id="mount"><path d="m0,250 a100,100,0,0,1,200,0" /></template>
+        <template id="point"><path d="M0,200 Q80,180 100,135 Q120,180 200,200" /></template>
+        <template id="flaunches"><path d="M0,0 q120,100 0,200 M200,0 q-120,100 0,200" /></template>
+        <template id="gore"><path d="M20,0 Q30,75 100,100 Q80,150 100,200 L0,200 L0,0 Z" /></template>
+        <template id="pall"><polygon points="0,0 30,0 100,70 170,0 200,0 200,30 122,109 122,200 78,200 78,109 0,30" /></template>
+        <template id="pallReversed"><polygon points="0,200 0,170 78,91 78,0 122,0 122,91 200,170 200,200 170,200 100,130 30,200" /></template>
+        <template id="chevron"><polygon points="0,125 100,60 200,125 200,165 100,100 0,165" /></template>
+        <template id="chevronReversed"><polygon points="0,75 100,140 200,75 200,35 100,100 0,35" /></template>
+        <template id="gyron"><polygon points="0,0 100,100 0,100" /></template>
+        <template id="quarter"><rect x="0" y="0" width="50%" height="50%" /></template>
+        <template id="canton"><rect x="0" y="0" width="37.5%" height="37.5%" /></template>
+        <template id="pile"><polygon points="70,0 100,175 130,0" /></template>
+        <template id="pileInBend"><polygon points="200,200 200,144 25,25 145,200" /></template>
+        <template id="pileInBendSinister"><polygon points="0,200 0,144 175,25 55,200" /></template>
+        <template id="piles"><polygon points="46,0 75,175 103,0" /><polygon points="95,0 125,175 154,0" /></template>
+        <template id="pilesInPoint"><path d="M15,0 100,200 60,0Z M80,0 100,200 120,0Z M140,0 100,200 185,0Z" /></template>
+        <template id="label"><path d="m 46,54.8 6.6,-15.6 95.1,0 5.9,15.5 -16.8,0.1 4.5,-11.8 L 104,43 l 4.3,11.9 -16.8,0 4.3,-11.8 -37.2,0 4.5,11.8 -16.9,0 z" /></template>
+      </g>
+
+      <g id="charges">
+        <!-- Conventional -->
+        <g id="lozenge"><polygon points="100,60 135,100 100,140 65,100" /></g>
+        <g id="fusil"><polygon points="100,55 130,100 100,145 70,100" /></g>
+        <g id="mascle"><path d="M100,55 l30,45 l-30,45 l-30,-45z M100,70.75 l-19.5,29.25 l19.5,29.25 l19.5,-29.25z" /></g>
+        <g id="rustre"><path d="M100,55 l30,45 l-30,45 l-30,-45z M100,100 m-12,0 a12,12 0 1,0 24,0 a12,12 0 1,0 -24,0" /></g>
+        <g id="lozengeFaceted">
+          <polygon points="100,55 130,100 100,145 70,100"></polygon>
+          <polygon points="100,99 130,99 100,55" fill="#000" opacity=".2"></polygon>
+          <polygon points="99,100 70,100 99,145" fill="#000" opacity=".2"></polygon>
+          <polygon points="100,100 130,100 100,145" fill="#000" opacity=".3"></polygon>
+        </g>
+        <g id="lozengePloye"><path d="M100,60 Q105,95 140,100 Q105,105 100,140 Q95,105 60,100 Q95,95 100,60" stroke-width=".5" /></g>
+        <g id="roundel"><circle cx="100" cy="100" r="30"></circle></g>
+        <g id="roundel2"><circle cx="100" cy="100" r="30"></circle><path d="M124,95 a23,23 0,0,1,-25,30" stroke-width=".5" fill="none" /></g>
+        <g id="annulet"><path d="M100,100 m-30,0 a30,30 0 1,0 60,0 a30,30 0 1,0 -60,0 M100,100 m-20,0 a20,20 0 1,1 40,0 a20,20 0 1,1 -40,0" /></g>
+        <g id="mullet"><polygon points="100,60,108.98,87.64,138.04,87.64,114.53,104.72,123.51,132.36,100,115.28,76.49,132.36,85.47,104.72,61.96,87.64,91.02,87.64"></polygon></g>
+        <g id="mulletPierced"><path d="M100,60 L108.98,87.64 L138.04,87.64 L114.53,104.72 L123.51,132.36 L100,115.28 L76.49,132.36 L85.47,104.72 L61.96,87.64 L91.02,87.64Z M100,100 m-8,0 a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0" /></g>
+        <g id="mulletFaceted">
+          <path d="M100,60 L108.98,87.64 L138.04,87.64 L114.53,104.72 L123.51,132.36 L100,115.28 L76.49,132.36 L85.47,104.72 L61.96,87.64 L91.02,87.64Z" />
+          <path d="M100,100 L100,60 L108.98,87.64 L100,100 L138.04,87.64 L114.53,104.72 L100,100 L123.51,132.36 L100,115.28 L100,100 L76.49,132.36 L85.47,104.72 L100,100 L61.96,87.64 L91.02,87.64Z" fill="#000" stroke-width=".2" fill-opacity=".2" />
+        </g>
+        <g id="mullet4"><polygon points="100,60,109.9,90.1,140,100,109.9,109.9,100,140,90.1,109.9,60,100,90.1,90.1"></polygon></g>
+        <g id="mullet6"><polygon points="100,60,107.64,86.77,134.64,80,115.28,100,134.64,120,107.64,113.23,100,140,92.36,113.23,65.36,120,84.72,100,65.36,80,92.36,86.77"></polygon></g>
+        <g id="mullet6Pierced"><path d="M100,60 L107.64,86.77 L134.64,80 L115.28,100 L134.64,120 L107.64,113.23 L100,140 L92.36,113.23 L65.36,120 L84.72,100 L65.36,80 L92.36,86.77Z M100,100 m-8,0 a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0" /></g>
+        <g id="mullet6Faceted">
+          <path d="M100,60 L107.64,86.77 L133.64,80 L115.28,100 L134.64,120 L107.64,113.23 L100,140 L92.36,113.23 L65.36,120 L84.72,100 L65.36,80 L92.36,86.77Z" />
+          <path d="M100,100 L134,80 L115.28,100 L100,100 L134.64,120 L107.64,113.23 L100,100 L100,140 L92.36,113.23 L100,100 L65.36,120 L84.72,100 L100,100 L65.36,80 L92.36,86.77 L100,100 L100,60 L107.64,86.77Z" fill="#000" stroke-width=".2" fill-opacity=".2" />
+        </g>
+        <g id="mullet7"><polygon points="100,60,106.63,86.23,131.27,75.06,114.9,96.6,139,108.9,111.95,109.53,117.36,136.04,100,115.28,82.64,136.04,88.05,109.53,61,108.9,85.1,96.6,68.73,75.06,93.37,86.23"></polygon></g>
+        <g id="mullet8"><polygon points="100,60,105.85,85.88,128.28,71.72,114.12,94.15,140,100,114.12,105.85,128.28,128.28,105.85,114.12,100,140,94.15,114.12,71.72,128.28,85.88,105.85,60,100,85.88,94.15,71.72,71.72,94.15,85.88"></polygon></g>
+        <g id="mullet10"><polygon points="100,60,104.72,85.47,123.51,67.64,112.36,91.02,138.04,87.64,115.28,100,138.04,112.36,112.36,108.98,123.51,132.36,104.72,114.53,100,140,95.28,114.53,76.49,132.36,87.64,108.98,61.96,112.36,84.72,100,61.96,87.64,87.64,91.02,76.49,67.64,95.28,85.47"></polygon></g>
+        <g id="billet"><polygon points="80,65 120,65 120,135 80,135"></polygon></g>
+        <g id="delf"><polygon points="75,75 125,75 125,125 75,125"></polygon></g>
+        <g id="triangle"><polygon points="100,60 135,130 65,130"></polygon></g>
+        <g id="trianglePierced"><path d="M100,60 L135,130 L65,130Z M100,80 L80,120 L120,120Z" /></g>
+        <g id="goutte"><path d="m 100,134 c 17,-1 16,-19 10,-25 -1.9,-1.8 -4.6,-5.3 -3.9,-8.1 C 108,94 102,90 102,87 c -1,-7 3,-7 3,-13 -0.1,-6.2 -3.3,-8.7 -6,-12 1.2,3 2,6 1,9 -1.5,5.9 -6.2,6.9 -8,11 -2,5 3,11 3,15 -0.6,9.1 -9,13 -9,23 0.3,11.3 9,14 14,14 z" /></g>
+        <g id="heart"><path d="m 100,84 c -0.7,-1.1 -1.4,-2.2 -2.4,-3.2 -6.3,-6.8 -16.6,-6.8 -23,0 -6.3,6.8 -5.4,17.8 1,24.6 6.3,6.8 17.7,12.4 24.2,27 7.3,-14.4 18.2,-20.2 24.5,-27 6.3,-6.8 7.3,-17.8 1,-24.6 -6.3,-6.8 -16.6,-6.8 -23,0 C 101.4,81.8 100.7,82.9 100,84 Z" stroke-width=".5" /></g>
+        <g id="pique"><path d="m 100,70 c -5.7,10.3 -25.2,19.8 -25.2,32.8 0,6.2 5.6,11.1 12.6,11.1 4.4,0 8.4,-2 10.6,-5.1 -0.9,8.9 -3.5,18.8 -12.6,20.7 H 100 114.6 c -9.2,-1.9 -11.7,-11.8 -12.6,-20.7 2.2,3.1 6.2,5.1 10.6,5.1 7,0 12.6,-5 12.6,-11.1 C 125.2,89.8 105.7,80.3 100,70 Z" stroke-width=".5" /></g>
+        <g id="trefle"><path d="m 100,70 c -7.8,0 -14.1,6.4 -14.1,14.3 0,5.6 3.2,10.5 7.9,12.8 1.4,0.7 -0.1,2.5 -1.2,1.3 -2.6,-3 -6.4,-4.8 -10.6,-4.8 -7.8,0 -14.1,6.4 -14.1,14.3 0,7.9 6.3,14.3 14.1,14.3 7.7,0 14.1,-6.3 14.1,-14.1 0,-1.4 2.1,-1.5 2.1,0.3 0,2.9 -2.8,18.5 -4.3,21.5 3.955628,-0.85651 8.16171,-1.15253 12,0 -1.5,-3 -4.3,-18.6 -4.3,-21.5 0,-1.9 2.1,-1.7 2.1,-0.3 0.1,7.8 6.4,14.1 14.1,14.1 7.8,0 14.1,-6.4 14.1,-14.3 0,-7.9 -6.3,-14.3 -14.1,-14.3 -4.2,0 -8,1.9 -10.6,4.8 -1,1.2 -2.6,-0.6 -1.2,-1.3 4.7,-2.3 7.9,-7.2 7.9,-12.8 C 114.1,76.4 107.8,70 100,70 Z" stroke-width=".5" /></g>
+        <g id="сarreau"><path d="M 100,59.8 C 94.4,75.1 86.2,88.6 75,100 86.2,111.4 94.4,124.9 100,140.2 105.6,124.9 113.8,111.4 125,100 113.8,88.6 105.6,75.1 100,59.8 Z" stroke-width=".5" /></g>
+        <g id="sun"><path d="m 84.7,63 c -1,3.9 0.1,7.1 2,10.1 1.5,2.3 2.4,4.8 2.4,7.5 -0.7,0.4 -1.3,0.8 -1.9,1.2 L 71.8,71.7 82.2,86.9 c -0.2,0.3 -0.4,0.5 -0.5,0.8 -2.9,-1.3 -5.7,-1.6 -8.3,-1.1 -3.7,0.7 -6.9,-0.1 -10.2,-2 2.1,3.5 5.1,5 8.6,5.7 2.7,0.6 5.1,1.7 7,3.6 -0.2,0.7 -0.4,1.5 -0.5,2.2 l -18.1,3.7 18.1,3.5 c 0,0.3 0.1,0.6 0.2,0.9 -3,1.1 -5.2,2.9 -6.6,5.1 -2.1,3.1 -4.9,4.8 -8.6,5.8 3.9,1 7.1,-0.1 10.1,-2 2.3,-1.5 4.8,-2.4 7.5,-2.4 0.4,0.7 0.8,1.3 1.2,1.9 L 71.8,128.1 87.1,117.7 c 0.3,0.2 0.5,0.4 0.8,0.5 -1.3,2.9 -1.6,5.7 -1.1,8.3 0.7,3.7 -0.1,6.8 -2,10.1 3.5,-2.1 5,-5.1 5.7,-8.6 0.6,-2.7 1.7,-5.1 3.6,-7 0.7,0.2 1.5,0.4 2.2,0.5 l 3.7,18.1 3.5,-18.1 c 0.3,0 0.6,-0.1 0.9,-0.2 1.1,3 2.9,5.2 5.1,6.6 3.1,2.1 4.8,4.9 5.8,8.6 1,-3.9 -0.1,-7.1 -2,-10.1 -1.5,-2.3 -2.4,-4.8 -2.4,-7.5 0.7,-0.4 1.3,-0.8 1.9,-1.2 l 15.4,10.2 -10.4,-15.3 c 0.2,-0.3 0.4,-0.5 0.5,-0.8 2.9,1.3 5.7,1.6 8.3,1.1 3.7,-0.7 6.8,0.1 10.1,2 -2.1,-3.5 -5.1,-4.9 -8.6,-5.7 -2.7,-0.6 -5.1,-1.7 -7,-3.6 0.2,-0.7 0.4,-1.5 0.5,-2.2 l 18.1,-3.7 -18.1,-3.5 c 0,-0.3 -0.1,-0.6 -0.2,-0.9 3,-1.1 5.2,-2.9 6.6,-5.1 2.1,-3.1 4.9,-4.8 8.6,-5.7 -3.9,-1 -7.1,0.1 -10.1,2 -2.3,1.5 -4.8,2.4 -7.5,2.4 -0.4,-0.7 -0.8,-1.3 -1.2,-1.9 l 10.2,-15.4 -15.3,10.3 c -0.3,-0.2 -0.5,-0.4 -0.8,-0.5 1.3,-2.9 1.6,-5.7 1.1,-8.3 -0.7,-3.7 0.1,-6.9 2,-10.2 -3.5,2.1 -4.9,5.1 -5.7,8.6 -0.6,2.7 -1.7,5.2 -3.7,7 -0.7,-0.2 -1.5,-0.4 -2.2,-0.5 L 100,60 96.5,78.1 c -0.3,0 -0.6,0.1 -0.9,0.2 -1.1,-3 -2.9,-5.2 -5.1,-6.6 -3.1,-2.1 -4.8,-4.9 -5.7,-8.6 z" stroke-width=".5"/></g>
+
+        <!-- Crosses -->
+        <g id="crossHummetty" stroke-width=".5"><path d="m 90,60 h 20 v 30 h 30 v 20 h -30 v 30 H 90 V 110 H 60 V 90 h 30 z" /></g>
+        <g id="crossVoided" stroke-width=".5"><path d="M 90 60 L 90 90 L 60 90 L 60 110 L 90 110 L 90 140 L 110 140 L 110 110 L 140 110 L 140 90 L 110 90 L 110 60 L 90 60 z M 95 65 L 105 65 L 105 95 L 135 95 L 135 105 L 105 105 L 105 135 L 95 135 L 95 105 L 65 105 L 65 95 L 95 95 L 95 65 z " /></g>
+        <g id="crossPattee" stroke-width=".5"><path d="M 77 60 A 52 52 0 0 1 96 96 A 52 52 0 0 1 60 77 L 60 123 A 52 52 0 0 1 96 104 A 52 52 0 0 1 77 140 L 123 140 A 52 52 0 0 1 104 104 A 52 52 0 0 1 140 123 L 140 77 A 52 52 0 0 1 104 96 A 52 52 0 0 1 123 60 L 77 60 z" /></g>
+        <g id="crossPotent" stroke-width=".5"><path d="M 83,60 V 70 H 95 V 95 H 70 V 83 H 60 v 34 h 10 v -12 h 25 v 25 H 83 v 10 h 34 v -10 h -12 v -25 h 25 v 12 h 10 V 83 H 130 V 95 H 105 V 70 h 12 V 60 Z" /></g>
+        <g id="crosslet" stroke-width=".5"><path d="m 95,60 h 10 v 10 h 12 v 10 h -12 v 15 h 15 V 83 h 10 v 12 h 10 v 10 h -10 v 12 h -10 v -12 h -15 v 15 h 12 v 10 h -12 v 10 H 95 V 130 H 83 V 120 H 95 V 105 H 80 v 12 H 70 V 105 H 60 V 95 H 70 V 83 H 80 V 95 H 95 V 80 H 83 V 70 h 12 z" /></g>
+        <g id="crossClechy" stroke-width=".5"><path d="m 96.9,103.1 c -0.3,8.7 -3.5,17 -8.7,22.3 5.2,2.3 9.5,7.7 11.8,14.5 2.3,-6.9 6.6,-12.2 11.8,-14.5 -5.2,-5.4 -8.4,-13.6 -8.7,-22.3 8.7,0.3 17,3.5 22.3,8.7 2.3,-5.2 7.7,-9.5 14.5,-11.8 -6.9,-2.3 -12.2,-6.7 -14.5,-11.8 -5.4,5.2 -13.6,8.4 -22.3,8.7 0.3,-8.7 3.5,-17 8.7,-22.3 -5.2,-2.4 -9.5,-7.7 -11.8,-14.6 -2.3,6.9 -6.7,12.2 -11.8,14.5 5.1,5.4 8.4,13.7 8.7,22.4 -8.7,-0.3 -17,-3.6 -22.4,-8.7 -2.3,5.1 -7.6,9.5 -14.5,11.8 6.9,2.3 12.2,6.6 14.5,11.8 7.2,-5.3 13.9,-8.5 22.4,-8.7 z" /></g>
+        <g id="crossBottony" stroke-width=".5"><path d="M 78.7,95.8 A 5.5,5.5 0 1 0 69,95.4 a 5.5,5.5 0 1 0 0,9.3 5.5,5.5 0 1 0 9.7,-0.4 h 17.1 v 17.2 a 5.5,5.5 0 1 0 -0.4,9.7 5.5,5.5 0 1 0 9.3,0 5.5,5.5 0 1 0 -0.4,-9.7 v -17.2 h 17.1 a 5.5,5.5 0 1 0 9.7,0.4 5.5,5.5 0 1 0 0,-9.3 5.5,5.5 0 1 0 -9.7,0.4 h -17.1 V 78.7 A 5.5,5.5 0 1 0 104.7,69 a 5.5,5.5 0 1 0 -9.3,0 5.5,5.5 0 1 0 0.4,9.7 v 17.2 z" /></g>
+        <g id="crossFleury" stroke-width=".5"><path d="m 95.2,125.9 a 2.6,2.6 0 0 1 -2.6,2.6 2.6,2.6 0 0 1 -2.6,-2.6 4.8,4.8 0 0 0 -1.7,3.7 4.8,4.8 0 0 0 4.8,4.8 4.8,4.8 0 0 0 3,-1.1 7.8,7.8 0 0 0 3.9,6.8 7.8,7.8 0 0 0 3.9,-6.8 4.8,4.8 0 0 0 3,1.1 4.8,4.8 0 0 0 4.8,-4.8 4.8,4.8 0 0 0 -1.7,-3.7 2.6,2.6 0 0 1 -2.6,2.6 2.6,2.6 0 0 1 -2.6,-2.6 v -21.1 h 21.1 a 2.6,2.6 0 0 1 2.6,2.6 2.6,2.6 0 0 1 -2.6,2.6 4.8,4.8 0 0 0 3.7,1.7 4.8,4.8 0 0 0 4.8,-4.8 4.8,4.8 0 0 0 -1.1,-3 7.8,7.8 0 0 0 6.8,-3.9 7.8,7.8 0 0 0 -6.8,-3.9 4.8,4.8 0 0 0 1.1,-3 4.8,4.8 0 0 0 -4.8,-4.8 4.8,4.8 0 0 0 -3.7,1.7 2.6,2.6 0 0 1 2.6,2.6 2.6,2.6 0 0 1 -2.6,2.6 h -21.1 V 74.1 a 2.6,2.6 0 0 1 2.6,-2.6 2.6,2.6 0 0 1 2.6,2.6 4.8,4.8 0 0 0 1.7,-3.7 4.8,4.8 0 0 0 -4.8,-4.8 4.8,4.8 0 0 0 -3,1.1 A 7.8,7.8 0 0 0 100,60 a 7.8,7.8 0 0 0 -3.9,6.8 4.8,4.8 0 0 0 -3,-1.1 4.8,4.8 0 0 0 -4.8,4.8 4.8,4.8 0 0 0 1.7,3.7 2.6,2.6 0 0 1 2.6,-2.6 2.6,2.6 0 0 1 2.6,2.6 V 95.2 H 74.1 a 2.6,2.6 0 0 1 -2.6,-2.6 2.6,2.6 0 0 1 2.6,-2.6 4.8,4.8 0 0 0 -3.7,-1.7 4.8,4.8 0 0 0 -4.8,4.8 4.8,4.8 0 0 0 1.1,3 A 7.8,7.8 0 0 0 60,100 a 7.8,7.8 0 0 0 6.8,3.9 4.8,4.8 0 0 0 -1.1,3 4.8,4.8 0 0 0 4.8,4.8 4.8,4.8 0 0 0 3.7,-1.7 2.6,2.6 0 0 1 -2.6,-2.6 2.6,2.6 0 0 1 2.6,-2.6 h 21.1 z"/></g>
+        <g id="crossPatonce" stroke-width=".5"><path d="m 100,60.1 a 8.8,8.8 0 0 0 -4.4,7.6 5.1,5.1 0 0 0 -8.8,0 64.8,64.7 0 0 1 8.5,27.7 64.8,64.7 0 0 1 -27.8,-8.5 5.1,5.1 0 0 0 0,8.8 A 8.8,8.8 0 0 0 60,100.1 a 8.8,8.8 0 0 0 7.6,4.4 5.1,5.1 0 0 0 0,8.8 64.8,64.7 0 0 1 27.8,-8.5 64.8,64.7 0 0 1 -8.5,27.7 5.1,5.1 0 0 0 8.8,0 8.8,8.8 0 0 0 4.4,7.6 8.8,8.8 0 0 0 4.4,-7.6 5.1,5.1 0 0 0 8.8,0 64.8,64.7 0 0 1 -8.5,-27.7 64.8,64.7 0 0 1 27.8,8.5 5.1,5.1 0 0 0 0,-8.8 8.8,8.8 0 0 0 7.6,-4.4 8.8,8.8 0 0 0 -7.6,-4.4 5.1,5.1 0 0 0 0,-8.8 64.8,64.7 0 0 1 -27.8,8.5 64.8,64.7 0 0 1 8.5,-27.7 5.1,5.1 0 0 0 -8.8,0 8.8,8.8 0 0 0 -4.4,-7.6 z" /></g>
+        <g id="crossPommy" stroke-width=".5"><path d="M 95.8,104.2 H 76 a 8.5,8.5 0 1 1 0,-8.5 H 95.8 V 75.9 a 8.5,8.5 0 1 1 8.5,0 V 95.7 H 124 a 8.5,8.5 0 1 1 0,8.5 H 104.2 V 124 a 8.5,8.5 0 1 1 -8.5,0 z" /></g>
+        <g id="crossGamma" stroke-width=".5"><path d="m 95,60 h 22 v 10 h -12 v 25 h 35 v 22 h -10 v -12 h -25 v 35 H 83 V 130 H 95 V 105 H 60 V 83 h 10 v 12 h 25 z" /></g>
+        <g id="crossArrowed" stroke-width=".5"><path d="M 100 60 L 84 76 L 92 76 L 92 92 L 76 92 L 76 84 L 60 100 L 76 116 L 76 108 L 92 108 L 92 124 L 84 124 L 100 140 L 116 124 L 108 124 L 108 108 L 124 108 L 124 116 L 140 100 L 124 84 L 124 92 L 108 92 L 108 76 L 116 76 L 100 60 z " /></g>
+        <g id="crossFitchy" stroke-width=".5"><path d="M 90,90 V 70 l 10,-10 10,10 v 20 h 20 l 10,10 -10,10 h -20 v 20 L 100,140 90,130 V 110 H 70 L 60,100 70,90 Z" /></g>
+        <g id="crossCercelee" stroke-width=".5"><path d="m 133,100.05 c 3.59,-0.26 6.43,-4.77 6.43,-10.24 0,-5.65 -3.02,-10.24 -6.73,-10.24 h -5.73 c 2.36,0 4.28,3.24 4.28,7.26 0,4.03 -1.92,7.26 -4.28,7.26 h -20.94 V 73.14 c 0,-2.36 3.28,-4.29 7.26,-4.29 3.98,0 7.26,1.93 7.26,4.29 v -5.73 c 0,-3.72 -4.59,-6.74 -10.23,-6.74 -5.47,0 -9.97,2.84 -10.23,6.43 -0.26,-3.59 -4.77,-6.43 -10.23,-6.43 -5.64,0 -10.23,3.02 -10.23,6.74 v 5.73 c 0,-2.36 3.24,-4.29 7.26,-4.29 4.02,0 7.26,1.93 7.26,4.29 V 94.1 H 73.19 c -2.36,0 -4.28,-3.28 -4.28,-7.26 0,-3.98 1.92,-7.26 4.28,-7.26 h -5.73 c -3.72,0 -6.73,4.59 -6.73,10.24 0,5.47 2.84,9.98 6.43,10.24 -3.59,0.26 -6.43,4.77 -6.43,10.24 0,5.65 3.02,10.24 6.73,10.24 h 5.73 c -2.36,0 -4.28,-3.24 -4.28,-7.26 0,-4.03 1.92,-7.26 4.28,-7.26 h 20.94 v 20.96 c 0,2.36 -3.28,4.29 -7.26,4.29 -3.98,0 -7.26,-1.93 -7.26,-4.29 v 5.73 c 0,3.72 4.59,6.74 10.23,6.74 5.47,0 9.93,-2.84 10.23,-6.43 0.26,3.59 4.77,6.43 10.23,6.43 5.64,0 10.23,-3.02 10.23,-6.74 v -5.73 c 0,2.36 -3.24,4.29 -7.26,4.29 -4.02,0 -7.26,-1.93 -7.26,-4.29 v -20.96 h 20.94 c 2.36,0 4.28,3.28 4.28,7.26 0,3.98 -1.92,7.26 -4.28,7.26 h 5.73 c 3.72,0 6.73,-4.59 6.73,-10.24 0,-5.47 -2.84,-9.98 -6.43,-10.24 z"/></g>
+        <g id="crossMoline" stroke-width=".5"><path d="m 104.3,74.9 c 0,-6.4 2.7,-11.4 5.1,-14.8 -4.1,0 -7.2,2 -9.4,4.9 -2.2,-2.9 -5.3,-4.9 -9.4,-4.9 2.5,3.4 5.1,8.4 5.1,14.8 V 95.7 H 74.9 c -6.4,0 -11.3,-2.7 -14.8,-5.1 0,4.1 2,7.2 4.9,9.4 -2.9,2.2 -4.9,5.4 -4.9,9.4 3.4,-2.5 8.3,-5.1 14.8,-5.1 h 20.8 v 20.9 c 0,6.4 -2.7,11.4 -5.1,14.8 4.1,0 7.2,-2 9.4,-4.9 2.2,2.9 5.3,4.9 9.4,4.9 -2.5,-3.4 -5.1,-8.4 -5.1,-14.8 v -20.9 h 20.8 c 6.4,0 11.3,2.7 14.8,5.1 0,-4.1 -2,-7.2 -4.9,-9.4 2.9,-2.2 4.9,-5.4 4.9,-9.4 -3.4,2.5 -8.3,5.1 -14.8,5.1 h -20.8 z" /></g>
+        <g id="crossFourchy" stroke-width=".5"><path d="M 95,105 H 76 c -1,0 -3,0 -4,1 l -7,5 -3,-5 9,-6 -9,-6 3,-5 7,5 c 1,1 3,1 4,1 H 95 V 75 c 0,-1 0,-3 -1,-4 l -5,-8 5,-3 6,9 6,-9 5,4 -5,8 c -1,1 -1,3 -1,4 v 20 h 20 c 1,0 3,0 4,-1 l 7,-5 3,5 -9,6 9,6 -3,5 -7,-5 c -1,-1 -3,-1 -4,-1 h -20 v 18 c 0,1 0,3 1,4 l 5,8 -5,4 -6,-9 -6,9 -5,-4 5,-8 c 1,-1 1,-3 1,-4 z" /></g>
+        <g id="crossAvellane" stroke-width=".5"><path d="m 99.9,60 c -1.8,0 -2.4,3.2 -4.2,3.5 -2.6,0.5 -4.9,-3.2 -7.6,-2.4 -2.6,0.7 -5,3 -6.4,6.3 1.9,-2 4.3,-2.6 6.5,-1.6 2.2,0.9 4.1,3.3 5,6.4 0.3,1.2 0.1,2.5 -0.5,3.5 -0.8,1.8 -1.3,6 -1.3,8.1 0,6.6 2,9.8 7.6,10.2 -2.8,0.3 -4.7,2.1 -5,5 -0.3,-5.6 -3.6,-7.5 -10.3,-7.5 -2.1,0 -6.3,0.4 -8.1,1.3 -1,0.6 -2.3,0.8 -3.5,0.5 -3.1,-0.9 -5.5,-2.7 -6.4,-4.9 -0.9,-2.2 -0.3,-4.6 1.6,-6.5 -3.3,1.4 -5.6,3.7 -6.3,6.4 -0.7,2.6 2.9,4.9 2.4,7.5 -0.3,1.7 -3.2,2.3 -3.2,4.1 0,1.8 2.9,2.5 3.2,4.3 0.4,2.6 -3.1,4.9 -2.4,7.5 0.7,2.6 3,4.9 6.3,6.4 -1.9,-1.9 -2.5,-4.2 -1.7,-6.4 0.9,-2.2 3.2,-4 6.2,-5 1.2,-0.3 2.6,-0.2 3.6,0.4 1.8,0.9 6.1,1.3 8.2,1.3 6.6,0 10.1,-1.8 10.4,-7.4 0.2,2.9 2.1,4.7 5,5 -5.6,0.3 -7.7,3.4 -7.7,10.1 0,2.1 0.4,6.3 1.3,8.1 0.6,1 0.8,2.3 0.5,3.5 -0.9,3.1 -2.7,5.5 -5,6.4 -2.2,0.9 -4.6,0.3 -6.5,-1.6 1.4,3.3 3.7,5.6 6.4,6.3 2.6,0.7 5,-2.9 7.6,-2.4 1.8,0.3 2.5,3.3 4.2,3.3 1.8,0 2.4,-3 4.2,-3.3 2.6,-0.5 4.9,3.2 7.6,2.4 2.6,-0.7 5,-3 6.4,-6.3 -1.9,1.9 -4.2,2.6 -6.4,1.7 -2.2,-0.9 -4,-3.2 -5,-6.2 -0.3,-1.2 -0.2,-2.6 0.4,-3.6 0.9,-1.8 1.3,-6.1 1.3,-8.2 0,-6.6 -1.7,-9.8 -7.3,-10.2 2.8,-0.3 4.7,-2.1 5,-5 0.3,5.6 3.3,7.5 10,7.5 2.1,0 6.4,-0.5 8.2,-1.3 1,-0.6 2.4,-0.7 3.6,-0.4 3,0.9 5.3,2.7 6.2,5 0.9,2.2 0.3,4.6 -1.7,6.4 3.3,-1.4 5.6,-3.7 6.3,-6.4 0.7,-2.6 -2.9,-4.9 -2.4,-7.5 0.3,-1.8 3.4,-2.6 3.4,-4.4 0,-1.7 -3,-2.3 -3.4,-4 -0.5,-2.6 3.1,-4.9 2.4,-7.5 -0.7,-2.6 -3,-4.9 -6.3,-6.4 2,1.9 2.6,4.3 1.6,6.5 -0.9,2.2 -3.3,4.1 -6.4,4.9 -1.2,0.3 -2.5,0.1 -3.5,-0.5 -1.8,-0.8 -6,-1.3 -8.1,-1.3 -6.6,0 -9.6,1.8 -9.9,7.4 -0.2,-2.8 -2.1,-4.7 -5,-5 5.6,-0.3 7.2,-3.4 7.2,-10.1 0,-2.1 -0.5,-6.4 -1.3,-8.2 -0.5,-1 -0.7,-2.4 -0.4,-3.6 0.9,-3 2.7,-5.3 5,-6.2 2.2,-0.9 4.6,-0.3 6.4,1.7 -1.4,-3.3 -3.7,-5.6 -6.4,-6.3 -2.6,-0.7 -5,2.9 -7.6,2.4 -1.8,-0.4 -2.3,-3.5 -4.2,-3.5 z"/></g>
+        <g id="crossErminee" stroke-width=".5"><path d="m 100.1,60 c -1.6,2.1 -3.2,4.1 -4,6.7 -1.7,-2.2 -6.5,-3.4 -9.2,-3.2 5,4.7 9.5,9.2 13.2,30.9 3.7,-21.7 8.2,-26.2 13.2,-30.9 -2.8,-0.3 -7.5,1 -9.2,3.2 C 103.2,64.1 101.6,62.1 100.1,60 Z M 63.6,86.8 c -0.3,2.8 1,7.5 3.2,9.2 -2.5,0.8 -4.6,2.4 -6.7,4 2.1,1.6 4.1,3.2 6.7,4 -2.2,1.7 -3.4,6.5 -3.2,9.2 4.7,-5 9.2,-9.5 30.9,-13.2 -21.7,-3.7 -26.2,-8.2 -30.9,-13.2 z m 72.9,0 c -4.7,5 -9.2,9.5 -30.9,13.2 21.7,3.7 26.2,8.2 30.9,13.2 0.3,-2.8 -1,-7.5 -3.2,-9.2 2.5,-0.8 4.6,-2.4 6.7,-4 -2.1,-1.6 -4.1,-3.2 -6.7,-4 2.2,-1.7 3.4,-6.5 3.2,-9.2 z m -43.2,3.4 c -1.7,0 -3.1,1.4 -3.1,3.1 0,1.7 1.4,3.1 3.1,3.1 1.7,0 3.1,-1.4 3.1,-3.1 0,-1.7 -1.4,-3.1 -3.1,-3.1 z m 13.5,0 c -1.7,0 -3.1,1.4 -3.1,3.1 0,1.7 1.4,3.1 3.1,3.1 1.7,0 3.1,-1.4 3.1,-3.1 0,-1.7 -1.4,-3.1 -3.1,-3.1 z m -6.8,6.8 c -1.7,0 -3.1,1.4 -3.1,3.1 0,1.7 1.4,3.1 3.1,3.1 1.7,0 3.1,-1.4 3.1,-3.1 0,-1.7 -1.4,-3.1 -3.1,-3.1 z m -6.7,6.8 c -1.7,0 -3.1,1.4 -3.1,3.1 0,1.7 1.4,3.1 3.1,3.1 1.7,0 3.1,-1.4 3.1,-3.1 0,-1.7 -1.4,-3.1 -3.1,-3.1 z m 13.5,0 c -1.7,0 -3.1,1.4 -3.1,3.1 0,1.7 1.4,3.1 3.1,3.1 1.7,0 3.1,-1.4 3.1,-3.1 0,-1.7 -1.4,-3.1 -3.1,-3.1 z m -6.8,2 c -3.7,21.7 -8.2,26.2 -13.2,30.9 2.8,0.3 7.5,-1 9.2,-3.2 0.8,2.5 2.4,4.6 4,6.7 1.6,-2.1 3.2,-4.1 4,-6.7 1.7,2.2 6.5,3.4 9.2,3.2 -5,-4.7 -9.5,-9.2 -13.2,-30.9 z"/></g>
+        <g id="crossMaltese" stroke-width=".5"><path d="m 98,98 -15,-38 17,11 17,-11 -15,38 38,-15 -11,17 11,17 -38,-15 15,38 -17,-11 -17,11 15,-38 -38,15 11,-17 -11,-17 z" /></g>
+        <g id="crossCeltic" stroke-width=".5"><path d="M 96.7 60 L 96.7 73 C 84.4 74.5 74.5 84.2 73 96.7 L 60 96.7 L 60 103.3 L 73 103.3 C 74.5 115.8 84.4 125.5 96.7 127 L 96.7 140 L 103.3 140 L 103.3 127 C 115.7 125.4 125.4 115.7 126.9 103.3 L 140 103.3 L 140 96.7 L 126.9 96.7 C 125.4 84.3 115.7 74.6 103.3 73 L 103.3 60 L 96.7 60 z M 96.7 79.6 L 96.7 96.7 L 79.7 96.7 C 81.1 87.8 88 81 96.7 79.6 z M 103.3 79.7 C 112.1 81.1 118.9 87.9 120.3 96.7 L 103.3 96.7 L 103.3 79.7 z M 79.7 103.3 L 96.7 103.3 L 96.7 120.4 C 88 119 81.1 112.2 79.7 103.3 z M 103.3 103.3 L 120.3 103.3 C 118.9 112.1 112.1 118.9 103.3 120.3 L 103.3 103.3 z" /></g>
+        <g id="crossOccitan" stroke-width=".5"><path d="m 100,60 a 3,3 0 0 0 -3,3 3,3 0 0 0 1.8,2.7 l 0,0 c -1.9,2.4 -5.9,6.4 -12.7,7.4 h 0 a 3,3 0 0 0 0,-0.1 3,3 0 0 0 -3,-3 3,3 0 0 0 -3,3 3,3 0 0 0 3,3 3,3 0 0 0 2.4,-1.2 l 0,0 c 2,2.3 7.3,9.2 8.8,19.3 C 84.2,92.6 77.3,87.3 75,85.3 l 0,0 a 3,3 0 0 0 1.2,-2.4 3,3 0 0 0 -3,-3 3,3 0 0 0 -3,3 3,3 0 0 0 3,3 3,3 0 0 0 0.1,0 l 0,0 c -1.1,6.8 -5,10.9 -7.4,12.8 l 0,0 a 3,3 0 0 0 -2.7,-1.8 3,3 0 0 0 -3,3 3,3 0 0 0 3,3 3,3 0 0 0 2.7,-1.8 l 0,0 c 2.4,1.9 6.3,5.9 7.4,12.8 v 0 a 3,3 0 0 0 -0.1,0 3,3 0 0 0 -3,3 3,3 0 0 0 3,3 3,3 0 0 0 3,-3 3,3 0 0 0 -1.2,-2.4 l 0,0 c 2.3,-2 9.2,-7.3 19.2,-8.8 -1.4,10.1 -6.7,17 -8.8,19.3 l 0,0 a 3,3 0 0 0 -2.4,-1.2 3,3 0 0 0 -3,3 3,3 0 0 0 3,3 3,3 0 0 0 3,-3 3,3 0 0 0 0,-0.1 h 0 c 6.8,1.1 10.8,5 12.7,7.4 l 0,0 a 3,3 0 0 0 -1.8,2.7 3,3 0 0 0 3,3 3,3 0 0 0 3,-3 A 3,3 0 0 0 101.1,134 l 0,0 c 1.9,-2.4 5.9,-6.4 12.7,-7.4 h 0 a 3,3 0 0 0 0,0.1 3,3 0 0 0 3,3 3,3 0 0 0 3,-3 3,3 0 0 0 -3,-3 3,3 0 0 0 -2.4,1.2 l 0,0 c -2,-2.3 -7.3,-9.2 -8.8,-19.3 10,1.5 16.9,6.8 19.2,8.8 l 0,0 a 3,3 0 0 0 -1.2,2.4 3,3 0 0 0 3,3 3,3 0 0 0 3,-3 3,3 0 0 0 -3,-3 3,3 0 0 0 -0.1,0 v 0 c 1.1,-6.8 5,-10.9 7.4,-12.8 l 0,0 a 3,3 0 0 0 2.7,1.8 3,3 0 0 0 3,-3 3,3 0 0 0 -3,-3 A 3,3 0 0 0 134,98.7 l 0,0 c -2.4,-1.9 -6.3,-5.9 -7.4,-12.8 l 0,0 a 3,3 0 0 0 0.1,0 3,3 0 0 0 3,-3 3,3 0 0 0 -3,-3 3,3 0 0 0 -3,3 3,3 0 0 0 1.2,2.4 l 0,0 c -2.3,2 -9.2,7.3 -19.2,8.8 1.4,-10.1 6.7,-17 8.8,-19.3 l 0,0 a 3,3 0 0 0 2.4,1.2 3,3 0 0 0 3,-3 3,3 0 0 0 -3,-3 3,3 0 0 0 -3,3 3,3 0 0 0 0,0.1 h 0 c -6.8,-1.1 -10.8,-5 -12.7,-7.4 l 0,0 A 3,3 0 0 0 102.9,63 3,3 0 0 0 100,60 a 3,3 0 0 0 0,0 z m 0,10 c 4.2,4.6 9,5.7 9,5.7 -5.6,6.7 -6.9,17.2 -7.2,22.4 5.2,-0.3 15.6,-1.6 22.3,-7.2 0,0 1.1,4.7 5.6,9 -4.6,4.3 -5.6,9 -5.6,9 -6.7,-5.7 -17.1,-6.9 -22.3,-7.2 0.3,5.2 1.6,15.7 7.2,22.4 0,0 -4.7,1.1 -9,5.7 -4.2,-4.6 -9,-5.7 -9,-5.7 5.6,-6.7 6.9,-17.2 7.2,-22.4 -5.2,0.3 -15.6,1.6 -22.3,7.2 0,0 -1.1,-4.7 -5.6,-9 4.6,-4.3 5.6,-9 5.6,-9 6.7,5.7 17.1,6.9 22.3,7.2 -0.3,-5.2 -1.6,-15.7 -7.2,-22.4 0,0 4.7,-1.1 9,-5.7 z"/></g>
+        <g id="crossSaltire" stroke-width=".5"><path d="m 71.83,65.17 -6.66,6.66 28.17,28.17 -28.17,28.17 6.66,6.66 28.17,-28.17 28.17,28.17 6.66,-6.66 L 106.66,100 134.83,71.83 128.17,65.17 100,93.34 Z" /></g>
+        <g id="crossTau" stroke-width=".5"><path d="M 83.1,140 C 96.3,116.9 92.9,81.8 92.9,81.8 80.9,80.1 60,90.3 60,90.3 60,90.3 67.1,77.6 67.1,60 83.1,70.1 116.9,70.1 132.9,60 132.9,77.6 140,90.3 140,90.3 c 0,0 -20.9,-10.2 -32.9,-8.5 0,0 -3.4,35.1 9.9,58.2 -11.4,-5.3 -24,-4.8 -33.9,0 z" /></g>
+
+        <!-- Loaded charges -->
+      </g>
+
+      <g id="coas">
+        <!-- coas svg -->
+      </g>
+    </defs>
+  </svg>
 
   <!-- <script src="libs/translate.js"></script> -->
   <script src="libs/jquery-3.1.1.min.js"></script>
@@ -3759,6 +4337,8 @@
   <script defer src="modules/ui/regiments-overview.js"></script>
   <script defer src="modules/ui/regiment-editor.js"></script>
   <script defer src="modules/ui/battle-screen.js"></script>
+  <script defer src="modules/coa-renderer.js"></script>
+  <script defer src="modules/ui/coa-editor.js"></script>
   <script defer src="modules/ui/editors.js"></script>
   <script defer src="modules/ui/3d.js"></script>
   <script defer src="libs/rgbquant.js"></script>

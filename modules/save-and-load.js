@@ -423,7 +423,7 @@ async function quickSave() {
   if (customization) {tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error"); return;}
   const blob = await getMapData();
   if (blob) ldb.set("lastMap", blob); // auto-save map
-  tip("Map is saved to browser memory", true, "success", 2000);
+  tip("Map is saved to browser memory. Please also save as .map file to secure progress", true, "success", 2000);
 }
 
 function quickLoad() {

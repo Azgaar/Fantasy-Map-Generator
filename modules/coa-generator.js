@@ -158,14 +158,14 @@
     head: {e: 1},
     headWreathed: {e: 1}
   };
-  
+
   const lines = {
     straight: 50, wavy: 8, engrailed: 4, invecked: 3, rayonne: 3, embattled: 1, raguly: 1, urdy: 1, dancetty: 1, indented: 2,
     dentilly: 1, bevilled: 1, angled: 1, flechy: 1, barby: 1, enclavy: 1, escartely: 1, arched: 2, archedReversed: 1, nowy: 1, nowyReversed: 1,
     embattledGhibellin: 1, embattledNotched: 1, embattledGrady: 1, dovetailedIndented: 1, dovetailed: 1,
     potenty: 1, potentyDexter: 1, potentySinister: 1, nebuly: 2, seaWaves: 1, dragonTeeth: 1, firTrees: 1
   };
-  
+
   const divisions = {
     variants: { perPale: 5, perFess: 5, perBend: 2, perBendSinister: 1, perChevron: 1, perChevronReversed: 1, perCross: 5, perPile: 1, perSaltire: 1, gyronny: 1, chevronny: 1 },
     perPale: lines,
@@ -177,7 +177,7 @@
     perCross: { straight: 20, wavy: 5, engrailed: 4, invecked: 3, rayonne: 1, embattled: 1, raguly: 1, urdy: 1, indented: 2, dentilly: 1, bevilled: 1, angled: 1, embattledGhibellin: 1, embattledGrady: 1, dovetailedIndented: 1, dovetailed: 1, potenty: 1, potentyDexter: 1, potentySinister: 1, nebuly: 1 },
     perPile: lines
   };
-  
+
   const ordinaries = {
     lined: {
       pale: 7, fess: 5, bend: 3, bendSinister: 2, chief: 5, bar: 2, gemelle: 1, fessCotissed: 1, fessDoubleCotissed: 1,
@@ -193,6 +193,14 @@
   const generate = function(parent) {
     TIME && console.time("generateCOA");
     let usedPattern = null, usedTinctures = [];
+
+    // TODO
+    // seafaring
+    // stringify coa on save and load
+    // regenerateAll
+    // generate on new item creation
+    // shields for cultures
+    // old versions auti migration
 
     const t1 = parent && P(.25) ? parent.t1 : getTincture("field");
     const coa = {t1};
@@ -285,7 +293,7 @@
                            division === "perBend" ? ["l", "m"] :
                           ["j", "o"]; // perBendSinister
           coa.charges[0].p = p1;
-  
+
           const charge = selectCharge(charges.single);
           const t = getTincture("charge", usedTinctures, coa.division.t);
           coa.charges.push({charge, t, p: p2});
@@ -293,28 +301,28 @@
         else if (["perCross", "perSaltire"].includes(division) && P(.5)) { // place 4 charges in division standard positions
           const [p1, p2, p3, p4] = division === "perCross" ? ["j", "l", "m", "o"] : ["b", "d", "f", "h"];
           coa.charges[0].p = p1;
-  
+
           const c2 = selectCharge(charges.single);
           const t2 = getTincture("charge", [], coa.division.t);
-  
+
           const c3 = selectCharge(charges.single);
           const t3 = getTincture("charge", [], coa.division.t);
-  
+
           const c4 = selectCharge(charges.single);
           const t4 = getTincture("charge", [], coa.t1);
           coa.charges.push({charge: c2, t: t2, p: p2}, {charge: c3, t: t3, p: p3}, {charge: c4, t: t4, p: p4});
         }
         else if (allowCounter && p.length > 1) coa.charges[0].divided = "counter"; // counterchanged, 40%
       }
-  
+
       coa.charges.forEach(c => defineChargeAttributes(c));
       function defineChargeAttributes(c) {
         // define size
         c.size = (c.size || 1) * getSize(c.p, ordinary, division);
-  
+
         // clean-up position
         c.p = [...new Set(c.p)].join("");
-  
+
         // define orientation
         if (P(.02) && charges.sinister.includes(c.charge)) c.sinister = 1;
         if (P(.02) && charges.reversed.includes(c.charge)) c.reversed = 1;
@@ -329,21 +337,21 @@
     // select tincture: element type (field, division, charge), used field tinctures, field type to follow RoT
     function getTincture(element, fields = [], RoT) {
       const base = RoT ? RoT.includes("-") ? RoT.split("-")[1] : RoT : null;
-  
+
       let type = rw(tinctures[element]); // metals, colours, stains, patterns
       if (RoT && type !== "patterns") type = getType(base) === "metals" ? "colours" : "metals"; // follow RoT
       if (type === "metals" && fields.includes("or") && fields.includes("argent")) type = "colours"; // exclude metals overuse
       let tincture = rw(tinctures[type]);
-  
+
       while (tincture === base || fields.includes(tincture)) {tincture = rw(tinctures[type]);} // follow RoT
-  
+
       if (type !== "patterns" && element !== "charge") usedTinctures.push(tincture); // add field tincture
-  
+
       if (type === "patterns") {
         usedPattern = tincture;
         tincture = definePattern(tincture, element);
       }
-  
+
       return tincture;
     }
 
@@ -361,7 +369,7 @@
       else if (P(.05)) size = "-smaller";
       else if (P(.035)) size = "-big";
       else if (P(.001)) size = "-smallest";
-  
+
       // apply standard tinctures
       if (P(.5) && ["vair", "vairInPale", "vairEnPointe"].includes(pattern)) {t1 = "azure"; t2 = "argent";}
       else if (P(.8) && pattern === "ermine") {t1 = "argent"; t2 = "sable";}
@@ -381,24 +389,24 @@
         else if (P(.15)) {t1 = "gules"; t2 = "argent";}
       }
       else if (pattern === "semy") pattern += "_of_" + selectCharge(charges.semy);
-  
-  
+
+
       if (!t1 || !t2) {
         const startWithMetal = P(.7);
         t1 = startWithMetal ? rw(tinctures.metals) : rw(tinctures.colours);
         t2 = startWithMetal ? rw(tinctures.colours) : rw(tinctures.metals);
       }
-  
+
       // division should not be the same tincture as base field
       if (element === "division") {
         if (usedTinctures.includes(t1)) t1 = replaceTincture(t1);
         if (usedTinctures.includes(t2)) t2 = replaceTincture(t2);
       }
-  
+
       usedTinctures.push(t1, t2);
       return `${pattern}-${t1}-${t2}${size}`;
     }
-  
+
     function replaceTincture(t, n) {
       const type = getType(t);
       while (!n || n === t) {n = rw(tinctures[type]);}

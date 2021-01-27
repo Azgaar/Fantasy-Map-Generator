@@ -42,7 +42,7 @@ function editStates() {
     const el = ev.target, cl = el.classList, line = el.parentNode, state = +line.dataset.id;
     if (cl.contains("fillRect")) stateChangeFill(el); else
     if (cl.contains("name")) editStateName(state); else
-    if (cl.contains("emblemIcon")) editCOA(state); else
+    if (cl.contains("coaIcon")) editEmblem("state", "stateCOA"+state, pack.states[state]); else
     if (cl.contains("icon-star-empty")) stateCapitalZoomIn(state); else
     if (cl.contains("culturePopulation")) changePopulation(state); else
     if (cl.contains("icon-pin")) toggleFog(state, cl); else
@@ -83,7 +83,6 @@ function editStates() {
       totalPopulation += population;
       totalBurgs += s.burgs;
       const focused = defs.select("#fog #focusState"+s.i).size();
-      const COAsize = Math.round(15 * +uiSizeInput.value);
 
       if (!s.i) {
         // Neutral line
@@ -91,7 +90,7 @@ function editStates() {
         data-population=${population} data-burgs=${s.burgs} data-color="" data-form="" data-capital="" data-culture="" data-type="" data-expansionism="">
           <svg width="9" height="9" class="placeholder"></svg>
           <input data-tip="Neutral lands name. Click to change" class="stateName name pointer italic" value="${s.name}" readonly>
-          <embed class="emblemIcon placeholder hide" type="image/svg+xml" width=${COAsize} height=${COAsize} >
+          <svg class="coaIcon placeholder hide"></svg>
           <input class="stateForm placeholder" value="none">
           <span class="icon-star-empty placeholder hide"></span>
           <input class="stateCapital placeholder hide">
@@ -110,13 +109,14 @@ function editStates() {
         </div>`;
         continue;
       }
+
       const capital = pack.burgs[s.capital].name;
-      const coaURL = `http://azgaar.github.io/Armoria/?view=1&size=${COAsize}&noedit&coa=${COA.toString(s.coa)}`;
+      COArenderer.trigger("stateCOA"+s.i, s.coa);
       lines += `<div class="states" data-id=${s.i} data-name="${s.name}" data-form="${s.formName}" data-capital="${capital}" data-color="${s.color}" data-cells=${s.cells}
         data-area=${area} data-population=${population} data-burgs=${s.burgs} data-culture=${pack.cultures[s.culture].name} data-type=${s.type} data-expansionism=${s.expansionism}>
         <svg data-tip="State fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${s.color}" class="fillRect pointer"></svg>
         <input data-tip="State name. Click to change" class="stateName name pointer" value="${s.name}" readonly>
-        <embed data-tip="Click to show state COA" class="emblemIcon hide" type="image/svg+xml" width=${COAsize} height=${COAsize} src='${coaURL}'>
+        <svg data-tip="Click to edit state emblem" class="coaIcon hide" viewBox="0 0 200 200"><use href="#stateCOA${s.i}"></use></svg>
         <input data-tip="State form name. Click to change" class="stateForm name pointer" value="${s.formName}" readonly>
         <span data-tip="State capital. Click to zoom into view" class="icon-star-empty pointer hide"></span>
         <input data-tip="Capital name. Click and type to rename" class="stateCapital hide" value="${capital}" autocorrect="off" spellcheck="false"/>
@@ -313,19 +313,6 @@ function editStates() {
     if (!capital) return;
     pack.burgs[capital].name = value;
     document.querySelector("#burgLabel"+capital).textContent = value;
-  }
-
-  function editCOA(state) {
-    const coa = COA.toString(pack.states[state].coa);
-    const url = "http://azgaar.github.io/Armoria/?view=1&size=200&noedit&coa=" + coa;
-
-    $("#emblemsEditor").dialog({
-      title: "Emblems Editor", resizable: false, width: fitContent(), close: closeStatesEditor,
-      position: {my: "left top", at: "left+10 top+10", of: "svg", collision: "fit"}
-    });
-    
-    const embed = document.getElementById("emblemsEmbed");
-    embed.setAttribute("src", url);
   }
 
   function changePopulation(state) {

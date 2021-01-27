@@ -339,6 +339,7 @@ function showInfo() {
   const Reddit = link("https://www.reddit.com/r/FantasyMapGenerator", "Reddit")
   const Patreon = link("https://www.patreon.com/azgaar", "Patreon");
   const Trello = link("https://trello.com/b/7x832DG4/fantasy-map-generator", "Trello");
+  const Armoria = link("https://azgaar.github.io/Armoria", "Armoria");
 
   const QuickStart = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Quick-Start-Tutorial", "Quick start tutorial");
   const QAA = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A", "Q&A page");
@@ -353,9 +354,11 @@ function showInfo() {
     <p>The best way to get help is to contact the community on ${Discord} and ${Reddit}. 
     Before asking questions, please check out the ${QuickStart} and the ${QAA}.</p>
 
-    <p>You can track the development process on ${Trello}.</p>
+    <p>Track the development process on ${Trello}.</p>
 
-    Links:
+    <p>Check out our new project: ${Armoria}, heraldry generator and editor.</p>
+
+    <b>Links:</b>
     <ul style="columns:2">
       <li>${link("https://github.com/Azgaar/Fantasy-Map-Generator", "GitHub repository")}</li>
       <li>${link("https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE", "License")}</li>
