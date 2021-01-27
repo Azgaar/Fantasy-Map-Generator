@@ -25,7 +25,7 @@
       .map((h, i) => h < 20 || cells.t[i] < 1 ? h : h + d3.mean(cells.c[i].map(c => cells.t[c])) / 10000);
 
     resolveDepressions(h);
-    features.forEach(f => {delete f.river; delete f.flux;});
+    features.forEach(f => {delete f.river; delete f.flux; delete f.totalFlux; delete f.inlets});
 
     const riversData = []; // rivers data
     cells.fl = new Uint16Array(cells.i.length); // water flux array
@@ -41,7 +41,7 @@
         let outlet;
         if (l.shoreline) {
           outlet = l.shoreline[d3.scan(l.shoreline, (a,b) => h[a] - h[b])];
-        } else {
+        } else { // in case it got missed or deleted
           WARN && console.warn('Re-scanning shoreline of a lake');
           const shallows = cells.i.filter(j => cells.t[j] === -1 && cells.f[j] === l.i);
           let shoreline = [];
@@ -53,7 +53,6 @@
       });
 
       const flowDown = function(min, mFlux, iFlux, ri, i = 0){
-        let terminus = false;
         if (cells.r[min]) { // downhill cell already has river assigned
           if (mFlux < iFlux) {
             cells.conf[min] = cells.fl[min]; // mark confluence
@@ -62,7 +61,6 @@
           } else {
             cells.conf[min] += iFlux; // mark confluence
             if (h[min] >= 20) riversData.find(r => r.river === ri).parent = cells.r[min]; // current river is a tributary of min river
-            terminus = true;
           }
         } else cells.r[min] = ri; // assign the river to the downhill cell
         
@@ -77,13 +75,16 @@
               mf.flux = iFlux; // entering flux
             }
             mf.totalFlux += iFlux;
+            if (mf.inlets) {
+              mf.inlets.push(ri);
+            } else {
+              mf.inlets = [ri];
+            }
           }
-          terminus = true;
         } else {
           cells.fl[min] += iFlux; // propagate flux
           riversData.push({river: ri, cell: min, x: p[min][0], y: p[min][1]}); // add next River segment
         }
-        return terminus;
       }
 
       land.forEach(function(i) {
@@ -91,8 +92,9 @@
         const x = p[i][0], y = p[i][1];
 
         // lake outlets draw from lake
-        let out2;
-        for (let n = outlets.indexOf(i); n !== -1; n = outlets.indexOf(i, n+1)) { // in case multiple lakes share outlet
+        let n = -1, out2 = 0;
+        while (outlets.includes(i, n+1)) {
+          n = outlets.indexOf(i, n+1);  
           const l = features[n];
           if ( ! l ) {continue;}
           const j = cells.haven[i];
@@ -114,9 +116,13 @@
               riverNext++;
             }
           }
+          cells.fl[j] += l.totalFlux; // signpost river size
           flowDown(i, cells.fl[i], l.totalFlux, cells.r[j]);
           // prevent dropping imediately back into the lake
-          out2 = cells.c[i].filter(c => cells.f[c] !== cells.f[j]).sort((a,b) => h[a] - h[b])[0]; // downhill cell not in the source lake
+          out2 = cells.c[i].filter(c => h[c] >= 20 || cells.f[c] !== cells.f[j]).sort((a,b) => h[a] - h[b])[0]; // downhill cell not in the source lake
+
+          // assign all to outlet basin
+          if (l.inlets) l.inlets.forEach(fork => riversData.find(r => r.river === fork).parent = cells.r[j]);
         }
 
         // near-border cell: pour out of the screen
@@ -162,8 +168,12 @@
 
         if (riverSegments.length > 2) {
           const riverEnhanced = addMeandring(riverSegments);
-          const width = rn(.8 + Math.random() * .4, 1); // river width modifier
-          const increment = rn(.8 + Math.random() * .6, 1); // river bed widening modifier
+          let width = rn(.8 + Math.random() * .4, 1); // river width modifier [.2, 10]
+          let increment = rn(.8 + Math.random() * .6, 1); // river bed widening modifier [.01, 3]
+          if (cells.fl[riverSegments[1]] >= 50) {
+            increment = rn( increment /2 - .39, 2);
+            width *= 2;
+          }
           const [path, length] = getPath(riverEnhanced, width, increment);
           riverPaths.push([r, path, width, increment]);
           const source = riverSegments[0], mouth = riverSegments[riverSegments.length-2];
