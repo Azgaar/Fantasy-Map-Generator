@@ -403,14 +403,14 @@ function randomizeHeightmapTemplate() {
 // select culture set pseudo-randomly
 function randomizeCultureSet() {
   const sets = {
-    "world":       25,
-    "european":    20,
-    "oriental":    10,
-    "english":     10,
-    "antique":     5,
-    "highFantasy": 22,
-    "darkFantasy": 6,
-    "random":      2};
+    "world":       10,
+    "european":    10,
+    "oriental":    2,
+    "english":     5,
+    "antique":     3,
+    "highFantasy": 11,
+    "darkFantasy": 3,
+    "random":      1};
   culturesSet.value = rw(sets);
   changeCultureSet();
 }
