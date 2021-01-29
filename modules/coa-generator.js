@@ -191,7 +191,6 @@
   };
 
   const generate = function(parent) {
-    TIME && console.time("generateCOA");
     let usedPattern = null, usedTinctures = [];
 
     // TODO
@@ -199,8 +198,10 @@
     // stringify coa on save and load
     // regenerateAll
     // generate on new item creation
-    // shields for cultures
-    // old versions auti migration
+    // old versions auto migration: coa generation for cultures and states etc.
+    // emblems layer for old maps
+    // define emblems layer style for all styles
+    // add coa on click events for loaded map
 
     const t1 = parent && P(.25) ? parent.t1 : getTincture("field");
     const coa = {t1};
@@ -427,7 +428,6 @@
       return .7; // 1, 2
     }
 
-    TIME && console.timeEnd("generateCOA");
     return coa;
   }
 
@@ -442,7 +442,8 @@
   }
 
   const toString = coa => JSON.stringify(coa).replaceAll("#", "%23");
+  const copy = coa => JSON.parse(JSON.stringify(coa));
 
-  return {generate, generateAll, toString};
+  return {generate, generateAll, toString, copy};
 
 })));

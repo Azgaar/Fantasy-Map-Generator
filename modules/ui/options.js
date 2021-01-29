@@ -114,6 +114,7 @@ optionsContent.addEventListener("input", function(event) {
   else if (id === "neutralOutput") neutralInput.value = value;
   else if (id === "manorsInput") changeBurgsNumberSlider(value);
   else if (id === "religionsInput") religionsOutput.value = value;
+  else if (id === "emblemShape") changeEmblemShape(value);
   else if (id === "uiSizeInput") uiSizeOutput.value = value;
   else if (id === "uiSizeOutput") changeUIsize(value);
   else if (id === "tooltipSizeInput" || id === "tooltipSizeOutput") changeTooltipSize(value);
@@ -262,6 +263,17 @@ function changeCultureSet() {
   if (+culturesOutput.value > +max) culturesInput.value = culturesOutput.value = max;
 }
 
+function changeEmblemShape(value) {
+  const image = document.getElementById("emblemShapeImage");
+  const shapeEl = document.getElementById(value);
+  if (shapeEl) {
+    const shape = shapeEl.querySelector("path").getAttribute("d");
+    image.setAttribute("d", shape);
+  } else {
+    image.removeAttribute("d");
+  }
+}
+
 function changeStatesNumber(value) {
   regionsInput.value = regionsOutput.value = value;
   regionsOutput.style.color = +value ? null : "#b12117";
@@ -380,6 +392,7 @@ function randomizeOptions() {
 
   // World settings
   generateEra();
+  changeEmblemShape(emblemShape.value); // change emblem shape image
 }
 
 // select heightmap template pseudo-randomly

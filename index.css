@@ -101,7 +101,7 @@ button, select, a, .pointer {
 	fill-rule: evenodd;
 }
 
-#lakes, #coastline, #armies, #ice {
+#lakes, #coastline, #armies, #ice, #emblems {
 	cursor: pointer;
 }
 
@@ -705,6 +705,15 @@ fieldset {
 #optionsContent table td:nth-of-type(4) {
 	text-align: right;
 	width: 6%;
+}
+
+.emblemShapePreview {
+	width: 1.5em;
+	height: 1.5em;
+	margin: -.4em .1em;
+	fill: #fff;
+	stroke: #000;
+	stroke-width: 5px;
 }
 
 #styleContent table {

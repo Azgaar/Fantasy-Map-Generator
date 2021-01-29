@@ -17,6 +17,7 @@ function restoreLayers() {
   if (layerIsOn("toggleProvinces")) drawProvinces();
   if (layerIsOn("toggleReligions")) drawReligions();
   if (layerIsOn("toggleIce")) drawIce();
+  if (layerIsOn("toggleEmblems")) drawEmblems();
 
   // states are getting rendered each time, if it's not required than layers should be hidden
   if (!layerIsOn("toggleBorders")) $('#borders').fadeOut();
@@ -877,6 +878,26 @@ function drawProvinces() {
   const labelsOn = provs.attr("data-labels") == 1;
   provs.selectAll("*").remove();
 
+  const provinces = pack.provinces;
+  const {body, gap} = getProvincesVertices();
+
+  const g = provs.append("g").attr("id", "provincesBody");
+  const bodyData = body.map((p, i) => [p.length > 10 ? p : null, i, provinces[i].color]).filter(d => d[0]);
+  g.selectAll("path").data(bodyData).enter().append("path").attr("d", d => d[0]).attr("fill", d => d[2]).attr("stroke", "none").attr("id", d => "province"+d[1]);
+  const gapData = gap.map((p, i) => [p.length > 10 ? p : null, i, provinces[i].color]).filter(d => d[0]);
+  g.selectAll(".path").data(gapData).enter().append("path").attr("d", d => d[0]).attr("fill", "none").attr("stroke", d => d[2]).attr("id", d => "province-gap"+d[1]);
+
+  const labels = provs.append("g").attr("id", "provinceLabels");
+  labels.style("display", `${labelsOn ? "block" : "none"}`);
+  const labelData = provinces.filter(p => p.i && !p.removed);
+  labels.selectAll(".path").data(labelData).enter().append("text")
+    .attr("x", d => d.pole[0]).attr("y", d => d.pole[1])
+    .attr("id", d => "provinceLabel"+d.i).text(d => d.name);
+
+  TIME && console.timeEnd("drawProvinces");
+}
+
+function getProvincesVertices() {
   const cells = pack.cells, vertices = pack.vertices, provinces = pack.provinces, n = cells.i.length;
   const used = new Uint8Array(cells.i.length);
   const vArray = new Array(provinces.length); // store vertices array
@@ -906,18 +927,7 @@ function drawProvinces() {
     provinces[i].pole = polylabel(sorted, 1.0); // pole of inaccessibility
   });
 
-  const g = provs.append("g").attr("id", "provincesBody");
-  const bodyData = body.map((p, i) => [p.length > 10 ? p : null, i, provinces[i].color]).filter(d => d[0]);
-  g.selectAll("path").data(bodyData).enter().append("path").attr("d", d => d[0]).attr("fill", d => d[2]).attr("stroke", "none").attr("id", d => "province"+d[1]);
-  const gapData = gap.map((p, i) => [p.length > 10 ? p : null, i, provinces[i].color]).filter(d => d[0]);
-  g.selectAll(".path").data(gapData).enter().append("path").attr("d", d => d[0]).attr("fill", "none").attr("stroke", d => d[2]).attr("id", d => "province-gap"+d[1]);
-
-  const labels = provs.append("g").attr("id", "provinceLabels");
-  labels.style("display", `${labelsOn ? "block" : "none"}`);
-  const labelData = provinces.filter(p => p.i && !p.removed);
-  labels.selectAll(".path").data(labelData).enter().append("text")
-    .attr("x", d => d.pole[0]).attr("y", d => d.pole[1])
-    .attr("id", d => "provinceLabel"+d.i).text(d => d.name);
+  return {body, gap};
 
   // connect vertices to chain
   function connectVertices(start, t, province) {
@@ -942,7 +952,7 @@ function drawProvinces() {
     chain.push([start, province, land]); // add starting vertex to sequence to close the path
     return chain;
   }
-  TIME && console.timeEnd("drawProvinces");
+
 }
 
 function toggleGrid(event) {
@@ -1214,7 +1224,71 @@ function toggleZones(event) {
     if (event && isCtrlClick(event)) {editStyle("zones"); return;}
     turnButtonOff("toggleZones");
     $('#zones').fadeOut();
-  }  
+  }
+}
+
+function toggleEmblems(event) {
+  if (!layerIsOn("toggleEmblems")) {
+    turnButtonOn("toggleEmblems");
+    if (!emblems.selectAll("*").size()) drawEmblems();
+    $('#emblems').fadeIn();
+    if (event && isCtrlClick(event)) editStyle("emblems");
+  } else {
+    if (event && isCtrlClick(event)) {editStyle("emblems"); return;}
+    $('#emblems').fadeOut();
+    turnButtonOff("toggleEmblems");
+  }
+}
+
+function drawEmblems() {
+  TIME && console.time("drawEmblems");
+  const {states, provinces, burgs, cells} = pack;
+
+  let svg = "";
+
+  // const sizeBurgs = +emblems.attr("size-burgs") || 15;
+  // burgs.filter(b => b.i && !b.removed && b.coa).forEach(burg => {
+  //   const {x, y} = burg;
+  //   COArenderer.trigger("burgCOA"+burg.i, burg.coa);
+  //   svg += `<use x=${x-sizeBurgs/2} y=${y-sizeBurgs/2} width=${sizeBurgs} height=${sizeBurgs} href="#burgCOA${burg.i}"></use>`;
+  // });
+
+  const sizeProvinces = +emblems.attr("size-provinces") || 25;
+  const provinceCOAs = provinces.filter(p => p.i && !p.removed && p.coa).map(province => {
+    if (!province.pole) getProvincesVertices();
+    const [x, y] = province.pole;
+    COArenderer.trigger("provinceCOA"+province.i, province.coa);
+    //svg += `<use x=${x-sizeProvinces/2} y=${y-sizeProvinces/2} width=${sizeProvinces} height=${sizeProvinces} href="#provinceCOA${province.i}"></use>`;
+    return {type: "province", id: "provinceCOA"+province.i, x: x - sizeProvinces/2, y: y - sizeProvinces/2, size: sizeProvinces, el: province};
+  });
+
+  const sizeStates = +emblems.attr("size-states") || 50;
+  const stateCOAs = states.filter(s => s.i && !s.removed && s.coa).map(state => {
+    const [x, y] = state.pole;
+    COArenderer.trigger("stateCOA"+state.i, state.coa);
+    //svg += `<use x=${x-sizeStates/2} y=${y-sizeStates/2} width=${sizeStates} height=${sizeStates} href="#stateCOA${state.i}"></use>`;
+    return {type: "state", id: "stateCOA"+state.i, x: x - sizeStates/2, y: y - sizeStates/2, size: sizeStates, el: state};
+  });
+
+  const nodes = provinceCOAs.concat(stateCOAs);
+  // emblems.html(svg);
+
+  const simulation = d3.forceSimulation(nodes)
+    .alphaMin(.6).alphaDecay(.2)
+    .force('collision', d3.forceCollide().radius(d => d.size/2));
+
+  const node = emblems.selectAll("use").data(nodes).join("use")
+    .attr("href", d => "#"+d.id)
+    .attr("x", d => d.x)
+    .attr("y", d => d.y)
+    .attr("width", d => d.size)
+    .attr("height", d => d.size);
+
+  simulation.on("tick", () => {
+    node.attr("x", d => d.x).attr("y", d => d.y);
+  });
+
+  TIME && console.timeEnd("drawEmblems");
 }
 
 function layerIsOn(el) {
@@ -1262,6 +1336,7 @@ function getLayer(id) {
   if (id === "togglePopulation") return $("#population");
   if (id === "toggleIce") return $("#ice");
   if (id === "toggleTexture") return $("#texture");
+  if (id === "toggleEmblems") return $("#emblems");
   if (id === "toggleLabels") return $("#labels");
   if (id === "toggleIcons") return $("#icons");
   if (id === "toggleMarkers") return $("#markers");

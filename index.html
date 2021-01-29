@@ -956,6 +956,7 @@
           <li id="togglePopulation" data-tip="Population map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: N" class="buttonoff" onclick="togglePopulation(event)">Populatio<u>n</u></li>
           <li id="toggleIce" data-tip="Icebergs and glaciers: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: J" class="buttonoff" onclick="toggleIce(event)">Ice</li>
           <li id="togglePrec" data-tip="Precipitation map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: A" class="buttonoff" onclick="togglePrec(event)">Precipit<u>a</u>tion</li>
+          <li id="toggleEmblems" data-tip="Emblems: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: Y" class="buttonoff" onclick="toggleEmblems(event)">Emblems</li>
           <li id="toggleLabels" data-tip="Labels: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: L" onclick="toggleLabels(event)"><u>L</u>abels</li>
           <li id="toggleIcons" data-tip="Burg icons: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: I" onclick="toggleIcons(event)"><u>I</u>cons</li>
           <li id="toggleMilitary" data-tip="Military forces: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: M" class="buttonoff" onclick="toggleMilitary(event)"><u>M</u>ilitary</li>
@@ -994,6 +995,7 @@
           <option value="coastline">Coastline</option>
           <option value="coordinates">Coordinates</option>
           <option value="cults">Cultures</option>
+          <option value="emblems">Emblems</option>
           <option value="fogging">Fogging</option>
           <option value="gridOverlay">Grid</option>
           <option value="terrs">Heightmap</option>
@@ -1735,6 +1737,65 @@
               <output id="religionsOutput" data-stored="religions" value="auto"></output>
             </td>
           </tr>
+
+          <tr data-tip="Select emblem shape to be applied on generation. Can be set indivudually in Emblem editor">
+            <td>
+              <i data-locked=0 id="lock_emblemShape" class="icon-lock"></i>
+            </td>
+            <td>Emblem shape</td>
+            <td>
+              <select id="emblemShape" data-stored="emblemShape">
+                <option value="culture" selected>Culture-specific</option>
+                <option value="random">Culture-random</option>
+                <option value="state">State-specific</option>
+                <option value="heater">Heater</option>
+                <option value="spanish">Spanish</option>
+                <option value="french">French</option>
+                <option value="horsehead">Horsehead</option>
+                <option value="horsehead2">Horsehead Edgy</option>
+                <option value="polish">Polish</option>
+                <option value="hessen">Hessen</option>
+                <option value="swiss">Swiss</option>
+                <option value="boeotian">Boeotian</option>
+                <option value="roman">Roman</option>
+                <option value="kite">Kite</option>
+                <option value="oldFrench">Old French</option>
+                <option value="renaissance">Renaissance</option>
+                <option value="baroque">Baroque</option>
+                <option value="targe">Targe</option>
+                <option value="targe2">Targe2</option>
+                <option value="pavise">Pavise</option>
+                <option value="wedged">Wedged</option>
+                <option value="flag">Flag</option>
+                <option value="pennon">Pennon</option>
+                <option value="guidon">Guidon</option>
+                <option value="banner">Banner</option>
+                <option value="dovetail">Dovetail</option>
+                <option value="gonfalon">Gonfalon</option>
+                <option value="pennant">Pennant</option>
+                <option value="round">Round</option>
+                <option value="oval">Oval</option>
+                <option value="vesicaPiscis">Vesica Piscis</option>
+                <option value="square">Square</option>
+                <option value="diamond">Diamond</option>
+                <option value="fantasy1">Fantasy1</option>
+                <option value="fantasy2">Fantasy2</option>
+                <option value="fantasy3">Fantasy3</option>
+                <option value="fantasy4">Fantasy4</option>
+                <option value="fantasy5">Fantasy5</option>
+                <option value="noldor">Noldor</option>
+                <option value="gondor">Gondor</option>
+                <option value="easterling">Easterling</option>
+                <option value="erebor">Erebor</option>
+                <option value="ironHills">Iron Hills</option>
+                <option value="urukHai">UrukHai</option>
+                <option value="moriaOrc">Moria Orc</option>
+              </select>
+            </td>
+            <td>
+              <svg class="emblemShapePreview" viewBox="0 0 200 210"><path id="emblemShapeImage"/></svg>
+            </td>
+          </tr>
         </table>
 
         <p data-tip="Tool settings that don't affect maps. Changes are getting applied immediately">Generator settings:</p>
@@ -1799,7 +1860,7 @@
             </td>
           </tr>
 
-          <!-- <tr data-tip="Select language (please note not all languages are fully supported). Reload the page to apply">
+          <!-- <tr data-tip="Select language (not all languages are fully supported). Reload the page to apply">
             <td></td>
             <td>Language</td>
             <td>

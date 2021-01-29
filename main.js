@@ -11,8 +11,8 @@ const version = "1.4"; // generator version
 document.title += " v" + version;
 
 // Switches to disable/enable logging features
-const INFO = 0;
-const TIME = 0;
+const INFO = 1;
+const TIME = 1;
 const WARN = 1;
 const ERROR = 1;
 
@@ -61,6 +61,7 @@ let coastline = viewbox.append("g").attr("id", "coastline");
 let ice = viewbox.append("g").attr("id", "ice").style("display", "none");
 let prec = viewbox.append("g").attr("id", "prec").style("display", "none");
 let population = viewbox.append("g").attr("id", "population");
+let emblems = viewbox.append("g").attr("id", "emblems");
 let labels = viewbox.append("g").attr("id", "labels");
 let icons = viewbox.append("g").attr("id", "icons");
 let burgIcons = icons.append("g").attr("id", "burgIcons");
@@ -555,7 +556,7 @@ function generate() {
     Names.getMapName();
 
     WARN && console.warn(`TOTAL: ${rn((performance.now()-timeStart)/1000,2)}s`);
-    showStatistics();
+    INFO && showStatistics();
     INFO && console.groupEnd("Generated Map " + seed);
   }
   catch(error) {
@@ -1718,7 +1719,7 @@ function showStatistics() {
 
   mapId = Date.now(); // unique map id is it's creation date number
   mapHistory.push({seed, width:graphWidth, height:graphHeight, template, created:mapId});
-  INFO && console.log(stats);
+  console.log(stats);
 }
 
 const regenerateMap = debounce(function() {

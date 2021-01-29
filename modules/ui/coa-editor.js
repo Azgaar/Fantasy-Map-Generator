@@ -2,6 +2,15 @@
 function editEmblem(type, id, el) {
   if (customization) return;
 
+  if (!id && d3.event) {
+    const data = d3.event.target.__data__;
+    type = data.type;
+    id = data.id;
+    el = data.el;
+  }
+
+  emblems.selectAll(":scope > use").call(d3.drag().on("drag", dragEmblem)).classed("draggable", true);
+
   const emblemStates = document.getElementById("emblemStates");
   const emblemProvinces = document.getElementById("emblemProvinces");
   const emblemBurgs = document.getElementById("emblemBurgs");
@@ -10,8 +19,9 @@ function editEmblem(type, id, el) {
   updateElementSelectors(type, id, el);
 
   $("#emblemEditor").dialog({
-    title: "Edit Emblem", resizable: true, width: "auto",
-    position: {my: "left top", at: "left+10 top+10", of: "svg", collision: "fit"}
+    title: "Edit Emblem", resizable: true, width: "auto", height: "auto",
+    position: {my: "left top", at: "left+10 top+10", of: "svg", collision: "fit"},
+    close: closeEmblemEditor
   });
 
   if (modules.editEmblem) return;
@@ -32,13 +42,19 @@ function editEmblem(type, id, el) {
 
     // define selected values
     if (type === "state") state = el.i;
-    else if (type === "province") {province = el.i; state = states[el.state].i;}
-    else {burg = el.i; province = provinces[cells.province[el.cell]].i; state = provinces[province].state;}
+    else if (type === "province") {
+      province = el.i
+      state = states[el.state].i;
+    } else {
+      burg = el.i;
+      province = cells.province[el.cell] ? provinces[cells.province[el.cell]].i : 0;
+      state = provinces[province].state || 0;
+    }
 
     // update option list and select actual values
     emblemStates.options.length = 0;
     const neutralBurgs = burgs.filter(burg => burg.i && !burg.removed && !burg.state);
-    if (neutralBurgs.length) emblemProvinces.options.add(new Option(states[0].name, 0, false, !state));
+    if (neutralBurgs.length) emblemStates.options.add(new Option(states[0].name, 0, false, !state));
     const stateList = states.filter(state => state.i && !state.removed);
     stateList.forEach(s => emblemStates.options.add(new Option(s.name, s.i, false, s.i === state)));
 
@@ -50,7 +66,7 @@ function editEmblem(type, id, el) {
     emblemBurgs.options.length = 0;
     emblemBurgs.options.add(new Option("", 0, false, !burg));
     const burgList = burgs.filter(burg => !burg.removed && province ? cells.province[burg.cell] === province : burg.state === state);
-    burgList.forEach(b => emblemBurgs.options.add(new Option(b.name, b.i, false, b.i === burg)));
+    burgList.forEach(b => emblemBurgs.options.add(new Option(b.capital ? "👑 " + b.name : b.name, b.i, false, b.i === burg)));
     emblemBurgs.options[0].disabled = true;
 
     COArenderer.trigger(id, el.coa);
@@ -104,5 +120,19 @@ function editEmblem(type, id, el) {
     el = burgs[burg];
     id = "burgCOA"+ burg;
     updateElementSelectors(type, id, el);
+  }
+
+  function dragEmblem() {
+    const tr = parseTransform(this.getAttribute("transform"));
+    const x = +tr[0] - d3.event.x, y = +tr[1] - d3.event.y;
+  
+    d3.event.on("drag", function() {
+      const transform = `translate(${(x + d3.event.x)},${(y + d3.event.y)})`;
+      this.setAttribute("transform", transform);
+    });
+  }
+
+  function closeEmblemEditor() {
+    emblems.selectAll(":scope > use").call(d3.drag().on("drag", null)).attr("class", null);
   }
 }

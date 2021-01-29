@@ -94,6 +94,14 @@ function showMapTooltip(point, e, i, g) {
     tip(e.target.parentNode.dataset.name + ". Click to edit");
     return;
   }
+  if (group === "emblems" && e.target.__data__?.el) {
+    const el = d3.select(e.target);
+    el.raise();
+    const name = el.datum().el.fullName || el.datum().el.name || "";
+    const type = el.datum().type || "";
+    tip(`${name} ${type} emblem. Click to edit`);
+    return;
+  }
   if (group === "rivers") {
     const river = +e.target.id.slice(5);
     const r = pack.rivers.find(r => r.i === river);
@@ -171,7 +179,7 @@ function highlightEditorLine(editor, id, timeout = 15000) {
   Array.from(editor.getElementsByClassName("states hovered")).forEach(el => el.classList.remove("hovered")); // clear all hovered
   const hovered = Array.from(editor.querySelectorAll("div")).find(el => el.dataset.id == id);
   if (hovered) hovered.classList.add("hovered"); // add hovered class
-  if (timeout) setTimeout(() => hovered.classList.remove("hovered"), timeout);
+  if (timeout) setTimeout(() => {hovered && hovered.classList.remove("hovered")}, timeout);
 }
 
 // get cell info on mouse move
@@ -454,6 +462,7 @@ document.addEventListener("keyup", event => {
   else if (key === 78) togglePopulation(); // "N" to toggle Population layer
   else if (key === 74) toggleIce(); // "J" to toggle Ice layer
   else if (key === 65) togglePrec(); // "A" to toggle Precipitation layer
+  else if (key === 89) toggleEmblems(); // "Y" to toggle Emblems layer
   else if (key === 76) toggleLabels(); // "L" to toggle Labels layer
   else if (key === 73) toggleIcons(); // "I" to toggle Icons layer
   else if (key === 77) toggleMilitary(); // "M" to toggle Military layer

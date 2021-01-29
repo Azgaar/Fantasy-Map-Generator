@@ -140,12 +140,14 @@
   }
 
   function getShield(culture, state) {
+    const emblemShape = document.getElementById("emblemShape").value;
+    if (emblemShape === "state" && state && pack.states[state].coa) return pack.states[state].coa.shield;
     if (pack.cultures[culture].shield) return pack.cultures[culture].shield;
-    if (state) return pack.states[state].coa.shield;
+    console.error("Emblem shape is not defined on culture level", pack.cultures[culture]);
     return "heater";
   }
 
-  // define burg coordinates, port status and define details
+  // define burg coordinates, coa, port status and define details
   const specifyBurgs = function() {
     TIME && console.time("specifyBurgs");
     const cells = pack.cells, vertices = pack.vertices, features = pack.features, temp = grid.cells.temp;
@@ -183,6 +185,10 @@
         if (i%2) b.x = rn(b.x + shift, 2); else b.x = rn(b.x - shift, 2);
         if (cells.r[i]%2) b.y = rn(b.y + shift, 2); else b.y = rn(b.y - shift, 2);
       }
+
+      const stateCOA = pack.states[b.state].coa;
+      b.coa = COA.generate(stateCOA);
+      b.coa.shield = getShield(b.culture, b.state);
     }
 
     // de-assign port status if it's the only one on feature
@@ -207,10 +213,6 @@
       const religion = cells.religion[b.cell];
       const theocracy = pack.states[b.state].form === "Theocracy";
       b.temple = religion && theocracy || pop > 50 || pop > 35 && P(.75) || pop > 20 && P(.5) ? 1 : 0;
-      const province = cells.province[b.cell];
-      const parentCOA = province ? pack.provinces[province].coa : pack.states[b.state].coa;
-      b.coa = COA.generate(parentCOA);
-      b.coa.shield = getShield(b.culture, b.state);
     });
   }
 
@@ -553,7 +555,7 @@
         el.insertAdjacentHTML("afterbegin", spans.join(""));
         if (lines.length < 2) return;
 
-        // check whether multilined label is generally inside the strate. If no, replace with short name label
+        // check whether multilined label is generally inside the state. If no, replace with short name label
         const cs = pack.cells.state, b = el.parentNode.getBBox();
         const c1 = () => +cs[findCell(b.x, b.y)] === id;
         const c2 = () => +cs[findCell(b.x + b.width / 2, b.y)] === id;
@@ -941,13 +943,14 @@
         const center = stateBurgs[i].cell;
         const burg = stateBurgs[i].i;
         const c = stateBurgs[i].culture;
-        const name = P(.5) ? Names.getState(Names.getCultureShort(c), c) : stateBurgs[i].name;
+        const nameByBurg = P(.5);
+        const name = nameByBurg ? stateBurgs[i].name : Names.getState(Names.getCultureShort(c), c);
         const formName = rw(form);
         form[formName] += 5;
         const fullName = name + " " + formName;
         const color = getMixedColor(s.color);
-        const coa = COA.generate(s.coa);
-        coa.shield = getShield(s.culture, s.i);
+        const coa = COA.generate(stateBurgs[i].coa);
+        coa.shield = getShield(c, s.i);
         provinces.push({i:province, state:s.i, center, burg, name, formName, fullName, color, coa});
       }
     });
@@ -1032,7 +1035,8 @@
 
         // generate "wild" province name
         const c = cells.culture[center];
-        const name = burgCell && P(.5) ? burgs[burg].name : Names.getState(Names.getCultureShort(c), c);
+        const nameByBurg = burgCell && P(.5);
+        const name = nameByBurg ? burgs[burg].name : Names.getState(Names.getCultureShort(c), c);
         const f = pack.features[cells.f[center]];
         const provCells = stateNoProvince.filter(i => cells.province[i] === province);
         const singleIsle = provCells.length === f.cells && !provCells.find(i => cells.f[i] !== f.i);
@@ -1042,6 +1046,7 @@
         const fullName = name + " " + formName;
         const color = getMixedColor(s.color);
         const coa = COA.generate(s.coa);
+        coa.shield = getShield(c, s.i);
         provinces.push({i:province, state:s.i, center, burg, name, formName, fullName, color, coa});
         s.provinces.push(province);
 
