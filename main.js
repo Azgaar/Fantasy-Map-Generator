@@ -437,8 +437,23 @@ function invokeActiveZooming() {
       const relative = Math.max(rn((desired + desired / scale) / 2, 2), 1);
       this.getAttribute("font-size", relative);
       const hidden = hideLabels.checked && (relative * scale < 6 || relative * scale > 50);
-      if (hidden) this.classList.add("hidden"); else this.classList.remove("hidden");
+      if (hidden) this.classList.add("hidden");
+      else this.classList.remove("hidden");
     });
+  }
+
+  // rescale emblems on zoom
+  if (emblems.style("display") !== "none") {
+    const fontSize = rn(1 / scale ** .1, 4);
+    emblems.attr("font-size", fontSize);
+    // const realSize = fontSize * scale;
+
+    // emblems.selectAll("use").each(function(d) {
+      
+    //   const hidden = realSize < 20 || realSize > 350;
+    //   if (hidden) this.classList.add("hidden");
+    //   else this.classList.remove("hidden");
+    // });
   }
 
   // turn off ocean pattern if scale is big (improves performance)

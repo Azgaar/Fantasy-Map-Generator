@@ -795,8 +795,7 @@ function applyDefaultStyle() {
   labels.select("#addedLabels").attr("fill", "#3e3e4b").attr("opacity", 1).attr("stroke", "#3a3a3a").attr("stroke-width", 0).attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC").attr("font-size", 18).attr("data-size", 18).attr("filter", null);
 
   fogging.attr("opacity", .98).attr("fill", "#30426f");
-
-  emblems.attr("opacity", .9).attr("size-states", 50).attr("size-provinces", 25).attr("size-burgs", 15).attr("filter", null);
+  emblems.attr("opacity", .9).attr("font-size", 1).attr("size-modifier", 1).attr("filter", null)
 }
 
 // apply style settings in JSON

@@ -1244,8 +1244,6 @@ function drawEmblems() {
   TIME && console.time("drawEmblems");
   const {states, provinces, burgs, cells} = pack;
 
-  let svg = "";
-
   // const sizeBurgs = +emblems.attr("size-burgs") || 15;
   // burgs.filter(b => b.i && !b.removed && b.coa).forEach(burg => {
   //   const {x, y} = burg;
@@ -1253,39 +1251,65 @@ function drawEmblems() {
   //   svg += `<use x=${x-sizeBurgs/2} y=${y-sizeBurgs/2} width=${sizeBurgs} height=${sizeBurgs} href="#burgCOA${burg.i}"></use>`;
   // });
 
-  const sizeProvinces = +emblems.attr("size-provinces") || 25;
-  const provinceCOAs = provinces.filter(p => p.i && !p.removed && p.coa).map(province => {
+  const validStates = states.filter(s => s.i && !s.removed && s.coa);
+  const validProvinces = provinces.filter(p => p.i && !p.removed && p.coa);
+  
+  const sizeMod = +emblems.attr("size-modifier") || 1;
+  const getStateEmblemsSize = () => {
+    const startSize = (graphHeight + graphWidth) / 40;
+    const statesMod = (1 + validStates.length / 100) - (15 - validStates.length) / 200; // states number modifier
+    const size = rn(startSize / statesMod * sizeMod); // target size ~50px on 1536x754 map with 15 states
+    return Math.min(Math.max(size, 10), 100);
+  };
+
+  const getProvinceEmblemsSize = () => {
+    const startSize = (graphHeight + graphWidth) / 80;
+    const provincesMod = (1 + validProvinces.length / 1000) - (115 - validProvinces.length) / 1000; // states number modifier
+    const size = rn(startSize / provincesMod * sizeMod); // target size ~50px on 1536x754 map with 15 states
+    return Math.min(Math.max(size, 5), 75);
+  }
+
+  const sizeProvinces = getProvinceEmblemsSize();
+  const provinceCOAs = validProvinces.map(province => {
     if (!province.pole) getProvincesVertices();
     const [x, y] = province.pole;
     COArenderer.trigger("provinceCOA"+province.i, province.coa);
-    //svg += `<use x=${x-sizeProvinces/2} y=${y-sizeProvinces/2} width=${sizeProvinces} height=${sizeProvinces} href="#provinceCOA${province.i}"></use>`;
-    return {type: "province", id: "provinceCOA"+province.i, x: x - sizeProvinces/2, y: y - sizeProvinces/2, size: sizeProvinces, el: province};
+    return {type: "province", id: "provinceCOA"+province.i, x, y, size: sizeProvinces, el: province};
   });
 
-  const sizeStates = +emblems.attr("size-states") || 50;
-  const stateCOAs = states.filter(s => s.i && !s.removed && s.coa).map(state => {
+  const sizeStates = getStateEmblemsSize();
+  const stateCOAs = validStates.map(state => {
     const [x, y] = state.pole;
     COArenderer.trigger("stateCOA"+state.i, state.coa);
-    //svg += `<use x=${x-sizeStates/2} y=${y-sizeStates/2} width=${sizeStates} height=${sizeStates} href="#stateCOA${state.i}"></use>`;
-    return {type: "state", id: "stateCOA"+state.i, x: x - sizeStates/2, y: y - sizeStates/2, size: sizeStates, el: state};
+    return {type: "state", id: "stateCOA"+state.i, x, y, size: sizeStates, el: state};
   });
 
   const nodes = provinceCOAs.concat(stateCOAs);
-  // emblems.html(svg);
-
   const simulation = d3.forceSimulation(nodes)
-    .alphaMin(.6).alphaDecay(.2)
-    .force('collision', d3.forceCollide().radius(d => d.size/2));
+    .alphaMin(.6).alphaDecay(.2).velocityDecay(.6)
+    .force('collision', d3.forceCollide().radius(d => d.size/2))
+    .stop();
 
-  const node = emblems.selectAll("use").data(nodes).join("use")
-    .attr("href", d => "#"+d.id)
-    .attr("x", d => d.x)
-    .attr("y", d => d.y)
-    .attr("width", d => d.size)
-    .attr("height", d => d.size);
+  debug.attr("fill", "#fff").attr("stroke", "#000")
+    .selectAll("circle").data(nodes).join("circle")
+    .attr("cx", d => d.x)
+    .attr("cy", d => d.y)
+    .attr("r", 2);
 
-  simulation.on("tick", () => {
-    node.attr("x", d => d.x).attr("y", d => d.y);
+  d3.timeout(function() {
+    const n = Math.ceil(Math.log(simulation.alphaMin()) / Math.log(1 - simulation.alphaDecay()));
+    for (let i = 0; i < n; ++i) {
+      simulation.tick();
+    }
+
+    emblems.selectAll("use").data(nodes).join("use")
+      .attr("href", d => "#"+d.id)
+      .attr("x", d => d.x - d.size / 2)
+      .attr("y", d => d.y - d.size / 2)
+      .attr("width", d => d.size + "em")
+      .attr("height", d => d.size + "em");
+
+    invokeActiveZooming();
   });
 
   TIME && console.timeEnd("drawEmblems");
