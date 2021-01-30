@@ -1230,7 +1230,7 @@ function toggleZones(event) {
 function toggleEmblems(event) {
   if (!layerIsOn("toggleEmblems")) {
     turnButtonOn("toggleEmblems");
-    if (!emblems.selectAll("*").size()) drawEmblems();
+    if (!emblems.selectAll("use").size()) drawEmblems();
     $('#emblems').fadeIn();
     if (event && isCtrlClick(event)) editStyle("emblems");
   } else {
@@ -1242,19 +1242,14 @@ function toggleEmblems(event) {
 
 function drawEmblems() {
   TIME && console.time("drawEmblems");
-  const {states, provinces, burgs, cells} = pack;
-
-  // const sizeBurgs = +emblems.attr("size-burgs") || 15;
-  // burgs.filter(b => b.i && !b.removed && b.coa).forEach(burg => {
-  //   const {x, y} = burg;
-  //   COArenderer.trigger("burgCOA"+burg.i, burg.coa);
-  //   svg += `<use x=${x-sizeBurgs/2} y=${y-sizeBurgs/2} width=${sizeBurgs} height=${sizeBurgs} href="#burgCOA${burg.i}"></use>`;
-  // });
+  const {states, provinces, burgs} = pack;
 
   const validStates = states.filter(s => s.i && !s.removed && s.coa);
   const validProvinces = provinces.filter(p => p.i && !p.removed && p.coa);
+  const validBurgs = burgs.filter(b => b.i && !b.removed && b.coa);
   
   const sizeMod = +emblems.attr("size-modifier") || 1;
+
   const getStateEmblemsSize = () => {
     const startSize = (graphHeight + graphWidth) / 40;
     const statesMod = (1 + validStates.length / 100) - (15 - validStates.length) / 200; // states number modifier
@@ -1265,36 +1260,47 @@ function drawEmblems() {
   const getProvinceEmblemsSize = () => {
     const startSize = (graphHeight + graphWidth) / 80;
     const provincesMod = (1 + validProvinces.length / 1000) - (115 - validProvinces.length) / 1000; // states number modifier
-    const size = rn(startSize / provincesMod * sizeMod); // target size ~50px on 1536x754 map with 15 states
+    const size = rn(startSize / provincesMod * sizeMod); // target size ~26px on 1536x754 map with 115 provinces
     return Math.min(Math.max(size, 5), 75);
   }
+
+  const getBurgEmblemSize = () => {
+    const startSize = (graphHeight + graphWidth) / 150;
+    const burgsMod = (1 + validBurgs.length / 1000) - (450 - validBurgs.length) / 1000; // states number modifier
+    const size = rn(startSize / burgsMod * sizeMod); // target size ~10px on 1536x754 map with 450 burgs
+    return Math.min(Math.max(size, 5), 50);
+  }
+
+  const sizeBurgs = getBurgEmblemSize();
+  const burgCOAs = validBurgs.map(burg => {
+    const {x, y} = burg;
+    return {type: "burg", i: burg.i, x, y, size: sizeBurgs};
+  });
 
   const sizeProvinces = getProvinceEmblemsSize();
   const provinceCOAs = validProvinces.map(province => {
     if (!province.pole) getProvincesVertices();
     const [x, y] = province.pole;
-    COArenderer.trigger("provinceCOA"+province.i, province.coa);
-    return {type: "province", id: "provinceCOA"+province.i, x, y, size: sizeProvinces, el: province};
+    return {type: "province", i: province.i, x, y, size: sizeProvinces};
   });
 
   const sizeStates = getStateEmblemsSize();
   const stateCOAs = validStates.map(state => {
     const [x, y] = state.pole;
-    COArenderer.trigger("stateCOA"+state.i, state.coa);
-    return {type: "state", id: "stateCOA"+state.i, x, y, size: sizeStates, el: state};
+    return {type: "state", i: state.i, x, y, size: sizeStates};
   });
 
-  const nodes = provinceCOAs.concat(stateCOAs);
+  const nodes = burgCOAs.concat(provinceCOAs).concat(stateCOAs);
   const simulation = d3.forceSimulation(nodes)
     .alphaMin(.6).alphaDecay(.2).velocityDecay(.6)
     .force('collision', d3.forceCollide().radius(d => d.size/2))
     .stop();
 
-  debug.attr("fill", "#fff").attr("stroke", "#000")
-    .selectAll("circle").data(nodes).join("circle")
-    .attr("cx", d => d.x)
-    .attr("cy", d => d.y)
-    .attr("r", 2);
+  // debug.attr("fill", "#fff").attr("stroke", "#000")
+  //   .selectAll("circle").data(nodes).join("circle")
+  //   .attr("cx", d => d.x)
+  //   .attr("cy", d => d.y)
+  //   .attr("r", 2);
 
   d3.timeout(function() {
     const n = Math.ceil(Math.log(simulation.alphaMin()) / Math.log(1 - simulation.alphaDecay()));
@@ -1302,12 +1308,20 @@ function drawEmblems() {
       simulation.tick();
     }
 
-    emblems.selectAll("use").data(nodes).join("use")
-      .attr("href", d => "#"+d.id)
-      .attr("x", d => d.x - d.size / 2)
-      .attr("y", d => d.y - d.size / 2)
-      .attr("width", d => d.size + "em")
-      .attr("height", d => d.size + "em");
+    emblems.select("#burgEmblems").attr("font-size", sizeBurgs)
+      .selectAll("use").data(nodes.filter(node => node.type === "burg")).join("use")
+      .attr("x", d => d.x - d.size / 2).attr("y", d => d.y - d.size / 2)
+      .attr("width", "1em").attr("height", "1em").attr("data-i", d => d.i);
+
+    emblems.select("#provinceEmblems").attr("font-size", sizeProvinces)
+      .selectAll("use").data(nodes.filter(node => node.type === "province")).join("use")
+      .attr("x", d => d.x - d.size / 2).attr("y", d => d.y - d.size / 2)
+      .attr("width", "1em").attr("height", "1em").attr("data-i", d => d.i);
+
+    emblems.select("#stateEmblems").attr("font-size", sizeStates)
+      .selectAll("use").data(nodes.filter(node => node.type === "state")).join("use")
+      .attr("x", d => d.x - d.size / 2).attr("y", d => d.y - d.size / 2)
+      .attr("width", "1em").attr("height", "1em").attr("data-i", d => d.i);
 
     invokeActiveZooming();
   });

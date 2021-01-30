@@ -683,7 +683,6 @@
     const viewBox = shieldBox[coa.shield] || "0 0 200 200";
 
     const coaDefs = document.getElementById("coaDefs");
-    const chargesGroup = coaDefs.querySelector("#charges");
 
     let svg = `
       <svg id="${id}" xmlns="http://www.w3.org/2000/svg" width=200 height=200 viewBox="${viewBox}">
@@ -878,7 +877,7 @@
   }
 
   // async render coa if it does not exist
-  const trigger = function(id, coa) {
+  const trigger = async function(id, coa) {
     if (!document.getElementById(id)) draw(id, coa);
   }
 

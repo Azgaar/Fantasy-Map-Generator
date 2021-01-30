@@ -3,10 +3,14 @@ function editEmblem(type, id, el) {
   if (customization) return;
 
   if (!id && d3.event) {
-    const data = d3.event.target.__data__;
-    type = data.type;
-    id = data.id;
-    el = data.el;
+    const parent = d3.event.target.parentNode;
+    const [g, t] = parent.id === "burgEmblems" ? [pack.burgs, "burg"] :
+                      parent.id === "provinceEmblems" ? [pack.provinces, "province"] :
+                      [pack.states, "state"];
+    const i = +d3.event.target.dataset.i;
+    type = t;
+    id = type+"COA"+i;
+    el = g[i];
   }
 
   emblems.selectAll(":scope > use").call(d3.drag().on("drag", dragEmblem)).classed("draggable", true);
@@ -31,6 +35,7 @@ function editEmblem(type, id, el) {
   emblemStates.addEventListener("input", selectState);
   emblemProvinces.addEventListener("input", selectProvince);
   emblemBurgs.addEventListener("input", selectBurg);
+  document.getElementById("emblemsFocus").addEventListener("click", showArea);
 
   function updateElementSelectors(type, id, el) {
     let state = 0, province = 0, burg = 0;
@@ -130,6 +135,10 @@ function editEmblem(type, id, el) {
       const transform = `translate(${(x + d3.event.x)},${(y + d3.event.y)})`;
       this.setAttribute("transform", transform);
     });
+  }
+
+  function showArea() {
+    highlightEmblemElement(type, el);
   }
 
   function closeEmblemEditor() {

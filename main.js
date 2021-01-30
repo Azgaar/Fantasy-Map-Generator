@@ -61,7 +61,7 @@ let coastline = viewbox.append("g").attr("id", "coastline");
 let ice = viewbox.append("g").attr("id", "ice").style("display", "none");
 let prec = viewbox.append("g").attr("id", "prec").style("display", "none");
 let population = viewbox.append("g").attr("id", "population");
-let emblems = viewbox.append("g").attr("id", "emblems");
+let emblems = viewbox.append("g").attr("id", "emblems").style("display", "none");
 let labels = viewbox.append("g").attr("id", "labels");
 let icons = viewbox.append("g").attr("id", "icons");
 let burgIcons = icons.append("g").attr("id", "burgIcons");
@@ -97,6 +97,11 @@ anchors.append("g").attr("id", "towns");
 // population groups
 population.append("g").attr("id", "rural");
 population.append("g").attr("id", "urban");
+
+// emblem groups
+emblems.append("g").attr("id", "burgEmblems");
+emblems.append("g").attr("id", "provinceEmblems");
+emblems.append("g").attr("id", "stateEmblems");
 
 // fogging
 fogging.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
@@ -444,16 +449,12 @@ function invokeActiveZooming() {
 
   // rescale emblems on zoom
   if (emblems.style("display") !== "none") {
-    const fontSize = rn(1 / scale ** .1, 4);
-    emblems.attr("font-size", fontSize);
-    // const realSize = fontSize * scale;
-
-    // emblems.selectAll("use").each(function(d) {
-      
-    //   const hidden = realSize < 20 || realSize > 350;
-    //   if (hidden) this.classList.add("hidden");
-    //   else this.classList.remove("hidden");
-    // });
+    emblems.selectAll("g").each(function() {
+      const size = this.getAttribute("font-size") * scale;
+      const hidden = size < 25 || size > 300;
+      if (hidden) this.classList.add("hidden"); else this.classList.remove("hidden");
+      if (!hidden && this.children.length && !this.children[0].getAttribute("href")) renderGroupCOAs(this);
+    });
   }
 
   // turn off ocean pattern if scale is big (improves performance)
@@ -481,6 +482,18 @@ function invokeActiveZooming() {
     ruler.selectAll("rect").attr("stroke-width", .5 * size);
     ruler.selectAll("text").attr("font-size", 10 * size);
     ruler.selectAll("line, path").attr("stroke-width", size);
+  }
+}
+
+async function renderGroupCOAs(g) {
+  const [group, type] = g.id === "burgEmblems" ? [pack.burgs, "burg"] :
+                        g.id === "provinceEmblems" ? [pack.provinces, "province"] :
+                        [pack.states, "state"];
+  for (let use of g.children) {
+    const i = +use.dataset.i;
+    const id = type+"COA"+i;
+    COArenderer.trigger(id, group[i].coa);
+    use.setAttribute("href", "#"+id);
   }
 }
 

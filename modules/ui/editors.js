@@ -21,7 +21,7 @@ function clicked() {
   const p = d3.mouse(this);
   const i = findCell(p[0], p[1]);
 
-  if (parent.id === "emblems") editEmblem();
+  if (grand.id === "emblems") editEmblem();
   else if (parent.id === "rivers") editRiver();
   else if (grand.id === "routes") editRoute();
   else if (el.tagName === "tspan" && grand.parentNode.parentNode.id === "labels") editLabel();

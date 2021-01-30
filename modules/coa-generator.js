@@ -208,16 +208,16 @@
     // fix download svg/png
     // test in FF
 
-    const t1 = parent && P(.25) ? parent.t1 : getTincture("field");
+    const t1 = parent && P(.3) ? parent.t1 : getTincture("field");
     const coa = {t1};
 
     let charge = P(usedPattern ? .5 : .93) ? true : false; // 80% for charge
-    const linedOrdinary = charge && P(.3) || P(.5) ? parent?.ordinaries && P(.2) ? parent.ordinaries[0].ordinary : rw(ordinaries.lined) : null;
+    const linedOrdinary = charge && P(.3) || P(.5) ? parent?.ordinaries && P(.3) ? parent.ordinaries[0].ordinary : rw(ordinaries.lined) : null;
     const ordinary = !charge && P(.65) || P(.3) ? linedOrdinary ? linedOrdinary : rw(ordinaries.straight) : null; // 36% for ordinary
     const rareDivided = ["chief", "terrace", "chevron", "quarter", "flaunches"].includes(ordinary);
     const divisioned = rareDivided ? P(.03) : charge && ordinary ? P(.03) : charge ? P(.3) : ordinary ? P(.7) : P(.995); // 33% for division
     const division = divisioned ? parent?.division && P(.2) ? parent.division.division : rw(divisions.variants) : null;
-    if (charge) charge = parent?.charges && P(.3) ? parent.charges[0].charge : selectCharge();
+    if (charge) charge = parent?.charges && P(.2) ? parent.charges[0].charge : selectCharge();
 
     if (division) {
       const t = getTincture("division", usedTinctures, P(.98) ? coa.t1 : null);
