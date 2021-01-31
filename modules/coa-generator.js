@@ -101,7 +101,7 @@
       crossParted: { e: 5, ee: 1 },
       saltire: { ee: 5, jlemo: 1 },
       saltireParted: { e: 5, ee: 1 },
-      pall: { ee: 1, acez: 5, jlhh: 3 },
+      pall: { ee: 1, jleh: 5, jlhh: 3 },
       pallReversed: { ee: 1, bemo: 5 },
       pile: { bbb: 1 },
       pileInBend: { eeee: 1, eeoo: 1 },
@@ -190,7 +190,7 @@
     }
   };
 
-  const generate = function(parent) {
+  const generate = function(parent, kinship, dominion) {
     let usedPattern = null, usedTinctures = [];
 
     // TODO
@@ -207,17 +207,19 @@
     // style settings for emblems layer
     // fix download svg/png
     // test in FF
+    // generate all?
+    // layout preset
 
-    const t1 = parent && P(.3) ? parent.t1 : getTincture("field");
+    const t1 = P(kinship) ? parent.t1 : getTincture("field");
     const coa = {t1};
 
     let charge = P(usedPattern ? .5 : .93) ? true : false; // 80% for charge
-    const linedOrdinary = charge && P(.3) || P(.5) ? parent?.ordinaries && P(.3) ? parent.ordinaries[0].ordinary : rw(ordinaries.lined) : null;
+    const linedOrdinary = charge && P(.3) || P(.5) ? parent?.ordinaries && P(kinship) ? parent.ordinaries[0].ordinary : rw(ordinaries.lined) : null;
     const ordinary = !charge && P(.65) || P(.3) ? linedOrdinary ? linedOrdinary : rw(ordinaries.straight) : null; // 36% for ordinary
     const rareDivided = ["chief", "terrace", "chevron", "quarter", "flaunches"].includes(ordinary);
     const divisioned = rareDivided ? P(.03) : charge && ordinary ? P(.03) : charge ? P(.3) : ordinary ? P(.7) : P(.995); // 33% for division
-    const division = divisioned ? parent?.division && P(.2) ? parent.division.division : rw(divisions.variants) : null;
-    if (charge) charge = parent?.charges && P(.2) ? parent.charges[0].charge : selectCharge();
+    const division = divisioned ? parent?.division && P(kinship - .1) ? parent.division.division : rw(divisions.variants) : null;
+    if (charge) charge = parent?.charges && P(kinship - .1) ? parent.charges[0].charge : selectCharge();
 
     if (division) {
       const t = getTincture("division", usedTinctures, P(.98) ? coa.t1 : null);
@@ -335,6 +337,32 @@
       }
     }
 
+    // dominions have canton with parent coa
+    if (P(dominion)) {
+      const t = getType(parent.t1) === getType(coa.t1) ? getTincture("division", usedTinctures, coa.t1) : parent.t1;
+      const canton = {ordinary: "canton", t};
+      if (coa.charges) {
+        coa.charges.forEach((charge, i) => {
+          if (charge.p.includes("a")) charge.p = charge.p.replaceAll("a", "");
+          if (charge.p.includes("j")) charge.p = charge.p.replaceAll("j", "");
+          if (charge.p.includes("y")) charge.p = charge.p.replaceAll("y", "");
+          if (!charge.p) coa.charges.splice(i, 1);
+        });
+      }
+
+      if (parent.charges) {
+        let charge = parent.charges[0].charge;
+        if (charge === "inescutcheon" && parent.charges[1]) charge = parent.charges[1].charge;
+
+        let t2 = parent.charges[0].t;
+        if (getType(t) === getType(t2)) t2 = getTincture("charge", usedTinctures, t);
+        
+        if (!coa.charges) coa.charges = [];
+        coa.charges.push({charge, t: t2, p: "y", size: 0.5});
+      } else canton.above = 1;
+      coa.ordinaries ? coa.ordinaries.push(canton) : coa.ordinaries = [canton];
+    }
+
     function selectCharge(set) {
       const type = set ? rw(set) : ordinary || divisioned ? rw(charges.types): rw(charges.single);
       return type === "inescutcheon" ? "inescutcheon" : rw(charges[type]);
@@ -366,7 +394,6 @@
       if (Object.keys(tinctures.metals).includes(tincture)) return "metals";
       if (Object.keys(tinctures.colours).includes(tincture)) return "colours";
       if (Object.keys(tinctures.stains).includes(tincture)) return "stains";
-      debugger; // exception
     }
 
     function definePattern(pattern, element, size = "") {

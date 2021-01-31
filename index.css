@@ -1573,12 +1573,17 @@ rect.fillRect {
 }
 
 #emblemBody .label {
-	width: 5.5em;
+	width: 6em;
 	display: inline-block;
 }
 
 #emblemBody select {
-	width: 8em;
+	width: 9em;
+}
+
+
+#emblemsBottom {
+	margin-top: 4px;
 }
 
 #picker text {

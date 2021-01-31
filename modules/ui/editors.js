@@ -545,9 +545,7 @@ function unfog(id) {
 }
 
 function getFileName(dataType) {
-  const formatTime = (time) => {
-    return (time < 10) ? "0" + time : time;
-  };
+  const formatTime = time => time < 10 ? "0" + time : time;
   const name = mapName.value;
   const type = dataType ? dataType + " " : "";
   const date = new Date();

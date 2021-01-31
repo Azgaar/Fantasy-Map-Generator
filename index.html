@@ -37,7 +37,7 @@
   <link rel="stylesheet" href="libs/jquery-ui.css">
 </head>
 <body>
-  <svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" id="map" width="100%" height="100%">
+  <svg xmlns="http://www.w3.org/2000/svg" version="1.1" id="map" width="100%" height="100%">
     <defs>
       <g id="filters">
         <filter id="blurFilter" x="-1" y="-1" width="100" height="100">
@@ -1745,51 +1745,69 @@
             <td>Emblem shape</td>
             <td>
               <select id="emblemShape" data-stored="emblemShape">
-                <option value="culture" selected>Culture-specific</option>
-                <option value="random">Culture-random</option>
-                <option value="state">State-specific</option>
-                <option value="heater">Heater</option>
-                <option value="spanish">Spanish</option>
-                <option value="french">French</option>
-                <option value="horsehead">Horsehead</option>
-                <option value="horsehead2">Horsehead Edgy</option>
-                <option value="polish">Polish</option>
-                <option value="hessen">Hessen</option>
-                <option value="swiss">Swiss</option>
-                <option value="boeotian">Boeotian</option>
-                <option value="roman">Roman</option>
-                <option value="kite">Kite</option>
-                <option value="oldFrench">Old French</option>
-                <option value="renaissance">Renaissance</option>
-                <option value="baroque">Baroque</option>
-                <option value="targe">Targe</option>
-                <option value="targe2">Targe2</option>
-                <option value="pavise">Pavise</option>
-                <option value="wedged">Wedged</option>
-                <option value="flag">Flag</option>
-                <option value="pennon">Pennon</option>
-                <option value="guidon">Guidon</option>
-                <option value="banner">Banner</option>
-                <option value="dovetail">Dovetail</option>
-                <option value="gonfalon">Gonfalon</option>
-                <option value="pennant">Pennant</option>
-                <option value="round">Round</option>
-                <option value="oval">Oval</option>
-                <option value="vesicaPiscis">Vesica Piscis</option>
-                <option value="square">Square</option>
-                <option value="diamond">Diamond</option>
-                <option value="fantasy1">Fantasy1</option>
-                <option value="fantasy2">Fantasy2</option>
-                <option value="fantasy3">Fantasy3</option>
-                <option value="fantasy4">Fantasy4</option>
-                <option value="fantasy5">Fantasy5</option>
-                <option value="noldor">Noldor</option>
-                <option value="gondor">Gondor</option>
-                <option value="easterling">Easterling</option>
-                <option value="erebor">Erebor</option>
-                <option value="ironHills">Iron Hills</option>
-                <option value="urukHai">UrukHai</option>
-                <option value="moriaOrc">Moria Orc</option>
+                <optgroup label="Diversiform">
+                  <option value="culture" selected>Culture-specific</option>
+                  <option value="random">Culture-random</option>
+                  <option value="state">State-specific</option>
+                </optgroup>
+                <optgroup label="Basic">
+                  <option value="heater">Heater</option>
+                  <option value="spanish">Spanish</option>
+                  <option value="french">French</option>
+                </optgroup>
+                <optgroup label="Regional">
+                  <option value="horsehead">Horsehead</option>
+                  <option value="horsehead2">Horsehead Edgy</option>
+                  <option value="polish">Polish</option>
+                  <option value="hessen">Hessen</option>
+                  <option value="swiss">Swiss</option>
+                </optgroup>
+                <optgroup label="Historical">
+                  <option value="boeotian">Boeotian</option>
+                  <option value="roman">Roman</option>
+                  <option value="kite">Kite</option>
+                  <option value="oldFrench">Old French</option>
+                  <option value="renaissance">Renaissance</option>
+                  <option value="baroque">Baroque</option>
+                </optgroup>
+                <optgroup label="Specific">
+                  <option value="targe">Targe</option>
+                  <option value="targe2">Targe2</option>
+                  <option value="pavise">Pavise</option>
+                  <option value="wedged">Wedged</option>
+                </optgroup>
+                <optgroup label="Banner">
+                  <option value="flag">Flag</option>
+                  <option value="pennon">Pennon</option>
+                  <option value="guidon">Guidon</option>
+                  <option value="banner">Banner</option>
+                  <option value="dovetail">Dovetail</option>
+                  <option value="gonfalon">Gonfalon</option>
+                  <option value="pennant">Pennant</option>
+                </optgroup>
+                <optgroup label="Simple">
+                  <option value="round">Round</option>
+                  <option value="oval">Oval</option>
+                  <option value="vesicaPiscis">Vesica Piscis</option>
+                  <option value="square">Square</option>
+                  <option value="diamond">Diamond</option>
+                </optgroup>
+                <optgroup label="Fantasy">
+                  <option value="fantasy1">Fantasy1</option>
+                  <option value="fantasy2">Fantasy2</option>
+                  <option value="fantasy3">Fantasy3</option>
+                  <option value="fantasy4">Fantasy4</option>
+                  <option value="fantasy5">Fantasy5</option>
+                </optgroup>
+                <optgroup label="Middle Earth">
+                  <option value="noldor">Noldor</option>
+                  <option value="gondor">Gondor</option>
+                  <option value="easterling">Easterling</option>
+                  <option value="erebor">Erebor</option>
+                  <option value="ironHills">Iron Hills</option>
+                  <option value="urukHai">UrukHai</option>
+                  <option value="moriaOrc">Moria Orc</option>
+                </optgroup>
               </select>
             </td>
             <td>
@@ -3337,8 +3355,77 @@
           <div class="label">Burg:</div>
           <select id="emblemBurgs"></select>
         </div>
+        <hr/>
+        <div data-tip="Select shape of the emblem">
+          <div class="label">Shape:</div>
+          <select id="emblemShapeSelector">
+            <optgroup label="Basic">
+              <option value="heater">Heater</option>
+              <option value="spanish">Spanish</option>
+              <option value="french">French</option>
+            </optgroup>
+            <optgroup label="Regional">
+              <option value="horsehead">Horsehead</option>
+              <option value="horsehead2">Horsehead Edgy</option>
+              <option value="polish">Polish</option>
+              <option value="hessen">Hessen</option>
+              <option value="swiss">Swiss</option>
+            </optgroup>
+            <optgroup label="Historical">
+              <option value="boeotian">Boeotian</option>
+              <option value="roman">Roman</option>
+              <option value="kite">Kite</option>
+              <option value="oldFrench">Old French</option>
+              <option value="renaissance">Renaissance</option>
+              <option value="baroque">Baroque</option>
+            </optgroup>
+            <optgroup label="Specific">
+              <option value="targe">Targe</option>
+              <option value="targe2">Targe2</option>
+              <option value="pavise">Pavise</option>
+              <option value="wedged">Wedged</option>
+            </optgroup>
+            <optgroup label="Banner">
+              <option value="flag">Flag</option>
+              <option value="pennon">Pennon</option>
+              <option value="guidon">Guidon</option>
+              <option value="banner">Banner</option>
+              <option value="dovetail">Dovetail</option>
+              <option value="gonfalon">Gonfalon</option>
+              <option value="pennant">Pennant</option>
+            </optgroup>
+            <optgroup label="Simple">
+              <option value="round">Round</option>
+              <option value="oval">Oval</option>
+              <option value="vesicaPiscis">Vesica Piscis</option>
+              <option value="square">Square</option>
+              <option value="diamond">Diamond</option>
+            </optgroup>
+            <optgroup label="Fantasy">
+              <option value="fantasy1">Fantasy1</option>
+              <option value="fantasy2">Fantasy2</option>
+              <option value="fantasy3">Fantasy3</option>
+              <option value="fantasy4">Fantasy4</option>
+              <option value="fantasy5">Fantasy5</option>
+            </optgroup>
+            <optgroup label="Middle Earth">
+              <option value="noldor">Noldor</option>
+              <option value="gondor">Gondor</option>
+              <option value="easterling">Easterling</option>
+              <option value="erebor">Erebor</option>
+              <option value="ironHills">Iron Hills</option>
+              <option value="urukHai">UrukHai</option>
+              <option value="moriaOrc">Moria Orc</option>
+            </optgroup>
+          </select>
+        </div>
       </div>
       <div id="emblemsBottom">
+        <button id="emblemsRegenerate" data-tip="Regenerate emblem" class="icon-shuffle"></button>
+        <button id="emblemsArmoria" data-tip="Edit the emblem in Armoria: our dedicated rich heraldry editor" class="icon-brush"></button>
+        <button id="emblemsUpload" data-tip="Upload png, jpg or svg image from Armoria or other sources as emblem" class="icon-upload"></button>
+        <button id="emblemsDownload" data-tip="Download emblem as png image" class="icon-download"></button>
+        <button id="emblemsGallery" data-tip="Download emblems gallery as html table (open in browser)" class="icon-layer-group"></button>
         <button id="emblemsFocus" data-tip="Show emblem associated area or place" class="icon-target"></button>
       </div>
     </div>
@@ -3956,7 +4043,7 @@
         </template>
         <template id="vairInPale">
           <pattern id="{id}" width=.125 height=.125 viewBox="0 0 25 25">
-            <rect x=0 y=0 width="100%" height="100%" fill="{c2}"/>
+            <rect x=0 y=0 width=25 height=25 fill="{c2}"/>
             <path d="m12.5,0 l6.25,6.25 v12.5 l6.25,6.25 h-25 l6.25,-6.25 v-12.5 z" fill="{c1}" stroke="#000" stroke-width=".2"/>
           </pattern>
         </template>

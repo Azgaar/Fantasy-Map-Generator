@@ -186,8 +186,14 @@
         if (cells.r[i]%2) b.y = rn(b.y + shift, 2); else b.y = rn(b.y - shift, 2);
       }
 
-      const stateCOA = pack.states[b.state].coa;
-      b.coa = COA.generate(stateCOA);
+      // define emblem
+      const state = pack.states[b.state];
+      const stateCOA = state.coa;
+      let kinship = .25;
+      if (b.capital) kinship += .1;
+      else if (b.port) kinship -= .1;
+      if (b.culture !== state.culture) kinship -= .25;
+      b.coa = COA.generate(stateCOA, kinship);
       b.coa.shield = getShield(b.culture, b.state);
     }
 
@@ -949,7 +955,8 @@
         form[formName] += 5;
         const fullName = name + " " + formName;
         const color = getMixedColor(s.color);
-        const coa = COA.generate(stateBurgs[i].coa);
+        const kinship = nameByBurg ? .8 : .4;
+        const coa = COA.generate(stateBurgs[i].coa, kinship);
         coa.shield = getShield(c, s.i);
         provinces.push({i:province, state:s.i, center, burg, name, formName, fullName, color, coa});
       }
@@ -1045,7 +1052,9 @@
         const formName = singleIsle ? "Island" : isleGroup ? "Islands" : colony ? "Colony" : rw(forms["Wild"]);
         const fullName = name + " " + formName;
         const color = getMixedColor(s.color);
-        const coa = COA.generate(s.coa);
+        const dominion = colony ? P(.95) : singleIsle || isleGroup ? P(.7) : P(.3);
+        const kinship = dominion ? 0 : .4;
+        const coa = COA.generate(s.coa, kinship, dominion);
         coa.shield = getShield(c, s.i);
         provinces.push({i:province, state:s.i, center, burg, name, formName, fullName, color, coa});
         s.provinces.push(province);
