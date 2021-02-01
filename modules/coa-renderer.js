@@ -672,7 +672,7 @@
     moriaOrc: "0 0 200 200"
   }
 
-  async function draw(id, coa) {
+  function draw(id, coa) {
     const {division, ordinaries = [], charges = []} = coa;
     const ordinariesRegular = ordinaries.filter(o => !o.above);
     const ordinariesAboveCharges = ordinaries.filter(o => o.above);
@@ -877,7 +877,7 @@
   }
 
   // async render coa if it does not exist
-  const trigger = async function(id, coa) {
+  const trigger = function(id, coa) {
     if (!document.getElementById(id)) draw(id, coa);
   }
 

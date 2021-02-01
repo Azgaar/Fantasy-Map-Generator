@@ -209,6 +209,8 @@
     // test in FF
     // generate all?
     // layout preset
+    // burg editor - add emblem
+    // other editors
 
     const t1 = P(kinship) ? parent.t1 : getTincture("field");
     const coa = {t1};

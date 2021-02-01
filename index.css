@@ -1581,9 +1581,18 @@ rect.fillRect {
 	width: 9em;
 }
 
-
 #emblemsBottom {
 	margin-top: 4px;
+	text-align: center;
+}
+
+#emblemDownloadControl {
+	margin-top: .3em;
+	text-align: center;
+}
+
+#emblemDownloadControl > input {
+	width: 4.1em;
 }
 
 #picker text {

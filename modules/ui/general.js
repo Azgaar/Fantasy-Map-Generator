@@ -330,7 +330,7 @@ document.querySelectorAll("[data-locked]").forEach(function(e) {
     event.stopPropagation();
   });
 
-  e.addEventListener("click", function(event) {
+  e.addEventListener("click", function() {
     const id = (this.id).slice(5);
     if (this.className === "icon-lock") unlock(id);
     else lock(id);

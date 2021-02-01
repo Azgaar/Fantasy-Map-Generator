@@ -3343,6 +3343,7 @@
         <div>
           <b id="emblemArmiger"></b>
         </div>
+        <hr/>
         <div data-tip="Select state">
           <div class="label">State:</div>
           <select id="emblemStates"></select>
@@ -3424,9 +3425,15 @@
         <button id="emblemsRegenerate" data-tip="Regenerate emblem" class="icon-shuffle"></button>
         <button id="emblemsArmoria" data-tip="Edit the emblem in Armoria: our dedicated rich heraldry editor" class="icon-brush"></button>
         <button id="emblemsUpload" data-tip="Upload png, jpg or svg image from Armoria or other sources as emblem" class="icon-upload"></button>
-        <button id="emblemsDownload" data-tip="Download emblem as png image" class="icon-download"></button>
-        <button id="emblemsGallery" data-tip="Download emblems gallery as html table (open in browser)" class="icon-layer-group"></button>
+        <button id="emblemsDownload" data-tip="Set size, select file format and download emblem image" class="icon-download"></button>
+        <button id="emblemsGallery" data-tip="Download emblems gallery as html document (open in browser; downloading takes some time)" class="icon-layer-group"></button>
         <button id="emblemsFocus" data-tip="Show emblem associated area or place" class="icon-target"></button>
+      </div>
+      <div id="emblemDownloadControl" class="hidden">
+        <input id="emblemsDownloadSize" data-tip="Set image size in pixels" type="number" value="500" step="100" min="100" max="10000"/>
+        <button id="emblemsDownloadSVG" data-tip="Download as SVG: scalable vector image. Best quality, can be opened in browser or Inkscape">SVG</button>
+        <button id="emblemsDownloadPNG" data-tip="Download as PNG: lossless raster image with transparent background">PNG</button>
+        <button id="emblemsDownloadJPG" data-tip="Download as JPG: lossy compressed raster image with solid white background">JPG</button>
       </div>
     </div>
 
