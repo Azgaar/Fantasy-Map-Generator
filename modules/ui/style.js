@@ -1095,7 +1095,7 @@ function addFonts(url) {
         let family = rule.style.getPropertyValue('font-family');
         let font = family.replace(/['"]+/g, '').replace(/ /g, "+");
         let weight = rule.style.getPropertyValue('font-weight');
-        if (weight !== "400") font += ":" + weight;
+        if (weight && weight !== "400") font += ":" + weight;
         if (fonts.indexOf(font) == -1) {
           fonts.push(font);
           fetched++
