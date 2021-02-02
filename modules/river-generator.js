@@ -25,7 +25,7 @@
       .map((h, i) => h < 20 || cells.t[i] < 1 ? h : h + d3.mean(cells.c[i].map(c => cells.t[c])) / 10000);
 
     resolveDepressions(h);
-    features.forEach(f => {delete f.river; delete f.flux; delete f.totalFlux; delete f.inlets});
+    features.forEach(f => {delete f.river; delete f.flux; delete f.inlets});
 
     const riversData = []; // rivers data
     cells.fl = new Uint16Array(cells.i.length); // water flux array
@@ -38,7 +38,7 @@
       const outlets = new Uint32Array(features.length);
       // enumerate lake outlet positions
       features.filter(f => f.type === "lake" && (f.group === "freshwater" || f.group === "frozen")).forEach(l => {
-        let outlet;
+        let outlet = 0;
         if (l.shoreline) {
           outlet = l.shoreline[d3.scan(l.shoreline, (a,b) => h[a] - h[b])];
         } else { // in case it got missed or deleted
@@ -67,7 +67,7 @@
         if (h[min] < 20) {
           // pour water to the sea haven
           const oh = i ? cells.haven[i] : min;
-          riversData.push({river: ri, cell: oh, x: p[oh][0], y: p[oh][1]});
+          riversData.push({river: ri, cell: oh, x: p[min][0], y: p[min][1]});
           const mf = features[cells.f[min]]; // feature of min cell
           if (mf.type === "lake") {
             if (!mf.river || iFlux > mf.flux) {
@@ -116,11 +116,11 @@
               riverNext++;
             }
           }
-          cells.fl[j] += l.totalFlux; // signpost river size
+          // cells.fl[j] += l.totalFlux; // signpost river size
           flowDown(i, cells.fl[i], l.totalFlux, cells.r[j]);
           // prevent dropping imediately back into the lake
-          out2 = cells.c[i].filter(c => h[c] >= 20 || cells.f[c] !== cells.f[j]).sort((a,b) => h[a] - h[b])[0]; // downhill cell not in the source lake
-
+          // out2 = cells.c[i].filter(c => {h[c] >= 20 || cells.f[c] !== cells.f[j]}).sort((a,b) => h[a] - h[b])[0]; // downhill cell not in the source lake
+          out2 = cells.c[i].filter(c => h[c] >= 20).sort((a,b) => h[a] - h[b])[0]; // downhill land cell
           // assign all to outlet basin
           if (l.inlets) l.inlets.forEach(fork => riversData.find(r => r.river === fork).parent = cells.r[j]);
         }
@@ -167,16 +167,16 @@
         const riverSegments = riversData.filter(d => d.river === r);
 
         if (riverSegments.length > 2) {
-          const riverEnhanced = addMeandring(riverSegments);
+          const source = riverSegments[0], mouth = riverSegments[riverSegments.length-2];
           let width = rn(.8 + Math.random() * .4, 1); // river width modifier [.2, 10]
           let increment = rn(.8 + Math.random() * .6, 1); // river bed widening modifier [.01, 3]
-          if (cells.fl[riverSegments[1]] >= 50) {
-            increment = rn( increment /2 - .39, 2);
+          if (cells.h[source.cell] < 20) { // is lake outflow
+            increment = rn( increment /2 - .3, 2);
             width *= 2;
           }
+          const riverEnhanced = addMeandring(riverSegments);
           const [path, length] = getPath(riverEnhanced, width, increment);
           riverPaths.push([r, path, width, increment]);
-          const source = riverSegments[0], mouth = riverSegments[riverSegments.length-2];
           const parent = source.parent || 0;
           pack.rivers.push({i:r, parent, length, source:source.cell, mouth:mouth.cell});
         } else {
@@ -204,7 +204,7 @@
     const land = cells.i.filter(i => h[i] >= 20 && h[i] < 100 && !cells.b[i]); // exclude near-border cells
     const lakes = pack.features.filter(f => f.type === "lake" && (f.group === "freshwater" || f.group === "frozen")); // to keep lakes flat
     lakes.forEach(l => {
-      l.shoreline = [l.firstCell - 1]; 
+      l.shoreline = [];
       l.height = 21;
       l.totalFlux = grid.cells.prec[cells.g[l.firstCell]];
     });
