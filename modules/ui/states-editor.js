@@ -422,17 +422,28 @@ function editStates() {
     statesBody.select("#state"+state).remove();
     statesBody.select("#state-gap"+state).remove();
     statesHalo.select("#state-border"+state).remove();
+    labels.select("#stateLabel"+state).remove();
+    defs.select("#textPath_stateLabel"+state).remove();
+
     unfog("focusState"+state);
-    const label = document.querySelector("#stateLabel"+state);
-    if (label) label.remove();
     pack.burgs.forEach(b => {if(b.state === state) b.state = 0;});
     pack.cells.state.forEach((s, i) => {if(s === state) pack.cells.state[i] = 0;});
-    pack.states[state].removed = true;
+
+    // remove emblem
+    const coaId = "stateCOA" + state;
+    document.getElementById(coaId).remove();
+    emblems.select(`#stateEmblems > use[data-i='${state}']`).remove();
 
     // remove provinces
     pack.states[state].provinces.forEach(p => {
-      pack.provinces[p].removed = true;
+      pack.provinces[p] = {i: p, removed: true};
       pack.cells.province.forEach((pr, i) => {if(pr === p) pack.cells.province[i] = 0;});
+      const coaId = "provinceCOA" + p;
+      if (document.getElementById(coaId)) document.getElementById(coaId).remove();
+      emblems.select(`#provinceEmblems > use[data-i='${p}']`).remove();
+      const g = provs.select("#provincesBody");
+      g.select("#province"+p).remove();
+      g.select("#province-gap"+p).remove();
     });
 
     // remove military
@@ -448,8 +459,7 @@ function editStates() {
     pack.burgs[capital].state = 0;
     moveBurgToGroup(capital, "towns");
 
-    // clean state object
-    pack.states[state].military = [];
+    pack.states[state] = {i: state, removed: true};
 
     debug.selectAll(".highlight").remove();
     if (!layerIsOn("toggleStates")) toggleStates(); else drawStates();

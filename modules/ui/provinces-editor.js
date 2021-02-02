@@ -352,18 +352,16 @@ function editProvinces() {
           pack.cells.province.forEach((province, i) => {
             if(province === p) pack.cells.province[i] = 0;
           });
-          const province = pack.provinces[p];
           const s = province.state, state = pack.states[s];
           if (state.provinces.includes(p)) state.provinces.splice(state.provinces.indexOf(p), 1);
-          province.removed = true;
+
           unfog("focusProvince"+p);
 
-          if (province.coa) {
-            const coaId = "provinceCOA" + p;
-            if (document.getElementById(coaId)) document.getElementById(coaId).remove();
-            emblems.select(`#provinceEmblems > use[data-i='${p}']`).remove();
-            delete province.coa; // remove to save data
-          }
+          const coaId = "provinceCOA" + p;
+          if (document.getElementById(coaId)) document.getElementById(coaId).remove();
+          emblems.select(`#provinceEmblems > use[data-i='${p}']`).remove();
+
+          pack.provinces[p] = {i: p, removed: true};
 
           const g = provs.select("#provincesBody");
           g.select("#province"+p).remove();

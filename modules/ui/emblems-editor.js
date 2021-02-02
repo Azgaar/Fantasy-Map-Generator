@@ -3,7 +3,7 @@ function editEmblem(type, id, el) {
   if (customization) return;
   if (!id && d3.event) defineEmblemData(d3.event);
 
-  emblems.selectAll(":scope > use").call(d3.drag().on("drag", dragEmblem)).classed("draggable", true);
+  emblems.selectAll("use").call(d3.drag().on("drag", dragEmblem)).classed("draggable", true);
 
   const emblemStates = document.getElementById("emblemStates");
   const emblemProvinces = document.getElementById("emblemProvinces");
@@ -337,6 +337,6 @@ function editEmblem(type, id, el) {
   }
 
   function closeEmblemEditor() {
-    emblems.selectAll(":scope > use").call(d3.drag().on("drag", null)).attr("class", null);
+    emblems.selectAll("use").call(d3.drag().on("drag", null)).attr("class", null);
   }
 }

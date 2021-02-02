@@ -91,7 +91,7 @@
         const nomadic = [1, 2, 3, 4].includes(cells.biome[b.cell]);
         const type = nomadic ? "Nomadic" : cultures[b.culture].type === "Nomadic" ? "Generic" : cultures[b.culture].type;
         const coa = COA.generate(null);
-        coa.shield = getShield(b.culture, null);
+        coa.shield = COA.getShield(b.culture, null);
         states.push({i, color: colors[i-1], name, expansionism, capital: i, type, center: b.cell, culture: b.culture, coa});
         cells.burg[b.cell] = i;
       });
@@ -137,14 +137,6 @@
       burgs[0] = {name:undefined}; // do not store burgsTree anymore
       TIME && console.timeEnd('placeTowns');
     }
-  }
-
-  function getShield(culture, state) {
-    const emblemShape = document.getElementById("emblemShape").value;
-    if (emblemShape === "state" && state && pack.states[state].coa) return pack.states[state].coa.shield;
-    if (pack.cultures[culture].shield) return pack.cultures[culture].shield;
-    console.error("Emblem shape is not defined on culture level", pack.cultures[culture]);
-    return "heater";
   }
 
   // define burg coordinates, coa, port status and define details
@@ -194,7 +186,7 @@
       else if (b.port) kinship -= .1;
       if (b.culture !== state.culture) kinship -= .25;
       b.coa = COA.generate(stateCOA, kinship);
-      b.coa.shield = getShield(b.culture, b.state);
+      b.coa.shield = COA.getShield(b.culture, b.state);
     }
 
     // de-assign port status if it's the only one on feature
@@ -592,6 +584,7 @@
     TIME && console.time("collectStatistics");
     const cells = pack.cells, states = pack.states;
     states.forEach(s => {
+      if (s.removed) return;
       s.cells = s.area = s.burgs = s.rural = s.urban = 0;
       s.neighbors = new Set();
     });
@@ -614,7 +607,10 @@
     }
 
     // convert neighbors Set object into array
-    states.forEach(s => s.neighbors = Array.from(s.neighbors));
+    states.forEach(s => {
+      if (!s.neighbors) return;
+      s.neighbors = Array.from(s.neighbors);
+    });
 
     TIME && console.timeEnd("collectStatistics");
   }
@@ -957,7 +953,7 @@
         const color = getMixedColor(s.color);
         const kinship = nameByBurg ? .8 : .4;
         const coa = COA.generate(stateBurgs[i].coa, kinship);
-        coa.shield = getShield(c, s.i);
+        coa.shield = COA.getShield(c, s.i);
         provinces.push({i:province, state:s.i, center, burg, name, formName, fullName, color, coa});
       }
     });
@@ -1055,7 +1051,7 @@
         const dominion = colony ? P(.95) : singleIsle || isleGroup ? P(.7) : P(.3);
         const kinship = dominion ? 0 : .4;
         const coa = COA.generate(s.coa, kinship, dominion);
-        coa.shield = getShield(c, s.i);
+        coa.shield = COA.getShield(c, s.i);
         provinces.push({i:province, state:s.i, center, burg, name, formName, fullName, color, coa});
         s.provinces.push(province);
 

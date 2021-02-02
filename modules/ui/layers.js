@@ -1297,32 +1297,23 @@ function drawEmblems() {
     .force('collision', d3.forceCollide().radius(d => d.size/2))
     .stop();
 
-  // debug.attr("fill", "#fff").attr("stroke", "#000")
-  //   .selectAll("circle").data(nodes).join("circle")
-  //   .attr("cx", d => d.x)
-  //   .attr("cy", d => d.y)
-  //   .attr("r", 2);
-
   d3.timeout(function() {
     const n = Math.ceil(Math.log(simulation.alphaMin()) / Math.log(1 - simulation.alphaDecay()));
     for (let i = 0; i < n; ++i) {
       simulation.tick();
     }
 
-    emblems.select("#burgEmblems").attr("font-size", sizeBurgs)
-      .selectAll("use").data(nodes.filter(node => node.type === "burg")).join("use")
-      .attr("x", d => d.x - d.size / 2).attr("y", d => d.y - d.size / 2)
-      .attr("width", "1em").attr("height", "1em").attr("data-i", d => d.i);
+    const burgNodes = nodes.filter(node => node.type === "burg");
+    const burgString = burgNodes.map(d => `<use data-i="${d.i}" x="${d.x - d.size / 2}" y="${d.y - d.size / 2}" width="1em" height="1em"/>`).join("");
+    emblems.select("#burgEmblems").attr("font-size", sizeBurgs).html(burgString);
 
-    emblems.select("#provinceEmblems").attr("font-size", sizeProvinces)
-      .selectAll("use").data(nodes.filter(node => node.type === "province")).join("use")
-      .attr("x", d => d.x - d.size / 2).attr("y", d => d.y - d.size / 2)
-      .attr("width", "1em").attr("height", "1em").attr("data-i", d => d.i);
+    const provinceNodes = nodes.filter(node => node.type === "province");
+    const provinceString = provinceNodes.map(d => `<use data-i="${d.i}" x="${d.x - d.size / 2}" y="${d.y - d.size / 2}" width="1em" height="1em"/>`).join("");
+    emblems.select("#provinceEmblems").attr("font-size", sizeProvinces).html(provinceString);
 
-    emblems.select("#stateEmblems").attr("font-size", sizeStates)
-      .selectAll("use").data(nodes.filter(node => node.type === "state")).join("use")
-      .attr("x", d => d.x - d.size / 2).attr("y", d => d.y - d.size / 2)
-      .attr("width", "1em").attr("height", "1em").attr("data-i", d => d.i);
+    const stateNodes = nodes.filter(node => node.type === "state");
+    const stateString = stateNodes.map(d => `<use data-i="${d.i}" x="${d.x - d.size / 2}" y="${d.y - d.size / 2}" width="1em" height="1em"/>`).join("");
+    emblems.select("#stateEmblems").attr("font-size", sizeStates).html(stateString);
 
     invokeActiveZooming();
   });

@@ -196,18 +196,14 @@
     // TODO
     // seafaring
     // stringify coa on save and load
-    // regenerateAll
     // generate on new item creation
     // old versions auto migration: coa generation for cultures and states etc.
     // emblems layer for old maps
     // define emblems layer style for all styles
-    // add coa on click events for loaded map
     // generatate state/prov/burg - remove all rendered coas
-    // remove state/prov/burg - remove rendered coa [burg - done, provice - done, state]
     // style settings for emblems layer
-    // fix download svg/png
+    // fix map download svg/png
     // test in FF
-    // generate all?
     // layout preset
     // burg editor - add emblem
     // other editors
@@ -340,11 +336,13 @@
     }
 
     // dominions have canton with parent coa
-    if (P(dominion)) {
-      const t = getType(parent.t1) === getType(coa.t1) ? getTincture("division", usedTinctures, coa.t1) : parent.t1;
+    if (P(dominion) && parent.charges) {
+      const invert = isSameType(parent.t1, coa.t1);
+      const t = invert ? getTincture("division", usedTinctures, coa.t1) : parent.t1;
       const canton = {ordinary: "canton", t};
       if (coa.charges) {
         coa.charges.forEach((charge, i) => {
+          if (charge.size === 1.5) charge.size = 1.4;
           if (charge.p.includes("a")) charge.p = charge.p.replaceAll("a", "");
           if (charge.p.includes("j")) charge.p = charge.p.replaceAll("j", "");
           if (charge.p.includes("y")) charge.p = charge.p.replaceAll("y", "");
@@ -352,17 +350,20 @@
         });
       }
 
-      if (parent.charges) {
-        let charge = parent.charges[0].charge;
-        if (charge === "inescutcheon" && parent.charges[1]) charge = parent.charges[1].charge;
+      let charge = parent.charges[0].charge;
+      if (charge === "inescutcheon" && parent.charges[1]) charge = parent.charges[1].charge;
 
-        let t2 = parent.charges[0].t;
-        if (getType(t) === getType(t2)) t2 = getTincture("charge", usedTinctures, t);
-        
-        if (!coa.charges) coa.charges = [];
-        coa.charges.push({charge, t: t2, p: "y", size: 0.5});
-      } else canton.above = 1;
+      let t2 = invert ? parent.t1 : parent.charges[0].t;
+      if (isSameType(t, t2)) t2 = getTincture("charge", usedTinctures, t);
+
+      if (!coa.charges) coa.charges = [];
+      coa.charges.push({charge, t: t2, p: "y", size: 0.5});
+
       coa.ordinaries ? coa.ordinaries.push(canton) : coa.ordinaries = [canton];
+
+      console.log(encodeURI(`https://azgaar.github.io/Armoria/?coa=${JSON.stringify(coa)}`));
+      console.log(encodeURI(`https://azgaar.github.io/Armoria/?coa=${JSON.stringify(parent)}`));
+      console.log("-------");
     }
 
     function selectCharge(set) {
@@ -396,6 +397,18 @@
       if (Object.keys(tinctures.metals).includes(tincture)) return "metals";
       if (Object.keys(tinctures.colours).includes(tincture)) return "colours";
       if (Object.keys(tinctures.stains).includes(tincture)) return "stains";
+    }
+
+    function isSameType(t1, t2) {
+      return type(t1) === type(t2);
+
+      function type(tincture) {
+        if (Object.keys(tinctures.metals).includes(tincture)) return "metals";
+        if (Object.keys(tinctures.colours).includes(tincture)) return "colours";
+        if (Object.keys(tinctures.stains).includes(tincture)) return "stains";
+        else return "pattern";
+      }
+
     }
 
     function definePattern(pattern, element, size = "") {
@@ -465,19 +478,17 @@
     return coa;
   }
 
-  const generateAll = function() {
-    const states = pack.states, burgs = pack.burgs, provinces = pack.provinces;
-
-    states.forEach(state => {
-      if (!state.i || state.removed) return;
-      const coa = generate();
-      s.coa = coa;
-    });
+  const getShield = function(culture, state) {
+    const emblemShape = document.getElementById("emblemShape").value;
+    if (emblemShape === "state" && state && pack.states[state].coa) return pack.states[state].coa.shield;
+    if (pack.cultures[culture].shield) return pack.cultures[culture].shield;
+    console.error("Emblem shape is not defined on culture level", pack.cultures[culture]);
+    return "heater";
   }
 
   const toString = coa => JSON.stringify(coa).replaceAll("#", "%23");
   const copy = coa => JSON.parse(JSON.stringify(coa));
 
-  return {generate, generateAll, toString, copy};
+  return {generate, toString, copy, getShield};
 
 })));
