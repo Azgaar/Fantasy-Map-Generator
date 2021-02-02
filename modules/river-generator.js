@@ -120,7 +120,6 @@
           flowDown(i, cells.fl[i], l.totalFlux, cells.r[j]);
           // prevent dropping imediately back into the lake
           out2 = cells.c[i].filter(c => (h[c] >= 20 || cells.f[c] !== cells.f[j])).sort((a,b) => h[a] - h[b])[0]; // downhill cell not in the source lake
-          // out2 = cells.c[i].filter(c => h[c] >= 20).sort((a,b) => h[a] - h[b])[0]; // downhill land cell
           // assign all to outlet basin
           if (l.inlets) l.inlets.forEach(fork => riversData.find(r => r.river === fork).parent = cells.r[j]);
         }
@@ -140,7 +139,6 @@
         }
 
         const min = out2 ? out2 : cells.c[i][d3.scan(cells.c[i], (a, b) => h[a] - h[b])]; // downhill cell
-        // let min = cells.c[i][d3.scan(cells.c[i], (a, b) => h[a] - h[b])]; // downhill cell
 
         if (cells.fl[i] < 30) {
           if (h[min] >= 20) cells.fl[min] += cells.fl[i];
@@ -171,14 +169,7 @@
           const riverEnhanced = addMeandring(riverSegments);
           let width = rn(.8 + Math.random() * .4, 1); // river width modifier [.2, 10]
           let increment = rn(.8 + Math.random() * .6, 1); // river bed widening modifier [.01, 3]
-          if (cells.h[source.cell] < 20) { // is lake outflow
-            const c = riverEnhanced[2][2] || 0; // widen the river by a pretend confluence
-            const lakeSize = Math.min(pack.features[cells.f[source.cell]].totalFlux - 40, 0);
-            // riverEnhanced[1][2] = c + Math.min(cells.fl[source.cell] - 40, 0);
-            if(c) riverEnhanced[2][2] = c + lakeSize;
-            else riverEnhanced[2].push(lakeSize);
-          }
-          const [path, length] = getPath(riverEnhanced, width, increment);
+          const [path, length] = getPath(riverEnhanced, width, increment, cells.h[source.cell] >= 20 ? .1 : .6);
           riverPaths.push([r, path, width, increment]);
           const parent = source.parent || 0;
           pack.rivers.push({i:r, parent, length, source:source.cell, mouth:mouth.cell});
@@ -286,8 +277,8 @@
     return riverEnhanced;
   }
 
-  const getPath = function(points, width = 1, increment = 1) {
-    let offset, extraOffset = .1; // starting river width (to make river source visible)
+  const getPath = function(points, width = 1, increment = 1, starting = .1) {
+    let offset, extraOffset = starting; // starting river width (to make river source visible)
     const riverLength = points.reduce((s, v, i, p) => s + (i ? Math.hypot(v[0] - p[i-1][0], v[1] - p[i-1][1]) : 0), 0); // summ of segments length
     const widening = rn((1000 + (riverLength * 30)) * increment);
     const riverPointsLeft = [], riverPointsRight = []; // store points on both sides to build a valid polygon
