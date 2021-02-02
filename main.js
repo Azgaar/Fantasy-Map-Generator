@@ -1732,7 +1732,11 @@ function addZones(number = 1) {
 function showStatistics() {
   const template = templateInput.value;
   const templateRandom = locked("template") ? "" : "(random)";
-  const stats = `  Seed: ${seed}
+
+  mapId = Date.now(); // unique map id is it's creation date number
+  mapHistory.push({seed, width:graphWidth, height:graphHeight, template, created:mapId});
+  console.log(`
+    Seed: ${seed}
     Canvas size: ${graphWidth}x${graphHeight}
     Template: ${template} ${templateRandom}
     Points: ${grid.points.length}
@@ -1743,11 +1747,7 @@ function showStatistics() {
     Burgs: ${pack.burgs.length-1}
     Religions: ${pack.religions.length-1}
     Culture set: ${culturesSet.selectedOptions[0].innerText}
-    Cultures: ${pack.cultures.length-1}`;
-
-  mapId = Date.now(); // unique map id is it's creation date number
-  mapHistory.push({seed, width:graphWidth, height:graphHeight, template, created:mapId});
-  console.log(stats);
+    Cultures: ${pack.cultures.length-1}`);
 }
 
 const regenerateMap = debounce(function() {

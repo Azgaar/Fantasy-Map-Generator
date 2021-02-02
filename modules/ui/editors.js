@@ -172,6 +172,13 @@ function removeBurg(id) {
   const cells = pack.cells, burg = pack.burgs[id];
   burg.removed = true;
   cells.burg[burg.cell] = 0;
+
+  if (burg.coa) {
+    const coaId = "burgCOA" + id;
+    if (document.getElementById(coaId)) document.getElementById(coaId).remove();
+    emblems.select(`#burgEmblems > use[data-i='${id}']`).remove();
+    delete burg.coa; // remove to save data
+  }
 }
 
 function toggleCapital(burg) {

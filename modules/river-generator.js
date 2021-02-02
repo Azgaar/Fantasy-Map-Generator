@@ -126,11 +126,8 @@
         }
       }
 
-      // drawRivers
-      rivers.selectAll("path").remove();
-      rivers.selectAll("path").data(riverPaths).enter()
-        .append("path").attr("d", d => d[1]).attr("id", d => "river"+d[0])
-        .attr("data-width", d => d[2]).attr("data-increment", d => d[3]);
+      const html = riverPaths.map(r =>`<path id="river${r[0]}" d="${r[1]}" data-width="${r[2]}" data-increment="${r[3]}"/>`).join("");
+      rivers.html(html);
     }()
 
     // apply change heights as basic one

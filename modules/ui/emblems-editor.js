@@ -8,7 +8,6 @@ function editEmblem(type, id, el) {
   const emblemStates = document.getElementById("emblemStates");
   const emblemProvinces = document.getElementById("emblemProvinces");
   const emblemBurgs = document.getElementById("emblemBurgs");
-  const {states, provinces, burgs, cells} = pack;
 
   updateElementSelectors(type, id, el);
 
@@ -55,28 +54,30 @@ function editEmblem(type, id, el) {
     if (type === "state") state = el.i;
     else if (type === "province") {
       province = el.i
-      state = states[el.state].i;
+      state = pack.states[el.state].i;
     } else {
       burg = el.i;
-      province = cells.province[el.cell] ? provinces[cells.province[el.cell]].i : 0;
-      state = provinces[province].state || 0;
+      province = pack.cells.province[el.cell] ? pack.provinces[pack.cells.province[el.cell]].i : 0;
+      state = el.state;
     }
+
+    const validBurgs = pack.burgs.filter(burg => burg.i && !burg.removed && burg.coa);
 
     // update option list and select actual values
     emblemStates.options.length = 0;
-    const neutralBurgs = burgs.filter(burg => burg.i && !burg.removed && !burg.state);
-    if (neutralBurgs.length) emblemStates.options.add(new Option(states[0].name, 0, false, !state));
-    const stateList = states.filter(state => state.i && !state.removed);
+    const neutralBurgs = validBurgs.filter(burg => !burg.state);
+    if (neutralBurgs.length) emblemStates.options.add(new Option(pack.states[0].name, 0, false, !state));
+    const stateList = pack.states.filter(state => state.i && !state.removed);
     stateList.forEach(s => emblemStates.options.add(new Option(s.name, s.i, false, s.i === state)));
 
     emblemProvinces.options.length = 0;
     emblemProvinces.options.add(new Option("", 0, false, !province));
-    const provinceList = provinces.filter(province => !province.removed && province.state === state);
+    const provinceList = pack.provinces.filter(province => !province.removed && province.state === state);
     provinceList.forEach(p => emblemProvinces.options.add(new Option(p.name, p.i, false, p.i === province)));
 
     emblemBurgs.options.length = 0;
     emblemBurgs.options.add(new Option("", 0, false, !burg));
-    const burgList = burgs.filter(burg => !burg.removed && province ? cells.province[burg.cell] === province : burg.state === state);
+    const burgList = validBurgs.filter(burg => province ? pack.cells.province[burg.cell] === province : burg.state === state);
     burgList.forEach(b => emblemBurgs.options.add(new Option(b.capital ? "👑 " + b.name : b.name, b.i, false, b.i === burg)));
     emblemBurgs.options[0].disabled = true;
 
@@ -97,11 +98,11 @@ function editEmblem(type, id, el) {
     const state = +this.value;
     if (state) {
       type = "state";
-      el = states[state];
+      el = pack.states[state];
       id = "stateCOA"+ state;
     } else {
       // select neutral burg if state is changed to Neutrals
-      const neutralBurgs = burgs.filter(burg => burg.i && !burg.removed && !burg.state);
+      const neutralBurgs = pack.burgs.filter(burg => burg.i && !burg.removed && !burg.state);
       if (!neutralBurgs.length) return;
       type = "burg";
       el = neutralBurgs[0];
@@ -115,13 +116,13 @@ function editEmblem(type, id, el) {
 
     if (province) {
       type = "province";
-      el = provinces[province];
+      el = pack.provinces[province];
       id = "provinceCOA"+ province;
     } else {
       // select state if province is changed to null value
       const state = +emblemStates.value;
       type = "state";
-      el = states[state];
+      el = pack.states[state];
       id = "stateCOA"+ state;
     }
 
@@ -131,7 +132,7 @@ function editEmblem(type, id, el) {
   function selectBurg() {
     const burg = +this.value;
     type = "burg";
-    el = burgs[burg];
+    el = pack.burgs[burg];
     id = "burgCOA"+ burg;
     updateElementSelectors(type, id, el);
   }
@@ -239,9 +240,9 @@ function editEmblem(type, id, el) {
 
   function downloadGallery() {
     const name = getFileName("Emblems Gallery");
-    const validStates = states.filter(s => s.i && !s.removed && s.coa);
-    const validProvinces = provinces.filter(p => p.i && !p.removed && p.coa);
-    const validBurgs = burgs.filter(b => b.i && !b.removed && b.coa);
+    const validStates = pack.states.filter(s => s.i && !s.removed && s.coa);
+    const validProvinces = pack.provinces.filter(p => p.i && !p.removed && p.coa);
+    const validBurgs = pack.burgs.filter(b => b.i && !b.removed && b.coa);
     triggerCOALoad(validStates, validProvinces, validBurgs);
     const timeout = (validStates.length + validProvinces.length + validBurgs.length) * 8;
     tip("Preparing to download...", true, "warn", timeout);
@@ -255,28 +256,28 @@ function editEmblem(type, id, el) {
       }).join("") + `</div>`;
 
       const provinceSections = validStates.map(state => {
-        const figures = validProvinces.filter(p => p.state === state.i).map(province => {
+        const stateProvinces = validProvinces.filter(p => p.state === state.i);
+        const figures = stateProvinces.map(province => {
           const el = document.getElementById("provinceCOA"+province.i);
           const svg = getSVG(el, province.coa, 200);
           return `<figure id="province_${province.i}"><a href="#burgs_${province.i}"><figcaption>${province.fullName}</figcaption>${svg}</a></figure>`;
         }).join("");
-        return `<div id="provinces_${state.i}"><h2>${state.fullName} provinces</h2>${figures}</div>`;
+        return stateProvinces.length ? `<div id="provinces_${state.i}"><h2>${state.fullName} provinces</h2>${figures}</div>` : "";
       }).join("");
 
       const burgSections = validStates.map(state => {
         const stateBurgs = validBurgs.filter(b => b.state === state.i);
         let stateBurgSections = validProvinces.filter(p => p.state === state.i).map(province => {
-          const provinceBurgs = stateBurgs.filter(b => cells.province[b.cell] === province.i);
-          if (!provinceBurgs.length) return "";
+          const provinceBurgs = stateBurgs.filter(b => pack.cells.province[b.cell] === province.i);
           const provinceBurgFigures = provinceBurgs.map(burg => {
             const el = document.getElementById("burgCOA"+burg.i);
             const svg = getSVG(el, burg.coa, 200);
             return `<figure id="burg_${burg.i}"><figcaption>${burg.name}</figcaption>${svg}</figure>`;
           }).join("");
-          return `<div id="burgs_${province.i}"><h2>${province.fullName} burgs</h2>${provinceBurgFigures}</div>`;
+          return provinceBurgs.length ? `<div id="burgs_${province.i}"><h2>${province.fullName} burgs</h2>${provinceBurgFigures}</div>` : "";
         }).join("");
 
-        const stateBurgOutOfProvinces = stateBurgs.filter(b => !cells.province[b.cell]);
+        const stateBurgOutOfProvinces = stateBurgs.filter(b => !pack.cells.province[b.cell]);
         const stateBurgOutOfProvincesFigures = stateBurgOutOfProvinces.map(burg => {
           const el = document.getElementById("burgCOA"+burg.i);
           const svg = getSVG(el, burg.coa, 200);

@@ -336,7 +336,6 @@ function editProvinces() {
 
       refreshProvincesEditor();
     }
-
   }
 
   function toggleFog(p, cl) {
@@ -346,17 +345,26 @@ function editProvinces() {
   }
 
   function removeProvince(p) {
-
     alertMessage.innerHTML = `Are you sure you want to remove the province? <br>This action cannot be reverted`;
     $("#alert").dialog({resizable: false, title: "Remove province",
       buttons: {
         Remove: function() {
-          pack.cells.province.forEach((province, i) => {if(province === p) pack.cells.province[i] = 0;});
-          const state = pack.provinces[p].state;
-          if (pack.states[state].provinces.includes(p)) pack.states[state].provinces.splice(pack.states[state].provinces.indexOf(p), 1);
-          pack.provinces[p].removed = true;
+          pack.cells.province.forEach((province, i) => {
+            if(province === p) pack.cells.province[i] = 0;
+          });
+          const province = pack.provinces[p];
+          const s = province.state, state = pack.states[s];
+          if (state.provinces.includes(p)) state.provinces.splice(state.provinces.indexOf(p), 1);
+          province.removed = true;
           unfog("focusProvince"+p);
-      
+
+          if (province.coa) {
+            const coaId = "provinceCOA" + p;
+            if (document.getElementById(coaId)) document.getElementById(coaId).remove();
+            emblems.select(`#provinceEmblems > use[data-i='${p}']`).remove();
+            delete province.coa; // remove to save data
+          }
+
           const g = provs.select("#provincesBody");
           g.select("#province"+p).remove();
           g.select("#province-gap"+p).remove();
@@ -367,8 +375,6 @@ function editProvinces() {
         Cancel: function() {$(this).dialog("close");}
       }
     });
-    
-
   }
 
   function editProvinceName(province) {
@@ -829,13 +835,17 @@ function editProvinces() {
       buttons: {
         Remove: function() {
           $(this).dialog("close");
-          pack.provinces.filter(p => p.i).forEach(p => {
-            p.removed = true;
-            unfog("focusProvince"+p.i);
-          });
-          pack.cells.i.forEach(i => pack.cells.province[i] = 0);
-          pack.states.filter(s => s.i && !s.removed).forEach(s => s.provinces = []);
 
+          // remove emblems
+          document.querySelectorAll("[id^='provinceCOA']").forEach(el => el.remove());
+          emblems.select("#provinceEmblems").selectAll("*").remove();
+
+          // remove data
+          pack.provinces = [0];
+          pack.cells.province = new Uint16Array(pack.cells.i.length);
+          pack.states.forEach(s => s.provinces = []);
+
+          unfog();
           if (!layerIsOn("toggleBorders")) toggleBorders(); else drawBorders();
           provs.select("#provincesBody").remove();
           turnButtonOff("toggleProvinces");

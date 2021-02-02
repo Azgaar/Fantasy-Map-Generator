@@ -132,7 +132,13 @@ button, select, a, .pointer {
 	user-select: none;
 }
 
-#statesBody, #provincesBody, #relig, #biomes, #cults {
+#statesBody, #provincesBody {
+	stroke-width: 2;
+	fill-rule: evenodd;
+	mask: url(#land);
+}
+
+#relig, #biomes, #cults {
 	stroke-width: .6;
 	fill-rule: evenodd;
 	mask: url(#land);
@@ -141,7 +147,6 @@ button, select, a, .pointer {
 #statesHalo {
 	fill: none;
 	filter: url(#blur5);
-	/*animation: hideshow 3s infinite;*/
 }
 
 #borders {
@@ -154,11 +159,6 @@ button, select, a, .pointer {
 	fill: "#18181a";
 	font-family: "Georgia";
 	font-size: 9px;
-}
-
-@keyframes hideshow {
-	0% {stroke-width: 1;}
-	50% {stroke-width: 10;}
 }
 
 #rivers {

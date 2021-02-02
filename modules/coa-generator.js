@@ -203,7 +203,7 @@
     // define emblems layer style for all styles
     // add coa on click events for loaded map
     // generatate state/prov/burg - remove all rendered coas
-    // remove state/prov/burg - remove rendered coa
+    // remove state/prov/burg - remove rendered coa [burg - done, provice - done, state]
     // style settings for emblems layer
     // fix download svg/png
     // test in FF
