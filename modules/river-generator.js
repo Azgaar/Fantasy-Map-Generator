@@ -116,11 +116,11 @@
               riverNext++;
             }
           }
-          // cells.fl[j] += l.totalFlux; // signpost river size
+          cells.fl[j] = l.totalFlux; // signpost river size
           flowDown(i, cells.fl[i], l.totalFlux, cells.r[j]);
           // prevent dropping imediately back into the lake
-          // out2 = cells.c[i].filter(c => {h[c] >= 20 || cells.f[c] !== cells.f[j]}).sort((a,b) => h[a] - h[b])[0]; // downhill cell not in the source lake
-          out2 = cells.c[i].filter(c => h[c] >= 20).sort((a,b) => h[a] - h[b])[0]; // downhill land cell
+          out2 = cells.c[i].filter(c => (h[c] >= 20 || cells.f[c] !== cells.f[j])).sort((a,b) => h[a] - h[b])[0]; // downhill cell not in the source lake
+          // out2 = cells.c[i].filter(c => h[c] >= 20).sort((a,b) => h[a] - h[b])[0]; // downhill land cell
           // assign all to outlet basin
           if (l.inlets) l.inlets.forEach(fork => riversData.find(r => r.river === fork).parent = cells.r[j]);
         }
@@ -168,13 +168,16 @@
 
         if (riverSegments.length > 2) {
           const source = riverSegments[0], mouth = riverSegments[riverSegments.length-2];
+          const riverEnhanced = addMeandring(riverSegments);
           let width = rn(.8 + Math.random() * .4, 1); // river width modifier [.2, 10]
           let increment = rn(.8 + Math.random() * .6, 1); // river bed widening modifier [.01, 3]
           if (cells.h[source.cell] < 20) { // is lake outflow
-            increment = rn( increment /2 - .3, 2);
-            width *= 2;
+            const c = riverEnhanced[2][2] || 0; // widen the river by a pretend confluence
+            const lakeSize = Math.min(pack.features[cells.f[source.cell]].totalFlux - 40, 0);
+            // riverEnhanced[1][2] = c + Math.min(cells.fl[source.cell] - 40, 0);
+            if(c) riverEnhanced[2][2] = c + lakeSize;
+            else riverEnhanced[2].push(lakeSize);
           }
-          const riverEnhanced = addMeandring(riverSegments);
           const [path, length] = getPath(riverEnhanced, width, increment);
           riverPaths.push([r, path, width, increment]);
           const parent = source.parent || 0;
