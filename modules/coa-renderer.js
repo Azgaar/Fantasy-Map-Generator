@@ -879,7 +879,7 @@
   // async render coa if it does not exist
   const trigger = function(id, coa) {
     if (!coa) {
-      console.warn(id, "emblem is undefined");
+      console.warn(`Emblem ${id} is undefined`);
       return;
     }
     if (!document.getElementById(id)) draw(id, coa);

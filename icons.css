@@ -252,17 +252,8 @@
 .icon-if:before {font-style: italic; font-weight: bold;content:'if';}
 .icon-coa:before {content:'\f3ed'; font-size: .9em; color: #999;} /* '' */
 .icon-half:before {font-weight: bold;content:'½';}
-.icon-curve:before {content: 'C';}
-.icon-area:before {content: 'O';}
-.icon-curve:before,
-.icon-area:before {
-  font-size: 1.5em;
-  padding: 0;
-  writing-mode: tb-rl;
-  margin-left: 1px;
-  width: .6em;
-  font-family: monospace;
-}
+.icon-voice:before {content:'🔊';}
+
 .icon-die:before {content:'🎲';}
 .icon-button-die:before {content:'🎲'; padding-right: .4em;}
 .icon-button-power:before {content:'💪'; padding-right: .6em;}

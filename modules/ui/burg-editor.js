@@ -31,8 +31,9 @@ function editBurg(id) {
   document.getElementById("burgRemoveGroup").addEventListener("click", removeBurgsGroup);
 
   document.getElementById("burgName").addEventListener("input", changeName);
-  document.getElementById("burgNameReCulture").addEventListener("click", generateNameCulture);
   document.getElementById("burgNameReRandom").addEventListener("click", generateNameRandom);
+  document.getElementById("burgCulture").addEventListener("input", changeCulture);
+  document.getElementById("burgNameReCulture").addEventListener("click", generateNameCulture);
   document.getElementById("burgPopulation").addEventListener("change", changePopulation);
   burgBody.querySelectorAll(".burgFeature").forEach(el => el.addEventListener("click", toggleFeature));
 
@@ -43,7 +44,7 @@ function editBurg(id) {
   document.getElementById("burgEditAnchorStyle").addEventListener("click", editGroupAnchorStyle);
 
   document.getElementById("burgSeeInMFCG").addEventListener("click", openInMFCG);
-  document.getElementById("burgOpenCOA").addEventListener("click", editCOA);
+  document.getElementById("burgEditEmblem").addEventListener("click", openEmblemEdit);
   document.getElementById("burgRelocate").addEventListener("click", toggleRelocateBurg);
   document.getElementById("burglLegend").addEventListener("click", editBurgLegend);
   document.getElementById("burgRemove").addEventListener("click", removeSelectedBurg);
@@ -54,6 +55,12 @@ function editBurg(id) {
     document.getElementById("burgName").value = b.name;
     document.getElementById("burgPopulation").value = rn(b.population * populationRate.value * urbanization.value);
     document.getElementById("burgEditAnchorStyle").style.display = +b.port ? "inline-block" : "none";
+
+    // update list and select culture
+    const cultureSelect = document.getElementById("burgCulture");
+    cultureSelect.options.length = 0;
+    const cultures = pack.cultures.filter(c => !c.removed);
+    cultures.forEach(c => cultureSelect.options.add(new Option(c.name, c.i, false, c.i === b.culture)));
 
     // toggle features
     if (b.capital) document.getElementById("burgCapital").classList.remove("inactive");
@@ -79,6 +86,11 @@ function editBurg(id) {
     burgLabels.selectAll("g").each(function() {
       select.options.add(new Option(this.id, this.id, false, this.id === group));
     });
+
+    // set emlem image
+    const coaID = "burgCOA"+id;
+    COArenderer.trigger(coaID, b.coa);
+    document.getElementById("burgEmblem").setAttribute("href", "#" + coaID);
   }
 
   function dragBurgLabel() {
@@ -220,16 +232,21 @@ function editBurg(id) {
     elSelected.text(burgName.value);
   }
 
+  function generateNameRandom() {
+    const base = rand(nameBases.length-1);
+    burgName.value = Names.getBase(base);
+    changeName();
+  }
+
+  function changeCulture() {
+    const id = +elSelected.attr("data-id");
+    pack.burgs[id].culture = +this.value;
+  }
+
   function generateNameCulture() {
     const id = +elSelected.attr("data-id");
     const culture = pack.burgs[id].culture;
     burgName.value = Names.getCulture(culture);
-    changeName();
-  }
-
-  function generateNameRandom() {
-    const base = rand(nameBases.length-1);
-    burgName.value = Names.getBase(base);
     changeName();
   }
 
@@ -326,10 +343,9 @@ function editBurg(id) {
     }
   }
 
-  function editCOA() {
-    const id = elSelected.attr("data-id"), burg = pack.burgs[id];
-    const coa = COA.toString(burg.coa);
-    openURL("http://azgaar.github.io/Armoria/?coa=" + coa);
+  function openEmblemEdit() {
+    const id = +elSelected.attr("data-id"), burg = pack.burgs[id];
+    editEmblem("burg", "burgCOA"+id, burg);
   }
 
   function toggleRelocateBurg() {

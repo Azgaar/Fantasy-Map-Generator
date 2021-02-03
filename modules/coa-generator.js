@@ -361,9 +361,9 @@
 
       coa.ordinaries ? coa.ordinaries.push(canton) : coa.ordinaries = [canton];
 
-      console.log(encodeURI(`https://azgaar.github.io/Armoria/?coa=${JSON.stringify(coa)}`));
-      console.log(encodeURI(`https://azgaar.github.io/Armoria/?coa=${JSON.stringify(parent)}`));
-      console.log("-------");
+      // console.log(encodeURI(`https://azgaar.github.io/Armoria/?coa=${JSON.stringify(coa)}`));
+      // console.log(encodeURI(`https://azgaar.github.io/Armoria/?coa=${JSON.stringify(parent)}`));
+      // console.log("-------");
     }
 
     function selectCharge(set) {

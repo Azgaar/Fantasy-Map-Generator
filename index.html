@@ -1863,6 +1863,17 @@
             </td>
           </tr>
 
+          <tr data-tip="Select speech synthesis voice to pronounce generated names">
+            <td></td>
+            <td>Speaker voice</td>
+            <td>
+              <select id="speakerVoice" data-stored="speakerVoice"></select>
+            </td>
+            <td>
+              <span id="speakerTest" data-tip="Click to test the voice" style="cursor: pointer">🔊</span>
+            </td>
+          </tr>
+
           <tr data-tip="Set minimum and maximum possible zoom level">
             <td></td>
             <td>Zoom extent</td>
@@ -2163,6 +2174,7 @@
       <div id="labelTextSection" style="display: none">
         <button id="labelTextHide" data-tip="Hide the edit label text section" class="icon-pencil"></button>
         <input id="labelText" data-tip='Type to change the label. Enter "|" to move to a new line' style="width: 12em">
+        <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
         <span id="labelTextRandom" data-tip="Generate random name" class="icon-shuffle pointer"></span>
       </div>
 
@@ -2186,6 +2198,7 @@
       <div id="riverNameSection" style="display: none">
         <button id="riverNameHide" data-tip="Hide the river name section" class="icon-font"></button>
         <input id="riverName" data-tip="Change river proper name" style="width: 8em">
+        <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
         <input id="riverType" data-tip="Change river type name" style="width: 6em">
         <span id="riverNameCulture" data-tip="Generate culture-specific name for the river" class="icon-book pointer"></span>
         <span id="riverNameRandom" data-tip="Generate random name for the river" class="icon-globe pointer"></span>
@@ -2420,27 +2433,36 @@
     <div id="burgEditor" class="dialog" style="display: none">
 
       <div id="burgBody" style="padding-bottom: .3em">
-        <div style="padding: .1em">
-          <div class="label">Name:</div>
-          <input id="burgName" data-tip="Type to rename the burg" autocorrect="off" spellcheck="false" style="width: 7em">
-          <span id="burgNameReCulture" data-tip="Generate culture-specific name for the burg" class="icon-book pointer"></span>
-          <span id="burgNameReRandom" data-tip="Generate random name for the burg" class="icon-globe pointer"></span>
-        </div>
+        <svg viewBox="0 0 200 200" width="85" height="85"><use id="burgEmblem"></use></svg>
+        <div style="float: right">
+          <div style="padding: .1em">
+            <div class="label">Name:</div>
+            <input id="burgName" data-tip="Type to rename the burg" autocorrect="off" spellcheck="false" style="width: 8em">
+            <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+            <span id="burgNameReRandom" data-tip="Generate random name for the burg" class="icon-globe pointer"></span>
+          </div>
 
-        <div style="padding: .1em">
-          <div class="label">Population:</div>
-          <input id="burgPopulation" data-tip="Set burg population" type="number" min=0 step=1 style="width: 7em">
-        </div>
+          <div style="padding: .1em">
+            <div class="label">Culture:</div>
+            <select id="burgCulture" data-tip="Select dominant culture" style="width: 8em"></select>
+            <span id="burgNameReCulture" data-tip="Generate culture-specific name for the burg" class="icon-book pointer"></span>
+          </div>
 
-        <div style="padding: .1em">
-          <div class="label">Features:</div>
-          <span id="burgCapital" data-tip="Shows whether the burg is a state capital. Click to toggle" data-feature="capital" class="burgFeature icon-star"></span>
-          <span id="burgPort" data-tip="Shows whether the burg is a port. Click to toggle" data-feature="port" class="burgFeature icon-anchor"></span>
-          <span id="burgCitadel" data-tip="Shows whether the burg has a citadel (castle). Click to toggle" data-feature="citadel" class="burgFeature icon-chess-rook" style="font-size: 1.1em"></span>
-          <span id="burgWalls" data-tip="Shows whether the burg is walled. Click to toggle" data-feature="walls" class="burgFeature icon-fort-awesome"></span>
-          <span id="burgPlaza" data-tip="Shows whether the burg is a trade center (has big marketplace). Click to toggle" data-feature="plaza" class="burgFeature icon-store" style="font-size: 1em"></span>
-          <span id="burgTemple" data-tip="Shows whether the burg is a religious center. Click to toggle" data-feature="temple" class="burgFeature icon-chess-bishop" style="font-size: 1.1em; margin-left: 3px"></span>
-          <span id="burgShanty" data-tip="Shows whether the burg has a shanty town. Click to toggle" data-feature="shanty" class="burgFeature icon-campground" style="font-size: 1em"></span>
+          <div style="padding: .1em">
+            <div class="label">Population:</div>
+            <input id="burgPopulation" data-tip="Set burg population" type="number" min=0 step=1 style="width: 8em">
+          </div>
+
+          <div style="padding: .1em">
+            <div class="label">Features:</div>
+            <span id="burgCapital" data-tip="Shows whether the burg is a state capital. Click to toggle" data-feature="capital" class="burgFeature icon-star"></span>
+            <span id="burgPort" data-tip="Shows whether the burg is a port. Click to toggle" data-feature="port" class="burgFeature icon-anchor"></span>
+            <span id="burgCitadel" data-tip="Shows whether the burg has a citadel (castle). Click to toggle" data-feature="citadel" class="burgFeature icon-chess-rook" style="font-size: 1.1em"></span>
+            <span id="burgWalls" data-tip="Shows whether the burg is walled. Click to toggle" data-feature="walls" class="burgFeature icon-fort-awesome"></span>
+            <span id="burgPlaza" data-tip="Shows whether the burg is a trade center (has big marketplace). Click to toggle" data-feature="plaza" class="burgFeature icon-store" style="font-size: 1em"></span>
+            <span id="burgTemple" data-tip="Shows whether the burg is a religious center. Click to toggle" data-feature="temple" class="burgFeature icon-chess-bishop" style="font-size: 1.1em; margin-left: 3px"></span>
+            <span id="burgShanty" data-tip="Shows whether the burg has a shanty town. Click to toggle" data-feature="shanty" class="burgFeature icon-campground" style="font-size: 1em"></span>
+          </div>
         </div>
       </div>
 
@@ -2463,7 +2485,7 @@
         </div>
 
         <button id="burgSeeInMFCG" data-tip="Open burg in the Medieval Fantasy City Generator by Watabou. Ctrl + click to change the seed" class="icon-map-o"></button>
-        <button id="burgOpenCOA" data-tip="Open burg's COA. Ctrl + click to change the seed" class="icon-shield-alt"></button>
+        <button id="burgEditEmblem" data-tip="Edit emblem" class="icon-shield-alt"></button>
         <button id="burgRelocate" data-tip="Relocate burg" class="icon-target"></button>
         <button id="burglLegend" data-tip="Edit free text notes (legend) for this burg" class="icon-edit"></button>
         <button id="burgRemove" data-tip="Remove non-capital burg. Shortcut: Delete" class="icon-trash fastDelete"></button>
@@ -2516,6 +2538,7 @@
         <div>
           <button id="regimentType" data-tip="Regiment type (land or naval). Click to change"></button>
           <input id="regimentName" data-tip="Type to rename the regiment" autocorrect="off" spellcheck="false" style="width: 13em">
+          <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
           <i id="regimentNameRestore" data-tip="Click to restore regiment's default name" class="icon-ccw pointer"></i>
         </div>
 
@@ -2968,6 +2991,7 @@
       <div style="padding: .1em">
         <div data-tip="State short name" class="label">Short name:</div>
         <input id="stateNameEditorShort" data-tip="Type to change the short name" autocorrect="off" spellcheck="false" style="width: 11em">
+        <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
         <span id="stateNameEditorShortCulture" data-tip="Generate culture-specific name" class="icon-book pointer"></span>
         <span id="stateNameEditorShortRandom" data-tip="Generate random name" class="icon-globe pointer"></span>
       </div>
@@ -3030,6 +3054,7 @@
       <div style="padding: .1em">
         <div data-tip="State full name" class="label">Full name:</div>
         <input id="stateNameEditorFull" data-tip="Type to change the full name" autocorrect="off" spellcheck="false" style="width: 11em">
+        <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
         <span id="stateNameEditorFullRegenerate" data-tip="Click to re-generate full name" data-tick="0" class="icon-arrows-cw pointer"></span>
       </div>
 
@@ -3118,13 +3143,14 @@
       <div style="padding: .1em">
         <div data-tip="Province short name" class="label">Short name:</div>
         <input id="provinceNameEditorShort" data-tip="Type to change the short name" autocorrect="off" spellcheck="false" style="width: 11em">
+        <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
         <span id="provinceNameEditorShortCulture" data-tip="Generate culture-specific name" class="icon-book pointer"></span>
         <span id="provinceNameEditorShortRandom" data-tip="Generate random name" class="icon-globe pointer"></span>
       </div>
 
       <div style="padding: .1em" data-tip="Select form name">
         <div data-tip="Province form name" class="label">Form name:</div>
-        <select id="provinceNameEditorSelectForm" style="display: inline-block; width: 11.7em; height: 1.645em">
+        <select id="provinceNameEditorSelectForm" style="display: inline-block; width: 11em; height: 1.645em">
           <option value="">blank</option>
           <option value="Barony">Barony</option>
           <option value="Canton">Canton</option>
@@ -3155,6 +3181,7 @@
       <div style="padding: .1em">
         <div data-tip="Province full name" class="label">Full name:</div>
         <input id="provinceNameEditorFull" data-tip="Type to change the full name" autocorrect="off" spellcheck="false" style="width: 11em">
+        <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
         <span id="provinceNameEditorFullRegenerate" data-tip="Click to re-generate full name" class="icon-arrows-cw pointer"></span>
       </div>
     </div>
@@ -3237,6 +3264,7 @@
         <button id="namesbaseDownload" data-tip="Download namesbase to PC" class="icon-download"></button>
         <button id="namesbaseUpload" data-tip="Upload a namesbase from PC" class="icon-upload"></button>
         <button id="namesbaseCA" data-tip="Find or share custom namesbase on Cartography Assets portal" class="icon-drafting-compass" onclick="openURL('https://cartographyassets.com/asset-category/specific-assets/azgaars-generator/namebases/')"></button>
+        <button id="namesbaseSpeak" data-tip="Speak the examples. You can change voice and language in options" class="icon-voice"></button>
       </div>
     </div>
 
@@ -3285,9 +3313,11 @@
         <select id="notesSelect" data-tip="Select object" style="width: 12em"></select>
         <span>Object name: </span>
         <input id="notesName" data-tip="Type to change object name" autocorrect="off" spellcheck="false" style="width: 16em">
+        <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
       </div>
       <div id="notesText" data-tip="Type and style object description" style="padding: .4em 0"></div>
       <div>
+        <button id="notesSpeak" data-tip="Speak the note. You can change voice and language in options" class="icon-voice"></button>
         <button id="notesFocus" data-tip="Focus on selected object" class="icon-target"></button>
         <button id="notesPin" data-tip="Toggle notes box dispay: hide or do not hide the box on mouse move" class="icon-pin"></button>
         <button id="notesDownload" data-tip="Download notes to PC" class="icon-download"></button>

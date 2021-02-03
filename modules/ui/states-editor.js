@@ -232,7 +232,7 @@ function editStates() {
     document.getElementById("stateNameEditorFull").value = s.fullName || "";
 
     $("#stateNameEditor").dialog({
-      resizable: false, title: "Change state name", width: "22em", buttons: {
+      resizable: false, title: "Change state name", buttons: {
         Apply: function() {applyNameChange(s); $(this).dialog("close");},
         Cancel: function() {$(this).dialog("close");}
       }, position: {my: "center", at: "center", of: "svg"}

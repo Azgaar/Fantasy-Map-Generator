@@ -383,7 +383,7 @@ function editProvinces() {
     document.getElementById("provinceNameEditorFull").value = p.fullName;
 
     $("#provinceNameEditor").dialog({
-      resizable: false, title: "Change province name", width: "22em", buttons: {
+      resizable: false, title: "Change province name", buttons: {
         Apply: function() {applyNameChange(p); $(this).dialog("close");},
         Cancel: function() {$(this).dialog("close");}
       }, position: {my: "center", at: "center", of: "svg"}

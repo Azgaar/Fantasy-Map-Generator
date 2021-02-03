@@ -367,6 +367,22 @@ function stored(option) {
   return localStorage.getItem(option);
 }
 
+// assign skeaker behaviour
+Array.from(document.getElementsByClassName("speaker")).forEach(el => {
+  const input = el.previousElementSibling;
+  el.addEventListener("click", () => speak(input.value));
+});
+
+function speak(text) {
+  const speaker = new SpeechSynthesisUtterance(text);
+  const voices = speechSynthesis.getVoices();
+  if (voices.length) {
+    const voiceId = +document.getElementById("speakerVoice").value;
+    speaker.voice = voices[voiceId];
+  }
+  speechSynthesis.speak(speaker);
+}
+
 // apply drop-down menu option. If the value is not in options, add it
 function applyOption(select, id, name = id) {
   const custom = !Array.from(select.options).some(o => o.value == id);

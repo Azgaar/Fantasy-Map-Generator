@@ -76,8 +76,12 @@ input, button, select, a, textarea {
 	outline: none;
 }
 
-button, select, a, .pointer {
+button, select, a {
 	cursor: pointer;
+}
+
+.pointer {
+	cursor: pointer !important;
 }
 
 #prec text {
@@ -1464,9 +1468,7 @@ div.states > .coaIcon > use {
 }
 
 .burgFeature {
-	font-size: 1.2em;
-  padding: 1px 2px;
-	color: #555;
+  padding: 1px;
 	cursor: pointer;
 }
 
@@ -2139,6 +2141,11 @@ svg.button {
 	color: white;
 	padding: .4em .5em;
 	border: dashed 1px #5d4651;
+}
+
+.speaker {
+	font-size: .9em;
+	cursor: pointer;
 }
 
 #prompt {
