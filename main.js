@@ -453,7 +453,7 @@ function invokeActiveZooming() {
       const size = this.getAttribute("font-size") * scale;
       const hidden = size < 25 || size > 300;
       if (hidden) this.classList.add("hidden"); else this.classList.remove("hidden");
-      if (!hidden && this.children.length && !this.children[0].getAttribute("href")) renderGroupCOAs(this);
+      if (!hidden && COArenderer && this.children.length && !this.children[0].getAttribute("href")) renderGroupCOAs(this);
     });
   }
 

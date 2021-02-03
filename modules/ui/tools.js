@@ -117,6 +117,11 @@ function regenerateStates() {
     b.capital = 0;
   });
 
+  // remove emblems
+  document.querySelectorAll("[id^=stateCOA]").forEach(el => el.remove());
+  document.querySelectorAll("[id^=provinceCOA]").forEach(el => el.remove());
+  emblems.selectAll("use").remove();
+
   unfog();
 
   // if desired states number is 0
@@ -130,11 +135,6 @@ function regenerateStates() {
     regions.selectAll("path").remove(); // remove states fill
     labels.select("#states").selectAll("text"); // remove state labels
     defs.select("#textPaths").selectAll("path[id*='stateLabel']").remove(); // remove state labels paths
-
-    // remove emblems
-    document.querySelectorAll("[id^=stateCOA]").forEach(el => el.remove());
-    document.querySelectorAll("[id^=provinceCOA]").forEach(el => el.remove());
-    emblems.selectAll("use").remove();
 
     if (document.getElementById("burgsOverviewRefresh").offsetParent) burgsOverviewRefresh.click();
     if (document.getElementById("statesEditorRefresh").offsetParent) statesEditorRefresh.click();
@@ -193,9 +193,15 @@ function regenerateStates() {
 
 function regenerateProvinces() {
   unfog();
+
   BurgsAndStates.generateProvinces(true);
   drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
+
+  // remove emblems
+  document.querySelectorAll("[id^=provinceCOA]").forEach(el => el.remove());
+  emblems.selectAll("use").remove();
+  if (layerIsOn("toggleEmblems")) drawEmblems();
 }
 
 function regenerateBurgs() {
@@ -246,6 +252,11 @@ function regenerateBurgs() {
   BurgsAndStates.defineBurgFeatures();
   BurgsAndStates.drawBurgs();
   Routes.regenerate();
+
+  // remove emblems
+  document.querySelectorAll("[id^=burgCOA]").forEach(el => el.remove());
+  emblems.selectAll("use").remove();
+  if (layerIsOn("toggleEmblems")) drawEmblems();
 
   if (document.getElementById("burgsOverviewRefresh").offsetParent) burgsOverviewRefresh.click();
   if (document.getElementById("statesEditorRefresh").offsetParent) statesEditorRefresh.click();

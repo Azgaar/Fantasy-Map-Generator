@@ -200,7 +200,6 @@
     // old versions auto migration: coa generation for cultures and states etc.
     // emblems layer for old maps
     // define emblems layer style for all styles
-    // generatate state/prov/burg - remove all rendered coas
     // style settings for emblems layer
     // fix map download svg/png
     // test in FF
