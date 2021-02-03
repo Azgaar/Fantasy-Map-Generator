@@ -5,9 +5,9 @@
 }(this, (function () {'use strict';
 
   const tinctures = {
-    field: { metals: 30, colours: 42, stains: 1, patterns: 12 },
-    division: { metals: 30, colours: 42, stains: 1, patterns: 6 },
-    charge: { metals: 16, colours: 24, stains: 1, patterns: 0 },
+    field: { metals: 3, colours: 4, stains: +P(.03), patterns: 1 },
+    division: { metals: 5, colours: 8, stains: +P(.03), patterns: 1 },
+    charge: { metals: 2, colours: 3, stains: +P(.05), patterns: 0 },
     metals: { argent: 3, or: 2 },
     colours: { gules: 5, azure: 4, sable: 3, purpure: 3, vert: 2 },
     stains: { murrey: 1, sanguine: 1, tenné: 1 },
@@ -127,7 +127,7 @@
       quarter: { e: 1 },
       canton: { e: 5, beh: 1, def: 1, bdefh: 1, kn: 1 },
       cross: { acgi: 1 },
-      pall: { BCKFEILGbdmfo: 1 },
+      pall: { BCKFEILGJbdmfo: 1 },
       pallReversed: { aczac: 1 },
       chevron: { ach: 3, hhh: 1 },
       chevronReversed: { bbb: 1 },
@@ -209,6 +209,7 @@
     // other editors
 
     const t1 = P(kinship) ? parent.t1 : getTincture("field");
+    if (t1.includes("-")) usedPattern = t1;
     const coa = {t1};
 
     let charge = P(usedPattern ? .5 : .93) ? true : false; // 80% for charge

@@ -361,7 +361,6 @@
       if (buddies.length > 2) continue;
       if (adversaries.length <= buddies.length) continue;
       cells.state[i] = cells.state[adversaries[0]];
-      //debug.append("circle").attr("cx", cells.p[i][0]).attr("cy", cells.p[i][1]).attr("r", .5).attr("fill", "red");
     }
     TIME && console.timeEnd("normalizeStates");
   }
@@ -412,11 +411,6 @@
       const relaxed = chain.map(i => voronoi.vertices.p[i]).filter((p, i) => i%15 === 0 || i+1 === chain.length);
       paths.push([s.i, relaxed]);
 
-      // if (s.i == 13) debug.selectAll(".circle").data(points).enter().append("circle").attr("cx", d => d[0]).attr("cy", d => d[1]).attr("r", .5).attr("fill", "red");
-      // if (s.i == 13) d3.select("#cells").selectAll(".polygon").data(d3.range(voronoi.cells.v.length)).enter().append("polygon").attr("points", d => voronoi.cells.v[d] ? voronoi.cells.v[d].map(v => c.p[v]) : "");
-      // if (s.i == 13) debug.append("path").attr("d", round(lineGen(relaxed))).attr("fill", "none").attr("stroke", "blue").attr("stroke-width", .5);
-      // if (s.i == 13) debug.selectAll(".circle").data(chain).enter().append("circle").attr("cx", d => c.p[d][0]).attr("cy", d => c.p[d][1]).attr("r", 1);
-
       function getHull(start, state, maxLake) {
         const queue = [start], hull = new Set();
 
@@ -451,7 +445,6 @@
         const h = c.p.length < 200 ? 0 : c.p.length < 600 ? .5 : 1; // power of horyzontality shift
         const end = pointsInside[d3.scan(pointsInside, (a, b) => (c.p[a][0] - c.p[b][0]) + (Math.abs(c.p[a][1] - y) - Math.abs(c.p[b][1] - y)) * h)]; // left point
         const start = pointsInside[d3.scan(pointsInside, (a, b) => (c.p[b][0] - c.p[a][0]) - (Math.abs(c.p[b][1] - y) - Math.abs(c.p[a][1] - y)) * h)]; // right point
-        //debug.append("line").attr("x1", c.p[start][0]).attr("y1", c.p[start][1]).attr("x2", c.p[end][0]).attr("y2", c.p[end][1]).attr("stroke", "#00dd00");
 
         // connect leftmost and rightmost points with shortest path
         const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
@@ -966,7 +959,6 @@
       cells.province[p.center] = p.i;
       queue.queue({e:p.center, p:0, province:p.i, state:p.state});
       cost[p.center] = 1;
-      //debug.append("circle").attr("cx", cells.p[p.center][0]).attr("cy", cells.p[p.center][1]).attr("r", .3).attr("fill", "red");
     });
 
     while (queue.length) {

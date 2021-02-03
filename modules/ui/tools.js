@@ -282,7 +282,7 @@ function regenerateEmblems() {
     const parent = province.burg ? pack.burgs[province.burg] : pack.states[province.state];
 
     let dominion = false;
-    if (province.burg) {
+    if (!province.burg) {
       dominion = P(.2);
       if (province.formName === "Colony") dominion = P(.95); else
       if (province.formName === "Island") dominion = P(.6); else
