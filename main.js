@@ -530,7 +530,6 @@ function generate() {
     reGraph();
     drawCoastline();
 
-    elevateLakes();
     Rivers.generate();
     defineBiomes();
 
@@ -1122,22 +1121,6 @@ function reMarkFeatures() {
   TIME && console.timeEnd("reMarkFeatures");
 }
 
-// temporary elevate some lakes to resolve depressions and flux the water to form an open (exorheic) lake
-function elevateLakes() {
-  if (templateInput.value === "Atoll") return; // no need for Atolls
-  TIME && console.time('elevateLakes');
-  const cells = pack.cells, features = pack.features;
-  const maxCells = cells.i.length / 100; // size limit; let big lakes be closed (endorheic)
-  cells.i.forEach(i => {
-    if (cells.h[i] >= 20) return;
-    if (features[cells.f[i]].group !== "freshwater" || features[cells.f[i]].cells > maxCells) return;
-    cells.h[i] = 20;
-    //debug.append("circle").attr("cx", cells.p[i][0]).attr("cy", cells.p[i][1]).attr("r", .5).attr("fill", "blue");
-  });
-
-  TIME && console.timeEnd('elevateLakes');
-}
-
 // assign biome id for each cell
 function defineBiomes() {
   TIME && console.time("defineBiomes");
@@ -1145,7 +1128,6 @@ function defineBiomes() {
   cells.biome = new Uint8Array(cells.i.length); // biomes array
 
   for (const i of cells.i) {
-    if (f[cells.f[i]].group === "freshwater") cells.h[i] = 19; // de-elevate lakes; here to save some resources
     const t = temp[cells.g[i]]; // cell temperature
     const h = cells.h[i]; // cell height
     const m = h < 20 ? 0 : calculateMoisture(i); // cell moisture
