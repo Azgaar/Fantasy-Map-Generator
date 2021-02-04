@@ -7,7 +7,7 @@
 // See also https://github.com/Azgaar/Fantasy-Map-Generator/issues/153
 
 "use strict";
-const version = "1.4"; // generator version
+const version = "1.5"; // generator version
 document.title += " v" + version;
 
 // Switches to disable/enable logging features
@@ -353,14 +353,10 @@ function showWelcomeMessage() {
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
 
     <ul>${post}
-      <li>Military forces changes (${link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Military-Forces", "detailed description")})</li>
-      <li>Battle simulation (${link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Battle-Simulator", "detailed description")})</li>
-      <li>Ice layer and Ice editor</li>
-      <li>Route and River Elevation profile (by EvolvedExperiment)</li>
-      <li>Image Converter enhancement</li>
-      <li>Name generator improvement</li>
-      <li>Improved integration with City Generator</li>
-      <li>Fogging restyle</li>
+      <li>Emblems generation</li>
+      <li>Emblem editor</li>
+      <li>Burg editor screen update</li>
+      <li>Speak name functionality</li>
     </ul>
 
     <p>You can can also download a ${desktop}.</p>
