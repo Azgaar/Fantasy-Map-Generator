@@ -12,7 +12,7 @@ document.title += " v" + version;
 
 // Switches to disable/enable logging features
 const INFO = 0;
-const TIME = 0;
+const TIME = 1;
 const WARN = 1;
 const ERROR = 1;
 
@@ -610,7 +610,7 @@ function calculateVoronoi(graph, points) {
   TIME && console.timeEnd("calculateDelaunay");
 
   TIME && console.time("calculateVoronoi");
-  const voronoi = Voronoi(delaunay, allPoints, n);
+  const voronoi = new Voronoi(delaunay, allPoints, n);
   graph.cells = voronoi.cells;
   graph.cells.i = n < 65535 ? Uint16Array.from(d3.range(n)) : Uint32Array.from(d3.range(n)); // array of indexes
   graph.vertices = voronoi.vertices;
