@@ -52,7 +52,7 @@
       for (const unit of options.military) {
         if (!stateModifier[unit.type]) continue;
         let modifier = stateModifier[unit.type][s.type] || 1;
-        if (unit.type === "mounted" && s.form === "Horde") modifier *= 2; else
+        if (unit.type === "mounted" && s.formName.includes("Horde")) modifier *= 2; else
         if (unit.type === "naval" && s.form === "Republic") modifier *= 1.2;
         temp[unit.name] = modifier * s.alert;
       }

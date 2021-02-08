@@ -295,7 +295,8 @@ function editStates() {
       const changed = nameChanged || formChanged || fullNameChanged;
 
       if (formChanged) {
-        const form = formSelect.selectedOptions[0].dataset.form || null;
+        const selected = formSelect.selectedOptions[0];
+        const form = selected.parentElement.label || null;
         if (form) s.form = form;
       }
 
