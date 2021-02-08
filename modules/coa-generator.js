@@ -191,20 +191,17 @@
   };
 
   const generate = function(parent, kinship, dominion) {
+    if (parent === "custom") parent = null;
     let usedPattern = null, usedTinctures = [];
 
     // TODO
     // seafaring
-    // stringify coa on save and load
-    // generate on new item creation
     // old versions auto migration: coa generation for cultures and states etc.
     // emblems layer for old maps
     // define emblems layer style for all styles
     // style settings for emblems layer
-    // fix map download svg/png
     // test in FF
     // layout preset
-    // burg editor - add emblem
     // other editors
 
     const t1 = P(kinship) ? parent.t1 : getTincture("field");

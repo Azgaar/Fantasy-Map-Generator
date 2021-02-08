@@ -125,7 +125,12 @@ function addBurg(point) {
   const temple = pack.states[state].form === "Theocracy";
   const population = Math.max((cells.s[cell] + cells.road[cell]) / 3 + i / 1000 + cell % 100 / 1000, .1);
 
-  pack.burgs.push({name, cell, x, y, state, i, culture, feature, capital: 0, port: 0, temple, population});
+  // generate emblem
+  const coa = COA.generate(pack.states[state].coa, .25);
+  coa.shield = COA.getShield(culture, state);
+  COArenderer.add("burg", i, coa, x, y);
+
+  pack.burgs.push({name, cell, x, y, state, i, culture, feature, capital: 0, port: 0, temple, population, coa});
   cells.burg[cell] = i;
 
   const townSize = burgIcons.select("#towns").attr("size") || 0.5;

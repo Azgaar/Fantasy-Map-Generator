@@ -52,6 +52,11 @@ function editBurg(id) {
   function updateBurgValues() {
     const id = +elSelected.attr("data-id");
     const b = pack.burgs[id];
+    const province = pack.cells.province[b.cell];
+    const provinceName = province ? pack.provinces[province].fullName + ", " : "";
+    const stateName = pack.states[b.state].fullName || pack.states[b.state].name;
+    document.getElementById("burgProvinceAndState").innerHTML = provinceName + stateName;
+
     document.getElementById("burgName").value = b.name;
     document.getElementById("burgPopulation").value = rn(b.population * populationRate.value * urbanization.value);
     document.getElementById("burgEditAnchorStyle").style.display = +b.port ? "inline-block" : "none";
@@ -61,6 +66,11 @@ function editBurg(id) {
     cultureSelect.options.length = 0;
     const cultures = pack.cultures.filter(c => !c.removed);
     cultures.forEach(c => cultureSelect.options.add(new Option(c.name, c.i, false, c.i === b.culture)));
+
+    const temperature = grid.cells.temp[pack.cells.g[b.cell]];
+    document.getElementById("burgTemperature").innerHTML = convertTemperature(temperature);
+    document.getElementById("burgTemperatureLikeIn").innerHTML = getTemperatureLikeness(temperature);
+    document.getElementById("burgElevation").innerHTML = getHeight(pack.cells.h[b.cell]);
 
     // toggle features
     if (b.capital) document.getElementById("burgCapital").classList.remove("inactive");
@@ -91,6 +101,18 @@ function editBurg(id) {
     const coaID = "burgCOA"+id;
     COArenderer.trigger(coaID, b.coa);
     document.getElementById("burgEmblem").setAttribute("href", "#" + coaID);
+  }
+
+  // in °C, array from -1 °C; source: https://en.wikipedia.org/wiki/List_of_cities_by_average_temperature
+  function getTemperatureLikeness(temperature) {
+    if (temperature < -5) return "Yakutsk";
+    const cities = [
+      "Snag (Yukon)", "Yellowknife (Canada)", "Okhotsk (Russia)", "Fairbanks (Alaska)", "Nuuk (Greenland)", "Murmansk", // -5 - 0
+      "Arkhangelsk", "Anchorage", "Tromsø", "Reykjavik", "Riga", "Stockholm", "Halifax", "Prague", "Copenhagen9", "London", // 1 - 10
+      "Antwerp", "Paris", "Milan", "Batumi", "Rome", "Dubrovnik", "Lisbon", "Barcelona", "Marrakesh", "Alexandria", // 11 - 20
+      "Tegucigalpa", "Guangzhou", "Rio de Janeiro", "Dakar", "Miami", "Jakarta", "Mogadishu", "Bangkok", "Aden", "Khartoum"]; // 21 - 30
+    if (temperature > 30) return "Mecca";
+    return cities[temperature+5] || null;
   }
 
   function dragBurgLabel() {
@@ -313,7 +335,8 @@ function editBurg(id) {
       if (!seed && burg.MFCGlink) {openURL(burg.MFCGlink); return;}
       const cells = pack.cells;
       const name = elSelected.text();
-      const size = Math.max(Math.min(rn(burg.population), 65), 6);
+      const size = Math.max(Math.min(rn(burg.population), 100), 6); // to be removed once change on MFDC is done
+      const population = rn(burg.population * populationRate.value * urbanization.value);
   
       const s = burg.MFCG || defSeed;
       const cell = burg.cell;
@@ -338,7 +361,7 @@ function editBurg(id) {
       }
 
       const site = "http://fantasycities.watabou.ru/?random=0&continuous=0";
-      const url = `${site}&name=${name}&size=${size}&seed=${s}&hub=${hub}&river=${river}&coast=${coast}&citadel=${citadel}&plaza=${plaza}&temple=${temple}&walls=${walls}&shantytown=${shanty}${sea}`;
+      const url = `${site}&name=${name}&population=${population}&size=${size}&seed=${s}&hub=${hub}&river=${river}&coast=${coast}&citadel=${citadel}&plaza=${plaza}&temple=${temple}&walls=${walls}&shantytown=${shanty}${sea}`;
       openURL(url);
     }
   }

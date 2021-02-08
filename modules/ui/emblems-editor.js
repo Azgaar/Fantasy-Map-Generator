@@ -8,6 +8,7 @@ function editEmblem(type, id, el) {
   const emblemStates = document.getElementById("emblemStates");
   const emblemProvinces = document.getElementById("emblemProvinces");
   const emblemBurgs = document.getElementById("emblemBurgs");
+  const emblemShapeSelector = document.getElementById("emblemShapeSelector");
 
   updateElementSelectors(type, id, el);
 
@@ -21,9 +22,14 @@ function editEmblem(type, id, el) {
   emblemStates.oninput = selectState;
   emblemProvinces.oninput = selectProvince;
   emblemBurgs.oninput = selectBurg;
-  document.getElementById("emblemShapeSelector").oninput = changeShape;
+  emblemShapeSelector.oninput = changeShape;
   document.getElementById("emblemsRegenerate").onclick = regenerate;
   document.getElementById("emblemsArmoria").onclick = openInArmoria;
+  document.getElementById("emblemsUpload").onclick = toggleUpload;
+  document.getElementById("emblemsUploadImage").onclick = () => emblemImageToLoad.click();
+  document.getElementById("emblemsUploadSVG").onclick = () => emblemSVGToLoad.click();
+  document.getElementById("emblemImageToLoad").onchange = () => upload("image");
+  document.getElementById("emblemSVGToLoad").onchange = () => upload("svg");
   document.getElementById("emblemsDownload").onclick = toggleDownload;
   document.getElementById("emblemsDownloadSVG").onclick = () => download("svg");
   document.getElementById("emblemsDownloadPNG").onclick = () => download("png");
@@ -88,10 +94,15 @@ function editEmblem(type, id, el) {
   function updateEmblemData(type, id, el) {
     if (!el.coa) return;
     document.getElementById("emblemImage").setAttribute("href", "#" + id);
-    document.getElementById("emblemShapeSelector").value = el.coa.shield;
     let name = el.fullName || el.name;
     if (type === "burg") name = "Burg of " + name;
     document.getElementById("emblemArmiger").innerText = name;
+
+    if (el.coa === "custom") emblemShapeSelector.disabled = true;
+    else {
+      emblemShapeSelector.disabled = false;
+      emblemShapeSelector.value = el.coa.shield;
+    }
   }
 
   function selectState() {
@@ -149,27 +160,75 @@ function editEmblem(type, id, el) {
 
   function regenerate() {
     let parent = null;
-    if (type === "province") parent = pack.states[el.state].coa;
+    if (type === "province") parent = pack.states[el.state];
     else if (type === "burg") {
       const province = pack.cells.province[el.cell];
-      parent = province ? pack.provinces[province].coa : pack.states[el.state].coa;
+      parent = province ? pack.provinces[province] : pack.states[el.state];
     }
 
-    const shield = el.coa.shield;
-    el.coa = COA.generate(parent);
+    const shield = el.coa.shield || COA.getShield(el.culture || parent?.culture || 0, el.state);
+    el.coa = COA.generate(parent ? parent.coa : null);
     el.coa.shield = shield;
+    emblemShapeSelector.disabled = false;
+    emblemShapeSelector.value = el.coa.shield;
 
-    document.getElementById(id).remove();
+    const coaEl = document.getElementById(id);
+    if (coaEl) coaEl.remove();
     COArenderer.trigger(id, el.coa);
   }
 
   function openInArmoria() {
-    const json = JSON.stringify(el.coa).replaceAll("#", "%23");
+    const coa = el.coa && el.coa !== "custom" ? el.coa : {t1: "sable"};
+    const json = JSON.stringify(coa).replaceAll("#", "%23");
     const url = `http://azgaar.github.io/Armoria/?coa=${json}`;
     openURL(url);
   }
 
+  function toggleUpload() {
+    document.getElementById("emblemDownloadControl").classList.add("hidden");
+    const buttons = document.getElementById("emblemUploadControl");
+    buttons.classList.toggle("hidden");
+  }
+
+  function upload(type) {
+    const input = type === "image" ? document.getElementById("emblemImageToLoad") : document.getElementById("emblemSVGToLoad");
+    const file = input.files[0];
+    input.value = "";
+
+    if (file.size > 500000) {
+      tip(`File is too big, please optimize file size up to 500kB and re-upload. Recommended size is 200x200 px and up to 100kB`, true, "error", 5000);
+      return;
+    }
+
+    const reader = new FileReader();
+    
+    reader.onload = function(readerEvent) {
+      const result = readerEvent.target.result;
+      const defs = document.getElementById("defs-emblems");
+
+      if (type === "image") {
+        const svg = `<svg id="${id}" xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><image x="0" y="0" width="200" height="200" href="${result}"/></svg>`;
+        defs.insertAdjacentHTML("beforeend", svg);
+      } else {
+        defs.insertAdjacentHTML("beforeend", result);
+        const newEmblem = defs.lastChild; // new coa
+        newEmblem.id = id;
+        newEmblem.setAttribute("width", 200);
+        newEmblem.setAttribute("height", 200);
+      }
+
+      const coa = document.getElementById(id);
+      if (coa) coa.remove(); // remove old emblem
+
+      el.coa = "custom";
+      emblemShapeSelector.disabled = true;
+    };
+
+    if (type === "image") reader.readAsDataURL(file); else reader.readAsText(file);
+  }
+
   function toggleDownload() {
+    document.getElementById("emblemUploadControl").classList.add("hidden");
     const buttons = document.getElementById("emblemDownloadControl");
     buttons.classList.toggle("hidden");
   }
@@ -225,15 +284,8 @@ function editEmblem(type, id, el) {
     const clone = svg.cloneNode(true); // clone svg
     const d = clone.getElementsByTagName("defs")[0];
 
-    clone.removeAttribute("id");
     clone.setAttribute("width", size);
     clone.setAttribute("height", size);
-
-    d.insertAdjacentHTML("beforeend", document.getElementById(coa.shield).outerHTML); // copy shield to defs
-    clone.querySelectorAll("[fill^=url]").forEach(el => {
-      const id = el.getAttribute("fill").match(/\#([^)]+)\)/)[1];
-      d.insertAdjacentHTML("beforeend", document.getElementById(id).outerHTML);
-    });
 
     return (new XMLSerializer()).serializeToString(clone);
   }

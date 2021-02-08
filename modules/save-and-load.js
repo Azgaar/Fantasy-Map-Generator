@@ -94,6 +94,17 @@ async function getMapURL(type, subtype) {
   if (customization && type === "mesh") updateMeshCells(clone);
   inlineStyle(clone);
 
+  // add displayed emblems
+  if (layerIsOn("toggleEmblems")) {
+    const defsEmblems = cloneEl.getElementById("defs-emblems");
+    clone.selectAll("#emblems use").each(function() {
+      const href = this.getAttribute("href");
+      if (!href) return;
+      const emblem = document.getElementById(href.slice(1)).cloneNode(true); // clone emblem
+      defsEmblems.append(emblem);
+    });
+  }
+
   const fontStyle = await GFontToDataURI(getFontsToLoad()); // load non-standard fonts
   if (fontStyle) clone.select("defs").append("style").text(fontStyle.join('\n')); // add font to style
 
@@ -115,7 +126,7 @@ function removeUnusedElements(clone) {
   for (let empty = 1; empty;) {
     empty = 0;
     clone.selectAll("g").each(function() {
-      if (!this.hasChildNodes() || this.style.display === "none") {empty++; this.remove();}
+      if (!this.hasChildNodes() || this.style.display === "none" || this.classList.contains("hidden")) {empty++; this.remove();}
       if (this.hasAttribute("display") && this.style.display === "inline") this.removeAttribute("display");
     });
   }
@@ -246,7 +257,8 @@ function getMapData() {
     const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
     const notesData = JSON.stringify(notes);
 
-    const cloneEl = document.getElementById("map").cloneNode(true); // clone svg
+    // clone svg
+    const cloneEl = document.getElementById("map").cloneNode(true);
 
     // set transform values to default
     cloneEl.setAttribute("width", graphWidth);

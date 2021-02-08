@@ -171,7 +171,6 @@
     const td = (cell, goal) => {const d = Math.abs(temp[cells.g[cell]] - goal); return d ? d+1 : 1;} // temperature difference fee
     const bd = (cell, biomes, fee = 4) => biomes.includes(cells.biome[cell]) ? 1 : fee; // biome difference fee
     const sf = (cell, fee = 4) => cells.haven[cell] && pack.features[cells.f[cells.haven[cell]]].type !== "lake" ? 1 : fee; // not on sea coast fee
-    // https://en.wikipedia.org/wiki/List_of_cities_by_average_temperature
 
     if (culturesSet.value === "european") {
       return [

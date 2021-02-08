@@ -842,6 +842,10 @@ function editStates() {
     const name = Names.getState(basename, culture);
     const color = getRandomColor();
 
+    // generate emblem
+    const coa = COA.generate(burgs[burg].coa, .4);
+    coa.shield = COA.getShield(culture, null);
+
     // update diplomacy and reverse relations
     const diplomacy = states.map(s => {
       if (!s.i) return "x";
@@ -869,7 +873,9 @@ function editStates() {
     const affectedProvinces = [cells.province[center]];
     cells.state[center] = newState;
     cells.province[center] = 0;
-    cells.c[center].forEach(c => {
+
+    const cellsToCheck = [...new Set(cells.c[center].map(c => cells.c[c].map(c => cells.c[c])).flat(2))];
+    cellsToCheck.forEach(c => {
       if (cells.h[c] < 20) return;
       if (cells.burg[c]) return;
       affectedStates.push(cells.state[c]);
@@ -877,7 +883,8 @@ function editStates() {
       cells.state[c] = newState;
       cells.province[c] = 0;
     });
-    states.push({i:newState, name, diplomacy, provinces:[], color, expansionism:.5, capital:burg, type:"Generic", center, culture, military:[], alert:1});
+
+    states.push({i:newState, name, diplomacy, provinces:[], color, expansionism:.5, capital:burg, type:"Generic", center, culture, military:[], alert:1, coa});
     BurgsAndStates.collectStatistics();
     BurgsAndStates.defineStateForms([newState]);
     adjustProvinces([...new Set(affectedProvinces)]);
@@ -886,6 +893,7 @@ function editStates() {
     if (!layerIsOn("toggleStates")) toggleStates(); else drawStates();
     if (!layerIsOn("toggleBorders")) toggleBorders(); else drawBorders();
     BurgsAndStates.drawStateLabels([...new Set(affectedStates)]);
+    COArenderer.add("state", newState, coa, states[newState].pole[0], states[newState].pole[1]);
     statesEditorAddLines();
   }
 

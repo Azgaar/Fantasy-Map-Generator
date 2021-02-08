@@ -1451,9 +1451,13 @@ div.states > .coaIcon > use {
 	line-height: 1.4em;
 }
 
+#burgBody div.label {
+	display: inline-block;
+  width: 6em;
+}
+
 #stateNameEditor div.label,
 #provinceNameEditor div.label,
-#burgBody div.label,
 #regimentBody div.label {
 	display: inline-block;
   width: 5.5em;
@@ -1588,6 +1592,7 @@ rect.fillRect {
 	text-align: center;
 }
 
+#emblemUploadControl,
 #emblemDownloadControl {
 	margin-top: .3em;
 	text-align: center;

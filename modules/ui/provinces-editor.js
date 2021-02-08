@@ -239,10 +239,15 @@ function editProvinces() {
     const name = provinces[p].name;
     const color = getRandomColor();
 
+    const coa = provinces[p].coa;
+    const coaEl = document.getElementById("provinceCOA"+p);
+    if (coaEl) coaEl.id = "stateCOA"+newState;
+    emblems.select(`#provinceEmblems > use[data-i='${p}']`).remove();
+
     // update cells
     cells.i.filter(i => cells.province[i] === p).forEach(i => {
-        cells.province[i] = 0;
-        cells.state[i] = newState;
+      cells.province[i] = 0;
+      cells.state[i] = newState;
     });
 
     // update diplomacy and reverse relations
@@ -264,7 +269,7 @@ function editProvinces() {
     states[0].diplomacy.push([`Independance declaration`, `${name} declared its independance from ${states[oldState].name}`]);
 
     // create new state
-    states.push({i:newState, name, diplomacy, provinces:[], color, expansionism:.5, capital:burg, type:"Generic", center, culture, military:[], alert:1});
+    states.push({i:newState, name, diplomacy, provinces:[], color, expansionism:.5, capital:burg, type:"Generic", center, culture, military:[], alert:1, coa});
     BurgsAndStates.collectStatistics();
     BurgsAndStates.defineStateForms([newState]);
 
@@ -276,7 +281,10 @@ function editProvinces() {
     // remove old province
     unfog("focusProvince"+p);
     if (states[oldState].provinces.includes(p)) states[oldState].provinces.splice(states[oldState].provinces.indexOf(p), 1);
-    provinces[p].removed = true;
+    provinces[p] = {i:p, removed: true};
+
+    // draw emblem
+    COArenderer.add("state", newState, coa, pack.states[newState].pole[0], pack.states[newState].pole[1]);
 
     closeDialogs();
     editStates();
@@ -767,7 +775,15 @@ function editProvinces() {
     const fullName = name + " " + formName;
     const stateColor = pack.states[state].color, rndColor = getRandomColor();
     const color = stateColor[0] === "#" ? d3.color(d3.interpolate(stateColor, rndColor)(.2)).hex() : rndColor;
-    provinces.push({i:province, state, center, burg, name, formName, fullName, color});
+
+    // generate emblem
+    const kinship = burg ? .8 : .4;
+    const parent = burg ? pack.burgs[burg].coa : pack.states[state].coa;
+    const coa = COA.generate(parent, kinship);
+    coa.shield = COA.getShield(c, state);
+    COArenderer.add("province", province, coa, point[0], point[1]);
+
+    provinces.push({i:province, state, center, burg, name, formName, fullName, color, coa});
 
     cells.province[center] = province;
     cells.c[center].forEach(c => {
