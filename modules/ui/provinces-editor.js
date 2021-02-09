@@ -38,7 +38,7 @@ function editProvinces() {
     const el = ev.target, cl = el.classList, line = el.parentNode, p = +line.dataset.id;
     if (cl.contains("fillRect")) changeFill(el); else
     if (cl.contains("name")) editProvinceName(p); else
-    if (cl.contains("icon-coa")) editCOA(p); else
+    if (cl.contains("coaIcon")) editEmblem("province", "provinceCOA"+p, pack.provinces[p]); else
     if (cl.contains("icon-star-empty")) capitalZoomIn(p); else
     if (cl.contains("icon-flag-empty")) triggerIndependencePromps(p); else
     if (cl.contains("culturePopulation")) changePopulation(p); else
@@ -114,10 +114,11 @@ function editProvinces() {
       const capital = p.burg ? pack.burgs[p.burg].name : '';
       const separable = p.burg && p.burg !== pack.states[p.state].capital;
       const focused = defs.select("#fog #focusProvince"+p.i).size();
+      COArenderer.trigger("provinceCOA"+p.i, p.coa);
       lines += `<div class="states" data-id=${p.i} data-name="${p.name}" data-form="${p.formName}" data-color="${p.color}" data-capital="${capital}" data-state="${stateName}" data-area=${area} data-population=${population}>
         <svg data-tip="Province fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${p.color}" class="fillRect pointer"></svg>
         <input data-tip="Province name. Click to change" class="name pointer" value="${p.name}" readonly>
-        <span data-tip="Click to edit province COA" class="icon-coa pointer hide"></span>
+        <svg data-tip="Click to show and edit province emblem" class="coaIcon hide" viewBox="0 0 200 200"><use href="#provinceCOA${p.i}"></use></svg>
         <input data-tip="Province form name. Click to change" class="name pointer hide" value="${p.formName}" readonly>
         <span data-tip="Province capital. Click to zoom into view" class="icon-star-empty pointer hide ${p.burg?'':'placeholder'}"></span>
         <select data-tip="Province capital. Click to select from burgs within the state. No capital means the province is governed from the state capital" class="cultureBase hide ${p.burgs.length?'':'placeholder'}">${p.burgs.length ? getCapitalOptions(p.burgs, p.burg) : ''}</select>

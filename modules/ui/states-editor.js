@@ -116,7 +116,7 @@ function editStates() {
         data-area=${area} data-population=${population} data-burgs=${s.burgs} data-culture=${pack.cultures[s.culture].name} data-type=${s.type} data-expansionism=${s.expansionism}>
         <svg data-tip="State fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${s.color}" class="fillRect pointer"></svg>
         <input data-tip="State name. Click to change" class="stateName name pointer" value="${s.name}" readonly>
-        <svg data-tip="Click to edit state emblem" class="coaIcon hide" viewBox="0 0 200 200"><use href="#stateCOA${s.i}"></use></svg>
+        <svg data-tip="Click to show and edit state emblem" class="coaIcon hide" viewBox="0 0 200 200"><use href="#stateCOA${s.i}"></use></svg>
         <input data-tip="State form name. Click to change" class="stateForm name pointer" value="${s.formName}" readonly>
         <span data-tip="State capital. Click to zoom into view" class="icon-star-empty pointer hide"></span>
         <input data-tip="Capital name. Click and type to rename" class="stateCapital hide" value="${capital}" autocorrect="off" spellcheck="false"/>

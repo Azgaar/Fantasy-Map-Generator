@@ -1412,10 +1412,6 @@ div.states > .coaIcon {
 	transition: all .4s ease-in-out;
 }
 
-div.states > .coaIcon:hover {
-	transform: scale(8);
-}
-
 div.states > .coaIcon > use {
 	pointer-events: none;
 }
@@ -1523,12 +1519,10 @@ div.states.active {
 }
 
 div.states.Self {
-	border-color: #858b8e;
-	background-image: linear-gradient(to right, #f2f2f2 0%, #b0c6d9 100%);
-	font-style: italic;
-	font-weight: bold;
 	margin-bottom: .2em;
 	cursor: default !important;
+	padding: .2em 0 0 .5em;
+	font-weight: bold;
 }
 
 div.states button.selectCapital {
