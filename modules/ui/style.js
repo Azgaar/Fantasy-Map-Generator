@@ -664,14 +664,9 @@ function fetchTextureURL(url) {
   img.src = url;
 }
 
-function armiesStyle() {
-  return `#armies text {stroke: none; fill: #fff; text-shadow: 0 0 4px #000; dominant-baseline: central; text-anchor: middle; font-family: Helvetica; fill-opacity: 1;}#armies text.regimentIcon {font-size: .8em;}`;
-}
-
 // apply default or custom style settings on load
 function applyStyleOnLoad() {
   addDefaulsStyles(); // add FMG system styles to localStorage
-  svg.select("defs").append("style").text(armiesStyle()); // add armies style
 
   const preset = localStorage.getItem("presetStyle");
   const style = preset ? localStorage.getItem(preset) : null;

@@ -848,7 +848,7 @@
     const divisionGroup = division ? templateDivision() : "";
     const overlay = `<path d="${shieldPath}" fill="url(#backlight_${id})" stroke="#333"/>`;
 
-    const svg= `<svg id="${id}" xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="${viewBox}">
+    const svg= `<svg id="${id}" width="200" height="200" viewBox="${viewBox}">
         <defs>${shieldClip}${divisionClip}${loadedCharges}${loadedPatterns}${blacklight}</defs>
         <g clip-path="url(#${shield}_${id})">${field}${divisionGroup}${templateAboveAll()}</g>
         ${overlay}</svg>`;

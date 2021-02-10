@@ -134,6 +134,17 @@ button, select, a {
 #armies text {
 	pointer-events: none;
 	user-select: none;
+	stroke: none;
+	fill: #fff;
+	text-shadow: 0 0 4px #000;
+	dominant-baseline: central;
+	text-anchor: middle;
+	font-family: Helvetica;
+	fill-opacity: 1;
+}
+
+#armies text.regimentIcon {
+	font-size: .8em;
 }
 
 #statesBody, #provincesBody {
@@ -1405,11 +1416,11 @@ div.states>input.riverType {
 }
 
 div.states > .coaIcon {
+	stroke-width: 3;
 	width: 1.4em;
 	height: 1.4em;
 	margin: -.3em 0;
 	cursor: pointer;
-	transition: all .4s ease-in-out;
 }
 
 div.states > .coaIcon > use {

@@ -96,23 +96,56 @@ async function getMapURL(type, subtype) {
 
   // add displayed emblems
   if (layerIsOn("toggleEmblems")) {
-    const defsEmblems = cloneEl.getElementById("defs-emblems");
+    const defs = cloneEl.getElementById("defs-emblems") || cloneEl.getElementById("deftemp");
     clone.selectAll("#emblems use").each(function() {
       const href = this.getAttribute("href");
       if (!href) return;
       const emblem = document.getElementById(href.slice(1)).cloneNode(true); // clone emblem
-      defsEmblems.append(emblem);
+      defs.append(emblem);
     });
   }
 
-  const fontStyle = await GFontToDataURI(getFontsToLoad()); // load non-standard fonts
-  if (fontStyle) clone.select("defs").append("style").text(fontStyle.join('\n')); // add font to style
+  // remove unused filters
+  const filters = cloneEl.querySelectorAll("filter");
+  for (let i=0; i < filters.length; i++) {
+    const id = filters[i].id;
+    if (cloneEl.querySelector("[filter='url(#"+id+")']")) continue;
+    if (cloneEl.getAttribute("filter") === "url(#"+id+")") continue;
+    filters[i].remove();
+  }
 
-  clone.append("metadata").text("<dc:format>image/svg+xml</dc:format>");
-  const serialized = (new XMLSerializer()).serializeToString(clone.node());
-  const svg_xml = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>` + serialized;
+  // remove unused patterns
+  const patterns = cloneEl.querySelectorAll("pattern");
+  for (let i=0; i < patterns.length; i++) {
+    const id = patterns[i].id;
+    if (cloneEl.querySelector("[fill='url(#"+id+")']")) continue;
+    patterns[i].remove();
+  }
+
+  // remove unused symbols
+  const symbols = cloneEl.querySelectorAll("symbol");
+  for (let i=0; i < symbols.length; i++) {
+    const id = symbols[i].id;
+    if (cloneEl.querySelector("[use='#"+id+"']")) continue;
+    symbols[i].remove();
+  }
+  
+  if (!cloneEl.getElementById("hatching").children.length) cloneEl.getElementById("hatching").remove(); //remove unused hatching group
+  if (!cloneEl.getElementById("defs-icons").children.length) cloneEl.getElementById("defs-icons").remove(); //remove unused icons group
+  if (!cloneEl.getElementById("compass")) cloneEl.getElementById("rose").remove(); //remove unused rose
+  if (!cloneEl.getElementById("fogging-cont")) cloneEl.getElementById("fog").remove(); //remove unused fog
+  if (!cloneEl.getElementById("regions")) cloneEl.getElementById("statePaths").remove(); // removed unused statePaths
+  if (!cloneEl.getElementById("labels")) cloneEl.getElementById("textPaths").remove(); // removed unused textPaths
+
+  // add armies style
+  if (cloneEl.getElementById("armies")) cloneEl.insertAdjacentHTML("afterbegin", "<style>#armies text {stroke: none; fill: #fff; text-shadow: 0 0 4px #000; dominant-baseline: central; text-anchor: middle; font-family: Helvetica; fill-opacity: 1;}#armies text.regimentIcon {font-size: .8em;}</style>");
+
+  const fontStyle = await GFontToDataURI(getFontsToLoad(clone)); // load non-standard fonts
+  if (fontStyle) clone.select("defs").append("style").text(fontStyle.join('\n')); // add font to style
   clone.remove();
-  const blob = new Blob([svg_xml], {type: 'image/svg+xml;charset=utf-8'});
+
+  const serialized = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>` + (new XMLSerializer()).serializeToString(cloneEl);
+  const blob = new Blob([serialized], {type: 'image/svg+xml;charset=utf-8'});
   const url = window.URL.createObjectURL(blob);
   window.setTimeout(() => window.URL.revokeObjectURL(url), 5000);
   return url;
@@ -181,11 +214,11 @@ function inlineStyle(clone) {
 }
 
 // get non-standard fonts used for labels to fetch them from web
-function getFontsToLoad() {
+function getFontsToLoad(clone) {
   const webSafe = ["Georgia", "Times+New+Roman", "Comic+Sans+MS", "Lucida+Sans+Unicode", "Courier+New", "Verdana", "Arial", "Impact"]; // fonts to not fetch
 
   const fontsInUse = new Set(); // to store fonts currently in use
-  labels.selectAll("g").each(function() {
+  clone.selectAll("#labels > g").each(function() {
     if (!this.hasChildNodes()) return;
     const font = this.dataset.font;
     if (!font || webSafe.includes(font)) return;
@@ -513,6 +546,8 @@ function uploadMap(file, callback) {
   const fileReader = new FileReader();
   fileReader.onload = function(fileLoadedEvent) {
     if (callback) callback();
+    document.getElementById("coas").innerHTML = ""; // remove auto-generated emblems
+
     const dataLoaded = fileLoadedEvent.target.result;
     const data = dataLoaded.split("\r\n");
 
@@ -753,7 +788,7 @@ function parseLoadedData(data) {
       ruler.selectAll("g.opisometer circle").call(d3.drag().on("start", dragOpisometerEnd));
       ruler.selectAll("g.opisometer circle").call(d3.drag().on("start", dragOpisometerEnd));
 
-      scaleBar.on("mousemove", () => tip("Click to open Units Editor"));
+      scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => editUnits());
       legend.on("mousemove", () => tip("Drag to change the position. Click to hide the legend")).on("click", () => clearLegend());
     }()
 
@@ -953,7 +988,6 @@ function parseLoadedData(data) {
         BurgsAndStates.generateCampaigns();
 
         // v 1.3 added militry layer
-        svg.select("defs").append("style").text(armiesStyle()); // add armies style
         armies = viewbox.insert("g", "#icons").attr("id", "armies");
         armies.attr("opacity", 1).attr("fill-opacity", 1).attr("font-size", 6).attr("box-size", 3).attr("stroke", "#000").attr("stroke-width", .3);
         turnButtonOn("toggleMilitary");

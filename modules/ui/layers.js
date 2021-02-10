@@ -1304,15 +1304,15 @@ function drawEmblems() {
     }
 
     const burgNodes = nodes.filter(node => node.type === "burg");
-    const burgString = burgNodes.map(d => `<use data-i="${d.i}" x="${d.x - d.size / 2}" y="${d.y - d.size / 2}" width="1em" height="1em"/>`).join("");
+    const burgString = burgNodes.map(d => `<use data-i="${d.i}" x="${rn(d.x - d.size / 2)}" y="${rn(d.y - d.size / 2)}" width="1em" height="1em"/>`).join("");
     emblems.select("#burgEmblems").attr("font-size", sizeBurgs).html(burgString);
 
     const provinceNodes = nodes.filter(node => node.type === "province");
-    const provinceString = provinceNodes.map(d => `<use data-i="${d.i}" x="${d.x - d.size / 2}" y="${d.y - d.size / 2}" width="1em" height="1em"/>`).join("");
+    const provinceString = provinceNodes.map(d => `<use data-i="${d.i}" x="${rn(d.x - d.size / 2)}" y="${rn(d.y - d.size / 2)}" width="1em" height="1em"/>`).join("");
     emblems.select("#provinceEmblems").attr("font-size", sizeProvinces).html(provinceString);
 
     const stateNodes = nodes.filter(node => node.type === "state");
-    const stateString = stateNodes.map(d => `<use data-i="${d.i}" x="${d.x - d.size / 2}" y="${d.y - d.size / 2}" width="1em" height="1em"/>`).join("");
+    const stateString = stateNodes.map(d => `<use data-i="${d.i}" x="${rn(d.x - d.size / 2)}" y="${rn(d.y - d.size / 2)}" width="1em" height="1em"/>`).join("");
     emblems.select("#stateEmblems").attr("font-size", sizeStates).html(stateString);
 
     invokeActiveZooming();

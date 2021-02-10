@@ -205,6 +205,7 @@ function editEmblem(type, id, el) {
     reader.onload = function(readerEvent) {
       const result = readerEvent.target.result;
       const defs = document.getElementById("defs-emblems");
+      const coa = document.getElementById(id); // old emblem
 
       if (type === "image") {
         const svg = `<svg id="${id}" xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><image x="0" y="0" width="200" height="200" href="${result}"/></svg>`;
@@ -217,9 +218,7 @@ function editEmblem(type, id, el) {
         newEmblem.setAttribute("height", 200);
       }
 
-      const coa = document.getElementById(id);
       if (coa) coa.remove(); // remove old emblem
-
       el.coa = "custom";
       emblemShapeSelector.disabled = true;
     };
@@ -282,7 +281,6 @@ function editEmblem(type, id, el) {
 
   function getSVG(svg, coa, size) {
     const clone = svg.cloneNode(true); // clone svg
-    const d = clone.getElementsByTagName("defs")[0];
 
     clone.setAttribute("width", size);
     clone.setAttribute("height", size);

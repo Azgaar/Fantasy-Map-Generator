@@ -108,7 +108,7 @@ fogging.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("hei
 fogging.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%").attr("fill", "#e8f0f6").attr("filter", "url(#splotch)");
 
 // assign events separately as not a viewbox child
-scaleBar.on("mousemove", () => tip("Click to open Units Editor"));
+scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => editUnits());
 legend.on("mousemove", () => tip("Drag to change the position. Click to hide the legend")).on("click", () => clearLegend());
 
 // main data variables
@@ -1761,7 +1761,8 @@ const regenerateMap = debounce(function() {
 // clear the map
 function undraw() {
   viewbox.selectAll("path, circle, polygon, line, text, use, #zones > g, #armies > g, #ruler > g").remove();
-  defs.selectAll("path, clipPath").remove();
+  document.getElementById("deftemp").querySelectorAll("path, clipPath, svg").forEach(el => el.remove());
+  document.getElementById("coas").innerHTML = ""; // remove auto-generated emblems
   notes = [];
   unfog();
 }
