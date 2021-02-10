@@ -81,6 +81,8 @@ async function getMapURL(type, subtype) {
   const clone = d3.select(cloneEl);
   clone.select("#debug").remove();
 
+  const defs = cloneEl.getElementsByTagName("defs")[0];
+
   const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
   if (isFirefox && type === "mesh") clone.select("#oceanPattern").remove();
   if (subtype === "globe") clone.select("#scaleBar").remove();
@@ -126,10 +128,30 @@ async function getMapURL(type, subtype) {
   const symbols = cloneEl.querySelectorAll("symbol");
   for (let i=0; i < symbols.length; i++) {
     const id = symbols[i].id;
-    if (cloneEl.querySelector("[use='#"+id+"']")) continue;
+    if (cloneEl.querySelector("use[href='#"+id+"']")) continue;
     symbols[i].remove();
   }
-  
+
+  // add ocean pattern
+  const patternId = cloneEl.getElementById("oceanicPattern").getAttribute("filter").slice(5,-1);
+  const pattern = document.getElementById(patternId);
+  if (patternId) defs.appendChild(pattern.cloneNode(true));
+
+  // add relief icons
+  if (cloneEl.getElementById("terrain")) {
+    const uniqueElements = new Set();
+    const terrainElements = cloneEl.getElementById("terrain").childNodes;
+    for (let i=0; i < terrainElements.length; i++) {
+      uniqueElements.add(terrainElements[i].getAttribute("href"));
+    }
+
+    const defsRelief = document.getElementById("defs-relief");
+    for (const terrain of [...uniqueElements]) {
+      const element = defsRelief.querySelector(terrain);
+      if (element) defs.appendChild(element.cloneNode(true));
+    }
+  }
+
   if (!cloneEl.getElementById("hatching").children.length) cloneEl.getElementById("hatching").remove(); //remove unused hatching group
   if (!cloneEl.getElementById("defs-icons").children.length) cloneEl.getElementById("defs-icons").remove(); //remove unused icons group
   if (!cloneEl.getElementById("compass")) cloneEl.getElementById("rose").remove(); //remove unused rose
