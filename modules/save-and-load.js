@@ -1007,13 +1007,6 @@ function parseLoadedData(data) {
       }
 
       if (version < 1.22) {
-        // v 1.21 had incorrect style formatting
-        localStorage.removeItem("styleClean");
-        localStorage.removeItem("styleGloom");
-        localStorage.removeItem("styleAncient");
-        localStorage.removeItem("styleMonochrome");
-        addDefaulsStyles();
-
         // v 1.22 changed state neighbors from Set object to array
         BurgsAndStates.collectStatistics();
       }
@@ -1078,6 +1071,12 @@ function parseLoadedData(data) {
         emblems.append("g").attr("id", "stateEmblems");
         regenerateEmblems();
         toggleEmblems();
+
+        // not need to store default styles from v 1.5
+        localStorage.removeItem("styleClean");
+        localStorage.removeItem("styleGloom");
+        localStorage.removeItem("styleAncient");
+        localStorage.removeItem("styleMonochrome");
       }
 
     }()

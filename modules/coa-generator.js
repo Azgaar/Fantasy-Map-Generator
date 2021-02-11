@@ -197,7 +197,6 @@
     // TODO
     // seafaring etc
 
-    // style settings for emblems layer
     // define emblems layer style for all styles
     // test in FF
 
