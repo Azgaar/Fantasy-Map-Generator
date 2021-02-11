@@ -245,7 +245,7 @@ function showSeedHistoryDialog() {
   });
 }
 
-// generate map with historycal seed
+// generate map with historical seed
 function restoreSeed(id) {
   if (mapHistory[id].seed == seed) {
     tip("The current map is already generated with this seed", null, "error");

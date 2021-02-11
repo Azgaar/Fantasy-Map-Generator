@@ -779,36 +779,43 @@ function parseLoadedData(data) {
       }
     }()
 
-    void function restoreLayersState() {
-      if (texture.style("display") !== "none" && texture.select("image").size()) turnButtonOn("toggleTexture"); else turnButtonOff("toggleTexture");
-      if (terrs.selectAll("*").size()) turnButtonOn("toggleHeight"); else turnButtonOff("toggleHeight");
-      if (biomes.selectAll("*").size()) turnButtonOn("toggleBiomes"); else turnButtonOff("toggleBiomes");
-      if (cells.selectAll("*").size()) turnButtonOn("toggleCells"); else turnButtonOff("toggleCells");
-      if (gridOverlay.selectAll("*").size()) turnButtonOn("toggleGrid"); else turnButtonOff("toggleGrid");
-      if (coordinates.selectAll("*").size()) turnButtonOn("toggleCoordinates"); else turnButtonOff("toggleCoordinates");
-      if (compass.style("display") !== "none" && compass.select("use").size()) turnButtonOn("toggleCompass"); else turnButtonOff("toggleCompass");
-      if (rivers.style("display") !== "none") turnButtonOn("toggleRivers"); else turnButtonOff("toggleRivers");
-      if (terrain.style("display") !== "none" && terrain.selectAll("*").size()) turnButtonOn("toggleRelief"); else turnButtonOff("toggleRelief");
-      if (relig.selectAll("*").size()) turnButtonOn("toggleReligions"); else turnButtonOff("toggleReligions");
-      if (cults.selectAll("*").size()) turnButtonOn("toggleCultures"); else turnButtonOff("toggleCultures");
-      if (statesBody.selectAll("*").size()) turnButtonOn("toggleStates"); else turnButtonOff("toggleStates");
-      if (provs.selectAll("*").size()) turnButtonOn("toggleProvinces"); else turnButtonOff("toggleProvinces");
-      if (zones.selectAll("*").size() && zones.style("display") !== "none") turnButtonOn("toggleZones"); else turnButtonOff("toggleZones");
-      if (borders.style("display") !== "none") turnButtonOn("toggleBorders"); else turnButtonOff("toggleBorders");
-      if (routes.style("display") !== "none" && routes.selectAll("path").size()) turnButtonOn("toggleRoutes"); else turnButtonOff("toggleRoutes");
-      if (temperature.selectAll("*").size()) turnButtonOn("toggleTemp"); else turnButtonOff("toggleTemp");
-      if (prec.selectAll("circle").size()) turnButtonOn("togglePrec"); else turnButtonOff("togglePrec");
-      if (labels.style("display") !== "none") turnButtonOn("toggleLabels"); else turnButtonOff("toggleLabels");
-      if (icons.style("display") !== "none") turnButtonOn("toggleIcons"); else turnButtonOff("toggleIcons");
-      if (armies.selectAll("*").size() && armies.style("display") !== "none") turnButtonOn("toggleMilitary"); else turnButtonOff("toggleMilitary");
-      if (markers.selectAll("*").size() && markers.style("display") !== "none") turnButtonOn("toggleMarkers"); else turnButtonOff("toggleMarkers");
-      if (ruler.style("display") !== "none") turnButtonOn("toggleRulers"); else turnButtonOff("toggleRulers");
-      if (scaleBar.style("display") !== "none") turnButtonOn("toggleScaleBar"); else turnButtonOff("toggleScaleBar");
+    const notHidden = selection => selection.style("display") !== "none";
+    const hasChildren = selection => selection.node().hasChildNodes();
+    const hasChild = (selection, selector) => selection.node().querySelector(selector);
+    const turnOn = el => document.getElementById(el).classList.remove("buttonoff");
 
-      // special case for population bars
-      const populationIsOn = population.selectAll("line").size();
-      if (populationIsOn) drawPopulation();
-      if (populationIsOn) turnButtonOn("togglePopulation"); else turnButtonOff("togglePopulation");
+    void function restoreLayersState() {
+      // turn all layers off
+      document.getElementById("mapLayers").querySelectorAll("li").forEach(el => el.classList.add("buttonoff"));
+
+      // turn on active layers
+      if (notHidden(texture) && hasChild(texture, "image")) turnOn("toggleTexture");
+      if (hasChildren(terrs)) turnOn("toggleHeight");
+      if (hasChildren(biomes)) turnOn("toggleBiomes");
+      if (hasChildren(cells)) turnOn("toggleCells");
+      if (hasChildren(gridOverlay)) turnOn("toggleGrid");
+      if (hasChildren(coordinates)) turnOn("toggleCoordinates");
+      if (notHidden(compass) && hasChild(compass, "use")) turnOn("toggleCompass");
+      if (notHidden(rivers)) turnOn("toggleRivers");
+      if (notHidden(terrain) && hasChildren(terrain)) turnOn("toggleRelief");
+      if (hasChildren(relig)) turnOn("toggleReligions");
+      if (hasChildren(cults)) turnOn("toggleCultures");
+      if (hasChildren(statesBody)) turnOn("toggleStates");
+      if (hasChildren(provs)) turnOn("toggleProvinces");
+      if (hasChildren(zones) && notHidden(zones)) turnOn("toggleZones");
+      if (notHidden(borders) && hasChild(compass, "use")) turnOn("toggleBorders");
+      if (notHidden(routes) && hasChild(routes, "path")) turnOn("toggleRoutes");
+      if (hasChildren(temperature)) turnOn("toggleTemp");
+      if (hasChild(population, "line")) turnOn("togglePopulation");
+      if (hasChildren(ice)) turnOn("toggleIce");
+      if (hasChild(prec, "circle")) turnOn("togglePrec");
+      if (hasChild(emblems, "use")) turnOn("toggleEmblems");
+      if (notHidden(labels)) turnOn("toggleLabels");
+      if (notHidden(icons)) turnOn("toggleIcons");
+      if (hasChildren(armies) && notHidden(armies)) turnOn("toggleMilitary");
+      if (hasChildren(markers) && notHidden(markers)) turnOn("toggleMarkers");
+      if (notHidden(ruler)) turnOn("toggleRulers");
+      if (notHidden(scaleBar)) turnOn("toggleScaleBar");
 
       getCurrentPreset();
     }()

@@ -1,30 +1,6 @@
 // UI module stub to control map layers
 "use strict";
 
-// on map regeneration restore layers if they was turned on 
-function restoreLayers() {
-  if (layerIsOn("toggleHeight")) drawHeightmap();
-  if (layerIsOn("toggleCells")) drawCells();
-  if (layerIsOn("toggleGrid")) drawGrid();
-  if (layerIsOn("toggleCoordinates")) drawCoordinates();
-  if (layerIsOn("toggleCompass")) compass.style("display", "block");
-  if (layerIsOn("toggleTemp")) drawTemp();
-  if (layerIsOn("togglePrec")) drawPrec();
-  if (layerIsOn("togglePopulation")) drawPopulation();
-  if (layerIsOn("toggleBiomes")) drawBiomes();
-  if (layerIsOn("toggleRelief")) ReliefIcons();
-  if (layerIsOn("toggleCultures")) drawCultures();
-  if (layerIsOn("toggleProvinces")) drawProvinces();
-  if (layerIsOn("toggleReligions")) drawReligions();
-  if (layerIsOn("toggleIce")) drawIce();
-  if (layerIsOn("toggleEmblems")) drawEmblems();
-
-  // states are getting rendered each time, if it's not required than layers should be hidden
-  if (!layerIsOn("toggleBorders")) $('#borders').fadeOut();
-  if (!layerIsOn("toggleStates")) regions.style("display", "none").selectAll("path").remove();
-}
-
-restoreLayers(); // run on-load
 let presets = {}; // global object
 restoreCustomPresets(); // run on-load
 
@@ -39,6 +15,7 @@ function getDefaultPresets() {
     "physical": ["toggleCoordinates", "toggleHeight", "toggleIce", "toggleRivers", "toggleScaleBar"],
     "poi": ["toggleBorders", "toggleHeight", "toggleIce", "toggleIcons", "toggleMarkers", "toggleRivers", "toggleRoutes", "toggleScaleBar"],
     "military": ["toggleBorders", "toggleIcons", "toggleLabels", "toggleMilitary", "toggleRivers", "toggleRoutes", "toggleScaleBar", "toggleStates"],
+    "emblems": ["toggleBorders", "toggleIcons", "toggleIce", "toggleEmblems", "toggleRivers", "toggleRoutes", "toggleScaleBar", "toggleStates"],
     "landmass": ["toggleScaleBar"]
   }
 }
@@ -56,9 +33,10 @@ function restoreCustomPresets() {
   presets = storedPresets;
 }
 
+// run on map generation
 function applyPreset() {
-  const selected = localStorage.getItem("preset");
-  if (selected) changePreset(selected);
+  const preset = localStorage.getItem("preset") || document.getElementById("layersPreset").value;
+  changePreset(preset);
 }
 
 // toggle layers on preset change
@@ -116,6 +94,29 @@ function getCurrentPreset() {
   layersPreset.value = "custom";
   removePresetButton.style.display = "none";
   savePresetButton.style.display = "inline-block";
+}
+
+// run on map regeneration
+function restoreLayers() {
+  if (layerIsOn("toggleHeight")) drawHeightmap();
+  if (layerIsOn("toggleCells")) drawCells();
+  if (layerIsOn("toggleGrid")) drawGrid();
+  if (layerIsOn("toggleCoordinates")) drawCoordinates();
+  if (layerIsOn("toggleCompass")) compass.style("display", "block");
+  if (layerIsOn("toggleTemp")) drawTemp();
+  if (layerIsOn("togglePrec")) drawPrec();
+  if (layerIsOn("togglePopulation")) drawPopulation();
+  if (layerIsOn("toggleBiomes")) drawBiomes();
+  if (layerIsOn("toggleRelief")) ReliefIcons();
+  if (layerIsOn("toggleCultures")) drawCultures();
+  if (layerIsOn("toggleProvinces")) drawProvinces();
+  if (layerIsOn("toggleReligions")) drawReligions();
+  if (layerIsOn("toggleIce")) drawIce();
+  if (layerIsOn("toggleEmblems")) drawEmblems();
+
+  // states are getting rendered each time, if it's not required than layers should be hidden
+  if (!layerIsOn("toggleBorders")) $('#borders').fadeOut();
+  if (!layerIsOn("toggleStates")) regions.style("display", "none").selectAll("path").remove();
 }
 
 function toggleHeight(event) {
@@ -458,7 +459,7 @@ function drawCells() {
   cells.append("path").attr("d", path);
 }
 
-function toggleIce() {
+function toggleIce(event) {
   if (!layerIsOn("toggleIce")) {
     turnButtonOn("toggleIce");
     $('#ice').fadeIn();
