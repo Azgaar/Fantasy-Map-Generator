@@ -800,6 +800,39 @@
             </tr>
           </tbody>
 
+          <tbody id="styleEmblems">
+            <tr data-tip="Set state emblems size multiplier">
+              <td>State Size</td>
+              <td>
+                <input id="styleEmblemsStateSizeInput" data-stored="styleEmblemsStateSize" type="range" min=.1 max=3 step=.01 value=1>
+                <output id="styleEmblemsStateSizeOutput">1</output>
+              </td>
+            </tr>
+
+            <tr data-tip="Set province emblems size multiplier">
+              <td>Province Size</td>
+              <td>
+                <input id="styleEmblemsProvinceSizeInput" data-stored="styleEmblemsProvinceSize" type="range" min=.1 max=3 step=.01 value=1>
+                <output id="styleEmblemsProvinceSizeOutput">1</output>
+              </td>
+            </tr>
+
+            <tr data-tip="Set burg emblems size multiplier">
+              <td>Burg Size</td>
+              <td>
+                <input id="styleEmblemsBurgSizeInput" data-stored="styleEmblemsBurgSize" type="range" min=.1 max=3 step=.01 value=1>
+                <output id="styleEmblemsBurgSizeOutput">1</output>
+              </td>
+            </tr>
+
+            <tr data-tip="Allow system to hide emblem groups if their size in too small or too big on that scale">
+              <td colspan="2">
+                <input id="hideEmblems" class="checkbox" type="checkbox" onchange="invokeActiveZooming()" checked>
+                <label for="hideEmblems"class="checkbox-label">Toggle visibility automatically</label>
+              </td>
+            </tr>
+          </tbody>
+
           <tbody id="styleFilter" style="display: block">
             <tr data-tip="Select filter for element. Please note filters may cause performance issues!">
               <td>Filter</td>
@@ -852,10 +885,10 @@
           </tbody>
 
           <tbody id="styleVisibility">
-            <tr data-tip="Define displayed label groups">
+            <tr data-tip="Allow system to hide labels if their size in too small or too big on that scale">
               <td colspan=2>
                 <input id="hideLabels" class="checkbox" type="checkbox" onchange="invokeActiveZooming()" checked>
-                <label for="hideLabels" data-tip="Allow system to hide labels if their size in too small or too big on that scale" class="checkbox-label">Toggle visibility automatically</label>
+                <label for="hideLabels" class="checkbox-label">Toggle visibility automatically</label>
               </td>
             </tr>
           </tbody>
@@ -2816,7 +2849,7 @@
       </div>
       <div id="emblemsBottom">
         <button id="emblemsRegenerate" data-tip="Regenerate emblem" class="icon-shuffle"></button>
-        <button id="emblemsArmoria" data-tip="Edit the emblem in Armoria: our dedicated rich heraldry editor" class="icon-brush"></button>
+        <button id="emblemsArmoria" data-tip="Edit the emblem in Armoria - dedicated heraldry editor. Download emblem and upload it back map the generator" class="icon-brush"></button>
         <button id="emblemsUpload" data-tip="Upload png, jpg or svg image from Armoria or other sources as emblem" class="icon-upload"></button>
         <button id="emblemsDownload" data-tip="Set size, select file format and download emblem image" class="icon-download"></button>
         <button id="emblemsGallery" data-tip="Download emblems gallery as html document (open in browser; downloading takes some time)" class="icon-layer-group"></button>
@@ -3214,7 +3247,7 @@
     <div id="saveMapData" style="display: none" class="dialog">
       <div style="margin-bottom: .3em; font-weight: bold">Please select saving method:</div>
       <div>
-        <button onclick="saveMap()" data-tip="Download the project in internal .map format (reliable). Then open via 'Load' in menu">.map</button>
+        <button onclick="saveMap()" data-tip="Download the project in internal .map format (reliable). Then open via 'Load' in menu. Shortcut: Ctrl + S">.map</button>
         <button onclick="saveSVG()" data-tip="Download the map as vector image (open in browser or Inkscape)">.svg</button>
         <button onclick="savePNG()" data-tip="Download visible part of the map as .png (lossless compressed)">.png</button>
         <button onclick="saveJPEG()" data-tip="Download visible part of the map as .jpeg (lossy compressed) image">.jpeg</button>

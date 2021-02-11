@@ -1,6 +1,11 @@
 // UI module to control the style
 "use strict";
 
+// store some style inputs as options
+styleElements.addEventListener("change", function(ev) {
+  if (ev.target.dataset.stored) lock(ev.target.dataset.stored);
+});
+
 // select element to be edited
 function editStyle(element, group) {
   showOptions();
@@ -224,6 +229,10 @@ function selectStyleElement() {
     styleArmies.style.display = "block";
     styleArmiesFillOpacity.value = styleArmiesFillOpacityOutput.value = el.attr("fill-opacity");
     styleArmiesSize.value = styleArmiesSizeOutput.value = el.attr("box-size");
+  }
+
+  if (sel === "emblems") {
+    styleEmblems.style.display = "block";
   }
 
   // update group options
@@ -614,6 +623,21 @@ styleArmiesSize.addEventListener("input", function() {
   });
 });
 
+styleEmblemsStateSizeInput.addEventListener("input", function() {
+  styleEmblemsStateSizeOutput.value = this.value;
+  drawEmblems();
+});
+
+styleEmblemsProvinceSizeInput.addEventListener("input", function() {
+  styleEmblemsProvinceSizeOutput.value = this.value;
+  drawEmblems();
+});
+
+styleEmblemsBurgSizeInput.addEventListener("input", function() {
+  styleEmblemsBurgSizeOutput.value = this.value;
+  drawEmblems();
+});
+
 // request a URL to image to be used as a texture
 function textureProvideURL() {
   alertMessage.innerHTML = `Provide an image URL to be used as a texture:
@@ -790,7 +814,7 @@ function applyDefaultStyle() {
   labels.select("#addedLabels").attr("fill", "#3e3e4b").attr("opacity", 1).attr("stroke", "#3a3a3a").attr("stroke-width", 0).attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC").attr("font-size", 18).attr("data-size", 18).attr("filter", null);
 
   fogging.attr("opacity", .98).attr("fill", "#30426f");
-  emblems.attr("opacity", .9).attr("size-modifier", 1).attr("filter", null)
+  emblems.attr("opacity", .9).attr("size-modifier", 1).attr("filter", null);
 }
 
 // apply style settings in JSON

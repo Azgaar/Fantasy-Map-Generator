@@ -331,6 +331,7 @@ function getMapData() {
     cloneEl.setAttribute("width", graphWidth);
     cloneEl.setAttribute("height", graphHeight);
     cloneEl.querySelector("#viewbox").removeAttribute("transform");
+
     const svg_xml = (new XMLSerializer()).serializeToString(cloneEl);
 
     const gridGeneral = JSON.stringify({spacing:grid.spacing, cellsX:grid.cellsX, cellsY:grid.cellsY, boundary:grid.boundary, points:grid.points, features:grid.features});
@@ -600,7 +601,7 @@ function uploadMap(file, callback) {
     } else {
       load = true;
       message =  `The map version (${mapVersion}) does not match the Generator version (${version}).
-                 <br>Click OK to get map auto-updated. In case of issues please keep using an ${archive} of the Generator`;
+                 <br>Click OK to get map <b>auto-updated</b>. In case of issues please keep using an ${archive} of the Generator`;
     }
     alertMessage.innerHTML = message;
     $("#alert").dialog({title: "Version conflict", width: "38em", buttons: {
@@ -719,6 +720,7 @@ function parseLoadedData(data) {
       coastline = viewbox.select("#coastline");
       prec = viewbox.select("#prec");
       population = viewbox.select("#population");
+      emblems = viewbox.select("#emblems");
       labels = viewbox.select("#labels");
       icons = viewbox.select("#icons");
       burgIcons = icons.select("#burgIcons");
@@ -780,8 +782,8 @@ function parseLoadedData(data) {
     }()
 
     const notHidden = selection => selection.style("display") !== "none";
-    const hasChildren = selection => selection.node().hasChildNodes();
-    const hasChild = (selection, selector) => selection.node().querySelector(selector);
+    const hasChildren = selection => selection.node()?.hasChildNodes();
+    const hasChild = (selection, selector) => selection.node()?.querySelector(selector);
     const turnOn = el => document.getElementById(el).classList.remove("buttonoff");
 
     void function restoreLayersState() {
@@ -1068,6 +1070,16 @@ function parseLoadedData(data) {
         pack.states.filter(s => s.military).forEach(s => s.military.forEach(r => r.state = s.i));
       }
 
+      if (version < 1.5) {
+        // v 1.5 added emblems
+        emblems = viewbox.append("g").attr("id", "emblems").style("display", "none");
+        emblems.append("g").attr("id", "burgEmblems");
+        emblems.append("g").attr("id", "provinceEmblems");
+        emblems.append("g").attr("id", "stateEmblems");
+        regenerateEmblems();
+        toggleEmblems();
+      }
+
     }()
 
     void function checkDataIntegrity() {
@@ -1128,6 +1140,9 @@ function parseLoadedData(data) {
 
     changeMapSize();
 
+    // remove href from emblems, to trigger rendering on load
+    emblems.selectAll("use").attr("href", null);
+
     // set options
     yearInput.value = options.year;
     eraInput.value = options.era;
@@ -1137,7 +1152,7 @@ function parseLoadedData(data) {
     invokeActiveZooming();
 
     WARN && console.warn(`TOTAL: ${rn((performance.now()-uploadMap.timeStart)/1000,2)}s`);
-    showStatistics();
+    INFO && showStatistics();
     INFO && console.groupEnd("Loaded Map " + seed);
     tip("Map is successfully loaded", true, "success", 7000);
   }

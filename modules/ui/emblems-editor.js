@@ -299,6 +299,8 @@ function editEmblem(type, id, el) {
     d3.timeout(runDownload, timeout);
 
     function runDownload() {
+      const back = `<a href="javascript:history.back()">Go Back</a>`;
+
       const stateSection = `<div><h2>States</h2>` + validStates.map(state => {
         const el = document.getElementById("stateCOA"+state.i);
         const svg = getSVG(el, state.coa, 200);
@@ -312,7 +314,7 @@ function editEmblem(type, id, el) {
           const svg = getSVG(el, province.coa, 200);
           return `<figure id="province_${province.i}"><a href="#burgs_${province.i}"><figcaption>${province.fullName}</figcaption>${svg}</a></figure>`;
         }).join("");
-        return stateProvinces.length ? `<div id="provinces_${state.i}"><h2>${state.fullName} provinces</h2>${figures}</div>` : "";
+        return stateProvinces.length ? `<div id="provinces_${state.i}">${back}<h2>${state.fullName} provinces</h2>${figures}</div>` : "";
       }).join("");
 
       const burgSections = validStates.map(state => {
@@ -324,7 +326,7 @@ function editEmblem(type, id, el) {
             const svg = getSVG(el, burg.coa, 200);
             return `<figure id="burg_${burg.i}"><figcaption>${burg.name}</figcaption>${svg}</figure>`;
           }).join("");
-          return provinceBurgs.length ? `<div id="burgs_${province.i}"><h2>${province.fullName} burgs</h2>${provinceBurgFigures}</div>` : "";
+          return provinceBurgs.length ? `<div id="burgs_${province.i}">${back}<h2>${province.fullName} burgs</h2>${provinceBurgFigures}</div>` : "";
         }).join("");
 
         const stateBurgOutOfProvinces = stateBurgs.filter(b => !pack.cells.province[b.cell]);
@@ -356,6 +358,7 @@ function editEmblem(type, id, el) {
           figcaption { text-align: center; margin: .4em 0; width: 200px; font-family: 'Overlock SC' }
           figure > a { color: black; text-decoration: none; }
           address { width: 100%; max-width: 1018px; margin: 0 auto; }
+          div > a { float: right; font-family: monospace; margin-top: .8em; }
         </style>
         <link href="https://fonts.googleapis.com/css2?family=Forum&family=Overlock+SC" rel="stylesheet">
         <body>

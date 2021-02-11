@@ -195,13 +195,11 @@
     let usedPattern = null, usedTinctures = [];
 
     // TODO
-    // seafaring
-    // old versions auto migration: coa generation for cultures and states etc.
-    // emblems layer for old maps
-    // define emblems layer style for all styles
+    // seafaring etc
+
     // style settings for emblems layer
+    // define emblems layer style for all styles
     // test in FF
-    // layout preset
 
     const t1 = P(kinship) ? parent.t1 : getTincture("field");
     if (t1.includes("-")) usedPattern = t1;

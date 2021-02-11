@@ -432,6 +432,7 @@ function showInfo() {
 // prevent default browser behavior for FMG-used hotkeys
 document.addEventListener("keydown", event => {
   if (event.altKey && event.keyCode !== 18) event.preventDefault(); // disallow alt key combinations
+  if (event.ctrlKey && event.code === "KeyS") event.preventDefault(); // disallow CTRL + C
   if ([112, 113, 117, 120, 9].includes(event.keyCode)) event.preventDefault(); // F1, F2, F6, F9, Tab
 });
 
@@ -460,6 +461,7 @@ document.addEventListener("keyup", event => {
   else if (key === 79 && canvas3d) toggle3dOptions(); // "O" to toggle 3d options
 
   else if (ctrl && key === 81) toggleSaveReminder(); // Ctrl + "Q" to toggle save reminder
+  else if (ctrl && key === 83) saveMap(); // Ctrl + "S" to save .map file
   else if (undo.offsetParent && ctrl && key === 90) undo.click(); // Ctrl + "Z" to undo
   else if (redo.offsetParent && ctrl && key === 89) redo.click(); // Ctrl + "Y" to redo
 
