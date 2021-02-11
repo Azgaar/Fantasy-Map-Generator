@@ -356,8 +356,9 @@ function editEmblem(type, id, el) {
           figure { margin: 0 0 2em; display: inline-block; transition: .2s; }
           figure:hover { background-color: #f6f6f6; }
           figcaption { text-align: center; margin: .4em 0; width: 200px; font-family: 'Overlock SC' }
-          figure > a { color: black; text-decoration: none; }
           address { width: 100%; max-width: 1018px; margin: 0 auto; }
+          a { color: black; }
+          figure > a { text-decoration: none; }
           div > a { float: right; font-family: monospace; margin-top: .8em; }
         </style>
         <link href="https://fonts.googleapis.com/css2?family=Forum&family=Overlock+SC" rel="stylesheet">
