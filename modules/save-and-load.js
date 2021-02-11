@@ -81,7 +81,8 @@ async function getMapURL(type, subtype) {
   const clone = d3.select(cloneEl);
   clone.select("#debug").remove();
 
-  const defs = cloneEl.getElementsByTagName("defs")[0];
+  const cloneDefs = cloneEl.getElementsByTagName("defs")[0];
+  const svgDefs = document.getElementById("defElements");
 
   const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
   if (isFirefox && type === "mesh") clone.select("#oceanPattern").remove();
@@ -95,17 +96,6 @@ async function getMapURL(type, subtype) {
   if (type === "svg") removeUnusedElements(clone);
   if (customization && type === "mesh") updateMeshCells(clone);
   inlineStyle(clone);
-
-  // add displayed emblems
-  if (layerIsOn("toggleEmblems")) {
-    const defs = cloneEl.getElementById("defs-emblems") || cloneEl.getElementById("deftemp");
-    clone.selectAll("#emblems use").each(function() {
-      const href = this.getAttribute("href");
-      if (!href) return;
-      const emblem = document.getElementById(href.slice(1)).cloneNode(true); // clone emblem
-      defs.append(emblem);
-    });
-  }
 
   // remove unused filters
   const filters = cloneEl.querySelectorAll("filter");
@@ -132,10 +122,22 @@ async function getMapURL(type, subtype) {
     symbols[i].remove();
   }
 
+  // add displayed emblems
+  if (layerIsOn("toggleEmblems")) {
+    Array.from(cloneEl.getElementById("emblems").querySelectorAll("use")).forEach(el => {
+      const href = el.getAttribute("href");
+      if (!href) return;
+      const emblem = document.getElementById(href.slice(1)).cloneNode(true); // clone emblem
+      cloneDefs.append(emblem);
+    });
+  }
+
   // add ocean pattern
-  const patternId = cloneEl.getElementById("oceanicPattern").getAttribute("filter").slice(5,-1);
-  const pattern = document.getElementById(patternId);
-  if (patternId) defs.appendChild(pattern.cloneNode(true));
+  if (cloneEl.getElementById("oceanicPattern")) {
+    const patternId = cloneEl.getElementById("oceanicPattern").getAttribute("filter").slice(5,-1);
+    const pattern = svgDefs.getElementById(patternId);
+    if (patternId) cloneDefs.appendChild(pattern.cloneNode(true));
+  }
 
   // add relief icons
   if (cloneEl.getElementById("terrain")) {
@@ -145,16 +147,26 @@ async function getMapURL(type, subtype) {
       uniqueElements.add(terrainElements[i].getAttribute("href"));
     }
 
-    const defsRelief = document.getElementById("defs-relief");
+    const defsRelief = svgDefs.getElementById("defs-relief");
     for (const terrain of [...uniqueElements]) {
       const element = defsRelief.querySelector(terrain);
-      if (element) defs.appendChild(element.cloneNode(true));
+      if (element) cloneDefs.appendChild(element.cloneNode(true));
     }
   }
 
+  // add wind rose
+  if (cloneEl.getElementById("compass")) {
+    const rose = svgDefs.getElementById("rose");
+    if (rose) cloneDefs.appendChild(rose.cloneNode(true));
+  }
+
+  // add port icon
+  if (cloneEl.getElementById("anchors")) {
+    const anchor = svgDefs.getElementById("icon-anchor");
+    if (anchor) cloneDefs.appendChild(anchor.cloneNode(true));
+  }
+
   if (!cloneEl.getElementById("hatching").children.length) cloneEl.getElementById("hatching").remove(); //remove unused hatching group
-  if (!cloneEl.getElementById("defs-icons").children.length) cloneEl.getElementById("defs-icons").remove(); //remove unused icons group
-  if (!cloneEl.getElementById("compass")) cloneEl.getElementById("rose").remove(); //remove unused rose
   if (!cloneEl.getElementById("fogging-cont")) cloneEl.getElementById("fog").remove(); //remove unused fog
   if (!cloneEl.getElementById("regions")) cloneEl.getElementById("statePaths").remove(); // removed unused statePaths
   if (!cloneEl.getElementById("labels")) cloneEl.getElementById("textPaths").remove(); // removed unused textPaths
