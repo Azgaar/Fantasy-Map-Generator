@@ -15,24 +15,16 @@
   }
 
   const charges = {
-    types: { conventional: 30, crosses: 8, animals: 2, animalHeads: 1, birds: 2, aquatic: 1, seafaring: 1, fantastic: 3, plants: 1, agriculture: 1, arms: 3, bodyparts: 1, people: 1, architecture: 1, miscellaneous: 3, inescutcheon: 3, uploaded: 0 },
-    single: { conventional: 12, crosses: 8, plants: 2, animals: 10, animalHeads: 2, birds: 4, aquatic: 2, seafaring: 2, fantastic: 7, agriculture: 1, arms: 6, bodyparts: 1, people: 1, architecture: 1, miscellaneous: 9, inescutcheon: 5, uploaded: 0 },
+    // categories selection
+    types: { conventional: 30, crosses: 8, animals: 2, animalHeads: 1, birds: 2, aquatic: 1, seafaring: 1, fantastic: 3, plants: 1, agriculture: 1, arms: 3, bodyparts: 1, people: 1, architecture: 1, miscellaneous: 3, inescutcheon: 3 },
+    single: { conventional: 12, crosses: 8, plants: 2, animals: 10, animalHeads: 2, birds: 4, aquatic: 2, seafaring: 2, fantastic: 7, agriculture: 1, arms: 6, bodyparts: 1, people: 1, architecture: 1, miscellaneous: 9, inescutcheon: 5 },
     semy: { conventional: 12, crosses: 3, plants: 1 },
+    // generic categories 
     conventional: {
       lozenge: 2, fusil: 4, mascle: 4, rustre: 2, lozengeFaceted: 3, lozengePloye: 1, roundel: 4, roundel2: 3, annulet: 4,
       mullet: 5, mulletPierced: 1, mulletFaceted: 1, mullet4: 3, mullet6: 4, mullet6Pierced: 1, mullet6Faceted: 1, mullet7: 1, mullet8: 1, mullet10: 1,
       estoile: 1, compassRose: 1, billet: 5, delf: 0, triangle: 3, trianglePierced: 1, goutte: 4, heart: 4, pique: 2, сarreau: 1, trefle: 2,
       fleurDeLis: 6, sun: 3, sunInSplendour: 1, crescent: 5, fountain: 1
-    },
-    inescutcheon: {
-      inescutcheonHeater: 1, inescutcheonSpanish: 1, inescutcheonFrench: 1,
-      inescutcheonHorsehead: 1, inescutcheonHorsehead2: 1, inescutcheonPolish: 1, inescutcheonHessen: 1, inescutcheonSwiss: 1,
-      inescutcheonBoeotian: 1, inescutcheonRoman: 1, inescutcheonKite: 1, inescutcheonOldFrench: 1, inescutcheonRenaissance: 1, inescutcheonBaroque: 1,
-      inescutcheonTarge: 1, inescutcheonTarge2: 1, inescutcheonPavise: 1, inescutcheonWedged: 1,
-      inescutcheonFlag: 1, inescutcheonPennon: 1, inescutcheonGuidon: 1, inescutcheonBanner: 1, inescutcheonDovetail: 1, inescutcheonGonfalon: 1, inescutcheonPennant: 1,
-      inescutcheonRound: 1, inescutcheonOval: 1, inescutcheonVesicaPiscis: 1, inescutcheonSquare: 1, inescutcheonDiamond: 1, inescutcheonNo: 1,
-      inescutcheonFantasy1: 1, inescutcheonFantasy2: 1, inescutcheonFantasy3: 1, inescutcheonFantasy4: 1, inescutcheonFantasy5: 1,
-      inescutcheonNoldor: 1, inescutcheonGondor: 1, inescutcheonEasterling: 1, inescutcheonErebor: 1, inescutcheonIronHills: 1, inescutcheonUrukHai: 1, inescutcheonMoriaOrc: 1
     },
     crosses: {
       crossHummetty: 15, crossVoided: 1, crossPattee: 3, crossPotent: 2, crossClechy: 3, crosslet: 1, crossBottony: 1, crossFleury: 3,
@@ -43,9 +35,7 @@
       lionRampant: 5, lionPassant: 2, wolfRampant: 1, wolfPassant: 1, wolfStatant: 1, greyhoundCourant: 1, boarRampant: 1,
       horseRampant: 2, horseSalient: 1, bearRampant: 2, bearPassant: 1, bullPassant: 1, goat: 1, lamb: 1, elephant: 1
     },
-    animalHeads: {
-      wolfHeadErased: 2, bullHeadCaboshed: 1, deerHeadCaboshed: 1
-    },
+    animalHeads: { wolfHeadErased: 2, bullHeadCaboshed: 1, deerHeadCaboshed: 1 },
     fantastic: { dragonPassant: 2, dragonRampant: 2, wyvern: 1, wyvernWithWingsDisplayed: 1, griffinPassant: 1, griffinRampant: 1, eagleTwoHeards: 2, unicornRampant: 1, pegasus: 1, serpent: 1 },
     birds: { eagle: 9, raven: 2, cock: 3, parrot: 1, swan: 2, swanErased: 1, heron: 1 },
     plants: { tree: 1, cinquefoil: 1, rose: 1 },
@@ -59,7 +49,18 @@
     miscellaneous: {
       crown: 3, orb: 1, chalice: 1, key: 1, buckle: 1, bugleHorn: 1, bell: 2, pot: 1, horseshoe: 3, stagsAttires: 1, cowHorns: 2, wing: 1, wingSword: 1,
       lute: 1, harp: 1, wheel: 2, crosier: 1, log: 1},
-    uploaded: {},
+    // selection based on culture type:
+    Naval: { anchor: 3, boat: 1, lymphad: 2, armillarySphere: 1, escallop: 1, dolphin: 1 },
+    Highland: { tower: 1, raven: 1, wolfHeadErased: 1, wolfPassant: 1, goat: 1,},
+    River: { tower: 1, garb: 1, rake: 1, boat: 1, pike: 2, bullHeadCaboshed: 1 },
+    Lake: { cancer: 2, escallop: 1, pike: 2, heron: 1, boat: 1 },
+    Nomadic: { pot: 1, buckle: 1, wheel: 2, sabre: 2, sabresCrossed: 1, bow: 2, arrow: 1, horseRampant: 1, horseSalient: 1, crescent: 1 },
+    Hunting: { bugleHorn: 3, stagsAttires: 2, hatchet: 1, bowWithArrow: 2, arrowsSheaf: 1, deerHeadCaboshed: 1, wolfStatant: 1 },
+    // selection based on type
+    City: { key: 3, bell: 2, lute: 1, tower: 1, castle: 1, mallet: 1 },
+    Capital: { crown: 4, orb: 1, lute: 1, castle: 3, tower: 1 },
+    Сathedra: { chalice: 1, orb: 1, crosier: 3, lamb: 1 },
+    // specific cases
     natural: { fountain: "azure", garb: "or", raven: "sable" }, // charges to mainly use predefined colours
     sinister: ["crossGamma", "lionRampant", "lionPassant", "wolfRampant", "wolfPassant", "wolfStatant", "wolfHeadErased", "greyhoundСourant", "boarRampant", "horseRampant", "horseSalient", "bullPassant",
       "bearRampant", "bearPassant", "goat", "lamb", "elephant",
@@ -190,15 +191,9 @@
     }
   };
 
-  const generate = function(parent, kinship, dominion) {
+  const generate = function(parent, kinship, dominion, type) {
     if (parent === "custom") parent = null;
     let usedPattern = null, usedTinctures = [];
-
-    // TODO
-    // seafaring etc
-
-    // define emblems layer style for all styles
-    // test in FF
 
     const t1 = P(kinship) ? parent.t1 : getTincture("field");
     if (t1.includes("-")) usedPattern = t1;
@@ -210,7 +205,7 @@
     const rareDivided = ["chief", "terrace", "chevron", "quarter", "flaunches"].includes(ordinary);
     const divisioned = rareDivided ? P(.03) : charge && ordinary ? P(.03) : charge ? P(.3) : ordinary ? P(.7) : P(.995); // 33% for division
     const division = divisioned ? parent?.division && P(kinship - .1) ? parent.division.division : rw(divisions.variants) : null;
-    if (charge) charge = parent?.charges && P(kinship - .1) ? parent.charges[0].charge : selectCharge();
+    if (charge) charge = parent?.charges && P(kinship - .1) ? parent.charges[0].charge : type && P(.3) ? rw(charges[type]) : selectCharge();
 
     if (division) {
       const t = getTincture("division", usedTinctures, P(.98) ? coa.t1 : null);
@@ -353,10 +348,6 @@
       coa.charges.push({charge, t: t2, p: "y", size: 0.5});
 
       coa.ordinaries ? coa.ordinaries.push(canton) : coa.ordinaries = [canton];
-
-      // console.log(encodeURI(`https://azgaar.github.io/Armoria/?coa=${JSON.stringify(coa)}`));
-      // console.log(encodeURI(`https://azgaar.github.io/Armoria/?coa=${JSON.stringify(parent)}`));
-      // console.log("-------");
     }
 
     function selectCharge(set) {

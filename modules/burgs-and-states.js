@@ -90,7 +90,7 @@
         const name = Names.getState(basename, b.culture);
         const nomadic = [1, 2, 3, 4].includes(cells.biome[b.cell]);
         const type = nomadic ? "Nomadic" : cultures[b.culture].type === "Nomadic" ? "Generic" : cultures[b.culture].type;
-        const coa = COA.generate(null);
+        const coa = COA.generate(null, null, null, type);
         coa.shield = COA.getShield(b.culture, null);
         states.push({i, color: colors[i-1], name, expansionism, capital: i, type, center: b.cell, culture: b.culture, coa});
         cells.burg[b.cell] = i;
@@ -185,7 +185,9 @@
       if (b.capital) kinship += .1;
       else if (b.port) kinship -= .1;
       if (b.culture !== state.culture) kinship -= .25;
-      b.coa = COA.generate(stateCOA, kinship);
+      b.type = getBurgType(b, i);
+      const type = b.capital && P(.2) ? "Capital" : b.type === "Generic" ? "City" : b.type;
+      b.coa = COA.generate(stateCOA, kinship, null, type === "Generic" ? null : type);
       b.coa.shield = COA.getShield(b.culture, b.state);
     }
 
@@ -198,6 +200,17 @@
     }
 
     TIME && console.timeEnd("specifyBurgs");
+  }
+
+  const getBurgType = function(b, i) {
+    const cells = pack.cells;
+    if (b.port) return "Naval";
+    if (cells.haven[i] && pack.features[cells.f[cells.haven[i]]].type === "lake") return "River";
+    if (cells.h[i] > 60) return "Highland";
+    if (cells.r[i] && cells.r[i].length > 100 && cells.r[i].length >= pack.rivers[0].length) return "River";
+    if ([1, 2, 3, 4].includes(cells.biome[i])) return "Nomadic";
+    if (cells.biome[i] > 4 && cells.biome[i] < 10) return "Hunting";
+    return "Generic";
   }
 
   const defineBurgFeatures = function(newburg) {
@@ -939,7 +952,7 @@
         const fullName = name + " " + formName;
         const color = getMixedColor(s.color);
         const kinship = nameByBurg ? .8 : .4;
-        const coa = COA.generate(stateBurgs[i].coa, kinship);
+        const coa = COA.generate(stateBurgs[i].coa, kinship, null, burg.port ? "Naval" : null);
         coa.shield = COA.getShield(c, s.i);
         provinces.push({i:province, state:s.i, center, burg, name, formName, fullName, color, coa});
       }
@@ -1036,7 +1049,8 @@
         const color = getMixedColor(s.color);
         const dominion = colony ? P(.95) : singleIsle || isleGroup ? P(.7) : P(.3);
         const kinship = dominion ? 0 : .4;
-        const coa = COA.generate(s.coa, kinship, dominion);
+        const naval = singleIsle || !isleGroup || burgs[burg]?.port;
+        const coa = COA.generate(s.coa, kinship, dominion, naval ? "Naval" : null);
         coa.shield = COA.getShield(c, s.i);
         provinces.push({i:province, state:s.i, center, burg, name, formName, fullName, color, coa});
         s.provinces.push(province);
