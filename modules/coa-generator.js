@@ -195,6 +195,10 @@
     if (parent === "custom") parent = null;
     let usedPattern = null, usedTinctures = [];
 
+    // TO-DO
+    // test in FF
+    // stringify COA on save?
+
     const t1 = P(kinship) ? parent.t1 : getTincture("field");
     if (t1.includes("-")) usedPattern = t1;
     const coa = {t1};

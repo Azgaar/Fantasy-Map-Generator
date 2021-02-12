@@ -709,7 +709,7 @@ function applyStyleOnLoad() {
     stylePreset.value = preset;
     stylePreset.dataset.old = preset;
   } else {
-    preset && ERROR && console.error(`Style preset ${preset} is not available in localStorage, applying default style`);
+    if (preset !== "styleDefault" && ERROR) console.error(`Style preset ${preset} is not available in localStorage, applying default style`);
     stylePreset.value = "styleDefault";
     stylePreset.dataset.old = preset;
     applyDefaultStyle();

@@ -450,7 +450,7 @@ function invokeActiveZooming() {
       const size = this.getAttribute("font-size") * scale;
       const hidden = hideEmblems.checked && (size < 25 || size > 300);
       if (hidden) this.classList.add("hidden"); else this.classList.remove("hidden");
-      if (!hidden && COArenderer && this.children.length && !this.children[0].getAttribute("href")) renderGroupCOAs(this);
+      if (!hidden && window.COArenderer && this.children.length && !this.children[0].getAttribute("href")) renderGroupCOAs(this);
     });
   }
 
