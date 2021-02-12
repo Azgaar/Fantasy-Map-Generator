@@ -8,7 +8,6 @@ async function saveSVG() {
   const link = document.createElement("a");
   link.download = getFileName() + ".svg";
   link.href = url;
-  document.body.appendChild(link);
   link.click();
 
   tip(`${link.download} is saved. Open "Downloads" screen (crtl + J) to check. You can set image scale in options`, true, "success", 5000);
@@ -33,7 +32,6 @@ async function savePNG() {
     link.download = getFileName() + ".png";
     canvas.toBlob(function(blob) {
         link.href = window.URL.createObjectURL(blob);
-        document.body.appendChild(link);
         link.click();
         window.setTimeout(function() {
           canvas.remove();
@@ -64,7 +62,6 @@ async function saveJPEG() {
     const link = document.createElement("a");
     link.download = getFileName() + ".jpeg";
     link.href = URL;
-    document.body.appendChild(link);
     link.click();
     tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
     window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
@@ -378,7 +375,6 @@ async function saveMap() {
   const link = document.createElement("a");
   link.download = getFileName() + ".map";
   link.href = URL;
-  document.body.appendChild(link);
   link.click();
   tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
   window.URL.revokeObjectURL(URL);

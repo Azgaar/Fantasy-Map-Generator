@@ -1311,7 +1311,6 @@ function editHeightmap() {
       const link = document.createElement("a");
       link.download = getFileName("Heightmap") + ".png";
       link.href = imgBig;
-      document.body.appendChild(link);
       link.click();
       canvas.remove();
     }

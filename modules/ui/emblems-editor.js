@@ -245,7 +245,6 @@ function editEmblem(type, id, el) {
 
   function downloadSVG(url, link) {
     link.href = url;
-    document.body.appendChild(link);
     link.click();
     window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
   }
@@ -266,7 +265,6 @@ function editEmblem(type, id, el) {
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       const URL = await canvas.toDataURL("image/" + format, .92);
       link.href = URL;
-      document.body.appendChild(link);
       link.click();
       window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
     }
