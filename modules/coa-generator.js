@@ -16,8 +16,8 @@
 
   const charges = {
     // categories selection
-    types: { conventional: 30, crosses: 8, animals: 2, animalHeads: 1, birds: 2, aquatic: 1, seafaring: 1, fantastic: 3, plants: 1, agriculture: 1, arms: 3, bodyparts: 1, people: 1, architecture: 1, miscellaneous: 3, inescutcheon: 3 },
-    single: { conventional: 12, crosses: 8, plants: 2, animals: 10, animalHeads: 2, birds: 4, aquatic: 2, seafaring: 2, fantastic: 7, agriculture: 1, arms: 6, bodyparts: 1, people: 1, architecture: 1, miscellaneous: 9, inescutcheon: 5 },
+    types: { conventional: 30, crosses: 8, animals: 2, animalHeads: 1, birds: 2, fantastic: 3, plants: 1, agriculture: 1, arms: 3, bodyparts: 1, people: 1, architecture: 1, miscellaneous: 3, inescutcheon: 3 },
+    single: { conventional: 12, crosses: 8, plants: 2, animals: 10, animalHeads: 2, birds: 4, fantastic: 7, agriculture: 1, arms: 6, bodyparts: 1, people: 1, architecture: 1, miscellaneous: 9, inescutcheon: 5 },
     semy: { conventional: 12, crosses: 3, plants: 1 },
     // generic categories 
     conventional: {
@@ -35,19 +35,17 @@
       lionRampant: 5, lionPassant: 2, wolfRampant: 1, wolfPassant: 1, wolfStatant: 1, greyhoundCourant: 1, boarRampant: 1,
       horseRampant: 2, horseSalient: 1, bearRampant: 2, bearPassant: 1, bullPassant: 1, goat: 1, lamb: 1, elephant: 1
     },
-    animalHeads: { wolfHeadErased: 2, bullHeadCaboshed: 1, deerHeadCaboshed: 1 },
+    animalHeads: { wolfHeadErased: 1, bullHeadCaboshed: 1, deerHeadCaboshed: 1 },
     fantastic: { dragonPassant: 2, dragonRampant: 2, wyvern: 1, wyvernWithWingsDisplayed: 1, griffinPassant: 1, griffinRampant: 1, eagleTwoHeards: 2, unicornRampant: 1, pegasus: 1, serpent: 1 },
-    birds: { eagle: 9, raven: 2, cock: 3, parrot: 1, swan: 2, swanErased: 1, heron: 1 },
+    birds: { eagle: 9, raven: 1, cock: 3, parrot: 1, swan: 2, swanErased: 1, heron: 1 },
     plants: { tree: 1, cinquefoil: 1, rose: 1 },
-    aquatic: { escallop: 5, pike: 1, cancer: 1, dolphin: 1 },
-    seafaring: { anchor: 6, boat: 2, lymphad: 2, armillarySphere: 1 },
-    agriculture: { garb: 2, rake: 1 },
+    agriculture: { garb: 1, rake: 1 },
     arms: { sword: 5, sabre: 1, sabresCrossed: 1, hatchet: 2, lochaberAxe: 1, mallet: 1, bowWithArrow: 2, bow: 1, arrow: 1, arrowsSheaf: 1 },
     bodyparts: { hand: 4, head: 1, headWreathed: 1 },
     people: { cavalier: 1 },
     architecture: { tower: 1, castle: 1 },
     miscellaneous: {
-      crown: 3, orb: 1, chalice: 1, key: 1, buckle: 1, bugleHorn: 1, bell: 2, pot: 1, horseshoe: 3, stagsAttires: 1, cowHorns: 2, wing: 1, wingSword: 1,
+      crown: 3, orb: 1, chalice: 1, key: 1, buckle: 1, bugleHorn: 1, bell: 1, pot: 1, horseshoe: 3, stagsAttires: 1, cowHorns: 2, wing: 1, wingSword: 1,
       lute: 1, harp: 1, wheel: 2, crosier: 1, log: 1},
     // selection based on culture type:
     Naval: { anchor: 3, boat: 1, lymphad: 2, armillarySphere: 1, escallop: 1, dolphin: 1 },
@@ -195,10 +193,6 @@
     if (parent === "custom") parent = null;
     let usedPattern = null, usedTinctures = [];
 
-    // TO-DO
-    // test in FF
-    // stringify COA on save?
-
     const t1 = P(kinship) ? parent.t1 : getTincture("field");
     if (t1.includes("-")) usedPattern = t1;
     const coa = {t1};
@@ -209,7 +203,10 @@
     const rareDivided = ["chief", "terrace", "chevron", "quarter", "flaunches"].includes(ordinary);
     const divisioned = rareDivided ? P(.03) : charge && ordinary ? P(.03) : charge ? P(.3) : ordinary ? P(.7) : P(.995); // 33% for division
     const division = divisioned ? parent?.division && P(kinship - .1) ? parent.division.division : rw(divisions.variants) : null;
-    if (charge) charge = parent?.charges && P(kinship - .1) ? parent.charges[0].charge : type && P(.3) ? rw(charges[type]) : selectCharge();
+    if (charge) charge = 
+      parent?.charges && P(kinship - .1) ? parent.charges[0].charge : 
+      type && type !== "Generic" && P(.3) ? rw(charges[type]) : 
+      selectCharge();
 
     if (division) {
       const t = getTincture("division", usedTinctures, P(.98) ? coa.t1 : null);

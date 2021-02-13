@@ -257,13 +257,13 @@ function editEmblem(type, id, el) {
 
     const img = new Image();
     img.src = url;
-    img.onload = async function() {
+    img.onload = function() {
       if (format === "jpeg") {
         ctx.fillStyle = "#fff";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      const URL = await canvas.toDataURL("image/" + format, .92);
+      const URL = canvas.toDataURL("image/" + format, .92);
       link.href = URL;
       link.click();
       window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
@@ -277,12 +277,10 @@ function editEmblem(type, id, el) {
     return url;
   }
 
-  function getSVG(svg, coa, size) {
+  function getSVG(svg, size) {
     const clone = svg.cloneNode(true); // clone svg
-
     clone.setAttribute("width", size);
     clone.setAttribute("height", size);
-
     return (new XMLSerializer()).serializeToString(clone);
   }
 

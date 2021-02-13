@@ -968,18 +968,16 @@
   }
 
   async function fetchCharge(charge, id) {
-    const fetched = fetch("https://azgaar.github.io/Armoria/charges/" + charge + ".svg")
-      .then(res => {
+    const fetched = fetch("https://azgaar.github.io/Armoria/charges/" + charge + ".svg").then(res => {
         if (res.ok) return res.text();
         else throw new Error("Cannot fetch charge");
-      })
-      .then(text => {
+      }).then(text => {
         const html = document.createElement("html");
         html.innerHTML = text;
         const g = html.querySelector("g");
         g.setAttribute("id", charge + "_" + id);
         return g.outerHTML;
-      });
+      }).catch(err => console.error(err));
     return fetched;
   }
 
