@@ -967,7 +967,7 @@
     return fetchedCharges.join("");
   }
 
-  const url = PRODUCTION ? "https://azgaar.github.io/Armoria/charges/" : "http://armoria.herokuapp.com/charges/";
+  const url = PRODUCTION ? "./charges/" : "http://armoria.herokuapp.com/charges/"; // on local machine fetch files from server
   async function fetchCharge(charge, id) {
     const fetched = fetch(url + charge + ".svg").then(res => {
         if (res.ok) return res.text();
