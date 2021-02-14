@@ -7,7 +7,7 @@
   let cells, p, states;
 
   const generate = function() {
-    console.time("generateMilitaryForces");
+    TIME && console.time("generateMilitaryForces");
     cells = pack.cells, p = cells.p, states = pack.states;
     const valid = states.filter(s => s.i && !s.removed); // valid states
     if (!options.military) options.military = getDefaultOptions();
@@ -52,7 +52,7 @@
       for (const unit of options.military) {
         if (!stateModifier[unit.type]) continue;
         let modifier = stateModifier[unit.type][s.type] || 1;
-        if (unit.type === "mounted" && s.form === "Horde") modifier *= 2; else
+        if (unit.type === "mounted" && s.formName.includes("Horde")) modifier *= 2; else
         if (unit.type === "naval" && s.form === "Republic") modifier *= 1.2;
         temp[unit.name] = modifier * s.alert;
       }
@@ -176,7 +176,7 @@
       return regiments;
     }
 
-    console.timeEnd("generateMilitaryForces");
+    TIME && console.timeEnd("generateMilitaryForces");
   }
 
   const getDefaultOptions = function() {

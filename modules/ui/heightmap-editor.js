@@ -164,8 +164,8 @@ function editHeightmap() {
   }
 
   function regenerateErasedData() {
-    console.group("Edit Heightmap");
-    console.time("regenerateErasedData");
+    INFO && console.group("Edit Heightmap");
+    TIME && console.time("regenerateErasedData");
 
     const change = changeHeights.checked;
     markFeatures();
@@ -204,8 +204,8 @@ function editHeightmap() {
     Military.generate();
     addMarkers();
     addZones();
-    console.timeEnd("regenerateErasedData");
-    console.groupEnd("Edit Heightmap");
+    TIME && console.timeEnd("regenerateErasedData");
+    INFO && console.groupEnd("Edit Heightmap");
   }
 
   function restoreKeptData() {
@@ -216,8 +216,8 @@ function editHeightmap() {
   }
 
   function restoreRiskedData() {
-    console.group("Edit Heightmap");
-    console.time("restoreRiskedData");
+    INFO && console.group("Edit Heightmap");
+    TIME && console.time("restoreRiskedData");
 
     // assign pack data to grid cells
     const l = grid.cells.i.length;
@@ -401,8 +401,8 @@ function editHeightmap() {
         .attr("points", d => getPackPolygon(d)).attr("id", d => base + d);
     });
 
-    console.timeEnd("restoreRiskedData");
-    console.groupEnd("Edit Heightmap");
+    TIME && console.timeEnd("restoreRiskedData");
+    INFO && console.groupEnd("Edit Heightmap");
   }
 
   // trigger heightmap redraw and history update if at least 1 cell is changed
@@ -954,7 +954,7 @@ function editHeightmap() {
       templateBody.innerHTML = "";
       for (const s of steps) {
         const step = s.split(" ");
-        if (step.length !== 5) {console.error("Cannot parse step, wrong arguments count", s); continue;}
+        if (step.length !== 5) {ERROR && console.error("Cannot parse step, wrong arguments count", s); continue;}
         addStep(step[0], step[1], step[2], step[3], step[4]);
       }
 
@@ -1311,7 +1311,6 @@ function editHeightmap() {
       const link = document.createElement("a");
       link.download = getFileName("Heightmap") + ".png";
       link.href = imgBig;
-      document.body.appendChild(link);
       link.click();
       canvas.remove();
     }

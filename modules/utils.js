@@ -232,7 +232,7 @@ function gauss(expected = 100, deviation = 30, min = 0, max = 300, round = 0) {
   return rn(Math.max(Math.min(d3.randomNormal(expected, deviation)(), max), min), round);
 }
 
-/** This is a description of the foo function. */
+// probability shorthand for floats
 function Pint(float) {
   return ~~float + +P(float % 1);
 }
@@ -471,14 +471,14 @@ function lim(v) {
 
 // get number from string in format "1-3" or "2" or "0.5"
 function getNumberInRange(r) {
-  if (typeof r !== "string") {console.error("The value should be a string", r); return 0;}
+  if (typeof r !== "string") {ERROR && console.error("The value should be a string", r); return 0;}
   if (!isNaN(+r)) return ~~r + +P(r - ~~r);
   const sign = r[0] === "-" ? -1 : 1;
   if (isNaN(+r[0])) r = r.slice(1);
   const range = r.includes("-") ? r.split("-") : null;
-  if (!range) {console.error("Cannot parse the number. Check the format", r); return 0;}
+  if (!range) {ERROR && console.error("Cannot parse the number. Check the format", r); return 0;}
   const count = rand(range[0] * sign, +range[1]);
-  if (isNaN(count) || count < 0) {console.error("Cannot parse number. Check the format", r); return 0;}
+  if (isNaN(count) || count < 0) {ERROR && console.error("Cannot parse number. Check the format", r); return 0;}
   return count;
 }
 
@@ -516,26 +516,15 @@ function getNextId(core, i = 1) {
   return core + i;
 }
 
-// from https://davidwalsh.name/javascript-debounce-function
-function debounce(func, wait, immediate) {
-  var timeout;
-  return function() {
-    var context = this, args = arguments;
-    var later = function() {
-      timeout = null;
-      if (!immediate) func.apply(context, args);
-    }
-    var callNow = immediate && !timeout;
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-    if (callNow) func.apply(context, args);
-  }
-}
+function debounce(f, ms) {
+  let isCooldown = false;
 
-// pause/block JS execution for a while
-function sleep(delay) {
-  const start = new Date().getTime();
-  while (new Date().getTime() < start + delay);
+  return function() {
+    if (isCooldown) return;
+    f.apply(this, arguments);
+    isCooldown = true;
+    setTimeout(() => isCooldown = false, ms);
+  };
 }
 
 // parse error to get the readable string in Chrome and Firefox
@@ -597,15 +586,21 @@ function generateDate(from = 100, to = 1000) {
   return new Date(rand(from, to),rand(12),rand(31)).toLocaleDateString("en", {year:'numeric', month:'long', day:'numeric'});
 }
 
+function getQGIScoordinates(x, y) {
+  const cx = mapCoordinates.lonW + (x / graphWidth) * mapCoordinates.lonT;
+  const cy = mapCoordinates.latN - (y / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
+  return [cx, cy];
+}
+
 // prompt replacer (prompt does not work in Electron)
 void function() {
   const prompt = document.getElementById("prompt");
   const form = prompt.querySelector("#promptForm");
 
-  window.prompt = function(promptTest = "Please provide an input", options = {default:1, step:.01, min:0, max:100}, callback) {
-    if (options.default === undefined) {console.error("Prompt: options object does not have default value defined"); return;}
+  window.prompt = function(promptText = "Please provide an input", options = {default:1, step:.01, min:0, max:100}, callback) {
+    if (options.default === undefined) {ERROR && console.error("Prompt: options object does not have default value defined"); return;}
     const input = prompt.querySelector("#promptInput");
-    prompt.querySelector("#promptTest").innerHTML = promptTest;
+    prompt.querySelector("#promptText").innerHTML = promptText;
     const type = typeof(options.default) === "number" ? "number" : "text";
     input.type = type;
     if (options.step !== undefined) input.step = options.step;
@@ -628,4 +623,4 @@ void function() {
 }()
 
 // indexedDB; ldb object
-!function(){function e(t,o){return n?void(n.transaction("s").objectStore("s").get(t).onsuccess=function(e){var t=e.target.result&&e.target.result.v||null;o(t)}):void setTimeout(function(){e(t,o)},100)}var t=window.indexedDB||window.mozIndexedDB||window.webkitIndexedDB||window.msIndexedDB;if(!t)return void console.error("indexedDB not supported");var n,o={k:"",v:""},r=t.open("d2",1);r.onsuccess=function(e){n=this.result},r.onerror=function(e){console.error("indexedDB request error"),console.log(e)},r.onupgradeneeded=function(e){n=null;var t=e.target.result.createObjectStore("s",{keyPath:"k"});t.transaction.oncomplete=function(e){n=e.target.db}},window.ldb={get:e,set:function(e,t){o.k=e,o.v=t,n.transaction("s","readwrite").objectStore("s").put(o)}}}();
+!function(){function e(t,o){return n?void(n.transaction("s").objectStore("s").get(t).onsuccess=function(e){var t=e.target.result&&e.target.result.v||null;o(t)}):void setTimeout(function(){e(t,o)},100)}var t=window.indexedDB||window.mozIndexedDB||window.webkitIndexedDB||window.msIndexedDB;if(!t)return void ERROR && console.error("indexedDB not supported");var n,o={k:"",v:""},r=t.open("d2",1);r.onsuccess=function(e){n=this.result},r.onerror=function(e){ERROR && console.error("indexedDB request error"),INFO && console.log(e)},r.onupgradeneeded=function(e){n=null;var t=e.target.result.createObjectStore("s",{keyPath:"k"});t.transaction.oncomplete=function(e){n=e.target.db}},window.ldb={get:e,set:function(e,t){o.k=e,o.v=t,n.transaction("s","readwrite").objectStore("s").put(o)}}}();

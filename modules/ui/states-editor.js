@@ -42,7 +42,7 @@ function editStates() {
     const el = ev.target, cl = el.classList, line = el.parentNode, state = +line.dataset.id;
     if (cl.contains("fillRect")) stateChangeFill(el); else
     if (cl.contains("name")) editStateName(state); else
-    if (cl.contains("icon-coa")) stateOpenCOA(ev, state); else
+    if (cl.contains("coaIcon")) editEmblem("state", "stateCOA"+state, pack.states[state]); else
     if (cl.contains("icon-star-empty")) stateCapitalZoomIn(state); else
     if (cl.contains("culturePopulation")) changePopulation(state); else
     if (cl.contains("icon-pin")) toggleFog(state, cl); else
@@ -90,7 +90,7 @@ function editStates() {
         data-population=${population} data-burgs=${s.burgs} data-color="" data-form="" data-capital="" data-culture="" data-type="" data-expansionism="">
           <svg width="9" height="9" class="placeholder"></svg>
           <input data-tip="Neutral lands name. Click to change" class="stateName name pointer italic" value="${s.name}" readonly>
-          <span class="icon-coa placeholder hide"></span>
+          <svg class="coaIcon placeholder hide"></svg>
           <input class="stateForm placeholder" value="none">
           <span class="icon-star-empty placeholder hide"></span>
           <input class="stateCapital placeholder hide">
@@ -109,12 +109,14 @@ function editStates() {
         </div>`;
         continue;
       }
+
       const capital = pack.burgs[s.capital].name;
+      COArenderer.trigger("stateCOA"+s.i, s.coa);
       lines += `<div class="states" data-id=${s.i} data-name="${s.name}" data-form="${s.formName}" data-capital="${capital}" data-color="${s.color}" data-cells=${s.cells}
         data-area=${area} data-population=${population} data-burgs=${s.burgs} data-culture=${pack.cultures[s.culture].name} data-type=${s.type} data-expansionism=${s.expansionism}>
         <svg data-tip="State fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${s.color}" class="fillRect pointer"></svg>
         <input data-tip="State name. Click to change" class="stateName name pointer" value="${s.name}" readonly>
-        <span data-tip="Click to open state COA in the Iron Arachne Heraldry Generator. Ctrl + click to change the seed" class="icon-coa pointer hide"></span>
+        <svg data-tip="Click to show and edit state emblem" class="coaIcon hide" viewBox="0 0 200 200"><use href="#stateCOA${s.i}"></use></svg>
         <input data-tip="State form name. Click to change" class="stateForm name pointer" value="${s.formName}" readonly>
         <span data-tip="State capital. Click to zoom into view" class="icon-star-empty pointer hide"></span>
         <input data-tip="Capital name. Click and type to rename" class="stateCapital hide" value="${capital}" autocorrect="off" spellcheck="false"/>
@@ -230,7 +232,7 @@ function editStates() {
     document.getElementById("stateNameEditorFull").value = s.fullName || "";
 
     $("#stateNameEditor").dialog({
-      resizable: false, title: "Change state name", width: "22em", buttons: {
+      resizable: false, title: "Change state name", buttons: {
         Apply: function() {applyNameChange(s); $(this).dialog("close");},
         Cancel: function() {$(this).dialog("close");}
       }, position: {my: "center", at: "center", of: "svg"}
@@ -293,7 +295,8 @@ function editStates() {
       const changed = nameChanged || formChanged || fullNameChanged;
 
       if (formChanged) {
-        const form = formSelect.selectedOptions[0].dataset.form || null;
+        const selected = formSelect.selectedOptions[0];
+        const form = selected.parentElement.label || null;
         if (form) s.form = form;
       }
 
@@ -311,19 +314,6 @@ function editStates() {
     if (!capital) return;
     pack.burgs[capital].name = value;
     document.querySelector("#burgLabel"+capital).textContent = value;
-  }
-
-  function stateOpenCOA(event, state) {
-    const defSeed = `${seed}-s${state}`;
-    const openIAHG = () => openURL("https://ironarachne.com/heraldry/" + (pack.states[state].IAHG || defSeed));
-
-    if (isCtrlClick(event)) {
-      prompt(`Please provide an Iron Arachne Heraldry Generator seed. <br>Default seed is a combination of FMG map seed and state id (${defSeed})`, 
-      {default:pack.states[state].IAHG || defSeed}, v => {
-        if (v && v != defSeed) pack.states[state].IAHG = v;
-        openIAHG();
-      });
-    } else openIAHG();
   }
 
   function changePopulation(state) {
@@ -433,17 +423,28 @@ function editStates() {
     statesBody.select("#state"+state).remove();
     statesBody.select("#state-gap"+state).remove();
     statesHalo.select("#state-border"+state).remove();
+    labels.select("#stateLabel"+state).remove();
+    defs.select("#textPath_stateLabel"+state).remove();
+
     unfog("focusState"+state);
-    const label = document.querySelector("#stateLabel"+state);
-    if (label) label.remove();
     pack.burgs.forEach(b => {if(b.state === state) b.state = 0;});
     pack.cells.state.forEach((s, i) => {if(s === state) pack.cells.state[i] = 0;});
-    pack.states[state].removed = true;
+
+    // remove emblem
+    const coaId = "stateCOA" + state;
+    document.getElementById(coaId).remove();
+    emblems.select(`#stateEmblems > use[data-i='${state}']`).remove();
 
     // remove provinces
     pack.states[state].provinces.forEach(p => {
-      pack.provinces[p].removed = true;
+      pack.provinces[p] = {i: p, removed: true};
       pack.cells.province.forEach((pr, i) => {if(pr === p) pack.cells.province[i] = 0;});
+      const coaId = "provinceCOA" + p;
+      if (document.getElementById(coaId)) document.getElementById(coaId).remove();
+      emblems.select(`#provinceEmblems > use[data-i='${p}']`).remove();
+      const g = provs.select("#provincesBody");
+      g.select("#province"+p).remove();
+      g.select("#province-gap"+p).remove();
     });
 
     // remove military
@@ -454,22 +455,12 @@ function editStates() {
     });
     armies.select("g#army"+state).remove();
 
-    const military = pack.states[elSelected.dataset.state].military;
-    const regIndex = military.indexOf(regiment());
-    if (regIndex === -1) return;
-    military.splice(regIndex, 1);
-
-    const index = notes.findIndex(n => n.id === elSelected.id);
-    if (index != -1) notes.splice(index, 1);
-    elSelected.remove();
-
     const capital = pack.states[state].capital;
     pack.burgs[capital].capital = 0;
     pack.burgs[capital].state = 0;
     moveBurgToGroup(capital, "towns");
 
-    // clean state object
-    pack.states[state].military = [];
+    pack.states[state] = {i: state, removed: true};
 
     debug.selectAll(".highlight").remove();
     if (!layerIsOn("toggleStates")) toggleStates(); else drawStates();
@@ -852,6 +843,11 @@ function editStates() {
     const name = Names.getState(basename, culture);
     const color = getRandomColor();
 
+    // generate emblem
+    const cultureType = pack.cultures[culture].type;
+    const coa = COA.generate(burgs[burg].coa, .4, null, cultureType);
+    coa.shield = COA.getShield(culture, null);
+
     // update diplomacy and reverse relations
     const diplomacy = states.map(s => {
       if (!s.i) return "x";
@@ -879,7 +875,9 @@ function editStates() {
     const affectedProvinces = [cells.province[center]];
     cells.state[center] = newState;
     cells.province[center] = 0;
-    cells.c[center].forEach(c => {
+
+    const cellsToCheck = [...new Set(cells.c[center].map(c => cells.c[c].map(c => cells.c[c])).flat(2))];
+    cellsToCheck.forEach(c => {
       if (cells.h[c] < 20) return;
       if (cells.burg[c]) return;
       affectedStates.push(cells.state[c]);
@@ -887,7 +885,8 @@ function editStates() {
       cells.state[c] = newState;
       cells.province[c] = 0;
     });
-    states.push({i:newState, name, diplomacy, provinces:[], color, expansionism:.5, capital:burg, type:"Generic", center, culture, military:[], alert:1});
+
+    states.push({i:newState, name, diplomacy, provinces:[], color, expansionism:.5, capital:burg, type:"Generic", center, culture, military:[], alert:1, coa});
     BurgsAndStates.collectStatistics();
     BurgsAndStates.defineStateForms([newState]);
     adjustProvinces([...new Set(affectedProvinces)]);
@@ -896,6 +895,7 @@ function editStates() {
     if (!layerIsOn("toggleStates")) toggleStates(); else drawStates();
     if (!layerIsOn("toggleBorders")) toggleBorders(); else drawBorders();
     BurgsAndStates.drawStateLabels([...new Set(affectedStates)]);
+    COArenderer.add("state", newState, coa, states[newState].pole[0], states[newState].pole[1]);
     statesEditorAddLines();
   }
 

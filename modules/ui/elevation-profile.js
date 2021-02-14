@@ -83,7 +83,7 @@ function showElevationProfile(data, routeLen, isRiver) {
     chartData.ma = Math.max(chartData.ma, chartData.height[i]);
   }
 
-  if (lastBurgIndex != 0 && lastBurgCell == chartData.cell[data.length-1] && lastBurgIndex < data.length) {
+  if (lastBurgIndex != 0 && lastBurgCell == chartData.cell[data.length-1] && lastBurgIndex < data.length-1) {
     chartData.burg[data.length-1] = chartData.burg[lastBurgIndex];
     chartData.burg[lastBurgIndex] = 0;
   }
@@ -196,7 +196,26 @@ function showElevationProfile(data, routeLen, isRiver) {
       const x = chartData.points[k][0];
       const y = yOffset + chartHeight;
       const c = biomesData.color[chartData.biome[k]];
-      const dataTip = biomesData.name[chartData.biome[k]]+" (" + chartData.height[k] + " " + hu + ", cell " + chartData.cell[k] + ")";
+
+      const cell = chartData.cell[k];
+      const culture = pack.cells.culture[cell];
+      const religion = pack.cells.religion[cell];
+      const province = pack.cells.province[cell];
+      const state = pack.cells.state[cell];
+      let pop = pack.cells.pop[cell];
+      if (chartData.burg[k]) {
+        pop += pack.burgs[chartData.burg[k]].population * urbanization.value;
+      }
+
+      const populationDesc = rn(pop * populationRate.value);
+
+      const provinceDesc = province ? ", " + pack.provinces[province].name : "";
+      const dataTip = biomesData.name[chartData.biome[k]] + 
+                      provinceDesc +
+                      ", " + pack.states[state].name +
+                      ", " + pack.religions[religion].name +
+                      ", " + pack.cultures[culture].name +
+                      " (height: " + chartData.height[k] + " " + hu + ", population " + populationDesc + ", cell " + chartData.cell[k] + ")";
 
       g.append("rect").attr("stroke", c).attr("fill", c).attr("x", x).attr("y", y).attr("width", xscale(1)).attr("height", 15).attr("data-tip", dataTip);
     }

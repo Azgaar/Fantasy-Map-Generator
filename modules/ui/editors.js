@@ -21,7 +21,8 @@ function clicked() {
   const p = d3.mouse(this);
   const i = findCell(p[0], p[1]);
 
-  if (parent.id === "rivers") editRiver();
+  if (grand.id === "emblems") editEmblem();
+  else if (parent.id === "rivers") editRiver();
   else if (grand.id === "routes") editRoute();
   else if (el.tagName === "tspan" && grand.parentNode.parentNode.id === "labels") editLabel();
   else if (grand.id === "burgLabels") editBurg();
@@ -123,8 +124,14 @@ function addBurg(point) {
 
   const temple = pack.states[state].form === "Theocracy";
   const population = Math.max((cells.s[cell] + cells.road[cell]) / 3 + i / 1000 + cell % 100 / 1000, .1);
+  const type = BurgsAndStates.getType(cell, false);
 
-  pack.burgs.push({name, cell, x, y, state, i, culture, feature, capital: 0, port: 0, temple, population});
+  // generate emblem
+  const coa = COA.generate(pack.states[state].coa, .25, null, type);
+  coa.shield = COA.getShield(culture, state);
+  COArenderer.add("burg", i, coa, x, y);
+
+  pack.burgs.push({name, cell, x, y, state, i, culture, feature, capital: 0, port: 0, temple, population, coa, type});
   cells.burg[cell] = i;
 
   const townSize = burgIcons.select("#towns").attr("size") || 0.5;
@@ -141,7 +148,7 @@ function moveBurgToGroup(id, g) {
   const label = document.querySelector("#burgLabels [data-id='" + id + "']");
   const icon = document.querySelector("#burgIcons [data-id='" + id + "']");
   const anchor = document.querySelector("#anchors [data-id='" + id + "']");
-  if (!label || !icon) {console.error("Cannot find label or icon elements"); return;}
+  if (!label || !icon) {ERROR && console.error("Cannot find label or icon elements"); return;}
 
   document.querySelector("#burgLabels > #"+g).appendChild(label);
   document.querySelector("#burgIcons > #"+g).appendChild(icon);
@@ -171,6 +178,13 @@ function removeBurg(id) {
   const cells = pack.cells, burg = pack.burgs[id];
   burg.removed = true;
   cells.burg[burg.cell] = 0;
+
+  if (burg.coa) {
+    const coaId = "burgCOA" + id;
+    if (document.getElementById(coaId)) document.getElementById(coaId).remove();
+    emblems.select(`#burgEmblems > use[data-i='${id}']`).remove();
+    delete burg.coa; // remove to save data
+  }
 }
 
 function toggleCapital(burg) {
@@ -544,14 +558,17 @@ function unfog(id) {
 }
 
 function getFileName(dataType) {
+  const formatTime = time => time < 10 ? "0" + time : time;
   const name = mapName.value;
   const type = dataType ? dataType + " " : "";
   const date = new Date();
-  const datFormatter = new Intl.DateTimeFormat("en", {month: "short", day: "numeric"});
-  const timeFormatter = new Intl.DateTimeFormat("ru", {hour: "numeric", minute: "numeric"});
-  const day = datFormatter.format(date).replace(" ", "");
-  const time = timeFormatter.format(date).replace(":", "-");
-  return name + " " + type + day + " " + time;
+  const year = date.getFullYear();
+  const month = formatTime(date.getMonth() + 1);
+  const day = formatTime(date.getDate());
+  const hour = formatTime(date.getHours());
+  const minutes = formatTime(date.getMinutes());
+  const dateString = [year, month, day, hour, minutes].join('-');
+  return name + " " + type + dateString;
 }
 
 function downloadFile(data, name, type = "text/plain") {
@@ -630,4 +647,17 @@ function selectIcon(initial, callback) {
     Apply: function() {callback(input.value||"⠀"); $(this).dialog("close")},
     Close: function() {callback(initial); $(this).dialog("close")}}
   });
+}
+
+// Calls the refresh functionality on all editors currently open.
+function refreshAllEditors() {
+  TIME && console.time('refreshAllEditors');
+  if (document.getElementById('culturesEditorRefresh').offsetParent) culturesEditorRefresh.click();
+  if (document.getElementById('biomesEditorRefresh').offsetParent) biomesEditorRefresh.click();
+  if (document.getElementById('diplomacyEditorRefresh').offsetParent) diplomacyEditorRefresh.click();
+  if (document.getElementById('provincesEditorRefresh').offsetParent) provincesEditorRefresh.click();
+  if (document.getElementById('religionsEditorRefresh').offsetParent) religionsEditorRefresh.click();
+  if (document.getElementById('statesEditorRefresh').offsetParent) statesEditorRefresh.click();
+  if (document.getElementById('zonesEditorRefresh').offsetParent) zonesEditorRefresh.click();
+  TIME && console.timeEnd('refreshAllEditors');
 }

@@ -54,7 +54,7 @@ function editReliefIcon() {
   }
 
   function updateReliefIconSelected() {
-    const type = elSelected.attr("data-type");
+    const type = elSelected.attr("href");
     const button = reliefIconsDiv.querySelector("svg[data-type='"+type+"']");
 
     reliefIconsDiv.querySelectorAll("svg.pressed").forEach(b => b.classList.remove("pressed"));
@@ -65,7 +65,7 @@ function editReliefIcon() {
   }
 
   function updateReliefSizeInput() {
-    const size = +elSelected.attr("data-size");
+    const size = +elSelected.attr("width");
     reliefSize.value = reliefSizeNumber.value = rn(size);
   }
 
@@ -146,14 +146,15 @@ function editReliefIcon() {
         const x = rn(cx-h, 2);
         const y = rn(cy-h, 2);
         const z = y + h * 2;
+        const s = rn(h*2, 2);
 
         let nth = 1;
         while (positions[nth] && z > positions[nth]) {nth++;}
 
         tree.add([cx, cy]);
         positions.push(z);
-        terrain.insert("use", ":nth-child("+nth+")").attr("xlink:href", type).attr("data-type", type)
-          .attr("x", x).attr("y", y).attr("data-size", h*2).attr("width", h*2).attr("height", h*2);
+        terrain.insert("use", ":nth-child("+nth+")").attr("href", type)
+          .attr("x", x).attr("y", y).attr("width", s).attr("height", s);
       });
 
     });
@@ -178,7 +179,7 @@ function editReliefIcon() {
 
     const r = +reliefRadiusNumber.value;
     const type = pressed.dataset.type;
-    const icons = type ? terrain.selectAll("use[data-type='"+type+"']") : terrain.selectAll("use");
+    const icons = type ? terrain.selectAll("use[href='"+type+"']") : terrain.selectAll("use");
     const tree = d3.quadtree();
     icons.each(function() {
       const x = +this.getAttribute("x") + this.getAttribute("width") / 2;
@@ -198,7 +199,7 @@ function editReliefIcon() {
     if (!reliefIndividual.classList.contains("pressed")) return;
 
     const shift = (size - +elSelected.attr("width")) / 2;
-    elSelected.attr("width", size).attr("height", size).attr("data-size", size);
+    elSelected.attr("width", size).attr("height", size);
     const x = +elSelected.attr("x"), y = +elSelected.attr("y");
     elSelected.attr("x", x-shift).attr("y", y-shift);
   }
@@ -217,7 +218,7 @@ function editReliefIcon() {
 
     if (reliefIndividual.classList.contains("pressed")) {
       const type = this.dataset.type;
-      elSelected.attr("xlink:href", type).attr("data-type", type);
+      elSelected.attr("href", type);
     }
   }
 

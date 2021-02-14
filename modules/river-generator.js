@@ -5,8 +5,8 @@
 }(this, (function () {'use strict';
 
   const generate = function(changeHeights = true) {
-    console.time('generateRivers');
-    Math.seedrandom(seed);
+    TIME && console.time('generateRivers');
+    Math.random = aleaPRNG(seed);
     const cells = pack.cells, p = cells.p, features = pack.features;
 
     // build distance field in cells from water (cells.t)
@@ -56,7 +56,7 @@
         //const min = cells.c[i][d3.scan(cells.c[i], (a, b) => h[a] - h[b])]; // downhill cell
         let min = cells.c[i][d3.scan(cells.c[i], (a, b) => h[a] - h[b])]; // downhill cell
 
-        // allow only one river can flow thought a lake
+        // allow only one river can flow through a lake
         const cf = features[cells.f[i]]; // current cell feature
         if (cf.river && cf.river !== cells.r[i]) {
           cells.fl[i] = 0;
@@ -126,17 +126,14 @@
         }
       }
 
-      // drawRivers
-      rivers.selectAll("path").remove();
-      rivers.selectAll("path").data(riverPaths).enter()
-        .append("path").attr("d", d => d[1]).attr("id", d => "river"+d[0])
-        .attr("data-width", d => d[2]).attr("data-increment", d => d[3]);
+      const html = riverPaths.map(r =>`<path id="river${r[0]}" d="${r[1]}" data-width="${r[2]}" data-increment="${r[3]}"/>`).join("");
+      rivers.html(html);
     }()
 
     // apply change heights as basic one
     if (changeHeights) cells.h = Uint8Array.from(h);
 
-    console.timeEnd('generateRivers');
+    TIME && console.timeEnd('generateRivers');
   }
 
   // depression filling algorithm (for a correct water flux modeling)
@@ -253,6 +250,7 @@
 
   const specify = function() {
     if (!pack.rivers.length) return;
+    Math.random = aleaPRNG(seed);
     const smallLength = pack.rivers.map(r => r.length||0).sort((a,b) => a-b)[Math.ceil(pack.rivers.length * .15)];
     const smallType = {"Creek":9, "River":3, "Brook":3, "Stream":1}; // weighted small river types
 

@@ -38,6 +38,7 @@ function editCultures() {
   function refreshCulturesEditor() {
     culturesCollectStatistics();
     culturesEditorAddLines();
+    drawCultureCenters();
   }
 
   function culturesCollectStatistics() {
@@ -491,9 +492,9 @@ function editCultures() {
     debug.select("#cultureCenters").style("display", "none");
 
     culturesEditor.querySelectorAll(".hide").forEach(el => el.classList.add("hidden"));
-    culturesHeader.querySelector("div[data-sortby='type']").style.left = "6.8em";
+    culturesHeader.querySelector("div[data-sortby='type']").style.left = "8.8em";
     culturesFooter.style.display = "none";
-    culturesHeader.querySelector("div[data-sortby='base']").style.marginLeft = "21px";
+    culturesHeader.querySelector("div[data-sortby='base']").style.marginLeft = "20px";
     body.querySelectorAll("div > input, select, span, svg").forEach(e => e.style.pointerEvents = "none");
     $("#culturesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg"}});
 
@@ -587,7 +588,7 @@ function editCultures() {
     document.getElementById("culturesManuallyButtons").style.display = "none";
 
     culturesEditor.querySelectorAll(".hide").forEach(el => el.classList.remove("hidden"));
-    culturesHeader.querySelector("div[data-sortby='type']").style.left = "15.8em";
+    culturesHeader.querySelector("div[data-sortby='type']").style.left = "18.6em";
     culturesFooter.style.display = "block";
     culturesHeader.querySelector("div[data-sortby='base']").style.marginLeft = "2px";
     body.querySelectorAll("div > input, select, span, svg").forEach(e => e.style.pointerEvents = "all");

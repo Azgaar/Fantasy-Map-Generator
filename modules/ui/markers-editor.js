@@ -203,7 +203,16 @@ function editMarker() {
 
   function changeMarkerSize() {
     const id = elSelected.attr("data-id");
-    document.querySelectorAll("use[data-id='"+id+"']").forEach(e => e.dataset.size = markerSize.value);
+    document.querySelectorAll("use[data-id='"+id+"']").forEach(e => {
+      const x = +e.dataset.x, y = +e.dataset.y;
+      const desired = e.dataset.size = +markerSize.value;
+      const size = Math.max(desired * 5 + 25 / scale, 1);
+
+      e.setAttribute("x", x - size / 2);
+      e.setAttribute("y", y - size / 2);
+      e.setAttribute("width", size);
+      e.setAttribute("height", size);
+    });
     invokeActiveZooming();
   }
 

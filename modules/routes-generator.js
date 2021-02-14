@@ -5,10 +5,10 @@
 }(this, (function () {'use strict';
 
   const getRoads = function() {
-    console.time("generateMainRoads");
+    TIME && console.time("generateMainRoads");
     const cells = pack.cells, burgs = pack.burgs.filter(b => b.i && !b.removed);
     const capitals = burgs.filter(b => b.capital);
-    if (capitals.length < 2) return []; // not enought capitals to build main roads
+    if (capitals.length < 2) return []; // not enough capitals to build main roads
     const paths = []; // array to store path segments
 
     for (const b of capitals) {
@@ -21,14 +21,14 @@
     }
 
     cells.i.forEach(i => cells.s[i] += cells.road[i] / 2); // add roads to suitability score
-    console.timeEnd("generateMainRoads");
+    TIME && console.timeEnd("generateMainRoads");
     return paths;
   }
 
   const getTrails = function() {
-    console.time("generateTrails");
+    TIME && console.time("generateTrails");
     const cells = pack.cells, burgs = pack.burgs.filter(b => b.i && !b.removed);
-    if (burgs.length < 2) return []; // not enought burgs to build trails
+    if (burgs.length < 2) return []; // not enough burgs to build trails
 
     let paths = []; // array to store path segments
     for (const f of pack.features.filter(f => f.land)) {
@@ -55,12 +55,12 @@
       });
     }
 
-    console.timeEnd("generateTrails");
+    TIME && console.timeEnd("generateTrails");
     return paths;
   }
 
   const getSearoutes = function() {
-    console.time("generateSearoutes");
+    TIME && console.time("generateSearoutes");
     const allPorts = pack.burgs.filter(b => b.port > 0 && !b.removed);
     if (allPorts.length < 2) return [];
 
@@ -93,12 +93,12 @@
 
     });
 
-    console.timeEnd("generateSearoutes");
+    TIME && console.timeEnd("generateSearoutes");
     return paths;
   }
 
   const draw = function(main, small, ocean) {
-    console.time("drawRoutes");
+    TIME && console.time("drawRoutes");
     const cells = pack.cells, burgs = pack.burgs;
     lineGen.curve(d3.curveCatmullRom.alpha(0.1));
 
@@ -133,7 +133,7 @@
         return [x, y];
       })), 1));
 
-    console.timeEnd("drawRoutes");
+    TIME && console.timeEnd("drawRoutes");
   }
 
   const regenerate = function() {

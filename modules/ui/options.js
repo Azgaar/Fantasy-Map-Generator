@@ -71,9 +71,29 @@ document.getElementById("options").querySelector("div.tab").addEventListener("cl
 
 // show popup with a list of Patreon supportes (updated manually, to be replaced with API call)
 function showSupporters() {
-  const supporters = "Aaron Meyer, Ahmad Amerih, AstralJacks, aymeric, Billy Dean Goehring, Branndon Edwards, Chase Mayers, Curt Flood, cyninge, Dino Princip, E.M. White, es, Fondue, Fritjof Olsson, Gatsu, Johan Fröberg, Jonathan Moore, Joseph Miranda, Kate, KC138, Luke Nelson, Markus Finster, Massimo Vella, Mikey, Nathan Mitchell, Paavi1, Pat, Ryan Westcott, Sasquatch, Shawn Spencer, Sizz_TV, Timothée CALLET, UTG community, Vlad Tomash, Wil Sisney, William Merriott, Xariun, Gun Metal Games, Scott Marner, Spencer Sherman, Valerii Matskevych, Alloyed Clavicle, Stewart Walsh, Ruthlyn Mollett (Javan), Benjamin Mair-Pratt, Diagonath, Alexander Thomas, Ashley Wilson-Savoury, William Henry, Preston Brooks, JOSHUA QUALTIERI, Hilton Williams, Katharina Haase, Hisham Bedri, Ian arless, Karnat, Bird, Kevin, Jessica Thomas, Steve Hyatt, Logicspren, Alfred García, Jonathan Killstring, John Ackley, Invad3r233, Norbert Žigmund, Jennifer, PoliticsBuff, _gfx_, Maggie, Connor McMartin, Jared McDaris, BlastWind, Franc Casanova Ferrer, Dead & Devil, Michael Carmody, Valerie Elise, naikibens220, Jordon Phillips, William Pucs, The Dungeon Masters, Brady R Rathbun, J, Shadow, Matthew Tiffany, Huw Williams, Joseph Hamilton, FlippantFeline, Tamashi Toh, kms, Stephen Herron, MidnightMoon, Whakomatic x, Barished, Aaron bateson, Brice Moss, Diklyquill, PatronUser, Michael Greiner, Steven Bennett, Jacob Harrington, Miguel C., Reya C., Giant Monster Games, Noirbard, Brian Drennen, Ben Craigie, Alex Smolin, Endwords, Joshua E Goodwin, SirTobit , Allen S. Rout, Allen Bull Bear, Pippa Mitchell, R K, G0atfather, Ryan Lege, Caner Oleas Pekgönenç, Bradley Edwards, Tertiary , Austin Miller, Jesse Holmes, Jan Dvořák, Marten F, Erin D. Smale, Maxwell Hill, Drunken_Legends, rob bee, Jesse Holmes, YYako, Detocroix";
-  alertMessage.innerHTML = "<ul style='column-count: 3; column-gap: 2em'>" + supporters.split(", ").sort().map(n => `<li>${n}</li>`).join("") + "</ul>";
-  $("#alert").dialog({resizable: false, title: "Patreon Supporters", width: "30vw", position: {my: "center", at: "center", of: "svg"}});
+  const supporters = `Aaron Meyer,Ahmad Amerih,AstralJacks,aymeric,Billy Dean Goehring,Branndon Edwards,Chase Mayers,Curt Flood,cyninge,Dino Princip,
+    E.M. White,es,Fondue,Fritjof Olsson,Gatsu,Johan Fröberg,Jonathan Moore,Joseph Miranda,Kate,KC138,Luke Nelson,Markus Finster,Massimo Vella,Mikey,
+    Nathan Mitchell,Paavi1,Pat,Ryan Westcott,Sasquatch,Shawn Spencer,Sizz_TV,Timothée CALLET,UTG community,Vlad Tomash,Wil Sisney,William Merriott,
+    Xariun,Gun Metal Games,Scott Marner,Spencer Sherman,Valerii Matskevych,Alloyed Clavicle,Stewart Walsh,Ruthlyn Mollett (Javan),Benjamin Mair-Pratt,
+    Diagonath,Alexander Thomas,Ashley Wilson-Savoury,William Henry,Preston Brooks,JOSHUA QUALTIERI,Hilton Williams,Katharina Haase,Hisham Bedri,Ian arless,
+    Karnat,Bird,Kevin,Jessica Thomas,Steve Hyatt,Logicspren,Alfred García,Jonathan Killstring,John Ackley,Invad3r233,Norbert Žigmund,Jennifer,
+    PoliticsBuff,_gfx_,Maggie,Connor McMartin,Jared McDaris,BlastWind,Franc Casanova Ferrer,Dead & Devil,Michael Carmody,Valerie Elise,naikibens220,
+    Jordon Phillips,William Pucs,The Dungeon Masters,Brady R Rathbun,J,Shadow,Matthew Tiffany,Huw Williams,Joseph Hamilton,FlippantFeline,Tamashi Toh,
+    kms,Stephen Herron,MidnightMoon,Whakomatic x,Barished,Aaron bateson,Brice Moss,Diklyquill,PatronUser,Michael Greiner,Steven Bennett,Jacob Harrington,
+    Miguel C.,Reya C.,Giant Monster Games,Noirbard,Brian Drennen,Ben Craigie,Alex Smolin,Endwords,Joshua E Goodwin,SirTobit ,Allen S. Rout,Allen Bull Bear,
+    Pippa Mitchell,R K,G0atfather,Ryan Lege,Caner Oleas Pekgönenç,Bradley Edwards,Tertiary ,Austin Miller,Jesse Holmes,Jan Dvořák,Marten F,Erin D. Smale,
+    Maxwell Hill,Drunken_Legends,rob bee,Jesse Holmes,YYako,Detocroix,Anoplexian,Hannah,Paul,Sandra Krohn,Lucid,Richard Keating,Allen Varney,Rick Falkvinge,
+    Seth Fusion,Adam Butler,Gus,StroboWolf,Sadie Blackthorne,Zewen Senpai,Dell McKnight,Oneiris,Darinius Dragonclaw Studios,Christopher Whitney,Rhodes HvZ,
+    Jeppe Skov Jensen,María Martín López,Martin Seeger,Annie Rishor,Aram Sabatés,MadNomadMedia,Eric Foley,Vito Martono,James H. Anthony,Kevin Cossutta,
+    Thirty-OneR ,ThatGuyGW ,Dee Chiu,MontyBoosh ,Achillain ,Jaden ,SashaTK,Steve Johnson,Eric Foley,Vito Martono,James H. Anthony,Kevin Cossutta,Thirty-OneR,
+    ThatGuyGW,Dee Chiu,MontyBoosh,Achillain,Jaden,SashaTK,Steve Johnson,Pierrick Bertrand,Jared Kennedy,Dylan Devenny,Kyle Robertson,Andrew Rostaing,Daniel Gill,
+    Char,Jack,Barna Csíkos,Ian Rousseau,Nicholas Grabstas,Tom Van Orden jr,Bryan Brake,Akylos,Riley Seaman,MaxOliver,Evan-DiLeo,Alex Debus,Joshua Vaught,
+    Kyle S,Eric Moore,Dean Dunakin,Uniquenameosaurus,WarWizardGames,Chance Mena,Jan Ka,Miguel Alejandro,Dalton Clark,Simon Drapeau,Radovan Zapletal,Jmmat6,
+    Justa Badge,Blargh Blarghmoomoo,Vanessa Anjos,Grant A. Murray,Akirsop,Rikard Wolff,Jake Fish,teco 47,Antiroo,Jakob Siegel,Guilherme Aguiar,Jarno Hallikainen`;
+
+  const array = supporters.replace(/(?:\r\n|\r|\n)/g, "").split(",").map(v => capitalize(v.trim())).sort();
+  alertMessage.innerHTML = "<ul style='column-count: 5; column-gap: 2em'>" + array.map(n => `<li>${n}</li>`).join("") + "</ul>";
+  $("#alert").dialog({resizable: false,title: "Patreon Supporters",width: "54vw",position: {my: "center",at: "center",of: "svg"}});
 }
 
 // Option listeners
@@ -95,12 +115,11 @@ optionsContent.addEventListener("input", function(event) {
   else if (id === "neutralOutput") neutralInput.value = value;
   else if (id === "manorsInput") changeBurgsNumberSlider(value);
   else if (id === "religionsInput") religionsOutput.value = value;
+  else if (id === "emblemShape") changeEmblemShape(value);
   else if (id === "uiSizeInput") uiSizeOutput.value = value;
   else if (id === "uiSizeOutput") changeUIsize(value);
   else if (id === "tooltipSizeInput" || id === "tooltipSizeOutput") changeTooltipSize(value);
   else if (id === "transparencyInput") changeDialogsTransparency(value);
-  else if (id === "pngResolutionInput") pngResolutionOutput.value = value;
-  else if (id === "pngResolutionOutput") pngResolutionInput.value = value;
 });
 
 optionsContent.addEventListener("change", function(event) {
@@ -109,6 +128,8 @@ optionsContent.addEventListener("change", function(event) {
   if (id === "zoomExtentMin" || id === "zoomExtentMax") changeZoomExtent(value);
   else if (id === "optionsSeed") generateMapWithSeed();
   else if (id === "uiSizeInput") changeUIsize(value);
+  else if (id === "yearInput") changeYear();
+  else if (id === "eraInput") changeEra();
 });
 
 optionsContent.addEventListener("click", function(event) {
@@ -120,6 +141,7 @@ optionsContent.addEventListener("click", function(event) {
   else if (id === "optionsEraRegenerate") regenerateEra();
   else if (id === "zoomExtentDefault") restoreDefaultZoomExtent();
   else if (id === "translateExtent") toggleTranslateExtent(event.target);
+  else if (id === "speakerTest") testSpeaker();
 });
 
 function mapSizeInputChange() {
@@ -140,6 +162,9 @@ function changeMapSize() {
   landmass.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
   oceanPattern.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
   oceanLayers.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
+  fogging.selectAll("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
+  defs.select("mask#fog > rect").attr("width", maxWidth).attr("height", maxHeight);
+  texture.select("image").attr("width", maxWidth).attr("height", maxHeight);
 
   fitScaleBar();
   if (window.fitLegendBox) fitLegendBox();
@@ -175,6 +200,30 @@ function toggleTranslateExtent(el) {
   else zoom.translateExtent([[0, 0], [graphWidth, graphHeight]]);
 }
 
+// add voice options
+const voiceInterval = setInterval(function() {
+  const voices = speechSynthesis.getVoices();
+  if (voices.length) clearInterval(voiceInterval); else return;
+
+  const select = document.getElementById("speakerVoice");
+  voices.forEach((voice, i) => {
+    select.options.add(new Option(voice.name, i, false));
+  });
+  if (stored("speakerVoice")) select.value = localStorage.getItem("speakerVoice"); // se voice to store
+  else select.value = voices.findIndex(voice => voice.lang === "en-US"); // or to first found English-US
+}, 1000);
+
+function testSpeaker() {
+  const text = `${mapName.value}, ${options.year} ${options.era}`;
+  const speaker = new SpeechSynthesisUtterance(text);
+  const voices = speechSynthesis.getVoices();
+  if (voices.length) {
+    const voiceId = +document.getElementById("speakerVoice").value;
+    speaker.voice = voices[voiceId];
+  }
+  speechSynthesis.speak(speaker);
+}
+
 function generateMapWithSeed() {
   if (optionsSeed.value == seed) {
     tip("The current map already has this seed", false, "error");
@@ -196,7 +245,7 @@ function showSeedHistoryDialog() {
   });
 }
 
-// generate map with historycal seed
+// generate map with historical seed
 function restoreSeed(id) {
   if (mapHistory[id].seed == seed) {
     tip("The current map is already generated with this seed", null, "error");
@@ -238,6 +287,17 @@ function changeCultureSet() {
   const max = culturesSet.selectedOptions[0].dataset.max;
   culturesInput.max = culturesOutput.max = max
   if (+culturesOutput.value > +max) culturesInput.value = culturesOutput.value = max;
+}
+
+function changeEmblemShape(value) {
+  const image = document.getElementById("emblemShapeImage");
+  const shapeEl = document.getElementById(value);
+  if (shapeEl) {
+    const shape = shapeEl.querySelector("path").getAttribute("d");
+    image.setAttribute("d", shape);
+  } else {
+    image.removeAttribute("d");
+  }
 }
 
 function changeStatesNumber(value) {
@@ -297,6 +357,7 @@ function applyStoredOptions() {
 
   for (let i=0; i < localStorage.length; i++) {
     const stored = localStorage.key(i), value = localStorage.getItem(stored);
+    if (stored === "speakerVoice") continue;
     const input = document.getElementById(stored+"Input") || document.getElementById(stored);
     const output = document.getElementById(stored+"Output");
     if (input) input.value = value;
@@ -328,7 +389,7 @@ function applyStoredOptions() {
 
 // randomize options if randomization is allowed (not locked or options='default')
 function randomizeOptions() {
-  Math.seedrandom(seed); // reset seed to initial one
+  Math.random = aleaPRNG(seed); // reset seed to initial one
   const randomize = new URL(window.location.href).searchParams.get("options") === "default"; // ignore stored options
 
   // 'Options' settings
@@ -358,6 +419,7 @@ function randomizeOptions() {
 
   // World settings
   generateEra();
+  changeEmblemShape(emblemShape.value); // change emblem shape image
 }
 
 // select heightmap template pseudo-randomly
@@ -381,14 +443,14 @@ function randomizeHeightmapTemplate() {
 // select culture set pseudo-randomly
 function randomizeCultureSet() {
   const sets = {
-    "world":       25,
-    "european":    20,
-    "oriental":    10,
-    "english":     10,
-    "antique":     5,
-    "highFantasy": 22,
-    "darkFantasy": 6,
-    "random":      2};
+    "world":       10,
+    "european":    10,
+    "oriental":    2,
+    "english":     5,
+    "antique":     3,
+    "highFantasy": 11,
+    "darkFantasy": 3,
+    "random":      1};
   culturesSet.value = rw(sets);
   changeCultureSet();
 }
@@ -397,7 +459,7 @@ function randomizeCultureSet() {
 function generateEra() {
   if (!stored("year")) yearInput.value = rand(100, 2000); // current year
   if (!stored("era")) eraInput.value = Names.getBaseShort(P(.7) ? 1 : rand(nameBases.length)) + " Era";
-  options.year = yearInput.value;
+  options.year = +yearInput.value;
   options.era = eraInput.value;
   options.eraShort = options.era.split(" ").map(w => w[0].toUpperCase()).join(""); // short name for era
 }
@@ -406,6 +468,18 @@ function regenerateEra() {
   unlock("era");
   options.era = eraInput.value = Names.getBaseShort(P(.7) ? 1 : rand(nameBases.length)) + " Era";
   options.eraShort = options.era.split(" ").map(w => w[0].toUpperCase()).join("");
+}
+
+function changeYear() {
+  if (!yearInput.value) return;
+  if (isNaN(+yearInput.value)) {tip("Current year should be a number", false, "error"); return;}
+  options.year = +yearInput.value;
+}
+
+function changeEra() {
+  if (!eraInput.value) return;
+  lock("era");
+  options.era = eraInput.value;
 }
 
 // remove all saved data from LocalStorage and reload the page
@@ -453,7 +527,7 @@ function saveGeoJSON() {
   $("#alert").dialog({title: "GIS data export", resizable: false, width: "35em", position: {my: "center", at: "center", of: "svg"},
     buttons: {
       Cells: saveGeoJSON_Cells,
-      Routes: saveGeoJSON_Roads,
+      Routes: saveGeoJSON_Routes,
       Rivers: saveGeoJSON_Rivers,
       Markers: saveGeoJSON_Markers,
       Close: function() {$(this).dialog("close");}
@@ -497,7 +571,7 @@ document.getElementById("mapToLoad").addEventListener("change", function() {
 
 // View mode
 viewMode.addEventListener("click", changeViewMode);
-function changeViewMode() {
+function changeViewMode(event) {
   const button = event.target;
   if (button.tagName !== "BUTTON") return;
   const pressed = button.classList.contains("pressed");

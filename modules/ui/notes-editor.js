@@ -5,6 +5,18 @@ function editNotes(id, name) {
   select.options.length = 0;
   for (const note of notes) {select.options.add(new Option(note.id, note.id));}
 
+  // initiate pell (html editor)
+  const editor = Pell.init({
+    element: document.getElementById("notesText"),
+    onChange: html => {
+      const id = document.getElementById("notesSelect").value;
+      const note = notes.find(note => note.id === id);
+      if (!note) return;
+      note.legend = html;
+      showNote(note);
+    }
+  });
+
   // select an object
   if (notes.length || id) {
     if (!id) id = notes[0].id;
@@ -17,17 +29,18 @@ function editNotes(id, name) {
     }
     select.value = id;
     notesName.value = note.name;
-    notesText.value = note.legend;
+    editor.content.innerHTML = note.legend;
+    showNote(note);
   } else {
-    const value = "There are no added notes. Click on element (e.g. label) and add a free text note";
-    document.getElementById("notesText").value = value;
+    editor.content.innerHTML = "There are no added notes. Click on element (e.g. label) and add a free text note";
     document.getElementById("notesName").value = "";
   }
 
   // open a dialog
   $("#notesEditor").dialog({
-    title: "Notes Editor", minWidth: "40em",
-    position: {my: "center", at: "center", of: "svg"}
+    title: "Notes Editor", minWidth: "40em", width: "50vw",
+    position: {my: "center", at: "center", of: "svg"},
+    close: () => notesText.innerHTML = ""
   });
 
   if (modules.editNotes) return;
@@ -36,18 +49,25 @@ function editNotes(id, name) {
   // add listeners
   document.getElementById("notesSelect").addEventListener("change", changeObject);
   document.getElementById("notesName").addEventListener("input", changeName);
-  document.getElementById("notesText").addEventListener("input", changeText);
+  document.getElementById("notesPin").addEventListener("click", () => options.pinNotes = !options.pinNotes);
+  document.getElementById("notesSpeak").addEventListener("click", () => speak(editor.content.innerHTML));
   document.getElementById("notesFocus").addEventListener("click", validateHighlightElement);
   document.getElementById("notesDownload").addEventListener("click", downloadLegends);
   document.getElementById("notesUpload").addEventListener("click", () => legendsToLoad.click());
   document.getElementById("legendsToLoad").addEventListener("change", function() {uploadFile(this, uploadLegends)});
   document.getElementById("notesRemove").addEventListener("click", triggerNotesRemove);
 
+  function showNote(note) {
+    document.getElementById("notes").style.display = "block";
+    document.getElementById("notesHeader").innerHTML = note.name;
+    document.getElementById("notesBody").innerHTML = note.legend;
+  }
+
   function changeObject() {
     const note = notes.find(note => note.id === this.value);
     if (!note) return;
     notesName.value = note.name;
-    notesText.value = note.legend;
+    editor.content.innerHTML = note.legend;
   }
 
   function changeName() {
@@ -55,13 +75,7 @@ function editNotes(id, name) {
     const note = notes.find(note => note.id === id);
     if (!note) return;
     note.name = this.value;
-  }
-
-  function changeText() {
-    const id = document.getElementById("notesSelect").value;
-    const note = notes.find(note => note.id === id);
-    if (!note) return;
-    note.legend = this.value;
+    showNote(note);
   }
 
   function validateHighlightElement() {
@@ -112,6 +126,7 @@ function editNotes(id, name) {
     notes.splice(index, 1);
     select.options.length = 0;
     if (!notes.length) {$("#notesEditor").dialog("close"); return;}
+    notesText.innerHTML = "";
     editNotes(notes[0].id, notes[0].name);
   }
 

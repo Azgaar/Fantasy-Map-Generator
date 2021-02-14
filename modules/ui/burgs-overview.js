@@ -456,7 +456,7 @@ function overviewBurgs() {
 
   function triggerAllBurgsRemove() {
     alertMessage.innerHTML = `Are you sure you want to remove all burgs except of capitals?
-      <br>To remove a capital you have to remove its state first`;
+      <br><i>To remove a capital you have to remove a state first</i>`;
     $("#alert").dialog({resizable: false, title: "Remove all burgs",
       buttons: {
         Remove: function() {
@@ -472,5 +472,4 @@ function overviewBurgs() {
     pack.burgs.filter(b => b.i && !b.capital).forEach(b => removeBurg(b.i));
     burgsOverviewAddLines();
   }
-
 }
