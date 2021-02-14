@@ -126,6 +126,7 @@ function editNotes(id, name) {
     notes.splice(index, 1);
     select.options.length = 0;
     if (!notes.length) {$("#notesEditor").dialog("close"); return;}
+    notesText.innerHTML = "";
     editNotes(notes[0].id, notes[0].name);
   }
 
