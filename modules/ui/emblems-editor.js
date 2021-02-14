@@ -150,7 +150,8 @@ function editEmblem(type, id, el) {
 
   function changeShape() {
     el.coa.shield = this.value;
-    document.getElementById(id).remove();
+    const coaEl = document.getElementById(id);
+    if (coaEl) coaEl.remove();
     COArenderer.trigger(id, el.coa);
   }
 
