@@ -419,7 +419,7 @@
       const hull = getHull(start, s.i, s.cells / 10);
       const points = [...hull].map(v => pack.vertices.p[v]);
       const delaunay = Delaunator.from(points);
-      const voronoi = Voronoi(delaunay, points, points.length);
+      const voronoi = new Voronoi(delaunay, points, points.length);
       const chain = connectCenters(voronoi.vertices, s.pole[1]);
       const relaxed = chain.map(i => voronoi.vertices.p[i]).filter((p, i) => i%15 === 0 || i+1 === chain.length);
       paths.push([s.i, relaxed]);

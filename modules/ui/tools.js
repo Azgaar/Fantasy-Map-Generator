@@ -73,12 +73,7 @@ function processFeatureRegeneration(event, button) {
 }
 
 function regenerateRivers() {
-  elevateLakes();
   Rivers.generate();
-  for (const i of pack.cells.i) {
-    const f = pack.features[pack.cells.f[i]]; // feature
-    if (f.group === "freshwater") pack.cells.h[i] = 19; // de-elevate lakes
-  }
   Rivers.specify();
   if (!layerIsOn("toggleRivers")) toggleRivers();
 }
