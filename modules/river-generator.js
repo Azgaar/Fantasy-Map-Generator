@@ -6,7 +6,7 @@
 
   const generate = function(changeHeights = true) {
     TIME && console.time('generateRivers');
-    Math.seedrandom(seed);
+    Math.random = aleaPRNG(seed);
     const cells = pack.cells, p = cells.p, features = pack.features;
 
     // build distance field in cells from water (cells.t)
@@ -250,7 +250,7 @@
 
   const specify = function() {
     if (!pack.rivers.length) return;
-    Math.seedrandom(seed);
+    Math.random = aleaPRNG(seed);
     const smallLength = pack.rivers.map(r => r.length||0).sort((a,b) => a-b)[Math.ceil(pack.rivers.length * .15)];
     const smallType = {"Creek":9, "River":3, "Brook":3, "Stream":1}; // weighted small river types
 

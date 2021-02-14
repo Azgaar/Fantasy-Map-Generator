@@ -97,7 +97,8 @@ function recalculatePopulation() {
 }
 
 function regenerateStates() {
-  Math.seedrandom(Math.floor(Math.random() * 1e9)); // new random seed
+  const localSeed = Math.floor(Math.random() * 1e9); // new random seed
+  Math.random = aleaPRNG(localSeed);
   const burgs = pack.burgs.filter(b => b.i && !b.removed);
   if (!burgs.length) {
     tip("No burgs to generate states. Please create burgs first", false, "error");

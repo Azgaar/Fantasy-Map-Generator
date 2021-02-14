@@ -389,7 +389,7 @@ function applyStoredOptions() {
 
 // randomize options if randomization is allowed (not locked or options='default')
 function randomizeOptions() {
-  Math.seedrandom(seed); // reset seed to initial one
+  Math.random = aleaPRNG(seed); // reset seed to initial one
   const randomize = new URL(window.location.href).searchParams.get("options") === "default"; // ignore stored options
 
   // 'Options' settings

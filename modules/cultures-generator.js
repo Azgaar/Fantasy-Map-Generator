@@ -388,14 +388,9 @@
           if (cells.s[e] > 0) cells.culture[e] = c; // assign culture to populated cell
           cost[e] = totalCost;
           queue.queue({e, p:totalCost, c});
-
-          //debug.append("text").attr("x", (cells.p[n][0]+cells.p[e][0])/2 - 1).attr("y", (cells.p[n][1]+cells.p[e][1])/2 - 1).text(rn(totalCost-p)).attr("font-size", .8);
-          //const points = [cells.p[n][0], cells.p[n][1], (cells.p[n][0]+cells.p[e][0])/2, (cells.p[n][1]+cells.p[e][1])/2, cells.p[e][0], cells.p[e][1]];
-          //debug.append("polyline").attr("points", points.toString()).attr("marker-mid", "url(#arrow)").attr("opacity", .6);
         }
       });
     }
-    //debug.selectAll(".text").data(cost).enter().append("text").attr("x", (d, e) => cells.p[e][0]-1).attr("y", (d, e) => cells.p[e][1]-1).text(d => d ? rn(d) : "").attr("font-size", 2);
     TIME && console.timeEnd('expandCultures');
   }
 

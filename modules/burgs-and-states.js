@@ -910,7 +910,7 @@
   const generateProvinces = function(regenerate) {
     TIME && console.time("generateProvinces");
     const localSeed = regenerate ? Math.floor(Math.random() * 1e9).toString() : seed;
-    Math.seedrandom(localSeed);
+    Math.random = aleaPRNG(localSeed);
 
     const cells = pack.cells, states = pack.states, burgs = pack.burgs;
     const provinces = pack.provinces = [0];
@@ -928,7 +928,7 @@
     }
 
     // generate provinces for a selected burgs
-    Math.seedrandom(localSeed);
+    Math.random = aleaPRNG(localSeed);
     states.forEach(s => {
       s.provinces = [];
       if (!s.i || s.removed) return;

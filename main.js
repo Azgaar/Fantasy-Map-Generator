@@ -602,7 +602,7 @@ function generateSeed() {
   else if (optionsSeed.value && optionsSeed.value != seed) seed = optionsSeed.value;
   else seed = Math.floor(Math.random() * 1e9).toString();
   optionsSeed.value = seed;
-  Math.seedrandom(seed);
+  Math.random = aleaPRNG(seed);
 }
 
 // Place points to calculate Voronoi diagram
@@ -636,7 +636,7 @@ function calculateVoronoi(graph, points) {
 // Mark features (ocean, lakes, islands)
 function markFeatures() {
   TIME && console.time("markFeatures");
-  Math.seedrandom(seed); // restart Math.random() to get the same result on heightmap edit in Erase mode
+  Math.random = aleaPRNG(seed); // restart Math.random() to get the same result on heightmap edit in Erase mode
   const cells = grid.cells, heights = grid.cells.h;
   cells.f = new Uint16Array(cells.i.length); // cell feature number
   cells.t = new Int8Array(cells.i.length); // cell type: 1 = land coast; -1 = water near coast;

@@ -475,7 +475,7 @@ function toggleIce(event) {
 function drawIce() {
   const cells = grid.cells, vertices = grid.vertices, n = cells.i.length, temp = cells.temp, h = cells.h;
   const used = new Uint8Array(cells.i.length);
-  Math.seedrandom(seed);
+  Math.random = aleaPRNG(seed);
 
   const shieldMin = -6; // max temp to form ice shield (glacier)
   const icebergMax = 2; // max temp to form an iceberg
