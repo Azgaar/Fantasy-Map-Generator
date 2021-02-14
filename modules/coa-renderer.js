@@ -967,8 +967,9 @@
     return fetchedCharges.join("");
   }
 
+  const url = PRODUCTION ? "https://azgaar.github.io/Armoria/charges/" : "http://armoria.herokuapp.com/charges/";
   async function fetchCharge(charge, id) {
-    const fetched = fetch("https://azgaar.github.io/Armoria/charges/" + charge + ".svg").then(res => {
+    const fetched = fetch(url + charge + ".svg").then(res => {
         if (res.ok) return res.text();
         else throw new Error("Cannot fetch charge");
       }).then(text => {

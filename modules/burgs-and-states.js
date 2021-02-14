@@ -88,8 +88,8 @@
         const expansionism = rn(Math.random() * powerInput.value + 1, 1);
         const basename = b.name.length < 9 && b.cell%5 === 0 ? b.name : Names.getCultureShort(b.culture);
         const name = Names.getState(basename, b.culture);
-        const nomadic = [1, 2, 3, 4].includes(cells.biome[b.cell]);
-        const type = nomadic ? "Nomadic" : cultures[b.culture].type === "Nomadic" ? "Generic" : cultures[b.culture].type;
+        const type = cultures[b.culture].type;
+
         const coa = COA.generate(null, null, null, type);
         coa.shield = COA.getShield(b.culture, null);
         states.push({i, color: colors[i-1], name, expansionism, capital: i, type, center: b.cell, culture: b.culture, coa});
@@ -185,9 +185,9 @@
       if (b.capital) kinship += .1;
       else if (b.port) kinship -= .1;
       if (b.culture !== state.culture) kinship -= .25;
-      b.type = getBurgType(b, i);
+      b.type = getType(i, b.port);
       const type = b.capital && P(.2) ? "Capital" : b.type === "Generic" ? "City" : b.type;
-      b.coa = COA.generate(stateCOA, kinship, null, type === "Generic" ? null : type);
+      b.coa = COA.generate(stateCOA, kinship, null, type);
       b.coa.shield = COA.getShield(b.culture, b.state);
     }
 
@@ -202,10 +202,10 @@
     TIME && console.timeEnd("specifyBurgs");
   }
 
-  const getBurgType = function(b, i) {
+  const getType = function(i, port) {
     const cells = pack.cells;
-    if (b.port) return "Naval";
-    if (cells.haven[i] && pack.features[cells.f[cells.haven[i]]].type === "lake") return "River";
+    if (port) return "Naval";
+    if (cells.haven[i] && pack.features[cells.f[cells.haven[i]]].type === "lake") return "Lake";
     if (cells.h[i] > 60) return "Highland";
     if (cells.r[i] && cells.r[i].length > 100 && cells.r[i].length >= pack.rivers[0].length) return "River";
     if ([1, 2, 3, 4].includes(cells.biome[i])) return "Nomadic";
@@ -952,7 +952,8 @@
         const fullName = name + " " + formName;
         const color = getMixedColor(s.color);
         const kinship = nameByBurg ? .8 : .4;
-        const coa = COA.generate(stateBurgs[i].coa, kinship, null, burg.port ? "Naval" : null);
+        const type = getType(center, burg.port);
+        const coa = COA.generate(stateBurgs[i].coa, kinship, null, type);
         coa.shield = COA.getShield(c, s.i);
         provinces.push({i:province, state:s.i, center, burg, name, formName, fullName, color, coa});
       }
@@ -1049,8 +1050,8 @@
         const color = getMixedColor(s.color);
         const dominion = colony ? P(.95) : singleIsle || isleGroup ? P(.7) : P(.3);
         const kinship = dominion ? 0 : .4;
-        const naval = singleIsle || !isleGroup || burgs[burg]?.port;
-        const coa = COA.generate(s.coa, kinship, dominion, naval ? "Naval" : null);
+        const type = getType(center, burgs[burg]?.port);
+        const coa = COA.generate(s.coa, kinship, dominion, type);
         coa.shield = COA.getShield(c, s.i);
         provinces.push({i:province, state:s.i, center, burg, name, formName, fullName, color, coa});
         s.provinces.push(province);
@@ -1080,7 +1081,7 @@
   }
 
   return {generate, expandStates, normalizeStates, assignColors,
-    drawBurgs, specifyBurgs, defineBurgFeatures, drawStateLabels, collectStatistics,
+    drawBurgs, specifyBurgs, defineBurgFeatures, getType, drawStateLabels, collectStatistics,
     generateCampaigns, generateDiplomacy, defineStateForms, getFullName, generateProvinces, updateCultures};
 
 })));

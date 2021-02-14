@@ -167,7 +167,7 @@ function editEmblem(type, id, el) {
     }
 
     const shield = el.coa.shield || COA.getShield(el.culture || parent?.culture || 0, el.state);
-    el.coa = COA.generate(parent ? parent.coa : null);
+    el.coa = COA.generate(parent ? parent.coa : null, .3, .1, null);
     el.coa.shield = shield;
     emblemShapeSelector.disabled = false;
     emblemShapeSelector.value = el.coa.shield;

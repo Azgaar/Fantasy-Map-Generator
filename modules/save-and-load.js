@@ -1073,6 +1073,14 @@ function parseLoadedData(data) {
         localStorage.removeItem("styleGloom");
         localStorage.removeItem("styleAncient");
         localStorage.removeItem("styleMonochrome");
+
+        // v 1.5 added burg type value
+        pack.burgs.forEach(burg => {
+          if (!burg.i || burg.removed) return;
+          burg.type = BurgsAndStates.getType(burg.cell, burg.port);
+        });
+
+        BurgsAndStates.getType(cell, false);
       }
 
     }()

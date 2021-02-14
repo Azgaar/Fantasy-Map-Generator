@@ -205,7 +205,7 @@
     const division = divisioned ? parent?.division && P(kinship - .1) ? parent.division.division : rw(divisions.variants) : null;
     if (charge) charge = 
       parent?.charges && P(kinship - .1) ? parent.charges[0].charge : 
-      type && type !== "Generic" && P(.3) ? rw(charges[type]) : 
+      type && type !== "Generic" && P(.2) ? rw(charges[type]) : 
       selectCharge();
 
     if (division) {

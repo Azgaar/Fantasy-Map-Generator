@@ -844,7 +844,8 @@ function editStates() {
     const color = getRandomColor();
 
     // generate emblem
-    const coa = COA.generate(burgs[burg].coa, .4);
+    const cultureType = pack.cultures[culture].type;
+    const coa = COA.generate(burgs[burg].coa, .4, null, cultureType);
     coa.shield = COA.getShield(culture, null);
 
     // update diplomacy and reverse relations

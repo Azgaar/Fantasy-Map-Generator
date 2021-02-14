@@ -193,11 +193,6 @@ function editProvinces() {
     openPicker(currentFill, callback);
   }
 
-  function editCOA(p) {
-    const coa = COA.toString(pack.provinces[p].coa);
-    openURL("http://azgaar.github.io/Armoria/?coa=" + coa);
-  }
-
   function capitalZoomIn(p) {
     const capital = pack.provinces[p].burg;
     const l = burgLabels.select("[data-id='" + capital + "']");
@@ -780,7 +775,8 @@ function editProvinces() {
     // generate emblem
     const kinship = burg ? .8 : .4;
     const parent = burg ? pack.burgs[burg].coa : pack.states[state].coa;
-    const coa = COA.generate(parent, kinship);
+    const type = BurgsAndStates.getType(center, parent.port);
+    const coa = COA.generate(parent, kinship, P(.1), type);
     coa.shield = COA.getShield(c, state);
     COArenderer.add("province", province, coa, point[0], point[1]);
 
