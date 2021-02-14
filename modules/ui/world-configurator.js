@@ -45,7 +45,6 @@ function editWorld() {
     updateGlobePosition();
     calculateTemperatures();
     generatePrecipitation();
-    elevateLakes();
     const heights = new Uint8Array(pack.cells.h);
     Rivers.generate();
     Rivers.specify();
