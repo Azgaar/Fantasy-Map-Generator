@@ -55,25 +55,9 @@
       c.origin = 0;
       c.code = getCode(c.name);
       cells.culture[cell] = i+1;
-      if (emblemShape === "random") c.shield = getRandomShiled();
+      if (emblemShape === "random") c.shield = getRandomShield();
       else if (emblemShape !== "culture" && emblemShape !== "state") c.shield = emblemShape;
     });
-
-    function getRandomShiled() {
-      const shields = {
-        types: {basic: 10, regional: 2, historical: 1, specific: 1, banner: 1, simple: 2, fantasy: 1, middleEarth: 0},
-        basic: {heater: 12, spanish: 6, french: 1},
-        regional: {horsehead: 1, horsehead2: 1, polish: 1, hessen: 1, swiss: 1},
-        historical: {boeotian: 1, roman: 2, kite: 1, oldFrench: 5, renaissance: 2, baroque: 2},
-        specific: {targe: 1, targe2: 0, pavise: 5, wedged: 10},
-        banner: {flag: 1, pennon: 0, guidon: 0, banner: 0, dovetail: 1, gonfalon: 5, pennant: 0},
-        simple: {round: 12, oval: 6, vesicaPiscis: 1, square: 1, diamond: 2, no: 0},
-        fantasy: {fantasy1: 2, fantasy2: 2, fantasy3: 1, fantasy4: 1, fantasy5: 3},
-        middleEarth: {noldor: 1, gondor: 1, easterling: 1, erebor: 1, ironHills: 1, urukHai: 1, moriaOrc: 1}
-      }
-      const type = rw(shields.types);
-      return rw(shields[type]);
-    }
 
     function placeCenter(v) {
       let c, spacing = (graphWidth + graphHeight) / 2 / count;
@@ -161,7 +145,14 @@
     const code = getCode(name);
     const i = pack.cultures.length;
     const color = d3.color(d3.scaleSequential(d3.interpolateRainbow)(Math.random())).hex();
-    pack.cultures.push({name, color, base, center, i, expansionism:1, type:"Generic", cells:0, area:0, rural:0, urban:0, origin:0, code});
+
+    // define emblem shape
+    const emblemShape = document.getElementById("emblemShape").value;
+    let shield = culture.shield;
+    if (emblemShape === "random") shield = getRandomShield();
+    else if (emblemShape !== "culture" && emblemShape !== "state") shield = emblemShape;
+
+    pack.cultures.push({name, color, base, center, i, expansionism:1, type:"Generic", cells:0, area:0, rural:0, urban:0, origin:0, code, shield});
   }
 
   const getDefault = function(count) {
@@ -428,6 +419,22 @@
     return 0;
   }
 
-  return {generate, add, expand, getDefault};
+  const getRandomShield = function() {
+    const shields = {
+      types: {basic: 10, regional: 2, historical: 1, specific: 1, banner: 1, simple: 2, fantasy: 1, middleEarth: 0},
+      basic: {heater: 12, spanish: 6, french: 1},
+      regional: {horsehead: 1, horsehead2: 1, polish: 1, hessen: 1, swiss: 1},
+      historical: {boeotian: 1, roman: 2, kite: 1, oldFrench: 5, renaissance: 2, baroque: 2},
+      specific: {targe: 1, targe2: 0, pavise: 5, wedged: 10},
+      banner: {flag: 1, pennon: 0, guidon: 0, banner: 0, dovetail: 1, gonfalon: 5, pennant: 0},
+      simple: {round: 12, oval: 6, vesicaPiscis: 1, square: 1, diamond: 2, no: 0},
+      fantasy: {fantasy1: 2, fantasy2: 2, fantasy3: 1, fantasy4: 1, fantasy5: 3},
+      middleEarth: {noldor: 1, gondor: 1, easterling: 1, erebor: 1, ironHills: 1, urukHai: 1, moriaOrc: 1}
+    }
+    const type = rw(shields.types);
+    return rw(shields[type]);
+  }
+
+  return {generate, add, expand, getDefault, getRandomShield};
 
 })));

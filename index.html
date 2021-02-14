@@ -1107,8 +1107,67 @@
               <output id="religionsOutput" data-stored="religions" value="auto"></output>
             </td>
           </tr>
+        </table>
 
-          <tr data-tip="Select emblem shape to be applied on generation. Can be set indivudually in Emblem editor">
+        <p data-tip="Tool settings that don't affect maps. Changes are getting applied immediately">Generator settings:</p>
+        <table>
+          <tr data-tip="Set what Generator should do on opening">
+            <td></td>
+            <td>Onload behavior</td>
+            <td>
+              <select id="onloadMap" data-stored="onloadMap">
+                <option value="random" selected>Generate random map</option>
+                <option value="saved">Open last saved map</option>
+              </select>
+            </td>
+            <td></td>
+          </tr>
+
+          <tr data-tip="Set user interface size. Please note browser zoom also affects interface size (Ctrl + or Ctrl - to change)">
+            <td></td>
+            <td>Interface size</td>
+            <td>
+              <input id="uiSizeInput" data-stored="uiSize" type="range" min=.6 max=3 step=.1 value=1>
+            </td>
+            <td>
+              <input id="uiSizeOutput" data-stored="uiSize" type="number" min=.6 max=3 step=.1 value=1>
+            </td>
+          </tr>
+
+          <tr data-tip="Set tooltip size">
+            <td></td>
+            <td>Tooltip size</td>
+            <td>
+              <input id="tooltipSizeInput" data-stored="tooltipSize" type="range" min=4 max=32 value=14>
+            </td>
+            <td>
+              <input id="tooltipSizeOutput" data-stored="tooltipSize" type="number" min=4 max=32 value=14>
+            </td>
+          </tr>
+
+          <tr data-tip="Set dialog and tool windows transparency">
+            <td></td>
+            <td>Transparency</td>
+            <td>
+              <input id="transparencyInput" data-stored="transparency" type="range" min=0 max=100 value=15>
+            </td>
+            <td>
+              <input id="transparencyOutput" data-stored="transparency" type="number" min=0 max=100 value=15>
+            </td>
+          </tr>
+
+          <tr data-tip="Select speech synthesis voice to pronounce generated names">
+            <td></td>
+            <td>Speaker voice</td>
+            <td>
+              <select id="speakerVoice" data-stored="speakerVoice"></select>
+            </td>
+            <td>
+              <span id="speakerTest" data-tip="Click to test the voice" style="cursor: pointer">🔊</span>
+            </td>
+          </tr>
+
+          <tr data-tip="Select emblem shape. Can be changed indivudually in Emblem editor">
             <td>
               <i data-locked=0 id="lock_emblemShape" class="icon-lock"></i>
             </td>
@@ -1182,65 +1241,6 @@
             </td>
             <td>
               <svg class="emblemShapePreview" viewBox="0 0 200 210"><path id="emblemShapeImage"/></svg>
-            </td>
-          </tr>
-        </table>
-
-        <p data-tip="Tool settings that don't affect maps. Changes are getting applied immediately">Generator settings:</p>
-        <table>
-          <tr data-tip="Set what Generator should do on opening">
-            <td></td>
-            <td>Onload behavior</td>
-            <td>
-              <select id="onloadMap" data-stored="onloadMap">
-                <option value="random" selected>Generate random map</option>
-                <option value="saved">Open last saved map</option>
-              </select>
-            </td>
-            <td></td>
-          </tr>
-
-          <tr data-tip="Set user interface size. Please note browser zoom also affects interface size (Ctrl + or Ctrl - to change)">
-            <td></td>
-            <td>Interface size</td>
-            <td>
-              <input id="uiSizeInput" data-stored="uiSize" type="range" min=.6 max=3 step=.1 value=1>
-            </td>
-            <td>
-              <input id="uiSizeOutput" data-stored="uiSize" type="number" min=.6 max=3 step=.1 value=1>
-            </td>
-          </tr>
-
-          <tr data-tip="Set tooltip size">
-            <td></td>
-            <td>Tooltip size</td>
-            <td>
-              <input id="tooltipSizeInput" data-stored="tooltipSize" type="range" min=4 max=32 value=14>
-            </td>
-            <td>
-              <input id="tooltipSizeOutput" data-stored="tooltipSize" type="number" min=4 max=32 value=14>
-            </td>
-          </tr>
-
-          <tr data-tip="Set dialog and tool windows transparency">
-            <td></td>
-            <td>Transparency</td>
-            <td>
-              <input id="transparencyInput" data-stored="transparency" type="range" min=0 max=100 value=15>
-            </td>
-            <td>
-              <input id="transparencyOutput" data-stored="transparency" type="number" min=0 max=100 value=15>
-            </td>
-          </tr>
-
-          <tr data-tip="Select speech synthesis voice to pronounce generated names">
-            <td></td>
-            <td>Speaker voice</td>
-            <td>
-              <select id="speakerVoice" data-stored="speakerVoice"></select>
-            </td>
-            <td>
-              <span id="speakerTest" data-tip="Click to test the voice" style="cursor: pointer">🔊</span>
             </td>
           </tr>
 

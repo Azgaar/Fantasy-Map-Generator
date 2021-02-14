@@ -1051,6 +1051,6 @@
     if (layerIsOn("toggleEmblems")) trigger(id, coa);
   }
 
-  return {trigger, add};
+  return {trigger, add, shieldPaths};
 
 })));
