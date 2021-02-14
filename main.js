@@ -1,10 +1,5 @@
-// Fantasy Map Generator main script
-// Azgaar (azgaar.fmg@yandex.by). Minsk, 2017-2019
+// Azgaar (azgaar.fmg@yandex.com). Minsk, 2017-2021. MIT License
 // https://github.com/Azgaar/Fantasy-Map-Generator
-// MIT License
-
-// I don't mind of any help with programming.
-// See also https://github.com/Azgaar/Fantasy-Map-Generator/issues/153
 
 "use strict";
 const version = "1.5"; // generator version
@@ -343,27 +338,21 @@ function applyDefaultBiomesSystem() {
 }
 
 function showWelcomeMessage() {
-  const post = link("https://www.reddit.com/r/FantasyMapGenerator/comments/ft5b41/update_new_version_is_published_into_the_battle_v14/", "Main changes:"); // announcement on Reddit
+  const post = link("https://www.reddit.com/r/FantasyMapGenerator/comments/ft5b41/update_v15/", "Main changes:"); // announcement on Reddit
   const changelog = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "previous version");
   const reddit = link("https://www.reddit.com/r/FantasyMapGenerator", "Reddit community");
   const discord = link("https://discordapp.com/invite/X7E84HU", "Discord server");
   const patreon = link("https://www.patreon.com/azgaar", "Patreon");
-  const desktop = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#is-there-a-desktop-version", "desktop application");
 
   alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
-
     <ul>${post}
       <li>Emblems generation</li>
-      <li>Emblem editor</li>
+      <li>Emblem editor integrated with ${link("https://azgaar.github.io/Armoria", "Armoria")}</li>
       <li>Burg editor screen update</li>
       <li>Speak name functionality</li>
     </ul>
-
-    <p>You can can also download a ${desktop}.</p>
-
     <p>Join our ${discord} and ${reddit} to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
-
     <span>Thanks for all supporters on ${patreon}!</i></span>`;
 
   $("#alert").dialog(
