@@ -1800,9 +1800,9 @@
     <div id="burgEditor" class="dialog" style="display: none">
 
       <div id="burgBody" style="padding-bottom: .3em">
-        <svg viewBox="0 0 200 200" width="11em" height="11em"><use id="burgEmblem"></use></svg>
+        <svg viewBox="0 0 200 200" width="14em" height="14em"><use id="burgEmblem"></use></svg>
         <div style="float: right">
-          <div id="burgProvinceAndState" style="padding: .1em; font-style: italic"></div>
+          <div id="burgProvinceAndState" style="padding: .1em; font-style: italic; max-width: 16em"></div>
 
           <div style="padding: .1em">
             <div class="label">Name:</div>
@@ -1811,15 +1811,28 @@
             <span id="burgNameReRandom" data-tip="Generate random name for the burg" class="icon-globe pointer"></span>
           </div>
 
-          <div style="padding: .1em">
+          <div style="padding: .1em" data-tip="Select burg type. Type slightly affects emblem generation">
+            <div class="label">Type:</div>
+            <select id="burgType" style="width: 8em">
+              <option value="Generic">Generic</option>
+              <option value="River">River</option>
+              <option value="Lake">Lake</option>
+              <option value="Naval">Naval</option>
+              <option value="Nomadic">Nomadic</option>
+              <option value="Hunting">Hunting</option>
+              <option value="Highland">Highland</option>
+            </select>
+          </div>
+
+          <div style="padding: .1em" data-tip="Select dominant culture">
             <div class="label">Culture:</div>
-            <select id="burgCulture" data-tip="Select dominant culture" style="width: 8em"></select>
+            <select id="burgCulture" style="width: 8em"></select>
             <span id="burgNameReCulture" data-tip="Generate culture-specific name for the burg" class="icon-book pointer"></span>
           </div>
 
-          <div style="padding: .1em">
+          <div style="padding: .1em" data-tip="Set burg population">
             <div class="label">Population:</div>
-            <input id="burgPopulation" data-tip="Set burg population" type="number" min=0 step=1 style="width: 8em">
+            <input id="burgPopulation" type="number" min=0 step=1 style="width: 8em">
           </div>
 
           <div style="padding: .1em">

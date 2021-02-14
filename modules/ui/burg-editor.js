@@ -32,6 +32,7 @@ function editBurg(id) {
 
   document.getElementById("burgName").addEventListener("input", changeName);
   document.getElementById("burgNameReRandom").addEventListener("click", generateNameRandom);
+  document.getElementById("burgType").addEventListener("input", changeType);
   document.getElementById("burgCulture").addEventListener("input", changeCulture);
   document.getElementById("burgNameReCulture").addEventListener("click", generateNameCulture);
   document.getElementById("burgPopulation").addEventListener("change", changePopulation);
@@ -58,6 +59,7 @@ function editBurg(id) {
     document.getElementById("burgProvinceAndState").innerHTML = provinceName + stateName;
 
     document.getElementById("burgName").value = b.name;
+    document.getElementById("burgType").value = b.type || "Generic";
     document.getElementById("burgPopulation").value = rn(b.population * populationRate.value * urbanization.value);
     document.getElementById("burgEditAnchorStyle").style.display = +b.port ? "inline-block" : "none";
 
@@ -258,6 +260,11 @@ function editBurg(id) {
     const base = rand(nameBases.length-1);
     burgName.value = Names.getBase(base);
     changeName();
+  }
+
+  function changeType() {
+    const id = +elSelected.attr("data-id");
+    pack.burgs[id].type = this.value;
   }
 
   function changeCulture() {
