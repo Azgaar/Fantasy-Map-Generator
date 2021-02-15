@@ -757,13 +757,13 @@
 
   const templates = {
     // divisions
-    perFess: line => `<path d="${line}"/><rect x="0" y="115" width="200" height="85"/>`,
-    perPale: line => `<path d="${line}" transform="rotate(-90)" transform-origin="center"/><rect x="115" y="0" width="85" height="200"/>`,
-    perBend: line => `<path d="${line}" transform="rotate(45) scale(1.1)" transform-origin="center"/><rect x="0" y="115" width="200" height="85" transform="rotate(45) scale(1.1)" transform-origin="center"/>`,
-    perBendSinister: line => `<path d="${line}" transform="rotate(-45) scale(1.1)" transform-origin="center"/><rect x="0" y="115" width="200" height="85" transform="rotate(-45) scale(1.1)" transform-origin="center"/>`,
+    perFess: line => `<path d="${line}"/><rect x="0" y="114.5" width="200" height="86"/>`,
+    perPale: line => `<path d="${line}" transform="translate(.5 0) rotate(-90)" transform-origin="center"/><rect x="114.75" y="0" width="85.5" height="200"/>`,
+    perBend: line => `<path d="${line}" transform="translate(-.5 0) rotate(45) scale(1.1)" transform-origin="center"/><rect x="0" y="114.5" width="200" height="86" transform="rotate(45) scale(1.1)" transform-origin="center"/>`,
+    perBendSinister: line => `<path d="${line}" transform="translate(.5 0) rotate(-45) scale(1.1)" transform-origin="center"/><rect x="0" y="114.5" width="200" height="86" transform="rotate(-45) scale(1.1)" transform-origin="center"/>`,
     perChevron: line => `<path d="${line}" transform="translate(-70.7,70.7) rotate(-45) scale(-1,1)" transform-origin="center"/><polygon points="20,200 100,120 180,200"/><path d="${line}" transform="translate(70.7,70.7) rotate(45)" transform-origin="center"/>`,
-    perChevronReversed: line => `<path d="${line}" transform="translate(-70.7,-70.7) rotate(225) scale(1,1)" transform-origin="center"/><polygon points="21,0 100,79 179,0"/><path d="${line}" transform="translate(70.7,-70.7) rotate(-225) scale(-1,1)" transform-origin="center"/>`,
-    perCross: line => `<rect x="100" y="0" width="100" height="92.5"/><rect x="0" y="107.5" width="100" height="92.5"/><path d="${line}" transform="translate(0,50) scale(.5001,.5001)"/><path d="${line}" transform="translate(50,0) scale(-.5001,-.5001)" transform-origin="center"/>`,
+    perChevronReversed: line => `<path d="${line}" transform="translate(-70.7,-70.7) rotate(225) scale(1,1)" transform-origin="center"/><polygon points="20,0 100,80 180,0"/><path d="${line}" transform="translate(70.7,-70.7) rotate(-225) scale(-1,1)" transform-origin="center"/>`,
+    perCross: line => `<rect x="100" y="0" width="100" height="93.5"/><rect x="0" y="107.5" width="100" height="92.5"/><path d="${line}" transform="translate(0,51) scale(.5001,.5001)"/><path d="${line}" transform="translate(50,0) scale(-.5001,-.5001)" transform-origin="center"/>`,
     perPile: line => `<path d="${line}" transform="translate(-35,15) rotate(66.8) scale(-1,1)" transform-origin="center"/><path d="${line}" transform="translate(35,15) rotate(-66.8)" transform-origin="center"/><polygon points="0,0 86,200 114,200 200,0 200,200 0,200"/>`,
     perSaltire: () => `<polygon points="0,0 0,200 200,0 200,200"/>`,
     gyronny: () => `<polygon points="0,0 200,200 200,100 0,100"/><polygon points="200,0 0,200 100,200 100,0"/>`,
