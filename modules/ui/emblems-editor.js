@@ -181,7 +181,7 @@ function editEmblem(type, id, el) {
   function openInArmoria() {
     const coa = el.coa && el.coa !== "custom" ? el.coa : {t1: "sable"};
     const json = JSON.stringify(coa).replaceAll("#", "%23");
-    const url = `http://azgaar.github.io/Armoria/?coa=${json}&from=FMG`;
+    const url = `https://azgaar.github.io/Armoria/?coa=${json}&from=FMG`;
     openURL(url);
   }
 

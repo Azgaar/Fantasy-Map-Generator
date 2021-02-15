@@ -467,7 +467,7 @@
     const emblemShape = document.getElementById("emblemShape").value;
     if (emblemShape === "state" && state && pack.states[state].coa) return pack.states[state].coa.shield;
     if (pack.cultures[culture].shield) return pack.cultures[culture].shield;
-    console.error("Emblem shape is not defined on culture level", pack.cultures[culture]);
+    console.error("Shield shape is not defined on culture level", pack.cultures[culture]);
     return "heater";
   }
 
