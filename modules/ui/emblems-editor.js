@@ -13,7 +13,7 @@ function editEmblem(type, id, el) {
   updateElementSelectors(type, id, el);
 
   $("#emblemEditor").dialog({
-    title: "Edit Emblem", resizable: true, width: "18em", height: "auto",
+    title: "Edit Emblem", resizable: true, width: "18.2em", height: "auto",
     position: {my: "left top", at: "left+10 top+10", of: "svg", collision: "fit"},
     close: closeEmblemEditor
   });
@@ -181,7 +181,7 @@ function editEmblem(type, id, el) {
   function openInArmoria() {
     const coa = el.coa && el.coa !== "custom" ? el.coa : {t1: "sable"};
     const json = JSON.stringify(coa).replaceAll("#", "%23");
-    const url = `http://azgaar.github.io/Armoria/?coa=${json}&from=FMG`;
+    const url = `https://azgaar.github.io/Armoria/?coa=${json}&from=FMG`;
     openURL(url);
   }
 
@@ -233,10 +233,10 @@ function editEmblem(type, id, el) {
     buttons.classList.toggle("hidden");
   }
 
-  function download(format) {
+  async function download(format) {
     const coa = document.getElementById(id);
     const size = +emblemsDownloadSize.value;
-    const url = getURL(coa, el.coa, size);
+    const url = await getURL(coa, size);
     const link = document.createElement("a");
     link.download = getFileName(`Emblem ${el.fullName || el.name}`) + "." + format;
 
@@ -247,7 +247,6 @@ function editEmblem(type, id, el) {
   function downloadSVG(url, link) {
     link.href = url;
     link.click();
-    window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
   }
 
   function downloadRaster(format, url, link, size) {
@@ -264,25 +263,22 @@ function editEmblem(type, id, el) {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      const URL = canvas.toDataURL("image/" + format, .92);
-      link.href = URL;
+      const dataURL = canvas.toDataURL("image/" + format, .92);
+      link.href = dataURL;
       link.click();
-      window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
+      window.setTimeout(() => window.URL.revokeObjectURL(dataURL), 6000);
     }
   }
 
-  function getURL(svg, coa, size) {
-    const serialized = getSVG(svg, coa, size);
-    const blob = new Blob([serialized], { type: 'image/svg+xml;charset=utf-8' });
-    const url = window.URL.createObjectURL(blob);
-    return url;
-  }
-
-  function getSVG(svg, size) {
+  async function getURL(svg, size) {
     const clone = svg.cloneNode(true); // clone svg
     clone.setAttribute("width", size);
     clone.setAttribute("height", size);
-    return (new XMLSerializer()).serializeToString(clone);
+    const serialized = (new XMLSerializer()).serializeToString(clone);
+    const blob = new Blob([serialized], {type: 'image/svg+xml;charset=utf-8'});
+    const url = window.URL.createObjectURL(blob);
+    window.setTimeout(() => window.URL.revokeObjectURL(url), 6000);
+    return url;
   }
 
   function downloadGallery() {
