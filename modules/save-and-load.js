@@ -1079,6 +1079,7 @@ function parseLoadedData(data) {
         });
 
         // v 1.5 added emblems
+        defs.append("g").attr("id", "defs-emblems");
         emblems = viewbox.insert("g", "#population").attr("id", "emblems").style("display", "none");
         emblems.append("g").attr("id", "burgEmblems");
         emblems.append("g").attr("id", "provinceEmblems");
