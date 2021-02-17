@@ -1160,7 +1160,7 @@ function parseLoadedData(data) {
     invokeActiveZooming();
 
     WARN && console.warn(`TOTAL: ${rn((performance.now()-uploadMap.timeStart)/1000,2)}s`);
-    INFO && showStatistics();
+    showStatistics();
     INFO && console.groupEnd("Loaded Map " + seed);
     tip("Map is successfully loaded", true, "success", 7000);
   }

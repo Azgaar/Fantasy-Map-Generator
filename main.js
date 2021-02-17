@@ -569,7 +569,7 @@ function generate() {
     Names.getMapName();
 
     WARN && console.warn(`TOTAL: ${rn((performance.now()-timeStart)/1000,2)}s`);
-    INFO && showStatistics();
+    showStatistics();
     INFO && console.groupEnd("Generated Map " + seed);
   }
   catch(error) {
