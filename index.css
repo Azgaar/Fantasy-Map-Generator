@@ -2003,8 +2003,8 @@ svg.button {
 }
 
 #alertMessage ul {
-	padding-left: 15px;
-	margin: 10px 0; 
+	padding-left: 1.2em;
+	margin: 1em 0;
 }
 
 .pseudoLink {

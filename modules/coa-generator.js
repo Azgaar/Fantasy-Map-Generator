@@ -23,7 +23,7 @@
     conventional: {
       lozenge: 2, fusil: 4, mascle: 4, rustre: 2, lozengeFaceted: 3, lozengePloye: 1, roundel: 4, roundel2: 3, annulet: 4,
       mullet: 5, mulletPierced: 1, mulletFaceted: 1, mullet4: 3, mullet6: 4, mullet6Pierced: 1, mullet6Faceted: 1, mullet7: 1, mullet8: 1, mullet10: 1,
-      estoile: 1, compassRose: 1, billet: 5, delf: 0, triangle: 3, trianglePierced: 1, goutte: 4, heart: 4, pique: 2, сarreau: 1, trefle: 2,
+      estoile: 1, compassRose: 1, billet: 5, delf: 0, triangle: 3, trianglePierced: 1, goutte: 4, heart: 4, pique: 2, carreau: 1, trefle: 2,
       fleurDeLis: 6, sun: 3, sunInSplendour: 1, crescent: 5, fountain: 1
     },
     crosses: {
@@ -398,10 +398,10 @@
 
     function definePattern(pattern, element, size = "") {
       let t1 = null, t2 = null;
-      if (P(.15)) size = "-small";
-      else if (P(.05)) size = "-smaller";
-      else if (P(.035)) size = "-big";
-      else if (P(.001)) size = "-smallest";
+      if (P(.1)) size = "-small";
+      else if (P(.1)) size = "-smaller";
+      else if (P(.01)) size = "-big";
+      else if (P(.005)) size = "-smallest";
 
       // apply standard tinctures
       if (P(.5) && ["vair", "vairInPale", "vairEnPointe"].includes(pattern)) {t1 = "azure"; t2 = "argent";}

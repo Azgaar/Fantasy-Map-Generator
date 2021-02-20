@@ -839,11 +839,7 @@
     const divisionClip = division ? `<clipPath id="divisionClip_${id}">${getTemplate(division.division, division.line)}</clipPath>` : "";
     const loadedCharges = await getCharges(coa, id, shieldPath);
     const loadedPatterns = getPatterns(coa, id);
-    const blacklight = `<radialGradient id="backlight_${id}" cx="100%" cy="100%" r="150%">
-    <stop stop-color="#fff" stop-opacity=".3" offset="0"/>
-    <stop stop-color="#fff" stop-opacity=".15" offset=".25"/>
-    <stop stop-color="#000" stop-opacity="0" offset="1"/>
-    </radialGradient>`;
+    const blacklight = `<radialGradient id="backlight_${id}" cx="100%" cy="100%" r="150%"><stop stop-color="#fff" stop-opacity=".3" offset="0"/><stop stop-color="#fff" stop-opacity=".15" offset=".25"/><stop stop-color="#000" stop-opacity="0" offset="1"/></radialGradient>`;
     const field = `<rect x="0" y="0" width="200" height="200" fill="${clr(coa.t1)}"/>`;
     const divisionGroup = division ? templateDivision() : "";
     const overlay = `<path d="${shieldPath}" fill="url(#backlight_${id})" stroke="#333"/>`;
@@ -855,6 +851,7 @@
 
     // insert coa svg to defs
     document.getElementById("coas").insertAdjacentHTML("beforeend", svg);
+    return true;
 
     function templateDivision() {
       let svg = "";
@@ -1000,10 +997,10 @@
   }
 
   function getSizeMod(size) {
-    if (size === "small") return .5;
-    if (size === "smaller") return .25;
-    if (size === "smallest") return .125;
-    if (size === "big") return 2;
+    if (size === "small") return .8;
+    if (size === "smaller") return .5;
+    if (size === "smallest") return .25;
+    if (size === "big") return 1.6;
     return 1;
   }
 
@@ -1027,7 +1024,7 @@
   }
 
   // render coa if does not exist
-  const trigger = function(id, coa) {
+  const trigger = async function(id, coa) {
     if (coa === "custom") {
       console.warn("Cannot render custom emblem", coa);
       return;
@@ -1036,7 +1033,7 @@
       console.warn(`Emblem ${id} is undefined`);
       return;
     }
-    if (!document.getElementById(id)) draw(id, coa);
+    if (!document.getElementById(id)) return draw(id, coa);
   }
 
   const add = function(type, i, coa, x, y) {
