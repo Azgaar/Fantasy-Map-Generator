@@ -11,7 +11,14 @@
     metals: { argent: 3, or: 2 },
     colours: { gules: 5, azure: 4, sable: 3, purpure: 3, vert: 2 },
     stains: { murrey: 1, sanguine: 1, tenné: 1 },
-    patterns: { semy: 1, vair: 2, vairInPale: 1, vairEnPointe: 2, ermine: 2, chequy: 5, lozengy: 2, fusily: 1, pally: 4, barry: 4, gemelles: 1, bendy: 3, bendySinister: 2, palyBendy: 1, pappellony: 2, masoned: 3, fretty: 2 }
+    patterns: {
+      semy: 8, ermine: 6,
+      vair: 4, counterVair: 1, vairInPale: 1, vairEnPointe: 2, vairAncien: 2,
+      potent: 2, counterPotent: 1, potentInPale: 1, potentEnPointe: 1,
+      chequy: 8, lozengy: 5, fusily: 2, pally: 8, barry: 10, gemelles: 1,
+      bendy: 8, bendySinister: 4, palyBendy: 2, barryBendy: 1,
+      pappellony: 2, pappellony2: 3, scaly: 1, plumetty: 1,
+      masoned: 6, fretty: 3, grillage: 1, chainy: 1, maily: 2, honeycombed: 1 }
   }
 
   const charges = {
