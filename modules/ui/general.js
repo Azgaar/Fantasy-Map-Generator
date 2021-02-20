@@ -106,13 +106,13 @@ function showMapTooltip(point, e, i, g) {
                       parent.id === "provinceEmblems" ? [pack.provinces, "province"] :
                       [pack.states, "state"];
     const i = +e.target.dataset.i;
-    highlightEmblemElement(type, g[i]);
+    if (event.shiftKey) highlightEmblemElement(type, g[i]);
 
     d3.select(e.target).raise();
     d3.select(parent).raise();
 
     const name = g[i].fullName || g[i].name;
-    tip(`${name} ${type} emblem. Click to edit`);
+    tip(`${name} ${type} emblem. Click to edit. Hold Shift to show associated area or place`);
     return;
   }
   if (group === "rivers") {
