@@ -480,6 +480,7 @@ document.addEventListener("keyup", event => {
   else if (shift && key === 78) editNamesbase(); // Shift + "N" to edit Namesbase
   else if (shift && key === 90) editZones(); // Shift + "Z" to edit Zones
   else if (shift && key === 82) editReligions(); // Shift + "R" to edit Religions
+  else if (shift && key === 89) openEmblemEditor(); // Shift + "Y" to edit Emblems
   else if (shift && key === 81) editUnits(); // Shift + "Q" to edit Units
   else if (shift && key === 79) editNotes(); // Shift + "O" to edit Notes
   else if (shift && key === 84) overviewBurgs(); // Shift + "T" to open Burgs overview
