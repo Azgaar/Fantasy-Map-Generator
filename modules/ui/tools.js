@@ -14,6 +14,7 @@ toolsContent.addEventListener("click", function(event) {
   if (button === "editDiplomacyButton") editDiplomacy(); else
   if (button === "editCulturesButton") editCultures(); else
   if (button === "editReligions") editReligions(); else
+  if (button === "editEmblemButton") openEmblemEditor(); else
   if (button === "editNamesBaseButton") editNamesbase(); else
   if (button === "editUnitsButton") editUnits(); else
   if (button === "editNotesButton") editNotes(); else
@@ -70,6 +71,26 @@ function processFeatureRegeneration(event, button) {
   if (button === "regenerateIce") regenerateIce(); else
   if (button === "regenerateMarkers") regenerateMarkers(event); else
   if (button === "regenerateZones") regenerateZones(event);
+}
+
+async function openEmblemEditor() {
+  let type, id, el;
+
+  if (pack.states[1]?.coa) {
+    type = "state";
+    id = "stateCOA1";
+    el = pack.states[1];
+  } else if (pack.burgs[1]?.coa) {
+    type = "burg";
+    id = "burgCOA1";
+    el = pack.burgs[1];
+  } else {
+    tip("No emblems to edit, please generate states and burgs first", false, "error");
+    return;
+  }
+
+  await COArenderer.trigger(id, el.coa);
+  editEmblem(type, id, el);
 }
 
 function regenerateRivers() {
