@@ -338,7 +338,7 @@ function applyDefaultBiomesSystem() {
 }
 
 function showWelcomeMessage() {
-  const post = link("https://www.reddit.com/r/FantasyMapGenerator/comments/ft5b41/update_v15/", "Main changes:"); // announcement on Reddit
+  const post = "Main changes:" //link("https://www.reddit.com/r/FantasyMapGenerator/comments/ft5b41/update_v15/", "Main changes:");
   const changelog = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "previous version");
   const reddit = link("https://www.reddit.com/r/FantasyMapGenerator", "Reddit community");
   const discord = link("https://discordapp.com/invite/X7E84HU", "Discord server");
@@ -347,18 +347,19 @@ function showWelcomeMessage() {
   alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
     <ul>${post}
-      <li>Emblems generation</li>
-      <li>Emblem editor integrated with ${link("https://azgaar.github.io/Armoria", "Armoria")}</li>
+      <li>State, province and burg Emblems generation</li>
+      <li>Emblem editor integrated with ${link("https://azgaar.github.io/Armoria", "Armoria")} — our new dedicated Heraldry generator and editor</li>
       <li>Burg editor screen update</li>
       <li>Speak name functionality</li>
     </ul>
+    <img src="https://raw.githubusercontent.com/Azgaar/Armoria/master/public/preview.png" alt="Armoria preview" width="100%" height="auto"/>
     <p>Join our ${discord} and ${reddit} to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
     <span>Thanks for all supporters on ${patreon}!</i></span>`;
 
   $("#alert").dialog(
     {resizable: false, title: "Fantasy Map Generator update", width: "28em",
     buttons: {OK: function() {$(this).dialog("close")}},
-    position: {my: "center", at: "center", of: "svg"},
+    position: {my: "center center-80", at: "center", of: "svg"},
     close: () => localStorage.setItem("version", version)}
   );
 }
