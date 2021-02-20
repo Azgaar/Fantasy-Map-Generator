@@ -303,13 +303,12 @@ function getPopulationTip(i) {
 }
 
 function highlightEmblemElement(type, el) {
-    if (emblems.selectAll("line, circle").size()) return;
     const i = el.i, cells = pack.cells;
     const animation = d3.transition().duration(1000).ease(d3.easeSinIn);
 
     if (type === "burg") {
       const {x, y} = el;
-      emblems.append("circle").attr("cx", x).attr("cy", y).attr("r", 0)
+      debug.append("circle").attr("cx", x).attr("cy", y).attr("r", 0)
         .attr("fill", "none").attr("stroke", "#d0240f").attr("stroke-width", 1).attr("opacity", 1)
         .transition(animation).attr("r", 20).attr("opacity", .1).attr("stroke-width", 0).remove();
       return;
@@ -320,7 +319,7 @@ function highlightEmblemElement(type, el) {
     const borderCells = cells.i.filter(id => obj[id] === i && cells.c[id].some(n => obj[n] !== i));
     const data = Array.from(borderCells).filter((c, i) => !(i%2)).map(i => cells.p[i]).map(i => [i[0], i[1], Math.hypot(i[0]-x, i[1]-y)]);
 
-    emblems.selectAll("line").data(data).enter().append("line")
+    debug.selectAll("line").data(data).enter().append("line")
       .attr("x1", x).attr("y1", y).attr("x2", d => d[0]).attr("y2", d => d[1])
       .attr("stroke", "#d0240f").attr("stroke-width", .5).attr("opacity", .2)
       .attr("stroke-dashoffset", d => d[2]).attr("stroke-dasharray", d => d[2])
