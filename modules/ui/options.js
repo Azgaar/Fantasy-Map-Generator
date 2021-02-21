@@ -299,7 +299,8 @@ function changeEmblemShape(emblemShape) {
 
   const rerenderCOA = (id, coa) => {
     const coaEl = document.getElementById(id);
-    if (coaEl) coaEl.remove();
+    if (!coaEl) return; // not rendered
+    coaEl.remove();
     COArenderer.trigger(id, coa);
   }
 
