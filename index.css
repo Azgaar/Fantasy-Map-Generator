@@ -1361,10 +1361,7 @@ div.states>.culturePopulation {
 	cursor: pointer;
 }
 
-div.states > .cultureBase,
-div.states > .cultureType,
-div.states > .stateCulture,
-div.states > .diplomacyRelations {
+div.states > select {
 	width: 4.6em;
 	cursor: pointer;
 	border: 0;
@@ -1374,10 +1371,7 @@ div.states > .diplomacyRelations {
 	appearance: none;
 }
 
-div.states > .cultureBase {
-	width: 6em;
-}
-
+div.states > .cultureBase,
 div.states > .burgName,
 div.states > .burgState,
 div.states > .burgCulture {
