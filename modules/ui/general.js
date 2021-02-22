@@ -19,6 +19,12 @@ document.getElementById("dialogs").addEventListener("mousemove", showDataTip);
 document.getElementById("optionsContainer").addEventListener("mousemove", showDataTip);
 document.getElementById("exitCustomization").addEventListener("mousemove", showDataTip);
 
+/**
+ * @param {string} tip Tooltip text
+ * @param {boolean} main Show above other tooltips
+ * @param {string} type Message type (color): error, warn, success
+ * @param {number} time Timeout to auto hide, ms
+ */
 function tip(tip = "Tip is undefined", main, type, time) {
   tooltip.innerHTML = tip;
   tooltip.style.background = "linear-gradient(0.1turn, #ffffff00, #5e5c5c80, #ffffff00)";
@@ -100,13 +106,13 @@ function showMapTooltip(point, e, i, g) {
                       parent.id === "provinceEmblems" ? [pack.provinces, "province"] :
                       [pack.states, "state"];
     const i = +e.target.dataset.i;
-    highlightEmblemElement(type, g[i]);
+    if (event.shiftKey) highlightEmblemElement(type, g[i]);
 
     d3.select(e.target).raise();
     d3.select(parent).raise();
 
     const name = g[i].fullName || g[i].name;
-    tip(`${name} ${type} emblem. Click to edit`);
+    tip(`${name} ${type} emblem. Click to edit. Hold Shift to show associated area or place`);
     return;
   }
   if (group === "rivers") {
@@ -297,13 +303,12 @@ function getPopulationTip(i) {
 }
 
 function highlightEmblemElement(type, el) {
-    if (emblems.selectAll("line, circle").size()) return;
     const i = el.i, cells = pack.cells;
     const animation = d3.transition().duration(1000).ease(d3.easeSinIn);
 
     if (type === "burg") {
       const {x, y} = el;
-      emblems.append("circle").attr("cx", x).attr("cy", y).attr("r", 0)
+      debug.append("circle").attr("cx", x).attr("cy", y).attr("r", 0)
         .attr("fill", "none").attr("stroke", "#d0240f").attr("stroke-width", 1).attr("opacity", 1)
         .transition(animation).attr("r", 20).attr("opacity", .1).attr("stroke-width", 0).remove();
       return;
@@ -314,7 +319,7 @@ function highlightEmblemElement(type, el) {
     const borderCells = cells.i.filter(id => obj[id] === i && cells.c[id].some(n => obj[n] !== i));
     const data = Array.from(borderCells).filter((c, i) => !(i%2)).map(i => cells.p[i]).map(i => [i[0], i[1], Math.hypot(i[0]-x, i[1]-y)]);
 
-    emblems.selectAll("line").data(data).enter().append("line")
+    debug.selectAll("line").data(data).enter().append("line")
       .attr("x1", x).attr("y1", y).attr("x2", d => d[0]).attr("y2", d => d[1])
       .attr("stroke", "#d0240f").attr("stroke-width", .5).attr("opacity", .2)
       .attr("stroke-dashoffset", d => d[2]).attr("stroke-dasharray", d => d[2])
@@ -474,6 +479,7 @@ document.addEventListener("keyup", event => {
   else if (shift && key === 78) editNamesbase(); // Shift + "N" to edit Namesbase
   else if (shift && key === 90) editZones(); // Shift + "Z" to edit Zones
   else if (shift && key === 82) editReligions(); // Shift + "R" to edit Religions
+  else if (shift && key === 89) openEmblemEditor(); // Shift + "Y" to edit Emblems
   else if (shift && key === 81) editUnits(); // Shift + "Q" to edit Units
   else if (shift && key === 79) editNotes(); // Shift + "O" to edit Notes
   else if (shift && key === 84) overviewBurgs(); // Shift + "T" to open Burgs overview

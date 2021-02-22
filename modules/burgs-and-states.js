@@ -208,8 +208,12 @@
     if (cells.haven[i] && pack.features[cells.f[cells.haven[i]]].type === "lake") return "Lake";
     if (cells.h[i] > 60) return "Highland";
     if (cells.r[i] && cells.r[i].length > 100 && cells.r[i].length >= pack.rivers[0].length) return "River";
-    if ([1, 2, 3, 4].includes(cells.biome[i])) return "Nomadic";
-    if (cells.biome[i] > 4 && cells.biome[i] < 10) return "Hunting";
+
+    if (!cells.burg[i] || pack.burgs[cells.burg[i]].population < 6) {
+      if (population < 5 && [1, 2, 3, 4].includes(cells.biome[i])) return "Nomadic";
+      if (cells.biome[i] > 4 && cells.biome[i] < 10) return "Hunting";
+    }
+
     return "Generic";
   }
 
@@ -419,7 +423,7 @@
       const hull = getHull(start, s.i, s.cells / 10);
       const points = [...hull].map(v => pack.vertices.p[v]);
       const delaunay = Delaunator.from(points);
-      const voronoi = Voronoi(delaunay, points, points.length);
+      const voronoi = new Voronoi(delaunay, points, points.length);
       const chain = connectCenters(voronoi.vertices, s.pole[1]);
       const relaxed = chain.map(i => voronoi.vertices.p[i]).filter((p, i) => i%15 === 0 || i+1 === chain.length);
       paths.push([s.i, relaxed]);

@@ -289,15 +289,45 @@ function changeCultureSet() {
   if (+culturesOutput.value > +max) culturesInput.value = culturesOutput.value = max;
 }
 
-function changeEmblemShape(value) {
+function changeEmblemShape(emblemShape) {
   const image = document.getElementById("emblemShapeImage");
-  const shapeEl = document.getElementById(value);
-  if (shapeEl) {
-    const shape = shapeEl.querySelector("path").getAttribute("d");
-    image.setAttribute("d", shape);
-  } else {
-    image.removeAttribute("d");
+  const shapePath = window.COArenderer && COArenderer.shieldPaths[emblemShape];
+  shapePath ? image.setAttribute("d", shapePath) : image.removeAttribute("d");
+
+  const specificShape = ["culture", "state", "random"].includes(emblemShape) ? null : emblemShape;
+  if (emblemShape === "random") pack.cultures.filter(c => !c.removed).forEach(c => c.shield = Cultures.getRandomShield());
+
+  const rerenderCOA = (id, coa) => {
+    const coaEl = document.getElementById(id);
+    if (!coaEl) return; // not rendered
+    coaEl.remove();
+    COArenderer.trigger(id, coa);
   }
+
+  pack.states.forEach(state => {
+    if (!state.i || state.removed || !state.coa || state.coa === "custom") return;
+    const newShield = specificShape || COA.getShield(state.culture, null);
+    if (newShield === state.coa.shield) return;
+    state.coa.shield = newShield;
+    rerenderCOA("stateCOA" + state.i, state.coa);
+  });
+
+  pack.provinces.forEach(province => {
+    if (!province.i || province.removed || !province.coa || province.coa === "custom") return;
+    const culture = pack.cells.culture[province.center];
+    const newShield = specificShape || COA.getShield(culture, province.state);
+    if (newShield === province.coa.shield) return;
+    province.coa.shield = newShield;
+    rerenderCOA("provinceCOA" + province.i, province.coa);
+  });
+
+  pack.burgs.forEach(burg => {
+    if (!burg.i || burg.removed || !burg.coa || burg.coa === "custom") return;
+    const newShield = specificShape || COA.getShield(burg.culture, burg.state);
+    if (newShield === burg.coa.shield) return;
+    burg.coa.shield = newShield
+    rerenderCOA("burgCOA" + burg.i, burg.coa);
+  });
 }
 
 function changeStatesNumber(value) {
@@ -419,7 +449,6 @@ function randomizeOptions() {
 
   // World settings
   generateEra();
-  changeEmblemShape(emblemShape.value); // change emblem shape image
 }
 
 // select heightmap template pseudo-randomly

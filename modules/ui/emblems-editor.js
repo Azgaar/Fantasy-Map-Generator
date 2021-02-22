@@ -13,7 +13,7 @@ function editEmblem(type, id, el) {
   updateElementSelectors(type, id, el);
 
   $("#emblemEditor").dialog({
-    title: "Edit Emblem", resizable: true, width: "18em", height: "auto",
+    title: "Edit Emblem", resizable: true, width: "18.2em", height: "auto",
     position: {my: "left top", at: "left+10 top+10", of: "svg", collision: "fit"},
     close: closeEmblemEditor
   });
@@ -150,7 +150,8 @@ function editEmblem(type, id, el) {
 
   function changeShape() {
     el.coa.shield = this.value;
-    document.getElementById(id).remove();
+    const coaEl = document.getElementById(id);
+    if (coaEl) coaEl.remove();
     COArenderer.trigger(id, el.coa);
   }
 
@@ -180,7 +181,7 @@ function editEmblem(type, id, el) {
   function openInArmoria() {
     const coa = el.coa && el.coa !== "custom" ? el.coa : {t1: "sable"};
     const json = JSON.stringify(coa).replaceAll("#", "%23");
-    const url = `http://azgaar.github.io/Armoria/?coa=${json}`;
+    const url = `https://azgaar.github.io/Armoria/?coa=${json}&from=FMG`;
     openURL(url);
   }
 
@@ -232,10 +233,10 @@ function editEmblem(type, id, el) {
     buttons.classList.toggle("hidden");
   }
 
-  function download(format) {
+  async function download(format) {
     const coa = document.getElementById(id);
     const size = +emblemsDownloadSize.value;
-    const url = getURL(coa, el.coa, size);
+    const url = await getURL(coa, size);
     const link = document.createElement("a");
     link.download = getFileName(`Emblem ${el.fullName || el.name}`) + "." + format;
 
@@ -246,7 +247,6 @@ function editEmblem(type, id, el) {
   function downloadSVG(url, link) {
     link.href = url;
     link.click();
-    window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
   }
 
   function downloadRaster(format, url, link, size) {
@@ -263,52 +263,49 @@ function editEmblem(type, id, el) {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      const URL = canvas.toDataURL("image/" + format, .92);
-      link.href = URL;
+      const dataURL = canvas.toDataURL("image/" + format, .92);
+      link.href = dataURL;
       link.click();
-      window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
+      window.setTimeout(() => window.URL.revokeObjectURL(dataURL), 6000);
     }
   }
 
-  function getURL(svg, coa, size) {
-    const serialized = getSVG(svg, coa, size);
-    const blob = new Blob([serialized], { type: 'image/svg+xml;charset=utf-8' });
+  async function getURL(svg, size) {
+    const serialized = getSVG(svg, size);
+    const blob = new Blob([serialized], {type: 'image/svg+xml;charset=utf-8'});
     const url = window.URL.createObjectURL(blob);
+    window.setTimeout(() => window.URL.revokeObjectURL(url), 6000);
     return url;
   }
 
   function getSVG(svg, size) {
-    const clone = svg.cloneNode(true); // clone svg
+    const clone = svg.cloneNode(true);
     clone.setAttribute("width", size);
     clone.setAttribute("height", size);
     return (new XMLSerializer()).serializeToString(clone);
   }
 
-  function downloadGallery() {
+  async function downloadGallery() {
     const name = getFileName("Emblems Gallery");
     const validStates = pack.states.filter(s => s.i && !s.removed && s.coa);
     const validProvinces = pack.provinces.filter(p => p.i && !p.removed && p.coa);
     const validBurgs = pack.burgs.filter(b => b.i && !b.removed && b.coa);
-    triggerCOALoad(validStates, validProvinces, validBurgs);
-    const timeout = (validStates.length + validProvinces.length + validBurgs.length) * 8;
-    tip("Preparing to download...", true, "warn", timeout);
-    d3.timeout(runDownload, timeout);
+    await renderAllEmblems(validStates, validProvinces, validBurgs);
+    runDownload();
 
     function runDownload() {
       const back = `<a href="javascript:history.back()">Go Back</a>`;
 
       const stateSection = `<div><h2>States</h2>` + validStates.map(state => {
         const el = document.getElementById("stateCOA"+state.i);
-        const svg = getSVG(el, state.coa, 200);
-        return `<figure id="state_${state.i}"><a href="#provinces_${state.i}"><figcaption>${state.fullName}</figcaption>${svg}</a></figure>`;
+        return `<figure id="state_${state.i}"><a href="#provinces_${state.i}"><figcaption>${state.fullName}</figcaption>${getSVG(el, 200)}</a></figure>`;
       }).join("") + `</div>`;
 
       const provinceSections = validStates.map(state => {
         const stateProvinces = validProvinces.filter(p => p.state === state.i);
         const figures = stateProvinces.map(province => {
           const el = document.getElementById("provinceCOA"+province.i);
-          const svg = getSVG(el, province.coa, 200);
-          return `<figure id="province_${province.i}"><a href="#burgs_${province.i}"><figcaption>${province.fullName}</figcaption>${svg}</a></figure>`;
+          return `<figure id="province_${province.i}"><a href="#burgs_${province.i}"><figcaption>${province.fullName}</figcaption>${getSVG(el, 200)}</a></figure>`;
         }).join("");
         return stateProvinces.length ? `<div id="provinces_${state.i}">${back}<h2>${state.fullName} provinces</h2>${figures}</div>` : "";
       }).join("");
@@ -319,8 +316,7 @@ function editEmblem(type, id, el) {
           const provinceBurgs = stateBurgs.filter(b => pack.cells.province[b.cell] === province.i);
           const provinceBurgFigures = provinceBurgs.map(burg => {
             const el = document.getElementById("burgCOA"+burg.i);
-            const svg = getSVG(el, burg.coa, 200);
-            return `<figure id="burg_${burg.i}"><figcaption>${burg.name}</figcaption>${svg}</figure>`;
+            return `<figure id="burg_${burg.i}"><figcaption>${burg.name}</figcaption>${getSVG(el, 200)}</figure>`;
           }).join("");
           return provinceBurgs.length ? `<div id="burgs_${province.i}">${back}<h2>${province.fullName} burgs</h2>${provinceBurgFigures}</div>` : "";
         }).join("");
@@ -328,8 +324,7 @@ function editEmblem(type, id, el) {
         const stateBurgOutOfProvinces = stateBurgs.filter(b => !pack.cells.province[b.cell]);
         const stateBurgOutOfProvincesFigures = stateBurgOutOfProvinces.map(burg => {
           const el = document.getElementById("burgCOA"+burg.i);
-          const svg = getSVG(el, burg.coa, 200);
-          return `<figure id="burg_${burg.i}"><figcaption>${burg.name}</figcaption>${svg}</figure>`;
+          return `<figure id="burg_${burg.i}"><figcaption>${burg.name}</figcaption>${getSVG(el, 200)}</figure>`;
         }).join("");
         if (stateBurgOutOfProvincesFigures) stateBurgSections += `<div><h2>${state.fullName} burgs under direct control</h2>${stateBurgOutOfProvincesFigures}</div>`;
         return stateBurgSections;
@@ -338,8 +333,7 @@ function editEmblem(type, id, el) {
       const neutralBurgs = validBurgs.filter(b => !b.state);
       const neutralsSection = neutralBurgs.length ? "<div><h2>Independent burgs</h2>" + neutralBurgs.map(burg => {
         const el = document.getElementById("burgCOA"+burg.i);
-        const svg = getSVG(el, burg.coa, 200);
-        return `<figure id="burg_${burg.i}"><figcaption>${burg.name}</figcaption>${svg}</figure>`;
+        return `<figure id="burg_${burg.i}"><figcaption>${burg.name}</figcaption>${getSVG(el, 200)}</figure>`;
       }).join("") + "</div>" : "";
 
       const FMG = `<a href="https://azgaar.github.io/Fantasy-Map-Generator" target="_blank">Azgaar's Fantasy Map Generator</a>`;
@@ -370,10 +364,15 @@ function editEmblem(type, id, el) {
     }
   }
 
-  function triggerCOALoad(states, provinces, burgs) {
-    states.forEach(state => COArenderer.trigger("stateCOA"+state.i, state.coa));
-    provinces.forEach(province => COArenderer.trigger("provinceCOA"+province.i, province.coa));
-    burgs.forEach(burg => COArenderer.trigger("burgCOA"+burg.i, burg.coa));
+  async function renderAllEmblems(states, provinces, burgs) {
+    tip("Preparing for download...", true, "warn");
+
+    const statePromises = states.map(state => COArenderer.trigger("stateCOA"+state.i, state.coa));
+    const provincePromises = provinces.map(province => COArenderer.trigger("provinceCOA"+province.i, province.coa));
+    const burgPromises = burgs.map(burg => COArenderer.trigger("burgCOA"+burg.i, burg.coa));
+    const promises = [...statePromises, ...provincePromises, ...burgPromises];
+
+    return Promise.allSettled(promises).then(res => clearMainTip());
   }
 
   function dragEmblem() {

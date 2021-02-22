@@ -1060,19 +1060,17 @@ function parseLoadedData(data) {
       }
 
       if (version < 1.5) {
-        // v 1.5 added emblems
-        emblems = viewbox.append("g").attr("id", "emblems").style("display", "none");
-        emblems.append("g").attr("id", "burgEmblems");
-        emblems.append("g").attr("id", "provinceEmblems");
-        emblems.append("g").attr("id", "stateEmblems");
-        regenerateEmblems();
-        toggleEmblems();
-
         // not need to store default styles from v 1.5
         localStorage.removeItem("styleClean");
         localStorage.removeItem("styleGloom");
         localStorage.removeItem("styleAncient");
         localStorage.removeItem("styleMonochrome");
+
+        // v 1.5 cultures has shield attribute
+        pack.cultures.forEach(culture => {
+          if (culture.removed) return;
+          culture.shield = Cultures.getRandomShield();
+        });
 
         // v 1.5 added burg type value
         pack.burgs.forEach(burg => {
@@ -1080,7 +1078,14 @@ function parseLoadedData(data) {
           burg.type = BurgsAndStates.getType(burg.cell, burg.port);
         });
 
-        BurgsAndStates.getType(cell, false);
+        // v 1.5 added emblems
+        defs.append("g").attr("id", "defs-emblems");
+        emblems = viewbox.insert("g", "#population").attr("id", "emblems").style("display", "none");
+        emblems.append("g").attr("id", "burgEmblems");
+        emblems.append("g").attr("id", "provinceEmblems");
+        emblems.append("g").attr("id", "stateEmblems");
+        regenerateEmblems();
+        toggleEmblems();
       }
 
     }()
@@ -1155,7 +1160,7 @@ function parseLoadedData(data) {
     invokeActiveZooming();
 
     WARN && console.warn(`TOTAL: ${rn((performance.now()-uploadMap.timeStart)/1000,2)}s`);
-    INFO && showStatistics();
+    showStatistics();
     INFO && console.groupEnd("Loaded Map " + seed);
     tip("Map is successfully loaded", true, "success", 7000);
   }

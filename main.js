@@ -338,7 +338,7 @@ function applyDefaultBiomesSystem() {
 }
 
 function showWelcomeMessage() {
-  const post = link("https://www.reddit.com/r/FantasyMapGenerator/comments/ft5b41/update_v15/", "Main changes:"); // announcement on Reddit
+  const post = "Main changes:" //link("https://www.reddit.com/r/FantasyMapGenerator/comments/ft5b41/update_v15/", "Main changes:");
   const changelog = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "previous version");
   const reddit = link("https://www.reddit.com/r/FantasyMapGenerator", "Reddit community");
   const discord = link("https://discordapp.com/invite/X7E84HU", "Discord server");
@@ -347,18 +347,19 @@ function showWelcomeMessage() {
   alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
     <ul>${post}
-      <li>Emblems generation</li>
-      <li>Emblem editor integrated with ${link("https://azgaar.github.io/Armoria", "Armoria")}</li>
+      <li>State, province and burg Emblems generation</li>
+      <li>Emblem editor integrated with ${link("https://azgaar.github.io/Armoria", "Armoria")} — our new dedicated Heraldry generator and editor</li>
       <li>Burg editor screen update</li>
       <li>Speak name functionality</li>
     </ul>
+    <img src="https://raw.githubusercontent.com/Azgaar/Armoria/master/public/preview.png" alt="Armoria preview" width="100%" height="auto"/>
     <p>Join our ${discord} and ${reddit} to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
     <span>Thanks for all supporters on ${patreon}!</i></span>`;
 
   $("#alert").dialog(
     {resizable: false, title: "Fantasy Map Generator update", width: "28em",
     buttons: {OK: function() {$(this).dialog("close")}},
-    position: {my: "center", at: "center", of: "svg"},
+    position: {my: "center center-80", at: "center", of: "svg"},
     close: () => localStorage.setItem("version", version)}
   );
 }
@@ -545,7 +546,6 @@ function generate() {
     reGraph();
     drawCoastline();
 
-    elevateLakes();
     Rivers.generate();
     defineBiomes();
 
@@ -570,7 +570,7 @@ function generate() {
     Names.getMapName();
 
     WARN && console.warn(`TOTAL: ${rn((performance.now()-timeStart)/1000,2)}s`);
-    INFO && showStatistics();
+    showStatistics();
     INFO && console.groupEnd("Generated Map " + seed);
   }
   catch(error) {
@@ -626,7 +626,7 @@ function calculateVoronoi(graph, points) {
   TIME && console.timeEnd("calculateDelaunay");
 
   TIME && console.time("calculateVoronoi");
-  const voronoi = Voronoi(delaunay, allPoints, n);
+  const voronoi = new Voronoi(delaunay, allPoints, n);
   graph.cells = voronoi.cells;
   graph.cells.i = n < 65535 ? Uint16Array.from(d3.range(n)) : Uint32Array.from(d3.range(n)); // array of indexes
   graph.vertices = voronoi.vertices;
@@ -1137,22 +1137,6 @@ function reMarkFeatures() {
   TIME && console.timeEnd("reMarkFeatures");
 }
 
-// temporary elevate some lakes to resolve depressions and flux the water to form an open (exorheic) lake
-function elevateLakes() {
-  if (templateInput.value === "Atoll") return; // no need for Atolls
-  TIME && console.time('elevateLakes');
-  const cells = pack.cells, features = pack.features;
-  const maxCells = cells.i.length / 100; // size limit; let big lakes be closed (endorheic)
-  cells.i.forEach(i => {
-    if (cells.h[i] >= 20) return;
-    if (features[cells.f[i]].group !== "freshwater" || features[cells.f[i]].cells > maxCells) return;
-    cells.h[i] = 20;
-    //debug.append("circle").attr("cx", cells.p[i][0]).attr("cy", cells.p[i][1]).attr("r", .5).attr("fill", "blue");
-  });
-
-  TIME && console.timeEnd('elevateLakes');
-}
-
 // assign biome id for each cell
 function defineBiomes() {
   TIME && console.time("defineBiomes");
@@ -1160,7 +1144,6 @@ function defineBiomes() {
   cells.biome = new Uint8Array(cells.i.length); // biomes array
 
   for (const i of cells.i) {
-    if (f[cells.f[i]].group === "freshwater") cells.h[i] = 19; // de-elevate lakes; here to save some resources
     const t = temp[cells.g[i]]; // cell temperature
     const h = cells.h[i]; // cell height
     const m = h < 20 ? 0 : calculateMoisture(i); // cell moisture
@@ -1718,11 +1701,7 @@ function addZones(number = 1) {
 function showStatistics() {
   const template = templateInput.value;
   const templateRandom = locked("template") ? "" : "(random)";
-
-  mapId = Date.now(); // unique map id is it's creation date number
-  mapHistory.push({seed, width:graphWidth, height:graphHeight, template, created:mapId});
-  console.log(`
-    Seed: ${seed}
+  const stats = `  Seed: ${seed}
     Canvas size: ${graphWidth}x${graphHeight}
     Template: ${template} ${templateRandom}
     Points: ${grid.points.length}
@@ -1733,7 +1712,11 @@ function showStatistics() {
     Burgs: ${pack.burgs.length-1}
     Religions: ${pack.religions.length-1}
     Culture set: ${culturesSet.selectedOptions[0].innerText}
-    Cultures: ${pack.cultures.length-1}`);
+    Cultures: ${pack.cultures.length-1}`;
+
+  mapId = Date.now(); // unique map id is it's creation date number
+  mapHistory.push({seed, width:graphWidth, height:graphHeight, template, created:mapId});
+  INFO && console.log(stats);
 }
 
 const regenerateMap = debounce(function() {

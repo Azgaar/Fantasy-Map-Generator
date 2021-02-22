@@ -11,7 +11,14 @@
     metals: { argent: 3, or: 2 },
     colours: { gules: 5, azure: 4, sable: 3, purpure: 3, vert: 2 },
     stains: { murrey: 1, sanguine: 1, tenné: 1 },
-    patterns: { semy: 1, vair: 2, vairInPale: 1, vairEnPointe: 2, ermine: 2, chequy: 5, lozengy: 2, fusily: 1, pally: 4, barry: 4, gemelles: 1, bendy: 3, bendySinister: 2, palyBendy: 1, pappellony: 2, masoned: 3, fretty: 2 }
+    patterns: {
+      semy: 8, ermine: 6,
+      vair: 4, counterVair: 1, vairInPale: 1, vairEnPointe: 2, vairAncien: 2,
+      potent: 2, counterPotent: 1, potentInPale: 1, potentEnPointe: 1,
+      chequy: 8, lozengy: 5, fusily: 2, pally: 8, barry: 10, gemelles: 1,
+      bendy: 8, bendySinister: 4, palyBendy: 2, barryBendy: 1,
+      pappellony: 2, pappellony2: 3, scaly: 1, plumetty: 1,
+      masoned: 6, fretty: 3, grillage: 1, chainy: 1, maily: 2, honeycombed: 1 }
   }
 
   const charges = {
@@ -23,7 +30,7 @@
     conventional: {
       lozenge: 2, fusil: 4, mascle: 4, rustre: 2, lozengeFaceted: 3, lozengePloye: 1, roundel: 4, roundel2: 3, annulet: 4,
       mullet: 5, mulletPierced: 1, mulletFaceted: 1, mullet4: 3, mullet6: 4, mullet6Pierced: 1, mullet6Faceted: 1, mullet7: 1, mullet8: 1, mullet10: 1,
-      estoile: 1, compassRose: 1, billet: 5, delf: 0, triangle: 3, trianglePierced: 1, goutte: 4, heart: 4, pique: 2, сarreau: 1, trefle: 2,
+      estoile: 1, compassRose: 1, billet: 5, delf: 0, triangle: 3, trianglePierced: 1, goutte: 4, heart: 4, pique: 2, carreau: 1, trefle: 2,
       fleurDeLis: 6, sun: 3, sunInSplendour: 1, crescent: 5, fountain: 1
     },
     crosses: {
@@ -188,6 +195,18 @@
       pile: 2, pileInBend: 2, pileInBendSinister: 1, piles: 1, pilesInPoint: 2, label: 1
     }
   };
+
+  const shields = {
+    types: {basic: 10, regional: 2, historical: 1, specific: 1, banner: 1, simple: 2, fantasy: 1, middleEarth: 0},
+    basic: {heater: 12, spanish: 6, french: 1},
+    regional: {horsehead: 1, horsehead2: 1, polish: 1, hessen: 1, swiss: 1},
+    historical: {boeotian: 1, roman: 2, kite: 1, oldFrench: 5, renaissance: 2, baroque: 2},
+    specific: {targe: 1, targe2: 0, pavise: 5, wedged: 10},
+    banner: {flag: 1, pennon: 0, guidon: 0, banner: 0, dovetail: 1, gonfalon: 5, pennant: 0},
+    simple: {round: 12, oval: 6, vesicaPiscis: 1, square: 1, diamond: 2, no: 0},
+    fantasy: {fantasy1: 2, fantasy2: 2, fantasy3: 1, fantasy4: 1, fantasy5: 3},
+    middleEarth: {noldor: 1, gondor: 1, easterling: 1, erebor: 1, ironHills: 1, urukHai: 1, moriaOrc: 1}
+  }
 
   const generate = function(parent, kinship, dominion, type) {
     if (parent === "custom") parent = null;
@@ -398,10 +417,10 @@
 
     function definePattern(pattern, element, size = "") {
       let t1 = null, t2 = null;
-      if (P(.15)) size = "-small";
-      else if (P(.05)) size = "-smaller";
-      else if (P(.035)) size = "-big";
-      else if (P(.001)) size = "-smallest";
+      if (P(.1)) size = "-small";
+      else if (P(.1)) size = "-smaller";
+      else if (P(.01)) size = "-big";
+      else if (P(.005)) size = "-smallest";
 
       // apply standard tinctures
       if (P(.5) && ["vair", "vairInPale", "vairEnPointe"].includes(pattern)) {t1 = "azure"; t2 = "argent";}
@@ -464,16 +483,19 @@
   }
 
   const getShield = function(culture, state) {
-    const emblemShape = document.getElementById("emblemShape").value;
-    if (emblemShape === "state" && state && pack.states[state].coa) return pack.states[state].coa.shield;
+    const emblemShape = document.getElementById("emblemShape");
+    const shapeGroup = emblemShape.selectedOptions[0].parentNode.label;
+    if (shapeGroup !== "Diversiform") return emblemShape.value;
+
+    if (emblemShape.value === "state" && state && pack.states[state].coa) return pack.states[state].coa.shield;
     if (pack.cultures[culture].shield) return pack.cultures[culture].shield;
-    console.error("Emblem shape is not defined on culture level", pack.cultures[culture]);
+    console.error("Shield shape is not defined on culture level", pack.cultures[culture]);
     return "heater";
   }
 
   const toString = coa => JSON.stringify(coa).replaceAll("#", "%23");
   const copy = coa => JSON.parse(JSON.stringify(coa));
 
-  return {generate, toString, copy, getShield};
+  return {generate, toString, copy, getShield, shields};
 
 })));
