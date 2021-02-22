@@ -110,7 +110,7 @@ function editBurg(id) {
     if (temperature < -5) return "Yakutsk";
     const cities = [
       "Snag (Yukon)", "Yellowknife (Canada)", "Okhotsk (Russia)", "Fairbanks (Alaska)", "Nuuk (Greenland)", "Murmansk", // -5 - 0
-      "Arkhangelsk", "Anchorage", "Tromsø", "Reykjavik", "Riga", "Stockholm", "Halifax", "Prague", "Copenhagen9", "London", // 1 - 10
+      "Arkhangelsk", "Anchorage", "Tromsø", "Reykjavik", "Riga", "Stockholm", "Halifax", "Prague", "Copenhagen", "London", // 1 - 10
       "Antwerp", "Paris", "Milan", "Batumi", "Rome", "Dubrovnik", "Lisbon", "Barcelona", "Marrakesh", "Alexandria", // 11 - 20
       "Tegucigalpa", "Guangzhou", "Rio de Janeiro", "Dakar", "Miami", "Jakarta", "Mogadishu", "Bangkok", "Aden", "Khartoum"]; // 21 - 30
     if (temperature > 30) return "Mecca";
