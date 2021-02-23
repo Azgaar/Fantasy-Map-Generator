@@ -850,7 +850,7 @@ function editStates() {
 
     // update diplomacy and reverse relations
     const diplomacy = states.map(s => {
-      if (!s.i) return "x";
+      if (!s.i || s.removed) return "x";
       if (!oldState) {
         s.diplomacy.push("Neutral");
         return "Neutral";
