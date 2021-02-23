@@ -19,6 +19,12 @@ document.getElementById("dialogs").addEventListener("mousemove", showDataTip);
 document.getElementById("optionsContainer").addEventListener("mousemove", showDataTip);
 document.getElementById("exitCustomization").addEventListener("mousemove", showDataTip);
 
+/**
+ * @param {string} tip Tooltip text
+ * @param {boolean} main Show above other tooltips
+ * @param {string} type Message type (color): error, warn, success
+ * @param {number} time Timeout to auto hide, ms
+ */
 function tip(tip = "Tip is undefined", main, type, time) {
   tooltip.innerHTML = tip;
   tooltip.style.background = "linear-gradient(0.1turn, #ffffff00, #5e5c5c80, #ffffff00)";
@@ -94,6 +100,23 @@ function showMapTooltip(point, e, i, g) {
     tip(e.target.parentNode.dataset.name + ". Click to edit");
     return;
   }
+
+  if (group === "emblems" && e.target.tagName === "use") {
+    const parent = e.target.parentNode;
+    const [g, type] = parent.id === "burgEmblems" ? [pack.burgs, "burg"] :
+                      parent.id === "provinceEmblems" ? [pack.provinces, "province"] :
+                      [pack.states, "state"];
+    const i = +e.target.dataset.i;
+    if (event.shiftKey) highlightEmblemElement(type, g[i]);
+
+    d3.select(e.target).raise();
+    d3.select(parent).raise();
+
+    const name = g[i].fullName || g[i].name;
+    tip(`${name} ${type} emblem. Click to edit. Hold Shift to show associated area or place`);
+    return;
+  }
+
   if (group === "rivers") {
     const river = +e.target.id.slice(5);
     const r = pack.rivers.find(r => r.i === river);
@@ -171,7 +194,7 @@ function highlightEditorLine(editor, id, timeout = 15000) {
   Array.from(editor.getElementsByClassName("states hovered")).forEach(el => el.classList.remove("hovered")); // clear all hovered
   const hovered = Array.from(editor.querySelectorAll("div")).find(el => el.dataset.id == id);
   if (hovered) hovered.classList.add("hovered"); // add hovered class
-  if (timeout) setTimeout(() => hovered.classList.remove("hovered"), timeout);
+  if (timeout) setTimeout(() => {hovered && hovered.classList.remove("hovered")}, timeout);
 }
 
 // get cell info on mouse move
@@ -281,6 +304,31 @@ function getPopulationTip(i) {
   return `Cell population: ${si(rural+urban)}; Rural: ${si(rural)}; Urban: ${si(urban)}`;
 }
 
+function highlightEmblemElement(type, el) {
+    const i = el.i, cells = pack.cells;
+    const animation = d3.transition().duration(1000).ease(d3.easeSinIn);
+
+    if (type === "burg") {
+      const {x, y} = el;
+      debug.append("circle").attr("cx", x).attr("cy", y).attr("r", 0)
+        .attr("fill", "none").attr("stroke", "#d0240f").attr("stroke-width", 1).attr("opacity", 1)
+        .transition(animation).attr("r", 20).attr("opacity", .1).attr("stroke-width", 0).remove();
+      return;
+    }
+
+    const [x, y] = el.pole;
+    const obj = type === "state" ? cells.state : cells.province;
+    const borderCells = cells.i.filter(id => obj[id] === i && cells.c[id].some(n => obj[n] !== i));
+    const data = Array.from(borderCells).filter((c, i) => !(i%2)).map(i => cells.p[i]).map(i => [i[0], i[1], Math.hypot(i[0]-x, i[1]-y)]);
+
+    debug.selectAll("line").data(data).enter().append("line")
+      .attr("x1", x).attr("y1", y).attr("x2", d => d[0]).attr("y2", d => d[1])
+      .attr("stroke", "#d0240f").attr("stroke-width", .5).attr("opacity", .2)
+      .attr("stroke-dashoffset", d => d[2]).attr("stroke-dasharray", d => d[2])
+      .transition(animation).attr("stroke-dashoffset", 0).attr("opacity", 1)
+      .transition(animation).delay(1000).attr("stroke-dashoffset", d => d[2]).attr("opacity", 0).remove();
+}
+
 // assign lock behavior
 document.querySelectorAll("[data-locked]").forEach(function(e) {
   e.addEventListener("mouseover", function(event) {
@@ -289,7 +337,7 @@ document.querySelectorAll("[data-locked]").forEach(function(e) {
     event.stopPropagation();
   });
 
-  e.addEventListener("click", function(event) {
+  e.addEventListener("click", function() {
     const id = (this.id).slice(5);
     if (this.className === "icon-lock") unlock(id);
     else lock(id);
@@ -326,6 +374,22 @@ function stored(option) {
   return localStorage.getItem(option);
 }
 
+// assign skeaker behaviour
+Array.from(document.getElementsByClassName("speaker")).forEach(el => {
+  const input = el.previousElementSibling;
+  el.addEventListener("click", () => speak(input.value));
+});
+
+function speak(text) {
+  const speaker = new SpeechSynthesisUtterance(text);
+  const voices = speechSynthesis.getVoices();
+  if (voices.length) {
+    const voiceId = +document.getElementById("speakerVoice").value;
+    speaker.voice = voices[voiceId];
+  }
+  speechSynthesis.speak(speaker);
+}
+
 // apply drop-down menu option. If the value is not in options, add it
 function applyOption(select, id, name = id) {
   const custom = !Array.from(select.options).some(o => o.value == id);
@@ -339,6 +403,7 @@ function showInfo() {
   const Reddit = link("https://www.reddit.com/r/FantasyMapGenerator", "Reddit")
   const Patreon = link("https://www.patreon.com/azgaar", "Patreon");
   const Trello = link("https://trello.com/b/7x832DG4/fantasy-map-generator", "Trello");
+  const Armoria = link("https://azgaar.github.io/Armoria", "Armoria");
 
   const QuickStart = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Quick-Start-Tutorial", "Quick start tutorial");
   const QAA = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A", "Q&A page");
@@ -353,9 +418,11 @@ function showInfo() {
     <p>The best way to get help is to contact the community on ${Discord} and ${Reddit}. 
     Before asking questions, please check out the ${QuickStart} and the ${QAA}.</p>
 
-    <p>You can track the development process on ${Trello}.</p>
+    <p>Track the development process on ${Trello}.</p>
 
-    Links:
+    <p>Check out our new project: ${Armoria}, heraldry generator and editor.</p>
+
+    <b>Links:</b>
     <ul style="columns:2">
       <li>${link("https://github.com/Azgaar/Fantasy-Map-Generator", "GitHub repository")}</li>
       <li>${link("https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE", "License")}</li>
@@ -372,6 +439,7 @@ function showInfo() {
 // prevent default browser behavior for FMG-used hotkeys
 document.addEventListener("keydown", event => {
   if (event.altKey && event.keyCode !== 18) event.preventDefault(); // disallow alt key combinations
+  if (event.ctrlKey && event.code === "KeyS") event.preventDefault(); // disallow CTRL + C
   if ([112, 113, 117, 120, 9].includes(event.keyCode)) event.preventDefault(); // F1, F2, F6, F9, Tab
 });
 
@@ -400,6 +468,7 @@ document.addEventListener("keyup", event => {
   else if (key === 79 && canvas3d) toggle3dOptions(); // "O" to toggle 3d options
 
   else if (ctrl && key === 81) toggleSaveReminder(); // Ctrl + "Q" to toggle save reminder
+  else if (ctrl && key === 83) saveMap(); // Ctrl + "S" to save .map file
   else if (undo.offsetParent && ctrl && key === 90) undo.click(); // Ctrl + "Z" to undo
   else if (redo.offsetParent && ctrl && key === 89) redo.click(); // Ctrl + "Y" to redo
 
@@ -412,6 +481,7 @@ document.addEventListener("keyup", event => {
   else if (shift && key === 78) editNamesbase(); // Shift + "N" to edit Namesbase
   else if (shift && key === 90) editZones(); // Shift + "Z" to edit Zones
   else if (shift && key === 82) editReligions(); // Shift + "R" to edit Religions
+  else if (shift && key === 89) openEmblemEditor(); // Shift + "Y" to edit Emblems
   else if (shift && key === 81) editUnits(); // Shift + "Q" to edit Units
   else if (shift && key === 79) editNotes(); // Shift + "O" to edit Notes
   else if (shift && key === 84) overviewBurgs(); // Shift + "T" to open Burgs overview
@@ -451,6 +521,7 @@ document.addEventListener("keyup", event => {
   else if (key === 78) togglePopulation(); // "N" to toggle Population layer
   else if (key === 74) toggleIce(); // "J" to toggle Ice layer
   else if (key === 65) togglePrec(); // "A" to toggle Precipitation layer
+  else if (key === 89) toggleEmblems(); // "Y" to toggle Emblems layer
   else if (key === 76) toggleLabels(); // "L" to toggle Labels layer
   else if (key === 73) toggleIcons(); // "I" to toggle Icons layer
   else if (key === 77) toggleMilitary(); // "M" to toggle Military layer

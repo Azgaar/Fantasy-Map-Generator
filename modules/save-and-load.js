@@ -8,7 +8,6 @@ async function saveSVG() {
   const link = document.createElement("a");
   link.download = getFileName() + ".svg";
   link.href = url;
-  document.body.appendChild(link);
   link.click();
 
   tip(`${link.download} is saved. Open "Downloads" screen (crtl + J) to check. You can set image scale in options`, true, "success", 5000);
@@ -33,7 +32,6 @@ async function savePNG() {
     link.download = getFileName() + ".png";
     canvas.toBlob(function(blob) {
         link.href = window.URL.createObjectURL(blob);
-        document.body.appendChild(link);
         link.click();
         window.setTimeout(function() {
           canvas.remove();
@@ -64,7 +62,6 @@ async function saveJPEG() {
     const link = document.createElement("a");
     link.download = getFileName() + ".jpeg";
     link.href = URL;
-    document.body.appendChild(link);
     link.click();
     tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
     window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
@@ -81,6 +78,9 @@ async function getMapURL(type, subtype) {
   const clone = d3.select(cloneEl);
   clone.select("#debug").remove();
 
+  const cloneDefs = cloneEl.getElementsByTagName("defs")[0];
+  const svgDefs = document.getElementById("defElements");
+
   const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
   if (isFirefox && type === "mesh") clone.select("#oceanPattern").remove();
   if (subtype === "globe") clone.select("#scaleBar").remove();
@@ -94,14 +94,89 @@ async function getMapURL(type, subtype) {
   if (customization && type === "mesh") updateMeshCells(clone);
   inlineStyle(clone);
 
-  const fontStyle = await GFontToDataURI(getFontsToLoad()); // load non-standard fonts
-  if (fontStyle) clone.select("defs").append("style").text(fontStyle.join('\n')); // add font to style
+  // remove unused filters
+  const filters = cloneEl.querySelectorAll("filter");
+  for (let i=0; i < filters.length; i++) {
+    const id = filters[i].id;
+    if (cloneEl.querySelector("[filter='url(#"+id+")']")) continue;
+    if (cloneEl.getAttribute("filter") === "url(#"+id+")") continue;
+    filters[i].remove();
+  }
 
-  clone.append("metadata").text("<dc:format>image/svg+xml</dc:format>");
-  const serialized = (new XMLSerializer()).serializeToString(clone.node());
-  const svg_xml = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>` + serialized;
+  // remove unused patterns
+  const patterns = cloneEl.querySelectorAll("pattern");
+  for (let i=0; i < patterns.length; i++) {
+    const id = patterns[i].id;
+    if (cloneEl.querySelector("[fill='url(#"+id+")']")) continue;
+    patterns[i].remove();
+  }
+
+  // remove unused symbols
+  const symbols = cloneEl.querySelectorAll("symbol");
+  for (let i=0; i < symbols.length; i++) {
+    const id = symbols[i].id;
+    if (cloneEl.querySelector("use[href='#"+id+"']")) continue;
+    symbols[i].remove();
+  }
+
+  // add displayed emblems
+  if (layerIsOn("toggleEmblems")) {
+    Array.from(cloneEl.getElementById("emblems").querySelectorAll("use")).forEach(el => {
+      const href = el.getAttribute("href");
+      if (!href) return;
+      const emblem = document.getElementById(href.slice(1)).cloneNode(true); // clone emblem
+      cloneDefs.append(emblem);
+    });
+  }
+
+  // add ocean pattern
+  if (cloneEl.getElementById("oceanicPattern")) {
+    const patternId = cloneEl.getElementById("oceanicPattern").getAttribute("filter").slice(5,-1);
+    const pattern = svgDefs.getElementById(patternId);
+    if (patternId) cloneDefs.appendChild(pattern.cloneNode(true));
+  }
+
+  // add relief icons
+  if (cloneEl.getElementById("terrain")) {
+    const uniqueElements = new Set();
+    const terrainElements = cloneEl.getElementById("terrain").childNodes;
+    for (let i=0; i < terrainElements.length; i++) {
+      uniqueElements.add(terrainElements[i].getAttribute("href"));
+    }
+
+    const defsRelief = svgDefs.getElementById("defs-relief");
+    for (const terrain of [...uniqueElements]) {
+      const element = defsRelief.querySelector(terrain);
+      if (element) cloneDefs.appendChild(element.cloneNode(true));
+    }
+  }
+
+  // add wind rose
+  if (cloneEl.getElementById("compass")) {
+    const rose = svgDefs.getElementById("rose");
+    if (rose) cloneDefs.appendChild(rose.cloneNode(true));
+  }
+
+  // add port icon
+  if (cloneEl.getElementById("anchors")) {
+    const anchor = svgDefs.getElementById("icon-anchor");
+    if (anchor) cloneDefs.appendChild(anchor.cloneNode(true));
+  }
+
+  if (!cloneEl.getElementById("hatching").children.length) cloneEl.getElementById("hatching").remove(); //remove unused hatching group
+  if (!cloneEl.getElementById("fogging-cont")) cloneEl.getElementById("fog").remove(); //remove unused fog
+  if (!cloneEl.getElementById("regions")) cloneEl.getElementById("statePaths").remove(); // removed unused statePaths
+  if (!cloneEl.getElementById("labels")) cloneEl.getElementById("textPaths").remove(); // removed unused textPaths
+
+  // add armies style
+  if (cloneEl.getElementById("armies")) cloneEl.insertAdjacentHTML("afterbegin", "<style>#armies text {stroke: none; fill: #fff; text-shadow: 0 0 4px #000; dominant-baseline: central; text-anchor: middle; font-family: Helvetica; fill-opacity: 1;}#armies text.regimentIcon {font-size: .8em;}</style>");
+
+  const fontStyle = await GFontToDataURI(getFontsToLoad(clone)); // load non-standard fonts
+  if (fontStyle) clone.select("defs").append("style").text(fontStyle.join('\n')); // add font to style
   clone.remove();
-  const blob = new Blob([svg_xml], {type: 'image/svg+xml;charset=utf-8'});
+
+  const serialized = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>` + (new XMLSerializer()).serializeToString(cloneEl);
+  const blob = new Blob([serialized], {type: 'image/svg+xml;charset=utf-8'});
   const url = window.URL.createObjectURL(blob);
   window.setTimeout(() => window.URL.revokeObjectURL(url), 5000);
   return url;
@@ -115,7 +190,7 @@ function removeUnusedElements(clone) {
   for (let empty = 1; empty;) {
     empty = 0;
     clone.selectAll("g").each(function() {
-      if (!this.hasChildNodes() || this.style.display === "none") {empty++; this.remove();}
+      if (!this.hasChildNodes() || this.style.display === "none" || this.classList.contains("hidden")) {empty++; this.remove();}
       if (this.hasAttribute("display") && this.style.display === "inline") this.removeAttribute("display");
     });
   }
@@ -170,11 +245,11 @@ function inlineStyle(clone) {
 }
 
 // get non-standard fonts used for labels to fetch them from web
-function getFontsToLoad() {
+function getFontsToLoad(clone) {
   const webSafe = ["Georgia", "Times+New+Roman", "Comic+Sans+MS", "Lucida+Sans+Unicode", "Courier+New", "Verdana", "Arial", "Impact"]; // fonts to not fetch
 
   const fontsInUse = new Set(); // to store fonts currently in use
-  labels.selectAll("g").each(function() {
+  clone.selectAll("#labels > g").each(function() {
     if (!this.hasChildNodes()) return;
     const font = this.dataset.font;
     if (!font || webSafe.includes(font)) return;
@@ -246,12 +321,14 @@ function getMapData() {
     const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
     const notesData = JSON.stringify(notes);
 
-    const cloneEl = document.getElementById("map").cloneNode(true); // clone svg
+    // clone svg
+    const cloneEl = document.getElementById("map").cloneNode(true);
 
     // set transform values to default
     cloneEl.setAttribute("width", graphWidth);
     cloneEl.setAttribute("height", graphHeight);
     cloneEl.querySelector("#viewbox").removeAttribute("transform");
+
     const svg_xml = (new XMLSerializer()).serializeToString(cloneEl);
 
     const gridGeneral = JSON.stringify({spacing:grid.spacing, cellsX:grid.cellsX, cellsY:grid.cellsY, boundary:grid.boundary, points:grid.points, features:grid.features});
@@ -298,7 +375,6 @@ async function saveMap() {
   const link = document.createElement("a");
   link.download = getFileName() + ".map";
   link.href = URL;
-  document.body.appendChild(link);
   link.click();
   tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
   window.URL.revokeObjectURL(URL);
@@ -423,7 +499,7 @@ async function quickSave() {
   if (customization) {tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error"); return;}
   const blob = await getMapData();
   if (blob) ldb.set("lastMap", blob); // auto-save map
-  tip("Map is saved to browser memory", true, "success", 2000);
+  tip("Map is saved to browser memory. Please also save as .map file to secure progress", true, "success", 2000);
 }
 
 function quickLoad() {
@@ -501,6 +577,8 @@ function uploadMap(file, callback) {
   const fileReader = new FileReader();
   fileReader.onload = function(fileLoadedEvent) {
     if (callback) callback();
+    document.getElementById("coas").innerHTML = ""; // remove auto-generated emblems
+
     const dataLoaded = fileLoadedEvent.target.result;
     const data = dataLoaded.split("\r\n");
 
@@ -519,7 +597,7 @@ function uploadMap(file, callback) {
     } else {
       load = true;
       message =  `The map version (${mapVersion}) does not match the Generator version (${version}).
-                 <br>Click OK to get map auto-updated. In case of issues please keep using an ${archive} of the Generator`;
+                 <br>Click OK to get map <b>auto-updated</b>. In case of issues please keep using an ${archive} of the Generator`;
     }
     alertMessage.innerHTML = message;
     $("#alert").dialog({title: "Version conflict", width: "38em", buttons: {
@@ -638,6 +716,7 @@ function parseLoadedData(data) {
       coastline = viewbox.select("#coastline");
       prec = viewbox.select("#prec");
       population = viewbox.select("#population");
+      emblems = viewbox.select("#emblems");
       labels = viewbox.select("#labels");
       icons = viewbox.select("#icons");
       burgIcons = icons.select("#burgIcons");
@@ -698,36 +777,43 @@ function parseLoadedData(data) {
       }
     }()
 
-    void function restoreLayersState() {
-      if (texture.style("display") !== "none" && texture.select("image").size()) turnButtonOn("toggleTexture"); else turnButtonOff("toggleTexture");
-      if (terrs.selectAll("*").size()) turnButtonOn("toggleHeight"); else turnButtonOff("toggleHeight");
-      if (biomes.selectAll("*").size()) turnButtonOn("toggleBiomes"); else turnButtonOff("toggleBiomes");
-      if (cells.selectAll("*").size()) turnButtonOn("toggleCells"); else turnButtonOff("toggleCells");
-      if (gridOverlay.selectAll("*").size()) turnButtonOn("toggleGrid"); else turnButtonOff("toggleGrid");
-      if (coordinates.selectAll("*").size()) turnButtonOn("toggleCoordinates"); else turnButtonOff("toggleCoordinates");
-      if (compass.style("display") !== "none" && compass.select("use").size()) turnButtonOn("toggleCompass"); else turnButtonOff("toggleCompass");
-      if (rivers.style("display") !== "none") turnButtonOn("toggleRivers"); else turnButtonOff("toggleRivers");
-      if (terrain.style("display") !== "none" && terrain.selectAll("*").size()) turnButtonOn("toggleRelief"); else turnButtonOff("toggleRelief");
-      if (relig.selectAll("*").size()) turnButtonOn("toggleReligions"); else turnButtonOff("toggleReligions");
-      if (cults.selectAll("*").size()) turnButtonOn("toggleCultures"); else turnButtonOff("toggleCultures");
-      if (statesBody.selectAll("*").size()) turnButtonOn("toggleStates"); else turnButtonOff("toggleStates");
-      if (provs.selectAll("*").size()) turnButtonOn("toggleProvinces"); else turnButtonOff("toggleProvinces");
-      if (zones.selectAll("*").size() && zones.style("display") !== "none") turnButtonOn("toggleZones"); else turnButtonOff("toggleZones");
-      if (borders.style("display") !== "none") turnButtonOn("toggleBorders"); else turnButtonOff("toggleBorders");
-      if (routes.style("display") !== "none" && routes.selectAll("path").size()) turnButtonOn("toggleRoutes"); else turnButtonOff("toggleRoutes");
-      if (temperature.selectAll("*").size()) turnButtonOn("toggleTemp"); else turnButtonOff("toggleTemp");
-      if (prec.selectAll("circle").size()) turnButtonOn("togglePrec"); else turnButtonOff("togglePrec");
-      if (labels.style("display") !== "none") turnButtonOn("toggleLabels"); else turnButtonOff("toggleLabels");
-      if (icons.style("display") !== "none") turnButtonOn("toggleIcons"); else turnButtonOff("toggleIcons");
-      if (armies.selectAll("*").size() && armies.style("display") !== "none") turnButtonOn("toggleMilitary"); else turnButtonOff("toggleMilitary");
-      if (markers.selectAll("*").size() && markers.style("display") !== "none") turnButtonOn("toggleMarkers"); else turnButtonOff("toggleMarkers");
-      if (ruler.style("display") !== "none") turnButtonOn("toggleRulers"); else turnButtonOff("toggleRulers");
-      if (scaleBar.style("display") !== "none") turnButtonOn("toggleScaleBar"); else turnButtonOff("toggleScaleBar");
+    const notHidden = selection => selection.style("display") !== "none";
+    const hasChildren = selection => selection.node()?.hasChildNodes();
+    const hasChild = (selection, selector) => selection.node()?.querySelector(selector);
+    const turnOn = el => document.getElementById(el).classList.remove("buttonoff");
 
-      // special case for population bars
-      const populationIsOn = population.selectAll("line").size();
-      if (populationIsOn) drawPopulation();
-      if (populationIsOn) turnButtonOn("togglePopulation"); else turnButtonOff("togglePopulation");
+    void function restoreLayersState() {
+      // turn all layers off
+      document.getElementById("mapLayers").querySelectorAll("li").forEach(el => el.classList.add("buttonoff"));
+
+      // turn on active layers
+      if (notHidden(texture) && hasChild(texture, "image")) turnOn("toggleTexture");
+      if (hasChildren(terrs)) turnOn("toggleHeight");
+      if (hasChildren(biomes)) turnOn("toggleBiomes");
+      if (hasChildren(cells)) turnOn("toggleCells");
+      if (hasChildren(gridOverlay)) turnOn("toggleGrid");
+      if (hasChildren(coordinates)) turnOn("toggleCoordinates");
+      if (notHidden(compass) && hasChild(compass, "use")) turnOn("toggleCompass");
+      if (notHidden(rivers)) turnOn("toggleRivers");
+      if (notHidden(terrain) && hasChildren(terrain)) turnOn("toggleRelief");
+      if (hasChildren(relig)) turnOn("toggleReligions");
+      if (hasChildren(cults)) turnOn("toggleCultures");
+      if (hasChildren(statesBody)) turnOn("toggleStates");
+      if (hasChildren(provs)) turnOn("toggleProvinces");
+      if (hasChildren(zones) && notHidden(zones)) turnOn("toggleZones");
+      if (notHidden(borders) && hasChild(compass, "use")) turnOn("toggleBorders");
+      if (notHidden(routes) && hasChild(routes, "path")) turnOn("toggleRoutes");
+      if (hasChildren(temperature)) turnOn("toggleTemp");
+      if (hasChild(population, "line")) turnOn("togglePopulation");
+      if (hasChildren(ice)) turnOn("toggleIce");
+      if (hasChild(prec, "circle")) turnOn("togglePrec");
+      if (hasChild(emblems, "use")) turnOn("toggleEmblems");
+      if (notHidden(labels)) turnOn("toggleLabels");
+      if (notHidden(icons)) turnOn("toggleIcons");
+      if (hasChildren(armies) && notHidden(armies)) turnOn("toggleMilitary");
+      if (hasChildren(markers) && notHidden(markers)) turnOn("toggleMarkers");
+      if (notHidden(ruler)) turnOn("toggleRulers");
+      if (notHidden(scaleBar)) turnOn("toggleScaleBar");
 
       getCurrentPreset();
     }()
@@ -741,7 +827,7 @@ function parseLoadedData(data) {
       ruler.selectAll("g.opisometer circle").call(d3.drag().on("start", dragOpisometerEnd));
       ruler.selectAll("g.opisometer circle").call(d3.drag().on("start", dragOpisometerEnd));
 
-      scaleBar.on("mousemove", () => tip("Click to open Units Editor"));
+      scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => editUnits());
       legend.on("mousemove", () => tip("Drag to change the position. Click to hide the legend")).on("click", () => clearLegend());
     }()
 
@@ -917,13 +1003,6 @@ function parseLoadedData(data) {
       }
 
       if (version < 1.22) {
-        // v 1.21 had incorrect style formatting
-        localStorage.removeItem("styleClean");
-        localStorage.removeItem("styleGloom");
-        localStorage.removeItem("styleAncient");
-        localStorage.removeItem("styleMonochrome");
-        addDefaulsStyles();
-
         // v 1.22 changed state neighbors from Set object to array
         BurgsAndStates.collectStatistics();
       }
@@ -941,7 +1020,6 @@ function parseLoadedData(data) {
         BurgsAndStates.generateCampaigns();
 
         // v 1.3 added militry layer
-        svg.select("defs").append("style").text(armiesStyle()); // add armies style
         armies = viewbox.insert("g", "#icons").attr("id", "armies");
         armies.attr("opacity", 1).attr("fill-opacity", 1).attr("font-size", 6).attr("box-size", 3).attr("stroke", "#000").attr("stroke-width", .3);
         turnButtonOn("toggleMilitary");
@@ -979,6 +1057,35 @@ function parseLoadedData(data) {
 
         // 1.4 added state reference for regiments
         pack.states.filter(s => s.military).forEach(s => s.military.forEach(r => r.state = s.i));
+      }
+
+      if (version < 1.5) {
+        // not need to store default styles from v 1.5
+        localStorage.removeItem("styleClean");
+        localStorage.removeItem("styleGloom");
+        localStorage.removeItem("styleAncient");
+        localStorage.removeItem("styleMonochrome");
+
+        // v 1.5 cultures has shield attribute
+        pack.cultures.forEach(culture => {
+          if (culture.removed) return;
+          culture.shield = Cultures.getRandomShield();
+        });
+
+        // v 1.5 added burg type value
+        pack.burgs.forEach(burg => {
+          if (!burg.i || burg.removed) return;
+          burg.type = BurgsAndStates.getType(burg.cell, burg.port);
+        });
+
+        // v 1.5 added emblems
+        defs.append("g").attr("id", "defs-emblems");
+        emblems = viewbox.insert("g", "#population").attr("id", "emblems").style("display", "none");
+        emblems.append("g").attr("id", "burgEmblems");
+        emblems.append("g").attr("id", "provinceEmblems");
+        emblems.append("g").attr("id", "stateEmblems");
+        regenerateEmblems();
+        toggleEmblems();
       }
 
     }()
@@ -1040,6 +1147,9 @@ function parseLoadedData(data) {
     }()
 
     changeMapSize();
+
+    // remove href from emblems, to trigger rendering on load
+    emblems.selectAll("use").attr("href", null);
 
     // set options
     yearInput.value = options.year;

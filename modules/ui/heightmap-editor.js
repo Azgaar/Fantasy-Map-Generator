@@ -287,9 +287,7 @@ function editHeightmap() {
     reGraph();
     drawCoastline();
 
-    if (changeHeights.checked) {
-      Rivers.generate(changeHeights.checked);
-    }
+    if (changeHeights.checked) Rivers.generate(changeHeights.checked);
 
     // assign saved pack data from grid back to pack
     const n = pack.cells.i.length;
@@ -1308,7 +1306,6 @@ function editHeightmap() {
       const link = document.createElement("a");
       link.download = getFileName("Heightmap") + ".png";
       link.href = imgBig;
-      document.body.appendChild(link);
       link.click();
       canvas.remove();
     }

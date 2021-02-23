@@ -35,7 +35,7 @@
           let h = rn((4 + Math.random()) * size, 2);
           const icon = getBiomeIcon(i, biomesData.icons[b]);
           if (icon === "#relief-grass-1") h *= 1.3;
-          relief.push({i: icon, x: rn(cx-h, 2), y: rn(cy-h, 2), s: h*2});
+          relief.push({i: icon, x: rn(cx-h, 2), y: rn(cy-h, 2), s: rn(h*2, 2)});
         }
       }
 
@@ -45,7 +45,7 @@
 
         for (const [cx, cy] of poissonDiscSampler(e[0], e[1], e[2], e[3], radius)) {
           if (!d3.polygonContains(polygon, [cx, cy])) continue;
-          relief.push({i: icon, x: rn(cx-h, 2), y: rn(cy-h, 2), s: h*2});
+          relief.push({i: icon, x: rn(cx-h, 2), y: rn(cy-h, 2), s: rn(h*2, 2)});
         }
       }
 
@@ -64,7 +64,7 @@
     void function renderRelief() {
       let reliefHTML = "";
       for (const r of relief) {
-        reliefHTML += `<use xlink:href="${r.i}" data-type="${r.i}" x=${r.x} y=${r.y} data-size=${r.s} width=${r.s} height=${r.s}></use>`;
+        reliefHTML += `<use href="${r.i}" x="${r.x}" y="${r.y}" width="${r.s}" height="${r.s}"/>`;
       }
       terrain.html(reliefHTML);
     }()

@@ -1,29 +1,6 @@
 // UI module stub to control map layers
 "use strict";
 
-// on map regeneration restore layers if they was turned on 
-function restoreLayers() {
-  if (layerIsOn("toggleHeight")) drawHeightmap();
-  if (layerIsOn("toggleCells")) drawCells();
-  if (layerIsOn("toggleGrid")) drawGrid();
-  if (layerIsOn("toggleCoordinates")) drawCoordinates();
-  if (layerIsOn("toggleCompass")) compass.style("display", "block");
-  if (layerIsOn("toggleTemp")) drawTemp();
-  if (layerIsOn("togglePrec")) drawPrec();
-  if (layerIsOn("togglePopulation")) drawPopulation();
-  if (layerIsOn("toggleBiomes")) drawBiomes();
-  if (layerIsOn("toggleRelief")) ReliefIcons();
-  if (layerIsOn("toggleCultures")) drawCultures();
-  if (layerIsOn("toggleProvinces")) drawProvinces();
-  if (layerIsOn("toggleReligions")) drawReligions();
-  if (layerIsOn("toggleIce")) drawIce();
-
-  // states are getting rendered each time, if it's not required than layers should be hidden
-  if (!layerIsOn("toggleBorders")) $('#borders').fadeOut();
-  if (!layerIsOn("toggleStates")) regions.style("display", "none").selectAll("path").remove();
-}
-
-restoreLayers(); // run on-load
 let presets = {}; // global object
 restoreCustomPresets(); // run on-load
 
@@ -38,6 +15,7 @@ function getDefaultPresets() {
     "physical": ["toggleCoordinates", "toggleHeight", "toggleIce", "toggleRivers", "toggleScaleBar"],
     "poi": ["toggleBorders", "toggleHeight", "toggleIce", "toggleIcons", "toggleMarkers", "toggleRivers", "toggleRoutes", "toggleScaleBar"],
     "military": ["toggleBorders", "toggleIcons", "toggleLabels", "toggleMilitary", "toggleRivers", "toggleRoutes", "toggleScaleBar", "toggleStates"],
+    "emblems": ["toggleBorders", "toggleIcons", "toggleIce", "toggleEmblems", "toggleRivers", "toggleRoutes", "toggleScaleBar", "toggleStates"],
     "landmass": ["toggleScaleBar"]
   }
 }
@@ -55,9 +33,10 @@ function restoreCustomPresets() {
   presets = storedPresets;
 }
 
+// run on map generation
 function applyPreset() {
-  const selected = localStorage.getItem("preset");
-  if (selected) changePreset(selected);
+  const preset = localStorage.getItem("preset") || document.getElementById("layersPreset").value;
+  changePreset(preset);
 }
 
 // toggle layers on preset change
@@ -115,6 +94,29 @@ function getCurrentPreset() {
   layersPreset.value = "custom";
   removePresetButton.style.display = "none";
   savePresetButton.style.display = "inline-block";
+}
+
+// run on map regeneration
+function restoreLayers() {
+  if (layerIsOn("toggleHeight")) drawHeightmap();
+  if (layerIsOn("toggleCells")) drawCells();
+  if (layerIsOn("toggleGrid")) drawGrid();
+  if (layerIsOn("toggleCoordinates")) drawCoordinates();
+  if (layerIsOn("toggleCompass")) compass.style("display", "block");
+  if (layerIsOn("toggleTemp")) drawTemp();
+  if (layerIsOn("togglePrec")) drawPrec();
+  if (layerIsOn("togglePopulation")) drawPopulation();
+  if (layerIsOn("toggleBiomes")) drawBiomes();
+  if (layerIsOn("toggleRelief")) ReliefIcons();
+  if (layerIsOn("toggleCultures")) drawCultures();
+  if (layerIsOn("toggleProvinces")) drawProvinces();
+  if (layerIsOn("toggleReligions")) drawReligions();
+  if (layerIsOn("toggleIce")) drawIce();
+  if (layerIsOn("toggleEmblems")) drawEmblems();
+
+  // states are getting rendered each time, if it's not required than layers should be hidden
+  if (!layerIsOn("toggleBorders")) $('#borders').fadeOut();
+  if (!layerIsOn("toggleStates")) regions.style("display", "none").selectAll("path").remove();
 }
 
 function toggleHeight(event) {
@@ -457,7 +459,7 @@ function drawCells() {
   cells.append("path").attr("d", path);
 }
 
-function toggleIce() {
+function toggleIce(event) {
   if (!layerIsOn("toggleIce")) {
     turnButtonOn("toggleIce");
     $('#ice').fadeIn();
@@ -473,7 +475,7 @@ function toggleIce() {
 function drawIce() {
   const cells = grid.cells, vertices = grid.vertices, n = cells.i.length, temp = cells.temp, h = cells.h;
   const used = new Uint8Array(cells.i.length);
-  Math.seedrandom(seed);
+  Math.random = aleaPRNG(seed);
 
   const shieldMin = -6; // max temp to form ice shield (glacier)
   const icebergMax = 2; // max temp to form an iceberg
@@ -713,15 +715,16 @@ function drawStates() {
   });
 
   const bodyData = body.map((p, i) => [p.length > 10 ? p : null, i, states[i].color]).filter(d => d[0]);
-  statesBody.selectAll("path").data(bodyData).enter().append("path").attr("d", d => d[0]).attr("fill", d => d[2]).attr("stroke", "none").attr("id", d => "state"+d[1]);
   const gapData = gap.map((p, i) => [p.length > 10 ? p : null, i, states[i].color]).filter(d => d[0]);
-  statesBody.selectAll(".path").data(gapData).enter().append("path").attr("d", d => d[0]).attr("fill", "none").attr("stroke", d => d[2]).attr("id", d => "state-gap"+d[1]);
 
-  defs.select("#statePaths").selectAll("clipPath").remove();
-  defs.select("#statePaths").selectAll("clipPath").data(bodyData).enter().append("clipPath").attr("id", d => "state-clip"+d[1]).append("use").attr("href", d => "#state"+d[1]);
-  statesHalo.selectAll(".path").data(bodyData).enter().append("path")
-    .attr("d", d => d[0]).attr("stroke", d => d3.color(d[2]) ? d3.color(d[2]).darker().hex() : "#666666")
-    .attr("id", d => "state-border"+d[1]).attr("clip-path", d => "url(#state-clip"+d[1]+")");
+  const bodyString = bodyData.map(d => `<path id="state${d[1]}" d="${d[0]}" fill="${d[2]}" stroke="none"/>`).join("");
+  const gapString = gapData.map(d => `<path id="state-gap${d[1]}" d="${d[0]}" fill="none" stroke="${d[2]}"/>`).join("");
+  const clipString = bodyData.map(d => `<clipPath id="state-clip${d[1]}"><use href="#state${d[1]}"/></clipPath>`).join("");
+  const haloString = bodyData.map(d => `<path id="state-border${d[1]}" d="${d[0]}" clip-path="url(#state-clip${d[1]})" stroke="${d3.color(d[2]) ? d3.color(d[2]).darker().hex() : '#666666'}"/>`).join("");
+
+  statesBody.html(bodyString + gapString);
+  defs.select("#statePaths").html(clipString);
+  statesHalo.html(haloString);
 
   // connect vertices to chain
   function connectVertices(start, t, state) {
@@ -877,6 +880,26 @@ function drawProvinces() {
   const labelsOn = provs.attr("data-labels") == 1;
   provs.selectAll("*").remove();
 
+  const provinces = pack.provinces;
+  const {body, gap} = getProvincesVertices();
+
+  const g = provs.append("g").attr("id", "provincesBody");
+  const bodyData = body.map((p, i) => [p.length > 10 ? p : null, i, provinces[i].color]).filter(d => d[0]);
+  g.selectAll("path").data(bodyData).enter().append("path").attr("d", d => d[0]).attr("fill", d => d[2]).attr("stroke", "none").attr("id", d => "province"+d[1]);
+  const gapData = gap.map((p, i) => [p.length > 10 ? p : null, i, provinces[i].color]).filter(d => d[0]);
+  g.selectAll(".path").data(gapData).enter().append("path").attr("d", d => d[0]).attr("fill", "none").attr("stroke", d => d[2]).attr("id", d => "province-gap"+d[1]);
+
+  const labels = provs.append("g").attr("id", "provinceLabels");
+  labels.style("display", `${labelsOn ? "block" : "none"}`);
+  const labelData = provinces.filter(p => p.i && !p.removed);
+  labels.selectAll(".path").data(labelData).enter().append("text")
+    .attr("x", d => d.pole[0]).attr("y", d => d.pole[1])
+    .attr("id", d => "provinceLabel"+d.i).text(d => d.name);
+
+  TIME && console.timeEnd("drawProvinces");
+}
+
+function getProvincesVertices() {
   const cells = pack.cells, vertices = pack.vertices, provinces = pack.provinces, n = cells.i.length;
   const used = new Uint8Array(cells.i.length);
   const vArray = new Array(provinces.length); // store vertices array
@@ -906,18 +929,7 @@ function drawProvinces() {
     provinces[i].pole = polylabel(sorted, 1.0); // pole of inaccessibility
   });
 
-  const g = provs.append("g").attr("id", "provincesBody");
-  const bodyData = body.map((p, i) => [p.length > 10 ? p : null, i, provinces[i].color]).filter(d => d[0]);
-  g.selectAll("path").data(bodyData).enter().append("path").attr("d", d => d[0]).attr("fill", d => d[2]).attr("stroke", "none").attr("id", d => "province"+d[1]);
-  const gapData = gap.map((p, i) => [p.length > 10 ? p : null, i, provinces[i].color]).filter(d => d[0]);
-  g.selectAll(".path").data(gapData).enter().append("path").attr("d", d => d[0]).attr("fill", "none").attr("stroke", d => d[2]).attr("id", d => "province-gap"+d[1]);
-
-  const labels = provs.append("g").attr("id", "provinceLabels");
-  labels.style("display", `${labelsOn ? "block" : "none"}`);
-  const labelData = provinces.filter(p => p.i && !p.removed);
-  labels.selectAll(".path").data(labelData).enter().append("text")
-    .attr("x", d => d.pole[0]).attr("y", d => d.pole[1])
-    .attr("id", d => "provinceLabel"+d.i).text(d => d.name);
+  return {body, gap};
 
   // connect vertices to chain
   function connectVertices(start, t, province) {
@@ -942,7 +954,6 @@ function drawProvinces() {
     chain.push([start, province, land]); // add starting vertex to sequence to close the path
     return chain;
   }
-  TIME && console.timeEnd("drawProvinces");
 }
 
 function toggleGrid(event) {
@@ -1214,7 +1225,98 @@ function toggleZones(event) {
     if (event && isCtrlClick(event)) {editStyle("zones"); return;}
     turnButtonOff("toggleZones");
     $('#zones').fadeOut();
-  }  
+  }
+}
+
+function toggleEmblems(event) {
+  if (!layerIsOn("toggleEmblems")) {
+    turnButtonOn("toggleEmblems");
+    if (!emblems.selectAll("use").size()) drawEmblems();
+    $('#emblems').fadeIn();
+    if (event && isCtrlClick(event)) editStyle("emblems");
+  } else {
+    if (event && isCtrlClick(event)) {editStyle("emblems"); return;}
+    $('#emblems').fadeOut();
+    turnButtonOff("toggleEmblems");
+  }
+}
+
+function drawEmblems() {
+  TIME && console.time("drawEmblems");
+  const {states, provinces, burgs} = pack;
+
+  const validStates = states.filter(s => s.i && !s.removed && s.coa);
+  const validProvinces = provinces.filter(p => p.i && !p.removed && p.coa);
+  const validBurgs = burgs.filter(b => b.i && !b.removed && b.coa);
+
+  const getStateEmblemsSize = () => {
+    const startSize = Math.min(Math.max((graphHeight + graphWidth) / 40, 10), 100);
+    const statesMod = (1 + validStates.length / 100) - (15 - validStates.length) / 200; // states number modifier
+    const sizeMod = +document.getElementById("styleEmblemsStateSizeInput").value || 1;
+    return rn(startSize / statesMod * sizeMod); // target size ~50px on 1536x754 map with 15 states
+  };
+
+  const getProvinceEmblemsSize = () => {
+    const startSize = Math.min(Math.max((graphHeight + graphWidth) / 80, 5), 75);
+    const provincesMod = (1 + validProvinces.length / 1000) - (115 - validProvinces.length) / 1000; // states number modifier
+    const sizeMod = +document.getElementById("styleEmblemsProvinceSizeInput").value || 1;
+    return rn(startSize / provincesMod * sizeMod); // target size ~26px on 1536x754 map with 115 provinces
+  }
+
+  const getBurgEmblemSize = () => {
+    const startSize = Math.min(Math.max((graphHeight + graphWidth) / 150, 5), 50);
+    const burgsMod = (1 + validBurgs.length / 1000) - (450 - validBurgs.length) / 1000; // states number modifier
+    const sizeMod = +document.getElementById("styleEmblemsBurgSizeInput").value || 1;
+    return rn(startSize / burgsMod * sizeMod); // target size ~10px on 1536x754 map with 450 burgs
+  }
+
+  const sizeBurgs = getBurgEmblemSize();
+  const burgCOAs = validBurgs.map(burg => {
+    const {x, y} = burg;
+    return {type: "burg", i: burg.i, x, y, size: sizeBurgs};
+  });
+
+  const sizeProvinces = getProvinceEmblemsSize();
+  const provinceCOAs = validProvinces.map(province => {
+    if (!province.pole) getProvincesVertices();
+    const [x, y] = province.pole;
+    return {type: "province", i: province.i, x, y, size: sizeProvinces};
+  });
+
+  const sizeStates = getStateEmblemsSize();
+  const stateCOAs = validStates.map(state => {
+    const [x, y] = state.pole;
+    return {type: "state", i: state.i, x, y, size: sizeStates};
+  });
+
+  const nodes = burgCOAs.concat(provinceCOAs).concat(stateCOAs);
+  const simulation = d3.forceSimulation(nodes)
+    .alphaMin(.6).alphaDecay(.2).velocityDecay(.6)
+    .force('collision', d3.forceCollide().radius(d => d.size/2))
+    .stop();
+
+  d3.timeout(function() {
+    const n = Math.ceil(Math.log(simulation.alphaMin()) / Math.log(1 - simulation.alphaDecay()));
+    for (let i = 0; i < n; ++i) {
+      simulation.tick();
+    }
+
+    const burgNodes = nodes.filter(node => node.type === "burg");
+    const burgString = burgNodes.map(d => `<use data-i="${d.i}" x="${rn(d.x - d.size / 2)}" y="${rn(d.y - d.size / 2)}" width="1em" height="1em"/>`).join("");
+    emblems.select("#burgEmblems").attr("font-size", sizeBurgs).html(burgString);
+
+    const provinceNodes = nodes.filter(node => node.type === "province");
+    const provinceString = provinceNodes.map(d => `<use data-i="${d.i}" x="${rn(d.x - d.size / 2)}" y="${rn(d.y - d.size / 2)}" width="1em" height="1em"/>`).join("");
+    emblems.select("#provinceEmblems").attr("font-size", sizeProvinces).html(provinceString);
+
+    const stateNodes = nodes.filter(node => node.type === "state");
+    const stateString = stateNodes.map(d => `<use data-i="${d.i}" x="${rn(d.x - d.size / 2)}" y="${rn(d.y - d.size / 2)}" width="1em" height="1em"/>`).join("");
+    emblems.select("#stateEmblems").attr("font-size", sizeStates).html(stateString);
+
+    invokeActiveZooming();
+  });
+
+  TIME && console.timeEnd("drawEmblems");
 }
 
 function layerIsOn(el) {
@@ -1262,6 +1364,7 @@ function getLayer(id) {
   if (id === "togglePopulation") return $("#population");
   if (id === "toggleIce") return $("#ice");
   if (id === "toggleTexture") return $("#texture");
+  if (id === "toggleEmblems") return $("#emblems");
   if (id === "toggleLabels") return $("#labels");
   if (id === "toggleIcons") return $("#icons");
   if (id === "toggleMarkers") return $("#markers");

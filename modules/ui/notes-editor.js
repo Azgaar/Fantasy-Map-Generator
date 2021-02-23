@@ -38,7 +38,7 @@ function editNotes(id, name) {
 
   // open a dialog
   $("#notesEditor").dialog({
-    title: "Notes Editor", minWidth: "40em",
+    title: "Notes Editor", minWidth: "40em", width: "50vw",
     position: {my: "center", at: "center", of: "svg"},
     close: () => notesText.innerHTML = ""
   });
@@ -50,6 +50,7 @@ function editNotes(id, name) {
   document.getElementById("notesSelect").addEventListener("change", changeObject);
   document.getElementById("notesName").addEventListener("input", changeName);
   document.getElementById("notesPin").addEventListener("click", () => options.pinNotes = !options.pinNotes);
+  document.getElementById("notesSpeak").addEventListener("click", () => speak(editor.content.innerHTML));
   document.getElementById("notesFocus").addEventListener("click", validateHighlightElement);
   document.getElementById("notesDownload").addEventListener("click", downloadLegends);
   document.getElementById("notesUpload").addEventListener("click", () => legendsToLoad.click());
@@ -125,6 +126,7 @@ function editNotes(id, name) {
     notes.splice(index, 1);
     select.options.length = 0;
     if (!notes.length) {$("#notesEditor").dialog("close"); return;}
+    notesText.innerHTML = "";
     editNotes(notes[0].id, notes[0].name);
   }
 

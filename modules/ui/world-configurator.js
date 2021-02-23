@@ -2,10 +2,10 @@ function editWorld() {
   if (customization) return;
   $("#worldConfigurator").dialog({title: "Configure World", resizable: false, width: "42em",
     buttons: {
-      "Whole World": () => applyPreset(100, 50), 
-      "Northern": () => applyPreset(33, 25), 
-      "Tropical": () => applyPreset(33, 50), 
-      "Southern": () => applyPreset(33, 75), 
+      "Whole World": () => applyWorldPreset(100, 50),
+      "Northern": () => applyWorldPreset(33, 25),
+      "Tropical": () => applyWorldPreset(33, 50),
+      "Southern": () => applyWorldPreset(33, 75),
       "Restore Winds": restoreDefaultWinds
     }, open: function() {
       const buttons = $(this).dialog("widget").find(".ui-dialog-buttonset > button");
@@ -124,7 +124,7 @@ function editWorld() {
     if (update) updateWorld();
   }
 
-  function applyPreset(size, lat) {
+  function applyWorldPreset(size, lat) {
     document.getElementById("mapSizeInput").value = document.getElementById("mapSizeOutput").value = size;
     document.getElementById("latitudeInput").value = document.getElementById("latitudeOutput").value = lat;
     lock("mapSize");

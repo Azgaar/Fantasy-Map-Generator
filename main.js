@@ -1,18 +1,14 @@
-// Fantasy Map Generator main script
-// Azgaar (azgaar.fmg@yandex.by). Minsk, 2017-2019
+// Azgaar (azgaar.fmg@yandex.com). Minsk, 2017-2021. MIT License
 // https://github.com/Azgaar/Fantasy-Map-Generator
-// MIT License
-
-// I don't mind of any help with programming.
-// See also https://github.com/Azgaar/Fantasy-Map-Generator/issues/153
 
 "use strict";
-const version = "1.4"; // generator version
+const version = "1.5"; // generator version
 document.title += " v" + version;
 
 // Switches to disable/enable logging features
-const INFO = 0;
-const TIME = 1;
+const PRODUCTION = window.location.host;
+const INFO = !PRODUCTION;
+const TIME = !PRODUCTION;
 const WARN = 1;
 const ERROR = 1;
 
@@ -61,6 +57,7 @@ let coastline = viewbox.append("g").attr("id", "coastline");
 let ice = viewbox.append("g").attr("id", "ice").style("display", "none");
 let prec = viewbox.append("g").attr("id", "prec").style("display", "none");
 let population = viewbox.append("g").attr("id", "population");
+let emblems = viewbox.append("g").attr("id", "emblems").style("display", "none");
 let labels = viewbox.append("g").attr("id", "labels");
 let icons = viewbox.append("g").attr("id", "icons");
 let burgIcons = icons.append("g").attr("id", "burgIcons");
@@ -97,12 +94,17 @@ anchors.append("g").attr("id", "towns");
 population.append("g").attr("id", "rural");
 population.append("g").attr("id", "urban");
 
+// emblem groups
+emblems.append("g").attr("id", "burgEmblems");
+emblems.append("g").attr("id", "provinceEmblems");
+emblems.append("g").attr("id", "stateEmblems");
+
 // fogging
 fogging.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
 fogging.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%").attr("fill", "#e8f0f6").attr("filter", "url(#splotch)");
 
 // assign events separately as not a viewbox child
-scaleBar.on("mousemove", () => tip("Click to open Units Editor"));
+scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => editUnits());
 legend.on("mousemove", () => tip("Drag to change the position. Click to hide the legend")).on("click", () => clearLegend());
 
 // main data variables
@@ -336,37 +338,28 @@ function applyDefaultBiomesSystem() {
 }
 
 function showWelcomeMessage() {
-  const post = link("https://www.reddit.com/r/FantasyMapGenerator/comments/ft5b41/update_new_version_is_published_into_the_battle_v14/", "Main changes:"); // announcement on Reddit
+  const post = "Main changes:" //link("https://www.reddit.com/r/FantasyMapGenerator/comments/ft5b41/update_v15/", "Main changes:");
   const changelog = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "previous version");
   const reddit = link("https://www.reddit.com/r/FantasyMapGenerator", "Reddit community");
   const discord = link("https://discordapp.com/invite/X7E84HU", "Discord server");
   const patreon = link("https://www.patreon.com/azgaar", "Patreon");
-  const desktop = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#is-there-a-desktop-version", "desktop application");
 
   alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
-
     <ul>${post}
-      <li>Military forces changes (${link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Military-Forces", "detailed description")})</li>
-      <li>Battle simulation (${link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Battle-Simulator", "detailed description")})</li>
-      <li>Ice layer and Ice editor</li>
-      <li>Route and River Elevation profile (by EvolvedExperiment)</li>
-      <li>Image Converter enhancement</li>
-      <li>Name generator improvement</li>
-      <li>Improved integration with City Generator</li>
-      <li>Fogging restyle</li>
+      <li>State, province and burg Emblems generation</li>
+      <li>Emblem editor integrated with ${link("https://azgaar.github.io/Armoria", "Armoria")} — our new dedicated Heraldry generator and editor</li>
+      <li>Burg editor screen update</li>
+      <li>Speak name functionality</li>
     </ul>
-
-    <p>You can can also download a ${desktop}.</p>
-
+    <img src="https://raw.githubusercontent.com/Azgaar/Armoria/master/public/preview.png" alt="Armoria preview" width="100%" height="auto"/>
     <p>Join our ${discord} and ${reddit} to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
-
     <span>Thanks for all supporters on ${patreon}!</i></span>`;
 
   $("#alert").dialog(
     {resizable: false, title: "Fantasy Map Generator update", width: "28em",
     buttons: {OK: function() {$(this).dialog("close")}},
-    position: {my: "center", at: "center", of: "svg"},
+    position: {my: "center center-80", at: "center", of: "svg"},
     close: () => localStorage.setItem("version", version)}
   );
 }
@@ -436,7 +429,18 @@ function invokeActiveZooming() {
       const relative = Math.max(rn((desired + desired / scale) / 2, 2), 1);
       this.getAttribute("font-size", relative);
       const hidden = hideLabels.checked && (relative * scale < 6 || relative * scale > 50);
+      if (hidden) this.classList.add("hidden");
+      else this.classList.remove("hidden");
+    });
+  }
+  
+  // rescale emblems on zoom
+  if (emblems.style("display") !== "none") {
+    emblems.selectAll("g").each(function() {
+      const size = this.getAttribute("font-size") * scale;
+      const hidden = hideEmblems.checked && (size < 25 || size > 300);
       if (hidden) this.classList.add("hidden"); else this.classList.remove("hidden");
+      if (!hidden && window.COArenderer && this.children.length && !this.children[0].getAttribute("href")) renderGroupCOAs(this);
     });
   }
 
@@ -465,6 +469,18 @@ function invokeActiveZooming() {
     ruler.selectAll("rect").attr("stroke-width", .5 * size);
     ruler.selectAll("text").attr("font-size", 10 * size);
     ruler.selectAll("line, path").attr("stroke-width", size);
+  }
+}
+
+async function renderGroupCOAs(g) {
+  const [group, type] = g.id === "burgEmblems" ? [pack.burgs, "burg"] :
+                        g.id === "provinceEmblems" ? [pack.provinces, "province"] :
+                        [pack.states, "state"];
+  for (let use of g.children) {
+    const i = +use.dataset.i;
+    const id = type+"COA"+i;
+    COArenderer.trigger(id, group[i].coa);
+    use.setAttribute("href", "#"+id);
   }
 }
 
@@ -586,7 +602,7 @@ function generateSeed() {
   else if (optionsSeed.value && optionsSeed.value != seed) seed = optionsSeed.value;
   else seed = Math.floor(Math.random() * 1e9).toString();
   optionsSeed.value = seed;
-  Math.seedrandom(seed);
+  Math.random = aleaPRNG(seed);
 }
 
 // Place points to calculate Voronoi diagram
@@ -620,7 +636,8 @@ function calculateVoronoi(graph, points) {
 // Mark features (ocean, lakes, islands)
 function markFeatures() {
   TIME && console.time("markFeatures");
-  Math.seedrandom(seed); // restart Math.random() to get the same result on heightmap edit in Erase mode
+  Math.random = aleaPRNG(seed); // restart Math.random() to get the same result on heightmap edit in Erase mode
+
   const cells = grid.cells, heights = grid.cells.h;
   cells.f = new Uint16Array(cells.i.length); // cell feature number
   cells.t = new Int8Array(cells.i.length); // cell type: 1 = land coast; -1 = water near coast;
@@ -1718,7 +1735,8 @@ const regenerateMap = debounce(function() {
 // clear the map
 function undraw() {
   viewbox.selectAll("path, circle, polygon, line, text, use, #zones > g, #armies > g, #ruler > g").remove();
-  defs.selectAll("path, clipPath").remove();
+  document.getElementById("deftemp").querySelectorAll("path, clipPath, svg").forEach(el => el.remove());
+  document.getElementById("coas").innerHTML = ""; // remove auto-generated emblems
   notes = [];
   unfog();
 }

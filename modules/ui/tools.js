@@ -14,6 +14,7 @@ toolsContent.addEventListener("click", function(event) {
   if (button === "editDiplomacyButton") editDiplomacy(); else
   if (button === "editCulturesButton") editCultures(); else
   if (button === "editReligions") editReligions(); else
+  if (button === "editEmblemButton") openEmblemEditor(); else
   if (button === "editNamesBaseButton") editNamesbase(); else
   if (button === "editUnitsButton") editUnits(); else
   if (button === "editNotesButton") editNotes(); else
@@ -60,15 +61,36 @@ function processFeatureRegeneration(event, button) {
   if (button === "regenerateRoutes") {Routes.regenerate(); if (!layerIsOn("toggleRoutes")) toggleRoutes();} else
   if (button === "regenerateRivers") regenerateRivers(); else
   if (button === "regeneratePopulation") recalculatePopulation(); else
-  if (button === "regenerateBurgs") regenerateBurgs(); else
   if (button === "regenerateStates") regenerateStates(); else
   if (button === "regenerateProvinces") regenerateProvinces(); else
+  if (button === "regenerateBurgs") regenerateBurgs(); else
+  if (button === "regenerateEmblems") regenerateEmblems(); else
   if (button === "regenerateReligions") regenerateReligions(); else
   if (button === "regenerateCultures") regenerateCultures(); else
   if (button === "regenerateMilitary") regenerateMilitary(); else
   if (button === "regenerateIce") regenerateIce(); else
   if (button === "regenerateMarkers") regenerateMarkers(event); else
   if (button === "regenerateZones") regenerateZones(event);
+}
+
+async function openEmblemEditor() {
+  let type, id, el;
+
+  if (pack.states[1]?.coa) {
+    type = "state";
+    id = "stateCOA1";
+    el = pack.states[1];
+  } else if (pack.burgs[1]?.coa) {
+    type = "burg";
+    id = "burgCOA1";
+    el = pack.burgs[1];
+  } else {
+    tip("No emblems to edit, please generate states and burgs first", false, "error");
+    return;
+  }
+
+  await COArenderer.trigger(id, el.coa);
+  editEmblem(type, id, el);
 }
 
 function regenerateRivers() {
@@ -88,6 +110,116 @@ function recalculatePopulation() {
     if (b.port) b.population = b.population * 1.3; // increase port population
     b.population = rn(b.population * gauss(2,3,.6,20,3), 3);
   });
+}
+
+function regenerateStates() {
+  const localSeed = Math.floor(Math.random() * 1e9); // new random seed
+  Math.random = aleaPRNG(localSeed);
+  const burgs = pack.burgs.filter(b => b.i && !b.removed);
+  if (!burgs.length) {
+    tip("No burgs to generate states. Please create burgs first", false, "error");
+    return;
+  }
+  if (burgs.length < +regionsInput.value) {
+    tip(`Not enough burgs to generate ${regionsInput.value} states. Will generate only ${burgs.length} states`, false, "warn");
+  }
+
+  // burg local ids sorted by a bit randomized population:
+  const sorted = burgs.map((b, i) => [i, b.population * Math.random()]).sort((a, b) => b[1] - a[1]).map(b => b[0]);
+  const capitalsTree = d3.quadtree();
+
+  // turn all old capitals into towns
+  burgs.filter(b => b.capital).forEach(b => {
+    moveBurgToGroup(b.i, "towns");
+    b.capital = 0;
+  });
+
+  // remove emblems
+  document.querySelectorAll("[id^=stateCOA]").forEach(el => el.remove());
+  document.querySelectorAll("[id^=provinceCOA]").forEach(el => el.remove());
+  emblems.selectAll("use").remove();
+
+  unfog();
+
+  // if desired states number is 0
+  if (regionsInput.value == 0) {
+    tip(`Cannot generate zero states. Please check the <i>States Number</i> option`, false, "warn");
+    pack.states = pack.states.slice(0,1); // remove all except of neutrals
+    pack.states[0].diplomacy = []; // clear diplomacy
+    pack.provinces = [0]; // remove all provinces
+    pack.cells.state = new Uint16Array(pack.cells.i.length); // reset cells data
+    borders.selectAll("path").remove(); // remove borders
+    regions.selectAll("path").remove(); // remove states fill
+    labels.select("#states").selectAll("text"); // remove state labels
+    defs.select("#textPaths").selectAll("path[id*='stateLabel']").remove(); // remove state labels paths
+
+    if (document.getElementById("burgsOverviewRefresh").offsetParent) burgsOverviewRefresh.click();
+    if (document.getElementById("statesEditorRefresh").offsetParent) statesEditorRefresh.click();
+    return;
+  }
+
+  const neutral = pack.states[0].name;
+  const count = Math.min(+regionsInput.value, burgs.length);
+  let spacing = (graphWidth + graphHeight) / 2 / count; // min distance between capitals
+  pack.states = d3.range(count).map(i => {
+    if (!i) return {i, name: neutral};
+
+    let capital = null, x = 0, y = 0;
+    for (const i of sorted) {
+      capital = burgs[i];
+      x = capital.x, y = capital.y;
+      if (capitalsTree.find(x, y, spacing) === undefined) break;
+      spacing = Math.max(spacing - 1, 1);
+    }
+
+    capitalsTree.add([x, y]);
+    capital.capital = 1;
+    moveBurgToGroup(capital.i, "cities");
+
+    const culture = capital.culture;
+    const basename = capital.name.length < 9 && capital.cell%5 === 0 ? capital.name : Names.getCulture(culture, 3, 6, "", 0);
+    const name = Names.getState(basename, culture);
+    const nomadic = [1, 2, 3, 4].includes(pack.cells.biome[capital.cell]);
+    const type = nomadic ? "Nomadic" : pack.cultures[culture].type === "Nomadic" ? "Generic" : pack.cultures[culture].type;
+    const expansionism = rn(Math.random() * powerInput.value + 1, 1);
+
+    const cultureType = pack.cultures[culture].type;
+    const coa = COA.generate(capital.coa, .3, null, cultureType);
+    coa.shield = capital.coa.shield;
+
+    return {i, name, type, capital:capital.i, center:capital.cell, culture, expansionism, coa};
+  });
+
+  BurgsAndStates.expandStates();
+  BurgsAndStates.normalizeStates();
+  BurgsAndStates.collectStatistics();
+  BurgsAndStates.assignColors();
+  BurgsAndStates.generateCampaigns();
+  BurgsAndStates.generateDiplomacy();
+  BurgsAndStates.defineStateForms();
+  BurgsAndStates.generateProvinces(true);
+  if (!layerIsOn("toggleStates")) toggleStates(); else drawStates();
+  if (!layerIsOn("toggleBorders")) toggleBorders(); else drawBorders();
+  BurgsAndStates.drawStateLabels();
+  Military.generate();
+  if (layerIsOn("toggleEmblems")) drawEmblems(); // redrawEmblems
+
+  if (document.getElementById("burgsOverviewRefresh").offsetParent) burgsOverviewRefresh.click();
+  if (document.getElementById("statesEditorRefresh").offsetParent) statesEditorRefresh.click();
+  if (document.getElementById("militaryOverviewRefresh").offsetParent) militaryOverviewRefresh.click();
+}
+
+function regenerateProvinces() {
+  unfog();
+
+  BurgsAndStates.generateProvinces(true);
+  drawBorders();
+  if (layerIsOn("toggleProvinces")) drawProvinces();
+
+  // remove emblems
+  document.querySelectorAll("[id^=provinceCOA]").forEach(el => el.remove());
+  emblems.selectAll("use").remove();
+  if (layerIsOn("toggleEmblems")) drawEmblems();
 }
 
 function regenerateBurgs() {
@@ -139,100 +271,65 @@ function regenerateBurgs() {
   BurgsAndStates.drawBurgs();
   Routes.regenerate();
 
+  // remove emblems
+  document.querySelectorAll("[id^=burgCOA]").forEach(el => el.remove());
+  emblems.selectAll("use").remove();
+  if (layerIsOn("toggleEmblems")) drawEmblems();
+
   if (document.getElementById("burgsOverviewRefresh").offsetParent) burgsOverviewRefresh.click();
   if (document.getElementById("statesEditorRefresh").offsetParent) statesEditorRefresh.click();
 }
 
-function regenerateStates() {
-  Math.seedrandom(Math.floor(Math.random() * 1e9)); // new random seed
-  const burgs = pack.burgs.filter(b => b.i && !b.removed);
-  if (!burgs.length) {
-    tip("No burgs to generate states. Please create burgs first", false, "error");
-    return;
-  }
-  if (burgs.length < +regionsInput.value) {
-    tip(`Not enough burgs to generate ${regionsInput.value} states. Will generate only ${burgs.length} states`, false, "warn");
-  }
+function regenerateEmblems() {
+  // remove old emblems
+  document.querySelectorAll("[id^=stateCOA]").forEach(el => el.remove());
+  document.querySelectorAll("[id^=provinceCOA]").forEach(el => el.remove());
+  document.querySelectorAll("[id^=burgCOA]").forEach(el => el.remove());
+  emblems.selectAll("use").remove();
 
-  // burg local ids sorted by a bit randomized population:
-  const sorted = burgs.map((b, i) => [i, b.population * Math.random()]).sort((a, b) => b[1] - a[1]).map(b => b[0]);
-  const capitalsTree = d3.quadtree();
-
-  // turn all old capitals into towns
-  burgs.filter(b => b.capital).forEach(b => {
-    moveBurgToGroup(b.i, "towns");
-    b.capital = 0;
+  // generate new emblems
+  pack.states.forEach(state => {
+    if (!state.i || state.removed) return;
+    const cultureType = pack.cultures[state.culture].type;
+    state.coa = COA.generate(null, null, null, cultureType);
+    state.coa.shield = COA.getShield(state.culture, null);
   });
 
-  unfog();
+  pack.burgs.forEach(burg => {
+    if (!burg.i || burg.removed) return;
+    const state = pack.states[burg.state];
 
-  // if desired states number is 0
-  if (regionsInput.value == 0) {
-    tip(`Cannot generate zero states. Please check the <i>States Number</i> option`, false, "warn");
-    pack.states = pack.states.slice(0,1); // remove all except of neutrals
-    pack.states[0].diplomacy = []; // clear diplomacy
-    pack.provinces = [0]; // remove all provinces
-    pack.cells.state = new Uint16Array(pack.cells.i.length); // reset cells data
-    borders.selectAll("path").remove(); // remove borders
-    regions.selectAll("path").remove(); // remove states fill
-    labels.select("#states").selectAll("text"); // remove state labels
-    defs.select("#textPaths").selectAll("path[id*='stateLabel']").remove(); // remove state labels paths
+    let kinship = .25;
+    if (burg.capital) kinship += .1;
+    else if (burg.port) kinship -= .1;
+    if (burg.culture !== state.culture) kinship -= .25;
+    burg.coa = COA.generate(state.coa, kinship, null, burg.type);
+    burg.coa.shield = COA.getShield(burg.culture, burg.state);
+  });
 
-    if (document.getElementById("burgsOverviewRefresh").offsetParent) burgsOverviewRefresh.click();
-    if (document.getElementById("statesEditorRefresh").offsetParent) statesEditorRefresh.click();
-    return;
-  }
+  pack.provinces.forEach(province => {
+    if (!province.i || province.removed) return;
+    const parent = province.burg ? pack.burgs[province.burg] : pack.states[province.state];
 
-  const neutral = pack.states[0].name;
-  const count = Math.min(+regionsInput.value, burgs.length);
-  let spacing = (graphWidth + graphHeight) / 2 / count; // min distance between capitals
-  pack.states = d3.range(count).map(i => {
-    if (!i) return {i, name: neutral};
-
-    let capital = null, x = 0, y = 0;
-    for (const i of sorted) {
-      capital = burgs[i];
-      x = capital.x, y = capital.y;
-      if (capitalsTree.find(x, y, spacing) === undefined) break;
-      spacing = Math.max(spacing - 1, 1);
+    let dominion = false;
+    if (!province.burg) {
+      dominion = P(.2);
+      if (province.formName === "Colony") dominion = P(.95); else
+      if (province.formName === "Island") dominion = P(.6); else
+      if (province.formName === "Islands") dominion = P(.5); else
+      if (province.formName === "Territory") dominion = P(.4); else
+      if (province.formName === "Land") dominion = P(.3);
     }
 
-    capitalsTree.add([x, y]);
-    capital.capital = 1;
-    moveBurgToGroup(capital.i, "cities");
-
-    const culture = capital.culture;
-    const basename = capital.name.length < 9 && capital.cell%5 === 0 ? capital.name : Names.getCulture(culture, 3, 6, "", 0);
-    const name = Names.getState(basename, culture);
-    const nomadic = [1, 2, 3, 4].includes(pack.cells.biome[capital.cell]);
-    const type = nomadic ? "Nomadic" : pack.cultures[culture].type === "Nomadic" ? "Generic" : pack.cultures[culture].type;
-    const expansionism = rn(Math.random() * powerInput.value + 1, 1);
-    return {i, name, type, capital:capital.i, center:capital.cell, culture, expansionism};
+    const nameByBurg = province.burg && province.name.slice(0, 3) === parent.name.slice(0, 3);
+    const kinship = dominion ? 0 : nameByBurg ? .8 : .4;
+    const culture = pack.cells.culture[province.center];
+    const type = BurgsAndStates.getType(province.center, parent.port);
+    province.coa = COA.generate(parent.coa, kinship, dominion, type);
+    province.coa.shield = COA.getShield(culture, province.state);
   });
 
-  BurgsAndStates.expandStates();
-  BurgsAndStates.normalizeStates();
-  BurgsAndStates.collectStatistics();
-  BurgsAndStates.assignColors();
-  BurgsAndStates.generateCampaigns();
-  BurgsAndStates.generateDiplomacy();
-  BurgsAndStates.defineStateForms();
-  BurgsAndStates.generateProvinces(true);
-  if (!layerIsOn("toggleStates")) toggleStates(); else drawStates();
-  if (!layerIsOn("toggleBorders")) toggleBorders(); else drawBorders();
-  BurgsAndStates.drawStateLabels();
-  Military.generate();
-
-  if (document.getElementById("burgsOverviewRefresh").offsetParent) burgsOverviewRefresh.click();
-  if (document.getElementById("statesEditorRefresh").offsetParent) statesEditorRefresh.click();
-  if (document.getElementById("militaryOverviewRefresh").offsetParent) militaryOverviewRefresh.click();
-}
-
-function regenerateProvinces() {
-  unfog();
-  BurgsAndStates.generateProvinces(true);
-  drawBorders();
-  if (layerIsOn("toggleProvinces")) drawProvinces();
+  if (layerIsOn("toggleEmblems")) drawEmblems(); // redrawEmblems
 }
 
 function regenerateReligions() {

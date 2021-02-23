@@ -54,8 +54,10 @@ function editDiplomacy() {
     const selName = states[sel].fullName;
     diplomacySelect.style.display = "none";
 
-    let lines = `<div class="states Self" data-id=${sel}>
-      <div data-tip="List below shows relations to ${selName}" style="width: 100%">${selName}</div>
+    COArenderer.trigger("stateCOA"+sel, states[sel].coa);
+    let lines = `<div class="states Self" data-id=${sel} data-tip="List below shows relations to ${selName}">
+      <div style="width: max-content">${selName}</div>
+      <svg class="coaIcon" viewBox="0 0 200 200"><use href="#stateCOA${sel}"></use></svg>
     </div>`;
 
     for (const s of states) {
@@ -66,9 +68,10 @@ function editDiplomacy() {
       const tip = s.fullName + description[index] + selName;
       const tipSelect = `${tip}. Click to see relations to ${s.name}`;
       const tipChange = `${tip}. Click to change relations to ${selName}`;
+      COArenderer.trigger("stateCOA"+s.i, s.coa);
 
       lines += `<div class="states" data-id=${s.i} data-name="${s.fullName}" data-relations="${relation}">
-        <span data-tip="${tipSelect}" class="icon-right-open"></span>
+        <svg data-tip="${tipSelect}" class="coaIcon" viewBox="0 0 200 200"><use href="#stateCOA${s.i}"></use></svg>
         <div data-tip="${tipSelect}" style="width:12em">${s.fullName}</div>
         <svg data-tip="${tipChange}" width=".9em" height=".9em" style="margin-bottom:-1px" class="changeRelations">
           <rect x="0" y="0" width="100%" height="100%" fill="${color}" class="fillRect pointer" style="pointer-events: none"></rect>

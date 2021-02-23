@@ -13,7 +13,6 @@ class Voronoi {
     this.cells = { v: [], c: [], b: [] }; // voronoi cells: v = cell vertices, c = adjacent cells, b = near-border cell
     this.vertices = { p: [], v: [], c: [] }; // cells vertices: p = vertex coordinates, v = neighboring vertices, c = adjacent cells
 
-
     // Half-edges are the indices into the delaunator outputs:
     // delaunay.triangles[e] gives the point ID where the half-edge starts
     // delaunay.triangles[e] returns either the opposite half-edge in the adjacent triangle, or -1 if there's not an adjacent triangle.

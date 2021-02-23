@@ -38,7 +38,7 @@ function editProvinces() {
     const el = ev.target, cl = el.classList, line = el.parentNode, p = +line.dataset.id;
     if (cl.contains("fillRect")) changeFill(el); else
     if (cl.contains("name")) editProvinceName(p); else
-    if (cl.contains("icon-coa")) provinceOpenCOA(ev, p); else
+    if (cl.contains("coaIcon")) editEmblem("province", "provinceCOA"+p, pack.provinces[p]); else
     if (cl.contains("icon-star-empty")) capitalZoomIn(p); else
     if (cl.contains("icon-flag-empty")) triggerIndependencePromps(p); else
     if (cl.contains("culturePopulation")) changePopulation(p); else
@@ -114,10 +114,11 @@ function editProvinces() {
       const capital = p.burg ? pack.burgs[p.burg].name : '';
       const separable = p.burg && p.burg !== pack.states[p.state].capital;
       const focused = defs.select("#fog #focusProvince"+p.i).size();
+      COArenderer.trigger("provinceCOA"+p.i, p.coa);
       lines += `<div class="states" data-id=${p.i} data-name="${p.name}" data-form="${p.formName}" data-color="${p.color}" data-capital="${capital}" data-state="${stateName}" data-area=${area} data-population=${population}>
         <svg data-tip="Province fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${p.color}" class="fillRect pointer"></svg>
         <input data-tip="Province name. Click to change" class="name pointer" value="${p.name}" readonly>
-        <span data-tip="Click to open province COA in the Iron Arachne Heraldry Generator. Ctrl + click to change the seed" class="icon-coa pointer hide"></span>
+        <svg data-tip="Click to show and edit province emblem" class="coaIcon hide" viewBox="0 0 200 200"><use href="#provinceCOA${p.i}"></use></svg>
         <input data-tip="Province form name. Click to change" class="name pointer hide" value="${p.formName}" readonly>
         <span data-tip="Province capital. Click to zoom into view" class="icon-star-empty pointer hide ${p.burg?'':'placeholder'}"></span>
         <select data-tip="Province capital. Click to select from burgs within the state. No capital means the province is governed from the state capital" class="cultureBase hide ${p.burgs.length?'':'placeholder'}">${p.burgs.length ? getCapitalOptions(p.burgs, p.burg) : ''}</select>
@@ -192,19 +193,6 @@ function editProvinces() {
     openPicker(currentFill, callback);
   }
 
-  function provinceOpenCOA(event, p) {
-    const defSeed = `${seed}-p${p}`;
-    const openIAHG = () => openURL("https://ironarachne.com/#/heraldry/" + (pack.provinces[p].IAHG || defSeed));
-
-    if (isCtrlClick(event)) {
-      prompt(`Please provide an Iron Arachne Heraldry Generator seed. <br>Default seed is a combination of FMG map seed and province id (${defSeed})`, 
-      {default:pack.provinces[p].IAHG || defSeed}, v => {
-        if (v && v != defSeed) pack.provinces[p].IAHG = v;
-        openIAHG();
-      });
-    } else openIAHG();
-  }
-
   function capitalZoomIn(p) {
     const capital = pack.provinces[p].burg;
     const l = burgLabels.select("[data-id='" + capital + "']");
@@ -247,10 +235,15 @@ function editProvinces() {
     const name = provinces[p].name;
     const color = getRandomColor();
 
+    const coa = provinces[p].coa;
+    const coaEl = document.getElementById("provinceCOA"+p);
+    if (coaEl) coaEl.id = "stateCOA"+newState;
+    emblems.select(`#provinceEmblems > use[data-i='${p}']`).remove();
+
     // update cells
     cells.i.filter(i => cells.province[i] === p).forEach(i => {
-        cells.province[i] = 0;
-        cells.state[i] = newState;
+      cells.province[i] = 0;
+      cells.state[i] = newState;
     });
 
     // update diplomacy and reverse relations
@@ -272,7 +265,7 @@ function editProvinces() {
     states[0].diplomacy.push([`Independance declaration`, `${name} declared its independance from ${states[oldState].name}`]);
 
     // create new state
-    states.push({i:newState, name, diplomacy, provinces:[], color, expansionism:.5, capital:burg, type:"Generic", center, culture, military:[], alert:1});
+    states.push({i:newState, name, diplomacy, provinces:[], color, expansionism:.5, capital:burg, type:"Generic", center, culture, military:[], alert:1, coa});
     BurgsAndStates.collectStatistics();
     BurgsAndStates.defineStateForms([newState]);
 
@@ -284,7 +277,10 @@ function editProvinces() {
     // remove old province
     unfog("focusProvince"+p);
     if (states[oldState].provinces.includes(p)) states[oldState].provinces.splice(states[oldState].provinces.indexOf(p), 1);
-    provinces[p].removed = true;
+    provinces[p] = {i:p, removed: true};
+
+    // draw emblem
+    COArenderer.add("state", newState, coa, pack.states[newState].pole[0], pack.states[newState].pole[1]);
 
     closeDialogs();
     editStates();
@@ -344,7 +340,6 @@ function editProvinces() {
 
       refreshProvincesEditor();
     }
-
   }
 
   function toggleFog(p, cl) {
@@ -354,17 +349,24 @@ function editProvinces() {
   }
 
   function removeProvince(p) {
-
     alertMessage.innerHTML = `Are you sure you want to remove the province? <br>This action cannot be reverted`;
     $("#alert").dialog({resizable: false, title: "Remove province",
       buttons: {
         Remove: function() {
-          pack.cells.province.forEach((province, i) => {if(province === p) pack.cells.province[i] = 0;});
-          const state = pack.provinces[p].state;
-          if (pack.states[state].provinces.includes(p)) pack.states[state].provinces.splice(pack.states[state].provinces.indexOf(p), 1);
-          pack.provinces[p].removed = true;
+          pack.cells.province.forEach((province, i) => {
+            if(province === p) pack.cells.province[i] = 0;
+          });
+          const s = province.state, state = pack.states[s];
+          if (state.provinces.includes(p)) state.provinces.splice(state.provinces.indexOf(p), 1);
+
           unfog("focusProvince"+p);
-      
+
+          const coaId = "provinceCOA" + p;
+          if (document.getElementById(coaId)) document.getElementById(coaId).remove();
+          emblems.select(`#provinceEmblems > use[data-i='${p}']`).remove();
+
+          pack.provinces[p] = {i: p, removed: true};
+
           const g = provs.select("#provincesBody");
           g.select("#province"+p).remove();
           g.select("#province-gap"+p).remove();
@@ -375,8 +377,6 @@ function editProvinces() {
         Cancel: function() {$(this).dialog("close");}
       }
     });
-    
-
   }
 
   function editProvinceName(province) {
@@ -387,7 +387,7 @@ function editProvinces() {
     document.getElementById("provinceNameEditorFull").value = p.fullName;
 
     $("#provinceNameEditor").dialog({
-      resizable: false, title: "Change province name", width: "22em", buttons: {
+      resizable: false, title: "Change province name", buttons: {
         Apply: function() {applyNameChange(p); $(this).dialog("close");},
         Cancel: function() {$(this).dialog("close");}
       }, position: {my: "center", at: "center", of: "svg"}
@@ -771,7 +771,16 @@ function editProvinces() {
     const fullName = name + " " + formName;
     const stateColor = pack.states[state].color, rndColor = getRandomColor();
     const color = stateColor[0] === "#" ? d3.color(d3.interpolate(stateColor, rndColor)(.2)).hex() : rndColor;
-    provinces.push({i:province, state, center, burg, name, formName, fullName, color});
+
+    // generate emblem
+    const kinship = burg ? .8 : .4;
+    const parent = burg ? pack.burgs[burg].coa : pack.states[state].coa;
+    const type = BurgsAndStates.getType(center, parent.port);
+    const coa = COA.generate(parent, kinship, P(.1), type);
+    coa.shield = COA.getShield(c, state);
+    COArenderer.add("province", province, coa, point[0], point[1]);
+
+    provinces.push({i:province, state, center, burg, name, formName, fullName, color, coa});
 
     cells.province[center] = province;
     cells.c[center].forEach(c => {
@@ -837,13 +846,17 @@ function editProvinces() {
       buttons: {
         Remove: function() {
           $(this).dialog("close");
-          pack.provinces.filter(p => p.i).forEach(p => {
-            p.removed = true;
-            unfog("focusProvince"+p.i);
-          });
-          pack.cells.i.forEach(i => pack.cells.province[i] = 0);
-          pack.states.filter(s => s.i && !s.removed).forEach(s => s.provinces = []);
 
+          // remove emblems
+          document.querySelectorAll("[id^='provinceCOA']").forEach(el => el.remove());
+          emblems.select("#provinceEmblems").selectAll("*").remove();
+
+          // remove data
+          pack.provinces = [0];
+          pack.cells.province = new Uint16Array(pack.cells.i.length);
+          pack.states.forEach(s => s.provinces = []);
+
+          unfog();
           if (!layerIsOn("toggleBorders")) toggleBorders(); else drawBorders();
           provs.select("#provincesBody").remove();
           turnButtonOff("toggleProvinces");

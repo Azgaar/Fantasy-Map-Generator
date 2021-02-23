@@ -212,7 +212,7 @@ const sourceDataForReference = {
   burgEditIconStyle: "Edit icon style for burg group in Style Editor",
   burgEditAnchorStyle: "Edit port icon (anchor) style for burg group in Style Editor",
   burgSeeInMFCG: "Open burg in the Medieval Fantasy City Generator by Watabou. Ctrl + click to change the seed",
-  burgOpenCOA: "Open burg's COA in the Iron Arachne Heraldry Generator. Ctrl + click to change the seed",
+  burgOpenCOA: "Open burg's COA. Ctrl + click to change the seed",
   burgRelocate: "Relocate burg",
   burglLegend: "Edit free text notes (legend) for this burg",
   burgRemove: "Remove non-capital burg. Shortcut: Delete",

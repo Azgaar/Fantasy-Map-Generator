@@ -22,6 +22,7 @@ function editNamesbase() {
   document.getElementById("namesbaseDownload").addEventListener("click", namesbaseDownload);
   document.getElementById("namesbaseUpload").addEventListener("click", () => namesbaseToLoad.click());
   document.getElementById("namesbaseToLoad").addEventListener("change", function() {uploadFile(this, namesbaseUpload)});
+  document.getElementById("namesbaseSpeak").addEventListener("click", () => speak(namesbaseExamples.textContent));
 
   createBasesList();
   updateInputs();

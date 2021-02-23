@@ -121,7 +121,6 @@ const saveScreenshot = async function() {
   const link = document.createElement("a");
   link.download = getFileName() + ".jpeg";
   link.href = URL;
-  document.body.appendChild(link);
   link.click();
   tip(`Screenshot is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
   window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);

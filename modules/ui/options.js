@@ -87,8 +87,9 @@ function showSupporters() {
     Jeppe Skov Jensen,María Martín López,Martin Seeger,Annie Rishor,Aram Sabatés,MadNomadMedia,Eric Foley,Vito Martono,James H. Anthony,Kevin Cossutta,
     Thirty-OneR ,ThatGuyGW ,Dee Chiu,MontyBoosh ,Achillain ,Jaden ,SashaTK,Steve Johnson,Eric Foley,Vito Martono,James H. Anthony,Kevin Cossutta,Thirty-OneR,
     ThatGuyGW,Dee Chiu,MontyBoosh,Achillain,Jaden,SashaTK,Steve Johnson,Pierrick Bertrand,Jared Kennedy,Dylan Devenny,Kyle Robertson,Andrew Rostaing,Daniel Gill,
-    Char, Jack, Barna Csíkos, Ian Rousseau, Nicholas Grabstas, Tom Van Orden jr, Bryan Brake, Akylos, Riley Seaman,
-    MaxOliver, Evan-DiLeo, Alex Debus, Joshua Vaught, Kyle S, Eric Moore, Dean Dunakin, Uniquenameosaurus, WarWizardGames`;
+    Char,Jack,Barna Csíkos,Ian Rousseau,Nicholas Grabstas,Tom Van Orden jr,Bryan Brake,Akylos,Riley Seaman,MaxOliver,Evan-DiLeo,Alex Debus,Joshua Vaught,
+    Kyle S,Eric Moore,Dean Dunakin,Uniquenameosaurus,WarWizardGames,Chance Mena,Jan Ka,Miguel Alejandro,Dalton Clark,Simon Drapeau,Radovan Zapletal,Jmmat6,
+    Justa Badge,Blargh Blarghmoomoo,Vanessa Anjos,Grant A. Murray,Akirsop,Rikard Wolff,Jake Fish,teco 47,Antiroo,Jakob Siegel,Guilherme Aguiar,Jarno Hallikainen`;
 
   const array = supporters.replace(/(?:\r\n|\r|\n)/g, "").split(",").map(v => capitalize(v.trim())).sort();
   alertMessage.innerHTML = "<ul style='column-count: 5; column-gap: 2em'>" + array.map(n => `<li>${n}</li>`).join("") + "</ul>";
@@ -114,6 +115,7 @@ optionsContent.addEventListener("input", function(event) {
   else if (id === "neutralOutput") neutralInput.value = value;
   else if (id === "manorsInput") changeBurgsNumberSlider(value);
   else if (id === "religionsInput") religionsOutput.value = value;
+  else if (id === "emblemShape") changeEmblemShape(value);
   else if (id === "uiSizeInput") uiSizeOutput.value = value;
   else if (id === "uiSizeOutput") changeUIsize(value);
   else if (id === "tooltipSizeInput" || id === "tooltipSizeOutput") changeTooltipSize(value);
@@ -139,6 +141,7 @@ optionsContent.addEventListener("click", function(event) {
   else if (id === "optionsEraRegenerate") regenerateEra();
   else if (id === "zoomExtentDefault") restoreDefaultZoomExtent();
   else if (id === "translateExtent") toggleTranslateExtent(event.target);
+  else if (id === "speakerTest") testSpeaker();
 });
 
 function mapSizeInputChange() {
@@ -197,6 +200,30 @@ function toggleTranslateExtent(el) {
   else zoom.translateExtent([[0, 0], [graphWidth, graphHeight]]);
 }
 
+// add voice options
+const voiceInterval = setInterval(function() {
+  const voices = speechSynthesis.getVoices();
+  if (voices.length) clearInterval(voiceInterval); else return;
+
+  const select = document.getElementById("speakerVoice");
+  voices.forEach((voice, i) => {
+    select.options.add(new Option(voice.name, i, false));
+  });
+  if (stored("speakerVoice")) select.value = localStorage.getItem("speakerVoice"); // se voice to store
+  else select.value = voices.findIndex(voice => voice.lang === "en-US"); // or to first found English-US
+}, 1000);
+
+function testSpeaker() {
+  const text = `${mapName.value}, ${options.year} ${options.era}`;
+  const speaker = new SpeechSynthesisUtterance(text);
+  const voices = speechSynthesis.getVoices();
+  if (voices.length) {
+    const voiceId = +document.getElementById("speakerVoice").value;
+    speaker.voice = voices[voiceId];
+  }
+  speechSynthesis.speak(speaker);
+}
+
 function generateMapWithSeed() {
   if (optionsSeed.value == seed) {
     tip("The current map already has this seed", false, "error");
@@ -218,7 +245,7 @@ function showSeedHistoryDialog() {
   });
 }
 
-// generate map with historycal seed
+// generate map with historical seed
 function restoreSeed(id) {
   if (mapHistory[id].seed == seed) {
     tip("The current map is already generated with this seed", null, "error");
@@ -260,6 +287,47 @@ function changeCultureSet() {
   const max = culturesSet.selectedOptions[0].dataset.max;
   culturesInput.max = culturesOutput.max = max
   if (+culturesOutput.value > +max) culturesInput.value = culturesOutput.value = max;
+}
+
+function changeEmblemShape(emblemShape) {
+  const image = document.getElementById("emblemShapeImage");
+  const shapePath = window.COArenderer && COArenderer.shieldPaths[emblemShape];
+  shapePath ? image.setAttribute("d", shapePath) : image.removeAttribute("d");
+
+  const specificShape = ["culture", "state", "random"].includes(emblemShape) ? null : emblemShape;
+  if (emblemShape === "random") pack.cultures.filter(c => !c.removed).forEach(c => c.shield = Cultures.getRandomShield());
+
+  const rerenderCOA = (id, coa) => {
+    const coaEl = document.getElementById(id);
+    if (!coaEl) return; // not rendered
+    coaEl.remove();
+    COArenderer.trigger(id, coa);
+  }
+
+  pack.states.forEach(state => {
+    if (!state.i || state.removed || !state.coa || state.coa === "custom") return;
+    const newShield = specificShape || COA.getShield(state.culture, null);
+    if (newShield === state.coa.shield) return;
+    state.coa.shield = newShield;
+    rerenderCOA("stateCOA" + state.i, state.coa);
+  });
+
+  pack.provinces.forEach(province => {
+    if (!province.i || province.removed || !province.coa || province.coa === "custom") return;
+    const culture = pack.cells.culture[province.center];
+    const newShield = specificShape || COA.getShield(culture, province.state);
+    if (newShield === province.coa.shield) return;
+    province.coa.shield = newShield;
+    rerenderCOA("provinceCOA" + province.i, province.coa);
+  });
+
+  pack.burgs.forEach(burg => {
+    if (!burg.i || burg.removed || !burg.coa || burg.coa === "custom") return;
+    const newShield = specificShape || COA.getShield(burg.culture, burg.state);
+    if (newShield === burg.coa.shield) return;
+    burg.coa.shield = newShield
+    rerenderCOA("burgCOA" + burg.i, burg.coa);
+  });
 }
 
 function changeStatesNumber(value) {
@@ -319,6 +387,7 @@ function applyStoredOptions() {
 
   for (let i=0; i < localStorage.length; i++) {
     const stored = localStorage.key(i), value = localStorage.getItem(stored);
+    if (stored === "speakerVoice") continue;
     const input = document.getElementById(stored+"Input") || document.getElementById(stored);
     const output = document.getElementById(stored+"Output");
     if (input) input.value = value;
@@ -350,7 +419,7 @@ function applyStoredOptions() {
 
 // randomize options if randomization is allowed (not locked or options='default')
 function randomizeOptions() {
-  Math.seedrandom(seed); // reset seed to initial one
+  Math.random = aleaPRNG(seed); // reset seed to initial one
   const randomize = new URL(window.location.href).searchParams.get("options") === "default"; // ignore stored options
 
   // 'Options' settings
@@ -403,14 +472,14 @@ function randomizeHeightmapTemplate() {
 // select culture set pseudo-randomly
 function randomizeCultureSet() {
   const sets = {
-    "world":       25,
-    "european":    20,
-    "oriental":    10,
-    "english":     10,
-    "antique":     5,
-    "highFantasy": 22,
-    "darkFantasy": 6,
-    "random":      2};
+    "world":       10,
+    "european":    10,
+    "oriental":    2,
+    "english":     5,
+    "antique":     3,
+    "highFantasy": 11,
+    "darkFantasy": 3,
+    "random":      1};
   culturesSet.value = rw(sets);
   changeCultureSet();
 }
