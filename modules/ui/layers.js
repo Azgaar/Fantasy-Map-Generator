@@ -954,7 +954,6 @@ function getProvincesVertices() {
     chain.push([start, province, land]); // add starting vertex to sequence to close the path
     return chain;
   }
-
 }
 
 function toggleGrid(event) {

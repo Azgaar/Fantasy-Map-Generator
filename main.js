@@ -637,6 +637,7 @@ function calculateVoronoi(graph, points) {
 function markFeatures() {
   TIME && console.time("markFeatures");
   Math.random = aleaPRNG(seed); // restart Math.random() to get the same result on heightmap edit in Erase mode
+
   const cells = grid.cells, heights = grid.cells.h;
   cells.f = new Uint16Array(cells.i.length); // cell feature number
   cells.t = new Int8Array(cells.i.length); // cell type: 1 = land coast; -1 = water near coast;

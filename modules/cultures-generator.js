@@ -74,6 +74,7 @@
       ERROR && console.error("Name base is empty, default nameBases will be applied");
       nameBases = Names.getNameBases();
     }
+
     cultures.forEach(c => c.base = c.base % nameBases.length);
 
     function getRandomCultures(c) {
@@ -380,6 +381,7 @@
         }
       });
     }
+
     TIME && console.timeEnd('expandCultures');
   }
 

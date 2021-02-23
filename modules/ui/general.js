@@ -100,6 +100,7 @@ function showMapTooltip(point, e, i, g) {
     tip(e.target.parentNode.dataset.name + ". Click to edit");
     return;
   }
+
   if (group === "emblems" && e.target.tagName === "use") {
     const parent = e.target.parentNode;
     const [g, type] = parent.id === "burgEmblems" ? [pack.burgs, "burg"] :
@@ -115,6 +116,7 @@ function showMapTooltip(point, e, i, g) {
     tip(`${name} ${type} emblem. Click to edit. Hold Shift to show associated area or place`);
     return;
   }
+
   if (group === "rivers") {
     const river = +e.target.id.slice(5);
     const r = pack.rivers.find(r => r.i === river);
