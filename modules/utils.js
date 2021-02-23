@@ -510,6 +510,14 @@ function getComposedPath(node) {
   return [node];
 };
 
+// polyfill for replaceAll
+if (!String.prototype.replaceAll) {
+  String.prototype.replaceAll = function(str, newStr){
+    if (Object.prototype.toString.call(str).toLowerCase() === '[object regexp]') return this.replace(str, newStr);
+    return this.replace(new RegExp(str, 'g'), newStr);
+  };
+}
+
 // get next unused id
 function getNextId(core, i = 1) {
   while (document.getElementById(core+i)) i++;
