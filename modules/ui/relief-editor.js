@@ -54,7 +54,7 @@ function editReliefIcon() {
   }
 
   function updateReliefIconSelected() {
-    const type = elSelected.attr("href");
+    const type = elSelected.attr("href") || elSelected.attr("data-type");
     const button = reliefIconsDiv.querySelector("svg[data-type='"+type+"']");
 
     reliefIconsDiv.querySelectorAll("svg.pressed").forEach(b => b.classList.remove("pressed"));

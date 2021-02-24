@@ -1086,6 +1086,15 @@ function parseLoadedData(data) {
         emblems.append("g").attr("id", "stateEmblems");
         regenerateEmblems();
         toggleEmblems();
+
+        // v 1.5 changed releif icons data
+        terrain.selectAll("use").each(function() {
+          const type = this.getAttribute("data-type") || this.getAttribute("xlink:href");
+          this.removeAttribute("xlink:href");
+          this.removeAttribute("data-type");
+          this.removeAttribute("data-size");
+          this.setAttribute("href", type);
+        });
       }
 
     }()
