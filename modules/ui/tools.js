@@ -299,12 +299,12 @@ function regenerateEmblems() {
     if (!burg.i || burg.removed) return;
     const state = pack.states[burg.state];
 
-    let kinship = .25;
+    let kinship = state ? .25 : 0;
     if (burg.capital) kinship += .1;
     else if (burg.port) kinship -= .1;
-    if (burg.culture !== state.culture) kinship -= .25;
-    burg.coa = COA.generate(state.coa, kinship, null, burg.type);
-    burg.coa.shield = COA.getShield(burg.culture, burg.state);
+    if (state && burg.culture !== state.culture) kinship -= .25;
+    burg.coa = COA.generate(state ? state.coa : null, kinship, null, burg.type);
+    burg.coa.shield = COA.getShield(burg.culture, state ? burg.state || 0);
   });
 
   pack.provinces.forEach(province => {
