@@ -316,7 +316,7 @@ function highlightEmblemElement(type, el) {
       return;
     }
 
-    const [x, y] = el.pole;
+    const [x, y] = el.pole || pack.cells.p[el.center];
     const obj = type === "state" ? cells.state : cells.province;
     const borderCells = cells.i.filter(id => obj[id] === i && cells.c[id].some(n => obj[n] !== i));
     const data = Array.from(borderCells).filter((c, i) => !(i%2)).map(i => cells.p[i]).map(i => [i[0], i[1], Math.hypot(i[0]-x, i[1]-y)]);

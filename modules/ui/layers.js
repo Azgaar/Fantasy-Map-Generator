@@ -891,7 +891,7 @@ function drawProvinces() {
 
   const labels = provs.append("g").attr("id", "provinceLabels");
   labels.style("display", `${labelsOn ? "block" : "none"}`);
-  const labelData = provinces.filter(p => p.i && !p.removed);
+  const labelData = provinces.filter(p => p.i && !p.removed && p.pole);
   labels.selectAll(".path").data(labelData).enter().append("text")
     .attr("x", d => d.pole[0]).attr("y", d => d.pole[1])
     .attr("id", d => "provinceLabel"+d.i).text(d => d.name);
@@ -923,7 +923,7 @@ function getProvincesVertices() {
     gap[p] += "M" + vertices.p[chain[0][0]] + chain.reduce((r,v,i,d) => !i ? r : !v[2] ? r + "L" + vertices.p[v[0]] : d[i+1] && !d[i+1][2] ? r + "M" +  vertices.p[v[0]] : r, "");
   }
 
-  // find state visual center
+  // find province visual center
   vArray.forEach((ar, i) => {
     const sorted = ar.sort((a, b) => b.length - a.length); // sort by points number
     provinces[i].pole = polylabel(sorted, 1.0); // pole of inaccessibility
@@ -1279,13 +1279,13 @@ function drawEmblems() {
   const sizeProvinces = getProvinceEmblemsSize();
   const provinceCOAs = validProvinces.map(province => {
     if (!province.pole) getProvincesVertices();
-    const [x, y] = province.pole;
+    const [x, y] = province.pole || pack.cells.p[province.center];
     return {type: "province", i: province.i, x, y, size: sizeProvinces};
   });
 
   const sizeStates = getStateEmblemsSize();
   const stateCOAs = validStates.map(state => {
-    const [x, y] = state.pole;
+    const [x, y] = state.pole || pack.cells.p[state.center];
     return {type: "state", i: state.i, x, y, size: sizeStates};
   });
 
