@@ -209,7 +209,11 @@
   }
 
   const generate = function(parent, kinship, dominion, type) {
-    if (parent === "custom") parent = null;
+    if (!parent || parent === "custom") {
+      parent = null;
+      kinship = 0;
+      dominion = 0;
+    }
     let usedPattern = null, usedTinctures = [];
 
     const t1 = P(kinship) ? parent.t1 : getTincture("field");

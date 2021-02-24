@@ -1144,6 +1144,13 @@ function parseLoadedData(data) {
         cells.i.filter(i => cells.burg[i] === b.i).forEach(i => cells.burg[i] = 0);
         cells.burg[b.cell] = b.i;
       });
+
+      pack.provinces.forEach(p => {
+        if (!p.i || p.removed) return;
+        if (pack.states[p.state] && !pack.states[p.state].removed) return;
+        ERROR && console.error("Data Integrity Check. Province", p.i, "is linked to removed state", p.state);
+        p.removed = true; // remove incorrect province
+      });
     }()
 
     changeMapSize();
