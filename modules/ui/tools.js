@@ -304,7 +304,7 @@ function regenerateEmblems() {
     else if (burg.port) kinship -= .1;
     if (state && burg.culture !== state.culture) kinship -= .25;
     burg.coa = COA.generate(state ? state.coa : null, kinship, null, burg.type);
-    burg.coa.shield = COA.getShield(burg.culture, state ? burg.state || 0);
+    burg.coa.shield = COA.getShield(burg.culture, state ? burg.state : 0);
   });
 
   pack.provinces.forEach(province => {
