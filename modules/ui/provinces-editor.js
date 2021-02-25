@@ -248,7 +248,7 @@ function editProvinces() {
 
     // update diplomacy and reverse relations
     const diplomacy = states.map(s => {
-      if (!s.i) return "x";
+      if (!s.i || s.removed) return "x";
       let relations = states[oldState].diplomacy[s.i]; // relations between Nth state and old overlord
       if (s.i === oldState) relations = "Enemy"; // new state is Enemy to its old overlord
       else if (relations === "Ally") relations = "Suspicion";
