@@ -1147,11 +1147,18 @@ function parseLoadedData(data) {
       pack.burgs.forEach(b => {
         if (!b.i || b.removed) return;
         if (b.port < 0) {ERROR && console.error("Data Integrity Check. Burg", b.i, "has invalid port value", b.port); b.port = 0;}
-        if (b.cell < cells.i.length) return;
-        ERROR && console.error("Data Integrity Check. Burg", b.i, "is linked to invalid cell", b.cell);
-        b.cell = findCell(b.x, b.y);
-        cells.i.filter(i => cells.burg[i] === b.i).forEach(i => cells.burg[i] = 0);
-        cells.burg[b.cell] = b.i;
+
+        if (b.cell >= cells.i.length) {
+          ERROR && console.error("Data Integrity Check. Burg", b.i, "is linked to invalid cell", b.cell);
+          b.cell = findCell(b.x, b.y);
+          cells.i.filter(i => cells.burg[i] === b.i).forEach(i => cells.burg[i] = 0);
+          cells.burg[b.cell] = b.i;
+        }
+
+        if (b.state && !pack.states[b.state]) {
+          ERROR && console.error("Data Integrity Check. Burg", b.i, "is linked to invalid state", b.state);
+          b.state = 0;
+        }
       });
 
       pack.provinces.forEach(p => {
