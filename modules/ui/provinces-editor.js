@@ -356,7 +356,7 @@ function editProvinces() {
           pack.cells.province.forEach((province, i) => {
             if(province === p) pack.cells.province[i] = 0;
           });
-          const s = province.state, state = pack.states[s];
+          const s = pack.provinces[p].state, state = pack.states[s];
           if (state.provinces.includes(p)) state.provinces.splice(state.provinces.indexOf(p), 1);
 
           unfog("focusProvince"+p);
