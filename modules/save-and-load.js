@@ -779,9 +779,9 @@ function parseLoadedData(data) {
       }
     }()
 
-    const notHidden = selection => selection?.style("display") !== "none";
-    const hasChildren = selection => selection?.node()?.hasChildNodes();
-    const hasChild = (selection, selector) => selection?.node()?.querySelector(selector);
+    const notHidden = selection => selection.node() && selection.style("display") !== "none";
+    const hasChildren = selection => selection.node()?.hasChildNodes();
+    const hasChild = (selection, selector) => selection.node()?.querySelector(selector);
     const turnOn = el => document.getElementById(el).classList.remove("buttonoff");
 
     void function restoreLayersState() {
