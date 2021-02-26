@@ -625,20 +625,9 @@ styleArmiesSize.addEventListener("input", function() {
   });
 });
 
-styleEmblemsStateSizeInput.addEventListener("input", function() {
-  styleEmblemsStateSizeOutput.value = this.value;
-  drawEmblems();
-});
-
-styleEmblemsProvinceSizeInput.addEventListener("input", function() {
-  styleEmblemsProvinceSizeOutput.value = this.value;
-  drawEmblems();
-});
-
-styleEmblemsBurgSizeInput.addEventListener("input", function() {
-  styleEmblemsBurgSizeOutput.value = this.value;
-  drawEmblems();
-});
+styleEmblemsStateSizeInput.addEventListener("input", drawEmblems);
+styleEmblemsProvinceSizeInput.addEventListener("input", drawEmblems);
+styleEmblemsBurgSizeInput.addEventListener("input", drawEmblems);
 
 // request a URL to image to be used as a texture
 function textureProvideURL() {
