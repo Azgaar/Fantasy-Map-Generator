@@ -164,13 +164,6 @@ button, select, a {
 	fill: none;
 }
 
-#provinceLabels {
-	text-anchor: middle;
-	fill: "#18181a";
-	font-family: "Georgia";
-	font-size: 9px;
-}
-
 #rivers {
 	stroke: none;
 	mask: url(#land);
@@ -276,6 +269,7 @@ i.icon-lock {
 	to {stroke-dashoffset: 0}
 }
 
+#provinceLabels,
 #burgLabels {
 	dominant-baseline: alphabetic;
 	text-anchor: middle;
