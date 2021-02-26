@@ -120,13 +120,15 @@ async function getMapURL(type, subtype) {
   }
 
   // add displayed emblems
-  if (layerIsOn("toggleEmblems")) {
+  if (layerIsOn("toggleEmblems") && emblems.selectAll("use").size()) {
     Array.from(cloneEl.getElementById("emblems").querySelectorAll("use")).forEach(el => {
       const href = el.getAttribute("href");
       if (!href) return;
-      const emblem = document.getElementById(href.slice(1)).cloneNode(true); // clone emblem
-      cloneDefs.append(emblem);
+      const emblem = document.getElementById(href.slice(1));
+      if (emblem) cloneDefs.append(emblem.cloneNode(true));
     });
+  } else {
+    cloneDefs.querySelector("#defs-emblems").remove();
   }
 
   // add ocean pattern
@@ -807,7 +809,7 @@ function parseLoadedData(data) {
       if (hasChild(population, "line")) turnOn("togglePopulation");
       if (hasChildren(ice)) turnOn("toggleIce");
       if (hasChild(prec, "circle")) turnOn("togglePrec");
-      if (hasChild(emblems, "use")) turnOn("toggleEmblems");
+      if (notHidden(emblems) && hasChild(emblems, "use")) turnOn("toggleEmblems");
       if (notHidden(labels)) turnOn("toggleLabels");
       if (notHidden(icons)) turnOn("toggleIcons");
       if (hasChildren(armies) && notHidden(armies)) turnOn("toggleMilitary");
