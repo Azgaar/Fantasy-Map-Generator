@@ -7,6 +7,7 @@ function editProvinces() {
   if (layerIsOn("toggleStates")) toggleStates();
   if (layerIsOn("toggleCultures")) toggleCultures();
 
+  provs.selectAll("text").call(d3.drag().on("drag", dragLabel)).classed("draggable", true);
   const body = document.getElementById("provincesBodySection");
   refreshProvincesEditor();
 
@@ -585,6 +586,7 @@ function editProvinces() {
     const hidden = provs.select("#provinceLabels").style("display") === "none";
     provs.select("#provinceLabels").style("display", `${hidden ? "block" : "none"}`);
     provs.attr("data-labels", +hidden);
+    provs.selectAll("text").call(d3.drag().on("drag", dragLabel)).classed("draggable", true);
   }
 
   function enterProvincesManualAssignent() {
@@ -868,7 +870,18 @@ function editProvinces() {
     });
   }
 
+  function dragLabel() {
+    const tr = parseTransform(this.getAttribute("transform"));
+    const x = +tr[0] - d3.event.x, y = +tr[1] - d3.event.y;
+
+    d3.event.on("drag", function() {
+      const transform = `translate(${(x + d3.event.x)},${(y + d3.event.y)})`;
+      this.setAttribute("transform", transform);
+    });
+  }
+
   function closeProvincesEditor() {
+    provs.selectAll("text").call(d3.drag().on("drag", null)).attr("class", null);
     if (customization === 11) exitProvincesManualAssignment("close");
     if (customization === 12) exitAddProvinceMode();
   }

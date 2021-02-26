@@ -122,7 +122,7 @@ button, select, a {
 	stroke-linejoin: round;
 }
 
-#regions, #cults, #relig, #biomes, #provs, #terrs, #biomes, #tooltip, #temperature, #texture, #landmass, #fogging {
+#regions, #cults, #relig, #biomes, #provincesBody, #terrs, #biomes, #tooltip, #temperature, #texture, #landmass, #fogging {
 	pointer-events: none;
 }
 
