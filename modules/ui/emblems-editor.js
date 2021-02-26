@@ -238,8 +238,26 @@ function editEmblem(type, id, el) {
         const svg = `<svg id="${id}" xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><image x="0" y="0" width="200" height="200" href="${result}"/></svg>`;
         defs.insertAdjacentHTML("beforeend", svg);
       } else {
-        defs.insertAdjacentHTML("beforeend", result);
-        const newEmblem = defs.lastChild; // new coa
+
+        const el = document.createElement("html");
+        el.innerHTML = result;
+  
+        // remove sodipodi and inkscape attributes
+        el.querySelectorAll("*").forEach(el => {
+          const attributes = el.getAttributeNames();
+          attributes.forEach(attr => {
+            if (attr.includes("inkscape") || attr.includes("sodipodi")) el.removeAttribute(attr);
+          });
+        });
+
+        const g = el.querySelector("g");
+
+        if (!g) {
+          tip("The file should be prepated for load to FMG. Please use Armoria or other relevant tools", false, "error");
+          return;
+        }
+
+        const newEmblem = defs.appendChild(g);
         newEmblem.id = id;
         newEmblem.setAttribute("width", 200);
         newEmblem.setAttribute("height", 200);
