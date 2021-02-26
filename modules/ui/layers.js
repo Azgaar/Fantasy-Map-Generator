@@ -1245,9 +1245,9 @@ function drawEmblems() {
   TIME && console.time("drawEmblems");
   const {states, provinces, burgs} = pack;
 
-  const validStates = states.filter(s => s.i && !s.removed && s.coa && !s.coaHidden);
-  const validProvinces = provinces.filter(p => p.i && !p.removed && p.coa && !p.coaHidden);
-  const validBurgs = burgs.filter(b => b.i && !b.removed && b.coa && !b.coaHidden);
+  const validStates = states.filter(s => s.i && !s.removed && s.coa && s.coaSize != 0);
+  const validProvinces = provinces.filter(p => p.i && !p.removed && p.coa && p.coaSize != 0);
+  const validBurgs = burgs.filter(b => b.i && !b.removed && b.coa && b.coaSize != 0);
 
   const getStateEmblemsSize = () => {
     const startSize = Math.min(Math.max((graphHeight + graphWidth) / 40, 10), 100);
@@ -1273,26 +1273,32 @@ function drawEmblems() {
   const sizeBurgs = getBurgEmblemSize();
   const burgCOAs = validBurgs.map(burg => {
     const {x, y} = burg;
-    return {type: "burg", i: burg.i, x, y, size: sizeBurgs};
+    const size = burg.coaSize || 1;
+    const shift = sizeBurgs * size / 2;
+    return {type: "burg", i: burg.i, x, y, size, shift};
   });
 
   const sizeProvinces = getProvinceEmblemsSize();
   const provinceCOAs = validProvinces.map(province => {
     if (!province.pole) getProvincesVertices();
     const [x, y] = province.pole || pack.cells.p[province.center];
-    return {type: "province", i: province.i, x, y, size: sizeProvinces};
+    const size = province.coaSize || 1;
+    const shift = sizeProvinces * size / 2;
+    return {type: "province", i: province.i, x, y, size, shift};
   });
 
   const sizeStates = getStateEmblemsSize();
   const stateCOAs = validStates.map(state => {
     const [x, y] = state.pole || pack.cells.p[state.center];
-    return {type: "state", i: state.i, x, y, size: sizeStates};
+    const size = state.coaSize || 1;
+    const shift = sizeStates * size / 2;
+    return {type: "state", i: state.i, x, y, size, shift};
   });
 
   const nodes = burgCOAs.concat(provinceCOAs).concat(stateCOAs);
   const simulation = d3.forceSimulation(nodes)
     .alphaMin(.6).alphaDecay(.2).velocityDecay(.6)
-    .force('collision', d3.forceCollide().radius(d => d.size/2))
+    .force('collision', d3.forceCollide().radius(d => d.shift))
     .stop();
 
   d3.timeout(function() {
@@ -1302,15 +1308,15 @@ function drawEmblems() {
     }
 
     const burgNodes = nodes.filter(node => node.type === "burg");
-    const burgString = burgNodes.map(d => `<use data-i="${d.i}" x="${rn(d.x - d.size / 2)}" y="${rn(d.y - d.size / 2)}" width="1em" height="1em"/>`).join("");
+    const burgString = burgNodes.map(d => `<use data-i="${d.i}" x="${rn(d.x - d.shift)}" y="${rn(d.y - d.shift)}" width="${d.size}em" height="${d.size}em"/>`).join("");
     emblems.select("#burgEmblems").attr("font-size", sizeBurgs).html(burgString);
 
     const provinceNodes = nodes.filter(node => node.type === "province");
-    const provinceString = provinceNodes.map(d => `<use data-i="${d.i}" x="${rn(d.x - d.size / 2)}" y="${rn(d.y - d.size / 2)}" width="1em" height="1em"/>`).join("");
+    const provinceString = provinceNodes.map(d => `<use data-i="${d.i}" x="${rn(d.x - d.shift)}" y="${rn(d.y - d.shift)}" width="${d.size}em" height="${d.size}em"/>`).join("");
     emblems.select("#provinceEmblems").attr("font-size", sizeProvinces).html(provinceString);
 
     const stateNodes = nodes.filter(node => node.type === "state");
-    const stateString = stateNodes.map(d => `<use data-i="${d.i}" x="${rn(d.x - d.size / 2)}" y="${rn(d.y - d.size / 2)}" width="1em" height="1em"/>`).join("");
+    const stateString = stateNodes.map(d => `<use data-i="${d.i}" x="${rn(d.x - d.shift)}" y="${rn(d.y - d.shift)}" width="${d.size}em" height="${d.size}em"/>`).join("");
     emblems.select("#stateEmblems").attr("font-size", sizeStates).html(stateString);
 
     invokeActiveZooming();

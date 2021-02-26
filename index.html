@@ -2862,9 +2862,10 @@
           </select>
         </div>
 
-        <div data-tip="Show or hide this particular emblem on map. To hide the entire category go to Menu ⭢ Style ⭢ Emblems">
-          <input id="emblemShow" class="checkbox" type="checkbox">
-          <label for="emblemShow" class="checkbox-label">Show emblem on map</label>
+        <div data-tip="Set size of particular Emblem. To hide set to 0. To change the entire category go to Menu ⭢ Style ⭢ Emblems">
+          <div class="label" style="width: 2.8em">Size:</div>
+          <input id="emblemSizeSlider" type="range" min=0 max=5 step=.1 style="width: 8em"/>
+          <input id="emblemSizeNumber" type="number" min=0 max=5 step=.1 />
         </div>
       </div>
       <div id="emblemsBottom">
