@@ -63,7 +63,7 @@ const generate = function(changeHeights = true) {
           if (h[min] >= 20) riversData.find(r => r.river === ri).parent = cells.r[min]; // current river is a tributary of min river
         }
       } else cells.r[min] = ri; // assign the river to the downhill cell
-      
+
       if (h[min] < 20) {
         // pour water to the sea haven
         const oh = i ? cells.haven[i] : min;
@@ -71,10 +71,10 @@ const generate = function(changeHeights = true) {
         const mf = features[cells.f[min]]; // feature of min cell
         if (mf.type === "lake") {
           if (!mf.river || iFlux > mf.flux) {
-            mf.river = ri; // pour water to temporaly elevated lake
+            mf.river = ri; // pour water to lake
             mf.flux = iFlux; // entering flux
           }
-          mf.totalFlux += iFlux;
+          mf.totalFlux = (mf.totalFlux || 0) + iFlux;
           if (mf.inlets) {
             mf.inlets.push(ri);
           } else {
@@ -94,9 +94,9 @@ const generate = function(changeHeights = true) {
       // lake outlets draw from lake
       let n = -1, out2 = 0;
       while (outlets.includes(i, n+1)) {
-        n = outlets.indexOf(i, n+1);  
+        n = outlets.indexOf(i, n+1);
         const l = features[n];
-        if ( ! l ) {continue;}
+        if (!l) continue;
         const j = cells.haven[i];
         // allow chain lakes to retain identity
         if(cells.r[j] !== l.river) {
@@ -138,7 +138,7 @@ const generate = function(changeHeights = true) {
         return;
       }
 
-      const min = out2 ? out2 : cells.c[i][d3.scan(cells.c[i], (a, b) => h[a] - h[b])]; // downhill cell
+      const min = out2 || cells.c[i][d3.scan(cells.c[i], (a, b) => h[a] - h[b])]; // downhill cell
 
       if (cells.fl[i] < 30) {
         if (h[min] >= 20) cells.fl[min] += cells.fl[i];
@@ -218,13 +218,13 @@ const resolveDepressions = function(h) {
       const minHeight = d3.min(l.shoreline.map(s => h[s]));
       if (minHeight === 100) continue; // already max height
       if (l.height <= minHeight) {
-        l.height = Math.min(minHeight + 1, 100);
+        l.height = Math.min(rn(minHeight + 1), 100);
         depression++;
         depressed = true;
       }
     }
     for (const i of land) {
-      const minHeight = d3.min(cells.c[i].map(c => cells.t[c] > 0 ? h[c] : 
+      const minHeight = d3.min(cells.c[i].map(c => cells.t[c] > 0 ? h[c] :
         pack.features[cells.f[c]].height || h[c] // NB undefined is falsy (a || b is short for a ? a : b)
         ));
       if (minHeight === 100) continue; // already max height
@@ -329,15 +329,16 @@ const getPath = function(points, width = 1, increment = 1, starting = .1) {
 }
 
 const specify = function() {
-  if (!pack.rivers.length) return;
+  const rivers = pack.rivers;
+  if (!rivers.length) return;
   Math.random = aleaPRNG(seed);
-  const smallLength = pack.rivers.map(r => r.length||0).sort((a,b) => a-b)[Math.ceil(pack.rivers.length * .15)];
+  const tresholdElement = Math.ceil(rivers.length * .15);
+  const smallLength = rivers.map(r => r.length || 0).sort((a, b) => a-b)[tresholdElement];
   const smallType = {"Creek":9, "River":3, "Brook":3, "Stream":1}; // weighted small river types
 
-  for (const r of pack.rivers) {
+  for (const r of rivers) {
     r.basin = getBasin(r.i, r.parent);
     r.name = getName(r.mouth);
-    //debug.append("circle").attr("cx", pack.cells.p[r.mouth][0]).attr("cy", pack.cells.p[r.mouth][1]).attr("r", 2);
     const small = r.length < smallLength;
     r.type = r.parent && !(r.i%6) ? small ? "Branch" : "Fork" : small ? rw(smallType) : "River";
   }
