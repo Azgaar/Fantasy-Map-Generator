@@ -38,7 +38,7 @@
       }
     }
 
-    const cultures = pack.cultures = getRandomCultures(count);
+    const cultures = pack.cultures = selectCultures(count);
     const centers = d3.quadtree();
     const colors = getColors(count);
     const emblemShape = document.getElementById("emblemShape").value;
@@ -77,16 +77,21 @@
 
     cultures.forEach(c => c.base = c.base % nameBases.length);
 
-    function getRandomCultures(c) {
-      const d = getDefault(c), n = d.length-1;
-      const count = Math.min(c, d.length);
+    function selectCultures(c) {
+      let def = getDefault(c);
+      if (c === def.length) return def;
+      if (def.every(d => d.odd === 1)) return def.splice(0, c);
+
+      const count = Math.min(c, def.length);
       const cultures = [];
-      while (cultures.length < count) {
-        let culture = d[rand(n)];
+
+      for (let culture, rnd, i=0; cultures.length < count && i < 200; i++) {
         do {
-          culture = d[rand(n)];
-        } while (!P(culture.odd) || cultures.find(c => c.name === culture.name))
+          rnd = rand(def.length-1);
+          culture = def[rnd];
+        } while (!P(culture.odd))
         cultures.push(culture);
+        def.splice(rnd, 1);
       }
       return cultures;
     }
@@ -304,9 +309,10 @@
     }
 
     if (culturesSet.value === "random") {
-      return d3.range(count).map(i => {
+      return d3.range(count).map(function() {
         const rnd = rand(nameBases.length-1);
-        return {name:Names.getBaseShort(rnd), base:rnd, odd:1, shield:getRandomShield()}
+        const name = Names.getBaseShort(rnd);
+        return {name, base:rnd, odd:1, shield:getRandomShield()}
       });
     }
 

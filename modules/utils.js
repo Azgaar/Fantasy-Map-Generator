@@ -224,6 +224,8 @@ function rand(min, max) {
 
 // probability shorthand
 function P(probability) {
+  if (probability >= 1) return true;
+  if (probability <= 0) return false;
   return Math.random() < probability;
 }
 
