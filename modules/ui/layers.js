@@ -1245,9 +1245,9 @@ function drawEmblems() {
   TIME && console.time("drawEmblems");
   const {states, provinces, burgs} = pack;
 
-  const validStates = states.filter(s => s.i && !s.removed && s.coa);
-  const validProvinces = provinces.filter(p => p.i && !p.removed && p.coa);
-  const validBurgs = burgs.filter(b => b.i && !b.removed && b.coa);
+  const validStates = states.filter(s => s.i && !s.removed && s.coa && !s.coaHidden);
+  const validProvinces = provinces.filter(p => p.i && !p.removed && p.coa && !p.coaHidden);
+  const validBurgs = burgs.filter(b => b.i && !b.removed && b.coa && !b.coaHidden);
 
   const getStateEmblemsSize = () => {
     const startSize = Math.min(Math.max((graphHeight + graphWidth) / 40, 10), 100);
@@ -1257,17 +1257,17 @@ function drawEmblems() {
   };
 
   const getProvinceEmblemsSize = () => {
-    const startSize = Math.min(Math.max((graphHeight + graphWidth) / 80, 5), 75);
+    const startSize = Math.min(Math.max((graphHeight + graphWidth) / 100, 5), 70);
     const provincesMod = (1 + validProvinces.length / 1000) - (115 - validProvinces.length) / 1000; // states number modifier
     const sizeMod = +document.getElementById("styleEmblemsProvinceSizeInput").value || 1;
-    return rn(startSize / provincesMod * sizeMod); // target size ~26px on 1536x754 map with 115 provinces
+    return rn(startSize / provincesMod * sizeMod); // target size ~20px on 1536x754 map with 115 provinces
   }
 
   const getBurgEmblemSize = () => {
-    const startSize = Math.min(Math.max((graphHeight + graphWidth) / 150, 5), 50);
+    const startSize = Math.min(Math.max((graphHeight + graphWidth) / 185, 2), 50);
     const burgsMod = (1 + validBurgs.length / 1000) - (450 - validBurgs.length) / 1000; // states number modifier
     const sizeMod = +document.getElementById("styleEmblemsBurgSizeInput").value || 1;
-    return rn(startSize / burgsMod * sizeMod); // target size ~10px on 1536x754 map with 450 burgs
+    return rn(startSize / burgsMod * sizeMod); // target size ~8.5px on 1536x754 map with 450 burgs
   }
 
   const sizeBurgs = getBurgEmblemSize();

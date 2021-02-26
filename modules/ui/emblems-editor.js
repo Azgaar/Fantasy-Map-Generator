@@ -23,6 +23,7 @@ function editEmblem(type, id, el) {
   emblemProvinces.oninput = selectProvince;
   emblemBurgs.oninput = selectBurg;
   emblemShapeSelector.oninput = changeShape;
+  document.getElementById("emblemShow").onchange = toggleEmblem;
   document.getElementById("emblemsRegenerate").onclick = regenerate;
   document.getElementById("emblemsArmoria").onclick = openInArmoria;
   document.getElementById("emblemsUpload").onclick = toggleUpload;
@@ -103,6 +104,8 @@ function editEmblem(type, id, el) {
       emblemShapeSelector.disabled = false;
       emblemShapeSelector.value = el.coa.shield;
     }
+
+    document.getElementById("emblemShow").checked = !el.coaHidden;
   }
 
   function selectState() {
@@ -157,6 +160,24 @@ function editEmblem(type, id, el) {
 
   function showArea() {
     highlightEmblemElement(type, el);
+  }
+
+  function toggleEmblem() {
+    el.coaHidden = !el.coaHidden;
+
+    const g = emblems.select("#"+type+"Emblems");
+    if (el.coaHidden) g.select("[data-i='"+el.i+"']").remove();
+    else {
+      // re-append use element
+      if (g.select("[data-i='"+el.i+"']").size()) return; // alredy displayed
+      const halfSize = +g.attr("font-size") / 2;
+      const x = el.x || el.pole[0];
+      const y = el.y || el.pole[1];
+      g.append("use").attr("data-i", el.i)
+        .attr("x", rn(x - halfSize), 2).attr("y", rn(y - halfSize), 2)
+        .attr("width", "1em").attr("height", "1em")
+        .attr("href", "#"+id);
+    }
   }
 
   function regenerate() {
