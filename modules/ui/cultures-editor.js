@@ -61,7 +61,7 @@ function editCultures() {
     let lines = "", totalArea = 0, totalPopulation = 0;
 
     const emblemShapeGroup = document.getElementById("emblemShape").selectedOptions[0].parentNode.label;
-    const selectShape = emblemShapeGroup === "Diversiform"
+    const selectShape = emblemShapeGroup === "Diversiform";
 
     for (const c of pack.cultures) {
       if (c.removed) continue;
@@ -137,6 +137,8 @@ function editCultures() {
     body.querySelectorAll("div > div.culturePopulation").forEach(el => el.addEventListener("click", changePopulation));
     body.querySelectorAll("div > span.icon-arrows-cw").forEach(el => el.addEventListener("click", cultureRegenerateBurgs));
     body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.addEventListener("click", cultureRemove));
+
+    culturesHeader.querySelector("div[data-sortby='emblems']").style.display = selectShape ? "inline-block" : "none";
 
     if (body.dataset.type === "percentage") {body.dataset.type = "absolute"; togglePercentageMode();}
     applySorting(culturesHeader);
