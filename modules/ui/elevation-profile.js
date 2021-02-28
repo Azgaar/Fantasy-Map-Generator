@@ -52,10 +52,13 @@ function showElevationProfile(data, routeLen, isRiver) {
   let lastBurgCell = 0;
   let burgCount = 0;
   let chartData = {biome:[], burg:[], cell:[], height:[], mi:1000000, ma:0, mih: 100, mah: 0, points:[]};
-  for (let i=0, prevB=0, prevH=-1; i  <data.length; i++) {
+  for (let i = 0, prevB = 0, prevH = -1; i < data.length; i++) {
     let cell = data[i];
     let h = pack.cells.h[cell];
-    if (h < 20) h = 20;
+    if (h < 20) {
+      const f = pack.features[pack.cells.f[cell]];
+      if (f.type === "lake") h = f.height; else h = 20;
+    }
 
     // check for river up-hill
     if (prevH != -1) {

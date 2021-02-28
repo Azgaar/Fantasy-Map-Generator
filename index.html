@@ -1611,7 +1611,7 @@
 
         <div style="padding: .1em" data-tip="River width multiplier">
           <div class="label">Width modifier:</div>
-          <input id="riverWidthFactor" type="number" min=.2 max=4 step=.1 />
+          <input id="riverWidthFactor" type="number" min=.1 max=4 step=.1 />
         </div>
       </div>
 
@@ -3088,19 +3088,21 @@
 
     <div id="riversOverview" class="dialog stable" style="display: none">
       <div id="riversHeader" class="header">
-        <div style="left:1.7em" data-tip="Click to sort by river name" class="sortable alphabetically" data-sortby="name">River&nbsp;</div>
-        <div style="left:7.9em" data-tip="Click to sort by river type name" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
-        <div style="left:11.9em" data-tip="Click to sort by discharge (flux in m3/s)" class="sortable icon-sort-number-down" data-sortby="discharge">Discharge&nbsp;</div>
-        <div style="left:18.2em" data-tip="Click to sort by river length" class="sortable" data-sortby="length">Length&nbsp;</div>
-        <div style="left:23.4em" data-tip="Click to sort by river mouth width" class="sortable" data-sortby="width">Width&nbsp;</div>
-        <div style="left:29em" data-tip="Click to sort by river basin" class="sortable alphabetically" data-sortby="basin">Basin&nbsp;</div>
+        <div style="left:1.3em" data-tip="Click to sort by river name" class="sortable alphabetically" data-sortby="name">River&nbsp;</div>
+        <div style="left:8.6em" data-tip="Click to sort by river type name" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
+        <div style="left:13em" data-tip="Click to sort by discharge (flux in m3/s)" class="sortable icon-sort-number-down" data-sortby="discharge">Discharge&nbsp;</div>
+        <div style="left:19.3em" data-tip="Click to sort by river length" class="sortable" data-sortby="length">Length&nbsp;</div>
+        <div style="left:24.4em" data-tip="Click to sort by river mouth width" class="sortable" data-sortby="width">Width&nbsp;</div>
+        <div style="left:30em" data-tip="Click to sort by river basin" class="sortable alphabetically" data-sortby="basin">Basin&nbsp;</div>
       </div>
 
       <div id="riversBody" class="burgs-table"></div>
 
       <div id="riversFooter" class="totalLine">
         <div data-tip="Rivers number" style="margin-left: 4px">Rivers:&nbsp;<span id="riversFooterNumber">0</span></div>
-        <div data-tip="Average length" style="margin-left: 14px">Average length:&nbsp;<span id="riversFooterLength">0</span></div>
+        <div data-tip="Average discharge" style="margin-left: 12px">Average discharge:&nbsp;<span id="riversFooterDischarge">0</span></div>
+        <div data-tip="Average length" style="margin-left: 12px">Length:&nbsp;<span id="riversFooterLength">0</span></div>
+        <div data-tip="Average mouth width" style="margin-left: 12px">Width:&nbsp;<span id="riversFooterWidth">0</span></div>
       </div>
 
       <div id="riversBottom">

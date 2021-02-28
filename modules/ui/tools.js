@@ -522,25 +522,30 @@ function addRiverOnClick() {
   }
 
   const points = Rivers.addMeandering(dataRiver, 1, .5);
-  const width = Math.random() * .5 + .9;
-  const increment = Math.random() * .4 + .8;
-  const [path, length] = Rivers.getPath(points, width, increment);
-  rivers.append("path").attr("d", path).attr("id", "river"+river).attr("data-width", width).attr("data-increment", increment);
+  const widthFactor = rn(.8 + Math.random() * .4, 1); // river width modifier [.8, 1.2]
+  const sourceWidth = .1;
+  const [path, length, offset] = Rivers.getPath(points, widthFactor, sourceWidth);
+  rivers.append("path").attr("d", path).attr("id", "river"+river);
 
   // add new river to data or change extended river attributes
   const r = pack.rivers.find(r => r.i === river);
+  const mouth = last(dataRiver).cell;
+  const discharge = cells.fl[mouth]; // in m3/s
+
   if (r) {
     r.source = dataRiver[0].cell;
     r.length = length;
+    r.discharge = discharge;
   } else {
     const parent = dataRiver[0].parent || 0;
     const basin = Rivers.getBasin(river);
     const source = dataRiver[0].cell;
-    const mouth = last(dataRiver).cell;
+    const width = rn(offset ** 2, 2); // mounth width in km
     const name = Rivers.getName(mouth);
     const smallLength = pack.rivers.map(r => r.length||0).sort((a,b) => a-b)[Math.ceil(pack.rivers.length * .15)];
     const type = length < smallLength ? rw({"Creek":9, "River":3, "Brook":3, "Stream":1}) : "River";
-    pack.rivers.push({i:river, parent, length, source, mouth, basin, name, type});
+
+    pack.rivers.push({i:river, source, mouth, discharge, length, width, widthFactor, sourceWidth, parent, basin, name, type});
   }
 
   if (d3.event.shiftKey === false) {

@@ -1383,7 +1383,11 @@ div.states span.inactive:hover {
 	color: #abaaaa;
 }
 
-div.states>input.riverType {
+div.states > .riverName {
+	width: 7em;
+}
+
+div.states > .riverType {
 	width: 5em;
 }
 

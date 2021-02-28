@@ -607,7 +607,7 @@ function highlightElement(element) {
   if (tr[0]) x += tr[0];
   let y = box.y + box.height / 2;
   if (tr[1]) y += tr[1];
-  if (scale >= 2) zoomTo(x, y, scale, 1600);
+  zoomTo(x, y, scale > 2 ? scale : 3, 1600);
 }
 
 function selectIcon(initial, callback) {

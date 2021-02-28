@@ -27,17 +27,18 @@ function overviewRivers() {
   function riversOverviewAddLines() {
     body.innerHTML = "";
     let lines = "";
+    const unit = distanceUnitInput.value;
 
     for (const r of pack.rivers) {
       const discharge = r.discharge + " m³/s";
-      const length = rn(r.length * distanceScaleInput.value) + " " + distanceUnitInput.value;
-      const width = rn(r.width * distanceScaleInput.value, 3) + " " + distanceUnitInput.value;
+      const length = rn(r.length * distanceScaleInput.value) + " " + unit;
+      const width = rn(r.width * distanceScaleInput.value, 3) + " " + unit;
       const basin = pack.rivers.find(river => river.i === r.basin).name;
 
       lines += `<div class="states" data-id=${r.i} data-name="${r.name}" data-type="${r.type}" data-discharge="${r.discharge}" data-length="${r.length}" data-width="${r.width}" data-basin="${basin}">
         <span data-tip="Click to focus on river" class="icon-dot-circled pointer"></span>
-        <input data-tip="River proper name. Click to change. Ctrl + click to regenerate" class="riverName" value="${r.name}" autocorrect="off" spellcheck="false">
-        <input data-tip="River type name. Click to change" class="riverType" value="${r.type}">
+        <div data-tip="River name" class="riverName">${r.name}</div>
+        <div data-tip="River type name" class="riverType">${r.type}</div>
         <div data-tip="River discharge (flux power)" class="biomeArea">${discharge}</div>
         <div data-tip="River length from source to mouth" class="biomeArea">${length}</div>
         <div data-tip="River mouth width" class="biomeArea">${width}</div>
@@ -50,15 +51,16 @@ function overviewRivers() {
 
     // update footer
     riversFooterNumber.innerHTML = pack.rivers.length;
-    const averageLength = rn(d3.sum(pack.rivers.map(r => r.length)) / pack.rivers.length);
-    riversFooterLength.innerHTML = (averageLength * distanceScaleInput.value) + " " + distanceUnitInput.value;
+    const averageDischarge = rn(d3.mean(pack.rivers.map(r => r.discharge)));
+    riversFooterDischarge.innerHTML = averageDischarge + " m³/s";
+    const averageLength = rn(d3.mean(pack.rivers.map(r => r.length)) );
+    riversFooterLength.innerHTML = (averageLength * distanceScaleInput.value) + " " + unit;
+    const averageWidth = rn(d3.mean(pack.rivers.map(r => r.width)), 3);
+    riversFooterWidth.innerHTML = rn(averageWidth * distanceScaleInput.value, 3) + " " + unit;
 
     // add listeners
     body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseenter", ev => riverHighlightOn(ev)));
     body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseleave", ev => riverHighlightOff(ev)));
-    body.querySelectorAll("div > input.riverName").forEach(el => el.addEventListener("input", changeRiverName));
-    body.querySelectorAll("div > input.riverName").forEach(el => el.addEventListener("click", regenerateRiverName));
-    body.querySelectorAll("div > input.riverType").forEach(el => el.addEventListener("input", changeRiverType));
     body.querySelectorAll("div > span.icon-dot-circled").forEach(el => el.addEventListener("click", zoomToRiver));
     body.querySelectorAll("div > span.icon-pencil").forEach(el => el.addEventListener("click", openRiverEditor));
     body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.addEventListener("click", triggerRiverRemove));
@@ -72,30 +74,9 @@ function overviewRivers() {
     rivers.select("#river"+r).attr("stroke", "red").attr("stroke-width", 1);
   }
 
-  function riverHighlightOff() {
-    const r = +event.target.dataset.id;
+  function riverHighlightOff(e) {
+    const r = +e.target.dataset.id;
     rivers.select("#river"+r).attr("stroke", null).attr("stroke-width", null);
-  }
-
-  function changeRiverName() {
-    if (this.value == "") tip("Please provide a proper name", false, "error");
-    const river = +this.parentNode.dataset.id;
-    pack.rivers.find(r => r.i === river).name = this.value;
-    this.parentNode.dataset.name = this.value;
-  }
-
-  function regenerateRiverName(event) {
-    if (!isCtrlClick(event)) return;
-    const river = +this.parentNode.dataset.id;
-    const r = pack.rivers.find(r => r.i === river);
-    r.name = this.value = this.parentNode.dataset.name = Rivers.getName(r.mouth);
-  }
-
-  function changeRiverType() {
-    if (this.value == "") tip("Please provide a type name", false, "error");
-    const river = +this.parentNode.dataset.id;
-    pack.rivers.find(r => r.i === river).type = this.value;
-    this.parentNode.dataset.type = this.value;
   }
 
   function zoomToRiver() {
