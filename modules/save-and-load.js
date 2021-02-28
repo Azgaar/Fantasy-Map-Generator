@@ -1104,9 +1104,9 @@ function parseLoadedData(data) {
         for (const river of pack.rivers) {
           const el = document.getElementById("river"+river.i);
           if (el) {
+            river.widthFactor = +el.getAttribute("data-width");
             el.removeAttribute("data-width");
             el.removeAttribute("data-increment");
-            river.widthFactor = +this.getAttribute("data-width");
             river.discharge = pack.cells.fl[river.mouth] || 1;
             river.width = rn(river.length / 100, 2);
             river.sourceWidth = .1;
