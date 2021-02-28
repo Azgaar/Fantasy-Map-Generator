@@ -389,9 +389,9 @@ const remove = function(id) {
 }
 
 const getBasin = function(r) {
-    const parent = pack.rivers.find(river => river.i === r)?.parent;
-    if (!parent || r === parent) return r;
-    return getBasin(parent);
+  const parent = pack.rivers.find(river => river.i === r)?.parent;
+  if (!parent || r === parent) return r;
+  return getBasin(parent);
 }
 
 return {generate, resolveDepressions, addMeandering, getPath, specify, getName, getBasin, remove};
