@@ -200,16 +200,6 @@ i.icon-lock {
 	cursor: pointer;
 }
 
-#riverAngle, #riverWidthInput, #riverIncrement {
-	width: 7em;
-}
-
-.editButtonS {
-	display: none;
-	cursor: pointer;
-}
-
-#riverEditor > *,
 #routeEditor > *,
 #labelEditor div, 
 #markerEditor div {
@@ -275,8 +265,7 @@ i.icon-lock {
 	text-anchor: middle;
 }
 
-#routeLength, 
-#riverLength,
+#routeLength,
 #lakeArea,
 #coastlineArea {
 	background-color: #eeeeee;
@@ -1444,6 +1433,13 @@ div.states > .coaIcon > use {
 #burgBody div.label {
 	display: inline-block;
   width: 6em;
+}
+
+#riverBody div.label,
+#riverBody input,
+#riverBody select {
+	display: inline-block;
+  width: 7em;
 }
 
 #stateNameEditor div.label,

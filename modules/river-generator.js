@@ -173,7 +173,7 @@ const generate = function(changeHeights = true) {
     } else {
       // propagate flux and add next river segment
       cells.fl[toCell] += fromFlux;
-      riversData.push({river, cell: toCell, x: p[toCell][0], y: p[toCell][1], flux: cells.fl[toCell]});
+      riversData.push({river, cell: toCell, x: p[toCell][0], y: p[toCell][1], flux: fromFlux});
     }
   }
 
@@ -363,7 +363,7 @@ const specify = function() {
   const smallType = {"Creek":9, "River":3, "Brook":3, "Stream":1}; // weighted small river types
 
   for (const r of rivers) {
-    r.basin = getBasin(r.i, r.parent);
+    r.basin = getBasin(r.i);
     r.name = getName(r.mouth);
     const small = r.length < smallLength;
     r.type = r.parent && !(r.i%6) ? small ? "Branch" : "Fork" : small ? rw(smallType) : "River";
@@ -377,7 +377,7 @@ const getName = function(cell) {
 // remove river and all its tributaries
 const remove = function(id) {
   const cells = pack.cells;
-  const riversToRemove = pack.rivers.filter(r => r.i === id || getBasin(r.i, r.parent, id) === id).map(r => r.i);
+  const riversToRemove = pack.rivers.filter(r => r.basin === id).map(r => r.i);
   riversToRemove.forEach(r => rivers.select("#river"+r).remove());
   cells.r.forEach((r, i) => {
     if (!r || !riversToRemove.includes(r)) return;
@@ -388,14 +388,10 @@ const remove = function(id) {
   pack.rivers = pack.rivers.filter(r => !riversToRemove.includes(r.i));
 }
 
-const getBasin = function(r, p, e) {
-  while (p && r !== p && r !== e) {
-    const parent = pack.rivers.find(r => r.i === p);
-    if (!parent) return r;
-    r = parent.i;
-    p = parent.parent;
-  }
-  return r;
+const getBasin = function(r) {
+    const parent = pack.rivers.find(river => river.i === r)?.parent;
+    if (!parent || r === parent) return r;
+    return getBasin(parent);
 }
 
 return {generate, resolveDepressions, addMeandering, getPath, specify, getName, getBasin, remove};

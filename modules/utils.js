@@ -182,11 +182,9 @@ function toHEX(rgb){
 
 // return array of standard shuffled colors
 function getColors(number) {
-  // const c12 = d3.scaleOrdinal(d3.schemeSet3);
   const c12 = ["#dababf","#fb8072","#80b1d3","#fdb462","#b3de69","#fccde5","#c6b9c1","#bc80bd","#ccebc5","#ffed6f","#8dd3c7","#eb8de7"];
   const cRB = d3.scaleSequential(d3.interpolateRainbow);
   const colors = d3.shuffle(d3.range(number).map(i => i < 12 ? c12[i] : d3.color(cRB((i-12)/(number-12))).hex()));
-  //debug.selectAll("circle").data(colors).enter().append("circle").attr("r", 15).attr("cx", (d,i) => 60 + i * 40).attr("cy", 20).attr("fill", d => d);
   return colors;
 }
 

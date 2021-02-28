@@ -1564,31 +1564,64 @@
     </div>
 
     <div id="riverEditor" class="dialog" style="display: none">
-      <button id="riverNameShow" data-tip="Show river name section" class="icon-font"></button>
-      <div id="riverNameSection" style="display: none">
-        <button id="riverNameHide" data-tip="Hide the river name section" class="icon-font"></button>
-        <input id="riverName" data-tip="Change river proper name" style="width: 8em">
-        <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
-        <input id="riverType" data-tip="Change river type name" style="width: 6em">
-        <span id="riverNameCulture" data-tip="Generate culture-specific name for the river" class="icon-book pointer"></span>
-        <span id="riverNameRandom" data-tip="Generate random name for the river" class="icon-globe pointer"></span>
+      <div id="riverBody" style="padding-bottom: .3em">
+
+        <div style="padding: .1em">
+          <div class="label" style="width: 4.8em">Name:</div>
+          <span id="riverNameCulture" data-tip="Generate culture-specific name for the river" class="icon-book pointer"></span>
+          <span id="riverNameRandom" data-tip="Generate random name for the river" class="icon-globe pointer"></span>
+          <input id="riverName" data-tip="Type to rename the river" autocorrect="off" spellcheck="false">
+          <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        </div>
+
+        <div style="padding: .1em" data-tip="Type to change river type (e.g. fork, creek, river, brook, stream)">
+          <div class="label">Type:</div>
+          <input id="riverType" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div style="padding: .1em" data-tip="Select parent river">
+          <div class="label">Mainstem:</div>
+          <select id="riverMainstem"></select>
+        </div>
+
+        <div style="padding: .1em" data-tip="River drainage basin (watershed)">
+          <div class="label">Basin:</div>
+          <input id="riverBasin" disabled/>
+        </div>
+
+        <div style="padding: .1em" data-tip="River discharge (flux power)">
+          <div class="label">Discharge:</div>
+          <input id="riverDischarge" disabled/>
+        </div>
+
+        <div style="padding: .1em" data-tip="River length in selected units">
+          <div class="label">Length:</div>
+          <input id="riverLength" disabled/>
+        </div>
+
+        <div style="padding: .1em" data-tip="River mouth width in selected units">
+          <div class="label">Mouse width:</div>
+          <input id="riverWidth" disabled/>
+        </div>
+
+        <div style="padding: .1em" data-tip="River source width in pixels">
+          <div class="label">Source width:</div>
+          <input id="riverSourceWidth" type="number" min=0 max=3 step=.1 />
+        </div>
+
+        <div style="padding: .1em" data-tip="River width multiplier">
+          <div class="label">Width modifier:</div>
+          <input id="riverWidthFactor" type="number" min=.2 max=4 step=.1 />
+        </div>
       </div>
 
-      <button id="riverWidthShow" data-tip="Show river width and widening change section" class="icon-resize-full"></button>
-      <div id="riverWidthSection" style="display: none">
-        <button id="riverWidthHide" data-tip="Hide the river width and widening change section" class="icon-resize-full"></button>
-        <i id="riverWidthIcon" class="icon-w"></i>
-        <input id="riverWidthInput" data-tip="Change river width" value="1" type="range" min=.2 max=10 step=.1>
-        <i id="riverIncrementIcon" class="icon-i"></i>
-        <input id="riverIncrement" data-tip="Change river bed increment (widening speed)" type="range" min=.01 max=3 step=.01>
+      <div id="riverBottom">
+        <button id="riverNew" data-tip="Create new river clicking on map" class="icon-map-pin"></button>
+        <button id="riverEditStyle" data-tip="Edit style for all rivers in Style Editor" class="icon-brush"></button>
+        <button id="riverElevationProfile" data-tip="Show the elevation profile for the river" class="icon-chart-area"></button>
+        <button id="riverLegend" data-tip="Edit free text notes (legend) for the river" class="icon-edit"></button>
+        <button id="riverRemove" data-tip="Remove river. Shortcut: Delete" class="icon-trash fastDelete"></button>
       </div>
-
-      <button id="riverEditStyle" data-tip="Edit style for all rivers in Style Editor" class="icon-brush"></button>
-      <button id="riverLength" data-tip="River length in selected units">0</button>
-      <button id="riverElevationProfile" data-tip="Show the elevation profile for the river" class="icon-chart-area"></button>
-      <button id="riverNew" data-tip="Create new river clicking on map" class="icon-map-pin"></button>
-      <button id="riverLegend" data-tip="Edit free text notes (legend) for the river" class="icon-edit"></button>
-      <button id="riverRemove" data-tip="Remove river. Shortcut: Delete" class="icon-trash fastDelete"></button>
     </div>
 
     <div id="elevationProfile" class="dialog" style="display: none" width="100%">
@@ -3055,10 +3088,12 @@
 
     <div id="riversOverview" class="dialog stable" style="display: none">
       <div id="riversHeader" class="header">
-        <div style="left:1.8em" data-tip="Click to sort by river name" class="sortable alphabetically" data-sortby="name">River&nbsp;</div>
-        <div style="left:7.7em" data-tip="Click to sort by river type name" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
-        <div style="left:12.9em" data-tip="Click to sort by river length" class="sortable icon-sort-number-down" data-sortby="length">Length&nbsp;</div>
-        <div style="left:18.2em" data-tip="Click to sort by river basin" class="sortable alphabetically" data-sortby="basin">Basin&nbsp;</div>
+        <div style="left:1.7em" data-tip="Click to sort by river name" class="sortable alphabetically" data-sortby="name">River&nbsp;</div>
+        <div style="left:7.9em" data-tip="Click to sort by river type name" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
+        <div style="left:11.9em" data-tip="Click to sort by discharge (flux in m3/s)" class="sortable icon-sort-number-down" data-sortby="discharge">Discharge&nbsp;</div>
+        <div style="left:18.2em" data-tip="Click to sort by river length" class="sortable" data-sortby="length">Length&nbsp;</div>
+        <div style="left:23.4em" data-tip="Click to sort by river mouth width" class="sortable" data-sortby="width">Width&nbsp;</div>
+        <div style="left:29em" data-tip="Click to sort by river basin" class="sortable alphabetically" data-sortby="basin">Basin&nbsp;</div>
       </div>
 
       <div id="riversBody" class="burgs-table"></div>

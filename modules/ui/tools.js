@@ -534,7 +534,7 @@ function addRiverOnClick() {
     r.length = length;
   } else {
     const parent = dataRiver[0].parent || 0;
-    const basin = Rivers.getBasin(river, parent);
+    const basin = Rivers.getBasin(river);
     const source = dataRiver[0].cell;
     const mouth = last(dataRiver).cell;
     const name = Rivers.getName(mouth);

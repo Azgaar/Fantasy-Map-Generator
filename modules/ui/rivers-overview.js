@@ -29,14 +29,18 @@ function overviewRivers() {
     let lines = "";
 
     for (const r of pack.rivers) {
+      const discharge = r.discharge + " m³/s";
       const length = rn(r.length * distanceScaleInput.value) + " " + distanceUnitInput.value;
+      const width = rn(r.width * distanceScaleInput.value, 3) + " " + distanceUnitInput.value;
       const basin = pack.rivers.find(river => river.i === r.basin).name;
 
-      lines += `<div class="states" data-id=${r.i} data-name="${r.name}" data-type="${r.type}" data-length="${r.length}" data-basin="${basin}">
+      lines += `<div class="states" data-id=${r.i} data-name="${r.name}" data-type="${r.type}" data-discharge="${r.discharge}" data-length="${r.length}" data-width="${r.width}" data-basin="${basin}">
         <span data-tip="Click to focus on river" class="icon-dot-circled pointer"></span>
         <input data-tip="River proper name. Click to change. Ctrl + click to regenerate" class="riverName" value="${r.name}" autocorrect="off" spellcheck="false">
         <input data-tip="River type name. Click to change" class="riverType" value="${r.type}">
-        <div data-tip="River length" class="biomeArea">${length}</div>
+        <div data-tip="River discharge (flux power)" class="biomeArea">${discharge}</div>
+        <div data-tip="River length from source to mouth" class="biomeArea">${length}</div>
+        <div data-tip="River mouth width" class="biomeArea">${width}</div>
         <input data-tip="River basin (name of the main stem)" class="stateName" value="${basin}" disabled>
         <span data-tip="Edit river" class="icon-pencil"></span>
         <span data-tip="Remove river" class="icon-trash-empty"></span>
@@ -106,26 +110,27 @@ function overviewRivers() {
       rivers.attr("data-basin", null);
     } else {
       rivers.attr("data-basin", "hightlighted");
-      const basins = [...(new Set(pack.rivers.map(r=>r.basin)))];
-      const colors = getColors(basins.length);
-  
-      basins.forEach((b,i) => {
+      const basins = [...new Set(pack.rivers.map(r => r.basin))];
+      const colors = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2","#7f7f7f","#bcbd22","#17becf"];
+
+      basins.forEach((b, i) => {
+        const color = colors[i % colors.length];
         pack.rivers.filter(r => r.basin === b).forEach(r => {
-          rivers.select("#river"+r.i).attr("fill", colors[i]);
+          rivers.select("#river"+r.i).attr("fill", color);
         });
       });
     }
   }
 
   function downloadRiversData() {
-    let data = "Id,River,Type,Length,Basin\n"; // headers
+    let data = "Id,River,Type,Discharge,Length,Width,Basin\n"; // headers
 
     body.querySelectorAll(":scope > div").forEach(function(el) {
-      data += el.dataset.id + ",";
-      data += el.dataset.name + ",";
-      data += el.dataset.type + ",";
-      data += el.querySelector(".biomeArea").innerHTML + ",";
-      data += el.dataset.basin + "\n";
+      const d = el.dataset;
+      const discharge = d.discharge + " m³/s"
+      const length = rn(d.length * distanceScaleInput.value) + " " + distanceUnitInput.value;
+      const width = rn(d.width * distanceScaleInput.value, 3) + " " + distanceUnitInput.value;
+      data += [d.id, d.name, d.type, discharge, length, width, d.basin].join(",") + "\n";
     });
 
     const name = getFileName("Rivers") + ".csv";
