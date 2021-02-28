@@ -61,13 +61,11 @@
     relief.sort((a, b) => (a.y + a.s) - (b.y + b.s));
 
     // append relief icons at once using pure js
-    void function renderRelief() {
-      let reliefHTML = "";
-      for (const r of relief) {
-        reliefHTML += `<use href="${r.i}" x="${r.x}" y="${r.y}" width="${r.s}" height="${r.s}"/>`;
-      }
-      terrain.html(reliefHTML);
-    }()
+    let reliefHTML = "";
+    for (const r of relief) {
+      reliefHTML += `<use href="${r.i}" x="${r.x}" y="${r.y}" width="${r.s}" height="${r.s}"/>`;
+    }
+    terrain.html(reliefHTML);
 
     TIME && console.timeEnd('drawRelief');
   }

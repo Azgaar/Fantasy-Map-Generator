@@ -707,7 +707,6 @@ function openNearSeaLakes() {
       if (cells.h[c] >= 20) cells.t[c] = 1; // mark as coastline
     });
     features[lake].type = "ocean"; // mark former lake as ocean
-    debug.append("circle").attr("cx", grid.points[treshold][0]).attr("cy", grid.points[treshold][1]).attr("r", 2);
   }
 
   TIME && console.timeEnd("openLakes");
@@ -1132,10 +1131,7 @@ function defineLakesGroup() {
   }
 
   function defineGroup(feature) {
-    const gridCell = pack.cells.g[feature.firstCell];
-    const temp = grid.cells.temp[gridCell];
-
-    if (temp < -3) return "frozen";
+    if (feature.temp < -3) return "frozen";
     if (feature.height > 60 && feature.cells < 10 && feature.firstCell % 5 === 0) return "lava";
 
     if (!feature.inlets && !feature.outlet) {

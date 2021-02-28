@@ -521,7 +521,7 @@ function addRiverOnClick() {
     i = min;
   }
 
-  const points = Rivers.addMeandring(dataRiver, Math.random() * .5 + .1);
+  const points = Rivers.addMeandering(dataRiver, 1, .5);
   const width = Math.random() * .5 + .9;
   const increment = Math.random() * .4 + .8;
   const [path, length] = Rivers.getPath(points, width, increment);
