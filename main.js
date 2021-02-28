@@ -547,6 +547,7 @@ function generate() {
     drawCoastline();
 
     Rivers.generate();
+    defineLakesGroup();
     defineBiomes();
 
     rankCells();
@@ -673,36 +674,29 @@ function markFeatures() {
   TIME && console.timeEnd("markFeatures");
 }
 
-// How to handle lakes generated near seas? They can be both open or closed.
-// As these lakes are usually get a lot of water inflow, most of them should have brake the treshold and flow to sea via river or strait (see Ancylus Lake).
-// So I will help this process and open these kind of lakes setting a treshold cell heigh below the sea level (=19).
+// near sea lakes usually get a lot of water inflow, most of them should brake treshold and flow out to sea (see Ancylus Lake)
 function openNearSeaLakes() {
   if (templateInput.value === "Atoll") return; // no need for Atolls
   const cells = grid.cells, features = grid.features;
   if (!features.find(f => f.type === "lake")) return; // no lakes
   TIME && console.time("openLakes");
-  const limit = 50; // max height that can be breached by water
+  const LIMIT = 22; // max height that can be breached by water
 
-  for (let t = 0, removed = true; t < 5 && removed; t++) {
-    removed = false;
+  for (const i of cells.i) {
+    const lake = cells.f[i];
+    if (features[lake].type !== "lake") continue; // not a lake cell
 
-    for (const i of cells.i) {
-      const lake = cells.f[i];
-      if (features[lake].type !== "lake") continue; // not a lake cell
+    check_neighbours:
+    for (const c of cells.c[i]) {
+      if (cells.t[c] !== 1 || cells.h[c] > LIMIT) continue; // water cannot brake this
 
-      check_neighbours:
-      for (const c of cells.c[i]) {
-        if (cells.t[c] !== 1 || cells.h[c] > limit) continue; // water cannot brake this
-
-        for (const n of cells.c[c]) {
-          const ocean = cells.f[n];
-          if (features[ocean].type !== "ocean") continue; // not an ocean
-          removed = removeLake(c, lake, ocean);
-          break check_neighbours;
-        }
+      for (const n of cells.c[c]) {
+        const ocean = cells.f[n];
+        if (features[ocean].type !== "ocean") continue; // not an ocean
+        removeLake(c, lake, ocean);
+        break check_neighbours;
       }
     }
-
   }
 
   function removeLake(treshold, lake, ocean) {
@@ -713,7 +707,7 @@ function openNearSeaLakes() {
       if (cells.h[c] >= 20) cells.t[c] = 1; // mark as coastline
     });
     features[lake].type = "ocean"; // mark former lake as ocean
-    return true;
+    debug.append("circle").attr("cx", grid.points[treshold][0]).attr("cy", grid.points[treshold][1]).attr("r", 2);
   }
 
   TIME && console.timeEnd("openLakes");
@@ -999,7 +993,7 @@ function drawCoastline() {
     if (features[f].type === "lake") {
       landMask.append("path").attr("d", path).attr("fill", "black").attr("id", "land_"+f);
       // waterMask.append("path").attr("d", path).attr("fill", "white").attr("id", "water_"+id); // uncomment to show over lakes
-      lakes.select("#"+features[f].group).append("path").attr("d", path).attr("id", "lake_"+f).attr("data-f", f); // draw the lake
+      lakes.select("#freshwater").append("path").attr("d", path).attr("id", "lake_"+f).attr("data-f", f); // draw the lake
     } else {
       landMask.append("path").attr("d", path).attr("fill", "white").attr("id", "land_"+f);
       waterMask.append("path").attr("d", path).attr("fill", "black").attr("id", "water_"+f);
@@ -1105,21 +1099,10 @@ function reMarkFeatures() {
 
     const type = land ? "island" : border ? "ocean" : "lake";
     let group;
-    if (type === "lake") group = defineLakeGroup(start, cellNumber, temp[cells.g[start]]);
-    else if (type === "ocean") group = defineOceanGroup(cellNumber);
+    if (type === "ocean") group = defineOceanGroup(cellNumber);
     else if (type === "island") group = defineIslandGroup(start, cellNumber);
     features.push({i, land, border, type, cells: cellNumber, firstCell: start, group});
     queue[0] = cells.f.findIndex(f => !f); // find unmarked cell
-  }
-
-  function defineLakeGroup(cell, number, temp) {
-    if (temp > 31) return "dry";
-    if (temp > 24) return "salt";
-    if (temp < -3) return "frozen";
-    const height = d3.max(cells.c[cell].map(c => cells.h[c]));
-    if (height > 69 && number < 3 && cell%5 === 0) return "sinkhole";
-    if (height > 69 && number < 10 && cell%5 === 0) return "lava";
-    return "freshwater";
   }
 
   function defineOceanGroup(number) {
@@ -1136,6 +1119,34 @@ function reMarkFeatures() {
   }
 
   TIME && console.timeEnd("reMarkFeatures");
+}
+
+function defineLakesGroup() {
+  for (const feature of pack.features) {
+    if (feature.type !== "lake") continue;
+    const lakeEl = lakes.select(`[data-f="${feature.i}"]`).node();
+    if (!lakeEl) continue;
+
+    feature.group = defineGroup(feature);
+    document.getElementById(feature.group).appendChild(lakeEl);
+  }
+
+  function defineGroup(feature) {
+    const gridCell = pack.cells.g[feature.firstCell];
+    const temp = grid.cells.temp[gridCell];
+
+    if (temp < -3) return "frozen";
+    if (feature.height > 60 && feature.cells < 10 && feature.firstCell % 5 === 0) return "lava";
+
+    if (!feature.inlets && !feature.outlet) {
+      if (feature.evaporation / 2 > feature.flux) return "dry";
+      if (feature.cells < 3 && feature.firstCell % 5 === 0) return "sinkhole";
+    }
+
+    if (!feature.outlet && feature.evaporation > feature.flux) return "salt";
+
+    return "freshwater";
+  }
 }
 
 // assign biome id for each cell
@@ -1174,7 +1185,7 @@ function getBiomeId(moisture, temperature, height) {
 // assess cells suitability to calculate population and rand cells for culture center and burgs placement
 function rankCells() {
   TIME && console.time('rankCells');
-  const cells = pack.cells, f = pack.features;
+  const {cells, features} = pack;
   cells.s = new Int16Array(cells.i.length); // cell suitability array
   cells.pop = new Float32Array(cells.i.length); // cell population array
 
@@ -1190,12 +1201,14 @@ function rankCells() {
 
     if (cells.t[i] === 1) {
       if (cells.r[i]) s += 15; // estuary is valued
-      const type = f[cells.f[cells.haven[i]]].type;
-      const group = f[cells.f[cells.haven[i]]].group;
-      if (type === "lake") {
-        // lake coast is valued
-        if (group === "freshwater") s += 30;
-        else if (group !== "lava" && group !== "dry") s += 10;
+      const feature = features[cells.f[cells.haven[i]]];
+      if (feature.type === "lake") {
+        if (feature.group === "freshwater") s += 30;
+        else if (feature.group == "salt") s += 10;
+        else if (feature.group == "frozen") s += 1;
+        else if (feature.group == "dry") s -= 5;
+        else if (feature.group == "sinkhole") s -= 5;
+        else if (feature.group == "lava") s -= 30;
       } else {
         s += 5; // ocean coast is valued
         if (cells.harbor[i] === 1) s += 20; // safe sea harbor is valued

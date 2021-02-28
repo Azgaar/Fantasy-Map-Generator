@@ -185,6 +185,7 @@ function editHeightmap() {
       }
     }
 
+    defineLakesGroup();
     defineBiomes();
     rankCells();
     Cultures.generate();

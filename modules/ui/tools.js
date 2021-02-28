@@ -95,6 +95,7 @@ async function openEmblemEditor() {
 
 function regenerateRivers() {
   Rivers.generate();
+  defineLakesGroup();
   Rivers.specify();
   if (!layerIsOn("toggleRivers")) toggleRivers();
 }

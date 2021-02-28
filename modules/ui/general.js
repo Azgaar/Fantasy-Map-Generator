@@ -238,12 +238,7 @@ function toDMS(coord, c) {
 function getElevation(f, h) {
   if (f.land) return getHeight(h) + " (" + h + ")"; // land: usual height
   if (f.border) return "0 " + heightUnit.value; // ocean: 0
-
-  // lake: lowest coast height - 1
-  const lakeCells = Array.from(pack.cells.i.filter(i => pack.cells.f[i] === f.i));
-  const heights = lakeCells.map(i => pack.cells.c[i].map(c => pack.cells.h[c])).flat().filter(h => h > 19);
-  const elevation = (d3.min(heights)||20) - 1;
-  return getHeight(elevation) + " (" + elevation + ")";
+  if (f.type === "lake") return getHeight(f.height) + " (" + f.height + ")"; // lake: defined on river generation
 }
 
 // get water depth

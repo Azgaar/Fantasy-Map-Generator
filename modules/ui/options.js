@@ -434,7 +434,7 @@ function randomizeOptions() {
   if (randomize || !locked("culturesSet")) randomizeCultureSet();
 
   // 'Configure World' settings
-  if (randomize || !locked("prec")) precInput.value = precOutput.value = gauss(120, 20, 5, 500);
+  if (randomize || !locked("prec")) precInput.value = precOutput.value = gauss(100, 40, 5, 500);
   const tMax = +temperatureEquatorOutput.max, tMin = +temperatureEquatorOutput.min; // temperature extremes
   if (randomize || !locked("temperatureEquator")) temperatureEquatorOutput.value = temperatureEquatorInput.value = rand(tMax-6, tMax);
   if (randomize || !locked("temperaturePole")) temperaturePoleOutput.value = temperaturePoleInput.value = rand(tMin, tMin+10);
