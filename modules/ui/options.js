@@ -116,8 +116,6 @@ optionsContent.addEventListener("input", function(event) {
   else if (id === "manorsInput") changeBurgsNumberSlider(value);
   else if (id === "religionsInput") religionsOutput.value = value;
   else if (id === "emblemShape") changeEmblemShape(value);
-  else if (id === "uiSizeInput") uiSizeOutput.value = value;
-  else if (id === "uiSizeOutput") changeUIsize(value);
   else if (id === "tooltipSizeInput" || id === "tooltipSizeOutput") changeTooltipSize(value);
   else if (id === "transparencyInput") changeDialogsTransparency(value);
 });
@@ -127,7 +125,7 @@ optionsContent.addEventListener("change", function(event) {
   const id = event.target.id, value = event.target.value;
   if (id === "zoomExtentMin" || id === "zoomExtentMax") changeZoomExtent(value);
   else if (id === "optionsSeed") generateMapWithSeed();
-  else if (id === "uiSizeInput") changeUIsize(value);
+  else if (id === "uiSizeInput" || id === "uiSizeOutput") changeUIsize(value);
   else if (id === "yearInput") changeYear();
   else if (id === "eraInput") changeEra();
 });
@@ -342,10 +340,18 @@ function changeBurgsNumberSlider(value) {
 }
 
 function changeUIsize(value) {
-  if (isNaN(+value) || +value > 4 || +value < .5) return;
+  if (isNaN(+value) || +value < .5) return;
+
+  const max = getUImaxSize();
+  if (+value > max) value = max;
+
   uiSizeInput.value = uiSizeOutput.value = value;
   document.getElementsByTagName("body")[0].style.fontSize = value * 11 + "px";
   document.getElementById("options").style.width = value * 300 + "px";
+}
+
+function getUImaxSize() {
+  return rn(Math.min(window.innerHeight / 465, window.innerWidth / 302), 1);
 }
 
 function changeTooltipSize(value) {
@@ -405,6 +411,7 @@ function applyStoredOptions() {
   if (localStorage.getItem("tooltipSize")) changeTooltipSize(localStorage.getItem("tooltipSize"));
   if (localStorage.getItem("regions")) changeStatesNumber(localStorage.getItem("regions"));
 
+  uiSizeInput.max = uiSizeOutput.max = getUImaxSize();
   if (localStorage.getItem("uiSize")) changeUIsize(localStorage.getItem("uiSize"));
   else changeUIsize(Math.max(Math.min(rn(mapWidthInput.value / 1280, 1), 2.5), 1));
 
