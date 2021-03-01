@@ -488,7 +488,7 @@
 
   const getShield = function(culture, state) {
     const emblemShape = document.getElementById("emblemShape");
-    const shapeGroup = emblemShape.selectedOptions[0].parentNode.label;
+    const shapeGroup = emblemShape.selectedOptions[0]?.parentNode.label || "Diversiform";
     if (shapeGroup !== "Diversiform") return emblemShape.value;
 
     if (emblemShape.value === "state" && state && pack.states[state].coa) return pack.states[state].coa.shield;

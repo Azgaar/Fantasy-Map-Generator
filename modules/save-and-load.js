@@ -115,20 +115,20 @@ async function getMapURL(type, subtype) {
   const symbols = cloneEl.querySelectorAll("symbol");
   for (let i=0; i < symbols.length; i++) {
     const id = symbols[i].id;
-    if (cloneEl.querySelector("use[href='#"+id+"']")) continue;
+    if (cloneEl.querySelector("use[*|href='#"+id+"']")) continue;
     symbols[i].remove();
   }
 
   // add displayed emblems
   if (layerIsOn("toggleEmblems") && emblems.selectAll("use").size()) {
-    Array.from(cloneEl.getElementById("emblems").querySelectorAll("use")).forEach(el => {
-      const href = el.getAttribute("href");
+    cloneEl.getElementById("emblems")?.querySelectorAll("use").forEach(el => {
+      const href = el.getAttribute("href") || el.getAttribute("xlink:href");
       if (!href) return;
       const emblem = document.getElementById(href.slice(1));
       if (emblem) cloneDefs.append(emblem.cloneNode(true));
     });
   } else {
-    cloneDefs.querySelector("#defs-emblems").remove();
+    cloneDefs.querySelector("#defs-emblems")?.remove();
   }
 
   // add ocean pattern
@@ -141,9 +141,10 @@ async function getMapURL(type, subtype) {
   // add relief icons
   if (cloneEl.getElementById("terrain")) {
     const uniqueElements = new Set();
-    const terrainElements = cloneEl.getElementById("terrain").childNodes;
-    for (let i=0; i < terrainElements.length; i++) {
-      uniqueElements.add(terrainElements[i].getAttribute("href"));
+    const terrainNodes = cloneEl.getElementById("terrain").childNodes;
+    for (let i=0; i < terrainNodes.length; i++) {
+      const href = terrainNodes[i].getAttribute("href") || terrainNodes[i].getAttribute("xlink:href");
+      uniqueElements.add(href);
     }
 
     const defsRelief = svgDefs.getElementById("defs-relief");

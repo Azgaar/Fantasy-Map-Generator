@@ -414,9 +414,16 @@ function togglePopulation(event) {
   } else {
     if (event && isCtrlClick(event)) {editStyle("population"); return;}
     turnButtonOff("togglePopulation");
-    const hide = d3.transition().duration(1000).ease(d3.easeSinIn);
-    population.select("#rural").selectAll("line").transition(hide).attr("y2", d => d[1]).remove();
-    population.select("#urban").selectAll("line").transition(hide).delay(1000).attr("y2", d => d[1]).remove();
+    const isD3data = population.select("line").datum();
+    if (!isD3data) {
+      // just remove
+      population.selectAll("line").remove();
+    } else {
+      // remove with animation
+      const hide = d3.transition().duration(1000).ease(d3.easeSinIn);
+      population.select("#rural").selectAll("line").transition(hide).attr("y2", d => d[1]).remove();
+      population.select("#urban").selectAll("line").transition(hide).delay(1000).attr("y2", d => d[1]).remove();
+    }
   }
 }
 
