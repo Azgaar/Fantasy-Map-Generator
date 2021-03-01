@@ -842,6 +842,7 @@ function editStates() {
     const basename = center%5 === 0 ? burgs[burg].name : Names.getCulture(culture);
     const name = Names.getState(basename, culture);
     const color = getRandomColor();
+    const pole = cells.p[center];
 
     // generate emblem
     const cultureType = pack.cultures[culture].type;
@@ -871,30 +872,25 @@ function editStates() {
     diplomacy.push("x");
     states[0].diplomacy.push([`Independance declaration`, `${name} declared its independance from ${states[oldState].name}`]);
 
-    const affectedStates = [newState, oldState];
-    const affectedProvinces = [cells.province[center]];
     cells.state[center] = newState;
     cells.province[center] = 0;
 
-    const cellsToCheck = [...new Set(cells.c[center].map(c => cells.c[c].map(c => cells.c[c])).flat(2))];
-    cellsToCheck.forEach(c => {
-      if (cells.h[c] < 20) return;
-      if (cells.burg[c]) return;
-      affectedStates.push(cells.state[c]);
-      affectedProvinces.push(cells.province[c]);
-      cells.state[c] = newState;
-      cells.province[c] = 0;
-    });
-
-    states.push({i:newState, name, diplomacy, provinces:[], color, expansionism:.5, capital:burg, type:"Generic", center, culture, military:[], alert:1, coa});
+    states.push({i:newState, name, diplomacy, provinces:[], color, expansionism:.5, capital:burg, type:"Generic", center, culture, military:[], alert:1, coa, pole});
     BurgsAndStates.collectStatistics();
     BurgsAndStates.defineStateForms([newState]);
-    adjustProvinces([...new Set(affectedProvinces)]);
+    adjustProvinces([cells.province[center]]);
 
     if (layerIsOn("toggleProvinces")) toggleProvinces();
     if (!layerIsOn("toggleStates")) toggleStates(); else drawStates();
     if (!layerIsOn("toggleBorders")) toggleBorders(); else drawBorders();
-    BurgsAndStates.drawStateLabels([...new Set(affectedStates)]);
+
+    // add label
+    defs.select("#textPaths").append("path").attr("d", `M${pole[0]-50},${pole[1]+6}h${100}`).attr("id", "textPath_stateLabel"+newState);
+    labels.select("#states")
+      .append("text").attr("id", "stateLabel"+newState)
+      .append("textPath").attr("xlink:href", "#textPath_stateLabel"+newState).attr("startOffset", "50%").attr("font-size", "50%")
+      .append("tspan").attr("x", name.length * -3).text(name);
+
     COArenderer.add("state", newState, coa, states[newState].pole[0], states[newState].pole[1]);
     statesEditorAddLines();
   }
@@ -906,7 +902,7 @@ function editStates() {
     body.querySelectorAll("div > input, select, span, svg").forEach(e => e.style.pointerEvents = "all");
     if (statesAdd.classList.contains("pressed")) statesAdd.classList.remove("pressed");
   }
-  
+
   function downloadStatesData() {
     const unit = areaUnit.value === "square" ? distanceUnitInput.value + "2" : areaUnit.value;
     let data = "Id,State,Form,Color,Capital,Culture,Type,Expansionism,Cells,Burgs,Area "+unit+",Total Population,Rural Population,Urban Population\n"; // headers
