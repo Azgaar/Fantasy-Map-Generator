@@ -66,7 +66,7 @@ class Battle {
       const typesD = Object.keys(defender.u).map(name => options.military.find(u => u.name === name).type);
 
       if (attacker.n && defender.n) return "naval"; // attacker and defender are navals
-      if (typesA.every(t => t === "aviation") && typesD.every(t => t === "aviation")) return "air"; // if attacked and defender have only aviation units
+      if (typesA.every(t => t === "aviation") && typesD.every(t => t === "aviation")) return "air"; // if attackers and defender have only aviation units
       if (attacker.n && !defender.n && typesA.some(t => t !== "naval")) return "landing"; // if attacked is naval with non-naval units and defender is not naval
       if (!defender.n && pack.burgs[pack.cells.burg[this.cell]].walls) return "siege"; // defender is in walled town
       if (P(.1) && [5,6,7,8,9,12].includes(pack.cells.biome[this.cell])) return "ambush"; // 20% if defenders are in forest or marshes
@@ -106,6 +106,15 @@ class Battle {
     if (this.type === "ambush") return this.place + " Ambush";
     if (this.type === "landing") return this.place + " Landing";
     if (this.type === "air") return `${this.place} ${P(.8) ? "Air Battle" : "Dogfight"}`;
+  }
+
+  getTypeName() {
+    if (this.type === "field") return "field battle";
+    if (this.type === "naval") return "naval battle";
+    if (this.type === "siege") return "siege";
+    if (this.type === "ambush") return "ambush";
+    if (this.type === "landing") return "landing";
+    if (this.type === "air") return "battle";
   }
 
   addHeaders() {
@@ -618,7 +627,6 @@ class Battle {
       r.u = Object.assign({}, r.survivors);
       r.a = d3.sum(Object.values(r.u)); // reg total
       armies.select(`g#${id} > text`).text(Military.getTotal(r)); // update reg box
-      Military.moveRegiment(r, r.x + rand(20) - 10, r.y + rand(20) - 10);
     }
 
     // append battlefield marker
@@ -631,15 +639,19 @@ class Battle {
         .attr("font-size", "12px").attr("dominant-baseline", "central").text("⚔️");
     }()
 
-    const getSide = (regs, n) => regs.length > 1 ? 
-      `${n ? "regiments" : "forces"} of ${list([... new Set(regs.map(r => pack.states[r.state].name))])}` :
-      getAdjective(pack.states[regs[0].state].name) + " " + regs[0].name;
+    const getSide = (regs, n) => regs.length > 1
+      ? `${n ? "regiments" : "forces"} of ${list([... new Set(regs.map(r => pack.states[r.state].name))])}`
+      : getAdjective(pack.states[regs[0].state].name) + " " + regs[0].name;
     const getLosses = casualties => Math.min(rn(casualties * 100), 100);
 
-    const legend = `${this.name} took place in ${options.year} ${options.eraShort}. It was fought between ${getSide(this.attackers.regiments, 1)} and ${getSide(this.defenders.regiments, 0)}. The ${this.type} ended in ${battleStatus[+P(.7)]}.
+    const status = battleStatus[+P(.7)];
+    const result = `The ${this.getTypeName(this.type)} ended in ${status}`;
+    const legend = `${this.name} took place in ${options.year} ${options.eraShort}. It was fought between ${getSide(this.attackers.regiments, 1)} and ${getSide(this.defenders.regiments, 0)}. ${result}.
       \r\nAttackers losses: ${getLosses(this.attackers.casualties)}%, defenders losses: ${getLosses(this.defenders.casualties)}%`;
     const id = getNextId("markerElement");
     notes.push({id, name:this.name, legend});
+
+    tip(`${this.name} is over. ${result}`, true, "success", 4000);
 
     markers.append("use").attr("id", id)
       .attr("xlink:href", "#marker_battlefield").attr("data-id", "#marker_battlefield")
