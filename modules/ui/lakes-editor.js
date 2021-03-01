@@ -13,6 +13,7 @@ function editLake() {
   const node = d3.event.target;
   debug.append("g").attr("id", "vertices");
   elSelected = d3.select(node);
+  updateLakeValues();
   selectLakeGroup(node);
   drawLakeVertices();
   viewbox.on("touchmove mousemove", null);
@@ -21,19 +22,34 @@ function editLake() {
   modules.editLake = true;
 
   // add listeners
-  document.getElementById("lakeGroupsShow").addEventListener("click", showGroupSection);
+  document.getElementById("lakeName").addEventListener("input", changeName);
+  document.getElementById("lakeNameCulture").addEventListener("click", generateNameCulture);
+  document.getElementById("lakeNameRandom").addEventListener("click", generateNameRandom);
+
   document.getElementById("lakeGroup").addEventListener("change", changeLakeGroup);
   document.getElementById("lakeGroupAdd").addEventListener("click", toggleNewGroupInput);
   document.getElementById("lakeGroupName").addEventListener("change", createNewGroup);
   document.getElementById("lakeGroupRemove").addEventListener("click", removeLakeGroup);
-  document.getElementById("lakeGroupsHide").addEventListener("click", hideGroupSection);
 
   document.getElementById("lakeEditStyle").addEventListener("click", editGroupStyle);
   document.getElementById("lakeLegend").addEventListener("click", editLakeLegend);
 
+  function getLake() {
+    const lakeId = +elSelected.attr("data-f");
+    return pack.features.find(feature => feature.i === lakeId);
+  }
+
+  function updateLakeValues() {
+    const l = getLake();
+    document.getElementById("lakeName").value = l.name;
+    document.getElementById("lakeGroup").value = l.type;
+
+    const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
+    document.getElementById("lakeArea").value = si(l.area * distanceScaleInput.value ** 2) + unit;
+  }
+
   function drawLakeVertices() {
-    const f = +elSelected.attr("data-f"); // feature id
-    const v = pack.features[f].vertices; // lake outer vertices
+    const v = getLake().vertices; // lake outer vertices
 
     const c = [... new Set(v.map(v => pack.vertices.c[v]).flat())];
     debug.select("#vertices").selectAll("polygon").data(c).enter().append("polygon")
@@ -43,10 +59,6 @@ function editLake() {
       .attr("cx", d => pack.vertices.p[d][0]).attr("cy", d => pack.vertices.p[d][1])
       .attr("r", .4).attr("data-v", d => d).call(d3.drag().on("drag", dragVertex))
       .on("mousemove", () => tip("Drag to move the vertex, please use for fine-tuning only. Edit heightmap to change actual cell heights"));
-
-    const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
-    const area = pack.features[f].area;
-    lakeArea.innerHTML = si(area * distanceScaleInput.value ** 2) + unit;
   }
 
   function dragVertex() {
@@ -61,29 +73,29 @@ function editLake() {
 
   function redrawLake() {
     lineGen.curve(d3.curveBasisClosed);
-    const f = +elSelected.attr("data-f");
-    const vertices = pack.features[f].vertices;
-    const points = vertices.map(v => pack.vertices.p[v]);
+    const feature = getLake();
+    const points = feature.vertices.map(v => pack.vertices.p[v]);
     const d = round(lineGen(points));
     elSelected.attr("d", d);
-    defs.select("mask#land > path#land_"+f).attr("d", d); // update land mask
+    defs.select("mask#land > path#land_"+feature.i).attr("d", d); // update land mask
 
     const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
-    const area = Math.abs(d3.polygonArea(points));
-    lakeArea.innerHTML = si(area * distanceScaleInput.value ** 2) + unit;
+    feature.area = Math.abs(d3.polygonArea(points));
+    document.getElementById("lakeArea").value = si(feature.area * distanceScaleInput.value ** 2) + unit;
   }
 
-  function showGroupSection() {
-    document.querySelectorAll("#lakeEditor > button").forEach(el => el.style.display = "none");
-    document.getElementById("lakeGroupsSelection").style.display = "inline-block";
+  function changeName() {
+    getLake().name = this.value;
   }
 
-  function hideGroupSection() {
-    document.querySelectorAll("#lakeEditor > button").forEach(el => el.style.display = "inline-block");
-    document.getElementById("lakeGroupsSelection").style.display = "none";
-    document.getElementById("lakeGroupName").style.display = "none";
-    document.getElementById("lakeGroupName").value = "";
-    document.getElementById("lakeGroup").style.display = "inline-block"; 
+  function generateNameCulture() {
+    const lake = getLake();
+    lake.name = lakeName.value = Lakes.getName(lake);
+  }
+
+  function generateNameRandom() {
+    const lake = getLake();
+    lake.name = lakeName.value = Names.getBase(rand(nameBases.length-1));
   }
 
   function selectLakeGroup(node) {

@@ -185,7 +185,7 @@ function editHeightmap() {
       }
     }
 
-    defineLakesGroup();
+    Lakes.defineGroup();
     defineBiomes();
     rankCells();
     Cultures.generate();
@@ -201,6 +201,8 @@ function editHeightmap() {
     BurgsAndStates.drawStateLabels();
 
     Rivers.specify();
+    Lakes.generateName();
+
     Military.generate();
     addMarkers();
     addZones();

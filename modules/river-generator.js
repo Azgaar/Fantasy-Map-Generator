@@ -21,7 +21,7 @@ const generate = function(changeHeights = true) {
   resolveDepressions(h);
   drainWater();
   defineRivers();
-  cleanupLakeData();
+  Lakes.cleanupLakeData();
 
   if (changeHeights) cells.h = Uint8Array.from(h); // apply changed heights as basic one
 
@@ -57,25 +57,7 @@ const generate = function(changeHeights = true) {
   function drainWater() {
     const MIN_FLUX_TO_FORM_RIVER = 30;
     const land = cells.i.filter(i => h[i] >= 20).sort((a,b) => h[b] - h[a]);
-
-    const lakeOutCells = new Uint16Array(cells.i.length); // to enumerate lake outlet positions
-    features.forEach(f => {
-      if (f.type !== "lake") return;
-      const gridCell = cells.g[f.firstCell];
-
-      // lake possible outlet: cell around with min height
-      f.outCell = f.shoreline[d3.scan(f.shoreline, (a,b) => h[a] - h[b])];
-      lakeOutCells[f.outCell] = f.i;
-
-      // default flux: sum of precipition around lake first cell
-      f.flux = rn(d3.sum(f.shoreline.map(c => grid.cells.prec[cells.g[c]])) / 2);
-
-      // temperature and evaporation to detect closed lakes
-      f.temp = f.cells < 6 ? grid.cells.temp[gridCell] : rn(d3.mean(f.shoreline.map(c => grid.cells.temp[cells.g[c]])), 1);
-      const height = (f.height - 18) ** heightExponentInput.value; // height in meters
-      const evaporation = (700 * (f.temp + .006 * height) / 50 + 75) / (80 - f.temp); // based on Penman formula, [1-11]
-      f.evaporation = rn(evaporation * f.cells);
-    });
+    const lakeOutCells = Lakes.setClimateData(h);
 
     land.forEach(function(i) {
       cells.fl[i] += grid.cells.prec[cells.g[i]]; // flux from precipitation
@@ -208,24 +190,6 @@ const generate = function(changeHeights = true) {
     // draw rivers
     rivers.html(riverPaths.map(d => `<path id="river${d[1]}" d="${d[0]}"/>`).join(""));
   }
-
-  function cleanupLakeData() {
-    for (const feature of features) {
-      if (feature.type !== "lake") continue;
-      delete feature.river;
-      delete feature.enteringFlux;
-      delete feature.shoreline;
-      delete feature.outCell;
-      feature.height = rn(feature.height);
-
-      const inlets = feature.inlets?.filter(r => pack.rivers.find(river => river.i === r));
-      if (!inlets || !inlets.length) delete feature.inlets;
-      else feature.inlets = inlets;
-
-      const outlet = feature.outlet && pack.rivers.find(river => river.i === feature.outlet);
-      if (!outlet) delete feature.outlet;
-    }
-  }
 }
 
 // depression filling algorithm (for a correct water flux modeling)
@@ -238,7 +202,6 @@ const resolveDepressions = function(h) {
     const uniqueCells = new Set();
     l.vertices.forEach(v => pack.vertices.c[v].forEach(c => cells.h[c] >= 20 && uniqueCells.add(c)));
     l.shoreline = [...uniqueCells];
-    l.height = 21;
   });
 
   const land = cells.i.filter(i => h[i] >= 20 && !cells.b[i]); // exclude near-border cells

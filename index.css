@@ -1441,7 +1441,10 @@ div.states > .coaIcon > use {
 
 #riverBody div.label,
 #riverBody input,
-#riverBody select {
+#riverBody select,
+#lakeBody div.label,
+#lakeBody input,
+#lakeBody select {
 	display: inline-block;
   width: 7em;
 }

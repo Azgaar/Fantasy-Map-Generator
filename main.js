@@ -547,7 +547,7 @@ function generate() {
     drawCoastline();
 
     Rivers.generate();
-    defineLakesGroup();
+    Lakes.defineGroup();
     defineBiomes();
 
     rankCells();
@@ -564,6 +564,7 @@ function generate() {
     BurgsAndStates.drawStateLabels();
 
     Rivers.specify();
+    Lakes.generateName();
 
     Military.generate();
     addMarkers();
@@ -1118,31 +1119,6 @@ function reMarkFeatures() {
   }
 
   TIME && console.timeEnd("reMarkFeatures");
-}
-
-function defineLakesGroup() {
-  for (const feature of pack.features) {
-    if (feature.type !== "lake") continue;
-    const lakeEl = lakes.select(`[data-f="${feature.i}"]`).node();
-    if (!lakeEl) continue;
-
-    feature.group = defineGroup(feature);
-    document.getElementById(feature.group).appendChild(lakeEl);
-  }
-
-  function defineGroup(feature) {
-    if (feature.temp < -3) return "frozen";
-    if (feature.height > 60 && feature.cells < 10 && feature.firstCell % 5 === 0) return "lava";
-
-    if (!feature.inlets && !feature.outlet) {
-      if (feature.evaporation / 2 > feature.flux) return "dry";
-      if (feature.cells < 3 && feature.firstCell % 5 === 0) return "sinkhole";
-    }
-
-    if (!feature.outlet && feature.evaporation > feature.flux) return "salt";
-
-    return "freshwater";
-  }
 }
 
 // assign biome id for each cell

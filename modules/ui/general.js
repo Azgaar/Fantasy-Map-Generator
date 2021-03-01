@@ -145,7 +145,12 @@ function showMapTooltip(point, e, i, g) {
   }
   if (subgroup === "burgIcons") {tip("Click to edit the Burg"); return;}
   if (subgroup === "burgLabels") {tip("Click to edit the Burg"); return;}
-  if (group === "lakes" && !land) {tip(`${capitalize(subgroup)} lake. Click to edit`); return;}
+  if (group === "lakes" && !land) {
+    const lakeId = +e.target.dataset.f;
+    const name = pack.features[lakeId]?.name;
+    const fullName = subgroup === "freshwater" ? name : name + " " + subgroup;
+    tip(`${fullName} lake. Click to edit`); return;
+  }
   if (group === "coastline") {tip("Click to edit the coastline"); return;}
   if (group === "zones") {
     const zone = path[path.length-8];

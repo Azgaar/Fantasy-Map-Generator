@@ -1624,6 +1624,37 @@
       </div>
     </div>
 
+    <div id="lakeEditor" class="dialog" style="display: none">
+      <div id="lakeBody" style="padding-bottom: .3em">
+        <div style="padding: .1em">
+          <div class="label" style="width: 4.8em">Name:</div>
+          <span id="lakeNameCulture" data-tip="Generate culture-specific name for the lake" class="icon-book pointer"></span>
+          <span id="lakeNameRandom" data-tip="Generate random name for the lake" class="icon-globe pointer"></span>
+          <input id="lakeName" data-tip="Type to rename the lake" autocorrect="off" spellcheck="false">
+          <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        </div>
+
+        <div style="padding: .1em" data-tip="Type to change lake type (group)">
+          <div class="label">Type:</div>
+
+          <select id="lakeGroup" data-tip="Select lake type (group)" style="width:9em"></select>
+          <input id="lakeGroupName" placeholder="new group name" data-tip="Provide a name for the new group" style="display:none; width:9em"/>
+          <span id="lakeGroupAdd" data-tip="Create new type (group) for the lake" class="icon-plus pointer"></span>
+          <span id="lakeGroupRemove" data-tip="Remove the group" class="icon-trash-empty pointer"></span>
+        </div>
+
+        <div style="padding: .1em" data-tip="Lake area in selected units">
+          <div class="label">Area:</div>
+          <input id="lakeArea" disabled/>
+        </div>
+      </div>
+
+      <div id="lakeBottom">
+        <button id="lakeEditStyle" data-tip="Edit lake group style in Style Editor" class="icon-brush"></button>
+        <button id="lakeLegend" data-tip="Edit free text notes (legend) for the lake" class="icon-edit"></button>
+      </div>
+    </div>
+
     <div id="elevationProfile" class="dialog" style="display: none" width="100%">
       <div id="elevationGraph" data-tip="Elevation profile"></div>
       <div style="text-align: center">
@@ -1661,21 +1692,6 @@
       <button id="routeLegend" data-tip="Edit free text notes (legend) for the route" class="icon-edit"></button>
       <button id="routeNew" data-tip="Create new route clicking on map" class="icon-map-pin"></button>
       <button id="routeRemove" data-tip="Remove route. Shortcut: Delete" class="icon-trash fastDelete"></button>
-    </div>
-
-    <div id="lakeEditor" class="dialog" style="display: none">
-      <button id="lakeGroupsShow" data-tip="Show the group selection" class="icon-tags"></button>
-      <div id="lakeGroupsSelection" style="display: none">
-        <button id="lakeGroupsHide" data-tip="Hide the group section" class="icon-tags"></button>
-        <select id="lakeGroup" data-tip="Select a group for this lake" style="width:9em"></select>
-        <input id="lakeGroupName" placeholder="new group name" data-tip="Provide a name for the new group" style="display:none; width:9em"/>
-        <span id="lakeGroupAdd" data-tip="Create new group for this lake" class="icon-plus pointer"></span>
-        <span id="lakeGroupRemove" data-tip="Remove the group" class="icon-trash-empty pointer"></span>
-      </div>
-
-      <button id="lakeEditStyle" data-tip="Edit lake group style in Style Editor" class="icon-brush"></button>
-      <button id="lakeArea" data-tip="Lake area in selected units">0</button>
-      <button id="lakeLegend" data-tip="Edit free text notes (legend) for the lake" class="icon-edit"></button>
     </div>
 
     <div id="iceEditor" class="dialog" style="display: none">
@@ -4037,6 +4053,7 @@
   <script src="modules/heightmap-generator.js"></script>
   <script src="modules/ocean-layers.js"></script>
   <script src="modules/river-generator.js"></script>
+  <script src="modules/lakes.js"></script>
   <script src="modules/names-generator.js"></script>
   <script src="modules/cultures-generator.js"></script>
   <script src="modules/burgs-and-states.js"></script>

@@ -47,7 +47,7 @@ function editWorld() {
     generatePrecipitation();
     const heights = new Uint8Array(pack.cells.h);
     Rivers.generate();
-    defineLakesGroup();
+    Lakes.defineGroup();
     Rivers.specify();
     pack.cells.h = new Float32Array(heights);
     defineBiomes();

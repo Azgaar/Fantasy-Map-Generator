@@ -421,7 +421,6 @@ function applyStoredOptions() {
   const height = +params.get("height");
   if (width) mapWidthInput.value = width;
   if (height) mapHeightInput.value = height;
-  //window.history.pushState({}, null, "?");
 }
 
 // randomize options if randomization is allowed (not locked or options='default')
