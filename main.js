@@ -349,8 +349,7 @@ function showWelcomeMessage() {
     <ul>${post}
       <li>River overview and River editor rework</li>
       <li>River generation code refactored and optimized</li>
-      <li></li>
-      <li>Rivers discharge (flux) properly calculated </li>
+      <li>Rivers discharge (flux) and mouth width calculated</li>
       <li>Lake editor rework</li>
       <li>Lake type defined dynamically based on evaporation and river system</li>
       <li>Lake flux, inlets and outlet tracked properly</li>
@@ -365,7 +364,7 @@ function showWelcomeMessage() {
   $("#alert").dialog(
     {resizable: false, title: "Fantasy Map Generator update", width: "28em",
     buttons: {OK: function() {$(this).dialog("close")}},
-    position: {my: "center center-80", at: "center", of: "svg"},
+    position: {my: "center center-4em", at: "center", of: "svg"},
     close: () => localStorage.setItem("version", version)}
   );
 }
