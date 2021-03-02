@@ -338,7 +338,7 @@ function applyDefaultBiomesSystem() {
 }
 
 function showWelcomeMessage() {
-  const post = "Main changes:" //link("https://www.reddit.com/r/FantasyMapGenerator/comments/ft5b41/update_v16/", "Main changes:");
+  const post = link("https://www.patreon.com/posts/48228540", "Main changes:");
   const changelog = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "previous version");
   const reddit = link("https://www.reddit.com/r/FantasyMapGenerator", "Reddit community");
   const discord = link("https://discordapp.com/invite/X7E84HU", "Discord server");
