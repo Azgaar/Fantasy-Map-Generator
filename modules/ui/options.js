@@ -276,9 +276,9 @@ function copyMapURL() {
 }
 
 function changeCellsDensity(value) {
-  densityOutput.value = value * 10 + "K";
-  if (value > 5) densityOutput.style.color = "#b12117";
-  else if (value > 1) densityOutput.style.color = "#dfdf12";
+  densityOutput.value = value * 1 + "K";
+  if (value > 50) densityOutput.style.color = "#b12117";
+  else if (value > 10) densityOutput.style.color = "#dfdf12";
   else densityOutput.style.color = "#038603";
 }
 

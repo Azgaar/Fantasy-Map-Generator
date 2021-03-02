@@ -186,7 +186,23 @@
   }
 
   function getBlobPower() {
-    switch (+densityInput.value) {
+    if (+densityInput.value < 10) {
+      switch (+densityInput.value) {
+        case 1: return .93;
+        case 2: return .95;
+        case 3: return .96;
+        case 4: return .96;
+        case 5: return .96;
+        case 6: return .96;
+        case 7: return .97;
+        case 8: return .97;
+        case 9: return .975;
+        case 10: return .98;
+      }
+    }
+
+    let x = Math.max(1, rn(+densityInput.value / 10));
+    switch (x) {
       case 1: return .98;
       case 2: return .985;
       case 3: return .987;
@@ -201,7 +217,23 @@
   }
 
   function getLinePower() {
-    switch (+densityInput.value) {
+    if (+densityInput.value < 10) {
+      switch (+densityInput.value) {
+        case 1: return .74;
+        case 2: return .75;
+        case 3: return .76;
+        case 4: return .77;
+        case 5: return .78;
+        case 6: return .79;
+        case 7: return .795;
+        case 8: return .80;
+        case 9: return .805;
+        case 10: return .81;
+      }
+    }
+
+    let x = Math.max(1, rn(+densityInput.value / 10));
+    switch (x) {
       case 1: return .81;
       case 2: return .82;
       case 3: return .83;
