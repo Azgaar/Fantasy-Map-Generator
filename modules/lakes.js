@@ -58,6 +58,7 @@ const defineGroup = function() {
 }
 
 const generateName = function() {
+  Math.random = aleaPRNG(seed);
   for (const feature of pack.features) {
     if (feature.type !== "lake") continue;
     feature.name = getName(feature);

@@ -347,12 +347,18 @@ function showWelcomeMessage() {
   alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
     <ul>${post}
-      <li>State, province and burg Emblems generation</li>
-      <li>Emblem editor integrated with ${link("https://azgaar.github.io/Armoria", "Armoria")} — our new dedicated Heraldry generator and editor</li>
-      <li>Burg editor screen update</li>
-      <li>Speak name functionality</li>
+      <li>River overview and River editor rework</li>
+      <li>River generation code refactored and optimized</li>
+      <li></li>
+      <li>Rivers discharge (flux) properly calculated </li>
+      <li>Lake editor rework</li>
+      <li>Lake type defined dynamically based on evaporation and river system</li>
+      <li>Lake flux, inlets and outlet tracked properly</li>
+      <li>Lake outlet rendered with starting width depending on flux</li>
+      <li>Lakes now have names</li>
     </ul>
-    <img src="https://raw.githubusercontent.com/Azgaar/Armoria/master/public/preview.png" alt="Armoria preview" width="100%" height="auto"/>
+
+    <iframe width="100%" height="auto" src="https://www.youtube.com/embed/XBSNkTf1Ddg?controls=0" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
     <p>Join our ${discord} and ${reddit} to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
     <span>Thanks for all supporters on ${patreon}!</i></span>`;
 
