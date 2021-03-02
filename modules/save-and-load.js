@@ -1100,7 +1100,7 @@ function parseLoadedData(data) {
         });
       }
 
-      if (version < 1.59) {
+      if (version < 1.6) {
         // v 1.6 changed rivers data
         for (const river of pack.rivers) {
           const el = document.getElementById("river"+river.i);
@@ -1115,8 +1115,22 @@ function parseLoadedData(data) {
             Rivers.remove(river.i);
           }
         }
-      }
 
+        // v 1.6 changed lakes data
+        for (const f of pack.features) {
+          if (f.type !== "lake") continue;
+          if (f.evaporation) continue;
+
+          f.flux = f.flux || f.cells * 3;
+          f.temp = grid.cells.temp[pack.cells.g[f.firstCell]];
+          f.height = f.height || d3.min(pack.cells.c[f.firstCell].map(c => pack.cells.h[c]).filter(h => h >= 20));
+          const height = (f.height - 18) ** heightExponentInput.value;
+          const evaporation = (700 * (f.temp + .006 * height) / 50 + 75) / (80 - f.temp);
+          f.evaporation = rn(evaporation * f.cells);
+          f.name = f.name || Lakes.getName(f);
+          delete f.river;
+        }
+      }
     }()
 
     void function checkDataIntegrity() {

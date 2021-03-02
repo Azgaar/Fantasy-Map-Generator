@@ -204,7 +204,8 @@ function editRiver(id) {
 
   function editRiverLegend() {
     const id = elSelected.attr("id");
-    editNotes(id, id);
+    const river = getRiver();
+    editNotes(id, river.name + " " + river.type);
   }
 
   function toggleRiverCreationMode() {

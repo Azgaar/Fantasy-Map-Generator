@@ -351,7 +351,6 @@ function editHeightmap() {
       if (!b.i || b.removed) continue;
       b.cell = findBurgCell(b.x, b.y);
       b.feature = pack.cells.f[b.cell];
-      //if (b.port) b.port = pack.cells.f[pack.cells.haven[b.cell]]; // water body id
 
       pack.cells.burg[b.cell] = b.i;
       if (!b.capital && pack.cells.h[b.cell] < 20) removeBurg(b.i);
@@ -383,7 +382,10 @@ function editHeightmap() {
     drawStates();
     drawBorders();
 
-    if (changeHeights.checked) Rivers.specify();
+    if (changeHeights.checked) {
+      Rivers.specify();
+      Lakes.generateName();
+    }
 
     // restore zones from grid
     zones.selectAll("g").each(function() {

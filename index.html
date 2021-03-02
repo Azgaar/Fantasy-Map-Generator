@@ -1566,7 +1566,7 @@
     <div id="riverEditor" class="dialog" style="display: none">
       <div id="riverBody" style="padding-bottom: .3em">
 
-        <div style="padding: .1em">
+        <div>
           <div class="label" style="width: 4.8em">Name:</div>
           <span id="riverNameCulture" data-tip="Generate culture-specific name for the river" class="icon-book pointer"></span>
           <span id="riverNameRandom" data-tip="Generate random name for the river" class="icon-globe pointer"></span>
@@ -1574,42 +1574,42 @@
           <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
         </div>
 
-        <div style="padding: .1em" data-tip="Type to change river type (e.g. fork, creek, river, brook, stream)">
+        <div data-tip="Type to change river type (e.g. fork, creek, river, brook, stream)">
           <div class="label">Type:</div>
           <input id="riverType" autocorrect="off" spellcheck="false">
         </div>
 
-        <div style="padding: .1em" data-tip="Select parent river">
+        <div data-tip="Select parent river">
           <div class="label">Mainstem:</div>
           <select id="riverMainstem"></select>
         </div>
 
-        <div style="padding: .1em" data-tip="River drainage basin (watershed)">
+        <div data-tip="River drainage basin (watershed)">
           <div class="label">Basin:</div>
           <input id="riverBasin" disabled/>
         </div>
 
-        <div style="padding: .1em" data-tip="River discharge (flux power)">
+        <div data-tip="River discharge (flux power)">
           <div class="label">Discharge:</div>
           <input id="riverDischarge" disabled/>
         </div>
 
-        <div style="padding: .1em" data-tip="River length in selected units">
+        <div data-tip="River length in selected units">
           <div class="label">Length:</div>
           <input id="riverLength" disabled/>
         </div>
 
-        <div style="padding: .1em" data-tip="River mouth width in selected units">
+        <div data-tip="River mouth width in selected units">
           <div class="label">Mouse width:</div>
           <input id="riverWidth" disabled/>
         </div>
 
-        <div style="padding: .1em" data-tip="River source width in pixels">
+        <div data-tip="River source width in pixels">
           <div class="label">Source width:</div>
           <input id="riverSourceWidth" type="number" min=0 max=3 step=.1 />
         </div>
 
-        <div style="padding: .1em" data-tip="River width multiplier">
+        <div data-tip="River width multiplier">
           <div class="label">Width modifier:</div>
           <input id="riverWidthFactor" type="number" min=.1 max=4 step=.1 />
         </div>
@@ -1626,7 +1626,7 @@
 
     <div id="lakeEditor" class="dialog" style="display: none">
       <div id="lakeBody" style="padding-bottom: .3em">
-        <div style="padding: .1em">
+        <div>
           <div class="label" style="width: 4.8em">Name:</div>
           <span id="lakeNameCulture" data-tip="Generate culture-specific name for the lake" class="icon-book pointer"></span>
           <span id="lakeNameRandom" data-tip="Generate random name for the lake" class="icon-globe pointer"></span>
@@ -1634,23 +1634,62 @@
           <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
         </div>
 
-        <div style="padding: .1em" data-tip="Type to change lake type (group)">
-          <div class="label">Type:</div>
-
-          <select id="lakeGroup" data-tip="Select lake type (group)" style="width:9em"></select>
-          <input id="lakeGroupName" placeholder="new group name" data-tip="Provide a name for the new group" style="display:none; width:9em"/>
-          <span id="lakeGroupAdd" data-tip="Create new type (group) for the lake" class="icon-plus pointer"></span>
+        <div data-tip="Type to change lake type (group)">
+          <div class="label" style="width: 4.8em">Type:</div>
           <span id="lakeGroupRemove" data-tip="Remove the group" class="icon-trash-empty pointer"></span>
+          <span id="lakeGroupAdd" data-tip="Create new type (group) for the lake" class="icon-plus pointer"></span>
+          <select id="lakeGroup" data-tip="Select lake type (group)"></select>
+          <input id="lakeGroupName" placeholder="type name" data-tip="Provide a name for the new group" style="display:none"/>
+          <span id="lakeEditStyle" data-tip="Edit lake group style in Style Editor" class="icon-brush pointer"></span>
         </div>
 
-        <div style="padding: .1em" data-tip="Lake area in selected units">
+        <div data-tip="Lake area in selected units">
           <div class="label">Area:</div>
           <input id="lakeArea" disabled/>
+        </div>
+
+        <div data-tip="Lake shore length in selected units">
+          <div class="label">Shore length:</div>
+          <input id="lakeShoreLength" disabled/>
+        </div>
+
+        <div data-tip="Lake elevation in selected units">
+          <div class="label">Elevation:</div>
+          <input id="lakeElevation" disabled/>
+        </div>
+
+        <div data-tip="Lake average depth in selected units">
+          <div class="label">Avarage depth:</div>
+          <input id="lakeAvarageDepth" disabled/>
+        </div>
+
+        <div data-tip="Lake maximum depth in selected units">
+          <div class="label">Max depth:</div>
+          <input id="lakeMaxDepth" disabled/>
+        </div>
+
+        <div data-tip="Lake water supply. If supply > evaporation and there is an outlet, the lake water is fresh. If supply is very low, the lake becomes dry">
+          <div class="label">Supply:</div>
+          <input id="lakeFlux" disabled/>
+        </div>
+
+        <div data-tip="Evaporation from lake surface. If evaporation > supply, the lake water is saline. If difference is high, the lake becomes dry">
+          <div class="label">Evaporation:</div>
+          <input id="lakeEvaporation" disabled/>
+        </div>
+
+        <div data-tip="Number of lake inlet rivers">
+          <div class="label">Inlets:</div>
+          <input id="lakeInlets" disabled/>
+        </div>
+
+        <div data-tip="Lake outlet river">
+          <div class="label">Outlet:</div>
+          <input id="lakeOutlet" disabled/>
         </div>
       </div>
 
       <div id="lakeBottom">
-        <button id="lakeEditStyle" data-tip="Edit lake group style in Style Editor" class="icon-brush"></button>
         <button id="lakeLegend" data-tip="Edit free text notes (legend) for the lake" class="icon-edit"></button>
       </div>
     </div>
@@ -1854,16 +1893,16 @@
       <div id="burgBody" style="padding-bottom: .3em">
         <svg viewBox="0 0 200 200" width="14em" height="14em"><use id="burgEmblem"></use></svg>
         <div style="float: right">
-          <div id="burgProvinceAndState" style="padding: .1em; font-style: italic; max-width: 16em"></div>
+          <div id="burgProvinceAndState" style="font-style: italic; max-width: 16em"></div>
 
-          <div style="padding: .1em">
+          <div>
             <div class="label">Name:</div>
             <input id="burgName" data-tip="Type to rename the burg" autocorrect="off" spellcheck="false" style="width: 8em">
             <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
             <span id="burgNameReRandom" data-tip="Generate random name for the burg" class="icon-globe pointer"></span>
           </div>
 
-          <div style="padding: .1em" data-tip="Select burg type. Type slightly affects emblem generation">
+          <div data-tip="Select burg type. Type slightly affects emblem generation">
             <div class="label">Type:</div>
             <select id="burgType" style="width: 8em">
               <option value="Generic">Generic</option>
@@ -1876,18 +1915,18 @@
             </select>
           </div>
 
-          <div style="padding: .1em" data-tip="Select dominant culture">
+          <div data-tip="Select dominant culture">
             <div class="label">Culture:</div>
             <select id="burgCulture" style="width: 8em"></select>
             <span id="burgNameReCulture" data-tip="Generate culture-specific name for the burg" class="icon-book pointer"></span>
           </div>
 
-          <div style="padding: .1em" data-tip="Set burg population">
+          <div data-tip="Set burg population">
             <div class="label">Population:</div>
             <input id="burgPopulation" type="number" min=0 step=1 style="width: 8em">
           </div>
 
-          <div style="padding: .1em">
+          <div>
             <div class="label">Features:</div>
             <span id="burgCapital" data-tip="Shows whether the burg is a state capital. Click to toggle" data-feature="capital" class="burgFeature icon-star"></span>
             <span id="burgPort" data-tip="Shows whether the burg is a port. Click to toggle" data-feature="port" class="burgFeature icon-anchor"></span>
@@ -1898,13 +1937,13 @@
             <span id="burgShanty" data-tip="Shows whether the burg has a shanty town. Click to toggle" data-feature="shanty" class="burgFeature icon-campground" style="font-size: 1em"></span>
           </div>
 
-          <div style="padding: .1em" data-tip="Burg mean annual temperature and real-world city for comparison">
+          <div data-tip="Burg mean annual temperature and real-world city for comparison">
             <div class="label">Temperature:</div>
             <span id="burgTemperature"></span>, like in 
             <span id="burgTemperatureLikeIn"></span>
           </div>
 
-          <div style="padding: .1em" data-tip="Burg height above mean sea level">
+          <div data-tip="Burg height above mean sea level">
             <div class="label">Elevation:</div>
             <span id="burgElevation"></span> above sea level
           </div>

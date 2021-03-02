@@ -266,7 +266,6 @@ i.icon-lock {
 }
 
 #routeLength,
-#lakeArea,
 #coastlineArea {
 	background-color: #eeeeee;
 	border: 1px solid #a5a5a5;
@@ -1437,6 +1436,12 @@ div.states > .coaIcon > use {
 #burgBody div.label {
 	display: inline-block;
   width: 6em;
+}
+
+#burgBody > div > div,
+#riverBody > div,
+#lakeBody > div {
+	padding: .1em;
 }
 
 #riverBody div.label,

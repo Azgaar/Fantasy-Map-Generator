@@ -2,7 +2,7 @@
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 "use strict";
-const version = "1.59"; // generator version
+const version = "1.6"; // generator version
 document.title += " v" + version;
 
 // Switches to disable/enable logging features
@@ -338,7 +338,7 @@ function applyDefaultBiomesSystem() {
 }
 
 function showWelcomeMessage() {
-  const post = "Main changes:" //link("https://www.reddit.com/r/FantasyMapGenerator/comments/ft5b41/update_v15/", "Main changes:");
+  const post = "Main changes:" //link("https://www.reddit.com/r/FantasyMapGenerator/comments/ft5b41/update_v16/", "Main changes:");
   const changelog = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "previous version");
   const reddit = link("https://www.reddit.com/r/FantasyMapGenerator", "Reddit community");
   const discord = link("https://discordapp.com/invite/X7E84HU", "Discord server");

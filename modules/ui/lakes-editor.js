@@ -40,12 +40,32 @@ function editLake() {
   }
 
   function updateLakeValues() {
+    const cells = pack.cells;
+
     const l = getLake();
     document.getElementById("lakeName").value = l.name;
-    document.getElementById("lakeGroup").value = l.type;
 
     const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
     document.getElementById("lakeArea").value = si(l.area * distanceScaleInput.value ** 2) + unit;
+
+    const length = d3.polygonLength(l.vertices.map(v => pack.vertices.p[v]));
+    document.getElementById("lakeShoreLength").value = si(length * distanceScaleInput.value) + " " + distanceUnitInput.value;
+
+    const lakeCells = Array.from(cells.i.filter(i => cells.f[i] === l.i));
+    const heights = lakeCells.map(i => cells.h[i]);
+
+    document.getElementById("lakeElevation").value = getHeight(l.height);
+    document.getElementById("lakeAvarageDepth").value = getHeight(d3.mean(heights), "abs");
+    document.getElementById("lakeMaxDepth").value = getHeight(d3.min(heights), "abs");
+
+    document.getElementById("lakeFlux").value = l.flux;
+    document.getElementById("lakeEvaporation").value = l.evaporation;
+
+    const inlets = l.inlets && l.inlets.map(inlet => pack.rivers.find(river => river.i === inlet)?.name);
+    const outlet = l.outlet ? pack.rivers.find(river => river.i === l.outlet)?.name : "no";
+    document.getElementById("lakeInlets").value = inlets ? inlets.length : "no";
+    document.getElementById("lakeInlets").title = inlets ? inlets.join(", ") : "";
+    document.getElementById("lakeOutlet").value = outlet;
   }
 
   function drawLakeVertices() {
@@ -110,6 +130,7 @@ function editLake() {
 
   function changeLakeGroup() {
     document.getElementById(this.value).appendChild(elSelected.node());
+    getLake().group = this.value;
   }
 
   function toggleNewGroupInput() {
@@ -195,7 +216,7 @@ function editLake() {
 
   function editLakeLegend() {
     const id = elSelected.attr("id");
-    editNotes(id, id);
+    editNotes(id, getLake().name + " " + lakeGroup.value + " lake");
   }
 
   function closeLakesEditor() {
