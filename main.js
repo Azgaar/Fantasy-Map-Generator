@@ -615,7 +615,12 @@ function generateSeed() {
 // Place points to calculate Voronoi diagram
 function placePoints() {
   TIME && console.time("placePoints");
-  const cellsDesired = 10000 * densityInput.value; // generate 10k points for each densityInput point
+  let cellsDesired = 10000 * (+densityInput.value - 3); // generate 10k points for each densityInput point
+  switch (+densityInput.value) {
+    case 1: cellsDesired = 1000; break;
+    case 2: cellsDesired = 2000; break;
+    case 3: cellsDesired = 5000; break;
+  }
   const spacing = grid.spacing = rn(Math.sqrt(graphWidth * graphHeight / cellsDesired), 2); // spacing between points before jirrering
   grid.boundary = getBoundaryPoints(graphWidth, graphHeight, spacing);
   grid.points = getJitteredGrid(graphWidth, graphHeight, spacing); // jittered square grid

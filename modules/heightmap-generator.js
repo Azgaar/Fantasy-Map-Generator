@@ -187,31 +187,37 @@
 
   function getBlobPower() {
     switch (+densityInput.value) {
-      case 1: return .98;
-      case 2: return .985;
-      case 3: return .987;
-      case 4: return .9892;
-      case 5: return .9911;
-      case 6: return .9921;
-      case 7: return .9934;
-      case 8: return .9942;
-      case 9: return .9946;
-      case 10: return .995;
+      case 1: return .93;
+      case 2: return .95;
+      case 3: return .96;
+      case 4: return .98;
+      case 5: return .985;
+      case 6: return .987;
+      case 7: return .9892;
+      case 8: return .9911;
+      case 9: return .9921;
+      case 10: return .9934;
+      case 11: return .9942;
+      case 12: return .9946;
+      case 13: return .995;
     }
   }
 
   function getLinePower() {
     switch (+densityInput.value) {
-      case 1: return .81;
-      case 2: return .82;
-      case 3: return .83;
-      case 4: return .84;
-      case 5: return .855;
-      case 6: return .87;
-      case 7: return .885;
-      case 8: return .91;
-      case 9: return .92;
-      case 10: return .93;
+      case 1: return .74;
+      case 2: return .75;
+      case 3: return .78;
+      case 4: return .81;
+      case 5: return .82;
+      case 6: return .83;
+      case 7: return .84;
+      case 8: return .855;
+      case 9: return .87;
+      case 10: return .885;
+      case 11: return .91;
+      case 12: return .92;
+      case 13: return .93;
     }
   }
 
