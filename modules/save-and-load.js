@@ -1178,6 +1178,14 @@ function parseLoadedData(data) {
         ERROR && console.error("Data Integrity Check. Invalid burg", b, "is assigned to cells", invalidCells);
       });
 
+      const invalidRivers = [...new Set(cells.r)].filter(r => r && !pack.rivers.find(river => river.i === r));
+      invalidRivers.forEach(r => {
+        const invalidCells = cells.i.filter(i => cells.r[i] === r);
+        invalidCells.forEach(i => cells.r[i] = 0);
+        rivers.select("river"+r).remove();
+        ERROR && console.error("Data Integrity Check. Invalid river", r, "is assigned to cells", invalidCells);
+      });
+
       pack.burgs.forEach(b => {
         if (!b.i || b.removed) return;
         if (b.port < 0) {ERROR && console.error("Data Integrity Check. Burg", b.i, "has invalid port value", b.port); b.port = 0;}

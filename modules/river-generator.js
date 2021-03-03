@@ -160,31 +160,35 @@ const generate = function(changeHeights = true) {
   }
 
   function defineRivers() {
+    cells.r = new Uint16Array(cells.i.length); // re-initiate rivers array
     pack.rivers = []; // rivers data
     const riverPaths = [];
 
     for (let r = 1; r <= riverNext; r++) {
       const riverSegments = riversData.filter(d => d.river === r);
+      if (riverSegments.length < 3) continue;
 
-      if (riverSegments.length > 2) {
-        const source = riverSegments[0].cell;
-        const mouth = riverSegments[riverSegments.length-2].cell;
-
-        const widthFactor = rn(.8 + Math.random() * .4, 1); // river width modifier [.8, 1.2]
-        const sourceWidth = cells.h[source] >= 20 ? .1 : rn(Math.min(Math.max((cells.fl[source] / 500) ** .4, .5), 1.7), 2);
-
-        const riverMeandered = addMeandering(riverSegments, sourceWidth * 10, .5);
-        const [path, length, offset] = getPath(riverMeandered, widthFactor, sourceWidth);
-        riverPaths.push([path, r]);
-
-        const parent = riverSegments[0].parent || 0;
-        const width = rn(offset ** 2, 2); // mounth width in km
-        const discharge = last(riverSegments).flux; // in m3/s
-        pack.rivers.push({i:r, source, mouth, discharge, length, width, widthFactor, sourceWidth, parent});
-      } else {
-        // remove too short rivers
-        riverSegments.filter(s => cells.r[s.cell] === r).forEach(s => cells.r[s.cell] = 0);
+      for (const segment of riverSegments) {
+        const i = segment.cell;
+        if (cells.r[i]) continue;
+        if (cells.h[i] < 20) continue;
+        cells.r[i] = r;
       }
+
+      const source = riverSegments[0].cell;
+      const mouth = riverSegments[riverSegments.length-2].cell;
+
+      const widthFactor = rn(.8 + Math.random() * .4, 1); // river width modifier [.8, 1.2]
+      const sourceWidth = cells.h[source] >= 20 ? .1 : rn(Math.min(Math.max((cells.fl[source] / 500) ** .4, .5), 1.7), 2);
+
+      const riverMeandered = addMeandering(riverSegments, sourceWidth * 10, .5);
+      const [path, length, offset] = getPath(riverMeandered, widthFactor, sourceWidth);
+      riverPaths.push([path, r]);
+
+      const parent = riverSegments[0].parent || 0;
+      const width = rn(offset ** 2, 2); // mounth width in km
+      const discharge = last(riverSegments).flux; // in m3/s
+      pack.rivers.push({i:r, source, mouth, discharge, length, width, widthFactor, sourceWidth, parent});
     }
 
     // draw rivers

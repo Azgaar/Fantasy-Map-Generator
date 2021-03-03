@@ -33,7 +33,7 @@ function overviewRivers() {
       const discharge = r.discharge + " m³/s";
       const length = rn(r.length * distanceScaleInput.value) + " " + unit;
       const width = rn(r.width * distanceScaleInput.value, 3) + " " + unit;
-      const basin = pack.rivers.find(river => river.i === r.basin).name;
+      const basin = pack.rivers.find(river => river.i === r.basin)?.name;
 
       lines += `<div class="states" data-id=${r.i} data-name="${r.name}" data-type="${r.type}" data-discharge="${r.discharge}" data-length="${r.length}" data-width="${r.width}" data-basin="${basin}">
         <span data-tip="Click to focus on river" class="icon-dot-circled pointer"></span>
