@@ -277,13 +277,13 @@ function copyMapURL() {
 
 function changeCellsDensity(value) {
   switch (value) {
-    case 1 : densityOutput.value = "1K"; break;
-    case 2 : densityOutput.value = "2K"; break;
-    case 3 : densityOutput.value = "5K"; break;
-    default: densityOutput.value = (value-3) * 10 + "K"; 
+    case POINTS_1K : densityOutput.value = "1K"; break;
+    case POINTS_2K : densityOutput.value = "2K"; break;
+    case POINTS_5K : densityOutput.value = "5K"; break;
+    default: densityOutput.value = (value-POINTS_5K) * 10 + "K"; 
   }
-  if (value > 9) densityOutput.style.color = "#b12117";
-  else if (value > 4) densityOutput.style.color = "#dfdf12";
+  if (value > POINTS_50K) densityOutput.style.color = "#b12117";
+  else if (value > POINTS_10K) densityOutput.style.color = "#dfdf12";
   else densityOutput.style.color = "#038603";
 }
 

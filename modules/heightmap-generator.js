@@ -187,37 +187,37 @@
 
   function getBlobPower() {
     switch (+densityInput.value) {
-      case 1: return .93;
-      case 2: return .95;
-      case 3: return .96;
-      case 4: return .98;
-      case 5: return .985;
-      case 6: return .987;
-      case 7: return .9892;
-      case 8: return .9911;
-      case 9: return .9921;
-      case 10: return .9934;
-      case 11: return .9942;
-      case 12: return .9946;
-      case 13: return .995;
+      case POINTS_1K: return .93;
+      case POINTS_2K: return .95;
+      case POINTS_5K: return .96;
+      case POINTS_10K: return .98;
+      case POINTS_20K: return .985;
+      case POINTS_30K: return .987;
+      case POINTS_40K: return .9892;
+      case POINTS_50K: return .9911;
+      case POINTS_60K: return .9921;
+      case POINTS_70K: return .9934;
+      case POINTS_80K: return .9942;
+      case POINTS_90K: return .9946;
+      case POINTS_100K: return .995;
     }
   }
 
   function getLinePower() {
     switch (+densityInput.value) {
-      case 1: return .74;
-      case 2: return .75;
-      case 3: return .78;
-      case 4: return .81;
-      case 5: return .82;
-      case 6: return .83;
-      case 7: return .84;
-      case 8: return .855;
-      case 9: return .87;
-      case 10: return .885;
-      case 11: return .91;
-      case 12: return .92;
-      case 13: return .93;
+      case POINTS_1K: return .74;
+      case POINTS_2K: return .75;
+      case POINTS_5K: return .78;
+      case POINTS_10K: return .81;
+      case POINTS_20K: return .82;
+      case POINTS_30K: return .83;
+      case POINTS_40K: return .84;
+      case POINTS_50K: return .855;
+      case POINTS_60K: return .87;
+      case POINTS_70K: return .885;
+      case POINTS_80K: return .91;
+      case POINTS_90K: return .92;
+      case POINTS_100K: return .93;
     }
   }
 
