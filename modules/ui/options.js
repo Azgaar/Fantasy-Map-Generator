@@ -276,9 +276,14 @@ function copyMapURL() {
 }
 
 function changeCellsDensity(value) {
-  densityOutput.value = value * 10 + "K";
-  if (value > 5) densityOutput.style.color = "#b12117";
-  else if (value > 1) densityOutput.style.color = "#dfdf12";
+  switch (value) {
+    case POINTS_1K : densityOutput.value = "1K"; break;
+    case POINTS_2K : densityOutput.value = "2K"; break;
+    case POINTS_5K : densityOutput.value = "5K"; break;
+    default: densityOutput.value = (value-POINTS_5K) * 10 + "K"; 
+  }
+  if (value > POINTS_50K) densityOutput.style.color = "#b12117";
+  else if (value > POINTS_10K) densityOutput.style.color = "#dfdf12";
   else densityOutput.style.color = "#038603";
 }
 
