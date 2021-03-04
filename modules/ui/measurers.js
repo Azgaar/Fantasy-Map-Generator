@@ -1,5 +1,132 @@
 // UI measurers: rulers (linear, curve, area) and Scale Bar
-"use strict";
+class Ruler {
+  constructor(points) {
+    this.points = points;
+  }
+
+  toString() {
+    return "ruler" + ": " + this.points.join(" ");
+  }
+
+  getPoints() {
+    return this.points.join(" ");
+  }
+
+  updatePoint(index, x, y) {
+    this.points[index] = [x, y];
+  }
+
+  getPointId(x, y) {
+    return this.points.findIndex(el => el[0] == x && el[1] == y);
+  }
+
+  addPoint(i) {
+    const [x, y] = this.points[i];
+    i ? this.points.push([x, y]) : this.points.unshift([x, y]);
+  }
+
+  render() {
+    if (this.el) this.el.selectAll("*").remove();
+    const points = this.getPoints();
+    const size = rn(1 / scale ** .3 * 2, 2);
+    const dash = rn(30 / distanceScaleInput.value, 2);
+
+    const el = this.el = ruler.append("g").attr("class", "ruler").call(d3.drag().on("start", this.drag)).attr("font-size", 10 * size)
+    el.append("polyline").attr("points", points).attr("class", "white").attr("stroke-width", size);
+    el.append("polyline").attr("points", points).attr("class", "gray").attr("stroke-width", rn(size * 1.2, 2)).attr("stroke-dasharray", dash);
+    el.append("g").attr("class", "rulerPoints").attr("stroke-width", .5 * size).attr("font-size", 2 * size);
+    el.append("text").attr("dx", ".35em").attr("dy", "-.45em").on("click", this.remove);
+    this.renderPoints(el);
+    this.updateLabel();
+  }
+
+  renderPoints(el) {
+    const g = el.select(".rulerPoints");
+    g.selectAll("circle").remove();
+
+    for (let i=0; i < this.points.length; i++) {
+      const [x, y] = this.points[i];
+      this.renderPoint(g, x, y, i);
+    }
+  }
+
+  renderPoint(el, x, y, i) {
+    const context = this;
+    const circle = el.append("circle")
+      .attr("r", "1em").attr("cx", x).attr("cy", y)
+      .on("click", function() {context.removePoint(context, i)})
+      .call(d3.drag().clickDistance(3).on("start", function() {context.dragControl(context, i)}));
+
+    if (!this.isEdge(i)) circle.attr("class", "control");
+  }
+
+  isEdge(i) {
+    return i === 0 || i === this.points.length-1;
+  }
+
+  updateLabel() {
+    const length = this.getLength();
+    const text = rn(length * distanceScaleInput.value) + " " + distanceUnitInput.value;
+    const [x, y] = last(this.points);
+    this.el.select("text").attr("x", x).attr("y", y).text(text);
+  }
+
+  getLength() {
+    let length = 0;
+    for (let i=0; i < this.points.length - 1; i++) {
+      const [x1, y1] = this.points[i];
+      const [x2, y2] = this.points[i+1];
+      length += Math.hypot(x1 - x2, y1 - y2);
+    }
+    return length;
+  }
+
+  drag() {
+    const tr = parseTransform(this.getAttribute("transform"));
+    const x = +tr[0] - d3.event.x, y = +tr[1] - d3.event.y;
+
+    d3.event.on("drag", function() {
+      const transform = `translate(${(x + d3.event.x)},${(y + d3.event.y)})`;
+      this.setAttribute("transform", transform);
+    });
+  }
+
+  dragControl(context, pointId) {
+    let edge = context.isEdge(pointId)
+    let circle = context.el.select(`circle:nth-child(${pointId+1})`);
+    const line = context.el.selectAll("polyline");
+
+    d3.event.on("drag", function() {
+      if (edge) {
+        if (d3.event.dx < .1 && d3.event.dy < .1) return;
+        context.addPoint(pointId);
+        context.renderPoints(context.el);
+        if (pointId) pointId++;
+        circle = context.el.select(`circle:nth-child(${pointId+1})`);
+        edge = false;
+      }
+
+      const x = rn(d3.event.x, 1);
+      const y = rn(d3.event.y, 1);
+      context.updatePoint(pointId, x, y);
+      line.attr("points", context.getPoints());
+      circle.attr("cx", x).attr("cy", y);
+      context.updateLabel();
+    });
+  }
+
+  removePoint(context, pointId) {
+    this.points.splice(pointId, 1);
+    if (this.points.length < 2) context.el.remove();
+    else context.render();
+  }
+
+  remove() {
+    this.parentNode.parentNode.removeChild(this.parentNode);
+  }
+
+}
+
 
 // Linear measurer (one is added by default)
 function addRuler(x1, y1, x2, y2) {
@@ -239,7 +366,7 @@ function drawScaleBar() {
   else if (val > 9) val = rn(val, -1); // round to 10
   else val = rn(val) // round to 1
   const l = val * scale / dScale; // actual length in pixels on this scale
-  
+
   scaleBar.append("line").attr("x1", 0.5).attr("y1", 0).attr("x2", l+size-0.5).attr("y2", 0).attr("stroke-width", size).attr("stroke", "white");
   scaleBar.append("line").attr("x1", 0).attr("y1", size).attr("x2", l+size).attr("y2", size).attr("stroke-width", size).attr("stroke", "#3d3d3d");
   const dash = size + " " + rn(l / 5 - size, 2);

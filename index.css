@@ -1747,6 +1747,10 @@ rect.fillRect {
 	cursor: grab;
 }
 
+#ruler circle.control {
+	fill: #999999;
+}
+
 #ruler rect {
 	stroke: #3d3d3d;
 	fill: yellow;
@@ -1762,7 +1766,7 @@ rect.fillRect {
 }
 
 #ruler text {
-	font-family: 'Times New Roman';
+	font-family: 'Georgia';
 	fill: #3d3d3d;
 	stroke: none;
 	text-anchor: middle;

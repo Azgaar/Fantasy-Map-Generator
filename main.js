@@ -484,11 +484,8 @@ function invokeActiveZooming() {
 
   // rescale rulers to have always the same size
   if (ruler.style("display") !== "none") {
-    const size = rn(1 / scale ** .3 * 2, 1);
-    ruler.selectAll("circle").attr("r", 2 * size).attr("stroke-width", .5 * size);
-    ruler.selectAll("rect").attr("stroke-width", .5 * size);
-    ruler.selectAll("text").attr("font-size", 10 * size);
-    ruler.selectAll("line, path").attr("stroke-width", size);
+    const size = rn(10 / scale ** .3 * 2, 2);
+    ruler.selectAll("text").attr("font-size", size);
   }
 }
 
@@ -594,6 +591,9 @@ function generate() {
     WARN && console.warn(`TOTAL: ${rn((performance.now()-timeStart)/1000,2)}s`);
     showStatistics();
     INFO && console.groupEnd("Generated Map " + seed);
+
+    var r = new Ruler([[70,150],[100,300],[400,360.1]])
+    r.render()
   }
   catch(error) {
     ERROR && console.error(error);
