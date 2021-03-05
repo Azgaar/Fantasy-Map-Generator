@@ -219,10 +219,25 @@ function editUnits() {
       this.classList.remove("pressed");
     } else {
       if (!layerIsOn("toggleRulers")) toggleRulers();
-      tip("Draw a curve to measure its length", true);
+      tip("Draw a curve to measure length. Hold Shift to disallow path optimization", true);
       unitsBottom.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
       this.classList.add("pressed");
-      viewbox.style("cursor", "crosshair").call(d3.drag().on("start", drawOpisometer));
+      viewbox.style("cursor", "crosshair").call(d3.drag().on("start", function() {
+        const point = d3.mouse(this);
+        const opisometer = rulers.curve([point]).draw();
+
+        d3.event.on("drag", function() {
+          const point = d3.mouse(this);
+          opisometer.addPoint(point);
+        });
+
+        d3.event.on("end", function() {
+          restoreDefaultEvents();
+          clearMainTip();
+          addOpisometer.classList.remove("pressed");
+          if (!d3.event.sourceEvent.shiftKey) opisometer.optimize();
+        });
+      }));
     }
   }
 
