@@ -140,6 +140,10 @@ class LinearRuler {
     let circle = context.el.select(`circle:nth-child(${pointId+1})`);
     const line = context.el.selectAll("polyline");
 
+    let x0 = rn(d3.event.x, 1);
+    let y0 = rn(d3.event.y, 1);
+    let axis;
+
     d3.event.on("drag", function() {
       if (edge) {
         if (d3.event.dx < .1 && d3.event.dy < .1) return;
@@ -150,8 +154,18 @@ class LinearRuler {
         edge = false;
       }
 
-      const x = rn(d3.event.x, 1);
-      const y = rn(d3.event.y, 1);
+      const shiftPressed = d3.event.sourceEvent.shiftKey;
+      if (shiftPressed && !axis) axis = Math.abs(d3.event.dx) > Math.abs(d3.event.dy) ? "x" : "y";
+
+      const x = axis === "y" ? x0 : rn(d3.event.x, 1);
+      const y = axis === "x" ? y0 : rn(d3.event.y, 1);
+
+      if (!shiftPressed) {
+        axis = null;
+        x0 = x;
+        y0 = y;
+      }
+
       context.updatePoint(pointId, x, y);
       line.attr("points", context.getPointsString());
       circle.attr("cx", x).attr("cy", y);

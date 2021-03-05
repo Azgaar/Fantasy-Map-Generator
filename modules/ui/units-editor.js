@@ -206,7 +206,7 @@ function editUnits() {
     pt.x = graphWidth / 2, pt.y = graphHeight / 4;
     const p = pt.matrixTransform(viewbox.node().getScreenCTM().inverse());
     const dx = graphWidth / 4 / scale;
-    const dy = (rulers.data.length * 10) % (graphHeight / 2);
+    const dy = (rulers.data.length * 40) % (graphHeight / 2);
     const from = [p.x-dx | 0, p.y+dy | 0];
     const to = [p.x+dx | 0, p.y+dy | 0];
     rulers.linear([from, to]).draw();
