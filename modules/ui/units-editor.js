@@ -209,7 +209,7 @@ function editUnits() {
     const dy = (rulers.data.length * 40) % (graphHeight / 2);
     const from = [p.x-dx | 0, p.y+dy | 0];
     const to = [p.x+dx | 0, p.y+dy | 0];
-    rulers.linear([from, to]).draw();
+    rulers.create(Ruler, [from, to]).draw();
   }
 
   function toggleOpisometerMode() {
@@ -224,7 +224,7 @@ function editUnits() {
       this.classList.add("pressed");
       viewbox.style("cursor", "crosshair").call(d3.drag().on("start", function() {
         const point = d3.mouse(this);
-        const opisometer = rulers.curve([point]).draw();
+        const opisometer = rulers.create(Opisometer, [point]).draw();
 
         d3.event.on("drag", function() {
           const point = d3.mouse(this);
@@ -248,10 +248,26 @@ function editUnits() {
       this.classList.remove("pressed");
     } else {
       if (!layerIsOn("toggleRulers")) toggleRulers();
-      tip("Draw a line to measure its inner area", true);
+      tip("Draw a curve to measure its area. Hold Shift to disallow path optimization", true);
       unitsBottom.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
       this.classList.add("pressed");
-      viewbox.style("cursor", "crosshair").call(d3.drag().on("start", drawPlanimeter));
+      viewbox.style("cursor", "crosshair").call(d3.drag().on("start", function() {
+        const point = d3.mouse(this);
+        const planimeter = rulers.create(Planimeter, [point]).draw();
+
+        d3.event.on("drag", function() {
+          const point = d3.mouse(this);
+          planimeter.addPoint(point);
+        });
+
+        d3.event.on("end", function() {
+          restoreDefaultEvents();
+          clearMainTip();
+          addPlanimeter.classList.remove("pressed");
+          if (!d3.event.sourceEvent.shiftKey) planimeter.optimize();
+        });
+      }));
+
     }
   }
 

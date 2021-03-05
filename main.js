@@ -1028,7 +1028,7 @@ function drawCoastline() {
     if (f === largestLand) {
       const from = points[d3.scan(points, (a, b) => a[0] - b[0])];
       const to = points[d3.scan(points, (a, b) => b[0] - a[0])];
-      rulers.linear([from, to]);
+      rulers.create(Ruler, [from, to]);
     }
   }
 

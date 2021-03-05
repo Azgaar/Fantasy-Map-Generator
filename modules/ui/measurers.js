@@ -1,39 +1,29 @@
-// UI measurers: rulers (linear, curve, area) and Scale Bar
 class Rulers {
   constructor() {
     this.data = [];
   }
 
-  linear(points) {
-    const ruler = new LinearRuler(points);
+  create(Type, points) {
+    const ruler = new Type(points);
     this.data.push(ruler);
     return ruler;
   }
 
-  curve(points) {
-    const curve = new Opisometer(points);
-    this.data.push(curve);
-    return curve;
-  }
-
-  area(points) {
-    const area = new Planimeter(points);
-    this.data.push(area);
-    return area;
-  }
-
   toString() {
-    const string = this.data.map(ruler => ruler.toString()).join("; ");
-    return string;
+    return this.data.map(ruler => ruler.toString()).join("; ");
   }
 
   fromString(string) {
     this.data = [];
+
     const rulers = string.split("; ");
-    for (ruler of rulers) {
-      const [type, pointsString] = ruler.split(": ");
+    for (const rulerString of rulers) {
+      const [type, pointsString] = rulerString.split(": ");
       const points = pointsString.split(" ").map(el => el.split(",").map(n => +n));
-      this[type](points);
+      const Type = type === "Ruler" ? Ruler : 
+                   type === "Opisometer" ? Opisometer :
+                   type === "Planimeter" ? Planimeter : null;
+      this.create(Type, points);
     }
   }
 
@@ -46,6 +36,8 @@ class Rulers {
   }
 
   remove(id) {
+    if (id === undefined) return;
+
     const ruler = this.data.find(ruler => ruler.id === id);
     ruler.undraw();
     const rulerIndex = this.data.indexOf(ruler);
@@ -59,6 +51,18 @@ class Measurer {
     this.id = rulers.data.length;
   }
 
+  toString() {
+    return this.constructor.name + ": " + this.points.join(" ");
+  }
+
+  getSize() {
+    return rn(1 / scale ** .3 * 2, 2);
+  }
+
+  getDash() {
+    return rn(30 / distanceScaleInput.value, 2);
+  }
+
   drag() {
     const tr = parseTransform(this.getAttribute("transform"));
     const x = +tr[0] - d3.event.x, y = +tr[1] - d3.event.y;
@@ -69,15 +73,43 @@ class Measurer {
     });
   }
 
-}
-
-class LinearRuler extends Measurer {
-  constructor(points) {
-    super(points);
+  addPoint(point) {
+    const MIN_DIST = d3.event.sourceEvent.shiftKey ? 9 : 100;
+    const prev = last(this.points);
+    point = [point[0] | 0, point[1] | 0];
+    const dist2 = (prev[0] - point[0]) ** 2 + (prev[1] - point[1]) ** 2;
+    if (dist2 < MIN_DIST) return;
+    this.points.push(point);
+    this.updateCurve();
+    this.updateLabel();
   }
 
-  toString() {
-    return "linear" + ": " + this.points.join(" ");
+  optimize() {
+    const MIN_DIST2 = 900;
+    const optimized = [];
+
+    for (let i=0, p1 = this.points[0]; i < this.points.length; i++) {
+      const p2 = this.points[i];
+      const dist2 = !i || i === this.points.length-1 ? Infinity : (p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2;
+      if (dist2 < MIN_DIST2) continue;
+      optimized.push(p2);
+      p1 = p2;
+    }
+
+    this.points = optimized;
+    this.updateCurve();
+    this.updateLabel();
+  }
+
+  undraw() {
+    this.el?.remove();
+  }
+
+}
+
+class Ruler extends Measurer {
+  constructor(points) {
+    super(points);
   }
 
   getPointsString() {
@@ -92,7 +124,7 @@ class LinearRuler extends Measurer {
     return this.points.findIndex(el => el[0] == x && el[1] == y);
   }
 
-  addPoint(i) {
+  pushPoint(i) {
     const [x, y] = this.points[i];
     i ? this.points.push([x, y]) : this.points.unshift([x, y]);
   }
@@ -100,8 +132,8 @@ class LinearRuler extends Measurer {
   draw() {
     if (this.el) this.el.selectAll("*").remove();
     const points = this.getPointsString();
-    const size = rn(1 / scale ** .3 * 2, 2);
-    const dash = rn(30 / distanceScaleInput.value, 2);
+    const size = this.getSize();
+    const dash = this.getDash();
 
     const el = this.el = ruler.append("g").attr("class", "ruler").call(d3.drag().on("start", this.drag)).attr("font-size", 10 * size);
     el.append("polyline").attr("points", points).attr("class", "white").attr("stroke-width", size)
@@ -167,7 +199,7 @@ class LinearRuler extends Measurer {
     d3.event.on("drag", function() {
       if (edge) {
         if (d3.event.dx < .1 && d3.event.dy < .1) return;
-        context.addPoint(pointId);
+        context.pushPoint(pointId);
         context.drawPoints(context.el);
         if (pointId) pointId++;
         circle = context.el.select(`circle:nth-child(${pointId+1})`);
@@ -219,15 +251,10 @@ class Opisometer extends Measurer {
     super(points);
   }
 
-  toString() {
-    return "curve" + ": " + this.points.join(" ");
-  }
-
   draw() {
     if (this.el) this.el.selectAll("*").remove();
-    lineGen.curve(d3.curveBasis);
-    const size = rn(1 / scale ** .3 * 2, 1);
-    const dash = rn(30 / distanceScaleInput.value, 2);
+    const size = this.getSize();
+    const dash = this.getDash();
     const context = this;
 
     const el = this.el = ruler.append("g").attr("class", "opisometer").call(d3.drag().on("start", this.drag)).attr("font-size", 10 * size);
@@ -243,18 +270,8 @@ class Opisometer extends Measurer {
     return this;
   }
 
-  addPoint(point) {
-    const MIN_DIST = d3.event.sourceEvent.shiftKey ? 9 : 100;
-    const prev = last(this.points);
-    point = [point[0] | 0, point[1] | 0];
-    const dist2 = (prev[0] - point[0]) ** 2 + (prev[1] - point[1]) ** 2;
-    if (dist2 < MIN_DIST) return;
-    this.points.push(point);
-    this.updateCurve();
-    this.updateLabel();
-  }
-
   updateCurve() {
+    lineGen.curve(d3.curveCatmullRom.alpha(.5));
     const path = round(lineGen(this.points));
     this.el.selectAll("path").attr("d", path);
 
@@ -292,27 +309,6 @@ class Opisometer extends Measurer {
       if (!d3.event.sourceEvent.shiftKey) context.optimize();
     });
   }
-
-  optimize() {
-    const MIN_DIST2 = 900;
-    const optimized = [];
-
-    for (let i=0, p1 = this.points[0]; i < this.points.length; i++) {
-      const p2 = this.points[i];
-      const dist2 = !i || i === this.points.length-1 ? Infinity : (p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2;
-      if (dist2 < MIN_DIST2) continue;
-      optimized.push(p2);
-      p1 = p2;
-    }
-
-    this.points = optimized;
-    this.updateCurve();
-    this.updateLabel();
-  }
-
-  undraw() {
-    this.el.remove();
-  }
 }
 
 class Planimeter extends Measurer {
@@ -320,111 +316,37 @@ class Planimeter extends Measurer {
     super(points);
   }
 
-  toString() {
-    return "area" + ": " + this.points.join(" ");
-  }
-
   draw() {
     if (this.el) this.el.selectAll("*").remove();
-    lineGen.curve(d3.curveBasis);
-    const size = rn(1 / scale ** .3 * 2, 1);
-    const dash = rn(30 / distanceScaleInput.value, 2);
-    const context = this;
+    const size = this.getSize();
 
-    const el = this.el = ruler.append("g").attr("class", "opisometer").call(d3.drag().on("start", this.drag)).attr("font-size", 10 * size);
-    el.append("path").attr("class", "white").attr("stroke-width", size);
-    el.append("path").attr("class", "gray").attr("stroke-width", size).attr("stroke-dasharray", dash);
-    const rulerPoints = el.append("g").attr("class", "rulerPoints").attr("stroke-width", .5 * size).attr("font-size", 2 * size);
-    rulerPoints.append("circle").attr("r", "1em").call(d3.drag().on("start", function() {context.dragControl(context, 0)}));
-    rulerPoints.append("circle").attr("r", "1em").call(d3.drag().on("start", function() {context.dragControl(context, 1)}));
-    el.append("text").attr("dx", ".35em").attr("dy", "-.45em").on("click", () => rulers.remove(this.id));
+    const el = this.el = ruler.append("g").attr("class", "planimeter").call(d3.drag().on("start", this.drag)).attr("font-size", 10 * size);
+    el.append("path").attr("class", "planimeter").attr("stroke-width", size);
+    el.append("text").on("click", () => rulers.remove(this.id));
 
     this.updateCurve();
     this.updateLabel();
     return this;
   }
 
-  addPoint(point) {
-    const MIN_DIST = d3.event.sourceEvent.shiftKey ? 9 : 100;
-    const prev = last(this.points);
-    point = [point[0] | 0, point[1] | 0];
-    const dist2 = (prev[0] - point[0]) ** 2 + (prev[1] - point[1]) ** 2;
-    if (dist2 < MIN_DIST) return;
-    this.points.push(point);
-    this.updateCurve();
-    this.updateLabel();
-  }
-
   updateCurve() {
+    lineGen.curve(d3.curveCatmullRomClosed.alpha(.5));
     const path = round(lineGen(this.points));
     this.el.selectAll("path").attr("d", path);
-
-    const left = this.points[0];
-    const right = last(this.points);
-    this.el.select(".rulerPoints > circle:first-child").attr("cx", left[0]).attr("cy", left[1]);
-    this.el.select(".rulerPoints > circle:last-child").attr("cx", right[0]).attr("cy", right[1]);
   }
 
   updateLabel() {
-    const length = this.el.select("path").node().getTotalLength();
-    const text = rn(length * distanceScaleInput.value) + " " + distanceUnitInput.value;
-    const [x, y] = last(this.points);
-    this.el.select("text").attr("x", x).attr("y", y).text(text);
-  }
+    if (this.points.length < 3) return;
 
-  optimize() {
-    const MIN_DIST2 = 900;
-    const optimized = [];
-
-    for (let i=0, p1 = this.points[0]; i < this.points.length; i++) {
-      const p2 = this.points[i];
-      const dist2 = !i || i === this.points.length-1 ? Infinity : (p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2;
-      if (dist2 < MIN_DIST2) continue;
-      optimized.push(p2);
-      p1 = p2;
-    }
-
-    this.points = optimized;
-    this.updateCurve();
-    this.updateLabel();
-  }
-
-  undraw() {
-    this.el.remove();
-  }
-}
-
-function drawPlanimeter() {
-  lineGen.curve(d3.curveBasisClosed);
-  const size = rn(1 / scale ** .3 * 2, 1);
-  const p0 = d3.mouse(this);
-  const points = [[p0[0], p0[1]]];
-
-  const rulerNew = ruler.append("g").attr("class", "planimeter").call(d3.drag().on("start", dragRuler));
-  const curve = rulerNew.append("path").attr("class", "planimeter").attr("stroke-width", size);
-  const text = rulerNew.append("text").attr("font-size", 10 * size).on("click", removeParent);
-
-  d3.event.on("drag", function() {
-    const p = d3.mouse(this);
-    const diff = Math.hypot(last(points)[0] - p[0], last(points)[1] - p[1]);
-    if (diff > 5) points.push([p[0], p[1]]); else return;
-    curve.attr("d", round(lineGen(points)));
-  });
-
-  d3.event.on("end", function() {
-    restoreDefaultEvents();
-    clearMainTip();
-    addPlanimeter.classList.remove("pressed");
-
-    const polygonArea = rn(Math.abs(d3.polygonArea(points)));
+    const polygonArea = rn(Math.abs(d3.polygonArea(this.points)));
     const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
     const area = si(polygonArea * distanceScaleInput.value ** 2) + " " + unit;
-    const c = polylabel([points], 1.0); // pole of inaccessibility
-    text.attr("x", c[0]).attr("y", c[1]).text(area);
-  });
+    const c = polylabel([this.points], 1.0);
+    this.el.select("text").attr("x", c[0]).attr("y", c[1]).text(area);
+  }
 }
 
-// draw scale bar
+// Scale bar
 function drawScaleBar() {
   if (scaleBar.style("display") === "none") return; // no need to re-draw hidden element
   scaleBar.selectAll("*").remove(); // fully redraw every time
