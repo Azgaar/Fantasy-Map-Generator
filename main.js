@@ -80,7 +80,7 @@ let anchors = icons.append("g").attr("id", "anchors");
 let armies = viewbox.append("g").attr("id", "armies").style("display", "none");
 let markers = viewbox.append("g").attr("id", "markers").style("display", "none");
 let fogging = viewbox.append("g").attr("id", "fogging-cont").attr("mask", "url(#fog)").append("g").attr("id", "fogging").style("display", "none");
-let ruler = viewbox.append("g").attr("id", "ruler").style("display", "none");
+let ruler = viewbox.append("g").attr("id", "ruler");
 let debug = viewbox.append("g").attr("id", "debug");
 
 // lake and coast groups
@@ -126,6 +126,7 @@ legend.on("mousemove", () => tip("Drag to change the position. Click to hide the
 let grid = {}; // initial grapg based on jittered square grid and data
 let pack = {}; // packed graph and data
 let seed, mapId, mapHistory = [], elSelected, modules = {}, notes = [];
+let rulers = new Rulers();
 let customization = 0; // 0 - no; 1 = heightmap draw; 2 - states draw; 3 - add state/burg; 4 - cultures draw
 
 let biomesData = applyDefaultBiomesSystem();
@@ -591,9 +592,6 @@ function generate() {
     WARN && console.warn(`TOTAL: ${rn((performance.now()-timeStart)/1000,2)}s`);
     showStatistics();
     INFO && console.groupEnd("Generated Map " + seed);
-
-    var r = new Ruler([[70,150],[100,300],[400,360.1]])
-    r.render()
   }
   catch(error) {
     ERROR && console.error(error);
@@ -1030,7 +1028,7 @@ function drawCoastline() {
     if (f === largestLand) {
       const from = points[d3.scan(points, (a, b) => a[0] - b[0])];
       const to = points[d3.scan(points, (a, b) => b[0] - a[0])];
-      addRuler(from[0], from[1], to[0], to[1]);
+      rulers.linear([from, to]);
     }
   }
 
@@ -1748,5 +1746,6 @@ function undraw() {
   document.getElementById("deftemp").querySelectorAll("path, clipPath, svg").forEach(el => el.remove());
   document.getElementById("coas").innerHTML = ""; // remove auto-generated emblems
   notes = [];
+  rulers = new Rulers();
   unfog();
 }

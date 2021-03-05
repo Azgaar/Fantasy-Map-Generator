@@ -33,7 +33,7 @@ function editUnits() {
   document.getElementById("urbanizationOutput").addEventListener("input", changeUrbanizationRate);
   document.getElementById("urbanization").addEventListener("change", changeUrbanizationRate);
 
-  document.getElementById("addLinearRuler").addEventListener("click", addAdditionalRuler);
+  document.getElementById("addLinearRuler").addEventListener("click", addRuler);
   document.getElementById("addOpisometer").addEventListener("click", toggleOpisometerMode);
   document.getElementById("addPlanimeter").addEventListener("click", togglePlanimeterMode);
   document.getElementById("removeRulers").addEventListener("click", removeAllRulers);
@@ -200,14 +200,16 @@ function editUnits() {
     localStorage.removeItem("urbanization");
   }
 
-  function addAdditionalRuler() {
+  function addRuler() {
     if (!layerIsOn("toggleRulers")) toggleRulers();
-    const x = graphWidth/2, y = graphHeight/2;
     const pt = document.getElementById('map').createSVGPoint();
-    pt.x = x, pt.y = y;
+    pt.x = graphWidth / 2, pt.y = graphHeight / 4;
     const p = pt.matrixTransform(viewbox.node().getScreenCTM().inverse());
-    const dx = rn(graphWidth / 4 / scale), dy = rand(dx / 2, dx * 2) - rand(dx / 2, dx * 2);
-    addRuler(p.x - dx, p.y + dy, p.x + dx, p.y + dy);
+    const dx = graphWidth / 4 / scale;
+    const dy = (rulers.data.length * 10) % (graphHeight / 2);
+    const from = [p.x-dx | 0, p.y+dy | 0];
+    const to = [p.x+dx | 0, p.y+dy | 0];
+    rulers.linear([from, to]).draw();
   }
 
   function toggleOpisometerMode() {
@@ -239,13 +241,16 @@ function editUnits() {
   }
 
   function removeAllRulers() {
-    if (!ruler.selectAll("g").size()) return;
-    alertMessage.innerHTML = `Are you sure you want to remove all placed rulers?`;
+    if (!rulers.data.length) return;
+    alertMessage.innerHTML = `
+      Are you sure you want to remove all placed rulers?
+      <br>If you just want to hide rulers, toggle the Rulers layer off in Menu`;
     $("#alert").dialog({resizable: false, title: "Remove all rulers",
       buttons: {
         Remove: function() {
           $(this).dialog("close");
-          ruler.selectAll("g").remove();
+          rulers.undraw();
+          rulers = new Rulers();
         },
         Cancel: function() {$(this).dialog("close");}
       }

@@ -1131,6 +1131,12 @@ function parseLoadedData(data) {
           delete f.river;
         }
       }
+
+      if (version < 1.61) {
+        // v 1.61 changed rulers data
+        ruler.style("display", null);
+        rulers = new Rulers();
+      }
     }()
 
     void function checkDataIntegrity() {

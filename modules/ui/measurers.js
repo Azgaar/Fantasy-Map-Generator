@@ -1,14 +1,57 @@
 // UI measurers: rulers (linear, curve, area) and Scale Bar
-class Ruler {
-  constructor(points) {
-    this.points = points;
+class Rulers {
+  constructor() {
+    this.data = [];
+  }
+
+  linear(points) {
+    const ruler = new LinearRuler(points);
+    this.data.push(ruler);
+    return ruler;
   }
 
   toString() {
-    return "ruler" + ": " + this.points.join(" ");
+    const string = this.data.map(ruler => ruler.toString()).join("; ");
+    return string;
   }
 
-  getPoints() {
+  fromString(string) {
+    this.data = [];
+    const rulers = string.split("; ");
+    for (ruler of rulers) {
+      const [type, pointsString] = ruler.split(": ");
+      const points = pointsString.split(" ").map(el => el.split(",").map(n => +n));
+      if (type === "linear") this.linear(points);
+    }
+  }
+
+  draw() {
+    this.data.forEach(ruler => ruler.draw());
+  }
+
+  undraw() {
+    this.data.forEach(ruler => ruler.undraw());
+  }
+
+  remove(id) {
+    const ruler = this.data.find(ruler => ruler.id === id);
+    ruler.undraw();
+    const rulerIndex = this.data.indexOf(ruler);
+    rulers.data.splice(rulerIndex, 1);
+  }
+}
+
+class LinearRuler {
+  constructor(points) {
+    this.points = points;
+    this.id = rulers.data.length;
+  }
+
+  toString() {
+    return "linear" + ": " + this.points.join(" ");
+  }
+
+  getPointsString() {
     return this.points.join(" ");
   }
 
@@ -25,9 +68,9 @@ class Ruler {
     i ? this.points.push([x, y]) : this.points.unshift([x, y]);
   }
 
-  render() {
+  draw() {
     if (this.el) this.el.selectAll("*").remove();
-    const points = this.getPoints();
+    const points = this.getPointsString();
     const size = rn(1 / scale ** .3 * 2, 2);
     const dash = rn(30 / distanceScaleInput.value, 2);
 
@@ -36,22 +79,22 @@ class Ruler {
       .call(d3.drag().on("start", () => this.addControl(this)));
     el.append("polyline").attr("points", points).attr("class", "gray").attr("stroke-width", rn(size * 1.2, 2)).attr("stroke-dasharray", dash);
     el.append("g").attr("class", "rulerPoints").attr("stroke-width", .5 * size).attr("font-size", 2 * size);
-    el.append("text").attr("dx", ".35em").attr("dy", "-.45em").on("click", this.remove);
-    this.renderPoints(el);
+    el.append("text").attr("dx", ".35em").attr("dy", "-.45em").on("click", () => rulers.remove(this.id));
+    this.drawPoints(el);
     this.updateLabel();
   }
 
-  renderPoints(el) {
+  drawPoints(el) {
     const g = el.select(".rulerPoints");
     g.selectAll("circle").remove();
 
     for (let i=0; i < this.points.length; i++) {
       const [x, y] = this.points[i];
-      this.renderPoint(g, x, y, i);
+      this.drawPoint(g, x, y, i);
     }
   }
 
-  renderPoint(el, x, y, i) {
+  drawPoint(el, x, y, i) {
     const context = this;
     const circle = el.append("circle")
       .attr("r", "1em").attr("cx", x).attr("cy", y)
@@ -101,7 +144,7 @@ class Ruler {
       if (edge) {
         if (d3.event.dx < .1 && d3.event.dy < .1) return;
         context.addPoint(pointId);
-        context.renderPoints(context.el);
+        context.drawPoints(context.el);
         if (pointId) pointId++;
         circle = context.el.select(`circle:nth-child(${pointId+1})`);
         edge = false;
@@ -110,7 +153,7 @@ class Ruler {
       const x = rn(d3.event.x, 1);
       const y = rn(d3.event.y, 1);
       context.updatePoint(pointId, x, y);
-      line.attr("points", context.getPoints());
+      line.attr("points", context.getPointsString());
       circle.attr("cx", x).attr("cy", y);
       context.updateLabel();
     });
@@ -122,127 +165,19 @@ class Ruler {
     const pointId = getSegmentId(context.points, [x, y]);
 
     context.points.splice(pointId, 0, [x, y]);
-    context.renderPoints(context.el);
+    context.drawPoints(context.el);
     context.dragControl(context, pointId);
   }
 
   removePoint(context, pointId) {
     this.points.splice(pointId, 1);
     if (this.points.length < 2) context.el.remove();
-    else context.render();
+    else context.draw();
   }
 
-  remove() {
-    this.parentNode.parentNode.removeChild(this.parentNode);
+  undraw() {
+    this.el.remove();
   }
-
-}
-
-
-// Linear measurer (one is added by default)
-function addRuler(x1, y1, x2, y2) {
-  const cx = rn((x1 + x2) / 2, 2), cy = rn((y1 + y2) / 2, 2);
-  const size = rn(1 / scale ** .3 * 2, 1);
-  const dash = rn(30 / distanceScaleInput.value, 2);
-
-  // body
-  const rulerNew = ruler.append("g").attr("class", "ruler").call(d3.drag().on("start", dragRuler));
-  rulerNew.append("line").attr("x1", x1).attr("y1", y1).attr("x2", x2).attr("y2", y2).attr("class", "white").attr("stroke-width", size);
-  rulerNew.append("line").attr("x1", x1).attr("y1", y1).attr("x2", x2).attr("y2", y2).attr("class", "gray").attr("stroke-width", size).attr("stroke-dasharray", dash);
-  rulerNew.append("circle").attr("r", 2 * size).attr("stroke-width", .5 * size).attr("cx", x1).attr("cy", y1).attr("data-edge", "left").call(d3.drag().on("drag", dragRulerEdge));
-  rulerNew.append("circle").attr("r", 2 * size).attr("stroke-width", .5 * size).attr("cx", x2).attr("cy", y2).attr("data-edge", "right").call(d3.drag().on("drag", dragRulerEdge));
-
-  // label and center
-  const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
-  const rotate = `rotate(${angle} ${cx} ${cy})`;
-  const dist = rn(Math.hypot(x1 - x2, y1 - y2));
-  const label = rn(dist * distanceScaleInput.value) + " " + distanceUnitInput.value;
-  rulerNew.append("rect").attr("x", cx - size * 1.5).attr("y", cy - size * 1.5).attr("width", size * 3).attr("height", size * 3).attr("transform", rotate).attr("stroke-width", .5 * size).call(d3.drag().on("start", rulerCenterDrag));
-  rulerNew.append("text").attr("x", cx).attr("y", cy).attr("dx", ".3em").attr("dy", "-.3em").attr("transform", rotate).attr("font-size", 10 * size).text(label).on("click", removeParent);
-}
-
-function dragRuler() {
-  const tr = parseTransform(this.getAttribute("transform"));
-  const x = +tr[0] - d3.event.x, y = +tr[1] - d3.event.y;
-
-  d3.event.on("drag", function() {
-    const transform = `translate(${(x + d3.event.x)},${(y + d3.event.y)})`;
-    this.setAttribute("transform", transform);
-  });
-}
-
-function dragRulerEdge() {
-  const ruler = d3.select(this.parentNode);
-  const x = d3.event.x, y = d3.event.y;
-
-  d3.select(this).attr("cx", x).attr("cy", y);
-  const line = ruler.selectAll("line");
-  const left = this.dataset.edge === "left";
-  const x0 = left ? +line.attr("x2") : +line.attr("x1");
-  const y0 = left ? +line.attr("y2") : +line.attr("y1");
-  if (left) line.attr("x1", x).attr("y1", y); else line.attr("x2", x).attr("y2", y);
-
-  const cx = rn((x + x0) / 2, 2), cy = rn((y + y0) / 2, 2);
-  const dist = Math.hypot(x0 - x, y0 - y);
-  const label = rn(dist * distanceScaleInput.value) + " " + distanceUnitInput.value;
-  const atan = x0 > x ? Math.atan2(y0 - y, x0 - x) : Math.atan2(y - y0, x - x0);
-  const angle = rn(atan * 180 / Math.PI, 3);
-  const rotate = `rotate(${angle} ${cx} ${cy})`;
-
-  const size = rn(1 / scale ** .3 * 2, 1);
-  ruler.select("rect").attr("x", cx - size * 1.5).attr("y", cy - size * 1.5).attr("transform", rotate);
-  ruler.select("text").attr("x", cx).attr("y", cy).attr("transform", rotate).text(label);
-}
-
-function rulerCenterDrag() {
-  let xc1, yc1, xc2, yc2, r1, r2;
-  const rulerOld = d3.select(this.parentNode); // current ruler
-  let x = d3.event.x, y = d3.event.y; // current coords
-  const line = rulerOld.selectAll("line"); // current lines
-  const x1 = +line.attr("x1"), y1 = +line.attr("y1"), x2 = +line.attr("x2"), y2 = +line.attr("y2"); // initial line edge points
-  const size = rn(1 / scale ** .3 * 2, 1);
-  const dash = +rulerOld.select(".gray").attr("stroke-dasharray");
-
-  const rulerNew = ruler.insert("g", ":first-child");
-  rulerNew.attr("transform", rulerOld.attr("transform")).call(d3.drag().on("start", dragRuler));
-  rulerNew.append("line").attr("class", "white").attr("stroke-width", size);
-  rulerNew.append("line").attr("class", "gray").attr("stroke-dasharray", dash).attr("stroke-width", size);
-  rulerNew.append("text").attr("dx", ".3em").attr("dy", "-.3em").on("click", removeParent).attr("font-size", 10 * size).attr("stroke-width", size);
-
-  d3.event.on("drag", function() {
-    x = d3.event.x, y = d3.event.y;
-
-    // change first part
-    let dist = rn(Math.hypot(x1 - x, y1 - y));
-    let label = rn(dist * distanceScaleInput.value) + " " + distanceUnitInput.value;
-    let atan = x1 > x ? Math.atan2(y1 - y, x1 - x) : Math.atan2(y - y1, x - x1);
-    xc1 = rn((x + x1) / 2, 2), yc1 = rn((y + y1) / 2, 2);
-    r1 = `rotate(${rn(atan * 180 / Math.PI, 3)} ${xc1} ${yc1})`;
-    line.attr("x1", x1).attr("y1", y1).attr("x2", x).attr("y2", y);
-    rulerOld.select("rect").attr("x", x - size * 1.5).attr("y", y - size * 1.5).attr("transform", null);
-    rulerOld.select("text").attr("x", xc1).attr("y", yc1).attr("transform", r1).text(label);
-
-    // change second (new) part
-    dist = rn(Math.hypot(x2 - x, y2 - y));
-    label = rn(dist * distanceScaleInput.value) + " " + distanceUnitInput.value;
-    atan = x2 > x ? Math.atan2(y2 - y, x2 - x) : Math.atan2(y - y2, x - x2);
-    xc2 = rn((x + x2) / 2, 2), yc2 = rn((y + y2) / 2, 2);
-    r2 = `rotate(${rn(atan * 180 / Math.PI, 3)} ${xc2} ${yc2})`;
-    rulerNew.selectAll("line").attr("x1", x).attr("y1", y).attr("x2", x2).attr("y2", y2);
-    rulerNew.select("text").attr("x", xc2).attr("y", yc2).attr("transform", r2).text(label);
-  });
-
-  d3.event.on("end", function() {
-    // contols for 1st part
-    rulerOld.select("circle[data-edge='left']").attr("cx", x1).attr("cy", y1);
-    rulerOld.select("circle[data-edge='right']").attr("cx", x).attr("cy", y);
-    rulerOld.select("rect").attr("x", xc1 - size * 1.5).attr("y", yc1 - size * 1.5).attr("transform", r1);
-
-    // contols for 2nd part
-    rulerNew.append("circle").attr("cx", x).attr("cy", y).attr("r", 2 * size).attr("stroke-width", 0.5 * size).attr("data-edge", "left").call(d3.drag().on("drag", dragRulerEdge));
-    rulerNew.append("circle").attr("cx", x2).attr("cy", y2).attr("r", 2 * size).attr("stroke-width", 0.5 * size).attr("data-edge", "right").call(d3.drag().on("drag", dragRulerEdge));
-    rulerNew.append("rect").attr("x", xc2 - size * 1.5).attr("y", yc2 - size * 1.5).attr("width", size * 3).attr("height", size * 3).attr("transform", r2).attr("stroke-width", .5 * size).call(d3.drag().on("start", rulerCenterDrag));
-  });
 }
 
 function drawOpisometer() {

@@ -1202,12 +1202,12 @@ function toggleIcons(event) {
 function toggleRulers(event) {
   if (!layerIsOn("toggleRulers")) {
     turnButtonOn("toggleRulers");
-    $('#ruler').fadeIn();
     if (event && isCtrlClick(event)) editStyle("ruler");
+    rulers.draw();
   } else {
     if (event && isCtrlClick(event)) {editStyle("ruler"); return;}
-    $('#ruler').fadeOut();
     turnButtonOff("toggleRulers");
+    rulers.undraw();
   }
 }
 
