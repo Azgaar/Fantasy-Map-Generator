@@ -235,6 +235,7 @@ function editUnits() {
           restoreDefaultEvents();
           clearMainTip();
           addOpisometer.classList.remove("pressed");
+          if (opisometer.points.length < 2) rulers.remove(opisometer.id);
           if (!d3.event.sourceEvent.shiftKey) opisometer.optimize();
         });
       }));
@@ -264,7 +265,8 @@ function editUnits() {
           restoreDefaultEvents();
           clearMainTip();
           addPlanimeter.classList.remove("pressed");
-          if (!d3.event.sourceEvent.shiftKey) planimeter.optimize();
+          if (planimeter.points.length < 3) rulers.remove(planimeter.id);
+          else if (!d3.event.sourceEvent.shiftKey) planimeter.optimize();
         });
       }));
 

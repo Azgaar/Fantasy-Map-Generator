@@ -212,7 +212,7 @@ function inlineStyle(clone) {
   const emptyG = clone.append("g").node();
   const defaultStyles = window.getComputedStyle(emptyG);
 
-  clone.selectAll("g, #ruler > g > *, #scaleBar > text").each(function() {
+  clone.selectAll("g, #ruler *, #scaleBar > text").each(function() {
     const compStyle = window.getComputedStyle(this);
     let style = "";
 

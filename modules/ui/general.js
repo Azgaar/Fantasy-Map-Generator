@@ -138,10 +138,10 @@ function showMapTooltip(point, e, i, g) {
   if (group === "labels") {tip("Click to edit the Label"); return;}
   if (group === "markers") {tip("Click to edit the Marker"); return;}
   if (group === "ruler") {
-    if (tag === "rect") {tip("Drag to split the ruler into 2 parts"); return;}
     if (tag === "circle") {tip("Drag to adjust the measurer"); return;}
-    if (tag === "path" || tag === "line") {tip("Drag to move the measurer"); return;}
-    if (tag === "text") {tip("Click to remove the measurer"); return;}
+    if (tag === "path") {tip("Drag to move the measurer"); return;}
+    if (tag === "polyline") {tip("Drag to add a control point"); return;}
+    if (tag === "text") {tip("Drag to move, click to remove the measurer"); return;}
   }
   if (subgroup === "burgIcons") {tip("Click to edit the Burg"); return;}
   if (subgroup === "burgLabels") {tip("Click to edit the Burg"); return;}

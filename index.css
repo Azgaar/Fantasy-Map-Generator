@@ -1741,20 +1741,14 @@ rect.fillRect {
 	fill: none;
 }
 
-#ruler circle {
+#ruler .rulerPoints {
 	stroke: #4e5a69;
 	fill: yellow;
 	cursor: grab;
 }
 
-#ruler circle.control {
+#ruler .rulerPoints .control {
 	fill: #999999;
-}
-
-#ruler rect {
-	stroke: #3d3d3d;
-	fill: yellow;
-	cursor: col-resize;
 }
 
 #ruler .white {
@@ -1769,13 +1763,12 @@ rect.fillRect {
 #ruler text {
 	font-family: 'Georgia';
 	fill: #3d3d3d;
-	stroke: none;
 	text-anchor: middle;
 	text-shadow: 0 0 4px white;
 	cursor: pointer;
 }
 
-#ruler .planimeter {
+#ruler path.planimeter {
 	fill: lightblue;
 	fill-rule: evenodd;
 	fill-opacity: 0.5;
