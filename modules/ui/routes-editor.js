@@ -48,40 +48,26 @@ function editRoute(onClick) {
   function drawControlPoints(node) {
     const l = node.getTotalLength();
     const increment = l / Math.ceil(l / 4);
-    for (let i=0; i <= l; i += increment) {addControlPoint(node.getPointAtLength(i));}
+    for (let i=0; i <= l; i += increment) {
+      const point = node.getPointAtLength(i);
+      addControlPoint([point.x, point.y]);
+    }
     routeLength.innerHTML = rn(l * distanceScaleInput.value) + " " + distanceUnitInput.value;
   }
   
-  function addControlPoint(point) {
-    debug.select("#controlPoints").append("circle")
-      .attr("cx", point.x).attr("cy", point.y).attr("r", .8)
+  function addControlPoint(point, before = null) {
+    debug.select("#controlPoints").insert("circle", before)
+      .attr("cx", point[0]).attr("cy", point[1]).attr("r", .6)
       .call(d3.drag().on("drag", dragControlPoint))
       .on("click", clickControlPoint);
   }
 
   function addInterimControlPoint() {
     const point = d3.mouse(this);
-
-    const dists = [];
-    debug.select("#controlPoints").selectAll("circle").each(function() {
-      const x = +this.getAttribute("cx");
-      const y = +this.getAttribute("cy");
-      dists.push((point[0] - x) ** 2 + (point[1] - y) ** 2);
-    });
-
-    let index = dists.length;
-    if (dists.length > 1) {
-      const sorted = dists.slice(0).sort((a, b) => a-b);
-      const closest = dists.indexOf(sorted[0]);
-      const next = dists.indexOf(sorted[1]);
-      if (closest <= next) index = closest+1; else index = next+1;
-    }
-
-    const before = ":nth-child(" + (index + 1) + ")";
-    debug.select("#controlPoints").insert("circle", before)
-      .attr("cx", point[0]).attr("cy", point[1]).attr("r", .8)
-      .call(d3.drag().on("drag", dragControlPoint))
-      .on("click", clickControlPoint);
+    const controls = document.getElementById("controlPoints").querySelectorAll("circle");
+    const points = Array.from(controls).map(circle => [+circle.getAttribute("cx"), +circle.getAttribute("cy")]);
+    const index = getSegmentId(points, point, 2);
+    addControlPoint(point, ":nth-child(" + (index+1) + ")");
 
     redrawRoute();
   }
@@ -266,9 +252,7 @@ function editRoute(onClick) {
       elSelected = d3.select(parent).append("path").attr("id", id).attr("data-new", 1);
     }
 
-    // add control point
-    const point = d3.mouse(this);
-    addControlPoint({x: point[0], y: point[1]});
+    addControlPoint(d3.mouse(this));
     redrawRoute();
   }
 

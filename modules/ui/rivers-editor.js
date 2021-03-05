@@ -87,8 +87,8 @@ function editRiver(id) {
     }
   }
 
-  function addControlPoint(point) {
-    debug.select("#controlPoints").append("circle")
+  function addControlPoint(point, before = null) {
+    debug.select("#controlPoints").insert("circle", before)
       .attr("cx", point[0]).attr("cy", point[1]).attr("r", .6)
       .call(d3.drag().on("drag", dragControlPoint))
       .on("click", clickControlPoint);
@@ -137,27 +137,10 @@ function editRiver(id) {
 
   function addInterimControlPoint() {
     const point = d3.mouse(this);
-
-    const dists = [];
-    debug.select("#controlPoints").selectAll("circle").each(function() {
-      const x = +this.getAttribute("cx");
-      const y = +this.getAttribute("cy");
-      dists.push((point[0] - x) ** 2 + (point[1] - y) ** 2);
-    });
-
-    let index = dists.length;
-    if (dists.length > 1) {
-      const sorted = dists.slice(0).sort((a, b) => a-b);
-      const closest = dists.indexOf(sorted[0]);
-      const next = dists.indexOf(sorted[1]);
-      if (closest <= next) index = closest+1; else index = next+1;
-    }
-
-    const before = ":nth-child(" + (index + 1) + ")";
-    debug.select("#controlPoints").insert("circle", before)
-      .attr("cx", point[0]).attr("cy", point[1]).attr("r", .8)
-      .call(d3.drag().on("drag", dragControlPoint))
-      .on("click", clickControlPoint);
+    const controls = document.getElementById("controlPoints").querySelectorAll("circle");
+    const points = Array.from(controls).map(circle => [+circle.getAttribute("cx"), +circle.getAttribute("cy")]);
+    const index = getSegmentId(points, point, 2);
+    addControlPoint(point, ":nth-child(" + (index+1) + ")");
 
     redrawRiver();
   }

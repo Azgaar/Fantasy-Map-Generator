@@ -359,7 +359,7 @@ void function addFindAll() {
 }()
 
 // get segment of any point on polyline
-function getSegmentId(points, point) {
+function getSegmentId(points, point, step = 10) {
   if (points.length === 2) return 1;
   const d2 = (p1, p2) => (p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2;
 
@@ -371,7 +371,7 @@ function getSegmentId(points, point) {
     const p2 = points[i+1];
 
     const length = Math.sqrt(d2(p1, p2));
-    const segments = Math.ceil(length / 10);
+    const segments = Math.ceil(length / step);
     const dx = (p2[0] - p1[0]) / segments;
     const dy = (p2[1] - p1[1]) / segments;
 
