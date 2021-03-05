@@ -12,21 +12,6 @@ const TIME = !PRODUCTION;
 const WARN = 1;
 const ERROR = 1;
 
-// constants to link density values to number of cells
-const POINTS_1K = 1;
-const POINTS_2K = 2;
-const POINTS_5K = 3;
-const POINTS_10K = 4;
-const POINTS_20K = 5;
-const POINTS_30K = 6;
-const POINTS_40K = 7;
-const POINTS_50K = 8;
-const POINTS_60K = 9;
-const POINTS_70K = 10;
-const POINTS_80K = 11;
-const POINTS_90K = 12;
-const POINTS_100K = 13;
-
 // if map version is not stored, clear localStorage and show a message
 if (rn(localStorage.getItem("version"), 2) !== rn(version, 2)) {
   localStorage.clear();
@@ -367,10 +352,11 @@ function showWelcomeMessage() {
       <li>River generation code refactored and optimized</li>
       <li>Rivers discharge (flux) and mouth width calculated</li>
       <li>Lake editor rework</li>
-      <li>Lake type defined dynamically based on evaporation and river system</li>
+      <li>Lake type based on evaporation and river system</li>
       <li>Lake flux, inlets and outlet tracked properly</li>
-      <li>Lake outlet rendered with starting width depending on flux</li>
+      <li>Lake outlet width depends on flux</li>
       <li>Lakes now have names</li>
+      <li>Rulers rework (v1.61)</li>
     </ul>
 
     <iframe width="100%" height="auto" src="https://www.youtube.com/embed/XBSNkTf1Ddg?controls=0" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
@@ -628,12 +614,8 @@ function generateSeed() {
 // Place points to calculate Voronoi diagram
 function placePoints() {
   TIME && console.time("placePoints");
-  let cellsDesired = 10000 * (+densityInput.value - POINTS_5K); // generate 10k points for each densityInput point
-  switch (+densityInput.value) {
-    case POINTS_1K: cellsDesired = 1000; break;
-    case POINTS_2K: cellsDesired = 2000; break;
-    case POINTS_5K: cellsDesired = 5000; break;
-  }
+
+  const cellsDesired = +pointsInput.dataset.cells;
   const spacing = grid.spacing = rn(Math.sqrt(graphWidth * graphHeight / cellsDesired), 2); // spacing between points before jirrering
   grid.boundary = getBoundaryPoints(graphWidth, graphHeight, spacing);
   grid.points = getJitteredGrid(graphWidth, graphHeight, spacing); // jittered square grid

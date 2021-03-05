@@ -102,7 +102,7 @@ const optionsContent = document.getElementById("optionsContent");
 optionsContent.addEventListener("input", function(event) {
   const id = event.target.id, value = event.target.value;
   if (id === "mapWidthInput" || id === "mapHeightInput") mapSizeInputChange();
-  else if (id === "densityInput" || id === "densityOutput") changeCellsDensity(+value);
+  else if (id === "pointsInput") changeCellsDensity(+value);
   else if (id === "culturesInput") culturesOutput.value = value;
   else if (id === "culturesOutput") culturesInput.value = value;
   else if (id === "culturesSet") changeCultureSet();
@@ -276,15 +276,26 @@ function copyMapURL() {
 }
 
 function changeCellsDensity(value) {
-  switch (value) {
-    case POINTS_1K : densityOutput.value = "1K"; break;
-    case POINTS_2K : densityOutput.value = "2K"; break;
-    case POINTS_5K : densityOutput.value = "5K"; break;
-    default: densityOutput.value = (value-POINTS_5K) * 10 + "K"; 
+  const convert = v => {
+    if (v == 1) return 1000;
+    if (v == 2) return 2000;
+    if (v == 3) return 5000;
+    if (v == 4) return 10000;
+    if (v == 5) return 20000;
+    if (v == 6) return 30000;
+    if (v == 7) return 40000;
+    if (v == 8) return 50000;
+    if (v == 9) return 60000;
+    if (v == 10) return 70000;
+    if (v == 11) return 80000;
+    if (v == 12) return 90000;
+    if (v == 13) return 100000;
   }
-  if (value > POINTS_50K) densityOutput.style.color = "#b12117";
-  else if (value > POINTS_10K) densityOutput.style.color = "#dfdf12";
-  else densityOutput.style.color = "#038603";
+  const cells = convert(value);
+
+  pointsInput.setAttribute("data-cells", cells);
+  pointsOutput.value = cells / 1000 + "K";
+  pointsOutput.style.color = cells > 50000 ? "#b12117" : cells !== 10000 ? "#dfdf12" : "#053305";
 }
 
 function changeCultureSet() {

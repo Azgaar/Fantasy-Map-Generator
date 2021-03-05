@@ -938,14 +938,14 @@
             </td>
           </tr>
 
-          <tr data-tip="Set number of points to be used for graph generation. Highly affects performance">
+          <tr data-tip="Set number of points to be used for graph generation. Highly affects performance. 10K is the only recommended value">
             <td></td>
             <td>Points number</td>
             <td>
-              <input id="densityInput" type="range" min=1 max=13 value=4>
+              <input id="pointsInput" type="range" min=1 max=13 value=4 data-cells=10000 >
             </td>
             <td>
-              <output id="densityOutput">10K</output>
+              <output id="pointsOutput" style="color: #053305">10K</output>
             </td>
           </tr>
 
