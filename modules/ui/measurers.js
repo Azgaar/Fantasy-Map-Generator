@@ -32,7 +32,8 @@ class Ruler {
     const dash = rn(30 / distanceScaleInput.value, 2);
 
     const el = this.el = ruler.append("g").attr("class", "ruler").call(d3.drag().on("start", this.drag)).attr("font-size", 10 * size)
-    el.append("polyline").attr("points", points).attr("class", "white").attr("stroke-width", size);
+    el.append("polyline").attr("points", points).attr("class", "white").attr("stroke-width", size)
+      .call(d3.drag().on("start", () => this.addControl(this)));
     el.append("polyline").attr("points", points).attr("class", "gray").attr("stroke-width", rn(size * 1.2, 2)).attr("stroke-dasharray", dash);
     el.append("g").attr("class", "rulerPoints").attr("stroke-width", .5 * size).attr("font-size", 2 * size);
     el.append("text").attr("dx", ".35em").attr("dy", "-.45em").on("click", this.remove);
@@ -113,6 +114,16 @@ class Ruler {
       circle.attr("cx", x).attr("cy", y);
       context.updateLabel();
     });
+  }
+
+  addControl(context) {
+    const x = rn(d3.event.x, 1);
+    const y = rn(d3.event.y, 1);
+    const pointId = getSegmentId(context.points, [x, y]);
+
+    context.points.splice(pointId, 0, [x, y]);
+    context.renderPoints(context.el);
+    context.dragControl(context, pointId);
   }
 
   removePoint(context, pointId) {

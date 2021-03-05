@@ -358,6 +358,38 @@ void function addFindAll() {
   }
 }()
 
+// get segment of any point on polyline
+function getSegmentId(points, point) {
+  if (points.length === 2) return 1;
+  const d2 = (p1, p2) => (p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2;
+
+  let minSegment = 1;
+  let minDist = Infinity;
+
+  for (let i=0; i < points.length-1; i++) {
+    const p1 = points[i];
+    const p2 = points[i+1];
+
+    const length = Math.sqrt(d2(p1, p2));
+    const segments = Math.ceil(length / 10);
+    const dx = (p2[0] - p1[0]) / segments;
+    const dy = (p2[1] - p1[1]) / segments;
+
+    for (let s=0; s < segments; s++) {
+      const x = p1[0] + s * dx;
+      const y = p1[1] + s * dy;
+      const dist2 = d2(point, [x, y]);
+
+      if (dist2 >= minDist) continue;
+      minDist = dist2;
+      minSegment = i+1;
+    }
+  }
+
+  console.log(minSegment);
+  return minSegment;
+}
+
 // normalization function
 function normalize(val, min, max) {
   return Math.min(Math.max((val - min) / (max - min), 0), 1);

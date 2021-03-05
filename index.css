@@ -1763,6 +1763,7 @@ rect.fillRect {
 
 #ruler .gray {
 	stroke: #3d3d3d;
+	pointer-events: none;
 }
 
 #ruler text {
