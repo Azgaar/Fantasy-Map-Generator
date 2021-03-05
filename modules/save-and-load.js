@@ -323,6 +323,7 @@ function getMapData() {
     const coords = JSON.stringify(mapCoordinates);
     const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
     const notesData = JSON.stringify(notes);
+    const rulersString = rulers.toString();
 
     // clone svg
     const cloneEl = document.getElementById("map").cloneNode(true);
@@ -331,6 +332,9 @@ function getMapData() {
     cloneEl.setAttribute("width", graphWidth);
     cloneEl.setAttribute("height", graphHeight);
     cloneEl.querySelector("#viewbox").removeAttribute("transform");
+
+    // always remove rulers
+    cloneEl.querySelector("#ruler").innerHTML = "";
 
     const svg_xml = (new XMLSerializer()).serializeToString(cloneEl);
 
@@ -360,7 +364,7 @@ function getMapData() {
       pack.cells.biome, pack.cells.burg, pack.cells.conf, pack.cells.culture, pack.cells.fl,
       pop, pack.cells.r, pack.cells.road, pack.cells.s, pack.cells.state,
       pack.cells.religion, pack.cells.province, pack.cells.crossroad, religions, provinces,
-      namesData, rivers].join("\r\n");
+      namesData, rivers, rulersString].join("\r\n");
     const blob = new Blob([data], {type: "text/plain"});
 
     TIME && console.timeEnd("createMapDataBlob");
@@ -659,6 +663,7 @@ function parseLoadedData(data) {
     void function parseConfiguration() {
       if (data[2]) mapCoordinates = JSON.parse(data[2]);
       if (data[4]) notes = JSON.parse(data[4]);
+      if (data[33]) rulers.fromString(data[33]);
 
       const biomes = data[3].split("|");
       biomesData = applyDefaultBiomesSystem();
@@ -822,14 +827,6 @@ function parseLoadedData(data) {
     }()
 
     void function restoreEvents() {
-      ruler.selectAll("g").call(d3.drag().on("start", dragRuler));
-      ruler.selectAll("text").on("click", removeParent);
-      ruler.selectAll("g.ruler circle").call(d3.drag().on("drag", dragRulerEdge));
-      ruler.selectAll("g.ruler circle").call(d3.drag().on("drag", dragRulerEdge));
-      ruler.selectAll("g.ruler rect").call(d3.drag().on("start", rulerCenterDrag));
-      ruler.selectAll("g.opisometer circle").call(d3.drag().on("start", dragOpisometerEnd));
-      ruler.selectAll("g.opisometer circle").call(d3.drag().on("start", dragOpisometerEnd));
-
       scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => editUnits());
       legend.on("mousemove", () => tip("Drag to change the position. Click to hide the legend")).on("click", () => clearLegend());
     }()
@@ -1136,6 +1133,45 @@ function parseLoadedData(data) {
         // v 1.61 changed rulers data
         ruler.style("display", null);
         rulers = new Rulers();
+
+        ruler.selectAll(".ruler > .white").each(function() {
+          const x1 = +this.getAttribute("x1");
+          const y1 = +this.getAttribute("y1");
+          const x2 = +this.getAttribute("x2");
+          const y2 = +this.getAttribute("y2");
+          if (isNaN(x1) || isNaN(y1) || isNaN(x2) || isNaN(y2)) return;
+          const points = [[x1, y1], [x2, y2]];
+          rulers.create(Ruler, points);
+        });
+
+        ruler.selectAll("g.opisometer").each(function() {
+          const pointsString = this.dataset.points;
+          if (!pointsString) return;
+          const points = JSON.parse(pointsString);
+          rulers.create(Opisometer, points);
+        });
+
+        ruler.selectAll("path.planimeter").each(function() {
+          const length = this.getTotalLength();
+          if (length < 30) return;
+
+          const step = length > 1000 ? 40 : length > 400 ? 20 : 10;
+          const increment = length / Math.ceil(length / step);
+          const points = [];
+          for (let i=0; i <= length; i += increment) {
+            const point = this.getPointAtLength(i);
+            points.push([point.x | 0, point.y | 0]);
+          }
+
+          rulers.create(Planimeter, points);
+        });
+
+        ruler.selectAll("*").remove();
+
+        if (rulers.data.length) {
+          turnButtonOn("toggleRulers");
+          rulers.draw();
+        } else turnButtonOff("toggleRulers");
       }
     }()
 
@@ -1221,6 +1257,9 @@ function parseLoadedData(data) {
 
     // remove href from emblems, to trigger rendering on load
     emblems.selectAll("use").attr("href", null);
+
+    // draw data layers (no kept in svg)
+    if (rulers && layerIsOn("toggleRulers")) rulers.draw();
 
     // set options
     yearInput.value = options.year;

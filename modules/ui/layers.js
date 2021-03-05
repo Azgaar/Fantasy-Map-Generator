@@ -151,7 +151,7 @@ function drawHeightmap() {
   }
 
   let currentLayer = 20;
-  const heights = cells.i.sort((a, b) => cells.h[a] - cells.h[b]); 
+  const heights = cells.i.sort((a, b) => cells.h[a] - cells.h[b]);
   for (const i of heights) {
     const h = cells.h[i];
     if (h > currentLayer) currentLayer += skip;
@@ -200,7 +200,7 @@ function drawHeightmap() {
     const n = simplification + 1; // filter each nth element
     return chain.filter((d, i) => i % n === 0);
   }
-  
+
   TIME && console.timeEnd("drawHeightmap");
 }
 
@@ -240,7 +240,7 @@ function drawTemp() {
   const used = new Uint8Array(n); // to detect already passed cells
   const min = d3.min(cells.temp), max = d3.max(cells.temp);
   const step = Math.max(Math.round(Math.abs(min - max) / 5), 1);
-  const isolines = d3.range(min+step, max, step); 
+  const isolines = d3.range(min+step, max, step);
   const chains = [], labels = []; // store label coordinates
 
   for (const i of cells.i) {
@@ -557,7 +557,7 @@ function toggleCultures(event) {
 
 function drawCultures() {
   TIME && console.time("drawCultures");
-  
+
   cults.selectAll("path").remove();
   const cells = pack.cells, vertices = pack.vertices, cultures = pack.cultures, n = cells.i.length;
   const used = new Uint8Array(cells.i.length);
@@ -738,7 +738,7 @@ function drawStates() {
     const chain = []; // vertices chain to form a path
     let land = vertices.c[start].some(c => cells.h[c] >= 20 && cells.state[c] !== t);
     function check(i) {state = cells.state[i]; land = cells.h[i] >= 20;}
-    
+
     for (let i=0, current = start; i === 0 || current !== start && i < 20000; i++) {
       const prev = chain[chain.length - 1] ? chain[chain.length - 1][0] : -1; // previous vertex in chain
       chain.push([current, state, land]); // add current vertex to sequence
@@ -797,7 +797,7 @@ function drawBorders() {
       sUsed[s][stateToCell] = stateTo;
       const vertex = cells.v[i].find(v => vertices.c[v].some(i => cells.h[i] >= 20 && cells.state[i] === stateTo));
       const chain = connectVertices(vertex, s, cells.state, stateTo, sUsed);
-      
+
       if (chain.length > 1) {
         sPath.push("M" + chain.map(c => vertices.p[c]).join(" "));
         i--;
@@ -819,7 +819,7 @@ function drawBorders() {
     for (let i=0; i < 1000; i++) {
       if (i === 999) ERROR && console.error("Find starting vertex: limit is reached", current, f, t);
       const p = chain[chain.length-2] || -1; // previous vertex
-      const v = vertices.v[current], c = vertices.c[current]; 
+      const v = vertices.v[current], c = vertices.c[current];
 
       const v0 = checkCell(c[0]) !== checkCell(c[1]) && checkVertex(v[0]);
       const v1 = checkCell(c[1]) !== checkCell(c[2]) && checkVertex(v[1]);
@@ -867,7 +867,7 @@ function toggleBorders(event) {
     if (event && isCtrlClick(event)) {editStyle("borders"); return;}
     turnButtonOff("toggleBorders");
     $('#borders').fadeOut();
-  }  
+  }
 }
 
 function toggleProvinces(event) {
@@ -1196,7 +1196,7 @@ function toggleIcons(event) {
     if (event && isCtrlClick(event)) {editStyle("burgIcons"); return;}
     turnButtonOff("toggleIcons");
     $('#icons').fadeOut();
-  }  
+  }
 }
 
 function toggleRulers(event) {
@@ -1204,10 +1204,12 @@ function toggleRulers(event) {
     turnButtonOn("toggleRulers");
     if (event && isCtrlClick(event)) editStyle("ruler");
     rulers.draw();
+    ruler.style("display", null);
   } else {
     if (event && isCtrlClick(event)) {editStyle("ruler"); return;}
     turnButtonOff("toggleRulers");
-    rulers.undraw();
+    ruler.selectAll("*").remove();
+    ruler.style("display", "none");
   }
 }
 

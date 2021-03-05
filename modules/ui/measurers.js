@@ -240,10 +240,6 @@ class Ruler extends Measurer {
     if (this.points.length < 2) context.el.remove();
     else context.draw();
   }
-
-  undraw() {
-    this.el.remove();
-  }
 }
 
 class Opisometer extends Measurer {
