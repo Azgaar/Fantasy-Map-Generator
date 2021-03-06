@@ -1175,7 +1175,9 @@ function parseLoadedData(data) {
 
         // 1.61 changed oceanicPattern from rect to image
         const pattern = document.getElementById("oceanic");
-        pattern.innerHTML = '<image id="oceanicPattern" href="./images/pattern1.png" width="100" height="100" opacity=".2"></image>';
+        const filter = pattern.firstElementChild.getAttribute("filter");
+        const href = filter ? "./images/" + filter.replace("url(#", "").replace(")", "") + ".png" : "";
+        pattern.innerHTML = `<image id="oceanicPattern" href=${href} width="100" height="100" opacity=".2"></image>`;
       }
     }()
 
