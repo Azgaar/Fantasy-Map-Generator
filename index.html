@@ -219,15 +219,15 @@
       </g>
 
       <pattern id="oceanic" width="100" height="100" patternUnits="userSpaceOnUse">
-        <image id="oceanicPattern" href="./images/pattern1.png" width="100" height="100" opacity=".2"></image>
+        <image id="oceanicPattern" href="./images/pattern1.png"></image>
       </pattern>
     </defs>
     <g id="viewbox"></g>
     <g id="scaleBar"></g>
     <g id="initial" opacity=1>
-      <rect x="-1%" y="-1%" width="102%" height="102%" fill="#466eab"></rect>
-      <rect x="-1%" y="-1%" width="102%" height="102%" fill="url(#oceanic)"></rect>
-      <use href="#rose" id="init-rose" x="50%" y="50%"></use>
+      <rect x="-1%" y="-1%" width="102%" height="102%" fill="#466eab"/>
+      <rect x="-1%" y="-1%" width="102%" height="102%" fill="url(#oceanic)" opacity=".2"/>
+      <use href="#rose" id="init-rose" x="50%" y="50%"/>
     </g>
   </svg>
 
@@ -505,6 +505,14 @@
               </td>
             </tr>
 
+            <tr data-tip="Set ocean pattern opacity">
+              <td>Pattern opacity</td>
+              <td>
+                <input id="styleOceanPatternOpacity" type="range" min=0 max=1 step=.01 value=.2 />
+                <output id="styleOceanPatternOpacityOutput">0.2</output>
+              </td>
+            </tr>
+
             <tr data-tip="Define the coast outline contours scheme">
               <td>Ocean layers</td>
               <td>
@@ -520,22 +528,13 @@
               </td>
             </tr>
 
-            <tr data-tip="Set background color. Not visible if opacity is 1">
-              <td>Background</td>
+            <tr data-tip="Set ocean color">
+              <td>Color</td>
               <td>
-                <input id="styleOceanBack" type="color" value="#000000"/>
-                <output id="styleOceanBackOutput">#000000</output>
+                <input id="styleOceanFill" type="color" value="#466eab"/>
+                <output id="styleOceanFillOutput">#466eab</output>
               </td>
             </tr>
-
-            <tr data-tip="Set foreground color. Visible if opacity > 0">
-              <td>Foreground</td>
-              <td>
-                <input id="styleOceanFore" type="color" value="#466eab"/>
-                <output id="styleOceanForeOutput">#466eab</output>
-              </td>
-            </tr>
-
           </tbody>
 
           <tbody id="styleGrid">

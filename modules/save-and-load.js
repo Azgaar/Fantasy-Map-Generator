@@ -84,7 +84,10 @@ async function getMapURL(type, subtype) {
   const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
   if (isFirefox && type === "mesh") clone.select("#oceanPattern").remove();
   if (subtype === "globe") clone.select("#scaleBar").remove();
-  if (subtype === "noWater") {clone.select("#oceanBase").attr("opacity", 0); clone.select("#oceanPattern").attr("opacity", 0);}
+  if (subtype === "noWater") {
+    clone.select("#oceanBase").attr("opacity", 0);
+    clone.select("#oceanPattern").attr("opacity", 0);
+  }
   if (type !== "png") {
     // reset transform to show the whole map
     clone.attr("width", graphWidth).attr("height", graphHeight);
@@ -1177,7 +1180,8 @@ function parseLoadedData(data) {
         const pattern = document.getElementById("oceanic");
         const filter = pattern.firstElementChild.getAttribute("filter");
         const href = filter ? "./images/" + filter.replace("url(#", "").replace(")", "") + ".png" : "";
-        pattern.innerHTML = `<image id="oceanicPattern" href=${href} width="100" height="100" opacity=".2"></image>`;
+        pattern.innerHTML = `<image id="oceanicPattern" href=${href} width="100" height="100"></image>`;
+        document.getElementById("oceanPattern").setAttribute("opacity", .2);
       }
     }()
 

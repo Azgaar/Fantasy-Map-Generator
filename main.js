@@ -357,6 +357,7 @@ function showWelcomeMessage() {
       <li>Lake outlet width depends on flux</li>
       <li>Lakes now have names</li>
       <li>Rulers rework (v1.61)</li>
+      <li>New ocean pattern by Kiwiroo (v1.61)</li>
     </ul>
 
     <iframe width="100%" height="auto" src="https://www.youtube.com/embed/XBSNkTf1Ddg?controls=0" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
