@@ -1111,10 +1111,10 @@ function toggleTexture(event) {
     // append default texture image selected by default. Don't append on load to not harm performance
     if (!texture.selectAll("*").size()) {
       const x = +styleTextureShiftX.value, y = +styleTextureShiftY.value;
-      const href = styleTextureInput.value === "default" ? getDefaultTexture() : setBase64Texture(styleTextureInput.value);
-      texture.append("image").attr("id", "textureImage")
+      const image = texture.append("image").attr("id", "textureImage")
         .attr("x", x).attr("y", y).attr("width", graphWidth - x).attr("height", graphHeight - y)
-        .attr("xlink:href", href).attr("preserveAspectRatio", "xMidYMid slice");
+        .attr("xlink:href", getDefaultTexture()).attr("preserveAspectRatio", "xMidYMid slice");
+      if (styleTextureInput.value !== "default") getBase64(styleTextureInput.value, base64 => image.attr("xlink:href", base64));
     }
     $('#texture').fadeIn();
     zoom.scaleBy(svg, 1.00001); // enforce browser re-draw

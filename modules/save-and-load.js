@@ -131,11 +131,11 @@ async function getMapURL(type, subtype) {
     cloneDefs.querySelector("#defs-emblems")?.remove();
   }
 
-  // add ocean pattern
+  // replace ocean pattern href to base64
   if (cloneEl.getElementById("oceanicPattern")) {
-    const patternId = cloneEl.getElementById("oceanicPattern").getAttribute("filter").slice(5,-1);
-    const pattern = svgDefs.getElementById(patternId);
-    if (patternId) cloneDefs.appendChild(pattern.cloneNode(true));
+    const el = cloneEl.getElementById("oceanicPattern");
+    const url = el.getAttribute("href");
+    getBase64(url, base64 => el.setAttribute("href", base64));
   }
 
   // add relief icons
@@ -958,7 +958,7 @@ function parseLoadedData(data) {
       if (version < 1.11) {
         // v 1.11 added new attributes
         terrs.attr("scheme", "bright").attr("terracing", 0).attr("skip", 5).attr("relax", 0).attr("curve", 0);
-        svg.select("#oceanic > rect").attr("id", "oceanicPattern");
+        svg.select("#oceanic > *").attr("id", "oceanicPattern");
         oceanLayers.attr("layers", "-6,-3,-1");
         gridOverlay.attr("type", "pointyHex").attr("size", 10);
 
@@ -1172,6 +1172,10 @@ function parseLoadedData(data) {
           turnButtonOn("toggleRulers");
           rulers.draw();
         } else turnButtonOff("toggleRulers");
+
+        // 1.61 changed oceanicPattern from rect to image
+        const pattern = document.getElementById("oceanic");
+        pattern.innerHTML = '<image id="oceanicPattern" href="./images/pattern1.png" width="100" height="100" opacity=".2"></image>';
       }
     }()
 
