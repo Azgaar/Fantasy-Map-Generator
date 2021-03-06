@@ -65,7 +65,7 @@ let anchors = icons.append("g").attr("id", "anchors");
 let armies = viewbox.append("g").attr("id", "armies").style("display", "none");
 let markers = viewbox.append("g").attr("id", "markers").style("display", "none");
 let fogging = viewbox.append("g").attr("id", "fogging-cont").attr("mask", "url(#fog)").append("g").attr("id", "fogging").style("display", "none");
-let ruler = viewbox.append("g").attr("id", "ruler");
+let ruler = viewbox.append("g").attr("id", "ruler").style("display", "none");
 let debug = viewbox.append("g").attr("id", "debug");
 
 // lake and coast groups
