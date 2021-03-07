@@ -386,7 +386,6 @@ function getSegmentId(points, point, step = 10) {
     }
   }
 
-  console.log(minSegment);
   return minSegment;
 }
 

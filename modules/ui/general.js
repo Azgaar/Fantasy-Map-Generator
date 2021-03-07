@@ -88,7 +88,6 @@ function showNotes(e, i) {
 // show viewbox tooltip if main tooltip is blank
 function showMapTooltip(point, e, i, g) {
   tip(""); // clear tip
-  const tag = e.target.tagName;
   const path = e.composedPath ? e.composedPath() : getComposedPath(e.target); // apply polyfill
   if (!path[path.length - 8]) return;
   const group = path[path.length - 7].id;
@@ -138,9 +137,13 @@ function showMapTooltip(point, e, i, g) {
   if (group === "labels") {tip("Click to edit the Label"); return;}
   if (group === "markers") {tip("Click to edit the Marker"); return;}
   if (group === "ruler") {
+    const tag = e.target.tagName;
+    const className = e.target.getAttribute("class");
+    if (tag === "circle" && className === "edge") {tip("Drag to adjust. Hold Ctrl and drag to add a point. Click to remove the point"); return;}
+    if (tag === "circle" && className === "control") {tip("Drag to adjust. Hold Shifta and drag to keep axial direction. Click to remove the point"); return;}
     if (tag === "circle") {tip("Drag to adjust the measurer"); return;}
+    if (tag === "polyline") {tip("Click on drag to add a control point"); return;}
     if (tag === "path") {tip("Drag to move the measurer"); return;}
-    if (tag === "polyline") {tip("Drag to add a control point"); return;}
     if (tag === "text") {tip("Drag to move, click to remove the measurer"); return;}
   }
   if (subgroup === "burgIcons") {tip("Click to edit the Burg"); return;}

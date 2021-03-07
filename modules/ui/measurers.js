@@ -158,12 +158,11 @@ class Ruler extends Measurer {
 
   drawPoint(el, x, y, i) {
     const context = this;
-    const circle = el.append("circle")
+    el.append("circle")
       .attr("r", "1em").attr("cx", x).attr("cy", y)
+      .attr("class", this.isEdge(i) ? "edge" : "control")
       .on("click", function() {context.removePoint(context, i)})
       .call(d3.drag().clickDistance(3).on("start", function() {context.dragControl(context, i)}));
-
-    if (!this.isEdge(i)) circle.attr("class", "control");
   }
 
   isEdge(i) {
@@ -188,7 +187,7 @@ class Ruler extends Measurer {
   }
 
   dragControl(context, pointId) {
-    let edge = context.isEdge(pointId)
+    let addPoint = context.isEdge(pointId) && d3.event.sourceEvent.ctrlKey;
     let circle = context.el.select(`circle:nth-child(${pointId+1})`);
     const line = context.el.selectAll("polyline");
 
@@ -197,13 +196,13 @@ class Ruler extends Measurer {
     let axis;
 
     d3.event.on("drag", function() {
-      if (edge) {
+      if (addPoint) {
         if (d3.event.dx < .1 && d3.event.dy < .1) return;
         context.pushPoint(pointId);
         context.drawPoints(context.el);
         if (pointId) pointId++;
         circle = context.el.select(`circle:nth-child(${pointId+1})`);
-        edge = false;
+        addPoint = false;
       }
 
       const shiftPressed = d3.event.sourceEvent.shiftKey;
@@ -236,9 +235,9 @@ class Ruler extends Measurer {
   }
 
   removePoint(context, pointId) {
+    if (this.points.length < 3) return;
     this.points.splice(pointId, 1);
-    if (this.points.length < 2) context.el.remove();
-    else context.draw();
+    context.draw();
   }
 }
 
