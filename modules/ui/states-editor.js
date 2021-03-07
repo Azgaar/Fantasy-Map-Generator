@@ -7,7 +7,6 @@ function editStates() {
   if (layerIsOn("toggleCultures")) toggleCultures();
   if (layerIsOn("toggleBiomes")) toggleBiomes();
   if (layerIsOn("toggleReligions")) toggleReligions();
-  if (layerIsOn("toggleTexture")) toggleTexture();
 
   const body = document.getElementById("statesBodySection");
   refreshStatesEditor();
