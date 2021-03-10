@@ -344,7 +344,7 @@ const getName = function(cell) {
 // remove river and all its tributaries
 const remove = function(id) {
   const cells = pack.cells;
-  const riversToRemove = pack.rivers.filter(r => r.basin === id).map(r => r.i);
+  const riversToRemove = pack.rivers.filter(r => r.i === id || r.parent === id || r.basin === id).map(r => r.i);
   riversToRemove.forEach(r => rivers.select("#river"+r).remove());
   cells.r.forEach((r, i) => {
     if (!r || !riversToRemove.includes(r)) return;

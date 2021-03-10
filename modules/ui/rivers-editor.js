@@ -256,6 +256,7 @@ function editRiver(id) {
           $(this).dialog("close");
           const river = +elSelected.attr("id").slice(5);
           Rivers.remove(river);
+          elSelected.remove(); // keep if river if missed in pack.rivers
           $("#riverEditor").dialog("close");
         },
         Cancel: function() {$(this).dialog("close");}
