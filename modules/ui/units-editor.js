@@ -35,6 +35,7 @@ function editUnits() {
 
   document.getElementById("addLinearRuler").addEventListener("click", addRuler);
   document.getElementById("addOpisometer").addEventListener("click", toggleOpisometerMode);
+  document.getElementById("addRouteOpisometer").addEventListener("click", toggleRouteOpisometerMode);
   document.getElementById("addPlanimeter").addEventListener("click", togglePlanimeterMode);
   document.getElementById("removeRulers").addEventListener("click", removeAllRulers);
   document.getElementById("unitsRestore").addEventListener("click", restoreDefaultUnits);
@@ -238,6 +239,57 @@ function editUnits() {
           if (opisometer.points.length < 2) rulers.remove(opisometer.id);
           if (!d3.event.sourceEvent.shiftKey) opisometer.optimize();
         });
+      }));
+    }
+  }
+
+  function toggleRouteOpisometerMode() {
+    if (this.classList.contains("pressed")) {
+      restoreDefaultEvents();
+      clearMainTip();
+      this.classList.remove("pressed");
+    } else {
+      if (!layerIsOn("toggleRulers")) toggleRulers();
+      tip("Draw a curve along routes to measure length", true);
+      unitsBottom.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
+      this.classList.add("pressed");
+      viewbox.style("cursor", "crosshair").call(d3.drag().on("start", function() {
+        const cells = pack.cells;
+        const burgs = pack.burgs;
+        const point = d3.mouse(this);
+        const c = findCell(point[0], point[1]);
+        if (cells.road[c]) {
+          const b = cells.burg[c];
+          const x = b ? burgs[b].x : cells.p[c][0];
+          const y = b ? burgs[b].y : cells.p[c][1];
+          const routeOpisometer = rulers.create(RouteOpisometer, [[x, y]]).draw();
+
+          d3.event.on("drag", function () {
+            const point = d3.mouse(this);
+            const c = findCell(point[0], point[1]);
+            if (cells.road[c]) {
+              /*const b = cells.burg[c];
+              const x = b ? burgs[b].x : cells.p[c][0];
+              const y = b ? burgs[b].y : cells.p[c][1];
+              routeOpisometer.addPoint([x, y]);*/
+              routeOpisometer.trackCell(c, true);
+            }
+          });
+
+          d3.event.on("end", function () {
+            restoreDefaultEvents();
+            clearMainTip();
+            addRouteOpisometer.classList.remove("pressed");
+            if (routeOpisometer.points.length < 2) {
+              rulers.remove(routeOpisometer.id);
+            }
+          });
+        } else {
+          restoreDefaultEvents();
+          clearMainTip();
+          addRouteOpisometer.classList.remove("pressed");
+          tip("Must start in a cell with a route in it", false, "error");
+        }
       }));
     }
   }

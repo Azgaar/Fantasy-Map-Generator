@@ -22,6 +22,7 @@ class Rulers {
       const points = pointsString.split(" ").map(el => el.split(",").map(n => +n));
       const Type = type === "Ruler" ? Ruler : 
                    type === "Opisometer" ? Opisometer :
+                   type === "RouteOpisometer" ? RouteOpisometer :
                    type === "Planimeter" ? Planimeter : null;
       this.create(Type, points);
     }
@@ -302,6 +303,122 @@ class Opisometer extends Measurer {
 
     d3.event.on("end", function() {
       if (!d3.event.sourceEvent.shiftKey) context.optimize();
+    });
+  }
+}
+
+class RouteOpisometer extends Measurer {
+  constructor(points) {
+    super(points);
+    if (pack.cells) {
+      this.cellStops = points.map(p => findCell(p[0], p[1]));
+    } else {
+      this.cellStops = null;
+    }
+  }
+
+  checkCellStops() {
+    if (!this.cellStops) {
+      this.cellStops = this.points.map(p => findCell(p[0], p[1]));
+    }
+  }
+
+  trackCell(cell, rigth) {
+    this.checkCellStops();
+    const cellStops = this.cellStops;
+    if (rigth) {
+      if (last(cellStops) === cell) {
+        return;
+      } else if (cellStops.length > 1 && cellStops[cellStops.length - 2] === cell) {
+        cellStops.pop();
+        this.points.pop();
+        this.updateCurve();
+        this.updateLabel();
+       } else {
+        cellStops.push(cell);
+        this.points.push(this.getCellRouteCoord(cell));
+        this.updateCurve();
+        this.updateLabel();
+      }
+    }
+    else {
+      if (cellStops[0] === cell) {
+        return;
+      } else if (cellStops.length > 1 && cellStops[1] === cell) {
+        cellStops.shift();
+        this.points.shift();
+        this.updateCurve();
+        this.updateLabel();
+       } else {
+        cellStops.unshift(cell);
+        this.points.unshift(this.getCellRouteCoord(cell));
+        this.updateCurve();
+        this.updateLabel();
+      }
+    }
+  }
+
+  getCellRouteCoord(c) {
+    const cells = pack.cells;
+    const burgs = pack.burgs;
+    if (cells.road[c]) {
+      const b = cells.burg[c];
+      const x = b ? burgs[b].x : cells.p[c][0];
+      const y = b ? burgs[b].y : cells.p[c][1];
+      return [x, y];
+    } else {
+      return null;
+    }
+  }
+
+  draw() {
+    if (this.el) this.el.selectAll("*").remove();
+    const size = this.getSize();
+    const dash = this.getDash();
+    const context = this;
+
+    const el = this.el = ruler.append("g").attr("class", "opisometer")/*.call(d3.drag().on("start", this.drag))*/.attr("font-size", 10 * size);
+    el.append("path").attr("class", "white").attr("stroke-width", size);
+    el.append("path").attr("class", "gray").attr("stroke-width", size).attr("stroke-dasharray", dash);
+    const rulerPoints = el.append("g").attr("class", "rulerPoints").attr("stroke-width", .5 * size).attr("font-size", 2 * size);
+    rulerPoints.append("circle").attr("r", "1em").call(d3.drag().on("start", function() {context.dragControl(context, 0)}));
+    rulerPoints.append("circle").attr("r", "1em").call(d3.drag().on("start", function() {context.dragControl(context, 1)}));
+    el.append("text").attr("dx", ".35em").attr("dy", "-.45em").on("click", () => rulers.remove(this.id));
+
+    this.updateCurve();
+    this.updateLabel();
+    return this;
+  }
+
+  updateCurve() {
+    lineGen.curve(d3.curveCatmullRom.alpha(.5));
+    const path = round(lineGen(this.points));
+    this.el.selectAll("path").attr("d", path);
+
+    const left = this.points[0];
+    const right = last(this.points);
+    this.el.select(".rulerPoints > circle:first-child").attr("cx", left[0]).attr("cy", left[1]);
+    this.el.select(".rulerPoints > circle:last-child").attr("cx", right[0]).attr("cy", right[1]);
+  }
+
+  updateLabel() {
+    const length = this.el.select("path").node().getTotalLength();
+    const text = rn(length * distanceScaleInput.value) + " " + distanceUnitInput.value;
+    const [x, y] = last(this.points);
+    this.el.select("text").attr("x", x).attr("y", y).text(text);
+  }
+
+  dragControl(context, rigth) {
+    d3.event.on("drag", function() {
+      const mousePoint = [d3.event.x | 0, d3.event.y | 0];
+      const cells = pack.cells;
+
+      const c = findCell(mousePoint[0], mousePoint[1]);
+      if (!cells.road[c]) {
+        return;
+      }
+
+      context.trackCell(c, rigth);
     });
   }
 }
