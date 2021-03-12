@@ -20,7 +20,7 @@ class Rulers {
     for (const rulerString of rulers) {
       const [type, pointsString] = rulerString.split(": ");
       const points = pointsString.split(" ").map(el => el.split(",").map(n => +n));
-      const Type = type === "Ruler" ? Ruler : 
+      const Type = type === "Ruler" ? Ruler :
                    type === "Opisometer" ? Opisometer :
                    type === "RouteOpisometer" ? RouteOpisometer :
                    type === "Planimeter" ? Planimeter : null;
@@ -326,12 +326,13 @@ class RouteOpisometer extends Measurer {
   trackCell(cell, rigth) {
     this.checkCellStops();
     const cellStops = this.cellStops;
+    const foundIndex = cellStops.indexOf(cell);
     if (rigth) {
       if (last(cellStops) === cell) {
         return;
-      } else if (cellStops.length > 1 && cellStops[cellStops.length - 2] === cell) {
-        cellStops.pop();
-        this.points.pop();
+      } else if (cellStops.length > 1 && foundIndex != -1) {
+        cellStops.splice(foundIndex + 1);
+        this.points.splice(foundIndex + 1);
         this.updateCurve();
         this.updateLabel();
        } else {
@@ -340,13 +341,12 @@ class RouteOpisometer extends Measurer {
         this.updateCurve();
         this.updateLabel();
       }
-    }
-    else {
+    } else {
       if (cellStops[0] === cell) {
         return;
-      } else if (cellStops.length > 1 && cellStops[1] === cell) {
-        cellStops.shift();
-        this.points.shift();
+      } else if (cellStops.length > 1 && foundIndex != -1) {
+        cellStops.splice(0, foundIndex);
+        this.points.splice(0, foundIndex);
         this.updateCurve();
         this.updateLabel();
        } else {
@@ -361,14 +361,10 @@ class RouteOpisometer extends Measurer {
   getCellRouteCoord(c) {
     const cells = pack.cells;
     const burgs = pack.burgs;
-    if (cells.road[c]) {
-      const b = cells.burg[c];
-      const x = b ? burgs[b].x : cells.p[c][0];
-      const y = b ? burgs[b].y : cells.p[c][1];
-      return [x, y];
-    } else {
-      return null;
-    }
+    const b = cells.burg[c];
+    const x = b ? burgs[b].x : cells.p[c][0];
+    const y = b ? burgs[b].y : cells.p[c][1];
+    return [x, y];
   }
 
   draw() {
@@ -377,7 +373,7 @@ class RouteOpisometer extends Measurer {
     const dash = this.getDash();
     const context = this;
 
-    const el = this.el = ruler.append("g").attr("class", "opisometer")/*.call(d3.drag().on("start", this.drag))*/.attr("font-size", 10 * size);
+    const el = this.el = ruler.append("g").attr("class", "opisometer").attr("font-size", 10 * size);
     el.append("path").attr("class", "white").attr("stroke-width", size);
     el.append("path").attr("class", "gray").attr("stroke-width", size).attr("stroke-dasharray", dash);
     const rulerPoints = el.append("g").attr("class", "rulerPoints").attr("stroke-width", .5 * size).attr("font-size", 2 * size);
@@ -414,7 +410,7 @@ class RouteOpisometer extends Measurer {
       const cells = pack.cells;
 
       const c = findCell(mousePoint[0], mousePoint[1]);
-      if (!cells.road[c]) {
+      if (!cells.road[c] && !d3.event.sourceEvent.shiftKey) {
         return;
       }
 

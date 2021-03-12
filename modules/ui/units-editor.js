@@ -178,7 +178,7 @@ function editUnits() {
     heightExponentInput.value = heightExponentOutput.value = 1.8;
     localStorage.removeItem("heightExponent");
     calculateTemperatures();
-    
+
     // scale bar
     barSizeOutput.value = barSize.value = 2;
     barLabel.value = "";
@@ -250,7 +250,7 @@ function editUnits() {
       this.classList.remove("pressed");
     } else {
       if (!layerIsOn("toggleRulers")) toggleRulers();
-      tip("Draw a curve along routes to measure length", true);
+      tip("Draw a curve along routes to measure length. Hold Shift to measure away from roads.", true);
       unitsBottom.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
       this.classList.add("pressed");
       viewbox.style("cursor", "crosshair").call(d3.drag().on("start", function() {
@@ -258,7 +258,7 @@ function editUnits() {
         const burgs = pack.burgs;
         const point = d3.mouse(this);
         const c = findCell(point[0], point[1]);
-        if (cells.road[c]) {
+        if (cells.road[c] || d3.event.sourceEvent.shiftKey) {
           const b = cells.burg[c];
           const x = b ? burgs[b].x : cells.p[c][0];
           const y = b ? burgs[b].y : cells.p[c][1];
@@ -267,11 +267,7 @@ function editUnits() {
           d3.event.on("drag", function () {
             const point = d3.mouse(this);
             const c = findCell(point[0], point[1]);
-            if (cells.road[c]) {
-              /*const b = cells.burg[c];
-              const x = b ? burgs[b].x : cells.p[c][0];
-              const y = b ? burgs[b].y : cells.p[c][1];
-              routeOpisometer.addPoint([x, y]);*/
+            if (cells.road[c] || d3.event.sourceEvent.shiftKey) {
               routeOpisometer.trackCell(c, true);
             }
           });
