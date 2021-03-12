@@ -333,13 +333,9 @@ class RouteOpisometer extends Measurer {
       } else if (cellStops.length > 1 && foundIndex != -1) {
         cellStops.splice(foundIndex + 1);
         this.points.splice(foundIndex + 1);
-        this.updateCurve();
-        this.updateLabel();
-       } else {
+      } else {
         cellStops.push(cell);
         this.points.push(this.getCellRouteCoord(cell));
-        this.updateCurve();
-        this.updateLabel();
       }
     } else {
       if (cellStops[0] === cell) {
@@ -347,15 +343,13 @@ class RouteOpisometer extends Measurer {
       } else if (cellStops.length > 1 && foundIndex != -1) {
         cellStops.splice(0, foundIndex);
         this.points.splice(0, foundIndex);
-        this.updateCurve();
-        this.updateLabel();
-       } else {
+      } else {
         cellStops.unshift(cell);
         this.points.unshift(this.getCellRouteCoord(cell));
-        this.updateCurve();
-        this.updateLabel();
       }
     }
+    this.updateCurve();
+    this.updateLabel();
   }
 
   getCellRouteCoord(c) {
