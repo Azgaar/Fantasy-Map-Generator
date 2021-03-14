@@ -542,6 +542,7 @@ function generate() {
     drawScaleBar();
     HeightmapGenerator.generate();
     markFeatures();
+    getSignedDistanceField();
     openNearSeaLakes();
     OceanLayers();
     defineMapSize();
@@ -641,17 +642,17 @@ function calculateVoronoi(graph, points) {
   TIME && console.timeEnd("calculateVoronoi");
 }
 
-// Mark features (ocean, lakes, islands)
+// Mark features (ocean, lakes, islands) and calculate distance field
 function markFeatures() {
   TIME && console.time("markFeatures");
-  Math.random = aleaPRNG(seed); // restart Math.random() to get the same result on heightmap edit in Erase mode
+  Math.random = aleaPRNG(seed); // get the same result on heightmap edit in Erase mode
 
   const cells = grid.cells, heights = grid.cells.h;
   cells.f = new Uint16Array(cells.i.length); // cell feature number
-  cells.t = new Int8Array(cells.i.length); // cell type: 1 = land coast; -1 = water near coast;
+  cells.t = new Int8Array(cells.i.length); // cell type: 1 = land coast; -1 = water near coast
   grid.features = [0];
 
-  for (let i=1, queue=[0]; queue[0] !== -1; i++) {
+  for (let i = 1, queue = [0]; queue[0] !== -1; i++) {
     cells.f[queue[0]] = i; // feature number
     const land = heights[queue[0]] >= 20;
     let border = false; // true if feature touches map border
@@ -659,16 +660,15 @@ function markFeatures() {
     while (queue.length) {
       const q = queue.pop();
       if (cells.b[q]) border = true;
-      cells.c[q].forEach(function(e) {
-        const eLand = heights[e] >= 20;
-        //if (eLand) cells.t[e] = 2;
-        if (land === eLand && cells.f[e] === 0) {
-          cells.f[e] = i;
-          queue.push(e);
-        }
-        if (land && !eLand) {
+
+      cells.c[q].forEach(c => {
+        const cLand = heights[c] >= 20;
+        if (land === cLand && !cells.f[c]) {
+          cells.f[c] = i;
+          queue.push(c);
+        } else if (land && !cLand) {
           cells.t[q] = 1;
-          cells.t[e] = -1;
+          cells.t[c] = -1;
         }
       });
     }
@@ -679,6 +679,31 @@ function markFeatures() {
   }
 
   TIME && console.timeEnd("markFeatures");
+}
+
+function getSignedDistanceField() {
+  TIME && console.time("getSignedDistanceField");
+  const cells = grid.cells, pointsN = cells.i.length;
+  markup(-2, -1, -10);
+  markup(2, 1, 0);
+
+  // build signed distance field
+  function markup(start, increment, limit) {
+    for (let t = start, count = Infinity; count > 0 && t > limit; t += increment) {
+      count = 0;
+      const prevT = t - increment;
+      for (let i = 0; i < pointsN; i++) {
+        if (cells.t[i] !== prevT) continue;
+
+        for (const c of cells.c[i]) {
+          if (cells.t[c]) continue;
+          cells.t[c] = t;
+          count++;
+        }
+      }
+    }
+  }
+  TIME && console.timeEnd("getSignedDistanceField");
 }
 
 // near sea lakes usually get a lot of water inflow, most of them should brake treshold and flow out to sea (see Ancylus Lake)
@@ -915,18 +940,22 @@ function generatePrecipitation() {
 // recalculate Voronoi Graph to pack cells
 function reGraph() {
   TIME && console.time("reGraph");
-  let cells = grid.cells, points = grid.points, features = grid.features;
-  const newCells = {p:[], g:[], h:[], t:[], f:[], r:[], biome:[]}; // to store new data
+  let {cells, points, features} = grid;
+  const newCells = {p:[], g:[], h:[]}; // to store new data
   const spacing2 = grid.spacing ** 2;
+
+  console.log("Graph points:", points);
+  console.log("Graph T points:", cells.t);
 
   for (const i of cells.i) {
     const height = cells.h[i];
     const type = cells.t[i];
     if (height < 20 && type !== -1 && type !== -2) continue; // exclude all deep ocean points
     if (type === -2 && (i%4=== 0 || features[cells.f[i]].type === "lake")) continue; // exclude non-coastal lake points
-    const x = points[i][0], y = points[i][1];
+    const [x, y] = points[i];
 
-    addNewPoint(x, y); // add point to array
+    addNewPoint(i, x, y, height);
+
     // add additional points for cells along coast
     if (type === 1 || type === -1) {
       if (cells.b[i]) continue; // not for near-border cells
@@ -937,17 +966,19 @@ function reGraph() {
           if (dist2 < spacing2) return; // too close to each other
           const x1 = rn((x + points[e][0]) / 2, 1);
           const y1 = rn((y + points[e][1]) / 2, 1);
-          addNewPoint(x1, y1);
+          addNewPoint(i, x1, y1, height);
         }
       });
     }
-
-    function addNewPoint(x, y) {
-      newCells.p.push([x, y]);
-      newCells.g.push(i);
-      newCells.h.push(height);
-    }
   }
+
+  function addNewPoint(i, x, y, height) {
+    newCells.p.push([x, y]);
+    newCells.g.push(i);
+    newCells.h.push(height);
+  }
+
+  console.log("New points:", newCells.p);
 
   calculateVoronoi(pack, newCells.p);
   cells = pack.cells;
@@ -1068,9 +1099,9 @@ function drawCoastline() {
 // Re-mark features (ocean, lakes, islands)
 function reMarkFeatures() {
   TIME && console.time("reMarkFeatures");
-  const cells = pack.cells, features = pack.features = [0], temp = grid.cells.temp;
+  const cells = pack.cells, features = pack.features = [0];
   cells.f = new Uint16Array(cells.i.length); // cell feature number
-  cells.t = new Int16Array(cells.i.length); // cell type: 1 = land along coast; -1 = water along coast;
+  cells.t = new Int8Array(cells.i.length); // cell type: 1 = land along coast; -1 = water along coast;
   cells.haven = cells.i.length < 65535 ? new Uint16Array(cells.i.length) : new Uint32Array(cells.i.length);// cell haven (opposite water cell);
   cells.harbor = new Uint8Array(cells.i.length); // cell harbor (number of adjacent water cells);
 

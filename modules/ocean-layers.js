@@ -14,7 +14,6 @@
     lineGen.curve(d3.curveBasisClosed);
     cells = grid.cells, pointsN = grid.cells.i.length, vertices = grid.vertices;
     const limits = outline === "random" ? randomizeOutline() : outline.split(",").map(s => +s);
-    markupOcean(limits);
 
     const chains = [];
     const opacity = rn(0.4 / limits.length, 2);
@@ -33,15 +32,12 @@
       const relaxed = chain.filter((v, i) => !(i%relax) || vertices.c[v].some(c => c >= pointsN));
       if (relaxed.length < 4) continue;
       const points = clipPoly(relaxed.map(v => vertices.p[v]), 1);
-      //const inside = d3.polygonContains(points, grid.points[i]);
-      chains.push([t, points]); //chains.push([t, points, inside]);
+      chains.push([t, points]); 
     }
 
-    //const bbox = `M0,0h${graphWidth}v${graphHeight}h${-graphWidth}Z`;
     for (const t of limits) {
       const layer = chains.filter(c => c[0] === t);
       let path = layer.map(c => round(lineGen(c[1]))).join("");
-      //if (layer.every(c => !c[2])) path = bbox + path; // add outer ring if all segments are outside (works not for all cases)
       if (path) oceanLayers.append("path").attr("d", path).attr("fill", "#ecf2f9").style("opacity", opacity);
     }
 
@@ -62,16 +58,6 @@
       else {odd *= 2;}
     }
     return limits;
-  }
-
-  // Define grid ocean cells type based on distance form land
-  function markupOcean(limits) {
-    for (let t = -2; t >= limits[0]-1; t--) {
-      for (let i = 0; i < pointsN; i++) {
-        if (cells.t[i] !== t+1) continue;
-        cells.c[i].forEach(function(e) {if (!cells.t[e]) cells.t[e] = t;});
-      }
-    }
   }
 
   // connect vertices to chain

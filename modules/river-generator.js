@@ -15,7 +15,6 @@ const generate = function(changeHeights = true) {
   cells.conf = new Uint8Array(cells.i.length); // confluences array
   let riverNext = 1; // first river id is 1
 
-  markupLand();
   const h = alterHeights();
   removeStoredLakeData();
   resolveDepressions(h);
@@ -26,16 +25,6 @@ const generate = function(changeHeights = true) {
   if (changeHeights) cells.h = Uint8Array.from(h); // apply changed heights as basic one
 
   TIME && console.timeEnd('generateRivers');
-
-  // build distance field in cells from water (cells.t)
-  function markupLand() {
-    const q = t => cells.i.filter(i => cells.t[i] === t);
-    for (let t = 2, queue = q(t); queue.length; t++, queue = q(t)) {
-      queue.forEach(i => cells.c[i].forEach(c => {
-        if (!cells.t[c]) cells.t[c] = t+1;
-      }));
-    }
-  }
 
   // height with added t value to make map less depressed
   function alterHeights() {
