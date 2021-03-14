@@ -1188,6 +1188,10 @@ function parseLoadedData(data) {
     void function checkDataIntegrity() {
       const cells = pack.cells;
 
+      if (pack.cells.i.length !== pack.cells.state.length) {
+        ERROR && console.error("Striping issue. Map data is corrupted. The only solution is to edit the heightmap in erase mode");
+      }
+
       const invalidStates = [...new Set(cells.state)].filter(s => !pack.states[s] || pack.states[s].removed);
       invalidStates.forEach(s => {
         const invalidCells = cells.i.filter(i => cells.state[i] === s);
