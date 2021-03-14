@@ -944,9 +944,6 @@ function reGraph() {
   const newCells = {p:[], g:[], h:[]}; // to store new data
   const spacing2 = grid.spacing ** 2;
 
-  console.log("Graph points:", points);
-  console.log("Graph T points:", cells.t);
-
   for (const i of cells.i) {
     const height = cells.h[i];
     const type = cells.t[i];
@@ -977,8 +974,6 @@ function reGraph() {
     newCells.g.push(i);
     newCells.h.push(height);
   }
-
-  console.log("New points:", newCells.p);
 
   calculateVoronoi(pack, newCells.p);
   cells = pack.cells;
@@ -1059,7 +1054,6 @@ function drawCoastline() {
     const chain = []; // vertices chain to form a path
     for (let i=0, current = start; i === 0 || current !== start && i < 50000; i++) {
       const prev = chain[chain.length-1]; // previous vertex in chain
-      //d3.select("#labels").append("text").attr("x", vertices.p[current][0]).attr("y", vertices.p[current][1]).text(i).attr("font-size", "1px");
       chain.push(current); // add current vertex to sequence
       const c = vertices.c[current] // cells adjacent to vertex
       const v = vertices.v[current] // neighboring vertices
@@ -1071,7 +1065,6 @@ function drawCoastline() {
       if (v[2] !== prev && c0 !== c2) current = v[2];
       if (current === chain[chain.length-1]) {ERROR && console.error("Next vertex is not found"); break;}
     }
-    //chain.push(chain[0]); // push first vertex as the last one
     return chain;
   }
 

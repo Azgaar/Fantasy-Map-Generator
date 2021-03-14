@@ -16,7 +16,7 @@
     const limits = outline === "random" ? randomizeOutline() : outline.split(",").map(s => +s);
 
     const chains = [];
-    const opacity = rn(0.4 / limits.length, 2);
+    const opacity = rn(.4 / limits.length, 2);
     used = new Uint8Array(pointsN); // to detect already passed cells
 
     for (const i of cells.i) {
