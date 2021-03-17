@@ -24,7 +24,7 @@
   const charges = {
     // categories selection
     types: { conventional: 30, crosses: 8, animals: 2, animalHeads: 1, birds: 2, fantastic: 3, plants: 1, agriculture: 1, arms: 3, bodyparts: 1, people: 1, architecture: 1, miscellaneous: 3, inescutcheon: 3 },
-    single: { conventional: 12, crosses: 8, plants: 2, animals: 10, animalHeads: 2, birds: 4, fantastic: 7, agriculture: 1, arms: 6, bodyparts: 1, people: 1, architecture: 1, miscellaneous: 9, inescutcheon: 5 },
+    single: { conventional: 12, crosses: 8, plants: 2, animals: 10, animalHeads: 2, birds: 4, fantastic: 7, agriculture: 1, arms: 6, bodyparts: 1, people: 2, architecture: 1, miscellaneous: 10, inescutcheon: 5 },
     semy: { conventional: 12, crosses: 3, plants: 1 },
     // generic categories 
     conventional: {
@@ -39,40 +39,42 @@
       crossAvellane: 1, crossErminee: 1, crossMaltese: 3, crossCeltic: 1, crossOccitan: 1, crossSaltire: 3, crossTau: 1
     },
     animals: {
-      lionRampant: 5, lionPassant: 2, wolfRampant: 1, wolfPassant: 1, wolfStatant: 1, greyhoundCourant: 1, boarRampant: 1,
-      horseRampant: 2, horseSalient: 1, bearRampant: 2, bearPassant: 1, bullPassant: 1, goat: 1, lamb: 1, elephant: 1
+      lionRampant: 5, lionPassant: 2, lionPassantGuardant: 1, wolfRampant: 1, wolfPassant: 1, wolfStatant: 1, greyhoundCourant: 1, boarRampant: 1,
+      horseRampant: 2, horseSalient: 1, bearRampant: 2, bearPassant: 1, bullPassant: 1, goat: 1, lamb: 1, elephant: 1, camel: 1
     },
-    animalHeads: { wolfHeadErased: 1, bullHeadCaboshed: 1, deerHeadCaboshed: 1 },
+    animalHeads: { wolfHeadErased: 1, bullHeadCaboshed: 1, deerHeadCaboshed: 1, lionHeadCaboshed: 2 },
     fantastic: { dragonPassant: 2, dragonRampant: 2, wyvern: 1, wyvernWithWingsDisplayed: 1, griffinPassant: 1, griffinRampant: 1, eagleTwoHeards: 2, unicornRampant: 1, pegasus: 1, serpent: 1 },
-    birds: { eagle: 9, raven: 1, cock: 3, parrot: 1, swan: 2, swanErased: 1, heron: 1 },
-    plants: { tree: 1, cinquefoil: 1, rose: 1 },
+    birds: { eagle: 9, raven: 1, cock: 3, parrot: 1, swan: 2, swanErased: 1, heron: 1, owl: 1 },
+    plants: { tree: 1, oak: 1, cinquefoil: 1, rose: 1 },
     agriculture: { garb: 1, rake: 1 },
-    arms: { sword: 5, sabre: 1, sabresCrossed: 1, hatchet: 2, lochaberAxe: 1, mallet: 1, bowWithArrow: 2, bow: 1, arrow: 1, arrowsSheaf: 1 },
+    arms: { sword: 5, sabre: 1, sabresCrossed: 1, hatchet: 2, axe: 2, lochaberAxe: 1, mallet: 1, bowWithArrow: 2, bow: 1, arrow: 1, arrowsSheaf: 1, helmet: 2 },
     bodyparts: { hand: 4, head: 1, headWreathed: 1 },
-    people: { cavalier: 1 },
+    people: { cavalier: 3, monk: 1, angel: 2 },
     architecture: { tower: 1, castle: 1 },
     miscellaneous: {
-      crown: 3, orb: 1, chalice: 1, key: 1, buckle: 1, bugleHorn: 1, bell: 1, pot: 1, horseshoe: 3, stagsAttires: 1, cowHorns: 2, wing: 1, wingSword: 1,
-      lute: 1, harp: 1, wheel: 2, crosier: 1, log: 1},
+      crown: 3, orb: 1, chalice: 1, key: 1, buckle: 1, bugleHorn: 1, bugleHorn2: 1, bell: 2, pot: 1, bucket: 1, horseshoe: 3,
+      attire: 1, stagsAttires: 1, ramsHorn: 1, cowHorns: 2, wing: 1, wingSword: 1, lute: 1, harp: 1, wheel: 2, crosier: 1, fasces: 1, log: 1
+    },
     // selection based on culture type:
     Naval: { anchor: 3, boat: 1, lymphad: 2, armillarySphere: 1, escallop: 1, dolphin: 1 },
-    Highland: { tower: 1, raven: 1, wolfHeadErased: 1, wolfPassant: 1, goat: 1,},
+    Highland: { tower: 1, raven: 1, wolfHeadErased: 1, wolfPassant: 1, goat: 1, axe: 1 },
     River: { tower: 1, garb: 1, rake: 1, boat: 1, pike: 2, bullHeadCaboshed: 1 },
-    Lake: { cancer: 2, escallop: 1, pike: 2, heron: 1, boat: 1 },
-    Nomadic: { pot: 1, buckle: 1, wheel: 2, sabre: 2, sabresCrossed: 1, bow: 2, arrow: 1, horseRampant: 1, horseSalient: 1, crescent: 1 },
-    Hunting: { bugleHorn: 3, stagsAttires: 2, hatchet: 1, bowWithArrow: 2, arrowsSheaf: 1, deerHeadCaboshed: 1, wolfStatant: 1 },
+    Lake: { cancer: 2, escallop: 1, pike: 2, heron: 1, boat: 1, boat2: 2 },
+    Nomadic: { pot: 1, buckle: 1, wheel: 2, sabre: 2, sabresCrossed: 1, bow: 2, arrow: 1, horseRampant: 1, horseSalient: 1, crescent: 1, camel: 3 },
+    Hunting: { bugleHorn: 2, bugleHorn2: 1, stagsAttires: 2, attire: 2, hatchet: 1, bowWithArrow: 1, arrowsSheaf: 1, deerHeadCaboshed: 1, wolfStatant: 1, oak: 1 },
     // selection based on type
     City: { key: 3, bell: 2, lute: 1, tower: 1, castle: 1, mallet: 1 },
     Capital: { crown: 4, orb: 1, lute: 1, castle: 3, tower: 1 },
-    Сathedra: { chalice: 1, orb: 1, crosier: 3, lamb: 1 },
+    Сathedra: { chalice: 1, orb: 1, crosier: 2, lamb: 1, monk: 2, angel: 3 },
     // specific cases
     natural: { fountain: "azure", garb: "or", raven: "sable" }, // charges to mainly use predefined colours
-    sinister: ["crossGamma", "lionRampant", "lionPassant", "wolfRampant", "wolfPassant", "wolfStatant", "wolfHeadErased", "greyhoundСourant", "boarRampant", "horseRampant", "horseSalient", "bullPassant",
-      "bearRampant", "bearPassant", "goat", "lamb", "elephant",
-      "eagle", "raven", "cock", "parrot", "swan", "swanErased", "heron", "pike", "dragonPassant", "dragonRampant", "wyvern", "wyvernWithWingsDisplayed", "griffinPassant", "griffinRampant", "unicornRampant",
-      "pegasus", "serpent", "hatchet", "lochaberAxe", "hand", "wing", "wingSword", "lute", "harp", "bow", "head", "headWreathed", "knight", "lymphad", "log",
-      "crosier", "dolphin", "sabre"], // charges that can be sinister
-    reversed: ["goutte", "mullet", "mullet7", "crescent", "crossTau", "cancer", "sword", "sabresCrossed", "hand", "horseshoe", "bowWithArrow", "arrow", "arrowsSheaf", "rake"] // charges that can be reversed
+    sinister: [
+      "crossGamma", "lionRampant", "lionPassant", "wolfRampant", "wolfPassant", "wolfStatant", "wolfHeadErased", "greyhoundСourant", "boarRampant",
+      "horseRampant", "horseSalient", "bullPassant", "bearRampant", "bearPassant", "goat", "lamb", "elephant", "eagle", "raven", "cock", "parrot",
+      "swan", "swanErased", "heron", "pike", "dragonPassant", "dragonRampant", "wyvern", "wyvernWithWingsDisplayed", "griffinPassant", "griffinRampant",
+      "unicornRampant", "pegasus", "serpent", "hatchet", "lochaberAxe", "hand", "wing", "wingSword", "lute", "harp", "bow", "head", "headWreathed",
+      "knight", "lymphad", "log", "crosier", "dolphin", "sabre", "monk", "owl", "axe", "camel", "fasces", "lionPassantGuardant", "helmet"], // charges that can be sinister
+    reversed: ["goutte", "mullet", "mullet7", "crescent", "crossTau", "cancer", "sword", "sabresCrossed", "hand", "horseshoe", "bowWithArrow", "arrow", "arrowsSheaf", "rake"], // charges that can be reversed
   }
 
   const positions = {
@@ -162,7 +164,9 @@
     tree: {e: 1},
     lymphad: {e: 1},
     head: {e: 1},
-    headWreathed: {e: 1}
+    headWreathed: {e: 1},
+    cavalier: {e: 1},
+    angel: {e: 1}
   };
 
   const lines = {

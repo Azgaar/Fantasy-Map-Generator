@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200">
-<!--Author: Azgaar. License: Public Domain-->
+  <metadata author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0"/>
   <g id="crossSaltire" stroke-width=".5">
     <path d="M71.83 65.17l-6.66 6.66L93.34 100l-28.17 28.17 6.66 6.66L100 106.66l28.17 28.17 6.66-6.66L106.66 100l28.17-28.17-6.66-6.66L100 93.34z"/>
   </g>

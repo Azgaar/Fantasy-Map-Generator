@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200">
-<!--source: http://wappenwiki.org/images/8/82/Alfonso_VIII_of_Castile.svg, CC BY-NC-SA 3.0-->
+  <metadata source="http://wappenwiki.org/images/8/82/Alfonso_VIII_of_Castile.svg" license="https://creativecommons.org/licenses/by-nc-sa/3.0"/>
   <g id="castle" stroke-width=".4">
     <path d="M109.3 63.4H90.8l-.2 1.9 1.4 1.9h16l1.6-1.9zM92 67.2h16V102H92zM90.8 60h3.8v3.4h-3.8zm14.7 0h3.8v3.4h-3.8zM98 60h4.2v3.4H98zm-5.8 13h15.7m-15.7 5.6h15.7m-15.7 5.6h15.7m-15.7 5.7h15.7M92.2 67.2h15.7M92 95.6h16m-8 5.7v-5.7m0-5.7v-5.7m0-5.7v-5.7m3.9 22.9V90m-7.7 5.7V90m7.7-5.8v-5.7m-7.7 5.7v-5.7m7.7-5.7v-5.6m-7.7 5.6v-5.6m13.4-1.9h-19"/>
     <path fill="#0D6793" d="M98 72.7c0-1.2 1-2.4 2-2.4s2 1.2 2 2.4V87h-4V72.7z"/>

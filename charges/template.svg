@@ -2,6 +2,7 @@
 <!--Use this file as a template, save as svg and upload back to Armoria. Visit https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial/Getting_Started for svg guidance-->
 <!--Next line must stay as is for consistency-->
 <svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200">
+<metadata author="Name" source="URL" license="licenseDescURL"/>
 <!--Here is a line where you should add info about source and license. Actual charge markup goes below.-->
 <!--Fit the charge into this 80px rectangle in the middle and then remove it-->
   <rect width="80" height="80" x="60" y="60" fill="red" fill-opacity=".05" stroke="#333" stroke-opacity=".5" stroke-width=".5"/>

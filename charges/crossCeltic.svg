@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200">
-<!--Author: Azgaar. License: Public Domain-->
+  <metadata author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0"/>
   <g id="crossCeltic" stroke-width=".5">
     <path d="M96.7 60v13A27.18 27.18 0 0073 96.7H60v6.6h13A27.18 27.18 0 0096.7 127v13h6.6v-13a27.18 27.18 0 0023.6-23.7H140v-6.6h-13.1A27.18 27.18 0 00103.3 73V60h-6.6zm0 19.6v17.1h-17c1.4-8.9 8.3-15.7 17-17.1zm6.6.1c8.8 1.4 15.6 8.2 17 17h-17v-17zm-23.6 23.6h17v17.1c-8.7-1.4-15.6-8.2-17-17.1zm23.6 0h17c-1.4 8.8-8.2 15.6-17 17v-17z"/>
   </g>

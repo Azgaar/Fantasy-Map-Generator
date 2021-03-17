@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200">
-<!--Author: Azgaar. License: Public Domain-->
+  <metadata author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0"/>
   <g id="crossPattee" stroke-width=".5">
     <path d="M77 60a52 52 0 0119 36 52 52 0 01-36-19v46a52 52 0 0136-19 52 52 0 01-19 36h46a52 52 0 01-19-36 52 52 0 0136 19V77a52 52 0 01-36 19 52 52 0 0119-36H77z"/>
   </g>

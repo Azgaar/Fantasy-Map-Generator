@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200">
-<!--source: wappenwiki.org, CC BY-NC-SA 3.0-->
+  <metadata source="http://wappenwiki.org" license="https://creativecommons.org/licenses/by-nc-sa/3.0"/>
   <g id="key" stroke-width="3" transform="matrix(.1412 0 0 .1422 148.22 37.9)">
     <path d="M-395.2 310.5h17.6v29h10.9v-42.3h46.4v-73.1h-46.4v-41.6h-10.9v27.8h-17.6v-27.8h-54.4v24h30.8v17.6h-30.8v27.8h45.9v-15.8h17.6v15.8h17.2v17.6h-17.2v15.7h-17.6v-15.7h-45.9v27.7h30.8v17.6h-30.8v24.7h54.4z"/>
     <path d="M-342.9 585.6v-422c0-5.2 7.5-9.5 16.7-9.5s16.7 4.3 16.7 9.5v422h-33.4z"/>

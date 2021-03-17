@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200">
-<!--source: wappenwiki.org, CC BY-NC-SA 3.0-->
+  <metadata source="http://wappenwiki.org" license="https://creativecommons.org/licenses/by-nc-sa/3.0"/>
   <g id="lionPassant" stroke-width=".42">
     <path d="M69.72 83.42c.58-.86.4-2.8-1.03-3.3-.1-.04-.32-.11-.23.2.36 1.33-.44 1.5-.44 1.5s-.33.32-.5.39c.9 1.93 1.86 1.33 2.2 1.21z"/>
     <path d="M65 82.5c-.5-1.06-2.23-1.82-3.43-.76-.09.07-.25.23.04.31 1.36.35 1.1 1.12 1.1 1.12s.13.46.1.65c2.51.02 2.1-.96 2.19-1.32z"/>

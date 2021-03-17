@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200">
-<!--source: wappenwiki.org, CC BY-NC-SA 3.0-->
+  <metadata source="http://wappenwiki.org" license="https://creativecommons.org/licenses/by-nc-sa/3.0"/>
   <g id="cock" stroke-width=".4">
     <path d="M116 112.6c1.3.8 2.1 2.2 2.4 3.7.2 1.5-.1 3-.5 4.5 1.2-.1 2.3-1 3-2.2.5-1.1.6-2.5.4-3.7-.2-1.3-.7-2.5-1.2-3.7"/>
     <path d="M121.2 110a9 9 0 013.2 3.1c.8 1.3 1.1 3 .7 4.4-.3 1-1 2-2 2.7.3-1.6.1-3.4-.8-4.8-.4-.7-1-1.1-1.4-1.8-.5-.7-.7-1.7-1.2-2.4"/>
