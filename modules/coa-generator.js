@@ -23,10 +23,10 @@
 
   const charges = {
     // categories selection
-    types: { conventional: 30, crosses: 8, animals: 2, animalHeads: 1, birds: 2, fantastic: 3, plants: 1, agriculture: 1, arms: 3, bodyparts: 1, people: 1, architecture: 1, miscellaneous: 3, inescutcheon: 3 },
+    types: { conventional: 30, crosses: 10, animals: 2, animalHeads: 1, birds: 2, fantastic: 3, plants: 1, agriculture: 1, arms: 3, bodyparts: 1, people: 1, architecture: 1, miscellaneous: 3, inescutcheon: 3 },
     single: { conventional: 12, crosses: 8, plants: 2, animals: 10, animalHeads: 2, birds: 4, fantastic: 7, agriculture: 1, arms: 6, bodyparts: 1, people: 2, architecture: 1, miscellaneous: 10, inescutcheon: 5 },
     semy: { conventional: 12, crosses: 3, plants: 1 },
-    // generic categories 
+    // generic categories
     conventional: {
       lozenge: 2, fusil: 4, mascle: 4, rustre: 2, lozengeFaceted: 3, lozengePloye: 1, roundel: 4, roundel2: 3, annulet: 4,
       mullet: 5, mulletPierced: 1, mulletFaceted: 1, mullet4: 3, mullet6: 4, mullet6Pierced: 1, mullet6Faceted: 1, mullet7: 1, mullet8: 1, mullet10: 1,
@@ -34,9 +34,11 @@
       fleurDeLis: 6, sun: 3, sunInSplendour: 1, crescent: 5, fountain: 1
     },
     crosses: {
-      crossHummetty: 15, crossVoided: 1, crossPattee: 3, crossPotent: 2, crossClechy: 3, crosslet: 1, crossBottony: 1, crossFleury: 3,
-      crossPatonce: 1, crossPommy: 1, crossGamma: 1, crossArrowed: 1, crossFitchy: 1, crossCercelee: 1, crossMoline: 2, crossFourchy: 1,
-      crossAvellane: 1, crossErminee: 1, crossMaltese: 3, crossCeltic: 1, crossOccitan: 1, crossSaltire: 3, crossTau: 1
+      crossHummetty: 15, crossVoided: 1, crossPattee: 2, crossPatteeAlisee: 1, crossFormee: 1, crossFormee2: 2, crossPotent: 2, crossJerusalem:1,
+      crosslet: 1, crossClechy: 3, crossBottony: 1, crossFleury: 3, crossPatonce: 1, crossPommy: 1, crossGamma: 1, crossArrowed: 1, crossFitchy: 1,
+      crossCercelee: 1, crossMoline: 2, crossFourchy: 1, crossAvellane: 1, crossErminee: 1, crossBiparted: 1, crossMaltese: 3, crossTemplar: 2,
+      crossCeltic: 1, crossCeltic2: 1, crossTriquetra: 1, crossCarolingian: 1, crossOccitan: 1, crossSaltire: 3, crossBurgundy: 1,
+      crossLatin: 3, crossPatriarchal: 1, crossOrthodox: 1, crossCalvary: 1, crossDouble: 1, crossTau: 1, crossSantiago: 1, crossAnkh: 1
     },
     animals: {
       lionRampant: 5, lionPassant: 2, lionPassantGuardant: 1, wolfRampant: 1, wolfPassant: 1, wolfStatant: 1, greyhoundCourant: 1, boarRampant: 1,
@@ -65,16 +67,19 @@
     // selection based on type
     City: { key: 3, bell: 2, lute: 1, tower: 1, castle: 1, mallet: 1 },
     Capital: { crown: 4, orb: 1, lute: 1, castle: 3, tower: 1 },
-    Сathedra: { chalice: 1, orb: 1, crosier: 2, lamb: 1, monk: 2, angel: 3 },
+    Сathedra: { chalice: 1, orb: 1, crosier: 2, lamb: 1, monk: 2, angel: 3, crossLatin: 2, crossPatriarchal: 1, crossOrthodox: 1, crossCalvary: 1 },
     // specific cases
     natural: { fountain: "azure", garb: "or", raven: "sable" }, // charges to mainly use predefined colours
-    sinister: [
+    sinister: [ // charges that can be sinister
       "crossGamma", "lionRampant", "lionPassant", "wolfRampant", "wolfPassant", "wolfStatant", "wolfHeadErased", "greyhoundСourant", "boarRampant",
       "horseRampant", "horseSalient", "bullPassant", "bearRampant", "bearPassant", "goat", "lamb", "elephant", "eagle", "raven", "cock", "parrot",
       "swan", "swanErased", "heron", "pike", "dragonPassant", "dragonRampant", "wyvern", "wyvernWithWingsDisplayed", "griffinPassant", "griffinRampant",
       "unicornRampant", "pegasus", "serpent", "hatchet", "lochaberAxe", "hand", "wing", "wingSword", "lute", "harp", "bow", "head", "headWreathed",
-      "knight", "lymphad", "log", "crosier", "dolphin", "sabre", "monk", "owl", "axe", "camel", "fasces", "lionPassantGuardant", "helmet"], // charges that can be sinister
-    reversed: ["goutte", "mullet", "mullet7", "crescent", "crossTau", "cancer", "sword", "sabresCrossed", "hand", "horseshoe", "bowWithArrow", "arrow", "arrowsSheaf", "rake"], // charges that can be reversed
+      "knight", "lymphad", "log", "crosier", "dolphin", "sabre", "monk", "owl", "axe", "camel", "fasces", "lionPassantGuardant", "helmet"],
+    reversed: [ // charges that can be reversed
+      "goutte", "mullet", "mullet7", "crescent", "crossTau", "cancer", "sword", "sabresCrossed", "hand",
+      "horseshoe", "bowWithArrow", "arrow", "arrowsSheaf", "rake", "crossTriquetra", "crossLatin", "crossTau"
+    ]
   }
 
   const positions = {
