@@ -707,6 +707,7 @@ function toggle3dOptions() {
 
   document.getElementById("options3dUpdate").addEventListener("click", ThreeD.update);
   document.getElementById("options3dSave").addEventListener("click", ThreeD.saveScreenshot);
+  document.getElementById("options3dOBJSave").addEventListener("click", ThreeD.saveOBJ);
 
   document.getElementById("options3dScaleRange").addEventListener("input", changeHeightScale);
   document.getElementById("options3dScaleNumber").addEventListener("change", changeHeightScale);

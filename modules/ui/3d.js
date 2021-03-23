@@ -10,7 +10,8 @@ const options = {scale: 50, lightness: .7, shadow: .5, sun: {x: 100, y: 600, z: 
 
 // set variables
 let Renderer, scene, camera, controls, animationFrame, material, texture,
-  geometry, mesh, ambientLight, spotLight, waterPlane, waterMaterial, waterMesh;
+  geometry, mesh, ambientLight, spotLight, waterPlane, waterMaterial, waterMesh,
+  objexporter;
 
 // initiate 3d scene
 const create = async function(canvas, type = "viewMesh") {
@@ -121,8 +122,20 @@ const saveScreenshot = async function() {
   const link = document.createElement("a");
   link.download = getFileName() + ".jpeg";
   link.href = URL;
+  document.body.appendChild(link);
   link.click();
   tip(`Screenshot is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
+  window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
+}
+
+const saveOBJ = async function() {
+  const URL = 'data:text/plain;charset=UTF-8,' + encodeURIComponent(await getOBJ());
+  const link = document.createElement("a");
+  link.download = getFileName() + ".obj";
+  link.href = URL;
+  document.body.appendChild(link);
+  link.click();
+  tip(`OBJ is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
   window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
 }
 
@@ -289,6 +302,13 @@ async function updateGlobeTexure(addMesh) {
   img2.src = await getMapURL("mesh", "globe");;
 }
 
+async function getOBJ() {
+  objexporter = await OBJExporter();
+
+  const data = await objexporter.parse(mesh);
+  return data;
+}
+
 function addGlobe3dMesh() {
   geometry = new THREE.SphereBufferGeometry(1, 64, 64);
   mesh = new THREE.Mesh(geometry, material);
@@ -332,6 +352,18 @@ function OrbitControls(camera, domElement) {
   });
 }
 
-return {create, redraw, update, stop, options, setScale, setLightness, setSun, setRotation, toggleSky, setResolution, setColors, saveScreenshot};
+function OBJExporter() {
+  if (THREE.OBJExporter) return new THREE.OBJExporter();
+
+  return new Promise(resolve => {
+    const script = document.createElement('script');
+    script.src = "libs/objexporter.min.js"
+    document.head.append(script);
+    script.onload = () => resolve(new THREE.OBJExporter());
+    script.onerror = () => resolve(false);
+  });
+}
+
+return {create, redraw, update, stop, options, setScale, setLightness, setSun, setRotation, toggleSky, setResolution, setColors, saveScreenshot, saveOBJ};
 
 })));
