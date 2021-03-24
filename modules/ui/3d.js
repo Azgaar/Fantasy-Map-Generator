@@ -128,13 +128,7 @@ const saveScreenshot = async function() {
 }
 
 const saveOBJ = async function() {
-  const URL = 'data:text/plain;charset=UTF-8,' + encodeURIComponent(await getOBJ());
-  const link = document.createElement("a");
-  link.download = getFileName() + ".obj";
-  link.href = URL;
-  link.click();
-  tip(`OBJ is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
-  window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
+  downloadFile(await getOBJ(), getFileName() + ".obj", "text/plain;charset=UTF-8");
 }
 
 // start 3d view and heightmap edit preview
