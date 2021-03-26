@@ -145,7 +145,7 @@
     const cells = pack.cells, vertices = pack.vertices, features = pack.features, temp = grid.cells.temp;
 
     for (const b of pack.burgs) {
-      if (!b.i) continue;
+      if (!b.i || b.lock) continue;
       const i = b.cell;
 
       // asign port status to some coastline burgs with temp > 0 °C

@@ -103,7 +103,7 @@ function regenerateRivers() {
 function recalculatePopulation() {
   rankCells();
   pack.burgs.forEach(b => {
-    if (!b.i || b.removed) return;
+    if (!b.i || b.removed || b.lock) return;
     const i = b.cell;
 
     b.population = rn(Math.max((pack.cells.s[i] + pack.cells.road[i] / 2) / 8 + b.i / 1000 + i % 100 / 1000, .1), 3);
@@ -224,7 +224,7 @@ function regenerateProvinces() {
 }
 
 function regenerateBurgs() {
-  const cells = pack.cells, states = pack.states;
+  const cells = pack.cells, states = pack.states, Lockedburgs = pack.burgs.filter(b =>b.lock);
   rankCells();
   cells.burg = new Uint16Array(cells.i.length);
   const burgs = pack.burgs = [0]; // clear burgs array
@@ -236,6 +236,19 @@ function regenerateBurgs() {
   const sorted = cells.i.filter(i => score[i] > 0 && cells.culture[i]).sort((a, b) => score[b] - score[a]); // filtered and sorted array of indexes
   const burgsCount = manorsInput.value == 1000 ? rn(sorted.length / 5 / (grid.points.length / 10000) ** .8) + states.length : +manorsInput.value + states.length;
   const spacing = (graphWidth + graphHeight) / 150 / (burgsCount ** .7 / 66); // base min distance between towns
+
+  //clear locked list since ids will change
+  //burglock.selectAll("text").remove();
+  for (let j=0; j < Lockedburgs.length; j++) {
+    const id = burgs.length;
+    const oldBurg = Lockedburgs[j];
+    oldBurg.i = id;
+    burgs.push(oldBurg);
+    burgsTree.add([oldBurg.x, oldBurg.y]);
+    cells.burg[oldBurg.cell] = id;
+    if (oldBurg.capital) {states[oldBurg.state].capital = id; states[oldBurg.state].center = oldBurg.cell;}
+    //burglock.append("text").attr("data-id", id);
+  }
 
   for (let i=0; i < sorted.length && burgs.length < burgsCount; i++) {
     const id = burgs.length;

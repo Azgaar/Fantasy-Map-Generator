@@ -48,6 +48,7 @@ function editBurg(id) {
   document.getElementById("burgEditEmblem").addEventListener("click", openEmblemEdit);
   document.getElementById("burgRelocate").addEventListener("click", toggleRelocateBurg);
   document.getElementById("burglLegend").addEventListener("click", editBurgLegend);
+  document.getElementById("burgLock").addEventListener("click", toggleBurgLockButton);
   document.getElementById("burgRemove").addEventListener("click", removeSelectedBurg);
 
   function updateBurgValues() {
@@ -89,6 +90,9 @@ function editBurg(id) {
     else document.getElementById("burgTemple").classList.add("inactive");
     if (b.shanty) document.getElementById("burgShanty").classList.remove("inactive");
     else document.getElementById("burgShanty").classList.add("inactive");
+
+    //toggle lock
+    updateBurgLockIcon();
 
     // select group
     const group = elSelected.node().parentNode.id;
@@ -297,6 +301,20 @@ function editBurg(id) {
 
     if (b.port) document.getElementById("burgEditAnchorStyle").style.display = "inline-block";
     else document.getElementById("burgEditAnchorStyle").style.display = "none";
+  }
+
+  function toggleBurgLockButton() {
+    const id = +elSelected.attr("data-id");
+    toggleBurgLock(id);
+    updateBurgLockIcon();
+  }
+
+  function updateBurgLockIcon() {
+    const id = +elSelected.attr("data-id");
+    const b = pack.burgs[id];
+    if (b.lock) {document.getElementById("burgLock").classList.remove("icon-lock-open"); document.getElementById("burgLock").classList.add("icon-lock");}
+    else {document.getElementById("burgLock").classList.remove("icon-lock"); document.getElementById("burgLock").classList.add("icon-lock-open");}
+
   }
 
   function showStyleSection() {

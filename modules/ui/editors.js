@@ -221,6 +221,11 @@ function togglePort(burg) {
     .attr("width", size).attr("height", size);
 }
 
+function toggleBurgLock(burg) {
+  const b = pack.burgs[burg];
+  b.lock = b.lock ? 0 : 1;
+}
+
 // draw legend box
 function drawLegend(name, data) {
   legend.selectAll("*").remove(); // fully redraw every time
