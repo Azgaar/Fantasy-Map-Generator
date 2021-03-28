@@ -49,6 +49,7 @@ function editBurg(id) {
   document.getElementById("burgRelocate").addEventListener("click", toggleRelocateBurg);
   document.getElementById("burglLegend").addEventListener("click", editBurgLegend);
   document.getElementById("burgLock").addEventListener("click", toggleBurgLockButton);
+  document.getElementById("burgLock").addEventListener("mouseover", showBurgELockTip);
   document.getElementById("burgRemove").addEventListener("click", removeSelectedBurg);
 
   function updateBurgValues() {
@@ -224,12 +225,12 @@ function editBurg(id) {
     for (let i=0; i < group.children.length; i++) {
       burgsInGroup.push(+group.children[i].dataset.id);
     }
-    const burgsToRemove = burgsInGroup.filter(b => !pack.burgs[b].capital);
+    const burgsToRemove = burgsInGroup.filter(b => !(pack.burgs[b].capital || pack.burgs[b].lock));
     const capital = burgsToRemove.length < burgsInGroup.length;
 
     alertMessage.innerHTML = `Are you sure you want to remove
-      ${basic || capital ? "all elements in the group" : "the entire burg group"}?
-      <br>Please note that capital burgs will not be deleted.
+      ${basic || capital ? "all unlocked elements in the group" : "the entire burg group"}?
+      <br>Please note that capital or locked burgs will not be deleted.
       <br><br>Burgs to be removed: ${burgsToRemove.length}`;
     $("#alert").dialog({resizable: false, title: "Remove route group",
       buttons: {
@@ -315,6 +316,11 @@ function editBurg(id) {
     if (b.lock) {document.getElementById("burgLock").classList.remove("icon-lock-open"); document.getElementById("burgLock").classList.add("icon-lock");}
     else {document.getElementById("burgLock").classList.remove("icon-lock"); document.getElementById("burgLock").classList.add("icon-lock-open");}
 
+  }
+
+  function showBurgELockTip() {
+    const id = +elSelected.attr("data-id");
+    showBurgLockTip(id);
   }
 
   function showStyleSection() {
