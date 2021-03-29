@@ -86,6 +86,7 @@ function overviewBurgs() {
           <span data-tip="Click to toggle port status" class="icon-anchor pointer${b.port ? '' : ' inactive'}" style="font-size:.9em"></span>
         </div>
         <span data-tip="Edit burg" class="icon-pencil"></span>
+        <span class="locks pointer  ${b.lock ? 'icon-lock' : 'icon-lock-open inactive'}"></span>
         <span data-tip="Remove burg" class="icon-trash-empty"></span>
       </div>`;
     }
@@ -104,6 +105,8 @@ function overviewBurgs() {
     body.querySelectorAll("div > input.burgPopulation").forEach(el => el.addEventListener("change", changeBurgPopulation));
     body.querySelectorAll("div > span.icon-star-empty").forEach(el => el.addEventListener("click", toggleCapitalStatus));
     body.querySelectorAll("div > span.icon-anchor").forEach(el => el.addEventListener("click", togglePortStatus));
+    body.querySelectorAll("div > span.locks").forEach(el => el.addEventListener("click", toggleBurgLockStatus));
+    body.querySelectorAll("div > span.locks").forEach(el => el.addEventListener("mouseover", showBurgOLockTip));
     body.querySelectorAll("div > span.icon-pencil").forEach(el => el.addEventListener("click", openBurgEditor));
     body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.addEventListener("click", triggerBurgRemove));
 
@@ -178,6 +181,18 @@ function overviewBurgs() {
     else this.classList.add("inactive");
   }
 
+  function toggleBurgLockStatus() {
+    const burg = +this.parentNode.dataset.id;
+    toggleBurgLock(burg);
+    if (this.classList.contains("icon-lock")) {this.classList.remove("icon-lock"); this.classList.add("icon-lock-open"); this.classList.add("inactive");}
+    else {this.classList.remove("icon-lock-open"); this.classList.add("icon-lock"); this.classList.remove("inactive");}
+  }
+
+  function showBurgOLockTip() {
+    const burg = +this.parentNode.dataset.id;
+    showBurgLockTip(burg);
+  }
+
   function openBurgEditor() {
     const burg = +this.parentNode.dataset.id;
     editBurg(burg);
@@ -203,11 +218,14 @@ function overviewBurgs() {
   function regenerateNames() {
     body.querySelectorAll(":scope > div").forEach(function(el) {
       const burg = +el.dataset.id;
+      //if (pack.burgs[burg].lock) return;
       const culture = pack.burgs[burg].culture;
       const name = Names.getCulture(culture);
-      el.querySelector(".burgName").value = name;
-      pack.burgs[burg].name = el.dataset.name = name;
-      burgLabels.select("[data-id='" + burg + "']").text(name);
+      if (!pack.burgs[burg].lock) {
+        el.querySelector(".burgName").value = name;
+        pack.burgs[burg].name = el.dataset.name = name;
+        burgLabels.select("[data-id='" + burg + "']").text(name);
+      }
     });
   }
 
@@ -455,7 +473,7 @@ function overviewBurgs() {
   }
 
   function triggerAllBurgsRemove() {
-    alertMessage.innerHTML = `Are you sure you want to remove all burgs except of capitals?
+    alertMessage.innerHTML = `Are you sure you want to remove all unlocked burgs except for capitals?
       <br><i>To remove a capital you have to remove a state first</i>`;
     $("#alert").dialog({resizable: false, title: "Remove all burgs",
       buttons: {
@@ -469,7 +487,7 @@ function overviewBurgs() {
   }
 
   function removeAllBurgs() {
-    pack.burgs.filter(b => b.i && !b.capital).forEach(b => removeBurg(b.i));
+    pack.burgs.filter(b => b.i && !(b.capital || b.lock)).forEach(b => removeBurg(b.i));
     burgsOverviewAddLines();
   }
 }

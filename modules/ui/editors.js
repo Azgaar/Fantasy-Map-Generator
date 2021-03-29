@@ -221,6 +221,20 @@ function togglePort(burg) {
     .attr("width", size).attr("height", size);
 }
 
+function toggleBurgLock(burg) {
+  const b = pack.burgs[burg];
+  b.lock = b.lock ? 0 : 1;
+}
+
+function showBurgLockTip(burg) {
+  const b = pack.burgs[burg];
+  if (b.lock) {
+    tip("Click to Unlock burg and allow it to be change by regeneration tools");
+  } else {
+    tip("Click to Lock burg and prevent changes by regeneration tools");
+  }
+}
+
 // draw legend box
 function drawLegend(name, data) {
   legend.selectAll("*").remove(); // fully redraw every time
