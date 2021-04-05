@@ -335,7 +335,7 @@ function editCultures() {
   function cultureRegenerateBurgs() {
     if (customization === 4) return;
     const culture = +this.parentNode.dataset.id;
-    const cBurgs = pack.burgs.filter(b => b.culture === culture);
+    const cBurgs = pack.burgs.filter(b => b.culture === culture && !b.lock);
     cBurgs.forEach(b => {
       b.name = Names.getCulture(culture);
       labels.select("[data-id='" + b.i +"']").text(b.name);
