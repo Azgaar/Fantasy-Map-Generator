@@ -62,7 +62,7 @@ function selectStyleElement() {
   }
 
   // stroke color and width
-  if (sel === "armies" ||sel === "routes" || sel === "lakes" || sel === "borders" || sel === "cults" || sel === "cells" || sel === "gridOverlay" || sel === "coastline" || sel === "prec" || sel === "ice" || sel === "icons" || sel === "coordinates"|| sel === "zones") {
+  if (sel === "armies" ||sel === "routes" || sel === "lakes" || sel === "borders" || sel === "cults" || sel === "relig" || sel === "cells" || sel === "gridOverlay" || sel === "coastline" || sel === "prec" || sel === "ice" || sel === "icons" || sel === "coordinates"|| sel === "zones") {
     styleStroke.style.display = "block";
     styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke");
     styleStrokeWidth.style.display = "block";
@@ -717,7 +717,7 @@ function applyDefaultStyle() {
   compass.attr("opacity", .8).attr("transform", null).attr("filter", null).attr("mask", "url(#water)").attr("shape-rendering", "optimizespeed");
   if (!d3.select("#initial").size()) d3.select("#rose").attr("transform", "translate(80 80) scale(.25)");
 
-  relig.attr("opacity", .7).attr("stroke", null).attr("stroke-width", null).attr("filter", null);
+  relig.attr("opacity", .7).attr("stroke", "#777777").attr("stroke-width", 0).attr("filter", null);
   cults.attr("opacity", .6).attr("stroke", "#777777").attr("stroke-width", .5).attr("filter", null);
   landmass.attr("opacity", 1).attr("fill", "#eef6fb").attr("filter", null);
   markers.attr("opacity", null).attr("rescale", 1).attr("filter", "url(#dropShadow01)");
