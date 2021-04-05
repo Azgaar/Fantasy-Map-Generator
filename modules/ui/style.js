@@ -37,7 +37,7 @@ function selectStyleElement() {
 
   // active group element
   const group = styleGroupSelect.value;
-  if (sel == "routes" || sel == "labels" || sel === "coastline" || sel == "lakes" || sel == "anchors" || sel == "burgIcons" || sel == "borders") {
+  if (["routes", "labels", "coastline", "lakes", "anchors", "burgIcons", "borders"].includes(sel)) {
     el = d3.select("#"+sel).select("g#"+group).size()
       ? d3.select("#"+sel).select("g#"+group)
       : d3.select("#"+sel).select("g");
@@ -56,13 +56,13 @@ function selectStyleElement() {
   }
 
   // fill
-  if (sel === "rivers" || sel === "lakes" || sel === "landmass" || sel === "prec" || sel === "ice" || sel === "fogging") {
+  if (["rivers", "lakes", "landmass", "prec", "ice", "fogging"].includes(sel)) {
     styleFill.style.display = "block";
     styleFillInput.value = styleFillOutput.value = el.attr("fill");
   }
 
   // stroke color and width
-  if (sel === "armies" ||sel === "routes" || sel === "lakes" || sel === "borders" || sel === "cults" || sel === "relig" || sel === "cells" || sel === "gridOverlay" || sel === "coastline" || sel === "prec" || sel === "ice" || sel === "icons" || sel === "coordinates"|| sel === "zones") {
+  if (["armies", "routes", "lakes", "borders", "cults", "relig", "cells", "gridOverlay", "coastline", "prec", "ice", "icons", "coordinates", "zones"].includes(sel)) {
     styleStroke.style.display = "block";
     styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke");
     styleStrokeWidth.style.display = "block";
@@ -70,14 +70,14 @@ function selectStyleElement() {
   }
 
   // stroke dash
-  if (sel === "routes" || sel === "borders" || sel === "gridOverlay" || sel === "temperature" || sel === "legend" || sel === "population" || sel === "coordinates"|| sel === "zones") {
+  if (["routes", "borders", "gridOverlay", "temperature", "legend", "population", "coordinates", "zones"].includes(sel)) {
     styleStrokeDash.style.display = "block";
     styleStrokeDasharrayInput.value = el.attr("stroke-dasharray") || "";
     styleStrokeLinecapInput.value = el.attr("stroke-linecap") || "inherit";
   }
 
   // clipping
-  if (sel === "cells" || sel === "gridOverlay" || sel === "coordinates" || sel === "compass" || sel === "terrain" || sel === "temperature" || sel === "routes" || sel === "texture" || sel === "biomes"|| sel === "zones") {
+  if (["cells", "gridOverlay", "coordinates", "compass", "terrain", "temperature", "routes", "texture", "biomes", "zones"].includes(sel)) {
     styleClipping.style.display = "block";
     styleClippingInput.value = el.attr("mask") || "";
   }
@@ -85,7 +85,7 @@ function selectStyleElement() {
   // show specific sections
   if (sel === "gridOverlay") styleGrid.style.display = "block";
   if (sel === "texture") styleTexture.style.display = "block";
-  if (sel === "routes" || sel === "labels" || sel == "anchors" || sel == "burgIcons" || sel === "coastline" || sel === "lakes" || sel === "borders") styleGroup.style.display = "block";
+  if (sel === "routes", "labels" || sel == "anchors" || sel == "burgIcons", "coastline", "lakes", "borders") styleGroup.style.display = "block";
 
   if (sel === "terrs") {
     styleHeightmap.style.display = "block";
@@ -250,7 +250,7 @@ function selectStyleElement() {
 
   // update group options
   styleGroupSelect.options.length = 0; // remove all options
-  if (sel === "routes" || sel === "labels" || sel === "coastline" || sel === "lakes" || sel === "anchors" || sel === "burgIcons" || sel === "borders") {
+  if (["routes", "labels", "coastline", "lakes", "anchors", "burgIcons", "borders"].includes(sel)) {
     document.getElementById(sel).querySelectorAll("g").forEach(el => {
       if (el.id === "burgLabels") return;
       const count = el.childElementCount;
