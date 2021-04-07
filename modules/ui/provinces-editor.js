@@ -469,9 +469,8 @@ function editProvinces() {
 
   function showChart() {
     // build hierarchy tree
-    const states = pack.states.map(s => {
-      return {id:s.i, state: s.i?0:null, color: s.i && s.color[0] === "#" ? d3.color(s.color).darker() : "#666"}
-    });
+    const getColor = (s) => !s.i || s.removed || s.color[0] !== "#" ? "#666" : d3.color(s.color).darker();
+    const states = pack.states.map(s => ({id: s.i, state: s.i ? 0 : null, color: getColor(s)}));
     const provinces = pack.provinces.filter(p => p.i && !p.removed).map(p => {
       return {id:p.i+states.length-1, i:p.i, state:p.state, color:p.color, 
         name:p.name, fullName:p.fullName, area:p.area, urban:p.urban, rural:p.rural}
