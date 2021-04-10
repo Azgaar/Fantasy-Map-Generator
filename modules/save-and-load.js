@@ -135,10 +135,15 @@ async function getMapURL(type, subtype) {
   }
 
   // replace ocean pattern href to base64
-  if (cloneEl.getElementById("oceanicPattern")) {
+  if (PRODUCTION && cloneEl.getElementById("oceanicPattern")) {
     const el = cloneEl.getElementById("oceanicPattern");
     const url = el.getAttribute("href");
-    getBase64(url, base64 => el.setAttribute("href", base64));
+    await new Promise(resolve => {
+      getBase64(url, base64 => {
+        el.setAttribute("href", base64);
+        resolve();
+      });
+    });
   }
 
   // add relief icons
@@ -167,6 +172,13 @@ async function getMapURL(type, subtype) {
   if (cloneEl.getElementById("anchors")) {
     const anchor = svgDefs.getElementById("icon-anchor");
     if (anchor) cloneDefs.appendChild(anchor.cloneNode(true));
+  }
+
+  // add grid pattern
+  if (cloneEl.getElementById("gridOverlay")?.hasChildNodes()) {
+    const type = cloneEl.getElementById("gridOverlay").getAttribute("type");
+    const pattern = svgDefs.getElementById("pattern_"+type);
+    if (pattern) cloneDefs.appendChild(pattern.cloneNode(true));
   }
 
   if (!cloneEl.getElementById("hatching").children.length) cloneEl.getElementById("hatching").remove(); //remove unused hatching group
@@ -1185,6 +1197,11 @@ function parseLoadedData(data) {
       }
     }()
 
+    if (version < 1.62) {
+      // v 1.62 changed grid data
+      gridOverlay.attr("size", null);
+    }
+
     void function checkDataIntegrity() {
       const cells = pack.cells;
 
@@ -1274,6 +1291,7 @@ function parseLoadedData(data) {
 
     // draw data layers (no kept in svg)
     if (rulers && layerIsOn("toggleRulers")) rulers.draw();
+    if (layerIsOn("toggleGrid")) drawGrid();
 
     // set options
     yearInput.value = options.year;

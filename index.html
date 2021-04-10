@@ -550,11 +550,19 @@
               </td>
             </tr>
 
-            <tr data-tip="Set grid cells spacing (size)">
-              <td>Size</td>
+            <tr data-tip="Set grid cells scale multiplier">
+              <td>Scale</td>
               <td>
-                <input id="styleGridSize" type="number" min=2 max=50 step=.001>
-                <output id="styleGridSizeFriendly" data-tip="Distance between two adjacent cells in map scale"></output>
+                <input id="styleGridScale" type="number" min=.1 max=10 step=.01 >
+                <output id="styleGridSizeFriendly" data-tip="Distance between grid cell centers (in map scale)"></output>
+              </td>
+            </tr>
+
+            <tr data-tip="Shift the element by axes">
+              <td>Shift by axes</td>
+              <td>
+                <input id="styleGridShiftX" type="number" data-tip="Shift by x axis in pixels">
+                <input id="styleGridShiftY" type="number" data-tip="Shift by y axis in pixels">
               </td>
             </tr>
           </tbody>
@@ -4063,18 +4071,17 @@
 
       <g id="coas"></g>
 
-      <pattern id="squareGrid" width="80" height="80" patternUnits="userSpaceOnUse" patternTransform="scale(1)">
-        <path d="M 80 0 L 0 0 0 80" fill="none" stroke="gray" stroke-width="1"/>
-      </pattern>
-      <pattern id="pointyHexGrid" width="50" height="43.4" patternUnits="userSpaceOnUse" patternTransform="scale(1)" fill="none" stroke="gray" stroke-width="1">
-        <polygon points="24.8,22 37.3,29.2 37.3,43.7 24.8,50.9 12.3,43.7 12.3,29.2" id="pointyHex"></polygon>
-        <use xlink:href="#pointyHex" x="25"></use>
-        <use xlink:href="#pointyHex" x="-25"></use>
-        <use xlink:href="#pointyHex" x="12.5" y="-21.7"></use>
-        <use xlink:href="#pointyHex" x="-12.5" y="-21.7"></use>
-      </pattern>
-      <!-- <rect width="100%" height="100%" fill="url('#squareGrid')"/> -->
-      <!-- <rect width="100%" height="100%" fill="url('#pointyHexGrid')"/> -->
+      <g id="gridPatterns">
+        <pattern id="pattern_square" width="25" height="25" patternUnits="userSpaceOnUse" fill="none">
+          <path d="M 25 0 L 0 0 0 25"/>
+        </pattern>
+        <pattern id="pattern_pointyHex" width="25" height="43.4" patternUnits="userSpaceOnUse" fill="none">
+          <path d="M 0,0 12.5,7.2 25,0 M 12.5,21.7 V 7.2 Z M 0,43.4 V 28.9 L 12.5,21.7 25,28.9 v 14.5"/>
+        </pattern>
+        <pattern id="pattern_flatHex" width="43.4" height="25" patternUnits="userSpaceOnUse" fill="none">
+          <path d="M 43.4,0 36.2,12.5 43.4,25 M 21.7,12.5 H 36.2 Z M 0,0 H 14.5 L 21.7,12.5 14.5,25 H 0"/>
+        </pattern>
+      </g>
     </defs>
   </svg>
 
