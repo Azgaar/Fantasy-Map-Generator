@@ -4062,6 +4062,20 @@
       </g>
 
       <g id="coas"></g>
+
+      <pattern id="squareGrid" width="80" height="80" patternUnits="userSpaceOnUse" patternTransform="scale(1)">
+        <path d="M 80 0 L 0 0 0 80" fill="none" stroke="gray" stroke-width="1"/>
+      </pattern>
+      <pattern id="pointyHexGrid" width="50" height="43.4" patternUnits="userSpaceOnUse" patternTransform="scale(1)" fill="none" stroke="gray" stroke-width="1">
+        <polygon points="24.8,22 37.3,29.2 37.3,43.7 24.8,50.9 12.3,43.7 12.3,29.2" id="pointyHex"></polygon>
+        <use xlink:href="#pointyHex" x="25"></use>
+        <use xlink:href="#pointyHex" x="-25"></use>
+        <use xlink:href="#pointyHex" x="12.5" y="-21.7"></use>
+        <use xlink:href="#pointyHex" x="-12.5" y="-21.7"></use>
+      </pattern>
+      <!-- <rect width="100%" height="100%" fill="url('#squareGrid')"/> -->
+      <!-- <rect width="100%" height="100%" fill="url('#pointyHexGrid')"/> -->
+      
     </defs>
   </svg>
 
