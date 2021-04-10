@@ -200,6 +200,7 @@ function editReligions() {
     const religion = +this.parentNode.dataset.id;
     this.parentNode.dataset.name = this.value;
     pack.religions[religion].name = this.value;
+    pack.religions[religion].code = abbreviate(this.value, pack.religions.map(c => c.code));
   }
 
   function religionChangeType() {

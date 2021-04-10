@@ -216,6 +216,7 @@ function editCultures() {
     const culture = +this.parentNode.dataset.id;
     this.parentNode.dataset.name = this.value;
     pack.cultures[culture].name = this.value;
+    pack.cultures[culture].code = abbreviate(this.value, pack.cultures.map(c => c.code));
   }
 
   function cultureChangeExpansionism() {

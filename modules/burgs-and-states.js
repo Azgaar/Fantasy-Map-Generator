@@ -287,25 +287,28 @@
   // growth algorithm to assign cells to states like we did for cultures
   const expandStates = function() {
     TIME && console.time("expandStates");
-    const cells = pack.cells, states = pack.states, cultures = pack.cultures, burgs = pack.burgs;
+    const {cells, states, cultures, burgs} = pack;
 
-    cells.state = new Uint16Array(cells.i.length); // cell state
+    cells.state = new Uint16Array(cells.i.length);
     const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
     const cost = [];
-    states.filter(s => s.i && !s.removed).forEach(function(s) {
-      cells.state[burgs[s.capital].cell] = s.i;
-      const b = cells.biome[cultures[s.culture].center]; // native biome
+    const neutral = cells.i.length / 5000 * 2500 * neutralInput.value * statesNeutral.value; // limit cost for state growth
+
+    states.filter(s => s.i && !s.removed).forEach(s => {
+      const capitalCell = burgs[s.capital].cell;
+      cells.state[capitalCell] = s.i;
+      const cultureCenter = cultures[s.culture].center;
+      const b = cells.biome[cultureCenter]; // state native biome
       queue.queue({e:s.center, p:0, s:s.i, b});
       cost[s.center] = 1;
     });
-    const neutral = cells.i.length / 5000 * 2500 * neutralInput.value * statesNeutral.value; // limit cost for state growth
 
     while (queue.length) {
-      const next = queue.dequeue(), n = next.e, p = next.p, s = next.s, b = next.b;
-      const type = states[s].type;
-      const culture = states[s].culture;
+      const next = queue.dequeue();
+      const {e, p, s, b} = next;
+      const {type, culture} = states[s];
 
-      cells.c[n].forEach(function(e) {
+      cells.c[e].forEach(e => {
         if (cells.state[e] && e === states[cells.state[e]].center) return; // do not overwrite capital cells
 
         const cultureCost = culture === cells.culture[e] ? -9 : 100;

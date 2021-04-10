@@ -43,6 +43,7 @@
     const colors = getColors(count);
     const emblemShape = document.getElementById("emblemShape").value;
 
+    const codes = [];
     cultures.forEach(function(c, i) {
       const cell = c.center = placeCenter(c.sort ? c.sort : (i) => cells.s[i]);
       centers.add(cells.p[cell]);
@@ -53,7 +54,8 @@
       c.type = defineCultureType(cell);
       c.expansionism = defineCultureExpansionism(c.type);
       c.origin = 0;
-      c.code = getCode(c.name);
+      c.code = abbreviate(c.name, codes);
+      codes.push(c.code);
       cells.culture[cell] = i+1;
       if (emblemShape === "random") c.shield = getRandomShield();
     });
@@ -122,20 +124,10 @@
     TIME && console.timeEnd('generateCultures');
   }
 
-  // assign a unique two-letters code (abbreviation)
-  function getCode(name) {
-    name = name.replace(/[()]/g, "");
-    const words = name.split(" "), letters = words.join("");
-    let code = words.length === 2 ? words[0][0]+words[1][0] : letters.slice(0,2);
-    for (let i=1; i < letters.length-1 && pack.cultures.some(c => c.code === code); i++) {
-      code = letters[0] + letters[i].toUpperCase();
-    }
-    return code;
-  }
-
   const add = function(center) {
     const defaultCultures = getDefault();
     let culture, base, name;
+
     if (pack.cultures.length < defaultCultures.length) {
       // add one of the default cultures
       culture = pack.cultures.length;
@@ -147,7 +139,7 @@
       name = Names.getCulture(culture, 5, 8, "");
       base = pack.cultures[culture].base;
     }
-    const code = getCode(name);
+    const code = abbreviate(name, pack.cultures.map(c => c.code));
     const i = pack.cultures.length;
     const color = d3.color(d3.scaleSequential(d3.interpolateRainbow)(Math.random())).hex();
 
