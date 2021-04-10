@@ -113,7 +113,7 @@ function selectStyleElement() {
 
   if (sel === "compass") {
     styleCompass.style.display = "block";
-    const tr = parseTransform(d3.select("#rose").attr("transform"));
+    const tr = parseTransform(compass.select("use").attr("transform"));
     styleCompassShiftX.value = tr[0];
     styleCompassShiftY.value = tr[1];
     styleCompassSizeInput.value = styleCompassSizeOutput.value = tr[2];
@@ -483,7 +483,7 @@ styleCompassShiftY.addEventListener("input", shiftCompass);
 
 function shiftCompass() {
   const tr = `translate(${styleCompassShiftX.value} ${styleCompassShiftY.value}) scale(${styleCompassSizeInput.value})`;
-  d3.select("#rose").attr("transform", tr);
+  compass.select("use").attr("transform", tr);
 }
 
 styleLegendColItems.addEventListener("input", function() {

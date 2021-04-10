@@ -4,11 +4,9 @@
     (global.Military = factory());
 }(this, (function () {'use strict';
 
-  let cells, p, states;
-
   const generate = function() {
     TIME && console.time("generateMilitaryForces");
-    cells = pack.cells, p = cells.p, states = pack.states;
+    const cells = pack.cells, p = cells.p, states = pack.states;
     const valid = states.filter(s => s.i && !s.removed); // valid states
     if (!options.military) options.military = getDefaultOptions();
 
@@ -253,6 +251,7 @@
   const getTotal = reg => reg.a > (reg.n ? 999 : 99999) ? si(reg.a) : reg.a;
 
   const getName = function(r, regiments) {
+    const cells = pack.cells;
     const proper = r.n ? null :
       cells.province[r.cell] && pack.provinces[cells.province[r.cell]] ? pack.provinces[cells.province[r.cell]].name :
       cells.burg[r.cell] && pack.burgs[cells.burg[r.cell]] ? pack.burgs[cells.burg[r.cell]].name : null
@@ -264,13 +263,14 @@
   // get default regiment emblem
   const getEmblem = function(r) {
     if (!r.n && !Object.values(r.u).length) return "🔰"; // "Newbie" regiment without troops
-    if (!r.n && pack.states[r.state].form === "Monarchy" && cells.burg[r.cell] && pack.burgs[cells.burg[r.cell]].capital) return "👑"; // "Royal" regiment based in capital
+    if (!r.n && pack.states[r.state].form === "Monarchy" && pack.cells.burg[r.cell] && pack.burgs[pack.cells.burg[r.cell]].capital) return "👑"; // "Royal" regiment based in capital
     const mainUnit = Object.entries(r.u).sort((a,b) => b[1]-a[1])[0][0]; // unit with more troops in regiment
     const unit = options.military.find(u => u.name === mainUnit);
     return unit.icon;
   }
 
   const generateNote = function(r, s) {
+    const cells = pack.cells;
     const base = cells.burg[r.cell] && pack.burgs[cells.burg[r.cell]] ? pack.burgs[cells.burg[r.cell]].name :
       cells.province[r.cell] && pack.provinces[cells.province[r.cell]] ? pack.provinces[cells.province[r.cell]].fullName : null;
     const station = base ? `${r.name} is ${r.n ? "based" : "stationed"} in ${base}. ` : "";
