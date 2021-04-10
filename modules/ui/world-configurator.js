@@ -19,7 +19,7 @@ function editWorld() {
 
   const globe = d3.select("#globe");
   const clr = d3.scaleSequential(d3.interpolateSpectral);
-  const tMax = +temperatureEquatorOutput.max, tMin = +temperatureEquatorOutput.min; // temperature extremes
+  const tMax = 30, tMin = -25; // temperature extremes
   const projection = d3.geoOrthographic().translate([100, 100]).scale(100);
   const path = d3.geoPath(projection);
 

@@ -484,8 +484,8 @@ function drawIce() {
   const used = new Uint8Array(cells.i.length);
   Math.random = aleaPRNG(seed);
 
-  const shieldMin = -6; // max temp to form ice shield (glacier)
-  const icebergMax = 2; // max temp to form an iceberg
+  const shieldMin = -8; // max temp to form ice shield (glacier)
+  const icebergMax = 1; // max temp to form an iceberg
 
   for (const i of grid.cells.i) {
     const t = temp[i];
