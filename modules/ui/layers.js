@@ -990,8 +990,11 @@ function drawGrid() {
   const dy = gridOverlay.attr("dy") || 0;
   const tr = `scale(${scale}) translate(${dx} ${dy})`;
 
+  const maxWidth = Math.max(+mapWidthInput.value, graphWidth);
+  const maxHeight = Math.max(+mapHeightInput.value, graphHeight);
+
   d3.select(pattern).attr("stroke", stroke).attr("stroke-width", width).attr("stroke-dasharray", dasharray).attr("stroke-linecap", linecap).attr("patternTransform", tr);
-  gridOverlay.append("rect").attr("width", "100%").attr("height", "100%").attr("fill", "url(" + pattern + ")").attr("stroke", "none");
+  gridOverlay.append("rect").attr("width", maxWidth).attr("height", maxHeight).attr("fill", "url(" + pattern + ")").attr("stroke", "none");
 }
 
 function toggleCoordinates(event) {
