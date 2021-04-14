@@ -360,7 +360,6 @@ function showWelcomeMessage() {
       <li>New ocean pattern by Kiwiroo (v1.61)</li>
     </ul>
 
-    <iframe width="100%" height="auto" src="https://www.youtube.com/embed/XBSNkTf1Ddg?controls=0" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
     <p>Join our ${discord} and ${reddit} to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
     <span>Thanks for all supporters on ${patreon}!</i></span>`;
 
