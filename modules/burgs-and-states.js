@@ -419,7 +419,7 @@
     lineGen.curve(d3.curveBundle.beta(1));
 
     for (const s of states) {
-      if (!s.i || s.removed || (list && !list.includes(s.i))) continue;
+      if (!s.i || s.removed || !s.cells || (list && !list.includes(s.i))) continue;
       const used = [];
       const visualCenter = findCell(s.pole[0], s.pole[1]);
       const start = cells.state[visualCenter] === s.i ? visualCenter : s.center;

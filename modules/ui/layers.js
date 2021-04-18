@@ -120,13 +120,17 @@ function restoreLayers() {
 }
 
 function toggleHeight(event) {
+  if (customization === 1) {
+    tip("You cannot turn off the layer when heightmap is in edit mode", false, "error");
+    return;
+  }
+
   if (!terrs.selectAll("*").size()) {
     turnButtonOn("toggleHeight");
     drawHeightmap();
     if (event && isCtrlClick(event)) editStyle("terrs");
   } else {
     if (event && isCtrlClick(event)) {editStyle("terrs"); return;}
-    if (customization === 1) {tip("You cannot turn off the layer when heightmap is in edit mode", false, "error"); return;}
     turnButtonOff("toggleHeight");
     terrs.selectAll("*").remove();
   }
