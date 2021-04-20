@@ -529,6 +529,9 @@ window.Resources = (function () {
   const temp = i => grid.cells.temp[pack.cells.g[i]];
   const group = i => pack.features[cells.f[i]].group;
 
+  const temp = i => grid.cells.temp[pack.cells.g[i]];
+  const group = i => pack.features[cells.f[i]].group;
+
   const models = {
     Deciduous_forests: 'biome(6, 7, 8)',
     Any_forest: 'biome(5, 6, 7, 8, 9)',
