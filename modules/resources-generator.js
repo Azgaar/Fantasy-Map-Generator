@@ -38,6 +38,10 @@
       {i: 21, name: "Hemp", value: 2, spread: .4, model: "forest", bonus: {fleet: 2}},
       {i: 22, name: "Pearls", value: 35, spread: .16, model: "tropicalWater", bonus: {prestige: 1}},
       {i: 23, name: "Gemstones", value: 35, spread: .1, model: "mountains", bonus: {prestige: 1}},
+      {i: 24, name: "Dyes", value: 15, spread: .2, model: "habitableOrWater", bonus: {prestige: 1}},
+      {i: 25, name: "Incense", value: 25, spread: .1, model: "desertAndTropicalForest", bonus: {prestige: 2}},
+      {i: 26, name: "Silk", value: 30, spread: .05, model: "tropicalForest", bonus: {prestige: 2}},
+      {i: 27, name: "Spices", value: 30, spread: .08, model: "tropicalForest", bonus: {prestige: 2}},
     ]
   }
 
@@ -66,7 +70,11 @@
     desert: i => cells.biome[i] === 1 || cells.biome[i] === 2,
     grasslandsAndColdDesert: i => cells.biome[i] === 3 || (!(i%4) && cells.biome[i] === 2),
     savannaDesertTropicalForest: i => [1, 3, 5, 7].includes(cells.biome[i]),
+    desertAndTropicalForest: i => [1, 7].includes(cells.biome[i]),
+    tropicalForest: i => cells.biome[i] === 7,
     tropicalWater: i => cells.t[i] === -1 && temp(i) >= 20,
+    subAndTropicalWater: i => cells.t[i] === -1 && temp(i) >= 15,
+    habitableOrWater: i => biomesData.habitability[cells.biome[i]] || cells.t[i] === -1,
   }
 
   // Biomes: 0: Marine, 1: Hot desert, 2: Cold desert, 3: Savanna, 4: Grassland,
@@ -102,7 +110,7 @@
 
     }
 
-    console.table(pack.resources);
+    console.table(pack.resources.sort((a, b) => a.i > b.i ? 1 : -1));
   }
 
   const draw = function() {
