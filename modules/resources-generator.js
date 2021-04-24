@@ -533,34 +533,27 @@ window.Resources = (function () {
   const group = i => pack.features[cells.f[i]].group;
 
   const models = {
-    Deciduous_forests: 'biome(6, 7, 8)',
-    Any_forest: 'biome(5, 6, 7, 8, 9)',
-    Temperate_and_boreal_forests: 'biome(6, 8, 9)',
-    Hills: 'minHeight(40) || (minHeight(30) && nth(10))',
-    Mountains: 'minHeight(60) || (minHeight(20) && nth(10))',
-    Mountains_and_wetlands: 'minHeight(60) || (biome(12) && nth(7)) || (minHeight(20) && nth(10))',
-    Headwaters: 'river() && minHeight(40)',
-    More_habitable: 'minHabitability(20) && habitability()',
-    Marine_and_rivers: 'shore(-1) && (type("ocean", "freshwater", "salt") || (river() && shore(1, 2)))',
-    Pastures_and_temperate_forest: '(biome(3, 4) && !elevation()) || (biome(6) && random(70)) || (biome(5) && nth(5))',
-    Tropical_forests: 'biome(5, 7)',
-    Arid_land_and_salt_lakes: 'shore(1) && type("salt", "dry") || (biome(1, 2) && random(70)) || (biome(12) && nth(10))',
-    Hot_desert: 'biome(1)',
-    Deserts: 'biome(1, 2)',
-    Grassland_and_cold_desert: 'biome(3) || (biome(2) && nth(4))',
-    Hot_biomes: 'biome(1, 3, 5, 7)',
-    Hot_desert_and_tropical_forest: 'biome(1, 7)',
-    Tropical_rainforest: 'biome(7)',
-    Tropical_waters: 'shore(-1) && minTemp(18)',
-    Hilly_tropical_rainforest: 'minHeight(40) && biome(7)',
-    Subtropical_waters: 'shore(-1) && minTemp(14)',
-    Habitable_biome_or_marine: 'shore(-1) || minHabitability(1)',
-    Foresty_seashore: 'shore(1) && biome(6, 7, 8, 9)',
-    Boreal_forests: 'biome(9) || (biome(10) && nth(2)) || (biome(6, 8) && nth(5)) || (biome(12) && nth(10))',
-    Less_habitable_seashore: 'shore(1) && minHabitability(1) && !habitability()',
-    Less_habitable_biomes: 'minHabitability(1) && !habitability()',
-    Arctic_waters: 'shore(-1) && biome(0) && maxTemp(7)'
-  };
+    forest: i => [6, 7, 8].includes(cells.biome[i]),
+    forestAndTaiga: i => [5, 6, 7, 8, 9].includes(cells.biome[i]),
+    deciduousForestAndTaiga: i => [6, 8, 9].includes(cells.biome[i]),
+    hills: i => cells.h[i] >= 40,
+    mountains: i => cells.h[i] >= 60 || (cells.h[i] >= 40 && P(.1)),
+    mountainsAndRareWetland: i => cells.h[i] >= 60 || (cells.biome[i] === 12 && !(i%8)),
+    upperRivers: i => cells.h[i] >= 40 && cells.r[i],
+    habitability: i => chance(biomesData.habitability[cells.biome[i]]),
+    waterAndRiver: i => cells.r[i] || (!(i%2) && (cells.h[i] < 20) && group(i) !== "dry"),
+    pasturesAndTemperateForest: i => chance([0, 0, 0, 100, 100, 20, 80, 0, 0, 0, 0, 0, 0][cells.biome[i]]),
+    tropics: i => [5, 7].includes(cells.biome[i]),
+    aridLandAndLakes: i => chance([0, 80, 60, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10][cells.biome[i]]) || group(i) === "salt" || group(i) === "dry",
+    desert: i => cells.biome[i] === 1 || cells.biome[i] === 2,
+    grasslandsAndColdDesert: i => cells.biome[i] === 3 || (!(i%4) && cells.biome[i] === 2),
+    savannaDesertTropicalForest: i => [1, 3, 5, 7].includes(cells.biome[i]),
+    desertAndTropicalForest: i => [1, 7].includes(cells.biome[i]),
+    tropicalForest: i => cells.biome[i] === 7,
+    tropicalWater: i => cells.t[i] === -1 && temp(i) >= 20,
+    subAndTropicalWater: i => cells.t[i] === -1 && temp(i) >= 15,
+    habitableOrWater: i => biomesData.habitability[cells.biome[i]] || cells.t[i] === -1,
+  }
 
   const methods = {
     random: (number) => number >= 100 || (number > 0 && number / 100 > Math.random()),
@@ -579,41 +572,39 @@ window.Resources = (function () {
   };
   const allMethods = '{' + Object.keys(methods).join(', ') + '}';
 
-  const generate = function () {
-    TIME && console.time('generateResources');
+  const generate = function() {
     cells = pack.cells;
-    cells.resource = new Uint8Array(cells.i.length); // resources array [0, 255]
-    const resourceMaxCells = Math.ceil((200 * cells.i.length) / 5000);
-    if (!pack.resources) pack.resources = defaultResources;
-    pack.resources.forEach((r) => {
-      r.cells = 0;
-      const model = r.custom || models[r.model];
-      r.fn = new Function(allMethods, 'return ' + model);
+    const cellsN = cells.i.length;
+    const cellsP = cellsN / 100; // 1% of all cells
+    cells.resource = new Uint8Array(cellsN); // resources array [0, 255]
+
+    pack.resources = getDefault().map(resource => {
+      const expected = cellsP * resource.spread;
+      resource.expected = ~~expected; // temp
+      resource.max = gauss(expected, expected / 2, expected / 5, cellsN, 0); // temp
+      resource.cells = 0;
+      return resource;
     });
 
     const skipGlaciers = biomesData.habitability[11] === 0;
     const shuffledCells = d3.shuffle(cells.i.slice());
 
     for (const i of shuffledCells) {
-      if (!(i % 10)) d3.shuffle(pack.resources);
-      if (skipGlaciers && cells.biome[i] === 11) continue;
-      const rnd = Math.random() * 100;
-      cellId = i;
+      if (!(i%10)) d3.shuffle(pack.resources);
 
       for (const resource of pack.resources) {
-        if (resource.cells >= resourceMaxCells) continue;
-        if (resource.cells ? rnd > resource.chance : Math.random() * 100 > resource.chance) continue;
-        if (!resource.fn({...methods})) continue;
+        if (resource.cells >= resource.max) continue;
+        if (!models[resource.model](i)) continue;
 
         cells.resource[i] = resource.i;
-        resource.cells++;
+        resource.cells += 1;
         break;
       }
     }
     pack.resources.sort((a, b) => (a.i > b.i ? 1 : -1)).forEach((r) => delete r.fn);
 
-    TIME && console.timeEnd('generateResources');
-  };
+    console.table(pack.resources.sort((a, b) => a.i > b.i ? 1 : -1));
+  }
 
   const getStroke = (color) => d3.color(color).darker(2).hex();
   const get = (i) => pack.resources.find((resource) => resource.i === i);
