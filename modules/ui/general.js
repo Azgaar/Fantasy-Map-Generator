@@ -138,7 +138,7 @@ function showMapTooltip(point, e, i, g) {
   }
 
   if (group === "goods") {
-    const id = +e.target.getAttribute("href").slice(10);
+    const id = +e.target.dataset.i;
     const resource = pack.resources.find(resource => resource.i === id);
     tip("Resource: " + resource.name);
     return;
