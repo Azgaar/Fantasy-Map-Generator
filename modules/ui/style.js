@@ -62,7 +62,7 @@ function selectStyleElement() {
   }
 
   // stroke color and width
-  if (["armies", "routes", "lakes", "borders", "cults", "relig", "cells", "coastline", "prec", "ice", "icons", "coordinates", "zones", "gridOverlay"].includes(sel)) {
+  if (["armies", "routes", "lakes", "borders", "cults", "relig", "cells", "coastline", "prec", "ice", "icons", "coordinates", "zones", "gridOverlay", "goods"].includes(sel)) {
     styleStroke.style.display = "block";
     styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke");
     styleStrokeWidth.style.display = "block";
@@ -797,6 +797,8 @@ function applyDefaultStyle() {
 
   fogging.attr("opacity", .98).attr("fill", "#30426f");
   emblems.attr("opacity", .9).attr("stroke-width", 1).attr("filter", null);
+
+  goods.attr("opacity", 1).attr("fill", "#000").attr("stroke", "#000").attr("stroke-width", .32).attr("filter", "url(#dropShadow01)");
 }
 
 // apply style settings in JSON

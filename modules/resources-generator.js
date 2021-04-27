@@ -14,46 +14,46 @@
   const getDefault = function() {
     // model: cells eligibility function; chance: chance to get rosource in model-eligible cell
     return [
-      {i: 1, name: "Wood", icon: "resource-wood", value: 5, chance: 10, model: "forestAndTaiga", bonus: {fleet: 2, defence: 1}},
-      {i: 2, name: "Stone", icon: "resource-stone", value: 4, chance: 7, model: "hills", bonus: {prestige: 1, defence: 2}},
-      {i: 3, name: "Marble", icon: "resource-marble", value: 15, chance: 1, model: "mountains", bonus: {prestige: 2}},
-      {i: 4, name: "Iron", icon: "resource-iron", value: 8, chance: 8, model: "mountainsAndRareWetland", bonus: {artillery: 1, infantry: 1, defence: 1}},
-      {i: 5, name: "Copper", icon: "resource-copper", value: 10, chance: 3, model: "mountains", bonus: {artillery: 2, defence: 1, prestige: 1}},
-      {i: 6, name: "Lead", icon: "resource-lead", value: 8, chance: 3, model: "mountains", bonus: {artillery: 1, defence: 1}},
-      {i: 7, name: "Silver", icon: "resource-silver", value: 15, chance: 3, model: "mountains", bonus: {prestige: 2}},
-      {i: 8, name: "Gold", icon: "resource-gold", value: 30, chance: 1, model: "upperRivers", bonus: {prestige: 3}},
-      {i: 9, name: "Grain", icon: "resource-grain", value: 1, chance: 15, model: "habitability", bonus: {population: 4}},
-      {i: 10, name: "Сattle", icon: "resource-cattle", value: 2, chance: 10, model: "pasturesAndTemperateForest", bonus: {population: 2}},
-      {i: 11, name: "Fish", icon: "resource-fish", value: 1, chance: 5, model: "waterAndRiver", bonus: {population: 2}},
-      {i: 12, name: "Game", icon: "resource-game", value: 2, chance: 3, model: "forestAndTaiga", bonus: {archers: 2, population: 1}},
-      {i: 13, name: "Wine", icon: "resource-wine", value: 3, chance: 4, model: "tropics", bonus: {population: 1, prestige: 1}},
-      {i: 14, name: "Olives", icon: "resource-olives", value: 3, chance: 4, model: "tropics", bonus: {population: 1}},
-      {i: 15, name: "Honey", icon: "resource-honey", value: 4, chance: 3, model: "deciduousForestAndTaiga", bonus: {population: 1}},
-      {i: 16, name: "Salt", icon: "resource-salt", value: 5, chance: 4, model: "aridLandAndLakes", bonus: {population: 1, defence: 1}},
-      {i: 17, name: "Dates", icon: "resource-dates", value: 3, chance: 3, model: "desert", bonus: {population: 1}},
-      {i: 18, name: "Horses", icon: "resource-horses", value: 10, chance: 6, model: "grasslandsAndColdDesert", bonus: {cavalry: 2}},
-      {i: 19, name: "Elephants", icon: "resource-elephants", value: 15, chance: 2, model: "savannaDesertTropicalForest", bonus: {cavalry: 1}},
-      {i: 20, name: "Camels", icon: "resource-camels", value: 13, chance: 4, model: "desert", bonus: {cavalry: 1}},
-      {i: 21, name: "Hemp", icon: "resource-hemp", value: 2, chance: 4, model: "forest", bonus: {fleet: 2}},
-      {i: 22, name: "Pearls", icon: "resource-pearls", value: 35, chance: 3, model: "tropicalWater", bonus: {prestige: 1}},
-      {i: 23, name: "Gemstones", icon: "resource-gemstones", value: 35, chance: 2, model: "mountains", bonus: {prestige: 1}},
-      {i: 24, name: "Dyes", icon: "resource-dyes", value: 15, chance: .5, model: "habitableOrWater", bonus: {prestige: 1}},
-      {i: 25, name: "Incense", icon: "resource-incense", value: 25, chance: 2, model: "desertAndTropicalForest", bonus: {prestige: 2}},
-      {i: 26, name: "Silk", icon: "resource-silk", value: 30, chance: 1, model: "tropicalForest", bonus: {prestige: 2}},
-      {i: 27, name: "Spices", icon: "resource-spices", value: 30, chance: 2, model: "tropicalForest", bonus: {prestige: 2}},
-      {i: 28, name: "Amber", icon: "resource-amber", value: 15, chance: 2, model: "forestSeashore", bonus: {prestige: 1}},
-      {i: 29, name: "Furs", icon: "resource-furs", value: 13, chance: 2, model: "borealForest", bonus: {prestige: 1}},
-      {i: 30, name: "Sheeps", icon: "resource-sheeps", value: 2, chance: 5, model: "pasturesAndTemperateForest", bonus: {infantry: 1}},
-      {i: 31, name: "Slaves", icon: "resource-slaves", value: 10, chance: 3, model: "lessHabitableSeashore", bonus: {population: 2}},
-      {i: 32, name: "Tar", icon: "resource-tar", value: 3, chance: 3, model: "forestAndTaiga", bonus: {fleet: 1}},
-      {i: 33, name: "Saltpeter", icon: "resource-saltpeter", value: 8, chance: 2, model: "habitability", bonus: {artillery: 3}},
-      {i: 34, name: "Coal", icon: "resource-coal", value: 2, chance: 7, model: "hills", bonus: {artillery: 2}},
-      {i: 35, name: "Oil", icon: "resource-oil", value: 5, chance: 2, model: "lessHabitableOrWater", bonus: {artillery: 1}},
-      {i: 36, name: "Tropical timber", icon: "resource-tropicalTimber", value: 20, chance: 2, model: "tropicalForest", bonus: {prestige: 1}},
-      {i: 37, name: "Whales", icon: "resource-whales", value: 2, chance: 2, model: "colderWaters", bonus: {population: 1}},
-      {i: 38, name: "Sugar", icon: "resource-sugar", value: 3, chance: 3, model: "tropicalForest", bonus: {population: 1}},
-      {i: 39, name: "Tea", icon: "resource-tea", value: 10, chance: 2, model: "tropicalForest", bonus: {prestige: 1}},
-      {i: 40, name: "Tobacco", icon: "resource-tobacco", value: 10, chance: 2, model: "tropicalForest", bonus: {prestige: 1}},
+      {i: 1, name: "Wood", icon: "resource-wood", color: "#966F33", value: 5, chance: 10, model: "forestAndTaiga", bonus: {fleet: 2, defence: 1}},
+      {i: 2, name: "Stone", icon: "resource-stone", color: "#979EA2", value: 4, chance: 7, model: "hills", bonus: {prestige: 1, defence: 2}},
+      {i: 3, name: "Marble", icon: "resource-marble", color: "#d6d0bf", value: 15, chance: 1, model: "mountains", bonus: {prestige: 2}},
+      {i: 4, name: "Iron", icon: "resource-iron", color: "#5D686E", value: 8, chance: 8, model: "mountainsAndRareWetland", bonus: {artillery: 1, infantry: 1, defence: 1}},
+      {i: 5, name: "Copper", icon: "resource-copper", color: "#b87333", value: 10, chance: 3, model: "mountains", bonus: {artillery: 2, defence: 1, prestige: 1}},
+      {i: 6, name: "Lead", icon: "resource-lead", color: "#454343", value: 8, chance: 3, model: "mountains", bonus: {artillery: 1, defence: 1}},
+      {i: 7, name: "Silver", icon: "resource-silver", color: "#ffffff", value: 15, chance: 3, model: "mountains", bonus: {prestige: 2}},
+      {i: 8, name: "Gold", icon: "resource-gold", color: "#ffffff", value: 30, chance: 1, model: "upperRivers", bonus: {prestige: 3}},
+      {i: 9, name: "Grain", icon: "resource-grain", color: "#ffffff", value: 1, chance: 15, model: "habitability", bonus: {population: 4}},
+      {i: 10, name: "Сattle", icon: "resource-cattle", color: "#ffffff", value: 2, chance: 10, model: "pasturesAndTemperateForest", bonus: {population: 2}},
+      {i: 11, name: "Fish", icon: "resource-fish", color: "#ffffff", value: 1, chance: 5, model: "waterAndRiver", bonus: {population: 2}},
+      {i: 12, name: "Game", icon: "resource-game", color: "#ffffff", value: 2, chance: 3, model: "forestAndTaiga", bonus: {archers: 2, population: 1}},
+      {i: 13, name: "Wine", icon: "resource-wine", color: "#ffffff", value: 3, chance: 4, model: "tropics", bonus: {population: 1, prestige: 1}},
+      {i: 14, name: "Olives", icon: "resource-olives", color: "#ffffff", value: 3, chance: 4, model: "tropics", bonus: {population: 1}},
+      {i: 15, name: "Honey", icon: "resource-honey", color: "#ffffff", value: 4, chance: 3, model: "deciduousForestAndTaiga", bonus: {population: 1}},
+      {i: 16, name: "Salt", icon: "resource-salt", color: "#ffffff", value: 5, chance: 4, model: "aridLandAndLakes", bonus: {population: 1, defence: 1}},
+      {i: 17, name: "Dates", icon: "resource-dates", color: "#ffffff", value: 3, chance: 3, model: "desert", bonus: {population: 1}},
+      {i: 18, name: "Horses", icon: "resource-horses", color: "#ffffff", value: 10, chance: 6, model: "grasslandsAndColdDesert", bonus: {cavalry: 2}},
+      {i: 19, name: "Elephants", icon: "resource-elephants", color: "#ffffff", value: 15, chance: 2, model: "savannaDesertTropicalForest", bonus: {cavalry: 1}},
+      {i: 20, name: "Camels", icon: "resource-camels", color: "#ffffff", value: 13, chance: 4, model: "desert", bonus: {cavalry: 1}},
+      {i: 21, name: "Hemp", icon: "resource-hemp", color: "#ffffff", value: 2, chance: 4, model: "forest", bonus: {fleet: 2}},
+      {i: 22, name: "Pearls", icon: "resource-pearls", color: "#ffffff", value: 35, chance: 3, model: "tropicalWater", bonus: {prestige: 1}},
+      {i: 23, name: "Gemstones", icon: "resource-gemstones", color: "#ffffff", value: 35, chance: 2, model: "mountains", bonus: {prestige: 1}},
+      {i: 24, name: "Dyes", icon: "resource-dyes", color: "#ffffff", value: 15, chance: .5, model: "habitableOrWater", bonus: {prestige: 1}},
+      {i: 25, name: "Incense", icon: "resource-incense", color: "#ffffff", value: 25, chance: 2, model: "desertAndTropicalForest", bonus: {prestige: 2}},
+      {i: 26, name: "Silk", icon: "resource-silk", color: "#ffffff", value: 30, chance: 1, model: "tropicalForest", bonus: {prestige: 2}},
+      {i: 27, name: "Spices", icon: "resource-spices", color: "#ffffff", value: 30, chance: 2, model: "tropicalForest", bonus: {prestige: 2}},
+      {i: 28, name: "Amber", icon: "resource-amber", color: "#ffffff", value: 15, chance: 2, model: "forestSeashore", bonus: {prestige: 1}},
+      {i: 29, name: "Furs", icon: "resource-furs", color: "#ffffff", value: 13, chance: 2, model: "borealForest", bonus: {prestige: 1}},
+      {i: 30, name: "Sheeps", icon: "resource-sheeps", color: "#ffffff", value: 2, chance: 5, model: "pasturesAndTemperateForest", bonus: {infantry: 1}},
+      {i: 31, name: "Slaves", icon: "resource-slaves", color: "#ffffff", value: 10, chance: 3, model: "lessHabitableSeashore", bonus: {population: 2}},
+      {i: 32, name: "Tar", icon: "resource-tar", color: "#ffffff", value: 3, chance: 3, model: "forestAndTaiga", bonus: {fleet: 1}},
+      {i: 33, name: "Saltpeter", icon: "resource-saltpeter", color: "#ffffff", value: 8, chance: 2, model: "habitability", bonus: {artillery: 3}},
+      {i: 34, name: "Coal", icon: "resource-coal", color: "#ffffff", value: 2, chance: 7, model: "hills", bonus: {artillery: 2}},
+      {i: 35, name: "Oil", icon: "resource-oil", color: "#ffffff", value: 5, chance: 2, model: "lessHabitableOrWater", bonus: {artillery: 1}},
+      {i: 36, name: "Tropical timber", icon: "resource-tropicalTimber", color: "#ffffff", value: 20, chance: 2, model: "tropicalForest", bonus: {prestige: 1}},
+      {i: 37, name: "Whales", icon: "resource-whales", color: "#ffffff", value: 2, chance: 2, model: "colderWaters", bonus: {population: 1}},
+      {i: 38, name: "Sugar", icon: "resource-sugar", color: "#ffffff", value: 3, chance: 3, model: "tropicalForest", bonus: {population: 1}},
+      {i: 39, name: "Tea", icon: "resource-tea", color: "#ffffff", value: 10, chance: 2, model: "tropicalForest", bonus: {prestige: 1}},
+      {i: 40, name: "Tobacco", icon: "resource-tobacco", color: "#ffffff", value: 10, chance: 2, model: "tropicalForest", bonus: {prestige: 1}},
     ]
   }
 
@@ -106,6 +106,7 @@
 
     pack.resources = getDefault().map(resource => {
       resource.cells = 0;
+      resource.stroke = d3.color(resource.color).darker(2).hex();
       return resource;
     });
 
@@ -128,20 +129,24 @@
     }
 
     console.timeEnd("generateResources");
-    console.table(pack.resources.sort((a, b) => a.i > b.i ? 1 : -1));
+    //console.table(pack.resources.sort((a, b) => a.i > b.i ? 1 : -1));
   }
 
   const draw = function() {
+    console.time("drawResources");
     let resourcesHTML = "";
     for (const i of cells.i) {
       if (!cells.resource[i]) continue;
-      //if (cells.resource[i] !== 38) continue;
       const resource = pack.resources.find(resource => resource.i === cells.resource[i]);
       const [x, y] = cells.p[i];
-      resourcesHTML += `<use data-i="${resource.i}" href="#${resource.icon}" x="${x-3}" y="${y-3}" width="6" height="6"/>`;
+      resourcesHTML += `<g>
+        <circle data-i="${resource.i}" cx=${x} cy=${y} r="3" fill="${resource.color}" stroke="${resource.stroke}" />
+        <use href="#${resource.icon}" x="${x-3}" y="${y-3}" width="6" height="6"/>
+      </g>`;
     }
 
     goods.html(resourcesHTML);
+    console.timeEnd("drawResources");
   }
 
 return {generate, getDefault, draw};

@@ -2169,6 +2169,10 @@ svg.button {
   user-select: none;
 }
 
+#goods > g > use {
+  pointer-events: none;
+}
+
 .dontAsk {
   display: inline-block;
   margin: 0.9em 0 0 0.6em;
