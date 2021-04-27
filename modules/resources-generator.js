@@ -583,6 +583,7 @@ window.Resources = (function () {
       resource.expected = ~~expected; // temp
       resource.max = gauss(expected, expected / 2, expected / 5, cellsN, 0); // temp
       resource.cells = 0;
+      resource.stroke = d3.color(resource.color).darker(2).hex();
       return resource;
     });
 
