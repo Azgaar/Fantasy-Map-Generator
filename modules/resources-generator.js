@@ -34,7 +34,7 @@
       {i: 18, name: "Horses", icon: "resource-horses", color: "#ba7447", value: 10, chance: 6, model: "grasslandsAndColdDesert", bonus: {cavalry: 2}},
       {i: 19, name: "Elephants", icon: "resource-elephants", color: "#C5CACD", value: 15, chance: 2, model: "savannaDesertTropicalForest", bonus: {cavalry: 1}},
       {i: 20, name: "Camels", icon: "resource-camels", color: "#C19A6B", value: 13, chance: 4, model: "desert", bonus: {cavalry: 1}},
-      {i: 21, name: "Hemp", icon: "resource-hemp", color: "#779771", value: 2, chance: 4, model: "forest", bonus: {fleet: 2}},
+      {i: 21, name: "Hemp", icon: "resource-hemp", color: "#069a06", value: 2, chance: 4, model: "forest", bonus: {fleet: 2}},
       {i: 22, name: "Pearls", icon: "resource-pearls", color: "#EAE0C8", value: 35, chance: 3, model: "tropicalWater", bonus: {prestige: 1}},
       {i: 23, name: "Gemstones", icon: "resource-gemstones", color: "#d6a7eb", value: 35, chance: 2, model: "mountains", bonus: {prestige: 1}},
       {i: 24, name: "Dyes", icon: "resource-dyes", color: "#eba7e3", value: 15, chance: .5, model: "habitableOrWater", bonus: {prestige: 1}},
