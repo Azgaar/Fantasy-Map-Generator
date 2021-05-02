@@ -41,7 +41,7 @@
       {i: 25, name: "Incense", icon: "resource-incense", color: "#ebe5a7", value: 25, chance: 2, model: "desertAndTropicalForest", bonus: {prestige: 2}},
       {i: 26, name: "Silk", icon: "resource-silk", color: "#e0f0f8", value: 30, chance: 1, model: "tropicalForest", bonus: {prestige: 2}},
       {i: 27, name: "Spices", icon: "resource-spices", color: "#e99c75", value: 30, chance: 2, model: "tropicalForest", bonus: {prestige: 2}},
-      {i: 28, name: "Amber", icon: "resource-amber", color: "#ffc233", value: 15, chance: 2, model: "forestSeashore", bonus: {prestige: 1}},
+      {i: 28, name: "Amber", icon: "resource-amber", color: "#e68200", value: 15, chance: 2, model: "forestSeashore", bonus: {prestige: 1}},
       {i: 29, name: "Furs", icon: "resource-furs", color: "#8a5e51", value: 13, chance: 2, model: "borealForest", bonus: {prestige: 1}},
       {i: 30, name: "Sheeps", icon: "resource-sheeps", color: "#53b574", value: 2, chance: 5, model: "pasturesAndTemperateForest", bonus: {infantry: 1}},
       {i: 31, name: "Slaves", icon: "resource-slaves", color: "#757575", value: 10, chance: 3, model: "lessHabitableSeashore", bonus: {population: 2}},
