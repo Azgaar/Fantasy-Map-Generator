@@ -717,7 +717,6 @@ async function generate(options) {
     defineBiomes();
 
     Resources.generate();
-    Resources.draw();
 
     rankCells();
     Cultures.generate();
