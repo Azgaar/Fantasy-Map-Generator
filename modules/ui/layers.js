@@ -1924,6 +1924,35 @@ function drawResources() {
   console.timeEnd('drawResources');
 }
 
+function toggleResources(event) {
+  if (!layerIsOn("toggleResources")) {
+    turnButtonOn("toggleResources");
+    $('#goods').fadeIn();
+    if (!goods.selectAll("*").size()) drawResources();
+    if (event && isCtrlClick(event)) editStyle("goods");
+  } else {
+    if (event && isCtrlClick(event)) {editStyle("goods"); return;}
+    $('#goods').fadeOut();
+    turnButtonOff("toggleResources");
+  }
+}
+
+function drawResources() {
+  console.time("drawResources");
+  let resourcesHTML = "";
+  for (const i of pack.cells.i) {
+    if (!pack.cells.resource[i]) continue;
+    const resource = pack.resources.find(resource => resource.i === pack.cells.resource[i]);
+    const [x, y] = pack.cells.p[i];
+    resourcesHTML += `<g>
+      <circle data-i="${resource.i}" cx=${x} cy=${y} r="3" fill="${resource.color}" stroke="${resource.stroke}" />
+      <use href="#${resource.icon}" x="${x-3}" y="${y-3}" width="6" height="6"/>
+    </g>`;
+  }
+  goods.html(resourcesHTML);
+  console.timeEnd("drawResources");
+}
+
 function layerIsOn(el) {
   const buttonoff = document.getElementById(el).classList.contains("buttonoff");
   return !buttonoff;
