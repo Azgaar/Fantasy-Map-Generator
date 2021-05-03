@@ -1302,8 +1302,9 @@
           <button id="editNamesBaseButton" data-tip="Click to open Namesbase Editor. Shortcut: Shift + N">Namesbase</button>
           <button id="editZonesButton" data-tip="Click to open Zones Editor. Shortcut: Shift + Z">Zones</button>
           <button id="editReligions" data-tip="Click to open Religions Editor. Shortcut: Shift + R">Religions</button>
+          <button id="editResources" data-tip="Click to open Resources Editor. Shortcut: Shift + Q">Resources</button>
           <button id="editEmblemButton" data-tip="Click to open Emblem Editor. Shortcut: Shift + Y">Emblems</button>
-          <button id="editUnitsButton" data-tip="Click to open Units Editor. Shortcut: Shift + Q">Units</button>
+          <button id="editUnitsButton" data-tip="Click to open Units Editor. Shortcut: Shift + W">Units</button>
           <button id="editNotesButton" data-tip="Click to open Notes Editor. Shortcut: Shift + O">Notes</button>
         </div>
 
@@ -3000,6 +3001,31 @@
       </div>
     </div>
 
+    <div id="resourcesEditor" class="dialog stable" style="display: none">
+      <div id="resourcesHeader" class="header">
+        <div style="left:1.8em" data-tip="Click to sort by resource name" class="sortable alphabetically" data-sortby="name">Resource&nbsp;</div>
+        <div style="left:12.6em" data-tip="Click to sort by resource type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
+        <div style="left:18em" data-tip="Click to sort by resource basic value" class="sortable" data-sortby="value">Value&nbsp;</div>
+        <div style="left:25.1em" data-tip="Click to sort by generation chance" class="sortable" data-sortby="chance">Chance&nbsp;</div>
+        <div style="left:42.1em" data-tip="Click to sort spread model" class="sortable alphabetically" data-sortby="model">Model&nbsp;</div>
+        <div style="left:47em" data-tip="Click to sort by number of cells" class="sortable icon-sort-number-down" data-sortby="cells">Cells&nbsp;</div>
+      </div>
+      <div id="resourcesBody" class="table" data-type="absolute"></div>
+
+      <div id="resourcesFooter" class="totalLine">
+        <div data-tip="Number of resources" style="margin-left: 12px">Resources:&nbsp;<span id="resourcesNumber">0</span></div>
+      </div>
+    
+      <div id="resourcesBottom">
+        <button id="resourcesEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
+        <button id="resourcesEditStyle" data-tip="Edit resources style in Style Editor" class="icon-adjust"></button>
+        <button id="resourcesLegend" data-tip="Toggle Legend box" class="icon-list-bullet"></button>
+        <button id="resourcesPercentage" data-tip="Toggle percentage / absolute values display mode" class="icon-percent"></button>
+        <button id="resourcesAdd" data-tip="Add a new resource" class="icon-plus"></button>
+        <button id="resourcesExport" data-tip="Download resources-related data" class="icon-download"></button>
+      </div>
+    </div>
+    
     <div id="unitsEditor" class="dialog stable" style="display: none">
       <div id="unitsBody" style="margin-left:1.1em">
         <div class="unitsHeader" style="margin-top:.4em">
@@ -4361,6 +4387,7 @@
   <script defer src="modules/ui/regiment-editor.js"></script>
   <script defer src="modules/ui/battle-screen.js"></script>
   <script defer src="modules/coa-renderer.js"></script>
+  <script defer src="modules/ui/resources-editor.js"></script>
   <script defer src="modules/ui/emblems-editor.js"></script>
   <script defer src="modules/ui/editors.js"></script>
   <script defer src="modules/ui/3d.js"></script>
