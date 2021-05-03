@@ -6,8 +6,10 @@
 
   // TO-DO
   // apply logic on heightmap edit
-  // apply logic on burgs regenearation
+  // apply logic on burgs regeneration
   // apply logic on population recalculation
+  // apply logic on save
+  // apply logic on load
 
   let cells;
 
@@ -57,15 +59,6 @@
     ]
   }
 
-  const chance = v => {
-    if (v < .01) return false;
-    if (v > 99.99) return true;
-    return v / 100 > Math.random();
-  }
-
-  const temp = i => grid.cells.temp[pack.cells.g[i]];
-  const group = i => pack.features[cells.f[i]].group;
-
   const models = {
     forest: i => [6, 7, 8].includes(cells.biome[i]),
     forestAndTaiga: i => [5, 6, 7, 8, 9].includes(cells.biome[i]),
@@ -95,9 +88,14 @@
     colderWaters: i => cells.t[i] < 0 && temp(i) < 8,
   }
 
-  // Biomes: 0: Marine, 1: Hot desert, 2: Cold desert, 3: Savanna, 4: Grassland,
-  //         5: Tropical seasonal forest, 6: Temperate deciduous forest, 7: Tropical rainforest,
-  //         8: Temperate rainforest, 9: Taiga, 10: Tundra, 11: Glacier, 12: Wetland
+  const chance = v => {
+    if (v < .01) return false;
+    if (v > 99.99) return true;
+    return v / 100 > Math.random();
+  }
+
+  const temp = i => grid.cells.temp[pack.cells.g[i]];
+  const group = i => pack.features[cells.f[i]].group;
 
   const generate = function() {
     console.time("generateResources");
@@ -133,23 +131,6 @@
     console.table(pack.resources);
   }
 
-  const draw = function() {
-    console.time("drawResources");
-    let resourcesHTML = "";
-    for (const i of cells.i) {
-      if (!cells.resource[i]) continue;
-      const resource = pack.resources.find(resource => resource.i === cells.resource[i]);
-      const [x, y] = cells.p[i];
-      resourcesHTML += `<g>
-        <circle data-i="${resource.i}" cx=${x} cy=${y} r="3" fill="${resource.color}" stroke="${resource.stroke}" />
-        <use href="#${resource.icon}" x="${x-3}" y="${y-3}" width="6" height="6"/>
-      </g>`;
-    }
-
-    goods.html(resourcesHTML);
-    console.timeEnd("drawResources");
-  }
-
-return {generate, getDefault, draw};
+return {generate, getDefault};
 
 })));

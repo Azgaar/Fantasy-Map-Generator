@@ -57,8 +57,8 @@ let coastline = viewbox.append("g").attr("id", "coastline");
 let ice = viewbox.append("g").attr("id", "ice").style("display", "none");
 let prec = viewbox.append("g").attr("id", "prec").style("display", "none");
 let population = viewbox.append("g").attr("id", "population");
-let emblems = viewbox.append("g").attr("id", "emblems").style("display", "none");
 let goods = viewbox.append("g").attr("id", "goods");
+let emblems = viewbox.append("g").attr("id", "emblems").style("display", "none");
 let labels = viewbox.append("g").attr("id", "labels");
 let icons = viewbox.append("g").attr("id", "icons");
 let burgIcons = icons.append("g").attr("id", "burgIcons");
@@ -557,7 +557,6 @@ function generate() {
     defineBiomes();
 
     Resources.generate();
-    Resources.draw();
 
     rankCells();
     Cultures.generate();

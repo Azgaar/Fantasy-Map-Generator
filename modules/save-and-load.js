@@ -739,6 +739,7 @@ function parseLoadedData(data) {
       coastline = viewbox.select("#coastline");
       prec = viewbox.select("#prec");
       population = viewbox.select("#population");
+      goods = viewbox.select("#goods");
       emblems = viewbox.select("#emblems");
       labels = viewbox.select("#labels");
       icons = viewbox.select("#icons");
@@ -830,6 +831,7 @@ function parseLoadedData(data) {
       if (hasChild(population, "line")) turnOn("togglePopulation");
       if (hasChildren(ice)) turnOn("toggleIce");
       if (hasChild(prec, "circle")) turnOn("togglePrec");
+      if (hasChildren(goods)) turnOn("toggleResources");
       if (notHidden(emblems) && hasChild(emblems, "use")) turnOn("toggleEmblems");
       if (notHidden(labels)) turnOn("toggleLabels");
       if (notHidden(icons)) turnOn("toggleIcons");
@@ -1200,6 +1202,11 @@ function parseLoadedData(data) {
     if (version < 1.62) {
       // v 1.62 changed grid data
       gridOverlay.attr("size", null);
+    }
+
+    if (version < 1.7) {
+      // v 1.7 added resources layer
+      goods = viewbox.append("g").attr("id", "goods");
     }
 
     void function checkDataIntegrity() {

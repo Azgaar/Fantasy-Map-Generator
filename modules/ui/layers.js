@@ -14,6 +14,7 @@ function getDefaultPresets() {
     "heightmap": ["toggleHeight", "toggleRivers"],
     "physical": ["toggleCoordinates", "toggleHeight", "toggleIce", "toggleRivers", "toggleScaleBar"],
     "poi": ["toggleBorders", "toggleHeight", "toggleIce", "toggleIcons", "toggleMarkers", "toggleRivers", "toggleRoutes", "toggleScaleBar"],
+    "economical": ["toggleResources", "toggleBiomes", "toggleBorders", "toggleIcons", "toggleIce", "toggleLabels", "toggleRivers", "toggleRoutes", "toggleScaleBar"],
     "military": ["toggleBorders", "toggleIcons", "toggleLabels", "toggleMilitary", "toggleRivers", "toggleRoutes", "toggleScaleBar", "toggleStates"],
     "emblems": ["toggleBorders", "toggleIcons", "toggleIce", "toggleEmblems", "toggleRivers", "toggleRoutes", "toggleScaleBar", "toggleStates"],
     "landmass": ["toggleScaleBar"]
@@ -1311,6 +1312,35 @@ function drawEmblems() {
   TIME && console.timeEnd("drawEmblems");
 }
 
+function toggleResources(event) {
+  if (!layerIsOn("toggleResources")) {
+    turnButtonOn("toggleResources");
+    $('#goods').fadeIn();
+    if (!goods.selectAll("*").size()) drawResources();
+    if (event && isCtrlClick(event)) editStyle("goods");
+  } else {
+    if (event && isCtrlClick(event)) {editStyle("goods"); return;}
+    $('#goods').fadeOut();
+    turnButtonOff("toggleResources");
+  }
+}
+
+function drawResources() {
+  console.time("drawResources");
+  let resourcesHTML = "";
+  for (const i of pack.cells.i) {
+    if (!pack.cells.resource[i]) continue;
+    const resource = pack.resources.find(resource => resource.i === pack.cells.resource[i]);
+    const [x, y] = pack.cells.p[i];
+    resourcesHTML += `<g>
+      <circle data-i="${resource.i}" cx=${x} cy=${y} r="3" fill="${resource.color}" stroke="${resource.stroke}" />
+      <use href="#${resource.icon}" x="${x-3}" y="${y-3}" width="6" height="6"/>
+    </g>`;
+  }
+  goods.html(resourcesHTML);
+  console.timeEnd("drawResources");
+}
+
 function layerIsOn(el) {
   const buttonoff = document.getElementById(el).classList.contains("buttonoff");
   return !buttonoff;
@@ -1356,6 +1386,7 @@ function getLayer(id) {
   if (id === "togglePopulation") return $("#population");
   if (id === "toggleIce") return $("#ice");
   if (id === "toggleTexture") return $("#texture");
+  if (id === "toggleResources") return $("#goods");
   if (id === "toggleEmblems") return $("#emblems");
   if (id === "toggleLabels") return $("#labels");
   if (id === "toggleIcons") return $("#icons");

@@ -531,6 +531,7 @@ document.addEventListener("keyup", event => {
   else if (key === 78) togglePopulation(); // "N" to toggle Population layer
   else if (key === 74) toggleIce(); // "J" to toggle Ice layer
   else if (key === 65) togglePrec(); // "A" to toggle Precipitation layer
+  else if (key === 81) toggleResources(); // "Q" to toggle Resources layer
   else if (key === 89) toggleEmblems(); // "Y" to toggle Emblems layer
   else if (key === 76) toggleLabels(); // "L" to toggle Labels layer
   else if (key === 73) toggleIcons(); // "I" to toggle Icons layer
