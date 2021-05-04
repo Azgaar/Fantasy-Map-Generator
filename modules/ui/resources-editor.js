@@ -28,17 +28,19 @@ function editResources() {
     // // {i: 33, name: "Saltpeter", icon: "resource-saltpeter", color: "#e6e3e3", value: 8, chance: 2, model: "habitability", bonus: {artillery: 3}}
     for (const r of pack.resources) {
       const stroke = Resources.getStroke(r.color);
-      lines += `<div class="states resources" data-id=${r.i} data-name="${r.name}" data-color="${r.color}" data-chance="${r.chance}" data-value="${r.value}" data-model="${r.model}" data-cells="${r.cells}">
+      lines += `<div class="states resources" data-id=${r.i} data-name="${r.name}" data-color="${r.color}"
+        data-category="${r.category}" data-chance="${r.chance}"
+        data-value="${r.value}" data-model="${r.model}" data-cells="${r.cells}">
         <svg data-tip="Resource icon. Click to change" width="2em" height="2em" class="icon">
           <circle cx="50%" cy="50%" r="42%" fill="${r.color}" stroke="${stroke}"/>
           <use href="#${r.icon}" x="10%" y="10%" width="80%" height="80%"/>
         </svg>
-        <input data-tip="Resource name. Click and type to change" class="resourceName" value="${r.name}" autocorrect="off" spellcheck="false">
-        <select data-tip="Resource type. Select to change" class="resourceType"><option selected>No data</option></select>
+        <input data-tip="Resource name. Click and category to change" class="resourceName" value="${r.name}" autocorrect="off" spellcheck="false">
+        <select data-tip="Resource category. Select to change"><option selected>No data</option></select>
         <input data-tip="Resource spread model. Select to change" value="${r.model}" class="model"/>
 
-        <input data-tip="Resource basic value. Click and type to change" value="${r.value}" type="number">
-        <input data-tip="Resource generation chance in eligible cell. Click and type to change" value="${r.chance}" type="number">
+        <input data-tip="Resource basic value. Click and type to change" value="${r.value}" type="number" min=0 max=100 step=1 />
+        <input data-tip="Resource generation chance in eligible cell. Click and type to change" value="${r.chance}" type="number" min=0 max=100 step=.1 />
         <div data-tip="Number of cells with resource" class="cells">${r.cells}</div>
 
         <span data-tip="Remove resource" class="icon-trash-empty hide"></span>
@@ -97,12 +99,12 @@ function editResources() {
   }
 
   function downloadResourcesData() {
-    let data = "Id,Resource,Type,Color,Icon,Value,Chance,Model,Cells\n"; // headers
+    let data = "Id,Resource,Category,Color,Icon,Value,Chance,Model,Cells\n"; // headers
 
     body.querySelectorAll(":scope > div").forEach(function(el) {
       data += el.dataset.id + ",";
       data += el.dataset.name + ",";
-      data += el.dataset.type + ",";
+      data += el.dataset.category + ",";
       data += el.dataset.color + ",";
       data += el.dataset.icon + ",";
       data += el.dataset.value + ",";
