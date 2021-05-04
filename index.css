@@ -1448,6 +1448,20 @@ div.states > .coaIcon > use {
   pointer-events: none;
 }
 
+div.states > .icon {
+  margin: 0;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+div.states > .model {
+  width: 7em;
+}
+
+div.states > .icon > * {
+  pointer-events: none;
+}
+
 #diplomacyBodySection > div {
   cursor: pointer;
 }
