@@ -331,6 +331,7 @@ function createPicker(hatching) {
   const closePicker = () => container.remove();
 
   const container = d3.select("body").append("svg").attr("id", "pickerContainer").attr("width", "100%").attr("height", "100%");
+  container.append("rect").attr("width", "100%").attr("height", "100%").attr("opacity", 0).on("mousemove", cl).on("click", closePicker);
   const picker = container.append("g").attr("id", "picker").call(d3.drag().filter(() => event.target.tagName !== "INPUT").on("start", dragPicker));
 
   const controls = picker.append("g").attr("id", "pickerControls");
