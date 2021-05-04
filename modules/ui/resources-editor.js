@@ -451,6 +451,22 @@ function editResources() {
     confirmationDialog({title: 'Restore default resources', message, confirm: 'Restore', onConfirm});
   }
 
+  function resourceChangeColor() {
+    const circle = this.querySelector("circle");
+    const resource = Resources.get(+this.parentNode.dataset.id);
+
+    const callback = function(fill) {
+      const stroke = Resources.getStroke(fill);
+      circle.setAttribute("fill", fill);
+      circle.setAttribute("stroke", stroke);
+      resource.color = fill;
+      resource.stroke = stroke;
+      goods.selectAll(`circle[data-i='${resource.i}']`).attr("fill", fill).attr("stroke", stroke);
+    }
+
+    openPicker(resource.color, callback, {allowHatching: false});
+  }
+
   function toggleLegend() {
     if (legend.selectAll('*').size()) {
       clearLegend();

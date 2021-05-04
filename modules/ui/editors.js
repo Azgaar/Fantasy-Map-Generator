@@ -469,7 +469,8 @@ function clearLegend() {
 }
 
 // draw color (fill) picker
-function createPicker() {
+function createPicker(hatching) {
+  const COLORS_IN_ROW = 14;
   const pos = () => tip("Drag to change the picker position");
   const cl = () => tip("Click to close the picker");
   const closePicker = () => container.style("display", "none");
@@ -672,10 +673,8 @@ function updatePickerColors() {
   });
 }
 
-function openPicker(fill, callback) {
-  const picker = d3.select("#picker");
-  if (!picker.size()) createPicker();
-  d3.select("#pickerContainer").style("display", "block");
+function openPicker(fill, callback, options = {allowHatching: true}) {
+  createPicker(options.allowHatching);
 
   if (fill[0] === "#") {
     const hsl = d3.hsl(fill);
