@@ -29,13 +29,16 @@ function editResources() {
     // // {i: 33, name: "Saltpeter", icon: "resource-saltpeter", color: "#e6e3e3", value: 8, chance: 2, model: "habitability", bonus: {artillery: 3}}
     for (const r of pack.resources) {
       lines += `<div class="states resources" data-id=${r.i} data-name="${r.name}" data-color="${r.color}" data-chance="${r.chance}" data-value="${r.value}" data-model="${r.model}" data-cells="${r.cells}">
-        <svg data-tip="Resource background color. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${r.color}" class="fillRect pointer"></svg>
+        <svg data-tip="Resource icon. Click to change" width="2em" height="2em" class="icon">
+          <circle cx="50%" cy="50%" r="42%" fill="${r.color}" stroke="${r.stroke}"/>
+          <use href="#${r.icon}" x="10%" y="10%" width="80%" height="80%"/>
+        </svg>
         <input data-tip="Resource name. Click and type to change" class="resourceName" value="${r.name}" autocorrect="off" spellcheck="false">
-        <select data-tip="Resource type. Select to change" class="resourceType">No data</select>
+        <select data-tip="Resource type. Select to change" class="resourceType"><option selected>No data</option></select>
+        <input data-tip="Resource spread model. Select to change" value="${r.model}" class="model"/>
 
         <input data-tip="Resource basic value. Click and type to change" value="${r.value}" type="number">
         <input data-tip="Resource generation chance in eligible cell. Click and type to change" value="${r.chance}" type="number">
-        <input data-tip="Resource spread model. Select to change" value="${r.model}">
         <div data-tip="Number of cells with resource" class="cells">${r.cells}</div>
 
         <span data-tip="Remove resource" class="icon-trash-empty hide"></span>
