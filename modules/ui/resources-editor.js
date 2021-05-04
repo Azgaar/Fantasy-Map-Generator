@@ -17,7 +17,6 @@ function editResources() {
 
   // add listeners
   document.getElementById("resourcesEditorRefresh").addEventListener("click", resourcesEditorAddLines);
-  document.getElementById("resourcesEditStyle").addEventListener("click", () => editStyle("goods"));
   document.getElementById("resourcesLegend").addEventListener("click", toggleLegend);
   document.getElementById("resourcesPercentage").addEventListener("click", togglePercentageMode);
   document.getElementById("resourcesExport").addEventListener("click", downloadResourcesData);
@@ -28,9 +27,10 @@ function editResources() {
 
     // // {i: 33, name: "Saltpeter", icon: "resource-saltpeter", color: "#e6e3e3", value: 8, chance: 2, model: "habitability", bonus: {artillery: 3}}
     for (const r of pack.resources) {
+      const stroke = Resources.getStroke(r.color);
       lines += `<div class="states resources" data-id=${r.i} data-name="${r.name}" data-color="${r.color}" data-chance="${r.chance}" data-value="${r.value}" data-model="${r.model}" data-cells="${r.cells}">
         <svg data-tip="Resource icon. Click to change" width="2em" height="2em" class="icon">
-          <circle cx="50%" cy="50%" r="42%" fill="${r.color}" stroke="${r.stroke}"/>
+          <circle cx="50%" cy="50%" r="42%" fill="${r.color}" stroke="${stroke}"/>
           <use href="#${r.icon}" x="10%" y="10%" width="80%" height="80%"/>
         </svg>
         <input data-tip="Resource name. Click and type to change" class="resourceName" value="${r.name}" autocorrect="off" spellcheck="false">
@@ -53,11 +53,27 @@ function editResources() {
     // body.querySelectorAll("div.resources").forEach(el => el.addEventListener("mouseenter", ev => resourceHighlightOn(ev)));
     // body.querySelectorAll("div.resources").forEach(el => el.addEventListener("mouseleave", ev => resourceHighlightOff(ev)));
     // body.querySelectorAll("div.states").forEach(el => el.addEventListener("click", selectResourceOnLineClick));
-    // body.querySelectorAll("rect.fillRect").forEach(el => el.addEventListener("click", resourceChangeColor));
+    body.querySelectorAll("svg.icon").forEach(el => el.addEventListener("click", resourceChangeColor));
 
     if (body.dataset.type === "percentage") {body.dataset.type = "absolute"; togglePercentageMode();}
     applySorting(resourcesHeader);
     $("#resourcesEditor").dialog({width: fitContent()});
+  }
+
+  function resourceChangeColor() {
+    const circle = this.querySelector("circle");
+    const resource = Resources.get(+this.parentNode.dataset.id);
+
+    const callback = function(fill) {
+      const stroke = Resources.getStroke(fill);
+      circle.setAttribute("fill", fill);
+      circle.setAttribute("stroke", stroke);
+      resource.color = fill;
+      resource.stroke = stroke;
+      goods.selectAll(`circle[data-i='${resource.i}']`).attr("fill", fill).attr("stroke", stroke);
+    }
+
+    openPicker(resource.color, callback, {allowHatching: false});
   }
 
   function toggleLegend() {
