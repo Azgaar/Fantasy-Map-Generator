@@ -324,15 +324,14 @@ function clearLegend() {
 }
 
 // draw color (fill) picker
-function createPicker() {
+function createPicker(hatching) {
+  const COLORS_IN_ROW = 14;
   const pos = () => tip("Drag to change the picker position");
   const cl = () => tip("Click to close the picker");
-  const closePicker = () => contaiter.style("display", "none");
+  const closePicker = () => container.remove();
 
-  const contaiter = d3.select("body").append("svg").attr("id", "pickerContainer").attr("width", "100%").attr("height", "100%");
-  contaiter.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%").attr("opacity", .2)
-    .on("mousemove", cl).on("click", closePicker);
-  const picker = contaiter.append("g").attr("id", "picker").call(d3.drag().filter(() => event.target.tagName !== "INPUT").on("start", dragPicker));
+  const container = d3.select("body").append("svg").attr("id", "pickerContainer").attr("width", "100%").attr("height", "100%");
+  const picker = container.append("g").attr("id", "picker").call(d3.drag().filter(() => event.target.tagName !== "INPUT").on("start", dragPicker));
 
   const controls = picker.append("g").attr("id", "pickerControls");
   const h = controls.append("g");
@@ -375,23 +374,21 @@ function createPicker() {
   spaces.selectAll("input").on("change", changePickerSpace);
 
   const colors = picker.append("g").attr("id", "pickerColors").attr("stroke", "#333333");
-  const hatches = picker.append("g").attr("id", "pickerHatches").attr("stroke", "#333333");
-  const hatching = d3.selectAll("g#hatching > pattern");
-  const number = hatching.size();
-
-  const clr = d3.range(number).map(i => d3.hsl(i/number*360, .7, .7).hex());
+  const clr = d3.range(COLORS_IN_ROW).map(i => d3.hsl(i/COLORS_IN_ROW*360, .7, .7).hex());
   clr.forEach(function(d, i) {
     colors.append("rect").attr("id", "picker_" + d).attr("fill", d).attr("class", i?"":"selected")
       .attr("x", i*22+4).attr("y", 40).attr("width", 16).attr("height", 16);
   });
-
-  hatching.each(function(d, i) {
-    hatches.append("rect").attr("id", "picker_" + this.id).attr("fill", "url(#" + this.id + ")")
-      .attr("x", i*22+4).attr("y", 61).attr("width", 16).attr("height", 16);
-  });
-
   colors.selectAll("rect").on("click", pickerFillClicked).on("mousemove", () => tip("Click to fill with the color"));
-  hatches.selectAll("rect").on("click", pickerFillClicked).on("mousemove", () => tip("Click to fill with the hatching"));
+
+  if (hatching) {
+    const hatches = picker.append("g").attr("id", "pickerHatches").attr("stroke", "#333333");
+    d3.selectAll("g#hatching > pattern").each(function(d, i) {
+      hatches.append("rect").attr("id", "picker_" + this.id).attr("fill", "url(#" + this.id + ")")
+        .attr("x", i*22+4).attr("y", 61).attr("width", 16).attr("height", 16);
+    });
+    hatches.selectAll("rect").on("click", pickerFillClicked).on("mousemove", () => tip("Click to fill with the hatching"));
+  }
 
   // append box
   const bbox = picker.node().getBBox();
@@ -445,10 +442,8 @@ function updatePickerColors() {
   });
 }
 
-function openPicker(fill, callback) {
-  const picker = d3.select("#picker");
-  if (!picker.size()) createPicker();
-  d3.select("#pickerContainer").style("display", "block");
+function openPicker(fill, callback, options = {allowHatching: true}) {
+  createPicker(options.allowHatching);
 
   if (fill[0] === "#") {
     const hsl = d3.hsl(fill);
