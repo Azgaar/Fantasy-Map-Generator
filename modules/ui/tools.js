@@ -356,6 +356,13 @@ function regenerateResources() {
   refreshAllEditors();
 }
 
+function regenerateResources() {
+  Resources.generate();
+  goods.selectAll("*").remove();
+  if (layerIsOn("toggleResources")) drawResources();
+  refreshAllEditors();
+}
+
 function regenerateEmblems() {
   // remove old emblems
   document.querySelectorAll("[id^=stateCOA]").forEach(el => el.remove());
