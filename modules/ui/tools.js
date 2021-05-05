@@ -65,6 +65,7 @@ function processFeatureRegeneration(event, button) {
   if (button === "regenerateStates") regenerateStates(); else
   if (button === "regenerateProvinces") regenerateProvinces(); else
   if (button === "regenerateBurgs") regenerateBurgs(); else
+  if (button === "regenerateResources") regenerateResources(); else
   if (button === "regenerateEmblems") regenerateEmblems(); else
   if (button === "regenerateReligions") regenerateReligions(); else
   if (button === "regenerateCultures") regenerateCultures(); else
@@ -238,8 +239,6 @@ function regenerateBurgs() {
   const burgsCount = manorsInput.value == 1000 ? rn(sorted.length / 5 / (grid.points.length / 10000) ** .8) + states.length : +manorsInput.value + states.length;
   const spacing = (graphWidth + graphHeight) / 150 / (burgsCount ** .7 / 66); // base min distance between towns
 
-  //clear locked list since ids will change
-  //burglock.selectAll("text").remove();
   for (let j=0; j < Lockedburgs.length; j++) {
     const id = burgs.length;
     const oldBurg = Lockedburgs[j];
@@ -248,7 +247,6 @@ function regenerateBurgs() {
     burgsTree.add([oldBurg.x, oldBurg.y]);
     cells.burg[oldBurg.cell] = id;
     if (oldBurg.capital) {states[oldBurg.state].capital = id; states[oldBurg.state].center = oldBurg.cell;}
-    //burglock.append("text").attr("data-id", id);
   }
 
   for (let i=0; i < sorted.length && burgs.length < burgsCount; i++) {
@@ -293,6 +291,13 @@ function regenerateBurgs() {
 
   if (document.getElementById("burgsOverviewRefresh").offsetParent) burgsOverviewRefresh.click();
   if (document.getElementById("statesEditorRefresh").offsetParent) statesEditorRefresh.click();
+}
+
+function regenerateResources() {
+  Resources.generate();
+  goods.selectAll("*").remove();
+  if (layerIsOn("toggleResources")) drawResources();
+  refreshAllEditors();
 }
 
 function regenerateEmblems() {

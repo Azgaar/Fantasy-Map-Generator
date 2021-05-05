@@ -1315,12 +1315,11 @@ function drawEmblems() {
 function toggleResources(event) {
   if (!layerIsOn("toggleResources")) {
     turnButtonOn("toggleResources");
-    $('#goods').fadeIn();
-    if (!goods.selectAll("*").size()) drawResources();
+    drawResources();
     if (event && isCtrlClick(event)) editStyle("goods");
   } else {
     if (event && isCtrlClick(event)) {editStyle("goods"); return;}
-    $('#goods').fadeOut();
+    goods.selectAll("*").remove();
     turnButtonOff("toggleResources");
   }
 }

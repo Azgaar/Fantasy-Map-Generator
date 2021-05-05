@@ -102,9 +102,9 @@
     cells = pack.cells;
     cells.resource = new Uint8Array(cells.i.length); // resources array [0, 255]
     const resourceMaxCells = Math.ceil(200 * cells.i.length / 5000);
-    pack.resources = getDefault();
+    if (!pack.resources) pack.resources = getDefault();
     pack.resources.forEach(r => r.cells = 0);
-    
+
     const skipGlaciers = biomesData.habitability[11] === 0;
     const shuffledCells = d3.shuffle(cells.i.slice());
     for (const i of shuffledCells) {
@@ -125,7 +125,6 @@
     pack.resources.sort((a, b) => a.i > b.i ? 1 : -1);
 
     console.timeEnd("generateResources");
-    console.table(pack.resources);
   }
 
   const getStroke = color => d3.color(color).darker(2).hex();

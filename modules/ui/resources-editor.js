@@ -17,6 +17,7 @@ function editResources() {
 
   // add listeners
   document.getElementById("resourcesEditorRefresh").addEventListener("click", resourcesEditorAddLines);
+  document.getElementById("resourcesRegenerate").addEventListener("click", regenerateResources);
   document.getElementById("resourcesLegend").addEventListener("click", toggleLegend);
   document.getElementById("resourcesPercentage").addEventListener("click", togglePercentageMode);
   document.getElementById("resourcesExport").addEventListener("click", downloadResourcesData);
@@ -24,6 +25,11 @@ function editResources() {
   // add line for each resource
   function resourcesEditorAddLines() {
     let lines = "";
+    const categories = [...new Set(pack.resources.map(r => r.category))].sort();
+    const categoryOptions = category => categories.map(c => `<option ${c === category ? "selected" : ""} value="${c}">${c}</option>`).join("");
+
+    const models = [...new Set(pack.resources.map(r => r.model))].sort();
+    const modelOptions = model => models.map(m => `<option ${m === model ? "selected" : ""} value="${m}">${m}</option>`).join("");
 
     // // {i: 33, name: "Saltpeter", icon: "resource-saltpeter", color: "#e6e3e3", value: 8, chance: 2, model: "habitability", bonus: {artillery: 3}}
     for (const r of pack.resources) {
@@ -36,8 +42,8 @@ function editResources() {
           <use href="#${r.icon}" x="10%" y="10%" width="80%" height="80%"/>
         </svg>
         <input data-tip="Resource name. Click and category to change" class="resourceName" value="${r.name}" autocorrect="off" spellcheck="false">
-        <select data-tip="Resource category. Select to change"><option selected>No data</option></select>
-        <input data-tip="Resource spread model. Select to change" value="${r.model}" class="model"/>
+        <select data-tip="Resource category. Select to change">${categoryOptions(r.category)}</select>
+        <select data-tip="Resource spread model. Select to change" class="model">${modelOptions(r.model)}</select>
 
         <input data-tip="Resource basic value. Click and type to change" value="${r.value}" type="number" min=0 max=100 step=1 />
         <input data-tip="Resource generation chance in eligible cell. Click and type to change" value="${r.chance}" type="number" min=0 max=100 step=.1 />
