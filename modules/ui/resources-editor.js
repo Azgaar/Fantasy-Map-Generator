@@ -29,7 +29,7 @@ function editResources() {
     const categoryOptions = category => categories.map(c => `<option ${c === category ? "selected" : ""} value="${c}">${c}</option>`).join("");
 
     const models = [...new Set(pack.resources.map(r => r.model))].sort();
-    const modelOptions = model => models.map(m => `<option ${m === model ? "selected" : ""} value="${m}">${m}</option>`).join("");
+    const modelOptions = model => models.map(m => `<option ${m === model ? "selected" : ""} value="${m}">${m.replaceAll("_", " ")}</option>`).join("");
 
     // // {i: 33, name: "Saltpeter", icon: "resource-saltpeter", color: "#e6e3e3", value: 8, chance: 2, model: "habitability", bonus: {artillery: 3}}
     for (const r of pack.resources) {
