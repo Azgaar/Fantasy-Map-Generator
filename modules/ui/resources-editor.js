@@ -63,6 +63,19 @@ function editResources() {
     if (bonus === 'cavalry') return `<span data-tip="Cavalry bonus" class="icon-chess-knight"></span>`;
   }
 
+  body.addEventListener("click", function(ev) {
+    const el = ev.target, cl = el.classList, line = el.parentNode, i = +line.dataset.id;
+    const resource = Resources.get(+line.dataset.id);
+    if (cl.contains("resourceCategory")) return changeCategory(resource, line, el);
+    if (cl.contains("resourceModel")) return changeModel(resource, line, el);
+  });
+
+  body.addEventListener("change", function(ev) {
+    const el = ev.target, cl = el.classList, line = el.parentNode;
+    const resource = Resources.get(+line.dataset.id);
+    if (cl.contains("resourceName")) return changeName(resource, el.value, line);
+  });
+
   // add line for each resource
   function resourcesEditorAddLines() {
     const addTitle = (string, max) => (string.length < max ? '' : `title="${string}"`);
@@ -449,6 +462,106 @@ function editResources() {
       regenerateResources();
     };
     confirmationDialog({title: 'Restore default resources', message, confirm: 'Restore', onConfirm});
+  }
+
+  function changeName(resource, name, line) {
+    resource.name = line.dataset.name = name;
+  }
+
+  function changeCategory(resource, line, el) {
+    const categories = [...new Set(pack.resources.map(r => r.category))].sort();
+    const categoryOptions = category => categories.map(c => `<option ${c === category ? "selected" : ""} value="${c}">${c}</option>`).join("");
+
+    alertMessage.innerHTML = `
+      <div style="margin-bottom:.2em" data-tip="Select category from the list">
+        <div style="display: inline-block; width: 9em">Select category:</div>
+        <select style="width: 9em" id="resouceCategorySelect">${categoryOptions(line.dataset.category)}</select>
+      </div>
+
+      <div style="margin-bottom:.2em" data-tip="Type new category name">
+        <div style="display: inline-block; width: 9em">Custom category:</div>
+        <input style="width: 9em" id="resouceCategoryAdd" placeholder="Category name" />
+      </div>
+    `;
+
+    $("#alert").dialog({resizable: false, title: "Change category",
+      buttons: {
+        Cancel: function() {$(this).dialog("close");},
+        Apply: function() {applyChanges(); $(this).dialog("close");}
+      }
+    });
+
+    function applyChanges() {
+      const custom = document.getElementById("resouceCategoryAdd").value;
+      const select = document.getElementById("resouceCategorySelect").value;
+      const category = custom ? capitalize(custom) : select;
+      resource.category = line.dataset.category = el.innerHTML = category;
+    }
+  }
+
+  function changeModel(resource, line, el) {
+    const defaultModels = Resources.defaultModels;
+    const model = line.dataset.model;
+    const modelOptions = Object.keys(defaultModels).map(m => `<option ${m === model ? "selected" : ""} value="${m}">${m.replaceAll("_", " ")}</option>`).join("");
+    const wikiURL = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Resources:-spread-functions";
+
+    alertMessage.innerHTML = `
+      <fieldset data-tip="Select one of the predefined spread models from the list" style="border: 1px solid #999; margin-bottom: 1em">
+        <legend>Predefined models</legend>
+        <div style="margin-bottom:.2em">
+          <div style="display: inline-block; width: 6em">Name:</div>
+          <select onchange="resouceModelFunction.innerHTML = Resources.defaultModels[this.value]" style="width: 14em" id="resouceModelSelect">${modelOptions}</select>
+        </div>
+
+        <div style="margin-bottom:.2em">
+          <div style="display: inline-block; width: 6em">Function:</div>
+          <div style="display: inline-block; width: 14em; font-family: monospace" id="resouceModelFunction">${defaultModels[model]}</div>
+        </div>
+      </fieldset>
+
+      <fieldset data-tip="Advanced option. Define custom spread model, click on 'Help' for details" style="border: 1px solid #999">
+        <legend>Custom model</legend>
+        <div style="margin-bottom:.2em">
+          <div style="display: inline-block; width: 6em">Name:</div>
+          <input style="width: 14em" id="resouceModelCustomName" />
+        </div>
+
+        <div>
+          <div style="display: inline-block; width: 6em">Function:</div>
+          <input style="width: 14em" id="resouceModelCustomFunction" />
+        </div>
+      </fieldset>
+
+      <div id="resourceModelMessage" style="color: #b20000; margin: .4em 1em 0"></div>
+    `;
+
+    $("#alert").dialog({resizable: false, title: "Change spread model",
+      buttons: {
+        Help: () => openURL(wikiURL),
+        Cancel: function() {$(this).dialog("close");},
+        Apply: function() {applyChanges(this);}
+      }
+    });
+
+    function applyChanges(dialog) {
+      const customName = document.getElementById("resouceModelCustomName").value;
+      const customFn = document.getElementById("resouceModelCustomFunction").value;
+
+      const message = document.getElementById("resourceModelMessage");
+      if (customName && !customFn) return message.innerHTML = "Error. Custom model function is required";
+      if (!customName && customFn) return message.innerHTML = "Error. Custom model name is required";
+      message.innerHTML = "";
+
+      if (customName && customFn) {
+        resource.model = line.dataset.model = el.innerHTML = customName;
+        resource.custom = customFn;
+        return;
+      }
+
+      const model = document.getElementById("resouceModelSelect").value;
+      resource.model = line.dataset.model = el.innerHTML = model;
+      $(dialog).dialog("close");
+    }
   }
 
   function resourceChangeColor() {
