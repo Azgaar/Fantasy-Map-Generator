@@ -1454,12 +1454,17 @@ div.states > .icon {
   vertical-align: middle;
 }
 
-div.states > .model {
-  width: 7em;
-}
-
 div.states > .icon > * {
   pointer-events: none;
+}
+
+div.states > .resourceCategory,
+div.states > .resourceModel {
+  cursor: pointer;
+  width: 7em;
+  overflow: hidden;
+  vertical-align: middle;
+  white-space: nowrap;
 }
 
 #diplomacyBodySection > div {
