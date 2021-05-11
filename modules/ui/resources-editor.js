@@ -63,15 +63,20 @@ function editResources() {
     if (bonus === 'cavalry') return `<span data-tip="Cavalry bonus" class="icon-chess-knight"></span>`;
   }
 
-  body.addEventListener("click", function(ev) {
-    const el = ev.target, cl = el.classList, line = el.parentNode, i = +line.dataset.id;
+  body.addEventListener("click", function (ev) {
+    const el = ev.target,
+      cl = el.classList,
+      line = el.parentNode,
+      i = +line.dataset.id;
     const resource = Resources.get(+line.dataset.id);
     if (cl.contains("resourceCategory")) return changeCategory(resource, line, el);
     if (cl.contains("resourceModel")) return changeModel(resource, line, el);
   });
 
-  body.addEventListener("change", function(ev) {
-    const el = ev.target, cl = el.classList, line = el.parentNode;
+  body.addEventListener("change", function (ev) {
+    const el = ev.target,
+      cl = el.classList,
+      line = el.parentNode;
     const resource = Resources.get(+line.dataset.id);
     if (cl.contains("resourceName")) return changeName(resource, el.value, line);
   });
@@ -484,10 +489,17 @@ function editResources() {
       </div>
     `;
 
-    $("#alert").dialog({resizable: false, title: "Change category",
+    $("#alert").dialog({
+      resizable: false,
+      title: "Change category",
       buttons: {
-        Cancel: function() {$(this).dialog("close");},
-        Apply: function() {applyChanges(); $(this).dialog("close");}
+        Cancel: function () {
+          $(this).dialog("close");
+        },
+        Apply: function () {
+          applyChanges();
+          $(this).dialog("close");
+        }
       }
     });
 
@@ -502,20 +514,26 @@ function editResources() {
   function changeModel(resource, line, el) {
     const defaultModels = Resources.defaultModels;
     const model = line.dataset.model;
-    const modelOptions = Object.keys(defaultModels).map(m => `<option ${m === model ? "selected" : ""} value="${m}">${m.replaceAll("_", " ")}</option>`).join("");
+    const modelOptions = Object.keys(defaultModels).sort().map(m => `<option ${m === model ? "selected" : ""} value="${m}">${m.replaceAll("_", " ")}</option>`).join("");
     const wikiURL = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Resources:-spread-functions";
+    const onSelect = "resouceModelFunction.innerHTML = Resources.defaultModels[this.value] || ' '; resouceModelCustomName.value = ''; resouceModelCustomFunction.value = ''";
 
     alertMessage.innerHTML = `
       <fieldset data-tip="Select one of the predefined spread models from the list" style="border: 1px solid #999; margin-bottom: 1em">
         <legend>Predefined models</legend>
         <div style="margin-bottom:.2em">
           <div style="display: inline-block; width: 6em">Name:</div>
-          <select onchange="resouceModelFunction.innerHTML = Resources.defaultModels[this.value]" style="width: 14em" id="resouceModelSelect">${modelOptions}</select>
+          <select onchange="${onSelect}" style="width: 18em" id="resouceModelSelect">
+            <option value=""><i>Custom</i></option>
+            ${modelOptions}
+          </select>
         </div>
 
         <div style="margin-bottom:.2em">
           <div style="display: inline-block; width: 6em">Function:</div>
-          <div style="display: inline-block; width: 14em; font-family: monospace" id="resouceModelFunction">${defaultModels[model]}</div>
+          <div id="resouceModelFunction" style="display: inline-block; width: 18em; font-family: monospace; border: 1px solid #ccc; padding: 3px; font-size: .95em;vertical-align: middle">
+            ${defaultModels[model] || " "}
+          </div>
         </div>
       </fieldset>
 
@@ -523,23 +541,29 @@ function editResources() {
         <legend>Custom model</legend>
         <div style="margin-bottom:.2em">
           <div style="display: inline-block; width: 6em">Name:</div>
-          <input style="width: 14em" id="resouceModelCustomName" />
+          <input style="width: 18em" id="resouceModelCustomName" value="${resource.custom ? resource.model : ''}" />
         </div>
 
         <div>
           <div style="display: inline-block; width: 6em">Function:</div>
-          <input style="width: 14em" id="resouceModelCustomFunction" />
+          <input style="width: 18.75em; font-family: monospace; font-size: .95em" id="resouceModelCustomFunction" spellcheck="false" value="${resource.custom || ''}"/>
         </div>
       </fieldset>
 
       <div id="resourceModelMessage" style="color: #b20000; margin: .4em 1em 0"></div>
     `;
 
-    $("#alert").dialog({resizable: false, title: "Change spread model",
+    $("#alert").dialog({
+      resizable: false,
+      title: "Change spread model",
       buttons: {
         Help: () => openURL(wikiURL),
-        Cancel: function() {$(this).dialog("close");},
-        Apply: function() {applyChanges(this);}
+        Cancel: function () {
+          $(this).dialog("close");
+        },
+        Apply: function () {
+          applyChanges(this);
+        }
       }
     });
 
@@ -548,17 +572,29 @@ function editResources() {
       const customFn = document.getElementById("resouceModelCustomFunction").value;
 
       const message = document.getElementById("resourceModelMessage");
-      if (customName && !customFn) return message.innerHTML = "Error. Custom model function is required";
-      if (!customName && customFn) return message.innerHTML = "Error. Custom model name is required";
+      if (customName && !customFn) return (message.innerHTML = "Error. Custom model function is required");
+      if (!customName && customFn) return (message.innerHTML = "Error. Custom model name is required");
       message.innerHTML = "";
 
       if (customName && customFn) {
+        try {
+          const allMethods = "{" + Object.keys(Resources.methods).join(", ") + "}";
+          const fn = new Function(allMethods, "return " + customFn);
+          fn({...Resources.methods});
+        } catch (err) {
+          message.innerHTML = "Error. " + err.message || err;
+          return;
+        }
+
         resource.model = line.dataset.model = el.innerHTML = customName;
         resource.custom = customFn;
+        $(dialog).dialog("close");
         return;
       }
 
       const model = document.getElementById("resouceModelSelect").value;
+      if (!model) return (message.innerHTML = "Error. Model is not set");
+
       resource.model = line.dataset.model = el.innerHTML = model;
       $(dialog).dialog("close");
     }
@@ -568,14 +604,14 @@ function editResources() {
     const circle = this.querySelector("circle");
     const resource = Resources.get(+this.parentNode.dataset.id);
 
-    const callback = function(fill) {
+    const callback = function (fill) {
       const stroke = Resources.getStroke(fill);
       circle.setAttribute("fill", fill);
       circle.setAttribute("stroke", stroke);
       resource.color = fill;
       resource.stroke = stroke;
       goods.selectAll(`circle[data-i='${resource.i}']`).attr("fill", fill).attr("stroke", stroke);
-    }
+    };
 
     openPicker(resource.color, callback, {allowHatching: false});
   }
