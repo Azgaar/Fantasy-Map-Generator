@@ -136,7 +136,7 @@
         break;
       }
     }
-    pack.resources.sort((a, b) => (a.i > b.i ? 1 : -1));
+    pack.resources.sort((a, b) => (a.i > b.i ? 1 : -1)).forEach(r => delete r.fn);
 
     console.timeEnd("generateResources");
   };
@@ -144,5 +144,5 @@
   const getStroke = color => d3.color(color).darker(2).hex();
   const get = i => pack.resources.find(resource => resource.i === i);
 
-  return {generate, getDefault, defaultModels, getStroke, get};
+  return {generate, getDefault, defaultModels, methods, getStroke, get};
 });
