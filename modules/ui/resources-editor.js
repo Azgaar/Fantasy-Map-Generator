@@ -51,10 +51,10 @@ function editResources() {
     if (bonus === 'defence') return `<span data-tip="Defence bonus" class="icon-chess-rook"></span>`;
     if (bonus === 'prestige') return `<span data-tip="Prestige bonus" class="icon-star"></span>`;
     if (bonus === 'artillery') return `<span data-tip="Artillery bonus" class="icon-rocket"></span>`;
-    if (bonus === 'infantry') return `<span data-tip="Infantry bonus" class="icon-pawn"></span>`;
+    if (bonus === 'infantry') return `<span data-tip="Infantry bonus" class="icon-chess-pawn"></span>`;
     if (bonus === 'population') return `<span data-tip="Population bonus" class="icon-male"></span>`;
     if (bonus === 'archers') return `<span data-tip="Archers bonus" class="icon-dot-circled"></span>`;
-    if (bonus === 'cavalry') return `<span data-tip="Cavalry bonus" class="icon-knight"></span>`;
+    if (bonus === 'cavalry') return `<span data-tip="Cavalry bonus" class="icon-chess-knight"></span>`;
   }
 
   // add line for each resource
@@ -243,8 +243,9 @@ function editResources() {
     const bonuses = [...new Set(pack.resources.map((r) => Object.keys(r.bonus)).flat())].sort();
     const inputs = bonuses.map(
       (bonus) => `<div style="margin-bottom:.2em">
-        <div style="display: inline-block; width: 7em">${capitalize(bonus)}</div>
-        <input id="resourceBonus_${bonus}" style="width: 4em" type="number" step="1" min="0" max="9" value="${resource.bonus[bonus] || 0}" />
+        ${getBonusIcon(bonus)}
+        <div style="display: inline-block; width: 8em">${capitalize(bonus)}</div>
+        <input id="resourceBonus_${bonus}" style="width: 4.1em" type="number" step="1" min="0" max="9" value="${resource.bonus[bonus] || 0}" />
       </div>`
     );
 
