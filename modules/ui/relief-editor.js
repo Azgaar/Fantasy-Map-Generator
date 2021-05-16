@@ -1,10 +1,10 @@
-"use strict";
+'use strict';
 function editReliefIcon() {
   if (customization) return;
-  closeDialogs(".stable");
-  if (!layerIsOn("toggleRelief")) toggleRelief();
+  closeDialogs('.stable');
+  if (!layerIsOn('toggleRelief')) toggleRelief();
 
-  terrain.selectAll("use").call(d3.drag().on("drag", dragReliefIcon)).classed("draggable", true);
+  terrain.selectAll('use').call(d3.drag().on('drag', dragReliefIcon)).classed('draggable', true);
   elSelected = d3.select(d3.event.target);
 
   restoreEditMode();
@@ -23,24 +23,24 @@ function editReliefIcon() {
   modules.editReliefIcon = true;
 
   // add listeners
-  document.getElementById("reliefIndividual").addEventListener("click", enterIndividualMode);
-  document.getElementById("reliefBulkAdd").addEventListener("click", enterBulkAddMode);
-  document.getElementById("reliefBulkRemove").addEventListener("click", enterBulkRemoveMode);
+  document.getElementById('reliefIndividual').addEventListener('click', enterIndividualMode);
+  document.getElementById('reliefBulkAdd').addEventListener('click', enterBulkAddMode);
+  document.getElementById('reliefBulkRemove').addEventListener('click', enterBulkRemoveMode);
 
-  document.getElementById("reliefSize").addEventListener("input", changeIconSize);
-  document.getElementById("reliefSizeNumber").addEventListener("input", changeIconSize);
-  document.getElementById("reliefEditorSet").addEventListener("change", changeIconsSet);
-  reliefIconsDiv.querySelectorAll("svg").forEach(el => el.addEventListener("click", changeIcon));
+  document.getElementById('reliefSize').addEventListener('input', changeIconSize);
+  document.getElementById('reliefSizeNumber').addEventListener('input', changeIconSize);
+  document.getElementById('reliefEditorSet').addEventListener('change', changeIconsSet);
+  reliefIconsDiv.querySelectorAll('svg').forEach((el) => el.addEventListener('click', changeIcon));
 
-  document.getElementById("reliefEditStyle").addEventListener("click", () => editStyle("terrain"));
-  document.getElementById("reliefCopy").addEventListener("click", copyIcon);
-  document.getElementById("reliefMoveFront").addEventListener("click", () => elSelected.raise());
-  document.getElementById("reliefMoveBack").addEventListener("click", () => elSelected.lower());
-  document.getElementById("reliefRemove").addEventListener("click", removeIcon);
+  document.getElementById('reliefEditStyle').addEventListener('click', () => editStyle('terrain'));
+  document.getElementById('reliefCopy').addEventListener('click', copyIcon);
+  document.getElementById('reliefMoveFront').addEventListener('click', () => elSelected.raise());
+  document.getElementById('reliefMoveBack').addEventListener('click', () => elSelected.lower());
+  document.getElementById('reliefRemove').addEventListener('click', removeIcon);
 
   function dragReliefIcon() {
-    const dx = +this.getAttribute("x") - d3.event.x;
-    const dy = +this.getAttribute("y") - d3.event.y;
+    const dx = +this.getAttribute('x') - d3.event.x;
+    const dy = +this.getAttribute('y') - d3.event.y;
 
     d3.event.on("drag", function () {
       const x = d3.event.x,
@@ -68,18 +68,18 @@ function editReliefIcon() {
   }
 
   function updateReliefSizeInput() {
-    const size = +elSelected.attr("width");
+    const size = +elSelected.attr('width');
     reliefSize.value = reliefSizeNumber.value = rn(size);
   }
 
   function enterIndividualMode() {
-    reliefTools.querySelectorAll("button.pressed").forEach(b => b.classList.remove("pressed"));
-    reliefIndividual.classList.add("pressed");
+    reliefTools.querySelectorAll('button.pressed').forEach((b) => b.classList.remove('pressed'));
+    reliefIndividual.classList.add('pressed');
 
-    reliefSizeDiv.style.display = "block";
-    reliefRadiusDiv.style.display = "none";
-    reliefSpacingDiv.style.display = "none";
-    reliefIconsSeletionAny.style.display = "none";
+    reliefSizeDiv.style.display = 'block';
+    reliefRadiusDiv.style.display = 'none';
+    reliefSpacingDiv.style.display = 'none';
+    reliefIconsSeletionAny.style.display = 'none';
 
     removeCircle();
     updateReliefSizeInput();
@@ -88,13 +88,13 @@ function editReliefIcon() {
   }
 
   function enterBulkAddMode() {
-    reliefTools.querySelectorAll("button.pressed").forEach(b => b.classList.remove("pressed"));
-    reliefBulkAdd.classList.add("pressed");
+    reliefTools.querySelectorAll('button.pressed').forEach((b) => b.classList.remove('pressed'));
+    reliefBulkAdd.classList.add('pressed');
 
-    reliefSizeDiv.style.display = "block";
-    reliefRadiusDiv.style.display = "block";
-    reliefSpacingDiv.style.display = "block";
-    reliefIconsSeletionAny.style.display = "none";
+    reliefSizeDiv.style.display = 'block';
+    reliefRadiusDiv.style.display = 'block';
+    reliefSpacingDiv.style.display = 'block';
+    reliefIconsSeletionAny.style.display = 'none';
 
     const pressedType = reliefIconsDiv.querySelector("svg.pressed");
     if (pressedType.id === "reliefIconsSeletionAny") {
@@ -103,8 +103,8 @@ function editReliefIcon() {
       reliefIconsDiv.querySelector("svg").classList.add("pressed");
     }
 
-    viewbox.style("cursor", "crosshair").call(d3.drag().on("start", dragToAdd)).on("touchmove mousemove", moveBrush);
-    tip("Drag to place relief icons within radius", true);
+    viewbox.style('cursor', 'crosshair').call(d3.drag().on('start', dragToAdd)).on('touchmove mousemove', moveBrush);
+    tip('Drag to place relief icons within radius', true);
   }
 
   function moveBrush() {
@@ -172,13 +172,13 @@ function editReliefIcon() {
   }
 
   function enterBulkRemoveMode() {
-    reliefTools.querySelectorAll("button.pressed").forEach(b => b.classList.remove("pressed"));
-    reliefBulkRemove.classList.add("pressed");
+    reliefTools.querySelectorAll('button.pressed').forEach((b) => b.classList.remove('pressed'));
+    reliefBulkRemove.classList.add('pressed');
 
-    reliefSizeDiv.style.display = "none";
-    reliefRadiusDiv.style.display = "block";
-    reliefSpacingDiv.style.display = "none";
-    reliefIconsSeletionAny.style.display = "inline-block";
+    reliefSizeDiv.style.display = 'none';
+    reliefRadiusDiv.style.display = 'block';
+    reliefSpacingDiv.style.display = 'none';
+    reliefIconsSeletionAny.style.display = 'inline-block';
 
     viewbox.style("cursor", "crosshair").call(d3.drag().on("start", dragToRemove)).on("touchmove mousemove", moveBrush);
     tip("Drag to remove relief icons in radius", true);
@@ -201,13 +201,13 @@ function editReliefIcon() {
     d3.event.on("drag", function () {
       const p = d3.mouse(this);
       moveCircle(p[0], p[1], r);
-      tree.findAll(p[0], p[1], r).forEach(f => f[2].remove());
+      tree.findAll(p[0], p[1], r).forEach((f) => f[2].remove());
     });
   }
 
   function changeIconSize() {
     const size = +reliefSizeNumber.value;
-    if (!reliefIndividual.classList.contains("pressed")) return;
+    if (!reliefIndividual.classList.contains('pressed')) return;
 
     const shift = (size - +elSelected.attr("width")) / 2;
     elSelected.attr("width", size).attr("height", size);
@@ -223,14 +223,14 @@ function editReliefIcon() {
   }
 
   function changeIcon() {
-    if (this.classList.contains("pressed")) return;
+    if (this.classList.contains('pressed')) return;
 
     reliefIconsDiv.querySelectorAll("svg.pressed").forEach(b => b.classList.remove("pressed"));
     this.classList.add("pressed");
 
-    if (reliefIndividual.classList.contains("pressed")) {
+    if (reliefIndividual.classList.contains('pressed')) {
       const type = this.dataset.type;
-      elSelected.attr("href", type);
+      elSelected.attr('href', type);
     }
   }
 
@@ -245,8 +245,8 @@ function editReliefIcon() {
       y -= 3;
     }
 
-    copy.setAttribute("x", x);
-    copy.setAttribute("y", y);
+    copy.setAttribute('x', x);
+    copy.setAttribute('y', y);
     parent.insertBefore(copy, null);
   }
 
@@ -280,7 +280,7 @@ function editReliefIcon() {
   }
 
   function closeReliefEditor() {
-    terrain.selectAll("use").call(d3.drag().on("drag", null)).classed("draggable", false);
+    terrain.selectAll('use').call(d3.drag().on('drag', null)).classed('draggable', false);
     removeCircle();
     unselect();
     clearMainTip();

@@ -696,8 +696,7 @@ function editResources() {
 
   function regenerateCurrentResources() {
     const message = 'Are you sure you want to regenerate resources? <br>This action cannot be reverted';
-    const onConfirm = () => regenerateResources();
-    confirmationDialog({title: 'Regenerate resources', message, confirm: 'Regenerate', onConfirm});
+    confirmationDialog({title: 'Regenerate resources', message, confirm: 'Regenerate', onConfirm: regenerateResources});
   }
 
   function resourcesRestoreDefaults() {

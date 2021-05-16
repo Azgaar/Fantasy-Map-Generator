@@ -3,7 +3,7 @@
 function editHeightmap(options) {
   const {mode, tool} = options || {};
   restartHistory();
-  viewbox.insert("g", "#terrs").attr("id", "heights");
+  viewbox.insert('g', '#terrs').attr('id', 'heights');
 
   if (!mode) showModeDialog();
   else enterHeightmapEditMode(mode);
@@ -87,8 +87,8 @@ function editHeightmap(options) {
     allowErosionBox.style.display = mode === "keep" ? "none" : "inline-block";
 
     // show finalize button
-    if (!sessionStorage.getItem("noExitButtonAnimation")) {
-      sessionStorage.setItem("noExitButtonAnimation", true);
+    if (!sessionStorage.getItem('noExitButtonAnimation')) {
+      sessionStorage.setItem('noExitButtonAnimation', true);
       exitCustomization.style.opacity = 0;
       const width = 12 * uiSizeOutput.value * 11;
       exitCustomization.style.right = (svgWidth - width) / 2 + "px";
@@ -145,7 +145,7 @@ function editHeightmap(options) {
     if (h >= 20) height = Math.pow(h - 18, +heightExponentInput.value);
     else if (h < 20 && h > 0) height = ((h - 20) / h) * 50;
 
-    return rn(height * unitRatio) + " " + unit;
+    return rn(height * unitRatio) + ' ' + unit;
   }
 
   // Exit customization mode
@@ -166,7 +166,7 @@ function editHeightmap(options) {
     customizationMenu.style.display = "none";
     if (byId("options").querySelector(".tab > button.active").id === "toolsTab") toolsContent.style.display = "block";
     layersPreset.disabled = false;
-    exitCustomization.style.display = "none"; // hide finalize button
+    exitCustomization.style.display = 'none'; // hide finalize button
     restoreDefaultEvents();
     clearMainTip();
     closeDialogs();
@@ -176,9 +176,9 @@ function editHeightmap(options) {
     if (byId("canvas3d")) enterStandardView();
 
     const mode = heightmapEditMode.innerHTML;
-    if (mode === "erase") regenerateErasedData();
-    else if (mode === "keep") restoreKeptData();
-    else if (mode === "risk") restoreRiskedData();
+    if (mode === 'erase') regenerateErasedData();
+    else if (mode === 'keep') restoreKeptData();
+    else if (mode === 'risk') restoreRiskedData();
 
     // restore initial layers
     //viewbox.select("#heights").remove();
@@ -196,8 +196,8 @@ function editHeightmap(options) {
   }
 
   function regenerateErasedData() {
-    INFO && console.group("Edit Heightmap");
-    TIME && console.time("regenerateErasedData");
+    INFO && console.group('Edit Heightmap');
+    TIME && console.time('regenerateErasedData');
 
     const erosionAllowed = allowErosion.checked;
     markFeatures();
@@ -247,12 +247,12 @@ function editHeightmap(options) {
     Military.generate();
     Markers.generate();
     addZones();
-    TIME && console.timeEnd("regenerateErasedData");
-    INFO && console.groupEnd("Edit Heightmap");
+    TIME && console.timeEnd('regenerateErasedData');
+    INFO && console.groupEnd('Edit Heightmap');
   }
 
   function restoreKeptData() {
-    viewbox.selectAll("#landmass, #lakes").style("display", null);
+    viewbox.selectAll('#landmass, #lakes').style('display', null);
     for (const i of pack.cells.i) {
       pack.cells.h[i] = grid.cells.h[pack.cells.g[i]];
     }
@@ -318,11 +318,11 @@ function editHeightmap(options) {
     // recalculate zones to grid
     zones.selectAll("g").each(function () {
       const zone = d3.select(this);
-      const dataCells = zone.attr("data-cells");
-      const cells = dataCells ? dataCells.split(",").map(i => +i) : [];
-      const g = cells.map(i => pack.cells.g[i]);
-      zone.attr("data-cells", g);
-      zone.selectAll("*").remove();
+      const dataCells = zone.attr('data-cells');
+      const cells = dataCells ? dataCells.split(',').map((i) => +i) : [];
+      const g = cells.map((i) => pack.cells.g[i]);
+      zone.attr('data-cells', g);
+      zone.selectAll('*').remove();
     });
 
     markFeatures();
@@ -404,7 +404,7 @@ function editHeightmap(options) {
 
     for (const p of pack.provinces) {
       if (!p.i || p.removed) continue;
-      const provCells = pack.cells.i.filter(i => pack.cells.province[i] === p.i);
+      const provCells = pack.cells.i.filter((i) => pack.cells.province[i] === p.i);
       if (!provCells.length) {
         const state = p.state;
         const stateProvs = pack.states[state].provinces;
@@ -438,9 +438,9 @@ function editHeightmap(options) {
     // restore zones from grid
     zones.selectAll("g").each(function () {
       const zone = d3.select(this);
-      const g = zone.attr("data-cells");
-      const gCells = g ? g.split(",").map(i => +i) : [];
-      const cells = pack.cells.i.filter(i => gCells.includes(pack.cells.g[i]));
+      const g = zone.attr('data-cells');
+      const gCells = g ? g.split(',').map((i) => +i) : [];
+      const cells = pack.cells.i.filter((i) => gCells.includes(pack.cells.g[i]));
 
       zone.attr("data-cells", cells);
       zone.selectAll("*").remove();
@@ -454,8 +454,8 @@ function editHeightmap(options) {
         .attr("id", d => base + d);
     });
 
-    TIME && console.timeEnd("restoreRiskedData");
-    INFO && console.groupEnd("Edit Heightmap");
+    TIME && console.timeEnd('restoreRiskedData');
+    INFO && console.groupEnd('Edit Heightmap');
   }
 
   // trigger heightmap redraw and history update if at least 1 cell is changed
@@ -478,7 +478,7 @@ function editHeightmap(options) {
 
   // draw or update heightmap
   function mockHeightmap() {
-    const data = renderOcean.checked ? grid.cells.i : grid.cells.i.filter(i => grid.cells.h[i] >= 20);
+    const data = renderOcean.checked ? grid.cells.i : grid.cells.i.filter((i) => grid.cells.h[i] >= 20);
     const scheme = getColorScheme();
     viewbox
       .select("#heights")
@@ -600,7 +600,7 @@ function editHeightmap(options) {
       if (!pressed) return;
       pressed.classList.remove("pressed");
 
-      viewbox.style("cursor", "default").on(".drag", null);
+      viewbox.style('cursor', 'default').on('.drag', null);
       removeCircle();
       byId("brushesSliders").style.display = "none";
     }
@@ -622,17 +622,17 @@ function editHeightmap(options) {
       const [x, y] = d3.mouse(this);
       const start = findGridCell(x, y, grid);
 
-      d3.event.on("drag", () => {
+      d3.event.on('drag', () => {
         const p = d3.mouse(this);
-        moveCircle(p[0], p[1], r, "#333");
+        moveCircle(p[0], p[1], r, '#333');
         if (~~d3.event.sourceEvent.timeStamp % 5 != 0) return; // slow down the edit
 
         const inRadius = findGridAll(p[0], p[1], r);
-        const selection = changeOnlyLand.checked ? inRadius.filter(i => grid.cells.h[i] >= 20) : inRadius;
+        const selection = changeOnlyLand.checked ? inRadius.filter((i) => grid.cells.h[i] >= 20) : inRadius;
         if (selection && selection.length) changeHeightForSelection(selection, start);
       });
 
-      d3.event.on("end", updateHeightmap);
+      d3.event.on('end', updateHeightmap);
     }
 
     function changeHeightForSelection(s, start) {
@@ -669,9 +669,9 @@ function editHeightmap(options) {
     }
 
     function changeOnlyLandClick(e) {
-      if (heightmapEditMode.innerHTML !== "keep") return;
+      if (heightmapEditMode.innerHTML !== 'keep') return;
       e.preventDefault();
-      tip("You cannot change the coastline in 'Keep' edit mode", false, "error");
+      tip("You cannot change the coastline in 'Keep' edit mode", false, 'error');
     }
 
     function rescale(v) {
@@ -682,7 +682,7 @@ function editHeightmap(options) {
     }
 
     function rescaleWithCondition() {
-      const range = rescaleLower.value + "-" + rescaleHigher.value;
+      const range = rescaleLower.value + '-' + rescaleHigher.value;
       const operator = conditionSign.value;
       const operand = rescaleModifier.valueAsNumber;
       if (Number.isNaN(operand)) return tip("Operand should be a number", false, "error");
@@ -720,7 +720,7 @@ function editHeightmap(options) {
         return tip("Heightmap is already cleared, please do not click twice if not required", false, "error");
 
       grid.cells.h = new Uint8Array(grid.cells.i.length);
-      viewbox.select("#heights").selectAll("*").remove();
+      viewbox.select('#heights').selectAll('*').remove();
       updateHistory();
     }
   }
@@ -757,9 +757,9 @@ function editHeightmap(options) {
         $body.dataset.changed = 1;
         return;
       }
-      if (el.classList.contains("icon-check-empty")) {
-        el.classList.add("icon-check");
-        el.classList.remove("icon-check-empty");
+      if (el.classList.contains('icon-check-empty')) {
+        el.classList.add('icon-check');
+        el.classList.remove('icon-check-empty');
         el.parentElement.style.opacity = 1;
         return;
       }
@@ -923,7 +923,7 @@ function editHeightmap(options) {
     }
 
     function setRange(event) {
-      if (event.target.value !== "interval") return;
+      if (event.target.value !== 'interval') return;
 
       prompt("Set a height interval. Avoid space, use hyphen as a separator", {default: "17-20"}, v => {
         const opt = document.createElement("option");
@@ -1019,10 +1019,10 @@ function editHeightmap(options) {
     function downloadTemplate() {
       const body = byId("templateBody");
       body.dataset.changed = 0;
-      const steps = body.querySelectorAll("#templateBody > div");
+      const steps = body.querySelectorAll('#templateBody > div');
       if (!steps.length) return;
 
-      let data = "";
+      let data = '';
       for (const s of steps) {
         if (s.style.opacity === "0.5") continue;
 
@@ -1034,7 +1034,7 @@ function editHeightmap(options) {
         data += `${type} ${count} ${arg3} ${x} ${y}\r\n`;
       }
 
-      const name = "template_" + Date.now() + ".txt";
+      const name = 'template_' + Date.now() + '.txt';
       downloadFile(data, name);
     }
 
@@ -1055,9 +1055,9 @@ function editHeightmap(options) {
   }
 
   function openImageConverter() {
-    if ($("#imageConverter").is(":visible")) return;
+    if ($('#imageConverter').is(':visible')) return;
     imageToLoad.click();
-    closeDialogs("#imageConverter");
+    closeDialogs('#imageConverter');
 
     $("#imageConverter").dialog({
       title: "Image Converter",
@@ -1069,8 +1069,8 @@ function editHeightmap(options) {
     });
 
     // create canvas for image
-    const canvas = document.createElement("canvas");
-    canvas.id = "canvas";
+    const canvas = document.createElement('canvas');
+    canvas.id = 'canvas';
     canvas.width = graphWidth;
     canvas.height = graphHeight;
     document.body.insertBefore(canvas, optionsContainer);
@@ -1081,7 +1081,7 @@ function editHeightmap(options) {
 
     // remove all heights
     grid.cells.h = new Uint8Array(grid.cells.i.length);
-    viewbox.select("#heights").selectAll("*").remove();
+    viewbox.select('#heights').selectAll('*').remove();
     updateHistory();
 
     if (modules.openImageConverter) return;
@@ -1118,7 +1118,7 @@ function editHeightmap(options) {
     });
 
     function showPalleteHeight() {
-      const height = +this.getAttribute("data-color");
+      const height = +this.getAttribute('data-color');
       colorsSelectValue.innerHTML = height;
       colorsSelectFriendly.innerHTML = getHeight(height);
       const former = imageConverterPalette.querySelector(".hoveredColor");
@@ -1128,7 +1128,7 @@ function editHeightmap(options) {
 
     function loadImage() {
       const file = this.files[0];
-      this.value = ""; // reset input value to get triggered if the file is re-uploaded
+      this.value = ''; // reset input value to get triggered if the file is re-uploaded
       const reader = new FileReader();
 
       const img = new Image();
@@ -1159,11 +1159,11 @@ function editHeightmap(options) {
       const data = q.reduce(sampleCanvas);
       const pallete = q.palette(true);
 
-      viewbox.select("#heights").selectAll("*").remove();
-      d3.select("#imageConverter").selectAll("div.color-div").remove();
-      colorsSelect.style.display = "block";
-      colorsUnassigned.style.display = "block";
-      colorsAssigned.style.display = "none";
+      viewbox.select('#heights').selectAll('*').remove();
+      d3.select('#imageConverter').selectAll('div.color-div').remove();
+      colorsSelect.style.display = 'block';
+      colorsUnassigned.style.display = 'block';
+      colorsAssigned.style.display = 'none';
       sampleCanvas.remove(); // no need to keep
 
       viewbox
@@ -1191,27 +1191,27 @@ function editHeightmap(options) {
     }
 
     function mapClicked() {
-      const fill = this.getAttribute("fill");
+      const fill = this.getAttribute('fill');
       const palleteColor = imageConverter.querySelector(`div[data-color="${fill}"]`);
       palleteColor.click();
     }
 
     function colorClicked() {
-      viewbox.select("#heights").selectAll(".selectedCell").attr("class", null);
-      const unselect = this.classList.contains("selectedColor");
+      viewbox.select('#heights').selectAll('.selectedCell').attr('class', null);
+      const unselect = this.classList.contains('selectedColor');
 
-      const selectedColor = imageConverter.querySelector("div.selectedColor");
-      if (selectedColor) selectedColor.classList.remove("selectedColor");
-      const hoveredColor = imageConverterPalette.querySelector("div.hoveredColor");
-      if (hoveredColor) hoveredColor.classList.remove("hoveredColor");
+      const selectedColor = imageConverter.querySelector('div.selectedColor');
+      if (selectedColor) selectedColor.classList.remove('selectedColor');
+      const hoveredColor = imageConverterPalette.querySelector('div.hoveredColor');
+      if (hoveredColor) hoveredColor.classList.remove('hoveredColor');
       colorsSelectValue.innerHTML = colorsSelectFriendly.innerHTML = 0;
 
       if (unselect) return;
-      this.classList.add("selectedColor");
+      this.classList.add('selectedColor');
 
       if (this.dataset.height) {
         const height = +this.dataset.height;
-        imageConverterPalette.querySelector(`div[data-color="${height}"]`).classList.add("hoveredColor");
+        imageConverterPalette.querySelector(`div[data-color="${height}"]`).classList.add('hoveredColor');
         colorsSelectValue.innerHTML = height;
         colorsSelectFriendly.innerHTML = getHeight(height);
       }
@@ -1229,8 +1229,8 @@ function editHeightmap(options) {
       const rgb = color(1 - (height < 20 ? height - 5 : height) / 100);
       const selectedColor = imageConverter.querySelector("div.selectedColor");
       selectedColor.style.backgroundColor = rgb;
-      selectedColor.setAttribute("data-color", rgb);
-      selectedColor.setAttribute("data-height", height);
+      selectedColor.setAttribute('data-color', rgb);
+      selectedColor.setAttribute('data-height', height);
 
       viewbox
         .select("#heights")
@@ -1283,7 +1283,7 @@ function editHeightmap(options) {
       };
 
       const assinged = []; // store assigned heights
-      unassigned.forEach(el => {
+      unassigned.forEach((el) => {
         const clr = el.dataset.color;
         const height =
           type === "hue" ? getHeightByHue(clr) : type === "lum" ? getHeightByLum(clr) : getHeightByScheme(clr);
@@ -1343,7 +1343,7 @@ function editHeightmap(options) {
           grid.cells.h[i] = height;
         });
 
-      viewbox.select("#heights").selectAll("polygon").remove();
+      viewbox.select('#heights').selectAll('polygon').remove();
       updateHeightmap();
       restoreImageConverterState();
     }
@@ -1365,9 +1365,9 @@ function editHeightmap(options) {
       colorsAssigned.style.display = "none";
       colorsUnassigned.style.display = "none";
       colorsSelectValue.innerHTML = colorsSelectFriendly.innerHTML = 0;
-      viewbox.style("cursor", "default").on(".drag", null);
+      viewbox.style('cursor', 'default').on('.drag', null);
       tip('Heightmap edit mode is active. Click on "Exit Customization" to finalize the heightmap', true);
-      $("#imageConverter").dialog("destroy");
+      $('#imageConverter').dialog('destroy');
       openBrushesPanel();
     }
 
@@ -1404,8 +1404,8 @@ function editHeightmap(options) {
       byId("preview").remove();
       return;
     }
-    const preview = document.createElement("canvas");
-    preview.id = "preview";
+    const preview = document.createElement('canvas');
+    preview.id = 'preview';
     preview.width = grid.cellsX;
     preview.height = grid.cellsY;
     document.body.insertBefore(preview, optionsContainer);
