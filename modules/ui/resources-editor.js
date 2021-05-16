@@ -442,7 +442,16 @@ function editResources() {
     if (selected) selected.classList.remove('selected');
   }
 
-  function resourceAdd() {}
+  function resourceAdd() {
+    let i = last(pack.resources).i;
+    while (Resources.get(i)) {
+      i++;
+    }
+    const resource = {i, name: 'Resource' + i, category: 'Unknown', icon: 'resource-unknown', color: '#ff5959', value: 1, chance: 10, model: 'habitability', bonus: {population: 1}, cells: 0};
+    pack.resources.push(resource);
+    tip('Resource is added', false, 'success', 3000);
+    resourcesEditorAddLines();
+  }
 
   function downloadResourcesData() {
     let data = 'Id,Resource,Color,Category,Value,Bonus,Chance,Model,Cells\n'; // headers
