@@ -21,10 +21,10 @@ function editNotes(id, name) {
   // select an object
   if (notes.length || id) {
     if (!id) id = notes[0].id;
-    let note = notes.find(note => note.id === id);
+    let note = notes.find((note) => note.id === id);
     if (note === undefined) {
       if (!name) name = id;
-      note = {id, name, legend: ""};
+      note = {id, name, legend: ''};
       notes.push(note);
       notesSelect.options.add(new Option(id, id));
     }

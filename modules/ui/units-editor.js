@@ -1,14 +1,14 @@
-"use strict";
+'use strict';
 function editUnits() {
-  closeDialogs("#unitsEditor, .stable");
-  $("#unitsEditor").dialog();
+  closeDialogs('#unitsEditor, .stable');
+  $('#unitsEditor').dialog();
 
   if (modules.editUnits) return;
   modules.editUnits = true;
 
-  $("#unitsEditor").dialog({
-    title: "Units Editor",
-    position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
+  $('#unitsEditor').dialog({
+    title: 'Units Editor',
+    position: {my: 'right top', at: 'right-10 top+10', of: 'svg', collision: 'fit'}
   });
 
   const drawBar = () => drawScaleBar(scale);
@@ -36,12 +36,12 @@ function editUnits() {
   document.getElementById("urbanDensityOutput").addEventListener("input", changeUrbanDensity);
   document.getElementById("urbanDensityInput").addEventListener("change", changeUrbanDensity);
 
-  document.getElementById("addLinearRuler").addEventListener("click", addRuler);
-  document.getElementById("addOpisometer").addEventListener("click", toggleOpisometerMode);
-  document.getElementById("addRouteOpisometer").addEventListener("click", toggleRouteOpisometerMode);
-  document.getElementById("addPlanimeter").addEventListener("click", togglePlanimeterMode);
-  document.getElementById("removeRulers").addEventListener("click", removeAllRulers);
-  document.getElementById("unitsRestore").addEventListener("click", restoreDefaultUnits);
+  document.getElementById('addLinearRuler').addEventListener('click', addRuler);
+  document.getElementById('addOpisometer').addEventListener('click', toggleOpisometerMode);
+  document.getElementById('addRouteOpisometer').addEventListener('click', toggleRouteOpisometerMode);
+  document.getElementById('addPlanimeter').addEventListener('click', togglePlanimeterMode);
+  document.getElementById('removeRulers').addEventListener('click', removeAllRulers);
+  document.getElementById('unitsRestore').addEventListener('click', restoreDefaultUnits);
 
   function changeDistanceUnit() {
     if (this.value === "custom_name") {
@@ -109,21 +109,21 @@ function editUnits() {
     unlock("distanceScale");
 
     // units
-    const US = navigator.language === "en-US";
-    const UK = navigator.language === "en-GB";
-    distanceUnitInput.value = US || UK ? "mi" : "km";
-    heightUnit.value = US || UK ? "ft" : "m";
-    temperatureScale.value = US ? "°F" : "°C";
-    areaUnit.value = "square";
-    localStorage.removeItem("distanceUnit");
-    localStorage.removeItem("heightUnit");
-    localStorage.removeItem("temperatureScale");
-    localStorage.removeItem("areaUnit");
+    const US = navigator.language === 'en-US';
+    const UK = navigator.language === 'en-GB';
+    distanceUnitInput.value = US || UK ? 'mi' : 'km';
+    heightUnit.value = US || UK ? 'ft' : 'm';
+    temperatureScale.value = US ? '°F' : '°C';
+    areaUnit.value = 'square';
+    localStorage.removeItem('distanceUnit');
+    localStorage.removeItem('heightUnit');
+    localStorage.removeItem('temperatureScale');
+    localStorage.removeItem('areaUnit');
     calculateFriendlyGridSize();
 
     // height exponent
     heightExponentInput.value = heightExponentOutput.value = 1.8;
-    localStorage.removeItem("heightExponent");
+    localStorage.removeItem('heightExponent');
     calculateTemperatures();
 
     // scale bar
@@ -163,10 +163,10 @@ function editUnits() {
   }
 
   function toggleOpisometerMode() {
-    if (this.classList.contains("pressed")) {
+    if (this.classList.contains('pressed')) {
       restoreDefaultEvents();
       clearMainTip();
-      this.classList.remove("pressed");
+      this.classList.remove('pressed');
     } else {
       if (!layerIsOn("toggleRulers")) toggleRulers();
       tip("Draw a curve to measure length. Hold Shift to disallow path optimization", true);
@@ -195,10 +195,10 @@ function editUnits() {
   }
 
   function toggleRouteOpisometerMode() {
-    if (this.classList.contains("pressed")) {
+    if (this.classList.contains('pressed')) {
       restoreDefaultEvents();
       clearMainTip();
-      this.classList.remove("pressed");
+      this.classList.remove('pressed');
     } else {
       if (!layerIsOn("toggleRulers")) toggleRulers();
       tip("Draw a curve along routes to measure length. Hold Shift to measure away from roads.", true);
@@ -244,10 +244,10 @@ function editUnits() {
   }
 
   function togglePlanimeterMode() {
-    if (this.classList.contains("pressed")) {
+    if (this.classList.contains('pressed')) {
       restoreDefaultEvents();
       clearMainTip();
-      this.classList.remove("pressed");
+      this.classList.remove('pressed');
     } else {
       if (!layerIsOn("toggleRulers")) toggleRulers();
       tip("Draw a curve to measure its area. Hold Shift to disallow path optimization", true);

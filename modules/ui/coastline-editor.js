@@ -1,8 +1,8 @@
-"use strict";
+'use strict';
 function editCoastline(node = d3.event.target) {
   if (customization) return;
-  closeDialogs(".stable");
-  if (layerIsOn("toggleCells")) toggleCells();
+  closeDialogs('.stable');
+  if (layerIsOn('toggleCells')) toggleCells();
 
   $("#coastlineEditor").dialog({
     title: "Edit Coastline",
@@ -11,26 +11,26 @@ function editCoastline(node = d3.event.target) {
     close: closeCoastlineEditor
   });
 
-  debug.append("g").attr("id", "vertices");
+  debug.append('g').attr('id', 'vertices');
   elSelected = d3.select(node);
   selectCoastlineGroup(node);
   drawCoastlineVertices();
-  viewbox.on("touchmove mousemove", null);
+  viewbox.on('touchmove mousemove', null);
 
   if (modules.editCoastline) return;
   modules.editCoastline = true;
 
   // add listeners
-  document.getElementById("coastlineGroupsShow").addEventListener("click", showGroupSection);
-  document.getElementById("coastlineGroup").addEventListener("change", changeCoastlineGroup);
-  document.getElementById("coastlineGroupAdd").addEventListener("click", toggleNewGroupInput);
-  document.getElementById("coastlineGroupName").addEventListener("change", createNewGroup);
-  document.getElementById("coastlineGroupRemove").addEventListener("click", removeCoastlineGroup);
-  document.getElementById("coastlineGroupsHide").addEventListener("click", hideGroupSection);
-  document.getElementById("coastlineEditStyle").addEventListener("click", editGroupStyle);
+  document.getElementById('coastlineGroupsShow').addEventListener('click', showGroupSection);
+  document.getElementById('coastlineGroup').addEventListener('change', changeCoastlineGroup);
+  document.getElementById('coastlineGroupAdd').addEventListener('click', toggleNewGroupInput);
+  document.getElementById('coastlineGroupName').addEventListener('change', createNewGroup);
+  document.getElementById('coastlineGroupRemove').addEventListener('click', removeCoastlineGroup);
+  document.getElementById('coastlineGroupsHide').addEventListener('click', hideGroupSection);
+  document.getElementById('coastlineEditStyle').addEventListener('click', editGroupStyle);
 
   function drawCoastlineVertices() {
-    const f = +elSelected.attr("data-f"); // feature id
+    const f = +elSelected.attr('data-f'); // feature id
     const v = pack.features[f].vertices; // coastline outer vertices
 
     const l = pack.cells.i.length;
@@ -77,7 +77,7 @@ function editCoastline(node = d3.event.target) {
 
   function redrawCoastline() {
     lineGen.curve(d3.curveBasisClosed);
-    const f = +elSelected.attr("data-f");
+    const f = +elSelected.attr('data-f');
     const vertices = pack.features[f].vertices;
     const points = clipPoly(
       vertices.map(v => pack.vertices.p[v]),
@@ -107,7 +107,7 @@ function editCoastline(node = d3.event.target) {
 
   function selectCoastlineGroup(node) {
     const group = node.parentNode.id;
-    const select = document.getElementById("coastlineGroup");
+    const select = document.getElementById('coastlineGroup');
     select.options.length = 0; // remove all options
 
     coastline.selectAll("g").each(function () {
@@ -120,13 +120,13 @@ function editCoastline(node = d3.event.target) {
   }
 
   function toggleNewGroupInput() {
-    if (coastlineGroupName.style.display === "none") {
-      coastlineGroupName.style.display = "inline-block";
+    if (coastlineGroupName.style.display === 'none') {
+      coastlineGroupName.style.display = 'inline-block';
       coastlineGroupName.focus();
-      coastlineGroup.style.display = "none";
+      coastlineGroup.style.display = 'none';
     } else {
-      coastlineGroupName.style.display = "none";
-      coastlineGroup.style.display = "inline-block";
+      coastlineGroupName.style.display = 'none';
+      coastlineGroup.style.display = 'inline-block';
     }
   }
 
@@ -141,42 +141,42 @@ function editCoastline(node = d3.event.target) {
       .replace(/[^\w\s]/gi, "");
 
     if (document.getElementById(group)) {
-      tip("Element with this id already exists. Please provide a unique name", false, "error");
+      tip('Element with this id already exists. Please provide a unique name', false, 'error');
       return;
     }
 
     if (Number.isFinite(+group.charAt(0))) {
-      tip("Group name should start with a letter", false, "error");
+      tip('Group name should start with a letter', false, 'error');
       return;
     }
 
     // just rename if only 1 element left
     const oldGroup = elSelected.node().parentNode;
-    const basic = ["sea_island", "lake_island"].includes(oldGroup.id);
+    const basic = ['sea_island', 'lake_island'].includes(oldGroup.id);
     if (!basic && oldGroup.childElementCount === 1) {
-      document.getElementById("coastlineGroup").selectedOptions[0].remove();
-      document.getElementById("coastlineGroup").options.add(new Option(group, group, false, true));
+      document.getElementById('coastlineGroup').selectedOptions[0].remove();
+      document.getElementById('coastlineGroup').options.add(new Option(group, group, false, true));
       oldGroup.id = group;
       toggleNewGroupInput();
-      document.getElementById("coastlineGroupName").value = "";
+      document.getElementById('coastlineGroupName').value = '';
       return;
     }
 
     // create a new group
     const newGroup = elSelected.node().parentNode.cloneNode(false);
-    document.getElementById("coastline").appendChild(newGroup);
+    document.getElementById('coastline').appendChild(newGroup);
     newGroup.id = group;
-    document.getElementById("coastlineGroup").options.add(new Option(group, group, false, true));
+    document.getElementById('coastlineGroup').options.add(new Option(group, group, false, true));
     document.getElementById(group).appendChild(elSelected.node());
 
     toggleNewGroupInput();
-    document.getElementById("coastlineGroupName").value = "";
+    document.getElementById('coastlineGroupName').value = '';
   }
 
   function removeCoastlineGroup() {
     const group = elSelected.node().parentNode.id;
-    if (["sea_island", "lake_island"].includes(group)) {
-      tip("This is one of the default groups, it cannot be removed", false, "error");
+    if (['sea_island', 'lake_island'].includes(group)) {
+      tip('This is one of the default groups, it cannot be removed', false, 'error');
       return;
     }
 
@@ -203,16 +203,20 @@ function editCoastline(node = d3.event.target) {
           $(this).dialog("close");
         }
       }
-    });
+      groupEl.remove();
+      document.getElementById('coastlineGroup').selectedOptions[0].remove();
+      document.getElementById('coastlineGroup').value = 'sea_island';
+    };
+    confirmationDialog({title: 'Remove coastline group', message, confirm: 'Remove', onConfirm});
   }
 
   function editGroupStyle() {
     const g = elSelected.node().parentNode.id;
-    editStyle("coastline", g);
+    editStyle('coastline', g);
   }
 
   function closeCoastlineEditor() {
-    debug.select("#vertices").remove();
+    debug.select('#vertices').remove();
     unselect();
   }
 }

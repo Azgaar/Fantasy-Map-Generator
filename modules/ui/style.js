@@ -1,5 +1,5 @@
 // UI module to control the style
-"use strict";
+'use strict';
 
 // add available filters to lists
 {
@@ -29,16 +29,16 @@ function editStyle(element, group) {
   if (group) styleGroupSelect.options.add(new Option(group, group, true, true));
   selectStyleElement();
 
-  styleElementSelect.classList.add("glow");
-  if (group) styleGroupSelect.classList.add("glow");
+  styleElementSelect.classList.add('glow');
+  if (group) styleGroupSelect.classList.add('glow');
   setTimeout(() => {
-    styleElementSelect.classList.remove("glow");
-    if (group) styleGroupSelect.classList.remove("glow");
+    styleElementSelect.classList.remove('glow');
+    if (group) styleGroupSelect.classList.remove('glow');
   }, 1500);
 }
 
 // Toggle style sections on element select
-styleElementSelect.addEventListener("change", selectStyleElement);
+styleElementSelect.addEventListener('change', selectStyleElement);
 function selectStyleElement() {
   const sel = styleElementSelect.value;
   let el = d3.select("#" + sel);
@@ -69,9 +69,9 @@ function selectStyleElement() {
   }
 
   // fill
-  if (["rivers", "lakes", "landmass", "prec", "ice", "fogging"].includes(sel)) {
-    styleFill.style.display = "block";
-    styleFillInput.value = styleFillOutput.value = el.attr("fill");
+  if (['rivers', 'lakes', 'landmass', 'prec', 'ice', 'fogging'].includes(sel)) {
+    styleFill.style.display = 'block';
+    styleFillInput.value = styleFillOutput.value = el.attr('fill');
   }
 
   // stroke color and width
@@ -87,16 +87,16 @@ function selectStyleElement() {
   }
 
   // stroke dash
-  if (["routes", "borders", "temperature", "legend", "population", "coordinates", "zones", "gridOverlay"].includes(sel)) {
-    styleStrokeDash.style.display = "block";
-    styleStrokeDasharrayInput.value = el.attr("stroke-dasharray") || "";
-    styleStrokeLinecapInput.value = el.attr("stroke-linecap") || "inherit";
+  if (['routes', 'borders', 'temperature', 'legend', 'population', 'coordinates', 'zones', 'gridOverlay'].includes(sel)) {
+    styleStrokeDash.style.display = 'block';
+    styleStrokeDasharrayInput.value = el.attr('stroke-dasharray') || '';
+    styleStrokeLinecapInput.value = el.attr('stroke-linecap') || 'inherit';
   }
 
   // clipping
-  if (["cells", "gridOverlay", "coordinates", "compass", "terrain", "temperature", "routes", "texture", "biomes", "zones"].includes(sel)) {
-    styleClipping.style.display = "block";
-    styleClippingInput.value = el.attr("mask") || "";
+  if (['cells', 'gridOverlay', 'coordinates', 'compass', 'terrain', 'temperature', 'routes', 'texture', 'biomes', 'zones'].includes(sel)) {
+    styleClipping.style.display = 'block';
+    styleClippingInput.value = el.attr('mask') || '';
   }
 
   // show specific sections
@@ -111,41 +111,41 @@ function selectStyleElement() {
     styleHeightmapCurve.value = terrs.attr("curve");
   }
 
-  if (sel === "markers") {
-    styleMarkers.style.display = "block";
-    styleRescaleMarkers.checked = +markers.attr("rescale");
+  if (sel === 'markers') {
+    styleMarkers.style.display = 'block';
+    styleRescaleMarkers.checked = +markers.attr('rescale');
   }
 
-  if (sel === "gridOverlay") {
-    styleGrid.style.display = "block";
-    styleGridType.value = el.attr("type");
-    styleGridScale.value = el.attr("scale") || 1;
-    styleGridShiftX.value = el.attr("dx") || 0;
-    styleGridShiftY.value = el.attr("dy") || 0;
+  if (sel === 'gridOverlay') {
+    styleGrid.style.display = 'block';
+    styleGridType.value = el.attr('type');
+    styleGridScale.value = el.attr('scale') || 1;
+    styleGridShiftX.value = el.attr('dx') || 0;
+    styleGridShiftY.value = el.attr('dy') || 0;
     calculateFriendlyGridSize();
   }
 
-  if (sel === "compass") {
-    styleCompass.style.display = "block";
-    const tr = parseTransform(compass.select("use").attr("transform"));
+  if (sel === 'compass') {
+    styleCompass.style.display = 'block';
+    const tr = parseTransform(compass.select('use').attr('transform'));
     styleCompassShiftX.value = tr[0];
     styleCompassShiftY.value = tr[1];
     styleCompassSizeInput.value = styleCompassSizeOutput.value = tr[2];
   }
 
-  if (sel === "terrain") {
-    styleRelief.style.display = "block";
-    styleReliefSizeOutput.innerHTML = styleReliefSizeInput.value = terrain.attr("size");
-    styleReliefDensityOutput.innerHTML = styleReliefDensityInput.value = terrain.attr("density");
-    styleReliefSet.value = terrain.attr("set");
+  if (sel === 'terrain') {
+    styleRelief.style.display = 'block';
+    styleReliefSizeOutput.innerHTML = styleReliefSizeInput.value = terrain.attr('size');
+    styleReliefDensityOutput.innerHTML = styleReliefDensityInput.value = terrain.attr('density');
+    styleReliefSet.value = terrain.attr('set');
   }
 
-  if (sel === "population") {
-    stylePopulation.style.display = "block";
-    stylePopulationRuralStrokeInput.value = stylePopulationRuralStrokeOutput.value = population.select("#rural").attr("stroke");
-    stylePopulationUrbanStrokeInput.value = stylePopulationUrbanStrokeOutput.value = population.select("#urban").attr("stroke");
-    styleStrokeWidth.style.display = "block";
-    styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr("stroke-width") || "";
+  if (sel === 'population') {
+    stylePopulation.style.display = 'block';
+    stylePopulationRuralStrokeInput.value = stylePopulationRuralStrokeOutput.value = population.select('#rural').attr('stroke');
+    stylePopulationUrbanStrokeInput.value = stylePopulationUrbanStrokeOutput.value = population.select('#urban').attr('stroke');
+    styleStrokeWidth.style.display = 'block';
+    styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr('stroke-width') || '';
   }
 
   if (sel === "regions") {
@@ -216,10 +216,10 @@ function selectStyleElement() {
     styleStrokeWidth.style.display = "block";
     styleSize.style.display = "block";
 
-    styleLegend.style.display = "block";
-    styleLegendColItemsOutput.value = styleLegendColItems.value = el.attr("data-columns");
-    styleLegendBackOutput.value = styleLegendBack.value = el.select("#legendBox").attr("fill");
-    styleLegendOpacityOutput.value = styleLegendOpacity.value = el.select("#legendBox").attr("fill-opacity");
+    styleLegend.style.display = 'block';
+    styleLegendColItemsOutput.value = styleLegendColItems.value = el.attr('data-columns');
+    styleLegendBackOutput.value = styleLegendBack.value = el.select('#legendBox').attr('fill');
+    styleLegendOpacityOutput.value = styleLegendOpacity.value = el.select('#legendBox').attr('fill-opacity');
 
     styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#111111";
     styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr("stroke-width") || 0.5;
@@ -246,21 +246,21 @@ function selectStyleElement() {
     styleTemperatureFontSizeInput.value = styleTemperatureFontSizeOutput.value = el.attr("font-size") || "8px";
   }
 
-  if (sel === "coordinates") {
-    styleSize.style.display = "block";
-    styleFontSize.value = el.attr("data-size");
+  if (sel === 'coordinates') {
+    styleSize.style.display = 'block';
+    styleFontSize.value = el.attr('data-size');
   }
 
-  if (sel === "armies") {
-    styleArmies.style.display = "block";
-    styleArmiesFillOpacity.value = styleArmiesFillOpacityOutput.value = el.attr("fill-opacity");
-    styleArmiesSize.value = styleArmiesSizeOutput.value = el.attr("box-size");
+  if (sel === 'armies') {
+    styleArmies.style.display = 'block';
+    styleArmiesFillOpacity.value = styleArmiesFillOpacityOutput.value = el.attr('fill-opacity');
+    styleArmiesSize.value = styleArmiesSizeOutput.value = el.attr('box-size');
   }
 
-  if (sel === "emblems") {
-    styleEmblems.style.display = "block";
-    styleStrokeWidth.style.display = "block";
-    styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr("stroke-width") || 1;
+  if (sel === 'emblems') {
+    styleEmblems.style.display = 'block';
+    styleStrokeWidth.style.display = 'block';
+    styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr('stroke-width') || 1;
   }
 
   if (sel === 'goods') {
@@ -294,7 +294,7 @@ function selectStyleElement() {
 }
 
 // Handle style inputs change
-styleGroupSelect.addEventListener("change", selectStyleElement);
+styleGroupSelect.addEventListener('change', selectStyleElement);
 
 function getEl() {
   const el = styleElementSelect.value;
@@ -391,13 +391,13 @@ styleGridShiftY.addEventListener("input", function () {
   if (layerIsOn("toggleGrid")) drawGrid();
 });
 
-styleShiftX.addEventListener("input", shiftElement);
-styleShiftY.addEventListener("input", shiftElement);
+styleShiftX.addEventListener('input', shiftElement);
+styleShiftY.addEventListener('input', shiftElement);
 
 function shiftElement() {
   const x = styleShiftX.value || 0;
   const y = styleShiftY.value || 0;
-  getEl().attr("transform", `translate(${x},${y})`);
+  getEl().attr('transform', `translate(${x},${y})`);
 }
 
 styleRescaleMarkers.addEventListener("change", function () {
@@ -459,7 +459,7 @@ styleHeightmapCurve.addEventListener("change", function () {
 styleReliefSet.addEventListener("change", function () {
   terrain.attr("set", this.value);
   ReliefIcons();
-  if (!layerIsOn("toggleRelief")) toggleRelief();
+  if (!layerIsOn('toggleRelief')) toggleRelief();
 });
 
 styleReliefSizeInput.addEventListener("change", function () {
@@ -473,7 +473,7 @@ styleReliefDensityInput.addEventListener("change", function () {
   terrain.attr("density", this.value);
   styleReliefDensityOutput.value = this.value;
   ReliefIcons();
-  if (!layerIsOn("toggleRelief")) toggleRelief();
+  if (!layerIsOn('toggleRelief')) toggleRelief();
 });
 
 styleTemperatureFillOpacityInput.addEventListener("input", function () {
@@ -506,31 +506,31 @@ styleCompassSizeInput.addEventListener("input", function () {
   shiftCompass();
 });
 
-styleCompassShiftX.addEventListener("input", shiftCompass);
-styleCompassShiftY.addEventListener("input", shiftCompass);
+styleCompassShiftX.addEventListener('input', shiftCompass);
+styleCompassShiftY.addEventListener('input', shiftCompass);
 
 function shiftCompass() {
   const tr = `translate(${styleCompassShiftX.value} ${styleCompassShiftY.value}) scale(${styleCompassSizeInput.value})`;
-  compass.select("use").attr("transform", tr);
+  compass.select('use').attr('transform', tr);
 }
 
 styleLegendColItems.addEventListener("input", function () {
   styleLegendColItemsOutput.value = this.value;
-  legend.select("#legendBox").attr("data-columns", this.value);
+  legend.select('#legendBox').attr('data-columns', this.value);
   redrawLegend();
 });
 
 styleLegendBack.addEventListener("input", function () {
   styleLegendBackOutput.value = this.value;
-  legend.select("#legendBox").attr("fill", this.value);
+  legend.select('#legendBox').attr('fill', this.value);
 });
 
 styleLegendOpacity.addEventListener("input", function () {
   styleLegendOpacityOutput.value = this.value;
-  legend.select("#legendBox").attr("fill-opacity", this.value);
+  legend.select('#legendBox').attr('fill-opacity', this.value);
 });
 
-styleSelectFont.addEventListener("change", changeFont);
+styleSelectFont.addEventListener('change', changeFont);
 function changeFont() {
   const family = styleSelectFont.value;
   getEl().attr("font-family", family);
@@ -688,12 +688,12 @@ styleStatesBodyFilter.addEventListener("change", function () {
 
 styleStatesHaloWidth.addEventListener("input", function () {
   styleStatesHaloWidthOutput.value = this.value;
-  statesHalo.attr("data-width", this.value).attr("stroke-width", this.value);
+  statesHalo.attr('data-width', this.value).attr('stroke-width', this.value);
 });
 
 styleStatesHaloOpacity.addEventListener("input", function () {
   styleStatesHaloOpacityOutput.value = this.value;
-  statesHalo.attr("opacity", this.value);
+  statesHalo.attr('opacity', this.value);
 });
 
 styleStatesHaloBlur.addEventListener("input", function () {
@@ -710,8 +710,8 @@ styleArmiesFillOpacity.addEventListener("input", function () {
 styleArmiesSize.addEventListener("input", function () {
   armies.attr("box-size", this.value).attr("font-size", this.value * 2);
   styleArmiesSizeOutput.value = this.value;
-  armies.selectAll("g").remove(); // clear armies layer
-  pack.states.forEach(s => {
+  armies.selectAll('g').remove(); // clear armies layer
+  pack.states.forEach((s) => {
     if (!s.i || s.removed || !s.military.length) return;
     Military.drawRegiments(s.military, s.i);
   });
@@ -748,9 +748,9 @@ function textureProvideURL() {
         opt.text = name.slice(0, 20);
         styleTextureInput.add(opt);
         styleTextureInput.value = textureURL.value;
-        getBase64(textureURL.value, base64 => texture.select("image").attr("xlink:href", base64));
+        getBase64(textureURL.value, (base64) => texture.select('image').attr('xlink:href', base64));
         zoom.scaleBy(svg, 1.00001); // enforce browser re-draw
-        $(this).dialog("close");
+        $(this).dialog('close');
       },
       Cancel: function () {
         $(this).dialog("close");
@@ -760,11 +760,11 @@ function textureProvideURL() {
 }
 
 function fetchTextureURL(url) {
-  INFO && console.log("Provided URL is", url);
+  INFO && console.log('Provided URL is', url);
   const img = new Image();
   img.onload = function () {
-    const canvas = document.getElementById("texturePreview");
-    const ctx = canvas.getContext("2d");
+    const canvas = document.getElementById('texturePreview');
+    const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
   };
@@ -805,17 +805,17 @@ function updateElements() {
   });
 
   // redraw elements
-  if (layerIsOn("toggleHeight")) drawHeightmap();
-  if (legend.selectAll("*").size() && window.redrawLegend) redrawLegend();
-  oceanLayers.selectAll("path").remove();
+  if (layerIsOn('toggleHeight')) drawHeightmap();
+  if (legend.selectAll('*').size() && window.redrawLegend) redrawLegend();
+  oceanLayers.selectAll('path').remove();
   OceanLayers();
   invokeActiveZooming();
 }
 
 // GLOBAL FILTERS
-mapFilters.addEventListener("click", applyMapFilter);
+mapFilters.addEventListener('click', applyMapFilter);
 function applyMapFilter(event) {
-  if (event.target.tagName !== "BUTTON") return;
+  if (event.target.tagName !== 'BUTTON') return;
   const button = event.target;
   svg.attr("data-filter", null).attr("filter", null);
   if (button.classList.contains("pressed")) return button.classList.remove("pressed");

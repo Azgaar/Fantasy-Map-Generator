@@ -1,15 +1,15 @@
-"use strict";
+'use strict';
 function overviewBurgs() {
   if (customization) return;
-  closeDialogs("#burgsOverview, .stable");
-  if (!layerIsOn("toggleIcons")) toggleIcons();
-  if (!layerIsOn("toggleLabels")) toggleLabels();
+  closeDialogs('#burgsOverview, .stable');
+  if (!layerIsOn('toggleIcons')) toggleIcons();
+  if (!layerIsOn('toggleLabels')) toggleLabels();
 
-  const body = document.getElementById("burgsBody");
+  const body = document.getElementById('burgsBody');
   updateFilter();
   updateLockAllIcon();
   burgsOverviewAddLines();
-  $("#burgsOverview").dialog();
+  $('#burgsOverview').dialog();
 
   if (modules.overviewBurgs) return;
   modules.overviewBurgs = true;
@@ -44,7 +44,7 @@ function overviewBurgs() {
   }
 
   function updateFilter() {
-    const stateFilter = document.getElementById("burgsFilterState");
+    const stateFilter = document.getElementById('burgsFilterState');
     const selectedState = stateFilter.value || 1;
     stateFilter.options.length = 0; // remove all options
     stateFilter.options.add(new Option(`all`, -1, false, selectedState == -1));
@@ -52,7 +52,7 @@ function overviewBurgs() {
     const statesSorted = pack.states.filter(s => s.i && !s.removed).sort((a, b) => (a.name > b.name ? 1 : -1));
     statesSorted.forEach(s => stateFilter.options.add(new Option(s.name, s.i, false, s.i == selectedState)));
 
-    const cultureFilter = document.getElementById("burgsFilterCulture");
+    const cultureFilter = document.getElementById('burgsFilterCulture');
     const selectedCulture = cultureFilter.value || -1;
     cultureFilter.options.length = 0; // remove all options
     cultureFilter.options.add(new Option(`all`, -1, false, selectedCulture == -1));
@@ -63,11 +63,11 @@ function overviewBurgs() {
 
   // add line for each burg
   function burgsOverviewAddLines() {
-    const selectedState = +document.getElementById("burgsFilterState").value;
-    const selectedCulture = +document.getElementById("burgsFilterCulture").value;
-    let filtered = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
-    if (selectedState != -1) filtered = filtered.filter(b => b.state === selectedState); // filtered by state
-    if (selectedCulture != -1) filtered = filtered.filter(b => b.culture === selectedCulture); // filtered by culture
+    const selectedState = +document.getElementById('burgsFilterState').value;
+    const selectedCulture = +document.getElementById('burgsFilterCulture').value;
+    let filtered = pack.burgs.filter((b) => b.i && !b.removed); // all valid burgs
+    if (selectedState != -1) filtered = filtered.filter((b) => b.state === selectedState); // filtered by state
+    if (selectedCulture != -1) filtered = filtered.filter((b) => b.culture === selectedCulture); // filtered by culture
 
     body.innerHTML = "";
     let lines = "",
@@ -76,10 +76,10 @@ function overviewBurgs() {
     for (const b of filtered) {
       const population = b.population * populationRate * urbanization;
       totalPopulation += population;
-      const type = b.capital && b.port ? "a-capital-port" : b.capital ? "c-capital" : b.port ? "p-port" : "z-burg";
+      const type = b.capital && b.port ? 'a-capital-port' : b.capital ? 'c-capital' : b.port ? 'p-port' : 'z-burg';
       const state = pack.states[b.state].name;
       const prov = pack.cells.province[b.cell];
-      const province = prov ? pack.provinces[prov].name : "";
+      const province = prov ? pack.provinces[prov].name : '';
       const culture = pack.cultures[b.culture].name;
 
       lines += /* html */ `<div
@@ -113,7 +113,7 @@ function overviewBurgs() {
         <span data-tip="Remove burg" class="icon-trash-empty"></span>
       </div>`;
     }
-    body.insertAdjacentHTML("beforeend", lines);
+    body.insertAdjacentHTML('beforeend', lines);
 
     // update footer
     burgsFooterBurgs.innerHTML = filtered.length;
@@ -142,13 +142,13 @@ function overviewBurgs() {
   }
 
   function burgHighlightOn(event) {
-    if (!layerIsOn("toggleLabels")) toggleLabels();
+    if (!layerIsOn('toggleLabels')) toggleLabels();
     const burg = +event.target.dataset.id;
-    burgLabels.select("[data-id='" + burg + "']").classed("drag", true);
+    burgLabels.select("[data-id='" + burg + "']").classed('drag', true);
   }
 
   function burgHighlightOff() {
-    burgLabels.selectAll("text.drag").classed("drag", false);
+    burgLabels.selectAll('text.drag').classed('drag', false);
   }
 
   function changeBurgName() {
@@ -187,7 +187,7 @@ function overviewBurgs() {
     this.value = si(this.value);
 
     const population = [];
-    body.querySelectorAll(":scope > div").forEach(el => population.push(+getInteger(el.dataset.population)));
+    body.querySelectorAll(':scope > div').forEach((el) => population.push(+getInteger(el.dataset.population)));
     burgsFooterPopulation.innerHTML = si(d3.mean(population));
   }
 
@@ -200,8 +200,8 @@ function overviewBurgs() {
   function togglePortStatus() {
     const burg = +this.parentNode.parentNode.dataset.id;
     togglePort(burg);
-    if (this.classList.contains("inactive")) this.classList.remove("inactive");
-    else this.classList.add("inactive");
+    if (this.classList.contains('inactive')) this.classList.remove('inactive');
+    else this.classList.add('inactive');
   }
 
   function toggleBurgLockStatus() {
@@ -258,9 +258,9 @@ function overviewBurgs() {
   function enterAddBurgMode() {
     if (this.classList.contains("pressed")) return exitAddBurgMode();
     customization = 3;
-    this.classList.add("pressed");
-    tip("Click on the map to create a new burg. Hold Shift to add multiple", true, "warn");
-    viewbox.style("cursor", "crosshair").on("click", addBurgOnClick);
+    this.classList.add('pressed');
+    tip('Click on the map to create a new burg. Hold Shift to add multiple', true, 'warn');
+    viewbox.style('cursor', 'crosshair').on('click', addBurgOnClick);
   }
 
   function addBurgOnClick() {
@@ -281,14 +281,14 @@ function overviewBurgs() {
     customization = 0;
     restoreDefaultEvents();
     clearMainTip();
-    if (addBurgTool.classList.contains("pressed")) addBurgTool.classList.remove("pressed");
-    if (addNewBurg.classList.contains("pressed")) addNewBurg.classList.remove("pressed");
+    if (addBurgTool.classList.contains('pressed')) addBurgTool.classList.remove('pressed');
+    if (addNewBurg.classList.contains('pressed')) addNewBurg.classList.remove('pressed');
   }
 
   function showBurgsChart() {
     // build hierarchy tree
-    const states = pack.states.map(s => {
-      const color = s.color ? s.color : "#ccc";
+    const states = pack.states.map((s) => {
+      const color = s.color ? s.color : '#ccc';
       const name = s.fullName ? s.fullName : s.name;
       return {id: s.i, state: s.i ? 0 : null, color, name};
     });
@@ -353,22 +353,22 @@ function overviewBurgs() {
       .on("click", d => zoomTo(d.data.x, d.data.y, 8, 2000));
 
     function showInfo(ev, d) {
-      d3.select(ev.target).transition().duration(1500).attr("stroke", "#c13119");
+      d3.select(ev.target).transition().duration(1500).attr('stroke', '#c13119');
       const name = d.data.name;
       const parent = d.parent.data.name;
       const population = si(d.value * populationRate * urbanization);
 
       burgsInfo.innerHTML = /* html */ `${name}. ${parent}. Population: ${population}`;
       burgHighlightOn(ev);
-      tip("Click to zoom into view");
+      tip('Click to zoom into view');
     }
 
     function hideInfo(ev) {
       burgHighlightOff(ev);
-      if (!document.getElementById("burgsInfo")) return;
-      burgsInfo.innerHTML = "&#8205;";
-      d3.select(ev.target).transition().attr("stroke", null);
-      tip("");
+      if (!document.getElementById('burgsInfo')) return;
+      burgsInfo.innerHTML = '&#8205;';
+      d3.select(ev.target).transition().attr('stroke', null);
+      tip('');
     }
 
     function updateChart() {
@@ -386,8 +386,8 @@ function overviewBurgs() {
         });
 
       const getParentData = () => {
-        const states = pack.states.map(s => {
-          const color = s.color ? s.color : "#ccc";
+        const states = pack.states.map((s) => {
+          const color = s.color ? s.color : '#ccc';
           const name = s.fullName ? s.fullName : s.name;
           return {id: s.i, parent: s.i ? 0 : null, color, name};
         });
@@ -458,9 +458,9 @@ function overviewBurgs() {
 
     const valid = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
 
-    valid.forEach(b => {
-      data += b.i + ",";
-      data += b.name + ",";
+    valid.forEach((b) => {
+      data += b.i + ',';
+      data += b.name + ',';
       const province = pack.cells.province[b.cell];
       data += province ? pack.provinces[province].name + "," : ",";
       data += province ? pack.provinces[province].fullName + "," : ",";
@@ -487,7 +487,7 @@ function overviewBurgs() {
       data += "\n";
     });
 
-    const name = getFileName("Burgs") + ".csv";
+    const name = getFileName('Burgs') + '.csv';
     downloadFile(data, name);
   }
 
@@ -567,7 +567,7 @@ function overviewBurgs() {
   }
 
   function removeAllBurgs() {
-    pack.burgs.filter(b => b.i && !(b.capital || b.lock)).forEach(b => removeBurg(b.i));
+    pack.burgs.filter((b) => b.i && !(b.capital || b.lock)).forEach((b) => removeBurg(b.i));
     burgsOverviewAddLines();
   }
 

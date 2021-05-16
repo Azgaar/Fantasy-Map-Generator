@@ -1,14 +1,14 @@
-"use strict";
+'use strict';
 function editLabel() {
   if (customization) return;
   closeDialogs();
-  if (!layerIsOn("toggleLabels")) toggleLabels();
+  if (!layerIsOn('toggleLabels')) toggleLabels();
 
   const tspan = d3.event.target;
   const textPath = tspan.parentNode;
   const text = textPath.parentNode;
-  elSelected = d3.select(text).call(d3.drag().on("start", dragLabel)).classed("draggable", true);
-  viewbox.on("touchmove mousemove", showEditorTips);
+  elSelected = d3.select(text).call(d3.drag().on('start', dragLabel)).classed('draggable', true);
+  viewbox.on('touchmove mousemove', showEditorTips);
 
   $("#labelEditor").dialog({
     title: "Edit Label",
@@ -26,28 +26,28 @@ function editLabel() {
   modules.editLabel = true;
 
   // add listeners
-  document.getElementById("labelGroupShow").addEventListener("click", showGroupSection);
-  document.getElementById("labelGroupHide").addEventListener("click", hideGroupSection);
-  document.getElementById("labelGroupSelect").addEventListener("click", changeGroup);
-  document.getElementById("labelGroupInput").addEventListener("change", createNewGroup);
-  document.getElementById("labelGroupNew").addEventListener("click", toggleNewGroupInput);
-  document.getElementById("labelGroupRemove").addEventListener("click", removeLabelsGroup);
+  document.getElementById('labelGroupShow').addEventListener('click', showGroupSection);
+  document.getElementById('labelGroupHide').addEventListener('click', hideGroupSection);
+  document.getElementById('labelGroupSelect').addEventListener('click', changeGroup);
+  document.getElementById('labelGroupInput').addEventListener('change', createNewGroup);
+  document.getElementById('labelGroupNew').addEventListener('click', toggleNewGroupInput);
+  document.getElementById('labelGroupRemove').addEventListener('click', removeLabelsGroup);
 
-  document.getElementById("labelTextShow").addEventListener("click", showTextSection);
-  document.getElementById("labelTextHide").addEventListener("click", hideTextSection);
-  document.getElementById("labelText").addEventListener("input", changeText);
-  document.getElementById("labelTextRandom").addEventListener("click", generateRandomName);
+  document.getElementById('labelTextShow').addEventListener('click', showTextSection);
+  document.getElementById('labelTextHide').addEventListener('click', hideTextSection);
+  document.getElementById('labelText').addEventListener('input', changeText);
+  document.getElementById('labelTextRandom').addEventListener('click', generateRandomName);
 
-  document.getElementById("labelEditStyle").addEventListener("click", editGroupStyle);
+  document.getElementById('labelEditStyle').addEventListener('click', editGroupStyle);
 
-  document.getElementById("labelSizeShow").addEventListener("click", showSizeSection);
-  document.getElementById("labelSizeHide").addEventListener("click", hideSizeSection);
-  document.getElementById("labelStartOffset").addEventListener("input", changeStartOffset);
-  document.getElementById("labelRelativeSize").addEventListener("input", changeRelativeSize);
+  document.getElementById('labelSizeShow').addEventListener('click', showSizeSection);
+  document.getElementById('labelSizeHide').addEventListener('click', hideSizeSection);
+  document.getElementById('labelStartOffset').addEventListener('input', changeStartOffset);
+  document.getElementById('labelRelativeSize').addEventListener('input', changeRelativeSize);
 
-  document.getElementById("labelAlign").addEventListener("click", editLabelAlign);
-  document.getElementById("labelLegend").addEventListener("click", editLabelLegend);
-  document.getElementById("labelRemoveSingle").addEventListener("click", removeLabel);
+  document.getElementById('labelAlign').addEventListener('click', editLabelAlign);
+  document.getElementById('labelLegend').addEventListener('click', editLabelLegend);
+  document.getElementById('labelRemoveSingle').addEventListener('click', removeLabel);
 
   function showEditorTips() {
     showMainTip();
@@ -78,16 +78,16 @@ function editLabel() {
   }
 
   function updateValues(textPath) {
-    document.getElementById("labelText").value = [...textPath.querySelectorAll("tspan")].map(tspan => tspan.textContent).join("|");
-    document.getElementById("labelStartOffset").value = parseFloat(textPath.getAttribute("startOffset"));
-    document.getElementById("labelRelativeSize").value = parseFloat(textPath.getAttribute("font-size"));
+    document.getElementById('labelText').value = [...textPath.querySelectorAll('tspan')].map((tspan) => tspan.textContent).join('|');
+    document.getElementById('labelStartOffset').value = parseFloat(textPath.getAttribute('startOffset'));
+    document.getElementById('labelRelativeSize').value = parseFloat(textPath.getAttribute('font-size'));
   }
 
   function drawControlPointsAndLine() {
-    debug.select("#controlPoints").remove();
-    debug.append("g").attr("id", "controlPoints").attr("transform", elSelected.attr("transform"));
-    const path = document.getElementById("textPath_" + elSelected.attr("id"));
-    debug.select("#controlPoints").append("path").attr("d", path.getAttribute("d")).on("click", addInterimControlPoint);
+    debug.select('#controlPoints').remove();
+    debug.append('g').attr('id', 'controlPoints').attr('transform', elSelected.attr('transform'));
+    const path = document.getElementById('textPath_' + elSelected.attr('id'));
+    debug.select('#controlPoints').append('path').attr('d', path.getAttribute('d')).on('click', addInterimControlPoint);
     const l = path.getTotalLength();
     if (!l) return;
     const increment = l / Math.max(Math.ceil(l / 200), 2);
@@ -109,13 +109,13 @@ function editLabel() {
   }
 
   function dragControlPoint() {
-    this.setAttribute("cx", d3.event.x);
-    this.setAttribute("cy", d3.event.y);
+    this.setAttribute('cx', d3.event.x);
+    this.setAttribute('cy', d3.event.y);
     redrawLabelPath();
   }
 
   function redrawLabelPath() {
-    const path = document.getElementById("textPath_" + elSelected.attr("id"));
+    const path = document.getElementById('textPath_' + elSelected.attr('id'));
     lineGen.curve(d3.curveBundle.beta(1));
     const points = [];
     debug
@@ -125,8 +125,8 @@ function editLabel() {
         points.push([this.getAttribute("cx"), this.getAttribute("cy")]);
       });
     const d = round(lineGen(points));
-    path.setAttribute("d", d);
-    debug.select("#controlPoints > path").attr("d", d);
+    path.setAttribute('d', d);
+    debug.select('#controlPoints > path').attr('d', d);
   }
 
   function clickControlPoint() {
@@ -202,10 +202,10 @@ function editLabel() {
   }
 
   function toggleNewGroupInput() {
-    if (labelGroupInput.style.display === "none") {
-      labelGroupInput.style.display = "inline-block";
+    if (labelGroupInput.style.display === 'none') {
+      labelGroupInput.style.display = 'inline-block';
       labelGroupInput.focus();
-      labelGroupSelect.style.display = "none";
+      labelGroupSelect.style.display = 'none';
     } else {
       labelGroupInput.style.display = "none";
       labelGroupSelect.style.display = "inline-block";
@@ -223,39 +223,39 @@ function editLabel() {
       .replace(/[^\w\s]/gi, "");
 
     if (document.getElementById(group)) {
-      tip("Element with this id already exists. Please provide a unique name", false, "error");
+      tip('Element with this id already exists. Please provide a unique name', false, 'error');
       return;
     }
 
     if (Number.isFinite(+group.charAt(0))) {
-      tip("Group name should start with a letter", false, "error");
+      tip('Group name should start with a letter', false, 'error');
       return;
     }
 
     // just rename if only 1 element left
     const oldGroup = elSelected.node().parentNode;
-    if (oldGroup !== "states" && oldGroup !== "addedLabels" && oldGroup.childElementCount === 1) {
-      document.getElementById("labelGroupSelect").selectedOptions[0].remove();
-      document.getElementById("labelGroupSelect").options.add(new Option(group, group, false, true));
+    if (oldGroup !== 'states' && oldGroup !== 'addedLabels' && oldGroup.childElementCount === 1) {
+      document.getElementById('labelGroupSelect').selectedOptions[0].remove();
+      document.getElementById('labelGroupSelect').options.add(new Option(group, group, false, true));
       oldGroup.id = group;
       toggleNewGroupInput();
-      document.getElementById("labelGroupInput").value = "";
+      document.getElementById('labelGroupInput').value = '';
       return;
     }
 
     const newGroup = elSelected.node().parentNode.cloneNode(false);
-    document.getElementById("labels").appendChild(newGroup);
+    document.getElementById('labels').appendChild(newGroup);
     newGroup.id = group;
-    document.getElementById("labelGroupSelect").options.add(new Option(group, group, false, true));
+    document.getElementById('labelGroupSelect').options.add(new Option(group, group, false, true));
     document.getElementById(group).appendChild(elSelected.node());
 
     toggleNewGroupInput();
-    document.getElementById("labelGroupInput").value = "";
+    document.getElementById('labelGroupInput').value = '';
   }
 
   function removeLabelsGroup() {
     const group = elSelected.node().parentNode.id;
-    const basic = group === "states" || group === "addedLabels";
+    const basic = group === 'states' || group === 'addedLabels';
     const count = elSelected.node().parentNode.childElementCount;
     alertMessage.innerHTML = /* html */ `Are you sure you want to remove ${
       basic ? "all elements in the group" : "the entire label group"
@@ -300,7 +300,12 @@ function editLabel() {
     const el = elSelected.select("textPath").node();
     const example = d3.select(elSelected.node().parentNode).append("text").attr("x", 0).attr("x", 0).attr("font-size", el.getAttribute("font-size")).node();
 
-    const lines = input.split("|");
+  function changeText() {
+    const input = document.getElementById('labelText').value;
+    const el = elSelected.select('textPath').node();
+    const example = d3.select(elSelected.node().parentNode).append('text').attr('x', 0).attr('x', 0).attr('font-size', el.getAttribute('font-size')).node();
+
+    const lines = input.split('|');
     const top = (lines.length - 1) / -2; // y offset
     const inner = lines
       .map((l, d) => {
@@ -321,20 +326,20 @@ function editLabel() {
     if (elSelected.attr("id").slice(0, 10) === "stateLabel") {
       const id = +elSelected.attr("id").slice(10);
       const culture = pack.states[id].culture;
-      name = Names.getState(Names.getCulture(culture, 4, 7, ""), culture);
+      name = Names.getState(Names.getCulture(culture, 4, 7, ''), culture);
     } else {
       const box = elSelected.node().getBBox();
       const cell = findCell((box.x + box.width) / 2, (box.y + box.height) / 2);
       const culture = pack.cells.culture[cell];
       name = Names.getCulture(culture);
     }
-    document.getElementById("labelText").value = name;
+    document.getElementById('labelText').value = name;
     changeText();
   }
 
   function editGroupStyle() {
     const g = elSelected.node().parentNode.id;
-    editStyle("labels", g);
+    editStyle('labels', g);
   }
 
   function showSizeSection() {
@@ -348,13 +353,13 @@ function editLabel() {
   }
 
   function changeStartOffset() {
-    elSelected.select("textPath").attr("startOffset", this.value + "%");
-    tip("Label offset: " + this.value + "%");
+    elSelected.select('textPath').attr('startOffset', this.value + '%');
+    tip('Label offset: ' + this.value + '%');
   }
 
   function changeRelativeSize() {
-    elSelected.select("textPath").attr("font-size", this.value + "%");
-    tip("Label relative size: " + this.value + "%");
+    elSelected.select('textPath').attr('font-size', this.value + '%');
+    tip('Label relative size: ' + this.value + '%');
     changeText();
   }
 
@@ -367,7 +372,7 @@ function editLabel() {
   }
 
   function editLabelLegend() {
-    const id = elSelected.attr("id");
+    const id = elSelected.attr('id');
     const name = elSelected.text();
     editNotes(id, name);
   }
@@ -392,7 +397,7 @@ function editLabel() {
   }
 
   function closeLabelEditor() {
-    debug.select("#controlPoints").remove();
+    debug.select('#controlPoints').remove();
     unselect();
   }
 }
