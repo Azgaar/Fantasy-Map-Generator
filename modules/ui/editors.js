@@ -1,5 +1,5 @@
 // module stub to store common functions for ui editors
-"use strict";
+'use strict';
 
 modules.editors = true;
 
@@ -41,9 +41,9 @@ function clicked() {
 function unselect() {
   restoreDefaultEvents();
   if (!elSelected) return;
-  elSelected.call(d3.drag().on("drag", null)).attr("class", null);
-  debug.selectAll("*").remove();
-  viewbox.style("cursor", "default");
+  elSelected.call(d3.drag().on('drag', null)).attr('class', null);
+  debug.selectAll('*').remove();
+  viewbox.style('cursor', 'default');
   elSelected = null;
 }
 
@@ -65,9 +65,9 @@ function moveCircle(x, y, r = 20) {
     const html = /* html */ `<circle id="brushCircle" cx=${x} cy=${y} r=${r}></circle>`;
     byId("debug").insertAdjacentHTML("afterBegin", html);
   } else {
-    circle.setAttribute("cx", x);
-    circle.setAttribute("cy", y);
-    circle.setAttribute("r", r);
+    circle.setAttribute('cx', x);
+    circle.setAttribute('cy', y);
+    circle.setAttribute('r', r);
   }
 }
 
@@ -77,7 +77,7 @@ function removeCircle() {
 
 // get browser-defined fit-content
 function fitContent() {
-  return !window.chrome ? "-moz-max-content" : "fit-content";
+  return !window.chrome ? '-moz-max-content' : 'fit-content';
 }
 
 // apply sorting behaviour for lines on Editor header click
@@ -117,8 +117,8 @@ function applySorting(headers) {
   const header = headers.querySelector("div[class*='icon-sort']");
   if (!header) return;
   const sortby = header.dataset.sortby;
-  const name = header.classList.contains("alphabetically");
-  const desc = header.className.includes("-down") ? -1 : 1;
+  const name = header.classList.contains('alphabetically');
+  const desc = header.className.includes('-down') ? -1 : 1;
   const list = headers.nextElementSibling;
   const lines = Array.from(list.children);
 
@@ -149,7 +149,7 @@ function addBurg(point) {
   // generate emblem
   const coa = COA.generate(pack.states[state].coa, 0.25, null, type);
   coa.shield = COA.getShield(culture, state);
-  COArenderer.add("burg", i, coa, x, y);
+  COArenderer.add('burg', i, coa, x, y);
 
   pack.burgs.push({name, cell, x, y, state, i, culture, feature, capital: 0, port: 0, temple, population, coa, type});
   cells.burg[cell] = i;
@@ -189,9 +189,9 @@ function moveBurgToGroup(id, g) {
   document.querySelector("#burgLabels > #" + g).appendChild(label);
   document.querySelector("#burgIcons > #" + g).appendChild(icon);
 
-  const iconSize = icon.parentNode.getAttribute("size");
-  icon.setAttribute("r", iconSize);
-  label.setAttribute("dy", `${iconSize * -1.5}px`);
+  const iconSize = icon.parentNode.getAttribute('size');
+  icon.setAttribute('r', iconSize);
+  label.setAttribute('dy', `${iconSize * -1.5}px`);
 
   if (anchor) {
     document.querySelector("#anchors > #" + g).appendChild(anchor);
@@ -260,8 +260,8 @@ function toggleCapital(burg) {
   pack.states[state].center = pack.burgs[burg].cell;
   pack.burgs[burg].capital = 1;
   pack.burgs[old].capital = 0;
-  moveBurgToGroup(burg, "cities");
-  moveBurgToGroup(old, "towns");
+  moveBurgToGroup(burg, 'cities');
+  moveBurgToGroup(old, 'towns');
 }
 
 function togglePort(burg) {
@@ -275,7 +275,7 @@ function togglePort(burg) {
 
   const haven = pack.cells.haven[b.cell];
   const port = haven ? pack.cells.f[haven] : -1;
-  if (!haven) tip("Port haven is not found, system won't be able to make a searoute", false, "warn");
+  if (!haven) tip("Port haven is not found, system won't be able to make a searoute", false, 'warn');
   b.port = port;
 
   const g = b.capital ? "cities" : "towns";
@@ -358,11 +358,11 @@ function getMFCGlink(burg) {
 
 // draw legend box
 function drawLegend(name, data) {
-  legend.selectAll("*").remove(); // fully redraw every time
-  legend.attr("data", data.join("|")); // store data
+  legend.selectAll('*').remove(); // fully redraw every time
+  legend.attr('data', data.join('|')); // store data
 
   const itemsInCol = +styleLegendColItems.value;
-  const fontSize = +legend.attr("font-size");
+  const fontSize = +legend.attr('font-size');
   const backClr = styleLegendBack.value;
   const opacity = +styleLegendOpacity.value;
 
@@ -429,9 +429,9 @@ function drawLegend(name, data) {
 
 // fit Legend box to canvas size
 function fitLegendBox() {
-  if (!legend.selectAll("*").size()) return;
-  const px = isNaN(+legend.attr("data-x")) ? 99 : legend.attr("data-x") / 100;
-  const py = isNaN(+legend.attr("data-y")) ? 93 : legend.attr("data-y") / 100;
+  if (!legend.selectAll('*').size()) return;
+  const px = isNaN(+legend.attr('data-x')) ? 99 : legend.attr('data-x') / 100;
+  const py = isNaN(+legend.attr('data-y')) ? 93 : legend.attr('data-y') / 100;
   const bbox = legend.node().getBBox();
   const x = rn(svgWidth * px - bbox.width),
     y = rn(svgHeight * py - bbox.height);
@@ -464,8 +464,8 @@ function dragLegendBox() {
 }
 
 function clearLegend() {
-  legend.selectAll("*").remove();
-  legend.attr("data", null);
+  legend.selectAll('*').remove();
+  legend.attr('data', null);
 }
 
 // draw color (fill) picker
@@ -500,12 +500,12 @@ function createPicker(hatching) {
         .on("start", dragPicker)
     );
 
-  const controls = picker.append("g").attr("id", "pickerControls");
-  const h = controls.append("g");
-  h.append("text").attr("x", 4).attr("y", 14).text("H:");
-  h.append("line").attr("x1", 18).attr("y1", 10).attr("x2", 107).attr("y2", 10);
-  h.append("circle").attr("cx", 75).attr("cy", 10).attr("r", 5).attr("id", "pickerH");
-  h.on("mousemove", () => tip("Set palette hue"));
+  const controls = picker.append('g').attr('id', 'pickerControls');
+  const h = controls.append('g');
+  h.append('text').attr('x', 4).attr('y', 14).text('H:');
+  h.append('line').attr('x1', 18).attr('y1', 10).attr('x2', 107).attr('y2', 10);
+  h.append('circle').attr('cx', 75).attr('cy', 10).attr('r', 5).attr('id', 'pickerH');
+  h.on('mousemove', () => tip('Set palette hue'));
 
   const s = controls.append("g");
   s.append("text").attr("x", 113).attr("y", 14).text("S:");
@@ -513,14 +513,14 @@ function createPicker(hatching) {
   s.append("circle").attr("cx", 181.4).attr("cy", 10).attr("r", 5).attr("id", "pickerS");
   s.on("mousemove", () => tip("Set palette saturation"));
 
-  const l = controls.append("g");
-  l.append("text").attr("x", 213).attr("y", 14).text("L:");
-  l.append("line").attr("x1", 226).attr("y1", 10).attr("x2", 306).attr("y2", 10);
-  l.append("circle").attr("cx", 282).attr("cy", 10).attr("r", 5).attr("id", "pickerL");
-  l.on("mousemove", () => tip("Set palette lightness"));
+  const l = controls.append('g');
+  l.append('text').attr('x', 213).attr('y', 14).text('L:');
+  l.append('line').attr('x1', 226).attr('y1', 10).attr('x2', 306).attr('y2', 10);
+  l.append('circle').attr('cx', 282).attr('cy', 10).attr('r', 5).attr('id', 'pickerL');
+  l.on('mousemove', () => tip('Set palette lightness'));
 
-  controls.selectAll("line").on("click", clickPickerControl);
-  controls.selectAll("circle").call(d3.drag().on("start", dragPickerControl));
+  controls.selectAll('line').on('click', clickPickerControl);
+  controls.selectAll('circle').call(d3.drag().on('start', dragPickerControl));
 
   const spaces = picker
     .append("foreignObject")
@@ -659,7 +659,7 @@ function updateSpaces() {
 }
 
 function updatePickerColors() {
-  const colors = d3.select("#picker > #pickerColors").selectAll("rect");
+  const colors = d3.select('#picker > #pickerColors').selectAll('rect');
   const number = colors.size();
 
   const h = getPickerControl(pickerH, 360);
@@ -676,7 +676,7 @@ function updatePickerColors() {
 function openPicker(fill, callback, options = {allowHatching: true}) {
   createPicker(options.allowHatching);
 
-  if (fill[0] === "#") {
+  if (fill[0] === '#') {
     const hsl = d3.hsl(fill);
     if (!isNaN(hsl.h)) setPickerControl(pickerH, hsl.h, 360);
     if (!isNaN(hsl.s)) setPickerControl(pickerS, hsl.s, 1);
@@ -695,10 +695,10 @@ function openPicker(fill, callback, options = {allowHatching: true}) {
 }
 
 function setPickerControl(control, value, max) {
-  const min = +control.previousSibling.getAttribute("x1");
-  const delta = +control.previousSibling.getAttribute("x2") - min;
+  const min = +control.previousSibling.getAttribute('x1');
+  const delta = +control.previousSibling.getAttribute('x2') - min;
   const percent = value / max;
-  control.setAttribute("cx", min + delta * percent);
+  control.setAttribute('cx', min + delta * percent);
 }
 
 function getPickerControl(control, max) {
@@ -724,7 +724,7 @@ function dragPicker() {
 }
 
 function pickerFillClicked() {
-  const fill = this.getAttribute("fill");
+  const fill = this.getAttribute('fill');
   updateSelectedRect(fill);
   openPicker.updateFill();
 
@@ -736,19 +736,19 @@ function pickerFillClicked() {
 
 function clickPickerControl() {
   const min = this.getScreenCTM().e;
-  this.nextSibling.setAttribute("cx", d3.event.x - min);
+  this.nextSibling.setAttribute('cx', d3.event.x - min);
   updateSpaces();
   updatePickerColors();
   openPicker.updateFill();
 }
 
 function dragPickerControl() {
-  const min = +this.previousSibling.getAttribute("x1");
-  const max = +this.previousSibling.getAttribute("x2");
+  const min = +this.previousSibling.getAttribute('x1');
+  const max = +this.previousSibling.getAttribute('x2');
 
   d3.event.on("drag", function () {
     const x = Math.max(Math.min(d3.event.x, max), min);
-    this.setAttribute("cx", x);
+    this.setAttribute('cx', x);
     updateSpaces();
     updatePickerColors();
     openPicker.updateFill();
@@ -799,9 +799,9 @@ function fog(id, path) {
       .transition(fadeIn)
       .attr("opacity", 1);
   } else {
-    defs.select("#fog").append("path").attr("d", path).attr("id", id).attr("opacity", 1);
-    const opacity = fogging.attr("opacity");
-    fogging.style("display", "block").attr("opacity", 0).transition(fadeIn).attr("opacity", opacity);
+    defs.select('#fog').append('path').attr('d', path).attr('id', id).attr('opacity', 1);
+    const opacity = fogging.attr('opacity');
+    fogging.style('display', 'block').attr('opacity', 0).transition(fadeIn).attr('opacity', opacity);
   }
 }
 
@@ -811,13 +811,13 @@ function unfog(id) {
   if (!id || !el.size()) el = defs.select("#fog").selectAll("path");
 
   el.remove();
-  if (!defs.selectAll("#fog path").size()) fogging.style("display", "none");
+  if (!defs.selectAll('#fog path').size()) fogging.style('display', 'none');
 }
 
 function getFileName(dataType) {
   const formatTime = time => (time < 10 ? "0" + time : time);
   const name = mapName.value;
-  const type = dataType ? dataType + " " : "";
+  const type = dataType ? dataType + ' ' : '';
   const date = new Date();
   const year = date.getFullYear();
   const month = formatTime(date.getMonth() + 1);
@@ -828,10 +828,10 @@ function getFileName(dataType) {
   return name + " " + type + dateString;
 }
 
-function downloadFile(data, name, type = "text/plain") {
+function downloadFile(data, name, type = 'text/plain') {
   const dataBlob = new Blob([data], {type});
   const url = window.URL.createObjectURL(dataBlob);
-  const link = document.createElement("a");
+  const link = document.createElement('a');
   link.download = name;
   link.href = url;
   link.click();
@@ -840,9 +840,9 @@ function downloadFile(data, name, type = "text/plain") {
 
 function uploadFile(el, callback) {
   const fileReader = new FileReader();
-  fileReader.readAsText(el.files[0], "UTF-8");
-  el.value = "";
-  fileReader.onload = loaded => callback(loaded.target.result);
+  fileReader.readAsText(el.files[0], 'UTF-8');
+  el.value = '';
+  fileReader.onload = (loaded) => callback(loaded.target.result);
 }
 
 function getBBox(element) {
@@ -887,7 +887,7 @@ function highlightElement(element, zoom) {
 
 function selectIcon(initial, callback) {
   if (!callback) return;
-  $("#iconSelector").dialog();
+  $('#iconSelector').dialog();
 
   const table = byId("iconTable");
   const input = byId("iconInput");

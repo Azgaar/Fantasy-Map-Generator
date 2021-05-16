@@ -73,7 +73,7 @@ function editResources() {
     if (cl.contains('resourceModel')) return changeModel(resource, line, el);
     if (cl.contains('resourceBonus')) return changeBonus(resource, line, el);
     if (cl.contains('icon-pin')) return pinResource(resource, el);
-    if (cl.contains('icon-trash-empty')) return removeResourcePrompt(resource, line);
+    if (cl.contains('icon-trash-empty')) return removeResource(resource, line);
   });
 
   body.addEventListener('change', function (ev) {
@@ -694,9 +694,19 @@ function editResources() {
     openPicker(resource.color, callback, {allowHatching: false});
   }
 
+  function regenerateCurrentResources() {
+    const message = 'Are you sure you want to regenerate resources? <br>This action cannot be reverted';
+    const onConfirm = () => regenerateResources();
+    confirmationDialog({title: 'Regenerate resources', message, confirm: 'Regenerate', onConfirm});
+  }
+
   function resourcesRestoreDefaults() {
-    delete pack.resources;
-    regenerateResources();
+    const message = 'Are you sure you want to restore default resources? <br>This action cannot be reverted';
+    const onConfirm = () => {
+      delete pack.resources;
+      regenerateResources();
+    };
+    confirmationDialog({title: 'Restore default resources', message, confirm: 'Restore', onConfirm});
   }
 
   function toggleLegend() {
