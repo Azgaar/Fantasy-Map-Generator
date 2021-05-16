@@ -72,6 +72,8 @@ function editResources() {
     if (cl.contains('resourceCategory')) return changeCategory(resource, line, el);
     if (cl.contains('resourceModel')) return changeModel(resource, line, el);
     if (cl.contains('resourceBonus')) return changeBonus(resource, line, el);
+    if (cl.contains('icon-pin')) return pinResource(resource, el);
+    if (cl.contains('icon-trash-empty')) return removeResourcePrompt(resource, line);
   });
 
   body.addEventListener('change', function (ev) {
@@ -690,6 +692,11 @@ function editResources() {
     };
 
     openPicker(resource.color, callback, {allowHatching: false});
+  }
+
+  function resourcesRestoreDefaults() {
+    delete pack.resources;
+    regenerateResources();
   }
 
   function toggleLegend() {
