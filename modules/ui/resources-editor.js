@@ -20,7 +20,7 @@ function editResources() {
 
   // add listeners
   document.getElementById('resourcesEditorRefresh').addEventListener('click', resourcesEditorAddLines);
-  document.getElementById('resourcesRegenerate').addEventListener('click', regenerateResources);
+  document.getElementById('resourcesRegenerate').addEventListener('click', regenerateCurrentResources);
   document.getElementById('resourcesLegend').addEventListener('click', toggleLegend);
   document.getElementById('resourcesPercentage').addEventListener('click', togglePercentageMode);
   document.getElementById('resourcesAssign').addEventListener('click', enterResourceAssignMode);
@@ -32,14 +32,13 @@ function editResources() {
   body.addEventListener('click', function (ev) {
     const el = ev.target,
       cl = el.classList,
-      line = el.parentNode,
-      i = +line.dataset.id;
+      line = el.parentNode;
     const resource = Resources.get(+line.dataset.id);
     if (cl.contains('resourceCategory')) return changeCategory(resource, line, el);
     if (cl.contains('resourceModel')) return changeModel(resource, line, el);
     if (cl.contains('resourceBonus')) return changeBonus(resource, line, el);
     if (cl.contains('icon-pin')) return pinResource(resource, el);
-    if (cl.contains('icon-trash-empty')) return removeResourcePrompt(resource, line);
+    if (cl.contains('icon-trash-empty')) return removeResource(resource, line);
   });
 
   body.addEventListener('change', function (ev) {
@@ -320,9 +319,19 @@ function editResources() {
     openPicker(resource.color, callback, {allowHatching: false});
   }
 
+  function regenerateCurrentResources() {
+    const message = 'Are you sure you want to regenerate resources? <br>This action cannot be reverted';
+    const onConfirm = () => regenerateResources();
+    confirmationDialog({title: 'Regenerate resources', message, confirm: 'Regenerate', onConfirm});
+  }
+
   function resourcesRestoreDefaults() {
-    delete pack.resources;
-    regenerateResources();
+    const message = 'Are you sure you want to restore default resources? <br>This action cannot be reverted';
+    const onConfirm = () => {
+      delete pack.resources;
+      regenerateResources();
+    };
+    confirmationDialog({title: 'Restore default resources', message, confirm: 'Restore', onConfirm});
   }
 
   function toggleLegend() {
@@ -417,6 +426,7 @@ function editResources() {
     if (layerIsOn('toggleCells')) {
       const toggler = document.getElementById('toggleCells');
       if (toggler.dataset.forced) toggleCells();
+      delete toggler.dataset.forced;
     }
 
     document
@@ -479,37 +489,24 @@ function editResources() {
     body.querySelectorAll(':scope > div > span.icon-pin').forEach((el) => el.classList.add('inactive'));
   }
 
-  function removeResourcePrompt(resource, line) {
+  function removeResource(res, line) {
     if (customization) return;
 
-    alertMessage.innerHTML = 'Are you sure you want to remove the resource? <br>This action cannot be reverted';
-    $('#alert').dialog({
-      resizable: false,
-      title: 'Remove resource',
-      buttons: {
-        Remove: function () {
-          $(this).dialog('close');
-          removeResource(resource, line);
-        },
-        Cancel: function () {
-          $(this).dialog('close');
+    const message = 'Are you sure you want to remove the resource? <br>This action cannot be reverted';
+    const onConfirm = () => {
+      for (const i of pack.cells.i) {
+        if (pack.cells.resource[i] === res.i) {
+          pack.cells.resource[i] = 0;
         }
       }
-    });
-  }
 
-  function removeResource(res, line) {
-    for (const i of pack.cells.i) {
-      if (pack.cells.resource[i] === res.i) {
-        pack.cells.resource[i] = 0;
-      }
-    }
+      pack.resources = pack.resources.filter((resource) => resource.i !== res.i);
+      line.remove();
 
-    pack.resources = pack.resources.filter((resource) => resource.i !== res.i);
-    line.remove();
-
-    goods.selectAll('*').remove();
-    drawResources();
+      goods.selectAll('*').remove();
+      drawResources();
+    };
+    confirmationDialog({title: 'Remove resource', message, confirm: 'Remove', onConfirm});
   }
 
   function closeResourcesEditor() {
