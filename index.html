@@ -3007,27 +3007,30 @@
         <div style="left:2.8em" data-tip="Click to sort by resource name" class="sortable alphabetically" data-sortby="name">Resource&nbsp;</div>
         <div style="left:8.8em" data-tip="Click to sort by resource category" class="sortable alphabetically" data-sortby="category">Category&nbsp;</div>
         <div style="left:15em" data-tip="Click to sort by generation chance" class="sortable" data-sortby="chance">Chance&nbsp;</div>
-        <div style="left:20em" data-tip="Click to sort by spread model" class="sortable alphabetically" data-sortby="model">Model&nbsp;</div>
-        <div style="left:27em" data-tip="Click to sort by number of cells" class="sortable icon-sort-number-down" data-sortby="cells">Cells&nbsp;</div>
-        <div style="left:30.8em" data-tip="Click to sort by resource basic value" class="sortable" data-sortby="value">Value&nbsp;</div>
-        <div style="left:34.5em" data-tip="Click to sort by bonuses" class="sortable alphabetically" data-sortby="bonuses">Bonuses&nbsp;</div>
+        <div style="left:19.5em" data-tip="Click to sort by number of cells" class="sortable icon-sort-number-down" data-sortby="cells">Cells&nbsp;</div>
+        <div style="left:23.4em" data-tip="Click to sort by spread model" class="sortable alphabetically hide" data-sortby="model">Model&nbsp;</div>
+        <div style="left:30.8em" data-tip="Click to sort by resource basic value" class="sortable hide" data-sortby="value">Value&nbsp;</div>
+        <div style="left:34.5em" data-tip="Click to sort by bonus" class="sortable alphabetically hide" data-sortby="bonus">Bonus&nbsp;</div>
+        <div style="left:39.8em; cursor: pointer;" data-tip="Click to unpin (show) all resources" class="icon-pin hidden" id="resourcesUnpinAll"></div>
       </div>
       <div id="resourcesBody" class="table" data-type="absolute"></div>
 
       <div id="resourcesFooter" class="totalLine">
         <div data-tip="Number of resources" style="margin-left: 12px">Resources:&nbsp;<span id="resourcesNumber">0</span></div>
       </div>
-    
+
       <div id="resourcesBottom">
         <button id="resourcesEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
         <button id="resourcesRegenerate" data-tip="Regenerate resources based on current configuration" class="icon-retweet"></button>
         <button id="resourcesLegend" data-tip="Toggle Legend box" class="icon-list-bullet"></button>
         <button id="resourcesPercentage" data-tip="Toggle percentage / absolute values display mode" class="icon-percent"></button>
+        <button id="resourcesAssign" data-tip="Manually assign resources to cells" class="icon-brush"></button>
         <button id="resourcesAdd" data-tip="Add a new resource" class="icon-plus"></button>
+        <button id="resourcesRestore" data-tip="Restore default list and regenerate resources" class="icon-history"></button>
         <button id="resourcesExport" data-tip="Download resources-related data" class="icon-download"></button>
       </div>
     </div>
-    
+
     <div id="unitsEditor" class="dialog stable" style="display: none">
       <div id="unitsBody" style="margin-left:1.1em">
         <div class="unitsHeader" style="margin-top:.4em">

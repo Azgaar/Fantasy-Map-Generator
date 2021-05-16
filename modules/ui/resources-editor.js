@@ -23,7 +23,11 @@ function editResources() {
   document.getElementById('resourcesRegenerate').addEventListener('click', regenerateResources);
   document.getElementById('resourcesLegend').addEventListener('click', toggleLegend);
   document.getElementById('resourcesPercentage').addEventListener('click', togglePercentageMode);
+  document.getElementById('resourcesAssign').addEventListener('click', enterResourceAssignMode);
+  document.getElementById('resourcesAdd').addEventListener('click', resourceAdd);
+  document.getElementById('resourcesRestore').addEventListener('click', resourcesRestoreDefaults);
   document.getElementById('resourcesExport').addEventListener('click', downloadResourcesData);
+  document.getElementById('resourcesUnpinAll').addEventListener('click', unpinAllResources);
 
   body.addEventListener('click', function (ev) {
     const el = ev.target,
@@ -34,6 +38,8 @@ function editResources() {
     if (cl.contains('resourceCategory')) return changeCategory(resource, line, el);
     if (cl.contains('resourceModel')) return changeModel(resource, line, el);
     if (cl.contains('resourceBonus')) return changeBonus(resource, line, el);
+    if (cl.contains('icon-pin')) return pinResource(resource, el);
+    if (cl.contains('icon-trash-empty')) return removeResourcePrompt(resource, line);
   });
 
   body.addEventListener('change', function (ev) {
@@ -80,11 +86,13 @@ function editResources() {
         <input data-tip="Resource name. Click and category to change" class="resourceName" value="${r.name}" autocorrect="off" spellcheck="false">
         <div data-tip="Resource category. Select to change" class="resourceCategory">${r.category}</div>
         <input data-tip="Resource generation chance in eligible cell. Click and type to change" class="resourceChance" value="${r.chance}" type="number" min=0 max=100 step=.1 />
-        <div data-tip="Resource spread model. Click to change" class="resourceModel" ${addTitle(model, 8)}">${model}</div>
-        <div data-tip="Number of cells with resource" class="cells">${r.cells}</div>
+        <div data-tip="Number of cells with resource" class="resourceCells">${r.cells}</div>
 
-        <input data-tip="Resource basic value. Click and type to change" class="resourceValue" value="${r.value}" type="number" min=0 max=100 step=1 />
-        <div data-tip="Resource bonus. Click to change" class="resourceBonus" title="${bonusString}">${bonusHTML}</div>
+        <div data-tip="Resource spread model. Click to change" class="resourceModel hide" ${addTitle(model, 8)}">${model}</div>
+        <input data-tip="Resource basic value. Click and type to change" class="resourceValue hide" value="${r.value}" type="number" min=0 max=100 step=1 />
+        <div data-tip="Resource bonus. Click to change" class="resourceBonus hide" title="${bonusString}">${bonusHTML}</div>
+
+        <span data-tip="Toogle resource exclusive visibility (pin)" class="icon-pin inactive hide"></span>
         <span data-tip="Remove resource" class="icon-trash-empty hide"></span>
       </div>`;
     }
@@ -96,7 +104,7 @@ function editResources() {
     // add listeners
     // body.querySelectorAll("div.resources").forEach(el => el.addEventListener("mouseenter", ev => resourceHighlightOn(ev)));
     // body.querySelectorAll("div.resources").forEach(el => el.addEventListener("mouseleave", ev => resourceHighlightOff(ev)));
-    // body.querySelectorAll("div.states").forEach(el => el.addEventListener("click", selectResourceOnLineClick));
+    body.querySelectorAll('div.states').forEach((el) => el.addEventListener('click', selectResourceOnLineClick));
     body.querySelectorAll('svg.icon').forEach((el) => el.addEventListener('click', resourceChangeColor));
 
     if (body.dataset.type === 'percentage') {
@@ -312,6 +320,11 @@ function editResources() {
     openPicker(resource.color, callback, {allowHatching: false});
   }
 
+  function resourcesRestoreDefaults() {
+    delete pack.resources;
+    regenerateResources();
+  }
+
   function toggleLegend() {
     if (legend.selectAll('*').size()) {
       clearLegend();
@@ -339,6 +352,89 @@ function editResources() {
     }
   }
 
+  function enterResourceAssignMode() {
+    if (this.classList.contains('pressed')) return exitResourceAssignMode();
+    customization = 14;
+    this.classList.add('pressed');
+    if (!layerIsOn('toggleResources')) toggleResources();
+    if (!layerIsOn('toggleCells')) {
+      const toggler = document.getElementById('toggleCells');
+      toggler.dataset.forced = true;
+      toggleCells();
+    }
+
+    document
+      .getElementById('resourcesEditor')
+      .querySelectorAll('.hide')
+      .forEach((el) => el.classList.add('hidden'));
+    document.getElementById('resourcesFooter').style.display = 'none';
+    body.querySelectorAll('.resourceName, .resourceCategory, .resourceChance, .resourceCells, svg').forEach((e) => (e.style.pointerEvents = 'none'));
+    $('#resourcesEditor').dialog({position: {my: 'right top', at: 'right-10 top+10', of: 'svg', collision: 'fit'}});
+
+    tip('Select resource line in editor, click on cells to remove or add a resource', true);
+    viewbox.on('click', changeResourceOnCellClick);
+
+    body.querySelector('div').classList.add('selected');
+
+    const someArePinned = pack.resources.some((resource) => resource.pinned);
+    if (someArePinned) unpinAllResources();
+  }
+
+  function selectResourceOnLineClick() {
+    if (customization !== 14) return;
+    //if (this.parentNode.id !== "statesBodySection") return;
+    body.querySelector('div.selected').classList.remove('selected');
+    this.classList.add('selected');
+  }
+
+  function changeResourceOnCellClick() {
+    const point = d3.mouse(this);
+    const i = findCell(point[0], point[1]);
+    const selected = body.querySelector('div.selected');
+    if (!selected) return;
+
+    if (pack.cells.resource[i]) {
+      const resourceToRemove = Resources.get(pack.cells.resource[i]);
+      if (resourceToRemove) resourceToRemove.cells -= 1;
+      body.querySelector("div.states[data-id='" + resourceToRemove.i + "'] > .resourceCells").innerHTML = resourceToRemove.cells;
+      pack.cells.resource[i] = 0;
+    } else {
+      const resourceId = +selected.dataset.id;
+      const resource = Resources.get(resourceId);
+      resource.cells += 1;
+      body.querySelector("div.states[data-id='" + resourceId + "'] > .resourceCells").innerHTML = resource.cells;
+      pack.cells.resource[i] = resourceId;
+    }
+
+    goods.selectAll('*').remove();
+    drawResources();
+  }
+
+  function exitResourceAssignMode(close) {
+    customization = 0;
+    document.getElementById('resourcesAssign').classList.remove('pressed');
+
+    if (layerIsOn('toggleCells')) {
+      const toggler = document.getElementById('toggleCells');
+      if (toggler.dataset.forced) toggleCells();
+    }
+
+    document
+      .getElementById('resourcesEditor')
+      .querySelectorAll('.hide')
+      .forEach((el) => el.classList.remove('hidden'));
+    document.getElementById('resourcesFooter').style.display = 'block';
+    body.querySelectorAll('.resourceName, .resourceCategory, .resourceChance, .resourceCells, svg').forEach((e) => delete e.style.pointerEvents);
+    !close && $('#resourcesEditor').dialog({position: {my: 'right top', at: 'right-10 top+10', of: 'svg', collision: 'fit'}});
+
+    restoreDefaultEvents();
+    clearMainTip();
+    const selected = body.querySelector('div.selected');
+    if (selected) selected.classList.remove('selected');
+  }
+
+  function resourceAdd() {}
+
   function downloadResourcesData() {
     let data = 'Id,Resource,Color,Category,Value,Bonus,Chance,Model,Cells\n'; // headers
 
@@ -358,5 +454,67 @@ function editResources() {
     downloadFile(data, name);
   }
 
-  function closeResourcesEditor() {}
+  function pinResource(resource, el) {
+    const pin = el.classList.contains('inactive');
+    el.classList.toggle('inactive');
+
+    if (pin) resource.pinned = pin;
+    else delete resource.pinned;
+
+    goods.selectAll('*').remove();
+    drawResources();
+
+    // manage top unpin all button state
+    const someArePinned = pack.resources.some((resource) => resource.pinned);
+    const unpinAll = document.getElementById('resourcesUnpinAll');
+    someArePinned ? unpinAll.classList.remove('hidden') : unpinAll.classList.add('hidden');
+  }
+
+  function unpinAllResources() {
+    pack.resources.forEach((resource) => delete resource.pinned);
+    goods.selectAll('*').remove();
+    drawResources();
+
+    document.getElementById('resourcesUnpinAll').classList.add('hidden');
+    body.querySelectorAll(':scope > div > span.icon-pin').forEach((el) => el.classList.add('inactive'));
+  }
+
+  function removeResourcePrompt(resource, line) {
+    if (customization) return;
+
+    alertMessage.innerHTML = 'Are you sure you want to remove the resource? <br>This action cannot be reverted';
+    $('#alert').dialog({
+      resizable: false,
+      title: 'Remove resource',
+      buttons: {
+        Remove: function () {
+          $(this).dialog('close');
+          removeResource(resource, line);
+        },
+        Cancel: function () {
+          $(this).dialog('close');
+        }
+      }
+    });
+  }
+
+  function removeResource(res, line) {
+    for (const i of pack.cells.i) {
+      if (pack.cells.resource[i] === res.i) {
+        pack.cells.resource[i] = 0;
+      }
+    }
+
+    pack.resources = pack.resources.filter((resource) => resource.i !== res.i);
+    line.remove();
+
+    goods.selectAll('*').remove();
+    drawResources();
+  }
+
+  function closeResourcesEditor() {
+    if (customization === 14) exitResourceAssignMode('close');
+    unpinAllResources();
+    body.innerHTML = '';
+  }
 }
