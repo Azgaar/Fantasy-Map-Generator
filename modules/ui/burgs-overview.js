@@ -80,7 +80,7 @@ function overviewBurgs() {
       const culture = pack.cultures[b.culture].name;
 
       lines += `<div class="states" data-id=${b.i} data-name="${b.name}" data-state="${state}" data-province="${province}" data-culture="${culture}" data-population=${population} data-type="${type}">
-        <span data-tip="Click to zoom into view" class="icon-dot-circled pointer"></span>
+        <span data-tip="Edit burg" class="icon-pencil"></span>
         <input data-tip="Burg name. Click and type to change" class="burgName" value="${b.name}" autocorrect="off" spellcheck="false">
         <input data-tip="Burg province" class="burgState" value="${province}" disabled>
         <input data-tip="Burg state" class="burgState" value="${state}" disabled>
@@ -91,8 +91,8 @@ function overviewBurgs() {
           <span data-tip="${b.capital ? ' This burg is a state capital' : 'Click to assign a capital status'}" class="icon-star-empty${b.capital ? '' : ' inactive pointer'}"></span>
           <span data-tip="Click to toggle port status" class="icon-anchor pointer${b.port ? '' : ' inactive'}" style="font-size:.9em"></span>
         </div>
-        <span data-tip="Edit burg" class="icon-pencil"></span>
-        <span class="locks pointer  ${b.lock ? 'icon-lock' : 'icon-lock-open inactive'}"></span>
+        <span class="locks pointer ${b.lock ? 'icon-lock' : 'icon-lock-open inactive'}"></span>
+        <span data-tip="Click to zoom into view" class="icon-dot-circled pointer"></span>
         <span data-tip="Remove burg" class="icon-trash-empty"></span>
       </div>`;
     }

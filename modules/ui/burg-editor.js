@@ -75,7 +75,7 @@ function editBurg(id) {
 
     const temperature = grid.cells.temp[pack.cells.g[b.cell]];
     document.getElementById('burgTemperature').innerHTML = convertTemperature(temperature);
-    document.getElementById('burgTemperatureLikeIn').innerHTML = getTemperatureLikeness(temperature);
+    document.getElementById('burgTemperatureLike').innerHTML = getTemperatureLikeness(temperature);
     document.getElementById('burgElevation').innerHTML = getHeight(pack.cells.h[b.cell]);
 
     // toggle features
@@ -112,16 +112,18 @@ function editBurg(id) {
     document.getElementById('burgEmblem').setAttribute('href', '#' + coaID);
   }
 
-  // in °C, array from -1 °C; source: https://en.wikipedia.org/wiki/List_of_cities_by_average_temperature
+  // [-1; 31] °C, source: https://en.wikipedia.org/wiki/List_of_cities_by_average_temperature
   function getTemperatureLikeness(temperature) {
-    if (temperature < -5) return 'Yakutsk';
+    if (temperature < -15) return 'nowhere in the real-world';
+    if (temperature < -5) return 'in Yakutsk';
+    if (temperature > 31) return 'nowhere in the real-world';
     const cities = [
       'Snag (Yukon)',
       'Yellowknife (Canada)',
       'Okhotsk (Russia)',
       'Fairbanks (Alaska)',
       'Nuuk (Greenland)',
-      'Murmansk', // -5 - 0
+      'Murmansk',
       'Arkhangelsk',
       'Anchorage',
       'Tromsø',
@@ -131,7 +133,7 @@ function editBurg(id) {
       'Halifax',
       'Prague',
       'Copenhagen',
-      'London', // 1 - 10
+      'London',
       'Antwerp',
       'Paris',
       'Milan',
@@ -141,7 +143,7 @@ function editBurg(id) {
       'Lisbon',
       'Barcelona',
       'Marrakesh',
-      'Alexandria', // 11 - 20
+      'Alexandria',
       'Tegucigalpa',
       'Guangzhou',
       'Rio de Janeiro',
@@ -151,10 +153,11 @@ function editBurg(id) {
       'Mogadishu',
       'Bangkok',
       'Aden',
-      'Khartoum'
-    ]; // 21 - 30
-    if (temperature > 30) return 'Mecca';
-    return cities[temperature + 5] || null;
+      'Khartoum',
+      'Mecca'
+    ];
+    const city = cities[temperature + 5];
+    return city ? 'in ' + city : null;
   }
 
   function dragBurgLabel() {
