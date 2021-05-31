@@ -70,9 +70,13 @@ function editResources() {
     for (const r of pack.resources) {
       const stroke = Resources.getStroke(r.color);
       const model = r.model.replaceAll('_', ' ');
-      const bonusArray = Object.entries(r.bonus).map(e => Array(e[1]).fill(e[0])).flat(); //prettier-ignore
+      const bonusArray = Object.entries(r.bonus)
+        .map((e) => Array(e[1]).fill(e[0]))
+        .flat();
       const bonusHTML = bonusArray.map((bonus) => getBonusIcon(bonus)).join('');
-      const bonusString = Object.entries(r.bonus).map((e) => e.join(': ')).join('; '); //prettier-ignore
+      const bonusString = Object.entries(r.bonus)
+        .map((e) => e.join(': '))
+        .join('; ');
 
       lines += `<div class="states resources"
           data-id=${r.i} data-name="${r.name}" data-color="${r.color}"
@@ -89,7 +93,7 @@ function editResources() {
 
         <div data-tip="Resource spread model. Click to change" class="resourceModel hide" ${addTitle(model, 8)}">${model}</div>
         <input data-tip="Resource basic value. Click and type to change" class="resourceValue hide" value="${r.value}" type="number" min=0 max=100 step=1 />
-        <div data-tip="Resource bonus. Click to change" class="resourceBonus hide" title="${bonusString}">${bonusHTML}</div>
+        <div data-tip="Resource bonus. Click to change" class="resourceBonus hide" title="${bonusString}">${bonusHTML || "<span style='opacity:0'>place</span>"}</div>
 
         <span data-tip="Toogle resource exclusive visibility (pin)" class="icon-pin inactive hide"></span>
         <span data-tip="Remove resource" class="icon-trash-empty hide"></span>
@@ -285,7 +289,7 @@ function editResources() {
       const bonusString = Object.entries(bonusObj).map((e) => e.join(': ')).join('; '); //prettier-ignore
 
       resource.bonus = bonusObj;
-      el.innerHTML = bonusHTML;
+      el.innerHTML = bonusHTML || "<span style='opacity:0'>place</span>";
       line.dataset.bonus = bonusString;
       el.setAttribute('title', bonusString);
     }
