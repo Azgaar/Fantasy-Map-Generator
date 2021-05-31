@@ -208,6 +208,7 @@
         <g id="textPaths"></g>
         <g id="statePaths"></g>
         <g id="defs-emblems"></g>
+        <g id="defs-icons"></g>
       </g>
 
       <g id="defs-markers">
@@ -3031,6 +3032,26 @@
       </div>
     </div>
 
+    <div id="resourceIconEditor" class="dialog" style="display: none">
+      <div style="padding: .1em">
+        <div class="label">Select:</div>
+        <select id="resourceSelectIcon"></select>
+      </div>
+      <div style="padding: .1em">
+        <div class="label">Upload:</div>
+        <button id="resourceUploadIconRaster" data-tip="Upload custom icon as raster image">raster</button>
+        <button id="resourceUploadIconVector" data-tip="Upload custom vector (.svg) icon image. You can use Inscape to fix the viewBox">vector</button>
+      </div>
+      <div style="padding: .1em">
+        <a href="https://www.iloveimg.com/compress-image" target="_blank" data-tip="Use external tool to compress/resize raster images before upload">Comperess raster</a>
+        <span> | </span>
+        <a href="https://jakearchibald.github.io/svgomg" target="_blank" data-tip="Use external tool to optimize vector images before upload">Optimize vector</a>
+      </div>
+      <div style="padding: .1em">
+        <svg viewBox="0 0 200 200"><use id="resourceIconPreview"></use></svg>
+      </div>
+    </div>
+
     <div id="unitsEditor" class="dialog stable" style="display: none">
       <div id="unitsBody" style="margin-left:1.1em">
         <div class="unitsHeader" style="margin-top:.4em">
@@ -3468,15 +3489,14 @@
   <div id="mapOverlay" style="display: none">Drop a .map file to open</div>
 
   <div id="fileInputs" style="display: none">
-    <input type="file" accept=".map" id="mapToLoad">
-    <input type="file" accept=".txt,.csv" id="burgsListToLoad">
-    <input type="file" accept=".txt" id="legendsToLoad">
-    <input type="file" accept="image/*" id="imageToLoad">
-    <input type="file" accept="image/*" id="emblemImageToLoad">
-    <input type="file" accept=".svg" id="emblemSVGToLoad">
-    <input type="file" accept=".txt" id="templateToLoad">
-    <input type="file" accept=".txt" id="namesbaseToLoad">
-    <input type="file" accept=".json" id="styleToLoad">
+    <input type="file" accept=".map" id="mapToLoad"/>
+    <input type="file" accept=".txt,.csv" id="burgsListToLoad"/>
+    <input type="file" accept=".txt" id="legendsToLoad"/>
+    <input type="file" accept="image/*" id="imageToLoad"/>
+    <input type="file" accept=".svg" id="svgToLoad"/>
+    <input type="file" accept=".txt" id="templateToLoad"/>
+    <input type="file" accept=".txt" id="namesbaseToLoad"/>
+    <input type="file" accept=".json" id="styleToLoad"/>
   </div>
 
   <!-- svg elements not required for map display -->

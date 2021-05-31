@@ -1457,13 +1457,13 @@ div.states > .coaIcon > use {
   pointer-events: none;
 }
 
-div.states > .icon {
+div.states > .resourceIcon {
   margin: 0;
   cursor: pointer;
   vertical-align: middle;
 }
 
-div.states > .icon > * {
+div.states > .resourceIcon > * {
   pointer-events: none;
 }
 
@@ -1548,7 +1548,8 @@ div.states > div.resourceBonus > span.icon-male {
 
 #stateNameEditor div.label,
 #provinceNameEditor div.label,
-#regimentBody div.label {
+#regimentBody div.label,
+#resourceIconEditor div.label {
   display: inline-block;
   width: 5.5em;
 }

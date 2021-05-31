@@ -137,6 +137,8 @@ async function getMapURL(type, subtype) {
     cloneDefs.querySelector('#defs-emblems')?.remove();
   }
 
+  // add displayed resource icons TODO
+
   // replace ocean pattern href to base64
   if (PRODUCTION && cloneEl.getElementById('oceanicPattern')) {
     const el = cloneEl.getElementById('oceanicPattern');
@@ -1310,6 +1312,7 @@ function parseLoadedData(data) {
     if (version < 1.7) {
       // v 1.7 added resources layer
       goods = viewbox.append('g').attr('id', 'goods');
+      defs.append('g').attr('id', 'defs-icons');
     }
 
     void (function checkDataIntegrity() {
