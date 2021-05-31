@@ -678,17 +678,110 @@ function editResources() {
     resource.chance = line.dataset.chance = +chance;
   }
 
-  function resourceChangeColor() {
-    const circle = this.querySelector('circle');
-    const resource = Resources.get(+this.parentNode.dataset.id);
+  function changeIcon(resource, line, el) {
+    const standardIcons = Array.from(document.getElementById('resource-icons').querySelectorAll('symbol')).map((el) => el.id);
+    const standardIconsOptions = standardIcons.map((icon) => `<option value=${icon}${resource.icon === icon ? 'selected' : ''}>${icon}</option>`);
 
-    const callback = function (fill) {
+    const customIconsEl = document.getElementById('defs-icons');
+    const customIcons = customIconsEl ? Array.from(document.getElementById('defs-icons').querySelectorAll('svg')).map((el) => el.id) : [];
+    const customIconsOptions = customIcons.map((icon) => `<option value=${icon}${resource.icon === icon ? 'selected' : ''}>${icon}</option>`);
+
+    const select = document.getElementById('resourceSelectIcon');
+    select.innerHTML = standardIconsOptions + customIconsOptions;
+
+    const preview = document.getElementById('resourceIconPreview');
+    preview.setAttribute('href', '#' + resource.icon);
+
+    $('#resourceIconEditor').dialog({
+      resizable: false,
+      title: 'Change Icon',
+      buttons: {
+        Cancel: function () {
+          $(this).dialog('close');
+        },
+        'Change color': () => changeColor(resource, line, el),
+        Apply: function () {
+          $(this).dialog('close');
+          resource.icon = select.value;
+          line.querySelector('svg.resourceIcon > use').setAttribute('href', '#' + select.value);
+          drawResources();
+        }
+      },
+      position: {my: 'center bottom', at: 'center', of: 'svg'}
+    });
+
+    const uploadTo = document.getElementById('defs-icons');
+    const onUpload = (id) => {
+      preview.setAttribute('href', '#' + id);
+      select.innerHTML += `<option value=${id}>${id}</option>`;
+      select.value = id;
+    };
+
+    // add listeners
+    select.onchange = () => preview.setAttribute('href', '#' + select.value);
+    document.getElementById('resourceUploadIconRaster').onclick = () => imageToLoad.click();
+    document.getElementById('resourceUploadIconVector').onclick = () => svgToLoad.click();
+    document.getElementById('imageToLoad').onchange = () => uploadImage('image', uploadTo, onUpload);
+    document.getElementById('svgToLoad').onchange = () => uploadImage('svg', uploadTo, onUpload);
+  }
+
+  function uploadImage(type, uploadTo, callback) {
+    const input = type === 'image' ? document.getElementById('imageToLoad') : document.getElementById('svgToLoad');
+    const file = input.files[0];
+    input.value = '';
+
+    if (file.size > 200000) return tip(`File is too big, please optimize file size up to 200kB and re-upload. Recommended size is 48x48 px and up to 10kB`, true, 'error', 5000);
+
+    const reader = new FileReader();
+    reader.onload = function (readerEvent) {
+      const result = readerEvent.target.result;
+      const id = 'resource-custom-' + Math.random().toString(36).slice(-6);
+
+      if (type === 'image') {
+        const svg = `<svg id="${id}" xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><image x="0" y="0" width="200" height="200" href="${result}"/></svg>`;
+        uploadTo.insertAdjacentHTML('beforeend', svg);
+      } else {
+        const el = document.createElement('html');
+        el.innerHTML = result;
+
+        // remove sodipodi and inkscape attributes
+        el.querySelectorAll('*').forEach((el) => {
+          const attributes = el.getAttributeNames();
+          attributes.forEach((attr) => {
+            if (attr.includes('inkscape') || attr.includes('sodipodi')) el.removeAttribute(attr);
+          });
+        });
+
+        // remove all text if source is Noun project (to make it usable)
+        if (result.includes('from the Noun Project')) el.querySelectorAll('text').forEach((textEl) => textEl.remove());
+
+        const svg = el.querySelector('svg');
+        if (!svg) return tip("The file should be prepated for load to FMG. If you don't know why it's happening, try to upload the raster image", false, 'error');
+
+        const icon = uploadTo.appendChild(svg);
+        icon.id = id;
+        icon.setAttribute('width', 200);
+        icon.setAttribute('height', 200);
+      }
+
+      callback(id);
+    };
+
+    if (type === 'image') reader.readAsDataURL(file);
+    else reader.readAsText(file);
+  }
+
+  function changeColor(resource, line, el) {
+    const circle = el.querySelector('circle');
+
+    const callback = (fill) => {
       const stroke = Resources.getStroke(fill);
       circle.setAttribute('fill', fill);
       circle.setAttribute('stroke', stroke);
       resource.color = fill;
       resource.stroke = stroke;
       goods.selectAll(`circle[data-i='${resource.i}']`).attr('fill', fill).attr('stroke', stroke);
+      line.dataset.color = fill;
     };
 
     openPicker(resource.color, callback, {allowHatching: false});
