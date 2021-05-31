@@ -660,7 +660,7 @@ function editResources() {
       const bonusString = Object.entries(bonusObj).map((e) => e.join(': ')).join('; '); //prettier-ignore
 
       resource.bonus = bonusObj;
-      el.innerHTML = bonusHTML;
+      el.innerHTML = bonusHTML || "<span style='opacity:0'>place</span>";
       line.dataset.bonus = bonusString;
       el.setAttribute('title', bonusString);
     }
