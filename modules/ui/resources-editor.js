@@ -680,17 +680,21 @@ function editResources() {
 
   function changeIcon(resource, line, el) {
     const standardIcons = Array.from(document.getElementById('resource-icons').querySelectorAll('symbol')).map((el) => el.id);
-    const standardIconsOptions = standardIcons.map((icon) => `<option value=${icon}${resource.icon === icon ? 'selected' : ''}>${icon}</option>`);
+    const standardIconsOptions = standardIcons.map((icon) => `<option value=${icon}>${icon}</option>`);
 
     const customIconsEl = document.getElementById('defs-icons');
     const customIcons = customIconsEl ? Array.from(document.getElementById('defs-icons').querySelectorAll('svg')).map((el) => el.id) : [];
-    const customIconsOptions = customIcons.map((icon) => `<option value=${icon}${resource.icon === icon ? 'selected' : ''}>${icon}</option>`);
+    const customIconsOptions = customIcons.map((icon) => `<option value=${icon}>${icon}</option>`);
 
     const select = document.getElementById('resourceSelectIcon');
     select.innerHTML = standardIconsOptions + customIconsOptions;
+    select.value = resource.icon;
 
     const preview = document.getElementById('resourceIconPreview');
     preview.setAttribute('href', '#' + resource.icon);
+
+    const viewBoxSection = document.getElementById('resourceIconEditorViewboxFields');
+    viewBoxSection.style.display = 'none';
 
     $('#resourceIconEditor').dialog({
       resizable: false,
@@ -702,6 +706,7 @@ function editResources() {
         'Change color': () => changeColor(resource, line, el),
         Apply: function () {
           $(this).dialog('close');
+
           resource.icon = select.value;
           line.querySelector('svg.resourceIcon > use').setAttribute('href', '#' + select.value);
           drawResources();
@@ -711,10 +716,29 @@ function editResources() {
     });
 
     const uploadTo = document.getElementById('defs-icons');
-    const onUpload = (id) => {
+    const onUpload = (type, id) => {
       preview.setAttribute('href', '#' + id);
       select.innerHTML += `<option value=${id}>${id}</option>`;
       select.value = id;
+
+      if (type === 'image') return;
+
+      // let user set viewBox for svg image
+      const el = document.getElementById(id);
+      viewBoxSection.style.display = 'block';
+      const viewBoxAttr = el.getAttribute('viewBox');
+      const initialViewBox = viewBoxAttr ? viewBoxAttr.split(' ') : [0, 0, 200, 200];
+      const inputs = viewBoxSection.querySelectorAll('input');
+      const changeInput = () => {
+        const viewBox = Array.from(inputs)
+          .map((input) => input.value)
+          .join(' ');
+        el.setAttribute('viewBox', viewBox);
+      };
+      inputs.forEach((input, i) => {
+        input.value = initialViewBox[i];
+        input.onchange = changeInput;
+      });
     };
 
     // add listeners
@@ -764,7 +788,7 @@ function editResources() {
         icon.setAttribute('height', 200);
       }
 
-      callback(id);
+      callback(type, id);
     };
 
     if (type === 'image') reader.readAsDataURL(file);
