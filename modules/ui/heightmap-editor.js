@@ -212,6 +212,9 @@ function editHeightmap() {
 
     Lakes.defineGroup();
     defineBiomes();
+
+    Resources.generate();
+
     rankCells();
     Cultures.generate();
     Cultures.expand();

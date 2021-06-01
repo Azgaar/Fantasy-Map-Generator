@@ -395,6 +395,7 @@ function getMapData() {
     const religions = JSON.stringify(pack.religions);
     const provinces = JSON.stringify(pack.provinces);
     const rivers = JSON.stringify(pack.rivers);
+    const resources = JSON.stringify(pack.resources);
 
     // store name array only if it is not the same as default
     const defaultNB = Names.getNameBases();
@@ -443,8 +444,11 @@ function getMapData() {
       provinces,
       namesData,
       rivers,
-      rulersString
+      rulersString,
+      pack.cells.resource,
+      resources
     ].join('\r\n');
+
     const blob = new Blob([data], {type: 'text/plain'});
 
     TIME && console.timeEnd('createMapDataBlob');
@@ -857,6 +861,7 @@ function parseLoadedData(data) {
       pack.religions = data[29] ? JSON.parse(data[29]) : [{i: 0, name: 'No religion'}];
       pack.provinces = data[30] ? JSON.parse(data[30]) : [0];
       pack.rivers = data[32] ? JSON.parse(data[32]) : [];
+      pack.resources = data[35] ? JSON.parse(data[35]) : [];
 
       const cells = pack.cells;
       cells.biome = Uint8Array.from(data[16].split(','));
@@ -872,6 +877,7 @@ function parseLoadedData(data) {
       cells.religion = data[26] ? Uint16Array.from(data[26].split(',')) : new Uint16Array(cells.i.length);
       cells.province = data[27] ? Uint16Array.from(data[27].split(',')) : new Uint16Array(cells.i.length);
       cells.crossroad = data[28] ? Uint16Array.from(data[28].split(',')) : new Uint16Array(cells.i.length);
+      cells.resource = data[34] ? Uint8Array.from(data[34].split(',')) : new Uint8Array(cells.i.length);
 
       if (data[31]) {
         const namesDL = data[31].split('/');
@@ -1302,18 +1308,19 @@ function parseLoadedData(data) {
         pattern.innerHTML = `<image id="oceanicPattern" href=${href} width="100" height="100"></image>`;
         document.getElementById('oceanPattern').setAttribute('opacity', 0.2);
       }
+
+      if (version < 1.62) {
+        // v 1.62 changed grid data
+        gridOverlay.attr('size', null);
+      }
+
+      if (version < 1.7) {
+        // v 1.7 added resources layer
+        goods = viewbox.append('g').attr('id', 'goods');
+        defs.append('g').attr('id', 'defs-icons');
+        Resources.generate();
+      }
     })();
-
-    if (version < 1.62) {
-      // v 1.62 changed grid data
-      gridOverlay.attr('size', null);
-    }
-
-    if (version < 1.7) {
-      // v 1.7 added resources layer
-      goods = viewbox.append('g').attr('id', 'goods');
-      defs.append('g').attr('id', 'defs-icons');
-    }
 
     void (function checkDataIntegrity() {
       const cells = pack.cells;
