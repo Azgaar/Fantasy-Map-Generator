@@ -32,20 +32,9 @@
 
   // get array of land cells aroound lake
   const getShoreline = function (lake) {
-    const queue = [lake.firstCell];
-    const used = [queue[0]];
-    const landCellsAround = [];
-    while (queue.length) {
-      const q = queue.pop();
-      for (const c of pack.cells.c[q]) {
-        if (used[c]) continue;
-        used[c] = true;
-        if (pack.cells.f[c] === lake.i) queue.push(c);
-        if (pack.cells.h[c] >= 20) landCellsAround.push(c);
-      }
-    }
-
-    lake.shoreline = landCellsAround;
+    const uniqueCells = new Set();
+    lake.vertices.forEach(v => pack.vertices.c[v].forEach(c => pack.cells.h[c] >= 20 && uniqueCells.add(c)));
+    lake.shoreline = [...uniqueCells];
   };
 
   const cleanupLakeData = function () {
