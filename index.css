@@ -104,7 +104,7 @@ a {
 }
 
 #biomes {
-  stroke-width: .7;
+  stroke-width: 0.7;
 }
 
 #landmass {
@@ -283,6 +283,12 @@ i.icon-lock {
   stroke-dasharray: 5;
   stroke-dashoffset: 1000;
   animation: dash 80s linear backwards;
+}
+
+.arrow {
+  marker-end: url(#end-arrow-small);
+  stroke: #555;
+  stroke-width: 0.5;
 }
 
 @keyframes dash {

@@ -27,19 +27,19 @@ async function savePNG() {
   const img = new Image();
   img.src = url;
 
-  img.onload = function() {
+  img.onload = function () {
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     link.download = getFileName() + ".png";
-    canvas.toBlob(function(blob) {
-        link.href = window.URL.createObjectURL(blob);
-        link.click();
-        window.setTimeout(function() {
-          canvas.remove();
-          window.URL.revokeObjectURL(link.href);
-          tip(`${link.download} is saved. Open "Downloads" screen (crtl + J) to check. You can set image scale in options`, true, "success", 5000);
-        }, 1000);
+    canvas.toBlob(function (blob) {
+      link.href = window.URL.createObjectURL(blob);
+      link.click();
+      window.setTimeout(function () {
+        canvas.remove();
+        window.URL.revokeObjectURL(link.href);
+        tip(`${link.download} is saved. Open "Downloads" screen (crtl + J) to check. You can set image scale in options`, true, "success", 5000);
+      }, 1000);
     });
-  }
+  };
 
   TIME && console.timeEnd("savePNG");
 }
@@ -55,9 +55,9 @@ async function saveJPEG() {
   const img = new Image();
   img.src = url;
 
-  img.onload = async function() {
+  img.onload = async function () {
     canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
-    const quality = Math.min(rn(1 - pngResolutionInput.value / 20, 2), .92);
+    const quality = Math.min(rn(1 - pngResolutionInput.value / 20, 2), 0.92);
     const URL = await canvas.toDataURL("image/jpeg", quality);
     const link = document.createElement("a");
     link.download = getFileName() + ".jpeg";
@@ -65,7 +65,7 @@ async function saveJPEG() {
     link.click();
     tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
     window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
-  }
+  };
 
   TIME && console.timeEnd("saveJPEG");
 }
@@ -81,7 +81,7 @@ async function getMapURL(type, subtype) {
   const cloneDefs = cloneEl.getElementsByTagName("defs")[0];
   const svgDefs = document.getElementById("defElements");
 
-  const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+  const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
   if (isFirefox && type === "mesh") clone.select("#oceanPattern").remove();
   if (subtype === "globe") clone.select("#scaleBar").remove();
   if (subtype === "noWater") {
@@ -99,37 +99,40 @@ async function getMapURL(type, subtype) {
 
   // remove unused filters
   const filters = cloneEl.querySelectorAll("filter");
-  for (let i=0; i < filters.length; i++) {
+  for (let i = 0; i < filters.length; i++) {
     const id = filters[i].id;
-    if (cloneEl.querySelector("[filter='url(#"+id+")']")) continue;
-    if (cloneEl.getAttribute("filter") === "url(#"+id+")") continue;
+    if (cloneEl.querySelector("[filter='url(#" + id + ")']")) continue;
+    if (cloneEl.getAttribute("filter") === "url(#" + id + ")") continue;
     filters[i].remove();
   }
 
   // remove unused patterns
   const patterns = cloneEl.querySelectorAll("pattern");
-  for (let i=0; i < patterns.length; i++) {
+  for (let i = 0; i < patterns.length; i++) {
     const id = patterns[i].id;
-    if (cloneEl.querySelector("[fill='url(#"+id+")']")) continue;
+    if (cloneEl.querySelector("[fill='url(#" + id + ")']")) continue;
     patterns[i].remove();
   }
 
   // remove unused symbols
   const symbols = cloneEl.querySelectorAll("symbol");
-  for (let i=0; i < symbols.length; i++) {
+  for (let i = 0; i < symbols.length; i++) {
     const id = symbols[i].id;
-    if (cloneEl.querySelector("use[*|href='#"+id+"']")) continue;
+    if (cloneEl.querySelector("use[*|href='#" + id + "']")) continue;
     symbols[i].remove();
   }
 
   // add displayed emblems
   if (layerIsOn("toggleEmblems") && emblems.selectAll("use").size()) {
-    cloneEl.getElementById("emblems")?.querySelectorAll("use").forEach(el => {
-      const href = el.getAttribute("href") || el.getAttribute("xlink:href");
-      if (!href) return;
-      const emblem = document.getElementById(href.slice(1));
-      if (emblem) cloneDefs.append(emblem.cloneNode(true));
-    });
+    cloneEl
+      .getElementById("emblems")
+      ?.querySelectorAll("use")
+      .forEach(el => {
+        const href = el.getAttribute("href") || el.getAttribute("xlink:href");
+        if (!href) return;
+        const emblem = document.getElementById(href.slice(1));
+        if (emblem) cloneDefs.append(emblem.cloneNode(true));
+      });
   } else {
     cloneDefs.querySelector("#defs-emblems")?.remove();
   }
@@ -150,7 +153,7 @@ async function getMapURL(type, subtype) {
   if (cloneEl.getElementById("terrain")) {
     const uniqueElements = new Set();
     const terrainNodes = cloneEl.getElementById("terrain").childNodes;
-    for (let i=0; i < terrainNodes.length; i++) {
+    for (let i = 0; i < terrainNodes.length; i++) {
       const href = terrainNodes[i].getAttribute("href") || terrainNodes[i].getAttribute("xlink:href");
       uniqueElements.add(href);
     }
@@ -177,7 +180,7 @@ async function getMapURL(type, subtype) {
   // add grid pattern
   if (cloneEl.getElementById("gridOverlay")?.hasChildNodes()) {
     const type = cloneEl.getElementById("gridOverlay").getAttribute("type");
-    const pattern = svgDefs.getElementById("pattern_"+type);
+    const pattern = svgDefs.getElementById("pattern_" + type);
     if (pattern) cloneDefs.appendChild(pattern.cloneNode(true));
   }
 
@@ -190,11 +193,11 @@ async function getMapURL(type, subtype) {
   if (cloneEl.getElementById("armies")) cloneEl.insertAdjacentHTML("afterbegin", "<style>#armies text {stroke: none; fill: #fff; text-shadow: 0 0 4px #000; dominant-baseline: central; text-anchor: middle; font-family: Helvetica; fill-opacity: 1;}#armies text.regimentIcon {font-size: .8em;}</style>");
 
   const fontStyle = await GFontToDataURI(getFontsToLoad(clone)); // load non-standard fonts
-  if (fontStyle) clone.select("defs").append("style").text(fontStyle.join('\n')); // add font to style
+  if (fontStyle) clone.select("defs").append("style").text(fontStyle.join("\n")); // add font to style
   clone.remove();
 
-  const serialized = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>` + (new XMLSerializer()).serializeToString(cloneEl);
-  const blob = new Blob([serialized], {type: 'image/svg+xml;charset=utf-8'});
+  const serialized = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>` + new XMLSerializer().serializeToString(cloneEl);
+  const blob = new Blob([serialized], {type: "image/svg+xml;charset=utf-8"});
   const url = window.URL.createObjectURL(blob);
   window.setTimeout(() => window.URL.revokeObjectURL(url), 5000);
   return url;
@@ -205,10 +208,13 @@ function removeUnusedElements(clone) {
   if (!terrain.selectAll("use").size()) clone.select("#defs-relief").remove();
   if (markers.style("display") === "none") clone.select("#defs-markers").remove();
 
-  for (let empty = 1; empty;) {
+  for (let empty = 1; empty; ) {
     empty = 0;
-    clone.selectAll("g").each(function() {
-      if (!this.hasChildNodes() || this.style.display === "none" || this.classList.contains("hidden")) {empty++; this.remove();}
+    clone.selectAll("g").each(function () {
+      if (!this.hasChildNodes() || this.style.display === "none" || this.classList.contains("hidden")) {
+        empty++;
+        this.remove();
+      }
       if (this.hasAttribute("display") && this.style.display === "inline") this.removeAttribute("display");
     });
   }
@@ -218,8 +224,14 @@ function updateMeshCells(clone) {
   const data = renderOcean.checked ? grid.cells.i : grid.cells.i.filter(i => grid.cells.h[i] >= 20);
   const scheme = getColorScheme();
   clone.select("#heights").attr("filter", "url(#blur1)");
-  clone.select("#heights").selectAll("polygon").data(data).join("polygon").attr("points", d => getGridPolygon(d))
-    .attr("id", d => "cell"+d).attr("stroke", d => getColor(grid.cells.h[d], scheme));
+  clone
+    .select("#heights")
+    .selectAll("polygon")
+    .data(data)
+    .join("polygon")
+    .attr("points", d => getGridPolygon(d))
+    .attr("id", d => "cell" + d)
+    .attr("stroke", d => getColor(grid.cells.h[d], scheme));
 }
 
 // for each g element get inline style
@@ -227,11 +239,11 @@ function inlineStyle(clone) {
   const emptyG = clone.append("g").node();
   const defaultStyles = window.getComputedStyle(emptyG);
 
-  clone.selectAll("g, #ruler *, #scaleBar > text").each(function() {
+  clone.selectAll("g, #ruler *, #scaleBar > text").each(function () {
     const compStyle = window.getComputedStyle(this);
     let style = "";
 
-    for (let i=0; i < compStyle.length; i++) {
+    for (let i = 0; i < compStyle.length; i++) {
       const key = compStyle[i];
       const value = compStyle.getPropertyValue(key);
 
@@ -244,7 +256,7 @@ function inlineStyle(clone) {
       if (key === "cursor") continue; // cursor should be default
       if (this.hasAttribute(key)) continue; // don't add style if there is the same attribute
       if (value === defaultStyles.getPropertyValue(key)) continue;
-      style += key + ':' + value + ';';
+      style += key + ":" + value + ";";
     }
 
     for (const key in compStyle) {
@@ -253,10 +265,10 @@ function inlineStyle(clone) {
       if (key === "cursor") continue; // cursor should be default
       if (this.hasAttribute(key)) continue; // don't add style if there is the same attribute
       if (value === defaultStyles.getPropertyValue(key)) continue;
-      style += key + ':' + value + ';';
+      style += key + ":" + value + ";";
     }
 
-    if (style != "") this.setAttribute('style', style);
+    if (style != "") this.setAttribute("style", style);
   });
 
   emptyG.remove();
@@ -267,7 +279,7 @@ function getFontsToLoad(clone) {
   const webSafe = ["Georgia", "Times+New+Roman", "Comic+Sans+MS", "Lucida+Sans+Unicode", "Courier+New", "Verdana", "Arial", "Impact"]; // fonts to not fetch
 
   const fontsInUse = new Set(); // to store fonts currently in use
-  clone.selectAll("#labels > g").each(function() {
+  clone.selectAll("#labels > g").each(function () {
     if (!this.hasChildNodes()) return;
     const font = this.dataset.font;
     if (!font || webSafe.includes(font)) return;
@@ -285,16 +297,16 @@ function GFontToDataURI(url) {
   return fetch(url) // first fecth the embed stylesheet page
     .then(resp => resp.text()) // we only need the text of it
     .then(text => {
-      let s = document.createElement('style');
+      let s = document.createElement("style");
       s.innerHTML = text;
       document.head.appendChild(s);
       const styleSheet = Array.prototype.filter.call(document.styleSheets, sS => sS.ownerNode === s)[0];
 
       const FontRule = rule => {
-        const src = rule.style.getPropertyValue('src');
-        const url = src ? src.split('url(')[1].split(')')[0] : "";
+        const src = rule.style.getPropertyValue("src");
+        const url = src ? src.split("url(")[1].split(")")[0] : "";
         return {rule, src, url: url.substring(url.length - 1, 1)};
-      }
+      };
       const fontProms = [];
 
       for (const r of styleSheet.cssRules) {
@@ -303,16 +315,16 @@ function GFontToDataURI(url) {
 
         fontProms.push(
           fetch(fR.url) // fetch the actual font-file (.woff)
-          .then(resp => resp.blob())
-          .then(blob => {
-            return new Promise(resolve => {
-              let f = new FileReader();
-              f.onload = e => resolve(f.result);
-              f.readAsDataURL(blob);
+            .then(resp => resp.blob())
+            .then(blob => {
+              return new Promise(resolve => {
+                let f = new FileReader();
+                f.onload = e => resolve(f.result);
+                f.readAsDataURL(blob);
+              });
             })
-          })
-          .then(dataURL => fR.rule.cssText.replace(fR.url, dataURL))
-        )
+            .then(dataURL => fR.rule.cssText.replace(fR.url, dataURL))
+        );
       }
       document.head.removeChild(s); // clean up
       return Promise.all(fontProms); // wait for all this has been done
@@ -328,13 +340,7 @@ function getMapData() {
     const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
     const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
     const params = [version, license, dateString, seed, graphWidth, graphHeight, mapId].join("|");
-    const settings = [distanceUnitInput.value, distanceScaleInput.value, areaUnit.value,
-      heightUnit.value, heightExponentInput.value, temperatureScale.value,
-      barSize.value, barLabel.value, barBackOpacity.value, barBackColor.value,
-      barPosX.value, barPosY.value, populationRate.value, urbanization.value,
-      mapSizeOutput.value, latitudeOutput.value, temperatureEquatorOutput.value,
-      temperaturePoleOutput.value, precOutput.value, JSON.stringify(options),
-      mapName.value].join("|");
+    const settings = [distanceUnitInput.value, distanceScaleInput.value, areaUnit.value, heightUnit.value, heightExponentInput.value, temperatureScale.value, barSize.value, barLabel.value, barBackOpacity.value, barBackColor.value, barPosX.value, barPosY.value, populationRate.value, urbanization.value, mapSizeOutput.value, latitudeOutput.value, temperatureEquatorOutput.value, temperaturePoleOutput.value, precOutput.value, JSON.stringify(options), mapName.value].join("|");
     const coords = JSON.stringify(mapCoordinates);
     const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
     const notesData = JSON.stringify(notes);
@@ -351,9 +357,9 @@ function getMapData() {
     // always remove rulers
     cloneEl.querySelector("#ruler").innerHTML = "";
 
-    const svg_xml = (new XMLSerializer()).serializeToString(cloneEl);
+    const svg_xml = new XMLSerializer().serializeToString(cloneEl);
 
-    const gridGeneral = JSON.stringify({spacing:grid.spacing, cellsX:grid.cellsX, cellsY:grid.cellsY, boundary:grid.boundary, points:grid.points, features:grid.features});
+    const gridGeneral = JSON.stringify({spacing: grid.spacing, cellsX: grid.cellsX, cellsY: grid.cellsY, boundary: grid.boundary, points: grid.points, features: grid.features});
     const features = JSON.stringify(pack.features);
     const cultures = JSON.stringify(pack.cultures);
     const states = JSON.stringify(pack.states);
@@ -364,22 +370,18 @@ function getMapData() {
 
     // store name array only if it is not the same as default
     const defaultNB = Names.getNameBases();
-    const namesData = nameBases.map((b,i) => {
-      const names = defaultNB[i] && defaultNB[i].b === b.b ? "" : b.b;
-      return `${b.name}|${b.min}|${b.max}|${b.d}|${b.m}|${names}`;
-    }).join("/");
+    const namesData = nameBases
+      .map((b, i) => {
+        const names = defaultNB[i] && defaultNB[i].b === b.b ? "" : b.b;
+        return `${b.name}|${b.min}|${b.max}|${b.d}|${b.m}|${names}`;
+      })
+      .join("/");
 
     // round population to save resources
     const pop = Array.from(pack.cells.pop).map(p => rn(p, 4));
 
     // data format as below
-    const data = [params, settings, coords, biomes, notesData, svg_xml,
-      gridGeneral, grid.cells.h, grid.cells.prec, grid.cells.f, grid.cells.t, grid.cells.temp,
-      features, cultures, states, burgs,
-      pack.cells.biome, pack.cells.burg, pack.cells.conf, pack.cells.culture, pack.cells.fl,
-      pop, pack.cells.r, pack.cells.road, pack.cells.s, pack.cells.state,
-      pack.cells.religion, pack.cells.province, pack.cells.crossroad, religions, provinces,
-      namesData, rivers, rulersString].join("\r\n");
+    const data = [params, settings, coords, biomes, notesData, svg_xml, gridGeneral, grid.cells.h, grid.cells.prec, grid.cells.f, grid.cells.t, grid.cells.temp, features, cultures, states, burgs, pack.cells.biome, pack.cells.burg, pack.cells.conf, pack.cells.culture, pack.cells.fl, pop, pack.cells.r, pack.cells.road, pack.cells.s, pack.cells.state, pack.cells.religion, pack.cells.province, pack.cells.crossroad, religions, provinces, namesData, rivers, rulersString].join("\r\n");
     const blob = new Blob([data], {type: "text/plain"});
 
     TIME && console.timeEnd("createMapDataBlob");
@@ -389,7 +391,10 @@ function getMapData() {
 
 // Download .map file
 async function saveMap() {
-  if (customization) {tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error"); return;}
+  if (customization) {
+    tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
+    return;
+  }
   closeDialogs("#alert");
 
   const blob = await getMapData();
@@ -405,8 +410,11 @@ async function saveMap() {
 function saveGeoJSON_Cells() {
   const json = {type: "FeatureCollection", features: []};
   const cells = pack.cells;
-  const getPopulation = i => {const [r, u] = getCellPopulation(i); return rn(r+u)};
-  const getHeight = i => parseInt(getFriendlyHeight([cells.p[i][0],cells.p[i][1]]));
+  const getPopulation = i => {
+    const [r, u] = getCellPopulation(i);
+    return rn(r + u);
+  };
+  const getHeight = i => parseInt(getFriendlyHeight([cells.p[i][0], cells.p[i][1]]));
 
   cells.i.forEach(i => {
     const coordinates = getCellCoordinates(cells.v[i]);
@@ -420,7 +428,7 @@ function saveGeoJSON_Cells() {
     const religion = cells.religion[i];
     const neighbors = cells.c[i];
 
-    const properties = {id:i, height, biome, type, population, state, province, culture, religion, neighbors}
+    const properties = {id: i, height, biome, type, population, state, province, culture, religion, neighbors};
     const feature = {type: "Feature", geometry: {type: "Polygon", coordinates}, properties};
     json.features.push(feature);
   });
@@ -432,7 +440,7 @@ function saveGeoJSON_Cells() {
 function saveGeoJSON_Routes() {
   const json = {type: "FeatureCollection", features: []};
 
-  routes.selectAll("g > path").each(function() {
+  routes.selectAll("g > path").each(function () {
     const coordinates = getRoutePoints(this);
     const id = this.id;
     const type = this.parentElement.id;
@@ -448,7 +456,7 @@ function saveGeoJSON_Routes() {
 function saveGeoJSON_Rivers() {
   const json = {type: "FeatureCollection", features: []};
 
-  rivers.selectAll("path").each(function() {
+  rivers.selectAll("path").each(function () {
     const coordinates = getRiverPoints(this);
     const id = this.id;
     const width = +this.dataset.increment;
@@ -470,10 +478,10 @@ function saveGeoJSON_Rivers() {
 function saveGeoJSON_Markers() {
   const json = {type: "FeatureCollection", features: []};
 
-  markers.selectAll("use").each(function() {
+  markers.selectAll("use").each(function () {
     const coordinates = getQGIScoordinates(this.dataset.x, this.dataset.y);
     const id = this.id;
-    const type = (this.dataset.id).substring(1);
+    const type = this.dataset.id.substring(1);
     const icon = document.getElementById(type).textContent;
     const note = notes.length ? notes.find(note => note.id === this.id) : null;
     const name = note ? note.name : "";
@@ -497,7 +505,7 @@ function getRoutePoints(node) {
   let points = [];
   const l = node.getTotalLength();
   const increment = l / Math.ceil(l / 2);
-  for (let i=0; i <= l; i += increment) {
+  for (let i = 0; i <= l; i += increment) {
     const p = node.getPointAtLength(i);
     points.push(getQGIScoordinates(p.x, p.y));
   }
@@ -508,17 +516,20 @@ function getRiverPoints(node) {
   let points = [];
   const l = node.getTotalLength() / 2; // half-length
   const increment = 0.25; // defines density of points
-  for (let i=l, c=i; i >= 0; i -= increment, c += increment) {
+  for (let i = l, c = i; i >= 0; i -= increment, c += increment) {
     const p1 = node.getPointAtLength(i);
     const p2 = node.getPointAtLength(c);
     const [x, y] = getQGIScoordinates((p1.x + p2.x) / 2, (p1.y + p2.y) / 2);
-    points.push([x,y]);
+    points.push([x, y]);
   }
   return points;
 }
 
 async function quickSave() {
-  if (customization) {tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error"); return;}
+  if (customization) {
+    tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
+    return;
+  }
   const blob = await getMapData();
   if (blob) ldb.set("lastMap", blob); // auto-save map
   tip("Map is saved to browser memory. Please also save as .map file to secure progress", true, "success", 2000);
@@ -537,14 +548,24 @@ function quickLoad() {
 
 function loadMapPrompt(blob) {
   const workingTime = (Date.now() - last(mapHistory).created) / 60000; // minutes
-  if (workingTime < 5) {loadLastSavedMap(); return;}
+  if (workingTime < 5) {
+    loadLastSavedMap();
+    return;
+  }
 
   alertMessage.innerHTML = `Are you sure you want to load saved map?<br>
   All unsaved changes made to the current map will be lost`;
-  $("#alert").dialog({resizable: false, title: "Load saved map",
+  $("#alert").dialog({
+    resizable: false,
+    title: "Load saved map",
     buttons: {
-      Cancel: function() {$(this).dialog("close");},
-      Load: function() {loadLastSavedMap(); $(this).dialog("close");}
+      Cancel: function () {
+        $(this).dialog("close");
+      },
+      Load: function () {
+        loadLastSavedMap();
+        $(this).dialog("close");
+      }
     }
   });
 
@@ -552,31 +573,23 @@ function loadMapPrompt(blob) {
     WARN && console.warn("Load last saved map");
     try {
       uploadMap(blob);
-    }
-    catch(error) {
+    } catch (error) {
       ERROR && console.error(error);
       tip("Cannot load last saved map", true, "error", 2000);
     }
   }
 }
 
-const saveReminder = function() {
+const saveReminder = function () {
   if (localStorage.getItem("noReminder")) return;
-  const message = ["Please don't forget to save your work as a .map file",
-    "Please remember to save work as a .map file",
-    "Saving in .map format will ensure your data won't be lost in case of issues",
-    "Safety is number one priority. Please save the map",
-    "Don't forget to save your map on a regular basis!",
-    "Just a gentle reminder for you to save the map",
-    "Please don't forget to save your progress (saving as .map is the best option)",
-    "Don't want to be reminded about need to save? Press CTRL+Q"];
+  const message = ["Please don't forget to save your work as a .map file", "Please remember to save work as a .map file", "Saving in .map format will ensure your data won't be lost in case of issues", "Safety is number one priority. Please save the map", "Don't forget to save your map on a regular basis!", "Just a gentle reminder for you to save the map", "Please don't forget to save your progress (saving as .map is the best option)", "Don't want to be reminded about need to save? Press CTRL+Q"];
 
   saveReminder.reminder = setInterval(() => {
     if (customization) return;
     tip(ra(message), true, "warn", 2500);
   }, 1e6);
   saveReminder.status = 1;
-}
+};
 
 saveReminder();
 
@@ -597,7 +610,7 @@ function uploadMap(file, callback) {
   uploadMap.timeStart = performance.now();
 
   const fileReader = new FileReader();
-  fileReader.onload = function(fileLoadedEvent) {
+  fileReader.onload = function (fileLoadedEvent) {
     if (callback) callback();
     document.getElementById("coas").innerHTML = ""; // remove auto-generated emblems
 
@@ -605,11 +618,15 @@ function uploadMap(file, callback) {
     const data = dataLoaded.split("\r\n");
 
     const mapVersion = data[0].split("|")[0] || data[0];
-    if (mapVersion === version) {parseLoadedData(data); return;}
+    if (mapVersion === version) {
+      parseLoadedData(data);
+      return;
+    }
 
     const archive = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "archived version");
     const parsed = parseFloat(mapVersion);
-    let message = "", load = false;
+    let message = "",
+      load = false;
     if (isNaN(parsed) || data.length < 26 || !data[5]) {
       message = `The file you are trying to load is outdated or not a valid .map file.
                 <br>Please try to open it using an ${archive}`;
@@ -618,13 +635,20 @@ function uploadMap(file, callback) {
                 <br>Please keep using an ${archive}`;
     } else {
       load = true;
-      message =  `The map version (${mapVersion}) does not match the Generator version (${version}).
+      message = `The map version (${mapVersion}) does not match the Generator version (${version}).
                  <br>Click OK to get map <b>auto-updated</b>. In case of issues please keep using an ${archive} of the Generator`;
     }
     alertMessage.innerHTML = message;
-    $("#alert").dialog({title: "Version conflict", width: "38em", buttons: {
-      OK: function() {$(this).dialog("close"); if (load) parseLoadedData(data);}
-    }});
+    $("#alert").dialog({
+      title: "Version conflict",
+      width: "38em",
+      buttons: {
+        OK: function () {
+          $(this).dialog("close");
+          if (load) parseLoadedData(data);
+        }
+      }
+    });
   };
 
   fileReader.readAsText(file, "UTF-8");
@@ -640,17 +664,20 @@ function parseLoadedData(data) {
     const reliefIcons = document.getElementById("defs-relief").innerHTML; // save relief icons
     const hatching = document.getElementById("hatching").cloneNode(true); // save hatching
 
-    void function parseParameters() {
+    void (function parseParameters() {
       const params = data[0].split("|");
-      if (params[3]) {seed = params[3]; optionsSeed.value = seed;}
+      if (params[3]) {
+        seed = params[3];
+        optionsSeed.value = seed;
+      }
       if (params[4]) graphWidth = +params[4];
       if (params[5]) graphHeight = +params[5];
       mapId = params[6] ? +params[6] : Date.now();
-    }()
+    })();
 
     INFO && console.group("Loaded Map " + seed);
 
-    void function parseSettings() {
+    void (function parseSettings() {
       const settings = data[1].split("|");
       if (settings[0]) applyOption(distanceUnitInput, settings[0]);
       if (settings[1]) distanceScaleInput.value = distanceScaleOutput.value = settings[1];
@@ -673,9 +700,9 @@ function parseLoadedData(data) {
       if (settings[18]) precInput.value = precOutput.value = settings[18];
       if (settings[19]) options = JSON.parse(settings[19]);
       if (settings[20]) mapName.value = settings[20];
-    }()
+    })();
 
-    void function parseConfiguration() {
+    void (function parseConfiguration() {
       if (data[2]) mapCoordinates = JSON.parse(data[2]);
       if (data[4]) notes = JSON.parse(data[4]);
       if (data[33]) rulers.fromString(data[33]);
@@ -687,20 +714,20 @@ function parseLoadedData(data) {
       biomesData.name = biomes[2].split(",");
 
       // push custom biomes if any
-      for (let i=biomesData.i.length; i < biomesData.name.length; i++) {
+      for (let i = biomesData.i.length; i < biomesData.name.length; i++) {
         biomesData.i.push(biomesData.i.length);
         biomesData.iconsDensity.push(0);
         biomesData.icons.push([]);
         biomesData.cost.push(50);
       }
-    }()
+    })();
 
-    void function replaceSVG() {
+    void (function replaceSVG() {
       svg.remove();
       document.body.insertAdjacentHTML("afterbegin", data[5]);
-    }()
+    })();
 
-    void function redefineElements() {
+    void (function redefineElements() {
       svg = d3.select("#map");
       defs = svg.select("#deftemp");
       viewbox = svg.select("#viewbox");
@@ -750,9 +777,9 @@ function parseLoadedData(data) {
       fogging = viewbox.select("#fogging");
       debug = viewbox.select("#debug");
       burgLabels = labels.select("#burgLabels");
-    }()
+    })();
 
-    void function parseGridData() {
+    void (function parseGridData() {
       grid = JSON.parse(data[6]);
       calculateVoronoi(grid, grid.points);
       grid.cells.h = Uint8Array.from(data[7].split(","));
@@ -760,9 +787,9 @@ function parseLoadedData(data) {
       grid.cells.f = Uint16Array.from(data[9].split(","));
       grid.cells.t = Int8Array.from(data[10].split(","));
       grid.cells.temp = Int8Array.from(data[11].split(","));
-    }()
+    })();
 
-    void function parsePackData() {
+    void (function parsePackData() {
       pack = {};
       reGraph();
       reMarkFeatures();
@@ -795,19 +822,22 @@ function parseLoadedData(data) {
           const e = d.split("|");
           if (!e.length) return;
           const b = e[5].split(",").length > 2 || !nameBases[i] ? e[5] : nameBases[i].b;
-          nameBases[i] = {name:e[0], min:e[1], max:e[2], d:e[3], m:e[4], b};
+          nameBases[i] = {name: e[0], min: e[1], max: e[2], d: e[3], m: e[4], b};
         });
       }
-    }()
+    })();
 
     const notHidden = selection => selection.node() && selection.style("display") !== "none";
     const hasChildren = selection => selection.node()?.hasChildNodes();
     const hasChild = (selection, selector) => selection.node()?.querySelector(selector);
     const turnOn = el => document.getElementById(el).classList.remove("buttonoff");
 
-    void function restoreLayersState() {
+    void (function restoreLayersState() {
       // turn all layers off
-      document.getElementById("mapLayers").querySelectorAll("li").forEach(el => el.classList.add("buttonoff"));
+      document
+        .getElementById("mapLayers")
+        .querySelectorAll("li")
+        .forEach(el => el.classList.add("buttonoff"));
 
       // turn on active layers
       if (notHidden(texture) && hasChild(texture, "image")) turnOn("toggleTexture");
@@ -839,14 +869,14 @@ function parseLoadedData(data) {
       if (notHidden(scaleBar)) turnOn("toggleScaleBar");
 
       getCurrentPreset();
-    }()
+    })();
 
-    void function restoreEvents() {
+    void (function restoreEvents() {
       scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => editUnits());
       legend.on("mousemove", () => tip("Drag to change the position. Click to hide the legend")).on("click", () => clearLegend());
-    }()
+    })();
 
-    void function resolveVersionConflicts() {
+    void (function resolveVersionConflicts() {
       const version = parseFloat(data[0].split("|")[0]);
       if (version < 0.9) {
         // 0.9 has additional relief icons to be included into older maps
@@ -860,19 +890,17 @@ function parseLoadedData(data) {
 
         // 1.0 adds a legend box
         legend = svg.append("g").attr("id", "legend");
-        legend.attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC")
-          .attr("font-size", 13).attr("data-size", 13).attr("data-x", 99).attr("data-y", 93)
-          .attr("stroke-width", 2.5).attr("stroke", "#812929").attr("stroke-dasharray", "0 4 10 4").attr("stroke-linecap", "round");
+        legend.attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC").attr("font-size", 13).attr("data-size", 13).attr("data-x", 99).attr("data-y", 93).attr("stroke-width", 2.5).attr("stroke", "#812929").attr("stroke-dasharray", "0 4 10 4").attr("stroke-linecap", "round");
 
         // 1.0 separated drawBorders fron drawStates()
         stateBorders = borders.append("g").attr("id", "stateBorders");
         provinceBorders = borders.append("g").attr("id", "provinceBorders");
         borders.attr("opacity", null).attr("stroke", null).attr("stroke-width", null).attr("stroke-dasharray", null).attr("stroke-linecap", null).attr("filter", null);
-        stateBorders.attr("opacity", .8).attr("stroke", "#56566d").attr("stroke-width", 1).attr("stroke-dasharray", "2").attr("stroke-linecap", "butt");
-        provinceBorders.attr("opacity", .8).attr("stroke", "#56566d").attr("stroke-width", .5).attr("stroke-dasharray", "1").attr("stroke-linecap", "butt");
+        stateBorders.attr("opacity", 0.8).attr("stroke", "#56566d").attr("stroke-width", 1).attr("stroke-dasharray", "2").attr("stroke-linecap", "butt");
+        provinceBorders.attr("opacity", 0.8).attr("stroke", "#56566d").attr("stroke-width", 0.5).attr("stroke-dasharray", "1").attr("stroke-linecap", "butt");
 
         // 1.0 adds state relations, provinces, forms and full names
-        provs = viewbox.insert("g", "#borders").attr("id", "provs").attr("opacity", .6);
+        provs = viewbox.insert("g", "#borders").attr("id", "provs").attr("opacity", 0.6);
         BurgsAndStates.collectStatistics();
         BurgsAndStates.generateCampaigns();
         BurgsAndStates.generateDiplomacy();
@@ -880,7 +908,7 @@ function parseLoadedData(data) {
         drawStates();
         BurgsAndStates.generateProvinces();
         drawBorders();
-        if (!layerIsOn("toggleBorders")) $('#borders').fadeOut();
+        if (!layerIsOn("toggleBorders")) $("#borders").fadeOut();
         if (!layerIsOn("toggleStates")) regions.attr("display", "none").selectAll("path").remove();
 
         // 1.0 adds hatching
@@ -888,9 +916,12 @@ function parseLoadedData(data) {
 
         // 1.0 adds zones layer
         zones = viewbox.insert("g", "#borders").attr("id", "zones").attr("display", "none");
-        zones.attr("opacity", .6).attr("stroke", null).attr("stroke-width", 0).attr("stroke-dasharray", null).attr("stroke-linecap", "butt");
+        zones.attr("opacity", 0.6).attr("stroke", null).attr("stroke-width", 0).attr("stroke-dasharray", null).attr("stroke-linecap", "butt");
         addZones();
-        if (!markers.selectAll("*").size()) {addMarkers(); turnButtonOn("toggleMarkers");}
+        if (!markers.selectAll("*").size()) {
+          addMarkers();
+          turnButtonOn("toggleMarkers");
+        }
 
         // 1.0 add fogging layer (state focus)
         fogging = viewbox.insert("g", "#ruler").attr("id", "fogging-cont").attr("mask", "url(#fog)").append("g").attr("id", "fogging").style("display", "none");
@@ -904,7 +935,7 @@ function parseLoadedData(data) {
         }
 
         // 1.0 changed labels to multi-lined
-        labels.selectAll("textPath").each(function() {
+        labels.selectAll("textPath").each(function () {
           const text = this.textContent;
           const shift = this.getComputedTextLength() / -1.5;
           this.innerHTML = `<tspan x="${shift}">${text}</tspan>`;
@@ -923,7 +954,7 @@ function parseLoadedData(data) {
         // v 1.0 initially has Sympathy status then relaced with Friendly
         for (const s of pack.states) {
           if (!s.diplomacy) continue;
-          s.diplomacy = s.diplomacy.map(r => r === "Sympathy" ? "Friendly" : r);
+          s.diplomacy = s.diplomacy.map(r => (r === "Sympathy" ? "Friendly" : r));
         }
 
         // labels should be toggled via style attribute, so remove display attribute
@@ -931,20 +962,22 @@ function parseLoadedData(data) {
 
         // v 1.0 added religions heirarchy tree
         if (pack.religions[1] && !pack.religions[1].code) {
-          pack.religions.filter(r => r.i).forEach(r => {
-            r.origin = 0;
-            r.code = r.name.slice(0, 2);
-          });
+          pack.religions
+            .filter(r => r.i)
+            .forEach(r => {
+              r.origin = 0;
+              r.code = r.name.slice(0, 2);
+            });
         }
 
         if (!document.getElementById("freshwater")) {
           lakes.append("g").attr("id", "freshwater");
-          lakes.select("#freshwater").attr("opacity", .5).attr("fill", "#a6c1fd").attr("stroke", "#5f799d").attr("stroke-width", .7).attr("filter", null);
+          lakes.select("#freshwater").attr("opacity", 0.5).attr("fill", "#a6c1fd").attr("stroke", "#5f799d").attr("stroke-width", 0.7).attr("filter", null);
         }
 
         if (!document.getElementById("salt")) {
           lakes.append("g").attr("id", "salt");
-          lakes.select("#salt").attr("opacity", .5).attr("fill", "#409b8a").attr("stroke", "#388985").attr("stroke-width", .7).attr("filter", null);
+          lakes.select("#salt").attr("opacity", 0.5).attr("fill", "#409b8a").attr("stroke", "#388985").attr("stroke-width", 0.7).attr("filter", null);
         }
 
         // v 1.1 added new lake and coast groups
@@ -952,14 +985,14 @@ function parseLoadedData(data) {
           lakes.append("g").attr("id", "sinkhole");
           lakes.append("g").attr("id", "frozen");
           lakes.append("g").attr("id", "lava");
-          lakes.select("#sinkhole").attr("opacity", 1).attr("fill", "#5bc9fd").attr("stroke", "#53a3b0").attr("stroke-width", .7).attr("filter", null);
-          lakes.select("#frozen").attr("opacity", .95).attr("fill", "#cdd4e7").attr("stroke", "#cfe0eb").attr("stroke-width", 0).attr("filter", null);
-          lakes.select("#lava").attr("opacity", .7).attr("fill", "#90270d").attr("stroke", "#f93e0c").attr("stroke-width", 2).attr("filter", "url(#crumpled)");
+          lakes.select("#sinkhole").attr("opacity", 1).attr("fill", "#5bc9fd").attr("stroke", "#53a3b0").attr("stroke-width", 0.7).attr("filter", null);
+          lakes.select("#frozen").attr("opacity", 0.95).attr("fill", "#cdd4e7").attr("stroke", "#cfe0eb").attr("stroke-width", 0).attr("filter", null);
+          lakes.select("#lava").attr("opacity", 0.7).attr("fill", "#90270d").attr("stroke", "#f93e0c").attr("stroke-width", 2).attr("filter", "url(#crumpled)");
 
           coastline.append("g").attr("id", "sea_island");
           coastline.append("g").attr("id", "lake_island");
-          coastline.select("#sea_island").attr("opacity", .5).attr("stroke", "#1f3846").attr("stroke-width", .7).attr("filter", "url(#dropShadow)");
-          coastline.select("#lake_island").attr("opacity", 1).attr("stroke", "#7c8eaf").attr("stroke-width", .35).attr("filter", null);
+          coastline.select("#sea_island").attr("opacity", 0.5).attr("stroke", "#1f3846").attr("stroke-width", 0.7).attr("filter", "url(#dropShadow)");
+          coastline.select("#lake_island").attr("opacity", 1).attr("stroke", "#7c8eaf").attr("stroke-width", 0.35).attr("filter", null);
         }
 
         // v 1.1 features stores more data
@@ -979,10 +1012,12 @@ function parseLoadedData(data) {
 
         // v 1.11 added cultures heirarchy tree
         if (pack.cultures[1] && !pack.cultures[1].code) {
-          pack.cultures.filter(c => c.i).forEach(c => {
-            c.origin = 0;
-            c.code = c.name.slice(0, 2);
-          });
+          pack.cultures
+            .filter(c => c.i)
+            .forEach(c => {
+              c.origin = 0;
+              c.code = c.name.slice(0, 2);
+            });
         }
 
         // v 1.11 had an issue with fogging being displayed on load
@@ -991,12 +1026,12 @@ function parseLoadedData(data) {
         // v 1.2 added new terrain attributes
         if (!terrain.attr("set")) terrain.attr("set", "simple");
         if (!terrain.attr("size")) terrain.attr("size", 1);
-        if (!terrain.attr("density")) terrain.attr("density", .4);
+        if (!terrain.attr("density")) terrain.attr("density", 0.4);
       }
 
       if (version < 1.21) {
         // v 1.11 replaced "display" attribute by "display" style
-        viewbox.selectAll("g").each(function() {
+        viewbox.selectAll("g").each(function () {
           if (this.hasAttribute("display")) {
             this.removeAttribute("display");
             this.style.display = "none";
@@ -1005,16 +1040,17 @@ function parseLoadedData(data) {
 
         // v 1.21 added rivers data to pack
         pack.rivers = []; // rivers data
-        rivers.selectAll("path").each(function() {
+        rivers.selectAll("path").each(function () {
           const i = +this.id.slice(5);
           const length = this.getTotalLength() / 2;
-          const s = this.getPointAtLength(length), e = this.getPointAtLength(0);
-          const source = findCell(s.x, s.y), mouth = findCell(e.x, e.y);
+          const s = this.getPointAtLength(length),
+            e = this.getPointAtLength(0);
+          const source = findCell(s.x, s.y),
+            mouth = findCell(e.x, e.y);
           const name = Rivers.getName(mouth);
-          const type = length < 25 ? rw({"Creek":9, "River":3, "Brook":3, "Stream":1}) : "River";
-          pack.rivers.push({i, parent:0, length, source, mouth, basin:i, name, type});
+          const type = length < 25 ? rw({Creek: 9, River: 3, Brook: 3, Stream: 1}) : "River";
+          pack.rivers.push({i, parent: 0, length, source, mouth, basin: i, name, type});
         });
-
       }
 
       if (version < 1.22) {
@@ -1026,7 +1062,7 @@ function parseLoadedData(data) {
         // v 1.3 added global options object
         const winds = options.slice(); // previostly wind was saved in settings[19]
         const year = rand(100, 2000);
-        const era = Names.getBaseShort(P(.7) ? 1 : rand(nameBases.length)) + " Era";
+        const era = Names.getBaseShort(P(0.7) ? 1 : rand(nameBases.length)) + " Era";
         const eraShort = era[0] + "E";
         const military = Military.getDefaultOptions();
         options = {winds, year, era, eraShort, military};
@@ -1036,7 +1072,7 @@ function parseLoadedData(data) {
 
         // v 1.3 added militry layer
         armies = viewbox.insert("g", "#icons").attr("id", "armies");
-        armies.attr("opacity", 1).attr("fill-opacity", 1).attr("font-size", 6).attr("box-size", 3).attr("stroke", "#000").attr("stroke-width", .3);
+        armies.attr("opacity", 1).attr("fill-opacity", 1).attr("font-size", 6).attr("box-size", 3).attr("stroke", "#000").attr("stroke-width", 0.3);
         turnButtonOn("toggleMilitary");
         Military.generate();
       }
@@ -1045,7 +1081,7 @@ function parseLoadedData(data) {
         // v 1.35 added dry lakes
         if (!lakes.select("#dry").size()) {
           lakes.append("g").attr("id", "dry");
-          lakes.select("#dry").attr("opacity", 1).attr("fill", "#c9bfa7").attr("stroke", "#8e816f").attr("stroke-width", .7).attr("filter", null);
+          lakes.select("#dry").attr("opacity", 1).attr("fill", "#c9bfa7").attr("stroke", "#8e816f").attr("stroke-width", 0.7).attr("filter", null);
         }
 
         // v 1.4 added ice layer
@@ -1071,7 +1107,7 @@ function parseLoadedData(data) {
         }
 
         // 1.4 added state reference for regiments
-        pack.states.filter(s => s.military).forEach(s => s.military.forEach(r => r.state = s.i));
+        pack.states.filter(s => s.military).forEach(s => s.military.forEach(r => (r.state = s.i)));
       }
 
       if (version < 1.5) {
@@ -1103,7 +1139,7 @@ function parseLoadedData(data) {
         toggleEmblems();
 
         // v 1.5 changed releif icons data
-        terrain.selectAll("use").each(function() {
+        terrain.selectAll("use").each(function () {
           const type = this.getAttribute("data-type") || this.getAttribute("xlink:href");
           this.removeAttribute("xlink:href");
           this.removeAttribute("data-type");
@@ -1115,14 +1151,14 @@ function parseLoadedData(data) {
       if (version < 1.6) {
         // v 1.6 changed rivers data
         for (const river of pack.rivers) {
-          const el = document.getElementById("river"+river.i);
+          const el = document.getElementById("river" + river.i);
           if (el) {
             river.widthFactor = +el.getAttribute("data-width");
             el.removeAttribute("data-width");
             el.removeAttribute("data-increment");
             river.discharge = pack.cells.fl[river.mouth] || 1;
             river.width = rn(river.length / 100, 2);
-            river.sourceWidth = .1;
+            river.sourceWidth = 0.1;
           } else {
             Rivers.remove(river.i);
           }
@@ -1137,7 +1173,7 @@ function parseLoadedData(data) {
           f.temp = grid.cells.temp[pack.cells.g[f.firstCell]];
           f.height = f.height || d3.min(pack.cells.c[f.firstCell].map(c => pack.cells.h[c]).filter(h => h >= 20));
           const height = (f.height - 18) ** heightExponentInput.value;
-          const evaporation = (700 * (f.temp + .006 * height) / 50 + 75) / (80 - f.temp);
+          const evaporation = ((700 * (f.temp + 0.006 * height)) / 50 + 75) / (80 - f.temp);
           f.evaporation = rn(evaporation * f.cells);
           f.name = f.name || Lakes.getName(f);
           delete f.river;
@@ -1149,31 +1185,34 @@ function parseLoadedData(data) {
         ruler.style("display", null);
         rulers = new Rulers();
 
-        ruler.selectAll(".ruler > .white").each(function() {
+        ruler.selectAll(".ruler > .white").each(function () {
           const x1 = +this.getAttribute("x1");
           const y1 = +this.getAttribute("y1");
           const x2 = +this.getAttribute("x2");
           const y2 = +this.getAttribute("y2");
           if (isNaN(x1) || isNaN(y1) || isNaN(x2) || isNaN(y2)) return;
-          const points = [[x1, y1], [x2, y2]];
+          const points = [
+            [x1, y1],
+            [x2, y2]
+          ];
           rulers.create(Ruler, points);
         });
 
-        ruler.selectAll("g.opisometer").each(function() {
+        ruler.selectAll("g.opisometer").each(function () {
           const pointsString = this.dataset.points;
           if (!pointsString) return;
           const points = JSON.parse(pointsString);
           rulers.create(Opisometer, points);
         });
 
-        ruler.selectAll("path.planimeter").each(function() {
+        ruler.selectAll("path.planimeter").each(function () {
           const length = this.getTotalLength();
           if (length < 30) return;
 
           const step = length > 1000 ? 40 : length > 400 ? 20 : 10;
           const increment = length / Math.ceil(length / step);
           const points = [];
-          for (let i=0; i <= length; i += increment) {
+          for (let i = 0; i <= length; i += increment) {
             const point = this.getPointAtLength(i);
             points.push([point.x | 0, point.y | 0]);
           }
@@ -1193,16 +1232,16 @@ function parseLoadedData(data) {
         const filter = pattern.firstElementChild.getAttribute("filter");
         const href = filter ? "./images/" + filter.replace("url(#", "").replace(")", "") + ".png" : "";
         pattern.innerHTML = `<image id="oceanicPattern" href=${href} width="100" height="100"></image>`;
-        document.getElementById("oceanPattern").setAttribute("opacity", .2);
+        document.getElementById("oceanPattern").setAttribute("opacity", 0.2);
       }
-    }()
+    })();
 
     if (version < 1.62) {
       // v 1.62 changed grid data
       gridOverlay.attr("size", null);
     }
 
-    void function checkDataIntegrity() {
+    void (function checkDataIntegrity() {
       const cells = pack.cells;
 
       if (pack.cells.i.length !== pack.cells.state.length) {
@@ -1212,28 +1251,28 @@ function parseLoadedData(data) {
       const invalidStates = [...new Set(cells.state)].filter(s => !pack.states[s] || pack.states[s].removed);
       invalidStates.forEach(s => {
         const invalidCells = cells.i.filter(i => cells.state[i] === s);
-        invalidCells.forEach(i => cells.state[i] = 0);
+        invalidCells.forEach(i => (cells.state[i] = 0));
         ERROR && console.error("Data Integrity Check. Invalid state", s, "is assigned to cells", invalidCells);
       });
 
       const invalidProvinces = [...new Set(cells.province)].filter(p => p && (!pack.provinces[p] || pack.provinces[p].removed));
       invalidProvinces.forEach(p => {
         const invalidCells = cells.i.filter(i => cells.province[i] === p);
-        invalidCells.forEach(i => cells.province[i] = 0);
+        invalidCells.forEach(i => (cells.province[i] = 0));
         ERROR && console.error("Data Integrity Check. Invalid province", p, "is assigned to cells", invalidCells);
       });
 
       const invalidCultures = [...new Set(cells.culture)].filter(c => !pack.cultures[c] || pack.cultures[c].removed);
       invalidCultures.forEach(c => {
         const invalidCells = cells.i.filter(i => cells.culture[i] === c);
-        invalidCells.forEach(i => cells.province[i] = 0);
+        invalidCells.forEach(i => (cells.province[i] = 0));
         ERROR && console.error("Data Integrity Check. Invalid culture", c, "is assigned to cells", invalidCells);
       });
 
       const invalidReligions = [...new Set(cells.religion)].filter(r => !pack.religions[r] || pack.religions[r].removed);
       invalidReligions.forEach(r => {
         const invalidCells = cells.i.filter(i => cells.religion[i] === r);
-        invalidCells.forEach(i => cells.religion[i] = 0);
+        invalidCells.forEach(i => (cells.religion[i] = 0));
         ERROR && console.error("Data Integrity Check. Invalid religion", c, "is assigned to cells", invalidCells);
       });
 
@@ -1247,26 +1286,29 @@ function parseLoadedData(data) {
       const invalidBurgs = [...new Set(cells.burg)].filter(b => b && (!pack.burgs[b] || pack.burgs[b].removed));
       invalidBurgs.forEach(b => {
         const invalidCells = cells.i.filter(i => cells.burg[i] === b);
-        invalidCells.forEach(i => cells.burg[i] = 0);
+        invalidCells.forEach(i => (cells.burg[i] = 0));
         ERROR && console.error("Data Integrity Check. Invalid burg", b, "is assigned to cells", invalidCells);
       });
 
       const invalidRivers = [...new Set(cells.r)].filter(r => r && !pack.rivers.find(river => river.i === r));
       invalidRivers.forEach(r => {
         const invalidCells = cells.i.filter(i => cells.r[i] === r);
-        invalidCells.forEach(i => cells.r[i] = 0);
-        rivers.select("river"+r).remove();
+        invalidCells.forEach(i => (cells.r[i] = 0));
+        rivers.select("river" + r).remove();
         ERROR && console.error("Data Integrity Check. Invalid river", r, "is assigned to cells", invalidCells);
       });
 
       pack.burgs.forEach(b => {
         if (!b.i || b.removed) return;
-        if (b.port < 0) {ERROR && console.error("Data Integrity Check. Burg", b.i, "has invalid port value", b.port); b.port = 0;}
+        if (b.port < 0) {
+          ERROR && console.error("Data Integrity Check. Burg", b.i, "has invalid port value", b.port);
+          b.port = 0;
+        }
 
         if (b.cell >= cells.i.length) {
           ERROR && console.error("Data Integrity Check. Burg", b.i, "is linked to invalid cell", b.cell);
           b.cell = findCell(b.x, b.y);
-          cells.i.filter(i => cells.burg[i] === b.i).forEach(i => cells.burg[i] = 0);
+          cells.i.filter(i => cells.burg[i] === b.i).forEach(i => (cells.burg[i] = 0));
           cells.burg[b.cell] = b.i;
         }
 
@@ -1282,7 +1324,7 @@ function parseLoadedData(data) {
         ERROR && console.error("Data Integrity Check. Province", p.i, "is linked to removed state", p.state);
         p.removed = true; // remove incorrect province
       });
-    }()
+    })();
 
     changeMapSize();
 
@@ -1301,12 +1343,11 @@ function parseLoadedData(data) {
     focusOn(); // based on searchParams focus on point, cell or burg
     invokeActiveZooming();
 
-    WARN && console.warn(`TOTAL: ${rn((performance.now()-uploadMap.timeStart)/1000,2)}s`);
+    WARN && console.warn(`TOTAL: ${rn((performance.now() - uploadMap.timeStart) / 1000, 2)}s`);
     showStatistics();
     INFO && console.groupEnd("Loaded Map " + seed);
     tip("Map is successfully loaded", true, "success", 7000);
-  }
-  catch(error) {
+  } catch (error) {
     ERROR && console.error(error);
     clearMainTip();
 
@@ -1314,12 +1355,23 @@ function parseLoadedData(data) {
       <br>generate a new random map or cancel the loading
       <p id="errorBox">${parseError(error)}</p>`;
     $("#alert").dialog({
-      resizable: false, title: "Loading error", maxWidth:"50em", buttons: {
-        "Select file": function() {$(this).dialog("close"); mapToLoad.click();},
-        "New map": function() {$(this).dialog("close"); regenerateMap();},
-        Cancel: function() {$(this).dialog("close")}
-      }, position: {my: "center", at: "center", of: "svg"}
+      resizable: false,
+      title: "Loading error",
+      maxWidth: "50em",
+      buttons: {
+        "Select file": function () {
+          $(this).dialog("close");
+          mapToLoad.click();
+        },
+        "New map": function () {
+          $(this).dialog("close");
+          regenerateMap();
+        },
+        Cancel: function () {
+          $(this).dialog("close");
+        }
+      },
+      position: {my: "center", at: "center", of: "svg"}
     });
   }
-
 }
