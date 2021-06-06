@@ -2,7 +2,7 @@
 "use strict";
 
 // fit full-screen map if window is resized
-$(window).resize(function(e) {
+$(window).resize(function (e) {
   if (localStorage.getItem("mapWidth") && localStorage.getItem("mapHeight")) return;
   mapWidthInput.value = window.innerWidth;
   mapHeightInput.value = window.innerHeight;
@@ -28,12 +28,12 @@ document.getElementById("exitCustomization").addEventListener("mousemove", showD
 function tip(tip = "Tip is undefined", main, type, time) {
   tooltip.innerHTML = tip;
   tooltip.style.background = "linear-gradient(0.1turn, #ffffff00, #5e5c5c80, #ffffff00)";
-  if (type === "error") tooltip.style.background = "linear-gradient(0.1turn, #ffffff00, #e11d1dcc, #ffffff00)"; else
-  if (type === "warn") tooltip.style.background = "linear-gradient(0.1turn, #ffffff00, #be5d08cc, #ffffff00)"; else
-  if (type === "success") tooltip.style.background = "linear-gradient(0.1turn, #ffffff00, #127912cc, #ffffff00)";
+  if (type === "error") tooltip.style.background = "linear-gradient(0.1turn, #ffffff00, #e11d1dcc, #ffffff00)";
+  else if (type === "warn") tooltip.style.background = "linear-gradient(0.1turn, #ffffff00, #be5d08cc, #ffffff00)";
+  else if (type === "success") tooltip.style.background = "linear-gradient(0.1turn, #ffffff00, #127912cc, #ffffff00)";
 
   if (main) tooltip.dataset.main = tip; // set main tip
-  if (time) setTimeout(() => tooltip.dataset.main = "", time); // clear main in some time
+  if (time) setTimeout(() => (tooltip.dataset.main = ""), time); // clear main in some time
 }
 
 function showMainTip() {
@@ -62,7 +62,8 @@ function mouseMove() {
   if (i === undefined) return;
   showNotes(d3.event, i);
   const g = findGridCell(point[0], point[1]); // grid cell id
-  if (tooltip.dataset.main) showMainTip(); else showMapTooltip(point, d3.event, i, g);
+  if (tooltip.dataset.main) showMainTip();
+  else showMapTooltip(point, d3.event, i, g);
   if (cellInfo.offsetParent) updateCellInfo(point, i, g);
 }
 
@@ -70,8 +71,8 @@ function mouseMove() {
 function showNotes(e, i) {
   if (notesEditor.offsetParent) return;
   let id = e.target.id || e.target.parentNode.id || e.target.parentNode.parentNode.id;
-  if (e.target.parentNode.parentNode.id === "burgLabels") id = "burg" + e.target.dataset.id; else
-  if (e.target.parentNode.parentNode.id === "burgIcons") id = "burg" + e.target.dataset.id;
+  if (e.target.parentNode.parentNode.id === "burgLabels") id = "burg" + e.target.dataset.id;
+  else if (e.target.parentNode.parentNode.id === "burgIcons") id = "burg" + e.target.dataset.id;
 
   const note = notes.find(note => note.id === id);
   if (note !== undefined && note.legend !== "") {
@@ -102,9 +103,7 @@ function showMapTooltip(point, e, i, g) {
 
   if (group === "emblems" && e.target.tagName === "use") {
     const parent = e.target.parentNode;
-    const [g, type] = parent.id === "burgEmblems" ? [pack.burgs, "burg"] :
-                      parent.id === "provinceEmblems" ? [pack.provinces, "province"] :
-                      [pack.states, "state"];
+    const [g, type] = parent.id === "burgEmblems" ? [pack.burgs, "burg"] : parent.id === "provinceEmblems" ? [pack.provinces, "province"] : [pack.states, "state"];
     const i = +e.target.dataset.i;
     if (event.shiftKey) highlightEmblemElement(type, g[i]);
 
@@ -124,8 +123,14 @@ function showMapTooltip(point, e, i, g) {
     if (riversOverview.offsetParent) highlightEditorLine(riversOverview, river, 5000);
     return;
   }
-  if (group === "routes") {tip("Click to edit the Route"); return;}
-  if (group === "terrain") {tip("Click to edit the Relief Icon"); return;}
+  if (group === "routes") {
+    tip("Click to edit the Route");
+    return;
+  }
+  if (group === "terrain") {
+    tip("Click to edit the Relief Icon");
+    return;
+  }
   if (subgroup === "burgLabels" || subgroup === "burgIcons") {
     const burg = +path[path.length - 10].dataset.id;
     const b = pack.burgs[burg];
@@ -134,52 +139,87 @@ function showMapTooltip(point, e, i, g) {
     if (burgsOverview.offsetParent) highlightEditorLine(burgsOverview, burg, 5000);
     return;
   }
-  if (group === "labels") {tip("Click to edit the Label"); return;}
-  if (group === "markers") {tip("Click to edit the Marker"); return;}
+  if (group === "labels") {
+    tip("Click to edit the Label");
+    return;
+  }
+  if (group === "markers") {
+    tip("Click to edit the Marker");
+    return;
+  }
   if (group === "ruler") {
     const tag = e.target.tagName;
     const className = e.target.getAttribute("class");
-    if (tag === "circle" && className === "edge") {tip("Drag to adjust. Hold Ctrl and drag to add a point. Click to remove the point"); return;}
-    if (tag === "circle" && className === "control") {tip("Drag to adjust. Hold Shifta and drag to keep axial direction. Click to remove the point"); return;}
-    if (tag === "circle") {tip("Drag to adjust the measurer"); return;}
-    if (tag === "polyline") {tip("Click on drag to add a control point"); return;}
-    if (tag === "path") {tip("Drag to move the measurer"); return;}
-    if (tag === "text") {tip("Drag to move, click to remove the measurer"); return;}
+    if (tag === "circle" && className === "edge") {
+      tip("Drag to adjust. Hold Ctrl and drag to add a point. Click to remove the point");
+      return;
+    }
+    if (tag === "circle" && className === "control") {
+      tip("Drag to adjust. Hold Shifta and drag to keep axial direction. Click to remove the point");
+      return;
+    }
+    if (tag === "circle") {
+      tip("Drag to adjust the measurer");
+      return;
+    }
+    if (tag === "polyline") {
+      tip("Click on drag to add a control point");
+      return;
+    }
+    if (tag === "path") {
+      tip("Drag to move the measurer");
+      return;
+    }
+    if (tag === "text") {
+      tip("Drag to move, click to remove the measurer");
+      return;
+    }
   }
-  if (subgroup === "burgIcons") {tip("Click to edit the Burg"); return;}
-  if (subgroup === "burgLabels") {tip("Click to edit the Burg"); return;}
+  if (subgroup === "burgIcons") {
+    tip("Click to edit the Burg");
+    return;
+  }
+  if (subgroup === "burgLabels") {
+    tip("Click to edit the Burg");
+    return;
+  }
   if (group === "lakes" && !land) {
     const lakeId = +e.target.dataset.f;
     const name = pack.features[lakeId]?.name;
     const fullName = subgroup === "freshwater" ? name : name + " " + subgroup;
-    tip(`${fullName} lake. Click to edit`); return;
+    tip(`${fullName} lake. Click to edit`);
+    return;
   }
-  if (group === "coastline") {tip("Click to edit the coastline"); return;}
+  if (group === "coastline") {
+    tip("Click to edit the coastline");
+    return;
+  }
   if (group === "zones") {
-    const zone = path[path.length-8];
+    const zone = path[path.length - 8];
     tip(zone.dataset.description);
     if (zonesEditor.offsetParent) highlightEditorLine(zonesEditor, zone.id, 5000);
     return;
   }
-  if (group === "ice") {tip("Click to edit the Ice"); return;}
+  if (group === "ice") {
+    tip("Click to edit the Ice");
+    return;
+  }
 
   // covering elements
-  if (layerIsOn("togglePrec") && land) tip("Annual Precipitation: "+ getFriendlyPrecipitation(i)); else
-  if (layerIsOn("togglePopulation")) tip(getPopulationTip(i)); else
-  if (layerIsOn("toggleTemp")) tip("Temperature: " + convertTemperature(grid.cells.temp[g])); else
-  if (layerIsOn("toggleBiomes") && pack.cells.biome[i]) {
-    const biome = pack.cells.biome[i]
+  if (layerIsOn("togglePrec") && land) tip("Annual Precipitation: " + getFriendlyPrecipitation(i));
+  else if (layerIsOn("togglePopulation")) tip(getPopulationTip(i));
+  else if (layerIsOn("toggleTemp")) tip("Temperature: " + convertTemperature(grid.cells.temp[g]));
+  else if (layerIsOn("toggleBiomes") && pack.cells.biome[i]) {
+    const biome = pack.cells.biome[i];
     tip("Biome: " + biomesData.name[biome]);
     if (biomesEditor.offsetParent) highlightEditorLine(biomesEditor, biome);
-  } else
-  if (layerIsOn("toggleReligions") && pack.cells.religion[i]) {
+  } else if (layerIsOn("toggleReligions") && pack.cells.religion[i]) {
     const religion = pack.cells.religion[i];
     const r = pack.religions[religion];
     const type = r.type === "Cult" || r.type == "Heresy" ? r.type : r.type + " religion";
     tip(type + ": " + r.name);
     if (religionsEditor.offsetParent) highlightEditorLine(religionsEditor, religion);
-  } else
-  if (pack.cells.state[i] && (layerIsOn("toggleProvinces") || layerIsOn("toggleStates"))) {
+  } else if (pack.cells.state[i] && (layerIsOn("toggleProvinces") || layerIsOn("toggleStates"))) {
     const state = pack.cells.state[i];
     const stateName = pack.states[state].fullName;
     const province = pack.cells.province[i];
@@ -189,27 +229,28 @@ function showMapTooltip(point, e, i, g) {
     if (diplomacyEditor.offsetParent) highlightEditorLine(diplomacyEditor, state);
     if (militaryOverview.offsetParent) highlightEditorLine(militaryOverview, state);
     if (provincesEditor.offsetParent) highlightEditorLine(provincesEditor, province);
-  } else
-  if (layerIsOn("toggleCultures") && pack.cells.culture[i]) {
+  } else if (layerIsOn("toggleCultures") && pack.cells.culture[i]) {
     const culture = pack.cells.culture[i];
     tip("Culture: " + pack.cultures[culture].name);
     if (culturesEditor.offsetParent) highlightEditorLine(culturesEditor, culture);
-  } else
-  if (layerIsOn("toggleHeight")) tip("Height: " + getFriendlyHeight(point));
+  } else if (layerIsOn("toggleHeight")) tip("Height: " + getFriendlyHeight(point));
 }
 
 function highlightEditorLine(editor, id, timeout = 15000) {
   Array.from(editor.getElementsByClassName("states hovered")).forEach(el => el.classList.remove("hovered")); // clear all hovered
   const hovered = Array.from(editor.querySelectorAll("div")).find(el => el.dataset.id == id);
   if (hovered) hovered.classList.add("hovered"); // add hovered class
-  if (timeout) setTimeout(() => {hovered && hovered.classList.remove("hovered")}, timeout);
+  if (timeout)
+    setTimeout(() => {
+      hovered && hovered.classList.remove("hovered");
+    }, timeout);
 }
 
 // get cell info on mouse move
 function updateCellInfo(point, i, g) {
   const cells = pack.cells;
-  const x = infoX.innerHTML = rn(point[0]);
-  const y = infoY.innerHTML = rn(point[1]);
+  const x = (infoX.innerHTML = rn(point[0]));
+  const y = (infoY.innerHTML = rn(point[1]));
   const f = cells.f[i];
   infoLat.innerHTML = toDMS(mapCoordinates.latN - (y / graphHeight) * mapCoordinates.latT, "lat");
   infoLon.innerHTML = toDMS(mapCoordinates.lonW + (x / graphWidth) * mapCoordinates.lonT, "lon");
@@ -222,7 +263,7 @@ function updateCellInfo(point, i, g) {
   infoTemp.innerHTML = convertTemperature(grid.cells.temp[g]);
   infoPrec.innerHTML = cells.h[i] >= 20 ? getFriendlyPrecipitation(i) : "n/a";
   infoRiver.innerHTML = cells.h[i] >= 20 && cells.r[i] ? getRiverInfo(cells.r[i]) : "no";
-  infoState.innerHTML = cells.h[i] >= 20 ? cells.state[i] ? `${pack.states[cells.state[i]].fullName} (${cells.state[i]})` : "neutral lands (0)" : "no";
+  infoState.innerHTML = cells.h[i] >= 20 ? (cells.state[i] ? `${pack.states[cells.state[i]].fullName} (${cells.state[i]})` : "neutral lands (0)") : "no";
   infoProvince.innerHTML = cells.province[i] ? `${pack.provinces[cells.province[i]].fullName} (${cells.province[i]})` : "no";
   infoCulture.innerHTML = cells.culture[i] ? `${pack.cultures[cells.culture[i]].name} (${cells.culture[i]})` : "no";
   infoReligion.innerHTML = cells.religion[i] ? `${pack.religions[cells.religion[i]].name} (${cells.religion[i]})` : "no";
@@ -238,7 +279,7 @@ function toDMS(coord, c) {
   const minutesNotTruncated = (Math.abs(coord) - degrees) * 60;
   const minutes = Math.floor(minutesNotTruncated);
   const seconds = Math.floor((minutesNotTruncated - minutes) * 60);
-  const cardinal = c === "lat" ? coord >= 0 ? "N" : "S" : coord >= 0 ? "E" : "W";
+  const cardinal = c === "lat" ? (coord >= 0 ? "N" : "S") : coord >= 0 ? "E" : "W";
   return degrees + "° " + minutes + "′ " + seconds + "″ " + cardinal;
 }
 
@@ -252,9 +293,15 @@ function getElevation(f, h) {
 // get water depth
 function getDepth(f, h, p) {
   if (f.land) return "0 " + heightUnit.value; // land: 0
-  if (!f.border) return getHeight(h, "abs"); // lake: pack abs height
+
+  // lake: difference between surface and bottom
   const gridH = grid.cells.h[findGridCell(p[0], p[1])];
-  return getHeight(gridH, "abs"); // ocean: grig height
+  if (f.type === "lake") {
+    const depth = gridH === 19 ? f.height / 2 : gridH;
+    return getHeight(depth, "abs");
+  }
+
+  return getHeight(gridH, "abs"); // ocean: grid height
 }
 
 // get user-friendly (real-world) height value from map data
@@ -268,12 +315,13 @@ function getFriendlyHeight(p) {
 function getHeight(h, abs) {
   const unit = heightUnit.value;
   let unitRatio = 3.281; // default calculations are in feet
-  if (unit === "m") unitRatio = 1; // if meter
+  if (unit === "m") unitRatio = 1;
+  // if meter
   else if (unit === "f") unitRatio = 0.5468; // if fathom
 
   let height = -990;
   if (h >= 20) height = Math.pow(h - 18, +heightExponentInput.value);
-  else if (h < 20 && h > 0) height = (h - 20) / h * 50;
+  else if (h < 20 && h > 0) height = ((h - 20) / h) * 50;
 
   if (abs) height = Math.abs(height);
   return rn(height * unitRatio) + " " + unit;
@@ -299,49 +347,67 @@ function getCellPopulation(i) {
 // get user-friendly (real-world) population value from map data
 function getFriendlyPopulation(i) {
   const [rural, urban] = getCellPopulation(i);
-  return `${si(rural+urban)} (${si(rural)} rural, urban ${si(urban)})`;
+  return `${si(rural + urban)} (${si(rural)} rural, urban ${si(urban)})`;
 }
 
 function getPopulationTip(i) {
   const [rural, urban] = getCellPopulation(i);
-  return `Cell population: ${si(rural+urban)}; Rural: ${si(rural)}; Urban: ${si(urban)}`;
+  return `Cell population: ${si(rural + urban)}; Rural: ${si(rural)}; Urban: ${si(urban)}`;
 }
 
 function highlightEmblemElement(type, el) {
-    const i = el.i, cells = pack.cells;
-    const animation = d3.transition().duration(1000).ease(d3.easeSinIn);
+  const i = el.i,
+    cells = pack.cells;
+  const animation = d3.transition().duration(1000).ease(d3.easeSinIn);
 
-    if (type === "burg") {
-      const {x, y} = el;
-      debug.append("circle").attr("cx", x).attr("cy", y).attr("r", 0)
-        .attr("fill", "none").attr("stroke", "#d0240f").attr("stroke-width", 1).attr("opacity", 1)
-        .transition(animation).attr("r", 20).attr("opacity", .1).attr("stroke-width", 0).remove();
-      return;
-    }
+  if (type === "burg") {
+    const {x, y} = el;
+    debug.append("circle").attr("cx", x).attr("cy", y).attr("r", 0).attr("fill", "none").attr("stroke", "#d0240f").attr("stroke-width", 1).attr("opacity", 1).transition(animation).attr("r", 20).attr("opacity", 0.1).attr("stroke-width", 0).remove();
+    return;
+  }
 
-    const [x, y] = el.pole || pack.cells.p[el.center];
-    const obj = type === "state" ? cells.state : cells.province;
-    const borderCells = cells.i.filter(id => obj[id] === i && cells.c[id].some(n => obj[n] !== i));
-    const data = Array.from(borderCells).filter((c, i) => !(i%2)).map(i => cells.p[i]).map(i => [i[0], i[1], Math.hypot(i[0]-x, i[1]-y)]);
+  const [x, y] = el.pole || pack.cells.p[el.center];
+  const obj = type === "state" ? cells.state : cells.province;
+  const borderCells = cells.i.filter(id => obj[id] === i && cells.c[id].some(n => obj[n] !== i));
+  const data = Array.from(borderCells)
+    .filter((c, i) => !(i % 2))
+    .map(i => cells.p[i])
+    .map(i => [i[0], i[1], Math.hypot(i[0] - x, i[1] - y)]);
 
-    debug.selectAll("line").data(data).enter().append("line")
-      .attr("x1", x).attr("y1", y).attr("x2", d => d[0]).attr("y2", d => d[1])
-      .attr("stroke", "#d0240f").attr("stroke-width", .5).attr("opacity", .2)
-      .attr("stroke-dashoffset", d => d[2]).attr("stroke-dasharray", d => d[2])
-      .transition(animation).attr("stroke-dashoffset", 0).attr("opacity", 1)
-      .transition(animation).delay(1000).attr("stroke-dashoffset", d => d[2]).attr("opacity", 0).remove();
+  debug
+    .selectAll("line")
+    .data(data)
+    .enter()
+    .append("line")
+    .attr("x1", x)
+    .attr("y1", y)
+    .attr("x2", d => d[0])
+    .attr("y2", d => d[1])
+    .attr("stroke", "#d0240f")
+    .attr("stroke-width", 0.5)
+    .attr("opacity", 0.2)
+    .attr("stroke-dashoffset", d => d[2])
+    .attr("stroke-dasharray", d => d[2])
+    .transition(animation)
+    .attr("stroke-dashoffset", 0)
+    .attr("opacity", 1)
+    .transition(animation)
+    .delay(1000)
+    .attr("stroke-dashoffset", d => d[2])
+    .attr("opacity", 0)
+    .remove();
 }
 
 // assign lock behavior
-document.querySelectorAll("[data-locked]").forEach(function(e) {
-  e.addEventListener("mouseover", function(event) {
+document.querySelectorAll("[data-locked]").forEach(function (e) {
+  e.addEventListener("mouseover", function (event) {
     if (this.className === "icon-lock") tip("Click to unlock the option and allow it to be randomized on new map generation");
     else tip("Click to lock the option and always use the current value on new map generation");
     event.stopPropagation();
   });
 
-  e.addEventListener("click", function() {
-    const id = (this.id).slice(5);
+  e.addEventListener("click", function () {
+    const id = this.id.slice(5);
     if (this.className === "icon-lock") unlock(id);
     else lock(id);
   });
@@ -349,10 +415,10 @@ document.querySelectorAll("[data-locked]").forEach(function(e) {
 
 // lock option
 function lock(id) {
-  const input = document.querySelector("[data-stored='"+id+"']");
+  const input = document.querySelector("[data-stored='" + id + "']");
   if (input) localStorage.setItem(id, input.value);
   const el = document.getElementById("lock_" + id);
-  if(!el) return;
+  if (!el) return;
   el.dataset.locked = 1;
   el.className = "icon-lock";
 }
@@ -361,7 +427,7 @@ function lock(id) {
 function unlock(id) {
   localStorage.removeItem(id);
   const el = document.getElementById("lock_" + id);
-  if(!el) return;
+  if (!el) return;
   el.dataset.locked = 0;
   el.className = "icon-lock-open";
 }
@@ -403,7 +469,7 @@ function applyOption(select, id, name = id) {
 // show info about the generator in a popup
 function showInfo() {
   const Discord = link("https://discordapp.com/invite/X7E84HU", "Discord");
-  const Reddit = link("https://www.reddit.com/r/FantasyMapGenerator", "Reddit")
+  const Reddit = link("https://www.reddit.com/r/FantasyMapGenerator", "Reddit");
   const Patreon = link("https://www.patreon.com/azgaar", "Patreon");
   const Trello = link("https://trello.com/b/7x832DG4/fantasy-map-generator", "Trello");
   const Armoria = link("https://azgaar.github.io/Armoria", "Armoria");
@@ -433,8 +499,15 @@ function showInfo() {
       <li>${link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys", "Hotkeys")}</li>
     </ul>`;
 
-  $("#alert").dialog({resizable: false, title: document.title, width: "28em",
-    buttons: {OK: function() {$(this).dialog("close");}},
+  $("#alert").dialog({
+    resizable: false,
+    title: document.title,
+    width: "28em",
+    buttons: {
+      OK: function () {
+        $(this).dialog("close");
+      }
+    },
     position: {my: "center", at: "center", of: "svg"}
   });
 }
@@ -460,93 +533,170 @@ document.addEventListener("keyup", event => {
   const shift = event.shiftKey || key === 16;
   const alt = event.altKey || key === 18;
 
-  if (key === 112) showInfo(); // "F1" to show info
-  else if (key === 113) regeneratePrompt(); // "F2" for new map
-  else if (key === 113) regeneratePrompt(); // "F2" for a new map
-  else if (key === 117) quickSave(); // "F6" for quick save
-  else if (key === 120) quickLoad(); // "F9" for quick load
-  else if (key === 9) toggleOptions(event); // Tab to toggle options
-  else if (key === 27) {closeDialogs(); hideOptions();} // Escape to close all dialogs
-  else if (key === 46) removeElementOnKey(); // "Delete" to remove the selected element
-  else if (key === 79 && canvas3d) toggle3dOptions(); // "O" to toggle 3d options
-
-  else if (ctrl && key === 81) toggleSaveReminder(); // Ctrl + "Q" to toggle save reminder
-  else if (ctrl && key === 83) saveMap(); // Ctrl + "S" to save .map file
-  else if (undo.offsetParent && ctrl && key === 90) undo.click(); // Ctrl + "Z" to undo
-  else if (redo.offsetParent && ctrl && key === 89) redo.click(); // Ctrl + "Y" to redo
-
-  else if (shift && key === 72) editHeightmap(); // Shift + "H" to edit Heightmap
-  else if (shift && key === 66) editBiomes(); // Shift + "B" to edit Biomes
-  else if (shift && key === 83) editStates(); // Shift + "S" to edit States
-  else if (shift && key === 80) editProvinces(); // Shift + "P" to edit Provinces
-  else if (shift && key === 68) editDiplomacy(); // Shift + "D" to edit Diplomacy
-  else if (shift && key === 67) editCultures(); // Shift + "C" to edit Cultures
-  else if (shift && key === 78) editNamesbase(); // Shift + "N" to edit Namesbase
-  else if (shift && key === 90) editZones(); // Shift + "Z" to edit Zones
-  else if (shift && key === 82) editReligions(); // Shift + "R" to edit Religions
-  else if (shift && key === 89) openEmblemEditor(); // Shift + "Y" to edit Emblems
-  else if (shift && key === 81) editUnits(); // Shift + "Q" to edit Units
-  else if (shift && key === 79) editNotes(); // Shift + "O" to edit Notes
-  else if (shift && key === 84) overviewBurgs(); // Shift + "T" to open Burgs overview
-  else if (shift && key === 86) overviewRivers(); // Shift + "V" to open Rivers overview
-  else if (shift && key === 77) overviewMilitary(); // Shift + "M" to open Military overview
-  else if (shift && key === 69) viewCellDetails(); // Shift + "E" to open Cell Details
-
-  else if (shift && key === 49) toggleAddBurg(); // Shift + "1" to click to add Burg
-  else if (shift && key === 50) toggleAddLabel(); // Shift + "2" to click to add Label
-  else if (shift && key === 51) toggleAddRiver(); // Shift + "3" to click to add River
-  else if (shift && key === 52) toggleAddRoute(); // Shift + "4" to click to add Route
-  else if (shift && key === 53) toggleAddMarker(); // Shift + "5" to click to add Marker
-
-  else if (alt && key === 66) console.table(pack.burgs); // Alt + "B" to log burgs data
-  else if (alt && key === 83) console.table(pack.states); // Alt + "S" to log states data
-  else if (alt && key === 67) console.table(pack.cultures); // Alt + "C" to log cultures data
-  else if (alt && key === 82) console.table(pack.religions); // Alt + "R" to log religions data
-  else if (alt && key === 70) console.table(pack.features); // Alt + "F" to log features data
-
-  else if (key === 88) toggleTexture(); // "X" to toggle Texture layer
-  else if (key === 72) toggleHeight(); // "H" to toggle Heightmap layer
-  else if (key === 66) toggleBiomes(); // "B" to toggle Biomes layer
-  else if (key === 69) toggleCells(); // "E" to toggle Cells layer
-  else if (key === 71) toggleGrid(); // "G" to toggle Grid layer
-  else if (key === 79) toggleCoordinates(); // "O" to toggle Coordinates layer
-  else if (key === 87) toggleCompass(); // "W" to toggle Compass Rose layer
-  else if (key === 86) toggleRivers(); // "V" to toggle Rivers layer
-  else if (key === 70) toggleRelief(); // "F" to toggle Relief icons layer
-  else if (key === 67) toggleCultures(); // "C" to toggle Cultures layer
-  else if (key === 83) toggleStates(); // "S" to toggle States layer
-  else if (key === 80) toggleProvinces(); // "P" to toggle Provinces layer
-  else if (key === 90) toggleZones(); // "Z" to toggle Zones
-  else if (key === 68) toggleBorders(); // "D" to toggle Borders layer
-  else if (key === 82) toggleReligions(); // "R" to toggle Religions layer
-  else if (key === 85) toggleRoutes(); // "U" to toggle Routes layer
-  else if (key === 84) toggleTemp(); // "T" to toggle Temperature layer
-  else if (key === 78) togglePopulation(); // "N" to toggle Population layer
-  else if (key === 74) toggleIce(); // "J" to toggle Ice layer
-  else if (key === 65) togglePrec(); // "A" to toggle Precipitation layer
-  else if (key === 89) toggleEmblems(); // "Y" to toggle Emblems layer
-  else if (key === 76) toggleLabels(); // "L" to toggle Labels layer
-  else if (key === 73) toggleIcons(); // "I" to toggle Icons layer
-  else if (key === 77) toggleMilitary(); // "M" to toggle Military layer
-  else if (key === 75) toggleMarkers(); // "K" to toggle Markers layer
-  else if (key === 187) toggleRulers(); // Equal (=) to toggle Rulers
-  else if (key === 189) toggleScaleBar(); // Minus (-) to toggle Scale bar
-
-  else if (key === 37) zoom.translateBy(svg, 10, 0); // Left to scroll map left
-  else if (key === 39) zoom.translateBy(svg, -10, 0); // Right to scroll map right
-  else if (key === 38) zoom.translateBy(svg, 0, 10); // Up to scroll map up
-  else if (key === 40) zoom.translateBy(svg, 0, -10); // Up to scroll map up
-  else if (key === 107 || key === 109) pressNumpadSign(key); // Numpad Plus/Minus to zoom map or change brush size
-  else if (key === 48 || key === 96) resetZoom(1000); // 0 to reset zoom
-  else if (key === 49 || key === 97) zoom.scaleTo(svg, 1); // 1 to zoom to 1
-  else if (key === 50 || key === 98) zoom.scaleTo(svg, 2); // 2 to zoom to 2
-  else if (key === 51 || key === 99) zoom.scaleTo(svg, 3); // 3 to zoom to 3
-  else if (key === 52 || key === 100) zoom.scaleTo(svg, 4); // 4 to zoom to 4
-  else if (key === 53 || key === 101) zoom.scaleTo(svg, 5); // 5 to zoom to 5
-  else if (key === 54 || key === 102) zoom.scaleTo(svg, 6); // 6 to zoom to 6
-  else if (key === 55 || key === 103) zoom.scaleTo(svg, 7); // 7 to zoom to 7
-  else if (key === 56 || key === 104) zoom.scaleTo(svg, 8); // 8 to zoom to 8
-  else if (key === 57 || key === 105) zoom.scaleTo(svg, 9); // 9 to zoom to 9
+  if (key === 112) showInfo();
+  // "F1" to show info
+  else if (key === 113) regeneratePrompt();
+  // "F2" for new map
+  else if (key === 113) regeneratePrompt();
+  // "F2" for a new map
+  else if (key === 117) quickSave();
+  // "F6" for quick save
+  else if (key === 120) quickLoad();
+  // "F9" for quick load
+  else if (key === 9) toggleOptions(event);
+  // Tab to toggle options
+  else if (key === 27) {
+    closeDialogs();
+    hideOptions();
+  } // Escape to close all dialogs
+  else if (key === 46) removeElementOnKey();
+  // "Delete" to remove the selected element
+  else if (key === 79 && canvas3d) toggle3dOptions();
+  // "O" to toggle 3d options
+  else if (ctrl && key === 81) toggleSaveReminder();
+  // Ctrl + "Q" to toggle save reminder
+  else if (ctrl && key === 83) saveMap();
+  // Ctrl + "S" to save .map file
+  else if (undo.offsetParent && ctrl && key === 90) undo.click();
+  // Ctrl + "Z" to undo
+  else if (redo.offsetParent && ctrl && key === 89) redo.click();
+  // Ctrl + "Y" to redo
+  else if (shift && key === 72) editHeightmap();
+  // Shift + "H" to edit Heightmap
+  else if (shift && key === 66) editBiomes();
+  // Shift + "B" to edit Biomes
+  else if (shift && key === 83) editStates();
+  // Shift + "S" to edit States
+  else if (shift && key === 80) editProvinces();
+  // Shift + "P" to edit Provinces
+  else if (shift && key === 68) editDiplomacy();
+  // Shift + "D" to edit Diplomacy
+  else if (shift && key === 67) editCultures();
+  // Shift + "C" to edit Cultures
+  else if (shift && key === 78) editNamesbase();
+  // Shift + "N" to edit Namesbase
+  else if (shift && key === 90) editZones();
+  // Shift + "Z" to edit Zones
+  else if (shift && key === 82) editReligions();
+  // Shift + "R" to edit Religions
+  else if (shift && key === 89) openEmblemEditor();
+  // Shift + "Y" to edit Emblems
+  else if (shift && key === 81) editUnits();
+  // Shift + "Q" to edit Units
+  else if (shift && key === 79) editNotes();
+  // Shift + "O" to edit Notes
+  else if (shift && key === 84) overviewBurgs();
+  // Shift + "T" to open Burgs overview
+  else if (shift && key === 86) overviewRivers();
+  // Shift + "V" to open Rivers overview
+  else if (shift && key === 77) overviewMilitary();
+  // Shift + "M" to open Military overview
+  else if (shift && key === 69) viewCellDetails();
+  // Shift + "E" to open Cell Details
+  else if (shift && key === 49) toggleAddBurg();
+  // Shift + "1" to click to add Burg
+  else if (shift && key === 50) toggleAddLabel();
+  // Shift + "2" to click to add Label
+  else if (shift && key === 51) toggleAddRiver();
+  // Shift + "3" to click to add River
+  else if (shift && key === 52) toggleAddRoute();
+  // Shift + "4" to click to add Route
+  else if (shift && key === 53) toggleAddMarker();
+  // Shift + "5" to click to add Marker
+  else if (alt && key === 66) console.table(pack.burgs);
+  // Alt + "B" to log burgs data
+  else if (alt && key === 83) console.table(pack.states);
+  // Alt + "S" to log states data
+  else if (alt && key === 67) console.table(pack.cultures);
+  // Alt + "C" to log cultures data
+  else if (alt && key === 82) console.table(pack.religions);
+  // Alt + "R" to log religions data
+  else if (alt && key === 70) console.table(pack.features);
+  // Alt + "F" to log features data
+  else if (key === 88) toggleTexture();
+  // "X" to toggle Texture layer
+  else if (key === 72) toggleHeight();
+  // "H" to toggle Heightmap layer
+  else if (key === 66) toggleBiomes();
+  // "B" to toggle Biomes layer
+  else if (key === 69) toggleCells();
+  // "E" to toggle Cells layer
+  else if (key === 71) toggleGrid();
+  // "G" to toggle Grid layer
+  else if (key === 79) toggleCoordinates();
+  // "O" to toggle Coordinates layer
+  else if (key === 87) toggleCompass();
+  // "W" to toggle Compass Rose layer
+  else if (key === 86) toggleRivers();
+  // "V" to toggle Rivers layer
+  else if (key === 70) toggleRelief();
+  // "F" to toggle Relief icons layer
+  else if (key === 67) toggleCultures();
+  // "C" to toggle Cultures layer
+  else if (key === 83) toggleStates();
+  // "S" to toggle States layer
+  else if (key === 80) toggleProvinces();
+  // "P" to toggle Provinces layer
+  else if (key === 90) toggleZones();
+  // "Z" to toggle Zones
+  else if (key === 68) toggleBorders();
+  // "D" to toggle Borders layer
+  else if (key === 82) toggleReligions();
+  // "R" to toggle Religions layer
+  else if (key === 85) toggleRoutes();
+  // "U" to toggle Routes layer
+  else if (key === 84) toggleTemp();
+  // "T" to toggle Temperature layer
+  else if (key === 78) togglePopulation();
+  // "N" to toggle Population layer
+  else if (key === 74) toggleIce();
+  // "J" to toggle Ice layer
+  else if (key === 65) togglePrec();
+  // "A" to toggle Precipitation layer
+  else if (key === 89) toggleEmblems();
+  // "Y" to toggle Emblems layer
+  else if (key === 76) toggleLabels();
+  // "L" to toggle Labels layer
+  else if (key === 73) toggleIcons();
+  // "I" to toggle Icons layer
+  else if (key === 77) toggleMilitary();
+  // "M" to toggle Military layer
+  else if (key === 75) toggleMarkers();
+  // "K" to toggle Markers layer
+  else if (key === 187) toggleRulers();
+  // Equal (=) to toggle Rulers
+  else if (key === 189) toggleScaleBar();
+  // Minus (-) to toggle Scale bar
+  else if (key === 37) zoom.translateBy(svg, 10, 0);
+  // Left to scroll map left
+  else if (key === 39) zoom.translateBy(svg, -10, 0);
+  // Right to scroll map right
+  else if (key === 38) zoom.translateBy(svg, 0, 10);
+  // Up to scroll map up
+  else if (key === 40) zoom.translateBy(svg, 0, -10);
+  // Up to scroll map up
+  else if (key === 107 || key === 109) pressNumpadSign(key);
+  // Numpad Plus/Minus to zoom map or change brush size
+  else if (key === 48 || key === 96) resetZoom(1000);
+  // 0 to reset zoom
+  else if (key === 49 || key === 97) zoom.scaleTo(svg, 1);
+  // 1 to zoom to 1
+  else if (key === 50 || key === 98) zoom.scaleTo(svg, 2);
+  // 2 to zoom to 2
+  else if (key === 51 || key === 99) zoom.scaleTo(svg, 3);
+  // 3 to zoom to 3
+  else if (key === 52 || key === 100) zoom.scaleTo(svg, 4);
+  // 4 to zoom to 4
+  else if (key === 53 || key === 101) zoom.scaleTo(svg, 5);
+  // 5 to zoom to 5
+  else if (key === 54 || key === 102) zoom.scaleTo(svg, 6);
+  // 6 to zoom to 6
+  else if (key === 55 || key === 103) zoom.scaleTo(svg, 7);
+  // 7 to zoom to 7
+  else if (key === 56 || key === 104) zoom.scaleTo(svg, 8);
+  // 8 to zoom to 8
+  else if (key === 57 || key === 105) zoom.scaleTo(svg, 9);
+  // 9 to zoom to 9
   else if (ctrl) pressControl(); // Control to toggle mode
 });
 
@@ -555,21 +705,21 @@ function pressNumpadSign(key) {
   let brush = null;
   const d = key === 107 ? 1 : -1;
 
-  if (brushRadius.offsetParent) brush = document.getElementById("brushRadius"); else
-  if (biomesManuallyBrush.offsetParent) brush = document.getElementById("biomesManuallyBrush"); else
-  if (statesManuallyBrush.offsetParent) brush = document.getElementById("statesManuallyBrush"); else
-  if (provincesManuallyBrush.offsetParent) brush = document.getElementById("provincesManuallyBrush"); else
-  if (culturesManuallyBrush.offsetParent) brush = document.getElementById("culturesManuallyBrush"); else
-  if (zonesBrush.offsetParent) brush = document.getElementById("zonesBrush"); else
-  if (religionsManuallyBrush.offsetParent) brush = document.getElementById("religionsManuallyBrush");
+  if (brushRadius.offsetParent) brush = document.getElementById("brushRadius");
+  else if (biomesManuallyBrush.offsetParent) brush = document.getElementById("biomesManuallyBrush");
+  else if (statesManuallyBrush.offsetParent) brush = document.getElementById("statesManuallyBrush");
+  else if (provincesManuallyBrush.offsetParent) brush = document.getElementById("provincesManuallyBrush");
+  else if (culturesManuallyBrush.offsetParent) brush = document.getElementById("culturesManuallyBrush");
+  else if (zonesBrush.offsetParent) brush = document.getElementById("zonesBrush");
+  else if (religionsManuallyBrush.offsetParent) brush = document.getElementById("religionsManuallyBrush");
 
   if (brush) {
     const value = Math.max(Math.min(+brush.value + d, +brush.max), +brush.min);
-    brush.value = document.getElementById(brush.id+"Number").value = value;
+    brush.value = document.getElementById(brush.id + "Number").value = value;
     return;
   }
 
-  const scaleBy = key === 107 ? 1.2 : .8;
+  const scaleBy = key === 107 ? 1.2 : 0.8;
   zoom.scaleBy(svg, scaleBy); // if no, zoom map
 }
 
