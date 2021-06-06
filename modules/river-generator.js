@@ -43,6 +43,10 @@
       const land = cells.i.filter(i => h[i] >= 20).sort((a, b) => h[b] - h[a]);
       const lakeOutCells = Lakes.setClimateData(h);
 
+      // const flow = cells.i.length < 65535 ? new Uint16Array(cells.i.length) : new Uint32Array(cells.i.length);
+      // flow[i] = min;
+      // debug.append("path").attr("class", "arrow").attr("d", `M${cells.p[i][0]},${cells.p[i][1]}L${cells.p[min][0]},${cells.p[min][1]}`);
+
       land.forEach(function (i) {
         cells.fl[i] += grid.cells.prec[cells.g[i]]; // flux from precipitation
         const [x, y] = p[i];
@@ -194,12 +198,13 @@
 
     const lakes = features.filter(f => f.type === "lake");
     const land = cells.i.filter(i => h[i] >= 20 && !cells.b[i]); // exclude near-border cells
-    land.sort((a, b) => h[b] - h[a]); // highest cells go first
+    land.sort((a, b) => h[a] - h[b]); // lowest cells go first
 
     const progress = [];
     let depressions = Infinity;
     let prevDepressions = null;
-    for (let iteration = 0; depressions && iteration < maxIterations; iteration++) {
+    let iteration = 0;
+    for (; depressions && iteration < maxIterations; iteration++) {
       if (progress.length > 5 && d3.sum(progress) > 0) {
         // bad progress, abort and set heights back
         h = alterHeights();
@@ -239,11 +244,10 @@
       prevDepressions = depressions;
     }
 
+    console.log(iteration);
+
     if (!depressions) return;
     WARN && console.warn(`Unresolved depressions: ${depressions}. Edit heightmap to fix`);
-    //const flow = cells.i.length < 65535 ? new Uint16Array(cells.i.length) : new Uint32Array(cells.i.length);
-    //flow[i] = min;
-    //debug.append("path").attr("class", "arrow").attr("d", `M${cells.p[i][0]},${cells.p[i][1]}L${cells.p[min][0]},${cells.p[min][1]}`);
   };
 
   // add more river points on 1/3 and 2/3 of length

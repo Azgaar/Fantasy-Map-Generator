@@ -599,6 +599,7 @@ function generate() {
     markFeatures();
     markupGridOcean();
     openNearSeaLakes();
+
     OceanLayers();
     defineMapSize();
     calculateMapCoordinates();
