@@ -598,6 +598,7 @@ function generate() {
     HeightmapGenerator.generate();
     markFeatures();
     markupGridOcean();
+    addLakesInDeepDepressions();
     openNearSeaLakes();
 
     OceanLayers();
@@ -770,11 +771,71 @@ function markup(cells, start, increment, limit) {
   }
 }
 
+function addLakesInDeepDepressions() {
+  console.time("addLakesInDeepDepressions");
+  const {cells, features, points} = grid;
+  const {c, h, b} = cells;
+  const ELEVATION_LIMIT = 10;
+
+  for (const i of cells.i) {
+    if (b[i] || h[i] < 20) continue;
+
+    const minHeight = d3.min(c[i].map(c => h[c]));
+    if (h[i] > minHeight) continue;
+
+    let deep = true;
+    const treshold = h[i] + ELEVATION_LIMIT;
+    const queue = [i];
+    const checked = [];
+    checked[i] = true;
+
+    // check if elevated cell can potentially pour to water
+    while (deep && queue.length) {
+      const q = queue.pop();
+
+      for (const n of c[q]) {
+        if (checked[n]) continue;
+        if (h[n] < 20) {
+          deep = false;
+          break;
+        }
+        if (h[n] >= treshold) continue;
+
+        checked[n] = true;
+        queue.push(n);
+      }
+    }
+
+    // if not, add a lake
+    if (deep) {
+      debug.append("circle").attr("cx", points[i][0]).attr("cy", points[i][1]).attr("r", 1).attr("fill", "red");
+      const lakeCells = [i].concat(c[i].filter(n => h[n] === h[i]));
+      addLake(lakeCells);
+    }
+  }
+
+  function addLake(lakeCells) {
+    const f = features.length;
+
+    lakeCells.forEach(i => {
+      cells.h[i] = 19;
+      cells.t[i] = -1;
+      cells.f[i] = f;
+      c[i].forEach(n => !lakeCells.includes(n) && (cells.t[c] = 1));
+    });
+
+    features.push({i: f, land: false, border: false, type: "lake"});
+  }
+
+  console.timeEnd("addLakesInDeepDepressions");
+}
+
 // near sea lakes usually get a lot of water inflow, most of them should brake treshold and flow out to sea (see Ancylus Lake)
 function openNearSeaLakes() {
   if (templateInput.value === "Atoll") return; // no need for Atolls
-  const cells = grid.cells,
-    features = grid.features;
+
+  const cells = grid.cells;
+  const features = grid.features;
   if (!features.find(f => f.type === "lake")) return; // no lakes
   TIME && console.time("openLakes");
   const LIMIT = 22; // max height that can be breached by water

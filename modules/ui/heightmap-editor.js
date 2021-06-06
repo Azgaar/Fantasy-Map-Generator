@@ -77,7 +77,7 @@ function editHeightmap() {
     convertImage.style.display = type === "erase" ? "inline-block" : "none";
 
     // hide erosion checkbox if mode is Keep
-    changeHeightsBox.style.display = type === "keep" ? "none" : "inline-block";
+    allowErosionBox.style.display = type === "keep" ? "none" : "inline-block";
 
     // show finalize button
     if (!sessionStorage.getItem("noExitButtonAnimation")) {
@@ -182,19 +182,22 @@ function editHeightmap() {
     INFO && console.group("Edit Heightmap");
     TIME && console.time("regenerateErasedData");
 
-    const change = changeHeights.checked;
+    const erosionAllowed = allowErosion.checked;
     markFeatures();
     markupGridOcean();
-    if (change) openNearSeaLakes();
+    if (erosionAllowed) {
+      addLakesInDeepDepressions();
+      openNearSeaLakes();
+    }
     OceanLayers();
     calculateTemperatures();
     generatePrecipitation();
     reGraph();
     drawCoastline();
 
-    Rivers.generate(change);
+    Rivers.generate(erosionAllowed);
 
-    if (!change) {
+    if (!erosionAllowed) {
       for (const i of pack.cells.i) {
         const g = pack.cells.g[i];
         if (pack.cells.h[i] !== grid.cells.h[g] && pack.cells.h[i] >= 20 === grid.cells.h[g] >= 20) pack.cells.h[i] = grid.cells.h[g];
@@ -236,6 +239,7 @@ function editHeightmap() {
   function restoreRiskedData() {
     INFO && console.group("Edit Heightmap");
     TIME && console.time("restoreRiskedData");
+    const erosionAllowed = allowErosion.checked;
 
     // assign pack data to grid cells
     const l = grid.cells.i.length;
@@ -250,7 +254,7 @@ function editHeightmap() {
     const culture = new Uint16Array(l);
     const religion = new Uint16Array(l);
 
-    // rivers data, stored only if changeHeights is unchecked
+    // rivers data, stored only if allowErosion is unchecked
     const fl = new Uint16Array(l);
     const r = new Uint16Array(l);
     const conf = new Uint8Array(l);
@@ -268,7 +272,7 @@ function editHeightmap() {
       burg[g] = pack.cells.burg[i];
       religion[g] = pack.cells.religion[i];
 
-      if (!changeHeights.checked) {
+      if (!erosionAllowed) {
         fl[g] = pack.cells.fl[i];
         r[g] = pack.cells.r[i];
         conf[g] = pack.cells.conf[i];
@@ -301,13 +305,14 @@ function editHeightmap() {
 
     markFeatures();
     markupGridOcean();
+    if (erosionAllowed) addLakesInDeepDepressions();
     OceanLayers();
     calculateTemperatures();
     generatePrecipitation();
     reGraph();
     drawCoastline();
 
-    if (changeHeights.checked) Rivers.generate(changeHeights.checked);
+    if (erosionAllowed) Rivers.generate(true);
 
     // assign saved pack data from grid back to pack
     const n = pack.cells.i.length;
@@ -322,7 +327,7 @@ function editHeightmap() {
     pack.cells.religion = new Uint16Array(n);
     pack.cells.biome = new Uint8Array(n);
 
-    if (!changeHeights.checked) {
+    if (!erosionAllowed) {
       pack.cells.r = new Uint16Array(n);
       pack.cells.conf = new Uint8Array(n);
       pack.cells.fl = new Uint16Array(n);
@@ -336,7 +341,7 @@ function editHeightmap() {
       pack.cells.biome[i] = land && biome[g] ? biome[g] : getBiomeId(grid.cells.prec[g], pack.cells.h[i]);
 
       // rivers data
-      if (!changeHeights.checked) {
+      if (!erosionAllowed) {
         pack.cells.r[i] = r[g];
         pack.cells.conf[i] = conf[g];
         pack.cells.fl[i] = fl[g];
@@ -400,7 +405,7 @@ function editHeightmap() {
     drawStates();
     drawBorders();
 
-    if (changeHeights.checked) {
+    if (erosion) {
       Rivers.specify();
       Lakes.generateName();
     }

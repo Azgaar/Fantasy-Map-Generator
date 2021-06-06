@@ -3,7 +3,7 @@
 })(this, function () {
   "use strict";
 
-  const generate = function (changeHeights = true) {
+  const generate = function (allowErosion = true) {
     TIME && console.time("generateRivers");
     Math.random = aleaPRNG(seed);
     const cells = pack.cells,
@@ -23,7 +23,7 @@
     defineRivers();
     Lakes.cleanupLakeData();
 
-    if (changeHeights) cells.h = Uint8Array.from(h); // apply changed heights as basic one
+    if (allowErosion) cells.h = Uint8Array.from(h); // apply changed heights as basic one
 
     TIME && console.timeEnd("generateRivers");
 
