@@ -795,11 +795,11 @@ function addLakesInDeepDepressions() {
 
       for (const n of c[q]) {
         if (checked[n]) continue;
+        if (h[n] >= treshold) continue;
         if (h[n] < 20) {
           deep = false;
           break;
         }
-        if (h[n] >= treshold) continue;
 
         checked[n] = true;
         queue.push(n);
@@ -808,7 +808,6 @@ function addLakesInDeepDepressions() {
 
     // if not, add a lake
     if (deep) {
-      debug.append("circle").attr("cx", points[i][0]).attr("cy", points[i][1]).attr("r", 1).attr("fill", "red");
       const lakeCells = [i].concat(c[i].filter(n => h[n] === h[i]));
       addLake(lakeCells);
     }

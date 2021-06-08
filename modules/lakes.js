@@ -45,7 +45,7 @@
       delete feature.shoreline;
       delete feature.outCell;
       delete feature.closed;
-      feature.height = rn(feature.height);
+      feature.height = rn(feature.height, 3);
 
       const inlets = feature.inlets?.filter(r => pack.rivers.find(river => river.i === r));
       if (!inlets || !inlets.length) delete feature.inlets;
