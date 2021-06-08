@@ -6,9 +6,8 @@
   const generate = function (allowErosion = true) {
     TIME && console.time("generateRivers");
     Math.random = aleaPRNG(seed);
-    const cells = pack.cells,
-      p = cells.p,
-      features = pack.features;
+    const {cells, features} = pack;
+    const p = cells.p;
 
     const riversData = []; // rivers data
     cells.fl = new Uint16Array(cells.i.length); // water flux array
@@ -93,7 +92,11 @@
         }
 
         // downhill cell (make sure it's not in the source lake)
-        const min = lakeOutCells[i] ? cells.c[i].filter(c => !lakes.map(lake => lake.i).includes(cells.f[c])).sort((a, b) => h[a] - h[b])[0] : cells.c[i].sort((a, b) => h[a] - h[b])[0];
+        const filtered = lakeOutCells[i] ? cells.c[i].filter(c => !lakes.map(lake => lake.i).includes(cells.f[c])) : cells.c[i];
+        const min = filtered.sort((a, b) => h[a] - h[b])[0];
+
+        // cells is depressed
+        if (h[i] <= h[min]) return;
 
         if (cells.fl[i] < MIN_FLUX_TO_FORM_RIVER) {
           if (h[min] >= 20) cells.fl[min] += cells.fl[i];
@@ -244,10 +247,7 @@
       prevDepressions = depressions;
     }
 
-    console.log(iteration);
-
-    if (!depressions) return;
-    WARN && console.warn(`Unresolved depressions: ${depressions}. Edit heightmap to fix`);
+    depressions && WARN && console.warn(`Unresolved depressions: ${depressions}. Edit heightmap to fix`);
   };
 
   // add more river points on 1/3 and 2/3 of length
