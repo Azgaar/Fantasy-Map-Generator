@@ -2,7 +2,7 @@
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 "use strict";
-const version = "1.61"; // generator version
+const version = "1.62"; // generator version
 document.title += " v" + version;
 
 // Switches to disable/enable logging features
@@ -13,7 +13,7 @@ const WARN = 1;
 const ERROR = 1;
 
 // if map version is not stored, clear localStorage and show a message
-if (rn(localStorage.getItem("version"), 2) !== rn(version, 2)) {
+if (rn(localStorage.getItem("version"), 1) !== rn(version, 1)) {
   localStorage.clear();
   setTimeout(showWelcomeMessage, 8000);
 }
@@ -390,6 +390,7 @@ function showWelcomeMessage() {
       <li>Lakes now have names</li>
       <li>Rulers rework (v1.61)</li>
       <li>New ocean pattern by Kiwiroo (v1.61)</li>
+      <li>Water erosion rework (v1.62)</li>
     </ul>
 
     <p>Join our ${discord} and ${reddit} to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
