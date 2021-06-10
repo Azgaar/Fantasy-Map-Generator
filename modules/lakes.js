@@ -37,6 +37,55 @@
     lake.shoreline = [...uniqueCells];
   };
 
+  const prepareLakeData = h => {
+    const cells = pack.cells;
+    const ELEVATION_LIMIT = 10;
+
+    pack.features.forEach(f => {
+      if (f.type !== "lake") return;
+      delete f.flux;
+      delete f.inlets;
+      delete f.outlet;
+      delete f.height;
+      delete f.closed;
+      !f.shoreline && Lakes.getShoreline(f);
+
+      // lake surface height is as lowest land cells around
+      const min = f.shoreline.sort((a, b) => h[a] - h[b])[0];
+      f.height = h[min] - 0.1;
+
+      // check if lake can be open (not in deep depression)
+      let deep = true;
+      const treshold = f.height + ELEVATION_LIMIT;
+      const queue = [min];
+      const checked = [];
+      checked[min] = true;
+
+      // check if elevated lake can potentially pour to another water body
+      while (deep && queue.length) {
+        const q = queue.pop();
+
+        for (const n of cells.c[q]) {
+          if (checked[n]) continue;
+          if (h[n] >= treshold) continue;
+
+          if (h[n] < 20) {
+            const nFeature = pack.features[cells.f[n]];
+            if (nFeature.type === "ocean" || f.height > nFeature.height) {
+              deep = false;
+              break;
+            }
+          }
+
+          checked[n] = true;
+          queue.push(n);
+        }
+      }
+
+      f.closed = deep;
+    });
+  };
+
   const cleanupLakeData = function () {
     for (const feature of pack.features) {
       if (feature.type !== "lake") continue;
@@ -95,5 +144,5 @@
     return "freshwater";
   }
 
-  return {setClimateData, cleanupLakeData, defineGroup, generateName, getName, getShoreline};
+  return {setClimateData, cleanupLakeData, prepareLakeData, defineGroup, generateName, getName, getShoreline};
 });

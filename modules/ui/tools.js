@@ -539,25 +539,19 @@ function addRiverOnClick() {
   let river = +getNextId("river").slice(5); // river id
   cells.fl[i] = grid.cells.prec[cells.g[i]]; // initial flux
 
-  // height with added t value to make map less depressed
-  const h = Array.from(cells.h)
-    .map((h, i) => (h < 20 || cells.t[i] < 1 ? h : h + cells.t[i] / 100))
-    .map((h, i) => (h < 20 || cells.t[i] < 1 ? h : h + d3.mean(cells.c[i].map(c => cells.t[c])) / 10000));
+  const h = Rivers.alterHeights();
+  Lakes.prepareLakeData(h);
   Rivers.resolveDepressions(h, 200);
 
   while (i) {
     cells.r[i] = river;
-    const x = cells.p[i][0],
-      y = cells.p[i][1];
+    const [x, y] = cells.p[i];
     dataRiver.push({x, y, cell: i});
 
-    const min = cells.c[i][d3.scan(cells.c[i], (a, b) => h[a] - h[b])]; // downhill cell
-    if (h[i] <= h[min]) {
-      tip(`Cell ${i} is depressed, river cannot flow further`, false, "error");
-      return;
-    }
-    const tx = cells.p[min][0],
-      ty = cells.p[min][1];
+    const min = cells.c[i].sort((a, b) => h[a] - h[b])[0]; // downhill cell
+    if (h[i] <= h[min]) return tip(`Cell ${i} is depressed, river cannot flow further`, false, "error");
+
+    const [tx, ty] = cells.p[min];
 
     if (h[min] < 20) {
       // pour to water body
@@ -572,7 +566,7 @@ function addRiverOnClick() {
       continue;
     }
 
-    // hadnle case when lowest cell already has a river
+    // handle case when lowest cell already has a river
     const r = cells.r[min];
     const riverCells = cells.i.filter(i => cells.r[i] === r);
     const riverCellsUpper = riverCells.filter(i => h[i] > h[min]);
@@ -625,6 +619,7 @@ function addRiverOnClick() {
   }
 
   if (d3.event.shiftKey === false) {
+    Lakes.cleanupLakeData();
     unpressClickToAddButton();
     document.getElementById("addNewRiver").classList.remove("pressed");
     if (addNewRiver.offsetParent) riversOverviewRefresh.click();
