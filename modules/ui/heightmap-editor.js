@@ -405,7 +405,7 @@ function editHeightmap() {
     drawStates();
     drawBorders();
 
-    if (erosion) {
+    if (erosionAllowed) {
       Rivers.specify();
       Lakes.generateName();
     }
