@@ -3,7 +3,9 @@ function editNotes(id, name) {
   // update list of objects
   const select = document.getElementById("notesSelect");
   select.options.length = 0;
-  for (const note of notes) {select.options.add(new Option(note.id, note.id));}
+  for (const note of notes) {
+    select.options.add(new Option(note.id, note.id));
+  }
 
   // initiate pell (html editor)
   const editor = Pell.init({
@@ -38,9 +40,11 @@ function editNotes(id, name) {
 
   // open a dialog
   $("#notesEditor").dialog({
-    title: "Notes Editor", minWidth: "40em", width: "50vw",
+    title: "Notes Editor",
+    minWidth: "40em",
+    width: "50vw",
     position: {my: "center", at: "center", of: "svg"},
-    close: () => notesText.innerHTML = ""
+    close: () => (notesText.innerHTML = "")
   });
 
   if (modules.editNotes) return;
@@ -49,12 +53,15 @@ function editNotes(id, name) {
   // add listeners
   document.getElementById("notesSelect").addEventListener("change", changeObject);
   document.getElementById("notesName").addEventListener("input", changeName);
-  document.getElementById("notesPin").addEventListener("click", () => options.pinNotes = !options.pinNotes);
+  document.getElementById("notesPin").addEventListener("click", () => (options.pinNotes = !options.pinNotes));
   document.getElementById("notesSpeak").addEventListener("click", () => speak(editor.content.innerHTML));
   document.getElementById("notesFocus").addEventListener("click", validateHighlightElement);
   document.getElementById("notesDownload").addEventListener("click", downloadLegends);
   document.getElementById("notesUpload").addEventListener("click", () => legendsToLoad.click());
-  document.getElementById("legendsToLoad").addEventListener("change", function() {uploadFile(this, uploadLegends)});
+  document.getElementById("legendsToLoad").addEventListener("change", function () {
+    uploadFile(this, uploadLegends);
+  });
+  document.getElementById("notesClearStyle").addEventListener("click", clearStyle);
   document.getElementById("notesRemove").addEventListener("click", triggerNotesRemove);
 
   function showNote(note) {
@@ -85,15 +92,22 @@ function editNotes(id, name) {
     // if element is not found
     if (element === null) {
       alertMessage.innerHTML = "Related element is not found. Would you like to remove the note?";
-      $("#alert").dialog({resizable: false, title: "Element not found",
+      $("#alert").dialog({
+        resizable: false,
+        title: "Element not found",
         buttons: {
-          Remove: function() {$(this).dialog("close"); removeLegend();},
-          Keep: function() {$(this).dialog("close");}
+          Remove: function () {
+            $(this).dialog("close");
+            removeLegend();
+          },
+          Keep: function () {
+            $(this).dialog("close");
+          }
         }
       });
       return;
     }
-    
+
     highlightElement(element); // if element is found
   }
 
@@ -104,18 +118,32 @@ function editNotes(id, name) {
   }
 
   function uploadLegends(dataLoaded) {
-    if (!dataLoaded) {tip("Cannot load the file. Please check the data format", false, "error"); return;}
+    if (!dataLoaded) {
+      tip("Cannot load the file. Please check the data format", false, "error");
+      return;
+    }
     notes = JSON.parse(dataLoaded);
     document.getElementById("notesSelect").options.length = 0;
     editNotes(notes[0].id, notes[0].name);
   }
 
+  function clearStyle() {
+    editor.content.innerHTML = editor.content.textContent;
+  }
+
   function triggerNotesRemove() {
     alertMessage.innerHTML = "Are you sure you want to remove the selected note?";
-    $("#alert").dialog({resizable: false, title: "Remove note",
+    $("#alert").dialog({
+      resizable: false,
+      title: "Remove note",
       buttons: {
-        Remove: function() {$(this).dialog("close"); removeLegend();},
-        Keep: function() {$(this).dialog("close");}
+        Remove: function () {
+          $(this).dialog("close");
+          removeLegend();
+        },
+        Keep: function () {
+          $(this).dialog("close");
+        }
       }
     });
   }
@@ -125,9 +153,11 @@ function editNotes(id, name) {
     const index = notes.findIndex(n => n.id === select.value);
     notes.splice(index, 1);
     select.options.length = 0;
-    if (!notes.length) {$("#notesEditor").dialog("close"); return;}
+    if (!notes.length) {
+      $("#notesEditor").dialog("close");
+      return;
+    }
     notesText.innerHTML = "";
     editNotes(notes[0].id, notes[0].name);
   }
-
 }
