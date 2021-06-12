@@ -132,11 +132,11 @@
 
   function getGroup(feature) {
     if (feature.temp < -3) return "frozen";
-    if (feature.height > 60 && feature.cells < 10 && feature.firstCell % 5 === 0) return "lava";
+    if (feature.height > 60 && feature.cells < 10 && feature.firstCell % 10 === 0) return "lava";
 
     if (!feature.inlets && !feature.outlet) {
       if (feature.evaporation / 2 > feature.flux) return "dry";
-      if (feature.cells < 3 && feature.firstCell % 5 === 0) return "sinkhole";
+      if (feature.cells < 3 && feature.firstCell % 10 === 0) return "sinkhole";
     }
 
     if (!feature.outlet && feature.evaporation > feature.flux) return "salt";
