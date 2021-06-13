@@ -184,13 +184,22 @@ async function getMapURL(type, subtype) {
     if (pattern) cloneDefs.appendChild(pattern.cloneNode(true));
   }
 
-  if (!cloneEl.getElementById("hatching").children.length) cloneEl.getElementById("hatching").remove(); //remove unused hatching group
-  if (!cloneEl.getElementById("fogging-cont")) cloneEl.getElementById("fog").remove(); //remove unused fog
+  if (!cloneEl.getElementById("hatching").children.length) cloneEl.getElementById("hatching").remove(); // remove unused hatching group
+  if (!cloneEl.getElementById("fogging-cont")) cloneEl.getElementById("fog").remove(); // remove unused fog
   if (!cloneEl.getElementById("regions")) cloneEl.getElementById("statePaths").remove(); // removed unused statePaths
   if (!cloneEl.getElementById("labels")) cloneEl.getElementById("textPaths").remove(); // removed unused textPaths
 
   // add armies style
   if (cloneEl.getElementById("armies")) cloneEl.insertAdjacentHTML("afterbegin", "<style>#armies text {stroke: none; fill: #fff; text-shadow: 0 0 4px #000; dominant-baseline: central; text-anchor: middle; font-family: Helvetica; fill-opacity: 1;}#armies text.regimentIcon {font-size: .8em;}</style>");
+
+  // add xlink: for href to support svg1.1
+  if (type === "svg") {
+    cloneEl.querySelectorAll("[href]").forEach(el => {
+      const href = el.getAttribute("href");
+      el.removeAttribute("href");
+      el.setAttribute("xlink:href", href);
+    });
+  }
 
   const fontStyle = await GFontToDataURI(getFontsToLoad(clone)); // load non-standard fonts
   if (fontStyle) clone.select("defs").append("style").text(fontStyle.join("\n")); // add font to style
