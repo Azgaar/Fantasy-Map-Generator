@@ -950,7 +950,8 @@ function editHeightmap() {
 
       for (const s of steps) {
         if (s.style.opacity == 0.5) continue;
-        const type = s.getAttribute("data-type");
+        const type = s.dataset.type;
+
         const elCount = s.querySelector(".templateCount") || "";
         const elHeight = s.querySelector(".templateHeight") || "";
 
