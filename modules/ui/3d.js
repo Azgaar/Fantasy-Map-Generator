@@ -275,7 +275,7 @@ async function createMesh(width, height, segmentsX, segmentsY) {
       const [x, y, z] = get3dCoords(label.x.baseVal[0].value, label.y.baseVal[0].value)
       text_mesh.position.set(x, y + 15, z);
       text_mesh.animate = function () {
-        this.lookAt(camera.position);
+        this.rotation.copy(camera.rotation);
       }
 
       textMeshs.push(text_mesh)
@@ -290,11 +290,11 @@ async function createMesh(width, height, segmentsX, segmentsY) {
       const [x, y, z] = get3dCoords(label.x.baseVal[0].value, label.y.baseVal[0].value)
       text_mesh.position.set(x, y + 5, z);
       text_mesh.animate = function () {
-        this.lookAt(camera.position);
         if(this.position.distanceTo(camera.position) > 200) {
           this.visible = false;
         } else {
           this.visible = true;
+          this.rotation.copy(camera.rotation);
         }
       }
 
