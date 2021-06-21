@@ -197,14 +197,14 @@ function createTextMesh(text, font, size) {
   drawCtx.fillText(text, 0, 50);
     
   // canvas contents will be used for a texture
-  let text_texture = new THREE.TextureLoader().load(drawCtx.canvas.toDataURL());
+  const text_texture = new THREE.TextureLoader().load(drawCtx.canvas.toDataURL());
   text_texture.minFilter = THREE.LinearFilter
   text_texture.needsUpdate = true;
       
-  let text_material = new THREE.MeshBasicMaterial({map: text_texture/*, side:THREE.DoubleSide*/, depthWrite: false});
+  const text_material = new THREE.MeshBasicMaterial({map: text_texture/*, side:THREE.DoubleSide*/, depthWrite: false});
   text_material.transparent = true;
 
-  let text_mesh = new THREE.Mesh(
+  const text_mesh = new THREE.Mesh(
     new THREE.PlaneGeometry(drawCtx.canvas.width*(size/100), drawCtx.canvas.height*(size/100)),
     text_material
   );
@@ -216,9 +216,9 @@ function createTextMesh(text, font, size) {
 function get3dCoords(x, base_y) {
   const svg = $('svg#map')[0];
 
-  let y = getMeshHeight(findGridCell(x, base_y));
+  const y = getMeshHeight(findGridCell(x, base_y));
   x = x - svg.width.baseVal.value/2;
-  let z = base_y - svg.height.baseVal.value/2;
+  const z = base_y - svg.height.baseVal.value/2;
 
   return [x, y, z];
 }
@@ -264,11 +264,13 @@ async function createMesh(width, height, segmentsX, segmentsY) {
   iconMeshs = []
 
   const svg = $('svg#map')[0];
+  // Labels
   if(layerIsOn("toggleLabels")) {
+    // Cities labels
     const cities_labels = $('svg #viewbox #labels #burgLabels #cities')[0]
 
     for (const label of cities_labels.childNodes) {
-      var text_mesh = createTextMesh(label.innerHTML, "Almendra SC", 25)
+      const text_mesh = createTextMesh(label.innerHTML, "Almendra SC", 25)
 
       const [x, y, z] = get3dCoords(label.x.baseVal[0].value, label.y.baseVal[0].value)
       text_mesh.position.set(x, y + 25, z);
@@ -280,9 +282,10 @@ async function createMesh(width, height, segmentsX, segmentsY) {
       scene.add(text_mesh);
     }
 
+    // Town labels
     const towns_labels = $('svg #viewbox #labels #burgLabels #towns')[0]
     for (const label of towns_labels.childNodes) {
-      var text_mesh = createTextMesh(label.innerHTML, "Almendra SC", 7)
+      const text_mesh = createTextMesh(label.innerHTML, "Almendra SC", 7)
 
       const [x, y, z] = get3dCoords(label.x.baseVal[0].value, label.y.baseVal[0].value)
       text_mesh.position.set(x, y + 5, z);
@@ -299,11 +302,12 @@ async function createMesh(width, height, segmentsX, segmentsY) {
       scene.add(text_mesh);
     }
   }
+  // Icons
   if(layerIsOn("toggleIcons")) {
     const cities_icon = $('svg #viewbox #icons #burgIcons #cities')[0]
     for (const icon of cities_icon.childNodes) {
-      var icon_material = new THREE.MeshBasicMaterial({color: 0xcccccc});
-      var icon_mesh = new THREE.Mesh(
+      const icon_material = new THREE.MeshBasicMaterial({color: 0xcccccc});
+      const icon_mesh = new THREE.Mesh(
         new THREE.SphereGeometry(2, 16, 16),
         icon_material
       );
@@ -316,8 +320,8 @@ async function createMesh(width, height, segmentsX, segmentsY) {
 
     const town_icon = $('svg #viewbox #icons #burgIcons #towns')[0]
     for (const icon of town_icon.childNodes) {
-      var icon_material = new THREE.MeshBasicMaterial({color: 0xcccccc});
-      var icon_mesh = new THREE.Mesh(
+      const icon_material = new THREE.MeshBasicMaterial({color: 0xcccccc});
+      const icon_mesh = new THREE.Mesh(
         new THREE.SphereGeometry(1, 16, 16),
         icon_material
       );
