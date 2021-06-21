@@ -267,10 +267,9 @@ async function createMesh(width, height, segmentsX, segmentsY) {
   // Labels
   if(layerIsOn("toggleLabels")) {
     // Cities labels
-    const cities_labels = $('svg #viewbox #labels #burgLabels #cities')[0]
-
-    for (const label of cities_labels.childNodes) {
-      const text_mesh = createTextMesh(label.innerHTML, "Almendra SC", 25)
+    const cities = $('#viewbox #labels #burgLabels #cities', svg)
+    for (const label of cities[0].childNodes) {
+      const text_mesh = createTextMesh(label.innerHTML, cities.css('font-family'), 25) // cities.data('size')
 
       const [x, y, z] = get3dCoords(label.x.baseVal[0].value, label.y.baseVal[0].value)
       text_mesh.position.set(x, y + 15, z);
@@ -283,9 +282,9 @@ async function createMesh(width, height, segmentsX, segmentsY) {
     }
 
     // Town labels
-    const towns_labels = $('svg #viewbox #labels #burgLabels #towns')[0]
-    for (const label of towns_labels.childNodes) {
-      const text_mesh = createTextMesh(label.innerHTML, "Almendra SC", 7)
+    const towns = $('#viewbox #labels #burgLabels #towns', svg)
+    for (const label of towns[0].childNodes) {
+      const text_mesh = createTextMesh(label.innerHTML, towns.css('font-family'), 7) // towns.data('size')
 
       const [x, y, z] = get3dCoords(label.x.baseVal[0].value, label.y.baseVal[0].value)
       text_mesh.position.set(x, y + 5, z);
@@ -304,7 +303,7 @@ async function createMesh(width, height, segmentsX, segmentsY) {
   }
   // Icons
   if(layerIsOn("toggleIcons")) {
-    const cities_icon = $('svg #viewbox #icons #burgIcons #cities')[0]
+    const cities_icon = $('#viewbox #icons #burgIcons #cities', svg)[0]
     for (const icon of cities_icon.childNodes) {
       const icon_material = new THREE.MeshBasicMaterial({color: 0xcccccc});
       const icon_mesh = new THREE.Mesh(
@@ -318,7 +317,7 @@ async function createMesh(width, height, segmentsX, segmentsY) {
       scene.add(icon_mesh);
     }
 
-    const town_icon = $('svg #viewbox #icons #burgIcons #towns')[0]
+    const town_icon = $('#viewbox #icons #burgIcons #towns', svg)[0]
     for (const icon of town_icon.childNodes) {
       const icon_material = new THREE.MeshBasicMaterial({color: 0xcccccc});
       const icon_mesh = new THREE.Mesh(
