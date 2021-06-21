@@ -273,7 +273,7 @@ async function createMesh(width, height, segmentsX, segmentsY) {
       const text_mesh = createTextMesh(label.innerHTML, "Almendra SC", 25)
 
       const [x, y, z] = get3dCoords(label.x.baseVal[0].value, label.y.baseVal[0].value)
-      text_mesh.position.set(x, y + 25, z);
+      text_mesh.position.set(x, y + 15, z);
       text_mesh.animate = function () {
         this.lookAt(camera.position);
       }
