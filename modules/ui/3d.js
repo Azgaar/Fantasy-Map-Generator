@@ -12,6 +12,8 @@ const options = {scale: 50, lightness: .7, shadow: .5, sun: {x: 100, y: 600, z: 
 let Renderer, scene, camera, controls, animationFrame, material, texture,
   geometry, mesh, ambientLight, spotLight, waterPlane, waterMaterial, waterMesh,
   objexporter;
+let drawCtx = document.createElement('canvas').getContext('2d');
+let textMeshs = [], iconMeshs = [];
 
 // initiate 3d scene
 const create = async function(canvas, type = "viewMesh") {
@@ -42,6 +44,17 @@ const stop = function() {
   material.dispose();
   if (waterPlane) waterPlane.dispose();
   if (waterMaterial) waterMaterial.dispose();
+  for (const mesh of textMeshs) {
+    mesh.material.map.dispose();
+    mesh.material.dispose();
+    mesh.geometry.dispose();
+    scene.remove(mesh);
+  }
+  for (const mesh of iconMeshs) {
+    mesh.material.dispose();
+    mesh.geometry.dispose();
+    scene.remove(mesh);
+  }
 
   Renderer.renderLists.dispose(); // is it required?
   Renderer.dispose();
@@ -166,10 +179,48 @@ async function newMesh(canvas) {
   controls.maxPolarAngle = Math.PI/2;
   controls.autoRotate = Boolean(options.rotateMesh);
   controls.autoRotateSpeed = options.rotateMesh;
-  if (controls.autoRotate) animate();
+  animate();
   controls.addEventListener("change", render);
 
   return true;
+}
+
+function createTextMesh(text, font, size) {
+  drawCtx.clearRect(0, 0, drawCtx.canvas.width, drawCtx.canvas.height);
+  drawCtx.font = "50px " + font;
+
+  drawCtx.canvas.width = drawCtx.measureText(text).width;
+  drawCtx.canvas.height = 50 + 5;
+  drawCtx.font = "50px " + font;
+
+  drawCtx.fillStyle = "rgba(0,0,0,1)";
+  drawCtx.fillText(text, 0, 50);
+    
+  // canvas contents will be used for a texture
+  let text_texture = new THREE.TextureLoader().load(drawCtx.canvas.toDataURL());
+  text_texture.minFilter = THREE.LinearFilter
+  text_texture.needsUpdate = true;
+      
+  let text_material = new THREE.MeshBasicMaterial({map: text_texture/*, side:THREE.DoubleSide*/, depthWrite: false});
+  text_material.transparent = true;
+
+  let text_mesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(drawCtx.canvas.width*(size/100), drawCtx.canvas.height*(size/100)),
+    text_material
+  );
+  text_mesh.renderOrder = 1;
+
+  return text_mesh
+}
+
+function get3dCoords(x, base_y) {
+  const svg = $('svg#map')[0];
+
+  let y = getMeshHeight(findGridCell(x, base_y));
+  x = x - svg.width.baseVal.value/2;
+  let z = base_y - svg.height.baseVal.value/2;
+
+  return [x, y, z];
 }
 
 // create a mesh from pixel data
@@ -196,6 +247,87 @@ async function createMesh(width, height, segmentsX, segmentsY) {
   mesh.castShadow = true;
   mesh.receiveShadow = true;
   scene.add(mesh);
+
+  for (const mesh of textMeshs) {
+    mesh.material.map.dispose();
+    mesh.material.dispose();
+    mesh.geometry.dispose();
+    scene.remove(mesh);
+  }
+  textMeshs = []
+
+  for (const mesh of iconMeshs) {
+    mesh.material.dispose();
+    mesh.geometry.dispose();
+    scene.remove(mesh);
+  }
+  iconMeshs = []
+
+  const svg = $('svg#map')[0];
+  if(layerIsOn("toggleLabels")) {
+    const cities_labels = $('svg #viewbox #labels #burgLabels #cities')[0]
+
+    for (const label of cities_labels.childNodes) {
+      var text_mesh = createTextMesh(label.innerHTML, "Almendra SC", 25)
+
+      const [x, y, z] = get3dCoords(label.x.baseVal[0].value, label.y.baseVal[0].value)
+      text_mesh.position.set(x, y + 25, z);
+      text_mesh.animate = function () {
+        this.lookAt(camera.position);
+      }
+
+      textMeshs.push(text_mesh)
+      scene.add(text_mesh);
+    }
+
+    const towns_labels = $('svg #viewbox #labels #burgLabels #towns')[0]
+    for (const label of towns_labels.childNodes) {
+      var text_mesh = createTextMesh(label.innerHTML, "Almendra SC", 7)
+
+      const [x, y, z] = get3dCoords(label.x.baseVal[0].value, label.y.baseVal[0].value)
+      text_mesh.position.set(x, y + 5, z);
+      text_mesh.animate = function () {
+        this.lookAt(camera.position);
+        if(this.position.distanceTo(camera.position) > 200) {
+          this.visible = false;
+        } else {
+          this.visible = true;
+        }
+      }
+
+      textMeshs.push(text_mesh)
+      scene.add(text_mesh);
+    }
+  }
+  if(layerIsOn("toggleIcons")) {
+    const cities_icon = $('svg #viewbox #icons #burgIcons #cities')[0]
+    for (const icon of cities_icon.childNodes) {
+      var icon_material = new THREE.MeshBasicMaterial({color: 0xcccccc});
+      var icon_mesh = new THREE.Mesh(
+        new THREE.SphereGeometry(2, 16, 16),
+        icon_material
+      );
+
+      icon_mesh.position.set(...get3dCoords(icon.cx.baseVal.value, icon.cy.baseVal.value))
+
+      iconMeshs.push(icon_mesh);
+      scene.add(icon_mesh);
+    }
+
+    const town_icon = $('svg #viewbox #icons #burgIcons #towns')[0]
+    for (const icon of town_icon.childNodes) {
+      var icon_material = new THREE.MeshBasicMaterial({color: 0xcccccc});
+      var icon_mesh = new THREE.Mesh(
+        new THREE.SphereGeometry(1, 16, 16),
+        icon_material
+      );
+
+      icon_mesh.position.set(...get3dCoords(icon.cx.baseVal.value, icon.cy.baseVal.value))
+
+      iconMeshs.push(icon_mesh);
+      scene.add(icon_mesh);
+    }
+  }
 }
 
 function getMeshHeight(i) {
@@ -317,6 +449,11 @@ function render() {
 function animate() {
   animationFrame = requestAnimationFrame(animate);
   controls.update();
+  for(const mesh of textMeshs) {
+    if(mesh.animate) {
+      mesh.animate();
+    }
+  }
   Renderer.render(scene, camera);
 }
 

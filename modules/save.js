@@ -82,6 +82,10 @@ async function getMapURL(type, subtype) {
   const svgDefs = document.getElementById("defElements");
 
   const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
+  if (type === "mesh") {
+    clone.select("#labels #burgLabels").remove();
+    clone.select("#icons #burgIcons").remove();
+  }
   if (isFirefox && type === "mesh") clone.select("#oceanPattern").remove();
   if (subtype === "globe") clone.select("#scaleBar").remove();
   if (subtype === "noWater") {
