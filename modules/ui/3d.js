@@ -6,7 +6,7 @@
 
 // set default options
 const options = {scale: 50, lightness: .7, shadow: .5, sun: {x: 100, y: 600, z: 1000}, rotateMesh: 0, rotateGlobe: .5,
-  skyColor: "#9ecef5", waterColor: "#466eab", extendedWater: 0, resolution: 2};
+  skyColor: "#9ecef5", waterColor: "#466eab", extendedWater: 0, labels3d: 0, resolution: 2};
 
 // set variables
 let Renderer, scene, camera, controls, animationFrame, material, texture,
@@ -113,6 +113,11 @@ const toggleSky = function() {
   } else extendWater(graphWidth, graphHeight);
 
   options.extendedWater = !options.extendedWater;
+  redraw();
+}
+
+const toggleLabels = function() {
+  options.labels3d = !options.labels3d;
   redraw();
 }
 
@@ -225,8 +230,12 @@ function get3dCoords(x, base_y) {
 
 // create a mesh from pixel data
 async function createMesh(width, height, segmentsX, segmentsY) {
-  const url = await getMapURL("mesh", options.extendedWater ? "noWater" : null);
+  const mapOptions = []
+  if (options.labels3d) mapOptions.push("noLabels");
+  if (options.extendedWater) mapOptions.push("noWater");
+  const url = await getMapURL("mesh", mapOptions);
   window.setTimeout(() => window.URL.revokeObjectURL(url), 3000);
+
   if (texture) texture.dispose();
   texture = new THREE.TextureLoader().load(url, render);
   texture.needsUpdate = true;
@@ -263,73 +272,72 @@ async function createMesh(width, height, segmentsX, segmentsY) {
   }
   iconMeshs = []
 
-  const svg = $('svg#map')[0];
-  console.log(svg)
-  // Labels
-  if(layerIsOn("toggleLabels")) {
-    // Cities labels
-    const cities = $('#viewbox #labels #burgLabels #cities', svg)
-    for (const label of cities[0].childNodes) {
-      const text_mesh = createTextMesh(label.innerHTML, cities.css('font-family'), 25, cities.css('fill')) // cities.data('size')
-
-      const [x, y, z] = get3dCoords(label.x.baseVal[0].value, label.y.baseVal[0].value)
-      text_mesh.position.set(x, y + 15, z);
-      text_mesh.animate = function () {
-        this.rotation.copy(camera.rotation);
-      }
-
-      textMeshs.push(text_mesh)
-      scene.add(text_mesh);
-    }
-
-    // Town labels
-    const towns = $('#viewbox #labels #burgLabels #towns', svg)
-    for (const label of towns[0].childNodes) {
-      const text_mesh = createTextMesh(label.innerHTML, towns.css('font-family'), 7, towns.css('fill')) // towns.data('size')
-
-      const [x, y, z] = get3dCoords(label.x.baseVal[0].value, label.y.baseVal[0].value)
-      text_mesh.position.set(x, y + 5, z);
-      text_mesh.animate = function () {
-        if(this.position.distanceTo(camera.position) > 200) {
-          this.visible = false;
-        } else {
-          this.visible = true;
+  if (options.labels3d) {
+    const svg = $('svg#map')[0];
+    // Labels
+    if(layerIsOn("toggleLabels")) {
+      const cities = $('#viewbox #labels #burgLabels #cities', svg)
+      for (const label of cities[0].childNodes) {
+        const text_mesh = createTextMesh(label.innerHTML, cities.css('font-family'), 25, cities.css('fill')) // cities.data('size')
+  
+        const [x, y, z] = get3dCoords(label.x.baseVal[0].value, label.y.baseVal[0].value)
+        text_mesh.position.set(x, y + 15, z);
+        text_mesh.animate = function () {
           this.rotation.copy(camera.rotation);
         }
+  
+        textMeshs.push(text_mesh)
+        scene.add(text_mesh);
       }
-
-      textMeshs.push(text_mesh)
-      scene.add(text_mesh);
+  
+      const towns = $('#viewbox #labels #burgLabels #towns', svg)
+      for (const label of towns[0].childNodes) {
+        const text_mesh = createTextMesh(label.innerHTML, towns.css('font-family'), 7, towns.css('fill')) // towns.data('size')
+  
+        const [x, y, z] = get3dCoords(label.x.baseVal[0].value, label.y.baseVal[0].value)
+        text_mesh.position.set(x, y + 5, z);
+        text_mesh.animate = function () {
+          if(this.position.distanceTo(camera.position) > 200) {
+            this.visible = false;
+          } else {
+            this.visible = true;
+            this.rotation.copy(camera.rotation);
+          }
+        }
+  
+        textMeshs.push(text_mesh)
+        scene.add(text_mesh);
+      }
     }
-  }
-  // Icons
-  if(layerIsOn("toggleIcons")) {
-    const cities_icon = $('#viewbox #icons #burgIcons #cities', svg)[0]
-    for (const icon of cities_icon.childNodes) {
-      const icon_material = new THREE.MeshBasicMaterial({color: 0xcccccc});
-      const icon_mesh = new THREE.Mesh(
-        new THREE.SphereGeometry(2, 16, 16),
-        icon_material
-      );
-
-      icon_mesh.position.set(...get3dCoords(icon.cx.baseVal.value, icon.cy.baseVal.value))
-
-      iconMeshs.push(icon_mesh);
-      scene.add(icon_mesh);
-    }
-
-    const town_icon = $('#viewbox #icons #burgIcons #towns', svg)[0]
-    for (const icon of town_icon.childNodes) {
-      const icon_material = new THREE.MeshBasicMaterial({color: 0xcccccc});
-      const icon_mesh = new THREE.Mesh(
-        new THREE.SphereGeometry(1, 16, 16),
-        icon_material
-      );
-
-      icon_mesh.position.set(...get3dCoords(icon.cx.baseVal.value, icon.cy.baseVal.value))
-
-      iconMeshs.push(icon_mesh);
-      scene.add(icon_mesh);
+    // Icons
+    if(layerIsOn("toggleIcons")) {
+      const cities_icon = $('#viewbox #icons #burgIcons #cities', svg)[0]
+      for (const icon of cities_icon.childNodes) {
+        const icon_material = new THREE.MeshBasicMaterial({color: 0xcccccc});
+        const icon_mesh = new THREE.Mesh(
+          new THREE.SphereGeometry(2, 16, 16),
+          icon_material
+        );
+  
+        icon_mesh.position.set(...get3dCoords(icon.cx.baseVal.value, icon.cy.baseVal.value))
+  
+        iconMeshs.push(icon_mesh);
+        scene.add(icon_mesh);
+      }
+  
+      const town_icon = $('#viewbox #icons #burgIcons #towns', svg)[0]
+      for (const icon of town_icon.childNodes) {
+        const icon_material = new THREE.MeshBasicMaterial({color: 0xcccccc});
+        const icon_mesh = new THREE.Mesh(
+          new THREE.SphereGeometry(1, 16, 16),
+          icon_material
+        );
+  
+        icon_mesh.position.set(...get3dCoords(icon.cx.baseVal.value, icon.cy.baseVal.value))
+  
+        iconMeshs.push(icon_mesh);
+        scene.add(icon_mesh);
+      }
     }
   }
 }
@@ -427,7 +435,7 @@ async function updateGlobeTexure(addMesh) {
     material.map = texture;
     if (addMesh) addGlobe3dMesh();
   };
-  img2.src = await getMapURL("mesh", "globe");;
+  img2.src = await getMapURL("mesh", ["globe"]);
 }
 
 async function getOBJ() {
@@ -497,6 +505,6 @@ function OBJExporter() {
   });
 }
 
-return {create, redraw, update, stop, options, setScale, setLightness, setSun, setRotation, toggleSky, setResolution, setColors, saveScreenshot, saveOBJ};
+return {create, redraw, update, stop, options, setScale, setLightness, setSun, setRotation, toggleLabels, toggleSky, setResolution, setColors, saveScreenshot, saveOBJ};
 
 })));
