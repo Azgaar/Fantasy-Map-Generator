@@ -185,7 +185,7 @@ async function newMesh(canvas) {
   return true;
 }
 
-function createTextMesh(text, font, size) {
+function createTextMesh(text, font, size, color) {
   drawCtx.clearRect(0, 0, drawCtx.canvas.width, drawCtx.canvas.height);
   drawCtx.font = "50px " + font;
 
@@ -193,7 +193,7 @@ function createTextMesh(text, font, size) {
   drawCtx.canvas.height = 50 + 5;
   drawCtx.font = "50px " + font;
 
-  drawCtx.fillStyle = "rgba(0,0,0,1)";
+  drawCtx.fillStyle = color;
   drawCtx.fillText(text, 0, 50);
     
   // canvas contents will be used for a texture
@@ -264,12 +264,13 @@ async function createMesh(width, height, segmentsX, segmentsY) {
   iconMeshs = []
 
   const svg = $('svg#map')[0];
+  console.log(svg)
   // Labels
   if(layerIsOn("toggleLabels")) {
     // Cities labels
     const cities = $('#viewbox #labels #burgLabels #cities', svg)
     for (const label of cities[0].childNodes) {
-      const text_mesh = createTextMesh(label.innerHTML, cities.css('font-family'), 25) // cities.data('size')
+      const text_mesh = createTextMesh(label.innerHTML, cities.css('font-family'), 25, cities.css('fill')) // cities.data('size')
 
       const [x, y, z] = get3dCoords(label.x.baseVal[0].value, label.y.baseVal[0].value)
       text_mesh.position.set(x, y + 15, z);
@@ -284,7 +285,7 @@ async function createMesh(width, height, segmentsX, segmentsY) {
     // Town labels
     const towns = $('#viewbox #labels #burgLabels #towns', svg)
     for (const label of towns[0].childNodes) {
-      const text_mesh = createTextMesh(label.innerHTML, towns.css('font-family'), 7) // towns.data('size')
+      const text_mesh = createTextMesh(label.innerHTML, towns.css('font-family'), 7, towns.css('fill')) // towns.data('size')
 
       const [x, y, z] = get3dCoords(label.x.baseVal[0].value, label.y.baseVal[0].value)
       text_mesh.position.set(x, y + 5, z);
