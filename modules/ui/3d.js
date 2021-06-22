@@ -218,16 +218,6 @@ function createTextMesh(text, font, size, color) {
   return text_mesh
 }
 
-function get3dCoords(x, base_y) {
-  const svg = $('svg#map')[0];
-
-  const y = getMeshHeight(findGridCell(x, base_y));
-  x = x - svg.width.baseVal.value/2;
-  const z = base_y - svg.height.baseVal.value/2;
-
-  return [x, y, z];
-}
-
 // create a mesh from pixel data
 async function createMesh(width, height, segmentsX, segmentsY) {
   const mapOptions = []
@@ -274,67 +264,53 @@ async function createMesh(width, height, segmentsX, segmentsY) {
 
   if (options.labels3d) {
     const svg = $('svg#map')[0];
-    // Labels
-    if(layerIsOn("toggleLabels")) {
-      const cities = $('#viewbox #labels #burgLabels #cities', svg)
-      for (const label of cities[0].childNodes) {
-        const text_mesh = createTextMesh(label.innerHTML, cities.css('font-family'), 25, cities.css('fill')) // cities.data('size')
-  
-        const [x, y, z] = get3dCoords(label.x.baseVal[0].value, label.y.baseVal[0].value)
-        text_mesh.position.set(x, y + 15, z);
-        text_mesh.animate = function () {
-          this.rotation.copy(camera.rotation);
+    const cities = $('#viewbox #labels #burgLabels #cities', svg);
+    const towns = $('#viewbox #labels #burgLabels #towns', svg);
+    const cities_icons = $('#viewbox #icons #burgIcons #cities', svg);
+    const towns_icons = $('#viewbox #icons #burgIcons #towns', svg);
+
+    for (const burg of pack.burgs) {
+      const x = burg.x - svg.width.baseVal.value/2;
+      const y = getMeshHeight(findGridCell(burg.x, burg.y)); // work better than getMeshHeight(burg.cell) but I don't know why
+      const z = burg.y - svg.height.baseVal.value/2;
+
+      if(layerIsOn("toggleLabels")) {
+        if (burg.capital) {
+          var text_mesh = createTextMesh(burg.name, cities.css('font-family'), 25, cities.css('fill')); // cities.data('size')
+        } else {
+          var text_mesh = createTextMesh(burg.name, towns.css('font-family'), 7, towns.css('fill')); // towns.data('size')
         }
-  
-        textMeshs.push(text_mesh)
-        scene.add(text_mesh);
-      }
-  
-      const towns = $('#viewbox #labels #burgLabels #towns', svg)
-      for (const label of towns[0].childNodes) {
-        const text_mesh = createTextMesh(label.innerHTML, towns.css('font-family'), 7, towns.css('fill')) // towns.data('size')
-  
-        const [x, y, z] = get3dCoords(label.x.baseVal[0].value, label.y.baseVal[0].value)
-        text_mesh.position.set(x, y + 5, z);
-        text_mesh.animate = function () {
-          if(this.position.distanceTo(camera.position) > 200) {
-            this.visible = false;
-          } else {
-            this.visible = true;
+
+        if (burg.capital) {
+          text_mesh.position.set(x, y + 15, z);
+          text_mesh.animate = function () {
             this.rotation.copy(camera.rotation);
           }
+        } else {
+          text_mesh.position.set(x, y + 5, z);
+          text_mesh.animate = function () {
+            if(this.position.distanceTo(camera.position) > 200) {
+              this.visible = false;
+            } else {
+              this.visible = true;
+              this.rotation.copy(camera.rotation);
+            }
+          }
         }
-  
-        textMeshs.push(text_mesh)
+
+        textMeshs.push(text_mesh);
         scene.add(text_mesh);
       }
-    }
-    // Icons
-    if(layerIsOn("toggleIcons")) {
-      const cities_icon = $('#viewbox #icons #burgIcons #cities', svg)[0]
-      for (const icon of cities_icon.childNodes) {
-        const icon_material = new THREE.MeshBasicMaterial({color: 0xcccccc});
+
+      // Icon
+      if(layerIsOn("toggleIcons")) {
+        const icon_material = new THREE.MeshBasicMaterial({color: burg.capital ? cities_icons.attr('fill') : towns_icons.attr('fill')});
         const icon_mesh = new THREE.Mesh(
-          new THREE.SphereGeometry(2, 16, 16),
+          new THREE.SphereGeometry((burg.capital ? cities_icons.attr("size") : towns_icons.attr("size")) * 2, 16, 16),
           icon_material
         );
-  
-        icon_mesh.position.set(...get3dCoords(icon.cx.baseVal.value, icon.cy.baseVal.value))
-  
-        iconMeshs.push(icon_mesh);
-        scene.add(icon_mesh);
-      }
-  
-      const town_icon = $('#viewbox #icons #burgIcons #towns', svg)[0]
-      for (const icon of town_icon.childNodes) {
-        const icon_material = new THREE.MeshBasicMaterial({color: 0xcccccc});
-        const icon_mesh = new THREE.Mesh(
-          new THREE.SphereGeometry(1, 16, 16),
-          icon_material
-        );
-  
-        icon_mesh.position.set(...get3dCoords(icon.cx.baseVal.value, icon.cy.baseVal.value))
-  
+        icon_mesh.position.set(x, y, z)
+    
         iconMeshs.push(icon_mesh);
         scene.add(icon_mesh);
       }
