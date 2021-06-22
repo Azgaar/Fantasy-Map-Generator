@@ -263,22 +263,21 @@ async function createMesh(width, height, segmentsX, segmentsY) {
   iconMeshs = []
 
   if (options.labels3d) {
-    const svg = $('svg#map')[0];
-    const cities = $('#viewbox #labels #burgLabels #cities', svg);
-    const towns = $('#viewbox #labels #burgLabels #towns', svg);
-    const cities_icons = $('#viewbox #icons #burgIcons #cities', svg);
-    const towns_icons = $('#viewbox #icons #burgIcons #towns', svg);
+    const cities = svg.select("#viewbox #labels #burgLabels #cities");
+    const towns = svg.select('#viewbox #labels #burgLabels #towns');
+    const cities_icons = svg.select('#viewbox #icons #burgIcons #cities');
+    const towns_icons = svg.select('#viewbox #icons #burgIcons #towns');
 
     for (const burg of pack.burgs) {
-      const x = burg.x - svg.width.baseVal.value/2;
+      const x = burg.x - svg.attr("width")/2;
       const y = getMeshHeight(findGridCell(burg.x, burg.y)); // work better than getMeshHeight(burg.cell) but I don't know why
-      const z = burg.y - svg.height.baseVal.value/2;
+      const z = burg.y - svg.attr("height")/2;
 
       if(layerIsOn("toggleLabels")) {
         if (burg.capital) {
-          var text_mesh = createTextMesh(burg.name, cities.css('font-family'), 25, cities.css('fill')); // cities.data('size')
+          var text_mesh = createTextMesh(burg.name, cities.attr('font-family'), 25, cities.attr('fill')); // cities.data('size')
         } else {
-          var text_mesh = createTextMesh(burg.name, towns.css('font-family'), 7, towns.css('fill')); // towns.data('size')
+          var text_mesh = createTextMesh(burg.name, towns.attr('font-family'), 7, towns.attr('fill')); // towns.data('size')
         }
 
         if (burg.capital) {
