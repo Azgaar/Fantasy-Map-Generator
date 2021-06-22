@@ -78,6 +78,14 @@ const stop = function() {
 
 const setScale = function(scale) {
   options.scale = scale;
+
+  for (const mesh of textMeshs) {
+    mesh.position.y = getMeshHeight(findGridCell(mesh.base_x, mesh.base_y)) + mesh.base_height;
+  }
+  for (const mesh of iconMeshs) {
+    mesh.position.y = getMeshHeight(findGridCell(mesh.base_x, mesh.base_y));
+
+  }
   geometry.vertices.forEach((v, i) => v.z = getMeshHeight(i));
   geometry.verticesNeedUpdate = true;
   geometry.computeVertexNormals();
@@ -282,11 +290,13 @@ async function createMesh(width, height, segmentsX, segmentsY) {
 
         if (burg.capital) {
           text_mesh.position.set(x, y + 15, z);
+          text_mesh.base_height = 15
           text_mesh.animate = function () {
             this.rotation.copy(camera.rotation);
           }
         } else {
           text_mesh.position.set(x, y + 5, z);
+          text_mesh.base_height = 5
           text_mesh.animate = function () {
             if(this.position.distanceTo(camera.position) > 200) {
               this.visible = false;
@@ -296,6 +306,8 @@ async function createMesh(width, height, segmentsX, segmentsY) {
             }
           }
         }
+        text_mesh.base_x = burg.x
+        text_mesh.base_y = burg.y
 
         textMeshs.push(text_mesh);
         scene.add(text_mesh);
@@ -309,6 +321,8 @@ async function createMesh(width, height, segmentsX, segmentsY) {
           icon_material
         );
         icon_mesh.position.set(x, y, z)
+        icon_mesh.base_x = burg.x
+        icon_mesh.base_y = burg.y
     
         iconMeshs.push(icon_mesh);
         scene.add(icon_mesh);
