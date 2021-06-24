@@ -726,6 +726,7 @@ function openSaveTiles() {
   updateTilesOptions();
   const status = document.getElementById("tileStatus");
   status.innerHTML = "";
+  let loading = null;
 
   $("#saveTilesScreen").dialog({
     resizable: false,
@@ -735,7 +736,7 @@ function openSaveTiles() {
       Download: function () {
         status.innerHTML = "Preparing for download...";
         setTimeout(() => (status.innerHTML = "Downloading. It may take some time."), 1000);
-        const loading = setInterval(() => (status.innerHTML += "."), 1000);
+        loading = setInterval(() => (status.innerHTML += "."), 1000);
         saveTiles().then(() => {
           clearInterval(loading);
           status.innerHTML = `Done. Check file in "Downloads" (crtl + J)`;
@@ -746,7 +747,10 @@ function openSaveTiles() {
         $(this).dialog("close");
       }
     },
-    close: () => debug.selectAll("*").remove()
+    close: () => {
+      debug.selectAll("*").remove();
+      clearInterval(loading);
+    }
   });
 }
 
@@ -774,8 +778,8 @@ function updateTilesOptions() {
   const labels = [];
   const tileW = (graphWidth / tilesX) | 0;
   const tileH = (graphHeight / tilesY) | 0;
-  for (let y = 0, i = 0; y < graphHeight; y += tileH) {
-    for (let x = 0; x < graphWidth; x += tileW, i++) {
+  for (let y = 0, i = 0; y + tileH <= graphHeight; y += tileH) {
+    for (let x = 0; x + tileW <= graphWidth; x += tileW, i++) {
       rects.push(`<rect x=${x} y=${y} width=${tileW} height=${tileH} />`);
       labels.push(`<text x=${x + tileW / 2} y=${y + tileH / 2}>${i}</text>`);
     }

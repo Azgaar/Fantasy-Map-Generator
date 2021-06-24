@@ -106,8 +106,8 @@ async function saveTiles() {
     const img = new Image();
     img.src = url;
     img.onload = function () {
-      for (let y = 0, i = 0; y < graphHeight; y += tileH) {
-        for (let x = 0; x < graphWidth; x += tileW, i++) {
+      for (let y = 0, i = 0; y + tileH <= graphHeight; y += tileH) {
+        for (let x = 0; x + tileW <= graphWidth; x += tileW, i++) {
           ctx.drawImage(img, x, y, tileW, tileH, 0, 0, canvas.width, canvas.height);
           const name = `fmg_tile_${i}.png`;
           canvas.toBlob(blob => {
