@@ -1513,6 +1513,11 @@ div.states > .coaIcon > use {
   width: 5.5em;
 }
 
+#saveTilesScreen div.label {
+  display: inline-block;
+  width: 5em;
+}
+
 #regimentBody div {
   margin: 0.1em 0;
 }

@@ -70,13 +70,78 @@ async function saveJPEG() {
   TIME && console.timeEnd("saveJPEG");
 }
 
+// download map as png tiles
+async function saveTiles() {
+  return new Promise(async (resolve, reject) => {
+    // download schema
+    const urlSchema = await getMapURL("tiles", "schema");
+    const zip = new JSZip();
+
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = graphWidth;
+    canvas.height = graphHeight;
+
+    const imgSchema = new Image();
+    imgSchema.src = urlSchema;
+    imgSchema.onload = function () {
+      ctx.drawImage(imgSchema, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(blob => zip.file(`fmg_tile_schema.png`, blob));
+    };
+
+    // download tiles
+    const url = await getMapURL("tiles");
+    const tilesX = +document.getElementById("tileColsInput").value;
+    const tilesY = +document.getElementById("tileRowsInput").value;
+    const scale = +document.getElementById("tileScaleInput").value;
+
+    const tileW = (graphWidth / tilesX) | 0;
+    const tileH = (graphHeight / tilesY) | 0;
+    const tolesTotal = tilesX * tilesY;
+
+    canvas.width = graphWidth * scale;
+    canvas.height = graphHeight * scale;
+
+    let loaded = 0;
+    const img = new Image();
+    img.src = url;
+    img.onload = function () {
+      for (let y = 0, i = 0; y < graphHeight; y += tileH) {
+        for (let x = 0; x < graphWidth; x += tileW, i++) {
+          ctx.drawImage(img, x, y, tileW, tileH, 0, 0, canvas.width, canvas.height);
+          const name = `fmg_tile_${i}.png`;
+          canvas.toBlob(blob => {
+            zip.file(name, blob);
+            loaded += 1;
+            if (loaded === tolesTotal) return downloadZip();
+          });
+        }
+      }
+    };
+
+    function downloadZip() {
+      const name = `${getFileName()}.zip`;
+      zip.generateAsync({type: "blob"}).then(blob => {
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = name;
+        link.click();
+        link.remove();
+
+        setTimeout(() => URL.revokeObjectURL(link.href), 5000);
+        resolve(true);
+      });
+    }
+  });
+}
+
 // parse map svg to object url
 async function getMapURL(type, subtype) {
   const cloneEl = document.getElementById("map").cloneNode(true); // clone svg
   cloneEl.id = "fantasyMap";
   document.body.appendChild(cloneEl);
   const clone = d3.select(cloneEl);
-  clone.select("#debug").remove();
+  if (subtype !== "schema") clone.select("#debug").remove();
 
   const cloneDefs = cloneEl.getElementsByTagName("defs")[0];
   const svgDefs = document.getElementById("defElements");
@@ -93,6 +158,7 @@ async function getMapURL(type, subtype) {
     clone.attr("width", graphWidth).attr("height", graphHeight);
     clone.select("#viewbox").attr("transform", null);
   }
+
   if (type === "svg") removeUnusedElements(clone);
   if (customization && type === "mesh") updateMeshCells(clone);
   inlineStyle(clone);

@@ -3389,6 +3389,7 @@
         <button onclick="saveSVG()" data-tip="Download the map as vector image (open in browser or Inkscape)">.svg</button>
         <button onclick="savePNG()" data-tip="Download visible part of the map as .png (lossless compressed)">.png</button>
         <button onclick="saveJPEG()" data-tip="Download visible part of the map as .jpeg (lossy compressed) image">.jpeg</button>
+        <button onclick="openSaveTiles()" data-tip="Split map into smaller png tiles and download as zip archive">tiles</button>
         <button onclick="saveGeoJSON()" data-tip="Download map data in GeoJSON format">.json</button>
         <button onclick="quickSave()" data-tip="Save the project to browser storage (unreliable). Shortcut: F6">storage</button>
       </div>
@@ -3396,7 +3397,7 @@
       <p style="font-style: italic">Generator uses pop-up window to download files. Please ensure your browser does not block popups.</p>
       <div data-tip="Define scale of a saved png/jpeg image (e.g. 5x). Saving big images is slow and may cause a browser crash!" style="margin-bottom: .3em">
         PNG / JPEG scale:
-        <input id="pngResolutionInput" data-stored="pngResolution" type="range" min=1 max=8 value=1 style="width: 10.8em" oninput="pngResolutionOutput.value = this.value">
+        <input id="pngResolutionInput" data-stored="pngResolution" type="range" min=1 max=8 value=1 style="width: 14em" oninput="pngResolutionOutput.value = this.value">
         <input id="pngResolutionOutput" data-stored="pngResolution" type="number" min=1 max=8 value=1 oninput="pngResolutionInput.value = this.value">
       </div>
     </div>
@@ -3408,6 +3409,30 @@
         <button onclick="loadURL()" data-tip="Load .map file from URL (server should allow CORS)">URL</button>
         <button onclick="quickLoad()" data-tip="Load map from browser storage (if saved before)">storage</button>
       </div>
+    </div>
+
+    <div id="saveTilesScreen" style="display: none" class="dialog">
+      <p style="font-style: italic">Map will be split into tiles and downloaded as a single zip file. Avoid saving to big images</p>
+      <div data-tip="Number of columns" style="margin-bottom: .3em">
+        <div class="label">Columns:</div>
+        <input id="tileColsInput" data-stored="tileCols" type="range" min=2 max=20 value=8 style="width: 11em" oninput="tileColsOutput.value = this.value">
+        <input id="tileColsOutput" data-stored="tileCols" type="number" min=2 value=8 oninput="tileColsInput.value = this.value">
+      </div>
+      <div data-tip="Number of rows" style="margin-bottom: .3em">
+        <div class="label">Rows:</div>
+        <input id="tileRowsInput" data-stored="tileRows" type="range" min=2 max=20 value=8 style="width: 11em" oninput="tileRowsOutput.value = this.value">
+        <input id="tileRowsOutput" data-stored="tileRows" type="number" min=2 value=8 oninput="tileRowsInput.value = this.value">
+      </div>
+      <div data-tip="Image scale relative to image size (e.g. 5x)" style="margin-bottom: .3em">
+        <div class="label">Scale:</div>
+        <input id="tileScaleInput" data-stored="tileScale" type="range" min=1 max=4 value=1 style="width: 11em" oninput="tileScaleOutput.value = this.value">
+        <input id="tileScaleOutput" data-stored="tileScale" type="number" min=1 value=1 oninput="tileScaleInput.value = this.value;">
+      </div>
+      <div data-tip="Calculated size of image if combined" style="margin-bottom: .3em">
+        <div class="label">Total size:</div>
+        <div id="tileSize" style="display: inline-block">1000 x 1000 px</div>
+      </div>
+      <div id="tileStatus" style="background-color: #33333310; font-style: italic"></div>
     </div>
 
     <div id="alert" style="display: none" class="dialog">
@@ -4164,5 +4189,6 @@
   <script defer src="libs/rgbquant.min.js"></script>
   <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
   <script defer src="libs/pell.min.js"></script>
+  <script defer src="libs/jszip.min.js"></script>
 </body>
 </html>

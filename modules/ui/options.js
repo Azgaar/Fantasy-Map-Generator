@@ -638,7 +638,7 @@ function showSavePane() {
   $("#saveMapData").dialog({
     title: "Save map",
     resizable: false,
-    width: "27em",
+    width: "30em",
     position: {my: "center", at: "center", of: "svg"},
     buttons: {
       Close: function () {
@@ -718,6 +718,70 @@ document.getElementById("mapToLoad").addEventListener("change", function () {
   closeDialogs();
   uploadMap(fileToLoad);
 });
+
+function openSaveTiles() {
+  closeDialogs();
+  updateTilesOptions();
+  const status = document.getElementById("tileStatus");
+  status.innerHTML = "";
+
+  $("#saveTilesScreen").dialog({
+    resizable: false,
+    title: "Download tiles",
+    width: "23em",
+    buttons: {
+      Download: function () {
+        status.innerHTML = "Preparing for download...";
+        setTimeout(() => (status.innerHTML = "Downloading. It may take some time."), 1000);
+        const loading = setInterval(() => (status.innerHTML += "."), 1000);
+        saveTiles().then(() => {
+          clearInterval(loading);
+          status.innerHTML = `Done. Check file in "Downloads" (crtl + J)`;
+          setTimeout(() => (status.innerHTML = ""), 8000);
+        });
+      },
+      Cancel: function () {
+        $(this).dialog("close");
+      }
+    },
+    close: () => debug.selectAll("*").remove()
+  });
+}
+
+document
+  .getElementById("saveTilesScreen")
+  .querySelectorAll("input")
+  .forEach(el => el.addEventListener("input", updateTilesOptions));
+
+function updateTilesOptions() {
+  const tileSize = document.getElementById("tileSize");
+  const tilesX = +document.getElementById("tileColsInput").value;
+  const tilesY = +document.getElementById("tileRowsInput").value;
+
+  // calculate size
+  const scale = +document.getElementById("tileScaleInput").value;
+  const sizeX = graphWidth * scale * tilesX;
+  const sizeY = graphHeight * scale * tilesY;
+  const totalSize = sizeX * sizeY;
+
+  tileSize.innerHTML = `${sizeX} x ${sizeY} px`;
+  tileSize.style.color = totalSize > 1e9 ? "#053305" : totalSize > 1e7 ? "#9e6409" : "#1a941a";
+
+  // draw tiles
+  const rects = [];
+  const labels = [];
+  const tileW = (graphWidth / tilesX) | 0;
+  const tileH = (graphHeight / tilesY) | 0;
+  for (let y = 0, i = 0; y < graphHeight; y += tileH) {
+    for (let x = 0; x < graphWidth; x += tileW, i++) {
+      rects.push(`<rect x=${x} y=${y} width=${tileW} height=${tileH} />`);
+      labels.push(`<text x=${x + tileW / 2} y=${y + tileH / 2}>${i}</text>`);
+    }
+  }
+  const rectsG = "<g fill='none' stroke='#000'>" + rects.join("") + "</g>";
+  const labelsG = "<g fill='#000' stroke='none' text-anchor='middle' dominant-baseline='central' font-size='24px'>" + labels.join("") + "</g>";
+  debug.html(rectsG + labelsG);
+}
 
 // View mode
 viewMode.addEventListener("click", changeViewMode);
