@@ -351,7 +351,10 @@ function extendWater(width, height) {
 
 async function update3dTexture() {
   if (texture) texture.dispose();
-  const url = await getMapURL("mesh");
+  const mapOptions = []
+  if (options.labels3d) mapOptions.push("noLabels");
+  if (options.extendedWater) mapOptions.push("noWater");
+  const url = await getMapURL("mesh", mapOptions);
   window.setTimeout(() => window.URL.revokeObjectURL(url), 3000);
   texture = new THREE.TextureLoader().load(url, render);
   material.map = texture;
