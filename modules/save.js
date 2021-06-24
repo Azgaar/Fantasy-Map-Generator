@@ -99,8 +99,10 @@ async function saveTiles() {
     const tileH = (graphHeight / tilesY) | 0;
     const tolesTotal = tilesX * tilesY;
 
-    canvas.width = graphWidth * scale;
-    canvas.height = graphHeight * scale;
+    const width = graphWidth * scale;
+    const height = width * (tileH / tileW);
+    canvas.width = width;
+    canvas.height = height;
 
     let loaded = 0;
     const img = new Image();
@@ -108,7 +110,7 @@ async function saveTiles() {
     img.onload = function () {
       for (let y = 0, i = 0; y + tileH <= graphHeight; y += tileH) {
         for (let x = 0; x + tileW <= graphWidth; x += tileW, i++) {
-          ctx.drawImage(img, x, y, tileW, tileH, 0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, x, y, tileW, tileH, 0, 0, width, height);
           const name = `fmg_tile_${i}.png`;
           canvas.toBlob(blob => {
             zip.file(name, blob);
