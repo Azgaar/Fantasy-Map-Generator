@@ -85,6 +85,7 @@ async function getMapURL(type, options=[]) {
   if (isFirefox && type === "mesh") clone.select("#oceanPattern").remove();
   if (options.includes("globe")) clone.select("#scaleBar").remove();
   if (options.includes("noLabels")) {
+    clone.select("#labels #states").remove();
     clone.select("#labels #burgLabels").remove();
     clone.select("#icons #burgIcons").remove();
   }
