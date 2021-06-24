@@ -635,6 +635,8 @@ function regeneratePrompt() {
 }
 
 function showSavePane() {
+  document.getElementById("showLabels").checked = !hideLabels.checked;
+
   $("#saveMapData").dialog({
     title: "Save map",
     resizable: false,
@@ -755,17 +757,17 @@ document
 
 function updateTilesOptions() {
   const tileSize = document.getElementById("tileSize");
-  const tilesX = +document.getElementById("tileColsInput").value;
-  const tilesY = +document.getElementById("tileRowsInput").value;
+  const tilesX = +document.getElementById("tileColsOutput").value;
+  const tilesY = +document.getElementById("tileRowsOutput").value;
+  const scale = +document.getElementById("tileScaleOutput").value;
 
   // calculate size
-  const scale = +document.getElementById("tileScaleInput").value;
   const sizeX = graphWidth * scale * tilesX;
   const sizeY = graphHeight * scale * tilesY;
   const totalSize = sizeX * sizeY;
 
   tileSize.innerHTML = `${sizeX} x ${sizeY} px`;
-  tileSize.style.color = totalSize > 1e9 ? "#053305" : totalSize > 1e7 ? "#9e6409" : "#1a941a";
+  tileSize.style.color = totalSize > 1e9 ? "#d00b0b" : totalSize > 1e8 ? "#9e6409" : "#1a941a";
 
   // draw tiles
   const rects = [];

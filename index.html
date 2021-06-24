@@ -3400,6 +3400,10 @@
         <input id="pngResolutionInput" data-stored="pngResolution" type="range" min=1 max=8 value=1 style="width: 14em" oninput="pngResolutionOutput.value = this.value">
         <input id="pngResolutionOutput" data-stored="pngResolution" type="number" min=1 max=8 value=1 oninput="pngResolutionInput.value = this.value">
       </div>
+      <div data-tip="Check to not allow system to automatically hide labels">
+        <input id="showLabels" class="checkbox" type="checkbox" onchange="hideLabels.checked = !this.checked; invokeActiveZooming()" checked="">
+        <label for="showLabels" class="checkbox-label">Show all labels</label>
+      </div>
     </div>
 
     <div id="loadMapData" style="display: none" class="dialog">
