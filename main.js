@@ -774,9 +774,10 @@ function markup(cells, start, increment, limit) {
 
 function addLakesInDeepDepressions() {
   console.time("addLakesInDeepDepressions");
-  const {cells, features, points} = grid;
+  const {cells, features} = grid;
   const {c, h, b} = cells;
-  const ELEVATION_LIMIT = 10;
+  const ELEVATION_LIMIT = +document.getElementById("lakeElevationLimitOutput").value;
+  if (ELEVATION_LIMIT === 80) return;
 
   for (const i of cells.i) {
     if (b[i] || h[i] < 20) continue;
@@ -785,7 +786,7 @@ function addLakesInDeepDepressions() {
     if (h[i] > minHeight) continue;
 
     let deep = true;
-    const treshold = h[i] + ELEVATION_LIMIT;
+    const threshold = h[i] + ELEVATION_LIMIT;
     const queue = [i];
     const checked = [];
     checked[i] = true;
@@ -796,7 +797,7 @@ function addLakesInDeepDepressions() {
 
       for (const n of c[q]) {
         if (checked[n]) continue;
-        if (h[n] >= treshold) continue;
+        if (h[n] >= threshold) continue;
         if (h[n] < 20) {
           deep = false;
           break;
@@ -830,7 +831,7 @@ function addLakesInDeepDepressions() {
   console.timeEnd("addLakesInDeepDepressions");
 }
 
-// near sea lakes usually get a lot of water inflow, most of them should brake treshold and flow out to sea (see Ancylus Lake)
+// near sea lakes usually get a lot of water inflow, most of them should brake threshold and flow out to sea (see Ancylus Lake)
 function openNearSeaLakes() {
   if (templateInput.value === "Atoll") return; // no need for Atolls
 
@@ -856,11 +857,11 @@ function openNearSeaLakes() {
     }
   }
 
-  function removeLake(treshold, lake, ocean) {
-    cells.h[treshold] = 19;
-    cells.t[treshold] = -1;
-    cells.f[treshold] = ocean;
-    cells.c[treshold].forEach(function (c) {
+  function removeLake(threshold, lake, ocean) {
+    cells.h[threshold] = 19;
+    cells.t[threshold] = -1;
+    cells.f[threshold] = ocean;
+    cells.c[threshold].forEach(function (c) {
       if (cells.h[c] >= 20) cells.t[c] = 1; // mark as coastline
     });
     features[lake].type = "ocean"; // mark former lake as ocean

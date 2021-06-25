@@ -541,7 +541,7 @@ function addRiverOnClick() {
 
   const h = Rivers.alterHeights();
   Lakes.prepareLakeData(h);
-  Rivers.resolveDepressions(h, 200);
+  Rivers.resolveDepressions(h);
 
   while (i) {
     cells.r[i] = river;

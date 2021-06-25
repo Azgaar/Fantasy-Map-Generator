@@ -17,7 +17,7 @@
 
     const h = alterHeights();
     Lakes.prepareLakeData(h);
-    resolveDepressions(h, 200);
+    resolveDepressions(h);
     drainWater();
     defineRivers();
     Lakes.cleanupLakeData();
@@ -184,8 +184,12 @@
   };
 
   // depression filling algorithm (for a correct water flux modeling)
-  const resolveDepressions = function (h, maxIterations) {
+  const resolveDepressions = function (h) {
     const {cells, features} = pack;
+    const maxIterations = +document.getElementById("resolveDepressionsStepsOutput").value;
+    const checkLakeMaxIteration = maxIterations * 0.8;
+    const elevateLakeMaxIteration = (maxIterations - checkLakeMaxIteration) / 2;
+
     const height = i => features[cells.f[i]].height || h[i]; // height of lake or specific cell
 
     const lakes = features.filter(f => f.type === "lake");
@@ -195,8 +199,7 @@
     const progress = [];
     let depressions = Infinity;
     let prevDepressions = null;
-    let iteration = 0;
-    for (; depressions && iteration < maxIterations; iteration++) {
+    for (let iteration = 0; depressions && iteration < maxIterations; iteration++) {
       if (progress.length > 5 && d3.sum(progress) > 0) {
         // bad progress, abort and set heights back
         h = alterHeights();
@@ -206,13 +209,13 @@
 
       depressions = 0;
 
-      if (iteration < 180) {
+      if (iteration < checkLakeMaxIteration) {
         for (const l of lakes) {
           if (l.closed) continue;
           const minHeight = d3.min(l.shoreline.map(s => h[s]));
           if (minHeight >= 100 || l.height > minHeight) continue;
 
-          if (iteration > 150) {
+          if (iteration < elevateLakeMaxIteration) {
             l.shoreline.forEach(i => (h[i] = cells.h[i]));
             l.height = d3.min(l.shoreline.map(s => h[s])) - 1;
             l.closed = true;
@@ -342,8 +345,8 @@
     const rivers = pack.rivers;
     if (!rivers.length) return;
     Math.random = aleaPRNG(seed);
-    const tresholdElement = Math.ceil(rivers.length * 0.15);
-    const smallLength = rivers.map(r => r.length || 0).sort((a, b) => a - b)[tresholdElement];
+    const thresholdElement = Math.ceil(rivers.length * 0.15);
+    const smallLength = rivers.map(r => r.length || 0).sort((a, b) => a - b)[thresholdElement];
     const smallType = {Creek: 9, River: 3, Brook: 3, Stream: 1}; // weighted small river types
 
     for (const r of rivers) {

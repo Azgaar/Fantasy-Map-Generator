@@ -39,7 +39,7 @@
 
   const prepareLakeData = h => {
     const cells = pack.cells;
-    const ELEVATION_LIMIT = 10;
+    const ELEVATION_LIMIT = +document.getElementById("lakeElevationLimitOutput").value;
 
     pack.features.forEach(f => {
       if (f.type !== "lake") return;
@@ -55,8 +55,13 @@
       f.height = h[min] - 0.1;
 
       // check if lake can be open (not in deep depression)
+      if (ELEVATION_LIMIT === 80) {
+        f.closed = false;
+        return;
+      }
+
       let deep = true;
-      const treshold = f.height + ELEVATION_LIMIT;
+      const threshold = f.height + ELEVATION_LIMIT;
       const queue = [min];
       const checked = [];
       checked[min] = true;
@@ -67,7 +72,7 @@
 
         for (const n of cells.c[q]) {
           if (checked[n]) continue;
-          if (h[n] >= treshold) continue;
+          if (h[n] >= threshold) continue;
 
           if (h[n] < 20) {
             const nFeature = pack.features[cells.f[n]];

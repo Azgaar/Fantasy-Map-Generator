@@ -1358,9 +1358,20 @@
             <input id="renderOcean" class="checkbox" type="checkbox">
             <label for="renderOcean" class="checkbox-label">Render ocean cells</label>
           </div>
-          <div id="allowErosionBox" data-tip="Regenerate rivers and allow water flow to change heights and form lakes">
+          <div id="allowErosionBox" data-tip="Regenerate rivers and allow water flow to change heights and form new lakes. Better to keep checked">
             <input id="allowErosion" class="checkbox" type="checkbox" checked>
             <label for="allowErosion" class="checkbox-label">Allow water erosion</label>
+          </div>
+          <div data-tip="Maximum number of iterations taken to resolve depressions. Increase if you have rivers ending nowhere">
+            Depressions filling max iterations:
+            <input id="resolveDepressionsStepsInput" data-stored="resolveDepressionsSteps" type="range" min=0 max=500 value=250 oninput="resolveDepressionsStepsOutput.value = this.value">
+            <input id="resolveDepressionsStepsOutput" data-stored="resolveDepressionsSteps" type="number" min=0 max=1000 value=250 oninput="resolveDepressionsStepsInput.value = this.value">
+          </div>
+
+          <div data-tip="Depression depth to form a new lake. Increase to reduce number of lakes added by system">
+            Depression depth threshold:
+            <input id="lakeElevationLimitInput" data-stored="lakeElevationLimit" type="range" min=0 max=80 value=20 oninput="lakeElevationLimitOutput.value = this.value">
+            <input id="lakeElevationLimitOutput" data-stored="lakeElevationLimit" type="number" min=0 max=80 value=20 oninput="lakeElevationLimitInput.value = this.value">
           </div>
         </div>
 
