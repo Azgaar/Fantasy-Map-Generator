@@ -315,6 +315,10 @@ function createLabels() {
     const pos = pack.states[id].pole
     const [x, y, z] = get3dCoords(pos[0], pos[1])
     text_mesh.position.set(x, y + 25, z);
+    text_mesh.base_x = pos[0];
+    text_mesh.base_y = pos[1];
+    text_mesh.base_height = 25;
+
     textMeshs.push(text_mesh)
     scene.add(text_mesh);
   }
