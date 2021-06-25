@@ -108,35 +108,51 @@ function showSupporters() {
   $("#alert").dialog({resizable: false, title: "Patreon Supporters", width: "54vw", position: {my: "center", at: "center", of: "svg"}});
 }
 
+// on any option or dialog change
+document.getElementById("options").addEventListener("change", checkIfStored);
+document.getElementById("dialogs").addEventListener("change", checkIfStored);
+document.getElementById("options").addEventListener("input", updateOutputToFollowInput);
+document.getElementById("dialogs").addEventListener("input", updateOutputToFollowInput);
+
+function checkIfStored(ev) {
+  if (ev.target.dataset.stored) lock(ev.target.dataset.stored);
+}
+
+function updateOutputToFollowInput(ev) {
+  const id = ev.target.id;
+  const value = ev.target.value;
+
+  // specific cases
+  if (id === "manorsInput") return (manorsOutput.value = value == 1000 ? "auto" : value);
+
+  // generic case
+  if (id.slice(-5) === "Input") {
+    const output = document.getElementById(id.slice(0, -5) + "Output");
+    if (output) output.value = value;
+  } else if (id.slice(-6) === "Output") {
+    const input = document.getElementById(id.slice(0, -6) + "Input");
+    if (input) input.value = value;
+  }
+}
+
 // Option listeners
 const optionsContent = document.getElementById("optionsContent");
 optionsContent.addEventListener("input", function (event) {
-  const id = event.target.id,
-    value = event.target.value;
+  const id = event.target.id;
+  const value = event.target.value;
   if (id === "mapWidthInput" || id === "mapHeightInput") mapSizeInputChange();
   else if (id === "pointsInput") changeCellsDensity(+value);
-  else if (id === "culturesInput") culturesOutput.value = value;
-  else if (id === "culturesOutput") culturesInput.value = value;
   else if (id === "culturesSet") changeCultureSet();
   else if (id === "regionsInput" || id === "regionsOutput") changeStatesNumber(value);
-  else if (id === "provincesInput") provincesOutput.value = value;
-  else if (id === "provincesOutput") provincesOutput.value = value;
-  else if (id === "provincesOutput") powerOutput.value = value;
-  else if (id === "powerInput") powerOutput.value = value;
-  else if (id === "powerOutput") powerInput.value = value;
-  else if (id === "neutralInput") neutralOutput.value = value;
-  else if (id === "neutralOutput") neutralInput.value = value;
-  else if (id === "manorsInput") changeBurgsNumberSlider(value);
-  else if (id === "religionsInput") religionsOutput.value = value;
   else if (id === "emblemShape") changeEmblemShape(value);
   else if (id === "tooltipSizeInput" || id === "tooltipSizeOutput") changeTooltipSize(value);
   else if (id === "transparencyInput") changeDialogsTransparency(value);
 });
 
 optionsContent.addEventListener("change", function (event) {
-  if (event.target.dataset.stored) lock(event.target.dataset.stored);
-  const id = event.target.id,
-    value = event.target.value;
+  const id = event.target.id;
+  const value = event.target.value;
+
   if (id === "zoomExtentMin" || id === "zoomExtentMax") changeZoomExtent(value);
   else if (id === "optionsSeed") generateMapWithSeed();
   else if (id === "uiSizeInput" || id === "uiSizeOutput") changeUIsize(value);
@@ -332,8 +348,8 @@ function changeCellsDensity(value) {
   const cells = convert(value);
 
   pointsInput.setAttribute("data-cells", cells);
-  pointsOutput.value = cells / 1000 + "K";
-  pointsOutput.style.color = cells > 50000 ? "#b12117" : cells !== 10000 ? "#dfdf12" : "#053305";
+  pointsOutput_formatted.value = cells / 1000 + "K";
+  pointsOutput_formatted.style.color = cells > 50000 ? "#b12117" : cells !== 10000 ? "#dfdf12" : "#053305";
 }
 
 function changeCultureSet() {
@@ -384,14 +400,9 @@ function changeEmblemShape(emblemShape) {
 }
 
 function changeStatesNumber(value) {
-  regionsInput.value = regionsOutput.value = value;
   regionsOutput.style.color = +value ? null : "#b12117";
   burgLabels.select("#capitals").attr("data-size", Math.max(rn(6 - value / 20), 3));
   labels.select("#countries").attr("data-size", Math.max(rn(18 - value / 6), 4));
-}
-
-function changeBurgsNumberSlider(value) {
-  manorsOutput.value = value == 1000 ? "auto" : value;
 }
 
 function changeUIsize(value) {
@@ -410,7 +421,6 @@ function getUImaxSize() {
 }
 
 function changeTooltipSize(value) {
-  tooltipSizeInput.value = tooltipSizeOutput.value = value;
   tooltip.style.fontSize = `calc(${value}px + 0.5vw)`;
 }
 
@@ -448,8 +458,9 @@ function applyStoredOptions() {
   if (localStorage.getItem("heightUnit")) applyOption(heightUnit, localStorage.getItem("heightUnit"));
 
   for (let i = 0; i < localStorage.length; i++) {
-    const stored = localStorage.key(i),
-      value = localStorage.getItem(stored);
+    const stored = localStorage.key(i);
+    const value = localStorage.getItem(stored);
+
     if (stored === "speakerVoice") continue;
     const input = document.getElementById(stored + "Input") || document.getElementById(stored);
     const output = document.getElementById(stored + "Output");

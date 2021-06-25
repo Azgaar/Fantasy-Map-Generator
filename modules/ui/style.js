@@ -92,9 +92,9 @@ function selectStyleElement() {
   if (sel === "terrs") {
     styleHeightmap.style.display = "block";
     styleHeightmapScheme.value = terrs.attr("scheme");
-    styleHeightmapTerracing.value = styleHeightmapTerracingOutput.value = terrs.attr("terracing");
-    styleHeightmapSkip.value = styleHeightmapSkipOutput.value = terrs.attr("skip");
-    styleHeightmapSimplification.value = styleHeightmapSimplificationOutput.value = terrs.attr("relax");
+    styleHeightmapTerracingInput.value = styleHeightmapTerracingOutput.value = terrs.attr("terracing");
+    styleHeightmapSkipInput.value = styleHeightmapSkipOutput.value = terrs.attr("skip");
+    styleHeightmapSimplificationInput.value = styleHeightmapSimplificationOutput.value = terrs.attr("relax");
     styleHeightmapCurve.value = terrs.attr("curve");
   }
 
@@ -419,20 +419,17 @@ styleHeightmapScheme.addEventListener("change", function () {
   drawHeightmap();
 });
 
-styleHeightmapTerracing.addEventListener("input", function () {
-  styleHeightmapTerracingOutput.value = this.value;
+styleHeightmapTerracingInput.addEventListener("input", function () {
   terrs.attr("terracing", this.value);
   drawHeightmap();
 });
 
-styleHeightmapSkip.addEventListener("input", function () {
-  styleHeightmapSkipOutput.value = this.value;
+styleHeightmapSkipInput.addEventListener("input", function () {
   terrs.attr("skip", this.value);
   drawHeightmap();
 });
 
-styleHeightmapSimplification.addEventListener("input", function () {
-  styleHeightmapSimplificationOutput.value = this.value;
+styleHeightmapSimplificationInput.addEventListener("input", function () {
   terrs.attr("relax", this.value);
   drawHeightmap();
 });

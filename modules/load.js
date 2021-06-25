@@ -125,7 +125,7 @@ function parseLoadedData(data) {
       if (settings[3]) applyOption(heightUnit, settings[3]);
       if (settings[4]) heightExponentInput.value = heightExponentOutput.value = settings[4];
       if (settings[5]) temperatureScale.value = settings[5];
-      if (settings[6]) barSize.value = barSizeOutput.value = settings[6];
+      if (settings[6]) barSizeInput.value = barSizeOutput.value = settings[6];
       if (settings[7] !== undefined) barLabel.value = settings[7];
       if (settings[8] !== undefined) barBackOpacity.value = settings[8];
       if (settings[9]) barBackColor.value = settings[9];

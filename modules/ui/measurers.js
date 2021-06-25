@@ -20,10 +20,7 @@ class Rulers {
     for (const rulerString of rulers) {
       const [type, pointsString] = rulerString.split(": ");
       const points = pointsString.split(" ").map(el => el.split(",").map(n => +n));
-      const Type = type === "Ruler" ? Ruler :
-                   type === "Opisometer" ? Opisometer :
-                   type === "RouteOpisometer" ? RouteOpisometer :
-                   type === "Planimeter" ? Planimeter : null;
+      const Type = type === "Ruler" ? Ruler : type === "Opisometer" ? Opisometer : type === "RouteOpisometer" ? RouteOpisometer : type === "Planimeter" ? Planimeter : null;
       this.create(Type, points);
     }
   }
@@ -57,7 +54,7 @@ class Measurer {
   }
 
   getSize() {
-    return rn(1 / scale ** .3 * 2, 2);
+    return rn((1 / scale ** 0.3) * 2, 2);
   }
 
   getDash() {
@@ -66,10 +63,11 @@ class Measurer {
 
   drag() {
     const tr = parseTransform(this.getAttribute("transform"));
-    const x = +tr[0] - d3.event.x, y = +tr[1] - d3.event.y;
+    const x = +tr[0] - d3.event.x,
+      y = +tr[1] - d3.event.y;
 
-    d3.event.on("drag", function() {
-      const transform = `translate(${(x + d3.event.x)},${(y + d3.event.y)})`;
+    d3.event.on("drag", function () {
+      const transform = `translate(${x + d3.event.x},${y + d3.event.y})`;
       this.setAttribute("transform", transform);
     });
   }
@@ -89,9 +87,9 @@ class Measurer {
     const MIN_DIST2 = 900;
     const optimized = [];
 
-    for (let i=0, p1 = this.points[0]; i < this.points.length; i++) {
+    for (let i = 0, p1 = this.points[0]; i < this.points.length; i++) {
       const p2 = this.points[i];
-      const dist2 = !i || i === this.points.length-1 ? Infinity : (p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2;
+      const dist2 = !i || i === this.points.length - 1 ? Infinity : (p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2;
       if (dist2 < MIN_DIST2) continue;
       optimized.push(p2);
       p1 = p2;
@@ -105,7 +103,6 @@ class Measurer {
   undraw() {
     this.el?.remove();
   }
-
 }
 
 class Ruler extends Measurer {
@@ -136,12 +133,29 @@ class Ruler extends Measurer {
     const size = this.getSize();
     const dash = this.getDash();
 
-    const el = this.el = ruler.append("g").attr("class", "ruler").call(d3.drag().on("start", this.drag)).attr("font-size", 10 * size);
-    el.append("polyline").attr("points", points).attr("class", "white").attr("stroke-width", size)
+    const el = (this.el = ruler
+      .append("g")
+      .attr("class", "ruler")
+      .call(d3.drag().on("start", this.drag))
+      .attr("font-size", 10 * size));
+    el.append("polyline")
+      .attr("points", points)
+      .attr("class", "white")
+      .attr("stroke-width", size)
       .call(d3.drag().on("start", () => this.addControl(this)));
-    el.append("polyline").attr("points", points).attr("class", "gray").attr("stroke-width", rn(size * 1.2, 2)).attr("stroke-dasharray", dash);
-    el.append("g").attr("class", "rulerPoints").attr("stroke-width", .5 * size).attr("font-size", 2 * size);
-    el.append("text").attr("dx", ".35em").attr("dy", "-.45em").on("click", () => rulers.remove(this.id));
+    el.append("polyline")
+      .attr("points", points)
+      .attr("class", "gray")
+      .attr("stroke-width", rn(size * 1.2, 2))
+      .attr("stroke-dasharray", dash);
+    el.append("g")
+      .attr("class", "rulerPoints")
+      .attr("stroke-width", 0.5 * size)
+      .attr("font-size", 2 * size);
+    el.append("text")
+      .attr("dx", ".35em")
+      .attr("dy", "-.45em")
+      .on("click", () => rulers.remove(this.id));
     this.drawPoints(el);
     this.updateLabel();
     return this;
@@ -151,7 +165,7 @@ class Ruler extends Measurer {
     const g = el.select(".rulerPoints");
     g.selectAll("circle").remove();
 
-    for (let i=0; i < this.points.length; i++) {
+    for (let i = 0; i < this.points.length; i++) {
       const [x, y] = this.points[i];
       this.drawPoint(g, x, y, i);
     }
@@ -160,14 +174,25 @@ class Ruler extends Measurer {
   drawPoint(el, x, y, i) {
     const context = this;
     el.append("circle")
-      .attr("r", "1em").attr("cx", x).attr("cy", y)
+      .attr("r", "1em")
+      .attr("cx", x)
+      .attr("cy", y)
       .attr("class", this.isEdge(i) ? "edge" : "control")
-      .on("click", function() {context.removePoint(context, i)})
-      .call(d3.drag().clickDistance(3).on("start", function() {context.dragControl(context, i)}));
+      .on("click", function () {
+        context.removePoint(context, i);
+      })
+      .call(
+        d3
+          .drag()
+          .clickDistance(3)
+          .on("start", function () {
+            context.dragControl(context, i);
+          })
+      );
   }
 
   isEdge(i) {
-    return i === 0 || i === this.points.length-1;
+    return i === 0 || i === this.points.length - 1;
   }
 
   updateLabel() {
@@ -179,9 +204,9 @@ class Ruler extends Measurer {
 
   getLength() {
     let length = 0;
-    for (let i=0; i < this.points.length - 1; i++) {
+    for (let i = 0; i < this.points.length - 1; i++) {
       const [x1, y1] = this.points[i];
-      const [x2, y2] = this.points[i+1];
+      const [x2, y2] = this.points[i + 1];
       length += Math.hypot(x1 - x2, y1 - y2);
     }
     return length;
@@ -189,20 +214,20 @@ class Ruler extends Measurer {
 
   dragControl(context, pointId) {
     let addPoint = context.isEdge(pointId) && d3.event.sourceEvent.ctrlKey;
-    let circle = context.el.select(`circle:nth-child(${pointId+1})`);
+    let circle = context.el.select(`circle:nth-child(${pointId + 1})`);
     const line = context.el.selectAll("polyline");
 
     let x0 = rn(d3.event.x, 1);
     let y0 = rn(d3.event.y, 1);
     let axis;
 
-    d3.event.on("drag", function() {
+    d3.event.on("drag", function () {
       if (addPoint) {
-        if (d3.event.dx < .1 && d3.event.dy < .1) return;
+        if (d3.event.dx < 0.1 && d3.event.dy < 0.1) return;
         context.pushPoint(pointId);
         context.drawPoints(context.el);
         if (pointId) pointId++;
-        circle = context.el.select(`circle:nth-child(${pointId+1})`);
+        circle = context.el.select(`circle:nth-child(${pointId + 1})`);
         addPoint = false;
       }
 
@@ -253,13 +278,38 @@ class Opisometer extends Measurer {
     const dash = this.getDash();
     const context = this;
 
-    const el = this.el = ruler.append("g").attr("class", "opisometer").call(d3.drag().on("start", this.drag)).attr("font-size", 10 * size);
+    const el = (this.el = ruler
+      .append("g")
+      .attr("class", "opisometer")
+      .call(d3.drag().on("start", this.drag))
+      .attr("font-size", 10 * size));
     el.append("path").attr("class", "white").attr("stroke-width", size);
     el.append("path").attr("class", "gray").attr("stroke-width", size).attr("stroke-dasharray", dash);
-    const rulerPoints = el.append("g").attr("class", "rulerPoints").attr("stroke-width", .5 * size).attr("font-size", 2 * size);
-    rulerPoints.append("circle").attr("r", "1em").call(d3.drag().on("start", function() {context.dragControl(context, 0)}));
-    rulerPoints.append("circle").attr("r", "1em").call(d3.drag().on("start", function() {context.dragControl(context, 1)}));
-    el.append("text").attr("dx", ".35em").attr("dy", "-.45em").on("click", () => rulers.remove(this.id));
+    const rulerPoints = el
+      .append("g")
+      .attr("class", "rulerPoints")
+      .attr("stroke-width", 0.5 * size)
+      .attr("font-size", 2 * size);
+    rulerPoints
+      .append("circle")
+      .attr("r", "1em")
+      .call(
+        d3.drag().on("start", function () {
+          context.dragControl(context, 0);
+        })
+      );
+    rulerPoints
+      .append("circle")
+      .attr("r", "1em")
+      .call(
+        d3.drag().on("start", function () {
+          context.dragControl(context, 1);
+        })
+      );
+    el.append("text")
+      .attr("dx", ".35em")
+      .attr("dy", "-.45em")
+      .on("click", () => rulers.remove(this.id));
 
     this.updateCurve();
     this.updateLabel();
@@ -267,7 +317,7 @@ class Opisometer extends Measurer {
   }
 
   updateCurve() {
-    lineGen.curve(d3.curveCatmullRom.alpha(.5));
+    lineGen.curve(d3.curveCatmullRom.alpha(0.5));
     const path = round(lineGen(this.points));
     this.el.selectAll("path").attr("d", path);
 
@@ -288,7 +338,7 @@ class Opisometer extends Measurer {
     const MIN_DIST = d3.event.sourceEvent.shiftKey ? 9 : 100;
     let prev = rigth ? last(context.points) : context.points[0];
 
-    d3.event.on("drag", function() {
+    d3.event.on("drag", function () {
       const point = [d3.event.x | 0, d3.event.y | 0];
 
       const dist2 = (prev[0] - point[0]) ** 2 + (prev[1] - point[1]) ** 2;
@@ -301,7 +351,7 @@ class Opisometer extends Measurer {
       context.updateLabel();
     });
 
-    d3.event.on("end", function() {
+    d3.event.on("end", function () {
       if (!d3.event.sourceEvent.shiftKey) context.optimize();
     });
   }
@@ -367,13 +417,37 @@ class RouteOpisometer extends Measurer {
     const dash = this.getDash();
     const context = this;
 
-    const el = this.el = ruler.append("g").attr("class", "opisometer").attr("font-size", 10 * size);
+    const el = (this.el = ruler
+      .append("g")
+      .attr("class", "opisometer")
+      .attr("font-size", 10 * size));
     el.append("path").attr("class", "white").attr("stroke-width", size);
     el.append("path").attr("class", "gray").attr("stroke-width", size).attr("stroke-dasharray", dash);
-    const rulerPoints = el.append("g").attr("class", "rulerPoints").attr("stroke-width", .5 * size).attr("font-size", 2 * size);
-    rulerPoints.append("circle").attr("r", "1em").call(d3.drag().on("start", function() {context.dragControl(context, 0)}));
-    rulerPoints.append("circle").attr("r", "1em").call(d3.drag().on("start", function() {context.dragControl(context, 1)}));
-    el.append("text").attr("dx", ".35em").attr("dy", "-.45em").on("click", () => rulers.remove(this.id));
+    const rulerPoints = el
+      .append("g")
+      .attr("class", "rulerPoints")
+      .attr("stroke-width", 0.5 * size)
+      .attr("font-size", 2 * size);
+    rulerPoints
+      .append("circle")
+      .attr("r", "1em")
+      .call(
+        d3.drag().on("start", function () {
+          context.dragControl(context, 0);
+        })
+      );
+    rulerPoints
+      .append("circle")
+      .attr("r", "1em")
+      .call(
+        d3.drag().on("start", function () {
+          context.dragControl(context, 1);
+        })
+      );
+    el.append("text")
+      .attr("dx", ".35em")
+      .attr("dy", "-.45em")
+      .on("click", () => rulers.remove(this.id));
 
     this.updateCurve();
     this.updateLabel();
@@ -381,7 +455,7 @@ class RouteOpisometer extends Measurer {
   }
 
   updateCurve() {
-    lineGen.curve(d3.curveCatmullRom.alpha(.5));
+    lineGen.curve(d3.curveCatmullRom.alpha(0.5));
     const path = round(lineGen(this.points));
     this.el.selectAll("path").attr("d", path);
 
@@ -399,7 +473,7 @@ class RouteOpisometer extends Measurer {
   }
 
   dragControl(context, rigth) {
-    d3.event.on("drag", function() {
+    d3.event.on("drag", function () {
       const mousePoint = [d3.event.x | 0, d3.event.y | 0];
       const cells = pack.cells;
 
@@ -422,7 +496,11 @@ class Planimeter extends Measurer {
     if (this.el) this.el.selectAll("*").remove();
     const size = this.getSize();
 
-    const el = this.el = ruler.append("g").attr("class", "planimeter").call(d3.drag().on("start", this.drag)).attr("font-size", 10 * size);
+    const el = (this.el = ruler
+      .append("g")
+      .attr("class", "planimeter")
+      .call(d3.drag().on("start", this.drag))
+      .attr("font-size", 10 * size));
     el.append("path").attr("class", "planimeter").attr("stroke-width", size);
     el.append("text").on("click", () => rulers.remove(this.id));
 
@@ -432,7 +510,7 @@ class Planimeter extends Measurer {
   }
 
   updateCurve() {
-    lineGen.curve(d3.curveCatmullRomClosed.alpha(.5));
+    lineGen.curve(d3.curveCatmullRomClosed.alpha(0.5));
     const path = round(lineGen(this.points));
     this.el.selectAll("path").attr("d", path);
   }
@@ -458,36 +536,79 @@ function drawScaleBar() {
 
   // calculate size
   const init = 100; // actual length in pixels if scale, dScale and size = 1;
-  const size = +barSize.value;
-  let val = init * size * dScale / scale; // bar length in distance unit
-  if (val > 900) val = rn(val, -3); // round to 1000
-  else if (val > 90) val = rn(val, -2); // round to 100
-  else if (val > 9) val = rn(val, -1); // round to 10
-  else val = rn(val) // round to 1
-  const l = val * scale / dScale; // actual length in pixels on this scale
+  const size = +barSizeInput.value;
+  let val = (init * size * dScale) / scale; // bar length in distance unit
+  if (val > 900) val = rn(val, -3);
+  // round to 1000
+  else if (val > 90) val = rn(val, -2);
+  // round to 100
+  else if (val > 9) val = rn(val, -1);
+  // round to 10
+  else val = rn(val); // round to 1
+  const l = (val * scale) / dScale; // actual length in pixels on this scale
 
-  scaleBar.append("line").attr("x1", 0.5).attr("y1", 0).attr("x2", l+size-0.5).attr("y2", 0).attr("stroke-width", size).attr("stroke", "white");
-  scaleBar.append("line").attr("x1", 0).attr("y1", size).attr("x2", l+size).attr("y2", size).attr("stroke-width", size).attr("stroke", "#3d3d3d");
+  scaleBar
+    .append("line")
+    .attr("x1", 0.5)
+    .attr("y1", 0)
+    .attr("x2", l + size - 0.5)
+    .attr("y2", 0)
+    .attr("stroke-width", size)
+    .attr("stroke", "white");
+  scaleBar
+    .append("line")
+    .attr("x1", 0)
+    .attr("y1", size)
+    .attr("x2", l + size)
+    .attr("y2", size)
+    .attr("stroke-width", size)
+    .attr("stroke", "#3d3d3d");
   const dash = size + " " + rn(l / 5 - size, 2);
-  scaleBar.append("line").attr("x1", 0).attr("y1", 0).attr("x2", l+size).attr("y2", 0)
-    .attr("stroke-width", rn(size * 3, 2)).attr("stroke-dasharray", dash).attr("stroke", "#3d3d3d");
+  scaleBar
+    .append("line")
+    .attr("x1", 0)
+    .attr("y1", 0)
+    .attr("x2", l + size)
+    .attr("y2", 0)
+    .attr("stroke-width", rn(size * 3, 2))
+    .attr("stroke-dasharray", dash)
+    .attr("stroke", "#3d3d3d");
 
   const fontSize = rn(5 * size, 1);
-  scaleBar.selectAll("text").data(d3.range(0,6)).enter().append("text")
-    .attr("x", d => rn(d * l/5, 2)).attr("y", 0).attr("dy", "-.5em")
-    .attr("font-size", fontSize).text(d => rn(d * l/5 * dScale / scale) + (d<5 ? "" : " " + unit));
+  scaleBar
+    .selectAll("text")
+    .data(d3.range(0, 6))
+    .enter()
+    .append("text")
+    .attr("x", d => rn((d * l) / 5, 2))
+    .attr("y", 0)
+    .attr("dy", "-.5em")
+    .attr("font-size", fontSize)
+    .text(d => rn((((d * l) / 5) * dScale) / scale) + (d < 5 ? "" : " " + unit));
 
   if (barLabel.value !== "") {
-    scaleBar.append("text").attr("x", (l+1) / 2).attr("y", 2 * size)
+    scaleBar
+      .append("text")
+      .attr("x", (l + 1) / 2)
+      .attr("y", 2 * size)
       .attr("dominant-baseline", "text-before-edge")
-      .attr("font-size", fontSize).text(barLabel.value);
+      .attr("font-size", fontSize)
+      .text(barLabel.value);
   }
 
   const bbox = scaleBar.node().getBBox();
   // append backbround rectangle
-  scaleBar.insert("rect", ":first-child").attr("x", -10).attr("y", -20).attr("width", bbox.width + 10).attr("height", bbox.height + 15)
-    .attr("stroke-width", size).attr("stroke", "none").attr("filter", "url(#blur5)")
-    .attr("fill", barBackColor.value).attr("opacity", +barBackOpacity.value);
+  scaleBar
+    .insert("rect", ":first-child")
+    .attr("x", -10)
+    .attr("y", -20)
+    .attr("width", bbox.width + 10)
+    .attr("height", bbox.height + 15)
+    .attr("stroke-width", size)
+    .attr("stroke", "none")
+    .attr("filter", "url(#blur5)")
+    .attr("fill", barBackColor.value)
+    .attr("opacity", +barBackOpacity.value);
 
   fitScaleBar();
 }
@@ -495,9 +616,10 @@ function drawScaleBar() {
 // fit ScaleBar to canvas size
 function fitScaleBar() {
   if (!scaleBar.select("rect").size() || scaleBar.style("display") === "none") return;
-  const px = isNaN(+barPosX.value) ? .99 : barPosX.value / 100;
-  const py = isNaN(+barPosY.value) ? .99 : barPosY.value / 100;
+  const px = isNaN(+barPosX.value) ? 0.99 : barPosX.value / 100;
+  const py = isNaN(+barPosY.value) ? 0.99 : barPosY.value / 100;
   const bbox = scaleBar.select("rect").node().getBBox();
-  const x = rn(svgWidth * px - bbox.width + 10), y = rn(svgHeight * py - bbox.height + 20);
+  const x = rn(svgWidth * px - bbox.width + 10),
+    y = rn(svgHeight * py - bbox.height + 20);
   scaleBar.attr("transform", `translate(${x},${y})`);
 }

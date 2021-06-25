@@ -752,7 +752,7 @@
             <tr data-tip="Select color scheme for the element">
               <td>Color scheme</td>
               <td>
-                <select id="styleHeightmapScheme" onchange="drawHeightmap()">
+                <select id="styleHeightmapScheme">
                   <option value="bright" selected>Bright</option>
                   <option value="light">Light</option>
                   <option value="green">Green</option>
@@ -764,14 +764,14 @@
             <tr data-tip="Terracing rate. Set to 0 (toggle off) to improve performance">
               <td>Terracing</td>
               <td>
-                <input id="styleHeightmapTerracing" type="range" min=0 max=20 step=1>
+                <input id="styleHeightmapTerracingInput" type="range" min=0 max=20 step=1>
                 <output id="styleHeightmapTerracingOutput">0</output>
               </td>
             </tr>
             <tr data-tip="Layers reduction rate. Increase to improve performance">
               <td>Reduce layers</td>
               <td>
-                <input id="styleHeightmapSkip" type="range" min=0 max=10 step=1 value=5 oninput="styleHeightmapSkipOutput.value = this.value; drawHeightmap()">
+                <input id="styleHeightmapSkipInput" type="range" min=0 max=10 step=1 value=5 >
                 <output id="styleHeightmapSkipOutput">5</output>
               </td>
             </tr>
@@ -779,7 +779,7 @@
             <tr data-tip="Line simplification rate. Increase to slightly improve performance">
               <td>Simplify line</td>
               <td>
-                <input id="styleHeightmapSimplification" type="range" min=0 max=10 step=1 value=0 oninput="styleHeightmapSimplificationOutput.value = this.value; drawHeightmap()">
+                <input id="styleHeightmapSimplificationInput" type="range" min=0 max=10 step=1 value=0 >
                 <output id="styleHeightmapSimplificationOutput">0</output>
               </td>
             </tr>
@@ -787,7 +787,7 @@
             <tr data-tip="Select line interpolation type">
               <td>Line style</td>
               <td>
-                <select id="styleHeightmapCurve" onchange="drawHeightmap()">
+                <select id="styleHeightmapCurve">
                   <option value=0 selected>Curved</option>
                   <option value=1>Linear</option>
                   <option value=2>Rectangular</option>
@@ -953,7 +953,7 @@
               <input id="pointsInput" type="range" min=1 max=13 value=4 data-cells=10000 >
             </td>
             <td>
-              <output id="pointsOutput" style="color: #053305">10K</output>
+              <output id="pointsOutput_formatted" style="color: #053305">10K</output>
             </td>
           </tr>
 
@@ -1151,7 +1151,7 @@
               <input id="tooltipSizeInput" data-stored="tooltipSize" type="range" min=4 max=32 value=14>
             </td>
             <td>
-              <input id="tooltipSizeOutput" data-stored="tooltipSize" type="number" min=4 max=32 value=14>
+              <input id="tooltipSizeOutput" data-stored="tooltipSize" type="number" min=0 max=256 value=14>
             </td>
           </tr>
 
@@ -1364,14 +1364,14 @@
           </div>
           <div data-tip="Maximum number of iterations taken to resolve depressions. Increase if you have rivers ending nowhere">
             Depressions filling max iterations:
-            <input id="resolveDepressionsStepsInput" data-stored="resolveDepressionsSteps" type="range" min=0 max=500 value=250 oninput="resolveDepressionsStepsOutput.value = this.value">
-            <input id="resolveDepressionsStepsOutput" data-stored="resolveDepressionsSteps" type="number" min=0 max=1000 value=250 oninput="resolveDepressionsStepsInput.value = this.value">
+            <input id="resolveDepressionsStepsInput" data-stored="resolveDepressionsSteps" type="range" min=0 max=500 value=250>
+            <input id="resolveDepressionsStepsOutput" data-stored="resolveDepressionsSteps" type="number" min=0 max=1000 value=250>
           </div>
 
           <div data-tip="Depression depth to form a new lake. Increase to reduce number of lakes added by system">
             Depression depth threshold:
-            <input id="lakeElevationLimitInput" data-stored="lakeElevationLimit" type="range" min=0 max=80 value=20 oninput="lakeElevationLimitOutput.value = this.value">
-            <input id="lakeElevationLimitOutput" data-stored="lakeElevationLimit" type="number" min=0 max=80 value=20 oninput="lakeElevationLimitInput.value = this.value">
+            <input id="lakeElevationLimitInput" data-stored="lakeElevationLimit" type="range" min=0 max=80 value=20>
+            <input id="lakeElevationLimitOutput" data-stored="lakeElevationLimit" type="number" min=0 max=80 value=20>
           </div>
         </div>
 
@@ -3086,8 +3086,8 @@
 
         <div data-tip="Set scale bar size">
           <div>Bar size:</div>
-          <input id="barSizeOutput" type="range" min=.5 max=5 value=2 step=.1>
-          <input id="barSize" data-stored="barSize" type="number" min=.5 max=5 value=2 step=.1>
+          <input id="barSizeOutput" data-stored="barSize" type="range" min=.5 max=5 value=2 step=.1>
+          <input id="barSizeInput" data-stored="barSize" type="number" min=.5 max=5 value=2 step=.1>
         </div>
 
         <div data-tip="Type scale bar label, leave blank to hide label">
@@ -3408,8 +3408,8 @@
       <p style="font-style: italic">Generator uses pop-up window to download files. Please ensure your browser does not block popups.</p>
       <div data-tip="Define scale of a saved png/jpeg image (e.g. 5x). Saving big images is slow and may cause a browser crash!" style="margin-bottom: .3em">
         PNG / JPEG scale:
-        <input id="pngResolutionInput" data-stored="pngResolution" type="range" min=1 max=8 value=1 style="width: 14em" oninput="pngResolutionOutput.value = this.value">
-        <input id="pngResolutionOutput" data-stored="pngResolution" type="number" min=1 max=8 value=1 oninput="pngResolutionInput.value = this.value">
+        <input id="pngResolutionInput" data-stored="pngResolution" type="range" min=1 max=8 value=1 style="width: 14em">
+        <input id="pngResolutionOutput" data-stored="pngResolution" type="number" min=1 max=8 value=1>
       </div>
       <div data-tip="Check to not allow system to automatically hide labels">
         <input id="showLabels" class="checkbox" type="checkbox" onchange="hideLabels.checked = !this.checked; invokeActiveZooming()" checked="">
@@ -3430,18 +3430,19 @@
       <p style="font-style: italic">Map will be split into tiles and downloaded as a single zip file. Avoid saving to big images</p>
       <div data-tip="Number of columns" style="margin-bottom: .3em">
         <div class="label">Columns:</div>
-        <input id="tileColsInput" data-stored="tileCols" type="range" min=2 max=20 value=8 style="width: 11em" oninput="tileColsOutput.value = this.value">
-        <input id="tileColsOutput" data-stored="tileCols" type="number" min=2 value=8 oninput="tileColsInput.value = this.value">
+        <input id="tileColsInput" data-stored="tileCols" type="range" min=2 max=20 value=8 style="width: 11em">
+        <input id="tileColsOutput" data-stored="tileCols" type="number" min=2 value=8 >
       </div>
       <div data-tip="Number of rows" style="margin-bottom: .3em">
         <div class="label">Rows:</div>
-        <input id="tileRowsInput" data-stored="tileRows" type="range" min=2 max=20 value=8 style="width: 11em" oninput="tileRowsOutput.value = this.value">
-        <input id="tileRowsOutput" data-stored="tileRows" type="number" min=2 value=8 oninput="tileRowsInput.value = this.value">
+        <input id="tileRowsInput" data-stored="tileRows" type="range" min=2 max=20 value=8 style="width: 11em">
+        <input id="tileRowsOutput" data-stored="tileRows" type="number" min=2 value=8 >
       </div>
       <div data-tip="Image scale relative to image size (e.g. 5x)" style="margin-bottom: .3em">
         <div class="label">Scale:</div>
-        <input id="tileScaleInput" data-stored="tileScale" type="range" min=1 max=4 value=1 style="width: 11em" oninput="tileScaleOutput.value = this.value">
-        <input id="tileScaleOutput" data-stored="tileScale" type="number" min=1 value=1 oninput="tileScaleInput.value = this.value;">
+        <input id="tileScaleInput" data-stored="tileScale" type="range" min=1 max=4 value=1 style="width: 11em">
+        <input id="tileScaleOutput" data-stored="tileScale" type="number" min=1 value=1 
+        >
       </div>
       <div data-tip="Calculated size of image if combined" style="margin-bottom: .3em">
         <div class="label">Total size:</div>

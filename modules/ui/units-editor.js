@@ -15,16 +15,15 @@ function editUnits() {
   document.getElementById("distanceUnitInput").addEventListener("change", changeDistanceUnit);
   document.getElementById("distanceScaleOutput").addEventListener("input", changeDistanceScale);
   document.getElementById("distanceScaleInput").addEventListener("change", changeDistanceScale);
-  document.getElementById("areaUnit").addEventListener("change", () => lock("areaUnit"));
   document.getElementById("heightUnit").addEventListener("change", changeHeightUnit);
   document.getElementById("heightExponentInput").addEventListener("input", changeHeightExponent);
   document.getElementById("heightExponentOutput").addEventListener("input", changeHeightExponent);
   document.getElementById("temperatureScale").addEventListener("change", changeTemperatureScale);
-  document.getElementById("barSizeOutput").addEventListener("input", changeScaleBarSize);
-  document.getElementById("barSize").addEventListener("input", changeScaleBarSize);
-  document.getElementById("barLabel").addEventListener("input", changeScaleBarLabel);
-  document.getElementById("barPosX").addEventListener("input", changeScaleBarPosition);
-  document.getElementById("barPosY").addEventListener("input", changeScaleBarPosition);
+  document.getElementById("barSizeOutput").addEventListener("input", drawScaleBar);
+  document.getElementById("barSizeInput").addEventListener("input", drawScaleBar);
+  document.getElementById("barLabel").addEventListener("input", drawScaleBar);
+  document.getElementById("barPosX").addEventListener("input", fitScaleBar);
+  document.getElementById("barPosY").addEventListener("input", fitScaleBar);
   document.getElementById("barBackOpacity").addEventListener("input", changeScaleBarOpacity);
   document.getElementById("barBackColor").addEventListener("input", changeScaleBarColor);
 
@@ -42,7 +41,7 @@ function editUnits() {
 
   function changeDistanceUnit() {
     if (this.value === "custom_name") {
-      prompt("Provide a custom name for a distance unit", {default:""}, custom => {
+      prompt("Provide a custom name for a distance unit", {default: ""}, custom => {
         this.options.add(new Option(custom, custom, false, true));
         lock("distanceUnit");
         drawScaleBar();
@@ -51,114 +50,55 @@ function editUnits() {
       return;
     }
 
-    lock("distanceUnit");
     drawScaleBar();
     calculateFriendlyGridSize();
   }
 
   function changeDistanceScale() {
-    const scale = +this.value;
-    if (!scale || isNaN(scale) || scale < 0) {
-      tip("Distance scale should be a positive number", false, "error");
-      this.value = document.getElementById("distanceScaleInput").dataset.value;
-      return;
-    }
-
-    document.getElementById("distanceScaleOutput").value = scale;
-    document.getElementById("distanceScaleInput").value = scale;
-    document.getElementById("distanceScaleInput").dataset.value = scale;
-    lock("distanceScale");
-
     drawScaleBar();
     calculateFriendlyGridSize();
   }
 
   function changeHeightUnit() {
-    if (this.value === "custom_name") {
-      prompt("Provide a custom name for a height unit", {default:""}, custom => {
-        this.options.add(new Option(custom, custom, false, true));
-        lock("heightUnit");
-      });
-      return;
-    }
+    if (this.value !== "custom_name") return;
 
-    lock("heightUnit");
+    prompt("Provide a custom name for a height unit", {default: ""}, custom => {
+      this.options.add(new Option(custom, custom, false, true));
+      lock("heightUnit");
+    });
   }
 
   function changeHeightExponent() {
-    document.getElementById("heightExponentInput").value = this.value;
-    document.getElementById("heightExponentOutput").value = this.value;
     calculateTemperatures();
     if (layerIsOn("toggleTemp")) drawTemp();
-    lock("heightExponent");
   }
 
   function changeTemperatureScale() {
-    lock("temperatureScale");
     if (layerIsOn("toggleTemp")) drawTemp();
-  }
-
-  function changeScaleBarSize() {
-    document.getElementById("barSize").value = this.value;
-    document.getElementById("barSizeOutput").value = this.value;
-    drawScaleBar();
-    lock("barSize");
-  }
-
-  function changeScaleBarPosition() {
-    lock("barPosX");
-    lock("barPosY");
-    fitScaleBar();
-  }
-
-  function changeScaleBarLabel() {
-    lock("barLabel");
-    drawScaleBar();
   }
 
   function changeScaleBarOpacity() {
     scaleBar.select("rect").attr("opacity", this.value);
-    lock("barBackOpacity");
   }
 
   function changeScaleBarColor() {
     scaleBar.select("rect").attr("fill", this.value);
-    lock("barBackColor");
   }
 
   function changePopulationRate() {
-    const rate = +this.value;
-    if (!rate || isNaN(rate) || rate <= 0) {
-      tip("Population rate should be a positive number", false, "error");
-      this.value = document.getElementById("populationRate").dataset.value;
-      return;
-    }
-
-    document.getElementById("populationRateOutput").value = rate;
-    document.getElementById("populationRate").value = rate;
-    document.getElementById("populationRate").dataset.value = rate;
-    lock("populationRate");
+    document.getElementById("populationRateOutput").value = this.value;
+    document.getElementById("populationRate").value = this.value;
   }
 
   function changeUrbanizationRate() {
-    const rate = +this.value;
-    if (!rate || isNaN(rate) || rate < 0) {
-      tip("Urbanization rate should be a number", false, "error");
-      this.value = document.getElementById("urbanization").dataset.value;
-      return;
-    }
-
-    document.getElementById("urbanizationOutput").value = rate;
-    document.getElementById("urbanization").value = rate;
-    document.getElementById("urbanization").dataset.value = rate;
-    lock("urbanization");
+    document.getElementById("urbanizationOutput").value = this.value;
+    document.getElementById("urbanization").value = this.value;
   }
 
   function restoreDefaultUnits() {
     // distanceScale
     document.getElementById("distanceScaleOutput").value = 3;
     document.getElementById("distanceScaleInput").value = 3;
-    document.getElementById("distanceScaleInput").dataset.value = 3;
     unlock("distanceScale");
 
     // units
@@ -180,9 +120,9 @@ function editUnits() {
     calculateTemperatures();
 
     // scale bar
-    barSizeOutput.value = barSize.value = 2;
+    barSizeOutput.value = barSizeInput.value = 2;
     barLabel.value = "";
-    barBackOpacity.value = .2;
+    barBackOpacity.value = 0.2;
     barBackColor.value = "#ffffff";
     barPosX.value = barPosY.value = 99;
 
@@ -203,13 +143,13 @@ function editUnits() {
 
   function addRuler() {
     if (!layerIsOn("toggleRulers")) toggleRulers();
-    const pt = document.getElementById('map').createSVGPoint();
-    pt.x = graphWidth / 2, pt.y = graphHeight / 4;
+    const pt = document.getElementById("map").createSVGPoint();
+    (pt.x = graphWidth / 2), (pt.y = graphHeight / 4);
     const p = pt.matrixTransform(viewbox.node().getScreenCTM().inverse());
     const dx = graphWidth / 4 / scale;
     const dy = (rulers.data.length * 40) % (graphHeight / 2);
-    const from = [p.x-dx | 0, p.y+dy | 0];
-    const to = [p.x+dx | 0, p.y+dy | 0];
+    const from = [(p.x - dx) | 0, (p.y + dy) | 0];
+    const to = [(p.x + dx) | 0, (p.y + dy) | 0];
     rulers.create(Ruler, [from, to]).draw();
   }
 
@@ -223,23 +163,25 @@ function editUnits() {
       tip("Draw a curve to measure length. Hold Shift to disallow path optimization", true);
       unitsBottom.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
       this.classList.add("pressed");
-      viewbox.style("cursor", "crosshair").call(d3.drag().on("start", function() {
-        const point = d3.mouse(this);
-        const opisometer = rulers.create(Opisometer, [point]).draw();
-
-        d3.event.on("drag", function() {
+      viewbox.style("cursor", "crosshair").call(
+        d3.drag().on("start", function () {
           const point = d3.mouse(this);
-          opisometer.addPoint(point);
-        });
+          const opisometer = rulers.create(Opisometer, [point]).draw();
 
-        d3.event.on("end", function() {
-          restoreDefaultEvents();
-          clearMainTip();
-          addOpisometer.classList.remove("pressed");
-          if (opisometer.points.length < 2) rulers.remove(opisometer.id);
-          if (!d3.event.sourceEvent.shiftKey) opisometer.optimize();
-        });
-      }));
+          d3.event.on("drag", function () {
+            const point = d3.mouse(this);
+            opisometer.addPoint(point);
+          });
+
+          d3.event.on("end", function () {
+            restoreDefaultEvents();
+            clearMainTip();
+            addOpisometer.classList.remove("pressed");
+            if (opisometer.points.length < 2) rulers.remove(opisometer.id);
+            if (!d3.event.sourceEvent.shiftKey) opisometer.optimize();
+          });
+        })
+      );
     }
   }
 
@@ -253,40 +195,42 @@ function editUnits() {
       tip("Draw a curve along routes to measure length. Hold Shift to measure away from roads.", true);
       unitsBottom.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
       this.classList.add("pressed");
-      viewbox.style("cursor", "crosshair").call(d3.drag().on("start", function() {
-        const cells = pack.cells;
-        const burgs = pack.burgs;
-        const point = d3.mouse(this);
-        const c = findCell(point[0], point[1]);
-        if (cells.road[c] || d3.event.sourceEvent.shiftKey) {
-          const b = cells.burg[c];
-          const x = b ? burgs[b].x : cells.p[c][0];
-          const y = b ? burgs[b].y : cells.p[c][1];
-          const routeOpisometer = rulers.create(RouteOpisometer, [[x, y]]).draw();
+      viewbox.style("cursor", "crosshair").call(
+        d3.drag().on("start", function () {
+          const cells = pack.cells;
+          const burgs = pack.burgs;
+          const point = d3.mouse(this);
+          const c = findCell(point[0], point[1]);
+          if (cells.road[c] || d3.event.sourceEvent.shiftKey) {
+            const b = cells.burg[c];
+            const x = b ? burgs[b].x : cells.p[c][0];
+            const y = b ? burgs[b].y : cells.p[c][1];
+            const routeOpisometer = rulers.create(RouteOpisometer, [[x, y]]).draw();
 
-          d3.event.on("drag", function () {
-            const point = d3.mouse(this);
-            const c = findCell(point[0], point[1]);
-            if (cells.road[c] || d3.event.sourceEvent.shiftKey) {
-              routeOpisometer.trackCell(c, true);
-            }
-          });
+            d3.event.on("drag", function () {
+              const point = d3.mouse(this);
+              const c = findCell(point[0], point[1]);
+              if (cells.road[c] || d3.event.sourceEvent.shiftKey) {
+                routeOpisometer.trackCell(c, true);
+              }
+            });
 
-          d3.event.on("end", function () {
+            d3.event.on("end", function () {
+              restoreDefaultEvents();
+              clearMainTip();
+              addRouteOpisometer.classList.remove("pressed");
+              if (routeOpisometer.points.length < 2) {
+                rulers.remove(routeOpisometer.id);
+              }
+            });
+          } else {
             restoreDefaultEvents();
             clearMainTip();
             addRouteOpisometer.classList.remove("pressed");
-            if (routeOpisometer.points.length < 2) {
-              rulers.remove(routeOpisometer.id);
-            }
-          });
-        } else {
-          restoreDefaultEvents();
-          clearMainTip();
-          addRouteOpisometer.classList.remove("pressed");
-          tip("Must start in a cell with a route in it", false, "error");
-        }
-      }));
+            tip("Must start in a cell with a route in it", false, "error");
+          }
+        })
+      );
     }
   }
 
@@ -300,24 +244,25 @@ function editUnits() {
       tip("Draw a curve to measure its area. Hold Shift to disallow path optimization", true);
       unitsBottom.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
       this.classList.add("pressed");
-      viewbox.style("cursor", "crosshair").call(d3.drag().on("start", function() {
-        const point = d3.mouse(this);
-        const planimeter = rulers.create(Planimeter, [point]).draw();
-
-        d3.event.on("drag", function() {
+      viewbox.style("cursor", "crosshair").call(
+        d3.drag().on("start", function () {
           const point = d3.mouse(this);
-          planimeter.addPoint(point);
-        });
+          const planimeter = rulers.create(Planimeter, [point]).draw();
 
-        d3.event.on("end", function() {
-          restoreDefaultEvents();
-          clearMainTip();
-          addPlanimeter.classList.remove("pressed");
-          if (planimeter.points.length < 3) rulers.remove(planimeter.id);
-          else if (!d3.event.sourceEvent.shiftKey) planimeter.optimize();
-        });
-      }));
+          d3.event.on("drag", function () {
+            const point = d3.mouse(this);
+            planimeter.addPoint(point);
+          });
 
+          d3.event.on("end", function () {
+            restoreDefaultEvents();
+            clearMainTip();
+            addPlanimeter.classList.remove("pressed");
+            if (planimeter.points.length < 3) rulers.remove(planimeter.id);
+            else if (!d3.event.sourceEvent.shiftKey) planimeter.optimize();
+          });
+        })
+      );
     }
   }
 
@@ -326,18 +271,19 @@ function editUnits() {
     alertMessage.innerHTML = `
       Are you sure you want to remove all placed rulers?
       <br>If you just want to hide rulers, toggle the Rulers layer off in Menu`;
-    $("#alert").dialog({resizable: false, title: "Remove all rulers",
+    $("#alert").dialog({
+      resizable: false,
+      title: "Remove all rulers",
       buttons: {
-        Remove: function() {
+        Remove: function () {
           $(this).dialog("close");
           rulers.undraw();
           rulers = new Rulers();
         },
-        Cancel: function() {$(this).dialog("close");}
+        Cancel: function () {
+          $(this).dialog("close");
+        }
       }
     });
   }
-
-
 }
-

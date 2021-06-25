@@ -417,7 +417,7 @@ function getMapData() {
     const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
     const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
     const params = [version, license, dateString, seed, graphWidth, graphHeight, mapId].join("|");
-    const settings = [distanceUnitInput.value, distanceScaleInput.value, areaUnit.value, heightUnit.value, heightExponentInput.value, temperatureScale.value, barSize.value, barLabel.value, barBackOpacity.value, barBackColor.value, barPosX.value, barPosY.value, populationRate.value, urbanization.value, mapSizeOutput.value, latitudeOutput.value, temperatureEquatorOutput.value, temperaturePoleOutput.value, precOutput.value, JSON.stringify(options), mapName.value, +hideLabels.checked].join("|");
+    const settings = [distanceUnitInput.value, distanceScaleInput.value, areaUnit.value, heightUnit.value, heightExponentInput.value, temperatureScale.value, barSizeInput.value, barLabel.value, barBackOpacity.value, barBackColor.value, barPosX.value, barPosY.value, populationRate.value, urbanization.value, mapSizeOutput.value, latitudeOutput.value, temperatureEquatorOutput.value, temperaturePoleOutput.value, precOutput.value, JSON.stringify(options), mapName.value, +hideLabels.checked].join("|");
     const coords = JSON.stringify(mapCoordinates);
     const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
     const notesData = JSON.stringify(notes);
