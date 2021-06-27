@@ -15,7 +15,9 @@ function editBurg(id) {
   const of = id ? "svg" : d3.event.target;
 
   $("#burgEditor").dialog({
-    title: "Edit Burg", resizable: false, close: closeBurgEditor,
+    title: "Edit Burg",
+    resizable: false,
+    close: closeBurgEditor,
     position: {my, at, of, collision: "fit"}
   });
 
@@ -62,7 +64,7 @@ function editBurg(id) {
 
     document.getElementById("burgName").value = b.name;
     document.getElementById("burgType").value = b.type || "Generic";
-    document.getElementById("burgPopulation").value = rn(b.population * populationRate.value * urbanization.value);
+    document.getElementById("burgPopulation").value = rn(b.population * populationRate * urbanization);
     document.getElementById("burgEditAnchorStyle").style.display = +b.port ? "inline-block" : "none";
 
     // update list and select culture
@@ -100,12 +102,12 @@ function editBurg(id) {
     const select = document.getElementById("burgSelectGroup");
     select.options.length = 0; // remove all options
 
-    burgLabels.selectAll("g").each(function() {
+    burgLabels.selectAll("g").each(function () {
       select.options.add(new Option(this.id, this.id, false, this.id === group));
     });
 
     // set emlem image
-    const coaID = "burgCOA"+id;
+    const coaID = "burgCOA" + id;
     COArenderer.trigger(coaID, b.coa);
     document.getElementById("burgEmblem").setAttribute("href", "#" + coaID);
   }
@@ -114,32 +116,67 @@ function editBurg(id) {
   function getTemperatureLikeness(temperature) {
     if (temperature < -5) return "Yakutsk";
     const cities = [
-      "Snag (Yukon)", "Yellowknife (Canada)", "Okhotsk (Russia)", "Fairbanks (Alaska)", "Nuuk (Greenland)", "Murmansk", // -5 - 0
-      "Arkhangelsk", "Anchorage", "Tromsø", "Reykjavik", "Riga", "Stockholm", "Halifax", "Prague", "Copenhagen", "London", // 1 - 10
-      "Antwerp", "Paris", "Milan", "Batumi", "Rome", "Dubrovnik", "Lisbon", "Barcelona", "Marrakesh", "Alexandria", // 11 - 20
-      "Tegucigalpa", "Guangzhou", "Rio de Janeiro", "Dakar", "Miami", "Jakarta", "Mogadishu", "Bangkok", "Aden", "Khartoum"]; // 21 - 30
+      "Snag (Yukon)",
+      "Yellowknife (Canada)",
+      "Okhotsk (Russia)",
+      "Fairbanks (Alaska)",
+      "Nuuk (Greenland)",
+      "Murmansk", // -5 - 0
+      "Arkhangelsk",
+      "Anchorage",
+      "Tromsø",
+      "Reykjavik",
+      "Riga",
+      "Stockholm",
+      "Halifax",
+      "Prague",
+      "Copenhagen",
+      "London", // 1 - 10
+      "Antwerp",
+      "Paris",
+      "Milan",
+      "Batumi",
+      "Rome",
+      "Dubrovnik",
+      "Lisbon",
+      "Barcelona",
+      "Marrakesh",
+      "Alexandria", // 11 - 20
+      "Tegucigalpa",
+      "Guangzhou",
+      "Rio de Janeiro",
+      "Dakar",
+      "Miami",
+      "Jakarta",
+      "Mogadishu",
+      "Bangkok",
+      "Aden",
+      "Khartoum"
+    ]; // 21 - 30
     if (temperature > 30) return "Mecca";
-    return cities[temperature+5] || null;
+    return cities[temperature + 5] || null;
   }
 
   function dragBurgLabel() {
     const tr = parseTransform(this.getAttribute("transform"));
-    const dx = +tr[0] - d3.event.x, dy = +tr[1] - d3.event.y;
+    const dx = +tr[0] - d3.event.x,
+      dy = +tr[1] - d3.event.y;
 
-    d3.event.on("drag", function() {
-      const x = d3.event.x, y = d3.event.y;
-      this.setAttribute("transform", `translate(${(dx+x)},${(dy+y)})`);
+    d3.event.on("drag", function () {
+      const x = d3.event.x,
+        y = d3.event.y;
+      this.setAttribute("transform", `translate(${dx + x},${dy + y})`);
       tip('Use dragging for fine-tuning only, to actually move burg use "Relocate" button', false, "warning");
     });
   }
 
   function showGroupSection() {
-    document.querySelectorAll("#burgBottom > button").forEach(el => el.style.display = "none");
+    document.querySelectorAll("#burgBottom > button").forEach(el => (el.style.display = "none"));
     document.getElementById("burgGroupSection").style.display = "inline-block";
   }
 
   function hideGroupSection() {
-    document.querySelectorAll("#burgBottom > button").forEach(el => el.style.display = "inline-block");
+    document.querySelectorAll("#burgBottom > button").forEach(el => (el.style.display = "inline-block"));
     document.getElementById("burgGroupSection").style.display = "none";
     document.getElementById("burgInputGroup").style.display = "none";
     document.getElementById("burgInputGroup").value = "";
@@ -163,8 +200,14 @@ function editBurg(id) {
   }
 
   function createNewGroup() {
-    if (!this.value) {tip("Please provide a valid group name", false, "error"); return;}
-    const group = this.value.toLowerCase().replace(/ /g, "_").replace(/[^\w\s]/gi, "");
+    if (!this.value) {
+      tip("Please provide a valid group name", false, "error");
+      return;
+    }
+    const group = this.value
+      .toLowerCase()
+      .replace(/ /g, "_")
+      .replace(/[^\w\s]/gi, "");
 
     if (document.getElementById(group)) {
       tip("Element with this id already exists. Please provide a unique name", false, "error");
@@ -182,11 +225,14 @@ function editBurg(id) {
     const label = document.querySelector("#burgLabels [data-id='" + id + "']");
     const icon = document.querySelector("#burgIcons [data-id='" + id + "']");
     const anchor = document.querySelector("#anchors [data-id='" + id + "']");
-    if (!label || !icon) {ERROR && console.error("Cannot find label or icon elements"); return;}
+    if (!label || !icon) {
+      ERROR && console.error("Cannot find label or icon elements");
+      return;
+    }
 
-    const labelG = document.querySelector("#burgLabels > #"+oldGroup);
-    const iconG = document.querySelector("#burgIcons > #"+oldGroup);
-    const anchorG = document.querySelector("#anchors > #"+oldGroup);
+    const labelG = document.querySelector("#burgLabels > #" + oldGroup);
+    const iconG = document.querySelector("#burgIcons > #" + oldGroup);
+    const anchorG = document.querySelector("#anchors > #" + oldGroup);
 
     // just rename if only 1 element left
     const count = elSelected.node().parentNode.childElementCount;
@@ -222,7 +268,7 @@ function editBurg(id) {
     const basic = group.id === "cities" || group.id === "towns";
 
     const burgsInGroup = [];
-    for (let i=0; i < group.children.length; i++) {
+    for (let i = 0; i < group.children.length; i++) {
       burgsInGroup.push(+group.children[i].dataset.id);
     }
     const burgsToRemove = burgsInGroup.filter(b => !(pack.burgs[b].capital || pack.burgs[b].lock));
@@ -232,9 +278,11 @@ function editBurg(id) {
       ${basic || capital ? "all unlocked elements in the group" : "the entire burg group"}?
       <br>Please note that capital or locked burgs will not be deleted.
       <br><br>Burgs to be removed: ${burgsToRemove.length}`;
-    $("#alert").dialog({resizable: false, title: "Remove route group",
+    $("#alert").dialog({
+      resizable: false,
+      title: "Remove route group",
       buttons: {
-        Remove: function() {
+        Remove: function () {
           $(this).dialog("close");
           $("#burgEditor").dialog("close");
           hideGroupSection();
@@ -242,15 +290,17 @@ function editBurg(id) {
 
           if (!basic && !capital) {
             // entirely remove group
-            const labelG = document.querySelector("#burgLabels > #"+group.id);
-            const iconG = document.querySelector("#burgIcons > #"+group.id);
-            const anchorG = document.querySelector("#anchors > #"+group.id);
+            const labelG = document.querySelector("#burgLabels > #" + group.id);
+            const iconG = document.querySelector("#burgIcons > #" + group.id);
+            const anchorG = document.querySelector("#anchors > #" + group.id);
             if (labelG) labelG.remove();
             if (iconG) iconG.remove();
             if (anchorG) anchorG.remove();
           }
         },
-        Cancel: function() {$(this).dialog("close");}
+        Cancel: function () {
+          $(this).dialog("close");
+        }
       }
     });
   }
@@ -262,7 +312,7 @@ function editBurg(id) {
   }
 
   function generateNameRandom() {
-    const base = rand(nameBases.length-1);
+    const base = rand(nameBases.length - 1);
     burgName.value = Names.getBase(base);
     changeName();
   }
@@ -286,7 +336,7 @@ function editBurg(id) {
 
   function changePopulation() {
     const id = +elSelected.attr("data-id");
-    pack.burgs[id].population = rn(burgPopulation.value / populationRate.value / urbanization.value, 4);
+    pack.burgs[id].population = rn(burgPopulation.value / populationRate / urbanization, 4);
   }
 
   function toggleFeature() {
@@ -295,7 +345,7 @@ function editBurg(id) {
     const feature = this.dataset.feature;
     const turnOn = this.classList.contains("inactive");
     if (feature === "port") togglePort(id);
-    else if(feature === "capital") toggleCapital(id);
+    else if (feature === "capital") toggleCapital(id);
     else b[feature] = +turnOn;
     if (b[feature]) this.classList.remove("inactive");
     else if (!b[feature]) this.classList.add("inactive");
@@ -313,9 +363,13 @@ function editBurg(id) {
   function updateBurgLockIcon() {
     const id = +elSelected.attr("data-id");
     const b = pack.burgs[id];
-    if (b.lock) {document.getElementById("burgLock").classList.remove("icon-lock-open"); document.getElementById("burgLock").classList.add("icon-lock");}
-    else {document.getElementById("burgLock").classList.remove("icon-lock"); document.getElementById("burgLock").classList.add("icon-lock-open");}
-
+    if (b.lock) {
+      document.getElementById("burgLock").classList.remove("icon-lock-open");
+      document.getElementById("burgLock").classList.add("icon-lock");
+    } else {
+      document.getElementById("burgLock").classList.remove("icon-lock");
+      document.getElementById("burgLock").classList.add("icon-lock-open");
+    }
   }
 
   function showBurgELockTip() {
@@ -324,12 +378,12 @@ function editBurg(id) {
   }
 
   function showStyleSection() {
-    document.querySelectorAll("#burgBottom > button").forEach(el => el.style.display = "none");
+    document.querySelectorAll("#burgBottom > button").forEach(el => (el.style.display = "none"));
     document.getElementById("burgStyleSection").style.display = "inline-block";
   }
 
   function hideStyleSection() {
-    document.querySelectorAll("#burgBottom > button").forEach(el => el.style.display = "inline-block");
+    document.querySelectorAll("#burgBottom > button").forEach(el => (el.style.display = "inline-block"));
     document.getElementById("burgStyleSection").style.display = "none";
   }
 
@@ -353,27 +407,33 @@ function editBurg(id) {
     const burg = pack.burgs[id];
     const defSeed = +(seed + id.padStart(4, 0));
     if (isCtrlClick(event)) {
-      prompt(`Please provide a Medieval Fantasy City Generator seed. 
+      prompt(
+        `Please provide a Medieval Fantasy City Generator seed. 
         Seed should be a number. Default seed is FMG map seed + burg id padded to 4 chars with zeros (${defSeed}). 
         Please note that if seed is custom, "Overworld" button from MFCG will open a different map`,
-        {default:burg.MFCG||defSeed, step:1, min:1, max:1e13-1}, v => {
-        burg.MFCG = v;
-        openMFCG(v);
-      });
+        {default: burg.MFCG || defSeed, step: 1, min: 1, max: 1e13 - 1},
+        v => {
+          burg.MFCG = v;
+          openMFCG(v);
+        }
+      );
     } else openMFCG();
 
     function openMFCG(seed) {
-      if (!seed && burg.MFCGlink) {openURL(burg.MFCGlink); return;}
+      if (!seed && burg.MFCGlink) {
+        openURL(burg.MFCGlink);
+        return;
+      }
       const cells = pack.cells;
       const name = elSelected.text();
       const size = Math.max(Math.min(rn(burg.population), 100), 6); // to be removed once change on MFDC is done
-      const population = rn(burg.population * populationRate.value * urbanization.value);
-  
+      const population = rn(burg.population * populationRate * urbanization);
+
       const s = burg.MFCG || defSeed;
       const cell = burg.cell;
       const hub = +cells.road[cell] > 50;
       const river = cells.r[cell] ? 1 : 0;
-  
+
       const coast = +burg.port;
       const citadel = +burg.citadel;
       const walls = +burg.walls;
@@ -385,10 +445,10 @@ function editBurg(id) {
       function getSeaDirections(i) {
         const p1 = cells.p[i];
         const p2 = cells.p[cells.haven[i]];
-        let deg = Math.atan2(p2[1] - p1[1], p2[0] - p1[0]) * 180 / Math.PI - 90;
+        let deg = (Math.atan2(p2[1] - p1[1], p2[0] - p1[0]) * 180) / Math.PI - 90;
         if (deg < 0) deg += 360;
         const norm = rn(normalize(deg, 0, 360) * 2, 2); // 0 = south, 0.5 = west, 1 = north, 1.5 = east
-        return "&sea="+norm;
+        return "&sea=" + norm;
       }
 
       const site = "http://fantasycities.watabou.ru/?random=0&continuous=0";
@@ -398,8 +458,9 @@ function editBurg(id) {
   }
 
   function openEmblemEdit() {
-    const id = +elSelected.attr("data-id"), burg = pack.burgs[id];
-    editEmblem("burg", "burgCOA"+id, burg);
+    const id = +elSelected.attr("data-id"),
+      burg = pack.burgs[id];
+    editEmblem("burg", "burgCOA" + id, burg);
   }
 
   function toggleRelocateBurg() {
@@ -408,11 +469,17 @@ function editBurg(id) {
     if (document.getElementById("burgRelocate").classList.contains("pressed")) {
       viewbox.style("cursor", "crosshair").on("click", relocateBurgOnClick);
       tip("Click on map to relocate burg. Hold Shift for continuous move", true);
-      if (!layerIsOn("toggleCells")) {toggleCells(); toggler.dataset.forced = true;}
+      if (!layerIsOn("toggleCells")) {
+        toggleCells();
+        toggler.dataset.forced = true;
+      }
     } else {
       clearMainTip();
       viewbox.on("click", clicked).style("cursor", "default");
-      if (layerIsOn("toggleCells") && toggler.dataset.forced) {toggleCells(); toggler.dataset.forced = false;}
+      if (layerIsOn("toggleCells") && toggler.dataset.forced) {
+        toggleCells();
+        toggler.dataset.forced = false;
+      }
     }
   }
 
@@ -442,10 +509,19 @@ function editBurg(id) {
     }
 
     // change UI
-    const x = rn(point[0], 2), y = rn(point[1], 2);
-    burgIcons.select("[data-id='" + id + "']").attr("transform", null).attr("cx", x).attr("cy", y);
-    burgLabels.select("text[data-id='" + id + "']").attr("transform", null).attr("x", x).attr("y", y);
-    const anchor = anchors.select("use[data-id='" + id+ "']");
+    const x = rn(point[0], 2),
+      y = rn(point[1], 2);
+    burgIcons
+      .select("[data-id='" + id + "']")
+      .attr("transform", null)
+      .attr("cx", x)
+      .attr("cy", y);
+    burgLabels
+      .select("text[data-id='" + id + "']")
+      .attr("transform", null)
+      .attr("x", x)
+      .attr("y", y);
+    const anchor = anchors.select("use[data-id='" + id + "']");
     if (anchor.size()) {
       const size = anchor.attr("width");
       const xa = rn(x - size * 0.47, 2);
@@ -468,7 +544,7 @@ function editBurg(id) {
   function editBurgLegend() {
     const id = elSelected.attr("data-id");
     const name = elSelected.text();
-    editNotes("burg"+id, name);
+    editNotes("burg" + id, name);
   }
 
   function removeSelectedBurg() {
@@ -476,19 +552,29 @@ function editBurg(id) {
     if (pack.burgs[id].capital) {
       alertMessage.innerHTML = `You cannot remove the burg as it is a state capital.<br><br>
         You can change the capital using Burgs Editor (shift + T)`;
-      $("#alert").dialog({resizable: false, title: "Remove burg",
-        buttons: {Ok: function() {$(this).dialog("close");}}
+      $("#alert").dialog({
+        resizable: false,
+        title: "Remove burg",
+        buttons: {
+          Ok: function () {
+            $(this).dialog("close");
+          }
+        }
       });
     } else {
       alertMessage.innerHTML = "Are you sure you want to remove the burg?";
-      $("#alert").dialog({resizable: false, title: "Remove burg",
+      $("#alert").dialog({
+        resizable: false,
+        title: "Remove burg",
         buttons: {
-          Remove: function() {
+          Remove: function () {
             $(this).dialog("close");
             removeBurg(id); // see Editors module
             $("#burgEditor").dialog("close");
           },
-          Cancel: function() {$(this).dialog("close");}
+          Cancel: function () {
+            $(this).dialog("close");
+          }
         }
       });
     }
@@ -499,5 +585,4 @@ function editBurg(id) {
     burgLabels.selectAll("text").call(d3.drag().on("drag", null)).classed("draggable", false);
     unselect();
   }
-
 }

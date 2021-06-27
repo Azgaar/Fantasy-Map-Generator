@@ -1,6 +1,5 @@
 "use strict";
 class Battle {
-
   constructor(attacker, defender) {
     if (customization) return;
     closeDialogs(".stable");
@@ -11,8 +10,8 @@ class Battle {
     this.x = defender.x;
     this.y = defender.y;
     this.cell = findCell(this.x, this.y);
-    this.attackers = {regiments:[], distances:[], morale:100, casualties:0, power:0};
-    this.defenders = {regiments:[], distances:[], morale:100, casualties:0, power:0};
+    this.attackers = {regiments: [], distances: [], morale: 100, casualties: 0, power: 0};
+    this.defenders = {regiments: [], distances: [], morale: 100, casualties: 0, power: 0};
 
     this.addHeaders();
     this.addRegiment("attackers", attacker);
@@ -26,7 +25,9 @@ class Battle {
     this.getInitialMorale();
 
     $("#battleScreen").dialog({
-      title: this.name, resizable: false, width: fitContent(),
+      title: this.name,
+      resizable: false,
+      width: fitContent(),
       position: {my: "center", at: "center", of: "#map"},
       close: () => Battle.prototype.context.cancelResults()
     });
@@ -38,7 +39,7 @@ class Battle {
     document.getElementById("battleType").addEventListener("click", ev => this.toggleChange(ev));
     document.getElementById("battleType").nextElementSibling.addEventListener("click", ev => Battle.prototype.context.changeType(ev));
     document.getElementById("battleNameShow").addEventListener("click", () => Battle.prototype.context.showNameSection());
-    document.getElementById("battleNamePlace").addEventListener("change", ev => Battle.prototype.context.place = ev.target.value);
+    document.getElementById("battleNamePlace").addEventListener("change", ev => (Battle.prototype.context.place = ev.target.value));
     document.getElementById("battleNameFull").addEventListener("change", ev => Battle.prototype.context.changeName(ev));
     document.getElementById("battleNameCulture").addEventListener("click", () => Battle.prototype.context.generateName("culture"));
     document.getElementById("battleNameRandom").addEventListener("click", () => Battle.prototype.context.generateName("random"));
@@ -69,9 +70,9 @@ class Battle {
       if (typesA.every(t => t === "aviation") && typesD.every(t => t === "aviation")) return "air"; // if attackers and defender have only aviation units
       if (attacker.n && !defender.n && typesA.some(t => t !== "naval")) return "landing"; // if attacked is naval with non-naval units and defender is not naval
       if (!defender.n && pack.burgs[pack.cells.burg[this.cell]].walls) return "siege"; // defender is in walled town
-      if (P(.1) && [5,6,7,8,9,12].includes(pack.cells.biome[this.cell])) return "ambush"; // 20% if defenders are in forest or marshes
+      if (P(0.1) && [5, 6, 7, 8, 9, 12].includes(pack.cells.biome[this.cell])) return "ambush"; // 20% if defenders are in forest or marshes
       return "field";
-    }
+    };
 
     this.type = getType();
     this.setType();
@@ -80,9 +81,9 @@ class Battle {
   setType() {
     document.getElementById("battleType").className = "icon-button-" + this.type;
 
-    const sideSpecific = document.getElementById("battlePhases_"+this.type+"_attackers");
-    const attackers = sideSpecific ? sideSpecific.content : document.getElementById("battlePhases_"+this.type).content;
-    const defenders = sideSpecific ? document.getElementById("battlePhases_"+this.type+"_defenders").content : attackers;
+    const sideSpecific = document.getElementById("battlePhases_" + this.type + "_attackers");
+    const attackers = sideSpecific ? sideSpecific.content : document.getElementById("battlePhases_" + this.type).content;
+    const defenders = sideSpecific ? document.getElementById("battlePhases_" + this.type + "_defenders").content : attackers;
 
     document.getElementById("battlePhase_attackers").nextElementSibling.innerHTML = "";
     document.getElementById("battlePhase_defenders").nextElementSibling.innerHTML = "";
@@ -91,9 +92,13 @@ class Battle {
   }
 
   definePlace() {
-    const cells = pack.cells, i = this.cell;
+    const cells = pack.cells,
+      i = this.cell;
     const burg = cells.burg[i] ? pack.burgs[cells.burg[i]].name : null;
-    const getRiver = i => {const river = pack.rivers.find(r => r.i === i); return river.name + " " + river.type};
+    const getRiver = i => {
+      const river = pack.rivers.find(r => r.i === i);
+      return river.name + " " + river.type;
+    };
     const river = !burg && cells.r[i] ? getRiver(cells.r[i]) : null;
     const proper = burg || river ? null : Names.getCulture(cells.culture[this.cell]);
     return burg ? burg : river ? river : proper;
@@ -102,10 +107,10 @@ class Battle {
   defineName() {
     if (this.type === "field") return "Battle of " + this.place;
     if (this.type === "naval") return "Naval Battle of " + this.place;
-    if (this.type === "siege") return "Siege of "+ this.place;
+    if (this.type === "siege") return "Siege of " + this.place;
     if (this.type === "ambush") return this.place + " Ambush";
     if (this.type === "landing") return this.place + " Landing";
-    if (this.type === "air") return `${this.place} ${P(.8) ? "Air Battle" : "Dogfight"}`;
+    if (this.type === "air") return `${this.place} ${P(0.8) ? "Air Battle" : "Dogfight"}`;
   }
 
   getTypeName() {
@@ -121,7 +126,7 @@ class Battle {
     let headers = "<thead><tr><th></th><th></th>";
 
     for (const u of options.military) {
-      const label = capitalize(u.name.replace(/_/g, ' '));
+      const label = capitalize(u.name.replace(/_/g, " "));
       headers += `<th data-tip="${label}">${u.icon}</th>`;
     }
 
@@ -130,11 +135,11 @@ class Battle {
   }
 
   addRegiment(side, regiment) {
-    regiment.casualties = Object.keys(regiment.u).reduce((a,b) => (a[b]=0,a), {});
+    regiment.casualties = Object.keys(regiment.u).reduce((a, b) => ((a[b] = 0), a), {});
     regiment.survivors = Object.assign({}, regiment.u);
 
     const state = pack.states[regiment.state];
-    const distance = Math.hypot(this.y-regiment.by, this.x-regiment.bx) * distanceScaleInput.value | 0; // distance between regiment and its base
+    const distance = (Math.hypot(this.y - regiment.by, this.x - regiment.bx) * distanceScaleInput.value) | 0; // distance between regiment and its base
     const color = state.color[0] === "#" ? state.color : "#999";
     const icon = `<svg width="1.4em" height="1.4em" style="margin-bottom: -.6em">
       <rect x="0" y="0" width="100%" height="100%" fill="${color}" class="fillRect"></rect>
@@ -146,14 +151,14 @@ class Battle {
     let survivors = `<tr class="battleSurvivors"><td></td><td data-tip="Supply line length, affects morale">Distance to base: ${distance} ${distanceUnitInput.value}</td>`;
 
     for (const u of options.military) {
-      initial += `<td data-tip="Initial forces" style="width: 2.5em; text-align: center">${regiment.u[u.name]||0}</td>`;
+      initial += `<td data-tip="Initial forces" style="width: 2.5em; text-align: center">${regiment.u[u.name] || 0}</td>`;
       casualties += `<td data-tip="Casualties" style="width: 2.5em; text-align: center; color: red">0</td>`;
-      survivors += `<td data-tip="Survivors" style="width: 2.5em; text-align: center; color: green">${regiment.u[u.name]||0}</td>`;
+      survivors += `<td data-tip="Survivors" style="width: 2.5em; text-align: center; color: green">${regiment.u[u.name] || 0}</td>`;
     }
 
-    initial += `<td data-tip="Initial forces" style="width: 2.5em; text-align: center">${regiment.a||0}</td></tr>`;
+    initial += `<td data-tip="Initial forces" style="width: 2.5em; text-align: center">${regiment.a || 0}</td></tr>`;
     casualties += `<td data-tip="Casualties"  style="width: 2.5em; text-align: center; color: red">0</td></tr>`;
-    survivors += `<td data-tip="Survivors" style="width: 2.5em; text-align: center; color: green">${regiment.a||0}</td></tr>`;
+    survivors += `<td data-tip="Survivors" style="width: 2.5em; text-align: center; color: green">${regiment.a || 0}</td></tr>`;
 
     const div = side === "attackers" ? battleAttackers : battleDefenders;
     div.innerHTML += body + initial + casualties + survivors + "</tbody>";
@@ -164,13 +169,19 @@ class Battle {
   addSide() {
     const body = document.getElementById("regimentSelectorBody");
     const context = Battle.prototype.context;
-    const regiments = pack.states.filter(s => s.military && !s.removed).map(s => s.military).flat();
-    const distance = reg => rn(Math.hypot(context.y-reg.y, context.x-reg.x) * distanceScaleInput.value) + " " + distanceUnitInput.value;
+    const regiments = pack.states
+      .filter(s => s.military && !s.removed)
+      .map(s => s.military)
+      .flat();
+    const distance = reg => rn(Math.hypot(context.y - reg.y, context.x - reg.x) * distanceScaleInput.value) + " " + distanceUnitInput.value;
     const isAdded = reg => context.defenders.regiments.some(r => r === reg) || context.attackers.regiments.some(r => r === reg);
 
-    body.innerHTML = regiments.map(r => {
-      const s = pack.states[r.state], added = isAdded(r), dist = added ? "0 " + distanceUnitInput.value : distance(r);
-      return `<div ${added ? "class='inactive'" : ""} data-s=${s.i} data-i=${r.i} data-state=${s.name} data-regiment=${r.name} 
+    body.innerHTML = regiments
+      .map(r => {
+        const s = pack.states[r.state],
+          added = isAdded(r),
+          dist = added ? "0 " + distanceUnitInput.value : distance(r);
+        return `<div ${added ? "class='inactive'" : ""} data-s=${s.i} data-i=${r.i} data-state=${s.name} data-regiment=${r.name} 
         data-total=${r.a} data-distance=${dist} data-tip="Click to select regiment">
         <svg width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${s.color}" class="fillRect"></svg>
         <div style="width:6em">${s.name.slice(0, 11)}</div>
@@ -179,11 +190,15 @@ class Battle {
         <div style="width:4em">${r.a}</div>
         <div style="width:4em">${dist}</div>
       </div>`;
-    }).join("");
+      })
+      .join("");
 
     $("#regimentSelectorScreen").dialog({
-      resizable: false, width: fitContent(), title: "Add regiment to the battle",
-      position: {my: "left center", at: "right+10 center", of: "#battleScreen"}, close: addSideClosed,
+      resizable: false,
+      width: fitContent(),
+      title: "Add regiment to the battle",
+      position: {my: "left center", at: "right+10 center", of: "#battleScreen"},
+      close: addSideClosed,
       buttons: {
         "Add to attackers": () => addSideClicked("attackers"),
         "Add to defenders": () => addSideClicked("defenders"),
@@ -195,13 +210,19 @@ class Battle {
     body.addEventListener("click", selectLine);
 
     function selectLine(ev) {
-      if (ev.target.className === "inactive") {tip("Regiment is already in the battle", false, "error"); return};
+      if (ev.target.className === "inactive") {
+        tip("Regiment is already in the battle", false, "error");
+        return;
+      }
       ev.target.classList.toggle("selected");
     }
 
     function addSideClicked(side) {
       const selected = body.querySelectorAll(".selected");
-      if (!selected.length) {tip("Please select a regiment first", false, "error"); return}
+      if (!selected.length) {
+        tip("Please select a regiment first", false, "error");
+        return;
+      }
 
       $("#regimentSelectorScreen").dialog("close");
       selected.forEach(line => {
@@ -212,8 +233,9 @@ class Battle {
         Battle.prototype.getInitialMorale.call(context);
 
         // move regiment
-        const defenders = context.defenders.regiments, attackers = context.attackers.regiments;
-        const shift = side === "attackers" ? attackers.length * -8 : (defenders.length-1) * 8;
+        const defenders = context.defenders.regiments,
+          attackers = context.attackers.regiments;
+        const shift = side === "attackers" ? attackers.length * -8 : (defenders.length - 1) * 8;
         regiment.px = regiment.x;
         regiment.py = regiment.y;
         Military.moveRegiment(regiment, defenders[0].x, defenders[0].y + shift);
@@ -227,7 +249,7 @@ class Battle {
   }
 
   showNameSection() {
-    document.querySelectorAll("#battleBottom > button").forEach(el => el.style.display = "none");
+    document.querySelectorAll("#battleBottom > button").forEach(el => (el.style.display = "none"));
     document.getElementById("battleNameSection").style.display = "inline-block";
 
     document.getElementById("battleNamePlace").value = this.place;
@@ -235,22 +257,20 @@ class Battle {
   }
 
   hideNameSection() {
-    document.querySelectorAll("#battleBottom > button").forEach(el => el.style.display = "inline-block");
+    document.querySelectorAll("#battleBottom > button").forEach(el => (el.style.display = "inline-block"));
     document.getElementById("battleNameSection").style.display = "none";
   }
 
   changeName(ev) {
     this.name = ev.target.value;
-    $("#battleScreen").dialog({"title":this.name});
+    $("#battleScreen").dialog({title: this.name});
   }
 
   generateName(type) {
-    const place = type === "culture" 
-      ? Names.getCulture(pack.cells.culture[this.cell], null, null, "")
-      : Names.getBase(rand(nameBases.length-1));
+    const place = type === "culture" ? Names.getCulture(pack.cells.culture[this.cell], null, null, "") : Names.getBase(rand(nameBases.length - 1));
     document.getElementById("battleNamePlace").value = this.place = place;
     document.getElementById("battleNameFull").value = this.name = this.defineName();
-    $("#battleScreen").dialog({"title":this.name});
+    $("#battleScreen").dialog({title: this.name});
   }
 
   getJoinedForces(regiments) {
@@ -266,47 +286,47 @@ class Battle {
   calculateStrength(side) {
     const scheme = {
       // field battle phases
-      "skirmish": {"melee":.2, "ranged":2.4, "mounted":.1, "machinery":3, "naval":1, "armored":.2, "aviation":1.8, "magical":1.8}, // ranged excel
-      "melee": {"melee":2, "ranged":1.2, "mounted":1.5, "machinery":.5, "naval":.2, "armored":2, "aviation":.8, "magical":.8}, // melee excel
-      "pursue": {"melee":1, "ranged":1, "mounted":4, "machinery":.05, "naval":1, "armored":1, "aviation":1.5, "magical":.6}, // mounted excel
-      "retreat": {"melee":.1, "ranged":.01, "mounted":.5, "machinery":.01, "naval":.2, "armored":.1, "aviation":.8, "magical":.05}, // reduced
+      skirmish: {melee: 0.2, ranged: 2.4, mounted: 0.1, machinery: 3, naval: 1, armored: 0.2, aviation: 1.8, magical: 1.8}, // ranged excel
+      melee: {melee: 2, ranged: 1.2, mounted: 1.5, machinery: 0.5, naval: 0.2, armored: 2, aviation: 0.8, magical: 0.8}, // melee excel
+      pursue: {melee: 1, ranged: 1, mounted: 4, machinery: 0.05, naval: 1, armored: 1, aviation: 1.5, magical: 0.6}, // mounted excel
+      retreat: {melee: 0.1, ranged: 0.01, mounted: 0.5, machinery: 0.01, naval: 0.2, armored: 0.1, aviation: 0.8, magical: 0.05}, // reduced
 
       // naval battle phases
-      "shelling": {"melee":0, "ranged":.2, "mounted":0, "machinery":2, "naval":2, "armored":0, "aviation":.1, "magical":.5}, // naval and machinery excel
-      "boarding": {"melee":1, "ranged":.5, "mounted":.5, "machinery":0, "naval":.5, "armored":.4, "aviation":0, "magical":.2}, // melee excel
-      "chase": {"melee":0, "ranged":.15, "mounted":0, "machinery":1, "naval":1, "armored":0, "aviation":.15, "magical":.5}, // reduced
-      "withdrawal": {"melee":0, "ranged":.02, "mounted":0, "machinery":.5, "naval":.1, "armored":0, "aviation":.1, "magical":.3}, // reduced
+      shelling: {melee: 0, ranged: 0.2, mounted: 0, machinery: 2, naval: 2, armored: 0, aviation: 0.1, magical: 0.5}, // naval and machinery excel
+      boarding: {melee: 1, ranged: 0.5, mounted: 0.5, machinery: 0, naval: 0.5, armored: 0.4, aviation: 0, magical: 0.2}, // melee excel
+      chase: {melee: 0, ranged: 0.15, mounted: 0, machinery: 1, naval: 1, armored: 0, aviation: 0.15, magical: 0.5}, // reduced
+      withdrawal: {melee: 0, ranged: 0.02, mounted: 0, machinery: 0.5, naval: 0.1, armored: 0, aviation: 0.1, magical: 0.3}, // reduced
 
       // siege phases
-      "blockade": {"melee":.25, "ranged":.25, "mounted":.2, "machinery":.5, "naval":.2, "armored":.1, "aviation":.25, "magical":.25}, // no active actions
-      "sheltering": {"melee":.3, "ranged":.5, "mounted":.2, "machinery":.5, "naval":.2, "armored":.1, "aviation":.25, "magical":.25}, // no active actions
-      "sortie": {"melee":2, "ranged":.5, "mounted":1.2, "machinery":.2, "naval":.1, "armored":.5, "aviation":1, "magical":1}, // melee excel
-      "bombardment": {"melee":.2, "ranged":.5, "mounted":.2, "machinery":3, "naval":1, "armored":.5, "aviation":1, "magical":1}, // machinery excel
-      "storming": {"melee":1, "ranged":.6, "mounted":.5, "machinery":1, "naval":.1, "armored":.1, "aviation":.5, "magical":.5}, // melee excel
-      "defense": {"melee":2, "ranged":3, "mounted":1, "machinery":1, "naval":.1, "armored":1, "aviation":.5, "magical":1}, // ranged excel
-      "looting": {"melee":1.6, "ranged":1.6, "mounted":.5, "machinery":.2, "naval":.02, "armored":.2, "aviation":.1, "magical":.3}, // melee excel
-      "surrendering": {"melee":.1, "ranged":.1, "mounted":.05, "machinery":.01, "naval":.01, "armored":.02, "aviation":.01, "magical":.03}, // reduced
+      blockade: {melee: 0.25, ranged: 0.25, mounted: 0.2, machinery: 0.5, naval: 0.2, armored: 0.1, aviation: 0.25, magical: 0.25}, // no active actions
+      sheltering: {melee: 0.3, ranged: 0.5, mounted: 0.2, machinery: 0.5, naval: 0.2, armored: 0.1, aviation: 0.25, magical: 0.25}, // no active actions
+      sortie: {melee: 2, ranged: 0.5, mounted: 1.2, machinery: 0.2, naval: 0.1, armored: 0.5, aviation: 1, magical: 1}, // melee excel
+      bombardment: {melee: 0.2, ranged: 0.5, mounted: 0.2, machinery: 3, naval: 1, armored: 0.5, aviation: 1, magical: 1}, // machinery excel
+      storming: {melee: 1, ranged: 0.6, mounted: 0.5, machinery: 1, naval: 0.1, armored: 0.1, aviation: 0.5, magical: 0.5}, // melee excel
+      defense: {melee: 2, ranged: 3, mounted: 1, machinery: 1, naval: 0.1, armored: 1, aviation: 0.5, magical: 1}, // ranged excel
+      looting: {melee: 1.6, ranged: 1.6, mounted: 0.5, machinery: 0.2, naval: 0.02, armored: 0.2, aviation: 0.1, magical: 0.3}, // melee excel
+      surrendering: {melee: 0.1, ranged: 0.1, mounted: 0.05, machinery: 0.01, naval: 0.01, armored: 0.02, aviation: 0.01, magical: 0.03}, // reduced
 
       // ambush phases
-      "surprise": {"melee":2, "ranged":2.4, "mounted":1, "machinery":1, "naval":1, "armored":1, "aviation":.8, "magical":1.2}, // increased
-      "shock": {"melee":.5, "ranged":.5, "mounted":.5, "machinery":.4, "naval":.3, "armored":.1, "aviation":.4, "magical":.5}, // reduced
+      surprise: {melee: 2, ranged: 2.4, mounted: 1, machinery: 1, naval: 1, armored: 1, aviation: 0.8, magical: 1.2}, // increased
+      shock: {melee: 0.5, ranged: 0.5, mounted: 0.5, machinery: 0.4, naval: 0.3, armored: 0.1, aviation: 0.4, magical: 0.5}, // reduced
 
       // langing phases
-      "landing": {"melee":.8, "ranged":.6, "mounted":.6, "machinery":.5, "naval":.5, "armored":.5, "aviation":.5, "magical":.6}, // reduced
-      "flee": {"melee":.1, "ranged":.01, "mounted":.5, "machinery":.01, "naval":.5, "armored":.1, "aviation":.2, "magical":.05}, // reduced
-      "waiting": {"melee":.05, "ranged":.5, "mounted":.05, "machinery":.5, "naval":2, "armored":.05, "aviation":.5, "magical":.5}, // reduced
+      landing: {melee: 0.8, ranged: 0.6, mounted: 0.6, machinery: 0.5, naval: 0.5, armored: 0.5, aviation: 0.5, magical: 0.6}, // reduced
+      flee: {melee: 0.1, ranged: 0.01, mounted: 0.5, machinery: 0.01, naval: 0.5, armored: 0.1, aviation: 0.2, magical: 0.05}, // reduced
+      waiting: {melee: 0.05, ranged: 0.5, mounted: 0.05, machinery: 0.5, naval: 2, armored: 0.05, aviation: 0.5, magical: 0.5}, // reduced
 
       // air battle phases
-      "maneuvering": {"melee":0, "ranged":.1, "mounted":0, "machinery":.2, "naval":0, "armored":0, "aviation":1, "magical":.2}, // aviation
-      "dogfight": {"melee":0, "ranged":.1, "mounted":0, "machinery":.1, "naval":0, "armored":0, "aviation":2, "magical":.1} // aviation
+      maneuvering: {melee: 0, ranged: 0.1, mounted: 0, machinery: 0.2, naval: 0, armored: 0, aviation: 1, magical: 0.2}, // aviation
+      dogfight: {melee: 0, ranged: 0.1, mounted: 0, machinery: 0.1, naval: 0, armored: 0, aviation: 2, magical: 0.1} // aviation
     };
 
     const forces = this.getJoinedForces(this[side].regiments);
     const phase = this[side].phase;
-    const adjuster = Math.max(populationRate.value / 10, 10); // population adjuster, by default 100
+    const adjuster = Math.max(populationRate / 10, 10); // population adjuster, by default 100
     this[side].power = d3.sum(options.military.map(u => (forces[u.name] || 0) * u.power * scheme[phase][u.type])) / adjuster;
-    const UIvalue = this[side].power ? Math.max(this[side].power|0, 1) : 0;
-    document.getElementById("battlePower_"+side).innerHTML = UIvalue;
+    const UIvalue = this[side].power ? Math.max(this[side].power | 0, 1) : 0;
+    document.getElementById("battlePower_" + side).innerHTML = UIvalue;
   }
 
   getInitialMorale() {
@@ -320,7 +340,7 @@ class Battle {
   }
 
   updateMorale(side) {
-    const morale = document.getElementById("battleMorale_"+side);
+    const morale = document.getElementById("battleMorale_" + side);
     morale.dataset.tip = morale.dataset.tip.replace(morale.value, "");
     morale.value = this[side].morale | 0;
     morale.dataset.tip += morale.value;
@@ -335,9 +355,11 @@ class Battle {
   }
 
   rollDie(side) {
-    const el = document.getElementById("battleDie_"+side);
+    const el = document.getElementById("battleDie_" + side);
     const prev = +el.innerHTML;
-    do {el.innerHTML = rand(1, 6)} while (el.innerHTML == prev)
+    do {
+      el.innerHTML = rand(1, 6);
+    } while (el.innerHTML == prev);
     this[side].die = +el.innerHTML;
   }
 
@@ -357,12 +379,18 @@ class Battle {
       if (prev[0] === "skirmish" && prev[1] === "skirmish") {
         const forces = this.getJoinedForces(this.attackers.regiments.concat(this.defenders.regiments));
         const total = d3.sum(Object.values(forces)); // total forces
-        const ranged = d3.sum(options.military.filter(u => u.type === "ranged").map(u => u.name).map(u => forces[u])) / total; // ranged units
-        if (P(ranged) || P(.8-i/10)) return ["skirmish", "skirmish"];
+        const ranged =
+          d3.sum(
+            options.military
+              .filter(u => u.type === "ranged")
+              .map(u => u.name)
+              .map(u => forces[u])
+          ) / total; // ranged units
+        if (P(ranged) || P(0.8 - i / 10)) return ["skirmish", "skirmish"];
       }
 
       return ["melee", "melee"]; // default option
-    }
+    };
 
     const getNavalBattlePhase = () => {
       const prev = [this.attackers.phase || "shelling", this.defenders.phase || "shelling"]; // previous phase
@@ -372,66 +400,66 @@ class Battle {
 
       // withdrawal phase when power imbalanced
       if (!prev[0] === "boarding") {
-        if (powerRatio < .5 || P(this.attackers.casualties) && powerRatio < 1) return ["withdrawal", "chase"];
-        if (powerRatio > 2 || P(this.defenders.casualties) && powerRatio > 1) return ["chase", "withdrawal"];
+        if (powerRatio < 0.5 || (P(this.attackers.casualties) && powerRatio < 1)) return ["withdrawal", "chase"];
+        if (powerRatio > 2 || (P(this.defenders.casualties) && powerRatio > 1)) return ["chase", "withdrawal"];
       }
 
       // boarding phase can start from 2nd iteration
-      if (prev[0] === "boarding" || P(i/10 - .1)) return ["boarding", "boarding"];
+      if (prev[0] === "boarding" || P(i / 10 - 0.1)) return ["boarding", "boarding"];
 
       return ["shelling", "shelling"]; // default option
-    }
+    };
 
     const getSiegePhase = () => {
       const prev = [this.attackers.phase || "blockade", this.defenders.phase || "sheltering"]; // previous phase
-      let phase = ["blockade", "sheltering"] // default phase
+      let phase = ["blockade", "sheltering"]; // default phase
 
       if (prev[0] === "retreat" || prev[0] === "looting") return prev;
 
       if (P(1 - morale[0] / 30) && powerRatio < 1) return ["retreat", "pursue"]; // attackers retreat chance if moral < 30
       if (P(1 - morale[1] / 15)) return ["looting", "surrendering"]; // defenders surrendering chance if moral < 15
 
-      if (P((powerRatio-1) / 2)) return ["storming", "defense"]; // start storm
+      if (P((powerRatio - 1) / 2)) return ["storming", "defense"]; // start storm
 
       if (prev[0] !== "storming") {
         const machinery = options.military.filter(u => u.type === "machinery").map(u => u.name); // machinery units
 
         const attackers = this.getJoinedForces(this.attackers.regiments);
         const machineryA = d3.sum(machinery.map(u => attackers[u]));
-        if (i && machineryA && P(.9)) phase[0] = "bombardment";
+        if (i && machineryA && P(0.9)) phase[0] = "bombardment";
 
         const defenders = this.getJoinedForces(this.defenders.regiments);
         const machineryD = d3.sum(machinery.map(u => defenders[u]));
-        if (machineryD && P(.9)) phase[1] = "bombardment";
+        if (machineryD && P(0.9)) phase[1] = "bombardment";
 
-        if (i && prev[1] !== "sortie" && machineryD < machineryA && P(.25) && P(morale[1]/70)) phase[1] = "sortie"; // defenders sortie
+        if (i && prev[1] !== "sortie" && machineryD < machineryA && P(0.25) && P(morale[1] / 70)) phase[1] = "sortie"; // defenders sortie
       }
 
       return phase;
-    }
+    };
 
     const getAmbushPhase = () => {
       const prev = [this.attackers.phase || "shock", this.defenders.phase || "surprise"]; // previous phase
 
-      if (prev[1] === "surprise" && P(1-powerRatio*i/5)) return ["shock", "surprise"];
+      if (prev[1] === "surprise" && P(1 - (powerRatio * i) / 5)) return ["shock", "surprise"];
 
       // chance if moral < 25
       if (P(1 - morale[0] / 25)) return ["retreat", "pursue"];
       if (P(1 - morale[1] / 25)) return ["pursue", "retreat"];
 
       return ["melee", "melee"]; // default option
-    }
+    };
 
     const getLandingPhase = () => {
       const prev = [this.attackers.phase || "landing", this.defenders.phase || "defense"]; // previous phase
 
       if (prev[1] === "waiting") return ["flee", "waiting"];
-      if (prev[1] === "pursue") return ["flee", P(.3) ? "pursue" : "waiting"];
+      if (prev[1] === "pursue") return ["flee", P(0.3) ? "pursue" : "waiting"];
       if (prev[1] === "retreat") return ["pursue", "retreat"];
 
       if (prev[0] === "landing") {
-        const attackers = P(i/2) ? "melee" : "landing";
-        const defenders = i ? prev[1] : P(.5) ? "defense" : "shock";
+        const attackers = P(i / 2) ? "melee" : "landing";
+        const defenders = i ? prev[1] : P(0.5) ? "defense" : "shock";
         return [attackers, defenders];
       }
 
@@ -439,7 +467,7 @@ class Battle {
       if (P(1 - morale[1] / 25)) return ["pursue", "retreat"]; // chance if moral < 25
 
       return ["melee", "melee"]; // default option
-    }
+    };
 
     const getAirBattlePhase = () => {
       const prev = [this.attackers.phase || "maneuvering", this.defenders.phase || "maneuvering"]; // previous phase
@@ -448,53 +476,87 @@ class Battle {
       if (P(1 - morale[0] / 25)) return ["retreat", "pursue"];
       if (P(1 - morale[1] / 25)) return ["pursue", "retreat"];
 
-      if (prev[0] === "maneuvering" && P(1-i/10)) return ["maneuvering", "maneuvering"];
+      if (prev[0] === "maneuvering" && P(1 - i / 10)) return ["maneuvering", "maneuvering"];
 
       return ["dogfight", "dogfight"]; // default option
-    }
+    };
 
-    const phase = function(type) {
+    const phase = (function (type) {
       switch (type) {
-        case "field": return getFieldBattlePhase();
-        case "naval": return getNavalBattlePhase();
-        case "siege": return getSiegePhase();
-        case "ambush": return getAmbushPhase();
-        case "landing": return getLandingPhase();
-        case "air": return getAirBattlePhase();
-        default: getFieldBattlePhase();
+        case "field":
+          return getFieldBattlePhase();
+        case "naval":
+          return getNavalBattlePhase();
+        case "siege":
+          return getSiegePhase();
+        case "ambush":
+          return getAmbushPhase();
+        case "landing":
+          return getLandingPhase();
+        case "air":
+          return getAirBattlePhase();
+        default:
+          getFieldBattlePhase();
       }
-    }(this.type);
+    })(this.type);
 
     this.attackers.phase = phase[0];
     this.defenders.phase = phase[1];
 
     const buttonA = document.getElementById("battlePhase_attackers");
     buttonA.className = "icon-button-" + this.attackers.phase;
-    buttonA.dataset.tip = buttonA.nextElementSibling.querySelector("[data-phase='"+phase[0]+"']").dataset.tip;
+    buttonA.dataset.tip = buttonA.nextElementSibling.querySelector("[data-phase='" + phase[0] + "']").dataset.tip;
 
     const buttonD = document.getElementById("battlePhase_defenders");
     buttonD.className = "icon-button-" + this.defenders.phase;
-    buttonD.dataset.tip = buttonD.nextElementSibling.querySelector("[data-phase='"+phase[1]+"']").dataset.tip;
+    buttonD.dataset.tip = buttonD.nextElementSibling.querySelector("[data-phase='" + phase[1] + "']").dataset.tip;
   }
 
   run() {
     // validations
-    if (!this.attackers.power) {tip("Attackers army destroyed", false, "warn"); return}
-    if (!this.defenders.power) {tip("Defenders army destroyed", false, "warn"); return}
+    if (!this.attackers.power) {
+      tip("Attackers army destroyed", false, "warn");
+      return;
+    }
+    if (!this.defenders.power) {
+      tip("Defenders army destroyed", false, "warn");
+      return;
+    }
 
     // calculate casualties
-    const attack = this.attackers.power * (this.attackers.die / 10 + .4);
-    const defense = this.defenders.power * (this.defenders.die / 10 + .4);
+    const attack = this.attackers.power * (this.attackers.die / 10 + 0.4);
+    const defense = this.defenders.power * (this.defenders.die / 10 + 0.4);
 
     // casualties modifier for phase
     const phase = {
-      "skirmish":.1, "melee":.2, "pursue":.3, "retreat":.3, "boarding":.2, "shelling":.1, "chase":.03, "withdrawal": .03,
-      "blockade":0, "sheltering":0, "sortie":.1, "bombardment":.05, "storming":.2, "defense":.2, "looting":.5, "surrendering":.5,
-      "surprise":.3, "shock":.3, "landing":.3, "flee":0, "waiting":0, "maneuvering":.1, "dogfight":.2};
+      skirmish: 0.1,
+      melee: 0.2,
+      pursue: 0.3,
+      retreat: 0.3,
+      boarding: 0.2,
+      shelling: 0.1,
+      chase: 0.03,
+      withdrawal: 0.03,
+      blockade: 0,
+      sheltering: 0,
+      sortie: 0.1,
+      bombardment: 0.05,
+      storming: 0.2,
+      defense: 0.2,
+      looting: 0.5,
+      surrendering: 0.5,
+      surprise: 0.3,
+      shock: 0.3,
+      landing: 0.3,
+      flee: 0,
+      waiting: 0,
+      maneuvering: 0.1,
+      dogfight: 0.2
+    };
 
-    const casualties = Math.random() * (Math.max(phase[this.attackers.phase], phase[this.defenders.phase])); // total casualties, ~10% per iteration
-    const casualtiesA = casualties * defense / (attack + defense); // attackers casualties, ~5% per iteration
-    const casualtiesD = casualties * attack / (attack + defense); // defenders casualties, ~5% per iteration
+    const casualties = Math.random() * Math.max(phase[this.attackers.phase], phase[this.defenders.phase]); // total casualties, ~10% per iteration
+    const casualtiesA = (casualties * defense) / (attack + defense); // attackers casualties, ~5% per iteration
+    const casualtiesD = (casualties * attack) / (attack + defense); // defenders casualties, ~5% per iteration
 
     this.calculateCasualties("attackers", casualtiesA);
     this.calculateCasualties("defenders", casualtiesD);
@@ -519,7 +581,7 @@ class Battle {
   calculateCasualties(side, casualties) {
     for (const r of this[side].regiments) {
       for (const unit in r.u) {
-        const rand = .8 + Math.random() * .4;
+        const rand = 0.8 + Math.random() * 0.4;
         const died = Math.min(Pint(r.u[unit] * casualties * rand), r.survivors[unit]);
         r.casualties[unit] -= died;
         r.survivors[unit] -= died;
@@ -551,10 +613,16 @@ class Battle {
     const button = ev.target;
     const div = button.nextElementSibling;
 
-    const hideSection = function() {button.style.opacity = 1; div.style.display = "none"}
-    if (div.style.display === "block") {hideSection(); return}
+    const hideSection = function () {
+      button.style.opacity = 1;
+      div.style.display = "none";
+    };
+    if (div.style.display === "block") {
+      hideSection();
+      return;
+    }
 
-    button.style.opacity = .5;
+    button.style.opacity = 0.5;
     div.style.display = "block";
 
     document.getElementsByTagName("body")[0].addEventListener("click", hideSection, {once: true});
@@ -568,13 +636,13 @@ class Battle {
     this.calculateStrength("attackers");
     this.calculateStrength("defenders");
     this.name = this.defineName();
-    $("#battleScreen").dialog({"title":this.name});
+    $("#battleScreen").dialog({title: this.name});
   }
 
   changePhase(ev, side) {
     if (ev.target.tagName !== "BUTTON") return;
-    const phase = this[side].phase = ev.target.dataset.phase;
-    const button = document.getElementById("battlePhase_"+side);
+    const phase = (this[side].phase = ev.target.dataset.phase);
+    const button = document.getElementById("battlePhase_" + side);
     button.className = "icon-button-" + phase;
     button.dataset.tip = ev.target.dataset.tip;
     this.calculateStrength(side);
@@ -587,12 +655,12 @@ class Battle {
     const battleStatus = getBattleStatus(relativeCasualties, maxCasualties);
     function getBattleStatus(relative, max) {
       if (isNaN(relative)) return ["standoff", "standoff"]; // if no casualties at all
-      if (max < .05) return ["minor skirmishes", "minor skirmishes"];
+      if (max < 0.05) return ["minor skirmishes", "minor skirmishes"];
       if (relative > 95) return ["attackers flawless victory", "disorderly retreat of defenders"];
-      if (relative > .7) return ["attackers decisive victory", "defenders disastrous defeat"];
-      if (relative > .6) return ["attackers victory", "defenders defeat"];
-      if (relative > .4) return ["stalemate", "stalemate"];
-      if (relative > .3) return ["attackers defeat", "defenders victory"];
+      if (relative > 0.7) return ["attackers decisive victory", "defenders disastrous defeat"];
+      if (relative > 0.6) return ["attackers victory", "defenders defeat"];
+      if (relative > 0.4) return ["stalemate", "stalemate"];
+      if (relative > 0.3) return ["attackers defeat", "defenders victory"];
       if (relative > 0.5) return ["attackers disastrous defeat", "decisive victory of defenders"];
       if (relative >= 0) return ["attackers disorderly retreat", "flawless victory of defenders"];
       return ["stalemate", "stalemate"]; // exception
@@ -609,16 +677,10 @@ class Battle {
       if (note) {
         const status = side === "attackers" ? battleStatus[0] : battleStatus[1];
         const losses = r.a ? Math.abs(d3.sum(Object.values(r.casualties))) / r.a : 1;
-        const regStatus =
-          losses === 1 ? "is destroyed" :
-          losses > .8 ? "is almost completely destroyed" :
-          losses > .5 ? "suffered terrible losses" :
-          losses > .3 ? "suffered severe losses" :
-          losses > .2 ? "suffered heavy losses" :
-          losses > .05 ? "suffered significant losses" :
-          losses > 0 ? "suffered unsignificant losses" :
-          "left the battle without loss";
-        const casualties = Object.keys(r.casualties).map(t => r.casualties[t] ? `${Math.abs(r.casualties[t])} ${t}` : null).filter(c => c);
+        const regStatus = losses === 1 ? "is destroyed" : losses > 0.8 ? "is almost completely destroyed" : losses > 0.5 ? "suffered terrible losses" : losses > 0.3 ? "suffered severe losses" : losses > 0.2 ? "suffered heavy losses" : losses > 0.05 ? "suffered significant losses" : losses > 0 ? "suffered unsignificant losses" : "left the battle without loss";
+        const casualties = Object.keys(r.casualties)
+          .map(t => (r.casualties[t] ? `${Math.abs(r.casualties[t])} ${t}` : null))
+          .filter(c => c);
         const casualtiesText = casualties.length ? " Casualties: " + list(casualties) + "." : "";
         const legend = `\r\n\r\n${battleName} (${options.year} ${options.eraShort}): ${status}. The regiment ${regStatus}.${casualtiesText}`;
         note.legend += legend;
@@ -630,33 +692,38 @@ class Battle {
     }
 
     // append battlefield marker
-    void function addMarkerSymbol() {
+    void (function addMarkerSymbol() {
       if (svg.select("#defs-markers").select("#marker_battlefield").size()) return;
       const symbol = svg.select("#defs-markers").append("symbol").attr("id", "marker_battlefield").attr("viewBox", "0 0 30 30");
       symbol.append("path").attr("d", "M6,19 l9,10 L24,19").attr("fill", "#000000").attr("stroke", "none");
       symbol.append("circle").attr("cx", 15).attr("cy", 15).attr("r", 10).attr("fill", "#ffffff").attr("stroke", "#000000").attr("stroke-width", 1);
-      symbol.append("text").attr("x", "50%").attr("y", "52%").attr("fill", "#000000").attr("stroke", "#3200ff").attr("stroke-width", 0)
-        .attr("font-size", "12px").attr("dominant-baseline", "central").text("⚔️");
-    }()
+      symbol.append("text").attr("x", "50%").attr("y", "52%").attr("fill", "#000000").attr("stroke", "#3200ff").attr("stroke-width", 0).attr("font-size", "12px").attr("dominant-baseline", "central").text("⚔️");
+    })();
 
-    const getSide = (regs, n) => regs.length > 1
-      ? `${n ? "regiments" : "forces"} of ${list([... new Set(regs.map(r => pack.states[r.state].name))])}`
-      : getAdjective(pack.states[regs[0].state].name) + " " + regs[0].name;
+    const getSide = (regs, n) => (regs.length > 1 ? `${n ? "regiments" : "forces"} of ${list([...new Set(regs.map(r => pack.states[r.state].name))])}` : getAdjective(pack.states[regs[0].state].name) + " " + regs[0].name);
     const getLosses = casualties => Math.min(rn(casualties * 100), 100);
 
-    const status = battleStatus[+P(.7)];
+    const status = battleStatus[+P(0.7)];
     const result = `The ${this.getTypeName(this.type)} ended in ${status}`;
     const legend = `${this.name} took place in ${options.year} ${options.eraShort}. It was fought between ${getSide(this.attackers.regiments, 1)} and ${getSide(this.defenders.regiments, 0)}. ${result}.
       \r\nAttackers losses: ${getLosses(this.attackers.casualties)}%, defenders losses: ${getLosses(this.defenders.casualties)}%`;
     const id = getNextId("markerElement");
-    notes.push({id, name:this.name, legend});
+    notes.push({id, name: this.name, legend});
 
     tip(`${this.name} is over. ${result}`, true, "success", 4000);
 
-    markers.append("use").attr("id", id)
-      .attr("xlink:href", "#marker_battlefield").attr("data-id", "#marker_battlefield")
-      .attr("data-x", this.x).attr("data-y", this.y).attr("x", this.x - 15).attr("y", this.y - 30)
-      .attr("data-size", 1).attr("width", 30).attr("height", 30);
+    markers
+      .append("use")
+      .attr("id", id)
+      .attr("xlink:href", "#marker_battlefield")
+      .attr("data-id", "#marker_battlefield")
+      .attr("data-x", this.x)
+      .attr("data-y", this.y)
+      .attr("x", this.x - 15)
+      .attr("y", this.y - 30)
+      .attr("data-size", 1)
+      .attr("width", 30)
+      .attr("height", 30);
 
     $("#battleScreen").dialog("destroy");
     this.cleanData();
@@ -682,5 +749,4 @@ class Battle {
     });
     delete Battle.prototype.context;
   }
-
 }

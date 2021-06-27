@@ -137,6 +137,9 @@ let options = {pinNotes: false}; // options object
 let mapCoordinates = {}; // map coordinates on globe
 options.winds = [225, 45, 225, 315, 135, 315]; // default wind directions
 
+let populationRate = +document.getElementById("populationRateInput").value;
+let urbanization = +document.getElementById("urbanizationInput").value;
+
 applyStoredOptions();
 let graphWidth = +mapWidthInput.value,
   graphHeight = +mapHeightInput.value; // voronoi graph extention, cannot be changed arter generation
@@ -1480,7 +1483,7 @@ function addMarkers(number = 1) {
       const resource = rw(resources);
       const burg = pack.burgs[cells.burg[cell]];
       const name = `${burg.name} — ${resource} mining town`;
-      const population = rn(burg.population * populationRate.value * urbanization.value);
+      const population = rn(burg.population * populationRate * urbanization);
       const legend = `${burg.name} is a mining town of ${population} people just nearby the ${resource} mine`;
       notes.push({id, name, legend});
       count--;

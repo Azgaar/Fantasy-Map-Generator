@@ -17,7 +17,10 @@ function editReligions() {
   modules.editReligions = true;
 
   $("#religionsEditor").dialog({
-    title: "Religions Editor", resizable: false, width: fitContent(), close: closeReligionsEditor,
+    title: "Religions Editor",
+    resizable: false,
+    width: fitContent(),
+    close: closeReligionsEditor,
     position: {my: "right top", at: "right-10 top+10", of: "svg"}
   });
 
@@ -40,8 +43,9 @@ function editReligions() {
   }
 
   function religionsCollectStatistics() {
-    const cells = pack.cells, religions = pack.religions;
-    religions.forEach(r => r.cells = r.area = r.rural = r.urban = 0);
+    const cells = pack.cells,
+      religions = pack.religions;
+    religions.forEach(r => (r.cells = r.area = r.rural = r.urban = 0));
 
     for (const i of cells.i) {
       if (cells.h[i] < 20) continue;
@@ -56,14 +60,16 @@ function editReligions() {
   // add line for each religion
   function religionsEditorAddLines() {
     const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
-    let lines = "", totalArea = 0, totalPopulation = 0;
+    let lines = "",
+      totalArea = 0,
+      totalPopulation = 0;
 
     for (const r of pack.religions) {
       if (r.removed) continue;
 
-      const area = r.area * (distanceScaleInput.value ** 2);
-      const rural = r.rural * populationRate.value;
-      const urban = r.urban * populationRate.value * urbanization.value;
+      const area = r.area * distanceScaleInput.value ** 2;
+      const rural = r.rural * populationRate;
+      const urban = r.urban * populationRate * urbanization;
       const population = rn(rural + urban);
       if (r.i && !r.cells && body.dataset.extinct !== "show") continue; // hide extinct religions
       const populationTip = `Believers: ${si(population)}; Rural areas: ${si(rural)}; Urban areas: ${si(urban)}. Click to change`;
@@ -72,13 +78,13 @@ function editReligions() {
 
       if (r.i) {
         lines += `<div class="states religions" data-id=${r.i} data-name="${r.name}" data-color="${r.color}" data-area=${area} 
-          data-population=${population} data-type=${r.type} data-form=${r.form} data-deity="${r.deity?r.deity:''}" data-expansionism=${r.expansionism}>
+          data-population=${population} data-type=${r.type} data-form=${r.form} data-deity="${r.deity ? r.deity : ""}" data-expansionism=${r.expansionism}>
           <svg data-tip="Religion fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${r.color}" class="fillRect pointer"></svg>
           <input data-tip="Religion name. Click and type to change" class="religionName" value="${r.name}" autocorrect="off" spellcheck="false">
           <select data-tip="Religion type" class="religionType">${getTypeOptions(r.type)}</select>
           <input data-tip="Religion form" class="religionForm hide" value="${r.form}" autocorrect="off" spellcheck="false">
           <span data-tip="Click to re-generate supreme deity" class="icon-arrows-cw hide"></span>
-          <input data-tip="Religion supreme deity" class="religionDeity hide" value="${r.deity?r.deity:''}" autocorrect="off" spellcheck="false">
+          <input data-tip="Religion supreme deity" class="religionDeity hide" value="${r.deity ? r.deity : ""}" autocorrect="off" spellcheck="false">
           <span data-tip="Religion area" style="padding-right: 4px" class="icon-map-o hide"></span>
           <div data-tip="Religion area" class="biomeArea hide">${si(area) + unit}</div>
           <span data-tip="${populationTip}" class="icon-male hide"></span>
@@ -127,7 +133,10 @@ function editReligions() {
     body.querySelectorAll("div > div.culturePopulation").forEach(el => el.addEventListener("click", changePopulation));
     body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.addEventListener("click", religionRemove));
 
-    if (body.dataset.type === "percentage") {body.dataset.type = "absolute"; togglePercentageMode();}
+    if (body.dataset.type === "percentage") {
+      body.dataset.type = "absolute";
+      togglePercentageMode();
+    }
     applySorting(religionsHeader);
     $("#religionsEditor").dialog({width: fitContent()});
   }
@@ -135,7 +144,7 @@ function editReligions() {
   function getTypeOptions(type) {
     let options = "";
     const types = ["Folk", "Organized", "Cult", "Heresy"];
-    types.forEach(t => options += `<option ${type === t ? "selected" : ""} value="${t}">${t}</option>`);
+    types.forEach(t => (options += `<option ${type === t ? "selected" : ""} value="${t}">${t}</option>`));
     return options;
   }
 
@@ -143,14 +152,14 @@ function editReligions() {
     const religion = +event.target.dataset.id;
     const info = document.getElementById("religionInfo");
     if (info) {
-      d3.select("#hierarchy").select("g[data-id='"+religion+"'] > path").classed("selected", 1);
+      d3.select("#hierarchy")
+        .select("g[data-id='" + religion + "'] > path")
+        .classed("selected", 1);
       const r = pack.religions[religion];
-      const type = r.name.includes(r.type) ? "" 
-        : r.type === "Folk" || r.type === "Organized" 
-        ? ". " + r.type + " religion" : ". " + r.type;
+      const type = r.name.includes(r.type) ? "" : r.type === "Folk" || r.type === "Organized" ? ". " + r.type + " religion" : ". " + r.type;
       const form = r.form === r.type || r.name.includes(r.form) ? "" : ". " + r.form;
-      const rural = r.rural * populationRate.value;
-      const urban = r.urban * populationRate.value * urbanization.value;
+      const rural = r.rural * populationRate;
+      const urban = r.urban * populationRate * urbanization;
       const population = rural + urban > 0 ? ". " + si(rn(rural + urban)) + " believers" : ". Extinct";
       info.innerHTML = `${r.name}${type}${form}${population}`;
       tip("Drag to change parent, drag to itself to move to the top level. Hold CTRL and click to change abbreviation");
@@ -161,24 +170,46 @@ function editReligions() {
 
     if (!layerIsOn("toggleReligions")) return;
     if (customization) return;
-    relig.select("#religion"+religion).raise().transition(animate).attr("stroke-width", 2.5).attr("stroke", "#c13119");
-    debug.select("#religionsCenter"+religion).raise().transition(animate).attr("r", 8).attr("stroke-width", 2).attr("stroke", "#c13119");
+    relig
+      .select("#religion" + religion)
+      .raise()
+      .transition(animate)
+      .attr("stroke-width", 2.5)
+      .attr("stroke", "#c13119");
+    debug
+      .select("#religionsCenter" + religion)
+      .raise()
+      .transition(animate)
+      .attr("r", 8)
+      .attr("stroke-width", 2)
+      .attr("stroke", "#c13119");
   }
 
   function religionHighlightOff(event) {
     const religion = +event.target.dataset.id;
     const info = document.getElementById("religionInfo");
     if (info) {
-      d3.select("#hierarchy").select("g[data-id='"+religion+"'] > path").classed("selected", 0);
+      d3.select("#hierarchy")
+        .select("g[data-id='" + religion + "'] > path")
+        .classed("selected", 0);
       info.innerHTML = "&#8205;";
       tip("");
     }
 
-    const el = body.querySelector(`div[data-id='${religion}']`)
+    const el = body.querySelector(`div[data-id='${religion}']`);
     if (el) el.classList.remove("active");
 
-    relig.select("#religion"+religion).transition().attr("stroke-width", null).attr("stroke", null);
-    debug.select("#religionsCenter"+religion).transition().attr("r", 4).attr("stroke-width", 1.2).attr("stroke", null);
+    relig
+      .select("#religion" + religion)
+      .transition()
+      .attr("stroke-width", null)
+      .attr("stroke", null);
+    debug
+      .select("#religionsCenter" + religion)
+      .transition()
+      .attr("r", 4)
+      .attr("stroke-width", 1.2)
+      .attr("stroke", null);
   }
 
   function religionChangeColor() {
@@ -186,12 +217,12 @@ function editReligions() {
     const currentFill = el.getAttribute("fill");
     const religion = +el.parentNode.parentNode.dataset.id;
 
-    const callback = function(fill) {
+    const callback = function (fill) {
       el.setAttribute("fill", fill);
       pack.religions[religion].color = fill;
-      relig.select("#religion"+religion).attr("fill", fill);
-      debug.select("#religionsCenter"+religion).attr("fill", fill);
-    }
+      relig.select("#religion" + religion).attr("fill", fill);
+      debug.select("#religionsCenter" + religion).attr("fill", fill);
+    };
 
     openPicker(currentFill, callback);
   }
@@ -200,7 +231,10 @@ function editReligions() {
     const religion = +this.parentNode.dataset.id;
     this.parentNode.dataset.name = this.value;
     pack.religions[religion].name = this.value;
-    pack.religions[religion].code = abbreviate(this.value, pack.religions.map(c => c.code));
+    pack.religions[religion].code = abbreviate(
+      this.value,
+      pack.religions.map(c => c.code)
+    );
   }
 
   function religionChangeType() {
@@ -233,9 +267,12 @@ function editReligions() {
   function changePopulation() {
     const religion = +this.parentNode.dataset.id;
     const r = pack.religions[religion];
-    if (!r.cells) {tip("Religion does not have any cells, cannot change population", false, "error"); return;}
-    const rural = rn(r.rural * populationRate.value);
-    const urban = rn(r.urban * populationRate.value * urbanization.value);
+    if (!r.cells) {
+      tip("Religion does not have any cells, cannot change population", false, "error");
+      return;
+    }
+    const rural = rn(r.rural * populationRate);
+    const urban = rn(r.urban * populationRate * urbanization);
     const total = rural + urban;
     const l = n => Number(n).toLocaleString();
     const burgs = pack.burgs.filter(b => !b.removed && pack.cells.religion[b.cell] === religion);
@@ -243,52 +280,60 @@ function editReligions() {
     alertMessage.innerHTML = `<p><i>Please note all population of religion territory is considered 
     believers of this religion. It means believers number change will directly change population</i></p>
     Rural: <input type="number" min=0 step=1 id="ruralPop" value=${rural} style="width:6em">
-    Urban: <input type="number" min=0 step=1 id="urbanPop" value=${urban} style="width:6em" ${burgs.length?'':"disabled"}>
+    Urban: <input type="number" min=0 step=1 id="urbanPop" value=${urban} style="width:6em" ${burgs.length ? "" : "disabled"}>
     <p>Total believers: ${l(total)} ⇒ <span id="totalPop">${l(total)}</span> (<span id="totalPopPerc">100</span>%)</p>`;
 
-    const update = function() {
+    const update = function () {
       const totalNew = ruralPop.valueAsNumber + urbanPop.valueAsNumber;
       if (isNaN(totalNew)) return;
       totalPop.innerHTML = l(totalNew);
-      totalPopPerc.innerHTML = rn(totalNew / total * 100);
-    }
+      totalPopPerc.innerHTML = rn((totalNew / total) * 100);
+    };
 
     ruralPop.oninput = () => update();
     urbanPop.oninput = () => update();
 
     $("#alert").dialog({
-      resizable: false, title: "Change believers number", width: "24em", buttons: {
-        Apply: function() {applyPopulationChange(); $(this).dialog("close");},
-        Cancel: function() {$(this).dialog("close");}
-      }, position: {my: "center", at: "center", of: "svg"}
+      resizable: false,
+      title: "Change believers number",
+      width: "24em",
+      buttons: {
+        Apply: function () {
+          applyPopulationChange();
+          $(this).dialog("close");
+        },
+        Cancel: function () {
+          $(this).dialog("close");
+        }
+      },
+      position: {my: "center", at: "center", of: "svg"}
     });
 
     function applyPopulationChange() {
       const ruralChange = ruralPop.value / rural;
       if (isFinite(ruralChange) && ruralChange !== 1) {
         const cells = pack.cells.i.filter(i => pack.cells.religion[i] === religion);
-        cells.forEach(i => pack.cells.pop[i] *= ruralChange);
+        cells.forEach(i => (pack.cells.pop[i] *= ruralChange));
       }
       if (!isFinite(ruralChange) && +ruralPop.value > 0) {
-        const points = ruralPop.value / populationRate.value;
+        const points = ruralPop.value / populationRate;
         const cells = pack.cells.i.filter(i => pack.cells.religion[i] === religion);
         const pop = rn(points / cells.length);
-        cells.forEach(i => pack.cells.pop[i] = pop);
+        cells.forEach(i => (pack.cells.pop[i] = pop));
       }
 
       const urbanChange = urbanPop.value / urban;
       if (isFinite(urbanChange) && urbanChange !== 1) {
-        burgs.forEach(b => b.population = rn(b.population * urbanChange, 4));
+        burgs.forEach(b => (b.population = rn(b.population * urbanChange, 4)));
       }
       if (!isFinite(urbanChange) && +urbanPop.value > 0) {
-        const points = urbanPop.value / populationRate.value / urbanization.value;
+        const points = urbanPop.value / populationRate / urbanization;
         const population = rn(points / burgs.length, 4);
-        burgs.forEach(b => b.population = population);
+        burgs.forEach(b => (b.population = population));
       }
 
       refreshReligionsEditor();
     }
-
   }
 
   function religionRemove() {
@@ -296,43 +341,59 @@ function editReligions() {
     const religion = +this.parentNode.dataset.id;
 
     alertMessage.innerHTML = "Are you sure you want to remove the religion? <br>This action cannot be reverted";
-    $("#alert").dialog({resizable: false, title: "Remove religion",
+    $("#alert").dialog({
+      resizable: false,
+      title: "Remove religion",
       buttons: {
-        Remove: function() {
-          relig.select("#religion"+religion).remove();
-          relig.select("#religion-gap"+religion).remove();
-          debug.select("#religionsCenter"+religion).remove();
+        Remove: function () {
+          relig.select("#religion" + religion).remove();
+          relig.select("#religion-gap" + religion).remove();
+          debug.select("#religionsCenter" + religion).remove();
 
-          pack.cells.religion.forEach((r, i) => {if(r === religion) pack.cells.religion[i] = 0;});
+          pack.cells.religion.forEach((r, i) => {
+            if (r === religion) pack.cells.religion[i] = 0;
+          });
           pack.religions[religion].removed = true;
           const origin = pack.religions[religion].origin;
-          pack.religions.forEach(r => {if(r.origin === religion) r.origin = origin;});
-      
+          pack.religions.forEach(r => {
+            if (r.origin === religion) r.origin = origin;
+          });
+
           refreshReligionsEditor();
           $(this).dialog("close");
         },
-        Cancel: function() {$(this).dialog("close");}
+        Cancel: function () {
+          $(this).dialog("close");
+        }
       }
     });
   }
 
   function drawReligionCenters() {
     debug.select("#religionCenters").remove();
-    const religionCenters = debug.append("g").attr("id", "religionCenters")
-      .attr("stroke-width", 1.2).attr("stroke", "#444444").style("cursor", "move");
+    const religionCenters = debug.append("g").attr("id", "religionCenters").attr("stroke-width", 1.2).attr("stroke", "#444444").style("cursor", "move");
 
     const data = pack.religions.filter(r => r.i && r.center && r.cells && !r.removed);
-    religionCenters.selectAll("circle").data(data).enter().append("circle")
-      .attr("id", d => "religionsCenter"+d.i).attr("data-id", d => d.i)
-      .attr("r", 4).attr("fill", d => d.color)
-      .attr("cx", d => pack.cells.p[d.center][0]).attr("cy", d => pack.cells.p[d.center][1])
+    religionCenters
+      .selectAll("circle")
+      .data(data)
+      .enter()
+      .append("circle")
+      .attr("id", d => "religionsCenter" + d.i)
+      .attr("data-id", d => d.i)
+      .attr("r", 4)
+      .attr("fill", d => d.color)
+      .attr("cx", d => pack.cells.p[d.center][0])
+      .attr("cy", d => pack.cells.p[d.center][1])
       .on("mouseenter", d => {
-        tip(d.name+ ". Drag to move the religion center", true);
+        tip(d.name + ". Drag to move the religion center", true);
         religionHighlightOn(event);
-      }).on("mouseleave", d => {
-        tip('', true);
+      })
+      .on("mouseleave", d => {
+        tip("", true);
         religionHighlightOff(event);
-      }).call(d3.drag().on("start", religionCenterDrag));
+      })
+      .call(d3.drag().on("start", religionCenterDrag));
   }
 
   function religionCenterDrag() {
@@ -347,8 +408,14 @@ function editReligions() {
   }
 
   function toggleLegend() {
-    if (legend.selectAll("*").size()) {clearLegend(); return;}; // hide legend
-    const data = pack.religions.filter(r => r.i && !r.removed && r.area).sort((a, b) => b.area - a.area).map(r => [r.i, r.color, r.name]);
+    if (legend.selectAll("*").size()) {
+      clearLegend();
+      return;
+    } // hide legend
+    const data = pack.religions
+      .filter(r => r.i && !r.removed && r.area)
+      .sort((a, b) => b.area - a.area)
+      .map(r => [r.i, r.color, r.name]);
     drawLegend("Religions", data);
   }
 
@@ -358,9 +425,9 @@ function editReligions() {
       const totalArea = +religionsFooterArea.dataset.area;
       const totalPopulation = +religionsFooterPopulation.dataset.population;
 
-      body.querySelectorAll(":scope > div").forEach(function(el) {
-        el.querySelector(".biomeArea").innerHTML = rn(+el.dataset.area / totalArea * 100) + "%";
-        el.querySelector(".culturePopulation").innerHTML = rn(+el.dataset.population / totalPopulation * 100) + "%";
+      body.querySelectorAll(":scope > div").forEach(function (el) {
+        el.querySelector(".biomeArea").innerHTML = rn((+el.dataset.area / totalArea) * 100) + "%";
+        el.querySelector(".culturePopulation").innerHTML = rn((+el.dataset.population / totalPopulation) * 100) + "%";
       });
     } else {
       body.dataset.type = "absolute";
@@ -372,11 +439,18 @@ function editReligions() {
     // build hierarchy tree
     pack.religions[0].origin = null;
     const religions = pack.religions.filter(r => !r.removed);
-    if (religions.length < 3) {tip("Not enough religions to show hierarchy", false, "error"); return;}
-    const root = d3.stratify().id(d => d.i).parentId(d => d.origin)(religions);
+    if (religions.length < 3) {
+      tip("Not enough religions to show hierarchy", false, "error");
+      return;
+    }
+    const root = d3
+      .stratify()
+      .id(d => d.i)
+      .parentId(d => d.origin)(religions);
     const treeWidth = root.leaves().length;
     const treeHeight = root.height;
-    const width = treeWidth * 40, height = treeHeight * 60;
+    const width = treeWidth * 40,
+      height = treeHeight * 60;
 
     const margin = {top: 10, right: 10, bottom: -5, left: 10};
     const w = width - margin.left - margin.right;
@@ -385,8 +459,7 @@ function editReligions() {
 
     // prepare svg
     alertMessage.innerHTML = "<div id='religionInfo' class='chartInfo'>&#8205;</div>";
-    const svg = d3.select("#alertMessage").insert("svg", "#religionInfo").attr("id", "hierarchy")
-      .attr("width", width).attr("height", height).style("text-anchor", "middle");
+    const svg = d3.select("#alertMessage").insert("svg", "#religionInfo").attr("id", "hierarchy").attr("width", width).attr("height", height).style("text-anchor", "middle");
     const graph = svg.append("g").attr("transform", `translate(10, -45)`);
     const links = graph.append("g").attr("fill", "none").attr("stroke", "#aaaaaa");
     const nodes = graph.append("g");
@@ -394,45 +467,70 @@ function editReligions() {
     renderTree();
     function renderTree() {
       treeLayout(root);
-      links.selectAll('path').data(root.links()).enter()
-        .append('path').attr("d", d => {return "M" + d.source.x + "," + d.source.y
-          + "C" + d.source.x + "," + (d.source.y * 3 + d.target.y) / 4
-          + " " + d.target.x + "," + (d.source.y * 2 + d.target.y) / 3
-          + " " + d.target.x + "," + d.target.y;});
+      links
+        .selectAll("path")
+        .data(root.links())
+        .enter()
+        .append("path")
+        .attr("d", d => {
+          return "M" + d.source.x + "," + d.source.y + "C" + d.source.x + "," + (d.source.y * 3 + d.target.y) / 4 + " " + d.target.x + "," + (d.source.y * 2 + d.target.y) / 3 + " " + d.target.x + "," + d.target.y;
+        });
 
-      const node = nodes.selectAll('g').data(root.descendants()).enter()
-        .append('g').attr("data-id", d => d.data.i).attr("stroke", "#333333")
+      const node = nodes
+        .selectAll("g")
+        .data(root.descendants())
+        .enter()
+        .append("g")
+        .attr("data-id", d => d.data.i)
+        .attr("stroke", "#333333")
         .attr("transform", d => `translate(${d.x}, ${d.y})`)
         .on("mouseenter", () => religionHighlightOn(event))
         .on("mouseleave", () => religionHighlightOff(event))
         .call(d3.drag().on("start", d => dragToReorigin(d)));
 
-      node.append("path").attr("d", d => {
-          if (d.data.type === "Folk") return "M11.3,0A11.3,11.3,0,1,1,-11.3,0A11.3,11.3,0,1,1,11.3,0"; else // circle
-          if (d.data.type === "Heresy") return "M0,-14L14,0L0,14L-14,0Z"; else // diamond
-          if (d.data.type === "Cult") return "M-6.5,-11.26l13,0l6.5,11.26l-6.5,11.26l-13,0l-6.5,-11.26Z"; else // hex
-          if (!d.data.i) return "M5,0A5,5,0,1,1,-5,0A5,5,0,1,1,5,0"; else // small circle
-          return "M-11,-11h22v22h-22Z"; // square
-        }).attr("fill", d => d.data.i ? d.data.color : "#ffffff")
-          .attr("stroke-dasharray", d => d.data.cells ? "null" : "1");
+      node
+        .append("path")
+        .attr("d", d => {
+          if (d.data.type === "Folk") return "M11.3,0A11.3,11.3,0,1,1,-11.3,0A11.3,11.3,0,1,1,11.3,0";
+          // circle
+          else if (d.data.type === "Heresy") return "M0,-14L14,0L0,14L-14,0Z";
+          // diamond
+          else if (d.data.type === "Cult") return "M-6.5,-11.26l13,0l6.5,11.26l-6.5,11.26l-13,0l-6.5,-11.26Z";
+          // hex
+          else if (!d.data.i) return "M5,0A5,5,0,1,1,-5,0A5,5,0,1,1,5,0";
+          // small circle
+          else return "M-11,-11h22v22h-22Z"; // square
+        })
+        .attr("fill", d => (d.data.i ? d.data.color : "#ffffff"))
+        .attr("stroke-dasharray", d => (d.data.cells ? "null" : "1"));
 
-      node.append("text").attr("dy", ".35em").text(d => d.data.i ? d.data.code : '');
+      node
+        .append("text")
+        .attr("dy", ".35em")
+        .text(d => (d.data.i ? d.data.code : ""));
     }
 
     $("#alert").dialog({
-      title: "Religions tree", width: fitContent(), resizable: false, 
-      position: {my: "left center", at: "left+10 center", of: "svg"}, buttons: {},
-      close: () => {alertMessage.innerHTML = "";}
+      title: "Religions tree",
+      width: fitContent(),
+      resizable: false,
+      position: {my: "left center", at: "left+10 center", of: "svg"},
+      buttons: {},
+      close: () => {
+        alertMessage.innerHTML = "";
+      }
     });
 
     function dragToReorigin(d) {
-      if (isCtrlClick(d3.event.sourceEvent)) {changeCode(d); return;}
+      if (isCtrlClick(d3.event.sourceEvent)) {
+        changeCode(d);
+        return;
+      }
 
-      const originLine = graph.append("path")
-        .attr("class", "dragLine").attr("d", `M${d.x},${d.y}L${d.x},${d.y}`);
+      const originLine = graph.append("path").attr("class", "dragLine").attr("d", `M${d.x},${d.y}L${d.x},${d.y}`);
 
       d3.event.on("drag", () => {
-        originLine.attr("d", `M${d.x},${d.y}L${d3.event.x},${d3.event.y}`)
+        originLine.attr("d", `M${d.x},${d.y}L${d3.event.x},${d3.event.y}`);
       });
 
       d3.event.on("end", () => {
@@ -446,14 +544,17 @@ function editReligions() {
         if (newOrigin == religion) newOrigin = 0; // move to top
         if (newOrigin && d.descendants().some(node => node.id == newOrigin)) return; // cannot be a child of its own child
         pack.religions[religion].origin = d.data.origin = newOrigin; // change data
-        showHierarchy() // update hierarchy
+        showHierarchy(); // update hierarchy
       });
     }
 
     function changeCode(d) {
-      prompt(`Please provide an abbreviation for ${d.data.name}`, {default:d.data.code}, v => {
+      prompt(`Please provide an abbreviation for ${d.data.name}`, {default: d.data.code}, v => {
         pack.religions[d.data.i].code = v;
-        nodes.select("g[data-id='"+d.data.i+"']").select("text").text(v);
+        nodes
+          .select("g[data-id='" + d.data.i + "']")
+          .select("text")
+          .text(v);
       });
     }
   }
@@ -467,20 +568,17 @@ function editReligions() {
     if (!layerIsOn("toggleReligions")) toggleReligions();
     customization = 7;
     relig.append("g").attr("id", "temp");
-    document.querySelectorAll("#religionsBottom > button").forEach(el => el.style.display = "none");
+    document.querySelectorAll("#religionsBottom > button").forEach(el => (el.style.display = "none"));
     document.getElementById("religionsManuallyButtons").style.display = "inline-block";
     debug.select("#religionCenters").style("display", "none");
 
     religionsEditor.querySelectorAll(".hide").forEach(el => el.classList.add("hidden"));
     religionsFooter.style.display = "none";
-    body.querySelectorAll("div > input, select, span, svg").forEach(e => e.style.pointerEvents = "none");
+    body.querySelectorAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "none"));
     $("#religionsEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg"}});
 
     tip("Click on religion to select, drag the circle to change religion", true);
-    viewbox.style("cursor", "crosshair")
-      .on("click", selectReligionOnMapClick)
-      .call(d3.drag().on("start", dragReligionBrush))
-      .on("touchmove mousemove", moveReligionBrush);
+    viewbox.style("cursor", "crosshair").on("click", selectReligionOnMapClick).call(d3.drag().on("start", dragReligionBrush)).on("touchmove mousemove", moveReligionBrush);
 
     body.querySelector("div").classList.add("selected");
   }
@@ -496,13 +594,13 @@ function editReligions() {
     const i = findCell(point[0], point[1]);
     if (pack.cells.h[i] < 20) return;
 
-    const assigned = relig.select("#temp").select("polygon[data-cell='"+i+"']");
+    const assigned = relig.select("#temp").select("polygon[data-cell='" + i + "']");
     const religion = assigned.size() ? +assigned.attr("data-religion") : pack.cells.religion[i];
 
     body.querySelector("div.selected").classList.remove("selected");
-    body.querySelector("div[data-id='"+religion+"']").classList.add("selected");
+    body.querySelector("div[data-id='" + religion + "']").classList.add("selected");
   }
-  
+
   function dragReligionBrush() {
     const r = +religionsManuallyBrushNumber.value;
 
@@ -510,7 +608,7 @@ function editReligions() {
       if (!d3.event.dx && !d3.event.dy) return;
       const p = d3.mouse(this);
       moveCircle(p[0], p[1], r);
-  
+
       const found = r > 5 ? findAll(p[0], p[1], r) : [findCell(p[0], p[1], r)];
       const selection = found.filter(isLand);
       if (selection) changeReligionForSelection(selection);
@@ -524,8 +622,8 @@ function editReligions() {
     const r = +selected.dataset.id; // religionNew
     const color = pack.religions[r].color || "#ffffff";
 
-    selection.forEach(function(i) {
-      const exists = temp.select("polygon[data-cell='"+i+"']");
+    selection.forEach(function (i) {
+      const exists = temp.select("polygon[data-cell='" + i + "']");
       const religionOld = exists.size() ? +exists.attr("data-religion") : pack.cells.religion[i];
       if (r === religionOld) return;
 
@@ -544,7 +642,7 @@ function editReligions() {
 
   function applyReligionsManualAssignent() {
     const changed = relig.select("#temp").selectAll("polygon");
-    changed.each(function() {
+    changed.each(function () {
       const i = +this.dataset.cell;
       const r = +this.dataset.religion;
       pack.cells.religion[i] = r;
@@ -557,18 +655,18 @@ function editReligions() {
     }
     exitReligionsManualAssignment();
   }
- 
+
   function exitReligionsManualAssignment(close) {
     customization = 0;
     relig.select("#temp").remove();
     removeCircle();
-    document.querySelectorAll("#religionsBottom > button").forEach(el => el.style.display = "inline-block");
+    document.querySelectorAll("#religionsBottom > button").forEach(el => (el.style.display = "inline-block"));
     document.getElementById("religionsManuallyButtons").style.display = "none";
 
     religionsEditor.querySelectorAll(".hide").forEach(el => el.classList.remove("hidden"));
     religionsFooter.style.display = "block";
-    body.querySelectorAll("div > input, select, span, svg").forEach(e => e.style.pointerEvents = "all");
-    if(!close) $("#religionsEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg"}});
+    body.querySelectorAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "all"));
+    if (!close) $("#religionsEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg"}});
 
     debug.select("#religionCenters").style("display", null);
     restoreDefaultEvents();
@@ -578,28 +676,37 @@ function editReligions() {
   }
 
   function enterAddReligionMode() {
-    if (this.classList.contains("pressed")) {exitAddReligionMode(); return;};
+    if (this.classList.contains("pressed")) {
+      exitAddReligionMode();
+      return;
+    }
     customization = 8;
     this.classList.add("pressed");
     tip("Click on the map to add a new religion", true);
     viewbox.style("cursor", "crosshair").on("click", addReligion);
-    body.querySelectorAll("div > input, select, span, svg").forEach(e => e.style.pointerEvents = "none");
+    body.querySelectorAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "none"));
   }
 
   function exitAddReligionMode() {
     customization = 0;
     restoreDefaultEvents();
     clearMainTip();
-    body.querySelectorAll("div > input, select, span, svg").forEach(e => e.style.pointerEvents = "all");
+    body.querySelectorAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "all"));
     if (religionsAdd.classList.contains("pressed")) religionsAdd.classList.remove("pressed");
   }
 
   function addReligion() {
     const point = d3.mouse(this);
     const center = findCell(point[0], point[1]);
-    if (pack.cells.h[center] < 20) {tip("You cannot place religion center into the water. Please click on a land cell", false, "error"); return;}
+    if (pack.cells.h[center] < 20) {
+      tip("You cannot place religion center into the water. Please click on a land cell", false, "error");
+      return;
+    }
     const occupied = pack.religions.some(r => !r.removed && r.center === center);
-    if (occupied) {tip("This cell is already a religion center. Please select a different cell", false, "error"); return;}
+    if (occupied) {
+      tip("This cell is already a religion center. Please select a different cell", false, "error");
+      return;
+    }
 
     if (d3.event.shiftKey === false) exitAddReligionMode();
     Religions.add(center);
@@ -611,9 +718,9 @@ function editReligions() {
 
   function downloadReligionsData() {
     const unit = areaUnit.value === "square" ? distanceUnitInput.value + "2" : areaUnit.value;
-    let data = "Id,Religion,Color,Type,Form,Deity,Area "+unit+",Believers\n"; // headers
+    let data = "Id,Religion,Color,Type,Form,Deity,Area " + unit + ",Believers\n"; // headers
 
-    body.querySelectorAll(":scope > div").forEach(function(el) {
+    body.querySelectorAll(":scope > div").forEach(function (el) {
       data += el.dataset.id + ",";
       data += el.dataset.name + ",";
       data += el.dataset.color + ",";
@@ -627,11 +734,10 @@ function editReligions() {
     const name = getFileName("Religions") + ".csv";
     downloadFile(data, name);
   }
-  
+
   function closeReligionsEditor() {
     debug.select("#religionCenters").remove();
     exitReligionsManualAssignment("close");
     exitAddReligionMode();
   }
-
 }

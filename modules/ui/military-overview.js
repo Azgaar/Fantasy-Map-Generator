@@ -15,7 +15,9 @@ function overviewMilitary() {
   updateHeaders();
 
   $("#militaryOverview").dialog({
-    title: "Military Overview", resizable: false, width: fitContent(),
+    title: "Military Overview",
+    resizable: false,
+    width: fitContent(),
     position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
   });
 
@@ -28,13 +30,17 @@ function overviewMilitary() {
   document.getElementById("militaryExport").addEventListener("click", downloadMilitaryData);
   document.getElementById("militaryWiki").addEventListener("click", () => wiki("Military-Forces"));
 
-  body.addEventListener("change", function(ev) {
-    const el = ev.target, line = el.parentNode, state = +line.dataset.id;
+  body.addEventListener("change", function (ev) {
+    const el = ev.target,
+      line = el.parentNode,
+      state = +line.dataset.id;
     changeAlert(state, line, +el.value);
   });
 
-  body.addEventListener("click", function(ev) {
-    const el = ev.target, line = el.parentNode, state = +line.dataset.id;
+  body.addEventListener("click", function (ev) {
+    const el = ev.target,
+      line = el.parentNode,
+      state = +line.dataset.id;
     if (el.tagName === "SPAN") overviewRegiments(state);
   });
 
@@ -44,11 +50,13 @@ function overviewMilitary() {
     header.querySelectorAll(".removable").forEach(el => el.remove());
     const insert = html => document.getElementById("militaryTotal").insertAdjacentHTML("beforebegin", html);
     for (const u of options.military) {
-      const label = capitalize(u.name.replace(/_/g, ' '));
+      const label = capitalize(u.name.replace(/_/g, " "));
       insert(`<div data-tip="State ${u.name} units number. Click to sort" class="sortable removable" data-sortby="${u.name}">${label}&nbsp;</div>`);
     }
-    header.querySelectorAll(".removable").forEach(function(e) {
-      e.addEventListener("click", function() {sortLines(this);});
+    header.querySelectorAll(".removable").forEach(function (e) {
+      e.addEventListener("click", function () {
+        sortLines(this);
+      });
     });
   }
 
@@ -59,10 +67,10 @@ function overviewMilitary() {
     const states = pack.states.filter(s => s.i && !s.removed);
 
     for (const s of states) {
-      const population = rn((s.rural + s.urban * urbanization.value) * populationRate.value);
-      const getForces = u => s.military.reduce((s, r) => s+(r.u[u.name]||0), 0);
+      const population = rn((s.rural + s.urban * urbanization) * populationRate);
+      const getForces = u => s.military.reduce((s, r) => s + (r.u[u.name] || 0), 0);
       const total = options.military.reduce((s, u) => s + getForces(u) * u.crew, 0);
-      const rate = total / population * 100;
+      const rate = (total / population) * 100;
 
       const sortData = options.military.map(u => `data-${u.name}="${getForces(u)}"`).join(" ");
       const lineData = options.military.map(u => `<div data-type="${u.name}" data-tip="State ${u.name} units number">${getForces(u)}</div>`).join(" ");
@@ -85,7 +93,10 @@ function overviewMilitary() {
     body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseenter", ev => stateHighlightOn(ev)));
     body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseleave", ev => stateHighlightOff(ev)));
 
-    if (body.dataset.type === "percentage") {body.dataset.type = "absolute"; togglePercentageMode();}
+    if (body.dataset.type === "percentage") {
+      body.dataset.type = "absolute";
+      togglePercentageMode();
+    }
     applySorting(militaryHeader);
   }
 
@@ -95,17 +106,17 @@ function overviewMilitary() {
     s.alert = line.dataset.alert = alert;
 
     s.military.forEach(r => {
-      Object.keys(r.u).forEach(u => r.u[u] = rn(r.u[u] * dif)); // change units value
+      Object.keys(r.u).forEach(u => (r.u[u] = rn(r.u[u] * dif))); // change units value
       r.a = d3.sum(Object.values(r.u)); // change total
       armies.select(`g>g#regiment${s.i}-${r.i}>text`).text(Military.getTotal(r)); // change icon text
     });
 
-    const getForces = u => s.military.reduce((s, r) => s+(r.u[u.name]||0), 0);
-    options.military.forEach(u => line.dataset[u.name] = line.querySelector(`div[data-type='${u.name}']`).innerHTML = getForces(u));
+    const getForces = u => s.military.reduce((s, r) => s + (r.u[u.name] || 0), 0);
+    options.military.forEach(u => (line.dataset[u.name] = line.querySelector(`div[data-type='${u.name}']`).innerHTML = getForces(u)));
 
-    const population = rn((s.rural + s.urban * urbanization.value) * populationRate.value);
-    const total = line.dataset.total = options.military.reduce((s, u) => s + getForces(u) * u.crew, 0);
-    const rate = line.dataset.rate = total / population * 100;
+    const population = rn((s.rural + s.urban * urbanization) * populationRate);
+    const total = (line.dataset.total = options.military.reduce((s, u) => s + getForces(u) * u.crew, 0));
+    const rate = (line.dataset.rate = (total / population) * 100);
     line.querySelector("div[data-type='total']").innerHTML = si(total);
     line.querySelector("div[data-type='rate']").innerHTML = rn(rate, 2) + "%";
 
@@ -114,7 +125,7 @@ function overviewMilitary() {
 
   function updateFooter() {
     const lines = Array.from(body.querySelectorAll(":scope > div"));
-    const statesNumber = militaryFooterStates.innerHTML = pack.states.filter(s => s.i && !s.removed).length;
+    const statesNumber = (militaryFooterStates.innerHTML = pack.states.filter(s => s.i && !s.removed).length);
     const total = d3.sum(lines.map(el => el.dataset.total));
     militaryFooterForcesTotal.innerHTML = si(total);
     militaryFooterForces.innerHTML = si(total / statesNumber);
@@ -125,46 +136,59 @@ function overviewMilitary() {
   function stateHighlightOn(event) {
     const state = +event.target.dataset.id;
     if (customization || !state) return;
-    armies.select("#army"+state).transition().duration(2000).style("fill", "#ff0000");
+    armies
+      .select("#army" + state)
+      .transition()
+      .duration(2000)
+      .style("fill", "#ff0000");
 
     if (!layerIsOn("toggleStates")) return;
-    const d = regions.select("#state"+state).attr("d");
+    const d = regions.select("#state" + state).attr("d");
 
-    const path = debug.append("path").attr("class", "highlight").attr("d", d)
-      .attr("fill", "none").attr("stroke", "red").attr("stroke-width", 1).attr("opacity", 1)
-      .attr("filter", "url(#blur1)");
+    const path = debug.append("path").attr("class", "highlight").attr("d", d).attr("fill", "none").attr("stroke", "red").attr("stroke-width", 1).attr("opacity", 1).attr("filter", "url(#blur1)");
 
-    const l = path.node().getTotalLength(), dur = (l + 5000) / 2;
+    const l = path.node().getTotalLength(),
+      dur = (l + 5000) / 2;
     const i = d3.interpolateString("0," + l, l + "," + l);
-    path.transition().duration(dur).attrTween("stroke-dasharray", function() {return t => i(t)});
+    path
+      .transition()
+      .duration(dur)
+      .attrTween("stroke-dasharray", function () {
+        return t => i(t);
+      });
   }
 
   function stateHighlightOff(event) {
-    debug.selectAll(".highlight").each(function() {
+    debug.selectAll(".highlight").each(function () {
       d3.select(this).transition().duration(1000).attr("opacity", 0).remove();
     });
 
     const state = +event.target.dataset.id;
-    armies.select("#army"+state).transition().duration(1000).style("fill", null);
+    armies
+      .select("#army" + state)
+      .transition()
+      .duration(1000)
+      .style("fill", null);
   }
 
   function togglePercentageMode() {
     if (body.dataset.type === "absolute") {
       body.dataset.type = "percentage";
       const lines = body.querySelectorAll(":scope > div");
-      const array = Array.from(lines), cache = [];
+      const array = Array.from(lines),
+        cache = [];
 
-      const total = function(type) {
+      const total = function (type) {
         if (cache[type]) cache[type];
         cache[type] = d3.sum(array.map(el => +el.dataset[type]));
         return cache[type];
-      }
+      };
 
-      lines.forEach(function(el) {
-        el.querySelectorAll("div").forEach(function(div) {
+      lines.forEach(function (el) {
+        el.querySelectorAll("div").forEach(function (div) {
           const type = div.dataset.type;
           if (type === "rate") return;
-          div.textContent = total(type) ? rn(+el.dataset[type] / total(type) * 100) + "%" : "0%";
+          div.textContent = total(type) ? rn((+el.dataset[type] / total(type)) * 100) + "%" : "0%";
         });
       });
     } else {
@@ -180,14 +204,19 @@ function overviewMilitary() {
     options.military.map(u => addUnitLine(u));
 
     $("#militaryOptions").dialog({
-      title: "Edit Military Units", resizable: false, width: fitContent(),
+      title: "Edit Military Units",
+      resizable: false,
+      width: fitContent(),
       position: {my: "center", at: "center", of: "svg"},
       buttons: {
         Apply: applyMilitaryOptions,
-        Add: () => addUnitLine({icon: "🛡️", name: "custom"+militaryOptionsTable.rows.length, rural: .2, urban: .5, crew: 1, power: 1, type: "melee"}),
+        Add: () => addUnitLine({icon: "🛡️", name: "custom" + militaryOptionsTable.rows.length, rural: 0.2, urban: 0.5, crew: 1, power: 1, type: "melee"}),
         Restore: restoreDefaultUnits,
-        Cancel: function() {$(this).dialog("close");}
-      }, open: function() {
+        Cancel: function () {
+          $(this).dialog("close");
+        }
+      },
+      open: function () {
         const buttons = $(this).dialog("widget").find(".ui-dialog-buttonset > button");
         buttons[0].addEventListener("mousemove", () => tip("Apply military units settings. <span style='color:#cb5858'>All forces will be recalculated!</span>"));
         buttons[1].addEventListener("mousemove", () => tip("Add new military unit to the table"));
@@ -202,7 +231,7 @@ function overviewMilitary() {
 
     function addUnitLine(u) {
       const row = document.createElement("tr");
-      row.innerHTML = `<td><button type="button" data-tip="Click to select unit icon">${u.icon||" "}</button></td>
+      row.innerHTML = `<td><button type="button" data-tip="Click to select unit icon">${u.icon || " "}</button></td>
         <td><input data-tip="Type unit name. If name is changed for existing unit, old unit will be replaced" value="${u.name}"></td>
         <td><input data-tip="Enter conscription percentage for rural population" type="number" min=0 max=100 step=.01 value="${u.rural}"></td>
         <td><input data-tip="Enter conscription percentage for urban population" type="number" min=0 max=100 step=.01 value="${u.urban}"></td>
@@ -213,7 +242,9 @@ function overviewMilitary() {
           <input id="${u.name}Separate" type="checkbox" class="checkbox" ${u.separate ? "checked" : ""}>
           <label for="${u.name}Separate" class="checkbox-label"></label></td>
         <td data-tip="Remove the unit"><span data-tip="Remove unit type" class="icon-trash-empty pointer" onclick="this.parentElement.parentElement.remove();"></span></td>`;
-      row.querySelector("button").addEventListener("click", function(e) {selectIcon(this.innerHTML, v => this.innerHTML = v)});
+      row.querySelector("button").addEventListener("click", function (e) {
+        selectIcon(this.innerHTML, v => (this.innerHTML = v));
+      });
       table.appendChild(row);
     }
 
@@ -224,7 +255,7 @@ function overviewMilitary() {
 
     function applyMilitaryOptions() {
       const unitLines = Array.from(table.querySelectorAll("tr"));
-      const names = unitLines.map(r => r.querySelector("input").value.replace(/[&\/\\#, +()$~%.'":*?<>{}]/g, '_'));
+      const names = unitLines.map(r => r.querySelector("input").value.replace(/[&\/\\#, +()$~%.'":*?<>{}]/g, "_"));
       if (new Set(names).size !== names.length) {
         tip("All units should have unique names", false, "error");
         return;
@@ -239,46 +270,48 @@ function overviewMilitary() {
           if (d.type === "button") value = d.innerHTML || "⠀";
           return value;
         });
-        return {icon, name:names[i], rural, urban, crew, power, type, separate};
+        return {icon, name: names[i], rural, urban, crew, power, type, separate};
       });
       localStorage.setItem("military", JSON.stringify(options.military));
       Military.generate();
       updateHeaders();
       addLines();
     }
-
   }
 
   function militaryRecalculate() {
     alertMessage.innerHTML = "Are you sure you want to recalculate military forces for all states?<br>Regiments for all states will be regenerated";
-    $("#alert").dialog({resizable: false, title: "Remove regiment",
+    $("#alert").dialog({
+      resizable: false,
+      title: "Remove regiment",
       buttons: {
-        Recalculate: function() {
+        Recalculate: function () {
           $(this).dialog("close");
           Military.generate();
           addLines();
         },
-        Cancel: function() {$(this).dialog("close");}
+        Cancel: function () {
+          $(this).dialog("close");
+        }
       }
     });
   }
 
   function downloadMilitaryData() {
     const units = options.military.map(u => u.name);
-    let data = "Id,State,"+units.map(u => capitalize(u)).join(",")+",Total,Population,Rate,War Alert\n"; // headers
+    let data = "Id,State," + units.map(u => capitalize(u)).join(",") + ",Total,Population,Rate,War Alert\n"; // headers
 
-    body.querySelectorAll(":scope > div").forEach(function(el) {
+    body.querySelectorAll(":scope > div").forEach(function (el) {
       data += el.dataset.id + ",";
       data += el.dataset.state + ",";
       data += units.map(u => el.dataset[u]).join(",") + ",";
       data += el.dataset.total + ",";
       data += el.dataset.population + ",";
-      data += rn(el.dataset.rate,2) + "%,";
+      data += rn(el.dataset.rate, 2) + "%,";
       data += el.dataset.alert + "\n";
     });
 
     const name = getFileName("Military") + ".csv";
     downloadFile(data, name);
   }
-
 }

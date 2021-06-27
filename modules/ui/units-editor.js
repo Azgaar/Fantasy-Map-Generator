@@ -28,9 +28,9 @@ function editUnits() {
   document.getElementById("barBackColor").addEventListener("input", changeScaleBarColor);
 
   document.getElementById("populationRateOutput").addEventListener("input", changePopulationRate);
-  document.getElementById("populationRate").addEventListener("change", changePopulationRate);
+  document.getElementById("populationRateInput").addEventListener("change", changePopulationRate);
   document.getElementById("urbanizationOutput").addEventListener("input", changeUrbanizationRate);
-  document.getElementById("urbanization").addEventListener("change", changeUrbanizationRate);
+  document.getElementById("urbanizationInput").addEventListener("change", changeUrbanizationRate);
 
   document.getElementById("addLinearRuler").addEventListener("click", addRuler);
   document.getElementById("addOpisometer").addEventListener("click", toggleOpisometerMode);
@@ -86,13 +86,11 @@ function editUnits() {
   }
 
   function changePopulationRate() {
-    document.getElementById("populationRateOutput").value = this.value;
-    document.getElementById("populationRate").value = this.value;
+    populationRate = +this.value;
   }
 
   function changeUrbanizationRate() {
-    document.getElementById("urbanizationOutput").value = this.value;
-    document.getElementById("urbanization").value = this.value;
+    urbanization = +this.value;
   }
 
   function restoreDefaultUnits() {
@@ -135,8 +133,8 @@ function editUnits() {
     drawScaleBar();
 
     // population
-    populationRateOutput.value = populationRate.value = 1000;
-    urbanizationOutput.value = urbanization.value = 1;
+    populationRate = populationRateOutput.value = populationRateInput.value = 1000;
+    urbanization = urbanizationOutput.value = urbanizationInput.value = 1;
     localStorage.removeItem("populationRate");
     localStorage.removeItem("urbanization");
   }

@@ -131,8 +131,8 @@ function parseLoadedData(data) {
       if (settings[9]) barBackColor.value = settings[9];
       if (settings[10]) barPosX.value = settings[10];
       if (settings[11]) barPosY.value = settings[11];
-      if (settings[12]) populationRate.value = populationRateOutput.value = settings[12];
-      if (settings[13]) urbanization.value = urbanizationOutput.value = settings[13];
+      if (settings[12]) populationRate = populationRateInput.value = populationRateOutput.value = settings[12];
+      if (settings[13]) urbanization = urbanizationInput.value = urbanizationOutput.value = settings[13];
       if (settings[14]) mapSizeInput.value = mapSizeOutput.value = Math.max(Math.min(settings[14], 100), 1);
       if (settings[15]) latitudeInput.value = latitudeOutput.value = Math.max(Math.min(settings[15], 100), 0);
       if (settings[16]) temperatureEquatorInput.value = temperatureEquatorOutput.value = settings[16];

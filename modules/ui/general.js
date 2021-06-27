@@ -134,7 +134,7 @@ function showMapTooltip(point, e, i, g) {
   if (subgroup === "burgLabels" || subgroup === "burgIcons") {
     const burg = +path[path.length - 10].dataset.id;
     const b = pack.burgs[burg];
-    const population = si(b.population * populationRate.value * urbanization.value);
+    const population = si(b.population * populationRate * urbanization);
     tip(`${b.name}. Population: ${population}. Click to edit`);
     if (burgsOverview.offsetParent) highlightEditorLine(burgsOverview, burg, 5000);
     return;
@@ -339,8 +339,8 @@ function getRiverInfo(id) {
 }
 
 function getCellPopulation(i) {
-  const rural = pack.cells.pop[i] * populationRate.value;
-  const urban = pack.cells.burg[i] ? pack.burgs[pack.cells.burg[i]].population * populationRate.value * urbanization.value : 0;
+  const rural = pack.cells.pop[i] * populationRate;
+  const urban = pack.cells.burg[i] ? pack.burgs[pack.cells.burg[i]].population * populationRate * urbanization : 0;
   return [rural, urban];
 }
 
