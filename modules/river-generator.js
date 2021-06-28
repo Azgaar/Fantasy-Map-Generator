@@ -187,8 +187,8 @@
   const resolveDepressions = function (h) {
     const {cells, features} = pack;
     const maxIterations = +document.getElementById("resolveDepressionsStepsOutput").value;
-    const checkLakeMaxIteration = maxIterations * 0.8;
-    const elevateLakeMaxIteration = (maxIterations - checkLakeMaxIteration) / 2;
+    const checkLakeMaxIteration = maxIterations * 0.85;
+    const elevateLakeMaxIteration = maxIterations * 0.75;
 
     const height = i => features[cells.f[i]].height || h[i]; // height of lake or specific cell
 
@@ -215,7 +215,7 @@
           const minHeight = d3.min(l.shoreline.map(s => h[s]));
           if (minHeight >= 100 || l.height > minHeight) continue;
 
-          if (iteration < elevateLakeMaxIteration) {
+          if (iteration > elevateLakeMaxIteration) {
             l.shoreline.forEach(i => (h[i] = cells.h[i]));
             l.height = d3.min(l.shoreline.map(s => h[s])) - 1;
             l.closed = true;
