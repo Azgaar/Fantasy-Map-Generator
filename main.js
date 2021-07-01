@@ -7,10 +7,11 @@ document.title += " v" + version;
 
 // Switches to disable/enable logging features
 const PRODUCTION = window.location.host;
-const INFO = !PRODUCTION;
-const TIME = !PRODUCTION;
-const WARN = 1;
-const ERROR = 1;
+const DEBUG = localStorage.getItem("debug");
+const INFO = DEBUG || !PRODUCTION;
+const TIME = DEBUG || !PRODUCTION;
+const WARN = true;
+const ERROR = true;
 
 // if map version is not stored, clear localStorage and show a message
 if (rn(localStorage.getItem("version"), 1) !== rn(version, 1)) {
@@ -776,7 +777,7 @@ function markup(cells, start, increment, limit) {
 }
 
 function addLakesInDeepDepressions() {
-  console.time("addLakesInDeepDepressions");
+  TIME && console.time("addLakesInDeepDepressions");
   const {cells, features} = grid;
   const {c, h, b} = cells;
   const ELEVATION_LIMIT = +document.getElementById("lakeElevationLimitOutput").value;
@@ -831,7 +832,7 @@ function addLakesInDeepDepressions() {
     features.push({i: f, land: false, border: false, type: "lake"});
   }
 
-  console.timeEnd("addLakesInDeepDepressions");
+  TIME && console.timeEnd("addLakesInDeepDepressions");
 }
 
 // near sea lakes usually get a lot of water inflow, most of them should brake threshold and flow out to sea (see Ancylus Lake)
