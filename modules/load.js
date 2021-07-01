@@ -674,12 +674,26 @@ function parseLoadedData(data) {
         const href = filter ? "./images/" + filter.replace("url(#", "").replace(")", "") + ".png" : "";
         pattern.innerHTML = `<image id="oceanicPattern" href=${href} width="100" height="100" opacity="0.2"></image>`;
       }
-    })();
 
-    if (version < 1.62) {
-      // v 1.62 changed grid data
-      gridOverlay.attr("size", null);
-    }
+      if (version < 1.62) {
+        // v 1.62 changed grid data
+        gridOverlay.attr("size", null);
+      }
+
+      if (version < 1.63) {
+        // v.1.63 change ocean pattern opacity element
+        const oceanPattern = document.getElementById("oceanPattern");
+        if (oceanPattern) oceanPattern.removeAttribute("opacity");
+        const oceanicPattern = document.getElementById("oceanicPattern");
+        if (!oceanicPattern.getAttribute("opacity")) oceanicPattern.setAttribute("opacity", 0.2);
+
+        // v 1.63 moved label text-shadow from css to editable inline style
+        burgLabels.select("#cities").style("text-shadow", "white 0 0 4px");
+        burgLabels.select("#towns").style("text-shadow", "white 0 0 4px");
+        labels.select("#states").style("text-shadow", "white 0 0 4px");
+        labels.select("#addedLabels").style("text-shadow", "white 0 0 4px");
+      }
+    })();
 
     void (function checkDataIntegrity() {
       const cells = pack.cells;

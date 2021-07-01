@@ -239,7 +239,6 @@ i.icon-lock {
 #labels {
   text-anchor: start;
   dominant-baseline: central;
-  text-shadow: 0 0 4px white;
   cursor: pointer;
 }
 
