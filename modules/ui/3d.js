@@ -97,11 +97,9 @@ const setSun = function(x, y, z) {
 }
 
 const setRotation = function(speed) {
-  cancelAnimationFrame(animationFrame);
   if (options.isGlobe) options.rotateGlobe = speed; else options.rotateMesh = speed;
   controls.autoRotateSpeed = speed;
   controls.autoRotate = Boolean(controls.autoRotateSpeed);
-  if (controls.autoRotate) animate();
 }
 
 const toggleSky = function() {
@@ -267,8 +265,8 @@ async function createLabels() {
 
   const citie_icon_material = new THREE.MeshBasicMaterial({color: cities_icons.attr('fill')});
   const town_icon_material = new THREE.MeshBasicMaterial({color: towns_icons.attr('fill')});
-  const citie_icon_geometry = new THREE.SphereGeometry(cities_icons.attr("size") * 2, 16, 16);
-  const town_icon_geometry = new THREE.SphereGeometry(towns_icons.attr("size") * 2, 16, 16);
+  const citie_icon_geometry = new THREE.SphereGeometry(cities_icons.attr("size") * 2, 8, 8);
+  const town_icon_geometry = new THREE.SphereGeometry(towns_icons.attr("size") * 2, 8, 8);
   for (const burg of pack.burgs) {
     const [x, y, z] = get3dCoords(burg.x, burg.y)
 
