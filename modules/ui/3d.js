@@ -11,7 +11,7 @@ const options = {scale: 50, lightness: .7, shadow: .5, sun: {x: 100, y: 600, z: 
 // set variables
 let Renderer, scene, camera, controls, animationFrame, material, texture,
   geometry, mesh, ambientLight, spotLight, waterPlane, waterMaterial, waterMesh,
-  objexporter;
+  objexporter, square_geometry, texture_loader;
 const drawSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
 document.body.appendChild(drawSVG);
 let textMeshs = [], iconMeshs = [];
@@ -116,14 +116,14 @@ const toggleSky = function() {
 }
 
 const toggleLabels = function() {
+  options.labels3d = !options.labels3d;
+
   if (options.labels3d) {
+    createLabels().then(() => update());
+  } else {
     deleteLabels();
     update();
-  } else {
-    createLabels().then(() => update());
   }
-
-  options.labels3d = !options.labels3d;
 }
 
 const setColors = function(sky, water) {
@@ -207,14 +207,14 @@ function svg2mesh(svg, sx=1, sy=1) {
   svg.setAttribute("width", bbox.width);
   svg.setAttribute("height", bbox.height);
 
-  const texture = new THREE.TextureLoader().load(svg2base64(svg));
+  const texture = new texture_loader.load(svg2base64(svg));
   texture.minFilter = THREE.LinearFilter; // remove `texture has been resized` warning
 
-  const material = new THREE.MeshBasicMaterial({map: texture, side:THREE.DoubleSide, depthWrite: false});
+  const material = new THREE.MeshBasicMaterial({map: texture, side: THREE.DoubleSide, depthWrite: false});
   material.transparent = true;
 
   const mesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(1, 1),
+    square_geometry,
     material
   );
   mesh.scale.x = bbox.width * (sx / 100);
@@ -227,7 +227,7 @@ function svg2mesh(svg, sx=1, sy=1) {
 async function createStateText(font, size, color, label) {
   drawSVG.innerHTML = "<defs></defs>";
   drawSVG.appendChild(label.cloneNode(true));
-  if (fontCache[font] == undefined) {fontCache[font] = await GFontToDataURI(`https://fonts.googleapis.com/css?family=${font}`)}
+  if (fontCache[font] == undefined) {fontCache[font] = (await GFontToDataURI(`https://fonts.googleapis.com/css?family=${font}`)).join('\n');}
   drawSVG.children[0].innerHTML = `<style type="text/css">${fontCache[font]}</style>`;
   drawSVG.children[0].appendChild(svg.select(label.childNodes[0].href.baseVal).node().cloneNode(true)); // href of path in defs
   drawSVG.children[1].setAttribute("transform", `scale(${5} ${5})`)
@@ -241,11 +241,11 @@ async function createStateText(font, size, color, label) {
   return mesh;
 }
 
-async function createBurgText(text, font, size, color) {
-  if (fontCache[font] == undefined) {fontCache[font] = await GFontToDataURI(`https://fonts.googleapis.com/css?family=${font}`)}
-  drawSVG.innerHTML = `<text font-family="${font}" font-size="${size * (20 / 2)}" fill="${color}">${text}</text>
+async function createBurgText(text, font, size, color, quality=1) {  // for quality: lower value mean higher quality
+  if (fontCache[font] == undefined) {fontCache[font] = (await GFontToDataURI(`https://fonts.googleapis.com/css?family=${font}`)).join("\n");}
+  drawSVG.innerHTML = `<text font-family="${font}" font-size="${size * (20 / quality)}" fill="${color}">${text}</text>
 <defs><style type="text/css">${fontCache[font]}</style></defs>`;
-  return svg2mesh(drawSVG, 7*2, 7*2);
+  return svg2mesh(drawSVG, 7*quality, 7*quality);
 }
 
 function get3dCoords(base_x, base_y) {
@@ -256,12 +256,19 @@ function get3dCoords(base_x, base_y) {
 }
 
 async function createLabels() {
+  square_geometry = new THREE.PlaneGeometry(1, 1);
+  texture_loader = new THREE.TextureLoader();
+
   // Burg labels
   const cities = svg.select("#viewbox #labels #burgLabels #cities");
   const towns = svg.select('#viewbox #labels #burgLabels #towns');
   const cities_icons = svg.select('#viewbox #icons #burgIcons #cities');
   const towns_icons = svg.select('#viewbox #icons #burgIcons #towns');
 
+  const citie_icon_material = new THREE.MeshBasicMaterial({color: cities_icons.attr('fill')});
+  const town_icon_material = new THREE.MeshBasicMaterial({color: towns_icons.attr('fill')});
+  const citie_icon_geometry = new THREE.SphereGeometry(cities_icons.attr("size") * 2, 16, 16);
+  const town_icon_geometry = new THREE.SphereGeometry(towns_icons.attr("size") * 2, 16, 16);
   for (const burg of pack.burgs) {
     const [x, y, z] = get3dCoords(burg.x, burg.y)
 
@@ -300,10 +307,9 @@ async function createLabels() {
 
     // Icon
     if(layerIsOn("toggleIcons")) {
-      const icon_material = new THREE.MeshBasicMaterial({color: burg.capital ? cities_icons.attr('fill') : towns_icons.attr('fill')});
       const icon_mesh = new THREE.Mesh(
-        new THREE.SphereGeometry((burg.capital ? cities_icons.attr("size") : towns_icons.attr("size")) * 2, 16, 16),
-        icon_material
+        burg.capital ? citie_icon_geometry : town_icon_geometry,
+        burg.capital ? citie_icon_material : town_icon_material
       );
       icon_mesh.position.set(x, y, z)
       icon_mesh.base_x = burg.x
@@ -332,18 +338,31 @@ async function createLabels() {
 }
 
 function deleteLabels() {
-  for (const mesh of textMeshs) {
+  if (square_geometry) square_geometry.dispose();
+  square_geometry = undefined;
+  texture_loader = undefined;
+
+  for (const [i, mesh] of textMeshs.entries()) {
+    scene.remove(mesh);
     mesh.material.map.dispose();
     mesh.material.dispose();
     mesh.geometry.dispose();
-    scene.remove(mesh);
+    delete mesh.material.map;
+    delete mesh.material;
+    delete mesh.geometry;
+    delete textMeshs[i];
   }
+  textMeshs = [];
 
-  for (const mesh of iconMeshs) {
+  for (const [i, mesh] of iconMeshs.entries()) {
+    scene.remove(mesh);
     mesh.material.dispose();
     mesh.geometry.dispose();
-    scene.remove(mesh);
+    delete mesh.material;
+    delete mesh.geometry;
+    delete iconMeshs[i];
   }
+  iconMeshs = [];
 }
 
 // create a mesh from pixel data
@@ -376,8 +395,6 @@ async function createMesh(width, height, segmentsX, segmentsY) {
   scene.add(mesh);
 
   deleteLabels();
-  textMeshs = [];
-  iconMeshs = [];
 
   if (options.labels3d) {
     await createLabels();
