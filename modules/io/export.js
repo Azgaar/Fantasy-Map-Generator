@@ -10,18 +10,18 @@ async function saveSVG() {
   link.href = url;
   link.click();
 
-  tip(`${link.download} is saved. Open "Downloads" screen (crtl + J) to check. You can set image scale in options`, true, "success", 5000);
-  TIME && console.timeEnd("saveSVG");
+  tip(`${link.download} is saved. Open "Downloads" screen (crtl + J) to check. You can set image scale in options`, true, 'success', 5000);
+  TIME && console.timeEnd('saveSVG');
 }
 
 // download map as PNG
 async function savePNG() {
-  TIME && console.time("savePNG");
-  const url = await getMapURL("png");
+  TIME && console.time('savePNG');
+  const url = await getMapURL('png');
 
-  const link = document.createElement("a");
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
+  const link = document.createElement('a');
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
   canvas.width = svgWidth * pngResolutionInput.value;
   canvas.height = svgHeight * pngResolutionInput.value;
   const img = new Image();
@@ -29,45 +29,45 @@ async function savePNG() {
 
   img.onload = function () {
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    link.download = getFileName() + ".png";
+    link.download = getFileName() + '.png';
     canvas.toBlob(function (blob) {
       link.href = window.URL.createObjectURL(blob);
       link.click();
       window.setTimeout(function () {
         canvas.remove();
         window.URL.revokeObjectURL(link.href);
-        tip(`${link.download} is saved. Open "Downloads" screen (crtl + J) to check. You can set image scale in options`, true, "success", 5000);
+        tip(`${link.download} is saved. Open "Downloads" screen (crtl + J) to check. You can set image scale in options`, true, 'success', 5000);
       }, 1000);
     });
   };
 
-  TIME && console.timeEnd("savePNG");
+  TIME && console.timeEnd('savePNG');
 }
 
 // download map as JPEG
 async function saveJPEG() {
-  TIME && console.time("saveJPEG");
-  const url = await getMapURL("png");
+  TIME && console.time('saveJPEG');
+  const url = await getMapURL('png');
 
-  const canvas = document.createElement("canvas");
+  const canvas = document.createElement('canvas');
   canvas.width = svgWidth * pngResolutionInput.value;
   canvas.height = svgHeight * pngResolutionInput.value;
   const img = new Image();
   img.src = url;
 
   img.onload = async function () {
-    canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
     const quality = Math.min(rn(1 - pngResolutionInput.value / 20, 2), 0.92);
-    const URL = await canvas.toDataURL("image/jpeg", quality);
-    const link = document.createElement("a");
-    link.download = getFileName() + ".jpeg";
+    const URL = await canvas.toDataURL('image/jpeg', quality);
+    const link = document.createElement('a');
+    link.download = getFileName() + '.jpeg';
     link.href = URL;
     link.click();
-    tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
+    tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, 'success', 7000);
     window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
   };
 
-  TIME && console.timeEnd("saveJPEG");
+  TIME && console.timeEnd('saveJPEG');
 }
 
 // download map as png tiles
@@ -78,8 +78,8 @@ async function saveTiles() {
     await import("../../libs/jszip.min.js");
     const zip = new window.JSZip();
 
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
     canvas.width = graphWidth;
     canvas.height = graphHeight;
 
@@ -87,7 +87,7 @@ async function saveTiles() {
     imgSchema.src = urlSchema;
     imgSchema.onload = function () {
       ctx.drawImage(imgSchema, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob(blob => zip.file(`fmg_tile_schema.png`, blob));
+      canvas.toBlob((blob) => zip.file(`fmg_tile_schema.png`, blob));
     };
 
     // download tiles
@@ -113,7 +113,7 @@ async function saveTiles() {
         for (let x = 0; x + tileW <= graphWidth; x += tileW, i++) {
           ctx.drawImage(img, x, y, tileW, tileH, 0, 0, width, height);
           const name = `fmg_tile_${i}.png`;
-          canvas.toBlob(blob => {
+          canvas.toBlob((blob) => {
             zip.file(name, blob);
             loaded += 1;
             if (loaded === tolesTotal) return downloadZip();
@@ -124,8 +124,8 @@ async function saveTiles() {
 
     function downloadZip() {
       const name = `${getFileName()}.zip`;
-      zip.generateAsync({type: "blob"}).then(blob => {
-        const link = document.createElement("a");
+      zip.generateAsync({type: 'blob'}).then((blob) => {
+        const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = name;
         link.click();
@@ -150,8 +150,8 @@ async function getMapURL(type, options = {}) {
   const clone = d3.select(cloneEl);
   if (!debug) clone.select("#debug")?.remove();
 
-  const cloneDefs = cloneEl.getElementsByTagName("defs")[0];
-  const svgDefs = document.getElementById("defElements");
+  const cloneDefs = cloneEl.getElementsByTagName('defs')[0];
+  const svgDefs = document.getElementById('defElements');
 
   const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
   if (isFirefox && type === "mesh") clone.select("#oceanPattern")?.remove();
@@ -174,21 +174,21 @@ async function getMapURL(type, options = {}) {
     drawScaleBar(scale);
   }
 
-  if (type === "svg") removeUnusedElements(clone);
-  if (customization && type === "mesh") updateMeshCells(clone);
+  if (type === 'svg') removeUnusedElements(clone);
+  if (customization && type === 'mesh') updateMeshCells(clone);
   inlineStyle(clone);
 
   // remove unused filters
-  const filters = cloneEl.querySelectorAll("filter");
+  const filters = cloneEl.querySelectorAll('filter');
   for (let i = 0; i < filters.length; i++) {
     const id = filters[i].id;
     if (cloneEl.querySelector("[filter='url(#" + id + ")']")) continue;
-    if (cloneEl.getAttribute("filter") === "url(#" + id + ")") continue;
+    if (cloneEl.getAttribute('filter') === 'url(#' + id + ')') continue;
     filters[i].remove();
   }
 
   // remove unused patterns
-  const patterns = cloneEl.querySelectorAll("pattern");
+  const patterns = cloneEl.querySelectorAll('pattern');
   for (let i = 0; i < patterns.length; i++) {
     const id = patterns[i].id;
     if (cloneEl.querySelector("[fill='url(#" + id + ")']")) continue;
@@ -196,7 +196,7 @@ async function getMapURL(type, options = {}) {
   }
 
   // remove unused symbols
-  const symbols = cloneEl.querySelectorAll("symbol");
+  const symbols = cloneEl.querySelectorAll('symbol');
   for (let i = 0; i < symbols.length; i++) {
     const id = symbols[i].id;
     if (cloneEl.querySelector("use[*|href='#" + id + "']")) continue;
@@ -204,19 +204,21 @@ async function getMapURL(type, options = {}) {
   }
 
   // add displayed emblems
-  if (layerIsOn("toggleEmblems") && emblems.selectAll("use").size()) {
+  if (layerIsOn('toggleEmblems') && emblems.selectAll('use').size()) {
     cloneEl
-      .getElementById("emblems")
-      ?.querySelectorAll("use")
-      .forEach(el => {
-        const href = el.getAttribute("href") || el.getAttribute("xlink:href");
+      .getElementById('emblems')
+      ?.querySelectorAll('use')
+      .forEach((el) => {
+        const href = el.getAttribute('href') || el.getAttribute('xlink:href');
         if (!href) return;
         const emblem = document.getElementById(href.slice(1));
         if (emblem) cloneDefs.append(emblem.cloneNode(true));
       });
   } else {
-    cloneDefs.querySelector("#defs-emblems")?.remove();
+    cloneDefs.querySelector('#defs-emblems')?.remove();
   }
+
+  // add resources TODO
 
   // replace ocean pattern href to base64
   if (location.hostname && cloneEl.getElementById("oceanicPattern")) {
@@ -231,15 +233,15 @@ async function getMapURL(type, options = {}) {
   }
 
   // add relief icons
-  if (cloneEl.getElementById("terrain")) {
+  if (cloneEl.getElementById('terrain')) {
     const uniqueElements = new Set();
-    const terrainNodes = cloneEl.getElementById("terrain").childNodes;
+    const terrainNodes = cloneEl.getElementById('terrain').childNodes;
     for (let i = 0; i < terrainNodes.length; i++) {
-      const href = terrainNodes[i].getAttribute("href") || terrainNodes[i].getAttribute("xlink:href");
+      const href = terrainNodes[i].getAttribute('href') || terrainNodes[i].getAttribute('xlink:href');
       uniqueElements.add(href);
     }
 
-    const defsRelief = svgDefs.getElementById("defs-relief");
+    const defsRelief = svgDefs.getElementById('defs-relief');
     for (const terrain of [...uniqueElements]) {
       const element = defsRelief.querySelector(terrain);
       if (element) cloneDefs.appendChild(element.cloneNode(true));
@@ -247,21 +249,21 @@ async function getMapURL(type, options = {}) {
   }
 
   // add wind rose
-  if (cloneEl.getElementById("compass")) {
-    const rose = svgDefs.getElementById("rose");
+  if (cloneEl.getElementById('compass')) {
+    const rose = svgDefs.getElementById('rose');
     if (rose) cloneDefs.appendChild(rose.cloneNode(true));
   }
 
   // add port icon
-  if (cloneEl.getElementById("anchors")) {
-    const anchor = svgDefs.getElementById("icon-anchor");
+  if (cloneEl.getElementById('anchors')) {
+    const anchor = svgDefs.getElementById('icon-anchor');
     if (anchor) cloneDefs.appendChild(anchor.cloneNode(true));
   }
 
   // add grid pattern
-  if (cloneEl.getElementById("gridOverlay")?.hasChildNodes()) {
-    const type = cloneEl.getElementById("gridOverlay").getAttribute("type");
-    const pattern = svgDefs.getElementById("pattern_" + type);
+  if (cloneEl.getElementById('gridOverlay')?.hasChildNodes()) {
+    const type = cloneEl.getElementById('gridOverlay').getAttribute('type');
+    const pattern = svgDefs.getElementById('pattern_' + type);
     if (pattern) cloneDefs.appendChild(pattern.cloneNode(true));
   }
 
@@ -316,7 +318,7 @@ async function getMapURL(type, options = {}) {
   clone.remove();
 
   const serialized = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>` + new XMLSerializer().serializeToString(cloneEl);
-  const blob = new Blob([serialized], {type: "image/svg+xml;charset=utf-8"});
+  const blob = new Blob([serialized], {type: 'image/svg+xml;charset=utf-8'});
   const url = window.URL.createObjectURL(blob);
   window.setTimeout(() => window.URL.revokeObjectURL(url), 5000);
   return url;
@@ -328,12 +330,12 @@ function removeUnusedElements(clone) {
 
   for (let empty = 1; empty; ) {
     empty = 0;
-    clone.selectAll("g").each(function () {
-      if (!this.hasChildNodes() || this.style.display === "none" || this.classList.contains("hidden")) {
+    clone.selectAll('g').each(function () {
+      if (!this.hasChildNodes() || this.style.display === 'none' || this.classList.contains('hidden')) {
         empty++;
         this.remove();
       }
-      if (this.hasAttribute("display") && this.style.display === "inline") this.removeAttribute("display");
+      if (this.hasAttribute('display') && this.style.display === 'inline') this.removeAttribute('display');
     });
   }
 }
@@ -343,65 +345,65 @@ function updateMeshCells(clone) {
   const scheme = getColorScheme(terrs.attr("scheme"));
   clone.select("#heights").attr("filter", "url(#blur1)");
   clone
-    .select("#heights")
-    .selectAll("polygon")
+    .select('#heights')
+    .selectAll('polygon')
     .data(data)
-    .join("polygon")
-    .attr("points", d => getGridPolygon(d))
-    .attr("id", d => "cell" + d)
-    .attr("stroke", d => getColor(grid.cells.h[d], scheme));
+    .join('polygon')
+    .attr('points', (d) => getGridPolygon(d))
+    .attr('id', (d) => 'cell' + d)
+    .attr('stroke', (d) => getColor(grid.cells.h[d], scheme));
 }
 
 // for each g element get inline style
 function inlineStyle(clone) {
-  const emptyG = clone.append("g").node();
+  const emptyG = clone.append('g').node();
   const defaultStyles = window.getComputedStyle(emptyG);
 
-  clone.selectAll("g, #ruler *, #scaleBar > text").each(function () {
+  clone.selectAll('g, #ruler *, #scaleBar > text').each(function () {
     const compStyle = window.getComputedStyle(this);
-    let style = "";
+    let style = '';
 
     for (let i = 0; i < compStyle.length; i++) {
       const key = compStyle[i];
       const value = compStyle.getPropertyValue(key);
 
       // Firefox mask hack
-      if (key === "mask-image" && value !== defaultStyles.getPropertyValue(key)) {
+      if (key === 'mask-image' && value !== defaultStyles.getPropertyValue(key)) {
         style += "mask-image: url('#land');";
         continue;
       }
 
-      if (key === "cursor") continue; // cursor should be default
+      if (key === 'cursor') continue; // cursor should be default
       if (this.hasAttribute(key)) continue; // don't add style if there is the same attribute
       if (value === defaultStyles.getPropertyValue(key)) continue;
-      style += key + ":" + value + ";";
+      style += key + ':' + value + ';';
     }
 
     for (const key in compStyle) {
       const value = compStyle.getPropertyValue(key);
 
-      if (key === "cursor") continue; // cursor should be default
+      if (key === 'cursor') continue; // cursor should be default
       if (this.hasAttribute(key)) continue; // don't add style if there is the same attribute
       if (value === defaultStyles.getPropertyValue(key)) continue;
-      style += key + ":" + value + ";";
+      style += key + ':' + value + ';';
     }
 
-    if (style != "") this.setAttribute("style", style);
+    if (style != '') this.setAttribute('style', style);
   });
 
   emptyG.remove();
 }
 
 function saveGeoJSON_Cells() {
-  const json = {type: "FeatureCollection", features: []};
+  const json = {type: 'FeatureCollection', features: []};
   const cells = pack.cells;
-  const getPopulation = i => {
+  const getPopulation = (i) => {
     const [r, u] = getCellPopulation(i);
     return rn(r + u);
   };
-  const getHeight = i => parseInt(getFriendlyHeight([cells.p[i][0], cells.p[i][1]]));
+  const getHeight = (i) => parseInt(getFriendlyHeight([cells.p[i][0], cells.p[i][1]]));
 
-  cells.i.forEach(i => {
+  cells.i.forEach((i) => {
     const coordinates = getCellCoordinates(cells.v[i]);
     const height = getHeight(i);
     const biome = cells.biome[i];
@@ -414,7 +416,7 @@ function saveGeoJSON_Cells() {
     const neighbors = cells.c[i];
 
     const properties = {id: i, height, biome, type, population, state, province, culture, religion, neighbors};
-    const feature = {type: "Feature", geometry: {type: "Polygon", coordinates}, properties};
+    const feature = {type: 'Feature', geometry: {type: 'Polygon', coordinates}, properties};
     json.features.push(feature);
   });
 
@@ -423,14 +425,14 @@ function saveGeoJSON_Cells() {
 }
 
 function saveGeoJSON_Routes() {
-  const json = {type: "FeatureCollection", features: []};
+  const json = {type: 'FeatureCollection', features: []};
 
-  routes.selectAll("g > path").each(function () {
+  routes.selectAll('g > path').each(function () {
     const coordinates = getRoutePoints(this);
     const id = this.id;
     const type = this.parentElement.id;
 
-    const feature = {type: "Feature", geometry: {type: "LineString", coordinates}, properties: {id, type}};
+    const feature = {type: 'Feature', geometry: {type: 'LineString', coordinates}, properties: {id, type}};
     json.features.push(feature);
   });
 
@@ -439,7 +441,7 @@ function saveGeoJSON_Routes() {
 }
 
 function saveGeoJSON_Rivers() {
-  const json = {type: "FeatureCollection", features: []};
+  const json = {type: 'FeatureCollection', features: []};
 
   rivers.selectAll("path").each(function () {
     const river = pack.rivers.find(r => r.i === +this.id.slice(5));
