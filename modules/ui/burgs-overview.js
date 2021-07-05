@@ -71,7 +71,7 @@ function overviewBurgs() {
       totalPopulation = 0;
 
     for (const b of filtered) {
-      const population = b.population * populationRate.value * urbanization.value;
+      const population = b.population * populationRate * urbanization;
       totalPopulation += population;
       const type = b.capital && b.port ? 'a-capital-port' : b.capital ? 'c-capital' : b.port ? 'p-port' : 'z-burg';
       const state = pack.states[b.state].name;
@@ -91,8 +91,8 @@ function overviewBurgs() {
           <span data-tip="${b.capital ? ' This burg is a state capital' : 'Click to assign a capital status'}" class="icon-star-empty${b.capital ? '' : ' inactive pointer'}"></span>
           <span data-tip="Click to toggle port status" class="icon-anchor pointer${b.port ? '' : ' inactive'}" style="font-size:.9em"></span>
         </div>
+        <span data-tip="Edit burg" class="icon-pencil"></span>
         <span class="locks pointer ${b.lock ? 'icon-lock' : 'icon-lock-open inactive'}"></span>
-        <span data-tip="Click to zoom into view" class="icon-dot-circled pointer"></span>
         <span data-tip="Remove burg" class="icon-trash-empty"></span>
       </div>`;
     }
@@ -163,10 +163,10 @@ function overviewBurgs() {
     const burg = +this.parentNode.dataset.id;
     if (this.value == '' || isNaN(+this.value)) {
       tip('Please provide an integer number (like 10000, not 10K)', false, 'error');
-      this.value = si(pack.burgs[burg].population * populationRate.value * urbanization.value);
+      this.value = si(pack.burgs[burg].population * populationRate * urbanization);
       return;
     }
-    pack.burgs[burg].population = this.value / populationRate.value / urbanization.value;
+    pack.burgs[burg].population = this.value / populationRate / urbanization;
     this.parentNode.dataset.population = this.value;
     this.value = si(this.value);
 
@@ -255,14 +255,9 @@ function overviewBurgs() {
   function addBurgOnClick() {
     const point = d3.mouse(this);
     const cell = findCell(point[0], point[1]);
-    if (pack.cells.h[cell] < 20) {
-      tip('You cannot place state into the water. Please click on a land cell', false, 'error');
-      return;
-    }
-    if (pack.cells.burg[cell]) {
-      tip('There is already a burg in this cell. Please select a free cell', false, 'error');
-      return;
-    }
+    if (pack.cells.h[cell] < 20) return tip('You cannot place state into the water. Please click on a land cell', false, 'error');
+    if (pack.cells.burg[cell]) return tip('There is already a burg in this cell. Please select a free cell', false, 'error');
+
     addBurg(point); // add new burg
 
     if (d3.event.shiftKey === false) {
@@ -347,7 +342,7 @@ function overviewBurgs() {
       d3.select(ev.target).transition().duration(1500).attr('stroke', '#c13119');
       const name = d.data.name;
       const parent = d.parent.data.name;
-      const population = si(d.value * populationRate.value * urbanization.value);
+      const population = si(d.value * populationRate * urbanization);
 
       burgsInfo.innerHTML = `${name}. ${parent}. Population: ${population}`;
       burgHighlightOn(ev);
@@ -449,7 +444,7 @@ function overviewBurgs() {
       data += b.state ? pack.states[b.state].fullName + ',' : pack.states[b.state].name + ',';
       data += pack.cultures[b.culture].name + ',';
       data += pack.religions[pack.cells.religion[b.cell]].name + ',';
-      data += rn(b.population * populationRate.value * urbanization.value) + ',';
+      data += rn(b.population * populationRate * urbanization) + ',';
 
       // add geography data
       data += mapCoordinates.lonW + (b.x / graphWidth) * mapCoordinates.lonT + ',';
@@ -497,15 +492,9 @@ function overviewBurgs() {
   }
 
   function importBurgNames(dataLoaded) {
-    if (!dataLoaded) {
-      tip('Cannot load the file, please check the format', false, 'error');
-      return;
-    }
+    if (!dataLoaded) return tip('Cannot load the file, please check the format', false, 'error');
     const data = dataLoaded.split('\r\n');
-    if (!data.length) {
-      tip('Cannot parse the list, please check the file format', false, 'error');
-      return;
-    }
+    if (!data.length) return tip('Cannot parse the list, please check the file format', false, 'error');
 
     let change = [],
       message = `Burgs will be renamed as below. Please confirm`;

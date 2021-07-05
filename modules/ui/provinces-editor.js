@@ -47,7 +47,7 @@ function editProvinces() {
     else if (cl.contains('name')) editProvinceName(p);
     else if (cl.contains('coaIcon')) editEmblem('province', 'provinceCOA' + p, pack.provinces[p]);
     else if (cl.contains('icon-star-empty')) capitalZoomIn(p);
-    else if (cl.contains('icon-flag-empty')) triggerIndependence(p);
+    else if (cl.contains('icon-flag-empty')) triggerIndependencePromps(p);
     else if (cl.contains('culturePopulation')) changePopulation(p);
     else if (cl.contains('icon-pin')) toggleFog(p, cl);
     else if (cl.contains('icon-trash-empty')) removeProvince(p);
@@ -118,8 +118,8 @@ function editProvinces() {
     for (const p of filtered) {
       const area = p.area * distanceScaleInput.value ** 2;
       totalArea += area;
-      const rural = p.rural * populationRate.value;
-      const urban = p.urban * populationRate.value * urbanization.value;
+      const rural = p.rural * populationRate;
+      const urban = p.urban * populationRate * urbanization;
       const population = rn(rural + urban);
       const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}`;
       totalPopulation += population;
@@ -233,9 +233,21 @@ function editProvinces() {
     zoomTo(x, y, 8, 2000);
   }
 
-  function triggerIndependence(p) {
-    const message = 'Are you sure you want to declare province independence? <br>It will turn province into a new state';
-    confirmationDialog({title: 'Declare independence', message, confirm: 'Declare', onConfirm: () => declareProvinceIndependence(p)});
+  function triggerIndependencePromps(p) {
+    alertMessage.innerHTML = 'Are you sure you want to declare province independence? <br>It will turn province into a new state';
+    $('#alert').dialog({
+      resizable: false,
+      title: 'Declare independence',
+      buttons: {
+        Declare: function () {
+          declareProvinceIndependence(p);
+          $(this).dialog('close');
+        },
+        Cancel: function () {
+          $(this).dialog('close');
+        }
+      }
+    });
   }
 
   function declareProvinceIndependence(p) {
@@ -328,8 +340,8 @@ function editProvinces() {
       tip('Province does not have any cells, cannot change population', false, 'error');
       return;
     }
-    const rural = rn(p.rural * populationRate.value);
-    const urban = rn(p.urban * populationRate.value * urbanization.value);
+    const rural = rn(p.rural * populationRate);
+    const urban = rn(p.urban * populationRate * urbanization);
     const total = rural + urban;
     const l = (n) => Number(n).toLocaleString();
 
@@ -370,7 +382,7 @@ function editProvinces() {
         cells.forEach((i) => (pack.cells.pop[i] *= ruralChange));
       }
       if (!isFinite(ruralChange) && +ruralPop.value > 0) {
-        const points = ruralPop.value / populationRate.value;
+        const points = ruralPop.value / populationRate;
         const pop = rn(points / cells.length);
         cells.forEach((i) => (pack.cells.pop[i] = pop));
       }
@@ -380,7 +392,7 @@ function editProvinces() {
         p.burgs.forEach((b) => (pack.burgs[b].population = rn(pack.burgs[b].population * urbanChange, 4)));
       }
       if (!isFinite(urbanChange) && +urbanPop.value > 0) {
-        const points = urbanPop.value / populationRate.value / urbanization.value;
+        const points = urbanPop.value / populationRate / urbanization;
         const population = rn(points / burgs.length, 4);
         p.burgs.forEach((b) => (pack.burgs[b].population = population));
       }
@@ -397,31 +409,40 @@ function editProvinces() {
   }
 
   function removeProvince(p) {
-    const message = 'Are you sure you want to remove the province? <br>This action cannot be reverted';
-    const onConfirm = () => {
-      pack.cells.province.forEach((province, i) => {
-        if (province === p) pack.cells.province[i] = 0;
-      });
-      const s = pack.provinces[p].state;
-      const state = pack.states[s];
-      if (state.provinces.includes(p)) state.provinces.splice(state.provinces.indexOf(p), 1);
+    alertMessage.innerHTML = `Are you sure you want to remove the province? <br>This action cannot be reverted`;
+    $('#alert').dialog({
+      resizable: false,
+      title: 'Remove province',
+      buttons: {
+        Remove: function () {
+          pack.cells.province.forEach((province, i) => {
+            if (province === p) pack.cells.province[i] = 0;
+          });
+          const s = pack.provinces[p].state,
+            state = pack.states[s];
+          if (state.provinces.includes(p)) state.provinces.splice(state.provinces.indexOf(p), 1);
 
-      unfog('focusProvince' + p);
+          unfog('focusProvince' + p);
 
-      const coaId = 'provinceCOA' + p;
-      if (document.getElementById(coaId)) document.getElementById(coaId).remove();
-      emblems.select(`#provinceEmblems > use[data-i='${p}']`).remove();
+          const coaId = 'provinceCOA' + p;
+          if (document.getElementById(coaId)) document.getElementById(coaId).remove();
+          emblems.select(`#provinceEmblems > use[data-i='${p}']`).remove();
 
-      pack.provinces[p] = {i: p, removed: true};
+          pack.provinces[p] = {i: p, removed: true};
 
-      const g = provs.select('#provincesBody');
-      g.select('#province' + p).remove();
-      g.select('#province-gap' + p).remove();
-      if (!layerIsOn('toggleBorders')) toggleBorders();
-      else drawBorders();
-      refreshProvincesEditor();
-    };
-    confirmationDialog({title: 'Remove province', message, confirm: 'Remove', onConfirm});
+          const g = provs.select('#provincesBody');
+          g.select('#province' + p).remove();
+          g.select('#province-gap' + p).remove();
+          if (!layerIsOn('toggleBorders')) toggleBorders();
+          else drawBorders();
+          refreshProvincesEditor();
+          $(this).dialog('close');
+        },
+        Cancel: function () {
+          $(this).dialog('close');
+        }
+      }
+    });
   }
 
   function editProvinceName(province) {
@@ -571,8 +592,8 @@ function editProvinces() {
 
       const unit = areaUnit.value === 'square' ? ' ' + distanceUnitInput.value + '²' : ' ' + areaUnit.value;
       const area = d.data.area * distanceScaleInput.value ** 2 + unit;
-      const rural = rn(d.data.rural * populationRate.value);
-      const urban = rn(d.data.urban * populationRate.value * urbanization.value);
+      const rural = rn(d.data.rural * populationRate);
+      const urban = rn(d.data.urban * populationRate * urbanization);
 
       const value =
         provincesTreeType.value === 'area'
@@ -938,8 +959,8 @@ function editProvinces() {
       data += el.dataset.capital + ',';
       data += el.dataset.area + ',';
       data += el.dataset.population + ',';
-      data += `${Math.round(pack.provinces[key].rural * populationRate.value)},`;
-      data += `${Math.round(pack.provinces[key].urban * populationRate.value * urbanization.value)}\n`;
+      data += `${Math.round(pack.provinces[key].rural * populationRate)},`;
+      data += `${Math.round(pack.provinces[key].urban * populationRate * urbanization)}\n`;
     });
 
     const name = getFileName('Provinces') + '.csv';
@@ -947,26 +968,36 @@ function editProvinces() {
   }
 
   function removeAllProvinces() {
-    const message = `Are you sure you want to remove all provinces? <br>This action cannot be reverted`;
-    const onConfirm = () => {
-      // remove emblems
-      document.querySelectorAll("[id^='provinceCOA']").forEach((el) => el.remove());
-      emblems.select('#provinceEmblems').selectAll('*').remove();
+    alertMessage.innerHTML = `Are you sure you want to remove all provinces? <br>This action cannot be reverted`;
+    $('#alert').dialog({
+      resizable: false,
+      title: 'Remove all provinces',
+      buttons: {
+        Remove: function () {
+          $(this).dialog('close');
 
-      // remove data
-      pack.provinces = [0];
-      pack.cells.province = new Uint16Array(pack.cells.i.length);
-      pack.states.forEach((s) => (s.provinces = []));
+          // remove emblems
+          document.querySelectorAll("[id^='provinceCOA']").forEach((el) => el.remove());
+          emblems.select('#provinceEmblems').selectAll('*').remove();
 
-      unfog();
-      if (!layerIsOn('toggleBorders')) toggleBorders();
-      else drawBorders();
-      provs.select('#provincesBody').remove();
-      turnButtonOff('toggleProvinces');
+          // remove data
+          pack.provinces = [0];
+          pack.cells.province = new Uint16Array(pack.cells.i.length);
+          pack.states.forEach((s) => (s.provinces = []));
 
-      provincesEditorAddLines();
-    };
-    confirmationDialog({title: 'Remove all provinces', message, confirm: 'Remove', onConfirm});
+          unfog();
+          if (!layerIsOn('toggleBorders')) toggleBorders();
+          else drawBorders();
+          provs.select('#provincesBody').remove();
+          turnButtonOff('toggleProvinces');
+
+          provincesEditorAddLines();
+        },
+        Cancel: function () {
+          $(this).dialog('close');
+        }
+      }
+    });
   }
 
   function dragLabel() {

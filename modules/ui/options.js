@@ -95,7 +95,10 @@ function showSupporters() {
     Kyle S,Eric Moore,Dean Dunakin,Uniquenameosaurus,WarWizardGames,Chance Mena,Jan Ka,Miguel Alejandro,Dalton Clark,Simon Drapeau,Radovan Zapletal,Jmmat6,
     Justa Badge,Blargh Blarghmoomoo,Vanessa Anjos,Grant A. Murray,Akirsop,Rikard Wolff,Jake Fish,teco 47,Antiroo,Jakob Siegel,Guilherme Aguiar,Jarno Hallikainen,
     Justin Mcclain,Kristin Chernoff,Rowland Kingman,Esther Busch,Grayson McClead,Austin,Hakon the Viking,Chad Riley,Cooper Counts,Patrick Jones,Clonetone,
-    PlayByMail.Net,Brad Wardell,Lance Saba,Egoensis,Brea Richards,Tiber,Chris Bloom,Maxim Lowe,Aquelion,Page One Project,Spencer Morris,Paul Ingram`;
+    PlayByMail.Net,Brad Wardell,Lance Saba,Egoensis,Brea Richards,Tiber,Chris Bloom,Maxim Lowe,Aquelion,Page One Project,Spencer Morris,Paul Ingram,
+    Dust Bunny,Adrian Wright,Eric Alexander Cartaya,GameNight,Thomas Mortensen Hansen,Zklaus,Drinarius,Ed Wright,Lon Varnadore,Crys Cain,Heaven N Lee,
+    Jeffrey Henning,Lazer Elf,Jordan Bellah,Alex Beard,Kass Frisson,Petro Lombaard,Emanuel Pietri,Rox,PinkEvil,Gavin Madrigal,Martin Lorber,Prince of Morgoth,
+    Jaryd Armstrong,Andrew Pirkola,ThyHolyDevil,Gary Smith,Tyshaun Wise,Ethan Cook,Jon Stroman,Nobody679,良义 金,Chris Gray`;
 
   const array = supporters
     .replace(/(?:\r\n|\r|\n)/g, '')
@@ -106,35 +109,51 @@ function showSupporters() {
   $('#alert').dialog({resizable: false, title: 'Patreon Supporters', width: '54vw', position: {my: 'center', at: 'center', of: 'svg'}});
 }
 
+// on any option or dialog change
+document.getElementById('options').addEventListener('change', checkIfStored);
+document.getElementById('dialogs').addEventListener('change', checkIfStored);
+document.getElementById('options').addEventListener('input', updateOutputToFollowInput);
+document.getElementById('dialogs').addEventListener('input', updateOutputToFollowInput);
+
+function checkIfStored(ev) {
+  if (ev.target.dataset.stored) lock(ev.target.dataset.stored);
+}
+
+function updateOutputToFollowInput(ev) {
+  const id = ev.target.id;
+  const value = ev.target.value;
+
+  // specific cases
+  if (id === 'manorsInput') return (manorsOutput.value = value == 1000 ? 'auto' : value);
+
+  // generic case
+  if (id.slice(-5) === 'Input') {
+    const output = document.getElementById(id.slice(0, -5) + 'Output');
+    if (output) output.value = value;
+  } else if (id.slice(-6) === 'Output') {
+    const input = document.getElementById(id.slice(0, -6) + 'Input');
+    if (input) input.value = value;
+  }
+}
+
 // Option listeners
 const optionsContent = document.getElementById('optionsContent');
 optionsContent.addEventListener('input', function (event) {
-  const id = event.target.id,
-    value = event.target.value;
+  const id = event.target.id;
+  const value = event.target.value;
   if (id === 'mapWidthInput' || id === 'mapHeightInput') mapSizeInputChange();
   else if (id === 'pointsInput') changeCellsDensity(+value);
-  else if (id === 'culturesInput') culturesOutput.value = value;
-  else if (id === 'culturesOutput') culturesInput.value = value;
   else if (id === 'culturesSet') changeCultureSet();
   else if (id === 'regionsInput' || id === 'regionsOutput') changeStatesNumber(value);
-  else if (id === 'provincesInput') provincesOutput.value = value;
-  else if (id === 'provincesOutput') provincesOutput.value = value;
-  else if (id === 'provincesOutput') powerOutput.value = value;
-  else if (id === 'powerInput') powerOutput.value = value;
-  else if (id === 'powerOutput') powerInput.value = value;
-  else if (id === 'neutralInput') neutralOutput.value = value;
-  else if (id === 'neutralOutput') neutralInput.value = value;
-  else if (id === 'manorsInput') changeBurgsNumberSlider(value);
-  else if (id === 'religionsInput') religionsOutput.value = value;
   else if (id === 'emblemShape') changeEmblemShape(value);
   else if (id === 'tooltipSizeInput' || id === 'tooltipSizeOutput') changeTooltipSize(value);
   else if (id === 'transparencyInput') changeDialogsTransparency(value);
 });
 
 optionsContent.addEventListener('change', function (event) {
-  if (event.target.dataset.stored) lock(event.target.dataset.stored);
-  const id = event.target.id,
-    value = event.target.value;
+  const id = event.target.id;
+  const value = event.target.value;
+
   if (id === 'zoomExtentMin' || id === 'zoomExtentMax') changeZoomExtent(value);
   else if (id === 'optionsSeed') generateMapWithSeed();
   else if (id === 'uiSizeInput' || id === 'uiSizeOutput') changeUIsize(value);
@@ -330,8 +349,8 @@ function changeCellsDensity(value) {
   const cells = convert(value);
 
   pointsInput.setAttribute('data-cells', cells);
-  pointsOutput.value = cells / 1000 + 'K';
-  pointsOutput.style.color = cells > 50000 ? '#b12117' : cells !== 10000 ? '#dfdf12' : '#053305';
+  pointsOutput_formatted.value = cells / 1000 + 'K';
+  pointsOutput_formatted.style.color = cells > 50000 ? '#b12117' : cells !== 10000 ? '#dfdf12' : '#053305';
 }
 
 function changeCultureSet() {
@@ -382,14 +401,9 @@ function changeEmblemShape(emblemShape) {
 }
 
 function changeStatesNumber(value) {
-  regionsInput.value = regionsOutput.value = value;
   regionsOutput.style.color = +value ? null : '#b12117';
   burgLabels.select('#capitals').attr('data-size', Math.max(rn(6 - value / 20), 3));
   labels.select('#countries').attr('data-size', Math.max(rn(18 - value / 6), 4));
-}
-
-function changeBurgsNumberSlider(value) {
-  manorsOutput.value = value == 1000 ? 'auto' : value;
 }
 
 function changeUIsize(value) {
@@ -408,7 +422,6 @@ function getUImaxSize() {
 }
 
 function changeTooltipSize(value) {
-  tooltipSizeInput.value = tooltipSizeOutput.value = value;
   tooltip.style.fontSize = `calc(${value}px + 0.5vw)`;
 }
 
@@ -446,8 +459,9 @@ function applyStoredOptions() {
   if (localStorage.getItem('heightUnit')) applyOption(heightUnit, localStorage.getItem('heightUnit'));
 
   for (let i = 0; i < localStorage.length; i++) {
-    const stored = localStorage.key(i),
-      value = localStorage.getItem(stored);
+    const stored = localStorage.key(i);
+    const value = localStorage.getItem(stored);
+
     if (stored === 'speakerVoice') continue;
     const input = document.getElementById(stored + 'Input') || document.getElementById(stored);
     const output = document.getElementById(stored + 'Output');
@@ -606,23 +620,40 @@ document.getElementById('sticked').addEventListener('click', function (event) {
 });
 
 function regeneratePrompt() {
-  if (customization) return tip('New map cannot be generated when edit mode is active, please exit the mode and retry', false, 'error');
-  const workingMinutes = (Date.now() - last(mapHistory).created) / 60000;
-  if (workingMinutes < 5) return regenerateMap();
-
-  const message = 'Are you sure you want to generate a new map? <br>All unsaved changes made to the current map will be lost';
-  const onConfirm = () => {
-    closeDialogs();
+  if (customization) {
+    tip('New map cannot be generated when edit mode is active, please exit the mode and retry', false, 'error');
+    return;
+  }
+  const workingTime = (Date.now() - last(mapHistory).created) / 60000; // minutes
+  if (workingTime < 5) {
     regenerateMap();
-  };
-  confirmationDialog({title: 'Generate new map', message, confirm: 'Generate', onConfirm});
+    return;
+  }
+
+  alertMessage.innerHTML = `Are you sure you want to generate a new map?<br>
+  All unsaved changes made to the current map will be lost`;
+  $('#alert').dialog({
+    resizable: false,
+    title: 'Generate new map',
+    buttons: {
+      Cancel: function () {
+        $(this).dialog('close');
+      },
+      Generate: function () {
+        closeDialogs();
+        regenerateMap();
+      }
+    }
+  });
 }
 
 function showSavePane() {
+  document.getElementById('showLabels').checked = !hideLabels.checked;
+
   $('#saveMapData').dialog({
     title: 'Save map',
     resizable: false,
-    width: '27em',
+    width: '30em',
     position: {my: 'center', at: 'center', of: 'svg'},
     buttons: {
       Close: function () {
@@ -702,6 +733,74 @@ document.getElementById('mapToLoad').addEventListener('change', function () {
   closeDialogs();
   uploadMap(fileToLoad);
 });
+
+function openSaveTiles() {
+  closeDialogs();
+  updateTilesOptions();
+  const status = document.getElementById('tileStatus');
+  status.innerHTML = '';
+  let loading = null;
+
+  $('#saveTilesScreen').dialog({
+    resizable: false,
+    title: 'Download tiles',
+    width: '23em',
+    buttons: {
+      Download: function () {
+        status.innerHTML = 'Preparing for download...';
+        setTimeout(() => (status.innerHTML = 'Downloading. It may take some time.'), 1000);
+        loading = setInterval(() => (status.innerHTML += '.'), 1000);
+        saveTiles().then(() => {
+          clearInterval(loading);
+          status.innerHTML = `Done. Check file in "Downloads" (crtl + J)`;
+          setTimeout(() => (status.innerHTML = ''), 8000);
+        });
+      },
+      Cancel: function () {
+        $(this).dialog('close');
+      }
+    },
+    close: () => {
+      debug.selectAll('*').remove();
+      clearInterval(loading);
+    }
+  });
+}
+
+document
+  .getElementById('saveTilesScreen')
+  .querySelectorAll('input')
+  .forEach((el) => el.addEventListener('input', updateTilesOptions));
+
+function updateTilesOptions() {
+  const tileSize = document.getElementById('tileSize');
+  const tilesX = +document.getElementById('tileColsOutput').value;
+  const tilesY = +document.getElementById('tileRowsOutput').value;
+  const scale = +document.getElementById('tileScaleOutput').value;
+
+  // calculate size
+  const sizeX = graphWidth * scale * tilesX;
+  const sizeY = graphHeight * scale * tilesY;
+  const totalSize = sizeX * sizeY;
+
+  tileSize.innerHTML = `${sizeX} x ${sizeY} px`;
+  tileSize.style.color = totalSize > 1e9 ? '#d00b0b' : totalSize > 1e8 ? '#9e6409' : '#1a941a';
+
+  // draw tiles
+  const rects = [];
+  const labels = [];
+  const tileW = (graphWidth / tilesX) | 0;
+  const tileH = (graphHeight / tilesY) | 0;
+  for (let y = 0, i = 0; y + tileH <= graphHeight; y += tileH) {
+    for (let x = 0; x + tileW <= graphWidth; x += tileW, i++) {
+      rects.push(`<rect x=${x} y=${y} width=${tileW} height=${tileH} />`);
+      labels.push(`<text x=${x + tileW / 2} y=${y + tileH / 2}>${i}</text>`);
+    }
+  }
+  const rectsG = "<g fill='none' stroke='#000'>" + rects.join('') + '</g>';
+  const labelsG = "<g fill='#000' stroke='none' text-anchor='middle' dominant-baseline='central' font-size='24px'>" + labels.join('') + '</g>';
+  debug.html(rectsG + labelsG);
+}
 
 // View mode
 viewMode.addEventListener('click', changeViewMode);

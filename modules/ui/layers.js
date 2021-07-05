@@ -14,7 +14,6 @@ function getDefaultPresets() {
     heightmap: ['toggleHeight', 'toggleRivers'],
     physical: ['toggleCoordinates', 'toggleHeight', 'toggleIce', 'toggleRivers', 'toggleScaleBar'],
     poi: ['toggleBorders', 'toggleHeight', 'toggleIce', 'toggleIcons', 'toggleMarkers', 'toggleRivers', 'toggleRoutes', 'toggleScaleBar'],
-    economical: ['toggleResources', 'toggleBiomes', 'toggleBorders', 'toggleIcons', 'toggleIce', 'toggleLabels', 'toggleRivers', 'toggleRoutes', 'toggleScaleBar'],
     military: ['toggleBorders', 'toggleIcons', 'toggleLabels', 'toggleMilitary', 'toggleRivers', 'toggleRoutes', 'toggleScaleBar', 'toggleStates'],
     emblems: ['toggleBorders', 'toggleIcons', 'toggleIce', 'toggleEmblems', 'toggleRivers', 'toggleRoutes', 'toggleScaleBar', 'toggleStates'],
     landmass: ['toggleScaleBar']
@@ -547,7 +546,7 @@ function drawPopulation(event) {
     .transition(show)
     .attr('y2', (d) => d[2]);
 
-  const urban = burgs.filter((b) => b.i && !b.removed).map((b) => [b.x, b.y, b.y - (b.population / 8) * urbanization.value]);
+  const urban = burgs.filter((b) => b.i && !b.removed).map((b) => [b.x, b.y, b.y - (b.population / 8) * urbanization]);
   population
     .select('#urban')
     .selectAll('line')
@@ -919,7 +918,9 @@ function drawStates() {
   const bodyString = bodyData.map((d) => `<path id="state${d[1]}" d="${d[0]}" fill="${d[2]}" stroke="none"/>`).join('');
   const gapString = gapData.map((d) => `<path id="state-gap${d[1]}" d="${d[0]}" fill="none" stroke="${d[2]}"/>`).join('');
   const clipString = bodyData.map((d) => `<clipPath id="state-clip${d[1]}"><use href="#state${d[1]}"/></clipPath>`).join('');
-  const haloString = bodyData.map((d) => `<path id="state-border${d[1]}" d="${d[0]}" clip-path="url(#state-clip${d[1]})" stroke="${d3.color(d[2]) ? d3.color(d[2]).darker().hex() : '#666666'}"/>`).join('');
+  const haloString = bodyData
+    .map((d) => `<path id="state-border${d[1]}" d="${d[0]}" clip-path="url(#state-clip${d[1]})" stroke="${d3.color(d[2]) ? d3.color(d[2]).darker().hex() : '#666666'}"/>`)
+    .join('');
 
   statesBody.html(bodyString + gapString);
   defs.select('#statePaths').html(clipString);

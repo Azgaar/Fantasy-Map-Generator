@@ -15,23 +15,22 @@ function editUnits() {
   document.getElementById('distanceUnitInput').addEventListener('change', changeDistanceUnit);
   document.getElementById('distanceScaleOutput').addEventListener('input', changeDistanceScale);
   document.getElementById('distanceScaleInput').addEventListener('change', changeDistanceScale);
-  document.getElementById('areaUnit').addEventListener('change', () => lock('areaUnit'));
   document.getElementById('heightUnit').addEventListener('change', changeHeightUnit);
   document.getElementById('heightExponentInput').addEventListener('input', changeHeightExponent);
   document.getElementById('heightExponentOutput').addEventListener('input', changeHeightExponent);
   document.getElementById('temperatureScale').addEventListener('change', changeTemperatureScale);
-  document.getElementById('barSizeOutput').addEventListener('input', changeScaleBarSize);
-  document.getElementById('barSize').addEventListener('input', changeScaleBarSize);
-  document.getElementById('barLabel').addEventListener('input', changeScaleBarLabel);
-  document.getElementById('barPosX').addEventListener('input', changeScaleBarPosition);
-  document.getElementById('barPosY').addEventListener('input', changeScaleBarPosition);
+  document.getElementById('barSizeOutput').addEventListener('input', drawScaleBar);
+  document.getElementById('barSizeInput').addEventListener('input', drawScaleBar);
+  document.getElementById('barLabel').addEventListener('input', drawScaleBar);
+  document.getElementById('barPosX').addEventListener('input', fitScaleBar);
+  document.getElementById('barPosY').addEventListener('input', fitScaleBar);
   document.getElementById('barBackOpacity').addEventListener('input', changeScaleBarOpacity);
   document.getElementById('barBackColor').addEventListener('input', changeScaleBarColor);
 
   document.getElementById('populationRateOutput').addEventListener('input', changePopulationRate);
-  document.getElementById('populationRate').addEventListener('change', changePopulationRate);
+  document.getElementById('populationRateInput').addEventListener('change', changePopulationRate);
   document.getElementById('urbanizationOutput').addEventListener('input', changeUrbanizationRate);
-  document.getElementById('urbanization').addEventListener('change', changeUrbanizationRate);
+  document.getElementById('urbanizationInput').addEventListener('change', changeUrbanizationRate);
 
   document.getElementById('addLinearRuler').addEventListener('click', addRuler);
   document.getElementById('addOpisometer').addEventListener('click', toggleOpisometerMode);
@@ -51,114 +50,53 @@ function editUnits() {
       return;
     }
 
-    lock('distanceUnit');
     drawScaleBar();
     calculateFriendlyGridSize();
   }
 
   function changeDistanceScale() {
-    const scale = +this.value;
-    if (!scale || isNaN(scale) || scale < 0) {
-      tip('Distance scale should be a positive number', false, 'error');
-      this.value = document.getElementById('distanceScaleInput').dataset.value;
-      return;
-    }
-
-    document.getElementById('distanceScaleOutput').value = scale;
-    document.getElementById('distanceScaleInput').value = scale;
-    document.getElementById('distanceScaleInput').dataset.value = scale;
-    lock('distanceScale');
-
     drawScaleBar();
     calculateFriendlyGridSize();
   }
 
   function changeHeightUnit() {
-    if (this.value === 'custom_name') {
-      prompt('Provide a custom name for a height unit', {default: ''}, (custom) => {
-        this.options.add(new Option(custom, custom, false, true));
-        lock('heightUnit');
-      });
-      return;
-    }
+    if (this.value !== 'custom_name') return;
 
-    lock('heightUnit');
+    prompt('Provide a custom name for a height unit', {default: ''}, (custom) => {
+      this.options.add(new Option(custom, custom, false, true));
+      lock('heightUnit');
+    });
   }
 
   function changeHeightExponent() {
-    document.getElementById('heightExponentInput').value = this.value;
-    document.getElementById('heightExponentOutput').value = this.value;
     calculateTemperatures();
     if (layerIsOn('toggleTemp')) drawTemp();
-    lock('heightExponent');
   }
 
   function changeTemperatureScale() {
-    lock('temperatureScale');
     if (layerIsOn('toggleTemp')) drawTemp();
-  }
-
-  function changeScaleBarSize() {
-    document.getElementById('barSize').value = this.value;
-    document.getElementById('barSizeOutput').value = this.value;
-    drawScaleBar();
-    lock('barSize');
-  }
-
-  function changeScaleBarPosition() {
-    lock('barPosX');
-    lock('barPosY');
-    fitScaleBar();
-  }
-
-  function changeScaleBarLabel() {
-    lock('barLabel');
-    drawScaleBar();
   }
 
   function changeScaleBarOpacity() {
     scaleBar.select('rect').attr('opacity', this.value);
-    lock('barBackOpacity');
   }
 
   function changeScaleBarColor() {
     scaleBar.select('rect').attr('fill', this.value);
-    lock('barBackColor');
   }
 
   function changePopulationRate() {
-    const rate = +this.value;
-    if (!rate || isNaN(rate) || rate <= 0) {
-      tip('Population rate should be a positive number', false, 'error');
-      this.value = document.getElementById('populationRate').dataset.value;
-      return;
-    }
-
-    document.getElementById('populationRateOutput').value = rate;
-    document.getElementById('populationRate').value = rate;
-    document.getElementById('populationRate').dataset.value = rate;
-    lock('populationRate');
+    populationRate = +this.value;
   }
 
   function changeUrbanizationRate() {
-    const rate = +this.value;
-    if (!rate || isNaN(rate) || rate < 0) {
-      tip('Urbanization rate should be a number', false, 'error');
-      this.value = document.getElementById('urbanization').dataset.value;
-      return;
-    }
-
-    document.getElementById('urbanizationOutput').value = rate;
-    document.getElementById('urbanization').value = rate;
-    document.getElementById('urbanization').dataset.value = rate;
-    lock('urbanization');
+    urbanization = +this.value;
   }
 
   function restoreDefaultUnits() {
     // distanceScale
     document.getElementById('distanceScaleOutput').value = 3;
     document.getElementById('distanceScaleInput').value = 3;
-    document.getElementById('distanceScaleInput').dataset.value = 3;
     unlock('distanceScale');
 
     // units
@@ -180,7 +118,7 @@ function editUnits() {
     calculateTemperatures();
 
     // scale bar
-    barSizeOutput.value = barSize.value = 2;
+    barSizeOutput.value = barSizeInput.value = 2;
     barLabel.value = '';
     barBackOpacity.value = 0.2;
     barBackColor.value = '#ffffff';
@@ -195,8 +133,8 @@ function editUnits() {
     drawScaleBar();
 
     // population
-    populationRateOutput.value = populationRate.value = 1000;
-    urbanizationOutput.value = urbanization.value = 1;
+    populationRate = populationRateOutput.value = populationRateInput.value = 1000;
+    urbanization = urbanizationOutput.value = urbanizationInput.value = 1;
     localStorage.removeItem('populationRate');
     localStorage.removeItem('urbanization');
   }
@@ -328,12 +266,22 @@ function editUnits() {
 
   function removeAllRulers() {
     if (!rulers.data.length) return;
-
-    const message = 'Are you sure you want to remove all placed rulers?<br>If you just want to hide rulers, toggle the Rulers layer off in Menu';
-    const onConfirm = () => {
-      rulers.undraw();
-      rulers = new Rulers();
-    };
-    confirmationDialog({title: 'Remove all rulers', message, confirm: 'Remove', onConfirm});
+    alertMessage.innerHTML = `
+      Are you sure you want to remove all placed rulers?
+      <br>If you just want to hide rulers, toggle the Rulers layer off in Menu`;
+    $('#alert').dialog({
+      resizable: false,
+      title: 'Remove all rulers',
+      buttons: {
+        Remove: function () {
+          $(this).dialog('close');
+          rulers.undraw();
+          rulers = new Rulers();
+        },
+        Cancel: function () {
+          $(this).dialog('close');
+        }
+      }
+    });
   }
 }

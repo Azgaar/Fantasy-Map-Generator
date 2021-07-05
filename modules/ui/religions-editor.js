@@ -68,8 +68,8 @@ function editReligions() {
       if (r.removed) continue;
 
       const area = r.area * distanceScaleInput.value ** 2;
-      const rural = r.rural * populationRate.value;
-      const urban = r.urban * populationRate.value * urbanization.value;
+      const rural = r.rural * populationRate;
+      const urban = r.urban * populationRate * urbanization;
       const population = rn(rural + urban);
       if (r.i && !r.cells && body.dataset.extinct !== 'show') continue; // hide extinct religions
       const populationTip = `Believers: ${si(population)}; Rural areas: ${si(rural)}; Urban areas: ${si(urban)}. Click to change`;
@@ -160,8 +160,8 @@ function editReligions() {
       const r = pack.religions[religion];
       const type = r.name.includes(r.type) ? '' : r.type === 'Folk' || r.type === 'Organized' ? '. ' + r.type + ' religion' : '. ' + r.type;
       const form = r.form === r.type || r.name.includes(r.form) ? '' : '. ' + r.form;
-      const rural = r.rural * populationRate.value;
-      const urban = r.urban * populationRate.value * urbanization.value;
+      const rural = r.rural * populationRate;
+      const urban = r.urban * populationRate * urbanization;
       const population = rural + urban > 0 ? '. ' + si(rn(rural + urban)) + ' believers' : '. Extinct';
       info.innerHTML = `${r.name}${type}${form}${population}`;
       tip('Drag to change parent, drag to itself to move to the top level. Hold CTRL and click to change abbreviation');
@@ -273,8 +273,8 @@ function editReligions() {
       tip('Religion does not have any cells, cannot change population', false, 'error');
       return;
     }
-    const rural = rn(r.rural * populationRate.value);
-    const urban = rn(r.urban * populationRate.value * urbanization.value);
+    const rural = rn(r.rural * populationRate);
+    const urban = rn(r.urban * populationRate * urbanization);
     const total = rural + urban;
     const l = (n) => Number(n).toLocaleString();
     const burgs = pack.burgs.filter((b) => !b.removed && pack.cells.religion[b.cell] === religion);
@@ -318,7 +318,7 @@ function editReligions() {
         cells.forEach((i) => (pack.cells.pop[i] *= ruralChange));
       }
       if (!isFinite(ruralChange) && +ruralPop.value > 0) {
-        const points = ruralPop.value / populationRate.value;
+        const points = ruralPop.value / populationRate;
         const cells = pack.cells.i.filter((i) => pack.cells.religion[i] === religion);
         const pop = rn(points / cells.length);
         cells.forEach((i) => (pack.cells.pop[i] = pop));
@@ -329,7 +329,7 @@ function editReligions() {
         burgs.forEach((b) => (b.population = rn(b.population * urbanChange, 4)));
       }
       if (!isFinite(urbanChange) && +urbanPop.value > 0) {
-        const points = urbanPop.value / populationRate.value / urbanization.value;
+        const points = urbanPop.value / populationRate / urbanization;
         const population = rn(points / burgs.length, 4);
         burgs.forEach((b) => (b.population = population));
       }
@@ -342,24 +342,33 @@ function editReligions() {
     if (customization) return;
     const religion = +this.parentNode.dataset.id;
 
-    const message = 'Are you sure you want to remove the religion? <br>This action cannot be reverted';
-    const onConfirm = () => {
-      relig.select('#religion' + religion).remove();
-      relig.select('#religion-gap' + religion).remove();
-      debug.select('#religionsCenter' + religion).remove();
+    alertMessage.innerHTML = 'Are you sure you want to remove the religion? <br>This action cannot be reverted';
+    $('#alert').dialog({
+      resizable: false,
+      title: 'Remove religion',
+      buttons: {
+        Remove: function () {
+          relig.select('#religion' + religion).remove();
+          relig.select('#religion-gap' + religion).remove();
+          debug.select('#religionsCenter' + religion).remove();
 
-      pack.cells.religion.forEach((r, i) => {
-        if (r === religion) pack.cells.religion[i] = 0;
-      });
-      pack.religions[religion].removed = true;
-      const origin = pack.religions[religion].origin;
-      pack.religions.forEach((r) => {
-        if (r.origin === religion) r.origin = origin;
-      });
+          pack.cells.religion.forEach((r, i) => {
+            if (r === religion) pack.cells.religion[i] = 0;
+          });
+          pack.religions[religion].removed = true;
+          const origin = pack.religions[religion].origin;
+          pack.religions.forEach((r) => {
+            if (r.origin === religion) r.origin = origin;
+          });
 
-      refreshReligionsEditor();
-    };
-    confirmationDialog({title: 'Remove religion', message, confirm: 'Remove', onConfirm});
+          refreshReligionsEditor();
+          $(this).dialog('close');
+        },
+        Cancel: function () {
+          $(this).dialog('close');
+        }
+      }
+    });
   }
 
   function drawReligionCenters() {

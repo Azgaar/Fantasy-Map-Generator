@@ -64,7 +64,7 @@ function editBurg(id) {
 
     document.getElementById('burgName').value = b.name;
     document.getElementById('burgType').value = b.type || 'Generic';
-    document.getElementById('burgPopulation').value = rn(b.population * populationRate.value * urbanization.value);
+    document.getElementById('burgPopulation').value = rn(b.population * populationRate * urbanization);
     document.getElementById('burgEditAnchorStyle').style.display = +b.port ? 'inline-block' : 'none';
 
     // update list and select culture
@@ -123,7 +123,7 @@ function editBurg(id) {
       'Okhotsk (Russia)',
       'Fairbanks (Alaska)',
       'Nuuk (Greenland)',
-      'Murmansk',
+      'Murmansk', // -5 - 0
       'Arkhangelsk',
       'Anchorage',
       'Tromsø',
@@ -133,7 +133,7 @@ function editBurg(id) {
       'Halifax',
       'Prague',
       'Copenhagen',
-      'London',
+      'London', // 1 - 10
       'Antwerp',
       'Paris',
       'Milan',
@@ -143,7 +143,7 @@ function editBurg(id) {
       'Lisbon',
       'Barcelona',
       'Marrakesh',
-      'Alexandria',
+      'Alexandria', // 11 - 20
       'Tegucigalpa',
       'Guangzhou',
       'Rio de Janeiro',
@@ -153,11 +153,10 @@ function editBurg(id) {
       'Mogadishu',
       'Bangkok',
       'Aden',
-      'Khartoum',
-      'Mecca'
-    ];
-    const city = cities[temperature + 5];
-    return city ? 'in ' + city : null;
+      'Khartoum'
+    ]; // 21 - 30
+    if (temperature > 30) return 'Mecca';
+    return cities[temperature + 5] || null;
   }
 
   function dragBurgLabel() {
@@ -332,7 +331,7 @@ function editBurg(id) {
 
   function changePopulation() {
     const id = +elSelected.attr('data-id');
-    pack.burgs[id].population = rn(burgPopulation.value / populationRate.value / urbanization.value, 4);
+    pack.burgs[id].population = rn(burgPopulation.value / populationRate / urbanization, 4);
   }
 
   function toggleFeature() {
@@ -423,7 +422,7 @@ function editBurg(id) {
       const cells = pack.cells;
       const name = elSelected.text();
       const size = Math.max(Math.min(rn(burg.population), 100), 6); // to be removed once change on MFDC is done
-      const population = rn(burg.population * populationRate.value * urbanization.value);
+      const population = rn(burg.population * populationRate * urbanization);
 
       const s = burg.MFCG || defSeed;
       const cell = burg.cell;
@@ -547,7 +546,7 @@ function editBurg(id) {
     const id = +elSelected.attr('data-id');
     if (pack.burgs[id].capital) {
       alertMessage.innerHTML = `You cannot remove the burg as it is a state capital.<br><br>
-        Please change state capital first. You can do it using Burgs Editor (shift + T)`;
+        You can change the capital using Burgs Editor (shift + T)`;
       $('#alert').dialog({
         resizable: false,
         title: 'Remove burg',

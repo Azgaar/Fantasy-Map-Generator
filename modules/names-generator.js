@@ -1,26 +1,26 @@
 (function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-    typeof define === 'function' && define.amd ? define(factory) :
-    (global.Names = factory());
-}(this, (function () { 'use strict';
-
+  typeof exports === "object" && typeof module !== "undefined" ? (module.exports = factory()) : typeof define === "function" && define.amd ? define(factory) : (global.Names = factory());
+})(this, function () {
+  "use strict";
   let chains = [];
 
   // calculate Markov chain for a namesbase
-  const calculateChain = function(string) {
-    const chain = [], array = string.split(",");
+  const calculateChain = function (string) {
+    const chain = [];
+    const array = string.split(",");
 
     for (const n of array) {
       let name = n.trim().toLowerCase();
-      const basic = !(/[^\u0000-\u007f]/.test(name)); // basic chars and English rules can be applied
+      const basic = !/[^\u0000-\u007f]/.test(name); // basic chars and English rules can be applied
 
       // split word into pseudo-syllables
-      for (let i=-1, syllable = ""; i < name.length; i += (syllable.length||1), syllable = "") {
+      for (let i = -1, syllable = ""; i < name.length; i += syllable.length || 1, syllable = "") {
         let prev = name[i] || ""; // pre-onset letter
         let v = 0; // 0 if no vowels in syllable
 
-        for (let c=i+1; name[c] && syllable.length < 5; c++) {
-          const that = name[c], next = name[c+1]; // next char
+        for (let c = i + 1; name[c] && syllable.length < 5; c++) {
+          const that = name[c],
+            next = name[c + 1]; // next char
           syllable += that;
           if (syllable === " " || syllable === "-") break; // syllable starts with space or hyphen
           if (!next || next === " " || next === "-") break; // no need to check
@@ -29,7 +29,8 @@
 
           // do not split some diphthongs
           if (that === "y" && next === "e") continue; // 'ye'
-          if (basic) { // English-like
+          if (basic) {
+            // English-like
             if (that === "o" && next === "o") continue; // 'oo'
             if (that === "e" && next === "e") continue; // 'ee'
             if (that === "a" && next === "e") continue; // 'ae'
@@ -37,7 +38,7 @@
           }
 
           if (vowel(that) === next) break; // two same vowels in a row
-          if (v && vowel(name[c+2])) break; // syllable has vowel and additional vowel is expected soon
+          if (v && vowel(name[c + 2])) break; // syllable has vowel and additional vowel is expected soon
         }
 
         if (chain[prev] === undefined) chain[prev] = [];
@@ -46,17 +47,20 @@
     }
 
     return chain;
-  }
+  };
 
   // update chain for specific base
-  const updateChain = (i) => chains[i] = nameBases[i] || nameBases[i].b ? calculateChain(nameBases[i].b) : null;
+  const updateChain = i => (chains[i] = nameBases[i] || nameBases[i].b ? calculateChain(nameBases[i].b) : null);
 
   // update chains for all used bases
-  const clearChains = () => chains = [];
+  const clearChains = () => (chains = []);
 
   // generate name using Markov's chain
-  const getBase = function(base, min, max, dupl) {
-    if (base === undefined) {ERROR && console.error("Please define a base"); return;}
+  const getBase = function (base, min, max, dupl) {
+    if (base === undefined) {
+      ERROR && console.error("Please define a base");
+      return;
+    }
     if (!chains[base]) updateChain(base);
 
     const data = chains[base];
@@ -70,12 +74,20 @@
     if (!max) max = nameBases[base].max;
     if (dupl !== "") dupl = nameBases[base].d;
 
-    let v = data[""], cur = ra(v), w = "";
-    for (let i=0; i < 20; i++) {
-      if (cur === "") { // end of word
-        if (w.length < min) {cur = ""; w = ""; v = data[""];} else break;
+    let v = data[""],
+      cur = ra(v),
+      w = "";
+    for (let i = 0; i < 20; i++) {
+      if (cur === "") {
+        // end of word
+        if (w.length < min) {
+          cur = "";
+          w = "";
+          v = data[""];
+        } else break;
       } else {
-        if (w.length + cur.length > max) { // word too long
+        if (w.length + cur.length > max) {
+          // word too long
           if (w.length < min) w += cur;
           break;
         } else v = data[last(cur)] || data[""];
@@ -87,23 +99,27 @@
 
     // parse word to get a final name
     const l = last(w); // last letter
-    if (l === "'" || l === " " || l === "-") w = w.slice(0,-1); // not allow some characters at the end
-    const basic = !(/[^\u0000-\u007f]/.test(w)); // true if word has only basic characters
+    if (l === "'" || l === " " || l === "-") w = w.slice(0, -1); // not allow some characters at the end
+    const basic = !/[^\u0000-\u007f]/.test(w); // true if word has only basic characters
 
-    let name = [...w].reduce(function(r, c, i, d) {
-      if (c === d[i+1] && !dupl.includes(c)) return r; // duplication is not allowed
+    let name = [...w].reduce(function (r, c, i, d) {
+      if (c === d[i + 1] && !dupl.includes(c)) return r; // duplication is not allowed
       if (!r.length) return c.toUpperCase();
       if (r.slice(-1) === "-" && c === " ") return r; // remove space after hyphen
       if (r.slice(-1) === " ") return r + c.toUpperCase(); // capitalize letter after space
       if (r.slice(-1) === "-") return r + c.toUpperCase(); // capitalize letter after hyphen
-      if (c === "a" && d[i+1] === "e") return r; // "ae" => "e"
-      if (basic && i+1 < d.length && !vowel(c) && !vowel(d[i-1]) && !vowel(d[i+1])) return r; // remove consonant between 2 consonants
-      if (i+2 < d.length && c === d[i+1] && c === d[i+2]) return r; // remove three same letters in a row
+      if (c === "a" && d[i + 1] === "e") return r; // "ae" => "e"
+      if (basic && i + 1 < d.length && !vowel(c) && !vowel(d[i - 1]) && !vowel(d[i + 1])) return r; // remove consonant between 2 consonants
+      if (i + 2 < d.length && c === d[i + 1] && c === d[i + 2]) return r; // remove three same letters in a row
       return r + c;
     }, "");
 
     // join the word if any part has only 1 letter
-    if (name.split(" ").some(part => part.length < 2)) name = name.split(" ").map((p,i) => i ? p.toLowerCase() : p).join("");
+    if (name.split(" ").some(part => part.length < 2))
+      name = name
+        .split(" ")
+        .map((p, i) => (i ? p.toLowerCase() : p))
+        .join("");
 
     if (name.length < 2) {
       ERROR && console.error("Name is too short! Random name will be selected");
@@ -111,33 +127,40 @@
     }
 
     return name;
-  }
+  };
 
   // generate name for culture
-  const getCulture = function(culture, min, max, dupl) {
-    if (culture === undefined) {ERROR && console.error("Please define a culture"); return;}
+  const getCulture = function (culture, min, max, dupl) {
+    if (culture === undefined) {
+      ERROR && console.error("Please define a culture");
+      return;
+    }
     const base = pack.cultures[culture].base;
     return getBase(base, min, max, dupl);
-  }
+  };
 
   // generate short name for culture
-  const getCultureShort = function(culture) {
-    if (culture === undefined) {ERROR && console.error("Please define a culture"); return;}
+  const getCultureShort = function (culture) {
+    if (culture === undefined) {
+      ERROR && console.error("Please define a culture");
+      return;
+    }
     return getBaseShort(pack.cultures[culture].base);
-  }
+  };
 
   // generate short name for base
-  const getBaseShort = function(base) {
+  const getBaseShort = function (base) {
     if (nameBases[base] === undefined) {
       tip(`Namebase ${base} does not exist. Please upload custom namebases of change the base in Cultures Editor`, false, "error");
       base = 1;
     }
-    const min = nameBases[base].min-1;
-    const max = Math.max(nameBases[base].max-2, min);
+    const min = nameBases[base].min - 1;
+    const max = Math.max(nameBases[base].max - 2, min);
     return getBase(base, min, max, "", 0);
-  }
+  };
 
   // generate state name based on capital or random name and culture-specific suffix
+  // prettier-ignore
   const getState = function(name, culture, base) {
     if (name === undefined) {ERROR && console.error("Please define a base name"); return;}
     if (culture === undefined && base === undefined) {ERROR && console.error("Please define a culture"); return;}
@@ -191,33 +214,37 @@
     if (name.slice(-1 * suffix.length) === suffix) return name; // no suffix if name already ends with it
     const s1 = suffix.charAt(0);
     if (name.slice(-1) === s1) name = name.slice(0, -1); // remove name last letter if it's a suffix first letter
-    if (vowel(s1) === vowel(name.slice(-1)) && vowel(s1) === vowel(name.slice(-2,-1))) name = name.slice(0, -1); // remove name last char if 2 last chars are the same type as suffix's 1st
+    if (vowel(s1) === vowel(name.slice(-1)) && vowel(s1) === vowel(name.slice(-2, -1))) name = name.slice(0, -1); // remove name last char if 2 last chars are the same type as suffix's 1st
     if (name.slice(-1) === s1) name = name.slice(0, -1); // remove name last letter if it's a suffix first letter
     return name + suffix;
   }
 
   // generato name for the map
-  const getMapName = function(force) {
+  const getMapName = function (force) {
     if (!force && locked("mapName")) return;
     if (force && locked("mapName")) unlock("mapName");
-    const base = P(.7) ? 2 : P(.5) ? rand(0, 6) : rand(0, 31);
-    if (!nameBases[base]) {tip("Namebase is not found", false, "error"); return ""};
-    const min = nameBases[base].min-1;
-    const max = Math.max(nameBases[base].max-3, min);
+    const base = P(0.7) ? 2 : P(0.5) ? rand(0, 6) : rand(0, 31);
+    if (!nameBases[base]) {
+      tip("Namebase is not found", false, "error");
+      return "";
+    }
+    const min = nameBases[base].min - 1;
+    const max = Math.max(nameBases[base].max - 3, min);
     const baseName = getBase(base, min, max, "", 0);
-    const name = P(.7) ? addSuffix(baseName) : baseName;
+    const name = P(0.7) ? addSuffix(baseName) : baseName;
     mapName.value = name;
-  }
+  };
 
   function addSuffix(name) {
-    const suffix = P(.8) ? "ia" : "land";
-    if (suffix === "ia" && name.length > 6) name = name.slice(0, -(name.length-3)); else
-    if (suffix === "land" && name.length > 6) name = name.slice(0, -(name.length-5));
+    const suffix = P(0.8) ? "ia" : "land";
+    if (suffix === "ia" && name.length > 6) name = name.slice(0, -(name.length - 3));
+    else if (suffix === "land" && name.length > 6) name = name.slice(0, -(name.length - 5));
     return validateSuffix(name, suffix);
   }
 
-  const getNameBases = function() {
+  const getNameBases = function () {
     // name, min length, max length, letters to allow duplication, multi-word name rate [deprecated]
+    // prettier-ignore
     return [
       // real-world bases by Azgaar:
       {name: "German", i: 0, min: 5, max: 12, d: "lt", m: 0, b: "Achern,Aichhalden,Aitern,Albbruck,Alpirsbach,Altensteig,Althengstett,Appenweier,Auggen,Wildbad,Badenen,Badenweiler,Baiersbronn,Ballrechten,Bellingen,Berghaupten,Bernau,Biberach,Biederbach,Binzen,Birkendorf,Birkenfeld,Bischweier,Blumberg,Bollen,Bollschweil,Bonndorf,Bosingen,Braunlingen,Breisach,Breisgau,Breitnau,Brigachtal,Buchenbach,Buggingen,Buhl,Buhlertal,Calw,Dachsberg,Dobel,Donaueschingen,Dornhan,Dornstetten,Dottingen,Dunningen,Durbach,Durrheim,Ebhausen,Ebringen,Efringen,Egenhausen,Ehrenkirchen,Ehrsberg,Eimeldingen,Eisenbach,Elzach,Elztal,Emmendingen,Endingen,Engelsbrand,Enz,Enzklosterle,Eschbronn,Ettenheim,Ettlingen,Feldberg,Fischerbach,Fischingen,Fluorn,Forbach,Freiamt,Freiburg,Freudenstadt,Friedenweiler,Friesenheim,Frohnd,Furtwangen,Gaggenau,Geisingen,Gengenbach,Gernsbach,Glatt,Glatten,Glottertal,Gorwihl,Gottenheim,Grafenhausen,Grenzach,Griesbach,Gutach,Gutenbach,Hag,Haiterbach,Hardt,Harmersbach,Hasel,Haslach,Hausach,Hausen,Hausern,Heitersheim,Herbolzheim,Herrenalb,Herrischried,Hinterzarten,Hochenschwand,Hofen,Hofstetten,Hohberg,Horb,Horben,Hornberg,Hufingen,Ibach,Ihringen,Inzlingen,Kandern,Kappel,Kappelrodeck,Karlsbad,Karlsruhe,Kehl,Keltern,Kippenheim,Kirchzarten,Konigsfeld,Krozingen,Kuppenheim,Kussaberg,Lahr,Lauchringen,Lauf,Laufenburg,Lautenbach,Lauterbach,Lenzkirch,Liebenzell,Loffenau,Loffingen,Lorrach,Lossburg,Mahlberg,Malsburg,Malsch,March,Marxzell,Marzell,Maulburg,Monchweiler,Muhlenbach,Mullheim,Munstertal,Murg,Nagold,Neubulach,Neuenburg,Neuhausen,Neuried,Neuweiler,Niedereschach,Nordrach,Oberharmersbach,Oberkirch,Oberndorf,Oberbach,Oberried,Oberwolfach,Offenburg,Ohlsbach,Oppenau,Ortenberg,otigheim,Ottenhofen,Ottersweier,Peterstal,Pfaffenweiler,Pfalzgrafenweiler,Pforzheim,Rastatt,Renchen,Rheinau,Rheinfelden,Rheinmunster,Rickenbach,Rippoldsau,Rohrdorf,Rottweil,Rummingen,Rust,Sackingen,Sasbach,Sasbachwalden,Schallbach,Schallstadt,Schapbach,Schenkenzell,Schiltach,Schliengen,Schluchsee,Schomberg,Schonach,Schonau,Schonenberg,Schonwald,Schopfheim,Schopfloch,Schramberg,Schuttertal,Schwenningen,Schworstadt,Seebach,Seelbach,Seewald,Sexau,Simmersfeld,Simonswald,Sinzheim,Solden,Staufen,Stegen,Steinach,Steinen,Steinmauern,Straubenhardt,Stuhlingen,Sulz,Sulzburg,Teinach,Tiefenbronn,Tiengen,Titisee,Todtmoos,Todtnau,Todtnauberg,Triberg,Tunau,Tuningen,uhlingen,Unterkirnach,Reichenbach,Utzenfeld,Villingen,Villingendorf,Vogtsburg,Vohrenbach,Waldachtal,Waldbronn,Waldkirch,Waldshut,Wehr,Weil,Weilheim,Weisenbach,Wembach,Wieden,Wiesental,Wildberg,Winzeln,Wittlingen,Wittnau,Wolfach,Wutach,Wutoschingen,Wyhlen,Zavelstein"},
@@ -245,7 +272,7 @@
       {name: "Celtic", i: 22, min: 4, max: 12, d: "nld", m: 0, b: "Aberaman,Aberangell,Aberarth,Aberavon,Aberbanc,Aberbargoed,Aberbeeg,Abercanaid,Abercarn,Abercastle,Abercegir,Abercraf,Abercregan,Abercych,Abercynon,Aberdare,Aberdaron,Aberdaugleddau,Aberdeen,Aberdulais,Aberdyfi,Aberedw,Abereiddy,Abererch,Abereron,Aberfan,Aberffraw,Aberffrwd,Abergavenny,Abergele,Aberglasslyn,Abergorlech,Abergwaun,Abergwesyn,Abergwili,Abergwynfi,Abergwyngregyn,Abergynolwyn,Aberhafesp,Aberhonddu,Aberkenfig,Aberllefenni,Abermain,Abermaw,Abermorddu,Abermule,Abernant,Aberpennar,Aberporth,Aberriw,Abersoch,Abersychan,Abertawe,Aberteifi,Aberthin,Abertillery,Abertridwr,Aberystwyth,Achininver,Afonhafren,Alisaha,Antinbhearmor,Ardenna,Attacon,Beira,Bhrura,Boioduro,Bona,Boudobriga,Bravon,Brigant,Briganta,Briva,Cambodunum,Cambra,Caracta,Catumagos,Centobriga,Ceredigion,Chalain,Dinn,Diwa,Dubingen,Duro,Ebora,Ebruac,Eburodunum,Eccles,Eighe,Eireann,Ferkunos,Genua,Ghrainnse,Inbhear,Inbhir,Inbhirair,Innerleithen,Innerleven,Innerwick,Inver,Inveraldie,Inverallan,Inveralmond,Inveramsay,Inveran,Inveraray,Inverarnan,Inverbervie,Inverclyde,Inverell,Inveresk,Inverfarigaig,Invergarry,Invergordon,Invergowrie,Inverhaddon,Inverkeilor,Inverkeithing,Inverkeithney,Inverkip,Inverleigh,Inverleith,Inverloch,Inverlochlarig,Inverlochy,Invermay,Invermoriston,Inverness,Inveroran,Invershin,Inversnaid,Invertrossachs,Inverugie,Inveruglas,Inverurie,Kilninver,Kirkcaldy,Kirkintilloch,Krake,Latense,Leming,Lindomagos,Llanaber,Lochinver,Lugduno,Magoduro,Monmouthshire,Narann,Novioduno,Nowijonago,Octoduron,Penning,Pheofharain,Ricomago,Rossinver,Salodurum,Seguia,Sentica,Theorsa,Uige,Vitodurum,Windobona"},
       {name: "Mesopotamian", i: 23, min: 4, max: 9, d: "srpl", m: .1, b: "Adab,Akkad,Akshak,Amnanum,Arbid,Arpachiyah,Arrapha,Assur,Babilim,Badtibira,Balawat,Barsip,Borsippa,Carchemish,Chagar Bazar,Chuera,Ctesiphon ,Der,Dilbat,Diniktum,Doura,Durkurigalzu,Ekallatum,Emar,Erbil,Eridu,Eshnunn,Fakhariya ,Gawra,Girsu,Hadatu,Hamoukar,Haradum,Harran,Hatra,Idu,Irisagrig,Isin,Jemdet,Kahat,Kartukulti,Khaiber,Kish ,Kisurra,Kuara,Kutha,Lagash,Larsa ,Leilan,Marad,Mardaman,Mari,Mashkan,Mumbaqat ,Nabada,Nagar,Nerebtum,Nimrud,Nineveh,Nippur,Nuzi,Qalatjarmo,Qatara,Rawda,Seleucia,Shaduppum,Shanidar,Sharrukin,Shemshara,Shibaniba,Shuruppak,Sippar,Tarbisu,Tellagrab,Tellessawwan,Tellessweyhat,Tellhassuna,Telltaya,Telul,Terqa,Thalathat,Tutub,Ubaid ,Umma,Ur,Urfa,Urkesh,Uruk,Urum,Zabalam,Zenobia"},
       {name: "Iranian", i: 24, min: 5, max: 11, d: "", m: .1, b: "Abali,Abrisham,Absard,Abuzeydabad,Afus,Alavicheh,Alikosh,Amol,Anarak,Anbar,Andisheh,Anshan,Aran,Ardabil,Arderica,Ardestan,Arjomand,Asgaran,Asgharabad,Ashian,Awan,Babajan,Badrud,Bafran,Baghestan,Baghshad,Bahadoran,Baharan Shahr,Baharestan,Bakun,Bam,Baqershahr,Barzok,Bastam,Behistun,Bitistar,Bumahen,Bushehr,Chadegan,Chahardangeh,Chamgardan,Chermahin,Choghabonut,Chugan,Damaneh,Damavand,Darabgard,Daran,Dastgerd,Dehaq,Dehaqan,Dezful,Dizicheh,Dorcheh,Dowlatabad,Duruntash,Ecbatana,Eslamshahr,Estakhr,Ezhiyeh,Falavarjan,Farrokhi,Fasham,Ferdowsieh,Fereydunshahr,Ferunabad,Firuzkuh,Fuladshahr,Ganjdareh,Ganzak,Gaz,Geoy,Godin,Goldasht,Golestan,Golpayegan,Golshahr,Golshan,Gorgab,Guged,Habibabad,Hafshejan,Hajjifiruz,Hana,Harand,Hasanabad,Hasanlu,Hashtgerd,Hecatompylos,Hormirzad,Imanshahr,Isfahan,Jandaq,Javadabad,Jiroft,Jowsheqan ,Jowzdan,Kabnak,Kahriz Sang,Kahrizak,Kangavar,Karaj,Karkevand,Kashan,Kelishad,Kermanshah,Khaledabad,Khansar,Khorramabad,Khur,Khvorzuq,Kilan,Komeh,Komeshcheh,Konar,Kuhpayeh,Kul,Kushk,Lavasan,Laybid,Liyan,Lyan,Mahabad,Mahallat,Majlesi,Malard,Manzariyeh,Marlik,Meshkat,Meymeh,Miandasht,Mish,Mobarakeh,Nahavand,Nain,Najafabad,Naqshe,Narezzash,Nasimshahr,Nasirshahr,Nasrabad,Natanz,Neyasar,Nikabad,Nimvar,Nushabad,Pakdasht,Parand,Pardis,Parsa,Pasargadai,Patigrabana,Pir Bakran,Pishva,Qahderijan,Qahjaverestan,Qamsar,Qarchak,Qods,Rabat,Ray-shahr,Rezvanshahr,Rhages,Robat Karim,Rozveh,Rudehen,Sabashahr,Safadasht,Sagzi,Salehieh,Sandal,Sarvestan,Sedeh,Sefidshahr,Semirom,Semnan,Shadpurabad,Shah,Shahdad,Shahedshahr,Shahin,Shahpour,Shahr,Shahreza,Shahriar,Sharifabad,Shemshak,Shiraz,Shushan,Shushtar,Sialk,Sin,Sukhteh,Tabas,Tabriz,Takhte,Talkhuncheh,Talli,Tarq,Temukan,Tepe,Tiran,Tudeshk,Tureng,Urmia,Vahidieh,Vahrkana,Vanak,Varamin,Varnamkhast,Varzaneh,Vazvan,Yahya,Yarim,Yasuj,Zarrin Shahr,Zavareh,Zayandeh,Zazeran,Ziar,Zibashahr,Zranka"},
-      {name: "Hawaiian", i: 25, min: 5, max: 10, d: "auo", m: 1, b: "Aapueo,Ahoa,Ahuakaio,Ahuakamalii,Ahuakeio,Ahupau,Aki,Alaakua,Alae,Alaeloa,Alaenui,Alamihi,Aleamai,Alena,Alio,Aupokopoko,Auwahi,Hahakea,Haiku,Halakaa,Halehaku,Halehana,Halemano,Haleu,Haliimaile,Hamakuapoko,Hamoa,Hanakaoo,Hanaulu,Hanawana,Hanehoi,Haneoo,Haou,Hikiaupea,Hoalua,Hokuula,Honohina,Honokahua,Honokala,Honokalani,Honokeana,Honokohau,Honokowai,Honolua,Honolulu,Honolulunui,Honomaele,Honomanu,Hononana,Honopou,Hoolawa,Hopenui,Hualele,Huelo,Hulaia,Ihuula,Ilikahi,Interisland,Kaalaea,Kaalelehinale,Kaapahu,Kaehoeho,Kaeleku,Kaeo,Kahakuloa,Kahalawe,Kahalawe,Kahalehili,Kahana,Kahilo,Kahuai,Kaiaula,Kailihiakoko,Kailua,Kainehe,Kakalahale,Kakanoni,Kakio,Kakiweka,Kalena,Kalenanui,Kaleoaihe,Kalepa,Kaliae,Kalialinui,Kalihi,Kalihi,Kalihi,Kalimaohe,Kaloi,Kamani,Kamaole,Kamehame,Kanahena,Kanaio,Kaniaula,Kaonoulu,Kaopa,Kapaloa,Kapaula,Kapewakua,Kapohue,Kapuaikini,Kapunakea,Kapuuomahuka,Kauau,Kauaula,Kaukuhalahala,Kaulalo,Kaulanamoa,Kauluohana,Kaumahalua,Kaumakani,Kaumanu,Kaunauhane,Kaunuahane,Kaupakulua,Kawaipapa,Kawaloa,Kawaloa,Kawalua,Kawela,Keaa,Keaalii,Keaaula,Keahua,Keahuapono,Keakuapauaela,Kealahou,Keanae,Keauhou,Kekuapawela,Kelawea,Keokea,Keopuka,Kepio,Kihapuhala,Kikoo,Kilolani,Kipapa,Koakupuna,Koali,Koananai,Koheo,Kolea,Kolokolo,Kooka,Kopili,Kou,Kualapa,Kuhiwa,Kuholilea,Kuhua,Kuia,Kuiaha,Kuikui,Kukoae,Kukohia,Kukuiaeo,Kukuioolu,Kukuipuka,Kukuiula,Kulahuhu,Kumunui,Lapakea,Lapalapaiki,Lapueo,Launiupoko,Loiloa,Lole,Lualailua,Maalo,Mahinahina,Mahulua,Maiana,Mailepai,Makaakini,Makaalae,Makaehu,Makaiwa,Makaliua,Makapipi,Makapuu,Makawao,Makila,Mala,Maluaka,Mamalu,Manawaiapiki,Manawainui,Maulili,Mehamenui,Miana,Mikimiki,Moalii,Moanui,Mohopili,Mohopilo,Mokae,Mokuia,Mokupapa,Mooiki,Mooloa,Moomuku,Muolea,Nahuakamalii,Nailiilipoko,Nakaaha,Nakalepo,Nakaohu,Nakapehu,Nakula,Napili,Niniau,Niumalu,Nuu,Ohia,Oloewa,Olowalu,Omaopio,Onau,Onouli,Opaeula,Opana,Opikoula,Paakea,Paeahu,Paehala,Paeohi,Pahoa,Paia,Pakakia,Pakala,Palauea,Palemo,Panaewa,Paniau,Papaaea,Papaanui,Papaauhau,Papahawahawa,Papaka,Papauluana,Pauku,Paunau,Pauwalu,Pauwela,Peahi,Piapia,Pohakanele,Pohoula,Polaiki,Polanui,Polapola,Polua,Poopoo,Popoiwi,Popoloa,Poponui,Poupouwela,Puaa,Puaaluu,Puahoowali,Puakea,Puako,Pualaea,Puehuehu,Puekahi,Pueokauiki,Pukaauhuhu,Pukalani,Pukuilua,Pulehu,Pulehuiki,Pulehunui,Punaluu,Puolua,Puou,Puuhaehae,Puuhaoa,Puuiki,Puuki,Puukohola,Puulani,Puumaneoneo,Puunau,Puunoa,Puuomaiai,Puuomaile,Uaoa,Uhao,Ukumehame,Ulaino,Ulumalu,Unknown,Various,Wahikuli,Waiahole,Waiakoa,Waianae,Waianu,Waiawa,Waiehu,Waieli,Waihee,Waikapu,Wailamoa,Wailaulau,Wailua,Wailuku,Wainee,Waiohole,Waiohonu,Waiohue,Waiohuli,Waiokama,Waiokila,Waiopai,Waiopua,Waipao,Waipio,Waipioiki,Waipionui,Waipouli,Wakiu,Wananalua"},
+      {name: "Hawaiian", i: 25, min: 5, max: 10, d: "auo", m: 1, b: "Aapueo,Ahoa,Ahuakaio,Ahuakamalii,Ahuakeio,Ahupau,Aki,Alaakua,Alae,Alaeloa,Alaenui,Alamihi,Aleamai,Alena,Alio,Aupokopoko,Auwahi,Hahakea,Haiku,Halakaa,Halehaku,Halehana,Halemano,Haleu,Haliimaile,Hamakuapoko,Hamoa,Hanakaoo,Hanaulu,Hanawana,Hanehoi,Haneoo,Haou,Hikiaupea,Hoalua,Hokuula,Honohina,Honokahua,Honokala,Honokalani,Honokeana,Honokohau,Honokowai,Honolua,Honolulu,Honolulunui,Honomaele,Honomanu,Hononana,Honopou,Hoolawa,Hopenui,Hualele,Huelo,Hulaia,Ihuula,Ilikahi,Kaalaea,Kaalelehinale,Kaapahu,Kaehoeho,Kaeleku,Kaeo,Kahakuloa,Kahalawe,Kahalawe,Kahalehili,Kahana,Kahilo,Kahuai,Kaiaula,Kailihiakoko,Kailua,Kainehe,Kakalahale,Kakanoni,Kakio,Kakiweka,Kalena,Kalenanui,Kaleoaihe,Kalepa,Kaliae,Kalialinui,Kalihi,Kalihi,Kalihi,Kalimaohe,Kaloi,Kamani,Kamaole,Kamehame,Kanahena,Kanaio,Kaniaula,Kaonoulu,Kaopa,Kapaloa,Kapaula,Kapewakua,Kapohue,Kapuaikini,Kapunakea,Kapuuomahuka,Kauau,Kauaula,Kaukuhalahala,Kaulalo,Kaulanamoa,Kauluohana,Kaumahalua,Kaumakani,Kaumanu,Kaunauhane,Kaunuahane,Kaupakulua,Kawaipapa,Kawaloa,Kawaloa,Kawalua,Kawela,Keaa,Keaalii,Keaaula,Keahua,Keahuapono,Keakuapauaela,Kealahou,Keanae,Keauhou,Kekuapawela,Kelawea,Keokea,Keopuka,Kepio,Kihapuhala,Kikoo,Kilolani,Kipapa,Koakupuna,Koali,Koananai,Koheo,Kolea,Kolokolo,Kooka,Kopili,Kou,Kualapa,Kuhiwa,Kuholilea,Kuhua,Kuia,Kuiaha,Kuikui,Kukoae,Kukohia,Kukuiaeo,Kukuioolu,Kukuipuka,Kukuiula,Kulahuhu,Kumunui,Lapakea,Lapalapaiki,Lapueo,Launiupoko,Loiloa,Lole,Lualailua,Maalo,Mahinahina,Mahulua,Maiana,Mailepai,Makaakini,Makaalae,Makaehu,Makaiwa,Makaliua,Makapipi,Makapuu,Makawao,Makila,Mala,Maluaka,Mamalu,Manawaiapiki,Manawainui,Maulili,Mehamenui,Miana,Mikimiki,Moalii,Moanui,Mohopili,Mohopilo,Mokae,Mokuia,Mokupapa,Mooiki,Mooloa,Moomuku,Muolea,Nahuakamalii,Nailiilipoko,Nakaaha,Nakalepo,Nakaohu,Nakapehu,Nakula,Napili,Niniau,Niumalu,Nuu,Ohia,Oloewa,Olowalu,Omaopio,Onau,Onouli,Opaeula,Opana,Opikoula,Paakea,Paeahu,Paehala,Paeohi,Pahoa,Paia,Pakakia,Pakala,Palauea,Palemo,Panaewa,Paniau,Papaaea,Papaanui,Papaauhau,Papahawahawa,Papaka,Papauluana,Pauku,Paunau,Pauwalu,Pauwela,Peahi,Piapia,Pohakanele,Pohoula,Polaiki,Polanui,Polapola,Polua,Poopoo,Popoiwi,Popoloa,Poponui,Poupouwela,Puaa,Puaaluu,Puahoowali,Puakea,Puako,Pualaea,Puehuehu,Puekahi,Pueokauiki,Pukaauhuhu,Pukalani,Pukuilua,Pulehu,Pulehuiki,Pulehunui,Punaluu,Puolua,Puou,Puuhaehae,Puuhaoa,Puuiki,Puuki,Puukohola,Puulani,Puumaneoneo,Puunau,Puunoa,Puuomaiai,Puuomaile,Uaoa,Uhao,Ukumehame,Ulaino,Ulumalu,Wahikuli,Waiahole,Waiakoa,Waianae,Waianu,Waiawa,Waiehu,Waieli,Waihee,Waikapu,Wailamoa,Wailaulau,Wailua,Wailuku,Wainee,Waiohole,Waiohonu,Waiohue,Waiohuli,Waiokama,Waiokila,Waiopai,Waiopua,Waipao,Waipio,Waipioiki,Waipionui,Waipouli,Wakiu,Wananalua"},
       {name: "Karnataka", i: 26, min: 5, max: 11, d: "tnl", m: 0, b: "Adityapatna,Adyar,Afzalpur,Aland,Alnavar,Alur,Ambikanagara,Anekal,Ankola,Annigeri,Arkalgud,Arsikere,Athni,Aurad,Badami,Bagalkot,Bagepalli,Bail,Bajpe,Bangalore,Bangarapet,Bankapura,Bannur,Bantval,Basavakalyan,Basavana,Belgaum,Beltangadi,Belur,Bhadravati,Bhalki,Bhatkal,Bhimarayanagudi,Bidar,Bijapur,Bilgi,Birur,Bommasandra,Byadgi,Challakere,Chamarajanagar,Channagiri,Channapatna,Channarayapatna,Chik,Chikmagalur,Chiknayakanhalli,Chikodi,Chincholi,Chintamani,Chitapur,Chitgoppa,Chitradurga,Dandeli,Dargajogihalli,Devadurga,Devanahalli,Dod,Donimalai,Gadag,Gajendragarh,Gangawati,Gauribidanur,Gokak,Gonikoppal,Gubbi,Gudibanda,Gulbarga,Guledgudda,Gundlupet,Gurmatkal,Haliyal,Hangal,Harapanahalli,Harihar,Hassan,Hatti,Haveri,Hebbagodi,Heggadadevankote,Hirekerur,Holalkere,Hole,Homnabad,Honavar,Honnali,Hoovina,Hosakote,Hosanagara,Hosdurga,Hospet,Hubli,Hukeri,Hungund,Hunsur,Ilkal,Indi,Jagalur,Jamkhandi,Jevargi,Jog,Kadigenahalli,Kadur,Kalghatgi,Kamalapuram,Kampli,Kanakapura,Karkal,Karwar,Khanapur,Kodiyal,Kolar,Kollegal,Konnur,Koppa,Koppal,Koratagere,Kotturu,Krishnarajanagara,Krishnarajasagara,Krishnarajpet,Kudchi,Kudligi,Kudremukh,Kumta,Kundapura,Kundgol,Kunigal,Kurgunta,Kushalnagar,Kushtagi,Lakshmeshwar,Lingsugur,Londa,Maddur,Madhugiri,Madikeri,Mahalingpur,Malavalli,Mallar,Malur,Mandya,Mangalore,Manvi,Molakalmuru,Mudalgi,Mudbidri,Muddebihal,Mudgal,Mudhol,Mudigere,Mulbagal,Mulgund,Mulki,Mulur,Mundargi,Mundgod,Munirabad,Mysore,Nagamangala,Nanjangud,Narasimharajapura,Naregal,Nargund,Navalgund,Nipani,Pandavapura,Pavagada,Piriyapatna,Pudu,Puttur,Rabkavi,Raichur,Ramanagaram,Ramdurg,Ranibennur,Raybag,Robertson,Ron,Sadalgi,Sagar,Sakleshpur,Saligram,Sandur,Sankeshwar,Saundatti,Savanur,Sedam,Shahabad,Shahpur,Shaktinagar,Shiggaon,Shikarpur,Shirhatti,Shorapur,Shrirangapattana,Siddapur,Sidlaghatta,Sindgi,Sindhnur,Sira,Siralkoppa,Sirsi,Siruguppa,Somvarpet,Sorab,Sringeri,Srinivaspur,Sulya,Talikota,Tarikere,Tekkalakote,Terdal,Thumbe,Tiptur,Tirthahalli,Tirumakudal,Tumkur,Turuvekere,Udupi,Vijayapura,Wadi,Yadgir,Yelandur,Yelbarga,Yellapur,Yenagudde"},
       {name: "Quechua", i: 27, min: 6, max: 12, d: "l", m: 0, b: "Altomisayoq,Ancash,Andahuaylas,Apachekta,Apachita,Apu ,Apurimac,Arequipa,Atahuallpa,Atawalpa,Atico,Ayacucho,Ayllu,Cajamarca,Carhuac,Carhuacatac,Cashan,Caullaraju,Caxamalca,Cayesh,Chacchapunta,Chacraraju,Champara,Chanchan,Chekiacraju,Chinchey,Chontah,Chopicalqui,Chucuito,Chuito,Chullo,Chumpi,Chuncho,Chuquiapo,Churup,Cochapata,Cojup,Collota,Conococha,Copa,Corihuayrachina,Cusichaca,Despacho,Haika,Hanpiq,Hatun,Haywarisqa,Huaca,Hualcan,Huamanga,Huamashraju,Huancarhuas,Huandoy,Huantsan,Huarmihuanusca,Huascaran,Huaylas,Huayllabamba,Huichajanca,Huinayhuayna,Huinioch,Illiasca,Intipunku,Ishinca,Jahuacocha,Jirishanca,Juli,Jurau,Kakananpunta,Kamasqa,Karpay,Kausay,Khuya ,Kuelap,Llaca,Llactapata,Llanganuco,Llaqta,Llupachayoc,Machu,Mallku,Matarraju,Mikhuy,Milluacocha,Munay,Ocshapalca,Ollantaytambo,Pacamayo,Paccharaju,Pachacamac,Pachakamaq,Pachakuteq,Pachakuti,Pachamama  ,Paititi,Pajaten,Palcaraju,Pampa,Panaka,Paqarina,Paqo,Parap,Paria,Patallacta,Phuyupatamarca,Pisac,Pongos,Pucahirca,Pucaranra,Puscanturpa,Putaca,Qawaq ,Qayqa,Qochamoqo,Qollana,Qorihuayrachina,Qorimoqo,Quenuaracra,Queshque,Quillcayhuanca,Quillya,Quitaracsa,Quitaraju,Qusqu,Rajucolta,Rajutakanan,Rajutuna,Ranrahirca,Ranrapalca,Raria,Rasac,Rimarima,Riobamba,Runkuracay,Rurec,Sacsa,Saiwa,Sarapo,Sayacmarca,Sinakara,TamboColorado,Tamboccocha,Taripaypacha,Taulliraju,Tawantinsuyu,Taytanchis,Tiwanaku,Tocllaraju,Tsacra,Tuco,Tullparaju,Tumbes,Ulta,Uruashraju,Vallunaraju,Vilcabamba,Wacho ,Wankawillka,Wayra,Yachay,Yahuarraju,Yanamarey,Yanesha,Yerupaja"},
       {name: "Swahili", i: 28, min: 4, max: 9, d: "", m: 0, b: "Abim,Adjumani,Alebtong,Amolatar,Amuria,Amuru,Apac,Arua,Arusha,Babati,Baragoi,Bombo,Budaka,Bugembe,Bugiri,Buikwe,Bukedea,Bukoba,Bukomansimbi,Bukungu,Buliisa,Bundibugyo,Bungoma,Busembatya,Bushenyi,Busia,Busia,Busolwe,Butaleja,Butambala,Butere,Buwenge,Buyende,Dadaab,Dodoma,Dokolo,Eldoret,Elegu,Emali,Embu,Entebbe,Garissa,Gede,Gulu,Handeni,Hima,Hoima,Hola,Ibanda,Iganga,Iringa,Isingiro,Isiolo,Jinja,Kaabong,Kabale,Kaberamaido,Kabuyanda,Kabwohe,Kagadi,Kahama,Kajiado,Kakamega,Kakinga,Kakira,Kakiri,Kakuma,Kalangala,Kaliro,Kalisizo,Kalongo,Kalungu,Kampala,Kamuli,Kamwenge,Kanoni,Kanungu,Kapchorwa,Kapenguria,Kasese,Kasulu,Katakwi,Kayunga,Kericho,Keroka,Kiambu,Kibaale,Kibaha,Kibingo,Kiboga,Kibwezi,Kigoma,Kihiihi,Kilifi,Kira,Kiruhura,Kiryandongo,Kisii,Kisoro,Kisumu,Kitale,Kitgum,Kitui,Koboko,Korogwe,Kotido,Kumi,Kyazanga,Kyegegwa,Kyenjojo,Kyotera,Lamu,Langata,Lindi,Lodwar,Lokichoggio,Londiani,Loyangalani,Lugazi,Lukaya,Luweero,Lwakhakha,Lwengo,Lyantonde,Machakos,Mafinga,Makambako,Makindu,Malaba,Malindi,Manafwa,Mandera,Maralal,Marsabit,Masaka,Masindi,MasindiPort,Masulita,Matugga,Mayuge,Mbale,Mbarara,Mbeya,Meru,Mitooma,Mityana,Mombasa,Morogoro,Moroto,Moshi,Moyale,Moyo,Mpanda,Mpigi,Mpondwe,Mtwara,Mubende,Mukono,Mumias,Muranga,Musoma,Mutomo,Mutukula,Mwanza,Nagongera,Nairobi,Naivasha,Nakapiripirit,Nakaseke,Nakasongola,Nakuru,Namanga,Namayingo,Namutumba,Nansana,Nanyuki,Narok,Naromoru,Nebbi,Ngora,Njeru,Njombe,Nkokonjeru,Ntungamo,Nyahururu,Nyeri,Oyam,Pader,Paidha,Pakwach,Pallisa,Rakai,Ruiru,Rukungiri,Rwimi,Sanga,Sembabule,Shimoni,Shinyanga,Singida,Sironko,Songea,Soroti,Ssabagabo,Sumbawanga,Tabora,Takaungu,Tanga,Thika,Tororo,Tunduma,Vihiga,Voi,Wajir,Wakiso,Watamu,Webuye,Wobulenzi,Wote,Wundanyi,Yumbe,Zanzibar"},
@@ -264,7 +291,7 @@
       {name: "Arachnid", i: 40, min: 4, max: 10, d: "erlsk", m: 0, b: "Aaqok'ser,Acah,Aiced,Aisi,Aizachis,Allinqel,As'taq,Ashrash,Caaqtos,Caq'zux,Ceek'sax,Ceezuq,Cek'siereel,Cen'qi,Ceqru,Ceqzocer,Cezeed,Chachocaq,Charis,Chashar,Chashilieth,Checib,Chen'qal,Chernul,Cherzoq,Chezi,Chiazu,Chikoqal,Chishros,Chixhi,Chizhi,Chizoser,Chollash,Choq'sha,Chouk'rix,Cinchichail,Collul,Ecush'taid,Eenqachal,Ekiqe,El'zos,El'zur,Ellu,Eq'tur,Eqa,Eqas,Er'uria,Erikas,Ertu,Es'tase,Esrub,Evirrot,Exha,Haqsho,Heekath,Hiavheesh,Hitha,Hok'thi,Hossa,Iacid,Iciever,Ik'si,Illuq,Iri,Isicer,Isnir,Ivrid,Kaalzux,Keezut,Kheellavas,Kheizoh,Khellinqesh,Khiachod,Khika,Khinchi,Khirzur,Khivila,Khonrud,Khontid,Khosi,Khrakku,Khraqshis,Khrerrith,Khrethish'ti,Khriashus,Khrika,Khrirni,Khrocoqshesh,Klashirel,Klassa,Kleil'sha,Kliakis,Klishuth,Klith'osha,Krarnit,Kras'tex,Kreelzi,Krivas,Krotieqas,Laco,Lairta,Lais'tid,Laizuh,Lasnoth,Lekkol,Len'qeer,Leqanches,Lezad,Lhezsi,Lhilir,Lhivhath,Lhok'thu,Lialliesed,Liaraq,Liarisriq,Liceva,Lichorro,Lilla,Livorzish,Lokieqib,Nakar,Nakur,Naros,Natha,Necuk'saih,Neerhaca,Neet'er,Neezoh,Nenchiled,Nerhalneth,Nir'ih,Nizus,Noreeqo,Novalsher,On'qix,Qailloncho,Qak'sovo,Qalitho,Qartori,Qas'tor,Qasol,Qavrud,Qavud,Qazar,Qazieveq,Qazru,Qeik'thoth,Qekno,Qeqravee,Qes'tor,Qhaaviq,Qhaik'sal,Qhak'sish,Qhazsakais,Qhechorte,Qheliva,Qhenchaqes,Qherazal,Qhesoh,Qhiallud,Qhon'qos,Qhoshielleed,Qish'tur,Qisih,Qollal,Qorhoci,Qouxet,Qranchiq,Racith,Rak'zes,Ranchis,Rarhie,Rarzi,Rarzisiaq,Ras'tih,Ravosho,Recad,Rekid,Relshacash,Reqishee,Rernee,Rertachis,Rezhokketh,Reziel,Rhacish,Rhail'shel,Rhairhizse,Rhakivex,Rhaqeer,Rhartix,Rheciezsei,Rheevid,Rhel'shir,Rhetovraix,Rhevhie,Rhialzub,Rhiavekot,Rhikkos,Rhiqese,Rhiqi,Rhiqracar,Rhisned,Rhokno,Rhousnateb,Rhouvaqid,Riakeesnex,Rik'sid,Rintachal,Rir'ul,Rorrucis,Rosharhir,Rourk'u,Rouzakri,Sailiqei,Sanchiqed,Sanqad,Saqshu,Sat'ier,Sazi,Seiqas,Shieth'i,Shiqsheh,Shizha,Shrachuvo,Shranqo,Shravhos,Shravuth,Shreerhod,Shrethuh,Shriantieth,Shronqash,Shrovarhir,Shrozih,Siacaqoh,Siezosh,Silrul,Siq'sha,Sirro,Sornosi,Srachussi,Sreqrud,Srirnukaaq,Szaca,Szacih,Szaqova,Szasu,Szazhilos,Szeerrud,Szeezsad,Szeknur,Szesir,Szet'as,Szetirrar,Szezhirros,Szilshith,Szon'qol,Szornuq,Xaax'uq,Xeekke,Xosax,Yaconchi,Yacozses,Yazrer,Yeek'su,Yeeq'zox,Yeqil,Yeqroq,Yeveed,Yevied,Yicaveeh,Yirresh,Yisie,Yithik'thaih,Yorhaqshes,Zacheek'sa,Zakkasa,Zaqi,Zelraq,Zeqo,Zhaivoq,Zharuncho,Zhath'arhish,Zhavirrit,Zhazilraq,Zhazot,Zhazsachiel,Zhek'tha,Zhequ,Zhias'ted,Zhicat,Zhicur,Zhiese,Zhirhacil,Zhizri,Zhochizses,Zhorkir,Ziarih,Zirnib,Zis'teq,Zivezeh"},
       {name: "Serpents", i: 41, min: 5, max: 11, d: "slrk", m: 0, b: "Aj'ha,Aj'i,Aj'tiss,Ajakess,Aksas,Aksiss,Al'en,An'jeshe,Apjige,Arkkess,Athaz,Atus,Azras,Caji,Cakrasar,Cal'arrun,Capji,Cathras,Cej'han,Ces,Cez'jenta,Cij'te,Cinash,Cizran,Coth'jus,Cothrash,Culzanek,Cunaless,Ej'tesh,Elzazash,Ergek,Eshjuk,Ethris,Gan'jas,Gapja,Gar'thituph,Gopjeguss,Gor'thesh,Gragishaph,Grar'theness,Grath'ji,Gressinas,Grolzesh,Grorjar,Grozrash,Guj'ika,Harji,Hej'hez,Herkush,Horgarrez,Illuph,Ipjar,Ithashin,Kaj'ess,Kar'kash,Kepjusha,Ki'kintus,Kissere,Koph,Kopjess,Kra'kasher,Krak,Krapjez,Krashjuless,Kraz'ji,Krirrigis,Krussin,Ma'lush,Mage,Maj'tak,Mal'a,Mapja,Mar'kash,Mar'kis,Marjin,Mas,Mathan,Men'jas,Meth'jaresh,Mij'hegak,Min'jash,Mith'jas,Monassu,Moss,Naj'hass,Najugash,Nak,Napjiph,Nar'ka,Nar'thuss,Narrusha,Nash,Nashjekez,Nataph,Nij'ass,Nij'tessiph,Nishjiss,Norkkuss,Nus,Olluruss,Or'thi,Or'thuss,Paj'a,Parkka,Pas,Pathujen,Paz'jaz,Pepjerras,Pirkkanar,Pituk,Porjunek,Pu'ke,Ragen,Ran'jess,Rargush,Razjuph,Rilzan,Riss,Rithruz,Rorgiss,Rossez,Rraj'asesh,Rraj'tass,Rrar'kess,Rrar'thuph,Rras,Rrazresh,Rrej'hish,Rrigelash,Rris,Rris,Rroksurrush,Rukrussush,Rurri,Russa,Ruth'jes,Sa'kitesh,Sar'thass,Sarjas,Sazjuzush,Ser'thez,Sezrass,Shajas,Shas,Shashja,Shass,Shetesh,Shijek,Shun'jaler,Shurjarri,Skaler,Skalla,Skallentas,Skaph,Skar'kerriz,Skath'jeruk,Sker'kalas,Skor,Skoz'ji,Sku'lu,Skuph,Skur'thur,Slalli,Slalt'har,Slelziress,Slil'ar,Sloz'jisa,Sojesh,Solle,Sorge,Sral'e,Sran'ji,Srapjess,Srar'thazur,Srash,Srath'jess,Srathrarre,Srerkkash,Srus,Sruss'tugeph,Sun,Suss'tir,Uzrash,Vargush,Vek,Vess'tu,Viph,Vult'ha,Vupjer,Vushjesash,Xagez,Xassa,Xulzessu,Zaj'tiss,Zan'jer,Zarriss,Zassegus,Zirres,Zsor,Zurjass"}
     ];
-  }
+  };
 
   return {getBase, getCulture, getCultureShort, getBaseShort, getState, updateChain, clearChains, getNameBases, getMapName, calculateChain};
-})));
+});

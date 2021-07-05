@@ -72,8 +72,8 @@ function editCultures() {
     for (const c of pack.cultures) {
       if (c.removed) continue;
       const area = c.area * distanceScaleInput.value ** 2;
-      const rural = c.rural * populationRate.value;
-      const urban = c.urban * populationRate.value * urbanization.value;
+      const rural = c.rural * populationRate;
+      const urban = c.urban * populationRate * urbanization;
       const population = rn(rural + urban);
       const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}. Click to edit`;
       totalArea += area;
@@ -186,8 +186,8 @@ function editCultures() {
         .select("g[data-id='" + culture + "'] > path")
         .classed('selected', 1);
       const c = pack.cultures[culture];
-      const rural = c.rural * populationRate.value;
-      const urban = c.urban * populationRate.value * urbanization.value;
+      const rural = c.rural * populationRate;
+      const urban = c.urban * populationRate * urbanization;
       const population = rural + urban > 0 ? si(rn(rural + urban)) + ' people' : 'Extinct';
       info.innerHTML = `${c.name} culture. ${c.type}. ${population}`;
       tip('Drag to change parent, drag to itself to move to the top level. Hold CTRL and click to change abbreviation');
@@ -323,8 +323,8 @@ function editCultures() {
       tip('Culture does not have any cells, cannot change population', false, 'error');
       return;
     }
-    const rural = rn(c.rural * populationRate.value);
-    const urban = rn(c.urban * populationRate.value * urbanization.value);
+    const rural = rn(c.rural * populationRate);
+    const urban = rn(c.urban * populationRate * urbanization);
     const total = rural + urban;
     const l = (n) => Number(n).toLocaleString();
     const burgs = pack.burgs.filter((b) => !b.removed && b.culture === culture);
@@ -367,7 +367,7 @@ function editCultures() {
         cells.forEach((i) => (pack.cells.pop[i] *= ruralChange));
       }
       if (!isFinite(ruralChange) && +ruralPop.value > 0) {
-        const points = ruralPop.value / populationRate.value;
+        const points = ruralPop.value / populationRate;
         const cells = pack.cells.i.filter((i) => pack.cells.culture[i] === culture);
         const pop = rn(points / cells.length);
         cells.forEach((i) => (pack.cells.pop[i] = pop));
@@ -378,7 +378,7 @@ function editCultures() {
         burgs.forEach((b) => (b.population = rn(b.population * urbanChange, 4)));
       }
       if (!isFinite(urbanChange) && +urbanPop.value > 0) {
-        const points = urbanPop.value / populationRate.value / urbanization.value;
+        const points = urbanPop.value / populationRate / urbanization;
         const population = rn(points / burgs.length, 4);
         burgs.forEach((b) => (b.population = population));
       }
@@ -402,27 +402,36 @@ function editCultures() {
     if (customization === 4) return;
     const culture = +this.parentNode.dataset.id;
 
-    const message = 'Are you sure you want to remove the culture? <br>This action cannot be reverted';
-    const onConfirm = () => {
-      cults.select('#culture' + culture).remove();
-      debug.select('#cultureCenter' + culture).remove();
+    alertMessage.innerHTML = 'Are you sure you want to remove the culture? <br>This action cannot be reverted';
+    $('#alert').dialog({
+      resizable: false,
+      title: 'Remove culture',
+      buttons: {
+        Remove: function () {
+          cults.select('#culture' + culture).remove();
+          debug.select('#cultureCenter' + culture).remove();
 
-      pack.burgs.filter((b) => b.culture == culture).forEach((b) => (b.culture = 0));
-      pack.states.forEach((s, i) => {
-        if (s.culture === culture) s.culture = 0;
-      });
-      pack.cells.culture.forEach((c, i) => {
-        if (c === culture) pack.cells.culture[i] = 0;
-      });
-      pack.cultures[culture].removed = true;
+          pack.burgs.filter((b) => b.culture == culture).forEach((b) => (b.culture = 0));
+          pack.states.forEach((s, i) => {
+            if (s.culture === culture) s.culture = 0;
+          });
+          pack.cells.culture.forEach((c, i) => {
+            if (c === culture) pack.cells.culture[i] = 0;
+          });
+          pack.cultures[culture].removed = true;
 
-      const origin = pack.cultures[culture].origin;
-      pack.cultures.forEach((c) => {
-        if (c.origin === culture) c.origin = origin;
-      });
-      refreshCulturesEditor();
-    };
-    confirmationDialog({title: 'Remove culture', message, confirm: 'Remove', onConfirm});
+          const origin = pack.cultures[culture].origin;
+          pack.cultures.forEach((c) => {
+            if (c.origin === culture) c.origin = origin;
+          });
+          refreshCulturesEditor();
+          $(this).dialog('close');
+        },
+        Cancel: function () {
+          $(this).dialog('close');
+        }
+      }
+    });
   }
 
   function drawCultureCenters() {

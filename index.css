@@ -239,7 +239,6 @@ i.icon-lock {
 #labels {
   text-anchor: start;
   dominant-baseline: central;
-  text-shadow: 0 0 4px white;
   cursor: pointer;
 }
 
@@ -283,6 +282,12 @@ i.icon-lock {
   stroke-dasharray: 5;
   stroke-dashoffset: 1000;
   animation: dash 80s linear backwards;
+}
+
+.arrow {
+  marker-end: url(#end-arrow-small);
+  stroke: #555;
+  stroke-width: 0.5;
 }
 
 @keyframes dash {
@@ -1552,6 +1557,11 @@ div.states > div.resourceBonus > span.icon-male {
 #resourceIconEditor div.label {
   display: inline-block;
   width: 5.5em;
+}
+
+#saveTilesScreen div.label {
+  display: inline-block;
+  width: 5em;
 }
 
 #regimentBody div {

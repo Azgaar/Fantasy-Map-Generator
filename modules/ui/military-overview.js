@@ -67,7 +67,7 @@ function overviewMilitary() {
     const states = pack.states.filter((s) => s.i && !s.removed);
 
     for (const s of states) {
-      const population = rn((s.rural + s.urban * urbanization.value) * populationRate.value);
+      const population = rn((s.rural + s.urban * urbanization) * populationRate);
       const getForces = (u) => s.military.reduce((s, r) => s + (r.u[u.name] || 0), 0);
       const total = options.military.reduce((s, u) => s + getForces(u) * u.crew, 0);
       const rate = (total / population) * 100;
@@ -114,7 +114,7 @@ function overviewMilitary() {
     const getForces = (u) => s.military.reduce((s, r) => s + (r.u[u.name] || 0), 0);
     options.military.forEach((u) => (line.dataset[u.name] = line.querySelector(`div[data-type='${u.name}']`).innerHTML = getForces(u)));
 
-    const population = rn((s.rural + s.urban * urbanization.value) * populationRate.value);
+    const population = rn((s.rural + s.urban * urbanization) * populationRate);
     const total = (line.dataset.total = options.military.reduce((s, u) => s + getForces(u) * u.crew, 0));
     const rate = (line.dataset.rate = (total / population) * 100);
     line.querySelector("div[data-type='total']").innerHTML = si(total);
@@ -282,12 +282,21 @@ function overviewMilitary() {
   }
 
   function militaryRecalculate() {
-    const message = 'Are you sure you want to recalculate military forces for all states?<br>Regiments for all states will be regenerated';
-    const onConfirm = () => {
-      Military.generate();
-      addLines();
-    };
-    confirmationDialog({title: 'Remove regiment', message, confirm: 'Remove', onConfirm});
+    alertMessage.innerHTML = 'Are you sure you want to recalculate military forces for all states?<br>Regiments for all states will be regenerated';
+    $('#alert').dialog({
+      resizable: false,
+      title: 'Remove regiment',
+      buttons: {
+        Recalculate: function () {
+          $(this).dialog('close');
+          Military.generate();
+          addLines();
+        },
+        Cancel: function () {
+          $(this).dialog('close');
+        }
+      }
+    });
   }
 
   function downloadMilitaryData() {

@@ -235,7 +235,7 @@
   <div id="loading">
     <div id="titleName"><t data-t="titleName">Azgaar's</t></div>
     <div id="title"><t data-t="title">Fantasy Map Generator</t></div>
-    <div id="version"><t data-t="version">v. </t>1.61</div>
+    <div id="version"><t data-t="version">v. </t>1.63</div>
     <p id="loading-text"><t data-t="loading">LOADING</t><span>.</span><span>.</span><span>.</span></p>
   </div>
 
@@ -673,6 +673,15 @@
             </tr>
           </tbody>
 
+          <tbody id="styleShadow">
+            <tr data-tip="Set text shadow">
+              <td>Text shadow</td>
+              <td>
+                <input id="styleShadowInput" type="text" value="0 0 4px white"/>
+              </td>
+            </tr>
+          </tbody>
+
           <tbody id="styleFont">
             <tr data-tip="Select font">
               <td>Font</td>
@@ -756,7 +765,7 @@
             <tr data-tip="Select color scheme for the element">
               <td>Color scheme</td>
               <td>
-                <select id="styleHeightmapScheme" onchange="drawHeightmap()">
+                <select id="styleHeightmapScheme">
                   <option value="bright" selected>Bright</option>
                   <option value="light">Light</option>
                   <option value="green">Green</option>
@@ -768,14 +777,14 @@
             <tr data-tip="Terracing rate. Set to 0 (toggle off) to improve performance">
               <td>Terracing</td>
               <td>
-                <input id="styleHeightmapTerracing" type="range" min=0 max=20 step=1>
+                <input id="styleHeightmapTerracingInput" type="range" min=0 max=20 step=1>
                 <output id="styleHeightmapTerracingOutput">0</output>
               </td>
             </tr>
             <tr data-tip="Layers reduction rate. Increase to improve performance">
               <td>Reduce layers</td>
               <td>
-                <input id="styleHeightmapSkip" type="range" min=0 max=10 step=1 value=5 oninput="styleHeightmapSkipOutput.value = this.value; drawHeightmap()">
+                <input id="styleHeightmapSkipInput" type="range" min=0 max=10 step=1 value=5 >
                 <output id="styleHeightmapSkipOutput">5</output>
               </td>
             </tr>
@@ -783,7 +792,7 @@
             <tr data-tip="Line simplification rate. Increase to slightly improve performance">
               <td>Simplify line</td>
               <td>
-                <input id="styleHeightmapSimplification" type="range" min=0 max=10 step=1 value=0 oninput="styleHeightmapSimplificationOutput.value = this.value; drawHeightmap()">
+                <input id="styleHeightmapSimplificationInput" type="range" min=0 max=10 step=1 value=0 >
                 <output id="styleHeightmapSimplificationOutput">0</output>
               </td>
             </tr>
@@ -791,7 +800,7 @@
             <tr data-tip="Select line interpolation type">
               <td>Line style</td>
               <td>
-                <select id="styleHeightmapCurve" onchange="drawHeightmap()">
+                <select id="styleHeightmapCurve">
                   <option value=0 selected>Curved</option>
                   <option value=1>Linear</option>
                   <option value=2>Rectangular</option>
@@ -957,7 +966,7 @@
               <input id="pointsInput" type="range" min=1 max=13 value=4 data-cells=10000 >
             </td>
             <td>
-              <output id="pointsOutput" style="color: #053305">10K</output>
+              <output id="pointsOutput_formatted" style="color: #053305">10K</output>
             </td>
           </tr>
 
@@ -1155,7 +1164,7 @@
               <input id="tooltipSizeInput" data-stored="tooltipSize" type="range" min=4 max=32 value=14>
             </td>
             <td>
-              <input id="tooltipSizeOutput" data-stored="tooltipSize" type="number" min=4 max=32 value=14>
+              <input id="tooltipSizeOutput" data-stored="tooltipSize" type="number" min=0 max=256 value=14>
             </td>
           </tr>
 
@@ -1364,9 +1373,20 @@
             <input id="renderOcean" class="checkbox" type="checkbox">
             <label for="renderOcean" class="checkbox-label">Render ocean cells</label>
           </div>
-          <div id="changeHeightsBox" data-tip="Regenerate rivers and allow water flow to slightly change heights">
-            <input id="changeHeights" class="checkbox" type="checkbox" checked>
-            <label for="changeHeights" class="checkbox-label">Allow water erosion</label>
+          <div id="allowErosionBox" data-tip="Regenerate rivers and allow water flow to change heights and form new lakes. Better to keep checked">
+            <input id="allowErosion" class="checkbox" type="checkbox" checked>
+            <label for="allowErosion" class="checkbox-label">Allow water erosion</label>
+          </div>
+          <div data-tip="Maximum number of iterations taken to resolve depressions. Increase if you have rivers ending nowhere">
+            Depressions filling max iterations:
+            <input id="resolveDepressionsStepsInput" data-stored="resolveDepressionsSteps" type="range" min=0 max=500 value=250>
+            <input id="resolveDepressionsStepsOutput" data-stored="resolveDepressionsSteps" type="number" min=0 max=1000 value=250>
+          </div>
+
+          <div data-tip="Depression depth to form a new lake. Increase to reduce number of lakes added by system">
+            Depression depth threshold:
+            <input id="lakeElevationLimitInput" data-stored="lakeElevationLimit" type="range" min=0 max=80 value=20>
+            <input id="lakeElevationLimitOutput" data-stored="lakeElevationLimit" type="number" min=0 max=80 value=20>
           </div>
         </div>
 
@@ -2328,8 +2348,8 @@
           <div style="width:4em">Hill</div>
           <i class="icon-trash-empty pointer" data-tip="Remove the step"></i>
           <i class="icon-resize-vertical" data-tip="Drag to reorder"></i>
-          <span>y:<input class="templateY" data-tip="Placement range percentage along Y axis (minY-maxY)" value="47-53"></span>
-          <span>x:<input class="templateX" data-tip="Placement range percentage along X axis (minX-maxX)" value="65-75"></span>
+          <span>y:<input class="templateY" data-tip="Y axis position in percentage (minY-maxY or Y)" value="47-53"></span>
+          <span>x:<input class="templateX" data-tip="X axis position in percentage (minX-maxX or X)" value="65-75"></span>
           <span>h:<input class="templateHeight" data-tip="Blob maximum height, use hyphen to get a random number in range" value="90-100"></span>
           <span>n:<input class="templateCount" data-tip="Blobs to add, use hyphen to get a random number in range" value="1"></span>
         </div>
@@ -2844,6 +2864,7 @@
         <button id="notesPin" data-tip="Toggle notes box dispay: hide or do not hide the box on mouse move" class="icon-pin"></button>
         <button id="notesDownload" data-tip="Download notes to PC" class="icon-download"></button>
         <button id="notesUpload" data-tip="Upload notes from PC" class="icon-upload"></button>
+        <button id="notesClearStyle" data-tip="Remove all styling, get plain text only" class="icon-eraser"></button>
         <button id="notesRemove" data-tip="Remove this note" class="icon-trash fastDelete"></button>
       </div>
     </div>
@@ -3136,8 +3157,8 @@
 
         <div data-tip="Set scale bar size">
           <div>Bar size:</div>
-          <input id="barSizeOutput" type="range" min=.5 max=5 value=2 step=.1>
-          <input id="barSize" data-stored="barSize" type="number" min=.5 max=5 value=2 step=.1>
+          <input id="barSizeOutput" data-stored="barSize" type="range" min=.5 max=5 value=2 step=.1>
+          <input id="barSizeInput" data-stored="barSize" type="number" min=.5 max=5 value=2 step=.1>
         </div>
 
         <div data-tip="Type scale bar label, leave blank to hide label">
@@ -3164,14 +3185,14 @@
 
         <div data-tip="Set how many people are in one population point">
           <div>1 population point =</div>
-          <input id="populationRateOutput" type="range" min=10 max=9990 step=10 value=1000 style="width:6em">
-          <input id="populationRate" data-stored="populationRate" type="number" min=10 max=9990 step=10 value=1000 data-value=1000 style="width:4.5em">
+          <input id="populationRateOutput" data-stored="populationRate" type="range" min=10 max=9990 step=10 value=1000 style="width:6em">
+          <input id="populationRateInput" data-stored="populationRate" type="number" min=10 max=9990 step=10 value=1000 style="width:4.5em">
         </div>
 
         <div data-tip="Set urbanization rate: burgs population relative to all population">
           <div>Urbanization rate:</div>
-          <input id="urbanizationOutput" type="range" min=.01 max=5 step=.01 value=1>
-          <input id="urbanization" data-stored="urbanization" type="number" min=.01 max=5 step=.01 value=1 data-value=1>
+          <input id="urbanizationOutput" data-stored="urbanization" type="range" min=.01 max=5 step=.01 value=1 >
+          <input id="urbanizationInput" data-stored="urbanization" type="number" min=.01 max=5 step=.01 value=1 >
         </div>
       </div>
 
@@ -3450,6 +3471,7 @@
         <button onclick="saveSVG()" data-tip="Download the map as vector image (open in browser or Inkscape)">.svg</button>
         <button onclick="savePNG()" data-tip="Download visible part of the map as .png (lossless compressed)">.png</button>
         <button onclick="saveJPEG()" data-tip="Download visible part of the map as .jpeg (lossy compressed) image">.jpeg</button>
+        <button onclick="openSaveTiles()" data-tip="Split map into smaller png tiles and download as zip archive">tiles</button>
         <button onclick="saveGeoJSON()" data-tip="Download map data in GeoJSON format">.json</button>
         <button onclick="quickSave()" data-tip="Save the project to browser storage (unreliable). Shortcut: F6">storage</button>
       </div>
@@ -3457,8 +3479,12 @@
       <p style="font-style: italic">Generator uses pop-up window to download files. Please ensure your browser does not block popups.</p>
       <div data-tip="Define scale of a saved png/jpeg image (e.g. 5x). Saving big images is slow and may cause a browser crash!" style="margin-bottom: .3em">
         PNG / JPEG scale:
-        <input id="pngResolutionInput" data-stored="pngResolution" type="range" min=1 max=8 value=1 style="width: 10.8em" oninput="pngResolutionOutput.value = this.value">
-        <input id="pngResolutionOutput" data-stored="pngResolution" type="number" min=1 max=8 value=1 oninput="pngResolutionInput.value = this.value">
+        <input id="pngResolutionInput" data-stored="pngResolution" type="range" min=1 max=8 value=1 style="width: 14em">
+        <input id="pngResolutionOutput" data-stored="pngResolution" type="number" min=1 max=8 value=1>
+      </div>
+      <div data-tip="Check to not allow system to automatically hide labels">
+        <input id="showLabels" class="checkbox" type="checkbox" onchange="hideLabels.checked = !this.checked; invokeActiveZooming()" checked="">
+        <label for="showLabels" class="checkbox-label">Show all labels</label>
       </div>
     </div>
 
@@ -3469,6 +3495,31 @@
         <button onclick="loadURL()" data-tip="Load .map file from URL (server should allow CORS)">URL</button>
         <button onclick="quickLoad()" data-tip="Load map from browser storage (if saved before)">storage</button>
       </div>
+    </div>
+
+    <div id="saveTilesScreen" style="display: none" class="dialog">
+      <p style="font-style: italic">Map will be split into tiles and downloaded as a single zip file. Avoid saving to big images</p>
+      <div data-tip="Number of columns" style="margin-bottom: .3em">
+        <div class="label">Columns:</div>
+        <input id="tileColsInput" data-stored="tileCols" type="range" min=2 max=20 value=8 style="width: 11em">
+        <input id="tileColsOutput" data-stored="tileCols" type="number" min=2 value=8 >
+      </div>
+      <div data-tip="Number of rows" style="margin-bottom: .3em">
+        <div class="label">Rows:</div>
+        <input id="tileRowsInput" data-stored="tileRows" type="range" min=2 max=20 value=8 style="width: 11em">
+        <input id="tileRowsOutput" data-stored="tileRows" type="number" min=2 value=8 >
+      </div>
+      <div data-tip="Image scale relative to image size (e.g. 5x)" style="margin-bottom: .3em">
+        <div class="label">Scale:</div>
+        <input id="tileScaleInput" data-stored="tileScale" type="range" min=1 max=4 value=1 style="width: 11em">
+        <input id="tileScaleOutput" data-stored="tileScale" type="number" min=1 value=1 
+        >
+      </div>
+      <div data-tip="Calculated size of image if combined" style="margin-bottom: .3em">
+        <div class="label">Total size:</div>
+        <div id="tileSize" style="display: inline-block">1000 x 1000 px</div>
+      </div>
+      <div id="tileStatus" style="background-color: #33333310; font-style: italic"></div>
     </div>
 
     <div id="alert" style="display: none" class="dialog">
@@ -3511,6 +3562,9 @@
     <defs>
       <marker id="end-arrow" viewBox="0 -5 10 10" refX="6" markerWidth="7" markerHeight="7" orient="auto">
         <path d="M0,-5L10,0L0,5" fill="#000"></path>
+      </marker>
+      <marker id="end-arrow-small" viewBox="0 -5 10 10" refX="6" markerWidth="2" markerHeight="2" orient="auto">
+        <path d="M0,-5L10,0L0,5" fill="#555"></path>
       </marker>
 
       <symbol id="icon-store" viewBox="0 0 616 512">
@@ -4391,7 +4445,8 @@
   <script defer src="modules/ui/general.js"></script>
   <script defer src="modules/ui/options.js"></script>
   <script defer src="modules/ui/style.js"></script>
-  <script defer src="modules/save-and-load.js"></script>
+  <script defer src="modules/save.js"></script>
+  <script defer src="modules/load.js"></script>
   <script defer src="main.js"></script>
   <script defer src="modules/relief-icons.js"></script>
   <script defer src="modules/ui/tools.js"></script>
@@ -4431,5 +4486,6 @@
   <script defer src="libs/rgbquant.min.js"></script>
   <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
   <script defer src="libs/pell.min.js"></script>
+  <script defer src="libs/jszip.min.js"></script>
 </body>
 </html>

@@ -61,6 +61,7 @@ function editNotes(id, name) {
   document.getElementById('legendsToLoad').addEventListener('change', function () {
     uploadFile(this, uploadLegends);
   });
+  document.getElementById('notesClearStyle').addEventListener('click', clearStyle);
   document.getElementById('notesRemove').addEventListener('click', triggerNotesRemove);
 
   function showNote(note) {
@@ -89,8 +90,20 @@ function editNotes(id, name) {
     const element = document.getElementById(select.value);
 
     if (element === null) {
-      const message = 'Related element is not found. Would you like to remove the note?';
-      confirmationDialog({title: 'Element not found', message, confirm: 'Remove', onConfirm: removeLegend});
+      alertMessage.innerHTML = 'Related element is not found. Would you like to remove the note?';
+      $('#alert').dialog({
+        resizable: false,
+        title: 'Element not found',
+        buttons: {
+          Remove: function () {
+            $(this).dialog('close');
+            removeLegend();
+          },
+          Keep: function () {
+            $(this).dialog('close');
+          }
+        }
+      });
       return;
     }
 
@@ -104,15 +117,34 @@ function editNotes(id, name) {
   }
 
   function uploadLegends(dataLoaded) {
-    if (!dataLoaded) return tip('Cannot load the file. Please check the data format', false, 'error');
+    if (!dataLoaded) {
+      tip('Cannot load the file. Please check the data format', false, 'error');
+      return;
+    }
     notes = JSON.parse(dataLoaded);
     document.getElementById('notesSelect').options.length = 0;
     editNotes(notes[0].id, notes[0].name);
   }
 
+  function clearStyle() {
+    editor.content.innerHTML = editor.content.textContent;
+  }
+
   function triggerNotesRemove() {
-    const message = 'Are you sure you want to remove the selected note? <br>This action cannot be reverted';
-    confirmationDialog({title: 'Remove note', message, confirm: 'Remove', onConfirm: removeLegend});
+    alertMessage.innerHTML = 'Are you sure you want to remove the selected note?';
+    $('#alert').dialog({
+      resizable: false,
+      title: 'Remove note',
+      buttons: {
+        Remove: function () {
+          $(this).dialog('close');
+          removeLegend();
+        },
+        Keep: function () {
+          $(this).dialog('close');
+        }
+      }
+    });
   }
 
   function removeLegend() {
@@ -120,7 +152,10 @@ function editNotes(id, name) {
     const index = notes.findIndex((n) => n.id === select.value);
     notes.splice(index, 1);
     select.options.length = 0;
-    if (!notes.length) return $('#notesEditor').dialog('close');
+    if (!notes.length) {
+      $('#notesEditor').dialog('close');
+      return;
+    }
     notesText.innerHTML = '';
     editNotes(notes[0].id, notes[0].name);
   }
