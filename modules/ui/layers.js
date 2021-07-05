@@ -14,6 +14,7 @@ function getDefaultPresets() {
     heightmap: ['toggleHeight', 'toggleRivers'],
     physical: ['toggleCoordinates', 'toggleHeight', 'toggleIce', 'toggleRivers', 'toggleScaleBar'],
     poi: ['toggleBorders', 'toggleHeight', 'toggleIce', 'toggleIcons', 'toggleMarkers', 'toggleRivers', 'toggleRoutes', 'toggleScaleBar'],
+    economical: ['toggleResources', 'toggleBiomes', 'toggleBorders', 'toggleIcons', 'toggleIce', 'toggleLabels', 'toggleRivers', 'toggleRoutes', 'toggleScaleBar'],
     military: ['toggleBorders', 'toggleIcons', 'toggleLabels', 'toggleMilitary', 'toggleRivers', 'toggleRoutes', 'toggleScaleBar', 'toggleStates'],
     emblems: ['toggleBorders', 'toggleIcons', 'toggleIce', 'toggleEmblems', 'toggleRivers', 'toggleRoutes', 'toggleScaleBar', 'toggleStates'],
     landmass: ['toggleScaleBar']
