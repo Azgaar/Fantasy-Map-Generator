@@ -11,7 +11,7 @@ const options = {scale: 50, lightness: .7, shadow: .5, sun: {x: 100, y: 600, z: 
 // set variables
 let Renderer, scene, camera, controls, animationFrame, material, texture,
   geometry, mesh, ambientLight, spotLight, waterPlane, waterMaterial, waterMesh,
-  objexporter, square_geometry, texture_loader;
+  objexporter, square_geometry, texture_loader, raycaster;
 const drawSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
 document.body.appendChild(drawSVG);
 let textMeshs = [], iconMeshs = [];
@@ -71,17 +71,20 @@ const stop = function() {
 const setScale = function(scale) {
   options.scale = scale;
 
-  for (const mesh of textMeshs) {
-    mesh.position.y = getMeshHeight(findGridCell(mesh.base_x, mesh.base_y)) + mesh.base_height;
-  }
-  for (const mesh of iconMeshs) {
-    mesh.position.y = getMeshHeight(findGridCell(mesh.base_x, mesh.base_y));
-  }
   geometry.vertices.forEach((v, i) => v.z = getMeshHeight(i));
   geometry.verticesNeedUpdate = true;
   geometry.computeVertexNormals();
   render();
   geometry.verticesNeedUpdate = false;
+
+  for (const textMesh of textMeshs) {
+    raycaster.ray.origin.x = textMesh.position.x; raycaster.ray.origin.z = textMesh.position.z;
+    textMesh.position.y = raycaster.intersectObject(mesh)[0].point.y + textMesh.base_height;
+  }
+  for (const iconMesh of iconMeshs) {
+    raycaster.ray.origin.x = iconMesh.position.x; raycaster.ray.origin.z = iconMesh.position.z;
+    iconMesh.position.y = raycaster.intersectObject(mesh)[0].point.y;
+  }
 }
 
 const setLightness = function(intensity) {
@@ -198,7 +201,7 @@ function svg2base64(svg) {
   return 'data:image/svg+xml;base64,' + btoa(str_xml);
 }
 
-function svg2mesh(svg, sx=1, sy=1) {
+function svg2mesh(svg, sx=1, sy=1, backface=false) {
   svg.removeAttribute("viewBox");
   const bbox = svg.getBBox();
   svg.setAttribute("viewBox", [bbox.x, bbox.y, bbox.width, bbox.height].join(" "));
@@ -208,7 +211,7 @@ function svg2mesh(svg, sx=1, sy=1) {
   const texture = new texture_loader.load(svg2base64(svg));
   texture.minFilter = THREE.LinearFilter; // remove `texture has been resized` warning
 
-  const material = new THREE.MeshBasicMaterial({map: texture, side: THREE.DoubleSide, depthWrite: false});
+  const material = new THREE.MeshBasicMaterial({map: texture, side: backface ? THREE.DoubleSide : THREE.FrontSide, depthWrite: false});
   material.transparent = true;
 
   const mesh = new THREE.Mesh(
@@ -233,7 +236,7 @@ async function createStateText(font, size, color, label) {
   drawSVG.children[1].setAttribute('font-size', size);
   drawSVG.children[1].setAttribute('fill', color);
 
-  const mesh = svg2mesh(drawSVG, 20, 20);
+  const mesh = svg2mesh(drawSVG, 20, 20, true);
   mesh.rotation.set(THREE.Math.degToRad(-90), 0, 0);
 
   return mesh;
@@ -241,21 +244,25 @@ async function createStateText(font, size, color, label) {
 
 async function createBurgText(text, font, size, color, quality=1) {  // for quality: lower value mean higher quality
   if (fontCache[font] == undefined) {fontCache[font] = (await GFontToDataURI(`https://fonts.googleapis.com/css?family=${font}`)).join("\n");}
-  drawSVG.innerHTML = `<text font-family="${font}" font-size="${size * (20 / quality)}" fill="${color}">${text}</text>
-<defs><style type="text/css">${fontCache[font]}</style></defs>`;
+  drawSVG.innerHTML = `<defs><style type="text/css">${fontCache[font]}</style></defs>
+<text font-family="${font}" font-size="${size * (20 / quality)}" fill="${color}">${text}</text>`;
   return svg2mesh(drawSVG, 7*quality, 7*quality);
 }
 
 function get3dCoords(base_x, base_y) {
   const x = base_x - graphWidth/2;
-  const y = getMeshHeight(findGridCell(base_x, base_y)); // work better than getMeshHeight(burg.cell) but I don't know why
   const z = base_y - graphHeight/2;
+
+  raycaster.ray.origin.x = x; raycaster.ray.origin.z = z;
+  const y = raycaster.intersectObject(mesh)[0].point.y;
   return [x, y, z];
 }
 
 async function createLabels() {
   square_geometry = new THREE.PlaneGeometry(1, 1);
   texture_loader = new THREE.TextureLoader();
+  raycaster = new THREE.Raycaster();
+  raycaster.set(new THREE.Vector3(0, 1000, 0), new THREE.Vector3(0, -1, 0));
 
   // Burg labels
   const cities = svg.select("#viewbox #labels #burgLabels #cities");
@@ -267,7 +274,7 @@ async function createLabels() {
   const town_icon_material = new THREE.MeshBasicMaterial({color: towns_icons.attr('fill')});
   const citie_icon_geometry = new THREE.SphereGeometry(cities_icons.attr("size") * 2, 8, 8);
   const town_icon_geometry = new THREE.SphereGeometry(towns_icons.attr("size") * 2, 8, 8);
-  for (const burg of pack.burgs) {
+  for (const burg of pack.burgs.slice(1)) {
     const [x, y, z] = get3dCoords(burg.x, burg.y)
 
     if(layerIsOn("toggleLabels")) {
@@ -296,9 +303,6 @@ async function createLabels() {
         }
       }
 
-      text_mesh.base_x = burg.x;
-      text_mesh.base_y = burg.y;
-
       textMeshs.push(text_mesh);
       scene.add(text_mesh);
     }
@@ -310,8 +314,6 @@ async function createLabels() {
         burg.capital ? citie_icon_material : town_icon_material
       );
       icon_mesh.position.set(x, y, z)
-      icon_mesh.base_x = burg.x
-      icon_mesh.base_y = burg.y
   
       iconMeshs.push(icon_mesh);
       scene.add(icon_mesh);
@@ -326,8 +328,6 @@ async function createLabels() {
     const pos = pack.states[id].pole
     const [x, y, z] = get3dCoords(pos[0], pos[1])
     text_mesh.position.set(x, y + 25, z);
-    text_mesh.base_x = pos[0];
-    text_mesh.base_y = pos[1];
     text_mesh.base_height = 25;
 
     textMeshs.push(text_mesh)
@@ -339,6 +339,7 @@ function deleteLabels() {
   if (square_geometry) square_geometry.dispose();
   square_geometry = undefined;
   texture_loader = undefined;
+  raycaster = undefined;
 
   for (const [i, mesh] of textMeshs.entries()) {
     scene.remove(mesh);
@@ -392,8 +393,8 @@ async function createMesh(width, height, segmentsX, segmentsY) {
   mesh.receiveShadow = true;
   scene.add(mesh);
 
+  render();  // needed for Raycaster to work, but why ?
   deleteLabels();
-
   if (options.labels3d) {
     await createLabels();
   }
@@ -446,7 +447,7 @@ async function newGlobe(canvas) {
   updateGlobeTexure(true);
 
   // camera
- camera = new THREE.PerspectiveCamera(45, canvas.width / canvas.height, 0.1, 1000).translateZ(5);
+  camera = new THREE.PerspectiveCamera(45, canvas.width / canvas.height, 0.1, 1000).translateZ(5);
 
   // controls
   controls = await OrbitControls(camera, Renderer.domElement);
