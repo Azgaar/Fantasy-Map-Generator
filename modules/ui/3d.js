@@ -12,6 +12,7 @@ const options = {scale: 50, lightness: .7, shadow: .5, sun: {x: 100, y: 600, z: 
 let Renderer, scene, camera, controls, animationFrame, material, texture,
   geometry, mesh, ambientLight, spotLight, waterPlane, waterMaterial, waterMesh,
   objexporter, square_geometry, texture_loader, raycaster;
+const drawCtx = document.createElement("canvas").getContext('2d');
 const drawSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
 document.body.appendChild(drawSVG);
 let textMeshs = [], iconMeshs = [];
@@ -201,14 +202,8 @@ function svg2base64(svg) {
   return 'data:image/svg+xml;base64,' + btoa(str_xml);
 }
 
-function svg2mesh(svg, sx=1, sy=1, backface=false) {
-  svg.removeAttribute("viewBox");
-  const bbox = svg.getBBox();
-  svg.setAttribute("viewBox", [bbox.x, bbox.y, bbox.width, bbox.height].join(" "));
-  svg.setAttribute("width", bbox.width);
-  svg.setAttribute("height", bbox.height);
-
-  const texture = new texture_loader.load(svg2base64(svg));
+function texture2mesh(texture, width=1, height=1, backface=false) {
+  texture = new texture_loader.load(texture);
   texture.minFilter = THREE.LinearFilter; // remove `texture has been resized` warning
 
   const material = new THREE.MeshBasicMaterial({map: texture, side: backface ? THREE.DoubleSide : THREE.FrontSide, depthWrite: false});
@@ -218,35 +213,47 @@ function svg2mesh(svg, sx=1, sy=1, backface=false) {
     square_geometry,
     material
   );
-  mesh.scale.x = bbox.width * (sx / 100);
-  mesh.scale.y = bbox.height * (sy / 100);
+  mesh.scale.x = width;
+  mesh.scale.y = height;
   mesh.renderOrder = 1;
 
   return mesh;
 }
 
-async function createStateText(font, size, color, label) {
+async function createStateText(font, size, color, label, quality=10) {
   drawSVG.innerHTML = "<defs></defs>";
   drawSVG.appendChild(label.cloneNode(true));
   if (fontCache[font] == undefined) {fontCache[font] = (await GFontToDataURI(`https://fonts.googleapis.com/css?family=${font}`)).join('\n');}
   drawSVG.children[0].innerHTML = `<style type="text/css">${fontCache[font]}</style>`;
   drawSVG.children[0].appendChild(svg.select(label.childNodes[0].href.baseVal).node().cloneNode(true)); // href of path in defs
-  drawSVG.children[1].setAttribute("transform", `scale(${5} ${5})`)
+  drawSVG.children[1].setAttribute("transform", `scale(${quality} ${quality})`)
   drawSVG.children[1].setAttribute('font-family', font);
   drawSVG.children[1].setAttribute('font-size', size);
   drawSVG.children[1].setAttribute('fill', color);
 
-  const mesh = svg2mesh(drawSVG, 20, 20, true);
+  drawSVG.removeAttribute("viewBox");
+  const bbox = drawSVG.getBBox();
+  drawSVG.setAttribute("viewBox", [bbox.x, bbox.y, bbox.width, bbox.height].join(" "));
+  drawSVG.setAttribute("width", bbox.width);
+  drawSVG.setAttribute("height", bbox.height);
+
+  const mesh = texture2mesh(svg2base64(drawSVG), bbox.width / quality, bbox.height / quality, true);
   mesh.rotation.set(THREE.Math.degToRad(-90), 0, 0);
 
   return mesh;
 }
 
-async function createBurgText(text, font, size, color, quality=1) {  // for quality: lower value mean higher quality
-  if (fontCache[font] == undefined) {fontCache[font] = (await GFontToDataURI(`https://fonts.googleapis.com/css?family=${font}`)).join("\n");}
-  drawSVG.innerHTML = `<defs><style type="text/css">${fontCache[font]}</style></defs>
-<text font-family="${font}" font-size="${size * (20 / quality)}" fill="${color}">${text}</text>`;
-  return svg2mesh(drawSVG, 7*quality, 7*quality);
+async function createBurgText(text, font, size, color, quality=30) {
+  drawCtx.font = `${size * quality}px ${font}`;
+  drawCtx.canvas.width = drawCtx.measureText(text).width;
+  drawCtx.canvas.height = size*quality * (1 + 1/4); // adding a margin of 1/4 of the size because text sometime overflow the font size
+  drawCtx.clearRect(0, 0, drawCtx.canvas.width, drawCtx.canvas.height);
+  
+  drawCtx.font = `${size * quality}px ${font}`;
+  drawCtx.fillStyle = color;
+  drawCtx.fillText(text, 0, size * quality);
+  
+  return texture2mesh(drawCtx.canvas.toDataURL(), drawCtx.canvas.width / quality, drawCtx.canvas.height / quality);
 }
 
 function get3dCoords(base_x, base_y) {
@@ -274,18 +281,19 @@ async function createLabels() {
   const town_icon_material = new THREE.MeshBasicMaterial({color: towns_icons.attr('fill')});
   const citie_icon_geometry = new THREE.SphereGeometry(cities_icons.attr("size") * 2, 8, 8);
   const town_icon_geometry = new THREE.SphereGeometry(towns_icons.attr("size") * 2, 8, 8);
-  for (const burg of pack.burgs.slice(1)) {
+  for (let i = 1; i < pack.burgs.length; i++) {
+    const burg = pack.burgs[i];
     const [x, y, z] = get3dCoords(burg.x, burg.y)
 
     if(layerIsOn("toggleLabels")) {
       if (burg.capital) {
-        var text_mesh = await createBurgText(burg.name, cities.attr('font-family'), cities.attr('font-size'), cities.attr('fill')); // cities.attr('font-size')
+        var text_mesh = await createBurgText(burg.name, cities.attr('font-family'), cities.attr('font-size'), cities.attr('fill'));
       } else {
-        var text_mesh = await createBurgText(burg.name, towns.attr('font-family'), towns.attr('font-size'), towns.attr('fill')); // towns.attr('font-size')
+        var text_mesh = await createBurgText(burg.name, towns.attr('font-family'), towns.attr('font-size'), towns.attr('fill'));
       }
 
       if (burg.capital) {
-        text_mesh.position.set(x, y + 15, z);
+        text_mesh.position.set(x, y + 10, z);
         text_mesh.base_height = 15;
         text_mesh.animate = function () {
           this.rotation.copy(camera.rotation);
