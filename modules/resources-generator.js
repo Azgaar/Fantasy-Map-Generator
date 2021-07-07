@@ -529,9 +529,6 @@ window.Resources = (function () {
   const temp = i => grid.cells.temp[pack.cells.g[i]];
   const group = i => pack.features[cells.f[i]].group;
 
-  const temp = i => grid.cells.temp[pack.cells.g[i]];
-  const group = i => pack.features[cells.f[i]].group;
-
   const models = {
     forest: i => [6, 7, 8].includes(cells.biome[i]),
     forestAndTaiga: i => [5, 6, 7, 8, 9].includes(cells.biome[i]),
