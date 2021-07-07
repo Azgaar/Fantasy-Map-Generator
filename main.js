@@ -1542,7 +1542,7 @@ function getBiomeId(moisture, temperature, height) {
   return biomesData.biomesMartix[moistureBand][temperatureBand];
 }
 
-// assess cells suitability to calculate population and rand cells for culture center and burgs placement
+// assess cells suitability to calculate population and rang cells for culture center and burgs placement
 function rankCells() {
   TIME && console.time("rankCells");
   const {cells, features} = pack;
@@ -1552,13 +1552,18 @@ function rankCells() {
   const flMean = d3.median(cells.fl.filter(f => f)) || 0,
     flMax = d3.max(cells.fl) + d3.max(cells.conf); // to normalize flux
   const areaMean = d3.mean(cells.area); // to adjust population by cell area
+  const getResValue = (i) => (cells.resource[i] ? Resources.get(cells.resource[i])?.value : 0);
+  const resBonuses = [];
+  const POP_BALANCER = 1.5; // contant to ballance population to desired number not changing ranking
 
   for (const i of cells.i) {
+    if (cells.b[i]) continue; // avoid adding burgs on map border
     if (cells.h[i] < 20) continue; // no population in water
-    let s = +biomesData.habitability[cells.biome[i]]; // base suitability derived from biome habitability
+    let s = biomesData.habitability[cells.biome[i]] / 10; // base suitability derived from biome habitability
     if (!s) continue; // uninhabitable biomes has 0 suitability
-    if (flMean) s += normalize(cells.fl[i] + cells.conf[i], flMean, flMax) * 250; // big rivers and confluences are valued
-    s -= (cells.h[i] - 50) / 5; // low elevation is valued, high is not;
+
+    if (flMean) s += normalize(cells.fl[i] + cells.conf[i], flMean, flMax) * 50; // big rivers and confluences are valued
+    s -= (cells.h[i] - 50) / 25; // low elevation is valued, high is not;
 
     if (cells.t[i] === 1) {
       if (cells.r[i]) s += 15; // estuary is valued
@@ -1571,14 +1576,22 @@ function rankCells() {
         else if (feature.group == "sinkhole") s -= 5;
         else if (feature.group == "lava") s -= 30;
       } else {
-        s += 5; // ocean coast is valued
-        if (cells.harbor[i] === 1) s += 20; // safe sea harbor is valued
+        s += 1; // ocean coast is valued
+        if (cells.harbor[i] === 1) s += 4; // safe sea harbor is valued
       }
     }
 
-    cells.s[i] = s / 5; // general population rate
+    // add bonus for resources around
+    const cellRes = getResValue(i);
+    const neibRes = d3.mean(cells.c[i].map((c) => getResValue(c)));
+    const resBonus = (cellRes ? cellRes + 10 : 0) + neibRes;
+    resBonuses.push(resBonus);
+
     // cell rural population is suitability adjusted by cell area
-    cells.pop[i] = cells.s[i] > 0 ? (cells.s[i] * cells.area[i]) / areaMean : 0;
+    cells.pop[i] = s > 0 ? (s * POP_BALANCER * cells.area[i]) / areaMean : 0;
+    cells.s[i] = s + resBonus;
+
+    debug.append('text').attr('x', cells.p[i][0]).attr('y', cells.p[i][1]).text(cells.s[i]);
   }
 
   TIME && console.timeEnd("rankCells");

@@ -727,6 +727,12 @@ styleResourcesCircle.addEventListener('change', function () {
   drawResources();
 });
 
+styleResourcesCircle.addEventListener('change', function () {
+  goods.attr('data-circle', +this.checked);
+  goods.selectAll('*').remove();
+  drawResources();
+});
+
 // request a URL to image to be used as a texture
 function textureProvideURL() {
   alertMessage.innerHTML = /* html */ `Provide an image URL to be used as a texture:
