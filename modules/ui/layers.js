@@ -1666,7 +1666,7 @@ function drawResources() {
     const stroke = Resources.getStroke(resource.color);
 
     if (!drawCircle) {
-      resourcesHTML += `<use href="#${resource.icon}" x="${x - 3}" y="${y - 3}" width="6" height="6"/>`;
+      resourcesHTML += `<use data-i="${resource.i}" href="#${resource.icon}" x="${x - 3}" y="${y - 3}" width="6" height="6"/>`;
       continue;
     }
 
