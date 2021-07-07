@@ -251,6 +251,13 @@ function selectStyleElement() {
     styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr('stroke-width') || 1;
   }
 
+  if (sel === 'goods') {
+    styleStrokeWidth.style.display = 'block';
+    styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr('stroke-width') || '';
+    styleResources.style.display = 'block';
+    styleResourcesCircle.checked = +el.attr('data-circle');
+  }
+
   // update group options
   styleGroupSelect.options.length = 0; // remove all options
   if (['routes', 'labels', 'coastline', 'lakes', 'anchors', 'burgIcons', 'borders'].includes(sel)) {
@@ -677,6 +684,12 @@ styleEmblemsStateSizeInput.addEventListener('input', drawEmblems);
 styleEmblemsProvinceSizeInput.addEventListener('input', drawEmblems);
 styleEmblemsBurgSizeInput.addEventListener('input', drawEmblems);
 
+styleResourcesCircle.addEventListener('change', function () {
+  goods.attr('data-circle', +this.checked);
+  goods.selectAll('*').remove();
+  drawResources();
+});
+
 // request a URL to image to be used as a texture
 function textureProvideURL() {
   alertMessage.innerHTML = `Provide an image URL to be used as a texture:
@@ -913,7 +926,7 @@ function applyDefaultStyle() {
   fogging.attr('opacity', 0.98).attr('fill', '#30426f');
   emblems.attr('opacity', 0.9).attr('stroke-width', 1).attr('filter', null);
 
-  goods.attr('opacity', 1).attr('fill', '#000').attr('stroke', '#000').attr('stroke-width', 0.32).attr('filter', 'url(#dropShadow01)');
+  goods.attr('opacity', 1).attr('data-circle', 1).attr('fill', '#000').attr('stroke', '#000').attr('stroke-width', 0.32).attr('filter', 'url(#dropShadow01)');
 }
 
 // apply style settings in JSON
