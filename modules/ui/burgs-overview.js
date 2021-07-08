@@ -91,7 +91,7 @@ function overviewBurgs() {
           <span data-tip="${b.capital ? ' This burg is a state capital' : 'Click to assign a capital status'}" class="icon-star-empty${b.capital ? '' : ' inactive pointer'}"></span>
           <span data-tip="Click to toggle port status" class="icon-anchor pointer${b.port ? '' : ' inactive'}" style="font-size:.9em"></span>
         </div>
-        <span data-tip="Edit burg" class="icon-pencil"></span>
+        <span data-tip="Zoom to burg" class="icon-dot-circled pointer"></span>
         <span class="locks pointer ${b.lock ? 'icon-lock' : 'icon-lock-open inactive'}"></span>
         <span data-tip="Remove burg" class="icon-trash-empty"></span>
       </div>`;
