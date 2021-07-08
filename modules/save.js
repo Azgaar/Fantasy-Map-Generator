@@ -686,12 +686,15 @@ const saveReminder = function () {
     "Don't forget to save your map on a regular basis!",
     'Just a gentle reminder for you to save the map',
     "Please don't forget to save your progress (saving as .map is the best option)",
-    "Don't want to be reminded about need to save? Press CTRL+Q"
+    "Don't want to be reminded about need to save? Press CTRL+Q",
+    "You'd better to save your progress as .map file",
+    "Don't want to lose the worldbuiding progress? Save your map right now",
+    'There is no way to restore the map other than .map file. Please save it regularly'
   ];
 
   saveReminder.reminder = setInterval(() => {
     if (customization) return;
-    tip(ra(message), true, 'warn', 2500);
+    tip(ra(message), true, 'warn', 10000);
   }, 1e6);
   saveReminder.status = 1;
 };
