@@ -1157,7 +1157,7 @@ function addStylePreset() {
     localStorage.setItem(preset, styleSaverJSON.value); // save preset
     $('#styleSaver').dialog('close');
     removeStyleButton.style.display = 'inline-block';
-    tip('Style preset is saved', false, 'warn', 4000);
+    tip('Style preset is saved', false, 'success', 4000);
   }
 
   function styleDownload() {

@@ -1459,7 +1459,7 @@ function rankCells() {
     cells.pop[i] = s > 0 ? (s * POP_BALANCER * cells.area[i]) / areaMean : 0;
     cells.s[i] = s + resBonus;
 
-    debug.append('text').attr('x', cells.p[i][0]).attr('y', cells.p[i][1]).text(cells.s[i]);
+    // debug.append('text').attr('x', cells.p[i][0]).attr('y', cells.p[i][1]).text(cells.s[i]);
   }
 
   console.log(resBonuses);
