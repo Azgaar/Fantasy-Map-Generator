@@ -269,8 +269,16 @@ async function getMapURL(type, subtype) {
     });
   }
 
-  const fontStyle = await GFontToDataURI(getFontsToLoad(clone)); // load non-standard fonts
-  if (fontStyle) clone.select("defs").append("style").text(fontStyle.join("\n")); // add font to style
+  // load non-standard fonts
+  const usedFonts = getFontsList(clone);
+  const webSafe = ["Georgia", "Times+New+Roman", "Comic+Sans+MS", "Lucida+Sans+Unicode", "Courier+New", "Verdana", "Arial", "Impact"];
+  const fontsToLoad = usedFonts.filter(font => !webSafe.includes(font));
+  if (fontsToLoad.length) {
+    const url = "https://fonts.googleapis.com/css?family=" + fontsToLoad.join("|");
+    const fontStyle = await GFontToDataURI(url);
+    if (fontStyle) clone.select("defs").append("style").text(fontStyle.join("\n"));
+  }
+
   clone.remove();
 
   const serialized = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>` + new XMLSerializer().serializeToString(cloneEl);
@@ -351,21 +359,17 @@ function inlineStyle(clone) {
   emptyG.remove();
 }
 
-// get non-standard fonts used for labels to fetch them from web
-function getFontsToLoad(clone) {
-  const webSafe = ["Georgia", "Times+New+Roman", "Comic+Sans+MS", "Lucida+Sans+Unicode", "Courier+New", "Verdana", "Arial", "Impact"]; // fonts to not fetch
+function getFontsList(svg) {
+  const fontsInUse = [];
 
-  const fontsInUse = new Set(); // to store fonts currently in use
-  clone.selectAll("#labels > g").each(function () {
+  svg.selectAll("#labels > g").each(function () {
     if (!this.hasChildNodes()) return;
     const font = this.dataset.font;
-    if (!font || webSafe.includes(font)) return;
-    fontsInUse.add(font);
+    if (font) fontsInUse.push(font);
   });
-  const legendFont = legend.attr("data-font");
-  if (legend.node().hasChildNodes() && !webSafe.includes(legendFont)) fontsInUse.add(legendFont);
-  const fonts = [...fontsInUse];
-  return fonts.length ? "https://fonts.googleapis.com/css?family=" + fonts.join("|") : null;
+  if (legend.node().hasChildNodes()) fontsInUse.push(legend.attr("data-font"));
+
+  return [...new Set(fontsInUse)];
 }
 
 // code from Kaiido's answer https://stackoverflow.com/questions/42402584/how-to-use-google-fonts-in-canvas-when-drawing-dom-objects-in-svg

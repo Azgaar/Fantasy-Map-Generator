@@ -1233,7 +1233,7 @@ function addFonts(url) {
       document.head.removeChild(s);
       return fetched;
     })
-    .catch(function () {});
+    .catch(err => ERROR && console.error(err));
 }
 
 // Update font list for Label and Burg Editors

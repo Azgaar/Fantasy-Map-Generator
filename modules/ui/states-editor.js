@@ -846,7 +846,7 @@ function editStates() {
       if (owner) {
         const name = provinces[p].name;
 
-        // if province is historical part of abouther state province, unite with old province
+        // if province is a historical part of another state's province, unite with old province
         const part = states[owner].provinces.find(n => name.includes(provinces[n].name));
         if (part) {
           provinces[p].removed = true;
