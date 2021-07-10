@@ -22,7 +22,7 @@ document.getElementById("exitCustomization").addEventListener("mousemove", showD
 /**
  * @param {string} tip Tooltip text
  * @param {boolean} main Show above other tooltips
- * @param {string} type Message type (color): error, warn, success
+ * @param {string} type Message type (color): error / warn / success
  * @param {number} time Timeout to auto hide, ms
  */
 function tip(tip = "Tip is undefined", main, type, time) {

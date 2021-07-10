@@ -10,8 +10,8 @@
     pack.features.forEach(f => {
       if (f.type !== "lake") return;
 
-      // default flux: sum of precipition around lake first cell
-      f.flux = rn(d3.sum(f.shoreline.map(c => grid.cells.prec[cells.g[c]])) / 2);
+      // default flux: sum of precipitation around lake
+      f.flux = f.shoreline.reduce((acc, c) => acc + grid.cells.prec[cells.g[c]], 0);
 
       // temperature and evaporation to detect closed lakes
       f.temp = f.cells < 6 ? grid.cells.temp[cells.g[f.firstCell]] : rn(d3.mean(f.shoreline.map(c => grid.cells.temp[cells.g[c]])), 1);
@@ -96,7 +96,6 @@
       if (feature.type !== "lake") continue;
       delete feature.river;
       delete feature.enteringFlux;
-      delete feature.shoreline;
       delete feature.outCell;
       delete feature.closed;
       feature.height = rn(feature.height, 3);
@@ -140,7 +139,7 @@
     if (feature.height > 60 && feature.cells < 10 && feature.firstCell % 10 === 0) return "lava";
 
     if (!feature.inlets && !feature.outlet) {
-      if (feature.evaporation / 2 > feature.flux) return "dry";
+      if (feature.evaporation > feature.flux * 4) return "dry";
       if (feature.cells < 3 && feature.firstCell % 10 === 0) return "sinkhole";
     }
 

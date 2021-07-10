@@ -880,30 +880,83 @@ function drawStates() {
   TIME && console.time("drawStates");
   regions.selectAll("path").remove();
 
-  const cells = pack.cells,
-    vertices = pack.vertices,
-    states = pack.states,
-    n = cells.i.length;
+  const {cells, vertices, features} = pack;
+  const states = pack.states;
+  const n = cells.i.length;
+
   const used = new Uint8Array(cells.i.length);
   const vArray = new Array(states.length); // store vertices array
-  const body = new Array(states.length).fill(""); // store path around each state
-  const gap = new Array(states.length).fill(""); // store path along water for each state to fill the gaps
+  const body = new Array(states.length).fill(""); // path around each state
+  const gap = new Array(states.length).fill(""); // path along water for each state to fill the gaps
+  const halo = new Array(states.length).fill(""); // path around states, but not lakes
+
+  // helper functions
+  const isLand = i => i[1] === "land";
+  const nextIsLand = (ar, i) => ar[i + 1]?.[1] === "land";
+  const prevIsLand = (ar, i) => ar[i - 1]?.[1] === "land";
+  const getStringPoint = v => vertices.p[v[0]].join(",");
+
+  // define inner-state lakes to omit on border render
+  const innerLakes = features.map(feature => {
+    if (feature.type !== "lake") return false;
+    if (!feature.shoreline) Lakes.getShoreline(feature);
+
+    const states = feature.shoreline.map(i => cells.state[i]);
+    return new Set(states).size > 1 ? false : true;
+  });
 
   for (const i of cells.i) {
     if (!cells.state[i] || used[i]) continue;
-    const s = cells.state[i];
-    const onborder = cells.c[i].some(n => cells.state[n] !== s);
+    const state = cells.state[i];
+
+    // if (state !== 5) continue;
+
+    const onborder = cells.c[i].some(n => cells.state[n] !== state);
     if (!onborder) continue;
 
-    const borderWith = cells.c[i].map(c => cells.state[c]).find(n => n !== s);
+    const borderWith = cells.c[i].map(c => cells.state[c]).find(n => n !== state);
     const vertex = cells.v[i].find(v => vertices.c[v].some(i => cells.state[i] === borderWith));
-    const chain = connectVertices(vertex, s, borderWith);
+    const chain = connectVertices(vertex, state);
     if (chain.length < 3) continue;
-    const points = chain.map(v => vertices.p[v[0]]);
-    if (!vArray[s]) vArray[s] = [];
-    vArray[s].push(points);
-    body[s] += "M" + points.join("L");
-    gap[s] += "M" + vertices.p[chain[0][0]] + chain.reduce((r, v, i, d) => (!i ? r : !v[2] ? r + "L" + vertices.p[v[0]] : d[i + 1] && !d[i + 1][2] ? r + "M" + vertices.p[v[0]] : r), "");
+
+    // get path around state
+    const points = chain.filter(v => v[1] !== "innerLake").map(v => vertices.p[v[0]]);
+    if (!vArray[state]) vArray[state] = [];
+
+    if (points.length) {
+      vArray[state].push(points);
+      body[state] += "M" + points.join("L");
+    }
+
+    // connect path for halo
+    let discontinued = true;
+    halo[state] += chain
+      .map((v, i) => {
+        if (isLand(v) || nextIsLand(chain, i) || prevIsLand(chain, i)) {
+          const operation = discontinued ? "M" : "L";
+          discontinued = false;
+          return `${operation}${getStringPoint(v)}`;
+        }
+
+        discontinued = true;
+        return "";
+      })
+      .join("");
+
+    // connect gaps between state and water into a single path
+    discontinued = true;
+    gap[state] += chain
+      .map(v => {
+        if (isLand(v)) {
+          discontinued = true;
+          return "";
+        }
+
+        const operation = discontinued ? "M" : "L";
+        discontinued = false;
+        return `${operation}${getStringPoint(v)}`;
+      })
+      .join("");
   }
 
   // find state visual center
@@ -912,54 +965,56 @@ function drawStates() {
     states[i].pole = polylabel(sorted, 1.0); // pole of inaccessibility
   });
 
-  const bodyData = body.map((p, i) => [p.length > 10 ? p : null, i, states[i].color]).filter(d => d[0]);
-  const gapData = gap.map((p, i) => [p.length > 10 ? p : null, i, states[i].color]).filter(d => d[0]);
+  const bodyData = body.map((p, s) => [p.length > 10 ? p : null, s, states[s].color]).filter(d => d[0]);
+  const gapData = gap.map((p, s) => [p.length > 10 ? p : null, s, states[s].color]).filter(d => d[0]);
+  const haloData = halo.map((p, s) => [p.length > 10 ? p : null, s, states[s].color]).filter(d => d[0]);
 
   const bodyString = bodyData.map(d => `<path id="state${d[1]}" d="${d[0]}" fill="${d[2]}" stroke="none"/>`).join("");
   const gapString = gapData.map(d => `<path id="state-gap${d[1]}" d="${d[0]}" fill="none" stroke="${d[2]}"/>`).join("");
   const clipString = bodyData.map(d => `<clipPath id="state-clip${d[1]}"><use href="#state${d[1]}"/></clipPath>`).join("");
-  const haloString = bodyData.map(d => `<path id="state-border${d[1]}" d="${d[0]}" clip-path="url(#state-clip${d[1]})" stroke="${d3.color(d[2]) ? d3.color(d[2]).darker().hex() : "#666666"}"/>`).join("");
+  const haloString = haloData.map(d => `<path id="state-border${d[1]}" d="${d[0]}" clip-path="url(#state-clip${d[1]})" stroke="${d3.color(d[2]) ? d3.color(d[2]).darker().hex() : "#666666"}"/>`).join("");
 
   statesBody.html(bodyString + gapString);
   defs.select("#statePaths").html(clipString);
   statesHalo.html(haloString);
 
   // connect vertices to chain
-  function connectVertices(start, t, state) {
+  function connectVertices(start, state) {
     const chain = []; // vertices chain to form a path
-    let land = vertices.c[start].some(c => cells.h[c] >= 20 && cells.state[c] !== t);
-    function check(i) {
-      state = cells.state[i];
-      land = cells.h[i] >= 20;
-    }
+    const getType = c => {
+      const waterCell = c.find(i => cells.h[i] < 20);
+      if (!waterCell) return "land";
+      if (innerLakes[cells.f[waterCell]]) return "innerLake";
+      return features[cells.f[waterCell]].type;
+    };
 
     for (let i = 0, current = start; i === 0 || (current !== start && i < 20000); i++) {
-      const prev = chain[chain.length - 1] ? chain[chain.length - 1][0] : -1; // previous vertex in chain
-      chain.push([current, state, land]); // add current vertex to sequence
+      const prev = chain.length ? chain[chain.length - 1][0] : -1; // previous vertex in chain
+
       const c = vertices.c[current]; // cells adjacent to vertex
-      c.filter(c => cells.state[c] === t).forEach(c => (used[c] = 1));
-      const c0 = c[0] >= n || cells.state[c[0]] !== t;
-      const c1 = c[1] >= n || cells.state[c[1]] !== t;
-      const c2 = c[2] >= n || cells.state[c[2]] !== t;
+      chain.push([current, getType(c)]); // add current vertex to sequence
+
+      c.filter(c => cells.state[c] === state).forEach(c => (used[c] = 1));
+      const c0 = c[0] >= n || cells.state[c[0]] !== state;
+      const c1 = c[1] >= n || cells.state[c[1]] !== state;
+      const c2 = c[2] >= n || cells.state[c[2]] !== state;
+
       const v = vertices.v[current]; // neighboring vertices
-      if (v[0] !== prev && c0 !== c1) {
-        current = v[0];
-        check(c0 ? c[0] : c[1]);
-      } else if (v[1] !== prev && c1 !== c2) {
-        current = v[1];
-        check(c1 ? c[1] : c[2]);
-      } else if (v[2] !== prev && c0 !== c2) {
-        current = v[2];
-        check(c2 ? c[2] : c[0]);
-      }
-      if (current === chain[chain.length - 1][0]) {
+
+      if (v[0] !== prev && c0 !== c1) current = v[0];
+      else if (v[1] !== prev && c1 !== c2) current = v[1];
+      else if (v[2] !== prev && c0 !== c2) current = v[2];
+
+      if (current === prev) {
         ERROR && console.error("Next vertex is not found");
         break;
       }
     }
-    chain.push([start, state, land]); // add starting vertex to sequence to close the path
+
+    if (chain.length) chain.push(chain[0]);
     return chain;
   }
+
   invokeActiveZooming();
   TIME && console.timeEnd("drawStates");
 }

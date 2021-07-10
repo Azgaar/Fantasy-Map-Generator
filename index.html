@@ -322,6 +322,7 @@
           <option value="styleAncient" data-system=1>Ancient</option>
           <option value="styleGloom" data-system=1>Gloom</option>
           <option value="styleClean" data-system=1>Clean</option>
+          <option value="styleWatercolor" data-system=1>Watercolor</option>
           <option value="styleMonochrome" data-system=1>Monochrome (for heightmap)</option>
         </select>
         <button id="addStyleButton" data-tip="Click to save current style as a new preset" class="icon-plus styleButton" style="display: inline-block" onclick="addStylePreset()"></button>
@@ -363,16 +364,15 @@
           <option value="compass">Wind Rose</option>
           <option value="zones">Zones</option>
         </select>
-        <!-- <button id="restoreStyle" data-tip="Click to restore default style for all elements" class="icon-ccw styleButton" onclick="askToRestoreDefaultStyle()"></button> -->
 
         <table id="styleElements">
-          <caption id="styleIsOff" data-tip="The selected layer is not visible. See the buttons above to toggle it on">Please ensure the element is toggled on!</caption>
+          <caption id="styleIsOff" data-tip="The selected layer is not visible. Toogle it on to see style changes effect">Ensure the element visibility is toggled on!</caption>
 
           <tbody id="styleGroup">
             <tr data-tip="Select element group">
               <td><b>Group</b></td>
               <td>
-                <select id="styleGroupSelect"><option value="regions">regions</option></select>
+                <select id="styleGroupSelect"></select>
               </td>
             </tr>
           </tbody>
@@ -383,24 +383,6 @@
               <td>
                 <input id="styleOpacityInput" type="range" min=0 max=1 step=0.01 value=.4>
                 <output id="styleOpacityOutput">0.4</output>
-              </td>
-            </tr>
-          </tbody>
-
-          <tbody id="styleStates" style="display: block">
-            <tr data-tip="Set states halo effect width">
-              <td>Halo width</td>
-              <td>
-                <input id="styleStatesHaloWidth" type="range" min=0 max=30 step=.1 value=10>
-                <output id="styleStatesHaloWidthOutput">10</output>
-              </td>
-            </tr>
-
-            <tr data-tip="Set states halo effect opacity. 0: invisible, 1: solid">
-              <td>Halo opacity</td>
-              <td>
-                <input id="styleStatesHaloOpacity" type="range" min=0 max=1 step=0.01 value=1>
-                <output id="styleStatesHaloOpacityOutput">1</output>
               </td>
             </tr>
           </tbody>
@@ -753,6 +735,40 @@
               <td>
                 <input id="styleTemperatureFillInput" type="color"/>
                 <output id="styleTemperatureFillOutput">#000</output>
+              </td>
+            </tr>
+          </tbody>
+
+          <tbody id="styleStates" style="display: block">
+            <tr data-tip="Set states fill opacity. 0: invisible, 1: solid">
+              <td>Body opacity</td>
+              <td>
+                <input id="styleStatesBodyOpacity" type="range" min=0 max=1 step=0.01>
+                <output id="styleStatesBodyOpacityOutput"></output>
+              </td>
+            </tr>
+
+            <tr data-tip="Set states halo effect width">
+              <td>Halo width</td>
+              <td>
+                <input id="styleStatesHaloWidth" type="range" min=0 max=30 step=.1 value=10>
+                <output id="styleStatesHaloWidthOutput">10</output>
+              </td>
+            </tr>
+
+            <tr data-tip="Set states halo effect opacity. 0: invisible, 1: solid">
+              <td>Halo opacity</td>
+              <td>
+                <input id="styleStatesHaloOpacity" type="range" min=0 max=1 step=0.01 value=1>
+                <output id="styleStatesHaloOpacityOutput">1</output>
+              </td>
+            </tr>
+
+            <tr data-tip="Select halo effect power (blur). Set to 0 to make it solid line">
+              <td>Halo blur</td>
+              <td>
+                <input id="styleStatesHaloBlur" type="range" min=0 max=10 step=0.01 value=4>
+                <output id="styleStatesHaloBlurOutput">4</output>
               </td>
             </tr>
           </tbody>

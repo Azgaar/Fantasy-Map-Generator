@@ -681,7 +681,7 @@ function parseLoadedData(data) {
       }
 
       if (version < 1.63) {
-        // v.1.63 change ocean pattern opacity element
+        // v.1.63 changed ocean pattern opacity element
         const oceanPattern = document.getElementById("oceanPattern");
         if (oceanPattern) oceanPattern.removeAttribute("opacity");
         const oceanicPattern = document.getElementById("oceanicPattern");
@@ -692,6 +692,14 @@ function parseLoadedData(data) {
         burgLabels.select("#towns").style("text-shadow", "white 0 0 4px");
         labels.select("#states").style("text-shadow", "white 0 0 4px");
         labels.select("#addedLabels").style("text-shadow", "white 0 0 4px");
+      }
+
+      if (version < 1.64) {
+        // v.1.64 change states style
+        const bodyOpacity = regions.attr("opacity");
+        statesBody.attr("opacity", bodyOpacity);
+        statesHalo.attr("opacity", bodyOpacity).attr("filter", "blur(5px)");
+        regions.removeAttribute("opacity");
       }
     })();
 

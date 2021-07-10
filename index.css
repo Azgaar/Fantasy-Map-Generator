@@ -171,9 +171,16 @@ a {
 
 #statesBody,
 #provincesBody {
-  stroke-width: 2;
+  stroke-width: 3;
+  stroke-linejoin: round;
   fill-rule: evenodd;
   mask: url(#land);
+}
+
+#statesHalo {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 #relig,
@@ -181,11 +188,6 @@ a {
 #cults {
   fill-rule: evenodd;
   mask: url(#land);
-}
-
-#statesHalo {
-  fill: none;
-  filter: url(#blur5);
 }
 
 #borders {

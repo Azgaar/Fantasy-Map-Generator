@@ -2,7 +2,7 @@
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 "use strict";
-const version = "1.63"; // generator version
+const version = "1.64"; // generator version
 document.title += " v" + version;
 
 // Switches to disable/enable logging features
@@ -506,13 +506,14 @@ function invokeActiveZooming() {
 
   // change states halo width
   if (!customization) {
-    const haloSize = rn(statesHalo.attr("data-width") / scale, 1);
-    statesHalo.attr("stroke-width", haloSize).style("display", haloSize > 3 ? "block" : "none");
+    const desired = +statesHalo.attr("data-width");
+    const haloSize = rn(desired / scale ** 0.8, 2);
+    statesHalo.attr("stroke-width", haloSize).style("display", haloSize > 0.1 ? "block" : "none");
   }
 
   // rescale map markers
   if (+markers.attr("rescale") && markers.style("display") !== "none") {
-    markers.selectAll("use").each(function (d) {
+    markers.selectAll("use").each(function () {
       const x = +this.dataset.x,
         y = +this.dataset.y,
         desired = +this.dataset.size;
