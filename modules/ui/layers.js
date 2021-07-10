@@ -890,10 +890,6 @@ function drawStates() {
   const gap = new Array(states.length).fill(""); // path along water for each state to fill the gaps
   const halo = new Array(states.length).fill(""); // path around states, but not lakes
 
-  // helper functions
-  const isLand = i => i[1] === "land";
-  const nextIsLand = (ar, i) => ar[i + 1]?.[1] === "land";
-  const prevIsLand = (ar, i) => ar[i - 1]?.[1] === "land";
   const getStringPoint = v => vertices.p[v[0]].join(",");
 
   // define inner-state lakes to omit on border render
@@ -909,37 +905,34 @@ function drawStates() {
     if (!cells.state[i] || used[i]) continue;
     const state = cells.state[i];
 
-    // if (state !== 5) continue;
-
     const onborder = cells.c[i].some(n => cells.state[n] !== state);
     if (!onborder) continue;
 
     const borderWith = cells.c[i].map(c => cells.state[c]).find(n => n !== state);
     const vertex = cells.v[i].find(v => vertices.c[v].some(i => cells.state[i] === borderWith));
     const chain = connectVertices(vertex, state);
-    if (chain.length < 3) continue;
 
-    // get path around state
-    const points = chain.filter(v => v[1] !== "innerLake").map(v => vertices.p[v[0]]);
+    const noInnerLakes = chain.filter(v => v[1] !== "innerLake");
+    if (noInnerLakes.length < 3) continue;
+
+    // get path around the state
     if (!vArray[state]) vArray[state] = [];
-
-    if (points.length) {
-      vArray[state].push(points);
-      body[state] += "M" + points.join("L");
-    }
+    const points = noInnerLakes.map(v => vertices.p[v[0]]);
+    vArray[state].push(points);
+    body[state] += "M" + points.join("L");
 
     // connect path for halo
     let discontinued = true;
-    halo[state] += chain
-      .map((v, i) => {
-        if (isLand(v) || nextIsLand(chain, i) || prevIsLand(chain, i)) {
-          const operation = discontinued ? "M" : "L";
-          discontinued = false;
-          return `${operation}${getStringPoint(v)}`;
+    halo[state] += noInnerLakes
+      .map(v => {
+        if (v[1] === "border") {
+          discontinued = true;
+          return "";
         }
 
-        discontinued = true;
-        return "";
+        const operation = discontinued ? "M" : "L";
+        discontinued = false;
+        return `${operation}${getStringPoint(v)}`;
       })
       .join("");
 
@@ -947,7 +940,7 @@ function drawStates() {
     discontinued = true;
     gap[state] += chain
       .map(v => {
-        if (isLand(v)) {
+        if (v[1] === "land") {
           discontinued = true;
           return "";
         }
@@ -982,6 +975,9 @@ function drawStates() {
   function connectVertices(start, state) {
     const chain = []; // vertices chain to form a path
     const getType = c => {
+      const borderCell = c.find(i => cells.b[i]);
+      if (borderCell) return "border";
+
       const waterCell = c.find(i => cells.h[i] < 20);
       if (!waterCell) return "land";
       if (innerLakes[cells.f[waterCell]]) return "innerLake";
