@@ -827,18 +827,15 @@ function editStates() {
   }
 
   function adjustProvinces(affectedProvinces) {
-    const cells = pack.cells,
-      provinces = pack.provinces,
-      states = pack.states;
+    const {cells, provinces, states} = pack;
     const form = {Zone: 1, Area: 1, Territory: 2, Province: 1};
 
     affectedProvinces.forEach(p => {
-      // do nothing if neutral lands are captured
-      if (!p) return;
+      if (!p) return; // do nothing if neutral lands are captured
+      const old = provinces[p].state;
 
       // remove province from state provinces list
-      const old = provinces[p].state;
-      if (states[old].provinces.includes(p)) states[old].provinces.splice(states[old].provinces.indexOf(p), 1);
+      if (states[old]?.provinces?.includes(p)) states[old].provinces.splice(states[old].provinces.indexOf(p), 1);
 
       // find states owning at least 1 province cell
       const provCells = cells.i.filter(i => cells.province[i] === p);
