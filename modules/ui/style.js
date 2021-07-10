@@ -52,8 +52,8 @@ function selectStyleElement() {
   // active group element
   const group = styleGroupSelect.value;
   if (["routes", "labels", "coastline", "lakes", "anchors", "burgIcons", "borders"].includes(sel)) {
-    const gEl = el.select("#" + group);
-    el = gEl.size() ? gEl : el.select("g");
+    const gEl = group && el.select("#" + group);
+    el = group && gEl.size() ? gEl : el.select("g");
   }
 
   // opacity
