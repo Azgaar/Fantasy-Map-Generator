@@ -45,36 +45,36 @@
     xmlns:svg="http://www.w3.org/2000/svg">
     <defs>
       <g id="filters">
-        <filter id="blurFilter" x="-1" y="-1" width="100" height="100">
+        <filter id="blurFilter" name="Blur 0.2" x="-1" y="-1" width="100" height="100">
           <feGaussianBlur in="SourceGraphic" stdDeviation="0.2"/>
         </filter>
-        <filter id="blur1" x="-1" y="-1" width="100" height="100">
+        <filter id="blur1" name="Blur 1" x="-1" y="-1" width="100" height="100">
           <feGaussianBlur in="SourceGraphic" stdDeviation="1"/>
         </filter>
-        <filter id="blur3" x="-1" y="-1" width="100" height="100">
+        <filter id="blur3" name="Blur 3" x="-1" y="-1" width="100" height="100">
           <feGaussianBlur in="SourceGraphic" stdDeviation="3"/>
         </filter>
-        <filter id="blur5" x="-1" y="-1" width="100" height="100">
+        <filter id="blur5" name="Blur 5" x="-1" y="-1" width="100" height="100">
           <feGaussianBlur in="SourceGraphic" stdDeviation="5"/>
         </filter>
-        <filter id="blur7" x="-1" y="-1" width="100" height="100">
+        <filter id="blur7" name="Blur 7" x="-1" y="-1" width="100" height="100">
           <feGaussianBlur in="SourceGraphic" stdDeviation="7"/>
         </filter>
-        <filter id="blur10" x="-1" y="-1" width="100" height="100">
+        <filter id="blur10" name="Blur 10" x="-1" y="-1" width="100" height="100">
           <feGaussianBlur in="SourceGraphic" stdDeviation="10"/>
         </filter>
-        <filter id="splotch">
+        <filter id="splotch" name="Splotch">
           <feTurbulence type="fractalNoise" baseFrequency=".01" numOctaves="4"/>
           <feColorMatrix values="0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 -0.9 1.2" result="texture"/>
           <feComposite in="SourceGraphic" in2="texture" operator="in"/>
         </filter>
-        <filter id="bluredSplotch">
+        <filter id="bluredSplotch" name="Blurred Splotch">
           <feTurbulence type="fractalNoise" baseFrequency=".01" numOctaves="4"/>
           <feColorMatrix values="0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 -0.9 1.2" result="texture"/>
           <feComposite in="SourceGraphic" in2="texture" operator="in"/>
           <feGaussianBlur stdDeviation="4"/>
         </filter>
-        <filter id="dropShadow">
+        <filter id="dropShadow" name="Shadow 2">
           <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
           <feOffset dx="1" dy="2"/>
           <feMerge>
@@ -82,7 +82,7 @@
               <feMergeNode in="SourceGraphic"/>
           </feMerge>
         </filter>
-        <filter id="dropShadow01">
+        <filter id="dropShadow01" name="Shadow 0.1">
           <feGaussianBlur in="SourceAlpha" stdDeviation=".1"/>
           <feOffset dx=".2" dy=".3"/>
           <feMerge>
@@ -90,7 +90,7 @@
               <feMergeNode in="SourceGraphic"/>
           </feMerge>
         </filter>
-        <filter id="dropShadow05">
+        <filter id="dropShadow05" name="Shadow 0.5">
           <feGaussianBlur in="SourceAlpha" stdDeviation=".5"/>
           <feOffset dx=".5" dy=".7"/>
           <feMerge>
@@ -98,23 +98,23 @@
               <feMergeNode in="SourceGraphic"/>
           </feMerge>
         </filter>
-        <filter id="outline">
+        <filter id="outline" name="Outline">
           <feGaussianBlur in="SourceAlpha" stdDeviation="1"/>
           <feMerge>
               <feMergeNode/>
               <feMergeNode in="SourceGraphic"/>
           </feMerge>
         </filter>
-        <filter id="pencil">
+        <filter id="pencil" name="Pencil">
           <feTurbulence baseFrequency="0.03" numOctaves="6" type="fractalNoise"/>
           <feDisplacementMap scale="3" in="SourceGraphic" xChannelSelector="R" yChannelSelector="G"/>
         </filter>
-        <filter id="turbulence">
+        <filter id="turbulence" name="Turbulence">
           <feTurbulence baseFrequency="0.1" numOctaves="3" type="fractalNoise"/>
           <feDisplacementMap scale="10" in="SourceGraphic" xChannelSelector="R" yChannelSelector="G"/>
         </filter>
 
-        <filter id="paper" x="-20%" y="-20%" width="140%" height="140%" filterUnits="objectBoundingBox" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+        <filter id="paper" name="Paper" x="-20%" y="-20%" width="140%" height="140%" filterUnits="objectBoundingBox" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
           <feGaussianBlur stdDeviation="1 1" x="0%" y="0%" width="100%" height="100%" in="SourceGraphic" edgeMode="none" result="blur"/>
           <feTurbulence type="fractalNoise" baseFrequency="0.05 0.05" numOctaves="4" seed="1" stitchTiles="stitch" result="turbulence"/>
           <feDiffuseLighting surfaceScale="2" diffuseConstant="1" lighting-color="#707070" in="turbulence" result="diffuseLighting">
@@ -124,7 +124,7 @@
           <feComposite in="composite" in2="SourceGraphic" operator="in" x="0%" y="0%" width="100%" height="100%" result="composite1"/>
         </filter>
 
-        <filter id="crumpled" x="-20%" y="-20%" width="140%" height="140%" filterUnits="objectBoundingBox" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+        <filter id="crumpled" name="Crumpled" x="-20%" y="-20%" width="140%" height="140%" filterUnits="objectBoundingBox" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
           <feGaussianBlur stdDeviation="2 2" x="0%" y="0%" width="100%" height="100%" in="SourceGraphic" edgeMode="none" result="blur"/>
           <feTurbulence type="turbulence" baseFrequency="0.05 0.05" numOctaves="4" seed="1" stitchTiles="stitch" result="turbulence"/>
           <feDiffuseLighting surfaceScale="2" diffuseConstant="1" lighting-color="#828282" in="turbulence" result="diffuseLighting">
@@ -134,16 +134,16 @@
           <feComposite in="composite" in2="SourceGraphic" operator="in" x="0%" y="0%" width="100%" height="100%" result="composite1"/>
         </filter>
 
-        <filter id="filter-grayscale">
+        <filter id="filter-grayscale" name="Grayscale">
           <feColorMatrix values="0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0 0 0 1 0"/>
         </filter>
-        <filter id="filter-sepia">
+        <filter id="filter-sepia" name="Sepia">
           <feColorMatrix values="0.393 0.769 0.189 0 0 0.349 0.686 0.168 0 0 0.272 0.534 0.131 0 0 0 0 0 1 0"/>
         </filter>
-        <filter id="filter-dingy">
+        <filter id="filter-dingy" name="Dingy">
           <feColorMatrix values="1 0 0 0 0 0 1 0 0 0 0 0.3 0.3 0 0 0 0 0 1 0"></feColorMatrix>
         </filter>
-        <filter id="filter-tint">
+        <filter id="filter-tint" name="Tint">
           <feColorMatrix values="1.1 0 0 0 0  0 1.1 0 0 0  0 0 0.9 0 0  0 0 0 1 0"></feColorMatrix>
         </filter>
       </g>
@@ -748,6 +748,11 @@
               </td>
             </tr>
 
+            <tr data-tip="Select filter for states fill. Please note filters may cause performance issues!">
+              <td>Body filter</td>
+              <td><select id="styleStatesBodyFilter"/></td>
+            </tr>
+
             <tr data-tip="Set states halo effect width">
               <td>Halo width</td>
               <td>
@@ -871,29 +876,7 @@
           <tbody id="styleFilter" style="display: block">
             <tr data-tip="Select filter for element. Please note filters may cause performance issues!">
               <td>Filter</td>
-              <td>
-                <select id="styleFilterInput">
-                  <option value="" selected>None</option>
-                  <option value="url(#blurFilter)">Blur 0.2</option>
-                  <option value="url(#blur1)">Blur 1</option>
-                  <option value="url(#blur3)">Blur 3</option>
-                  <option value="url(#blur5)">Blur 5</option>
-                  <option value="url(#blur7)">Blur 7</option>
-                  <option value="url(#blur10)">Blur 10</option>
-                  <option value="url(#splotch)">Splotch</option>
-                  <option value="url(#bluredSplotch)">Blurred Splotch</option>
-                  <option value="url(#dropShadow01)">Shadow 0.1</option>
-                  <option value="url(#dropShadow05)">Shadow 0.5</option>
-                  <option value="url(#dropShadow)">Shadow 2</option>
-                  <option value="url(#outline)">Outline</option>
-                  <option value="url(#pencil)">Pencil</option>
-                  <option value="url(#turbulence)">Turbulence</option>
-                  <option value="url(#paper)">Paper</option>
-                  <option value="url(#crumpled)">Crumpled</option>
-                  <option value="url(#filter-grayscale)">Grayscale</option>
-                  <option value="url(#filter-sepia)">Sepia</option>
-                </select>
-              </td>
+              <td><select id="styleFilterInput"/></td>
             </tr>
           </tbody>
 

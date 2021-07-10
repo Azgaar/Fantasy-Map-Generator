@@ -696,10 +696,11 @@ function parseLoadedData(data) {
 
       if (version < 1.64) {
         // v.1.64 change states style
-        const bodyOpacity = regions.attr("opacity");
-        statesBody.attr("opacity", bodyOpacity);
-        statesHalo.attr("opacity", bodyOpacity).attr("filter", "blur(5px)");
-        regions.removeAttribute("opacity");
+        const opacity = regions.attr("opacity");
+        const filter = regions.attr("filter");
+        statesBody.attr("opacity", opacity).attr("filter", filter);
+        statesHalo.attr("opacity", opacity).attr("filter", "blur(5px)");
+        regions.attr("opacity", null).attr("filter", null);
       }
     })();
 
