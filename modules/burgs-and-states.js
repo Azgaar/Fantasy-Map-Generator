@@ -966,11 +966,11 @@
       if (isTheocracy) s.form = "Theocracy";
       else if (isAnarchy) s.form = "Anarchy";
       else s.form = s.type === "Naval" ? rw(naval) : rw(generic);
-      s.formName = selectForm(s);
+      s.formName = selectForm(s, tier);
       s.fullName = getFullName(s);
     }
 
-    function selectForm(s) {
+    function selectForm(s, tier) {
       const base = pack.cultures[s.culture].base;
 
       if (s.form === "Monarchy") {
