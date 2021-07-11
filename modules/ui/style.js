@@ -965,6 +965,8 @@ function addStylePreset() {
     position: {my: "center", at: "center", of: "svg"}
   });
 
+  const currentStyle = document.getElementById("stylePreset").selectedOptions[0].text;
+  document.getElementById("styleSaverName").value = currentStyle;
   styleSaverJSON.value = JSON.stringify(getStyle(), null, 2);
   checkName();
 
@@ -1075,22 +1077,11 @@ function addStylePreset() {
   }
 
   function saveStyle() {
-    if (!styleSaverJSON.value) {
-      tip("Please provide a style JSON", false, "error");
-      return;
-    }
-    if (!JSON.isValid(styleSaverJSON.value)) {
-      tip("JSON string is not valid, please check the format", false, "error");
-      return;
-    }
-    if (!styleSaverName.value) {
-      tip("Please provide a preset name", false, "error");
-      return;
-    }
-    if (styleSaverTip.innerHTML === "default") {
-      tip("You cannot overwrite default preset, please change the name", false, "error");
-      return;
-    }
+    if (!styleSaverJSON.value) return tip("Please provide a style JSON", false, "error");
+    if (!JSON.isValid(styleSaverJSON.value)) return tip("JSON string is not valid, please check the format", false, "error");
+    if (!styleSaverName.value) return tip("Please provide a preset name", false, "error");
+    if (styleSaverTip.innerHTML === "default") return tip("You cannot overwrite default preset, please change the name", false, "error");
+
     const preset = "style" + styleSaverName.value;
     applyOption(stylePreset, preset, styleSaverName.value); // add option
     localStorage.setItem("presetStyle", preset); // mark preset as default
@@ -1101,41 +1092,25 @@ function addStylePreset() {
   }
 
   function styleDownload() {
-    if (!styleSaverJSON.value) {
-      tip("Please provide a style JSON", false, "error");
-      return;
-    }
-    if (!JSON.isValid(styleSaverJSON.value)) {
-      tip("JSON string is not valid, please check the format", false, "error");
-      return;
-    }
-    if (!styleSaverName.value) {
-      tip("Please provide a preset name", false, "error");
-      return;
-    }
+    if (!styleSaverJSON.value) return tip("Please provide a style JSON", false, "error");
+    if (!JSON.isValid(styleSaverJSON.value)) return tip("JSON string is not valid, please check the format", false, "error");
+    if (!styleSaverName.value) return tip("Please provide a preset name", false, "error");
+
     const data = styleSaverJSON.value;
-    if (!data) {
-      tip("Please provide a style JSON", false, "error");
-      return;
-    }
+    if (!data) return tip("Please provide a style JSON", false, "error");
     downloadFile(data, "style" + styleSaverName.value + ".json", "application/json");
   }
 
   function styleUpload(dataLoaded) {
-    if (!dataLoaded) {
-      tip("Cannot load the file. Please check the data format", false, "error");
-      return;
-    }
+    if (!dataLoaded) return tip("Cannot load the file. Please check the data format", false, "error");
     const data = JSON.stringify(JSON.parse(dataLoaded), null, 2);
     styleSaverJSON.value = data;
   }
 }
 
 function removeStylePreset() {
-  if (stylePreset.selectedOptions[0].dataset.system) {
-    tip("Cannot remove system preset", false, "error");
-    return;
-  }
+  if (stylePreset.selectedOptions[0].dataset.system) return tip("Cannot remove system preset", false, "error");
+
   localStorage.removeItem("presetStyle");
   localStorage.removeItem(stylePreset.value);
   stylePreset.selectedOptions[0].remove();
@@ -1148,10 +1123,8 @@ function applyMapFilter(event) {
   if (event.target.tagName !== "BUTTON") return;
   const button = event.target;
   svg.attr("data-filter", null).attr("filter", null);
-  if (button.classList.contains("pressed")) {
-    button.classList.remove("pressed");
-    return;
-  }
+  if (button.classList.contains("pressed")) return button.classList.remove("pressed");
+
   mapFilters.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
   button.classList.add("pressed");
   svg.attr("data-filter", button.id).attr("filter", "url(#filter-" + button.id + ")");
@@ -1179,23 +1152,17 @@ function loadDefaultFonts() {
 
 function fetchFonts(url) {
   return new Promise((resolve, reject) => {
-    if (url === "") {
-      tip("Use a direct link to any @font-face declaration or just font name to fetch from Google Fonts");
-      return;
-    }
+    if (url === "") return tip("Use a direct link to any @font-face declaration or just font name to fetch from Google Fonts");
+
     if (url.indexOf("http") === -1) {
       url = url.replace(url.charAt(0), url.charAt(0).toUpperCase()).split(" ").join("+");
       url = "https://fonts.googleapis.com/css?family=" + url;
     }
-    const fetched = addFonts(url).then(fetched => {
-      if (fetched === undefined) {
-        tip("Cannot fetch font for this value!", false, "error");
-        return;
-      }
-      if (fetched === 0) {
-        tip("Already in the fonts list!", false, "error");
-        return;
-      }
+
+    addFonts(url).then(fetched => {
+      if (fetched === undefined) return tip("Cannot fetch font for this value!", false, "error");
+      if (fetched === 0) return tip("Already in the fonts list!", false, "error");
+
       updateFontOptions();
       if (fetched === 1) {
         tip("Font " + fonts[fonts.length - 1] + " is fetched");
