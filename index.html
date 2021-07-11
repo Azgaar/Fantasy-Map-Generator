@@ -579,7 +579,7 @@
           </tbody>
 
           <tbody id="styleRelief">
-              <tr data-tip="Select set of relief icons. The change will trigger icons regeneration">
+              <tr data-tip="Select set of relief icons. All relief icons will be regenerated">
                   <td>Style</td>
                   <td>
                     <select id="styleReliefSet">
@@ -590,15 +590,15 @@
                   </td>
                 </tr>
 
-            <tr data-tip="Define the size of relief icons">
+            <tr data-tip="Define the size of relief icons. All relief icons will be regenerated">
               <td>Size</td>
               <td>
-                <input id="styleReliefSizeInput" data-stored="reliefSize" type="range" min=.2 max=3 step=.01 value=1>
-                <output id="styleReliefSizeOutput">1</output>
+                <input id="styleReliefSizeInput" data-stored="reliefSize" type="range" min=.2 max=4 step=.01>
+                <output id="styleReliefSizeOutput"></output>
               </td>
             </tr>
 
-            <tr data-tip="Define the density of relief icons. Highly affects performance!">
+            <tr data-tip="Define the density of relief icons. All relief icons will be regenerated. Highly affects performance!">
               <td>Density</td>
               <td>
                 <input id="styleReliefDensityInput" data-stored="reliefDensity" type="range" min=.3 max=.8 step=.01 value=.4>
@@ -848,21 +848,21 @@
             <tr data-tip="Set state emblems size multiplier">
               <td>State Size</td>
               <td>
-                <input id="styleEmblemsStateSizeInput" data-stored="styleEmblemsStateSize" type="number" min=0 max=5 step=.02 value=1 />
+                <input id="emblemsStateSizeInput" data-stored="emblemsStateSize" type="number" min=0 max=5 step=.02 value=1 />
               </td>
             </tr>
 
             <tr data-tip="Set province emblems size multiplier">
               <td>Province Size</td>
               <td>
-                <input id="styleEmblemsProvinceSizeInput" data-stored="styleEmblemsProvinceSize" type="number" min=0 max=5 step=.02 value=1 />
+                <input id="emblemsProvinceSizeInput" data-stored="emblemsProvinceSize" type="number" min=0 max=5 step=.02 value=1 />
               </td>
             </tr>
 
             <tr data-tip="Set burg emblems size multiplier">
               <td>Burg Size</td>
               <td>
-                <input id="styleEmblemsBurgSizeInput" data-stored="styleEmblemsBurgSize" type="number" min=0 max=5 step=.02 value=1 />
+                <input id="emblemsBurgSizeInput" data-stored="emblemsBurgSize" type="number" min=0 max=5 step=.02 value=1 />
               </td>
             </tr>
 
