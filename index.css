@@ -2013,10 +2013,6 @@ svg.button {
   width: 16em;
 }
 
-#reliefEditor input[type="number"] {
-  width: 3em;
-}
-
 #reliefIconsDiv {
   margin-top: 2px;
   padding: 2px;
