@@ -141,6 +141,7 @@ function parseLoadedData(data) {
       if (settings[19]) options = JSON.parse(settings[19]);
       if (settings[20]) mapName.value = settings[20];
       if (settings[21]) hideLabels.checked = +settings[21];
+      if (settings[22]) stylePreset.value = +settings[22];
     })();
 
     void (function parseConfiguration() {
