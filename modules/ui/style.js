@@ -568,13 +568,13 @@ styleFontSize.addEventListener("change", function () {
 });
 
 styleFontPlus.addEventListener("click", function () {
-  const size = Math.max(rn(getEl().attr("data-size") * 1.1, 2), 1);
-  changeFontSize(size);
+  const size = +getEl().attr("data-size") + 1;
+  changeFontSize(Math.min(size, 999));
 });
 
 styleFontMinus.addEventListener("click", function () {
-  const size = Math.max(rn(getEl().attr("data-size") * 0.9, 2), 1);
-  changeFontSize(size);
+  const size = +getEl().attr("data-size") - 1;
+  changeFontSize(Math.max(size, 1));
 });
 
 function changeFontSize(size) {
