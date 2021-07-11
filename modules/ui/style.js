@@ -578,13 +578,21 @@ styleFontMinus.addEventListener("click", function () {
 });
 
 function changeFontSize(size) {
-  const legend = styleElementSelect.value === "legend";
-  const coords = styleElementSelect.value === "coordinates";
-
-  const desSize = legend ? size : coords ? rn(size / scale ** 0.8, 2) : rn(size + size / scale);
-  getEl().attr("data-size", size).attr("font-size", desSize);
   styleFontSize.value = size;
-  if (legend) redrawLegend();
+
+  const getSizeOnScale = element => {
+    // some labels are rescaled on zoom
+    if (element === "labels") return Math.max(rn((size + size / scale) / 2, 2), 1);
+    if (element === "coordinates") return rn(size / scale ** 0.8, 2);
+
+    // other has the same size
+    return size;
+  };
+
+  const scaleSize = getSizeOnScale(styleElementSelect.value);
+  getEl().attr("data-size", size).attr("font-size", scaleSize);
+
+  if (styleElementSelect.value === "legend") redrawLegend();
 }
 
 styleRadiusInput.addEventListener("change", function () {
