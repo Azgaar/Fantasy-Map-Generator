@@ -221,14 +221,7 @@ function parseLoadedData(data) {
       burgLabels = labels.select("#burgLabels");
     })();
 
-    void (function loadUsedFonts() {
-      const fontsInUse = getFontsList(svg);
-      const fontsToLoad = fontsInUse.filter(font => !fonts.includes(font));
-      if (fontsToLoad) {
-        const url = "https://fonts.googleapis.com/css?family=" + fontsToLoad.join("|");
-        addFonts(url);
-      }
-    })();
+    loadUsedFonts();
 
     void (function parseGridData() {
       grid = JSON.parse(data[6]);

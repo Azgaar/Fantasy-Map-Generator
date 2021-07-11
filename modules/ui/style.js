@@ -879,10 +879,8 @@ function applyStyle(style) {
 
 // change current style preset to another saved one
 function changeStylePreset(preset) {
-  if (customization) {
-    tip("Please exit the customization mode first", false, "error");
-    return;
-  }
+  if (customization) return tip("Please exit the customization mode first", false, "error");
+
   alertMessage.innerHTML = "Are you sure you want to change the style preset? All unsaved style changes will be lost";
   $("#alert").dialog({
     resizable: false,
@@ -899,6 +897,7 @@ function changeStylePreset(preset) {
           }
         } else if (defaultStyles[preset]) applyStyle(JSON.parse(defaultStyles[preset]));
         else applyDefaultStyle();
+        loadUsedFonts();
 
         removeStyleButton.style.display = stylePreset.selectedOptions[0].dataset.system ? "none" : "inline-block";
         updateElements(); // change elements
