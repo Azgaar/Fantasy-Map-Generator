@@ -47,7 +47,7 @@ function getFontsList(svg) {
     const font = this.dataset.font;
     if (font) fontsInUse.push(font);
   });
-  if (legend.node().hasChildNodes()) fontsInUse.push(legend.attr("data-font"));
+  if (legend?.node()?.hasChildNodes()) fontsInUse.push(legend.attr("data-font"));
 
   return [...new Set(fontsInUse)];
 }
