@@ -157,6 +157,7 @@ optionsContent.addEventListener("change", function (event) {
   if (id === "zoomExtentMin" || id === "zoomExtentMax") changeZoomExtent(value);
   else if (id === "optionsSeed") generateMapWithSeed();
   else if (id === "uiSizeInput" || id === "uiSizeOutput") changeUIsize(value);
+  if (id === "shapeRendering") viewbox.attr("shape-rendering", value);
   else if (id === "yearInput") changeYear();
   else if (id === "eraInput") changeEra();
 });
@@ -494,6 +495,9 @@ function applyStoredOptions() {
   const height = +params.get("height");
   if (width) mapWidthInput.value = width;
   if (height) mapHeightInput.value = height;
+
+  // set shape rendering
+  viewbox.attr("shape-rendering", shapeRendering.value);
 }
 
 // randomize options if randomization is allowed (not locked or options='default')

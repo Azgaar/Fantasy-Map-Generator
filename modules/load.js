@@ -804,6 +804,7 @@ function parseLoadedData(data) {
     // set options
     yearInput.value = options.year;
     eraInput.value = options.era;
+    shapeRendering.value = viewbox.attr("shape-rendering") || "geometricPrecision";
 
     if (window.restoreDefaultEvents) restoreDefaultEvents();
     focusOn(); // based on searchParams focus on point, cell or burg
