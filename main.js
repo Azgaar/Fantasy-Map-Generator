@@ -128,9 +128,23 @@ let color = d3.scaleSequential(d3.interpolateSpectral); // default color scheme
 const lineGen = d3.line().curve(d3.curveBasis); // d3 line generator with default curve interpolation
 
 // d3 zoom behavior
-let scale = 1,
-  viewX = 0,
-  viewY = 0;
+let scale = 1;
+let viewX = 0;
+let viewY = 0;
+
+const zoomThrottled = throttle(doWorkOnZoom, 100);
+function zoomed() {
+  const {k, x, y} = d3.event.transform;
+
+  const isScaleChanged = Boolean(scale - k);
+  const isPositionChanged = Boolean(viewX - x || viewY - y);
+
+  scale = k;
+  viewX = x;
+  viewY = y;
+
+  zoomThrottled(isScaleChanged, isPositionChanged);
+}
 const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", zoomed);
 
 // default options
@@ -414,30 +428,24 @@ function showWelcomeMessage() {
   });
 }
 
-function zoomed() {
-  const transform = d3.event.transform;
-  const scaleDiff = scale - transform.k;
-  const positionDiff = (viewX - transform.x) | (viewY - transform.y);
-  if (!positionDiff && !scaleDiff) return;
+function doWorkOnZoom(isScaleChanged, isPositionChanged) {
+  viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
 
-  scale = transform.k;
-  viewX = transform.x;
-  viewY = transform.y;
-  viewbox.attr("transform", transform);
+  if (isPositionChanged) drawCoordinates();
 
-  // update grid only if view position
-  if (positionDiff) drawCoordinates();
-
-  // rescale only if zoom is changed
-  if (scaleDiff) {
+  if (isScaleChanged) {
     invokeActiveZooming();
     drawScaleBar();
   }
 
   // zoom image converter overlay
-  const canvas = document.getElementById("canvas");
-  if (canvas && +canvas.style.opacity) {
-    const img = document.getElementById("image");
+  if (customization === 1) {
+    const canvas = document.getElementById("canvas");
+    if (!canvas || canvas.style.opacity === "0") return;
+
+    const img = document.getElementById("imageToConvert");
+    if (!img) return;
+
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.setTransform(scale, 0, 0, scale, viewX, viewY);

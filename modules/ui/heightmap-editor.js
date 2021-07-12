@@ -131,15 +131,8 @@ function editHeightmap() {
 
   // Exit customization mode
   function finalizeHeightmap() {
-    if (viewbox.select("#heights").selectAll("*").size() < 200) {
-      tip("Insufficient land area! There should be at least 200 land cells to finalize the heightmap", null, "error");
-      return;
-    }
-
-    if (document.getElementById("imageConverter").offsetParent) {
-      tip("Please exit the Image Conversion mode first", null, "error");
-      return;
-    }
+    if (viewbox.select("#heights").selectAll("*").size() < 200) return tip("Insufficient land area! There should be at least 200 land cells to finalize the heightmap", null, "error");
+    if (document.getElementById("imageConverter").offsetParent) return tip("Please exit the Image Conversion mode first", null, "error");
 
     delete window.edits; // remove global variable
     redo.disabled = templateRedo.disabled = true;
@@ -1103,6 +1096,10 @@ function editHeightmap() {
       const reader = new FileReader();
 
       const img = new Image();
+      img.id = "imageToConvert";
+      img.style.display = "none";
+      document.body.appendChild(img);
+
       img.onload = function () {
         const ctx = document.getElementById("canvas").getContext("2d");
         ctx.drawImage(img, 0, 0, graphWidth, graphHeight);
@@ -1295,10 +1292,7 @@ function editHeightmap() {
     }
 
     function applyConversion() {
-      if (colorsAssigned.childElementCount < 3) {
-        tip("Please do the assignment first", false, "error");
-        return;
-      }
+      if (colorsAssigned.childElementCount < 3) return tip("Please do the assignment first", false, "error");
 
       viewbox
         .select("#heights")
@@ -1323,6 +1317,9 @@ function editHeightmap() {
     function restoreImageConverterState() {
       const canvas = document.getElementById("canvas");
       if (canvas) canvas.remove();
+
+      const image = document.getElementById("imageToConvert");
+      if (image) image.remove();
 
       d3.select("#imageConverter").selectAll("div.color-div").remove();
       colorsAssigned.style.display = "none";
