@@ -573,6 +573,7 @@ function editHeightmap() {
       document.getElementById("brushesSliders").style.display = "none";
     }
 
+    const dragBrushThrottled = throttle(dragBrush, 100);
     function toggleBrushMode(e) {
       if (e.target.classList.contains("pressed")) {
         exitBrushMode();
@@ -581,7 +582,7 @@ function editHeightmap() {
       exitBrushMode();
       document.getElementById("brushesSliders").style.display = "block";
       e.target.classList.add("pressed");
-      viewbox.style("cursor", "crosshair").call(d3.drag().on("start", dragBrush));
+      viewbox.style("cursor", "crosshair").call(d3.drag().on("start", dragBrushThrottled));
     }
 
     function dragBrush() {

@@ -2023,7 +2023,7 @@ const regenerateMap = debounce(function () {
   restoreLayers();
   if (ThreeD.options.isOn) ThreeD.redraw();
   if ($("#worldConfigurator").is(":visible")) editWorld();
-}, 500);
+}, 1000);
 
 // clear the map
 function undraw() {
