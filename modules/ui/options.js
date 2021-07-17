@@ -912,6 +912,7 @@ function toggle3dOptions() {
   document.getElementById("options3dMeshRotationNumber").addEventListener("change", changeRotation);
   document.getElementById("options3dGlobeRotationRange").addEventListener("input", changeRotation);
   document.getElementById("options3dGlobeRotationNumber").addEventListener("change", changeRotation);
+  document.getElementById("options3dMeshLabels3d").addEventListener("change", toggleLabels3d);
   document.getElementById("options3dMeshSkyMode").addEventListener("change", toggleSkyMode);
   document.getElementById("options3dMeshSky").addEventListener("input", changeColors);
   document.getElementById("options3dMeshWater").addEventListener("input", changeColors);
@@ -928,6 +929,7 @@ function toggle3dOptions() {
     options3dSunZ.value = ThreeD.options.sun.z;
     options3dMeshRotationRange.value = options3dMeshRotationNumber.value = ThreeD.options.rotateMesh;
     options3dGlobeRotationRange.value = options3dGlobeRotationNumber.value = ThreeD.options.rotateGlobe;
+    options3dMeshLabels3d.value = ThreeD.options.labels3d;
     options3dMeshSkyMode.value = ThreeD.options.extendedWater;
     options3dColorSection.style.display = ThreeD.options.extendedWater ? "block" : "none";
     options3dMeshSky.value = ThreeD.options.skyColor;
@@ -956,6 +958,10 @@ function toggle3dOptions() {
     (this.nextElementSibling || this.previousElementSibling).value = this.value;
     const speed = +this.value;
     ThreeD.setRotation(speed);
+  }
+
+  function toggleLabels3d() {
+    ThreeD.toggleLabels();
   }
 
   function toggleSkyMode() {

@@ -6,12 +6,17 @@
 
 // set default options
 const options = {scale: 50, lightness: .7, shadow: .5, sun: {x: 100, y: 600, z: 1000}, rotateMesh: 0, rotateGlobe: .5,
-  skyColor: "#9ecef5", waterColor: "#466eab", extendedWater: 0, resolution: 2};
+  skyColor: "#9ecef5", waterColor: "#466eab", extendedWater: 0, labels3d: 0, resolution: 2};
 
 // set variables
 let Renderer, scene, camera, controls, animationFrame, material, texture,
   geometry, mesh, ambientLight, spotLight, waterPlane, waterMaterial, waterMesh,
-  objexporter;
+  objexporter, square_geometry, texture_loader, raycaster;
+const drawCtx = document.createElement("canvas").getContext('2d');
+const drawSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+document.body.appendChild(drawSVG);
+let textMeshs = [], iconMeshs = [];
+const fontCache = {"Georgia": "", "Times New Roman": "", "Comic Sans MS": "", "Lucida Sans Unicode": "", "Courier New": "", "Verdana": "", "Arial": "", "Impact": ""} // default are web-safe fonts
 
 // initiate 3d scene
 const create = async function(canvas, type = "viewMesh") {
@@ -42,6 +47,7 @@ const stop = function() {
   material.dispose();
   if (waterPlane) waterPlane.dispose();
   if (waterMaterial) waterMaterial.dispose();
+  deleteLabels();
 
   Renderer.renderLists.dispose(); // is it required?
   Renderer.dispose();
@@ -65,11 +71,21 @@ const stop = function() {
 
 const setScale = function(scale) {
   options.scale = scale;
+
   geometry.vertices.forEach((v, i) => v.z = getMeshHeight(i));
   geometry.verticesNeedUpdate = true;
   geometry.computeVertexNormals();
   render();
   geometry.verticesNeedUpdate = false;
+
+  for (const textMesh of textMeshs) {
+    raycaster.ray.origin.x = textMesh.position.x; raycaster.ray.origin.z = textMesh.position.z;
+    textMesh.position.y = raycaster.intersectObject(mesh)[0].point.y + textMesh.base_height;
+  }
+  for (const iconMesh of iconMeshs) {
+    raycaster.ray.origin.x = iconMesh.position.x; raycaster.ray.origin.z = iconMesh.position.z;
+    iconMesh.position.y = raycaster.intersectObject(mesh)[0].point.y;
+  }
 }
 
 const setLightness = function(intensity) {
@@ -85,11 +101,9 @@ const setSun = function(x, y, z) {
 }
 
 const setRotation = function(speed) {
-  cancelAnimationFrame(animationFrame);
   if (options.isGlobe) options.rotateGlobe = speed; else options.rotateMesh = speed;
   controls.autoRotateSpeed = speed;
   controls.autoRotate = Boolean(controls.autoRotateSpeed);
-  if (controls.autoRotate) animate();
 }
 
 const toggleSky = function() {
@@ -101,6 +115,17 @@ const toggleSky = function() {
 
   options.extendedWater = !options.extendedWater;
   redraw();
+}
+
+const toggleLabels = function() {
+  options.labels3d = !options.labels3d;
+
+  if (options.labels3d) {
+    createLabels().then(() => update());
+  } else {
+    deleteLabels();
+    update();
+  }
 }
 
 const setColors = function(sky, water) {
@@ -166,16 +191,195 @@ async function newMesh(canvas) {
   controls.maxPolarAngle = Math.PI/2;
   controls.autoRotate = Boolean(options.rotateMesh);
   controls.autoRotateSpeed = options.rotateMesh;
-  if (controls.autoRotate) animate();
+  animate();
   controls.addEventListener("change", render);
 
   return true;
 }
 
+function svg2base64(svg) {
+  const str_xml = new XMLSerializer().serializeToString(svg);
+  return 'data:image/svg+xml;base64,' + btoa(str_xml);
+}
+
+function texture2mesh(texture, width=1, height=1, backface=false) {
+  texture = new texture_loader.load(texture);
+  texture.minFilter = THREE.LinearFilter; // remove `texture has been resized` warning
+
+  const material = new THREE.MeshBasicMaterial({map: texture, side: backface ? THREE.DoubleSide : THREE.FrontSide, depthWrite: false});
+  material.transparent = true;
+
+  const mesh = new THREE.Mesh(
+    square_geometry,
+    material
+  );
+  mesh.scale.x = width;
+  mesh.scale.y = height;
+  mesh.renderOrder = 1;
+
+  return mesh;
+}
+
+async function createStateText(font, size, color, label, quality=10) {
+  drawSVG.innerHTML = "<defs></defs>";
+  drawSVG.appendChild(label.cloneNode(true));
+  if (fontCache[font] == undefined) {fontCache[font] = (await GFontToDataURI(`https://fonts.googleapis.com/css?family=${font}`)).join('\n');}
+  drawSVG.children[0].innerHTML = `<style type="text/css">${fontCache[font]}</style>`;
+  drawSVG.children[0].appendChild(svg.select(label.childNodes[0].href.baseVal).node().cloneNode(true)); // href of path in defs
+  drawSVG.children[1].setAttribute("transform", `scale(${quality} ${quality})`)
+  drawSVG.children[1].setAttribute('font-family', font);
+  drawSVG.children[1].setAttribute('font-size', size);
+  drawSVG.children[1].setAttribute('fill', color);
+
+  drawSVG.removeAttribute("viewBox");
+  const bbox = drawSVG.getBBox();
+  drawSVG.setAttribute("viewBox", [bbox.x, bbox.y, bbox.width, bbox.height].join(" "));
+  drawSVG.setAttribute("width", bbox.width);
+  drawSVG.setAttribute("height", bbox.height);
+
+  const mesh = texture2mesh(svg2base64(drawSVG), bbox.width / quality, bbox.height / quality, true);
+  mesh.rotation.set(THREE.Math.degToRad(-90), 0, 0);
+
+  return mesh;
+}
+
+async function createBurgText(text, font, size, color, quality=30) {
+  drawCtx.font = `${size * quality}px ${font}`;
+  drawCtx.canvas.width = drawCtx.measureText(text).width;
+  drawCtx.canvas.height = size*quality * (1 + 1/4); // adding a margin of 1/4 of the size because text sometime overflow the font size
+  drawCtx.clearRect(0, 0, drawCtx.canvas.width, drawCtx.canvas.height);
+  
+  drawCtx.font = `${size * quality}px ${font}`;
+  drawCtx.fillStyle = color;
+  drawCtx.fillText(text, 0, size * quality);
+  
+  return texture2mesh(drawCtx.canvas.toDataURL(), drawCtx.canvas.width / quality, drawCtx.canvas.height / quality);
+}
+
+function get3dCoords(base_x, base_y) {
+  const x = base_x - graphWidth/2;
+  const z = base_y - graphHeight/2;
+
+  raycaster.ray.origin.x = x; raycaster.ray.origin.z = z;
+  const y = raycaster.intersectObject(mesh)[0].point.y;
+  return [x, y, z];
+}
+
+async function createLabels() {
+  square_geometry = new THREE.PlaneGeometry(1, 1);
+  texture_loader = new THREE.TextureLoader();
+  raycaster = new THREE.Raycaster();
+  raycaster.set(new THREE.Vector3(0, 1000, 0), new THREE.Vector3(0, -1, 0));
+
+  // Burg labels
+  const cities = svg.select("#viewbox #labels #burgLabels #cities");
+  const towns = svg.select('#viewbox #labels #burgLabels #towns');
+  const cities_icons = svg.select('#viewbox #icons #burgIcons #cities');
+  const towns_icons = svg.select('#viewbox #icons #burgIcons #towns');
+
+  const citie_icon_material = new THREE.MeshBasicMaterial({color: cities_icons.attr('fill')});
+  const town_icon_material = new THREE.MeshBasicMaterial({color: towns_icons.attr('fill')});
+  const citie_icon_geometry = new THREE.SphereGeometry(cities_icons.attr("size") * 2, 8, 8);
+  const town_icon_geometry = new THREE.SphereGeometry(towns_icons.attr("size") * 2, 8, 8);
+  for (let i = 1; i < pack.burgs.length; i++) {
+    const burg = pack.burgs[i];
+    const [x, y, z] = get3dCoords(burg.x, burg.y)
+
+    if(layerIsOn("toggleLabels")) {
+      if (burg.capital) {
+        var text_mesh = await createBurgText(burg.name, cities.attr('font-family'), cities.attr('font-size'), cities.attr('fill'));
+      } else {
+        var text_mesh = await createBurgText(burg.name, towns.attr('font-family'), towns.attr('font-size'), towns.attr('fill'));
+      }
+
+      if (burg.capital) {
+        text_mesh.position.set(x, y + 10, z);
+        text_mesh.base_height = 15;
+        text_mesh.animate = function () {
+          this.rotation.copy(camera.rotation);
+        }
+      } else {
+        text_mesh.position.set(x, y + 5, z);
+        text_mesh.base_height = 5;
+        text_mesh.animate = function () {
+          if(this.position.distanceTo(camera.position) > 200) {
+            this.visible = false;
+          } else {
+            this.visible = true;
+            this.rotation.copy(camera.rotation);
+          }
+        }
+      }
+
+      textMeshs.push(text_mesh);
+      scene.add(text_mesh);
+    }
+
+    // Icon
+    if(layerIsOn("toggleIcons")) {
+      const icon_mesh = new THREE.Mesh(
+        burg.capital ? citie_icon_geometry : town_icon_geometry,
+        burg.capital ? citie_icon_material : town_icon_material
+      );
+      icon_mesh.position.set(x, y, z)
+  
+      iconMeshs.push(icon_mesh);
+      scene.add(icon_mesh);
+    }
+  }
+
+  // State labels
+  const state_labels = svg.select("#viewbox #labels #states")
+  for (const label of state_labels.node().children) {
+    const text_mesh = await createStateText(state_labels.attr("font-family"), state_labels.attr("font-size"), state_labels.attr("fill"), label);
+    const id = label.id.match(/\d+$/);
+    const pos = pack.states[id].pole
+    const [x, y, z] = get3dCoords(pos[0], pos[1])
+    text_mesh.position.set(x, y + 25, z);
+    text_mesh.base_height = 25;
+
+    textMeshs.push(text_mesh)
+    scene.add(text_mesh);
+  }
+}
+
+function deleteLabels() {
+  if (square_geometry) square_geometry.dispose();
+  square_geometry = undefined;
+  texture_loader = undefined;
+  raycaster = undefined;
+
+  for (const [i, mesh] of textMeshs.entries()) {
+    scene.remove(mesh);
+    mesh.material.map.dispose();
+    mesh.material.dispose();
+    mesh.geometry.dispose();
+    delete mesh.material.map;
+    delete mesh.material;
+    delete mesh.geometry;
+    delete textMeshs[i];
+  }
+  textMeshs = [];
+
+  for (const [i, mesh] of iconMeshs.entries()) {
+    scene.remove(mesh);
+    mesh.material.dispose();
+    mesh.geometry.dispose();
+    delete mesh.material;
+    delete mesh.geometry;
+    delete iconMeshs[i];
+  }
+  iconMeshs = [];
+}
+
 // create a mesh from pixel data
 async function createMesh(width, height, segmentsX, segmentsY) {
-  const url = await getMapURL("mesh", options.extendedWater ? "noWater" : null);
+  const mapOptions = {}
+  if (options.labels3d) mapOptions.noLabels = true;
+  if (options.extendedWater) mapOptions.noWater = true;
+  const url = await getMapURL("mesh", mapOptions);
   window.setTimeout(() => window.URL.revokeObjectURL(url), 3000);
+
   if (texture) texture.dispose();
   texture = new THREE.TextureLoader().load(url, render);
   texture.needsUpdate = true;
@@ -196,6 +400,12 @@ async function createMesh(width, height, segmentsX, segmentsY) {
   mesh.castShadow = true;
   mesh.receiveShadow = true;
   scene.add(mesh);
+
+  render();  // needed for Raycaster to work, but why ?
+  deleteLabels();
+  if (options.labels3d) {
+    await createLabels();
+  }
 }
 
 function getMeshHeight(i) {
@@ -218,7 +428,10 @@ function extendWater(width, height) {
 
 async function update3dTexture() {
   if (texture) texture.dispose();
-  const url = await getMapURL("mesh");
+  const mapOptions = {}
+  if (options.labels3d) mapOptions.noLabels = true;
+  if (options.extendedWater) mapOptions.noWater = true;
+  const url = await getMapURL("mesh", mapOptions);
   window.setTimeout(() => window.URL.revokeObjectURL(url), 3000);
   texture = new THREE.TextureLoader().load(url, render);
   material.map = texture;
@@ -242,7 +455,7 @@ async function newGlobe(canvas) {
   updateGlobeTexure(true);
 
   // camera
- camera = new THREE.PerspectiveCamera(45, canvas.width / canvas.height, 0.1, 1000).translateZ(5);
+  camera = new THREE.PerspectiveCamera(45, canvas.width / canvas.height, 0.1, 1000).translateZ(5);
 
   // controls
   controls = await OrbitControls(camera, Renderer.domElement);
@@ -291,7 +504,7 @@ async function updateGlobeTexure(addMesh) {
     material.map = texture;
     if (addMesh) addGlobe3dMesh();
   };
-  img2.src = await getMapURL("mesh", "globe");;
+  img2.src = await getMapURL("mesh", {globe: true});
 }
 
 async function getOBJ() {
@@ -317,6 +530,11 @@ function render() {
 function animate() {
   animationFrame = requestAnimationFrame(animate);
   controls.update();
+  for(const mesh of textMeshs) {
+    if(mesh.animate) {
+      mesh.animate();
+    }
+  }
   Renderer.render(scene, camera);
 }
 
@@ -356,6 +574,6 @@ function OBJExporter() {
   });
 }
 
-return {create, redraw, update, stop, options, setScale, setLightness, setSun, setRotation, toggleSky, setResolution, setColors, saveScreenshot, saveOBJ};
+return {create, redraw, update, stop, options, setScale, setLightness, setSun, setRotation, toggleLabels, toggleSky, setResolution, setColors, saveScreenshot, saveOBJ};
 
 })));

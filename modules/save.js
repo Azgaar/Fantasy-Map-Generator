@@ -138,7 +138,7 @@ async function saveTiles() {
 }
 
 // parse map svg to object url
-async function getMapURL(type, subtype) {
+async function getMapURL(type, {globe=false, noLabels=false, noWater=false}) {
   const cloneEl = document.getElementById("map").cloneNode(true); // clone svg
   cloneEl.id = "fantasyMap";
   document.body.appendChild(cloneEl);
@@ -150,8 +150,13 @@ async function getMapURL(type, subtype) {
 
   const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
   if (isFirefox && type === "mesh") clone.select("#oceanPattern").remove();
-  if (subtype === "globe") clone.select("#scaleBar").remove();
-  if (subtype === "noWater") {
+  if (globe) clone.select("#scaleBar").remove();
+  if (noLabels) {
+    clone.select("#labels #states").remove();
+    clone.select("#labels #burgLabels").remove();
+    clone.select("#icons #burgIcons").remove();
+  }
+  if (noWater) {
     clone.select("#oceanBase").attr("opacity", 0);
     clone.select("#oceanPattern").attr("opacity", 0);
   }
