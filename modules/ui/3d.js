@@ -7,7 +7,7 @@
   const options = {scale: 50, lightness: 0.7, shadow: 0.5, sun: {x: 100, y: 600, z: 1000}, rotateMesh: 0, rotateGlobe: 0.5, skyColor: "#9ecef5", waterColor: "#466eab", extendedWater: 0, labels3d: 0, resolution: 2};
 
   // set variables
-  let Renderer, scene, camera, controls, animationFrame, material, texture, geometry, mesh, ambientLight, spotLight, waterPlane, waterMaterial, waterMesh, square_geometry, texture_loader, raycaster;
+  let Renderer, scene, camera, controls, animationFrame, material, texture, geometry, mesh, ambientLight, spotLight, waterPlane, waterMaterial, waterMesh, raycaster;
 
   const drawCtx = document.createElement("canvas").getContext("2d");
   const drawSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -234,8 +234,6 @@
   }
 
   async function createLabels() {
-    square_geometry = new THREE.PlaneGeometry(1, 1);
-    texture_loader = new THREE.TextureLoader();
     raycaster = new THREE.Raycaster();
     raycaster.set(new THREE.Vector3(0, 1000, 0), new THREE.Vector3(0, -1, 0));
 
@@ -339,9 +337,6 @@
   }
 
   function deleteLabels() {
-    if (square_geometry) square_geometry.dispose();
-    square_geometry = undefined;
-    texture_loader = undefined;
     raycaster = undefined;
 
     for (const mesh of labels) {
@@ -428,7 +423,7 @@
       noWater: options.extendedWater
     };
     const url = await getMapURL("mesh", mapOptions);
-    window.setTimeout(() => window.URL.revokeObjectURL(url), 3000);
+    window.setTimeout(() => window.URL.revokeObjectURL(url), 4000);
     texture = new THREE.TextureLoader().load(url, render);
     material.map = texture;
   }

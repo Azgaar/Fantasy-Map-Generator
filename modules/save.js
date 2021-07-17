@@ -138,7 +138,8 @@ async function saveTiles() {
 }
 
 // parse map svg to object url
-async function getMapURL(type, {debug = false, globe = false, noLabels = false, noWater = false}) {
+async function getMapURL(type, options = {}) {
+  const {debug = false, globe = false, noLabels = false, noWater = false} = options;
   const cloneEl = document.getElementById("map").cloneNode(true); // clone svg
   cloneEl.id = "fantasyMap";
   document.body.appendChild(cloneEl);
