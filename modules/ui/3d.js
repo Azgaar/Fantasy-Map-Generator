@@ -13,12 +13,9 @@
   const drawSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   document.body.appendChild(drawSVG);
 
-  let icons = [];
   let labels = [];
-  let states = [];
+  let icons = [];
   let lines = [];
-
-  const fontCache = {Georgia: "", "Times New Roman": "", "Comic Sans MS": "", "Lucida Sans Unicode": "", "Courier New": "", Verdana: "", Arial: "", Impact: ""}; // default are web-safe fonts
 
   // initiate 3d scene
   const create = async function (canvas, type = "viewMesh") {
@@ -29,6 +26,7 @@
 
   // redraw 3d scene
   const redraw = function () {
+    deleteLabels();
     scene.remove(mesh);
     Renderer.setSize(Renderer.domElement.width, Renderer.domElement.height);
     if (options.isGlobe) updateGlobeTexure();
@@ -73,24 +71,12 @@
 
   const setScale = function (scale) {
     options.scale = scale;
-
     geometry.vertices.forEach((v, i) => (v.z = getMeshHeight(i)));
     geometry.verticesNeedUpdate = true;
     geometry.computeVertexNormals();
     geometry.verticesNeedUpdate = false;
 
-    // for (const textMesh of labels) {
-    //   raycaster.ray.origin.x = textMesh.position.x;
-    //   raycaster.ray.origin.z = textMesh.position.z;
-    //   textMesh.position.y = raycaster.intersectObject(mesh)[0].point.y + textMesh.elevation;
-    // }
-    // for (const iconMesh of iconMeshs) {
-    //   raycaster.ray.origin.x = iconMesh.position.x;
-    //   raycaster.ray.origin.z = iconMesh.position.z;
-    //   iconMesh.position.y = raycaster.intersectObject(mesh)[0].point.y;
-    // }
-
-    render();
+    redraw();
   };
 
   const setLightness = function (intensity) {
@@ -214,63 +200,27 @@
     return true;
   }
 
-  function svg2base64(svg) {
-    const str_xml = new XMLSerializer().serializeToString(svg);
-    return "data:image/svg+xml;base64," + btoa(str_xml);
-  }
+  function textureToSprite(texture, width, height) {
+    const map = new THREE.TextureLoader().load(texture);
+    const material = new THREE.SpriteMaterial({map});
+    material.depthTest = false;
 
-  function texture2mesh(texture, width = 1, height = 1, backface = false) {
-    texture = new texture_loader.load(texture);
-    texture.minFilter = THREE.LinearFilter; // remove `texture has been resized` warning
-
-    const material = new THREE.MeshBasicMaterial({map: texture, side: backface ? THREE.DoubleSide : THREE.FrontSide, depthWrite: false});
-    material.transparent = true;
-
-    const mesh = new THREE.Mesh(square_geometry, material);
-    mesh.scale.x = width;
-    mesh.scale.y = height;
-    mesh.renderOrder = 1;
-
-    return mesh;
-  }
-
-  async function createStateText(font, size, color, label, quality = 10) {
-    drawSVG.innerHTML = "<defs></defs>";
-    drawSVG.appendChild(label.cloneNode(true));
-    if (fontCache[font] == undefined) {
-      fontCache[font] = (await GFontToDataURI(`https://fonts.googleapis.com/css?family=${font}`)).join("\n");
-    }
-
-    drawSVG.children[0].innerHTML = `<style type="text/css">${fontCache[font]}</style>`;
-    drawSVG.children[0].appendChild(svg.select(label.childNodes[0].href.baseVal).node().cloneNode(true)); // href of path in defs
-    drawSVG.children[1].setAttribute("transform", `scale(${quality} ${quality})`);
-    drawSVG.children[1].setAttribute("font-family", font);
-    drawSVG.children[1].setAttribute("font-size", size);
-    drawSVG.children[1].setAttribute("fill", color);
-
-    drawSVG.removeAttribute("viewBox");
-    const bbox = drawSVG.getBBox();
-    drawSVG.setAttribute("viewBox", [bbox.x, bbox.y, bbox.width, bbox.height].join(" "));
-    drawSVG.setAttribute("width", bbox.width);
-    drawSVG.setAttribute("height", bbox.height);
-
-    const mesh = texture2mesh(svg2base64(drawSVG), bbox.width / quality, bbox.height / quality, true);
-    mesh.rotation.set(THREE.Math.degToRad(-90), 0, 0);
-
-    return mesh;
+    const sprite = new THREE.Sprite(material);
+    sprite.scale.set(width, height, 1);
+    return sprite;
   }
 
   async function createTextLabel({text, font, size, color, quality}) {
     drawCtx.font = `${size * quality}px ${font}`;
     drawCtx.canvas.width = drawCtx.measureText(text).width;
-    drawCtx.canvas.height = size * quality * (1 + 1 / 4); // adding a margin of 1/4 of the size because text sometime overflow the font size
+    drawCtx.canvas.height = size * quality * 1.25; // 25% margin as text can overflow the font size
     drawCtx.clearRect(0, 0, drawCtx.canvas.width, drawCtx.canvas.height);
 
     drawCtx.font = `${size * quality}px ${font}`;
     drawCtx.fillStyle = color;
     drawCtx.fillText(text, 0, size * quality);
 
-    return texture2mesh(drawCtx.canvas.toDataURL(), drawCtx.canvas.width / quality, drawCtx.canvas.height / quality);
+    return textureToSprite(drawCtx.canvas.toDataURL(), drawCtx.canvas.width / quality, drawCtx.canvas.height / quality);
   }
 
   function get3dCoords(baseX, baseY) {
@@ -289,18 +239,26 @@
     raycaster = new THREE.Raycaster();
     raycaster.set(new THREE.Vector3(0, 1000, 0), new THREE.Vector3(0, -1, 0));
 
-    // burg labels
+    const states = viewbox.select("#labels #states");
     const cities = burgLabels.select("#cities");
     const towns = burgLabels.select("#towns");
     const city_icons = burgIcons.select("#cities");
     const town_icons = burgIcons.select("#towns");
+
+    const stateOptions = {
+      font: states.attr("font-family"),
+      size: +states.attr("data-size"),
+      color: states.attr("fill"),
+      elevation: 20,
+      quality: 20
+    };
 
     const cityOptions = {
       font: cities.attr("font-family"),
       size: +cities.attr("data-size"),
       color: cities.attr("fill"),
       elevation: 10,
-      quality: 10,
+      quality: 20,
       iconSize: +city_icons.attr("size"),
       iconColor: "#666",
       line: 10 - cities.attr("data-size") / 2
@@ -311,7 +269,7 @@
       size: +towns.attr("data-size"),
       color: towns.attr("fill"),
       elevation: 5,
-      quality: 10,
+      quality: 20,
       iconSize: +town_icons.attr("size"),
       iconColor: "#666",
       line: 5 - towns.attr("data-size") / 2
@@ -323,21 +281,23 @@
     const town_icon_geometry = new THREE.CylinderGeometry(townOptions.iconSize * 2, townOptions.iconSize * 2, townOptions.iconSize, 16, 1);
     const line_material = new THREE.LineBasicMaterial({color: cityOptions.iconColor});
 
+    // burg labels
     for (let i = 1; i < pack.burgs.length; i++) {
       const burg = pack.burgs[i];
+      if (burg.removed) continue;
+
       const isCity = burg.capital;
       const [x, y, z] = get3dCoords(burg.x, burg.y);
       const options = isCity ? cityOptions : townOptions;
 
       if (layerIsOn("toggleLabels")) {
-        const burgMesh = await createTextLabel({text: burg.name, ...options});
+        const burgSprite = await createTextLabel({text: burg.name, ...options});
 
-        burgMesh.elevation = options.elevation;
-        burgMesh.position.set(x, y + options.elevation, z);
-        burgMesh.size = options.size;
+        burgSprite.position.set(x, y + options.elevation, z);
+        burgSprite.size = options.size;
 
-        labels.push(burgMesh);
-        scene.add(burgMesh);
+        labels.push(burgSprite);
+        scene.add(burgSprite);
       }
 
       // icons
@@ -360,17 +320,20 @@
     }
 
     // state labels
-    const state_labels = svg.select("#viewbox #labels #states");
-    for (const label of state_labels.node().children) {
-      const text_mesh = await createStateText(state_labels.attr("font-family"), state_labels.attr("font-size"), state_labels.attr("fill"), label);
-      const id = label.id.match(/\d+$/);
-      const pos = pack.states[id].pole;
-      const [x, y, z] = get3dCoords(pos[0], pos[1]);
-      text_mesh.position.set(x, y + 20, z);
-      text_mesh.elevation = 20;
+    if (layerIsOn("toggleLabels")) {
+      for (let i = 1; i < pack.states.length; i++) {
+        const state = pack.states[i];
+        if (state.removed) continue;
 
-      states.push(text_mesh);
-      scene.add(text_mesh);
+        const [x, y, z] = get3dCoords(state.pole[0], state.pole[1]);
+        const stateSprite = await createTextLabel({text: state.fullName, ...stateOptions});
+
+        stateSprite.position.set(x, y + stateOptions.elevation, z);
+        stateSprite.size = stateOptions.size;
+
+        labels.push(stateSprite);
+        scene.add(stateSprite);
+      }
     }
   }
 
@@ -387,14 +350,6 @@
       mesh.geometry.dispose();
     }
     labels = [];
-
-    for (const mesh of states) {
-      scene.remove(mesh);
-      mesh.material.map.dispose();
-      mesh.material.dispose();
-      mesh.geometry.dispose();
-    }
-    states = [];
 
     for (const mesh of icons) {
       scene.remove(mesh);
@@ -579,9 +534,10 @@
   function doWorkOnRender() {
     console.log("doWorkOnRender");
     for (const [i, label] of labels.entries()) {
-      const isVisible = label.position.distanceTo(camera.position) < 50 * label.size;
-      label.visible = lines[i].visible = isVisible;
-      if (label.visible) label.rotation.copy(camera.rotation);
+      const dist = label.position.distanceTo(camera.position);
+      const isVisible = dist < 80 * label.size && dist > label.size * 6;
+      label.visible = isVisible;
+      if (lines[i]) lines[i].visible = isVisible;
     }
   }
 
