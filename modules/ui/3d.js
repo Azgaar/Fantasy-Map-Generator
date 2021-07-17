@@ -7,7 +7,7 @@
   const options = {scale: 50, lightness: 0.7, shadow: 0.5, sun: {x: 100, y: 600, z: 1000}, rotateMesh: 0, rotateGlobe: 0.5, skyColor: "#9ecef5", waterColor: "#466eab", extendedWater: 0, labels3d: 0, resolution: 2};
 
   // set variables
-  let Renderer, scene, camera, controls, animationFrame, material, texture, geometry, mesh, ambientLight, spotLight, waterPlane, waterMaterial, waterMesh, objexporter, square_geometry, texture_loader, raycaster;
+  let Renderer, scene, camera, controls, animationFrame, material, texture, geometry, mesh, ambientLight, spotLight, waterPlane, waterMaterial, waterMesh, square_geometry, texture_loader, raycaster;
   const drawCtx = document.createElement("canvas").getContext("2d");
   const drawSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   document.body.appendChild(drawSVG);
@@ -47,14 +47,13 @@
     if (waterMaterial) waterMaterial.dispose();
     deleteLabels();
 
-    Renderer.renderLists.dispose(); // is it required?
+    Renderer.renderLists.dispose();
     Renderer.dispose();
     scene.remove(mesh);
     scene.remove(spotLight);
     scene.remove(ambientLight);
     scene.remove(waterMesh);
 
-    // not sure it's required
     Renderer = undefined;
     scene = undefined;
     controls = undefined;
@@ -104,7 +103,14 @@
     if (options.isGlobe) options.rotateGlobe = speed;
     else options.rotateMesh = speed;
     controls.autoRotateSpeed = speed;
-    controls.autoRotate = Boolean(controls.autoRotateSpeed);
+
+    const startAnimation = !controls.autoRotate && Boolean(speed);
+    const endAnimation = controls.autoRotate && !Boolean(speed);
+
+    controls.autoRotate = Boolean(speed);
+
+    if (startAnimation) animate();
+    if (endAnimation) cancelAnimationFrame(animationFrame);
   };
 
   const toggleSky = function () {
@@ -195,7 +201,8 @@
     controls.maxPolarAngle = Math.PI / 2;
     controls.autoRotate = Boolean(options.rotateMesh);
     controls.autoRotateSpeed = options.rotateMesh;
-    animate();
+    if (controls.autoRotate) animate();
+
     controls.addEventListener("change", render);
 
     return true;
@@ -403,7 +410,7 @@
     mesh.receiveShadow = true;
     scene.add(mesh);
 
-    render(); // needed for Raycaster to work, but why ?
+    render();
     deleteLabels();
     if (options.labels3d) {
       await createLabels();
@@ -517,8 +524,7 @@
   }
 
   async function getOBJ() {
-    objexporter = await OBJExporter();
-
+    const objexporter = await OBJExporter();
     const data = await objexporter.parse(mesh);
     return data;
   }
@@ -533,19 +539,18 @@
 
   // render 3d scene and camera, do only on controls change
   function render() {
+    console.log("render");
     Renderer.render(scene, camera);
   }
 
   // animate 3d scene and camera
   function animate() {
+    console.log("animate");
     animationFrame = requestAnimationFrame(animate);
     controls.update();
     for (const mesh of textMeshs) {
-      if (mesh.animate) {
-        mesh.animate();
-      }
+      if (mesh.animate) mesh.animate();
     }
-    Renderer.render(scene, camera);
   }
 
   function loadTHREE() {
