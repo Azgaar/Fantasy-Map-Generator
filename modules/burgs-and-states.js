@@ -477,9 +477,7 @@
   // calculate and draw curved state labels for a list of states
   const drawStateLabels = function (list) {
     TIME && console.time("drawStateLabels");
-    const cells = pack.cells,
-      features = pack.features,
-      states = pack.states;
+    const {cells, features, states} = pack;
     const paths = []; // text paths
     lineGen.curve(d3.curveBundle.beta(1));
 
@@ -572,8 +570,8 @@
     }
 
     void (function drawLabels() {
-      const g = labels.select("#states"),
-        t = defs.select("#textPaths");
+      const g = labels.select("#states");
+      const t = defs.select("#textPaths");
       const displayed = layerIsOn("toggleLabels");
       if (!displayed) toggleLabels();
 
@@ -602,8 +600,8 @@
           .attr("id", "textPath_stateLabel" + id);
         const pathLength = p[1].length > 1 ? textPath.node().getTotalLength() / letterLength : 0; // path length in letters
 
-        let lines = [],
-          ratio = 100;
+        let lines = [];
+        let ratio = 100;
 
         if (pathLength < s.name.length) {
           // only short name will fit
@@ -622,10 +620,9 @@
         // prolongate path if it's too short
         if (pathLength && pathLength < lines[0].length) {
           const points = p[1];
-          const f = points[0],
-            l = points[points.length - 1];
-          const dx = l[0] - f[0],
-            dy = l[1] - f[1];
+          const f = points[0];
+          const l = points[points.length - 1];
+          const [dx, dy] = [l[0] - f[0], l[1] - f[1]];
           const mod = Math.abs((letterLength * lines[0].length) / dx) / 2;
           points[0] = [rn(f[0] - dx * mod), rn(f[1] - dy * mod)];
           points[points.length - 1] = [rn(l[0] + dx * mod), rn(l[1] + dy * mod)];
@@ -653,8 +650,8 @@
         if (lines.length < 2) return;
 
         // check whether multilined label is generally inside the state. If no, replace with short name label
-        const cs = pack.cells.state,
-          b = el.parentNode.getBBox();
+        const cs = pack.cells.state;
+        const b = el.parentNode.getBBox();
         const c1 = () => +cs[findCell(b.x, b.y)] === id;
         const c2 = () => +cs[findCell(b.x + b.width / 2, b.y)] === id;
         const c3 = () => +cs[findCell(b.x + b.width, b.y)] === id;

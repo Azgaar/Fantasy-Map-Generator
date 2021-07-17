@@ -269,7 +269,7 @@
       size: +towns.attr("data-size"),
       color: towns.attr("fill"),
       elevation: 5,
-      quality: 20,
+      quality: 30,
       iconSize: +town_icons.attr("size"),
       iconColor: "#666",
       line: 5 - towns.attr("data-size") / 2
@@ -326,7 +326,8 @@
         if (state.removed) continue;
 
         const [x, y, z] = get3dCoords(state.pole[0], state.pole[1]);
-        const stateSprite = await createTextLabel({text: state.fullName, ...stateOptions});
+        const text = states.select("#stateLabel" + state.i)?.text() || state.name;
+        const stateSprite = await createTextLabel({text, ...stateOptions});
 
         stateSprite.position.set(x, y + stateOptions.elevation, z);
         stateSprite.size = stateOptions.size;
