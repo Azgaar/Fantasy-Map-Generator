@@ -525,14 +525,11 @@
   // render 3d scene and camera, do only on controls change
   const renderThrottled = throttle(doWorkOnRender, 200);
   function render() {
-    console.log("render");
     Renderer.render(scene, camera);
-
     renderThrottled();
   }
 
   function doWorkOnRender() {
-    console.log("doWorkOnRender");
     for (const [i, label] of labels.entries()) {
       const dist = label.position.distanceTo(camera.position);
       const isVisible = dist < 80 * label.size && dist > label.size * 6;
