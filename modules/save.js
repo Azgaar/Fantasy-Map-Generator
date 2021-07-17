@@ -74,7 +74,7 @@ async function saveJPEG() {
 async function saveTiles() {
   return new Promise(async (resolve, reject) => {
     // download schema
-    const urlSchema = await getMapURL("tiles", "schema");
+    const urlSchema = await getMapURL("tiles", {debug: true});
     const zip = new JSZip();
 
     const canvas = document.createElement("canvas");
@@ -138,12 +138,12 @@ async function saveTiles() {
 }
 
 // parse map svg to object url
-async function getMapURL(type, {globe=false, noLabels=false, noWater=false}) {
+async function getMapURL(type, {debug = false, globe = false, noLabels = false, noWater = false}) {
   const cloneEl = document.getElementById("map").cloneNode(true); // clone svg
   cloneEl.id = "fantasyMap";
   document.body.appendChild(cloneEl);
   const clone = d3.select(cloneEl);
-  if (subtype !== "schema") clone.select("#debug").remove();
+  if (debug) clone.select("#debug").remove();
 
   const cloneDefs = cloneEl.getElementsByTagName("defs")[0];
   const svgDefs = document.getElementById("defElements");
