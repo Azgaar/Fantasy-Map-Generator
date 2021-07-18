@@ -258,7 +258,7 @@
       color: cities.attr("fill"),
       elevation: 10,
       quality: 20,
-      iconSize: +city_icons.attr("size"),
+      iconSize: 1,
       iconColor: "#666",
       line: 10 - cities.attr("data-size") / 2
     };
@@ -269,7 +269,7 @@
       color: towns.attr("fill"),
       elevation: 5,
       quality: 30,
-      iconSize: +town_icons.attr("size"),
+      iconSize: 0.5,
       iconColor: "#666",
       line: 5 - towns.attr("data-size") / 2
     };
