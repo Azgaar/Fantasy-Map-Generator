@@ -202,11 +202,12 @@
 
   function textureToSprite(texture, width, height) {
     const map = new THREE.TextureLoader().load(texture);
+    map.anisotropy = Renderer.getMaxAnisotropy();
     const material = new THREE.SpriteMaterial({map});
-    material.depthTest = false;
 
     const sprite = new THREE.Sprite(material);
     sprite.scale.set(width, height, 1);
+    sprite.renderOrder = 1;
     return sprite;
   }
 
@@ -334,6 +335,9 @@
         scene.add(stateSprite);
       }
     }
+
+    // apply visibility setting
+    doWorkOnRender();
   }
 
   function deleteLabels() {
@@ -528,7 +532,7 @@
   function doWorkOnRender() {
     for (const [i, label] of labels.entries()) {
       const dist = label.position.distanceTo(camera.position);
-      const isVisible = dist < 80 * label.size && dist > label.size * 6;
+      const isVisible = dist < 100 * label.size && dist > label.size * 6;
       label.visible = isVisible;
       if (lines[i]) lines[i].visible = isVisible;
     }
