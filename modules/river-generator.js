@@ -245,19 +245,19 @@
   };
 
   // add points at 1/3 and 2/3 of a line between adjacents river cells
-  const addMeandering = function (cells, width = 1, meandering = 0.5) {
+  const addMeandering = function (riverCells, width = 1, meandering = 0.5) {
     const meandered = [];
-    const {p, conf, h} = pack.cells;
-    const lastCell = cells.length - 1;
+    const {p, conf} = pack.cells;
+    const lastCell = riverCells.length - 1;
 
     for (let i = 0; i <= lastCell; i++, width++) {
-      const cell = cells[i];
+      const cell = riverCells[i];
       const [x1, y1] = p[cell];
       meandered.push([x1, y1, conf[cell]]);
 
       if (i === lastCell) break;
 
-      const nextCell = cells[i + 1];
+      const nextCell = riverCells[i + 1];
       if (nextCell === -1) {
         meandered.push(getBorderPoint(cell));
         break;
@@ -271,14 +271,14 @@
       const meander = meandering + 1 / width + Math.random() * Math.max(meandering - width / 100, 0);
       const dist2 = (x2 - x1) ** 2 + (y2 - y1) ** 2; // square distance between cells
 
-      if (width < 10 && (dist2 > 64 || (dist2 > 36 && cells.length < 5))) {
+      if (width < 10 && (dist2 > 64 || (dist2 > 36 && riverCells.length < 5))) {
         // if dist2 is big or river is small add extra points at 1/3 and 2/3 of segment
         const p1x = (x1 * 2 + x2) / 3 + -sin * meander;
         const p1y = (y1 * 2 + y2) / 3 + cos * meander;
         const p2x = (x1 + x2 * 2) / 3 + sin * meander;
         const p2y = (y1 + y2 * 2) / 3 + cos * meander;
         meandered.push([p1x, p1y], [p2x, p2y]);
-      } else if (dist2 > 25 || cells.length < 6) {
+      } else if (dist2 > 25 || riverCells.length < 6) {
         // if dist is medium or river is small add 1 extra middlepoint
         const p1x = (x1 + x2) / 2 + -sin * meander;
         const p1y = (y1 + y2) / 2 + cos * meander;

@@ -538,8 +538,9 @@ function addRiverOnClick() {
   if (cells.h[i] < 20) return tip("Cannot create river in water cell", false, "error");
   if (cells.b[i]) return;
 
-  const riverPoints = [];
+  const riverCells = [];
   let riverId = +getNextId("river").slice(5);
+  let parent = 0;
 
   const initialFlux = grid.cells.prec[cells.g[i]];
   cells.fl[i] = initialFlux;
@@ -549,8 +550,7 @@ function addRiverOnClick() {
 
   while (i) {
     cells.r[i] = riverId;
-    const [x, y] = cells.p[i];
-    riverPoints.push({x, y, cell: i});
+    riverCells.push(i);
 
     const min = cells.c[i].sort((a, b) => h[a] - h[b])[0]; // downhill cell
     if (h[i] <= h[min]) return tip(`Cell ${i} is depressed, river cannot flow further`, false, "error");
@@ -559,13 +559,20 @@ function addRiverOnClick() {
 
     // pour to water body
     if (h[min] < 20) {
-      riverPoints.push({x: tx, y: ty, cell: i});
+      riverCells.push(min);
 
       const feature = pack.features[cells.f[min]];
       if (feature.type === "lake") {
-        riverPoints[0].parent = feature.outlet || 0;
+        parent = feature.outlet || 0;
         feature.inlets ? feature.inlets.push(riverId) : (feature.inlets = [riverId]);
       }
+      break;
+    }
+
+    // pour outside of map from border cell
+    if (cells.b[min]) {
+      cells.fl[min] += cells.fl[i];
+      riverCells.push(-1);
       break;
     }
 
@@ -578,24 +585,28 @@ function addRiverOnClick() {
 
     // handle case when lowest cell already has a river
     const oldRiverId = cells.r[min];
-    const riverCells = cells.i.filter(i => cells.r[i] === oldRiverId);
-    const riverCellsUpper = riverCells.filter(i => h[i] > h[min]);
+    const oldRiver = rivers.find(river => river.i === oldRiverId);
+    const oldRiverCells = oldRiver?.cells || cells.i.filter(i => cells.r[i] === oldRiverId);
+    const oldRiverCellsUpper = oldRiverCells.filter(i => h[i] > h[min]);
 
     // create new river as a tributary
-    if (riverPoints.length <= riverCellsUpper.length) {
+    if (riverCells.length <= oldRiverCellsUpper.length) {
       cells.conf[min] += cells.fl[i];
-      riverPoints.push({x: tx, y: ty, cell: min});
-      riverPoints[0].parent = oldRiverId;
+      riverCells.push(min);
+      parent = oldRiverId;
       break;
     }
 
     // continue old river
     document.getElementById("river" + oldRiverId)?.remove();
-    cells.i.filter(i => cells.r[i] === riverId).forEach(i => (cells.r[i] = oldRiverId));
-    const oldRiver = rivers.find(river => river.i === oldRiverId);
-    oldRiver?.points.forEach(([x, y, cell]) => {
-      riverPoints.push({x, y, cell});
-      cells.fl[cell] += cells.fl[i];
+    riverCells.forEach(i => (cells.r[i] = oldRiverId));
+    oldRiverCells.forEach(cell => {
+      if (h[cell] > h[min]) {
+        cells.r[cell] = 0;
+      } else {
+        riverCells.push(cell);
+        cells.fl[cell] += cells.fl[i];
+      }
     });
     riverId = oldRiverId;
 
@@ -604,9 +615,8 @@ function addRiverOnClick() {
 
   const river = rivers.find(r => r.i === riverId);
   const sourceWidth = 0.1;
-  const widthFactor = river.widthFactor || rn(0.8 + Math.random() * 0.4, 1);
+  const widthFactor = river?.widthFactor || rn(0.8 + Math.random() * 0.4, 1);
 
-  const riverCells = riverPoints.map(point => point.cell);
   const riverMeandered = Rivers.addMeandering(riverCells, sourceWidth * 10, 0.5);
   const [path, length, offset] = Rivers.getPath(riverMeandered, widthFactor, sourceWidth);
   viewbox
@@ -616,8 +626,8 @@ function addRiverOnClick() {
     .attr("id", "river" + riverId);
 
   // add new river to data or change extended river attributes
-  const source = riverPoints[0].cell;
-  const mouth = last(riverPoints).cell;
+  const source = riverCells[0];
+  const mouth = last(riverCells);
   const discharge = cells.fl[mouth]; // in m3/s
   const width = rn(offset ** 2, 2); // mounth width in km
 
@@ -626,9 +636,8 @@ function addRiverOnClick() {
     river.length = length;
     river.discharge = discharge;
     river.width = width;
-    river.points = points;
+    river.cells = riverCells;
   } else {
-    const parent = riverPoints[0].parent || 0;
     const basin = Rivers.getBasin(parent);
     const name = Rivers.getName(mouth);
     const smallLength = rivers.map(r => r.length || 0).sort((a, b) => a - b)[Math.ceil(pack.rivers.length * 0.15)];
