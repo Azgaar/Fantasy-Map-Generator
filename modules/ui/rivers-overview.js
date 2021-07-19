@@ -12,7 +12,9 @@ function overviewRivers() {
   modules.overviewRivers = true;
 
   $("#riversOverview").dialog({
-    title: "Rivers Overview", resizable: false, width: fitContent(),
+    title: "Rivers Overview",
+    resizable: false,
+    width: fitContent(),
     position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
   });
 
@@ -53,8 +55,8 @@ function overviewRivers() {
     riversFooterNumber.innerHTML = pack.rivers.length;
     const averageDischarge = rn(d3.mean(pack.rivers.map(r => r.discharge)));
     riversFooterDischarge.innerHTML = averageDischarge + " m³/s";
-    const averageLength = rn(d3.mean(pack.rivers.map(r => r.length)) );
-    riversFooterLength.innerHTML = (averageLength * distanceScaleInput.value) + " " + unit;
+    const averageLength = rn(d3.mean(pack.rivers.map(r => r.length)));
+    riversFooterLength.innerHTML = averageLength * distanceScaleInput.value + " " + unit;
     const averageWidth = rn(d3.mean(pack.rivers.map(r => r.width)), 3);
     riversFooterWidth.innerHTML = rn(averageWidth * distanceScaleInput.value, 3) + " " + unit;
 
@@ -71,17 +73,23 @@ function overviewRivers() {
   function riverHighlightOn(event) {
     if (!layerIsOn("toggleRivers")) toggleRivers();
     const r = +event.target.dataset.id;
-    rivers.select("#river"+r).attr("stroke", "red").attr("stroke-width", 1);
+    rivers
+      .select("#river" + r)
+      .attr("stroke", "red")
+      .attr("stroke-width", 1);
   }
 
   function riverHighlightOff(e) {
     const r = +e.target.dataset.id;
-    rivers.select("#river"+r).attr("stroke", null).attr("stroke-width", null);
+    rivers
+      .select("#river" + r)
+      .attr("stroke", null)
+      .attr("stroke-width", null);
   }
 
   function zoomToRiver() {
     const r = +this.parentNode.dataset.id;
-    const river = rivers.select("#river"+r).node();
+    const river = rivers.select("#river" + r).node();
     highlightElement(river);
   }
 
@@ -92,13 +100,15 @@ function overviewRivers() {
     } else {
       rivers.attr("data-basin", "hightlighted");
       const basins = [...new Set(pack.rivers.map(r => r.basin))];
-      const colors = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2","#7f7f7f","#bcbd22","#17becf"];
+      const colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"];
 
       basins.forEach((b, i) => {
         const color = colors[i % colors.length];
-        pack.rivers.filter(r => r.basin === b).forEach(r => {
-          rivers.select("#river"+r.i).attr("fill", color);
-        });
+        pack.rivers
+          .filter(r => r.basin === b)
+          .forEach(r => {
+            rivers.select("#river" + r.i).attr("fill", color);
+          });
       });
     }
   }
@@ -106,9 +116,9 @@ function overviewRivers() {
   function downloadRiversData() {
     let data = "Id,River,Type,Discharge,Length,Width,Basin\n"; // headers
 
-    body.querySelectorAll(":scope > div").forEach(function(el) {
+    body.querySelectorAll(":scope > div").forEach(function (el) {
       const d = el.dataset;
-      const discharge = d.discharge + " m³/s"
+      const discharge = d.discharge + " m³/s";
       const length = rn(d.length * distanceScaleInput.value) + " " + distanceUnitInput.value;
       const width = rn(d.width * distanceScaleInput.value, 3) + " " + distanceUnitInput.value;
       data += [d.id, d.name, d.type, discharge, length, width, d.basin].join(",") + "\n";
@@ -119,7 +129,7 @@ function overviewRivers() {
   }
 
   function openRiverEditor() {
-    editRiver("river"+this.parentNode.dataset.id);
+    editRiver("river" + this.parentNode.dataset.id);
   }
 
   function triggerRiverRemove() {
@@ -127,35 +137,44 @@ function overviewRivers() {
     alertMessage.innerHTML = `Are you sure you want to remove the river? 
       All tributaries will be auto-removed`;
 
-    $("#alert").dialog({resizable: false, width: "22em", title: "Remove river",
+    $("#alert").dialog({
+      resizable: false,
+      width: "22em",
+      title: "Remove river",
       buttons: {
-        Remove: function() {
+        Remove: function () {
           Rivers.remove(river);
           riversOverviewAddLines();
           $(this).dialog("close");
         },
-        Cancel: function() {$(this).dialog("close");}
+        Cancel: function () {
+          $(this).dialog("close");
+        }
       }
     });
   }
 
   function triggerAllRiversRemove() {
     alertMessage.innerHTML = `Are you sure you want to remove all rivers?`;
-    $("#alert").dialog({resizable: false, title: "Remove all rivers",
+    $("#alert").dialog({
+      resizable: false,
+      title: "Remove all rivers",
       buttons: {
-        Remove: function() {
+        Remove: function () {
           $(this).dialog("close");
           removeAllRivers();
         },
-        Cancel: function() {$(this).dialog("close");}
+        Cancel: function () {
+          $(this).dialog("close");
+        }
       }
     });
   }
 
   function removeAllRivers() {
     pack.rivers = [];
+    pack.cells.r = new Uint16Array(pack.cells.i.length);
     rivers.selectAll("*").remove();
     riversOverviewAddLines();
   }
-
 }

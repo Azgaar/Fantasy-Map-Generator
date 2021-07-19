@@ -603,6 +603,7 @@ function addRiverOnClick() {
     oldRiverCells.forEach(cell => {
       if (h[cell] > h[min]) {
         cells.r[cell] = 0;
+        cells.fl[cell] = grid.cells.prec[cells.g[cell]];
       } else {
         riverCells.push(cell);
         cells.fl[cell] += cells.fl[i];
