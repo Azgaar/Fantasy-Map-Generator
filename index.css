@@ -169,12 +169,8 @@ a {
   font-size: 0.8em;
 }
 
-#statesBody,
-#provincesBody {
+#statesBody {
   stroke-width: 3;
-  stroke-linejoin: round;
-  fill-rule: evenodd;
-  mask: url(#land);
 }
 
 #statesHalo {
@@ -183,9 +179,16 @@ a {
   stroke-linejoin: round;
 }
 
+#provincesBody {
+  stroke-width: 0.2;
+}
+
+#statesBody,
+#provincesBody,
 #relig,
 #biomes,
 #cults {
+  stroke-linejoin: round;
   fill-rule: evenodd;
   mask: url(#land);
 }
