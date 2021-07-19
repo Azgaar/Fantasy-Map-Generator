@@ -289,13 +289,11 @@
     return meandered;
   };
 
-  const getPath = function (points, widthFactor = 1, sourceWidth = 0.1) {
-    let offset;
-    let extraOffset = sourceWidth; // starting width (make river source visible)
-
+  const getPath = function (points, widthFactor = 1, width = 0.1) {
     const riverLength = points.reduce((s, v, i, p) => s + (i ? Math.hypot(v[0] - p[i - 1][0], v[1] - p[i - 1][1]) : 0), 0); // sum of segments length
     const widening = 1000 + riverLength * 30;
     const factor = riverLength / points.length;
+    let offset;
 
     // store points on both sides to build a valid polygon
     const riverPointsLeft = [];
@@ -306,10 +304,11 @@
       const [x1, y1] = points[p];
       const [x2, y2] = points[p + 1] || points[p];
 
-      offset = (Math.atan(Math.pow(p * factor, 2) / widening) / 2) * widthFactor + extraOffset;
-      if (points[p + 1] && points[p + 1][2]) {
+      offset = width + (Math.atan(Math.pow(p * factor, 2) / widening) / 2) * widthFactor;
+
+      if (points[p + 2] && points[p + 1][2]) {
         const confluence = points[p + 1][2];
-        extraOffset += Math.atan((confluence * 5) / widening);
+        width += Math.atan((confluence * 5) / widening);
       }
 
       const angle = Math.atan2(y0 - y2, x0 - x2);
