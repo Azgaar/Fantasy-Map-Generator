@@ -1299,6 +1299,15 @@ function reMarkFeatures() {
   cells.haven = cells.i.length < 65535 ? new Uint16Array(cells.i.length) : new Uint32Array(cells.i.length); // cell haven (opposite water cell);
   cells.harbor = new Uint8Array(cells.i.length); // cell harbor (number of adjacent water cells);
 
+  const defineHaven = i => {
+    const water = cells.c[i].filter(c => cells.h[c] < 20);
+    const dist2 = water.map(c => (cells.p[i][0] - cells.p[c][0]) ** 2 + (cells.p[i][1] - cells.p[c][1]) ** 2);
+    const closest = water[dist2.indexOf(Math.min.apply(Math, dist2))];
+
+    cells.haven[i] = closest;
+    cells.harbor[i] = water.length;
+  };
+
   for (let i = 1, queue = [0]; queue[0] !== -1; i++) {
     const start = queue[0]; // first cell
     cells.f[start] = i; // assign feature number
@@ -1314,8 +1323,7 @@ function reMarkFeatures() {
         if (land && !eLand) {
           cells.t[q] = 1;
           cells.t[e] = -1;
-          cells.harbor[q]++;
-          if (!cells.haven[q]) cells.haven[q] = e;
+          if (!cells.haven[q]) defineHaven(q);
         } else if (land && eLand) {
           if (!cells.t[e] && cells.t[q] === 1) cells.t[e] = 2;
           else if (!cells.t[q] && cells.t[e] === 1) cells.t[q] = 2;

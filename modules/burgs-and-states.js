@@ -175,9 +175,9 @@
 
       if (b.port) {
         b.population = b.population * 1.3; // increase port population
-        const e = cells.v[i].filter(v => vertices.c[v].some(c => c === cells.haven[i])); // vertices of common edge
-        b.x = rn((vertices.p[e[0]][0] + vertices.p[e[1]][0]) / 2, 2);
-        b.y = rn((vertices.p[e[0]][1] + vertices.p[e[1]][1]) / 2, 2);
+        const [x, y] = getMiddlePoint(i, haven);
+        b.x = x;
+        b.y = y;
       }
 
       // add random factor

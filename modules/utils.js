@@ -552,6 +552,20 @@ function getNumberInRange(r) {
   return count;
 }
 
+// return center point of common edge of 2 pack cells
+function getMiddlePoint(cell1, cell2) {
+  const {cells, vertices} = pack;
+
+  const commonVertices = cells.v[cell1].filter(vertex => vertices.c[vertex].some(cell => cell === cell2));
+  const [x1, y1] = vertices.p[commonVertices[0]];
+  const [x2, y2] = vertices.p[commonVertices[1]];
+
+  const x = (x1 + x2) / 2;
+  const y = (y1 + y2) / 2;
+
+  return [x, y];
+}
+
 // helper function non-used for the generation
 function drawCellsValue(data) {
   debug.selectAll("text").remove();
