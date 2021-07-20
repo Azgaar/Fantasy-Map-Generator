@@ -31,7 +31,11 @@
       const land = cells.i.filter(i => h[i] >= 20).sort((a, b) => h[b] - h[a]);
       const lakeOutCells = Lakes.setClimateData(h);
 
+      let step = 0;
+
       land.forEach(function (i) {
+        step++;
+
         cells.fl[i] += grid.cells.prec[cells.g[i]]; // flux from precipitation
         const [x, y] = p[i];
 
@@ -59,7 +63,7 @@
           }
 
           lake.outlet = cells.r[lakeCell];
-          flowDown(i, cells.fl[i], cells.fl[lakeCell], lake.outlet);
+          flowDown(i, cells.fl[lakeCell], lake.outlet);
         }
 
         // assign all tributary rivers to outlet basin
@@ -100,15 +104,24 @@
           riverNext++;
         }
 
-        flowDown(min, cells.fl[min], cells.fl[i], cells.r[i], i);
+        flowDown(min, cells.fl[i], cells.r[i], i, step);
       });
     }
 
-    function flowDown(toCell, toFlux, fromFlux, river, fromCell = 0) {
+    function flowDown(toCell, fromFlux, river, fromCell, step) {
+      const toFlux = cells.fl[toCell] - cells.conf[toCell];
+      // prettier-ignore
+      if (step) debug.append("text")
+        .attr("x", pack.cells.p[fromCell][0])
+        .attr("y", pack.cells.p[fromCell][1])
+        .text(`${step}: ${fromFlux} -> ${toFlux}`)
+        .attr("font-size", "1.5px");
+
       if (cells.r[toCell]) {
         // downhill cell already has river assigned
-        if (toFlux < fromFlux) {
-          cells.conf[toCell] = cells.fl[toCell]; // mark confluence
+
+        if (fromFlux > toFlux) {
+          cells.conf[toCell] += cells.fl[toCell]; // mark confluence
           if (h[toCell] >= 20) riversData.find(r => r.river === cells.r[toCell]).parent = river; // min river is a tributary of current river
           cells.r[toCell] = river; // re-assign river if downhill part has less flux
         } else {
@@ -155,16 +168,16 @@
 
         const source = riverPoints[0].cell;
         const mouth = riverPoints[riverPoints.length - 2].cell;
+        const parent = riverPoints[0].parent || 0;
 
-        const widthFactor = rn(0.8 + Math.random() * 0.4, 1); // river width modifier [.8, 1.2]
-        const sourceWidth = cells.h[source] >= 20 ? 0.1 : rn(Math.min(Math.max((cells.fl[source] / 500) ** 0.4, 0.5), 1.7), 2);
+        const widthFactor = parent ? 1 : 1.4;
+        const sourceWidth = cells.h[source] >= 20 ? 0.1 : rn(Math.min(Math.max((cells.fl[source] / 500) ** 0.4, 0.5), 1.6), 2);
 
         const riverCells = riverPoints.map(point => point.cell);
         const riverMeandered = addMeandering(riverCells, sourceWidth * 10, 0.5);
         const [path, length, offset] = getPath(riverMeandered, widthFactor, sourceWidth);
         riverPaths.push([path, r]);
 
-        const parent = riverPoints[0].parent || 0;
         const width = rn(offset ** 2, 2); // mounth width in km
         const discharge = last(riverPoints).flux; // in m3/s
 
@@ -295,7 +308,7 @@
     const factor = riverLength / points.length;
     let offset;
 
-    // store points on both sides to build a valid polygon
+    // store points on both sides to build a polygon
     const riverPointsLeft = [];
     const riverPointsRight = [];
 
@@ -316,12 +329,12 @@
       const cosOffset = Math.cos(angle) * offset;
 
       riverPointsLeft.push([x1 - sinOffset, y1 + cosOffset]);
-      riverPointsRight.unshift([x1 + sinOffset, y1 - cosOffset]);
+      riverPointsRight.push([x1 + sinOffset, y1 - cosOffset]);
     }
 
     // generate polygon path and return
     lineGen.curve(d3.curveCatmullRom.alpha(0.1));
-    const right = lineGen(riverPointsRight);
+    const right = lineGen(riverPointsRight.reverse());
     let left = lineGen(riverPointsLeft);
     left = left.substring(left.indexOf("C"));
 

@@ -616,7 +616,7 @@ function addRiverOnClick() {
 
   const river = rivers.find(r => r.i === riverId);
   const sourceWidth = 0.1;
-  const widthFactor = river?.widthFactor || rn(0.8 + Math.random() * 0.4, 1);
+  const widthFactor = river?.widthFactor || (parent ? 1 : 1.4);
 
   const riverMeandered = Rivers.addMeandering(riverCells, sourceWidth * 10, 0.5);
   const [path, length, offset] = Rivers.getPath(riverMeandered, widthFactor, sourceWidth);
