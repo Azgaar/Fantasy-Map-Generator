@@ -31,11 +31,7 @@
       const land = cells.i.filter(i => h[i] >= 20).sort((a, b) => h[b] - h[a]);
       const lakeOutCells = Lakes.setClimateData(h);
 
-      let step = 0;
-
       land.forEach(function (i) {
-        step++;
-
         cells.fl[i] += grid.cells.prec[cells.g[i]]; // flux from precipitation
         const [x, y] = p[i];
 
@@ -104,22 +100,15 @@
           riverNext++;
         }
 
-        flowDown(min, cells.fl[i], cells.r[i], i, step);
+        flowDown(min, cells.fl[i], cells.r[i]);
       });
     }
 
-    function flowDown(toCell, fromFlux, river, fromCell, step) {
+    function flowDown(toCell, fromFlux, river) {
       const toFlux = cells.fl[toCell] - cells.conf[toCell];
-      // prettier-ignore
-      if (step) debug.append("text")
-        .attr("x", pack.cells.p[fromCell][0])
-        .attr("y", pack.cells.p[fromCell][1])
-        .text(`${step}: ${fromFlux} -> ${toFlux}`)
-        .attr("font-size", "1.5px");
 
       if (cells.r[toCell]) {
         // downhill cell already has river assigned
-
         if (fromFlux > toFlux) {
           cells.conf[toCell] += cells.fl[toCell]; // mark confluence
           if (h[toCell] >= 20) riversData.find(r => r.river === cells.r[toCell]).parent = river; // min river is a tributary of current river
@@ -171,7 +160,7 @@
         const parent = riverPoints[0].parent || 0;
 
         const widthFactor = parent ? 1 : 1.4;
-        const sourceWidth = cells.h[source] >= 20 ? 0.1 : rn(Math.min(Math.max((cells.fl[source] / 500) ** 0.4, 0.5), 1.6), 2);
+        const sourceWidth = cells.h[source] >= 20 ? 0.05 : rn(Math.min(Math.max((cells.fl[source] / 700) ** 0.4, 0.5), 1.5), 2);
 
         const riverCells = riverPoints.map(point => point.cell);
         const riverMeandered = addMeandering(riverCells, sourceWidth * 10, 0.5);
@@ -260,19 +249,22 @@
   // add points at 1/3 and 2/3 of a line between adjacents river cells
   const addMeandering = function (riverCells, width = 1, meandering = 0.5) {
     const meandered = [];
-    const {p, conf} = pack.cells;
+    const {p, fl} = pack.cells;
     const lastCell = riverCells.length - 1;
 
     for (let i = 0; i <= lastCell; i++, width++) {
       const cell = riverCells[i];
       const [x1, y1] = p[cell];
-      meandered.push([x1, y1, conf[cell]]);
+      const flux = fl[cell];
+
+      meandered.push([x1, y1, flux]);
 
       if (i === lastCell) break;
 
       const nextCell = riverCells[i + 1];
       if (nextCell === -1) {
-        meandered.push(getBorderPoint(cell));
+        const [x, y] = getBorderPoint(cell);
+        meandered.push([x, y, flux]);
         break;
       }
 
@@ -290,23 +282,27 @@
         const p1y = (y1 * 2 + y2) / 3 + cos * meander;
         const p2x = (x1 + x2 * 2) / 3 + sin * meander;
         const p2y = (y1 + y2 * 2) / 3 + cos * meander;
-        meandered.push([p1x, p1y], [p2x, p2y]);
+        meandered.push([p1x, p1y, flux], [p2x, p2y, flux]);
       } else if (dist2 > 25 || riverCells.length < 6) {
         // if dist is medium or river is small add 1 extra middlepoint
         const p1x = (x1 + x2) / 2 + -sin * meander;
         const p1y = (y1 + y2) / 2 + cos * meander;
-        meandered.push([p1x, p1y]);
+        meandered.push([p1x, p1y, flux]);
       }
     }
 
     return meandered;
   };
 
-  const getPath = function (points, widthFactor = 1, width = 0.1) {
+  const getPath = function (points, widthFactor = 1, startingWidth = 0.1) {
     const riverLength = points.reduce((s, v, i, p) => s + (i ? Math.hypot(v[0] - p[i - 1][0], v[1] - p[i - 1][1]) : 0), 0); // sum of segments length
-    const widening = 1000 + riverLength * 30;
-    const factor = riverLength / points.length;
-    let offset;
+    const widening = widthFactor * (riverLength / points.length) * 0.016;
+    let width = 0;
+    let lengthWidth = 0;
+
+    // const [x, y] = points[0];
+    // debug.append("text").attr("x", x).attr("y", y).text(widening).attr("font-size", "4px");
+    console.log("---------");
 
     // store points on both sides to build a polygon
     const riverPointsLeft = [];
@@ -314,19 +310,18 @@
 
     for (let p = 0; p < points.length; p++) {
       const [x0, y0] = points[p - 1] || points[p];
-      const [x1, y1] = points[p];
+      const [x1, y1, flux] = points[p];
       const [x2, y2] = points[p + 1] || points[p];
 
-      offset = width + (Math.atan(Math.pow(p * factor, 2) / widening) / 2) * widthFactor;
-
-      if (points[p + 2] && points[p + 1][2]) {
-        const confluence = points[p + 1][2];
-        width += Math.atan((confluence * 5) / widening);
-      }
+      const fluxWidth = flux / 1000;
+      lengthWidth += (widening / (p ** 0.8 || 1)) * ((Math.atan(p) / Math.PI) * 2);
+      width = lengthWidth + fluxWidth;
 
       const angle = Math.atan2(y0 - y2, x0 - x2);
-      const sinOffset = Math.sin(angle) * offset;
-      const cosOffset = Math.cos(angle) * offset;
+      const sinOffset = Math.sin(angle) * width;
+      const cosOffset = Math.cos(angle) * width;
+
+      console.log(p, fluxWidth, lengthWidth, width);
 
       riverPointsLeft.push([x1 - sinOffset, y1 + cosOffset]);
       riverPointsRight.push([x1 + sinOffset, y1 - cosOffset]);
@@ -338,7 +333,7 @@
     let left = lineGen(riverPointsLeft);
     left = left.substring(left.indexOf("C"));
 
-    return [round(right + left, 2), rn(riverLength, 2), offset];
+    return [round(right + left, 2), rn(riverLength, 2), width];
   };
 
   const specify = function () {

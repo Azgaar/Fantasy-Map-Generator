@@ -777,6 +777,12 @@ document
   .forEach(el => el.addEventListener("input", updateTilesOptions));
 
 function updateTilesOptions() {
+  if (this?.tagName === "INPUT") {
+    const {nextElementSibling: next, previousElementSibling: prev} = this;
+    if (next?.tagName === "INPUT") next.value = this.value;
+    if (prev?.tagName === "INPUT") prev.value = this.value;
+  }
+
   const tileSize = document.getElementById("tileSize");
   const tilesX = +document.getElementById("tileColsOutput").value;
   const tilesY = +document.getElementById("tileRowsOutput").value;
