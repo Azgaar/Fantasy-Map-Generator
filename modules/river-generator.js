@@ -159,18 +159,17 @@
         const mouth = riverPoints[riverPoints.length - 2].cell;
         const parent = riverPoints[0].parent || 0;
 
-        const widthFactor = parent ? 1 : 1.4;
-        const sourceWidth = cells.h[source] >= 20 ? 0.05 : rn(Math.min(Math.max((cells.fl[source] / 700) ** 0.4, 0.5), 1.5), 2);
-
         const riverCells = riverPoints.map(point => point.cell);
-        const riverMeandered = addMeandering(riverCells, sourceWidth * 10, 0.5);
-        const [path, length, offset] = getPath(riverMeandered, widthFactor, sourceWidth);
+        const widthFactor = parent ? 1 : 1.4;
+        const initStep = cells.h[source] >= 20 ? 1 : 10;
+        const riverMeandered = addMeandering(riverCells, initStep, 0.5);
+        const [path, length, offset] = getPath(riverMeandered, widthFactor);
         riverPaths.push([path, r]);
 
         const width = rn(offset ** 2, 2); // mounth width in km
         const discharge = last(riverPoints).flux; // in m3/s
 
-        pack.rivers.push({i: r, source, mouth, discharge, length, width, widthFactor, sourceWidth, parent, cells: riverCells});
+        pack.rivers.push({i: r, source, mouth, discharge, length, width, widthFactor, sourceWidth: 0, parent, cells: riverCells});
       }
 
       // draw rivers
@@ -247,61 +246,72 @@
   };
 
   // add points at 1/3 and 2/3 of a line between adjacents river cells
-  const addMeandering = function (riverCells, width = 1, meandering = 0.5) {
+  const addMeandering = function (riverCells, step = 1, meandering = 0.5) {
     const meandered = [];
     const {p, fl} = pack.cells;
-    const lastCell = riverCells.length - 1;
 
-    for (let i = 0; i <= lastCell; i++, width++) {
+    const lastStep = riverCells.length - 1;
+    let fluxPrev = 0;
+    const getFlux = (step, flux) => (step === lastStep ? fluxPrev : flux);
+
+    for (let i = 0; i <= lastStep; i++, step++) {
       const cell = riverCells[i];
+      const isLastCell = i === lastStep;
+
       const [x1, y1] = p[cell];
-      const flux = fl[cell];
+      const flux1 = (fluxPrev = getFlux(i, fl[cell]));
 
-      meandered.push([x1, y1, flux]);
+      meandered.push([x1, y1, flux1]);
 
-      if (i === lastCell) break;
+      if (isLastCell) break;
 
       const nextCell = riverCells[i + 1];
       if (nextCell === -1) {
         const [x, y] = getBorderPoint(cell);
-        meandered.push([x, y, flux]);
+        meandered.push([x, y, flux1]);
         break;
       }
 
       const [x2, y2] = p[nextCell];
+      const flux2 = getFlux(i + 1, fl[nextCell]);
       const angle = Math.atan2(y2 - y1, x2 - x1);
       const sin = Math.sin(angle);
       const cos = Math.cos(angle);
 
-      const meander = meandering + 1 / width + Math.random() * Math.max(meandering - width / 100, 0);
+      const meander = meandering + 1 / step + Math.random() * Math.max(meandering - step / 100, 0);
       const dist2 = (x2 - x1) ** 2 + (y2 - y1) ** 2; // square distance between cells
 
-      if (width < 10 && (dist2 > 64 || (dist2 > 36 && riverCells.length < 5))) {
+      if (step < 10 && (dist2 > 64 || (dist2 > 36 && riverCells.length < 5))) {
         // if dist2 is big or river is small add extra points at 1/3 and 2/3 of segment
         const p1x = (x1 * 2 + x2) / 3 + -sin * meander;
         const p1y = (y1 * 2 + y2) / 3 + cos * meander;
+        const fluxThird1 = (flux1 * 2 + flux2) / 3;
         const p2x = (x1 + x2 * 2) / 3 + sin * meander;
         const p2y = (y1 + y2 * 2) / 3 + cos * meander;
-        meandered.push([p1x, p1y, flux], [p2x, p2y, flux]);
+        const fluxThird2 = (flux1 + flux2 * 2) / 3;
+        meandered.push([p1x, p1y, fluxThird1], [p2x, p2y, fluxThird2]);
       } else if (dist2 > 25 || riverCells.length < 6) {
         // if dist is medium or river is small add 1 extra middlepoint
         const p1x = (x1 + x2) / 2 + -sin * meander;
         const p1y = (y1 + y2) / 2 + cos * meander;
-        meandered.push([p1x, p1y, flux]);
+        const fluxMid = (flux1 + flux2) / 2;
+        meandered.push([p1x, p1y, fluxMid]);
       }
     }
 
     return meandered;
   };
 
-  const getPath = function (points, widthFactor = 1, startingWidth = 0.1) {
-    const riverLength = points.reduce((s, v, i, p) => s + (i ? Math.hypot(v[0] - p[i - 1][0], v[1] - p[i - 1][1]) : 0), 0); // sum of segments length
-    const widening = widthFactor * (riverLength / points.length) * 0.016;
-    let width = 0;
-    let lengthWidth = 0;
+  const fluxFactor = 500;
+  const maxFluxWidth = 1;
+  const widthFactor = 200;
+  const stepWidth = 1 / widthFactor;
+  const lengthProgression = [1, 1, 2, 3, 5, 8, 13, 21, 34].map(n => n / widthFactor);
+  const maxProgression = last(lengthProgression);
 
-    // const [x, y] = points[0];
-    // debug.append("text").attr("x", x).attr("y", y).text(widening).attr("font-size", "4px");
+  const getPath = function (points, widthFactor = 1, startingWidth = 0) {
+    const riverLength = points.reduce((s, v, i, p) => s + (i ? Math.hypot(v[0] - p[i - 1][0], v[1] - p[i - 1][1]) : 0), 0);
+    let width = 0;
     console.log("---------");
 
     // store points on both sides to build a polygon
@@ -313,15 +323,18 @@
       const [x1, y1, flux] = points[p];
       const [x2, y2] = points[p + 1] || points[p];
 
-      const fluxWidth = flux / 1000;
-      lengthWidth += (widening / (p ** 0.8 || 1)) * ((Math.atan(p) / Math.PI) * 2);
-      width = lengthWidth + fluxWidth;
+      const fluxWidth = Math.min(flux ** 0.9 / fluxFactor, 1);
+      const lengthWidth = p * stepWidth + (lengthProgression[p] || maxProgression);
+      width = widthFactor * (lengthWidth + fluxWidth) + startingWidth;
 
       const angle = Math.atan2(y0 - y2, x0 - x2);
       const sinOffset = Math.sin(angle) * width;
       const cosOffset = Math.cos(angle) * width;
 
-      console.log(p, fluxWidth, lengthWidth, width);
+      //const text = `${p}: ${rn(flux, 1)} - ${rn(width, 1)}`;
+      //debug.append("text").attr("x", x1).attr("y", y1).text(text);
+
+      console.log({fluxWidth, lengthWidth, width});
 
       riverPointsLeft.push([x1 - sinOffset, y1 + cosOffset]);
       riverPointsRight.push([x1 + sinOffset, y1 - cosOffset]);

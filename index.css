@@ -1121,6 +1121,12 @@ div#regimentSelectorBody > div > div {
   fill: none;
 }
 
+#debug > text {
+  font-size: 3px;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
 .selectedCell {
   stroke-width: 1;
   stroke: #da3126;
