@@ -7,9 +7,14 @@
     TIME && console.time("generateRivers");
     Math.random = aleaPRNG(seed);
     const {cells, features} = pack;
-    const p = cells.p;
 
-    const riversData = []; // rivers data
+    const riversData = {}; // rivers data
+    const riverParents = {};
+    const addCellToRiver = function (cell, river) {
+      if (!riversData[river]) riversData[river] = [cell];
+      else riversData[river].push(cell);
+    };
+
     cells.fl = new Uint16Array(cells.i.length); // water flux array
     cells.r = new Uint16Array(cells.i.length); // rivers array
     cells.conf = new Uint8Array(cells.i.length); // confluences array
@@ -49,10 +54,10 @@
 
             if (sameRiver) {
               cells.r[lakeCell] = lake.river;
-              riversData.push({river: lake.river, cell: lakeCell});
+              addCellToRiver(lakeCell, lake.river);
             } else {
               cells.r[lakeCell] = riverNext;
-              riversData.push({river: riverNext, cell: lakeCell});
+              addCellToRiver(lakeCell, riverNext);
               riverNext++;
             }
           }
@@ -62,15 +67,16 @@
         }
 
         // assign all tributary rivers to outlet basin
-        for (let outlet = lakes[0]?.outlet, l = 0; l < lakes.length; l++) {
-          lakes[l].inlets?.forEach(fork => (riversData.find(r => r.river === fork).parent = outlet));
+        const outlet = lakes[0]?.outlet;
+        for (const lake of lakes) {
+          if (!Array.isArray(lake.inlets)) continue;
+          for (const inlet of lake.inlets) {
+            riverParents[inlet] = outlet;
+          }
         }
 
         // near-border cell: pour water out of the screen
-        if (cells.b[i] && cells.r[i]) {
-          riversData.push({river: cells.r[i], cell: -1});
-          return;
-        }
+        if (cells.b[i] && cells.r[i]) return addCellToRiver(-1, cells.r[i]);
 
         // downhill cell (make sure it's not in the source lake)
         let min = null;
@@ -95,7 +101,7 @@
         // proclaim a new river
         if (!cells.r[i]) {
           cells.r[i] = riverNext;
-          riversData.push({river: riverNext, cell: i});
+          addCellToRiver(i, riverNext);
           riverNext++;
         }
 
@@ -105,24 +111,17 @@
 
     function flowDown(toCell, fromFlux, river) {
       const toFlux = cells.fl[toCell] - cells.conf[toCell];
+      const toRiver = cells.r[toCell];
 
-      if (cells.r[toCell]) {
+      if (toRiver) {
         // downhill cell already has river assigned
         if (fromFlux > toFlux) {
           cells.conf[toCell] += cells.fl[toCell]; // mark confluence
-          if (h[toCell] >= 20) {
-            // min river is a tributary of current river
-            const toRiver = riversData.find(r => r.river === cells.r[toCell]);
-            if (toRiver) toRiver.parent = river;
-          }
+          if (h[toCell] >= 20) riverParents[toRiver] = river; // min river is a tributary of current river
           cells.r[toCell] = river; // re-assign river if downhill part has less flux
         } else {
           cells.conf[toCell] += fromFlux; // mark confluence
-          if (h[toCell] >= 20) {
-            // current river is a tributary of min river
-            const thisRiver = riversData.find(r => r.river === river);
-            if (thisRiver) thisRiver.parent = cells.r[toCell];
-          }
+          if (h[toCell] >= 20) riverParents[river] = toRiver; // current river is a tributary of min river
         }
       } else cells.r[toCell] = river; // assign the river to the downhill cell
 
@@ -143,7 +142,7 @@
         cells.fl[toCell] += fromFlux;
       }
 
-      riversData.push({river, cell: toCell});
+      addCellToRiver(toCell, river);
     }
 
     function defineRivers() {
@@ -153,36 +152,35 @@
       pack.rivers = [];
       const riverPaths = [];
 
-      for (let r = 1; r <= riverNext; r++) {
-        const riverData = riversData.filter(d => d.river === r);
-        if (riverData.length < 3) continue; // exclude tiny rivers
+      for (const key in riversData) {
+        const riverCells = riversData[key];
+        if (riverCells.length < 3) continue; // exclude tiny rivers
 
-        for (const segment of riverData) {
-          const i = segment.cell;
-          if (i < 0 || cells.h[i] < 20) continue;
+        const riverId = +key;
+        for (const cell of riverCells) {
+          if (cell < 0 || cells.h[cell] < 20) continue;
 
           // mark real confluences and assign river to cells
-          if (cells.r[i]) cells.conf[i] = 1;
-          else cells.r[i] = r;
+          if (cells.r[cell]) cells.conf[cell] = 1;
+          else cells.r[cell] = riverId;
         }
 
-        const source = riverData[0].cell;
-        const mouth = riverData[riverData.length - 2].cell;
-        const parent = riverData[0].parent || 0;
+        const source = riverCells[0];
+        const mouth = riverCells[riverCells.length - 2];
+        const parent = riverParents[key] || 0;
 
-        const riverCells = riverData.map(point => point.cell);
-        const widthFactor = !parent || parent === r ? 1.2 : 1;
+        const widthFactor = !parent || parent === riverId ? 1.2 : 1;
         const initStep = cells.h[source] >= 20 ? 1 : 10;
         const riverMeandered = addMeandering(riverCells, initStep, 0.5);
         const [path, length, offset] = getRiverPath(riverMeandered, widthFactor);
-        riverPaths.push([path, r]);
+        riverPaths.push([path, riverId]);
 
-        // Real mounth width examples: Amazon 6000m, Volga 6000m, Dniepr 3000m, Mississippi 1300m, Themes 900m,
+        // Real mouth width examples: Amazon 6000m, Volga 6000m, Dniepr 3000m, Mississippi 1300m, Themes 900m,
         // Danube 800m, Daugava 600m, Neva 500m, Nile 450m, Don 400m, Wisla 300m, Pripyat 150m, Bug 140m, Muchavets 40m
-        const width = rn((offset / 1.4) ** 2, 2); // mounth width in km
-        const discharge = last(riverData).flux; // in m3/s
+        const width = rn((offset / 1.4) ** 2, 2); // mouth width in km
+        const discharge = cells.fl[mouth]; // in m3/s
 
-        pack.rivers.push({i: r, source, mouth, discharge, length, width, widthFactor, sourceWidth: 0, parent, cells: riverCells});
+        pack.rivers.push({i: riverId, source, mouth, discharge, length, width, widthFactor, sourceWidth: 0, parent, cells: riverCells});
       }
 
       // draw rivers
