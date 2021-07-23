@@ -170,14 +170,13 @@
         const parent = riverParents[key] || 0;
 
         const widthFactor = !parent || parent === riverId ? 1.2 : 1;
-        const initStep = cells.h[source] >= 20 ? 1 : 10;
-        const riverMeandered = addMeandering(riverCells, initStep);
+        const riverMeandered = addMeandering(riverCells);
         const [path, length, offset] = getRiverPath(riverMeandered, widthFactor);
         riverPaths.push([path, riverId]);
 
         // Real mouth width examples: Amazon 6000m, Volga 6000m, Dniepr 3000m, Mississippi 1300m, Themes 900m,
         // Danube 800m, Daugava 600m, Neva 500m, Nile 450m, Don 400m, Wisla 300m, Pripyat 150m, Bug 140m, Muchavets 40m
-        const width = rn((offset / 1.4) ** 2, 2); // mouth width in km
+        const width = rn((offset / 1.5) ** 1.8, 2); // mouth width in km
         const discharge = cells.fl[mouth]; // m3 in second
 
         pack.rivers.push({i: riverId, source, mouth, discharge, length, width, widthFactor, sourceWidth: 0, parent, cells: riverCells});
@@ -269,11 +268,12 @@
   };
 
   // add points at 1/3 and 2/3 of a line between adjacents river cells
-  const addMeandering = function (riverCells, step = 1, meandering = 0.5, riverPoints = null) {
-    const {fl, conf} = pack.cells;
+  const addMeandering = function (riverCells, meandering = 0.5, riverPoints = null) {
+    const {fl, conf, h} = pack.cells;
     const meandered = [];
     const lastStep = riverCells.length - 1;
     const points = getRiverPoints(riverCells, riverPoints);
+    let step = h[riverCells[0]] < 20 ? 1 : 10;
 
     let fluxPrev = 0;
     const getFlux = (step, flux) => (step === lastStep ? fluxPrev : flux);
@@ -348,9 +348,9 @@
 
   const fluxFactor = 500;
   const maxFluxWidth = 2;
-  const widthFactor = 200;
-  const stepWidth = 1 / widthFactor;
-  const lengthProgression = [1, 1, 2, 3, 5, 8, 13, 21, 34].map(n => n / widthFactor);
+  const lengthFactor = 200;
+  const stepWidth = 1 / lengthFactor;
+  const lengthProgression = [1, 1, 2, 3, 5, 8, 13, 21, 34].map(n => n / lengthFactor);
   const maxProgression = last(lengthProgression);
 
   // build polygon from a list of points and calculated offset (width)

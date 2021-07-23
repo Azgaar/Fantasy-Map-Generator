@@ -538,6 +538,7 @@ function addRiverOnClick() {
   if (cells.h[i] < 20) return tip("Cannot create river in water cell", false, "error");
   if (cells.b[i]) return;
 
+  const {alterHeights, resolveDepressions, addMeandering, getRiverPath, getBasin, getName, getType} = Rivers;
   const riverCells = [];
   let riverId = last(rivers).id + 1;
   let parent = 0;
@@ -545,8 +546,8 @@ function addRiverOnClick() {
   const initialFlux = grid.cells.prec[cells.g[i]];
   cells.fl[i] = initialFlux;
 
-  const h = Rivers.alterHeights();
-  Rivers.resolveDepressions(h);
+  const h = alterHeights();
+  resolveDepressions(h);
 
   while (i) {
     cells.r[i] = riverId;
@@ -615,9 +616,9 @@ function addRiverOnClick() {
   const river = rivers.find(r => r.i === riverId);
   const widthFactor = river?.widthFactor || (!parent || parent === riverId ? 1.2 : 1);
 
-  const riverMeandered = Rivers.addMeandering(riverCells, 1);
+  const riverMeandered = addMeandering(riverCells);
   lineGen.curve(d3.curveCatmullRom.alpha(0.1));
-  const [path, length, offset] = Rivers.getRiverPath(riverMeandered, widthFactor);
+  const [path, length, offset] = getRiverPath(riverMeandered, widthFactor);
   viewbox
     .select("#rivers")
     .append("path")
@@ -637,9 +638,9 @@ function addRiverOnClick() {
     river.width = width;
     river.cells = riverCells;
   } else {
-    const basin = Rivers.getBasin(parent);
-    const name = Rivers.getName(mouth);
-    const type = Rivers.getType({i: riverId, length, parent});
+    const basin = getBasin(parent);
+    const name = getName(mouth);
+    const type = getType({i: riverId, length, parent});
 
     rivers.push({i: riverId, source, mouth, discharge, length, width, widthFactor, sourceWidth: 0, parent, cells: riverCells, basin, name, type});
   }

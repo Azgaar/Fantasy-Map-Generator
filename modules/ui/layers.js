@@ -1444,16 +1444,24 @@ function toggleTexture(event) {
 function toggleRivers(event) {
   if (!layerIsOn("toggleRivers")) {
     turnButtonOn("toggleRivers");
-    $("#rivers").fadeIn();
+    drawRivers();
     if (event && isCtrlClick(event)) editStyle("rivers");
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("rivers");
-      return;
-    }
-    $("#rivers").fadeOut();
+    if (event && isCtrlClick(event)) return editStyle("rivers");
+    rivers.selectAll("*").remove();
     turnButtonOff("toggleRivers");
   }
+}
+
+function drawRivers() {
+  const riverPaths = pack.rivers.map(river => {
+    const riverMeandered = Rivers.addMeandering(river.cells, 0.5, river.points);
+    const widthFactor = river.widthFactor || 1;
+    const startingWidth = river.startingWidth || 0;
+    const [path] = Rivers.getRiverPath(riverMeandered, widthFactor, startingWidth);
+    return [path, river.i];
+  });
+  rivers.html(riverPaths.map(d => `<path id="river${d[1]}" d="${d[0]}"/>`).join(""));
 }
 
 function toggleRoutes(event) {
