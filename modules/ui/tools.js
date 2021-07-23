@@ -534,12 +534,12 @@ function addRiverOnClick() {
   const point = d3.mouse(this);
   let i = findCell(point[0], point[1]);
 
-  if (cells.r[i]) return tip("There already a river here", false, "error");
+  if (cells.r[i]) return tip("There is already a river here", false, "error");
   if (cells.h[i] < 20) return tip("Cannot create river in water cell", false, "error");
   if (cells.b[i]) return;
 
   const riverCells = [];
-  let riverId = +getNextId("river").slice(5);
+  let riverId = last(rivers).id + 1;
   let parent = 0;
 
   const initialFlux = grid.cells.prec[cells.g[i]];
@@ -554,8 +554,6 @@ function addRiverOnClick() {
 
     const min = cells.c[i].sort((a, b) => h[a] - h[b])[0]; // downhill cell
     if (h[i] <= h[min]) return tip(`Cell ${i} is depressed, river cannot flow further`, false, "error");
-
-    const [tx, ty] = cells.p[min];
 
     // pour to water body
     if (h[min] < 20) {
@@ -615,12 +613,11 @@ function addRiverOnClick() {
   }
 
   const river = rivers.find(r => r.i === riverId);
-  const sourceWidth = 0.1;
   const widthFactor = river?.widthFactor || (!parent || parent === r ? 1.2 : 1);
 
-  const riverMeandered = Rivers.addMeandering(riverCells, sourceWidth * 10, 0.5);
+  const riverMeandered = Rivers.addMeandering(riverCells, 1);
   lineGen.curve(d3.curveCatmullRom.alpha(0.1));
-  const [path, length, offset] = Rivers.getRiverPath(riverMeandered, widthFactor, sourceWidth);
+  const [path, length, offset] = Rivers.getRiverPath(riverMeandered, widthFactor);
   viewbox
     .select("#rivers")
     .append("path")
@@ -629,9 +626,9 @@ function addRiverOnClick() {
 
   // add new river to data or change extended river attributes
   const source = riverCells[0];
-  const mouth = last(riverCells);
-  const discharge = cells.fl[mouth]; // in m3/s
-  const width = rn(offset ** 2, 2); // mounth width in km
+  const mouth = riverCells[riverCells.length - 2];
+  const discharge = cells.fl[mouth]; // m3 in second
+  const width = rn((offset / 1.4) ** 2, 2); // mounth width in km
 
   if (river) {
     river.source = source;

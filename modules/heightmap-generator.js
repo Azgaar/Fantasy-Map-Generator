@@ -422,7 +422,6 @@
         if (d % 6 !== 0) return;
         for (const l of d3.range(i)) {
           const min = cells.c[cur][d3.scan(cells.c[cur], (a, b) => cells.h[a] - cells.h[b])]; // downhill cell
-          //debug.append("circle").attr("cx", p[min][0]).attr("cy", p[min][1]).attr("r", 1);
           cells.h[min] = (cells.h[cur] * 2 + cells.h[min]) / 3;
           cur = min;
         }
