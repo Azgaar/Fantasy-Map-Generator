@@ -312,8 +312,8 @@
         // if dist2 is big or river is small add extra points at 1/3 and 2/3 of segment
         const p1x = (x1 * 2 + x2) / 3 + -sinMeander;
         const p1y = (y1 * 2 + y2) / 3 + cosMeander;
-        const p2x = (x1 + x2 * 2) / 3 + sinMeander;
-        const p2y = (y1 + y2 * 2) / 3 + cosMeander;
+        const p2x = (x1 + x2 * 2) / 3 + sinMeander / 2;
+        const p2y = (y1 + y2 * 2) / 3 - cosMeander / 2;
         const [p1fl, p2fl] = keepInitialFlux ? [flux1, flux1] : [(flux1 * 2 + flux2) / 3, (flux1 + flux2 * 2) / 3];
         meandered.push([p1x, p1y, p1fl], [p2x, p2y, p2fl]);
       } else if (dist2 > 25 || riverCells.length < 6) {
@@ -444,5 +444,5 @@
     return getBasin(parent);
   };
 
-  return {generate, alterHeights, resolveDepressions, addMeandering, getPath: getRiverPath, specify, getName, getBasin, remove};
+  return {generate, alterHeights, resolveDepressions, addMeandering, getRiverPath, specify, getName, getType, getBasin, remove};
 });

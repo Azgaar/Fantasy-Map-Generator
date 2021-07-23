@@ -613,7 +613,7 @@ function addRiverOnClick() {
   }
 
   const river = rivers.find(r => r.i === riverId);
-  const widthFactor = river?.widthFactor || (!parent || parent === r ? 1.2 : 1);
+  const widthFactor = river?.widthFactor || (!parent || parent === riverId ? 1.2 : 1);
 
   const riverMeandered = Rivers.addMeandering(riverCells, 1);
   lineGen.curve(d3.curveCatmullRom.alpha(0.1));
@@ -641,7 +641,7 @@ function addRiverOnClick() {
     const name = Rivers.getName(mouth);
     const type = Rivers.getType({i: riverId, length, parent});
 
-    rivers.push({i: riverId, source, mouth, discharge, length, width, widthFactor, sourceWidth, parent, cells: riverCells, basin, name, type});
+    rivers.push({i: riverId, source, mouth, discharge, length, width, widthFactor, sourceWidth: 0, parent, cells: riverCells, basin, name, type});
   }
 
   if (d3.event.shiftKey === false) {
