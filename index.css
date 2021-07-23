@@ -1122,7 +1122,7 @@ div#regimentSelectorBody > div > div {
 }
 
 #debug > text {
-  font-size: 3px;
+  font-size: 2px;
   text-anchor: middle;
   dominant-baseline: central;
 }

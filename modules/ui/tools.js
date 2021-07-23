@@ -616,10 +616,11 @@ function addRiverOnClick() {
 
   const river = rivers.find(r => r.i === riverId);
   const sourceWidth = 0.1;
-  const widthFactor = river?.widthFactor || (parent ? 1 : 1.4);
+  const widthFactor = river?.widthFactor || (!parent || parent === r ? 1.2 : 1);
 
   const riverMeandered = Rivers.addMeandering(riverCells, sourceWidth * 10, 0.5);
-  const [path, length, offset] = Rivers.getPath(riverMeandered, widthFactor, sourceWidth);
+  lineGen.curve(d3.curveCatmullRom.alpha(0.1));
+  const [path, length, offset] = Rivers.getRiverPath(riverMeandered, widthFactor, sourceWidth);
   viewbox
     .select("#rivers")
     .append("path")
