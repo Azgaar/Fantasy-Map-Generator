@@ -305,7 +305,7 @@
       const flux2 = getFlux(i + 1, fl[nextCell]);
       const keepInitialFlux = conf[nextCell] || flux1 === flux2;
 
-      const meander = meandering + 1 / step + Math.random() * Math.max(meandering - step / 100, 0);
+      const meander = meandering + 1 / step + Math.max(meandering - step / 100, 0);
       const angle = Math.atan2(y2 - y1, x2 - x1);
       const sinMeander = Math.sin(angle) * meander;
       const cosMeander = Math.cos(angle) * meander;
