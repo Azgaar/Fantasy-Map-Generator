@@ -388,14 +388,11 @@
   const specify = function () {
     const rivers = pack.rivers;
     if (!rivers.length) return;
-    Math.random = aleaPRNG(seed);
-    const thresholdElement = Math.ceil(rivers.length * 0.15);
-    const smallLength = rivers.map(r => r.length || 0).sort((a, b) => a - b)[thresholdElement];
 
-    for (const r of rivers) {
-      r.basin = getBasin(r.i);
-      r.name = getName(r.mouth);
-      r.type = getType(r, r.length < smallLength);
+    for (const river of rivers) {
+      river.basin = getBasin(river.i);
+      river.name = getName(river.mouth);
+      river.type = getType(river);
     }
   };
 
@@ -414,8 +411,16 @@
       small: {Branch: 1}
     }
   };
-  const getType = function (river, isSmall) {
-    const isFork = each(3)(river.i) && river.parent && river.parent !== river.i;
+
+  let smallLength = null;
+  const getType = function ({i, length, parent}) {
+    if (smallLength === null) {
+      const threshold = Math.ceil(pack.rivers.length * 0.15);
+      smallLength = pack.rivers.map(r => r.length || 0).sort((a, b) => a - b)[threshold];
+    }
+
+    const isSmall = length < smallLength;
+    const isFork = each(3)(i) && parent && parent !== i;
     return rw(riverTypes[isFork ? "fork" : "main"][isSmall ? "small" : "big"]);
   };
 

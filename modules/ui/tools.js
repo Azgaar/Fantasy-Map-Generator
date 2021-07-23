@@ -639,8 +639,7 @@ function addRiverOnClick() {
   } else {
     const basin = Rivers.getBasin(parent);
     const name = Rivers.getName(mouth);
-    const smallLength = rivers.map(r => r.length || 0).sort((a, b) => a - b)[Math.ceil(pack.rivers.length * 0.15)];
-    const type = length < smallLength ? rw({Creek: 9, River: 3, Brook: 3, Stream: 1}) : "River";
+    const type = Rivers.getType({i: riverId, length, parent});
 
     rivers.push({i: riverId, source, mouth, discharge, length, width, widthFactor, sourceWidth, parent, cells: riverCells, basin, name, type});
   }
