@@ -875,7 +875,6 @@ function toggleStates(event) {
   }
 }
 
-// draw states
 function drawStates() {
   TIME && console.time("drawStates");
   regions.selectAll("path").remove();
@@ -1015,6 +1014,21 @@ function drawStates() {
   TIME && console.timeEnd("drawStates");
 }
 
+function toggleBorders(event) {
+  if (!layerIsOn("toggleBorders")) {
+    turnButtonOn("toggleBorders");
+    drawBorders();
+    if (event && isCtrlClick(event)) editStyle("borders");
+  } else {
+    if (event && isCtrlClick(event)) {
+      editStyle("borders");
+      return;
+    }
+    turnButtonOff("toggleBorders");
+    borders.selectAll("path").remove();
+  }
+}
+
 // draw state and province borders
 function drawBorders() {
   TIME && console.time("drawBorders");
@@ -1116,21 +1130,6 @@ function drawBorders() {
   }
 
   TIME && console.timeEnd("drawBorders");
-}
-
-function toggleBorders(event) {
-  if (!layerIsOn("toggleBorders")) {
-    turnButtonOn("toggleBorders");
-    $("#borders").fadeIn();
-    if (event && isCtrlClick(event)) editStyle("borders");
-  } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("borders");
-      return;
-    }
-    turnButtonOff("toggleBorders");
-    $("#borders").fadeOut();
-  }
 }
 
 function toggleProvinces(event) {
@@ -1454,14 +1453,18 @@ function toggleRivers(event) {
 }
 
 function drawRivers() {
+  TIME && console.time("drawRivers");
+  const {addMeandering, getRiverPath} = Rivers;
+  lineGen.curve(d3.curveCatmullRom.alpha(0.1));
   const riverPaths = pack.rivers.map(river => {
-    const riverMeandered = Rivers.addMeandering(river.cells, 0.5, river.points);
+    const riverMeandered = addMeandering(river.cells, 0.5, river.points);
     const widthFactor = river.widthFactor || 1;
     const startingWidth = river.startingWidth || 0;
-    const [path] = Rivers.getRiverPath(riverMeandered, widthFactor, startingWidth);
-    return [path, river.i];
+    const path = getRiverPath(riverMeandered, widthFactor, startingWidth);
+    return `<path id="river${river.i}" d="${path}"/>`;
   });
-  rivers.html(riverPaths.map(d => `<path id="river${d[1]}" d="${d[0]}"/>`).join(""));
+  rivers.html(riverPaths.join(""));
+  TIME && console.timeEnd("drawRivers");
 }
 
 function toggleRoutes(event) {

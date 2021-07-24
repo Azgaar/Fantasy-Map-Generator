@@ -624,6 +624,7 @@ function generate() {
     drawCoastline();
 
     Rivers.generate();
+    drawRivers();
     Lakes.defineGroup();
     defineBiomes();
 

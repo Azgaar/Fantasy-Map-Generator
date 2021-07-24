@@ -24,7 +24,6 @@
     Lakes.prepareLakeData(h);
     resolveDepressions(h);
     drainWater();
-    lineGen.curve(d3.curveCatmullRom.alpha(0.1));
     defineRivers();
     calculateConfluenceFlux();
     Lakes.cleanupLakeData();
@@ -150,7 +149,6 @@
       cells.r = new Uint16Array(cells.i.length);
       cells.conf = new Uint16Array(cells.i.length);
       pack.rivers = [];
-      const riverPaths = [];
 
       for (const key in riversData) {
         const riverCells = riversData[key];
@@ -170,20 +168,13 @@
         const parent = riverParents[key] || 0;
 
         const widthFactor = !parent || parent === riverId ? 1.2 : 1;
-        const riverMeandered = addMeandering(riverCells);
-        const [path, length, offset] = getRiverPath(riverMeandered, widthFactor);
-        riverPaths.push([path, riverId]);
-
-        // Real mouth width examples: Amazon 6000m, Volga 6000m, Dniepr 3000m, Mississippi 1300m, Themes 900m,
-        // Danube 800m, Daugava 600m, Neva 500m, Nile 450m, Don 400m, Wisla 300m, Pripyat 150m, Bug 140m, Muchavets 40m
-        const width = rn((offset / 1.5) ** 1.8, 2); // mouth width in km
+        const meanderedPoints = addMeandering(riverCells);
         const discharge = cells.fl[mouth]; // m3 in second
+        const length = getApproximateLength(meanderedPoints);
+        const width = getWidth(getOffset(discharge, meanderedPoints.length, widthFactor));
 
         pack.rivers.push({i: riverId, source, mouth, discharge, length, width, widthFactor, sourceWidth: 0, parent, cells: riverCells});
       }
-
-      // draw rivers
-      rivers.html(riverPaths.map(d => `<path id="river${d[1]}" d="${d[0]}"/>`).join(""));
     }
 
     function calculateConfluenceFlux() {
@@ -346,18 +337,21 @@
     return [graphWidth, y];
   };
 
-  const fluxFactor = 500;
-  const maxFluxWidth = 2;
-  const lengthFactor = 200;
-  const stepWidth = 1 / lengthFactor;
-  const lengthProgression = [1, 1, 2, 3, 5, 8, 13, 21, 34].map(n => n / lengthFactor);
-  const maxProgression = last(lengthProgression);
+  const FLUX_FACTOR = 500;
+  const MAX_FLUX_WIDTH = 2;
+  const LENGTH_FACTOR = 200;
+  const STEP_WIDTH = 1 / LENGTH_FACTOR;
+  const LENGTH_PROGRESSION = [1, 1, 2, 3, 5, 8, 13, 21, 34].map(n => n / LENGTH_FACTOR);
+  const MAX_PROGRESSION = last(LENGTH_PROGRESSION);
+
+  const getOffset = (flux, pointNumber, widthFactor = 1, startingWidth = 0) => {
+    const fluxWidth = Math.min(flux ** 0.9 / FLUX_FACTOR, MAX_FLUX_WIDTH);
+    const lengthWidth = pointNumber * STEP_WIDTH + (LENGTH_PROGRESSION[pointNumber] || MAX_PROGRESSION);
+    return widthFactor * (lengthWidth + fluxWidth) + startingWidth;
+  };
 
   // build polygon from a list of points and calculated offset (width)
   const getRiverPath = function (points, widthFactor = 1, startingWidth = 0) {
-    const riverLength = points.reduce((s, v, i, p) => s + (i ? Math.hypot(v[0] - p[i - 1][0], v[1] - p[i - 1][1]) : 0), 0);
-    let width = 0;
-
     const riverPointsLeft = [];
     const riverPointsRight = [];
 
@@ -366,13 +360,10 @@
       const [x1, y1, flux] = points[p];
       const [x2, y2] = points[p + 1] || points[p];
 
-      const fluxWidth = Math.min(flux ** 0.9 / fluxFactor, maxFluxWidth);
-      const lengthWidth = p * stepWidth + (lengthProgression[p] || maxProgression);
-      width = widthFactor * (lengthWidth + fluxWidth) + startingWidth;
-
+      const offset = getOffset(flux, p, widthFactor, startingWidth);
       const angle = Math.atan2(y0 - y2, x0 - x2);
-      const sinOffset = Math.sin(angle) * width;
-      const cosOffset = Math.cos(angle) * width;
+      const sinOffset = Math.sin(angle) * offset;
+      const cosOffset = Math.cos(angle) * offset;
 
       riverPointsLeft.push([x1 - sinOffset, y1 + cosOffset]);
       riverPointsRight.push([x1 + sinOffset, y1 - cosOffset]);
@@ -382,7 +373,7 @@
     let left = lineGen(riverPointsLeft);
     left = left.substring(left.indexOf("C"));
 
-    return [round(right + left, 2), rn(riverLength, 2), width];
+    return round(right + left, 1);
   };
 
   const specify = function () {
@@ -424,6 +415,12 @@
     return rw(riverTypes[isFork ? "fork" : "main"][isSmall ? "small" : "big"]);
   };
 
+  const getApproximateLength = points => points.reduce((s, v, i, p) => s + (i ? Math.hypot(v[0] - p[i - 1][0], v[1] - p[i - 1][1]) : 0), 0);
+
+  // Real mouth width examples: Amazon 6000m, Volga 6000m, Dniepr 3000m, Mississippi 1300m, Themes 900m,
+  // Danube 800m, Daugava 600m, Neva 500m, Nile 450m, Don 400m, Wisla 300m, Pripyat 150m, Bug 140m, Muchavets 40m
+  const getWidth = offset => rn((offset / 1.5) ** 1.8, 2); // mouth width in km
+
   // remove river and all its tributaries
   const remove = function (id) {
     const cells = pack.cells;
@@ -444,5 +441,5 @@
     return getBasin(parent);
   };
 
-  return {generate, alterHeights, resolveDepressions, addMeandering, getRiverPath, specify, getName, getType, getBasin, remove};
+  return {generate, alterHeights, resolveDepressions, addMeandering, getRiverPath, specify, getName, getType, getBasin, getWidth, getOffset, getApproximateLength, remove};
 });

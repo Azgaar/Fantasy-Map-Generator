@@ -538,7 +538,7 @@ function addRiverOnClick() {
   if (cells.h[i] < 20) return tip("Cannot create river in water cell", false, "error");
   if (cells.b[i]) return;
 
-  const {alterHeights, resolveDepressions, addMeandering, getRiverPath, getBasin, getName, getType} = Rivers;
+  const {alterHeights, resolveDepressions, addMeandering, getRiverPath, getBasin, getName, getType, getWidth, getOffset, getApproximateLength} = Rivers;
   const riverCells = [];
   let riverId = last(rivers).id + 1;
   let parent = 0;
@@ -614,22 +614,15 @@ function addRiverOnClick() {
   }
 
   const river = rivers.find(r => r.i === riverId);
-  const widthFactor = river?.widthFactor || (!parent || parent === riverId ? 1.2 : 1);
 
-  const riverMeandered = addMeandering(riverCells);
-  lineGen.curve(d3.curveCatmullRom.alpha(0.1));
-  const [path, length, offset] = getRiverPath(riverMeandered, widthFactor);
-  viewbox
-    .select("#rivers")
-    .append("path")
-    .attr("d", path)
-    .attr("id", "river" + riverId);
-
-  // add new river to data or change extended river attributes
   const source = riverCells[0];
   const mouth = riverCells[riverCells.length - 2];
+  const widthFactor = river?.widthFactor || (!parent || parent === riverId ? 1.2 : 1);
+  const riverMeandered = addMeandering(riverCells);
+
   const discharge = cells.fl[mouth]; // m3 in second
-  const width = rn((offset / 1.4) ** 2, 2); // mounth width in km
+  const length = getApproximateLength(riverMeandered);
+  const width = getWidth(getOffset(discharge, riverMeandered.length, widthFactor));
 
   if (river) {
     river.source = source;
@@ -644,6 +637,13 @@ function addRiverOnClick() {
 
     rivers.push({i: riverId, source, mouth, discharge, length, width, widthFactor, sourceWidth: 0, parent, cells: riverCells, basin, name, type});
   }
+
+  // render river
+  lineGen.curve(d3.curveCatmullRom.alpha(0.1));
+  const path = getRiverPath(riverMeandered, widthFactor);
+  const id = "river" + riverId;
+  const riversG = viewbox.select("#rivers");
+  riversG.append("path").attr("d", path).attr("id", id);
 
   if (d3.event.shiftKey === false) {
     Lakes.cleanupLakeData();

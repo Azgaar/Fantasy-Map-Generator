@@ -271,12 +271,13 @@ function parseLoadedData(data) {
       }
     })();
 
-    const notHidden = selection => selection.node() && selection.style("display") !== "none";
-    const hasChildren = selection => selection.node()?.hasChildNodes();
-    const hasChild = (selection, selector) => selection.node()?.querySelector(selector);
-    const turnOn = el => document.getElementById(el).classList.remove("buttonoff");
-
     void (function restoreLayersState() {
+      // helper functions
+      const notHidden = selection => selection.node() && selection.style("display") !== "none";
+      const hasChildren = selection => selection.node()?.hasChildNodes();
+      const hasChild = (selection, selector) => selection.node()?.querySelector(selector);
+      const turnOn = el => document.getElementById(el).classList.remove("buttonoff");
+
       // turn all layers off
       document
         .getElementById("mapLayers")
@@ -291,7 +292,7 @@ function parseLoadedData(data) {
       if (hasChildren(gridOverlay)) turnOn("toggleGrid");
       if (hasChildren(coordinates)) turnOn("toggleCoordinates");
       if (notHidden(compass) && hasChild(compass, "use")) turnOn("toggleCompass");
-      if (notHidden(rivers)) turnOn("toggleRivers");
+      if (hasChildren(rivers)) turnOn("toggleRivers");
       if (notHidden(terrain) && hasChildren(terrain)) turnOn("toggleRelief");
       if (hasChildren(relig)) turnOn("toggleReligions");
       if (hasChildren(cults)) turnOn("toggleCultures");
