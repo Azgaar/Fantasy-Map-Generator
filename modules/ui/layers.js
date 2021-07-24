@@ -1457,7 +1457,7 @@ function drawRivers() {
   const {addMeandering, getRiverPath} = Rivers;
   lineGen.curve(d3.curveCatmullRom.alpha(0.1));
   const riverPaths = pack.rivers.map(river => {
-    const riverMeandered = addMeandering(river.cells, 0.5, river.points);
+    const riverMeandered = addMeandering(river.cells, river.points);
     const widthFactor = river.widthFactor || 1;
     const startingWidth = river.startingWidth || 0;
     const path = getRiverPath(riverMeandered, widthFactor, startingWidth);

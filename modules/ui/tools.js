@@ -540,8 +540,8 @@ function addRiverOnClick() {
 
   const {alterHeights, resolveDepressions, addMeandering, getRiverPath, getBasin, getName, getType, getWidth, getOffset, getApproximateLength} = Rivers;
   const riverCells = [];
-  let riverId = last(rivers).id + 1;
-  let parent = 0;
+  let riverId = last(rivers).i + 1;
+  let parent = riverId;
 
   const initialFlux = grid.cells.prec[cells.g[i]];
   cells.fl[i] = initialFlux;
@@ -562,7 +562,7 @@ function addRiverOnClick() {
 
       const feature = pack.features[cells.f[min]];
       if (feature.type === "lake") {
-        parent = feature.outlet || 0;
+        if (feature.outlet) parent = feature.outlet;
         feature.inlets ? feature.inlets.push(riverId) : (feature.inlets = [riverId]);
       }
       break;
@@ -618,11 +618,11 @@ function addRiverOnClick() {
   const source = riverCells[0];
   const mouth = riverCells[riverCells.length - 2];
   const widthFactor = river?.widthFactor || (!parent || parent === riverId ? 1.2 : 1);
-  const riverMeandered = addMeandering(riverCells);
+  const meanderedPoints = addMeandering(riverCells);
 
   const discharge = cells.fl[mouth]; // m3 in second
-  const length = getApproximateLength(riverMeandered);
-  const width = getWidth(getOffset(discharge, riverMeandered.length, widthFactor));
+  const length = getApproximateLength(meanderedPoints);
+  const width = getWidth(getOffset(discharge, meanderedPoints.length, widthFactor));
 
   if (river) {
     river.source = source;
@@ -640,10 +640,10 @@ function addRiverOnClick() {
 
   // render river
   lineGen.curve(d3.curveCatmullRom.alpha(0.1));
-  const path = getRiverPath(riverMeandered, widthFactor);
+  const path = getRiverPath(meanderedPoints, widthFactor);
   const id = "river" + riverId;
   const riversG = viewbox.select("#rivers");
-  riversG.append("path").attr("d", path).attr("id", id);
+  riversG.append("path").attr("id", id).attr("d", path);
 
   if (d3.event.shiftKey === false) {
     Lakes.cleanupLakeData();

@@ -259,7 +259,7 @@
   };
 
   // add points at 1/3 and 2/3 of a line between adjacents river cells
-  const addMeandering = function (riverCells, meandering = 0.5, riverPoints = null) {
+  const addMeandering = function (riverCells, riverPoints = null, meandering = 0.5) {
     const {fl, conf, h} = pack.cells;
     const meandered = [];
     const lastStep = riverCells.length - 1;
