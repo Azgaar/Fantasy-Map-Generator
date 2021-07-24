@@ -1,21 +1,31 @@
 "use strict";
 function editRiver(id) {
   if (customization) return;
-  if (elSelected && d3.event && d3.event.target.id === elSelected.attr("id")) return;
+  if (elSelected && id === elSelected.attr("id")) return;
   closeDialogs(".stable");
   if (!layerIsOn("toggleRivers")) toggleRivers();
 
-  const node = id ? document.getElementById(id) : d3.event.target;
-  elSelected = d3.select(node).on("click", addInterimControlPoint);
+  document.getElementById("toggleCells").dataset.forced = +!layerIsOn("toggleCells");
+  if (!layerIsOn("toggleCells")) toggleCells();
+
+  elSelected = d3.select("#" + id);
+
   viewbox.on("touchmove mousemove", showEditorTips);
-  debug.append("g").attr("id", "controlPoints").attr("transform", elSelected.attr("transform"));
+  debug.append("g").attr("id", "controlCells");
+  debug.append("g").attr("id", "controlPoints");
+
   updateRiverData();
-  drawControlPoints(node);
+
+  const river = getRiver();
+  const {cells, points} = river;
+  const riverPoints = Rivers.getRiverPoints(cells, points);
+  drawControlPoints(riverPoints, cells);
+  drawRiverCells(cells);
 
   $("#riverEditor").dialog({
     title: "Edit River",
     resizable: false,
-    position: {my: "center top+80", at: "top", of: node, collision: "fit"},
+    position: {my: "left+40 center", at: "center", of: "svg", collision: "fit"},
     close: closeRiverEditor
   });
 
@@ -28,10 +38,8 @@ function editRiver(id) {
   document.getElementById("riverNameCulture").addEventListener("click", generateNameCulture);
   document.getElementById("riverNameRandom").addEventListener("click", generateNameRandom);
   document.getElementById("riverMainstem").addEventListener("change", changeParent);
-
   document.getElementById("riverSourceWidth").addEventListener("input", changeSourceWidth);
   document.getElementById("riverWidthFactor").addEventListener("input", changeWidthFactor);
-
   document.getElementById("riverNew").addEventListener("click", toggleRiverCreationMode);
   document.getElementById("riverEditStyle").addEventListener("click", () => editStyle("rivers"));
   document.getElementById("riverElevationProfile").addEventListener("click", showElevationProfile);
@@ -39,9 +47,8 @@ function editRiver(id) {
   document.getElementById("riverRemove").addEventListener("click", removeRiver);
 
   function showEditorTips() {
+    tip("Drag control points for minor change, to change cells add a new river", true);
     showMainTip();
-    if (d3.event.target.parentNode.id === elSelected.attr("id")) tip("Drag to move, click to add a control point");
-    else if (d3.event.target.parentNode.id === "controlPoints") tip("Drag to move, click to delete the control point");
   }
 
   function getRiver() {
@@ -67,86 +74,127 @@ function editRiver(id) {
     document.getElementById("riverBasin").value = pack.rivers.find(river => river.i === r.basin).name;
 
     document.getElementById("riverDischarge").value = r.discharge + " m³/s";
-    r.length = elSelected.node().getTotalLength() / 2;
-    const length = rn(r.length * distanceScaleInput.value) + " " + distanceUnitInput.value;
-    document.getElementById("riverLength").value = length;
-    const width = rn(r.width * distanceScaleInput.value, 3) + " " + distanceUnitInput.value;
-    document.getElementById("riverWidth").value = width;
-
     document.getElementById("riverSourceWidth").value = r.sourceWidth;
     document.getElementById("riverWidthFactor").value = r.widthFactor;
+
+    updateRiverLength(r);
+    updateRiverWidth(r);
   }
 
-  function drawControlPoints(node) {
-    const length = getRiver().length;
-    const segments = Math.ceil(length / 4);
-    const increment = rn((length / segments) * 1e5);
-    for (let i = increment * segments, c = i; i >= 0; i -= increment, c += increment) {
-      const p1 = node.getPointAtLength(i / 1e5);
-      const p2 = node.getPointAtLength(c / 1e5);
-      addControlPoint([(p1.x + p2.x) / 2, (p1.y + p2.y) / 2]);
-    }
+  function updateRiverLength(river) {
+    river.length = rn(elSelected.node().getTotalLength() / 2, 2);
+    const length = `${river.length * distanceScaleInput.value} ${distanceUnitInput.value}`;
+    document.getElementById("riverLength").value = length;
   }
 
-  function addControlPoint(point, before = null) {
-    debug.select("#controlPoints").insert("circle", before).attr("cx", point[0]).attr("cy", point[1]).attr("r", 0.6).call(d3.drag().on("drag", dragControlPoint)).on("click", clickControlPoint);
+  function updateRiverWidth(river) {
+    const {addMeandering, getWidth, getOffset} = Rivers;
+    const {cells, discharge, widthFactor, sourceWidth} = river;
+    const meanderedPoints = addMeandering(cells);
+    river.width = getWidth(getOffset(discharge, meanderedPoints.length, widthFactor, sourceWidth));
+
+    const width = `${rn(river.width * distanceScaleInput.value, 3)} ${distanceUnitInput.value}`;
+    document.getElementById("riverWidth").value = width;
   }
 
-  function dragControlPoint() {
-    this.setAttribute("cx", d3.event.x);
-    this.setAttribute("cy", d3.event.y);
-    redrawRiver();
-  }
-
-  function redrawRiver() {
-    const points = [];
+  function drawControlPoints(points, cells) {
     debug
       .select("#controlPoints")
       .selectAll("circle")
-      .each(function () {
-        points.push([+this.getAttribute("cx"), +this.getAttribute("cy")]);
-      });
+      .data(points)
+      .enter()
+      .append("circle")
+      .attr("cx", d => d[0])
+      .attr("cy", d => d[1])
+      .attr("r", 0.6)
+      .attr("data-cell", (d, i) => cells[i])
+      .attr("data-i", (d, i) => i)
+      .call(d3.drag().on("start", dragControlPoint));
+  }
 
-    if (points.length < 2) return;
-    if (points.length === 2) {
-      const p0 = points[0],
-        p1 = points[1];
-      const angle = Math.atan2(p1[1] - p0[1], p1[0] - p0[0]);
-      const sin = Math.sin(angle),
-        cos = Math.cos(angle);
-      elSelected.attr("d", `M${p0[0]},${p0[1]} L${p1[0]},${p1[1]} l${-sin / 2},${cos / 2} Z`);
-      return;
-    }
+  function drawRiverCells(cells) {
+    debug
+      .select("#controlCells")
+      .selectAll("polygon.current")
+      .data(cells)
+      .join("polygon")
+      .attr("points", d => getPackPolygon(d))
+      .attr("class", "current");
+  }
 
-    const widthFactor = +document.getElementById("riverWidthFactor").value;
-    const sourceWidth = +document.getElementById("riverSourceWidth").value;
+  function drawAvailableCells(cells) {
+    debug
+      .select("#controlCells")
+      .selectAll("polygon.available")
+      .data(cells)
+      .join("polygon")
+      .attr("points", d => getPackPolygon(d))
+      .attr("class", "available");
+  }
+
+  function dragControlPoint() {
+    const {c, r, fl, conf} = pack.cells;
+    const river = getRiver();
+    const {cells} = river;
+
+    const initCell = +this.dataset.cell;
+    const index = +this.dataset.i;
+    const prev = cells[index - 1];
+    const next = cells[index + 1];
+    const availableCells = conf[initCell]
+      ? []
+      : c[initCell]
+          .filter(neib => !r[neib])
+          .filter(neib => !prev || c[neib].includes(prev))
+          .filter(neib => !next || c[neib].includes(next));
+
+    let movedToCell = null;
+    drawAvailableCells(availableCells);
+
+    d3.event.on("drag", function () {
+      const {x, y} = d3.event;
+      const currentCell = findCell(x, y);
+
+      if (initCell !== currentCell) {
+        if (availableCells.includes(currentCell)) movedToCell = currentCell;
+        else return;
+      } else movedToCell = null;
+
+      this.setAttribute("cx", x);
+      this.setAttribute("cy", y);
+      this.__data__ = [rn(x, 1), rn(y, 1)];
+      redrawRiver();
+    });
+
+    d3.event.on("end", () => {
+      if (movedToCell) {
+        this.dataset.cell = movedToCell;
+        river.cells[index] = movedToCell;
+
+        r[initCell] = 0;
+        r[movedToCell] = river.i;
+        const sourceFlux = fl[initCell];
+        fl[initCell] = fl[movedToCell];
+        fl[movedToCell] = sourceFlux;
+        drawRiverCells(river.cells);
+      }
+
+      debug.select("#controlCells").selectAll("polygon.available").remove();
+    });
+  }
+
+  function redrawRiver() {
+    const river = getRiver();
+    river.points = debug.selectAll("#controlPoints > *").data();
+    const {cells, widthFactor, sourceWidth} = river;
+    const meanderedPoints = Rivers.addMeandering(cells, river.points);
+
     lineGen.curve(d3.curveCatmullRom.alpha(0.1));
-    const [path, length, offset] = Rivers.getRiverPath(points, widthFactor, sourceWidth);
+    const path = Rivers.getRiverPath(meanderedPoints, widthFactor, sourceWidth);
     elSelected.attr("d", path);
 
-    const r = getRiver();
-    if (r) {
-      r.width = rn(offset ** 2, 2);
-      r.length = length;
-      updateRiverData();
-    }
-
+    updateRiverLength(river);
     if (modules.elevation) showEPForRiver(elSelected.node());
-  }
-
-  function clickControlPoint() {
-    this.remove();
-    redrawRiver();
-  }
-
-  function addInterimControlPoint() {
-    const point = d3.mouse(this);
-    const controls = document.getElementById("controlPoints").querySelectorAll("circle");
-    const points = Array.from(controls).map(circle => [+circle.getAttribute("cx"), +circle.getAttribute("cy")]);
-    const index = getSegmentId(points, point, 2);
-    addControlPoint(point, ":nth-child(" + (index + 1) + ")");
-
-    redrawRiver();
   }
 
   function changeName() {
@@ -175,12 +223,16 @@ function editRiver(id) {
   }
 
   function changeSourceWidth() {
-    getRiver().sourceWidth = +this.value;
+    const river = getRiver();
+    river.sourceWidth = +this.value;
+    updateRiverWidth(river);
     redrawRiver();
   }
 
   function changeWidthFactor() {
-    getRiver().widthFactor = +this.value;
+    const river = getRiver();
+    river.widthFactor = +this.value;
+    updateRiverWidth(river);
     redrawRiver();
   }
 
@@ -214,7 +266,7 @@ function editRiver(id) {
 
     // add control point
     const point = d3.mouse(this);
-    addControlPoint([point[0], point[1]]);
+    // addControlPoint([point[0], point[1]]);
     redrawRiver();
   }
 
@@ -222,7 +274,6 @@ function editRiver(id) {
     riverNew.classList.remove("pressed");
     clearMainTip();
     viewbox.on("click", clicked).style("cursor", "default");
-    elSelected.on("click", addInterimControlPoint);
 
     if (!elSelected.attr("data-new")) return; // no need to create a new river
     elSelected.attr("data-new", null);
@@ -257,11 +308,11 @@ function editRiver(id) {
   }
 
   function removeRiver() {
-    alertMessage.innerHTML = "Are you sure you want to remove the river? All tributaries will be auto-removed";
+    alertMessage.innerHTML = "Are you sure you want to remove the river and all its tributaries";
     $("#alert").dialog({
       resizable: false,
       width: "22em",
-      title: "Remove river",
+      title: "Remove river and tributaries",
       buttons: {
         Remove: function () {
           $(this).dialog("close");
@@ -281,6 +332,11 @@ function editRiver(id) {
     exitRiverCreationMode();
     elSelected.on("click", null);
     debug.select("#controlPoints").remove();
+    debug.select("#controlCells").remove();
     unselect();
+
+    const forced = +document.getElementById("toggleCells").dataset.forced;
+    document.getElementById("toggleCells").dataset.forced = 0;
+    if (forced && layerIsOn("toggleCells")) toggleCells();
   }
 }

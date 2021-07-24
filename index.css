@@ -202,6 +202,7 @@ a {
   stroke: none;
   mask: url(#land);
   cursor: pointer;
+  fill-rule: nonzero;
 }
 
 #anchors {
@@ -982,6 +983,24 @@ body button.noicon {
   stroke-width: 2;
   opacity: 0.4;
   cursor: pointer;
+}
+
+#controlCells > .current {
+  fill: #82c8ff40;
+  stroke: #82c8ff;
+  stroke-width: 0.4;
+}
+
+#controlCells > .available {
+  fill: #82ff9b40;
+  stroke: #82ff9b;
+  stroke-width: 0.4;
+}
+
+#controlCells > .occupied {
+  fill: #ff828240;
+  stroke: #ff8282;
+  stroke-width: 0.4;
 }
 
 #vertices > circle {

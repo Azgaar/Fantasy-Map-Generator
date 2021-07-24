@@ -129,7 +129,8 @@ function overviewRivers() {
   }
 
   function openRiverEditor() {
-    editRiver("river" + this.parentNode.dataset.id);
+    const id = "river" + this.parentNode.dataset.id;
+    editRiver(id);
   }
 
   function triggerRiverRemove() {

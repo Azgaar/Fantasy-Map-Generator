@@ -706,6 +706,14 @@ function parseLoadedData(data) {
         statesHalo.attr("opacity", opacity).attr("filter", "blur(5px)");
         regions.attr("opacity", null).attr("filter", null);
       }
+
+      if (version < 1.65) {
+        // v 1.65 changed rivers data
+        for (const river of pack.rivers) {
+          river.sourceWidth = 0;
+          // get points and cells
+        }
+      }
     })();
 
     void (function checkDataIntegrity() {

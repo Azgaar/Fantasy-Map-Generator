@@ -171,7 +171,7 @@
         const meanderedPoints = addMeandering(riverCells);
         const discharge = cells.fl[mouth]; // m3 in second
         const length = getApproximateLength(meanderedPoints);
-        const width = getWidth(getOffset(discharge, meanderedPoints.length, widthFactor));
+        const width = getWidth(getOffset(discharge, meanderedPoints.length, widthFactor, 0));
 
         pack.rivers.push({i: riverId, source, mouth, discharge, length, width, widthFactor, sourceWidth: 0, parent, cells: riverCells});
       }
@@ -441,5 +441,5 @@
     return getBasin(parent);
   };
 
-  return {generate, alterHeights, resolveDepressions, addMeandering, getRiverPath, specify, getName, getType, getBasin, getWidth, getOffset, getApproximateLength, remove};
+  return {generate, alterHeights, resolveDepressions, addMeandering, getRiverPath, specify, getName, getType, getBasin, getWidth, getOffset, getApproximateLength, getRiverPoints, remove};
 });
