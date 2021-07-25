@@ -991,12 +991,6 @@ body button.noicon {
   stroke-width: 0.4;
 }
 
-#controlCells > .available {
-  fill: #82ff9b40;
-  stroke: #82ff9b;
-  stroke-width: 0.4;
-}
-
 #controlCells > .occupied {
   fill: #ff828240;
   stroke: #ff8282;
