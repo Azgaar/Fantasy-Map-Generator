@@ -531,8 +531,7 @@ function toggleAddRiver() {
 
 function addRiverOnClick() {
   const {cells, rivers} = pack;
-  const point = d3.mouse(this);
-  let i = findCell(point[0], point[1]);
+  let i = findCell(...d3.mouse(this));
 
   if (cells.r[i]) return tip("There is already a river here", false, "error");
   if (cells.h[i] < 20) return tip("Cannot create river in water cell", false, "error");

@@ -1674,6 +1674,12 @@ rect.fillRect {
   text-align: center;
 }
 
+div.editorLine {
+  margin: 0.2em 0;
+  padding: 0 0.2em;
+  font-size: 0.9em;
+}
+
 #emblemDownloadControl > input {
   width: 4.1em;
 }

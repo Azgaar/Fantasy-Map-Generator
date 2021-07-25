@@ -1663,6 +1663,14 @@
       </div>
     </div>
 
+    <div id="riverCreator" class="dialog" style="display: none">
+      <div id="riverCreatorBody"></div>
+      <div id="riverCreatorBottom">
+        <button id="riverCreatorComplete" data-tip="Complete river creation" class="icon-check"></button>
+        <button id="riverCreatorCancel" data-tip="Cancel the creation" class="icon-cancel"></button>
+      </div>
+    </div>
+
     <div id="lakeEditor" class="dialog" style="display: none">
       <div id="lakeBody" style="padding-bottom: .3em">
         <div>
@@ -3223,7 +3231,8 @@
 
       <div id="riversBottom">
         <button id="riversOverviewRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-        <button id="addNewRiver" data-tip="Add a new river. Hold Shift to add multiple" class="icon-plus"></button>
+        <button id="addNewRiver" data-tip="Automatically add river starting from clicked cell. Hold Shift to add multiple" class="icon-plus"></button>
+        <button id="riverCreateNew" data-tip="Create new river selecting river cells" class="icon-map-pin"></button>
         <button id="riversBasinHighlight" data-tip="Toggle basin highlight mode" class="icon-sitemap"></button>
         <button id="riversExport" data-tip="Save rivers-related data as a text file (.csv)" class="icon-download"></button>
         <button id="riversRemoveAll" data-tip="Remove all rivers" class="icon-trash"></button>
@@ -4218,6 +4227,7 @@
   <script defer src="modules/ui/coastline-editor.js"></script>
   <script defer src="modules/ui/labels-editor.js"></script>
   <script defer src="modules/ui/rivers-editor.js"></script>
+  <script defer src="modules/ui/rivers-creator.js"></script>
   <script defer src="modules/ui/relief-editor.js"></script>
   <script defer src="modules/ui/religions-editor.js"></script>
   <script defer src="modules/ui/markers-editor.js"></script>

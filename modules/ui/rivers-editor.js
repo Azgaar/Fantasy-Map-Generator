@@ -25,7 +25,7 @@ function editRiver(id) {
   $("#riverEditor").dialog({
     title: "Edit River",
     resizable: false,
-    position: {my: "left+40 center", at: "center", of: "svg", collision: "fit"},
+    position: {my: "left top", at: "left+10 top+10", of: "#map"},
     close: closeRiverEditor
   });
 
