@@ -74,19 +74,22 @@ function createRiver() {
 
   function addRiver() {
     const {rivers, cells} = pack;
-    const {addMeandering, getApproximateLength, getWidth, getOffset, getName, getRiverPath} = Rivers;
+    const {addMeandering, getApproximateLength, getWidth, getOffset, getName, getRiverPath, getBasin} = Rivers;
+
+    const riverCells = createRiver.cells;
+    if (riverCells.length < 2) return tip("Add at least 2 cells", false, "error");
 
     const riverId = last(rivers).i + 1;
-    const riverCells = createRiver.cells;
+    const parent = cells.r[last(riverCells)] || riverId;
 
     riverCells.forEach(cell => {
       if (!cells.r[cell]) cells.r[cell] = riverId;
     });
 
     const source = riverCells[0];
-    const mouth = riverCells[riverCells.length - 1];
+    const mouth = parent === riverId ? last(riverCells) : riverCells[riverCells.length - 2];
     const sourceWidth = 0.05;
-    const widthFactor = 1;
+    const widthFactor = 1.2;
 
     const meanderedPoints = addMeandering(riverCells);
 
@@ -94,8 +97,9 @@ function createRiver() {
     const length = getApproximateLength(meanderedPoints);
     const width = getWidth(getOffset(discharge, meanderedPoints.length, widthFactor, sourceWidth));
     const name = getName(mouth);
+    const basin = getBasin(parent);
 
-    rivers.push({i: riverId, source, mouth, discharge, length, width, widthFactor, sourceWidth, parent: riverId, cells: riverCells, basin: riverId, name, type: "River"});
+    rivers.push({i: riverId, source, mouth, discharge, length, width, widthFactor, sourceWidth, parent, cells: riverCells, basin, name, type: "River"});
 
     // render river
     lineGen.curve(d3.curveCatmullRom.alpha(0.1));
@@ -109,6 +113,7 @@ function createRiver() {
   }
 
   function closeRiverCreator() {
+    body.innerHTML = "";
     debug.select("#controlCells").remove();
     restoreDefaultEvents();
     clearMainTip();

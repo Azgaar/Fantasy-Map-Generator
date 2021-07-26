@@ -33,6 +33,11 @@ function editRiver(id) {
   modules.editRiver = true;
 
   // add listeners
+  document.getElementById("riverCreateSelectingCells").addEventListener("click", createRiver);
+  document.getElementById("riverEditStyle").addEventListener("click", () => editStyle("rivers"));
+  document.getElementById("riverElevationProfile").addEventListener("click", showElevationProfile);
+  document.getElementById("riverLegend").addEventListener("click", editRiverLegend);
+  document.getElementById("riverRemove").addEventListener("click", removeRiver);
   document.getElementById("riverName").addEventListener("input", changeName);
   document.getElementById("riverType").addEventListener("input", changeType);
   document.getElementById("riverNameCulture").addEventListener("click", generateNameCulture);
@@ -40,10 +45,6 @@ function editRiver(id) {
   document.getElementById("riverMainstem").addEventListener("change", changeParent);
   document.getElementById("riverSourceWidth").addEventListener("input", changeSourceWidth);
   document.getElementById("riverWidthFactor").addEventListener("input", changeWidthFactor);
-  document.getElementById("riverEditStyle").addEventListener("click", () => editStyle("rivers"));
-  document.getElementById("riverElevationProfile").addEventListener("click", showElevationProfile);
-  document.getElementById("riverLegend").addEventListener("click", editRiverLegend);
-  document.getElementById("riverRemove").addEventListener("click", removeRiver);
 
   function getRiver() {
     const riverId = +elSelected.attr("id").slice(5);
