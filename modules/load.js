@@ -710,8 +710,23 @@ function parseLoadedData(data) {
       if (version < 1.65) {
         // v 1.65 changed rivers data
         for (const river of pack.rivers) {
-          river.sourceWidth = 0;
-          // get points and cells
+          const node = document.getElementById("river" + river.i);
+          if (node && !river.cells) {
+            const riverCells = new Set();
+            const length = node.getTotalLength() / 2;
+            const segments = Math.ceil(length / 6);
+            const increment = length / segments;
+            for (let i = increment * segments, c = i; i >= 0; i -= increment, c += increment) {
+              const p1 = node.getPointAtLength(i);
+              const p2 = node.getPointAtLength(c);
+              const x = (p1.x + p2.x) / 2;
+              const y = (p1.y + p2.y) / 2;
+              const cell = findCell(x, y, 6);
+              if (cell) riverCells.add(cell);
+            }
+
+            river.cells = Array.from(riverCells);
+          }
         }
       }
     })();
