@@ -234,7 +234,7 @@
   <div id="loading">
     <div id="titleName"><t data-t="titleName">Azgaar's</t></div>
     <div id="title"><t data-t="title">Fantasy Map Generator</t></div>
-    <div id="version"><t data-t="version">v. </t>1.63</div>
+    <div id="version"><t data-t="version">v. </t>1.65</div>
     <p id="loading-text"><t data-t="loading">LOADING</t><span>.</span><span>.</span><span>.</span></p>
   </div>
 
@@ -1644,23 +1644,31 @@
           <input id="riverWidth" disabled/>
         </div>
 
-        <div data-tip="River source width in pixels">
+        <div data-tip="River additional width. Default value is 0">
           <div class="label">Source width:</div>
           <input id="riverSourceWidth" type="number" min=0 max=3 step=.1 />
         </div>
 
-        <div data-tip="River width multiplier">
+        <div data-tip="River width multiplier. Default value is 1">
           <div class="label">Width modifier:</div>
           <input id="riverWidthFactor" type="number" min=.1 max=4 step=.1 />
         </div>
       </div>
 
       <div id="riverBottom">
-        <button id="riverNew" data-tip="Create new river clicking on map" class="icon-map-pin"></button>
+        <button id="riverCreateSelectingCells" data-tip="Create new river selecting river cells" class="icon-map-pin"></button>
         <button id="riverEditStyle" data-tip="Edit style for all rivers in Style Editor" class="icon-brush"></button>
         <button id="riverElevationProfile" data-tip="Show the elevation profile for the river" class="icon-chart-area"></button>
         <button id="riverLegend" data-tip="Edit free text notes (legend) for the river" class="icon-edit"></button>
         <button id="riverRemove" data-tip="Remove river. Shortcut: Delete" class="icon-trash fastDelete"></button>
+      </div>
+    </div>
+
+    <div id="riverCreator" class="dialog" style="display: none">
+      <div id="riverCreatorBody"></div>
+      <div id="riverCreatorBottom">
+        <button id="riverCreatorComplete" data-tip="Complete river creation" class="icon-check"></button>
+        <button id="riverCreatorCancel" data-tip="Cancel the creation" class="icon-cancel"></button>
       </div>
     </div>
 
@@ -3224,7 +3232,8 @@
 
       <div id="riversBottom">
         <button id="riversOverviewRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-        <button id="addNewRiver" data-tip="Add a new river. Hold Shift to add multiple" class="icon-plus"></button>
+        <button id="addNewRiver" data-tip="Automatically add river starting from clicked cell. Hold Shift to add multiple" class="icon-plus"></button>
+        <button id="riverCreateNew" data-tip="Create new river selecting river cells" class="icon-map-pin"></button>
         <button id="riversBasinHighlight" data-tip="Toggle basin highlight mode" class="icon-sitemap"></button>
         <button id="riversExport" data-tip="Save rivers-related data as a text file (.csv)" class="icon-download"></button>
         <button id="riversRemoveAll" data-tip="Remove all rivers" class="icon-trash"></button>
@@ -4219,6 +4228,7 @@
   <script defer src="modules/ui/coastline-editor.js"></script>
   <script defer src="modules/ui/labels-editor.js"></script>
   <script defer src="modules/ui/rivers-editor.js"></script>
+  <script defer src="modules/ui/rivers-creator.js"></script>
   <script defer src="modules/ui/relief-editor.js"></script>
   <script defer src="modules/ui/religions-editor.js"></script>
   <script defer src="modules/ui/markers-editor.js"></script>

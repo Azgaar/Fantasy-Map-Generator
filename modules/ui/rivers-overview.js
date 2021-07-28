@@ -21,6 +21,7 @@ function overviewRivers() {
   // add listeners
   document.getElementById("riversOverviewRefresh").addEventListener("click", riversOverviewAddLines);
   document.getElementById("addNewRiver").addEventListener("click", toggleAddRiver);
+  document.getElementById("riverCreateNew").addEventListener("click", createRiver);
   document.getElementById("riversBasinHighlight").addEventListener("click", toggleBasinsHightlight);
   document.getElementById("riversExport").addEventListener("click", downloadRiversData);
   document.getElementById("riversRemoveAll").addEventListener("click", triggerAllRiversRemove);
@@ -129,7 +130,8 @@ function overviewRivers() {
   }
 
   function openRiverEditor() {
-    editRiver("river" + this.parentNode.dataset.id);
+    const id = "river" + this.parentNode.dataset.id;
+    editRiver(id);
   }
 
   function triggerRiverRemove() {

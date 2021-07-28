@@ -96,10 +96,7 @@ function showMapTooltip(point, e, i, g) {
   const land = pack.cells.h[i] >= 20;
 
   // specific elements
-  if (group === "armies") {
-    tip(e.target.parentNode.dataset.name + ". Click to edit");
-    return;
-  }
+  if (group === "armies") return tip(e.target.parentNode.dataset.name + ". Click to edit");
 
   if (group === "emblems" && e.target.tagName === "use") {
     const parent = e.target.parentNode;
@@ -123,14 +120,11 @@ function showMapTooltip(point, e, i, g) {
     if (riversOverview.offsetParent) highlightEditorLine(riversOverview, river, 5000);
     return;
   }
-  if (group === "routes") {
-    tip("Click to edit the Route");
-    return;
-  }
-  if (group === "terrain") {
-    tip("Click to edit the Relief Icon");
-    return;
-  }
+
+  if (group === "routes") return tip("Click to edit the Route");
+
+  if (group === "terrain") return tip("Click to edit the Relief Icon");
+
   if (subgroup === "burgLabels" || subgroup === "burgIcons") {
     const burg = +path[path.length - 10].dataset.id;
     const b = pack.burgs[burg];
@@ -139,50 +133,25 @@ function showMapTooltip(point, e, i, g) {
     if (burgsOverview.offsetParent) highlightEditorLine(burgsOverview, burg, 5000);
     return;
   }
-  if (group === "labels") {
-    tip("Click to edit the Label");
-    return;
-  }
-  if (group === "markers") {
-    tip("Click to edit the Marker");
-    return;
-  }
+  if (group === "labels") return tip("Click to edit the Label");
+
+  if (group === "markers") return tip("Click to edit the Marker");
+
   if (group === "ruler") {
     const tag = e.target.tagName;
     const className = e.target.getAttribute("class");
-    if (tag === "circle" && className === "edge") {
-      tip("Drag to adjust. Hold Ctrl and drag to add a point. Click to remove the point");
-      return;
-    }
-    if (tag === "circle" && className === "control") {
-      tip("Drag to adjust. Hold Shifta and drag to keep axial direction. Click to remove the point");
-      return;
-    }
-    if (tag === "circle") {
-      tip("Drag to adjust the measurer");
-      return;
-    }
-    if (tag === "polyline") {
-      tip("Click on drag to add a control point");
-      return;
-    }
-    if (tag === "path") {
-      tip("Drag to move the measurer");
-      return;
-    }
-    if (tag === "text") {
-      tip("Drag to move, click to remove the measurer");
-      return;
-    }
+    if (tag === "circle" && className === "edge") return tip("Drag to adjust. Hold Ctrl and drag to add a point. Click to remove the point");
+    if (tag === "circle" && className === "control") return tip("Drag to adjust. Hold Shift and drag to keep axial direction. Click to remove the point");
+    if (tag === "circle") return tip("Drag to adjust the measurer");
+    if (tag === "polyline") return tip("Click on drag to add a control point");
+    if (tag === "path") return tip("Drag to move the measurer");
+    if (tag === "text") return tip("Drag to move, click to remove the measurer");
   }
-  if (subgroup === "burgIcons") {
-    tip("Click to edit the Burg");
-    return;
-  }
-  if (subgroup === "burgLabels") {
-    tip("Click to edit the Burg");
-    return;
-  }
+
+  if (subgroup === "burgIcons") return tip("Click to edit the Burg");
+
+  if (subgroup === "burgLabels") return tip("Click to edit the Burg");
+
   if (group === "lakes" && !land) {
     const lakeId = +e.target.dataset.f;
     const name = pack.features[lakeId]?.name;
@@ -190,20 +159,16 @@ function showMapTooltip(point, e, i, g) {
     tip(`${fullName} lake. Click to edit`);
     return;
   }
-  if (group === "coastline") {
-    tip("Click to edit the coastline");
-    return;
-  }
+  if (group === "coastline") return tip("Click to edit the coastline");
+
   if (group === "zones") {
     const zone = path[path.length - 8];
     tip(zone.dataset.description);
     if (zonesEditor.offsetParent) highlightEditorLine(zonesEditor, zone.id, 5000);
     return;
   }
-  if (group === "ice") {
-    tip("Click to edit the Ice");
-    return;
-  }
+
+  if (group === "ice") return tip("Click to edit the Ice");
 
   // covering elements
   if (layerIsOn("togglePrec") && land) tip("Annual Precipitation: " + getFriendlyPrecipitation(i));

@@ -7,9 +7,14 @@
     TIME && console.time("generateRivers");
     Math.random = aleaPRNG(seed);
     const {cells, features} = pack;
-    const p = cells.p;
 
-    const riversData = []; // rivers data
+    const riversData = {}; // rivers data
+    const riverParents = {};
+    const addCellToRiver = function (cell, river) {
+      if (!riversData[river]) riversData[river] = [cell];
+      else riversData[river].push(cell);
+    };
+
     cells.fl = new Uint16Array(cells.i.length); // water flux array
     cells.r = new Uint16Array(cells.i.length); // rivers array
     cells.conf = new Uint8Array(cells.i.length); // confluences array
@@ -20,6 +25,7 @@
     resolveDepressions(h);
     drainWater();
     defineRivers();
+    calculateConfluenceFlux();
     Lakes.cleanupLakeData();
 
     if (allowErosion) cells.h = Uint8Array.from(h); // apply changed heights as basic one
@@ -28,51 +34,48 @@
 
     function drainWater() {
       const MIN_FLUX_TO_FORM_RIVER = 30;
+      const prec = grid.cells.prec;
       const land = cells.i.filter(i => h[i] >= 20).sort((a, b) => h[b] - h[a]);
       const lakeOutCells = Lakes.setClimateData(h);
 
       land.forEach(function (i) {
-        cells.fl[i] += grid.cells.prec[cells.g[i]]; // flux from precipitation
-        const [x, y] = p[i];
+        cells.fl[i] += prec[cells.g[i]]; // add flux from precipitation
 
         // create lake outlet if lake is not in deep depression and flux > evaporation
         const lakes = lakeOutCells[i] ? features.filter(feature => i === feature.outCell && feature.flux > feature.evaporation) : [];
         for (const lake of lakes) {
           const lakeCell = cells.c[i].find(c => h[c] < 20 && cells.f[c] === lake.i);
-
           cells.fl[lakeCell] += Math.max(lake.flux - lake.evaporation, 0); // not evaporated lake water drains to outlet
 
           // allow chain lakes to retain identity
           if (cells.r[lakeCell] !== lake.river) {
             const sameRiver = cells.c[lakeCell].some(c => cells.r[c] === lake.river);
-            const [x, y] = p[lakeCell];
-            const flux = cells.fl[lakeCell];
 
             if (sameRiver) {
               cells.r[lakeCell] = lake.river;
-              riversData.push({river: lake.river, cell: lakeCell, x, y, flux});
+              addCellToRiver(lakeCell, lake.river);
             } else {
               cells.r[lakeCell] = riverNext;
-              riversData.push({river: riverNext, cell: lakeCell, x, y, flux});
+              addCellToRiver(lakeCell, riverNext);
               riverNext++;
             }
           }
 
           lake.outlet = cells.r[lakeCell];
-          flowDown(i, cells.fl[i], cells.fl[lakeCell], lake.outlet);
+          flowDown(i, cells.fl[lakeCell], lake.outlet);
         }
 
         // assign all tributary rivers to outlet basin
-        for (let outlet = lakes[0]?.outlet, l = 0; l < lakes.length; l++) {
-          lakes[l].inlets?.forEach(fork => (riversData.find(r => r.river === fork).parent = outlet));
+        const outlet = lakes[0]?.outlet;
+        for (const lake of lakes) {
+          if (!Array.isArray(lake.inlets)) continue;
+          for (const inlet of lake.inlets) {
+            riverParents[inlet] = outlet;
+          }
         }
 
         // near-border cell: pour water out of the screen
-        if (cells.b[i] && cells.r[i]) {
-          const [x, y] = getBorderPoint(i);
-          riversData.push({river: cells.r[i], cell: -1, x, y, flux: cells.fl[i]});
-          return;
-        }
+        if (cells.b[i] && cells.r[i]) return addCellToRiver(-1, cells.r[i]);
 
         // downhill cell (make sure it's not in the source lake)
         let min = null;
@@ -89,31 +92,35 @@
         if (h[i] <= h[min]) return;
 
         if (cells.fl[i] < MIN_FLUX_TO_FORM_RIVER) {
+          // flux is too small to operate as a river
           if (h[min] >= 20) cells.fl[min] += cells.fl[i];
-          return; // flux is too small to operate as river
+          return;
         }
 
         // proclaim a new river
         if (!cells.r[i]) {
           cells.r[i] = riverNext;
-          riversData.push({river: riverNext, cell: i, x, y, flux: cells.fl[i]});
+          addCellToRiver(i, riverNext);
           riverNext++;
         }
 
-        flowDown(min, cells.fl[min], cells.fl[i], cells.r[i], i);
+        flowDown(min, cells.fl[i], cells.r[i]);
       });
     }
 
-    function flowDown(toCell, toFlux, fromFlux, river, fromCell = 0) {
-      if (cells.r[toCell]) {
+    function flowDown(toCell, fromFlux, river) {
+      const toFlux = cells.fl[toCell] - cells.conf[toCell];
+      const toRiver = cells.r[toCell];
+
+      if (toRiver) {
         // downhill cell already has river assigned
-        if (toFlux < fromFlux) {
-          cells.conf[toCell] = cells.fl[toCell]; // mark confluence
-          if (h[toCell] >= 20) riversData.find(r => r.river === cells.r[toCell]).parent = river; // min river is a tributary of current river
+        if (fromFlux > toFlux) {
+          cells.conf[toCell] += cells.fl[toCell]; // mark confluence
+          if (h[toCell] >= 20) riverParents[toRiver] = river; // min river is a tributary of current river
           cells.r[toCell] = river; // re-assign river if downhill part has less flux
         } else {
           cells.conf[toCell] += fromFlux; // mark confluence
-          if (h[toCell] >= 20) riversData.find(r => r.river === river).parent = cells.r[toCell]; // current river is a tributary of min river
+          if (h[toCell] >= 20) riverParents[river] = toRiver; // current river is a tributary of min river
         }
       } else cells.r[toCell] = river; // assign the river to the downhill cell
 
@@ -126,53 +133,60 @@
             waterBody.enteringFlux = fromFlux;
           }
           waterBody.flux = waterBody.flux + fromFlux;
-          waterBody.inlets ? waterBody.inlets.push(river) : (waterBody.inlets = [river]);
+          if (!waterBody.inlets) waterBody.inlets = [river];
+          else waterBody.inlets.push(river);
         }
       } else {
         // propagate flux and add next river segment
         cells.fl[toCell] += fromFlux;
       }
 
-      const [x, y] = p[toCell];
-      riversData.push({river, cell: toCell, x, y, flux: fromFlux});
+      addCellToRiver(toCell, river);
     }
 
     function defineRivers() {
-      cells.r = new Uint16Array(cells.i.length); // re-initiate rivers array
-      pack.rivers = []; // rivers data
-      const riverPaths = [];
+      // re-initialize rivers and confluence arrays
+      cells.r = new Uint16Array(cells.i.length);
+      cells.conf = new Uint16Array(cells.i.length);
+      pack.rivers = [];
 
-      for (let r = 1; r <= riverNext; r++) {
-        const riverPoints = riversData.filter(d => d.river === r);
-        if (riverPoints.length < 3) continue;
+      for (const key in riversData) {
+        const riverCells = riversData[key];
+        if (riverCells.length < 3) continue; // exclude tiny rivers
 
-        for (const segment of riverPoints) {
-          const i = segment.cell;
-          if (cells.r[i]) continue;
-          if (cells.h[i] < 20) continue;
-          cells.r[i] = r;
+        const riverId = +key;
+        for (const cell of riverCells) {
+          if (cell < 0 || cells.h[cell] < 20) continue;
+
+          // mark real confluences and assign river to cells
+          if (cells.r[cell]) cells.conf[cell] = 1;
+          else cells.r[cell] = riverId;
         }
 
-        const source = riverPoints[0].cell;
-        const mouth = riverPoints[riverPoints.length - 2].cell;
+        const source = riverCells[0];
+        const mouth = riverCells[riverCells.length - 2];
+        const parent = riverParents[key] || 0;
 
-        const widthFactor = rn(0.8 + Math.random() * 0.4, 1); // river width modifier [.8, 1.2]
-        const sourceWidth = cells.h[source] >= 20 ? 0.1 : rn(Math.min(Math.max((cells.fl[source] / 500) ** 0.4, 0.5), 1.7), 2);
+        const widthFactor = !parent || parent === riverId ? 1.2 : 1;
+        const meanderedPoints = addMeandering(riverCells);
+        const discharge = cells.fl[mouth]; // m3 in second
+        const length = getApproximateLength(meanderedPoints);
+        const width = getWidth(getOffset(discharge, meanderedPoints.length, widthFactor, 0));
 
-        const riverCells = riverPoints.map(point => point.cell);
-        const riverMeandered = addMeandering(riverCells, sourceWidth * 10, 0.5);
-        const [path, length, offset] = getPath(riverMeandered, widthFactor, sourceWidth);
-        riverPaths.push([path, r]);
-
-        const parent = riverPoints[0].parent || 0;
-        const width = rn(offset ** 2, 2); // mounth width in km
-        const discharge = last(riverPoints).flux; // in m3/s
-
-        pack.rivers.push({i: r, source, mouth, discharge, length, width, widthFactor, sourceWidth, parent, cells: riverCells});
+        pack.rivers.push({i: riverId, source, mouth, discharge, length, width, widthFactor, sourceWidth: 0, parent, cells: riverCells});
       }
+    }
 
-      // draw rivers
-      rivers.html(riverPaths.map(d => `<path id="river${d[1]}" d="${d[0]}"/>`).join(""));
+    function calculateConfluenceFlux() {
+      for (const i of cells.i) {
+        if (!cells.conf[i]) continue;
+
+        const sortedInflux = cells.c[i]
+          .filter(c => cells.r[c] && h[c] > h[i])
+          .map(c => cells.fl[c])
+          .sort((a, b) => b - a);
+        cells.conf[i] = sortedInflux.reduce((acc, flux, index) => (index ? acc + flux : acc), 0);
+      }
     }
   };
 
@@ -245,108 +259,167 @@
   };
 
   // add points at 1/3 and 2/3 of a line between adjacents river cells
-  const addMeandering = function (riverCells, width = 1, meandering = 0.5) {
+  const addMeandering = function (riverCells, riverPoints = null, meandering = 0.5) {
+    const {fl, conf, h} = pack.cells;
     const meandered = [];
-    const {p, conf} = pack.cells;
-    const lastCell = riverCells.length - 1;
+    const lastStep = riverCells.length - 1;
+    const points = getRiverPoints(riverCells, riverPoints);
+    let step = h[riverCells[0]] < 20 ? 1 : 10;
 
-    for (let i = 0; i <= lastCell; i++, width++) {
+    let fluxPrev = 0;
+    const getFlux = (step, flux) => (step === lastStep ? fluxPrev : flux);
+
+    for (let i = 0; i <= lastStep; i++, step++) {
       const cell = riverCells[i];
-      const [x1, y1] = p[cell];
-      meandered.push([x1, y1, conf[cell]]);
+      const isLastCell = i === lastStep;
 
-      if (i === lastCell) break;
+      const [x1, y1] = points[i];
+      const flux1 = getFlux(i, fl[cell]);
+      fluxPrev = flux1;
+
+      meandered.push([x1, y1, flux1]);
+      if (isLastCell) break;
 
       const nextCell = riverCells[i + 1];
+      const [x2, y2] = points[i + 1];
+
       if (nextCell === -1) {
-        meandered.push(getBorderPoint(cell));
+        meandered.push([x2, y2, fluxPrev]);
         break;
       }
 
-      const [x2, y2] = p[nextCell];
-      const angle = Math.atan2(y2 - y1, x2 - x1);
-      const sin = Math.sin(angle);
-      const cos = Math.cos(angle);
-
-      const meander = meandering + 1 / width + Math.random() * Math.max(meandering - width / 100, 0);
       const dist2 = (x2 - x1) ** 2 + (y2 - y1) ** 2; // square distance between cells
+      if (dist2 <= 25 && riverCells.length >= 6) continue;
 
-      if (width < 10 && (dist2 > 64 || (dist2 > 36 && riverCells.length < 5))) {
+      const flux2 = getFlux(i + 1, fl[nextCell]);
+      const keepInitialFlux = conf[nextCell] || flux1 === flux2;
+
+      const meander = meandering + 1 / step + Math.max(meandering - step / 100, 0);
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      const sinMeander = Math.sin(angle) * meander;
+      const cosMeander = Math.cos(angle) * meander;
+
+      if (step < 10 && (dist2 > 64 || (dist2 > 36 && riverCells.length < 5))) {
         // if dist2 is big or river is small add extra points at 1/3 and 2/3 of segment
-        const p1x = (x1 * 2 + x2) / 3 + -sin * meander;
-        const p1y = (y1 * 2 + y2) / 3 + cos * meander;
-        const p2x = (x1 + x2 * 2) / 3 + sin * meander;
-        const p2y = (y1 + y2 * 2) / 3 + cos * meander;
-        meandered.push([p1x, p1y], [p2x, p2y]);
+        const p1x = (x1 * 2 + x2) / 3 + -sinMeander;
+        const p1y = (y1 * 2 + y2) / 3 + cosMeander;
+        const p2x = (x1 + x2 * 2) / 3 + sinMeander / 2;
+        const p2y = (y1 + y2 * 2) / 3 - cosMeander / 2;
+        const [p1fl, p2fl] = keepInitialFlux ? [flux1, flux1] : [(flux1 * 2 + flux2) / 3, (flux1 + flux2 * 2) / 3];
+        meandered.push([p1x, p1y, p1fl], [p2x, p2y, p2fl]);
       } else if (dist2 > 25 || riverCells.length < 6) {
         // if dist is medium or river is small add 1 extra middlepoint
-        const p1x = (x1 + x2) / 2 + -sin * meander;
-        const p1y = (y1 + y2) / 2 + cos * meander;
-        meandered.push([p1x, p1y]);
+        const p1x = (x1 + x2) / 2 + -sinMeander;
+        const p1y = (y1 + y2) / 2 + cosMeander;
+        const p1fl = keepInitialFlux ? flux1 : (flux1 + flux2) / 2;
+        meandered.push([p1x, p1y, p1fl]);
       }
     }
 
     return meandered;
   };
 
-  const getPath = function (points, widthFactor = 1, width = 0.1) {
-    const riverLength = points.reduce((s, v, i, p) => s + (i ? Math.hypot(v[0] - p[i - 1][0], v[1] - p[i - 1][1]) : 0), 0); // sum of segments length
-    const widening = 1000 + riverLength * 30;
-    const factor = riverLength / points.length;
-    let offset;
+  const getRiverPoints = (riverCells, riverPoints) => {
+    const {p} = pack.cells;
+    return riverCells.map((cell, i) => {
+      if (riverPoints && riverPoints[i]) return riverPoints[i];
+      if (cell === -1) return getBorderPoint(riverCells[i - 1]);
+      return p[cell];
+    });
+  };
 
-    // store points on both sides to build a valid polygon
+  const getBorderPoint = i => {
+    const [x, y] = pack.cells.p[i];
+    const min = Math.min(y, graphHeight - y, x, graphWidth - x);
+    if (min === y) return [x, 0];
+    else if (min === graphHeight - y) return [x, graphHeight];
+    else if (min === x) return [0, y];
+    return [graphWidth, y];
+  };
+
+  const FLUX_FACTOR = 500;
+  const MAX_FLUX_WIDTH = 2;
+  const LENGTH_FACTOR = 200;
+  const STEP_WIDTH = 1 / LENGTH_FACTOR;
+  const LENGTH_PROGRESSION = [1, 1, 2, 3, 5, 8, 13, 21, 34].map(n => n / LENGTH_FACTOR);
+  const MAX_PROGRESSION = last(LENGTH_PROGRESSION);
+
+  const getOffset = (flux, pointNumber, widthFactor = 1, startingWidth = 0) => {
+    const fluxWidth = Math.min(flux ** 0.9 / FLUX_FACTOR, MAX_FLUX_WIDTH);
+    const lengthWidth = pointNumber * STEP_WIDTH + (LENGTH_PROGRESSION[pointNumber] || MAX_PROGRESSION);
+    return widthFactor * (lengthWidth + fluxWidth) + startingWidth;
+  };
+
+  // build polygon from a list of points and calculated offset (width)
+  const getRiverPath = function (points, widthFactor = 1, startingWidth = 0) {
     const riverPointsLeft = [];
     const riverPointsRight = [];
 
     for (let p = 0; p < points.length; p++) {
       const [x0, y0] = points[p - 1] || points[p];
-      const [x1, y1] = points[p];
+      const [x1, y1, flux] = points[p];
       const [x2, y2] = points[p + 1] || points[p];
 
-      offset = width + (Math.atan(Math.pow(p * factor, 2) / widening) / 2) * widthFactor;
-
-      if (points[p + 2] && points[p + 1][2]) {
-        const confluence = points[p + 1][2];
-        width += Math.atan((confluence * 5) / widening);
-      }
-
+      const offset = getOffset(flux, p, widthFactor, startingWidth);
       const angle = Math.atan2(y0 - y2, x0 - x2);
       const sinOffset = Math.sin(angle) * offset;
       const cosOffset = Math.cos(angle) * offset;
 
       riverPointsLeft.push([x1 - sinOffset, y1 + cosOffset]);
-      riverPointsRight.unshift([x1 + sinOffset, y1 - cosOffset]);
+      riverPointsRight.push([x1 + sinOffset, y1 - cosOffset]);
     }
 
-    // generate polygon path and return
-    lineGen.curve(d3.curveCatmullRom.alpha(0.1));
-    const right = lineGen(riverPointsRight);
+    const right = lineGen(riverPointsRight.reverse());
     let left = lineGen(riverPointsLeft);
     left = left.substring(left.indexOf("C"));
 
-    return [round(right + left, 2), rn(riverLength, 2), offset];
+    return round(right + left, 1);
   };
 
   const specify = function () {
     const rivers = pack.rivers;
     if (!rivers.length) return;
-    Math.random = aleaPRNG(seed);
-    const thresholdElement = Math.ceil(rivers.length * 0.15);
-    const smallLength = rivers.map(r => r.length || 0).sort((a, b) => a - b)[thresholdElement];
-    const smallType = {Creek: 9, River: 3, Brook: 3, Stream: 1}; // weighted small river types
 
-    for (const r of rivers) {
-      r.basin = getBasin(r.i);
-      r.name = getName(r.mouth);
-      const small = r.length < smallLength;
-      r.type = r.parent && !(r.i % 6) ? (small ? "Branch" : "Fork") : small ? rw(smallType) : "River";
+    for (const river of rivers) {
+      river.basin = getBasin(river.i);
+      river.name = getName(river.mouth);
+      river.type = getType(river);
     }
   };
 
   const getName = function (cell) {
     return Names.getCulture(pack.cells.culture[cell]);
   };
+
+  // weighted arrays of river type names
+  const riverTypes = {
+    main: {
+      big: {River: 1},
+      small: {Creek: 9, River: 3, Brook: 3, Stream: 1}
+    },
+    fork: {
+      big: {Fork: 1},
+      small: {Branch: 1}
+    }
+  };
+
+  let smallLength = null;
+  const getType = function ({i, length, parent}) {
+    if (smallLength === null) {
+      const threshold = Math.ceil(pack.rivers.length * 0.15);
+      smallLength = pack.rivers.map(r => r.length || 0).sort((a, b) => a - b)[threshold];
+    }
+
+    const isSmall = length < smallLength;
+    const isFork = each(3)(i) && parent && parent !== i;
+    return rw(riverTypes[isFork ? "fork" : "main"][isSmall ? "small" : "big"]);
+  };
+
+  const getApproximateLength = points => points.reduce((s, v, i, p) => s + (i ? Math.hypot(v[0] - p[i - 1][0], v[1] - p[i - 1][1]) : 0), 0);
+
+  // Real mouth width examples: Amazon 6000m, Volga 6000m, Dniepr 3000m, Mississippi 1300m, Themes 900m,
+  // Danube 800m, Daugava 600m, Neva 500m, Nile 450m, Don 400m, Wisla 300m, Pripyat 150m, Bug 140m, Muchavets 40m
+  const getWidth = offset => rn((offset / 1.5) ** 1.8, 2); // mouth width in km
 
   // remove river and all its tributaries
   const remove = function (id) {
@@ -368,14 +441,5 @@
     return getBasin(parent);
   };
 
-  const getBorderPoint = i => {
-    const [x, y] = pack.cells.p[i];
-    const min = Math.min(y, graphHeight - y, x, graphWidth - x);
-    if (min === y) return [x, 0];
-    else if (min === graphHeight - y) return [x, graphHeight];
-    else if (min === x) return [0, y];
-    return [graphWidth, y];
-  };
-
-  return {generate, alterHeights, resolveDepressions, addMeandering, getPath, specify, getName, getBasin, remove};
+  return {generate, alterHeights, resolveDepressions, addMeandering, getRiverPath, specify, getName, getType, getBasin, getWidth, getOffset, getApproximateLength, getRiverPoints, remove};
 });

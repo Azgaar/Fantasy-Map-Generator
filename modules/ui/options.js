@@ -98,7 +98,7 @@ function showSupporters() {
     PlayByMail.Net,Brad Wardell,Lance Saba,Egoensis,Brea Richards,Tiber,Chris Bloom,Maxim Lowe,Aquelion,Page One Project,Spencer Morris,Paul Ingram,
     Dust Bunny,Adrian Wright,Eric Alexander Cartaya,GameNight,Thomas Mortensen Hansen,Zklaus,Drinarius,Ed Wright,Lon Varnadore,Crys Cain,Heaven N Lee,
     Jeffrey Henning,Lazer Elf,Jordan Bellah,Alex Beard,Kass Frisson,Petro Lombaard,Emanuel Pietri,Rox,PinkEvil,Gavin Madrigal,Martin Lorber,Prince of Morgoth,
-    Jaryd Armstrong,Andrew Pirkola,ThyHolyDevil,Gary Smith,Tyshaun Wise,Ethan Cook,Jon Stroman,Nobody679,良义 金,Chris Gray`;
+    Jaryd Armstrong,Andrew Pirkola,ThyHolyDevil,Gary Smith,Tyshaun Wise,Ethan Cook,Jon Stroman,Nobody679,良义 金,Chris Gray,Phoenix Boatwright`;
 
   const array = supporters
     .replace(/(?:\r\n|\r|\n)/g, "")
@@ -777,6 +777,12 @@ document
   .forEach(el => el.addEventListener("input", updateTilesOptions));
 
 function updateTilesOptions() {
+  if (this?.tagName === "INPUT") {
+    const {nextElementSibling: next, previousElementSibling: prev} = this;
+    if (next?.tagName === "INPUT") next.value = this.value;
+    if (prev?.tagName === "INPUT") prev.value = this.value;
+  }
+
   const tileSize = document.getElementById("tileSize");
   const tilesX = +document.getElementById("tileColsOutput").value;
   const tilesY = +document.getElementById("tileRowsOutput").value;

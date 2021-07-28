@@ -144,7 +144,7 @@ async function getMapURL(type, options = {}) {
   cloneEl.id = "fantasyMap";
   document.body.appendChild(cloneEl);
   const clone = d3.select(cloneEl);
-  if (debug) clone.select("#debug").remove();
+  if (!debug) clone.select("#debug").remove();
 
   const cloneDefs = cloneEl.getElementsByTagName("defs")[0];
   const svgDefs = document.getElementById("defElements");

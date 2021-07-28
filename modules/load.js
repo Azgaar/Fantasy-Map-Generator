@@ -271,12 +271,13 @@ function parseLoadedData(data) {
       }
     })();
 
-    const notHidden = selection => selection.node() && selection.style("display") !== "none";
-    const hasChildren = selection => selection.node()?.hasChildNodes();
-    const hasChild = (selection, selector) => selection.node()?.querySelector(selector);
-    const turnOn = el => document.getElementById(el).classList.remove("buttonoff");
-
     void (function restoreLayersState() {
+      // helper functions
+      const notHidden = selection => selection.node() && selection.style("display") !== "none";
+      const hasChildren = selection => selection.node()?.hasChildNodes();
+      const hasChild = (selection, selector) => selection.node()?.querySelector(selector);
+      const turnOn = el => document.getElementById(el).classList.remove("buttonoff");
+
       // turn all layers off
       document
         .getElementById("mapLayers")
@@ -291,7 +292,7 @@ function parseLoadedData(data) {
       if (hasChildren(gridOverlay)) turnOn("toggleGrid");
       if (hasChildren(coordinates)) turnOn("toggleCoordinates");
       if (notHidden(compass) && hasChild(compass, "use")) turnOn("toggleCompass");
-      if (notHidden(rivers)) turnOn("toggleRivers");
+      if (hasChildren(rivers)) turnOn("toggleRivers");
       if (notHidden(terrain) && hasChildren(terrain)) turnOn("toggleRelief");
       if (hasChildren(relig)) turnOn("toggleReligions");
       if (hasChildren(cults)) turnOn("toggleCultures");
@@ -704,6 +705,33 @@ function parseLoadedData(data) {
         statesBody.attr("opacity", opacity).attr("filter", filter);
         statesHalo.attr("opacity", opacity).attr("filter", "blur(5px)");
         regions.attr("opacity", null).attr("filter", null);
+      }
+
+      if (version < 1.65) {
+        // v 1.65 changed rivers data
+        for (const river of pack.rivers) {
+          const node = document.getElementById("river" + river.i);
+          if (node && !river.cells) {
+            const riverCells = new Set();
+            const length = node.getTotalLength() / 2;
+            const segments = Math.ceil(length / 6);
+            const increment = length / segments;
+            for (let i = increment * segments, c = i; i >= 0; i -= increment, c += increment) {
+              const p1 = node.getPointAtLength(i);
+              const p2 = node.getPointAtLength(c);
+              const x = (p1.x + p2.x) / 2;
+              const y = (p1.y + p2.y) / 2;
+              const cell = findCell(x, y, 6);
+              if (cell) riverCells.add(cell);
+            }
+
+            river.cells = Array.from(riverCells);
+          }
+
+          pack.cells.i.forEach(i => {
+            if (pack.cells.r[i] && pack.cells.h[i] < 20) pack.cells.r[i] = 0;
+          });
+        }
       }
     })();
 

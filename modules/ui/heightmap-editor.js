@@ -197,6 +197,7 @@ function editHeightmap() {
       }
     }
 
+    drawRivers();
     Lakes.defineGroup();
     defineBiomes();
     rankCells();

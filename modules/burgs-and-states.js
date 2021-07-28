@@ -80,6 +80,7 @@
       TIME && console.time("createStates");
       const states = [{i: 0, name: "Neutrals"}];
       const colors = getColors(burgs.length - 1);
+      const each5th = each(5);
 
       burgs.forEach(function (b, i) {
         if (!i) return; // skip first element
@@ -93,7 +94,7 @@
 
         // states data
         const expansionism = rn(Math.random() * powerInput.value + 1, 1);
-        const basename = b.name.length < 9 && b.cell % 5 === 0 ? b.name : Names.getCultureShort(b.culture);
+        const basename = b.name.length < 9 && each5th(b.cell) ? b.name : Names.getCultureShort(b.culture);
         const name = Names.getState(basename, b.culture);
         const type = cultures[b.culture].type;
 

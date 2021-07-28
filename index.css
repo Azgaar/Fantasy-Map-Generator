@@ -202,6 +202,7 @@ a {
   stroke: none;
   mask: url(#land);
   cursor: pointer;
+  fill-rule: nonzero;
 }
 
 #anchors {
@@ -984,6 +985,18 @@ body button.noicon {
   cursor: pointer;
 }
 
+#controlCells > .current {
+  fill: #82c8ff40;
+  stroke: #82c8ff;
+  stroke-width: 0.4;
+}
+
+#controlCells > .occupied {
+  fill: #ff828240;
+  stroke: #ff8282;
+  stroke-width: 0.4;
+}
+
 #vertices > circle {
   fill: #ff0000;
   stroke: #841f1f;
@@ -1119,6 +1132,12 @@ div#regimentSelectorBody > div > div {
   stroke-width: 0.8;
   stroke: #da3126;
   fill: none;
+}
+
+#debug > text {
+  font-size: 2px;
+  text-anchor: middle;
+  dominant-baseline: central;
 }
 
 .selectedCell {
@@ -1653,6 +1672,12 @@ rect.fillRect {
 #emblemDownloadControl {
   margin-top: 0.3em;
   text-align: center;
+}
+
+div.editorLine {
+  margin: 0.2em 0;
+  padding: 0 0.2em;
+  font-size: 0.9em;
 }
 
 #emblemDownloadControl > input {

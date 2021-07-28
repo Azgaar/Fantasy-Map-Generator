@@ -875,7 +875,6 @@ function toggleStates(event) {
   }
 }
 
-// draw states
 function drawStates() {
   TIME && console.time("drawStates");
   regions.selectAll("path").remove();
@@ -1015,6 +1014,21 @@ function drawStates() {
   TIME && console.timeEnd("drawStates");
 }
 
+function toggleBorders(event) {
+  if (!layerIsOn("toggleBorders")) {
+    turnButtonOn("toggleBorders");
+    drawBorders();
+    if (event && isCtrlClick(event)) editStyle("borders");
+  } else {
+    if (event && isCtrlClick(event)) {
+      editStyle("borders");
+      return;
+    }
+    turnButtonOff("toggleBorders");
+    borders.selectAll("path").remove();
+  }
+}
+
 // draw state and province borders
 function drawBorders() {
   TIME && console.time("drawBorders");
@@ -1116,21 +1130,6 @@ function drawBorders() {
   }
 
   TIME && console.timeEnd("drawBorders");
-}
-
-function toggleBorders(event) {
-  if (!layerIsOn("toggleBorders")) {
-    turnButtonOn("toggleBorders");
-    $("#borders").fadeIn();
-    if (event && isCtrlClick(event)) editStyle("borders");
-  } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("borders");
-      return;
-    }
-    turnButtonOff("toggleBorders");
-    $("#borders").fadeOut();
-  }
 }
 
 function toggleProvinces(event) {
@@ -1444,16 +1443,28 @@ function toggleTexture(event) {
 function toggleRivers(event) {
   if (!layerIsOn("toggleRivers")) {
     turnButtonOn("toggleRivers");
-    $("#rivers").fadeIn();
+    drawRivers();
     if (event && isCtrlClick(event)) editStyle("rivers");
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("rivers");
-      return;
-    }
-    $("#rivers").fadeOut();
+    if (event && isCtrlClick(event)) return editStyle("rivers");
+    rivers.selectAll("*").remove();
     turnButtonOff("toggleRivers");
   }
+}
+
+function drawRivers() {
+  TIME && console.time("drawRivers");
+  const {addMeandering, getRiverPath} = Rivers;
+  lineGen.curve(d3.curveCatmullRom.alpha(0.1));
+  const riverPaths = pack.rivers.map(river => {
+    const meanderedPoints = addMeandering(river.cells, river.points);
+    const widthFactor = river.widthFactor || 1;
+    const startingWidth = river.sourceWidth || 0;
+    const path = getRiverPath(meanderedPoints, widthFactor, startingWidth);
+    return `<path id="river${river.i}" d="${path}"/>`;
+  });
+  rivers.html(riverPaths.join(""));
+  TIME && console.timeEnd("drawRivers");
 }
 
 function toggleRoutes(event) {
