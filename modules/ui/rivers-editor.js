@@ -78,8 +78,8 @@ function editRiver(id) {
 
   function updateRiverLength(river) {
     river.length = rn(elSelected.node().getTotalLength() / 2, 2);
-    const length = `${river.length * distanceScaleInput.value} ${distanceUnitInput.value}`;
-    document.getElementById("riverLength").value = length;
+    const lengthUI = `${rn(river.length * distanceScaleInput.value)} ${distanceUnitInput.value}`;
+    document.getElementById("riverLength").value = lengthUI;
   }
 
   function updateRiverWidth(river) {

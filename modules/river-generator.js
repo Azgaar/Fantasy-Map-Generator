@@ -170,7 +170,7 @@
         const widthFactor = !parent || parent === riverId ? 1.2 : 1;
         const meanderedPoints = addMeandering(riverCells);
         const discharge = cells.fl[mouth]; // m3 in second
-        const length = getApproximateLength(meanderedPoints);
+        const length = rn(getApproximateLength(meanderedPoints), 2);
         const width = getWidth(getOffset(discharge, meanderedPoints.length, widthFactor, 0));
 
         pack.rivers.push({i: riverId, source, mouth, discharge, length, width, widthFactor, sourceWidth: 0, parent, cells: riverCells});
