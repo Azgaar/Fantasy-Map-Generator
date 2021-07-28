@@ -389,7 +389,6 @@ function applyDefaultBiomesSystem() {
 }
 
 function showWelcomeMessage() {
-  const post = link("https://www.patreon.com/posts/48228540", "Main changes:");
   const changelog = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "previous version");
   const reddit = link("https://www.reddit.com/r/FantasyMapGenerator", "Reddit community");
   const discord = link("https://discordapp.com/invite/X7E84HU", "Discord server");
@@ -397,18 +396,10 @@ function showWelcomeMessage() {
 
   alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
-    <ul>${post}
-      <li>River overview and River editor rework</li>
-      <li>River generation code refactored and optimized</li>
-      <li>Rivers discharge (flux) and mouth width calculated</li>
-      <li>Lake editor rework</li>
-      <li>Lake type based on evaporation and river system</li>
-      <li>Lake flux, inlets and outlet tracked properly</li>
-      <li>Lake outlet width depends on flux</li>
-      <li>Lakes now have names</li>
-      <li>Rulers rework (v1.61)</li>
-      <li>New ocean pattern by Kiwiroo (v1.61)</li>
-      <li>Water erosion rework (v1.62)</li>
+    <ul>Main changes:
+      <li>Ability to add river selecting its cells</li>
+      <li>Keep river course on edit</li>
+      <li>Refactor river rendering code</li>
     </ul>
 
     <p>Join our ${discord} and ${reddit} to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
