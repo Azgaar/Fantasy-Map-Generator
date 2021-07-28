@@ -33,7 +33,7 @@ async function addFonts(url) {
 function loadUsedFonts() {
   const fontsInUse = getFontsList(svg);
   const fontsToLoad = fontsInUse.filter(font => !fonts.includes(font));
-  if (fontsToLoad) {
+  if (fontsToLoad?.length) {
     const url = "https://fonts.googleapis.com/css?family=" + fontsToLoad.join("|");
     addFonts(url);
   }

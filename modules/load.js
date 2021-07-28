@@ -727,6 +727,10 @@ function parseLoadedData(data) {
 
             river.cells = Array.from(riverCells);
           }
+
+          pack.cells.i.forEach(i => {
+            if (pack.cells.r[i] && pack.cells.h[i] < 20) pack.cells.r[i] = 0;
+          });
         }
       }
     })();
