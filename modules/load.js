@@ -709,6 +709,8 @@ function parseLoadedData(data) {
 
       if (version < 1.65) {
         // v 1.65 changed rivers data
+        rivers.attr("style", null); // remove style to unhide layer
+
         for (const river of pack.rivers) {
           const node = document.getElementById("river" + river.i);
           if (node && !river.cells) {
@@ -732,6 +734,11 @@ function parseLoadedData(data) {
             if (pack.cells.r[i] && pack.cells.h[i] < 20) pack.cells.r[i] = 0;
           });
         }
+      }
+
+      if (version < 1.651) {
+        // remove style to unhide river layer
+        rivers.attr("style", null);
       }
     })();
 
