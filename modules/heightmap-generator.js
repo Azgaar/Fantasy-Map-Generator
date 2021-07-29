@@ -1,8 +1,6 @@
 "use strict";
 
-(function (global, factory) {
-  typeof exports === "object" && typeof module !== "undefined" ? (module.exports = factory()) : typeof define === "function" && define.amd ? define(factory) : (global.HeightmapGenerator = factory());
-})(this, function () {
+window.HeightmapGenerator = (function () {
   let cells, p;
 
   const generate = function () {
@@ -411,4 +409,4 @@
   }
 
   return {generate, addHill, addRange, addTrough, addStrait, addPit, smooth, modify};
-});
+})();
