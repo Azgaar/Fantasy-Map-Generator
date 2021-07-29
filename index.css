@@ -190,6 +190,12 @@ a {
 #cults {
   stroke-linejoin: round;
   fill-rule: evenodd;
+}
+
+#statesBody,
+#provincesBody,
+#relig,
+#cults {
   mask: url(#land);
 }
 
