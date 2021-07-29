@@ -1,4 +1,3 @@
-// heightmap-editor module. To be added to window as for now
 "use strict";
 
 function editHeightmap() {

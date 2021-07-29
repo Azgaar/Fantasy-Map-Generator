@@ -541,17 +541,18 @@ function randomizeOptions() {
 // select heightmap template pseudo-randomly
 function randomizeHeightmapTemplate() {
   const templates = {
-    Volcano: 3,
-    "High Island": 22,
-    "Low Island": 9,
-    Continents: 20,
-    Archipelago: 25,
-    Mediterranean: 3,
-    Peninsula: 3,
-    Pangea: 5,
-    Isthmus: 2,
-    Atoll: 1,
-    Shattered: 7
+    volcano: 3,
+    highIsland: 22,
+    lowIsland: 9,
+    continents: 20,
+    archipelago: 25,
+    mediterranean: 3,
+    peninsula: 3,
+    pangea: 5,
+    isthmus: 2,
+    atoll: 1,
+    shattered: 7,
+    taklamakan: 2
   };
   document.getElementById("templateInput").value = rw(templates);
 }
