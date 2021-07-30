@@ -736,9 +736,10 @@ function parseLoadedData(data) {
         }
       }
 
-      if (version < 1.651) {
-        // remove style to unhide river layer
+      if (version < 1.652) {
+        // remove style to unhide layers
         rivers.attr("style", null);
+        borders.attr("style", null);
       }
     })();
 
