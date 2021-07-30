@@ -7,18 +7,19 @@
     TIME && console.time("generateMainRoads");
     const cells = pack.cells;
     const burgs = pack.burgs.filter(b => b.i && !b.removed);
-    const capitals = burgs.filter(b => b.capital);
+    const capitals = burgs.filter(b => b.capital)
+                          .sort((a,b) => a.population - b.population);
 
     if (capitals.length < 2) return []; // not enough capitals to build main roads
     const paths = []; // array to store path segments
 
     for (const b of capitals) {
-      const connect = capitals.filter(c => c.i > b.i && c.feature === b.feature);
-      if (!connect.length) continue;
-      const farthest = d3.scan(connect, (a, c) => (c.y - b.y) ** 2 + (c.x - b.x) ** 2 - ((a.y - b.y) ** 2 + (a.x - b.x) ** 2));
-      const [from, exit] = findLandPath(b.cell, connect[farthest].cell, null);
-      const segments = restorePath(b.cell, exit, "main", from);
-      segments.forEach(s => paths.push(s));
+      const connect = capitals.filter(c => c.feature === b.feature && c !== b);
+      for (const t of connect) {
+        const [from, exit] = findLandPath(b.cell, t.cell, true);
+        const segments = restorePath(b.cell, exit, "main", from);
+        segments.forEach(s => paths.push(s));
+      }
     }
 
     cells.i.forEach(i => (cells.s[i] += cells.road[i] / 2)); // add roads to suitability score
@@ -41,11 +42,12 @@
       isle.forEach(function (b, i) {
         let path = [];
         if (!i) {
-          // build trail from the first burg on island to the farthest one on the same island
+          // build trail from the first burg on island
+          // to the farthest one on the same island or the closest road
           const farthest = d3.scan(isle, (a, c) => (c.y - b.y) ** 2 + (c.x - b.x) ** 2 - ((a.y - b.y) ** 2 + (a.x - b.x) ** 2));
           const to = isle[farthest].cell;
           if (cells.road[to]) return;
-          const [from, exit] = findLandPath(b.cell, to, null);
+          const [from, exit] = findLandPath(b.cell, to, true);
           path = restorePath(b.cell, exit, "small", from);
         } else {
           // build trail from all other burgs to the closest road on the same island
@@ -176,6 +178,7 @@
         if (cells.h[c] < 20) continue; // ignore water cells
         const stateChangeCost = cells.state && cells.state[c] !== cells.state[n] ? 400 : 0; // trails tend to lay within the same state
         const habitability = biomesData.habitability[cells.biome[c]];
+        if (!habitability) continue; // avoid inhabitable cells (eg. lava, glacier)
         const habitedCost = habitability ? Math.max(100 - habitability, 0) : 400; // routes tend to lay within populated areas
         const heightChangeCost = Math.abs(cells.h[c] - cells.h[n]) * 10; // routes tend to avoid elevation changes
         const heightCost = cells.h[c] > 80 ? cells.h[c] : 0; // routes tend to avoid mountainous areas
@@ -198,7 +201,7 @@
     let segment = [],
       current = end,
       prev = end;
-    const score = type === "main" ? 5 : 1; // to incrade road score at cell
+    const score = type === "main" ? 5 : 1; // to increase road score at cell
 
     if (type === "ocean" || !cells.road[prev]) segment.push(end);
     if (!cells.road[prev]) cells.road[prev] = score;
