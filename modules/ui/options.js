@@ -544,15 +544,15 @@ function randomizeHeightmapTemplate() {
     volcano: 3,
     highIsland: 22,
     lowIsland: 9,
-    continents: 20,
-    archipelago: 25,
-    mediterranean: 3,
+    continents: 19,
+    archipelago: 23,
+    mediterranean: 5,
     peninsula: 3,
     pangea: 5,
     isthmus: 2,
     atoll: 1,
     shattered: 7,
-    taklamakan: 2
+    taklamakan: 1
   };
   document.getElementById("templateInput").value = rw(templates);
 }
