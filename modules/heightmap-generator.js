@@ -30,8 +30,8 @@ window.HeightmapGenerator = (function () {
     if (a1 === "Range") return addRange(a2, a3, a4, a5);
     if (a1 === "Trough") return addTrough(a2, a3, a4, a5);
     if (a1 === "Strait") return addStrait(a2, a3);
-    if (a1 === "Add") return modify(a3, a2, 1);
-    if (a1 === "Multiply") return modify(a3, 0, a2);
+    if (a1 === "Add") return modify(a3, +a2, 1);
+    if (a1 === "Multiply") return modify(a3, 0, +a2);
     if (a1 === "Smooth") return smooth(a2);
   }
 
