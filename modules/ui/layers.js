@@ -122,9 +122,10 @@ function restoreLayers() {
   if (layerIsOn("toggleIce")) drawIce();
   if (layerIsOn("toggleEmblems")) drawEmblems();
 
-  // states are getting rendered each time, if it's not required than layers should be hidden
-  if (!layerIsOn("toggleBorders")) $("#borders").fadeOut();
-  if (!layerIsOn("toggleStates")) regions.style("display", "none").selectAll("path").remove();
+  // some layers are rendered each time, remove them if they are not on
+  if (!layerIsOn("toggleBorders")) borders.selectAll("path").remove();
+  if (!layerIsOn("toggleStates")) regions.selectAll("path").remove();
+  if (!layerIsOn("toggleRivers")) rivers.selectAll("*").remove();
 }
 
 function toggleHeight(event) {
@@ -1034,13 +1035,14 @@ function drawBorders() {
   TIME && console.time("drawBorders");
   borders.selectAll("path").remove();
 
-  const cells = pack.cells,
-    vertices = pack.vertices,
-    n = cells.i.length;
-  const sPath = [],
-    pPath = [];
-  const sUsed = new Array(pack.states.length).fill("").map(a => []);
-  const pUsed = new Array(pack.provinces.length).fill("").map(a => []);
+  const {cells, vertices} = pack;
+  const n = cells.i.length;
+
+  const sPath = [];
+  const pPath = [];
+
+  const sUsed = new Array(pack.states.length).fill("").map(_ => []);
+  const pUsed = new Array(pack.provinces.length).fill("").map(_ => []);
 
   for (let i = 0; i < cells.i.length; i++) {
     if (!cells.state[i]) continue;
