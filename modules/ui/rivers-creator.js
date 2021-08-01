@@ -79,7 +79,7 @@ function createRiver() {
     const riverCells = createRiver.cells;
     if (riverCells.length < 2) return tip("Add at least 2 cells", false, "error");
 
-    const riverId = last(rivers).i + 1;
+    const riverId = rivers.length ? last(rivers).i + 1 : 1;
     const parent = cells.r[last(riverCells)] || riverId;
 
     riverCells.forEach(cell => {
