@@ -111,7 +111,7 @@ function editRiver(id) {
     debug
       .select("#controlCells")
       .selectAll(`polygon.${type}`)
-      .data(cells)
+      .data(cells.filter(i => pack.cells.i[i]))
       .join("polygon")
       .attr("points", d => getPackPolygon(d))
       .attr("class", type);
