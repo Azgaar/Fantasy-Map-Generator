@@ -479,7 +479,8 @@ function invokeActiveZooming() {
       if (this.id === "burgLabels") return;
       const desired = +this.dataset.size;
       const relative = Math.max(rn((desired + desired / scale) / 2, 2), 1);
-      this.setAttribute("font-size", relative);
+      if (rescaleLabels.checked) this.setAttribute("font-size", relative);
+
       const hidden = hideLabels.checked && (relative * scale < 6 || relative * scale > 60);
       if (hidden) this.classList.add("hidden");
       else this.classList.remove("hidden");
