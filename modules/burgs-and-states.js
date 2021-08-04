@@ -1,12 +1,9 @@
-(function (global, factory) {
-  typeof exports === "object" && typeof module !== "undefined" ? (module.exports = factory()) : typeof define === "function" && define.amd ? define(factory) : (global.BurgsAndStates = factory());
-})(this, function () {
-  "use strict";
+"use strict";
 
+window.BurgsAndStates = (function () {
   const generate = function () {
-    const cells = pack.cells,
-      cultures = pack.cultures,
-      n = cells.i.length;
+    const {cells, cultures} = pack;
+    const n = cells.i.length;
 
     cells.burg = new Uint16Array(n); // cell burg
     cells.road = new Uint16Array(n); // cell road power
@@ -1224,4 +1221,4 @@
   };
 
   return {generate, expandStates, normalizeStates, assignColors, drawBurgs, specifyBurgs, defineBurgFeatures, getType, drawStateLabels, collectStatistics, generateCampaigns, generateDiplomacy, defineStateForms, getFullName, generateProvinces, updateCultures};
-});
+})();

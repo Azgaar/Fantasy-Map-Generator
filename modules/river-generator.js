@@ -1,8 +1,6 @@
-(function (global, factory) {
-  typeof exports === "object" && typeof module !== "undefined" ? (module.exports = factory()) : typeof define === "function" && define.amd ? define(factory) : (global.Rivers = factory());
-})(this, function () {
-  "use strict";
+"use strict";
 
+window.Rivers = (function () {
   const generate = function (allowErosion = true) {
     TIME && console.time("generateRivers");
     Math.random = aleaPRNG(seed);
@@ -442,4 +440,4 @@
   };
 
   return {generate, alterHeights, resolveDepressions, addMeandering, getRiverPath, specify, getName, getType, getBasin, getWidth, getOffset, getApproximateLength, getRiverPoints, remove};
-});
+})();

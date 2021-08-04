@@ -1,8 +1,6 @@
-(function (global, factory) {
-  typeof exports === "object" && typeof module !== "undefined" ? (module.exports = factory()) : typeof define === "function" && define.amd ? define(factory) : (global.ReliefIcons = factory());
-})(this, function () {
-  "use strict";
+"use strict";
 
+window.ReliefIcons = (function () {
   const ReliefIcons = function () {
     TIME && console.time("drawRelief");
     terrain.selectAll("*").remove();
@@ -127,4 +125,4 @@
   }
 
   return ReliefIcons;
-});
+})();

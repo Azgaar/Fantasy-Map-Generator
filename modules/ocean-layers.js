@@ -1,8 +1,6 @@
-(function (global, factory) {
-  typeof exports === "object" && typeof module !== "undefined" ? (module.exports = factory()) : typeof define === "function" && define.amd ? define(factory) : (global.OceanLayers = factory());
-})(this, function () {
-  "use strict";
+"use strict";
 
+window.OceanLayers = (function () {
   let cells, vertices, pointsN, used;
 
   const OceanLayers = function OceanLayers() {
@@ -91,4 +89,4 @@
   }
 
   return OceanLayers;
-});
+})();

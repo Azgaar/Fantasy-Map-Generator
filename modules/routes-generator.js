@@ -1,14 +1,9 @@
-(function (global, factory) {
-  typeof exports === "object" && typeof module !== "undefined" ? (module.exports = factory()) : typeof define === "function" && define.amd ? define(factory) : (global.Routes = factory());
-})(this, function () {
-  "use strict";
-
+window.Routes = (function () {
   const getRoads = function () {
     TIME && console.time("generateMainRoads");
     const cells = pack.cells;
     const burgs = pack.burgs.filter(b => b.i && !b.removed);
-    const capitals = burgs.filter(b => b.capital)
-                          .sort((a,b) => a.population - b.population);
+    const capitals = burgs.filter(b => b.capital).sort((a, b) => a.population - b.population);
 
     if (capitals.length < 2) return []; // not enough capitals to build main roads
     const paths = []; // array to store path segments
@@ -271,4 +266,4 @@
     }
     return [from, exit, false];
   }
-});
+})();
