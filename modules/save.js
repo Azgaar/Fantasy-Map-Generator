@@ -74,7 +74,7 @@ async function saveJPEG() {
 async function saveTiles() {
   return new Promise(async (resolve, reject) => {
     // download schema
-    const urlSchema = await getMapURL('tiles', 'schema');
+    const urlSchema = await getMapURL('tiles', {debug: true});
     const zip = new JSZip();
 
     const canvas = document.createElement('canvas');
@@ -138,20 +138,26 @@ async function saveTiles() {
 }
 
 // parse map svg to object url
-async function getMapURL(type, subtype) {
+async function getMapURL(type, options = {}) {
+  const {debug = false, globe = false, noLabels = false, noWater = false} = options;
   const cloneEl = document.getElementById('map').cloneNode(true); // clone svg
   cloneEl.id = 'fantasyMap';
   document.body.appendChild(cloneEl);
   const clone = d3.select(cloneEl);
-  if (subtype !== 'schema') clone.select('#debug').remove();
+  if (!debug) clone.select('#debug').remove();
 
   const cloneDefs = cloneEl.getElementsByTagName('defs')[0];
   const svgDefs = document.getElementById('defElements');
 
   const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
   if (isFirefox && type === 'mesh') clone.select('#oceanPattern').remove();
-  if (subtype === 'globe') clone.select('#scaleBar').remove();
-  if (subtype === 'noWater') {
+  if (globe) clone.select('#scaleBar').remove();
+  if (noLabels) {
+    clone.select('#labels #states').remove();
+    clone.select('#labels #burgLabels').remove();
+    clone.select('#icons #burgIcons').remove();
+  }
+  if (noWater) {
     clone.select('#oceanBase').attr('opacity', 0);
     clone.select('#oceanPattern').attr('opacity', 0);
   }
@@ -275,8 +281,16 @@ async function getMapURL(type, subtype) {
     });
   }
 
-  const fontStyle = await GFontToDataURI(getFontsToLoad(clone)); // load non-standard fonts
-  if (fontStyle) clone.select('defs').append('style').text(fontStyle.join('\n')); // add font to style
+  // load non-standard fonts
+  const usedFonts = getFontsList(clone);
+  const webSafe = ['Georgia', 'Times+New+Roman', 'Comic+Sans+MS', 'Lucida+Sans+Unicode', 'Courier+New', 'Verdana', 'Arial', 'Impact'];
+  const fontsToLoad = usedFonts.filter((font) => !webSafe.includes(font));
+  if (fontsToLoad.length) {
+    const url = 'https://fonts.googleapis.com/css?family=' + fontsToLoad.join('|');
+    const fontStyle = await GFontToDataURI(url);
+    if (fontStyle) clone.select('defs').append('style').text(fontStyle.join('\n'));
+  }
+
   clone.remove();
 
   const serialized = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>` + new XMLSerializer().serializeToString(cloneEl);
@@ -357,63 +371,6 @@ function inlineStyle(clone) {
   emptyG.remove();
 }
 
-// get non-standard fonts used for labels to fetch them from web
-function getFontsToLoad(clone) {
-  const webSafe = ['Georgia', 'Times+New+Roman', 'Comic+Sans+MS', 'Lucida+Sans+Unicode', 'Courier+New', 'Verdana', 'Arial', 'Impact']; // fonts to not fetch
-
-  const fontsInUse = new Set(); // to store fonts currently in use
-  clone.selectAll('#labels > g').each(function () {
-    if (!this.hasChildNodes()) return;
-    const font = this.dataset.font;
-    if (!font || webSafe.includes(font)) return;
-    fontsInUse.add(font);
-  });
-  const legendFont = legend.attr('data-font');
-  if (legend.node().hasChildNodes() && !webSafe.includes(legendFont)) fontsInUse.add(legendFont);
-  const fonts = [...fontsInUse];
-  return fonts.length ? 'https://fonts.googleapis.com/css?family=' + fonts.join('|') : null;
-}
-
-// code from Kaiido's answer https://stackoverflow.com/questions/42402584/how-to-use-google-fonts-in-canvas-when-drawing-dom-objects-in-svg
-function GFontToDataURI(url) {
-  if (!url) return Promise.resolve();
-  return fetch(url) // first fecth the embed stylesheet page
-    .then((resp) => resp.text()) // we only need the text of it
-    .then((text) => {
-      let s = document.createElement('style');
-      s.innerHTML = text;
-      document.head.appendChild(s);
-      const styleSheet = Array.prototype.filter.call(document.styleSheets, (sS) => sS.ownerNode === s)[0];
-
-      const FontRule = (rule) => {
-        const src = rule.style.getPropertyValue('src');
-        const url = src ? src.split('url(')[1].split(')')[0] : '';
-        return {rule, src, url: url.substring(url.length - 1, 1)};
-      };
-      const fontProms = [];
-
-      for (const r of styleSheet.cssRules) {
-        let fR = FontRule(r);
-        if (!fR.url) continue;
-
-        fontProms.push(
-          fetch(fR.url) // fetch the actual font-file (.woff)
-            .then((resp) => resp.blob())
-            .then((blob) => {
-              return new Promise((resolve) => {
-                let f = new FileReader();
-                f.onload = (e) => resolve(f.result);
-                f.readAsDataURL(blob);
-              });
-            })
-            .then((dataURL) => fR.rule.cssText.replace(fR.url, dataURL))
-        );
-      }
-      document.head.removeChild(s); // clean up
-      return Promise.all(fontProms); // wait for all this has been done
-    });
-}
-
 // prepare map data for saving
 function getMapData() {
   TIME && console.time('createMapDataBlob');
@@ -445,7 +402,9 @@ function getMapData() {
       precOutput.value,
       JSON.stringify(options),
       mapName.value,
-      +hideLabels.checked
+      +hideLabels.checked,
+      stylePreset.value,
+      +rescaleLabels.checked
     ].join('|');
     const coords = JSON.stringify(mapCoordinates);
     const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join('|');
@@ -667,10 +626,7 @@ function getRiverPoints(node) {
 }
 
 async function quickSave() {
-  if (customization) {
-    tip('Map cannot be saved when edit mode is active, please exit the mode and retry', false, 'error');
-    return;
-  }
+  if (customization) return tip('Map cannot be saved when edit mode is active, please exit the mode and retry', false, 'error');
   const blob = await getMapData();
   if (blob) ldb.set('lastMap', blob); // auto-save map
   tip('Map is saved to browser memory. Please also save as .map file to secure progress', true, 'success', 2000);

@@ -1,7 +1,6 @@
-(function (global, factory) {
-  typeof exports === "object" && typeof module !== "undefined" ? (module.exports = factory()) : typeof define === "function" && define.amd ? define(factory) : (global.Names = factory());
-})(this, function () {
-  "use strict";
+"use strict";
+
+window.Names = (function () {
   let chains = [];
 
   // calculate Markov chain for a namesbase
@@ -294,4 +293,4 @@
   };
 
   return {getBase, getCulture, getCultureShort, getBaseShort, getState, updateChain, clearChains, getNameBases, getMapName, calculateChain};
-});
+})();

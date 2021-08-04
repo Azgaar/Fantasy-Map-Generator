@@ -169,23 +169,28 @@ a {
   font-size: 0.8em;
 }
 
-#statesBody,
-#provincesBody {
-  stroke-width: 2;
-  fill-rule: evenodd;
-  mask: url(#land);
-}
-
-#relig,
-#biomes,
-#cults {
-  fill-rule: evenodd;
-  mask: url(#land);
+#statesBody {
+  stroke-width: 3;
 }
 
 #statesHalo {
   fill: none;
-  filter: url(#blur5);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#provincesBody {
+  stroke-width: 0.2;
+}
+
+#statesBody,
+#provincesBody,
+#relig,
+#biomes,
+#cults {
+  stroke-linejoin: round;
+  fill-rule: evenodd;
+  mask: url(#land);
 }
 
 #borders {
@@ -197,6 +202,7 @@ a {
   stroke: none;
   mask: url(#land);
   cursor: pointer;
+  fill-rule: nonzero;
 }
 
 #anchors {
@@ -979,6 +985,12 @@ body button.noicon {
   cursor: pointer;
 }
 
+#controlCells > .current {
+  fill: #82c8ff40;
+  stroke: #82c8ff;
+  stroke-width: 0.4;
+}
+
 #vertices > circle {
   fill: #ff0000;
   stroke: #841f1f;
@@ -1114,6 +1126,12 @@ div#regimentSelectorBody > div > div {
   stroke-width: 0.8;
   stroke: #da3126;
   fill: none;
+}
+
+#debug > text {
+  font-size: 2px;
+  text-anchor: middle;
+  dominant-baseline: central;
 }
 
 .selectedCell {
@@ -1697,6 +1715,12 @@ rect.fillRect {
   text-align: center;
 }
 
+div.editorLine {
+  margin: 0.2em 0;
+  padding: 0 0.2em;
+  font-size: 0.9em;
+}
+
 #emblemDownloadControl > input {
   width: 4.1em;
 }
@@ -2056,10 +2080,6 @@ svg.button {
 
 #reliefEditor input[type='range'] {
   width: 16em;
-}
-
-#reliefEditor input[type='number'] {
-  width: 3em;
 }
 
 #reliefIconsDiv {

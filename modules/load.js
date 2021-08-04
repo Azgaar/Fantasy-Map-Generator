@@ -141,6 +141,8 @@ function parseLoadedData(data) {
       if (settings[19]) options = JSON.parse(settings[19]);
       if (settings[20]) mapName.value = settings[20];
       if (settings[21]) hideLabels.checked = +settings[21];
+      if (settings[22]) stylePreset.value = settings[22];
+      if (settings[23]) rescaleLabels.checked = settings[23];
     })();
 
     void (function parseConfiguration() {
@@ -220,6 +222,8 @@ function parseLoadedData(data) {
       burgLabels = labels.select('#burgLabels');
     })();
 
+    loadUsedFonts();
+
     void (function parseGridData() {
       grid = JSON.parse(data[6]);
       calculateVoronoi(grid, grid.points);
@@ -270,12 +274,13 @@ function parseLoadedData(data) {
       }
     })();
 
-    const notHidden = (selection) => selection.node() && selection.style('display') !== 'none';
-    const hasChildren = (selection) => selection.node()?.hasChildNodes();
-    const hasChild = (selection, selector) => selection.node()?.querySelector(selector);
-    const turnOn = (el) => document.getElementById(el).classList.remove('buttonoff');
-
     void (function restoreLayersState() {
+      // helper functions
+      const notHidden = (selection) => selection.node() && selection.style('display') !== 'none';
+      const hasChildren = (selection) => selection.node()?.hasChildNodes();
+      const hasChild = (selection, selector) => selection.node()?.querySelector(selector);
+      const turnOn = (el) => document.getElementById(el).classList.remove('buttonoff');
+
       // turn all layers off
       document
         .getElementById('mapLayers')
@@ -290,7 +295,7 @@ function parseLoadedData(data) {
       if (hasChildren(gridOverlay)) turnOn('toggleGrid');
       if (hasChildren(coordinates)) turnOn('toggleCoordinates');
       if (notHidden(compass) && hasChild(compass, 'use')) turnOn('toggleCompass');
-      if (notHidden(rivers)) turnOn('toggleRivers');
+      if (hasChildren(rivers)) turnOn('toggleRivers');
       if (notHidden(terrain) && hasChildren(terrain)) turnOn('toggleRelief');
       if (hasChildren(relig)) turnOn('toggleReligions');
       if (hasChildren(cults)) turnOn('toggleCultures');
@@ -303,7 +308,6 @@ function parseLoadedData(data) {
       if (hasChild(population, 'line')) turnOn('togglePopulation');
       if (hasChildren(ice)) turnOn('toggleIce');
       if (hasChild(prec, 'circle')) turnOn('togglePrec');
-      if (hasChildren(goods)) turnOn('toggleResources');
       if (notHidden(emblems) && hasChild(emblems, 'use')) turnOn('toggleEmblems');
       if (notHidden(labels)) turnOn('toggleLabels');
       if (notHidden(icons)) turnOn('toggleIcons');
@@ -694,7 +698,7 @@ function parseLoadedData(data) {
       }
 
       if (version < 1.63) {
-        // v.1.63 change ocean pattern opacity element
+        // v.1.63 changed ocean pattern opacity element
         const oceanPattern = document.getElementById('oceanPattern');
         if (oceanPattern) oceanPattern.removeAttribute('opacity');
         const oceanicPattern = document.getElementById('oceanicPattern');
@@ -712,6 +716,50 @@ function parseLoadedData(data) {
         goods = viewbox.append('g').attr('id', 'goods');
         defs.append('g').attr('id', 'defs-icons');
         Resources.generate();
+      }
+
+      if (version < 1.64) {
+        // v.1.64 change states style
+        const opacity = regions.attr('opacity');
+        const filter = regions.attr('filter');
+        statesBody.attr('opacity', opacity).attr('filter', filter);
+        statesHalo.attr('opacity', opacity).attr('filter', 'blur(5px)');
+        regions.attr('opacity', null).attr('filter', null);
+      }
+
+      if (version < 1.65) {
+        // v 1.65 changed rivers data
+        rivers.attr('style', null); // remove style to unhide layer
+
+        for (const river of pack.rivers) {
+          const node = document.getElementById('river' + river.i);
+          if (node && !river.cells) {
+            const riverCells = new Set();
+            const length = node.getTotalLength() / 2;
+            const segments = Math.ceil(length / 6);
+            const increment = length / segments;
+            for (let i = increment * segments, c = i; i >= 0; i -= increment, c += increment) {
+              const p1 = node.getPointAtLength(i);
+              const p2 = node.getPointAtLength(c);
+              const x = (p1.x + p2.x) / 2;
+              const y = (p1.y + p2.y) / 2;
+              const cell = findCell(x, y, 6);
+              if (cell) riverCells.add(cell);
+            }
+
+            river.cells = Array.from(riverCells);
+          }
+
+          pack.cells.i.forEach((i) => {
+            if (pack.cells.r[i] && pack.cells.h[i] < 20) pack.cells.r[i] = 0;
+          });
+        }
+      }
+
+      if (version < 1.652) {
+        // remove style to unhide layers
+        rivers.attr('style', null);
+        borders.attr('style', null);
       }
     })();
 
@@ -812,6 +860,7 @@ function parseLoadedData(data) {
     // set options
     yearInput.value = options.year;
     eraInput.value = options.era;
+    shapeRendering.value = viewbox.attr('shape-rendering') || 'geometricPrecision';
 
     if (window.restoreDefaultEvents) restoreDefaultEvents();
     focusOn(); // based on searchParams focus on point, cell or burg

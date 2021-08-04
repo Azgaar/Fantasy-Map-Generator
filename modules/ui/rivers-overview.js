@@ -21,6 +21,7 @@ function overviewRivers() {
   // add listeners
   document.getElementById('riversOverviewRefresh').addEventListener('click', riversOverviewAddLines);
   document.getElementById('addNewRiver').addEventListener('click', toggleAddRiver);
+  document.getElementById('riverCreateNew').addEventListener('click', createRiver);
   document.getElementById('riversBasinHighlight').addEventListener('click', toggleBasinsHightlight);
   document.getElementById('riversExport').addEventListener('click', downloadRiversData);
   document.getElementById('riversRemoveAll').addEventListener('click', triggerAllRiversRemove);
@@ -129,27 +130,53 @@ function overviewRivers() {
   }
 
   function openRiverEditor() {
-    editRiver('river' + this.parentNode.dataset.id);
+    const id = 'river' + this.parentNode.dataset.id;
+    editRiver(id);
   }
 
   function triggerRiverRemove() {
     const river = +this.parentNode.dataset.id;
+    alertMessage.innerHTML = `Are you sure you want to remove the river? 
+      All tributaries will be auto-removed`;
 
-    const message = 'Are you sure you want to remove the river? <br>All tributaries will be auto-removed';
-    const onConfirm = () => {
-      Rivers.remove(river);
-      riversOverviewAddLines();
-    };
-    confirmationDialog({title: 'Remove river', message, confirm: 'Remove', onConfirm});
+    $('#alert').dialog({
+      resizable: false,
+      width: '22em',
+      title: 'Remove river',
+      buttons: {
+        Remove: function () {
+          Rivers.remove(river);
+          riversOverviewAddLines();
+          $(this).dialog('close');
+        },
+        Cancel: function () {
+          $(this).dialog('close');
+        }
+      }
+    });
   }
 
   function triggerAllRiversRemove() {
-    const message = 'Are you sure you want to remove all rivers? <br>This action cannot be reverted';
-    const onConfirm = () => {
-      pack.rivers = [];
-      rivers.selectAll('*').remove();
-      riversOverviewAddLines();
-    };
-    confirmationDialog({title: 'Remove all rivers', message, confirm: 'Remove', onConfirm});
+    alertMessage.innerHTML = `Are you sure you want to remove all rivers?`;
+    $('#alert').dialog({
+      resizable: false,
+      title: 'Remove all rivers',
+      buttons: {
+        Remove: function () {
+          $(this).dialog('close');
+          removeAllRivers();
+        },
+        Cancel: function () {
+          $(this).dialog('close');
+        }
+      }
+    });
+  }
+
+  function removeAllRivers() {
+    pack.rivers = [];
+    pack.cells.r = new Uint16Array(pack.cells.i.length);
+    rivers.selectAll('*').remove();
+    riversOverviewAddLines();
   }
 }

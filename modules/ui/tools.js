@@ -551,93 +551,119 @@ function toggleAddRiver() {
 }
 
 function addRiverOnClick() {
-  const cells = pack.cells;
-  const point = d3.mouse(this);
-  let i = findCell(point[0], point[1]);
-  if (cells.r[i] || cells.h[i] < 20 || cells.b[i]) return;
+  const {cells, rivers} = pack;
+  let i = findCell(...d3.mouse(this));
 
-  const dataRiver = []; // to store river points
-  let river = +getNextId('river').slice(5); // river id
-  cells.fl[i] = grid.cells.prec[cells.g[i]]; // initial flux
+  if (cells.r[i]) return tip('There is already a river here', false, 'error');
+  if (cells.h[i] < 20) return tip('Cannot create river in water cell', false, 'error');
+  if (cells.b[i]) return;
 
-  const h = Rivers.alterHeights();
-  Lakes.prepareLakeData(h);
-  Rivers.resolveDepressions(h);
+  const {alterHeights, resolveDepressions, addMeandering, getRiverPath, getBasin, getName, getType, getWidth, getOffset, getApproximateLength} = Rivers;
+  const riverCells = [];
+  let riverId = rivers.length ? last(rivers).i + 1 : 1;
+  let parent = riverId;
+
+  const initialFlux = grid.cells.prec[cells.g[i]];
+  cells.fl[i] = initialFlux;
+
+  const h = alterHeights();
+  resolveDepressions(h);
 
   while (i) {
-    cells.r[i] = river;
-    const [x, y] = cells.p[i];
-    dataRiver.push({x, y, cell: i});
+    cells.r[i] = riverId;
+    riverCells.push(i);
 
     const min = cells.c[i].sort((a, b) => h[a] - h[b])[0]; // downhill cell
     if (h[i] <= h[min]) return tip(`Cell ${i} is depressed, river cannot flow further`, false, 'error');
 
-    const [tx, ty] = cells.p[min];
-
+    // pour to water body
     if (h[min] < 20) {
-      // pour to water body
-      dataRiver.push({x: tx, y: ty, cell: i});
+      riverCells.push(min);
+
+      const feature = pack.features[cells.f[min]];
+      if (feature.type === 'lake') {
+        if (feature.outlet) parent = feature.outlet;
+        feature.inlets ? feature.inlets.push(riverId) : (feature.inlets = [riverId]);
+      }
       break;
     }
 
+    // pour outside of map from border cell
+    if (cells.b[min]) {
+      cells.fl[min] += cells.fl[i];
+      riverCells.push(-1);
+      break;
+    }
+
+    // continue propagation if min cell has no river
     if (!cells.r[min]) {
-      // continue if next cell has not river
       cells.fl[min] += cells.fl[i];
       i = min;
       continue;
     }
 
     // handle case when lowest cell already has a river
-    const r = cells.r[min];
-    const riverCells = cells.i.filter((i) => cells.r[i] === r);
-    const riverCellsUpper = riverCells.filter((i) => h[i] > h[min]);
+    const oldRiverId = cells.r[min];
+    const oldRiver = rivers.find((river) => river.i === oldRiverId);
+    const oldRiverCells = oldRiver?.cells || cells.i.filter((i) => cells.r[i] === oldRiverId);
+    const oldRiverCellsUpper = oldRiverCells.filter((i) => h[i] > h[min]);
 
-    // finish new river if old river is longer
-    if (dataRiver.length <= riverCellsUpper.length) {
+    // create new river as a tributary
+    if (riverCells.length <= oldRiverCellsUpper.length) {
       cells.conf[min] += cells.fl[i];
-      dataRiver.push({x: tx, y: ty, cell: min});
-      dataRiver[0].parent = r; // new river is tributary
+      riverCells.push(min);
+      parent = oldRiverId;
       break;
     }
 
-    // extend old river
-    rivers.select('#river' + r).remove();
-    cells.i.filter((i) => cells.r[i] === river).forEach((i) => (cells.r[i] = r));
-    riverCells.forEach((i) => (cells.r[i] = 0));
-    river = r;
-    cells.fl[min] = cells.fl[i] + grid.cells.prec[cells.g[min]];
-    i = min;
+    // continue old river
+    document.getElementById('river' + oldRiverId)?.remove();
+    riverCells.forEach((i) => (cells.r[i] = oldRiverId));
+    oldRiverCells.forEach((cell) => {
+      if (h[cell] > h[min]) {
+        cells.r[cell] = 0;
+        cells.fl[cell] = grid.cells.prec[cells.g[cell]];
+      } else {
+        riverCells.push(cell);
+        cells.fl[cell] += cells.fl[i];
+      }
+    });
+    riverId = oldRiverId;
+
+    break;
   }
 
-  const points = Rivers.addMeandering(dataRiver, 1, 0.5);
-  const widthFactor = rn(0.8 + Math.random() * 0.4, 1); // river width modifier [.8, 1.2]
-  const sourceWidth = 0.1;
-  const [path, length, offset] = Rivers.getPath(points, widthFactor, sourceWidth);
-  rivers
-    .append('path')
-    .attr('d', path)
-    .attr('id', 'river' + river);
+  const river = rivers.find((r) => r.i === riverId);
 
-  // add new river to data or change extended river attributes
-  const r = pack.rivers.find((r) => r.i === river);
-  const mouth = last(dataRiver).cell;
-  const discharge = cells.fl[mouth]; // in m3/s
+  const source = riverCells[0];
+  const mouth = riverCells[riverCells.length - 2];
+  const widthFactor = river?.widthFactor || (!parent || parent === riverId ? 1.2 : 1);
+  const meanderedPoints = addMeandering(riverCells);
 
-  if (r) {
-    r.source = dataRiver[0].cell;
-    r.length = length;
-    r.discharge = discharge;
+  const discharge = cells.fl[mouth]; // m3 in second
+  const length = getApproximateLength(meanderedPoints);
+  const width = getWidth(getOffset(discharge, meanderedPoints.length, widthFactor));
+
+  if (river) {
+    river.source = source;
+    river.length = length;
+    river.discharge = discharge;
+    river.width = width;
+    river.cells = riverCells;
   } else {
-    const parent = dataRiver[0].parent || 0;
-    const basin = Rivers.getBasin(river);
-    const source = dataRiver[0].cell;
-    const width = rn(offset ** 2, 2); // mounth width in km
-    const name = Rivers.getName(mouth);
-    const smallLength = pack.rivers.map((r) => r.length || 0).sort((a, b) => a - b)[Math.ceil(pack.rivers.length * 0.15)];
-    const type = length < smallLength ? rw({Creek: 9, River: 3, Brook: 3, Stream: 1}) : 'River';
+    const basin = getBasin(parent);
+    const name = getName(mouth);
+    const type = getType({i: riverId, length, parent});
 
-    pack.rivers.push({i: river, source, mouth, discharge, length, width, widthFactor, sourceWidth, parent, basin, name, type});
+    rivers.push({i: riverId, source, mouth, discharge, length, width, widthFactor, sourceWidth: 0, parent, cells: riverCells, basin, name, type});
   }
+
+  // render river
+  lineGen.curve(d3.curveCatmullRom.alpha(0.1));
+  const path = getRiverPath(meanderedPoints, widthFactor);
+  const id = 'river' + riverId;
+  const riversG = viewbox.select('#rivers');
+  riversG.append('path').attr('id', id).attr('d', path);
 
   if (d3.event.shiftKey === false) {
     Lakes.cleanupLakeData();

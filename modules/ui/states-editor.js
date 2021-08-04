@@ -849,18 +849,21 @@ function editStates() {
   }
 
   function adjustProvinces(affectedProvinces) {
-    const cells = pack.cells,
-      provinces = pack.provinces,
-      states = pack.states;
+    const {cells, provinces, states} = pack;
     const form = {Zone: 1, Area: 1, Territory: 2, Province: 1};
 
+<<<<<<< HEAD
     affectedProvinces.forEach((p) => {
       // do nothing if neutral lands are captured
       if (!p) return;
+=======
+    affectedProvinces.forEach(p => {
+      if (!p) return; // do nothing if neutral lands are captured
+      const old = provinces[p].state;
+>>>>>>> 597f9ae038fbcc149315df9b1618e64744fb929d
 
       // remove province from state provinces list
-      const old = provinces[p].state;
-      if (states[old].provinces.includes(p)) states[old].provinces.splice(states[old].provinces.indexOf(p), 1);
+      if (states[old]?.provinces?.includes(p)) states[old].provinces.splice(states[old].provinces.indexOf(p), 1);
 
       // find states owning at least 1 province cell
       const provCells = cells.i.filter((i) => cells.province[i] === p);
@@ -871,8 +874,13 @@ function editStates() {
       if (owner) {
         const name = provinces[p].name;
 
+<<<<<<< HEAD
         // if province is historical part of abouther state province, unite with old province
         const part = states[owner].provinces.find((n) => name.includes(provinces[n].name));
+=======
+        // if province is a historical part of another state's province, unite with old province
+        const part = states[owner].provinces.find(n => name.includes(provinces[n].name));
+>>>>>>> 597f9ae038fbcc149315df9b1618e64744fb929d
         if (part) {
           provinces[p].removed = true;
           provCells.filter((i) => cells.state[i] === owner).forEach((i) => (cells.province[i] = part));

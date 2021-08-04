@@ -45,36 +45,36 @@
     xmlns:svg="http://www.w3.org/2000/svg">
     <defs>
       <g id="filters">
-        <filter id="blurFilter" x="-1" y="-1" width="100" height="100">
+        <filter id="blurFilter" name="Blur 0.2" x="-1" y="-1" width="100" height="100">
           <feGaussianBlur in="SourceGraphic" stdDeviation="0.2"/>
         </filter>
-        <filter id="blur1" x="-1" y="-1" width="100" height="100">
+        <filter id="blur1" name="Blur 1" x="-1" y="-1" width="100" height="100">
           <feGaussianBlur in="SourceGraphic" stdDeviation="1"/>
         </filter>
-        <filter id="blur3" x="-1" y="-1" width="100" height="100">
+        <filter id="blur3" name="Blur 3" x="-1" y="-1" width="100" height="100">
           <feGaussianBlur in="SourceGraphic" stdDeviation="3"/>
         </filter>
-        <filter id="blur5" x="-1" y="-1" width="100" height="100">
+        <filter id="blur5" name="Blur 5" x="-1" y="-1" width="100" height="100">
           <feGaussianBlur in="SourceGraphic" stdDeviation="5"/>
         </filter>
-        <filter id="blur7" x="-1" y="-1" width="100" height="100">
+        <filter id="blur7" name="Blur 7" x="-1" y="-1" width="100" height="100">
           <feGaussianBlur in="SourceGraphic" stdDeviation="7"/>
         </filter>
-        <filter id="blur10" x="-1" y="-1" width="100" height="100">
+        <filter id="blur10" name="Blur 10" x="-1" y="-1" width="100" height="100">
           <feGaussianBlur in="SourceGraphic" stdDeviation="10"/>
         </filter>
-        <filter id="splotch">
+        <filter id="splotch" name="Splotch">
           <feTurbulence type="fractalNoise" baseFrequency=".01" numOctaves="4"/>
           <feColorMatrix values="0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 -0.9 1.2" result="texture"/>
           <feComposite in="SourceGraphic" in2="texture" operator="in"/>
         </filter>
-        <filter id="bluredSplotch">
+        <filter id="bluredSplotch" name="Blurred Splotch">
           <feTurbulence type="fractalNoise" baseFrequency=".01" numOctaves="4"/>
           <feColorMatrix values="0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 -0.9 1.2" result="texture"/>
           <feComposite in="SourceGraphic" in2="texture" operator="in"/>
           <feGaussianBlur stdDeviation="4"/>
         </filter>
-        <filter id="dropShadow">
+        <filter id="dropShadow" name="Shadow 2">
           <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
           <feOffset dx="1" dy="2"/>
           <feMerge>
@@ -82,7 +82,7 @@
               <feMergeNode in="SourceGraphic"/>
           </feMerge>
         </filter>
-        <filter id="dropShadow01">
+        <filter id="dropShadow01" name="Shadow 0.1">
           <feGaussianBlur in="SourceAlpha" stdDeviation=".1"/>
           <feOffset dx=".2" dy=".3"/>
           <feMerge>
@@ -90,7 +90,7 @@
               <feMergeNode in="SourceGraphic"/>
           </feMerge>
         </filter>
-        <filter id="dropShadow05">
+        <filter id="dropShadow05" name="Shadow 0.5">
           <feGaussianBlur in="SourceAlpha" stdDeviation=".5"/>
           <feOffset dx=".5" dy=".7"/>
           <feMerge>
@@ -98,23 +98,23 @@
               <feMergeNode in="SourceGraphic"/>
           </feMerge>
         </filter>
-        <filter id="outline">
+        <filter id="outline" name="Outline">
           <feGaussianBlur in="SourceAlpha" stdDeviation="1"/>
           <feMerge>
               <feMergeNode/>
               <feMergeNode in="SourceGraphic"/>
           </feMerge>
         </filter>
-        <filter id="pencil">
+        <filter id="pencil" name="Pencil">
           <feTurbulence baseFrequency="0.03" numOctaves="6" type="fractalNoise"/>
           <feDisplacementMap scale="3" in="SourceGraphic" xChannelSelector="R" yChannelSelector="G"/>
         </filter>
-        <filter id="turbulence">
+        <filter id="turbulence" name="Turbulence">
           <feTurbulence baseFrequency="0.1" numOctaves="3" type="fractalNoise"/>
           <feDisplacementMap scale="10" in="SourceGraphic" xChannelSelector="R" yChannelSelector="G"/>
         </filter>
 
-        <filter id="paper" x="-20%" y="-20%" width="140%" height="140%" filterUnits="objectBoundingBox" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+        <filter id="paper" name="Paper" x="-20%" y="-20%" width="140%" height="140%" filterUnits="objectBoundingBox" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
           <feGaussianBlur stdDeviation="1 1" x="0%" y="0%" width="100%" height="100%" in="SourceGraphic" edgeMode="none" result="blur"/>
           <feTurbulence type="fractalNoise" baseFrequency="0.05 0.05" numOctaves="4" seed="1" stitchTiles="stitch" result="turbulence"/>
           <feDiffuseLighting surfaceScale="2" diffuseConstant="1" lighting-color="#707070" in="turbulence" result="diffuseLighting">
@@ -124,7 +124,7 @@
           <feComposite in="composite" in2="SourceGraphic" operator="in" x="0%" y="0%" width="100%" height="100%" result="composite1"/>
         </filter>
 
-        <filter id="crumpled" x="-20%" y="-20%" width="140%" height="140%" filterUnits="objectBoundingBox" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+        <filter id="crumpled" name="Crumpled" x="-20%" y="-20%" width="140%" height="140%" filterUnits="objectBoundingBox" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
           <feGaussianBlur stdDeviation="2 2" x="0%" y="0%" width="100%" height="100%" in="SourceGraphic" edgeMode="none" result="blur"/>
           <feTurbulence type="turbulence" baseFrequency="0.05 0.05" numOctaves="4" seed="1" stitchTiles="stitch" result="turbulence"/>
           <feDiffuseLighting surfaceScale="2" diffuseConstant="1" lighting-color="#828282" in="turbulence" result="diffuseLighting">
@@ -134,16 +134,16 @@
           <feComposite in="composite" in2="SourceGraphic" operator="in" x="0%" y="0%" width="100%" height="100%" result="composite1"/>
         </filter>
 
-        <filter id="filter-grayscale">
+        <filter id="filter-grayscale" name="Grayscale">
           <feColorMatrix values="0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0 0 0 1 0"/>
         </filter>
-        <filter id="filter-sepia">
+        <filter id="filter-sepia" name="Sepia">
           <feColorMatrix values="0.393 0.769 0.189 0 0 0.349 0.686 0.168 0 0 0.272 0.534 0.131 0 0 0 0 0 1 0"/>
         </filter>
-        <filter id="filter-dingy">
+        <filter id="filter-dingy" name="Dingy">
           <feColorMatrix values="1 0 0 0 0 0 1 0 0 0 0 0.3 0.3 0 0 0 0 0 1 0"></feColorMatrix>
         </filter>
-        <filter id="filter-tint">
+        <filter id="filter-tint" name="Tint">
           <feColorMatrix values="1.1 0 0 0 0  0 1.1 0 0 0  0 0 0.9 0 0  0 0 0 1 0"></feColorMatrix>
         </filter>
       </g>
@@ -235,7 +235,7 @@
   <div id="loading">
     <div id="titleName"><t data-t="titleName">Azgaar's</t></div>
     <div id="title"><t data-t="title">Fantasy Map Generator</t></div>
-    <div id="version"><t data-t="version">v. </t>1.63</div>
+    <div id="version"><t data-t="version">v. </t>1.65</div>
     <p id="loading-text"><t data-t="loading">LOADING</t><span>.</span><span>.</span><span>.</span></p>
   </div>
 
@@ -319,13 +319,15 @@
       </div>
 
       <div id="styleContent" class="tabcontent">
-        <p data-tip="Select a style preset" style="display: inline-block">Style preset:</p>
+        <p data-tip="Select a style preset. State labels may required regeneration if font is changed" style="display: inline-block">Style preset:</p>
         <select data-tip="Select a style preset" id="stylePreset" onchange="changeStylePreset(this.value)" style="width:45%">
           <option value="styleDefault" data-system=1 selected>Default</option>
           <option value="styleAncient" data-system=1>Ancient</option>
           <option value="styleGloom" data-system=1>Gloom</option>
           <option value="styleClean" data-system=1>Clean</option>
-          <option value="styleMonochrome" data-system=1>Monochrome (for heightmap)</option>
+          <option value="styleLight" data-system=1>Light</option>
+          <option value="styleWatercolor" data-system=1>Watercolor</option>
+          <option value="styleMonochrome" data-system=1>Monochrome</option>
         </select>
         <button id="addStyleButton" data-tip="Click to save current style as a new preset" class="icon-plus styleButton" style="display: inline-block" onclick="addStylePreset()"></button>
         <button id="removeStyleButton" data-tip="Click to remove current custom style preset" class="icon-minus styleButton" style="display: none" onclick="removeStylePreset()"></button>
@@ -367,16 +369,15 @@
           <option value="compass">Wind Rose</option>
           <option value="zones">Zones</option>
         </select>
-        <!-- <button id="restoreStyle" data-tip="Click to restore default style for all elements" class="icon-ccw styleButton" onclick="askToRestoreDefaultStyle()"></button> -->
 
         <table id="styleElements">
-          <caption id="styleIsOff" data-tip="The selected layer is not visible. See the buttons above to toggle it on">Please ensure the element is toggled on!</caption>
+          <caption id="styleIsOff" data-tip="The selected layer is not visible. Toogle it on to see style changes effect">Ensure the element visibility is toggled on!</caption>
 
           <tbody id="styleGroup">
             <tr data-tip="Select element group">
               <td><b>Group</b></td>
               <td>
-                <select id="styleGroupSelect"><option value="regions">regions</option></select>
+                <select id="styleGroupSelect"></select>
               </td>
             </tr>
           </tbody>
@@ -387,24 +388,6 @@
               <td>
                 <input id="styleOpacityInput" type="range" min=0 max=1 step=0.01 value=.4>
                 <output id="styleOpacityOutput">0.4</output>
-              </td>
-            </tr>
-          </tbody>
-
-          <tbody id="styleStates" style="display: block">
-            <tr data-tip="Set states halo effect width">
-              <td>Halo width</td>
-              <td>
-                <input id="styleStatesHaloWidth" type="range" min=0 max=30 step=.1 value=10>
-                <output id="styleStatesHaloWidthOutput">10</output>
-              </td>
-            </tr>
-
-            <tr data-tip="Set states halo effect opacity. 0: invisible, 1: solid">
-              <td>Halo opacity</td>
-              <td>
-                <input id="styleStatesHaloOpacity" type="range" min=0 max=1 step=0.01 value=1>
-                <output id="styleStatesHaloOpacityOutput">1</output>
               </td>
             </tr>
           </tbody>
@@ -600,7 +583,7 @@
           </tbody>
 
           <tbody id="styleRelief">
-              <tr data-tip="Select set of relief icons. The change will trigger icons regeneration">
+              <tr data-tip="Select set of relief icons. All relief icons will be regenerated">
                   <td>Style</td>
                   <td>
                     <select id="styleReliefSet">
@@ -611,15 +594,15 @@
                   </td>
                 </tr>
 
-            <tr data-tip="Define the size of relief icons">
+            <tr data-tip="Define the size of relief icons. All relief icons will be regenerated">
               <td>Size</td>
               <td>
-                <input id="styleReliefSizeInput" data-stored="reliefSize" type="range" min=.2 max=3 step=.01 value=1>
-                <output id="styleReliefSizeOutput">1</output>
+                <input id="styleReliefSizeInput" data-stored="reliefSize" type="range" min=.2 max=4 step=.01>
+                <output id="styleReliefSizeOutput"></output>
               </td>
             </tr>
 
-            <tr data-tip="Define the density of relief icons. Highly affects performance!">
+            <tr data-tip="Define the density of relief icons. All relief icons will be regenerated. Highly affects performance!">
               <td>Density</td>
               <td>
                 <input id="styleReliefDensityInput" data-stored="reliefDensity" type="range" min=.3 max=.8 step=.01 value=.4>
@@ -697,8 +680,8 @@
             <tr data-tip="Set font size">
               <td>Font size</td>
               <td>
-                <button id="styleFontPlus" data-tip="Multiply font size by 1.1" class="whiteButton">+</button>
-                <button id="styleFontMinus" data-tip="Multiply font size by 0.9" class="whiteButton" >-</button>
+                <button id="styleFontPlus" data-tip="Increase font" class="whiteButton">+</button>
+                <button id="styleFontMinus" data-tip="Descrease font" class="whiteButton" >-</button>
                 <input id="styleFontSize" type="number" min=.5 max=100 step=.1 value=14>
               </td>
             </tr>
@@ -757,6 +740,45 @@
               <td>
                 <input id="styleTemperatureFillInput" type="color"/>
                 <output id="styleTemperatureFillOutput">#000</output>
+              </td>
+            </tr>
+          </tbody>
+
+          <tbody id="styleStates" style="display: block">
+            <tr data-tip="Set states fill opacity. 0: invisible, 1: solid">
+              <td>Body opacity</td>
+              <td>
+                <input id="styleStatesBodyOpacity" type="range" min=0 max=1 step=0.01>
+                <output id="styleStatesBodyOpacityOutput"></output>
+              </td>
+            </tr>
+
+            <tr data-tip="Select filter for states fill. Please note filters may cause performance issues!">
+              <td>Body filter</td>
+              <td><select id="styleStatesBodyFilter"/></td>
+            </tr>
+
+            <tr data-tip="Set states halo effect width">
+              <td>Halo width</td>
+              <td>
+                <input id="styleStatesHaloWidth" type="range" min=0 max=30 step=.1 value=10>
+                <output id="styleStatesHaloWidthOutput">10</output>
+              </td>
+            </tr>
+
+            <tr data-tip="Set states halo effect opacity. 0: invisible, 1: solid">
+              <td>Halo opacity</td>
+              <td>
+                <input id="styleStatesHaloOpacity" type="range" min=0 max=1 step=0.01 value=1>
+                <output id="styleStatesHaloOpacityOutput">1</output>
+              </td>
+            </tr>
+
+            <tr data-tip="Select halo effect power (blur). Set to 0 to make it solid line">
+              <td>Halo blur</td>
+              <td>
+                <input id="styleStatesHaloBlur" type="range" min=0 max=10 step=0.01 value=4>
+                <output id="styleStatesHaloBlurOutput">4</output>
               </td>
             </tr>
           </tbody>
@@ -830,21 +852,21 @@
             <tr data-tip="Set state emblems size multiplier">
               <td>State Size</td>
               <td>
-                <input id="styleEmblemsStateSizeInput" data-stored="styleEmblemsStateSize" type="number" min=0 max=5 step=.02 value=1 />
+                <input id="emblemsStateSizeInput" data-stored="emblemsStateSize" type="number" min=0 max=5 step=.02 value=1 />
               </td>
             </tr>
 
             <tr data-tip="Set province emblems size multiplier">
               <td>Province Size</td>
               <td>
-                <input id="styleEmblemsProvinceSizeInput" data-stored="styleEmblemsProvinceSize" type="number" min=0 max=5 step=.02 value=1 />
+                <input id="emblemsProvinceSizeInput" data-stored="emblemsProvinceSize" type="number" min=0 max=5 step=.02 value=1 />
               </td>
             </tr>
 
             <tr data-tip="Set burg emblems size multiplier">
               <td>Burg Size</td>
               <td>
-                <input id="styleEmblemsBurgSizeInput" data-stored="styleEmblemsBurgSize" type="number" min=0 max=5 step=.02 value=1 />
+                <input id="emblemsBurgSizeInput" data-stored="emblemsBurgSize" type="number" min=0 max=5 step=.02 value=1 />
               </td>
             </tr>
 
@@ -859,29 +881,7 @@
           <tbody id="styleFilter" style="display: block">
             <tr data-tip="Select filter for element. Please note filters may cause performance issues!">
               <td>Filter</td>
-              <td>
-                <select id="styleFilterInput">
-                  <option value="" selected>None</option>
-                  <option value="url(#blurFilter)">Blur 0.2</option>
-                  <option value="url(#blur1)">Blur 1</option>
-                  <option value="url(#blur3)">Blur 3</option>
-                  <option value="url(#blur5)">Blur 5</option>
-                  <option value="url(#blur7)">Blur 7</option>
-                  <option value="url(#blur10)">Blur 10</option>
-                  <option value="url(#splotch)">Splotch</option>
-                  <option value="url(#bluredSplotch)">Blurred Splotch</option>
-                  <option value="url(#dropShadow01)">Shadow 0.1</option>
-                  <option value="url(#dropShadow05)">Shadow 0.5</option>
-                  <option value="url(#dropShadow)">Shadow 2</option>
-                  <option value="url(#outline)">Outline</option>
-                  <option value="url(#pencil)">Pencil</option>
-                  <option value="url(#turbulence)">Turbulence</option>
-                  <option value="url(#paper)">Paper</option>
-                  <option value="url(#crumpled)">Crumpled</option>
-                  <option value="url(#filter-grayscale)">Grayscale</option>
-                  <option value="url(#filter-sepia)">Sepia</option>
-                </select>
-              </td>
+              <td><select id="styleFilterInput"/></td>
             </tr>
           </tbody>
 
@@ -921,6 +921,13 @@
               <td colspan=2>
                 <input id="hideLabels" class="checkbox" type="checkbox" onchange="invokeActiveZooming()" checked>
                 <label for="hideLabels" class="checkbox-label">Toggle visibility automatically</label>
+              </td>
+            </tr>
+
+            <tr data-tip="Allow system to rescale labels on zoom">
+              <td colspan=2>
+                <input id="rescaleLabels" class="checkbox" type="checkbox" onchange="invokeActiveZooming()" checked>
+                <label for="rescaleLabels" class="checkbox-label">Rescale on zoom</label>
               </td>
             </tr>
           </tbody>
@@ -1013,17 +1020,18 @@
             <td>Map template</td>
             <td>
               <select id="templateInput" data-stored="template">
-                <option value="Volcano">Volcano</option>
-                <option value="High Island">High Island</option>
-                <option value="Low Island">Low Island</option>
-                <option value="Continents">Two Continents</option>
-                <option value="Archipelago">Archipelago</option>
-                <option value="Atoll">Atoll</option>
-                <option value="Mediterranean">Mediterranean</option>
-                <option value="Peninsula">Peninsula</option>
-                <option value="Pangea">Pangea</option>
-                <option value="Isthmus">Isthmus</option>
-                <option value="Shattered">Shattered</option>
+                <option value="volcano">Volcano</option>
+                <option value="highIsland">High Island</option>
+                <option value="lowIsland">Low Island</option>
+                <option value="continents">Two Continents</option>
+                <option value="archipelago">Archipelago</option>
+                <option value="atoll">Atoll</option>
+                <option value="mediterranean">Mediterranean</option>
+                <option value="peninsula">Peninsula</option>
+                <option value="pangea">Pangea</option>
+                <option value="isthmus">Isthmus</option>
+                <option value="shattered">Shattered</option>
+                <option value="taklamakan">Taklamakan</option>
               </select>
             </td>
             <td></td>
@@ -1291,6 +1299,18 @@
             </td>
           </tr>
 
+          <tr data-tip="Select shape rendering model">
+            <td></td>
+            <td>Shape rendering</td>
+            <td>
+              <select id="shapeRendering" data-stored="shapeRendering">
+                <option value="geometricPrecision" selected>Best quality</option>
+                <option value="optimizeSpeed">Best performace</option>
+              </select>
+            </td>
+            <td></td>
+          </tr>
+
           <!-- <tr data-tip="Select language (not all languages are fully supported). Reload the page to apply">
             <td></td>
             <td>Language</td>
@@ -1357,7 +1377,7 @@
 
         <div id="addFeature">
           <p>Click to add:</p>
-          <button id="addBurgTool" data-tip="Click on map to place a burg. Hold Shift to add multiple. Shortcut: Shift + 1">Burg</button>
+          <button id="addBurgTool" data-tip="Click on map to place a burg. Hold <kbd>Shift</kbd> to add multiple. Shortcut: Shift + 1">Burg</button>
           <button id="addLabel" data-tip="Click on map to place label. Hold Shift to add multiple. Shortcut: Shift + 2">Label</button>
           <button id="addRiver" data-tip="Click on map to place a river. Hold Shift to add multiple. Shortcut: Shift + 3">River</button>
           <button id="addRoute" data-tip="Click on map to place a route. Shortcut: Shift + 4">Route</button>
@@ -1647,23 +1667,31 @@
           <input id="riverWidth" disabled/>
         </div>
 
-        <div data-tip="River source width in pixels">
+        <div data-tip="River additional width. Default value is 0">
           <div class="label">Source width:</div>
           <input id="riverSourceWidth" type="number" min=0 max=3 step=.1 />
         </div>
 
-        <div data-tip="River width multiplier">
+        <div data-tip="River width multiplier. Default value is 1">
           <div class="label">Width modifier:</div>
           <input id="riverWidthFactor" type="number" min=.1 max=4 step=.1 />
         </div>
       </div>
 
       <div id="riverBottom">
-        <button id="riverNew" data-tip="Create new river clicking on map" class="icon-map-pin"></button>
+        <button id="riverCreateSelectingCells" data-tip="Create new river selecting river cells" class="icon-map-pin"></button>
         <button id="riverEditStyle" data-tip="Edit style for all rivers in Style Editor" class="icon-brush"></button>
         <button id="riverElevationProfile" data-tip="Show the elevation profile for the river" class="icon-chart-area"></button>
         <button id="riverLegend" data-tip="Edit free text notes (legend) for the river" class="icon-edit"></button>
         <button id="riverRemove" data-tip="Remove river. Shortcut: Delete" class="icon-trash fastDelete"></button>
+      </div>
+    </div>
+
+    <div id="riverCreator" class="dialog" style="display: none">
+      <div id="riverCreatorBody" class="table"></div>
+      <div id="riverCreatorBottom">
+        <button id="riverCreatorComplete" data-tip="Complete river creation" class="icon-check"></button>
+        <button id="riverCreatorCancel" data-tip="Cancel the creation" class="icon-cancel"></button>
       </div>
     </div>
 
@@ -1927,7 +1955,7 @@
         <button id="reliefCopy" data-tip="Copy selected relief icon" class="icon-clone"></button>
         <button id="reliefMoveFront" data-tip="Move selected relief icon to front" class="icon-level-up"></button>
         <button id="reliefMoveBack" data-tip="Move selected relief icon back" class="icon-level-down"></button>
-        <button id="reliefRemove" data-tip="Remove selected relief icon. Shortcut: Delete" class="icon-trash fastDelete"></button>
+        <button id="reliefRemove" data-tip="Remove selected relief icon or icon type. Shortcut: Delete" class="icon-trash fastDelete"></button>
       </div>
     </div>
 
@@ -2327,18 +2355,19 @@
     <div id="templateEditor" class="dialog stable" style="display: none">
       <div id="templateTop">
         <i>Select template: </i><select id="templateSelect" style="width:16em" data-prev="templateCustom" data-tip="Select base template">
-          <option value="templateCustom" selected>Custom</option>
-          <option value="templateVolcano">Volcano</option>
-          <option value="templateHighIsland">High Island</option>
-          <option value="templateLowIsland">Low Island</option>
-          <option value="templateContinents">Two Continents</option>
-          <option value="templateArchipelago">Archipelago</option>
-          <option value="templateAtoll">Atoll</option>
-          <option value="templateMediterranean">Mediterranean</option>
-          <option value="templatePeninsula">Peninsula</option>
-          <option value="templatePangea">Pangea</option>
-          <option value="templateIsthmus">Isthmus</option>
-          <option value="templateShattered">Shattered</option>
+          <option value="custom" selected>Custom</option>
+          <option value="volcano">Volcano</option>
+          <option value="highIsland">High Island</option>
+          <option value="lowIsland">Low Island</option>
+          <option value="continents">Two Continents</option>
+          <option value="archipelago">Archipelago</option>
+          <option value="atoll">Atoll</option>
+          <option value="mediterranean">Mediterranean</option>
+          <option value="peninsula">Peninsula</option>
+          <option value="pangea">Pangea</option>
+          <option value="isthmus">Isthmus</option>
+          <option value="shattered">Shattered</option>
+          <option value="taklamakan">Taklamakan</option>
         </select>
       </div>
       <div id="templateTools">
@@ -2553,6 +2582,7 @@
             <option value="Diarchy">Diarchy</option>
             <option value="Federation">Federation</option>
             <option value="Free City">Free City</option>
+            <option value="Most Serene Republic">Most Serene Republic</option>
             <option value="Oligarchy">Oligarchy</option>
             <option value="Protectorate">Protectorate</option>
             <option value="Republic">Republic</option>
@@ -2575,10 +2605,17 @@
             <option value="Tribes">United Tribes</option>
           </optgroup>
           <optgroup label="Theocracy">
+            <option value="Bishopric">Bishopric</option>
             <option value="Brotherhood">Brotherhood</option>
             <option value="Caliphate">Caliphate</option>
             <option value="Diocese">Diocese</option>
+            <option value="Divine Duchy">Divine Duchy</option>
+            <option value="Divine Grand Duchy">Divine Grand Duchy</option>
+            <option value="Divine Principality">Divine Principality</option>
+            <option value="Divine Kingdom">Divine Kingdom</option>
+            <option value="Divine Empire">Divine Empire</option>
             <option value="Eparchy">Eparchy</option>
+            <option value="Holy State">Holy State</option>
             <option value="Imamah">Imamah</option>
             <option value="Theocracy">Theocracy</option>
           </optgroup>
@@ -3275,7 +3312,8 @@
 
       <div id="riversBottom">
         <button id="riversOverviewRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-        <button id="addNewRiver" data-tip="Add a new river. Hold Shift to add multiple" class="icon-plus"></button>
+        <button id="addNewRiver" data-tip="Automatically add river starting from clicked cell. Hold Shift to add multiple" class="icon-plus"></button>
+        <button id="riverCreateNew" data-tip="Create new river selecting river cells" class="icon-map-pin"></button>
         <button id="riversBasinHighlight" data-tip="Toggle basin highlight mode" class="icon-sitemap"></button>
         <button id="riversExport" data-tip="Save rivers-related data as a text file (.csv)" class="icon-download"></button>
         <button id="riversRemoveAll" data-tip="Remove all rivers" class="icon-trash"></button>
@@ -3430,6 +3468,11 @@
           <input id="options3dSunX" type="number" min=-2500 max=2500 step=100 style="width:4.7em">
           <input id="options3dSunY" type="number" min=0 max=5000 step=100 style="width:4.7em">
           <input id="options3dSunZ" type="number" min=-1500 max=1500 step=100 style="width:4.7em">
+        </div>
+
+        <div data-tip="Toggle 3d labels" style="margin: .6em 0 .3em -.2em">
+          <input id="options3dMeshLabels3d" class="checkbox" type="checkbox">
+          <label for="options3dMeshLabels3d" class="checkbox-label"><i>Show 3D labels</i></label>
         </div>
 
         <div data-tip="Toggle sky mode" style="margin: .6em 0 .3em -.2em">
@@ -3601,12 +3644,12 @@
           <path d="m20,58 h70 m-62,3 h50" stroke="#5c5c70" stroke-dasharray="7, 11" stroke-width="1"></path>
         </symbol>
         <symbol id="relief-deciduous-1" viewBox="0 0 100 100">
-          <path d="m50,52 v7 h1 v-7 h-0.5 q13,-7 0,-16 q-13,9 0,16" fill="#fff" stroke="#5c5c70"></path>
-          <path d="m50,52 q-12,-7 0,-16 q-3.5,10 0,15.5" fill="#999999"></path>
+          <path d="m49.5,52 v7 h1 v-7 h-0.5 q13,-7 0,-16 q-13,9 0,16" fill="#fff" stroke="#5c5c70"></path>
+          <path d="M 50,51.5 C 44,49 40,43 50,36.5" fill="#999999"></path>
         </symbol>
         <symbol id="relief-conifer-1" viewBox="0 0 100 100">
-          <path d="m50,55 v4 h1 v-4 l4.5,0 -4,-8 l3.5,0 -4.5,-9 -4,9 3,0 -3.5,8 7,0" fill="#fff" stroke="#5c5c70"></path>
-          <path d="m46,55 l4,-8 -4,0 5,-9 -2.5,9 l1.5,0 -2,8" fill="#999999"></path>
+          <path d="m49.5,55 v4 h1 v-4 l4.5,0 -4,-8 l3.5,0 -4.5,-9 -4,9 3,0 -3.5,8 7,0" fill="#fff" stroke="#5c5c70"></path>
+          <path d="m 46,54.5 3.5,-8 H 46.6 L 50,39 v 15.5 z" fill="#999999"></path>
         </symbol>
         <symbol id="relief-acacia-1" viewBox="0 0 100 100">
           <path d="m34.5 44.5 c 1.8, -3 8.1, -5.7 12.6, -5.4 6, -2.2 9.3, -0.9 11.9, 1.3 1.7, 0.2 3.2,-0.3 5.2, 2.2 2.7, 1.2 3.7, 2.4 2.7, 3.7 -1.6, 0.3 -2.2, 0 -4.7, -1.6 -5.2, 0.1 -7, 0.7 -8.7, -0.9 -2.8, 1 -3.6, 0 -9.7, 0.2 -4.6, 0 -8, 1.6 -9.3, 0.4 z" fill="#fff"></path>
@@ -3623,7 +3666,7 @@
           <path d="m 49.5,53.1 c 0,-3.4 -2.4,-4.8 -3,-5.4 1,1.8 2.4,3.7 1.8,5.4 z M 51,53.2 C 51.4,49.6 49.6,47.9 48,46.8 c 1.1,1.8 2.8,4.6 1.8,6.5 z M 51.4,51.4 c 0.6,-1.9 1.8,-3.4 3,-4.3 -0.8,0.3 -2.9,1.5 -3.4,2.8 0.2,0.4 0.3,0.8 0.4,1.5 z M 52.9,53.2 c -0.7,-1.9 0.5,-3.3 1.5,-4.4 -1.7,1 -3,2.2 -2.7,4.4 z" fill="#5c5c70" stroke="none"></path>
         </symbol>
         <symbol id="relief-swamp-1" viewBox="0 0 100 100">
-          <path d="m50,46 v6 l3,-4 m-3,4 l-3,-4 m-7,4.5 h4 m4,0 h4 m4,0 h4" fill="none" stroke="#5c5c70"></path>
+          <path d="m 50,46 v 6 m 0,0 3,-4 m -3,4 -3,-4 m -6,4.5 h 3 m 4,0 h 4 m 4,0 3,0" fill="none" stroke="#5c5c70" stroke-linecap="round"></path>
         </symbol>
         <symbol id="relief-dune-1" viewBox="0 0 100 100">
           <path d="m 28.7,52.8 c 5,-3.9 10,-8.2 15.8,-8.3 4.5,0 10.8,3.8 15.2,6.5 3.5,2.2 6.8,2 6.8,2" fill="none" stroke="#5c5c70" stroke-width="1.8"></path>
@@ -4432,6 +4475,7 @@
   <script src="libs/delaunator.min.js"></script>
   <script src="modules/utils.js"></script>
   <script src="modules/voronoi.js"></script>
+  <script src="modules/heightmap-templates.js"></script>
   <script src="modules/heightmap-generator.js"></script>
   <script src="modules/ocean-layers.js"></script>
   <script src="modules/river-generator.js"></script>
@@ -4448,6 +4492,7 @@
   <script src="libs/lineclip.min.js"></script>
   <script src="libs/jquery-ui.min.js"></script>
   <script src="libs/alea.min.js"></script>
+  <script src="modules/fonts.js"></script>
   <script src="modules/ui/layers.js"></script>
   <script src="modules/ui/measurers.js"></script>
 
@@ -4473,6 +4518,7 @@
   <script defer src="modules/ui/coastline-editor.js"></script>
   <script defer src="modules/ui/labels-editor.js"></script>
   <script defer src="modules/ui/rivers-editor.js"></script>
+  <script defer src="modules/ui/rivers-creator.js"></script>
   <script defer src="modules/ui/relief-editor.js"></script>
   <script defer src="modules/ui/religions-editor.js"></script>
   <script defer src="modules/ui/markers-editor.js"></script>

@@ -98,7 +98,8 @@ function showSupporters() {
     PlayByMail.Net,Brad Wardell,Lance Saba,Egoensis,Brea Richards,Tiber,Chris Bloom,Maxim Lowe,Aquelion,Page One Project,Spencer Morris,Paul Ingram,
     Dust Bunny,Adrian Wright,Eric Alexander Cartaya,GameNight,Thomas Mortensen Hansen,Zklaus,Drinarius,Ed Wright,Lon Varnadore,Crys Cain,Heaven N Lee,
     Jeffrey Henning,Lazer Elf,Jordan Bellah,Alex Beard,Kass Frisson,Petro Lombaard,Emanuel Pietri,Rox,PinkEvil,Gavin Madrigal,Martin Lorber,Prince of Morgoth,
-    Jaryd Armstrong,Andrew Pirkola,ThyHolyDevil,Gary Smith,Tyshaun Wise,Ethan Cook,Jon Stroman,Nobody679,良义 金,Chris Gray`;
+    Jaryd Armstrong,Andrew Pirkola,ThyHolyDevil,Gary Smith,Tyshaun Wise,Ethan Cook,Jon Stroman,Nobody679,良义 金,Chris Gray,Phoenix Boatwright,Mackenzie,
+    "Milo Cohen,Jason Matthew Wuerfel,Rasmus Legêne,Andrew Hines,Wexxler,Espen Sæverud,Binks,Dominick Ormsby,Linn Browning,Václav Švec,Alan Buehne,George J.Lekkas"`;
 
   const array = supporters
     .replace(/(?:\r\n|\r|\n)/g, '')
@@ -157,6 +158,7 @@ optionsContent.addEventListener('change', function (event) {
   if (id === 'zoomExtentMin' || id === 'zoomExtentMax') changeZoomExtent(value);
   else if (id === 'optionsSeed') generateMapWithSeed();
   else if (id === 'uiSizeInput' || id === 'uiSizeOutput') changeUIsize(value);
+  if (id === 'shapeRendering') viewbox.attr('shape-rendering', value);
   else if (id === 'yearInput') changeYear();
   else if (id === 'eraInput') changeEra();
 });
@@ -494,6 +496,9 @@ function applyStoredOptions() {
   const height = +params.get('height');
   if (width) mapWidthInput.value = width;
   if (height) mapHeightInput.value = height;
+
+  // set shape rendering
+  viewbox.attr('shape-rendering', shapeRendering.value);
 }
 
 // randomize options if randomization is allowed (not locked or options='default')
@@ -537,17 +542,18 @@ function randomizeOptions() {
 // select heightmap template pseudo-randomly
 function randomizeHeightmapTemplate() {
   const templates = {
-    Volcano: 3,
-    'High Island': 22,
-    'Low Island': 9,
-    Continents: 20,
-    Archipelago: 25,
-    Mediterranean: 3,
-    Peninsula: 3,
-    Pangea: 5,
-    Isthmus: 2,
-    Atoll: 1,
-    Shattered: 7
+    volcano: 3,
+    highIsland: 22,
+    lowIsland: 9,
+    continents: 19,
+    archipelago: 23,
+    mediterranean: 5,
+    peninsula: 3,
+    pangea: 5,
+    isthmus: 2,
+    atoll: 1,
+    shattered: 7,
+    taklamakan: 1
   };
   document.getElementById('templateInput').value = rw(templates);
 }
@@ -773,6 +779,12 @@ document
   .forEach((el) => el.addEventListener('input', updateTilesOptions));
 
 function updateTilesOptions() {
+  if (this?.tagName === 'INPUT') {
+    const {nextElementSibling: next, previousElementSibling: prev} = this;
+    if (next?.tagName === 'INPUT') next.value = this.value;
+    if (prev?.tagName === 'INPUT') prev.value = this.value;
+  }
+
   const tileSize = document.getElementById('tileSize');
   const tilesX = +document.getElementById('tileColsOutput').value;
   const tilesY = +document.getElementById('tileRowsOutput').value;
@@ -908,6 +920,7 @@ function toggle3dOptions() {
   document.getElementById('options3dMeshRotationNumber').addEventListener('change', changeRotation);
   document.getElementById('options3dGlobeRotationRange').addEventListener('input', changeRotation);
   document.getElementById('options3dGlobeRotationNumber').addEventListener('change', changeRotation);
+  document.getElementById('options3dMeshLabels3d').addEventListener('change', toggleLabels3d);
   document.getElementById('options3dMeshSkyMode').addEventListener('change', toggleSkyMode);
   document.getElementById('options3dMeshSky').addEventListener('input', changeColors);
   document.getElementById('options3dMeshWater').addEventListener('input', changeColors);
@@ -924,6 +937,7 @@ function toggle3dOptions() {
     options3dSunZ.value = ThreeD.options.sun.z;
     options3dMeshRotationRange.value = options3dMeshRotationNumber.value = ThreeD.options.rotateMesh;
     options3dGlobeRotationRange.value = options3dGlobeRotationNumber.value = ThreeD.options.rotateGlobe;
+    options3dMeshLabels3d.value = ThreeD.options.labels3d;
     options3dMeshSkyMode.value = ThreeD.options.extendedWater;
     options3dColorSection.style.display = ThreeD.options.extendedWater ? 'block' : 'none';
     options3dMeshSky.value = ThreeD.options.skyColor;
@@ -952,6 +966,10 @@ function toggle3dOptions() {
     (this.nextElementSibling || this.previousElementSibling).value = this.value;
     const speed = +this.value;
     ThreeD.setRotation(speed);
+  }
+
+  function toggleLabels3d() {
+    ThreeD.toggleLabels();
   }
 
   function toggleSkyMode() {

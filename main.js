@@ -1,9 +1,9 @@
 // Azgaar (azgaar.fmg@yandex.com). Minsk, 2017-2021. MIT License
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
-'use strict';
-const version = '1.63'; // generator version
-document.title += ' v' + version;
+"use strict";
+const version = "1.652"; // generator version
+document.title += " v" + version;
 
 // Logging constants
 const PRODUCTION = window.location.host;
@@ -123,16 +123,30 @@ let customization = 0; // 0 - no; 1 = heightmap draw; 2 - states draw; 3 - add s
 
 let biomesData = applyDefaultBiomesSystem();
 let nameBases = Names.getNameBases(); // cultures-related data
-const fonts = ['Almendra+SC', 'Georgia', 'Arial', 'Times+New+Roman', 'Comic+Sans+MS', 'Lucida+Sans+Unicode', 'Courier+New']; // default web-safe fonts
+const fonts = ["Almendra+SC", "Georgia", "Arial", "Times+New+Roman", "Comic+Sans+MS", "Lucida+Sans+Unicode", "Courier+New", "Verdana", "Arial", "Impact"]; // default fonts
 
 let color = d3.scaleSequential(d3.interpolateSpectral); // default color scheme
 const lineGen = d3.line().curve(d3.curveBasis); // d3 line generator with default curve interpolation
 
 // d3 zoom behavior
-let scale = 1,
-  viewX = 0,
-  viewY = 0;
-const zoom = d3.zoom().scaleExtent([1, 20]).on('zoom', zoomed);
+let scale = 1;
+let viewX = 0;
+let viewY = 0;
+
+const zoomThrottled = throttle(doWorkOnZoom, 100);
+function zoomed() {
+  const {k, x, y} = d3.event.transform;
+
+  const isScaleChanged = Boolean(scale - k);
+  const isPositionChanged = Boolean(viewX - x || viewY - y);
+
+  scale = k;
+  viewX = x;
+  viewY = y;
+
+  zoomThrottled(isScaleChanged, isPositionChanged);
+}
+const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", zoomed);
 
 // default options
 let options = {pinNotes: false}; // options object
@@ -399,26 +413,17 @@ function applyDefaultBiomesSystem() {
 }
 
 function showWelcomeMessage() {
-  const post = link('https://www.patreon.com/posts/48228540', 'Main changes:');
-  const changelog = link('https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog', 'previous version');
-  const reddit = link('https://www.reddit.com/r/FantasyMapGenerator', 'Reddit community');
-  const discord = link('https://discordapp.com/invite/X7E84HU', 'Discord server');
-  const patreon = link('https://www.patreon.com/azgaar', 'Patreon');
+  const changelog = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "previous version");
+  const reddit = link("https://www.reddit.com/r/FantasyMapGenerator", "Reddit community");
+  const discord = link("https://discordapp.com/invite/X7E84HU", "Discord server");
+  const patreon = link("https://www.patreon.com/azgaar", "Patreon");
 
   alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
-    <ul>${post}
-      <li>River overview and River editor rework</li>
-      <li>River generation code refactored and optimized</li>
-      <li>Rivers discharge (flux) and mouth width calculated</li>
-      <li>Lake editor rework</li>
-      <li>Lake type based on evaporation and river system</li>
-      <li>Lake flux, inlets and outlet tracked properly</li>
-      <li>Lake outlet width depends on flux</li>
-      <li>Lakes now have names</li>
-      <li>Rulers rework (v1.61)</li>
-      <li>New ocean pattern by Kiwiroo (v1.61)</li>
-      <li>Water erosion rework (v1.62)</li>
+    <ul>Main changes:
+      <li>Ability to add river selecting its cells</li>
+      <li>Keep river course on edit</li>
+      <li>Refactor river rendering code</li>
     </ul>
 
     <p>Join our ${discord} and ${reddit} to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
@@ -438,31 +443,25 @@ function showWelcomeMessage() {
   });
 }
 
-function zoomed() {
-  const transform = d3.event.transform;
-  const scaleDiff = scale - transform.k;
-  const positionDiff = (viewX - transform.x) | (viewY - transform.y);
-  if (!positionDiff && !scaleDiff) return;
+function doWorkOnZoom(isScaleChanged, isPositionChanged) {
+  viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
 
-  scale = transform.k;
-  viewX = transform.x;
-  viewY = transform.y;
-  viewbox.attr('transform', transform);
+  if (isPositionChanged) drawCoordinates();
 
-  // update grid only if view position
-  if (positionDiff) drawCoordinates();
-
-  // rescale only if zoom is changed
-  if (scaleDiff) {
+  if (isScaleChanged) {
     invokeActiveZooming();
     drawScaleBar();
   }
 
   // zoom image converter overlay
-  const canvas = document.getElementById('canvas');
-  if (canvas && +canvas.style.opacity) {
-    const img = document.getElementById('image');
-    const ctx = canvas.getContext('2d');
+  if (customization === 1) {
+    const canvas = document.getElementById("canvas");
+    if (!canvas || canvas.style.opacity === "0") return;
+
+    const img = document.getElementById("imageToConvert");
+    if (!img) return;
+
+    const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.setTransform(scale, 0, 0, scale, viewX, viewY);
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
@@ -499,15 +498,16 @@ function invokeActiveZooming() {
   }
 
   // rescale lables on zoom
-  if (labels.style('display') !== 'none') {
-    labels.selectAll('g').each(function (d) {
-      if (this.id === 'burgLabels') return;
+  if (labels.style("display") !== "none") {
+    labels.selectAll("g").each(function () {
+      if (this.id === "burgLabels") return;
       const desired = +this.dataset.size;
       const relative = Math.max(rn((desired + desired / scale) / 2, 2), 1);
-      this.getAttribute('font-size', relative);
-      const hidden = hideLabels.checked && (relative * scale < 6 || relative * scale > 50);
-      if (hidden) this.classList.add('hidden');
-      else this.classList.remove('hidden');
+      if (rescaleLabels.checked) this.setAttribute("font-size", relative);
+
+      const hidden = hideLabels.checked && (relative * scale < 6 || relative * scale > 60);
+      if (hidden) this.classList.add("hidden");
+      else this.classList.remove("hidden");
     });
   }
 
@@ -530,13 +530,14 @@ function invokeActiveZooming() {
 
   // change states halo width
   if (!customization) {
-    const haloSize = rn(statesHalo.attr('data-width') / scale, 1);
-    statesHalo.attr('stroke-width', haloSize).style('display', haloSize > 3 ? 'block' : 'none');
+    const desired = +statesHalo.attr("data-width");
+    const haloSize = rn(desired / scale ** 0.8, 2);
+    statesHalo.attr("stroke-width", haloSize).style("display", haloSize > 0.1 ? "block" : "none");
   }
 
   // rescale map markers
-  if (+markers.attr('rescale') && markers.style('display') !== 'none') {
-    markers.selectAll('use').each(function (d) {
+  if (+markers.attr("rescale") && markers.style("display") !== "none") {
+    markers.selectAll("use").each(function () {
       const x = +this.dataset.x,
         y = +this.dataset.y,
         desired = +this.dataset.size;
@@ -639,6 +640,7 @@ function generate() {
     drawCoastline();
 
     Rivers.generate();
+    drawRivers();
     Lakes.defineGroup();
     defineBiomes();
 
@@ -1316,6 +1318,15 @@ function reMarkFeatures() {
   cells.haven = cells.i.length < 65535 ? new Uint16Array(cells.i.length) : new Uint32Array(cells.i.length); // cell haven (opposite water cell);
   cells.harbor = new Uint8Array(cells.i.length); // cell harbor (number of adjacent water cells);
 
+  const defineHaven = i => {
+    const water = cells.c[i].filter(c => cells.h[c] < 20);
+    const dist2 = water.map(c => (cells.p[i][0] - cells.p[c][0]) ** 2 + (cells.p[i][1] - cells.p[c][1]) ** 2);
+    const closest = water[dist2.indexOf(Math.min.apply(Math, dist2))];
+
+    cells.haven[i] = closest;
+    cells.harbor[i] = water.length;
+  };
+
   for (let i = 1, queue = [0]; queue[0] !== -1; i++) {
     const start = queue[0]; // first cell
     cells.f[start] = i; // assign feature number
@@ -1331,8 +1342,7 @@ function reMarkFeatures() {
         if (land && !eLand) {
           cells.t[q] = 1;
           cells.t[e] = -1;
-          cells.harbor[q]++;
-          if (!cells.haven[q]) cells.haven[q] = e;
+          if (!cells.haven[q]) defineHaven(q);
         } else if (land && eLand) {
           if (!cells.t[e] && cells.t[q] === 1) cells.t[e] = 2;
           else if (!cells.t[q] && cells.t[e] === 1) cells.t[q] = 2;
@@ -2146,8 +2156,13 @@ const regenerateMap = debounce(function () {
   generate();
   restoreLayers();
   if (ThreeD.options.isOn) ThreeD.redraw();
+<<<<<<< HEAD
   if ($('#worldConfigurator').is(':visible')) editWorld();
 }, 500);
+=======
+  if ($("#worldConfigurator").is(":visible")) editWorld();
+}, 1000);
+>>>>>>> 597f9ae038fbcc149315df9b1618e64744fb929d
 
 // clear the map
 function undraw() {

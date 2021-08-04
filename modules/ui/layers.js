@@ -123,9 +123,10 @@ function restoreLayers() {
   if (layerIsOn('toggleIce')) drawIce();
   if (layerIsOn('toggleEmblems')) drawEmblems();
 
-  // states are getting rendered each time, if it's not required than layers should be hidden
-  if (!layerIsOn('toggleBorders')) $('#borders').fadeOut();
-  if (!layerIsOn('toggleStates')) regions.style('display', 'none').selectAll('path').remove();
+  // some layers are rendered each time, remove them if they are not on
+  if (!layerIsOn('toggleBorders')) borders.selectAll('path').remove();
+  if (!layerIsOn('toggleStates')) regions.selectAll('path').remove();
+  if (!layerIsOn('toggleRivers')) rivers.selectAll('*').remove();
 }
 
 function toggleHeight(event) {
@@ -876,35 +877,80 @@ function toggleStates(event) {
   }
 }
 
-// draw states
 function drawStates() {
   TIME && console.time('drawStates');
   regions.selectAll('path').remove();
 
-  const cells = pack.cells,
-    vertices = pack.vertices,
-    states = pack.states,
-    n = cells.i.length;
+  const {cells, vertices, features} = pack;
+  const states = pack.states;
+  const n = cells.i.length;
+
   const used = new Uint8Array(cells.i.length);
   const vArray = new Array(states.length); // store vertices array
-  const body = new Array(states.length).fill(''); // store path around each state
-  const gap = new Array(states.length).fill(''); // store path along water for each state to fill the gaps
+  const body = new Array(states.length).fill(''); // path around each state
+  const gap = new Array(states.length).fill(''); // path along water for each state to fill the gaps
+  const halo = new Array(states.length).fill(''); // path around states, but not lakes
+
+  const getStringPoint = (v) => vertices.p[v[0]].join(',');
+
+  // define inner-state lakes to omit on border render
+  const innerLakes = features.map((feature) => {
+    if (feature.type !== 'lake') return false;
+    if (!feature.shoreline) Lakes.getShoreline(feature);
+
+    const states = feature.shoreline.map((i) => cells.state[i]);
+    return new Set(states).size > 1 ? false : true;
+  });
 
   for (const i of cells.i) {
     if (!cells.state[i] || used[i]) continue;
-    const s = cells.state[i];
-    const onborder = cells.c[i].some((n) => cells.state[n] !== s);
+    const state = cells.state[i];
+
+    const onborder = cells.c[i].some((n) => cells.state[n] !== state);
     if (!onborder) continue;
 
-    const borderWith = cells.c[i].map((c) => cells.state[c]).find((n) => n !== s);
+    const borderWith = cells.c[i].map((c) => cells.state[c]).find((n) => n !== state);
     const vertex = cells.v[i].find((v) => vertices.c[v].some((i) => cells.state[i] === borderWith));
-    const chain = connectVertices(vertex, s, borderWith);
-    if (chain.length < 3) continue;
-    const points = chain.map((v) => vertices.p[v[0]]);
-    if (!vArray[s]) vArray[s] = [];
-    vArray[s].push(points);
-    body[s] += 'M' + points.join('L');
-    gap[s] += 'M' + vertices.p[chain[0][0]] + chain.reduce((r, v, i, d) => (!i ? r : !v[2] ? r + 'L' + vertices.p[v[0]] : d[i + 1] && !d[i + 1][2] ? r + 'M' + vertices.p[v[0]] : r), '');
+    const chain = connectVertices(vertex, state);
+
+    const noInnerLakes = chain.filter((v) => v[1] !== 'innerLake');
+    if (noInnerLakes.length < 3) continue;
+
+    // get path around the state
+    if (!vArray[state]) vArray[state] = [];
+    const points = noInnerLakes.map((v) => vertices.p[v[0]]);
+    vArray[state].push(points);
+    body[state] += 'M' + points.join('L');
+
+    // connect path for halo
+    let discontinued = true;
+    halo[state] += noInnerLakes
+      .map((v) => {
+        if (v[1] === 'border') {
+          discontinued = true;
+          return '';
+        }
+
+        const operation = discontinued ? 'M' : 'L';
+        discontinued = false;
+        return `${operation}${getStringPoint(v)}`;
+      })
+      .join('');
+
+    // connect gaps between state and water into a single path
+    discontinued = true;
+    gap[state] += chain
+      .map((v) => {
+        if (v[1] === 'land') {
+          discontinued = true;
+          return '';
+        }
+
+        const operation = discontinued ? 'M' : 'L';
+        discontinued = false;
+        return `${operation}${getStringPoint(v)}`;
+      })
+      .join('');
   }
 
   // find state visual center
@@ -913,13 +959,14 @@ function drawStates() {
     states[i].pole = polylabel(sorted, 1.0); // pole of inaccessibility
   });
 
-  const bodyData = body.map((p, i) => [p.length > 10 ? p : null, i, states[i].color]).filter((d) => d[0]);
-  const gapData = gap.map((p, i) => [p.length > 10 ? p : null, i, states[i].color]).filter((d) => d[0]);
+  const bodyData = body.map((p, s) => [p.length > 10 ? p : null, s, states[s].color]).filter((d) => d[0]);
+  const gapData = gap.map((p, s) => [p.length > 10 ? p : null, s, states[s].color]).filter((d) => d[0]);
+  const haloData = halo.map((p, s) => [p.length > 10 ? p : null, s, states[s].color]).filter((d) => d[0]);
 
   const bodyString = bodyData.map((d) => `<path id="state${d[1]}" d="${d[0]}" fill="${d[2]}" stroke="none"/>`).join('');
   const gapString = gapData.map((d) => `<path id="state-gap${d[1]}" d="${d[0]}" fill="none" stroke="${d[2]}"/>`).join('');
   const clipString = bodyData.map((d) => `<clipPath id="state-clip${d[1]}"><use href="#state${d[1]}"/></clipPath>`).join('');
-  const haloString = bodyData
+  const haloString = haloData
     .map((d) => `<path id="state-border${d[1]}" d="${d[0]}" clip-path="url(#state-clip${d[1]})" stroke="${d3.color(d[2]) ? d3.color(d[2]).darker().hex() : '#666666'}"/>`)
     .join('');
 
@@ -928,43 +975,62 @@ function drawStates() {
   statesHalo.html(haloString);
 
   // connect vertices to chain
-  function connectVertices(start, t, state) {
+  function connectVertices(start, state) {
     const chain = []; // vertices chain to form a path
-    let land = vertices.c[start].some((c) => cells.h[c] >= 20 && cells.state[c] !== t);
-    function check(i) {
-      state = cells.state[i];
-      land = cells.h[i] >= 20;
-    }
+    const getType = (c) => {
+      const borderCell = c.find((i) => cells.b[i]);
+      if (borderCell) return 'border';
+
+      const waterCell = c.find((i) => cells.h[i] < 20);
+      if (!waterCell) return 'land';
+      if (innerLakes[cells.f[waterCell]]) return 'innerLake';
+      return features[cells.f[waterCell]].type;
+    };
 
     for (let i = 0, current = start; i === 0 || (current !== start && i < 20000); i++) {
-      const prev = chain[chain.length - 1] ? chain[chain.length - 1][0] : -1; // previous vertex in chain
-      chain.push([current, state, land]); // add current vertex to sequence
+      const prev = chain.length ? chain[chain.length - 1][0] : -1; // previous vertex in chain
+
       const c = vertices.c[current]; // cells adjacent to vertex
-      c.filter((c) => cells.state[c] === t).forEach((c) => (used[c] = 1));
-      const c0 = c[0] >= n || cells.state[c[0]] !== t;
-      const c1 = c[1] >= n || cells.state[c[1]] !== t;
-      const c2 = c[2] >= n || cells.state[c[2]] !== t;
+      chain.push([current, getType(c)]); // add current vertex to sequence
+
+      c.filter((c) => cells.state[c] === state).forEach((c) => (used[c] = 1));
+      const c0 = c[0] >= n || cells.state[c[0]] !== state;
+      const c1 = c[1] >= n || cells.state[c[1]] !== state;
+      const c2 = c[2] >= n || cells.state[c[2]] !== state;
+
       const v = vertices.v[current]; // neighboring vertices
-      if (v[0] !== prev && c0 !== c1) {
-        current = v[0];
-        check(c0 ? c[0] : c[1]);
-      } else if (v[1] !== prev && c1 !== c2) {
-        current = v[1];
-        check(c1 ? c[1] : c[2]);
-      } else if (v[2] !== prev && c0 !== c2) {
-        current = v[2];
-        check(c2 ? c[2] : c[0]);
-      }
-      if (current === chain[chain.length - 1][0]) {
+
+      if (v[0] !== prev && c0 !== c1) current = v[0];
+      else if (v[1] !== prev && c1 !== c2) current = v[1];
+      else if (v[2] !== prev && c0 !== c2) current = v[2];
+
+      if (current === prev) {
         ERROR && console.error('Next vertex is not found');
         break;
       }
     }
-    chain.push([start, state, land]); // add starting vertex to sequence to close the path
+
+    if (chain.length) chain.push(chain[0]);
     return chain;
   }
+
   invokeActiveZooming();
   TIME && console.timeEnd('drawStates');
+}
+
+function toggleBorders(event) {
+  if (!layerIsOn('toggleBorders')) {
+    turnButtonOn('toggleBorders');
+    drawBorders();
+    if (event && isCtrlClick(event)) editStyle('borders');
+  } else {
+    if (event && isCtrlClick(event)) {
+      editStyle('borders');
+      return;
+    }
+    turnButtonOff('toggleBorders');
+    borders.selectAll('path').remove();
+  }
 }
 
 // draw state and province borders
@@ -972,13 +1038,14 @@ function drawBorders() {
   TIME && console.time('drawBorders');
   borders.selectAll('path').remove();
 
-  const cells = pack.cells,
-    vertices = pack.vertices,
-    n = cells.i.length;
-  const sPath = [],
-    pPath = [];
-  const sUsed = new Array(pack.states.length).fill('').map((a) => []);
-  const pUsed = new Array(pack.provinces.length).fill('').map((a) => []);
+  const {cells, vertices} = pack;
+  const n = cells.i.length;
+
+  const sPath = [];
+  const pPath = [];
+
+  const sUsed = new Array(pack.states.length).fill('').map((_) => []);
+  const pUsed = new Array(pack.provinces.length).fill('').map((_) => []);
 
   for (let i = 0; i < cells.i.length; i++) {
     if (!cells.state[i]) continue;
@@ -1068,21 +1135,6 @@ function drawBorders() {
   }
 
   TIME && console.timeEnd('drawBorders');
-}
-
-function toggleBorders(event) {
-  if (!layerIsOn('toggleBorders')) {
-    turnButtonOn('toggleBorders');
-    $('#borders').fadeIn();
-    if (event && isCtrlClick(event)) editStyle('borders');
-  } else {
-    if (event && isCtrlClick(event)) {
-      editStyle('borders');
-      return;
-    }
-    turnButtonOff('toggleBorders');
-    $('#borders').fadeOut();
-  }
 }
 
 function toggleProvinces(event) {
@@ -1396,16 +1448,28 @@ function toggleTexture(event) {
 function toggleRivers(event) {
   if (!layerIsOn('toggleRivers')) {
     turnButtonOn('toggleRivers');
-    $('#rivers').fadeIn();
+    drawRivers();
     if (event && isCtrlClick(event)) editStyle('rivers');
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle('rivers');
-      return;
-    }
-    $('#rivers').fadeOut();
+    if (event && isCtrlClick(event)) return editStyle('rivers');
+    rivers.selectAll('*').remove();
     turnButtonOff('toggleRivers');
   }
+}
+
+function drawRivers() {
+  TIME && console.time('drawRivers');
+  const {addMeandering, getRiverPath} = Rivers;
+  lineGen.curve(d3.curveCatmullRom.alpha(0.1));
+  const riverPaths = pack.rivers.map((river) => {
+    const meanderedPoints = addMeandering(river.cells, river.points);
+    const widthFactor = river.widthFactor || 1;
+    const startingWidth = river.sourceWidth || 0;
+    const path = getRiverPath(meanderedPoints, widthFactor, startingWidth);
+    return `<path id="river${river.i}" d="${path}"/>`;
+  });
+  rivers.html(riverPaths.join(''));
+  TIME && console.timeEnd('drawRivers');
 }
 
 function toggleRoutes(event) {
@@ -1558,21 +1622,21 @@ function drawEmblems() {
   const getStateEmblemsSize = () => {
     const startSize = Math.min(Math.max((graphHeight + graphWidth) / 40, 10), 100);
     const statesMod = 1 + validStates.length / 100 - (15 - validStates.length) / 200; // states number modifier
-    const sizeMod = +document.getElementById('styleEmblemsStateSizeInput').value || 1;
+    const sizeMod = +document.getElementById('emblemsStateSizeInput').value || 1;
     return rn((startSize / statesMod) * sizeMod); // target size ~50px on 1536x754 map with 15 states
   };
 
   const getProvinceEmblemsSize = () => {
     const startSize = Math.min(Math.max((graphHeight + graphWidth) / 100, 5), 70);
     const provincesMod = 1 + validProvinces.length / 1000 - (115 - validProvinces.length) / 1000; // states number modifier
-    const sizeMod = +document.getElementById('styleEmblemsProvinceSizeInput').value || 1;
+    const sizeMod = +document.getElementById('emblemsProvinceSizeInput').value || 1;
     return rn((startSize / provincesMod) * sizeMod); // target size ~20px on 1536x754 map with 115 provinces
   };
 
   const getBurgEmblemSize = () => {
     const startSize = Math.min(Math.max((graphHeight + graphWidth) / 185, 2), 50);
     const burgsMod = 1 + validBurgs.length / 1000 - (450 - validBurgs.length) / 1000; // states number modifier
-    const sizeMod = +document.getElementById('styleEmblemsBurgSizeInput').value || 1;
+    const sizeMod = +document.getElementById('emblemsBurgSizeInput').value || 1;
     return rn((startSize / burgsMod) * sizeMod); // target size ~8.5px on 1536x754 map with 450 burgs
   };
 

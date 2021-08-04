@@ -14,14 +14,14 @@ function restoreDefaultEvents() {
 function clicked() {
   const el = d3.event.target;
   if (!el || !el.parentElement || !el.parentElement.parentElement) return;
-  const parent = el.parentElement,
-    grand = parent.parentElement,
-    great = grand.parentElement;
+  const parent = el.parentElement;
+  const grand = parent.parentElement;
+  const great = grand.parentElement;
   const p = d3.mouse(this);
   const i = findCell(p[0], p[1]);
 
   if (grand.id === 'emblems') editEmblem();
-  else if (parent.id === 'rivers') editRiver();
+  else if (parent.id === 'rivers') editRiver(el.id);
   else if (grand.id === 'routes') editRoute();
   else if (el.tagName === 'tspan' && grand.parentNode.parentNode.id === 'labels') editLabel();
   else if (grand.id === 'burgLabels') editBurg();
@@ -116,33 +116,6 @@ function applySorting(headers) {
       return (an > bn ? 1 : an < bn ? -1 : 0) * desc;
     })
     .forEach((line) => list.appendChild(line));
-}
-
-function confirmationDialog(options) {
-  const {
-    title = 'Confirm action',
-    message = 'Are you sure you want to continue? <br>The action cannot be reverted',
-    cancel = 'Cancel',
-    confirm = 'Continue',
-    onCancel = () => {},
-    onConfirm = () => {}
-  } = options;
-
-  alertMessage.innerHTML = message;
-  $('#alert').dialog({
-    resizable: false,
-    title,
-    buttons: {
-      [confirm]: function () {
-        onConfirm();
-        $(this).dialog('close');
-      },
-      [cancel]: function () {
-        onCancel();
-        $(this).dialog('close');
-      }
-    }
-  });
 }
 
 function addBurg(point) {
@@ -405,15 +378,14 @@ function clearLegend() {
 }
 
 // draw color (fill) picker
-function createPicker(hatching) {
-  const COLORS_IN_ROW = 14;
+function createPicker() {
   const pos = () => tip('Drag to change the picker position');
   const cl = () => tip('Click to close the picker');
-  const closePicker = () => container.remove();
+  const closePicker = () => contaiter.style('display', 'none');
 
-  const container = d3.select('body').append('svg').attr('id', 'pickerContainer').attr('width', '100%').attr('height', '100%');
-  container.append('rect').attr('width', '100%').attr('height', '100%').attr('opacity', 0).on('mousemove', cl).on('click', closePicker);
-  const picker = container
+  const contaiter = d3.select('body').append('svg').attr('id', 'pickerContainer').attr('width', '100%').attr('height', '100%');
+  contaiter.append('rect').attr('x', 0).attr('y', 0).attr('width', '100%').attr('height', '100%').attr('opacity', 0.2).on('mousemove', cl).on('click', closePicker);
+  const picker = contaiter
     .append('g')
     .attr('id', 'picker')
     .call(
@@ -469,7 +441,11 @@ function createPicker(hatching) {
   spaces.selectAll('input').on('change', changePickerSpace);
 
   const colors = picker.append('g').attr('id', 'pickerColors').attr('stroke', '#333333');
-  const clr = d3.range(COLORS_IN_ROW).map((i) => d3.hsl((i / COLORS_IN_ROW) * 360, 0.7, 0.7).hex());
+  const hatches = picker.append('g').attr('id', 'pickerHatches').attr('stroke', '#333333');
+  const hatching = d3.selectAll('g#hatching > pattern');
+  const number = hatching.size();
+
+  const clr = d3.range(number).map((i) => d3.hsl((i / number) * 360, 0.7, 0.7).hex());
   clr.forEach(function (d, i) {
     colors
       .append('rect')
@@ -481,28 +457,26 @@ function createPicker(hatching) {
       .attr('width', 16)
       .attr('height', 16);
   });
+
+  hatching.each(function (d, i) {
+    hatches
+      .append('rect')
+      .attr('id', 'picker_' + this.id)
+      .attr('fill', 'url(#' + this.id + ')')
+      .attr('x', i * 22 + 4)
+      .attr('y', 61)
+      .attr('width', 16)
+      .attr('height', 16);
+  });
+
   colors
     .selectAll('rect')
     .on('click', pickerFillClicked)
     .on('mousemove', () => tip('Click to fill with the color'));
-
-  if (hatching) {
-    const hatches = picker.append('g').attr('id', 'pickerHatches').attr('stroke', '#333333');
-    d3.selectAll('g#hatching > pattern').each(function (d, i) {
-      hatches
-        .append('rect')
-        .attr('id', 'picker_' + this.id)
-        .attr('fill', 'url(#' + this.id + ')')
-        .attr('x', i * 22 + 4)
-        .attr('y', 61)
-        .attr('width', 16)
-        .attr('height', 16);
-    });
-    hatches
-      .selectAll('rect')
-      .on('click', pickerFillClicked)
-      .on('mousemove', () => tip('Click to fill with the hatching'));
-  }
+  hatches
+    .selectAll('rect')
+    .on('click', pickerFillClicked)
+    .on('mousemove', () => tip('Click to fill with the hatching'));
 
   // append box
   const bbox = picker.node().getBBox();
@@ -973,6 +947,7 @@ function selectIcon(initial, callback) {
 
 // Calls the refresh for all currently open editors
 function refreshAllEditors() {
+  TIME && console.time('refreshAllEditors');
   if (document.getElementById('culturesEditorRefresh').offsetParent) culturesEditorRefresh.click();
   if (document.getElementById('biomesEditorRefresh').offsetParent) biomesEditorRefresh.click();
   if (document.getElementById('diplomacyEditorRefresh').offsetParent) diplomacyEditorRefresh.click();
@@ -980,5 +955,5 @@ function refreshAllEditors() {
   if (document.getElementById('religionsEditorRefresh').offsetParent) religionsEditorRefresh.click();
   if (document.getElementById('statesEditorRefresh').offsetParent) statesEditorRefresh.click();
   if (document.getElementById('zonesEditorRefresh').offsetParent) zonesEditorRefresh.click();
-  if (document.getElementById('resourcesEditorRefresh').offsetParent) resourcesEditorRefresh.click();
+  TIME && console.timeEnd('refreshAllEditors');
 }

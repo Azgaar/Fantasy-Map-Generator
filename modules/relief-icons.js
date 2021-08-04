@@ -1,41 +1,41 @@
-(function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-    typeof define === 'function' && define.amd ? define(factory) :
-    (global.ReliefIcons = factory());
-}(this, (function () {'use strict';
+"use strict";
 
-  const ReliefIcons = function() {
-    TIME && console.time('drawRelief');
+window.ReliefIcons = (function () {
+  const ReliefIcons = function () {
+    TIME && console.time("drawRelief");
     terrain.selectAll("*").remove();
-    const density = terrain.attr("density") || .4;
-    const size = 1.6 * (terrain.attr("size") || 1);
-    const mod = .2 * size; // size modifier;s
-    const relief = []; // t: type, c: cell, x: centerX, y: centerY, s: size;
+
     const cells = pack.cells;
+    const density = terrain.attr("density") || 0.4;
+    const size = 2 * (terrain.attr("size") || 1);
+    const mod = 0.2 * size; // size modifier
+    const relief = [];
 
     for (const i of cells.i) {
       const height = cells.h[i];
       if (height < 20) continue; // no icons on water
       if (cells.r[i]) continue; // no icons on rivers
-      const b = cells.biome[i];
-      if (height < 50 && biomesData.iconsDensity[b] === 0) continue; // no icons for this biome
-      const polygon = getPackPolygon(i);
-      const x = d3.extent(polygon, p => p[0]), y = d3.extent(polygon, p => p[1]);
-      const e = [Math.ceil(x[0]), Math.ceil(y[0]), Math.floor(x[1]), Math.floor(y[1])]; // polygon box
+      const biome = cells.biome[i];
+      if (height < 50 && biomesData.iconsDensity[biome] === 0) continue; // no icons for this biome
 
-      if (height < 50) placeBiomeIcons(i, b); else placeReliefIcons(i);
+      const polygon = getPackPolygon(i);
+      const [minX, maxX] = d3.extent(polygon, p => p[0]);
+      const [minY, maxY] = d3.extent(polygon, p => p[1]);
+
+      if (height < 50) placeBiomeIcons(i, biome);
+      else placeReliefIcons(i);
 
       function placeBiomeIcons() {
-        const iconsDensity = biomesData.iconsDensity[b] / 100;
+        const iconsDensity = biomesData.iconsDensity[biome] / 100;
         const radius = 2 / iconsDensity / density;
         if (Math.random() > iconsDensity * 10) return;
 
-        for (const [cx, cy] of poissonDiscSampler(e[0], e[1], e[2], e[3], radius)) {
+        for (const [cx, cy] of poissonDiscSampler(minX, minY, maxX, maxY, radius)) {
           if (!d3.polygonContains(polygon, [cx, cy])) continue;
-          let h = rn((4 + Math.random()) * size, 2);
-          const icon = getBiomeIcon(i, biomesData.icons[b]);
-          if (icon === "#relief-grass-1") h *= 1.3;
-          relief.push({i: icon, x: rn(cx-h, 2), y: rn(cy-h, 2), s: rn(h*2, 2)});
+          let h = (4 + Math.random()) * size;
+          const icon = getBiomeIcon(i, biomesData.icons[biome]);
+          if (icon === "#relief-grass-1") h *= 1.2;
+          relief.push({i: icon, x: rn(cx - h, 2), y: rn(cy - h, 2), s: rn(h * 2, 2)});
         }
       }
 
@@ -43,9 +43,9 @@
         const radius = 2 / density;
         const [icon, h] = getReliefIcon(i, height);
 
-        for (const [cx, cy] of poissonDiscSampler(e[0], e[1], e[2], e[3], radius)) {
+        for (const [cx, cy] of poissonDiscSampler(minX, minY, maxX, maxY, radius)) {
           if (!d3.polygonContains(polygon, [cx, cy])) continue;
-          relief.push({i: icon, x: rn(cx-h, 2), y: rn(cy-h, 2), s: rn(h*2, 2)});
+          relief.push({i: icon, x: rn(cx - h, 2), y: rn(cy - h, 2), s: rn(h * 2, 2)});
         }
       }
 
@@ -58,17 +58,16 @@
     }
 
     // sort relief icons by y+size
-    relief.sort((a, b) => (a.y + a.s) - (b.y + b.s));
+    relief.sort((a, b) => a.y + a.s - (b.y + b.s));
 
-    // append relief icons at once using pure js
     let reliefHTML = "";
     for (const r of relief) {
       reliefHTML += `<use href="${r.i}" x="${r.x}" y="${r.y}" width="${r.s}" height="${r.s}"/>`;
     }
     terrain.html(reliefHTML);
 
-    TIME && console.timeEnd('drawRelief');
-  }
+    TIME && console.timeEnd("drawRelief");
+  };
 
   function getBiomeIcon(i, b) {
     let type = b[Math.floor(Math.random() * b.length)];
@@ -78,27 +77,42 @@
   }
 
   function getVariant(type) {
-    switch(type) {
-      case "mount": return rand(2,7);
-      case "mountSnow": return rand(1,6);
-      case "hill": return rand(2,5);
-      case "conifer": return 2;
-      case "coniferSnow": return 1;
-      case "swamp": return rand(2,3);
-      case "cactus": return rand(1,3);
-      case "deadTree": return rand(1,2);
-      default: return 2;
+    switch (type) {
+      case "mount":
+        return rand(2, 7);
+      case "mountSnow":
+        return rand(1, 6);
+      case "hill":
+        return rand(2, 5);
+      case "conifer":
+        return 2;
+      case "coniferSnow":
+        return 1;
+      case "swamp":
+        return rand(2, 3);
+      case "cactus":
+        return rand(1, 3);
+      case "deadTree":
+        return rand(1, 2);
+      default:
+        return 2;
     }
   }
 
   function getOldIcon(type) {
-    switch(type) {
-      case "mountSnow": return "mount";
-      case "vulcan": return "mount";
-      case "coniferSnow": return "conifer";
-      case "cactus": return "dune";
-      case "deadTree": return "dune";
-      default: return type;
+    switch (type) {
+      case "mountSnow":
+        return "mount";
+      case "vulcan":
+        return "mount";
+      case "coniferSnow":
+        return "conifer";
+      case "cactus":
+        return "dune";
+      case "deadTree":
+        return "dune";
+      default:
+        return type;
     }
   }
 
@@ -111,5 +125,4 @@
   }
 
   return ReliefIcons;
-
-})));
+})();

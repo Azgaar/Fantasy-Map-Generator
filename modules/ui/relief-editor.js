@@ -81,6 +81,7 @@ function editReliefIcon() {
     reliefSpacingDiv.style.display = 'none';
     reliefIconsSeletionAny.style.display = 'none';
 
+    removeCircle();
     updateReliefSizeInput();
     restoreDefaultEvents();
     clearMainTip();
@@ -115,10 +116,7 @@ function editReliefIcon() {
 
   function dragToAdd() {
     const pressed = reliefIconsDiv.querySelector('svg.pressed');
-    if (!pressed) {
-      tip('Please select an icon', false, error);
-      return;
-    }
+    if (!pressed) return tip('Please select an icon', false, error);
 
     const type = pressed.dataset.type;
     const r = +reliefRadiusNumber.value;
@@ -188,10 +186,7 @@ function editReliefIcon() {
 
   function dragToRemove() {
     const pressed = reliefIconsDiv.querySelector('svg.pressed');
-    if (!pressed) {
-      tip('Please select an icon', false, error);
-      return;
-    }
+    if (!pressed) return tip('Please select an icon', false, error);
 
     const r = +reliefRadiusNumber.value;
     const type = pressed.dataset.type;
@@ -256,12 +251,32 @@ function editReliefIcon() {
   }
 
   function removeIcon() {
-    const message = 'Are you sure you want to remove the relief icon? <br>This action cannot be reverted';
-    const onConfirm = () => {
-      elSelected.remove();
-      $('#reliefEditor').dialog('close');
-    };
-    confirmationDialog({title: 'Remove relief icon', message, confirm: 'Remove', onConfirm});
+    let selection = null;
+    const pressed = reliefTools.querySelector('button.pressed');
+    if (pressed.id === 'reliefIndividual') {
+      alertMessage.innerHTML = `Are you sure you want to remove the icon?`;
+      selection = elSelected;
+    } else {
+      const type = reliefIconsDiv.querySelector('svg.pressed')?.dataset.type;
+      selection = type ? terrain.selectAll("use[href='" + type + "']") : terrain.selectAll('use');
+      const size = selection.size();
+      alertMessage.innerHTML = type ? `Are you sure you want to remove all ${type} icons (${size})?` : `Are you sure you want to remove all icons (${size})?`;
+    }
+
+    $('#alert').dialog({
+      resizable: false,
+      title: 'Remove relief icons',
+      buttons: {
+        Remove: function () {
+          if (selection) selection.remove();
+          $(this).dialog('close');
+          $('#reliefEditor').dialog('close');
+        },
+        Cancel: function () {
+          $(this).dialog('close');
+        }
+      }
+    });
   }
 
   function closeReliefEditor() {
