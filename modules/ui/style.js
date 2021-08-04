@@ -5,12 +5,12 @@
 {
   const filters = Array.from(document.getElementById("filters").querySelectorAll("filter"));
   const emptyOption = '<option value="" selected>None</option>';
-  const options = filters.map(filter => {
-    const id = filter.getAttribute("id");
-    const name = filter.getAttribute("name");
+  const options = filters.map((filter) => {
+    const id = filter.getAttribute('id');
+    const name = filter.getAttribute('name');
     return `<option value="url(#${id})">${name}</option>`;
   });
-  const allOptions = emptyOption + options.join("");
+  const allOptions = emptyOption + options.join('');
 
   document.getElementById("styleFilterInput").innerHTML = allOptions;
   document.getElementById("styleStatesBodyFilter").innerHTML = allOptions;
@@ -43,29 +43,29 @@ function selectStyleElement() {
   const sel = styleElementSelect.value;
   let el = d3.select('#' + sel);
 
-  styleElements.querySelectorAll("tbody").forEach(e => (e.style.display = "none")); // hide all sections
+  styleElements.querySelectorAll('tbody').forEach((e) => (e.style.display = 'none')); // hide all sections
 
   // show alert line if layer is not visible
-  const isLayerOff = sel !== "ocean" && (el.style("display") === "none" || !el.selectAll("*").size());
-  styleIsOff.style.display = isLayerOff ? "block" : "none";
+  const isLayerOff = sel !== 'ocean' && (el.style('display') === 'none' || !el.selectAll('*').size());
+  styleIsOff.style.display = isLayerOff ? 'block' : 'none';
 
   // active group element
   const group = styleGroupSelect.value;
-  if (["routes", "labels", "coastline", "lakes", "anchors", "burgIcons", "borders"].includes(sel)) {
-    const gEl = group && el.select("#" + group);
-    el = group && gEl.size() ? gEl : el.select("g");
+  if (['routes', 'labels', 'coastline', 'lakes', 'anchors', 'burgIcons', 'borders'].includes(sel)) {
+    const gEl = group && el.select('#' + group);
+    el = group && gEl.size() ? gEl : el.select('g');
   }
 
   // opacity
-  if (!["landmass", "ocean", "regions", "legend"].includes(sel)) {
-    styleOpacity.style.display = "block";
-    styleOpacityInput.value = styleOpacityOutput.value = el.attr("opacity") || 1;
+  if (!['landmass', 'ocean', 'regions', 'legend'].includes(sel)) {
+    styleOpacity.style.display = 'block';
+    styleOpacityInput.value = styleOpacityOutput.value = el.attr('opacity') || 1;
   }
 
   // filter
-  if (!["landmass", "legend", "regions"].includes(sel)) {
-    styleFilter.style.display = "block";
-    styleFilterInput.value = el.attr("filter") || "";
+  if (!['landmass', 'legend', 'regions'].includes(sel)) {
+    styleFilter.style.display = 'block';
+    styleFilterInput.value = el.attr('filter') || '';
   }
 
   // fill
@@ -100,7 +100,7 @@ function selectStyleElement() {
   }
 
   // show specific sections
-  if (sel === "texture") styleTexture.style.display = "block";
+  if (sel === 'texture') styleTexture.style.display = 'block';
 
   if (sel === 'terrs') {
     styleHeightmap.style.display = 'block';
@@ -148,13 +148,13 @@ function selectStyleElement() {
     styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr('stroke-width') || '';
   }
 
-  if (sel === "regions") {
-    styleStates.style.display = "block";
-    styleStatesBodyOpacity.value = styleStatesBodyOpacityOutput.value = statesBody.attr("opacity") || 1;
-    styleStatesBodyFilter.value = statesBody.attr("filter") || "";
-    styleStatesHaloWidth.value = styleStatesHaloWidthOutput.value = statesHalo.attr("data-width") || 10;
-    styleStatesHaloOpacity.value = styleStatesHaloOpacityOutput.value = statesHalo.attr("opacity") || 1;
-    const blur = parseFloat(statesHalo.attr("filter")?.match(/blur\(([^)]+)\)/)?.[1]) || 0;
+  if (sel === 'regions') {
+    styleStates.style.display = 'block';
+    styleStatesBodyOpacity.value = styleStatesBodyOpacityOutput.value = statesBody.attr('opacity') || 1;
+    styleStatesBodyFilter.value = statesBody.attr('filter') || '';
+    styleStatesHaloWidth.value = styleStatesHaloWidthOutput.value = statesHalo.attr('data-width') || 10;
+    styleStatesHaloOpacity.value = styleStatesHaloOpacityOutput.value = statesHalo.attr('opacity') || 1;
+    const blur = parseFloat(statesHalo.attr('filter')?.match(/blur\(([^)]+)\)/)?.[1]) || 0;
     styleStatesHaloBlur.value = styleStatesHaloBlurOutput.value = blur;
   }
 
@@ -272,18 +272,18 @@ function selectStyleElement() {
 
   // update group options
   styleGroupSelect.options.length = 0; // remove all options
-  if (["routes", "labels", "coastline", "lakes", "anchors", "burgIcons", "borders"].includes(sel)) {
-    const groups = document.getElementById(sel).querySelectorAll("g");
-    groups.forEach(el => {
-      if (el.id === "burgLabels") return;
+  if (['routes', 'labels', 'coastline', 'lakes', 'anchors', 'burgIcons', 'borders'].includes(sel)) {
+    const groups = document.getElementById(sel).querySelectorAll('g');
+    groups.forEach((el) => {
+      if (el.id === 'burgLabels') return;
       const option = new Option(`${el.id} (${el.childElementCount})`, el.id, false, false);
       styleGroupSelect.options.add(option);
     });
-    styleGroupSelect.value = el.attr("id");
-    styleGroup.style.display = "block";
+    styleGroupSelect.value = el.attr('id');
+    styleGroup.style.display = 'block';
   } else {
     styleGroupSelect.options.add(new Option(sel, sel, false, true));
-    styleGroup.style.display = "none";
+    styleGroup.style.display = 'none';
   }
 
   if (sel === 'coastline' && styleGroupSelect.value === 'sea_island') {
@@ -335,9 +335,9 @@ styleOpacityInput.addEventListener('input', function () {
   getEl().attr('opacity', this.value);
 });
 
-styleFilterInput.addEventListener("change", function () {
-  if (styleGroupSelect.value === "ocean") return oceanLayers.attr("filter", this.value);
-  getEl().attr("filter", this.value);
+styleFilterInput.addEventListener('change', function () {
+  if (styleGroupSelect.value === 'ocean') return oceanLayers.attr('filter', this.value);
+  getEl().attr('filter', this.value);
 });
 
 styleTextureInput.addEventListener("change", function () {
@@ -462,15 +462,15 @@ styleReliefSet.addEventListener('change', function () {
   if (!layerIsOn('toggleRelief')) toggleRelief();
 });
 
-styleReliefSizeInput.addEventListener("change", function () {
-  terrain.attr("size", this.value);
+styleReliefSizeInput.addEventListener('change', function () {
+  terrain.attr('size', this.value);
   styleReliefSizeOutput.value = this.value;
   ReliefIcons();
-  if (!layerIsOn("toggleRelief")) toggleRelief();
+  if (!layerIsOn('toggleRelief')) toggleRelief();
 });
 
-styleReliefDensityInput.addEventListener("change", function () {
-  terrain.attr("density", this.value);
+styleReliefDensityInput.addEventListener('change', function () {
+  terrain.attr('density', this.value);
   styleReliefDensityOutput.value = this.value;
   ReliefIcons();
   if (!layerIsOn('toggleRelief')) toggleRelief();
@@ -597,10 +597,10 @@ styleFontMinus.addEventListener("click", function () {
 function changeFontSize(el, size) {
   styleFontSize.value = size;
 
-  const getSizeOnScale = element => {
+  const getSizeOnScale = (element) => {
     // some labels are rescaled on zoom
-    if (element === "labels") return Math.max(rn((size + size / scale) / 2, 2), 1);
-    if (element === "coordinates") return rn(size / scale ** 0.8, 2);
+    if (element === 'labels') return Math.max(rn((size + size / scale) / 2, 2), 1);
+    if (element === 'coordinates') return rn(size / scale ** 0.8, 2);
 
     // other has the same size
     return size;
@@ -609,7 +609,7 @@ function changeFontSize(el, size) {
   const scaleSize = getSizeOnScale(styleElementSelect.value);
   el.attr("data-size", size).attr("font-size", scaleSize);
 
-  if (styleElementSelect.value === "legend") redrawLegend();
+  if (styleElementSelect.value === 'legend') redrawLegend();
 }
 
 styleRadiusInput.addEventListener('change', function () {
@@ -677,16 +677,16 @@ function changeIconSize(size, group) {
   styleIconSizeInput.value = size;
 }
 
-styleStatesBodyOpacity.addEventListener("input", function () {
+styleStatesBodyOpacity.addEventListener('input', function () {
   styleStatesBodyOpacityOutput.value = this.value;
-  statesBody.attr("opacity", this.value);
+  statesBody.attr('opacity', this.value);
 });
 
-styleStatesBodyFilter.addEventListener("change", function () {
-  statesBody.attr("filter", this.value);
+styleStatesBodyFilter.addEventListener('change', function () {
+  statesBody.attr('filter', this.value);
 });
 
-styleStatesHaloWidth.addEventListener("input", function () {
+styleStatesHaloWidth.addEventListener('input', function () {
   styleStatesHaloWidthOutput.value = this.value;
   statesHalo.attr('data-width', this.value).attr('stroke-width', this.value);
 });
@@ -696,14 +696,14 @@ styleStatesHaloOpacity.addEventListener('input', function () {
   statesHalo.attr('opacity', this.value);
 });
 
-styleStatesHaloBlur.addEventListener("input", function () {
+styleStatesHaloBlur.addEventListener('input', function () {
   styleStatesHaloBlurOutput.value = this.value;
   const blur = +this.value > 0 ? `blur(${this.value}px)` : null;
-  statesHalo.attr("filter", blur);
+  statesHalo.attr('filter', blur);
 });
 
-styleArmiesFillOpacity.addEventListener("input", function () {
-  armies.attr("fill-opacity", this.value);
+styleArmiesFillOpacity.addEventListener('input', function () {
+  armies.attr('fill-opacity', this.value);
   styleArmiesFillOpacityOutput.value = this.value;
 });
 
@@ -717,9 +717,9 @@ styleArmiesSize.addEventListener('input', function () {
   });
 });
 
-emblemsStateSizeInput.addEventListener("change", drawEmblems);
-emblemsProvinceSizeInput.addEventListener("change", drawEmblems);
-emblemsBurgSizeInput.addEventListener("change", drawEmblems);
+emblemsStateSizeInput.addEventListener('change', drawEmblems);
+emblemsProvinceSizeInput.addEventListener('change', drawEmblems);
+emblemsBurgSizeInput.addEventListener('change', drawEmblems);
 
 styleResourcesCircle.addEventListener("change", function () {
   goods.attr("data-circle", +this.checked);
@@ -823,10 +823,10 @@ mapFilters.addEventListener('click', applyMapFilter);
 function applyMapFilter(event) {
   if (event.target.tagName !== 'BUTTON') return;
   const button = event.target;
-  svg.attr("data-filter", null).attr("filter", null);
-  if (button.classList.contains("pressed")) return button.classList.remove("pressed");
+  svg.attr('data-filter', null).attr('filter', null);
+  if (button.classList.contains('pressed')) return button.classList.remove('pressed');
 
-  mapFilters.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
-  button.classList.add("pressed");
-  svg.attr("data-filter", button.id).attr("filter", "url(#filter-" + button.id + ")");
+  mapFilters.querySelectorAll('.pressed').forEach((button) => button.classList.remove('pressed'));
+  button.classList.add('pressed');
+  svg.attr('data-filter', button.id).attr('filter', 'url(#filter-' + button.id + ')');
 }

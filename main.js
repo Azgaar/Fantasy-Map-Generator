@@ -513,13 +513,13 @@ function handleZoom(isScaleChanged, isPositionChanged) {
 
   // zoom image converter overlay
   if (customization === 1) {
-    const canvas = document.getElementById("canvas");
-    if (!canvas || canvas.style.opacity === "0") return;
+    const canvas = document.getElementById('canvas');
+    if (!canvas || canvas.style.opacity === '0') return;
 
-    const img = document.getElementById("imageToConvert");
+    const img = document.getElementById('imageToConvert');
     if (!img) return;
 
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.setTransform(scale, 0, 0, scale, viewX, viewY);
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
@@ -561,11 +561,11 @@ function invokeActiveZooming() {
       if (this.id === "burgLabels") return;
       const desired = +this.dataset.size;
       const relative = Math.max(rn((desired + desired / scale) / 2, 2), 1);
-      if (rescaleLabels.checked) this.setAttribute("font-size", relative);
+      if (rescaleLabels.checked) this.setAttribute('font-size', relative);
 
       const hidden = hideLabels.checked && (relative * scale < 6 || relative * scale > 60);
-      if (hidden) this.classList.add("hidden");
-      else this.classList.remove("hidden");
+      if (hidden) this.classList.add('hidden');
+      else this.classList.remove('hidden');
     });
   }
 
@@ -591,7 +591,7 @@ function invokeActiveZooming() {
   if (!customization && !isOptimized) {
     const desired = +statesHalo.attr("data-width");
     const haloSize = rn(desired / scale ** 0.8, 2);
-    statesHalo.attr("stroke-width", haloSize).style("display", haloSize > 0.1 ? "block" : "none");
+    statesHalo.attr('stroke-width', haloSize).style('display', haloSize > 0.1 ? 'block' : 'none');
   }
 
   // rescale map markers
@@ -1428,9 +1428,9 @@ function reMarkFeatures() {
   cells.haven = cells.i.length < 65535 ? new Uint16Array(cells.i.length) : new Uint32Array(cells.i.length); // cell haven (opposite water cell);
   cells.harbor = new Uint8Array(cells.i.length); // cell harbor (number of adjacent water cells);
 
-  const defineHaven = i => {
-    const water = cells.c[i].filter(c => cells.h[c] < 20);
-    const dist2 = water.map(c => (cells.p[i][0] - cells.p[c][0]) ** 2 + (cells.p[i][1] - cells.p[c][1]) ** 2);
+  const defineHaven = (i) => {
+    const water = cells.c[i].filter((c) => cells.h[c] < 20);
+    const dist2 = water.map((c) => (cells.p[i][0] - cells.p[c][0]) ** 2 + (cells.p[i][1] - cells.p[c][1]) ** 2);
     const closest = water[dist2.indexOf(Math.min.apply(Math, dist2))];
 
     cells.haven[i] = closest;
