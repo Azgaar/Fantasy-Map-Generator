@@ -1,9 +1,9 @@
 // Azgaar (azgaar.fmg@yandex.com). Minsk, 2017-2021. MIT License
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
-"use strict";
-const version = "1.652"; // generator version
-document.title += " v" + version;
+'use strict';
+const version = '1.652'; // generator version
+document.title += ' v' + version;
 
 // Logging constants
 const PRODUCTION = window.location.host;
@@ -123,7 +123,7 @@ let customization = 0; // 0 - no; 1 = heightmap draw; 2 - states draw; 3 - add s
 
 let biomesData = applyDefaultBiomesSystem();
 let nameBases = Names.getNameBases(); // cultures-related data
-const fonts = ["Almendra+SC", "Georgia", "Arial", "Times+New+Roman", "Comic+Sans+MS", "Lucida+Sans+Unicode", "Courier+New", "Verdana", "Arial", "Impact"]; // default fonts
+const fonts = ['Almendra+SC', 'Georgia', 'Arial', 'Times+New+Roman', 'Comic+Sans+MS', 'Lucida+Sans+Unicode', 'Courier+New', 'Verdana', 'Arial', 'Impact']; // default fonts
 
 let color = d3.scaleSequential(d3.interpolateSpectral); // default color scheme
 const lineGen = d3.line().curve(d3.curveBasis); // d3 line generator with default curve interpolation
@@ -146,7 +146,7 @@ function zoomed() {
 
   zoomThrottled(isScaleChanged, isPositionChanged);
 }
-const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", zoomed);
+const zoom = d3.zoom().scaleExtent([1, 20]).on('zoom', zoomed);
 
 // default options
 let options = {pinNotes: false}; // options object
@@ -413,10 +413,10 @@ function applyDefaultBiomesSystem() {
 }
 
 function showWelcomeMessage() {
-  const changelog = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "previous version");
-  const reddit = link("https://www.reddit.com/r/FantasyMapGenerator", "Reddit community");
-  const discord = link("https://discordapp.com/invite/X7E84HU", "Discord server");
-  const patreon = link("https://www.patreon.com/azgaar", "Patreon");
+  const changelog = link('https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog', 'previous version');
+  const reddit = link('https://www.reddit.com/r/FantasyMapGenerator', 'Reddit community');
+  const discord = link('https://discordapp.com/invite/X7E84HU', 'Discord server');
+  const patreon = link('https://www.patreon.com/azgaar', 'Patreon');
 
   alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
@@ -444,7 +444,7 @@ function showWelcomeMessage() {
 }
 
 function doWorkOnZoom(isScaleChanged, isPositionChanged) {
-  viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
+  viewbox.attr('transform', `translate(${viewX} ${viewY}) scale(${scale})`);
 
   if (isPositionChanged) drawCoordinates();
 
@@ -455,13 +455,13 @@ function doWorkOnZoom(isScaleChanged, isPositionChanged) {
 
   // zoom image converter overlay
   if (customization === 1) {
-    const canvas = document.getElementById("canvas");
-    if (!canvas || canvas.style.opacity === "0") return;
+    const canvas = document.getElementById('canvas');
+    if (!canvas || canvas.style.opacity === '0') return;
 
-    const img = document.getElementById("imageToConvert");
+    const img = document.getElementById('imageToConvert');
     if (!img) return;
 
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.setTransform(scale, 0, 0, scale, viewX, viewY);
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
@@ -498,16 +498,16 @@ function invokeActiveZooming() {
   }
 
   // rescale lables on zoom
-  if (labels.style("display") !== "none") {
-    labels.selectAll("g").each(function () {
-      if (this.id === "burgLabels") return;
+  if (labels.style('display') !== 'none') {
+    labels.selectAll('g').each(function () {
+      if (this.id === 'burgLabels') return;
       const desired = +this.dataset.size;
       const relative = Math.max(rn((desired + desired / scale) / 2, 2), 1);
-      if (rescaleLabels.checked) this.setAttribute("font-size", relative);
+      if (rescaleLabels.checked) this.setAttribute('font-size', relative);
 
       const hidden = hideLabels.checked && (relative * scale < 6 || relative * scale > 60);
-      if (hidden) this.classList.add("hidden");
-      else this.classList.remove("hidden");
+      if (hidden) this.classList.add('hidden');
+      else this.classList.remove('hidden');
     });
   }
 
@@ -530,14 +530,14 @@ function invokeActiveZooming() {
 
   // change states halo width
   if (!customization) {
-    const desired = +statesHalo.attr("data-width");
+    const desired = +statesHalo.attr('data-width');
     const haloSize = rn(desired / scale ** 0.8, 2);
-    statesHalo.attr("stroke-width", haloSize).style("display", haloSize > 0.1 ? "block" : "none");
+    statesHalo.attr('stroke-width', haloSize).style('display', haloSize > 0.1 ? 'block' : 'none');
   }
 
   // rescale map markers
-  if (+markers.attr("rescale") && markers.style("display") !== "none") {
-    markers.selectAll("use").each(function () {
+  if (+markers.attr('rescale') && markers.style('display') !== 'none') {
+    markers.selectAll('use').each(function () {
       const x = +this.dataset.x,
         y = +this.dataset.y,
         desired = +this.dataset.size;
@@ -1318,9 +1318,9 @@ function reMarkFeatures() {
   cells.haven = cells.i.length < 65535 ? new Uint16Array(cells.i.length) : new Uint32Array(cells.i.length); // cell haven (opposite water cell);
   cells.harbor = new Uint8Array(cells.i.length); // cell harbor (number of adjacent water cells);
 
-  const defineHaven = i => {
-    const water = cells.c[i].filter(c => cells.h[c] < 20);
-    const dist2 = water.map(c => (cells.p[i][0] - cells.p[c][0]) ** 2 + (cells.p[i][1] - cells.p[c][1]) ** 2);
+  const defineHaven = (i) => {
+    const water = cells.c[i].filter((c) => cells.h[c] < 20);
+    const dist2 = water.map((c) => (cells.p[i][0] - cells.p[c][0]) ** 2 + (cells.p[i][1] - cells.p[c][1]) ** 2);
     const closest = water[dist2.indexOf(Math.min.apply(Math, dist2))];
 
     cells.haven[i] = closest;
@@ -2156,13 +2156,8 @@ const regenerateMap = debounce(function () {
   generate();
   restoreLayers();
   if (ThreeD.options.isOn) ThreeD.redraw();
-<<<<<<< HEAD
   if ($('#worldConfigurator').is(':visible')) editWorld();
-}, 500);
-=======
-  if ($("#worldConfigurator").is(":visible")) editWorld();
 }, 1000);
->>>>>>> 597f9ae038fbcc149315df9b1618e64744fb929d
 
 // clear the map
 function undraw() {

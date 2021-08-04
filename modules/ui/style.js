@@ -3,17 +3,17 @@
 
 // add available filters to lists
 void (function addFilters() {
-  const filters = Array.from(document.getElementById("filters").querySelectorAll("filter"));
+  const filters = Array.from(document.getElementById('filters').querySelectorAll('filter'));
   const emptyOption = '<option value="" selected>None</option>';
-  const options = filters.map(filter => {
-    const id = filter.getAttribute("id");
-    const name = filter.getAttribute("name");
+  const options = filters.map((filter) => {
+    const id = filter.getAttribute('id');
+    const name = filter.getAttribute('name');
     return `<option value="url(#${id})">${name}</option>`;
   });
-  const allOptions = emptyOption + options.join("");
+  const allOptions = emptyOption + options.join('');
 
-  document.getElementById("styleFilterInput").innerHTML = allOptions;
-  document.getElementById("styleStatesBodyFilter").innerHTML = allOptions;
+  document.getElementById('styleFilterInput').innerHTML = allOptions;
+  document.getElementById('styleStatesBodyFilter').innerHTML = allOptions;
 })();
 
 // store some style inputs as options
@@ -43,29 +43,29 @@ function selectStyleElement() {
   const sel = styleElementSelect.value;
   let el = d3.select('#' + sel);
 
-  styleElements.querySelectorAll("tbody").forEach(e => (e.style.display = "none")); // hide all sections
+  styleElements.querySelectorAll('tbody').forEach((e) => (e.style.display = 'none')); // hide all sections
 
   // show alert line if layer is not visible
-  const isLayerOff = sel !== "ocean" && (el.style("display") === "none" || !el.selectAll("*").size());
-  styleIsOff.style.display = isLayerOff ? "block" : "none";
+  const isLayerOff = sel !== 'ocean' && (el.style('display') === 'none' || !el.selectAll('*').size());
+  styleIsOff.style.display = isLayerOff ? 'block' : 'none';
 
   // active group element
   const group = styleGroupSelect.value;
-  if (["routes", "labels", "coastline", "lakes", "anchors", "burgIcons", "borders"].includes(sel)) {
-    const gEl = group && el.select("#" + group);
-    el = group && gEl.size() ? gEl : el.select("g");
+  if (['routes', 'labels', 'coastline', 'lakes', 'anchors', 'burgIcons', 'borders'].includes(sel)) {
+    const gEl = group && el.select('#' + group);
+    el = group && gEl.size() ? gEl : el.select('g');
   }
 
   // opacity
-  if (!["landmass", "ocean", "regions", "legend"].includes(sel)) {
-    styleOpacity.style.display = "block";
-    styleOpacityInput.value = styleOpacityOutput.value = el.attr("opacity") || 1;
+  if (!['landmass', 'ocean', 'regions', 'legend'].includes(sel)) {
+    styleOpacity.style.display = 'block';
+    styleOpacityInput.value = styleOpacityOutput.value = el.attr('opacity') || 1;
   }
 
   // filter
-  if (!["landmass", "legend", "regions"].includes(sel)) {
-    styleFilter.style.display = "block";
-    styleFilterInput.value = el.attr("filter") || "";
+  if (!['landmass', 'legend', 'regions'].includes(sel)) {
+    styleFilter.style.display = 'block';
+    styleFilterInput.value = el.attr('filter') || '';
   }
 
   // fill
@@ -96,15 +96,15 @@ function selectStyleElement() {
   }
 
   // show specific sections
-  if (sel === "texture") styleTexture.style.display = "block";
+  if (sel === 'texture') styleTexture.style.display = 'block';
 
-  if (sel === "terrs") {
-    styleHeightmap.style.display = "block";
-    styleHeightmapScheme.value = terrs.attr("scheme");
-    styleHeightmapTerracingInput.value = styleHeightmapTerracingOutput.value = terrs.attr("terracing");
-    styleHeightmapSkipInput.value = styleHeightmapSkipOutput.value = terrs.attr("skip");
-    styleHeightmapSimplificationInput.value = styleHeightmapSimplificationOutput.value = terrs.attr("relax");
-    styleHeightmapCurve.value = terrs.attr("curve");
+  if (sel === 'terrs') {
+    styleHeightmap.style.display = 'block';
+    styleHeightmapScheme.value = terrs.attr('scheme');
+    styleHeightmapTerracingInput.value = styleHeightmapTerracingOutput.value = terrs.attr('terracing');
+    styleHeightmapSkipInput.value = styleHeightmapSkipOutput.value = terrs.attr('skip');
+    styleHeightmapSimplificationInput.value = styleHeightmapSimplificationOutput.value = terrs.attr('relax');
+    styleHeightmapCurve.value = terrs.attr('curve');
   }
 
   if (sel === 'markers') {
@@ -144,13 +144,13 @@ function selectStyleElement() {
     styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr('stroke-width') || '';
   }
 
-  if (sel === "regions") {
-    styleStates.style.display = "block";
-    styleStatesBodyOpacity.value = styleStatesBodyOpacityOutput.value = statesBody.attr("opacity") || 1;
-    styleStatesBodyFilter.value = statesBody.attr("filter") || "";
-    styleStatesHaloWidth.value = styleStatesHaloWidthOutput.value = statesHalo.attr("data-width") || 10;
-    styleStatesHaloOpacity.value = styleStatesHaloOpacityOutput.value = statesHalo.attr("opacity") || 1;
-    const blur = parseFloat(statesHalo.attr("filter")?.match(/blur\(([^)]+)\)/)?.[1]) || 0;
+  if (sel === 'regions') {
+    styleStates.style.display = 'block';
+    styleStatesBodyOpacity.value = styleStatesBodyOpacityOutput.value = statesBody.attr('opacity') || 1;
+    styleStatesBodyFilter.value = statesBody.attr('filter') || '';
+    styleStatesHaloWidth.value = styleStatesHaloWidthOutput.value = statesHalo.attr('data-width') || 10;
+    styleStatesHaloOpacity.value = styleStatesHaloOpacityOutput.value = statesHalo.attr('opacity') || 1;
+    const blur = parseFloat(statesHalo.attr('filter')?.match(/blur\(([^)]+)\)/)?.[1]) || 0;
     styleStatesHaloBlur.value = styleStatesHaloBlurOutput.value = blur;
   }
 
@@ -273,18 +273,18 @@ function selectStyleElement() {
 
   // update group options
   styleGroupSelect.options.length = 0; // remove all options
-  if (["routes", "labels", "coastline", "lakes", "anchors", "burgIcons", "borders"].includes(sel)) {
-    const groups = document.getElementById(sel).querySelectorAll("g");
-    groups.forEach(el => {
-      if (el.id === "burgLabels") return;
+  if (['routes', 'labels', 'coastline', 'lakes', 'anchors', 'burgIcons', 'borders'].includes(sel)) {
+    const groups = document.getElementById(sel).querySelectorAll('g');
+    groups.forEach((el) => {
+      if (el.id === 'burgLabels') return;
       const option = new Option(`${el.id} (${el.childElementCount})`, el.id, false, false);
       styleGroupSelect.options.add(option);
     });
-    styleGroupSelect.value = el.attr("id");
-    styleGroup.style.display = "block";
+    styleGroupSelect.value = el.attr('id');
+    styleGroup.style.display = 'block';
   } else {
     styleGroupSelect.options.add(new Option(sel, sel, false, true));
-    styleGroup.style.display = "none";
+    styleGroup.style.display = 'none';
   }
 
   if (sel === 'coastline' && styleGroupSelect.value === 'sea_island') {
@@ -300,8 +300,8 @@ styleGroupSelect.addEventListener('change', selectStyleElement);
 function getEl() {
   const el = styleElementSelect.value;
   const g = styleGroupSelect.value;
-  if (g === el) return svg.select("#" + el);
-  else return svg.select("#" + el).select("#" + g);
+  if (g === el) return svg.select('#' + el);
+  else return svg.select('#' + el).select('#' + g);
 }
 
 styleFillInput.addEventListener('input', function () {
@@ -336,9 +336,9 @@ styleOpacityInput.addEventListener('input', function () {
   getEl().attr('opacity', this.value);
 });
 
-styleFilterInput.addEventListener("change", function () {
-  if (styleGroupSelect.value === "ocean") return oceanLayers.attr("filter", this.value);
-  getEl().attr("filter", this.value);
+styleFilterInput.addEventListener('change', function () {
+  if (styleGroupSelect.value === 'ocean') return oceanLayers.attr('filter', this.value);
+  getEl().attr('filter', this.value);
 });
 
 styleTextureInput.addEventListener('change', function () {
@@ -464,15 +464,15 @@ styleReliefSet.addEventListener('change', function () {
   if (!layerIsOn('toggleRelief')) toggleRelief();
 });
 
-styleReliefSizeInput.addEventListener("change", function () {
-  terrain.attr("size", this.value);
+styleReliefSizeInput.addEventListener('change', function () {
+  terrain.attr('size', this.value);
   styleReliefSizeOutput.value = this.value;
   ReliefIcons();
-  if (!layerIsOn("toggleRelief")) toggleRelief();
+  if (!layerIsOn('toggleRelief')) toggleRelief();
 });
 
-styleReliefDensityInput.addEventListener("change", function () {
-  terrain.attr("density", this.value);
+styleReliefDensityInput.addEventListener('change', function () {
+  terrain.attr('density', this.value);
   styleReliefDensityOutput.value = this.value;
   ReliefIcons();
   if (!layerIsOn('toggleRelief')) toggleRelief();
@@ -574,32 +574,32 @@ styleFontSize.addEventListener('change', function () {
   changeFontSize(+this.value);
 });
 
-styleFontPlus.addEventListener("click", function () {
-  const size = +getEl().attr("data-size") + 1;
+styleFontPlus.addEventListener('click', function () {
+  const size = +getEl().attr('data-size') + 1;
   changeFontSize(Math.min(size, 999));
 });
 
-styleFontMinus.addEventListener("click", function () {
-  const size = +getEl().attr("data-size") - 1;
+styleFontMinus.addEventListener('click', function () {
+  const size = +getEl().attr('data-size') - 1;
   changeFontSize(Math.max(size, 1));
 });
 
 function changeFontSize(size) {
   styleFontSize.value = size;
 
-  const getSizeOnScale = element => {
+  const getSizeOnScale = (element) => {
     // some labels are rescaled on zoom
-    if (element === "labels") return Math.max(rn((size + size / scale) / 2, 2), 1);
-    if (element === "coordinates") return rn(size / scale ** 0.8, 2);
+    if (element === 'labels') return Math.max(rn((size + size / scale) / 2, 2), 1);
+    if (element === 'coordinates') return rn(size / scale ** 0.8, 2);
 
     // other has the same size
     return size;
   };
 
   const scaleSize = getSizeOnScale(styleElementSelect.value);
-  getEl().attr("data-size", size).attr("font-size", scaleSize);
+  getEl().attr('data-size', size).attr('font-size', scaleSize);
 
-  if (styleElementSelect.value === "legend") redrawLegend();
+  if (styleElementSelect.value === 'legend') redrawLegend();
 }
 
 styleRadiusInput.addEventListener('change', function () {
@@ -663,16 +663,16 @@ function changeIconSize(size, group) {
   styleIconSizeInput.value = size;
 }
 
-styleStatesBodyOpacity.addEventListener("input", function () {
+styleStatesBodyOpacity.addEventListener('input', function () {
   styleStatesBodyOpacityOutput.value = this.value;
-  statesBody.attr("opacity", this.value);
+  statesBody.attr('opacity', this.value);
 });
 
-styleStatesBodyFilter.addEventListener("change", function () {
-  statesBody.attr("filter", this.value);
+styleStatesBodyFilter.addEventListener('change', function () {
+  statesBody.attr('filter', this.value);
 });
 
-styleStatesHaloWidth.addEventListener("input", function () {
+styleStatesHaloWidth.addEventListener('input', function () {
   styleStatesHaloWidthOutput.value = this.value;
   statesHalo.attr('data-width', this.value).attr('stroke-width', this.value);
 });
@@ -682,14 +682,14 @@ styleStatesHaloOpacity.addEventListener('input', function () {
   statesHalo.attr('opacity', this.value);
 });
 
-styleStatesHaloBlur.addEventListener("input", function () {
+styleStatesHaloBlur.addEventListener('input', function () {
   styleStatesHaloBlurOutput.value = this.value;
   const blur = +this.value > 0 ? `blur(${this.value}px)` : null;
-  statesHalo.attr("filter", blur);
+  statesHalo.attr('filter', blur);
 });
 
-styleArmiesFillOpacity.addEventListener("input", function () {
-  armies.attr("fill-opacity", this.value);
+styleArmiesFillOpacity.addEventListener('input', function () {
+  armies.attr('fill-opacity', this.value);
   styleArmiesFillOpacityOutput.value = this.value;
 });
 
@@ -703,9 +703,9 @@ styleArmiesSize.addEventListener('input', function () {
   });
 });
 
-emblemsStateSizeInput.addEventListener("change", drawEmblems);
-emblemsProvinceSizeInput.addEventListener("change", drawEmblems);
-emblemsBurgSizeInput.addEventListener("change", drawEmblems);
+emblemsStateSizeInput.addEventListener('change', drawEmblems);
+emblemsProvinceSizeInput.addEventListener('change', drawEmblems);
+emblemsBurgSizeInput.addEventListener('change', drawEmblems);
 
 // request a URL to image to be used as a texture
 function textureProvideURL() {
@@ -781,56 +781,74 @@ function applyStyleOnLoad() {
 
 // set default style
 function applyDefaultStyle() {
-  armies.attr("opacity", 1).attr("fill-opacity", 1).attr("font-size", 6).attr("box-size", 3).attr("stroke", "#000").attr("stroke-width", 0.3);
+  armies.attr('opacity', 1).attr('fill-opacity', 1).attr('font-size', 6).attr('box-size', 3).attr('stroke', '#000').attr('stroke-width', 0.3);
 
-  biomes.attr("opacity", null).attr("filter", null).attr("mask", null);
-  ice.attr("opacity", 0.9).attr("fill", "#e8f0f6").attr("stroke", "#e8f0f6").attr("stroke-width", 1).attr("filter", "url(#dropShadow05)");
-  stateBorders.attr("opacity", 0.8).attr("stroke", "#56566d").attr("stroke-width", 1).attr("stroke-dasharray", "2").attr("stroke-linecap", "butt").attr("filter", null);
-  provinceBorders.attr("opacity", 0.8).attr("stroke", "#56566d").attr("stroke-width", 0.5).attr("stroke-dasharray", "0 2").attr("stroke-linecap", "round").attr("filter", null);
-  cells.attr("opacity", null).attr("stroke", "#808080").attr("stroke-width", 0.1).attr("filter", null).attr("mask", null);
+  biomes.attr('opacity', null).attr('filter', null).attr('mask', null);
+  ice.attr('opacity', 0.9).attr('fill', '#e8f0f6').attr('stroke', '#e8f0f6').attr('stroke-width', 1).attr('filter', 'url(#dropShadow05)');
+  stateBorders.attr('opacity', 0.8).attr('stroke', '#56566d').attr('stroke-width', 1).attr('stroke-dasharray', '2').attr('stroke-linecap', 'butt').attr('filter', null);
+  provinceBorders.attr('opacity', 0.8).attr('stroke', '#56566d').attr('stroke-width', 0.5).attr('stroke-dasharray', '0 2').attr('stroke-linecap', 'round').attr('filter', null);
+  cells.attr('opacity', null).attr('stroke', '#808080').attr('stroke-width', 0.1).attr('filter', null).attr('mask', null);
 
-  gridOverlay.attr("opacity", 0.8).attr("type", "pointyHex").attr("scale", 1).attr("dx", 0).attr("dy", 0).attr("stroke", "#777777").attr("stroke-width", 0.5).attr("stroke-dasharray", null).attr("filter", null).attr("mask", null);
-  coordinates.attr("opacity", 1).attr("data-size", 12).attr("font-size", 12).attr("stroke", "#d4d4d4").attr("stroke-width", 1).attr("stroke-dasharray", 5).attr("filter", null).attr("mask", null);
-  compass.attr("opacity", 0.8).attr("transform", null).attr("filter", null).attr("mask", "url(#water)").attr("shape-rendering", "optimizespeed");
-  if (!d3.select("#initial").size()) d3.select("#rose").attr("transform", "translate(80 80) scale(.25)");
+  gridOverlay
+    .attr('opacity', 0.8)
+    .attr('type', 'pointyHex')
+    .attr('scale', 1)
+    .attr('dx', 0)
+    .attr('dy', 0)
+    .attr('stroke', '#777777')
+    .attr('stroke-width', 0.5)
+    .attr('stroke-dasharray', null)
+    .attr('filter', null)
+    .attr('mask', null);
+  coordinates.attr('opacity', 1).attr('data-size', 12).attr('font-size', 12).attr('stroke', '#d4d4d4').attr('stroke-width', 1).attr('stroke-dasharray', 5).attr('filter', null).attr('mask', null);
+  compass.attr('opacity', 0.8).attr('transform', null).attr('filter', null).attr('mask', 'url(#water)').attr('shape-rendering', 'optimizespeed');
+  if (!d3.select('#initial').size()) d3.select('#rose').attr('transform', 'translate(80 80) scale(.25)');
 
-  relig.attr("opacity", 0.7).attr("stroke", "#777777").attr("stroke-width", 0).attr("filter", null);
-  cults.attr("opacity", 0.6).attr("stroke", "#777777").attr("stroke-width", 0.5).attr("filter", null);
-  landmass.attr("opacity", 1).attr("fill", "#eef6fb").attr("filter", null);
-  markers.attr("opacity", null).attr("rescale", 1).attr("filter", "url(#dropShadow01)");
+  relig.attr('opacity', 0.7).attr('stroke', '#777777').attr('stroke-width', 0).attr('filter', null);
+  cults.attr('opacity', 0.6).attr('stroke', '#777777').attr('stroke-width', 0.5).attr('filter', null);
+  landmass.attr('opacity', 1).attr('fill', '#eef6fb').attr('filter', null);
+  markers.attr('opacity', null).attr('rescale', 1).attr('filter', 'url(#dropShadow01)');
 
-  prec.attr("opacity", null).attr("stroke", "#000000").attr("stroke-width", 0.1).attr("fill", "#003dff").attr("filter", null);
-  population.attr("opacity", null).attr("stroke-width", 1.6).attr("stroke-dasharray", null).attr("stroke-linecap", "butt").attr("filter", null);
-  population.select("#rural").attr("stroke", "#0000ff");
-  population.select("#urban").attr("stroke", "#ff0000");
+  prec.attr('opacity', null).attr('stroke', '#000000').attr('stroke-width', 0.1).attr('fill', '#003dff').attr('filter', null);
+  population.attr('opacity', null).attr('stroke-width', 1.6).attr('stroke-dasharray', null).attr('stroke-linecap', 'butt').attr('filter', null);
+  population.select('#rural').attr('stroke', '#0000ff');
+  population.select('#urban').attr('stroke', '#ff0000');
 
-  lakes.select("#freshwater").attr("opacity", 0.5).attr("fill", "#a6c1fd").attr("stroke", "#5f799d").attr("stroke-width", 0.7).attr("filter", null);
-  lakes.select("#salt").attr("opacity", 0.5).attr("fill", "#409b8a").attr("stroke", "#388985").attr("stroke-width", 0.7).attr("filter", null);
-  lakes.select("#sinkhole").attr("opacity", 1).attr("fill", "#5bc9fd").attr("stroke", "#53a3b0").attr("stroke-width", 0.7).attr("filter", null);
-  lakes.select("#frozen").attr("opacity", 0.95).attr("fill", "#cdd4e7").attr("stroke", "#cfe0eb").attr("stroke-width", 0).attr("filter", null);
-  lakes.select("#lava").attr("opacity", 0.7).attr("fill", "#90270d").attr("stroke", "#f93e0c").attr("stroke-width", 2).attr("filter", "url(#crumpled)");
-  lakes.select("#dry").attr("opacity", 1).attr("fill", "#c9bfa7").attr("stroke", "#8e816f").attr("stroke-width", 0.7).attr("filter", null);
+  lakes.select('#freshwater').attr('opacity', 0.5).attr('fill', '#a6c1fd').attr('stroke', '#5f799d').attr('stroke-width', 0.7).attr('filter', null);
+  lakes.select('#salt').attr('opacity', 0.5).attr('fill', '#409b8a').attr('stroke', '#388985').attr('stroke-width', 0.7).attr('filter', null);
+  lakes.select('#sinkhole').attr('opacity', 1).attr('fill', '#5bc9fd').attr('stroke', '#53a3b0').attr('stroke-width', 0.7).attr('filter', null);
+  lakes.select('#frozen').attr('opacity', 0.95).attr('fill', '#cdd4e7').attr('stroke', '#cfe0eb').attr('stroke-width', 0).attr('filter', null);
+  lakes.select('#lava').attr('opacity', 0.7).attr('fill', '#90270d').attr('stroke', '#f93e0c').attr('stroke-width', 2).attr('filter', 'url(#crumpled)');
+  lakes.select('#dry').attr('opacity', 1).attr('fill', '#c9bfa7').attr('stroke', '#8e816f').attr('stroke-width', 0.7).attr('filter', null);
 
-  coastline.select("#sea_island").attr("opacity", 0.5).attr("stroke", "#1f3846").attr("stroke-width", 0.7).attr("auto-filter", 1).attr("filter", "url(#dropShadow)");
-  coastline.select("#lake_island").attr("opacity", 1).attr("stroke", "#7c8eaf").attr("stroke-width", 0.35).attr("filter", null);
+  coastline.select('#sea_island').attr('opacity', 0.5).attr('stroke', '#1f3846').attr('stroke-width', 0.7).attr('auto-filter', 1).attr('filter', 'url(#dropShadow)');
+  coastline.select('#lake_island').attr('opacity', 1).attr('stroke', '#7c8eaf').attr('stroke-width', 0.35).attr('filter', null);
 
-  terrain.attr("opacity", null).attr("set", "simple").attr("size", 1).attr("density", 0.4).attr("filter", null).attr("mask", null);
-  rivers.attr("opacity", null).attr("fill", "#5d97bb").attr("filter", null);
-  ruler.attr("opacity", null).attr("filter", null);
+  terrain.attr('opacity', null).attr('set', 'simple').attr('size', 1).attr('density', 0.4).attr('filter', null).attr('mask', null);
+  rivers.attr('opacity', null).attr('fill', '#5d97bb').attr('filter', null);
+  ruler.attr('opacity', null).attr('filter', null);
 
-  roads.attr("opacity", 0.9).attr("stroke", "#d06324").attr("stroke-width", 0.7).attr("stroke-dasharray", "2").attr("stroke-linecap", "butt").attr("filter", null).attr("mask", null);
-  trails.attr("opacity", 0.9).attr("stroke", "#d06324").attr("stroke-width", 0.25).attr("stroke-dasharray", ".8 1.6").attr("stroke-linecap", "butt").attr("filter", null).attr("mask", null);
-  searoutes.attr("opacity", 0.8).attr("stroke", "#ffffff").attr("stroke-width", 0.45).attr("stroke-dasharray", "1 2").attr("stroke-linecap", "round").attr("filter", null).attr("mask", null);
+  roads.attr('opacity', 0.9).attr('stroke', '#d06324').attr('stroke-width', 0.7).attr('stroke-dasharray', '2').attr('stroke-linecap', 'butt').attr('filter', null).attr('mask', null);
+  trails.attr('opacity', 0.9).attr('stroke', '#d06324').attr('stroke-width', 0.25).attr('stroke-dasharray', '.8 1.6').attr('stroke-linecap', 'butt').attr('filter', null).attr('mask', null);
+  searoutes.attr('opacity', 0.8).attr('stroke', '#ffffff').attr('stroke-width', 0.45).attr('stroke-dasharray', '1 2').attr('stroke-linecap', 'round').attr('filter', null).attr('mask', null);
 
-  statesBody.attr("opacity", 0.4).attr("filter", null);
-  statesHalo.attr("data-width", 10).attr("stroke-width", 10).attr("opacity", 0.4).attr("filter", "blur(5px)");
+  statesBody.attr('opacity', 0.4).attr('filter', null);
+  statesHalo.attr('data-width', 10).attr('stroke-width', 10).attr('opacity', 0.4).attr('filter', 'blur(5px)');
 
-  provs.attr("opacity", 0.7).attr("fill", "#000000").attr("font-family", "Georgia").attr("data-font", "Georgia").attr("data-size", 10).attr("font-size", 10).attr("filter", null);
+  provs.attr('opacity', 0.7).attr('fill', '#000000').attr('font-family', 'Georgia').attr('data-font', 'Georgia').attr('data-size', 10).attr('font-size', 10).attr('filter', null);
 
-  temperature.attr("opacity", null).attr("fill", "#000000").attr("stroke-width", 1.8).attr("fill-opacity", 0.3).attr("font-size", "8px").attr("stroke-dasharray", null).attr("filter", null).attr("mask", null);
-  texture.attr("opacity", null).attr("filter", null).attr("mask", "url(#land)");
-  texture.select("#textureImage").attr("x", 0).attr("y", 0);
-  zones.attr("opacity", 0.6).attr("stroke", "#333333").attr("stroke-width", 0).attr("stroke-dasharray", null).attr("stroke-linecap", "butt").attr("filter", null).attr("mask", null);
+  temperature
+    .attr('opacity', null)
+    .attr('fill', '#000000')
+    .attr('stroke-width', 1.8)
+    .attr('fill-opacity', 0.3)
+    .attr('font-size', '8px')
+    .attr('stroke-dasharray', null)
+    .attr('filter', null)
+    .attr('mask', null);
+  texture.attr('opacity', null).attr('filter', null).attr('mask', 'url(#land)');
+  texture.select('#textureImage').attr('x', 0).attr('y', 0);
+  zones.attr('opacity', 0.6).attr('stroke', '#333333').attr('stroke-width', 0).attr('stroke-dasharray', null).attr('stroke-linecap', 'butt').attr('filter', null).attr('mask', null);
 
   // ocean and svg default style
   svg.attr('background-color', '#000000').attr('data-filter', null).attr('filter', null);
@@ -955,49 +973,40 @@ function applyStyle(style) {
 
 // change current style preset to another saved one
 function changeStylePreset(preset) {
-  if (customization) return tip("Please exit the customization mode first", false, "error");
+  if (customization) return tip('Please exit the customization mode first', false, 'error');
 
-  alertMessage.innerHTML = "Are you sure you want to change the style preset? All unsaved style changes will be lost";
-  $("#alert").dialog({
+  alertMessage.innerHTML = 'Are you sure you want to change the style preset? All unsaved style changes will be lost';
+  $('#alert').dialog({
     resizable: false,
-    title: "Change style preset",
-    width: "23em",
+    title: 'Change style preset',
+    width: '23em',
     buttons: {
       Change: function () {
         const customPreset = localStorage.getItem(preset);
         if (customPreset) {
           if (JSON.isValid(customPreset)) applyStyle(JSON.parse(customPreset));
           else {
-            tip("Cannot parse stored style JSON. Default style applied", false, "error", 5000);
+            tip('Cannot parse stored style JSON. Default style applied', false, 'error', 5000);
             applyDefaultStyle();
           }
         } else if (defaultStyles[preset]) applyStyle(JSON.parse(defaultStyles[preset]));
         else applyDefaultStyle();
         loadUsedFonts();
 
-        removeStyleButton.style.display = stylePreset.selectedOptions[0].dataset.system ? "none" : "inline-block";
+        removeStyleButton.style.display = stylePreset.selectedOptions[0].dataset.system ? 'none' : 'inline-block';
         updateElements(); // change elements
         selectStyleElement(); // re-select element to trigger values update
         updateMapFilter();
-        localStorage.setItem("presetStyle", preset); // save preset to use it onload
+        localStorage.setItem('presetStyle', preset); // save preset to use it onload
         stylePreset.dataset.old = stylePreset.value; // save current value
-        $(this).dialog("close");
+        $(this).dialog('close');
       },
       Cancel: function () {
         stylePreset.value = stylePreset.dataset.old;
-        $(this).dialog("close");
+        $(this).dialog('close');
       }
-    } else if (defaultStyles[preset]) applyStyle(JSON.parse(defaultStyles[preset]));
-    else applyDefaultStyle();
-
-    removeStyleButton.style.display = stylePreset.selectedOptions[0].dataset.system ? 'none' : 'inline-block';
-    updateElements(); // change elements
-    selectStyleElement(); // re-select element to trigger values update
-    updateMapFilter();
-    localStorage.setItem('presetStyle', preset); // save preset to use it onload
-    stylePreset.dataset.old = stylePreset.value; // save current value
-  };
-  confirmationDialog({title: 'Change style preset', message, confirm: 'Change', onConfirm});
+    }
+  });
 }
 
 function updateElements() {
@@ -1048,8 +1057,8 @@ function addStylePreset() {
     position: {my: 'center', at: 'center', of: 'svg'}
   });
 
-  const currentStyle = document.getElementById("stylePreset").selectedOptions[0].text;
-  document.getElementById("styleSaverName").value = currentStyle;
+  const currentStyle = document.getElementById('stylePreset').selectedOptions[0].text;
+  document.getElementById('styleSaverName').value = currentStyle;
   styleSaverJSON.value = JSON.stringify(getStyle(), null, 2);
   checkName();
 
@@ -1068,62 +1077,62 @@ function addStylePreset() {
   function getStyle() {
     const style = {};
     const attributes = {
-      "#map": ["background-color", "filter", "data-filter"],
-      "#armies": ["font-size", "box-size", "stroke", "stroke-width", "fill-opacity", "filter"],
-      "#biomes": ["opacity", "filter", "mask"],
-      "#stateBorders": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter"],
-      "#provinceBorders": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter"],
-      "#cells": ["opacity", "stroke", "stroke-width", "filter", "mask"],
-      "#gridOverlay": ["opacity", "scale", "dx", "dy", "type", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "transform", "filter", "mask"],
-      "#coordinates": ["opacity", "data-size", "font-size", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter", "mask"],
-      "#compass": ["opacity", "transform", "filter", "mask", "shape-rendering"],
-      "#rose": ["transform"],
-      "#relig": ["opacity", "stroke", "stroke-width", "filter"],
-      "#cults": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter"],
-      "#landmass": ["opacity", "fill", "filter"],
-      "#markers": ["opacity", "rescale", "filter"],
-      "#prec": ["opacity", "stroke", "stroke-width", "fill", "filter"],
-      "#population": ["opacity", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter"],
-      "#rural": ["stroke"],
-      "#urban": ["stroke"],
-      "#freshwater": ["opacity", "fill", "stroke", "stroke-width", "filter"],
-      "#salt": ["opacity", "fill", "stroke", "stroke-width", "filter"],
-      "#sinkhole": ["opacity", "fill", "stroke", "stroke-width", "filter"],
-      "#frozen": ["opacity", "fill", "stroke", "stroke-width", "filter"],
-      "#lava": ["opacity", "fill", "stroke", "stroke-width", "filter"],
-      "#dry": ["opacity", "fill", "stroke", "stroke-width", "filter"],
-      "#sea_island": ["opacity", "stroke", "stroke-width", "filter", "auto-filter"],
-      "#lake_island": ["opacity", "stroke", "stroke-width", "filter"],
-      "#terrain": ["opacity", "set", "size", "density", "filter", "mask"],
-      "#rivers": ["opacity", "filter", "fill"],
-      "#ruler": ["opacity", "filter"],
-      "#roads": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter", "mask"],
-      "#trails": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter", "mask"],
-      "#searoutes": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter", "mask"],
-      "#statesBody": ["opacity", "filter"],
-      "#statesHalo": ["opacity", "data-width", "stroke-width", "filter"],
-      "#provs": ["opacity", "fill", "font-size", "data-font", "font-family", "filter"],
-      "#temperature": ["opacity", "font-size", "fill", "fill-opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter"],
-      "#ice": ["opacity", "fill", "stroke", "stroke-width", "filter"],
-      "#emblems": ["opacity", "stroke-width", "filter"],
-      "#texture": ["opacity", "filter", "mask"],
-      "#textureImage": ["x", "y"],
-      "#zones": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter", "mask"],
-      "#oceanLayers": ["filter", "layers"],
-      "#oceanBase": ["fill"],
-      "#oceanicPattern": ["href", "opacity"],
-      "#terrs": ["opacity", "scheme", "terracing", "skip", "relax", "curve", "filter", "mask"],
-      "#legend": ["data-size", "font-size", "data-font", "font-family", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "data-x", "data-y", "data-columns"],
-      "#legendBox": ["fill", "fill-opacity"],
-      "#burgLabels > #cities": ["opacity", "fill", "text-shadow", "data-size", "font-size", "data-font", "font-family"],
-      "#burgIcons > #cities": ["opacity", "fill", "fill-opacity", "size", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap"],
-      "#anchors > #cities": ["opacity", "fill", "size", "stroke", "stroke-width"],
-      "#burgLabels > #towns": ["opacity", "fill", "text-shadow", "data-size", "font-size", "data-font", "font-family"],
-      "#burgIcons > #towns": ["opacity", "fill", "fill-opacity", "size", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap"],
-      "#anchors > #towns": ["opacity", "fill", "size", "stroke", "stroke-width"],
-      "#labels > #states": ["opacity", "fill", "stroke", "stroke-width", "text-shadow", "data-size", "font-size", "data-font", "font-family", "filter"],
-      "#labels > #addedLabels": ["opacity", "fill", "stroke", "stroke-width", "text-shadow", "data-size", "font-size", "data-font", "font-family", "filter"],
-      "#fogging": ["opacity", "fill", "filter"]
+      '#map': ['background-color', 'filter', 'data-filter'],
+      '#armies': ['font-size', 'box-size', 'stroke', 'stroke-width', 'fill-opacity', 'filter'],
+      '#biomes': ['opacity', 'filter', 'mask'],
+      '#stateBorders': ['opacity', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap', 'filter'],
+      '#provinceBorders': ['opacity', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap', 'filter'],
+      '#cells': ['opacity', 'stroke', 'stroke-width', 'filter', 'mask'],
+      '#gridOverlay': ['opacity', 'scale', 'dx', 'dy', 'type', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap', 'transform', 'filter', 'mask'],
+      '#coordinates': ['opacity', 'data-size', 'font-size', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap', 'filter', 'mask'],
+      '#compass': ['opacity', 'transform', 'filter', 'mask', 'shape-rendering'],
+      '#rose': ['transform'],
+      '#relig': ['opacity', 'stroke', 'stroke-width', 'filter'],
+      '#cults': ['opacity', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap', 'filter'],
+      '#landmass': ['opacity', 'fill', 'filter'],
+      '#markers': ['opacity', 'rescale', 'filter'],
+      '#prec': ['opacity', 'stroke', 'stroke-width', 'fill', 'filter'],
+      '#population': ['opacity', 'stroke-width', 'stroke-dasharray', 'stroke-linecap', 'filter'],
+      '#rural': ['stroke'],
+      '#urban': ['stroke'],
+      '#freshwater': ['opacity', 'fill', 'stroke', 'stroke-width', 'filter'],
+      '#salt': ['opacity', 'fill', 'stroke', 'stroke-width', 'filter'],
+      '#sinkhole': ['opacity', 'fill', 'stroke', 'stroke-width', 'filter'],
+      '#frozen': ['opacity', 'fill', 'stroke', 'stroke-width', 'filter'],
+      '#lava': ['opacity', 'fill', 'stroke', 'stroke-width', 'filter'],
+      '#dry': ['opacity', 'fill', 'stroke', 'stroke-width', 'filter'],
+      '#sea_island': ['opacity', 'stroke', 'stroke-width', 'filter', 'auto-filter'],
+      '#lake_island': ['opacity', 'stroke', 'stroke-width', 'filter'],
+      '#terrain': ['opacity', 'set', 'size', 'density', 'filter', 'mask'],
+      '#rivers': ['opacity', 'filter', 'fill'],
+      '#ruler': ['opacity', 'filter'],
+      '#roads': ['opacity', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap', 'filter', 'mask'],
+      '#trails': ['opacity', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap', 'filter', 'mask'],
+      '#searoutes': ['opacity', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap', 'filter', 'mask'],
+      '#statesBody': ['opacity', 'filter'],
+      '#statesHalo': ['opacity', 'data-width', 'stroke-width', 'filter'],
+      '#provs': ['opacity', 'fill', 'font-size', 'data-font', 'font-family', 'filter'],
+      '#temperature': ['opacity', 'font-size', 'fill', 'fill-opacity', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap', 'filter'],
+      '#ice': ['opacity', 'fill', 'stroke', 'stroke-width', 'filter'],
+      '#emblems': ['opacity', 'stroke-width', 'filter'],
+      '#texture': ['opacity', 'filter', 'mask'],
+      '#textureImage': ['x', 'y'],
+      '#zones': ['opacity', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap', 'filter', 'mask'],
+      '#oceanLayers': ['filter', 'layers'],
+      '#oceanBase': ['fill'],
+      '#oceanicPattern': ['href', 'opacity'],
+      '#terrs': ['opacity', 'scheme', 'terracing', 'skip', 'relax', 'curve', 'filter', 'mask'],
+      '#legend': ['data-size', 'font-size', 'data-font', 'font-family', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap', 'data-x', 'data-y', 'data-columns'],
+      '#legendBox': ['fill', 'fill-opacity'],
+      '#burgLabels > #cities': ['opacity', 'fill', 'text-shadow', 'data-size', 'font-size', 'data-font', 'font-family'],
+      '#burgIcons > #cities': ['opacity', 'fill', 'fill-opacity', 'size', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap'],
+      '#anchors > #cities': ['opacity', 'fill', 'size', 'stroke', 'stroke-width'],
+      '#burgLabels > #towns': ['opacity', 'fill', 'text-shadow', 'data-size', 'font-size', 'data-font', 'font-family'],
+      '#burgIcons > #towns': ['opacity', 'fill', 'fill-opacity', 'size', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap'],
+      '#anchors > #towns': ['opacity', 'fill', 'size', 'stroke', 'stroke-width'],
+      '#labels > #states': ['opacity', 'fill', 'stroke', 'stroke-width', 'text-shadow', 'data-size', 'font-size', 'data-font', 'font-family', 'filter'],
+      '#labels > #addedLabels': ['opacity', 'fill', 'stroke', 'stroke-width', 'text-shadow', 'data-size', 'font-size', 'data-font', 'font-family', 'filter'],
+      '#fogging': ['opacity', 'fill', 'filter']
     };
 
     for (const selector in attributes) {
@@ -1133,7 +1142,7 @@ function addStylePreset() {
       style[selector] = {};
       for (const attr of attributes[selector]) {
         let value = el.style[attr] || el.getAttribute(attr);
-        if (attr === "font-size" && el.hasAttribute("data-size")) value = el.getAttribute("data-size");
+        if (attr === 'font-size' && el.hasAttribute('data-size')) value = el.getAttribute('data-size');
         style[selector][attr] = parseValue(value);
       }
     }
@@ -1160,41 +1169,41 @@ function addStylePreset() {
   }
 
   function saveStyle() {
-    if (!styleSaverJSON.value) return tip("Please provide a style JSON", false, "error");
-    if (!JSON.isValid(styleSaverJSON.value)) return tip("JSON string is not valid, please check the format", false, "error");
-    if (!styleSaverName.value) return tip("Please provide a preset name", false, "error");
-    if (styleSaverTip.innerHTML === "default") return tip("You cannot overwrite default preset, please change the name", false, "error");
+    if (!styleSaverJSON.value) return tip('Please provide a style JSON', false, 'error');
+    if (!JSON.isValid(styleSaverJSON.value)) return tip('JSON string is not valid, please check the format', false, 'error');
+    if (!styleSaverName.value) return tip('Please provide a preset name', false, 'error');
+    if (styleSaverTip.innerHTML === 'default') return tip('You cannot overwrite default preset, please change the name', false, 'error');
 
-    const preset = "style" + styleSaverName.value;
+    const preset = 'style' + styleSaverName.value;
     applyOption(stylePreset, preset, styleSaverName.value); // add option
     localStorage.setItem('presetStyle', preset); // mark preset as default
     localStorage.setItem(preset, styleSaverJSON.value); // save preset
-    $("#styleSaver").dialog("close");
-    removeStyleButton.style.display = "inline-block";
-    tip("Style preset is saved", false, "success", 4000);
+    $('#styleSaver').dialog('close');
+    removeStyleButton.style.display = 'inline-block';
+    tip('Style preset is saved', false, 'success', 4000);
   }
 
   function styleDownload() {
-    if (!styleSaverJSON.value) return tip("Please provide a style JSON", false, "error");
-    if (!JSON.isValid(styleSaverJSON.value)) return tip("JSON string is not valid, please check the format", false, "error");
-    if (!styleSaverName.value) return tip("Please provide a preset name", false, "error");
+    if (!styleSaverJSON.value) return tip('Please provide a style JSON', false, 'error');
+    if (!JSON.isValid(styleSaverJSON.value)) return tip('JSON string is not valid, please check the format', false, 'error');
+    if (!styleSaverName.value) return tip('Please provide a preset name', false, 'error');
 
     const data = styleSaverJSON.value;
-    if (!data) return tip("Please provide a style JSON", false, "error");
-    downloadFile(data, "style" + styleSaverName.value + ".json", "application/json");
+    if (!data) return tip('Please provide a style JSON', false, 'error');
+    downloadFile(data, 'style' + styleSaverName.value + '.json', 'application/json');
   }
 
   function styleUpload(dataLoaded) {
-    if (!dataLoaded) return tip("Cannot load the file. Please check the data format", false, "error");
+    if (!dataLoaded) return tip('Cannot load the file. Please check the data format', false, 'error');
     const data = JSON.stringify(JSON.parse(dataLoaded), null, 2);
     styleSaverJSON.value = data;
   }
 }
 
 function removeStylePreset() {
-  if (stylePreset.selectedOptions[0].dataset.system) return tip("Cannot remove system preset", false, "error");
+  if (stylePreset.selectedOptions[0].dataset.system) return tip('Cannot remove system preset', false, 'error');
 
-  localStorage.removeItem("presetStyle");
+  localStorage.removeItem('presetStyle');
   localStorage.removeItem(stylePreset.value);
   stylePreset.selectedOptions[0].remove();
   removeStyleButton.style.display = 'none';
@@ -1205,12 +1214,12 @@ mapFilters.addEventListener('click', applyMapFilter);
 function applyMapFilter(event) {
   if (event.target.tagName !== 'BUTTON') return;
   const button = event.target;
-  svg.attr("data-filter", null).attr("filter", null);
-  if (button.classList.contains("pressed")) return button.classList.remove("pressed");
+  svg.attr('data-filter', null).attr('filter', null);
+  if (button.classList.contains('pressed')) return button.classList.remove('pressed');
 
-  mapFilters.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
-  button.classList.add("pressed");
-  svg.attr("data-filter", button.id).attr("filter", "url(#filter-" + button.id + ")");
+  mapFilters.querySelectorAll('.pressed').forEach((button) => button.classList.remove('pressed'));
+  button.classList.add('pressed');
+  svg.attr('data-filter', button.id).attr('filter', 'url(#filter-' + button.id + ')');
 }
 
 function updateMapFilter() {
