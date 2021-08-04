@@ -1273,17 +1273,26 @@ div.slider .ui-slider-handle {
   display: none !important;
 }
 
-.burgs-table {
-  max-height: 75vh;
-  overflow-x: hidden;
-  overflow-y: scroll;
-}
-
 .table {
   max-height: 75vh;
   max-width: 75vw;
   overflow-x: hidden;
   overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.table::-webkit-scrollbar {
+  width: 6px;
+  background-color: transparent;
+}
+
+.table::-webkit-scrollbar-thumb {
+  background-color: #aaa;
+  border-radius: 6px;
+}
+
+.table::-webkit-scrollbar-thumb:hover {
+  background: #666;
 }
 
 .overflow {
