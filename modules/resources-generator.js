@@ -615,5 +615,9 @@ window.Resources = (function () {
   const getStroke = (color) => d3.color(color).darker(2).hex();
   const get = (i) => pack.resources.find((resource) => resource.i === i);
 
+<<<<<<< HEAD
   return {generate, methods, models, getStroke, get};
+=======
+  return {generate, getDefault, defaultModels, methods, getStroke, get};
+>>>>>>> fe421bcd (resources IIFE module)
 })();
