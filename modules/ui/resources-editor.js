@@ -155,14 +155,14 @@ function editResources() {
   }
 
   function changeModel(resource, line, el) {
-    const defaultModels = Resources.defaultModels;
+    const defaultModels = FMG.data.resourceModels;
     const model = line.dataset.model;
     const modelOptions = Object.keys(defaultModels)
       .sort()
       .map((m) => `<option ${m === model ? 'selected' : ''} value="${m}">${m.replaceAll('_', ' ')}</option>`)
       .join('');
     const wikiURL = 'https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Resources:-spread-functions';
-    const onSelect = "resouceModelFunction.innerHTML = Resources.defaultModels[this.value] || ' '; resouceModelCustomName.value = ''; resouceModelCustomFunction.value = ''";
+    const onSelect = "resouceModelFunction.innerHTML = FMG.data.resourceModels[this.value] || ' '; resouceModelCustomName.value = ''; resouceModelCustomFunction.value = ''";
 
     alertMessage.innerHTML = `
       <fieldset data-tip="Select one of the predefined spread models from the list" style="border: 1px solid #999; margin-bottom: 1em">
