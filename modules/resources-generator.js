@@ -1,15 +1,6 @@
-(function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? (module.exports = factory()) : typeof define === 'function' && define.amd ? define(factory) : (global.Resources = factory());
-})(this, function () {
-  'use strict';
+'use strict';
 
-  // TODO
-  // apply logic on heightmap edit
-  // apply logic on burgs regeneration
-  // apply logic on population recalculation
-  // apply logic on save
-  // apply logic on load
-
+window.Resources = (function () {
   let cells, cellId;
 
   const getDefault = function () {
@@ -144,4 +135,4 @@
   const get = (i) => pack.resources.find((resource) => resource.i === i);
 
   return {generate, getDefault, defaultModels, methods, getStroke, get};
-});
+})();
