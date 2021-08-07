@@ -1639,6 +1639,15 @@ div.states > div.resourceBonus > span.icon-male {
   line-height: 1.4em;
 }
 
+#burgBody {
+  display: flex;
+  padding-bottom: 0.3em;
+}
+
+#burgBody > div {
+  width: 18em;
+}
+
 #burgBody div.label {
   display: inline-block;
   width: 6em;
@@ -1653,7 +1662,7 @@ div.states > div.resourceBonus > span.icon-male {
 #burgBody > div > div,
 #riverBody > div,
 #lakeBody > div {
-  padding: 0.1em;
+  line-height: 1.8em;
 }
 
 #riverBody div.label,

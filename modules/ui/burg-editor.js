@@ -57,10 +57,6 @@ function editBurg(id) {
   function updateBurgValues() {
     const id = +elSelected.attr('data-id');
     const b = pack.burgs[id];
-    const province = pack.cells.province[b.cell];
-    const provinceName = province ? pack.provinces[province].fullName + ', ' : '';
-    const stateName = pack.states[b.state].fullName || pack.states[b.state].name;
-    document.getElementById('burgProvinceAndState').innerHTML = provinceName + stateName;
 
     document.getElementById("burgName").value = b.name;
     document.getElementById("burgType").value = b.type || "Generic";
@@ -98,6 +94,18 @@ function editBurg(id) {
     const deals = pack.trade.deals;
     document.getElementById("burgExport").innerHTML = getExport(deals.filter((deal) => deal.exporter === b.i));
     document.getElementById("burgImport").innerHTML = '';
+
+    // economics block
+    let productionHTML = '';
+    for (const resourceId in b.production) {
+      const {name, icon} = Resources.get(+resourceId);
+      const production = b.production[resourceId];
+      productionHTML += `<span data-tip="${name}: ${production}">
+        <svg class="resIcon"><use href="#${icon}"></svg>
+        <span style="margin: 0 0.2em 0 -0.2em">${production}</span>
+      </span>`;
+    }
+    document.getElementById('burgProduction').innerHTML = productionHTML;
 
     //toggle lock
     updateBurgLockIcon();
