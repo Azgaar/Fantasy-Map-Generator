@@ -57,10 +57,6 @@ function editBurg(id) {
   function updateBurgValues() {
     const id = +elSelected.attr('data-id');
     const b = pack.burgs[id];
-    const province = pack.cells.province[b.cell];
-    const provinceName = province ? pack.provinces[province].fullName + ', ' : '';
-    const stateName = pack.states[b.state].fullName || pack.states[b.state].name;
-    document.getElementById('burgProvinceAndState').innerHTML = provinceName + stateName;
 
     document.getElementById("burgName").value = b.name;
     document.getElementById("burgType").value = b.type || "Generic";
