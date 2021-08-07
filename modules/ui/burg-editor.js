@@ -100,9 +100,10 @@ function editBurg(id) {
     // economics block
     let productionHTML = '';
     for (const resourceId in b.production) {
-      const {name, icon} = Resources.get(+resourceId);
+      const {name, unit, icon} = Resources.get(+resourceId);
       const production = b.production[resourceId];
-      productionHTML += `<span data-tip="${name}: ${production}">
+      const unitName = production > 1 ? unit + 's' : unit;
+      productionHTML += `<span data-tip="${name}: ${production} ${unitName}">
         <svg class="resIcon"><use href="#${icon}"></svg>
         <span style="margin: 0 0.2em 0 -0.2em">${production}</span>
       </span>`;
