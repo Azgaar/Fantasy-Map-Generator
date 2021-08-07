@@ -58,15 +58,12 @@ window.HeightmapTemplates = (function () {
     Strait 2 vertical 0 0
     Strait 2 horizontal 0 0`;
 
-  const atoll = `Add 11 all 0 0
-    Range 2-3 40-60 20-80 20-80
-    Hill 5 15-20 10-90 30-70
-    Hill 2 10-15 10-30 20-80
-    Hill 2 10-15 60-90 20-80
-    Smooth 3 0 0 0
-    Trough 10 20-30 5-95 5-95
-    Strait 2 vertical 0 0
-    Strait 2 horizontal 0 0`;
+  const atoll = `Hill 1 75-80 50-60 45-55
+    Hill 1.5 30-50 25-75 30-70
+    Hill .5 30-50 25-35 30-70
+    Smooth 1 0 0 0
+    Multiply 0.2 25-100 0 0
+    Hill .5 10-20 50-55 48-52`;
 
   const mediterranean = `Range 3-4 30-50 0-100 0-10
     Range 3-4 30-50 0-100 90-100
