@@ -10,6 +10,7 @@ window.FMG.data.resources = [
     value: 2,
     chance: 4,
     model: 'Any_forest',
+    unit: 'pile',
     bonus: {fleet: 2, defence: 1},
     culture: {Hunting: 2}
   },
@@ -22,6 +23,7 @@ window.FMG.data.resources = [
     value: 2,
     chance: 4,
     model: 'Hills',
+    unit: 'pallet',
     bonus: {prestige: 1, defence: 2},
     culture: {Hunting: 0.6, Nomadic: 0.6}
   },
@@ -34,6 +36,7 @@ window.FMG.data.resources = [
     value: 7,
     chance: 1,
     model: 'Mountains',
+    unit: 'pallet',
     bonus: {prestige: 2},
     culture: {Highland: 2}
   },
@@ -46,6 +49,7 @@ window.FMG.data.resources = [
     value: 4,
     chance: 4,
     model: 'Mountains_and_wetlands',
+    unit: 'wagon',
     bonus: {artillery: 1, infantry: 1, defence: 1},
     culture: {Highland: 2}
   },
@@ -58,6 +62,7 @@ window.FMG.data.resources = [
     value: 5,
     chance: 3,
     model: 'Mountains',
+    unit: 'wagon',
     bonus: {artillery: 2, defence: 1, prestige: 1},
     culture: {Highland: 2}
   },
@@ -70,6 +75,7 @@ window.FMG.data.resources = [
     value: 4,
     chance: 3,
     model: 'Mountains',
+    unit: 'wagon',
     bonus: {artillery: 1, defence: 1},
     culture: {Highland: 2}
   },
@@ -82,6 +88,7 @@ window.FMG.data.resources = [
     value: 8,
     chance: 3,
     model: 'Mountains',
+    unit: 'bullion',
     bonus: {prestige: 2},
     culture: {Hunting: 0.5, Highland: 2, Nomadic: 0.5}
   },
@@ -94,6 +101,7 @@ window.FMG.data.resources = [
     value: 15,
     chance: 1,
     model: 'Headwaters',
+    unit: 'bullion',
     bonus: {prestige: 3},
     culture: {Highland: 2, Nomadic: 0.5}
   },
@@ -106,6 +114,7 @@ window.FMG.data.resources = [
     value: 1,
     chance: 4,
     model: 'More_habitable',
+    unit: 'wain',
     bonus: {population: 4},
     culture: {River: 3, Lake: 2, Nomadic: 0.5}
   },
@@ -118,6 +127,7 @@ window.FMG.data.resources = [
     value: 2,
     chance: 4,
     model: 'Pastures_and_temperate_forest',
+    unit: 'head',
     bonus: {population: 2},
     culture: {Nomadic: 3}
   },
@@ -130,6 +140,7 @@ window.FMG.data.resources = [
     value: 1,
     chance: 2,
     model: 'Marine_and_rivers',
+    unit: 'wain',
     bonus: {population: 2},
     culture: {River: 2, Lake: 3, Naval: 3, Nomadic: 0.5}
   },
@@ -142,6 +153,7 @@ window.FMG.data.resources = [
     value: 2,
     chance: 3,
     model: 'Any_forest',
+    unit: 'wain',
     bonus: {archers: 2, population: 1},
     culture: {Naval: 0.6, Nomadic: 2, Hunting: 3}
   },
@@ -154,6 +166,7 @@ window.FMG.data.resources = [
     value: 2,
     chance: 3,
     model: 'Tropical_forests',
+    unit: 'barrel',
     bonus: {population: 1, prestige: 1},
     culture: {Highland: 1.2, Nomadic: 0.5}
   },
@@ -166,6 +179,7 @@ window.FMG.data.resources = [
     value: 2,
     chance: 3,
     model: 'Tropical_forests',
+    unit: 'barrel',
     bonus: {population: 1},
     culture: {Generic: 0.8, Nomadic: 0.5}
   },
@@ -178,6 +192,7 @@ window.FMG.data.resources = [
     value: 2,
     chance: 3,
     model: 'Temperate_and_boreal_forests',
+    unit: 'barrel',
     bonus: {population: 1},
     culture: {Hunting: 2, Highland: 2}
   },
@@ -190,6 +205,7 @@ window.FMG.data.resources = [
     value: 3,
     chance: 3,
     model: 'Arid_land_and_salt_lakes',
+    unit: 'bag',
     bonus: {population: 1, defence: 1},
     culture: {Naval: 1.2, Nomadic: 1.4}
   },
@@ -202,6 +218,7 @@ window.FMG.data.resources = [
     value: 2,
     chance: 2,
     model: 'Hot_desert',
+    unit: 'wain',
     bonus: {population: 1},
     culture: {Hunting: 0.8, Highland: 0.8}
   },
@@ -214,6 +231,7 @@ window.FMG.data.resources = [
     value: 5,
     chance: 4,
     model: 'Grassland_and_cold_desert',
+    unit: 'head',
     bonus: {cavalry: 2},
     culture: {Nomadic: 3}
   },
@@ -226,6 +244,7 @@ window.FMG.data.resources = [
     value: 7,
     chance: 2,
     model: 'Hot_biomes',
+    unit: 'head',
     bonus: {cavalry: 1},
     culture: {Nomadic: 1.2, Highland: 0.5}
   },
@@ -238,6 +257,7 @@ window.FMG.data.resources = [
     value: 7,
     chance: 3,
     model: 'Deserts',
+    unit: 'head',
     bonus: {cavalry: 1},
     culture: {Nomadic: 3}
   },
@@ -250,6 +270,7 @@ window.FMG.data.resources = [
     value: 2,
     chance: 3,
     model: 'Deciduous_forests',
+    unit: 'wain',
     bonus: {fleet: 2},
     culture: {River: 2, Lake: 2, Naval: 2}
   },
@@ -262,6 +283,7 @@ window.FMG.data.resources = [
     value: 16,
     chance: 2,
     model: 'Tropical_waters',
+    unit: 'pearl',
     bonus: {prestige: 1},
     culture: {Naval: 3}
   },
@@ -274,6 +296,7 @@ window.FMG.data.resources = [
     value: 17,
     chance: 2,
     model: 'Mountains',
+    unit: 'stone',
     bonus: {prestige: 1},
     culture: {Naval: 2}
   },
@@ -286,6 +309,7 @@ window.FMG.data.resources = [
     value: 6,
     chance: 0.5,
     model: 'Habitable_biome_or_marine',
+    unit: 'bag',
     bonus: {prestige: 1},
     culture: {Generic: 2}
   },
@@ -298,6 +322,7 @@ window.FMG.data.resources = [
     value: 12,
     chance: 2,
     model: 'Hot_desert_and_tropical_forest',
+    unit: 'chest',
     bonus: {prestige: 2},
     culture: {Generic: 2}
   },
@@ -310,6 +335,7 @@ window.FMG.data.resources = [
     value: 15,
     chance: 1,
     model: 'Tropical_rainforest',
+    unit: 'bolt',
     bonus: {prestige: 2},
     culture: {River: 1.2, Lake: 1.2}
   },
@@ -322,6 +348,7 @@ window.FMG.data.resources = [
     value: 15,
     chance: 2,
     model: 'Tropical_rainforest',
+    unit: 'chest',
     bonus: {prestige: 2},
     culture: {Generic: 2}
   },
@@ -334,6 +361,7 @@ window.FMG.data.resources = [
     value: 7,
     chance: 2,
     model: 'Foresty_seashore',
+    unit: 'stone',
     bonus: {prestige: 1},
     culture: {Generic: 2}
   },
@@ -346,6 +374,7 @@ window.FMG.data.resources = [
     value: 6,
     chance: 2,
     model: 'Boreal_forests',
+    unit: 'pelt',
     bonus: {prestige: 1},
     culture: {Hunting: 3}
   },
@@ -358,6 +387,7 @@ window.FMG.data.resources = [
     value: 2,
     chance: 3,
     model: 'Pastures_and_temperate_forest',
+    unit: 'head',
     bonus: {infantry: 1},
     culture: {Naval: 2, Highland: 2}
   },
@@ -370,6 +400,7 @@ window.FMG.data.resources = [
     value: 5,
     chance: 2,
     model: 'Less_habitable_seashore',
+    unit: 'slave',
     bonus: {population: 2},
     culture: {Naval: 2, Nomadic: 3, Hunting: 0.6, Highland: 0.4}
   },
@@ -382,6 +413,7 @@ window.FMG.data.resources = [
     value: 2,
     chance: 3,
     model: 'Any_forest',
+    unit: 'barrel',
     bonus: {fleet: 1},
     culture: {Hunting: 3}
   },
@@ -394,6 +426,7 @@ window.FMG.data.resources = [
     value: 3,
     chance: 2,
     model: 'Less_habitable_biomes',
+    unit: 'barrel',
     bonus: {artillery: 3},
     culture: {Generic: 2}
   },
@@ -406,6 +439,7 @@ window.FMG.data.resources = [
     value: 2,
     chance: 3,
     model: 'Hills',
+    unit: 'wain',
     bonus: {artillery: 2},
     culture: {Generic: 2}
   },
@@ -418,6 +452,7 @@ window.FMG.data.resources = [
     value: 3,
     chance: 2,
     model: 'Less_habitable_biomes',
+    unit: 'barrel',
     bonus: {artillery: 1},
     culture: {Generic: 2, Nomadic: 2}
   },
@@ -430,6 +465,7 @@ window.FMG.data.resources = [
     value: 10,
     chance: 2,
     model: 'Tropical_rainforest',
+    unit: 'pile',
     bonus: {prestige: 1},
     culture: {Generic: 2}
   },
@@ -442,6 +478,7 @@ window.FMG.data.resources = [
     value: 2,
     chance: 3,
     model: 'Arctic_waters',
+    unit: 'barrel',
     bonus: {population: 1},
     culture: {Naval: 2}
   },
@@ -454,6 +491,7 @@ window.FMG.data.resources = [
     value: 3,
     chance: 3,
     model: 'Tropical_rainforest',
+    unit: 'bag',
     bonus: {population: 1},
     culture: {Lake: 2, River: 2}
   },
@@ -466,6 +504,7 @@ window.FMG.data.resources = [
     value: 5,
     chance: 3,
     model: 'Hilly_tropical_rainforest',
+    unit: 'bag',
     bonus: {prestige: 1},
     culture: {Lake: 2, River: 2, Highland: 2}
   },
@@ -478,6 +517,7 @@ window.FMG.data.resources = [
     value: 5,
     chance: 2,
     model: 'Tropical_rainforest',
+    unit: 'bag',
     bonus: {prestige: 1},
     culture: {Lake: 2, River: 2}
   }
