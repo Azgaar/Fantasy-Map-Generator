@@ -1966,12 +1966,12 @@
     </div>
 
     <div id="burgEditor" class="dialog" style="display: none">
+      <div id="burgBody">
+        <div style="width:12em; height:100%">
+          <svg viewBox="0 0 200 200"><use id="burgEmblem"></use></svg>
+        </div>
 
-      <div id="burgBody" style="padding-bottom: .3em">
-        <svg viewBox="0 0 200 200" width="14em" height="14em"><use id="burgEmblem"></use></svg>
-        <div style="float: right">
-          <div id="burgProvinceAndState" style="font-style: italic; max-width: 16em"></div>
-
+        <div>
           <div>
             <div class="label">Name:</div>
             <input id="burgName" data-tip="Type to rename the burg" autocorrect="off" spellcheck="false" style="width: 8em">
@@ -2003,6 +2003,16 @@
             <input id="burgPopulation" type="number" min=0 step=1 style="width: 8em">
           </div>
 
+          <div id="Burg state. Can be changed via States Editor">
+            <div class="label">State:</div>
+            <span id="burgState"></span>
+          </div>
+
+          <div id="Burg province. Can be changed via Provinces Editor">
+            <div class="label">Province:</div>
+            <span id="burgProvince"></span>
+          </div>
+
           <div>
             <div class="label">Features:</div>
             <span id="burgCapital" data-tip="Shows whether the burg is a state capital. Click to toggle" data-feature="capital" class="burgFeature icon-star"></span>
@@ -2012,6 +2022,18 @@
             <span id="burgPlaza" data-tip="Shows whether the burg is a trade center (has big marketplace). Click to toggle" data-feature="plaza" class="burgFeature icon-store" style="font-size: 1em"></span>
             <span id="burgTemple" data-tip="Shows whether the burg is a religious center. Click to toggle" data-feature="temple" class="burgFeature icon-chess-bishop" style="font-size: 1.1em; margin-left: 3px"></span>
             <span id="burgShanty" data-tip="Shows whether the burg has a shanty town. Click to toggle" data-feature="shanty" class="burgFeature icon-campground" style="font-size: 1em"></span>
+          </div>
+        </div>
+
+        <div>
+          <div>
+            <div class="label">Production:</div>
+            <span id="burgProduction"></span>
+          </div>
+
+          <div>
+            <div class="label">Export:</div>
+            <span id="burgExport"></span>
           </div>
 
           <div data-tip="Burg mean annual temperature and real-world city for comparison">

@@ -10,7 +10,7 @@ function editBurg(id) {
   burgLabels.selectAll('text').call(d3.drag().on('start', dragBurgLabel)).classed('draggable', true);
   updateBurgValues();
 
-  const my = id || d3.event.target.tagName === 'text' ? 'center bottom-20' : 'center top+20';
+  const my = id || d3.event.target.tagName === 'text' ? 'center bottom-40' : 'center top+40';
   const at = id ? 'center' : d3.event.target.tagName === 'text' ? 'top' : 'bottom';
   const of = id ? 'svg' : d3.event.target;
 
@@ -57,14 +57,17 @@ function editBurg(id) {
   function updateBurgValues() {
     const id = +elSelected.attr('data-id');
     const b = pack.burgs[id];
-    const province = pack.cells.province[b.cell];
-    const provinceName = province ? pack.provinces[province].fullName + ', ' : '';
-    const stateName = pack.states[b.state].fullName || pack.states[b.state].name;
-    document.getElementById('burgProvinceAndState').innerHTML = provinceName + stateName;
 
     document.getElementById('burgName').value = b.name;
     document.getElementById('burgType').value = b.type || 'Generic';
     document.getElementById('burgPopulation').value = rn(b.population * populationRate * urbanization);
+
+    const stateName = pack.states[b.state].fullName || pack.states[b.state].name;
+    const province = pack.cells.province[b.cell];
+    const provinceName = province ? pack.provinces[province].fullName : '';
+    document.getElementById('burgState').innerHTML = stateName;
+    document.getElementById('burgProvince').innerHTML = provinceName;
+
     document.getElementById('burgEditAnchorStyle').style.display = +b.port ? 'inline-block' : 'none';
 
     // update list and select culture
@@ -93,6 +96,18 @@ function editBurg(id) {
     else document.getElementById('burgTemple').classList.add('inactive');
     if (b.shanty) document.getElementById('burgShanty').classList.remove('inactive');
     else document.getElementById('burgShanty').classList.add('inactive');
+
+    // economics block
+    let productionHTML = '';
+    for (const resourceId in b.production) {
+      const {name, icon} = Resources.get(+resourceId);
+      const production = b.production[resourceId];
+      productionHTML += `<span data-tip="${name}: ${production}">
+        <svg class="resIcon"><use href="#${icon}"></svg>
+        <span style="margin: 0 0.2em 0 -0.2em">${production}</span>
+      </span>`;
+    }
+    document.getElementById('burgProduction').innerHTML = productionHTML;
 
     //toggle lock
     updateBurgLockIcon();

@@ -1,42 +1,42 @@
 'use strict';
 
 window.Production = (function () {
-  const BONUS_PRODUCTION = 5;
+  const BONUS_PRODUCTION = 4;
   const BIOME_PRODUCTION = [
-    [{resource: 11, production: 1}], // marine: fish 1
-    [{resource: 2, production: 0.5}], // hot desert: stone 0.5
-    [{resource: 2, production: 0.5}], // cold desert: stone 0.5
+    [{resource: 11, production: 0.75}], // marine: fish
+    [{resource: 2, production: 0.5}], // hot desert: stone
+    [{resource: 2, production: 0.5}], // cold desert: stone
     [
-      {resource: 12, production: 0.75},
-      {resource: 10, production: 0.75}
+      {resource: 12, production: 0.4},
+      {resource: 10, production: 0.4}
     ], // savanna: game 0.75, cattle 0.75
-    [{resource: 10, production: 1}], // grassland: cattle 1
-    [{resource: 9, production: 1}], // tropical seasonal forest: grain 1
+    [{resource: 10, production: 0.5}], // grassland: cattle
+    [{resource: 9, production: 0.5}], // tropical seasonal forest: grain
     [
-      {resource: 9, production: 1},
-      {resource: 1, production: 1}
-    ], // temperate deciduous forest: grain 1, wood 1
+      {resource: 9, production: 0.5},
+      {resource: 1, production: 0.5}
+    ], // temperate deciduous forest: grain, wood
     [
-      {resource: 9, production: 1},
-      {resource: 1, production: 1}
-    ], // tropical rainforest: grain 1, wood 1
+      {resource: 9, production: 0.5},
+      {resource: 1, production: 0.5}
+    ], // tropical rainforest: grain, wood
     [
-      {resource: 9, production: 1},
-      {resource: 1, production: 1}
-    ], // temperate rainforest: grain 1, wood 1
+      {resource: 9, production: 0.5},
+      {resource: 1, production: 0.5}
+    ], // temperate rainforest: grain, wood
     [
-      {resource: 1, production: 1},
-      {resource: 12, production: 0.75}
-    ], // taiga: wood 1, game 0.75
-    [{resource: 29, production: 0.5}], // tundra: furs 0.5
+      {resource: 1, production: 0.5},
+      {resource: 12, production: 0.4}
+    ], // taiga: wood, game
+    [{resource: 29, production: 0.5}], // tundra: furs
     [], // glacier: nothing
     [
-      {resource: 4, production: 0.5},
-      {resource: 12, production: 0.75}
-    ] // wetland: iron .5, game .75
+      {resource: 4, production: 0.4},
+      {resource: 12, production: 0.4}
+    ] // wetland: iron, game
   ];
-  const RIVER_PRODUCTION = [{resource: 11, production: 1.5}]; // fish 1.5
-  const HILLS_PRODUCTION = [{resource: 34, production: 1}]; // coal 1
+  const RIVER_PRODUCTION = [{resource: 11, production: 0.5}]; // fish
+  const HILLS_PRODUCTION = [{resource: 34, production: 0.5}]; // coal
   const FOOD_MULTIPLIER = 3;
 
   const collectResources = () => {
