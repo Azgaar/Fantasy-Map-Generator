@@ -5,28 +5,22 @@ window.BurgsAndStates = (function () {
     const {cells, cultures} = pack;
     const n = cells.i.length;
 
-    cells.burg = new Uint16Array(n); // cell burg
-    cells.road = new Uint16Array(n); // cell road power
-    cells.crossroad = new Uint16Array(n); // cell crossroad power
+    cells.burg = new Uint16Array(n);
+    pack.burgs = placeCapitals();
+    const {burgs} = pack;
 
-    const burgs = (pack.burgs = placeCapitals());
     pack.states = createStates();
-    const capitalRoutes = Routes.getRoads();
 
     placeTowns();
     expandStates();
     normalizeStates();
-    const townRoutes = Routes.getTrails();
     specifyBurgs();
-
-    const oceanRoutes = Routes.getSearoutes();
 
     collectStatistics();
     assignColors();
 
     generateCampaigns();
     generateDiplomacy();
-    Routes.draw(capitalRoutes, townRoutes, oceanRoutes);
     drawBurgs();
 
     function placeCapitals() {
@@ -74,7 +68,7 @@ window.BurgsAndStates = (function () {
       return burgs;
     }
 
-    // For each capital create a state
+    // for each capital create a state
     function createStates() {
       TIME && console.time("createStates");
       const states = [{i: 0, name: "Neutrals"}];
@@ -138,9 +132,10 @@ window.BurgsAndStates = (function () {
       while (burgsAdded < burgsNumber && spacing > 1) {
         for (let i = 0; burgsAdded < burgsNumber && i < sorted.length; i++) {
           if (cells.burg[sorted[i]]) continue;
-          const cell = sorted[i],
-            x = cells.p[cell][0],
-            y = cells.p[cell][1];
+
+          const cell = sorted[i];
+          const [x, y] = cells.p[cell];
+
           const s = spacing * gauss(1, 0.3, 0.2, 2, 2); // randomize to make placement not uniform
           if (burgsTree.find(x, y, s) !== undefined) continue; // to close to existing burg
           const burg = burgs.length;
@@ -184,8 +179,10 @@ window.BurgsAndStates = (function () {
         b.port = port ? f : 0; // port is defined by water body id it lays on
       } else b.port = 0;
 
-      // define burg population (keep urbanization at about 10% rate)
-      b.population = rn(Math.max((cells.s[i] + cells.road[i] / 2) / 8 + b.i / 1000 + (i % 100) / 1000, 0.1), 3);
+      // define burg population
+      const primaryPopulation = cells.s[i] * POPULATION_MULTIPLIER;
+      const secondaryPopulation = b.i / 1000 + (i % 100) / 1000;
+      b.population = rn(Math.max(primaryPopulation + secondaryPopulation, 0.1), 3);
       if (b.capital) b.population = rn(b.population * 1.3, 3); // increase capital population
 
       if (b.port) {

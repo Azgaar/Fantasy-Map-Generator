@@ -111,9 +111,7 @@ window.Production = (function () {
   };
 
   const defineExport = () => {
-    const {cells, burgs} = pack;
-
-    for (const burg of burgs) {
+    for (const burg of pack.burgs) {
       if (!burg.i || burg.removed) continue;
       const {population, production: resourcePool} = burg;
       const localUsage = Math.ceil(population);
