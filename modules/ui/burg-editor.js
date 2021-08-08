@@ -90,14 +90,10 @@ function editBurg(id) {
     if (b.shanty) document.getElementById("burgShanty").classList.remove("inactive");
     else document.getElementById("burgShanty").classList.add("inactive");
     // economics block
-    document.getElementById("burgProduction").innerHTML = getProduction(b.produced);
+    document.getElementById('burgProduction').innerHTML = getProduction(b.produced);
     const deals = pack.trade.deals;
-    document.getElementById("burgExport").innerHTML = getExport(deals.filter((deal) => deal.exporter === b.i));
-    document.getElementById("burgImport").innerHTML = '';
-
-    // economics block
-    document.getElementById('burgProduction').innerHTML = getProduction(b.production);
-    document.getElementById('burgExport').innerHTML = getProduction(b.export);
+    document.getElementById('burgExport').innerHTML = getExport(deals.filter((deal) => deal.exporter === b.i));
+    document.getElementById('burgImport').innerHTML = '';
 
     //toggle lock
     updateBurgLockIcon();

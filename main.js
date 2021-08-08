@@ -1597,14 +1597,7 @@ function rankCells() {
     // cell rural population is suitability adjusted by cell area
     cells.pop[i] = s > 0 ? (s * POP_BALANCER * cells.area[i]) / areaMean : 0;
     cells.s[i] = s + resBonus;
-
-    // debug.append('text').attr('x', cells.p[i][0]).attr('y', cells.p[i][1]).text(cells.s[i]);
   }
-
-  console.log(resBonuses);
-  console.log(d3.max(resBonuses));
-  console.log(d3.mean(resBonuses));
-  console.log(d3.median(resBonuses.map((v) => rn(v))));
 
   TIME && console.timeEnd('rankCells');
 }
