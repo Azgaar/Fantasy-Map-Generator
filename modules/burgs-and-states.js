@@ -5,28 +5,22 @@ window.BurgsAndStates = (function () {
     const {cells, cultures} = pack;
     const n = cells.i.length;
 
-    cells.burg = new Uint16Array(n); // cell burg
-    cells.road = new Uint16Array(n); // cell road power
-    cells.crossroad = new Uint16Array(n); // cell crossroad power
+    cells.burg = new Uint16Array(n);
+    pack.burgs = placeCapitals();
+    const {burgs} = pack;
 
-    const burgs = (pack.burgs = placeCapitals());
     pack.states = createStates();
-    const capitalRoutes = Routes.getRoads();
 
     placeTowns();
     expandStates();
     normalizeStates();
-    const townRoutes = Routes.getTrails();
     specifyBurgs();
-
-    const oceanRoutes = Routes.getSearoutes();
 
     collectStatistics();
     assignColors();
 
     generateCampaigns();
     generateDiplomacy();
-    Routes.draw(capitalRoutes, townRoutes, oceanRoutes);
     drawBurgs();
 
     function placeCapitals() {
@@ -72,7 +66,7 @@ window.BurgsAndStates = (function () {
       return burgs;
     }
 
-    // For each capital create a state
+    // for each capital create a state
     function createStates() {
       TIME && console.time('createStates');
       const states = [{i: 0, name: 'Neutrals'}];
@@ -121,9 +115,10 @@ window.BurgsAndStates = (function () {
       while (burgsAdded < burgsNumber && spacing > 1) {
         for (let i = 0; burgsAdded < burgsNumber && i < sorted.length; i++) {
           if (cells.burg[sorted[i]]) continue;
-          const cell = sorted[i],
-            x = cells.p[cell][0],
-            y = cells.p[cell][1];
+
+          const cell = sorted[i];
+          const [x, y] = cells.p[cell];
+
           const s = spacing * gauss(1, 0.3, 0.2, 2, 2); // randomize to make placement not uniform
           if (burgsTree.find(x, y, s) !== undefined) continue; // to close to existing burg
           const burg = burgs.length;
@@ -149,10 +144,9 @@ window.BurgsAndStates = (function () {
   // define burg coordinates, coa, port status and define details
   const specifyBurgs = function () {
     TIME && console.time('specifyBurgs');
-    const cells = pack.cells,
-      vertices = pack.vertices,
-      features = pack.features,
-      temp = grid.cells.temp;
+    const {cells, features} = pack;
+    const temp = grid.cells.temp;
+    const POPULATION_MULTIPLIER = 0.15; // to keep urbanization at about 10% rate
 
     for (const b of pack.burgs) {
       if (!b.i || b.lock) continue;
@@ -167,8 +161,10 @@ window.BurgsAndStates = (function () {
         b.port = port ? f : 0; // port is defined by water body id it lays on
       } else b.port = 0;
 
-      // define burg population (keep urbanization at about 10% rate)
-      b.population = rn(Math.max((cells.s[i] + cells.road[i] / 2) / 8 + b.i / 1000 + (i % 100) / 1000, 0.1), 3);
+      // define burg population
+      const primaryPopulation = cells.s[i] * POPULATION_MULTIPLIER;
+      const secondaryPopulation = b.i / 1000 + (i % 100) / 1000;
+      b.population = rn(Math.max(primaryPopulation + secondaryPopulation, 0.1), 3);
       if (b.capital) b.population = rn(b.population * 1.3, 3); // increase capital population
 
       if (b.port) {
@@ -230,19 +226,21 @@ window.BurgsAndStates = (function () {
   };
 
   const defineBurgFeatures = function (newburg) {
-    const cells = pack.cells;
-    pack.burgs
-      .filter((b) => (newburg ? b.i == newburg.i : b.i && !b.removed))
-      .forEach((b) => {
-        const pop = b.population;
-        b.citadel = b.capital || (pop > 50 && P(0.75)) || P(0.5) ? 1 : 0;
-        b.plaza = pop > 50 || (pop > 30 && P(0.75)) || (pop > 10 && P(0.5)) || P(0.25) ? 1 : 0;
-        b.walls = b.capital || pop > 30 || (pop > 20 && P(0.75)) || (pop > 10 && P(0.5)) || P(0.2) ? 1 : 0;
-        b.shanty = pop > 30 || (pop > 20 && P(0.75)) || (b.walls && P(0.75)) ? 1 : 0;
-        const religion = cells.religion[b.cell];
-        const theocracy = pack.states[b.state].form === 'Theocracy';
-        b.temple = (religion && theocracy) || pop > 50 || (pop > 35 && P(0.75)) || (pop > 20 && P(0.5)) ? 1 : 0;
-      });
+    const {cells, burgs} = pack;
+
+    for (const burg of burgs) {
+      if (!burg.i || burg.removed) continue;
+      if (newburg && newburg.i !== burg.i) continue;
+      const {cell, state, pop, capital} = burg;
+
+      burg.citadel = capital || (pop > 50 && P(0.75)) || P(0.5) ? 1 : 0;
+      burg.plaza = pop > 50 || (pop > 30 && P(0.75)) || (pop > 10 && P(0.5)) || P(0.25) ? 1 : 0;
+      burg.walls = capital || pop > 30 || (pop > 20 && P(0.75)) || (pop > 10 && P(0.5)) || P(0.2) ? 1 : 0;
+      burg.shanty = pop > 30 || (pop > 20 && P(0.75)) || (burg.walls && P(0.75)) ? 1 : 0;
+      const religion = cells.religion[cell];
+      const theocracy = pack.states[state].form === 'Theocracy';
+      burg.temple = (religion && theocracy) || pop > 50 || (pop > 35 && P(0.75)) || (pop > 20 && P(0.5)) ? 1 : 0;
+    }
   };
 
   const drawBurgs = function () {
