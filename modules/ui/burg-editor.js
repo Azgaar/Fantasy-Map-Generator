@@ -163,6 +163,23 @@ function editBurg(id) {
     return `${totalIncome}: ${exported.join('')}`;
   }
 
+  function getProduction(resources) {
+    let html = '';
+
+    for (const resourceId in resources) {
+      const {name, unit, icon} = Resources.get(+resourceId);
+      const production = resources[resourceId];
+      const unitName = production > 1 ? unit + 's' : unit;
+
+      html += `<span data-tip="${name}: ${production} ${unitName}">
+        <svg class="resIcon"><use href="#${icon}"></svg>
+        <span style="margin: 0 0.2em 0 -0.2em">${production}</span>
+      </span>`;
+    }
+
+    return html;
+  }
+
   // [-1; 31] °C, source: https://en.wikipedia.org/wiki/List_of_cities_by_average_temperature
   function getTemperatureLikeness(temperature) {
     if (temperature < -15) return 'nowhere in the real-world';
