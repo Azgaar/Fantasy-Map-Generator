@@ -110,22 +110,5 @@ window.Production = (function () {
     }
   };
 
-  const defineExport = () => {
-    for (const burg of pack.burgs) {
-      if (!burg.i || burg.removed) continue;
-      const {population, production: resourcePool} = burg;
-      const localUsage = Math.ceil(population);
-
-      const surplus = {};
-      for (const resourceId in resourcePool) {
-        const production = resourcePool[resourceId];
-        const extraProduction = production - localUsage;
-        if (extraProduction > 0) surplus[resourceId] = extraProduction;
-      }
-
-      burg.export = surplus;
-    }
-  };
-
-  return {collectResources, defineExport};
+  return {collectResources};
 })();
