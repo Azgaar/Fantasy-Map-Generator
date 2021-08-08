@@ -717,7 +717,13 @@ async function generate(options) {
     rankCells();
     Cultures.generate();
     Cultures.expand();
+
+    // temp
+    pack.cells.road = new Uint16Array(pack.cells.i.length);
+    pack.cells.crossroad = new Uint16Array(pack.cells.i.length);
+
     BurgsAndStates.generate();
+
     Religions.generate();
     BurgsAndStates.defineStateForms();
 
@@ -1546,8 +1552,8 @@ function getBiomeId(moisture, temperature, height) {
 function rankCells() {
   TIME && console.time('rankCells');
   const {cells, features} = pack;
-  cells.s = new Int16Array(cells.i.length); // cell suitability array
-  cells.pop = new Float32Array(cells.i.length); // cell population array
+  cells.s = new Int16Array(cells.i.length); // cell suitability score
+  cells.pop = new Float32Array(cells.i.length); // cell population
 
   const flMean = d3.median(cells.fl.filter((f) => f)) || 0;
   const flMax = d3.max(cells.fl) + d3.max(cells.conf); // to normalize flux
