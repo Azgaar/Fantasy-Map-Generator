@@ -718,17 +718,20 @@ async function generate(options) {
     Cultures.generate();
     Cultures.expand();
 
-    // temp
+    BurgsAndStates.generate();
+
+    Production.collectResources();
+
+    Trade.defineCenters();
+    Trade.exportGoods();
+    Trade.importGoods();
+
+    // temp, replace with route generator
     pack.cells.road = new Uint16Array(pack.cells.i.length);
     pack.cells.crossroad = new Uint16Array(pack.cells.i.length);
 
-    BurgsAndStates.generate();
-
     Religions.generate();
     BurgsAndStates.defineStateForms();
-
-    Production.collectResources();
-    Production.defineExport();
 
     BurgsAndStates.generateProvinces();
     BurgsAndStates.defineBurgFeatures();

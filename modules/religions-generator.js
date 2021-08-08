@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 window.Religions = (function () {
   // name generation approach and relative chance to be selected
@@ -298,9 +298,9 @@ window.Religions = (function () {
   };
 
   const forms = {
-    Folk: {Shamanism: 2, Animism: 2, "Ancestor worship": 1, Polytheism: 2},
-    Organized: {Polytheism: 5, Dualism: 1, Monotheism: 4, "Non-theism": 1},
-    Cult: {Cult: 1, "Dark Cult": 1},
+    Folk: {Shamanism: 2, Animism: 2, 'Ancestor worship': 1, Polytheism: 2},
+    Organized: {Polytheism: 5, Dualism: 1, Monotheism: 4, 'Non-theism': 1},
+    Cult: {Cult: 1, 'Dark Cult': 1},
     Heresy: {Heresy: 1}
   };
 
@@ -318,12 +318,12 @@ window.Religions = (function () {
   const types = {
     Shamanism: {Beliefs: 3, Shamanism: 2, Spirits: 1},
     Animism: {Spirits: 1, Beliefs: 1},
-    "Ancestor worship": {Beliefs: 1, Forefathers: 2, Ancestors: 2},
+    'Ancestor worship': {Beliefs: 1, Forefathers: 2, Ancestors: 2},
     Polytheism: {Deities: 3, Faith: 1, Gods: 1, Pantheon: 1},
 
     Dualism: {Religion: 3, Faith: 1, Cult: 1},
     Monotheism: {Religion: 1, Church: 1},
-    "Non-theism": {Beliefs: 3, Spirits: 1},
+    'Non-theism': {Beliefs: 3, Spirits: 1},
 
     Cult: {Cult: 4, Sect: 4, Arcanum: 1, Coterie: 1, Order: 1, Worship: 1},
     "Dark Cult": {Cult: 2, Sect: 2, Blasphemy: 1, Circle: 1, Coven: 1, Idols: 1, Occultism: 1},
@@ -343,7 +343,7 @@ window.Religions = (function () {
   };
 
   const generate = function () {
-    TIME && console.time("generateReligions");
+    TIME && console.time('generateReligions');
     const cells = pack.cells,
       states = pack.states,
       cultures = pack.cultures;
@@ -365,8 +365,8 @@ window.Religions = (function () {
       }
 
       const form = rw(forms.Folk);
-      const name = c.name + " " + rw(types[form]);
-      const deity = form === "Animism" ? null : getDeityName(c.i);
+      const name = c.name + ' ' + rw(types[form]);
+      const deity = form === 'Animism' ? null : getDeityName(c.i);
       const color = getMixedColor(c.color, 0.1, 0); // `url(#hatch${rand(8,13)})`;
       religions.push({i: c.i, name, color, culture: c.i, type: "Folk", form, deity, center: c.center, origins: [0]});
     });
@@ -398,13 +398,13 @@ window.Religions = (function () {
       const state = cells.state[center];
       const culture = cells.culture[center];
 
-      const deity = form === "Non-theism" ? null : getDeityName(culture);
+      const deity = form === 'Non-theism' ? null : getDeityName(culture);
       let [name, expansion] = getReligionName(form, deity, center);
-      if (expansion === "state" && !state) expansion = "global";
-      if (expansion === "culture" && !culture) expansion = "global";
+      if (expansion === 'state' && !state) expansion = 'global';
+      if (expansion === 'culture' && !culture) expansion = 'global';
 
-      if (expansion === "state" && Math.random() > 0.5) center = states[state].center;
-      if (expansion === "culture" && Math.random() > 0.5) center = cultures[culture].center;
+      if (expansion === 'state' && Math.random() > 0.5) center = states[state].center;
+      if (expansion === 'culture' && Math.random() > 0.5) center = cultures[culture].center;
 
       if (!cells.burg[center] && cells.c[center].some(c => cells.burg[c]))
         center = cells.c[center].find(c => cells.burg[c]);
@@ -477,8 +477,8 @@ window.Religions = (function () {
 
     // generate heresies
     religions
-      .filter(r => r.type === "Organized")
-      .forEach(r => {
+      .filter((r) => r.type === 'Organized')
+      .forEach((r) => {
         if (r.expansionism < 3) return;
         const count = gauss(0, 1, 0, 3);
         for (let i = 0; i < count; i++) {
@@ -492,7 +492,7 @@ window.Religions = (function () {
           if (religionsTree.find(x, y, spacing / 10) !== undefined) continue; // to close to other
 
           const culture = cells.culture[center];
-          const name = getCultName("Heresy", center);
+          const name = getCultName('Heresy', center);
           const expansionism = gauss(1.2, 0.5, 0, 5);
           const color = getMixedColor(r.color, 0.4, 0.2); // "url(#hatch6)";
           religions.push({
@@ -515,7 +515,7 @@ window.Religions = (function () {
     expandHeresies();
     checkCenters();
 
-    TIME && console.timeEnd("generateReligions");
+    TIME && console.timeEnd('generateReligions');
   };
 
   const add = function (center) {
@@ -532,16 +532,16 @@ window.Religions = (function () {
       type === "Heresy" ? religions[religionId].deity : form === "Non-theism" ? null : getDeityName(culture);
 
     let name, expansion;
-    if (type === "Organized") [name, expansion] = getReligionName(form, deity, center);
+    if (type === 'Organized') [name, expansion] = getReligionName(form, deity, center);
     else {
       name = getCultName(form, center);
-      expansion = "global";
+      expansion = 'global';
     }
 
     const formName = type === "Heresy" ? religions[religionId].form : form;
     const code = abbreviate(
       name,
-      religions.map(r => r.code)
+      religions.map((r) => r.code)
     );
 
     const i = religions.length;
@@ -574,8 +574,8 @@ window.Religions = (function () {
     const cost = [];
 
     religions
-      .filter(r => r.type === "Organized" || r.type === "Cult")
-      .forEach(r => {
+      .filter((r) => r.type === 'Organized' || r.type === 'Cult')
+      .forEach((r) => {
         cells.religion[r.center] = r.i;
         queue.queue({e: r.center, p: 0, r: r.i, s: cells.state[r.center], c: r.culture});
         cost[r.center] = 1;
@@ -594,8 +594,8 @@ window.Religions = (function () {
       const expansion = religions[r].expansion;
 
       cells.c[n].forEach(function (e) {
-        if (expansion === "culture" && c !== cells.culture[e]) return;
-        if (expansion === "state" && s !== cells.state[e]) return;
+        if (expansion === 'culture' && c !== cells.culture[e]) return;
+        if (expansion === 'state' && s !== cells.state[e]) return;
 
         const cultureCost = c !== cells.culture[e] ? 10 : 0;
         const stateCost = s !== cells.state[e] ? 10 : 0;
@@ -625,8 +625,8 @@ window.Religions = (function () {
     const cost = [];
 
     religions
-      .filter(r => r.type === "Heresy")
-      .forEach(r => {
+      .filter((r) => r.type === 'Heresy')
+      .forEach((r) => {
         const b = cells.religion[r.center]; // "base" religion id
         cells.religion[r.center] = r.i; // heresy id
         queue.queue({e: r.center, p: 0, r: r.i, b});
@@ -678,25 +678,25 @@ window.Religions = (function () {
   }
 
   function updateCultures() {
-    TIME && console.time("updateCulturesForReligions");
+    TIME && console.time('updateCulturesForReligions');
     pack.religions = pack.religions.map((religion, index) => {
       if (index === 0) {
         return religion;
       }
       return {...religion, culture: pack.cells.culture[religion.center]};
     });
-    TIME && console.timeEnd("updateCulturesForReligions");
+    TIME && console.timeEnd('updateCulturesForReligions');
   }
 
   // get supreme deity name
   const getDeityName = function (culture) {
     if (culture === undefined) {
-      ERROR && console.error("Please define a culture");
+      ERROR && console.error('Please define a culture');
       return;
     }
     const meaning = generateMeaning();
-    const cultureName = Names.getCulture(culture, null, null, "", 0.8);
-    return cultureName + ", The " + meaning;
+    const cultureName = Names.getCulture(culture, null, null, '', 0.8);
+    return cultureName + ', The ' + meaning;
   };
 
   function generateMeaning() {
@@ -754,14 +754,14 @@ window.Religions = (function () {
       return rw(types[form]);
     };
     const random = function () {
-      return trimVowels(Names.getCulture(cells.culture[center], null, null, "", 0).split(/[ ,]+/)[0]);
+      return trimVowels(Names.getCulture(cells.culture[center], null, null, '', 0).split(/[ ,]+/)[0]);
     };
     const burg = function () {
       return trimVowels(pack.burgs[cells.burg[center]].name.split(/[ ,]+/)[0]);
     };
-    if (cells.burg[center]) return burg() + "ian " + type();
-    if (Math.random() > 0.5) return random() + "ian " + type();
-    return type() + " of the " + generateMeaning();
+    if (cells.burg[center]) return burg() + 'ian ' + type();
+    if (Math.random() > 0.5) return random() + 'ian ' + type();
+    return type() + ' of the ' + generateMeaning();
   }
 
   return {generate, add, getDeityName, expandReligions, updateCultures};
