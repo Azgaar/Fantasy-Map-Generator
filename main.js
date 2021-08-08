@@ -649,7 +649,13 @@ function generate() {
     rankCells();
     Cultures.generate();
     Cultures.expand();
+
+    // temp
+    pack.cells.road = new Uint16Array(pack.cells.i.length);
+    pack.cells.crossroad = new Uint16Array(pack.cells.i.length);
+
     BurgsAndStates.generate();
+
     Religions.generate();
     BurgsAndStates.defineStateForms();
 
@@ -1429,15 +1435,15 @@ function getBiomeId(moisture, temperature, height) {
 function rankCells() {
   TIME && console.time('rankCells');
   const {cells, features} = pack;
-  cells.s = new Int16Array(cells.i.length); // cell suitability array
-  cells.pop = new Float32Array(cells.i.length); // cell population array
+  cells.s = new Int16Array(cells.i.length); // cell suitability score
+  cells.pop = new Float32Array(cells.i.length); // cell population
 
   const flMean = d3.median(cells.fl.filter((f) => f)) || 0;
   const flMax = d3.max(cells.fl) + d3.max(cells.conf); // to normalize flux
   const areaMean = d3.mean(cells.area); // to adjust population by cell area
-  const getResValue = (i) => (cells.resource[i] ? Resources.get(cells.resource[i])?.value : 0);
+  const getResValue = (i) => (cells.resource[i] ? Resources.get(cells.resource[i])?.value : 0); // get bonus resource scope
   const resBonuses = [];
-  const POP_BALANCER = 1.5; // contant to ballance population to desired number not changing ranking
+  const POP_BALANCER = 1.5; // to ballance population to desired number
 
   for (const i of cells.i) {
     if (cells.b[i]) continue; // avoid adding burgs on map border
