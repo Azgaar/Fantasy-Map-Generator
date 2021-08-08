@@ -535,7 +535,7 @@ window.FMG.data.resourceModels = {
   Marine_and_rivers: 'shore(-1) && (type("ocean", "freshwater", "salt") || (river() && shore(1, 2)))',
   Pastures_and_temperate_forest: '(biome(3, 4) && !elevation()) || (biome(6) && random(70)) || (biome(5) && nth(5))',
   Tropical_forests: 'biome(5, 7)',
-  Arid_land_and_salt_lakes: 'type("salt", "dry") || (biome(1, 2) && random(70)) || (biome(12) && nth(10))',
+  Arid_land_and_salt_lakes: 'shore(1) && type("salt", "dry") || (biome(1, 2) && random(70)) || (biome(12) && nth(10))',
   Hot_desert: 'biome(1)',
   Deserts: 'biome(1, 2)',
   Grassland_and_cold_desert: 'biome(3) || (biome(2) && nth(4))',

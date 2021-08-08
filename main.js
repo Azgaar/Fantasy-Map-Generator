@@ -654,6 +654,7 @@ function generate() {
     BurgsAndStates.defineStateForms();
 
     Production.collectResources();
+    Production.defineExport();
 
     BurgsAndStates.generateProvinces();
     BurgsAndStates.defineBurgFeatures();
