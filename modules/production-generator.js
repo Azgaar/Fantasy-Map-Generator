@@ -102,11 +102,11 @@ window.Production = (function () {
         queue.queue({...occupation, basePriority: newBasePriority, priority: newPriority});
       }
 
+      burg.produced = {};
       for (const resourceId in productionPull) {
-        const production = Math.ceil(productionPull[resourceId]);
-        productionPull[resourceId] = production;
+        const production = productionPull[resourceId];
+        burg.produced[resourceId] = Math.ceil(production);
       }
-      burg.production = productionPull;
     }
   };
 

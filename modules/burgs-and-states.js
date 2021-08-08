@@ -229,12 +229,12 @@ window.BurgsAndStates = (function () {
     const {cells, burgs} = pack;
 
     for (const burg of burgs) {
-      if (!burg.i || burg.removed) continue;
-      if (newburg && newburg.i !== burg.i) continue;
-      const {cell, state, pop, capital} = burg;
+      const {i, removed, cell, state, pop, capital, tradeCenter} = burg;
+      if (!i || removed) continue;
+      if (newburg && newburg.i !== i) continue;
 
       burg.citadel = capital || (pop > 50 && P(0.75)) || P(0.5) ? 1 : 0;
-      burg.plaza = pop > 50 || (pop > 30 && P(0.75)) || (pop > 10 && P(0.5)) || P(0.25) ? 1 : 0;
+      burg.plaza = tradeCenter === i;
       burg.walls = capital || pop > 30 || (pop > 20 && P(0.75)) || (pop > 10 && P(0.5)) || P(0.2) ? 1 : 0;
       burg.shanty = pop > 30 || (pop > 20 && P(0.75)) || (burg.walls && P(0.75)) ? 1 : 0;
       const religion = cells.religion[cell];
