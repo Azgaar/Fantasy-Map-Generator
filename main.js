@@ -1566,7 +1566,6 @@ function rankCells() {
     flMax = d3.max(cells.fl) + d3.max(cells.conf); // to normalize flux
   const areaMean = d3.mean(cells.area); // to adjust population by cell area
   const getResValue = (i) => (cells.resource[i] ? Resources.get(cells.resource[i])?.value : 0); // get bonus resource scope
-  const resBonuses = [];
   const POP_BALANCER = 1.5; // to ballance population to desired number
 
   for (const i of cells.i) {
@@ -1598,13 +1597,10 @@ function rankCells() {
     const cellRes = getResValue(i);
     const neibRes = d3.mean(cells.c[i].map((c) => getResValue(c)));
     const resBonus = (cellRes ? cellRes + 10 : 0) + neibRes;
-    resBonuses.push(resBonus);
 
     // cell rural population is suitability adjusted by cell area
     cells.pop[i] = s > 0 ? (s * POP_BALANCER * cells.area[i]) / areaMean : 0;
     cells.s[i] = s + resBonus;
-
-    // debug.append('text').attr('x', cells.p[i][0]).attr('y', cells.p[i][1]).text(cells.s[i]);
   }
 
   TIME && console.timeEnd("rankCells");

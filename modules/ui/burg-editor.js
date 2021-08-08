@@ -163,12 +163,12 @@ function editBurg(id) {
     return `${totalIncome}: ${exported.join('')}`;
   }
 
-  function getProduction(resources) {
+  function getProduction(pool) {
     let html = '';
 
-    for (const resourceId in resources) {
+    for (const resourceId in pool) {
       const {name, unit, icon} = Resources.get(+resourceId);
-      const production = resources[resourceId];
+      const production = pool[resourceId];
       const unitName = production > 1 ? unit + 's' : unit;
 
       html += `<span data-tip="${name}: ${production} ${unitName}">
@@ -178,6 +178,24 @@ function editBurg(id) {
     }
 
     return html;
+  }
+
+  function getExport(dealsArray) {
+    if (!dealsArray.length) return 'no';
+
+    const totalIncome = d3.sum(dealsArray.map((deal) => deal.burgIncome));
+    const exported = dealsArray.map((deal) => {
+      const {resourceId, quantity, burgIncome} = deal;
+      const {name, unit, icon} = Resources.get(resourceId);
+      const unitName = quantity > 1 ? unit + 's' : unit;
+
+      return `<span data-tip="${name}: ${quantity} ${unitName}. Income: ${burgIncome}">
+        <svg class="resIcon"><use href="#${icon}"></svg>
+        <span style="margin: 0 0.2em 0 -0.2em">${quantity}</span>
+      </span>`;
+    });
+
+    return `${totalIncome}: ${exported.join('')}`;
   }
 
   // [-1; 31] °C, source: https://en.wikipedia.org/wiki/List_of_cities_by_average_temperature
