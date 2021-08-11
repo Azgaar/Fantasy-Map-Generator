@@ -183,13 +183,13 @@ function editBurg(id) {
   function getExport(dealsArray) {
     if (!dealsArray.length) return 'no';
 
-    const totalIncome = d3.sum(dealsArray.map((deal) => deal.burgIncome));
+    const totalIncome = rn(d3.sum(dealsArray.map((deal) => deal.burgIncome)));
     const exported = dealsArray.map((deal) => {
       const {resourceId, quantity, burgIncome} = deal;
       const {name, unit, icon} = Resources.get(resourceId);
       const unitName = quantity > 1 ? unit + 's' : unit;
 
-      return `<span data-tip="${name}: ${quantity} ${unitName}. Income: ${burgIncome}">
+      return `<span data-tip="${name}: ${quantity} ${unitName}. Income: ${rn(burgIncome)}">
         <svg class="resIcon"><use href="#${icon}"></svg>
         <span style="margin: 0 0.2em 0 -0.2em">${quantity}</span>
       </span>`;
