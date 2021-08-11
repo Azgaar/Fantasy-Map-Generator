@@ -74,6 +74,7 @@ window.BurgsAndStates = (function () {
       const states = [{i: 0, name: 'Neutrals'}];
       const colors = getColors(burgs.length - 1);
       const each5th = each(5);
+      const maxExpansionism = +powerInput.value;
 
       burgs.forEach(function (b, i) {
         if (!i) return; // skip first element
@@ -86,14 +87,15 @@ window.BurgsAndStates = (function () {
         b.capital = 1;
 
         // states data
-        const expansionism = rn(Math.random() * powerInput.value + 1, 1);
+        const expansionism = rn(Math.random() * maxExpansionism + 1, 1);
         const basename = b.name.length < 9 && each5th(b.cell) ? b.name : Names.getCultureShort(b.culture);
         const name = Names.getState(basename, b.culture);
         const type = cultures[b.culture].type;
+        const salesTax = rn(Math.random() * 0.3, 2);
 
         const coa = COA.generate(null, null, null, type);
         coa.shield = COA.getShield(b.culture, null);
-        states.push({i, color: colors[i - 1], name, expansionism, capital: i, type, center: b.cell, culture: b.culture, coa});
+        states.push({i, color: colors[i - 1], name, expansionism, capital: i, type, center: b.cell, culture: b.culture, coa, salesTax});
         cells.burg[b.cell] = i;
       });
 

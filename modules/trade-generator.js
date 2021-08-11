@@ -65,25 +65,25 @@ window.Trade = (function () {
 
         const distance = Math.hypot(x - x0, y - y0);
         const transportFee = (distance / DEFAULT_TRANSPORT_DIST) ** 0.8 || 0.02;
-        const salesTax = states[state].salesTax || 0.1;
+        const salesTax = states[state].salesTax || 0;
 
         for (const resourceId in produced) {
           const production = produced[resourceId];
           const quantity = production - consumption;
           if (quantity < 1) continue;
 
-          const {value} = Resources.get(+resourceId);
+          const {value, name} = Resources.get(+resourceId);
 
           const basePrice = value * quantity;
-          const transportCost = rn((value * quantity) ** 0.5 * transportFee, 2);
+          const transportCost = rn((value * quantity) ** 0.5 * transportFee, 1);
           const netPrice = basePrice - transportCost;
 
-          const stateIncome = rn(netPrice * salesTax, 2);
-          const burgIncome = rn(netPrice - stateIncome, 2);
+          const stateIncome = rn(netPrice * salesTax, 1);
+          const burgIncome = rn(netPrice - stateIncome, 1);
 
           if (burgIncome < 1 || burgIncome < basePrice / 4) continue;
 
-          trade.deals.push({resourceId: +resourceId, quantity, exporter: i, tradeCenter: centerId, basePrice, transportCost, stateIncome, burgIncome});
+          trade.deals.push({resourceId: +resourceId, name, quantity, exporter: i, tradeCenter: centerId, basePrice, transportCost, stateIncome, burgIncome});
 
           if (!goods[resourceId]) goods[resourceId] = quantity;
           else goods[resourceId] += quantity;

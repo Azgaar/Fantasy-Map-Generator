@@ -761,6 +761,9 @@ function parseLoadedData(data) {
         rivers.attr('style', null);
         borders.attr('style', null);
       }
+
+      // ecomonics:
+      // calculate salesTax for all states
     })();
 
     void (function checkDataIntegrity() {
