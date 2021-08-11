@@ -2,7 +2,7 @@ class Voronoi {
   /**
    * Creates a Voronoi diagram from the given Delaunator, a list of points, and the number of points. The Voronoi diagram is constructed using (I think) the {@link https://en.wikipedia.org/wiki/Bowyer%E2%80%93Watson_algorithm |Bowyer-Watson Algorithm}
    * The {@link https://github.com/mapbox/delaunator/ |Delaunator} library uses {@link https://en.wikipedia.org/wiki/Doubly_connected_edge_list |half-edges} to represent the relationship between points and triangles.
-   * @param {{triangles: Uint32Array, halfedges: Int32Array}} delaunay A {@link https://github.com/mapbox/delaunator/blob/master/index.js |Delaunator} instance. 
+   * @param {{triangles: Uint32Array, halfedges: Int32Array}} delaunay A {@link https://github.com/mapbox/delaunator/blob/master/index.js |Delaunator} instance.
    * @param {[number, number][]} points A list of coordinates.
    * @param {number} pointsN The number of points.
    */
@@ -15,7 +15,7 @@ class Voronoi {
 
     // Half-edges are the indices into the delaunator outputs:
     // delaunay.triangles[e] gives the point ID where the half-edge starts
-    // delaunay.triangles[e] returns either the opposite half-edge in the adjacent triangle, or -1 if there's not an adjacent triangle.
+    // delaunay.halfedges[e] returns either the opposite half-edge in the adjacent triangle, or -1 if there's not an adjacent triangle.
     for (let e = 0; e < this.delaunay.triangles.length; e++) {
 
       const p = this.delaunay.triangles[this.nextHalfedge(e)];
