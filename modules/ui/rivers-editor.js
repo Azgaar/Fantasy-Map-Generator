@@ -111,7 +111,7 @@ function editRiver(id) {
     debug
       .select("#controlCells")
       .selectAll(`polygon.${type}`)
-      .data(cells)
+      .data(cells.filter(i => pack.cells.i[i]))
       .join("polygon")
       .attr("points", d => getPackPolygon(d))
       .attr("class", type);
@@ -124,18 +124,13 @@ function editRiver(id) {
     const initCell = +this.dataset.cell;
     const index = +this.dataset.i;
 
-    const occupiedCells = i.filter(i => r[i] && !river.cells.includes(i));
-    drawCells(occupiedCells, "occupied");
     let movedToCell = null;
 
     d3.event.on("drag", function () {
       const {x, y} = d3.event;
       const currentCell = findCell(x, y);
 
-      if (initCell !== currentCell) {
-        if (occupiedCells.includes(currentCell)) return;
-        movedToCell = currentCell;
-      } else movedToCell = null;
+      movedToCell = initCell !== currentCell ? currentCell : null;
 
       this.setAttribute("cx", x);
       this.setAttribute("cy", y);
@@ -149,15 +144,15 @@ function editRiver(id) {
         river.cells[index] = movedToCell;
         drawCells(river.cells, "current");
 
-        // swap river data
-        r[initCell] = 0;
-        r[movedToCell] = river.i;
-        const sourceFlux = fl[initCell];
-        fl[initCell] = fl[movedToCell];
-        fl[movedToCell] = sourceFlux;
+        if (!r[movedToCell]) {
+          // swap river data
+          r[initCell] = 0;
+          r[movedToCell] = river.i;
+          const sourceFlux = fl[initCell];
+          fl[initCell] = fl[movedToCell];
+          fl[movedToCell] = sourceFlux;
+        }
       }
-
-      debug.select("#controlCells").selectAll("polygon.available, polygon.occupied").remove();
     });
   }
 

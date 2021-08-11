@@ -1,8 +1,6 @@
-(function (global, factory) {
-  typeof exports === "object" && typeof module !== "undefined" ? (module.exports = factory()) : typeof define === "function" && define.amd ? define(factory) : (global.Lakes = factory());
-})(this, function () {
-  "use strict";
+"use strict";
 
+window.Lakes = (function () {
   const setClimateData = function (h) {
     const cells = pack.cells;
     const lakeOutCells = new Uint16Array(cells.i.length);
@@ -149,4 +147,4 @@
   }
 
   return {setClimateData, cleanupLakeData, prepareLakeData, defineGroup, generateName, getName, getShoreline};
-});
+})();

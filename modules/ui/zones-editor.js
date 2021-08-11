@@ -1,4 +1,5 @@
 "use strict";
+
 function editZones() {
   closeDialogs();
   if (!layerIsOn("toggleZones")) toggleZones();

@@ -1,8 +1,6 @@
-(function (global, factory) {
-  typeof exports === "object" && typeof module !== "undefined" ? (module.exports = factory()) : typeof define === "function" && define.amd ? define(factory) : (global.HeightmapGenerator = factory());
-})(this, function () {
-  "use strict";
+"use strict";
 
+window.HeightmapGenerator = (function () {
   let cells, p;
 
   const generate = function () {
@@ -12,262 +10,63 @@
     cells.h = new Uint8Array(grid.points.length);
 
     const template = document.getElementById("templateInput").value;
-    switch (template) {
-      case "Volcano":
-        templateVolcano();
-        break;
-      case "High Island":
-        templateHighIsland();
-        break;
-      case "Low Island":
-        templateLowIsland();
-        break;
-      case "Continents":
-        templateContinents();
-        break;
-      case "Archipelago":
-        templateArchipelago();
-        break;
-      case "Atoll":
-        templateAtoll();
-        break;
-      case "Mediterranean":
-        templateMediterranean();
-        break;
-      case "Peninsula":
-        templatePeninsula();
-        break;
-      case "Pangea":
-        templatePangea();
-        break;
-      case "Isthmus":
-        templateIsthmus();
-        break;
-      case "Shattered":
-        templateShattered();
-        break;
+    const templateString = HeightmapTemplates[template];
+    const steps = templateString.split("\n");
+
+    if (!steps.length) throw new Error(`Heightmap template: no steps. Template: ${template}. Steps: ${steps}`);
+
+    for (const step of steps) {
+      const elements = step.trim().split(" ");
+      if (elements.length < 2) throw new Error(`Heightmap template: steps < 2. Template: ${template}. Step: ${elements}`);
+      addStep(...elements);
     }
 
     TIME && console.timeEnd("generateHeightmap");
   };
 
-  // parse template step
   function addStep(a1, a2, a3, a4, a5) {
     if (a1 === "Hill") return addHill(a2, a3, a4, a5);
     if (a1 === "Pit") return addPit(a2, a3, a4, a5);
     if (a1 === "Range") return addRange(a2, a3, a4, a5);
     if (a1 === "Trough") return addTrough(a2, a3, a4, a5);
     if (a1 === "Strait") return addStrait(a2, a3);
-    if (a1 === "Add") return modify(a3, a2, 1);
-    if (a1 === "Multiply") return modify(a3, 0, a2);
+    if (a1 === "Add") return modify(a3, +a2, 1);
+    if (a1 === "Multiply") return modify(a3, 0, +a2);
     if (a1 === "Smooth") return smooth(a2);
   }
 
-  // Heighmap Template: Volcano
-  function templateVolcano() {
-    addStep("Hill", "1", "90-100", "44-56", "40-60");
-    addStep("Multiply", 0.8, "50-100");
-    addStep("Range", "1.5", "30-55", "45-55", "40-60");
-    addStep("Smooth", 2);
-    addStep("Hill", "1.5", "25-35", "25-30", "20-75");
-    addStep("Hill", "1", "25-35", "75-80", "25-75");
-    addStep("Hill", "0.5", "20-25", "10-15", "20-25");
-  }
-
-  // Heighmap Template: High Island
-  function templateHighIsland() {
-    addStep("Hill", "1", "90-100", "65-75", "47-53");
-    addStep("Add", 5, "all");
-    addStep("Hill", "6", "20-23", "25-55", "45-55");
-    addStep("Range", "1", "40-50", "45-55", "45-55");
-    addStep("Smooth", 2);
-    addStep("Trough", "2-3", "20-30", "20-30", "20-30");
-    addStep("Trough", "2-3", "20-30", "60-80", "70-80");
-    addStep("Hill", "1", "10-15", "60-60", "50-50");
-    addStep("Hill", "1.5", "13-16", "15-20", "20-75");
-    addStep("Multiply", 0.8, "20-100");
-    addStep("Range", "1.5", "30-40", "15-85", "30-40");
-    addStep("Range", "1.5", "30-40", "15-85", "60-70");
-    addStep("Pit", "2-3", "10-15", "15-85", "20-80");
-  }
-
-  // Heighmap Template: Low Island
-  function templateLowIsland() {
-    addStep("Hill", "1", "90-99", "60-80", "45-55");
-    addStep("Hill", "4-5", "25-35", "20-65", "40-60");
-    addStep("Range", "1", "40-50", "45-55", "45-55");
-    addStep("Smooth", 3);
-    addStep("Trough", "1.5", "20-30", "15-85", "20-30");
-    addStep("Trough", "1.5", "20-30", "15-85", "70-80");
-    addStep("Hill", "1.5", "10-15", "5-15", "20-80");
-    addStep("Hill", "1", "10-15", "85-95", "70-80");
-    addStep("Pit", "3-5", "10-15", "15-85", "20-80");
-    addStep("Multiply", 0.4, "20-100");
-  }
-
-  // Heighmap Template: Continents
-  function templateContinents() {
-    addStep("Hill", "1", "80-85", "75-80", "40-60");
-    addStep("Hill", "1", "80-85", "20-25", "40-60");
-    addStep("Multiply", 0.22, "20-100");
-    addStep("Hill", "5-6", "15-20", "25-75", "20-82");
-    addStep("Range", ".8", "30-60", "5-15", "20-45");
-    addStep("Range", ".8", "30-60", "5-15", "55-80");
-    addStep("Range", "0-3", "30-60", "80-90", "20-80");
-    addStep("Trough", "3-4", "15-20", "15-85", "20-80");
-    addStep("Strait", "2", "vertical");
-    addStep("Smooth", 2);
-    addStep("Trough", "1-2", "5-10", "45-55", "45-55");
-    addStep("Pit", "3-4", "10-15", "15-85", "20-80");
-    addStep("Hill", "1", "5-10", "40-60", "40-60");
-  }
-
-  // Heighmap Template: Archipelago
-  function templateArchipelago() {
-    addStep("Add", 11, "all");
-    addStep("Range", "2-3", "40-60", "20-80", "20-80");
-    addStep("Hill", "5", "15-20", "10-90", "30-70");
-    addStep("Hill", "2", "10-15", "10-30", "20-80");
-    addStep("Hill", "2", "10-15", "60-90", "20-80");
-    addStep("Smooth", 3);
-    addStep("Trough", "10", "20-30", "5-95", "5-95");
-    addStep("Strait", "2", "vertical");
-    addStep("Strait", "2", "horizontal");
-  }
-
-  // Heighmap Template: Atoll
-  function templateAtoll() {
-    addStep("Hill", "1", "75-80", "50-60", "45-55");
-    addStep("Hill", "1.5", "30-50", "25-75", "30-70");
-    addStep("Hill", ".5", "30-50", "25-35", "30-70");
-    addStep("Smooth", 1);
-    addStep("Multiply", 0.2, "25-100");
-    addStep("Hill", ".5", "10-20", "50-55", "48-52");
-  }
-
-  // Heighmap Template: Mediterranean
-  function templateMediterranean() {
-    addStep("Range", "3-4", "30-50", "0-100", "0-10");
-    addStep("Range", "3-4", "30-50", "0-100", "90-100");
-    addStep("Hill", "5-6", "30-70", "0-100", "0-5");
-    addStep("Hill", "5-6", "30-70", "0-100", "95-100");
-    addStep("Smooth", 1);
-    addStep("Hill", "2-3", "30-70", "0-5", "20-80");
-    addStep("Hill", "2-3", "30-70", "95-100", "20-80");
-    addStep("Multiply", 0.8, "land");
-    addStep("Trough", "3-5", "40-50", "0-100", "0-10");
-    addStep("Trough", "3-5", "40-50", "0-100", "90-100");
-  }
-
-  // Heighmap Template: Peninsula
-  function templatePeninsula() {
-    addStep("Range", "2-3", "20-35", "40-50", "0-15");
-    addStep("Add", 5, "all");
-    addStep("Hill", "1", "90-100", "10-90", "0-5");
-    addStep("Add", 13, "all");
-    addStep("Hill", "3-4", "3-5", "5-95", "80-100");
-    addStep("Hill", "1-2", "3-5", "5-95", "40-60");
-    addStep("Trough", "5-6", "10-25", "5-95", "5-95");
-    addStep("Smooth", 3);
-  }
-
-  // Heighmap Template: Pangea
-  function templatePangea() {
-    addStep("Hill", "1-2", "25-40", "15-50", "0-10");
-    addStep("Hill", "1-2", "5-40", "50-85", "0-10");
-    addStep("Hill", "1-2", "25-40", "50-85", "90-100");
-    addStep("Hill", "1-2", "5-40", "15-50", "90-100");
-    addStep("Hill", "8-12", "20-40", "20-80", "48-52");
-    addStep("Smooth", 2);
-    addStep("Multiply", 0.7, "land");
-    addStep("Trough", "3-4", "25-35", "5-95", "10-20");
-    addStep("Trough", "3-4", "25-35", "5-95", "80-90");
-    addStep("Range", "5-6", "30-40", "10-90", "35-65");
-  }
-
-  // Heighmap Template: Isthmus
-  function templateIsthmus() {
-    addStep("Hill", "5-10", "15-30", "0-30", "0-20");
-    addStep("Hill", "5-10", "15-30", "10-50", "20-40");
-    addStep("Hill", "5-10", "15-30", "30-70", "40-60");
-    addStep("Hill", "5-10", "15-30", "50-90", "60-80");
-    addStep("Hill", "5-10", "15-30", "70-100", "80-100");
-    addStep("Smooth", 2);
-    addStep("Trough", "4-8", "15-30", "0-30", "0-20");
-    addStep("Trough", "4-8", "15-30", "10-50", "20-40");
-    addStep("Trough", "4-8", "15-30", "30-70", "40-60");
-    addStep("Trough", "4-8", "15-30", "50-90", "60-80");
-    addStep("Trough", "4-8", "15-30", "70-100", "80-100");
-  }
-
-  // Heighmap Template: Shattered
-  function templateShattered() {
-    addStep("Hill", "8", "35-40", "15-85", "30-70");
-    addStep("Trough", "10-20", "40-50", "5-95", "5-95");
-    addStep("Range", "5-7", "30-40", "10-90", "20-80");
-    addStep("Pit", "12-20", "30-40", "15-85", "20-80");
-  }
-
   function getBlobPower() {
-    switch (+pointsInput.dataset.cells) {
-      case 1000:
-        return 0.93;
-      case 2000:
-        return 0.95;
-      case 5000:
-        return 0.96;
-      case 10000:
-        return 0.98;
-      case 20000:
-        return 0.985;
-      case 30000:
-        return 0.987;
-      case 40000:
-        return 0.9892;
-      case 50000:
-        return 0.9911;
-      case 60000:
-        return 0.9921;
-      case 70000:
-        return 0.9934;
-      case 80000:
-        return 0.9942;
-      case 90000:
-        return 0.9946;
-      case 100000:
-        return 0.995;
-    }
+    const cells = +pointsInput.dataset.cells;
+    if (cells === 1000) return 0.93;
+    if (cells === 2000) return 0.95;
+    if (cells === 5000) return 0.96;
+    if (cells === 10000) return 0.98;
+    if (cells === 20000) return 0.985;
+    if (cells === 30000) return 0.987;
+    if (cells === 40000) return 0.9892;
+    if (cells === 50000) return 0.9911;
+    if (cells === 60000) return 0.9921;
+    if (cells === 70000) return 0.9934;
+    if (cells === 80000) return 0.9942;
+    if (cells === 90000) return 0.9946;
+    if (cells === 100000) return 0.995;
   }
 
   function getLinePower() {
-    switch (+pointsInput.dataset.cells) {
-      case 1000:
-        return 0.74;
-      case 2000:
-        return 0.75;
-      case 5000:
-        return 0.78;
-      case 10000:
-        return 0.81;
-      case 20000:
-        return 0.82;
-      case 30000:
-        return 0.83;
-      case 40000:
-        return 0.84;
-      case 50000:
-        return 0.855;
-      case 60000:
-        return 0.87;
-      case 70000:
-        return 0.885;
-      case 80000:
-        return 0.91;
-      case 90000:
-        return 0.92;
-      case 100000:
-        return 0.93;
-    }
+    const cells = +pointsInput.dataset.cells;
+    if (cells === 1000) return 0.74;
+    if (cells === 2000) return 0.75;
+    if (cells === 5000) return 0.78;
+    if (cells === 10000) return 0.81;
+    if (cells === 20000) return 0.82;
+    if (cells === 30000) return 0.83;
+    if (cells === 40000) return 0.84;
+    if (cells === 50000) return 0.855;
+    if (cells === 60000) return 0.87;
+    if (cells === 70000) return 0.885;
+    if (cells === 80000) return 0.91;
+    if (cells === 90000) return 0.92;
+    if (cells === 100000) return 0.93;
   }
 
   const addHill = function (count, height, rangeX, rangeY) {
@@ -610,4 +409,4 @@
   }
 
   return {generate, addHill, addRange, addTrough, addStrait, addPit, smooth, modify};
-});
+})();

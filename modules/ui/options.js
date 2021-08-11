@@ -98,7 +98,8 @@ function showSupporters() {
     PlayByMail.Net,Brad Wardell,Lance Saba,Egoensis,Brea Richards,Tiber,Chris Bloom,Maxim Lowe,Aquelion,Page One Project,Spencer Morris,Paul Ingram,
     Dust Bunny,Adrian Wright,Eric Alexander Cartaya,GameNight,Thomas Mortensen Hansen,Zklaus,Drinarius,Ed Wright,Lon Varnadore,Crys Cain,Heaven N Lee,
     Jeffrey Henning,Lazer Elf,Jordan Bellah,Alex Beard,Kass Frisson,Petro Lombaard,Emanuel Pietri,Rox,PinkEvil,Gavin Madrigal,Martin Lorber,Prince of Morgoth,
-    Jaryd Armstrong,Andrew Pirkola,ThyHolyDevil,Gary Smith,Tyshaun Wise,Ethan Cook,Jon Stroman,Nobody679,良义 金,Chris Gray,Phoenix Boatwright`;
+    Jaryd Armstrong,Andrew Pirkola,ThyHolyDevil,Gary Smith,Tyshaun Wise,Ethan Cook,Jon Stroman,Nobody679,良义 金,Chris Gray,Phoenix Boatwright,Mackenzie,
+    "Milo Cohen,Jason Matthew Wuerfel,Rasmus Legêne,Andrew Hines,Wexxler,Espen Sæverud,Binks,Dominick Ormsby,Linn Browning,Václav Švec,Alan Buehne,George J.Lekkas"`;
 
   const array = supporters
     .replace(/(?:\r\n|\r|\n)/g, "")
@@ -541,17 +542,18 @@ function randomizeOptions() {
 // select heightmap template pseudo-randomly
 function randomizeHeightmapTemplate() {
   const templates = {
-    Volcano: 3,
-    "High Island": 22,
-    "Low Island": 9,
-    Continents: 20,
-    Archipelago: 25,
-    Mediterranean: 3,
-    Peninsula: 3,
-    Pangea: 5,
-    Isthmus: 2,
-    Atoll: 1,
-    Shattered: 7
+    volcano: 3,
+    highIsland: 22,
+    lowIsland: 9,
+    continents: 19,
+    archipelago: 23,
+    mediterranean: 5,
+    peninsula: 3,
+    pangea: 5,
+    isthmus: 2,
+    atoll: 1,
+    shattered: 7,
+    taklamakan: 1
   };
   document.getElementById("templateInput").value = rw(templates);
 }

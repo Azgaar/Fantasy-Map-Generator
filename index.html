@@ -910,6 +910,13 @@
                 <label for="hideLabels" class="checkbox-label">Toggle visibility automatically</label>
               </td>
             </tr>
+
+            <tr data-tip="Allow system to rescale labels on zoom">
+              <td colspan=2>
+                <input id="rescaleLabels" class="checkbox" type="checkbox" onchange="invokeActiveZooming()" checked>
+                <label for="rescaleLabels" class="checkbox-label">Rescale on zoom</label>
+              </td>
+            </tr>
           </tbody>
         </table>
 
@@ -1000,17 +1007,18 @@
             <td>Map template</td>
             <td>
               <select id="templateInput" data-stored="template">
-                <option value="Volcano">Volcano</option>
-                <option value="High Island">High Island</option>
-                <option value="Low Island">Low Island</option>
-                <option value="Continents">Two Continents</option>
-                <option value="Archipelago">Archipelago</option>
-                <option value="Atoll">Atoll</option>
-                <option value="Mediterranean">Mediterranean</option>
-                <option value="Peninsula">Peninsula</option>
-                <option value="Pangea">Pangea</option>
-                <option value="Isthmus">Isthmus</option>
-                <option value="Shattered">Shattered</option>
+                <option value="volcano">Volcano</option>
+                <option value="highIsland">High Island</option>
+                <option value="lowIsland">Low Island</option>
+                <option value="continents">Two Continents</option>
+                <option value="archipelago">Archipelago</option>
+                <option value="atoll">Atoll</option>
+                <option value="mediterranean">Mediterranean</option>
+                <option value="peninsula">Peninsula</option>
+                <option value="pangea">Pangea</option>
+                <option value="isthmus">Isthmus</option>
+                <option value="shattered">Shattered</option>
+                <option value="taklamakan">Taklamakan</option>
               </select>
             </td>
             <td></td>
@@ -1665,7 +1673,7 @@
     </div>
 
     <div id="riverCreator" class="dialog" style="display: none">
-      <div id="riverCreatorBody"></div>
+      <div id="riverCreatorBody" class="table"></div>
       <div id="riverCreatorBottom">
         <button id="riverCreatorComplete" data-tip="Complete river creation" class="icon-check"></button>
         <button id="riverCreatorCancel" data-tip="Cancel the creation" class="icon-cancel"></button>
@@ -2332,18 +2340,19 @@
     <div id="templateEditor" class="dialog stable" style="display: none">
       <div id="templateTop">
         <i>Select template: </i><select id="templateSelect" style="width:16em" data-prev="templateCustom" data-tip="Select base template">
-          <option value="templateCustom" selected>Custom</option>
-          <option value="templateVolcano">Volcano</option>
-          <option value="templateHighIsland">High Island</option>
-          <option value="templateLowIsland">Low Island</option>
-          <option value="templateContinents">Two Continents</option>
-          <option value="templateArchipelago">Archipelago</option>
-          <option value="templateAtoll">Atoll</option>
-          <option value="templateMediterranean">Mediterranean</option>
-          <option value="templatePeninsula">Peninsula</option>
-          <option value="templatePangea">Pangea</option>
-          <option value="templateIsthmus">Isthmus</option>
-          <option value="templateShattered">Shattered</option>
+          <option value="custom" selected>Custom</option>
+          <option value="volcano">Volcano</option>
+          <option value="highIsland">High Island</option>
+          <option value="lowIsland">Low Island</option>
+          <option value="continents">Two Continents</option>
+          <option value="archipelago">Archipelago</option>
+          <option value="atoll">Atoll</option>
+          <option value="mediterranean">Mediterranean</option>
+          <option value="peninsula">Peninsula</option>
+          <option value="pangea">Pangea</option>
+          <option value="isthmus">Isthmus</option>
+          <option value="shattered">Shattered</option>
+          <option value="taklamakan">Taklamakan</option>
         </select>
       </div>
       <div id="templateTools">
@@ -3186,7 +3195,7 @@
         <div style="left:31.2em" data-tip="Click to sort by burg type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
       </div>
 
-      <div id="burgsBody" class="burgs-table"></div>
+      <div id="burgsBody" class="table"></div>
 
       <div id="burgsFilters" data-tip="Apply a filter">
         <span>State: </span>
@@ -3221,7 +3230,7 @@
         <div style="left:30em" data-tip="Click to sort by river basin" class="sortable alphabetically" data-sortby="basin">Basin&nbsp;</div>
       </div>
 
-      <div id="riversBody" class="burgs-table"></div>
+      <div id="riversBody" class="table"></div>
 
       <div id="riversFooter" class="totalLine">
         <div data-tip="Rivers number" style="margin-left: 4px">Rivers:&nbsp;<span id="riversFooterNumber">0</span></div>
@@ -4187,6 +4196,7 @@
   <script src="libs/delaunator.min.js"></script>
   <script src="modules/utils.js"></script>
   <script src="modules/voronoi.js"></script>
+  <script src="modules/heightmap-templates.js"></script>
   <script src="modules/heightmap-generator.js"></script>
   <script src="modules/ocean-layers.js"></script>
   <script src="modules/river-generator.js"></script>

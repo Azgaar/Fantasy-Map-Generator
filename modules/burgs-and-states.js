@@ -1,12 +1,9 @@
-(function (global, factory) {
-  typeof exports === "object" && typeof module !== "undefined" ? (module.exports = factory()) : typeof define === "function" && define.amd ? define(factory) : (global.BurgsAndStates = factory());
-})(this, function () {
-  "use strict";
+"use strict";
 
+window.BurgsAndStates = (function () {
   const generate = function () {
-    const cells = pack.cells,
-      cultures = pack.cultures,
-      n = cells.i.length;
+    const {cells, cultures} = pack;
+    const n = cells.i.length;
 
     cells.burg = new Uint16Array(n); // cell burg
     cells.road = new Uint16Array(n); // cell road power
@@ -37,7 +34,8 @@
       let count = +regionsInput.value;
       let burgs = [0];
 
-      const score = new Int16Array(cells.s.map(s => s * Math.random())); // cell score for capitals placement
+      const rand = () => 0.5 + Math.random() * 0.5;
+      const score = new Int16Array(cells.s.map(s => s * rand())); // cell score for capitals placement
       const sorted = cells.i.filter(i => score[i] > 0 && cells.culture[i]).sort((a, b) => score[b] - score[a]); // filtered and sorted array of indexes
 
       if (sorted.length < count * 10) {
@@ -54,9 +52,8 @@
       let spacing = (graphWidth + graphHeight) / 2 / count; // min distance between capitals
 
       for (let i = 0; burgs.length <= count; i++) {
-        const cell = sorted[i],
-          x = cells.p[cell][0],
-          y = cells.p[cell][1];
+        const cell = sorted[i];
+        const [x, y] = cells.p[cell];
 
         if (burgsTree.find(x, y, spacing) === undefined) {
           burgs.push({cell, x, y});
@@ -66,7 +63,9 @@
         if (i === sorted.length - 1) {
           WARN && console.warn("Cannot place capitals with current spacing. Trying again with reduced spacing");
           burgsTree = d3.quadtree();
-          (i = -1), (burgs = [0]), (spacing /= 1.2);
+          i = -1;
+          burgs = [0];
+          spacing /= 1.2;
         }
       }
 
@@ -1224,4 +1223,4 @@
   };
 
   return {generate, expandStates, normalizeStates, assignColors, drawBurgs, specifyBurgs, defineBurgFeatures, getType, drawStateLabels, collectStatistics, generateCampaigns, generateDiplomacy, defineStateForms, getFullName, generateProvinces, updateCultures};
-});
+})();

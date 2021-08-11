@@ -1,8 +1,6 @@
-(function (global, factory) {
-  typeof exports === "object" && typeof module !== "undefined" ? (module.exports = factory()) : typeof define === "function" && define.amd ? define(factory) : (global.ThreeD = factory());
-})(this, function () {
-  "use strict";
+"use strict";
 
+window.ThreeD = (function () {
   // set default options
   const options = {scale: 50, lightness: 0.7, shadow: 0.5, sun: {x: 100, y: 600, z: 1000}, rotateMesh: 0, rotateGlobe: 0.5, skyColor: "#9ecef5", waterColor: "#466eab", extendedWater: 0, labels3d: 0, resolution: 2};
 
@@ -581,4 +579,4 @@
   }
 
   return {create, redraw, update, stop, options, setScale, setLightness, setSun, setRotation, toggleLabels, toggleSky, setResolution, setColors, saveScreenshot, saveOBJ};
-});
+})();
