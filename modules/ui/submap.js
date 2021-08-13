@@ -27,8 +27,8 @@ const generateSubmap = debounce(function (x, y, w, h) {
     progress: p => progressUI.innerHTML = p,
   }
 
+  const [[x0, y0], [x1, y1]] = getViewBoxExtent();
   const projection = (x, y) => {
-    const [[x0, y0], [x1, y1]] = getViewBoxExtent();
     return [x * (x1-x0) / graphWidth + x0, y * (y1-y0) / graphHeight + y0]
   }
 

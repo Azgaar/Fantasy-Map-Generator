@@ -50,7 +50,7 @@ window.Submap = (function () {
       grid.cells.h[id] = gridCells.h[cid];
       grid.cells.temp[id] = gridCells.temp[cid];
       grid.cells.prec[id] = gridCells.prec[cid];
-      id%50 || progress(id * 100.0 / grid.points.length)
+      id%50 || progress(id * 100.0 / grid.points.length);
     })
     // TODO: add smooth/noise function for h, temp, prec n times
 
@@ -112,31 +112,41 @@ window.Submap = (function () {
     // Cultures.expand();
     // TODO: update culture centers
 
-    // transfer states and burgs. filter states without land
-    const validStates = new Set(pack.cells.state)
-    console.log(validStates);
-    pack.states = baseState.pack.states;
-    console.log(pack.states)
-    pack.validStates = pack.states.filter(s => validStates.has(s.i))
+    // transfer states and burgs. mark states without land as removed.
+    const validStates = new Set(pack.cells.state);
+    pack.states = baseState.pack.states
+    pack.states.forEach(s => {
+      if (!validStates.has(s.i)) s.removed=true;
+    });
 
     // BurgsAndStates.generate();
     // Religions.generate();
     // BurgsAndStates.defineStateForms();
-    BurgsAndStates.generateProvinces();
     // BurgsAndStates.defineBurgFeatures();
 
-    // update burg list
-    //const validBurgs = new Set(pack.cells.burgs);
+    // remove non-existent burgs
     pack.burgs = baseState.pack.burgs
-    //  .filter(b => validBurgs.has(b.i))
+
+
+    const [[xmin, ymin], [xmax, ymax]] = getViewBoxExtent();
+    const inMap = (x,y) => x>xmin && x<xmax && y>ymin && y<ymax;
 
     // remap burgs to the best new cell
     pack.burgs.forEach((b, i) => {
-      [b.x, b.y] = projection(b.x, b.y);
+      [b.x,b.y] = projection(b.x, b.y);
+      if (!inMap(b.x,b.y)) {
+        // out-of-map (removed) burgs' cell will be undefined
+        console.log('burg is out of map:', b)
+        b.removed=true;
+        b.cell = undefined;
+        return;
+      }
       b.cell = findCell(b.x, b.y);
       pack.cells.burg[b.cell] = i;
       // TODO: move port burgs to coast b.x, b.y,
     });
+
+    BurgsAndStates.generateProvinces();
 
     drawStates();
     drawBorders();
@@ -155,5 +165,6 @@ window.Submap = (function () {
     INFO && console.groupEnd("Generated Map " + seed);
   }
 
+  // export
   return { resample }
 })();
