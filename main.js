@@ -724,6 +724,10 @@ async function generate(options) {
 
     BurgsAndStates.generate();
 
+    Religions.generate();
+    BurgsAndStates.defineStateForms();
+    BurgsAndStates.defineTaxes();
+
     Production.collectResources();
 
     Trade.defineCenters();

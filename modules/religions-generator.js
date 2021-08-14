@@ -599,7 +599,7 @@ window.Religions = (function () {
 
         const cultureCost = c !== cells.culture[e] ? 10 : 0;
         const stateCost = s !== cells.state[e] ? 10 : 0;
-        const biomeCost = cells.road[e] ? 1 : biomesData.cost[cells.biome[e]];
+        const biomeCost = biomesData.cost[cells.biome[e]];
         const populationCost = Math.max(rn(popCost - cells.pop[e]), 0);
         const heightCost = Math.max(cells.h[e], 20) - 20;
         const waterCost = cells.h[e] < 20 ? (cells.road[e] ? 50 : 1000) : 0;
@@ -644,7 +644,7 @@ window.Religions = (function () {
 
       cells.c[n].forEach(function (e) {
         const religionCost = cells.religion[e] === b ? 0 : 2000;
-        const biomeCost = cells.road[e] ? 0 : biomesData.cost[cells.biome[e]];
+        const biomeCost = biomesData.cost[cells.biome[e]];
         const heightCost = Math.max(cells.h[e], 20) - 20;
         const waterCost = cells.h[e] < 20 ? (cells.road[e] ? 50 : 1000) : 0;
         const totalCost =
