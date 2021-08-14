@@ -652,6 +652,10 @@ function generate() {
 
     BurgsAndStates.generate();
 
+    Religions.generate();
+    BurgsAndStates.defineStateForms();
+    BurgsAndStates.defineTaxes();
+
     Production.collectResources();
 
     Trade.defineCenters();
@@ -661,9 +665,6 @@ function generate() {
     // temp, replace with route generator
     pack.cells.road = new Uint16Array(pack.cells.i.length);
     pack.cells.crossroad = new Uint16Array(pack.cells.i.length);
-
-    Religions.generate();
-    BurgsAndStates.defineStateForms();
 
     BurgsAndStates.generateProvinces();
     BurgsAndStates.defineBurgFeatures();

@@ -91,11 +91,10 @@ window.BurgsAndStates = (function () {
         const basename = b.name.length < 9 && each5th(b.cell) ? b.name : Names.getCultureShort(b.culture);
         const name = Names.getState(basename, b.culture);
         const type = cultures[b.culture].type;
-        const salesTax = rn(Math.random() * 0.3, 2);
 
         const coa = COA.generate(null, null, null, type);
         coa.shield = COA.getShield(b.culture, null);
-        states.push({i, color: colors[i - 1], name, expansionism, capital: i, type, center: b.cell, culture: b.culture, coa, salesTax});
+        states.push({i, color: colors[i - 1], name, expansionism, capital: i, type, center: b.cell, culture: b.culture, coa});
         cells.burg[b.cell] = i;
       });
 
@@ -1051,6 +1050,29 @@ window.BurgsAndStates = (function () {
     return adjName ? `${getAdjective(s.name)} ${s.formName}` : `${s.formName} of ${s.name}`;
   };
 
+  const defineTaxes = function () {
+    const {states} = pack;
+    const maxTaxPerForm = {
+      Monarchy: 0.3,
+      Republic: 0.1,
+      Union: 0.2,
+      Theocracy: 0.3,
+      Anarchy: 0
+    };
+
+    for (const state of states) {
+      const {i, removed, form} = state;
+      if (removed) continue;
+      if (!i) {
+        state.salesTax = 0;
+        continue;
+      }
+
+      const maxTax = maxTaxPerForm[form] || 0;
+      state.salesTax = maxTax ? rn(Math.random() * maxTax, 2) : 0;
+    }
+  };
+
   const generateProvinces = function (regenerate) {
     TIME && console.time('generateProvinces');
     const localSeed = regenerate ? Math.floor(Math.random() * 1e9).toString() : seed;
@@ -1255,6 +1277,7 @@ window.BurgsAndStates = (function () {
     generateDiplomacy,
     defineStateForms,
     getFullName,
+    defineTaxes,
     generateProvinces,
     updateCultures
   };
