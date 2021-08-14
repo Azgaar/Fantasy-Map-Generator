@@ -91,7 +91,6 @@ window.BurgsAndStates = (function () {
         const basename = b.name.length < 9 && each5th(b.cell) ? b.name : Names.getCultureShort(b.culture);
         const name = Names.getState(basename, b.culture);
         const type = cultures[b.culture].type;
-        const salesTax = rn(Math.random() * 0.3, 2);
 
         const coa = COA.generate(null, null, null, type);
         coa.shield = COA.getShield(b.culture, null);
