@@ -33,11 +33,12 @@ window.Rivers = (function () {
     function drainWater() {
       const MIN_FLUX_TO_FORM_RIVER = 30;
       const prec = grid.cells.prec;
+      const area = pack.cells.area;
       const land = cells.i.filter(i => h[i] >= 20).sort((a, b) => h[b] - h[a]);
       const lakeOutCells = Lakes.setClimateData(h);
 
       land.forEach(function (i) {
-        cells.fl[i] += prec[cells.g[i]]; // add flux from precipitation
+        cells.fl[i] += prec[cells.g[i]] * area[i] / 100; // add flux from precipitation
 
         // create lake outlet if lake is not in deep depression and flux > evaporation
         const lakes = lakeOutCells[i] ? features.filter(feature => i === feature.outCell && feature.flux > feature.evaporation) : [];
