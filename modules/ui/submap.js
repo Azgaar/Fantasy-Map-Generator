@@ -13,42 +13,46 @@ function openSubmapOptions() {
   });
 }
 
-const generateSubmap = debounce(function (x, y, w, h) {
+const generateSubmap = debounce(async function () {
   // Create submap from the current map
-  // x,y -> top left corner of desired submap
-  // w,h -> width and height of the submap
+  // submap limits defined by the current window size (canvas viewport)
 
   WARN && console.warn("Resampling current map");
   closeDialogs("#worldConfigurator, #options3d");
-  const stageUI = document.getElementById("submapStage");
-  const progressUI = document.getElementById("submapProgress");
-  const monitor = {
-    stage: s => stageUI.innerHTML = s,
-    progress: p => progressUI.innerHTML = p,
+  const settings = {
+    promoteTown: Boolean(document.getElementById("submapPromoteTown").checked),
+    depressRivers: Boolean(document.getElementById("submapDepressRivers").checked),
   }
 
+  // Create projection func from current zoom extents
   const [[x0, y0], [x1, y1]] = getViewBoxExtent();
-  const projection = (x, y) => {
-    return [x * (x1-x0) / graphWidth + x0, y * (y1-y0) / graphHeight + y0]
+  const projection = (x, y, inverse=false) => {
+    return inverse
+      ? [x * (x1-x0) / graphWidth + x0, y * (y1-y0) / graphHeight + y0]
+      : [(x-x0) * graphWidth / (x1-x0),  (y-y0) * graphHeight / (y1-y0)];
   }
 
+  // fix scale
+  distanceScaleInput.value = distanceScaleOutput.value = distanceScaleOutput.value / scale;
+  populationRateInput.value = populationRateOutput.value = populationRateOutput.value / scale;
   customization = 0;
+
   undraw();
   resetZoom(1000);
-
   let oldstate = {
     grid: _.cloneDeep(grid),
     pack: _.cloneDeep(pack),
     seed,
     graphWidth,
     graphHeight,
-  }
+  };
 
   try {
-    Submap.resample(oldstate, projection, monitor);
+    await Submap.resample(oldstate, projection, settings);
   } catch (error) {
     generateSubmapErrorHandler(error);
   }
+
   oldstate = null; // destroy old state to free memory
 
   restoreLayers();

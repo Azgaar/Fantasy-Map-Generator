@@ -762,6 +762,7 @@ function markupGridOcean() {
   TIME && console.timeEnd("markupGridOcean");
 }
 
+// Calculate cell-distance to coast for every cell
 function markup(cells, start, increment, limit) {
   for (let t = start, count = Infinity; count > 0 && t > limit; t += increment) {
     count = 0;
@@ -1690,11 +1691,11 @@ function addZones(number = 1) {
   }
 
   function addRebels() {
-    const state = ra(states.filter(s => s.i && s.neighbors.some(n => n)));
+    const state = ra(states.filter(s => s.i && !s.removed && s.neighbors.some(n => n)));
     if (!state) return;
 
-    const neib = ra(state.neighbors.filter(n => n));
-    const cell = cells.i.find(i => cells.state[i] === state.i && cells.c[i].some(c => cells.state[c] === neib));
+    const neib = ra(state.neighbors.filter(n => n && !states[n].removed));
+    const cell = cells.i.find(i => cells.state[i] === state.i && !state.removed && cells.c[i].some(c => cells.state[c] === neib));
     const cellsArray = [],
       queue = [cell],
       power = rand(10, 30);
@@ -1704,13 +1705,18 @@ function addZones(number = 1) {
       cellsArray.push(q);
       if (cellsArray.length > power) break;
 
-      cells.c[q].forEach(e => {
-        if (used[e]) return;
-        if (cells.state[e] !== state.i) return;
-        used[e] = 1;
-        if (e % 4 !== 0 && !cells.c[e].some(c => cells.state[c] === neib)) return;
-        queue.push(e);
-      });
+      try {
+        cells.c[q].forEach(e => {
+          if (used[e]) return;
+          if (cells.state[e] !== state.i) return;
+          used[e] = 1;
+          if (e % 4 !== 0 && !cells.c[e].some(c => cells.state[c] === neib)) return;
+          queue.push(e);
+        });
+      } catch (er) {
+        console.log('WTF: ', q, cellsArray);
+        throw er;
+      }
     }
 
     const rebels = rw({Rebels: 5, Insurgents: 2, Mutineers: 1, Rioters: 1, Separatists: 1, Secessionists: 1, Insurrection: 2, Rebellion: 1, Conspiracy: 2});

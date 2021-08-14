@@ -114,7 +114,7 @@ window.Military = (function () {
       for (const u of options.military) {
         if (u.type === "naval" && !b.port) continue; // only ports produce naval units
         const perc = +u.urban;
-        if (isNaN(perc) || perc <= 0 || !s.temp[u.name]) continue;
+        if (isNaN(perc) || perc <= 0 || !s.temp || !s.temp[u.name]) continue;
 
         const mod = type === "generic" ? 1 : burgTypeModifier[type][u.type]; // cell specific modifier
         const army = m * perc * mod; // urban cell army

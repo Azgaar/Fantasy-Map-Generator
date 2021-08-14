@@ -3503,10 +3503,17 @@
       <div id="tileStatus" style="background-color: #33333310; font-style: italic"></div>
     </div>
 
-    <div id="submapOptionsDialog" style="display: none" class="dialog">
-      <p style="font-style: italic; color: red">Original map will be destroyed! Don't forget to save your work!</p>
-      <div id="submapStage"></div>
-      <div id="submapProgress"></div>
+    <div id="submapOptionsDialog" style="display: none; max-width:300px;" class="dialog">
+      <p style="font-style: italic; color: red; font-weight:bold;">Original map will be destroyed! Don't forget to save your work!</p>
+      <p>Population rate (Units editor -> population) and map pixel size will
+        be automatically update according to the current scale factor. Options are interpreted as usual.</p>
+      <hl />
+      <div data-tip="All small cities of the parent map will be promoted to Capitals." >
+      <input id="submapPromoteTown" class="checkbox" type="checkbox">
+      <label for="submapPromoteTown" class="checkbox-label">Promote towns to cities.</label>
+      <input id="submapDepressRivers" class="checkbox" type="checkbox">
+      <label for="submapDepressRivers" class="checkbox-label">Errode riverbeds.</label>
+      </div>
       <button id="start" data-tip="Start submap resampling" class="options glow" onclick="generateSubmap()">Generate</button>
     </div>
 
