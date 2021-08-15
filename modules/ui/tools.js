@@ -117,6 +117,7 @@ function regenerateRivers() {
   Lakes.defineGroup();
   Rivers.specify();
   if (!layerIsOn("toggleRivers")) toggleRivers();
+  else drawRivers();
 }
 
 function recalculatePopulation() {
