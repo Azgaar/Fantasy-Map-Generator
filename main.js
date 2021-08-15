@@ -153,6 +153,7 @@ let mapCoordinates = {}; // map coordinates on globe
 options.winds = [225, 45, 225, 315, 135, 315]; // default wind directions
 
 let populationRate = +document.getElementById("populationRateInput").value;
+let distanceScale = +document.getElementById("distanceScaleInput").value;
 let urbanization = +document.getElementById("urbanizationInput").value;
 
 applyStoredOptions();

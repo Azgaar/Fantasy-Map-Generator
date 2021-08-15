@@ -33,8 +33,8 @@ const generateSubmap = debounce(async function () {
   }
 
   // fix scale
-  distanceScaleInput.value = distanceScaleOutput.value = distanceScaleOutput.value / scale;
-  populationRateInput.value = populationRateOutput.value = populationRateOutput.value / scale;
+  distanceScale = distanceScaleInput.value = distanceScaleOutput.value = distanceScaleOutput.value / scale;
+  populationRate = populationRateInput.value = populationRateOutput.value = populationRateOutput.value / scale;
   customization = 0;
 
   undraw();

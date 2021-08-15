@@ -31,14 +31,14 @@ window.Rivers = (function () {
     TIME && console.timeEnd("generateRivers");
 
     function drainWater() {
-      const MIN_FLUX_TO_FORM_RIVER = 30;
+      const MIN_FLUX_TO_FORM_RIVER = 10 * distanceScale;
       const prec = grid.cells.prec;
-      const area = pack.cells.area;
+      const area = c => pack.cells.area[c] * distanceScale * distanceScale;
       const land = cells.i.filter(i => h[i] >= 20).sort((a, b) => h[b] - h[a]);
       const lakeOutCells = Lakes.setClimateData(h);
 
       land.forEach(function (i) {
-        cells.fl[i] += prec[cells.g[i]] * area[i] / 100; // add flux from precipitation
+        cells.fl[i] += prec[cells.g[i]] * area(i) / 1000; // add flux from precipitation
 
         // create lake outlet if lake is not in deep depression and flux > evaporation
         const lakes = lakeOutCells[i] ? features.filter(feature => i === feature.outCell && feature.flux > feature.evaporation) : [];
@@ -166,7 +166,7 @@ window.Rivers = (function () {
         const mouth = riverCells[riverCells.length - 2];
         const parent = riverParents[key] || 0;
 
-        const widthFactor = !parent || parent === riverId ? 1.2 : 1;
+        const widthFactor = (!parent || parent === riverId ? 3.6 : 3) / distanceScale;
         const meanderedPoints = addMeandering(riverCells);
         const discharge = cells.fl[mouth]; // m3 in second
         const length = rn(getApproximateLength(meanderedPoints), 2);

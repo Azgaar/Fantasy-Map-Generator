@@ -55,6 +55,7 @@ function editUnits() {
   }
 
   function changeDistanceScale() {
+    distanceScale = +document.getElementById("distanceScaleInput").value;
     drawScaleBar();
     calculateFriendlyGridSize();
   }
@@ -95,6 +96,7 @@ function editUnits() {
 
   function restoreDefaultUnits() {
     // distanceScale
+    distanceScale = 3;
     document.getElementById("distanceScaleOutput").value = 3;
     document.getElementById("distanceScaleInput").value = 3;
     unlock("distanceScale");

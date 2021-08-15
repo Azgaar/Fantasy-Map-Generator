@@ -3506,14 +3506,22 @@
     <div id="submapOptionsDialog" style="display: none; max-width:300px;" class="dialog">
       <p style="font-style: italic; color: red; font-weight:bold;">Original map will be destroyed! Don't forget to save your work!</p>
       <p>Population rate (Units editor -> population) and map pixel size will
-        be automatically update according to the current scale factor. Options are interpreted as usual.</p>
-      <hl />
+        be automatically updated according to the current scale factor. If you'd like
+        to generate a new parent-map, <b>don't forget to reset them!</b> Options are interpreted as usual.</p>
+      <hr />
       <div data-tip="All small cities of the parent map will be promoted to Capitals." >
-      <input id="submapPromoteTown" class="checkbox" type="checkbox">
-      <label for="submapPromoteTown" class="checkbox-label">Promote towns to cities.</label>
-      <input id="submapDepressRivers" class="checkbox" type="checkbox">
-      <label for="submapDepressRivers" class="checkbox-label">Errode riverbeds.</label>
+        <input id="submapPromoteTown" class="checkbox" type="checkbox">
+        <label for="submapPromoteTown" class="checkbox-label">Promote towns to cities.</label>
       </div>
+      <div data-tip="Rivers on the parent map errode land (helps to get similar river network.)" >
+        <input id="submapDepressRivers" class="checkbox" type="checkbox">
+        <label for="submapDepressRivers" class="checkbox-label">Errode riverbeds.</label>
+      </div>
+      <div data-tip="Add lakes in depressions. (Can be very slow on big landmass!)" >
+        <input id="submapAddLakeInDepression" class="checkbox" type="checkbox">
+        <label for="submapAddLakeInDepression" class="checkbox-label">Add lakes in depressions.</label>
+      </div>
+      <hr/>
       <button id="start" data-tip="Start submap resampling" class="options glow" onclick="generateSubmap()">Generate</button>
     </div>
 
