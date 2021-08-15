@@ -14,7 +14,7 @@ window.Trade = (function () {
       const totalProduction = d3.sum(Object.values(produced));
       let score = Math.round(totalProduction - population);
       if (capital) score *= 2;
-      if (port) score *= 3;
+      if (port) score *= 2;
       return {i, score};
     });
 
