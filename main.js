@@ -659,6 +659,7 @@ function generate() {
     Production.collectResources();
 
     Trade.defineCenters();
+    Trade.calculateDistances();
     Trade.exportGoods();
     Trade.importGoods();
 

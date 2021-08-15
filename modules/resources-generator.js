@@ -526,8 +526,6 @@ window.Resources = (function () {
     }
   ];
 
-  // const categoryPriority = ['Food', 'Preservative', 'Construction', 'Ore', 'Material', 'Supply', 'Luxury'];
-
   const models = {
     Deciduous_forests: 'biome(6, 7, 8)',
     Any_forest: 'biome(5, 6, 7, 8, 9)',
