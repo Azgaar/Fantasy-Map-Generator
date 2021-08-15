@@ -31,9 +31,10 @@ window.Trade = (function () {
       if (tradeCenter) {
         const tradeCenterId = tradeCenter[2];
         burg.tradeCenter = tradeCenterId;
+        trade.centers[tradeCenterId].burgs.push({i: burgId});
       } else {
         const tradeCenterId = trade.centers.length;
-        trade.centers.push({i: tradeCenterId, burg: burgId, x, y});
+        trade.centers.push({i: tradeCenterId, burg: burgId, burgs: [{i: burgId}]});
         centersTree.add([x, y, tradeCenterId]);
         burg.tradeCenter = tradeCenterId;
       }
@@ -45,7 +46,9 @@ window.Trade = (function () {
     for (const burg of burgs) {
       const {i, x: x1, y: y1, tradeCenter} = burg;
       if (!i) continue;
-      const {x: x2, y: y2} = trade.centers[tradeCenter];
+
+      const center = trade.centers[tradeCenter];
+      const {x: x2, y: y2} = burgs[center.burg];
       debug.append('line').attr('x1', x1).attr('y1', y1).attr('x2', x2).attr('y2', y2).attr('stroke', 'black').attr('stroke-width', 0.2);
     }
     for (const {i, score} of candidatesSorted) {
@@ -59,7 +62,8 @@ window.Trade = (function () {
         .style('fill', 'blue')
         .text(score);
     }
-    for (const {x, y, i} of trade.centers) {
+    for (const tradeCenter of trade.centers) {
+      const {x, y} = burgs[tradeCenter.burg];
       debug
         .append('circle')
         .attr('cx', x - 4)
@@ -73,7 +77,7 @@ window.Trade = (function () {
         .attr('x', x - 4)
         .attr('y', y - 4)
         .style('font-size', 3)
-        .text(i);
+        .text(tradeCenter.i);
     }
 
     TIME && console.timeEnd('defineCenters');
@@ -98,18 +102,31 @@ window.Trade = (function () {
       for (let j = i + 1; j < centers.length; j++) {
         const {x: x2, y: y2, port: port2, cell: cell2} = burgs[centers[j].burg];
         const distance = Math.hypot(x1 - x2, y1 - y2);
-        const sameFeature = cell1 === cell2;
+        const sameFeature = cells.f[cell1] === cells.f[cell2];
         const sameFeaturePorts = port1 && port2 && port1 === port2;
         costs[i][j] = getCost(distance, sameFeature, sameFeaturePorts) | 0;
       }
     }
 
     for (const center of centers) {
+      // nearers trade centers
       center.nearest = centers.map(({i}) => {
         const cost = center.i < i ? costs[center.i][i] : costs[i][center.i];
         return {i, cost: cost || 0};
       });
       center.nearest.sort((a, b) => a.cost - b.cost);
+
+      // distance cost to burgs
+      const {x: x1, y: y1, port: port1, cell: cell1} = burgs[center.burg];
+      center.burgs = center.burgs.map(({i: burgId}) => {
+        const {x: x2, y: y2, port: port2, cell: cell2} = burgs[burgId];
+
+        const distance = Math.hypot(x1 - x2, y1 - y2);
+        const sameFeature = cells.f[cell1] === cells.f[cell2];
+        const sameFeaturePorts = port1 && port2 && port1 === port2;
+        const cost = getCost(distance, sameFeature, sameFeaturePorts) | 0;
+        return {i: burgId, cost};
+      });
     }
 
     TIME && console.timeEnd('calculateDistances');
@@ -120,17 +137,17 @@ window.Trade = (function () {
     const DEFAULT_TRANSPORT_DIST = (graphWidth + graphHeight) / 20;
 
     for (const tradeCenter of trade.centers) {
-      const {i: centerId, burg: centerBurg, x: x0, y: y0} = tradeCenter;
+      const {i: centerId, burgs: centerBurgs} = tradeCenter;
       const tradeCenterGoods = {};
 
-      for (const burg of burgs) {
-        const {i, removed, tradeCenter, produced, population, state, x, y} = burg;
-        if (!i || removed || tradeCenter !== centerBurg) continue;
+      for (const {i: burgId, cost: distanceCost} of centerBurgs) {
+        const burg = burgs[burgId];
+        const {i, removed, produced, population, state} = burg;
+        if (!i || removed) continue;
         const consumption = Math.ceil(population);
         const exportPool = {};
 
-        const distance = Math.hypot(x - x0, y - y0);
-        const transportFee = (distance / DEFAULT_TRANSPORT_DIST) ** 0.8 || 0.02;
+        const transportFee = (distanceCost / DEFAULT_TRANSPORT_DIST) ** 0.8 || 0.02;
         const salesTax = states[state].salesTax || 0;
         let income = 0;
 
@@ -205,6 +222,8 @@ window.Trade = (function () {
 
           const quantity = Math.min(demand, stored);
           importPool[resourceId] = quantity;
+
+          break;
 
           tradeCenter.supply[resourceId] -= quantity;
           demand -= quantity;
