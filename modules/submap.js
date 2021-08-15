@@ -64,13 +64,18 @@ window.Submap = (function () {
       baseState.pack.rivers.forEach(r =>
         r.cells.forEach(oldc => {
           const targetCells = forwardGridMap[oldc];
+          if (!targetCells) {
+            console.error('Targetcells is empty');
+            console.log("oldc,gridmap", oldc, forwardGridMap);
+            return;
+          }
           targetCells.forEach(c => {
             if (grid.cells.t[c]<1) return;
             rbeds[c] = 1;
           });
         })
       );
-      // raise every land cell a bit
+      // raise every land cell a bit except riverbeds
       grid.cells.h.forEach((h, i) => {
         if (!rbeds[i] || grid.cells.t[i]<1) return;
         grid.cells.h[i] = Math.min(grid.cells.h[i] * 1.1, 255);
@@ -78,7 +83,8 @@ window.Submap = (function () {
     }
 
     markupGridOcean();
-    addLakesInDeepDepressions();
+    if (options.addLakesInDepressions)
+      addLakesInDeepDepressions();
     // openNearSeaLakes();
     OceanLayers();
     // defineMapSize(); // not needed (not random)
@@ -150,9 +156,19 @@ window.Submap = (function () {
 
     // transfer basemap cultures
     pack.cultures = baseState.pack.cultures
+    // fix culture centers
+    const validCultures = new Set(pack.cells.culture);
+    pack.cultures.forEach((c, i) => {
+      if (!validCultures.has(c)) {
+        c.removed = true;
+        c.center = undefined;
+      } else {
+        c.center = pack.cells.culture.findIndex(x => x===c);
+      }
+    });
+
     // Cultures.generate();
     // Cultures.expand();
-    // TODO: update culture centers
 
     // transfer states, mark states without land as removed.
     const validStates = new Set(pack.cells.state);
