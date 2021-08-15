@@ -56,41 +56,58 @@ window.Trade = (function () {
 
     for (const tradeCenter of trade.centers) {
       const {i: centerId, burg: centerBurg, x: x0, y: y0} = tradeCenter;
-      const goods = {};
+      const tradeCenterGoods = {};
 
       for (const burg of burgs) {
-        const {i, removed, tradeCenter, produced, population, state, x, y} = burg;
+        const {i, removed, tradeCenter, produced, population, food, state, x, y} = burg;
         if (!i || removed || tradeCenter !== centerBurg) continue;
         const consumption = Math.ceil(population);
 
         const distance = Math.hypot(x - x0, y - y0);
         const transportFee = (distance / DEFAULT_TRANSPORT_DIST) ** 0.8 || 0.02;
         const salesTax = states[state].salesTax || 0;
+        let income = 0;
 
+        const categorized = {};
         for (const resourceId in produced) {
-          const production = produced[resourceId];
-          const quantity = production - consumption;
-          if (quantity < 1) continue;
-
-          const {value, name} = Resources.get(+resourceId);
-
-          const basePrice = value * quantity;
-          const transportCost = rn((value * quantity) ** 0.5 * transportFee, 1);
-          const netPrice = basePrice - transportCost;
-
-          const stateIncome = rn(netPrice * salesTax, 1);
-          const burgIncome = rn(netPrice - stateIncome, 1);
-
-          if (burgIncome < 1 || burgIncome < basePrice / 4) continue;
-
-          trade.deals.push({resourceId: +resourceId, name, quantity, exporter: i, tradeCenter: centerId, basePrice, transportCost, stateIncome, burgIncome});
-
-          if (!goods[resourceId]) goods[resourceId] = quantity;
-          else goods[resourceId] += quantity;
+          const {category} = Resources.get(+resourceId);
+          if (!categorized[category]) categorized[category] = {};
+          categorized[category][resourceId] = produced[resourceId];
         }
+
+        for (const category in categorized) {
+          const categoryProduction = d3.sum(Object.values(categorized[category]));
+          const exportQuantity = categoryProduction - consumption;
+          if (exportQuantity <= 0) continue;
+
+          for (const resourceId in categorized[category]) {
+            const production = categorized[category][resourceId];
+            const quantity = Math.round((production / categoryProduction) * exportQuantity);
+            if (quantity <= 0) continue;
+
+            const {value, name} = Resources.get(+resourceId);
+
+            const basePrice = value * quantity;
+            const transportCost = rn((value * quantity) ** 0.5 * transportFee, 1);
+            const netPrice = basePrice - transportCost;
+
+            const stateIncome = rn(netPrice * salesTax, 1);
+            const burgIncome = rn(netPrice - stateIncome, 1);
+
+            if (burgIncome < 1 || burgIncome < basePrice / 4) continue;
+
+            trade.deals.push({resourceId: +resourceId, name, quantity, exporter: i, tradeCenter: centerId, basePrice, transportCost, stateIncome, burgIncome});
+            income += burgIncome;
+
+            if (!tradeCenterGoods[resourceId]) tradeCenterGoods[resourceId] = quantity;
+            else tradeCenterGoods[resourceId] += quantity;
+          }
+        }
+
+        burg.income = income;
       }
 
-      tradeCenter.goods = goods;
+      tradeCenter.goods = tradeCenterGoods;
     }
   };
 
