@@ -727,6 +727,7 @@ async function generate(options) {
     Production.collectResources();
 
     Trade.defineCenters();
+    Trade.calculateDistances();
     Trade.exportGoods();
     Trade.importGoods();
 
