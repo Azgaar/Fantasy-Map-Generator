@@ -155,15 +155,16 @@ window.Submap = (function () {
     rankCells();
 
     // transfer basemap cultures
-    pack.cultures = baseState.pack.cultures
+    pack.cultures = baseState.pack.cultures;
     // fix culture centers
     const validCultures = new Set(pack.cells.culture);
+    console.log('cultures',validCultures);
     pack.cultures.forEach((c, i) => {
-      if (!validCultures.has(c)) {
+      if (!validCultures.has(i)) {
         c.removed = true;
         c.center = undefined;
       } else {
-        c.center = pack.cells.culture.findIndex(x => x===c);
+        c.center = pack.cells.culture.findIndex(x => x===i);
       }
     });
 
