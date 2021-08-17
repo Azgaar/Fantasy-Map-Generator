@@ -4,9 +4,9 @@ Experimental submaping module
 */
 
 window.Submap = (function () {
-  function resample(baseState, projection, options) {
-    // generate new map based on (resampling) existing one (baseState)
-    // baseState: {seed, grid, pack} from original map
+  function resample(parentMap, projection, options) {
+    // generate new map based on (resampling) existing one (parentMap)
+    // parentMap: {seed, grid, pack} from original map
     // projection: map function from old to new coordinates or backwards
     //  prj(x,y,direction:bool) -> [x',y']
 
@@ -15,7 +15,7 @@ window.Submap = (function () {
     invokeActiveZooming();
 
     // copy seed
-    seed = baseState.seed;
+    seed = parentMap.seed;
     Math.random = aleaPRNG(seed);
     INFO && console.group("SubMap with seed: " + seed);
     DEBUG && console.log("Using Options:", options);
@@ -42,10 +42,10 @@ window.Submap = (function () {
     grid.cells.temp = new Int8Array(n); // temperature
     grid.cells.prec = new Int8Array(n); // precipitation
 
-    const gridCells = baseState.grid.cells;
-    const forwardGridMap = baseState.grid.points.map(_=>[]); // old -> [newcelllist]
-    resampler(grid.points, baseState.pack.cells.q, (id, oldid) => {
-      const cid = baseState.pack.cells.g[oldid]
+    const gridCells = parentMap.grid.cells;
+    const forwardGridMap = parentMap.grid.points.map(_=>[]); // old -> [newcelllist]
+    resampler(grid.points, parentMap.pack.cells.q, (id, oldid) => {
+      const cid = parentMap.pack.cells.g[oldid]
       grid.cells.h[id] = gridCells.h[cid];
       grid.cells.temp[id] = gridCells.temp[cid];
       grid.cells.prec[id] = gridCells.prec[cid];
@@ -61,14 +61,10 @@ window.Submap = (function () {
       const rbeds = new Uint16Array(grid.cells.i.length);
 
       // and erode riverbeds
-      baseState.pack.rivers.forEach(r =>
+      parentMap.pack.rivers.forEach(r =>
         r.cells.forEach(oldc => {
           const targetCells = forwardGridMap[oldc];
-          if (!targetCells) {
-            console.error('Targetcells is empty');
-            console.log("oldc,gridmap", oldc, forwardGridMap);
-            return;
-          }
+          if (!targetCells) throw "TargetCell shouldn't be empty.";
           targetCells.forEach(c => {
             if (grid.cells.t[c]<1) return;
             rbeds[c] = 1;
@@ -101,9 +97,9 @@ window.Submap = (function () {
     drawCoastline();
 
     // resample packed graph
-    const oldCells = baseState.pack.cells;
+    const oldCells = parentMap.pack.cells;
     const reverseMap = new Map(); // cellmap from new -> oldcell
-    const forwardMap = baseState.pack.cells.p.map(_=>[]); // old -> [newcelllist]
+    const forwardMap = parentMap.pack.cells.p.map(_=>[]); // old -> [newcelllist]
 
     const pn = pack.cells.i.length;
     const cells = pack.cells;
@@ -148,17 +144,16 @@ window.Submap = (function () {
 
     // biome calculation based on (resampled) grid.cells.temp and prec
     // it's safe to recalculate.
-    stage("Regenerating Biome.")
+    stage("Regenerating Biome.");
     defineBiomes();
     // recalculate suitability and population
     // TODO: normalize according to the base-map
     rankCells();
 
     // transfer basemap cultures
-    pack.cultures = baseState.pack.cultures;
+    pack.cultures = parentMap.pack.cultures;
     // fix culture centers
     const validCultures = new Set(pack.cells.culture);
-    console.log('cultures',validCultures);
     pack.cultures.forEach((c, i) => {
       if (!validCultures.has(i)) {
         c.removed = true;
@@ -173,8 +168,8 @@ window.Submap = (function () {
 
     // transfer states, mark states without land as removed.
     const validStates = new Set(pack.cells.state);
-    stage("Porting states.")
-    pack.states = baseState.pack.states;
+    stage("Porting states.");
+    pack.states = parentMap.pack.states;
     // keep valid states and neighbors only
     pack.states.forEach((s, i) => {
       if (!validStates.has(i)) s.removed=true;
@@ -191,62 +186,15 @@ window.Submap = (function () {
     // BurgsAndStates.defineStateForms();
     // BurgsAndStates.defineBurgFeatures();
 
-    stage("Porting and locking burgs.")
-    pack.burgs = baseState.pack.burgs
-    const [[xmin, ymin], [xmax, ymax]] = getViewBoxExtent();
-    const inMap = (x,y) => x>xmin && x<xmax && y>ymin && y<ymax;
-
-    // remap burgs to the best new cell
-    pack.burgs.forEach((b, i) => {
-      // [b.x,b.y] = inverseProjection(b.x, b.y);
-      [b.x,b.y] = projection(b.x, b.y, false);
-      if (!inMap(b.x,b.y)) {
-        // disable out-of-map (removed) burgs
-        b.removed = true;
-        b.cell = undefined;
-        return;
-      }
-
-      let bestCell = findCell(b.x, b.y);
-
-      // move burgs out of water
-      if (cells.t[bestCell] == -1) {
-        const coasts = cells.c[bestCell].filter(c=>cells.t[c] == 1);
-        if (!coasts.length) {
-          WARN && console.warn(`Burg ${b.name} sank like Atlantis. Unable to find coastal cells nearby. Try to reduce resample zoom level.`);
-          b.removed = true;
-          return;
-        }
-        bestCell = coasts[0]; // TODO: closest instead?
-      }
-
-      b.cell = bestCell;
-      b.lock = true;
-      pack.cells.burg[b.cell] = i;
-      if (options.promoteTown) b.capital = 1;
-
-      // find water body id for ports
-      if (b.port) {
-        const water = cells.c[b.cell].filter(c=>cells.t[c] == -1);
-        if (water.length) {
-          b.port = cells.f[water[0]];
-          [b.x, b.y] = getMiddlePoint(b.cell, water[0]);
-        } else {
-          WARN && console.warn(`Can't find water near port ${b.name}. :-/`);
-          b.port = 0;
-        }
-      } else {
-        [b.x, b.y] = cells.p[b.cell];
-      }
-
-      // TODO: move port burgs to coast b.x, b.y,
-    });
+    stage("Porting and locking burgs.");
+    if (options.copyBurgs) copyBurgs(parentMap, projection);
+    else BurgsAndStates.regenerateBurgs();
     BurgsAndStates.drawBurgs();
 
-    stage("Regenerating road network.")
+    stage("Regenerating road network.");
     Routes.regenerate();
 
-    stage("Regenerating provinces.")
+    stage("Regenerating provinces.");
     BurgsAndStates.generateProvinces();
 
     drawStates();
@@ -256,16 +204,88 @@ window.Submap = (function () {
     Rivers.specify();
     Lakes.generateName();
 
-    stage("Modelling military.")
+    stage("Modelling military.");
     Military.generate();
     addMarkers();
     addZones();
     Names.getMapName();
-    stage("Submap done.")
+    stage("Submap done.");
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - timeStart) / 1000, 2)}s`);
     showStatistics();
     INFO && console.groupEnd("Generated Map " + seed);
+  }
+
+  /* find the nearest cell having at least one *neighbor*
+  *  fulfilling filter f, up to cell-distance `max`
+  *  returns [cellid, neighbor] tuple or undefined if no such cell.
+  */
+  const findNearest = (f, max=3) => centerId => {
+    const met = new Set([centerId]); // f might be expensive
+    const kernel = (c, dist) => {
+      const ncs = pack.cells.c[c].filter(nc => !met.has(nc));
+      const n = ncs.find(f);
+      if (n) return [c, n];
+      if (dist >= max || !ncs.length) return undefined;
+      ncs.forEach(i => met.add(i));
+      let answer;
+      while (ncs.length && !answer) answer = kernel(ncs.shift(), dist+1);
+      return answer;
+    }
+    return kernel(centerId, 1);
+  }
+
+  function copyBurgs(parentMap, projection) {
+    const [[xmin, ymin], [xmax, ymax]] = getViewBoxExtent();
+    const inMap = (x,y) => x>xmin && x<xmax && y>ymin && y<ymax;
+    const cells = pack.cells;
+    pack.burgs = parentMap.pack.burgs;
+
+    // remap burgs to the best new cell
+    pack.burgs.forEach( (b, id) => {
+      if (id == 0) return; // skip empty city of neturals
+      [b.x, b.y] = projection(b.x, b.y, false);
+
+      // disable out-of-map (removed) burgs
+      if (!inMap(b.x,b.y)) {
+        b.removed = true;
+        b.cell = undefined;
+        return;
+      }
+
+      let cityCell = findCell(b.x, b.y);
+
+      // pull sunken burgs out of water
+      if (cells.t[cityCell] <= 0) {
+        const searchPlace = findNearest(c => cells.t[c] === 1);
+        const res = searchPlace(cityCell)
+        if (!res) {
+          WARN && console.warn(`Burg ${b.name} sank like Atlantis. Unable to find coastal cells nearby. Try to reduce resample zoom level.`);
+          b.removed = true;
+          return;
+        }
+        const [water, coast] = res;
+        [b.x, b.y] = b.port? getMiddlePoint(coast, water): cells.p[coast];
+        b.cell = coast;
+      } if (b.port) {
+        // find coast for ports on land
+        const searchPortCell = findNearest(c => cells.t[c] === -1);
+        const res = searchPortCell(cityCell);
+        if (res) {
+          const [coast, water] = res;
+          [b.x, b.y] = getMiddlePoint(coast, water);
+          b.cell = coast;
+        } else {
+          WARN && console.warn(`Can't find water near port ${b.name}. :-/`);
+          b.port = 0;
+        }
+      } else {
+        [b.x, b.y] = cells.p[b.cell];
+      }
+      b.lock = true;
+      pack.cells.burg[b.cell] = id;
+      if (options.promoteTown) b.capital = 1;
+    });
   }
 
   // export

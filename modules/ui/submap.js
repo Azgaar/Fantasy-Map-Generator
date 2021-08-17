@@ -22,6 +22,7 @@ const generateSubmap = debounce(async function () {
   const settings = {
     promoteTown: Boolean(document.getElementById("submapPromoteTown").checked),
     depressRivers: Boolean(document.getElementById("submapDepressRivers").checked),
+    copyBurgs: Boolean(document.getElementById("submapCopyBurgs").checked),
     addLakesInDepressions: Boolean(document.getElementById("submapAddLakeInDepression").checked),
   }
 
