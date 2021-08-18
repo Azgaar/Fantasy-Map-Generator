@@ -172,6 +172,7 @@ window.Submap = (function () {
     pack.states = parentMap.pack.states;
     // keep valid states and neighbors only
     pack.states.forEach((s, i) => {
+      if (s.removed) return;
       if (!validStates.has(i)) s.removed=true;
       s.neighbors = s.neighbors.filter(n => validStates.has(n));
     });
@@ -204,10 +205,10 @@ window.Submap = (function () {
     Rivers.specify();
     Lakes.generateName();
 
-    stage("Modelling military.");
-    Military.generate();
-    addMarkers();
-    addZones();
+    stage("Modelling military, markers and zones (if requested).");
+    if (options.addMilitary) Military.generate();
+    if (options.addMarkers) addMarkers();
+    if (options.addZones) addZones();
     Names.getMapName();
     stage("Submap done.");
 
@@ -266,6 +267,7 @@ window.Submap = (function () {
         }
         const [water, coast] = res;
         [b.x, b.y] = b.port? getMiddlePoint(coast, water): cells.p[coast];
+        if (b.port) b.port = cells.f[water];
         b.cell = coast;
       } if (b.port) {
         // find coast for ports on land
@@ -274,6 +276,7 @@ window.Submap = (function () {
         if (res) {
           const [coast, water] = res;
           [b.x, b.y] = getMiddlePoint(coast, water);
+          b.port = cells.f[water]; // copy feature number
           b.cell = coast;
         } else {
           WARN && console.warn(`Can't find water near port ${b.name}. :-/`);

@@ -24,6 +24,9 @@ const generateSubmap = debounce(async function () {
     depressRivers: Boolean(document.getElementById("submapDepressRivers").checked),
     copyBurgs: Boolean(document.getElementById("submapCopyBurgs").checked),
     addLakesInDepressions: Boolean(document.getElementById("submapAddLakeInDepression").checked),
+    addMilitary: Boolean(document.getElementById("submapAddMilitary").checked),
+    addMarkers: Boolean(document.getElementById("submapAddMarkers").checked),
+    addZones: Boolean(document.getElementById("submapAddZones").checked),
   }
 
   // Create projection func from current zoom extents
