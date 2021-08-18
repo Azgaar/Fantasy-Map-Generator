@@ -187,7 +187,7 @@ window.Submap = (function () {
     // BurgsAndStates.defineBurgFeatures();
 
     stage("Porting and locking burgs.");
-    if (options.copyBurgs) copyBurgs(parentMap, projection);
+    if (options.copyBurgs) copyBurgs(parentMap, projection, options);
     else BurgsAndStates.regenerateBurgs();
     BurgsAndStates.drawBurgs();
 
@@ -235,7 +235,7 @@ window.Submap = (function () {
     return kernel(centerId, 1);
   }
 
-  function copyBurgs(parentMap, projection) {
+  function copyBurgs(parentMap, projection, options) {
     const [[xmin, ymin], [xmax, ymax]] = getViewBoxExtent();
     const inMap = (x,y) => x>xmin && x<xmax && y>ymin && y<ymax;
     const cells = pack.cells;
@@ -280,7 +280,8 @@ window.Submap = (function () {
           b.port = 0;
         }
       } else {
-        [b.x, b.y] = cells.p[b.cell];
+        b.cell = cityCell;
+        [b.x, b.y] = cells.p[cityCell];
       }
       b.lock = true;
       pack.cells.burg[b.cell] = id;
