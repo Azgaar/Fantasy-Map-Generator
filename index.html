@@ -1312,8 +1312,7 @@
         </table>
 
         <button id="configureWorld" data-tip="Click to open world configurator to setup map position on Globe and World climate" onclick="editWorld()">Configure World</button>
-        <button id="openSubmapOptions" data-tip="Click to generate new (sub)map from the current viewport" onclick="openSubmapOptions()">Submap</button>
-        <button id="optionsReset" data-tip="Click to restore default options (page will be reloaded)" onclick="restoreDefaultOptions()">Reset</button>
+        <button id="optionsReset" data-tip="Click to restore default options (page will be reloaded)" onclick="restoreDefaultOptions()">Reset to defaults</button>
 
       </div>
 
@@ -1359,6 +1358,7 @@
           <button id="regenerateIce" data-tip="Click to icebergs and glaciers">Ice</button>
           <button id="regenerateMarkers" data-tip="Click to regenerate markers. Hold Ctrl and click to set markers number multiplier">Markers</button>
           <button id="regenerateZones" data-tip="Click to regenerate zones. Hold Ctrl and click to set zones number multiplier">Zones</button>
+          <button id="openSubmapOptions" data-tip="Click to generate new (sub)map from the current viewport" onclick="openSubmapOptions()">Submap</button>
         </div>
 
         <div id="addFeature">
@@ -3538,7 +3538,7 @@
         <label for="submapAddZones" class="checkbox-label">Add Zones</label>
       </div>
       <hr/>
-      <button id="start" data-tip="Start submap resampling" class="options glow" onclick="generateSubmap()">Generate</button>
+      <button id="start" data-tip="Start submap resampling" class="options" onclick="generateSubmap()">Generate</button>
     </div>
 
     <div id="alert" style="display: none" class="dialog">
