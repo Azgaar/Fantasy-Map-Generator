@@ -454,8 +454,8 @@ function overviewBurgs() {
       data += b.i + ",";
       data += b.name + ",";
       const province = pack.cells.province[b.cell];
-      data += province ? pack.provinces[province].fullName + "," : ",";
-      data += b.state ? pack.states[b.state].fullName + "," : pack.states[b.state].name + ",";
+      data += province ? pack.provinces[province].name + "," : ",";
+      data += pack.states[b.state].name + ",";
       data += pack.cultures[b.culture].name + ",";
       data += pack.religions[pack.cells.religion[b.cell]].name + ",";
       data += rn(b.population * populationRate * urbanization) + ",";
