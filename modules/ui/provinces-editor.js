@@ -934,20 +934,22 @@ function editProvinces() {
 
   function downloadProvincesData() {
     const unit = areaUnit.value === "square" ? distanceUnitInput.value + "2" : areaUnit.value;
-    let data = "Id,Province,Form,State,Color,Capital,Area " + unit + ",Total Population,Rural Population,Urban Population\n"; // headers
+    let data = "Id,Province,Full Name,Form,State,Color,Capital,Area " + unit + ",Total Population,Rural Population,Urban Population\n"; // headers
 
     body.querySelectorAll(":scope > div").forEach(function (el) {
-      let key = parseInt(el.dataset.id);
+      const key = parseInt(el.dataset.id);
+      const provincePack = pack.provinces[key];
       data += el.dataset.id + ",";
       data += el.dataset.name + ",";
+      data += provincePack.fullName + ",";
       data += el.dataset.form + ",";
       data += el.dataset.state + ",";
       data += el.dataset.color + ",";
       data += el.dataset.capital + ",";
       data += el.dataset.area + ",";
       data += el.dataset.population + ",";
-      data += `${Math.round(pack.provinces[key].rural * populationRate)},`;
-      data += `${Math.round(pack.provinces[key].urban * populationRate * urbanization)}\n`;
+      data += `${Math.round(provincePack.rural * populationRate)},`;
+      data += `${Math.round(provincePack.urban * populationRate * urbanization)}\n`;
     });
 
     const name = getFileName("Provinces") + ".csv";

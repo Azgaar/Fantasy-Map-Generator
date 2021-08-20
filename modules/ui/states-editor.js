@@ -1028,12 +1028,13 @@ function editStates() {
 
   function downloadStatesData() {
     const unit = areaUnit.value === "square" ? distanceUnitInput.value + "2" : areaUnit.value;
-    let data = "Id,State,Form,Color,Capital,Culture,Type,Expansionism,Cells,Burgs,Area " + unit + ",Total Population,Rural Population,Urban Population\n"; // headers
-
+    let data = "Id,State,Full Name,Form,Color,Capital,Culture,Type,Expansionism,Cells,Burgs,Area " + unit + ",Total Population,Rural Population,Urban Population\n"; // headers
     body.querySelectorAll(":scope > div").forEach(function (el) {
       const key = parseInt(el.dataset.id);
+      const statePack = pack.states[key];
       data += el.dataset.id + ",";
       data += el.dataset.name + ",";
+      data += (statePack.fullName ? statePack.fullName : "") + ",";
       data += el.dataset.form + ",";
       data += el.dataset.color + ",";
       data += el.dataset.capital + ",";
@@ -1044,8 +1045,8 @@ function editStates() {
       data += el.dataset.burgs + ",";
       data += el.dataset.area + ",";
       data += el.dataset.population + ",";
-      data += `${Math.round(pack.states[key].rural * populationRate)},`;
-      data += `${Math.round(pack.states[key].urban * populationRate * urbanization)}\n`;
+      data += `${Math.round(statePack.rural * populationRate)},`;
+      data += `${Math.round(statePack.urban * populationRate * urbanization)}\n`;
     });
 
     const name = getFileName("States") + ".csv";
