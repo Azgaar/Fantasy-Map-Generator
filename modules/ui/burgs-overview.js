@@ -447,15 +447,17 @@ function overviewBurgs() {
   }
 
   function downloadBurgsData() {
-    let data = "Id,Burg,Province,State,Culture,Religion,Population,Longitude,Latitude,Elevation (" + heightUnit.value + "),Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town\n"; // headers
+    let data = "Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Population,Longitude,Latitude,Elevation (" + heightUnit.value + "),Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town\n"; // headers
     const valid = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
 
     valid.forEach(b => {
       data += b.i + ",";
       data += b.name + ",";
       const province = pack.cells.province[b.cell];
+      data += province ? pack.provinces[province].name + "," : ",";
       data += province ? pack.provinces[province].fullName + "," : ",";
-      data += b.state ? pack.states[b.state].fullName + "," : pack.states[b.state].name + ",";
+      data += pack.states[b.state].name + ",";
+      data += pack.states[b.state].fullName + ",";
       data += pack.cultures[b.culture].name + ",";
       data += pack.religions[pack.cells.religion[b.cell]].name + ",";
       data += rn(b.population * populationRate * urbanization) + ",";
