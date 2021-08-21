@@ -328,10 +328,10 @@ function editHeightmap() {
 
     for (const i of pack.cells.i) {
       const g = pack.cells.g[i];
-      const land = pack.cells.h[i] >= 20;
+      const isLand = pack.cells.h[i] >= 20;
 
       // check biome
-      pack.cells.biome[i] = land && biome[g] ? biome[g] : getBiomeId(grid.cells.prec[g], pack.cells.h[i]);
+      pack.cells.biome[i] = isLand && biome[g] ? biome[g] : getBiomeId(grid.cells.prec[g], grid.cells.temp[g], pack.cells.h[i]);
 
       // rivers data
       if (!erosionAllowed) {
@@ -340,7 +340,7 @@ function editHeightmap() {
         pack.cells.fl[i] = fl[g];
       }
 
-      if (!land) continue;
+      if (!isLand) continue;
       pack.cells.culture[i] = culture[g];
       pack.cells.pop[i] = pop[g];
       pack.cells.road[i] = road[g];
