@@ -1397,7 +1397,7 @@ function defineBiomes() {
 
 // assign biome id to a cell
 function getBiomeId(moisture, temperature, height) {
-  if (height < 20) return 0; // marine biome: liquid water cells
+  if (height < 20) return 0; // marine biome: all water cells
   if (temperature < -5) return 11; // permafrost biome
   if (moisture > 40 && temperature > -2 && (height < 25 || (moisture > 24 && height > 24))) return 12; // wetland biome
 

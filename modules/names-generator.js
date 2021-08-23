@@ -99,7 +99,6 @@ window.Names = (function () {
     // parse word to get a final name
     const l = last(w); // last letter
     if (l === "'" || l === " " || l === "-") w = w.slice(0, -1); // not allow some characters at the end
-    const basic = !/[^\u0000-\u007f]/.test(w); // true if word has only basic characters
 
     let name = [...w].reduce(function (r, c, i, d) {
       if (c === d[i + 1] && !dupl.includes(c)) return r; // duplication is not allowed
@@ -108,7 +107,6 @@ window.Names = (function () {
       if (r.slice(-1) === " ") return r + c.toUpperCase(); // capitalize letter after space
       if (r.slice(-1) === "-") return r + c.toUpperCase(); // capitalize letter after hyphen
       if (c === "a" && d[i + 1] === "e") return r; // "ae" => "e"
-      if (basic && i + 1 < d.length && !vowel(c) && !vowel(d[i - 1]) && !vowel(d[i + 1])) return r; // remove consonant between 2 consonants
       if (i + 2 < d.length && c === d[i + 1] && c === d[i + 2]) return r; // remove three same letters in a row
       return r + c;
     }, "");
