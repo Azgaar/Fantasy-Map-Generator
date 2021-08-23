@@ -1370,22 +1370,21 @@ function reMarkFeatures() {
 // assign biome id for each cell
 function defineBiomes() {
   TIME && console.time("defineBiomes");
-  const cells = pack.cells,
-    f = pack.features,
-    temp = grid.cells.temp,
-    prec = grid.cells.prec;
+  const {cells} = pack;
+  const {temp, prec} = grid.cells;
   cells.biome = new Uint8Array(cells.i.length); // biomes array
 
   for (const i of cells.i) {
-    const t = temp[cells.g[i]]; // cell temperature
-    const h = cells.h[i]; // cell height
-    const m = h < 20 ? 0 : calculateMoisture(i); // cell moisture
-    cells.biome[i] = getBiomeId(m, t, h);
+    const temperature = temp[cells.g[i]];
+    const height = cells.h[i];
+    const moisture = height < 20 ? 0 : calculateMoisture(i);
+    cells.biome[i] = getBiomeId(moisture, temperature, height);
   }
 
   function calculateMoisture(i) {
     let moist = prec[cells.g[i]];
     if (cells.r[i]) moist += Math.max(cells.fl[i] / 20, 2);
+
     const n = cells.c[i]
       .filter(isLand)
       .map(c => prec[cells.g[c]])
@@ -1398,12 +1397,13 @@ function defineBiomes() {
 
 // assign biome id to a cell
 function getBiomeId(moisture, temperature, height) {
-  if (temperature < -5) return 11; // permafrost biome, including sea ice
   if (height < 20) return 0; // marine biome: liquid water cells
+  if (temperature < -5) return 11; // permafrost biome
   if (moisture > 40 && temperature > -2 && (height < 25 || (moisture > 24 && height > 24))) return 12; // wetland biome
-  const m = Math.min((moisture / 5) | 0, 4); // moisture band from 0 to 4
-  const t = Math.min(Math.max(20 - temperature, 0), 25); // temparature band from 0 to 25
-  return biomesData.biomesMartix[m][t];
+
+  const moistureBand = Math.min((moisture / 5) | 0, 4); // [0-4]
+  const temperatureBand = Math.min(Math.max(20 - temperature, 0), 25); // [0-25]
+  return biomesData.biomesMartix[moistureBand][temperatureBand];
 }
 
 // assess cells suitability to calculate population and rand cells for culture center and burgs placement
