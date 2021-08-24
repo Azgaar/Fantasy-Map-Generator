@@ -960,41 +960,36 @@ function generatePrecipitation() {
   const {cells, cellsX, cellsY} = grid;
   cells.prec = new Uint8Array(cells.i.length); // precipitation array
   const modifier = precInput.value / 100; // user's input
-  const {winds} = options;
 
-  const MAX_PASSABLE_ELEVATION = 85;
+  const westerly = [];
+  const easterly = [];
+  let southerly = 0;
+  let northerly = 0;
 
-  let westerly = [],
-    easterly = [],
-    southerly = 0,
-    northerly = 0;
-
-  const isWest = tier => winds[tier] > 40 && winds[tier] < 140;
-  const isEast = tier => winds[tier] > 220 && winds[tier] < 320;
-  const isSouth = tier => winds[tier] > 100 && winds[tier] < 260;
-  const isNorth = tier => winds[tier] > 280 && winds[tier] < 80;
-
-  // latitude bands info
+  // precipitation modifier per latitude band
   // x4 = 0-5 latitude: wet through the year (rising zone)
   // x2 = 5-20 latitude: wet summer (rising zone), dry winter (sinking zone)
   // x1 = 20-30 latitude: dry all year (sinking zone)
   // x2 = 30-50 latitude: wet winter (rising zone), dry summer (sinking zone)
   // x3 = 50-60 latitude: wet all year (rising zone)
   // x2 = 60-70 latitude: wet summer (rising zone), dry winter (sinking zone)
-  // x1 = 70-90 latitude: dry all year (sinking zone)
+  // x1 = 70-85 latitude: dry all year (sinking zone)
+  // x0.5 = 85-90 latitude: dry all year (sinking zone)
   const lalitudeModifier = [4, 2, 2, 2, 1, 1, 2, 2, 2, 2, 3, 3, 2, 2, 1, 1, 1, 0.5];
+  const MAX_PASSABLE_ELEVATION = 85;
 
-  // difine wind directions based on cells latitude and prevailing winds there
+  // define wind directions based on cells latitude and prevailing winds there
   d3.range(0, cells.i.length, cellsX).forEach(function (c, i) {
     const lat = mapCoordinates.latN - (i / cellsY) * mapCoordinates.latT;
-    const band = ((Math.abs(lat) - 1) / 5) | 0;
-    const latMod = lalitudeModifier[band];
-    const tier = (Math.abs(lat - 89) / 30) | 0; // 30d tiers from 0 to 5 from N to S
+    const latBand = ((Math.abs(lat) - 1) / 5) | 0;
+    const latMod = lalitudeModifier[latBand];
+    const windTier = (Math.abs(lat - 89) / 30) | 0; // 30d tiers from 0 to 5 from N to S
+    const {isWest, isEast, isNorth, isSouth} = getWindDirections(windTier);
 
-    if (isWest(tier)) westerly.push([c, latMod, tier]);
-    else if (isEast(tier)) easterly.push([c + cellsX - 1, latMod, tier]);
-    if (isSouth(tier)) northerly++;
-    if (isNorth(tier)) southerly++;
+    if (isWest) westerly.push([c, latMod, windTier]);
+    if (isEast) easterly.push([c + cellsX - 1, latMod, windTier]);
+    if (isNorth) northerly++;
+    if (isSouth) southerly++;
   });
 
   // distribute winds by direction
@@ -1014,6 +1009,17 @@ function generatePrecipitation() {
     const latModS = mapCoordinates.latT > 60 ? d3.mean(lalitudeModifier) : lalitudeModifier[bandS];
     const maxPrecS = (southerly / vertT) * 60 * modifier * latModS;
     passWind(d3.range(cells.i.length - cellsX, cells.i.length, 1), maxPrecS, -cellsX, cellsY);
+  }
+
+  function getWindDirections(tier) {
+    const angle = options.winds[tier];
+
+    const isWest = angle > 40 && angle < 140;
+    const isEast = angle > 220 && angle < 320;
+    const isNorth = angle > 100 && angle < 260;
+    const isSouth = angle > 280 || angle < 80;
+
+    return {isWest, isEast, isNorth, isSouth};
   }
 
   function passWind(source, maxPrec, next, steps) {
