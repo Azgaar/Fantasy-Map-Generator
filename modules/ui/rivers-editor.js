@@ -145,6 +145,7 @@ function editRiver(id) {
         const sourceFlux = fl[initCell];
         fl[initCell] = fl[movedToCell];
         fl[movedToCell] = sourceFlux;
+        redrawRiver();
       }
     });
   }

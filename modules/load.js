@@ -710,29 +710,40 @@ function parseLoadedData(data) {
 
       if (version < 1.65) {
         // v 1.65 changed rivers data
-        rivers.attr("style", null); // remove style to unhide layer
+        d3.select("#rivers").attr("style", null); // remove style to unhide layer
+        const {cells, rivers} = pack;
 
-        for (const river of pack.rivers) {
+        for (const river of rivers) {
           const node = document.getElementById("river" + river.i);
           if (node && !river.cells) {
-            const riverCells = new Set();
+            const riverCells = [];
+            const riverPoints = [];
+
             const length = node.getTotalLength() / 2;
             const segments = Math.ceil(length / 6);
             const increment = length / segments;
-            for (let i = increment * segments, c = i; i >= 0; i -= increment, c += increment) {
-              const p1 = node.getPointAtLength(i);
-              const p2 = node.getPointAtLength(c);
-              const x = (p1.x + p2.x) / 2;
-              const y = (p1.y + p2.y) / 2;
-              const cell = findCell(x, y, 6);
-              if (cell) riverCells.add(cell);
+
+            for (let i = 0; i <= segments; i++) {
+              const shift = increment * i;
+              const {x: x1, y: y1} = node.getPointAtLength(length + shift);
+              const {x: x2, y: y2} = node.getPointAtLength(length - shift);
+              const x = rn((x1 + x2) / 2, 1);
+              const y = rn((y1 + y2) / 2, 1);
+
+              const cell = findCell(x, y);
+              riverPoints.push([x, y]);
+              riverCells.push(cell);
             }
 
-            river.cells = Array.from(riverCells);
+            river.cells = riverCells;
+            river.points = riverPoints;
           }
 
-          pack.cells.i.forEach(i => {
-            if (pack.cells.r[i] && pack.cells.h[i] < 20) pack.cells.r[i] = 0;
+          river.widthFactor = 1;
+
+          cells.i.forEach(i => {
+            const riverInWater = cells.r[i] && cells.h[i] < 20;
+            if (riverInWater) cells.r[i] = 0;
           });
         }
       }
