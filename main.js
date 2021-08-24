@@ -957,43 +957,45 @@ function calculateTemperatures() {
 function generatePrecipitation() {
   TIME && console.time("generatePrecipitation");
   prec.selectAll("*").remove();
-  const cells = grid.cells;
+  const {cells, cellsX, cellsY} = grid;
   cells.prec = new Uint8Array(cells.i.length); // precipitation array
   const modifier = precInput.value / 100; // user's input
-  const cellsX = grid.cellsX,
-    cellsY = grid.cellsY;
-  let westerly = [],
-    easterly = [],
-    southerly = 0,
-    northerly = 0;
 
-  {
-    // latitude bands
-    // x4 = 0-5 latitude: wet through the year (rising zone)
-    // x2 = 5-20 latitude: wet summer (rising zone), dry winter (sinking zone)
-    // x1 = 20-30 latitude: dry all year (sinking zone)
-    // x2 = 30-50 latitude: wet winter (rising zone), dry summer (sinking zone)
-    // x3 = 50-60 latitude: wet all year (rising zone)
-    // x2 = 60-70 latitude: wet summer (rising zone), dry winter (sinking zone)
-    // x1 = 70-90 latitude: dry all year (sinking zone)
-  }
-  const lalitudeModifier = [4, 2, 2, 2, 1, 1, 2, 2, 2, 2, 3, 3, 2, 2, 1, 1, 1, 0.5]; // by 5d step
+  const westerly = [];
+  const easterly = [];
+  let southerly = 0;
+  let northerly = 0;
 
-  // difine wind directions based on cells latitude and prevailing winds there
+  // precipitation modifier per latitude band
+  // x4 = 0-5 latitude: wet through the year (rising zone)
+  // x2 = 5-20 latitude: wet summer (rising zone), dry winter (sinking zone)
+  // x1 = 20-30 latitude: dry all year (sinking zone)
+  // x2 = 30-50 latitude: wet winter (rising zone), dry summer (sinking zone)
+  // x3 = 50-60 latitude: wet all year (rising zone)
+  // x2 = 60-70 latitude: wet summer (rising zone), dry winter (sinking zone)
+  // x1 = 70-85 latitude: dry all year (sinking zone)
+  // x0.5 = 85-90 latitude: dry all year (sinking zone)
+  const lalitudeModifier = [4, 2, 2, 2, 1, 1, 2, 2, 2, 2, 3, 3, 2, 2, 1, 1, 1, 0.5];
+  const MAX_PASSABLE_ELEVATION = 85;
+
+  // define wind directions based on cells latitude and prevailing winds there
   d3.range(0, cells.i.length, cellsX).forEach(function (c, i) {
     const lat = mapCoordinates.latN - (i / cellsY) * mapCoordinates.latT;
-    const band = ((Math.abs(lat) - 1) / 5) | 0;
-    const latMod = lalitudeModifier[band];
-    const tier = (Math.abs(lat - 89) / 30) | 0; // 30d tiers from 0 to 5 from N to S
-    if (options.winds[tier] > 40 && options.winds[tier] < 140) westerly.push([c, latMod, tier]);
-    else if (options.winds[tier] > 220 && options.winds[tier] < 320) easterly.push([c + cellsX - 1, latMod, tier]);
-    if (options.winds[tier] > 100 && options.winds[tier] < 260) northerly++;
-    else if (options.winds[tier] > 280 || options.winds[tier] < 80) southerly++;
+    const latBand = ((Math.abs(lat) - 1) / 5) | 0;
+    const latMod = lalitudeModifier[latBand];
+    const windTier = (Math.abs(lat - 89) / 30) | 0; // 30d tiers from 0 to 5 from N to S
+    const {isWest, isEast, isNorth, isSouth} = getWindDirections(windTier);
+
+    if (isWest) westerly.push([c, latMod, windTier]);
+    if (isEast) easterly.push([c + cellsX - 1, latMod, windTier]);
+    if (isNorth) northerly++;
+    if (isSouth) southerly++;
   });
 
   // distribute winds by direction
   if (westerly.length) passWind(westerly, 120 * modifier, 1, cellsX);
   if (easterly.length) passWind(easterly, 120 * modifier, -1, cellsX);
+
   const vertT = southerly + northerly;
   if (northerly) {
     const bandN = ((Math.abs(mapCoordinates.latN) - 1) / 5) | 0;
@@ -1001,6 +1003,7 @@ function generatePrecipitation() {
     const maxPrecN = (northerly / vertT) * 60 * modifier * latModN;
     passWind(d3.range(0, cellsX, 1), maxPrecN, cellsX, cellsY);
   }
+
   if (southerly) {
     const bandS = ((Math.abs(mapCoordinates.latS) - 1) / 5) | 0;
     const latModS = mapCoordinates.latT > 60 ? d3.mean(lalitudeModifier) : lalitudeModifier[bandS];
@@ -1008,20 +1011,34 @@ function generatePrecipitation() {
     passWind(d3.range(cells.i.length - cellsX, cells.i.length, 1), maxPrecS, -cellsX, cellsY);
   }
 
+  function getWindDirections(tier) {
+    const angle = options.winds[tier];
+
+    const isWest = angle > 40 && angle < 140;
+    const isEast = angle > 220 && angle < 320;
+    const isNorth = angle > 100 && angle < 260;
+    const isSouth = angle > 280 || angle < 80;
+
+    return {isWest, isEast, isNorth, isSouth};
+  }
+
   function passWind(source, maxPrec, next, steps) {
     const maxPrecInit = maxPrec;
+
     for (let first of source) {
       if (first[0]) {
         maxPrec = Math.min(maxPrecInit * first[1], 255);
         first = first[0];
       }
+
       let humidity = maxPrec - cells.h[first]; // initial water amount
       if (humidity <= 0) continue; // if first cell in row is too elevated cosdired wind dry
+
       for (let s = 0, current = first; s < steps; s++, current += next) {
-        // no flux on permafrost
-        if (cells.temp[current] < -5) continue;
-        // water cell
+        if (cells.temp[current] < -5) continue; // no flux in permafrost
+
         if (cells.h[current] < 20) {
+          // water cell
           if (cells.h[current + next] >= 20) {
             cells.prec[current + next] += Math.max(humidity / rand(10, 20), 1); // coastal precipitation
           } else {
@@ -1032,16 +1049,16 @@ function generatePrecipitation() {
         }
 
         // land cell
-        const precipitation = getPrecipitation(humidity, current, next);
+        const isPassable = cells.h[current + next] <= MAX_PASSABLE_ELEVATION;
+        const precipitation = isPassable ? getPrecipitation(humidity, current, next) : humidity;
         cells.prec[current] += precipitation;
         const evaporation = precipitation > 1.5 ? 1 : 0; // some humidity evaporates back to the atmosphere
-        humidity = Math.min(Math.max(humidity - precipitation + evaporation, 0), maxPrec);
+        humidity = isPassable ? Math.min(Math.max(humidity - precipitation + evaporation, 0), maxPrec) : 0;
       }
     }
   }
 
   function getPrecipitation(humidity, i, n) {
-    if (cells.h[i + n] > 85) return humidity; // 85 is max passable height
     const normalLoss = Math.max(humidity / (10 * modifier), 1); // precipitation in normal conditions
     const diff = Math.max(cells.h[i + n] - cells.h[i], 0); // difference in height
     const mod = (cells.h[i + n] / 70) ** 2; // 50 stands for hills, 70 for mountains
@@ -1359,22 +1376,21 @@ function reMarkFeatures() {
 // assign biome id for each cell
 function defineBiomes() {
   TIME && console.time("defineBiomes");
-  const cells = pack.cells,
-    f = pack.features,
-    temp = grid.cells.temp,
-    prec = grid.cells.prec;
+  const {cells} = pack;
+  const {temp, prec} = grid.cells;
   cells.biome = new Uint8Array(cells.i.length); // biomes array
 
   for (const i of cells.i) {
-    const t = temp[cells.g[i]]; // cell temperature
-    const h = cells.h[i]; // cell height
-    const m = h < 20 ? 0 : calculateMoisture(i); // cell moisture
-    cells.biome[i] = getBiomeId(m, t, h);
+    const temperature = temp[cells.g[i]];
+    const height = cells.h[i];
+    const moisture = height < 20 ? 0 : calculateMoisture(i);
+    cells.biome[i] = getBiomeId(moisture, temperature, height);
   }
 
   function calculateMoisture(i) {
     let moist = prec[cells.g[i]];
     if (cells.r[i]) moist += Math.max(cells.fl[i] / 20, 2);
+
     const n = cells.c[i]
       .filter(isLand)
       .map(c => prec[cells.g[c]])
@@ -1387,12 +1403,13 @@ function defineBiomes() {
 
 // assign biome id to a cell
 function getBiomeId(moisture, temperature, height) {
-  if (temperature < -5) return 11; // permafrost biome, including sea ice
-  if (height < 20) return 0; // marine biome: liquid water cells
+  if (height < 20) return 0; // marine biome: all water cells
+  if (temperature < -5) return 11; // permafrost biome
   if (moisture > 40 && temperature > -2 && (height < 25 || (moisture > 24 && height > 24))) return 12; // wetland biome
-  const m = Math.min((moisture / 5) | 0, 4); // moisture band from 0 to 4
-  const t = Math.min(Math.max(20 - temperature, 0), 25); // temparature band from 0 to 25
-  return biomesData.biomesMartix[m][t];
+
+  const moistureBand = Math.min((moisture / 5) | 0, 4); // [0-4]
+  const temperatureBand = Math.min(Math.max(20 - temperature, 0), 25); // [0-25]
+  return biomesData.biomesMartix[moistureBand][temperatureBand];
 }
 
 // assess cells suitability to calculate population and rand cells for culture center and burgs placement
