@@ -38,7 +38,7 @@ window.Rivers = (function () {
       const lakeOutCells = Lakes.setClimateData(h);
 
       land.forEach(function (i) {
-        cells.fl[i] += prec[cells.g[i]] * area[i] / 100; // add flux from precipitation
+        cells.fl[i] += (prec[cells.g[i]] * area[i]) / 100; // add flux from precipitation
 
         // create lake outlet if lake is not in deep depression and flux > evaporation
         const lakes = lakeOutCells[i] ? features.filter(feature => i === feature.outCell && feature.flux > feature.evaporation) : [];
@@ -169,7 +169,7 @@ window.Rivers = (function () {
         const widthFactor = !parent || parent === riverId ? 1.2 : 1;
         const meanderedPoints = addMeandering(riverCells);
         const discharge = cells.fl[mouth]; // m3 in second
-        const length = rn(getApproximateLength(meanderedPoints), 2);
+        const length = getApproximateLength(meanderedPoints);
         const width = getWidth(getOffset(discharge, meanderedPoints.length, widthFactor, 0));
 
         pack.rivers.push({i: riverId, source, mouth, discharge, length, width, widthFactor, sourceWidth: 0, parent, cells: riverCells});
@@ -414,7 +414,10 @@ window.Rivers = (function () {
     return rw(riverTypes[isFork ? "fork" : "main"][isSmall ? "small" : "big"]);
   };
 
-  const getApproximateLength = points => points.reduce((s, v, i, p) => s + (i ? Math.hypot(v[0] - p[i - 1][0], v[1] - p[i - 1][1]) : 0), 0);
+  const getApproximateLength = points => {
+    const length = points.reduce((s, v, i, p) => s + (i ? Math.hypot(v[0] - p[i - 1][0], v[1] - p[i - 1][1]) : 0), 0);
+    return rn(length, 2);
+  };
 
   // Real mouth width examples: Amazon 6000m, Volga 6000m, Dniepr 3000m, Mississippi 1300m, Themes 900m,
   // Danube 800m, Daugava 600m, Neva 500m, Nile 450m, Don 400m, Wisla 300m, Pripyat 150m, Bug 140m, Muchavets 40m
