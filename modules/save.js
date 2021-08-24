@@ -144,18 +144,18 @@ async function getMapURL(type, options = {}) {
   cloneEl.id = "fantasyMap";
   document.body.appendChild(cloneEl);
   const clone = d3.select(cloneEl);
-  if (!debug) clone.select("#debug").remove();
+  if (!debug) clone.select("#debug")?.remove();
 
   const cloneDefs = cloneEl.getElementsByTagName("defs")[0];
   const svgDefs = document.getElementById("defElements");
 
   const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
-  if (isFirefox && type === "mesh") clone.select("#oceanPattern").remove();
-  if (globe) clone.select("#scaleBar").remove();
+  if (isFirefox && type === "mesh") clone.select("#oceanPattern")?.remove();
+  if (globe) clone.select("#scaleBar")?.remove();
   if (noLabels) {
-    clone.select("#labels #states").remove();
-    clone.select("#labels #burgLabels").remove();
-    clone.select("#icons #burgIcons").remove();
+    clone.select("#labels #states")?.remove();
+    clone.select("#labels #burgLabels")?.remove();
+    clone.select("#icons #burgIcons")?.remove();
   }
   if (noWater) {
     clone.select("#oceanBase").attr("opacity", 0);
@@ -258,10 +258,10 @@ async function getMapURL(type, options = {}) {
     if (pattern) cloneDefs.appendChild(pattern.cloneNode(true));
   }
 
-  if (!cloneEl.getElementById("hatching").children.length) cloneEl.getElementById("hatching").remove(); // remove unused hatching group
-  if (!cloneEl.getElementById("fogging-cont")) cloneEl.getElementById("fog").remove(); // remove unused fog
-  if (!cloneEl.getElementById("regions")) cloneEl.getElementById("statePaths").remove(); // removed unused statePaths
-  if (!cloneEl.getElementById("labels")) cloneEl.getElementById("textPaths").remove(); // removed unused textPaths
+  if (!cloneEl.getElementById("hatching").children.length) cloneEl.getElementById("hatching")?.remove(); // remove unused hatching group
+  if (!cloneEl.getElementById("fogging-cont")) cloneEl.getElementById("fog")?.remove(); // remove unused fog
+  if (!cloneEl.getElementById("regions")) cloneEl.getElementById("statePaths")?.remove(); // removed unused statePaths
+  if (!cloneEl.getElementById("labels")) cloneEl.getElementById("textPaths")?.remove(); // removed unused textPaths
 
   // add armies style
   if (cloneEl.getElementById("armies")) cloneEl.insertAdjacentHTML("afterbegin", "<style>#armies text {stroke: none; fill: #fff; text-shadow: 0 0 4px #000; dominant-baseline: central; text-anchor: middle; font-family: Helvetica; fill-opacity: 1;}#armies text.regimentIcon {font-size: .8em;}</style>");
@@ -296,8 +296,8 @@ async function getMapURL(type, options = {}) {
 
 // remove hidden g elements and g elements without children to make downloaded svg smaller in size
 function removeUnusedElements(clone) {
-  if (!terrain.selectAll("use").size()) clone.select("#defs-relief").remove();
-  if (markers.style("display") === "none") clone.select("#defs-markers").remove();
+  if (!terrain.selectAll("use").size()) clone.select("#defs-relief")?.remove();
+  if (markers.style("display") === "none") clone.select("#defs-markers")?.remove();
 
   for (let empty = 1; empty; ) {
     empty = 0;
