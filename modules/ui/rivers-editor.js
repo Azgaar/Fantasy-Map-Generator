@@ -8,9 +8,9 @@ function editRiver(id) {
   document.getElementById("toggleCells").dataset.forced = +!layerIsOn("toggleCells");
   if (!layerIsOn("toggleCells")) toggleCells();
 
-  elSelected = d3.select("#" + id);
+  elSelected = d3.select("#" + id).on("click", addControlPoint);
 
-  tip("Drag control points to change the river course. For major changes please create a new river instead", true);
+  tip("Drag control points to change the river course. Click on point to remove it. Click on river to add additional control point. For major changes please create a new river instead", true);
   debug.append("g").attr("id", "controlCells");
   debug.append("g").attr("id", "controlPoints");
 
@@ -19,8 +19,8 @@ function editRiver(id) {
   const river = getRiver();
   const {cells, points} = river;
   const riverPoints = Rivers.getRiverPoints(cells, points);
-  drawControlPoints(riverPoints, cells);
-  drawCells(cells, "current");
+  drawControlPoints(riverPoints);
+  drawCells(cells);
 
   $("#riverEditor").dialog({
     title: "Edit River",
@@ -92,37 +92,35 @@ function editRiver(id) {
     document.getElementById("riverWidth").value = width;
   }
 
-  function drawControlPoints(points, cells) {
+  function drawControlPoints(points) {
     debug
       .select("#controlPoints")
       .selectAll("circle")
       .data(points)
-      .enter()
-      .append("circle")
+      .join("circle")
       .attr("cx", d => d[0])
       .attr("cy", d => d[1])
       .attr("r", 0.6)
-      .attr("data-cell", (d, i) => cells[i])
-      .attr("data-i", (d, i) => i)
-      .call(d3.drag().on("start", dragControlPoint));
+      .call(d3.drag().on("start", dragControlPoint))
+      .on("click", removeControlPoint);
   }
 
-  function drawCells(cells, type) {
+  function drawCells(cells) {
+    const validCells = [...new Set(cells)].filter(i => pack.cells.i[i]);
     debug
       .select("#controlCells")
-      .selectAll(`polygon.${type}`)
-      .data(cells.filter(i => pack.cells.i[i]))
+      .selectAll(`polygon`)
+      .data(validCells)
       .join("polygon")
-      .attr("points", d => getPackPolygon(d))
-      .attr("class", type);
+      .attr("points", d => getPackPolygon(d));
   }
 
   function dragControlPoint() {
-    const {i, r, fl} = pack.cells;
+    const {r, fl} = pack.cells;
     const river = getRiver();
 
-    const initCell = +this.dataset.cell;
-    const index = +this.dataset.i;
+    const {x: x0, y: y0} = d3.event;
+    const initCell = findCell(x0, y0);
 
     let movedToCell = null;
 
@@ -136,22 +134,17 @@ function editRiver(id) {
       this.setAttribute("cy", y);
       this.__data__ = [rn(x, 1), rn(y, 1)];
       redrawRiver();
+      drawCells(river.cells);
     });
 
     d3.event.on("end", () => {
-      if (movedToCell) {
-        this.dataset.cell = movedToCell;
-        river.cells[index] = movedToCell;
-        drawCells(river.cells, "current");
-
-        if (!r[movedToCell]) {
-          // swap river data
-          r[initCell] = 0;
-          r[movedToCell] = river.i;
-          const sourceFlux = fl[initCell];
-          fl[initCell] = fl[movedToCell];
-          fl[movedToCell] = sourceFlux;
-        }
+      if (movedToCell && !r[movedToCell]) {
+        // swap river data
+        r[initCell] = 0;
+        r[movedToCell] = river.i;
+        const sourceFlux = fl[initCell];
+        fl[initCell] = fl[movedToCell];
+        fl[movedToCell] = sourceFlux;
       }
     });
   }
@@ -159,8 +152,10 @@ function editRiver(id) {
   function redrawRiver() {
     const river = getRiver();
     river.points = debug.selectAll("#controlPoints > *").data();
-    const {cells, widthFactor, sourceWidth} = river;
-    const meanderedPoints = Rivers.addMeandering(cells, river.points);
+    river.cells = river.points.map(([x, y]) => findCell(x, y));
+
+    const {widthFactor, sourceWidth} = river;
+    const meanderedPoints = Rivers.addMeandering(river.cells, river.points);
 
     lineGen.curve(d3.curveCatmullRom.alpha(0.1));
     const path = Rivers.getRiverPath(meanderedPoints, widthFactor, sourceWidth);
@@ -168,6 +163,27 @@ function editRiver(id) {
 
     updateRiverLength(river);
     if (modules.elevation) showEPForRiver(elSelected.node());
+  }
+
+  function addControlPoint() {
+    const [x, y] = d3.mouse(this);
+    const point = [rn(x, 1), rn(y, 1)];
+
+    const river = getRiver();
+    if (!river.points) river.points = debug.selectAll("#controlPoints > *").data();
+
+    const index = getSegmentId(river.points, point, 2);
+    river.points.splice(index, 0, point);
+    drawControlPoints(river.points);
+    redrawRiver();
+  }
+
+  function removeControlPoint() {
+    this.remove();
+    redrawRiver();
+
+    const {cells} = getRiver();
+    drawCells(cells);
   }
 
   function changeName() {
@@ -244,6 +260,8 @@ function editRiver(id) {
   function closeRiverEditor() {
     debug.select("#controlPoints").remove();
     debug.select("#controlCells").remove();
+
+    elSelected.on("click", null);
     unselect();
     clearMainTip();
 
