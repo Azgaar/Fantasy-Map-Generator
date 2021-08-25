@@ -880,8 +880,8 @@ function openNearSeaLakes() {
 function defineMapSize() {
   const [size, latitude] = getSizeAndLatitude();
   const randomize = new URL(window.location.href).searchParams.get("options") === "default"; // ignore stored options
-  if (randomize || !locked("mapSize")) mapSizeOutput.value = mapSizeInput.value = size;
-  if (randomize || !locked("latitude")) latitudeOutput.value = latitudeInput.value = latitude;
+  if (randomize || !locked("mapSize")) mapSizeOutput.value = mapSizeInput.value = rn(size);
+  if (randomize || !locked("latitude")) latitudeOutput.value = latitudeInput.value = rn(latitude);
 
   function getSizeAndLatitude() {
     const template = document.getElementById("templateInput").value; // heightmap template
@@ -914,11 +914,11 @@ function calculateMapCoordinates() {
   const size = +document.getElementById("mapSizeOutput").value;
   const latShift = +document.getElementById("latitudeOutput").value;
 
-  const latT = (size / 100) * 180;
-  const latN = 90 - ((180 - latT) * latShift) / 100;
-  const latS = latN - latT;
+  const latT = rn((size / 100) * 180, 1);
+  const latN = rn(90 - ((180 - latT) * latShift) / 100, 1);
+  const latS = rn(latN - latT, 1);
 
-  const lon = Math.min(((graphWidth / graphHeight) * latT) / 2, 180);
+  const lon = rn(Math.min(((graphWidth / graphHeight) * latT) / 2, 180));
   mapCoordinates = {latT, latN, latS, lonT: lon * 2, lonW: -lon, lonE: lon};
 }
 
