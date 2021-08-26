@@ -1456,6 +1456,8 @@ function toggleRivers(event) {
 
 function drawRivers() {
   TIME && console.time("drawRivers");
+  rivers.selectAll("*").remove();
+
   const {addMeandering, getRiverPath} = Rivers;
   lineGen.curve(d3.curveCatmullRom.alpha(0.1));
 
