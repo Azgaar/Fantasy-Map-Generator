@@ -262,10 +262,12 @@ function focusOn() {
   const url = new URL(window.location.href);
   const params = url.searchParams;
 
-  if (params.get("from") === "MFCG" && document.referrer) {
+  const fromMGCG = params.get("from") === "MFCG" && document.referrer;
+  if (fromMGCG) {
     if (params.get("seed").length === 13) {
       // show back burg from MFCG
-      params.set("burg", params.get("seed").slice(-4));
+      const burgSeed = params.get("seed").slice(-4);
+      params.set("burg", burgSeed);
     } else {
       // select burg for MFCG
       findBurgForMFCG(params);
@@ -273,23 +275,33 @@ function focusOn() {
     }
   }
 
-  const s = +params.get("scale") || 8;
-  let x = +params.get("x");
-  let y = +params.get("y");
+  const scaleParam = params.get("scale");
+  const cellParam = params.get("cell");
+  const burgParam = params.get("burg");
 
-  const c = +params.get("cell");
-  if (c) {
-    x = pack.cells.p[c][0];
-    y = pack.cells.p[c][1];
+  if (scaleParam || cellParam || burgParam) {
+    const scale = +scaleParam || 8;
+
+    if (cellParam) {
+      const cell = +params.get("cell");
+      const [x, y] = pack.cells.p[cell];
+      zoomTo(x, y, scale, 1600);
+      return;
+    }
+
+    if (burgParam) {
+      const burg = isNaN(+burgParam) ? pack.burgs.find(burg => burg.name === burgParam) : pack.burgs[+burgParam];
+      if (!burg) return;
+
+      const {x, y} = burg;
+      zoomTo(x, y, scale, 1600);
+      return;
+    }
+
+    const x = +params.get("x") || graphWidth / 2;
+    const y = +params.get("y") || graphHeight / 2;
+    zoomTo(x, y, scale, 1600);
   }
-
-  const b = +params.get("burg");
-  if (b && pack.burgs[b]) {
-    x = pack.burgs[b].x;
-    y = pack.burgs[b].y;
-  }
-
-  if (x && y) zoomTo(x, y, s, 1600);
 }
 
 // find burg for MFCG and focus on it
