@@ -379,14 +379,16 @@ window.HeightmapGenerator = (function () {
   const modify = function (range, add, mult, power) {
     const min = range === "land" ? 20 : range === "all" ? 0 : +range.split("-")[0];
     const max = range === "land" || range === "all" ? 100 : +range.split("-")[1];
-    grid.cells.h = grid.cells.h.map(h => (h >= min && h <= max ? mod(h) : h));
+    const isLand = min === 20;
 
-    function mod(v) {
-      if (add) v = min === 20 ? Math.max(v + add, 20) : v + add;
-      if (mult !== 1) v = min === 20 ? (v - 20) * mult + 20 : v * mult;
-      if (power) v = min === 20 ? (v - 20) ** power + 20 : v ** power;
-      return lim(v);
-    }
+    grid.cells.h = grid.cells.h.map(h => {
+      if (h < min || h > max) return h;
+
+      if (add) h = isLand ? Math.max(h + add, 20) : h + add;
+      if (mult !== 1) h = isLand ? (h - 20) * mult + 20 : h * mult;
+      if (power) h = isLand ? (h - 20) ** power + 20 : h ** power;
+      return lim(h);
+    });
   };
 
   const smooth = function (fr = 2, add = 0) {

@@ -837,31 +837,27 @@ function editHeightmap() {
       const steps = body.querySelectorAll("#templateBody > div");
       if (!steps.length) return;
 
+      const {addHill, addPit, addRange, addTrough, addStrait, modify, smooth} = HeightmapGenerator;
       grid.cells.h = new Uint8Array(grid.cells.i.length); // clean all heights
 
-      for (const s of steps) {
-        if (s.style.opacity == 0.5) continue;
-        const type = s.dataset.type;
+      for (const step of steps) {
+        if (step.style.opacity === "0.5") continue;
+        const type = step.dataset.type;
 
-        const elCount = s.querySelector(".templateCount") || "";
-        const elHeight = s.querySelector(".templateHeight") || "";
+        const count = step.querySelector(".templateCount")?.value || "";
+        const height = step.querySelector(".templateHeight")?.value || "";
+        const dist = step.querySelector(".templateDist")?.value || null;
+        const x = step.querySelector(".templateX")?.value || null;
+        const y = step.querySelector(".templateY")?.value || null;
 
-        const elDist = s.querySelector(".templateDist");
-        const dist = elDist ? elDist.value : null;
-
-        const templateX = s.querySelector(".templateX");
-        const x = templateX ? templateX.value : null;
-        const templateY = s.querySelector(".templateY");
-        const y = templateY ? templateY.value : null;
-
-        if (type === "Hill") HeightmapGenerator.addHill(elCount.value, elHeight.value, x, y);
-        else if (type === "Pit") HeightmapGenerator.addPit(elCount.value, elHeight.value, x, y);
-        else if (type === "Range") HeightmapGenerator.addRange(elCount.value, elHeight.value, x, y);
-        else if (type === "Trough") HeightmapGenerator.addTrough(elCount.value, elHeight.value, x, y);
-        else if (type === "Strait") HeightmapGenerator.addStrait(elCount.value, dist);
-        else if (type === "Add") HeightmapGenerator.modify(dist, +elCount.value, 1);
-        else if (type === "Multiply") HeightmapGenerator.modify(dist, 0, +elCount.value);
-        else if (type === "Smooth") HeightmapGenerator.smooth(+elCount.value);
+        if (type === "Hill") addHill(count, height, x, y);
+        else if (type === "Pit") addPit(count, height, x, y);
+        else if (type === "Range") addRange(count, height, x, y);
+        else if (type === "Trough") addTrough(count, height, x, y);
+        else if (type === "Strait") addStrait(count, dist);
+        else if (type === "Add") modify(dist, +count, 1);
+        else if (type === "Multiply") modify(dist, 0, +count);
+        else if (type === "Smooth") smooth(+count);
 
         updateHistory("noStat"); // update history every step
       }
@@ -880,17 +876,13 @@ function editHeightmap() {
 
       let data = "";
       for (const s of steps) {
-        if (s.style.opacity == 0.5) continue;
+        if (s.style.opacity === "0.5") continue;
+
         const type = s.getAttribute("data-type");
-        const elCount = s.querySelector(".templateCount");
-        const count = elCount ? elCount.value : "0";
-        const elHeight = s.querySelector(".templateHeight");
-        const elDist = s.querySelector(".templateDist");
-        const arg3 = elHeight ? elHeight.value : elDist ? elDist.value : "0";
-        const templateX = s.querySelector(".templateX");
-        const x = templateX ? templateX.value : "0";
-        const templateY = s.querySelector(".templateY");
-        const y = templateY ? templateY.value : "0";
+        const count = s.querySelector(".templateCount")?.value || "0";
+        const arg3 = s.querySelector(".templateHeight")?.value || s.querySelector(".templateDist")?.value || "0";
+        const x = s.querySelector(".templateX")?.value || "0";
+        const y = s.querySelector(".templateY")?.value || "0";
         data += `${type} ${count} ${arg3} ${x} ${y}\r\n`;
       }
 
