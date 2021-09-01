@@ -91,48 +91,76 @@ function showUploadErrorMessage(error, URL, random) {
 
 function uploadMap(file, callback) {
   uploadMap.timeStart = performance.now();
+  const OLDEST_SUPPORTED_VERSION = 0.7;
+  const currentVersion = parseFloat(version);
 
   const fileReader = new FileReader();
   fileReader.onload = function (fileLoadedEvent) {
     if (callback) callback();
-    document.getElementById('coas').innerHTML = ''; // remove auto-generated emblems
-
+    document.getElementById("coas").innerHTML = ""; // remove auto-generated emblems
     const result = fileLoadedEvent.target.result;
-    const dataLoaded = last(result) === "=" ? decodeURIComponent(atob(result)) : result; // map can be encoded base64
-    const data = dataLoaded.split("\r\n");
+    const [mapData, mapVersion] = parseLoadedResult(result);
 
-    const mapVersion = data[0].split("|")[0] || data[0];
-    if (mapVersion === version) return parseLoadedData(data);
+    const isInvalid = !mapData || isNaN(mapVersion) || mapData.length < 26 || !mapData[5];
+    const isUpdated = mapVersion === currentVersion;
+    const isAncient = mapVersion < OLDEST_SUPPORTED_VERSION;
+    const isNewer = mapVersion > currentVersion;
+    const isOutdated = mapVersion < currentVersion;
 
-    const archive = link('https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog', 'archived version');
-    const parsed = parseFloat(mapVersion);
-    let message = '',
-      load = false;
-    if (isNaN(parsed) || data.length < 26 || !data[5]) {
-      message = `The file you are trying to load is outdated or not a valid .map file.
-                <br>Please try to open it using an ${archive}`;
-    } else if (parsed < 0.7) {
-      message = `The map version you are trying to load (${mapVersion}) is too old and cannot be updated to the current version.
-                <br>Please keep using an ${archive}`;
-    } else {
-      load = true;
-      message = `The map version (${mapVersion}) does not match the Generator version (${version}).
-                 <br>Click OK to get map <b>auto-updated</b>. In case of issues please keep using an ${archive} of the Generator`;
-    }
-    alertMessage.innerHTML = message;
-    $('#alert').dialog({
-      title: 'Version conflict',
-      width: '38em',
-      buttons: {
-        OK: function () {
-          $(this).dialog('close');
-          if (load) parseLoadedData(data);
-        }
-      }
-    });
+    if (isInvalid) return showUploadMessage("invalid", mapData, mapVersion);
+    if (isUpdated) return parseLoadedData(mapData);
+    if (isAncient) return showUploadMessage("ancient", mapData, mapVersion);
+    if (isNewer) return showUploadMessage("newer", mapData, mapVersion);
+    if (isOutdated) return showUploadMessage("outdated", mapData, mapVersion);
   };
 
   fileReader.readAsText(file, 'UTF-8');
+}
+
+function parseLoadedResult(result) {
+  try {
+    // data can be in FMG internal format or base64 encoded
+    const isDelimited = result.substr(0, 10).includes("|");
+    const decoded = isDelimited ? result : decodeURIComponent(atob(result));
+    const mapData = decoded.split("\r\n");
+    const mapVersion = parseFloat(mapData[0].split("|")[0] || mapData[0]);
+    return [mapData, mapVersion];
+  } catch (error) {
+    console.error(error);
+    return [null, null];
+  }
+}
+
+function showUploadMessage(type, mapData, mapVersion) {
+  const archive = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "archived version");
+  let message, title, canBeLoaded;
+
+  if (type === "invalid") {
+    message = `The file does not look like a valid <i>.map</i> file.<br>Please check the data format`;
+    title = "Invalid file";
+    canBeLoaded = false;
+  } else if (type === "ancient") {
+    message = `The map version you are trying to load (${mapVersion}) is too old and cannot be updated to the current version.<br>Please keep using an ${archive}`;
+    title = "Ancient file";
+    canBeLoaded = false;
+  } else if (type === "newer") {
+    message = `The map version you are trying to load (${mapVersion}) is newer than the current version.<br>Please load the file in the appropriate version`;
+    title = "Newer file";
+    canBeLoaded = false;
+  } else if (type === "outdated") {
+    message = `The map version (${mapVersion}) does not match the Generator version (${version}).<br>Click OK to get map <b>auto-updated</b>.<br>In case of issues please keep using an ${archive} of the Generator`;
+    title = "Outdated file";
+    canBeLoaded = true;
+  }
+
+  alertMessage.innerHTML = message;
+  const buttons = {
+    OK: function () {
+      $(this).dialog("close");
+      if (canBeLoaded) parseLoadedData(mapData);
+    }
+  };
+  $("#alert").dialog({title, buttons});
 }
 
 function parseLoadedData(data) {
