@@ -372,7 +372,10 @@ text.drag {
   border: solid 1px #5e4fa2;
   margin: 10px;
   padding-bottom: 0.3em;
+<<<<<<< HEAD
   background: var(--bg-light);
+=======
+>>>>>>> f557701e (dropbox - import changes from alpha)
 }
 
 #options input,
@@ -609,6 +612,12 @@ input[type='color']::-webkit-color-swatch-wrapper {
 
 #styleSelectFont > option {
   font-size: 2em;
+}
+
+#sticked {
+  display: flex;
+  justify-content: space-evenly;
+  width: 100%;
 }
 
 #sticked {
