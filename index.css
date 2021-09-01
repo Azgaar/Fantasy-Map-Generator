@@ -358,14 +358,11 @@ div.tab > button#optionsHide {
 }
 
 #options {
-  margin: 10px;
-  font-family: Consolas, monospace;
   position: absolute;
+  font-family: Consolas, monospace;
   border: solid 1px #5e4fa2;
-  width: 300px;
-  background-position: center;
-  background-size: cover;
-  background-blend-mode: color-dodge;
+  margin: 10px;
+  padding-bottom: 0.3em;
 }
 
 #options input,
@@ -576,14 +573,16 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   padding-left: 2.5px;
 }
 
+#sticked {
+  display: flex;
+  justify-content: space-evenly;
+  width: 100%;
+}
+
 #sticked button {
-  background-color: #997c8900;
-  padding: 0;
-  margin-bottom: 2px;
-  width: 22%;
-  font-size: 1em;
-  border: 0;
+  background-color: transparent;
   font-weight: bold;
+  border: 0;
 }
 
 #sticked button:hover {
