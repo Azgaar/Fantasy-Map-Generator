@@ -1800,16 +1800,13 @@ div.editorLine {
   width: 7em;
 }
 
+#unitsBody > div > select,
 #unitsBody > div > input[type="text"] {
-  width: 11.2em;
-}
-
-#unitsBody > div > select {
-  width: 11.32em;
+  width: 12em;
 }
 
 #unitsBody > div > input[type="number"] {
-  width: 3.4em;
+  width: 4.35em;
 }
 
 #unitsBody > div > input,
