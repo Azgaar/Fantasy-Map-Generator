@@ -621,6 +621,7 @@ document.getElementById("sticked").addEventListener("click", function (event) {
   const id = event.target.id;
   if (id === "newMapButton") regeneratePrompt();
   else if (id === "saveButton") showSavePane();
+  else if (id === "exportButton") showExportPane();
   else if (id === "loadButton") showLoadPane();
   else if (id === "zoomReset") resetZoom(1000);
 });
@@ -654,12 +655,13 @@ function regeneratePrompt() {
 }
 
 function showSavePane() {
-  document.getElementById("showLabels").checked = !hideLabels.checked;
+  const sharableLinkContainer = document.getElementById("sharableLinkContainer");
+  sharableLinkContainer.style.display = "none";
 
   $("#saveMapData").dialog({
     title: "Save map",
     resizable: false,
-    width: "30em",
+    width: "27em",
     position: {my: "center", at: "center", of: "svg"},
     buttons: {
       Close: function () {
@@ -669,21 +671,21 @@ function showSavePane() {
   });
 }
 
-// download map data as GeoJSON
-function saveGeoJSON() {
-  alertMessage.innerHTML = `You can export map data in GeoJSON format used in GIS tools such as QGIS.
-  Check out ${link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export", "wiki-page")} for guidance`;
+function copyLinkToClickboard() {
+  const shrableLink = document.getElementById("sharableLink");
+  const link = shrableLink.getAttribute("href");
+  navigator.clipboard.writeText(link).then(() => tip("Link is copied to the clipboard", true, "success", 8000));
+}
 
-  $("#alert").dialog({
-    title: "GIS data export",
+function showExportPane() {
+  document.getElementById("showLabels").checked = !hideLabels.checked;
+
+  $("#exportMapData").dialog({
+    title: "Export map data",
     resizable: false,
-    width: "35em",
+    width: "26em",
     position: {my: "center", at: "center", of: "svg"},
     buttons: {
-      Cells: saveGeoJSON_Cells,
-      Routes: saveGeoJSON_Routes,
-      Rivers: saveGeoJSON_Rivers,
-      Markers: saveGeoJSON_Markers,
       Close: function () {
         $(this).dialog("close");
       }
@@ -695,7 +697,7 @@ function showLoadPane() {
   $("#loadMapData").dialog({
     title: "Load map",
     resizable: false,
-    width: "17em",
+    width: "22em",
     position: {my: "center", at: "center", of: "svg"},
     buttons: {
       Close: function () {

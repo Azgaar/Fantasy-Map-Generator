@@ -12,6 +12,18 @@ function quickLoad() {
   });
 }
 
+function loadFromDropbox() {
+  const options = {
+    success: function (files) {
+      const url = files[0].link;
+      loadMapFromURL(url);
+    },
+    linkType: "direct",
+    extensions: [".map"]
+  };
+  Dropbox.choose(options);
+}
+
 function loadMapPrompt(blob) {
   const workingTime = (Date.now() - last(mapHistory).created) / 60000; // minutes
   if (workingTime < 5) {
@@ -46,6 +58,37 @@ function loadMapPrompt(blob) {
   }
 }
 
+function loadMapFromURL(maplink, random) {
+  const URL = decodeURIComponent(maplink);
+
+  fetch(URL, {method: "GET", mode: "cors"})
+    .then(response => {
+      if (response.ok) return response.blob();
+      throw new Error("Cannot load map from URL");
+    })
+    .then(blob => uploadMap(blob))
+    .catch(error => {
+      showUploadErrorMessage(error.message, URL, random);
+      if (random) generateMapOnLoad();
+    });
+}
+
+function showUploadErrorMessage(error, URL, random) {
+  ERROR && console.error(error);
+  alertMessage.innerHTML = `Cannot load map from the ${link(URL, "link provided")}.
+    ${random ? `A new random map is generated. ` : ""}
+    Please ensure the linked file is reachable and CORS is allowed on server side`;
+  $("#alert").dialog({
+    title: "Loading error",
+    width: "32em",
+    buttons: {
+      OK: function () {
+        $(this).dialog("close");
+      }
+    }
+  });
+}
+
 function uploadMap(file, callback) {
   uploadMap.timeStart = performance.now();
 
@@ -54,14 +97,12 @@ function uploadMap(file, callback) {
     if (callback) callback();
     document.getElementById("coas").innerHTML = ""; // remove auto-generated emblems
 
-    const dataLoaded = fileLoadedEvent.target.result;
+    const result = fileLoadedEvent.target.result;
+    const dataLoaded = last(result) === "=" ? decodeURIComponent(atob(result)) : result; // map can be encoded base64
     const data = dataLoaded.split("\r\n");
 
     const mapVersion = data[0].split("|")[0] || data[0];
-    if (mapVersion === version) {
-      parseLoadedData(data);
-      return;
-    }
+    if (mapVersion === version) return parseLoadedData(data);
 
     const archive = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "archived version");
     const parsed = parseFloat(mapVersion);
