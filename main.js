@@ -2,7 +2,7 @@
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 "use strict";
-const version = "1.652"; // generator version1
+const version = "1.66"; // generator version1
 document.title += " v" + version;
 
 // Switches to disable/enable logging features
@@ -219,37 +219,6 @@ void (function checkLoadParameters() {
   generateMapOnLoad();
 })();
 
-function loadMapFromURL(maplink, random) {
-  const URL = decodeURIComponent(maplink);
-
-  fetch(URL, {method: "GET", mode: "cors"})
-    .then(response => {
-      if (response.ok) return response.blob();
-      throw new Error("Cannot load map from URL");
-    })
-    .then(blob => uploadMap(blob))
-    .catch(error => {
-      showUploadErrorMessage(error.message, URL, random);
-      if (random) generateMapOnLoad();
-    });
-}
-
-function showUploadErrorMessage(error, URL, random) {
-  ERROR && console.error(error);
-  alertMessage.innerHTML = `Cannot load map from the ${link(URL, "link provided")}.
-    ${random ? `A new random map is generated. ` : ""}
-    Please ensure the linked file is reachable and CORS is allowed on server side`;
-  $("#alert").dialog({
-    title: "Loading error",
-    width: "32em",
-    buttons: {
-      OK: function () {
-        $(this).dialog("close");
-      }
-    }
-  });
-}
-
 function generateMapOnLoad() {
   applyStyleOnLoad(); // apply default of previously selected style
   generate(); // generate map
@@ -401,7 +370,7 @@ function applyDefaultBiomesSystem() {
 }
 
 function showWelcomeMessage() {
-  const changelog = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "previous version");
+  const changelog = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "previous versions");
   const reddit = link("https://www.reddit.com/r/FantasyMapGenerator", "Reddit community");
   const discord = link("https://discordapp.com/invite/X7E84HU", "Discord server");
   const patreon = link("https://www.patreon.com/azgaar", "Patreon");
@@ -409,9 +378,10 @@ function showWelcomeMessage() {
   alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
     <ul>Main changes:
-      <li>Ability to add river selecting its cells</li>
-      <li>Keep river course on edit</li>
-      <li>Refactor river rendering code</li>
+      <li>Save and load <i>.map</i> files to Dropbox</li>
+      <li>Ability to add control points on river edit</li>
+      <li>New heightmap template: Taklamakan</li>
+      <li>Option to not scale labels on zoom</li>
     </ul>
 
     <p>Join our ${discord} and ${reddit} to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
