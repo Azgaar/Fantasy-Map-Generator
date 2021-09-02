@@ -286,9 +286,9 @@ async function getMapURL(type, options = {}) {
   const webSafe = ['Georgia', 'Times+New+Roman', 'Comic+Sans+MS', 'Lucida+Sans+Unicode', 'Courier+New', 'Verdana', 'Arial', 'Impact'];
   const fontsToLoad = usedFonts.filter((font) => !webSafe.includes(font));
   if (fontsToLoad.length) {
-    const url = 'https://fonts.googleapis.com/css?family=' + fontsToLoad.join('|');
-    const fontStyle = await GFontToDataURI(url);
-    if (fontStyle) clone.select('defs').append('style').text(fontStyle.join('\n'));
+    const url = "https://fonts.googleapis.com/css?family=" + fontsToLoad.join("|");
+    const fontStyle = await convertFontToDataURI(url);
+    if (fontStyle) clone.select("defs").append("style").text(fontStyle.join("\n"));
   }
 
   clone.remove();
