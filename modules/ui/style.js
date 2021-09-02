@@ -158,8 +158,7 @@ function selectStyleElement() {
     styleFill.style.display = "block";
     styleStroke.style.display = "block";
     styleStrokeWidth.style.display = "block";
-    loadDefaultFonts();
-    styleFont.style.display = "block";
+
     styleShadow.style.display = "block";
     styleSize.style.display = "block";
     styleVisibility.style.display = "block";
@@ -167,21 +166,17 @@ function selectStyleElement() {
     styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#3a3a3a";
     styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr("stroke-width") || 0;
     styleShadowInput.value = el.style("text-shadow") || "white 0 0 4px";
-    styleSelectFont.value = fonts.indexOf(el.attr("data-font"));
-    styleInputFont.style.display = "none";
-    styleInputFont.value = "";
+
+    updateFontSelect(el.attr("font-family"));
     styleFontSize.value = el.attr("data-size");
   }
 
   if (sel === "provs") {
     styleFill.style.display = "block";
-    loadDefaultFonts();
-    styleFont.style.display = "block";
     styleSize.style.display = "block";
     styleFillInput.value = styleFillOutput.value = el.attr("fill") || "#111111";
-    styleSelectFont.value = fonts.indexOf(el.attr("data-font"));
-    styleInputFont.style.display = "none";
-    styleInputFont.value = "";
+
+    updateFontSelect(el.attr("font-family"));
     styleFontSize.value = el.attr("data-size");
   }
 
@@ -213,8 +208,6 @@ function selectStyleElement() {
   if (sel === "legend") {
     styleStroke.style.display = "block";
     styleStrokeWidth.style.display = "block";
-    loadDefaultFonts();
-    styleFont.style.display = "block";
     styleSize.style.display = "block";
 
     styleLegend.style.display = "block";
@@ -224,9 +217,8 @@ function selectStyleElement() {
 
     styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#111111";
     styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr("stroke-width") || 0.5;
-    styleSelectFont.value = fonts.indexOf(el.attr("data-font"));
-    styleInputFont.style.display = "none";
-    styleInputFont.value = "";
+
+    updateFontSelect(el.attr("font-family"));
     styleFontSize.value = el.attr("data-size");
   }
 
@@ -284,6 +276,16 @@ function selectStyleElement() {
     styleCoastline.style.display = "block";
     const auto = (styleCoastlineAuto.checked = coastline.select("#sea_island").attr("auto-filter"));
     if (auto) styleFilter.style.display = "none";
+  }
+
+  function updateFontSelect(family) {
+    styleInputFont.style.display = "none";
+    styleInputFont.value = "";
+    styleFont.style.display = "block";
+
+    declareDefaultFonts();
+    styleSelectFont.value = family;
+    styleSelectFont.style.fontFamily = family;
   }
 }
 
@@ -527,9 +529,10 @@ styleLegendOpacity.addEventListener("input", function () {
 
 styleSelectFont.addEventListener("change", changeFont);
 function changeFont() {
-  const value = styleSelectFont.value;
-  const font = fonts[value].split(":")[0].replace(/\+/g, " ");
-  getEl().attr("font-family", font).attr("data-font", fonts[value]);
+  const family = styleSelectFont.value;
+  getEl().attr("font-family", family);
+  this.style.fontFamily = family;
+
   if (styleElementSelect.value === "legend") redrawLegend();
 }
 
@@ -761,7 +764,7 @@ function applyStyleOnLoad() {
   if (preset && style && JSON.isValid(style)) {
     applyStyle(JSON.parse(style));
     updateMapFilter();
-    loadDefaultFonts();
+    declareUsedFonts();
     stylePreset.value = preset;
     stylePreset.dataset.old = preset;
   } else {
@@ -770,6 +773,8 @@ function applyStyleOnLoad() {
     stylePreset.dataset.old = preset;
     applyDefaultStyle();
   }
+
+  declareUsedFonts();
 }
 
 // set default style

@@ -276,9 +276,9 @@ async function getMapURL(type, options = {}) {
   }
 
   // load non-standard fonts
-  const usedFonts = getFontsList(clone);
-  const webSafe = ["Georgia", "Times+New+Roman", "Comic+Sans+MS", "Lucida+Sans+Unicode", "Courier+New", "Verdana", "Arial", "Impact"];
-  const fontsToLoad = usedFonts.filter(font => !webSafe.includes(font));
+  const usedFonts = getUsedFonts(cloneEl);
+  const websafe = ["Georgia", "Times+New+Roman", "Comic+Sans+MS", "Lucida+Sans+Unicode", "Courier+New", "Verdana", "Arial", "Impact"];
+  const fontsToLoad = usedFonts.filter(font => !websafe.includes(font));
   if (fontsToLoad.length) {
     const url = "https://fonts.googleapis.com/css?family=" + fontsToLoad.join("|");
     const fontStyle = await convertFontToDataURI(url);
