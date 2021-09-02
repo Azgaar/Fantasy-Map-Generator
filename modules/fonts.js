@@ -52,16 +52,16 @@ function getFontsList(svg) {
   return [...new Set(fontsInUse)];
 }
 
-// code from Kaiido's answer https://stackoverflow.com/questions/42402584/how-to-use-google-fonts-in-canvas-when-drawing-dom-objects-in-svg
-function GFontToDataURI(url) {
+function convertFontToDataURI(url) {
   if (!url) return Promise.resolve();
-  return fetch(url) // first fecth the embed stylesheet page
-    .then(resp => resp.text()) // we only need the text of it
+  return fetch(url)
+    .then(resp => resp.text())
     .then(text => {
-      let s = document.createElement("style");
-      s.innerHTML = text;
-      document.head.appendChild(s);
-      const styleSheet = Array.prototype.filter.call(document.styleSheets, sS => sS.ownerNode === s)[0];
+      const style = document.createElement("style");
+      style.innerHTML = text;
+      document.head.appendChild(style);
+
+      const styleSheet = document.styleSheets.find(sheet => sheet.ownerNode === style);
 
       const FontRule = rule => {
         const src = rule.style.getPropertyValue("src");
@@ -70,12 +70,12 @@ function GFontToDataURI(url) {
       };
       const fontProms = [];
 
-      for (const r of styleSheet.cssRules) {
-        let fR = FontRule(r);
+      for (const rule of styleSheet.cssRules) {
+        let fR = FontRule(rule);
         if (!fR.url) continue;
 
         fontProms.push(
-          fetch(fR.url) // fetch the actual font-file (.woff)
+          fetch(fR.url)
             .then(resp => resp.blob())
             .then(blob => {
               return new Promise(resolve => {
@@ -87,7 +87,8 @@ function GFontToDataURI(url) {
             .then(dataURL => fR.rule.cssText.replace(fR.url, dataURL))
         );
       }
-      document.head.removeChild(s); // clean up
+
+      document.head.removeChild(style); // clean up
       return Promise.all(fontProms); // wait for all this has been done
     });
 }

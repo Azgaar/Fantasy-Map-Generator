@@ -281,7 +281,7 @@ async function getMapURL(type, options = {}) {
   const fontsToLoad = usedFonts.filter(font => !webSafe.includes(font));
   if (fontsToLoad.length) {
     const url = "https://fonts.googleapis.com/css?family=" + fontsToLoad.join("|");
-    const fontStyle = await GFontToDataURI(url);
+    const fontStyle = await convertFontToDataURI(url);
     if (fontStyle) clone.select("defs").append("style").text(fontStyle.join("\n"));
   }
 
