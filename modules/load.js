@@ -218,6 +218,14 @@ function parseLoadedData(data) {
       if (data[2]) mapCoordinates = JSON.parse(data[2]);
       if (data[4]) notes = JSON.parse(data[4]);
       if (data[33]) rulers.fromString(data[33]);
+      if (data[34]) {
+        const usedFonts = JSON.parse(data[34]);
+        usedFonts.forEach(usedFont => {
+          const defaultFont = fonts.find(font => font.family === usedFont.family);
+          if (!defaultFont) fonts.push(usedFont);
+          declareFont(usedFont);
+        });
+      }
 
       const biomes = data[3].split("|");
       biomesData = applyDefaultBiomesSystem();
@@ -290,8 +298,6 @@ function parseLoadedData(data) {
       debug = viewbox.select("#debug");
       burgLabels = labels.select("#burgLabels");
     })();
-
-    loadUsedFonts();
 
     void (function parseGridData() {
       grid = JSON.parse(data[6]);
@@ -405,7 +411,7 @@ function parseLoadedData(data) {
 
         // 1.0 adds a legend box
         legend = svg.append("g").attr("id", "legend");
-        legend.attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC").attr("font-size", 13).attr("data-size", 13).attr("data-x", 99).attr("data-y", 93).attr("stroke-width", 2.5).attr("stroke", "#812929").attr("stroke-dasharray", "0 4 10 4").attr("stroke-linecap", "round");
+        legend.attr("font-family", "Almendra SC").attr("font-size", 13).attr("data-size", 13).attr("data-x", 99).attr("data-y", 93).attr("stroke-width", 2.5).attr("stroke", "#812929").attr("stroke-dasharray", "0 4 10 4").attr("stroke-linecap", "round");
 
         // 1.0 separated drawBorders fron drawStates()
         stateBorders = borders.append("g").attr("id", "stateBorders");
