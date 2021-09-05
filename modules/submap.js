@@ -74,7 +74,7 @@ window.Submap = (function () {
       // raise every land cell a bit except riverbeds
       grid.cells.h.forEach((h, i) => {
         if (!rbeds[i] || grid.cells.t[i]<1) return;
-        grid.cells.h[i] = Math.min(grid.cells.h[i] * 1.1, 255);
+        grid.cells.h[i] = Math.min(grid.cells.h[i]+2, 100);
       });
     }
 

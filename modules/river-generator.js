@@ -31,9 +31,10 @@ window.Rivers = (function () {
     TIME && console.timeEnd("generateRivers");
 
     function drainWater() {
+      const sqrpixel = distanceScale * distanceScale
       const MIN_FLUX_TO_FORM_RIVER = 10 * distanceScale;
       const prec = grid.cells.prec;
-      const area = c => pack.cells.area[c] * distanceScale * distanceScale;
+      const area = c => pack.cells.area[c] * sqrpixel;
       const land = cells.i.filter(i => h[i] >= 20).sort((a, b) => h[b] - h[a]);
       const lakeOutCells = Lakes.setClimateData(h);
 
