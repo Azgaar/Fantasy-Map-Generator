@@ -549,19 +549,39 @@ styleFontAdd.addEventListener("click", function () {
   }
 });
 
-styleInputFont.addEventListener("change", function () {
-  if (!this.value) {
-    tip("Please provide a valid Google font name or link to a @font-face declaration");
-    return;
-  }
-  fetchFonts(this.value).then(fetched => {
-    if (!fetched) return;
-    styleFontAdd.click();
-    styleInputFont.value = "";
-    if (fetched !== 1) return;
-    styleSelectFont.value = fonts.length - 1;
-    changeFont(); // auto-change font if 1 font is fetched
+styleInputFont.addEventListener("change", async function () {
+  const family = this.value;
+  if (!family) return tip("Please provide a Google font name", false, "error");
+  const existingFont = fonts.find(font => font.family === family);
+  if (existingFont) return tip("The font already exists in the list", false, "error");
+
+  document.getElementById("styleFontAdd").click();
+  document.getElementById("styleInputFont").value = "";
+
+  const fontRanges = await fetchGoogleFont(family);
+  if (!fontRanges) return tip("Cannot fetch Google font for this value", true, "error", 4000);
+
+  tip(`Google font ${family} is loading...`, true, "warn", 4000);
+
+  const promises = fontRanges.map(range => {
+    const {src, unicodeRange, variant} = range;
+    const fontFace = new FontFace(family, src, {unicodeRange, variant, display: "block"});
+    return fontFace.load();
   });
+
+  Promise.all(promises)
+    .then(fontFaces => {
+      fontFaces.forEach(fontFace => document.fonts.add(fontFace));
+      fonts.push(fontRanges[0]); // add the first font rule
+      tip(`Google font ${family} is added`, true, "success", 4000);
+      addFontOption(family);
+      document.getElementById("styleSelectFont").value = family;
+      changeFont();
+    })
+    .catch(err => {
+      tip(`Failed to load Google font ${family}`, true, "error", 4000);
+      console.error(err);
+    });
 });
 
 styleFontSize.addEventListener("change", function () {

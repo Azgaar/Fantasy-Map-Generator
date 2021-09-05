@@ -430,8 +430,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 #options input[type="range"] {
   height: 8px;
   background: 0;
-  -moz-appearance: none;
-  -webkit-appearance: none;
+  appearance: none;
   margin-left: 0;
   border: 0;
   padding: 0;
@@ -605,18 +604,18 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 }
 
 .glow {
-  animation: glowing 3s infinite;
+  animation: glowing 3s infinite ease-in-out;
 }
 
 @keyframes glowing {
   0% {
-    box-shadow: 0 0 -4px #ded2d8;
+    box-shadow: 0 0 1px #f44336;
   }
   50% {
-    box-shadow: 0 0 8px #f44336;
+    box-shadow: 0 0 10px #f44336;
   }
   100% {
-    box-shadow: 0 0 -4px #ded2d8;
+    box-shadow: 0 0 1px #f44336;
   }
 }
 
@@ -986,7 +985,7 @@ body button.noicon {
 #controlCells {
   pointer-events: none;
   fill: #82c8ff80;
-  stroke: "none";
+  stroke: none;
 }
 
 #vertices > circle {
@@ -1192,14 +1191,6 @@ i.resetButton:active {
 }
 
 .ui-dialog .disabled {
-  opacity: 0.2;
-}
-
-.ui-dialog .disabled::slider-thumb {
-  opacity: 0.2;
-}
-
-.ui-dialog .disabled::-moz-range-thumb {
   opacity: 0.2;
 }
 
@@ -1976,7 +1967,6 @@ div.textual span,
 #markers {
   cursor: pointer;
   font-family: monospace;
-  -moz-user-select: none;
   user-select: none;
   text-anchor: middle;
 }
@@ -2071,7 +2061,6 @@ svg.button {
 }
 
 #alertMessage {
-  -moz-user-select: text;
   user-select: text;
   max-height: 70vh;
   max-width: 75vw;
@@ -2199,7 +2188,6 @@ svg.button {
 
 #legend {
   cursor: move;
-  -moz-user-select: none;
   user-select: none;
 }
 
