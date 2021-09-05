@@ -221,7 +221,8 @@ function parseLoadedData(data) {
       if (data[34]) {
         const usedFonts = JSON.parse(data[34]);
         usedFonts.forEach(usedFont => {
-          const defaultFont = fonts.find(font => font.family === usedFont.family);
+          const {family: usedFamily, unicodeRange: usedRange, variant: usedVariant} = usedFont;
+          const defaultFont = fonts.find(({family, unicodeRange, variant}) => family === usedFamily && unicodeRange === usedRange && variant === usedVariant);
           if (!defaultFont) fonts.push(usedFont);
           declareFont(usedFont);
         });

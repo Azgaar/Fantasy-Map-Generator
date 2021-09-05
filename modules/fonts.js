@@ -121,17 +121,22 @@ const fonts = [
   }
 ];
 
+declareDefaultFonts(); // execute once on load
+
 function declareFont(font) {
   const {family, src, ...rest} = font;
   if (!src) return;
 
   const fontFace = new FontFace(family, src, {...rest, display: "block"});
-  const variant = font.variant || "normal";
-  const isAdded = document.fonts.check(`${variant} 1em ${family}`);
-  if (isAdded) return;
-
   document.fonts.add(fontFace);
-  addFontOption(font.family);
+  addFontOption(family);
+}
+
+function declareDefaultFonts() {
+  fonts.forEach(font => {
+    if (font.src) declareFont(font);
+    else addFontOption(font.family);
+  });
 }
 
 function getUsedFonts(svg) {
@@ -143,6 +148,9 @@ function getUsedFonts(svg) {
     if (font) usedFontFamilies.add(font);
   }
 
+  const provinceFont = provs.attr("font-family");
+  if (provinceFont) usedFontFamilies.add(provinceFont);
+
   const legend = svg.querySelector("#legend");
   const legendFont = legend?.getAttribute("font-family");
   if (legendFont) usedFontFamilies.add(legendFont);
@@ -151,23 +159,16 @@ function getUsedFonts(svg) {
   return usedFonts;
 }
 
-function declareUsedFonts() {
-  const fontsInUse = getUsedFonts(svg.node());
-  fontsInUse.forEach(font => declareFont(font));
-}
-
 function addFontOption(family) {
+  const options = document.getElementById("styleSelectFont");
+  // const existingOption = options.querySelector(`[value="${family}"]`);
+  // if (existingOption) return;
+
   const option = document.createElement("option");
   option.value = family;
   option.innerText = family;
   option.style.fontFamily = family;
-  document.getElementById("styleSelectFont").add(option);
-}
-
-addWebsafeFontOptions(); // execute once on load
-function addWebsafeFontOptions() {
-  const localFonts = fonts.filter(font => font.local);
-  localFonts.forEach(font => addFontOption(font.family));
+  options.add(option);
 }
 
 async function fetchGoogleFont(family) {
