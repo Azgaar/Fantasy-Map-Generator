@@ -277,12 +277,20 @@ async function getMapURL(type, options = {}) {
 
   // TODO: add dataURL for all used fonts
   const usedFonts = getUsedFonts(cloneEl);
-  const websafe = ["Georgia", "Times+New+Roman", "Comic+Sans+MS", "Lucida+Sans+Unicode", "Courier+New", "Verdana", "Arial", "Impact"];
-  const fontsToLoad = usedFonts.filter(font => !websafe.includes(font));
+  const fontsToLoad = usedFonts.filter(font => font.src);
   if (fontsToLoad.length) {
-    const url = "https://fonts.googleapis.com/css?family=" + fontsToLoad.join("|");
-    const fontStyle = await convertFontToDataURI(url);
-    if (fontStyle) clone.select("defs").append("style").text(fontStyle.join("\n"));
+    const dataURLfonts = await loadFontsAsDataURI(fontsToLoad);
+
+    const fontFaces = dataURLfonts
+      .map(({family, src, unicodeRange = "", variant = "normal"}) => {
+        return `@font-face {font-family: "${family}"; src: ${src}; unicode-range: ${unicodeRange}; font-variant: ${variant};}`;
+      })
+      .join("\n");
+
+    const style = document.createElement("style");
+    style.setAttribute("type", "text/css");
+    style.innerHTML = fontFaces;
+    cloneEl.querySelector("defs").appendChild(style);
   }
 
   clone.remove();

@@ -32,15 +32,20 @@ function tip(tip = "Tip is undefined", main, type, time) {
   else if (type === "warn") tooltip.style.background = "linear-gradient(0.1turn, #ffffff00, #be5d08cc, #ffffff00)";
   else if (type === "success") tooltip.style.background = "linear-gradient(0.1turn, #ffffff00, #127912cc, #ffffff00)";
 
-  if (main) tooltip.dataset.main = tip; // set main tip
-  if (time) setTimeout(() => (tooltip.dataset.main = ""), time); // clear main in some time
+  if (main) {
+    tooltip.dataset.main = tip;
+    tooltip.dataset.color = tooltip.style.background;
+  }
+  if (time) setTimeout(() => clearMainTip(), time);
 }
 
 function showMainTip() {
+  tooltip.style.background = tooltip.dataset.color;
   tooltip.innerHTML = tooltip.dataset.main;
 }
 
 function clearMainTip() {
+  tooltip.dataset.color = "";
   tooltip.dataset.main = "";
   tooltip.innerHTML = "";
 }

@@ -197,43 +197,24 @@ async function fetchGoogleFont(family) {
   }
 }
 
-function convertFontToDataURI(url) {
-  if (!url) return Promise.resolve();
-  return fetch(url)
-    .then(resp => resp.text())
-    .then(text => {
-      const style = document.createElement("style");
-      style.innerHTML = text;
-      document.head.appendChild(style);
+function readBlobAsDataURL(blob) {
+  return new Promise(function (resolve, reject) {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
 
-      const styleSheet = document.styleSheets.find(sheet => sheet.ownerNode === style);
+async function loadFontsAsDataURI(fonts) {
+  const promises = fonts.map(async font => {
+    const url = font.src.match(/url\(['"]?(.+?)['"]?\)/)[1];
+    const resp = await fetch(url);
+    const blob = await resp.blob();
+    const dataURL = await readBlobAsDataURL(blob);
 
-      const FontRule = rule => {
-        const src = rule.style.getPropertyValue("src");
-        const url = src ? src.split("url(")[1].split(")")[0] : "";
-        return {rule, src, url: url.substring(url.length - 1, 1)};
-      };
-      const fontProms = [];
+    return {...font, src: `url('${dataURL}')`};
+  });
 
-      for (const rule of styleSheet.cssRules) {
-        let fR = FontRule(rule);
-        if (!fR.url) continue;
-
-        fontProms.push(
-          fetch(fR.url)
-            .then(resp => resp.blob())
-            .then(blob => {
-              return new Promise(resolve => {
-                let f = new FileReader();
-                f.onload = e => resolve(f.result);
-                f.readAsDataURL(blob);
-              });
-            })
-            .then(dataURL => fR.rule.cssText.replace(fR.url, dataURL))
-        );
-      }
-
-      document.head.removeChild(style); // clean up
-      return Promise.all(fontProms); // wait for all this has been done
-    });
+  return await Promise.all(promises);
 }
