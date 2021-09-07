@@ -2,7 +2,7 @@
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 "use strict";
-const version = "1.652"; // generator version1
+const version = "1.66"; // generator version1
 document.title += " v" + version;
 
 // Switches to disable/enable logging features
@@ -219,37 +219,6 @@ void (function checkLoadParameters() {
   generateMapOnLoad();
 })();
 
-function loadMapFromURL(maplink, random) {
-  const URL = decodeURIComponent(maplink);
-
-  fetch(URL, {method: "GET", mode: "cors"})
-    .then(response => {
-      if (response.ok) return response.blob();
-      throw new Error("Cannot load map from URL");
-    })
-    .then(blob => uploadMap(blob))
-    .catch(error => {
-      showUploadErrorMessage(error.message, URL, random);
-      if (random) generateMapOnLoad();
-    });
-}
-
-function showUploadErrorMessage(error, URL, random) {
-  ERROR && console.error(error);
-  alertMessage.innerHTML = `Cannot load map from the ${link(URL, "link provided")}.
-    ${random ? `A new random map is generated. ` : ""}
-    Please ensure the linked file is reachable and CORS is allowed on server side`;
-  $("#alert").dialog({
-    title: "Loading error",
-    width: "32em",
-    buttons: {
-      OK: function () {
-        $(this).dialog("close");
-      }
-    }
-  });
-}
-
 function generateMapOnLoad() {
   applyStyleOnLoad(); // apply default of previously selected style
   generate(); // generate map
@@ -262,10 +231,12 @@ function focusOn() {
   const url = new URL(window.location.href);
   const params = url.searchParams;
 
-  if (params.get("from") === "MFCG" && document.referrer) {
+  const fromMGCG = params.get("from") === "MFCG" && document.referrer;
+  if (fromMGCG) {
     if (params.get("seed").length === 13) {
       // show back burg from MFCG
-      params.set("burg", params.get("seed").slice(-4));
+      const burgSeed = params.get("seed").slice(-4);
+      params.set("burg", burgSeed);
     } else {
       // select burg for MFCG
       findBurgForMFCG(params);
@@ -273,23 +244,33 @@ function focusOn() {
     }
   }
 
-  const s = +params.get("scale") || 8;
-  let x = +params.get("x");
-  let y = +params.get("y");
+  const scaleParam = params.get("scale");
+  const cellParam = params.get("cell");
+  const burgParam = params.get("burg");
 
-  const c = +params.get("cell");
-  if (c) {
-    x = pack.cells.p[c][0];
-    y = pack.cells.p[c][1];
+  if (scaleParam || cellParam || burgParam) {
+    const scale = +scaleParam || 8;
+
+    if (cellParam) {
+      const cell = +params.get("cell");
+      const [x, y] = pack.cells.p[cell];
+      zoomTo(x, y, scale, 1600);
+      return;
+    }
+
+    if (burgParam) {
+      const burg = isNaN(+burgParam) ? pack.burgs.find(burg => burg.name === burgParam) : pack.burgs[+burgParam];
+      if (!burg) return;
+
+      const {x, y} = burg;
+      zoomTo(x, y, scale, 1600);
+      return;
+    }
+
+    const x = +params.get("x") || graphWidth / 2;
+    const y = +params.get("y") || graphHeight / 2;
+    zoomTo(x, y, scale, 1600);
   }
-
-  const b = +params.get("burg");
-  if (b && pack.burgs[b]) {
-    x = pack.burgs[b].x;
-    y = pack.burgs[b].y;
-  }
-
-  if (x && y) zoomTo(x, y, s, 1600);
 }
 
 // find burg for MFCG and focus on it
@@ -389,7 +370,7 @@ function applyDefaultBiomesSystem() {
 }
 
 function showWelcomeMessage() {
-  const changelog = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "previous version");
+  const changelog = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "previous versions");
   const reddit = link("https://www.reddit.com/r/FantasyMapGenerator", "Reddit community");
   const discord = link("https://discordapp.com/invite/X7E84HU", "Discord server");
   const patreon = link("https://www.patreon.com/azgaar", "Patreon");
@@ -397,9 +378,10 @@ function showWelcomeMessage() {
   alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
     <ul>Main changes:
-      <li>Ability to add river selecting its cells</li>
-      <li>Keep river course on edit</li>
-      <li>Refactor river rendering code</li>
+      <li>Save and load <i>.map</i> files to Dropbox</li>
+      <li>Ability to add control points on river edit</li>
+      <li>New heightmap template: Taklamakan</li>
+      <li>Option to not scale labels on zoom</li>
     </ul>
 
     <p>Join our ${discord} and ${reddit} to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
@@ -880,8 +862,8 @@ function openNearSeaLakes() {
 function defineMapSize() {
   const [size, latitude] = getSizeAndLatitude();
   const randomize = new URL(window.location.href).searchParams.get("options") === "default"; // ignore stored options
-  if (randomize || !locked("mapSize")) mapSizeOutput.value = mapSizeInput.value = size;
-  if (randomize || !locked("latitude")) latitudeOutput.value = latitudeInput.value = latitude;
+  if (randomize || !locked("mapSize")) mapSizeOutput.value = mapSizeInput.value = rn(size);
+  if (randomize || !locked("latitude")) latitudeOutput.value = latitudeInput.value = rn(latitude);
 
   function getSizeAndLatitude() {
     const template = document.getElementById("templateInput").value; // heightmap template
@@ -914,11 +896,11 @@ function calculateMapCoordinates() {
   const size = +document.getElementById("mapSizeOutput").value;
   const latShift = +document.getElementById("latitudeOutput").value;
 
-  const latT = (size / 100) * 180;
-  const latN = 90 - ((180 - latT) * latShift) / 100;
-  const latS = latN - latT;
+  const latT = rn((size / 100) * 180, 1);
+  const latN = rn(90 - ((180 - latT) * latShift) / 100, 1);
+  const latS = rn(latN - latT, 1);
 
-  const lon = Math.min(((graphWidth / graphHeight) * latT) / 2, 180);
+  const lon = rn(Math.min(((graphWidth / graphHeight) * latT) / 2, 180));
   mapCoordinates = {latT, latN, latS, lonT: lon * 2, lonW: -lon, lonE: lon};
 }
 
@@ -1405,7 +1387,7 @@ function defineBiomes() {
 function getBiomeId(moisture, temperature, height) {
   if (height < 20) return 0; // marine biome: all water cells
   if (temperature < -5) return 11; // permafrost biome
-  if (moisture > 40 && temperature > -2 && (height < 25 || (moisture > 24 && height > 24))) return 12; // wetland biome
+  if (moisture > 40 && temperature > -2 && (height < 25 || (moisture > 24 && height > 24 && height < 60))) return 12; // wetland biome
 
   const moistureBand = Math.min((moisture / 5) | 0, 4); // [0-4]
   const temperatureBand = Math.min(Math.max(20 - temperature, 0), 25); // [0-25]

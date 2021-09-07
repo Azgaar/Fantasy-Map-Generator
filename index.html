@@ -234,7 +234,7 @@
   <div id="loading">
     <div id="titleName"><t data-t="titleName">Azgaar's</t></div>
     <div id="title"><t data-t="title">Fantasy Map Generator</t></div>
-    <div id="version"><t data-t="version">v. </t>1.65</div>
+    <div id="version"><t data-t="version">v. </t>1.66</div>
     <p id="loading-text"><t data-t="loading">LOADING</t><span>.</span><span>.</span><span>.</span></p>
   </div>
 
@@ -1447,11 +1447,11 @@
 
       <div id="sticked">
         <button id="newMapButton" data-tip="Generate a new map based on options. Shortcut: F2">New Map</button>
-        <button id="saveButton" data-tip="Select format to save map">Save</button>
-        <button id="loadButton" data-tip="Load fully functional map in a .map format">Load</button>
+        <button id="exportButton" data-tip="Select format to download image or export map data">Export</button>
+        <button id="saveButton" data-tip="Save fully-functional map in .map format">Save</button>
+        <button id="loadButton" data-tip="Load fully-functional map in .map format">Load</button>
         <button id="zoomReset" data-tip="Reset map zoom. Shortcut: 0">Reset Zoom</button>
       </div>
-
     </div>
 
   </div>
@@ -3106,8 +3106,8 @@
 
         <div data-tip="Set height exponent, i.e. a value for altitude change sharpness. Altitude affects temperature and hence biomes">
           <div>Exponent:</div>
-          <input id="heightExponentOutput" type="range" min=1.5 max=2.1 value=1.8 step=.01>
-          <input id="heightExponentInput" data-stored="heightExponent" type="number" min=1.5 max=2.1 value=1.8 step=.01>
+          <input id="heightExponentOutput" type="range" min=1.5 max=2.2 value=2 step=.01>
+          <input id="heightExponentInput" data-stored="heightExponent" type="number" min=1.5 max=2.2 value=2 step=.01>
         </div>
 
         <div class="unitsHeader" data-tip="Select Temperature scale">
@@ -3164,8 +3164,8 @@
 
         <div data-tip="Set how many people are in one population point">
           <div>1 population point =</div>
-          <input id="populationRateOutput" data-stored="populationRate" type="range" min=10 max=9990 step=10 value=1000 style="width:6em">
-          <input id="populationRateInput" data-stored="populationRate" type="number" min=10 max=9990 step=10 value=1000 style="width:4.5em">
+          <input id="populationRateOutput" data-stored="populationRate" type="range" min=10 max=9990 step=10 value=1000 />
+          <input id="populationRateInput" data-stored="populationRate" type="number" min=10 max=9990 step=10 value=1000 />
         </div>
 
         <div data-tip="Set urbanization rate: burgs population relative to all population">
@@ -3449,34 +3449,64 @@
 
     <div id="preview3d" class="dialog stable" style="display: none; padding: 0px"></div>
 
-    <div id="saveMapData" style="display: none" class="dialog">
-      <div style="margin-bottom: .3em; font-weight: bold">Please select saving method:</div>
+    <div id="exportMapData" style="display: none" class="dialog">
+      <div style="margin-bottom: .3em; font-weight: bold">Download image</div>
       <div>
-        <button onclick="saveMap()" data-tip="Download the project in internal .map format (reliable). Then open via 'Load' in menu. Shortcut: Ctrl + S">.map</button>
-        <button onclick="saveSVG()" data-tip="Download the map as vector image (open in browser or Inkscape)">.svg</button>
+        <button onclick="saveSVG()" data-tip="Download the map as vector image (open directly in browser or Inkscape)">.svg</button>
         <button onclick="savePNG()" data-tip="Download visible part of the map as .png (lossless compressed)">.png</button>
         <button onclick="saveJPEG()" data-tip="Download visible part of the map as .jpeg (lossy compressed) image">.jpeg</button>
         <button onclick="openSaveTiles()" data-tip="Split map into smaller png tiles and download as zip archive">tiles</button>
-        <button onclick="saveGeoJSON()" data-tip="Download map data in GeoJSON format">.json</button>
-        <button onclick="quickSave()" data-tip="Save the project to browser storage (unreliable). Shortcut: F6">storage</button>
+        <span data-tip="Check to not allow system to automatically hide labels">
+          <input id="showLabels" class="checkbox" type="checkbox" onchange="hideLabels.checked = !this.checked; invokeActiveZooming()" checked="">
+          <label for="showLabels" class="checkbox-label">Show all labels</label>
+        </span>
       </div>
-      <p style="font-style: italic">Keep noted that the only reliable project saving method is having .map file stored on your machine. There is no way to restore map if .map file is lost. We don't keep any data on our side.</p>
-      <p style="font-style: italic">Generator uses pop-up window to download files. Please ensure your browser does not block popups.</p>
+
       <div data-tip="Define scale of a saved png/jpeg image (e.g. 5x). Saving big images is slow and may cause a browser crash!" style="margin-bottom: .3em">
         PNG / JPEG scale:
-        <input id="pngResolutionInput" data-stored="pngResolution" type="range" min=1 max=8 value=1 style="width: 14em">
+        <input id="pngResolutionInput" data-stored="pngResolution" type="range" min=1 max=8 value=1 style="width: 10em">
         <input id="pngResolutionOutput" data-stored="pngResolution" type="number" min=1 max=8 value=1>
       </div>
-      <div data-tip="Check to not allow system to automatically hide labels">
-        <input id="showLabels" class="checkbox" type="checkbox" onchange="hideLabels.checked = !this.checked; invokeActiveZooming()" checked="">
-        <label for="showLabels" class="checkbox-label">Show all labels</label>
+
+      <div style="margin: 1em 0 .3em; font-weight: bold">Export to GeoJSON</div>
+      <div>
+        <button onclick="saveGeoJSON_Cells()" data-tip="Download cells data in GeoJSON format">cells</button>
+        <button onclick="saveGeoJSON_Routes()" data-tip="Download routes data in GeoJSON format">routes</button>
+        <button onclick="saveGeoJSON_Rivers()" data-tip="Download rivers data in GeoJSON format">rivers</button>
+        <button onclick="saveGeoJSON_Markers()" data-tip="Download markers data in GeoJSON format">markers</button>
+      </div>
+      <p style="font-style: italic">GeoJSON format is used in GIS tools such as QGIS. Check out <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export" target="_blank">wiki-page</a> for guidance</p>
+
+      <p style="font-style: italic">Generator uses pop-up window to download files. Please ensure your browser does not block popups.</p>
+
+      <p style="font-style: italic">It's also possible to export map to Foundry VTT, see <a href="https://github.com/Ethck/azgaar-foundry" target="_blank">the module.</a></p>
+    </div>
+
+    <div id="saveMapData" style="display: none" class="dialog">
+      <div style="margin-top: .3em">
+        <strong>Save map to</strong>
+        <button onclick="dowloadMap()" data-tip="Download .map file to your local disk. Shortcut: Ctrl + S">machine</button>
+        <button onclick="saveToDropbox()" data-tip="Save .map file to your Dropbox">dropbox</button>
+        <button onclick="quickSave()" data-tip="Save the project to browser storage (quick save). It can be unreliable. Shortcut: F6">browser</button>
+      </div>
+      <p style="font-style: italic">Maps are saved in <i>.map</i> format, that can be loaded back via 'Load' in menu. Please keep noted that we do not keep any data on our side. There is no way to restore the progress if .map file is lost. Please keep old .map files on your machine or cloud storage as backups.</p>
+      <p style="font-style: italic">Saving to Dropbox may not be allowed for big files. In this case open <a href="https://www.dropbox.com/home/FMG" target="_blank">Dropbox</a>, download the .map file and upload it manually.</p>
+
+      <div style="margin-top: .3em" data-tip="Select .map file on dropbox and share a sharable link">
+        <strong>Create sharable link</strong>
+        <button onclick="createSharableDropboxLink()">select file</button>
+        <div id="sharableLinkContainer" style="display: none">
+          <a id="sharableLink" target="_blank"></a>
+          <i data-tip="Copy link to the clipboard" onclick="copyLinkToClickboard()" class="icon-clone pointer"></i>
+        </div>
       </div>
     </div>
 
     <div id="loadMapData" style="display: none" class="dialog">
-      <div style="margin-bottom: .3em">Load map from:</div>
+      <div style="margin-bottom: .3em">Load map from</div>
       <div>
         <button onclick="mapToLoad.click()" data-tip="Load .map file from local disk">local disk</button>
+        <button onclick="loadFromDropbox()" data-tip="Load .map file from your Dropbox">Dropbox</button>
         <button onclick="loadURL()" data-tip="Load .map file from URL (server should allow CORS)">URL</button>
         <button onclick="quickLoad()" data-tip="Load map from browser storage (if saved before)">storage</button>
       </div>
@@ -4265,5 +4295,6 @@
   <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
   <script defer src="libs/pell.min.js"></script>
   <script defer src="libs/jszip.min.js"></script>
+  <script defer src="https://www.dropbox.com/static/api/2/dropins.js" id="dropboxjs" data-app-key="pdr9ae64ip0qno4"></script>
 </body>
 </html>

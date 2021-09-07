@@ -319,9 +319,10 @@ window.Rivers = (function () {
   };
 
   const getRiverPoints = (riverCells, riverPoints) => {
+    if (riverPoints) return riverPoints;
+
     const {p} = pack.cells;
     return riverCells.map((cell, i) => {
-      if (riverPoints && riverPoints[i]) return riverPoints[i];
       if (cell === -1) return getBorderPoint(riverCells[i - 1]);
       return p[cell];
     });
