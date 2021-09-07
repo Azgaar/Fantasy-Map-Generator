@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <script type="text/javascript" src="https://unpkg.com/dropbox@10.8.0/dist/Dropbox-sdk.min.js"></script>
+    <title>FMG Dropbox Auth</title>
+  </head>
+  <body>
+    <script>
+      /*
+        open this page in a new window without query parameter to start auth
+        window.opener.setDropBoxToken(token) will be called on the opener
+        window.
+      */
+      const REDIRECT_URI = window.location.origin + window.location.pathname;
+      console.log('redirect uri:', REDIRECT_URI);
+      const dbxAuth = new Dropbox.DropboxAuth({ clientId: 'sp7tzwm27u2w5ns', });
+
+      const spObj = new URLSearchParams(window.location.search);
+      const searchParams = Object.fromEntries(spObj.entries())
+
+      if (searchParams.code) getToken()
+      else doAuth(); // start authentication
+
+      function doAuth() {
+        dbxAuth.getAuthenticationUrl(REDIRECT_URI, undefined, 'code', 'offline', undefined, undefined, true)
+        .then(authUrl => {
+            window.sessionStorage.clear();
+            window.sessionStorage.setItem("codeVerifier", dbxAuth.codeVerifier);
+            window.location.href = authUrl;
+        })
+        .catch((error) => console.error(error));
+      };
+
+      function getToken() {
+        dbxAuth.setCodeVerifier(window.sessionStorage.getItem('codeVerifier'));
+        dbxAuth.getAccessTokenFromCode(REDIRECT_URI, searchParams.code)
+        .then((resp) => {
+            const token = resp.result.access_token;
+            console.log('calling window opener...')
+            window.opener.Cloud.providers.dropbox.setDropBoxToken(token)
+        }).catch((error) => {
+            console.error(error)
+        });
+      }
+    </script>
+  </body>
+</html>

@@ -435,42 +435,19 @@ function dowloadMap() {
   window.URL.revokeObjectURL(URL);
 }
 
-function saveToDropbox() {
+async function saveToDropbox() {
+  const sharableLinkContainer = document.getElementById("sharableLinkContainer");
   if (customization) return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
   closeDialogs("#alert");
-
   const mapData = getMapData();
-  const URL = "data:text/plain; base64," + btoa(encodeURIComponent(mapData));
   const filename = getFileName() + ".map";
-  const options = {
-    success: () => tip("Map is saved to your Dropbox", true, "success", 8000),
-    error: function (errorMessage) {
-      tip("Cannot save .map to your Dropbox", true, "error", 8000);
-      console.error(errorMessage);
-    }
-  };
-  Dropbox.save(URL, filename, options);
-}
-
-function createSharableDropboxLink() {
-  const sharableLink = document.getElementById("sharableLink");
-  const sharableLinkContainer = document.getElementById("sharableLinkContainer");
-
-  const options = {
-    success: function (files) {
-      const url = files[0].link;
-      const fmg = window.location.href.split("?")[0];
-      const link = `${fmg}/?maplink=${url}`;
-      const shortLink = link.slice(0, 50) + "...";
-
-      sharableLinkContainer.style.display = "block";
-      sharableLink.innerText = shortLink;
-      sharableLink.setAttribute("href", link);
-    },
-    linkType: "direct",
-    extensions: [".map"]
-  };
-  Dropbox.choose(options);
+  try {
+    await Cloud.providers.dropbox.save(filename, mapData);
+    tip("Map is saved to your Dropbox", true, "success", 8000);
+  } catch (msg) {
+    console.error(msg);
+    tip("Cannot save .map to your Dropbox", true, "error", 8000);
+  }
 }
 
 function saveGeoJSON_Cells() {

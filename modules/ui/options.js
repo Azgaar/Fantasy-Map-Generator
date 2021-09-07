@@ -695,7 +695,7 @@ function showExportPane() {
   });
 }
 
-function showLoadPane() {
+async function showLoadPane() {
   $("#loadMapData").dialog({
     title: "Load map",
     resizable: false,
@@ -706,6 +706,19 @@ function showLoadPane() {
         $(this).dialog("close");
       }
     }
+  });
+
+  const dpx = document.getElementById("loadFromDropbox");
+  const dpf = dpx.querySelector("select");
+  const files = await Cloud.providers.dropbox.list();
+  dpx.style.display = files? "block" : "none";
+  if (!files) return;
+  while(dpf.firstChild) dpf.removeChild(dpf.firstChild);
+  files.forEach(f => {
+    const opt = document.createElement('option');
+    opt.innerText = f.name;
+    opt.value = f.path;
+    dpf.appendChild(opt);
   });
 }
 
