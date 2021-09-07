@@ -13,7 +13,6 @@
         window.
       */
       const REDIRECT_URI = window.location.origin + window.location.pathname;
-      console.log('redirect uri:', REDIRECT_URI);
       const dbxAuth = new Dropbox.DropboxAuth({ clientId: 'sp7tzwm27u2w5ns', });
 
       const spObj = new URLSearchParams(window.location.search);
@@ -37,7 +36,6 @@
         dbxAuth.getAccessTokenFromCode(REDIRECT_URI, searchParams.code)
         .then((resp) => {
             const token = resp.result.access_token;
-            console.log('calling window opener...')
             window.opener.Cloud.providers.dropbox.setDropBoxToken(token)
         }).catch((error) => {
             console.error(error)
