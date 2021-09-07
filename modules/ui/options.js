@@ -702,11 +702,7 @@ function showSavePane() {
   $("#saveMapData").dialog({
     title: "Save map",
     resizable: false,
-<<<<<<< HEAD
     width: "25em",
-=======
-    width: "27em",
->>>>>>> f557701e (dropbox - import changes from alpha)
     position: {my: "center", at: "center", of: "svg"},
     buttons: {
       Close: function () {
@@ -747,11 +743,7 @@ async function showLoadPane() {
   $("#loadMapData").dialog({
     title: "Load map",
     resizable: false,
-<<<<<<< HEAD
     width: "24em",
-=======
-    width: "22em",
->>>>>>> f557701e (dropbox - import changes from alpha)
     position: {my: "center", at: "center", of: "svg"},
     buttons: {
       Close: function () {
