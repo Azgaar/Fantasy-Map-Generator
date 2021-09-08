@@ -666,7 +666,6 @@
               <td>Font</td>
               <td>
                 <select id="styleSelectFont"></select>
-                <input id="styleInputFont" data-tip="Type Google font name and press Enter" type="text">
                 <button id="styleFontAdd" data-tip="Add a font" class="icon-plus styleButton"></button>
               </td>
             </tr>
@@ -1995,7 +1994,7 @@
 
           <div data-tip="Burg mean annual temperature and real-world city for comparison">
             <div class="label">Temperature:</div>
-            <span id="burgTemperature"></span>, like in 
+            <span id="burgTemperature"></span>, like in
             <span id="burgTemperatureLikeIn"></span>
           </div>
 
@@ -3346,6 +3345,22 @@
       </div>
     </div>
 
+    <div id="addFontDialog" style="display: none" class="dialog">
+      <span>There are 3 ways to add a custom font:</span>
+      <p><strong>Font URL</strong>. Provide font name and link to the font file. Preferable format is <code>woff2</code></p>
+      <p><strong>Google font</strong>. Open <a href="https://fonts.google.com/" target="_blank">Google Fonts</a>, find a font you like and enter its name to the field below</p>
+      <p><strong>Local font</strong>. If you have a font <a href="https://www.wikihow.com/Install-Fonts-on-Your-PC" target="_blank">installed on your computer</a>, just provide the font name. Make sure the browser is reloaded after the installation. Please note it won't work on machines not having the font installed</p>
+      <div style="margin-top: .3em" data-tip="Select font adding method">
+        <select id="addFontMethod">
+          <option value="fontURL" selected>Font URL</option>
+          <option value="googleFont">Google font</option>
+          <option value="localFont">Local font</option>
+        </select>
+        <input id="addFontNameInput" placeholder="font family" style="width:15em">
+        <input id="addFontURLInput" placeholder="font file URL" style="width:22.6em; margin-top:.1em">
+      </div>
+    </div>
+
     <div id="cellInfo" style="display: none" class="dialog stable">
       <p><b>Cell:</b> <span id="infoCell"></span> <b>X:</b> <span id="infoX"></span> <b>Y:</b> <span id="infoY"></span></p>
       <p><b>Latitude:</b> <span id="infoLat"></span></p>
@@ -3442,7 +3457,7 @@
       <div id="options3dBottom" style="margin-top: .2em">
         <button id="options3dUpdate" data-tip="Update the scene" class="icon-cw"></button>
         <button data-tip="Configure world and map size and climate settings" onclick="editWorld()" class="icon-globe"></button>
-		<button id="options3dSave" data-tip="Save screenshot of the 3d scene" class="icon-button-screenshot"></button>
+        <button id="options3dSave" data-tip="Save screenshot of the 3d scene" class="icon-button-screenshot"></button>
         <button id="options3dOBJSave" data-tip="Save OBJ file of the 3d scene" class="icon-download"></button>
       </div>
     </div>

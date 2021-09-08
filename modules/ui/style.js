@@ -167,7 +167,8 @@ function selectStyleElement() {
     styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr("stroke-width") || 0;
     styleShadowInput.value = el.style("text-shadow") || "white 0 0 4px";
 
-    updateFontSelect(el.attr("font-family"));
+    styleFont.style.display = "block";
+    styleSelectFont.value = el.attr("font-family");
     styleFontSize.value = el.attr("data-size");
   }
 
@@ -176,7 +177,8 @@ function selectStyleElement() {
     styleSize.style.display = "block";
     styleFillInput.value = styleFillOutput.value = el.attr("fill") || "#111111";
 
-    updateFontSelect(el.attr("font-family"));
+    styleFont.style.display = "block";
+    styleSelectFont.value = el.attr("font-family");
     styleFontSize.value = el.attr("data-size");
   }
 
@@ -218,7 +220,8 @@ function selectStyleElement() {
     styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#111111";
     styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr("stroke-width") || 0.5;
 
-    updateFontSelect(el.attr("font-family"));
+    styleFont.style.display = "block";
+    styleSelectFont.value = el.attr("font-family");
     styleFontSize.value = el.attr("data-size");
   }
 
@@ -276,13 +279,6 @@ function selectStyleElement() {
     styleCoastline.style.display = "block";
     const auto = (styleCoastlineAuto.checked = coastline.select("#sea_island").attr("auto-filter"));
     if (auto) styleFilter.style.display = "none";
-  }
-
-  function updateFontSelect(family) {
-    styleInputFont.style.display = "none";
-    styleInputFont.value = "";
-    styleFont.style.display = "block";
-    styleSelectFont.value = family;
   }
 }
 
@@ -537,49 +533,41 @@ styleShadowInput.addEventListener("input", function () {
 });
 
 styleFontAdd.addEventListener("click", function () {
-  if (styleInputFont.style.display === "none") {
-    styleInputFont.style.display = "inline-block";
-    styleInputFont.focus();
-    styleSelectFont.style.display = "none";
-  } else {
-    styleInputFont.style.display = "none";
-    styleSelectFont.style.display = "inline-block";
-  }
+  addFontNameInput.value = "";
+  addFontURLInput.value = "";
+
+  $("#addFontDialog").dialog({
+    title: "Add custom font",
+    width: "26em",
+    position: {my: "center", at: "center", of: "svg"},
+    buttons: {
+      Add: function () {
+        const family = addFontNameInput.value;
+        if (!family) return tip("Please provide a font name", false, "error");
+
+        const existingFont = fonts.find(font => font.family === family);
+        if (existingFont) return tip("The font is already added", false, "error");
+
+        const method = addFontMethod.value;
+        const url = addFontURLInput.value;
+
+        if (method === "fontURL") addWebFont(family, url);
+        else if (method === "googleFont") addGoogleFont(family);
+        else if (method === "localFont") addLocalFont(family);
+
+        addFontNameInput.value = "";
+        addFontURLInput.value = "";
+        $(this).dialog("close");
+      },
+      Cancel: function () {
+        $(this).dialog("close");
+      }
+    }
+  });
 });
 
-styleInputFont.addEventListener("change", async function () {
-  const family = this.value;
-  if (!family) return tip("Please provide a Google font name", false, "error");
-  const existingFont = fonts.find(font => font.family === family);
-  if (existingFont) return tip("The font already exists in the list", false, "error");
-
-  document.getElementById("styleFontAdd").click();
-  document.getElementById("styleInputFont").value = "";
-
-  const fontRanges = await fetchGoogleFont(family);
-  if (!fontRanges) return tip("Cannot fetch Google font for this value", true, "error", 4000);
-
-  tip(`Google font ${family} is loading...`, true, "warn", 4000);
-
-  const promises = fontRanges.map(range => {
-    const {src, unicodeRange, variant} = range;
-    const fontFace = new FontFace(family, src, {unicodeRange, variant, display: "block"});
-    return fontFace.load();
-  });
-
-  Promise.all(promises)
-    .then(fontFaces => {
-      fontFaces.forEach(fontFace => document.fonts.add(fontFace));
-      fonts.push(...fontRanges);
-      tip(`Google font ${family} is added`, true, "success", 4000);
-      addFontOption(family);
-      document.getElementById("styleSelectFont").value = family;
-      changeFont();
-    })
-    .catch(err => {
-      tip(`Failed to load Google font ${family}`, true, "error", 4000);
-      console.error(err);
-    });
+addFontMethod.addEventListener("change", function () {
+  addFontURLInput.style.display = this.value === "fontURL" ? "inline" : "none";
 });
 
 styleFontSize.addEventListener("change", function () {
