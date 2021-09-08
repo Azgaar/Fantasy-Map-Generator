@@ -13,7 +13,7 @@ function quickLoad() {
 }
 
 async function loadFromDropbox() {
-  const mapPath = document.getElementById("#loadFromDropboxSelect")?.value;
+  const mapPath = document.getElementById("loadFromDropboxSelect")?.value;
 
   DEBUG && console.log("Loading map from Dropbox:", mapPath);
   const blob = await Cloud.providers.dropbox.load(mapPath);
