@@ -663,7 +663,7 @@ function showSavePane() {
   $("#saveMapData").dialog({
     title: "Save map",
     resizable: false,
-    width: "27em",
+    width: "25em",
     position: {my: "center", at: "center", of: "svg"},
     buttons: {
       Close: function () {
@@ -711,11 +711,11 @@ async function showLoadPane() {
   const dpx = document.getElementById("loadFromDropbox");
   const dpf = dpx.querySelector("select");
   const files = await Cloud.providers.dropbox.list();
-  dpx.style.display = files? "block" : "none";
+  dpx.style.display = files ? "block" : "none";
   if (!files) return;
-  while(dpf.firstChild) dpf.removeChild(dpf.firstChild);
+  while (dpf.firstChild) dpf.removeChild(dpf.firstChild);
   files.forEach(f => {
-    const opt = document.createElement('option');
+    const opt = document.createElement("option");
     opt.innerText = f.name;
     opt.value = f.path;
     dpf.appendChild(opt);

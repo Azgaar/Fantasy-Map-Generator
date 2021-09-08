@@ -3442,7 +3442,7 @@
       <div id="options3dBottom" style="margin-top: .2em">
         <button id="options3dUpdate" data-tip="Update the scene" class="icon-cw"></button>
         <button data-tip="Configure world and map size and climate settings" onclick="editWorld()" class="icon-globe"></button>
-		<button id="options3dSave" data-tip="Save screenshot of the 3d scene" class="icon-button-screenshot"></button>
+        <button id="options3dSave" data-tip="Save screenshot of the 3d scene" class="icon-button-screenshot"></button>
         <button id="options3dOBJSave" data-tip="Save OBJ file of the 3d scene" class="icon-download"></button>
       </div>
     </div>
@@ -3475,11 +3475,9 @@
         <button onclick="saveGeoJSON_Rivers()" data-tip="Download rivers data in GeoJSON format">rivers</button>
         <button onclick="saveGeoJSON_Markers()" data-tip="Download markers data in GeoJSON format">markers</button>
       </div>
-      <p style="font-style: italic">GeoJSON format is used in GIS tools such as QGIS. Check out <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export" target="_blank">wiki-page</a> for guidance</p>
-
-      <p style="font-style: italic">Generator uses pop-up window to download files. Please ensure your browser does not block popups.</p>
-
-      <p style="font-style: italic">It's also possible to export map to Foundry VTT, see <a href="https://github.com/Ethck/azgaar-foundry" target="_blank">the module.</a></p>
+      <p>GeoJSON format is used in GIS tools such as QGIS. Check out <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export" target="_blank">wiki-page</a> for guidance.</p>
+      <p>Generator uses pop-up window to download files. Please ensure your browser does not block popups.</p>
+      <p>It's also possible to export map to <i>Foundry VTT</i>, see <a href="https://github.com/Ethck/azgaar-foundry" target="_blank">the module.</a></p>
     </div>
 
     <div id="saveMapData" style="display: none" class="dialog">
@@ -3487,9 +3485,9 @@
         <strong>Save map to</strong>
         <button onclick="dowloadMap()" data-tip="Download .map file to your local disk. Shortcut: Ctrl + S">machine</button>
         <button onclick="saveToDropbox()" data-tip="Save .map file to your Dropbox">dropbox</button>
-        <button onclick="quickSave()" data-tip="Save the project to browser storage (quick save). It can be unreliable. Shortcut: F6">browser</button>
+        <button onclick="quickSave()" data-tip="Save the project to browser storage. It can be unreliable. Shortcut: F6">browser</button>
       </div>
-      <p style="font-style: italic">Maps are saved in <i>.map</i> format, that can be loaded back via 'Load' in menu. Please keep noted that we do not keep any data on our side. There is no way to restore the progress if .map file is lost. Please keep old .map files on your machine or cloud storage as backups.</p>
+      <p>Maps are saved in <i>.map</i> format, that can be loaded back via the <i>Load</i> in menu. There is no way to restore the progress if file is lost. Please keep old <i>.map</i> files on your machine or cloud storage as backups.</p>
     </div>
 
     <div id="loadMapData" style="display: none" class="dialog">
@@ -3499,12 +3497,11 @@
         <button onclick="loadURL()" data-tip="Load .map file from URL (server should allow CORS)">URL</button>
         <button onclick="quickLoad()" data-tip="Load map from browser storage (if saved before)">storage</button>
       </div>
-      <div id="loadFromDropbox">
-        <p>From your Dropbox account:</p>
-        <select style="margin-bottom:.3em">
-        </select>
+      <div id="loadFromDropbox" style="margin-bottom:.3em">
+        <span>From your Dropbox account</span>
+        <select id="loadFromDropboxSelect" style="margin-bottom:.3em"></select>
         <button onclick="loadFromDropbox()" data-tip="Load .map file from your Dropbox">Open</button>
-        <button onclick="createSharableDropboxLink()" data-tip="Select .map file on dropbox and share a sharable link">Create link</button>
+        <button onclick="createSharableDropboxLink()" data-tip="Select file and create a link to share with your friends">Create link</button>
 
         <div style="margin-top: .3em">
           <div id="sharableLinkContainer" style="display: none">
@@ -3516,7 +3513,7 @@
     </div>
 
     <div id="saveTilesScreen" style="display: none" class="dialog">
-      <p style="font-style: italic">Map will be split into tiles and downloaded as a single zip file. Avoid saving to big images</p>
+      <p>Map will be split into tiles and downloaded as a single zip file. Avoid saving to big images</p>
       <div data-tip="Number of columns" style="margin-bottom: .3em">
         <div class="label">Columns:</div>
         <input id="tileColsInput" data-stored="tileCols" type="range" min=2 max=20 value=8 style="width: 11em">

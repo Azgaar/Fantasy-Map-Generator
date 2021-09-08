@@ -61,7 +61,7 @@ function convertFontToDataURI(url) {
       style.innerHTML = text;
       document.head.appendChild(style);
 
-      const styleSheet = document.styleSheets.find(sheet => sheet.ownerNode === style);
+      const styleSheet = Array.from(document.styleSheets).find(sheet => sheet.ownerNode === style);
 
       const FontRule = rule => {
         const src = rule.style.getPropertyValue("src");
