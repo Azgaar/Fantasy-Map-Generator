@@ -699,7 +699,7 @@ async function showLoadPane() {
   $("#loadMapData").dialog({
     title: "Load map",
     resizable: false,
-    width: "22em",
+    width: "24em",
     position: {my: "center", at: "center", of: "svg"},
     buttons: {
       Close: function () {
@@ -708,17 +708,23 @@ async function showLoadPane() {
     }
   });
 
-  const dpx = document.getElementById("loadFromDropbox");
-  const dpf = dpx.querySelector("select");
+  const loadFromDropboxButtons = document.getElementById("loadFromDropboxButtons");
+  const fileSelect = document.getElementById("loadFromDropboxSelect");
   const files = await Cloud.providers.dropbox.list();
-  dpx.style.display = files ? "block" : "none";
-  if (!files) return;
-  while (dpf.firstChild) dpf.removeChild(dpf.firstChild);
-  files.forEach(f => {
+
+  if (!files) {
+    loadFromDropboxButtons.style.display = "none";
+    fileSelect.innerHTML = `<option value="" disabled selected>Save files to Dropbox first</option>`;
+    return;
+  }
+
+  loadFromDropboxButtons.style.display = "block";
+  fileSelect.innerHTML = "";
+  files.forEach(file => {
     const opt = document.createElement("option");
-    opt.innerText = f.name;
-    opt.value = f.path;
-    dpf.appendChild(opt);
+    opt.innerText = file.name;
+    opt.value = file.path;
+    fileSelect.appendChild(opt);
   });
 }
 

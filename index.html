@@ -3491,17 +3491,20 @@
     </div>
 
     <div id="loadMapData" style="display: none" class="dialog">
-      <div style="margin-bottom: .3em">Load map from</div>
       <div>
+        <strong>Load map from</strong>
         <button onclick="mapToLoad.click()" data-tip="Load .map file from local disk">local disk</button>
         <button onclick="loadURL()" data-tip="Load .map file from URL (server should allow CORS)">URL</button>
         <button onclick="quickLoad()" data-tip="Load map from browser storage (if saved before)">storage</button>
       </div>
-      <div id="loadFromDropbox" style="margin-bottom:.3em">
-        <span>From your Dropbox account</span>
-        <select id="loadFromDropboxSelect" style="margin-bottom:.3em"></select>
-        <button onclick="loadFromDropbox()" data-tip="Load .map file from your Dropbox">Open</button>
-        <button onclick="createSharableDropboxLink()" data-tip="Select file and create a link to share with your friends">Create link</button>
+      <div id="loadFromDropbox">
+        <p style="margin-bottom: .3em">From your Dropbox account</p>
+        <select id="loadFromDropboxSelect" style="width: 22em"></select>
+
+        <div id="loadFromDropboxButtons" style="margin-bottom: .3em">
+          <button onclick="loadFromDropbox()" data-tip="Load .map file from your Dropbox">Open</button>
+          <button onclick="createSharableDropboxLink()" data-tip="Select file and create a link to share with your friends">Create link</button>
+        </div>
 
         <div style="margin-top: .3em">
           <div id="sharableLinkContainer" style="display: none">
