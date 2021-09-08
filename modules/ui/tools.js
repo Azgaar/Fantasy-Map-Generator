@@ -136,21 +136,11 @@ function recalculatePopulation() {
 function regenerateStates() {
   const localSeed = Math.floor(Math.random() * 1e9); // new random seed
   Math.random = aleaPRNG(localSeed);
-  const burgs = pack.burgs.filter(b => b.i && !b.removed);
-  if (!burgs.length) {
-    tip("No burgs to generate states. Please create burgs first", false, "error");
-    return;
-  }
-  if (burgs.length < +regionsInput.value) {
-    tip(`Not enough burgs to generate ${regionsInput.value} states. Will generate only ${burgs.length} states`, false, "warn");
-  }
 
-  // burg local ids sorted by a bit randomized population:
-  const sorted = burgs
-    .map((b, i) => [i, b.population * Math.random()])
-    .sort((a, b) => b[1] - a[1])
-    .map(b => b[0]);
-  const capitalsTree = d3.quadtree();
+  const statesCount = +regionsInput.value;
+  const burgs = pack.burgs.filter(b => b.i && !b.removed);
+  if (!burgs.length) return tip("There are no any burgs to generate states. Please create burgs first", false, "error");
+  if (burgs.length < statesCount) tip(`Not enough burgs to generate ${statesCount} states. Will generate only ${burgs.length} states`, false, "warn");
 
   // turn all old capitals into towns
   burgs
@@ -167,8 +157,7 @@ function regenerateStates() {
 
   unfog();
 
-  // if desired states number is 0
-  if (regionsInput.value == 0) {
+  if (!statesCount) {
     tip(`Cannot generate zero states. Please check the <i>States Number</i> option`, false, "warn");
     pack.states = pack.states.slice(0, 1); // remove all except of neutrals
     pack.states[0].diplomacy = []; // clear diplomacy
@@ -184,25 +173,33 @@ function regenerateStates() {
     return;
   }
 
-  const neutral = pack.states[0].name;
-  const count = Math.min(+regionsInput.value, burgs.length);
+  // burg local ids sorted by a bit randomized population:
+  const sortedBurgs = burgs
+    .map((b, i) => [b, b.population * Math.random()])
+    .sort((a, b) => b[1] - a[1])
+    .map(b => b[0]);
+  const capitalsTree = d3.quadtree();
+
+  const neutral = pack.states[0].name; // neutrals name
+  const count = Math.min(statesCount, burgs.length) + 1; // +1 for neutral
   let spacing = (graphWidth + graphHeight) / 2 / count; // min distance between capitals
+
   pack.states = d3.range(count).map(i => {
     if (!i) return {i, name: neutral};
 
-    let capital = null,
-      x = 0,
-      y = 0;
-    for (const i of sorted) {
-      capital = burgs[i];
-      (x = capital.x), (y = capital.y);
-      if (capitalsTree.find(x, y, spacing) === undefined) break;
+    let capital = null;
+    for (const burg of sortedBurgs) {
+      const {x, y} = burg;
+      if (capitalsTree.find(x, y, spacing) === undefined) {
+        burg.capital = 1;
+        capital = burg;
+        capitalsTree.add([x, y]);
+        moveBurgToGroup(burg.i, "cities");
+        break;
+      }
+
       spacing = Math.max(spacing - 1, 1);
     }
-
-    capitalsTree.add([x, y]);
-    capital.capital = 1;
-    moveBurgToGroup(capital.i, "cities");
 
     const culture = capital.culture;
     const basename = capital.name.length < 9 && capital.cell % 5 === 0 ? capital.name : Names.getCulture(culture, 3, 6, "", 0);

@@ -144,18 +144,18 @@ async function getMapURL(type, options = {}) {
   cloneEl.id = "fantasyMap";
   document.body.appendChild(cloneEl);
   const clone = d3.select(cloneEl);
-  if (!debug) clone.select("#debug").remove();
+  if (!debug) clone.select("#debug")?.remove();
 
   const cloneDefs = cloneEl.getElementsByTagName("defs")[0];
   const svgDefs = document.getElementById("defElements");
 
   const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
-  if (isFirefox && type === "mesh") clone.select("#oceanPattern").remove();
-  if (globe) clone.select("#scaleBar").remove();
+  if (isFirefox && type === "mesh") clone.select("#oceanPattern")?.remove();
+  if (globe) clone.select("#scaleBar")?.remove();
   if (noLabels) {
-    clone.select("#labels #states").remove();
-    clone.select("#labels #burgLabels").remove();
-    clone.select("#icons #burgIcons").remove();
+    clone.select("#labels #states")?.remove();
+    clone.select("#labels #burgLabels")?.remove();
+    clone.select("#icons #burgIcons")?.remove();
   }
   if (noWater) {
     clone.select("#oceanBase").attr("opacity", 0);
@@ -258,10 +258,10 @@ async function getMapURL(type, options = {}) {
     if (pattern) cloneDefs.appendChild(pattern.cloneNode(true));
   }
 
-  if (!cloneEl.getElementById("hatching").children.length) cloneEl.getElementById("hatching").remove(); // remove unused hatching group
-  if (!cloneEl.getElementById("fogging-cont")) cloneEl.getElementById("fog").remove(); // remove unused fog
-  if (!cloneEl.getElementById("regions")) cloneEl.getElementById("statePaths").remove(); // removed unused statePaths
-  if (!cloneEl.getElementById("labels")) cloneEl.getElementById("textPaths").remove(); // removed unused textPaths
+  if (!cloneEl.getElementById("hatching").children.length) cloneEl.getElementById("hatching")?.remove(); // remove unused hatching group
+  if (!cloneEl.getElementById("fogging-cont")) cloneEl.getElementById("fog")?.remove(); // remove unused fog
+  if (!cloneEl.getElementById("regions")) cloneEl.getElementById("statePaths")?.remove(); // removed unused statePaths
+  if (!cloneEl.getElementById("labels")) cloneEl.getElementById("textPaths")?.remove(); // removed unused textPaths
 
   // add armies style
   if (cloneEl.getElementById("armies")) cloneEl.insertAdjacentHTML("afterbegin", "<style>#armies text {stroke: none; fill: #fff; text-shadow: 0 0 4px #000; dominant-baseline: central; text-anchor: middle; font-family: Helvetica; fill-opacity: 1;}#armies text.regimentIcon {font-size: .8em;}</style>");
@@ -296,8 +296,8 @@ async function getMapURL(type, options = {}) {
 
 // remove hidden g elements and g elements without children to make downloaded svg smaller in size
 function removeUnusedElements(clone) {
-  if (!terrain.selectAll("use").size()) clone.select("#defs-relief").remove();
-  if (markers.style("display") === "none") clone.select("#defs-markers").remove();
+  if (!terrain.selectAll("use").size()) clone.select("#defs-relief")?.remove();
+  if (markers.style("display") === "none") clone.select("#defs-markers")?.remove();
 
   for (let empty = 1; empty; ) {
     empty = 0;
@@ -367,68 +367,65 @@ function inlineStyle(clone) {
 
 // prepare map data for saving
 function getMapData() {
-  TIME && console.time("createMapDataBlob");
+  TIME && console.time("createMapData");
 
-  return new Promise(resolve => {
-    const date = new Date();
-    const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
-    const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
-    const params = [version, license, dateString, seed, graphWidth, graphHeight, mapId].join("|");
-    const settings = [distanceUnitInput.value, distanceScaleInput.value, areaUnit.value, heightUnit.value, heightExponentInput.value, temperatureScale.value, barSizeInput.value, barLabel.value, barBackOpacity.value, barBackColor.value, barPosX.value, barPosY.value, populationRate, urbanization, mapSizeOutput.value, latitudeOutput.value, temperatureEquatorOutput.value, temperaturePoleOutput.value, precOutput.value, JSON.stringify(options), mapName.value, +hideLabels.checked, stylePreset.value, +rescaleLabels.checked].join("|");
-    const coords = JSON.stringify(mapCoordinates);
-    const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
-    const notesData = JSON.stringify(notes);
-    const rulersString = rulers.toString();
+  const date = new Date();
+  const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
+  const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
+  const params = [version, license, dateString, seed, graphWidth, graphHeight, mapId].join("|");
+  const settings = [distanceUnitInput.value, distanceScaleInput.value, areaUnit.value, heightUnit.value, heightExponentInput.value, temperatureScale.value, barSizeInput.value, barLabel.value, barBackOpacity.value, barBackColor.value, barPosX.value, barPosY.value, populationRate, urbanization, mapSizeOutput.value, latitudeOutput.value, temperatureEquatorOutput.value, temperaturePoleOutput.value, precOutput.value, JSON.stringify(options), mapName.value, +hideLabels.checked, stylePreset.value, +rescaleLabels.checked].join("|");
+  const coords = JSON.stringify(mapCoordinates);
+  const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
+  const notesData = JSON.stringify(notes);
+  const rulersString = rulers.toString();
 
-    // clone svg
-    const cloneEl = document.getElementById("map").cloneNode(true);
+  // save svg
+  const cloneEl = document.getElementById("map").cloneNode(true);
 
-    // set transform values to default
-    cloneEl.setAttribute("width", graphWidth);
-    cloneEl.setAttribute("height", graphHeight);
-    cloneEl.querySelector("#viewbox").removeAttribute("transform");
+  // reset transform values to default
+  cloneEl.setAttribute("width", graphWidth);
+  cloneEl.setAttribute("height", graphHeight);
+  cloneEl.querySelector("#viewbox").removeAttribute("transform");
 
-    // always remove rulers
-    cloneEl.querySelector("#ruler").innerHTML = "";
+  cloneEl.querySelector("#ruler").innerHTML = ""; // always remove rulers
 
-    const svg_xml = new XMLSerializer().serializeToString(cloneEl);
+  const serializedSVG = new XMLSerializer().serializeToString(cloneEl);
 
-    const gridGeneral = JSON.stringify({spacing: grid.spacing, cellsX: grid.cellsX, cellsY: grid.cellsY, boundary: grid.boundary, points: grid.points, features: grid.features});
-    const features = JSON.stringify(pack.features);
-    const cultures = JSON.stringify(pack.cultures);
-    const states = JSON.stringify(pack.states);
-    const burgs = JSON.stringify(pack.burgs);
-    const religions = JSON.stringify(pack.religions);
-    const provinces = JSON.stringify(pack.provinces);
-    const rivers = JSON.stringify(pack.rivers);
+  const {spacing, cellsX, cellsY, boundary, points, features} = grid;
+  const gridGeneral = JSON.stringify({spacing, cellsX, cellsY, boundary, points, features});
+  const packFeatures = JSON.stringify(pack.features);
+  const cultures = JSON.stringify(pack.cultures);
+  const states = JSON.stringify(pack.states);
+  const burgs = JSON.stringify(pack.burgs);
+  const religions = JSON.stringify(pack.religions);
+  const provinces = JSON.stringify(pack.provinces);
+  const rivers = JSON.stringify(pack.rivers);
 
-    // store name array only if it is not the same as default
-    const defaultNB = Names.getNameBases();
-    const namesData = nameBases
-      .map((b, i) => {
-        const names = defaultNB[i] && defaultNB[i].b === b.b ? "" : b.b;
-        return `${b.name}|${b.min}|${b.max}|${b.d}|${b.m}|${names}`;
-      })
-      .join("/");
+  // store name array only if not the same as default
+  const defaultNB = Names.getNameBases();
+  const namesData = nameBases
+    .map((b, i) => {
+      const names = defaultNB[i] && defaultNB[i].b === b.b ? "" : b.b;
+      return `${b.name}|${b.min}|${b.max}|${b.d}|${b.m}|${names}`;
+    })
+    .join("/");
 
-    // round population to save resources
-    const pop = Array.from(pack.cells.pop).map(p => rn(p, 4));
+  // round population to save space
+  const pop = Array.from(pack.cells.pop).map(p => rn(p, 4));
 
-    // data format as below
-    const data = [params, settings, coords, biomes, notesData, svg_xml, gridGeneral, grid.cells.h, grid.cells.prec, grid.cells.f, grid.cells.t, grid.cells.temp, features, cultures, states, burgs, pack.cells.biome, pack.cells.burg, pack.cells.conf, pack.cells.culture, pack.cells.fl, pop, pack.cells.r, pack.cells.road, pack.cells.s, pack.cells.state, pack.cells.religion, pack.cells.province, pack.cells.crossroad, religions, provinces, namesData, rivers, rulersString].join("\r\n");
-    const blob = new Blob([data], {type: "text/plain"});
-
-    TIME && console.timeEnd("createMapDataBlob");
-    resolve(blob);
-  });
+  // data format as below
+  const mapData = [params, settings, coords, biomes, notesData, serializedSVG, gridGeneral, grid.cells.h, grid.cells.prec, grid.cells.f, grid.cells.t, grid.cells.temp, packFeatures, cultures, states, burgs, pack.cells.biome, pack.cells.burg, pack.cells.conf, pack.cells.culture, pack.cells.fl, pop, pack.cells.r, pack.cells.road, pack.cells.s, pack.cells.state, pack.cells.religion, pack.cells.province, pack.cells.crossroad, religions, provinces, namesData, rivers, rulersString].join("\r\n");
+  TIME && console.timeEnd("createMapData");
+  return mapData;
 }
 
 // Download .map file
-async function saveMap() {
+function dowloadMap() {
   if (customization) return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
   closeDialogs("#alert");
 
-  const blob = await getMapData();
+  const mapData = getMapData();
+  const blob = new Blob([mapData], {type: "text/plain"});
   const URL = window.URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.download = getFileName() + ".map";
@@ -436,6 +433,21 @@ async function saveMap() {
   link.click();
   tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
   window.URL.revokeObjectURL(URL);
+}
+
+async function saveToDropbox() {
+  const sharableLinkContainer = document.getElementById("sharableLinkContainer");
+  if (customization) return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
+  closeDialogs("#alert");
+  const mapData = getMapData();
+  const filename = getFileName() + ".map";
+  try {
+    await Cloud.providers.dropbox.save(filename, mapData);
+    tip("Map is saved to your Dropbox", true, "success", 8000);
+  } catch (msg) {
+    console.error(msg);
+    tip("Cannot save .map to your Dropbox", true, "error", 8000);
+  }
 }
 
 function saveGeoJSON_Cells() {
@@ -556,9 +568,11 @@ function getRiverPoints(node) {
   return points;
 }
 
-async function quickSave() {
+function quickSave() {
   if (customization) return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
-  const blob = await getMapData();
+
+  const mapData = getMapData();
+  const blob = new Blob([mapData], {type: "text/plain"});
   if (blob) ldb.set("lastMap", blob); // auto-save map
   tip("Map is saved to browser memory. Please also save as .map file to secure progress", true, "success", 2000);
 }

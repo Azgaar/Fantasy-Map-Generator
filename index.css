@@ -358,14 +358,11 @@ div.tab > button#optionsHide {
 }
 
 #options {
-  margin: 10px;
-  font-family: Consolas, monospace;
   position: absolute;
+  font-family: Consolas, monospace;
   border: solid 1px #5e4fa2;
-  width: 300px;
-  background-position: center;
-  background-size: cover;
-  background-blend-mode: color-dodge;
+  margin: 10px;
+  padding-bottom: 0.3em;
 }
 
 #options input,
@@ -576,14 +573,16 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   padding-left: 2.5px;
 }
 
+#sticked {
+  display: flex;
+  justify-content: space-evenly;
+  width: 100%;
+}
+
 #sticked button {
-  background-color: #997c8900;
-  padding: 0;
-  margin-bottom: 2px;
-  width: 22%;
-  font-size: 1em;
-  border: 0;
+  background-color: transparent;
   font-weight: bold;
+  border: 0;
 }
 
 #sticked button:hover {
@@ -985,16 +984,16 @@ body button.noicon {
 
 #controlPoints > path {
   fill: none;
-  stroke: #000000;
+  stroke: #0a0909;
   stroke-width: 2;
   opacity: 0.4;
   cursor: pointer;
 }
 
-#controlCells > .current {
-  fill: #82c8ff40;
-  stroke: #82c8ff;
-  stroke-width: 0.4;
+#controlCells {
+  pointer-events: none;
+  fill: #82c8ff80;
+  stroke: "none";
 }
 
 #vertices > circle {
@@ -1801,16 +1800,13 @@ div.editorLine {
   width: 7em;
 }
 
+#unitsBody > div > select,
 #unitsBody > div > input[type="text"] {
-  width: 11.2em;
-}
-
-#unitsBody > div > select {
-  width: 11.32em;
+  width: 12em;
 }
 
 #unitsBody > div > input[type="number"] {
-  width: 3.4em;
+  width: 4.35em;
 }
 
 #unitsBody > div > input,

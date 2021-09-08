@@ -99,7 +99,9 @@ function showSupporters() {
     Dust Bunny,Adrian Wright,Eric Alexander Cartaya,GameNight,Thomas Mortensen Hansen,Zklaus,Drinarius,Ed Wright,Lon Varnadore,Crys Cain,Heaven N Lee,
     Jeffrey Henning,Lazer Elf,Jordan Bellah,Alex Beard,Kass Frisson,Petro Lombaard,Emanuel Pietri,Rox,PinkEvil,Gavin Madrigal,Martin Lorber,Prince of Morgoth,
     Jaryd Armstrong,Andrew Pirkola,ThyHolyDevil,Gary Smith,Tyshaun Wise,Ethan Cook,Jon Stroman,Nobody679,良义 金,Chris Gray,Phoenix Boatwright,Mackenzie,
-    "Milo Cohen,Jason Matthew Wuerfel,Rasmus Legêne,Andrew Hines,Wexxler,Espen Sæverud,Binks,Dominick Ormsby,Linn Browning,Václav Švec,Alan Buehne,George J.Lekkas"`;
+    Milo Cohen,Jason Matthew Wuerfel,Rasmus Legêne,Andrew Hines,Wexxler,Espen Sæverud,Binks,Dominick Ormsby,Linn Browning,Václav Švec,Alan Buehne,
+    George J.Lekkas,Alexandre Boivin,Tommy Mayfield,Skylar Mangum-Turner,Karen Blythe,Stefan Gugerel,Mike Conley,Xavier privé,Hope You're Well,
+    Mark Sprietsma,Robert Landry,Nick Mowry"`;
 
   const array = supporters
     .replace(/(?:\r\n|\r|\n)/g, "")
@@ -621,6 +623,7 @@ document.getElementById("sticked").addEventListener("click", function (event) {
   const id = event.target.id;
   if (id === "newMapButton") regeneratePrompt();
   else if (id === "saveButton") showSavePane();
+  else if (id === "exportButton") showExportPane();
   else if (id === "loadButton") showLoadPane();
   else if (id === "zoomReset") resetZoom(1000);
 });
@@ -654,12 +657,13 @@ function regeneratePrompt() {
 }
 
 function showSavePane() {
-  document.getElementById("showLabels").checked = !hideLabels.checked;
+  const sharableLinkContainer = document.getElementById("sharableLinkContainer");
+  sharableLinkContainer.style.display = "none";
 
   $("#saveMapData").dialog({
     title: "Save map",
     resizable: false,
-    width: "30em",
+    width: "27em",
     position: {my: "center", at: "center", of: "svg"},
     buttons: {
       Close: function () {
@@ -669,21 +673,21 @@ function showSavePane() {
   });
 }
 
-// download map data as GeoJSON
-function saveGeoJSON() {
-  alertMessage.innerHTML = `You can export map data in GeoJSON format used in GIS tools such as QGIS.
-  Check out ${link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export", "wiki-page")} for guidance`;
+function copyLinkToClickboard() {
+  const shrableLink = document.getElementById("sharableLink");
+  const link = shrableLink.getAttribute("href");
+  navigator.clipboard.writeText(link).then(() => tip("Link is copied to the clipboard", true, "success", 8000));
+}
 
-  $("#alert").dialog({
-    title: "GIS data export",
+function showExportPane() {
+  document.getElementById("showLabels").checked = !hideLabels.checked;
+
+  $("#exportMapData").dialog({
+    title: "Export map data",
     resizable: false,
-    width: "35em",
+    width: "26em",
     position: {my: "center", at: "center", of: "svg"},
     buttons: {
-      Cells: saveGeoJSON_Cells,
-      Routes: saveGeoJSON_Routes,
-      Rivers: saveGeoJSON_Rivers,
-      Markers: saveGeoJSON_Markers,
       Close: function () {
         $(this).dialog("close");
       }
@@ -691,17 +695,30 @@ function saveGeoJSON() {
   });
 }
 
-function showLoadPane() {
+async function showLoadPane() {
   $("#loadMapData").dialog({
     title: "Load map",
     resizable: false,
-    width: "17em",
+    width: "22em",
     position: {my: "center", at: "center", of: "svg"},
     buttons: {
       Close: function () {
         $(this).dialog("close");
       }
     }
+  });
+
+  const dpx = document.getElementById("loadFromDropbox");
+  const dpf = dpx.querySelector("select");
+  const files = await Cloud.providers.dropbox.list();
+  dpx.style.display = files? "block" : "none";
+  if (!files) return;
+  while(dpf.firstChild) dpf.removeChild(dpf.firstChild);
+  files.forEach(f => {
+    const opt = document.createElement('option');
+    opt.innerText = f.name;
+    opt.value = f.path;
+    dpf.appendChild(opt);
   });
 }
 

@@ -100,16 +100,13 @@ function createRiver() {
     const basin = getBasin(parent);
 
     rivers.push({i: riverId, source, mouth, discharge, length, width, widthFactor, sourceWidth, parent, cells: riverCells, basin, name, type: "River"});
+    const id = "river" + riverId;
 
     // render river
     lineGen.curve(d3.curveCatmullRom.alpha(0.1));
-    viewbox
-      .select("#rivers")
-      .append("path")
-      .attr("id", "river" + riverId)
-      .attr("d", getRiverPath(meanderedPoints, widthFactor, sourceWidth));
+    viewbox.select("#rivers").append("path").attr("id", id).attr("d", getRiverPath(meanderedPoints, widthFactor, sourceWidth));
 
-    editRiver(riverId);
+    editRiver(id);
   }
 
   function closeRiverCreator() {

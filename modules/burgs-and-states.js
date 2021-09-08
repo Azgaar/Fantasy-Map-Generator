@@ -975,6 +975,7 @@ window.BurgsAndStates = (function () {
         // Default name depends on exponent tier, some culture bases have special names for tiers
         if (s.diplomacy) {
           if (form === "Duchy" && s.neighbors.length > 1 && rand(6) < s.neighbors.length && s.diplomacy.includes("Vassal")) return "Marches"; // some vassal dutchies on borderland
+          if (base === 1 && P(0.3) && s.diplomacy.includes("Vassal")) return "Dominion"; // English vassals
           if (P(0.3) && s.diplomacy.includes("Vassal")) return "Protectorate"; // some vassals
         }
 

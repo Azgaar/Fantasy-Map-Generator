@@ -1456,16 +1456,19 @@ function toggleRivers(event) {
 
 function drawRivers() {
   TIME && console.time("drawRivers");
+  rivers.selectAll("*").remove();
+
   const {addMeandering, getRiverPath} = Rivers;
   lineGen.curve(d3.curveCatmullRom.alpha(0.1));
-  const riverPaths = pack.rivers.map(river => {
-    const meanderedPoints = addMeandering(river.cells, river.points);
-    const widthFactor = river.widthFactor || 1;
-    const startingWidth = river.sourceWidth || 0;
-    const path = getRiverPath(meanderedPoints, widthFactor, startingWidth);
-    return `<path id="river${river.i}" d="${path}"/>`;
+
+  const riverPaths = pack.rivers.map(({cells, points, i, widthFactor, sourceWidth}) => {
+    if (!cells || cells.length < 2) return;
+    const meanderedPoints = addMeandering(cells, points);
+    const path = getRiverPath(meanderedPoints, widthFactor, sourceWidth);
+    return `<path id="river${i}" d="${path}"/>`;
   });
   rivers.html(riverPaths.join(""));
+
   TIME && console.timeEnd("drawRivers");
 }
 
