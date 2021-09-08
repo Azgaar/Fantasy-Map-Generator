@@ -4,11 +4,13 @@ const fonts = [
   {family: "Arial"},
   {family: "Times New Roman"},
   {family: "Georgia"},
+  {family: "Garamond"},
   {family: "Lucida Sans Unicode"},
   {family: "Courier New"},
   {family: "Verdana"},
   {family: "Impact"},
   {family: "Comic Sans MS"},
+  {family: "Papyrus"},
   {
     family: "Almendra SC",
     src: "url(https://fonts.gstatic.com/s/almendrasc/v13/Iure6Yx284eebowr7hbyTaZOrLQ.woff2)",

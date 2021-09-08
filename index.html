@@ -3347,14 +3347,14 @@
 
     <div id="addFontDialog" style="display: none" class="dialog">
       <span>There are 3 ways to add a custom font:</span>
-      <p><strong>Font URL</strong>. Provide font name and link to the font file. Preferable format is <code>woff2</code></p>
-      <p><strong>Google font</strong>. Open <a href="https://fonts.google.com/" target="_blank">Google Fonts</a>, find a font you like and enter its name to the field below</p>
-      <p><strong>Local font</strong>. If you have a font <a href="https://www.wikihow.com/Install-Fonts-on-Your-PC" target="_blank">installed on your computer</a>, just provide the font name. Make sure the browser is reloaded after the installation. Please note it won't work on machines not having the font installed</p>
+      <p><strong>Google font</strong>. Open <a href="https://fonts.google.com/" target="_blank">Google Fonts</a>, find a font you like and enter its name to the field below.</p>
+      <p><strong>Local font</strong>. If you have a font <a href="https://faqs.skillcrush.com/article/275-downloading-installing-a-font-on-your-computer" target="_blank">installed on your computer</a>, just provide the font name. Make sure the browser is reloaded after the installation. The font won't work on machines not having it installed. Good source of fonts are <a href="https://fontesk.com" target="_blank">Fontdesk</a> and <a href="https://www.dafont.com" target="_blank">DaFont</a>.</p>
+      <p><strong>Font URL</strong>. Provide font name and link to the font file hosted online. The best free font hostings are <a href="https://fonts.google.com/" target="_blank">Google Fonts</a> and <a target="_blank" href="https://www.cdnfonts.com">CDN Fonts</a>. To get font file open the link to css provided by these services and manually copy the link to <code>woff2</code>.</p>
       <div style="margin-top: .3em" data-tip="Select font adding method">
         <select id="addFontMethod">
-          <option value="fontURL" selected>Font URL</option>
-          <option value="googleFont">Google font</option>
+          <option value="googleFont" selected>Google font</option>
           <option value="localFont">Local font</option>
+          <option value="fontURL" selected>Font URL</option>
         </select>
         <input id="addFontNameInput" placeholder="font family" style="width:15em">
         <input id="addFontURLInput" placeholder="font file URL" style="width:22.6em; margin-top:.1em">
