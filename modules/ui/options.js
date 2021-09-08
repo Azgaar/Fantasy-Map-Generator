@@ -663,7 +663,7 @@ function showSavePane() {
   $("#saveMapData").dialog({
     title: "Save map",
     resizable: false,
-    width: "27em",
+    width: "25em",
     position: {my: "center", at: "center", of: "svg"},
     buttons: {
       Close: function () {
@@ -695,17 +695,36 @@ function showExportPane() {
   });
 }
 
-function showLoadPane() {
+async function showLoadPane() {
   $("#loadMapData").dialog({
     title: "Load map",
     resizable: false,
-    width: "22em",
+    width: "24em",
     position: {my: "center", at: "center", of: "svg"},
     buttons: {
       Close: function () {
         $(this).dialog("close");
       }
     }
+  });
+
+  const loadFromDropboxButtons = document.getElementById("loadFromDropboxButtons");
+  const fileSelect = document.getElementById("loadFromDropboxSelect");
+  const files = await Cloud.providers.dropbox.list();
+
+  if (!files) {
+    loadFromDropboxButtons.style.display = "none";
+    fileSelect.innerHTML = `<option value="" disabled selected>Save files to Dropbox first</option>`;
+    return;
+  }
+
+  loadFromDropboxButtons.style.display = "block";
+  fileSelect.innerHTML = "";
+  files.forEach(file => {
+    const opt = document.createElement("option");
+    opt.innerText = file.name;
+    opt.value = file.path;
+    fileSelect.appendChild(opt);
   });
 }
 

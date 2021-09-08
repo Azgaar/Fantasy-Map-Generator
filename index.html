@@ -3490,11 +3490,9 @@
         <button onclick="saveGeoJSON_Rivers()" data-tip="Download rivers data in GeoJSON format">rivers</button>
         <button onclick="saveGeoJSON_Markers()" data-tip="Download markers data in GeoJSON format">markers</button>
       </div>
-      <p style="font-style: italic">GeoJSON format is used in GIS tools such as QGIS. Check out <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export" target="_blank">wiki-page</a> for guidance</p>
-
-      <p style="font-style: italic">Generator uses pop-up window to download files. Please ensure your browser does not block popups.</p>
-
-      <p style="font-style: italic">It's also possible to export map to Foundry VTT, see <a href="https://github.com/Ethck/azgaar-foundry" target="_blank">the module.</a></p>
+      <p>GeoJSON format is used in GIS tools such as QGIS. Check out <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export" target="_blank">wiki-page</a> for guidance.</p>
+      <p>Generator uses pop-up window to download files. Please ensure your browser does not block popups.</p>
+      <p>It's also possible to export map to <i>Foundry VTT</i>, see <a href="https://github.com/Ethck/azgaar-foundry" target="_blank">the module.</a></p>
     </div>
 
     <div id="saveMapData" style="display: none" class="dialog">
@@ -3502,33 +3500,38 @@
         <strong>Save map to</strong>
         <button onclick="dowloadMap()" data-tip="Download .map file to your local disk. Shortcut: Ctrl + S">machine</button>
         <button onclick="saveToDropbox()" data-tip="Save .map file to your Dropbox">dropbox</button>
-        <button onclick="quickSave()" data-tip="Save the project to browser storage (quick save). It can be unreliable. Shortcut: F6">browser</button>
+        <button onclick="quickSave()" data-tip="Save the project to browser storage. It can be unreliable. Shortcut: F6">browser</button>
       </div>
-      <p style="font-style: italic">Maps are saved in <i>.map</i> format, that can be loaded back via 'Load' in menu. Please keep noted that we do not keep any data on our side. There is no way to restore the progress if .map file is lost. Please keep old .map files on your machine or cloud storage as backups.</p>
-      <p style="font-style: italic">Saving to Dropbox may not be allowed for big files. In this case open <a href="https://www.dropbox.com/home/FMG" target="_blank">Dropbox</a>, download the .map file and upload it manually.</p>
+      <p>Maps are saved in <i>.map</i> format, that can be loaded back via the <i>Load</i> in menu. There is no way to restore the progress if file is lost. Please keep old <i>.map</i> files on your machine or cloud storage as backups.</p>
+    </div>
 
-      <div style="margin-top: .3em" data-tip="Select .map file on dropbox and share a sharable link">
-        <strong>Create sharable link</strong>
-        <button onclick="createSharableDropboxLink()">select file</button>
-        <div id="sharableLinkContainer" style="display: none">
-          <a id="sharableLink" target="_blank"></a>
-          <i data-tip="Copy link to the clipboard" onclick="copyLinkToClickboard()" class="icon-clone pointer"></i>
+    <div id="loadMapData" style="display: none" class="dialog">
+      <div>
+        <strong>Load map from</strong>
+        <button onclick="mapToLoad.click()" data-tip="Load .map file from local disk">local disk</button>
+        <button onclick="loadURL()" data-tip="Load .map file from URL (server should allow CORS)">URL</button>
+        <button onclick="quickLoad()" data-tip="Load map from browser storage (if saved before)">storage</button>
+      </div>
+      <div id="loadFromDropbox">
+        <p style="margin-bottom: .3em">From your Dropbox account</p>
+        <select id="loadFromDropboxSelect" style="width: 22em"></select>
+
+        <div id="loadFromDropboxButtons" style="margin-bottom: .3em">
+          <button onclick="loadFromDropbox()" data-tip="Load .map file from your Dropbox">Open</button>
+          <button onclick="createSharableDropboxLink()" data-tip="Select file and create a link to share with your friends">Create link</button>
+        </div>
+
+        <div style="margin-top: .3em">
+          <div id="sharableLinkContainer" style="display: none">
+            <a id="sharableLink" target="_blank"></a>
+            <i data-tip="Copy link to the clipboard" onclick="copyLinkToClickboard()" class="icon-clone pointer"></i>
+          </div>
         </div>
       </div>
     </div>
 
-    <div id="loadMapData" style="display: none" class="dialog">
-      <div style="margin-bottom: .3em">Load map from</div>
-      <div>
-        <button onclick="mapToLoad.click()" data-tip="Load .map file from local disk">local disk</button>
-        <button onclick="loadFromDropbox()" data-tip="Load .map file from your Dropbox">Dropbox</button>
-        <button onclick="loadURL()" data-tip="Load .map file from URL (server should allow CORS)">URL</button>
-        <button onclick="quickLoad()" data-tip="Load map from browser storage (if saved before)">storage</button>
-      </div>
-    </div>
-
     <div id="saveTilesScreen" style="display: none" class="dialog">
-      <p style="font-style: italic">Map will be split into tiles and downloaded as a single zip file. Avoid saving to big images</p>
+      <p>Map will be split into tiles and downloaded as a single zip file. Avoid saving to big images</p>
       <div data-tip="Number of columns" style="margin-bottom: .3em">
         <div class="label">Columns:</div>
         <input id="tileColsInput" data-stored="tileCols" type="range" min=2 max=20 value=8 style="width: 11em">
@@ -3542,7 +3545,7 @@
       <div data-tip="Image scale relative to image size (e.g. 5x)" style="margin-bottom: .3em">
         <div class="label">Scale:</div>
         <input id="tileScaleInput" data-stored="tileScale" type="range" min=1 max=4 value=1 style="width: 11em">
-        <input id="tileScaleOutput" data-stored="tileScale" type="number" min=1 value=1 
+        <input id="tileScaleOutput" data-stored="tileScale" type="number" min=1 value=1
         >
       </div>
       <div data-tip="Calculated size of image if combined" style="margin-bottom: .3em">
@@ -4265,11 +4268,13 @@
   <script src="modules/ui/layers.js"></script>
   <script src="modules/ui/measurers.js"></script>
 
+  <script defer src="https://unpkg.com/dropbox@10.8.0/dist/Dropbox-sdk.min.js"></script>
   <script defer src="modules/ui/general.js"></script>
   <script defer src="modules/ui/options.js"></script>
   <script defer src="modules/ui/style.js"></script>
   <script defer src="modules/save.js"></script>
   <script defer src="modules/load.js"></script>
+  <script defer src="modules/cloud.js"></script>
   <script defer src="main.js"></script>
   <script defer src="modules/relief-icons.js"></script>
   <script defer src="modules/ui/tools.js"></script>
@@ -4310,6 +4315,5 @@
   <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
   <script defer src="libs/pell.min.js"></script>
   <script defer src="libs/jszip.min.js"></script>
-  <script defer src="libs/dropins.min.js" id="dropboxjs" data-app-key="pdr9ae64ip0qno4"></script>
 </body>
 </html>
