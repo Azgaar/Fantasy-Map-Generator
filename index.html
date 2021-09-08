@@ -666,8 +666,7 @@
               <td>Font</td>
               <td>
                 <select id="styleSelectFont"></select>
-                <input id="styleInputFont" data-tip="Provide a link to @font-face declaration or type Google font name" type="text" placeholder="link to @font-face">
-                <button id="styleFontAdd" data-tip="Add custom font from the web" class="icon-plus styleButton"></button>
+                <button id="styleFontAdd" data-tip="Add a font" class="icon-plus styleButton"></button>
               </td>
             </tr>
           </tbody>
@@ -3343,6 +3342,22 @@
         <button id="styleSaverDownload" data-tip="Download the style as a .json file (can be opened in any text editor)" class="icon-download"></button>
         <button id="styleSaverLoad" data-tip="Open previously downloaded style file" class="icon-upload"></button>
         <button id="styleSaverCA" data-tip="Find or share custom style preset on Cartography Assets portal" class="icon-drafting-compass" onclick="openURL('https://cartographyassets.com/asset-category/specific-assets/azgaars-generator/styles/')"></button>
+      </div>
+    </div>
+
+    <div id="addFontDialog" style="display: none" class="dialog">
+      <span>There are 3 ways to add a custom font:</span>
+      <p><strong>Google font</strong>. Open <a href="https://fonts.google.com/" target="_blank">Google Fonts</a>, find a font you like and enter its name to the field below.</p>
+      <p><strong>Local font</strong>. If you have a font <a href="https://faqs.skillcrush.com/article/275-downloading-installing-a-font-on-your-computer" target="_blank">installed on your computer</a>, just provide the font name. Make sure the browser is reloaded after the installation. The font won't work on machines not having it installed. Good source of fonts are <a href="https://fontesk.com" target="_blank">Fontdesk</a> and <a href="https://www.dafont.com" target="_blank">DaFont</a>.</p>
+      <p><strong>Font URL</strong>. Provide font name and link to the font file hosted online. The best free font hostings are <a href="https://fonts.google.com/" target="_blank">Google Fonts</a> and <a target="_blank" href="https://www.cdnfonts.com">CDN Fonts</a>. To get font file open the link to css provided by these services and manually copy the link to <code>woff2</code>.</p>
+      <div style="margin-top: .3em" data-tip="Select font adding method">
+        <select id="addFontMethod">
+          <option value="googleFont" selected>Google font</option>
+          <option value="localFont">Local font</option>
+          <option value="fontURL" selected>Font URL</option>
+        </select>
+        <input id="addFontNameInput" placeholder="font family" style="width:15em">
+        <input id="addFontURLInput" placeholder="font file URL" style="width:22.6em; margin-top:.1em">
       </div>
     </div>
 
