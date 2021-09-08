@@ -300,7 +300,6 @@ async function checkLoadParameters() {
       });
     });
 
-<<<<<<< HEAD
   if (onloadMap.value === "saved") {
     try {
       await loadLastMap();
@@ -318,15 +317,6 @@ async function checkLoadParameters() {
 async function generateMapOnLoad() {
   await applyStyleOnLoad(); // apply previously selected default or custom style
   await generate(); // generate map
-=======
-  WARN && console.warn('Generate random map');
-  generateMapOnLoad();
-})();
-
-function generateMapOnLoad() {
-  applyStyleOnLoad(); // apply default of previously selected style
-  generate(); // generate map
->>>>>>> f557701e (dropbox - import changes from alpha)
   focusOn(); // based on searchParams focus on point, cell or burg from MFCG
   applyPreset(); // apply saved layers preset
 }
