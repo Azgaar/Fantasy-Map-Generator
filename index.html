@@ -242,7 +242,7 @@
 
     <div id="collapsible">
       <button id="optionsTrigger" data-t="tipOptionsTrigger" data-tip="Click to show options pane. Shortcut: Tab" class="options glow" onclick="showOptions(event)" style="padding:.6em .45em">►</button>
-      <button id="regenerate" data-t="tipRegenerate" data-tip="Click to generate a new map. Shortcut: F2" onclick="regeneratePrompt()" class="options" style="display:none; padding:.6em 1em"><t data-t="newMap">New Map!</t></button>
+      <button id="regenerate" data-t="tipRegenerate" data-tip="Click to generate a new map. Shortcut: F2" onclick="regeneratePrompt()" class="options" style="display: none"><t data-t="newMap">New Map!</t></button>
     </div>
 
     <div id="options" style="display:none">
@@ -666,7 +666,7 @@
               <td>Font</td>
               <td>
                 <select id="styleSelectFont"></select>
-                <button id="styleFontAdd" data-tip="Add a font" class="icon-plus styleButton"></button>
+                <button id="styleFontAdd" data-tip="Add a font" class="icon-plus sideButton"></button>
               </td>
             </tr>
           </tbody>
@@ -1310,9 +1310,10 @@
           </tr> -->
         </table>
 
-        <button id="configureWorld" data-tip="Click to open world configurator to setup map position on Globe and World climate" onclick="editWorld()">Configure World</button>
-        <button id="optionsReset" data-tip="Click to restore default options (page will be reloaded)" onclick="restoreDefaultOptions()">Reset to defaults</button>
-
+        <div>
+          <button id="configureWorld" data-tip="Click to open world configurator to setup map position on Globe and World climate" onclick="editWorld()">Configure World</button>
+          <button id="optionsReset" data-tip="Click to restore default options (page will be reloaded)" onclick="restoreDefaultOptions()">Reset to defaults</button>
+        </div>
       </div>
 
       <div id="toolsContent" class="tabcontent">

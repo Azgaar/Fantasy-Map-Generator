@@ -332,20 +332,6 @@ text.drag {
   user-select: none;
 }
 
-#collapsible {
-  margin: 11px;
-  border: 0;
-  position: absolute;
-  z-index: 2;
-}
-
-div.tab > button#optionsHide {
-  width: 7%;
-  height: 100%;
-  font-family: Times New Roman, Arial;
-  padding: 7px 0px;
-}
-
 #options {
   position: absolute;
   font-family: Consolas, monospace;
@@ -360,10 +346,44 @@ div.tab > button#optionsHide {
   font-family: Consolas, monospace;
 }
 
+#collapsible {
+  margin: 11px;
+  border: 0;
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 2fr 7fr;
+}
+
 .tab {
-  overflow: hidden;
   border-bottom: 1px solid #5d4651;
   height: 2.2em;
+  display: flex;
+  justify-content: space-between;
+}
+
+div.tab > button#optionsHide {
+  width: auto;
+  font-family: Arial;
+  padding: 0.6em 0.45em;
+}
+
+button.options {
+  width: 100%;
+  background-color: #997b89;
+  font-weight: bold;
+  border: none;
+  transition: 0.2s;
+}
+
+button.options:hover {
+  background-color: #806070 !important;
+  color: white !important;
+}
+
+button.active {
+  background-color: #916e7f;
+  color: white;
 }
 
 #options p {
@@ -548,9 +568,8 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 }
 
 #styleElements input[type="number"] {
-  width: 52px;
+  width: 6em;
   border: 0;
-  padding-left: 2.5px;
 }
 
 #styleSelectFont > option {
@@ -609,32 +628,6 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   100% {
     box-shadow: 0 0 1px #f44336;
   }
-}
-
-.tab > button.options {
-  width: 18.6%;
-  height: 100%;
-  padding: 6px 0px;
-}
-
-button.options {
-  background-color: #997b89;
-  font-weight: bold;
-  float: left;
-  border: none;
-  border-radius: 0;
-  padding: 8px 10px;
-  transition: 0.2s;
-}
-
-button.options:hover {
-  background-color: #806070 !important;
-  color: white !important;
-}
-
-button.active {
-  background-color: #916e7f;
-  color: white;
 }
 
 .tabcontent {
@@ -702,7 +695,7 @@ fieldset {
 
 #options .buttonoff {
   background-color: #b6b4b440 !important;
-  color: grey;
+  color: #666;
 }
 
 .tabcontent li:hover,
