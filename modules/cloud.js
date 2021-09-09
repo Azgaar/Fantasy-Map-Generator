@@ -58,7 +58,7 @@ window.Cloud = (function () {
     async save(fileName, contents) {
       if (!this.api) await this.auth();
       const resp = this.call("filesUpload", {path: "/" + fileName, contents});
-      console.log("Dropbox response:", resp);
+      DEBUG && console.log("Dropbox response:", resp);
       return true;
     },
 
@@ -96,7 +96,7 @@ window.Cloud = (function () {
 
     // Callback function for auth window.
     setDropBoxToken(token) {
-      console.log("Access token got:", token);
+      DEBUG && console.log("Access token:", token);
       setToken(this.name, token);
       this.connect(token);
       this.authWindow.close();
@@ -122,7 +122,7 @@ window.Cloud = (function () {
           allow_download: true
         }
       });
-      console.log("dropbox link object:", resp.result);
+      DEBUG && console.log("Dropbox link object:", resp.result);
       return resp.result.url;
     }
   };
