@@ -275,14 +275,22 @@ async function getMapURL(type, options = {}) {
     });
   }
 
-  // load non-standard fonts
-  const usedFonts = getFontsList(clone);
-  const webSafe = ["Georgia", "Times+New+Roman", "Comic+Sans+MS", "Lucida+Sans+Unicode", "Courier+New", "Verdana", "Arial", "Impact"];
-  const fontsToLoad = usedFonts.filter(font => !webSafe.includes(font));
+  // TODO: add dataURL for all used fonts
+  const usedFonts = getUsedFonts(cloneEl);
+  const fontsToLoad = usedFonts.filter(font => font.src);
   if (fontsToLoad.length) {
-    const url = "https://fonts.googleapis.com/css?family=" + fontsToLoad.join("|");
-    const fontStyle = await convertFontToDataURI(url);
-    if (fontStyle) clone.select("defs").append("style").text(fontStyle.join("\n"));
+    const dataURLfonts = await loadFontsAsDataURI(fontsToLoad);
+
+    const fontFaces = dataURLfonts
+      .map(({family, src, unicodeRange = "", variant = "normal"}) => {
+        return `@font-face {font-family: "${family}"; src: ${src}; unicode-range: ${unicodeRange}; font-variant: ${variant};}`;
+      })
+      .join("\n");
+
+    const style = document.createElement("style");
+    style.setAttribute("type", "text/css");
+    style.innerHTML = fontFaces;
+    cloneEl.querySelector("defs").appendChild(style);
   }
 
   clone.remove();
@@ -378,6 +386,7 @@ function getMapData() {
   const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
   const notesData = JSON.stringify(notes);
   const rulersString = rulers.toString();
+  const fonts = JSON.stringify(getUsedFonts(svg.node()));
 
   // save svg
   const cloneEl = document.getElementById("map").cloneNode(true);
@@ -414,7 +423,7 @@ function getMapData() {
   const pop = Array.from(pack.cells.pop).map(p => rn(p, 4));
 
   // data format as below
-  const mapData = [params, settings, coords, biomes, notesData, serializedSVG, gridGeneral, grid.cells.h, grid.cells.prec, grid.cells.f, grid.cells.t, grid.cells.temp, packFeatures, cultures, states, burgs, pack.cells.biome, pack.cells.burg, pack.cells.conf, pack.cells.culture, pack.cells.fl, pop, pack.cells.r, pack.cells.road, pack.cells.s, pack.cells.state, pack.cells.religion, pack.cells.province, pack.cells.crossroad, religions, provinces, namesData, rivers, rulersString].join("\r\n");
+  const mapData = [params, settings, coords, biomes, notesData, serializedSVG, gridGeneral, grid.cells.h, grid.cells.prec, grid.cells.f, grid.cells.t, grid.cells.temp, packFeatures, cultures, states, burgs, pack.cells.biome, pack.cells.burg, pack.cells.conf, pack.cells.culture, pack.cells.fl, pop, pack.cells.r, pack.cells.road, pack.cells.s, pack.cells.state, pack.cells.religion, pack.cells.province, pack.cells.crossroad, religions, provinces, namesData, rivers, rulersString, fonts].join("\r\n");
   TIME && console.timeEnd("createMapData");
   return mapData;
 }
