@@ -360,10 +360,7 @@ text.drag {
   border: solid 1px #5e4fa2;
   margin: 10px;
   padding-bottom: 0.3em;
-<<<<<<< HEAD
   background: var(--bg-light);
-=======
->>>>>>> f557701e (dropbox - import changes from alpha)
 }
 
 #options input,
@@ -593,8 +590,8 @@ input[type='color']::-webkit-color-swatch-wrapper {
   width: 64%;
 }
 
-#styleElements input[type='number'] {
-  width: 52px;
+#styleElements input[type="number"] {
+  width: 6em;
   border: 0;
 }
 
