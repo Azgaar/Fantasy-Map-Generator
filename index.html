@@ -273,8 +273,8 @@
           <option value="landmass">Pure landmass</option>
           <option hidden value="custom">Custom (not saved)</option>
         </select>
-        <button id="savePresetButton" data-tip="Click to save displayed layers as a new preset" class="icon-plus presetButton" style="display:none" onclick="savePreset()"></button>
-        <button id="removePresetButton" data-tip="Click to remove current custom preset" class="icon-minus presetButton" style="display:none" onclick="removePreset()"></button>
+        <button id="savePresetButton" data-tip="Click to save displayed layers as a new preset" class="icon-plus sideButton" style="display:none" onclick="savePreset()"></button>
+        <button id="removePresetButton" data-tip="Click to remove current custom preset" class="icon-minus sideButton" style="display:none" onclick="removePreset()"></button>
 
         <p data-tip="Click to toggle a layer, drag to raise or lower a layer. Ctrl + click to edit layer style">Displayed layers and layers order:</p>
         <ul data-tip="Click to toggle a layer, drag to raise or lower a layer. Ctrl + click to edit layer style" id="mapLayers">
@@ -326,8 +326,8 @@
           <option value="styleWatercolor" data-system=1>Watercolor</option>
           <option value="styleMonochrome" data-system=1>Monochrome</option>
         </select>
-        <button id="addStyleButton" data-tip="Click to save current style as a new preset" class="icon-plus styleButton" style="display: inline-block" onclick="addStylePreset()"></button>
-        <button id="removeStyleButton" data-tip="Click to remove current custom style preset" class="icon-minus styleButton" style="display: none" onclick="removeStylePreset()"></button>
+        <button id="addStyleButton" data-tip="Click to save current style as a new preset" class="icon-plus sideButton" style="display: inline-block" onclick="addStylePreset()"></button>
+        <button id="removeStyleButton" data-tip="Click to remove current custom style preset" class="icon-minus sideButton" style="display: none" onclick="removeStylePreset()"></button>
 
         <p data-tip="Select an element to edit its style" style="display: inline-block;">Select element:</p>
         <select data-tip="Select an element to edit its style (list is ordered alphabetically)" id="styleElementSelect" style="width:42%">
@@ -458,7 +458,7 @@
                   <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/iran-small.jpg">Iran small</option>
                   <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/spain-small.jpg">Spain small</option>
                 </select>
-                <button data-tip="Click and provide a URL to image to be set as a texture" class="icon-plus styleButton" onclick="textureProvideURL()"></button>
+                <button data-tip="Click and provide a URL to image to be set as a texture" class="icon-plus sideButton" onclick="textureProvideURL()"></button>
               </td>
             </tr>
 
@@ -667,7 +667,7 @@
               <td>
                 <select id="styleSelectFont"></select>
                 <input id="styleInputFont" data-tip="Provide a link to @font-face declaration or type Google font name" type="text" placeholder="link to @font-face">
-                <button id="styleFontAdd" data-tip="Add custom font from the web" class="icon-plus styleButton"></button>
+                <button id="styleFontAdd" data-tip="Add custom font from the web" class="icon-plus sideButton"></button>
               </td>
             </tr>
           </tbody>
@@ -1317,8 +1317,8 @@
       </div>
 
       <div id="toolsContent" class="tabcontent">
+        <p>Click to configure:</p>
         <div>
-          <p>Click to configure:</p>
           <button id="editHeightmapButton" data-tip="Click to open Heightmap customization menu. Shortcut: Shift + H">Heightmap</button>
           <button id="editBiomesButton" data-tip="Click to open Biomes Editor. Shortcut: Shift + B">Biomes</button>
           <button id="editStatesButton" data-tip="Click to open States Editor. Shortcut: Shift + S">States</button>
@@ -1333,18 +1333,18 @@
           <button id="editNotesButton" data-tip="Click to open Notes Editor. Shortcut: Shift + O">Notes</button>
         </div>
 
+        <p>Click to overview:</p>
         <div>
-          <p>Click to overview:</p>
           <button id="overviewBurgsButton" data-tip="Click to open Burgs Overview. Shortcut: Shift + T">Burgs</button>
           <button id="overviewRiversButton" data-tip="Click to open Rivers Overview. Shortcut: Shift + V">Rivers</button>
           <button id="overviewMilitaryButton" data-tip="Click to open Military Forces Overview. Shortcut: Shift + M">Military</button>
           <button id="overviewCellsButton" data-tip="Click to open Cell details view. Shortcut: Shift + E">Cells</button>
         </div>
 
+        <p>Click to regenerate:</p>
         <div id="regenerateFeature">
-          <p>Click to regenerate:</p>
-          <button id="regenerateStateLabels" data-tip="Click to update state labels placement based on current borders">State labels</button>
-          <button id="regenerateReliefIcons" data-tip="Click to regenerate all relief icons based on current cell biome and elevation">Relief icons</button>
+          <button id="regenerateStateLabels" data-tip="Click to update state labels placement based on current borders">Labels</button>
+          <button id="regenerateReliefIcons" data-tip="Click to regenerate all relief icons based on current cell biome and elevation">Relief</button>
           <button id="regenerateRoutes" data-tip="Click to regenerate all routes">Routes</button>
           <button id="regenerateRivers" data-tip="Click to regenerate all rivers (restore default state)">Rivers</button>
           <button id="regeneratePopulation" data-tip="Click to recalculate rural and urban population">Population</button>
@@ -1360,8 +1360,8 @@
           <button id="regenerateZones" data-tip="Click to regenerate zones. Hold Ctrl and click to set zones number multiplier">Zones</button>
         </div>
 
+        <p>Click to add:</p>
         <div id="addFeature">
-          <p>Click to add:</p>
           <button id="addBurgTool" data-tip="Click on map to place a burg. Hold <kbd>Shift</kbd> to add multiple. Shortcut: Shift + 1">Burg</button>
           <button id="addLabel" data-tip="Click on map to place label. Hold Shift to add multiple. Shortcut: Shift + 2">Label</button>
           <button id="addRiver" data-tip="Click on map to place a river. Hold Shift to add multiple. Shortcut: Shift + 3">River</button>
@@ -1380,8 +1380,8 @@
           <button data-tip="Preview heightmap in 3D scene" id="heightmap3DView">3D scene</button>
         </div>
 
+        <p>Options:</p>
         <div id="customizeOptions">
-          <p>Options:</p>
           <div data-tip="Heightmap edit mode">Edit mode: <span id="heightmapEditMode"></span></div>
           <div data-tip="Render cells below the sea level (with height less than 20)">
             <input id="renderOcean" class="checkbox" type="checkbox">
@@ -1404,14 +1404,14 @@
           </div>
         </div>
 
+        <p>Statistics:</p>
         <div>
-          <p>Statistics:</p>
           <span>Land cells: </span><span id="landmassCounter">0</span>
           <span style="margin-left:.9em">Mean height: </span><span id="landmassAverage">0</span>
         </div>
 
+        <p>Cell info:</p>
         <div>
-          <p>Cell info:</p>
           <span>Coord: </span><span id="heightmapInfoX"></span>/<span id="heightmapInfoY"></span><br>
           <span>Cell: </span><span id="heightmapInfoCell"></span><br>
           <span>Height: </span><span id="heightmapInfoHeight"></span>

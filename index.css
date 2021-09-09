@@ -540,18 +540,10 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   font-weight: bold;
 }
 
-#layersContent button.presetButton {
-  position: absolute;
-  height: 2em;
+.tabcontent button.sideButton {
   border-radius: 15%;
-  margin: 1.3em 0 0 0.6em;
-  font-size: 0.7em;
-}
-
-#styleContent button.styleButton {
-  font-size: 70%;
-  border-radius: 15%;
-  margin: 0;
+  font-size: 0.8em;
+  margin-bottom: -1em;
 }
 
 #layersContent button.active,
@@ -670,6 +662,17 @@ button.active {
 
 .tabcontent button:hover {
   background-color: #a8879d !important;
+}
+
+#toolsContent div {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 0.2em 0;
+}
+
+#toolsContent button {
+  padding: 0.35em 0;
+  margin: 0.16em 0.12em;
 }
 
 #mapLayers {
