@@ -12,10 +12,11 @@ function quickLoad() {
   });
 }
 
-async function loadFromDropbox(fileName) {
-  const map = document.querySelector("#loadFromDropbox select").value;
-  console.log('loading dropbox map', map);
-  const blob = await Cloud.providers.dropbox.load(map);
+async function loadFromDropbox() {
+  const mapPath = document.getElementById("loadFromDropboxSelect")?.value;
+
+  DEBUG && console.log("Loading map from Dropbox:", mapPath);
+  const blob = await Cloud.providers.dropbox.load(mapPath);
   uploadMap(blob);
 }
 
@@ -23,18 +24,18 @@ async function createSharableDropboxLink() {
   const mapFile = document.querySelector("#loadFromDropbox select").value;
   const sharableLink = document.getElementById("sharableLink");
   const sharableLinkContainer = document.getElementById("sharableLinkContainer");
-  let url
+  let url;
   try {
     url = await Cloud.providers.dropbox.getLink(mapFile);
   } catch {
     tip("Dropbox API error. Can not create link.", true, "error", 2000);
-    return
+    return;
   }
 
   const fmg = window.location.href.split("?")[0];
-  const reallink= `${fmg}?maplink=${url}`;
+  const reallink = `${fmg}?maplink=${url}`;
   // voodoo magic required by the yellow god of CORS
-  const link = reallink.replace('www.dropbox.com/s/', 'dl.dropboxusercontent.com/1/view/')
+  const link = reallink.replace("www.dropbox.com/s/", "dl.dropboxusercontent.com/1/view/");
   const shortLink = link.slice(0, 50) + "...";
 
   sharableLinkContainer.style.display = "block";
@@ -236,6 +237,15 @@ function parseLoadedData(data) {
       if (data[2]) mapCoordinates = JSON.parse(data[2]);
       if (data[4]) notes = JSON.parse(data[4]);
       if (data[33]) rulers.fromString(data[33]);
+      if (data[34]) {
+        const usedFonts = JSON.parse(data[34]);
+        usedFonts.forEach(usedFont => {
+          const {family: usedFamily, unicodeRange: usedRange, variant: usedVariant} = usedFont;
+          const defaultFont = fonts.find(({family, unicodeRange, variant}) => family === usedFamily && unicodeRange === usedRange && variant === usedVariant);
+          if (!defaultFont) fonts.push(usedFont);
+          declareFont(usedFont);
+        });
+      }
 
       const biomes = data[3].split("|");
       biomesData = applyDefaultBiomesSystem();
@@ -308,8 +318,6 @@ function parseLoadedData(data) {
       debug = viewbox.select("#debug");
       burgLabels = labels.select("#burgLabels");
     })();
-
-    loadUsedFonts();
 
     void (function parseGridData() {
       grid = JSON.parse(data[6]);
@@ -423,7 +431,7 @@ function parseLoadedData(data) {
 
         // 1.0 adds a legend box
         legend = svg.append("g").attr("id", "legend");
-        legend.attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC").attr("font-size", 13).attr("data-size", 13).attr("data-x", 99).attr("data-y", 93).attr("stroke-width", 2.5).attr("stroke", "#812929").attr("stroke-dasharray", "0 4 10 4").attr("stroke-linecap", "round");
+        legend.attr("font-family", "Almendra SC").attr("font-size", 13).attr("data-size", 13).attr("data-x", 99).attr("data-y", 93).attr("stroke-width", 2.5).attr("stroke", "#812929").attr("stroke-dasharray", "0 4 10 4").attr("stroke-linecap", "round");
 
         // 1.0 separated drawBorders fron drawStates()
         stateBorders = borders.append("g").attr("id", "stateBorders");
