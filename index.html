@@ -242,7 +242,7 @@
 
     <div id="collapsible">
       <button id="optionsTrigger" data-t="tipOptionsTrigger" data-tip="Click to show options pane. Shortcut: Tab" class="options glow" onclick="showOptions(event)" style="padding:.6em .45em">►</button>
-      <button id="regenerate" data-t="tipRegenerate" data-tip="Click to generate a new map. Shortcut: F2" onclick="regeneratePrompt()" class="options" style="display:none; padding:.6em 1em"><t data-t="newMap">New Map!</t></button>
+      <button id="regenerate" data-t="tipRegenerate" data-tip="Click to generate a new map. Shortcut: F2" onclick="regeneratePrompt()" class="options" style="display: none"><t data-t="newMap">New Map!</t></button>
     </div>
 
     <div id="options" style="display:none">
@@ -273,8 +273,8 @@
           <option value="landmass">Pure landmass</option>
           <option hidden value="custom">Custom (not saved)</option>
         </select>
-        <button id="savePresetButton" data-tip="Click to save displayed layers as a new preset" class="icon-plus presetButton" style="display:none" onclick="savePreset()"></button>
-        <button id="removePresetButton" data-tip="Click to remove current custom preset" class="icon-minus presetButton" style="display:none" onclick="removePreset()"></button>
+        <button id="savePresetButton" data-tip="Click to save displayed layers as a new preset" class="icon-plus sideButton" style="display:none" onclick="savePreset()"></button>
+        <button id="removePresetButton" data-tip="Click to remove current custom preset" class="icon-minus sideButton" style="display:none" onclick="removePreset()"></button>
 
         <p data-tip="Click to toggle a layer, drag to raise or lower a layer. Ctrl + click to edit layer style">Displayed layers and layers order:</p>
         <ul data-tip="Click to toggle a layer, drag to raise or lower a layer. Ctrl + click to edit layer style" id="mapLayers">
@@ -326,8 +326,8 @@
           <option value="styleWatercolor" data-system=1>Watercolor</option>
           <option value="styleMonochrome" data-system=1>Monochrome</option>
         </select>
-        <button id="addStyleButton" data-tip="Click to save current style as a new preset" class="icon-plus styleButton" style="display: inline-block" onclick="addStylePreset()"></button>
-        <button id="removeStyleButton" data-tip="Click to remove current custom style preset" class="icon-minus styleButton" style="display: none" onclick="removeStylePreset()"></button>
+        <button id="addStyleButton" data-tip="Click to save current style as a new preset" class="icon-plus sideButton" style="display: inline-block" onclick="addStylePreset()"></button>
+        <button id="removeStyleButton" data-tip="Click to remove current custom style preset" class="icon-minus sideButton" style="display: none" onclick="removeStylePreset()"></button>
 
         <p data-tip="Select an element to edit its style" style="display: inline-block;">Select element:</p>
         <select data-tip="Select an element to edit its style (list is ordered alphabetically)" id="styleElementSelect" style="width:42%">
@@ -458,7 +458,7 @@
                   <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/iran-small.jpg">Iran small</option>
                   <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/spain-small.jpg">Spain small</option>
                 </select>
-                <button data-tip="Click and provide a URL to image to be set as a texture" class="icon-plus styleButton" onclick="textureProvideURL()"></button>
+                <button data-tip="Click and provide a URL to image to be set as a texture" class="icon-plus sideButton" onclick="textureProvideURL()"></button>
               </td>
             </tr>
 
@@ -666,8 +666,7 @@
               <td>Font</td>
               <td>
                 <select id="styleSelectFont"></select>
-                <input id="styleInputFont" data-tip="Provide a link to @font-face declaration or type Google font name" type="text" placeholder="link to @font-face">
-                <button id="styleFontAdd" data-tip="Add custom font from the web" class="icon-plus styleButton"></button>
+                <button id="styleFontAdd" data-tip="Add a font" class="icon-plus sideButton"></button>
               </td>
             </tr>
           </tbody>
@@ -1311,14 +1310,15 @@
           </tr> -->
         </table>
 
-        <button id="configureWorld" data-tip="Click to open world configurator to setup map position on Globe and World climate" onclick="editWorld()">Configure World</button>
-        <button id="optionsReset" data-tip="Click to restore default options (page will be reloaded)" onclick="restoreDefaultOptions()">Reset to defaults</button>
-
+        <div>
+          <button id="configureWorld" data-tip="Click to open world configurator to setup map position on Globe and World climate" onclick="editWorld()">Configure World</button>
+          <button id="optionsReset" data-tip="Click to restore default options (page will be reloaded)" onclick="restoreDefaultOptions()">Reset to defaults</button>
+        </div>
       </div>
 
       <div id="toolsContent" class="tabcontent">
+        <p>Click to configure:</p>
         <div>
-          <p>Click to configure:</p>
           <button id="editHeightmapButton" data-tip="Click to open Heightmap customization menu. Shortcut: Shift + H">Heightmap</button>
           <button id="editBiomesButton" data-tip="Click to open Biomes Editor. Shortcut: Shift + B">Biomes</button>
           <button id="editStatesButton" data-tip="Click to open States Editor. Shortcut: Shift + S">States</button>
@@ -1333,18 +1333,18 @@
           <button id="editNotesButton" data-tip="Click to open Notes Editor. Shortcut: Shift + O">Notes</button>
         </div>
 
+        <p>Click to overview:</p>
         <div>
-          <p>Click to overview:</p>
           <button id="overviewBurgsButton" data-tip="Click to open Burgs Overview. Shortcut: Shift + T">Burgs</button>
           <button id="overviewRiversButton" data-tip="Click to open Rivers Overview. Shortcut: Shift + V">Rivers</button>
           <button id="overviewMilitaryButton" data-tip="Click to open Military Forces Overview. Shortcut: Shift + M">Military</button>
           <button id="overviewCellsButton" data-tip="Click to open Cell details view. Shortcut: Shift + E">Cells</button>
         </div>
 
+        <p>Click to regenerate:</p>
         <div id="regenerateFeature">
-          <p>Click to regenerate:</p>
-          <button id="regenerateStateLabels" data-tip="Click to update state labels placement based on current borders">State labels</button>
-          <button id="regenerateReliefIcons" data-tip="Click to regenerate all relief icons based on current cell biome and elevation">Relief icons</button>
+          <button id="regenerateStateLabels" data-tip="Click to update state labels placement based on current borders">Labels</button>
+          <button id="regenerateReliefIcons" data-tip="Click to regenerate all relief icons based on current cell biome and elevation">Relief</button>
           <button id="regenerateRoutes" data-tip="Click to regenerate all routes">Routes</button>
           <button id="regenerateRivers" data-tip="Click to regenerate all rivers (restore default state)">Rivers</button>
           <button id="regeneratePopulation" data-tip="Click to recalculate rural and urban population">Population</button>
@@ -1360,8 +1360,8 @@
           <button id="regenerateZones" data-tip="Click to regenerate zones. Hold Ctrl and click to set zones number multiplier">Zones</button>
         </div>
 
+        <p>Click to add:</p>
         <div id="addFeature">
-          <p>Click to add:</p>
           <button id="addBurgTool" data-tip="Click on map to place a burg. Hold <kbd>Shift</kbd> to add multiple. Shortcut: Shift + 1">Burg</button>
           <button id="addLabel" data-tip="Click on map to place label. Hold Shift to add multiple. Shortcut: Shift + 2">Label</button>
           <button id="addRiver" data-tip="Click on map to place a river. Hold Shift to add multiple. Shortcut: Shift + 3">River</button>
@@ -1385,8 +1385,8 @@
           <button data-tip="Preview heightmap in 3D scene" id="heightmap3DView">3D scene</button>
         </div>
 
+        <p>Options:</p>
         <div id="customizeOptions">
-          <p>Options:</p>
           <div data-tip="Heightmap edit mode">Edit mode: <span id="heightmapEditMode"></span></div>
           <div data-tip="Render cells below the sea level (with height less than 20)">
             <input id="renderOcean" class="checkbox" type="checkbox">
@@ -1409,14 +1409,14 @@
           </div>
         </div>
 
+        <p>Statistics:</p>
         <div>
-          <p>Statistics:</p>
           <span>Land cells: </span><span id="landmassCounter">0</span>
           <span style="margin-left:.9em">Mean height: </span><span id="landmassAverage">0</span>
         </div>
 
+        <p>Cell info:</p>
         <div>
-          <p>Cell info:</p>
           <span>Coord: </span><span id="heightmapInfoX"></span>/<span id="heightmapInfoY"></span><br>
           <span>Cell: </span><span id="heightmapInfoCell"></span><br>
           <span>Height: </span><span id="heightmapInfoHeight"></span>
@@ -3351,6 +3351,22 @@
       </div>
     </div>
 
+    <div id="addFontDialog" style="display: none" class="dialog">
+      <span>There are 3 ways to add a custom font:</span>
+      <p><strong>Google font</strong>. Open <a href="https://fonts.google.com/" target="_blank">Google Fonts</a>, find a font you like and enter its name to the field below.</p>
+      <p><strong>Local font</strong>. If you have a font <a href="https://faqs.skillcrush.com/article/275-downloading-installing-a-font-on-your-computer" target="_blank">installed on your computer</a>, just provide the font name. Make sure the browser is reloaded after the installation. The font won't work on machines not having it installed. Good source of fonts are <a href="https://fontesk.com" target="_blank">Fontdesk</a> and <a href="https://www.dafont.com" target="_blank">DaFont</a>.</p>
+      <p><strong>Font URL</strong>. Provide font name and link to the font file hosted online. The best free font hostings are <a href="https://fonts.google.com/" target="_blank">Google Fonts</a> and <a target="_blank" href="https://www.cdnfonts.com">CDN Fonts</a>. To get font file open the link to css provided by these services and manually copy the link to <code>woff2</code>.</p>
+      <div style="margin-top: .3em" data-tip="Select font adding method">
+        <select id="addFontMethod">
+          <option value="googleFont" selected>Google font</option>
+          <option value="localFont">Local font</option>
+          <option value="fontURL" selected>Font URL</option>
+        </select>
+        <input id="addFontNameInput" placeholder="font family" style="width:15em">
+        <input id="addFontURLInput" placeholder="font file URL" style="width:22.6em; margin-top:.1em">
+      </div>
+    </div>
+
     <div id="cellInfo" style="display: none" class="dialog stable">
       <p><b>Cell:</b> <span id="infoCell"></span> <b>X:</b> <span id="infoX"></span> <b>Y:</b> <span id="infoY"></span></p>
       <p><b>Latitude:</b> <span id="infoLat"></span></p>
@@ -3447,7 +3463,7 @@
       <div id="options3dBottom" style="margin-top: .2em">
         <button id="options3dUpdate" data-tip="Update the scene" class="icon-cw"></button>
         <button data-tip="Configure world and map size and climate settings" onclick="editWorld()" class="icon-globe"></button>
-		<button id="options3dSave" data-tip="Save screenshot of the 3d scene" class="icon-button-screenshot"></button>
+        <button id="options3dSave" data-tip="Save screenshot of the 3d scene" class="icon-button-screenshot"></button>
         <button id="options3dOBJSave" data-tip="Save OBJ file of the 3d scene" class="icon-download"></button>
       </div>
     </div>
@@ -3480,11 +3496,9 @@
         <button onclick="saveGeoJSON_Rivers()" data-tip="Download rivers data in GeoJSON format">rivers</button>
         <button onclick="saveGeoJSON_Markers()" data-tip="Download markers data in GeoJSON format">markers</button>
       </div>
-      <p style="font-style: italic">GeoJSON format is used in GIS tools such as QGIS. Check out <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export" target="_blank">wiki-page</a> for guidance</p>
-
-      <p style="font-style: italic">Generator uses pop-up window to download files. Please ensure your browser does not block popups.</p>
-
-      <p style="font-style: italic">It's also possible to export map to Foundry VTT, see <a href="https://github.com/Ethck/azgaar-foundry" target="_blank">the module.</a></p>
+      <p>GeoJSON format is used in GIS tools such as QGIS. Check out <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export" target="_blank">wiki-page</a> for guidance.</p>
+      <p>Generator uses pop-up window to download files. Please ensure your browser does not block popups.</p>
+      <p>It's also possible to export map to <i>Foundry VTT</i>, see <a href="https://github.com/Ethck/azgaar-foundry" target="_blank">the module.</a></p>
     </div>
 
     <div id="saveMapData" style="display: none" class="dialog">
@@ -3492,24 +3506,26 @@
         <strong>Save map to</strong>
         <button onclick="dowloadMap()" data-tip="Download .map file to your local disk. Shortcut: Ctrl + S">machine</button>
         <button onclick="saveToDropbox()" data-tip="Save .map file to your Dropbox">dropbox</button>
-        <button onclick="quickSave()" data-tip="Save the project to browser storage (quick save). It can be unreliable. Shortcut: F6">browser</button>
+        <button onclick="quickSave()" data-tip="Save the project to browser storage. It can be unreliable. Shortcut: F6">browser</button>
       </div>
-      <p style="font-style: italic">Maps are saved in <i>.map</i> format, that can be loaded back via 'Load' in menu. Please keep noted that we do not keep any data on our side. There is no way to restore the progress if .map file is lost. Please keep old .map files on your machine or cloud storage as backups.</p>
+      <p>Maps are saved in <i>.map</i> format, that can be loaded back via the <i>Load</i> in menu. There is no way to restore the progress if file is lost. Please keep old <i>.map</i> files on your machine or cloud storage as backups.</p>
     </div>
 
     <div id="loadMapData" style="display: none" class="dialog">
-      <div style="margin-bottom: .3em">Load map from</div>
       <div>
+        <strong>Load map from</strong>
         <button onclick="mapToLoad.click()" data-tip="Load .map file from local disk">local disk</button>
         <button onclick="loadURL()" data-tip="Load .map file from URL (server should allow CORS)">URL</button>
         <button onclick="quickLoad()" data-tip="Load map from browser storage (if saved before)">storage</button>
       </div>
       <div id="loadFromDropbox">
-        <p>From your Dropbox account:</p>
-        <select style="margin-bottom:.3em">
-        </select>
-        <button onclick="loadFromDropbox()" data-tip="Load .map file from your Dropbox">Open</button>
-        <button onclick="createSharableDropboxLink()" data-tip="Select .map file on dropbox and share a sharable link">Create link</button>
+        <p style="margin-bottom: .3em">From your Dropbox account</p>
+        <select id="loadFromDropboxSelect" style="width: 22em"></select>
+
+        <div id="loadFromDropboxButtons" style="margin-bottom: .3em">
+          <button onclick="loadFromDropbox()" data-tip="Load .map file from your Dropbox">Open</button>
+          <button onclick="createSharableDropboxLink()" data-tip="Select file and create a link to share with your friends">Create link</button>
+        </div>
 
         <div style="margin-top: .3em">
           <div id="sharableLinkContainer" style="display: none">
@@ -3521,7 +3537,7 @@
     </div>
 
     <div id="saveTilesScreen" style="display: none" class="dialog">
-      <p style="font-style: italic">Map will be split into tiles and downloaded as a single zip file. Avoid saving to big images</p>
+      <p>Map will be split into tiles and downloaded as a single zip file. Avoid saving to big images</p>
       <div data-tip="Number of columns" style="margin-bottom: .3em">
         <div class="label">Columns:</div>
         <input id="tileColsInput" data-stored="tileCols" type="range" min=2 max=20 value=8 style="width: 11em">

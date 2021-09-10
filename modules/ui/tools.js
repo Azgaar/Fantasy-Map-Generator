@@ -475,7 +475,7 @@ function addLabelOnClick() {
   const id = getNextId("label");
 
   let group = labels.select("#addedLabels");
-  if (!group.size()) group = labels.append("g").attr("id", "addedLabels").attr("fill", "#3e3e4b").attr("opacity", 1).attr("stroke", "#3a3a3a").attr("stroke-width", 0).attr("font-family", "Almendra SC").attr("data-font", "Almendra+SC").attr("font-size", 18).attr("data-size", 18).attr("filter", null);
+  if (!group.size()) group = labels.append("g").attr("id", "addedLabels").attr("fill", "#3e3e4b").attr("opacity", 1).attr("stroke", "#3a3a3a").attr("stroke-width", 0).attr("font-family", "Almendra SC").attr("font-size", 18).attr("data-size", 18).attr("filter", null);
 
   const example = group.append("text").attr("x", 0).attr("x", 0).text(name);
   const width = example.node().getBBox().width;
