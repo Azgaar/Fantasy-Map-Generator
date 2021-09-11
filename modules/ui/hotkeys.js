@@ -4,7 +4,7 @@ document.addEventListener("keydown", handleKeydown);
 document.addEventListener("keyup", handleKeyup);
 
 function handleKeydown(event) {
-  const {key, ctrlKey, altKey} = event;
+  const {key, code, ctrlKey, altKey} = event;
   if (altKey && !ctrlKey) event.preventDefault(); // disallow alt key combinations
   if (ctrlKey && ["KeyS", "KeyC"].includes(code)) event.preventDefault(); // disallow CTRL + S and CTRL + C
   if (["F1", "F2", "F6", "F9", "Tab"].includes(key)) event.preventDefault(); // disallow default Fn and Tab
