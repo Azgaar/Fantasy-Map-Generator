@@ -460,7 +460,7 @@ function parseLoadedData(data) {
         zones.attr("opacity", 0.6).attr("stroke", null).attr("stroke-width", 0).attr("stroke-dasharray", null).attr("stroke-linecap", "butt");
         addZones();
         if (!markers.selectAll("*").size()) {
-          addMarkers();
+          Markers.generate();
           turnButtonOn("toggleMarkers");
         }
 

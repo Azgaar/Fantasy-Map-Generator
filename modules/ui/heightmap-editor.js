@@ -216,7 +216,7 @@ function editHeightmap() {
     Lakes.generateName();
 
     Military.generate();
-    addMarkers();
+    Markers.generate();
     addZones();
     TIME && console.timeEnd("regenerateErasedData");
     INFO && console.groupEnd("Edit Heightmap");

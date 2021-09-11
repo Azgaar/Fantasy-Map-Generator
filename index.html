@@ -241,15 +241,15 @@
   <div id="optionsContainer" style="opacity:0">
 
     <div id="collapsible">
-      <button id="optionsTrigger" data-t="tipOptionsTrigger" data-tip="Click to show options pane. Shortcut: Tab" class="options glow" onclick="showOptions(event)" style="padding:.6em .45em">►</button>
+      <button id="optionsTrigger" data-t="tipOptionsTrigger" data-tip="Click to show the Menu. Shortcut: Tab" class="options glow" onclick="showOptions(event)" style="padding:.6em .45em">►</button>
       <button id="regenerate" data-t="tipRegenerate" data-tip="Click to generate a new map. Shortcut: F2" onclick="regeneratePrompt()" class="options" style="display: none"><t data-t="newMap">New Map!</t></button>
     </div>
 
     <div id="options" style="display:none">
-      <div class="drag-trigger" data-t="optionsDragTrigger" data-tip="Drag to move options pane"></div>
+      <div class="drag-trigger" data-t="optionsDragTrigger" data-tip="Drag to move the Menu"></div>
 
       <div class="tab">
-        <button id="optionsHide" data-t="optionsHide" data-tip="Click to hide options pane. Shortcut: Tab to close this or Esc to close all dialogs" class="options" onclick="hideOptions(event)">◄</button>
+        <button id="optionsHide" data-t="optionsHide" data-tip="Click to hide the Menu. Shortcut: Tab or Esc" class="options" onclick="hideOptions(event)">◄</button>
         <button id="layersTab" data-t="layersTab" data-tip="Click to change map layers" class="options active"><t data-t="layers">Layers</t></button>
         <button id="styleTab" data-t="styleTab" data-tip="Click to open style editor" class="options"><t data-t="style">Style</t></button>
         <button id="optionsTab" data-t="optionsTab" data-tip="Click to change generation and UI options" class="options"><t data-t="options">Options</t></button>
@@ -4260,6 +4260,7 @@
   <script src="modules/routes-generator.js"></script>
   <script src="modules/religions-generator.js"></script>
   <script src="modules/military-generator.js"></script>
+  <script src="modules/markers-generator.js"></script>
   <script src="modules/coa-generator.js"></script>
   <script src="libs/polylabel.min.js"></script>
   <script src="libs/lineclip.min.js"></script>
