@@ -13,6 +13,7 @@ window.Markers = (function () {
     addLighthouses(number);
     addWaterfalls(number);
     addBattlefields(number);
+    addDungeons(number);
 
     TIME && console.timeEnd("addMarkers");
   };
@@ -20,16 +21,13 @@ window.Markers = (function () {
   function addVolcanoes(number) {
     const {cells} = pack;
 
-    let mounts = Array.from(cells.i)
-      .filter(i => cells.h[i] > 70)
-      .sort((a, b) => cells.h[b] - cells.h[a]);
+    let mounts = Array.from(cells.i.filter(i => cells.h[i] > 70).sort((a, b) => cells.h[b] - cells.h[a]));
     let count = mounts.length < 10 ? 0 : Math.ceil((mounts.length / 300) * number);
     if (count) addMarker("volcano", "🌋", 52, 50, 13);
 
     while (count && mounts.length) {
       const cell = mounts.splice(biased(0, mounts.length - 1, 5), 1);
-      const x = cells.p[cell][0],
-        y = cells.p[cell][1];
+      const [x, y] = cells.p[cell];
       const id = appendMarker(cell, "volcano");
       const proper = Names.getCulture(cells.culture[cell]);
       const name = P(0.3) ? "Mount " + proper : Math.random() > 0.3 ? proper + " Volcano" : proper;
@@ -41,9 +39,7 @@ window.Markers = (function () {
   function addHotSprings(number) {
     const {cells} = pack;
 
-    let springs = Array.from(cells.i)
-      .filter(i => cells.h[i] > 50)
-      .sort((a, b) => cells.h[b] - cells.h[a]);
+    let springs = Array.from(cells.i.filter(i => cells.h[i] > 50).sort((a, b) => cells.h[b] - cells.h[a]));
     let count = springs.length < 30 ? 0 : Math.ceil((springs.length / 1000) * number);
     if (count) addMarker("hot_springs", "♨️", 50, 52, 12.5);
 
@@ -60,7 +56,7 @@ window.Markers = (function () {
   function addMines(number) {
     const {cells} = pack;
 
-    let hills = Array.from(cells.i).filter(i => cells.h[i] > 47 && cells.burg[i]);
+    let hills = Array.from(cells.i.filter(i => cells.h[i] > 47 && cells.burg[i]));
     let count = !hills.length ? 0 : Math.ceil((hills.length / 7) * number);
     if (!count) return;
 
@@ -86,10 +82,7 @@ window.Markers = (function () {
     const meanRoad = d3.mean(cells.road.filter(r => r));
     const meanFlux = d3.mean(cells.fl.filter(fl => fl));
 
-    let bridges = Array.from(cells.i)
-      .filter(i => cells.burg[i] && cells.h[i] >= 20 && cells.r[i] && cells.fl[i] > meanFlux && cells.road[i] > meanRoad)
-      .sort((a, b) => cells.road[b] + cells.fl[b] / 10 - (cells.road[a] + cells.fl[a] / 10));
-
+    let bridges = Array.from(cells.i.filter(i => cells.burg[i] && cells.h[i] >= 20 && cells.r[i] && cells.fl[i] > meanFlux && cells.road[i] > meanRoad).sort((a, b) => cells.road[b] + cells.fl[b] / 10 - (cells.road[a] + cells.fl[a] / 10)));
     let count = !bridges.length ? 0 : Math.ceil((bridges.length / 12) * number);
     if (count) addMarker("bridge", "🌉", 50, 50, 14);
 
@@ -109,7 +102,7 @@ window.Markers = (function () {
     const {cells} = pack;
 
     const maxRoad = d3.max(cells.road) * 0.9;
-    let taverns = Array.from(cells.i).filter(i => cells.crossroad[i] && cells.h[i] >= 20 && cells.road[i] > maxRoad);
+    let taverns = Array.from(cells.i.filter(i => cells.crossroad[i] && cells.h[i] >= 20 && cells.road[i] > maxRoad));
     if (!taverns.length) return;
     const count = Math.ceil(4 * number);
     addMarker("inn", "🍻", 50, 50, 14.5);
@@ -130,13 +123,12 @@ window.Markers = (function () {
   function addLighthouses(number) {
     const {cells} = pack;
 
-    const lands = cells.i.filter(i => cells.harbor[i] > 6 && cells.c[i].some(c => cells.h[c] < 20 && cells.road[c]));
-    const lighthouses = Array.from(lands).map(i => [i, cells.v[i][cells.c[i].findIndex(c => cells.h[c] < 20 && cells.road[c])]]);
+    const lighthouses = Array.from(cells.i.filter(i => cells.harbor[i] > 6 && cells.c[i].some(c => cells.h[c] < 20 && cells.road[c])));
     if (lighthouses.length) addMarker("lighthouse", "🚨", 50, 50, 16);
     const count = Math.ceil(4 * number);
 
     for (let i = 0; i < lighthouses.length && i < count; i++) {
-      const [cell, vertex] = lighthouses[i];
+      const cell = lighthouses.splice(Math.floor(Math.random() * lighthouses.length), 1);
       const id = appendMarker(cell, "lighthouse");
       const proper = cells.burg[cell] ? pack.burgs[cells.burg[cell]].name : Names.getCulture(cells.culture[cell]);
       notes.push({id, name: getAdjective(proper) + " Lighthouse" + name, legend: `A lighthouse to keep the navigation safe`});
@@ -146,7 +138,7 @@ window.Markers = (function () {
   function addWaterfalls(number) {
     const {cells} = pack;
 
-    const waterfalls = cells.i.filter(i => cells.r[i] && cells.h[i] > 70);
+    const waterfalls = Array.from(cells.i.filter(i => cells.r[i] && cells.h[i] > 70));
     if (waterfalls.length) addMarker("waterfall", "⟱", 50, 54, 16.5);
     const count = Math.ceil(3 * number);
 
@@ -161,7 +153,7 @@ window.Markers = (function () {
   function addBattlefields(number) {
     const {cells, states} = pack;
 
-    let battlefields = Array.from(cells.i).filter(i => cells.state[i] && cells.pop[i] > 2 && cells.h[i] < 50 && cells.h[i] > 25);
+    let battlefields = Array.from(cells.i.filter(i => cells.state[i] && cells.pop[i] > 2 && cells.h[i] < 50 && cells.h[i] > 25));
     let count = battlefields.length < 100 ? 0 : Math.ceil((battlefields.length / 500) * number);
     if (count) addMarker("battlefield", "⚔️", 50, 52, 12);
 
@@ -172,6 +164,25 @@ window.Markers = (function () {
       const date = generateDate(campaign.start, campaign.end);
       const name = Names.getCulture(cells.culture[cell]) + " Battlefield";
       const legend = `A historical battle of the ${campaign.name}. \r\nDate: ${date} ${options.era}`;
+      notes.push({id, name, legend});
+      count--;
+    }
+  }
+
+  function addDungeons(number) {
+    const {cells} = pack;
+
+    let dungeons = Array.from(cells.i.filter(i => cells.pop[i] > 0));
+    let count = dungeons.length < 100 ? 0 : Math.ceil((dungeons.length / 1000) * number);
+    if (count) addMarker("dungeon", "🗝️", 50, 52, 12);
+
+    while (count && dungeons.length) {
+      const cell = dungeons.splice(Math.floor(Math.random() * dungeons.length), 1);
+      const id = appendMarker(cell, "dungeon");
+
+      const dungeonSeed = `${seed}${cell}`;
+      const name = "Dungeon";
+      const legend = `<div>Undiscovered dungeon. See <a href="https://watabou.github.io/one-page-dungeon/?seed=${dungeonSeed}" target="_blank">One page dungeon</a>.</div><iframe src="https://watabou.github.io/one-page-dungeon/?seed=${dungeonSeed}" frameborder="0"></iframe>`;
       notes.push({id, name, legend});
       count--;
     }
