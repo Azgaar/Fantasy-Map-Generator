@@ -136,10 +136,14 @@ function toggleMode() {
   }
 }
 
-// trigger trash button click on "Delete" keypress
 function removeElementOnKey() {
-  $(".dialog:visible .fastDelete").click();
-  $("button:visible:contains('Remove')").click();
+  const fastDelete = Array.from(document.querySelectorAll("[role='dialog'] .fastDelete")).find(dialog => dialog.style.display !== "none");
+  if (fastDelete) fastDelete.click();
+
+  const visibleDialogs = Array.from(document.querySelectorAll("[role='dialog']")).filter(dialog => dialog.style.display !== "none");
+  if (!visibleDialogs.length) return;
+
+  visibleDialogs.forEach(dialog => dialog.querySelectorAll("button").forEach(button => button.textContent === "Remove" && button.click()));
 }
 
 function closeAllDialogs() {
