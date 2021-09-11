@@ -172,3 +172,8 @@ function closeAllDialogs() {
   closeDialogs();
   hideOptions();
 }
+
+function closeAllDialogs() {
+  closeDialogs();
+  hideOptions();
+}
