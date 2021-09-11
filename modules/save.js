@@ -212,7 +212,7 @@ async function getMapURL(type, options = {}) {
   }
 
   // replace ocean pattern href to base64
-  if (PRODUCTION && cloneEl.getElementById("oceanicPattern")) {
+  if (location.hostname && cloneEl.getElementById("oceanicPattern")) {
     const el = cloneEl.getElementById("oceanicPattern");
     const url = el.getAttribute("href");
     await new Promise(resolve => {

@@ -9,7 +9,9 @@ $(window).resize(function (e) {
   changeMapSize();
 });
 
-window.onbeforeunload = () => "Are you sure you want to navigate away?";
+if (location.hostname && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
+  window.onbeforeunload = () => "Are you sure you want to navigate away?";
+}
 
 // Tooltips
 const tooltip = document.getElementById("tooltip");
@@ -19,12 +21,6 @@ document.getElementById("dialogs").addEventListener("mousemove", showDataTip);
 document.getElementById("optionsContainer").addEventListener("mousemove", showDataTip);
 document.getElementById("exitCustomization").addEventListener("mousemove", showDataTip);
 
-/**
- * @param {string} tip Tooltip text
- * @param {boolean} main Show above other tooltips
- * @param {string} type Message type (color): error / warn / success
- * @param {number} time Timeout to auto hide, ms
- */
 function tip(tip = "Tip is undefined", main, type, time) {
   tooltip.innerHTML = tip;
   tooltip.style.background = "linear-gradient(0.1turn, #ffffff00, #5e5c5c80, #ffffff00)";
