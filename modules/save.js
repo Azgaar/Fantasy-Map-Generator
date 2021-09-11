@@ -214,12 +214,12 @@ async function getMapURL(type, options = {}) {
   // add resources TODO
 
   // replace ocean pattern href to base64
-  if (PRODUCTION && cloneEl.getElementById('oceanicPattern')) {
-    const el = cloneEl.getElementById('oceanicPattern');
-    const url = el.getAttribute('href');
-    await new Promise((resolve) => {
-      getBase64(url, (base64) => {
-        el.setAttribute('href', base64);
+  if (location.hostname && cloneEl.getElementById("oceanicPattern")) {
+    const el = cloneEl.getElementById("oceanicPattern");
+    const url = el.getAttribute("href");
+    await new Promise(resolve => {
+      getBase64(url, base64 => {
+        el.setAttribute("href", base64);
         resolve();
       });
     });
