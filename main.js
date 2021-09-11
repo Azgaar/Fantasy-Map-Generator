@@ -437,10 +437,8 @@ function resetZoom(d = 1000) {
   svg.transition().duration(d).call(zoom.transform, d3.zoomIdentity);
 }
 
-// calculate x,y extreme points of viewBox
+// calculate x y extreme points of viewBox
 function getViewBoxExtent() {
-  // x = trX / scale * -1 + graphWidth / scale
-  // y = trY / scale * -1 + graphHeight / scale
   return [
     [Math.abs(viewX / scale), Math.abs(viewY / scale)],
     [Math.abs(viewX / scale) + graphWidth / scale, Math.abs(viewY / scale) + graphHeight / scale]

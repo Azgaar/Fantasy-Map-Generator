@@ -1,6 +1,7 @@
 // module stub to store common functions for ui editors
 "use strict";
 
+modules.editors = true;
 restoreDefaultEvents(); // apply default viewbox events on load
 
 // restore default viewbox events
