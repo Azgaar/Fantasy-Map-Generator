@@ -6,7 +6,7 @@ const version = "1.661"; // generator version
 document.title += " v" + version;
 
 // Switches to disable/enable logging features
-const PRODUCTION = window.location.host;
+const PRODUCTION = location.hostname && location.hostname !== "localhost" && location.hostname !== "127.0.0.1";
 const DEBUG = localStorage.getItem("debug");
 const INFO = DEBUG || !PRODUCTION;
 const TIME = DEBUG || !PRODUCTION;
@@ -437,10 +437,8 @@ function resetZoom(d = 1000) {
   svg.transition().duration(d).call(zoom.transform, d3.zoomIdentity);
 }
 
-// calculate x,y extreme points of viewBox
+// calculate x y extreme points of viewBox
 function getViewBoxExtent() {
-  // x = trX / scale * -1 + graphWidth / scale
-  // y = trY / scale * -1 + graphHeight / scale
   return [
     [Math.abs(viewX / scale), Math.abs(viewY / scale)],
     [Math.abs(viewX / scale) + graphWidth / scale, Math.abs(viewY / scale) + graphHeight / scale]
