@@ -427,7 +427,7 @@ function regenerateMarkers(event) {
       })
       .remove();
 
-    addMarkers(number);
+    Markers.generate();
     if (!layerIsOn("toggleMarkers")) toggleMarkers();
   }
 }
