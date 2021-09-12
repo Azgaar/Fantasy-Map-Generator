@@ -14,6 +14,7 @@ window.Markers = (function () {
     addWaterfalls(number);
     addBattlefields(number);
     addDungeons(number);
+    addMonsters(number);
 
     TIME && console.timeEnd("addMarkers");
   };
@@ -174,7 +175,7 @@ window.Markers = (function () {
 
     let dungeons = Array.from(cells.i.filter(i => cells.pop[i] > 0));
     let count = dungeons.length < 100 ? 0 : Math.ceil((dungeons.length / 1000) * number);
-    if (count) addMarker("dungeon", "🗝️", 50, 52, 12);
+    if (count) addMarker("dungeon", "🗝️", 50, 51, 13);
 
     while (count && dungeons.length) {
       const cell = dungeons.splice(Math.floor(Math.random() * dungeons.length), 1);
@@ -185,6 +186,56 @@ window.Markers = (function () {
       const legend = `<div>Undiscovered dungeon. See <a href="https://watabou.github.io/one-page-dungeon/?seed=${dungeonSeed}" target="_blank">One page dungeon</a>.</div><iframe src="https://watabou.github.io/one-page-dungeon/?seed=${dungeonSeed}" frameborder="0"></iframe>`;
       notes.push({id, name, legend});
       count--;
+    }
+  }
+
+  function addMonsters(number) {
+    const {cells, features} = pack;
+
+    const lakeMonster = number > 1 || P(0.7);
+    const hillMonster = number > 2 || P(0.7);
+    const seaMonster = number > 3 || P(0.4);
+
+    if (lakeMonster) {
+      const lakes = features.filter(feature => feature.type === "lake" && feature.group === "freshwater");
+      if (lakes.length) {
+        addMarker("lake_monster", "🐉", 50, 48, 12.5);
+        const lake = ra(lakes);
+        const cell = lake.firstCell;
+        const id = appendMarker(cell, "lake_monster");
+        const name = `${lake.name} Monster`;
+        const length = gauss(10, 5, 5, 100);
+        const legend = `Rumors said a relic monster of ${length} ${heightUnit.value} long inhabits ${lake.name} Lake. Truth or lie, but folks are affraid to fish in the lake`;
+        notes.push({id, name, legend});
+      }
+    }
+
+    if (hillMonster) {
+      const hills = cells.i.filter(i => cells.h[i] >= 50 && cells.pop[i]);
+      if (hills.length) {
+        addMarker("hill_monster", "👹", 50, 50, 12);
+        const cell = ra(hills);
+        const id = appendMarker(cell, "hill_monster");
+        const species = ra(["Ogre", "Troll", "Cyclopes", "Giant", "Monster", "Troll", "Beast", "Dragon", "Undead", "Ghoul", "Vampire"]);
+        const modus = ra(["steals their cattle", "doesn't mind eating children", "doesn't mind of human flesh", "keeps the region at bay"]);
+        const toponym = Names.getCulture(cells.culture[cell]);
+        const name = `${toponym} ${species}`;
+        const legend = `Locals tell tales of an old ${species} who inhabits ${toponym} hills and ${modus}`;
+        notes.push({id, name, legend});
+      }
+    }
+
+    if (seaMonster) {
+      const sea = cells.i.filter(i => cells.h[i] < 20 && cells.road[i] && features[cells.f[i]].type === "ocean");
+      if (sea.length) {
+        addMarker("sea_monster", "🐙", 50, 50, 12);
+        const cell = ra(sea);
+        const id = appendMarker(cell, "sea_monster");
+        const name = `${Names.getCultureShort(0)} Monster`;
+        const length = gauss(20, 10, 5, 100);
+        const legend = `Old sailors tell stories of a gigantic sea monster inhabiting these dangerous waters. Rumors say it can be ${length} ${heightUnit.value} long`;
+        notes.push({id, name, legend});
+      }
     }
   }
 
