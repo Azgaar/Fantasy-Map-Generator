@@ -5,7 +5,7 @@ Experimental submaping module
 
 window.Submap = (function () {
   function resample(parentMap, projection, options) {
-    // generate new map based on (resampling) existing one (parentMap)
+    // generate new map based on an existing one (resampling parentMap)
     // parentMap: {seed, grid, pack} from original map
     // projection: map function from old to new coordinates or backwards
     //  prj(x,y,direction:bool) -> [x',y']
@@ -24,7 +24,6 @@ window.Submap = (function () {
     applyMapSize();
     placePoints();
     calculateVoronoi(grid, grid.points);
-
     drawScaleBar();
 
     const resampler = (points, qtree, f) => {
@@ -43,13 +42,14 @@ window.Submap = (function () {
     grid.cells.prec = new Int8Array(n); // precipitation
 
     const gridCells = parentMap.grid.cells;
-    const forwardGridMap = parentMap.grid.points.map(_=>[]); // old -> [newcelllist]
+    // build cache old -> [newcelllist]
+    const forwardGridMap = parentMap.grid.points.map(_=>[]);
     resampler(grid.points, parentMap.pack.cells.q, (id, oldid) => {
-      const cid = parentMap.pack.cells.g[oldid]
+      const cid = parentMap.pack.cells.g[oldid];
       grid.cells.h[id] = gridCells.h[cid];
       grid.cells.temp[id] = gridCells.temp[cid];
       grid.cells.prec[id] = gridCells.prec[cid];
-      if (options.depressRivers) forwardGridMap[oldid].push(id);
+      if (options.depressRivers) forwardGridMap[cid].push(id);
     })
     // TODO: add smooth/noise function for h, temp, prec n times
 
@@ -62,9 +62,12 @@ window.Submap = (function () {
 
       // and erode riverbeds
       parentMap.pack.rivers.forEach(r =>
-        r.cells.forEach(oldc => {
+        r.cells.forEach(oldpc => {
+          if (oldpc < 0) return; // ignore out of map marker (-1)
+          const oldc = parentMap.pack.cells.g[oldpc];
           const targetCells = forwardGridMap[oldc];
-          if (!targetCells) throw "TargetCell shouldn't be empty.";
+          if (!targetCells)
+            throw "TargetCell shouldn't be empty.";
           targetCells.forEach(c => {
             if (grid.cells.t[c]<1) return;
             rbeds[c] = 1;
@@ -79,12 +82,14 @@ window.Submap = (function () {
     }
 
     markupGridOcean();
-    if (options.addLakesInDepressions)
+    // Warning: addLakesInDeepDepressions can be very slow!
+    if (options.addLakesInDepressions) {
       addLakesInDeepDepressions();
-    // openNearSeaLakes();
+      openNearSeaLakes();
+    }
+
     OceanLayers();
-    // defineMapSize(); // not needed (not random)
-    // TODO: update UI inputs before calculating according to new boundaries.
+
     calculateMapCoordinates();
     // calculateTemperatures();
     // generatePrecipitation();
@@ -92,7 +97,6 @@ window.Submap = (function () {
     reGraph();
 
     // remove misclassified cells
-
     stage("Define coastline.")
     drawCoastline();
 

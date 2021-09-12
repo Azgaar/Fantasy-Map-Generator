@@ -19,14 +19,15 @@ const generateSubmap = debounce(async function () {
 
   WARN && console.warn("Resampling current map");
   closeDialogs("#worldConfigurator, #options3d");
+  const checked = id => Boolean(document.getElementById(id).checked)
   const settings = {
-    promoteTown: Boolean(document.getElementById("submapPromoteTown").checked),
-    depressRivers: Boolean(document.getElementById("submapDepressRivers").checked),
-    copyBurgs: Boolean(document.getElementById("submapCopyBurgs").checked),
-    addLakesInDepressions: Boolean(document.getElementById("submapAddLakeInDepression").checked),
-    addMilitary: Boolean(document.getElementById("submapAddMilitary").checked),
-    addMarkers: Boolean(document.getElementById("submapAddMarkers").checked),
-    addZones: Boolean(document.getElementById("submapAddZones").checked),
+    promoteTown: checked("submapPromoteTown"),
+    depressRivers: checked("submapDepressRivers"),
+    copyBurgs: checked("submapCopyBurgs"),
+    addLakesInDepressions: checked("submapAddLakeInDepression"),
+    addMilitary: checked("submapAddMilitary"),
+    addMarkers: checked("submapAddMarkers"),
+    addZones: checked("submapAddZones"),
   }
 
   // Create projection func from current zoom extents
@@ -36,6 +37,16 @@ const generateSubmap = debounce(async function () {
       ? [x * (x1-x0) / graphWidth + x0, y * (y1-y0) / graphHeight + y0]
       : [(x-x0) * graphWidth / (x1-x0),  (y-y0) * graphHeight / (y1-y0)];
   }
+
+  // converting map position on the planet
+  const mapSizeOutput = document.getElementById("mapSizeOutput");
+  const latitudeOutput = document.getElementById("latitudeOutput");
+  const latN = 90 - (180 - mapSizeInput.value / 100 * 180) * latitudeOutput.value / 100;
+  const newLatN = latN - y0 / graphHeight * mapSizeOutput.value * 180 / 100;
+  mapSizeOutput.value /= scale;
+  latitudeOutput.value =  (90 - newLatN) / (180 - mapSizeOutput.value / 100 * 180) * 100;
+  document.getElementById("mapSizeInput").value = mapSizeOutput.value;
+  document.getElementById("latitudeInput").value = latitudeOutput.value;
 
   // fix scale
   distanceScale = distanceScaleInput.value = distanceScaleOutput.value = distanceScaleOutput.value / scale;

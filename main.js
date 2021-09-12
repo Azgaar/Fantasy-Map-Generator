@@ -1715,7 +1715,7 @@ function addZones(number = 1) {
           queue.push(e);
         });
       } catch (er) {
-        console.log('WTF: ', q, cellsArray);
+        console.error('Error in rebel generation: ', q, cellsArray);
         throw er;
       }
     }
