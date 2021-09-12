@@ -53,9 +53,6 @@ window.Submap = (function () {
     })
     // TODO: add smooth/noise function for h, temp, prec n times
 
-    stage("Detect features, ocean and generating lakes.")
-    markFeatures();
-
     if (options.depressRivers) {
       stage("Generating riverbeds.")
       const rbeds = new Uint16Array(grid.cells.i.length);
@@ -69,19 +66,24 @@ window.Submap = (function () {
           if (!targetCells)
             throw "TargetCell shouldn't be empty.";
           targetCells.forEach(c => {
-            if (grid.cells.t[c]<1) return;
+            if (grid.cells.h[c]<20) return;
             rbeds[c] = 1;
           });
         })
       );
+      console.log("rbed stats: ", rbeds.filter(x=>x).length, rbeds.length)
       // raise every land cell a bit except riverbeds
       grid.cells.h.forEach((h, i) => {
-        if (!rbeds[i] || grid.cells.t[i]<1) return;
-        grid.cells.h[i] = Math.min(grid.cells.h[i]+2, 100);
+        if (rbeds[i] || h<20) return;
+        grid.cells.h[i] = Math.min(h+2, 100);
       });
     }
 
+    stage("Detect features, ocean and generating lakes.")
+    markFeatures();
+
     markupGridOcean();
+
     // Warning: addLakesInDeepDepressions can be very slow!
     if (options.addLakesInDepressions) {
       addLakesInDeepDepressions();
@@ -118,7 +120,7 @@ window.Submap = (function () {
 
     resampler(cells.p, oldCells.q, (id, oldid) => {
       if (cells.t[id] * oldCells.t[oldid] < 0) {
-        // missmaped cell: water instead of land or vice versa
+        // fix missmaped cell: water instead of land or vice versa
         WARN && console.warn('Type discrepancy detected:', id, oldid, `${pack.cells.t[id]} != ${oldCells.t[oldid]}`);
         const aid = cells.t[id]<0
           ? cells.c[id].find(c=>cells.t[c]<0)
@@ -135,11 +137,6 @@ window.Submap = (function () {
       reverseMap.set(id, oldid)
       forwardMap[oldid].push(id)
     })
-
-    DEBUG && console.log('reversemap:',forwardMap)
-    DEBUG && console.log('forwardmap:',reverseMap)
-
-    // TODO: errode riverbeds
 
     stage("Regenerating river network.")
     Rivers.generate();

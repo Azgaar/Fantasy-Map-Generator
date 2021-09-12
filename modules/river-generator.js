@@ -31,10 +31,12 @@ window.Rivers = (function () {
     TIME && console.timeEnd("generateRivers");
 
     function drainWater() {
-      const sqrpixel = distanceScale * distanceScale
-      const MIN_FLUX_TO_FORM_RIVER = 10 * distanceScale;
+      const pixel2 = distanceScale * distanceScale
+      //const MIN_FLUX_TO_FORM_RIVER = 10 * distanceScale;
+      const MIN_FLUX_TO_FORM_RIVER = 30;
       const prec = grid.cells.prec;
-      const area = c => pack.cells.area[c] * sqrpixel;
+      // const area = c => pack.cells.area[c] * pixel2;
+      const area = pack.cells.area;
       const land = cells.i.filter(i => h[i] >= 20).sort((a, b) => h[b] - h[a]);
       const lakeOutCells = Lakes.setClimateData(h);
 
@@ -167,7 +169,7 @@ window.Rivers = (function () {
         const mouth = riverCells[riverCells.length - 2];
         const parent = riverParents[key] || 0;
 
-        const widthFactor = (!parent || parent === riverId ? 3.6 : 3) / distanceScale;
+        const widthFactor = (!parent || parent === riverId ? 1.2 : 1);
         const meanderedPoints = addMeandering(riverCells);
         const discharge = cells.fl[mouth]; // m3 in second
         const length = getApproximateLength(meanderedPoints);
