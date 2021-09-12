@@ -215,11 +215,12 @@ window.Markers = (function () {
         addMarker("hill_monster", "👹", 50, 50, 12);
         const cell = ra(hills);
         const id = appendMarker(cell, "hill_monster");
+        const subject = ra(["Locals", "Old folks", "Old books", "Tipplers"]);
         const species = ra(["Ogre", "Troll", "Cyclopes", "Giant", "Monster", "Troll", "Beast", "Dragon", "Undead", "Ghoul", "Vampire"]);
-        const modus = ra(["steals their cattle", "doesn't mind eating children", "doesn't mind of human flesh", "keeps the region at bay"]);
+        const modusOperandi = ra(["steals their cattle", "doesn't mind eating children", "doesn't mind of human flesh", "keeps the region at bay", "eats their kids", "abducts young women"]);
         const toponym = Names.getCulture(cells.culture[cell]);
         const name = `${toponym} ${species}`;
-        const legend = `Locals tell tales of an old ${species} who inhabits ${toponym} hills and ${modus}`;
+        const legend = `${subject} tell tales of an old ${species} who inhabits ${toponym} hills and ${modusOperandi}`;
         notes.push({id, name, legend});
       }
     }
