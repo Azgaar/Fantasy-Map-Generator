@@ -78,17 +78,16 @@ window.Markers = (function () {
   }
 
   function addBridges(number) {
-    const {cells} = pack;
+    const {cells, burgs} = pack;
 
-    const meanRoad = d3.mean(cells.road.filter(r => r));
     const meanFlux = d3.mean(cells.fl.filter(fl => fl));
 
-    let bridges = Array.from(cells.i.filter(i => cells.burg[i] && cells.h[i] >= 20 && cells.r[i] && cells.fl[i] > meanFlux && cells.road[i] > meanRoad).sort((a, b) => cells.road[b] + cells.fl[b] / 10 - (cells.road[a] + cells.fl[a] / 10)));
+    let bridges = Array.from(cells.i.filter(i => cells.burg[i] && cells.t[i] !== 1 && burgs[cells.burg[i]].population > 20 && cells.r[i] && cells.fl[i] > meanFlux));
     let count = !bridges.length ? 0 : Math.ceil((bridges.length / 12) * number);
     if (count) addMarker("bridge", "🌉", 50, 50, 14);
 
     while (count && bridges.length) {
-      const cell = bridges.splice(0, 1);
+      const cell = bridges.splice(Math.floor(Math.random() * bridges.length), 1);
       const id = appendMarker(cell, "bridge");
       const burg = pack.burgs[cells.burg[cell]];
       const river = pack.rivers.find(r => r.i === pack.cells.r[cell]);
