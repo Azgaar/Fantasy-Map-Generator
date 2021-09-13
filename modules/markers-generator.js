@@ -15,6 +15,7 @@ window.Markers = (function () {
     addBattlefields(number);
     addDungeons(number);
     addMonsters(number);
+    addSacredPlaces(number);
 
     TIME && console.timeEnd("addMarkers");
   };
@@ -27,7 +28,7 @@ window.Markers = (function () {
     if (count) addMarker("volcano", "🌋", 52, 50, 13);
 
     while (count && mounts.length) {
-      const cell = mounts.splice(biased(0, mounts.length - 1, 5), 1);
+      const [cell] = mounts.splice(biased(0, mounts.length - 1, 5), 1);
       const [x, y] = cells.p[cell];
       const id = appendMarker(cell, "volcano");
       const proper = Names.getCulture(cells.culture[cell]);
@@ -45,7 +46,7 @@ window.Markers = (function () {
     if (count) addMarker("hot_springs", "♨️", 50, 52, 12.5);
 
     while (count && springs.length) {
-      const cell = springs.splice(biased(1, springs.length - 1, 3), 1);
+      const [cell] = springs.splice(biased(1, springs.length - 1, 3), 1);
       const id = appendMarker(cell, "hot_springs");
       const proper = Names.getCulture(cells.culture[cell]);
       const temp = convertTemperature(gauss(30, 15, 20, 100));
@@ -65,7 +66,7 @@ window.Markers = (function () {
     const resources = {salt: 5, gold: 2, silver: 4, copper: 2, iron: 3, lead: 1, tin: 1};
 
     while (count && hills.length) {
-      const cell = hills.splice(Math.floor(Math.random() * hills.length), 1);
+      const [cell] = hills.splice(Math.floor(Math.random() * hills.length), 1);
       const id = appendMarker(cell, "mine");
       const resource = rw(resources);
       const burg = pack.burgs[cells.burg[cell]];
@@ -87,7 +88,7 @@ window.Markers = (function () {
     if (count) addMarker("bridge", "🌉", 50, 50, 14);
 
     while (count && bridges.length) {
-      const cell = bridges.splice(Math.floor(Math.random() * bridges.length), 1);
+      const [cell] = bridges.splice(Math.floor(Math.random() * bridges.length), 1);
       const id = appendMarker(cell, "bridge");
       const burg = pack.burgs[cells.burg[cell]];
       const river = pack.rivers.find(r => r.i === pack.cells.r[cell]);
@@ -101,8 +102,7 @@ window.Markers = (function () {
   function addInns(number) {
     const {cells} = pack;
 
-    const maxRoad = d3.max(cells.road) * 0.9;
-    let taverns = Array.from(cells.i.filter(i => cells.crossroad[i] && cells.h[i] >= 20 && cells.road[i] > maxRoad));
+    let taverns = Array.from(cells.i.filter(i => cells.crossroad[i] && cells.h[i] >= 20 && cells.road[i]));
     if (!taverns.length) return;
     const count = Math.ceil(4 * number);
     addMarker("inn", "🍻", 50, 50, 14.5);
@@ -112,7 +112,7 @@ window.Markers = (function () {
     const adj = ["New", "Good", "High", "Old", "Great", "Big", "Major", "Happy", "Main", "Huge", "Far", "Beautiful", "Fair", "Prime", "Ancient", "Golden", "Proud", "Lucky", "Fat", "Honest", "Giant", "Distant", "Friendly", "Loud", "Hungry", "Magical", "Superior", "Peaceful", "Frozen", "Divine", "Favorable", "Brave", "Sunny", "Flying"];
 
     for (let i = 0; i < taverns.length && i < count; i++) {
-      const cell = taverns.splice(Math.floor(Math.random() * taverns.length), 1);
+      const [cell] = taverns.splice(Math.floor(Math.random() * taverns.length), 1);
       const id = appendMarker(cell, "inn");
       const type = P(0.3) ? "inn" : "tavern";
       const name = P(0.5) ? ra(color) + " " + ra(animal) : P(0.6) ? ra(adj) + " " + ra(animal) : ra(adj) + " " + capitalize(type);
@@ -128,7 +128,7 @@ window.Markers = (function () {
     const count = Math.ceil(4 * number);
 
     for (let i = 0; i < lighthouses.length && i < count; i++) {
-      const cell = lighthouses.splice(Math.floor(Math.random() * lighthouses.length), 1);
+      const [cell] = lighthouses.splice(Math.floor(Math.random() * lighthouses.length), 1);
       const id = appendMarker(cell, "lighthouse");
       const proper = cells.burg[cell] ? pack.burgs[cells.burg[cell]].name : Names.getCulture(cells.culture[cell]);
       notes.push({id, name: getAdjective(proper) + " Lighthouse" + name, legend: `A lighthouse to keep the navigation safe`});
@@ -158,7 +158,7 @@ window.Markers = (function () {
     if (count) addMarker("battlefield", "⚔️", 50, 52, 12);
 
     while (count && battlefields.length) {
-      const cell = battlefields.splice(Math.floor(Math.random() * battlefields.length), 1);
+      const [cell] = battlefields.splice(Math.floor(Math.random() * battlefields.length), 1);
       const id = appendMarker(cell, "battlefield");
       const campaign = ra(states[cells.state[cell]].campaigns);
       const date = generateDate(campaign.start, campaign.end);
@@ -172,12 +172,14 @@ window.Markers = (function () {
   function addDungeons(number) {
     const {cells} = pack;
 
-    let dungeons = Array.from(cells.i.filter(i => cells.pop[i] > 0));
-    let count = dungeons.length < 100 ? 0 : Math.ceil((dungeons.length / 1000) * number);
-    if (count) addMarker("dungeon", "🗝️", 50, 51, 13);
+    let dungeons = Array.from(cells.i.filter(i => cells.pop[i] > 0 && cells.pop[i] < 3));
+    if (!dungeons.length) return;
 
-    while (count && dungeons.length) {
-      const cell = dungeons.splice(Math.floor(Math.random() * dungeons.length), 1);
+    let count = dungeons.length < 100 ? 0 : Math.ceil((dungeons.length / 500) * number);
+    addMarker("dungeon", "🗝️", 50, 51, 13);
+
+    while (count) {
+      const [cell] = dungeons.splice(Math.floor(Math.random() * dungeons.length), 1);
       const id = appendMarker(cell, "dungeon");
 
       const dungeonSeed = `${seed}${cell}`;
@@ -216,7 +218,7 @@ window.Markers = (function () {
         const cell = ra(hills);
         const id = appendMarker(cell, "hill_monster");
         const subject = ra(["Locals", "Old folks", "Old books", "Tipplers"]);
-        const species = ra(["Ogre", "Troll", "Cyclopes", "Giant", "Monster", "Troll", "Beast", "Dragon", "Undead", "Ghoul", "Vampire"]);
+        const species = ra(["Ogre", "Troll", "Cyclopes", "Giant", "Monster", "Beast", "Dragon", "Undead", "Ghoul", "Vampire"]);
         const modusOperandi = ra(["steals their cattle", "doesn't mind eating children", "doesn't mind of human flesh", "keeps the region at bay", "eats their kids", "abducts young women"]);
         const toponym = Names.getCulture(cells.culture[cell]);
         const name = `${toponym} ${species}`;
@@ -228,13 +230,86 @@ window.Markers = (function () {
     if (seaMonster) {
       const sea = cells.i.filter(i => cells.h[i] < 20 && cells.road[i] && features[cells.f[i]].type === "ocean");
       if (sea.length) {
-        addMarker("sea_monster", "🐙", 50, 50, 12);
+        addMarker("sea_monster", "🦑", 50, 50, 12);
         const cell = ra(sea);
         const id = appendMarker(cell, "sea_monster");
         const name = `${Names.getCultureShort(0)} Monster`;
         const length = gauss(20, 10, 5, 100);
         const legend = `Old sailors tell stories of a gigantic sea monster inhabiting these dangerous waters. Rumors say it can be ${length} ${heightUnit.value} long`;
         notes.push({id, name, legend});
+      }
+    }
+  }
+
+  function addSacredPlaces(number) {
+    const {cells, cultures} = pack;
+
+    {
+      let mountains = Array.from(cells.i.filter(i => cells.h[i] >= 70 && cells.c[i].some(c => cells.culture[c]) && cells.c[i].every(c => cells.h[c] < 60)));
+      let count = mountains.length ? Math.ceil((mountains.length / 5) * number) : 0;
+      if (count) addMarker("sacred_mountain", "🗻", 50, 48, 12);
+
+      while (count && mountains.length) {
+        const [cell] = mountains.splice(Math.floor(Math.random() * mountains.length), 1);
+        const id = appendMarker(cell, "sacred_mountain");
+
+        const culture = cells.c[cell].map(c => cells.culture[c]).find(c => c);
+        const name = `${Names.getCulture(culture)} Mountain`;
+        const height = getFriendlyHeight(cells.p[cell]);
+        const legend = `A sacred mountain of ${cultures[culture].name} culture. Height: ${height}`;
+        notes.push({id, name, legend});
+        count--;
+      }
+    }
+
+    {
+      let forests = Array.from(cells.i.filter(i => cells.culture[i] && [6, 8].includes(cells.biome[i])));
+      let count = forests.length ? Math.ceil((forests.length / 1000) * number) : 0;
+      if (count) addMarker("sacred_forest", "🌳", 50, 50, 12);
+
+      while (count) {
+        const [cell] = forests.splice(Math.floor(Math.random() * forests.length), 1);
+        const id = appendMarker(cell, "sacred_forest");
+
+        const culture = cells.culture[cell];
+        const name = `${Names.getCulture(culture)} Forest`;
+        const legend = `A sacred forest of ${cultures[culture].name} culture`;
+        notes.push({id, name, legend});
+        count--;
+      }
+    }
+
+    {
+      let borealForests = Array.from(cells.i.filter(i => cells.culture[i] && cells.biome[i] === 9));
+      let count = borealForests.length ? Math.ceil((borealForests.length / 800) * number) : 0;
+      if (count) addMarker("pinery", "🌲", 50, 50, 13);
+
+      while (count) {
+        const [cell] = borealForests.splice(Math.floor(Math.random() * borealForests.length), 1);
+        const id = appendMarker(cell, "pinery");
+
+        const culture = cells.culture[cell];
+        const name = `${Names.getCulture(culture)} Pinery`;
+        const legend = `A sacred pinery of ${cultures[culture].name} culture`;
+        notes.push({id, name, legend});
+        count--;
+      }
+    }
+
+    {
+      let oasises = Array.from(cells.i.filter(i => cells.culture[i] && cells.biome[i] === 1 && cells.pop[i] > 1 && cells.road[i]));
+      let count = oasises.length ? Math.ceil((oasises.length / 3) * number) : 0;
+      if (count) addMarker("palm_grove", "🌴", 50, 50, 13);
+
+      while (count) {
+        const [cell] = oasises.splice(Math.floor(Math.random() * oasises.length), 1);
+        const id = appendMarker(cell, "palm_grove");
+
+        const culture = cells.culture[cell];
+        const name = `${Names.getCulture(culture)} Pinery`;
+        const legend = `A sacred palm grove of ${cultures[culture].name} culture`;
+        notes.push({id, name, legend});
+        count--;
       }
     }
   }
