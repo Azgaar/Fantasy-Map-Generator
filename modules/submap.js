@@ -57,14 +57,17 @@ window.Submap = (function () {
 
     // smooth heightmap
     // smoothing never should change cell type (land->water or water->land)
-    const gcells = grid.cells;
-    gcells.h.forEach((h,i) => {
-      const hs = gcells.c[i].map(c=>gcells.h[c])
-      hs.push(h)
-      gcells.h[i] = h>=20
-        ? Math.max(d3.mean(hs),20)
-        : Math.min(d3.mean(hs),19);
-    });
+
+    if (options.smoothHeightMap) {
+      const gcells = grid.cells;
+      gcells.h.forEach((h,i) => {
+        const hs = gcells.c[i].map(c=>gcells.h[c])
+        hs.push(h)
+        gcells.h[i] = h>=20
+          ? Math.max(d3.mean(hs),20)
+          : Math.min(d3.mean(hs),19);
+      });
+    }
 
     if (options.depressRivers) {
       stage("Generating riverbeds.")
@@ -84,7 +87,6 @@ window.Submap = (function () {
           });
         })
       );
-      console.log("rbed stats: ", rbeds.filter(x=>x).length, rbeds.length)
       // raise every land cell a bit except riverbeds
       grid.cells.h.forEach((h, i) => {
         if (rbeds[i] || h<20) return;
@@ -137,10 +139,7 @@ window.Submap = (function () {
 
     for(const [id, gridCellId] of cells.g.entries()) {
       const oldGridId = reverseGridMap[gridCellId];
-      if (!oldGridId) {
-        console.error("oldgridid must be defined for", gridCellId, reverseGridMap);
-        throw(new Error("oldgridid"))
-      }
+      if (!oldGridId) throw new Error("Old grid Id must be defined!")
       // find old parent's children
       const oldChildren = oldCells.i.filter(oid=>oldCells.g[oid]==oldGridId);
       const isWater = x => x < 1? true: false;
@@ -174,8 +173,11 @@ window.Submap = (function () {
               "newheight", grid.cells.h[cells.g[id]])
             throw new Error("should be the same type")
           }
-
-          const nd = distance(oldCells.p[oid]);
+          const [oldpx, oldpy]= oldCells.p[oid];
+          const nd = distance(projection(oldpx, oldpx, false));
+          if (!nd) {
+            console.error("no distance!", nd, "old point", oldp)
+          }
           if (nd < d) [d, oldid] = [nd, oid];
         })
         if (!oldid) {
@@ -185,7 +187,6 @@ window.Submap = (function () {
       }
 
       if (isWater(cells.t[id]) !== isWater(oldCells.t[oldid])) {
-        // fix missmaped cell: water instead of land or vice versa
         WARN && console.warn('Type discrepancy detected:', id, oldid, `${pack.cells.t[id]} != ${oldCells.t[oldid]}`);
       }
 
@@ -227,13 +228,13 @@ window.Submap = (function () {
     // Cultures.expand();
 
     // transfer states, mark states without land as removed.
-    const validStates = new Set(pack.cells.state);
     stage("Porting states.");
+    const validStates = new Set(pack.cells.state);
     pack.states = parentMap.pack.states;
     // keep valid states and neighbors only
     pack.states.forEach((s, i) => {
       if (s.removed) return;
-      if (!validStates.has(i)) s.removed=true;
+      if (!validStates.has(i)) s.removed = true;
       s.neighbors = s.neighbors.filter(n => validStates.has(n));
     });
 
@@ -241,6 +242,16 @@ window.Submap = (function () {
     const newCoastCells = cells.t.reduce(
       (a,c,i) => c === -1 && !cells.state[i] ? a.push(i) && a: a, []
     );
+
+    // transfer provinces, mark provinces without land as removed.
+    stage("Porting provinces.");
+    const validProvinces = new Set(pack.cells.province);
+    pack.provinces = parentMap.pack.provinces;
+    // mark uneccesary provinces
+    pack.states.forEach((s, i) => {
+      if (s.removed) return;
+      if (!validProvinces.has(i)) s.removed = true;
+    });
 
     // BurgsAndStates.generate();
     // Religions.generate();
@@ -254,9 +265,6 @@ window.Submap = (function () {
 
     stage("Regenerating road network.");
     Routes.regenerate();
-
-    stage("Regenerating provinces.");
-    BurgsAndStates.generateProvinces();
 
     drawStates();
     drawBorders();

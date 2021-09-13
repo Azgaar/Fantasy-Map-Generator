@@ -20,7 +20,7 @@ const generateSubmap = debounce(async function () {
   WARN && console.warn("Resampling current map");
   closeDialogs("#worldConfigurator, #options3d");
   const checked = id => Boolean(document.getElementById(id).checked)
-  const settings = {
+  const options = {
     promoteTown: checked("submapPromoteTown"),
     depressRivers: checked("submapDepressRivers"),
     copyBurgs: checked("submapCopyBurgs"),
@@ -28,6 +28,7 @@ const generateSubmap = debounce(async function () {
     addMilitary: checked("submapAddMilitary"),
     addMarkers: checked("submapAddMarkers"),
     addZones: checked("submapAddZones"),
+    smoothHeightMap: scale > 2,
   }
 
   // Create projection func from current zoom extents
@@ -64,9 +65,9 @@ const generateSubmap = debounce(async function () {
   };
 
   try {
-    await Submap.resample(oldstate, projection, settings);
+    await Submap.resample(oldstate, projection, options);
   } catch (error) {
-    generateSubmapErrorHandler(error);
+    generateSubmapErrorHandler(error, oldstate, projection, options);
   }
 
   oldstate = null; // destroy old state to free memory
@@ -76,7 +77,7 @@ const generateSubmap = debounce(async function () {
   if ($("#worldConfigurator").is(":visible")) editWorld();
 }, 1000);
 
-function generateSubmapErrorHandler(error) {
+function generateSubmapErrorHandler(error, oldstate, projection, options) {
   ERROR && console.error(error);
   clearMainTip();
 
@@ -88,12 +89,12 @@ function generateSubmapErrorHandler(error) {
     title: "Generation error",
     width: "32em",
     buttons: {
-      "Clear data": function () {
-        localStorage.clear();
-        localStorage.setItem("version", version);
-      },
-      Regenerate: function () {
-        generateSubmap();
+      Regenerate: async function () {
+        try {
+          await Submap.resample(oldstate, projection, options);
+        } catch (error) {
+          generateSubmapErrorHandler(error, oldstate, projection, options);
+        }
         $(this).dialog("close");
       },
       Ignore: function () {
