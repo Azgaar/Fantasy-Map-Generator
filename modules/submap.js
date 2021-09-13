@@ -40,18 +40,31 @@ window.Submap = (function () {
     grid.cells.h = new Uint8Array(n); // heightmap
     grid.cells.temp = new Int8Array(n); // temperature
     grid.cells.prec = new Int8Array(n); // precipitation
+    const reverseGridMap = new Uint32Array(n); // cellmap from new -> oldcell
 
-    const gridCells = parentMap.grid.cells;
+    const oldGrid = parentMap.grid;
     // build cache old -> [newcelllist]
     const forwardGridMap = parentMap.grid.points.map(_=>[]);
     resampler(grid.points, parentMap.pack.cells.q, (id, oldid) => {
       const cid = parentMap.pack.cells.g[oldid];
-      grid.cells.h[id] = gridCells.h[cid];
-      grid.cells.temp[id] = gridCells.temp[cid];
-      grid.cells.prec[id] = gridCells.prec[cid];
+      grid.cells.h[id] = oldGrid.cells.h[cid];
+      grid.cells.temp[id] = oldGrid.cells.temp[cid];
+      grid.cells.prec[id] = oldGrid.cells.prec[cid];
       if (options.depressRivers) forwardGridMap[cid].push(id);
+      reverseGridMap[id] = cid;
     })
     // TODO: add smooth/noise function for h, temp, prec n times
+
+    // smooth heightmap
+    // smoothing never should change cell type (land->water or water->land)
+    const gcells = grid.cells;
+    gcells.h.forEach((h,i) => {
+      const hs = gcells.c[i].map(c=>gcells.h[c])
+      hs.push(h)
+      gcells.h[i] = h>=20
+        ? Math.max(d3.mean(hs),20)
+        : Math.min(d3.mean(hs),19);
+    });
 
     if (options.depressRivers) {
       stage("Generating riverbeds.")
@@ -60,7 +73,7 @@ window.Submap = (function () {
       // and erode riverbeds
       parentMap.pack.rivers.forEach(r =>
         r.cells.forEach(oldpc => {
-          if (oldpc < 0) return; // ignore out of map marker (-1)
+          if (oldpc < 0) return; // ignore out-of-map marker (-1)
           const oldc = parentMap.pack.cells.g[oldpc];
           const targetCells = forwardGridMap[oldc];
           if (!targetCells)
@@ -102,10 +115,12 @@ window.Submap = (function () {
     stage("Define coastline.")
     drawCoastline();
 
-    // resample packed graph
+    /****************************************************/
+    /* Packed Graph */
+    /****************************************************/
     const oldCells = parentMap.pack.cells;
-    const reverseMap = new Map(); // cellmap from new -> oldcell
-    const forwardMap = parentMap.pack.cells.p.map(_=>[]); // old -> [newcelllist]
+    // const reverseMap = new Map(); // cellmap from new -> oldcell
+    // const forwardMap = parentMap.pack.cells.p.map(_=>[]); // old -> [newcelllist]
 
     const pn = pack.cells.i.length;
     const cells = pack.cells;
@@ -115,28 +130,72 @@ window.Submap = (function () {
     cells.religion = new Uint16Array(pn);
     cells.road = new Uint16Array(pn);
     cells.crossroad = new Uint16Array(pn);
+    cells.province = new Uint16Array(pn);
 
     stage("Resampling culture, state and religion map.")
 
-    resampler(cells.p, oldCells.q, (id, oldid) => {
-      if (cells.t[id] * oldCells.t[oldid] < 0) {
-        // fix missmaped cell: water instead of land or vice versa
-        WARN && console.warn('Type discrepancy detected:', id, oldid, `${pack.cells.t[id]} != ${oldCells.t[oldid]}`);
-        const aid = cells.t[id]<0
-          ? cells.c[id].find(c=>cells.t[c]<0)
-          : cells.c[id].find(c=>cells.t[c]>0);
-        const [x, y] = cells.p[aid];
+
+    for(const [id, gridCellId] of cells.g.entries()) {
+      const oldGridId = reverseGridMap[gridCellId];
+      if (!oldGridId) {
+        console.error("oldgridid must be defined for", gridCellId, reverseGridMap);
+        throw(new Error("oldgridid"))
+      }
+      // find old parent's children
+      const oldChildren = oldCells.i.filter(oid=>oldCells.g[oid]==oldGridId);
+      const isWater = x => x < 1? true: false;
+      let oldid; // matching cell on the original map
+
+      if (!oldChildren.length) {
+        // it *must* be a (deleted) deep ocean cell
+        if (!oldGrid.cells.h[oldGridId] < 20) {
+          console.error(`Warning, ${gridCellId} should be water cell, not ${oldGrid.cells.h[oldGridId]}`);
+          continue;
+        }
+        // find replacement: closest water cell
+        const [ox, oy] = cells.p[id]
         const [tx, ty] = projection(x, y, true);
         oldid = oldCells.q.find(tx,ty,Infinity)[2];
-        WARN && console.warn(`using cell ${aid}->${oldid} instead`);
+        if (!oldid) {
+          console.warn("Warning, no id found in quad", id, "parent", gridCellId);
+          continue;
+        }
+      } else {
+        // find closest children (packcell) on the parent map
+        const distance = x => (x[0]-cells.p[id][0])**2 + (x[1]-cells.p[id][1])**2;
+        let d = Infinity;
+        oldChildren.forEach(oid => {
+          // must be the same type (it should be always true!)
+          if (isWater(oldCells.t[oid]) !== isWater(cells.t[id])) {
+            console.error(
+              "should be the same", oid, id, oldCells.t[oid], cells.t[id],
+              "oldparent", oldCells.g[oid], "newparent", cells.g[id],
+              "oldheight:", oldGrid.cells.h[oldCells.g[oid]],
+              "newheight", grid.cells.h[cells.g[id]])
+            throw new Error("should be the same type")
+          }
+
+          const nd = distance(oldCells.p[oid]);
+          if (nd < d) [d, oldid] = [nd, oid];
+        })
+        if (!oldid) {
+          console.warn("Warning, no match for", id, "parent", gridCellId, "in");
+          continue;
+        }
+      }
+
+      if (isWater(cells.t[id]) !== isWater(oldCells.t[oldid])) {
+        // fix missmaped cell: water instead of land or vice versa
+        WARN && console.warn('Type discrepancy detected:', id, oldid, `${pack.cells.t[id]} != ${oldCells.t[oldid]}`);
       }
 
       cells.culture[id] = oldCells.culture[oldid];
       cells.state[id] = oldCells.state[oldid];
       cells.religion[id] = oldCells.religion[oldid];
-      reverseMap.set(id, oldid)
-      forwardMap[oldid].push(id)
-    })
+      cells.province[id] = oldCells.province[oldid];
+      // reverseMap.set(id, oldid)
+      // forwardMap[oldid].push(id)
+    }
 
     stage("Regenerating river network.")
     Rivers.generate();
