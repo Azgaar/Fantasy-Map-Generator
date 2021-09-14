@@ -1695,6 +1695,7 @@ function addZones(number = 1) {
     if (!state) return;
 
     const neib = ra(state.neighbors.filter(n => n && !states[n].removed));
+    if (!neib) return;
     const cell = cells.i.find(i => cells.state[i] === state.i && !state.removed && cells.c[i].some(c => cells.state[c] === neib));
     const cellsArray = [],
       queue = [],

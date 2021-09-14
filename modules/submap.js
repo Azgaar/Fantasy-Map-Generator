@@ -248,7 +248,7 @@ window.Submap = (function () {
     const validProvinces = new Set(pack.cells.province);
     pack.provinces = parentMap.pack.provinces;
     // mark uneccesary provinces
-    pack.states.forEach((s, i) => {
+    pack.provinces.forEach((s, i) => {
       if (s.removed) return;
       if (!validProvinces.has(i)) s.removed = true;
     });
