@@ -134,13 +134,20 @@ window.Markers = (function () {
     const colors = ["Dark", "Light", "Bright", "Golden", "White", "Black", "Red", "Pink", "Purple", "Blue", "Green", "Yellow", "Amber", "Orange", "Brown", "Grey"];
     const animals = ["Antelope", "Ape", "Badger", "Bear", "Beaver", "Bison", "Boar", "Buffalo", "Cat", "Crane", "Crocodile", "Crow", "Deer", "Dog", "Eagle", "Elk", "Fox", "Goat", "Goose", "Hare", "Hawk", "Heron", "Horse", "Hyena", "Ibis", "Jackal", "Jaguar", "Lark", "Leopard", "Lion", "Mantis", "Marten", "Moose", "Mule", "Narwhal", "Owl", "Panther", "Rat", "Raven", "Rook", "Scorpion", "Shark", "Sheep", "Snake", "Spider", "Swan", "Tiger", "Turtle", "Wolf", "Wolverine", "Camel", "Falcon", "Hound", "Ox"];
     const adjectives = ["New", "Good", "High", "Old", "Great", "Big", "Major", "Happy", "Main", "Huge", "Far", "Beautiful", "Fair", "Prime", "Ancient", "Golden", "Proud", "Lucky", "Fat", "Honest", "Giant", "Distant", "Friendly", "Loud", "Hungry", "Magical", "Superior", "Peaceful", "Frozen", "Divine", "Favorable", "Brave", "Sunny", "Flying"];
+    const methods = ["Boiled", "Grilled", "Roasted", "Spit-roasted", "Stewed", "Stuffed", "Jugged", "Mashed", "Baked", "Braised", "Poached", "Marinated", "Pickled", "Smoked", "Dried", "Dry-aged", "Corned", "Fried", "Pan-fried", "Deep-fried", "Dressed", "Steamed", "Cured", "Syrupped"];
+    const courses = ["beef", "pork", "bacon", "chicken", "lamb", "chevon", "hare", "rabbit", "hart", "deer", "antlers", "bear", "buffalo", "badger", "beaver", "turkey", "pheasant", "duck", "goose", "teal", "quail", "pigeon", "seal", "carp", "bass", "pike", "catfish", "sturgeon", "escallop", "pie", "cake", "pottage", "pudding"];
+    const types = ["hot", "cold", "fire", "ice", "smoky", "misty", "shiny", "sweet", "bitter", "salty", "sour", "sparkling", "smelly"];
+    const drinks = ["wine", "brandy", "jinn", "whisky", "rom", "beer", "cider", "mead", "liquor", "spirit", "vodka", "tequila", "absinthe", "nectar", "milk", "kvass", "kumis", "tea", "water", "juice", "sap"];
 
     while (quantity) {
       const [cell] = extractAnyElement(taverns);
       const id = appendMarker(cell, "inn");
       const type = P(0.3) ? "inn" : "tavern";
       const name = P(0.5) ? ra(colors) + " " + ra(animals) : P(0.6) ? ra(adjectives) + " " + ra(animals) : ra(adjectives) + " " + capitalize(type);
-      notes.push({id, name: "The " + name, legend: `A big and famous roadside ${type}`});
+      const course = `${ra(methods)} ${ra(courses)}`;
+      const drink = `${P(0.5) ? ra(types) : ra(colors)} ${ra(drinks)}`;
+      const legend = `A big and famous roadside ${type}. ${course} with ${drink.toLowerCase()} is served here`;
+      notes.push({id, name: "The " + name, legend});
       quantity--;
     }
   }
