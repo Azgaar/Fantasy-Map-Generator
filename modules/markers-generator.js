@@ -135,7 +135,7 @@ window.Markers = (function () {
     const animals = ["Antelope", "Ape", "Badger", "Bear", "Beaver", "Bison", "Boar", "Buffalo", "Cat", "Crane", "Crocodile", "Crow", "Deer", "Dog", "Eagle", "Elk", "Fox", "Goat", "Goose", "Hare", "Hawk", "Heron", "Horse", "Hyena", "Ibis", "Jackal", "Jaguar", "Lark", "Leopard", "Lion", "Mantis", "Marten", "Moose", "Mule", "Narwhal", "Owl", "Panther", "Rat", "Raven", "Rook", "Scorpion", "Shark", "Sheep", "Snake", "Spider", "Swan", "Tiger", "Turtle", "Wolf", "Wolverine", "Camel", "Falcon", "Hound", "Ox"];
     const adjectives = ["New", "Good", "High", "Old", "Great", "Big", "Major", "Happy", "Main", "Huge", "Far", "Beautiful", "Fair", "Prime", "Ancient", "Golden", "Proud", "Lucky", "Fat", "Honest", "Giant", "Distant", "Friendly", "Loud", "Hungry", "Magical", "Superior", "Peaceful", "Frozen", "Divine", "Favorable", "Brave", "Sunny", "Flying"];
     const methods = ["Boiled", "Grilled", "Roasted", "Spit-roasted", "Stewed", "Stuffed", "Jugged", "Mashed", "Baked", "Braised", "Poached", "Marinated", "Pickled", "Smoked", "Dried", "Dry-aged", "Corned", "Fried", "Pan-fried", "Deep-fried", "Dressed", "Steamed", "Cured", "Syrupped"];
-    const courses = ["beef", "pork", "bacon", "chicken", "lamb", "chevon", "hare", "rabbit", "hart", "deer", "antlers", "bear", "buffalo", "badger", "beaver", "turkey", "pheasant", "duck", "goose", "teal", "quail", "pigeon", "seal", "carp", "bass", "pike", "catfish", "sturgeon", "escallop", "pie", "cake", "pottage", "pudding"];
+    const courses = ["beef", "pork", "bacon", "chicken", "lamb", "chevon", "hare", "rabbit", "hart", "deer", "antlers", "bear", "buffalo", "badger", "beaver", "turkey", "pheasant", "duck", "goose", "teal", "quail", "pigeon", "seal", "carp", "bass", "pike", "catfish", "sturgeon", "escallop", "pie", "cake", "pottage", "pudding", "onions", "carrot", "potato", "beet", "garlic", "cabbage", "eggplant", "eggs", "broccoli", "zucchini", "pepper", "olives", "pumpkin", "spinach", "peas", "chickpea", "beans", "rice", "pasta", "bread", "apples", "peaches", "pears", "melon", "oranges", "mango", "tomatoes", "cheese", "corn", "rat tails", "pig ears"];
     const types = ["hot", "cold", "fire", "ice", "smoky", "misty", "shiny", "sweet", "bitter", "salty", "sour", "sparkling", "smelly"];
     const drinks = ["wine", "brandy", "jinn", "whisky", "rom", "beer", "cider", "mead", "liquor", "spirit", "vodka", "tequila", "absinthe", "nectar", "milk", "kvass", "kumis", "tea", "water", "juice", "sap"];
 
@@ -143,10 +143,13 @@ window.Markers = (function () {
       const [cell] = extractAnyElement(taverns);
       const id = appendMarker(cell, "inn");
       const type = P(0.3) ? "inn" : "tavern";
-      const name = P(0.5) ? ra(colors) + " " + ra(animals) : P(0.6) ? ra(adjectives) + " " + ra(animals) : ra(adjectives) + " " + capitalize(type);
-      const course = `${ra(methods)} ${ra(courses)}`;
-      const drink = `${P(0.5) ? ra(types) : ra(colors)} ${ra(drinks)}`;
-      const legend = `A big and famous roadside ${type}. ${course} with ${drink.toLowerCase()} is served here`;
+      const isAnimalThemed = P(0.7);
+      const animal = ra(animals);
+      const name = isAnimalThemed ? (P(0.6) ? ra(colors) + " " + animal : ra(adjectives) + " " + animal) : ra(adjectives) + " " + capitalize(type);
+      const meal = isAnimalThemed && P(0.3) ? animal : ra(courses);
+      const course = `${ra(methods)} ${meal}`.toLowerCase();
+      const drink = `${P(0.5) ? ra(types) : ra(colors)} ${ra(drinks)}`.toLowerCase();
+      const legend = `A big and famous roadside ${type}. Delicious ${course} with ${drink} is served here`;
       notes.push({id, name: "The " + name, legend});
       quantity--;
     }
@@ -219,7 +222,7 @@ window.Markers = (function () {
 
       const dungeonSeed = `${seed}${cell}`;
       const name = "Dungeon";
-      const legend = `<div>Undiscovered dungeon. See <a href="https://watabou.github.io/one-page-dungeon/?seed=${dungeonSeed}" target="_blank">One page dungeon</a>.</div><iframe src="https://watabou.github.io/one-page-dungeon/?seed=${dungeonSeed}" frameborder="0"></iframe>`;
+      const legend = `<div>Undiscovered dungeon. See <a href="https://watabou.github.io/one-page-dungeon/?seed=${dungeonSeed}" target="_blank">One page dungeon</a></div><iframe src="https://watabou.github.io/one-page-dungeon/?seed=${dungeonSeed}" frameborder="0"></iframe>`;
       notes.push({id, name, legend});
       quantity--;
     }
