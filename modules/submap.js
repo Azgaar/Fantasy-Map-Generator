@@ -4,6 +4,9 @@ Experimental submaping module
 */
 
 window.Submap = (function () {
+  const isWater = (map, id) => map.grid.cells.h[map.pack.cells.g[id]] < 20? true: false;
+  const childMap = { grid, pack }
+
   function resample(parentMap, projection, options) {
     // generate new map based on an existing one (resampling parentMap)
     // parentMap: {seed, grid, pack} from original map
@@ -140,7 +143,6 @@ window.Submap = (function () {
       if (!oldGridId) throw new Error("Old grid Id must be defined!")
       // find old parent's children
       const oldChildren = oldCells.i.filter(oid=>oldCells.g[oid]==oldGridId);
-      const isWater = x => x < 1? true: false;
       let oldid; // matching cell on the original map
 
       if (!oldChildren.length) {
@@ -163,7 +165,7 @@ window.Submap = (function () {
         let d = Infinity;
         oldChildren.forEach(oid => {
           // must be the same type (this should be always true!)
-          if (isWater(oldCells.t[oid]) !== isWater(cells.t[id])) {
+          if (isWater(parentMap, oid) !== isWater(childMap, id)) {
             console.error(
               "should be the same", oid, id, oldCells.t[oid], cells.t[id],
               "oldparent", oldCells.g[oid], "newparent", cells.g[id],
@@ -184,7 +186,7 @@ window.Submap = (function () {
         }
       }
 
-      if (isWater(cells.t[id]) !== isWater(oldCells.t[oldid])) {
+      if (isWater(childMap, id) !== isWater(parentMap, oldid)) {
         WARN && console.warn('Type discrepancy detected:', id, oldid, `${pack.cells.t[id]} != ${oldCells.t[oldid]}`);
       }
 
@@ -222,9 +224,6 @@ window.Submap = (function () {
       }
     });
 
-    // Cultures.generate();
-    // Cultures.expand();
-
     // transfer states, mark states without land as removed.
     stage("Porting states.");
     const validStates = new Set(pack.cells.state);
@@ -250,11 +249,6 @@ window.Submap = (function () {
       if (s.removed) return;
       if (!validProvinces.has(i)) s.removed = true;
     });
-
-    // BurgsAndStates.generate();
-    // Religions.generate();
-    // BurgsAndStates.defineStateForms();
-    // BurgsAndStates.defineBurgFeatures();
 
     stage("Porting and locking burgs.");
     if (options.copyBurgs) copyBurgs(parentMap, projection, options);
@@ -322,7 +316,7 @@ window.Submap = (function () {
       let cityCell = findCell(b.x, b.y);
 
       // pull sunken burgs out of water
-      if (cells.t[cityCell] <= 0) {
+      if (isWater(childMap, cityCell)) {
         const searchPlace = findNearest(c => cells.t[c] === 1);
         const res = searchPlace(cityCell)
         if (!res) {
