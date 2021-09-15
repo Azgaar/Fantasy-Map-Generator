@@ -135,8 +135,6 @@ window.Submap = (function () {
     cells.province = new Uint16Array(pn);
 
     stage("Resampling culture, state and religion map.")
-
-
     for(const [id, gridCellId] of cells.g.entries()) {
       const oldGridId = reverseGridMap[gridCellId];
       if (!oldGridId) throw new Error("Old grid Id must be defined!")
@@ -164,7 +162,7 @@ window.Submap = (function () {
         const distance = x => (x[0]-cells.p[id][0])**2 + (x[1]-cells.p[id][1])**2;
         let d = Infinity;
         oldChildren.forEach(oid => {
-          // must be the same type (it should be always true!)
+          // must be the same type (this should be always true!)
           if (isWater(oldCells.t[oid]) !== isWater(cells.t[id])) {
             console.error(
               "should be the same", oid, id, oldCells.t[oid], cells.t[id],
@@ -290,7 +288,7 @@ window.Submap = (function () {
   *  returns [cellid, neighbor] tuple or undefined if no such cell.
   */
   const findNearest = (f, max=3) => centerId => {
-    const met = new Set([centerId]); // f might be expensive
+    const met = new Set([centerId]); // cache, f might be expensive
     const kernel = (c, dist) => {
       const ncs = pack.cells.c[c].filter(nc => !met.has(nc));
       const n = ncs.find(f);
@@ -305,8 +303,7 @@ window.Submap = (function () {
   }
 
   function copyBurgs(parentMap, projection, options) {
-    const [[xmin, ymin], [xmax, ymax]] = getViewBoxExtent();
-    const inMap = (x,y) => x>xmin && x<xmax && y>ymin && y<ymax;
+    const inMap = (x,y) => x>0 && x<graphWidth && y>0 && y<graphHeight;
     const cells = pack.cells;
     pack.burgs = parentMap.pack.burgs;
 
