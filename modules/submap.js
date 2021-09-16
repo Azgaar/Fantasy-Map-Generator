@@ -5,7 +5,6 @@ Experimental submaping module
 
 window.Submap = (function () {
   const isWater = (map, id) => map.grid.cells.h[map.pack.cells.g[id]] < 20? true: false;
-  const childMap = { grid, pack }
 
   function resample(parentMap, projection, options) {
     // generate new map based on an existing one (resampling parentMap)
@@ -15,6 +14,7 @@ window.Submap = (function () {
 
     const stage = s => INFO && console.log('SUBMAP:', s)
     const timeStart = performance.now();
+    const childMap = { grid, pack }
     invokeActiveZooming();
 
     // copy seed
@@ -59,7 +59,7 @@ window.Submap = (function () {
     // TODO: add smooth/noise function for h, temp, prec n times
 
     // smooth heightmap
-    // smoothing never should change cell type (land->water or water->land)
+    // smoothing should never change cell type (land->water or water->land)
 
     if (options.smoothHeightMap) {
       const gcells = grid.cells;
@@ -99,7 +99,6 @@ window.Submap = (function () {
 
     stage("Detect features, ocean and generating lakes.")
     markFeatures();
-
     markupGridOcean();
 
     // Warning: addLakesInDeepDepressions can be very slow!
@@ -125,7 +124,7 @@ window.Submap = (function () {
     /****************************************************/
     const oldCells = parentMap.pack.cells;
     // const reverseMap = new Map(); // cellmap from new -> oldcell
-    // const forwardMap = parentMap.pack.cells.p.map(_=>[]); // old -> [newcelllist]
+    const forwardMap = parentMap.pack.cells.p.map(_=>[]); // old -> [newcelllist]
 
     const pn = pack.cells.i.length;
     const cells = pack.cells;
@@ -216,13 +215,20 @@ window.Submap = (function () {
     // fix culture centers
     const validCultures = new Set(pack.cells.culture);
     pack.cultures.forEach((c, i) => {
+      if (!i) return // ignore wildlands
       if (!validCultures.has(i)) {
         c.removed = true;
         c.center = undefined;
-      } else {
-        c.center = pack.cells.culture.findIndex(x => x===i);
+        return
       }
+      const newCenters = forwardMap[c.center]
+      c.center = newCenters.length
+        ? newCenters[0]
+        : pack.cells.culture.findIndex(x => x===i);
     });
+
+    stage("Porting and locking burgs.");
+    if (options.copyBurgs) copyBurgs(parentMap, projection, options);
 
     // transfer states, mark states without land as removed.
     stage("Porting states.");
@@ -230,29 +236,46 @@ window.Submap = (function () {
     pack.states = parentMap.pack.states;
     // keep valid states and neighbors only
     pack.states.forEach((s, i) => {
-      if (s.removed) return;
+      if (!s.i || s.removed) return; // ignore removed and neutrals
       if (!validStates.has(i)) s.removed = true;
       s.neighbors = s.neighbors.filter(n => validStates.has(n));
+
+      // find center
+      let capital
+      if (options.copyBurgs) // capital is the best bet
+        capital = pack.burgs[s.capital].cell;
+
+      s.center = capital
+        ? capital
+        : pack.cells.state.findIndex(x => x===i);
     });
 
+    /* probably not needed now
     // fix extra coastline cells without state.
     const newCoastCells = cells.t.reduce(
       (a,c,i) => c === -1 && !cells.state[i] ? a.push(i) && a: a, []
     );
+    */
 
     // transfer provinces, mark provinces without land as removed.
     stage("Porting provinces.");
     const validProvinces = new Set(pack.cells.province);
     pack.provinces = parentMap.pack.provinces;
     // mark uneccesary provinces
-    pack.provinces.forEach((s, i) => {
-      if (s.removed) return;
-      if (!validProvinces.has(i)) s.removed = true;
+    pack.provinces.forEach((p, i) => {
+      if (!p || p.removed) return;
+      if (!validProvinces.has(i)) {
+        p.removed = true;
+        return
+      }
+      const newCenters = forwardMap[p.center]
+      p.center = newCenters.length
+        ? newCenters[0]
+        : pack.cells.province.findIndex(x => x===i);
     });
 
-    stage("Porting and locking burgs.");
-    if (options.copyBurgs) copyBurgs(parentMap, projection, options);
-    else BurgsAndStates.regenerateBurgs();
+    // regenerate (if not copied) and display burgs
+    if (!options.copyBurgs) BurgsAndStates.regenerateBurgs();
     BurgsAndStates.drawBurgs();
 
     stage("Regenerating road network.");
@@ -299,6 +322,7 @@ window.Submap = (function () {
   function copyBurgs(parentMap, projection, options) {
     const inMap = (x,y) => x>0 && x<graphWidth && y>0 && y<graphHeight;
     const cells = pack.cells;
+    const childMap = { grid, pack }
     pack.burgs = parentMap.pack.burgs;
 
     // remap burgs to the best new cell
