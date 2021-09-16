@@ -300,20 +300,21 @@ window.Submap = (function () {
     INFO && console.groupEnd("Generated Map " + seed);
   }
 
-  /* find the nearest cell having at least one *neighbor*
-  *  fulfilling filter f, up to cell-distance `max`
+  /* find the nearest fulfilling filter f *and* having at
+  *  least one *neighbor* fulfilling filter g, up to cell-distance `max`
   *  returns [cellid, neighbor] tuple or undefined if no such cell.
   */
-  const findNearest = (f, max=3) => centerId => {
+  const findNearest = (f, g, max=3) => centerId => {
     const met = new Set([centerId]); // cache, f might be expensive
     const kernel = (c, dist) => {
       const ncs = pack.cells.c[c].filter(nc => !met.has(nc));
-      const n = ncs.find(f);
-      if (n) return [c, n];
+      const n = ncs.find(g);
+      if (f(c) && n) return [c, n];
       if (dist >= max || !ncs.length) return undefined;
       ncs.forEach(i => met.add(i));
+      const targets = ncs.filter(f)
       let answer;
-      while (ncs.length && !answer) answer = kernel(ncs.shift(), dist+1);
+      while (targets.length && !answer) answer = kernel(targets.shift(), dist+1);
       return answer;
     }
     return kernel(centerId, 1);
@@ -323,6 +324,8 @@ window.Submap = (function () {
     const inMap = (x,y) => x>0 && x<graphWidth && y>0 && y<graphHeight;
     const cells = pack.cells;
     const childMap = { grid, pack }
+    const isCoast = c => cells.t[c] === -1
+    const isNearCoast = c => cells.t[c] === 1
     pack.burgs = parentMap.pack.burgs;
 
     // remap burgs to the best new cell
@@ -341,20 +344,20 @@ window.Submap = (function () {
 
       // pull sunken burgs out of water
       if (isWater(childMap, cityCell)) {
-        const searchPlace = findNearest(c => cells.t[c] === 1);
+        const searchPlace = findNearest(isCoast, isNearCoast);
         const res = searchPlace(cityCell)
         if (!res) {
           WARN && console.warn(`Burg ${b.name} sank like Atlantis. Unable to find coastal cells nearby. Try to reduce resample zoom level.`);
           b.removed = true;
           return;
         }
-        const [water, coast] = res;
+        const [coast, water] = res;
         [b.x, b.y] = b.port? getMiddlePoint(coast, water): cells.p[coast];
         if (b.port) b.port = cells.f[water];
         b.cell = coast;
       } if (b.port) {
         // find coast for ports on land
-        const searchPortCell = findNearest(c => cells.t[c] === -1);
+        const searchPortCell = findNearest(isCoast, isNearCoast);
         const res = searchPortCell(cityCell);
         if (res) {
           const [coast, water] = res;
