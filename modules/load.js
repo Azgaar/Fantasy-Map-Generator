@@ -1,5 +1,5 @@
-// Functions to save and load the map
 "use strict";
+// Functions to load and parse .map files
 
 function quickLoad() {
   ldb.get("lastMap", blob => {
