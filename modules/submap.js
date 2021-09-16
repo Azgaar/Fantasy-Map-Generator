@@ -324,8 +324,8 @@ window.Submap = (function () {
     const inMap = (x,y) => x>0 && x<graphWidth && y>0 && y<graphHeight;
     const cells = pack.cells;
     const childMap = { grid, pack }
-    const isCoast = c => cells.t[c] === -1
-    const isNearCoast = c => cells.t[c] === 1
+    const isCoast = c => cells.t[c] === 1
+    const isNearCoast = c => cells.t[c] === -1
     pack.burgs = parentMap.pack.burgs;
 
     // remap burgs to the best new cell
@@ -342,10 +342,10 @@ window.Submap = (function () {
 
       let cityCell = findCell(b.x, b.y);
 
+      const searchCoastCell = findNearest(isCoast, isNearCoast, 6);
       // pull sunken burgs out of water
       if (isWater(childMap, cityCell)) {
-        const searchPlace = findNearest(isCoast, isNearCoast);
-        const res = searchPlace(cityCell)
+        const res = searchCoastCell(cityCell)
         if (!res) {
           WARN && console.warn(`Burg ${b.name} sank like Atlantis. Unable to find coastal cells nearby. Try to reduce resample zoom level.`);
           b.removed = true;
@@ -357,15 +357,16 @@ window.Submap = (function () {
         b.cell = coast;
       } if (b.port) {
         // find coast for ports on land
-        const searchPortCell = findNearest(isCoast, isNearCoast);
-        const res = searchPortCell(cityCell);
+        const res = searchCoastCell(cityCell);
         if (res) {
           const [coast, water] = res;
           [b.x, b.y] = getMiddlePoint(coast, water);
           b.port = cells.f[water]; // copy feature number
           b.cell = coast;
         } else {
-          WARN && console.warn(`Can't find water near port ${b.name}. :-/`);
+          WARN && console.warn(`Can't find water near port ${b.name}. Increase search radius in searchCoastCell. (Removing port status)`);
+          b.cell = cityCell;
+          [b.x, b.y] = cells.p[cityCell];
           b.port = 0;
         }
       } else {
