@@ -194,7 +194,7 @@ window.Submap = (function () {
       cells.religion[id] = oldCells.religion[oldid];
       cells.province[id] = oldCells.province[oldid];
       // reverseMap.set(id, oldid)
-      // forwardMap[oldid].push(id)
+      forwardMap[oldid].push(id)
     }
 
     stage("Regenerating river network.")
