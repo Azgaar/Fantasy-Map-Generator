@@ -318,7 +318,6 @@ function findBurgForMFCG(params) {
     else if (p[0] === "shantytown") b.shanty = +p[1];
     else b[p[0]] = +p[1]; // other parameters
   }
-  b.MFCGlink = document.referrer; // set direct link to MFCG
   if (params.get("name") && params.get("name") != "null") b.name = params.get("name");
 
   const label = burgLabels.select("[data-id='" + burgId + "']");
