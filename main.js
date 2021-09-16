@@ -669,6 +669,7 @@ function generateSeed() {
 // Place points to calculate Voronoi diagram
 function placePoints() {
   TIME && console.time("placePoints");
+  Math.random = aleaPRNG(seed); // reset PRNG
 
   const cellsDesired = +pointsInput.dataset.cells;
   const spacing = (grid.spacing = rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2)); // spacing between points before jirrering
