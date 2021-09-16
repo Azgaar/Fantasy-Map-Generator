@@ -531,10 +531,9 @@ function randomizeOptions() {
 
   // 'Units Editor' settings
   const US = navigator.language === "en-US";
-  const UK = navigator.language === "en-GB";
   if (randomize || !locked("distanceScale")) distanceScaleOutput.value = distanceScaleInput.value = gauss(3, 1, 1, 5);
-  if (!stored("distanceUnit")) distanceUnitInput.value = US || UK ? "mi" : "km";
-  if (!stored("heightUnit")) heightUnit.value = US || UK ? "ft" : "m";
+  if (!stored("distanceUnit")) distanceUnitInput.value = US ? "mi" : "km";
+  if (!stored("heightUnit")) heightUnit.value = US ? "ft" : "m";
   if (!stored("temperatureScale")) temperatureScale.value = US ? "°F" : "°C";
 
   // World settings
