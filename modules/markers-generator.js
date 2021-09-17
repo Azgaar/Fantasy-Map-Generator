@@ -26,6 +26,7 @@ window.Markers = (function () {
     addSacredPalmGroves();
     addBrigands();
     addPirates();
+    addStatues();
 
     TIME && console.timeEnd("addMarkers");
   };
@@ -412,6 +413,43 @@ window.Markers = (function () {
       quantity--;
     }
   }
+
+  function addStatues() {
+    const {cells} = pack;
+    let statues = Array.from(cells.i.filter(i => cells.h[i] >= 20 && cells.h[i] < 40));
+    let quantity = getQuantity(statues, 80, 1200);
+    if (!quantity) return;
+    addMarker("statues", "🗿", 50, 50, 12);
+
+    const types = ["Statue", "Obelisk", "Monument", "Column", "Monolith", "Pillar", "Megalith", "Stele", "Runestone"];
+    const scripts = {
+      cypriot: "𐠁𐠂𐠃𐠄𐠅𐠈𐠊𐠋𐠌𐠍𐠎𐠏𐠐𐠑𐠒𐠓𐠔𐠕𐠖𐠗𐠘𐠙𐠚𐠛𐠜𐠝𐠞𐠟𐠠𐠡𐠢𐠣𐠤𐠥𐠦𐠧𐠨𐠩𐠪𐠫𐠬𐠭𐠮𐠯𐠰𐠱𐠲𐠳𐠴𐠵𐠷𐠸𐠼𐠿     ",
+      geez: "ሀለሐመሠረሰቀበተኀነአከወዐዘየደገጠጰጸፀፈፐ   ",
+      coptic: "ⲲⲴⲶⲸⲺⲼⲾⳀⳁⳂⳃⳄⳆⳈⳊⳌⳎⳐⳒⳔⳖⳘⳚⳜⳞⳠⳢⳤ⳥⳧⳩⳪ⳫⳬⳭⳲ⳹⳾   ",
+      tibetan: "ༀ༁༂༃༄༅༆༇༈༉༊་༌༐༑༒༓༔༕༖༗༘༙༚༛༜༠༡༢༣༤༥༦༧༨༩༪༫༬༭༮༯༰༱༲༳༴༵༶༷༸༹༺༻༼༽༾༿",
+      mongolian: "᠀᠐᠑᠒ᠠᠡᠦᠧᠨᠩᠪᠭᠮᠯᠰᠱᠲᠳᠵᠻᠼᠽᠾᠿᡀᡁᡆᡍᡎᡏᡐᡑᡒᡓᡔᡕᡖᡗᡙᡜᡝᡞᡟᡠᡡᡭᡮᡯᡰᡱᡲᡳᡴᢀᢁᢂᢋᢏᢐᢑᢒᢓᢛᢜᢞᢟᢠᢡᢢᢤᢥᢦ"
+    };
+
+    while (quantity) {
+      const [cell] = extractAnyElement(statues);
+      const id = appendMarker(cell, "statues");
+      const culture = cells.culture[cell];
+
+      const type = ra(types);
+      const name = `${Names.getCulture(culture)} ${type}`;
+      const script = scripts[ra(Object.keys(scripts))];
+      const inscription = Array(rand(40, 100))
+        .fill(null)
+        .map(() => ra(script))
+        .join("");
+      const legend = `An ancient ${type.toLowerCase()}. It has an inscription, but no one can translate it:
+        <div style="font-size: 1.8em; line-break: anywhere;">${inscription}</div>`;
+      notes.push({id, name, legend});
+      quantity--;
+    }
+  }
+
+  // pyramid"
 
   function addMarker(id, icon, x, y, size) {
     const markers = svg.select("#defs-markers");
