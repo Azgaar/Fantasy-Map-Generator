@@ -16,6 +16,7 @@ function handleKeyup(event) {
   const {tagName, contentEditable} = document.activeElement;
   if (["INPUT", "SELECT", "TEXTAREA"].includes(tagName)) return; // don't trigger if user inputs text
   if (tagName === "DIV" && contentEditable === "true") return; // don't trigger if user inputs a text
+  if (document.getSelection().toString()) return; // don't trigger if user selects text
   event.stopPropagation();
 
   const {ctrlKey, metaKey, shiftKey, altKey} = event;
