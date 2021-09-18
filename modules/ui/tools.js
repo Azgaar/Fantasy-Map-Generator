@@ -690,9 +690,9 @@ function toggleAddMarker() {
 
 function addMarkerOnClick() {
   const point = d3.mouse(this);
-  const x = rn(point[0], 2),
-    y = rn(point[1], 2);
-  const id = getNextId("markerElement");
+  const x = rn(point[0], 2);
+  const y = rn(point[1], 2);
+  const id = getNextId("marker");
 
   const selected = markerSelectGroup.value;
   const valid =
