@@ -689,6 +689,7 @@ function toggleAddMarker() {
 }
 
 function addMarkerOnClick() {
+  // TODO: rework for new markers system
   const point = d3.mouse(this);
   const x = rn(point[0], 2);
   const y = rn(point[1], 2);
