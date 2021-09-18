@@ -707,7 +707,7 @@ class Battle {
     const result = `The ${this.getTypeName(this.type)} ended in ${status}`;
     const legend = `${this.name} took place in ${options.year} ${options.eraShort}. It was fought between ${getSide(this.attackers.regiments, 1)} and ${getSide(this.defenders.regiments, 0)}. ${result}.
       \r\nAttackers losses: ${getLosses(this.attackers.casualties)}%, defenders losses: ${getLosses(this.defenders.casualties)}%`;
-    const id = getNextId("markerElement");
+    const id = getNextId("marker");
     notes.push({id, name: this.name, legend});
 
     tip(`${this.name} is over. ${result}`, true, "success", 4000);
