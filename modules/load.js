@@ -405,7 +405,7 @@ function parseLoadedData(data) {
       if (notHidden(labels)) turnOn("toggleLabels");
       if (notHidden(icons)) turnOn("toggleIcons");
       if (hasChildren(armies) && notHidden(armies)) turnOn("toggleMilitary");
-      if (hasChildren(markers) && notHidden(markers)) turnOn("toggleMarkers");
+      if (hasChildren(markers)) turnOn("toggleMarkers");
       if (notHidden(ruler)) turnOn("toggleRulers");
       if (notHidden(scaleBar)) turnOn("toggleScaleBar");
 

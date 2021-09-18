@@ -1505,16 +1505,47 @@ function toggleMilitary() {
 function toggleMarkers(event) {
   if (!layerIsOn("toggleMarkers")) {
     turnButtonOn("toggleMarkers");
-    $("#markers").fadeIn();
+    drawMarkers();
     if (event && isCtrlClick(event)) editStyle("markers");
   } else {
     if (event && isCtrlClick(event)) {
       editStyle("markers");
       return;
     }
-    $("#markers").fadeOut();
+    markers.selectAll("*").remove();
     turnButtonOff("toggleMarkers");
   }
+}
+
+function drawMarkers() {
+  const html = pack.markers.map(drawMarker);
+  markers.html(html.join(""));
+}
+
+const getPin = (shape = "no", fill = "#fff", stroke = "#000") => {
+  if (shape === "bubble") return `<path d="M6,19 l9,10 L24,19" fill="${stroke}" stroke="none" /><circle cx="15" cy="15" r="10" fill="${fill}" stroke="${stroke}"/>`;
+  if (shape === "pin") return `<path d="m 15,3 c -5.5,0 -9.7,4.09 -9.7,9.3 0,6.8 9.7,17 9.7,17 0,0 9.7,-10.2 9.7,-17 C 24.7,7.09 20.5,3 15,3 Z" fill="${fill}" stroke="${stroke}"/>`;
+  if (shape === "square") return `<path d="m 20,25 -5,4 -5,-4 z" fill="${stroke}"/><path d="M 5,5 H 25 V 25 H 5 Z" fill="${fill}" stroke="${stroke}"/>`;
+  if (shape === "squarish") return `<path d="m 5,5 h 20 v 20 h -6 l -4,4 -4,-4 H 5 Z" fill="${fill}" stroke="${stroke}" />`;
+  if (shape === "diamond") return `<path d="M 2,15 15,1 28,15 15,29 Z" fill="${fill}" stroke="${stroke}" />`;
+  if (shape === "hex") return `<path d="M 15,29 4.61,21 V 9 L 15,3 25.4,9 v 12 z" fill="${fill}" stroke="${stroke}" />`;
+  if (shape === "hexy") return `<path d="M 15,29 6,21 5,8 15,4 25,8 24,21 Z" fill="${fill}" stroke="${stroke}" />`;
+  if (shape === "shieldy") return `<path d="M 15,29 6,21 5,7 c 0,0 5,-3 10,-3 5,0 10,3 10,3 l -1,14 z" fill="${fill}" stroke="${stroke}" />`;
+  if (shape === "shield") return `<path d="M 4.6,5.2 H 25 v 6.7 A 20.3,20.4 0 0 1 15,29 20.3,20.4 0 0 1 4.6,11.9 Z" fill="${fill}" stroke="${stroke}" />`;
+  if (shape === "pentagon") return `<path d="M 4,16 9,4 h 12 l 5,12 -11,13 z" fill="${fill}" stroke="${stroke}" />`;
+  if (shape === "heptagon") return `<path d="M 15,29 6,22 4,12 10,4 h 10 l 6,8 -2,10 z" fill="${fill}" stroke="${stroke}" />`;
+  if (shape === "circle") return `<circle cx="15" cy="15" r="11" fill="${fill}" stroke="${stroke}" />`;
+  if (shape === "no") return "";
+};
+
+function drawMarker(marker) {
+  const {i, icon, x, y, dx = 50, dy = 50, px = 12, size = 30} = marker;
+  const id = `marker${i}`;
+  const zoomSize = Math.max(rn(size / 5 + 24 / scale, 2), 1);
+  const viewX = rn(x - zoomSize / 2, 1);
+  const viewY = rn(y - zoomSize, 1);
+
+  return `<svg id="${id}" viewbox="0 0 30 30" width="${zoomSize}" height="${zoomSize}" x="${viewX}" y="${viewY}">${getPin()}<text x="${dx}%" y="${dy}%" font-size="${px}px" >${icon}</text></svg>`;
 }
 
 function toggleLabels(event) {

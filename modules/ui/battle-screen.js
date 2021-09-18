@@ -691,6 +691,7 @@ class Battle {
       armies.select(`g#${id} > text`).text(Military.getTotal(r)); // update reg box
     }
 
+    // TODO: add updated marker
     // append battlefield marker
     void (function addMarkerSymbol() {
       if (svg.select("#defs-markers").select("#marker_battlefield").size()) return;

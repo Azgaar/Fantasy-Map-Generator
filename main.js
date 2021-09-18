@@ -64,7 +64,7 @@ let icons = viewbox.append("g").attr("id", "icons");
 let burgIcons = icons.append("g").attr("id", "burgIcons");
 let anchors = icons.append("g").attr("id", "anchors");
 let armies = viewbox.append("g").attr("id", "armies").style("display", "none");
-let markers = viewbox.append("g").attr("id", "markers").style("display", "none");
+let markers = viewbox.append("g").attr("id", "markers");
 let fogging = viewbox.append("g").attr("id", "fogging-cont").attr("mask", "url(#fog)").append("g").attr("id", "fogging").style("display", "none");
 let ruler = viewbox.append("g").attr("id", "ruler").style("display", "none");
 let debug = viewbox.append("g").attr("id", "debug");
@@ -493,16 +493,20 @@ function invokeActiveZooming() {
   }
 
   // rescale map markers
-  if (+markers.attr("rescale") && markers.style("display") !== "none") {
-    markers.selectAll("use").each(function () {
-      const {x, y, size} = this.dataset;
-      const actualSize = Math.max(rn(size * 5 + 25 / scale, 2), 1);
-      const actualX = rn(Number(x) - actualSize / 2, 2);
-      const actualY = rn(Number(y) - actualSize, 2);
+  +markers.attr("rescale") &&
+    pack.markers?.forEach(marker => {
+      const {i, x, y, size = 30, hidden} = marker;
+      if (hidden) return;
 
-      d3.select(this).attr("x", actualX).attr("y", actualY).attr("width", actualSize).attr("height", actualSize);
+      const el = document.getElementById(`marker${i}`);
+      if (!el) return;
+
+      const zoomedSize = Math.max(rn(size / 5 + 24 / scale, 2), 1);
+      el.setAttribute("width", zoomedSize);
+      el.setAttribute("height", zoomedSize);
+      el.setAttribute("x", rn(x - zoomedSize / 2, 1));
+      el.setAttribute("y", rn(y - zoomedSize, 1));
     });
-  }
 
   // rescale rulers to have always the same size
   if (ruler.style("display") !== "none") {

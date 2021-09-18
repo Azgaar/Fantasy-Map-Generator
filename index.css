@@ -1965,6 +1965,7 @@ div.textual span,
   font-family: monospace;
   user-select: none;
   text-anchor: middle;
+  dominant-baseline: central;
 }
 
 #markerEditor > button {

@@ -494,6 +494,7 @@ window.Markers = (function () {
   }
 
   function addMarkerGroup(id, icon, x, y, size) {
+    // TODO: remove and replace with individual markers rendering
     const markers = svg.select("#defs-markers");
     if (markers.select("#marker_" + id).size()) return;
 

@@ -275,7 +275,6 @@ async function getMapURL(type, options = {}) {
     });
   }
 
-  // TODO: add dataURL for all used fonts
   const usedFonts = getUsedFonts(cloneEl);
   const fontsToLoad = usedFonts.filter(font => font.src);
   if (fontsToLoad.length) {
@@ -305,7 +304,6 @@ async function getMapURL(type, options = {}) {
 // remove hidden g elements and g elements without children to make downloaded svg smaller in size
 function removeUnusedElements(clone) {
   if (!terrain.selectAll("use").size()) clone.select("#defs-relief")?.remove();
-  if (markers.style("display") === "none") clone.select("#defs-markers")?.remove();
 
   for (let empty = 1; empty; ) {
     empty = 0;
