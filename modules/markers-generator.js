@@ -380,7 +380,7 @@ window.Markers = (function () {
       const [cell] = extractAnyElement(oasises);
       const id = appendMarker(cell, "palm_grove");
       const culture = cells.culture[cell];
-      const name = `${Names.getCulture(culture)} Pinery`;
+      const name = `${Names.getCulture(culture)} Palm Grove`;
       const legend = `A sacred palm grove of ${cultures[culture].name} culture`;
       notes.push({id, name, legend});
       quantity--;
