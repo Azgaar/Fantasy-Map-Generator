@@ -492,14 +492,14 @@ window.Markers = (function () {
     let quantity = rand(5, 15);
     if (burgs.length < quantity + 1) return;
     let portals = burgs.slice(1, quantity + 1).map(burg => [burg.name, burg.cell]);
-    addMarker("portals", "🌌", 50, 50, 12);
+    addMarker("portals", "🌀", 50, 50, 14);
 
     while (quantity) {
       const [portal] = extractAnyElement(portals);
       const [burgName, cell] = portal;
       const id = appendMarker(cell, "portals");
       const name = `${burgName} Portal`;
-      const legend = `An element of the magic portal system connecting major cities. Portals installed centuries ago, but still works fine`;
+      const legend = `An element of the magic portal system connecting major cities. Portals installed centuries ago, but still work fine`;
       notes.push({id, name, legend});
       quantity--;
     }
