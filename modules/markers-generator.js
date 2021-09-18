@@ -8,6 +8,8 @@ window.Markers = (function () {
     if (requestedQtyMultiplier) multiplier = requestedQtyMultiplier;
     TIME && console.time("addMarkers");
 
+    const culturesSet = document.getElementById("culturesSet").value;
+
     addVolcanoes();
     addHotSprings();
     addMines();
@@ -27,6 +29,8 @@ window.Markers = (function () {
     addBrigands();
     addPirates();
     addStatues();
+    addRuines();
+    if (culturesSet.includes("Fantasy")) addPortals();
 
     TIME && console.timeEnd("addMarkers");
   };
@@ -39,6 +43,18 @@ window.Markers = (function () {
   const extractAnyElement = array => {
     const index = Math.floor(Math.random() * array.length);
     return array.splice(index, 1);
+  };
+
+  const getMarkerCoordinates = cell => {
+    const {cells, burgs} = pack;
+    const burgId = cells.burg[cell];
+
+    if (burgId) {
+      const {x, y} = burgs[burgId];
+      return [x, y];
+    }
+
+    return cells.p[cell];
   };
 
   function addVolcanoes() {
@@ -449,7 +465,45 @@ window.Markers = (function () {
     }
   }
 
-  // pyramid"
+  function addRuines() {
+    const {cells} = pack;
+    let ruins = Array.from(cells.i.filter(i => cells.culture[i] && cells.h[i] >= 20 && cells.h[i] < 60));
+    let quantity = getQuantity(ruins, 80, 1200);
+    if (!quantity) return;
+    addMarker("ruins", "🏺", 50, 50, 12);
+
+    const types = ["City", "Town", "Pyramid", "Fort"];
+
+    while (quantity) {
+      const [cell] = extractAnyElement(ruins);
+      const id = appendMarker(cell, "ruins");
+
+      const type = ra(types);
+      const name = `Ruined ${type}`;
+      const legend = `Ruins of an ancient ${type.toLowerCase()}. A good place for a treasures hunt`;
+      notes.push({id, name, legend});
+      quantity--;
+    }
+  }
+
+  function addPortals() {
+    const {burgs} = pack;
+
+    let quantity = rand(5, 15);
+    if (burgs.length < quantity + 1) return;
+    let portals = burgs.slice(1, quantity + 1).map(burg => [burg.name, burg.cell]);
+    addMarker("portals", "🌌", 50, 50, 12);
+
+    while (quantity) {
+      const [portal] = extractAnyElement(portals);
+      const [burgName, cell] = portal;
+      const id = appendMarker(cell, "portals");
+      const name = `${burgName} Portal`;
+      const legend = `An element of the magic portal system connecting major cities. Portals installed centuries ago, but still works fine`;
+      notes.push({id, name, legend});
+      quantity--;
+    }
+  }
 
   function addMarker(id, icon, x, y, size) {
     const markers = svg.select("#defs-markers");
@@ -475,9 +529,7 @@ window.Markers = (function () {
   }
 
   function appendMarker(cell, type) {
-    const {cells} = pack;
-
-    const [x, y] = cells.p[cell];
+    const [x, y] = getMarkerCoordinates(cell);
     const id = getNextId("markerElement");
     const name = "#marker_" + type;
 
