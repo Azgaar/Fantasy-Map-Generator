@@ -2,7 +2,7 @@
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 "use strict";
-const version = "1.661"; // generator version
+const version = "1.662"; // generator version
 document.title += " v" + version;
 
 // Switches to disable/enable logging features
@@ -495,15 +495,12 @@ function invokeActiveZooming() {
   // rescale map markers
   if (+markers.attr("rescale") && markers.style("display") !== "none") {
     markers.selectAll("use").each(function () {
-      const x = +this.dataset.x,
-        y = +this.dataset.y,
-        desired = +this.dataset.size;
-      const size = Math.max(desired * 5 + 25 / scale, 1);
-      d3.select(this)
-        .attr("x", x - size / 2)
-        .attr("y", y - size)
-        .attr("width", size)
-        .attr("height", size);
+      const {x, y, size} = this.dataset;
+      const actualSize = Math.max(rn(size * 5 + 25 / scale, 2), 1);
+      const actualX = rn(Number(x) - actualSize / 2, 2);
+      const actualY = rn(Number(y) - actualSize, 2);
+
+      d3.select(this).attr("x", actualX).attr("y", actualY).attr("width", actualSize).attr("height", actualSize);
     });
   }
 
