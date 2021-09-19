@@ -824,6 +824,7 @@ function parseLoadedData(data) {
             const riverPoints = [];
 
             const length = node.getTotalLength() / 2;
+            if (!length) continue;
             const segments = Math.ceil(length / 6);
             const increment = length / segments;
 
