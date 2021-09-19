@@ -29,7 +29,7 @@ function clicked() {
   else if (grand.id === "burgIcons") editBurg();
   else if (parent.id === "ice") editIce();
   else if (parent.id === "terrain") editReliefIcon();
-  else if (grand.id === "markers") editMarker();
+  else if (grand.id === "markers" || great.id === "markers") editMarker();
   else if (grand.id === "coastline") editCoastline();
   else if (great.id === "armies") editRegiment();
   else if (pack.cells.t[i] === 1) {
@@ -332,7 +332,15 @@ function drawLegend(name, data) {
   const width = bbox.width + colOffset * 2;
   const height = bbox.height + colOffset / 2 + vOffset;
 
-  legend.insert("rect", ":first-child").attr("id", "legendBox").attr("x", 0).attr("y", 0).attr("width", width).attr("height", height).attr("fill", backClr).attr("fill-opacity", opacity);
+  legend
+    .insert("rect", ":first-child")
+    .attr("id", "legendBox")
+    .attr("x", 0)
+    .attr("y", 0)
+    .attr("width", width)
+    .attr("height", height)
+    .attr("fill", backClr)
+    .attr("fill-opacity", opacity);
 
   fitLegendBox();
 }
@@ -385,7 +393,15 @@ function createPicker() {
   const closePicker = () => contaiter.style("display", "none");
 
   const contaiter = d3.select("body").append("svg").attr("id", "pickerContainer").attr("width", "100%").attr("height", "100%");
-  contaiter.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%").attr("opacity", 0.2).on("mousemove", cl).on("click", closePicker);
+  contaiter
+    .append("rect")
+    .attr("x", 0)
+    .attr("y", 0)
+    .attr("width", "100%")
+    .attr("height", "100%")
+    .attr("opacity", 0.2)
+    .on("mousemove", cl)
+    .on("click", closePicker);
   const picker = contaiter
     .append("g")
     .attr("id", "picker")
@@ -484,9 +500,25 @@ function createPicker() {
   const width = bbox.width + 8;
   const height = bbox.height + 9;
 
-  picker.insert("rect", ":first-child").attr("x", 0).attr("y", 0).attr("width", width).attr("height", height).attr("fill", "#ffffff").attr("stroke", "#5d4651").on("mousemove", pos);
+  picker
+    .insert("rect", ":first-child")
+    .attr("x", 0)
+    .attr("y", 0)
+    .attr("width", width)
+    .attr("height", height)
+    .attr("fill", "#ffffff")
+    .attr("stroke", "#5d4651")
+    .on("mousemove", pos);
   picker.insert("text", ":first-child").attr("x", 291).attr("y", -10).attr("id", "pickerCloseText").text("✕");
-  picker.insert("rect", ":first-child").attr("x", 288).attr("y", -21).attr("id", "pickerCloseRect").attr("width", 14).attr("height", 14).on("mousemove", cl).on("click", closePicker);
+  picker
+    .insert("rect", ":first-child")
+    .attr("x", 288)
+    .attr("y", -21)
+    .attr("id", "pickerCloseRect")
+    .attr("width", 14)
+    .attr("height", 14)
+    .on("mousemove", cl)
+    .on("click", closePicker);
   picker.insert("text", ":first-child").attr("x", 12).attr("y", -10).attr("id", "pickerLabel").text("Color Picker").on("mousemove", pos);
   picker.insert("rect", ":first-child").attr("x", 0).attr("y", -30).attr("width", width).attr("height", 30).attr("id", "pickerHeader").on("mousemove", pos);
   picker.attr("transform", `translate(${(svgWidth - width) / 2},${(svgHeight - height) / 2})`);
@@ -705,7 +737,14 @@ function highlightElement(element) {
 
   const highlight = debug.append("rect").attr("x", box.x).attr("y", box.y).attr("width", box.width).attr("height", box.height).attr("transform", transform);
 
-  highlight.classed("highlighted", 1).transition(enter).style("outline-offset", "0px").transition(exit).style("outline-color", "transparent").delay(1000).remove();
+  highlight
+    .classed("highlighted", 1)
+    .transition(enter)
+    .style("outline-offset", "0px")
+    .transition(exit)
+    .style("outline-color", "transparent")
+    .delay(1000)
+    .remove();
 
   const tr = parseTransform(transform);
   let x = box.x + box.width / 2;
@@ -922,6 +961,7 @@ function selectIcon(initial, callback) {
     }
   }
 
+  input.oninput = e => callback(input.value);
   table.onclick = e => {
     if (e.target.tagName === "TD") {
       input.value = e.target.innerHTML;
@@ -946,6 +986,31 @@ function selectIcon(initial, callback) {
       }
     }
   });
+}
+
+function confirmationDialog(options) {
+  const {
+    title = "Confirm action",
+    message = "Are you sure you want to continue? <br>The action cannot be reverted",
+    cancel = "Cancel",
+    confirm = "Continue",
+    onCancel,
+    onConfirm
+  } = options;
+
+  const buttons = {
+    [confirm]: function () {
+      if (onConfirm) onConfirm();
+      $(this).dialog("close");
+    },
+    [cancel]: function () {
+      if (onCancel) onCancel();
+      $(this).dialog("close");
+    }
+  };
+
+  document.getElementById("alertMessage").innerHTML = message;
+  $("#alert").dialog({resizable: false, title, buttons});
 }
 
 // add and register event listeners to clean up on editor closure

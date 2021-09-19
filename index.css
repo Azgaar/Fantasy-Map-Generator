@@ -238,8 +238,7 @@ i.icon-lock {
 }
 
 #routeEditor > *,
-#labelEditor div,
-#markerEditor div {
+#labelEditor div {
   display: inline-block;
 }
 
@@ -1525,7 +1524,8 @@ div.states > .coaIcon > use {
 
 #stateNameEditor div.label,
 #provinceNameEditor div.label,
-#regimentBody div.label {
+#regimentBody div.label,
+#markerEditor div.label {
   display: inline-block;
   width: 5.5em;
 }
@@ -1972,10 +1972,6 @@ div.textual span,
   user-select: none;
   text-anchor: middle;
   dominant-baseline: central;
-}
-
-#markerEditor > button {
-  vertical-align: top;
 }
 
 .highlighted {

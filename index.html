@@ -2036,39 +2036,66 @@
     </div>
 
     <div id="markerEditor" class="dialog" style="display: none">
+      <div id="markerBody" style="padding-bottom: .3em">
+        <div data-tip="Marker type. Style changes will apply to all markers of the same type. Leave blank if the marker is unique">
+          <div class="label">Type:</div>
+          <input id="markerType" />
+        </div>
 
-      <button id="markerGroup" data-tip="Change marker type" class="icon-tags"></button>
-      <div id="markerGroupSection" style="display: none">
-        <select id="markerSelectGroup" data-tip="Select type for the selected marker" style="width: 10em"></select>
-        <input id="markerInputGroup" data-tip="Create new type for selected marker" placeholder="type new name" style="display: none; width: 10em"/>
-        <i id="markerAddGroup" data-tip="Create new markers type" class="icon-plus pointer"></i>
-        <i id="markerRemoveGroup" data-tip="Remove all markers of that type" class="icon-trash pointer"></i>
+        <div data-tip="Marker icon. Paste any Unicode symbol or select from the predefined list">
+          <div class="label">Icon:</div>
+          <input id="markerIcon" style="width:5em" />
+          <button id="markerIconSelect" style="padding: 0; width: 4.5em">select</button>
+        </div>
+
+        <div data-tip="Marker icon size in pixels">
+          <div class="label">Icon size:</div>
+          <input id="markerIconSize" type="number" min="2" max="20" step="0.5" />
+        </div>
+
+        <div data-tip="Marker icon shift (by X and by Y axis), percent. Set to 50 to position icon in center">
+          <div class="label">Icon shift:</div>
+          <input id="markerIconShiftX" type="number" min="0" max="100" step="1" style="width:5em" />
+          <input id="markerIconShiftY" type="number" min="0" max="100" step="1" style="width:5em" />
+        </div>
+
+        <div data-tip="Size of the marker">
+          <div class="label">Marker size:</div>
+          <input id="markerSize" type="number" min="2" max="500" />
+        </div>
+
+        <div data-tip="Marker pin shape">
+          <div class="label">Pin shape:</div>
+          <select id="markerPin" >
+            <option value="bubble">Bubble</option>
+            <option value="pin">Pin</option>
+            <option value="square">Square</option>
+            <option value="squarish">Squarish</option>
+            <option value="diamond">Diamond</option>
+            <option value="hex">Hex</option>
+            <option value="hexy">Hexy</option>
+            <option value="shieldy">Shieldy</option>
+            <option value="shield">Shield</option>
+            <option value="pentagon">Pentagon</option>
+            <option value="heptagon">Heptagon</option>
+            <option value="circle">Circle</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+
+        <div data-tip="Pin fill and stroke colors">
+          <div class="label">Pin colors:</div>
+          <input id="markerFill" type="color" style="width:5em" />
+          <input id="markerStroke" type="color" style="width:5em" />
+        </div>
       </div>
 
-      <button id="markerIcon" data-tip="Change marker icon and edit positioning" class="icon-star"></button>
-      <div id="markerIconSection" style="display: none">
-        <i data-tip="Change marker icon size" class="icon-resize-full"></i>
-        <input id="markerIconSize" data-tip="Change marker icon size" type="range" min=5 max=30 step=.5 value=22 style="width:12em"><br>
-        <i data-tip="Marker Icon" class="icon-info"></i>
-        <button id="markerIconSelect" data-tip="Click to select icon"></button>
-        <i data-tip="Change marker horizontal shift" class="icon-resize-horizontal"></i>
-        <input id="markerIconShiftX" data-tip="Change icon horizontal shift" type="number" value=50>
-        <i data-tip="Change marker vertical shift" class="icon-resize-vertical"></i>
-        <input id="markerIconShiftY" data-tip="Change vertical shift" type="number" min=0 max=100 value=50>
+      <div id="markerBottom">
+        <button id="markerNotes" data-tip="Edit place legend (notes)" class="icon-edit"></button>
+        <button id="markerLock" class="icon-lock-open"></button>
+        <button id="markerAdd" data-tip="Add additional marker of that type" class="icon-plus"></button>
+        <button id="markerRemove" data-tip="Remove the marker. Shortcut: Delete" class="icon-trash fastDelete"></button>
       </div>
-
-      <button id="markerStyle" data-tip="Change marker size and colors" class="icon-brush"></button>
-      <div id="markerStyleSection" style="display: none">
-        <i data-tip="Change marker base (pin) style" class="icon-map-pin"></i>
-        <input id="markerSize" data-tip="Change marker size" type="range" min=.01 max=10 step=.1 value=1 style="width:12em">
-        <input id="markerBaseStroke" data-tip="Change pin stroke color" type="color" value="#ffffff">
-        <input id="markerBaseFill" data-tip="Change pin fill color" type="color" alue="#000000">
-      </div>
-
-      <button id="markerToggleBubble" data-tip="Toggle pin (bubble) display" class="icon-info-circled"></button>
-      <button id="markerLegendButton" data-tip="Edit place legend (free text notes)" class="icon-edit"></button>
-      <button id="markerAdd" data-tip="Add additional marker of that type" class="icon-plus"></button>
-      <button id="markerRemove" data-tip="Remove the marker. Shortcut: Delete" class="icon-trash fastDelete"></button>
     </div>
 
     <div id="regimentEditor" class="dialog" style="display: none">

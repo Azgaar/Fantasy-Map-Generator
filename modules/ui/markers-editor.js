@@ -3,23 +3,28 @@ function editMarker() {
   if (customization) return;
   closeDialogs(".stable");
 
-  const element = d3.event.target.parentElement;
-  elSelected = d3.select(element).call(d3.drag().on("start", dragMarker)).classed("draggable", true);
-  const marker = pack.markers.find(({i}) => Number(elSelected.attr("id").slice(6)) === i);
+  const element = d3.event.target.closest("svg");
+  const marker = pack.markers.find(({i}) => Number(element.id.slice(6)) === i);
   if (!marker) return;
 
+  elSelected = d3.select(element).raise().call(d3.drag().on("start", dragMarker)).classed("draggable", true);
+
   // dom elements
-  const markerSelectGroup = document.getElementById("markerSelectGroup");
+  const markerType = document.getElementById("markerType");
+  const markerIcon = document.getElementById("markerIcon");
+  const markerIconSelect = document.getElementById("markerIconSelect");
   const markerIconSize = document.getElementById("markerIconSize");
   const markerIconShiftX = document.getElementById("markerIconShiftX");
   const markerIconShiftY = document.getElementById("markerIconShiftY");
-
   const markerSize = document.getElementById("markerSize");
-  const markerBaseStroke = document.getElementById("markerBaseStroke");
-  const markerBaseFill = document.getElementById("markerBaseFill");
+  const markerPin = document.getElementById("markerPin");
+  const markerFill = document.getElementById("markerFill");
+  const markerStroke = document.getElementById("markerStroke");
 
-  const markerToggleBubble = document.getElementById("markerToggleBubble");
-  const markerIconSelect = document.getElementById("markerIconSelect");
+  const markerNotes = document.getElementById("markerNotes");
+  const addMarker = document.getElementById("addMarker");
+  const markerAdd = document.getElementById("markerAdd");
+  const markerRemove = document.getElementById("markerRemove");
 
   updateInputs();
 
@@ -31,21 +36,26 @@ function editMarker() {
   });
 
   const listeners = [
-    listen(markerSelectGroup, "change", changeGroup),
-    listen(document.getElementById("markerIcon"), "click", toggleIconSection),
+    listen(markerType, "change", changeMarkerType),
+    listen(markerIcon, "input", changeMarkerIcon),
+    listen(markerIconSelect, "click", selectMarkerIcon),
     listen(markerIconSize, "input", changeIconSize),
     listen(markerIconShiftX, "input", changeIconShiftX),
     listen(markerIconShiftY, "input", changeIconShiftY),
-    listen(document.getElementById("markerIconSelect"), "click", selectMarkerIcon),
-    listen(document.getElementById("markerStyle"), "click", toggleStyleSection),
     listen(markerSize, "input", changeMarkerSize),
-    listen(markerBaseStroke, "input", changePinStroke),
-    listen(markerBaseFill, "input", changePinFill),
-    listen(markerToggleBubble, "click", togglePinVisibility),
-    listen(document.getElementById("markerLegendButton"), "click", editMarkerLegend),
-    listen(document.getElementById("markerAdd"), "click", toggleAddMarker),
-    listen(document.getElementById("markerRemove"), "click", removeMarker)
+    listen(markerPin, "change", changeMarkerPin),
+    listen(markerFill, "input", changePinFill),
+    listen(markerStroke, "input", changePinStroke),
+    listen(markerNotes, "click", editMarkerLegend),
+    listen(markerAdd, "click", toggleAddMarker),
+    listen(markerRemove, "click", confirmMarkerDeletion)
   ];
+
+  function getSameTypeMarkers() {
+    const currentType = marker.type;
+    if (!currentType) return [marker];
+    return pack.markers.filter(({type}) => type === currentType);
+  }
 
   function dragMarker() {
     const dx = +this.getAttribute("x") - d3.event.x;
@@ -70,171 +80,145 @@ function editMarker() {
   }
 
   function updateInputs() {
-    const {icon, type = "", size = 30, dx = 50, dy = 50, px = 12, stroke = "#000", fill = "#fff", pin = "bubble"} = marker;
+    const {icon, type = "", size = 30, dx = 50, dy = 50, px = 12, stroke = "#000000", fill = "#ffffff", pin = "bubble"} = marker;
 
-    markerSelectGroup.value = type;
+    markerType.value = type;
+    markerIcon.value = icon;
     markerIconSize.value = px;
     markerIconShiftX.value = dx;
     markerIconShiftY.value = dy;
-
     markerSize.value = size;
-    markerBaseStroke.value = stroke;
-    markerBaseFill.value = fill;
-
-    markerToggleBubble.className = pin;
-    markerIconSelect.innerHTML = icon;
+    markerPin.value = pin;
+    markerFill.value = fill;
+    markerStroke.value = stroke;
   }
 
-  function toggleGroupSection() {
-    if (markerGroupSection.style.display === "inline-block") {
-      markerEditor.querySelectorAll("button:not(#markerGroup)").forEach(b => (b.style.display = "inline-block"));
-      markerGroupSection.style.display = "none";
-    } else {
-      markerEditor.querySelectorAll("button:not(#markerGroup)").forEach(b => (b.style.display = "none"));
-      markerGroupSection.style.display = "inline-block";
-    }
+  function changeMarkerType() {
+    marker.type = this.value;
   }
 
-  function changeGroup() {
-    elSelected.attr("xlink:href", "#" + this.value);
-    elSelected.attr("data-id", "#" + this.value);
-  }
-
-  function toggleIconSection() {
-    console.log(marker);
-    if (markerIconSection.style.display === "inline-block") {
-      markerEditor.querySelectorAll("button:not(#markerIcon)").forEach(b => (b.style.display = "inline-block"));
-      markerIconSection.style.display = "none";
-      markerIconSelect.style.display = "none";
-    } else {
-      markerEditor.querySelectorAll("button:not(#markerIcon)").forEach(b => (b.style.display = "none"));
-      markerIconSection.style.display = "inline-block";
-      markerIconSelect.style.display = "inline-block";
-    }
+  function changeMarkerIcon() {
+    const icon = this.value;
+    getSameTypeMarkers().forEach(marker => {
+      marker.icon = icon;
+      redrawIcon(marker);
+    });
   }
 
   function selectMarkerIcon() {
-    selectIcon(this.innerHTML, v => {
-      this.innerHTML = v;
-      const id = elSelected.attr("data-id");
-      d3.select("#defs-markers").select(id).select("text").text(v);
+    selectIcon(marker.icon, icon => {
+      markerIcon.value = icon;
+      getSameTypeMarkers().forEach(marker => {
+        marker.icon = icon;
+        redrawIcon(marker);
+      });
     });
   }
 
   function changeIconSize() {
-    const id = elSelected.attr("data-id");
-    d3.select("#defs-markers")
-      .select(id)
-      .select("text")
-      .attr("font-size", this.value + "px");
+    const px = +this.value;
+    getSameTypeMarkers().forEach(marker => {
+      marker.px = px;
+      redrawIcon(marker);
+    });
   }
 
   function changeIconShiftX() {
-    const id = elSelected.attr("data-id");
-    d3.select("#defs-markers")
-      .select(id)
-      .select("text")
-      .attr("x", this.value + "%");
+    const dx = +this.value;
+    getSameTypeMarkers().forEach(marker => {
+      marker.dx = dx;
+      redrawIcon(marker);
+    });
   }
 
   function changeIconShiftY() {
-    const id = elSelected.attr("data-id");
-    d3.select("#defs-markers")
-      .select(id)
-      .select("text")
-      .attr("y", this.value + "%");
-  }
-
-  function toggleStyleSection() {
-    if (markerStyleSection.style.display === "inline-block") {
-      markerEditor.querySelectorAll("button:not(#markerStyle)").forEach(b => (b.style.display = "inline-block"));
-      markerStyleSection.style.display = "none";
-    } else {
-      markerEditor.querySelectorAll("button:not(#markerStyle)").forEach(b => (b.style.display = "none"));
-      markerStyleSection.style.display = "inline-block";
-    }
+    const dy = +this.value;
+    getSameTypeMarkers().forEach(marker => {
+      marker.dy = dy;
+      redrawIcon(marker);
+    });
   }
 
   function changeMarkerSize() {
-    const id = elSelected.attr("data-id");
-    document.querySelectorAll("use[data-id='" + id + "']").forEach(e => {
-      const x = +e.dataset.x,
-        y = +e.dataset.y;
-      const desired = (e.dataset.size = +markerSize.value);
-      const size = Math.max(desired * 5 + 25 / scale, 1);
+    const size = +this.value;
+    const rescale = +markers.attr("rescale");
 
-      e.setAttribute("x", x - size / 2);
-      e.setAttribute("y", y - size / 2);
-      e.setAttribute("width", size);
-      e.setAttribute("height", size);
+    getSameTypeMarkers().forEach(marker => {
+      marker.size = size;
+      const {i, x, y, hidden} = marker;
+      const el = !hidden && document.getElementById(`marker${i}`);
+      if (!el) return;
+
+      const zoomedSize = rescale ? Math.max(rn(size / 5 + 24 / scale, 2), 1) : size;
+      el.setAttribute("width", zoomedSize);
+      el.setAttribute("height", zoomedSize);
+      el.setAttribute("x", rn(x - zoomedSize / 2, 1));
+      el.setAttribute("y", rn(y - zoomedSize, 1));
     });
-    invokeActiveZooming();
   }
 
-  function changePinStroke() {
-    const id = elSelected.attr("data-id");
-    d3.select(id).select("path").attr("fill", this.value);
-    d3.select(id).select("circle").attr("stroke", this.value);
+  function changeMarkerPin() {
+    const pin = this.value;
+    getSameTypeMarkers().forEach(marker => {
+      marker.pin = pin;
+      redrawPin(marker);
+    });
   }
 
   function changePinFill() {
-    const id = elSelected.attr("data-id");
-    d3.select(id).select("circle").attr("fill", this.value);
+    const fill = this.value;
+    getSameTypeMarkers().forEach(marker => {
+      marker.fill = fill;
+      redrawPin(marker);
+    });
   }
 
-  function changeIconStrokeWidth() {
-    const id = elSelected.attr("data-id");
-    d3.select("#defs-markers").select(id).select("text").attr("stroke-width", this.value);
+  function changePinStroke() {
+    const stroke = this.value;
+    getSameTypeMarkers().forEach(marker => {
+      marker.stroke = stroke;
+      redrawPin(marker);
+    });
   }
 
-  function changeIconStroke() {
-    const id = elSelected.attr("data-id");
-    d3.select("#defs-markers").select(id).select("text").attr("stroke", this.value);
+  function redrawIcon({i, hidden, icon, dx = 50, dy = 50, px = 12}) {
+    const iconElement = !hidden && document.querySelector(`#marker${i} > text`);
+    if (iconElement) {
+      iconElement.innerHTML = icon;
+      iconElement.setAttribute("x", dx + "%");
+      iconElement.setAttribute("y", dy + "%");
+      iconElement.setAttribute("font-size", px + "px");
+    }
   }
 
-  function changeIconFill() {
-    const id = elSelected.attr("data-id");
-    d3.select("#defs-markers").select(id).select("text").attr("fill", this.value);
-  }
-
-  function togglePinVisibility() {
-    const id = elSelected.attr("data-id");
-    let show = 1;
-    if (this.className === "icon-info-circled") {
-      this.className = "icon-info";
-      show = 0;
-    } else this.className = "icon-info-circled";
-    d3.select(id).select("circle").attr("opacity", show);
-    d3.select(id).select("path").attr("opacity", show);
+  function redrawPin({i, hidden, pin = "bubble", fill = "#fff", stroke = "#000"}) {
+    const pinGroup = !hidden && document.querySelector(`#marker${i} > g`);
+    if (pinGroup) pinGroup.innerHTML = getPin(pin, fill, stroke);
   }
 
   function editMarkerLegend() {
-    const id = elSelected.attr("id");
+    const id = element.id;
     editNotes(id, id);
   }
 
   function toggleAddMarker() {
-    document.getElementById("addMarker").click();
+    addMarker.click();
   }
 
-  function removeMarker() {
-    alertMessage.innerHTML = "Are you sure you want to remove the marker?";
-    $("#alert").dialog({
-      resizable: false,
+  function confirmMarkerDeletion() {
+    confirmationDialog({
       title: "Remove marker",
-      buttons: {
-        Remove: function () {
-          $(this).dialog("close");
-          const index = notes.findIndex(n => n.id === elSelected.attr("id"));
-          if (index != -1) notes.splice(index, 1);
-          elSelected.remove();
-          $("#markerEditor").dialog("close");
-        },
-        Cancel: function () {
-          $(this).dialog("close");
-        }
-      }
+      message: "Are you sure you want to remove this marker? The action cannot be reverted",
+      confirm: "Remove",
+      onConfirm: deleteMarker
     });
+  }
+
+  function deleteMarker() {
+    notes = notes.filter(note => note.id !== element.id);
+    pack.markers = pack.markers.filter(m => m.i !== marker.i);
+    element.remove();
+    $("#markerEditor").dialog("close");
   }
 
   function closeMarkerEditor() {

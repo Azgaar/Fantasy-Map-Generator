@@ -49,7 +49,9 @@ toolsContent.addEventListener("click", function (event) {
       },
       open: function () {
         const pane = $(this).dialog("widget").find(".ui-dialog-buttonpane");
-        $('<span><input id="dontAsk" class="checkbox" type="checkbox"><label for="dontAsk" class="checkbox-label dontAsk"><i>do not ask again</i></label><span>').prependTo(pane);
+        $(
+          '<span><input id="dontAsk" class="checkbox" type="checkbox"><label for="dontAsk" class="checkbox-label dontAsk"><i>do not ask again</i></label><span>'
+        ).prependTo(pane);
       },
       close: function () {
         const box = $(this).dialog("widget").find(".checkbox")[0];
@@ -262,7 +264,8 @@ function regenerateBurgs() {
 
   const score = new Int16Array(cells.s.map(s => s * Math.random())); // cell score for capitals placement
   const sorted = cells.i.filter(i => score[i] > 0 && cells.culture[i]).sort((a, b) => score[b] - score[a]); // filtered and sorted array of indexes
-  const burgsCount = manorsInput.value == 1000 ? rn(sorted.length / 5 / (grid.points.length / 10000) ** 0.8) + states.length : +manorsInput.value + states.length;
+  const burgsCount =
+    manorsInput.value == 1000 ? rn(sorted.length / 5 / (grid.points.length / 10000) ** 0.8) + states.length : +manorsInput.value + states.length;
   const spacing = (graphWidth + graphHeight) / 150 / (burgsCount ** 0.7 / 66); // base min distance between towns
 
   //clear locked list since ids will change
@@ -414,6 +417,7 @@ function regenerateIce() {
 }
 
 function regenerateMarkers(event) {
+  // TODO: rework for new markers system
   if (isCtrlClick(event)) prompt("Please provide markers number multiplier", {default: 1, step: 0.01, min: 0, max: 100}, v => addNumberOfMarkers(v));
   else addNumberOfMarkers(gauss(1, 0.5, 0.3, 5, 2));
 
@@ -475,7 +479,18 @@ function addLabelOnClick() {
   const id = getNextId("label");
 
   let group = labels.select("#addedLabels");
-  if (!group.size()) group = labels.append("g").attr("id", "addedLabels").attr("fill", "#3e3e4b").attr("opacity", 1).attr("stroke", "#3a3a3a").attr("stroke-width", 0).attr("font-family", "Almendra SC").attr("font-size", 18).attr("data-size", 18).attr("filter", null);
+  if (!group.size())
+    group = labels
+      .append("g")
+      .attr("id", "addedLabels")
+      .attr("fill", "#3e3e4b")
+      .attr("opacity", 1)
+      .attr("stroke", "#3a3a3a")
+      .attr("stroke-width", 0)
+      .attr("font-family", "Almendra SC")
+      .attr("font-size", 18)
+      .attr("data-size", 18)
+      .attr("filter", null);
 
   const example = group.append("text").attr("x", 0).attr("x", 0).text(name);
   const width = example.node().getBBox().width;

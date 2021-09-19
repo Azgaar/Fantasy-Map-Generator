@@ -338,11 +338,39 @@ function findBurgForMFCG(params) {
 
 // apply default biomes data
 function applyDefaultBiomesSystem() {
-  const name = ["Marine", "Hot desert", "Cold desert", "Savanna", "Grassland", "Tropical seasonal forest", "Temperate deciduous forest", "Tropical rainforest", "Temperate rainforest", "Taiga", "Tundra", "Glacier", "Wetland"];
+  const name = [
+    "Marine",
+    "Hot desert",
+    "Cold desert",
+    "Savanna",
+    "Grassland",
+    "Tropical seasonal forest",
+    "Temperate deciduous forest",
+    "Tropical rainforest",
+    "Temperate rainforest",
+    "Taiga",
+    "Tundra",
+    "Glacier",
+    "Wetland"
+  ];
   const color = ["#466eab", "#fbe79f", "#b5b887", "#d2d082", "#c8d68f", "#b6d95d", "#29bc56", "#7dcb35", "#409c43", "#4b6b32", "#96784b", "#d5e7eb", "#0b9131"];
   const habitability = [0, 4, 10, 22, 30, 50, 100, 80, 90, 12, 4, 0, 12];
   const iconsDensity = [0, 3, 2, 120, 120, 120, 120, 150, 150, 100, 5, 0, 150];
-  const icons = [{}, {dune: 3, cactus: 6, deadTree: 1}, {dune: 9, deadTree: 1}, {acacia: 1, grass: 9}, {grass: 1}, {acacia: 8, palm: 1}, {deciduous: 1}, {acacia: 5, palm: 3, deciduous: 1, swamp: 1}, {deciduous: 6, swamp: 1}, {conifer: 1}, {grass: 1}, {}, {swamp: 1}];
+  const icons = [
+    {},
+    {dune: 3, cactus: 6, deadTree: 1},
+    {dune: 9, deadTree: 1},
+    {acacia: 1, grass: 9},
+    {grass: 1},
+    {acacia: 8, palm: 1},
+    {deciduous: 1},
+    {acacia: 5, palm: 3, deciduous: 1, swamp: 1},
+    {deciduous: 6, swamp: 1},
+    {conifer: 1},
+    {grass: 1},
+    {},
+    {swamp: 1}
+  ];
   const cost = [10, 200, 150, 60, 50, 70, 70, 80, 90, 200, 1000, 5000, 150]; // biome movement cost
   const biomesMartix = [
     // hot ↔ cold [>19°C; <-4°C]; dry ↕ wet
@@ -494,9 +522,7 @@ function invokeActiveZooming() {
   +markers.attr("rescale") &&
     pack.markers?.forEach(marker => {
       const {i, x, y, size = 30, hidden} = marker;
-      if (hidden) return;
-
-      const el = document.getElementById(`marker${i}`);
+      const el = !hidden && document.getElementById(`marker${i}`);
       if (!el) return;
 
       const zoomedSize = Math.max(rn(size / 5 + 24 / scale, 2), 1);
@@ -1483,7 +1509,18 @@ function addZones(number = 1) {
       });
     }
 
-    const invasion = rw({Invasion: 4, Occupation: 3, Raid: 2, Conquest: 2, Subjugation: 1, Foray: 1, Skirmishes: 1, Incursion: 2, Pillaging: 1, Intervention: 1});
+    const invasion = rw({
+      Invasion: 4,
+      Occupation: 3,
+      Raid: 2,
+      Conquest: 2,
+      Subjugation: 1,
+      Foray: 1,
+      Skirmishes: 1,
+      Incursion: 2,
+      Pillaging: 1,
+      Intervention: 1
+    });
     const name = getAdjective(invader.name) + " " + invasion;
     data.push({name, type: "Invasion", cells: cellsArray, fill: "url(#hatch1)"});
   }
