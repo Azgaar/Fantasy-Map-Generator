@@ -965,7 +965,9 @@ function drawStates() {
   const bodyString = bodyData.map(d => `<path id="state${d[1]}" d="${d[0]}" fill="${d[2]}" stroke="none"/>`).join("");
   const gapString = gapData.map(d => `<path id="state-gap${d[1]}" d="${d[0]}" fill="none" stroke="${d[2]}"/>`).join("");
   const clipString = bodyData.map(d => `<clipPath id="state-clip${d[1]}"><use href="#state${d[1]}"/></clipPath>`).join("");
-  const haloString = haloData.map(d => `<path id="state-border${d[1]}" d="${d[0]}" clip-path="url(#state-clip${d[1]})" stroke="${d3.color(d[2]) ? d3.color(d[2]).darker().hex() : "#666666"}"/>`).join("");
+  const haloString = haloData
+    .map(d => `<path id="state-border${d[1]}" d="${d[0]}" clip-path="url(#state-clip${d[1]})" stroke="${d3.color(d[2]) ? d3.color(d[2]).darker().hex() : "#666666"}"/>`)
+    .join("");
 
   statesBody.html(bodyString + gapString);
   defs.select("#statePaths").html(clipString);
@@ -1522,7 +1524,7 @@ function drawMarkers() {
   markers.html(html.join(""));
 }
 
-const getPin = (shape = "no", fill = "#fff", stroke = "#000") => {
+const getPin = (shape = "bubble", fill = "#fff", stroke = "#000") => {
   if (shape === "bubble") return `<path d="M6,19 l9,10 L24,19" fill="${stroke}" stroke="none" /><circle cx="15" cy="15" r="10" fill="${fill}" stroke="${stroke}"/>`;
   if (shape === "pin") return `<path d="m 15,3 c -5.5,0 -9.7,4.09 -9.7,9.3 0,6.8 9.7,17 9.7,17 0,0 9.7,-10.2 9.7,-17 C 24.7,7.09 20.5,3 15,3 Z" fill="${fill}" stroke="${stroke}"/>`;
   if (shape === "square") return `<path d="m 20,25 -5,4 -5,-4 z" fill="${stroke}"/><path d="M 5,5 H 25 V 25 H 5 Z" fill="${fill}" stroke="${stroke}"/>`;
