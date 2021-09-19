@@ -493,50 +493,5 @@ window.Markers = (function () {
     return "marker" + i;
   }
 
-  function addMarkerGroup(id, icon, x, y, size) {
-    // TODO: remove and replace with individual markers rendering
-    const markers = svg.select("#defs-markers");
-    if (markers.select("#marker_" + id).size()) return;
-
-    const symbol = markers
-      .append("symbol")
-      .attr("id", "marker_" + id)
-      .attr("viewBox", "0 0 30 30");
-
-    symbol.append("path").attr("d", "M6,19 l9,10 L24,19").attr("fill", "#000000").attr("stroke", "none");
-    symbol.append("circle").attr("cx", 15).attr("cy", 15).attr("r", 10).attr("fill", "#ffffff").attr("stroke", "#000000").attr("stroke-width", 1);
-    symbol
-      .append("text")
-      .attr("x", x + "%")
-      .attr("y", y + "%")
-      .attr("fill", "#000000")
-      .attr("stroke", "#3200ff")
-      .attr("stroke-width", 0)
-      .attr("font-size", size + "px")
-      .attr("dominant-baseline", "central")
-      .text(icon);
-  }
-
-  function drawMarker(cell, type) {
-    const [x, y] = getMarkerCoordinates(cell);
-    const id = getNextId("marker");
-    const name = "#marker_" + type;
-
-    markers
-      .append("use")
-      .attr("id", id)
-      .attr("xlink:href", name)
-      .attr("data-id", name)
-      .attr("data-x", x)
-      .attr("data-y", y)
-      .attr("x", x - 15)
-      .attr("y", y - 30)
-      .attr("data-size", 1)
-      .attr("width", 30)
-      .attr("height", 30);
-
-    return id;
-  }
-
   return {generate};
 })();

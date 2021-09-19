@@ -29,7 +29,7 @@ function clicked() {
   else if (grand.id === "burgIcons") editBurg();
   else if (parent.id === "ice") editIce();
   else if (parent.id === "terrain") editReliefIcon();
-  else if (parent.id === "markers") editMarker();
+  else if (grand.id === "markers") editMarker();
   else if (grand.id === "coastline") editCoastline();
   else if (great.id === "armies") editRegiment();
   else if (pack.cells.t[i] === 1) {
@@ -946,6 +946,12 @@ function selectIcon(initial, callback) {
       }
     }
   });
+}
+
+// add and register event listeners to clean up on editor closure
+function listen(element, event, handler) {
+  element.addEventListener(event, handler);
+  return () => element.removeEventListener(event, handler);
 }
 
 // Calls the refresh functionality on all editors currently open.
