@@ -10,6 +10,7 @@ window.Markers = (function () {
     TIME && console.time("addMarkers");
 
     const culturesSet = document.getElementById("culturesSet").value;
+    // TODO: don't put multiple markers to the same cell
 
     addVolcanoes();
     addHotSprings();
@@ -120,7 +121,9 @@ window.Markers = (function () {
     const {cells, burgs} = pack;
 
     const meanFlux = d3.mean(cells.fl.filter(fl => fl));
-    let bridges = Array.from(cells.i.filter(i => cells.burg[i] && cells.t[i] !== 1 && burgs[cells.burg[i]].population > 20 && cells.r[i] && cells.fl[i] > meanFlux));
+    let bridges = Array.from(
+      cells.i.filter(i => cells.burg[i] && cells.t[i] !== 1 && burgs[cells.burg[i]].population > 20 && cells.r[i] && cells.fl[i] > meanFlux)
+    );
     let quantity = getQuantity(bridges, 1, 5);
     if (!quantity) return;
 
@@ -143,13 +146,233 @@ window.Markers = (function () {
     let quantity = getQuantity(taverns, 1, 100);
     if (!quantity) return;
 
-    const colors = ["Dark", "Light", "Bright", "Golden", "White", "Black", "Red", "Pink", "Purple", "Blue", "Green", "Yellow", "Amber", "Orange", "Brown", "Grey"];
-    const animals = ["Antelope", "Ape", "Badger", "Bear", "Beaver", "Bison", "Boar", "Buffalo", "Cat", "Crane", "Crocodile", "Crow", "Deer", "Dog", "Eagle", "Elk", "Fox", "Goat", "Goose", "Hare", "Hawk", "Heron", "Horse", "Hyena", "Ibis", "Jackal", "Jaguar", "Lark", "Leopard", "Lion", "Mantis", "Marten", "Moose", "Mule", "Narwhal", "Owl", "Panther", "Rat", "Raven", "Rook", "Scorpion", "Shark", "Sheep", "Snake", "Spider", "Swan", "Tiger", "Turtle", "Wolf", "Wolverine", "Camel", "Falcon", "Hound", "Ox"];
-    const adjectives = ["New", "Good", "High", "Old", "Great", "Big", "Major", "Happy", "Main", "Huge", "Far", "Beautiful", "Fair", "Prime", "Ancient", "Golden", "Proud", "Lucky", "Fat", "Honest", "Giant", "Distant", "Friendly", "Loud", "Hungry", "Magical", "Superior", "Peaceful", "Frozen", "Divine", "Favorable", "Brave", "Sunny", "Flying"];
-    const methods = ["Boiled", "Grilled", "Roasted", "Spit-roasted", "Stewed", "Stuffed", "Jugged", "Mashed", "Baked", "Braised", "Poached", "Marinated", "Pickled", "Smoked", "Dried", "Dry-aged", "Corned", "Fried", "Pan-fried", "Deep-fried", "Dressed", "Steamed", "Cured", "Syrupped", "Flame-Broiled"];
-    const courses = ["beef", "pork", "bacon", "chicken", "lamb", "chevon", "hare", "rabbit", "hart", "deer", "antlers", "bear", "buffalo", "badger", "beaver", "turkey", "pheasant", "duck", "goose", "teal", "quail", "pigeon", "seal", "carp", "bass", "pike", "catfish", "sturgeon", "escallop", "pie", "cake", "pottage", "pudding", "onions", "carrot", "potato", "beet", "garlic", "cabbage", "eggplant", "eggs", "broccoli", "zucchini", "pepper", "olives", "pumpkin", "spinach", "peas", "chickpea", "beans", "rice", "pasta", "bread", "apples", "peaches", "pears", "melon", "oranges", "mango", "tomatoes", "cheese", "corn", "rat tails", "pig ears"];
+    const colors = [
+      "Dark",
+      "Light",
+      "Bright",
+      "Golden",
+      "White",
+      "Black",
+      "Red",
+      "Pink",
+      "Purple",
+      "Blue",
+      "Green",
+      "Yellow",
+      "Amber",
+      "Orange",
+      "Brown",
+      "Grey"
+    ];
+    const animals = [
+      "Antelope",
+      "Ape",
+      "Badger",
+      "Bear",
+      "Beaver",
+      "Bison",
+      "Boar",
+      "Buffalo",
+      "Cat",
+      "Crane",
+      "Crocodile",
+      "Crow",
+      "Deer",
+      "Dog",
+      "Eagle",
+      "Elk",
+      "Fox",
+      "Goat",
+      "Goose",
+      "Hare",
+      "Hawk",
+      "Heron",
+      "Horse",
+      "Hyena",
+      "Ibis",
+      "Jackal",
+      "Jaguar",
+      "Lark",
+      "Leopard",
+      "Lion",
+      "Mantis",
+      "Marten",
+      "Moose",
+      "Mule",
+      "Narwhal",
+      "Owl",
+      "Panther",
+      "Rat",
+      "Raven",
+      "Rook",
+      "Scorpion",
+      "Shark",
+      "Sheep",
+      "Snake",
+      "Spider",
+      "Swan",
+      "Tiger",
+      "Turtle",
+      "Wolf",
+      "Wolverine",
+      "Camel",
+      "Falcon",
+      "Hound",
+      "Ox"
+    ];
+    const adjectives = [
+      "New",
+      "Good",
+      "High",
+      "Old",
+      "Great",
+      "Big",
+      "Major",
+      "Happy",
+      "Main",
+      "Huge",
+      "Far",
+      "Beautiful",
+      "Fair",
+      "Prime",
+      "Ancient",
+      "Golden",
+      "Proud",
+      "Lucky",
+      "Fat",
+      "Honest",
+      "Giant",
+      "Distant",
+      "Friendly",
+      "Loud",
+      "Hungry",
+      "Magical",
+      "Superior",
+      "Peaceful",
+      "Frozen",
+      "Divine",
+      "Favorable",
+      "Brave",
+      "Sunny",
+      "Flying"
+    ];
+    const methods = [
+      "Boiled",
+      "Grilled",
+      "Roasted",
+      "Spit-roasted",
+      "Stewed",
+      "Stuffed",
+      "Jugged",
+      "Mashed",
+      "Baked",
+      "Braised",
+      "Poached",
+      "Marinated",
+      "Pickled",
+      "Smoked",
+      "Dried",
+      "Dry-aged",
+      "Corned",
+      "Fried",
+      "Pan-fried",
+      "Deep-fried",
+      "Dressed",
+      "Steamed",
+      "Cured",
+      "Syrupped",
+      "Flame-Broiled"
+    ];
+    const courses = [
+      "beef",
+      "pork",
+      "bacon",
+      "chicken",
+      "lamb",
+      "chevon",
+      "hare",
+      "rabbit",
+      "hart",
+      "deer",
+      "antlers",
+      "bear",
+      "buffalo",
+      "badger",
+      "beaver",
+      "turkey",
+      "pheasant",
+      "duck",
+      "goose",
+      "teal",
+      "quail",
+      "pigeon",
+      "seal",
+      "carp",
+      "bass",
+      "pike",
+      "catfish",
+      "sturgeon",
+      "escallop",
+      "pie",
+      "cake",
+      "pottage",
+      "pudding",
+      "onions",
+      "carrot",
+      "potato",
+      "beet",
+      "garlic",
+      "cabbage",
+      "eggplant",
+      "eggs",
+      "broccoli",
+      "zucchini",
+      "pepper",
+      "olives",
+      "pumpkin",
+      "spinach",
+      "peas",
+      "chickpea",
+      "beans",
+      "rice",
+      "pasta",
+      "bread",
+      "apples",
+      "peaches",
+      "pears",
+      "melon",
+      "oranges",
+      "mango",
+      "tomatoes",
+      "cheese",
+      "corn",
+      "rat tails",
+      "pig ears"
+    ];
     const types = ["hot", "cold", "fire", "ice", "smoky", "misty", "shiny", "sweet", "bitter", "salty", "sour", "sparkling", "smelly"];
-    const drinks = ["wine", "brandy", "jinn", "whisky", "rom", "beer", "cider", "mead", "liquor", "spirit", "vodka", "tequila", "absinthe", "nectar", "milk", "kvass", "kumis", "tea", "water", "juice", "sap"];
+    const drinks = [
+      "wine",
+      "brandy",
+      "jinn",
+      "whisky",
+      "rom",
+      "beer",
+      "cider",
+      "mead",
+      "liquor",
+      "spirit",
+      "vodka",
+      "tequila",
+      "absinthe",
+      "nectar",
+      "milk",
+      "kvass",
+      "kumis",
+      "tea",
+      "water",
+      "juice",
+      "sap"
+    ];
 
     while (quantity) {
       const [cell] = extractAnyElement(taverns);
@@ -282,7 +505,14 @@ window.Markers = (function () {
 
     const subjects = ["Locals", "Old folks", "Old books", "Tipplers"];
     const species = ["Ogre", "Troll", "Cyclops", "Giant", "Monster", "Beast", "Dragon", "Undead", "Ghoul", "Vampire"];
-    const modusOperandi = ["steals their cattle", "doesn't mind eating children", "doesn't mind of human flesh", "keeps the region at bay", "eats their kids", "abducts young women"];
+    const modusOperandi = [
+      "steals their cattle",
+      "doesn't mind eating children",
+      "doesn't mind of human flesh",
+      "keeps the region at bay",
+      "eats their kids",
+      "abducts young women"
+    ];
 
     while (quantity) {
       const [cell] = extractAnyElement(hills);
@@ -376,7 +606,38 @@ window.Markers = (function () {
     let quantity = getQuantity(roads, 50, 100);
     if (!quantity) return;
 
-    const animals = ["Apes", "Badgers", "Bears", "Beavers", "Bisons", "Boars", "Cats", "Crows", "Dogs", "Foxes", "Hares", "Hawks", "Hyenas", "Jackals", "Jaguars", "Leopards", "Lions", "Owls", "Panthers", "Rats", "Ravens", "Rooks", "Scorpions", "Sharks", "Snakes", "Spiders", "Tigers", "Wolfs", "Wolverines", "Falcons"];
+    const animals = [
+      "Apes",
+      "Badgers",
+      "Bears",
+      "Beavers",
+      "Bisons",
+      "Boars",
+      "Cats",
+      "Crows",
+      "Dogs",
+      "Foxes",
+      "Hares",
+      "Hawks",
+      "Hyenas",
+      "Jackals",
+      "Jaguars",
+      "Leopards",
+      "Lions",
+      "Owls",
+      "Panthers",
+      "Rats",
+      "Ravens",
+      "Rooks",
+      "Scorpions",
+      "Sharks",
+      "Snakes",
+      "Spiders",
+      "Tigers",
+      "Wolfs",
+      "Wolverines",
+      "Falcons"
+    ];
     const types = {brigands: 4, bandits: 3, robbers: 1, highwaymen: 1};
 
     while (quantity) {
@@ -385,7 +646,18 @@ window.Markers = (function () {
       const culture = cells.culture[cell];
       const biome = cells.biome[cell];
       const height = cells.p[cell];
-      const locality = height >= 70 ? "highlander" : [1, 2].includes(biome) ? "desert" : [3, 4].includes(biome) ? "mounted" : [5, 6, 7, 8, 9].includes(biome) ? "forest" : biome === 12 ? "swamp" : "angry";
+      const locality =
+        height >= 70
+          ? "highlander"
+          : [1, 2].includes(biome)
+          ? "desert"
+          : [3, 4].includes(biome)
+          ? "mounted"
+          : [5, 6, 7, 8, 9].includes(biome)
+          ? "forest"
+          : biome === 12
+          ? "swamp"
+          : "angry";
       const name = `${Names.getCulture(culture)} ${ra(animals)}`;
       const legend = `A gang of ${locality} ${rw(types)}`;
       notes.push({id, name, legend});
