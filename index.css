@@ -1528,15 +1528,12 @@ div.states > .coaIcon > use {
 #markerEditor div.label {
   display: inline-block;
   width: 5.5em;
+  padding: 0.3em 0;
 }
 
 #saveTilesScreen div.label {
   display: inline-block;
   width: 5em;
-}
-
-#regimentBody div {
-  margin: 0.1em 0;
 }
 
 #regimentBody input[type="number"] {
