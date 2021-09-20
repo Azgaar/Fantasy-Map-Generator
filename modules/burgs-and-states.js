@@ -181,7 +181,7 @@ window.BurgsAndStates = (function () {
       } else b.port = 0;
 
       // define burg population
-      const primaryPopulation = cells.s[i] * POPULATION_MULTIPLIER;
+      const primaryPopulation = cells.s[i];
       const secondaryPopulation = b.i / 1000 + (i % 100) / 1000;
       b.population = rn(Math.max(primaryPopulation + secondaryPopulation, 0.1), 3);
       if (b.capital) b.population = rn(b.population * 1.3, 3); // increase capital population
