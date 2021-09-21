@@ -16,7 +16,7 @@
   <link rel="canonical" href="https://azgaar.github.io/Fantasy-Map-Generator/">
 
   <style type="text/css">
-    body {margin: 0; font-size: 11px; overflow: hidden;}
+    body {margin: 0; font-size: 10px; overflow: hidden;}
     #map {position: absolute;}
     #initial {fill: none; stroke: black; pointer-events: none;}
     #init-rose {animation: 20s infinite spin; opacity: .7; transform-origin: center;}
@@ -31,6 +31,7 @@
     #loading-text span:nth-child(2), #mapOverlay > span:nth-child(2) {animation-delay: 1s;}
     #loading-text span:nth-child(3), #mapOverlay > span:nth-child(3) {animation-delay: 2s;}
     @keyframes blink {0% {opacity: 0;} 20% {opacity: 1;} 100% {opacity: .1;}}
+
   </style>
   <link rel="stylesheet" href="index.css">
   <link rel="stylesheet" href="icons.css">
@@ -1145,10 +1146,10 @@
             <td></td>
             <td>Interface size</td>
             <td>
-              <input id="uiSizeInput" data-stored="uiSize" type="range" min=.6 max=3 step=.1 value=1>
+              <input id="uiSizeInput" data-stored="uiSize" type="range" min=.6 max=3 step=.1>
             </td>
             <td>
-              <input id="uiSizeOutput" data-stored="uiSize" type="number" min=.6 max=3 step=.1 value=1>
+              <input id="uiSizeOutput" data-stored="uiSize" type="number" min=.6 max=3 step=.1>
             </td>
           </tr>
 
@@ -1163,14 +1164,27 @@
             </td>
           </tr>
 
+          <tr data-tip="Set theme hue for dialogs and tool windows">
+            <td>
+              <i data-tip="Restore default theme color: pale magenta" id="themeColorRestore" class="icon-ccw"></i>
+            </td>
+            <td>Theme color</td>
+            <td>
+              <input id="themeHueInput" type="range" min=0 max=359 >
+            </td>
+            <td>
+              <input id="themeColorInput" data-stored="themeColor" type="color" >
+            </td>
+          </tr>
+
           <tr data-tip="Set dialog and tool windows transparency">
             <td></td>
             <td>Transparency</td>
             <td>
-              <input id="transparencyInput" data-stored="transparency" type="range" min=0 max=100 value=15>
+              <input id="transparencyInput" data-stored="transparency" type="range" min=0 max=100 >
             </td>
             <td>
-              <input id="transparencyOutput" data-stored="transparency" type="number" min=0 max=100 value=15>
+              <input id="transparencyOutput" data-stored="transparency" type="number" min=0 max=100 >
             </td>
           </tr>
 
@@ -1263,7 +1277,9 @@
           </tr>
 
           <tr data-tip="Set minimum and maximum possible zoom level">
-            <td></td>
+            <td>
+              <i data-tip="Restore default zoom extent: [1, 20]" id="zoomExtentDefault" class="icon-ccw"></i>
+            </td>
             <td>Zoom extent</td>
             <td>
               <span data-tip="Mimimal possible zoom level (should be > 0)">min</span>
@@ -1272,7 +1288,6 @@
               <input data-tip="Maximal possible zoom level (should be > 1)" id="zoomExtentMax" class="paired" type="number" min=1 max=50 value=20>
             </td>
             <td>
-              <i data-tip="Restore default zoom extent (1, 20)" id="zoomExtentDefault" class="icon-ccw"></i>
               <i data-tip="Allow to drag map beyond canvas borders" id="translateExtent" data-on=0 class="icon-hand-paper-o"></i>
             </td>
           </tr>
@@ -1454,8 +1469,7 @@
     </div>
   </div>
 
-  <div id="dialogs" style="background-color: #ffffff">
-
+  <div id="dialogs">
     <div id="worldConfigurator" class="dialog stable" style="display: none">
 
       <div id="worldControls">

@@ -3,81 +3,79 @@
 * Copyright jQuery Foundation and other contributors; Licensed MIT */
 
 .ui-draggable-handle {
-	-ms-touch-action: none;
-	touch-action: none;
+  -ms-touch-action: none;
+  touch-action: none;
 }
 
 .ui-helper-hidden {
-	display: none;
+  display: none;
 }
 .ui-helper-hidden-accessible {
-	border: 0;
-	clip: rect(0 0 0 0);
-	height: 1px;
-	margin: -1px;
-	overflow: hidden;
-	padding: 0;
-	position: absolute;
-	width: 1px;
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: 1px;
 }
 .ui-helper-reset {
-	margin: 0;
-	padding: 0;
-	border: 0;
-	outline: 0;
-	line-height: 1.3;
-	text-decoration: none;
-	font-size: 100%;
-	list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  line-height: 1.3;
+  text-decoration: none;
+  font-size: 100%;
+  list-style: none;
 }
 .ui-helper-clearfix:before,
 .ui-helper-clearfix:after {
-	content: "";
-	display: table;
-	border-collapse: collapse;
+  content: "";
+  display: table;
+  border-collapse: collapse;
 }
 .ui-helper-clearfix:after {
-	clear: both;
+  clear: both;
 }
 .ui-helper-zfix {
-	width: 100%;
-	height: 100%;
-	top: 0;
-	left: 0;
-	position: absolute;
-	opacity: 0;
-	filter:Alpha(Opacity=0); /* support: IE8 */
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  position: absolute;
+  opacity: 0;
+  filter: Alpha(Opacity=0); /* support: IE8 */
 }
 
 .ui-front {
-	z-index: 100;
+  z-index: 100;
 }
-
 
 /* Interaction Cues
 ----------------------------------*/
 .ui-state-disabled {
-	cursor: default !important;
-	pointer-events: none;
+  cursor: default !important;
+  pointer-events: none;
 }
-
 
 /* Icons
 ----------------------------------*/
 .ui-icon {
-	display: inline-block;
-	vertical-align: middle;
-	margin-top: -.25em;
-	position: relative;
-	text-indent: -99999px;
-	overflow: hidden;
-	background-repeat: no-repeat;
+  display: inline-block;
+  vertical-align: middle;
+  margin-top: -0.25em;
+  position: relative;
+  text-indent: -99999px;
+  overflow: hidden;
+  background-repeat: no-repeat;
 }
 
 .ui-widget-icon-block {
-	left: 50%;
-	margin-left: -8px;
-	display: block;
+  left: 50%;
+  margin-left: -8px;
+  display: block;
 }
 
 /* Misc visuals
@@ -85,102 +83,102 @@
 
 /* Overlays */
 .ui-widget-overlay {
-	position: fixed;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
 .ui-resizable {
-	position: relative;
+  position: relative;
 }
 .ui-resizable-handle {
-	position: absolute;
-	font-size: 0.1px;
-	display: block;
-	-ms-touch-action: none;
-	touch-action: none;
+  position: absolute;
+  font-size: 0.1px;
+  display: block;
+  -ms-touch-action: none;
+  touch-action: none;
 }
 .ui-resizable-disabled .ui-resizable-handle,
 .ui-resizable-autohide .ui-resizable-handle {
-	display: none;
+  display: none;
 }
 .ui-resizable-n {
-	cursor: n-resize;
-	height: 7px;
-	width: 100%;
-	top: -5px;
-	left: 0;
+  cursor: n-resize;
+  height: 7px;
+  width: 100%;
+  top: -5px;
+  left: 0;
 }
 .ui-resizable-s {
-	cursor: s-resize;
-	height: 7px;
-	width: 100%;
-	bottom: -5px;
-	left: 0;
+  cursor: s-resize;
+  height: 7px;
+  width: 100%;
+  bottom: -5px;
+  left: 0;
 }
 .ui-resizable-e {
-	cursor: e-resize;
-	width: 7px;
-	right: -5px;
-	top: 0;
-	height: 100%;
+  cursor: e-resize;
+  width: 7px;
+  right: -5px;
+  top: 0;
+  height: 100%;
 }
 .ui-resizable-w {
-	cursor: w-resize;
-	width: 7px;
-	left: -5px;
-	top: 0;
-	height: 100%;
+  cursor: w-resize;
+  width: 7px;
+  left: -5px;
+  top: 0;
+  height: 100%;
 }
 .ui-resizable-se {
-	cursor: se-resize;
-	width: 12px;
-	height: 12px;
-	right: 1px;
-	bottom: 1px;
+  cursor: se-resize;
+  width: 12px;
+  height: 12px;
+  right: 1px;
+  bottom: 1px;
 }
 .ui-resizable-sw {
-	cursor: sw-resize;
-	width: 9px;
-	height: 9px;
-	left: -5px;
-	bottom: -5px;
+  cursor: sw-resize;
+  width: 9px;
+  height: 9px;
+  left: -5px;
+  bottom: -5px;
 }
 .ui-resizable-nw {
-	cursor: nw-resize;
-	width: 9px;
-	height: 9px;
-	left: -5px;
-	top: -5px;
+  cursor: nw-resize;
+  width: 9px;
+  height: 9px;
+  left: -5px;
+  top: -5px;
 }
 .ui-resizable-ne {
-	cursor: ne-resize;
-	width: 9px;
-	height: 9px;
-	right: -5px;
-	top: -5px;
+  cursor: ne-resize;
+  width: 9px;
+  height: 9px;
+  right: -5px;
+  top: -5px;
 }
 .ui-sortable-handle {
-	-ms-touch-action: none;
-	touch-action: none;
+  -ms-touch-action: none;
+  touch-action: none;
 }
 .ui-button {
-	padding: .4em 1em;
-	display: inline-block;
-	position: relative;
-	line-height: normal;
-	margin-right: .1em;
-	cursor: pointer;
-	vertical-align: middle;
-	text-align: center;
-	-webkit-user-select: none;
-	-moz-user-select: none;
-	-ms-user-select: none;
-	user-select: none;
+  padding: 0.4em 1em;
+  display: inline-block;
+  position: relative;
+  line-height: normal;
+  margin-right: 0.1em;
+  cursor: pointer;
+  vertical-align: middle;
+  text-align: center;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 
-	/* Support: IE <= 11 */
-	overflow: visible;
+  /* Support: IE <= 11 */
+  overflow: visible;
 }
 
 .ui-button,
@@ -188,128 +186,126 @@
 .ui-button:visited,
 .ui-button:hover,
 .ui-button:active {
-	text-decoration: none;
+  text-decoration: none;
 }
 
 /* to make room for the icon, a width needs to be set here */
 .ui-button-icon-only {
-	width: 2em;
-	box-sizing: border-box;
-	white-space: nowrap;
+  width: 2em;
+  box-sizing: border-box;
+  white-space: nowrap;
 }
 
 /* button icon element(s) */
 .ui-button-icon-only .ui-icon {
-	position: absolute;
-	top: 50%;
-	left: 50%;
-	margin-top: -8px;
-	margin-left: -8px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin-top: -8px;
+  margin-left: -8px;
 }
 
 .ui-button.ui-icon-notext .ui-icon {
-	padding: 0;
-	width: 2.1em;
-	height: 2.1em;
-	text-indent: -9999px;
-	white-space: nowrap;
-
+  padding: 0;
+  width: 2.1em;
+  height: 2.1em;
+  text-indent: -9999px;
+  white-space: nowrap;
 }
 
 input.ui-button.ui-icon-notext .ui-icon {
-	width: auto;
-	height: auto;
-	text-indent: 0;
-	white-space: normal;
-	padding: .4em 1em;
+  width: auto;
+  height: auto;
+  text-indent: 0;
+  white-space: normal;
+  padding: 0.4em 1em;
 }
 
 /* workarounds */
 /* Support: Firefox 5 - 40 */
 input.ui-button::-moz-focus-inner,
 button.ui-button::-moz-focus-inner {
-	border: 0;
-	padding: 0;
+  border: 0;
+  padding: 0;
 }
 .ui-controlgroup {
-	vertical-align: middle;
-	display: inline-block;
+  vertical-align: middle;
+  display: inline-block;
 }
 .ui-controlgroup > .ui-controlgroup-item {
-	float: left;
-	margin-left: 0;
-	margin-right: 0;
+  float: left;
+  margin-left: 0;
+  margin-right: 0;
 }
 .ui-controlgroup > .ui-controlgroup-item:focus,
 .ui-controlgroup > .ui-controlgroup-item.ui-visual-focus {
-	z-index: 9999;
+  z-index: 9999;
 }
 .ui-controlgroup-vertical > .ui-controlgroup-item {
-	display: block;
-	float: none;
-	width: 100%;
-	margin-top: 0;
-	margin-bottom: 0;
-	text-align: left;
+  display: block;
+  float: none;
+  width: 100%;
+  margin-top: 0;
+  margin-bottom: 0;
+  text-align: left;
 }
 .ui-controlgroup-vertical .ui-controlgroup-item {
-	box-sizing: border-box;
+  box-sizing: border-box;
 }
 .ui-controlgroup .ui-controlgroup-label {
-	padding: .4em 1em;
+  padding: 0.4em 1em;
 }
 .ui-controlgroup .ui-controlgroup-label span {
-	font-size: 80%;
+  font-size: 80%;
 }
 .ui-controlgroup-horizontal .ui-controlgroup-label + .ui-controlgroup-item {
-	border-left: none;
+  border-left: none;
 }
 .ui-controlgroup-vertical .ui-controlgroup-label + .ui-controlgroup-item {
-	border-top: none;
+  border-top: none;
 }
 .ui-controlgroup-horizontal .ui-controlgroup-label.ui-widget-content {
-	border-right: none;
+  border-right: none;
 }
 .ui-controlgroup-vertical .ui-controlgroup-label.ui-widget-content {
-	border-bottom: none;
+  border-bottom: none;
 }
 
 /* Spinner specific style fixes */
 .ui-controlgroup-vertical .ui-spinner-input {
-
-	/* Support: IE8 only, Android < 4.4 only */
-	width: 75%;
-	width: calc( 100% - 2.4em );
+  /* Support: IE8 only, Android < 4.4 only */
+  width: 75%;
+  width: calc(100% - 2.4em);
 }
 .ui-controlgroup-vertical .ui-spinner .ui-spinner-up {
-	border-top-style: solid;
+  border-top-style: solid;
 }
 
 .ui-checkboxradio-label .ui-icon-background {
-	box-shadow: inset 1px 1px 1px #ccc;
-	border-radius: .12em;
-	border: none;
+  box-shadow: inset 1px 1px 1px #ccc;
+  border-radius: 0.12em;
+  border: none;
 }
 .ui-checkboxradio-radio-label .ui-icon-background {
-	width: 16px;
-	height: 16px;
-	border-radius: 1em;
-	overflow: visible;
-	border: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 1em;
+  overflow: visible;
+  border: none;
 }
 .ui-checkboxradio-radio-label.ui-checkboxradio-checked .ui-icon,
 .ui-checkboxradio-radio-label.ui-checkboxradio-checked:hover .ui-icon {
-	background-image: none;
-	width: 8px;
-	height: 8px;
-	border-width: 4px;
-	border-style: solid;
+  background-image: none;
+  width: 8px;
+  height: 8px;
+  border-width: 4px;
+  border-style: solid;
 }
 .ui-checkboxradio-disabled {
-	pointer-events: none;
+  pointer-events: none;
 }
 body .ui-dialog {
-	position: absolute;
+  position: absolute;
   top: 0;
   left: 0;
   outline: 0;
@@ -317,30 +313,30 @@ body .ui-dialog {
   background-color: inherit;
 }
 .ui-dialog .ui-dialog-titlebar {
-	padding: .4em 1em;
-	position: relative;
-	font-size: 1.2em;
+  padding: 0.4em 1em;
+  position: relative;
+  font-size: 1.2em;
   min-width: 150px;
 }
 .ui-dialog .ui-dialog-title {
-	float: left;
-	margin: .1em 0;
-	white-space: nowrap;
-	width: 90%;
-	overflow: hidden;
-	text-overflow: ellipsis;
+  float: left;
+  margin: 0.1em 0;
+  white-space: nowrap;
+  width: 90%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.ui-dialog  .ui-dialog-titlebar button {
-	position: absolute;
-  right: .5em;
+.ui-dialog .ui-dialog-titlebar button {
+  position: absolute;
+  right: 0.5em;
   top: 53%;
   padding: 0;
   width: 1.8em;
   height: 1.8em;
   color: #ffffff;
   background: none;
-  font-size: .75em;
+  font-size: 0.75em;
   border: 1px solid #c5c5c5;
 }
 
@@ -349,113 +345,107 @@ body .ui-dialog {
 }
 
 .ui-dialog .ui-dialog-titlebar button.ui-dialog-titlebar-close {
-	margin: -1em 0 0;
+  margin: -1em 0 0;
 }
 
-.ui-dialog  .ui-dialog-titlebar button:active {
+.ui-dialog .ui-dialog-titlebar button:active {
   border: 1px solid #5d4651;
   color: #5d4651;
 }
 
 .ui-dialog .ui-dialog-content {
-	position: relative;
-	border: 0;
-	padding: .5em 1em;
-	background: none;
-	overflow-y: auto;
-	overflow-x: hidden;
+  position: relative;
+  border: 0;
+  padding: 0.5em 1em;
+  background: none;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 .ui-dialog .ui-dialog-buttonpane {
-	text-align: left;
-	border-width: 1px 0 0 0;
-	background-image: none;
-	margin-top: .5em;
-	padding: .3em 1em .5em .4em;
+  text-align: left;
+  border-width: 1px 0 0 0;
+  background-image: none;
+  margin-top: 0.5em;
+  padding: 0.3em 1em 0.5em 0.4em;
 }
 .ui-dialog .ui-dialog-buttonpane .ui-dialog-buttonset {
-	float: right;
+  float: right;
 }
 .ui-dialog .ui-dialog-buttonpane button {
-	margin: .5em .4em .5em 0;
-	cursor: pointer;
+  margin: 0.5em 0.4em 0.5em 0;
+  cursor: pointer;
 }
 .ui-dialog .ui-resizable-n {
-	height: 2px;
-	top: 0;
+  height: 2px;
+  top: 0;
 }
 .ui-dialog .ui-resizable-e {
-	width: 2px;
-	right: 0;
+  width: 2px;
+  right: 0;
 }
 .ui-dialog .ui-resizable-s {
-	height: 2px;
-	bottom: 0;
+  height: 2px;
+  bottom: 0;
 }
 .ui-dialog .ui-resizable-w {
-	width: 2px;
-	left: 0;
+  width: 2px;
+  left: 0;
 }
 .ui-dialog .ui-resizable-se,
 .ui-dialog .ui-resizable-sw,
 .ui-dialog .ui-resizable-ne,
 .ui-dialog .ui-resizable-nw {
-	width: 7px;
-	height: 7px;
+  width: 7px;
+  height: 7px;
 }
 .ui-dialog .ui-resizable-se {
-	right: 0;
-	bottom: 0;
+  right: 0;
+  bottom: 0;
 }
 .ui-dialog .ui-resizable-sw {
-	left: 0;
-	bottom: 0;
+  left: 0;
+  bottom: 0;
 }
 .ui-dialog .ui-resizable-ne {
-	right: 0;
-	top: 0;
+  right: 0;
+  top: 0;
 }
 .ui-dialog .ui-resizable-nw {
-	left: 0;
-	top: 0;
+  left: 0;
+  top: 0;
 }
 .ui-draggable .ui-dialog-titlebar {
-	cursor: move;
+  cursor: move;
 }
 
 /* Component containers
 ----------------------------------*/
 .ui-widget {
-	font-family: Arial,Helvetica,sans-serif;
+  font-family: Arial, Helvetica, sans-serif;
 }
 .ui-widget input,
 .ui-widget select,
 .ui-widget textarea,
 .ui-widget button {
-	font-family: Arial,Helvetica,sans-serif;
-	font-size: 1em;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 1em;
 }
 .ui-widget button[class^="icon-"] {
-	padding: 1px 6px;
+  padding: 1px 6px;
 }
 .ui-widget.ui-widget-content {
-	border: 1px solid #5e4fa2;
+  border: 1px solid #5e4fa2;
   color: #333333;
 }
 .ui-widget-content {
-	border: 1px solid #dddddd;
-	color: #333333;
+  border: 1px solid #dddddd;
+  color: #333333;
 }
 .ui-widget-content a {
-	color: #333333;
-}
-.ui-widget-header {
-	border-bottom: 1px solid #5d4651;
-	background: #916e7f;
-	color: #ffffff;
-	font-weight: bold;
+  color: #333333;
 }
 .ui-widget-header a {
-	color: #333333;
+  color: #333333;
 }
 
 /* Interaction states
@@ -469,10 +459,10 @@ body .ui-dialog {
 works properly when clicked or hovered */
 html .ui-button.ui-state-disabled:hover,
 html .ui-button.ui-state-disabled:active {
-	border: 1px solid #c5c5c5;
-	background: #f6f6f6;
-	font-weight: normal;
-	color: #454545;
+  border: 1px solid #c5c5c5;
+  background: #f6f6f6;
+  font-weight: normal;
+  color: #454545;
 }
 .ui-state-default a,
 .ui-state-default a:link,
@@ -481,10 +471,10 @@ a.ui-button,
 a:link.ui-button,
 a:visited.ui-button,
 .ui-button {
-	color: #454545;
+  color: #454545;
 }
 .ui-button:active {
-	color: #5d4651;
+  color: #5d4651;
   border-color: #5d4651;
 }
 .ui-state-hover a,
@@ -497,12 +487,12 @@ a:visited.ui-button,
 .ui-state-focus a:visited,
 a.ui-button:hover,
 a.ui-button:focus {
-	color: #2b2b2b;
-	text-decoration: none;
+  color: #2b2b2b;
+  text-decoration: none;
 }
 
 .ui-visual-focus {
-	box-shadow: 0 0 3px 1px rgb(94, 158, 214);
+  box-shadow: 0 0 3px 1px rgb(94, 158, 214);
 }
 
 /* Interaction Cues
@@ -510,68 +500,68 @@ a.ui-button:focus {
 .ui-state-highlight,
 .ui-widget-content .ui-state-highlight,
 .ui-widget-header .ui-state-highlight {
-	border: 1px solid #dad55e;
-	background: #fffa90;
-	color: #777620;
+  border: 1px solid #dad55e;
+  background: #fffa90;
+  color: #777620;
 }
 .ui-state-checked {
-	border: 1px solid #dad55e;
-	background: #fffa90;
+  border: 1px solid #dad55e;
+  background: #fffa90;
 }
 .ui-state-highlight a,
 .ui-widget-content .ui-state-highlight a,
 .ui-widget-header .ui-state-highlight a {
-	color: #777620;
+  color: #777620;
 }
 .ui-state-error,
 .ui-widget-content .ui-state-error,
 .ui-widget-header .ui-state-error {
-	border: 1px solid #f1a899;
-	background: #fddfdf;
-	color: #5f3f3f;
+  border: 1px solid #f1a899;
+  background: #fddfdf;
+  color: #5f3f3f;
 }
 .ui-state-error a,
 .ui-widget-content .ui-state-error a,
 .ui-widget-header .ui-state-error a {
-	color: #5f3f3f;
+  color: #5f3f3f;
 }
 .ui-state-error-text,
 .ui-widget-content .ui-state-error-text,
 .ui-widget-header .ui-state-error-text {
-	color: #5f3f3f;
+  color: #5f3f3f;
 }
 .ui-priority-primary,
 .ui-widget-content .ui-priority-primary,
 .ui-widget-header .ui-priority-primary {
-	font-weight: bold;
+  font-weight: bold;
 }
 .ui-priority-secondary,
 .ui-widget-content .ui-priority-secondary,
 .ui-widget-header .ui-priority-secondary {
-	opacity: .7;
-	filter:Alpha(Opacity=70); /* support: IE8 */
-	font-weight: normal;
+  opacity: 0.7;
+  filter: Alpha(Opacity=70); /* support: IE8 */
+  font-weight: normal;
 }
 .ui-state-disabled,
 .ui-widget-content .ui-state-disabled,
 .ui-widget-header .ui-state-disabled {
-	opacity: .35;
-	filter:Alpha(Opacity=35); /* support: IE8 */
-	background-image: none;
+  opacity: 0.35;
+  filter: Alpha(Opacity=35); /* support: IE8 */
+  background-image: none;
 }
 .ui-state-disabled .ui-icon {
-	filter:Alpha(Opacity=35); /* support: IE8 - See #6059 */
+  filter: Alpha(Opacity=35); /* support: IE8 - See #6059 */
 }
 
 /* Misc visuals
 ----------------------------------*/
 /* Overlays */
 .ui-widget-overlay {
-	background: #aaaaaa;
-	opacity: .3;
-	filter: Alpha(Opacity=30); /* support: IE8 */
+  background: #aaaaaa;
+  opacity: 0.3;
+  filter: Alpha(Opacity=30); /* support: IE8 */
 }
 .ui-widget-shadow {
-	-webkit-box-shadow: 0px 0px 5px #666666;
-	box-shadow: 0px 0px 5px #666666;
+  -webkit-box-shadow: 0px 0px 5px #666666;
+  box-shadow: 0px 0px 5px #666666;
 }
