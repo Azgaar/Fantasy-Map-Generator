@@ -542,8 +542,8 @@ input[type='color']::-webkit-color-swatch-wrapper {
   margin: 0;
 }
 
-#optionsContent input[type='number']:hover {
-  outline: 1px solid #5d4651;
+#optionsContent input[type="number"]:hover {
+  outline: 1px solid var(--dark-solid);
 }
 
 #optionsContent input.paired {
@@ -569,6 +569,11 @@ input[type='color']::-webkit-color-swatch-wrapper {
   content: '✓';
   margin-left: -2px;
   font-weight: bold;
+}
+
+#options input[type="color"] {
+  width: 2em;
+  padding: 1px;
 }
 
 .tabcontent button.sideButton {
