@@ -150,7 +150,9 @@ optionsContent.addEventListener("input", function (event) {
   else if (id === "regionsInput" || id === "regionsOutput") changeStatesNumber(value);
   else if (id === "emblemShape") changeEmblemShape(value);
   else if (id === "tooltipSizeInput" || id === "tooltipSizeOutput") changeTooltipSize(value);
-  else if (id === "transparencyInput") changeDialogsTransparency(value);
+  else if (id === "themeHueInput") changeThemeHue(value);
+  else if (id === "themeColorInput") changeDialogsTheme(themeColorInput.value, transparencyInput.value);
+  else if (id === "transparencyInput") changeDialogsTheme(themeColorInput.value, value);
 });
 
 optionsContent.addEventListener("change", function (event) {
@@ -175,6 +177,7 @@ optionsContent.addEventListener("click", function (event) {
   else if (id === "zoomExtentDefault") restoreDefaultZoomExtent();
   else if (id === "translateExtent") toggleTranslateExtent(event.target);
   else if (id === "speakerTest") testSpeaker();
+  else if (id === "themeColorRestore") restoreDefaultThemeColor();
 });
 
 function mapSizeInputChange() {
@@ -417,7 +420,7 @@ function changeUIsize(value) {
   if (+value > max) value = max;
 
   uiSizeInput.value = uiSizeOutput.value = value;
-  document.getElementsByTagName("body")[0].style.fontSize = value * 11 + "px";
+  document.getElementsByTagName("body")[0].style.fontSize = rn(value * 10, 2) + "px";
   document.getElementById("options").style.width = value * 300 + "px";
 }
 
@@ -429,19 +432,49 @@ function changeTooltipSize(value) {
   tooltip.style.fontSize = `calc(${value}px + 0.5vw)`;
 }
 
-// change transparency for modal windows
-function changeDialogsTransparency(value) {
-  transparencyInput.value = transparencyOutput.value = value;
-  const alpha = (100 - +value) / 100;
-  const optionsColor = "rgba(164, 139, 149, " + alpha + ")";
-  const dialogsColor = "rgba(255, 255, 255, " + alpha + ")";
-  const optionButtonsColor = "rgba(145, 110, 127, " + Math.min(alpha + 0.3, 1) + ")";
-  const optionLiColor = "rgba(153, 123, 137, " + Math.min(alpha + 0.3, 1) + ")";
-  document.getElementById("options").style.backgroundColor = optionsColor;
-  document.getElementById("dialogs").style.backgroundColor = dialogsColor;
-  document.querySelectorAll(".tabcontent button").forEach(el => (el.style.backgroundColor = optionButtonsColor));
-  document.querySelectorAll(".tabcontent li").forEach(el => (el.style.backgroundColor = optionLiColor));
-  document.querySelectorAll("button.options").forEach(el => (el.style.backgroundColor = optionLiColor));
+const THEME_COLOR = "#997787";
+function restoreDefaultThemeColor() {
+  localStorage.removeItem("themeColor");
+  changeDialogsTheme(THEME_COLOR, transparencyInput.value);
+}
+
+function changeThemeHue(hue) {
+  const {s, l} = d3.hsl(themeColorInput.value);
+  const newColor = d3.hsl(+hue, s, l).hex();
+  changeDialogsTheme(newColor, transparencyInput.value);
+}
+
+// change color and transparency for modal windows
+function changeDialogsTheme(themeColor, transparency) {
+  transparencyInput.value = transparencyOutput.value = transparency;
+  const alpha = (100 - +transparency) / 100;
+  const alphaReduced = Math.min(alpha + 0.3, 1);
+
+  const {h, s, l} = d3.hsl(themeColor || THEME_COLOR);
+  themeColorInput.value = themeColor || THEME_COLOR;
+  themeHueInput.value = h;
+
+  const getRGBA = (hue, saturation, lightness, alpha) => {
+    const color = d3.hsl(hue, saturation, lightness, alpha);
+    return color.toString();
+  };
+
+  const theme = [
+    {name: "--bg-main", h, s, l, alpha},
+    {name: "--bg-lighter", h, s, l: l + 0.02, alpha},
+    {name: "--bg-light", h, s: s - 0.02, l: l + 0.06, alpha},
+    {name: "--light-solid", h, s: s + 0.01, l: l + 0.05, alpha: 1},
+    {name: "--dark-solid", h, s, l: l - 0.2, alpha: 1},
+    {name: "--header", h, s: s, l: l - 0.03, alpha: alphaReduced},
+    {name: "--header-active", h, s: s, l: l - 0.09, alpha: alphaReduced},
+    {name: "--bg-disabled", h, s: s - 0.04, l: l + 0.09, alphaReduced},
+    {name: "--bg-dialogs", h: 0, s: 0, l: 0.98, alpha}
+  ];
+
+  const sx = document.documentElement.style;
+  theme.forEach(({name, h, s, l, alpha}) => {
+    sx.setProperty(name, getRGBA(h, s, l, alpha));
+  });
 }
 
 function changeZoomExtent(value) {
@@ -484,7 +517,6 @@ function applyStoredOptions() {
       .map(w => +w);
   if (localStorage.getItem("military")) options.military = JSON.parse(localStorage.getItem("military"));
 
-  changeDialogsTransparency(localStorage.getItem("transparency") || 5);
   if (localStorage.getItem("tooltipSize")) changeTooltipSize(localStorage.getItem("tooltipSize"));
   if (localStorage.getItem("regions")) changeStatesNumber(localStorage.getItem("regions"));
 
@@ -498,6 +530,10 @@ function applyStoredOptions() {
   const height = +params.get("height");
   if (width) mapWidthInput.value = width;
   if (height) mapHeightInput.value = height;
+
+  const transparency = localStorage.getItem("transparency") || 5;
+  const themeColor = localStorage.getItem("themeColor");
+  changeDialogsTheme(themeColor, transparency);
 
   // set shape rendering
   viewbox.attr("shape-rendering", shapeRendering.value);

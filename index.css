@@ -228,11 +228,6 @@ t,
   cursor: pointer;
 }
 
-#options .pressed {
-  background-color: #896c77 !important;
-  font-style: italic;
-}
-
 i.icon-lock {
   cursor: pointer;
 }
@@ -328,8 +323,19 @@ text.drag {
   text-shadow: 0 0 1px red;
 }
 
+#dialogs {
+  background-color: var(--bg-dialogs);
+}
+
 .draggable {
   cursor: move;
+}
+
+.ui-widget-header {
+  border-bottom: 1px solid var(--dark-solid);
+  background: var(--header);
+  color: #ffffff;
+  font-weight: bold;
 }
 
 .ui-dialog,
@@ -343,6 +349,7 @@ text.drag {
   border: solid 1px #5e4fa2;
   margin: 10px;
   padding-bottom: 0.3em;
+  background: var(--bg-light);
 }
 
 #options input,
@@ -361,7 +368,7 @@ text.drag {
 }
 
 .tab {
-  border-bottom: 1px solid #5d4651;
+  border-bottom: 1px solid var(--dark-solid);
   height: 2.2em;
   display: flex;
   justify-content: space-between;
@@ -375,19 +382,19 @@ div.tab > button#optionsHide {
 
 button.options {
   width: 100%;
-  background-color: #997b89;
+  background-color: var(--bg-main);
   font-weight: bold;
   border: none;
   transition: 0.2s;
 }
 
-button.options:hover {
-  background-color: #806070 !important;
-  color: white !important;
+button.active {
+  background-color: var(--header);
+  color: white;
 }
 
-button.active {
-  background-color: #916e7f;
+button.options:hover {
+  background-color: var(--header-active);
   color: white;
 }
 
@@ -417,7 +424,7 @@ button.active {
 
 #options i {
   color: #31272c;
-  font-size: 0.8em;
+  font-size: 0.85em;
   cursor: pointer;
 }
 
@@ -466,11 +473,11 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   border-radius: 15%;
   width: 0.91em;
   height: 0.91em;
-  background: #a58394;
-  border: 1px solid #5d4651;
+  background: var(--light-solid);
+  border: 1px solid var(--dark-solid);
   cursor: pointer;
   margin-top: -0.4em;
-  box-shadow: 0.5px 0.5px 0px #5d4651;
+  box-shadow: 0.5px 0.5px 0px var(--dark-solid);
 }
 
 #options input[type="range"]::-moz-range-thumb {
@@ -478,10 +485,10 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   border-radius: 15%;
   width: 0.73em;
   height: 0.73em;
-  background: #a58394;
-  border: 1px solid #5d4651;
+  background: var(--light-solid);
+  border: 1px solid var(--dark-solid);
   cursor: pointer;
-  box-shadow: 0.5px 0.5px 0px #5d4651;
+  box-shadow: 0.5px 0.5px 0px var(--dark-solid);
 }
 
 #options input[type="range"]::-webkit-slider-runnable-track {
@@ -525,7 +532,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 }
 
 #optionsContent input[type="number"]:hover {
-  outline: 1px solid #5d4651;
+  outline: 1px solid var(--dark-solid);
 }
 
 #optionsContent input.paired {
@@ -551,6 +558,11 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   content: "✓";
   margin-left: -2px;
   font-weight: bold;
+}
+
+#options input[type="color"] {
+  width: 2em;
+  padding: 1px;
 }
 
 .tabcontent button.sideButton {
@@ -606,7 +618,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 
 #exitCustomization > div {
   width: 12em;
-  background: #5d4651;
+  background: var(--dark-solid);
   cursor: move;
 }
 
@@ -642,7 +654,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 }
 
 .tabcontent button {
-  background-color: #916e7f;
+  background-color: var(--bg-lighter);
   border: none;
   padding: 0.45em 0.75em;
   margin: 0.35em 0;
@@ -650,8 +662,13 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   font-size: 1em;
 }
 
+.tabcontent button.pressed {
+  background-color: var(--header);
+  font-style: italic;
+}
+
 .tabcontent button:hover {
-  background-color: #a8879d !important;
+  background-color: var(--header-active);
 }
 
 #toolsContent div {
@@ -684,12 +701,12 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 }
 
 fieldset {
-  border: 1px solid #5d4651;
+  border: 1px solid var(--dark-solid);
 }
 
 .tabcontent li {
   list-style-type: none;
-  background-color: #997b89;
+  background-color: var(--bg-main);
   cursor: pointer;
   padding: 0.35em;
   margin: 0.2em 0.3em;
@@ -698,14 +715,17 @@ fieldset {
   text-align: center;
 }
 
-#options .buttonoff {
-  background-color: #b6b4b440 !important;
-  color: #666;
+.tabcontent .buttonoff {
+  background-color: var(--bg-disabled);
+  color: #444444aa;
 }
 
-.tabcontent li:hover,
+.tabcontent li:hover {
+  box-shadow: 0 0 2px 2px var(--dark-solid) 17;
+}
+
 .tabcontent button:hover {
-  box-shadow: 0 0 2px 2px #5d465117;
+  background-color: var(--header);
 }
 
 #optionsContainer span {
@@ -804,7 +824,7 @@ fieldset {
 
 table.matrix-table th,
 table.matrix-table td {
-  border: 1px solid #5d4651;
+  border: 1px solid var(--dark-solid);
   height: 2em;
   padding: 0.2em;
   position: relative;
@@ -820,7 +840,7 @@ table.matrix-table tr:hover th {
 }
 
 table.matrix-table td:hover {
-  outline: 2px solid #5d4651;
+  outline: 2px solid var(--dark-solid);
   outline-offset: -1px;
   z-index: 1;
 }
@@ -1147,7 +1167,7 @@ i.resetButton {
 }
 
 i.resetButton:active {
-  color: #5d4651;
+  color: var(--dark-solid);
 }
 
 .ui-dialog button.pressed {
@@ -1680,8 +1700,8 @@ div.editorLine {
 }
 
 #pickerHeader {
-  fill: #916e7f;
-  stroke: #5d4651;
+  fill: var(--header);
+  stroke: var(--dark-solid);
   cursor: move;
 }
 
@@ -1695,7 +1715,7 @@ div.editorLine {
 
 #pickerCloseRect {
   cursor: pointer;
-  fill: #916e7f;
+  fill: var(--header);
   stroke: #f8ffff;
 }
 
@@ -2198,14 +2218,14 @@ svg.button {
   color: #920303;
   background-color: #dabdbd91;
   padding: 2px;
-  border: 1px solid #916e7f;
+  border: 1px solid var(--header);
 }
 
 .announcement {
   background-color: #a18888;
   color: white;
   padding: 0.4em 0.5em;
-  border: dashed 1px #5d4651;
+  border: dashed 1px var(--dark-solid);
 }
 
 .speaker {
