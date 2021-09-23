@@ -3,10 +3,18 @@
 window.Markers = (function () {
   let multiplier = 1;
 
-  const generate = requestedQtyMultiplier => {
+  const generate = function () {
     pack.markers = [];
-    if (requestedQtyMultiplier === 0) return;
-    if (requestedQtyMultiplier) multiplier = requestedQtyMultiplier;
+    generateTypes();
+  };
+
+  const regenerate = requestedMultiplier => {
+    if (requestedMultiplier === 0) return;
+    if (requestedMultiplier) multiplier = requestedMultiplier;
+    generateTypes();
+  };
+
+  const generateTypes = () => {
     TIME && console.time("addMarkers");
 
     const culturesSet = document.getElementById("culturesSet").value;
@@ -38,8 +46,9 @@ window.Markers = (function () {
   };
 
   const getQuantity = (array, min, each) => {
-    if (array.length < min) return 0;
-    return Math.ceil((array.length / each) * multiplier);
+    if (!array.length || array.length < min / multiplier) return 0;
+    const requestQty = Math.ceil((array.length / each) * multiplier);
+    return array.length < requestQty ? array.length : requestQty;
   };
 
   const extractAnyElement = array => {
@@ -765,5 +774,5 @@ window.Markers = (function () {
     return "marker" + i;
   }
 
-  return {generate};
+  return {generate, regenerate};
 })();

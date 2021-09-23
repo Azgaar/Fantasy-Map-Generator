@@ -417,22 +417,21 @@ function regenerateIce() {
 }
 
 function regenerateMarkers(event) {
-  // TODO: rework for new markers system
   if (isCtrlClick(event)) prompt("Please provide markers number multiplier", {default: 1, step: 0.01, min: 0, max: 100}, v => addNumberOfMarkers(v));
-  else addNumberOfMarkers(gauss(1, 0.5, 0.3, 5, 2));
+  else addNumberOfMarkers();
 
-  function addNumberOfMarkers(number) {
-    // remove existing markers and assigned notes
-    markers
-      .selectAll("use")
-      .each(function () {
-        const index = notes.findIndex(n => n.id === this.id);
-        if (index != -1) notes.splice(index, 1);
-      })
-      .remove();
+  function addNumberOfMarkers(multiplier) {
+    pack.markers = pack.markers.filter(marker => {
+      if (marker.lock) return true;
+      document.getElementById(`marker${marker.i}`)?.remove();
+      const index = notes.findIndex(note => note.id === marker.id);
+      if (index != -1) notes.splice(index, 1);
+      return false;
+    });
 
-    Markers.generate(number);
-    if (!layerIsOn("toggleMarkers")) toggleMarkers();
+    Markers.regenerate(multiplier);
+    turnButtonOn("toggleMarkers");
+    drawMarkers();
   }
 }
 
