@@ -13,6 +13,7 @@ if (localStorage.getItem("disable_click_arrow_tooltip")) {
 
 // Show options pane on trigger click
 function showOptions(event) {
+  track("click", "show options");
   if (!localStorage.getItem("disable_click_arrow_tooltip")) {
     clearMainTip();
     localStorage.setItem("disable_click_arrow_tooltip", true);
@@ -75,6 +76,7 @@ document
 
 // show popup with a list of Patreon supportes (updated manually, to be replaced with API call)
 function showSupporters() {
+  track("click", "show supporters");
   const supporters = `Aaron Meyer,Ahmad Amerih,AstralJacks,aymeric,Billy Dean Goehring,Branndon Edwards,Chase Mayers,Curt Flood,cyninge,Dino Princip,
     E.M. White,es,Fondue,Fritjof Olsson,Gatsu,Johan Fröberg,Jonathan Moore,Joseph Miranda,Kate,KC138,Luke Nelson,Markus Finster,Massimo Vella,Mikey,
     Nathan Mitchell,Paavi1,Pat,Ryan Westcott,Sasquatch,Shawn Spencer,Sizz_TV,Timothée CALLET,UTG community,Vlad Tomash,Wil Sisney,William Merriott,
@@ -160,7 +162,7 @@ optionsContent.addEventListener("change", function (event) {
   const value = event.target.value;
 
   if (id === "zoomExtentMin" || id === "zoomExtentMax") changeZoomExtent(value);
-  else if (id === "optionsSeed") generateMapWithSeed();
+  else if (id === "optionsSeed") generateMapWithSeed("seed change");
   else if (id === "uiSizeInput" || id === "uiSizeOutput") changeUIsize(value);
   if (id === "shapeRendering") viewbox.attr("shape-rendering", value);
   else if (id === "yearInput") changeYear();
@@ -170,7 +172,6 @@ optionsContent.addEventListener("change", function (event) {
 optionsContent.addEventListener("click", function (event) {
   const id = event.target.id;
   if (id === "toggleFullscreen") toggleFullscreen();
-  else if (id === "optionsSeedGenerate") generateMapWithSeed();
   else if (id === "optionsMapHistory") showSeedHistoryDialog();
   else if (id === "optionsCopySeed") copyMapURL();
   else if (id === "optionsEraRegenerate") regenerateEra();
@@ -211,8 +212,8 @@ function changeMapSize() {
 
 // just apply canvas size that was already set
 function applyMapSize() {
-  const zoomMin = +zoomExtentMin.value,
-    zoomMax = +zoomExtentMax.value;
+  const zoomMin = +zoomExtentMin.value;
+  const zoomMax = +zoomExtentMax.value;
   graphWidth = +mapWidthInput.value;
   graphHeight = +mapHeightInput.value;
   svgWidth = Math.min(graphWidth, window.innerWidth);
@@ -280,12 +281,9 @@ function testSpeaker() {
   speechSynthesis.speak(speaker);
 }
 
-function generateMapWithSeed() {
-  if (optionsSeed.value == seed) {
-    tip("The current map already has this seed", false, "error");
-    return;
-  }
-  regeneratePrompt();
+function generateMapWithSeed(source) {
+  if (optionsSeed.value == seed) return tip("The current map already has this seed", false, "error");
+  regeneratePrompt(source);
 }
 
 function showSeedHistoryDialog() {
@@ -316,7 +314,7 @@ function restoreSeed(id) {
   mapHeightInput.value = mapHistory[id].height;
   templateInput.value = mapHistory[id].template;
   if (locked("template")) unlock("template");
-  regeneratePrompt();
+  regeneratePrompt("seed history");
 }
 
 function restoreDefaultZoomExtent() {
@@ -656,23 +654,17 @@ function restoreDefaultOptions() {
 // Sticked menu Options listeners
 document.getElementById("sticked").addEventListener("click", function (event) {
   const id = event.target.id;
-  if (id === "newMapButton") regeneratePrompt();
+  if (id === "newMapButton") regeneratePrompt("sticky button");
   else if (id === "saveButton") showSavePane();
   else if (id === "exportButton") showExportPane();
   else if (id === "loadButton") showLoadPane();
   else if (id === "zoomReset") resetZoom(1000);
 });
 
-function regeneratePrompt() {
-  if (customization) {
-    tip("New map cannot be generated when edit mode is active, please exit the mode and retry", false, "error");
-    return;
-  }
+function regeneratePrompt(source) {
+  if (customization) return tip("New map cannot be generated when edit mode is active, please exit the mode and retry", false, "error");
   const workingTime = (Date.now() - last(mapHistory).created) / 60000; // minutes
-  if (workingTime < 5) {
-    regenerateMap();
-    return;
-  }
+  if (workingTime < 5) return regenerateMap(source);
 
   alertMessage.innerHTML = `Are you sure you want to generate a new map?<br>
   All unsaved changes made to the current map will be lost`;
@@ -685,7 +677,7 @@ function regeneratePrompt() {
       },
       Generate: function () {
         closeDialogs();
-        regenerateMap();
+        regenerateMap(source);
       }
     }
   });
@@ -792,6 +784,7 @@ function loadURL() {
 
 // load map
 document.getElementById("mapToLoad").addEventListener("change", function () {
+  track("load", `from local file`);
   const fileToLoad = this.files[0];
   this.value = "";
   closeDialogs();
@@ -811,6 +804,7 @@ function openSaveTiles() {
     width: "23em",
     buttons: {
       Download: function () {
+        track("export", `tiles`);
         status.innerHTML = "Preparing for download...";
         setTimeout(() => (status.innerHTML = "Downloading. It may take some time."), 1000);
         loading = setInterval(() => (status.innerHTML += "."), 1000);
@@ -900,6 +894,7 @@ function enterStandardView() {
 }
 
 async function enter3dView(type) {
+  track("click", `3d mode: ${type}`);
   const canvas = document.createElement("canvas");
   canvas.id = "canvas3d";
   canvas.dataset.type = type;

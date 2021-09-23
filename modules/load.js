@@ -13,6 +13,7 @@ function quickLoad() {
 }
 
 async function loadFromDropbox() {
+  track("load", `from dropbox`);
   const mapPath = document.getElementById("loadFromDropboxSelect")?.value;
 
   DEBUG && console.log("Loading map from Dropbox:", mapPath);
@@ -68,6 +69,7 @@ function loadMapPrompt(blob) {
 
   function loadLastSavedMap() {
     WARN && console.warn("Load last saved map");
+    track("load", `from browser storage`);
     try {
       uploadMap(blob);
     } catch (error) {
@@ -78,6 +80,7 @@ function loadMapPrompt(blob) {
 }
 
 function loadMapFromURL(maplink, random) {
+  track("load", `from url`);
   const URL = decodeURIComponent(maplink);
 
   fetch(URL, {method: "GET", mode: "cors"})
@@ -93,6 +96,7 @@ function loadMapFromURL(maplink, random) {
 }
 
 function showUploadErrorMessage(error, URL, random) {
+  track("error", `map load from url`);
   ERROR && console.error(error);
   alertMessage.innerHTML = `Cannot load map from the ${link(URL, "link provided")}.
     ${random ? `A new random map is generated. ` : ""}
@@ -431,12 +435,27 @@ function parseLoadedData(data) {
 
         // 1.0 adds a legend box
         legend = svg.append("g").attr("id", "legend");
-        legend.attr("font-family", "Almendra SC").attr("font-size", 13).attr("data-size", 13).attr("data-x", 99).attr("data-y", 93).attr("stroke-width", 2.5).attr("stroke", "#812929").attr("stroke-dasharray", "0 4 10 4").attr("stroke-linecap", "round");
+        legend
+          .attr("font-family", "Almendra SC")
+          .attr("font-size", 13)
+          .attr("data-size", 13)
+          .attr("data-x", 99)
+          .attr("data-y", 93)
+          .attr("stroke-width", 2.5)
+          .attr("stroke", "#812929")
+          .attr("stroke-dasharray", "0 4 10 4")
+          .attr("stroke-linecap", "round");
 
         // 1.0 separated drawBorders fron drawStates()
         stateBorders = borders.append("g").attr("id", "stateBorders");
         provinceBorders = borders.append("g").attr("id", "provinceBorders");
-        borders.attr("opacity", null).attr("stroke", null).attr("stroke-width", null).attr("stroke-dasharray", null).attr("stroke-linecap", null).attr("filter", null);
+        borders
+          .attr("opacity", null)
+          .attr("stroke", null)
+          .attr("stroke-width", null)
+          .attr("stroke-dasharray", null)
+          .attr("stroke-linecap", null)
+          .attr("filter", null);
         stateBorders.attr("opacity", 0.8).attr("stroke", "#56566d").attr("stroke-width", 1).attr("stroke-dasharray", "2").attr("stroke-linecap", "butt");
         provinceBorders.attr("opacity", 0.8).attr("stroke", "#56566d").attr("stroke-width", 0.5).attr("stroke-dasharray", "1").attr("stroke-linecap", "butt");
 
@@ -976,7 +995,7 @@ function parseLoadedData(data) {
         },
         "New map": function () {
           $(this).dialog("close");
-          regenerateMap();
+          regenerateMap("loading error");
         },
         Cancel: function () {
           $(this).dialog("close");
