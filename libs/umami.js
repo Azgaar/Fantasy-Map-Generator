@@ -1,6 +1,5 @@
 (window => {
   const noTrack = window.localStorage.getItem("noTrack");
-  if (noTrack) return;
 
   const {
     screen: {width, height},
@@ -22,6 +21,8 @@
   };
 
   const collect = (type, params) => {
+    if (noTrack) return;
+
     const payload = {website, hostname, screen, language, cache: false};
     Object.keys(params).forEach(key => {
       payload[key] = params[key];
