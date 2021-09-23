@@ -235,7 +235,7 @@
 
     <div id="collapsible">
       <button id="optionsTrigger" data-t="tipOptionsTrigger" data-tip="Click to show the Menu. Shortcut: Tab" class="options glow" onclick="showOptions(event)" style="padding:.6em .45em">►</button>
-      <button id="regenerate" data-t="tipRegenerate" data-tip="Click to generate a new map. Shortcut: F2" onclick="regeneratePrompt()" class="options" style="display: none"><t data-t="newMap">New Map!</t></button>
+      <button id="regenerate" data-t="tipRegenerate" data-tip="Click to generate a new map. Shortcut: F2" onclick="regeneratePrompt('drawer')" class="options" style="display: none"><t data-t="newMap">New Map!</t></button>
     </div>
 
     <div id="options" style="display:none">
@@ -942,14 +942,13 @@
 
           <tr data-tip="Map seed number. Seed produces the same map only if canvas size and options are the same">
             <td>
-              <i data-tip="Click to generate a map for this seed" id="optionsSeedGenerate"></i>
+              <i data-tip="Show seed history to apply a previous seed" id="optionsMapHistory" class="icon-history"></i>
             </td>
             <td>Map seed</td>
             <td>
               <input id="optionsSeed" class="long" type="number" min=1 max=999999999 step=1>
             </td>
             <td>
-              <i data-tip="Show seed history to apply a previous seed" id="optionsMapHistory" class="icon-history"></i>
               <i data-tip="Copy map seed as URL. It will produce the same map only if options are default or the same" id="optionsCopySeed" class="icon-docs"></i>
             </td>
           </tr>
@@ -4300,6 +4299,7 @@
   <script src="modules/fonts.js"></script>
   <script src="modules/ui/layers.js"></script>
   <script src="modules/ui/measurers.js"></script>
+  <script src="libs/umami.js"></script>
 
   <script async defer src="https://unpkg.com/dropbox@10.8.0/dist/Dropbox-sdk.min.js"></script>
   <script async defer src="modules/ui/general.js"></script>
@@ -4350,6 +4350,5 @@
   <script async defer src="libs/jquery.ui.touch-punch.min.js"></script>
   <script async defer src="libs/pell.min.js"></script>
   <script async defer src="libs/jszip.min.js"></script>
-  <script async defer data-website-id="4f6fd0ae-646a-4946-a9da-7aad63284e48" src="https://fmg-stats.herokuapp.com/umami.js"></script>
 </body>
 </html>

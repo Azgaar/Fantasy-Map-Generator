@@ -548,12 +548,6 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   width: 100%;
 }
 
-#optionsSeedGenerate:before {
-  content: "✓";
-  margin-left: -2px;
-  font-weight: bold;
-}
-
 #options input[type="color"] {
   width: 2em;
   padding: 1px;

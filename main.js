@@ -654,11 +654,13 @@ function generate() {
     INFO && console.groupEnd("Generated Map " + seed);
   } catch (error) {
     ERROR && console.error(error);
+    const parsedError = parseError(error);
+    track("error", parsedError);
     clearMainTip();
 
     alertMessage.innerHTML = `An error is occured on map generation. Please retry.
       <br>If error is critical, clear the stored data and try again.
-      <p id="errorBox">${parseError(error)}</p>`;
+      <p id="errorBox">${parsedError}</p>`;
     $("#alert").dialog({
       resizable: false,
       title: "Generation error",
@@ -669,7 +671,7 @@ function generate() {
           localStorage.setItem("version", version);
         },
         Regenerate: function () {
-          regenerateMap();
+          regenerateMap("generation error");
           $(this).dialog("close");
         },
         Ignore: function () {
@@ -1832,7 +1834,7 @@ function addZones(number = 1) {
 
 // show map stats on generation complete
 function showStatistics() {
-  const template = templateInput.value;
+  const template = templateInput.options[templateInput.selectedIndex].text;
   const templateRandom = locked("template") ? "" : "(random)";
   const stats = `  Seed: ${seed}
     Canvas size: ${graphWidth}x${graphHeight}
@@ -1850,9 +1852,10 @@ function showStatistics() {
   mapId = Date.now(); // unique map id is it's creation date number
   mapHistory.push({seed, width: graphWidth, height: graphHeight, template, created: mapId});
   INFO && console.log(stats);
+  track("generate", `Template: ${template} ${templateRandom}. Points: ${pointsInput.dataset.cells}`);
 }
 
-const regenerateMap = debounce(function () {
+const regenerateMap = debounce(function (source) {
   WARN && console.warn("Generate new random map");
   closeDialogs("#worldConfigurator, #options3d");
   customization = 0;
@@ -1862,6 +1865,7 @@ const regenerateMap = debounce(function () {
   restoreLayers();
   if (ThreeD.options.isOn) ThreeD.redraw();
   if ($("#worldConfigurator").is(":visible")) editWorld();
+  track("regenerate", `from ${source}`);
 }, 1000);
 
 // clear the map

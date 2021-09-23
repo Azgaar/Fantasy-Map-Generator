@@ -4,6 +4,7 @@
 // download map as SVG
 async function saveSVG() {
   TIME && console.time("saveSVG");
+  track("export", "svg");
   const url = await getMapURL("svg");
   const link = document.createElement("a");
   link.download = getFileName() + ".svg";
@@ -17,6 +18,7 @@ async function saveSVG() {
 // download map as PNG
 async function savePNG() {
   TIME && console.time("savePNG");
+  track("export", "png");
   const url = await getMapURL("png");
 
   const link = document.createElement("a");
@@ -47,6 +49,7 @@ async function savePNG() {
 // download map as JPEG
 async function saveJPEG() {
   TIME && console.time("saveJPEG");
+  track("export", "jpg");
   const url = await getMapURL("png");
 
   const canvas = document.createElement("canvas");
@@ -264,7 +267,11 @@ async function getMapURL(type, options = {}) {
   if (!cloneEl.getElementById("labels")) cloneEl.getElementById("textPaths")?.remove(); // removed unused textPaths
 
   // add armies style
-  if (cloneEl.getElementById("armies")) cloneEl.insertAdjacentHTML("afterbegin", "<style>#armies text {stroke: none; fill: #fff; text-shadow: 0 0 4px #000; dominant-baseline: central; text-anchor: middle; font-family: Helvetica; fill-opacity: 1;}#armies text.regimentIcon {font-size: .8em;}</style>");
+  if (cloneEl.getElementById("armies"))
+    cloneEl.insertAdjacentHTML(
+      "afterbegin",
+      "<style>#armies text {stroke: none; fill: #fff; text-shadow: 0 0 4px #000; dominant-baseline: central; text-anchor: middle; font-family: Helvetica; fill-opacity: 1;}#armies text.regimentIcon {font-size: .8em;}</style>"
+    );
 
   // add xlink: for href to support svg1.1
   if (type === "svg") {
@@ -372,6 +379,7 @@ function inlineStyle(clone) {
 }
 
 function saveGeoJSON_Cells() {
+  track("export", "getJSON cells");
   const json = {type: "FeatureCollection", features: []};
   const cells = pack.cells;
   const getPopulation = i => {
@@ -402,6 +410,7 @@ function saveGeoJSON_Cells() {
 }
 
 function saveGeoJSON_Routes() {
+  track("export", "getJSON routes");
   const json = {type: "FeatureCollection", features: []};
 
   routes.selectAll("g > path").each(function () {
@@ -418,6 +427,7 @@ function saveGeoJSON_Routes() {
 }
 
 function saveGeoJSON_Rivers() {
+  track("export", "getJSON rivers");
   const json = {type: "FeatureCollection", features: []};
 
   rivers.selectAll("path").each(function () {
@@ -440,6 +450,8 @@ function saveGeoJSON_Rivers() {
 }
 
 function saveGeoJSON_Markers() {
+  // TODO: rework for new markers
+  track("export", "getJSON markers");
   const json = {type: "FeatureCollection", features: []};
 
   markers.selectAll("use").each(function () {
