@@ -4,6 +4,7 @@ window.Markers = (function () {
   let config = [];
   let occupied = [];
 
+<<<<<<< HEAD
   function getDefaultConfig() {
     const culturesSet = document.getElementById("culturesSet").value;
     const isFantasy = culturesSet.includes("Fantasy");
@@ -62,10 +63,14 @@ window.Markers = (function () {
 
   const generate = function () {
     setConfig(getDefaultConfig());
+=======
+  const generate = function () {
+>>>>>>> 01fbfca0 (markers - generate tool + lock tooltip)
     pack.markers = [];
     generateTypes();
   };
 
+<<<<<<< HEAD
   const regenerate = () => {
     pack.markers = pack.markers.filter(({i, lock, cell}) => {
       if (lock) {
@@ -98,6 +103,15 @@ window.Markers = (function () {
   };
 
   function generateTypes() {
+=======
+  const regenerate = requestedMultiplier => {
+    if (requestedMultiplier === 0) return;
+    if (requestedMultiplier) multiplier = requestedMultiplier;
+    generateTypes();
+  };
+
+  const generateTypes = () => {
+>>>>>>> 01fbfca0 (markers - generate tool + lock tooltip)
     TIME && console.time("addMarkers");
 
     config.forEach(({type, icon, dx, dy, px, min, each, multiplier, list, add}) => {
@@ -120,11 +134,19 @@ window.Markers = (function () {
     TIME && console.timeEnd("addMarkers");
   }
 
+<<<<<<< HEAD
   function getQuantity(array, min, each, multiplier) {
     if (!array.length || array.length < min / multiplier) return 0;
     const requestQty = Math.ceil((array.length / each) * multiplier);
     return array.length < requestQty ? array.length : requestQty;
   }
+=======
+  const getQuantity = (array, min, each) => {
+    if (!array.length || array.length < min / multiplier) return 0;
+    const requestQty = Math.ceil((array.length / each) * multiplier);
+    return array.length < requestQty ? array.length : requestQty;
+  };
+>>>>>>> 01fbfca0 (markers - generate tool + lock tooltip)
 
   function extractAnyElement(array) {
     const index = Math.floor(Math.random() * array.length);
@@ -1140,6 +1162,7 @@ window.Markers = (function () {
     notes.push({id, name, legend});
   }
 
+<<<<<<< HEAD
   function listRifts({cells}) {
     return cells.i.filter(i => !occupied[i] && pack.cells.pop[i] <= 3 && biomesData.habitability[pack.cells.biome[i]]);
   }
@@ -1162,4 +1185,7 @@ window.Markers = (function () {
   }
 
   return {add, generate, regenerate, getConfig, setConfig, deleteMarker};
+=======
+  return {generate, regenerate};
+>>>>>>> 01fbfca0 (markers - generate tool + lock tooltip)
 })();

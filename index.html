@@ -2362,6 +2362,7 @@
                 <input id="temperatureEquatorOutput" data-stored="temperatureEquator" type="range" min="-50" max="50" />
               </label>
             </div>
+<<<<<<< HEAD
             <div>
               <i data-locked="0" id="lock_temperaturePole" class="icon-lock-open"></i>
               <label data-tip="Set temperature near poles">
@@ -2370,6 +2371,821 @@
                 <span id="temperaturePoleF"></span>°F
                 <input id="temperaturePoleOutput" data-stored="temperaturePole" type="range" min="-50" max="50" />
               </label>
+=======
+          </a>
+        </div>
+        <p>Special thanks to <a data-tip="Click to see list of supporters" onclick="showSupporters()">all supporters</a> on Patreon!</p>
+
+        <ul class="share-buttons">
+          <li><a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator%2F&quote=" data-tip="Share on Facebook" target="_blank"><img alt="Share on Facebook" src="images/Facebook.png" /></a></li>
+          <li><a href="https://twitter.com/intent/tweet?source=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator&text=%23FantasyMapGenerator%0A%0Ahttps%3A//azgaar.github.io/Fantasy-Map-Generator" target="_blank" data-tip="Tweet"><img alt="Tweet" src="images/Twitter.png" /></a></li>
+          <li><a href="http://www.tumblr.com/share?v=3&u=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator" target="_blank" data-tip="Post to Tumblr"><img alt="Post to Tumblr" src="images/Tumblr.png" /></a></li>
+          <li><a href="http://pinterest.com/pin/create/button/?url=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator" target="_blank" data-tip="Pin it"><img alt="Pin it" src="images/Pinterest.png" /></a></li>
+          <li><a href="http://www.reddit.com/submit?url=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator" target="_blank" data-tip="Submit to Reddit"><img alt="Submit to Reddit" src="images/Reddit.png" /></a></li>
+        </ul>
+      </div>
+
+      <div id="sticked">
+        <button id="newMapButton" data-tip="Generate a new map based on options. Shortcut: F2">New Map</button>
+        <button id="exportButton" data-tip="Select format to download image or export map data">Export</button>
+        <button id="saveButton" data-tip="Save fully-functional map in .map format">Save</button>
+        <button id="loadButton" data-tip="Load fully-functional map in .map format">Load</button>
+        <button id="zoomReset" data-tip="Reset map zoom. Shortcut: 0">Reset Zoom</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="exitCustomization">
+    <div data-tip="Drag to move the pane">
+      <button data-tip="Finalize the heightmap and exit the edit mode" id="finalizeHeightmap">Exit Customization</button>
+    </div>
+  </div>
+
+  <div id="dialogs">
+    <div id="worldConfigurator" class="dialog stable" style="display: none">
+
+      <div id="worldControls">
+        <div>
+          <i data-locked=0 id="lock_temperatureEquator" class="icon-lock-open"></i>
+          <label data-tip="Set temperature at equator">
+            <i>Equator:</i>
+            <input id="temperatureEquatorInput" data-stored="temperatureEquator" type="number" min="-50" max="50">°C =
+            <span id="temperatureEquatorF"></span>°F
+            <input id="temperatureEquatorOutput" data-stored="temperatureEquator" type="range" min="-50" max="50"/>
+          </label>
+        </div>
+        <div>
+          <i data-locked=0 id="lock_temperaturePole" class="icon-lock-open"></i>
+          <label data-tip="Set temperature near poles">
+            <i>Poles:</i>
+            <input id="temperaturePoleInput" data-stored="temperaturePole" type="number" min="-50" max="50">°C =
+            <span id="temperaturePoleF"></span>°F
+            <input id="temperaturePoleOutput" data-stored="temperaturePole" type="range" min="-50" max="50"/>
+          </label>
+        </div>
+        <div>
+          <i data-locked=0 id="lock_mapSize" class="icon-lock-open"></i>
+          <label data-tip="Set map size relative to the world size">
+            <i>Map size:</i>
+            <input id="mapSizeInput" data-stored="mapSize" type="number" min="1" max="100">%
+            <input id="mapSizeOutput" data-stored="mapSize" type="range" min="1" max="100">
+          </label>
+        </div>
+        <div>
+          <i data-locked=0 id="lock_latitude" class="icon-lock-open"></i>
+          <label data-tip="Set a North-South map shift">
+            <i>Latitudes:</i>
+            <input id="latitudeInput" data-stored="latitude" type="number" min="0" max="100" step=1>
+            <br><i>N</i><input id="latitudeOutput" data-stored="latitude" type="range" min="0" max="100" step=1 style="width: 10.3em"><i>S</i>
+          </label>
+        </div>
+
+        <div>
+          <label data-tip="Set precipitation - water amount clouds can bring. Defines rivers and biomes generation">
+            <i data-locked=0 id="lock_prec" class="icon-lock-open"></i>
+            <i>Precipitation:</i>
+            <input id="precInput" data-stored="prec" type="number">%
+            <input id="precOutput" data-stored="prec" type="range" min="0" max="500" value="50">
+          </label>
+        </div>
+        <div data-tip="Canvas size. Can be changed in general options on new map generation">
+          <i>Canvas size:</i><br>
+          <span id="mapSize"></span> px = <span id="mapSizeFriendly"></span>
+        </div>
+        <div>
+          <i data-tip="Length of Meridian. Almost half of the equator length">Meridian length:</i><br>
+          <span id="meridianLength" data-tip="Length of Meridian in pixels"></span> px =
+          <span id="meridianLengthFriendly" data-tip="Length of Meridian is friendly units (depends on user configuration)"></span>
+          <span id="meridianLengthEarth" data-tip="Fantasy world Meridian length relative to real-world Earth (20k km)"></span>
+        </div>
+        <div data-tip="Map coordinates on globe"><i>Coords:</i> <span id="mapCoordinates"></span></div>
+      </div>
+
+      <svg id="globe" width="22em" height="22em" viewBox="-20 -25 240 240">
+        <defs>
+          <linearGradient id="temperatureGradient" x1="0" x2="0" y1="0" y2="1">
+            <stop class="tempGradient90" offset="0%" stop-color="blue"/>
+            <stop class="tempGradient60" offset="16.6%" stop-color="green"/>
+            <stop class="tempGradient30" offset="33.3%" stop-color="yellow"/>
+            <stop class="tempGradient0" offset="50%" stop-color="red"/>
+            <stop class="tempGradient30" offset="66.6%" stop-color="yellow"/>
+            <stop class="tempGradient60" offset="83.3%" stop-color="green"/>
+            <stop class="tempGradient90" offset="100%" stop-color="blue"/>
+          </linearGradient>
+        </defs>
+        <g id="globeNoteLines">
+          <line x1="5" x2="220" y1="0" y2="0" />
+          <line x1="5" x2="220" y1="13" y2="13" />
+          <line x1="5" x2="220" y1="49.5" y2="49.5" />
+          <line x1="-5" x2="220" y1="100" y2="100" />
+          <line x1="5" x2="220" y1="150.5" y2="150.5" />
+          <line x1="5" x2="220" y1="187" y2="187" />
+          <line x1="5" x2="220" y1="200" y2="200" />
+        </g>
+        <g id="globeWindArrows" data-tip="Click to change wind direction" stroke-linejoin="round">
+          <circle cx=210 cy=6 r=12 />
+          <path data-tier=0 d="M210,11 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(225 210 6)" />
+          <circle cx=210 cy=30 r=12 />
+          <path data-tier=1 d="M210,35 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(45 210 30)" />
+          <circle cx=210 cy=75 r=12 />
+          <path data-tier=2 d="M210,80 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(225 210 75)"/>
+          <circle cx=210 cy=130 r=12 />
+          <path data-tier=3 d="M210,135 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(315 210 130)"/>
+          <circle cx=210 cy=173 r=12 />
+          <path data-tier=4 d="M210,178 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(135 210 173)"/>
+          <circle cx=210 cy=194 r=12 />
+          <path data-tier=5 d="M210,199 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(315 210 194)"/>
+        </g>
+        <g id="globaAxisLabels">
+          <text x="82%" y="-4%">wind</text>
+          <text x="-8%" y="-4%">latitude</text>
+        </g>
+        <g id="globeLatLabels">
+          <text x="-15" y="5">90°</text>
+          <text x="-15" y="18">60°</text>
+          <text x="-15" y="53">30°</text>
+          <text x="-15" y="103">0°</text>
+          <text x="-15" y="153">30°</text>
+          <text x="-15" y="190">60°</text>
+          <text x="-15" y="204">90°</text>
+        </g>
+        <circle id="globeOutline" cx="100" cy="100" r="100" />
+        <line id="globeEquator" x1="1" x2="199" y1="100" y2="100" />
+        <path id="globeGraticule" />
+        <path id="globeArea" />
+      </svg>
+    </div>
+
+    <div id="labelEditor" class="dialog" style="display: none">
+      <button id="labelGroupShow" data-tip="Show the group selection" class="icon-tags"></button>
+      <div id="labelGroupSection" style="display: none">
+        <button id="labelGroupHide" data-tip="Hide the group selection" class="icon-tags"></button>
+        <select id="labelGroupSelect" data-tip="Select a group for this label" style="width:10em"></select>
+        <input id="labelGroupInput" placeholder="new group name" data-tip="Provide a name for the new group" style="display:none; width:10em">
+        <span id="labelGroupNew" data-tip="Create new group for this label" class="icon-plus pointer"></span>
+        <span id="labelGroupRemove" data-tip="Remove the Group with all labels" class="icon-trash-empty pointer"></span>
+      </div>
+
+      <button id="labelTextShow" data-tip="Show the edit label text section" class="icon-pencil"></button>
+      <div id="labelTextSection" style="display: none">
+        <button id="labelTextHide" data-tip="Hide the edit label text section" class="icon-pencil"></button>
+        <input id="labelText" data-tip='Type to change the label. Enter "|" to move to a new line' style="width: 12em">
+        <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        <span id="labelTextRandom" data-tip="Generate random name" class="icon-shuffle pointer"></span>
+      </div>
+
+      <button id="labelEditStyle" data-tip="Edit label group style in Style Editor" class="icon-brush"></button>
+
+      <button id="labelSizeShow" data-tip="Show the font size section" class="icon-text-height"></button>
+      <div id="labelSizeSection" style="display: none">
+        <button id="labelSizeHide" data-tip="Hide the font size section" class="icon-text-height"></button>
+        <input id="labelStartOffset" data-tip="Set starting offset for the particular label" type="range" min=20 max=80 style="width:8em">
+        <i class="icon-text-height"></i>
+        <input id="labelRelativeSize" data-tip="Set relative size for the particular label" type="number" min=30 max=300 step=1 style="width:3.2em">
+      </div>
+
+      <button id="labelAlign" data-tip="Turn text path into a straight line" class="icon-resize-horizontal"></button>
+      <button id="labelLegend" data-tip="Edit free text notes (legend) for this label" class="icon-edit"></button>
+      <button id="labelRemoveSingle" data-tip="Remove the label. Shortcut: Delete" class="icon-trash fastDelete"></button>
+    </div>
+
+    <div id="riverEditor" class="dialog" style="display: none">
+      <div id="riverBody" style="padding-bottom: .3em">
+
+        <div>
+          <div class="label" style="width: 4.8em">Name:</div>
+          <span id="riverNameCulture" data-tip="Generate culture-specific name for the river" class="icon-book pointer"></span>
+          <span id="riverNameRandom" data-tip="Generate random name for the river" class="icon-globe pointer"></span>
+          <input id="riverName" data-tip="Type to rename the river" autocorrect="off" spellcheck="false">
+          <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        </div>
+
+        <div data-tip="Type to change river type (e.g. fork, creek, river, brook, stream)">
+          <div class="label">Type:</div>
+          <input id="riverType" autocorrect="off" spellcheck="false">
+        </div>
+
+        <div data-tip="Select parent river">
+          <div class="label">Mainstem:</div>
+          <select id="riverMainstem"></select>
+        </div>
+
+        <div data-tip="River drainage basin (watershed)">
+          <div class="label">Basin:</div>
+          <input id="riverBasin" disabled/>
+        </div>
+
+        <div data-tip="River discharge (flux power)">
+          <div class="label">Discharge:</div>
+          <input id="riverDischarge" disabled/>
+        </div>
+
+        <div data-tip="River length in selected units">
+          <div class="label">Length:</div>
+          <input id="riverLength" disabled/>
+        </div>
+
+        <div data-tip="River mouth width in selected units">
+          <div class="label">Mouth width:</div>
+          <input id="riverWidth" disabled/>
+        </div>
+
+        <div data-tip="River source additional width. Default value is 0">
+          <div class="label">Source width:</div>
+          <input id="riverSourceWidth" type="number" min=0 max=3 step=.01 />
+        </div>
+
+        <div data-tip="River width multiplier. Default value is 1">
+          <div class="label">Width modifier:</div>
+          <input id="riverWidthFactor" type="number" min=.1 max=4 step=.1 />
+        </div>
+      </div>
+
+      <div id="riverBottom">
+        <button id="riverCreateSelectingCells" data-tip="Create new river selecting river cells" class="icon-map-pin"></button>
+        <button id="riverEditStyle" data-tip="Edit style for all rivers in Style Editor" class="icon-brush"></button>
+        <button id="riverElevationProfile" data-tip="Show the elevation profile for the river" class="icon-chart-area"></button>
+        <button id="riverLegend" data-tip="Edit free text notes (legend) for the river" class="icon-edit"></button>
+        <button id="riverRemove" data-tip="Remove river. Shortcut: Delete" class="icon-trash fastDelete"></button>
+      </div>
+    </div>
+
+    <div id="riverCreator" class="dialog" style="display: none">
+      <div id="riverCreatorBody" class="table"></div>
+      <div id="riverCreatorBottom">
+        <button id="riverCreatorComplete" data-tip="Complete river creation" class="icon-check"></button>
+        <button id="riverCreatorCancel" data-tip="Cancel the creation" class="icon-cancel"></button>
+      </div>
+    </div>
+
+    <div id="lakeEditor" class="dialog" style="display: none">
+      <div id="lakeBody" style="padding-bottom: .3em">
+        <div>
+          <div class="label" style="width: 4.8em">Name:</div>
+          <span id="lakeNameCulture" data-tip="Generate culture-specific name for the lake" class="icon-book pointer"></span>
+          <span id="lakeNameRandom" data-tip="Generate random name for the lake" class="icon-globe pointer"></span>
+          <input id="lakeName" data-tip="Type to rename the lake" autocorrect="off" spellcheck="false">
+          <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        </div>
+
+        <div data-tip="Type to change lake type (group)">
+          <div class="label" style="width: 4.8em">Type:</div>
+          <span id="lakeGroupRemove" data-tip="Remove the group" class="icon-trash-empty pointer"></span>
+          <span id="lakeGroupAdd" data-tip="Create new type (group) for the lake" class="icon-plus pointer"></span>
+          <select id="lakeGroup" data-tip="Select lake type (group)"></select>
+          <input id="lakeGroupName" placeholder="type name" data-tip="Provide a name for the new group" style="display:none"/>
+          <span id="lakeEditStyle" data-tip="Edit lake group style in Style Editor" class="icon-brush pointer"></span>
+        </div>
+
+        <div data-tip="Lake area in selected units">
+          <div class="label">Area:</div>
+          <input id="lakeArea" disabled/>
+        </div>
+
+        <div data-tip="Lake shore length in selected units">
+          <div class="label">Shore length:</div>
+          <input id="lakeShoreLength" disabled/>
+        </div>
+
+        <div data-tip="Lake elevation in selected units">
+          <div class="label">Elevation:</div>
+          <input id="lakeElevation" disabled/>
+        </div>
+
+        <div data-tip="Lake average depth in selected units">
+          <div class="label">Avarage depth:</div>
+          <input id="lakeAvarageDepth" disabled/>
+        </div>
+
+        <div data-tip="Lake maximum depth in selected units">
+          <div class="label">Max depth:</div>
+          <input id="lakeMaxDepth" disabled/>
+        </div>
+
+        <div data-tip="Lake water supply. If supply > evaporation and there is an outlet, the lake water is fresh. If supply is very low, the lake becomes dry">
+          <div class="label">Supply:</div>
+          <input id="lakeFlux" disabled/>
+        </div>
+
+        <div data-tip="Evaporation from lake surface. If evaporation > supply, the lake water is saline. If difference is high, the lake becomes dry">
+          <div class="label">Evaporation:</div>
+          <input id="lakeEvaporation" disabled/>
+        </div>
+
+        <div data-tip="Number of lake inlet rivers">
+          <div class="label">Inlets:</div>
+          <input id="lakeInlets" disabled/>
+        </div>
+
+        <div data-tip="Lake outlet river">
+          <div class="label">Outlet:</div>
+          <input id="lakeOutlet" disabled/>
+        </div>
+      </div>
+
+      <div id="lakeBottom">
+        <button id="lakeLegend" data-tip="Edit free text notes (legend) for the lake" class="icon-edit"></button>
+      </div>
+    </div>
+
+    <div id="elevationProfile" class="dialog" style="display: none" width="100%">
+      <div id="elevationGraph" data-tip="Elevation profile"></div>
+      <div style="text-align: center">
+        <div id="epControls">
+          <span data-tip="Set height scale">Height scale: <input id="epScaleRange" type="range" min=1 max=100 value=50></span>
+          <span data-tip="Set curve profile">Curve:
+            <select id="epCurve">
+              <option>Linear</option>
+                <option selected>Basis spline</option>
+              <option>Bundle</option>
+              <option>Cubic Catmull-Rom</option>
+              <option>Monotone X</option>
+              <option>Natural</option>
+            </select>
+          </span>
+          <span><button id="epSave" data-tip="Download the chart data as a CSV file" class="icon-download"></button></span>
+        </div>
+      </div>
+    </div>
+
+    <div id="routeEditor" class="dialog" style="display: none">
+      <button id="routeGroupsShow" data-tip="Show the group selection" class="icon-tags"></button>
+      <div id="routeGroupsSelection" style="display: none">
+        <button id="routeGroupsHide" data-tip="Hide the group section" class="icon-tags"></button>
+        <select id="routeGroup" data-tip="Select a group for this route" style="width:12em"></select>
+        <input id="routeGroupName" placeholder="new group name" data-tip="Provide a name for the new group" style="display:none; width:12em"/>
+        <span id="routeGroupAdd" data-tip="Create new group for this route" class="icon-plus pointer"></span>
+        <span id="routeGroupRemove" data-tip="Remove all routes of this group" class="icon-trash-empty pointer"></span>
+      </div>
+
+      <button id="routeEditStyle" data-tip="Edit route group style in Style Editor" class="icon-brush"></button>
+      <button id="routeLength" data-tip="Route length in selected units">0</button>
+      <button id="routeElevationProfile" data-tip="Show the elevation profile for the route" class="icon-chart-area"></button>
+      <button id="routeSplit" data-tip="Click on a control point to split the route" class="icon-unlink"></button>
+      <button id="routeLegend" data-tip="Edit free text notes (legend) for the route" class="icon-edit"></button>
+      <button id="routeNew" data-tip="Create new route clicking on map" class="icon-map-pin"></button>
+      <button id="routeRemove" data-tip="Remove route. Shortcut: Delete" class="icon-trash fastDelete"></button>
+    </div>
+
+    <div id="iceEditor" class="dialog" style="display: none">
+      <button id="iceEditStyle" data-tip="Edit style in Style Editor" class="icon-brush"></button>
+      <button id="iceRandomize" data-tip="Randomize Iceberg shape" class="icon-shuffle"></button>
+      <input id="iceSize" data-tip="Change Iceberg size" type="range" min=".05" max="1" step=".01">
+      <button id="iceNew" data-tip="Add an Iceberg (click on map)" class="icon-plus"></button>
+      <button id="iceRemove" data-tip="Remove the element. Shortcut: Delete" class="icon-trash fastDelete"></button>
+    </div>
+
+    <div id="coastlineEditor" class="dialog" style="display: none">
+      <button id="coastlineGroupsShow" data-tip="Show the group selection" class="icon-tags"></button>
+      <div id="coastlineGroupsSelection" style="display: none">
+        <button id="coastlineGroupsHide" data-tip="Hide the group section" class="icon-tags"></button>
+        <select id="coastlineGroup" data-tip="Select a group for this coastline" style="width:9em"></select>
+        <input id="coastlineGroupName" placeholder="new group name" data-tip="Provide a name for the new group" style="display:none; width:9em"/>
+        <span id="coastlineGroupAdd" data-tip="Create new group for this coastline" class="icon-plus pointer"></span>
+        <span id="coastlineGroupRemove" data-tip="Remove the group" class="icon-trash-empty pointer"></span>
+      </div>
+
+      <button id="coastlineEditStyle" data-tip="Edit coastline group style in Style Editor" class="icon-brush"></button>
+      <button id="coastlineArea" data-tip="Landmass area in selected units">0</button>
+    </div>
+
+    <div id="reliefEditor" class="dialog" style="display: none">
+
+      <div id="reliefTools" data-tip="Select mode of operation">
+        <div class="reliefEditorLabel">Mode:</div>
+        <button id="reliefIndividual" data-tip="Edit individual selected icon" class="icon-info pressed"></button>
+        <button id="reliefBulkAdd" data-tip="Place icons in a bulk" class="icon-brush"></button>
+        <button id="reliefBulkRemove" data-tip="Remove icons in a bulk" class="icon-eraser"></button>
+
+        <div style="margin-left: 4.6em">Set:</div>
+        <select id="reliefEditorSet">
+          <option value="simple">Simple</option>
+          <option value="colored">Colored</option>
+          <option value="gray">Gray</option>
+        </select>
+      </div>
+
+      <div id="reliefSizeDiv" data-tip="Set icon size for individual icon or for bulk placement">
+        <div class="reliefEditorLabel">Size:</div>
+        <input id="reliefSize" oninput="reliefSizeNumber.value = this.value" type="range" min=2 max=50 value=5>
+        <input id="reliefSizeNumber" oninput="reliefSize.value = this.value" type="number" min=2 value=5>
+      </div>
+
+      <div id="reliefRadiusDiv" data-tip="Set brush radius for icons placement on deletion" style="display:none">
+        <div class="reliefEditorLabel">Radius:</div>
+        <input id="reliefRadius" oninput="reliefRadiusNumber.value = this.value" type="range" min=1 max=100 value=15>
+        <input id="reliefRadiusNumber" oninput="reliefRadius.value = this.value" type="number" min=1 value=15>
+      </div>
+
+      <div id="reliefSpacingDiv" data-tip="Set spacing between relief icons" style="display:none">
+        <div class="reliefEditorLabel">Spacing:</div>
+        <input id="reliefSpacing" oninput="reliefSpacingNumber.value = this.value" type="range" min=2 max=20 value=5>
+        <input id="reliefSpacingNumber" oninput="reliefSpacing.value = this.value" type="number" min=2 value=5>
+      </div>
+
+      <div id="reliefIconsDiv" data-tip="Select icon">
+        <div data-type="simple" style="display:none">
+          <svg data-type="#relief-mount-1" data-tip="Select Mountain icon"><use href="#relief-mount-1" width="40" height="40"></use></svg>
+          <svg data-type="#relief-hill-1" data-tip="Select Hill icon"><use href="#relief-hill-1" width="40" height="40"></use></svg>
+          <svg data-type="#relief-deciduous-1" data-tip="Select Deciduous Tree icon"><use href="#relief-deciduous-1" x="-25%" y="-25%" width="60" height="60"></use></svg>
+          <svg data-type="#relief-conifer-1" data-tip="Select Conifer Tree icon"><use href="#relief-conifer-1" x="-25%" y="-25%" width="60" height="60"></use></svg>
+          <svg data-type="#relief-palm-1" data-tip="Select Palm icon"><use href="#relief-palm-1" x="-25%" y="-25%" width="60" height="60"></use></svg>
+          <svg data-type="#relief-acacia-1" data-tip="Select Acacia icon"><use href="#relief-acacia-1" x="-25%" y="-25%" width="60" height="60"></use></svg>
+          <svg data-type="#relief-swamp-1" data-tip="Select Swamp icon"><use href="#relief-swamp-1" x="-50%" y="-50%" width="80" height="80"></use></svg>
+          <svg data-type="#relief-grass-1" data-tip="Select Grass icon"><use href="#relief-grass-1" x="-100%" y="-100%" width="120" height="120"></use></svg>
+          <svg data-type="#relief-dune-1" data-tip="Select Dune icon"><use href="#relief-dune-1" x="-25%" y="-25%" width="60" height="60"></use></svg>
+        </div>
+
+        <div data-type="colored" style="display:none">
+          <svg data-type="#relief-mount-2" data-tip="Select Mountain icon"><use href="#relief-mount-2" width="40" height="40"></use></svg>
+          <svg data-type="#relief-mount-3" data-tip="Select Mountain icon"><use href="#relief-mount-3" width="40" height="40"></use></svg>
+          <svg data-type="#relief-mount-4" data-tip="Select Mountain icon"><use href="#relief-mount-4" width="40" height="40"></use></svg>
+          <svg data-type="#relief-mount-5" data-tip="Select Mountain icon"><use href="#relief-mount-5" width="40" height="40"></use></svg>
+          <svg data-type="#relief-mount-6" data-tip="Select Mountain icon"><use href="#relief-mount-6" width="40" height="40"></use></svg>
+          <svg data-type="#relief-mount-7" data-tip="Select Mountain icon"><use href="#relief-mount-7" width="40" height="40"></use></svg>
+          <svg data-type="#relief-mountSnow-1" data-tip="Select Snow Mountain icon"><use href="#relief-mountSnow-1" width="40" height="40"></use></svg>
+          <svg data-type="#relief-mountSnow-2" data-tip="Select Snow Mountain icon"><use href="#relief-mountSnow-2" width="40" height="40"></use></svg>
+          <svg data-type="#relief-mountSnow-3" data-tip="Select Snow Mountain icon"><use href="#relief-mountSnow-3" width="40" height="40"></use></svg>
+          <svg data-type="#relief-mountSnow-4" data-tip="Select Snow Mountain icon"><use href="#relief-mountSnow-4" width="40" height="40"></use></svg>
+          <svg data-type="#relief-mountSnow-5" data-tip="Select Snow Mountain icon"><use href="#relief-mountSnow-5" width="40" height="40"></use></svg>
+          <svg data-type="#relief-mountSnow-6" data-tip="Select Snow Mountain icon"><use href="#relief-mountSnow-6" width="40" height="40"></use></svg>
+          <svg data-type="#relief-vulcan-1" data-tip="Select Volcano icon"><use href="#relief-vulcan-1" width="40" height="40"></use></svg>
+          <svg data-type="#relief-vulcan-2" data-tip="Select Volcano icon"><use href="#relief-vulcan-2" width="40" height="40"></use></svg>
+          <svg data-type="#relief-vulcan-3" data-tip="Select Volcano icon"><use href="#relief-vulcan-3" width="40" height="40"></use></svg>
+          <svg data-type="#relief-hill-2" data-tip="Select Hill icon"><use href="#relief-hill-2" width="40" height="40"></use></svg>
+          <svg data-type="#relief-hill-3" data-tip="Select Hill icon"><use href="#relief-hill-3" width="40" height="40"></use></svg>
+          <svg data-type="#relief-hill-4" data-tip="Select Hill icon"><use href="#relief-hill-4" width="40" height="40"></use></svg>
+          <svg data-type="#relief-hill-5" data-tip="Select Hill icon"><use href="#relief-hill-5" width="40" height="40"></use></svg>
+          <svg data-type="#relief-dune-2" data-tip="Select Dune icon"><use href="#relief-dune-2" width="40" height="40"></use></svg>
+          <svg data-type="#relief-deciduous-2" data-tip="Select Deciduous Tree icon"><use href="#relief-deciduous-2" x="-25%" y="-25%" width="60" height="60"></use></svg>
+          <svg data-type="#relief-deciduous-3" data-tip="Select Deciduous Tree icon"><use href="#relief-deciduous-3" x="-25%" y="-25%" width="60" height="60"></use></svg>
+          <svg data-type="#relief-conifer-2" data-tip="Select Conifer Tree icon"><use href="#relief-conifer-2" x="-25%" y="-25%" width="60" height="60"></use></svg>
+          <svg data-type="#relief-coniferSnow-1" data-tip="Select Snow Conifer Tree icon"><use href="#relief-coniferSnow-1" x="-25%" y="-25%" width="60" height="60"></use></svg>
+          <svg data-type="#relief-acacia-2" data-tip="Select Acacia icon"><use href="#relief-acacia-2" x="-25%" y="-25%" width="60" height="60"></use></svg>
+          <svg data-type="#relief-palm-2" data-tip="Select Palm icon"><use href="#relief-palm-2" x="-25%" y="-25%" width="60" height="60"></use></svg>
+          <svg data-type="#relief-grass-2" data-tip="Select Grass icon"><use href="#relief-grass-2" x="-25%" y="-25%" width="60" height="60"></use></svg>
+          <svg data-type="#relief-swamp-2" data-tip="Select Swamp icon"><use href="#relief-swamp-2" x="-25%" y="-25%" width="60" height="60"></use></svg>
+          <svg data-type="#relief-swamp-3" data-tip="Select Swamp icon"><use href="#relief-swamp-3" x="-25%" y="-25%" width="60" height="60"></use></svg>
+          <svg data-type="#relief-cactus-1" data-tip="Select Cactus icon"><use href="#relief-cactus-1" x="-25%" y="-25%" width="60" height="60"></use></svg>
+          <svg data-type="#relief-cactus-2" data-tip="Select Cactus icon"><use href="#relief-cactus-2" x="-25%" y="-25%" width="60" height="60"></use></svg>
+          <svg data-type="#relief-cactus-3" data-tip="Select Cactus icon"><use href="#relief-cactus-3" x="-25%" y="-25%" width="60" height="60"></use></svg>
+          <svg data-type="#relief-deadTree-1" data-tip="Select Dead Tree icon"><use href="#relief-deadTree-1" x="-25%" y="-25%" width="60" height="60"></use></svg>
+          <svg data-type="#relief-deadTree-2" data-tip="Select Dead Tree icon"><use href="#relief-deadTree-2" x="-25%" y="-25%" width="60" height="60"></use></svg>
+        </div>
+
+        <div data-type="gray" style="display:none">
+          <svg data-type="#relief-mount-2-bw" data-tip="Select Mountain icon"><use href="#relief-mount-2-bw" width="40" height="40"></use></svg>
+          <svg data-type="#relief-mount-3-bw" data-tip="Select Mountain icon"><use href="#relief-mount-3-bw" width="40" height="40"></use></svg>
+          <svg data-type="#relief-mount-4-bw" data-tip="Select Mountain icon"><use href="#relief-mount-4-bw" width="40" height="40"></use></svg>
+          <svg data-type="#relief-mount-5-bw" data-tip="Select Mountain icon"><use href="#relief-mount-5-bw" width="40" height="40"></use></svg>
+          <svg data-type="#relief-mount-6-bw" data-tip="Select Mountain icon"><use href="#relief-mount-6-bw" width="40" height="40"></use></svg>
+          <svg data-type="#relief-mount-7-bw" data-tip="Select Mountain icon"><use href="#relief-mount-7-bw" width="40" height="40"></use></svg>
+          <svg data-type="#relief-mountSnow-1-bw" data-tip="Select Snow Mountain icon"><use href="#relief-mountSnow-1-bw" width="40" height="40"></use></svg>
+          <svg data-type="#relief-mountSnow-2-bw" data-tip="Select Snow Mountain icon"><use href="#relief-mountSnow-2-bw" width="40" height="40"></use></svg>
+          <svg data-type="#relief-mountSnow-3-bw" data-tip="Select Snow Mountain icon"><use href="#relief-mountSnow-3-bw" width="40" height="40"></use></svg>
+          <svg data-type="#relief-mountSnow-4-bw" data-tip="Select Snow Mountain icon"><use href="#relief-mountSnow-4-bw" width="40" height="40"></use></svg>
+          <svg data-type="#relief-mountSnow-5-bw" data-tip="Select Snow Mountain icon"><use href="#relief-mountSnow-5-bw" width="40" height="40"></use></svg>
+          <svg data-type="#relief-mountSnow-6-bw" data-tip="Select Snow Mountain icon"><use href="#relief-mountSnow-6-bw" width="40" height="40"></use></svg>
+          <svg data-type="#relief-vulcan-1-bw" data-tip="Select Volcano icon"><use href="#relief-vulcan-1-bw" width="40" height="40"></use></svg>
+          <svg data-type="#relief-vulcan-2-bw" data-tip="Select Volcano icon"><use href="#relief-vulcan-2-bw" width="40" height="40"></use></svg>
+          <svg data-type="#relief-vulcan-3-bw" data-tip="Select Volcano icon"><use href="#relief-vulcan-3-bw" width="40" height="40"></use></svg>
+          <svg data-type="#relief-hill-2-bw" data-tip="Select Hill icon"><use href="#relief-hill-2-bw" width="40" height="40"></use></svg>
+          <svg data-type="#relief-hill-3-bw" data-tip="Select Hill icon"><use href="#relief-hill-3-bw" width="40" height="40"></use></svg>
+          <svg data-type="#relief-hill-4-bw" data-tip="Select Hill icon"><use href="#relief-hill-4-bw" width="40" height="40"></use></svg>
+          <svg data-type="#relief-hill-5-bw" data-tip="Select Hill icon"><use href="#relief-hill-5-bw" width="40" height="40"></use></svg>
+          <svg data-type="#relief-dune-2-bw" data-tip="Select Dune icon"><use href="#relief-dune-2-bw" width="40" height="40"></use></svg>
+          <svg data-type="#relief-deciduous-2-bw" data-tip="Select Deciduous Tree icon"><use href="#relief-deciduous-2-bw" x="-25%" y="-25%" width="60" height="60"></use></svg>
+          <svg data-type="#relief-deciduous-3-bw" data-tip="Select Deciduous Tree icon"><use href="#relief-deciduous-3-bw" x="-25%" y="-25%" width="60" height="60"></use></svg>
+          <svg data-type="#relief-conifer-2-bw" data-tip="Select Conifer Tree icon"><use href="#relief-conifer-2-bw" x="-25%" y="-25%" width="60" height="60"></use></svg>
+          <svg data-type="#relief-coniferSnow-1-bw" data-tip="Select Snow Conifer Tree icon"><use href="#relief-coniferSnow-1-bw" x="-25%" y="-25%" width="60" height="60"></use></svg>
+          <svg data-type="#relief-acacia-2-bw" data-tip="Select Acacia icon"><use href="#relief-acacia-2-bw" x="-25%" y="-25%" width="60" height="60"></use></svg>
+          <svg data-type="#relief-palm-2-bw" data-tip="Select Palm icon"><use href="#relief-palm-2-bw" x="-25%" y="-25%" width="60" height="60"></use></svg>
+          <svg data-type="#relief-grass-2-bw" data-tip="Select Grass icon"><use href="#relief-grass-2-bw" x="-25%" y="-25%" width="60" height="60"></use></svg>
+          <svg data-type="#relief-swamp-2-bw" data-tip="Select Swamp icon"><use href="#relief-swamp-2-bw" x="-25%" y="-25%" width="60" height="60"></use></svg>
+          <svg data-type="#relief-swamp-3-bw" data-tip="Select Swamp icon"><use href="#relief-swamp-3-bw" x="-25%" y="-25%" width="60" height="60"></use></svg>
+          <svg data-type="#relief-cactus-1-bw" data-tip="Select Cactus icon"><use href="#relief-cactus-1-bw" x="-25%" y="-25%" width="60" height="60"></use></svg>
+          <svg data-type="#relief-cactus-2-bw" data-tip="Select Cactus icon"><use href="#relief-cactus-2-bw" x="-25%" y="-25%" width="60" height="60"></use></svg>
+          <svg data-type="#relief-cactus-3-bw" data-tip="Select Cactus icon"><use href="#relief-cactus-3-bw" x="-25%" y="-25%" width="60" height="60"></use></svg>
+          <svg data-type="#relief-deadTree-1-bw" data-tip="Select Dead Tree icon"><use href="#relief-deadTree-1-bw" x="-25%" y="-25%" width="60" height="60"></use></svg>
+          <svg data-type="#relief-deadTree-2-bw" data-tip="Select Dead Tree icon"><use href="#relief-deadTree-2-bw" x="-25%" y="-25%" width="60" height="60"></use></svg>
+        </div>
+
+        <svg id="reliefIconsSeletionAny" data-tip="Select any type of icons"><text x="50%" y="50%">Any</text></svg>
+      </div>
+
+      <div id="reliefBottom">
+        <button id="reliefEditStyle" data-tip="Edit Relief Icons style in Style Editor" class="icon-adjust"></button>
+        <button id="reliefCopy" data-tip="Copy selected relief icon" class="icon-clone"></button>
+        <button id="reliefMoveFront" data-tip="Move selected relief icon to front" class="icon-level-up"></button>
+        <button id="reliefMoveBack" data-tip="Move selected relief icon back" class="icon-level-down"></button>
+        <button id="reliefRemove" data-tip="Remove selected relief icon or icon type. Shortcut: Delete" class="icon-trash fastDelete"></button>
+      </div>
+    </div>
+
+    <div id="burgEditor" class="dialog" style="display: none">
+      <div id="burgBody">
+        <div style="width:12em; height:100%">
+          <svg viewBox="0 0 200 200"><use id="burgEmblem"></use></svg>
+        </div>
+
+      <div id="burgBody" style="padding-bottom: .3em">
+        <div style="display: flex; align-items: center">
+          <svg data-tip="Burg emblem. Click to edit" class="pointer" viewBox="0 0 200 200" width="13em" height="13em"><use id="burgEmblem"></use></svg>
+          <div>
+          <div id="burgProvinceAndState" style="font-style: italic; max-width: 16em"></div>
+
+          <div>
+            <div class="label">Name:</div>
+            <input id="burgName" data-tip="Type to rename the burg" autocorrect="off" spellcheck="false" style="width: 8em">
+            <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+            <span id="burgNameReRandom" data-tip="Generate random name for the burg" class="icon-globe pointer"></span>
+          </div>
+
+          <div data-tip="Select burg type. Type slightly affects emblem generation">
+            <div class="label">Type:</div>
+            <select id="burgType" style="width: 8em">
+              <option value="Generic">Generic</option>
+              <option value="River">River</option>
+              <option value="Lake">Lake</option>
+              <option value="Naval">Naval</option>
+              <option value="Nomadic">Nomadic</option>
+              <option value="Hunting">Hunting</option>
+              <option value="Highland">Highland</option>
+            </select>
+          </div>
+
+          <div data-tip="Select dominant culture">
+            <div class="label">Culture:</div>
+            <select id="burgCulture" style="width: 8em"></select>
+            <span id="burgNameReCulture" data-tip="Generate culture-specific name for the burg" class="icon-book pointer"></span>
+          </div>
+
+          <div data-tip="Set burg population">
+            <div class="label">Population:</div>
+            <input id="burgPopulation" type="number" min=0 step=1 style="width: 8em">
+          </div>
+
+          <div id="Burg state. Can be changed via States Editor">
+            <div class="label">State:</div>
+            <span id="burgState"></span>
+          </div>
+
+          <div id="Burg province. Can be changed via Provinces Editor">
+            <div class="label">Province:</div>
+            <span id="burgProvince"></span>
+          </div>
+
+          <div>
+            <div class="label">Features:</div>
+            <span id="burgCapital" data-tip="Shows whether the burg is a state capital. Click to toggle" data-feature="capital" class="burgFeature icon-star"></span>
+            <span id="burgPort" data-tip="Shows whether the burg is a port. Click to toggle" data-feature="port" class="burgFeature icon-anchor"></span>
+            <span id="burgCitadel" data-tip="Shows whether the burg has a citadel (castle). Click to toggle" data-feature="citadel" class="burgFeature icon-chess-rook" style="font-size: 1.1em"></span>
+            <span id="burgWalls" data-tip="Shows whether the burg is walled. Click to toggle" data-feature="walls" class="burgFeature icon-fort-awesome"></span>
+            <span id="burgPlaza" data-tip="Shows whether the burg is a trade center. Click to toggle" data-feature="plaza" class="burgFeature icon-store" style="font-size: 1em"></span>
+            <span id="burgTemple" data-tip="Shows whether the burg is a religious center. Click to toggle" data-feature="temple" class="burgFeature icon-chess-bishop" style="font-size: 1.1em; margin-left: 3px"></span>
+            <span id="burgShanty" data-tip="Shows whether the burg has a shanty town. Click to toggle" data-feature="shanty" class="burgFeature icon-campground" style="font-size: 1em"></span>
+          </div>
+        </div>
+
+        <div>
+          <div data-tip="Burg monthly production">
+            <div class="label">Production:</div>
+            <span id="burgProduction"></span>
+          </div>
+
+          <div data-tip="Burg monthly export (goods sold)">
+            <div class="label">Export:</div>
+            <span id="burgExport"></span>
+          </div>
+
+          <div data-tip="Burg monthly import (goods purchased)">
+            <div class="label">Import:</div>
+            <span id="burgImport"></span>
+          </div>
+
+          <div data-tip="Burg montly goods consumption">
+            <div class="label">Consumption:</div>
+            <span id="burgConsumption"></span>
+          </div>
+
+          <div data-tip="Burg mean annual temperature and real-world city for comparison">
+            <div class="label">Temperature:</div>
+            <span id="burgTemperature"></span>, like in
+            <span id="burgTemperatureLikeIn"></span>
+          </div>
+
+          <div data-tip="Burg height above mean sea level">
+            <div class="label">Elevation:</div>
+            <span id="burgElevation"></span> above sea level
+          </div>
+          </div>
+        </div>
+
+        <div data-tip="Burg preview in the Medieval Fantasy City Generator. Default seed is a conbimation of map seed and burg id" style="display: flex; flex-direction: column">
+          <div>
+            See in <a id="mfcgLink" target="_blank">City Generator by Watabou</a>. 
+            Seed: <input id="mfcgBurgSeed" style="width: 10em" type="number" min=1 max="1e13" step="1" />
+            <i id="regenerateMFCGBurgSeed" data-tip="Randomize Medieval Fantasy City Generator burg seed" class="icon-arrows-cw pointer" style="margin-left: .1em"></i>
+          </div>
+          <iframe id="mfcgPreview" sandbox="allow-scripts allow-same-origin"></iframe>
+        </div>
+      </div>
+
+      <div id="burgBottom">
+        <button id="burgGroupShow" data-tip="Show group change section" class="icon-tags"></button>
+        <div id="burgGroupSection" style="display: none">
+          <button id="burgGroupHide" data-tip="Hide group change section" class="icon-tags"></button>
+          <select id="burgSelectGroup" data-tip="Select a group for this burg" style="width: 10em;"></select>
+          <input id="burgInputGroup" placeholder="new group name" data-tip="Create new Group for the Burg" style="display: none; width: 10em"/>
+          <i id="burgAddGroup" data-tip="Create new group for the burg" class="icon-plus pointer"></i>
+          <i id="burgRemoveGroup" data-tip="Remove selected burg group" class="icon-trash pointer"></i>
+        </div>
+
+        <button id="burgStyleShow" data-tip="Show style edit section" class="icon-brush"></button>
+        <div id="burgStyleSection" style="display: none">
+          <button id="burgStyleHide" data-tip="Hide style edit section" class="icon-brush"></button>
+          <button id="burgEditLabelStyle" data-tip="Edit label style for burg group in Style Editor" class="icon-font"></button>
+          <button id="burgEditIconStyle" data-tip="Edit icon style for burg group in Style Editor" class="icon-dot-circled"></button>
+          <button id="burgEditAnchorStyle" data-tip="Edit port icon (anchor) style for burg group in Style Editor" class="icon-anchor"></button>
+        </div>
+
+        <button id="burgEditEmblem" data-tip="Edit emblem" class="icon-shield-alt"></button>
+        <button id="burgRelocate" data-tip="Relocate burg" class="icon-target"></button>
+        <button id="burglLegend" data-tip="Edit free text notes (legend) for this burg" class="icon-edit"></button>
+        <button id="burgLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
+        <button id="burgRemove" data-tip="Remove non-capital burg. Shortcut: Delete" class="icon-trash fastDelete"></button>
+      </div>
+    </div>
+
+    <div id="markerEditor" class="dialog" style="display: none">
+      <div id="markerBody" style="padding-bottom: .3em">
+        <div data-tip="Marker type. Style changes will apply to all markers of the same type. Leave blank if the marker is unique">
+          <div class="label">Type:</div>
+          <input id="markerType" style="width: 10.3em" />
+        </div>
+
+        <div data-tip="Marker icon. Paste any Unicode symbol or select from the predefined list">
+          <div class="label">Icon:</div>
+          <input id="markerIcon" style="width:5em" />
+          <button id="markerIconSelect" style="width: 5em">select</button>
+        </div>
+
+        <div data-tip="Marker marker element and icon sizes in pixels">
+          <div class="label">Size:</div>
+          <input data-tip="Marker element size in pixels" id="markerSize" type="number" min="2" max="500" style="width: 5em" />
+          <input data-tip="Marker icon sizes in pixels" id="markerIconSize" type="number" min="2" max="20" step="0.5" style="width: 5em" />
+        </div>
+
+        <div data-tip="Marker icon shift (by X and by Y axis), percent. Set to 50 to position icon in center">
+          <div class="label">Icon shift:</div>
+          <input id="markerIconShiftX" type="number" min="0" max="100" step="1" style="width:5em" />
+          <input id="markerIconShiftY" type="number" min="0" max="100" step="1" style="width:5em" />
+        </div>
+
+        <div data-tip="Marker pin shape">
+          <div class="label">Pin shape:</div>
+          <select id="markerPin" style="width: 10.3em">
+            <option value="bubble">Bubble</option>
+            <option value="pin">Pin</option>
+            <option value="square">Square</option>
+            <option value="squarish">Squarish</option>
+            <option value="diamond">Diamond</option>
+            <option value="hex">Hex</option>
+            <option value="hexy">Hexy</option>
+            <option value="shieldy">Shieldy</option>
+            <option value="shield">Shield</option>
+            <option value="pentagon">Pentagon</option>
+            <option value="heptagon">Heptagon</option>
+            <option value="circle">Circle</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+
+        <div data-tip="Pin fill and stroke colors">
+          <div class="label">Pin colors:</div>
+          <input id="markerFill" type="color" style="width:5em; height:1.6em" />
+          <input id="markerStroke" type="color" style="width:5em; height:1.6em" />
+        </div>
+      </div>
+
+      <div id="markerBottom">
+        <button id="markerNotes" data-tip="Edit place legend (notes)" class="icon-edit"></button>
+        <button id="markerLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
+        <button id="markerAdd" data-tip="Add additional marker of that type" class="icon-plus"></button>
+        <button id="markerRemove" data-tip="Remove the marker. Shortcut: Delete" class="icon-trash fastDelete"></button>
+      </div>
+    </div>
+
+    <div id="regimentEditor" class="dialog" style="display: none">
+
+      <div id="regimentBody" style="padding-bottom: 0.3em">
+        <div style="padding-bottom: 0.2em">
+          <button id="regimentType" data-tip="Regiment type (land or naval). Click to change"></button>
+          <input id="regimentName" data-tip="Type to rename the regiment" autocorrect="off" spellcheck="false" style="width: 13em">
+          <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+          <i id="regimentNameRestore" data-tip="Click to restore regiment's default name" class="icon-ccw pointer"></i>
+        </div>
+
+        <div data-tip="Regiment emblem. Paste any Unicode symbol or select from the predefined list">
+          <div class="label italic">Emblem:</div>
+          <input id="regimentEmblem" style="width:5em">
+          <button id="regimentEmblemSelect" style="padding: 0; width: 4.5em">select</button>
+        </div>
+
+        <div id="regimentComposition" class="table"></div>
+      </div>
+
+      <div id="regimentBottom">
+        <button id="regimentAttack" data-tip="Attack foreign regiment" class="icon-target"></button>
+        <button id="regimentAdd" data-tip="Create new regiment or fleet" class="icon-user-plus"></button>
+        <button id="regimentSplit" data-tip="Split regiment into 2 separate ones" class="icon-half"></button>
+        <button id="regimentAttach" data-tip="Attach regiment to another one (include this regiment to another one)" class="icon-attach"></button>
+        <button id="regimentRegenerateLegend" data-tip="Regenerate legend for this regiment" class="icon-retweet"></button>
+        <button id="regimentLegend" data-tip="Edit free text notes (legend) for this regiment" class="icon-edit"></button>
+        <button id="regimentRemove" data-tip="Remove regiment. Shortcut: Delete" class="icon-trash fastDelete"></button>
+      </div>
+    </div>
+
+    <div id="battleScreen" class="dialog stable" style="display: none">
+      <div id="battleBody" class="overflow">
+        <template id="battlePhases_field">
+          <button data-tip="Skirmish phase. Ranged units excel" data-phase="skirmish" class="icon-button-skirmish"></button>
+          <button data-tip="Melee phase. Melee units excel" data-phase="melee" class="icon-button-melee"></button>
+          <button data-tip="Pursue phase. Mounted units excel" data-phase="pursue" class="icon-button-pursue"></button>
+          <button data-tip="Retreat phase. Units strength reduced" data-phase="retreat" class="icon-button-retreat"></button>
+        </template>
+
+        <template id="battlePhases_naval">
+          <button data-tip="Shelling phase. Naval artillery bombardment of enemy fleet" data-phase="shelling" class="icon-button-shelling"></button>
+          <button data-tip="Boarding phase. Melee units go aboard" data-phase="boarding" class="icon-button-boarding"></button>
+          <button data-tip="Сhase phase. Naval units pursue and rarely shell enemy fleet" data-phase="chase" class="icon-button-chase"></button>
+          <button data-tip="Withdrawal phase. Naval units try to escape enemy fleet" data-phase="withdrawal" class="icon-button-withdrawal"></button>
+        </template>
+
+        <template id="battlePhases_siege_attackers">
+          <button data-tip="Blockade phase. Prepare or hold the blockade" data-phase="blockade" class="icon-button-blockade"></button>
+          <button data-tip="Bombardment phase. Attack enemy with machinery units" data-phase="bombardment" class="icon-button-bombardment"></button>
+          <button data-tip="Storming phase. Storm enemy town. Melee units excel" data-phase="storming" class="icon-button-storming"></button>
+          <button data-tip="Looting phase. Plunder the town. Units strength increased" data-phase="looting" class="icon-button-looting"></button>
+          <button data-tip="Retreat phase. Units strength reduced" data-phase="retreat" class="icon-button-retreat"></button>
+        </template>
+
+        <template id="battlePhases_siege_defenders">
+          <button data-tip="Sheltering phase. Hide behind the walls and wait" data-phase="sheltering" class="icon-button-sheltering"></button>
+          <button data-tip="Sortie phase. Make a sortie from besieged town. Melee units excel" data-phase="sortie" class="icon-button-sortie"></button>
+          <button data-tip="Bombardment phase. Attack enemy with machinery units" data-phase="bombardment" class="icon-button-bombardment"></button>
+          <button data-tip="Defense phase. Ranged and melee units excel" data-phase="defense" class="icon-button-defense"></button>
+          <button data-tip="Surrendering phase. Give up the defense. Units strength reduced" data-phase="surrendering" class="icon-button-surrendering"></button>
+          <button data-tip="Pursue phase. Mounted units excel" data-phase="pursue" class="icon-button-pursue"></button>
+        </template>
+
+        <template id="battlePhases_ambush_attackers">
+          <button data-tip="Shock phase. Units strength reduced" data-phase="shock" class="icon-button-shock"></button>
+          <button data-tip="Melee phase. Melee units excel" data-phase="melee" class="icon-button-melee"></button>
+          <button data-tip="Pursue phase. Mounted units excel" data-phase="pursue" class="icon-button-pursue"></button>
+          <button data-tip="Retreat phase. Units strength reduced" data-phase="retreat" class="icon-button-retreat"></button>
+        </template>
+
+        <template id="battlePhases_ambush_defenders">
+          <button data-tip="Surprice attack phase. Units strength increased, ranged units excel" data-phase="surprise" class="icon-button-surprise"></button>
+          <button data-tip="Melee phase. Melee units excel" data-phase="melee" class="icon-button-melee"></button>
+          <button data-tip="Pursue phase. Mounted units excel" data-phase="pursue" class="icon-button-pursue"></button>
+          <button data-tip="Retreat phase. Units strength reduced" data-phase="retreat" class="icon-button-retreat"></button>
+        </template>
+
+        <template id="battlePhases_landing_attackers">
+          <button data-tip="Landing phase. Amphibious attack. Units are vulnerable against prepared defense" data-phase="landing" class="icon-button-landing"></button>
+          <button data-tip="Melee phase. Melee units excel" data-phase="melee" class="icon-button-melee"></button>
+          <button data-tip="Pursue phase. Mounted units excel" data-phase="pursue" class="icon-button-pursue"></button>
+          <button data-tip="Flee phase. Units strength reduced" data-phase="flee" class="icon-button-flee"></button>
+        </template>
+
+        <template id="battlePhases_landing_defenders">
+          <button data-tip="Shock phase. Units are not prepared for a defense" data-phase="shock" class="icon-button-shock"></button>
+          <button data-tip="Defense phase. Prepared defense. Units strength increased" data-phase="defense" class="icon-button-defense"></button>
+          <button data-tip="Melee phase. Melee units excel" data-phase="melee" class="icon-button-melee"></button>
+          <button data-tip="Waiting phase. Cannot pursue fleeing naval" data-phase="waiting" class="icon-button-waiting"></button>
+          <button data-tip="Pursue phase. Try to intercept fleeing attackers. Mounted units excel" data-phase="pursue" class="icon-button-pursue"></button>
+          <button data-tip="Retreat phase. Units strength reduced" data-phase="retreat" class="icon-button-retreat"></button>
+        </template>
+
+        <template id="battlePhases_air">
+          <button data-tip="Maneuvering phase. Units strength reduced" data-phase="maneuvering" class="icon-button-maneuvering"></button>
+          <button data-tip="Dogfight phase. Units strength increased" data-phase="dogfight" class="icon-button-dogfight"></button>
+          <button data-tip="Pursue phase. Units strength increased" data-phase="pursue" class="icon-button-pursue"></button>
+          <button data-tip="Retreat phase. Units strength reduced" data-phase="retreat" class="icon-button-retreat"></button>
+        </template>
+
+        <div style="font-size:1.2em; font-weight: bold; width: unset">
+          <span>Attackers</span>
+          <div style="float: right; font-size: .7em">
+            <meter id="battleMorale_attackers" data-tip="Attackers morale: " min=0 max=100 low=33 high=66 optimum=80></meter>
+            <div id="battlePower_attackers" data-tip="Attackers strength during this phase. Strength defines dealt damage" style="display: inline-block; text-align: center" class="icon-button-power"></div>
+            <div style="display: inline-block;">
+              <button id="battlePhase_attackers" style="width: 3.2em"></button>
+              <div class="battlePhases" style="display: none"></div>
+>>>>>>> 01fbfca0 (markers - generate tool + lock tooltip)
             </div>
             <div>
               <i data-locked="0" id="lock_mapSize" class="icon-lock-open"></i>
