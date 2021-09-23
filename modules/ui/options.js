@@ -665,7 +665,7 @@ function restoreDefaultOptions() {
 // Sticked menu Options listeners
 document.getElementById("sticked").addEventListener("click", function (event) {
   const id = event.target.id;
-  if (id === "newMapButton") regeneratePrompt();
+  if (id === "newMapButton") regeneratePrompt("sticky button");
   else if (id === "saveButton") showSavePane();
   else if (id === "exportButton") showExportPane();
   else if (id === "loadButton") showLoadPane();
@@ -931,8 +931,9 @@ function enterStandardView() {
 }
 
 async function enter3dView(type) {
-  const canvas = document.createElement('canvas');
-  canvas.id = 'canvas3d';
+  track("click", `3d mode: ${type}`);
+  const canvas = document.createElement("canvas");
+  canvas.id = "canvas3d";
   canvas.dataset.type = type;
 
   if (type === 'heightmap3DView') {

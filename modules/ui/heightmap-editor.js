@@ -1,33 +1,4 @@
-<<<<<<< HEAD
 "use strict";
-=======
-'use strict';
-
-function editHeightmap() {
-  void (function selectEditMode() {
-    alertMessage.innerHTML = `Heightmap is a core element on which all other data (rivers, burgs, states etc) is based.
-      So the best edit approach is to <i>erase</i> the secondary data and let the system automatically regenerate it on edit completion.
-      <p><i>Erase</i> mode also allows you Convert an Image into a heightmap or use Template Editor.</p>
-      <p>You can <i>keep</i> the data, but you won't be able to change the coastline.</p>
-      <p>Try <i>risk</i> mode to change the coastline and keep the data. The data will be restored as much as possible, but it can cause unpredictable errors.</p>
-      <p>Please <span class="pseudoLink" onclick=dowloadMap(); editHeightmap();>save the map</span> before editing the heightmap!</p>
-      <p style="margin-bottom: 0">Check out ${link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization", "wiki")} for guidance.</p>`;
-
-    $('#alert').dialog({
-      resizable: false,
-      title: 'Edit Heightmap',
-      width: '28em',
-      buttons: {
-        Erase: () => enterHeightmapEditMode('erase'),
-        Keep: () => enterHeightmapEditMode('keep'),
-        Risk: () => enterHeightmapEditMode('risk'),
-        Cancel: function () {
-          $(this).dialog('close');
-        }
-      }
-    });
-  })();
->>>>>>> f557701e (dropbox - import changes from alpha)
 
 function editHeightmap(options) {
   const {mode, tool} = options || {};
@@ -1089,7 +1060,8 @@ function editHeightmap(options) {
   }
 
   function openImageConverter() {
-    if ($('#imageConverter').is(':visible')) return;
+    if ($("#imageConverter").is(":visible")) return;
+    track("edit", "convert image");
     imageToLoad.click();
     closeDialogs('#imageConverter');
 
