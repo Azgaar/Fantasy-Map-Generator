@@ -30,19 +30,6 @@
     post(`${root}/api/collect`, {type, payload});
   };
 
-  // const addEvents = () => {
-  //   document.querySelectorAll("[class*='umami--']").forEach(element => {
-  //     element.className.split(" ").forEach(className => {
-  //       if (/^umami--([a-z]+)--([\w]+[\w-]*)$/.test(className)) {
-  //         const [, type, value] = className.split("--");
-  //         const listener = () => collect("event", {event_type: type, event_value: value});
-  //         element.addEventListener(type, listener, true);
-  //       }
-  //     });
-  //   });
-  // };
-  // addEvents();
-
   collect("pageview", {url, referrer});
   window.track = (event_type = "reach", event_value = "") => collect("event", {event_type, event_value, url});
 })(window);
