@@ -877,8 +877,10 @@ function parseLoadedData(data) {
         borders.attr('style', null);
       }
 
-      // ecomonics:
-      // calculate salesTax for all states
+      if (version < 1.7) {
+        // v 1.7 changed markers data
+        // TODO: get markers data from svg
+      }
     })();
 
     void (function checkDataIntegrity() {

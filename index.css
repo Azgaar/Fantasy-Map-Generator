@@ -439,7 +439,32 @@ button.options:hover {
   cursor: pointer;
 }
 
-input[type='color'] {
+#options button i.icon-cog {
+  position: absolute;
+  padding: 0.1em 0.3em;
+  background-color: var(--bg-lighter);
+  border-radius: 50%;
+  visibility: hidden;
+  opacity: 0;
+  transition: 0.4s ease-in-out;
+}
+
+#options button i.icon-cog:hover {
+  color: #111;
+  background-color: var(--bg-light);
+  transform: rotateZ(180deg);
+}
+
+#options button i.icon-cog:active {
+  transform: translateY(1px);
+}
+
+#options button:hover i.icon-cog {
+  visibility: visible;
+  opacity: 1;
+}
+
+input[type="color"] {
   -webkit-appearance: none;
   cursor: pointer;
   border: 1px solid #a9a9a9;
