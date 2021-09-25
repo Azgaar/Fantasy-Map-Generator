@@ -31,7 +31,7 @@ function editMarker() {
   $("#markerEditor").dialog({
     title: "Edit Marker",
     resizable: false,
-    position: {my: "center top+30", at: "bottom", of: element, collision: "fit"},
+    position: {my: "left top", at: "left+10 top+10", of: "svg", collision: "fit"},
     close: closeMarkerEditor
   });
 
