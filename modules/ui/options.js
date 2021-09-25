@@ -798,6 +798,9 @@ function openSaveTiles() {
   status.innerHTML = "";
   let loading = null;
 
+  const inputs = document.getElementById("saveTilesScreen").querySelectorAll("input");
+  inputs.forEach(input => input.addEventListener("input", updateTilesOptions));
+
   $("#saveTilesScreen").dialog({
     resizable: false,
     title: "Download tiles",
@@ -819,16 +822,12 @@ function openSaveTiles() {
       }
     },
     close: () => {
+      inputs.forEach(input => input.removeEventListener("input", updateTilesOptions));
       debug.selectAll("*").remove();
       clearInterval(loading);
     }
   });
 }
-
-document
-  .getElementById("saveTilesScreen")
-  .querySelectorAll("input")
-  .forEach(el => el.addEventListener("input", updateTilesOptions));
 
 function updateTilesOptions() {
   if (this?.tagName === "INPUT") {
