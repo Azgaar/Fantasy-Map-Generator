@@ -689,7 +689,7 @@ function addRouteOnClick() {
 }
 
 function toggleAddMarker() {
-  const pressed = document.getElementById("addMarker").classList.contains("pressed");
+  const pressed = document.getElementById("addMarker")?.classList.contains("pressed");
   if (pressed) {
     unpressClickToAddButton();
     return;
@@ -697,46 +697,33 @@ function toggleAddMarker() {
 
   addFeature.querySelectorAll("button.pressed").forEach(b => b.classList.remove("pressed"));
   addMarker.classList.add("pressed");
-  closeDialogs(".stable");
+
   viewbox.style("cursor", "crosshair").on("click", addMarkerOnClick);
   tip("Click on map to add a marker. Hold Shift to add multiple", true);
   if (!layerIsOn("toggleMarkers")) toggleMarkers();
 }
 
 function addMarkerOnClick() {
-  // TODO: rework for new markers system
+  const {markers} = pack;
   const point = d3.mouse(this);
   const x = rn(point[0], 2);
   const y = rn(point[1], 2);
-  const id = getNextId("marker");
+  const i = last(markers).i + 1;
 
-  const selected = markerSelectGroup.value;
-  const valid =
-    selected &&
-    d3
-      .select("#defs-markers")
-      .select("#" + selected)
-      .size();
-  const symbol = valid ? "#" + selected : "#marker0";
-  const added = markers.select("[data-id='" + symbol + "']").size();
-  let desired = valid && added ? markers.select("[data-id='" + symbol + "']").attr("data-size") : 1;
-  if (isNaN(desired)) desired = 1;
-  const size = desired * 5 + 25 / scale;
+  const isMarkerSelected = elSelected?.node()?.parentElement?.id === "markers";
+  const selectedMarker = isMarkerSelected ? markers.find(marker => marker.i === +elSelected.attr("id").slice(6)) : null;
+  const baseMarker = selectedMarker || {icon: "❓"};
+  const marker = {...baseMarker, i, x, y};
 
-  markers
-    .append("use")
-    .attr("id", id)
-    .attr("xlink:href", symbol)
-    .attr("data-id", symbol)
-    .attr("data-x", x)
-    .attr("data-y", y)
-    .attr("x", x - size / 2)
-    .attr("y", y - size)
-    .attr("data-size", desired)
-    .attr("width", size)
-    .attr("height", size);
+  markers.push(marker);
+  const markersElement = document.getElementById("markers");
+  const rescale = +markersElement.getAttribute("rescale");
+  markersElement.insertAdjacentHTML("beforeend", drawMarker(marker, rescale));
 
-  if (d3.event.shiftKey === false) unpressClickToAddButton();
+  if (d3.event.shiftKey === false) {
+    document.getElementById("markerAdd").classList.remove("pressed");
+    unpressClickToAddButton();
+  }
 }
 
 function viewCellDetails() {

@@ -202,6 +202,7 @@ function editMarker() {
   }
 
   function toggleAddMarker() {
+    markerAdd.classList.toggle("pressed");
     addMarker.click();
   }
 
@@ -225,8 +226,8 @@ function editMarker() {
     listeners.forEach(removeListener => removeListener());
 
     unselect();
-    if (addMarker.classList.contains("pressed")) addMarker.classList.remove("pressed");
-    if (markerAdd.classList.contains("pressed")) markerAdd.classList.remove("pressed");
+    addMarker.classList.remove("pressed");
+    markerAdd.classList.remove("pressed");
     restoreDefaultEvents();
     clearMainTip();
   }
