@@ -1461,3 +1461,4 @@ function editHeightmap(options) {
     };
   }
 }
+}

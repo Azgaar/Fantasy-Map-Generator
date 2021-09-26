@@ -74,13 +74,8 @@ function showElementLockTip(event) {
   }
 }
 
-<<<<<<< HEAD
 const onMouseMove = debounce(handleMouseMove, 100);
 function handleMouseMove() {
-=======
-const moved = debounce(mouseMove, 100);
-function mouseMove() {
->>>>>>> 01fbfca0 (markers - generate tool + lock tooltip)
   const point = d3.mouse(this);
   const i = findCell(point[0], point[1]); // pack cell id
   if (i === undefined) return;
@@ -126,15 +121,11 @@ function showMapTooltip(point, e, i, g) {
   if (group === "emblems" && e.target.tagName === "use") {
     const parent = e.target.parentNode;
     const [g, type] =
-<<<<<<< HEAD
       parent.id === "burgEmblems"
         ? [pack.burgs, "burg"]
         : parent.id === "provinceEmblems"
         ? [pack.provinces, "province"]
         : [pack.states, "state"];
-=======
-      parent.id === "burgEmblems" ? [pack.burgs, "burg"] : parent.id === "provinceEmblems" ? [pack.provinces, "province"] : [pack.states, "state"];
->>>>>>> 01fbfca0 (markers - generate tool + lock tooltip)
     const i = +e.target.dataset.i;
     if (event.shiftKey) highlightEmblemElement(type, g[i]);
 

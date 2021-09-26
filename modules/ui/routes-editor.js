@@ -338,3 +338,4 @@ function editRoute(onClick) {
     unselect();
   }
 }
+}

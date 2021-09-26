@@ -295,7 +295,6 @@ function getBurgSeed(burg) {
   return burg.MFCG || Number(`${seed}${String(burg.i).padStart(4, 0)}`);
 }
 
-<<<<<<< HEAD
 function getMFCGlink(burg) {
   if (burg.link) return burg.link;
 
@@ -357,8 +356,6 @@ function getMFCGlink(burg) {
   return url.toString();
 }
 
-=======
->>>>>>> 01fbfca0 (markers - generate tool + lock tooltip)
 // draw legend box
 function drawLegend(name, data) {
   legend.selectAll('*').remove(); // fully redraw every time
@@ -472,7 +469,7 @@ function clearLegend() {
 }
 
 // draw color (fill) picker
-function createPicker(hatching) {
+function createPicker() {
   const COLORS_IN_ROW = 14;
   const pos = () => tip("Drag to change the picker position");
   const cl = () => tip("Click to close the picker");

@@ -82,7 +82,6 @@ function overviewBurgs() {
       const province = prov ? pack.provinces[prov].name : '';
       const culture = pack.cultures[b.culture].name;
 
-<<<<<<< HEAD
       lines += /* html */ `<div
         class="states"
         data-id=${b.i}
@@ -100,31 +99,13 @@ function overviewBurgs() {
         <select data-tip="Dominant culture. Click to change burg culture (to change cell culture use Cultures Editor)" class="stateCulture">
           ${getCultureOptions(b.culture)}
         </select>
-=======
-      lines += `<div class="states" data-id=${b.i} data-name="${
-        b.name
-      }" data-state="${state}" data-province="${province}" data-culture="${culture}" data-population=${population} data-type="${type}">
-        <span data-tip="Click to zoom into view" class="icon-dot-circled pointer"></span>
-        <input data-tip="Burg name. Click and type to change" class="burgName" value="${b.name}" autocorrect="off" spellcheck="false">
-        <input data-tip="Burg province" class="burgState" value="${province}" disabled>
-        <input data-tip="Burg state" class="burgState" value="${state}" disabled>
-        <select data-tip="Dominant culture. Click to change burg culture (to change cell cultrure use Cultures Editor)" class="stateCulture">${getCultureOptions(
-          b.culture
-        )}</select>
->>>>>>> 01fbfca0 (markers - generate tool + lock tooltip)
         <span data-tip="Burg population" class="icon-male"></span>
         <input data-tip="Burg population. Type to change" class="burgPopulation" value=${si(population)} />
         <div class="burgType">
-<<<<<<< HEAD
           <span
             data-tip="${b.capital ? " This burg is a state capital" : "Click to assign a capital status"}"
             class="icon-star-empty${b.capital ? "" : " inactive pointer"}"
           ></span>
-=======
-          <span data-tip="${b.capital ? " This burg is a state capital" : "Click to assign a capital status"}" class="icon-star-empty${
-        b.capital ? "" : " inactive pointer"
-      }"></span>
->>>>>>> 01fbfca0 (markers - generate tool + lock tooltip)
           <span data-tip="Click to toggle port status" class="icon-anchor pointer${b.port ? "" : " inactive"}" style="font-size:.9em"></span>
         </div>
         <span data-tip="Edit burg" class="icon-pencil"></span>
@@ -226,7 +207,6 @@ function overviewBurgs() {
   function toggleBurgLockStatus() {
     const burgId = +this.parentNode.dataset.id;
 
-<<<<<<< HEAD
     const burg = pack.burgs[burgId];
     burg.lock = !burg.lock;
 
@@ -241,8 +221,6 @@ function overviewBurgs() {
     }
   }
 
-=======
->>>>>>> 01fbfca0 (markers - generate tool + lock tooltip)
   function openBurgEditor() {
     const burg = +this.parentNode.dataset.id;
     editBurg(burg);
@@ -435,7 +413,6 @@ function overviewBurgs() {
         if (this.value === "provinces") return d.province;
       };
 
-<<<<<<< HEAD
       const mapping = {
         states: getStatesData,
         cultures: getCulturesData,
@@ -444,16 +421,6 @@ function overviewBurgs() {
       };
 
       const base = mapping[this.value]();
-=======
-      const base =
-        this.value === "states"
-          ? getStatesData()
-          : this.value === "cultures"
-          ? getCulturesData()
-          : this.value === "parent"
-          ? getParentData()
-          : getProvincesData();
->>>>>>> 01fbfca0 (markers - generate tool + lock tooltip)
       burgs.forEach(b => (b.id = b.i + base.length - 1));
 
       const data = base.concat(burgs);
@@ -485,17 +452,10 @@ function overviewBurgs() {
   }
 
   function downloadBurgsData() {
-<<<<<<< HEAD
     let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Population,Latitude,Longitude,Elevation (${heightUnit.value}),Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town`; // headers
     if (options.showMFCGMap) data += `,City Generator Link`;
     data += "\n";
 
-=======
-    let data =
-      "Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Population,Longitude,Latitude,Elevation (" +
-      heightUnit.value +
-      "),Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town\n"; // headers
->>>>>>> 01fbfca0 (markers - generate tool + lock tooltip)
     const valid = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
 
     valid.forEach((b) => {
