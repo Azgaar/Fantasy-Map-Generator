@@ -688,6 +688,7 @@ function toggleAddMarker() {
 
   addFeature.querySelectorAll("button.pressed").forEach(b => b.classList.remove("pressed"));
   addMarker.classList.add("pressed");
+  markersAddFromOverview.classList.add("pressed");
 
   viewbox.style("cursor", "crosshair").on("click", addMarkerOnClick);
   tip("Click on map to add a marker. Hold Shift to add multiple", true);
@@ -713,6 +714,7 @@ function addMarkerOnClick() {
 
   if (d3.event.shiftKey === false) {
     document.getElementById("markerAdd").classList.remove("pressed");
+    document.getElementById("markersAddFromOverview").classList.remove("pressed");
     unpressClickToAddButton();
   }
 }

@@ -2,6 +2,7 @@
 
 window.Markers = (function () {
   let config = [];
+  let occupied = [];
 
   function getDefaultConfig() {
     const culturesSet = document.getElementById("culturesSet").value;
@@ -67,12 +68,13 @@ window.Markers = (function () {
   function generateTypes() {
 >>>>>>> 60057c5... markers - generate from config file
     TIME && console.time("addMarkers");
-    // TODO: don't put multiple markers to the same cell
 
     config.forEach(({type, icon, multiplier, fn}) => {
       if (multiplier === 0) return;
       fn(type, icon, multiplier);
     });
+
+    occupied = [];
     TIME && console.timeEnd("addMarkers");
   }
 
@@ -109,18 +111,19 @@ window.Markers = (function () {
   function addMarker({cell, type, icon, dx, dy, px}) {
     const i = pack.markers.length;
     const [x, y] = getMarkerCoordinates(cell);
-    const marker = {i, icon, type, x, y};
+    const marker = {i, icon, type, x, y, cell};
     if (dx) marker.dx = dx;
     if (dy) marker.dy = dy;
     if (px) marker.px = px;
     pack.markers.push(marker);
+    occupied[cell] = true;
     return "marker" + i;
   }
 
   function addVolcanoes(type, icon, multiplier) {
     const {cells} = pack;
 
-    let mountains = Array.from(cells.i.filter(i => cells.h[i] >= 70).sort((a, b) => cells.h[b] - cells.h[a]));
+    let mountains = Array.from(cells.i.filter(i => !occupied[i] && cells.h[i] >= 70).sort((a, b) => cells.h[b] - cells.h[a]));
     let quantity = getQuantity(mountains, 10, 300, multiplier);
     if (!quantity) return;
     const highestMountains = mountains.slice(0, 20);
@@ -138,7 +141,7 @@ window.Markers = (function () {
   function addHotSprings(type, icon, multiplier) {
     const {cells} = pack;
 
-    let springs = Array.from(cells.i.filter(i => cells.h[i] > 50).sort((a, b) => cells.h[b] - cells.h[a]));
+    let springs = Array.from(cells.i.filter(i => !occupied[i] && cells.h[i] > 50).sort((a, b) => cells.h[b] - cells.h[a]));
     let quantity = getQuantity(springs, 30, 800, multiplier);
     if (!quantity) return;
     const highestSprings = springs.slice(0, 40);
@@ -156,7 +159,7 @@ window.Markers = (function () {
   function addMines(type, icon, multiplier) {
     const {cells} = pack;
 
-    let hillyBurgs = Array.from(cells.i.filter(i => cells.h[i] > 47 && cells.burg[i]));
+    let hillyBurgs = Array.from(cells.i.filter(i => !occupied[i] && cells.h[i] > 47 && cells.burg[i]));
     let quantity = getQuantity(hillyBurgs, 1, 15, multiplier);
     if (!quantity) return;
 
@@ -180,7 +183,7 @@ window.Markers = (function () {
 
     const meanFlux = d3.mean(cells.fl.filter(fl => fl));
     let bridges = Array.from(
-      cells.i.filter(i => cells.burg[i] && cells.t[i] !== 1 && burgs[cells.burg[i]].population > 20 && cells.r[i] && cells.fl[i] > meanFlux)
+      cells.i.filter(i => !occupied[i] && cells.burg[i] && cells.t[i] !== 1 && burgs[cells.burg[i]].population > 20 && cells.r[i] && cells.fl[i] > meanFlux)
     );
     let quantity = getQuantity(bridges, 1, 5, multiplier);
     if (!quantity) return;
@@ -200,7 +203,7 @@ window.Markers = (function () {
   function addInns(type, icon, multiplier) {
     const {cells} = pack;
 
-    let taverns = Array.from(cells.i.filter(i => cells.h[i] >= 20 && cells.road[i] > 4 && cells.pop[i] > 10));
+    let taverns = Array.from(cells.i.filter(i => !occupied[i] && cells.h[i] >= 20 && cells.road[i] > 4 && cells.pop[i] > 10));
     let quantity = getQuantity(taverns, 1, 100, multiplier);
     if (!quantity) return;
 
@@ -451,7 +454,7 @@ window.Markers = (function () {
   function addLighthouses(type, icon, multiplier) {
     const {cells} = pack;
 
-    const lighthouses = Array.from(cells.i.filter(i => cells.harbor[i] > 6 && cells.c[i].some(c => cells.h[c] < 20 && cells.road[c])));
+    const lighthouses = Array.from(cells.i.filter(i => !occupied[i] && cells.harbor[i] > 6 && cells.c[i].some(c => cells.h[c] < 20 && cells.road[c])));
     let quantity = getQuantity(lighthouses, 1, 2, multiplier);
     if (!quantity) return;
 
@@ -467,7 +470,7 @@ window.Markers = (function () {
   function addWaterfalls(type, icon, multiplier) {
     const {cells} = pack;
 
-    const waterfalls = Array.from(cells.i.filter(i => cells.r[i] && cells.h[i] >= 50 && cells.c[i].some(c => cells.h[c] < 40 && cells.r[c])));
+    const waterfalls = Array.from(cells.i.filter(i => cells.r[i] && !occupied[i] && cells.h[i] >= 50 && cells.c[i].some(c => cells.h[c] < 40 && cells.r[c])));
     const quantity = getQuantity(waterfalls, 1, 5, multiplier);
     if (!quantity) return;
 
@@ -482,7 +485,7 @@ window.Markers = (function () {
   function addBattlefields(type, icon, multiplier) {
     const {cells, states} = pack;
 
-    let battlefields = Array.from(cells.i.filter(i => cells.state[i] && cells.pop[i] > 2 && cells.h[i] < 50 && cells.h[i] > 25));
+    let battlefields = Array.from(cells.i.filter(i => !occupied[i] && cells.state[i] && cells.pop[i] > 2 && cells.h[i] < 50 && cells.h[i] > 25));
     let quantity = getQuantity(battlefields, 50, 700, multiplier);
     if (!quantity) return;
 
@@ -501,7 +504,7 @@ window.Markers = (function () {
   function addDungeons(type, icon, multiplier) {
     const {cells} = pack;
 
-    let dungeons = Array.from(cells.i.filter(i => cells.pop[i] && cells.pop[i] < 3));
+    let dungeons = Array.from(cells.i.filter(i => !occupied[i] && cells.pop[i] && cells.pop[i] < 3));
     let quantity = getQuantity(dungeons, 30, 200, multiplier);
     if (!quantity) return;
 
@@ -520,7 +523,7 @@ window.Markers = (function () {
   function addLakeMonsters(type, icon, multiplier) {
     const {features} = pack;
 
-    const lakes = features.filter(feature => feature.type === "lake" && feature.group === "freshwater");
+    const lakes = features.filter(feature => feature.type === "lake" && feature.group === "freshwater" && !occupied[feature.firstCell]);
     let quantity = getQuantity(lakes, 2, 10, multiplier);
     if (!quantity) return;
 
@@ -539,7 +542,7 @@ window.Markers = (function () {
   function addSeaMonsters(type, icon, multiplier) {
     const {cells, features} = pack;
 
-    const sea = Array.from(cells.i.filter(i => cells.h[i] < 20 && cells.road[i] && features[cells.f[i]].type === "ocean"));
+    const sea = Array.from(cells.i.filter(i => !occupied[i] && cells.h[i] < 20 && cells.road[i] && features[cells.f[i]].type === "ocean"));
     let quantity = getQuantity(sea, 50, 700, multiplier);
     if (!quantity) return;
 
@@ -557,7 +560,7 @@ window.Markers = (function () {
   function addHillMonsters(type, icon, multiplier) {
     const {cells} = pack;
 
-    const hills = Array.from(cells.i.filter(i => cells.h[i] >= 50 && cells.pop[i]));
+    const hills = Array.from(cells.i.filter(i => !occupied[i] && cells.h[i] >= 50 && cells.pop[i]));
     let quantity = getQuantity(hills, 30, 600, multiplier);
     if (!quantity) return;
 
@@ -587,7 +590,9 @@ window.Markers = (function () {
   function addSacredMountains(type, icon, multiplier) {
     const {cells, cultures} = pack;
 
-    let lonelyMountains = Array.from(cells.i.filter(i => cells.h[i] >= 70 && cells.c[i].some(c => cells.culture[c]) && cells.c[i].every(c => cells.h[c] < 60)));
+    let lonelyMountains = Array.from(
+      cells.i.filter(i => !occupied[i] && cells.h[i] >= 70 && cells.c[i].some(c => cells.culture[c]) && cells.c[i].every(c => cells.h[c] < 60))
+    );
     let quantity = getQuantity(lonelyMountains, 1, 5, multiplier);
     if (!quantity) return;
 
@@ -606,7 +611,7 @@ window.Markers = (function () {
   function addSacredForests(type, icon, multiplier) {
     const {cells, cultures} = pack;
 
-    let temperateForests = Array.from(cells.i.filter(i => cells.culture[i] && [6, 8].includes(cells.biome[i])));
+    let temperateForests = Array.from(cells.i.filter(i => !occupied[i] && cells.culture[i] && [6, 8].includes(cells.biome[i])));
     let quantity = getQuantity(temperateForests, 30, 1000, multiplier);
     if (!quantity) return;
 
@@ -624,7 +629,7 @@ window.Markers = (function () {
   function addSacredPineries(type, icon, multiplier) {
     const {cells, cultures} = pack;
 
-    let borealForests = Array.from(cells.i.filter(i => cells.culture[i] && cells.biome[i] === 9));
+    let borealForests = Array.from(cells.i.filter(i => !occupied[i] && cells.culture[i] && cells.biome[i] === 9));
     let quantity = getQuantity(borealForests, 30, 800, multiplier);
     if (!quantity) return;
 
@@ -642,7 +647,7 @@ window.Markers = (function () {
   function addSacredPalmGroves(type, icon, multiplier) {
     const {cells, cultures} = pack;
 
-    let oasises = Array.from(cells.i.filter(i => cells.culture[i] && cells.biome[i] === 1 && cells.pop[i] > 1 && cells.road[i]));
+    let oasises = Array.from(cells.i.filter(i => !occupied[i] && cells.culture[i] && cells.biome[i] === 1 && cells.pop[i] > 1 && cells.road[i]));
     let quantity = getQuantity(oasises, 1, 100, multiplier);
     if (!quantity) return;
 
@@ -660,7 +665,7 @@ window.Markers = (function () {
   function addBrigands(type, icon, multiplier) {
     const {cells} = pack;
 
-    let roads = Array.from(cells.i.filter(i => cells.culture[i] && cells.road[i] > 4));
+    let roads = Array.from(cells.i.filter(i => !occupied[i] && cells.culture[i] && cells.road[i] > 4));
     let quantity = getQuantity(roads, 50, 100, multiplier);
     if (!quantity) return;
 
@@ -726,7 +731,7 @@ window.Markers = (function () {
   function addPirates(type, icon, multiplier) {
     const {cells} = pack;
 
-    let searoutes = Array.from(cells.i.filter(i => cells.h[i] < 20 && cells.road[i]));
+    let searoutes = Array.from(cells.i.filter(i => !occupied[i] && cells.h[i] < 20 && cells.road[i]));
     let quantity = getQuantity(searoutes, 40, 300, multiplier);
     if (!quantity) return;
 
@@ -742,7 +747,7 @@ window.Markers = (function () {
 
   function addStatues(type, icon, multiplier) {
     const {cells} = pack;
-    let statues = Array.from(cells.i.filter(i => cells.h[i] >= 20 && cells.h[i] < 40));
+    let statues = Array.from(cells.i.filter(i => !occupied[i] && cells.h[i] >= 20 && cells.h[i] < 40));
     let quantity = getQuantity(statues, 80, 1200, multiplier);
     if (!quantity) return;
 
@@ -776,7 +781,7 @@ window.Markers = (function () {
 
   function addRuines(type, icon, multiplier) {
     const {cells} = pack;
-    let ruins = Array.from(cells.i.filter(i => cells.culture[i] && cells.h[i] >= 20 && cells.h[i] < 60));
+    let ruins = Array.from(cells.i.filter(i => !occupied[i] && cells.culture[i] && cells.h[i] >= 20 && cells.h[i] < 60));
     let quantity = getQuantity(ruins, 80, 1200, multiplier);
     if (!quantity) return;
 
@@ -796,7 +801,10 @@ window.Markers = (function () {
 
   function addPortals(type, icon, multiplier) {
     const {burgs} = pack;
-    let portals = burgs.slice(1, Math.ceil(burgs.length / 10) + 1).map(burg => [burg.name, burg.cell]);
+    let portals = burgs
+      .slice(1, Math.ceil(burgs.length / 10) + 1)
+      .filter(({cell}) => !occupied[cell])
+      .map(burg => [burg.name, burg.cell]);
     let quantity = getQuantity(portals, 16, 8, multiplier);
     if (!quantity) return;
 

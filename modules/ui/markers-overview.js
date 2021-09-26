@@ -22,16 +22,26 @@ function overviewMarkers() {
   });
 
   const listeners = [
+    listen(body, "click", handleLineClick),
     listen(markersOverviewRefresh, "click", addLines),
-    listen(markersAddFromOverview, "click", () => {}),
+    listen(markersAddFromOverview, "click", toggleAddMarker),
     listen(markersGenerationConfig, "click", configMarkersGeneration),
     listen(markersRemoveAll, "click", triggerRemoveAll)
   ];
 
+  function handleLineClick(ev) {
+    const el = ev.target;
+    const i = +el.parentNode.dataset.i;
+
+    if (el.classList.contains("icon-pencil")) return openEditor(i);
+    if (el.classList.contains("locks")) return toggleLockStatus(el, i);
+    if (el.classList.contains("icon-trash-empty")) return triggerRemove(i);
+  }
+
   function addLines() {
     const lines = pack.markers
       .map(({i, type, icon, lock}) => {
-        return `<div class="states" data-id=${i} data-type="${type}">
+        return `<div class="states" data-i=${i} data-type="${type}">
         <div data-tip="Marker icon and type" style="width:12em">${icon} ${type}</div>
         <span data-tip="Edit marker" class="icon-pencil"></span>
         <span class="locks pointer ${lock ? "icon-lock" : "icon-lock-open inactive"}" onmouseover="showElementLockTip(event)"></span>
@@ -46,6 +56,15 @@ function overviewMarkers() {
     applySorting(markersHeader);
   }
 
+  function openEditor(i) {
+    const marker = pack.markers.find(marker => marker.i === i);
+    if (!marker) return;
+
+    const {x, y} = marker;
+    zoomTo(x, y, 8, 2000);
+    editMarker(i);
+  }
+
   function highlightMarkerOn(event) {
     if (!layerIsOn("toggleLabels")) toggleLabels();
     // burgLabels.select("[data-id='" + burg + "']").classed("drag", true);
@@ -55,31 +74,15 @@ function overviewMarkers() {
     // burgLabels.selectAll("text.drag").classed("drag", false);
   }
 
-  function zoomInto() {
-    const burg = +this.parentNode.dataset.id;
-    const label = document.querySelector("#burgLabels [data-id='" + burg + "']");
-    const x = +label.getAttribute("x"),
-      y = +label.getAttribute("y");
-    zoomTo(x, y, 8, 2000);
-  }
-
-  function toggleLockStatus() {
-    const burg = +this.parentNode.dataset.id;
-    toggleBurgLock(burg);
-    if (this.classList.contains("icon-lock")) {
-      this.classList.remove("icon-lock");
-      this.classList.add("icon-lock-open");
-      this.classList.add("inactive");
+  function toggleLockStatus(el, i) {
+    const marker = pack.markers.find(marker => marker.i === i);
+    if (marker.lock) {
+      delete marker.lock;
+      el.className = "locks pointer icon-lock-open inactive";
     } else {
-      this.classList.remove("icon-lock-open");
-      this.classList.add("icon-lock");
-      this.classList.remove("inactive");
+      marker.lock = true;
+      el.className = "locks pointer icon-lock";
     }
-  }
-
-  function openEditor() {
-    const burg = +this.parentNode.dataset.id;
-    editBurg(burg);
   }
 
   function triggerRemove(i) {
@@ -91,10 +94,16 @@ function overviewMarkers() {
     });
   }
 
+  function toggleAddMarker() {
+    markersAddFromOverview.classList.toggle("pressed");
+    addMarker.click();
+  }
+
   function removeMarker(i) {
     notes = notes.filter(note => note.id !== `marker${i}`);
     pack.markers = pack.markers.filter(marker => marker.i !== i);
     document.getElementById(`marker${i}`)?.remove();
+    addLines();
   }
 
   function triggerRemoveAll() {

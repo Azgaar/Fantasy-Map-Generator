@@ -1,11 +1,10 @@
 "use strict";
-function editMarker() {
+function editMarker(markerI) {
   if (customization) return;
   closeDialogs(".stable");
 
-  const element = d3.event.target.closest("svg");
-  const marker = pack.markers.find(({i}) => Number(element.id.slice(6)) === i);
-  if (!marker) return;
+  const [element, marker] = getElement(markerI, d3.event);
+  if (!marker || !element) return;
 
   elSelected = d3.select(element).raise().call(d3.drag().on("start", dragMarker)).classed("draggable", true);
 
@@ -51,6 +50,18 @@ function editMarker() {
     listen(markerRemove, "click", confirmMarkerDeletion)
   ];
 
+  function getElement(markerI, event) {
+    if (event) {
+      const element = event.target?.closest("svg");
+      const marker = pack.markers.find(({i}) => Number(element.id.slice(6)) === i);
+      return [element, marker];
+    }
+
+    const element = document.getElementById(`marker${markerI}`);
+    const marker = pack.markers.find(({i}) => i === markerI);
+    return [element, marker];
+  }
+
   function getSameTypeMarkers() {
     const currentType = marker.type;
     if (!currentType) return [marker];
@@ -74,8 +85,10 @@ function editMarker() {
 
       const size = marker.size || 30;
       const zoomSize = Math.max(rn(size / 5 + 24 / scale, 2), 1);
+
       marker.x = rn(x + dx + zoomSize / 2, 1);
       marker.y = rn(y + dy + zoomSize, 1);
+      marker.cell = findCell(marker.x, marker.y);
     });
   }
 
@@ -220,6 +233,7 @@ function editMarker() {
     pack.markers = pack.markers.filter(m => m.i !== marker.i);
     element.remove();
     $("#markerEditor").dialog("close");
+    if (document.getElementById("markersOverviewRefresh").offsetParent) markersOverviewRefresh.click();
   }
 
   function closeMarkerEditor() {
