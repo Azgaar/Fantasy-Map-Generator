@@ -28,7 +28,7 @@ window.Markers = (function () {
       {type: "pirates", icon: "🏴‍☠️", multiplier: 1, fn: addPirates},
       {type: "statues", icon: "🗿", multiplier: 1, fn: addStatues},
       {type: "ruines", icon: "🏺", multiplier: 1, fn: addRuines},
-      {type: "portals", icon: "🌀", multiplier: isFantasy, fn: addPortals}
+      {type: "portals", icon: "🌀", multiplier: +isFantasy, fn: addPortals}
     ];
   }
 
