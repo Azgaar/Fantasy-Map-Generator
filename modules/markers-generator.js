@@ -796,8 +796,8 @@ window.Markers = (function () {
 
   function addPortals(type, icon, multiplier) {
     const {burgs} = pack;
-    let portals = burgs.slice(1, rand(12, 30) + 1).map(burg => [burg.name, burg.cell]);
-    let quantity = getQuantity(portals, 10, 3, multiplier);
+    let portals = burgs.slice(1, Math.ceil(burgs.length / 10) + 1).map(burg => [burg.name, burg.cell]);
+    let quantity = getQuantity(portals, 16, 8, multiplier);
     if (!quantity) return;
 
     while (quantity) {

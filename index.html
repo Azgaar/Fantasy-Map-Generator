@@ -1344,6 +1344,7 @@
           <button id="overviewBurgsButton" data-tip="Click to open Burgs Overview. Shortcut: Shift + T">Burgs</button>
           <button id="overviewRiversButton" data-tip="Click to open Rivers Overview. Shortcut: Shift + V">Rivers</button>
           <button id="overviewMilitaryButton" data-tip="Click to open Military Forces Overview. Shortcut: Shift + M">Military</button>
+          <button id="overviewMarkersButton" data-tip="Click to open Markers Overview. Shortcut: Shift + K">Markers</button>
           <button id="overviewCellsButton" data-tip="Click to open Cell details view. Shortcut: Shift + E">Cells</button>
         </div>
 
@@ -3356,6 +3357,25 @@
       </div>
     </div>
 
+    <div id="markersOverview" class="dialog stable" style="display: none">
+      <div id="markersHeader" class="header">
+        <div style="left:1em" data-tip="Click to sort by marker type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
+      </div>
+
+      <div id="markersBody" class="table"></div>
+
+      <div id="markersFooter" class="totalLine">
+        <div data-tip="Markers number" style="margin-left: 4px">Total:&nbsp;<span id="markersFooterNumber">0</span>&nbsp;markers</div>
+      </div>
+
+      <div id="markersBottom">
+        <button id="markersOverviewRefresh" data-tip="Refresh the Overview screen" class="icon-cw"></button>
+        <button id="markersAddFromOverview" data-tip="Add a new marker. Hold Shift to add multiple" class="icon-plus"></button>
+        <button id="markersGenerationConfig" data-tip="Config markers generation options" class="icon-cog"></button>
+        <button id="markersRemoveAll" data-tip="Remove all unlocked markers" class="icon-trash"></button>
+      </div>
+    </div>
+
     <div id="styleSaver" class="dialog stable textual" style="display: none">
       <div id="styleSaverHeader" style="padding:2px 0">
         <span>Preset name:</span>
@@ -4339,6 +4359,7 @@
   <script async defer src="modules/ui/rivers-overview.js"></script>
   <script async defer src="modules/ui/military-overview.js"></script>
   <script async defer src="modules/ui/regiments-overview.js"></script>
+  <script async defer src="modules/ui/markers-overview.js"></script>
   <script async defer src="modules/ui/regiment-editor.js"></script>
   <script async defer src="modules/ui/battle-screen.js"></script>
   <script async defer src="modules/coa-renderer.js"></script>

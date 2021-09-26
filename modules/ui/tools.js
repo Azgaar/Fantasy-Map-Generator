@@ -25,6 +25,7 @@ toolsContent.addEventListener("click", function (event) {
   else if (button === "overviewBurgsButton") overviewBurgs();
   else if (button === "overviewRiversButton") overviewRivers();
   else if (button === "overviewMilitaryButton") overviewMilitary();
+  else if (button === "overviewMarkersButton") overviewMarkers();
   else if (button === "overviewCellsButton") viewCellDetails();
 
   // click on Regenerate buttons
@@ -63,82 +64,7 @@ toolsContent.addEventListener("click", function (event) {
   }
 
   // click on Configure regenerate buttons
-  if (button === "configRegenerateMarkers") {
-    const {markers} = pack;
-    const config = Markers.getConfig();
-
-    const headers = `<thead style='font-weight:bold'><tr>
-      <td data-tip="Marker type name">Type</td>
-      <td data-tip="Marker icon">Icon</td>
-      <td data-tip="Marker number multiplier">Multiplier</td>
-      <td data-tip="Number of markers of that type on the current map">Number</td>
-    </tr></thead>`;
-    const lines = config.map(({type, icon, multiplier}, index) => {
-      const inputId = `markerIconInput${index}`;
-      return `<tr>
-        <td><input value="${type}" /></td>
-        <td>
-          <input id="${inputId}" style="width: 5em" value="${icon}" />
-          <i class="icon-edit pointer" style="position: absolute; margin:.4em 0 0 -1.4em; font-size:.85em"></i>
-        </td>
-        <td><input type="number" min="0" max="100" step="0.1" value="${multiplier}" /></td>
-        <td style="text-align:center">${markers.filter(marker => marker.type === type).length}</td>
-      </tr>`;
-    });
-    const table = `<table class="table">${headers}<tbody>${lines.join("")}</tbody></table>`;
-    alertMessage.innerHTML = table;
-
-    alertMessage.querySelectorAll("i").forEach(selectIconButton => {
-      selectIconButton.addEventListener("click", function () {
-        const input = this.previousElementSibling;
-        selectIcon(input.value, icon => (input.value = icon));
-      });
-    });
-
-    const applyChanges = () => {
-      const rows = alertMessage.querySelectorAll("tbody > tr");
-      const rowsData = Array.from(rows).map(row => {
-        const inputs = row.querySelectorAll("input");
-        return {
-          type: inputs[0].value,
-          icon: inputs[1].value,
-          multiplier: parseFloat(inputs[2].value)
-        };
-      });
-
-      const newConfig = config.map((markerType, index) => {
-        const {type, icon, multiplier} = rowsData[index];
-        return {...markerType, type, icon, multiplier};
-      });
-      Markers.setConfig(newConfig);
-
-      Markers.regenerate();
-      turnButtonOn("toggleMarkers");
-      drawMarkers();
-
-      $("#alert").dialog("close");
-    };
-
-    $("#alert").dialog({
-      resizable: false,
-      title: "Markers generation settings",
-      position: {my: "left top", at: "left+10 top+10", of: "svg", collision: "fit"},
-      buttons: {
-        Apply: applyChanges,
-        Cancel: function () {
-          $(this).dialog("close");
-        }
-      },
-      open: function () {
-        const buttons = $(this).dialog("widget").find(".ui-dialog-buttonset > button");
-        buttons[0].addEventListener("mousemove", () => tip("Apply changes and regenerate markers"));
-        buttons[1].addEventListener("mousemove", () => tip("Cancel changes"));
-      },
-      close: function () {
-        $(this).dialog("destroy");
-      }
-    });
-  }
+  if (button === "configRegenerateMarkers") configMarkersGeneration();
 
   // click on Add buttons
   if (button === "addLabel") toggleAddLabel();
@@ -498,6 +424,7 @@ function regenerateMarkers() {
   Markers.regenerate();
   turnButtonOn("toggleMarkers");
   drawMarkers();
+  if (document.getElementById("markersOverviewRefresh").offsetParent) markersOverviewRefresh.click();
 }
 
 function regenerateZones(event) {
@@ -788,6 +715,86 @@ function addMarkerOnClick() {
     document.getElementById("markerAdd").classList.remove("pressed");
     unpressClickToAddButton();
   }
+}
+
+function configMarkersGeneration() {
+  drawConfigTable();
+
+  function drawConfigTable() {
+    const {markers} = pack;
+    const config = Markers.getConfig();
+    const headers = `<thead style='font-weight:bold'><tr>
+      <td data-tip="Marker type name">Type</td>
+      <td data-tip="Marker icon">Icon</td>
+      <td data-tip="Marker number multiplier">Multiplier</td>
+      <td data-tip="Number of markers of that type on the current map">Number</td>
+    </tr></thead>`;
+    const lines = config.map(({type, icon, multiplier}, index) => {
+      const inputId = `markerIconInput${index}`;
+      return `<tr>
+        <td><input value="${type}" /></td>
+        <td>
+          <input id="${inputId}" style="width: 5em" value="${icon}" />
+          <i class="icon-edit pointer" style="position: absolute; margin:.4em 0 0 -1.4em; font-size:.85em"></i>
+        </td>
+        <td><input type="number" min="0" max="100" step="0.1" value="${multiplier}" /></td>
+        <td style="text-align:center">${markers.filter(marker => marker.type === type).length}</td>
+      </tr>`;
+    });
+    const table = `<table class="table">${headers}<tbody>${lines.join("")}</tbody></table>`;
+    alertMessage.innerHTML = table;
+
+    alertMessage.querySelectorAll("i").forEach(selectIconButton => {
+      selectIconButton.addEventListener("click", function () {
+        const input = this.previousElementSibling;
+        selectIcon(input.value, icon => (input.value = icon));
+      });
+    });
+  }
+
+  const applyChanges = () => {
+    const rows = alertMessage.querySelectorAll("tbody > tr");
+    const rowsData = Array.from(rows).map(row => {
+      const inputs = row.querySelectorAll("input");
+      return {
+        type: inputs[0].value,
+        icon: inputs[1].value,
+        multiplier: parseFloat(inputs[2].value)
+      };
+    });
+
+    const config = Markers.getConfig();
+    const newConfig = config.map((markerType, index) => {
+      const {type, icon, multiplier} = rowsData[index];
+      return {...markerType, type, icon, multiplier};
+    });
+
+    Markers.setConfig(newConfig);
+  };
+
+  $("#alert").dialog({
+    resizable: false,
+    title: "Markers generation settings",
+    position: {my: "left top", at: "left+10 top+10", of: "svg", collision: "fit"},
+    buttons: {
+      Regenerate: () => {
+        applyChanges();
+        regenerateMarkers();
+        drawConfigTable();
+      },
+      Close: function () {
+        $(this).dialog("close");
+      }
+    },
+    open: function () {
+      const buttons = $(this).dialog("widget").find(".ui-dialog-buttonset > button");
+      buttons[0].addEventListener("mousemove", () => tip("Apply changes and regenerate markers"));
+      buttons[1].addEventListener("mousemove", () => tip("Close the window"));
+    },
+    close: function () {
+      $(this).dialog("destroy");
+    }
+  });
 }
 
 function viewCellDetails() {
