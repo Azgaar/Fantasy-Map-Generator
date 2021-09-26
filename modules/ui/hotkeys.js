@@ -53,6 +53,7 @@ function handleKeyup(event) {
   else if (shift && key === "T") overviewBurgs();
   else if (shift && key === "V") overviewRivers();
   else if (shift && key === "M") overviewMilitary();
+  else if (shift && key === "K") overviewMarkers();
   else if (shift && key === "E") viewCellDetails();
   else if (shift && key === "1") toggleAddBurg();
   else if (shift && key === "2") toggleAddLabel();
