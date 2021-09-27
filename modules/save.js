@@ -1,5 +1,5 @@
 "use strict";
-// Functions to save project as .map file
+// functions to save project as .map file
 
 // prepare map data for saving
 function getMapData() {
@@ -9,7 +9,32 @@ function getMapData() {
   const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
   const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
   const params = [version, license, dateString, seed, graphWidth, graphHeight, mapId].join("|");
-  const settings = [distanceUnitInput.value, distanceScaleInput.value, areaUnit.value, heightUnit.value, heightExponentInput.value, temperatureScale.value, barSizeInput.value, barLabel.value, barBackOpacity.value, barBackColor.value, barPosX.value, barPosY.value, populationRate, urbanization, mapSizeOutput.value, latitudeOutput.value, temperatureEquatorOutput.value, temperaturePoleOutput.value, precOutput.value, JSON.stringify(options), mapName.value, +hideLabels.checked, stylePreset.value, +rescaleLabels.checked].join("|");
+  const settings = [
+    distanceUnitInput.value,
+    distanceScaleInput.value,
+    areaUnit.value,
+    heightUnit.value,
+    heightExponentInput.value,
+    temperatureScale.value,
+    barSizeInput.value,
+    barLabel.value,
+    barBackOpacity.value,
+    barBackColor.value,
+    barPosX.value,
+    barPosY.value,
+    populationRate,
+    urbanization,
+    mapSizeOutput.value,
+    latitudeOutput.value,
+    temperatureEquatorOutput.value,
+    temperaturePoleOutput.value,
+    precOutput.value,
+    JSON.stringify(options),
+    mapName.value,
+    +hideLabels.checked,
+    stylePreset.value,
+    +rescaleLabels.checked
+  ].join("|");
   const coords = JSON.stringify(mapCoordinates);
   const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
   const notesData = JSON.stringify(notes);
@@ -37,6 +62,7 @@ function getMapData() {
   const religions = JSON.stringify(pack.religions);
   const provinces = JSON.stringify(pack.provinces);
   const rivers = JSON.stringify(pack.rivers);
+  const markers = JSON.stringify(pack.markers);
 
   // store name array only if not the same as default
   const defaultNB = Names.getNameBases();
@@ -51,7 +77,44 @@ function getMapData() {
   const pop = Array.from(pack.cells.pop).map(p => rn(p, 4));
 
   // data format as below
-  const mapData = [params, settings, coords, biomes, notesData, serializedSVG, gridGeneral, grid.cells.h, grid.cells.prec, grid.cells.f, grid.cells.t, grid.cells.temp, packFeatures, cultures, states, burgs, pack.cells.biome, pack.cells.burg, pack.cells.conf, pack.cells.culture, pack.cells.fl, pop, pack.cells.r, pack.cells.road, pack.cells.s, pack.cells.state, pack.cells.religion, pack.cells.province, pack.cells.crossroad, religions, provinces, namesData, rivers, rulersString, fonts].join("\r\n");
+  const mapData = [
+    params,
+    settings,
+    coords,
+    biomes,
+    notesData,
+    serializedSVG,
+    gridGeneral,
+    grid.cells.h,
+    grid.cells.prec,
+    grid.cells.f,
+    grid.cells.t,
+    grid.cells.temp,
+    packFeatures,
+    cultures,
+    states,
+    burgs,
+    pack.cells.biome,
+    pack.cells.burg,
+    pack.cells.conf,
+    pack.cells.culture,
+    pack.cells.fl,
+    pop,
+    pack.cells.r,
+    pack.cells.road,
+    pack.cells.s,
+    pack.cells.state,
+    pack.cells.religion,
+    pack.cells.province,
+    pack.cells.crossroad,
+    religions,
+    provinces,
+    namesData,
+    rivers,
+    rulersString,
+    fonts,
+    markers
+  ].join("\r\n");
   TIME && console.timeEnd("createMapData");
   return mapData;
 }
@@ -97,7 +160,16 @@ function quickSave() {
 
 const saveReminder = function () {
   if (localStorage.getItem("noReminder")) return;
-  const message = ["Please don't forget to save your work as a .map file", "Please remember to save work as a .map file", "Saving in .map format will ensure your data won't be lost in case of issues", "Safety is number one priority. Please save the map", "Don't forget to save your map on a regular basis!", "Just a gentle reminder for you to save the map", "Please don't forget to save your progress (saving as .map is the best option)", "Don't want to be reminded about need to save? Press CTRL+Q"];
+  const message = [
+    "Please don't forget to save your work as a .map file",
+    "Please remember to save work as a .map file",
+    "Saving in .map format will ensure your data won't be lost in case of issues",
+    "Safety is number one priority. Please save the map",
+    "Don't forget to save your map on a regular basis!",
+    "Just a gentle reminder for you to save the map",
+    "Please don't forget to save your progress (saving as .map is the best option)",
+    "Don't want to be reminded about need to save? Press CTRL+Q"
+  ];
   const interval = 15 * 60 * 1000; // remind every 15 minutes
 
   saveReminder.reminder = setInterval(() => {

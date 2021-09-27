@@ -450,25 +450,21 @@ function saveGeoJSON_Rivers() {
 }
 
 function saveGeoJSON_Markers() {
-  // TODO: rework for new markers
   track("export", "getJSON markers");
-  const json = {type: "FeatureCollection", features: []};
 
-  markers.selectAll("use").each(function () {
-    const coordinates = getQGIScoordinates(this.dataset.x, this.dataset.y);
-    const id = this.id;
-    const type = this.dataset.id.substring(1);
-    const icon = document.getElementById(type).textContent;
-    const note = notes.length ? notes.find(note => note.id === this.id) : null;
-    const name = note ? note.name : "";
-    const legend = note ? note.legend : "";
-
-    const feature = {type: "Feature", geometry: {type: "Point", coordinates}, properties: {id, type, icon, name, legend}};
-    json.features.push(feature);
+  const features = pack.markers.map(marker => {
+    const {i, type, icon, x, y, size, fill, stroke, size} = marker;
+    const coordinates = getQGIScoordinates(x, y);
+    const id = `marker${i}`;
+    const note = notes.find(note => note.id === id);
+    const properties = {id, type, icon, ...note, size, fill, stroke, size};
+    return {type: "Feature", geometry: {type: "Point", coordinates}, properties};
   });
 
-  const name = getFileName("Markers") + ".geojson";
-  downloadFile(JSON.stringify(json), name, "application/json");
+  const json = {type: "FeatureCollection", features};
+
+  const fileName = getFileName("Markers") + ".geojson";
+  downloadFile(JSON.stringify(json), fileName, "application/json");
 }
 
 function getCellCoordinates(vertices) {
