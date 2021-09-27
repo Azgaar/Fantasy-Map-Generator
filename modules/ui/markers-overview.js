@@ -45,6 +45,7 @@ function overviewMarkers() {
     if (el.classList.contains("icon-pin")) return pinMarker(el, i);
     if (el.classList.contains("locks")) return toggleLockStatus(el, i);
     if (el.classList.contains("icon-trash-empty")) return triggerRemove(i);
+    // TODO: hidden attribute
   }
 
   function addLines() {
