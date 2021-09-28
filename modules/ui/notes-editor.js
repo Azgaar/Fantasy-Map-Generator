@@ -108,7 +108,7 @@ function editNotes(id, name) {
       return;
     }
 
-    highlightElement(element); // if element is found
+    highlightElement(element, 3); // if element is found
   }
 
   function downloadLegends() {

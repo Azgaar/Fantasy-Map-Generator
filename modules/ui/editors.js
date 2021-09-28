@@ -728,30 +728,33 @@ function uploadFile(el, callback) {
   fileReader.onload = loaded => callback(loaded.target.result);
 }
 
-function highlightElement(element) {
-  if (debug.select(".highlighted").size()) return; // allow only 1 highlight element simultaniosly
-  const box = element.getBBox();
+function getBBox(element) {
+  const x = +element.getAttribute("x");
+  const y = +element.getAttribute("y");
+  const width = +element.getAttribute("width");
+  const height = +element.getAttribute("height");
+  return {x, y, width, height};
+}
+
+function highlightElement(element, zoom) {
+  if (debug.select(".highlighted").size()) return; // allow only 1 highlight element simultaneously
+  const box = element.tagName === "svg" ? getBBox(element) : element.getBBox();
   const transform = element.getAttribute("transform") || null;
   const enter = d3.transition().duration(1000).ease(d3.easeBounceOut);
   const exit = d3.transition().duration(500).ease(d3.easeLinear);
 
-  const highlight = debug.append("rect").attr("x", box.x).attr("y", box.y).attr("width", box.width).attr("height", box.height).attr("transform", transform);
+  const highlight = debug.append("rect").attr("x", box.x).attr("y", box.y).attr("width", box.width).attr("height", box.height);
+  highlight.classed("highlighted", 1).attr("transform", transform);
+  highlight.transition(enter).style("outline-offset", "0px").transition(exit).style("outline-color", "transparent").delay(1000).remove();
 
-  highlight
-    .classed("highlighted", 1)
-    .transition(enter)
-    .style("outline-offset", "0px")
-    .transition(exit)
-    .style("outline-color", "transparent")
-    .delay(1000)
-    .remove();
-
-  const tr = parseTransform(transform);
-  let x = box.x + box.width / 2;
-  if (tr[0]) x += tr[0];
-  let y = box.y + box.height / 2;
-  if (tr[1]) y += tr[1];
-  zoomTo(x, y, scale > 2 ? scale : 3, 1600);
+  if (zoom) {
+    const tr = parseTransform(transform);
+    let x = box.x + box.width / 2;
+    if (tr[0]) x += tr[0];
+    let y = box.y + box.height / 2;
+    if (tr[1]) y += tr[1];
+    zoomTo(x, y, scale > 2 ? scale : zoom, 1600);
+  }
 }
 
 function selectIcon(initial, callback) {

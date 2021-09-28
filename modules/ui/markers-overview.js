@@ -4,6 +4,7 @@ function overviewMarkers() {
   closeDialogs("#markersOverview, .stable");
   if (!layerIsOn("toggleMarkers")) toggleMarkers();
 
+  const markerGroup = document.getElementById("markers");
   const body = document.getElementById("markersBody");
   const markersFooterNumber = document.getElementById("markersFooterNumber");
   const markersOverviewRefresh = document.getElementById("markersOverviewRefresh");
@@ -36,6 +37,7 @@ function overviewMarkers() {
     const i = +el.parentNode.dataset.i;
 
     if (el.classList.contains("icon-pencil")) return openEditor(i);
+    if (el.classList.contains("icon-dot-circled")) return focusOnMarker(i);
     if (el.classList.contains("locks")) return toggleLockStatus(el, i);
     if (el.classList.contains("icon-trash-empty")) return triggerRemove(i);
     // TODO: hidden attribute
@@ -46,8 +48,9 @@ function overviewMarkers() {
       .map(({i, type, icon, lock}) => {
         return `<div class="states" data-i=${i} data-type="${type}">
         <div data-tip="Marker icon and type" style="width:12em">${icon} ${type}</div>
-        <span data-tip="Edit marker" class="icon-pencil"></span>
-        <span class="locks pointer ${lock ? "icon-lock" : "icon-lock-open inactive"}" onmouseover="showElementLockTip(event)"></span>
+        <span style="padding-right:.1em" data-tip="Edit marker" class="icon-pencil"></span>
+        <span style="padding-right:.1em" data-tip="Focus on marker position" class="icon-dot-circled pointer"></span>
+        <span style="padding-right:.1em" class="locks pointer ${lock ? "icon-lock" : "icon-lock-open inactive"}" onmouseover="showElementLockTip(event)"></span>
         <span data-tip="Remove marker" class="icon-trash-empty"></span>
       </div>`;
       })
@@ -68,14 +71,8 @@ function overviewMarkers() {
     editMarker(i);
   }
 
-  // TODO: highlight markers on hover
-  function highlightMarkerOn(event) {
-    if (!layerIsOn("toggleLabels")) toggleLabels();
-    // burgLabels.select("[data-id='" + burg + "']").classed("drag", true);
-  }
-
-  function highlightMarkerOff() {
-    // burgLabels.selectAll("text.drag").classed("drag", false);
+  function focusOnMarker(i) {
+    highlightElement(document.getElementById(`marker${i}`), 2);
   }
 
   function toggleLockStatus(el, i) {
