@@ -872,7 +872,48 @@ function parseLoadedData(data) {
 
       if (version < 1.7) {
         // v 1.7 changed markers data
-        // TODO: get markers data from svg
+        const defs = document.getElementById("defs-markers");
+        const markersGroup = document.getElementById("markers");
+        const markerElements = markersGroup.querySelectorAll("use");
+
+        pack.markers = Array.from(markerElements).map((el, i) => {
+          const id = el.getAttribute("id");
+          const note = notes.find(note => note.id === id);
+          if (note) note.id = `marker${i}`;
+
+          const x = rn(+el.dataset.x, 1);
+          const y = rn(+el.dataset.y, 1);
+          const cell = findCell(x, y);
+          const size = rn(el.dataset.size * 30, 1);
+
+          const href = el.href.baseVal;
+          const type = href.replace("#marker_", "");
+          const symbol = defs.querySelector(`symbol${href}`);
+          const text = symbol.querySelector("text");
+          const circle = symbol.querySelector("circle");
+
+          const icon = text.innerHTML;
+          const px = Number(text.getAttribute("font-size")?.replace("px", ""));
+          const dx = Number(text.getAttribute("x")?.replace("%", ""));
+          const dy = Number(text.getAttribute("y")?.replace("%", ""));
+          const fill = circle.getAttribute("fill");
+          const stroke = circle.getAttribute("stroke");
+
+          const marker = {i, icon, type, x, y, size, cell};
+          if (size && size !== 30) marker.size = size;
+          if (!isNaN(px) && px !== 12) marker.px = px;
+          if (!isNaN(dx) && dx !== 50) marker.dx = dx;
+          if (!isNaN(dy) && dy !== 50) marker.dy = dy;
+          if (fill && fill !== "#ffffff") marker.fill = fill;
+          if (stroke && stroke !== "#000000") marker.stroke = stroke;
+
+          return marker;
+        });
+
+        markersGroup.style.display = null;
+        defs.remove();
+        markerElements.forEach(el => el.remove());
+        if (layerIsOn("markers")) drawMarkers();
       }
     })();
 
