@@ -10,6 +10,7 @@ function overviewMarkers() {
   const markersAddFromOverview = document.getElementById("markersAddFromOverview");
   const markersGenerationConfig = document.getElementById("markersGenerationConfig");
   const markersRemoveAll = document.getElementById("markersRemoveAll");
+  const markersExport = document.getElementById("markersExport");
 
   addLines();
 
@@ -26,7 +27,8 @@ function overviewMarkers() {
     listen(markersOverviewRefresh, "click", addLines),
     listen(markersAddFromOverview, "click", toggleAddMarker),
     listen(markersGenerationConfig, "click", configMarkersGeneration),
-    listen(markersRemoveAll, "click", triggerRemoveAll)
+    listen(markersRemoveAll, "click", triggerRemoveAll),
+    listen(markersExport, "click", exportMarkers)
   ];
 
   function handleLineClick(ev) {
@@ -66,6 +68,7 @@ function overviewMarkers() {
     editMarker(i);
   }
 
+  // TODO: highlight markers on hover
   function highlightMarkerOn(event) {
     if (!layerIsOn("toggleLabels")) toggleLabels();
     // burgLabels.select("[data-id='" + burg + "']").classed("drag", true);
@@ -127,6 +130,22 @@ function overviewMarkers() {
     });
 
     addLines();
+  }
+
+  function exportMarkers() {
+    const headers = "Id,Type,Icon,Name,Note,X,Y\n";
+
+    const body = pack.markers.map(marker => {
+      const {i, type, icon, x, y} = marker;
+      const id = `marker${i}`;
+      const note = notes.find(note => note.id === id);
+      const legend = escape(note.legend);
+      return [id, type, icon, note.name, legend, x, y].join(",");
+    });
+
+    const data = headers + body.join("\n");
+    const fileName = getFileName("Markers") + ".csv";
+    downloadFile(data, fileName);
   }
 
   function close() {
