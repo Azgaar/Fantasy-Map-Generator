@@ -453,11 +453,11 @@ function saveGeoJSON_Markers() {
   track("export", "getJSON markers");
 
   const features = pack.markers.map(marker => {
-    const {i, type, icon, x, y, size, fill, stroke, size} = marker;
+    const {i, type, icon, x, y, size, fill, stroke} = marker;
     const coordinates = getQGIScoordinates(x, y);
     const id = `marker${i}`;
     const note = notes.find(note => note.id === id);
-    const properties = {id, type, icon, ...note, size, fill, stroke, size};
+    const properties = {id, type, icon, ...note, size, fill, stroke};
     return {type: "Feature", geometry: {type: "Point", coordinates}, properties};
   });
 
