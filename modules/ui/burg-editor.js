@@ -426,7 +426,7 @@ function editBurg(id) {
       }
       const cells = pack.cells;
       const name = elSelected.text();
-      const size = Math.max(Math.min(rn(burg.population), 100), 6); // to be removed once change on MFDC is done
+      const size = Math.ceil(2.13*Math.pow(burg.population * populationRate / urbanDensity,0.385));//Math.max(Math.min(rn(burg.population), 100), 6); // to be removed once change on MFDC is done
       const population = rn(burg.population * populationRate * urbanization);
 
       const s = burg.MFCG || defSeed;

@@ -153,6 +153,7 @@ options.winds = [225, 45, 225, 315, 135, 315]; // default wind directions
 
 let populationRate = +document.getElementById("populationRateInput").value;
 let urbanization = +document.getElementById("urbanizationInput").value;
+let urbanDensity = +document.getElementById("urbanDensityInput").value;
 
 applyStoredOptions();
 let graphWidth = +mapWidthInput.value,
