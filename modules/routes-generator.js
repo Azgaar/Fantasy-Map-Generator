@@ -218,6 +218,7 @@ window.Routes = (function () {
             cells.crossroad[current] += score;
           }
         }
+        cells.crossroad[current] += score;
         segment = [];
         prev = current;
       } else {
