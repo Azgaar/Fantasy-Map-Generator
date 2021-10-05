@@ -38,6 +38,7 @@ function overviewMarkers() {
 
     if (el.classList.contains("icon-pencil")) return openEditor(i);
     if (el.classList.contains("icon-dot-circled")) return focusOnMarker(i);
+    if (el.classList.contains("icon-pin")) return pinMarker(el, i);
     if (el.classList.contains("locks")) return toggleLockStatus(el, i);
     if (el.classList.contains("icon-trash-empty")) return triggerRemove(i);
     // TODO: hidden attribute
@@ -50,6 +51,7 @@ function overviewMarkers() {
         <div data-tip="Marker icon and type" style="width:12em">${icon} ${type}</div>
         <span style="padding-right:.1em" data-tip="Edit marker" class="icon-pencil"></span>
         <span style="padding-right:.1em" data-tip="Focus on marker position" class="icon-dot-circled pointer"></span>
+        <span style="padding-right:.1em" data-tip="Pin marker (display only pinned markers)" class="icon-pin inactive pointer"></span>
         <span style="padding-right:.1em" class="locks pointer ${lock ? "icon-lock" : "icon-lock-open inactive"}" onmouseover="showElementLockTip(event)"></span>
         <span data-tip="Remove marker" class="icon-trash-empty"></span>
       </div>`;
@@ -73,6 +75,20 @@ function overviewMarkers() {
 
   function focusOnMarker(i) {
     highlightElement(document.getElementById(`marker${i}`), 2);
+  }
+
+  function pinMarker(el, i) {
+    const marker = pack.markers.find(marker => marker.i === i);
+    if (marker.pinned) {
+      delete marker.pinned;
+      const anyPinned = pack.markers.some(marker => marker.pinned);
+      if (!anyPinned) markerGroup.removeAttribute("pinned");
+    } else {
+      marker.pinned = true;
+      markerGroup.setAttribute("pinned", 1);
+    }
+    el.classList.toggle("inactive");
+    drawMarkers();
   }
 
   function toggleLockStatus(el, i) {
