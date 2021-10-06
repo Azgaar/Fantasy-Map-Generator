@@ -49,7 +49,6 @@ function editBurg(id) {
   document.getElementById("burgRelocate").addEventListener("click", toggleRelocateBurg);
   document.getElementById("burglLegend").addEventListener("click", editBurgLegend);
   document.getElementById("burgLock").addEventListener("click", toggleBurgLockButton);
-  document.getElementById("burgLock").addEventListener("mouseover", showBurgELockTip);
   document.getElementById("burgRemove").addEventListener("click", removeSelectedBurg);
 
   function updateBurgValues() {
@@ -371,11 +370,6 @@ function editBurg(id) {
       document.getElementById("burgLock").classList.remove("icon-lock");
       document.getElementById("burgLock").classList.add("icon-lock-open");
     }
-  }
-
-  function showBurgELockTip() {
-    const id = +elSelected.attr("data-id");
-    showBurgLockTip(id);
   }
 
   function showStyleSection() {

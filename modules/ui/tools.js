@@ -420,11 +420,23 @@ function regenerateIce() {
   drawIce();
 }
 
-function regenerateMarkers() {
-  Markers.regenerate();
-  turnButtonOn("toggleMarkers");
-  drawMarkers();
-  if (document.getElementById("markersOverviewRefresh").offsetParent) markersOverviewRefresh.click();
+function regenerateMarkers(event) {
+  if (isCtrlClick(event)) prompt("Please provide markers number multiplier", {default: 1, step: 0.01, min: 0, max: 100}, v => addNumberOfMarkers(v));
+  else addNumberOfMarkers();
+
+  function addNumberOfMarkers(multiplier) {
+    pack.markers = pack.markers.filter(marker => {
+      if (marker.lock) return true;
+      document.getElementById(`marker${marker.i}`)?.remove();
+      const index = notes.findIndex(note => note.id === marker.id);
+      if (index != -1) notes.splice(index, 1);
+      return false;
+    });
+
+    Markers.regenerate(multiplier);
+    turnButtonOn("toggleMarkers");
+    drawMarkers();
+  }
 }
 
 function regenerateZones(event) {

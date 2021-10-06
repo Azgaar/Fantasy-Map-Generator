@@ -4,52 +4,19 @@ window.Markers = (function () {
   let config = [];
   let occupied = [];
 
-  function getDefaultConfig() {
-    const culturesSet = document.getElementById("culturesSet").value;
-    const isFantasy = culturesSet.includes("Fantasy");
-
-    return [
-      {type: "volcanoes", icon: "🌋", multiplier: 1, fn: addVolcanoes},
-      {type: "hot-springs", icon: "♨️", multiplier: 1, fn: addHotSprings},
-      {type: "mines", icon: "⛏️", multiplier: 1, fn: addMines},
-      {type: "bridges", icon: "🌉", multiplier: 1, fn: addBridges},
-      {type: "inns", icon: "🍻", multiplier: 1, fn: addInns},
-      {type: "lighthouses", icon: "🚨", multiplier: 1, fn: addLighthouses},
-      {type: "waterfalls", icon: "⟱", multiplier: 1, fn: addWaterfalls},
-      {type: "battlefields", icon: "⚔️", multiplier: 1, fn: addBattlefields},
-      {type: "dungeons", icon: "🗝️", multiplier: 1, fn: addDungeons},
-      {type: "lake-monsters", icon: "🐉", multiplier: 1, fn: addLakeMonsters},
-      {type: "sea-monsters", icon: "🦑", multiplier: 1, fn: addSeaMonsters},
-      {type: "hill-monsters", icon: "👹", multiplier: 1, fn: addHillMonsters},
-      {type: "sacred-mountains", icon: "🗻", multiplier: 1, fn: addSacredMountains},
-      {type: "sacred-forests", icon: "🌳", multiplier: 1, fn: addSacredForests},
-      {type: "sacred-pineries", icon: "🌲", multiplier: 1, fn: addSacredPineries},
-      {type: "sacred-palm-groves", icon: "🌴", multiplier: 1, fn: addSacredPalmGroves},
-      {type: "brigands", icon: "💰", multiplier: 1, fn: addBrigands},
-      {type: "pirates", icon: "🏴‍☠️", multiplier: 1, fn: addPirates},
-      {type: "statues", icon: "🗿", multiplier: 1, fn: addStatues},
-      {type: "ruines", icon: "🏺", multiplier: 1, fn: addRuines},
-      {type: "portals", icon: "🌀", multiplier: +isFantasy, fn: addPortals}
-    ];
-  }
-
-  const getConfig = () => config;
-
-  const setConfig = newConfig => {
-    config = newConfig;
-  };
-
-<<<<<<< HEAD
-  const generate = requestedQtyMultiplier => {
-    pack.markers = [];
-    if (requestedQtyMultiplier === 0) return;
-    if (requestedQtyMultiplier) multiplier = requestedQtyMultiplier;
-=======
   const generate = function () {
-    setConfig(getDefaultConfig());
     pack.markers = [];
     generateTypes();
   };
+
+  const regenerate = requestedMultiplier => {
+    if (requestedMultiplier === 0) return;
+    if (requestedMultiplier) multiplier = requestedMultiplier;
+    generateTypes();
+  };
+
+  const generateTypes = () => {
+    TIME && console.time("addMarkers");
 
   const regenerate = () => {
     pack.markers = pack.markers.filter(({i, lock}) => {
@@ -80,8 +47,9 @@ window.Markers = (function () {
 
 <<<<<<< HEAD
   const getQuantity = (array, min, each) => {
-    if (array.length < min) return 0;
-    return Math.ceil((array.length / each) * multiplier);
+    if (!array.length || array.length < min / multiplier) return 0;
+    const requestQty = Math.ceil((array.length / each) * multiplier);
+    return array.length < requestQty ? array.length : requestQty;
   };
 =======
   function getQuantity(array, min, each, multiplier) {
@@ -831,8 +799,5 @@ window.Markers = (function () {
     return "marker" + i;
   }
 
-  return {generate};
-=======
-  return {generate, regenerate, getConfig, setConfig};
->>>>>>> 60057c5... markers - generate from config file
+  return {generate, regenerate};
 })();

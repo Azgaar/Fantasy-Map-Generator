@@ -21,6 +21,7 @@ function editMarker(markerI) {
   const markerStroke = document.getElementById("markerStroke");
 
   const markerNotes = document.getElementById("markerNotes");
+  const markerLock = document.getElementById("markerLock");
   const addMarker = document.getElementById("addMarker");
   const markerAdd = document.getElementById("markerAdd");
   const markerRemove = document.getElementById("markerRemove");
@@ -46,6 +47,7 @@ function editMarker(markerI) {
     listen(markerFill, "input", changePinFill),
     listen(markerStroke, "input", changePinStroke),
     listen(markerNotes, "click", editMarkerLegend),
+    listen(markerLock, "click", toggleMarkerLock),
     listen(markerAdd, "click", toggleAddMarker),
     listen(markerRemove, "click", confirmMarkerDeletion)
   ];
@@ -93,7 +95,7 @@ function editMarker(markerI) {
   }
 
   function updateInputs() {
-    const {icon, type = "", size = 30, dx = 50, dy = 50, px = 12, stroke = "#000000", fill = "#ffffff", pin = "bubble"} = marker;
+    const {icon, type = "", size = 30, dx = 50, dy = 50, px = 12, stroke = "#000000", fill = "#ffffff", pin = "bubble", lock} = marker;
 
     markerType.value = type;
     markerIcon.value = icon;
@@ -104,6 +106,8 @@ function editMarker(markerI) {
     markerPin.value = pin;
     markerFill.value = fill;
     markerStroke.value = stroke;
+
+    markerLock.className = lock ? "icon-lock" : "icon-lock-open";
   }
 
   function changeMarkerType() {
@@ -212,6 +216,12 @@ function editMarker(markerI) {
   function editMarkerLegend() {
     const id = element.id;
     editNotes(id, id);
+  }
+
+  function toggleMarkerLock() {
+    marker.lock = !marker.lock;
+    markerLock.classList.toggle("icon-lock-open");
+    markerLock.classList.toggle("icon-lock");
   }
 
   function toggleAddMarker() {
