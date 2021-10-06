@@ -56,6 +56,15 @@ function showDataTip(e) {
   tip(dataTip);
 }
 
+function showElementLockTip(event) {
+  const locked = event?.target?.classList?.contains("icon-lock");
+  if (locked) {
+    tip("Click to unlock the element and allow it to be changed by regeneration tools");
+  } else {
+    tip("Click to lock the element and prevent changes to it by regeneration tools");
+  }
+}
+
 const moved = debounce(mouseMove, 100);
 function mouseMove() {
   const point = d3.mouse(this);
@@ -101,7 +110,8 @@ function showMapTooltip(point, e, i, g) {
 
   if (group === "emblems" && e.target.tagName === "use") {
     const parent = e.target.parentNode;
-    const [g, type] = parent.id === "burgEmblems" ? [pack.burgs, "burg"] : parent.id === "provinceEmblems" ? [pack.provinces, "province"] : [pack.states, "state"];
+    const [g, type] =
+      parent.id === "burgEmblems" ? [pack.burgs, "burg"] : parent.id === "provinceEmblems" ? [pack.provinces, "province"] : [pack.states, "state"];
     const i = +e.target.dataset.i;
     if (event.shiftKey) highlightEmblemElement(type, g[i]);
 
@@ -328,7 +338,20 @@ function highlightEmblemElement(type, el) {
 
   if (type === "burg") {
     const {x, y} = el;
-    debug.append("circle").attr("cx", x).attr("cy", y).attr("r", 0).attr("fill", "none").attr("stroke", "#d0240f").attr("stroke-width", 1).attr("opacity", 1).transition(animation).attr("r", 20).attr("opacity", 0.1).attr("stroke-width", 0).remove();
+    debug
+      .append("circle")
+      .attr("cx", x)
+      .attr("cy", y)
+      .attr("r", 0)
+      .attr("fill", "none")
+      .attr("stroke", "#d0240f")
+      .attr("stroke-width", 1)
+      .attr("opacity", 1)
+      .transition(animation)
+      .attr("r", 20)
+      .attr("opacity", 0.1)
+      .attr("stroke-width", 0)
+      .remove();
     return;
   }
 

@@ -2,7 +2,7 @@
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 "use strict";
-const version = "1.661"; // generator version
+const version = "1.7"; // generator version
 document.title += " v" + version;
 
 // Switches to disable/enable logging features
@@ -64,7 +64,7 @@ let icons = viewbox.append("g").attr("id", "icons");
 let burgIcons = icons.append("g").attr("id", "burgIcons");
 let anchors = icons.append("g").attr("id", "anchors");
 let armies = viewbox.append("g").attr("id", "armies").style("display", "none");
-let markers = viewbox.append("g").attr("id", "markers").style("display", "none");
+let markers = viewbox.append("g").attr("id", "markers");
 let fogging = viewbox.append("g").attr("id", "fogging-cont").attr("mask", "url(#fog)").append("g").attr("id", "fogging").style("display", "none");
 let ruler = viewbox.append("g").attr("id", "ruler").style("display", "none");
 let debug = viewbox.append("g").attr("id", "debug");
@@ -318,7 +318,6 @@ function findBurgForMFCG(params) {
     else if (p[0] === "shantytown") b.shanty = +p[1];
     else b[p[0]] = +p[1]; // other parameters
   }
-  b.MFCGlink = document.referrer; // set direct link to MFCG
   if (params.get("name") && params.get("name") != "null") b.name = params.get("name");
 
   const label = burgLabels.select("[data-id='" + burgId + "']");
@@ -339,11 +338,39 @@ function findBurgForMFCG(params) {
 
 // apply default biomes data
 function applyDefaultBiomesSystem() {
-  const name = ["Marine", "Hot desert", "Cold desert", "Savanna", "Grassland", "Tropical seasonal forest", "Temperate deciduous forest", "Tropical rainforest", "Temperate rainforest", "Taiga", "Tundra", "Glacier", "Wetland"];
+  const name = [
+    "Marine",
+    "Hot desert",
+    "Cold desert",
+    "Savanna",
+    "Grassland",
+    "Tropical seasonal forest",
+    "Temperate deciduous forest",
+    "Tropical rainforest",
+    "Temperate rainforest",
+    "Taiga",
+    "Tundra",
+    "Glacier",
+    "Wetland"
+  ];
   const color = ["#466eab", "#fbe79f", "#b5b887", "#d2d082", "#c8d68f", "#b6d95d", "#29bc56", "#7dcb35", "#409c43", "#4b6b32", "#96784b", "#d5e7eb", "#0b9131"];
   const habitability = [0, 4, 10, 22, 30, 50, 100, 80, 90, 12, 4, 0, 12];
   const iconsDensity = [0, 3, 2, 120, 120, 120, 120, 150, 150, 100, 5, 0, 150];
-  const icons = [{}, {dune: 3, cactus: 6, deadTree: 1}, {dune: 9, deadTree: 1}, {acacia: 1, grass: 9}, {grass: 1}, {acacia: 8, palm: 1}, {deciduous: 1}, {acacia: 5, palm: 3, deciduous: 1, swamp: 1}, {deciduous: 6, swamp: 1}, {conifer: 1}, {grass: 1}, {}, {swamp: 1}];
+  const icons = [
+    {},
+    {dune: 3, cactus: 6, deadTree: 1},
+    {dune: 9, deadTree: 1},
+    {acacia: 1, grass: 9},
+    {grass: 1},
+    {acacia: 8, palm: 1},
+    {deciduous: 1},
+    {acacia: 5, palm: 3, deciduous: 1, swamp: 1},
+    {deciduous: 6, swamp: 1},
+    {conifer: 1},
+    {grass: 1},
+    {},
+    {swamp: 1}
+  ];
   const cost = [10, 200, 150, 60, 50, 70, 70, 80, 90, 200, 1000, 5000, 150]; // biome movement cost
   const biomesMartix = [
     // hot ↔ cold [>19°C; <-4°C]; dry ↕ wet
@@ -377,11 +404,14 @@ function showWelcomeMessage() {
   alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
     <ul>Main changes:
-      <li>Add custom fonts dialog</li>
-      <li>Save and load <i>.map</i> files to Dropbox</li>
-      <li>Ability to add control points on river edit</li>
-      <li>New heightmap template: Taklamakan</li>
-      <li>Option to not scale labels on zoom</li>
+      <li>New marker types</li>
+      <li>New markers editor</li>
+      <li>Markers overview screen</li>
+      <li>Markers regeneration menu</li>
+      <li>Burg editor update</li>
+      <li>Editable theme color</li>
+      <li>Add font dialog</li>
+      <li>Save to Dropbox</li>
     </ul>
 
     <p>Join our ${discord} and ${reddit} to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
@@ -492,19 +522,18 @@ function invokeActiveZooming() {
   }
 
   // rescale map markers
-  if (+markers.attr("rescale") && markers.style("display") !== "none") {
-    markers.selectAll("use").each(function () {
-      const x = +this.dataset.x,
-        y = +this.dataset.y,
-        desired = +this.dataset.size;
-      const size = Math.max(desired * 5 + 25 / scale, 1);
-      d3.select(this)
-        .attr("x", x - size / 2)
-        .attr("y", y - size)
-        .attr("width", size)
-        .attr("height", size);
+  +markers.attr("rescale") &&
+    pack.markers?.forEach(marker => {
+      const {i, x, y, size = 30, hidden} = marker;
+      const el = !hidden && document.getElementById(`marker${i}`);
+      if (!el) return;
+
+      const zoomedSize = Math.max(rn(size / 5 + 24 / scale, 2), 1);
+      el.setAttribute("width", zoomedSize);
+      el.setAttribute("height", zoomedSize);
+      el.setAttribute("x", rn(x - zoomedSize / 2, 1));
+      el.setAttribute("y", rn(y - zoomedSize, 1));
     });
-  }
 
   // rescale rulers to have always the same size
   if (ruler.style("display") !== "none") {
@@ -626,11 +655,13 @@ function generate() {
     INFO && console.groupEnd("Generated Map " + seed);
   } catch (error) {
     ERROR && console.error(error);
+    const parsedError = parseError(error);
+    track("error", parsedError);
     clearMainTip();
 
     alertMessage.innerHTML = `An error is occured on map generation. Please retry.
       <br>If error is critical, clear the stored data and try again.
-      <p id="errorBox">${parseError(error)}</p>`;
+      <p id="errorBox">${parsedError}</p>`;
     $("#alert").dialog({
       resizable: false,
       title: "Generation error",
@@ -641,7 +672,7 @@ function generate() {
           localStorage.setItem("version", version);
         },
         Regenerate: function () {
-          regenerateMap();
+          regenerateMap("generation error");
           $(this).dialog("close");
         },
         Ignore: function () {
@@ -670,6 +701,7 @@ function generateSeed() {
 // Place points to calculate Voronoi diagram
 function placePoints() {
   TIME && console.time("placePoints");
+  Math.random = aleaPRNG(seed); // reset PRNG
 
   const cellsDesired = +pointsInput.dataset.cells;
   const spacing = (grid.spacing = rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2)); // spacing between points before jirrering
@@ -1482,7 +1514,18 @@ function addZones(number = 1) {
       });
     }
 
-    const invasion = rw({Invasion: 4, Occupation: 3, Raid: 2, Conquest: 2, Subjugation: 1, Foray: 1, Skirmishes: 1, Incursion: 2, Pillaging: 1, Intervention: 1});
+    const invasion = rw({
+      Invasion: 4,
+      Occupation: 3,
+      Raid: 2,
+      Conquest: 2,
+      Subjugation: 1,
+      Foray: 1,
+      Skirmishes: 1,
+      Incursion: 2,
+      Pillaging: 1,
+      Intervention: 1
+    });
     const name = getAdjective(invader.name) + " " + invasion;
     data.push({name, type: "Invasion", cells: cellsArray, fill: "url(#hatch1)"});
   }
@@ -1792,7 +1835,7 @@ function addZones(number = 1) {
 
 // show map stats on generation complete
 function showStatistics() {
-  const template = templateInput.value;
+  const template = templateInput.options[templateInput.selectedIndex].text;
   const templateRandom = locked("template") ? "" : "(random)";
   const stats = `  Seed: ${seed}
     Canvas size: ${graphWidth}x${graphHeight}
@@ -1810,9 +1853,10 @@ function showStatistics() {
   mapId = Date.now(); // unique map id is it's creation date number
   mapHistory.push({seed, width: graphWidth, height: graphHeight, template, created: mapId});
   INFO && console.log(stats);
+  track("generate", `Template: ${template} ${templateRandom}. Points: ${pointsInput.dataset.cells}`);
 }
 
-const regenerateMap = debounce(function () {
+const regenerateMap = debounce(function (source) {
   WARN && console.warn("Generate new random map");
   closeDialogs("#worldConfigurator, #options3d");
   customization = 0;
@@ -1822,6 +1866,7 @@ const regenerateMap = debounce(function () {
   restoreLayers();
   if (ThreeD.options.isOn) ThreeD.redraw();
   if ($("#worldConfigurator").is(":visible")) editWorld();
+  track("regenerate", `from ${source}`);
 }, 1000);
 
 // clear the map

@@ -16,6 +16,7 @@ function handleKeyup(event) {
   const {tagName, contentEditable} = document.activeElement;
   if (["INPUT", "SELECT", "TEXTAREA"].includes(tagName)) return; // don't trigger if user inputs text
   if (tagName === "DIV" && contentEditable === "true") return; // don't trigger if user inputs a text
+  if (document.getSelection().toString()) return; // don't trigger if user selects text
   event.stopPropagation();
 
   const {ctrlKey, metaKey, shiftKey, altKey} = event;
@@ -25,7 +26,7 @@ function handleKeyup(event) {
   const alt = altKey || key === "Alt";
 
   if (key === "F1") showInfo();
-  else if (key === "F2") regeneratePrompt();
+  else if (key === "F2") regeneratePrompt("hotkey");
   else if (key === "F6") quickSave();
   else if (key === "F9") quickLoad();
   else if (key === "TAB") toggleOptions(event);
@@ -52,6 +53,7 @@ function handleKeyup(event) {
   else if (shift && key === "T") overviewBurgs();
   else if (shift && key === "V") overviewRivers();
   else if (shift && key === "M") overviewMilitary();
+  else if (shift && key === "K") overviewMarkers();
   else if (shift && key === "E") viewCellDetails();
   else if (shift && key === "1") toggleAddBurg();
   else if (shift && key === "2") toggleAddLabel();
