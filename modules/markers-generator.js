@@ -519,7 +519,7 @@ window.Markers = (function () {
       const id = addMarker({cell, icon, type, dy: 48});
       const name = `${lake.name} Monster`;
       const length = gauss(10, 5, 5, 100);
-      const legend = `Rumors said a relic monster of ${length} ${heightUnit.value} long inhabits ${lake.name} Lake. Truth or lie, but folks are affraid to fish in the lake`;
+      const legend = `Rumors said a relic monster of ${length} ${heightUnit.value} long inhabits ${lake.name} Lake. Truth or lie, but folks are afraid to fish in the lake`;
       notes.push({id, name, legend});
       quantity--;
     }
