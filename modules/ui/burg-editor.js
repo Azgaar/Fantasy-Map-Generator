@@ -410,7 +410,6 @@ function editBurg(id) {
     const {cells} = pack;
     const {name, population, cell} = burg;
     const burgSeed = getBurgSeed(burg);
-    const size = Math.max(Math.min(rn(population), 100), 6);
     const size = Math.max(Math.min(Math.ceil(2.13*Math.pow(burg.population * populationRate)), 100), 6);
     const people = rn(population * populationRate * urbanization);
 
