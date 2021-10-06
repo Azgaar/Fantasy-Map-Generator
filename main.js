@@ -2,6 +2,7 @@
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 "use strict";
+// TODO: pump version to 1.7
 const version = "1.662"; // generator version
 document.title += " v" + version;
 

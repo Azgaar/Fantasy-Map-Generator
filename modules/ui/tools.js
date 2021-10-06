@@ -1,5 +1,5 @@
-// module to control the Tools options (click to edit, to re-geenerate, tp add)
 "use strict";
+// module to control the Tools options (click to edit, to re-geenerate, tp add)
 
 toolsContent.addEventListener("click", function (event) {
   if (customization) {
@@ -9,7 +9,7 @@ toolsContent.addEventListener("click", function (event) {
   if (event.target.tagName !== "BUTTON") return;
   const button = event.target.id;
 
-  // Click to open Editor buttons
+  // click on open Editor buttons
   if (button === "editHeightmapButton") editHeightmap();
   else if (button === "editBiomesButton") editBiomes();
   else if (button === "editStatesButton") editStates();
@@ -27,7 +27,7 @@ toolsContent.addEventListener("click", function (event) {
   else if (button === "overviewMilitaryButton") overviewMilitary();
   else if (button === "overviewCellsButton") viewCellDetails();
 
-  // Click to Regenerate buttons
+  // click on Regenerate buttons
   if (event.target.parentNode.id === "regenerateFeature") {
     if (sessionStorage.getItem("regenerateFeatureDontAsk")) {
       processFeatureRegeneration(event, button);
@@ -62,7 +62,11 @@ toolsContent.addEventListener("click", function (event) {
     });
   }
 
-  // Click to Add buttons
+  // click on Configure regenerate buttons
+  if (button === "configRegenerateMarkers") {
+  }
+
+  // click on Add buttons
   if (button === "addLabel") toggleAddLabel();
   else if (button === "addBurgTool") toggleAddBurg();
   else if (button === "addRiver") toggleAddRiver();
@@ -90,7 +94,7 @@ function processFeatureRegeneration(event, button) {
   else if (button === "regenerateCultures") regenerateCultures();
   else if (button === "regenerateMilitary") regenerateMilitary();
   else if (button === "regenerateIce") regenerateIce();
-  else if (button === "regenerateMarkers") regenerateMarkers(event);
+  else if (button === "regenerateMarkers") regenerateMarkers();
   else if (button === "regenerateZones") regenerateZones(event);
 }
 
@@ -416,24 +420,10 @@ function regenerateIce() {
   drawIce();
 }
 
-function regenerateMarkers(event) {
-  // TODO: rework for new markers system
-  if (isCtrlClick(event)) prompt("Please provide markers number multiplier", {default: 1, step: 0.01, min: 0, max: 100}, v => addNumberOfMarkers(v));
-  else addNumberOfMarkers(gauss(1, 0.5, 0.3, 5, 2));
-
-  function addNumberOfMarkers(number) {
-    // remove existing markers and assigned notes
-    markers
-      .selectAll("use")
-      .each(function () {
-        const index = notes.findIndex(n => n.id === this.id);
-        if (index != -1) notes.splice(index, 1);
-      })
-      .remove();
-
-    Markers.generate(number);
-    if (!layerIsOn("toggleMarkers")) toggleMarkers();
-  }
+function regenerateMarkers() {
+  Markers.regenerate();
+  turnButtonOn("toggleMarkers");
+  drawMarkers();
 }
 
 function regenerateZones(event) {
