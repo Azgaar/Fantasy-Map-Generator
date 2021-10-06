@@ -403,15 +403,9 @@ function editBurg(id) {
     document.getElementById("mfcgLink").setAttribute("href", mfcgURL);
   }
 
-    function openMFCG(seed) {
-      if (!seed && burg.MFCGlink) {
-        openURL(burg.MFCGlink);
-        return;
-      }
-      const cells = pack.cells;
-      const name = elSelected.text();
-      const size = Math.ceil(2.13*Math.pow(burg.population * populationRate / urbanDensity,0.385));//Math.max(Math.min(rn(burg.population), 100), 6); // to be removed once change on MFDC is done
-      const population = rn(burg.population * populationRate * urbanization);
+  function getBurgSeed(burg) {
+    return burg.MFCG || Number(`${seed}${String(burg.i).padStart(4, 0)}`);
+  }
 
   function getMFCGlink(burg) {
     const {cells} = pack;

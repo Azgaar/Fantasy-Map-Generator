@@ -1535,7 +1535,10 @@ function toggleMarkers(event) {
 
 function drawMarkers() {
   const rescale = +markers.attr("rescale");
-  const html = pack.markers.map(marker => drawMarker(marker, rescale));
+  const pinned = +markers.attr("pinned");
+
+  const markersData = pinned ? pack.markers.filter(({pinned}) => pinned) : pack.markers;
+  const html = markersData.map(marker => drawMarker(marker, rescale));
   markers.html(html.join(""));
 }
 

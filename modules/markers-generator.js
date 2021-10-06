@@ -4,19 +4,46 @@ window.Markers = (function () {
   let config = [];
   let occupied = [];
 
+  function getDefaultConfig() {
+    const culturesSet = document.getElementById("culturesSet").value;
+    const isFantasy = culturesSet.includes("Fantasy");
+
+    return [
+      {type: "volcanoes", icon: "🌋", multiplier: 1, fn: addVolcanoes},
+      {type: "hot-springs", icon: "♨️", multiplier: 1, fn: addHotSprings},
+      {type: "mines", icon: "⛏️", multiplier: 1, fn: addMines},
+      {type: "bridges", icon: "🌉", multiplier: 1, fn: addBridges},
+      {type: "inns", icon: "🍻", multiplier: 1, fn: addInns},
+      {type: "lighthouses", icon: "🚨", multiplier: 1, fn: addLighthouses},
+      {type: "waterfalls", icon: "⟱", multiplier: 1, fn: addWaterfalls},
+      {type: "battlefields", icon: "⚔️", multiplier: 1, fn: addBattlefields},
+      {type: "dungeons", icon: "🗝️", multiplier: 1, fn: addDungeons},
+      {type: "lake-monsters", icon: "🐉", multiplier: 1, fn: addLakeMonsters},
+      {type: "sea-monsters", icon: "🦑", multiplier: 1, fn: addSeaMonsters},
+      {type: "hill-monsters", icon: "👹", multiplier: 1, fn: addHillMonsters},
+      {type: "sacred-mountains", icon: "🗻", multiplier: 1, fn: addSacredMountains},
+      {type: "sacred-forests", icon: "🌳", multiplier: 1, fn: addSacredForests},
+      {type: "sacred-pineries", icon: "🌲", multiplier: 1, fn: addSacredPineries},
+      {type: "sacred-palm-groves", icon: "🌴", multiplier: 1, fn: addSacredPalmGroves},
+      {type: "brigands", icon: "💰", multiplier: 1, fn: addBrigands},
+      {type: "pirates", icon: "🏴‍☠️", multiplier: 1, fn: addPirates},
+      {type: "statues", icon: "🗿", multiplier: 1, fn: addStatues},
+      {type: "ruines", icon: "🏺", multiplier: 1, fn: addRuines},
+      {type: "portals", icon: "🌀", multiplier: +isFantasy, fn: addPortals}
+    ];
+  }
+
+  const getConfig = () => config;
+
+  const setConfig = newConfig => {
+    config = newConfig;
+  };
+
   const generate = function () {
+    setConfig(getDefaultConfig());
     pack.markers = [];
     generateTypes();
   };
-
-  const regenerate = requestedMultiplier => {
-    if (requestedMultiplier === 0) return;
-    if (requestedMultiplier) multiplier = requestedMultiplier;
-    generateTypes();
-  };
-
-  const generateTypes = () => {
-    TIME && console.time("addMarkers");
 
   const regenerate = () => {
     pack.markers = pack.markers.filter(({i, lock}) => {
@@ -33,7 +60,6 @@ window.Markers = (function () {
   };
 
   function generateTypes() {
->>>>>>> 60057c5... markers - generate from config file
     TIME && console.time("addMarkers");
 
     config.forEach(({type, icon, multiplier, fn}) => {
@@ -45,19 +71,11 @@ window.Markers = (function () {
     TIME && console.timeEnd("addMarkers");
   }
 
-<<<<<<< HEAD
-  const getQuantity = (array, min, each) => {
-    if (!array.length || array.length < min / multiplier) return 0;
-    const requestQty = Math.ceil((array.length / each) * multiplier);
-    return array.length < requestQty ? array.length : requestQty;
-  };
-=======
   function getQuantity(array, min, each, multiplier) {
     if (!array.length || array.length < min / multiplier) return 0;
     const requestQty = Math.ceil((array.length / each) * multiplier);
     return array.length < requestQty ? array.length : requestQty;
   }
->>>>>>> 60057c5... markers - generate from config file
 
   function extractAnyElement(array) {
     const index = Math.floor(Math.random() * array.length);
@@ -501,7 +519,7 @@ window.Markers = (function () {
       const id = addMarker({cell, icon, type, dy: 48});
       const name = `${lake.name} Monster`;
       const length = gauss(10, 5, 5, 100);
-      const legend = `Rumors said a relic monster of ${length} ${heightUnit.value} long inhabits ${lake.name} Lake. Truth or lie, but folks are affraid to fish in the lake`;
+      const legend = `Rumors said a relic monster of ${length} ${heightUnit.value} long inhabits ${lake.name} Lake. Truth or lie, but folks are afraid to fish in the lake`;
       notes.push({id, name, legend});
       quantity--;
     }
@@ -787,17 +805,5 @@ window.Markers = (function () {
     }
   }
 
-<<<<<<< HEAD
-  function addMarker({cell, type, icon, dx, dy, px}) {
-    const i = pack.markers.length;
-    const [x, y] = getMarkerCoordinates(cell);
-    const marker = {i, icon, type, x, y};
-    if (dx) marker.dx = dx;
-    if (dy) marker.dy = dy;
-    if (px) marker.px = px;
-    pack.markers.push(marker);
-    return "marker" + i;
-  }
-
-  return {generate, regenerate};
+  return {generate, regenerate, getConfig, setConfig};
 })();

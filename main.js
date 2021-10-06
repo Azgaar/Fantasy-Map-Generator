@@ -2,8 +2,7 @@
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 "use strict";
-// TODO: pump version to 1.7
-const version = "1.662"; // generator version
+const version = "1.7"; // generator version
 document.title += " v" + version;
 
 // Switches to disable/enable logging features
@@ -406,11 +405,14 @@ function showWelcomeMessage() {
   alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
     <ul>Main changes:
-      <li>Add custom fonts dialog</li>
-      <li>Save and load <i>.map</i> files to Dropbox</li>
-      <li>Ability to add control points on river edit</li>
-      <li>New heightmap template: Taklamakan</li>
-      <li>Option to not scale labels on zoom</li>
+      <li>New marker types</li>
+      <li>New markers editor</li>
+      <li>Markers overview screen</li>
+      <li>Markers regeneration menu</li>
+      <li>Burg editor update</li>
+      <li>Editable theme color</li>
+      <li>Add font dialog</li>
+      <li>Save to Dropbox</li>
     </ul>
 
     <p>Join our ${discord} and ${reddit} to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
