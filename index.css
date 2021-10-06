@@ -36,6 +36,12 @@ textarea {
   width: 100%;
 }
 
+iframe {
+  border: 0;
+  pointer-events: none;
+  width: 100%;
+}
+
 #map {
   background-color: #000000;
   mask-mode: alpha;

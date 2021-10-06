@@ -1953,8 +1953,9 @@
     <div id="burgEditor" class="dialog" style="display: none">
 
       <div id="burgBody" style="padding-bottom: .3em">
-        <svg viewBox="0 0 200 200" width="14em" height="14em"><use id="burgEmblem"></use></svg>
-        <div style="float: right">
+        <div style="display: flex; align-items: center">
+          <svg data-tip="Burg emblem. Click to edit" class="pointer" viewBox="0 0 200 200" width="13em" height="13em"><use id="burgEmblem"></use></svg>
+          <div>
           <div id="burgProvinceAndState" style="font-style: italic; max-width: 16em"></div>
 
           <div>
@@ -2009,6 +2010,16 @@
             <div class="label">Elevation:</div>
             <span id="burgElevation"></span> above sea level
           </div>
+          </div>
+        </div>
+
+        <div data-tip="Burg preview in the Medieval Fantasy City Generator. Default seed is a conbimation of map seed and burg id" style="display: flex; flex-direction: column">
+          <div>
+            See in <a id="mfcgLink" target="_blank">City Generator by Watabou</a>. 
+            Seed: <input id="mfcgBurgSeed" style="width: 10em" type="number" min=1 max="1e13" step="1" />
+            <i id="regenerateMFCGBurgSeed" data-tip="Randomize Medieval Fantasy City Generator burg seed" class="icon-arrows-cw pointer" style="margin-left: .1em"></i>
+          </div>
+          <iframe id="mfcgPreview" sandbox="allow-scripts allow-same-origin"></iframe>
         </div>
       </div>
 
@@ -2030,7 +2041,6 @@
           <button id="burgEditAnchorStyle" data-tip="Edit port icon (anchor) style for burg group in Style Editor" class="icon-anchor"></button>
         </div>
 
-        <button id="burgSeeInMFCG" data-tip="Open burg in the Medieval Fantasy City Generator by Watabou. Ctrl + click to change the seed" class="icon-map-o"></button>
         <button id="burgEditEmblem" data-tip="Edit emblem" class="icon-shield-alt"></button>
         <button id="burgRelocate" data-tip="Relocate burg" class="icon-target"></button>
         <button id="burglLegend" data-tip="Edit free text notes (legend) for this burg" class="icon-edit"></button>
