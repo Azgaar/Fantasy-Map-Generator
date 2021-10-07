@@ -13,7 +13,6 @@ if (localStorage.getItem("disable_click_arrow_tooltip")) {
 
 // Show options pane on trigger click
 function showOptions(event) {
-  track("click", "show options");
   if (!localStorage.getItem("disable_click_arrow_tooltip")) {
     clearMainTip();
     localStorage.setItem("disable_click_arrow_tooltip", true);
@@ -76,7 +75,6 @@ document
 
 // show popup with a list of Patreon supportes (updated manually, to be replaced with API call)
 function showSupporters() {
-  track("click", "show supporters");
   const supporters = `Aaron Meyer,Ahmad Amerih,AstralJacks,aymeric,Billy Dean Goehring,Branndon Edwards,Chase Mayers,Curt Flood,cyninge,Dino Princip,
     E.M. White,es,Fondue,Fritjof Olsson,Gatsu,Johan Fröberg,Jonathan Moore,Joseph Miranda,Kate,KC138,Luke Nelson,Markus Finster,Massimo Vella,Mikey,
     Nathan Mitchell,Paavi1,Pat,Ryan Westcott,Sasquatch,Shawn Spencer,Sizz_TV,Timothée CALLET,UTG community,Vlad Tomash,Wil Sisney,William Merriott,

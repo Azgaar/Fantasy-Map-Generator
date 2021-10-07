@@ -419,7 +419,7 @@ function showWelcomeMessage() {
     </ul>
 
     <p>Join our ${discord} and ${reddit} to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
-    <span>Thanks for all supporters on ${patreon}!</i></span>`;
+    <span>Thanks for all supporters on <a href="https://www.patreon.com/azgaar" onclick="track('click', 'patreon from update')" target="_blank">Patreon</a>!</i></span>`;
 
   $("#alert").dialog({
     resizable: false,
@@ -1857,7 +1857,6 @@ function showStatistics() {
   mapId = Date.now(); // unique map id is it's creation date number
   mapHistory.push({seed, width: graphWidth, height: graphHeight, template, created: mapId});
   INFO && console.log(stats);
-  track("generate", `Template: ${template} ${templateRandom}. Points: ${pointsInput.dataset.cells}`);
 }
 
 const regenerateMap = debounce(function (source) {
