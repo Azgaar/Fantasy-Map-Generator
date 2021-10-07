@@ -30,6 +30,7 @@ window.Religions = (function () {
   const base = {
     number: ["One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"],
     being: [
+<<<<<<< HEAD
       "Ancestor",
       "Ancient",
       "Brother",
@@ -63,19 +64,69 @@ window.Religions = (function () {
       "Ape",
       "Badger",
       "Basilisk",
+=======
+      "God",
+      "Goddess",
+      "Lord",
+      "Lady",
+      "Deity",
+      "Creator",
+      "Maker",
+      "Overlord",
+      "Ruler",
+      "Chief",
+      "Master",
+      "Spirit",
+      "Ancestor",
+      "Father",
+      "Forebear",
+      "Forefather",
+      "Mother",
+      "Brother",
+      "Sister",
+      "Elder",
+      "Numen",
+      "Ancient",
+      "Virgin",
+      "Giver",
+      "Council",
+      "Guardian",
+      "Reaper"
+    ],
+    animal: [
+      "Dragon",
+      "Wyvern",
+      "Phoenix",
+      "Unicorn",
+      "Sphinx",
+      "Centaur",
+      "Pegasus",
+      "Kraken",
+      "Basilisk",
+      "Chimera",
+      "Cyclope",
+      "Antelope",
+      "Ape",
+      "Badger",
+>>>>>>> c6917a14 (religion gen fix)
       "Bear",
       "Beaver",
       "Bison",
       "Boar",
       "Buffalo",
+<<<<<<< HEAD
       "Camel",
       "Cat",
       "Centaur",
       "Chimera",
+=======
+      "Cat",
+>>>>>>> c6917a14 (religion gen fix)
       "Cobra",
       "Crane",
       "Crocodile",
       "Crow",
+<<<<<<< HEAD
       "Cyclope",
       "Deer",
       "Dog",
@@ -83,6 +134,12 @@ window.Religions = (function () {
       "Eagle",
       "Elk",
       "Falcon",
+=======
+      "Deer",
+      "Dog",
+      "Eagle",
+      "Elk",
+>>>>>>> c6917a14 (religion gen fix)
       "Fox",
       "Goat",
       "Goose",
@@ -90,12 +147,18 @@ window.Religions = (function () {
       "Hawk",
       "Heron",
       "Horse",
+<<<<<<< HEAD
       "Hound",
+=======
+>>>>>>> c6917a14 (religion gen fix)
       "Hyena",
       "Ibis",
       "Jackal",
       "Jaguar",
+<<<<<<< HEAD
       "Kraken",
+=======
+>>>>>>> c6917a14 (religion gen fix)
       "Lark",
       "Leopard",
       "Lion",
@@ -105,30 +168,44 @@ window.Religions = (function () {
       "Mule",
       "Narwhal",
       "Owl",
+<<<<<<< HEAD
       "Ox",
       "Panther",
       "Pegasus",
       "Phoenix",
+=======
+      "Panther",
+>>>>>>> c6917a14 (religion gen fix)
       "Rat",
       "Raven",
       "Rook",
       "Scorpion",
+<<<<<<< HEAD
       "Serpent",
       "Shark",
       "Sheep",
       "Snake",
       "Sphinx",
+=======
+      "Shark",
+      "Sheep",
+      "Snake",
+>>>>>>> c6917a14 (religion gen fix)
       "Spider",
       "Swan",
       "Tiger",
       "Turtle",
+<<<<<<< HEAD
       "Unicorn",
+=======
+>>>>>>> c6917a14 (religion gen fix)
       "Viper",
       "Vulture",
       "Walrus",
       "Wolf",
       "Wolverine",
       "Worm",
+<<<<<<< HEAD
       "Wyvern"
     ],
     adjective: [
@@ -295,6 +372,161 @@ window.Religions = (function () {
       "White",
       "Yellow"
     ]
+=======
+      "Camel",
+      "Falcon",
+      "Hound",
+      "Ox",
+      "Serpent"
+    ],
+    adjective: [
+      "New",
+      "Good",
+      "High",
+      "Old",
+      "Great",
+      "Big",
+      "Young",
+      "Major",
+      "Strong",
+      "Happy",
+      "Last",
+      "Main",
+      "Huge",
+      "Far",
+      "Beautiful",
+      "Wild",
+      "Fair",
+      "Prime",
+      "Crazy",
+      "Ancient",
+      "Proud",
+      "Secret",
+      "Lucky",
+      "Sad",
+      "Silent",
+      "Latter",
+      "Severe",
+      "Fat",
+      "Holy",
+      "Pure",
+      "Aggressive",
+      "Honest",
+      "Giant",
+      "Mad",
+      "Pregnant",
+      "Distant",
+      "Lost",
+      "Broken",
+      "Blind",
+      "Friendly",
+      "Unknown",
+      "Sleeping",
+      "Slumbering",
+      "Loud",
+      "Hungry",
+      "Wise",
+      "Worried",
+      "Sacred",
+      "Magical",
+      "Superior",
+      "Patient",
+      "Dead",
+      "Deadly",
+      "Peaceful",
+      "Grateful",
+      "Frozen",
+      "Evil",
+      "Scary",
+      "Burning",
+      "Divine",
+      "Bloody",
+      "Dying",
+      "Waking",
+      "Brutal",
+      "Unhappy",
+      "Calm",
+      "Cruel",
+      "Favorable",
+      "Blond",
+      "Explicit",
+      "Disturbing",
+      "Devastating",
+      "Brave",
+      "Sunny",
+      "Troubled",
+      "Flying",
+      "Sustainable",
+      "Marine",
+      "Fatal",
+      "Inherent",
+      "Selected",
+      "Naval",
+      "Cheerful",
+      "Almighty",
+      "Benevolent",
+      "Eternal",
+      "Immutable",
+      "Infallible"
+    ],
+    genitive: [
+      "Day",
+      "Life",
+      "Death",
+      "Night",
+      "Home",
+      "Fog",
+      "Snow",
+      "Winter",
+      "Summer",
+      "Cold",
+      "Springs",
+      "Gates",
+      "Nature",
+      "Thunder",
+      "Lightning",
+      "War",
+      "Ice",
+      "Frost",
+      "Fire",
+      "Doom",
+      "Fate",
+      "Pain",
+      "Heaven",
+      "Justice",
+      "Light",
+      "Love",
+      "Time",
+      "Victory"
+    ],
+    theGenitive: [
+      "World",
+      "Word",
+      "South",
+      "West",
+      "North",
+      "East",
+      "Sun",
+      "Moon",
+      "Peak",
+      "Fall",
+      "Dawn",
+      "Eclipse",
+      "Abyss",
+      "Blood",
+      "Tree",
+      "Earth",
+      "Harvest",
+      "Rainbow",
+      "Sea",
+      "Sky",
+      "Stars",
+      "Storm",
+      "Underworld",
+      "Wild"
+    ],
+    color: ["Dark", "Light", "Bright", "Golden", "White", "Black", "Red", "Pink", "Purple", "Blue", "Green", "Yellow", "Amber", "Orange", "Brown", "Grey"]
+>>>>>>> c6917a14 (religion gen fix)
   };
 
   const forms = {
@@ -506,7 +738,11 @@ window.Religions = (function () {
             expansion: "global",
             expansionism,
             center,
+<<<<<<< HEAD
             origins: [r.i]
+=======
+            origin: r.i
+>>>>>>> c6917a14 (religion gen fix)
           });
           religionsTree.add([x, y]);
         }
@@ -543,8 +779,11 @@ window.Religions = (function () {
       name,
       religions.map((r) => r.code)
     );
+<<<<<<< HEAD
 
     const i = religions.length;
+=======
+>>>>>>> c6917a14 (religion gen fix)
     religions.push({
       i,
       name,
@@ -560,7 +799,11 @@ window.Religions = (function () {
       area: 0,
       rural: 0,
       urban: 0,
+<<<<<<< HEAD
       origins: [religionId],
+=======
+      origin: r,
+>>>>>>> c6917a14 (religion gen fix)
       code
     });
     cells.religion[center] = i;
