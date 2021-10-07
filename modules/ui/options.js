@@ -89,19 +89,18 @@ function showSupporters() {
     Maxwell Hill,Drunken_Legends,rob bee,Jesse Holmes,YYako,Detocroix,Anoplexian,Hannah,Paul,Sandra Krohn,Lucid,Richard Keating,Allen Varney,Rick Falkvinge,
     Seth Fusion,Adam Butler,Gus,StroboWolf,Sadie Blackthorne,Zewen Senpai,Dell McKnight,Oneiris,Darinius Dragonclaw Studios,Christopher Whitney,Rhodes HvZ,
     Jeppe Skov Jensen,María Martín López,Martin Seeger,Annie Rishor,Aram Sabatés,MadNomadMedia,Eric Foley,Vito Martono,James H. Anthony,Kevin Cossutta,
-    Thirty-OneR ,ThatGuyGW ,Dee Chiu,MontyBoosh ,Achillain ,Jaden ,SashaTK,Steve Johnson,Eric Foley,Vito Martono,James H. Anthony,Kevin Cossutta,Thirty-OneR,
-    ThatGuyGW,Dee Chiu,MontyBoosh,Achillain,Jaden,SashaTK,Steve Johnson,Pierrick Bertrand,Jared Kennedy,Dylan Devenny,Kyle Robertson,Andrew Rostaing,Daniel Gill,
-    Char,Jack,Barna Csíkos,Ian Rousseau,Nicholas Grabstas,Tom Van Orden jr,Bryan Brake,Akylos,Riley Seaman,MaxOliver,Evan-DiLeo,Alex Debus,Joshua Vaught,
-    Kyle S,Eric Moore,Dean Dunakin,Uniquenameosaurus,WarWizardGames,Chance Mena,Jan Ka,Miguel Alejandro,Dalton Clark,Simon Drapeau,Radovan Zapletal,Jmmat6,
-    Justa Badge,Blargh Blarghmoomoo,Vanessa Anjos,Grant A. Murray,Akirsop,Rikard Wolff,Jake Fish,teco 47,Antiroo,Jakob Siegel,Guilherme Aguiar,Jarno Hallikainen,
-    Justin Mcclain,Kristin Chernoff,Rowland Kingman,Esther Busch,Grayson McClead,Austin,Hakon the Viking,Chad Riley,Cooper Counts,Patrick Jones,Clonetone,
-    PlayByMail.Net,Brad Wardell,Lance Saba,Egoensis,Brea Richards,Tiber,Chris Bloom,Maxim Lowe,Aquelion,Page One Project,Spencer Morris,Paul Ingram,
-    Dust Bunny,Adrian Wright,Eric Alexander Cartaya,GameNight,Thomas Mortensen Hansen,Zklaus,Drinarius,Ed Wright,Lon Varnadore,Crys Cain,Heaven N Lee,
-    Jeffrey Henning,Lazer Elf,Jordan Bellah,Alex Beard,Kass Frisson,Petro Lombaard,Emanuel Pietri,Rox,PinkEvil,Gavin Madrigal,Martin Lorber,Prince of Morgoth,
-    Jaryd Armstrong,Andrew Pirkola,ThyHolyDevil,Gary Smith,Tyshaun Wise,Ethan Cook,Jon Stroman,Nobody679,良义 金,Chris Gray,Phoenix Boatwright,Mackenzie,
-    Milo Cohen,Jason Matthew Wuerfel,Rasmus Legêne,Andrew Hines,Wexxler,Espen Sæverud,Binks,Dominick Ormsby,Linn Browning,Václav Švec,Alan Buehne,
-    George J.Lekkas,Alexandre Boivin,Tommy Mayfield,Skylar Mangum-Turner,Karen Blythe,Stefan Gugerel,Mike Conley,Xavier privé,Hope You're Well,
-    Mark Sprietsma,Robert Landry,Nick Mowry,steve hall,Markell,Josh Wren,Neutrix,BLRageQuit,Rocky,Dario Spadavecchia`;
+    Thirty-OneR,ThatGuyGW,Dee Chiu,MontyBoosh,Achillain,Jaden,SashaTK,Steve Johnson,Pierrick Bertrand,Jared Kennedy,Dylan Devenny,Kyle Robertson,
+    Andrew Rostaing,Daniel Gill,Char,Jack,Barna Csíkos,Ian Rousseau,Nicholas Grabstas,Tom Van Orden jr,Bryan Brake,Akylos,Riley Seaman,MaxOliver,Evan-DiLeo,
+    Alex Debus,Joshua Vaught,Kyle S,Eric Moore,Dean Dunakin,Uniquenameosaurus,WarWizardGames,Chance Mena,Jan Ka,Miguel Alejandro,Dalton Clark,Simon Drapeau,
+    Radovan Zapletal,Jmmat6,Justa Badge,Blargh Blarghmoomoo,Vanessa Anjos,Grant A. Murray,Akirsop,Rikard Wolff,Jake Fish,teco 47,Antiroo,Jakob Siegel,
+    Guilherme Aguiar,Jarno Hallikainen,Justin Mcclain,Kristin Chernoff,Rowland Kingman,Esther Busch,Grayson McClead,Austin,Hakon the Viking,Chad Riley,
+    Cooper Counts,Patrick Jones,Clonetone,PlayByMail.Net,Brad Wardell,Lance Saba,Egoensis,Brea Richards,Tiber,Chris Bloom,Maxim Lowe,Aquelion,
+    Page One Project,Spencer Morris,Paul Ingram,Dust Bunny,Adrian Wright,Eric Alexander Cartaya,GameNight,Thomas Mortensen Hansen,Zklaus,Drinarius,
+    Ed Wright,Lon Varnadore,Crys Cain,Heaven N Lee,Jeffrey Henning,Lazer Elf,Jordan Bellah,Alex Beard,Kass Frisson,Petro Lombaard,Emanuel Pietri,Rox,
+    PinkEvil,Gavin Madrigal,Martin Lorber,Prince of Morgoth,Jaryd Armstrong,Andrew Pirkola,ThyHolyDevil,Gary Smith,Tyshaun Wise,Ethan Cook,Jon Stroman,
+    Nobody679,良义 金,Chris Gray,Phoenix Boatwright,Mackenzie,Milo Cohen,Jason Matthew Wuerfel,Rasmus Legêne,Andrew Hines,Wexxler,Espen Sæverud,Binks,
+    Dominick Ormsby,Linn Browning,Václav Švec,Alan Buehne,George J.Lekkas,Alexandre Boivin,Tommy Mayfield,Skylar Mangum-Turner,Karen Blythe,Stefan Gugerel,
+    Mike Conley,Xavier privé,Hope You're Well,Mark Sprietsma,Robert Landry,Nick Mowry,steve hall,Markell,Josh Wren,Neutrix,BLRageQuit,Rocky,Dario Spadavecchia`;
 
   const array = supporters
     .replace(/(?:\r\n|\r|\n)/g, "")
