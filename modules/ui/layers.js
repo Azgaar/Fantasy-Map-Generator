@@ -1563,7 +1563,7 @@ const getPin = (shape = "bubble", fill = "#fff", stroke = "#000") => {
 function drawMarker(marker, rescale = 1) {
   const {i, icon, x, y, dx = 50, dy = 50, px = 12, size = 30, pin, fill, stroke} = marker;
   const id = `marker${i}`;
-  const zoomSize = rescale ? Math.max(rn(size / 5 + 24 / scale, 2), 1) : 1;
+  const zoomSize = rescale ? Math.max(rn(size / 5 + 24 / scale, 2), 1) : size;
   const viewX = rn(x - zoomSize / 2, 1);
   const viewY = rn(y - zoomSize, 1);
   const pinHTML = getPin(pin, fill, stroke);
