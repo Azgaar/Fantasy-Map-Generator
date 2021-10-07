@@ -46,9 +46,11 @@ window.Markers = (function () {
   };
 
   const regenerate = () => {
-    pack.markers = pack.markers.filter(({i, lock}) => {
-      if (lock) return true;
-
+    pack.markers = pack.markers.filter(({i, lock, cell}) => {
+      if (lock) {
+        occupied[cell] = true;
+        return true;
+      }
       const id = `marker${i}`;
       document.getElementById(id)?.remove();
       const index = notes.findIndex(note => note.id === id);
