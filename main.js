@@ -111,14 +111,14 @@ legend.on("mousemove", () => tip("Drag to change the position. Click to hide the
 // main data variables
 let grid = {}; // initial grapg based on jittered square grid and data
 let pack = {}; // packed graph and data
-let seed,
-  mapId,
-  mapHistory = [],
-  elSelected,
-  modules = {},
-  notes = [];
+let seed;
+let mapId;
+let mapHistory = [];
+let elSelected;
+let modules = {};
+let notes = [];
 let rulers = new Rulers();
-let customization = 0; // 0 - no; 1 = heightmap draw; 2 - states draw; 3 - add state/burg; 4 - cultures draw
+let customization = 0;
 
 let biomesData = applyDefaultBiomesSystem();
 let nameBases = Names.getNameBases(); // cultures-related data
@@ -155,20 +155,24 @@ let populationRate = +document.getElementById("populationRateInput").value;
 let urbanization = +document.getElementById("urbanizationInput").value;
 
 applyStoredOptions();
-let graphWidth = +mapWidthInput.value,
-  graphHeight = +mapHeightInput.value; // voronoi graph extention, cannot be changed arter generation
-let svgWidth = graphWidth,
-  svgHeight = graphHeight; // svg canvas resolution, can be changed
+
+// voronoi graph extention, cannot be changed arter generation
+let graphWidth = +mapWidthInput.value;
+let graphHeight = +mapHeightInput.value;
+
+// svg canvas resolution, can be changed
+let svgWidth = graphWidth;
+let svgHeight = graphHeight;
+
 landmass.append("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 oceanPattern.append("rect").attr("fill", "url(#oceanic)").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 oceanLayers.append("rect").attr("id", "oceanBase").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 
-void (function removeLoading() {
-  d3.select("#loading").transition().duration(4000).style("opacity", 0).remove();
-  d3.select("#initial").transition().duration(4000).attr("opacity", 0).remove();
-  d3.select("#optionsContainer").transition().duration(3000).style("opacity", 1);
-  d3.select("#tooltip").transition().duration(4000).style("opacity", 1);
-})();
+// remove loading screen
+d3.select("#loading").transition().duration(4000).style("opacity", 0).remove();
+d3.select("#initial").transition().duration(4000).attr("opacity", 0).remove();
+d3.select("#optionsContainer").transition().duration(3000).style("opacity", 1);
+d3.select("#tooltip").transition().duration(4000).style("opacity", 1);
 
 // decide which map should be loaded or generated on page load
 void (function checkLoadParameters() {
