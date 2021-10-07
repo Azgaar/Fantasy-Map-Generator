@@ -478,7 +478,9 @@ window.Markers = (function () {
     while (quantity && battlefields.length) {
       const [cell] = extractAnyElement(battlefields);
       const id = addMarker({cell, icon, type, dy: 52});
-      const campaign = ra(states[cells.state[cell]].campaigns);
+      const state = states[cells.state[cell]];
+      if (!state.campaigns) state.campaigns = BurgsAndStates.generateCampaign(state);
+      const campaign = ra(state.campaigns);
       const date = generateDate(campaign.start, campaign.end);
       const name = Names.getCulture(cells.culture[cell]) + " Battlefield";
       const legend = `A historical battle of the ${campaign.name}. \r\nDate: ${date} ${options.era}`;

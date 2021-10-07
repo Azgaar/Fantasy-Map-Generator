@@ -738,21 +738,24 @@ window.BurgsAndStates = (function () {
     TIME && console.timeEnd("assignColors");
   };
 
+  const wars = {War: 6, Conflict: 2, Campaign: 4, Invasion: 2, Rebellion: 2, Conquest: 2, Intervention: 1, Expedition: 1, Crusade: 1};
+  const generateCampaign = state => {
+    const neighbors = state.neighbors.length ? state.neighbors : [0];
+    return neighbors
+      .map(i => {
+        const name = i && P(0.8) ? pack.states[i].name : Names.getCultureShort(state.culture);
+        const start = gauss(options.year - 100, 150, 1, options.year - 6);
+        const end = start + gauss(4, 5, 1, options.year - start - 1);
+        return {name: getAdjective(name) + " " + rw(wars), start, end};
+      })
+      .sort((a, b) => a.start - b.start);
+  };
+
   // generate historical conflicts of each state
   const generateCampaigns = function () {
-    const wars = {War: 6, Conflict: 2, Campaign: 4, Invasion: 2, Rebellion: 2, Conquest: 2, Intervention: 1, Expedition: 1, Crusade: 1};
-
     pack.states.forEach(s => {
       if (!s.i || s.removed) return;
-      const n = s.neighbors.length ? s.neighbors : [0];
-      s.campaigns = n
-        .map(i => {
-          const name = i && P(0.8) ? pack.states[i].name : Names.getCultureShort(s.culture);
-          const start = gauss(options.year - 100, 150, 1, options.year - 6);
-          const end = start + gauss(4, 5, 1, options.year - start - 1);
-          return {name: getAdjective(name) + " " + rw(wars), start, end};
-        })
-        .sort((a, b) => a.start - b.start);
+      s.campaigns = generateCampaign(s);
     });
   };
 
@@ -947,7 +950,17 @@ window.BurgsAndStates = (function () {
     });
 
     const monarchy = ["Duchy", "Grand Duchy", "Principality", "Kingdom", "Empire"]; // per expansionism tier
-    const republic = {Republic: 75, Federation: 4, Oligarchy: 2, "Most Serene Republic": 2, Tetrarchy: 1, Triumvirate: 1, Diarchy: 1, "Trade Company": 4, Junta: 1}; // weighted random
+    const republic = {
+      Republic: 75,
+      Federation: 4,
+      Oligarchy: 2,
+      "Most Serene Republic": 2,
+      Tetrarchy: 1,
+      Triumvirate: 1,
+      Diarchy: 1,
+      "Trade Company": 4,
+      Junta: 1
+    }; // weighted random
     const union = {Union: 3, League: 4, Confederation: 1, "United Kingdom": 1, "United Republic": 1, "United Provinces": 2, Commonwealth: 1, Heptarchy: 1}; // weighted random
     const theocracy = {Theocracy: 20, Brotherhood: 1, Thearchy: 2, See: 1, "Holy State": 1};
     const anarchy = {"Free Territory": 2, Council: 3, Commune: 1, Community: 1};
@@ -957,7 +970,8 @@ window.BurgsAndStates = (function () {
       const tier = expTiers[s.i];
 
       const religion = pack.cells.religion[s.center];
-      const isTheocracy = (religion && pack.religions[religion].expansion === "state") || (P(0.1) && ["Organized", "Cult"].includes(pack.religions[religion].type));
+      const isTheocracy =
+        (religion && pack.religions[religion].expansion === "state") || (P(0.1) && ["Organized", "Cult"].includes(pack.religions[religion].type));
       const isAnarchy = P(0.01 - tier / 500);
 
       if (isTheocracy) s.form = "Theocracy";
@@ -1025,7 +1039,25 @@ window.BurgsAndStates = (function () {
   };
 
   // state forms requiring Adjective + Name, all other forms use scheme Form + Of + Name
-  const adjForms = ["Empire", "Sultanate", "Khaganate", "Shogunate", "Caliphate", "Despotate", "Theocracy", "Oligarchy", "Union", "Confederation", "Trade Company", "League", "Tetrarchy", "Triumvirate", "Diarchy", "Horde", "Marches"];
+  const adjForms = [
+    "Empire",
+    "Sultanate",
+    "Khaganate",
+    "Shogunate",
+    "Caliphate",
+    "Despotate",
+    "Theocracy",
+    "Oligarchy",
+    "Union",
+    "Confederation",
+    "Trade Company",
+    "League",
+    "Tetrarchy",
+    "Triumvirate",
+    "Diarchy",
+    "Horde",
+    "Marches"
+  ];
 
   const getFullName = function (s) {
     if (!s.formName) return s.name;
@@ -1223,5 +1255,23 @@ window.BurgsAndStates = (function () {
     TIME && console.timeEnd("generateProvinces");
   };
 
-  return {generate, expandStates, normalizeStates, assignColors, drawBurgs, specifyBurgs, defineBurgFeatures, getType, drawStateLabels, collectStatistics, generateCampaigns, generateDiplomacy, defineStateForms, getFullName, generateProvinces, updateCultures};
+  return {
+    generate,
+    expandStates,
+    normalizeStates,
+    assignColors,
+    drawBurgs,
+    specifyBurgs,
+    defineBurgFeatures,
+    getType,
+    drawStateLabels,
+    collectStatistics,
+    generateCampaign,
+    generateCampaigns,
+    generateDiplomacy,
+    defineStateForms,
+    getFullName,
+    generateProvinces,
+    updateCultures
+  };
 })();
