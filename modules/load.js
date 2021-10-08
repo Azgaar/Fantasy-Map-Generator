@@ -875,16 +875,23 @@ function parseLoadedData(data) {
         const defs = document.getElementById("defs-markers");
         const markersGroup = document.getElementById("markers");
         const markerElements = markersGroup.querySelectorAll("use");
+        const rescale = +markersGroup.getAttribute("rescale");
 
         pack.markers = Array.from(markerElements).map((el, i) => {
           const id = el.getAttribute("id");
           const note = notes.find(note => note.id === id);
           if (note) note.id = `marker${i}`;
 
-          const x = rn(+el.dataset.x, 1);
-          const y = rn(+el.dataset.y, 1);
+          let x = +el.dataset.x;
+          let y = +el.dataset.y;
+          const transform = el.getAttribute("transform");
+          if (transform) {
+            const [dx, dy] = parseTransform(transform);
+            if (dx) x += +dx;
+            if (dy) y += +dy;
+          }
           const cell = findCell(x, y);
-          const size = rn(el.dataset.size * 30, 1);
+          const size = rn(rescale ? el.dataset.size * 30 : el.getAttribute("width"), 1);
 
           const href = el.href.baseVal;
           const type = href.replace("#marker_", "");
@@ -906,6 +913,7 @@ function parseLoadedData(data) {
           if (!isNaN(dy) && dy !== 50) marker.dy = dy;
           if (fill && fill !== "#ffffff") marker.fill = fill;
           if (stroke && stroke !== "#000000") marker.stroke = stroke;
+          if (circle.getAttribute("opacity") === "0") marker.pin = "no";
 
           return marker;
         });
