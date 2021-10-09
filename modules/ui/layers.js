@@ -47,8 +47,7 @@ function changePreset(preset) {
     .querySelectorAll("li")
     .forEach(function (e) {
       if (layers.includes(e.id) && !layerIsOn(e.id)) e.click();
-      // turn on
-      else if (!layers.includes(e.id) && layerIsOn(e.id)) e.click(); // turn off
+      else if (!layers.includes(e.id) && layerIsOn(e.id)) e.click();
     });
   layersPreset.value = preset;
   localStorage.setItem("preset", preset);
@@ -121,6 +120,7 @@ function restoreLayers() {
   if (layerIsOn("toggleReligions")) drawReligions();
   if (layerIsOn("toggleIce")) drawIce();
   if (layerIsOn("toggleEmblems")) drawEmblems();
+  if (layerIsOn("toggleMarkers")) drawMarkers();
 
   // some layers are rendered each time, remove them if they are not on
   if (!layerIsOn("toggleBorders")) borders.selectAll("path").remove();
