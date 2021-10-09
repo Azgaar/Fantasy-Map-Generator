@@ -1435,8 +1435,8 @@ function toggleTexture(event) {
     turnButtonOn("toggleTexture");
     // append default texture image selected by default. Don't append on load to not harm performance
     if (!texture.selectAll("*").size()) {
-      const x = +styleTextureShiftX.value,
-        y = +styleTextureShiftY.value;
+      const x = +styleTextureShiftX.value;
+      const y = +styleTextureShiftY.value;
       const image = texture
         .append("image")
         .attr("id", "textureImage")
@@ -1444,18 +1444,14 @@ function toggleTexture(event) {
         .attr("y", y)
         .attr("width", graphWidth - x)
         .attr("height", graphHeight - y)
-        .attr("xlink:href", getDefaultTexture())
         .attr("preserveAspectRatio", "xMidYMid slice");
-      if (styleTextureInput.value !== "default") getBase64(styleTextureInput.value, base64 => image.attr("xlink:href", base64));
+      getBase64(styleTextureInput.value, base64 => image.attr("xlink:href", base64));
     }
     $("#texture").fadeIn();
     zoom.scaleBy(svg, 1.00001); // enforce browser re-draw
     if (event && isCtrlClick(event)) editStyle("texture");
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("texture");
-      return;
-    }
+    if (event && isCtrlClick(event)) return editStyle("texture");
     $("#texture").fadeOut();
     turnButtonOff("toggleTexture");
   }

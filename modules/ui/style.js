@@ -335,7 +335,6 @@ styleFilterInput.addEventListener("change", function () {
 
 styleTextureInput.addEventListener("change", function () {
   if (this.value === "none") texture.select("image").attr("xlink:href", "");
-  if (this.value === "default") texture.select("image").attr("xlink:href", getDefaultTexture());
   else getBase64(this.value, base64 => texture.select("image").attr("xlink:href", base64));
 });
 
