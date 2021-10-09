@@ -234,7 +234,7 @@ function parseLoadedData(data) {
       if (settings[20]) mapName.value = settings[20];
       if (settings[21]) hideLabels.checked = +settings[21];
       if (settings[22]) stylePreset.value = settings[22];
-      if (settings[23]) rescaleLabels.checked = settings[23];
+      if (settings[23]) rescaleLabels.checked = +settings[23];
     })();
 
     void (function parseConfiguration() {
