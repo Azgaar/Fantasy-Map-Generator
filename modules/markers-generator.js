@@ -112,12 +112,11 @@ window.Markers = (function () {
     const {cells} = pack;
 
     let mountains = Array.from(cells.i.filter(i => !occupied[i] && cells.h[i] >= 70).sort((a, b) => cells.h[b] - cells.h[a]));
-    let quantity = getQuantity(mountains, 10, 300, multiplier);
+    let quantity = getQuantity(mountains, 10, 500, multiplier);
     if (!quantity) return;
-    const highestMountains = mountains.slice(0, 20);
 
     while (quantity) {
-      const [cell] = extractAnyElement(highestMountains);
+      const [cell] = extractAnyElement(mountains);
       const id = addMarker({cell, icon, type, dx: 52, px: 13});
       const proper = Names.getCulture(cells.culture[cell]);
       const name = P(0.3) ? "Mount " + proper : Math.random() > 0.3 ? proper + " Volcano" : proper;
@@ -130,12 +129,11 @@ window.Markers = (function () {
     const {cells} = pack;
 
     let springs = Array.from(cells.i.filter(i => !occupied[i] && cells.h[i] > 50).sort((a, b) => cells.h[b] - cells.h[a]));
-    let quantity = getQuantity(springs, 30, 800, multiplier);
+    let quantity = getQuantity(springs, 30, 1200, multiplier);
     if (!quantity) return;
-    const highestSprings = springs.slice(0, 40);
 
     while (quantity) {
-      const [cell] = extractAnyElement(highestSprings);
+      const [cell] = extractAnyElement(springs);
       const id = addMarker({cell, icon, type, dy: 52});
       const proper = Names.getCulture(cells.culture[cell]);
       const temp = convertTemperature(gauss(35, 15, 20, 100));
