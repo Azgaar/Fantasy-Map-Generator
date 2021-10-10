@@ -321,7 +321,7 @@ function overviewMilitary() {
 
       const lines = data.slice(1).map(
         ({i, name, fullName, color}) =>
-          `<tr><td><span style="color:${color}">⬤</span></td>
+          `<tr data-tip="${name}"><td><span style="color:${color}">⬤</span></td>
             <td><input id="el${i}" type="checkbox" class="checkbox" ${!initial.length || initial.includes(i) ? "checked" : ""} >
             <label for="el${i}" class="checkbox-label">${fullName || name}</label>
           </td></tr>`
