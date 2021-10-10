@@ -52,7 +52,7 @@ window.ReliefIcons = (function () {
       function getReliefIcon(i, h) {
         const temp = grid.cells.temp[pack.cells.g[i]];
         const type = h > 70 && temp < 0 ? "mountSnow" : h > 70 ? "mount" : "hill";
-        const size = h > 70 ? (h - 45) * mod : Math.min(Math.max((h - 40) * mod, 3), 6);
+        const size = h > 70 ? (h - 45) * mod : minmax((h - 40) * mod, 3, 6);
         return [getIcon(type), size];
       }
     }

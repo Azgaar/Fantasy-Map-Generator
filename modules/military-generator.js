@@ -3,9 +3,8 @@
 window.Military = (function () {
   const generate = function () {
     TIME && console.time("generateMilitaryForces");
-    const cells = pack.cells,
-      p = cells.p,
-      states = pack.states;
+    const {cells, states} = pack;
+    const {p} = cells;
     const valid = states.filter(s => s.i && !s.removed); // valid states
     if (!options.military) options.military = getDefaultOptions();
 
@@ -19,7 +18,6 @@ window.Military = (function () {
       mounted: {Nomadic: 2.3, Highland: 0.6, Lake: 0.7, Naval: 0.3, Hunting: 0.7, River: 0.8},
       machinery: {Nomadic: 0.8, Highland: 1.4, Lake: 1.1, Naval: 1.4, Hunting: 0.4, River: 1.1},
       naval: {Nomadic: 0.5, Highland: 0.5, Lake: 1.2, Naval: 1.8, Hunting: 0.7, River: 1.2},
-      // non-default generic:
       armored: {Nomadic: 1, Highland: 0.5, Lake: 1, Naval: 1, Hunting: 0.7, River: 1.1},
       aviation: {Nomadic: 0.5, Highland: 0.5, Lake: 1.2, Naval: 1.2, Hunting: 0.6, River: 1.2},
       magical: {Nomadic: 1, Highland: 2, Lake: 1, Naval: 1, Hunting: 1, River: 1}
@@ -38,18 +36,14 @@ window.Military = (function () {
     };
 
     valid.forEach(s => {
-      const temp = (s.temp = {}),
-        d = s.diplomacy;
-      const expansionRate = Math.min(Math.max(s.expansionism / expn / (s.area / area), 0.25), 4); // how much state expansionism is realized
+      const temp = (s.temp = {});
+      const d = s.diplomacy;
+
+      const expansionRate = minmax(s.expansionism / expn / (s.area / area), 0.25, 4); // how much state expansionism is realized
       const diplomacyRate = d.some(d => d === "Enemy") ? 1 : d.some(d => d === "Rival") ? 0.8 : d.some(d => d === "Suspicion") ? 0.5 : 0.1; // peacefulness
-      const neighborsRate = Math.min(
-        Math.max(
-          s.neighbors.map(n => (n ? pack.states[n].diplomacy[s.i] : "Suspicion")).reduce((s, r) => (s += rate[r]), 0.5),
-          0.3
-        ),
-        3
-      ); // neighbors rate
-      s.alert = Math.min(Math.max(rn(expansionRate * diplomacyRate * neighborsRate, 2), 0.1), 5); // war alert rate (army modifier)
+      const neighborsRateRaw = s.neighbors.map(n => (n ? pack.states[n].diplomacy[s.i] : "Suspicion")).reduce((s, r) => (s += rate[r]), 0.5);
+      const neighborsRate = minmax(neighborsRateRaw, 0.3, 3); // neighbors rate
+      s.alert = minmax(rn(expansionRate * diplomacyRate * neighborsRate, 2), 0.1, 5); // alert rate (area modifier)
       temp.platoons = [];
 
       // apply overall state modifiers for unit types based on state features
@@ -334,7 +328,13 @@ window.Military = (function () {
 
   const getName = function (r, regiments) {
     const cells = pack.cells;
-    const proper = r.n ? null : cells.province[r.cell] && pack.provinces[cells.province[r.cell]] ? pack.provinces[cells.province[r.cell]].name : cells.burg[r.cell] && pack.burgs[cells.burg[r.cell]] ? pack.burgs[cells.burg[r.cell]].name : null;
+    const proper = r.n
+      ? null
+      : cells.province[r.cell] && pack.provinces[cells.province[r.cell]]
+      ? pack.provinces[cells.province[r.cell]].name
+      : cells.burg[r.cell] && pack.burgs[cells.burg[r.cell]]
+      ? pack.burgs[cells.burg[r.cell]].name
+      : null;
     const number = nth(regiments.filter(reg => reg.n === r.n && reg.i < r.i).length + 1);
     const form = r.n ? "Fleet" : "Regiment";
     return `${number}${proper ? ` (${proper}) ` : ` `}${form}`;
@@ -351,7 +351,12 @@ window.Military = (function () {
 
   const generateNote = function (r, s) {
     const cells = pack.cells;
-    const base = cells.burg[r.cell] && pack.burgs[cells.burg[r.cell]] ? pack.burgs[cells.burg[r.cell]].name : cells.province[r.cell] && pack.provinces[cells.province[r.cell]] ? pack.provinces[cells.province[r.cell]].fullName : null;
+    const base =
+      cells.burg[r.cell] && pack.burgs[cells.burg[r.cell]]
+        ? pack.burgs[cells.burg[r.cell]].name
+        : cells.province[r.cell] && pack.provinces[cells.province[r.cell]]
+        ? pack.provinces[cells.province[r.cell]].fullName
+        : null;
     const station = base ? `${r.name} is ${r.n ? "based" : "stationed"} in ${base}. ` : "";
 
     const composition = r.a

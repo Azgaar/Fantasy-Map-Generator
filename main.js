@@ -954,7 +954,7 @@ function calculateTemperatures() {
     const lat = Math.abs(mapCoordinates.latN - (y / graphHeight) * mapCoordinates.latT); // [0; 90]
     const initTemp = tEq - int(lat / 90) * tDelta;
     for (let i = r; i < r + grid.cellsX; i++) {
-      cells.temp[i] = Math.max(Math.min(initTemp - convertToFriendly(cells.h[i]), 127), -128);
+      cells.temp[i] = minmax(initTemp - convertToFriendly(cells.h[i]), -128, 127);
     }
   });
 
@@ -1069,7 +1069,7 @@ function generatePrecipitation() {
         const precipitation = isPassable ? getPrecipitation(humidity, current, next) : humidity;
         cells.prec[current] += precipitation;
         const evaporation = precipitation > 1.5 ? 1 : 0; // some humidity evaporates back to the atmosphere
-        humidity = isPassable ? Math.min(Math.max(humidity - precipitation + evaporation, 0), maxPrec) : 0;
+        humidity = isPassable ? minmax(humidity - precipitation + evaporation, 0, maxPrec) : 0;
       }
     }
   }
@@ -1078,7 +1078,7 @@ function generatePrecipitation() {
     const normalLoss = Math.max(humidity / (10 * modifier), 1); // precipitation in normal conditions
     const diff = Math.max(cells.h[i + n] - cells.h[i], 0); // difference in height
     const mod = (cells.h[i + n] / 70) ** 2; // 50 stands for hills, 70 for mountains
-    return Math.min(Math.max(normalLoss + diff * mod, 1), humidity);
+    return minmax(normalLoss + diff * mod, 1, humidity);
   }
 
   void (function drawWindDirection() {

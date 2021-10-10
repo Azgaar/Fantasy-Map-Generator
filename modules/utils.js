@@ -248,7 +248,7 @@ function each(n) {
 
 // random number (normal or gaussian distribution)
 function gauss(expected = 100, deviation = 30, min = 0, max = 300, round = 0) {
-  return rn(Math.max(Math.min(d3.randomNormal(expected, deviation)(), max), min), round);
+  return rn(minmax(d3.randomNormal(expected, deviation)(), min, max), round);
 }
 
 // probability shorthand for floats
@@ -416,9 +416,13 @@ function getSegmentId(points, point, step = 10) {
   return minSegment;
 }
 
+function minmax(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
 // normalization function
 function normalize(val, min, max) {
-  return Math.min(Math.max((val - min) / (max - min), 0), 1);
+  return minmax((val - min) / (max - min), 0, 1);
 }
 
 // return a random integer from min to max biased towards one end based on exponent distribution (the bigger ex the higher bias towards min)
@@ -542,7 +546,7 @@ function rw(object) {
 
 // return value in range [0, 100] (height range)
 function lim(v) {
-  return Math.max(Math.min(v, 100), 0);
+  return minmax(v, 0, 100);
 }
 
 // get number from string in format "1-3" or "2" or "0.5"

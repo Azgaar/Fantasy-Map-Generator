@@ -473,10 +473,10 @@ function changeDialogsTheme(themeColor, transparency) {
 }
 
 function changeZoomExtent(value) {
-  const min = Math.max(+zoomExtentMin.value, 0.01),
-    max = Math.min(+zoomExtentMax.value, 200);
+  const min = Math.max(+zoomExtentMin.value, 0.01);
+  const max = Math.min(+zoomExtentMax.value, 200);
   zoom.scaleExtent([min, max]);
-  const scale = Math.max(Math.min(+value, 200), 0.01);
+  const scale = minmax(+value, 0.01, 200);
   zoom.scaleTo(svg, scale);
 }
 
@@ -517,7 +517,7 @@ function applyStoredOptions() {
 
   uiSizeInput.max = uiSizeOutput.max = getUImaxSize();
   if (localStorage.getItem("uiSize")) changeUIsize(localStorage.getItem("uiSize"));
-  else changeUIsize(Math.max(Math.min(rn(mapWidthInput.value / 1280, 1), 2.5), 1));
+  else changeUIsize(minmax(rn(mapWidthInput.value / 1280, 1), 1, 2.5));
 
   // search params overwrite stored and default options
   const params = new URL(window.location.href).searchParams;

@@ -621,7 +621,7 @@ function editHeightmap() {
       const interpolate = d3.interpolateRound(power, 1);
       const land = changeOnlyLand.checked;
       function lim(v) {
-        return Math.max(Math.min(v, 100), land ? 20 : 0);
+        return minmax(v, land ? 20 : 0, 100);
       }
       const h = grid.cells.h;
 

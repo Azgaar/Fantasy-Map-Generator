@@ -122,7 +122,7 @@ function pressNumpadSign(key) {
   else if (religionsManuallyBrush.offsetParent) brush = document.getElementById("religionsManuallyBrush");
 
   if (brush) {
-    const value = Math.max(Math.min(+brush.value + change, +brush.max), +brush.min);
+    const value = minmax(+brush.value + change, +brush.min, +brush.max);
     brush.value = document.getElementById(brush.id + "Number").value = value;
     return;
   }

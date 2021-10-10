@@ -330,7 +330,7 @@ class Battle {
   }
 
   getInitialMorale() {
-    const powerFee = diff => Math.min(Math.max(100 - diff ** 1.5 * 10 + 10, 50), 100);
+    const powerFee = diff => minmax(100 - diff ** 1.5 * 10 + 10, 50, 100);
     const distanceFee = dist => Math.min(d3.mean(dist) / 50, 15);
     const powerDiff = this.defenders.power / this.attackers.power;
     this.attackers.morale = powerFee(powerDiff) - distanceFee(this.attackers.distances);

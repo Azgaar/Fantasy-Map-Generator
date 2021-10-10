@@ -416,7 +416,7 @@ window.BurgsAndStates = (function () {
     function getRiverCost(r, i, type) {
       if (type === "River") return r ? 0 : 100; // penalty for river cultures
       if (!r) return 0; // no penalty for others if there is no river
-      return Math.min(Math.max(cells.fl[i] / 10, 20), 100); // river penalty from 20 to 100 based on flux
+      return minmax(cells.fl[i] / 10, 20, 100); // river penalty from 20 to 100 based on flux
     }
 
     function getTypeCost(t, type) {
@@ -606,15 +606,15 @@ window.BurgsAndStates = (function () {
         if (pathLength < s.name.length) {
           // only short name will fit
           lines = splitInTwo(s.name);
-          ratio = Math.max(Math.min(rn((pathLength / lines[0].length) * 60), 150), 50);
+          ratio = minmax(rn((pathLength / lines[0].length) * 60), 50, 150);
         } else if (pathLength > s.fullName.length * 2.5) {
           // full name will fit in one line
           lines = [s.fullName];
-          ratio = Math.max(Math.min(rn((pathLength / lines[0].length) * 70), 170), 70);
+          ratio = minmax(rn((pathLength / lines[0].length) * 70), 70, 170);
         } else {
           // try miltilined label
           lines = splitInTwo(s.fullName);
-          ratio = Math.max(Math.min(rn((pathLength / lines[0].length) * 60), 150), 70);
+          ratio = minmax(rn((pathLength / lines[0].length) * 60), 70, 150);
         }
 
         // prolongate path if it's too short
@@ -665,7 +665,7 @@ window.BurgsAndStates = (function () {
         example.text(name);
         const left = example.node().getBBox().width / -2; // x offset
         el.innerHTML = `<tspan x="${left}px">${name}</tspan>`;
-        ratio = Math.max(Math.min(rn((pathLength / name.length) * 60), 130), 40);
+        ratio = minmax(rn((pathLength / name.length) * 60), 40, 130);
         el.setAttribute("font-size", ratio + "%");
       });
 
