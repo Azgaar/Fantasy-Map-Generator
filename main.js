@@ -2,7 +2,7 @@
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 "use strict";
-const version = "1.7"; // generator version
+const version = "1.71"; // generator version
 document.title += " v" + version;
 
 // Switches to disable/enable logging features
@@ -408,6 +408,7 @@ function showWelcomeMessage() {
   alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
     <ul>Main changes:
+      <li>Ability to limit military units by biome, state, culture and religion</li>
       <li>New marker types</li>
       <li>New markers editor</li>
       <li>Markers overview screen</li>
