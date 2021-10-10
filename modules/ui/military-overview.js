@@ -255,29 +255,48 @@ function overviewMilitary() {
         const {i, name, color} = biomesData;
         const biomesArray = Array(i.length).fill(null);
         const biomes = biomesArray.map((_, i) => ({i, name: name[i], color: color[i]}));
-        return selectLimitation(el, biomes, v => (el.dataset.value = v));
+        return selectLimitation(el, biomes);
       }
-      if (type === "states") return selectLimitation(el, pack.states, v => (el.dataset.value = v));
-      if (type === "cultures") return selectLimitation(el, pack.cultures, v => (el.dataset.value = v));
-      if (type === "religions") return selectLimitation(el, pack.religions, v => (el.dataset.value = v));
+      if (type === "states") return selectLimitation(el, pack.states);
+      if (type === "cultures") return selectLimitation(el, pack.cultures);
+      if (type === "religions") return selectLimitation(el, pack.religions);
     });
 
     function removeUnitLines() {
       tableBody.querySelectorAll("tr").forEach(el => el.remove());
     }
 
+    function getLimitValue(attr) {
+      return attr?.join(",") || "";
+    }
+
+    function getLimitText(attr) {
+      return attr?.length ? "some" : "all";
+    }
+
+    function getLimitTip(attr, data) {
+      if (!attr || !attr.length) return "";
+      return attr.map(i => data?.[i]?.name || "").join(", ");
+    }
+
     function addUnitLine(unit) {
       const row = document.createElement("tr");
       const typeOptions = types.map(t => `<option ${unit.type === t ? "selected" : ""} value="${t}">${t}</option>`).join(" ");
-      const getLimitCell = limitBy =>
-        `<td><button data-type="${limitBy}" data-value="${unit[limitBy]?.join(",") || ""}">${unit[limitBy]?.length ? "some" : "all"}</button></td>`;
+      const getLimitButton = attr =>
+        `<button 
+          data-tip="Select allowed ${attr}"
+          data-type="${attr}"
+          title="${getLimitTip(unit[attr], pack[attr])}"
+          data-value="${getLimitValue(unit[attr])}">
+          ${getLimitText(unit[attr])}
+        </button>`;
 
       row.innerHTML = `<td><button data-type="icon" data-tip="Click to select unit icon">${unit.icon || " "}</button></td>
         <td><input data-tip="Type unit name. If name is changed for existing unit, old unit will be replaced" value="${unit.name}"></td>
-        ${getLimitCell("biomes")}
-        ${getLimitCell("states")}
-        ${getLimitCell("cultures")}
-        ${getLimitCell("religions")}
+        <td>${getLimitButton("biomes")}</td>
+        <td>${getLimitButton("states")}</td>
+        <td>${getLimitButton("cultures")}</td>
+        <td>${getLimitButton("religions")}</td>
         <td><input data-tip="Enter conscription percentage for rural population" type="number" min=0 max=100 step=.01 value="${unit.rural}"></td>
         <td><input data-tip="Enter conscription percentage for urban population" type="number" min=0 max=100 step=.01 value="${unit.urban}"></td>
         <td><input data-tip="Enter average number of people in crew (for total personnel calculation)" type="number" min=1 step=1 value="${unit.crew}"></td>
@@ -295,30 +314,43 @@ function overviewMilitary() {
       Military.getDefaultOptions().map(unit => addUnitLine(unit));
     }
 
-    function selectLimitation(el, data, callback) {
-      const limitBy = el.dataset.type;
-      const initial = el.dataset.value ? el.dataset.value.split(",").map(v => +v) : [];
+    function selectLimitation(el, data) {
+      const type = el.dataset.type;
+      const value = el.dataset.value;
+      const initial = value ? value.split(",").map(v => +v) : [];
 
       const lines = data.slice(1).map(
         ({i, name, fullName, color}) =>
           `<tr><td><span style="color:${color}">⬤</span></td>
-            <td><input id="el${i}" type="checkbox" class="checkbox" checked=${initial.includes(i)} >
+            <td><input id="el${i}" type="checkbox" class="checkbox" ${!initial.length || initial.includes(i) ? "checked" : ""} >
             <label for="el${i}" class="checkbox-label">${fullName || name}</label>
           </td></tr>`
       );
-      alertMessage.innerHTML = `<b>Limit unit by ${limitBy}:</b>
-        <div style="margin-top:.3em" class="table"><table><tbody>${lines.join("")}</tbody></table></div>`;
+      alertMessage.innerHTML = `<b>Limit unit by ${type}:</b><div style="margin-top:.3em" class="table"><table><tbody>${lines.join("")}</tbody></table></div>`;
 
       $("#alert").dialog({
         width: fitContent(),
         title: `Limit unit`,
         buttons: {
+          Invert: function () {
+            alertMessage.querySelectorAll("input").forEach(el => (el.checked = !el.checked));
+          },
           Apply: function () {
-            callback(selected.join(","));
+            const inputs = Array.from(alertMessage.querySelectorAll("input"));
+            const selected = inputs.reduce((acc, input, index) => {
+              if (input.checked) acc.push(index + 1);
+              return acc;
+            }, []);
+
+            if (!selected.length) return tip("Select at least one element", false, "error");
+
+            const allAreSelected = selected.length === inputs.length;
+            el.dataset.value = allAreSelected ? "" : selected.join(",");
+            el.innerHTML = allAreSelected ? "all" : "some";
+            el.setAttribute("title", getLimitTip(selected, data));
             $(this).dialog("close");
           },
-          Close: function () {
-            callback(initial.join(","));
+          Cancel: function () {
             $(this).dialog("close");
           }
         }
@@ -337,19 +369,19 @@ function overviewMilitary() {
       options.military = unitLines.map((r, i) => {
         const elements = Array.from(r.querySelectorAll("input, button, select"));
         const [icon, name, biomes, states, cultures, religions, rural, urban, crew, power, type, separate] = elements.map(el => {
-          let value = el.value;
-          if (el.dataset.type === "icon") value = el.innerHTML || "⠀";
-          else if (el.dataset.type) value = el.dataset.value ? el.dataset.value.split(",").map(v => parseInt(v)) : [];
-          else if (el.type === "number") value = +el.value || 0;
-          else if (el.type === "checkbox") value = +el.checked || 0;
-          return value;
+          const {type, value} = el.dataset || {};
+          if (type === "icon") return el.innerHTML || "⠀";
+          if (type) return value ? value.split(",").map(v => parseInt(v)) : null;
+          if (el.type === "number") return +el.value || 0;
+          if (el.type === "checkbox") return +el.checked || 0;
+          return el.value;
         });
 
         const unit = {icon, name: names[i], rural, urban, crew, power, type, separate};
-        if (biomes.length) unit.biomes = biomes;
-        if (states.length) unit.states = states;
-        if (cultures.length) unit.cultures = cultures;
-        if (religions.length) unit.religions = religions;
+        if (biomes) unit.biomes = biomes;
+        if (states) unit.states = states;
+        if (cultures) unit.cultures = cultures;
+        if (religions) unit.religions = religions;
         return unit;
       });
       localStorage.setItem("military", JSON.stringify(options.military));
