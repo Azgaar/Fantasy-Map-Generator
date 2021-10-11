@@ -225,8 +225,8 @@ function parseLoadedData(data) {
       if (settings[11]) barPosY.value = settings[11];
       if (settings[12]) populationRate = populationRateInput.value = populationRateOutput.value = settings[12];
       if (settings[13]) urbanization = urbanizationInput.value = urbanizationOutput.value = settings[13];
-      if (settings[14]) mapSizeInput.value = mapSizeOutput.value = Math.max(Math.min(settings[14], 100), 1);
-      if (settings[15]) latitudeInput.value = latitudeOutput.value = Math.max(Math.min(settings[15], 100), 0);
+      if (settings[14]) mapSizeInput.value = mapSizeOutput.value = minmax(settings[14], 1, 100);
+      if (settings[15]) latitudeInput.value = latitudeOutput.value = minmax(settings[15], 0, 100);
       if (settings[16]) temperatureEquatorInput.value = temperatureEquatorOutput.value = settings[16];
       if (settings[17]) temperaturePoleInput.value = temperaturePoleOutput.value = settings[17];
       if (settings[18]) precInput.value = precOutput.value = settings[18];
@@ -234,7 +234,7 @@ function parseLoadedData(data) {
       if (settings[20]) mapName.value = settings[20];
       if (settings[21]) hideLabels.checked = +settings[21];
       if (settings[22]) stylePreset.value = settings[22];
-      if (settings[23]) rescaleLabels.checked = settings[23];
+      if (settings[23]) rescaleLabels.checked = +settings[23];
     })();
 
     void (function parseConfiguration() {
@@ -875,16 +875,23 @@ function parseLoadedData(data) {
         const defs = document.getElementById("defs-markers");
         const markersGroup = document.getElementById("markers");
         const markerElements = markersGroup.querySelectorAll("use");
+        const rescale = +markersGroup.getAttribute("rescale");
 
         pack.markers = Array.from(markerElements).map((el, i) => {
           const id = el.getAttribute("id");
           const note = notes.find(note => note.id === id);
           if (note) note.id = `marker${i}`;
 
-          const x = rn(+el.dataset.x, 1);
-          const y = rn(+el.dataset.y, 1);
+          let x = +el.dataset.x;
+          let y = +el.dataset.y;
+          const transform = el.getAttribute("transform");
+          if (transform) {
+            const [dx, dy] = parseTransform(transform);
+            if (dx) x += +dx;
+            if (dy) y += +dy;
+          }
           const cell = findCell(x, y);
-          const size = rn(el.dataset.size * 30, 1);
+          const size = rn(rescale ? el.dataset.size * 30 : el.getAttribute("width"), 1);
 
           const href = el.href.baseVal;
           const type = href.replace("#marker_", "");
@@ -906,6 +913,7 @@ function parseLoadedData(data) {
           if (!isNaN(dy) && dy !== 50) marker.dy = dy;
           if (fill && fill !== "#ffffff") marker.fill = fill;
           if (stroke && stroke !== "#000000") marker.stroke = stroke;
+          if (circle.getAttribute("opacity") === "0") marker.pin = "no";
 
           return marker;
         });

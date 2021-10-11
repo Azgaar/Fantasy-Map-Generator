@@ -469,7 +469,10 @@ function addLabelOnClick() {
   const name = Names.getCulture(culture);
   const id = getNextId("label");
 
-  let group = labels.select("#addedLabels");
+  // use most recently selected label group
+  let selected = labelGroupSelect.value;
+  const symbol = selected ? "#" + selected : "#addedLabels";
+  let group = labels.select(symbol);
   if (!group.size())
     group = labels
       .append("g")

@@ -4,10 +4,10 @@ document.addEventListener("keydown", handleKeydown);
 document.addEventListener("keyup", handleKeyup);
 
 function handleKeydown(event) {
-  const {key, code, ctrlKey, altKey} = event;
+  const {code, ctrlKey, altKey} = event;
   if (altKey && !ctrlKey) event.preventDefault(); // disallow alt key combinations
   if (ctrlKey && ["KeyS", "KeyC"].includes(code)) event.preventDefault(); // disallow CTRL + S and CTRL + C
-  if (["F1", "F2", "F6", "F9", "Tab"].includes(key)) event.preventDefault(); // disallow default Fn and Tab
+  if (["F1", "F2", "F6", "F9", "Tab"].includes(code)) event.preventDefault(); // disallow default Fn and Tab
 }
 
 function handleKeyup(event) {
@@ -19,83 +19,82 @@ function handleKeyup(event) {
   if (document.getSelection().toString()) return; // don't trigger if user selects text
   event.stopPropagation();
 
-  const {ctrlKey, metaKey, shiftKey, altKey} = event;
-  const key = event.key.toUpperCase();
+  const {code, key, ctrlKey, metaKey, shiftKey, altKey} = event;
   const ctrl = ctrlKey || metaKey || key === "Control";
   const shift = shiftKey || key === "Shift";
   const alt = altKey || key === "Alt";
 
-  if (key === "F1") showInfo();
-  else if (key === "F2") regeneratePrompt("hotkey");
-  else if (key === "F6") quickSave();
-  else if (key === "F9") quickLoad();
-  else if (key === "TAB") toggleOptions(event);
-  else if (key === "ESCAPE") closeAllDialogs();
-  else if (key === "DELETE") removeElementOnKey();
-  else if (key === "O" && document.getElementById("canvas3d")) toggle3dOptions();
-  else if (ctrl && key === "Q") toggleSaveReminder();
-  else if (ctrl && key === "S") dowloadMap();
-  else if (ctrl && key === "C") saveToDropbox();
-  else if (ctrl && key === "Z" && undo.offsetParent) undo.click();
-  else if (ctrl && key === "Y" && redo.offsetParent) redo.click();
-  else if (shift && key === "H") editHeightmap();
-  else if (shift && key === "B") editBiomes();
-  else if (shift && key === "S") editStates();
-  else if (shift && key === "P") editProvinces();
-  else if (shift && key === "D") editDiplomacy();
-  else if (shift && key === "C") editCultures();
-  else if (shift && key === "N") editNamesbase();
-  else if (shift && key === "Z") editZones();
-  else if (shift && key === "R") editReligions();
-  else if (shift && key === "Y") openEmblemEditor();
-  else if (shift && key === "Q") editUnits();
-  else if (shift && key === "O") editNotes();
-  else if (shift && key === "T") overviewBurgs();
-  else if (shift && key === "V") overviewRivers();
-  else if (shift && key === "M") overviewMilitary();
-  else if (shift && key === "K") overviewMarkers();
-  else if (shift && key === "E") viewCellDetails();
-  else if (shift && key === "1") toggleAddBurg();
-  else if (shift && key === "2") toggleAddLabel();
-  else if (shift && key === "3") toggleAddRiver();
-  else if (shift && key === "4") toggleAddRoute();
-  else if (shift && key === "5") toggleAddMarker();
-  else if (alt && key === "B") console.table(pack.burgs);
-  else if (alt && key === "S") console.table(pack.states);
-  else if (alt && key === "C") console.table(pack.cultures);
-  else if (alt && key === "R") console.table(pack.religions);
-  else if (alt && key === "F") console.table(pack.features);
-  else if (key === "X") toggleTexture();
-  else if (key === "H") toggleHeight();
-  else if (key === "B") toggleBiomes();
-  else if (key === "E") toggleCells();
-  else if (key === "G") toggleGrid();
-  else if (key === "O") toggleCoordinates();
-  else if (key === "W") toggleCompass();
-  else if (key === "V") toggleRivers();
-  else if (key === "F") toggleRelief();
-  else if (key === "C") toggleCultures();
-  else if (key === "S") toggleStates();
-  else if (key === "P") toggleProvinces();
-  else if (key === "Z") toggleZones();
-  else if (key === "D") toggleBorders();
-  else if (key === "R") toggleReligions();
-  else if (key === "U") toggleRoutes();
-  else if (key === "T") toggleTemp();
-  else if (key === "N") togglePopulation();
-  else if (key === "J") toggleIce();
-  else if (key === "A") togglePrec();
-  else if (key === "Y") toggleEmblems();
-  else if (key === "L") toggleLabels();
-  else if (key === "I") toggleIcons();
-  else if (key === "M") toggleMilitary();
-  else if (key === "K") toggleMarkers();
-  else if (key === "=") toggleRulers();
-  else if (key === "/") toggleScaleBar();
-  else if (key === "ARROWLEFT") zoom.translateBy(svg, 10, 0);
-  else if (key === "ARROWRIGHT") zoom.translateBy(svg, -10, 0);
-  else if (key === "ARROWUP") zoom.translateBy(svg, 0, 10);
-  else if (key === "ARROWDOWN") zoom.translateBy(svg, 0, -10);
+  if (code === "F1") showInfo();
+  else if (code === "F2") regeneratePrompt("hotkey");
+  else if (code === "F6") quickSave();
+  else if (code === "F9") quickLoad();
+  else if (code === "Tab") toggleOptions(event);
+  else if (code === "Escape") closeAllDialogs();
+  else if (code === "Delete") removeElementOnKey();
+  else if (code === "KeyO" && document.getElementById("canvas3d")) toggle3dOptions();
+  else if (ctrl && code === "KeyQ") toggleSaveReminder();
+  else if (ctrl && code === "KeyS") dowloadMap();
+  else if (ctrl && code === "KeyC") saveToDropbox();
+  else if (ctrl && code === "KeyZ" && undo.offsetParent) undo.click();
+  else if (ctrl && code === "KeyY" && redo.offsetParent) redo.click();
+  else if (shift && code === "KeyH") editHeightmap();
+  else if (shift && code === "KeyB") editBiomes();
+  else if (shift && code === "KeyS") editStates();
+  else if (shift && code === "KeyP") editProvinces();
+  else if (shift && code === "KeyD") editDiplomacy();
+  else if (shift && code === "KeyC") editCultures();
+  else if (shift && code === "KeyN") editNamesbase();
+  else if (shift && code === "KeyZ") editZones();
+  else if (shift && code === "KeyR") editReligions();
+  else if (shift && code === "KeyY") openEmblemEditor();
+  else if (shift && code === "KeyQ") editUnits();
+  else if (shift && code === "KeyO") editNotes();
+  else if (shift && code === "KeyT") overviewBurgs();
+  else if (shift && code === "KeyV") overviewRivers();
+  else if (shift && code === "KeyM") overviewMilitary();
+  else if (shift && code === "KeyK") overviewMarkers();
+  else if (shift && code === "KeyE") viewCellDetails();
+  else if (key === "!") toggleAddBurg();
+  else if (key === "@") toggleAddLabel();
+  else if (key === "#") toggleAddRiver();
+  else if (key === "$") toggleAddRoute();
+  else if (key === "%") toggleAddMarker();
+  else if (alt && code === "KeyB") console.table(pack.burgs);
+  else if (alt && code === "KeyS") console.table(pack.states);
+  else if (alt && code === "KeyC") console.table(pack.cultures);
+  else if (alt && code === "KeyR") console.table(pack.religions);
+  else if (alt && code === "KeyF") console.table(pack.features);
+  else if (code === "KeyX") toggleTexture();
+  else if (code === "KeyH") toggleHeight();
+  else if (code === "KeyB") toggleBiomes();
+  else if (code === "KeyE") toggleCells();
+  else if (code === "KeyG") toggleGrid();
+  else if (code === "KeyO") toggleCoordinates();
+  else if (code === "KeyW") toggleCompass();
+  else if (code === "KeyV") toggleRivers();
+  else if (code === "KeyF") toggleRelief();
+  else if (code === "KeyC") toggleCultures();
+  else if (code === "KeyS") toggleStates();
+  else if (code === "KeyP") toggleProvinces();
+  else if (code === "KeyZ") toggleZones();
+  else if (code === "KeyD") toggleBorders();
+  else if (code === "KeyR") toggleReligions();
+  else if (code === "KeyU") toggleRoutes();
+  else if (code === "KeyT") toggleTemp();
+  else if (code === "KeyN") togglePopulation();
+  else if (code === "KeyJ") toggleIce();
+  else if (code === "KeyA") togglePrec();
+  else if (code === "KeyY") toggleEmblems();
+  else if (code === "KeyL") toggleLabels();
+  else if (code === "KeyI") toggleIcons();
+  else if (code === "KeyM") toggleMilitary();
+  else if (code === "KeyK") toggleMarkers();
+  else if (code === "Equal") toggleRulers();
+  else if (code === "Slash") toggleScaleBar();
+  else if (code === "ArrowLeft") zoom.translateBy(svg, 10, 0);
+  else if (code === "ArrowRight") zoom.translateBy(svg, -10, 0);
+  else if (code === "ArrowUp") zoom.translateBy(svg, 0, 10);
+  else if (code === "ArrowDown") zoom.translateBy(svg, 0, -10);
   else if (key === "+" || key === "-") pressNumpadSign(key);
   else if (key === "0") resetZoom(1000);
   else if (key === "1") zoom.scaleTo(svg, 1);
@@ -123,7 +122,7 @@ function pressNumpadSign(key) {
   else if (religionsManuallyBrush.offsetParent) brush = document.getElementById("religionsManuallyBrush");
 
   if (brush) {
-    const value = Math.max(Math.min(+brush.value + change, +brush.max), +brush.min);
+    const value = minmax(+brush.value + change, +brush.min, +brush.max);
     brush.value = document.getElementById(brush.id + "Number").value = value;
     return;
   }

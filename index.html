@@ -31,7 +31,6 @@
     #loading-text span:nth-child(2), #mapOverlay > span:nth-child(2) {animation-delay: 1s;}
     #loading-text span:nth-child(3), #mapOverlay > span:nth-child(3) {animation-delay: 2s;}
     @keyframes blink {0% {opacity: 0;} 20% {opacity: 1;} 100% {opacity: .1;}}
-
   </style>
   <link rel="stylesheet" href="index.css">
   <link rel="stylesheet" href="icons.css">
@@ -227,7 +226,7 @@
   <div id="loading">
     <div id="titleName"><t data-t="titleName">Azgaar's</t></div>
     <div id="title"><t data-t="title">Fantasy Map Generator</t></div>
-    <div id="version"><t data-t="version">v. </t>1.7</div>
+    <div id="version"><t data-t="version">v. </t>1.71</div>
     <p id="loading-text"><t data-t="loading">LOADING</t><span>.</span><span>.</span><span>.</span></p>
   </div>
 
@@ -431,18 +430,24 @@
               <td>
                 <select id="styleTextureInput">
                   <option value="none">None</option>
-                  <option value="default" selected>Default</option>
-                  <option value="https://i.imgur.com/EWvXSou.jpg">Folded paper</option>
-                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/marble-big.jpg">Marble big</option>
+                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2021/10/folded-paper-big.jpg">Folded paper big</option>
+                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2021/10/folded-paper-small.jpg">Folded paper small</option>
+                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2021/10/gray-paper.jpg">Gray paper</option>
+                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2021/10/soiled-paper.jpg">Soiled paper horizontal</option>
+                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2021/10/soiled-paper-e1633784189147.jpg">Soided paper vertical</option>
+                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2021/10/plaster.jpg">Plaster</option>
+                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2021/10/ocean.jpg">Ocean</option>
+                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/antique-small.jpg">Antique small</option>
+                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/antique-big.jpg">Antique big</option>
+                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/pergamena-small.jpg">Pergamena small</option>
+                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2021/10/marble-big.jpg" selected>Marble big</option>
+                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/marble-small.jpg">Marble small</option>
                   <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/marble-blue-small.jpg">Marble Blue</option>
                   <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/marble-blue-big.jpg">Marble Blue big</option>
                   <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/stone-small.jpg">Stone small</option>
                   <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/stone-big.jpg">Stone big</option>
                   <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/timbercut-small.jpg">Timber Cut small</option>
                   <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/timbercut-big.jpg">Timber Cut big</option>
-                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/antique-small.jpg">Antique small</option>
-                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/antique-big.jpg">Antique big</option>
-                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/pergamena-small.jpg">Pergamena small</option>
                   <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/mars-small.jpg">Mars small</option>
                   <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/mars-big.jpg">Mars big</option>
                   <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/mercury-small.jpg">Mercury small</option>
@@ -1430,7 +1435,7 @@
         <p>Join our <a href='https://discordapp.com/invite/X7E84HU' target='_blank'>Discord server</a> and <a href="https://www.reddit.com/r/FantasyMapGenerator/" target="_blank">Reddit community</a> to ask questions, get help and share maps.</p>
         <p>The project is under active development. Creator and main maintainer: Azgaar. To track the development progress see the <a href="https://trello.com/b/7x832DG4/fantasy-map-generator" target="_blank">devboard</a>. For older versions see the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog" target="_blank">changelog</a>. Please report bugs <a href="https://github.com/Azgaar/Fantasy-Map-Generator/issues" target="_blank">here</a>. You can also contact me directly via <a href="mailto:azgaar.fmg@yandex.by" target="_blank">email</a>.</p>
         <div style="background-color: #e85b46; padding: .4em; width: max-content; margin: .6em auto 0 auto; border: 1px solid #943838">
-          <a href="https://www.patreon.com/azgaar" target="_blank" style="color: white; text-decoration: none; font-family: sans-serif">
+          <a href="https://www.patreon.com/azgaar" onclick="track('click', 'patreon from about')" target="_blank" style="color: white; text-decoration: none; font-family: sans-serif">
             <div>
               <div style="width: .8em; display: inline-block; padding: 0 .2em; fill: white">
                 <svg viewBox="0 0 569 546">
@@ -3353,6 +3358,10 @@
             <tr>
               <th data-tip="Unit icon">Icon</th>
               <th data-tip="Unit name. If name is changed for existing unit, old unit will be replaced">Unit name</th>
+              <th style="width:5em" data-tip="Select allowed biomes">Biomes</th>
+              <th style="width:5em" data-tip="Select allowed states">States</th>
+              <th style="width:5em" data-tip="Select allowed cultures">Cultures</th>
+              <th style="width:5em" data-tip="Select allowed religions">Religions</th>
               <th data-tip="Conscription percentage for rural population">Rural</th>
               <th data-tip="Conscription percentage for urban population">Urban</th>
               <th data-tip="Average number of people in crew (used for total personnel calculation)">Crew</th>
@@ -4332,18 +4341,18 @@
   <script src="modules/ui/measurers.js"></script>
   <script src="libs/umami.js"></script>
 
-  <script async defer src="https://unpkg.com/dropbox@10.8.0/dist/Dropbox-sdk.min.js"></script>
-  <script async defer src="modules/ui/general.js"></script>
-  <script async defer src="modules/ui/options.js"></script>
-  <script async defer src="modules/ui/style.js"></script>
-  <script async defer src="modules/load.js"></script>
-  <script async defer src="modules/cloud.js"></script>
-  <script async defer src="main.js"></script>
-  <script async defer src="modules/save.js"></script>
-  <script async defer src="modules/export.js"></script>
-  <script async defer src="modules/relief-icons.js"></script>
-  <script async defer src="modules/ui/tools.js"></script>
-  <script async defer src="modules/ui/world-configurator.js"></script>
+  <script defer src="https://unpkg.com/dropbox@10.8.0/dist/Dropbox-sdk.min.js"></script>
+  <script defer src="modules/ui/general.js"></script>
+  <script defer src="modules/ui/options.js"></script>
+  <script defer src="modules/ui/style.js"></script>
+  <script defer src="modules/load.js"></script>
+  <script defer src="modules/cloud.js"></script>
+  <script defer src="main.js"></script>
+  <script defer src="modules/save.js"></script>
+  <script defer src="modules/export.js"></script>
+  <script defer src="modules/relief-icons.js"></script>
+  <script defer src="modules/ui/tools.js"></script>
+  <script defer src="modules/ui/world-configurator.js"></script>
   <script async defer src="modules/ui/heightmap-editor.js"></script>
   <script async defer src="modules/ui/states-editor.js"></script>
   <script async defer src="modules/ui/provinces-editor.js"></script>

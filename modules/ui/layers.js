@@ -47,8 +47,7 @@ function changePreset(preset) {
     .querySelectorAll("li")
     .forEach(function (e) {
       if (layers.includes(e.id) && !layerIsOn(e.id)) e.click();
-      // turn on
-      else if (!layers.includes(e.id) && layerIsOn(e.id)) e.click(); // turn off
+      else if (!layers.includes(e.id) && layerIsOn(e.id)) e.click();
     });
   layersPreset.value = preset;
   localStorage.setItem("preset", preset);
@@ -121,6 +120,7 @@ function restoreLayers() {
   if (layerIsOn("toggleReligions")) drawReligions();
   if (layerIsOn("toggleIce")) drawIce();
   if (layerIsOn("toggleEmblems")) drawEmblems();
+  if (layerIsOn("toggleMarkers")) drawMarkers();
 
   // some layers are rendered each time, remove them if they are not on
   if (!layerIsOn("toggleBorders")) borders.selectAll("path").remove();
@@ -1435,8 +1435,8 @@ function toggleTexture(event) {
     turnButtonOn("toggleTexture");
     // append default texture image selected by default. Don't append on load to not harm performance
     if (!texture.selectAll("*").size()) {
-      const x = +styleTextureShiftX.value,
-        y = +styleTextureShiftY.value;
+      const x = +styleTextureShiftX.value;
+      const y = +styleTextureShiftY.value;
       const image = texture
         .append("image")
         .attr("id", "textureImage")
@@ -1444,18 +1444,14 @@ function toggleTexture(event) {
         .attr("y", y)
         .attr("width", graphWidth - x)
         .attr("height", graphHeight - y)
-        .attr("xlink:href", getDefaultTexture())
         .attr("preserveAspectRatio", "xMidYMid slice");
-      if (styleTextureInput.value !== "default") getBase64(styleTextureInput.value, base64 => image.attr("xlink:href", base64));
+      getBase64(styleTextureInput.value, base64 => image.attr("xlink:href", base64));
     }
     $("#texture").fadeIn();
     zoom.scaleBy(svg, 1.00001); // enforce browser re-draw
     if (event && isCtrlClick(event)) editStyle("texture");
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("texture");
-      return;
-    }
+    if (event && isCtrlClick(event)) return editStyle("texture");
     $("#texture").fadeOut();
     turnButtonOff("toggleTexture");
   }
@@ -1563,7 +1559,7 @@ const getPin = (shape = "bubble", fill = "#fff", stroke = "#000") => {
 function drawMarker(marker, rescale = 1) {
   const {i, icon, x, y, dx = 50, dy = 50, px = 12, size = 30, pin, fill, stroke} = marker;
   const id = `marker${i}`;
-  const zoomSize = rescale ? Math.max(rn(size / 5 + 24 / scale, 2), 1) : 1;
+  const zoomSize = rescale ? Math.max(rn(size / 5 + 24 / scale, 2), 1) : size;
   const viewX = rn(x - zoomSize / 2, 1);
   const viewY = rn(y - zoomSize, 1);
   const pinHTML = getPin(pin, fill, stroke);
@@ -1674,21 +1670,21 @@ function drawEmblems() {
   const validBurgs = burgs.filter(b => b.i && !b.removed && b.coa && b.coaSize != 0);
 
   const getStateEmblemsSize = () => {
-    const startSize = Math.min(Math.max((graphHeight + graphWidth) / 40, 10), 100);
+    const startSize = minmax((graphHeight + graphWidth) / 40, 10, 100);
     const statesMod = 1 + validStates.length / 100 - (15 - validStates.length) / 200; // states number modifier
     const sizeMod = +document.getElementById("emblemsStateSizeInput").value || 1;
     return rn((startSize / statesMod) * sizeMod); // target size ~50px on 1536x754 map with 15 states
   };
 
   const getProvinceEmblemsSize = () => {
-    const startSize = Math.min(Math.max((graphHeight + graphWidth) / 100, 5), 70);
+    const startSize = minmax((graphHeight + graphWidth) / 100, 5, 70);
     const provincesMod = 1 + validProvinces.length / 1000 - (115 - validProvinces.length) / 1000; // states number modifier
     const sizeMod = +document.getElementById("emblemsProvinceSizeInput").value || 1;
     return rn((startSize / provincesMod) * sizeMod); // target size ~20px on 1536x754 map with 115 provinces
   };
 
   const getBurgEmblemSize = () => {
-    const startSize = Math.min(Math.max((graphHeight + graphWidth) / 185, 2), 50);
+    const startSize = minmax((graphHeight + graphWidth) / 185, 2, 50);
     const burgsMod = 1 + validBurgs.length / 1000 - (450 - validBurgs.length) / 1000; // states number modifier
     const sizeMod = +document.getElementById("emblemsBurgSizeInput").value || 1;
     return rn((startSize / burgsMod) * sizeMod); // target size ~8.5px on 1536x754 map with 450 burgs

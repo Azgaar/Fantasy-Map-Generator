@@ -1,19 +1,42 @@
 "use strict";
 
 window.ThreeD = (function () {
-  // set default options
-  const options = {scale: 50, lightness: 0.7, shadow: 0.5, sun: {x: 100, y: 600, z: 1000}, rotateMesh: 0, rotateGlobe: 0.5, skyColor: "#9ecef5", waterColor: "#466eab", extendedWater: 0, labels3d: 0, resolution: 2};
+  const options = {
+    scale: 50,
+    lightness: 0.7,
+    shadow: 0.5,
+    sun: {x: 100, y: 600, z: 1000},
+    rotateMesh: 0,
+    rotateGlobe: 0.5,
+    skyColor: "#9ecef5",
+    waterColor: "#466eab",
+    extendedWater: 0,
+    labels3d: 0,
+    resolution: 2
+  };
 
   // set variables
-  let Renderer, scene, camera, controls, animationFrame, material, texture, geometry, mesh, ambientLight, spotLight, waterPlane, waterMaterial, waterMesh, raycaster;
-
-  const drawCtx = document.createElement("canvas").getContext("2d");
-  const drawSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  document.body.appendChild(drawSVG);
+  let Renderer,
+    scene,
+    camera,
+    controls,
+    animationFrame,
+    material,
+    texture,
+    geometry,
+    mesh,
+    ambientLight,
+    spotLight,
+    waterPlane,
+    waterMaterial,
+    waterMesh,
+    raycaster;
 
   let labels = [];
   let icons = [];
   let lines = [];
+
+  const context2d = document.createElement("canvas").getContext("2d");
 
   // initiate 3d scene
   const create = async function (canvas, type = "viewMesh") {
@@ -210,16 +233,16 @@ window.ThreeD = (function () {
   }
 
   async function createTextLabel({text, font, size, color, quality}) {
-    drawCtx.font = `${size * quality}px ${font}`;
-    drawCtx.canvas.width = drawCtx.measureText(text).width;
-    drawCtx.canvas.height = size * quality * 1.25; // 25% margin as text can overflow the font size
-    drawCtx.clearRect(0, 0, drawCtx.canvas.width, drawCtx.canvas.height);
+    context2d.font = `${size * quality}px ${font}`;
+    context2d.canvas.width = context2d.measureText(text).width;
+    context2d.canvas.height = size * quality * 1.25; // 25% margin as text can overflow the font size
+    context2d.clearRect(0, 0, context2d.canvas.width, context2d.canvas.height);
 
-    drawCtx.font = `${size * quality}px ${font}`;
-    drawCtx.fillStyle = color;
-    drawCtx.fillText(text, 0, size * quality);
+    context2d.font = `${size * quality}px ${font}`;
+    context2d.fillStyle = color;
+    context2d.fillText(text, 0, size * quality);
 
-    return textureToSprite(drawCtx.canvas.toDataURL(), drawCtx.canvas.width / quality, drawCtx.canvas.height / quality);
+    return textureToSprite(context2d.canvas.toDataURL(), context2d.canvas.width / quality, context2d.canvas.height / quality);
   }
 
   function get3dCoords(baseX, baseY) {
@@ -578,5 +601,21 @@ window.ThreeD = (function () {
     });
   }
 
-  return {create, redraw, update, stop, options, setScale, setLightness, setSun, setRotation, toggleLabels, toggleSky, setResolution, setColors, saveScreenshot, saveOBJ};
+  return {
+    create,
+    redraw,
+    update,
+    stop,
+    options,
+    setScale,
+    setLightness,
+    setSun,
+    setRotation,
+    toggleLabels,
+    toggleSky,
+    setResolution,
+    setColors,
+    saveScreenshot,
+    saveOBJ
+  };
 })();

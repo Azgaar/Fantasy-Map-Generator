@@ -2,7 +2,22 @@
 
 window.Religions = (function () {
   // name generation approach and relative chance to be selected
-  const approach = {Number: 1, Being: 3, Adjective: 5, "Color + Animal": 5, "Adjective + Animal": 5, "Adjective + Being": 5, "Adjective + Genitive": 1, "Color + Being": 3, "Color + Genitive": 3, "Being + of + Genitive": 2, "Being + of the + Genitive": 1, "Animal + of + Genitive": 1, "Adjective + Being + of + Genitive": 2, "Adjective + Animal + of + Genitive": 2};
+  const approach = {
+    Number: 1,
+    Being: 3,
+    Adjective: 5,
+    "Color + Animal": 5,
+    "Adjective + Animal": 5,
+    "Adjective + Being": 5,
+    "Adjective + Genitive": 1,
+    "Color + Being": 3,
+    "Color + Genitive": 3,
+    "Being + of + Genitive": 2,
+    "Being + of the + Genitive": 1,
+    "Animal + of + Genitive": 1,
+    "Adjective + Being + of + Genitive": 2,
+    "Adjective + Animal + of + Genitive": 2
+  };
 
   // turn weighted array into simple array
   const approaches = [];
@@ -14,11 +29,254 @@ window.Religions = (function () {
 
   const base = {
     number: ["One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"],
-    being: ["God", "Goddess", "Lord", "Lady", "Deity", "Creator", "Maker", "Overlord", "Ruler", "Chief", "Master", "Spirit", "Ancestor", "Father", "Forebear", "Forefather", "Mother", "Brother", "Sister", "Elder", "Numen", "Ancient", "Virgin", "Giver", "Council", "Guardian", "Reaper"],
-    animal: ["Dragon", "Wyvern", "Phoenix", "Unicorn", "Sphinx", "Centaur", "Pegasus", "Kraken", "Basilisk", "Chimera", "Cyclope", "Antelope", "Ape", "Badger", "Bear", "Beaver", "Bison", "Boar", "Buffalo", "Cat", "Cobra", "Crane", "Crocodile", "Crow", "Deer", "Dog", "Eagle", "Elk", "Fox", "Goat", "Goose", "Hare", "Hawk", "Heron", "Horse", "Hyena", "Ibis", "Jackal", "Jaguar", "Lark", "Leopard", "Lion", "Mantis", "Marten", "Moose", "Mule", "Narwhal", "Owl", "Panther", "Rat", "Raven", "Rook", "Scorpion", "Shark", "Sheep", "Snake", "Spider", "Swan", "Tiger", "Turtle", "Viper", "Vulture", "Walrus", "Wolf", "Wolverine", "Worm", "Camel", "Falcon", "Hound", "Ox", "Serpent"],
-    adjective: ["New", "Good", "High", "Old", "Great", "Big", "Young", "Major", "Strong", "Happy", "Last", "Main", "Huge", "Far", "Beautiful", "Wild", "Fair", "Prime", "Crazy", "Ancient", "Proud", "Secret", "Lucky", "Sad", "Silent", "Latter", "Severe", "Fat", "Holy", "Pure", "Aggressive", "Honest", "Giant", "Mad", "Pregnant", "Distant", "Lost", "Broken", "Blind", "Friendly", "Unknown", "Sleeping", "Slumbering", "Loud", "Hungry", "Wise", "Worried", "Sacred", "Magical", "Superior", "Patient", "Dead", "Deadly", "Peaceful", "Grateful", "Frozen", "Evil", "Scary", "Burning", "Divine", "Bloody", "Dying", "Waking", "Brutal", "Unhappy", "Calm", "Cruel", "Favorable", "Blond", "Explicit", "Disturbing", "Devastating", "Brave", "Sunny", "Troubled", "Flying", "Sustainable", "Marine", "Fatal", "Inherent", "Selected", "Naval", "Cheerful", "Almighty", "Benevolent", "Eternal", "Immutable", "Infallible"],
-    genitive: ["Day", "Life", "Death", "Night", "Home", "Fog", "Snow", "Winter", "Summer", "Cold", "Springs", "Gates", "Nature", "Thunder", "Lightning", "War", "Ice", "Frost", "Fire", "Doom", "Fate", "Pain", "Heaven", "Justice", "Light", "Love", "Time", "Victory"],
-    theGenitive: ["World", "Word", "South", "West", "North", "East", "Sun", "Moon", "Peak", "Fall", "Dawn", "Eclipse", "Abyss", "Blood", "Tree", "Earth", "Harvest", "Rainbow", "Sea", "Sky", "Stars", "Storm", "Underworld", "Wild"],
+    being: [
+      "God",
+      "Goddess",
+      "Lord",
+      "Lady",
+      "Deity",
+      "Creator",
+      "Maker",
+      "Overlord",
+      "Ruler",
+      "Chief",
+      "Master",
+      "Spirit",
+      "Ancestor",
+      "Father",
+      "Forebear",
+      "Forefather",
+      "Mother",
+      "Brother",
+      "Sister",
+      "Elder",
+      "Numen",
+      "Ancient",
+      "Virgin",
+      "Giver",
+      "Council",
+      "Guardian",
+      "Reaper"
+    ],
+    animal: [
+      "Dragon",
+      "Wyvern",
+      "Phoenix",
+      "Unicorn",
+      "Sphinx",
+      "Centaur",
+      "Pegasus",
+      "Kraken",
+      "Basilisk",
+      "Chimera",
+      "Cyclope",
+      "Antelope",
+      "Ape",
+      "Badger",
+      "Bear",
+      "Beaver",
+      "Bison",
+      "Boar",
+      "Buffalo",
+      "Cat",
+      "Cobra",
+      "Crane",
+      "Crocodile",
+      "Crow",
+      "Deer",
+      "Dog",
+      "Eagle",
+      "Elk",
+      "Fox",
+      "Goat",
+      "Goose",
+      "Hare",
+      "Hawk",
+      "Heron",
+      "Horse",
+      "Hyena",
+      "Ibis",
+      "Jackal",
+      "Jaguar",
+      "Lark",
+      "Leopard",
+      "Lion",
+      "Mantis",
+      "Marten",
+      "Moose",
+      "Mule",
+      "Narwhal",
+      "Owl",
+      "Panther",
+      "Rat",
+      "Raven",
+      "Rook",
+      "Scorpion",
+      "Shark",
+      "Sheep",
+      "Snake",
+      "Spider",
+      "Swan",
+      "Tiger",
+      "Turtle",
+      "Viper",
+      "Vulture",
+      "Walrus",
+      "Wolf",
+      "Wolverine",
+      "Worm",
+      "Camel",
+      "Falcon",
+      "Hound",
+      "Ox",
+      "Serpent"
+    ],
+    adjective: [
+      "New",
+      "Good",
+      "High",
+      "Old",
+      "Great",
+      "Big",
+      "Young",
+      "Major",
+      "Strong",
+      "Happy",
+      "Last",
+      "Main",
+      "Huge",
+      "Far",
+      "Beautiful",
+      "Wild",
+      "Fair",
+      "Prime",
+      "Crazy",
+      "Ancient",
+      "Proud",
+      "Secret",
+      "Lucky",
+      "Sad",
+      "Silent",
+      "Latter",
+      "Severe",
+      "Fat",
+      "Holy",
+      "Pure",
+      "Aggressive",
+      "Honest",
+      "Giant",
+      "Mad",
+      "Pregnant",
+      "Distant",
+      "Lost",
+      "Broken",
+      "Blind",
+      "Friendly",
+      "Unknown",
+      "Sleeping",
+      "Slumbering",
+      "Loud",
+      "Hungry",
+      "Wise",
+      "Worried",
+      "Sacred",
+      "Magical",
+      "Superior",
+      "Patient",
+      "Dead",
+      "Deadly",
+      "Peaceful",
+      "Grateful",
+      "Frozen",
+      "Evil",
+      "Scary",
+      "Burning",
+      "Divine",
+      "Bloody",
+      "Dying",
+      "Waking",
+      "Brutal",
+      "Unhappy",
+      "Calm",
+      "Cruel",
+      "Favorable",
+      "Blond",
+      "Explicit",
+      "Disturbing",
+      "Devastating",
+      "Brave",
+      "Sunny",
+      "Troubled",
+      "Flying",
+      "Sustainable",
+      "Marine",
+      "Fatal",
+      "Inherent",
+      "Selected",
+      "Naval",
+      "Cheerful",
+      "Almighty",
+      "Benevolent",
+      "Eternal",
+      "Immutable",
+      "Infallible"
+    ],
+    genitive: [
+      "Day",
+      "Life",
+      "Death",
+      "Night",
+      "Home",
+      "Fog",
+      "Snow",
+      "Winter",
+      "Summer",
+      "Cold",
+      "Springs",
+      "Gates",
+      "Nature",
+      "Thunder",
+      "Lightning",
+      "War",
+      "Ice",
+      "Frost",
+      "Fire",
+      "Doom",
+      "Fate",
+      "Pain",
+      "Heaven",
+      "Justice",
+      "Light",
+      "Love",
+      "Time",
+      "Victory"
+    ],
+    theGenitive: [
+      "World",
+      "Word",
+      "South",
+      "West",
+      "North",
+      "East",
+      "Sun",
+      "Moon",
+      "Peak",
+      "Fall",
+      "Dawn",
+      "Eclipse",
+      "Abyss",
+      "Blood",
+      "Tree",
+      "Earth",
+      "Harvest",
+      "Rainbow",
+      "Sea",
+      "Sky",
+      "Stars",
+      "Storm",
+      "Underworld",
+      "Wild"
+    ],
     color: ["Dark", "Light", "Bright", "Golden", "White", "Black", "Red", "Pink", "Purple", "Blue", "Green", "Yellow", "Amber", "Orange", "Brown", "Grey"]
   };
 
@@ -29,7 +287,16 @@ window.Religions = (function () {
     Heresy: {Heresy: 1}
   };
 
-  const methods = {"Random + type": 3, "Random + ism": 1, "Supreme + ism": 5, "Faith of + Supreme": 5, "Place + ism": 1, "Culture + ism": 2, "Place + ian + type": 6, "Culture + type": 4};
+  const methods = {
+    "Random + type": 3,
+    "Random + ism": 1,
+    "Supreme + ism": 5,
+    "Faith of + Supreme": 5,
+    "Place + ism": 1,
+    "Culture + ism": 2,
+    "Place + ian + type": 6,
+    "Culture + type": 4
+  };
 
   const types = {
     Shamanism: {Beliefs: 3, Shamanism: 2, Spirits: 1},
@@ -78,7 +345,10 @@ window.Religions = (function () {
     }
 
     const burgs = pack.burgs.filter(b => b.i && !b.removed);
-    const sorted = burgs.length > +religionsInput.value ? burgs.sort((a, b) => b.population - a.population).map(b => b.cell) : cells.i.filter(i => cells.s[i] > 2).sort((a, b) => cells.s[b] - cells.s[a]);
+    const sorted =
+      burgs.length > +religionsInput.value
+        ? burgs.sort((a, b) => b.population - a.population).map(b => b.cell)
+        : cells.i.filter(i => cells.s[i] > 2).sort((a, b) => cells.s[b] - cells.s[a]);
     const religionsTree = d3.quadtree();
     const spacing = (graphWidth + graphHeight) / 6 / religionsInput.value; // base min distance between towns
     const cultsCount = Math.floor((rand(10, 40) / 100) * religionsInput.value);
@@ -160,9 +430,20 @@ window.Religions = (function () {
           const name = getCultName("Heresy", center);
           const expansionism = gauss(1.2, 0.5, 0, 5);
           const color = getMixedColor(r.color, 0.4, 0.2); // "url(#hatch6)";
-          religions.push({i: religions.length, name, color, culture, type: "Heresy", form: r.form, deity: r.deity, expansion: "global", expansionism, center, origin: r.i});
+          religions.push({
+            i: religions.length,
+            name,
+            color,
+            culture,
+            type: "Heresy",
+            form: r.form,
+            deity: r.deity,
+            expansion: "global",
+            expansionism,
+            center,
+            origin: r.i
+          });
           religionsTree.add([x, y]);
-          //debug.append("circle").attr("cx", x).attr("cy", y).attr("r", 2).attr("fill", "green");
         }
       });
 
@@ -195,7 +476,24 @@ window.Religions = (function () {
       name,
       religions.map(r => r.code)
     );
-    religions.push({i, name, color, culture, type, form: formName, deity, expansion, expansionism: 0, center, cells: 0, area: 0, rural: 0, urban: 0, origin: r, code});
+    religions.push({
+      i,
+      name,
+      color,
+      culture,
+      type,
+      form: formName,
+      deity,
+      expansion,
+      expansionism: 0,
+      center,
+      cells: 0,
+      area: 0,
+      rural: 0,
+      urban: 0,
+      origin: r,
+      code
+    });
     cells.religion[center] = i;
   };
 
@@ -292,21 +590,19 @@ window.Religions = (function () {
   };
 
   function checkCenters() {
-    const cells = pack.cells,
-      religions = pack.religions;
+    const {cells, religions} = pack;
 
     const codes = religions.map(r => r.code);
-    religions
-      .filter(r => r.i)
-      .forEach(r => {
-        r.code = abbreviate(r.name, codes);
+    religions.forEach(r => {
+      if (!r.i) return;
+      r.code = abbreviate(r.name, codes);
 
-        // move religion center if it's not within religion area after expansion
-        if (cells.religion[r.center] === r.i) return; // in area
-        const religCells = cells.i.filter(i => cells.religion[i] === r.i);
-        if (!religCells.length) return; // extinct religion
-        r.center = religCells.sort((a, b) => b.pop - a.pop)[0];
-      });
+      // move religion center if it's not within religion area after expansion
+      if (cells.religion[r.center] === r.i) return; // in area
+      const religCells = cells.i.filter(i => cells.religion[i] === r.i);
+      if (!religCells.length) return; // extinct religion
+      r.center = religCells.sort((a, b) => cells.pop[b] - cells.pop[a])[0];
+    });
   }
 
   function updateCultures() {

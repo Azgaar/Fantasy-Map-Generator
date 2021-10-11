@@ -13,7 +13,6 @@ if (localStorage.getItem("disable_click_arrow_tooltip")) {
 
 // Show options pane on trigger click
 function showOptions(event) {
-  track("click", "show options");
   if (!localStorage.getItem("disable_click_arrow_tooltip")) {
     clearMainTip();
     localStorage.setItem("disable_click_arrow_tooltip", true);
@@ -76,7 +75,6 @@ document
 
 // show popup with a list of Patreon supportes (updated manually, to be replaced with API call)
 function showSupporters() {
-  track("click", "show supporters");
   const supporters = `Aaron Meyer,Ahmad Amerih,AstralJacks,aymeric,Billy Dean Goehring,Branndon Edwards,Chase Mayers,Curt Flood,cyninge,Dino Princip,
     E.M. White,es,Fondue,Fritjof Olsson,Gatsu,Johan Fröberg,Jonathan Moore,Joseph Miranda,Kate,KC138,Luke Nelson,Markus Finster,Massimo Vella,Mikey,
     Nathan Mitchell,Paavi1,Pat,Ryan Westcott,Sasquatch,Shawn Spencer,Sizz_TV,Timothée CALLET,UTG community,Vlad Tomash,Wil Sisney,William Merriott,
@@ -91,19 +89,18 @@ function showSupporters() {
     Maxwell Hill,Drunken_Legends,rob bee,Jesse Holmes,YYako,Detocroix,Anoplexian,Hannah,Paul,Sandra Krohn,Lucid,Richard Keating,Allen Varney,Rick Falkvinge,
     Seth Fusion,Adam Butler,Gus,StroboWolf,Sadie Blackthorne,Zewen Senpai,Dell McKnight,Oneiris,Darinius Dragonclaw Studios,Christopher Whitney,Rhodes HvZ,
     Jeppe Skov Jensen,María Martín López,Martin Seeger,Annie Rishor,Aram Sabatés,MadNomadMedia,Eric Foley,Vito Martono,James H. Anthony,Kevin Cossutta,
-    Thirty-OneR ,ThatGuyGW ,Dee Chiu,MontyBoosh ,Achillain ,Jaden ,SashaTK,Steve Johnson,Eric Foley,Vito Martono,James H. Anthony,Kevin Cossutta,Thirty-OneR,
-    ThatGuyGW,Dee Chiu,MontyBoosh,Achillain,Jaden,SashaTK,Steve Johnson,Pierrick Bertrand,Jared Kennedy,Dylan Devenny,Kyle Robertson,Andrew Rostaing,Daniel Gill,
-    Char,Jack,Barna Csíkos,Ian Rousseau,Nicholas Grabstas,Tom Van Orden jr,Bryan Brake,Akylos,Riley Seaman,MaxOliver,Evan-DiLeo,Alex Debus,Joshua Vaught,
-    Kyle S,Eric Moore,Dean Dunakin,Uniquenameosaurus,WarWizardGames,Chance Mena,Jan Ka,Miguel Alejandro,Dalton Clark,Simon Drapeau,Radovan Zapletal,Jmmat6,
-    Justa Badge,Blargh Blarghmoomoo,Vanessa Anjos,Grant A. Murray,Akirsop,Rikard Wolff,Jake Fish,teco 47,Antiroo,Jakob Siegel,Guilherme Aguiar,Jarno Hallikainen,
-    Justin Mcclain,Kristin Chernoff,Rowland Kingman,Esther Busch,Grayson McClead,Austin,Hakon the Viking,Chad Riley,Cooper Counts,Patrick Jones,Clonetone,
-    PlayByMail.Net,Brad Wardell,Lance Saba,Egoensis,Brea Richards,Tiber,Chris Bloom,Maxim Lowe,Aquelion,Page One Project,Spencer Morris,Paul Ingram,
-    Dust Bunny,Adrian Wright,Eric Alexander Cartaya,GameNight,Thomas Mortensen Hansen,Zklaus,Drinarius,Ed Wright,Lon Varnadore,Crys Cain,Heaven N Lee,
-    Jeffrey Henning,Lazer Elf,Jordan Bellah,Alex Beard,Kass Frisson,Petro Lombaard,Emanuel Pietri,Rox,PinkEvil,Gavin Madrigal,Martin Lorber,Prince of Morgoth,
-    Jaryd Armstrong,Andrew Pirkola,ThyHolyDevil,Gary Smith,Tyshaun Wise,Ethan Cook,Jon Stroman,Nobody679,良义 金,Chris Gray,Phoenix Boatwright,Mackenzie,
-    Milo Cohen,Jason Matthew Wuerfel,Rasmus Legêne,Andrew Hines,Wexxler,Espen Sæverud,Binks,Dominick Ormsby,Linn Browning,Václav Švec,Alan Buehne,
-    George J.Lekkas,Alexandre Boivin,Tommy Mayfield,Skylar Mangum-Turner,Karen Blythe,Stefan Gugerel,Mike Conley,Xavier privé,Hope You're Well,
-    Mark Sprietsma,Robert Landry,Nick Mowry"`;
+    Thirty-OneR,ThatGuyGW,Dee Chiu,MontyBoosh,Achillain,Jaden,SashaTK,Steve Johnson,Pierrick Bertrand,Jared Kennedy,Dylan Devenny,Kyle Robertson,
+    Andrew Rostaing,Daniel Gill,Char,Jack,Barna Csíkos,Ian Rousseau,Nicholas Grabstas,Tom Van Orden jr,Bryan Brake,Akylos,Riley Seaman,MaxOliver,Evan-DiLeo,
+    Alex Debus,Joshua Vaught,Kyle S,Eric Moore,Dean Dunakin,Uniquenameosaurus,WarWizardGames,Chance Mena,Jan Ka,Miguel Alejandro,Dalton Clark,Simon Drapeau,
+    Radovan Zapletal,Jmmat6,Justa Badge,Blargh Blarghmoomoo,Vanessa Anjos,Grant A. Murray,Akirsop,Rikard Wolff,Jake Fish,teco 47,Antiroo,Jakob Siegel,
+    Guilherme Aguiar,Jarno Hallikainen,Justin Mcclain,Kristin Chernoff,Rowland Kingman,Esther Busch,Grayson McClead,Austin,Hakon the Viking,Chad Riley,
+    Cooper Counts,Patrick Jones,Clonetone,PlayByMail.Net,Brad Wardell,Lance Saba,Egoensis,Brea Richards,Tiber,Chris Bloom,Maxim Lowe,Aquelion,
+    Page One Project,Spencer Morris,Paul Ingram,Dust Bunny,Adrian Wright,Eric Alexander Cartaya,GameNight,Thomas Mortensen Hansen,Zklaus,Drinarius,
+    Ed Wright,Lon Varnadore,Crys Cain,Heaven N Lee,Jeffrey Henning,Lazer Elf,Jordan Bellah,Alex Beard,Kass Frisson,Petro Lombaard,Emanuel Pietri,Rox,
+    PinkEvil,Gavin Madrigal,Martin Lorber,Prince of Morgoth,Jaryd Armstrong,Andrew Pirkola,ThyHolyDevil,Gary Smith,Tyshaun Wise,Ethan Cook,Jon Stroman,
+    Nobody679,良义 金,Chris Gray,Phoenix Boatwright,Mackenzie,Milo Cohen,Jason Matthew Wuerfel,Rasmus Legêne,Andrew Hines,Wexxler,Espen Sæverud,Binks,
+    Dominick Ormsby,Linn Browning,Václav Švec,Alan Buehne,George J.Lekkas,Alexandre Boivin,Tommy Mayfield,Skylar Mangum-Turner,Karen Blythe,Stefan Gugerel,
+    Mike Conley,Xavier privé,Hope You're Well,Mark Sprietsma,Robert Landry,Nick Mowry,steve hall,Markell,Josh Wren,Neutrix,BLRageQuit,Rocky,Dario Spadavecchia`;
 
   const array = supporters
     .replace(/(?:\r\n|\r|\n)/g, "")
@@ -476,10 +473,10 @@ function changeDialogsTheme(themeColor, transparency) {
 }
 
 function changeZoomExtent(value) {
-  const min = Math.max(+zoomExtentMin.value, 0.01),
-    max = Math.min(+zoomExtentMax.value, 200);
+  const min = Math.max(+zoomExtentMin.value, 0.01);
+  const max = Math.min(+zoomExtentMax.value, 200);
   zoom.scaleExtent([min, max]);
-  const scale = Math.max(Math.min(+value, 200), 0.01);
+  const scale = minmax(+value, 0.01, 200);
   zoom.scaleTo(svg, scale);
 }
 
@@ -520,7 +517,7 @@ function applyStoredOptions() {
 
   uiSizeInput.max = uiSizeOutput.max = getUImaxSize();
   if (localStorage.getItem("uiSize")) changeUIsize(localStorage.getItem("uiSize"));
-  else changeUIsize(Math.max(Math.min(rn(mapWidthInput.value / 1280, 1), 2.5), 1));
+  else changeUIsize(minmax(rn(mapWidthInput.value / 1280, 1), 1, 2.5));
 
   // search params overwrite stored and default options
   const params = new URL(window.location.href).searchParams;

@@ -75,14 +75,21 @@ function overviewMilitary() {
       const sortData = options.military.map(u => `data-${u.name}="${getForces(u)}"`).join(" ");
       const lineData = options.military.map(u => `<div data-type="${u.name}" data-tip="State ${u.name} units number">${getForces(u)}</div>`).join(" ");
 
-      lines += `<div class="states" data-id=${s.i} data-state="${s.name}" ${sortData} data-total="${total}" data-population="${population}" data-rate="${rate}" data-alert="${s.alert}">
-        <svg data-tip="${s.fullName}" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${s.color}" class="fillRect"></svg>
+      lines += `<div class="states" data-id=${s.i} data-state="${
+        s.name
+      }" ${sortData} data-total="${total}" data-population="${population}" data-rate="${rate}" data-alert="${s.alert}">
+        <svg data-tip="${s.fullName}" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${
+        s.color
+      }" class="fillRect"></svg>
         <input data-tip="${s.fullName}" style="width:6em" value="${s.name}" readonly>
         ${lineData}
         <div data-type="total" data-tip="Total state military personnel (considering crew)" style="font-weight: bold">${si(total)}</div>
         <div data-type="population" data-tip="State population">${si(population)}</div>
         <div data-type="rate" data-tip="Military personnel rate (% of state population). Depends on war alert">${rn(rate, 2)}%</div>
-        <input data-tip="War Alert. Editable modifier to military forces number, depends of political situation" style="width:4.1em" type="number" min=0 step=.01 value="${rn(s.alert, 2)}">
+        <input data-tip="War Alert. Editable modifier to military forces number, depends of political situation" style="width:4.1em" type="number" min=0 step=.01 value="${rn(
+          s.alert,
+          2
+        )}">
         <span data-tip="Show regiments list" class="icon-list-bullet pointer"></span>
       </div>`;
     }
@@ -145,7 +152,15 @@ function overviewMilitary() {
     if (!layerIsOn("toggleStates")) return;
     const d = regions.select("#state" + state).attr("d");
 
-    const path = debug.append("path").attr("class", "highlight").attr("d", d).attr("fill", "none").attr("stroke", "red").attr("stroke-width", 1).attr("opacity", 1).attr("filter", "url(#blur1)");
+    const path = debug
+      .append("path")
+      .attr("class", "highlight")
+      .attr("d", d)
+      .attr("fill", "none")
+      .attr("stroke", "red")
+      .attr("stroke-width", 1)
+      .attr("opacity", 1)
+      .attr("filter", "url(#blur1)");
 
     const l = path.node().getTotalLength(),
       dur = (l + 5000) / 2;
@@ -199,9 +214,9 @@ function overviewMilitary() {
 
   function militaryCustomize() {
     const types = ["melee", "ranged", "mounted", "machinery", "naval", "armored", "aviation", "magical"];
-    const table = document.getElementById("militaryOptions").querySelector("tbody");
+    const tableBody = document.getElementById("militaryOptions").querySelector("tbody");
     removeUnitLines();
-    options.military.map(u => addUnitLine(u));
+    options.military.map(unit => addUnitLine(unit));
 
     $("#militaryOptions").dialog({
       title: "Edit Military Units",
@@ -218,43 +233,132 @@ function overviewMilitary() {
       },
       open: function () {
         const buttons = $(this).dialog("widget").find(".ui-dialog-buttonset > button");
-        buttons[0].addEventListener("mousemove", () => tip("Apply military units settings. <span style='color:#cb5858'>All forces will be recalculated!</span>"));
+        buttons[0].addEventListener("mousemove", () =>
+          tip("Apply military units settings. <span style='color:#cb5858'>All forces will be recalculated!</span>")
+        );
         buttons[1].addEventListener("mousemove", () => tip("Add new military unit to the table"));
         buttons[2].addEventListener("mousemove", () => tip("Restore default military units and settings"));
         buttons[3].addEventListener("mousemove", () => tip("Close the window without saving the changes"));
       }
     });
 
+    if (modules.overviewMilitaryCustomize) return;
+    modules.overviewMilitaryCustomize = true;
+
+    tableBody.addEventListener("click", event => {
+      const el = event.target;
+      if (el.tagName !== "BUTTON") return;
+      const type = el.dataset.type;
+
+      if (type === "icon") return selectIcon(el.innerHTML, v => (el.innerHTML = v));
+      if (type === "biomes") {
+        const {i, name, color} = biomesData;
+        const biomesArray = Array(i.length).fill(null);
+        const biomes = biomesArray.map((_, i) => ({i, name: name[i], color: color[i]}));
+        return selectLimitation(el, biomes);
+      }
+      if (type === "states") return selectLimitation(el, pack.states);
+      if (type === "cultures") return selectLimitation(el, pack.cultures);
+      if (type === "religions") return selectLimitation(el, pack.religions);
+    });
+
     function removeUnitLines() {
-      table.querySelectorAll("tr").forEach(el => el.remove());
+      tableBody.querySelectorAll("tr").forEach(el => el.remove());
     }
 
-    function addUnitLine(u) {
+    function getLimitValue(attr) {
+      return attr?.join(",") || "";
+    }
+
+    function getLimitText(attr) {
+      return attr?.length ? "some" : "all";
+    }
+
+    function getLimitTip(attr, data) {
+      if (!attr || !attr.length) return "";
+      return attr.map(i => data?.[i]?.name || "").join(", ");
+    }
+
+    function addUnitLine(unit) {
       const row = document.createElement("tr");
-      row.innerHTML = `<td><button type="button" data-tip="Click to select unit icon">${u.icon || " "}</button></td>
-        <td><input data-tip="Type unit name. If name is changed for existing unit, old unit will be replaced" value="${u.name}"></td>
-        <td><input data-tip="Enter conscription percentage for rural population" type="number" min=0 max=100 step=.01 value="${u.rural}"></td>
-        <td><input data-tip="Enter conscription percentage for urban population" type="number" min=0 max=100 step=.01 value="${u.urban}"></td>
-        <td><input data-tip="Enter average number of people in crew (used for total personnel calculation)" type="number" min=1 step=1 value="${u.crew}"></td>
-        <td><input data-tip="Enter military power (used for battle simulation)" type="number" min=0 step=.1 value="${u.power}"></td>
-        <td><select data-tip="Select unit type to apply special rules on forces recalculation">${types.map(t => `<option ${u.type === t ? "selected" : ""} value="${t}">${t}</option>`).join(" ")}</select></td>
+      const typeOptions = types.map(t => `<option ${unit.type === t ? "selected" : ""} value="${t}">${t}</option>`).join(" ");
+      const getLimitButton = attr =>
+        `<button 
+          data-tip="Select allowed ${attr}"
+          data-type="${attr}"
+          title="${getLimitTip(unit[attr], pack[attr])}"
+          data-value="${getLimitValue(unit[attr])}">
+          ${getLimitText(unit[attr])}
+        </button>`;
+
+      row.innerHTML = `<td><button data-type="icon" data-tip="Click to select unit icon">${unit.icon || " "}</button></td>
+        <td><input data-tip="Type unit name. If name is changed for existing unit, old unit will be replaced" value="${unit.name}"></td>
+        <td>${getLimitButton("biomes")}</td>
+        <td>${getLimitButton("states")}</td>
+        <td>${getLimitButton("cultures")}</td>
+        <td>${getLimitButton("religions")}</td>
+        <td><input data-tip="Enter conscription percentage for rural population" type="number" min=0 max=100 step=.01 value="${unit.rural}"></td>
+        <td><input data-tip="Enter conscription percentage for urban population" type="number" min=0 max=100 step=.01 value="${unit.urban}"></td>
+        <td><input data-tip="Enter average number of people in crew (for total personnel calculation)" type="number" min=1 step=1 value="${unit.crew}"></td>
+        <td><input data-tip="Enter military power (used for battle simulation)" type="number" min=0 step=.1 value="${unit.power}"></td>
+        <td><select data-tip="Select unit type to apply special rules on forces recalculation">${typeOptions}</select></td>
         <td data-tip="Check if unit is separate and can be stacked only with units of the same type">
-          <input id="${u.name}Separate" type="checkbox" class="checkbox" ${u.separate ? "checked" : ""}>
-          <label for="${u.name}Separate" class="checkbox-label"></label></td>
+          <input id="${unit.name}Separate" type="checkbox" class="checkbox" ${unit.separate ? "checked" : ""}>
+          <label for="${unit.name}Separate" class="checkbox-label"></label></td>
         <td data-tip="Remove the unit"><span data-tip="Remove unit type" class="icon-trash-empty pointer" onclick="this.parentElement.parentElement.remove();"></span></td>`;
-      row.querySelector("button").addEventListener("click", function (e) {
-        selectIcon(this.innerHTML, v => (this.innerHTML = v));
-      });
-      table.appendChild(row);
+      tableBody.appendChild(row);
     }
 
     function restoreDefaultUnits() {
       removeUnitLines();
-      Military.getDefaultOptions().map(u => addUnitLine(u));
+      Military.getDefaultOptions().map(unit => addUnitLine(unit));
+    }
+
+    function selectLimitation(el, data) {
+      const type = el.dataset.type;
+      const value = el.dataset.value;
+      const initial = value ? value.split(",").map(v => +v) : [];
+
+      const lines = data.slice(1).map(
+        ({i, name, fullName, color}) =>
+          `<tr data-tip="${name}"><td><span style="color:${color}">⬤</span></td>
+            <td><input id="el${i}" type="checkbox" class="checkbox" ${!initial.length || initial.includes(i) ? "checked" : ""} >
+            <label for="el${i}" class="checkbox-label">${fullName || name}</label>
+          </td></tr>`
+      );
+      alertMessage.innerHTML = `<b>Limit unit by ${type}:</b><div style="margin-top:.3em" class="table"><table><tbody>${lines.join("")}</tbody></table></div>`;
+
+      $("#alert").dialog({
+        width: fitContent(),
+        title: `Limit unit`,
+        buttons: {
+          Invert: function () {
+            alertMessage.querySelectorAll("input").forEach(el => (el.checked = !el.checked));
+          },
+          Apply: function () {
+            const inputs = Array.from(alertMessage.querySelectorAll("input"));
+            const selected = inputs.reduce((acc, input, index) => {
+              if (input.checked) acc.push(index + 1);
+              return acc;
+            }, []);
+
+            if (!selected.length) return tip("Select at least one element", false, "error");
+
+            const allAreSelected = selected.length === inputs.length;
+            el.dataset.value = allAreSelected ? "" : selected.join(",");
+            el.innerHTML = allAreSelected ? "all" : "some";
+            el.setAttribute("title", getLimitTip(selected, data));
+            $(this).dialog("close");
+          },
+          Cancel: function () {
+            $(this).dialog("close");
+          }
+        }
+      });
     }
 
     function applyMilitaryOptions() {
-      const unitLines = Array.from(table.querySelectorAll("tr"));
+      const unitLines = Array.from(tableBody.querySelectorAll("tr"));
       const names = unitLines.map(r => r.querySelector("input").value.replace(/[&\/\\#, +()$~%.'":*?<>{}]/g, "_"));
       if (new Set(names).size !== names.length) {
         tip("All units should have unique names", false, "error");
@@ -263,14 +367,22 @@ function overviewMilitary() {
 
       $("#militaryOptions").dialog("close");
       options.military = unitLines.map((r, i) => {
-        const [icon, name, rural, urban, crew, power, type, separate] = Array.from(r.querySelectorAll("input, select, button")).map(d => {
-          let value = d.value;
-          if (d.type === "number") value = +d.value || 0;
-          if (d.type === "checkbox") value = +d.checked || 0;
-          if (d.type === "button") value = d.innerHTML || "⠀";
-          return value;
+        const elements = Array.from(r.querySelectorAll("input, button, select"));
+        const [icon, name, biomes, states, cultures, religions, rural, urban, crew, power, type, separate] = elements.map(el => {
+          const {type, value} = el.dataset || {};
+          if (type === "icon") return el.innerHTML || "⠀";
+          if (type) return value ? value.split(",").map(v => parseInt(v)) : null;
+          if (el.type === "number") return +el.value || 0;
+          if (el.type === "checkbox") return +el.checked || 0;
+          return el.value;
         });
-        return {icon, name: names[i], rural, urban, crew, power, type, separate};
+
+        const unit = {icon, name: names[i], rural, urban, crew, power, type, separate};
+        if (biomes) unit.biomes = biomes;
+        if (states) unit.states = states;
+        if (cultures) unit.cultures = cultures;
+        if (religions) unit.religions = religions;
+        return unit;
       });
       localStorage.setItem("military", JSON.stringify(options.military));
       Military.generate();

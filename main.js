@@ -2,7 +2,7 @@
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 "use strict";
-const version = "1.7"; // generator version
+const version = "1.71"; // generator version
 document.title += " v" + version;
 
 // Switches to disable/enable logging features
@@ -111,14 +111,14 @@ legend.on("mousemove", () => tip("Drag to change the position. Click to hide the
 // main data variables
 let grid = {}; // initial grapg based on jittered square grid and data
 let pack = {}; // packed graph and data
-let seed,
-  mapId,
-  mapHistory = [],
-  elSelected,
-  modules = {},
-  notes = [];
+let seed;
+let mapId;
+let mapHistory = [];
+let elSelected;
+let modules = {};
+let notes = [];
 let rulers = new Rulers();
-let customization = 0; // 0 - no; 1 = heightmap draw; 2 - states draw; 3 - add state/burg; 4 - cultures draw
+let customization = 0;
 
 let biomesData = applyDefaultBiomesSystem();
 let nameBases = Names.getNameBases(); // cultures-related data
@@ -156,20 +156,24 @@ let urbanization = +document.getElementById("urbanizationInput").value;
 let urbanDensity = +document.getElementById("urbanDensityInput").value;
 
 applyStoredOptions();
-let graphWidth = +mapWidthInput.value,
-  graphHeight = +mapHeightInput.value; // voronoi graph extention, cannot be changed arter generation
-let svgWidth = graphWidth,
-  svgHeight = graphHeight; // svg canvas resolution, can be changed
+
+// voronoi graph extention, cannot be changed arter generation
+let graphWidth = +mapWidthInput.value;
+let graphHeight = +mapHeightInput.value;
+
+// svg canvas resolution, can be changed
+let svgWidth = graphWidth;
+let svgHeight = graphHeight;
+
 landmass.append("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 oceanPattern.append("rect").attr("fill", "url(#oceanic)").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 oceanLayers.append("rect").attr("id", "oceanBase").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 
-void (function removeLoading() {
-  d3.select("#loading").transition().duration(4000).style("opacity", 0).remove();
-  d3.select("#initial").transition().duration(4000).attr("opacity", 0).remove();
-  d3.select("#optionsContainer").transition().duration(3000).style("opacity", 1);
-  d3.select("#tooltip").transition().duration(4000).style("opacity", 1);
-})();
+// remove loading screen
+d3.select("#loading").transition().duration(4000).style("opacity", 0).remove();
+d3.select("#initial").transition().duration(4000).attr("opacity", 0).remove();
+d3.select("#optionsContainer").transition().duration(3000).style("opacity", 1);
+d3.select("#tooltip").transition().duration(4000).style("opacity", 1);
 
 // decide which map should be loaded or generated on page load
 void (function checkLoadParameters() {
@@ -405,6 +409,7 @@ function showWelcomeMessage() {
   alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
     <ul>Main changes:
+      <li>Ability to limit military units by biome, state, culture and religion</li>
       <li>New marker types</li>
       <li>New markers editor</li>
       <li>Markers overview screen</li>
@@ -416,7 +421,7 @@ function showWelcomeMessage() {
     </ul>
 
     <p>Join our ${discord} and ${reddit} to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
-    <span>Thanks for all supporters on ${patreon}!</i></span>`;
+    <span>Thanks for all supporters on <a href="https://www.patreon.com/azgaar" onclick="track('click', 'patreon from update')" target="_blank">Patreon</a>!</i></span>`;
 
   $("#alert").dialog({
     resizable: false,
@@ -951,7 +956,7 @@ function calculateTemperatures() {
     const lat = Math.abs(mapCoordinates.latN - (y / graphHeight) * mapCoordinates.latT); // [0; 90]
     const initTemp = tEq - int(lat / 90) * tDelta;
     for (let i = r; i < r + grid.cellsX; i++) {
-      cells.temp[i] = Math.max(Math.min(initTemp - convertToFriendly(cells.h[i]), 127), -128);
+      cells.temp[i] = minmax(initTemp - convertToFriendly(cells.h[i]), -128, 127);
     }
   });
 
@@ -1066,7 +1071,7 @@ function generatePrecipitation() {
         const precipitation = isPassable ? getPrecipitation(humidity, current, next) : humidity;
         cells.prec[current] += precipitation;
         const evaporation = precipitation > 1.5 ? 1 : 0; // some humidity evaporates back to the atmosphere
-        humidity = isPassable ? Math.min(Math.max(humidity - precipitation + evaporation, 0), maxPrec) : 0;
+        humidity = isPassable ? minmax(humidity - precipitation + evaporation, 0, maxPrec) : 0;
       }
     }
   }
@@ -1075,7 +1080,7 @@ function generatePrecipitation() {
     const normalLoss = Math.max(humidity / (10 * modifier), 1); // precipitation in normal conditions
     const diff = Math.max(cells.h[i + n] - cells.h[i], 0); // difference in height
     const mod = (cells.h[i + n] / 70) ** 2; // 50 stands for hills, 70 for mountains
-    return Math.min(Math.max(normalLoss + diff * mod, 1), humidity);
+    return minmax(normalLoss + diff * mod, 1, humidity);
   }
 
   void (function drawWindDirection() {
@@ -1854,7 +1859,6 @@ function showStatistics() {
   mapId = Date.now(); // unique map id is it's creation date number
   mapHistory.push({seed, width: graphWidth, height: graphHeight, template, created: mapId});
   INFO && console.log(stats);
-  track("generate", `Template: ${template} ${templateRandom}. Points: ${pointsInput.dataset.cells}`);
 }
 
 const regenerateMap = debounce(function (source) {

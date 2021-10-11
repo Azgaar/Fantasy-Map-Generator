@@ -8,6 +8,8 @@ function editMarker(markerI) {
 
   elSelected = d3.select(element).raise().call(d3.drag().on("start", dragMarker)).classed("draggable", true);
 
+  if (document.getElementById("notesEditor").offsetParent) editNotes(element.id, element.id);
+
   // dom elements
   const markerType = document.getElementById("markerType");
   const markerIcon = document.getElementById("markerIcon");

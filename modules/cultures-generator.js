@@ -117,7 +117,8 @@ window.Cultures = (function () {
       if (cells.h[i] > 50) return "Highland"; // no penalty for hills and moutains, high for other elevations
       const f = pack.features[cells.f[cells.haven[i]]]; // opposite feature
       if (f.type === "lake" && f.cells > 5) return "Lake"; // low water cross penalty and high for growth not along coastline
-      if ((cells.harbor[i] && f.type !== "lake" && P(0.1)) || (cells.harbor[i] === 1 && P(0.6)) || (pack.features[cells.f[i]].group === "isle" && P(0.4))) return "Naval"; // low water cross penalty and high for non-along-coastline growth
+      if ((cells.harbor[i] && f.type !== "lake" && P(0.1)) || (cells.harbor[i] === 1 && P(0.6)) || (pack.features[cells.f[i]].group === "isle" && P(0.4)))
+        return "Naval"; // low water cross penalty and high for non-along-coastline growth
       if (cells.r[i] && cells.fl[i] > 100) return "River"; // no River cross penalty, penalty for non-River growth
       if (cells.t[i] > 2 && [3, 7, 8, 9, 10, 12].includes(cells.biome[i])) return "Hunting"; // high penalty in non-native biomes
       return "Generic";
@@ -435,7 +436,7 @@ window.Cultures = (function () {
   function getRiverCost(r, i, type) {
     if (type === "River") return r ? 0 : 100; // penalty for river cultures
     if (!r) return 0; // no penalty for others if there is no river
-    return Math.min(Math.max(cells.fl[i] / 10, 20), 100); // river penalty from 20 to 100 based on flux
+    return minmax(cells.fl[i] / 10, 20, 100); // river penalty from 20 to 100 based on flux
   }
 
   function getTypeCost(t, type) {
