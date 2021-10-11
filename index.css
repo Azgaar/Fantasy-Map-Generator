@@ -1310,16 +1310,19 @@ div.slider .ui-slider-handle {
   scrollbar-width: thin;
 }
 
+#alertMessage::-webkit-scrollbar,
 .table::-webkit-scrollbar {
   width: 6px;
   background-color: transparent;
 }
 
+#alertMessage::-webkit-scrollbar-thumb,
 .table::-webkit-scrollbar-thumb {
   background-color: #aaa;
   border-radius: 6px;
 }
 
+#alertMessage::-webkit-scrollbar-thumb:hover,
 .table::-webkit-scrollbar-thumb:hover {
   background: #666;
 }

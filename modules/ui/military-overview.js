@@ -319,14 +319,15 @@ function overviewMilitary() {
       const value = el.dataset.value;
       const initial = value ? value.split(",").map(v => +v) : [];
 
-      const lines = data.slice(1).map(
+      const filtered = data.filter(datum => datum.i && !datum.removed);
+      const lines = filtered.map(
         ({i, name, fullName, color}) =>
           `<tr data-tip="${name}"><td><span style="color:${color}">⬤</span></td>
-            <td><input id="el${i}" type="checkbox" class="checkbox" ${!initial.length || initial.includes(i) ? "checked" : ""} >
+            <td><input data-i="${i}" id="el${i}" type="checkbox" class="checkbox" ${!initial.length || initial.includes(i) ? "checked" : ""} >
             <label for="el${i}" class="checkbox-label">${fullName || name}</label>
           </td></tr>`
       );
-      alertMessage.innerHTML = `<b>Limit unit by ${type}:</b><div style="margin-top:.3em" class="table"><table><tbody>${lines.join("")}</tbody></table></div>`;
+      alertMessage.innerHTML = `<b>Limit unit by ${type}:</b><table style="margin-top:.3em"><tbody>${lines.join("")}</tbody></table>`;
 
       $("#alert").dialog({
         width: fitContent(),
@@ -337,8 +338,8 @@ function overviewMilitary() {
           },
           Apply: function () {
             const inputs = Array.from(alertMessage.querySelectorAll("input"));
-            const selected = inputs.reduce((acc, input, index) => {
-              if (input.checked) acc.push(index + 1);
+            const selected = inputs.reduce((acc, input) => {
+              if (input.checked) acc.push(input.dataset.i);
               return acc;
             }, []);
 
