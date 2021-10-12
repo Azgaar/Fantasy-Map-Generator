@@ -2018,7 +2018,7 @@
           </div>
         </div>
 
-        <div data-tip="Burg preview in the Medieval Fantasy City Generator. Default seed is a conbimation of map seed and burg id" style="display: flex; flex-direction: column">
+        <div id="mfcgPreviewSection" data-tip="Burg preview in the Medieval Fantasy City Generator. Default seed is a conbimation of map seed and burg id" style="display: flex; flex-direction: column">
           <div>
             See in <a id="mfcgLink" target="_blank">City Generator by Watabou</a>. 
             Seed: <input id="mfcgBurgSeed" style="width: 10em" type="number" min=1 max="1e13" step="1" />
@@ -2047,6 +2047,7 @@
         </div>
 
         <button id="burgEditEmblem" data-tip="Edit emblem" class="icon-shield-alt"></button>
+        <button id="burgToggleMFCGMap" data-tip="Toggle MFCG map" class="icon-map"></button>
         <button id="burgRelocate" data-tip="Relocate burg" class="icon-target"></button>
         <button id="burglLegend" data-tip="Edit free text notes (legend) for this burg" class="icon-edit"></button>
         <button id="burgLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
@@ -3072,7 +3073,7 @@
 
         <div data-tip="Set size of particular Emblem. To hide set to 0. To change the entire category go to Menu ⭢ Style ⭢ Emblems">
           <div class="label" style="width: 2.8em">Size:</div>
-          <input id="emblemSizeSlider" type="range" min=0 max=5 step=.1 style="width: 8em"/>
+          <input id="emblemSizeSlider" type="range" min=0 max=5 step=.1 style="width: 7em"/>
           <input id="emblemSizeNumber" type="number" min=0 max=5 step=.1 />
         </div>
       </div>

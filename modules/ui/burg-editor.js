@@ -45,6 +45,7 @@ function editBurg(id) {
   document.getElementById("burgEditAnchorStyle").addEventListener("click", editGroupAnchorStyle);
 
   document.getElementById("burgEmblem").addEventListener("click", openEmblemEdit);
+  document.getElementById("burgToggleMFCGMap").addEventListener("click", toggleMFCGMap);
   document.getElementById("burgEditEmblem").addEventListener("click", openEmblemEdit);
   document.getElementById("burgRelocate").addEventListener("click", toggleRelocateBurg);
   document.getElementById("burglLegend").addEventListener("click", editBurgLegend);
@@ -108,8 +109,13 @@ function editBurg(id) {
     COArenderer.trigger(coaID, b.coa);
     document.getElementById("burgEmblem").setAttribute("href", "#" + coaID);
 
-    updateMFCGFrame(b);
-    document.getElementById("mfcgBurgSeed").value = getBurgSeed(b);
+    if (options.showMFCGMap) {
+      document.getElementById("mfcgPreviewSection").style.display = "block";
+      updateMFCGFrame(b);
+      document.getElementById("mfcgBurgSeed").value = getBurgSeed(b);
+    } else {
+      document.getElementById("mfcgPreviewSection").style.display = "none";
+    }
   }
 
   // in °C, array from -1 °C; source: https://en.wikipedia.org/wiki/List_of_cities_by_average_temperature
@@ -460,6 +466,12 @@ function editBurg(id) {
     const id = +elSelected.attr("data-id"),
       burg = pack.burgs[id];
     editEmblem("burg", "burgCOA" + id, burg);
+  }
+
+  function toggleMFCGMap() {
+    options.showMFCGMap = !options.showMFCGMap;
+    document.getElementById("mfcgPreviewSection").style.display = options.showMFCGMap ? "block" : "none";
+    document.getElementById("burgToggleMFCGMap").className = options.showMFCGMap ? "icon-map" : "icon-map-o";
   }
 
   function toggleRelocateBurg() {
