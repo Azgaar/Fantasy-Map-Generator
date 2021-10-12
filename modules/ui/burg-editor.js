@@ -527,6 +527,12 @@ function editBurg(id) {
     document.getElementById("burgToggleMFCGMap").className = options.showMFCGMap ? "icon-map" : "icon-map-o";
   }
 
+  function toggleMFCGMap() {
+    options.showMFCGMap = !options.showMFCGMap;
+    document.getElementById("mfcgPreviewSection").style.display = options.showMFCGMap ? "block" : "none";
+    document.getElementById("burgToggleMFCGMap").className = options.showMFCGMap ? "icon-map" : "icon-map-o";
+  }
+
   function toggleRelocateBurg() {
     const toggler = document.getElementById("toggleCells");
     document.getElementById("burgRelocate").classList.toggle("pressed");
