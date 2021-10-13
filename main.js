@@ -663,7 +663,6 @@ function generate() {
   } catch (error) {
     ERROR && console.error(error);
     const parsedError = parseError(error);
-    track("error", parsedError);
     clearMainTip();
 
     alertMessage.innerHTML = `An error is occured on map generation. Please retry.
