@@ -422,7 +422,7 @@ function showWelcomeMessage() {
     </ul>
 
     <p>Join our ${discord} and ${reddit} to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
-    <span>Thanks for all supporters on <a href="https://www.patreon.com/azgaar" onclick="track('click', 'patreon from update')" target="_blank">Patreon</a>!</i></span>`;
+    <span>Thanks for all supporters on <a href="https://www.patreon.com/azgaar" target="_blank">Patreon</a>!</i></span>`;
 
   $("#alert").dialog({
     resizable: false,
@@ -1862,7 +1862,7 @@ function showStatistics() {
   INFO && console.log(stats);
 }
 
-const regenerateMap = debounce(function (source) {
+const regenerateMap = debounce(function () {
   WARN && console.warn("Generate new random map");
   closeDialogs("#worldConfigurator, #options3d");
   customization = 0;
@@ -1872,7 +1872,6 @@ const regenerateMap = debounce(function (source) {
   restoreLayers();
   if (ThreeD.options.isOn) ThreeD.redraw();
   if ($("#worldConfigurator").is(":visible")) editWorld();
-  track("regenerate", `from ${source}`);
 }, 1000);
 
 // clear the map

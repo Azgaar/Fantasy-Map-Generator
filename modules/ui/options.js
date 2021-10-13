@@ -781,7 +781,6 @@ function loadURL() {
 
 // load map
 document.getElementById("mapToLoad").addEventListener("change", function () {
-  track("load", `from local file`);
   const fileToLoad = this.files[0];
   this.value = "";
   closeDialogs();
@@ -804,7 +803,6 @@ function openSaveTiles() {
     width: "23em",
     buttons: {
       Download: function () {
-        track("export", `tiles`);
         status.innerHTML = "Preparing for download...";
         setTimeout(() => (status.innerHTML = "Downloading. It may take some time."), 1000);
         loading = setInterval(() => (status.innerHTML += "."), 1000);
@@ -890,7 +888,6 @@ function enterStandardView() {
 }
 
 async function enter3dView(type) {
-  track("click", `3d mode: ${type}`);
   const canvas = document.createElement("canvas");
   canvas.id = "canvas3d";
   canvas.dataset.type = type;

@@ -15,18 +15,9 @@ function editHeightmap() {
       title: "Edit Heightmap",
       width: "28em",
       buttons: {
-        Erase: function () {
-          track("edit", "heightmap erase");
-          enterHeightmapEditMode("erase");
-        },
-        Keep: function () {
-          track("edit", "heightmap keep");
-          enterHeightmapEditMode("keep");
-        },
-        Risk: function () {
-          track("edit", "heightmap risk");
-          enterHeightmapEditMode("risk");
-        },
+        Erase: () => enterHeightmapEditMode("erase"),
+        Keep: () => enterHeightmapEditMode("keep"),
+        Risk: () => enterHeightmapEditMode("risk"),
         Cancel: function () {
           $(this).dialog("close");
         }
@@ -704,7 +695,6 @@ function editHeightmap() {
 
   function openTemplateEditor() {
     if ($("#templateEditor").is(":visible")) return;
-    track("edit", "template editor");
     const body = document.getElementById("templateBody");
 
     $("#templateEditor").dialog({
@@ -941,7 +931,6 @@ function editHeightmap() {
 
   function openImageConverter() {
     if ($("#imageConverter").is(":visible")) return;
-    track("edit", "convert image");
     imageToLoad.click();
     closeDialogs("#imageConverter");
 
