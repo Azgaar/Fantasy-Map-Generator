@@ -1061,7 +1061,6 @@ function editHeightmap(options) {
 
   function openImageConverter() {
     if ($("#imageConverter").is(":visible")) return;
-    track("edit", "convert image");
     imageToLoad.click();
     closeDialogs('#imageConverter');
 

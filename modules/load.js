@@ -68,7 +68,6 @@ function loadMapPrompt(blob) {
 
   function loadLastSavedMap() {
     WARN && console.warn("Load last saved map");
-    track("load", `from browser storage`);
     try {
       uploadMap(blob);
     } catch (error) {
@@ -79,7 +78,6 @@ function loadMapPrompt(blob) {
 }
 
 function loadMapFromURL(maplink, random) {
-  track("load", `from url`);
   const URL = decodeURIComponent(maplink);
 
   fetch(URL, {method: "GET", mode: "cors"})
@@ -95,7 +93,6 @@ function loadMapFromURL(maplink, random) {
 }
 
 function showUploadErrorMessage(error, URL, random) {
-  track("error", `map load from url`);
   ERROR && console.error(error);
   alertMessage.innerHTML = `Cannot load map from the ${link(URL, "link provided")}.
     ${random ? `A new random map is generated. ` : ""}

@@ -931,7 +931,6 @@ function enterStandardView() {
 }
 
 async function enter3dView(type) {
-  track("click", `3d mode: ${type}`);
   const canvas = document.createElement("canvas");
   canvas.id = "canvas3d";
   canvas.dataset.type = type;
