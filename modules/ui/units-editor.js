@@ -31,6 +31,8 @@ function editUnits() {
   document.getElementById("populationRateInput").addEventListener("change", changePopulationRate);
   document.getElementById("urbanizationOutput").addEventListener("input", changeUrbanizationRate);
   document.getElementById("urbanizationInput").addEventListener("change", changeUrbanizationRate);
+  document.getElementById("urbanDensityOutput").addEventListener("input", changeUrbanDensity);
+  document.getElementById("urbanDensityInput").addEventListener("change", changeUrbanDensity);
 
   document.getElementById("addLinearRuler").addEventListener("click", addRuler);
   document.getElementById("addOpisometer").addEventListener("click", toggleOpisometerMode);
@@ -93,6 +95,10 @@ function editUnits() {
     urbanization = +this.value;
   }
 
+  function changeUrbanDensity() {
+    urbanDensity = +this.value;
+  }
+
   function restoreDefaultUnits() {
     // distanceScale
     document.getElementById("distanceScaleOutput").value = 3;
@@ -135,8 +141,10 @@ function editUnits() {
     // population
     populationRate = populationRateOutput.value = populationRateInput.value = 1000;
     urbanization = urbanizationOutput.value = urbanizationInput.value = 1;
+    urbanDensity = urbanDensityOutput.value = urbanDensityInput.value = 10;
     localStorage.removeItem("populationRate");
     localStorage.removeItem("urbanization");
+    localStorage.removeItem("urbanDensity");
   }
 
   function addRuler() {
