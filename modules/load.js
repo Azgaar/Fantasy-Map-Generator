@@ -231,7 +231,7 @@ function parseLoadedData(data) {
       if (settings[21]) hideLabels.checked = +settings[21];
       if (settings[22]) stylePreset.value = settings[22];
       if (settings[23]) rescaleLabels.checked = +settings[23];
-      if (settings[24]) urbanDensity = urbanDensity.value = urbanDensityOutput.value = +settings[24];
+      if (settings[24]) urbanDensity = urbanDensityOutput.value = +settings[24];
     })();
 
     void (function parseConfiguration() {
