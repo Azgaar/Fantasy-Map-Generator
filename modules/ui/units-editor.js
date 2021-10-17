@@ -144,7 +144,7 @@ function editUnits() {
     urbanDensity = urbanDensityOutput.value = urbanDensityInput.value = 10;
     localStorage.removeItem("populationRate");
     localStorage.removeItem("urbanization");
-    localStorage.removeItem("urbanDensity")
+    localStorage.removeItem("urbanDensity");
   }
 
   function addRuler() {
