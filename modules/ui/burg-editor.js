@@ -408,7 +408,6 @@ function editBurg(id) {
     document.getElementById("mfcgPreview").setAttribute("src", mfcgURL);
     document.getElementById("mfcgLink").setAttribute("href", mfcgURL);
   }
-
   function getBurgSeed(burg) {
     return burg.MFCG || Number(`${seed}${String(burg.i).padStart(4, 0)}`);
   }
@@ -417,7 +416,7 @@ function editBurg(id) {
     const {cells} = pack;
     const {name, population, cell} = burg;
     const burgSeed = getBurgSeed(burg);
-    const size = minmax(rn(population), 6, 100);
+    const size = Math.max(Math.min(Math.ceil(2.13*Math.pow(population * populationRate/urbanDensity,0.385)), 100), 6);
     const people = rn(population * populationRate * urbanization);
 
     const hub = +cells.road[cell] > 50;

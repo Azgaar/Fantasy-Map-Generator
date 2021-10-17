@@ -155,6 +155,7 @@ let options = {
 let mapCoordinates = {}; // map coordinates on globe
 let populationRate = +document.getElementById("populationRateInput").value;
 let urbanization = +document.getElementById("urbanizationInput").value;
+let urbanDensity = +document.getElementById("urbanDensityInput").value;
 
 applyStoredOptions();
 
