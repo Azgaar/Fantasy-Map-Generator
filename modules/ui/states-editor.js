@@ -126,9 +126,15 @@ function editStates() {
 
       const capital = pack.burgs[s.capital].name;
       COArenderer.trigger("stateCOA" + s.i, s.coa);
-      lines += `<div class="states" data-id=${s.i} data-name="${s.name}" data-form="${s.formName}" data-capital="${capital}" data-color="${s.color}" data-cells=${s.cells}
-        data-area=${area} data-population=${population} data-burgs=${s.burgs} data-culture=${pack.cultures[s.culture].name} data-type=${s.type} data-expansionism=${s.expansionism}>
-        <svg data-tip="State fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${s.color}" class="fillRect pointer"></svg>
+      lines += `<div class="states" data-id=${s.i} data-name="${s.name}" data-form="${s.formName}" data-capital="${capital}" data-color="${
+        s.color
+      }" data-cells=${s.cells}
+        data-area=${area} data-population=${population} data-burgs=${s.burgs} data-culture=${pack.cultures[s.culture].name} data-type=${
+        s.type
+      } data-expansionism=${s.expansionism}>
+        <svg data-tip="State fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${
+          s.color
+        }" class="fillRect pointer"></svg>
         <input data-tip="State name. Click to change" class="stateName name pointer" value="${s.name}" readonly>
         <svg data-tip="Click to show and edit state emblem" class="coaIcon hide" viewBox="0 0 200 200"><use href="#stateCOA${s.i}"></use></svg>
         <input data-tip="State form name. Click to change" class="stateForm name pointer" value="${s.formName}" readonly>
@@ -143,7 +149,9 @@ function editStates() {
         <div data-tip="${populationTip}" class="culturePopulation hide">${si(population)}</div>
         <select data-tip="State type. Defines growth model. Click to change" class="cultureType ${hidden} show hide">${getTypeOptions(s.type)}</select>
         <span data-tip="State expansionism" class="icon-resize-full ${hidden} show hide"></span>
-        <input data-tip="Expansionism (defines competitive size). Change to re-calculate states based on new value" class="statePower ${hidden} show hide" type="number" min=0 max=99 step=.1 value=${s.expansionism}>
+        <input data-tip="Expansionism (defines competitive size). Change to re-calculate states based on new value" class="statePower ${hidden} show hide" type="number" min=0 max=99 step=.1 value=${
+        s.expansionism
+      }>
         <span data-tip="Cells count" class="icon-check-empty ${hidden} show hide"></span>
         <div data-tip="Cells count" class="stateCells ${hidden} show hide">${s.cells}</div>
         <span data-tip="Toggle state focus" class="icon-pin ${focused ? "" : " inactive"} hide"></span>
@@ -200,7 +208,15 @@ function editStates() {
     if (customization || !state) return;
     const d = regions.select("#state" + state).attr("d");
 
-    const path = debug.append("path").attr("class", "highlight").attr("d", d).attr("fill", "none").attr("stroke", "red").attr("stroke-width", 1).attr("opacity", 1).attr("filter", "url(#blur1)");
+    const path = debug
+      .append("path")
+      .attr("class", "highlight")
+      .attr("d", d)
+      .attr("fill", "none")
+      .attr("stroke", "red")
+      .attr("stroke-width", 1)
+      .attr("opacity", 1)
+      .attr("filter", "url(#blur1)");
 
     const l = path.node().getTotalLength(),
       dur = (l + 5000) / 2;
@@ -564,19 +580,20 @@ function editStates() {
 
   function showStatesChart() {
     // build hierarchy tree
-    const data = pack.states.filter(s => !s.removed);
+    const statesData = pack.states.filter(s => !s.removed);
+    if (statesData.length < 2) return tip("There are no states to show", false, "error");
+
     const root = d3
       .stratify()
       .id(d => d.i)
-      .parentId(d => (d.i ? 0 : null))(data)
+      .parentId(d => (d.i ? 0 : null))(statesData)
       .sum(d => d.area)
       .sort((a, b) => b.value - a.value);
 
-    const width = 150 + 200 * uiSizeOutput.value,
-      height = 150 + 200 * uiSizeOutput.value;
+    const size = 150 + 200 * uiSizeOutput.value;
     const margin = {top: 0, right: -50, bottom: 0, left: -50};
-    const w = width - margin.left - margin.right;
-    const h = height - margin.top - margin.bottom;
+    const w = size - margin.left - margin.right;
+    const h = size - margin.top - margin.bottom;
     const treeLayout = d3.pack().size([w, h]).padding(3);
 
     // prepare svg
@@ -588,7 +605,16 @@ function editStates() {
       <option value="burgs">Burgs number</option>
     </select>`;
     alertMessage.innerHTML += `<div id='statesInfo' class='chartInfo'>&#8205;</div>`;
-    const svg = d3.select("#alertMessage").insert("svg", "#statesInfo").attr("id", "statesTree").attr("width", width).attr("height", height).style("font-family", "Almendra SC").attr("text-anchor", "middle").attr("dominant-baseline", "central");
+
+    const svg = d3
+      .select("#alertMessage")
+      .insert("svg", "#statesInfo")
+      .attr("id", "statesTree")
+      .attr("width", size)
+      .attr("height", size)
+      .style("font-family", "Almendra SC")
+      .attr("text-anchor", "middle")
+      .attr("dominant-baseline", "central");
     const graph = svg.append("g").attr("transform", `translate(-50, 0)`);
     document.getElementById("statesTreeType").addEventListener("change", updateChart);
 
@@ -632,7 +658,16 @@ function editStates() {
       const urban = rn(d.data.urban * populationRate * urbanization);
 
       const option = statesTreeType.value;
-      const value = option === "area" ? "Area: " + area : option === "rural" ? "Rural population: " + si(rural) : option === "urban" ? "Urban population: " + si(urban) : option === "burgs" ? "Burgs number: " + d.data.burgs : "Population: " + si(rural + urban);
+      const value =
+        option === "area"
+          ? "Area: " + area
+          : option === "rural"
+          ? "Rural population: " + si(rural)
+          : option === "urban"
+          ? "Urban population: " + si(urban)
+          : option === "burgs"
+          ? "Burgs number: " + d.data.burgs
+          : "Population: " + si(rural + urban);
 
       statesInfo.innerHTML = `${state}. ${value}`;
       stateHighlightOn(ev);
@@ -646,7 +681,16 @@ function editStates() {
     }
 
     function updateChart() {
-      const value = this.value === "area" ? d => d.area : this.value === "rural" ? d => d.rural : this.value === "urban" ? d => d.urban : this.value === "burgs" ? d => d.burgs : d => d.rural + d.urban;
+      const value =
+        this.value === "area"
+          ? d => d.area
+          : this.value === "rural"
+          ? d => d.rural
+          : this.value === "urban"
+          ? d => d.urban
+          : this.value === "burgs"
+          ? d => d.burgs
+          : d => d.rural + d.urban;
 
       root.sum(value);
       node.data(treeLayout(root).leaves());
@@ -731,7 +775,11 @@ function editStates() {
     $("#statesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});
 
     tip("Click on state to select, drag the circle to change state", true);
-    viewbox.style("cursor", "crosshair").on("click", selectStateOnMapClick).call(d3.drag().on("start", dragStateBrush)).on("touchmove mousemove", moveStateBrush);
+    viewbox
+      .style("cursor", "crosshair")
+      .on("click", selectStateOnMapClick)
+      .call(d3.drag().on("start", dragStateBrush))
+      .on("touchmove mousemove", moveStateBrush);
 
     body.querySelector("div").classList.add("selected");
   }
@@ -881,7 +929,8 @@ function editStates() {
       const center = burgCell ? burgCell : provCells[0];
       const burg = burgCell ? cells.burg[burgCell] : 0;
 
-      const name = burgCell && P(0.7) ? getAdjective(pack.burgs[burg].name) : getAdjective(states[state].name) + " " + provinces[initProv].name.split(" ").slice(-1)[0];
+      const name =
+        burgCell && P(0.7) ? getAdjective(pack.burgs[burg].name) : getAdjective(states[state].name) + " " + provinces[initProv].name.split(" ").slice(-1)[0];
       const formName = name.split(" ").length > 1 ? provinces[initProv].formName : rw(form);
       const fullName = name + " " + formName;
       const color = getMixedColor(states[state].color);
@@ -985,7 +1034,22 @@ function editStates() {
     cells.state[center] = newState;
     cells.province[center] = 0;
 
-    states.push({i: newState, name, diplomacy, provinces: [], color, expansionism: 0.5, capital: burg, type: "Generic", center, culture, military: [], alert: 1, coa, pole});
+    states.push({
+      i: newState,
+      name,
+      diplomacy,
+      provinces: [],
+      color,
+      expansionism: 0.5,
+      capital: burg,
+      type: "Generic",
+      center,
+      culture,
+      military: [],
+      alert: 1,
+      coa,
+      pole
+    });
     BurgsAndStates.collectStatistics();
     BurgsAndStates.defineStateForms([newState]);
     adjustProvinces([cells.province[center]]);
@@ -1028,7 +1092,8 @@ function editStates() {
 
   function downloadStatesData() {
     const unit = areaUnit.value === "square" ? distanceUnitInput.value + "2" : areaUnit.value;
-    let data = "Id,State,Full Name,Form,Color,Capital,Culture,Type,Expansionism,Cells,Burgs,Area " + unit + ",Total Population,Rural Population,Urban Population\n"; // headers
+    let data =
+      "Id,State,Full Name,Form,Color,Capital,Culture,Type,Expansionism,Cells,Burgs,Area " + unit + ",Total Population,Rural Population,Urban Population\n"; // headers
     body.querySelectorAll(":scope > div").forEach(function (el) {
       const key = parseInt(el.dataset.id);
       const statePack = pack.states[key];

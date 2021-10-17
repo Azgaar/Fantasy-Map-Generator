@@ -295,6 +295,7 @@ function overviewBurgs() {
       const name = s.fullName ? s.fullName : s.name;
       return {id: s.i, state: s.i ? 0 : null, color, name};
     });
+
     const burgs = pack.burgs
       .filter(b => b.i && !b.removed)
       .map(b => {
@@ -306,6 +307,7 @@ function overviewBurgs() {
         return {id, i: b.i, state: b.state, culture: b.culture, province, parent, name: b.name, population, capital, x: b.x, y: b.y};
       });
     const data = states.concat(burgs);
+    if (data.length < 2) return tip("No burgs to show", false, "error");
 
     const root = d3
       .stratify()
