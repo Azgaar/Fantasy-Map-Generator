@@ -4,7 +4,7 @@
 // download map as SVG
 async function saveSVG() {
   TIME && console.time("saveSVG");
-  const url = await getMapURL("svg");
+  const url = await getMapURL("svg", {fullMap: true});
   const link = document.createElement("a");
   link.download = getFileName() + ".svg";
   link.href = url;
@@ -74,7 +74,7 @@ async function saveJPEG() {
 async function saveTiles() {
   return new Promise(async (resolve, reject) => {
     // download schema
-    const urlSchema = await getMapURL("tiles", {debug: true});
+    const urlSchema = await getMapURL("tiles", {debug: true, fullMap: true});
     const zip = new JSZip();
 
     const canvas = document.createElement("canvas");
@@ -90,7 +90,7 @@ async function saveTiles() {
     };
 
     // download tiles
-    const url = await getMapURL("tiles");
+    const url = await getMapURL("tiles", {fullMap: true});
     const tilesX = +document.getElementById("tileColsInput").value;
     const tilesY = +document.getElementById("tileRowsInput").value;
     const scale = +document.getElementById("tileScaleInput").value;
@@ -139,7 +139,10 @@ async function saveTiles() {
 
 // parse map svg to object url
 async function getMapURL(type, options = {}) {
-  const {debug = false, globe = false, noLabels = false, noWater = false} = options;
+  const {debug = false, globe = false, noLabels = false, noWater = false, fullMap = false} = options;
+
+  if (fullMap) drawScaleBar(1);
+
   const cloneEl = document.getElementById("map").cloneNode(true); // clone svg
   cloneEl.id = "fantasyMap";
   document.body.appendChild(cloneEl);
@@ -161,10 +164,11 @@ async function getMapURL(type, options = {}) {
     clone.select("#oceanBase").attr("opacity", 0);
     clone.select("#oceanPattern").attr("opacity", 0);
   }
-  if (type !== "png") {
+  if (fullMap) {
     // reset transform to show the whole map
     clone.attr("width", graphWidth).attr("height", graphHeight);
     clone.select("#viewbox").attr("transform", null);
+    drawScaleBar(scale);
   }
 
   if (type === "svg") removeUnusedElements(clone);

@@ -20,7 +20,16 @@ class Rulers {
     for (const rulerString of rulers) {
       const [type, pointsString] = rulerString.split(": ");
       const points = pointsString.split(" ").map(el => el.split(",").map(n => +n));
-      const Type = type === "Ruler" ? Ruler : type === "Opisometer" ? Opisometer : type === "RouteOpisometer" ? RouteOpisometer : type === "Planimeter" ? Planimeter : null;
+      const Type =
+        type === "Ruler"
+          ? Ruler
+          : type === "Opisometer"
+          ? Opisometer
+          : type === "RouteOpisometer"
+          ? RouteOpisometer
+          : type === "Planimeter"
+          ? Planimeter
+          : null;
       this.create(Type, points);
     }
   }
@@ -527,17 +536,18 @@ class Planimeter extends Measurer {
 }
 
 // Scale bar
-function drawScaleBar() {
+function drawScaleBar(requestedScale) {
   if (scaleBar.style("display") === "none") return; // no need to re-draw hidden element
   scaleBar.selectAll("*").remove(); // fully redraw every time
+  const scaleLevel = requestedScale || scale;
 
-  const dScale = distanceScaleInput.value;
+  const distanceScale = distanceScaleInput.value;
   const unit = distanceUnitInput.value;
+  const size = +barSizeInput.value;
 
   // calculate size
-  const init = 100; // actual length in pixels if scale, dScale and size = 1;
-  const size = +barSizeInput.value;
-  let val = (init * size * dScale) / scale; // bar length in distance unit
+  const init = 100;
+  let val = (init * size * distanceScale) / scaleLevel; // bar length in distance unit
   if (val > 900) val = rn(val, -3);
   // round to 1000
   else if (val > 90) val = rn(val, -2);
@@ -545,13 +555,13 @@ function drawScaleBar() {
   else if (val > 9) val = rn(val, -1);
   // round to 10
   else val = rn(val); // round to 1
-  const l = (val * scale) / dScale; // actual length in pixels on this scale
+  const length = (val * scaleLevel) / distanceScale; // actual length in pixels on this scale
 
   scaleBar
     .append("line")
     .attr("x1", 0.5)
     .attr("y1", 0)
-    .attr("x2", l + size - 0.5)
+    .attr("x2", length + size - 0.5)
     .attr("y2", 0)
     .attr("stroke-width", size)
     .attr("stroke", "white");
@@ -559,16 +569,16 @@ function drawScaleBar() {
     .append("line")
     .attr("x1", 0)
     .attr("y1", size)
-    .attr("x2", l + size)
+    .attr("x2", length + size)
     .attr("y2", size)
     .attr("stroke-width", size)
     .attr("stroke", "#3d3d3d");
-  const dash = size + " " + rn(l / 5 - size, 2);
+  const dash = size + " " + rn(length / 5 - size, 2);
   scaleBar
     .append("line")
     .attr("x1", 0)
     .attr("y1", 0)
-    .attr("x2", l + size)
+    .attr("x2", length + size)
     .attr("y2", 0)
     .attr("stroke-width", rn(size * 3, 2))
     .attr("stroke-dasharray", dash)
@@ -580,16 +590,16 @@ function drawScaleBar() {
     .data(d3.range(0, 6))
     .enter()
     .append("text")
-    .attr("x", d => rn((d * l) / 5, 2))
+    .attr("x", d => rn((d * length) / 5, 2))
     .attr("y", 0)
     .attr("dy", "-.5em")
     .attr("font-size", fontSize)
-    .text(d => rn((((d * l) / 5) * dScale) / scale) + (d < 5 ? "" : " " + unit));
+    .text(d => rn((((d * length) / 5) * distanceScale) / scaleLevel) + (d < 5 ? "" : " " + unit));
 
   if (barLabel.value !== "") {
     scaleBar
       .append("text")
-      .attr("x", (l + 1) / 2)
+      .attr("x", (length + 1) / 2)
       .attr("y", 2 * size)
       .attr("dominant-baseline", "text-before-edge")
       .attr("font-size", fontSize)

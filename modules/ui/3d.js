@@ -391,7 +391,8 @@ window.ThreeD = (function () {
   async function createMesh(width, height, segmentsX, segmentsY) {
     const mapOptions = {
       noLabels: options.labels3d,
-      noWater: options.extendedWater
+      noWater: options.extendedWater,
+      fullMap: true
     };
     const url = await getMapURL("mesh", mapOptions);
     window.setTimeout(() => window.URL.revokeObjectURL(url), 5000);
@@ -445,7 +446,8 @@ window.ThreeD = (function () {
     if (texture) texture.dispose();
     const mapOptions = {
       noLabels: options.labels3d,
-      noWater: options.extendedWater
+      noWater: options.extendedWater,
+      fullMap: true
     };
     const url = await getMapURL("mesh", mapOptions);
     window.setTimeout(() => window.URL.revokeObjectURL(url), 4000);
@@ -526,7 +528,7 @@ window.ThreeD = (function () {
       material.map = texture;
       if (addMesh) addGlobe3dMesh();
     };
-    img2.src = await getMapURL("mesh", {globe: true});
+    img2.src = await getMapURL("mesh", {globe: true, fullMap: true});
   }
 
   async function getOBJ() {
