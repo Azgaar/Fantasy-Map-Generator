@@ -932,6 +932,7 @@ function editStates() {
           // reassign province ownership to province center owner
           prevOwner.provinces = prevOwner.provinces.filter(province => province !== provinceId);
           province.state = stateId;
+          province.color = getMixedColor(states[stateId].color);
           states[stateId].provinces.push(provinceId);
           return;
         }
