@@ -1071,16 +1071,16 @@ window.BurgsAndStates = (function () {
     const localSeed = regenerate ? Math.floor(Math.random() * 1e9).toString() : seed;
     Math.random = aleaPRNG(localSeed);
 
-    const cells = pack.cells,
-      states = pack.states,
-      burgs = pack.burgs;
+    const {cells, states, burgs} = pack;
     const provinces = (pack.provinces = [0]);
     cells.province = new Uint16Array(cells.i.length); // cell state
     const percentage = +provincesInput.value;
+
     if (states.length < 2 || !percentage) {
       states.forEach(s => (s.provinces = []));
       return;
     } // no provinces
+
     const max = percentage == 100 ? 1000 : gauss(20, 5, 5, 100) * percentage ** 0.5; // max growth
 
     const forms = {
@@ -1093,7 +1093,6 @@ window.BurgsAndStates = (function () {
     };
 
     // generate provinces for a selected burgs
-    Math.random = aleaPRNG(localSeed);
     states.forEach(s => {
       s.provinces = [];
       if (!s.i || s.removed) return;

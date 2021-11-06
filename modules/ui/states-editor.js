@@ -845,9 +845,9 @@ function editStates() {
   }
 
   function applyStatesManualAssignent() {
-    const cells = pack.cells,
-      affectedStates = [],
-      affectedProvinces = [];
+    const {cells} = pack;
+    const affectedStates = [];
+    const affectedProvinces = [];
 
     statesBody
       .select("#temp")
@@ -863,78 +863,142 @@ function editStates() {
 
     if (affectedStates.length) {
       refreshStatesEditor();
-      if (!layerIsOn("toggleStates")) toggleStates();
-      else drawStates();
+      layerIsOn("toggleStates") ? drawStates() : toggleStates();
       if (adjustLabels.checked) BurgsAndStates.drawStateLabels([...new Set(affectedStates)]);
       adjustProvinces([...new Set(affectedProvinces)]);
-      if (!layerIsOn("toggleBorders")) toggleBorders();
-      else drawBorders();
+      layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
       if (layerIsOn("toggleProvinces")) drawProvinces();
     }
+
     exitStatesManualAssignment();
   }
 
   function adjustProvinces(affectedProvinces) {
-    const {cells, provinces, states} = pack;
-    const form = {Zone: 1, Area: 1, Territory: 2, Province: 1};
+    const {cells, provinces, states, burgs} = pack;
 
-    affectedProvinces.forEach(p => {
-      if (!p) return; // do nothing if neutral lands are captured
-      const old = provinces[p].state;
-
-      // remove province from state provinces list
-      if (states[old]?.provinces?.includes(p)) states[old].provinces.splice(states[old].provinces.indexOf(p), 1);
-
+    affectedProvinces.forEach(provinceId => {
       // find states owning at least 1 province cell
-      const provCells = cells.i.filter(i => cells.province[i] === p);
+      const provCells = cells.i.filter(i => cells.state[i] && cells.province[i] === provinceId);
       const provStates = [...new Set(provCells.map(i => cells.state[i]))];
 
-      // assign province to its center owner; if center is neutral, remove province
-      const owner = cells.state[provinces[p].center];
-      if (owner) {
-        const name = provinces[p].name;
+      // province is captured completely => change owner or remove
+      if (provinceId && provStates.length === 1) return changeProvinceOwner(provinceId, provStates[0], provCells);
 
-        // if province is a historical part of another state's province, unite with old province
-        const part = states[owner].provinces.find(n => name.includes(provinces[n].name));
-        if (part) {
-          provinces[p].removed = true;
-          provCells.filter(i => cells.state[i] === owner).forEach(i => (cells.province[i] = part));
-        } else {
-          provinces[p].state = owner;
-          states[owner].provinces.push(p);
-          provinces[p].color = getMixedColor(states[owner].color);
-        }
-      } else {
-        provinces[p].removed = true;
-        provCells.filter(i => !cells.state[i]).forEach(i => (cells.province[i] = 0));
-      }
-
-      // create new provinces for non-main part
-      provStates
-        .filter(s => s && s !== owner)
-        .forEach(s =>
-          createProvince(
-            p,
-            s,
-            provCells.filter(i => cells.state[i] === s)
-          )
-        );
+      // province is captured partially => split province
+      splitProvince(provinceId, provStates, provCells);
     });
 
-    function createProvince(initProv, state, provCells) {
-      const province = provinces.length;
-      provCells.forEach(i => (cells.province[i] = province));
+    function changeProvinceOwner(provinceId, newOwnerId, provinceCells) {
+      const province = provinces[provinceId];
+      const prevOwner = states[province.state];
 
-      const burgCell = provCells.find(i => cells.burg[i]);
-      const center = burgCell ? burgCell : provCells[0];
-      const burg = burgCell ? cells.burg[burgCell] : 0;
+      // remove province from old owner list
+      prevOwner.provinces = prevOwner.provinces.filter(province => province !== provinceId);
 
-      const name =
-        burgCell && P(0.7) ? getAdjective(pack.burgs[burg].name) : getAdjective(states[state].name) + " " + provinces[initProv].name.split(" ").slice(-1)[0];
-      const formName = name.split(" ").length > 1 ? provinces[initProv].formName : rw(form);
-      const fullName = name + " " + formName;
-      const color = getMixedColor(states[state].color);
-      provinces.push({i: province, state, center, burg, name, formName, fullName, color});
+      if (newOwnerId) {
+        // new owner is a state => change owner
+        province.state = newOwnerId;
+        states[newOwnerId].provinces.push(provinceId);
+      } else {
+        // new owner is neutral => remove province
+        provinces[provinceId] = {removed: true};
+        provinceCells.forEach(i => {
+          cells.province[i] = 0;
+        });
+      }
+    }
+
+    function splitProvince(provinceId, provinceStates, provinceCells) {
+      const province = provinces[provinceId];
+      const prevOwner = states[province.state];
+      const provinceCenterOwner = cells.state[province.center];
+
+      provinceStates.forEach(stateId => {
+        const stateProvinceCells = provinceCells.filter(i => cells.state[i] === stateId);
+
+        if (stateId === provinceCenterOwner) {
+          // province center is owned by the same state => do nothing for this state
+          if (stateId === prevOwner.i) return;
+
+          // province center is captured by neutrals => remove state
+          if (!stateId) {
+            provinces[provinceId] = {removed: true};
+            stateProvinceCells.forEach(i => {
+              cells.province[i] = 0;
+            });
+            return;
+          }
+
+          // reassign province ownership to province center owner
+          prevOwner.provinces = prevOwner.provinces.filter(province => province !== provinceId);
+          province.state = stateId;
+          states[stateId].provinces.push(provinceId);
+          return;
+        }
+
+        // province cells captured by neutrals => clear province
+        if (!stateId) {
+          stateProvinceCells.forEach(i => {
+            cells.province[i] = 0;
+          });
+          return;
+        }
+
+        // a few province cells owned by state => add to closes province
+        if (stateProvinceCells.length < 20) {
+          const closestProvince = findClosestProvince(provinceId, stateId, stateProvinceCells);
+          if (closestProvince) {
+            stateProvinceCells.forEach(i => {
+              cells.province[i] = closestProvince;
+            });
+            return;
+          }
+        }
+
+        // some province cells owned by state => create new province
+        createProvince(province, stateId, stateProvinceCells);
+      });
+    }
+
+    function createProvince(oldProvince, stateId, provinceCells) {
+      const newProvinceId = provinces.length;
+      const burgCell = provinceCells.find(i => cells.burg[i]);
+      const center = burgCell ? burgCell : provinceCells[0];
+      const burgId = burgCell ? cells.burg[burgCell] : 0;
+      const burg = burgId ? burgs[burgId] : null;
+      const culture = cells.culture[center];
+
+      const nameByBurg = burgCell && P(0.5);
+      const name = nameByBurg ? burg.name : oldProvince.name || Names.getState(Names.getCultureShort(culture), culture);
+
+      const formOptions = ["Zone", "Area", "Territory", "Province"];
+      const formName = burgCell && oldProvince.formName ? oldProvince.formName : ra(formOptions);
+
+      const color = getMixedColor(states[stateId].color);
+
+      const kinship = nameByBurg ? 0.8 : 0.4;
+      const type = BurgsAndStates.getType(center, burg?.port);
+      const coa = COA.generate(burg?.coa || states[stateId].coa, kinship, burg ? null : 0.9, type);
+      coa.shield = COA.getShield(culture, stateId);
+
+      provinces.push({i: newProvinceId, state: stateId, center, burg: burgId, name, formName, fullName: `${name} ${formName}`, color, coa});
+
+      provinceCells.forEach(i => {
+        cells.province[i] = newProvinceId;
+      });
+
+      states[stateId].provinces.push(newProvinceId);
+    }
+
+    function findClosestProvince(provinceId, stateId, sourceCells) {
+      const borderCell = sourceCells.find(i =>
+        cells.c[i].some(c => {
+          return cells.state[c] === stateId && cells.province[c] && cells.province[c] !== provinceId;
+        })
+      );
+
+      const closesProvince = borderCell && cells.c[borderCell].map(c => cells.province[c]).find(province => province && province !== provinceId);
+      return closesProvince;
     }
   }
 
