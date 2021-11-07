@@ -58,3 +58,7 @@ function createTypedArray({maxValue, length, from}) {
   if (!from) return new typedArray(length);
   return typedArray.from(from);
 }
+
+function unique(array) {
+  return [...new Set(array)];
+}
