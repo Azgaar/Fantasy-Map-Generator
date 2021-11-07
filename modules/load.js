@@ -233,6 +233,10 @@ function parseLoadedData(data) {
       if (settings[23]) rescaleLabels.checked = settings[23];
     })();
 
+    void (function applyOptionsToUI() {
+      stateLabelsModeInput.value = options.stateLabelsMode;
+    })();
+
     void (function parseConfiguration() {
       if (data[2]) mapCoordinates = JSON.parse(data[2]);
       if (data[4]) notes = JSON.parse(data[4]);
