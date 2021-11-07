@@ -234,6 +234,10 @@ function parseLoadedData(data) {
       if (settings[24]) urbanDensity = urbanDensityInput.value = urbanDensityOutput.value = +settings[24];
     })();
 
+    void (function applyOptionsToUI() {
+      stateLabelsModeInput.value = options.stateLabelsMode;
+    })();
+
     void (function parseConfiguration() {
       if (data[2]) mapCoordinates = JSON.parse(data[2]);
       if (data[4]) notes = JSON.parse(data[4]);

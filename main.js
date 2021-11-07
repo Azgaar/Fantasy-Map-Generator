@@ -150,7 +150,8 @@ const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", zoomed);
 let options = {
   pinNotes: false,
   showMFCGMap: true,
-  winds: [225, 45, 225, 315, 135, 315]
+  winds: [225, 45, 225, 315, 135, 315],
+  stateLabelsMode: "auto"
 };
 let mapCoordinates = {}; // map coordinates on globe
 let populationRate = +document.getElementById("populationRateInput").value;

@@ -165,6 +165,7 @@ optionsContent.addEventListener("change", function (event) {
   if (id === "shapeRendering") viewbox.attr("shape-rendering", value);
   else if (id === "yearInput") changeYear();
   else if (id === "eraInput") changeEra();
+  else if (id === "stateLabelsModeInput") options.stateLabelsMode = value;
 });
 
 optionsContent.addEventListener("click", function (event) {
@@ -533,6 +534,8 @@ function applyStoredOptions() {
 
   // set shape rendering
   viewbox.attr("shape-rendering", shapeRendering.value);
+
+  options.stateLabelsMode = stateLabelsModeInput.value;
 }
 
 // randomize options if randomization is allowed (not locked or options='default')

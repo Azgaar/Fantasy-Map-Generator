@@ -480,6 +480,7 @@ window.BurgsAndStates = (function () {
     const {cells, features, states} = pack;
     const paths = []; // text paths
     lineGen.curve(d3.curveBundle.beta(1));
+    const mode = options.stateLabelsMode || "auto";
 
     for (const s of states) {
       if (!s.i || s.removed || !s.cells || (list && !list.includes(s.i))) continue;
@@ -586,7 +587,8 @@ window.BurgsAndStates = (function () {
 
       paths.forEach(p => {
         const id = p[0];
-        const s = states[p[0]];
+        const state = states[p[0]];
+        const {name, fullName} = state;
 
         if (list) {
           t.select("#textPath_stateLabel" + id).remove();
@@ -600,22 +602,7 @@ window.BurgsAndStates = (function () {
           .attr("id", "textPath_stateLabel" + id);
         const pathLength = p[1].length > 1 ? textPath.node().getTotalLength() / letterLength : 0; // path length in letters
 
-        let lines = [];
-        let ratio = 100;
-
-        if (pathLength < s.name.length) {
-          // only short name will fit
-          lines = splitInTwo(s.name);
-          ratio = minmax(rn((pathLength / lines[0].length) * 60), 50, 150);
-        } else if (pathLength > s.fullName.length * 2.5) {
-          // full name will fit in one line
-          lines = [s.fullName];
-          ratio = minmax(rn((pathLength / lines[0].length) * 70), 70, 170);
-        } else {
-          // try miltilined label
-          lines = splitInTwo(s.fullName);
-          ratio = minmax(rn((pathLength / lines[0].length) * 60), 70, 150);
-        }
+        const [lines, ratio] = getLines(mode, name, fullName, pathLength);
 
         // prolongate path if it's too short
         if (pathLength && pathLength < lines[0].length) {
@@ -647,7 +634,7 @@ window.BurgsAndStates = (function () {
           .node();
 
         el.insertAdjacentHTML("afterbegin", spans.join(""));
-        if (lines.length < 2) return;
+        if (mode === "full" || lines.length === 1) return;
 
         // check whether multilined label is generally inside the state. If no, replace with short name label
         const cs = pack.cells.state;
@@ -658,20 +645,42 @@ window.BurgsAndStates = (function () {
         const c4 = () => +cs[findCell(b.x + b.width, b.y + b.height)] === id;
         const c5 = () => +cs[findCell(b.x + b.width / 2, b.y + b.height)] === id;
         const c6 = () => +cs[findCell(b.x, b.y + b.height)] === id;
-        if (c1() + c2() + c3() + c4() + c5() + c6() > 3) return; // generally inside
+        if (c1() + c2() + c3() + c4() + c5() + c6() > 3) return; // generally inside => exit
 
-        // use one-line name
-        const name = pathLength > s.fullName.length * 1.8 ? s.fullName : s.name;
-        example.text(name);
+        // move to one-line name
+        const text = pathLength > fullName.length * 1.8 ? fullName : name;
+        example.text(text);
         const left = example.node().getBBox().width / -2; // x offset
-        el.innerHTML = `<tspan x="${left}px">${name}</tspan>`;
-        ratio = minmax(rn((pathLength / name.length) * 60), 40, 130);
-        el.setAttribute("font-size", ratio + "%");
+        el.innerHTML = `<tspan x="${left}px">${text}</tspan>`;
+
+        const correctedRatio = minmax(rn((pathLength / text.length) * 60), 40, 130);
+        el.setAttribute("font-size", correctedRatio + "%");
       });
 
       example.remove();
       if (!displayed) toggleLabels();
     })();
+
+    function getLines(mode, name, fullName, pathLength) {
+      // short name
+      if (mode === "short" || (mode === "auto" && pathLength < name.length)) {
+        const lines = splitInTwo(name);
+        const ratio = pathLength / lines[0].length;
+        return [lines, minmax(rn(ratio * 60), 50, 150)];
+      }
+
+      // full name: one line
+      if (pathLength > fullName.length * 2.5) {
+        const lines = [fullName];
+        const ratio = pathLength / lines[0].length;
+        return [lines, minmax(rn(ratio * 70), 70, 170)];
+      }
+
+      // full name: two lines
+      const lines = splitInTwo(fullName);
+      const ratio = pathLength / lines[0].length;
+      return [lines, minmax(rn(ratio * 60), 70, 150)];
+    }
 
     TIME && console.timeEnd("drawStateLabels");
   };
