@@ -679,8 +679,8 @@ window.BurgsAndStates = (function () {
   // calculate states data like area, population etc.
   const collectStatistics = function () {
     TIME && console.time("collectStatistics");
-    const cells = pack.cells,
-      states = pack.states;
+    const {cells, states} = pack;
+
     states.forEach(s => {
       if (s.removed) return;
       s.cells = s.area = s.burgs = s.rural = s.urban = 0;

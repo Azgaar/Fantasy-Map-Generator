@@ -1411,11 +1411,16 @@ div.states > .statePopulation {
   width: 3em;
 }
 
+div.states:hover > .hiddenIcon {
+  visibility: visible !important;
+}
+
 div.states .icon-pencil,
 div.states .icon-trash-empty,
 div.states .icon-eye,
 div.states .icon-pin,
-div.states .icon-flag-empty {
+div.states .icon-flag-empty,
+div.states .icon-cw {
   cursor: pointer;
 }
 

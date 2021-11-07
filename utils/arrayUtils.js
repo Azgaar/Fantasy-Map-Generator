@@ -11,3 +11,7 @@ function common(a, b) {
   const setB = new Set(b);
   return [...new Set(a)].filter(a => setB.has(a));
 }
+
+function unique(array) {
+  return [...new Set(array)];
+}

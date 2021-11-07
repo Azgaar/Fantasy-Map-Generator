@@ -514,6 +514,7 @@ function editStates() {
       pack.cells.province.forEach((pr, i) => {
         if (pr === p) pack.cells.province[i] = 0;
       });
+
       const coaId = "provinceCOA" + p;
       if (document.getElementById(coaId)) document.getElementById(coaId).remove();
       emblems.select(`#provinceEmblems > use[data-i='${p}']`).remove();
@@ -901,7 +902,7 @@ function editStates() {
         states[newOwnerId].provinces.push(provinceId);
       } else {
         // new owner is neutral => remove province
-        provinces[provinceId] = {removed: true};
+        provinces[provinceId] = {i: provinceId, removed: true};
         provinceCells.forEach(i => {
           cells.province[i] = 0;
         });
@@ -922,7 +923,7 @@ function editStates() {
 
           // province center is captured by neutrals => remove state
           if (!stateId) {
-            provinces[provinceId] = {removed: true};
+            provinces[provinceId] = {i: provinceId, removed: true};
             stateProvinceCells.forEach(i => {
               cells.province[i] = 0;
             });
