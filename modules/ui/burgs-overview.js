@@ -456,7 +456,7 @@ function overviewBurgs() {
   }
 
   function downloadBurgsData() {
-    let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Population,Longitude,Latitude,Elevation (${heightUnit.value}),Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town`; // headers
+    let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Population,Latitude,Longitude,Elevation (${heightUnit.value}),Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town`; // headers
     if (options.showMFCGMap) data += `,City Generator Link`;
     data += "\n";
 
@@ -475,8 +475,8 @@ function overviewBurgs() {
       data += rn(b.population * populationRate * urbanization) + ",";
 
       // add geography data
-      data += mapCoordinates.lonW + (b.x / graphWidth) * mapCoordinates.lonT + ",";
-      data += mapCoordinates.latN - (b.y / graphHeight) * mapCoordinates.latT + ","; // this is inverted in QGIS otherwise
+      data += getLatitude(b.y, 2) + ",";
+      data += getLongitude(b.x, 2) + ",";
       data += parseInt(getHeight(pack.cells.h[b.cell])) + ",";
 
       // add status data

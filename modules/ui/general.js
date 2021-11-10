@@ -228,8 +228,8 @@ function updateCellInfo(point, i, g) {
   const x = (infoX.innerHTML = rn(point[0]));
   const y = (infoY.innerHTML = rn(point[1]));
   const f = cells.f[i];
-  infoLat.innerHTML = toDMS(mapCoordinates.latN - (y / graphHeight) * mapCoordinates.latT, "lat");
-  infoLon.innerHTML = toDMS(mapCoordinates.lonW + (x / graphWidth) * mapCoordinates.lonT, "lon");
+  infoLat.innerHTML = toDMS(getLatitude(y, 4), "lat");
+  infoLon.innerHTML = toDMS(getLongitude(x, 4), "lon");
 
   infoCell.innerHTML = i;
   const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;

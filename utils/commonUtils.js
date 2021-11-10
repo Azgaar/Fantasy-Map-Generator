@@ -137,10 +137,16 @@ function generateDate(from = 100, to = 1000) {
   return new Date(rand(from, to), rand(12), rand(31)).toLocaleDateString("en", {year: "numeric", month: "long", day: "numeric"});
 }
 
-function getQGIScoordinates(x, y) {
-  const cx = mapCoordinates.lonW + (x / graphWidth) * mapCoordinates.lonT;
-  const cy = mapCoordinates.latN - (y / graphHeight) * mapCoordinates.latT; // this is inverted in QGIS otherwise
-  return [cx, cy];
+function getLongitude(x, decimals = 2) {
+  return rn(mapCoordinates.lonW + (x / graphWidth) * mapCoordinates.lonT, decimals);
+}
+
+function getLatitude(y, decimals = 2) {
+  return rn(mapCoordinates.latN - (y / graphHeight) * mapCoordinates.latT, decimals);
+}
+
+function getCoordinates(x, y, decimals = 2) {
+  return [getLongitude(x, decimals), getLatitude(y, decimals)];
 }
 
 // prompt replacer (prompt does not work in Electron)
