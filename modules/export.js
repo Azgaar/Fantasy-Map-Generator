@@ -461,7 +461,7 @@ function saveGeoJSON_Markers() {
 
 function getCellCoordinates(vertices) {
   const p = pack.vertices.p;
-  const coordinates = vertices.map(n => getQGIScoordinates(p[n][0], p[n][1]));
+  const coordinates = vertices.map(n => getCoordinates(p[n][0], p[n][1], 2));
   return [coordinates.concat([coordinates[0]])];
 }
 
@@ -471,7 +471,7 @@ function getRoutePoints(node) {
   const increment = l / Math.ceil(l / 2);
   for (let i = 0; i <= l; i += increment) {
     const p = node.getPointAtLength(i);
-    points.push(getQGIScoordinates(p.x, p.y));
+    points.push(getCoordinates(p.x, p.y, 4));
   }
   return points;
 }
@@ -483,7 +483,7 @@ function getRiverPoints(node) {
   for (let i = l, c = i; i >= 0; i -= increment, c += increment) {
     const p1 = node.getPointAtLength(i);
     const p2 = node.getPointAtLength(c);
-    const [x, y] = getQGIScoordinates((p1.x + p2.x) / 2, (p1.y + p2.y) / 2);
+    const [x, y] = getCoordinates((p1.x + p2.x) / 2, (p1.y + p2.y) / 2, 4);
     points.push([x, y]);
   }
   return points;
