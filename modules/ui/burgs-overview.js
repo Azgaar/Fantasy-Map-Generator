@@ -456,10 +456,10 @@ function overviewBurgs() {
   }
 
   function downloadBurgsData() {
-    let data =
-      "Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Population,Longitude,Latitude,Elevation (" +
-      heightUnit.value +
-      "),Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town\n"; // headers
+    let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Population,Longitude,Latitude,Elevation (${heightUnit.value}),Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town`; // headers
+    if (options.showMFCGMap) data += `,City Generator Link`;
+    data += "\n";
+
     const valid = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
 
     valid.forEach(b => {
@@ -486,7 +486,9 @@ function overviewBurgs() {
       data += b.walls ? "walls," : ",";
       data += b.plaza ? "plaza," : ",";
       data += b.temple ? "temple," : ",";
-      data += b.shanty ? "shanty town\n" : "\n";
+      data += b.shanty ? "shanty town," : ",";
+      if (options.showMFCGMap) data += getMFCGlink(b);
+      data += "\n";
     });
 
     const name = getFileName("Burgs") + ".csv";

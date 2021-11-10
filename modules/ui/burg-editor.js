@@ -408,42 +408,6 @@ function editBurg(id) {
     document.getElementById("mfcgPreview").setAttribute("src", mfcgURL);
     document.getElementById("mfcgLink").setAttribute("href", mfcgURL);
   }
-  function getBurgSeed(burg) {
-    return burg.MFCG || Number(`${seed}${String(burg.i).padStart(4, 0)}`);
-  }
-
-  function getMFCGlink(burg) {
-    const {cells} = pack;
-    const {name, population, cell} = burg;
-    const burgSeed = getBurgSeed(burg);
-    const sizeRaw = 2.13 * Math.pow((population * populationRate) / urbanDensity, 0.385);
-    const size = minmax(Math.ceil(sizeRaw), 6, 100);
-    const people = rn(population * populationRate * urbanization);
-
-    const hub = +cells.road[cell] > 50;
-    const river = cells.r[cell] ? 1 : 0;
-
-    const coast = +burg.port;
-    const citadel = +burg.citadel;
-    const walls = +burg.walls;
-    const plaza = +burg.plaza;
-    const temple = +burg.temple;
-    const shanty = +burg.shanty;
-
-    const sea = coast && cells.haven[cell] ? getSeaDirections(cell) : "";
-    function getSeaDirections(i) {
-      const p1 = cells.p[i];
-      const p2 = cells.p[cells.haven[i]];
-      let deg = (Math.atan2(p2[1] - p1[1], p2[0] - p1[0]) * 180) / Math.PI - 90;
-      if (deg < 0) deg += 360;
-      const norm = rn(normalize(deg, 0, 360) * 2, 2); // 0 = south, 0.5 = west, 1 = north, 1.5 = east
-      return "&sea=" + norm;
-    }
-
-    const baseURL = "https://watabou.github.io/city-generator/?random=0&continuous=0";
-    const url = `${baseURL}&name=${name}&population=${people}&size=${size}&seed=${burgSeed}&hub=${hub}&river=${river}&coast=${coast}&citadel=${citadel}&plaza=${plaza}&temple=${temple}&walls=${walls}&shantytown=${shanty}${sea}`;
-    return url;
-  }
 
   function changeSeed() {
     const id = +elSelected.attr("data-id");
