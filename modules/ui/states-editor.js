@@ -878,8 +878,10 @@ function editStates() {
     const {cells, provinces, states, burgs} = pack;
 
     affectedProvinces.forEach(provinceId => {
+      if (!provinces[provinceId]) return; // lands without province captured => do nothing
+
       // find states owning at least 1 province cell
-      const provCells = cells.i.filter(i => cells.state[i] && cells.province[i] === provinceId);
+      const provCells = cells.i.filter(i => cells.province[i] === provinceId);
       const provStates = [...new Set(provCells.map(i => cells.state[i]))];
 
       // province is captured completely => change owner or remove
@@ -921,7 +923,7 @@ function editStates() {
           // province center is owned by the same state => do nothing for this state
           if (stateId === prevOwner.i) return;
 
-          // province center is captured by neutrals => remove state
+          // province center is captured by neutrals => remove province
           if (!stateId) {
             provinces[provinceId] = {i: provinceId, removed: true};
             stateProvinceCells.forEach(i => {
@@ -938,7 +940,7 @@ function editStates() {
           return;
         }
 
-        // province cells captured by neutrals => clear province
+        // province cells captured by neutrals => remove captured cells from province
         if (!stateId) {
           stateProvinceCells.forEach(i => {
             cells.province[i] = 0;
@@ -1036,20 +1038,14 @@ function editStates() {
   }
 
   function addState() {
-    const states = pack.states,
-      burgs = pack.burgs,
-      cells = pack.cells;
+    const {cells, states, burgs} = pack;
     const point = d3.mouse(this);
     const center = findCell(point[0], point[1]);
-    if (cells.h[center] < 20) {
-      tip("You cannot place state into the water. Please click on a land cell", false, "error");
-      return;
-    }
+    if (cells.h[center] < 20) return tip("You cannot place state into the water. Please click on a land cell", false, "error");
+
     let burg = cells.burg[center];
-    if (burg && burgs[burg].capital) {
-      tip("Existing capital cannot be selected as a new state capital! Select other cell", false, "error");
-      return;
-    }
+    if (burg && burgs[burg].capital) return tip("Existing capital cannot be selected as a new state capital! Select other cell", false, "error");
+
     if (!burg) burg = addBurg(point); // add new burg
 
     const oldState = cells.state[center];
