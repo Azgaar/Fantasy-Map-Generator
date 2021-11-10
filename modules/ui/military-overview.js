@@ -280,8 +280,10 @@ function overviewMilitary() {
     }
 
     function addUnitLine(unit) {
+      const {type, icon, name, rural, urban, power, crew, separate} = unit;
       const row = document.createElement("tr");
-      const typeOptions = types.map(t => `<option ${unit.type === t ? "selected" : ""} value="${t}">${t}</option>`).join(" ");
+      const typeOptions = types.map(t => `<option ${type === t ? "selected" : ""} value="${t}">${t}</option>`).join(" ");
+
       const getLimitButton = attr =>
         `<button 
           data-tip="Select allowed ${attr}"
@@ -291,20 +293,20 @@ function overviewMilitary() {
           ${getLimitText(unit[attr])}
         </button>`;
 
-      row.innerHTML = `<td><button data-type="icon" data-tip="Click to select unit icon">${unit.icon || " "}</button></td>
-        <td><input data-tip="Type unit name. If name is changed for existing unit, old unit will be replaced" value="${unit.name}"></td>
+      row.innerHTML = `<td><button data-type="icon" data-tip="Click to select unit icon">${icon || " "}</button></td>
+        <td><input data-tip="Type unit name. If name is changed for existing unit, old unit will be replaced" value="${name}"></td>
         <td>${getLimitButton("biomes")}</td>
         <td>${getLimitButton("states")}</td>
         <td>${getLimitButton("cultures")}</td>
         <td>${getLimitButton("religions")}</td>
-        <td><input data-tip="Enter conscription percentage for rural population" type="number" min=0 max=100 step=.01 value="${unit.rural}"></td>
-        <td><input data-tip="Enter conscription percentage for urban population" type="number" min=0 max=100 step=.01 value="${unit.urban}"></td>
-        <td><input data-tip="Enter average number of people in crew (for total personnel calculation)" type="number" min=1 step=1 value="${unit.crew}"></td>
-        <td><input data-tip="Enter military power (used for battle simulation)" type="number" min=0 step=.1 value="${unit.power}"></td>
+        <td><input data-tip="Enter conscription percentage for rural population" type="number" min=0 max=100 step=.01 value="${rural}"></td>
+        <td><input data-tip="Enter conscription percentage for urban population" type="number" min=0 max=100 step=.01 value="${urban}"></td>
+        <td><input data-tip="Enter average number of people in crew (for total personnel calculation)" type="number" min=1 step=1 value="${crew}"></td>
+        <td><input data-tip="Enter military power (used for battle simulation)" type="number" min=0 step=.1 value="${power}"></td>
         <td><select data-tip="Select unit type to apply special rules on forces recalculation">${typeOptions}</select></td>
-        <td data-tip="Check if unit is separate and can be stacked only with units of the same type">
-          <input id="${unit.name}Separate" type="checkbox" class="checkbox" ${unit.separate ? "checked" : ""}>
-          <label for="${unit.name}Separate" class="checkbox-label"></label></td>
+        <td data-tip="Check if unit is <b>separate</b> and can be stacked only with the same units">
+          <input id="${name}Separate" type="checkbox" class="checkbox" ${separate ? "checked" : ""}>
+          <label for="${name}Separate" class="checkbox-label"></label></td>
         <td data-tip="Remove the unit"><span data-tip="Remove unit type" class="icon-trash-empty pointer" onclick="this.parentElement.parentElement.remove();"></span></td>`;
       tableBody.appendChild(row);
     }

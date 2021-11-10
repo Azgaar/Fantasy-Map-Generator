@@ -72,6 +72,7 @@ window.Military = (function () {
       return true;
     }
 
+    // rural cells
     for (const i of cells.i) {
       if (!cells.pop[i]) continue;
 
@@ -93,6 +94,7 @@ window.Military = (function () {
         const perc = +unit.rural;
         if (isNaN(perc) || perc <= 0 || !stateObj.temp[unit.name]) continue;
         if (!passUnitLimits(unit, biome, state, culture, religion)) continue;
+        if (unit.type === "naval" && !cells.haven[i]) continue; // only near-ocean cells create naval units
 
         const cellTypeMod = type === "generic" ? 1 : cellTypeModifier[type][unit.type]; // cell specific modifier
         const army = modifier * perc * cellTypeMod; // rural cell army
@@ -102,16 +104,18 @@ window.Military = (function () {
         let [x, y] = p[i];
         let n = 0;
 
+        // place naval units to sea
         if (unit.type === "naval") {
-          let haven = cells.haven[i];
+          const haven = cells.haven[i];
           [x, y] = p[haven];
           n = 1;
-        } // place naval to sea
+        }
 
         stateObj.temp.platoons.push({cell: i, a: total, t: total, x, y, u: unit.name, n, s: unit.separate, type: unit.type});
       }
     }
 
+    // burgs
     for (const b of pack.burgs) {
       if (!b.i || b.removed || !b.state || !b.population) continue;
 
@@ -129,10 +133,10 @@ window.Military = (function () {
       const type = getType(b.cell);
 
       for (const unit of options.military) {
-        if (unit.type === "naval" && !b.port) continue; // only ports produce naval units
         const perc = +unit.urban;
         if (isNaN(perc) || perc <= 0 || !stateObj.temp[unit.name]) continue;
         if (!passUnitLimits(unit, biome, state, culture, religion)) continue;
+        if (unit.type === "naval" && (!b.port || !cells.haven[b.cell])) continue; // only ports create naval units
 
         const mod = type === "generic" ? 1 : burgTypeModifier[type][unit.type]; // cell specific modifier
         const army = m * perc * mod; // urban cell army
@@ -142,11 +146,12 @@ window.Military = (function () {
         let [x, y] = p[b.cell];
         let n = 0;
 
+        // place naval to sea
         if (unit.type === "naval") {
-          let haven = cells.haven[b.cell];
+          const haven = cells.haven[b.cell];
           [x, y] = p[haven];
           n = 1;
-        } // place naval to sea
+        }
 
         stateObj.temp.platoons.push({cell: b.cell, a: total, t: total, x, y, u: unit.name, n, s: unit.separate, type: unit.type});
       }
@@ -161,7 +166,7 @@ window.Military = (function () {
     })();
 
     const expected = 3 * populationRate; // expected regiment size
-    const mergeable = (n0, n1) => (!n0.s && !n1.s) || n0.type === n1.type; // check if regiments can be merged
+    const mergeable = (n0, n1) => (!n0.s && !n1.s) || n0.u === n1.u; // check if regiments can be merged
 
     // get regiments for each state
     valid.forEach(s => {
@@ -172,25 +177,27 @@ window.Military = (function () {
 
     function createRegiments(nodes, s) {
       if (!nodes.length) return [];
+
       nodes.sort((a, b) => a.a - b.a); // form regiments in cells with most troops
       const tree = d3.quadtree(
         nodes,
         d => d.x,
         d => d.y
       );
-      nodes.forEach(n => {
-        tree.remove(n);
-        const overlap = tree.find(n.x, n.y, 20);
-        if (overlap && overlap.t && mergeable(n, overlap)) {
-          merge(n, overlap);
+
+      nodes.forEach(node => {
+        tree.remove(node);
+        const overlap = tree.find(node.x, node.y, 20);
+        if (overlap && overlap.t && mergeable(node, overlap)) {
+          merge(node, overlap);
           return;
         }
-        if (n.t > expected) return;
-        const r = (expected - n.t) / (n.s ? 40 : 20); // search radius
-        const candidates = tree.findAll(n.x, n.y, r);
+        if (node.t > expected) return;
+        const r = (expected - node.t) / (node.s ? 40 : 20); // search radius
+        const candidates = tree.findAll(node.x, node.y, r);
         for (const c of candidates) {
-          if (c.t < expected && mergeable(n, c)) {
-            merge(n, c);
+          if (c.t < expected && mergeable(node, c)) {
+            merge(node, c);
             break;
           }
         }
