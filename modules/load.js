@@ -920,7 +920,7 @@ function parseLoadedData(data) {
         });
 
         markersGroup.style.display = null;
-        defs.remove();
+        defs?.remove();
         markerElements.forEach(el => el.remove());
         if (layerIsOn("markers")) drawMarkers();
       }
