@@ -44,11 +44,45 @@ window.COA = (function () {
   };
 
   const charges = {
-    // categories selection
-    types: {conventional: 30, crosses: 10, animals: 2, animalHeads: 1, birds: 2, fantastic: 3, plants: 1, agriculture: 1, arms: 3, bodyparts: 1, people: 1, architecture: 1, miscellaneous: 3, inescutcheon: 3},
-    single: {conventional: 12, crosses: 8, plants: 2, animals: 10, animalHeads: 2, birds: 4, fantastic: 7, agriculture: 1, arms: 6, bodyparts: 1, people: 2, architecture: 1, miscellaneous: 10, inescutcheon: 5},
-    semy: {conventional: 12, crosses: 3, plants: 1},
-    // generic categories
+    types: {
+      conventional: 30,
+      crosses: 10,
+      animals: 2,
+      animalHeads: 1,
+      birds: 2,
+      aquatic: 1,
+      seafaring: 1,
+      fantastic: 3,
+      plants: 1,
+      agriculture: 1,
+      arms: 3,
+      bodyparts: 1,
+      people: 1,
+      architecture: 1,
+      miscellaneous: 3,
+      inescutcheon: 3,
+      uploaded: 0
+    },
+    single: {
+      conventional: 12,
+      crosses: 8,
+      plants: 2,
+      animals: 10,
+      animalHeads: 2,
+      birds: 4,
+      aquatic: 2,
+      seafaring: 2,
+      fantastic: 7,
+      agriculture: 1,
+      arms: 6,
+      bodyparts: 1,
+      people: 2,
+      architecture: 1,
+      miscellaneous: 10,
+      inescutcheon: 5,
+      uploaded: 0
+    },
+    semy: {conventional: 4, crosses: 1},
     conventional: {
       lozenge: 2,
       fusil: 4,
@@ -85,6 +119,51 @@ window.COA = (function () {
       sunInSplendour: 1,
       crescent: 5,
       fountain: 1
+    },
+    inescutcheon: {
+      inescutcheonHeater: 1,
+      inescutcheonSpanish: 1,
+      inescutcheonFrench: 1,
+      inescutcheonHorsehead: 1,
+      inescutcheonHorsehead2: 1,
+      inescutcheonPolish: 1,
+      inescutcheonHessen: 1,
+      inescutcheonSwiss: 1,
+      inescutcheonBoeotian: 1,
+      inescutcheonRoman: 1,
+      inescutcheonKite: 1,
+      inescutcheonOldFrench: 1,
+      inescutcheonRenaissance: 1,
+      inescutcheonBaroque: 1,
+      inescutcheonTarge: 1,
+      inescutcheonTarge2: 1,
+      inescutcheonPavise: 1,
+      inescutcheonWedged: 1,
+      inescutcheonFlag: 1,
+      inescutcheonPennon: 1,
+      inescutcheonGuidon: 1,
+      inescutcheonBanner: 1,
+      inescutcheonDovetail: 1,
+      inescutcheonGonfalon: 1,
+      inescutcheonPennant: 1,
+      inescutcheonRound: 1,
+      inescutcheonOval: 1,
+      inescutcheonVesicaPiscis: 1,
+      inescutcheonSquare: 1,
+      inescutcheonDiamond: 1,
+      inescutcheonNo: 1,
+      inescutcheonFantasy1: 1,
+      inescutcheonFantasy2: 1,
+      inescutcheonFantasy3: 1,
+      inescutcheonFantasy4: 1,
+      inescutcheonFantasy5: 1,
+      inescutcheonNoldor: 1,
+      inescutcheonGondor: 1,
+      inescutcheonEasterling: 1,
+      inescutcheonErebor: 1,
+      inescutcheonIronHills: 1,
+      inescutcheonUrukHai: 1,
+      inescutcheonMoriaOrc: 1
     },
     crosses: {
       crossHummetty: 15,
@@ -129,35 +208,73 @@ window.COA = (function () {
       crossAnkh: 1
     },
     animals: {
-      lionRampant: 5,
+      lionRampant: 6,
       lionPassant: 2,
       lionPassantGuardant: 1,
       wolfRampant: 1,
       wolfPassant: 1,
       wolfStatant: 1,
       greyhoundCourant: 1,
+      greyhoundSejant: 1,
+      mastiffStatant: 1,
       boarRampant: 1,
       horseRampant: 2,
       horseSalient: 1,
+      horsePassant: 1,
       bearRampant: 2,
       bearPassant: 1,
       bullPassant: 1,
       goat: 1,
       lamb: 1,
+      lambPassantReguardant: 1,
+      agnusDei: 1,
       elephant: 1,
-      camel: 1
+      camel: 1,
+      porcupine: 1,
+      snake: 1
     },
-    animalHeads: {wolfHeadErased: 1, bullHeadCaboshed: 1, deerHeadCaboshed: 1, lionHeadCaboshed: 2},
-    fantastic: {dragonPassant: 2, dragonRampant: 2, wyvern: 1, wyvernWithWingsDisplayed: 1, griffinPassant: 1, griffinRampant: 1, eagleTwoHeards: 2, unicornRampant: 1, pegasus: 1, serpent: 1},
-    birds: {eagle: 9, raven: 1, cock: 3, parrot: 1, swan: 2, swanErased: 1, heron: 1, owl: 1},
-    plants: {tree: 1, oak: 1, cinquefoil: 1, rose: 1},
-    agriculture: {garb: 1, rake: 1},
-    arms: {sword: 5, sabre: 1, sabresCrossed: 1, hatchet: 2, axe: 2, lochaberAxe: 1, mallet: 1, bowWithArrow: 2, bow: 1, arrow: 1, arrowsSheaf: 1, helmet: 2},
-    bodyparts: {hand: 4, head: 1, headWreathed: 1},
+    animalHeads: {wolfHeadErased: 2, bullHeadCaboshed: 1, deerHeadCaboshed: 1, lionHeadCaboshed: 2},
+    fantastic: {
+      dragonPassant: 2,
+      dragonRampant: 2,
+      wyvern: 1,
+      wyvernWithWingsDisplayed: 1,
+      griffinPassant: 1,
+      griffinRampant: 1,
+      eagleTwoHeards: 2,
+      unicornRampant: 1,
+      pegasus: 1,
+      serpent: 1,
+      basilisk: 1
+    },
+    birds: {eagle: 9, raven: 2, cock: 3, parrot: 1, swan: 2, swanErased: 1, heron: 1, owl: 1},
+    plants: {tree: 1, oak: 1, cinquefoil: 1, rose: 1, apple: 1},
+    aquatic: {escallop: 5, pike: 1, cancer: 1, dolphin: 1},
+    seafaring: {anchor: 6, boat: 2, boat2: 1, lymphad: 2, armillarySphere: 1},
+    agriculture: {garb: 2, rake: 1, plough: 2},
+    arms: {
+      sword: 4,
+      falchion: 1,
+      sabre: 1,
+      sabresCrossed: 1,
+      sabre2: 1,
+      hatchet: 3,
+      axe: 3,
+      lochaberAxe: 1,
+      mallet: 1,
+      bowWithArrow: 3,
+      bow: 1,
+      arrow: 1,
+      arrowsSheaf: 1,
+      helmet: 2,
+      cannon: 1
+    },
+    bodyparts: {hand: 4, head: 1, headWreathed: 1, foot: 1},
     people: {cavalier: 3, monk: 1, angel: 2},
     architecture: {tower: 1, castle: 1},
     miscellaneous: {
-      crown: 3,
+      crown: 2,
+      crown2: 1,
       orb: 1,
       chalice: 1,
       key: 1,
@@ -179,19 +296,33 @@ window.COA = (function () {
       wheel: 2,
       crosier: 1,
       fasces: 1,
-      log: 1
+      log: 1,
+      chain: 1,
+      anvil: 1
     },
     // selection based on culture type:
     Naval: {anchor: 3, boat: 1, lymphad: 2, armillarySphere: 1, escallop: 1, dolphin: 1},
     Highland: {tower: 1, raven: 1, wolfHeadErased: 1, wolfPassant: 1, goat: 1, axe: 1},
-    River: {tower: 1, garb: 1, rake: 1, boat: 1, pike: 2, bullHeadCaboshed: 1},
+    River: {tower: 1, garb: 1, rake: 1, boat: 1, pike: 2, bullHeadCaboshed: 1, apple: 1, plough: 1},
     Lake: {cancer: 2, escallop: 1, pike: 2, heron: 1, boat: 1, boat2: 2},
     Nomadic: {pot: 1, buckle: 1, wheel: 2, sabre: 2, sabresCrossed: 1, bow: 2, arrow: 1, horseRampant: 1, horseSalient: 1, crescent: 1, camel: 3},
-    Hunting: {bugleHorn: 2, bugleHorn2: 1, stagsAttires: 2, attire: 2, hatchet: 1, bowWithArrow: 1, arrowsSheaf: 1, deerHeadCaboshed: 1, wolfStatant: 1, oak: 1},
+    Hunting: {
+      bugleHorn: 2,
+      bugleHorn2: 1,
+      stagsAttires: 2,
+      attire: 2,
+      hatchet: 1,
+      bowWithArrow: 1,
+      arrowsSheaf: 1,
+      deerHeadCaboshed: 1,
+      wolfStatant: 1,
+      oak: 1,
+      greyhoundSejant: 1
+    },
     // selection based on type
-    City: {key: 3, bell: 2, lute: 1, tower: 1, castle: 1, mallet: 1},
-    Capital: {crown: 4, orb: 1, lute: 1, castle: 3, tower: 1},
-    Сathedra: {chalice: 1, orb: 1, crosier: 2, lamb: 1, monk: 2, angel: 3, crossLatin: 2, crossPatriarchal: 1, crossOrthodox: 1, crossCalvary: 1},
+    City: {key: 3, bell: 2, lute: 1, tower: 1, castle: 1, mallet: 1, cannon: 1, anvil: 1},
+    Capital: {crown: 2, orb: 1, lute: 1, castle: 3, tower: 1, crown2: 2},
+    Сathedra: {chalice: 1, orb: 1, crosier: 2, lamb: 1, monk: 2, angel: 3, crossLatin: 2, crossPatriarchal: 1, crossOrthodox: 1, crossCalvary: 1, agnusDei: 3},
     // specific cases
     natural: {fountain: "azure", garb: "or", raven: "sable"}, // charges to mainly use predefined colours
     sinister: [
@@ -204,14 +335,19 @@ window.COA = (function () {
       "wolfStatant",
       "wolfHeadErased",
       "greyhoundСourant",
+      "greyhoundSejant",
+      "mastiffStatant",
       "boarRampant",
       "horseRampant",
       "horseSalient",
+      "horsePassant",
       "bullPassant",
       "bearRampant",
       "bearPassant",
       "goat",
       "lamb",
+      "lambPassantReguardant",
+      "agnusDei",
       "elephant",
       "eagle",
       "raven",
@@ -252,7 +388,15 @@ window.COA = (function () {
       "camel",
       "fasces",
       "lionPassantGuardant",
-      "helmet"
+      "helmet",
+      "foot",
+      "plough",
+      "sabre2",
+      "cannon",
+      "porcupine",
+      "basilisk",
+      "snake",
+      "anvil"
     ],
     reversed: [
       // charges that can be reversed
@@ -263,6 +407,7 @@ window.COA = (function () {
       "crossTau",
       "cancer",
       "sword",
+      "falchion",
       "sabresCrossed",
       "hand",
       "horseshoe",
@@ -272,12 +417,30 @@ window.COA = (function () {
       "rake",
       "crossTriquetra",
       "crossLatin",
-      "crossTau"
+      "crossTau",
+      "sabre2"
     ]
   };
 
   const positions = {
-    conventional: {e: 20, abcdefgzi: 3, beh: 3, behdf: 2, acegi: 1, kn: 3, bhdf: 1, jeo: 1, abc: 3, jln: 6, jlh: 3, kmo: 2, jleh: 1, def: 3, abcpqh: 4, ABCDEFGHIJKL: 1},
+    conventional: {
+      e: 20,
+      abcdefgzi: 3,
+      beh: 3,
+      behdf: 2,
+      acegi: 1,
+      kn: 3,
+      bhdf: 1,
+      jeo: 1,
+      abc: 3,
+      jln: 6,
+      jlh: 3,
+      kmo: 2,
+      jleh: 1,
+      def: 3,
+      abcpqh: 4,
+      ABCDEFGHIJKL: 1
+    },
     complex: {e: 40, beh: 1, kn: 1, jeo: 1, abc: 2, jln: 7, jlh: 2, def: 1, abcpqh: 1},
     divisions: {
       perPale: {e: 15, pq: 5, jo: 2, jl: 2, ABCDEFGHIJKL: 1},
@@ -405,14 +568,47 @@ window.COA = (function () {
   };
 
   const divisions = {
-    variants: {perPale: 5, perFess: 5, perBend: 2, perBendSinister: 1, perChevron: 1, perChevronReversed: 1, perCross: 5, perPile: 1, perSaltire: 1, gyronny: 1, chevronny: 1},
+    variants: {
+      perPale: 5,
+      perFess: 5,
+      perBend: 2,
+      perBendSinister: 1,
+      perChevron: 1,
+      perChevronReversed: 1,
+      perCross: 5,
+      perPile: 1,
+      perSaltire: 1,
+      gyronny: 1,
+      chevronny: 1
+    },
     perPale: lines,
     perFess: lines,
     perBend: lines,
     perBendSinister: lines,
     perChevron: lines,
     perChevronReversed: lines,
-    perCross: {straight: 20, wavy: 5, engrailed: 4, invecked: 3, rayonne: 1, embattled: 1, raguly: 1, urdy: 1, indented: 2, dentilly: 1, bevilled: 1, angled: 1, embattledGhibellin: 1, embattledGrady: 1, dovetailedIndented: 1, dovetailed: 1, potenty: 1, potentyDexter: 1, potentySinister: 1, nebuly: 1},
+    perCross: {
+      straight: 20,
+      wavy: 5,
+      engrailed: 4,
+      invecked: 3,
+      rayonne: 1,
+      embattled: 1,
+      raguly: 1,
+      urdy: 1,
+      indented: 2,
+      dentilly: 1,
+      bevilled: 1,
+      angled: 1,
+      embattledGhibellin: 1,
+      embattledGrady: 1,
+      dovetailedIndented: 1,
+      dovetailed: 1,
+      potenty: 1,
+      potentyDexter: 1,
+      potentySinister: 1,
+      nebuly: 1
+    },
     perPile: lines
   };
 
@@ -476,8 +672,9 @@ window.COA = (function () {
       kinship = 0;
       dominion = 0;
     }
-    let usedPattern = null,
-      usedTinctures = [];
+
+    let usedPattern = null;
+    let usedTinctures = [];
 
     const t1 = P(kinship) ? parent.t1 : getTincture("field");
     if (t1.includes("-")) usedPattern = t1;
@@ -489,7 +686,8 @@ window.COA = (function () {
     const rareDivided = ["chief", "terrace", "chevron", "quarter", "flaunches"].includes(ordinary);
     const divisioned = rareDivided ? P(0.03) : charge && ordinary ? P(0.03) : charge ? P(0.3) : ordinary ? P(0.7) : P(0.995); // 33% for division
     const division = divisioned ? (parent?.division && P(kinship - 0.1) ? parent.division.division : rw(divisions.variants)) : null;
-    if (charge) charge = parent?.charges && P(kinship - 0.1) ? parent.charges[0].charge : type && type !== "Generic" && P(0.2) ? rw(charges[type]) : selectCharge();
+    if (charge)
+      charge = parent?.charges && P(kinship - 0.1) ? parent.charges[0].charge : type && type !== "Generic" && P(0.2) ? rw(charges[type]) : selectCharge();
 
     if (division) {
       const t = getTincture("division", usedTinctures, P(0.98) ? coa.t1 : null);
