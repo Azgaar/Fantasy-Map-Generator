@@ -470,9 +470,10 @@ function addLabelOnClick() {
   const id = getNextId("label");
 
   // use most recently selected label group
-  let selected = labelGroupSelect.value;
-  const symbol = selected ? "#" + selected : "#addedLabels";
-  let group = labels.select(symbol);
+  const lastSelected = labelGroupSelect.value;
+  const groupId = ["", "states", "burgLabels"].includes(lastSelected) ? "#addedLabels" : "#" + lastSelected;
+
+  let group = labels.select(groupId);
   if (!group.size())
     group = labels
       .append("g")
