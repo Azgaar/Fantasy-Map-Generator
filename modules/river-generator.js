@@ -160,7 +160,11 @@ window.Rivers = (function () {
           // mark real confluences and assign river to cells
           if (cells.r[cell]) cells.conf[cell] = 1;
           else cells.r[cell] = riverId;
+          if (cells.s && cells.s[cell]) {
+            cells.s[cell] = cells.s[cell] * 1.25; // Increase value of rivers
+          }
         }
+
 
         const source = riverCells[0];
         const mouth = riverCells[riverCells.length - 2];

@@ -351,6 +351,7 @@ window.Religions = (function () {
         : cells.i.filter(i => cells.s[i] > 2).sort((a, b) => cells.s[b] - cells.s[a]);
     const religionsTree = d3.quadtree();
     const spacing = (graphWidth + graphHeight) / 6 / religionsInput.value; // base min distance between towns
+    //const spacing = (graphWidth + graphHeight) / distanceScaleInput.value
     const cultsCount = Math.floor((rand(10, 40) / 100) * religionsInput.value);
     const count = +religionsInput.value - cultsCount + religions.length;
 

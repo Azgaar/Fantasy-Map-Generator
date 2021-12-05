@@ -118,7 +118,7 @@ window.BurgsAndStates = (function () {
       let burgsAdded = 0;
 
       const burgsTree = burgs[0];
-      let spacing = (graphWidth + graphHeight) / 150 / (burgsNumber ** 0.7 / 66); // min distance between towns
+      let spacing = (graphWidth + graphHeight) / 15 / (burgsNumber ** 0.7 / 24); // min distance between towns
 
       while (burgsAdded < burgsNumber && spacing > 1) {
         for (let i = 0; burgsAdded < burgsNumber && i < sorted.length; i++) {
@@ -156,53 +156,53 @@ window.BurgsAndStates = (function () {
       features = pack.features,
       temp = grid.cells.temp;
 
-    for (const b of pack.burgs) {
-      if (!b.i || b.lock) continue;
-      const i = b.cell;
+    for (const burgs of pack.burgs) {
+      if (!burgs.i || burgs.lock) continue;
+      const i = burgs.cell;
 
-      // asign port status to some coastline burgs with temp > 0 °C
+      // assign port status to some coastline burgs with temp > 0 °C
       const haven = cells.haven[i];
       if (haven && temp[cells.g[i]] > 0) {
         const f = cells.f[haven]; // water body id
         // port is a capital with any harbor OR town with good harbor
-        const port = features[f].cells > 1 && ((b.capital && cells.harbor[i]) || cells.harbor[i] === 1);
-        b.port = port ? f : 0; // port is defined by water body id it lays on
-      } else b.port = 0;
+        const port = features[f].cells > 1 && ((burgs.capital && cells.harbor[i]) || cells.harbor[i] === 1);
+        burgs.port = port ? f : 0; // port is defined by water body id it lays on
+      } else burgs.port = 0;
 
       // define burg population (keep urbanization at about 10% rate)
-      b.population = rn(Math.max((cells.s[i] + cells.road[i] / 2) / 8 + b.i / 1000 + (i % 100) / 1000, 0.1), 3);
-      if (b.capital) b.population = rn(b.population * 1.3, 3); // increase capital population
+      burgs.population = rn(Math.max((cells.s[i] + cells.road[i] / 2) / 8 + burgs.i / 1000 + (i % 100) / 1000, 0.1), 3);
+      if (burgs.capital) burgs.population = rn(burgs.population * 1.3, 3); // increase capital population
 
-      if (b.port) {
-        b.population = b.population * 1.3; // increase port population
+      if (burgs.port) {
+        burgs.population = burgs.population * 1.3; // increase port population
         const [x, y] = getMiddlePoint(i, haven);
-        b.x = x;
-        b.y = y;
+        burgs.x = x;
+        burgs.y = y;
       }
 
       // add random factor
-      b.population = rn(b.population * gauss(2, 3, 0.6, 20, 3), 3);
+      burgs.population = rn(burgs.population * gauss(2, 3, 0.6, 20, 3), 3);
 
       // shift burgs on rivers semi-randomly and just a bit
-      if (!b.port && cells.r[i]) {
+      if (!burgs.port && cells.r[i]) {
         const shift = Math.min(cells.fl[i] / 150, 1);
-        if (i % 2) b.x = rn(b.x + shift, 2);
-        else b.x = rn(b.x - shift, 2);
-        if (cells.r[i] % 2) b.y = rn(b.y + shift, 2);
-        else b.y = rn(b.y - shift, 2);
+        if (i % 2) burgs.x = rn(burgs.x + shift, 2);
+        else burgs.x = rn(burgs.x - shift, 2);
+        if (cells.r[i] % 2) burgs.y = rn(burgs.y + shift, 2);
+        else burgs.y = rn(burgs.y - shift, 2);
       }
 
       // define emblem
-      const state = pack.states[b.state];
+      const state = pack.states[burgs.state];
       const stateCOA = state.coa;
       let kinship = 0.25;
-      if (b.capital) kinship += 0.1;
-      else if (b.port) kinship -= 0.1;
-      if (b.culture !== state.culture) kinship -= 0.25;
-      b.type = getType(i, b.port);
-      const type = b.capital && P(0.2) ? "Capital" : b.type === "Generic" ? "City" : b.type;
-      b.coa = COA.generate(stateCOA, kinship, null, type);
-      b.coa.shield = COA.getShield(b.culture, b.state);
+      if (burgs.capital) kinship += 0.1;
+      else if (burgs.port) kinship -= 0.1;
+      if (burgs.culture !== state.culture) kinship -= 0.25;
+      burgs.type = getType(i, burgs.port);
+      const type = burgs.capital && P(0.2) ? "Capital" : burgs.type === "Generic" ? "City" : burgs.type;
+      burgs.coa = COA.generate(stateCOA, kinship, null, type);
+      burgs.coa.shield = COA.getShield(burgs.culture, burgs.state);
     }
 
     // de-assign port status if it's the only one on feature
