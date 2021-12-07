@@ -363,8 +363,8 @@ function applyDefaultBiomesSystem() {
         "Wetland" // 12
     ];
     const biomeColor = ["#466eab", "#fbe79f", "#b5b887", "#d2d082", "#c8d68f", "#b6d95d", "#29bc56", "#7dcb35", "#409c43", "#4b6b32", "#96784b", "#d5e7eb", "#0b9131"];
-    const biomeIx =      [0,  1, 2,  3,   4,   5,   6,   7,  8, 9,  10, 11,  12]; // For Readability -]:-)>
-    const habitability = [2, 20, 25, 32, 35,  50,  50,  20, 45, 12,  4,  1,  75];
+    const biomeIx =      [0,  1, 2,  3,   4,   5,   6,   7,  8,  9,  10, 11,  12]; // For Readability -]:-)>
+    const habitability = [2, 30, 35, 40, 45,  50,  50,  20, 35, 22,  25,  5,  55];
     const iconsDensity = [0, 3, 2, 120, 120, 120, 120, 150, 150, 100, 5, 0, 150];
     const icons = [
         {},
