@@ -1,6 +1,7 @@
 // module stub to store common functions for ui editors
 "use strict";
 
+modules.editors = true;
 restoreDefaultEvents(); // apply default viewbox events on load
 
 // restore default viewbox events
@@ -28,7 +29,7 @@ function clicked() {
   else if (grand.id === "burgIcons") editBurg();
   else if (parent.id === "ice") editIce();
   else if (parent.id === "terrain") editReliefIcon();
-  else if (parent.id === "markers") editMarker();
+  else if (grand.id === "markers" || great.id === "markers") editMarker();
   else if (grand.id === "coastline") editCoastline();
   else if (great.id === "armies") editRegiment();
   else if (pack.cells.t[i] === 1) {
@@ -259,18 +260,46 @@ function togglePort(burg) {
     .attr("height", size);
 }
 
+function getBurgSeed(burg) {
+  return burg.MFCG || Number(`${seed}${String(burg.i).padStart(4, 0)}`);
+}
+
+function getMFCGlink(burg) {
+  const {cells} = pack;
+  const {name, population, cell} = burg;
+  const burgSeed = getBurgSeed(burg);
+  const sizeRaw = 2.13 * Math.pow((population * populationRate) / urbanDensity, 0.385);
+  const size = minmax(Math.ceil(sizeRaw), 6, 100);
+  const people = rn(population * populationRate * urbanization);
+
+  const hub = +cells.road[cell] > 50;
+  const river = cells.r[cell] ? 1 : 0;
+
+  const coast = +burg.port;
+  const citadel = +burg.citadel;
+  const walls = +burg.walls;
+  const plaza = +burg.plaza;
+  const temple = +burg.temple;
+  const shanty = +burg.shanty;
+
+  const sea = coast && cells.haven[cell] ? getSeaDirections(cell) : "";
+  function getSeaDirections(i) {
+    const p1 = cells.p[i];
+    const p2 = cells.p[cells.haven[i]];
+    let deg = (Math.atan2(p2[1] - p1[1], p2[0] - p1[0]) * 180) / Math.PI - 90;
+    if (deg < 0) deg += 360;
+    const norm = rn(normalize(deg, 0, 360) * 2, 2); // 0 = south, 0.5 = west, 1 = north, 1.5 = east
+    return "&sea=" + norm;
+  }
+
+  const baseURL = "https://watabou.github.io/city-generator/?random=0&continuous=0";
+  const url = `${baseURL}&name=${name}&population=${people}&size=${size}&seed=${burgSeed}&hub=${hub}&river=${river}&coast=${coast}&citadel=${citadel}&plaza=${plaza}&temple=${temple}&walls=${walls}&shantytown=${shanty}${sea}`;
+  return url;
+}
+
 function toggleBurgLock(burg) {
   const b = pack.burgs[burg];
   b.lock = b.lock ? 0 : 1;
-}
-
-function showBurgLockTip(burg) {
-  const b = pack.burgs[burg];
-  if (b.lock) {
-    tip("Click to Unlock burg and allow it to be change by regeneration tools");
-  } else {
-    tip("Click to Lock burg and prevent changes by regeneration tools");
-  }
 }
 
 // draw legend box
@@ -331,7 +360,15 @@ function drawLegend(name, data) {
   const width = bbox.width + colOffset * 2;
   const height = bbox.height + colOffset / 2 + vOffset;
 
-  legend.insert("rect", ":first-child").attr("id", "legendBox").attr("x", 0).attr("y", 0).attr("width", width).attr("height", height).attr("fill", backClr).attr("fill-opacity", opacity);
+  legend
+    .insert("rect", ":first-child")
+    .attr("id", "legendBox")
+    .attr("x", 0)
+    .attr("y", 0)
+    .attr("width", width)
+    .attr("height", height)
+    .attr("fill", backClr)
+    .attr("fill-opacity", opacity);
 
   fitLegendBox();
 }
@@ -384,7 +421,15 @@ function createPicker() {
   const closePicker = () => contaiter.style("display", "none");
 
   const contaiter = d3.select("body").append("svg").attr("id", "pickerContainer").attr("width", "100%").attr("height", "100%");
-  contaiter.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%").attr("opacity", 0.2).on("mousemove", cl).on("click", closePicker);
+  contaiter
+    .append("rect")
+    .attr("x", 0)
+    .attr("y", 0)
+    .attr("width", "100%")
+    .attr("height", "100%")
+    .attr("opacity", 0.2)
+    .on("mousemove", cl)
+    .on("click", closePicker);
   const picker = contaiter
     .append("g")
     .attr("id", "picker")
@@ -483,9 +528,25 @@ function createPicker() {
   const width = bbox.width + 8;
   const height = bbox.height + 9;
 
-  picker.insert("rect", ":first-child").attr("x", 0).attr("y", 0).attr("width", width).attr("height", height).attr("fill", "#ffffff").attr("stroke", "#5d4651").on("mousemove", pos);
+  picker
+    .insert("rect", ":first-child")
+    .attr("x", 0)
+    .attr("y", 0)
+    .attr("width", width)
+    .attr("height", height)
+    .attr("fill", "#ffffff")
+    .attr("stroke", "#5d4651")
+    .on("mousemove", pos);
   picker.insert("text", ":first-child").attr("x", 291).attr("y", -10).attr("id", "pickerCloseText").text("✕");
-  picker.insert("rect", ":first-child").attr("x", 288).attr("y", -21).attr("id", "pickerCloseRect").attr("width", 14).attr("height", 14).on("mousemove", cl).on("click", closePicker);
+  picker
+    .insert("rect", ":first-child")
+    .attr("x", 288)
+    .attr("y", -21)
+    .attr("id", "pickerCloseRect")
+    .attr("width", 14)
+    .attr("height", 14)
+    .on("mousemove", cl)
+    .on("click", closePicker);
   picker.insert("text", ":first-child").attr("x", 12).attr("y", -10).attr("id", "pickerLabel").text("Color Picker").on("mousemove", pos);
   picker.insert("rect", ":first-child").attr("x", 0).attr("y", -30).attr("width", width).attr("height", 30).attr("id", "pickerHeader").on("mousemove", pos);
   picker.attr("transform", `translate(${(svgWidth - width) / 2},${(svgHeight - height) / 2})`);
@@ -695,23 +756,33 @@ function uploadFile(el, callback) {
   fileReader.onload = loaded => callback(loaded.target.result);
 }
 
-function highlightElement(element) {
-  if (debug.select(".highlighted").size()) return; // allow only 1 highlight element simultaniosly
-  const box = element.getBBox();
+function getBBox(element) {
+  const x = +element.getAttribute("x");
+  const y = +element.getAttribute("y");
+  const width = +element.getAttribute("width");
+  const height = +element.getAttribute("height");
+  return {x, y, width, height};
+}
+
+function highlightElement(element, zoom) {
+  if (debug.select(".highlighted").size()) return; // allow only 1 highlight element simultaneously
+  const box = element.tagName === "svg" ? getBBox(element) : element.getBBox();
   const transform = element.getAttribute("transform") || null;
   const enter = d3.transition().duration(1000).ease(d3.easeBounceOut);
   const exit = d3.transition().duration(500).ease(d3.easeLinear);
 
-  const highlight = debug.append("rect").attr("x", box.x).attr("y", box.y).attr("width", box.width).attr("height", box.height).attr("transform", transform);
+  const highlight = debug.append("rect").attr("x", box.x).attr("y", box.y).attr("width", box.width).attr("height", box.height);
+  highlight.classed("highlighted", 1).attr("transform", transform);
+  highlight.transition(enter).style("outline-offset", "0px").transition(exit).style("outline-color", "transparent").delay(1000).remove();
 
-  highlight.classed("highlighted", 1).transition(enter).style("outline-offset", "0px").transition(exit).style("outline-color", "transparent").delay(1000).remove();
-
-  const tr = parseTransform(transform);
-  let x = box.x + box.width / 2;
-  if (tr[0]) x += tr[0];
-  let y = box.y + box.height / 2;
-  if (tr[1]) y += tr[1];
-  zoomTo(x, y, scale > 2 ? scale : 3, 1600);
+  if (zoom) {
+    const tr = parseTransform(transform);
+    let x = box.x + box.width / 2;
+    if (tr[0]) x += tr[0];
+    let y = box.y + box.height / 2;
+    if (tr[1]) y += tr[1];
+    zoomTo(x, y, scale > 2 ? scale : zoom, 1600);
+  }
 }
 
 function selectIcon(initial, callback) {
@@ -921,6 +992,7 @@ function selectIcon(initial, callback) {
     }
   }
 
+  input.oninput = e => callback(input.value);
   table.onclick = e => {
     if (e.target.tagName === "TD") {
       input.value = e.target.innerHTML;
@@ -945,6 +1017,37 @@ function selectIcon(initial, callback) {
       }
     }
   });
+}
+
+function confirmationDialog(options) {
+  const {
+    title = "Confirm action",
+    message = "Are you sure you want to continue? <br>The action cannot be reverted",
+    cancel = "Cancel",
+    confirm = "Continue",
+    onCancel,
+    onConfirm
+  } = options;
+
+  const buttons = {
+    [confirm]: function () {
+      if (onConfirm) onConfirm();
+      $(this).dialog("close");
+    },
+    [cancel]: function () {
+      if (onCancel) onCancel();
+      $(this).dialog("close");
+    }
+  };
+
+  document.getElementById("alertMessage").innerHTML = message;
+  $("#alert").dialog({resizable: false, title, buttons});
+}
+
+// add and register event listeners to clean up on editor closure
+function listen(element, event, handler) {
+  element.addEventListener(event, handler);
+  return () => element.removeEventListener(event, handler);
 }
 
 // Calls the refresh functionality on all editors currently open.

@@ -15,15 +15,9 @@ function editHeightmap() {
       title: "Edit Heightmap",
       width: "28em",
       buttons: {
-        Erase: function () {
-          enterHeightmapEditMode("erase");
-        },
-        Keep: function () {
-          enterHeightmapEditMode("keep");
-        },
-        Risk: function () {
-          enterHeightmapEditMode("risk");
-        },
+        Erase: () => enterHeightmapEditMode("erase"),
+        Keep: () => enterHeightmapEditMode("keep"),
+        Risk: () => enterHeightmapEditMode("risk"),
         Cancel: function () {
           $(this).dialog("close");
         }
@@ -87,7 +81,16 @@ function editHeightmap() {
       exitCustomization.style.bottom = svgHeight / 2 + "px";
       exitCustomization.style.transform = "scale(2)";
       exitCustomization.style.display = "block";
-      d3.select("#exitCustomization").transition().duration(1000).style("opacity", 1).transition().duration(2000).ease(d3.easeSinInOut).style("right", "10px").style("bottom", "10px").style("transform", "scale(1)");
+      d3.select("#exitCustomization")
+        .transition()
+        .duration(1000)
+        .style("opacity", 1)
+        .transition()
+        .duration(2000)
+        .ease(d3.easeSinInOut)
+        .style("right", "10px")
+        .style("bottom", "10px")
+        .style("transform", "scale(1)");
     } else exitCustomization.style.display = "block";
 
     openBrushesPanel();
@@ -130,7 +133,8 @@ function editHeightmap() {
 
   // Exit customization mode
   function finalizeHeightmap() {
-    if (viewbox.select("#heights").selectAll("*").size() < 200) return tip("Insufficient land area! There should be at least 200 land cells to finalize the heightmap", null, "error");
+    if (viewbox.select("#heights").selectAll("*").size() < 200)
+      return tip("Insufficient land area! There should be at least 200 land cells to finalize the heightmap", null, "error");
     if (document.getElementById("imageConverter").offsetParent) return tip("Please exit the Image Conversion mode first", null, "error");
 
     delete window.edits; // remove global variable
@@ -216,7 +220,7 @@ function editHeightmap() {
     Lakes.generateName();
 
     Military.generate();
-    addMarkers();
+    Markers.generate();
     addZones();
     TIME && console.timeEnd("regenerateErasedData");
     INFO && console.groupEnd("Edit Heightmap");
@@ -608,7 +612,7 @@ function editHeightmap() {
       const interpolate = d3.interpolateRound(power, 1);
       const land = changeOnlyLand.checked;
       function lim(v) {
-        return Math.max(Math.min(v, 100), land ? 20 : 0);
+        return minmax(v, land ? 20 : 0, 100);
       }
       const h = grid.cells.h;
 
@@ -618,7 +622,10 @@ function editHeightmap() {
       else if (brush === "brushLower") s.forEach(i => (h[i] = lim(h[i] - power)));
       else if (brush === "brushDepress") s.forEach((i, d) => (h[i] = lim(h[i] - interpolate(d / Math.max(s.length - 1, 1)))));
       else if (brush === "brushAlign") s.forEach(i => (h[i] = lim(h[start])));
-      else if (brush === "brushSmooth") s.forEach(i => (h[i] = rn((d3.mean(grid.cells.c[i].filter(i => (land ? h[i] >= 20 : 1)).map(c => h[c])) + h[i] * (10 - power) + 0.6) / (11 - power), 1)));
+      else if (brush === "brushSmooth")
+        s.forEach(
+          i => (h[i] = rn((d3.mean(grid.cells.c[i].filter(i => (land ? h[i] >= 20 : 1)).map(c => h[c])) + h[i] * (10 - power) + 0.6) / (11 - power), 1))
+        );
       else if (brush === "brushDisrupt") s.forEach(i => (h[i] = h[i] < 15 ? h[i] : lim(h[i] + power / 1.6 - Math.random() * power)));
 
       mockHeightmapSelection(s);
@@ -767,15 +774,29 @@ function editHeightmap() {
 
       const TempY = `<span>y:<input class="templateY" data-tip="Placement range percentage along Y axis (minY-maxY)" value=${arg5 || "20-80"}></span>`;
       const TempX = `<span>x:<input class="templateX" data-tip="Placement range percentage along X axis (minX-maxX)" value=${arg4 || "15-85"}></span>`;
-      const Height = `<span>h:<input class="templateHeight" data-tip="Blob maximum height, use hyphen to get a random number in range" value=${arg3 || "40-50"}></span>`;
+      const Height = `<span>h:<input class="templateHeight" data-tip="Blob maximum height, use hyphen to get a random number in range" value=${
+        arg3 || "40-50"
+      }></span>`;
       const Count = `<span>n:<input class="templateCount" data-tip="Blobs to add, use hyphen to get a random number in range" value=${count || "1-2"}></span>`;
       const blob = `${common}${TempY}${TempX}${Height}${Count}</div>`;
 
       if (type === "Hill" || type === "Pit" || type === "Range" || type === "Trough") return blob;
-      if (type === "Strait") return `${common}<span>d:<select class="templateDist" data-tip="Strait direction"><option value="vertical" selected>vertical</option><option value="horizontal">horizontal</option></select></span><span>w:<input class="templateCount" data-tip="Strait width, use hyphen to get a random number in range" value=${count || "2-7"}></span></div>`;
-      if (type === "Add") return `${common}<span>to:<select class="templateDist" data-tip="Change only land or all cells"><option value="all" selected>all cells</option><option value="land">land only</option><option value="interval">interval</option></select></span><span>v:<input class="templateCount" data-tip="Add value to height of all cells (negative values are allowed)" type="number" value=${count || -10} min=-100 max=100 step=1></span></div>`;
-      if (type === "Multiply") return `${common}<span>to:<select class="templateDist" data-tip="Change only land or all cells"><option value="all" selected>all cells</option><option value="land">land only</option><option value="interval">interval</option></select></span><span>v:<input class="templateCount" data-tip="Multiply all cells Height by the value" type="number" value=${count || 1.1} min=0 max=10 step=.1></span></div>`;
-      if (type === "Smooth") return `${common}<span>f:<input class="templateCount" data-tip="Set smooth fraction. 1 - full smooth, 2 - half-smooth, etc." type="number" min=1 max=10 value=${count || 2}></span></div>`;
+      if (type === "Strait")
+        return `${common}<span>d:<select class="templateDist" data-tip="Strait direction"><option value="vertical" selected>vertical</option><option value="horizontal">horizontal</option></select></span><span>w:<input class="templateCount" data-tip="Strait width, use hyphen to get a random number in range" value=${
+          count || "2-7"
+        }></span></div>`;
+      if (type === "Add")
+        return `${common}<span>to:<select class="templateDist" data-tip="Change only land or all cells"><option value="all" selected>all cells</option><option value="land">land only</option><option value="interval">interval</option></select></span><span>v:<input class="templateCount" data-tip="Add value to height of all cells (negative values are allowed)" type="number" value=${
+          count || -10
+        } min=-100 max=100 step=1></span></div>`;
+      if (type === "Multiply")
+        return `${common}<span>to:<select class="templateDist" data-tip="Change only land or all cells"><option value="all" selected>all cells</option><option value="land">land only</option><option value="interval">interval</option></select></span><span>v:<input class="templateCount" data-tip="Multiply all cells Height by the value" type="number" value=${
+          count || 1.1
+        } min=0 max=10 step=.1></span></div>`;
+      if (type === "Smooth")
+        return `${common}<span>f:<input class="templateCount" data-tip="Set smooth fraction. 1 - full smooth, 2 - half-smooth, etc." type="number" min=1 max=10 value=${
+          count || 2
+        }></span></div>`;
     }
 
     function setRange(event) {
@@ -1170,10 +1191,14 @@ function editHeightmap() {
     }
 
     function setConvertColorsNumber() {
-      prompt(`Please set maximum number of colors. <br>An actual number is usually lower and depends on color scheme`, {default: +convertColors.value, step: 1, min: 3, max: 255}, number => {
-        convertColors.value = number;
-        heightsFromImage(number);
-      });
+      prompt(
+        `Please set maximum number of colors. <br>An actual number is usually lower and depends on color scheme`,
+        {default: +convertColors.value, step: 1, min: 3, max: 255},
+        number => {
+          convertColors.value = number;
+          heightsFromImage(number);
+        }
+      );
     }
 
     function setOverlayOpacity(v) {

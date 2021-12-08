@@ -2,11 +2,11 @@
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 "use strict";
-const version = "1.661"; // generator version
+const version = "1.71"; // generator version
 document.title += " v" + version;
 
 // Switches to disable/enable logging features
-const PRODUCTION = window.location.host;
+const PRODUCTION = location.hostname && location.hostname !== "localhost" && location.hostname !== "127.0.0.1";
 const DEBUG = localStorage.getItem("debug");
 const INFO = DEBUG || !PRODUCTION;
 const TIME = DEBUG || !PRODUCTION;
@@ -64,7 +64,7 @@ let icons = viewbox.append("g").attr("id", "icons");
 let burgIcons = icons.append("g").attr("id", "burgIcons");
 let anchors = icons.append("g").attr("id", "anchors");
 let armies = viewbox.append("g").attr("id", "armies").style("display", "none");
-let markers = viewbox.append("g").attr("id", "markers").style("display", "none");
+let markers = viewbox.append("g").attr("id", "markers");
 let fogging = viewbox.append("g").attr("id", "fogging-cont").attr("mask", "url(#fog)").append("g").attr("id", "fogging").style("display", "none");
 let ruler = viewbox.append("g").attr("id", "ruler").style("display", "none");
 let debug = viewbox.append("g").attr("id", "debug");
@@ -111,14 +111,14 @@ legend.on("mousemove", () => tip("Drag to change the position. Click to hide the
 // main data variables
 let grid = {}; // initial grapg based on jittered square grid and data
 let pack = {}; // packed graph and data
-let seed,
-  mapId,
-  mapHistory = [],
-  elSelected,
-  modules = {},
-  notes = [];
+let seed;
+let mapId;
+let mapHistory = [];
+let elSelected;
+let modules = {};
+let notes = [];
 let rulers = new Rulers();
-let customization = 0; // 0 - no; 1 = heightmap draw; 2 - states draw; 3 - add state/burg; 4 - cultures draw
+let customization = 0;
 
 let biomesData = applyDefaultBiomesSystem();
 let nameBases = Names.getNameBases(); // cultures-related data
@@ -147,29 +147,37 @@ function zoomed() {
 const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", zoomed);
 
 // default options
-let options = {pinNotes: false}; // options object
+let options = {
+  pinNotes: false,
+  showMFCGMap: true,
+  winds: [225, 45, 225, 315, 135, 315],
+  stateLabelsMode: "auto"
+};
 let mapCoordinates = {}; // map coordinates on globe
-options.winds = [225, 45, 225, 315, 135, 315]; // default wind directions
-
 let populationRate = +document.getElementById("populationRateInput").value;
 let distanceScale = +document.getElementById("distanceScaleInput").value;
 let urbanization = +document.getElementById("urbanizationInput").value;
+let urbanDensity = +document.getElementById("urbanDensityInput").value;
 
 applyStoredOptions();
-let graphWidth = +mapWidthInput.value,
-  graphHeight = +mapHeightInput.value; // voronoi graph extention, cannot be changed arter generation
-let svgWidth = graphWidth,
-  svgHeight = graphHeight; // svg canvas resolution, can be changed
+
+// voronoi graph extention, cannot be changed arter generation
+let graphWidth = +mapWidthInput.value;
+let graphHeight = +mapHeightInput.value;
+
+// svg canvas resolution, can be changed
+let svgWidth = graphWidth;
+let svgHeight = graphHeight;
+
 landmass.append("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 oceanPattern.append("rect").attr("fill", "url(#oceanic)").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 oceanLayers.append("rect").attr("id", "oceanBase").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 
-void (function removeLoading() {
-  d3.select("#loading").transition().duration(4000).style("opacity", 0).remove();
-  d3.select("#initial").transition().duration(4000).attr("opacity", 0).remove();
-  d3.select("#optionsContainer").transition().duration(3000).style("opacity", 1);
-  d3.select("#tooltip").transition().duration(4000).style("opacity", 1);
-})();
+// remove loading screen
+d3.select("#loading").transition().duration(4000).style("opacity", 0).remove();
+d3.select("#initial").transition().duration(4000).attr("opacity", 0).remove();
+d3.select("#optionsContainer").transition().duration(3000).style("opacity", 1);
+d3.select("#tooltip").transition().duration(4000).style("opacity", 1);
 
 // decide which map should be loaded or generated on page load
 void (function checkLoadParameters() {
@@ -319,7 +327,6 @@ function findBurgForMFCG(params) {
     else if (p[0] === "shantytown") b.shanty = +p[1];
     else b[p[0]] = +p[1]; // other parameters
   }
-  b.MFCGlink = document.referrer; // set direct link to MFCG
   if (params.get("name") && params.get("name") != "null") b.name = params.get("name");
 
   const label = burgLabels.select("[data-id='" + burgId + "']");
@@ -340,11 +347,39 @@ function findBurgForMFCG(params) {
 
 // apply default biomes data
 function applyDefaultBiomesSystem() {
-  const name = ["Marine", "Hot desert", "Cold desert", "Savanna", "Grassland", "Tropical seasonal forest", "Temperate deciduous forest", "Tropical rainforest", "Temperate rainforest", "Taiga", "Tundra", "Glacier", "Wetland"];
+  const name = [
+    "Marine",
+    "Hot desert",
+    "Cold desert",
+    "Savanna",
+    "Grassland",
+    "Tropical seasonal forest",
+    "Temperate deciduous forest",
+    "Tropical rainforest",
+    "Temperate rainforest",
+    "Taiga",
+    "Tundra",
+    "Glacier",
+    "Wetland"
+  ];
   const color = ["#466eab", "#fbe79f", "#b5b887", "#d2d082", "#c8d68f", "#b6d95d", "#29bc56", "#7dcb35", "#409c43", "#4b6b32", "#96784b", "#d5e7eb", "#0b9131"];
   const habitability = [0, 4, 10, 22, 30, 50, 100, 80, 90, 12, 4, 0, 12];
   const iconsDensity = [0, 3, 2, 120, 120, 120, 120, 150, 150, 100, 5, 0, 150];
-  const icons = [{}, {dune: 3, cactus: 6, deadTree: 1}, {dune: 9, deadTree: 1}, {acacia: 1, grass: 9}, {grass: 1}, {acacia: 8, palm: 1}, {deciduous: 1}, {acacia: 5, palm: 3, deciduous: 1, swamp: 1}, {deciduous: 6, swamp: 1}, {conifer: 1}, {grass: 1}, {}, {swamp: 1}];
+  const icons = [
+    {},
+    {dune: 3, cactus: 6, deadTree: 1},
+    {dune: 9, deadTree: 1},
+    {acacia: 1, grass: 9},
+    {grass: 1},
+    {acacia: 8, palm: 1},
+    {deciduous: 1},
+    {acacia: 5, palm: 3, deciduous: 1, swamp: 1},
+    {deciduous: 6, swamp: 1},
+    {conifer: 1},
+    {grass: 1},
+    {},
+    {swamp: 1}
+  ];
   const cost = [10, 200, 150, 60, 50, 70, 70, 80, 90, 200, 1000, 5000, 150]; // biome movement cost
   const biomesMartix = [
     // hot ↔ cold [>19°C; <-4°C]; dry ↕ wet
@@ -378,15 +413,19 @@ function showWelcomeMessage() {
   alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
     <ul>Main changes:
-      <li>Add custom fonts dialog</li>
-      <li>Save and load <i>.map</i> files to Dropbox</li>
-      <li>Ability to add control points on river edit</li>
-      <li>New heightmap template: Taklamakan</li>
-      <li>Option to not scale labels on zoom</li>
+      <li>Ability to limit military units by biome, state, culture and religion</li>
+      <li>New marker types</li>
+      <li>New markers editor</li>
+      <li>Markers overview screen</li>
+      <li>Markers regeneration menu</li>
+      <li>Burg editor update</li>
+      <li>Editable theme color</li>
+      <li>Add font dialog</li>
+      <li>Save to Dropbox</li>
     </ul>
 
     <p>Join our ${discord} and ${reddit} to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
-    <span>Thanks for all supporters on ${patreon}!</i></span>`;
+    <span>Thanks for all supporters on <a href="https://www.patreon.com/azgaar" target="_blank">Patreon</a>!</i></span>`;
 
   $("#alert").dialog({
     resizable: false,
@@ -438,10 +477,8 @@ function resetZoom(d = 1000) {
   svg.transition().duration(d).call(zoom.transform, d3.zoomIdentity);
 }
 
-// calculate x,y extreme points of viewBox
+// calculate x y extreme points of viewBox
 function getViewBoxExtent() {
-  // x = trX / scale * -1 + graphWidth / scale
-  // y = trY / scale * -1 + graphHeight / scale
   return [
     [Math.abs(viewX / scale), Math.abs(viewY / scale)],
     [Math.abs(viewX / scale) + graphWidth / scale, Math.abs(viewY / scale) + graphHeight / scale]
@@ -495,19 +532,18 @@ function invokeActiveZooming() {
   }
 
   // rescale map markers
-  if (+markers.attr("rescale") && markers.style("display") !== "none") {
-    markers.selectAll("use").each(function () {
-      const x = +this.dataset.x,
-        y = +this.dataset.y,
-        desired = +this.dataset.size;
-      const size = Math.max(desired * 5 + 25 / scale, 1);
-      d3.select(this)
-        .attr("x", x - size / 2)
-        .attr("y", y - size)
-        .attr("width", size)
-        .attr("height", size);
+  +markers.attr("rescale") &&
+    pack.markers?.forEach(marker => {
+      const {i, x, y, size = 30, hidden} = marker;
+      const el = !hidden && document.getElementById(`marker${i}`);
+      if (!el) return;
+
+      const zoomedSize = Math.max(rn(size / 5 + 24 / scale, 2), 1);
+      el.setAttribute("width", zoomedSize);
+      el.setAttribute("height", zoomedSize);
+      el.setAttribute("x", rn(x - zoomedSize / 2, 1));
+      el.setAttribute("y", rn(y - zoomedSize, 1));
     });
-  }
 
   // rescale rulers to have always the same size
   if (ruler.style("display") !== "none") {
@@ -620,7 +656,7 @@ function generate() {
     Lakes.generateName();
 
     Military.generate();
-    addMarkers();
+    Markers.generate();
     addZones();
     Names.getMapName();
 
@@ -629,11 +665,12 @@ function generate() {
     INFO && console.groupEnd("Generated Map " + seed);
   } catch (error) {
     ERROR && console.error(error);
+    const parsedError = parseError(error);
     clearMainTip();
 
     alertMessage.innerHTML = `An error is occured on map generation. Please retry.
       <br>If error is critical, clear the stored data and try again.
-      <p id="errorBox">${parseError(error)}</p>`;
+      <p id="errorBox">${parsedError}</p>`;
     $("#alert").dialog({
       resizable: false,
       title: "Generation error",
@@ -644,7 +681,7 @@ function generate() {
           localStorage.setItem("version", version);
         },
         Regenerate: function () {
-          regenerateMap();
+          regenerateMap("generation error");
           $(this).dialog("close");
         },
         Ignore: function () {
@@ -673,6 +710,7 @@ function generateSeed() {
 // Place points to calculate Voronoi diagram
 function placePoints() {
   TIME && console.time("placePoints");
+  Math.random = aleaPRNG(seed); // reset PRNG
 
   const cellsDesired = +pointsInput.dataset.cells;
   const spacing = (grid.spacing = rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2)); // spacing between points before jirrering
@@ -922,7 +960,7 @@ function calculateTemperatures() {
     const lat = Math.abs(mapCoordinates.latN - (y / graphHeight) * mapCoordinates.latT); // [0; 90]
     const initTemp = tEq - int(lat / 90) * tDelta;
     for (let i = r; i < r + grid.cellsX; i++) {
-      cells.temp[i] = Math.max(Math.min(initTemp - convertToFriendly(cells.h[i]), 127), -128);
+      cells.temp[i] = minmax(initTemp - convertToFriendly(cells.h[i]), -128, 127);
     }
   });
 
@@ -1037,7 +1075,7 @@ function generatePrecipitation() {
         const precipitation = isPassable ? getPrecipitation(humidity, current, next) : humidity;
         cells.prec[current] += precipitation;
         const evaporation = precipitation > 1.5 ? 1 : 0; // some humidity evaporates back to the atmosphere
-        humidity = isPassable ? Math.min(Math.max(humidity - precipitation + evaporation, 0), maxPrec) : 0;
+        humidity = isPassable ? minmax(humidity - precipitation + evaporation, 0, maxPrec) : 0;
       }
     }
   }
@@ -1046,7 +1084,7 @@ function generatePrecipitation() {
     const normalLoss = Math.max(humidity / (10 * modifier), 1); // precipitation in normal conditions
     const diff = Math.max(cells.h[i + n] - cells.h[i], 0); // difference in height
     const mod = (cells.h[i + n] / 70) ** 2; // 50 stands for hills, 70 for mountains
-    return Math.min(Math.max(normalLoss + diff * mod, 1), humidity);
+    return minmax(normalLoss + diff * mod, 1, humidity);
   }
 
   void (function drawWindDirection() {
@@ -1438,205 +1476,6 @@ function rankCells() {
   TIME && console.timeEnd("rankCells");
 }
 
-// generate some markers
-function addMarkers(number = 1) {
-  if (!number) return;
-  TIME && console.time("addMarkers");
-  const cells = pack.cells,
-    states = pack.states;
-
-  void (function addVolcanoes() {
-    let mounts = Array.from(cells.i)
-      .filter(i => cells.h[i] > 70)
-      .sort((a, b) => cells.h[b] - cells.h[a]);
-    let count = mounts.length < 10 ? 0 : Math.ceil((mounts.length / 300) * number);
-    if (count) addMarker("volcano", "🌋", 52, 50, 13);
-
-    while (count && mounts.length) {
-      const cell = mounts.splice(biased(0, mounts.length - 1, 5), 1);
-      const x = cells.p[cell][0],
-        y = cells.p[cell][1];
-      const id = appendMarker(cell, "volcano");
-      const proper = Names.getCulture(cells.culture[cell]);
-      const name = P(0.3) ? "Mount " + proper : Math.random() > 0.3 ? proper + " Volcano" : proper;
-      notes.push({id, name, legend: `Active volcano. Height: ${getFriendlyHeight([x, y])}`});
-      count--;
-    }
-  })();
-
-  void (function addHotSprings() {
-    let springs = Array.from(cells.i)
-      .filter(i => cells.h[i] > 50)
-      .sort((a, b) => cells.h[b] - cells.h[a]);
-    let count = springs.length < 30 ? 0 : Math.ceil((springs.length / 1000) * number);
-    if (count) addMarker("hot_springs", "♨️", 50, 52, 12.5);
-
-    while (count && springs.length) {
-      const cell = springs.splice(biased(1, springs.length - 1, 3), 1);
-      const id = appendMarker(cell, "hot_springs");
-      const proper = Names.getCulture(cells.culture[cell]);
-      const temp = convertTemperature(gauss(30, 15, 20, 100));
-      notes.push({id, name: proper + " Hot Springs", legend: `A hot springs area. Temperature: ${temp}`});
-      count--;
-    }
-  })();
-
-  void (function addMines() {
-    let hills = Array.from(cells.i).filter(i => cells.h[i] > 47 && cells.burg[i]);
-    let count = !hills.length ? 0 : Math.ceil((hills.length / 7) * number);
-    if (!count) return;
-
-    addMarker("mine", "⛏️", 48, 50, 13.5);
-    const resources = {salt: 5, gold: 2, silver: 4, copper: 2, iron: 3, lead: 1, tin: 1};
-
-    while (count && hills.length) {
-      const cell = hills.splice(Math.floor(Math.random() * hills.length), 1);
-      const id = appendMarker(cell, "mine");
-      const resource = rw(resources);
-      const burg = pack.burgs[cells.burg[cell]];
-      const name = `${burg.name} — ${resource} mining town`;
-      const population = rn(burg.population * populationRate * urbanization);
-      const legend = `${burg.name} is a mining town of ${population} people just nearby the ${resource} mine`;
-      notes.push({id, name, legend});
-      count--;
-    }
-  })();
-
-  void (function addBridges() {
-    const meanRoad = d3.mean(cells.road.filter(r => r));
-    const meanFlux = d3.mean(cells.fl.filter(fl => fl));
-
-    let bridges = Array.from(cells.i)
-      .filter(i => cells.burg[i] && cells.h[i] >= 20 && cells.r[i] && cells.fl[i] > meanFlux && cells.road[i] > meanRoad)
-      .sort((a, b) => cells.road[b] + cells.fl[b] / 10 - (cells.road[a] + cells.fl[a] / 10));
-
-    let count = !bridges.length ? 0 : Math.ceil((bridges.length / 12) * number);
-    if (count) addMarker("bridge", "🌉", 50, 50, 14);
-
-    while (count && bridges.length) {
-      const cell = bridges.splice(0, 1);
-      const id = appendMarker(cell, "bridge");
-      const burg = pack.burgs[cells.burg[cell]];
-      const river = pack.rivers.find(r => r.i === pack.cells.r[cell]);
-      const riverName = river ? `${river.name} ${river.type}` : "river";
-      const name = river && P(0.2) ? river.name : burg.name;
-      notes.push({id, name: `${name} Bridge`, legend: `A stone bridge over the ${riverName} near ${burg.name}`});
-      count--;
-    }
-  })();
-
-  void (function addInns() {
-    const maxRoad = d3.max(cells.road) * 0.9;
-    let taverns = Array.from(cells.i).filter(i => cells.crossroad[i] && cells.h[i] >= 20 && cells.road[i] > maxRoad);
-    if (!taverns.length) return;
-    const count = Math.ceil(4 * number);
-    addMarker("inn", "🍻", 50, 50, 14.5);
-
-    const color = ["Dark", "Light", "Bright", "Golden", "White", "Black", "Red", "Pink", "Purple", "Blue", "Green", "Yellow", "Amber", "Orange", "Brown", "Grey"];
-    const animal = ["Antelope", "Ape", "Badger", "Bear", "Beaver", "Bison", "Boar", "Buffalo", "Cat", "Crane", "Crocodile", "Crow", "Deer", "Dog", "Eagle", "Elk", "Fox", "Goat", "Goose", "Hare", "Hawk", "Heron", "Horse", "Hyena", "Ibis", "Jackal", "Jaguar", "Lark", "Leopard", "Lion", "Mantis", "Marten", "Moose", "Mule", "Narwhal", "Owl", "Panther", "Rat", "Raven", "Rook", "Scorpion", "Shark", "Sheep", "Snake", "Spider", "Swan", "Tiger", "Turtle", "Wolf", "Wolverine", "Camel", "Falcon", "Hound", "Ox"];
-    const adj = ["New", "Good", "High", "Old", "Great", "Big", "Major", "Happy", "Main", "Huge", "Far", "Beautiful", "Fair", "Prime", "Ancient", "Golden", "Proud", "Lucky", "Fat", "Honest", "Giant", "Distant", "Friendly", "Loud", "Hungry", "Magical", "Superior", "Peaceful", "Frozen", "Divine", "Favorable", "Brave", "Sunny", "Flying"];
-
-    for (let i = 0; i < taverns.length && i < count; i++) {
-      const cell = taverns.splice(Math.floor(Math.random() * taverns.length), 1);
-      const id = appendMarker(cell, "inn");
-      const type = P(0.3) ? "inn" : "tavern";
-      const name = P(0.5) ? ra(color) + " " + ra(animal) : P(0.6) ? ra(adj) + " " + ra(animal) : ra(adj) + " " + capitalize(type);
-      notes.push({id, name: "The " + name, legend: `A big and famous roadside ${type}`});
-    }
-  })();
-
-  void (function addLighthouses() {
-    const lands = cells.i.filter(i => cells.harbor[i] > 6 && cells.c[i].some(c => cells.h[c] < 20 && cells.road[c]));
-    const lighthouses = Array.from(lands).map(i => [i, cells.v[i][cells.c[i].findIndex(c => cells.h[c] < 20 && cells.road[c])]]);
-    if (lighthouses.length) addMarker("lighthouse", "🚨", 50, 50, 16);
-    const count = Math.ceil(4 * number);
-
-    for (let i = 0; i < lighthouses.length && i < count; i++) {
-      const cell = lighthouses[i][0],
-        vertex = lighthouses[i][1];
-      const id = appendMarker(cell, "lighthouse");
-      const proper = cells.burg[cell] ? pack.burgs[cells.burg[cell]].name : Names.getCulture(cells.culture[cell]);
-      notes.push({id, name: getAdjective(proper) + " Lighthouse" + name, legend: `A lighthouse to keep the navigation safe`});
-    }
-  })();
-
-  void (function addWaterfalls() {
-    const waterfalls = cells.i.filter(i => cells.r[i] && cells.h[i] > 70);
-    if (waterfalls.length) addMarker("waterfall", "⟱", 50, 54, 16.5);
-    const count = Math.ceil(3 * number);
-
-    for (let i = 0; i < waterfalls.length && i < count; i++) {
-      const cell = waterfalls[i];
-      const id = appendMarker(cell, "waterfall");
-      const proper = cells.burg[cell] ? pack.burgs[cells.burg[cell]].name : Names.getCulture(cells.culture[cell]);
-      notes.push({id, name: getAdjective(proper) + " Waterfall" + name, legend: `An extremely beautiful waterfall`});
-    }
-  })();
-
-  void (function addBattlefields() {
-    let battlefields = Array.from(cells.i).filter(i => cells.state[i] && cells.pop[i] > 2 && cells.h[i] < 50 && cells.h[i] > 25);
-    let count = battlefields.length < 100 ? 0 : Math.ceil((battlefields.length / 500) * number);
-    if (count) addMarker("battlefield", "⚔️", 50, 52, 12);
-
-    while (count && battlefields.length) {
-      const cell = battlefields.splice(Math.floor(Math.random() * battlefields.length), 1);
-      const id = appendMarker(cell, "battlefield");
-      const campaign = ra(states[cells.state[cell]].campaigns);
-      const date = generateDate(campaign.start, campaign.end);
-      const name = Names.getCulture(cells.culture[cell]) + " Battlefield";
-      const legend = `A historical battle of the ${campaign.name}. \r\nDate: ${date} ${options.era}`;
-      notes.push({id, name, legend});
-      count--;
-    }
-  })();
-
-  function addMarker(id, icon, x, y, size) {
-    const markers = svg.select("#defs-markers");
-    if (markers.select("#marker_" + id).size()) return;
-
-    const symbol = markers
-      .append("symbol")
-      .attr("id", "marker_" + id)
-      .attr("viewBox", "0 0 30 30");
-    symbol.append("path").attr("d", "M6,19 l9,10 L24,19").attr("fill", "#000000").attr("stroke", "none");
-    symbol.append("circle").attr("cx", 15).attr("cy", 15).attr("r", 10).attr("fill", "#ffffff").attr("stroke", "#000000").attr("stroke-width", 1);
-    symbol
-      .append("text")
-      .attr("x", x + "%")
-      .attr("y", y + "%")
-      .attr("fill", "#000000")
-      .attr("stroke", "#3200ff")
-      .attr("stroke-width", 0)
-      .attr("font-size", size + "px")
-      .attr("dominant-baseline", "central")
-      .text(icon);
-  }
-
-  function appendMarker(cell, type) {
-    const x = cells.p[cell][0],
-      y = cells.p[cell][1];
-    const id = getNextId("markerElement");
-    const name = "#marker_" + type;
-
-    markers
-      .append("use")
-      .attr("id", id)
-      .attr("xlink:href", name)
-      .attr("data-id", name)
-      .attr("data-x", x)
-      .attr("data-y", y)
-      .attr("x", x - 15)
-      .attr("y", y - 30)
-      .attr("data-size", 1)
-      .attr("width", 30)
-      .attr("height", 30);
-
-    return id;
-  }
-
-  TIME && console.timeEnd("addMarkers");
-}
-
 // regenerate some zones
 function addZones(number = 1) {
   TIME && console.time("addZones");
@@ -1685,7 +1524,18 @@ function addZones(number = 1) {
       });
     }
 
-    const invasion = rw({Invasion: 4, Occupation: 3, Raid: 2, Conquest: 2, Subjugation: 1, Foray: 1, Skirmishes: 1, Incursion: 2, Pillaging: 1, Intervention: 1});
+    const invasion = rw({
+      Invasion: 4,
+      Occupation: 3,
+      Raid: 2,
+      Conquest: 2,
+      Subjugation: 1,
+      Foray: 1,
+      Skirmishes: 1,
+      Incursion: 2,
+      Pillaging: 1,
+      Intervention: 1
+    });
     const name = getAdjective(invader.name) + " " + invasion;
     data.push({name, type: "Invasion", cells: cellsArray, fill: "url(#hatch1)"});
   }
@@ -2002,7 +1852,7 @@ function addZones(number = 1) {
 
 // show map stats on generation complete
 function showStatistics() {
-  const template = templateInput.value;
+  const template = templateInput.options[templateInput.selectedIndex].text;
   const templateRandom = locked("template") ? "" : "(random)";
   const stats = `  Seed: ${seed}
     Canvas size: ${graphWidth}x${graphHeight}

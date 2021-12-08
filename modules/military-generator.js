@@ -3,9 +3,8 @@
 window.Military = (function () {
   const generate = function () {
     TIME && console.time("generateMilitaryForces");
-    const cells = pack.cells,
-      p = cells.p,
-      states = pack.states;
+    const {cells, states} = pack;
+    const {p} = cells;
     const valid = states.filter(s => s.i && !s.removed); // valid states
     if (!options.military) options.military = getDefaultOptions();
 
@@ -19,7 +18,6 @@ window.Military = (function () {
       mounted: {Nomadic: 2.3, Highland: 0.6, Lake: 0.7, Naval: 0.3, Hunting: 0.7, River: 0.8},
       machinery: {Nomadic: 0.8, Highland: 1.4, Lake: 1.1, Naval: 1.4, Hunting: 0.4, River: 1.1},
       naval: {Nomadic: 0.5, Highland: 0.5, Lake: 1.2, Naval: 1.8, Hunting: 0.7, River: 1.2},
-      // non-default generic:
       armored: {Nomadic: 1, Highland: 0.5, Lake: 1, Naval: 1, Hunting: 0.7, River: 1.1},
       aviation: {Nomadic: 0.5, Highland: 0.5, Lake: 1.2, Naval: 1.2, Hunting: 0.6, River: 1.2},
       magical: {Nomadic: 1, Highland: 2, Lake: 1, Naval: 1, Hunting: 1, River: 1}
@@ -38,27 +36,24 @@ window.Military = (function () {
     };
 
     valid.forEach(s => {
-      const temp = (s.temp = {}),
-        d = s.diplomacy;
-      const expansionRate = Math.min(Math.max(s.expansionism / expn / (s.area / area), 0.25), 4); // how much state expansionism is realized
+      s.temp = {};
+      const d = s.diplomacy;
+
+      const expansionRate = minmax(s.expansionism / expn / (s.area / area), 0.25, 4); // how much state expansionism is realized
       const diplomacyRate = d.some(d => d === "Enemy") ? 1 : d.some(d => d === "Rival") ? 0.8 : d.some(d => d === "Suspicion") ? 0.5 : 0.1; // peacefulness
-      const neighborsRate = Math.min(
-        Math.max(
-          s.neighbors.map(n => (n ? pack.states[n].diplomacy[s.i] : "Suspicion")).reduce((s, r) => (s += rate[r]), 0.5),
-          0.3
-        ),
-        3
-      ); // neighbors rate
-      s.alert = Math.min(Math.max(rn(expansionRate * diplomacyRate * neighborsRate, 2), 0.1), 5); // war alert rate (army modifier)
-      temp.platoons = [];
+      const neighborsRateRaw = s.neighbors.map(n => (n ? pack.states[n].diplomacy[s.i] : "Suspicion")).reduce((s, r) => (s += rate[r]), 0.5);
+      const neighborsRate = minmax(neighborsRateRaw, 0.3, 3); // neighbors rate
+      s.alert = minmax(rn(expansionRate * diplomacyRate * neighborsRate, 2), 0.1, 5); // alert rate (area modifier)
+      s.temp.platoons = [];
 
       // apply overall state modifiers for unit types based on state features
       for (const unit of options.military) {
         if (!stateModifier[unit.type]) continue;
+
         let modifier = stateModifier[unit.type][s.type] || 1;
         if (unit.type === "mounted" && s.formName.includes("Horde")) modifier *= 2;
         else if (unit.type === "naval" && s.form === "Republic") modifier *= 1.2;
-        temp[unit.name] = modifier * s.alert;
+        s.temp[unit.name] = modifier * s.alert;
       }
     });
 
@@ -69,66 +64,96 @@ window.Military = (function () {
       return "generic";
     };
 
+    function passUnitLimits(unit, biome, state, culture, religion) {
+      if (unit.biomes && !unit.biomes.includes(biome)) return false;
+      if (unit.states && !unit.states.includes(state)) return false;
+      if (unit.cultures && !unit.cultures.includes(culture)) return false;
+      if (unit.religions && !unit.religions.includes(religion)) return false;
+      return true;
+    }
+
+    // rural cells
     for (const i of cells.i) {
       if (!cells.pop[i]) continue;
-      const s = states[cells.state[i]]; // cell state
-      if (!s.i || s.removed) continue;
 
-      let m = cells.pop[i] / 100; // basic rural army in percentages
-      if (cells.culture[i] !== s.culture) m = s.form === "Union" ? m / 1.2 : m / 2; // non-dominant culture
-      if (cells.religion[i] !== cells.religion[s.center]) m = s.form === "Theocracy" ? m / 2.2 : m / 1.4; // non-dominant religion
-      if (cells.f[i] !== cells.f[s.center]) m = s.type === "Naval" ? m / 1.2 : m / 1.8; // different landmass
+      const biome = cells.biome[i];
+      const state = cells.state[i];
+      const culture = cells.culture[i];
+      const religion = cells.religion[i];
+
+      const stateObj = states[state];
+      if (!state || stateObj.removed) continue;
+
+      let modifier = cells.pop[i] / 100; // basic rural army in percentages
+      if (culture !== stateObj.culture) modifier = stateObj.form === "Union" ? modifier / 1.2 : modifier / 2; // non-dominant culture
+      if (religion !== cells.religion[stateObj.center]) modifier = stateObj.form === "Theocracy" ? modifier / 2.2 : modifier / 1.4; // non-dominant religion
+      if (cells.f[i] !== cells.f[stateObj.center]) modifier = stateObj.type === "Naval" ? modifier / 1.2 : modifier / 1.8; // different landmass
       const type = getType(i);
 
-      for (const u of options.military) {
-        const perc = +u.rural;
-        if (isNaN(perc) || perc <= 0 || !s.temp[u.name]) continue;
+      for (const unit of options.military) {
+        const perc = +unit.rural;
+        if (isNaN(perc) || perc <= 0 || !stateObj.temp[unit.name]) continue;
+        if (!passUnitLimits(unit, biome, state, culture, religion)) continue;
+        if (unit.type === "naval" && !cells.haven[i]) continue; // only near-ocean cells create naval units
 
-        const mod = type === "generic" ? 1 : cellTypeModifier[type][u.type]; // cell specific modifier
-        const army = m * perc * mod; // rural cell army
-        const t = rn(army * s.temp[u.name] * populationRate); // total troops
-        if (!t) continue;
-        let x = p[i][0],
-          y = p[i][1],
-          n = 0;
-        if (u.type === "naval") {
-          let haven = cells.haven[i];
-          (x = p[haven][0]), (y = p[haven][1]);
+        const cellTypeMod = type === "generic" ? 1 : cellTypeModifier[type][unit.type]; // cell specific modifier
+        const army = modifier * perc * cellTypeMod; // rural cell army
+        const total = rn(army * stateObj.temp[unit.name] * populationRate); // total troops
+        if (!total) continue;
+
+        let [x, y] = p[i];
+        let n = 0;
+
+        // place naval units to sea
+        if (unit.type === "naval") {
+          const haven = cells.haven[i];
+          [x, y] = p[haven];
           n = 1;
-        } // place naval to sea
-        s.temp.platoons.push({cell: i, a: t, t, x, y, u: u.name, n, s: u.separate, type: u.type});
+        }
+
+        stateObj.temp.platoons.push({cell: i, a: total, t: total, x, y, u: unit.name, n, s: unit.separate, type: unit.type});
       }
     }
 
+    // burgs
     for (const b of pack.burgs) {
       if (!b.i || b.removed || !b.state || !b.population) continue;
-      const s = states[b.state]; // burg state
 
+      const biome = cells.biome[b.cell];
+      const state = b.state;
+      const culture = b.culture;
+      const religion = cells.religion[b.cell];
+
+      const stateObj = states[state];
       let m = (b.population * urbanization) / 100; // basic urban army in percentages
       if (b.capital) m *= 1.2; // capital has household troops
-      if (b.culture !== s.culture) m = s.form === "Union" ? m / 1.2 : m / 2; // non-dominant culture
-      if (cells.religion[b.cell] !== cells.religion[s.center]) m = s.form === "Theocracy" ? m / 2.2 : m / 1.4; // non-dominant religion
-      if (cells.f[b.cell] !== cells.f[s.center]) m = s.type === "Naval" ? m / 1.2 : m / 1.8; // different landmass
+      if (culture !== stateObj.culture) m = stateObj.form === "Union" ? m / 1.2 : m / 2; // non-dominant culture
+      if (religion !== cells.religion[stateObj.center]) m = stateObj.form === "Theocracy" ? m / 2.2 : m / 1.4; // non-dominant religion
+      if (cells.f[b.cell] !== cells.f[stateObj.center]) m = stateObj.type === "Naval" ? m / 1.2 : m / 1.8; // different landmass
       const type = getType(b.cell);
 
-      for (const u of options.military) {
-        if (u.type === "naval" && !b.port) continue; // only ports produce naval units
-        const perc = +u.urban;
-        if (isNaN(perc) || perc <= 0 || !s.temp || !s.temp[u.name]) continue;
+      for (const unit of options.military) {
+        const perc = +unit.urban;
+        if (isNaN(perc) || perc <= 0 || !stateObj.temp[unit.name]) continue;
+        if (!passUnitLimits(unit, biome, state, culture, religion)) continue;
+        if (unit.type === "naval" && (!b.port || !cells.haven[b.cell])) continue; // only ports create naval units
 
-        const mod = type === "generic" ? 1 : burgTypeModifier[type][u.type]; // cell specific modifier
+        const mod = type === "generic" ? 1 : burgTypeModifier[type][unit.type]; // cell specific modifier
         const army = m * perc * mod; // urban cell army
-        const t = rn(army * s.temp[u.name] * populationRate); // total troops
-        if (!t) continue;
-        let x = p[b.cell][0],
-          y = p[b.cell][1],
-          n = 0;
-        if (u.type === "naval") {
-          let haven = cells.haven[b.cell];
-          (x = p[haven][0]), (y = p[haven][1]);
+        const total = rn(army * stateObj.temp[unit.name] * populationRate); // total troops
+        if (!total) continue;
+
+        let [x, y] = p[b.cell];
+        let n = 0;
+
+        // place naval to sea
+        if (unit.type === "naval") {
+          const haven = cells.haven[b.cell];
+          [x, y] = p[haven];
           n = 1;
-        } // place naval in sea cell
-        s.temp.platoons.push({cell: b.cell, a: t, t, x, y, u: u.name, n, s: u.separate, type: u.type});
+        }
+
+        stateObj.temp.platoons.push({cell: b.cell, a: total, t: total, x, y, u: unit.name, n, s: unit.separate, type: unit.type});
       }
     }
 
@@ -141,7 +166,7 @@ window.Military = (function () {
     })();
 
     const expected = 3 * populationRate; // expected regiment size
-    const mergeable = (n0, n1) => (!n0.s && !n1.s) || n0.type === n1.type; // check if regiments can be merged
+    const mergeable = (n0, n1) => (!n0.s && !n1.s) || n0.u === n1.u; // check if regiments can be merged
 
     // get regiments for each state
     valid.forEach(s => {
@@ -152,25 +177,27 @@ window.Military = (function () {
 
     function createRegiments(nodes, s) {
       if (!nodes.length) return [];
+
       nodes.sort((a, b) => a.a - b.a); // form regiments in cells with most troops
       const tree = d3.quadtree(
         nodes,
         d => d.x,
         d => d.y
       );
-      nodes.forEach(n => {
-        tree.remove(n);
-        const overlap = tree.find(n.x, n.y, 20);
-        if (overlap && overlap.t && mergeable(n, overlap)) {
-          merge(n, overlap);
+
+      nodes.forEach(node => {
+        tree.remove(node);
+        const overlap = tree.find(node.x, node.y, 20);
+        if (overlap && overlap.t && mergeable(node, overlap)) {
+          merge(node, overlap);
           return;
         }
-        if (n.t > expected) return;
-        const r = (expected - n.t) / (n.s ? 40 : 20); // search radius
-        const candidates = tree.findAll(n.x, n.y, r);
+        if (node.t > expected) return;
+        const r = (expected - node.t) / (node.s ? 40 : 20); // search radius
+        const candidates = tree.findAll(node.x, node.y, r);
         for (const c of candidates) {
-          if (c.t < expected && mergeable(n, c)) {
-            merge(n, c);
+          if (c.t < expected && mergeable(node, c)) {
+            merge(node, c);
             break;
           }
         }
@@ -334,7 +361,13 @@ window.Military = (function () {
 
   const getName = function (r, regiments) {
     const cells = pack.cells;
-    const proper = r.n ? null : cells.province[r.cell] && pack.provinces[cells.province[r.cell]] ? pack.provinces[cells.province[r.cell]].name : cells.burg[r.cell] && pack.burgs[cells.burg[r.cell]] ? pack.burgs[cells.burg[r.cell]].name : null;
+    const proper = r.n
+      ? null
+      : cells.province[r.cell] && pack.provinces[cells.province[r.cell]]
+      ? pack.provinces[cells.province[r.cell]].name
+      : cells.burg[r.cell] && pack.burgs[cells.burg[r.cell]]
+      ? pack.burgs[cells.burg[r.cell]].name
+      : null;
     const number = nth(regiments.filter(reg => reg.n === r.n && reg.i < r.i).length + 1);
     const form = r.n ? "Fleet" : "Regiment";
     return `${number}${proper ? ` (${proper}) ` : ` `}${form}`;
@@ -351,7 +384,12 @@ window.Military = (function () {
 
   const generateNote = function (r, s) {
     const cells = pack.cells;
-    const base = cells.burg[r.cell] && pack.burgs[cells.burg[r.cell]] ? pack.burgs[cells.burg[r.cell]].name : cells.province[r.cell] && pack.provinces[cells.province[r.cell]] ? pack.provinces[cells.province[r.cell]].fullName : null;
+    const base =
+      cells.burg[r.cell] && pack.burgs[cells.burg[r.cell]]
+        ? pack.burgs[cells.burg[r.cell]].name
+        : cells.province[r.cell] && pack.provinces[cells.province[r.cell]]
+        ? pack.provinces[cells.province[r.cell]].fullName
+        : null;
     const station = base ? `${r.name} is ${r.n ? "based" : "stationed"} in ${base}. ` : "";
 
     const composition = r.a

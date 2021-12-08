@@ -330,7 +330,7 @@ class Battle {
   }
 
   getInitialMorale() {
-    const powerFee = diff => Math.min(Math.max(100 - diff ** 1.5 * 10 + 10, 50), 100);
+    const powerFee = diff => minmax(100 - diff ** 1.5 * 10 + 10, 50, 100);
     const distanceFee = dist => Math.min(d3.mean(dist) / 50, 15);
     const powerDiff = this.defenders.power / this.attackers.power;
     this.attackers.morale = powerFee(powerDiff) - distanceFee(this.attackers.distances);
@@ -677,7 +677,22 @@ class Battle {
       if (note) {
         const status = side === "attackers" ? battleStatus[0] : battleStatus[1];
         const losses = r.a ? Math.abs(d3.sum(Object.values(r.casualties))) / r.a : 1;
-        const regStatus = losses === 1 ? "is destroyed" : losses > 0.8 ? "is almost completely destroyed" : losses > 0.5 ? "suffered terrible losses" : losses > 0.3 ? "suffered severe losses" : losses > 0.2 ? "suffered heavy losses" : losses > 0.05 ? "suffered significant losses" : losses > 0 ? "suffered unsignificant losses" : "left the battle without loss";
+        const regStatus =
+          losses === 1
+            ? "is destroyed"
+            : losses > 0.8
+            ? "is almost completely destroyed"
+            : losses > 0.5
+            ? "suffered terrible losses"
+            : losses > 0.3
+            ? "suffered severe losses"
+            : losses > 0.2
+            ? "suffered heavy losses"
+            : losses > 0.05
+            ? "suffered significant losses"
+            : losses > 0
+            ? "suffered unsignificant losses"
+            : "left the battle without loss";
         const casualties = Object.keys(r.casualties)
           .map(t => (r.casualties[t] ? `${Math.abs(r.casualties[t])} ${t}` : null))
           .filter(c => c);
@@ -691,39 +706,31 @@ class Battle {
       armies.select(`g#${id} > text`).text(Military.getTotal(r)); // update reg box
     }
 
-    // append battlefield marker
-    void (function addMarkerSymbol() {
-      if (svg.select("#defs-markers").select("#marker_battlefield").size()) return;
-      const symbol = svg.select("#defs-markers").append("symbol").attr("id", "marker_battlefield").attr("viewBox", "0 0 30 30");
-      symbol.append("path").attr("d", "M6,19 l9,10 L24,19").attr("fill", "#000000").attr("stroke", "none");
-      symbol.append("circle").attr("cx", 15).attr("cy", 15).attr("r", 10).attr("fill", "#ffffff").attr("stroke", "#000000").attr("stroke-width", 1);
-      symbol.append("text").attr("x", "50%").attr("y", "52%").attr("fill", "#000000").attr("stroke", "#3200ff").attr("stroke-width", 0).attr("font-size", "12px").attr("dominant-baseline", "central").text("⚔️");
-    })();
+    const i = last(pack.markers)?.i + 1 || 0;
+    {
+      // append battlefield marker
+      const marker = {i, x: this.x, y: this.y, cell: this.cell, icon: "⚔️", type: "battlefields", dy: 52};
+      pack.markers.push(marker);
+      const markerHTML = drawMarker(marker);
+      document.getElementById("markers").insertAdjacentHTML("beforeend", markerHTML);
+    }
 
-    const getSide = (regs, n) => (regs.length > 1 ? `${n ? "regiments" : "forces"} of ${list([...new Set(regs.map(r => pack.states[r.state].name))])}` : getAdjective(pack.states[regs[0].state].name) + " " + regs[0].name);
+    const getSide = (regs, n) =>
+      regs.length > 1
+        ? `${n ? "regiments" : "forces"} of ${list([...new Set(regs.map(r => pack.states[r.state].name))])}`
+        : getAdjective(pack.states[regs[0].state].name) + " " + regs[0].name;
     const getLosses = casualties => Math.min(rn(casualties * 100), 100);
 
     const status = battleStatus[+P(0.7)];
     const result = `The ${this.getTypeName(this.type)} ended in ${status}`;
-    const legend = `${this.name} took place in ${options.year} ${options.eraShort}. It was fought between ${getSide(this.attackers.regiments, 1)} and ${getSide(this.defenders.regiments, 0)}. ${result}.
+    const legend = `${this.name} took place in ${options.year} ${options.eraShort}. It was fought between ${getSide(this.attackers.regiments, 1)} and ${getSide(
+      this.defenders.regiments,
+      0
+    )}. ${result}.
       \r\nAttackers losses: ${getLosses(this.attackers.casualties)}%, defenders losses: ${getLosses(this.defenders.casualties)}%`;
-    const id = getNextId("markerElement");
-    notes.push({id, name: this.name, legend});
+    notes.push({id: `marker${i}`, name: this.name, legend});
 
     tip(`${this.name} is over. ${result}`, true, "success", 4000);
-
-    markers
-      .append("use")
-      .attr("id", id)
-      .attr("xlink:href", "#marker_battlefield")
-      .attr("data-id", "#marker_battlefield")
-      .attr("data-x", this.x)
-      .attr("data-y", this.y)
-      .attr("x", this.x - 15)
-      .attr("y", this.y - 30)
-      .attr("data-size", 1)
-      .attr("width", 30)
-      .attr("height", 30);
 
     $("#battleScreen").dialog("destroy");
     this.cleanData();

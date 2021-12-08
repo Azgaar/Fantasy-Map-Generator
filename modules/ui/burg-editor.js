@@ -10,15 +10,11 @@ function editBurg(id) {
   burgLabels.selectAll("text").call(d3.drag().on("start", dragBurgLabel)).classed("draggable", true);
   updateBurgValues();
 
-  const my = id || d3.event.target.tagName === "text" ? "center bottom-20" : "center top+20";
-  const at = id ? "center" : d3.event.target.tagName === "text" ? "top" : "bottom";
-  const of = id ? "svg" : d3.event.target;
-
   $("#burgEditor").dialog({
     title: "Edit Burg",
     resizable: false,
     close: closeBurgEditor,
-    position: {my, at, of, collision: "fit"}
+    position: {my: "left top", at: "left+10 top+10", of: "svg", collision: "fit"}
   });
 
   if (modules.editBurg) return;
@@ -39,6 +35,8 @@ function editBurg(id) {
   document.getElementById("burgNameReCulture").addEventListener("click", generateNameCulture);
   document.getElementById("burgPopulation").addEventListener("change", changePopulation);
   burgBody.querySelectorAll(".burgFeature").forEach(el => el.addEventListener("click", toggleFeature));
+  document.getElementById("mfcgBurgSeed").addEventListener("change", changeSeed);
+  document.getElementById("regenerateMFCGBurgSeed").addEventListener("click", randomizeSeed);
 
   document.getElementById("burgStyleShow").addEventListener("click", showStyleSection);
   document.getElementById("burgStyleHide").addEventListener("click", hideStyleSection);
@@ -46,12 +44,12 @@ function editBurg(id) {
   document.getElementById("burgEditIconStyle").addEventListener("click", editGroupIconStyle);
   document.getElementById("burgEditAnchorStyle").addEventListener("click", editGroupAnchorStyle);
 
-  document.getElementById("burgSeeInMFCG").addEventListener("click", openInMFCG);
+  document.getElementById("burgEmblem").addEventListener("click", openEmblemEdit);
+  document.getElementById("burgToggleMFCGMap").addEventListener("click", toggleMFCGMap);
   document.getElementById("burgEditEmblem").addEventListener("click", openEmblemEdit);
   document.getElementById("burgRelocate").addEventListener("click", toggleRelocateBurg);
   document.getElementById("burglLegend").addEventListener("click", editBurgLegend);
   document.getElementById("burgLock").addEventListener("click", toggleBurgLockButton);
-  document.getElementById("burgLock").addEventListener("mouseover", showBurgELockTip);
   document.getElementById("burgRemove").addEventListener("click", removeSelectedBurg);
 
   function updateBurgValues() {
@@ -110,6 +108,14 @@ function editBurg(id) {
     const coaID = "burgCOA" + id;
     COArenderer.trigger(coaID, b.coa);
     document.getElementById("burgEmblem").setAttribute("href", "#" + coaID);
+
+    if (options.showMFCGMap) {
+      document.getElementById("mfcgPreviewSection").style.display = "block";
+      updateMFCGFrame(b);
+      document.getElementById("mfcgBurgSeed").value = getBurgSeed(b);
+    } else {
+      document.getElementById("mfcgPreviewSection").style.display = "none";
+    }
   }
 
   // in °C, array from -1 °C; source: https://en.wikipedia.org/wiki/List_of_cities_by_average_temperature
@@ -275,12 +281,12 @@ function editBurg(id) {
     const capital = burgsToRemove.length < burgsInGroup.length;
 
     alertMessage.innerHTML = `Are you sure you want to remove
-      ${basic || capital ? "all unlocked elements in the group" : "the entire burg group"}?
+      ${basic || capital ? "all unlocked elements in the burg group" : "the entire burg group"}?
       <br>Please note that capital or locked burgs will not be deleted.
       <br><br>Burgs to be removed: ${burgsToRemove.length}`;
     $("#alert").dialog({
       resizable: false,
-      title: "Remove route group",
+      title: "Remove burg group",
       buttons: {
         Remove: function () {
           $(this).dialog("close");
@@ -372,11 +378,6 @@ function editBurg(id) {
     }
   }
 
-  function showBurgELockTip() {
-    const id = +elSelected.attr("data-id");
-    showBurgLockTip(id);
-  }
-
   function showStyleSection() {
     document.querySelectorAll("#burgBottom > button").forEach(el => (el.style.display = "none"));
     document.getElementById("burgStyleSection").style.display = "inline-block";
@@ -402,65 +403,39 @@ function editBurg(id) {
     editStyle("anchors", g);
   }
 
-  function openInMFCG(event) {
-    const id = elSelected.attr("data-id");
+  function updateMFCGFrame(burg) {
+    const mfcgURL = getMFCGlink(burg);
+    document.getElementById("mfcgPreview").setAttribute("src", mfcgURL);
+    document.getElementById("mfcgLink").setAttribute("href", mfcgURL);
+  }
+
+  function changeSeed() {
+    const id = +elSelected.attr("data-id");
     const burg = pack.burgs[id];
-    const defSeed = +(seed + id.padStart(4, 0));
-    if (isCtrlClick(event)) {
-      prompt(
-        `Please provide a Medieval Fantasy City Generator seed. 
-        Seed should be a number. Default seed is FMG map seed + burg id padded to 4 chars with zeros (${defSeed}). 
-        Please note that if seed is custom, "Overworld" button from MFCG will open a different map`,
-        {default: burg.MFCG || defSeed, step: 1, min: 1, max: 1e13 - 1},
-        v => {
-          burg.MFCG = v;
-          openMFCG(v);
-        }
-      );
-    } else openMFCG();
+    const burgSeed = +this.value;
+    burg.MFCG = burgSeed;
+    updateMFCGFrame(burg);
+  }
 
-    function openMFCG(seed) {
-      if (!seed && burg.MFCGlink) {
-        openURL(burg.MFCGlink);
-        return;
-      }
-      const cells = pack.cells;
-      const name = elSelected.text();
-      const size = Math.max(Math.min(rn(burg.population), 100), 6); // to be removed once change on MFDC is done
-      const population = rn(burg.population * populationRate * urbanization);
-
-      const s = burg.MFCG || defSeed;
-      const cell = burg.cell;
-      const hub = +cells.road[cell] > 50;
-      const river = cells.r[cell] ? 1 : 0;
-
-      const coast = +burg.port;
-      const citadel = +burg.citadel;
-      const walls = +burg.walls;
-      const plaza = +burg.plaza;
-      const temple = +burg.temple;
-      const shanty = +burg.shanty;
-
-      const sea = coast && cells.haven[burg.cell] ? getSeaDirections(burg.cell) : "";
-      function getSeaDirections(i) {
-        const p1 = cells.p[i];
-        const p2 = cells.p[cells.haven[i]];
-        let deg = (Math.atan2(p2[1] - p1[1], p2[0] - p1[0]) * 180) / Math.PI - 90;
-        if (deg < 0) deg += 360;
-        const norm = rn(normalize(deg, 0, 360) * 2, 2); // 0 = south, 0.5 = west, 1 = north, 1.5 = east
-        return "&sea=" + norm;
-      }
-
-      const site = "http://fantasycities.watabou.ru/?random=0&continuous=0";
-      const url = `${site}&name=${name}&population=${population}&size=${size}&seed=${s}&hub=${hub}&river=${river}&coast=${coast}&citadel=${citadel}&plaza=${plaza}&temple=${temple}&walls=${walls}&shantytown=${shanty}${sea}`;
-      openURL(url);
-    }
+  function randomizeSeed() {
+    const id = +elSelected.attr("data-id");
+    const burg = pack.burgs[id];
+    const burgSeed = rand(1e9 - 1);
+    burg.MFCG = burgSeed;
+    updateMFCGFrame(burg);
+    document.getElementById("mfcgBurgSeed").value = burgSeed;
   }
 
   function openEmblemEdit() {
     const id = +elSelected.attr("data-id"),
       burg = pack.burgs[id];
     editEmblem("burg", "burgCOA" + id, burg);
+  }
+
+  function toggleMFCGMap() {
+    options.showMFCGMap = !options.showMFCGMap;
+    document.getElementById("mfcgPreviewSection").style.display = options.showMFCGMap ? "block" : "none";
+    document.getElementById("burgToggleMFCGMap").className = options.showMFCGMap ? "icon-map" : "icon-map-o";
   }
 
   function toggleRelocateBurg() {

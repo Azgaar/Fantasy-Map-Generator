@@ -1,5 +1,5 @@
-// Functions to save and load the map
 "use strict";
+// Functions to load and parse .map files
 
 function quickLoad() {
   ldb.get("lastMap", blob => {
@@ -221,8 +221,8 @@ function parseLoadedData(data) {
       if (settings[11]) barPosY.value = settings[11];
       if (settings[12]) populationRate = populationRateInput.value = populationRateOutput.value = settings[12];
       if (settings[13]) urbanization = urbanizationInput.value = urbanizationOutput.value = settings[13];
-      if (settings[14]) mapSizeInput.value = mapSizeOutput.value = Math.max(Math.min(settings[14], 100), 1);
-      if (settings[15]) latitudeInput.value = latitudeOutput.value = Math.max(Math.min(settings[15], 100), 0);
+      if (settings[14]) mapSizeInput.value = mapSizeOutput.value = minmax(settings[14], 1, 100);
+      if (settings[15]) latitudeInput.value = latitudeOutput.value = minmax(settings[15], 0, 100);
       if (settings[16]) temperatureEquatorInput.value = temperatureEquatorOutput.value = settings[16];
       if (settings[17]) temperaturePoleInput.value = temperaturePoleOutput.value = settings[17];
       if (settings[18]) precInput.value = precOutput.value = settings[18];
@@ -230,7 +230,12 @@ function parseLoadedData(data) {
       if (settings[20]) mapName.value = settings[20];
       if (settings[21]) hideLabels.checked = +settings[21];
       if (settings[22]) stylePreset.value = settings[22];
-      if (settings[23]) rescaleLabels.checked = settings[23];
+      if (settings[23]) rescaleLabels.checked = +settings[23];
+      if (settings[24]) urbanDensity = urbanDensityInput.value = urbanDensityOutput.value = +settings[24];
+    })();
+
+    void (function applyOptionsToUI() {
+      stateLabelsModeInput.value = options.stateLabelsMode;
     })();
 
     void (function parseConfiguration() {
@@ -340,6 +345,7 @@ function parseLoadedData(data) {
       pack.religions = data[29] ? JSON.parse(data[29]) : [{i: 0, name: "No religion"}];
       pack.provinces = data[30] ? JSON.parse(data[30]) : [0];
       pack.rivers = data[32] ? JSON.parse(data[32]) : [];
+      pack.markers = data[35] ? JSON.parse(data[35]) : [];
 
       const cells = pack.cells;
       cells.biome = Uint8Array.from(data[16].split(","));
@@ -405,7 +411,7 @@ function parseLoadedData(data) {
       if (notHidden(labels)) turnOn("toggleLabels");
       if (notHidden(icons)) turnOn("toggleIcons");
       if (hasChildren(armies) && notHidden(armies)) turnOn("toggleMilitary");
-      if (hasChildren(markers) && notHidden(markers)) turnOn("toggleMarkers");
+      if (hasChildren(markers)) turnOn("toggleMarkers");
       if (notHidden(ruler)) turnOn("toggleRulers");
       if (notHidden(scaleBar)) turnOn("toggleScaleBar");
 
@@ -431,12 +437,27 @@ function parseLoadedData(data) {
 
         // 1.0 adds a legend box
         legend = svg.append("g").attr("id", "legend");
-        legend.attr("font-family", "Almendra SC").attr("font-size", 13).attr("data-size", 13).attr("data-x", 99).attr("data-y", 93).attr("stroke-width", 2.5).attr("stroke", "#812929").attr("stroke-dasharray", "0 4 10 4").attr("stroke-linecap", "round");
+        legend
+          .attr("font-family", "Almendra SC")
+          .attr("font-size", 13)
+          .attr("data-size", 13)
+          .attr("data-x", 99)
+          .attr("data-y", 93)
+          .attr("stroke-width", 2.5)
+          .attr("stroke", "#812929")
+          .attr("stroke-dasharray", "0 4 10 4")
+          .attr("stroke-linecap", "round");
 
         // 1.0 separated drawBorders fron drawStates()
         stateBorders = borders.append("g").attr("id", "stateBorders");
         provinceBorders = borders.append("g").attr("id", "provinceBorders");
-        borders.attr("opacity", null).attr("stroke", null).attr("stroke-width", null).attr("stroke-dasharray", null).attr("stroke-linecap", null).attr("filter", null);
+        borders
+          .attr("opacity", null)
+          .attr("stroke", null)
+          .attr("stroke-width", null)
+          .attr("stroke-dasharray", null)
+          .attr("stroke-linecap", null)
+          .attr("filter", null);
         stateBorders.attr("opacity", 0.8).attr("stroke", "#56566d").attr("stroke-width", 1).attr("stroke-dasharray", "2").attr("stroke-linecap", "butt");
         provinceBorders.attr("opacity", 0.8).attr("stroke", "#56566d").attr("stroke-width", 0.5).attr("stroke-dasharray", "1").attr("stroke-linecap", "butt");
 
@@ -460,7 +481,7 @@ function parseLoadedData(data) {
         zones.attr("opacity", 0.6).attr("stroke", null).attr("stroke-width", 0).attr("stroke-dasharray", null).attr("stroke-linecap", "butt");
         addZones();
         if (!markers.selectAll("*").size()) {
-          addMarkers();
+          Markers.generate();
           turnButtonOn("toggleMarkers");
         }
 
@@ -815,6 +836,7 @@ function parseLoadedData(data) {
             const riverPoints = [];
 
             const length = node.getTotalLength() / 2;
+            if (!length) continue;
             const segments = Math.ceil(length / 6);
             const increment = length / segments;
 
@@ -847,6 +869,64 @@ function parseLoadedData(data) {
         // remove style to unhide layers
         rivers.attr("style", null);
         borders.attr("style", null);
+      }
+
+      if (version < 1.7) {
+        // v 1.7 changed markers data
+        const defs = document.getElementById("defs-markers");
+        const markersGroup = document.getElementById("markers");
+
+        if (defs && markersGroup) {
+          const markerElements = markersGroup.querySelectorAll("use");
+          const rescale = +markersGroup.getAttribute("rescale");
+
+          pack.markers = Array.from(markerElements).map((el, i) => {
+            const id = el.getAttribute("id");
+            const note = notes.find(note => note.id === id);
+            if (note) note.id = `marker${i}`;
+
+            let x = +el.dataset.x;
+            let y = +el.dataset.y;
+
+            const transform = el.getAttribute("transform");
+            if (transform) {
+              const [dx, dy] = parseTransform(transform);
+              if (dx) x += +dx;
+              if (dy) y += +dy;
+            }
+            const cell = findCell(x, y);
+            const size = rn(rescale ? el.dataset.size * 30 : el.getAttribute("width"), 1);
+
+            const href = el.href.baseVal;
+            const type = href.replace("#marker_", "");
+            const symbol = defs?.querySelector(`symbol${href}`);
+            const text = symbol?.querySelector("text");
+            const circle = symbol?.querySelector("circle");
+
+            const icon = text?.innerHTML;
+            const px = text && Number(text.getAttribute("font-size")?.replace("px", ""));
+            const dx = text && Number(text.getAttribute("x")?.replace("%", ""));
+            const dy = text && Number(text.getAttribute("y")?.replace("%", ""));
+            const fill = circle && circle.getAttribute("fill");
+            const stroke = circle && circle.getAttribute("stroke");
+
+            const marker = {i, icon, type, x, y, size, cell};
+            if (size && size !== 30) marker.size = size;
+            if (!isNaN(px) && px !== 12) marker.px = px;
+            if (!isNaN(dx) && dx !== 50) marker.dx = dx;
+            if (!isNaN(dy) && dy !== 50) marker.dy = dy;
+            if (fill && fill !== "#ffffff") marker.fill = fill;
+            if (stroke && stroke !== "#000000") marker.stroke = stroke;
+            if (circle?.getAttribute("opacity") === "0") marker.pin = "no";
+
+            return marker;
+          });
+
+          markersGroup.style.display = null;
+          defs?.remove();
+          markerElements.forEach(el => el.remove());
+          if (layerIsOn("markers")) drawMarkers();
+        }
       }
     })();
 
@@ -975,7 +1055,7 @@ function parseLoadedData(data) {
         },
         "New map": function () {
           $(this).dialog("close");
-          regenerateMap();
+          regenerateMap("loading error");
         },
         Cancel: function () {
           $(this).dialog("close");

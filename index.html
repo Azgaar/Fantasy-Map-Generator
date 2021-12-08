@@ -16,7 +16,7 @@
   <link rel="canonical" href="https://azgaar.github.io/Fantasy-Map-Generator/">
 
   <style type="text/css">
-    body {margin: 0; font-size: 11px; overflow: hidden;}
+    body {margin: 0; font-size: 10px; overflow: hidden;}
     #map {position: absolute;}
     #initial {fill: none; stroke: black; pointer-events: none;}
     #init-rose {animation: 20s infinite spin; opacity: .7; transform-origin: center;}
@@ -210,14 +210,6 @@
         <g id="defs-emblems"></g>
       </g>
 
-      <g id="defs-markers">
-        <symbol id="marker0" viewBox="0 0 30 30">
-          <path d="M6,19 l9,10 L24,19" fill="#000000" stroke="none" />
-          <circle cx="15" cy="15" r="10" stroke-width="1" stroke="#000000" fill="#ffffff" />
-          <text x="50%" y="50%" fill="#000000" stroke-width="0" stroke="#3200ff" font-size="22px" dominant-baseline="central">?</text>
-        </symbol>
-      </g>
-
       <pattern id="oceanic" width="100" height="100" patternUnits="userSpaceOnUse">
         <image id="oceanicPattern" href="./images/pattern1.png"></image>
       </pattern>
@@ -234,22 +226,22 @@
   <div id="loading">
     <div id="titleName"><t data-t="titleName">Azgaar's</t></div>
     <div id="title"><t data-t="title">Fantasy Map Generator</t></div>
-    <div id="version"><t data-t="version">v. </t>1.66</div>
+    <div id="version"><t data-t="version">v. </t>1.71</div>
     <p id="loading-text"><t data-t="loading">LOADING</t><span>.</span><span>.</span><span>.</span></p>
   </div>
 
   <div id="optionsContainer" style="opacity:0">
 
     <div id="collapsible">
-      <button id="optionsTrigger" data-t="tipOptionsTrigger" data-tip="Click to show options pane. Shortcut: Tab" class="options glow" onclick="showOptions(event)" style="padding:.6em .45em">►</button>
-      <button id="regenerate" data-t="tipRegenerate" data-tip="Click to generate a new map. Shortcut: F2" onclick="regeneratePrompt()" class="options" style="display: none"><t data-t="newMap">New Map!</t></button>
+      <button id="optionsTrigger" data-t="tipOptionsTrigger" data-tip="Click to show the Menu. Shortcut: Tab" class="options glow" onclick="showOptions(event)" style="padding:.6em .45em">►</button>
+      <button id="regenerate" data-t="tipRegenerate" data-tip="Click to generate a new map. Shortcut: F2" onclick="regeneratePrompt('drawer')" class="options" style="display: none"><t data-t="newMap">New Map!</t></button>
     </div>
 
     <div id="options" style="display:none">
-      <div class="drag-trigger" data-t="optionsDragTrigger" data-tip="Drag to move options pane"></div>
+      <div class="drag-trigger" data-t="optionsDragTrigger" data-tip="Drag to move the Menu"></div>
 
       <div class="tab">
-        <button id="optionsHide" data-t="optionsHide" data-tip="Click to hide options pane. Shortcut: Tab to close this or Esc to close all dialogs" class="options" onclick="hideOptions(event)">◄</button>
+        <button id="optionsHide" data-t="optionsHide" data-tip="Click to hide the Menu. Shortcut: Tab or Esc" class="options" onclick="hideOptions(event)">◄</button>
         <button id="layersTab" data-t="layersTab" data-tip="Click to change map layers" class="options active"><t data-t="layers">Layers</t></button>
         <button id="styleTab" data-t="styleTab" data-tip="Click to open style editor" class="options"><t data-t="style">Style</t></button>
         <button id="optionsTab" data-t="optionsTab" data-tip="Click to change generation and UI options" class="options"><t data-t="options">Options</t></button>
@@ -304,7 +296,7 @@
           <li id="toggleMilitary" data-tip="Military forces: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: M" class="buttonoff" onclick="toggleMilitary(event)"><u>M</u>ilitary</li>
           <li id="toggleMarkers" data-tip="Markers: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style. Shortcut: K" class="buttonoff" onclick="toggleMarkers(event)">Mar<u>k</u>ers</li>
           <li id="toggleRulers" data-tip="Rulers: click to toggle, drag to move, click on label to delete. Ctrl + click to edit layer style. Shortcut: = (equal)" class="buttonoff" onclick="toggleRulers(event)">Rulers</li>
-          <li id="toggleScaleBar" data-tip="Scale Bar: click to toggle. Ctrl + click to edit style. Shortcut: - (minus)" onclick="toggleScaleBar(event)" class="solid">Scale Bar</li>
+          <li id="toggleScaleBar" data-tip="Scale Bar: click to toggle. Ctrl + click to edit style. Shortcut: / (slash)" onclick="toggleScaleBar(event)" class="solid">Scale Bar</li>
         </ul>
 
         <div id="viewMode" data-tip="Set view node">
@@ -438,18 +430,24 @@
               <td>
                 <select id="styleTextureInput">
                   <option value="none">None</option>
-                  <option value="default" selected>Default</option>
-                  <option value="https://i.imgur.com/EWvXSou.jpg">Folded paper</option>
-                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/marble-big.jpg">Marble big</option>
+                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2021/10/folded-paper-big.jpg">Folded paper big</option>
+                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2021/10/folded-paper-small.jpg">Folded paper small</option>
+                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2021/10/gray-paper.jpg">Gray paper</option>
+                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2021/10/soiled-paper.jpg">Soiled paper horizontal</option>
+                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2021/10/soiled-paper-e1633784189147.jpg">Soided paper vertical</option>
+                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2021/10/plaster.jpg">Plaster</option>
+                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2021/10/ocean.jpg">Ocean</option>
+                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/antique-small.jpg">Antique small</option>
+                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/antique-big.jpg">Antique big</option>
+                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/pergamena-small.jpg">Pergamena small</option>
+                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2021/10/marble-big.jpg" selected>Marble big</option>
+                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/marble-small.jpg">Marble small</option>
                   <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/marble-blue-small.jpg">Marble Blue</option>
                   <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/marble-blue-big.jpg">Marble Blue big</option>
                   <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/stone-small.jpg">Stone small</option>
                   <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/stone-big.jpg">Stone big</option>
                   <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/timbercut-small.jpg">Timber Cut small</option>
                   <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/timbercut-big.jpg">Timber Cut big</option>
-                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/antique-small.jpg">Antique small</option>
-                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/antique-big.jpg">Antique big</option>
-                  <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/pergamena-small.jpg">Pergamena small</option>
                   <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/mars-small.jpg">Mars small</option>
                   <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/mars-big.jpg">Mars big</option>
                   <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/mercury-small.jpg">Mercury small</option>
@@ -949,14 +947,13 @@
 
           <tr data-tip="Map seed number. Seed produces the same map only if canvas size and options are the same">
             <td>
-              <i data-tip="Click to generate a map for this seed" id="optionsSeedGenerate"></i>
+              <i data-tip="Show seed history to apply a previous seed" id="optionsMapHistory" class="icon-history"></i>
             </td>
             <td>Map seed</td>
             <td>
               <input id="optionsSeed" class="long" type="number" min=1 max=999999999 step=1>
             </td>
             <td>
-              <i data-tip="Show seed history to apply a previous seed" id="optionsMapHistory" class="icon-history"></i>
               <i data-tip="Copy map seed as URL. It will produce the same map only if options are default or the same" id="optionsCopySeed" class="icon-docs"></i>
             </td>
           </tr>
@@ -1133,6 +1130,21 @@
               <output id="religionsOutput" data-stored="religions" value="auto"></output>
             </td>
           </tr>
+
+          <tr data-tip="Select state labels mode: display short or full names">
+            <td>
+              <i data-locked=0 id="lock_stateLabelsMode" class="icon-lock-open"></i>
+            </td>
+            <td>State labels</td>
+            <td>
+              <select id="stateLabelsModeInput" data-stored="stateLabelsMode">
+                <option value="auto">Auto </option>
+                <option value="short">Short names</option>
+                <option value="full">Full names</option>
+              </select>
+            </td>
+            <td></td>
+          </tr>
         </table>
 
         <p data-tip="Tool settings that don't affect maps. Changes are getting applied immediately">Generator settings:</p>
@@ -1153,10 +1165,10 @@
             <td></td>
             <td>Interface size</td>
             <td>
-              <input id="uiSizeInput" data-stored="uiSize" type="range" min=.6 max=3 step=.1 value=1>
+              <input id="uiSizeInput" data-stored="uiSize" type="range" min=.6 max=3 step=.1>
             </td>
             <td>
-              <input id="uiSizeOutput" data-stored="uiSize" type="number" min=.6 max=3 step=.1 value=1>
+              <input id="uiSizeOutput" data-stored="uiSize" type="number" min=.6 max=3 step=.1>
             </td>
           </tr>
 
@@ -1171,14 +1183,27 @@
             </td>
           </tr>
 
+          <tr data-tip="Set theme hue for dialogs and tool windows">
+            <td>
+              <i data-tip="Restore default theme color: pale magenta" id="themeColorRestore" class="icon-ccw"></i>
+            </td>
+            <td>Theme color</td>
+            <td>
+              <input id="themeHueInput" type="range" min=0 max=359 >
+            </td>
+            <td>
+              <input id="themeColorInput" data-stored="themeColor" type="color" >
+            </td>
+          </tr>
+
           <tr data-tip="Set dialog and tool windows transparency">
             <td></td>
             <td>Transparency</td>
             <td>
-              <input id="transparencyInput" data-stored="transparency" type="range" min=0 max=100 value=15>
+              <input id="transparencyInput" data-stored="transparency" type="range" min=0 max=100 >
             </td>
             <td>
-              <input id="transparencyOutput" data-stored="transparency" type="number" min=0 max=100 value=15>
+              <input id="transparencyOutput" data-stored="transparency" type="number" min=0 max=100 >
             </td>
           </tr>
 
@@ -1271,7 +1296,9 @@
           </tr>
 
           <tr data-tip="Set minimum and maximum possible zoom level">
-            <td></td>
+            <td>
+              <i data-tip="Restore default zoom extent: [1, 20]" id="zoomExtentDefault" class="icon-ccw"></i>
+            </td>
             <td>Zoom extent</td>
             <td>
               <span data-tip="Mimimal possible zoom level (should be > 0)">min</span>
@@ -1280,7 +1307,6 @@
               <input data-tip="Maximal possible zoom level (should be > 1)" id="zoomExtentMax" class="paired" type="number" min=1 max=50 value=20>
             </td>
             <td>
-              <i data-tip="Restore default zoom extent (1, 20)" id="zoomExtentDefault" class="icon-ccw"></i>
               <i data-tip="Allow to drag map beyond canvas borders" id="translateExtent" data-on=0 class="icon-hand-paper-o"></i>
             </td>
           </tr>
@@ -1338,6 +1364,7 @@
           <button id="overviewBurgsButton" data-tip="Click to open Burgs Overview. Shortcut: Shift + T">Burgs</button>
           <button id="overviewRiversButton" data-tip="Click to open Rivers Overview. Shortcut: Shift + V">Rivers</button>
           <button id="overviewMilitaryButton" data-tip="Click to open Military Forces Overview. Shortcut: Shift + M">Military</button>
+          <button id="overviewMarkersButton" data-tip="Click to open Markers Overview. Shortcut: Shift + K">Markers</button>
           <button id="overviewCellsButton" data-tip="Click to open Cell details view. Shortcut: Shift + E">Cells</button>
         </div>
 
@@ -1356,7 +1383,7 @@
           <button id="regenerateCultures" data-tip="Click to regenerate cultures">Cultures</button>
           <button id="regenerateMilitary" data-tip="Click to recalculate military forces based on current military options">Military</button>
           <button id="regenerateIce" data-tip="Click to icebergs and glaciers">Ice</button>
-          <button id="regenerateMarkers" data-tip="Click to regenerate markers. Hold Ctrl and click to set markers number multiplier">Markers</button>
+          <button id="regenerateMarkers" data-tip="Click to regenerate markers">Markers <i id="configRegenerateMarkers" class="icon-cog" data-tip="Click to set number multiplier"></i></button>
           <button id="regenerateZones" data-tip="Click to regenerate zones. Hold Ctrl and click to set zones number multiplier">Zones</button>
         </div>
 
@@ -1467,8 +1494,7 @@
     </div>
   </div>
 
-  <div id="dialogs" style="background-color: #ffffff">
-
+  <div id="dialogs">
     <div id="worldConfigurator" class="dialog stable" style="display: none">
 
       <div id="worldControls">
@@ -1952,8 +1978,9 @@
     <div id="burgEditor" class="dialog" style="display: none">
 
       <div id="burgBody" style="padding-bottom: .3em">
-        <svg viewBox="0 0 200 200" width="14em" height="14em"><use id="burgEmblem"></use></svg>
-        <div style="float: right">
+        <div style="display: flex; align-items: center">
+          <svg data-tip="Burg emblem. Click to edit" class="pointer" viewBox="0 0 200 200" width="13em" height="13em"><use id="burgEmblem"></use></svg>
+          <div>
           <div id="burgProvinceAndState" style="font-style: italic; max-width: 16em"></div>
 
           <div>
@@ -2008,6 +2035,16 @@
             <div class="label">Elevation:</div>
             <span id="burgElevation"></span> above sea level
           </div>
+          </div>
+        </div>
+
+        <div id="mfcgPreviewSection" data-tip="Burg preview in the Medieval Fantasy City Generator. Default seed is a conbimation of map seed and burg id" style="display: flex; flex-direction: column">
+          <div>
+            See in <a id="mfcgLink" target="_blank">City Generator by Watabou</a>.
+            Seed: <input id="mfcgBurgSeed" style="width: 10em" type="number" min=1 max="1e13" step="1" />
+            <i id="regenerateMFCGBurgSeed" data-tip="Randomize Medieval Fantasy City Generator burg seed" class="icon-arrows-cw pointer" style="margin-left: .1em"></i>
+          </div>
+          <iframe id="mfcgPreview" sandbox="allow-scripts allow-same-origin"></iframe>
         </div>
       </div>
 
@@ -2029,59 +2066,78 @@
           <button id="burgEditAnchorStyle" data-tip="Edit port icon (anchor) style for burg group in Style Editor" class="icon-anchor"></button>
         </div>
 
-        <button id="burgSeeInMFCG" data-tip="Open burg in the Medieval Fantasy City Generator by Watabou. Ctrl + click to change the seed" class="icon-map-o"></button>
         <button id="burgEditEmblem" data-tip="Edit emblem" class="icon-shield-alt"></button>
+        <button id="burgToggleMFCGMap" data-tip="Toggle MFCG map" class="icon-map"></button>
         <button id="burgRelocate" data-tip="Relocate burg" class="icon-target"></button>
         <button id="burglLegend" data-tip="Edit free text notes (legend) for this burg" class="icon-edit"></button>
-        <button id="burgLock" class="icon-lock-open"></button>
+        <button id="burgLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
         <button id="burgRemove" data-tip="Remove non-capital burg. Shortcut: Delete" class="icon-trash fastDelete"></button>
       </div>
     </div>
 
     <div id="markerEditor" class="dialog" style="display: none">
+      <div id="markerBody" style="padding-bottom: .3em">
+        <div data-tip="Marker type. Style changes will apply to all markers of the same type. Leave blank if the marker is unique">
+          <div class="label">Type:</div>
+          <input id="markerType" style="width: 10.3em" />
+        </div>
 
-      <button id="markerGroup" data-tip="Change marker type" class="icon-tags"></button>
-      <div id="markerGroupSection" style="display: none">
-        <select id="markerSelectGroup" data-tip="Select type for the selected marker" style="width: 10em"></select>
-        <input id="markerInputGroup" data-tip="Create new type for selected marker" placeholder="type new name" style="display: none; width: 10em"/>
-        <i id="markerAddGroup" data-tip="Create new markers type" class="icon-plus pointer"></i>
-        <i id="markerRemoveGroup" data-tip="Remove all markers of that type" class="icon-trash pointer"></i>
+        <div data-tip="Marker icon. Paste any Unicode symbol or select from the predefined list">
+          <div class="label">Icon:</div>
+          <input id="markerIcon" style="width:5em" />
+          <button id="markerIconSelect" style="width: 5em">select</button>
+        </div>
+
+        <div data-tip="Marker marker element and icon sizes in pixels">
+          <div class="label">Size:</div>
+          <input data-tip="Marker element size in pixels" id="markerSize" type="number" min="2" max="500" style="width: 5em" />
+          <input data-tip="Marker icon sizes in pixels" id="markerIconSize" type="number" min="2" max="20" step="0.5" style="width: 5em" />
+        </div>
+
+        <div data-tip="Marker icon shift (by X and by Y axis), percent. Set to 50 to position icon in center">
+          <div class="label">Icon shift:</div>
+          <input id="markerIconShiftX" type="number" min="0" max="100" step="1" style="width:5em" />
+          <input id="markerIconShiftY" type="number" min="0" max="100" step="1" style="width:5em" />
+        </div>
+
+        <div data-tip="Marker pin shape">
+          <div class="label">Pin shape:</div>
+          <select id="markerPin" style="width: 10.3em">
+            <option value="bubble">Bubble</option>
+            <option value="pin">Pin</option>
+            <option value="square">Square</option>
+            <option value="squarish">Squarish</option>
+            <option value="diamond">Diamond</option>
+            <option value="hex">Hex</option>
+            <option value="hexy">Hexy</option>
+            <option value="shieldy">Shieldy</option>
+            <option value="shield">Shield</option>
+            <option value="pentagon">Pentagon</option>
+            <option value="heptagon">Heptagon</option>
+            <option value="circle">Circle</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+
+        <div data-tip="Pin fill and stroke colors">
+          <div class="label">Pin colors:</div>
+          <input id="markerFill" type="color" style="width:5em; height:1.6em" />
+          <input id="markerStroke" type="color" style="width:5em; height:1.6em" />
+        </div>
       </div>
 
-      <button id="markerIcon" data-tip="Change marker icon and edit positioning" class="icon-star"></button>
-      <div id="markerIconSection" style="display: none">
-        <i data-tip="Change marker icon size" class="icon-resize-full"></i>
-        <input id="markerIconSize" data-tip="Change marker icon size" type="range" min=5 max=30 step=.5 value=22 style="width:12em"><br>
-        <i data-tip="Marker Icon" class="icon-info"></i>
-        <button id="markerIconSelect" data-tip="Click to select icon"></button>
-        <i data-tip="Change marker horizontal shift" class="icon-resize-horizontal"></i>
-        <input id="markerIconShiftX" data-tip="Change icon horizontal shift" type="number" value=50>
-        <i data-tip="Change marker vertical shift" class="icon-resize-vertical"></i>
-        <input id="markerIconShiftY" data-tip="Change vertical shift" type="number" min=0 max=100 value=50>
+      <div id="markerBottom">
+        <button id="markerNotes" data-tip="Edit place legend (notes)" class="icon-edit"></button>
+        <button id="markerLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
+        <button id="markerAdd" data-tip="Add additional marker of that type" class="icon-plus"></button>
+        <button id="markerRemove" data-tip="Remove the marker. Shortcut: Delete" class="icon-trash fastDelete"></button>
       </div>
-
-      <button id="markerStyle" data-tip="Change marker size and colors" class="icon-brush"></button>
-      <div id="markerStyleSection" style="display: none">
-        <i data-tip="Change marker base (pin) style" class="icon-map-pin"></i>
-        <input id="markerSize" data-tip="Change marker size" type="range" min=.01 max=10 step=.1 value=1 style="width:12em">
-        <input id="markerBaseStroke" data-tip="Change pin stroke color" type="color" value="#ffffff">
-        <input id="markerBaseFill" data-tip="Change pin fill color" type="color" alue="#000000">
-        <br><i data-tip="Change marker icon style" class="icon-star"></i>
-        <input id="markerIconStrokeWidth" data-tip="Change icon stroke width" type="range" min=0 max=1 step=.02 value=0 style="width:12em">
-        <input id="markerIconStroke" data-tip="Change icon stroke color. Ensure icon stroke width is non-zero" type="color" value="#3200ff">
-        <input id="markerIconFill" data-tip="Change icon fill color" type="color" value="#000000">
-      </div>
-
-      <button id="markerToggleBubble" data-tip="Toggle pin (bubble) display" class="icon-info-circled"></button>
-      <button id="markerLegendButton" data-tip="Edit place legend (free text notes)" class="icon-edit"></button>
-      <button id="markerAdd" data-tip="Add additional marker of that type" class="icon-plus"></button>
-      <button id="markerRemove" data-tip="Remove the marker. Shortcut: Delete" class="icon-trash fastDelete"></button>
     </div>
 
     <div id="regimentEditor" class="dialog" style="display: none">
 
-      <div id="regimentBody">
-        <div>
+      <div id="regimentBody" style="padding-bottom: 0.3em">
+        <div style="padding-bottom: 0.2em">
           <button id="regimentType" data-tip="Regiment type (land or naval). Click to change"></button>
           <input id="regimentName" data-tip="Type to rename the regiment" autocorrect="off" spellcheck="false" style="width: 13em">
           <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
@@ -2535,7 +2591,7 @@
     </div>
 
     <div id="stateNameEditor" class="dialog" data-state="0" style="display: none">
-      <div style="padding: .1em">
+      <div>
         <div data-tip="State short name" class="label">Short name:</div>
         <input id="stateNameEditorShort" data-tip="Type to change the short name" autocorrect="off" spellcheck="false" style="width: 11em">
         <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
@@ -2543,7 +2599,7 @@
         <span id="stateNameEditorShortRandom" data-tip="Generate random name" class="icon-globe pointer"></span>
       </div>
 
-      <div style="padding: .1em" data-tip="Select form name">
+      <div data-tip="Select form name">
         <div data-tip="State form name" class="label">Form name:</div>
         <select id="stateNameEditorSelectForm" style="width: 11em">
           <option value="">blank</option>
@@ -2593,7 +2649,7 @@
             <option value="United Provinces">United Provinces</option>
             <option value="United Republic">United Republic</option>
             <option value="United States">United States</option>
-            <option value="Tribes">United Tribes</option>
+            <option value="United Tribes">United Tribes</option>
           </optgroup>
           <optgroup label="Theocracy">
             <option value="Bishopric">Bishopric</option>
@@ -2622,7 +2678,7 @@
         <span id="stateNameEditorAddForm" data-tip="Click to add custom state form name to the list" class="icon-plus pointer"></span>
       </div>
 
-      <div style="padding: .1em">
+      <div>
         <div data-tip="State full name" class="label">Full name:</div>
         <input id="stateNameEditorFull" data-tip="Type to change the full name" autocorrect="off" spellcheck="false" style="width: 11em">
         <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
@@ -2672,6 +2728,7 @@
           <button id="provincesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
         </div>
 
+        <button id="provincesRelease" data-tip="Release all provinces. It will make all provinces with burgs independent" class="icon-flag"></button>
         <button id="provincesAdd" data-tip="Add a new province. Hold Shift to add multiple" class="icon-plus"></button>
         <button id="provincesRemoveAll" data-tip="Remove all provinces. States will remain as they are" class="icon-trash"></button>
 
@@ -2711,7 +2768,7 @@
     </div>
 
     <div id="provinceNameEditor" class="dialog" data-province="0" style="display: none">
-      <div style="padding: .1em">
+      <div>
         <div data-tip="Province short name" class="label">Short name:</div>
         <input id="provinceNameEditorShort" data-tip="Type to change the short name" autocorrect="off" spellcheck="false" style="width: 11em">
         <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
@@ -2719,7 +2776,7 @@
         <span id="provinceNameEditorShortRandom" data-tip="Generate random name" class="icon-globe pointer"></span>
       </div>
 
-      <div style="padding: .1em" data-tip="Select form name">
+      <div data-tip="Select form name">
         <div data-tip="Province form name" class="label">Form name:</div>
         <select id="provinceNameEditorSelectForm" style="display: inline-block; width: 11em; height: 1.645em">
           <option value="">blank</option>
@@ -2759,7 +2816,7 @@
         <span id="provinceNameEditorAddForm" data-tip="Click to add custom province form name to the list" class="icon-plus pointer"></span>
       </div>
 
-      <div style="padding: .1em">
+      <div>
         <div data-tip="Province full name" class="label">Full name:</div>
         <input id="provinceNameEditorFull" data-tip="Type to change the full name" autocorrect="off" spellcheck="false" style="width: 11em">
         <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
@@ -2770,13 +2827,13 @@
     <div id="culturesEditor" class="dialog stable" style="display: none">
       <div id="culturesHeader" class="header">
         <div style="left:1.8em" data-tip="Click to sort by culture name" class="sortable alphabetically" data-sortby="name">Culture&nbsp;</div>
-        <div style="left:8.7em" data-tip="Click to sort by culture cells count" class="sortable hide" data-sortby="cells">Cells&nbsp;</div>
-        <div style="left:13.2em" data-tip="Click to sort by expansionism" class="sortable hide" data-sortby="expansionism">Expan.&nbsp;</div>
-        <div style="left:18.6em" data-tip="Click to sort by type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
-        <div style="left:24.9em" data-tip="Click to sort by culture area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
-        <div style="left:28.8em" data-tip="Click to sort by culture population" class="sortable hide icon-sort-number-down" data-sortby="population">Population&nbsp;</div>
-        <div style="left:35.8em" data-tip="Click to sort by culture namesbase" class="sortable" data-sortby="base">Namesbase&nbsp;</div>
-        <div style="left:42.9em" data-tip="Click to sort by culture emblems shape" class="sortable alphabetically hide" data-sortby="emblems">Emblems&nbsp;</div>
+        <div style="left:9.8em" data-tip="Click to sort by culture cells count" class="sortable hide" data-sortby="cells">Cells&nbsp;</div>
+        <div style="left:14.3em" data-tip="Click to sort by expansionism" class="sortable hide" data-sortby="expansionism">Expan.&nbsp;</div>
+        <div style="left:19.7em" data-tip="Click to sort by type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
+        <div style="left:26em" data-tip="Click to sort by culture area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
+        <div style="left:29.9em" data-tip="Click to sort by culture population" class="sortable hide icon-sort-number-down" data-sortby="population">Population&nbsp;</div>
+        <div style="left:36.9em" data-tip="Click to sort by culture namesbase" class="sortable" data-sortby="base">Namesbase&nbsp;</div>
+        <div style="left:44em" data-tip="Click to sort by culture emblems shape" class="sortable alphabetically hide" data-sortby="emblems">Emblems&nbsp;</div>
       </div>
       <div id="culturesBody" class="table" data-type="absolute"></div>
 
@@ -3037,7 +3094,7 @@
 
         <div data-tip="Set size of particular Emblem. To hide set to 0. To change the entire category go to Menu ⭢ Style ⭢ Emblems">
           <div class="label" style="width: 2.8em">Size:</div>
-          <input id="emblemSizeSlider" type="range" min=0 max=5 step=.1 style="width: 8em"/>
+          <input id="emblemSizeSlider" type="range" min=0 max=5 step=.1 style="width: 7em"/>
           <input id="emblemSizeNumber" type="number" min=0 max=5 step=.1 />
         </div>
       </div>
@@ -3178,6 +3235,12 @@
           <input id="urbanizationOutput" data-stored="urbanization" type="range" min=.01 max=5 step=.01 value=1 >
           <input id="urbanizationInput" data-stored="urbanization" type="number" min=.01 max=5 step=.01 value=1 >
         </div>
+
+        <div data-tip="Set urban density: average population per building in Medieval Fantasy City Generator">
+          <div>Urban density:</div>
+          <input id="urbanDensityOutput" data-stored="urbanDensity" type="range" min=1 max=200 step=1 value=10 >
+          <input id="urbanDensityInput" data-stored="urbanDensity" type="number" min=1 max=200 step=1 value=10 >
+        </div>
       </div>
 
       <div id="unitsBottom">
@@ -3202,6 +3265,7 @@
         <div style="left:20.1em" data-tip="Click to sort by culture name" class="sortable alphabetically" data-sortby="culture">Culture&nbsp;</div>
         <div style="left:24.7em" data-tip="Click to sort by burg population" class="sortable" data-sortby="population">Population&nbsp;</div>
         <div style="left:31.2em" data-tip="Click to sort by burg type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
+        <div id="burgsInvertLock" style="left:35.5em; color: #6e5e66" data-tip="Click to invert lock for all burgs" class="icon-lock pointer"></div>
       </div>
 
       <div id="burgsBody" class="table"></div>
@@ -3317,6 +3381,10 @@
             <tr>
               <th data-tip="Unit icon">Icon</th>
               <th data-tip="Unit name. If name is changed for existing unit, old unit will be replaced">Unit name</th>
+              <th style="width:5em" data-tip="Select allowed biomes">Biomes</th>
+              <th style="width:5em" data-tip="Select allowed states">States</th>
+              <th style="width:5em" data-tip="Select allowed cultures">Cultures</th>
+              <th style="width:5em" data-tip="Select allowed religions">Religions</th>
               <th data-tip="Conscription percentage for rural population">Rural</th>
               <th data-tip="Conscription percentage for urban population">Urban</th>
               <th data-tip="Average number of people in crew (used for total personnel calculation)">Crew</th>
@@ -3328,6 +3396,28 @@
           <tbody>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <div id="markersOverview" class="dialog stable" style="display: none">
+      <div id="markersHeader" class="header">
+        <div style="left:1em" data-tip="Click to sort by marker type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
+        <div id="markersInverPin" style="left:14.9em; color: #6e5e66" data-tip="Click to invert pin state for all markers" class="icon-pin pointer"></div>
+        <div id="markersInverLock" style="left:16.1em; color: #6e5e66" data-tip="Click to invert lock state for all markers" class="icon-lock pointer"></div>
+      </div>
+
+      <div id="markersBody" class="table"></div>
+
+      <div id="markersFooter" class="totalLine">
+        <div data-tip="Markers number" style="margin-left: 4px">Total:&nbsp;<span id="markersFooterNumber">0</span>&nbsp;markers</div>
+      </div>
+
+      <div id="markersBottom">
+        <button id="markersOverviewRefresh" data-tip="Refresh the Overview screen" class="icon-cw"></button>
+        <button id="markersAddFromOverview" data-tip="Add a new marker. Hold Shift to add multiple" class="icon-plus"></button>
+        <button id="markersGenerationConfig" data-tip="Config markers generation options" class="icon-cog"></button>
+        <button id="markersRemoveAll" data-tip="Remove all unlocked markers" class="icon-trash"></button>
+        <button id="markersExport" data-tip="Save markers data as a text file (.csv)" class="icon-download"></button>
       </div>
     </div>
 
@@ -3505,7 +3595,7 @@
       <div style="margin-top: .3em">
         <strong>Save map to</strong>
         <button onclick="dowloadMap()" data-tip="Download .map file to your local disk. Shortcut: Ctrl + S">machine</button>
-        <button onclick="saveToDropbox()" data-tip="Save .map file to your Dropbox">dropbox</button>
+        <button onclick="saveToDropbox()" data-tip="Save .map file to your Dropbox. Shortcut: Ctrl + C">dropbox</button>
         <button onclick="quickSave()" data-tip="Save the project to browser storage. It can be unreliable. Shortcut: F6">browser</button>
       </div>
       <p>Maps are saved in <i>.map</i> format, that can be loaded back via the <i>Load</i> in menu. There is no way to restore the progress if file is lost. Please keep old <i>.map</i> files on your machine or cloud storage as backups.</p>
@@ -3514,7 +3604,7 @@
     <div id="loadMapData" style="display: none" class="dialog">
       <div>
         <strong>Load map from</strong>
-        <button onclick="mapToLoad.click()" data-tip="Load .map file from local disk">local disk</button>
+        <button onclick="mapToLoad.click()" data-tip="Load .map file from your local disk">machine</button>
         <button onclick="loadURL()" data-tip="Load .map file from URL (server should allow CORS)">URL</button>
         <button onclick="quickLoad()" data-tip="Load map from browser storage (if saved before)">storage</button>
       </div>
@@ -3540,12 +3630,12 @@
       <p>Map will be split into tiles and downloaded as a single zip file. Avoid saving to big images</p>
       <div data-tip="Number of columns" style="margin-bottom: .3em">
         <div class="label">Columns:</div>
-        <input id="tileColsInput" data-stored="tileCols" type="range" min=2 max=20 value=8 style="width: 11em">
+        <input id="tileColsInput" data-stored="tileCols" type="range" min=2 max=20 value=8 style="width: 10em">
         <input id="tileColsOutput" data-stored="tileCols" type="number" min=2 value=8 >
       </div>
       <div data-tip="Number of rows" style="margin-bottom: .3em">
         <div class="label">Rows:</div>
-        <input id="tileRowsInput" data-stored="tileRows" type="range" min=2 max=20 value=8 style="width: 11em">
+        <input id="tileRowsInput" data-stored="tileRows" type="range" min=2 max=20 value=8 style="width: 10em">
         <input id="tileRowsOutput" data-stored="tileRows" type="number" min=2 value=8 >
       </div>
       <div data-tip="Image scale relative to image size (e.g. 5x)" style="margin-bottom: .3em">
@@ -4284,13 +4374,23 @@
     </defs>
   </svg>
 
-  <!-- <script src="libs/translate.js"></script> -->
   <script src="libs/jquery-3.1.1.min.js"></script>
   <script src="libs/d3.min.js"></script>
   <script src="libs/priority-queue.min.js"></script>
   <script src="libs/delaunator.min.js"></script>
   <script src="libs/lodash.min.js"></script>
-  <script src="modules/utils.js"></script>
+
+  <script src="utils/commonUtils.js"></script>
+  <script src="utils/arrayUtils.js"></script>
+  <script src="utils/colorUtils.js"></script>
+  <script src="utils/graphUtils.js"></script>
+  <script src="utils/nodeUtils.js"></script>
+  <script src="utils/numberUtils.js"></script>
+  <script src="utils/polyfills.js"></script>
+  <script src="utils/probabilityUtils.js"></script>
+  <script src="utils/stringUtils.js"></script>
+  <script src="utils/unitUtils.js"></script>
+
   <script src="modules/voronoi.js"></script>
   <script src="modules/heightmap-templates.js"></script>
   <script src="modules/heightmap-generator.js"></script>
@@ -4303,6 +4403,7 @@
   <script src="modules/routes-generator.js"></script>
   <script src="modules/religions-generator.js"></script>
   <script src="modules/military-generator.js"></script>
+  <script src="modules/markers-generator.js"></script>
   <script src="modules/coa-generator.js"></script>
   <script src="modules/submap.js"></script>
   <script src="libs/polylabel.min.js"></script>
@@ -4312,18 +4413,21 @@
   <script src="modules/fonts.js"></script>
   <script src="modules/ui/layers.js"></script>
   <script src="modules/ui/measurers.js"></script>
+  <!-- <script src="libs/umami.js"></script> -->
 
   <script defer src="https://unpkg.com/dropbox@10.8.0/dist/Dropbox-sdk.min.js"></script>
   <script defer src="modules/ui/general.js"></script>
   <script defer src="modules/ui/options.js"></script>
   <script defer src="modules/ui/style.js"></script>
-  <script defer src="modules/save.js"></script>
   <script defer src="modules/load.js"></script>
   <script defer src="modules/cloud.js"></script>
   <script defer src="main.js"></script>
+  <script defer src="modules/save.js"></script>
+  <script defer src="modules/export.js"></script>
   <script defer src="modules/relief-icons.js"></script>
   <script defer src="modules/ui/tools.js"></script>
   <script defer src="modules/ui/world-configurator.js"></script>
+  <script defer src="modules/ui/editors.js"></script>
   <script defer src="modules/ui/heightmap-editor.js"></script>
   <script defer src="modules/ui/states-editor.js"></script>
   <script defer src="modules/ui/provinces-editor.js"></script>
@@ -4350,13 +4454,14 @@
   <script defer src="modules/ui/rivers-overview.js"></script>
   <script defer src="modules/ui/military-overview.js"></script>
   <script defer src="modules/ui/regiments-overview.js"></script>
+  <script defer src="modules/ui/markers-overview.js"></script>
   <script defer src="modules/ui/regiment-editor.js"></script>
   <script defer src="modules/ui/battle-screen.js"></script>
   <script defer src="modules/coa-renderer.js"></script>
   <script defer src="modules/ui/emblems-editor.js"></script>
-  <script defer src="modules/ui/editors.js"></script>
   <script defer src="modules/ui/3d.js"></script>
   <script defer src="modules/ui/submap.js"></script>
+  <script defer src="modules/ui/hotkeys.js"></script>
   <script defer src="libs/rgbquant.min.js"></script>
   <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
   <script defer src="libs/pell.min.js"></script>

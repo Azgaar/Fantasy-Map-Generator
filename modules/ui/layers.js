@@ -47,8 +47,7 @@ function changePreset(preset) {
     .querySelectorAll("li")
     .forEach(function (e) {
       if (layers.includes(e.id) && !layerIsOn(e.id)) e.click();
-      // turn on
-      else if (!layers.includes(e.id) && layerIsOn(e.id)) e.click(); // turn off
+      else if (!layers.includes(e.id) && layerIsOn(e.id)) e.click();
     });
   layersPreset.value = preset;
   localStorage.setItem("preset", preset);
@@ -121,6 +120,7 @@ function restoreLayers() {
   if (layerIsOn("toggleReligions")) drawReligions();
   if (layerIsOn("toggleIce")) drawIce();
   if (layerIsOn("toggleEmblems")) drawEmblems();
+  if (layerIsOn("toggleMarkers")) drawMarkers();
 
   // some layers are rendered each time, remove them if they are not on
   if (!layerIsOn("toggleBorders")) borders.selectAll("path").remove();
@@ -196,7 +196,8 @@ function drawHeightmap() {
   for (const i of d3.range(20, 101)) {
     if (paths[i].length < 10) continue;
     const color = getColor(i, scheme);
-    if (terracing) terrs.append("path").attr("d", paths[i]).attr("transform", "translate(.7,1.4)").attr("fill", d3.color(color).darker(terracing)).attr("data-height", i);
+    if (terracing)
+      terrs.append("path").attr("d", paths[i]).attr("transform", "translate(.7,1.4)").attr("fill", d3.color(color).darker(terracing)).attr("data-height", i);
     terrs.append("path").attr("d", paths[i]).attr("fill", color).attr("data-height", i);
   }
 
@@ -798,7 +799,10 @@ function drawReligions() {
     if (!vArray[r]) vArray[r] = [];
     vArray[r].push(points);
     body[r] += "M" + points.join("L");
-    gap[r] += "M" + vertices.p[chain[0][0]] + chain.reduce((r2, v, i, d) => (!i ? r2 : !v[2] ? r2 + "L" + vertices.p[v[0]] : d[i + 1] && !d[i + 1][2] ? r2 + "M" + vertices.p[v[0]] : r2), "");
+    gap[r] +=
+      "M" +
+      vertices.p[chain[0][0]] +
+      chain.reduce((r2, v, i, d) => (!i ? r2 : !v[2] ? r2 + "L" + vertices.p[v[0]] : d[i + 1] && !d[i + 1][2] ? r2 + "M" + vertices.p[v[0]] : r2), "");
   }
 
   const bodyData = body.map((p, i) => [p.length > 10 ? p : null, i, religions[i].color]).filter(d => d[0]);
@@ -965,7 +969,14 @@ function drawStates() {
   const bodyString = bodyData.map(d => `<path id="state${d[1]}" d="${d[0]}" fill="${d[2]}" stroke="none"/>`).join("");
   const gapString = gapData.map(d => `<path id="state-gap${d[1]}" d="${d[0]}" fill="none" stroke="${d[2]}"/>`).join("");
   const clipString = bodyData.map(d => `<clipPath id="state-clip${d[1]}"><use href="#state${d[1]}"/></clipPath>`).join("");
-  const haloString = haloData.map(d => `<path id="state-border${d[1]}" d="${d[0]}" clip-path="url(#state-clip${d[1]})" stroke="${d3.color(d[2]) ? d3.color(d[2]).darker().hex() : "#666666"}"/>`).join("");
+  const haloString = haloData
+    .map(
+      d =>
+        `<path id="state-border${d[1]}" d="${d[0]}" clip-path="url(#state-clip${d[1]})" stroke="${
+          d3.color(d[2]) ? d3.color(d[2]).darker().hex() : "#666666"
+        }"/>`
+    )
+    .join("");
 
   statesBody.html(bodyString + gapString);
   defs.select("#statePaths").html(clipString);
@@ -1217,7 +1228,10 @@ function getProvincesVertices() {
     if (!vArray[p]) vArray[p] = [];
     vArray[p].push(points);
     body[p] += "M" + points.join("L");
-    gap[p] += "M" + vertices.p[chain[0][0]] + chain.reduce((r, v, i, d) => (!i ? r : !v[2] ? r + "L" + vertices.p[v[0]] : d[i + 1] && !d[i + 1][2] ? r + "M" + vertices.p[v[0]] : r), "");
+    gap[p] +=
+      "M" +
+      vertices.p[chain[0][0]] +
+      chain.reduce((r, v, i, d) => (!i ? r : !v[2] ? r + "L" + vertices.p[v[0]] : d[i + 1] && !d[i + 1][2] ? r + "M" + vertices.p[v[0]] : r), "");
   }
 
   // find province visual center
@@ -1298,7 +1312,12 @@ function drawGrid() {
   const maxWidth = Math.max(+mapWidthInput.value, graphWidth);
   const maxHeight = Math.max(+mapHeightInput.value, graphHeight);
 
-  d3.select(pattern).attr("stroke", stroke).attr("stroke-width", width).attr("stroke-dasharray", dasharray).attr("stroke-linecap", linecap).attr("patternTransform", tr);
+  d3.select(pattern)
+    .attr("stroke", stroke)
+    .attr("stroke-width", width)
+    .attr("stroke-dasharray", dasharray)
+    .attr("stroke-linecap", linecap)
+    .attr("patternTransform", tr);
   gridOverlay
     .append("rect")
     .attr("width", maxWidth)
@@ -1416,8 +1435,8 @@ function toggleTexture(event) {
     turnButtonOn("toggleTexture");
     // append default texture image selected by default. Don't append on load to not harm performance
     if (!texture.selectAll("*").size()) {
-      const x = +styleTextureShiftX.value,
-        y = +styleTextureShiftY.value;
+      const x = +styleTextureShiftX.value;
+      const y = +styleTextureShiftY.value;
       const image = texture
         .append("image")
         .attr("id", "textureImage")
@@ -1425,18 +1444,14 @@ function toggleTexture(event) {
         .attr("y", y)
         .attr("width", graphWidth - x)
         .attr("height", graphHeight - y)
-        .attr("xlink:href", getDefaultTexture())
         .attr("preserveAspectRatio", "xMidYMid slice");
-      if (styleTextureInput.value !== "default") getBase64(styleTextureInput.value, base64 => image.attr("xlink:href", base64));
+      getBase64(styleTextureInput.value, base64 => image.attr("xlink:href", base64));
     }
     $("#texture").fadeIn();
     zoom.scaleBy(svg, 1.00001); // enforce browser re-draw
     if (event && isCtrlClick(event)) editStyle("texture");
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("texture");
-      return;
-    }
+    if (event && isCtrlClick(event)) return editStyle("texture");
     $("#texture").fadeOut();
     turnButtonOff("toggleTexture");
   }
@@ -1505,16 +1520,51 @@ function toggleMilitary() {
 function toggleMarkers(event) {
   if (!layerIsOn("toggleMarkers")) {
     turnButtonOn("toggleMarkers");
-    $("#markers").fadeIn();
+    drawMarkers();
     if (event && isCtrlClick(event)) editStyle("markers");
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("markers");
-      return;
-    }
-    $("#markers").fadeOut();
+    if (event && isCtrlClick(event)) return editStyle("markers");
+    markers.selectAll("*").remove();
     turnButtonOff("toggleMarkers");
   }
+}
+
+function drawMarkers() {
+  const rescale = +markers.attr("rescale");
+  const pinned = +markers.attr("pinned");
+
+  const markersData = pinned ? pack.markers.filter(({pinned}) => pinned) : pack.markers;
+  const html = markersData.map(marker => drawMarker(marker, rescale));
+  markers.html(html.join(""));
+}
+
+const getPin = (shape = "bubble", fill = "#fff", stroke = "#000") => {
+  if (shape === "bubble")
+    return `<path d="M6,19 l9,10 L24,19" fill="${stroke}" stroke="none" /><circle cx="15" cy="15" r="10" fill="${fill}" stroke="${stroke}"/>`;
+  if (shape === "pin")
+    return `<path d="m 15,3 c -5.5,0 -9.7,4.09 -9.7,9.3 0,6.8 9.7,17 9.7,17 0,0 9.7,-10.2 9.7,-17 C 24.7,7.09 20.5,3 15,3 Z" fill="${fill}" stroke="${stroke}"/>`;
+  if (shape === "square") return `<path d="m 20,25 -5,4 -5,-4 z" fill="${stroke}"/><path d="M 5,5 H 25 V 25 H 5 Z" fill="${fill}" stroke="${stroke}"/>`;
+  if (shape === "squarish") return `<path d="m 5,5 h 20 v 20 h -6 l -4,4 -4,-4 H 5 Z" fill="${fill}" stroke="${stroke}" />`;
+  if (shape === "diamond") return `<path d="M 2,15 15,1 28,15 15,29 Z" fill="${fill}" stroke="${stroke}" />`;
+  if (shape === "hex") return `<path d="M 15,29 4.61,21 V 9 L 15,3 25.4,9 v 12 z" fill="${fill}" stroke="${stroke}" />`;
+  if (shape === "hexy") return `<path d="M 15,29 6,21 5,8 15,4 25,8 24,21 Z" fill="${fill}" stroke="${stroke}" />`;
+  if (shape === "shieldy") return `<path d="M 15,29 6,21 5,7 c 0,0 5,-3 10,-3 5,0 10,3 10,3 l -1,14 z" fill="${fill}" stroke="${stroke}" />`;
+  if (shape === "shield") return `<path d="M 4.6,5.2 H 25 v 6.7 A 20.3,20.4 0 0 1 15,29 20.3,20.4 0 0 1 4.6,11.9 Z" fill="${fill}" stroke="${stroke}" />`;
+  if (shape === "pentagon") return `<path d="M 4,16 9,4 h 12 l 5,12 -11,13 z" fill="${fill}" stroke="${stroke}" />`;
+  if (shape === "heptagon") return `<path d="M 15,29 6,22 4,12 10,4 h 10 l 6,8 -2,10 z" fill="${fill}" stroke="${stroke}" />`;
+  if (shape === "circle") return `<circle cx="15" cy="15" r="11" fill="${fill}" stroke="${stroke}" />`;
+  if (shape === "no") return "";
+};
+
+function drawMarker(marker, rescale = 1) {
+  const {i, icon, x, y, dx = 50, dy = 50, px = 12, size = 30, pin, fill, stroke} = marker;
+  const id = `marker${i}`;
+  const zoomSize = rescale ? Math.max(rn(size / 5 + 24 / scale, 2), 1) : size;
+  const viewX = rn(x - zoomSize / 2, 1);
+  const viewY = rn(y - zoomSize, 1);
+  const pinHTML = getPin(pin, fill, stroke);
+
+  return `<svg id="${id}" viewbox="0 0 30 30" width="${zoomSize}" height="${zoomSize}" x="${viewX}" y="${viewY}"><g>${pinHTML}</g><text x="${dx}%" y="${dy}%" font-size="${px}px" >${icon}</text></svg>`;
 }
 
 function toggleLabels(event) {
@@ -1620,21 +1670,21 @@ function drawEmblems() {
   const validBurgs = burgs.filter(b => b.i && !b.removed && b.coa && b.coaSize != 0);
 
   const getStateEmblemsSize = () => {
-    const startSize = Math.min(Math.max((graphHeight + graphWidth) / 40, 10), 100);
+    const startSize = minmax((graphHeight + graphWidth) / 40, 10, 100);
     const statesMod = 1 + validStates.length / 100 - (15 - validStates.length) / 200; // states number modifier
     const sizeMod = +document.getElementById("emblemsStateSizeInput").value || 1;
     return rn((startSize / statesMod) * sizeMod); // target size ~50px on 1536x754 map with 15 states
   };
 
   const getProvinceEmblemsSize = () => {
-    const startSize = Math.min(Math.max((graphHeight + graphWidth) / 100, 5), 70);
+    const startSize = minmax((graphHeight + graphWidth) / 100, 5, 70);
     const provincesMod = 1 + validProvinces.length / 1000 - (115 - validProvinces.length) / 1000; // states number modifier
     const sizeMod = +document.getElementById("emblemsProvinceSizeInput").value || 1;
     return rn((startSize / provincesMod) * sizeMod); // target size ~20px on 1536x754 map with 115 provinces
   };
 
   const getBurgEmblemSize = () => {
-    const startSize = Math.min(Math.max((graphHeight + graphWidth) / 185, 2), 50);
+    const startSize = minmax((graphHeight + graphWidth) / 185, 2, 50);
     const burgsMod = 1 + validBurgs.length / 1000 - (450 - validBurgs.length) / 1000; // states number modifier
     const sizeMod = +document.getElementById("emblemsBurgSizeInput").value || 1;
     return rn((startSize / burgsMod) * sizeMod); // target size ~8.5px on 1536x754 map with 450 burgs
@@ -1684,15 +1734,21 @@ function drawEmblems() {
     }
 
     const burgNodes = nodes.filter(node => node.type === "burg");
-    const burgString = burgNodes.map(d => `<use data-i="${d.i}" x="${rn(d.x - d.shift)}" y="${rn(d.y - d.shift)}" width="${d.size}em" height="${d.size}em"/>`).join("");
+    const burgString = burgNodes
+      .map(d => `<use data-i="${d.i}" x="${rn(d.x - d.shift)}" y="${rn(d.y - d.shift)}" width="${d.size}em" height="${d.size}em"/>`)
+      .join("");
     emblems.select("#burgEmblems").attr("font-size", sizeBurgs).html(burgString);
 
     const provinceNodes = nodes.filter(node => node.type === "province");
-    const provinceString = provinceNodes.map(d => `<use data-i="${d.i}" x="${rn(d.x - d.shift)}" y="${rn(d.y - d.shift)}" width="${d.size}em" height="${d.size}em"/>`).join("");
+    const provinceString = provinceNodes
+      .map(d => `<use data-i="${d.i}" x="${rn(d.x - d.shift)}" y="${rn(d.y - d.shift)}" width="${d.size}em" height="${d.size}em"/>`)
+      .join("");
     emblems.select("#provinceEmblems").attr("font-size", sizeProvinces).html(provinceString);
 
     const stateNodes = nodes.filter(node => node.type === "state");
-    const stateString = stateNodes.map(d => `<use data-i="${d.i}" x="${rn(d.x - d.shift)}" y="${rn(d.y - d.shift)}" width="${d.size}em" height="${d.size}em"/>`).join("");
+    const stateString = stateNodes
+      .map(d => `<use data-i="${d.i}" x="${rn(d.x - d.shift)}" y="${rn(d.y - d.shift)}" width="${d.size}em" height="${d.size}em"/>`)
+      .join("");
     emblems.select("#stateEmblems").attr("font-size", sizeStates).html(stateString);
 
     invokeActiveZooming();

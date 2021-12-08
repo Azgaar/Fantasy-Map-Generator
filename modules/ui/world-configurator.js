@@ -18,6 +18,9 @@ function editWorld() {
       buttons[2].addEventListener("mousemove", () => tip("Click to set map size to cover the Tropical latitudes"));
       buttons[3].addEventListener("mousemove", () => tip("Click to set map size to cover the Southern latitudes"));
       buttons[4].addEventListener("mousemove", () => tip("Click to restore default wind directions"));
+    },
+    close: function () {
+      $(this).dialog("destroy");
     }
   });
 

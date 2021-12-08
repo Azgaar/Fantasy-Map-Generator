@@ -94,10 +94,14 @@ function editBiomes() {
 
       lines += `<div class="states biomes" data-id="${i}" data-name="${b.name[i]}" data-habitability="${b.habitability[i]}"
       data-cells=${b.cells[i]} data-area=${area} data-population=${population} data-color=${b.color[i]}>
-        <svg data-tip="Biomes fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${b.color[i]}" class="fillRect pointer"></svg>
+        <svg data-tip="Biomes fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${
+          b.color[i]
+        }" class="fillRect pointer"></svg>
         <input data-tip="Biome name. Click and type to change" class="biomeName" value="${b.name[i]}" autocorrect="off" spellcheck="false">
         <span data-tip="Biome habitability percent" class="hide">%</span>
-        <input data-tip="Biome habitability percent. Click and set new value to change" type="number" min=0 max=9999 class="biomeHabitability hide" value=${b.habitability[i]}>
+        <input data-tip="Biome habitability percent. Click and set new value to change" type="number" min=0 max=9999 class="biomeHabitability hide" value=${
+          b.habitability[i]
+        }>
         <span data-tip="Cells count" class="icon-check-empty hide"></span>
         <div data-tip="Cells count" class="biomeCells hide">${b.cells[i]}</div>
         <span data-tip="Biome area" style="padding-right: 4px" class="icon-map-o hide"></span>
@@ -189,41 +193,27 @@ function editBiomes() {
   }
 
   function openWiki(el) {
-    const name = el.parentNode.dataset.name;
-    if (name === "Custom" || !name) {
-      tip("Please provide a biome name", false, "error");
-      return;
-    }
-    const wiki = "https://en.wikipedia.org/wiki/";
+    const biomeName = el.parentNode.dataset.name;
+    if (biomeName === "Custom" || !biomeName) return tip("Please fill in the biome name", false, "error");
 
-    switch (name) {
-      case "Hot desert":
-        openURL(wiki + "Desert_climate#Hot_desert_climates");
-      case "Cold desert":
-        openURL(wiki + "Desert_climate#Cold_desert_climates");
-      case "Savanna":
-        openURL(wiki + "Tropical_and_subtropical_grasslands,_savannas,_and_shrublands");
-      case "Grassland":
-        openURL(wiki + "Temperate_grasslands,_savannas,_and_shrublands");
-      case "Tropical seasonal forest":
-        openURL(wiki + "Seasonal_tropical_forest");
-      case "Temperate deciduous forest":
-        openURL(wiki + "Temperate_deciduous_forest");
-      case "Tropical rainforest":
-        openURL(wiki + "Tropical_rainforest");
-      case "Temperate rainforest":
-        openURL(wiki + "Temperate_rainforest");
-      case "Taiga":
-        openURL(wiki + "Taiga");
-      case "Tundra":
-        openURL(wiki + "Tundra");
-      case "Glacier":
-        openURL(wiki + "Glacier");
-      case "Wetland":
-        openURL(wiki + "Wetland");
-      default:
-        openURL(`https://en.wikipedia.org/w/index.php?search=${name}`);
-    }
+    const wikiBase = "https://en.wikipedia.org/wiki/";
+    const pages = {
+      "Hot desert": "Desert_climate#Hot_desert_climates",
+      "Cold desert": "Desert_climate#Cold_desert_climates",
+      Savanna: "Tropical_and_subtropical_grasslands,_savannas,_and_shrublands",
+      Grassland: "Temperate_grasslands,_savannas,_and_shrublands",
+      "Tropical seasonal forest": "Seasonal_tropical_forest",
+      "Temperate deciduous forest": "Temperate_deciduous_forest",
+      "Tropical rainforest": "Tropical_rainforest",
+      "Temperate rainforest": "Temperate_rainforest",
+      Taiga: "Taiga",
+      Tundra: "Tundra",
+      Glacier: "Glacier",
+      Wetland: "Wetland"
+    };
+    const customBiomeLink = `https://en.wikipedia.org/w/index.php?search=${biomeName}`;
+    const link = pages[biomeName] ? wikiBase + pages[biomeName] : customBiomeLink;
+    openURL(link);
   }
 
   function toggleLegend() {
@@ -343,7 +333,11 @@ function editBiomes() {
     $("#biomesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg"}});
 
     tip("Click on biome to select, drag the circle to change biome", true);
-    viewbox.style("cursor", "crosshair").on("click", selectBiomeOnMapClick).call(d3.drag().on("start", dragBiomeBrush)).on("touchmove mousemove", moveBiomeBrush);
+    viewbox
+      .style("cursor", "crosshair")
+      .on("click", selectBiomeOnMapClick)
+      .call(d3.drag().on("start", dragBiomeBrush))
+      .on("touchmove mousemove", moveBiomeBrush);
   }
 
   function selectBiomeOnLineClick(line) {

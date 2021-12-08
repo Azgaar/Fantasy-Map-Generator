@@ -89,19 +89,20 @@ function showSupporters() {
     Maxwell Hill,Drunken_Legends,rob bee,Jesse Holmes,YYako,Detocroix,Anoplexian,Hannah,Paul,Sandra Krohn,Lucid,Richard Keating,Allen Varney,Rick Falkvinge,
     Seth Fusion,Adam Butler,Gus,StroboWolf,Sadie Blackthorne,Zewen Senpai,Dell McKnight,Oneiris,Darinius Dragonclaw Studios,Christopher Whitney,Rhodes HvZ,
     Jeppe Skov Jensen,María Martín López,Martin Seeger,Annie Rishor,Aram Sabatés,MadNomadMedia,Eric Foley,Vito Martono,James H. Anthony,Kevin Cossutta,
-    Thirty-OneR ,ThatGuyGW ,Dee Chiu,MontyBoosh ,Achillain ,Jaden ,SashaTK,Steve Johnson,Eric Foley,Vito Martono,James H. Anthony,Kevin Cossutta,Thirty-OneR,
-    ThatGuyGW,Dee Chiu,MontyBoosh,Achillain,Jaden,SashaTK,Steve Johnson,Pierrick Bertrand,Jared Kennedy,Dylan Devenny,Kyle Robertson,Andrew Rostaing,Daniel Gill,
-    Char,Jack,Barna Csíkos,Ian Rousseau,Nicholas Grabstas,Tom Van Orden jr,Bryan Brake,Akylos,Riley Seaman,MaxOliver,Evan-DiLeo,Alex Debus,Joshua Vaught,
-    Kyle S,Eric Moore,Dean Dunakin,Uniquenameosaurus,WarWizardGames,Chance Mena,Jan Ka,Miguel Alejandro,Dalton Clark,Simon Drapeau,Radovan Zapletal,Jmmat6,
-    Justa Badge,Blargh Blarghmoomoo,Vanessa Anjos,Grant A. Murray,Akirsop,Rikard Wolff,Jake Fish,teco 47,Antiroo,Jakob Siegel,Guilherme Aguiar,Jarno Hallikainen,
-    Justin Mcclain,Kristin Chernoff,Rowland Kingman,Esther Busch,Grayson McClead,Austin,Hakon the Viking,Chad Riley,Cooper Counts,Patrick Jones,Clonetone,
-    PlayByMail.Net,Brad Wardell,Lance Saba,Egoensis,Brea Richards,Tiber,Chris Bloom,Maxim Lowe,Aquelion,Page One Project,Spencer Morris,Paul Ingram,
-    Dust Bunny,Adrian Wright,Eric Alexander Cartaya,GameNight,Thomas Mortensen Hansen,Zklaus,Drinarius,Ed Wright,Lon Varnadore,Crys Cain,Heaven N Lee,
-    Jeffrey Henning,Lazer Elf,Jordan Bellah,Alex Beard,Kass Frisson,Petro Lombaard,Emanuel Pietri,Rox,PinkEvil,Gavin Madrigal,Martin Lorber,Prince of Morgoth,
-    Jaryd Armstrong,Andrew Pirkola,ThyHolyDevil,Gary Smith,Tyshaun Wise,Ethan Cook,Jon Stroman,Nobody679,良义 金,Chris Gray,Phoenix Boatwright,Mackenzie,
-    Milo Cohen,Jason Matthew Wuerfel,Rasmus Legêne,Andrew Hines,Wexxler,Espen Sæverud,Binks,Dominick Ormsby,Linn Browning,Václav Švec,Alan Buehne,
-    George J.Lekkas,Alexandre Boivin,Tommy Mayfield,Skylar Mangum-Turner,Karen Blythe,Stefan Gugerel,Mike Conley,Xavier privé,Hope You're Well,
-    Mark Sprietsma,Robert Landry,Nick Mowry"`;
+    Thirty-OneR,ThatGuyGW,Dee Chiu,MontyBoosh,Achillain,Jaden,SashaTK,Steve Johnson,Pierrick Bertrand,Jared Kennedy,Dylan Devenny,Kyle Robertson,
+    Andrew Rostaing,Daniel Gill,Char,Jack,Barna Csíkos,Ian Rousseau,Nicholas Grabstas,Tom Van Orden jr,Bryan Brake,Akylos,Riley Seaman,MaxOliver,Evan-DiLeo,
+    Alex Debus,Joshua Vaught,Kyle S,Eric Moore,Dean Dunakin,Uniquenameosaurus,WarWizardGames,Chance Mena,Jan Ka,Miguel Alejandro,Dalton Clark,Simon Drapeau,
+    Radovan Zapletal,Jmmat6,Justa Badge,Blargh Blarghmoomoo,Vanessa Anjos,Grant A. Murray,Akirsop,Rikard Wolff,Jake Fish,teco 47,Antiroo,Jakob Siegel,
+    Guilherme Aguiar,Jarno Hallikainen,Justin Mcclain,Kristin Chernoff,Rowland Kingman,Esther Busch,Grayson McClead,Austin,Hakon the Viking,Chad Riley,
+    Cooper Counts,Patrick Jones,Clonetone,PlayByMail.Net,Brad Wardell,Lance Saba,Egoensis,Brea Richards,Tiber,Chris Bloom,Maxim Lowe,Aquelion,
+    Page One Project,Spencer Morris,Paul Ingram,Dust Bunny,Adrian Wright,Eric Alexander Cartaya,GameNight,Thomas Mortensen Hansen,Zklaus,Drinarius,
+    Ed Wright,Lon Varnadore,Crys Cain,Heaven N Lee,Jeffrey Henning,Lazer Elf,Jordan Bellah,Alex Beard,Kass Frisson,Petro Lombaard,Emanuel Pietri,Rox,
+    PinkEvil,Gavin Madrigal,Martin Lorber,Prince of Morgoth,Jaryd Armstrong,Andrew Pirkola,ThyHolyDevil,Gary Smith,Tyshaun Wise,Ethan Cook,Jon Stroman,
+    Nobody679,良义 金,Chris Gray,Phoenix Boatwright,Mackenzie,Milo Cohen,Jason Matthew Wuerfel,Rasmus Legêne,Andrew Hines,Wexxler,Espen Sæverud,Binks,
+    Dominick Ormsby,Linn Browning,Václav Švec,Alan Buehne,George J.Lekkas,Alexandre Boivin,Tommy Mayfield,Skylar Mangum-Turner,Karen Blythe,Stefan Gugerel,
+    Mike Conley,Xavier privé,Hope You're Well,Mark Sprietsma,Robert Landry,Nick Mowry,steve hall,Markell,Josh Wren,Neutrix,BLRageQuit,Rocky,
+    Dario Spadavecchia,Bas Kroot,John Patrick Callahan Jr,Alexandra Vesey,D,Exp1nt,james,Braxton Istace,w,Rurikid,AntiBlock,Redsauz,BigE0021,
+    Jonathan Williams,ojacid .,Brian Wilson,A Patreon of the Ahts,Shubham Jakhotiya`;
 
   const array = supporters
     .replace(/(?:\r\n|\r|\n)/g, "")
@@ -150,7 +151,9 @@ optionsContent.addEventListener("input", function (event) {
   else if (id === "regionsInput" || id === "regionsOutput") changeStatesNumber(value);
   else if (id === "emblemShape") changeEmblemShape(value);
   else if (id === "tooltipSizeInput" || id === "tooltipSizeOutput") changeTooltipSize(value);
-  else if (id === "transparencyInput") changeDialogsTransparency(value);
+  else if (id === "themeHueInput") changeThemeHue(value);
+  else if (id === "themeColorInput") changeDialogsTheme(themeColorInput.value, transparencyInput.value);
+  else if (id === "transparencyInput") changeDialogsTheme(themeColorInput.value, value);
 });
 
 optionsContent.addEventListener("change", function (event) {
@@ -158,23 +161,24 @@ optionsContent.addEventListener("change", function (event) {
   const value = event.target.value;
 
   if (id === "zoomExtentMin" || id === "zoomExtentMax") changeZoomExtent(value);
-  else if (id === "optionsSeed") generateMapWithSeed();
+  else if (id === "optionsSeed") generateMapWithSeed("seed change");
   else if (id === "uiSizeInput" || id === "uiSizeOutput") changeUIsize(value);
   if (id === "shapeRendering") viewbox.attr("shape-rendering", value);
   else if (id === "yearInput") changeYear();
   else if (id === "eraInput") changeEra();
+  else if (id === "stateLabelsModeInput") options.stateLabelsMode = value;
 });
 
 optionsContent.addEventListener("click", function (event) {
   const id = event.target.id;
   if (id === "toggleFullscreen") toggleFullscreen();
-  else if (id === "optionsSeedGenerate") generateMapWithSeed();
   else if (id === "optionsMapHistory") showSeedHistoryDialog();
   else if (id === "optionsCopySeed") copyMapURL();
   else if (id === "optionsEraRegenerate") regenerateEra();
   else if (id === "zoomExtentDefault") restoreDefaultZoomExtent();
   else if (id === "translateExtent") toggleTranslateExtent(event.target);
   else if (id === "speakerTest") testSpeaker();
+  else if (id === "themeColorRestore") restoreDefaultThemeColor();
 });
 
 function mapSizeInputChange() {
@@ -208,8 +212,8 @@ function changeMapSize() {
 
 // just apply canvas size that was already set
 function applyMapSize() {
-  const zoomMin = +zoomExtentMin.value,
-    zoomMax = +zoomExtentMax.value;
+  const zoomMin = +zoomExtentMin.value;
+  const zoomMax = +zoomExtentMax.value;
   graphWidth = +mapWidthInput.value;
   graphHeight = +mapHeightInput.value;
   svgWidth = Math.min(graphWidth, window.innerWidth);
@@ -277,12 +281,9 @@ function testSpeaker() {
   speechSynthesis.speak(speaker);
 }
 
-function generateMapWithSeed() {
-  if (optionsSeed.value == seed) {
-    tip("The current map already has this seed", false, "error");
-    return;
-  }
-  regeneratePrompt();
+function generateMapWithSeed(source) {
+  if (optionsSeed.value == seed) return tip("The current map already has this seed", false, "error");
+  regeneratePrompt(source);
 }
 
 function showSeedHistoryDialog() {
@@ -313,7 +314,7 @@ function restoreSeed(id) {
   mapHeightInput.value = mapHistory[id].height;
   templateInput.value = mapHistory[id].template;
   if (locked("template")) unlock("template");
-  regeneratePrompt();
+  regeneratePrompt("seed history");
 }
 
 function restoreDefaultZoomExtent() {
@@ -417,7 +418,7 @@ function changeUIsize(value) {
   if (+value > max) value = max;
 
   uiSizeInput.value = uiSizeOutput.value = value;
-  document.getElementsByTagName("body")[0].style.fontSize = value * 11 + "px";
+  document.getElementsByTagName("body")[0].style.fontSize = rn(value * 10, 2) + "px";
   document.getElementById("options").style.width = value * 300 + "px";
 }
 
@@ -429,26 +430,56 @@ function changeTooltipSize(value) {
   tooltip.style.fontSize = `calc(${value}px + 0.5vw)`;
 }
 
-// change transparency for modal windows
-function changeDialogsTransparency(value) {
-  transparencyInput.value = transparencyOutput.value = value;
-  const alpha = (100 - +value) / 100;
-  const optionsColor = "rgba(164, 139, 149, " + alpha + ")";
-  const dialogsColor = "rgba(255, 255, 255, " + alpha + ")";
-  const optionButtonsColor = "rgba(145, 110, 127, " + Math.min(alpha + 0.3, 1) + ")";
-  const optionLiColor = "rgba(153, 123, 137, " + Math.min(alpha + 0.3, 1) + ")";
-  document.getElementById("options").style.backgroundColor = optionsColor;
-  document.getElementById("dialogs").style.backgroundColor = dialogsColor;
-  document.querySelectorAll(".tabcontent button").forEach(el => (el.style.backgroundColor = optionButtonsColor));
-  document.querySelectorAll(".tabcontent li").forEach(el => (el.style.backgroundColor = optionLiColor));
-  document.querySelectorAll("button.options").forEach(el => (el.style.backgroundColor = optionLiColor));
+const THEME_COLOR = "#997787";
+function restoreDefaultThemeColor() {
+  localStorage.removeItem("themeColor");
+  changeDialogsTheme(THEME_COLOR, transparencyInput.value);
+}
+
+function changeThemeHue(hue) {
+  const {s, l} = d3.hsl(themeColorInput.value);
+  const newColor = d3.hsl(+hue, s, l).hex();
+  changeDialogsTheme(newColor, transparencyInput.value);
+}
+
+// change color and transparency for modal windows
+function changeDialogsTheme(themeColor, transparency) {
+  transparencyInput.value = transparencyOutput.value = transparency;
+  const alpha = (100 - +transparency) / 100;
+  const alphaReduced = Math.min(alpha + 0.3, 1);
+
+  const {h, s, l} = d3.hsl(themeColor || THEME_COLOR);
+  themeColorInput.value = themeColor || THEME_COLOR;
+  themeHueInput.value = h;
+
+  const getRGBA = (hue, saturation, lightness, alpha) => {
+    const color = d3.hsl(hue, saturation, lightness, alpha);
+    return color.toString();
+  };
+
+  const theme = [
+    {name: "--bg-main", h, s, l, alpha},
+    {name: "--bg-lighter", h, s, l: l + 0.02, alpha},
+    {name: "--bg-light", h, s: s - 0.02, l: l + 0.06, alpha},
+    {name: "--light-solid", h, s: s + 0.01, l: l + 0.05, alpha: 1},
+    {name: "--dark-solid", h, s, l: l - 0.2, alpha: 1},
+    {name: "--header", h, s: s, l: l - 0.03, alpha: alphaReduced},
+    {name: "--header-active", h, s: s, l: l - 0.09, alpha: alphaReduced},
+    {name: "--bg-disabled", h, s: s - 0.04, l: l + 0.09, alphaReduced},
+    {name: "--bg-dialogs", h: 0, s: 0, l: 0.98, alpha}
+  ];
+
+  const sx = document.documentElement.style;
+  theme.forEach(({name, h, s, l, alpha}) => {
+    sx.setProperty(name, getRGBA(h, s, l, alpha));
+  });
 }
 
 function changeZoomExtent(value) {
-  const min = Math.max(+zoomExtentMin.value, 0.01),
-    max = Math.min(+zoomExtentMax.value, 200);
+  const min = Math.max(+zoomExtentMin.value, 0.01);
+  const max = Math.min(+zoomExtentMax.value, 200);
   zoom.scaleExtent([min, max]);
-  const scale = Math.max(Math.min(+value, 200), 0.01);
+  const scale = minmax(+value, 0.01, 200);
   zoom.scaleTo(svg, scale);
 }
 
@@ -484,13 +515,12 @@ function applyStoredOptions() {
       .map(w => +w);
   if (localStorage.getItem("military")) options.military = JSON.parse(localStorage.getItem("military"));
 
-  changeDialogsTransparency(localStorage.getItem("transparency") || 5);
   if (localStorage.getItem("tooltipSize")) changeTooltipSize(localStorage.getItem("tooltipSize"));
   if (localStorage.getItem("regions")) changeStatesNumber(localStorage.getItem("regions"));
 
   uiSizeInput.max = uiSizeOutput.max = getUImaxSize();
   if (localStorage.getItem("uiSize")) changeUIsize(localStorage.getItem("uiSize"));
-  else changeUIsize(Math.max(Math.min(rn(mapWidthInput.value / 1280, 1), 2.5), 1));
+  else changeUIsize(minmax(rn(mapWidthInput.value / 1280, 1), 1, 2.5));
 
   // search params overwrite stored and default options
   const params = new URL(window.location.href).searchParams;
@@ -499,8 +529,14 @@ function applyStoredOptions() {
   if (width) mapWidthInput.value = width;
   if (height) mapHeightInput.value = height;
 
+  const transparency = localStorage.getItem("transparency") || 5;
+  const themeColor = localStorage.getItem("themeColor");
+  changeDialogsTheme(themeColor, transparency);
+
   // set shape rendering
   viewbox.attr("shape-rendering", shapeRendering.value);
+
+  options.stateLabelsMode = stateLabelsModeInput.value;
 }
 
 // randomize options if randomization is allowed (not locked or options='default')
@@ -531,10 +567,9 @@ function randomizeOptions() {
 
   // 'Units Editor' settings
   const US = navigator.language === "en-US";
-  const UK = navigator.language === "en-GB";
   if (randomize || !locked("distanceScale")) distanceScaleOutput.value = distanceScaleInput.value = gauss(3, 1, 1, 5);
-  if (!stored("distanceUnit")) distanceUnitInput.value = US || UK ? "mi" : "km";
-  if (!stored("heightUnit")) heightUnit.value = US || UK ? "ft" : "m";
+  if (!stored("distanceUnit")) distanceUnitInput.value = US ? "mi" : "km";
+  if (!stored("heightUnit")) heightUnit.value = US ? "ft" : "m";
   if (!stored("temperatureScale")) temperatureScale.value = US ? "°F" : "°C";
 
   // World settings
@@ -621,23 +656,17 @@ function restoreDefaultOptions() {
 // Sticked menu Options listeners
 document.getElementById("sticked").addEventListener("click", function (event) {
   const id = event.target.id;
-  if (id === "newMapButton") regeneratePrompt();
+  if (id === "newMapButton") regeneratePrompt("sticky button");
   else if (id === "saveButton") showSavePane();
   else if (id === "exportButton") showExportPane();
   else if (id === "loadButton") showLoadPane();
   else if (id === "zoomReset") resetZoom(1000);
 });
 
-function regeneratePrompt() {
-  if (customization) {
-    tip("New map cannot be generated when edit mode is active, please exit the mode and retry", false, "error");
-    return;
-  }
+function regeneratePrompt(source) {
+  if (customization) return tip("New map cannot be generated when edit mode is active, please exit the mode and retry", false, "error");
   const workingTime = (Date.now() - last(mapHistory).created) / 60000; // minutes
-  if (workingTime < 5) {
-    regenerateMap();
-    return;
-  }
+  if (workingTime < 5) return regenerateMap(source);
 
   alertMessage.innerHTML = `Are you sure you want to generate a new map?<br>
   All unsaved changes made to the current map will be lost`;
@@ -650,7 +679,7 @@ function regeneratePrompt() {
       },
       Generate: function () {
         closeDialogs();
-        regenerateMap();
+        regenerateMap(source);
       }
     }
   });
@@ -770,6 +799,9 @@ function openSaveTiles() {
   status.innerHTML = "";
   let loading = null;
 
+  const inputs = document.getElementById("saveTilesScreen").querySelectorAll("input");
+  inputs.forEach(input => input.addEventListener("input", updateTilesOptions));
+
   $("#saveTilesScreen").dialog({
     resizable: false,
     title: "Download tiles",
@@ -790,16 +822,12 @@ function openSaveTiles() {
       }
     },
     close: () => {
+      inputs.forEach(input => input.removeEventListener("input", updateTilesOptions));
       debug.selectAll("*").remove();
       clearInterval(loading);
     }
   });
 }
-
-document
-  .getElementById("saveTilesScreen")
-  .querySelectorAll("input")
-  .forEach(el => el.addEventListener("input", updateTilesOptions));
 
 function updateTilesOptions() {
   if (this?.tagName === "INPUT") {

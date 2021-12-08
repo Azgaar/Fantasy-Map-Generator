@@ -1,15 +1,15 @@
-// module to control the Tools options (click to edit, to re-geenerate, tp add)
 "use strict";
+// module to control the Tools options (click to edit, to re-geenerate, tp add)
 
 toolsContent.addEventListener("click", function (event) {
   if (customization) {
     tip("Please exit the customization mode first", false, "warning");
     return;
   }
-  if (event.target.tagName !== "BUTTON") return;
+  if (!["BUTTON", "I"].includes(event.target.tagName)) return;
   const button = event.target.id;
 
-  // Click to open Editor buttons
+  // click on open Editor buttons
   if (button === "editHeightmapButton") editHeightmap();
   else if (button === "editBiomesButton") editBiomes();
   else if (button === "editStatesButton") editStates();
@@ -25,9 +25,10 @@ toolsContent.addEventListener("click", function (event) {
   else if (button === "overviewBurgsButton") overviewBurgs();
   else if (button === "overviewRiversButton") overviewRivers();
   else if (button === "overviewMilitaryButton") overviewMilitary();
+  else if (button === "overviewMarkersButton") overviewMarkers();
   else if (button === "overviewCellsButton") viewCellDetails();
 
-  // Click to Regenerate buttons
+  // click on Regenerate buttons
   if (event.target.parentNode.id === "regenerateFeature") {
     if (sessionStorage.getItem("regenerateFeatureDontAsk")) {
       processFeatureRegeneration(event, button);
@@ -49,7 +50,9 @@ toolsContent.addEventListener("click", function (event) {
       },
       open: function () {
         const pane = $(this).dialog("widget").find(".ui-dialog-buttonpane");
-        $('<span><input id="dontAsk" class="checkbox" type="checkbox"><label for="dontAsk" class="checkbox-label dontAsk"><i>do not ask again</i></label><span>').prependTo(pane);
+        $(
+          '<span><input id="dontAsk" class="checkbox" type="checkbox"><label for="dontAsk" class="checkbox-label dontAsk"><i>do not ask again</i></label><span>'
+        ).prependTo(pane);
       },
       close: function () {
         const box = $(this).dialog("widget").find(".checkbox")[0];
@@ -60,7 +63,10 @@ toolsContent.addEventListener("click", function (event) {
     });
   }
 
-  // Click to Add buttons
+  // click on Configure regenerate buttons
+  if (button === "configRegenerateMarkers") configMarkersGeneration();
+
+  // click on Add buttons
   if (button === "addLabel") toggleAddLabel();
   else if (button === "addBurgTool") toggleAddBurg();
   else if (button === "addRiver") toggleAddRiver();
@@ -88,7 +94,7 @@ function processFeatureRegeneration(event, button) {
   else if (button === "regenerateCultures") regenerateCultures();
   else if (button === "regenerateMilitary") regenerateMilitary();
   else if (button === "regenerateIce") regenerateIce();
-  else if (button === "regenerateMarkers") regenerateMarkers(event);
+  else if (button === "regenerateMarkers") regenerateMarkers();
   else if (button === "regenerateZones") regenerateZones(event);
 }
 
@@ -262,7 +268,8 @@ function regenerateBurgs() {
 
   const score = new Int16Array(cells.s.map(s => s * Math.random())); // cell score for capitals placement
   const sorted = cells.i.filter(i => score[i] > 0 && cells.culture[i]).sort((a, b) => score[b] - score[a]); // filtered and sorted array of indexes
-  const burgsCount = manorsInput.value == 1000 ? rn(sorted.length / 5 / (grid.points.length / 10000) ** 0.8) + states.length : +manorsInput.value + states.length;
+  const burgsCount =
+    manorsInput.value == 1000 ? rn(sorted.length / 5 / (grid.points.length / 10000) ** 0.8) + states.length : +manorsInput.value + states.length;
   const spacing = (graphWidth + graphHeight) / 150 / (burgsCount ** 0.7 / 66); // base min distance between towns
 
   //clear locked list since ids will change
@@ -413,23 +420,11 @@ function regenerateIce() {
   drawIce();
 }
 
-function regenerateMarkers(event) {
-  if (isCtrlClick(event)) prompt("Please provide markers number multiplier", {default: 1, step: 0.01, min: 0, max: 100}, v => addNumberOfMarkers(v));
-  else addNumberOfMarkers(gauss(1, 0.5, 0.3, 5, 2));
-
-  function addNumberOfMarkers(number) {
-    // remove existing markers and assigned notes
-    markers
-      .selectAll("use")
-      .each(function () {
-        const index = notes.findIndex(n => n.id === this.id);
-        if (index != -1) notes.splice(index, 1);
-      })
-      .remove();
-
-    addMarkers(number);
-    if (!layerIsOn("toggleMarkers")) toggleMarkers();
-  }
+function regenerateMarkers() {
+  Markers.regenerate();
+  turnButtonOn("toggleMarkers");
+  drawMarkers();
+  if (document.getElementById("markersOverviewRefresh").offsetParent) markersOverviewRefresh.click();
 }
 
 function regenerateZones(event) {
@@ -474,8 +469,23 @@ function addLabelOnClick() {
   const name = Names.getCulture(culture);
   const id = getNextId("label");
 
-  let group = labels.select("#addedLabels");
-  if (!group.size()) group = labels.append("g").attr("id", "addedLabels").attr("fill", "#3e3e4b").attr("opacity", 1).attr("stroke", "#3a3a3a").attr("stroke-width", 0).attr("font-family", "Almendra SC").attr("font-size", 18).attr("data-size", 18).attr("filter", null);
+  // use most recently selected label group
+  const lastSelected = labelGroupSelect.value;
+  const groupId = ["", "states", "burgLabels"].includes(lastSelected) ? "#addedLabels" : "#" + lastSelected;
+
+  let group = labels.select(groupId);
+  if (!group.size())
+    group = labels
+      .append("g")
+      .attr("id", "addedLabels")
+      .attr("fill", "#3e3e4b")
+      .attr("opacity", 1)
+      .attr("stroke", "#3a3a3a")
+      .attr("stroke-width", 0)
+      .attr("font-family", "Almendra SC")
+      .attr("font-size", 18)
+      .attr("data-size", 18)
+      .attr("filter", null);
 
   const example = group.append("text").attr("x", 0).attr("x", 0).text(name);
   const width = example.node().getBBox().width;
@@ -674,7 +684,7 @@ function addRouteOnClick() {
 }
 
 function toggleAddMarker() {
-  const pressed = document.getElementById("addMarker").classList.contains("pressed");
+  const pressed = document.getElementById("addMarker")?.classList.contains("pressed");
   if (pressed) {
     unpressClickToAddButton();
     return;
@@ -682,45 +692,115 @@ function toggleAddMarker() {
 
   addFeature.querySelectorAll("button.pressed").forEach(b => b.classList.remove("pressed"));
   addMarker.classList.add("pressed");
-  closeDialogs(".stable");
+  markersAddFromOverview.classList.add("pressed");
+
   viewbox.style("cursor", "crosshair").on("click", addMarkerOnClick);
   tip("Click on map to add a marker. Hold Shift to add multiple", true);
   if (!layerIsOn("toggleMarkers")) toggleMarkers();
 }
 
 function addMarkerOnClick() {
+  const {markers} = pack;
   const point = d3.mouse(this);
-  const x = rn(point[0], 2),
-    y = rn(point[1], 2);
-  const id = getNextId("markerElement");
+  const x = rn(point[0], 2);
+  const y = rn(point[1], 2);
+  const i = markers.length ? last(markers).i + 1 : 0;
 
-  const selected = markerSelectGroup.value;
-  const valid =
-    selected &&
-    d3
-      .select("#defs-markers")
-      .select("#" + selected)
-      .size();
-  const symbol = valid ? "#" + selected : "#marker0";
-  const added = markers.select("[data-id='" + symbol + "']").size();
-  let desired = valid && added ? markers.select("[data-id='" + symbol + "']").attr("data-size") : 1;
-  if (isNaN(desired)) desired = 1;
-  const size = desired * 5 + 25 / scale;
+  const isMarkerSelected = markers.length && elSelected?.node()?.parentElement?.id === "markers";
+  const selectedMarker = isMarkerSelected ? markers.find(marker => marker.i === +elSelected.attr("id").slice(6)) : null;
+  const baseMarker = selectedMarker || {icon: "❓"};
+  const marker = {...baseMarker, i, x, y};
 
-  markers
-    .append("use")
-    .attr("id", id)
-    .attr("xlink:href", symbol)
-    .attr("data-id", symbol)
-    .attr("data-x", x)
-    .attr("data-y", y)
-    .attr("x", x - size / 2)
-    .attr("y", y - size)
-    .attr("data-size", desired)
-    .attr("width", size)
-    .attr("height", size);
+  markers.push(marker);
+  const markersElement = document.getElementById("markers");
+  const rescale = +markersElement.getAttribute("rescale");
+  markersElement.insertAdjacentHTML("beforeend", drawMarker(marker, rescale));
 
-  if (d3.event.shiftKey === false) unpressClickToAddButton();
+  if (d3.event.shiftKey === false) {
+    document.getElementById("markerAdd").classList.remove("pressed");
+    document.getElementById("markersAddFromOverview").classList.remove("pressed");
+    unpressClickToAddButton();
+  }
+}
+
+function configMarkersGeneration() {
+  drawConfigTable();
+
+  function drawConfigTable() {
+    const {markers} = pack;
+    const config = Markers.getConfig();
+    const headers = `<thead style='font-weight:bold'><tr>
+      <td data-tip="Marker type name">Type</td>
+      <td data-tip="Marker icon">Icon</td>
+      <td data-tip="Marker number multiplier">Multiplier</td>
+      <td data-tip="Number of markers of that type on the current map">Number</td>
+    </tr></thead>`;
+    const lines = config.map(({type, icon, multiplier}, index) => {
+      const inputId = `markerIconInput${index}`;
+      return `<tr>
+        <td><input value="${type}" /></td>
+        <td>
+          <input id="${inputId}" style="width: 5em" value="${icon}" />
+          <i class="icon-edit pointer" style="position: absolute; margin:.4em 0 0 -1.4em; font-size:.85em"></i>
+        </td>
+        <td><input type="number" min="0" max="100" step="0.1" value="${multiplier}" /></td>
+        <td style="text-align:center">${markers.filter(marker => marker.type === type).length}</td>
+      </tr>`;
+    });
+    const table = `<table class="table">${headers}<tbody>${lines.join("")}</tbody></table>`;
+    alertMessage.innerHTML = table;
+
+    alertMessage.querySelectorAll("i").forEach(selectIconButton => {
+      selectIconButton.addEventListener("click", function () {
+        const input = this.previousElementSibling;
+        selectIcon(input.value, icon => (input.value = icon));
+      });
+    });
+  }
+
+  const applyChanges = () => {
+    const rows = alertMessage.querySelectorAll("tbody > tr");
+    const rowsData = Array.from(rows).map(row => {
+      const inputs = row.querySelectorAll("input");
+      return {
+        type: inputs[0].value,
+        icon: inputs[1].value,
+        multiplier: parseFloat(inputs[2].value)
+      };
+    });
+
+    const config = Markers.getConfig();
+    const newConfig = config.map((markerType, index) => {
+      const {type, icon, multiplier} = rowsData[index];
+      return {...markerType, type, icon, multiplier};
+    });
+
+    Markers.setConfig(newConfig);
+  };
+
+  $("#alert").dialog({
+    resizable: false,
+    title: "Markers generation settings",
+    position: {my: "left top", at: "left+10 top+10", of: "svg", collision: "fit"},
+    buttons: {
+      Regenerate: () => {
+        applyChanges();
+        regenerateMarkers();
+        drawConfigTable();
+      },
+      Close: function () {
+        $(this).dialog("close");
+      }
+    },
+    open: function () {
+      const buttons = $(this).dialog("widget").find(".ui-dialog-buttonset > button");
+      buttons[0].addEventListener("mousemove", () => tip("Apply changes and regenerate markers"));
+      buttons[1].addEventListener("mousemove", () => tip("Close the window"));
+    },
+    close: function () {
+      $(this).dialog("destroy");
+    }
+  });
 }
 
 function viewCellDetails() {

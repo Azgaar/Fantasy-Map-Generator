@@ -416,7 +416,7 @@ window.BurgsAndStates = (function () {
     function getRiverCost(r, i, type) {
       if (type === "River") return r ? 0 : 100; // penalty for river cultures
       if (!r) return 0; // no penalty for others if there is no river
-      return Math.min(Math.max(cells.fl[i] / 10, 20), 100); // river penalty from 20 to 100 based on flux
+      return minmax(cells.fl[i] / 10, 20, 100); // river penalty from 20 to 100 based on flux
     }
 
     function getTypeCost(t, type) {
@@ -480,6 +480,7 @@ window.BurgsAndStates = (function () {
     const {cells, features, states} = pack;
     const paths = []; // text paths
     lineGen.curve(d3.curveBundle.beta(1));
+    const mode = options.stateLabelsMode || "auto";
 
     for (const s of states) {
       if (!s.i || s.removed || !s.cells || (list && !list.includes(s.i))) continue;
@@ -586,7 +587,8 @@ window.BurgsAndStates = (function () {
 
       paths.forEach(p => {
         const id = p[0];
-        const s = states[p[0]];
+        const state = states[p[0]];
+        const {name, fullName} = state;
 
         if (list) {
           t.select("#textPath_stateLabel" + id).remove();
@@ -600,22 +602,7 @@ window.BurgsAndStates = (function () {
           .attr("id", "textPath_stateLabel" + id);
         const pathLength = p[1].length > 1 ? textPath.node().getTotalLength() / letterLength : 0; // path length in letters
 
-        let lines = [];
-        let ratio = 100;
-
-        if (pathLength < s.name.length) {
-          // only short name will fit
-          lines = splitInTwo(s.name);
-          ratio = Math.max(Math.min(rn((pathLength / lines[0].length) * 60), 150), 50);
-        } else if (pathLength > s.fullName.length * 2.5) {
-          // full name will fit in one line
-          lines = [s.fullName];
-          ratio = Math.max(Math.min(rn((pathLength / lines[0].length) * 70), 170), 70);
-        } else {
-          // try miltilined label
-          lines = splitInTwo(s.fullName);
-          ratio = Math.max(Math.min(rn((pathLength / lines[0].length) * 60), 150), 70);
-        }
+        const [lines, ratio] = getLines(mode, name, fullName, pathLength);
 
         // prolongate path if it's too short
         if (pathLength && pathLength < lines[0].length) {
@@ -647,7 +634,7 @@ window.BurgsAndStates = (function () {
           .node();
 
         el.insertAdjacentHTML("afterbegin", spans.join(""));
-        if (lines.length < 2) return;
+        if (mode === "full" || lines.length === 1) return;
 
         // check whether multilined label is generally inside the state. If no, replace with short name label
         const cs = pack.cells.state;
@@ -658,20 +645,42 @@ window.BurgsAndStates = (function () {
         const c4 = () => +cs[findCell(b.x + b.width, b.y + b.height)] === id;
         const c5 = () => +cs[findCell(b.x + b.width / 2, b.y + b.height)] === id;
         const c6 = () => +cs[findCell(b.x, b.y + b.height)] === id;
-        if (c1() + c2() + c3() + c4() + c5() + c6() > 3) return; // generally inside
+        if (c1() + c2() + c3() + c4() + c5() + c6() > 3) return; // generally inside => exit
 
-        // use one-line name
-        const name = pathLength > s.fullName.length * 1.8 ? s.fullName : s.name;
-        example.text(name);
+        // move to one-line name
+        const text = pathLength > fullName.length * 1.8 ? fullName : name;
+        example.text(text);
         const left = example.node().getBBox().width / -2; // x offset
-        el.innerHTML = `<tspan x="${left}px">${name}</tspan>`;
-        ratio = Math.max(Math.min(rn((pathLength / name.length) * 60), 130), 40);
-        el.setAttribute("font-size", ratio + "%");
+        el.innerHTML = `<tspan x="${left}px">${text}</tspan>`;
+
+        const correctedRatio = minmax(rn((pathLength / text.length) * 60), 40, 130);
+        el.setAttribute("font-size", correctedRatio + "%");
       });
 
       example.remove();
       if (!displayed) toggleLabels();
     })();
+
+    function getLines(mode, name, fullName, pathLength) {
+      // short name
+      if (mode === "short" || (mode === "auto" && pathLength < name.length)) {
+        const lines = splitInTwo(name);
+        const ratio = pathLength / lines[0].length;
+        return [lines, minmax(rn(ratio * 60), 50, 150)];
+      }
+
+      // full name: one line
+      if (pathLength > fullName.length * 2.5) {
+        const lines = [fullName];
+        const ratio = pathLength / lines[0].length;
+        return [lines, minmax(rn(ratio * 70), 70, 170)];
+      }
+
+      // full name: two lines
+      const lines = splitInTwo(fullName);
+      const ratio = pathLength / lines[0].length;
+      return [lines, minmax(rn(ratio * 60), 70, 150)];
+    }
 
     TIME && console.timeEnd("drawStateLabels");
   };
@@ -679,8 +688,8 @@ window.BurgsAndStates = (function () {
   // calculate states data like area, population etc.
   const collectStatistics = function () {
     TIME && console.time("collectStatistics");
-    const cells = pack.cells,
-      states = pack.states;
+    const {cells, states} = pack;
+
     states.forEach(s => {
       if (s.removed) return;
       s.cells = s.area = s.burgs = s.rural = s.urban = 0;
@@ -738,21 +747,24 @@ window.BurgsAndStates = (function () {
     TIME && console.timeEnd("assignColors");
   };
 
+  const wars = {War: 6, Conflict: 2, Campaign: 4, Invasion: 2, Rebellion: 2, Conquest: 2, Intervention: 1, Expedition: 1, Crusade: 1};
+  const generateCampaign = state => {
+    const neighbors = state.neighbors.length ? state.neighbors : [0];
+    return neighbors
+      .map(i => {
+        const name = i && P(0.8) ? pack.states[i].name : Names.getCultureShort(state.culture);
+        const start = gauss(options.year - 100, 150, 1, options.year - 6);
+        const end = start + gauss(4, 5, 1, options.year - start - 1);
+        return {name: getAdjective(name) + " " + rw(wars), start, end};
+      })
+      .sort((a, b) => a.start - b.start);
+  };
+
   // generate historical conflicts of each state
   const generateCampaigns = function () {
-    const wars = {War: 6, Conflict: 2, Campaign: 4, Invasion: 2, Rebellion: 2, Conquest: 2, Intervention: 1, Expedition: 1, Crusade: 1};
-
     pack.states.forEach(s => {
       if (!s.i || s.removed) return;
-      const n = s.neighbors.length ? s.neighbors : [0];
-      s.campaigns = n
-        .map(i => {
-          const name = i && P(0.8) ? pack.states[i].name : Names.getCultureShort(s.culture);
-          const start = gauss(options.year - 100, 150, 1, options.year - 6);
-          const end = start + gauss(4, 5, 1, options.year - start - 1);
-          return {name: getAdjective(name) + " " + rw(wars), start, end};
-        })
-        .sort((a, b) => a.start - b.start);
+      s.campaigns = generateCampaign(s);
     });
   };
 
@@ -947,7 +959,17 @@ window.BurgsAndStates = (function () {
     });
 
     const monarchy = ["Duchy", "Grand Duchy", "Principality", "Kingdom", "Empire"]; // per expansionism tier
-    const republic = {Republic: 75, Federation: 4, Oligarchy: 2, "Most Serene Republic": 2, Tetrarchy: 1, Triumvirate: 1, Diarchy: 1, "Trade Company": 4, Junta: 1}; // weighted random
+    const republic = {
+      Republic: 75,
+      Federation: 4,
+      Oligarchy: 2,
+      "Most Serene Republic": 2,
+      Tetrarchy: 1,
+      Triumvirate: 1,
+      Diarchy: 1,
+      "Trade Company": 4,
+      Junta: 1
+    }; // weighted random
     const union = {Union: 3, League: 4, Confederation: 1, "United Kingdom": 1, "United Republic": 1, "United Provinces": 2, Commonwealth: 1, Heptarchy: 1}; // weighted random
     const theocracy = {Theocracy: 20, Brotherhood: 1, Thearchy: 2, See: 1, "Holy State": 1};
     const anarchy = {"Free Territory": 2, Council: 3, Commune: 1, Community: 1};
@@ -957,7 +979,8 @@ window.BurgsAndStates = (function () {
       const tier = expTiers[s.i];
 
       const religion = pack.cells.religion[s.center];
-      const isTheocracy = (religion && pack.religions[religion].expansion === "state") || (P(0.1) && ["Organized", "Cult"].includes(pack.religions[religion].type));
+      const isTheocracy =
+        (religion && pack.religions[religion].expansion === "state") || (P(0.1) && ["Organized", "Cult"].includes(pack.religions[religion].type));
       const isAnarchy = P(0.01 - tier / 500);
 
       if (isTheocracy) s.form = "Theocracy";
@@ -1025,7 +1048,25 @@ window.BurgsAndStates = (function () {
   };
 
   // state forms requiring Adjective + Name, all other forms use scheme Form + Of + Name
-  const adjForms = ["Empire", "Sultanate", "Khaganate", "Shogunate", "Caliphate", "Despotate", "Theocracy", "Oligarchy", "Union", "Confederation", "Trade Company", "League", "Tetrarchy", "Triumvirate", "Diarchy", "Horde", "Marches"];
+  const adjForms = [
+    "Empire",
+    "Sultanate",
+    "Khaganate",
+    "Shogunate",
+    "Caliphate",
+    "Despotate",
+    "Theocracy",
+    "Oligarchy",
+    "Union",
+    "Confederation",
+    "Trade Company",
+    "League",
+    "Tetrarchy",
+    "Triumvirate",
+    "Diarchy",
+    "Horde",
+    "Marches"
+  ];
 
   const getFullName = function (s) {
     if (!s.formName) return s.name;
@@ -1039,16 +1080,16 @@ window.BurgsAndStates = (function () {
     const localSeed = regenerate ? Math.floor(Math.random() * 1e9).toString() : seed;
     Math.random = aleaPRNG(localSeed);
 
-    const cells = pack.cells,
-      states = pack.states,
-      burgs = pack.burgs;
+    const {cells, states, burgs} = pack;
     const provinces = (pack.provinces = [0]);
     cells.province = new Uint16Array(cells.i.length); // cell state
     const percentage = +provincesInput.value;
+
     if (states.length < 2 || !percentage) {
       states.forEach(s => (s.provinces = []));
       return;
     } // no provinces
+
     const max = percentage == 100 ? 1000 : gauss(20, 5, 5, 100) * percentage ** 0.5; // max growth
 
     const forms = {
@@ -1061,7 +1102,6 @@ window.BurgsAndStates = (function () {
     };
 
     // generate provinces for a selected burgs
-    Math.random = aleaPRNG(localSeed);
     states.forEach(s => {
       s.provinces = [];
       if (!s.i || s.removed) return;
@@ -1223,5 +1263,23 @@ window.BurgsAndStates = (function () {
     TIME && console.timeEnd("generateProvinces");
   };
 
-  return {generate, expandStates, normalizeStates, assignColors, drawBurgs, specifyBurgs, defineBurgFeatures, getType, drawStateLabels, collectStatistics, generateCampaigns, generateDiplomacy, defineStateForms, getFullName, generateProvinces, updateCultures};
+  return {
+    generate,
+    expandStates,
+    normalizeStates,
+    assignColors,
+    drawBurgs,
+    specifyBurgs,
+    defineBurgFeatures,
+    getType,
+    drawStateLabels,
+    collectStatistics,
+    generateCampaign,
+    generateCampaigns,
+    generateDiplomacy,
+    defineStateForms,
+    getFullName,
+    generateProvinces,
+    updateCultures
+  };
 })();

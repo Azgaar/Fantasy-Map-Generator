@@ -1,4 +1,5 @@
 "use strict";
+
 function editNotes(id, name) {
   // update list of objects
   const select = document.getElementById("notesSelect");
@@ -8,11 +9,12 @@ function editNotes(id, name) {
   }
 
   // initiate pell (html editor)
+  const notesText = document.getElementById("notesText");
+  notesText.innerHTML = "";
   const editor = Pell.init({
-    element: document.getElementById("notesText"),
+    element: notesText,
     onChange: html => {
-      const id = document.getElementById("notesSelect").value;
-      const note = notes.find(note => note.id === id);
+      const note = notes.find(note => note.id === select.value);
       if (!note) return;
       note.legend = html;
       showNote(note);
@@ -43,8 +45,7 @@ function editNotes(id, name) {
     title: "Notes Editor",
     minWidth: "40em",
     width: "50vw",
-    position: {my: "center", at: "center", of: "svg"},
-    close: () => (notesText.innerHTML = "")
+    position: {my: "center", at: "center", of: "svg"}
   });
 
   if (modules.editNotes) return;
@@ -108,7 +109,7 @@ function editNotes(id, name) {
       return;
     }
 
-    highlightElement(element); // if element is found
+    highlightElement(element, 3); // if element is found
   }
 
   function downloadLegends() {
