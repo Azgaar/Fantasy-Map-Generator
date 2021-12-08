@@ -170,7 +170,7 @@ window.Submap = (function () {
               "oldparent", oldCells.g[oid], "newparent", cells.g[id],
               "oldheight:", oldGrid.cells.h[oldCells.g[oid]],
               "newheight", grid.cells.h[cells.g[id]])
-            throw new Error("should be the same type")
+            throw new Error("should be the same type.")
           }
           const [oldpx, oldpy]= oldCells.p[oid];
           const nd = distance(projection(oldpx, oldpx, false));
