@@ -1,0 +1,70 @@
+Index: _developmentREADME.md
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- _developmentREADME.md	(date 1639061423175)
++++ _developmentREADME.md	(date 1639061423175)
+@@ -0,0 +1,62 @@
++# How to setup development for project
++
++## Useful Commands
++
++```
++# Run using python on port 8000
++python -m http.server 8000
++
++#Check Network Ports if you having issues
++netstat -ano | grep LISTEN
++
++```
++
++## Useful starting points
++
++- Tool uses the d3.js library to visualize, navigate and map.
++- cells[i] is your friend it has all the data.
++
++
++
++
++## Open Tasks
++
++
++[ - ] Merge main back to dev-economics branch
++
++[ ] make cells a typescript class so we get code completion.
++
++[ ] Finish economics
++
++## Docker Host
++
++
++ [  ] Add from command history
++ 
++
++
++### Networking
++
++
++
++ [  ] 
++
++
++##### TLS
++
++ [ x ] Use Kubernetes
++
++ [  ] 
++
++
++### Securing
++
++ [ x ] Use Kubernetes
++
++ [  ] 
++
++
++## Tools
++
++Intellij 
++

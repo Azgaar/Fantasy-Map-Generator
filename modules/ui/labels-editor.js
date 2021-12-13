@@ -51,8 +51,8 @@ function editLabel() {
 
   function showEditorTips() {
     showMainTip();
-    if (d3.event.target.parentNode.parentNode.id === elSelected.attr('id')) tip('Drag to shift the label');
-    else if (d3.event.target.parentNode.id === 'controlPoints') {
+    if (d3.event.target.parentNode.parentNode.id === elSelected.attr("id")) tip("Drag to shift the label");
+    else if (d3.event.target.parentNode.id === "controlPoints") {
       if (d3.event.target.tagName === 'circle') tip('Drag to move, click to delete the control point');
       if (d3.event.target.tagName === 'path') tip('Click to add a control point');
     }
@@ -253,7 +253,13 @@ function editLabel() {
     const message = `Are you sure you want to remove ${basic ? 'all elements in the group' : 'the entire label group'}?<br><br>Labels to be removed: ${count}`;
     const onConfirm = () => {
       $('#labelEditor').dialog('close');
-      hideGroupSection();
+      resizable: false,
+      title: "Remove route group",
+      buttons: {
+        Remove: function () {
+          $(this).dialog("close");
+          $("#labelEditor").dialog("close");
+          hideGroupSection();
       labels
         .select('#' + group)
         .selectAll('text')
@@ -357,10 +363,13 @@ function editLabel() {
     const message = 'Are you sure you want to remove the label? <br>This action cannot be reverted';
     const onConfirm = () => {
       defs.select('#textPath_' + elSelected.attr('id')).remove();
+      title: "Remove label",
       elSelected.remove();
       $('#labelEditor').dialog('close');
     };
     confirmationDialog({title: 'Remove label', message, confirm: 'Remove', onConfirm});
+          $(this).dialog("close");
+        }
   }
 
   function closeLabelEditor() {

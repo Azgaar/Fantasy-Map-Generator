@@ -91,7 +91,7 @@ function overviewRivers() {
   function zoomToRiver() {
     const r = +this.parentNode.dataset.id;
     const river = rivers.select('#river' + r).node();
-    highlightElement(river);
+    highlightElement(river, 3);
   }
 
   function toggleBasinsHightlight() {

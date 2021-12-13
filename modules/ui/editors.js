@@ -1,6 +1,7 @@
 // module stub to store common functions for ui editors
 'use strict';
 
+modules.editors = true;
 restoreDefaultEvents(); // apply default viewbox events on load
 
 // restore default viewbox events
@@ -264,15 +265,8 @@ function toggleBurgLock(burg) {
   b.lock = b.lock ? 0 : 1;
 }
 
-function showBurgLockTip(burg) {
-  const b = pack.burgs[burg];
-  if (b.lock) {
     tip('Click to unlock burg and allow it to be change by regeneration tools');
-  } else {
     tip('Click to lock burg and prevent changes by regeneration tools');
-  }
-}
-
 // draw legend box
 function drawLegend(name, data) {
   legend.selectAll('*').remove(); // fully redraw every time
@@ -385,6 +379,14 @@ function createPicker() {
 
   const contaiter = d3.select('body').append('svg').attr('id', 'pickerContainer').attr('width', '100%').attr('height', '100%');
   contaiter.append('rect').attr('x', 0).attr('y', 0).attr('width', '100%').attr('height', '100%').attr('opacity', 0.2).on('mousemove', cl).on('click', closePicker);
+    .append("rect")
+    .attr("x", 0)
+    .attr("y", 0)
+    .attr("width", "100%")
+    .attr("height", "100%")
+    .attr("opacity", 0.2)
+    .on("mousemove", cl)
+    .on("click", closePicker);
   const picker = contaiter
     .append('g')
     .attr('id', 'picker')
@@ -489,6 +491,17 @@ function createPicker() {
   picker.insert('text', ':first-child').attr('x', 12).attr('y', -10).attr('id', 'pickerLabel').text('Color Picker').on('mousemove', pos);
   picker.insert('rect', ':first-child').attr('x', 0).attr('y', -30).attr('width', width).attr('height', 30).attr('id', 'pickerHeader').on('mousemove', pos);
   picker.attr('transform', `translate(${(svgWidth - width) / 2},${(svgHeight - height) / 2})`);
+    .attr("fill", "#ffffff")
+    .attr("stroke", "#5d4651")
+    .on("mousemove", pos);
+    .insert("rect", ":first-child")
+    .attr("x", 288)
+    .attr("y", -21)
+    .attr("id", "pickerCloseRect")
+    .attr("width", 14)
+    .attr("height", 14)
+    .on("mousemove", cl)
+    .on("click", closePicker);
 }
 
 function updateSelectedRect(fill) {
@@ -693,23 +706,32 @@ function uploadFile(el, callback) {
   fileReader.onload = (loaded) => callback(loaded.target.result);
 }
 
-function highlightElement(element) {
+function getBBox(element) {
   if (debug.select('.highlighted').size()) return; // allow only 1 highlight element simultaniosly
-  const box = element.getBBox();
+  const y = +element.getAttribute("y");
   const transform = element.getAttribute('transform') || null;
+  const height = +element.getAttribute("height");
+  return {x, y, width, height};
+}
+
+function highlightElement(element, zoom) {
+  if (debug.select(".highlighted").size()) return; // allow only 1 highlight element simultaneously
+  const box = element.tagName === "svg" ? getBBox(element) : element.getBBox();
   const enter = d3.transition().duration(1000).ease(d3.easeBounceOut);
   const exit = d3.transition().duration(500).ease(d3.easeLinear);
 
   const highlight = debug.append('rect').attr('x', box.x).attr('y', box.y).attr('width', box.width).attr('height', box.height).attr('transform', transform);
-
+  highlight.classed("highlighted", 1).attr("transform", transform);
   highlight.classed('highlighted', 1).transition(enter).style('outline-offset', '0px').transition(exit).style('outline-color', 'transparent').delay(1000).remove();
 
-  const tr = parseTransform(transform);
-  let x = box.x + box.width / 2;
-  if (tr[0]) x += tr[0];
-  let y = box.y + box.height / 2;
-  if (tr[1]) y += tr[1];
-  zoomTo(x, y, scale > 2 ? scale : 3, 1600);
+  if (zoom) {
+    const tr = parseTransform(transform);
+    let x = box.x + box.width / 2;
+    if (tr[0]) x += tr[0];
+    let y = box.y + box.height / 2;
+    if (tr[1]) y += tr[1];
+    zoomTo(x, y, scale > 2 ? scale : zoom, 1600);
+  }
 }
 
 function selectIcon(initial, callback) {
@@ -943,6 +965,37 @@ function selectIcon(initial, callback) {
       }
     }
   });
+}
+
+function confirmationDialog(options) {
+  const {
+    title = "Confirm action",
+    message = "Are you sure you want to continue? <br>The action cannot be reverted",
+    cancel = "Cancel",
+    confirm = "Continue",
+    onCancel,
+    onConfirm
+  } = options;
+
+  const buttons = {
+    [confirm]: function () {
+      if (onConfirm) onConfirm();
+      $(this).dialog("close");
+    },
+    [cancel]: function () {
+      if (onCancel) onCancel();
+      $(this).dialog("close");
+    }
+  };
+
+  document.getElementById("alertMessage").innerHTML = message;
+  $("#alert").dialog({resizable: false, title, buttons});
+}
+
+// add and register event listeners to clean up on editor closure
+function listen(element, event, handler) {
+  element.addEventListener(event, handler);
+  return () => element.removeEventListener(event, handler);
 }
 
 // Calls the refresh for all currently open editors

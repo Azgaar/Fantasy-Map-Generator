@@ -1,5 +1,5 @@
-// Functions to save and load the map
 'use strict';
+// Functions to load and parse .map files
 
 function quickLoad() {
   ldb.get('lastMap', (blob) => {
@@ -10,6 +10,37 @@ function quickLoad() {
       ERROR && console.error('No map stored');
     }
   });
+}
+
+async function loadFromDropbox() {
+  const mapPath = document.getElementById("loadFromDropboxSelect")?.value;
+
+  DEBUG && console.log("Loading map from Dropbox:", mapPath);
+  const blob = await Cloud.providers.dropbox.load(mapPath);
+  uploadMap(blob);
+}
+
+async function createSharableDropboxLink() {
+  const mapFile = document.querySelector("#loadFromDropbox select").value;
+  const sharableLink = document.getElementById("sharableLink");
+  const sharableLinkContainer = document.getElementById("sharableLinkContainer");
+  let url;
+  try {
+    url = await Cloud.providers.dropbox.getLink(mapFile);
+  } catch {
+    tip("Dropbox API error. Can not create link.", true, "error", 2000);
+    return;
+  }
+
+  const fmg = window.location.href.split("?")[0];
+  const reallink = `${fmg}?maplink=${url}`;
+  // voodoo magic required by the yellow god of CORS
+  const link = reallink.replace("www.dropbox.com/s/", "dl.dropboxusercontent.com/1/view/");
+  const shortLink = link.slice(0, 50) + "...";
+
+  sharableLinkContainer.style.display = "block";
+  sharableLink.innerText = shortLink;
+  sharableLink.setAttribute("href", link);
 }
 
 function loadMapPrompt(blob) {
@@ -46,52 +77,110 @@ function loadMapPrompt(blob) {
   }
 }
 
+function loadMapFromURL(maplink, random) {
+  const URL = decodeURIComponent(maplink);
+
+  fetch(URL, {method: "GET", mode: "cors"})
+    .then(response => {
+      if (response.ok) return response.blob();
+      throw new Error("Cannot load map from URL");
+    })
+    .then(blob => uploadMap(blob))
+    .catch(error => {
+      showUploadErrorMessage(error.message, URL, random);
+      if (random) generateMapOnLoad();
+    });
+}
+
+function showUploadErrorMessage(error, URL, random) {
+  ERROR && console.error(error);
+  alertMessage.innerHTML = `Cannot load map from the ${link(URL, "link provided")}.
+    ${random ? `A new random map is generated. ` : ""}
+    Please ensure the linked file is reachable and CORS is allowed on server side`;
+  $("#alert").dialog({
+    title: "Loading error",
+    width: "32em",
+    buttons: {
+      OK: function () {
+        $(this).dialog("close");
+      }
+    }
+  });
+}
+
 function uploadMap(file, callback) {
   uploadMap.timeStart = performance.now();
+  const OLDEST_SUPPORTED_VERSION = 0.7;
+  const currentVersion = parseFloat(version);
 
   const fileReader = new FileReader();
   fileReader.onload = function (fileLoadedEvent) {
     if (callback) callback();
     document.getElementById('coas').innerHTML = ''; // remove auto-generated emblems
+    const result = fileLoadedEvent.target.result;
+    const [mapData, mapVersion] = parseLoadedResult(result);
 
-    const dataLoaded = fileLoadedEvent.target.result;
+    const isInvalid = !mapData || isNaN(mapVersion) || mapData.length < 26 || !mapData[5];
+    const isUpdated = mapVersion === currentVersion;
     const data = dataLoaded.split('\r\n');
+    const isAncient = mapVersion < OLDEST_SUPPORTED_VERSION;
+    const isNewer = mapVersion > currentVersion;
+    const isOutdated = mapVersion < currentVersion;
 
     const mapVersion = data[0].split('|')[0] || data[0];
-    if (mapVersion === version) {
-      parseLoadedData(data);
-      return;
-    }
-
-    const archive = link('https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog', 'archived version');
-    const parsed = parseFloat(mapVersion);
-    let message = '',
-      load = false;
-    if (isNaN(parsed) || data.length < 26 || !data[5]) {
-      message = `The file you are trying to load is outdated or not a valid .map file.
-                <br>Please try to open it using an ${archive}`;
-    } else if (parsed < 0.7) {
-      message = `The map version you are trying to load (${mapVersion}) is too old and cannot be updated to the current version.
-                <br>Please keep using an ${archive}`;
-    } else {
-      load = true;
-      message = `The map version (${mapVersion}) does not match the Generator version (${version}).
-                 <br>Click OK to get map <b>auto-updated</b>. In case of issues please keep using an ${archive} of the Generator`;
-    }
-    alertMessage.innerHTML = message;
-    $('#alert').dialog({
-      title: 'Version conflict',
-      width: '38em',
-      buttons: {
-        OK: function () {
-          $(this).dialog('close');
-          if (load) parseLoadedData(data);
-        }
-      }
-    });
+    if (isUpdated) return parseLoadedData(mapData);
+    if (isAncient) return showUploadMessage("ancient", mapData, mapVersion);
+    if (isNewer) return showUploadMessage("newer", mapData, mapVersion);
+    if (isOutdated) return showUploadMessage("outdated", mapData, mapVersion);
   };
 
-  fileReader.readAsText(file, 'UTF-8');
+  fileReader.readAsText(file, "UTF-8");
+}
+
+function parseLoadedResult(result) {
+  try {
+    // data can be in FMG internal format or base64 encoded
+    const isDelimited = result.substr(0, 10).includes("|");
+    const decoded = isDelimited ? result : decodeURIComponent(atob(result));
+    const mapData = decoded.split("\r\n");
+    const mapVersion = parseFloat(mapData[0].split("|")[0] || mapData[0]);
+    return [mapData, mapVersion];
+  } catch (error) {
+    console.error(error);
+    return [null, null];
+  }
+}
+
+function showUploadMessage(type, mapData, mapVersion) {
+  const archive = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "archived version");
+  let message, title, canBeLoaded;
+
+  if (type === "invalid") {
+    message = `The file does not look like a valid <i>.map</i> file.<br>Please check the data format`;
+    title = "Invalid file";
+    canBeLoaded = false;
+  } else if (type === "ancient") {
+    message = `The map version you are trying to load (${mapVersion}) is too old and cannot be updated to the current version.<br>Please keep using an ${archive}`;
+    title = "Ancient file";
+    canBeLoaded = false;
+  } else if (type === "newer") {
+    message = `The map version you are trying to load (${mapVersion}) is newer than the current version.<br>Please load the file in the appropriate version`;
+    title = "Newer file";
+    canBeLoaded = false;
+  } else if (type === "outdated") {
+    message = `The map version (${mapVersion}) does not match the Generator version (${version}).<br>Click OK to get map <b>auto-updated</b>.<br>In case of issues please keep using an ${archive} of the Generator`;
+    title = "Outdated file";
+    canBeLoaded = true;
+  }
+
+  alertMessage.innerHTML = message;
+  const buttons = {
+    OK: function () {
+          $(this).dialog('close');
+      if (canBeLoaded) parseLoadedData(mapData);
+    }
+  };
+  $("#alert").dialog({title, buttons});
 }
 
 function parseLoadedData(data) {
@@ -133,8 +222,8 @@ function parseLoadedData(data) {
       if (settings[11]) barPosY.value = settings[11];
       if (settings[12]) populationRate = populationRateInput.value = populationRateOutput.value = settings[12];
       if (settings[13]) urbanization = urbanizationInput.value = urbanizationOutput.value = settings[13];
-      if (settings[14]) mapSizeInput.value = mapSizeOutput.value = Math.max(Math.min(settings[14], 100), 1);
-      if (settings[15]) latitudeInput.value = latitudeOutput.value = Math.max(Math.min(settings[15], 100), 0);
+      if (settings[14]) mapSizeInput.value = mapSizeOutput.value = minmax(settings[14], 1, 100);
+      if (settings[15]) latitudeInput.value = latitudeOutput.value = minmax(settings[15], 0, 100);
       if (settings[16]) temperatureEquatorInput.value = temperatureEquatorOutput.value = settings[16];
       if (settings[17]) temperaturePoleInput.value = temperaturePoleOutput.value = settings[17];
       if (settings[18]) precInput.value = precOutput.value = settings[18];
@@ -142,13 +231,27 @@ function parseLoadedData(data) {
       if (settings[20]) mapName.value = settings[20];
       if (settings[21]) hideLabels.checked = +settings[21];
       if (settings[22]) stylePreset.value = settings[22];
-      if (settings[23]) rescaleLabels.checked = settings[23];
+      if (settings[23]) rescaleLabels.checked = +settings[23];
+      if (settings[24]) urbanDensity = urbanDensityInput.value = urbanDensityOutput.value = +settings[24];
+    })();
+
+    void (function applyOptionsToUI() {
+      stateLabelsModeInput.value = options.stateLabelsMode;
     })();
 
     void (function parseConfiguration() {
       if (data[2]) mapCoordinates = JSON.parse(data[2]);
       if (data[4]) notes = JSON.parse(data[4]);
       if (data[33]) rulers.fromString(data[33]);
+      if (data[34]) {
+        const usedFonts = JSON.parse(data[34]);
+        usedFonts.forEach(usedFont => {
+          const {family: usedFamily, unicodeRange: usedRange, variant: usedVariant} = usedFont;
+          const defaultFont = fonts.find(({family, unicodeRange, variant}) => family === usedFamily && unicodeRange === usedRange && variant === usedVariant);
+          if (!defaultFont) fonts.push(usedFont);
+          declareFont(usedFont);
+        });
+      }
 
       const biomes = data[3].split('|');
       biomesData = applyDefaultBiomesSystem();
@@ -222,8 +325,6 @@ function parseLoadedData(data) {
       burgLabels = labels.select('#burgLabels');
     })();
 
-    loadUsedFonts();
-
     void (function parseGridData() {
       grid = JSON.parse(data[6]);
       calculateVoronoi(grid, grid.points);
@@ -245,7 +346,9 @@ function parseLoadedData(data) {
       pack.religions = data[29] ? JSON.parse(data[29]) : [{i: 0, name: 'No religion'}];
       pack.provinces = data[30] ? JSON.parse(data[30]) : [0];
       pack.rivers = data[32] ? JSON.parse(data[32]) : [];
-      pack.resources = data[35] ? JSON.parse(data[35]) : [];
+      // TODO: ***** both 35?
+      pack.resources = data[36] ? JSON.parse(data[36]) : [];
+      pack.markers = data[35] ? JSON.parse(data[35]) : [];
 
       const cells = pack.cells;
       cells.biome = Uint8Array.from(data[16].split(','));
@@ -339,23 +442,27 @@ function parseLoadedData(data) {
         // 1.0 adds a legend box
         legend = svg.append('g').attr('id', 'legend');
         legend
-          .attr('font-family', 'Almendra SC')
-          .attr('data-font', 'Almendra+SC')
-          .attr('font-size', 13)
-          .attr('data-size', 13)
-          .attr('data-x', 99)
-          .attr('data-y', 93)
-          .attr('stroke-width', 2.5)
-          .attr('stroke', '#812929')
-          .attr('stroke-dasharray', '0 4 10 4')
+          .attr("font-family", "Almendra SC")
+          .attr("font-size", 13)
+          .attr("data-size", 13)
+          .attr("data-x", 99)
+          .attr("data-y", 93)
+          .attr("stroke-width", 2.5)
+          .attr("stroke", "#812929")
+          .attr("stroke-dasharray", "0 4 10 4")
+          .attr("stroke-linecap", "round");
           .attr('stroke-linecap', 'round');
 
         // 1.0 separated drawBorders fron drawStates()
         stateBorders = borders.append('g').attr('id', 'stateBorders');
         provinceBorders = borders.append('g').attr('id', 'provinceBorders');
-        borders.attr('opacity', null).attr('stroke', null).attr('stroke-width', null).attr('stroke-dasharray', null).attr('stroke-linecap', null).attr('filter', null);
-        stateBorders.attr('opacity', 0.8).attr('stroke', '#56566d').attr('stroke-width', 1).attr('stroke-dasharray', '2').attr('stroke-linecap', 'butt');
-        provinceBorders.attr('opacity', 0.8).attr('stroke', '#56566d').attr('stroke-width', 0.5).attr('stroke-dasharray', '1').attr('stroke-linecap', 'butt');
+        borders
+          .attr("opacity", null)
+          .attr("stroke", null)
+          .attr("stroke-width", null)
+          .attr("stroke-dasharray", null)
+          .attr("stroke-linecap", null)
+          .attr("filter", null);
 
         // 1.0 adds state relations, provinces, forms and full names
         provs = viewbox.insert('g', '#borders').attr('id', 'provs').attr('opacity', 0.6);
@@ -377,7 +484,7 @@ function parseLoadedData(data) {
         zones.attr('opacity', 0.6).attr('stroke', null).attr('stroke-width', 0).attr('stroke-dasharray', null).attr('stroke-linecap', 'butt');
         addZones();
         if (!markers.selectAll('*').size()) {
-          addMarkers();
+          Markers.generate();
           turnButtonOn('toggleMarkers');
         }
 
@@ -729,29 +836,41 @@ function parseLoadedData(data) {
 
       if (version < 1.65) {
         // v 1.65 changed rivers data
-        rivers.attr('style', null); // remove style to unhide layer
+        d3.select('#rivers').attr('style', null); // remove style to unhide layer
+        const {cells, rivers} = pack;
 
-        for (const river of pack.rivers) {
+        for (const river of rivers) {
           const node = document.getElementById('river' + river.i);
           if (node && !river.cells) {
-            const riverCells = new Set();
+            const riverCells = [];
+            const riverPoints = [];
+
             const length = node.getTotalLength() / 2;
+            if (!length) continue;
             const segments = Math.ceil(length / 6);
             const increment = length / segments;
-            for (let i = increment * segments, c = i; i >= 0; i -= increment, c += increment) {
-              const p1 = node.getPointAtLength(i);
-              const p2 = node.getPointAtLength(c);
-              const x = (p1.x + p2.x) / 2;
-              const y = (p1.y + p2.y) / 2;
-              const cell = findCell(x, y, 6);
-              if (cell) riverCells.add(cell);
+
+            for (let i = 0; i <= segments; i++) {
+              const shift = increment * i;
+              const {x: x1, y: y1} = node.getPointAtLength(length + shift);
+              const {x: x2, y: y2} = node.getPointAtLength(length - shift);
+              const x = rn((x1 + x2) / 2, 1);
+              const y = rn((y1 + y2) / 2, 1);
+
+              const cell = findCell(x, y);
+              riverPoints.push([x, y]);
+              riverCells.push(cell);
             }
 
-            river.cells = Array.from(riverCells);
+            river.cells = riverCells;
+            river.points = riverPoints;
           }
 
-          pack.cells.i.forEach((i) => {
-            if (pack.cells.r[i] && pack.cells.h[i] < 20) pack.cells.r[i] = 0;
+          river.widthFactor = 1;
+
+          cells.i.forEach((i) => {
+            const riverInWater = cells.r[i] && cells.h[i] < 20;
+            if (riverInWater) cells.r[i] = 0;
           });
         }
       }
@@ -764,6 +883,59 @@ function parseLoadedData(data) {
 
       // ecomonics:
       // calculate salesTax for all states
+      if (version < 1.7) {
+        // v 1.7 changed markers data
+        const defs = document.getElementById("defs-markers");
+        const markersGroup = document.getElementById("markers");
+        const markerElements = markersGroup.querySelectorAll("use");
+        const rescale = +markersGroup.getAttribute("rescale");
+
+        pack.markers = Array.from(markerElements).map((el, i) => {
+          const id = el.getAttribute("id");
+          const note = notes.find(note => note.id === id);
+          if (note) note.id = `marker${i}`;
+
+          let x = +el.dataset.x;
+          let y = +el.dataset.y;
+          const transform = el.getAttribute("transform");
+          if (transform) {
+            const [dx, dy] = parseTransform(transform);
+            if (dx) x += +dx;
+            if (dy) y += +dy;
+          }
+          const cell = findCell(x, y);
+          const size = rn(rescale ? el.dataset.size * 30 : el.getAttribute("width"), 1);
+
+          const href = el.href.baseVal;
+          const type = href.replace("#marker_", "");
+          const symbol = defs.querySelector(`symbol${href}`);
+          const text = symbol.querySelector("text");
+          const circle = symbol.querySelector("circle");
+
+          const icon = text.innerHTML;
+          const px = Number(text.getAttribute("font-size")?.replace("px", ""));
+          const dx = Number(text.getAttribute("x")?.replace("%", ""));
+          const dy = Number(text.getAttribute("y")?.replace("%", ""));
+          const fill = circle.getAttribute("fill");
+          const stroke = circle.getAttribute("stroke");
+
+          const marker = {i, icon, type, x, y, size, cell};
+          if (size && size !== 30) marker.size = size;
+          if (!isNaN(px) && px !== 12) marker.px = px;
+          if (!isNaN(dx) && dx !== 50) marker.dx = dx;
+          if (!isNaN(dy) && dy !== 50) marker.dy = dy;
+          if (fill && fill !== "#ffffff") marker.fill = fill;
+          if (stroke && stroke !== "#000000") marker.stroke = stroke;
+          if (circle.getAttribute("opacity") === "0") marker.pin = "no";
+
+          return marker;
+        });
+
+        markersGroup.style.display = null;
+        defs.remove();
+        markerElements.forEach(el => el.remove());
+        if (layerIsOn("markers")) drawMarkers();
+      }
     })();
 
     void (function checkDataIntegrity() {
@@ -891,7 +1063,7 @@ function parseLoadedData(data) {
         },
         'New map': function () {
           $(this).dialog('close');
-          regenerateMap();
+          regenerateMap("loading error");
         },
         Cancel: function () {
           $(this).dialog('close');

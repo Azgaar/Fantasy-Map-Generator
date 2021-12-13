@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 window.COA = (function () {
   const tinctures = {
@@ -45,8 +45,38 @@ window.COA = (function () {
 
   const charges = {
     // categories selection
-    types: {conventional: 30, crosses: 10, animals: 2, animalHeads: 1, birds: 2, fantastic: 3, plants: 1, agriculture: 1, arms: 3, bodyparts: 1, people: 1, architecture: 1, miscellaneous: 3, inescutcheon: 3},
-    single: {conventional: 12, crosses: 8, plants: 2, animals: 10, animalHeads: 2, birds: 4, fantastic: 7, agriculture: 1, arms: 6, bodyparts: 1, people: 2, architecture: 1, miscellaneous: 10, inescutcheon: 5},
+    types: {
+      conventional: 30,
+      crosses: 10,
+      animals: 2,
+      animalHeads: 1,
+      birds: 2,
+      fantastic: 3,
+      plants: 1,
+      agriculture: 1,
+      arms: 3,
+      bodyparts: 1,
+      people: 1,
+      architecture: 1,
+      miscellaneous: 3,
+      inescutcheon: 3
+    },
+    single: {
+      conventional: 12,
+      crosses: 8,
+      plants: 2,
+      animals: 10,
+      animalHeads: 2,
+      birds: 4,
+      fantastic: 7,
+      agriculture: 1,
+      arms: 6,
+      bodyparts: 1,
+      people: 2,
+      architecture: 1,
+      miscellaneous: 10,
+      inescutcheon: 5
+    },
     semy: {conventional: 12, crosses: 3, plants: 1},
     // generic categories
     conventional: {
@@ -193,86 +223,86 @@ window.COA = (function () {
     Capital: {crown: 4, orb: 1, lute: 1, castle: 3, tower: 1},
     Сathedra: {chalice: 1, orb: 1, crosier: 2, lamb: 1, monk: 2, angel: 3, crossLatin: 2, crossPatriarchal: 1, crossOrthodox: 1, crossCalvary: 1},
     // specific cases
-    natural: {fountain: "azure", garb: "or", raven: "sable"}, // charges to mainly use predefined colours
+    natural: {fountain: 'azure', garb: 'or', raven: 'sable'}, // charges to mainly use predefined colours
     sinister: [
       // charges that can be sinister
-      "crossGamma",
-      "lionRampant",
-      "lionPassant",
-      "wolfRampant",
-      "wolfPassant",
-      "wolfStatant",
-      "wolfHeadErased",
-      "greyhoundСourant",
-      "boarRampant",
-      "horseRampant",
-      "horseSalient",
-      "bullPassant",
-      "bearRampant",
-      "bearPassant",
-      "goat",
-      "lamb",
-      "elephant",
-      "eagle",
-      "raven",
-      "cock",
-      "parrot",
-      "swan",
-      "swanErased",
-      "heron",
-      "pike",
-      "dragonPassant",
-      "dragonRampant",
-      "wyvern",
-      "wyvernWithWingsDisplayed",
-      "griffinPassant",
-      "griffinRampant",
-      "unicornRampant",
-      "pegasus",
-      "serpent",
-      "hatchet",
-      "lochaberAxe",
-      "hand",
-      "wing",
-      "wingSword",
-      "lute",
-      "harp",
-      "bow",
-      "head",
-      "headWreathed",
-      "knight",
-      "lymphad",
-      "log",
-      "crosier",
-      "dolphin",
-      "sabre",
-      "monk",
-      "owl",
-      "axe",
-      "camel",
-      "fasces",
-      "lionPassantGuardant",
-      "helmet"
+      'crossGamma',
+      'lionRampant',
+      'lionPassant',
+      'wolfRampant',
+      'wolfPassant',
+      'wolfStatant',
+      'wolfHeadErased',
+      'greyhoundСourant',
+      'boarRampant',
+      'horseRampant',
+      'horseSalient',
+      'bullPassant',
+      'bearRampant',
+      'bearPassant',
+      'goat',
+      'lamb',
+      'elephant',
+      'eagle',
+      'raven',
+      'cock',
+      'parrot',
+      'swan',
+      'swanErased',
+      'heron',
+      'pike',
+      'dragonPassant',
+      'dragonRampant',
+      'wyvern',
+      'wyvernWithWingsDisplayed',
+      'griffinPassant',
+      'griffinRampant',
+      'unicornRampant',
+      'pegasus',
+      'serpent',
+      'hatchet',
+      'lochaberAxe',
+      'hand',
+      'wing',
+      'wingSword',
+      'lute',
+      'harp',
+      'bow',
+      'head',
+      'headWreathed',
+      'knight',
+      'lymphad',
+      'log',
+      'crosier',
+      'dolphin',
+      'sabre',
+      'monk',
+      'owl',
+      'axe',
+      'camel',
+      'fasces',
+      'lionPassantGuardant',
+      'helmet'
     ],
     reversed: [
       // charges that can be reversed
-      "goutte",
-      "mullet",
-      "mullet7",
-      "crescent",
-      "crossTau",
-      "cancer",
-      "sword",
-      "sabresCrossed",
-      "hand",
-      "horseshoe",
-      "bowWithArrow",
-      "arrow",
-      "arrowsSheaf",
-      "rake",
-      "crossTriquetra",
-      "crossLatin",
-      "crossTau"
+      'goutte',
+      'mullet',
+      'mullet7',
+      'crescent',
+      'crossTau',
+      'cancer',
+      'sword',
+      'sabresCrossed',
+      'hand',
+      'horseshoe',
+      'bowWithArrow',
+      'arrow',
+      'arrowsSheaf',
+      'rake',
+      'crossTriquetra',
+      'crossLatin',
+      'crossTau'
     ]
   };
 
@@ -412,7 +442,28 @@ window.COA = (function () {
     perBendSinister: lines,
     perChevron: lines,
     perChevronReversed: lines,
-    perCross: {straight: 20, wavy: 5, engrailed: 4, invecked: 3, rayonne: 1, embattled: 1, raguly: 1, urdy: 1, indented: 2, dentilly: 1, bevilled: 1, angled: 1, embattledGhibellin: 1, embattledGrady: 1, dovetailedIndented: 1, dovetailed: 1, potenty: 1, potentyDexter: 1, potentySinister: 1, nebuly: 1},
+    perCross: {
+      straight: 20,
+      wavy: 5,
+      engrailed: 4,
+      invecked: 3,
+      rayonne: 1,
+      embattled: 1,
+      raguly: 1,
+      urdy: 1,
+      indented: 2,
+      dentilly: 1,
+      bevilled: 1,
+      angled: 1,
+      embattledGhibellin: 1,
+      embattledGrady: 1,
+      dovetailedIndented: 1,
+      dovetailed: 1,
+      potenty: 1,
+      potentyDexter: 1,
+      potentySinister: 1,
+      nebuly: 1
+    },
     perPile: lines
   };
 
@@ -471,7 +522,7 @@ window.COA = (function () {
   };
 
   const generate = function (parent, kinship, dominion, type) {
-    if (!parent || parent === "custom") {
+    if (!parent || parent === 'custom') {
       parent = null;
       kinship = 0;
       dominion = 0;
@@ -479,127 +530,127 @@ window.COA = (function () {
     let usedPattern = null,
       usedTinctures = [];
 
-    const t1 = P(kinship) ? parent.t1 : getTincture("field");
-    if (t1.includes("-")) usedPattern = t1;
+    const t1 = P(kinship) ? parent.t1 : getTincture('field');
+    if (t1.includes('-')) usedPattern = t1;
     const coa = {t1};
 
     let charge = P(usedPattern ? 0.5 : 0.93) ? true : false; // 80% for charge
     const linedOrdinary = (charge && P(0.3)) || P(0.5) ? (parent?.ordinaries && P(kinship) ? parent.ordinaries[0].ordinary : rw(ordinaries.lined)) : null;
     const ordinary = (!charge && P(0.65)) || P(0.3) ? (linedOrdinary ? linedOrdinary : rw(ordinaries.straight)) : null; // 36% for ordinary
-    const rareDivided = ["chief", "terrace", "chevron", "quarter", "flaunches"].includes(ordinary);
+    const rareDivided = ['chief', 'terrace', 'chevron', 'quarter', 'flaunches'].includes(ordinary);
     const divisioned = rareDivided ? P(0.03) : charge && ordinary ? P(0.03) : charge ? P(0.3) : ordinary ? P(0.7) : P(0.995); // 33% for division
     const division = divisioned ? (parent?.division && P(kinship - 0.1) ? parent.division.division : rw(divisions.variants)) : null;
-    if (charge) charge = parent?.charges && P(kinship - 0.1) ? parent.charges[0].charge : type && type !== "Generic" && P(0.2) ? rw(charges[type]) : selectCharge();
+    if (charge) charge = parent?.charges && P(kinship - 0.1) ? parent.charges[0].charge : type && type !== 'Generic' && P(0.2) ? rw(charges[type]) : selectCharge();
 
     if (division) {
-      const t = getTincture("division", usedTinctures, P(0.98) ? coa.t1 : null);
+      const t = getTincture('division', usedTinctures, P(0.98) ? coa.t1 : null);
       coa.division = {division, t};
-      if (divisions[division]) coa.division.line = usedPattern || (ordinary && P(0.7)) ? "straight" : rw(divisions[division]);
+      if (divisions[division]) coa.division.line = usedPattern || (ordinary && P(0.7)) ? 'straight' : rw(divisions[division]);
     }
 
     if (ordinary) {
-      coa.ordinaries = [{ordinary, t: getTincture("charge", usedTinctures, coa.t1)}];
-      if (linedOrdinary) coa.ordinaries[0].line = usedPattern || (division && P(0.7)) ? "straight" : rw(lines);
-      if (division && !charge && !usedPattern && P(0.5) && ordinary !== "bordure" && ordinary !== "orle") {
-        if (P(0.8)) coa.ordinaries[0].divided = "counter";
+      coa.ordinaries = [{ordinary, t: getTincture('charge', usedTinctures, coa.t1)}];
+      if (linedOrdinary) coa.ordinaries[0].line = usedPattern || (division && P(0.7)) ? 'straight' : rw(lines);
+      if (division && !charge && !usedPattern && P(0.5) && ordinary !== 'bordure' && ordinary !== 'orle') {
+        if (P(0.8)) coa.ordinaries[0].divided = 'counter';
         // 40%
-        else if (P(0.6)) coa.ordinaries[0].divided = "field";
+        else if (P(0.6)) coa.ordinaries[0].divided = 'field';
         // 6%
-        else coa.ordinaries[0].divided = "division"; // 4%
+        else coa.ordinaries[0].divided = 'division'; // 4%
       }
     }
 
     if (charge) {
-      let p = "e",
-        t = "gules";
+      let p = 'e',
+        t = 'gules';
       const ordinaryT = coa.ordinaries ? coa.ordinaries[0].t : null;
       if (positions.ordinariesOn[ordinary] && P(0.8)) {
         // place charge over ordinary (use tincture of field type)
         p = rw(positions.ordinariesOn[ordinary]);
         while (charges.natural[charge] === ordinaryT) charge = selectCharge();
-        t = !usedPattern && P(0.3) ? coa.t1 : getTincture("charge", [], ordinaryT);
+        t = !usedPattern && P(0.3) ? coa.t1 : getTincture('charge', [], ordinaryT);
       } else if (positions.ordinariesOff[ordinary] && P(0.95)) {
         // place charge out of ordinary (use tincture of ordinary type)
         p = rw(positions.ordinariesOff[ordinary]);
         while (charges.natural[charge] === coa.t1) charge = selectCharge();
-        t = !usedPattern && P(0.3) ? ordinaryT : getTincture("charge", usedTinctures, coa.t1);
+        t = !usedPattern && P(0.3) ? ordinaryT : getTincture('charge', usedTinctures, coa.t1);
       } else if (positions.divisions[division]) {
         // place charge in fields made by division
         p = rw(positions.divisions[division]);
         while (charges.natural[charge] === coa.t1) charge = selectCharge();
-        t = getTincture("charge", ordinaryT ? usedTinctures.concat(ordinaryT) : usedTinctures, coa.t1);
+        t = getTincture('charge', ordinaryT ? usedTinctures.concat(ordinaryT) : usedTinctures, coa.t1);
       } else if (positions[charge]) {
         // place charge-suitable position
         p = rw(positions[charge]);
         while (charges.natural[charge] === coa.t1) charge = selectCharge();
-        t = getTincture("charge", usedTinctures, coa.t1);
+        t = getTincture('charge', usedTinctures, coa.t1);
       } else {
         // place in standard position (use new tincture)
-        p = usedPattern ? "e" : charges.conventional[charge] ? rw(positions.conventional) : rw(positions.complex);
+        p = usedPattern ? 'e' : charges.conventional[charge] ? rw(positions.conventional) : rw(positions.complex);
         while (charges.natural[charge] === coa.t1) charge = selectCharge();
-        t = getTincture("charge", usedTinctures.concat(ordinaryT), coa.t1);
+        t = getTincture('charge', usedTinctures.concat(ordinaryT), coa.t1);
       }
 
       if (charges.natural[charge]) t = charges.natural[charge]; // natural tincture
       coa.charges = [{charge, t, p}];
 
-      if (p === "ABCDEFGHIKL" && P(0.95)) {
+      if (p === 'ABCDEFGHIKL' && P(0.95)) {
         // add central charge if charge is in bordure
         coa.charges[0].charge = rw(charges.conventional);
         const charge = selectCharge(charges.single);
-        const t = getTincture("charge", usedTinctures, coa.t1);
-        coa.charges.push({charge, t, p: "e"});
-      } else if (P(0.8) && charge === "inescutcheon") {
+        const t = getTincture('charge', usedTinctures, coa.t1);
+        coa.charges.push({charge, t, p: 'e'});
+      } else if (P(0.8) && charge === 'inescutcheon') {
         // add charge to inescutcheon
         const charge = selectCharge(charges.types);
-        const t2 = getTincture("charge", [], t);
+        const t2 = getTincture('charge', [], t);
         coa.charges.push({charge, t: t2, p, size: 0.5});
       } else if (division && !ordinary) {
-        const allowCounter = !usedPattern && (!coa.line || coa.line === "straight");
+        const allowCounter = !usedPattern && (!coa.line || coa.line === 'straight');
 
         // dimidiation: second charge at division basic positons
-        if (P(0.3) && ["perPale", "perFess"].includes(division) && coa.line === "straight") {
-          coa.charges[0].divided = "field";
+        if (P(0.3) && ['perPale', 'perFess'].includes(division) && coa.line === 'straight') {
+          coa.charges[0].divided = 'field';
           if (P(0.95)) {
-            const p2 = p === "e" || P(0.5) ? "e" : rw(positions.divisions[division]);
+            const p2 = p === 'e' || P(0.5) ? 'e' : rw(positions.divisions[division]);
             const charge = selectCharge(charges.single);
-            const t = getTincture("charge", usedTinctures, coa.division.t);
-            coa.charges.push({charge, t, p: p2, divided: "division"});
+            const t = getTincture('charge', usedTinctures, coa.division.t);
+            coa.charges.push({charge, t, p: p2, divided: 'division'});
           }
-        } else if (allowCounter && P(0.4)) coa.charges[0].divided = "counter";
+        } else if (allowCounter && P(0.4)) coa.charges[0].divided = 'counter';
         // counterchanged, 40%
-        else if (["perPale", "perFess", "perBend", "perBendSinister"].includes(division) && P(0.8)) {
+        else if (['perPale', 'perFess', 'perBend', 'perBendSinister'].includes(division) && P(0.8)) {
           // place 2 charges in division standard positions
-          const [p1, p2] = division === "perPale" ? ["p", "q"] : division === "perFess" ? ["k", "n"] : division === "perBend" ? ["l", "m"] : ["j", "o"]; // perBendSinister
+          const [p1, p2] = division === 'perPale' ? ['p', 'q'] : division === 'perFess' ? ['k', 'n'] : division === 'perBend' ? ['l', 'm'] : ['j', 'o']; // perBendSinister
           coa.charges[0].p = p1;
 
           const charge = selectCharge(charges.single);
-          const t = getTincture("charge", usedTinctures, coa.division.t);
+          const t = getTincture('charge', usedTinctures, coa.division.t);
           coa.charges.push({charge, t, p: p2});
-        } else if (["perCross", "perSaltire"].includes(division) && P(0.5)) {
+        } else if (['perCross', 'perSaltire'].includes(division) && P(0.5)) {
           // place 4 charges in division standard positions
-          const [p1, p2, p3, p4] = division === "perCross" ? ["j", "l", "m", "o"] : ["b", "d", "f", "h"];
+          const [p1, p2, p3, p4] = division === 'perCross' ? ['j', 'l', 'm', 'o'] : ['b', 'd', 'f', 'h'];
           coa.charges[0].p = p1;
 
           const c2 = selectCharge(charges.single);
-          const t2 = getTincture("charge", [], coa.division.t);
+          const t2 = getTincture('charge', [], coa.division.t);
 
           const c3 = selectCharge(charges.single);
-          const t3 = getTincture("charge", [], coa.division.t);
+          const t3 = getTincture('charge', [], coa.division.t);
 
           const c4 = selectCharge(charges.single);
-          const t4 = getTincture("charge", [], coa.t1);
+          const t4 = getTincture('charge', [], coa.t1);
           coa.charges.push({charge: c2, t: t2, p: p2}, {charge: c3, t: t3, p: p3}, {charge: c4, t: t4, p: p4});
-        } else if (allowCounter && p.length > 1) coa.charges[0].divided = "counter"; // counterchanged, 40%
+        } else if (allowCounter && p.length > 1) coa.charges[0].divided = 'counter'; // counterchanged, 40%
       }
 
-      coa.charges.forEach(c => defineChargeAttributes(c));
+      coa.charges.forEach((c) => defineChargeAttributes(c));
       function defineChargeAttributes(c) {
         // define size
         c.size = (c.size || 1) * getSize(c.p, ordinary, division);
 
         // clean-up position
-        c.p = [...new Set(c.p)].join("");
+        c.p = [...new Set(c.p)].join('');
 
         // define orientation
         if (P(0.02) && charges.sinister.includes(c.charge)) c.sinister = 1;
@@ -610,51 +661,51 @@ window.COA = (function () {
     // dominions have canton with parent coa
     if (P(dominion) && parent.charges) {
       const invert = isSameType(parent.t1, coa.t1);
-      const t = invert ? getTincture("division", usedTinctures, coa.t1) : parent.t1;
-      const canton = {ordinary: "canton", t};
+      const t = invert ? getTincture('division', usedTinctures, coa.t1) : parent.t1;
+      const canton = {ordinary: 'canton', t};
       if (coa.charges) {
         coa.charges.forEach((charge, i) => {
           if (charge.size === 1.5) charge.size = 1.4;
-          if (charge.p.includes("a")) charge.p = charge.p.replaceAll("a", "");
-          if (charge.p.includes("j")) charge.p = charge.p.replaceAll("j", "");
-          if (charge.p.includes("y")) charge.p = charge.p.replaceAll("y", "");
+          if (charge.p.includes('a')) charge.p = charge.p.replaceAll('a', '');
+          if (charge.p.includes('j')) charge.p = charge.p.replaceAll('j', '');
+          if (charge.p.includes('y')) charge.p = charge.p.replaceAll('y', '');
           if (!charge.p) coa.charges.splice(i, 1);
         });
       }
 
       let charge = parent.charges[0].charge;
-      if (charge === "inescutcheon" && parent.charges[1]) charge = parent.charges[1].charge;
+      if (charge === 'inescutcheon' && parent.charges[1]) charge = parent.charges[1].charge;
 
       let t2 = invert ? parent.t1 : parent.charges[0].t;
-      if (isSameType(t, t2)) t2 = getTincture("charge", usedTinctures, t);
+      if (isSameType(t, t2)) t2 = getTincture('charge', usedTinctures, t);
 
       if (!coa.charges) coa.charges = [];
-      coa.charges.push({charge, t: t2, p: "y", size: 0.5});
+      coa.charges.push({charge, t: t2, p: 'y', size: 0.5});
 
       coa.ordinaries ? coa.ordinaries.push(canton) : (coa.ordinaries = [canton]);
     }
 
     function selectCharge(set) {
       const type = set ? rw(set) : ordinary || divisioned ? rw(charges.types) : rw(charges.single);
-      return type === "inescutcheon" ? "inescutcheon" : rw(charges[type]);
+      return type === 'inescutcheon' ? 'inescutcheon' : rw(charges[type]);
     }
 
     // select tincture: element type (field, division, charge), used field tinctures, field type to follow RoT
     function getTincture(element, fields = [], RoT) {
-      const base = RoT ? (RoT.includes("-") ? RoT.split("-")[1] : RoT) : null;
+      const base = RoT ? (RoT.includes('-') ? RoT.split('-')[1] : RoT) : null;
 
       let type = rw(tinctures[element]); // metals, colours, stains, patterns
-      if (RoT && type !== "patterns") type = getType(base) === "metals" ? "colours" : "metals"; // follow RoT
-      if (type === "metals" && fields.includes("or") && fields.includes("argent")) type = "colours"; // exclude metals overuse
+      if (RoT && type !== 'patterns') type = getType(base) === 'metals' ? 'colours' : 'metals'; // follow RoT
+      if (type === 'metals' && fields.includes('or') && fields.includes('argent')) type = 'colours'; // exclude metals overuse
       let tincture = rw(tinctures[type]);
 
       while (tincture === base || fields.includes(tincture)) {
         tincture = rw(tinctures[type]);
       } // follow RoT
 
-      if (type !== "patterns" && element !== "charge") usedTinctures.push(tincture); // add field tincture
+      if (type !== 'patterns' && element !== 'charge') usedTinctures.push(tincture); // add field tincture
 
-      if (type === "patterns") {
+      if (type === 'patterns') {
         usedPattern = tincture;
         tincture = definePattern(tincture, element);
       }
@@ -663,72 +714,72 @@ window.COA = (function () {
     }
 
     function getType(t) {
-      const tincture = t.includes("-") ? t.split("-")[1] : t;
-      if (Object.keys(tinctures.metals).includes(tincture)) return "metals";
-      if (Object.keys(tinctures.colours).includes(tincture)) return "colours";
-      if (Object.keys(tinctures.stains).includes(tincture)) return "stains";
+      const tincture = t.includes('-') ? t.split('-')[1] : t;
+      if (Object.keys(tinctures.metals).includes(tincture)) return 'metals';
+      if (Object.keys(tinctures.colours).includes(tincture)) return 'colours';
+      if (Object.keys(tinctures.stains).includes(tincture)) return 'stains';
     }
 
     function isSameType(t1, t2) {
       return type(t1) === type(t2);
 
       function type(tincture) {
-        if (Object.keys(tinctures.metals).includes(tincture)) return "metals";
-        if (Object.keys(tinctures.colours).includes(tincture)) return "colours";
-        if (Object.keys(tinctures.stains).includes(tincture)) return "stains";
-        else return "pattern";
+        if (Object.keys(tinctures.metals).includes(tincture)) return 'metals';
+        if (Object.keys(tinctures.colours).includes(tincture)) return 'colours';
+        if (Object.keys(tinctures.stains).includes(tincture)) return 'stains';
+        else return 'pattern';
       }
     }
 
-    function definePattern(pattern, element, size = "") {
+    function definePattern(pattern, element, size = '') {
       let t1 = null,
         t2 = null;
-      if (P(0.1)) size = "-small";
-      else if (P(0.1)) size = "-smaller";
-      else if (P(0.01)) size = "-big";
-      else if (P(0.005)) size = "-smallest";
+      if (P(0.1)) size = '-small';
+      else if (P(0.1)) size = '-smaller';
+      else if (P(0.01)) size = '-big';
+      else if (P(0.005)) size = '-smallest';
 
       // apply standard tinctures
-      if (P(0.5) && ["vair", "vairInPale", "vairEnPointe"].includes(pattern)) {
-        t1 = "azure";
-        t2 = "argent";
-      } else if (P(0.8) && pattern === "ermine") {
-        t1 = "argent";
-        t2 = "sable";
-      } else if (pattern === "pappellony") {
+      if (P(0.5) && ['vair', 'vairInPale', 'vairEnPointe'].includes(pattern)) {
+        t1 = 'azure';
+        t2 = 'argent';
+      } else if (P(0.8) && pattern === 'ermine') {
+        t1 = 'argent';
+        t2 = 'sable';
+      } else if (pattern === 'pappellony') {
         if (P(0.2)) {
-          t1 = "gules";
-          t2 = "or";
+          t1 = 'gules';
+          t2 = 'or';
         } else if (P(0.2)) {
-          t1 = "argent";
-          t2 = "sable";
+          t1 = 'argent';
+          t2 = 'sable';
         } else if (P(0.2)) {
-          t1 = "azure";
-          t2 = "argent";
+          t1 = 'azure';
+          t2 = 'argent';
         }
-      } else if (pattern === "masoned") {
+      } else if (pattern === 'masoned') {
         if (P(0.3)) {
-          t1 = "gules";
-          t2 = "argent";
+          t1 = 'gules';
+          t2 = 'argent';
         } else if (P(0.3)) {
-          t1 = "argent";
-          t2 = "sable";
+          t1 = 'argent';
+          t2 = 'sable';
         } else if (P(0.1)) {
-          t1 = "or";
-          t2 = "sable";
+          t1 = 'or';
+          t2 = 'sable';
         }
-      } else if (pattern === "fretty") {
-        if (t2 === "sable" || P(0.35)) {
-          t1 = "argent";
-          t2 = "gules";
+      } else if (pattern === 'fretty') {
+        if (t2 === 'sable' || P(0.35)) {
+          t1 = 'argent';
+          t2 = 'gules';
         } else if (P(0.25)) {
-          t1 = "sable";
-          t2 = "or";
+          t1 = 'sable';
+          t2 = 'or';
         } else if (P(0.15)) {
-          t1 = "gules";
-          t2 = "argent";
+          t1 = 'gules';
+          t2 = 'argent';
         }
-      } else if (pattern === "semy") pattern += "_of_" + selectCharge(charges.semy);
+      } else if (pattern === 'semy') pattern += '_of_' + selectCharge(charges.semy);
 
       if (!t1 || !t2) {
         const startWithMetal = P(0.7);
@@ -737,7 +788,7 @@ window.COA = (function () {
       }
 
       // division should not be the same tincture as base field
-      if (element === "division") {
+      if (element === 'division') {
         if (usedTinctures.includes(t1)) t1 = replaceTincture(t1);
         if (usedTinctures.includes(t2)) t2 = replaceTincture(t2);
       }
@@ -755,12 +806,12 @@ window.COA = (function () {
     }
 
     function getSize(p, o = null, d = null) {
-      if (p === "e" && (o === "bordure" || o === "orle")) return 1.1;
-      if (p === "e") return 1.5;
-      if (p === "jln" || p === "jlh") return 0.7;
-      if (p === "abcpqh" || p === "ez" || p === "be") return 0.5;
-      if (["a", "b", "c", "d", "f", "g", "h", "i", "bh", "df"].includes(p)) return 0.5;
-      if (["j", "l", "m", "o", "jlmo"].includes(p) && d === "perCross") return 0.6;
+      if (p === 'e' && (o === 'bordure' || o === 'orle')) return 1.1;
+      if (p === 'e') return 1.5;
+      if (p === 'jln' || p === 'jlh') return 0.7;
+      if (p === 'abcpqh' || p === 'ez' || p === 'be') return 0.5;
+      if (['a', 'b', 'c', 'd', 'f', 'g', 'h', 'i', 'bh', 'df'].includes(p)) return 0.5;
+      if (['j', 'l', 'm', 'o', 'jlmo'].includes(p) && d === 'perCross') return 0.6;
       if (p.length > 10) return 0.18; // >10 (bordure)
       if (p.length > 7) return 0.3; // 8, 9, 10
       if (p.length > 4) return 0.4; // 5, 6, 7
@@ -772,18 +823,18 @@ window.COA = (function () {
   };
 
   const getShield = function (culture, state) {
-    const emblemShape = document.getElementById("emblemShape");
-    const shapeGroup = emblemShape.selectedOptions[0]?.parentNode.label || "Diversiform";
-    if (shapeGroup !== "Diversiform") return emblemShape.value;
+    const emblemShape = document.getElementById('emblemShape');
+    const shapeGroup = emblemShape.selectedOptions[0]?.parentNode.label || 'Diversiform';
+    if (shapeGroup !== 'Diversiform') return emblemShape.value;
 
-    if (emblemShape.value === "state" && state && pack.states[state].coa) return pack.states[state].coa.shield;
+    if (emblemShape.value === 'state' && state && pack.states[state].coa) return pack.states[state].coa.shield;
     if (pack.cultures[culture].shield) return pack.cultures[culture].shield;
-    console.error("Shield shape is not defined on culture level", pack.cultures[culture]);
-    return "heater";
+    console.error('Shield shape is not defined on culture level', pack.cultures[culture]);
+    return 'heater';
   };
 
-  const toString = coa => JSON.stringify(coa).replaceAll("#", "%23");
-  const copy = coa => JSON.parse(JSON.stringify(coa));
+  const toString = (coa) => JSON.stringify(coa).replaceAll('#', '%23');
+  const copy = (coa) => JSON.parse(JSON.stringify(coa));
 
   return {generate, toString, copy, getShield, shields};
 })();

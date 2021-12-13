@@ -287,7 +287,16 @@ window.Religions = (function () {
     Heresy: {Heresy: 1}
   };
 
-  const methods = {'Random + type': 3, 'Random + ism': 1, 'Supreme + ism': 5, 'Faith of + Supreme': 5, 'Place + ism': 1, 'Culture + ism': 2, 'Place + ian + type': 6, 'Culture + type': 4};
+  const methods = {
+    'Random + type': 3,
+    'Random + ism': 1,
+    'Supreme + ism': 5,
+    'Faith of + Supreme': 5,
+    'Place + ism': 1,
+    'Culture + ism': 2,
+    'Place + ian + type': 6,
+    'Culture + type': 4
+  };
 
   const types = {
     Shamanism: {Beliefs: 3, Shamanism: 2, Spirits: 1},
@@ -419,9 +428,20 @@ window.Religions = (function () {
           const name = getCultName('Heresy', center);
           const expansionism = gauss(1.2, 0.5, 0, 5);
           const color = getMixedColor(r.color, 0.4, 0.2); // "url(#hatch6)";
-          religions.push({i: religions.length, name, color, culture, type: 'Heresy', form: r.form, deity: r.deity, expansion: 'global', expansionism, center, origin: r.i});
+          religions.push({
+            i: religions.length,
+            name,
+            color,
+            culture,
+            type: 'Heresy',
+            form: r.form,
+            deity: r.deity,
+            expansion: 'global',
+            expansionism,
+            center,
+            origin: r.i
+          });
           religionsTree.add([x, y]);
-          //debug.append("circle").attr("cx", x).attr("cy", y).attr("r", 2).attr("fill", "green");
         }
       });
 
@@ -454,7 +474,24 @@ window.Religions = (function () {
       name,
       religions.map((r) => r.code)
     );
-    religions.push({i, name, color, culture, type, form: formName, deity, expansion, expansionism: 0, center, cells: 0, area: 0, rural: 0, urban: 0, origin: r, code});
+    religions.push({
+      i,
+      name,
+      color,
+      culture,
+      type,
+      form: formName,
+      deity,
+      expansion,
+      expansionism: 0,
+      center,
+      cells: 0,
+      area: 0,
+      rural: 0,
+      urban: 0,
+      origin: r,
+      code
+    });
     cells.religion[center] = i;
   };
 
@@ -551,21 +588,19 @@ window.Religions = (function () {
   };
 
   function checkCenters() {
-    const cells = pack.cells,
-      religions = pack.religions;
+    const {cells, religions} = pack;
 
     const codes = religions.map((r) => r.code);
-    religions
-      .filter((r) => r.i)
-      .forEach((r) => {
-        r.code = abbreviate(r.name, codes);
+    religions.forEach((r) => {
+      if (!r.i) return;
+      r.code = abbreviate(r.name, codes);
 
-        // move religion center if it's not within religion area after expansion
-        if (cells.religion[r.center] === r.i) return; // in area
-        const religCells = cells.i.filter((i) => cells.religion[i] === r.i);
-        if (!religCells.length) return; // extinct religion
-        r.center = religCells.sort((a, b) => b.pop - a.pop)[0];
-      });
+      // move religion center if it's not within religion area after expansion
+      if (cells.religion[r.center] === r.i) return; // in area
+      const religCells = cells.i.filter((i) => cells.religion[i] === r.i);
+      if (!religCells.length) return; // extinct religion
+      r.center = religCells.sort((a, b) => cells.pop[b] - cells.pop[a])[0];
+    });
   }
 
   function updateCultures() {

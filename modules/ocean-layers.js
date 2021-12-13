@@ -1,16 +1,16 @@
-"use strict";
+'use strict';
 
 window.OceanLayers = (function () {
   let cells, vertices, pointsN, used;
 
   const OceanLayers = function OceanLayers() {
-    const outline = oceanLayers.attr("layers");
-    if (outline === "none") return;
-    TIME && console.time("drawOceanLayers");
+    const outline = oceanLayers.attr('layers');
+    if (outline === 'none') return;
+    TIME && console.time('drawOceanLayers');
 
     lineGen.curve(d3.curveBasisClosed);
     (cells = grid.cells), (pointsN = grid.cells.i.length), (vertices = grid.vertices);
-    const limits = outline === "random" ? randomizeOutline() : outline.split(",").map(s => +s);
+    const limits = outline === 'random' ? randomizeOutline() : outline.split(',').map((s) => +s);
 
     const chains = [];
     const opacity = rn(0.4 / limits.length, 2);
@@ -26,28 +26,28 @@ window.OceanLayers = (function () {
       const chain = connectVertices(start, t); // vertices chain to form a path
       if (chain.length < 4) continue;
       const relax = 1 + t * -2; // select only n-th point
-      const relaxed = chain.filter((v, i) => !(i % relax) || vertices.c[v].some(c => c >= pointsN));
+      const relaxed = chain.filter((v, i) => !(i % relax) || vertices.c[v].some((c) => c >= pointsN));
       if (relaxed.length < 4) continue;
       const points = clipPoly(
-        relaxed.map(v => vertices.p[v]),
+        relaxed.map((v) => vertices.p[v]),
         1
       );
       chains.push([t, points]);
     }
 
     for (const t of limits) {
-      const layer = chains.filter(c => c[0] === t);
-      let path = layer.map(c => round(lineGen(c[1]))).join("");
-      if (path) oceanLayers.append("path").attr("d", path).attr("fill", "#ecf2f9").style("opacity", opacity);
+      const layer = chains.filter((c) => c[0] === t);
+      let path = layer.map((c) => round(lineGen(c[1]))).join('');
+      if (path) oceanLayers.append('path').attr('d', path).attr('fill', '#ecf2f9').style('opacity', opacity);
     }
 
     // find eligible cell vertex to start path detection
     function findStart(i, t) {
-      if (cells.b[i]) return cells.v[i].find(v => vertices.c[v].some(c => c >= pointsN)); // map border cell
-      return cells.v[i][cells.c[i].findIndex(c => cells.t[c] < t || !cells.t[c])];
+      if (cells.b[i]) return cells.v[i].find((v) => vertices.c[v].some((c) => c >= pointsN)); // map border cell
+      return cells.v[i][cells.c[i].findIndex((c) => cells.t[c] < t || !cells.t[c])];
     }
 
-    TIME && console.timeEnd("drawOceanLayers");
+    TIME && console.timeEnd('drawOceanLayers');
   };
 
   function randomizeOutline() {
@@ -71,7 +71,7 @@ window.OceanLayers = (function () {
       const prev = chain[chain.length - 1]; // previous vertex in chain
       chain.push(current); // add current vertex to sequence
       const c = vertices.c[current]; // cells adjacent to vertex
-      c.filter(c => cells.t[c] === t).forEach(c => (used[c] = 1));
+      c.filter((c) => cells.t[c] === t).forEach((c) => (used[c] = 1));
       const v = vertices.v[current]; // neighboring vertices
       const c0 = !cells.t[c[0]] || cells.t[c[0]] === t - 1;
       const c1 = !cells.t[c[1]] || cells.t[c[1]] === t - 1;
@@ -80,7 +80,7 @@ window.OceanLayers = (function () {
       else if (v[1] !== undefined && v[1] !== prev && c1 !== c2) current = v[1];
       else if (v[2] !== undefined && v[2] !== prev && c0 !== c2) current = v[2];
       if (current === chain[chain.length - 1]) {
-        ERROR && console.error("Next vertex is not found");
+        ERROR && console.error('Next vertex is not found');
         break;
       }
     }

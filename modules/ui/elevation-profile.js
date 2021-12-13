@@ -1,12 +1,12 @@
-"use strict";
+'use strict';
 
 function showEPForRoute(node) {
   const points = [];
   debug
-    .select("#controlPoints")
-    .selectAll("circle")
+    .select('#controlPoints')
+    .selectAll('circle')
     .each(function () {
-      const i = findCell(this.getAttribute("cx"), this.getAttribute("cy"));
+      const i = findCell(this.getAttribute('cx'), this.getAttribute('cy'));
       points.push(i);
     });
 
@@ -17,10 +17,10 @@ function showEPForRoute(node) {
 function showEPForRiver(node) {
   const points = [];
   debug
-    .select("#controlPoints")
-    .selectAll("circle")
+    .select('#controlPoints')
+    .selectAll('circle')
     .each(function () {
-      const i = findCell(this.getAttribute("cx"), this.getAttribute("cy"));
+      const i = findCell(this.getAttribute('cx'), this.getAttribute('cy'));
       points.push(i);
     });
 
@@ -30,16 +30,16 @@ function showEPForRiver(node) {
 
 function showElevationProfile(data, routeLen, isRiver) {
   // data is an array of cell indexes, routeLen is the distance (in actual metres/feet), isRiver should be true for rivers, false otherwise
-  document.getElementById("epScaleRange").addEventListener("change", draw);
-  document.getElementById("epCurve").addEventListener("change", draw);
-  document.getElementById("epSave").addEventListener("click", downloadCSV);
+  document.getElementById('epScaleRange').addEventListener('change', draw);
+  document.getElementById('epCurve').addEventListener('change', draw);
+  document.getElementById('epSave').addEventListener('click', downloadCSV);
 
-  $("#elevationProfile").dialog({
-    title: "Elevation profile",
+  $('#elevationProfile').dialog({
+    title: 'Elevation profile',
     resizable: false,
     width: window.width,
     close: closeElevationProfile,
-    position: {my: "left top", at: "left+20 bottom-500", of: window, collision: "fit"}
+    position: {my: 'left top', at: 'left+20 bottom-500', of: window, collision: 'fit'}
   });
 
   // prevent river graphs from showing rivers as flowing uphill - remember the general slope
@@ -67,7 +67,7 @@ function showElevationProfile(data, routeLen, isRiver) {
     let h = pack.cells.h[cell];
     if (h < 20) {
       const f = pack.features[pack.cells.f[cell]];
-      if (f.type === "lake") h = f.height;
+      if (f.type === 'lake') h = f.height;
       else h = 20;
     }
 
@@ -94,7 +94,7 @@ function showElevationProfile(data, routeLen, isRiver) {
     chartData.burg[i] = b;
     chartData.cell[i] = cell;
     let sh = getHeight(h);
-    chartData.height[i] = parseInt(sh.substr(0, sh.indexOf(" ")));
+    chartData.height[i] = parseInt(sh.substr(0, sh.indexOf(' ')));
     chartData.mih = Math.min(chartData.mih, h);
     chartData.mah = Math.max(chartData.mah, h);
     chartData.mi = Math.min(chartData.mi, chartData.height[i]);
@@ -109,7 +109,7 @@ function showElevationProfile(data, routeLen, isRiver) {
   draw();
 
   function downloadCSV() {
-    let data = "Point,X,Y,Cell,Height,Height value,Population,Burg,Burg population,Biome,Biome color,Culture,Culture color,Religion,Religion color,Province,Province color,State,State color\n"; // headers
+    let data = 'Point,X,Y,Cell,Height,Height value,Population,Burg,Burg population,Biome,Biome color,Culture,Culture color,Religion,Religion color,Province,Province color,State,State color\n'; // headers
 
     for (let k = 0; k < chartData.points.length; k++) {
       let cell = chartData.cell[k];
@@ -122,34 +122,34 @@ function showElevationProfile(data, routeLen, isRiver) {
       let pop = pack.cells.pop[cell];
       let h = pack.cells.h[cell];
 
-      data += k + 1 + ",";
-      data += chartData.points[k][0] + ",";
-      data += chartData.points[k][1] + ",";
-      data += cell + ",";
-      data += getHeight(h) + ",";
-      data += h + ",";
-      data += rn(pop * populationRate) + ",";
+      data += k + 1 + ',';
+      data += chartData.points[k][0] + ',';
+      data += chartData.points[k][1] + ',';
+      data += cell + ',';
+      data += getHeight(h) + ',';
+      data += h + ',';
+      data += rn(pop * populationRate) + ',';
       if (burg) {
-        data += pack.burgs[burg].name + ",";
-        data += pack.burgs[burg].population * populationRate * urbanization + ",";
+        data += pack.burgs[burg].name + ',';
+        data += pack.burgs[burg].population * populationRate * urbanization + ',';
       } else {
-        data += ",0,";
+        data += ',0,';
       }
-      data += biomesData.name[biome] + ",";
-      data += biomesData.color[biome] + ",";
-      data += pack.cultures[culture].name + ",";
-      data += pack.cultures[culture].color + ",";
-      data += pack.religions[religion].name + ",";
-      data += pack.religions[religion].color + ",";
-      data += pack.provinces[province].name + ",";
-      data += pack.provinces[province].color + ",";
-      data += pack.states[state].name + ",";
-      data += pack.states[state].color + ",";
+      data += biomesData.name[biome] + ',';
+      data += biomesData.color[biome] + ',';
+      data += pack.cultures[culture].name + ',';
+      data += pack.cultures[culture].color + ',';
+      data += pack.religions[religion].name + ',';
+      data += pack.religions[religion].color + ',';
+      data += pack.provinces[province].name + ',';
+      data += pack.provinces[province].color + ',';
+      data += pack.states[state].name + ',';
+      data += pack.states[state].color + ',';
 
-      data = data + "\n";
+      data = data + '\n';
     }
 
-    const name = getFileName("elevation profile") + ".csv";
+    const name = getFileName('elevation profile') + '.csv';
     downloadFile(data, name);
   }
 
@@ -169,37 +169,48 @@ function showElevationProfile(data, routeLen, isRiver) {
       chartData.points.push([xscale(i) + xOffset, yscale(chartData.height[i]) + yOffset]);
     }
 
-    document.getElementById("elevationGraph").innerHTML = "";
+    document.getElementById('elevationGraph').innerHTML = '';
 
     const chart = d3
-      .select("#elevationGraph")
-      .append("svg")
-      .attr("width", chartWidth + 120)
-      .attr("height", chartHeight + yOffset + biomesHeight)
-      .attr("id", "elevationSVG")
-      .attr("class", "epbackground");
+      .select('#elevationGraph')
+      .append('svg')
+      .attr('width', chartWidth + 120)
+      .attr('height', chartHeight + yOffset + biomesHeight)
+      .attr('id', 'elevationSVG')
+      .attr('class', 'epbackground');
     // arrow-head definition
-    chart.append("defs").append("marker").attr("id", "arrowhead").attr("orient", "auto").attr("markerWidth", "2").attr("markerHeight", "4").attr("refX", "0.1").attr("refY", "2").append("path").attr("d", "M0,0 V4 L2,2 Z").attr("fill", "darkgray");
+    chart
+      .append('defs')
+      .append('marker')
+      .attr('id', 'arrowhead')
+      .attr('orient', 'auto')
+      .attr('markerWidth', '2')
+      .attr('markerHeight', '4')
+      .attr('refX', '0.1')
+      .attr('refY', '2')
+      .append('path')
+      .attr('d', 'M0,0 V4 L2,2 Z')
+      .attr('fill', 'darkgray');
 
     let colors = getColorScheme();
-    const landdef = chart.select("defs").append("linearGradient").attr("id", "landdef").attr("x1", "0%").attr("y1", "0%").attr("x2", "0%").attr("y2", "100%");
+    const landdef = chart.select('defs').append('linearGradient').attr('id', 'landdef').attr('x1', '0%').attr('y1', '0%').attr('x2', '0%').attr('y2', '100%');
 
     if (chartData.mah == chartData.mih) {
       landdef
-        .append("stop")
-        .attr("offset", "0%")
-        .attr("style", "stop-color:" + getColor(chartData.mih, colors) + ";stop-opacity:1");
+        .append('stop')
+        .attr('offset', '0%')
+        .attr('style', 'stop-color:' + getColor(chartData.mih, colors) + ';stop-opacity:1');
       landdef
-        .append("stop")
-        .attr("offset", "100%")
-        .attr("style", "stop-color:" + getColor(chartData.mah, colors) + ";stop-opacity:1");
+        .append('stop')
+        .attr('offset', '100%')
+        .attr('style', 'stop-color:' + getColor(chartData.mah, colors) + ';stop-opacity:1');
     } else {
       for (let k = chartData.mah; k >= chartData.mih; k--) {
         let perc = 1 - (k - chartData.mih) / (chartData.mah - chartData.mih);
         landdef
-          .append("stop")
-          .attr("offset", perc * 100 + "%")
-          .attr("style", "stop-color:" + getColor(k, colors) + ";stop-opacity:1");
+          .append('stop')
+          .attr('offset', perc * 100 + '%')
+          .attr('style', 'stop-color:' + getColor(k, colors) + ';stop-opacity:1');
       }
     }
 
@@ -231,14 +242,14 @@ function showElevationProfile(data, routeLen, isRiver) {
     let extra = chartData.points.slice();
     let path = curve(extra);
     // this completes the right-hand side and bottom of our land "polygon"
-    path += " L" + parseInt(xscale(extra.length) + +xOffset) + "," + parseInt(extra[extra.length - 1][1]);
-    path += " L" + parseInt(xscale(extra.length) + +xOffset) + "," + parseInt(yscale(0) + +yOffset);
-    path += " L" + parseInt(xscale(0) + +xOffset) + "," + parseInt(yscale(0) + +yOffset);
-    path += "Z";
-    chart.append("g").attr("id", "epland").append("path").attr("d", path).attr("stroke", "purple").attr("stroke-width", "0").attr("fill", "url(#landdef)");
+    path += ' L' + parseInt(xscale(extra.length) + +xOffset) + ',' + parseInt(extra[extra.length - 1][1]);
+    path += ' L' + parseInt(xscale(extra.length) + +xOffset) + ',' + parseInt(yscale(0) + +yOffset);
+    path += ' L' + parseInt(xscale(0) + +xOffset) + ',' + parseInt(yscale(0) + +yOffset);
+    path += 'Z';
+    chart.append('g').attr('id', 'epland').append('path').attr('d', path).attr('stroke', 'purple').attr('stroke-width', '0').attr('fill', 'url(#landdef)');
 
     // biome / heights
-    let g = chart.append("g").attr("id", "epbiomes");
+    let g = chart.append('g').attr('id', 'epbiomes');
     const hu = heightUnit.value;
     for (let k = 0; k < chartData.points.length; k++) {
       const x = chartData.points[k][0];
@@ -257,65 +268,82 @@ function showElevationProfile(data, routeLen, isRiver) {
 
       const populationDesc = rn(pop * populationRate);
 
-      const provinceDesc = province ? ", " + pack.provinces[province].name : "";
-      const dataTip = biomesData.name[chartData.biome[k]] + provinceDesc + ", " + pack.states[state].name + ", " + pack.religions[religion].name + ", " + pack.cultures[culture].name + " (height: " + chartData.height[k] + " " + hu + ", population " + populationDesc + ", cell " + chartData.cell[k] + ")";
+      const provinceDesc = province ? ', ' + pack.provinces[province].name : '';
+      const dataTip =
+        biomesData.name[chartData.biome[k]] +
+        provinceDesc +
+        ', ' +
+        pack.states[state].name +
+        ', ' +
+        pack.religions[religion].name +
+        ', ' +
+        pack.cultures[culture].name +
+        ' (height: ' +
+        chartData.height[k] +
+        ' ' +
+        hu +
+        ', population ' +
+        populationDesc +
+        ', cell ' +
+        chartData.cell[k] +
+        ')';
 
-      g.append("rect").attr("stroke", c).attr("fill", c).attr("x", x).attr("y", y).attr("width", xscale(1)).attr("height", 15).attr("data-tip", dataTip);
+      g.append('rect').attr('stroke', c).attr('fill', c).attr('x', x).attr('y', y).attr('width', xscale(1)).attr('height', 15).attr('data-tip', dataTip);
     }
 
     const xAxis = d3
       .axisBottom(xscale)
       .ticks(10)
       .tickFormat(function (d) {
-        return rn((d / chartData.points.length) * routeLen) + " " + distanceUnitInput.value;
+        return rn((d / chartData.points.length) * routeLen) + ' ' + distanceUnitInput.value;
       });
     const yAxis = d3
       .axisLeft(yscale)
       .ticks(5)
       .tickFormat(function (d) {
-        return d + " " + hu;
+        return d + ' ' + hu;
       });
 
-    const xGrid = d3.axisBottom(xscale).ticks(10).tickSize(-chartHeight).tickFormat("");
-    const yGrid = d3.axisLeft(yscale).ticks(5).tickSize(-chartWidth).tickFormat("");
+    const xGrid = d3.axisBottom(xscale).ticks(10).tickSize(-chartHeight).tickFormat('');
+    const yGrid = d3.axisLeft(yscale).ticks(5).tickSize(-chartWidth).tickFormat('');
 
     chart
-      .append("g")
-      .attr("id", "epxaxis")
-      .attr("transform", "translate(" + xOffset + "," + parseInt(chartHeight + +yOffset + 20) + ")")
+      .append('g')
+      .attr('id', 'epxaxis')
+      .attr('transform', 'translate(' + xOffset + ',' + parseInt(chartHeight + +yOffset + 20) + ')')
       .call(xAxis)
-      .selectAll("text")
-      .style("text-anchor", "center")
-      .attr("transform", function (d) {
-        return "rotate(0)"; // used to rotate labels, - anti-clockwise, + clockwise
+      .selectAll('text')
+      .style('text-anchor', 'center')
+      .attr('transform', function (d) {
+        return 'rotate(0)'; // used to rotate labels, - anti-clockwise, + clockwise
       });
 
     chart
-      .append("g")
-      .attr("id", "epyaxis")
-      .attr("transform", "translate(" + parseInt(+xOffset - 10) + "," + parseInt(+yOffset) + ")")
+      .append('g')
+      .attr('id', 'epyaxis')
+      .attr('transform', 'translate(' + parseInt(+xOffset - 10) + ',' + parseInt(+yOffset) + ')')
       .call(yAxis);
 
     // add the X gridlines
     chart
-      .append("g")
-      .attr("id", "epxgrid")
-      .attr("class", "epgrid")
-      .attr("stroke-dasharray", "4 1")
-      .attr("transform", "translate(" + xOffset + "," + parseInt(chartHeight + +yOffset) + ")")
+      .append('g')
+      .attr('id', 'epxgrid')
+      .attr('class', 'epgrid')
+      .attr('stroke-dasharray', '4 1')
+      .attr('transform', 'translate(' + xOffset + ',' + parseInt(chartHeight + +yOffset) + ')')
       .call(xGrid);
 
     // add the Y gridlines
     chart
-      .append("g")
-      .attr("id", "epygrid")
-      .attr("class", "epgrid")
-      .attr("stroke-dasharray", "4 1")
-      .attr("transform", "translate(" + xOffset + "," + yOffset + ")")
+      .append('g')
+      .attr('id', 'epygrid')
+      .attr('class', 'epgrid')
+      .attr('stroke-dasharray', '4 1')
+      .attr('transform', 'translate(' + xOffset + ',' + yOffset + ')')
       .call(yGrid);
 
     // draw city labels - try to avoid putting labels over one another
-    g = chart.append("g").attr("id", "epburglabels");
+    g = chart.append('g').attr('id', 'epburglabels');
     let y1 = 0;
     const add = 15;
 
@@ -331,31 +359,31 @@ function showElevationProfile(data, routeLen, isRiver) {
         if (y1 >= yOffset) y1 = add;
 
         // burg name
-        g.append("text")
-          .attr("id", "ep" + b)
-          .attr("class", "epburglabel")
-          .attr("x", x1)
-          .attr("y", y1)
-          .attr("text-anchor", "middle");
-        document.getElementById("ep" + b).innerHTML = pack.burgs[b].name;
+        g.append('text')
+          .attr('id', 'ep' + b)
+          .attr('class', 'epburglabel')
+          .attr('x', x1)
+          .attr('y', y1)
+          .attr('text-anchor', 'middle');
+        document.getElementById('ep' + b).innerHTML = pack.burgs[b].name;
 
         // arrow from burg name to graph line
-        g.append("path")
-          .attr("id", "eparrow" + b)
-          .attr("d", "M" + x1.toString() + "," + (y1 + 3).toString() + "L" + x1.toString() + "," + parseInt(chartData.points[k][1] - 3).toString())
-          .attr("stroke", "darkgray")
-          .attr("fill", "lightgray")
-          .attr("stroke-width", "1")
-          .attr("marker-end", "url(#arrowhead)");
+        g.append('path')
+          .attr('id', 'eparrow' + b)
+          .attr('d', 'M' + x1.toString() + ',' + (y1 + 3).toString() + 'L' + x1.toString() + ',' + parseInt(chartData.points[k][1] - 3).toString())
+          .attr('stroke', 'darkgray')
+          .attr('fill', 'lightgray')
+          .attr('stroke-width', '1')
+          .attr('marker-end', 'url(#arrowhead)');
       }
     }
   }
 
   function closeElevationProfile() {
-    document.getElementById("epScaleRange").removeEventListener("change", draw);
-    document.getElementById("epCurve").removeEventListener("change", draw);
-    document.getElementById("epSave").removeEventListener("click", downloadCSV);
-    document.getElementById("elevationGraph").innerHTML = "";
+    document.getElementById('epScaleRange').removeEventListener('change', draw);
+    document.getElementById('epCurve').removeEventListener('change', draw);
+    document.getElementById('epSave').removeEventListener('click', downloadCSV);
+    document.getElementById('elevationGraph').innerHTML = '';
     modules.elevation = false;
   }
 }

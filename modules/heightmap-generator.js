@@ -1,38 +1,38 @@
-"use strict";
+'use strict';
 
 window.HeightmapGenerator = (function () {
   let cells, p;
 
   const generate = function () {
-    TIME && console.time("generateHeightmap");
+    TIME && console.time('generateHeightmap');
     cells = grid.cells;
     p = grid.points;
     cells.h = new Uint8Array(grid.points.length);
 
-    const template = document.getElementById("templateInput").value;
+    const template = document.getElementById('templateInput').value;
     const templateString = HeightmapTemplates[template];
-    const steps = templateString.split("\n");
+    const steps = templateString.split('\n');
 
     if (!steps.length) throw new Error(`Heightmap template: no steps. Template: ${template}. Steps: ${steps}`);
 
     for (const step of steps) {
-      const elements = step.trim().split(" ");
+      const elements = step.trim().split(' ');
       if (elements.length < 2) throw new Error(`Heightmap template: steps < 2. Template: ${template}. Step: ${elements}`);
       addStep(...elements);
     }
 
-    TIME && console.timeEnd("generateHeightmap");
+    TIME && console.timeEnd('generateHeightmap');
   };
 
   function addStep(a1, a2, a3, a4, a5) {
-    if (a1 === "Hill") return addHill(a2, a3, a4, a5);
-    if (a1 === "Pit") return addPit(a2, a3, a4, a5);
-    if (a1 === "Range") return addRange(a2, a3, a4, a5);
-    if (a1 === "Trough") return addTrough(a2, a3, a4, a5);
-    if (a1 === "Strait") return addStrait(a2, a3);
-    if (a1 === "Add") return modify(a3, +a2, 1);
-    if (a1 === "Multiply") return modify(a3, 0, +a2);
-    if (a1 === "Smooth") return smooth(a2);
+    if (a1 === 'Hill') return addHill(a2, a3, a4, a5);
+    if (a1 === 'Pit') return addPit(a2, a3, a4, a5);
+    if (a1 === 'Range') return addRange(a2, a3, a4, a5);
+    if (a1 === 'Trough') return addTrough(a2, a3, a4, a5);
+    if (a1 === 'Strait') return addStrait(a2, a3);
+    if (a1 === 'Add') return modify(a3, +a2, 1);
+    if (a1 === 'Multiply') return modify(a3, 0, +a2);
+    if (a1 === 'Smooth') return smooth(a2);
   }
 
   function getBlobPower() {
@@ -201,13 +201,13 @@ window.HeightmapGenerator = (function () {
       while (queue.length) {
         const frontier = queue.slice();
         (queue = []), i++;
-        frontier.forEach(i => {
+        frontier.forEach((i) => {
           cells.h[i] = lim(cells.h[i] + h * (Math.random() * 0.3 + 0.85));
         });
         h = h ** power - 1;
         if (h < 2) break;
-        frontier.forEach(f => {
-          cells.c[f].forEach(i => {
+        frontier.forEach((f) => {
+          cells.c[f].forEach((i) => {
             if (!used[i]) {
               queue.push(i);
               used[i] = 1;
@@ -295,13 +295,13 @@ window.HeightmapGenerator = (function () {
       while (queue.length) {
         const frontier = queue.slice();
         (queue = []), i++;
-        frontier.forEach(i => {
+        frontier.forEach((i) => {
           cells.h[i] = lim(cells.h[i] - h * (Math.random() * 0.3 + 0.85));
         });
         h = h ** power - 1;
         if (h < 2) break;
-        frontier.forEach(f => {
-          cells.c[f].forEach(i => {
+        frontier.forEach((f) => {
+          cells.c[f].forEach((i) => {
             if (!used[i]) {
               queue.push(i);
               used[i] = 1;
@@ -323,11 +323,11 @@ window.HeightmapGenerator = (function () {
     }
   };
 
-  const addStrait = function (width, direction = "vertical") {
+  const addStrait = function (width, direction = 'vertical') {
     width = Math.min(getNumberInRange(width), grid.cellsX / 3);
     if (width < 1 && P(width)) return;
     const used = new Uint8Array(cells.h.length);
-    const vert = direction === "vertical";
+    const vert = direction === 'vertical';
     const startX = vert ? Math.floor(Math.random() * graphWidth * 0.4 + graphWidth * 0.3) : 5;
     const startY = vert ? 5 : Math.floor(Math.random() * graphHeight * 0.4 + graphHeight * 0.3);
     const endX = vert ? Math.floor(graphWidth - startX - graphWidth * 0.1 + Math.random() * graphWidth * 0.2) : graphWidth - 5;
@@ -377,34 +377,36 @@ window.HeightmapGenerator = (function () {
   };
 
   const modify = function (range, add, mult, power) {
-    const min = range === "land" ? 20 : range === "all" ? 0 : +range.split("-")[0];
-    const max = range === "land" || range === "all" ? 100 : +range.split("-")[1];
-    grid.cells.h = grid.cells.h.map(h => (h >= min && h <= max ? mod(h) : h));
+    const min = range === 'land' ? 20 : range === 'all' ? 0 : +range.split('-')[0];
+    const max = range === 'land' || range === 'all' ? 100 : +range.split('-')[1];
+    const isLand = min === 20;
 
-    function mod(v) {
-      if (add) v = min === 20 ? Math.max(v + add, 20) : v + add;
-      if (mult !== 1) v = min === 20 ? (v - 20) * mult + 20 : v * mult;
-      if (power) v = min === 20 ? (v - 20) ** power + 20 : v ** power;
-      return lim(v);
-    }
+    grid.cells.h = grid.cells.h.map((h) => {
+      if (h < min || h > max) return h;
+
+      if (add) h = isLand ? Math.max(h + add, 20) : h + add;
+      if (mult !== 1) h = isLand ? (h - 20) * mult + 20 : h * mult;
+      if (power) h = isLand ? (h - 20) ** power + 20 : h ** power;
+      return lim(h);
+    });
   };
 
   const smooth = function (fr = 2, add = 0) {
     cells.h = cells.h.map((h, i) => {
       const a = [h];
-      cells.c[i].forEach(c => a.push(cells.h[c]));
+      cells.c[i].forEach((c) => a.push(cells.h[c]));
       return lim((h * (fr - 1) + d3.mean(a) + add) / fr);
     });
   };
 
   function getPointInRange(range, length) {
-    if (typeof range !== "string") {
-      ERROR && console.error("Range should be a string");
+    if (typeof range !== 'string') {
+      ERROR && console.error('Range should be a string');
       return;
     }
 
-    const min = range.split("-")[0] / 100 || 0;
-    const max = range.split("-")[1] / 100 || min;
+    const min = range.split('-')[0] / 100 || 0;
+    const max = range.split('-')[1] / 100 || min;
     return rand(min * length, max * length);
   }
 

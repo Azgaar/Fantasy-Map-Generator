@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 window.Names = (function () {
   let chains = [];
@@ -6,34 +6,34 @@ window.Names = (function () {
   // calculate Markov chain for a namesbase
   const calculateChain = function (string) {
     const chain = [];
-    const array = string.split(",");
+    const array = string.split(',');
 
     for (const n of array) {
       let name = n.trim().toLowerCase();
       const basic = !/[^\u0000-\u007f]/.test(name); // basic chars and English rules can be applied
 
       // split word into pseudo-syllables
-      for (let i = -1, syllable = ""; i < name.length; i += syllable.length || 1, syllable = "") {
-        let prev = name[i] || ""; // pre-onset letter
+      for (let i = -1, syllable = ''; i < name.length; i += syllable.length || 1, syllable = '') {
+        let prev = name[i] || ''; // pre-onset letter
         let v = 0; // 0 if no vowels in syllable
 
         for (let c = i + 1; name[c] && syllable.length < 5; c++) {
           const that = name[c],
             next = name[c + 1]; // next char
           syllable += that;
-          if (syllable === " " || syllable === "-") break; // syllable starts with space or hyphen
-          if (!next || next === " " || next === "-") break; // no need to check
+          if (syllable === ' ' || syllable === '-') break; // syllable starts with space or hyphen
+          if (!next || next === ' ' || next === '-') break; // no need to check
 
           if (vowel(that)) v = 1; // check if letter is vowel
 
           // do not split some diphthongs
-          if (that === "y" && next === "e") continue; // 'ye'
+          if (that === 'y' && next === 'e') continue; // 'ye'
           if (basic) {
             // English-like
-            if (that === "o" && next === "o") continue; // 'oo'
-            if (that === "e" && next === "e") continue; // 'ee'
-            if (that === "a" && next === "e") continue; // 'ae'
-            if (that === "c" && next === "h") continue; // 'ch'
+            if (that === 'o' && next === 'o') continue; // 'oo'
+            if (that === 'e' && next === 'e') continue; // 'ee'
+            if (that === 'a' && next === 'e') continue; // 'ae'
+            if (that === 'c' && next === 'h') continue; // 'ch'
           }
 
           if (vowel(that) === next) break; // two same vowels in a row
@@ -49,7 +49,7 @@ window.Names = (function () {
   };
 
   // update chain for specific base
-  const updateChain = i => (chains[i] = nameBases[i] || nameBases[i].b ? calculateChain(nameBases[i].b) : null);
+  const updateChain = (i) => (chains[i] = nameBases[i] || nameBases[i].b ? calculateChain(nameBases[i].b) : null);
 
   // update chains for all used bases
   const clearChains = () => (chains = []);
@@ -57,39 +57,39 @@ window.Names = (function () {
   // generate name using Markov's chain
   const getBase = function (base, min, max, dupl) {
     if (base === undefined) {
-      ERROR && console.error("Please define a base");
+      ERROR && console.error('Please define a base');
       return;
     }
     if (!chains[base]) updateChain(base);
 
     const data = chains[base];
-    if (!data || data[""] === undefined) {
-      tip("Namesbase " + base + " is incorrect. Please check in namesbase editor", false, "error");
-      ERROR && console.error("Namebase " + base + " is incorrect!");
-      return "ERROR";
+    if (!data || data[''] === undefined) {
+      tip('Namesbase ' + base + ' is incorrect. Please check in namesbase editor', false, 'error');
+      ERROR && console.error('Namebase ' + base + ' is incorrect!');
+      return 'ERROR';
     }
 
     if (!min) min = nameBases[base].min;
     if (!max) max = nameBases[base].max;
-    if (dupl !== "") dupl = nameBases[base].d;
+    if (dupl !== '') dupl = nameBases[base].d;
 
-    let v = data[""],
+    let v = data[''],
       cur = ra(v),
-      w = "";
+      w = '';
     for (let i = 0; i < 20; i++) {
-      if (cur === "") {
+      if (cur === '') {
         // end of word
         if (w.length < min) {
-          cur = "";
-          w = "";
-          v = data[""];
+          cur = '';
+          w = '';
+          v = data[''];
         } else break;
       } else {
         if (w.length + cur.length > max) {
           // word too long
           if (w.length < min) w += cur;
           break;
-        } else v = data[last(cur)] || data[""];
+        } else v = data[last(cur)] || data[''];
       }
 
       w += cur;
@@ -98,31 +98,29 @@ window.Names = (function () {
 
     // parse word to get a final name
     const l = last(w); // last letter
-    if (l === "'" || l === " " || l === "-") w = w.slice(0, -1); // not allow some characters at the end
-    const basic = !/[^\u0000-\u007f]/.test(w); // true if word has only basic characters
+    if (l === "'" || l === ' ' || l === '-') w = w.slice(0, -1); // not allow some characters at the end
 
     let name = [...w].reduce(function (r, c, i, d) {
       if (c === d[i + 1] && !dupl.includes(c)) return r; // duplication is not allowed
       if (!r.length) return c.toUpperCase();
-      if (r.slice(-1) === "-" && c === " ") return r; // remove space after hyphen
-      if (r.slice(-1) === " ") return r + c.toUpperCase(); // capitalize letter after space
-      if (r.slice(-1) === "-") return r + c.toUpperCase(); // capitalize letter after hyphen
-      if (c === "a" && d[i + 1] === "e") return r; // "ae" => "e"
-      if (basic && i + 1 < d.length && !vowel(c) && !vowel(d[i - 1]) && !vowel(d[i + 1])) return r; // remove consonant between 2 consonants
+      if (r.slice(-1) === '-' && c === ' ') return r; // remove space after hyphen
+      if (r.slice(-1) === ' ') return r + c.toUpperCase(); // capitalize letter after space
+      if (r.slice(-1) === '-') return r + c.toUpperCase(); // capitalize letter after hyphen
+      if (c === 'a' && d[i + 1] === 'e') return r; // "ae" => "e"
       if (i + 2 < d.length && c === d[i + 1] && c === d[i + 2]) return r; // remove three same letters in a row
       return r + c;
-    }, "");
+    }, '');
 
     // join the word if any part has only 1 letter
-    if (name.split(" ").some(part => part.length < 2))
+    if (name.split(' ').some((part) => part.length < 2))
       name = name
-        .split(" ")
+        .split(' ')
         .map((p, i) => (i ? p.toLowerCase() : p))
-        .join("");
+        .join('');
 
     if (name.length < 2) {
-      ERROR && console.error("Name is too short! Random name will be selected");
-      name = ra(nameBases[base].b.split(","));
+      ERROR && console.error('Name is too short! Random name will be selected');
+      name = ra(nameBases[base].b.split(','));
     }
 
     return name;
@@ -130,84 +128,98 @@ window.Names = (function () {
 
   // generate name for culture
   const getCulture = function (culture, min, max, dupl) {
-    if (culture === undefined) {
-      ERROR && console.error("Please define a culture");
-      return;
-    }
+    if (culture === undefined) return ERROR && console.error('Please define a culture');
     const base = pack.cultures[culture].base;
     return getBase(base, min, max, dupl);
   };
 
   // generate short name for culture
   const getCultureShort = function (culture) {
-    if (culture === undefined) {
-      ERROR && console.error("Please define a culture");
-      return;
-    }
+    if (culture === undefined) return ERROR && console.error('Please define a culture');
     return getBaseShort(pack.cultures[culture].base);
   };
 
   // generate short name for base
   const getBaseShort = function (base) {
     if (nameBases[base] === undefined) {
-      tip(`Namebase ${base} does not exist. Please upload custom namebases of change the base in Cultures Editor`, false, "error");
+      tip(`Namebase ${base} does not exist. Please upload custom namebases of change the base in Cultures Editor`, false, 'error');
       base = 1;
     }
     const min = nameBases[base].min - 1;
     const max = Math.max(nameBases[base].max - 2, min);
-    return getBase(base, min, max, "", 0);
+    return getBase(base, min, max, '', 0);
   };
 
   // generate state name based on capital or random name and culture-specific suffix
-  // prettier-ignore
-  const getState = function(name, culture, base) {
-    if (name === undefined) {ERROR && console.error("Please define a base name"); return;}
-    if (culture === undefined && base === undefined) {ERROR && console.error("Please define a culture"); return;}
+  const getState = function (name, culture, base) {
+    if (name === undefined) return ERROR && console.error('Please define a base name');
+    if (culture === undefined && base === undefined) return ERROR && console.error('Please define a culture');
     if (base === undefined) base = pack.cultures[culture].base;
 
     // exclude endings inappropriate for states name
-    if (name.includes(" ")) name = capitalize(name.replace(/ /g, "").toLowerCase()); // don't allow multiword state names
-    if (name.length > 6 && name.slice(-4) === "berg") name = name.slice(0,-4); // remove -berg for any
-    if (name.length > 5 && name.slice(-3) === "ton") name = name.slice(0,-3); // remove -ton for any
+    if (name.includes(' ')) name = capitalize(name.replace(/ /g, '').toLowerCase()); // don't allow multiword state names
+    if (name.length > 6 && name.slice(-4) === 'berg') name = name.slice(0, -4); // remove -berg for any
+    if (name.length > 5 && name.slice(-3) === 'ton') name = name.slice(0, -3); // remove -ton for any
 
-    if (base === 5 && ["sk", "ev", "ov"].includes(name.slice(-2))) name = name.slice(0,-2); // remove -sk/-ev/-ov for Ruthenian
-    else if (base === 12) return vowel(name.slice(-1)) ? name : name + "u"; // Japanese ends on any vowel or -u
-    else if (base === 18 && P(.4)) name = vowel(name.slice(0,1).toLowerCase()) ? "Al" + name.toLowerCase() : "Al " + name; // Arabic starts with -Al
+    if (base === 5 && ['sk', 'ev', 'ov'].includes(name.slice(-2))) name = name.slice(0, -2);
+    // remove -sk/-ev/-ov for Ruthenian
+    else if (base === 12) return vowel(name.slice(-1)) ? name : name + 'u';
+    // Japanese ends on any vowel or -u
+    else if (base === 18 && P(0.4)) name = vowel(name.slice(0, 1).toLowerCase()) ? 'Al' + name.toLowerCase() : 'Al ' + name; // Arabic starts with -Al
 
     // no suffix for fantasy bases
     if (base > 32 && base < 42) return name;
 
     // define if suffix should be used
     if (name.length > 3 && vowel(name.slice(-1))) {
-      if (vowel(name.slice(-2,-1)) && P(.85)) name = name.slice(0,-2); // 85% for vv
-      else if (P(.7)) name = name.slice(0,-1); // ~60% for cv
+      if (vowel(name.slice(-2, -1)) && P(0.85)) name = name.slice(0, -2);
+      // 85% for vv
+      else if (P(0.7)) name = name.slice(0, -1);
+      // ~60% for cv
       else return name;
-    } else if (P(.4)) return name; // 60% for cc and vc
+    } else if (P(0.4)) return name; // 60% for cc and vc
 
     // define suffix
-    let suffix = "ia"; // standard suffix
+    let suffix = 'ia'; // standard suffix
 
-    const rnd = Math.random(), l = name.length;
-    if (base === 3 && rnd < .03 && l < 7) suffix = "terra"; // Italian
-    else if (base === 4 && rnd < .03 && l < 7) suffix = "terra"; // Spanish
-    else if (base === 13 && rnd < .03 && l < 7) suffix = "terra"; // Portuguese
-    else if (base === 2 && rnd < .03 && l < 7) suffix = "terre"; // French
-    else if (base === 0 && rnd < .5 && l < 7) suffix = "land"; // German
-    else if (base === 1 && rnd < .4 && l < 7 ) suffix = "land"; // English
-    else if (base === 6 && rnd < .3 && l < 7) suffix = "land"; // Nordic
-    else if (base === 32 && rnd < .1 && l < 7) suffix = "land"; // generic Human
-    else if (base === 7 && rnd < .1) suffix = "eia"; // Greek
-    else if (base === 9 && rnd < .35) suffix = "maa"; // Finnic
-    else if (base === 15 && rnd < .4 && l < 6) suffix = "orszag"; // Hungarian
-    else if (base === 16) suffix = rnd < .6 ? "stan" : "ya"; // Turkish
-    else if (base === 10) suffix = "guk"; // Korean
-    else if (base === 11) suffix = " Guo"; // Chinese
-    else if (base === 14) suffix = rnd < .5 && l < 6 ? "tlan" : "co"; // Nahuatl
-    else if (base === 17 && rnd < .8) suffix = "a"; // Berber
-    else if (base === 18 && rnd < .8) suffix = "a"; // Arabic
+    const rnd = Math.random(),
+      l = name.length;
+    if (base === 3 && rnd < 0.03 && l < 7) suffix = 'terra';
+    // Italian
+    else if (base === 4 && rnd < 0.03 && l < 7) suffix = 'terra';
+    // Spanish
+    else if (base === 13 && rnd < 0.03 && l < 7) suffix = 'terra';
+    // Portuguese
+    else if (base === 2 && rnd < 0.03 && l < 7) suffix = 'terre';
+    // French
+    else if (base === 0 && rnd < 0.5 && l < 7) suffix = 'land';
+    // German
+    else if (base === 1 && rnd < 0.4 && l < 7) suffix = 'land';
+    // English
+    else if (base === 6 && rnd < 0.3 && l < 7) suffix = 'land';
+    // Nordic
+    else if (base === 32 && rnd < 0.1 && l < 7) suffix = 'land';
+    // generic Human
+    else if (base === 7 && rnd < 0.1) suffix = 'eia';
+    // Greek
+    else if (base === 9 && rnd < 0.35) suffix = 'maa';
+    // Finnic
+    else if (base === 15 && rnd < 0.4 && l < 6) suffix = 'orszag';
+    // Hungarian
+    else if (base === 16) suffix = rnd < 0.6 ? 'stan' : 'ya';
+    // Turkish
+    else if (base === 10) suffix = 'guk';
+    // Korean
+    else if (base === 11) suffix = ' Guo';
+    // Chinese
+    else if (base === 14) suffix = rnd < 0.5 && l < 6 ? 'tlan' : 'co';
+    // Nahuatl
+    else if (base === 17 && rnd < 0.8) suffix = 'a';
+    // Berber
+    else if (base === 18 && rnd < 0.8) suffix = 'a'; // Arabic
 
     return validateSuffix(name, suffix);
-  }
+  };
 
   function validateSuffix(name, suffix) {
     if (name.slice(-1 * suffix.length) === suffix) return name; // no suffix if name already ends with it
@@ -220,24 +232,24 @@ window.Names = (function () {
 
   // generato name for the map
   const getMapName = function (force) {
-    if (!force && locked("mapName")) return;
-    if (force && locked("mapName")) unlock("mapName");
+    if (!force && locked('mapName')) return;
+    if (force && locked('mapName')) unlock('mapName');
     const base = P(0.7) ? 2 : P(0.5) ? rand(0, 6) : rand(0, 31);
     if (!nameBases[base]) {
-      tip("Namebase is not found", false, "error");
-      return "";
+      tip('Namebase is not found', false, 'error');
+      return '';
     }
     const min = nameBases[base].min - 1;
     const max = Math.max(nameBases[base].max - 3, min);
-    const baseName = getBase(base, min, max, "", 0);
+    const baseName = getBase(base, min, max, '', 0);
     const name = P(0.7) ? addSuffix(baseName) : baseName;
     mapName.value = name;
   };
 
   function addSuffix(name) {
-    const suffix = P(0.8) ? "ia" : "land";
-    if (suffix === "ia" && name.length > 6) name = name.slice(0, -(name.length - 3));
-    else if (suffix === "land" && name.length > 6) name = name.slice(0, -(name.length - 5));
+    const suffix = P(0.8) ? 'ia' : 'land';
+    if (suffix === 'ia' && name.length > 6) name = name.slice(0, -(name.length - 3));
+    else if (suffix === 'land' && name.length > 6) name = name.slice(0, -(name.length - 5));
     return validateSuffix(name, suffix);
   }
 
@@ -250,7 +262,7 @@ window.Names = (function () {
       {name: "English", i: 1, min: 6, max: 11, d: "", m: .1, b: "Abingdon,Albrighton,Alcester,Almondbury,Altrincham,Amersham,Andover,Appleby,Ashboume,Atherstone,Aveton,Axbridge,Aylesbury,Baldock,Bamburgh,Barton,Basingstoke,Berden,Bere,Berkeley,Berwick,Betley,Bideford,Bingley,Birmingham,Blandford,Blechingley,Bodmin,Bolton,Bootham,Boroughbridge,Boscastle,Bossinney,Bramber,Brampton,Brasted,Bretford,Bridgetown,Bridlington,Bromyard,Bruton,Buckingham,Bungay,Burton,Calne,Cambridge,Canterbury,Carlisle,Castleton,Caus,Charmouth,Chawleigh,Chichester,Chillington,Chinnor,Chipping,Chisbury,Cleobury,Clifford,Clifton,Clitheroe,Cockermouth,Coleshill,Combe,Congleton,Crafthole,Crediton,Cuddenbeck,Dalton,Darlington,Dodbrooke,Drax,Dudley,Dunstable,Dunster,Dunwich,Durham,Dymock,Exeter,Exning,Faringdon,Felton,Fenny,Finedon,Flookburgh,Fowey,Frampton,Gateshead,Gatton,Godmanchester,Grampound,Grantham,Guildford,Halesowen,Halton,Harbottle,Harlow,Hatfield,Hatherleigh,Haydon,Helston,Henley,Hertford,Heytesbury,Hinckley,Hitchin,Holme,Hornby,Horsham,Kendal,Kenilworth,Kilkhampton,Kineton,Kington,Kinver,Kirby,Knaresborough,Knutsford,Launceston,Leighton,Lewes,Linton,Louth,Luton,Lyme,Lympstone,Macclesfield,Madeley,Malborough,Maldon,Manchester,Manningtree,Marazion,Marlborough,Marshfield,Mere,Merryfield,Middlewich,Midhurst,Milborne,Mitford,Modbury,Montacute,Mousehole,Newbiggin,Newborough,Newbury,Newenden,Newent,Norham,Northleach,Noss,Oakham,Olney,Orford,Ormskirk,Oswestry,Padstow,Paignton,Penkneth,Penrith,Penzance,Pershore,Petersfield,Pevensey,Pickering,Pilton,Pontefract,Portsmouth,Preston,Quatford,Reading,Redcliff,Retford,Rockingham,Romney,Rothbury,Rothwell,Salisbury,Saltash,Seaford,Seasalter,Sherston,Shifnal,Shoreham,Sidmouth,Skipsea,Skipton,Solihull,Somerton,Southam,Southwark,Standon,Stansted,Stapleton,Stottesdon,Sudbury,Swavesey,Tamerton,Tarporley,Tetbury,Thatcham,Thaxted,Thetford,Thornbury,Tintagel,Tiverton,Torksey,Totnes,Towcester,Tregoney,Trematon,Tutbury,Uxbridge,Wallingford,Wareham,Warenmouth,Wargrave,Warton,Watchet,Watford,Wendover,Westbury,Westcheap,Weymouth,Whitford,Wickwar,Wigan,Wigmore,Winchelsea,Winkleigh,Wiscombe,Witham,Witheridge,Wiveliscombe,Woodbury,Yeovil"},
       {name: "French", i: 2, min: 5, max: 13, d: "nlrs", m: .1, b: "Adon,Aillant,Amilly,Andonville,Ardon,Artenay,Ascheres,Ascoux,Attray,Aubin,Audeville,Aulnay,Autruy,Auvilliers,Auxy,Aveyron,Baccon,Bardon,Barville,Batilly,Baule,Bazoches,Beauchamps,Beaugency,Beaulieu,Beaune,Bellegarde,Boesses,Boigny,Boiscommun,Boismorand,Boisseaux,Bondaroy,Bonnee,Bonny,Bordes,Bou,Bougy,Bouilly,Boulay,Bouzonville,Bouzy,Boynes,Bray,Breteau,Briare,Briarres,Bricy,Bromeilles,Bucy,Cepoy,Cercottes,Cerdon,Cernoy,Cesarville,Chailly,Chaingy,Chalette,Chambon,Champoulet,Chanteau,Chantecoq,Chapell,Charme,Charmont,Charsonville,Chateau,Chateauneuf,Chatel,Chatenoy,Chatillon,Chaussy,Checy,Chevannes,Chevillon,Chevilly,Chevry,Chilleurs,Choux,Chuelles,Clery,Coinces,Coligny,Combleux,Combreux,Conflans,Corbeilles,Corquilleroy,Cortrat,Coudroy,Coullons,Coulmiers,Courcelles,Courcy,Courtemaux,Courtempierre,Courtenay,Cravant,Crottes,Dadonville,Dammarie,Dampierre,Darvoy,Desmonts,Dimancheville,Donnery,Dordives,Dossainville,Douchy,Dry,Echilleuses,Egry,Engenville,Epieds,Erceville,Ervauville,Escrennes,Escrignelles,Estouy,Faverelles,Fay,Feins,Ferolles,Ferrieres,Fleury,Fontenay,Foret,Foucherolles,Freville,Gatinais,Gaubertin,Gemigny,Germigny,Gidy,Gien,Girolles,Givraines,Gondreville,Grangermont,Greneville,Griselles,Guigneville,Guilly,Gyleslonains,Huetre,Huisseau,Ingrannes,Ingre,Intville,Isdes,Jargeau,Jouy,Juranville,Bussiere,Laas,Ladon,Lailly,Langesse,Leouville,Ligny,Lombreuil,Lorcy,Lorris,Loury,Louzouer,Malesherbois,Marcilly,Mardie,Mareau,Marigny,Marsainvilliers,Melleroy,Menestreau,Merinville,Messas,Meung,Mezieres,Migneres,Mignerette,Mirabeau,Montargis,Montbarrois,Montbouy,Montcresson,Montereau,Montigny,Montliard,Mormant,Morville,Moulinet,Moulon,Nancray,Nargis,Nesploy,Neuville,Neuvy,Nevoy,Nibelle,Nogent,Noyers,Ocre,Oison,Olivet,Ondreville,Onzerain,Orleans,Ormes,Orville,Oussoy,Outarville,Ouzouer,Pannecieres,Pannes,Patay,Paucourt,Pers,Pierrefitte,Pithiverais,Pithiviers,Poilly,Potier,Prefontaines,Presnoy,Pressigny,Puiseaux,Quiers,Ramoulu,Rebrechien,Rouvray,Rozieres,Rozoy,Ruan,Sandillon,Santeau,Saran,Sceaux,Seichebrieres,Semoy,Sennely,Sermaises,Sigloy,Solterre,Sougy,Sully,Sury,Tavers,Thignonville,Thimory,Thorailles,Thou,Tigy,Tivernon,Tournoisis,Trainou,Treilles,Trigueres,Trinay,Vannes,Varennes,Vennecy,Vieilles,Vienne,Viglain,Vignes,Villamblain,Villemandeur,Villemoutiers,Villemurlin,Villeneuve,Villereau,Villevoques,Villorceau,Vimory,Vitry,Vrigny,Ivre"},
       {name: "Italian", i: 3, min: 5, max: 12, d: "cltr", m: .1, b: "Accumoli,Acquafondata,Acquapendente,Acuto,Affile,Agosta,Alatri,Albano,Allumiere,Alvito,Amaseno,Amatrice,Anagni,Anguillara,Anticoli,Antrodoco,Anzio,Aprilia,Aquino,Arce,Arcinazzo,Ardea,Ariccia,Arlena,Arnara,Arpino,Arsoli,Artena,Ascrea,Atina,Ausonia,Bagnoregio,Barbarano,Bassano,Bassiano,Bellegra,Belmonte,Blera,Bolsena,Bomarzo,Borbona,Borgo,Borgorose,Boville,Bracciano,Broccostella,Calcata,Camerata,Campagnano,Campodimele,Campoli,Canale,Canepina,Canino,Cantalice,Cantalupo,Canterano,Capena,Capodimonte,Capranica,Caprarola,Carbognano,Casalattico,Casalvieri,Casape,Casaprota,Casperia,Cassino,Castelforte,Castelliri,Castello,Castelnuovo,Castiglione,Castro,Castrocielo,Cave,Ceccano,Celleno,Cellere,Ceprano,Cerreto,Cervara,Cervaro,Cerveteri,Ciampino,Ciciliano,Cineto,Cisterna,Cittaducale,Cittareale,Civita,Civitavecchia,Civitella,Colfelice,Collalto,Colle,Colleferro,Collegiove,Collepardo,Collevecchio,Colli,Colonna,Concerviano,Configni,Contigliano,Corchiano,Coreno,Cori,Cottanello,Esperia,Fabrica,Faleria,Fara,Farnese,Ferentino,Fiamignano,Fiano,Filacciano,Filettino,Fiuggi,Fiumicino,Fondi,Fontana,Fonte,Fontechiari,Forano,Formello,Formia,Frascati,Frasso,Frosinone,Fumone,Gaeta,Gallese,Gallicano,Gallinaro,Gavignano,Genazzano,Genzano,Gerano,Giuliano,Gorga,Gradoli,Graffignano,Greccio,Grottaferrata,Grotte,Guarcino,Guidonia,Ischia,Isola,Itri,Jenne,Labico,Labro,Ladispoli,Lanuvio,Lariano,Latera,Lenola,Leonessa,Licenza,Longone,Lubriano,Maenza,Magliano,Mandela,Manziana,Marano,Marcellina,Marcetelli,Marino,Marta,Mazzano,Mentana,Micigliano,Minturno,Mompeo,Montalto,Montasola,Monte,Montebuono,Montefiascone,Monteflavio,Montelanico,Monteleone,Montelibretti,Montenero,Monterosi,Monterotondo,Montopoli,Montorio,Moricone,Morlupo,Morolo,Morro,Nazzano,Nemi,Nepi,Nerola,Nespolo,Nettuno,Norma,Olevano,Onano,Oriolo,Orte,Orvinio,Paganico,Palestrina,Paliano,Palombara,Pastena,Patrica,Percile,Pescorocchiano,Pescosolido,Petrella,Piansano,Picinisco,Pico,Piedimonte,Piglio,Pignataro,Pisoniano,Pofi,Poggio,Poli,Pomezia,Pontecorvo,Pontinia,Ponza,Ponzano,Posta,Pozzaglia,Priverno,Proceno,Prossedi,Riano,Rieti,Rignano,Riofreddo,Ripi,Rivodutri,Rocca,Roccagiovine,Roccagorga,Roccantica,Roccasecca,Roiate,Ronciglione,Roviano,Sabaudia,Sacrofano,Salisano,Sambuci,Santa,Santi,Santopadre,Saracinesco,Scandriglia,Segni,Selci,Sermoneta,Serrone,Settefrati,Sezze,Sgurgola,Sonnino,Sora,Soriano,Sperlonga,Spigno,Stimigliano,Strangolagalli,Subiaco,Supino,Sutri,Tarano,Tarquinia,Terelle,Terracina,Tessennano,Tivoli,Toffia,Tolfa,Torre,Torri,Torrice,Torricella,Torrita,Trevi,Trevignano,Trivigliano,Turania,Tuscania,Vacone,Valentano,Vallecorsa,Vallemaio,Vallepietra,Vallerano,Vallerotonda,Vallinfreda,Valmontone,Varco,Vasanello,Vejano,Velletri,Ventotene,Veroli,Vetralla,Vicalvi,Vico,Vicovaro,Vignanello,Viterbo,Viticuso,Vitorchiano,Vivaro,Zagarolo"},
-      {name: "Castillian", i: 4, min: 5, max: 11, d: "lr", m: 0, b: "Abanades,Ablanque,Adobes,Ajofrin,Alameda,Alaminos,Alarilla,Albalate,Albares,Albarreal,Albendiego,Alcabon,Alcanizo,Alcaudete,Alcocer,Alcolea,Alcoroches,Aldea,Aldeanueva,Algar,Algora,Alhondiga,Alique,Almadrones,Almendral,Almoguera,Almonacid,Almorox,Alocen,Alovera,Alustante,Angon,Anguita,Anover,Anquela,Arbancon,Arbeteta,Arcicollar,Argecilla,Arges,Armallones,Armuna,Arroyo,Atanzon,Atienza,Aunon,Azuqueca,Azutan,Baides,Banos,Banuelos,Barcience,Bargas,Barriopedro,Belvis,Berninches,Borox,Brihuega,Budia,Buenaventura,Bujalaro,Burguillos,Burujon,Bustares,Cabanas,Cabanillas,Calera,Caleruela,Calzada,Camarena,Campillo,Camunas,Canizar,Canredondo,Cantalojas,Cardiel,Carmena,Carranque,Carriches,Casa,Casarrubios,Casas,Casasbuenas,Caspuenas,Castejon,Castellar,Castilforte,Castillo,Castilnuevo,Cazalegas,Cebolla,Cedillo,Cendejas,Centenera,Cervera,Checa,Chequilla,Chillaron,Chiloeches,Chozas,Chueca,Cifuentes,Cincovillas,Ciruelas,Ciruelos,Cobeja,Cobeta,Cobisa,Cogollor,Cogolludo,Condemios,Congostrina,Consuegra,Copernal,Corduente,Corral,Cuerva,Domingo,Dosbarrios,Driebes,Duron,El,Embid,Erustes,Escalona,Escalonilla,Escamilla,Escariche,Escopete,Espinosa,Espinoso,Esplegares,Esquivias,Estables,Estriegana,Fontanar,Fuembellida,Fuensalida,Fuentelsaz,Gajanejos,Galve,Galvez,Garciotum,Gascuena,Gerindote,Guadamur,Henche,Heras,Herreria,Herreruela,Hijes,Hinojosa,Hita,Hombrados,Hontanar,Hontoba,Horche,Hormigos,Huecas,Huermeces,Huerta,Hueva,Humanes,Illan,Illana,Illescas,Iniestola,Irueste,Jadraque,Jirueque,Lagartera,Las,Layos,Ledanca,Lillo,Lominchar,Loranca,Los,Lucillos,Lupiana,Luzaga,Luzon,Madridejos,Magan,Majaelrayo,Malaga,Malaguilla,Malpica,Mandayona,Mantiel,Manzaneque,Maqueda,Maranchon,Marchamalo,Marjaliza,Marrupe,Mascaraque,Masegoso,Matarrubia,Matillas,Mazarete,Mazuecos,Medranda,Megina,Mejorada,Mentrida,Mesegar,Miedes,Miguel,Millana,Milmarcos,Mirabueno,Miralrio,Mocejon,Mochales,Mohedas,Molina,Monasterio,Mondejar,Montarron,Mora,Moratilla,Morenilla,Muduex,Nambroca,Navalcan,Negredo,Noblejas,Noez,Nombela,Noves,Numancia,Nuno,Ocana,Ocentejo,Olias,Olmeda,Ontigola,Orea,Orgaz,Oropesa,Otero,Palmaces,Palomeque,Pantoja,Pardos,Paredes,Pareja,Parrillas,Pastrana,Pelahustan,Penalen,Penalver,Pepino,Peralejos,Peralveche,Pinilla,Pioz,Piqueras,Polan,Portillo,Poveda,Pozo,Pradena,Prados,Puebla,Puerto,Pulgar,Quer,Quero,Quintanar,Quismondo,Rebollosa,Recas,Renera,Retamoso,Retiendas,Riba,Rielves,Rillo,Riofrio,Robledillo,Robledo,Romanillos,Romanones,Rueda,Sacecorbo,Sacedon,Saelices,Salmeron,San,Santa,Santiuste,Santo,Sartajada,Sauca,Sayaton,Segurilla,Selas,Semillas,Sesena,Setiles,Sevilleja,Sienes,Siguenza,Solanillos,Somolinos,Sonseca,Sotillo,Sotodosos,Talavera,Tamajon,Taragudo,Taravilla,Tartanedo,Tembleque,Tendilla,Terzaga,Tierzo,Tordellego,Tordelrabano,Tordesilos,Torija,Torralba,Torre,Torrecilla,Torrecuadrada,Torrejon,Torremocha,Torrico,Torrijos,Torrubia,Tortola,Tortuera,Tortuero,Totanes,Traid,Trijueque,Trillo,Turleque,Uceda,Ugena,Ujados,Urda,Utande,Valdarachas,Valdesotos,Valhermoso,Valtablado,Valverde,Velada,Viana,Vinuelas,Yebes,Yebra,Yelamos,Yeles,Yepes,Yuncler,Yunclillos,Yuncos,Yunquera,Zaorejas,Zarzuela,Zorita"},
+      {name: "Castillian", i: 4, min: 5, max: 11, d: "lr", m: 0, b: "Abanades,Ablanque,Adobes,Ajofrin,Alameda,Alaminos,Alarilla,Albalate,Albares,Albarreal,Albendiego,Alcabon,Alcanizo,Alcaudete,Alcocer,Alcolea,Alcoroches,Aldea,Aldeanueva,Algar,Algora,Alhondiga,Alique,Almadrones,Almendral,Almoguera,Almonacid,Almorox,Alocen,Alovera,Alustante,Angon,Anguita,Anover,Anquela,Arbancon,Arbeteta,Arcicollar,Argecilla,Arges,Armallones,Armuna,Arroyo,Atanzon,Atienza,Aunon,Azuqueca,Azutan,Baides,Banos,Banuelos,Barcience,Bargas,Barriopedro,Belvis,Berninches,Borox,Brihuega,Budia,Buenaventura,Bujalaro,Burguillos,Burujon,Bustares,Cabanas,Cabanillas,Calera,Caleruela,Calzada,Camarena,Campillo,Camunas,Canizar,Canredondo,Cantalojas,Cardiel,Carmena,Carranque,Carriches,Casa,Casarrubios,Casas,Casasbuenas,Caspuenas,Castejon,Castellar,Castilforte,Castillo,Castilnuevo,Cazalegas,Cebolla,Cedillo,Cendejas,Centenera,Cervera,Checa,Chequilla,Chillaron,Chiloeches,Chozas,Chueca,Cifuentes,Cincovillas,Ciruelas,Ciruelos,Cobeja,Cobeta,Cobisa,Cogollor,Cogolludo,Condemios,Congostrina,Consuegra,Copernal,Corduente,Corral,Cuerva,Domingo,Dosbarrios,Driebes,Duron,El,Embid,Erustes,Escalona,Escalonilla,Escamilla,Escariche,Escopete,Espinosa,Espinoso,Esplegares,Esquivias,Estables,Estriegana,Fontanar,Fuembellida,Fuensalida,Fuentelsaz,Gajanejos,Galve,Galvez,Garciotum,Gascuena,Gerindote,Guadamur,Henche,Heras,Herreria,Herreruela,Hijes,Hinojosa,Hita,Hombrados,Hontanar,Hontoba,Horche,Hormigos,Huecas,Huermeces,Huerta,Hueva,Humanes,Illan,Illana,Illescas,Iniestola,Irueste,Jadraque,Jirueque,Lagartera,Las,Layos,Ledanca,Lillo,Lominchar,Loranca,Los,Lucillos,Lupiana,Luzaga,Luzon,Madridejos,Magan,Majaelrayo,Malaga,Malaguilla,Malpica,Mandayona,Mantiel,Manzaneque,Maqueda,Maranchon,Marchamalo,Marjaliza,Marrupe,Mascaraque,Masegoso,Matarrubia,Matillas,Mazarete,Mazuecos,Medranda,Megina,Mejorada,Mentrida,Mesegar,Miedes,Miguel,Millana,Milmarcos,Mirabueno,Miralrio,Mocejon,Mochales,Mohedas,Molina,Monasterio,Mondejar,Montarron,Mora,Moratilla,Morenilla,Muduex,Nambroca,Navalcan,Negredo,Noblejas,Noez,Nombela,Noves,Numancia,Nuno,Ocana,Ocentejo,Olias,Olmeda,Ontigola,Orea,Orgaz,Oropesa,Otero,Palmaces,Palomeque,Pantoja,Pardos,Paredes,Pareja,Parrillas,Pastrana,Pelahustan,Penalen,Penalver,Pepino,Peralejos,Peralveche,Pinilla,Pioz,Piqueras,Polan,Portillo,Poveda,Pozo,Pradena,Prados,Puebla,Puerto,Pulgar,Quer,Quero,Quintanar,Quismondo,Rebollosa,Recas,Renera,Retamoso,Retiendas,Riba,Rielves,Rillo,Riofrio,Robledillo,Robledo,Romanillos,Romanones,Rueda,Sacecorbo,Sacedon,Saelices,Salmeron,San,Santa,Santiuste,Santo,Sartajada,Sauca,Sayaton,Segurilla,Selas,Semillas,Sesena,Setiles,Sevilleja,Sienes,Siguenza,Solanillos,Somolinos,Sonseca,Sotillo,Sotodasos,Talavera,Tamajon,Taragudo,Taravilla,Tartanedo,Tembleque,Tendilla,Terzaga,Tierzo,Tordellego,Tordelrabano,Tordesilos,Torija,Torralba,Torre,Torrecilla,Torrecuadrada,Torrejon,Torremocha,Torrico,Torrijos,Torrubia,Tortola,Tortuera,Tortuero,Totanes,Traid,Trijueque,Trillo,Turleque,Uceda,Ugena,Ujados,Urda,Utande,Valdarachas,Valdesotos,Valhermoso,Valtablado,Valverde,Velada,Viana,Vinuelas,Yebes,Yebra,Yelamos,Yeles,Yepes,Yuncler,Yunclillos,Yuncos,Yunquera,Zaorejas,Zarzuela,Zorita"},
       {name: "Ruthenian", i: 5, min: 5, max: 10, d: "", m: 0, b: "Belgorod,Beloberezhye,Belyi,Belz,Berestiy,Berezhets,Berezovets,Berezutsk,Bobruisk,Bolonets,Borisov,Borovsk,Bozhesk,Bratslav,Bryansk,Brynsk,Buryn,Byhov,Chechersk,Chemesov,Cheremosh,Cherlen,Chern,Chernigov,Chernitsa,Chernobyl,Chernogorod,Chertoryesk,Chetvertnia,Demyansk,Derevesk,Devyagoresk,Dichin,Dmitrov,Dorogobuch,Dorogobuzh,Drestvin,Drokov,Drutsk,Dubechin,Dubichi,Dubki,Dubkov,Dveren,Galich,Glebovo,Glinsk,Goloty,Gomiy,Gorodets,Gorodische,Gorodno,Gorohovets,Goroshin,Gorval,Goryshon,Holm,Horobor,Hoten,Hotin,Hotmyzhsk,Ilovech,Ivan,Izborsk,Izheslavl,Kamenets,Kanev,Karachev,Karna,Kavarna,Klechesk,Klyapech,Kolomyya,Kolyvan,Kopyl,Korec,Kornik,Korochunov,Korshev,Korsun,Koshkin,Kotelno,Kovyla,Kozelsk,Kozelsk,Kremenets,Krichev,Krylatsk,Ksniatin,Kulatsk,Kursk,Kursk,Lebedev,Lida,Logosko,Lomihvost,Loshesk,Loshichi,Lubech,Lubno,Lubutsk,Lutsk,Luchin,Luki,Lukoml,Luzha,Lvov,Mtsensk,Mdin,Medniki,Melecha,Merech,Meretsk,Mescherskoe,Meshkovsk,Metlitsk,Mezetsk,Mglin,Mihailov,Mikitin,Mikulino,Miloslavichi,Mogilev,Mologa,Moreva,Mosalsk,Moschiny,Mozyr,Mstislav,Mstislavets,Muravin,Nemech,Nemiza,Nerinsk,Nichan,Novgorod,Novogorodok,Obolichi,Obolensk,Obolensk,Oleshsk,Olgov,Omelnik,Opoka,Opoki,Oreshek,Orlets,Osechen,Oster,Ostrog,Ostrov,Perelai,Peremil,Peremyshl,Pererov,Peresechen,Perevitsk,Pereyaslav,Pinsk,Ples,Polotsk,Pronsk,Proposhesk,Punia,Putivl,Rechitsa,Rodno,Rogachev,Romanov,Romny,Roslavl,Rostislavl,Rostovets,Rsha,Ruza,Rybchesk,Rylsk,Rzhavesk,Rzhev,Rzhischev,Sambor,Serensk,Serensk,Serpeysk,Shilov,Shuya,Sinech,Sizhka,Skala,Slovensk,Slutsk,Smedin,Sneporod,Snitin,Snovsk,Sochevo,Sokolec,Starica,Starodub,Stepan,Sterzh,Streshin,Sutesk,Svinetsk,Svisloch,Terebovl,Ternov,Teshilov,Teterin,Tiversk,Torchevsk,Toropets,Torzhok,Tripolye,Trubchevsk,Tur,Turov,Usvyaty,Uteshkov,Vasilkov,Velil,Velye,Venev,Venicha,Verderev,Vereya,Veveresk,Viazma,Vidbesk,Vidychev,Voino,Volodimer,Volok,Volyn,Vorobesk,Voronich,Voronok,Vorotynsk,Vrev,Vruchiy,Vselug,Vyatichsk,Vyatka,Vyshegorod,Vyshgorod,Vysokoe,Yagniatin,Yaropolch,Yasenets,Yuryev,Yuryevets,Zaraysk,Zhitomel,Zholvazh,Zizhech,Zubkov,Zudechev,Zvenigorod"},
       {name: "Nordic", i: 6, min: 6, max: 10, d: "kln", m: .1, b: "Akureyri,Aldra,Alftanes,Andenes,Austbo,Auvog,Bakkafjordur,Ballangen,Bardal,Beisfjord,Bifrost,Bildudalur,Bjerka,Bjerkvik,Bjorkosen,Bliksvaer,Blokken,Blonduos,Bolga,Bolungarvik,Borg,Borgarnes,Bosmoen,Bostad,Bostrand,Botsvika,Brautarholt,Breiddalsvik,Bringsli,Brunahlid,Budardalur,Byggdakjarni,Dalvik,Djupivogur,Donnes,Drageid,Drangsnes,Egilsstadir,Eiteroga,Elvenes,Engavogen,Ertenvog,Eskifjordur,Evenes,Eyrarbakki,Fagernes,Fallmoen,Fellabaer,Fenes,Finnoya,Fjaer,Fjelldal,Flakstad,Flateyri,Flostrand,Fludir,Gardaber,Gardur,Gimstad,Givaer,Gjeroy,Gladstad,Godoya,Godoynes,Granmoen,Gravdal,Grenivik,Grimsey,Grindavik,Grytting,Hafnir,Halsa,Hauganes,Haugland,Hauknes,Hella,Helland,Hellissandur,Hestad,Higrav,Hnifsdalur,Hofn,Hofsos,Holand,Holar,Holen,Holkestad,Holmavik,Hopen,Hovden,Hrafnagil,Hrisey,Husavik,Husvik,Hvammstangi,Hvanneyri,Hveragerdi,Hvolsvollur,Igeroy,Indre,Inndyr,Innhavet,Innes,Isafjordur,Jarklaustur,Jarnsreykir,Junkerdal,Kaldvog,Kanstad,Karlsoy,Kavosen,Keflavik,Kjelde,Kjerstad,Klakk,Kopasker,Kopavogur,Korgen,Kristnes,Krutoga,Krystad,Kvina,Lande,Laugar,Laugaras,Laugarbakki,Laugarvatn,Laupstad,Leines,Leira,Leiren,Leland,Lenvika,Loding,Lodingen,Lonsbakki,Lopsmarka,Lovund,Luroy,Maela,Melahverfi,Meloy,Mevik,Misvaer,Mornes,Mosfellsber,Moskenes,Myken,Naurstad,Nesberg,Nesjahverfi,Nesset,Nevernes,Obygda,Ofoten,Ogskardet,Okervika,Oknes,Olafsfjordur,Oldervika,Olstad,Onstad,Oppeid,Oresvika,Orsnes,Orsvog,Osmyra,Overdal,Prestoya,Raudalaekur,Raufarhofn,Reipo,Reykholar,Reykholt,Reykjahlid,Rif,Rinoya,Rodoy,Rognan,Rosvika,Rovika,Salhus,Sanden,Sandgerdi,Sandoker,Sandset,Sandvika,Saudarkrokur,Selfoss,Selsoya,Sennesvik,Setso,Siglufjordur,Silvalen,Skagastrond,Skjerstad,Skonland,Skorvogen,Skrova,Sleneset,Snubba,Softing,Solheim,Solheimar,Sorarnoy,Sorfugloy,Sorland,Sormela,Sorvaer,Sovika,Stamsund,Stamsvika,Stave,Stokka,Stokkseyri,Storjord,Storo,Storvika,Strand,Straumen,Strendene,Sudavik,Sudureyri,Sundoya,Sydalen,Thingeyri,Thorlakshofn,Thorshofn,Tjarnabyggd,Tjotta,Tosbotn,Traelnes,Trofors,Trones,Tverro,Ulvsvog,Unnstad,Utskor,Valla,Vandved,Varmahlid,Vassos,Vevelstad,Vidrek,Vik,Vikholmen,Vogar,Vogehamn,Vopnafjordur"},
       {name: "Greek", i: 7, min: 5, max: 11, d: "s", m: .1, b: "Abdera,Abila,Abydos,Acanthus,Acharnae,Actium,Adramyttium,Aegae,Aegina,Aegium,Aenus,Agrinion,Aigosthena,Akragas,Akrai,Akrillai,Akroinon,Akrotiri,Alalia,Alexandreia,Alexandretta,Alexandria,Alinda,Amarynthos,Amaseia,Ambracia,Amida,Amisos,Amnisos,Amphicaea,Amphigeneia,Amphipolis,Amphissa,Ankon,Antigona,Antipatrea,Antioch,Antioch,Antiochia,Andros,Apamea,Aphidnae,Apollonia,Argos,Arsuf,Artanes,Artemita,Argyroupoli,Asine,Asklepios,Aspendos,Assus,Astacus,Athenai,Athmonia,Aytos,Ancient,Baris,Bhrytos,Borysthenes,Berge,Boura,Bouthroton,Brauron,Byblos,Byllis,Byzantium,Bythinion,Callipolis,Cebrene,Chalcedon,Calydon,Carystus,Chamaizi,Chalcis,Chersonesos,Chios,Chytri,Clazomenae,Cleonae,Cnidus,Colosse,Corcyra,Croton,Cyme,Cyrene,Cythera,Decelea,Delos,Delphi,Demetrias,Dicaearchia,Dimale,Didyma,Dion,Dioscurias,Dodona,Dorylaion,Dyme,Edessa,Elateia,Eleusis,Eleutherna,Emporion,Ephesus,Ephyra,Epidamnos,Epidauros,Eresos,Eretria,Erythrae,Eubea,Gangra,Gaza,Gela,Golgi,Gonnos,Gorgippia,Gournia,Gortyn,Gythium,Hagios,Hagia,Halicarnassus,Halieis,Helike,Heliopolis,Hellespontos,Helorus,Hemeroskopeion,Heraclea,Hermione,Hermonassa,Hierapetra,Hierapolis,Himera,Histria,Hubla,Hyele,Ialysos,Iasus,Idalium,Imbros,Iolcus,Itanos,Ithaca,Juktas,Kallipolis,Kamares,Kameiros,Kannia,Kamarina,Kasmenai,Katane,Kerkinitida,Kepoi,Kimmerikon,Kios,Klazomenai,Knidos,Knossos,Korinthos,Kos,Kourion,Kume,Kydonia,Kynos,Kyrenia,Lamia,Lampsacus,Laodicea,Lapithos,Larissa,Lato,Laus,Lebena,Lefkada,Lekhaion,Leibethra,Leontinoi,Lepreum,Lessa,Lilaea,Lindus,Lissus,Epizephyrian,Madytos,Magnesia,Mallia,Mantineia,Marathon,Marmara,Maroneia,Masis,Massalia,Megalopolis,Megara,Mesembria,Messene,Metapontum,Methana,Methone,Methumna,Miletos,Misenum,Mochlos,Monastiraki,Morgantina,Mulai,Mukenai,Mylasa,Myndus,Myonia,Myra,Myrmekion,Mutilene,Myos,Nauplios,Naucratis,Naupactus,Naxos,Neapoli,Neapolis,Nemea,Nicaea,Nicopolis,Nirou,Nymphaion,Nysa,Oenoe,Oenus,Odessos,Olbia,Olous,Olympia,Olynthus,Opus,Orchomenus,Oricos,Orestias,Oreus,Oropus,Onchesmos,Pactye,Pagasae,Palaikastro,Pandosia,Panticapaeum,Paphos,Parium,Paros,Parthenope,Patrae,Pavlopetri,Pegai,Pelion,Peiraies,Pella,Percote,Pergamum,Petsofa,Phaistos,Phaleron,Phanagoria,Pharae,Pharnacia,Pharos,Phaselis,Philippi,Pithekussa,Philippopolis,Platanos,Phlius,Pherae,Phocaea,Pinara,Pisa,Pitane,Pitiunt,Pixous,Plataea,Poseidonia,Potidaea,Priapus,Priene,Prousa,Pseira,Psychro,Pteleum,Pydna,Pylos,Pyrgos,Rhamnus,Rhegion,Rhithymna,Rhodes,Rhypes,Rizinia,Salamis,Same,Samos,Scyllaeum,Selinus,Seleucia,Semasus,Sestos,Scidrus,Sicyon,Side,Sidon,Siteia,Sinope,Siris,Sklavokampos,Smyrna,Soli,Sozopolis,Sparta,Stagirus,Stratos,Stymphalos,Sybaris,Surakousai,Taras,Tanagra,Tanais,Tauromenion,Tegea,Temnos,Tenedos,Tenea,Teos,Thapsos,Thassos,Thebai,Theodosia,Therma,Thespiae,Thronion,Thoricus,Thurii,Thyreum,Thyria,Tiruns,Tithoraea,Tomis,Tragurion,Trapeze,Trapezus,Tripolis,Troizen,Troliton,Troy,Tylissos,Tyras,Tyros,Tyritake,Vasiliki,Vathypetros,Zakynthos,Zakros,Zankle"},

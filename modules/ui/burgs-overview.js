@@ -79,17 +79,20 @@ function overviewBurgs() {
       const province = prov ? pack.provinces[prov].name : '';
       const culture = pack.cultures[b.culture].name;
 
-      lines += `<div class="states" data-id=${b.i} data-name="${b.name}" data-state="${state}" data-province="${province}" data-culture="${culture}" data-population=${population} data-type="${type}">
-        <span data-tip="Edit burg" class="icon-pencil"></span>
-        <input data-tip="Burg name. Click and type to change" class="burgName" value="${b.name}" autocorrect="off" spellcheck="false">
+      lines += `<div class="states" data-id=${b.i} data-name="${
+        b.name
+      }" data-state="${state}" data-province="${province}" data-culture="${culture}" data-population=${population} data-type="${type}">
         <input data-tip="Burg province" class="burgState" value="${province}" disabled>
         <input data-tip="Burg state" class="burgState" value="${state}" disabled>
-        <select data-tip="Dominant culture. Click to change burg culture (to change cell cultrure use Cultures Editor)" class="stateCulture">${getCultureOptions(b.culture)}</select>
+        <select data-tip="Dominant culture. Click to change burg culture (to change cell cultrure use Cultures Editor)" class="stateCulture">${getCultureOptions(
+          b.culture
+        )}</select>
         <span data-tip="Burg population" class="icon-male"></span>
         <input data-tip="Burg population. Type to change" class="burgPopulation" value=${si(population)}>
         <div class="burgType">
           <span data-tip="${b.capital ? ' This burg is a state capital' : 'Click to assign a capital status'}" class="icon-star-empty${b.capital ? '' : ' inactive pointer'}"></span>
           <span data-tip="Click to toggle port status" class="icon-anchor pointer${b.port ? '' : ' inactive'}" style="font-size:.9em"></span>
+      }"></span>
         </div>
         <span data-tip="Zoom to burg" class="icon-dot-circled pointer"></span>
         <span class="locks pointer ${b.lock ? 'icon-lock' : 'icon-lock-open inactive'}"></span>
@@ -202,11 +205,6 @@ function overviewBurgs() {
     }
   }
 
-  function showBurgOLockTip() {
-    const burg = +this.parentNode.dataset.id;
-    showBurgLockTip(burg);
-  }
-
   function openBurgEditor() {
     const burg = +this.parentNode.dataset.id;
     editBurg(burg);
@@ -281,6 +279,7 @@ function overviewBurgs() {
       const name = s.fullName ? s.fullName : s.name;
       return {id: s.i, state: s.i ? 0 : null, color, name};
     });
+
     const burgs = pack.burgs
       .filter((b) => b.i && !b.removed)
       .map((b) => {
@@ -292,6 +291,7 @@ function overviewBurgs() {
         return {id, i: b.i, state: b.state, culture: b.culture, province, parent, name: b.name, population, capital, x: b.x, y: b.y};
       });
     const data = states.concat(burgs);
+    if (data.length < 2) return tip("No burgs to show", false, "error");
 
     const root = d3
       .stratify()
@@ -401,6 +401,12 @@ function overviewBurgs() {
 
       const base = this.value === 'states' ? getStatesData() : this.value === 'cultures' ? getCulturesData() : this.value === 'parent' ? getParentData() : getProvincesData();
       burgs.forEach((b) => (b.id = b.i + base.length - 1));
+          ? getStatesData()
+          : this.value === "cultures"
+          ? getCulturesData()
+          : this.value === "parent"
+          ? getParentData()
+          : getProvincesData();
 
       const data = base.concat(burgs);
 
@@ -435,6 +441,8 @@ function overviewBurgs() {
   function downloadBurgsData() {
     let data = 'Id,Burg,Province,State,Culture,Religion,Population,Longitude,Latitude,Elevation (' + heightUnit.value + '),Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town\n'; // headers
     const valid = pack.burgs.filter((b) => b.i && !b.removed); // all valid burgs
+      heightUnit.value +
+      "),Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town\n"; // headers
 
     valid.forEach((b) => {
       data += b.i + ',';

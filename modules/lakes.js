@@ -1,18 +1,18 @@
-"use strict";
+'use strict';
 
 window.Lakes = (function () {
   const setClimateData = function (h) {
     const cells = pack.cells;
     const lakeOutCells = new Uint16Array(cells.i.length);
 
-    pack.features.forEach(f => {
-      if (f.type !== "lake") return;
+    pack.features.forEach((f) => {
+      if (f.type !== 'lake') return;
 
       // default flux: sum of precipitation around lake
       f.flux = f.shoreline.reduce((acc, c) => acc + grid.cells.prec[cells.g[c]], 0);
 
       // temperature and evaporation to detect closed lakes
-      f.temp = f.cells < 6 ? grid.cells.temp[cells.g[f.firstCell]] : rn(d3.mean(f.shoreline.map(c => grid.cells.temp[cells.g[c]])), 1);
+      f.temp = f.cells < 6 ? grid.cells.temp[cells.g[f.firstCell]] : rn(d3.mean(f.shoreline.map((c) => grid.cells.temp[cells.g[c]])), 1);
       const height = (f.height - 18) ** heightExponentInput.value; // height in meters
       const evaporation = ((700 * (f.temp + 0.006 * height)) / 50 + 75) / (80 - f.temp); // based on Penman formula, [1-11]
       f.evaporation = rn(evaporation * f.cells);
@@ -31,16 +31,16 @@ window.Lakes = (function () {
   // get array of land cells aroound lake
   const getShoreline = function (lake) {
     const uniqueCells = new Set();
-    lake.vertices.forEach(v => pack.vertices.c[v].forEach(c => pack.cells.h[c] >= 20 && uniqueCells.add(c)));
+    lake.vertices.forEach((v) => pack.vertices.c[v].forEach((c) => pack.cells.h[c] >= 20 && uniqueCells.add(c)));
     lake.shoreline = [...uniqueCells];
   };
 
-  const prepareLakeData = h => {
+  const prepareLakeData = (h) => {
     const cells = pack.cells;
-    const ELEVATION_LIMIT = +document.getElementById("lakeElevationLimitOutput").value;
+    const ELEVATION_LIMIT = +document.getElementById('lakeElevationLimitOutput').value;
 
-    pack.features.forEach(f => {
-      if (f.type !== "lake") return;
+    pack.features.forEach((f) => {
+      if (f.type !== 'lake') return;
       delete f.flux;
       delete f.inlets;
       delete f.outlet;
@@ -74,7 +74,7 @@ window.Lakes = (function () {
 
           if (h[n] < 20) {
             const nFeature = pack.features[cells.f[n]];
-            if (nFeature.type === "ocean" || f.height > nFeature.height) {
+            if (nFeature.type === 'ocean' || f.height > nFeature.height) {
               deep = false;
               break;
             }
@@ -91,25 +91,25 @@ window.Lakes = (function () {
 
   const cleanupLakeData = function () {
     for (const feature of pack.features) {
-      if (feature.type !== "lake") continue;
+      if (feature.type !== 'lake') continue;
       delete feature.river;
       delete feature.enteringFlux;
       delete feature.outCell;
       delete feature.closed;
       feature.height = rn(feature.height, 3);
 
-      const inlets = feature.inlets?.filter(r => pack.rivers.find(river => river.i === r));
+      const inlets = feature.inlets?.filter((r) => pack.rivers.find((river) => river.i === r));
       if (!inlets || !inlets.length) delete feature.inlets;
       else feature.inlets = inlets;
 
-      const outlet = feature.outlet && pack.rivers.find(river => river.i === feature.outlet);
+      const outlet = feature.outlet && pack.rivers.find((river) => river.i === feature.outlet);
       if (!outlet) delete feature.outlet;
     }
   };
 
   const defineGroup = function () {
     for (const feature of pack.features) {
-      if (feature.type !== "lake") continue;
+      if (feature.type !== 'lake') continue;
       const lakeEl = lakes.select(`[data-f="${feature.i}"]`).node();
       if (!lakeEl) continue;
 
@@ -121,29 +121,29 @@ window.Lakes = (function () {
   const generateName = function () {
     Math.random = aleaPRNG(seed);
     for (const feature of pack.features) {
-      if (feature.type !== "lake") continue;
+      if (feature.type !== 'lake') continue;
       feature.name = getName(feature);
     }
   };
 
   const getName = function (feature) {
-    const landCell = pack.cells.c[feature.firstCell].find(c => pack.cells.h[c] >= 20);
+    const landCell = pack.cells.c[feature.firstCell].find((c) => pack.cells.h[c] >= 20);
     const culture = pack.cells.culture[landCell];
     return Names.getCulture(culture);
   };
 
   function getGroup(feature) {
-    if (feature.temp < -3) return "frozen";
-    if (feature.height > 60 && feature.cells < 10 && feature.firstCell % 10 === 0) return "lava";
+    if (feature.temp < -3) return 'frozen';
+    if (feature.height > 60 && feature.cells < 10 && feature.firstCell % 10 === 0) return 'lava';
 
     if (!feature.inlets && !feature.outlet) {
-      if (feature.evaporation > feature.flux * 4) return "dry";
-      if (feature.cells < 3 && feature.firstCell % 10 === 0) return "sinkhole";
+      if (feature.evaporation > feature.flux * 4) return 'dry';
+      if (feature.cells < 3 && feature.firstCell % 10 === 0) return 'sinkhole';
     }
 
-    if (!feature.outlet && feature.evaporation > feature.flux) return "salt";
+    if (!feature.outlet && feature.evaporation > feature.flux) return 'salt';
 
-    return "freshwater";
+    return 'freshwater';
   }
 
   return {setClimateData, cleanupLakeData, prepareLakeData, defineGroup, generateName, getName, getShoreline};

@@ -1,0 +1,25 @@
+{
+  "name": "Fantasy-Map-Generator",
+  "version": "1.0.0",
+  "main": "main.js",
+  "repository": "git@github.com:howlingsails/Fantasy-Map-Generator.git",
+  "author": "howlingsails <cap10bill@howlingsails.com>",
+  "license": "MIT",
+  "scripts": {
+    "start": "python -m http.server 3500",
+    "eslint": "eslint --ext js,ts,tsx",
+    "lint:init": "yarn run eslint --init",
+    "lint": "yarn run eslint modules",
+    "lint:fix": "yarn run eslint --fix modules",
+    "prettify": "prettier --write modules"
+    
+  },
+  "devDependencies": {
+    "eslint": "^8.4.1",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.25.3"
+  },
+  "dependencies": {
+    "prettier": "^2.5.1"
+  }
+}

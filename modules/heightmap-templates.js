@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 window.HeightmapTemplates = (function () {
   const volcano = `Hill 1 90-100 44-56 40-60
