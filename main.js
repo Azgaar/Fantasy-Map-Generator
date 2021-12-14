@@ -1425,7 +1425,7 @@ function defineBiomes() {
 function getBiomeId(moisture, temperature, height) {
   if (height < 20) return 0; // marine biome: all water cells
   if (temperature < -5) return 11; // permafrost biome
-  if (moisture > 40 && temperature > -2 && height < 60); // wetland biome
+  if (moisture > 40 && temperature > -2 && height < 60) return 12; // wetland biome
 
   const moistureBand = Math.min((moisture / 5) | 0, 4); // [0-4]
   const temperatureBand = Math.min(Math.max(20 - temperature, 0), 25); // [0-25]
