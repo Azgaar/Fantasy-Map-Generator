@@ -1180,7 +1180,7 @@ function reGraph() {
   TIME && console.timeEnd("reGraph");
 }
 
-// Detect and draw the coasline
+// Detect and draw the coastline
 function drawCoastline() {
   TIME && console.time("drawCoastline");
   reMarkFeatures();
@@ -1408,8 +1408,8 @@ function defineBiomes() {
   }
 
   function calculateMoisture(i) {
-    let moist = prec[cells.g[i]];
-    if (cells.r[i]) moist += Math.max(cells.fl[i] / 20, 2);
+    let moist = prec[cells.g[i]]; //moist equal to prec in this grid cell
+    if (cells.r[i]) moist += Math.max(cells.fl[i] / 20, 2); //if there is a river, add local flux / 20 (but at least 2) to the moist value
 
     const n = cells.c[i]
       .filter(isLand)
@@ -1425,7 +1425,7 @@ function defineBiomes() {
 function getBiomeId(moisture, temperature, height) {
   if (height < 20) return 0; // marine biome: all water cells
   if (temperature < -5) return 11; // permafrost biome
-  if (moisture > 40 && temperature > -2 && (height < 25 || (moisture > 24 && height > 24 && height < 60))) return 12; // wetland biome
+  if (moisture > 40 && temperature > -2 && height < 60); // wetland biome
 
   const moistureBand = Math.min((moisture / 5) | 0, 4); // [0-4]
   const temperatureBand = Math.min(Math.max(20 - temperature, 0), 25); // [0-25]
