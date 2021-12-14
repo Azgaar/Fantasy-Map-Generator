@@ -875,54 +875,58 @@ function parseLoadedData(data) {
         // v 1.7 changed markers data
         const defs = document.getElementById("defs-markers");
         const markersGroup = document.getElementById("markers");
-        const markerElements = markersGroup.querySelectorAll("use");
-        const rescale = +markersGroup.getAttribute("rescale");
 
-        pack.markers = Array.from(markerElements).map((el, i) => {
-          const id = el.getAttribute("id");
-          const note = notes.find(note => note.id === id);
-          if (note) note.id = `marker${i}`;
+        if (defs && markersGroup) {
+          const markerElements = markersGroup.querySelectorAll("use");
+          const rescale = +markersGroup.getAttribute("rescale");
 
-          let x = +el.dataset.x;
-          let y = +el.dataset.y;
-          const transform = el.getAttribute("transform");
-          if (transform) {
-            const [dx, dy] = parseTransform(transform);
-            if (dx) x += +dx;
-            if (dy) y += +dy;
-          }
-          const cell = findCell(x, y);
-          const size = rn(rescale ? el.dataset.size * 30 : el.getAttribute("width"), 1);
+          pack.markers = Array.from(markerElements).map((el, i) => {
+            const id = el.getAttribute("id");
+            const note = notes.find(note => note.id === id);
+            if (note) note.id = `marker${i}`;
 
-          const href = el.href.baseVal;
-          const type = href.replace("#marker_", "");
-          const symbol = defs.querySelector(`symbol${href}`);
-          const text = symbol.querySelector("text");
-          const circle = symbol.querySelector("circle");
+            let x = +el.dataset.x;
+            let y = +el.dataset.y;
 
-          const icon = text.innerHTML;
-          const px = Number(text.getAttribute("font-size")?.replace("px", ""));
-          const dx = Number(text.getAttribute("x")?.replace("%", ""));
-          const dy = Number(text.getAttribute("y")?.replace("%", ""));
-          const fill = circle.getAttribute("fill");
-          const stroke = circle.getAttribute("stroke");
+            const transform = el.getAttribute("transform");
+            if (transform) {
+              const [dx, dy] = parseTransform(transform);
+              if (dx) x += +dx;
+              if (dy) y += +dy;
+            }
+            const cell = findCell(x, y);
+            const size = rn(rescale ? el.dataset.size * 30 : el.getAttribute("width"), 1);
 
-          const marker = {i, icon, type, x, y, size, cell};
-          if (size && size !== 30) marker.size = size;
-          if (!isNaN(px) && px !== 12) marker.px = px;
-          if (!isNaN(dx) && dx !== 50) marker.dx = dx;
-          if (!isNaN(dy) && dy !== 50) marker.dy = dy;
-          if (fill && fill !== "#ffffff") marker.fill = fill;
-          if (stroke && stroke !== "#000000") marker.stroke = stroke;
-          if (circle.getAttribute("opacity") === "0") marker.pin = "no";
+            const href = el.href.baseVal;
+            const type = href.replace("#marker_", "");
+            const symbol = defs?.querySelector(`symbol${href}`);
+            const text = symbol?.querySelector("text");
+            const circle = symbol?.querySelector("circle");
 
-          return marker;
-        });
+            const icon = text?.innerHTML;
+            const px = text && Number(text.getAttribute("font-size")?.replace("px", ""));
+            const dx = text && Number(text.getAttribute("x")?.replace("%", ""));
+            const dy = text && Number(text.getAttribute("y")?.replace("%", ""));
+            const fill = circle && circle.getAttribute("fill");
+            const stroke = circle && circle.getAttribute("stroke");
 
-        markersGroup.style.display = null;
-        defs?.remove();
-        markerElements.forEach(el => el.remove());
-        if (layerIsOn("markers")) drawMarkers();
+            const marker = {i, icon, type, x, y, size, cell};
+            if (size && size !== 30) marker.size = size;
+            if (!isNaN(px) && px !== 12) marker.px = px;
+            if (!isNaN(dx) && dx !== 50) marker.dx = dx;
+            if (!isNaN(dy) && dy !== 50) marker.dy = dy;
+            if (fill && fill !== "#ffffff") marker.fill = fill;
+            if (stroke && stroke !== "#000000") marker.stroke = stroke;
+            if (circle?.getAttribute("opacity") === "0") marker.pin = "no";
+
+            return marker;
+          });
+
+          markersGroup.style.display = null;
+          defs?.remove();
+          markerElements.forEach(el => el.remove());
+          if (layerIsOn("markers")) drawMarkers();
+        }
       }
     })();
 

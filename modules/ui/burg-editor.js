@@ -281,12 +281,12 @@ function editBurg(id) {
     const capital = burgsToRemove.length < burgsInGroup.length;
 
     alertMessage.innerHTML = `Are you sure you want to remove
-      ${basic || capital ? "all unlocked elements in the group" : "the entire burg group"}?
+      ${basic || capital ? "all unlocked elements in the burg group" : "the entire burg group"}?
       <br>Please note that capital or locked burgs will not be deleted.
       <br><br>Burgs to be removed: ${burgsToRemove.length}`;
     $("#alert").dialog({
       resizable: false,
-      title: "Remove route group",
+      title: "Remove burg group",
       buttons: {
         Remove: function () {
           $(this).dialog("close");

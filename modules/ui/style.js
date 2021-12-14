@@ -1126,8 +1126,9 @@ function addStylePreset() {
     position: {my: "center", at: "center", of: "svg"}
   });
 
-  const currentStyle = document.getElementById("stylePreset").selectedOptions[0].text;
-  document.getElementById("styleSaverName").value = currentStyle;
+  const currentPreset = document.getElementById("stylePreset").selectedOptions[0];
+  const styleName = currentPreset ? currentPreset.text : "custom";
+  document.getElementById("styleSaverName").value = styleName;
   styleSaverJSON.value = JSON.stringify(getStyle(), null, 2);
   checkName();
 
