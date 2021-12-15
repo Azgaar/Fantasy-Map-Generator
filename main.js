@@ -1524,6 +1524,12 @@ function isWetLand(moisture, temperature, height) {
   return false;
 }
 
+function isWetLand(moisture, temperature, height) {
+  if (moisture > 40 && temperature > -2 && height < 25) return true; //near coast
+  if (moisture > 24 && temperature > -2 && height > 24 && height < 60) return true; //off coast
+  return false;
+}
+
 // assign biome id for each cell
 function defineBiomes() {
   TIME && console.time("defineBiomes");
