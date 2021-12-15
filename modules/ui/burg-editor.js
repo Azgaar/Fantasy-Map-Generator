@@ -405,7 +405,7 @@ function editBurg(id) {
 
   function updateMFCGFrame(burg) {
     const mfcgURL = getMFCGlink(burg);
-    document.getElementById("mfcgPreview").setAttribute("src", mfcgURL);
+    document.getElementById("mfcgPreview").setAttribute("src", mfcgURL + "&preview=1");
     document.getElementById("mfcgLink").setAttribute("href", mfcgURL);
   }
 
