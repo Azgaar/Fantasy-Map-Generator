@@ -907,7 +907,7 @@ function defineMapSize() {
     const template = document.getElementById("templateInput").value; // heightmap template
     const part = grid.features.some(f => f.land && f.border); // if land goes over map borders
     const max = part ? 80 : 100; // max size
-    const lat = () => gauss(P(0.5) ? 40 : 60, 15, 25, 75); // latiture shift
+    const lat = () => gauss(P(0.5) ? 40 : 60, 15, 25, 75); // latitude shift
 
     if (!part) {
       if (template === "Pangea") return [100, 50];
@@ -1052,7 +1052,7 @@ function generatePrecipitation() {
       }
 
       let humidity = maxPrec - cells.h[first]; // initial water amount
-      if (humidity <= 0) continue; // if first cell in row is too elevated cosdired wind dry
+      if (humidity <= 0) continue; // if first cell in row is too elevated consider wind dry
 
       for (let s = 0, current = first; s < steps; s++, current += next) {
         if (cells.temp[current] < -5) continue; // no flux in permafrost
@@ -1393,6 +1393,12 @@ function reMarkFeatures() {
   TIME && console.timeEnd("reMarkFeatures");
 }
 
+function isWetLand(moisture, temperature, height) {
+  if (moisture > 40 && temperature > -2 && height < 25) return true; //near coast
+  if (moisture > 24 && temperature > -2 && height > 24 && height < 60) return true; //off coast
+  return false;
+}
+
 // assign biome id for each cell
 function defineBiomes() {
   TIME && console.time("defineBiomes");
@@ -1425,7 +1431,7 @@ function defineBiomes() {
 function getBiomeId(moisture, temperature, height) {
   if (height < 20) return 0; // marine biome: all water cells
   if (temperature < -5) return 11; // permafrost biome
-  if (moisture > 40 && temperature > -2 && (height < 25 || (moisture > 24 && height > 24 && height < 60))) return 12; // wetland biome
+  if (isWetLand(moisture, temperature, height)) return 12; // wetland biome
 
   const moistureBand = Math.min((moisture / 5) | 0, 4); // [0-4]
   const temperatureBand = Math.min(Math.max(20 - temperature, 0), 25); // [0-25]
