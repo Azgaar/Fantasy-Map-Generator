@@ -33,6 +33,8 @@ function overviewBurgs() {
   document.getElementById("burgsListToLoad").addEventListener("change", function () {
     uploadFile(this, importBurgNames);
   });
+  document.getElementById("burgsLockAll").addEventListener("click", lockAllBurgs);
+  document.getElementById("burgsUnlockAll").addEventListener("click", unlockAllBurgs);
   document.getElementById("burgsRemoveAll").addEventListener("click", triggerAllBurgsRemove);
   document.getElementById("burgsInvertLock").addEventListener("click", invertLock);
 
@@ -87,7 +89,7 @@ function overviewBurgs() {
         <input data-tip="Burg name. Click and type to change" class="burgName" value="${b.name}" autocorrect="off" spellcheck="false">
         <input data-tip="Burg province" class="burgState" value="${province}" disabled>
         <input data-tip="Burg state" class="burgState" value="${state}" disabled>
-        <select data-tip="Dominant culture. Click to change burg culture (to change cell cultrure use Cultures Editor)" class="stateCulture">${getCultureOptions(
+        <select data-tip="Dominant culture. Click to change burg culture (to change cell culture use Cultures Editor)" class="stateCulture">${getCultureOptions(
           b.culture
         )}</select>
         <span data-tip="Burg population" class="icon-male"></span>
@@ -561,5 +563,13 @@ function overviewBurgs() {
   function invertLock() {
     pack.burgs = pack.burgs.map(burg => ({...burg, lock: !burg.lock}));
     burgsOverviewAddLines();
+  }
+  function lockAllBurgs() {
+    pack.burgs = pack.burgs.map(burg => ({...burg, lock: burg.lock = true})); 
+    burgsOverviewAddLines();
+  }
+  function unlockAllBurgs() {
+    pack.burgs = pack.burgs.map(burg => ({...burg, lock: burg.lock = false}));
+   burgsOverviewAddLines();
   }
 }
