@@ -565,11 +565,13 @@ function overviewBurgs() {
     burgsOverviewAddLines();
   }
   function lockAllBurgs() {
-    pack.burgs = pack.burgs.map(burg => ({...burg, lock: burg.lock = true})); 
+	pack.burgs.forEach(burg => {
+		burg.lock = true;});
     burgsOverviewAddLines();
   }
   function unlockAllBurgs() {
-    pack.burgs = pack.burgs.map(burg => ({...burg, lock: burg.lock = false}));
+	pack.burgs.forEach(burg => {
+		burg.lock = false;});
    burgsOverviewAddLines();
   }
 }
