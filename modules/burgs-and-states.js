@@ -962,13 +962,13 @@ window.BurgsAndStates = (function () {
     const republic = {
       Republic: 75,
       Federation: 4,
-	    "Trade Company": 4,
-	    "Most Serene Republic": 2,
+      "Trade Company": 4,
+      "Most Serene Republic": 2,
       Oligarchy: 2,
       Tetrarchy: 1,
       Triumvirate: 1,
       Diarchy: 1,
-  	  Chancellery: 1,
+      Chancellery: 1,
       Junta: 1
     }; // weighted random
     const union = {Union: 3, League: 4, Confederation: 1, "United Kingdom": 1, "United Republic": 1, "United Provinces": 2, Commonwealth: 1, Heptarchy: 1}; // weighted random
@@ -1001,7 +1001,7 @@ window.BurgsAndStates = (function () {
           if (form === "Duchy" && s.neighbors.length > 1 && rand(6) < s.neighbors.length && s.diplomacy.includes("Vassal")) return "Marches"; // some vassal duchies on borderland
           if (base === 1 && P(0.3) && s.diplomacy.includes("Vassal")) return "Dominion"; // English vassals
           if (P(0.3) && s.diplomacy.includes("Vassal")) return "Protectorate"; // some vassals
-		      if (P(0.3) && s.diplomacy.includes("Vassal")) return "Viceroyalty"; // vassals
+          if (P(0.3) && s.diplomacy.includes("Vassal")) return "Viceroyalty"; // vassals
         }
 
         if (base === 16 && (form === "Empire" || form === "Kingdom")) return "Sultanate"; // Turkic
@@ -1009,7 +1009,7 @@ window.BurgsAndStates = (function () {
         if ([16, 31].includes(base) && (form === "Empire" || form === "Kingdom")) return "Khaganate"; // Turkic, Mongolian
         if (base === 12 && (form === "Kingdom" || form === "Grand Duchy")) return "Shogunate"; // Japanese
         if ([18, 17].includes(base) && form === "Empire") return "Caliphate"; // Arabic, Berber
-    		if ([16, 18].includes(base) && form === "Principality") return "Khedivate"; // Arabic, Turkic
+        if ([16, 18].includes(base) && form === "Principality") return "Khedivate"; // Arabic, Turkic
         if (base === 18 && (form === "Grand Duchy" || form === "Duchy")) return "Emirate"; // Arabic
         if (base === 7 && (form === "Grand Duchy" || form === "Duchy")) return "Despotate"; // Greek
         if (base === 31 && (form === "Grand Duchy" || form === "Duchy")) return "Ulus"; // Mongolian
@@ -1042,8 +1042,8 @@ window.BurgsAndStates = (function () {
           if (tier < 2 && P(0.5)) return "Bishopric";
         }
         if (tier < 2 && P(0.9) && [7, 5].includes(base)) return "Eparchy"; // Greek, Ruthenian
-    		if (tier < 3 && P(0.9) && [7, 5].includes(base)) return "Exarchate"; // Greek, Ruthenian
-    		if (tier < 4 && P(0.9) && [7, 5].includes(base)) return "Patriarchate"; // Greek, Ruthenian
+        if (tier < 3 && P(0.9) && [7, 5].includes(base)) return "Exarchate"; // Greek, Ruthenian
+        if (tier < 4 && P(0.9) && [7, 5].includes(base)) return "Patriarchate"; // Greek, Ruthenian
         if (P(0.9) && [21, 16].includes(base)) return "Imamah"; // Nigerian, Turkish
         if (tier > 2 && P(0.8) && [18, 17, 28].includes(base)) return "Caliphate"; // Arabic, Berber, Swahili
         return rw(theocracy);
@@ -1058,7 +1058,7 @@ window.BurgsAndStates = (function () {
     "Empire",
     "Sultanate",
     "Khaganate",
-  	"Khedivate",
+    "Khedivate",
     "Shogunate",
     "Caliphate",
     "Despotate",
