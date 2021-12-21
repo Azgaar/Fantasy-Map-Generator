@@ -726,7 +726,7 @@ window.BurgsAndStates = (function () {
     TIME && console.time("assignColors");
     const colors = ["#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854", "#ffd92f"]; // d3.schemeSet2;
 
-    // assin basic color using greedy coloring algorithm
+    // assign basic color using greedy coloring algorithm
     pack.states.forEach(s => {
       if (!s.i || s.removed) return;
       const neibs = s.neighbors;
@@ -962,12 +962,13 @@ window.BurgsAndStates = (function () {
     const republic = {
       Republic: 75,
       Federation: 4,
+	    "Trade Company": 4,
+	    "Most Serene Republic": 2,
       Oligarchy: 2,
-      "Most Serene Republic": 2,
       Tetrarchy: 1,
       Triumvirate: 1,
       Diarchy: 1,
-      "Trade Company": 4,
+  	  Chancellery: 1,
       Junta: 1
     }; // weighted random
     const union = {Union: 3, League: 4, Confederation: 1, "United Kingdom": 1, "United Republic": 1, "United Provinces": 2, Commonwealth: 1, Heptarchy: 1}; // weighted random
@@ -997,9 +998,10 @@ window.BurgsAndStates = (function () {
         const form = monarchy[tier];
         // Default name depends on exponent tier, some culture bases have special names for tiers
         if (s.diplomacy) {
-          if (form === "Duchy" && s.neighbors.length > 1 && rand(6) < s.neighbors.length && s.diplomacy.includes("Vassal")) return "Marches"; // some vassal dutchies on borderland
+          if (form === "Duchy" && s.neighbors.length > 1 && rand(6) < s.neighbors.length && s.diplomacy.includes("Vassal")) return "Marches"; // some vassal duchies on borderland
           if (base === 1 && P(0.3) && s.diplomacy.includes("Vassal")) return "Dominion"; // English vassals
           if (P(0.3) && s.diplomacy.includes("Vassal")) return "Protectorate"; // some vassals
+		      if (P(0.3) && s.diplomacy.includes("Vassal")) return "Viceroyalty"; // vassals
         }
 
         if (base === 16 && (form === "Empire" || form === "Kingdom")) return "Sultanate"; // Turkic
@@ -1007,6 +1009,7 @@ window.BurgsAndStates = (function () {
         if ([16, 31].includes(base) && (form === "Empire" || form === "Kingdom")) return "Khaganate"; // Turkic, Mongolian
         if (base === 12 && (form === "Kingdom" || form === "Grand Duchy")) return "Shogunate"; // Japanese
         if ([18, 17].includes(base) && form === "Empire") return "Caliphate"; // Arabic, Berber
+    		if ([16, 18].includes(base) && form === "Principality") return "Khedivate"; // Arabic, Turkic
         if (base === 18 && (form === "Grand Duchy" || form === "Duchy")) return "Emirate"; // Arabic
         if (base === 7 && (form === "Grand Duchy" || form === "Duchy")) return "Despotate"; // Greek
         if (base === 31 && (form === "Grand Duchy" || form === "Duchy")) return "Ulus"; // Mongolian
@@ -1024,6 +1027,7 @@ window.BurgsAndStates = (function () {
           }
           if (P(0.3)) return "City-state";
         }
+		if (base === 0 && P(0.6) && (form === "Republic")) return "Chancellery"; // Germanic
         return rw(republic);
       }
 
@@ -1038,6 +1042,8 @@ window.BurgsAndStates = (function () {
           if (tier < 2 && P(0.5)) return "Bishopric";
         }
         if (tier < 2 && P(0.9) && [7, 5].includes(base)) return "Eparchy"; // Greek, Ruthenian
+    		if (tier < 3 && P(0.9) && [7, 5].includes(base)) return "Exarchate"; // Greek, Ruthenian
+    		if (tier < 4 && P(0.9) && [7, 5].includes(base)) return "Patriarchate"; // Greek, Ruthenian
         if (P(0.9) && [21, 16].includes(base)) return "Imamah"; // Nigerian, Turkish
         if (tier > 2 && P(0.8) && [18, 17, 28].includes(base)) return "Caliphate"; // Arabic, Berber, Swahili
         return rw(theocracy);
@@ -1052,6 +1058,7 @@ window.BurgsAndStates = (function () {
     "Empire",
     "Sultanate",
     "Khaganate",
+  	"Khedivate",
     "Shogunate",
     "Caliphate",
     "Despotate",
@@ -1093,12 +1100,12 @@ window.BurgsAndStates = (function () {
     const max = percentage == 100 ? 1000 : gauss(20, 5, 5, 100) * percentage ** 0.5; // max growth
 
     const forms = {
-      Monarchy: {County: 11, Earldom: 3, Shire: 1, Landgrave: 1, Margrave: 1, Barony: 1},
-      Republic: {Province: 6, Department: 2, Governorate: 2, District: 1, Canton: 1, Prefecture: 1},
-      Theocracy: {Parish: 3, Deanery: 1},
-      Union: {Province: 1, State: 1, Canton: 1, Republic: 1, County: 1, Council: 1},
+      Monarchy: {County: 11, Earldom: 3, Shire: 1, Landgrave: 1, Margrave: 1, Barony: 1, Bailiwick: 1, Captaincy:1, Seneschalty:1},
+      Republic: {Province: 6, Department: 2, Governorate: 2, District: 1, Canton: 1, Prefecture: 1, Delegation: 1, Municipality: 1},
+      Theocracy: {Parish: 3, Deanery: 1, Abbey: 1, Priory:1, Diaconate:1},
+      Union: {Province: 1, State: 1, Canton: 1, Republic: 1, County: 1, Council: 1, Autonomy:1},
       Anarchy: {Council: 1, Commune: 1, Community: 1, Tribe: 1},
-      Wild: {Territory: 10, Land: 5, Region: 2, Tribe: 1, Clan: 1, Dependency: 1, Area: 1}
+      Wild: {Territory: 10, Land: 5, Region: 2, Tribe: 1, Clan: 1, Chiefdom:1, Dependency: 1, Area: 1}
     };
 
     // generate provinces for a selected burgs
