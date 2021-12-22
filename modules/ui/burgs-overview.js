@@ -33,8 +33,7 @@ function overviewBurgs() {
   document.getElementById("burgsListToLoad").addEventListener("change", function () {
     uploadFile(this, importBurgNames);
   });
-  document.getElementById("burgsLockAll").addEventListener("click", lockAllBurgs);
-  document.getElementById("burgsUnlockAll").addEventListener("click", unlockAllBurgs);
+  document.getElementById("burgsonoff").addEventListener("click", burgsonoff);
   document.getElementById("burgsRemoveAll").addEventListener("click", triggerAllBurgsRemove);
   document.getElementById("burgsInvertLock").addEventListener("click", invertLock);
 
@@ -573,5 +572,15 @@ function overviewBurgs() {
 	pack.burgs.forEach(burg => {
 		burg.lock = false;});
    burgsOverviewAddLines();
+  }
+  function burgsonoff(){
+  const currentvalue = document.getElementById('burgsonoff').value;
+  if(currentvalue == "Off"){
+	lockAllBurgs();
+	document.getElementById("burgsonoff").value="On";
+  }else{
+	unlockAllBurgs();
+	document.getElementById("burgsonoff").value="Off";
+       }
   }
 }
