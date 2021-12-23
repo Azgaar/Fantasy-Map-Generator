@@ -2908,9 +2908,23 @@
         <div style="left:13em" data-tip="Zone cells count" class="hide">Cells&nbsp;</div>
         <div style="left:19em" data-tip="Zone area" class="hide">Area&nbsp;</div>
         <div style="left:24em" data-tip="Zone population" class="hide">Population&nbsp;</div>
+        <div style="left:31em" data-tip="Zone type" class="hide">Type&nbsp;</div>
       </div>
 
       <div id="zonesBodySection" class="table" data-type="absolute"></div>
+	  
+      <div id="zonesFilters">
+        <span>Type: </span>
+	<select id="zonesFilterType" data-tip="Only zones of this type appear on the map">
+           <option selected>All</option>
+           <option>Invasion</option>
+           <option>Rebels</option>
+           <option>Proselytism</option>
+           <option>Crusade</option>
+           <option>Disease</option>
+           <option>Disaster</option>
+        </select>
+      </div>
 
       <div id="zonesFooter" class="totalLine">
         <div data-tip="Number of zones" style="margin-left: 5px">Zones:&nbsp;<span id="zonesFooterNumber">0</span></div>
