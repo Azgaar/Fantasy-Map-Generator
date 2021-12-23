@@ -739,7 +739,7 @@ function configMarkersGeneration() {
       const inputId = `markerIconInput${index}`;
       return `<tr>
         <td><input value="${type}" /></td>
-        <td>
+        <td style="position: relative">
           <input id="${inputId}" style="width: 5em" value="${icon}" />
           <i class="icon-edit pointer" style="position: absolute; margin:.4em 0 0 -1.4em; font-size:.85em"></i>
         </td>
