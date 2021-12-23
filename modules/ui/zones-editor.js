@@ -18,7 +18,8 @@ function editZones() {
   });
 
   // add listeners
-  document.getElementById("zonesEditorRefresh").addEventListener("click", zonesEditorAddLines);
+  document.getElementById("zonesFilterType").addEventListener("change", refreshZonesEditor);
+  document.getElementById("zonesEditorRefresh").addEventListener("click", refreshZonesEditor);
   document.getElementById("zonesEditStyle").addEventListener("click", () => editStyle("zones"));
   document.getElementById("zonesLegend").addEventListener("click", toggleLegend);
   document.getElementById("zonesPercentage").addEventListener("click", togglePercentageMode);
@@ -61,6 +62,23 @@ function editZones() {
       zone = el.parentNode.dataset.id;
     if (el.classList.contains("religionName")) zones.select("#" + zone).attr("data-description", el.value);
   });
+  
+  function refreshZonesEditor() {
+    updateSVG();
+    zonesEditorAddLines();
+  }
+  
+function updateSVG() {
+	const value = document.getElementById("zonesFilterType").value; 
+
+zones.selectAll("g").each(function () {
+  if (value == "All" || this.dataset.type == value) {
+    this.style.display = "block";
+  } else {
+    this.style.display = "none";
+         }
+     });
+  }
 
   // add line for each zone
   function zonesEditorAddLines() {
@@ -76,6 +94,7 @@ function editZones() {
       const urban = d3.sum(c.map(i => pack.cells.burg[i]).map(b => pack.burgs[b].population)) * populationRate * urbanization;
       const population = rural + urban;
       const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}. Click to change`;
+      const zonetype = this.dataset.type;
       const inactive = this.style.display === "none";
       const focused = defs.select("#fog #focus" + this.id).size();
 
@@ -88,6 +107,7 @@ function editZones() {
         <div data-tip="Zone area" class="biomeArea hide">${si(area) + unit}</div>
         <span data-tip="${populationTip}" class="icon-male hide"></span>
         <div data-tip="${populationTip}" class="culturePopulation hide">${si(population)}</div>
+        <input data-tip="Zone type. Click and type to change" value="${zonetype}" autocorrect="off" spellcheck="false">
         <span data-tip="Drag to raise or lower the zone" class="icon-resize-vertical hide"></span>
         <span data-tip="Toggle zone focus" class="icon-pin ${focused ? "" : " inactive"} hide ${c.length ? "" : " placeholder"}"></span>
         <span data-tip="Toggle zone visibility" class="icon-eye ${inactive ? " inactive" : ""} hide ${c.length ? "" : " placeholder"}"></span>
