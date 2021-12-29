@@ -1013,6 +1013,31 @@ function parseLoadedData(data) {
         ERROR && console.error("Data Integrity Check. Province", p.i, "is linked to removed state", p.state);
         p.removed = true; // remove incorrect province
       });
+
+      {
+        const markerIds = [];
+        let nextId = last(pack.markers)?.i + 1 || 0;
+
+        pack.markers.forEach(marker => {
+          if (markerIds[marker.i]) {
+            ERROR && console.error("Data Integrity Check. Marker", marker.i, "has non-unique id. Changing to", nextId);
+
+            const domElements = document.querySelectorAll("#marker" + marker.i);
+            if (domElements[1]) domElements[1].id = "marker" + nextId; // rename 2nd dom element
+
+            const noteElements = notes.filter(note => note.id === "marker" + marker.i);
+            if (noteElements[1]) noteElements[1].id = "marker" + nextId; // rename 2nd note
+
+            marker.i = nextId;
+            nextId += 1;
+          } else {
+            markerIds[marker.i] = true;
+          }
+        });
+
+        // sort markers by index
+        pack.markers.sort((a, b) => a.i - b.i);
+      }
     })();
 
     changeMapSize();
