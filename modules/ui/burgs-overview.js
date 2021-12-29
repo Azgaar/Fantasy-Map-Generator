@@ -8,6 +8,7 @@ function overviewBurgs() {
   const body = document.getElementById("burgsBody");
   updateFilter();
   burgsOverviewAddLines();
+  setlockburgs();
   $("#burgsOverview").dialog();
 
   if (modules.overviewBurgs) return;
@@ -36,6 +37,12 @@ function overviewBurgs() {
   document.getElementById("burgsonoff").addEventListener("click", burgsonoff);
   document.getElementById("burgsRemoveAll").addEventListener("click", triggerAllBurgsRemove);
   document.getElementById("burgsInvertLock").addEventListener("click", invertLock);
+  document.getElementById("burgsonoff").addEventListener("click", function (toggleIcons) {
+  var target = toggleIcons.target;
+
+    target.classList.toggle("icon-lock");
+    target.classList.toggle("icon-lock-open");
+    }, false);
 
   function refreshBurgsEditor() {
     updateFilter();
@@ -558,11 +565,16 @@ function overviewBurgs() {
     pack.burgs.filter(b => b.i && !(b.capital || b.lock)).forEach(b => removeBurg(b.i));
     burgsOverviewAddLines();
   }
+  
+  function setlockburgs() {
+    (pack.burgs.filter(b => b.lock)).length === pack.burgs.length ? burgsonoff.value = "true" : burgsonoff.value = "false"; //Only true if all of them are locked
+  }
 
   function invertLock() {
     pack.burgs = pack.burgs.map(burg => ({...burg, lock: !burg.lock}));
     burgsOverviewAddLines();
   }
+  
   function lockAllBurgs() {
 	pack.burgs.forEach(burg => {
 		burg.lock = true;});
@@ -571,16 +583,16 @@ function overviewBurgs() {
   function unlockAllBurgs() {
 	pack.burgs.forEach(burg => {
 		burg.lock = false;});
-   burgsOverviewAddLines();
+    burgsOverviewAddLines();
   }
   function burgsonoff(){
-  const currentvalue = document.getElementById('burgsonoff').value;
-  if(currentvalue == "Off"){
-	lockAllBurgs();
-	document.getElementById("burgsonoff").value="On";
-  }else{
+	const currentvalue = document.getElementById('burgsonoff').value;
+  if(currentvalue == "true"){
 	unlockAllBurgs();
-	document.getElementById("burgsonoff").value="Off";
+	document.getElementById("burgsonoff").value="false";
+  }else{
+	lockAllBurgs();
+	document.getElementById("burgsonoff").value="true";
        }
   }
 }
