@@ -126,23 +126,7 @@ window.Markers = (function () {
     return cells.p[cell];
   };
 
-<<<<<<< HEAD
   function addVolcanoes() {
-=======
-  function addMarker({cell, type, icon, dx, dy, px}) {
-    const i = last(pack.markers)?.i + 1 || 0;
-    const [x, y] = getMarkerCoordinates(cell);
-    const marker = {i, icon, type, x, y, cell};
-    if (dx) marker.dx = dx;
-    if (dy) marker.dy = dy;
-    if (px) marker.px = px;
-    pack.markers.push(marker);
-    occupied[cell] = true;
-    return "marker" + i;
-  }
-
-  function addVolcanoes(type, icon, multiplier) {
->>>>>>> c152c2ed (ensure marker id is unique)
     const {cells} = pack;
 
     let mountains = Array.from(cells.i.filter(i => cells.h[i] >= 70).sort((a, b) => cells.h[b] - cells.h[a]));
