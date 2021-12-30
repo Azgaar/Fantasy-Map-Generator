@@ -828,6 +828,7 @@ function parseLoadedData(data) {
         // v 1.65 changed rivers data
         d3.select("#rivers").attr("style", null); // remove style to unhide layer
         const {cells, rivers} = pack;
+        const defaultWidthFactor = rn(1 / (pointsInput.dataset.cells / 10000) ** 0.25, 2);
 
         for (const river of rivers) {
           const node = document.getElementById("river" + river.i);
@@ -856,7 +857,7 @@ function parseLoadedData(data) {
             river.points = riverPoints;
           }
 
-          river.widthFactor = 1;
+          river.widthFactor = defaultWidthFactor;
 
           cells.i.forEach(i => {
             const riverInWater = cells.r[i] && cells.h[i] < 20;
