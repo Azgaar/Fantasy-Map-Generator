@@ -545,6 +545,7 @@ function togglePrec(event) {
 function drawPrec() {
   prec.selectAll("circle").remove();
   const {cells, points} = grid;
+
   prec.style("display", "block");
   const show = d3.transition().duration(800).ease(d3.easeSinIn);
   prec.selectAll('text').attr('opacity', 0).transition(show).attr('opacity', 1);
