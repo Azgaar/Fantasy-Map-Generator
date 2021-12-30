@@ -471,16 +471,14 @@ function togglePrec(event) {
 function drawPrec() {
   prec.selectAll("circle").remove();
   const {cells, points} = grid;
+
   prec.style("display", "block");
   const show = d3.transition().duration(800).ease(d3.easeSinIn);
   prec.selectAll("text").attr("opacity", 0).transition(show).attr("opacity", 1);
 
-  const cellsNumberModifier = pointsInput.dataset.cells / 10000;
+  const cellsNumberModifier = (pointsInput.dataset.cells / 10000) ** 0.25;
   const data = cells.i.filter(i => cells.h[i] >= 20 && cells.prec[i]);
-  const getRadius = prec => {
-    const base = prec / cellsNumberModifier / 2;
-    return rn(Math.sqrt(base), 2);
-  };
+  const getRadius = prec => rn(Math.sqrt(prec / 4) / cellsNumberModifier, 2);
 
   prec
     .selectAll("circle")

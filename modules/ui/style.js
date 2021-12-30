@@ -831,7 +831,7 @@ function applyDefaultStyle() {
   landmass.attr("opacity", 1).attr("fill", "#eef6fb").attr("filter", null);
   markers.attr("opacity", null).attr("rescale", 1).attr("filter", "url(#dropShadow01)");
 
-  prec.attr("opacity", null).attr("stroke", "#000000").attr("stroke-width", 0.1).attr("fill", "#003dff").attr("filter", null);
+  prec.attr("opacity", null).attr("stroke", "#000000").attr("stroke-width", 0).attr("fill", "#003dff").attr("filter", null);
   population.attr("opacity", null).attr("stroke-width", 1.6).attr("stroke-dasharray", null).attr("stroke-linecap", "butt").attr("filter", null);
   population.select("#rural").attr("stroke", "#0000ff");
   population.select("#urban").attr("stroke", "#ff0000");
