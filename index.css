@@ -2131,8 +2131,9 @@ svg.button {
   text-decoration: underline;
 }
 
-#info-line {
+.info-line {
   font-size: 0.9em;
+  font-style: italic;
   color: gray;
   user-select: none;
 }

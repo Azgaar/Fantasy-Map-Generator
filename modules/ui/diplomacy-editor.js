@@ -14,11 +14,7 @@ function editDiplomacy() {
   if (layerIsOn("toggleReligions")) toggleReligions();
 
   const relations = {
-    Ally: {
-      inText: "is an ally of",
-      color: "#00b300",
-      tip: "Ally means states formed a defensive pact and will protect each other in case of third party aggression"
-    },
+    Ally: {inText: "is an ally of", color: "#00b300", tip: "Allies formed a defensive pact and protect each other in case of third party aggression"},
     Friendly: {inText: "is friendly to", color: "#d4f8aa", tip: "State is friendly to anouther state when they share some common interests"},
     Neutral: {inText: "is neutral to", color: "#edeee8", tip: "Neutral means states relations are neither positive nor negative"},
     Suspicion: {inText: "is suspicious of", color: "#eeafaa", tip: "Suspicion means state has a cautious distrust of another state"},
@@ -30,8 +26,6 @@ function editDiplomacy() {
   };
 
   refreshDiplomacyEditor();
-
-  tip("Click on a state to see its diplomatic relations", false, "warning");
   viewbox.style("cursor", "crosshair").on("click", selectStateOnMapClick);
 
   if (modules.editDiplomacy) return;
@@ -83,11 +77,11 @@ function editDiplomacy() {
     const states = pack.states;
     const selectedLine = body.querySelector("div.Self");
     const selectedId = selectedLine ? +selectedLine.dataset.id : states.find(s => s.i && !s.removed).i;
-    const selectedName = states[selectedId].fullName;
+    const selectedName = states[selectedId].name;
 
     COArenderer.trigger("stateCOA" + selectedId, states[selectedId].coa);
     let lines = `<div class="states Self" data-id=${selectedId} data-tip="List below shows relations to ${selectedName}">
-      <div style="width: max-content">${selectedName}</div>
+      <div style="width: max-content">${states[selectedId].fullName}</div>
       <svg class="coaIcon" viewBox="0 0 200 200"><use href="#stateCOA${selectedId}"></use></svg>
     </div>`;
 
@@ -96,18 +90,20 @@ function editDiplomacy() {
       const relation = state.diplomacy[selectedId];
       const {color, inText} = relations[relation];
 
-      const tip = `${state.fullName} ${inText} ${selectedName}`;
+      const tip = `${state.name} ${inText} ${selectedName}`;
       const tipSelect = `${tip}. Click to see relations to ${state.name}`;
-      const tipChange = `${tip}. Click to change relations to ${selectedName}`;
+      const tipChange = `Click to change relations. ${tip}`;
       COArenderer.trigger("stateCOA" + state.i, state.coa);
 
       lines += `<div class="states" data-id=${state.i} data-name="${state.fullName}" data-relations="${relation}">
         <svg data-tip="${tipSelect}" class="coaIcon" viewBox="0 0 200 200"><use href="#stateCOA${state.i}"></use></svg>
-        <div data-tip="${tipSelect}" style="width:12em">${state.fullName}</div>
-        <svg data-tip="${tipChange}" width=".9em" height=".9em" style="margin-bottom:-1px" class="changeRelations">
-          <rect x="0" y="0" width="100%" height="100%" fill="${color}" class="fillRect pointer" style="pointer-events: none"></rect>
-        </svg>
-        <div data-tip="${tipChange}" class="changeRelations" style="width: 5em" />${relation}</div>
+        <div data-tip="${tipSelect}" style="width: 12em">${state.fullName}</div>
+        <div data-tip="${tipChange}" class="changeRelations pointer" style="width: 6em">
+          <svg width=".9em" height=".9em" style="margin-bottom:-1px">
+            <rect x="0" y="0" width="100%" height="100%" fill="${color}" class="fillRect"></rect>
+          </svg>
+          ${relation}
+        </div>
       </div>`;
     }
     body.innerHTML = lines;
@@ -291,7 +287,7 @@ function editDiplomacy() {
       });
       message += `&#8205;</div>`;
     });
-    alertMessage.innerHTML = message + `</div><i id="info-line">Type to edit. Press Enter to add a new line, empty the element to remove it</i>`;
+    alertMessage.innerHTML = message + `</div><div class="info-line">Type to edit. Press Enter to add a new line, empty the element to remove it</div>`;
     alertMessage.querySelectorAll("div[contenteditable='true']").forEach(el => el.addEventListener("input", changeReliationsHistory));
 
     $("#alert").dialog({
