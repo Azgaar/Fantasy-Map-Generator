@@ -268,6 +268,10 @@ function editDiplomacy() {
     else chronicle.push(change());
 
     refreshDiplomacyEditor();
+    if (diplomacyMatrix.offsetParent) {
+      document.getElementById("diplomacyMatrixBody").innerHTML = "";
+      showRelationsMatrix();
+    }
   }
 
   function regenerateRelations() {
@@ -276,18 +280,16 @@ function editDiplomacy() {
   }
 
   function resetRelations() {
-    pack.states[0].diplomacy = [];
+    const selectedId = +body.querySelector("div.Self")?.dataset?.id;
+    if (!selectedId) return;
+    const states = pack.states;
 
-    for (const state of pack.states) {
-      if (!state.i || state.removed) continue;
-
-      const newRelations = state.diplomacy.map(relations => {
-        if (relations === "x") return "x";
-        return "Neutral";
-      });
-
-      state.diplomacy = newRelations;
-    }
+    states[selectedId].diplomacy.forEach((relations, index) => {
+      if (relations !== "x") {
+        states[selectedId].diplomacy[index] = "Neutral";
+        states[index].diplomacy[selectedId] = "Neutral";
+      }
+    });
 
     refreshDiplomacyEditor();
   }
@@ -339,7 +341,7 @@ function editDiplomacy() {
   function showRelationsMatrix() {
     const states = pack.states.filter(s => s.i && !s.removed);
     const valid = states.map(state => state.i);
-    const body = document.getElementById("diplomacyMatrixBody");
+    const diplomacyMatrixBody = document.getElementById("diplomacyMatrixBody");
 
     let table = `<table><thead><tr><th data-tip='&#8205;'></th>`;
     table += states.map(state => `<th data-tip='Relations to ${state.fullName}'>${state.name}</th>`).join("") + `</tr>`;
@@ -347,32 +349,39 @@ function editDiplomacy() {
 
     states.forEach(state => {
       table +=
-        `<tr><th data-tip='Relations of ${state.fullName}'>${state.name}</th>` +
+        `<tr data-id=${state.i}><th data-tip='Relations of ${state.fullName}'>${state.name}</th>` +
         state.diplomacy
           .filter((v, i) => valid.includes(i))
           .map((relation, index) => {
             const relationObj = relations[relation];
             if (!relationObj) return `<td class='${relation}'>${relation}</td>`;
 
-            const stateName = pack.states[valid[index]].fullName;
-            const tip = `${state.fullName} ${relationObj.inText} ${stateName}`;
-            return `<td data-tip='${tip}' class='${relation}'>${relation}</td>`;
+            const objectState = pack.states[valid[index]];
+            const tip = `${state.fullName} ${relationObj.inText} ${objectState.fullName}`;
+            return `<td data-id=${objectState.i} data-tip='${tip}' class='${relation}'>${relation}</td>`;
           })
           .join("") +
         "</tr>";
     });
 
     table += `</tbody></table>`;
-    body.innerHTML = table;
+    diplomacyMatrixBody.innerHTML = table;
 
-    const tableEl = body.querySelector("table");
-    tableEl.addEventListener("click", showRelationsDropdown);
+    const tableEl = diplomacyMatrixBody.querySelector("table");
+    tableEl.addEventListener("click", function (event) {
+      const el = event.target;
+      if (el.tagName !== "TD") return;
+
+      const currentRelation = el.innerText;
+      if (!relations[currentRelation]) return;
+
+      const subjectId = +el.closest("tr")?.dataset?.id;
+      const objectId = +el?.dataset?.id;
+
+      selectRelation(subjectId, objectId, currentRelation);
+    });
 
     $("#diplomacyMatrix").dialog({title: "Relations matrix", position: {my: "center", at: "center", of: "svg"}, buttons: {}});
-
-    function showRelationsDropdown() {
-      if (this.tagName !== "TD") return;
-    }
   }
 
   function downloadDiplomacyData() {
