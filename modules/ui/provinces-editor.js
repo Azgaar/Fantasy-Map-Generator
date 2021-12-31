@@ -137,7 +137,7 @@ function editProvinces() {
           p.color
         }" class="fillRect pointer"></svg>
         <input data-tip="Province name. Click to change" class="name pointer" value="${p.name}" readonly>
-        <svg data-tip="Click to show and edit province emblem" class="coaIcon hide" viewBox="0 0 200 200"><use href="#provinceCOA${p.i}"></use></svg>
+        <svg data-tip="Click to show and edit province emblem" class="coaIcon pointer hide" viewBox="0 0 200 200"><use href="#provinceCOA${p.i}"></use></svg>
         <input data-tip="Province form name. Click to change" class="name pointer hide" value="${p.formName}" readonly>
         <span data-tip="Province capital. Click to zoom into view" class="icon-star-empty pointer hide ${p.burg ? "" : "placeholder"}"></span>
         <select data-tip="Province capital. Click to select from burgs within the state. No capital means the province is governed from the state capital" class="cultureBase hide ${

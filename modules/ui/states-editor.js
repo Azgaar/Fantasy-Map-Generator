@@ -136,7 +136,7 @@ function editStates() {
           s.color
         }" class="fillRect pointer"></svg>
         <input data-tip="State name. Click to change" class="stateName name pointer" value="${s.name}" readonly>
-        <svg data-tip="Click to show and edit state emblem" class="coaIcon hide" viewBox="0 0 200 200"><use href="#stateCOA${s.i}"></use></svg>
+        <svg data-tip="Click to show and edit state emblem" class="coaIcon pointer hide" viewBox="0 0 200 200"><use href="#stateCOA${s.i}"></use></svg>
         <input data-tip="State form name. Click to change" class="stateForm name pointer" value="${s.formName}" readonly>
         <span data-tip="State capital. Click to zoom into view" class="icon-star-empty pointer hide"></span>
         <input data-tip="Capital name. Click and type to rename" class="stateCapital hide" value="${capital}" autocorrect="off" spellcheck="false"/>

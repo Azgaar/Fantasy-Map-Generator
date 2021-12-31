@@ -2735,31 +2735,23 @@
     <div id="diplomacyEditor" class="dialog stable" style="display: none">
       <div id="diplomacyHeader" class="header">
         <div style="left:.2em" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">State&nbsp;</div>
-        <div style="left:13.4em" data-tip="Click to sort by diplomatical relations" class="sortable alphabetically" data-sortby="relations">Relations&nbsp;</div>
+        <div style="left:14.4em" data-tip="Click to sort by diplomatical relations" class="sortable alphabetically" data-sortby="relations">Relations&nbsp;</div>
       </div>
 
 	    <div id="diplomacyBodySection" class="table"></div>
-
-      <div id="diplomacySelect">
-        <div data-tip="Ally means states formed a defensive pact and will protect each other in case of third party aggression">Ally</div>
-        <div data-tip="State is friendly to anouther state when they share some common interests">Friendly</div>
-        <div data-tip="Neutral means states relations are neither positive nor negative">Neutral</div>
-        <div data-tip="Suspicion means state has a cautious distrust of another state">Suspicion</div>
-        <div data-tip="Enemies are states at war with each other">Enemy</div>
-        <div data-tip="Relations are unknown if states do not have enough information about each other">Unknown</div>
-        <div data-tip="Rivalry is a state of competing for dominance in the region">Rival</div>
-        <div data-tip="Vassal is a state having obligation to its suzerain">Vassal</div>
-        <div data-tip="Suzerain is a state having some control over its vassals">Suzerain</div>
-      </div>
 
       <div id="diplomacyBottom" style="margin-top: .1em">
         <button id="diplomacyEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
         <button id="diplomacyEditStyle" data-tip="Edit states (including diplomacy view) style in Style Editor" class="icon-adjust"></button>
         <button id="diplomacyRegenerate" data-tip="Regenerate diplomatical relations" class="icon-retweet"></button>
         <button id="diplomacyHistory" data-tip="Show relations history" class="icon-hourglass-1"></button>
-        <button id="diplomacyMatrix" data-tip="Show relations matrix" class="icon-list-bullet"></button>
+        <button id="diplomacyShowMatrix" data-tip="Show relations matrix" class="icon-list-bullet"></button>
         <button id="diplomacyExport" data-tip="Save state relations matrix as a text file (.csv)" class="icon-download"></button>
       </div>
+    </div>
+
+    <div id="diplomacyMatrix" class="dialog" style="display: none">
+      <div id="diplomacyMatrixBody" class="matrix-table"></div>
     </div>
 
     <div id="provinceNameEditor" class="dialog" data-province="0" style="display: none">
@@ -3636,8 +3628,7 @@
       <div data-tip="Image scale relative to image size (e.g. 5x)" style="margin-bottom: .3em">
         <div class="label">Scale:</div>
         <input id="tileScaleInput" data-stored="tileScale" type="range" min=1 max=4 value=1 style="width: 10em">
-        <input id="tileScaleOutput" data-stored="tileScale" type="number" min=1 value=1
-        >
+        <input id="tileScaleOutput" data-stored="tileScale" type="number" min=1 value=1 >
       </div>
       <div data-tip="Calculated size of image if combined" style="margin-bottom: .3em">
         <div class="label">Total size:</div>
