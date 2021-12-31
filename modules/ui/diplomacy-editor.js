@@ -43,6 +43,7 @@ function editDiplomacy() {
   document.getElementById("diplomacyEditorRefresh").addEventListener("click", refreshDiplomacyEditor);
   document.getElementById("diplomacyEditStyle").addEventListener("click", () => editStyle("regions"));
   document.getElementById("diplomacyRegenerate").addEventListener("click", regenerateRelations);
+  document.getElementById("diplomacyReset").addEventListener("click", resetRelations);
   document.getElementById("diplomacyShowMatrix").addEventListener("click", showRelationsMatrix);
   document.getElementById("diplomacyHistory").addEventListener("click", showRelationsHistory);
   document.getElementById("diplomacyExport").addEventListener("click", downloadDiplomacyData);
@@ -93,11 +94,13 @@ function editDiplomacy() {
       const tip = `${state.name} ${inText} ${selectedName}`;
       const tipSelect = `${tip}. Click to see relations to ${state.name}`;
       const tipChange = `Click to change relations. ${tip}`;
+
+      const name = state.fullName.length < 23 ? state.fullName : state.name;
       COArenderer.trigger("stateCOA" + state.i, state.coa);
 
-      lines += `<div class="states" data-id=${state.i} data-name="${state.fullName}" data-relations="${relation}">
+      lines += `<div class="states" data-id=${state.i} data-name="${name}" data-relations="${relation}">
         <svg data-tip="${tipSelect}" class="coaIcon" viewBox="0 0 200 200"><use href="#stateCOA${state.i}"></use></svg>
-        <div data-tip="${tipSelect}" style="width: 12em">${state.fullName}</div>
+        <div data-tip="${tipSelect}" style="width: 12em">${name}</div>
         <div data-tip="${tipChange}" class="changeRelations pointer" style="width: 6em">
           <svg width=".9em" height=".9em" style="margin-bottom:-1px">
             <rect x="0" y="0" width="100%" height="100%" fill="${color}" class="fillRect"></rect>
@@ -272,12 +275,26 @@ function editDiplomacy() {
     refreshDiplomacyEditor();
   }
 
+  function resetRelations() {
+    pack.states[0].diplomacy = [];
+
+    for (const state of pack.states) {
+      if (!state.i || state.removed) continue;
+
+      const newRelations = state.diplomacy.map(relations => {
+        if (relations === "x") return "x";
+        return "Neutral";
+      });
+
+      state.diplomacy = newRelations;
+    }
+
+    refreshDiplomacyEditor();
+  }
+
   function showRelationsHistory() {
     const chronicle = pack.states[0].diplomacy;
-    if (!chronicle.length) {
-      tip("Relations history is blank", false, "error");
-      return;
-    }
+    if (!chronicle.length) return tip("Relations history is blank", false, "error");
 
     let message = `<div autocorrect="off" spellcheck="false">`;
     chronicle.forEach((entry, d) => {
