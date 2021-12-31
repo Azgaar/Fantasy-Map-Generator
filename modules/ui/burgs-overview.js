@@ -8,7 +8,7 @@ function overviewBurgs() {
   const body = document.getElementById("burgsBody");
   updateFilter();
   burgsOverviewAddLines();
-  setlockburgs();
+  setLockIcon();
   $("#burgsOverview").dialog();
 
   if (modules.overviewBurgs) return;
@@ -34,15 +34,10 @@ function overviewBurgs() {
   document.getElementById("burgsListToLoad").addEventListener("change", function () {
     uploadFile(this, importBurgNames);
   });
-  document.getElementById("burgsonoff").addEventListener("click", burgsonoff);
+  document.getElementById("burgsLockAll").addEventListener("click", setLockBurgs);
+  document.getElementById("burgsLockAll").addEventListener("click", setLockIcon);
   document.getElementById("burgsRemoveAll").addEventListener("click", triggerAllBurgsRemove);
   document.getElementById("burgsInvertLock").addEventListener("click", invertLock);
-  document.getElementById("burgsonoff").addEventListener("click", function (toggleIcons) {
-  var target = toggleIcons.target;
-
-    target.classList.toggle("icon-lock");
-    target.classList.toggle("icon-lock-open");
-    }, false);
 
   function refreshBurgsEditor() {
     updateFilter();
@@ -565,10 +560,6 @@ function overviewBurgs() {
     pack.burgs.filter(b => b.i && !(b.capital || b.lock)).forEach(b => removeBurg(b.i));
     burgsOverviewAddLines();
   }
-  
-  function setlockburgs() {
-    (pack.burgs.filter(b => b.lock)).length === pack.burgs.length ? burgsonoff.value = "true" : burgsonoff.value = "false"; //Only true if all of them are locked
-  }
 
   function invertLock() {
     pack.burgs = pack.burgs.map(burg => ({...burg, lock: !burg.lock}));
@@ -585,14 +576,27 @@ function overviewBurgs() {
 		burg.lock = false;});
     burgsOverviewAddLines();
   }
-  function burgsonoff(){
-	const currentvalue = document.getElementById('burgsonoff').value;
-  if(currentvalue == "true"){
-	unlockAllBurgs();
-	document.getElementById("burgsonoff").value="false";
-  }else{
-	lockAllBurgs();
-	document.getElementById("burgsonoff").value="true";
-       }
+  
+  function setLockBurgs() {
+    const allLocked = pack.burgs.every(({lock, i, removed}) => lock || !i || removed);
+
+    if (allLocked) {
+    unlockAllBurgs();
+    } else {
+    lockAllBurgs();
+           }
+    setLockIcon();
+  }
+  
+  function setLockIcon() {
+	const allLocked = pack.burgs.every(({lock, i, removed}) => lock || !i || removed);
+
+	if (allLocked) {
+      burgsLockAll.classList.remove("icon-lock");
+      burgsLockAll.classList.add("icon-lock-open");
+    } else {
+      burgsLockAll.classList.add("icon-lock");
+      burgsLockAll.classList.remove("icon-lock-open");  
+         }
   }
 }
