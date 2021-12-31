@@ -568,12 +568,15 @@ function overviewBurgs() {
   
   function lockAllBurgs() {
 	pack.burgs.forEach(burg => {
-		burg.lock = true;});
+		burg.lock = true;
+		});
     burgsOverviewAddLines();
   }
+  
   function unlockAllBurgs() {
 	pack.burgs.forEach(burg => {
-		burg.lock = false;});
+		burg.lock = false;
+		});
     burgsOverviewAddLines();
   }
   
