@@ -9,7 +9,6 @@ function overviewBurgs() {
   updateFilter();
   updateLockAllIcon();
   burgsOverviewAddLines();
-  setLockIcon();
   $("#burgsOverview").dialog();
 
   if (modules.overviewBurgs) return;
