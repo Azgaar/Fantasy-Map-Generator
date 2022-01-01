@@ -362,7 +362,9 @@ function editBurg(id) {
 
   function toggleBurgLockButton() {
     const id = +elSelected.attr("data-id");
-    toggleBurgLock(id);
+    const burg = pack.burgs[id];
+    burg.lock = !burg.lock;
+
     updateBurgLockIcon();
   }
 

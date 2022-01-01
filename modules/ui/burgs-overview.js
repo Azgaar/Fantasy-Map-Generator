@@ -197,8 +197,11 @@ function overviewBurgs() {
   }
 
   function toggleBurgLockStatus() {
-    const burg = +this.parentNode.dataset.id;
-    toggleBurgLock(burg);
+    const burgId = +this.parentNode.dataset.id;
+
+    const burg = pack.burgs[burgId];
+    burg.lock = !burg.lock;
+
     if (this.classList.contains("icon-lock")) {
       this.classList.remove("icon-lock");
       this.classList.add("icon-lock-open");
