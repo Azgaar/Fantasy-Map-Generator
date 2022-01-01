@@ -7,8 +7,8 @@ function overviewBurgs() {
 
   const body = document.getElementById("burgsBody");
   updateFilter();
+  updateLockAllIcon();
   burgsOverviewAddLines();
-  setLockIcon();
   $("#burgsOverview").dialog();
 
   if (modules.overviewBurgs) return;
@@ -34,8 +34,7 @@ function overviewBurgs() {
   document.getElementById("burgsListToLoad").addEventListener("change", function () {
     uploadFile(this, importBurgNames);
   });
-  document.getElementById("burgsLockAll").addEventListener("click", setLockBurgs);
-  document.getElementById("burgsLockAll").addEventListener("click", setLockIcon);
+  document.getElementById("burgsLockAll").addEventListener("click", toggleLockAll);
   document.getElementById("burgsRemoveAll").addEventListener("click", triggerAllBurgsRemove);
   document.getElementById("burgsInvertLock").addEventListener("click", invertLock);
 
@@ -565,41 +564,21 @@ function overviewBurgs() {
     pack.burgs = pack.burgs.map(burg => ({...burg, lock: !burg.lock}));
     burgsOverviewAddLines();
   }
-  
-  function lockAllBurgs() {
-	pack.burgs.forEach(burg => {
-		burg.lock = true;
-		});
+
+  function toggleLockAll() {
+    const activeBurgs = pack.burgs.filter(b => b.i && !b.removed);
+    const allLocked = activeBurgs.every(burg => burg.lock);
+
+    pack.burgs.forEach(burg => {
+      burg.lock = !allLocked;
+    });
+
     burgsOverviewAddLines();
+    document.getElementById("burgsLockAll").className = allLocked ? "icon-lock" : "icon-lock-open";
   }
-  
-  function unlockAllBurgs() {
-	pack.burgs.forEach(burg => {
-		burg.lock = false;
-		});
-    burgsOverviewAddLines();
-  }
-  
-  function setLockBurgs() {
+
+  function updateLockAllIcon() {
     const allLocked = pack.burgs.every(({lock, i, removed}) => lock || !i || removed);
-
-    if (allLocked) {
-    unlockAllBurgs();
-    } else {
-    lockAllBurgs();
-           }
-    setLockIcon();
-  }
-  
-  function setLockIcon() {
-	const allLocked = pack.burgs.every(({lock, i, removed}) => lock || !i || removed);
-
-	if (allLocked) {
-      burgsLockAll.classList.remove("icon-lock");
-      burgsLockAll.classList.add("icon-lock-open");
-    } else {
-      burgsLockAll.classList.add("icon-lock");
-      burgsLockAll.classList.remove("icon-lock-open");  
-         }
+    document.getElementById("burgsLockAll").className = allLocked ? "icon-lock-open" : "icon-lock";
   }
 }
