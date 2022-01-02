@@ -2,3 +2,7 @@
 .vscode
 .idea
 _maps
+yarn.lock
+.gitignore
+node_modules
+yarn-error.log
