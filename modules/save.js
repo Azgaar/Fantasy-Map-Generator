@@ -117,6 +117,7 @@ function getMapData() {
     markers
   ].join("\r\n");
   TIME && console.timeEnd("createMapData");
+  debugger
   return mapData;
 }
 
@@ -126,6 +127,7 @@ function dowloadMap() {
   closeDialogs("#alert");
 
   const mapData = getMapData();
+  debugger
   const blob = new Blob([mapData], {type: "text/plain"});
   const URL = window.URL.createObjectURL(blob);
   const link = document.createElement("a");

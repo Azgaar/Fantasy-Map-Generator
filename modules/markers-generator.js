@@ -9,27 +9,30 @@ window.Markers = (function () {
     const isFantasy = culturesSet.includes("Fantasy");
 
     return [
-      {type: "volcanoes", icon: "🌋", multiplier: 1, fn: addVolcanoes},
-      {type: "hot-springs", icon: "♨️", multiplier: 1, fn: addHotSprings},
-      {type: "mines", icon: "⛏️", multiplier: 1, fn: addMines},
-      {type: "bridges", icon: "🌉", multiplier: 1, fn: addBridges},
-      {type: "inns", icon: "🍻", multiplier: 1, fn: addInns},
+      {type: "volcanoes", icon: "🌋", multiplier: 10, fn: addVolcanoes},
+      {type: "hot-springs", icon: "♨️", multiplier: 20, fn: addHotSprings},
+      {type: "mines", icon: "⛏️", multiplier: 5, fn: addMines},
+      {type: "bridges", icon: "🌉", multiplier: 10, fn: addBridges},
+      {type: "inns", icon: "🍻", multiplier: 20, fn: addInns},
       {type: "lighthouses", icon: "🚨", multiplier: 1, fn: addLighthouses},
-      {type: "waterfalls", icon: "⟱", multiplier: 1, fn: addWaterfalls},
+      {type: "waterfalls", icon: "⟱", multiplier: 3, fn: addWaterfalls},
       {type: "battlefields", icon: "⚔️", multiplier: 1, fn: addBattlefields},
-      {type: "dungeons", icon: "🗝️", multiplier: 1, fn: addDungeons},
-      {type: "lake-monsters", icon: "🐉", multiplier: 1, fn: addLakeMonsters},
-      {type: "sea-monsters", icon: "🦑", multiplier: 1, fn: addSeaMonsters},
-      {type: "hill-monsters", icon: "👹", multiplier: 1, fn: addHillMonsters},
-      {type: "sacred-mountains", icon: "🗻", multiplier: 1, fn: addSacredMountains},
-      {type: "sacred-forests", icon: "🌳", multiplier: 1, fn: addSacredForests},
-      {type: "sacred-pineries", icon: "🌲", multiplier: 1, fn: addSacredPineries},
+      {type: "dungeons", icon: "🗝️", multiplier: 20, fn: addDungeons},
+      {type: "lake-monsters", icon: "🐉", multiplier: 2, fn: addLakeMonsters},
+      {type: "sea-monsters", icon: "🦑", multiplier: 5, fn: addSeaMonsters},
+      {type: "hill-monsters", icon: "👹", multiplier: 20, fn: addHillMonsters},
+      {type: "sacred-mountains", icon: "🗻", multiplier: 5, fn: addSacredMountains},
+      {type: "sacred-forests", icon: "🌳", multiplier: 10, fn: addSacredForests},
+      {type: "sacred-pineries", icon: "🌲", multiplier: 20, fn: addSacredPineries},
       {type: "sacred-palm-groves", icon: "🌴", multiplier: 1, fn: addSacredPalmGroves},
-      {type: "brigands", icon: "💰", multiplier: 1, fn: addBrigands},
-      {type: "pirates", icon: "🏴‍☠️", multiplier: 1, fn: addPirates},
-      {type: "statues", icon: "🗿", multiplier: 1, fn: addStatues},
-      {type: "ruines", icon: "🏺", multiplier: 1, fn: addRuines},
-      {type: "portals", icon: "🌀", multiplier: +isFantasy, fn: addPortals}
+      {type: "brigands", icon: "💰", multiplier: 5, fn: addBrigands},
+      {type: "pirates", icon: "🏴‍☠️", multiplier: 3, fn: addPirates},
+      {type: "statues", icon: "🗿", multiplier: 5, fn: addStatues},
+      {type: "ruines", icon: "🏺", multiplier: 10, fn: addRuines},
+      {type: "spiders", icon: "🕷️", multiplier: 25, fn: addHillMonsters},
+      {type: "giant goat heard", icon: "🐐", multiplier: 25, fn: addHillMonsters},
+      {type: "citadel", icon: "🏯", multiplier: 25, fn: addSacredPineries},
+      {type: "portals", icon: "🌀", multiplier: 4, fn: addPortals}
     ];
   }
 
@@ -434,7 +437,7 @@ window.Markers = (function () {
       const [cell] = extractAnyElement(taverns);
       const id = addMarker({cell, icon, type, px: 14});
       const typeName = P(0.3) ? "inn" : "tavern";
-      const isAnimalThemed = P(0.7);
+      const isAnimalThemed = P(0.85);
       const animal = ra(animals);
       const name = isAnimalThemed ? (P(0.6) ? ra(colors) + " " + animal : ra(adjectives) + " " + animal) : ra(adjectives) + " " + capitalize(type);
       const meal = isAnimalThemed && P(0.3) ? animal : ra(courses);
@@ -856,6 +859,7 @@ window.Markers = (function () {
       quantity--;
     }
   }
+
 
   function addPortals(type, icon, multiplier) {
     const {burgs} = pack;
