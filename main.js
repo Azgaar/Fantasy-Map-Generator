@@ -109,7 +109,7 @@ scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", ()
 legend.on("mousemove", () => tip("Drag to change the position. Click to hide the legend")).on("click", () => clearLegend());
 
 // main data variables
-let grid = {}; // initial grapg based on jittered square grid and data
+let grid = {}; // initial graph based on jittered square grid and data
 let pack = {}; // packed graph and data
 let seed;
 let mapId;
@@ -160,7 +160,7 @@ let urbanDensity = +document.getElementById("urbanDensityInput").value;
 
 applyStoredOptions();
 
-// voronoi graph extention, cannot be changed arter generation
+// voronoi graph extension, cannot be changed after generation
 let graphWidth = +mapWidthInput.value;
 let graphHeight = +mapHeightInput.value;
 
@@ -492,7 +492,7 @@ function invokeActiveZooming() {
     coastline.select("#sea_island").attr("filter", filter);
   }
 
-  // rescale lables on zoom
+  // rescale labels on zoom
   if (labels.style("display") !== "none") {
     labels.selectAll("g").each(function () {
       if (this.id === "burgLabels") return;
@@ -667,7 +667,7 @@ function generate() {
     const parsedError = parseError(error);
     clearMainTip();
 
-    alertMessage.innerHTML = `An error is occured on map generation. Please retry.
+    alertMessage.innerHTML = `An error has occurred on map generation. Please retry.
       <br>If error is critical, clear the stored data and try again.
       <p id="errorBox">${parsedError}</p>`;
     $("#alert").dialog({
@@ -1183,7 +1183,7 @@ function reGraph() {
   TIME && console.timeEnd("reGraph");
 }
 
-// Detect and draw the coasline
+// Detect and draw the coastline
 function drawCoastline() {
   TIME && console.time("drawCoastline");
   reMarkFeatures();
@@ -1192,7 +1192,7 @@ function drawCoastline() {
     vertices = pack.vertices,
     n = cells.i.length,
     features = pack.features;
-  const used = new Uint8Array(features.length); // store conneted features
+  const used = new Uint8Array(features.length); // store connected features
   const largestLand = d3.scan(
     features.map(f => (f.land ? f.cells : 0)),
     (a, b) => b - a
