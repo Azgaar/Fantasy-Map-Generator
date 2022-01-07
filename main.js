@@ -783,7 +783,12 @@ async function generate(options) {
     const parsedError = parseError(error);
     clearMainTip();
 
+<<<<<<< HEAD
     alertMessage.innerHTML = /* html */ `An error has occurred on map generation. Please retry. <br />If error is critical, clear the stored data and try again.
+=======
+    alertMessage.innerHTML = `An error has occurred on map generation. Please retry.
+      <br>If error is critical, clear the stored data and try again.
+>>>>>>> ffb073fe (Update main.js (#722))
       <p id="errorBox">${parsedError}</p>`;
     $("#alert").dialog({
       resizable: false,
