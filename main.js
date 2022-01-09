@@ -998,14 +998,14 @@ function generatePrecipitation() {
   // x2 = 60-70 latitude: wet summer (rising zone), dry winter (sinking zone)
   // x1 = 70-85 latitude: dry all year (sinking zone)
   // x0.5 = 85-90 latitude: dry all year (sinking zone)
-  const lalitudeModifier = [4, 2, 2, 2, 1, 1, 2, 2, 2, 2, 3, 3, 2, 2, 1, 1, 1, 0.5];
+  const latitudeModifier = [4, 2, 2, 2, 1, 1, 2, 2, 2, 2, 3, 3, 2, 2, 1, 1, 1, 0.5];
   const MAX_PASSABLE_ELEVATION = 85;
 
   // define wind directions based on cells latitude and prevailing winds there
   d3.range(0, cells.i.length, cellsX).forEach(function (c, i) {
     const lat = mapCoordinates.latN - (i / cellsY) * mapCoordinates.latT;
     const latBand = ((Math.abs(lat) - 1) / 5) | 0;
-    const latMod = lalitudeModifier[latBand];
+    const latMod = latitudeModifier[latBand];
     const windTier = (Math.abs(lat - 89) / 30) | 0; // 30d tiers from 0 to 5 from N to S
     const {isWest, isEast, isNorth, isSouth} = getWindDirections(windTier);
 
@@ -1022,14 +1022,14 @@ function generatePrecipitation() {
   const vertT = southerly + northerly;
   if (northerly) {
     const bandN = ((Math.abs(mapCoordinates.latN) - 1) / 5) | 0;
-    const latModN = mapCoordinates.latT > 60 ? d3.mean(lalitudeModifier) : lalitudeModifier[bandN];
+    const latModN = mapCoordinates.latT > 60 ? d3.mean(latitudeModifier) : latitudeModifier[bandN];
     const maxPrecN = (northerly / vertT) * 60 * modifier * latModN;
     passWind(d3.range(0, cellsX, 1), maxPrecN, cellsX, cellsY);
   }
 
   if (southerly) {
     const bandS = ((Math.abs(mapCoordinates.latS) - 1) / 5) | 0;
-    const latModS = mapCoordinates.latT > 60 ? d3.mean(lalitudeModifier) : lalitudeModifier[bandS];
+    const latModS = mapCoordinates.latT > 60 ? d3.mean(latitudeModifier) : latitudeModifier[bandS];
     const maxPrecS = (southerly / vertT) * 60 * modifier * latModS;
     passWind(d3.range(cells.i.length - cellsX, cells.i.length, 1), maxPrecS, -cellsX, cellsY);
   }
