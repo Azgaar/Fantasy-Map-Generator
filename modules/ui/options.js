@@ -103,7 +103,7 @@ function showSupporters() {
     Mike Conley,Xavier privé,Hope You're Well,Mark Sprietsma,Robert Landry,Nick Mowry,steve hall,Markell,Josh Wren,Neutrix,BLRageQuit,Rocky,
     Dario Spadavecchia,Bas Kroot,John Patrick Callahan Jr,Alexandra Vesey,D,Exp1nt,james,Braxton Istace,w,Rurikid,AntiBlock,Redsauz,BigE0021,
     Jonathan Williams,ojacid .,Brian Wilson,A Patreon of the Ahts,Shubham Jakhotiya,www15o,Jan Bundesmann,Angelique Badger,Joshua Xiong,Moist mongol,
-    Frank Fewkes`;
+    Frank Fewkes,jason baldrick,Game Master Pro,Andrew Kircher,Preston Mitchell,Chris Kohut`;
 
   const array = supporters
     .replace(/(?:\r\n|\r|\n)/g, "")
