@@ -52,11 +52,11 @@ window.Religions = (function () {
       "Mother",
       "Numen",
       "Overlord",
-      "Reaper"
+      "Reaper",
       "Ruler",
       "Sister",
       "Spirit",
-      "Virgin",
+      "Virgin"
     ],
     animal: [
       "Antelope",
@@ -113,7 +113,7 @@ window.Religions = (function () {
       "Raven",
       "Rook",
       "Scorpion",
-      "Serpent"
+      "Serpent",
       "Shark",
       "Sheep",
       "Snake",
@@ -129,7 +129,7 @@ window.Religions = (function () {
       "Wolf",
       "Wolverine",
       "Worm",
-      "Wyvern",
+      "Wyvern"
     ],
     adjective: [
       "Aggressive",
@@ -178,7 +178,7 @@ window.Religions = (function () {
       "Huge",
       "Hungry",
       "Immutable",
-      "Infallible"
+      "Infallible",
       "Inherent",
       "Last",
       "Latter",
@@ -219,7 +219,7 @@ window.Religions = (function () {
       "Wild",
       "Wise",
       "Worried",
-      "Young",
+      "Young"
     ],
     genitive: [
       "Cold",
@@ -247,9 +247,9 @@ window.Religions = (function () {
       "Summer",
       "Thunder",
       "Time",
-      "Victory"
+      "Victory",
       "War",
-      "Winter",
+      "Winter"
     ],
     theGenitive: [
       "Abyss",
@@ -273,9 +273,9 @@ window.Religions = (function () {
       "Tree",
       "Underworld",
       "West",
-      "Wild"
+      "Wild",
       "Word",
-      "World",
+      "World"
     ],
     color: ["Amber", "Black", "Blue", "Bright", "Brown", "Dark", "Golden", "Green", "Grey", "Light", "Orange", "Pink", "Purple", "Red", "White", "Yellow"]
   };
