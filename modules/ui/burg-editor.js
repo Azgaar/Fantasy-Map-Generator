@@ -37,6 +37,7 @@ function editBurg(id) {
   burgBody.querySelectorAll(".burgFeature").forEach(el => el.addEventListener("click", toggleFeature));
   document.getElementById("mfcgBurgSeed").addEventListener("change", changeSeed);
   document.getElementById("regenerateMFCGBurgSeed").addEventListener("click", randomizeSeed);
+  document.getElementById("addCustomMFCGBurgLink").addEventListener("click", addCustomMfcgLink);
 
   document.getElementById("burgStyleShow").addEventListener("click", showStyleSection);
   document.getElementById("burgStyleHide").addEventListener("click", hideStyleSection);
@@ -112,7 +113,13 @@ function editBurg(id) {
     if (options.showMFCGMap) {
       document.getElementById("mfcgPreviewSection").style.display = "block";
       updateMFCGFrame(b);
-      document.getElementById("mfcgBurgSeed").value = getBurgSeed(b);
+
+      if (b.link) {
+        document.getElementById("mfcgBurgSeedSection").style.display = "none";
+      } else {
+        document.getElementById("mfcgBurgSeedSection").style.display = "inline-block";
+        document.getElementById("mfcgBurgSeed").value = getBurgSeed(b);
+      }
     } else {
       document.getElementById("mfcgPreviewSection").style.display = "none";
     }
@@ -426,6 +433,17 @@ function editBurg(id) {
     burg.MFCG = burgSeed;
     updateMFCGFrame(burg);
     document.getElementById("mfcgBurgSeed").value = burgSeed;
+  }
+
+  function addCustomMfcgLink() {
+    const id = +elSelected.attr("data-id");
+    const burg = pack.burgs[id];
+    const message = "Enter custom link to the burg map. It can be a link to Medieval Fantasy City Generator or other tool. Keep empty to use MFCG seed";
+    prompt(message, {default: burg.link || "", required: false}, link => {
+      if (link) burg.link = link;
+      else delete burg.link;
+      updateMFCGFrame(burg);
+    });
   }
 
   function openEmblemEdit() {

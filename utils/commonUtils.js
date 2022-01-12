@@ -154,18 +154,23 @@ void (function () {
   const prompt = document.getElementById("prompt");
   const form = prompt.querySelector("#promptForm");
 
-  window.prompt = function (promptText = "Please provide an input", options = {default: 1, step: 0.01, min: 0, max: 100}, callback) {
-    if (options.default === undefined) {
-      ERROR && console.error("Prompt: options object does not have default value defined");
-      return;
-    }
+  const defaultText = "Please provide an input";
+  const defaultOptions = {default: 1, step: 0.01, min: 0, max: 100, required: true};
+
+  window.prompt = function (promptText = defaultText, options = defaultOptions, callback) {
+    if (options.default === undefined) return ERROR && console.error("Prompt: options object does not have default value defined");
+
     const input = prompt.querySelector("#promptInput");
     prompt.querySelector("#promptText").innerHTML = promptText;
+
     const type = typeof options.default === "number" ? "number" : "text";
     input.type = type;
+
     if (options.step !== undefined) input.step = options.step;
     if (options.min !== undefined) input.min = options.min;
     if (options.max !== undefined) input.max = options.max;
+
+    input.required = options.required === false ? false : true;
     input.placeholder = "type a " + type;
     input.value = options.default;
     prompt.style.display = "block";
@@ -173,9 +178,9 @@ void (function () {
     form.addEventListener(
       "submit",
       event => {
+        event.preventDefault();
         prompt.style.display = "none";
         const v = type === "number" ? +input.value : input.value;
-        event.preventDefault();
         if (callback) callback(v);
       },
       {once: true}
@@ -183,7 +188,9 @@ void (function () {
   };
 
   const cancel = prompt.querySelector("#promptCancel");
-  cancel.addEventListener("click", () => (prompt.style.display = "none"));
+  cancel.addEventListener("click", () => {
+    prompt.style.display = "none";
+  });
 })();
 
 // indexedDB; ldb object

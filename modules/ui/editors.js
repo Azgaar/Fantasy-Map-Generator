@@ -265,6 +265,8 @@ function getBurgSeed(burg) {
 }
 
 function getMFCGlink(burg) {
+  if (burg.link) return burg.link;
+
   const {cells} = pack;
   const {name, population, cell} = burg;
   const burgSeed = getBurgSeed(burg);

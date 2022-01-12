@@ -2035,9 +2035,12 @@
 
         <div id="mfcgPreviewSection" data-tip="Burg preview in the Medieval Fantasy City Generator. Default seed is a combination of map seed and burg id" style="display: flex; flex-direction: column">
           <div>
-            See in <a id="mfcgLink" target="_blank">City Generator by Watabou</a>. 
-            Seed: <input id="mfcgBurgSeed" style="width: 10em" type="number" min=1 max="1e13" step="1" />
-            <i id="regenerateMFCGBurgSeed" data-tip="Randomize Medieval Fantasy City Generator burg seed" class="icon-arrows-cw pointer" style="margin-left: .1em"></i>
+            See in <a id="mfcgLink" target="_blank">City Generator by Watabou</a>.
+            <div id="mfcgBurgSeedSection">
+              Seed: <input id="mfcgBurgSeed" style="width: 10em" type="number" min=1 max="1e13" step="1" />
+              <i id="regenerateMFCGBurgSeed" data-tip="Randomize Medieval Fantasy City Generator burg seed" class="icon-arrows-cw pointer" style="margin-left: .1em"></i>
+            </div>
+            <i id="addCustomMFCGBurgLink" data-tip="Provide custom link to the burg map" class="icon-pencil pointer" style="margin-left: .1em"></i>
           </div>
           <iframe id="mfcgPreview" sandbox="allow-scripts allow-same-origin"></iframe>
         </div>
@@ -3656,7 +3659,7 @@
     <div id="prompt" style="display: none" class="dialog">
       <form id="promptForm">
         <div id="promptText"></div>
-        <input id="promptInput" type="number" step=.01 placeholder="type value" autocomplete="off" required>
+        <input id="promptInput" type="number" step=.01 placeholder="type value" autocomplete="off">
         <button type="submit">Confirm</button>
         <button type="button" id="promptCancel" formnovalidate>Cancel</button>
       </form>

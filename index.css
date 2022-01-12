@@ -2277,10 +2277,10 @@ svg.button {
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  max-width: 22em;
-  background-color: #fff;
+  max-width: 23em;
   padding: 1.2em;
-  border: solid 1px #000;
+  background-color: var(--bg-dialogs);
+  border: solid 1px var(--dark-solid);
   font-size: 1.2em;
   z-index: 1000;
 }
