@@ -190,7 +190,7 @@ function parseLoadedData(data) {
     if (customizationMenu.offsetParent) styleTab.click();
 
     const reliefIcons = document.getElementById("defs-relief").innerHTML; // save relief icons
-    const hatching = document.getElementById("hatching").cloneNode(true); // save hatching
+    const newHatching = document.getElementById("hatching").cloneNode(true); // save hatching
 
     void (function parseParameters() {
       const params = data[0].split("|");
@@ -474,7 +474,7 @@ function parseLoadedData(data) {
         if (!layerIsOn("toggleStates")) regions.attr("display", "none").selectAll("path").remove();
 
         // 1.0 adds hatching
-        document.getElementsByTagName("defs")[0].appendChild(hatching);
+        document.getElementsByTagName("defs")[0].appendChild(newHatching);
 
         // 1.0 adds zones layer
         zones = viewbox.insert("g", "#borders").attr("id", "zones").attr("display", "none");
@@ -929,6 +929,13 @@ function parseLoadedData(data) {
           if (layerIsOn("markers")) drawMarkers();
         }
       }
+
+     if (version < 1.72) {
+        // v 1.72 changed hatching data
+        document.getElementById("hatching").remove();      
+        document.getElementsByTagName("defs")[0].appendChild(newHatching);
+      };
+ 
     })();
 
     void (function checkDataIntegrity() {
@@ -1039,7 +1046,7 @@ function parseLoadedData(data) {
         // sort markers by index
         pack.markers.sort((a, b) => a.i - b.i);
       }
-    })();
+   })();
 
     changeMapSize();
 

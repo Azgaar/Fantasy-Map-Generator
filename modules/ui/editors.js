@@ -492,8 +492,8 @@ function createPicker() {
       .attr("id", "picker_" + d)
       .attr("fill", d)
       .attr("class", i ? "" : "selected")
-      .attr("x", i * 22 + 4)
-      .attr("y", 40)
+      .attr("x", (i % 15) * 22 + 4)
+      .attr("y", 40 + Math.floor(i / 15)*20)
       .attr("width", 16)
       .attr("height", 16);
   });
@@ -503,10 +503,11 @@ function createPicker() {
       .append("rect")
       .attr("id", "picker_" + this.id)
       .attr("fill", "url(#" + this.id + ")")
-      .attr("x", i * 22 + 4)
-      .attr("y", 61)
+      .attr("x", (i % 15) * 22 + 4)
+      .attr("y", Math.floor(i / 15)*20 + (number * 2))
       .attr("width", 16)
-      .attr("height", 16);
+      .attr("height", 16)
+      .on("mousemove", () => tip("Click to fill with the hatching " + this.id));
   });
 
   colors
@@ -516,7 +517,7 @@ function createPicker() {
   hatches
     .selectAll("rect")
     .on("click", pickerFillClicked)
-    .on("mousemove", () => tip("Click to fill with the hatching"));
+    //.on("mousemove", () => tip("Click to fill with the hatching " + #("#picker_" + hatch.id) ));
 
   // append box
   const bbox = picker.node().getBBox();
@@ -532,10 +533,10 @@ function createPicker() {
     .attr("fill", "#ffffff")
     .attr("stroke", "#5d4651")
     .on("mousemove", pos);
-  picker.insert("text", ":first-child").attr("x", 291).attr("y", -10).attr("id", "pickerCloseText").text("✕");
+  picker.insert("text", ":first-child").attr("x", width-20).attr("y", -10).attr("id", "pickerCloseText").text("✕");
   picker
     .insert("rect", ":first-child")
-    .attr("x", 288)
+    .attr("x", width-23)
     .attr("y", -21)
     .attr("id", "pickerCloseRect")
     .attr("width", 14)

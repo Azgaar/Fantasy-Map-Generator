@@ -80,7 +80,7 @@ function editZones() {
       const focused = defs.select("#fog #focus" + this.id).size();
 
       lines += `<div class="states" data-id="${this.id}" data-fill="${fill}" data-description="${description}" data-cells=${c.length} data-area=${area} data-population=${population}>
-        <svg data-tip="Zone fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${fill}" class="fillRect pointer"></svg>
+        <svg data-tip="Zone fill style. Click to change" width="1.5em" height="1.5em" style="margin-bottom:-4px"><rect x="0" y="0" width="100%" height="100%" fill="${fill}" class="fillRect pointer"></svg>
         <input data-tip="Zone description. Click and type to change" class="religionName" value="${description}" autocorrect="off" spellcheck="false">
         <span data-tip="Cells count" class="icon-check-empty hide"></span>
         <div data-tip="Cells count" class="stateCells hide">${c.length}</div>
@@ -344,12 +344,12 @@ function editZones() {
   function addZonesLayer() {
     const id = getNextId("zone");
     const description = "Unknown zone";
-    const fill = "url(#hatch" + (id.slice(4) % 14) + ")";
+    const fill = "url(#hatch" + (id.slice(4) % 60) + ")";
     zones.append("g").attr("id", id).attr("data-description", description).attr("data-cells", "").attr("fill", fill);
     const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
 
     const line = `<div class="states" data-id="${id}" data-fill="${fill}" data-description="${description}" data-cells=0 data-area=0 data-population=0>
-      <svg data-tip="Zone fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${fill}" class="fillRect pointer"></svg>
+      <svg data-tip="Zone fill style. Click to change" width="1.5em" height="1.5em" style="margin-bottom:-4px"><rect x="0" y="0" width="100%" height="100%" fill="${fill}" class="fillRect pointer"></svg>
       <input data-tip="Zone description. Click and type to change" class="religionName" value="${description}" autocorrect="off" spellcheck="false">
       <span data-tip="Cells count" class="icon-check-empty hide"></span>
       <div data-tip="Cells count" class="stateCells hide">0</div>
