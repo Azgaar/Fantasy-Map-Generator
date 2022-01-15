@@ -35,8 +35,7 @@ input[type="radio"] {
 }
 
 textarea {
-  padding: 2px;
-  text-indent: 1px;
+  padding: 3px;
   box-sizing: border-box;
   width: 100%;
 }
@@ -2012,7 +2011,7 @@ div.textual fieldset {
 
 div.textual span,
 .textual legend {
-  font-size: 0.8em;
+  font-size: 0.9em;
   font-weight: bold;
 }
 

@@ -2875,21 +2875,22 @@
       <div id="namesbaseBasesTop">
         <span>Select base: </span>
         <select id="namesbaseSelect" data-tip="Select base to edit" style="width: 12em" value="0"></select>
+        <span style="margin-left: 2px">Names data: </span>
       </div>
 
-      <div id="namesbaseBody">
-        <span>Names data:</span><br>
-        <textarea id="namesbaseTextarea" data-base="0" rows=12 data-tip="Names data: a comma separated list of source names used for names generation" placeholder="Provide a names data: a comma separated list of source names" autocorrect="off" spellcheck="false"></textarea>
-        <br>
+      <div id="namesbaseBody" style="margin-block: 2px">
+        <textarea id="namesbaseTextarea" data-base="0" rows=13 data-tip="Names data: a comma separated list of source names used for names generation" placeholder="Provide a names data: a comma separated list of source names" autocorrect="off" spellcheck="false"></textarea>
+
         <div>
           <span>Name: </span>
           <input id="namesbaseName" data-tip="Type to change a base name" placeholder="Base name" autocorrect="off" spellcheck="false" style="width:12em"/>
           <span>Length: </span>
           <input id="namesbaseMin" data-tip="Recommended minimum name length" type="number" min=2 max=100>
           <input id="namesbaseMax" data-tip="Recommended maximum name length" type="number" min=2 value=10>
-          <span>Double: </span>
+          <span>Doubled: </span>
           <input id="namesbaseDouble" data-tip="Populate with letters that can used twice in a row (geminates)" autocorrect="off" spellcheck="false" style="width:10em">
         </div>
+
         <fieldset>
           <legend>Generated examples: </legend>
           <div id="namesbaseExamples" data-tip="Examples. Click to re-generate"></div>
@@ -2898,12 +2899,12 @@
 
       <div id="namesbaseBottom">
         <button id="namesbaseUpdateExamples" data-tip="Re-generate examples based on provided data" class="icon-arrows-cw"></button>
-        <button id="namesbaseAnalize" data-tip="Analyze namesbase to get a validity and quality overview" class="icon-flask"></button>
         <button id="namesbaseAdd" data-tip="Add new namesbase" class="icon-plus"></button>
         <button id="namesbaseDefault" data-tip="Restore default namesbase" class="icon-cancel"></button>
         <button id="namesbaseDownload" data-tip="Download namesbase to PC" class="icon-download"></button>
         <button id="namesbaseUpload" data-tip="Upload a namesbase from PC" class="icon-upload"></button>
-        <button id="namesbaseCA" data-tip="Find or share custom namesbase on Cartography Assets portal" class="icon-drafting-compass" onclick="openURL('https://cartographyassets.com/asset-category/specific-assets/azgaars-generator/namebases/')"></button>
+        <button id="namesbaseCA" data-tip="Find or share custom namesbase on Cartography Assets portal" class="icon-drafting-compass"></button>
+        <button id="namesbaseAnalyze" data-tip="Analyze namesbase to get a validity and quality overview" class="icon-flask"></button>
         <button id="namesbaseSpeak" data-tip="Speak the examples. You can change voice and language in options" class="icon-voice"></button>
       </div>
     </div>
