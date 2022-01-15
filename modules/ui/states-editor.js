@@ -132,7 +132,7 @@ function editStates() {
         data-area=${area} data-population=${population} data-burgs=${s.burgs} data-culture=${pack.cultures[s.culture].name} data-type=${
         s.type
       } data-expansionism=${s.expansionism}>
-        <svg data-tip="State fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${
+        <svg data-tip="State fill style. Click to change" width="1.5em" height="1.5em" style="margin-bottom:-5px"><rect x="0" y="0" width="100%" height="100%" fill="${
           s.color
         }" class="fillRect pointer"></svg>
         <input data-tip="State name. Click to change" class="stateName name pointer" value="${s.name}" readonly>
