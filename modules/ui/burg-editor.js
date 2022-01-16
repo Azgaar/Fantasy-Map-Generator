@@ -354,17 +354,18 @@ function editBurg(id) {
 
   function toggleFeature() {
     const id = +elSelected.attr("data-id");
-    const b = pack.burgs[id];
+    const burg = pack.burgs[id];
     const feature = this.dataset.feature;
     const turnOn = this.classList.contains("inactive");
     if (feature === "port") togglePort(id);
     else if (feature === "capital") toggleCapital(id);
-    else b[feature] = +turnOn;
-    if (b[feature]) this.classList.remove("inactive");
-    else if (!b[feature]) this.classList.add("inactive");
+    else burg[feature] = +turnOn;
+    if (burg[feature]) this.classList.remove("inactive");
+    else if (!burg[feature]) this.classList.add("inactive");
 
-    if (b.port) document.getElementById("burgEditAnchorStyle").style.display = "inline-block";
+    if (burg.port) document.getElementById("burgEditAnchorStyle").style.display = "inline-block";
     else document.getElementById("burgEditAnchorStyle").style.display = "none";
+    updateMFCGFrame(burg);
   }
 
   function toggleBurgLockButton() {

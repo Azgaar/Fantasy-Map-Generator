@@ -240,7 +240,7 @@ window.BurgsAndStates = (function () {
         b.citadel = b.capital || (pop > 50 && P(0.75)) || P(0.5) ? 1 : 0;
         b.plaza = pop > 50 || (pop > 30 && P(0.75)) || (pop > 10 && P(0.5)) || P(0.25) ? 1 : 0;
         b.walls = b.capital || pop > 30 || (pop > 20 && P(0.75)) || (pop > 10 && P(0.5)) || P(0.2) ? 1 : 0;
-        b.shanty = pop > 30 || (pop > 20 && P(0.75)) || (b.walls && P(0.75)) ? 1 : 0;
+        b.shanty = pop > 60 || (pop > 40 && P(0.75)) || (pop > 20 && b.walls && P(0.4)) ? 1 : 0;
         const religion = cells.religion[b.cell];
         const theocracy = pack.states[b.state].form === "Theocracy";
         b.temple = (religion && theocracy) || pop > 50 || (pop > 35 && P(0.75)) || (pop > 20 && P(0.5)) ? 1 : 0;
@@ -1037,7 +1037,8 @@ window.BurgsAndStates = (function () {
           if (tier < 2 && P(0.5)) return "Diocese";
           if (tier < 2 && P(0.5)) return "Bishopric";
         }
-        if (P(0.9) && [7, 5].includes(base)) { // Greek, Ruthenian
+        if (P(0.9) && [7, 5].includes(base)) {
+          // Greek, Ruthenian
           if (tier < 2) return "Eparchy";
           if (tier === 2) return "Exarchate";
           if (tier > 2) return "Patriarchate";
@@ -1097,7 +1098,7 @@ window.BurgsAndStates = (function () {
     const max = percentage == 100 ? 1000 : gauss(20, 5, 5, 100) * percentage ** 0.5; // max growth
 
     const forms = {
-      Monarchy: {County: 22, Earldom: 6, Shire: 2, Landgrave: 2, Margrave: 2, Barony: 2, Captaincy:1, Seneschalty:1},
+      Monarchy: {County: 22, Earldom: 6, Shire: 2, Landgrave: 2, Margrave: 2, Barony: 2, Captaincy: 1, Seneschalty: 1},
       Republic: {Province: 6, Department: 2, Governorate: 2, District: 1, Canton: 1, Prefecture: 1},
       Theocracy: {Parish: 3, Deanery: 1},
       Union: {Province: 1, State: 1, Canton: 1, Republic: 1, County: 1, Council: 1},
