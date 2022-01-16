@@ -143,7 +143,7 @@ function regenerateStates() {
   const localSeed = Math.floor(Math.random() * 1e9); // new random seed
   Math.random = aleaPRNG(localSeed);
 
-  const statesCount = +regionsInput.value;
+  const statesCount = +regionsOutput.value;
   const burgs = pack.burgs.filter(b => b.i && !b.removed);
   if (!burgs.length) return tip("There are no any burgs to generate states. Please create burgs first", false, "error");
   if (burgs.length < statesCount) tip(`Not enough burgs to generate ${statesCount} states. Will generate only ${burgs.length} states`, false, "warn");

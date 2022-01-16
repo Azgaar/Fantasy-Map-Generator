@@ -938,7 +938,7 @@ function applyDefaultStyle() {
     .attr("stroke-linecap", "round");
   legend.select("#legendBox").attr("fill", "#ffffff").attr("fill-opacity", 0.8);
 
-  const citiesSize = Math.max(rn(8 - regionsInput.value / 20), 3);
+  const citiesSize = Math.max(rn(8 - regionsOutput.value / 20), 3);
   burgLabels
     .select("#cities")
     .attr("fill", "#3e3e4b")
@@ -979,7 +979,7 @@ function applyDefaultStyle() {
     .attr("stroke-linecap", "butt");
   anchors.select("#towns").attr("opacity", 1).attr("fill", "#ffffff").attr("stroke", "#3e3e4b").attr("stroke-width", 1.2).attr("size", 1);
 
-  const stateLabelSize = Math.max(rn(24 - regionsInput.value / 6), 6);
+  const stateLabelSize = Math.max(rn(24 - regionsOutput.value / 6), 6);
   labels
     .select("#states")
     .attr("fill", "#3e3e4b")

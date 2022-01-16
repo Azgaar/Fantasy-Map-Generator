@@ -31,7 +31,7 @@ window.BurgsAndStates = (function () {
 
     function placeCapitals() {
       TIME && console.time("placeCapitals");
-      let count = +regionsInput.value;
+      let count = +regionsOutput.value;
       let burgs = [0];
 
       const rand = () => 0.5 + Math.random() * 0.5;
