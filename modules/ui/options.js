@@ -288,18 +288,16 @@ function generateMapWithSeed(source) {
 }
 
 function showSeedHistoryDialog() {
-  const alert = mapHistory
-    .map(function (h, i) {
-      const created = new Date(h.created).toLocaleTimeString();
-      const button = `<i data-tip"Click to generate a map with this seed" onclick="restoreSeed(${i})" class="icon-history optionsSeedRestore"></i>`;
-      return `<div>${i + 1}. Seed: ${h.seed} ${button}. Size: ${h.width}x${h.height}. Template: ${h.template}. Created: ${created}</div>`;
-    })
-    .join("");
-  alertMessage.innerHTML = alert;
+  const lines = mapHistory.map((h, i) => {
+    const created = new Date(h.created).toLocaleTimeString();
+    const button = `<i data-tip="Click to generate a map with this seed" onclick="restoreSeed(${i})" class="icon-history optionsSeedRestore"></i>`;
+    return `<li>Seed: ${h.seed} ${button}. Size: ${h.width}x${h.height}. Template: ${h.template}. Created: ${created}</li>`;
+  });
+  alertMessage.innerHTML = `<ol style="margin: 0; padding-left: 1.5em">${lines.join("")}</ol>`;
+
   $("#alert").dialog({
     resizable: false,
     title: "Seed history",
-    width: fitContent(),
     position: {my: "center", at: "center", of: "svg"}
   });
 }
