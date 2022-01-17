@@ -7,6 +7,7 @@ function overviewBurgs() {
 
   const body = document.getElementById("burgsBody");
   updateFilter();
+  updateLockAllIcon();
   burgsOverviewAddLines();
   $("#burgsOverview").dialog();
 
@@ -33,6 +34,7 @@ function overviewBurgs() {
   document.getElementById("burgsListToLoad").addEventListener("change", function () {
     uploadFile(this, importBurgNames);
   });
+  document.getElementById("burgsLockAll").addEventListener("click", toggleLockAll);
   document.getElementById("burgsRemoveAll").addEventListener("click", triggerAllBurgsRemove);
   document.getElementById("burgsInvertLock").addEventListener("click", invertLock);
 
@@ -87,7 +89,7 @@ function overviewBurgs() {
         <input data-tip="Burg name. Click and type to change" class="burgName" value="${b.name}" autocorrect="off" spellcheck="false">
         <input data-tip="Burg province" class="burgState" value="${province}" disabled>
         <input data-tip="Burg state" class="burgState" value="${state}" disabled>
-        <select data-tip="Dominant culture. Click to change burg culture (to change cell cultrure use Cultures Editor)" class="stateCulture">${getCultureOptions(
+        <select data-tip="Dominant culture. Click to change burg culture (to change cell culture use Cultures Editor)" class="stateCulture">${getCultureOptions(
           b.culture
         )}</select>
         <span data-tip="Burg population" class="icon-male"></span>
@@ -195,8 +197,11 @@ function overviewBurgs() {
   }
 
   function toggleBurgLockStatus() {
-    const burg = +this.parentNode.dataset.id;
-    toggleBurgLock(burg);
+    const burgId = +this.parentNode.dataset.id;
+
+    const burg = pack.burgs[burgId];
+    burg.lock = !burg.lock;
+
     if (this.classList.contains("icon-lock")) {
       this.classList.remove("icon-lock");
       this.classList.add("icon-lock-open");
@@ -478,9 +483,9 @@ function overviewBurgs() {
   }
 
   function renameBurgsInBulk() {
-    const message = `Download burgs list as a text file, make changes and re-upload the file.
+    alertMessage.innerHTML = `Download burgs list as a text file, make changes and re-upload the file.
+    Make sure the file is a plain text document with each name on its own line (the dilimiter is CRLF).
     If you do not want to change the name, just leave it as is`;
-    alertMessage.innerHTML = message;
 
     $("#alert").dialog({
       title: "Burgs bulk renaming",
@@ -561,5 +566,22 @@ function overviewBurgs() {
   function invertLock() {
     pack.burgs = pack.burgs.map(burg => ({...burg, lock: !burg.lock}));
     burgsOverviewAddLines();
+  }
+
+  function toggleLockAll() {
+    const activeBurgs = pack.burgs.filter(b => b.i && !b.removed);
+    const allLocked = activeBurgs.every(burg => burg.lock);
+
+    pack.burgs.forEach(burg => {
+      burg.lock = !allLocked;
+    });
+
+    burgsOverviewAddLines();
+    document.getElementById("burgsLockAll").className = allLocked ? "icon-lock" : "icon-lock-open";
+  }
+
+  function updateLockAllIcon() {
+    const allLocked = pack.burgs.every(({lock, i, removed}) => lock || !i || removed);
+    document.getElementById("burgsLockAll").className = allLocked ? "icon-lock-open" : "icon-lock";
   }
 }

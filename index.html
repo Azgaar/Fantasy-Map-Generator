@@ -947,7 +947,7 @@
 
           <tr data-tip="Map seed number. Seed produces the same map only if canvas size and options are the same">
             <td>
-              <i data-tip="Show seed history to apply a previous seed" id="optionsMapHistory" class="icon-history"></i>
+              <i data-tip="Show seed history to apply a previous seed" id="optionsMapHistory" class="icon-hourglass-1"></i>
             </td>
             <td>Map seed</td>
             <td>
@@ -1062,7 +1062,7 @@
               <input id="regionsInput" data-stored="regions" type="range" min=0 max=99 value=13>
             </td>
             <td>
-              <input id="regionsOutput" data-stored="regions" type="number" min=0 max=99 value=13>
+              <input id="regionsOutput" data-stored="regions" type="number" min=0 max=999 value=13>
             </td>
           </tr>
 
@@ -1451,9 +1451,21 @@
       </div>
 
       <div id="aboutContent" class="tabcontent">
-        <p><a href="https://github.com/Azgaar/Fantasy-Map-Generator" target="_blank">Fantasy Map Generator</a> is a free <a href="https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE" target="_blank">open source</a> tool which procedurally generates fantasy maps. You may use auto-generated maps as they are, edit them or even create a new map from scratch. Check out the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Quick-Start-Tutorial" target="_blank">quick start tutorial</a>, <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A" target="_blank">Q&A</a> and <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys" target="_blank">hotkeys</a> for guidance.</p>
-        <p>Join our <a href='https://discordapp.com/invite/X7E84HU' target='_blank'>Discord server</a> and <a href="https://www.reddit.com/r/FantasyMapGenerator/" target="_blank">Reddit community</a> to ask questions, get help and share maps.</p>
-        <p>The project is under active development. Creator and main maintainer: Azgaar. To track the development progress see the <a href="https://trello.com/b/7x832DG4/fantasy-map-generator" target="_blank">devboard</a>. For older versions see the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog" target="_blank">changelog</a>. Please report bugs <a href="https://github.com/Azgaar/Fantasy-Map-Generator/issues" target="_blank">here</a>. You can also contact me directly via <a href="mailto:azgaar.fmg@yandex.by" target="_blank">email</a>.</p>
+        <p>
+          <a href="https://github.com/Azgaar/Fantasy-Map-Generator" target="_blank">Fantasy Map Generator</a> is a free <a href="https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE" target="_blank">open source</a> tool which procedurally generates fantasy maps.
+          You may use auto-generated maps as they are, edit them or even create a new map from scratch.
+          Check out the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Quick-Start-Tutorial" target="_blank">Quick start</a>, <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A" target="_blank">Q&A</a>, <a href="https://youtube.com/playlist?list=PLtgiuDC8iVR2gIG8zMTRn7T_L0arl9h1C" target="_blank">Video tutorial</a>, and <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys" target="_blank">hotkeys</a> for guidance.
+        </p>
+
+        <p>
+          Join our <a href='https://discordapp.com/invite/X7E84HU' target='_blank'>Discord server</a> and <a href="https://www.reddit.com/r/FantasyMapGenerator/" target="_blank">Reddit community</a> to ask questions, get help and share maps.
+        </p>
+
+        <p>
+          The project is under active development. Creator and main maintainer: Azgaar. To track the development progress see the <a href="https://trello.com/b/7x832DG4/fantasy-map-generator" target="_blank">devboard</a>.
+          For older versions see the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog" target="_blank">changelog</a>. Please report bugs <a href="https://github.com/Azgaar/Fantasy-Map-Generator/issues" target="_blank">here</a>. You can also contact me directly via <a href="mailto:azgaar.fmg@yandex.by" target="_blank">email</a>.
+        </p>
+
         <div style="background-color: #e85b46; padding: .4em; width: max-content; margin: .6em auto 0 auto; border: 1px solid #943838">
           <a href="https://www.patreon.com/azgaar" target="_blank" style="color: white; text-decoration: none; font-family: sans-serif">
             <div>
@@ -1466,7 +1478,10 @@
             </div>
           </a>
         </div>
-        <p>Special thanks to <a data-tip="Click to see list of supporters" onclick="showSupporters()">all supporters</a> on Patreon!</p>
+
+        <p>
+          Special thanks to <a data-tip="Click to see list of supporters" onclick="showSupporters()">all supporters</a> on Patreon!
+        </p>
 
         <ul class="share-buttons">
           <li><a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator%2F&quote=" data-tip="Share on Facebook" target="_blank"><img alt="Share on Facebook" src="images/Facebook.png" /></a></li>
@@ -2038,11 +2053,14 @@
           </div>
         </div>
 
-        <div id="mfcgPreviewSection" data-tip="Burg preview in the Medieval Fantasy City Generator. Default seed is a conbimation of map seed and burg id" style="display: flex; flex-direction: column">
+        <div id="mfcgPreviewSection" data-tip="Burg preview in the Medieval Fantasy City Generator. Default seed is a combination of map seed and burg id" style="display: flex; flex-direction: column">
           <div>
             See in <a id="mfcgLink" target="_blank">City Generator by Watabou</a>.
-            Seed: <input id="mfcgBurgSeed" style="width: 10em" type="number" min=1 max="1e13" step="1" />
-            <i id="regenerateMFCGBurgSeed" data-tip="Randomize Medieval Fantasy City Generator burg seed" class="icon-arrows-cw pointer" style="margin-left: .1em"></i>
+            <div id="mfcgBurgSeedSection">
+              Seed: <input id="mfcgBurgSeed" style="width: 10em" type="number" min=1 max="1e13" step="1" />
+              <i id="regenerateMFCGBurgSeed" data-tip="Randomize Medieval Fantasy City Generator burg seed" class="icon-arrows-cw pointer" style="margin-left: .1em"></i>
+            </div>
+            <i id="addCustomMFCGBurgLink" data-tip="Provide custom link to the burg map" class="icon-pencil pointer" style="margin-left: .1em"></i>
           </div>
           <iframe id="mfcgPreview" sandbox="allow-scripts allow-same-origin"></iframe>
         </div>
@@ -2623,8 +2641,10 @@
             <option value="Sultanate">Sultanate</option>
             <option value="Tsardom">Tsardom</option>
             <option value="Ulus">Ulus</option>
+            <option value="Viceroyalty">Viceroyalty</option>
           </optgroup>
           <optgroup label="Republic">
+            <option value="Chancellery">Chancellery</option>
             <option value="City-state">City-state</option>
             <option value="Diarchy">Diarchy</option>
             <option value="Federation">Federation</option>
@@ -2662,8 +2682,10 @@
             <option value="Divine Kingdom">Divine Kingdom</option>
             <option value="Divine Empire">Divine Empire</option>
             <option value="Eparchy">Eparchy</option>
+            <option value="Exarchate">Exarchate</option>
             <option value="Holy State">Holy State</option>
             <option value="Imamah">Imamah</option>
+            <option value="Patriarchate">Patriarchate</option>
             <option value="Theocracy">Theocracy</option>
           </optgroup>
           <optgroup label="Anarchy">
@@ -2740,31 +2762,25 @@
     <div id="diplomacyEditor" class="dialog stable" style="display: none">
       <div id="diplomacyHeader" class="header">
         <div style="left:.2em" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">State&nbsp;</div>
-        <div style="left:13.4em" data-tip="Click to sort by diplomatical relations" class="sortable alphabetically" data-sortby="relations">Relations&nbsp;</div>
+        <div style="left:14.4em" data-tip="Click to sort by diplomatical relations" class="sortable alphabetically" data-sortby="relations">Relations&nbsp;</div>
       </div>
 
 	    <div id="diplomacyBodySection" class="table"></div>
-
-      <div id="diplomacySelect">
-        <div data-tip="Ally means states formed a defensive pact and will protect each other in case of third party aggression">Ally</div>
-        <div data-tip="State is friendly to anouther state when they share some common interests">Friendly</div>
-        <div data-tip="Neutral means states relations are neither positive nor negative">Neutral</div>
-        <div data-tip="Suspicion means state has a cautious distrust of another state">Suspicion</div>
-        <div data-tip="Enemies are states at war with each other">Enemy</div>
-        <div data-tip="Relations are unknown if states do not have enough information about each other">Unknown</div>
-        <div data-tip="Rivalry is a state of competing for dominance in the region">Rival</div>
-        <div data-tip="Vassal is a state having obligation to its suzerain">Vassal</div>
-        <div data-tip="Suzerain is a state having some control over its vassals">Suzerain</div>
-      </div>
+	    <div class="info-line">Click on state name to see relations.<br>Click on relations name to change it</div>
 
       <div id="diplomacyBottom" style="margin-top: .1em">
         <button id="diplomacyEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
         <button id="diplomacyEditStyle" data-tip="Edit states (including diplomacy view) style in Style Editor" class="icon-adjust"></button>
         <button id="diplomacyRegenerate" data-tip="Regenerate diplomatical relations" class="icon-retweet"></button>
+        <button id="diplomacyReset" data-tip="Reset diplomatical relations of selected state to Neutral" class="icon-eraser"></button>
         <button id="diplomacyHistory" data-tip="Show relations history" class="icon-hourglass-1"></button>
-        <button id="diplomacyMatrix" data-tip="Show relations matrix" class="icon-list-bullet"></button>
+        <button id="diplomacyShowMatrix" data-tip="Show relations matrix" class="icon-list-bullet"></button>
         <button id="diplomacyExport" data-tip="Save state relations matrix as a text file (.csv)" class="icon-download"></button>
       </div>
+    </div>
+
+    <div id="diplomacyMatrix" class="dialog" style="display: none">
+      <div id="diplomacyMatrixBody" class="matrix-table"></div>
     </div>
 
     <div id="provinceNameEditor" class="dialog" data-province="0" style="display: none">
@@ -2784,6 +2800,8 @@
           <option value="Autonomy">Autonomy</option>
           <option value="Barony">Barony</option>
           <option value="Canton">Canton</option>
+          <option value="Captaincy">Captaincy</option>
+          <option value="Chiefdom">Chiefdom</option>
           <option value="Clan">Clan</option>
           <option value="Colony">Colony</option>
           <option value="Council">Council</option>
@@ -2791,6 +2809,7 @@
           <option value="Deanery">Deanery</option>
           <option value="Department">Department</option>
           <option value="Dependency">Dependency</option>
+          <option value="Diaconate">Diaconate</option>
           <option value="District">District</option>
           <option value="Earldom">Earldom</option>
           <option value="Governorate">Governorate</option>
@@ -2800,6 +2819,7 @@
           <option value="Landgrave">Landgrave</option>
           <option value="Mandate">Mandate</option>
           <option value="Margrave">Margrave</option>
+          <option value="Municipality">Municipality</option>
           <option value="Occupation zone">Occupation zone</option>
           <option value="Parish">Parish</option>
           <option value="Prefecture">Prefecture</option>
@@ -2807,6 +2827,7 @@
           <option value="Region">Region</option>
           <option value="Republic">Republic</option>
           <option value="Reservation">Reservation</option>
+          <option value="Seneschalty">Seneschalty</option>
           <option value="Shire">Shire</option>
           <option value="State">State</option>
           <option value="Territory">Territory</option>
@@ -2874,21 +2895,22 @@
       <div id="namesbaseBasesTop">
         <span>Select base: </span>
         <select id="namesbaseSelect" data-tip="Select base to edit" style="width: 12em" value="0"></select>
+        <span style="margin-left: 2px">Names data: </span>
       </div>
 
-      <div id="namesbaseBody">
-        <span>Names data:</span><br>
-        <textarea id="namesbaseTextarea" data-base="0" rows=12 data-tip="Names data: a comma separated list of source names used for names generation" placeholder="Provide a names data: a comma separated list of source names" autocorrect="off" spellcheck="false"></textarea>
-        <br>
+      <div id="namesbaseBody" style="margin-block: 2px">
+        <textarea id="namesbaseTextarea" data-base="0" rows=13 data-tip="Names data: a comma separated list of source names used for names generation" placeholder="Provide a names data: a comma separated list of source names" autocorrect="off" spellcheck="false"></textarea>
+
         <div>
           <span>Name: </span>
           <input id="namesbaseName" data-tip="Type to change a base name" placeholder="Base name" autocorrect="off" spellcheck="false" style="width:12em"/>
           <span>Length: </span>
           <input id="namesbaseMin" data-tip="Recommended minimum name length" type="number" min=2 max=100>
           <input id="namesbaseMax" data-tip="Recommended maximum name length" type="number" min=2 value=10>
-          <span>Double: </span>
+          <span>Doubled: </span>
           <input id="namesbaseDouble" data-tip="Populate with letters that can used twice in a row (geminates)" autocorrect="off" spellcheck="false" style="width:10em">
         </div>
+
         <fieldset>
           <legend>Generated examples: </legend>
           <div id="namesbaseExamples" data-tip="Examples. Click to re-generate"></div>
@@ -2897,12 +2919,12 @@
 
       <div id="namesbaseBottom">
         <button id="namesbaseUpdateExamples" data-tip="Re-generate examples based on provided data" class="icon-arrows-cw"></button>
-        <button id="namesbaseAnalize" data-tip="Analyze namesbase to get a validity and quality overview" class="icon-flask"></button>
         <button id="namesbaseAdd" data-tip="Add new namesbase" class="icon-plus"></button>
         <button id="namesbaseDefault" data-tip="Restore default namesbase" class="icon-cancel"></button>
         <button id="namesbaseDownload" data-tip="Download namesbase to PC" class="icon-download"></button>
         <button id="namesbaseUpload" data-tip="Upload a namesbase from PC" class="icon-upload"></button>
-        <button id="namesbaseCA" data-tip="Find or share custom namesbase on Cartography Assets portal" class="icon-drafting-compass" onclick="openURL('https://cartographyassets.com/asset-category/specific-assets/azgaars-generator/namebases/')"></button>
+        <button id="namesbaseCA" data-tip="Find or share custom namesbase on Cartography Assets portal" class="icon-drafting-compass"></button>
+        <button id="namesbaseAnalyze" data-tip="Analyze namesbase to get a validity and quality overview" class="icon-flask"></button>
         <button id="namesbaseSpeak" data-tip="Speak the examples. You can change voice and language in options" class="icon-voice"></button>
       </div>
     </div>
@@ -3289,6 +3311,7 @@
         <button id="addNewBurg" data-tip="Add a new burg. Hold Shift to add multiple" class="icon-plus"></button>
         <button id="burgsExport" data-tip="Save burgs-related data as a text file (.csv)" class="icon-download"></button>
         <button id="burgNamesImport" data-tip="Rename burgs in bulk" class="icon-upload"></button>
+        <button id="burgsLockAll" data-tip="Lock or unlock all burgs" class="icon-lock"></button>
         <button id="burgsRemoveAll" data-tip="Remove all unlocked burgs except for capitals. To remove a capital remove its state first" class="icon-trash"></button>
       </div>
     </div>
@@ -3640,8 +3663,8 @@
       </div>
       <div data-tip="Image scale relative to image size (e.g. 5x)" style="margin-bottom: .3em">
         <div class="label">Scale:</div>
-        <input id="tileScaleInput" data-stored="tileScale" type="range" min=1 max=4 value=1 style="width: 11em">
-        <input id="tileScaleOutput" data-stored="tileScale" type="number" min=1 value=1>
+        <input id="tileScaleInput" data-stored="tileScale" type="range" min=1 max=4 value=1 style="width: 10em">
+        <input id="tileScaleOutput" data-stored="tileScale" type="number" min=1 value=1 >
       </div>
       <div data-tip="Calculated size of image if combined" style="margin-bottom: .3em">
         <div class="label">Total size:</div>
@@ -3695,7 +3718,7 @@
     <div id="prompt" style="display: none" class="dialog">
       <form id="promptForm">
         <div id="promptText"></div>
-        <input id="promptInput" type="number" step=.01 placeholder="type value" autocomplete="off" required>
+        <input id="promptInput" type="number" step=.01 placeholder="type value" autocomplete="off">
         <button type="submit">Confirm</button>
         <button type="button" id="promptCancel" formnovalidate>Cancel</button>
       </form>

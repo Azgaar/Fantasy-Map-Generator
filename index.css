@@ -29,16 +29,19 @@ input:read-only {
   cursor: default;
 }
 
+input[type="radio"] {
+  vertical-align: bottom;
+  cursor: pointer;
+}
+
 textarea {
-  padding: 2px;
-  text-indent: 1px;
+  padding: 3px;
   box-sizing: border-box;
   width: 100%;
 }
 
 iframe {
   border: 0;
-  pointer-events: none;
   width: 100%;
 }
 
@@ -835,75 +838,79 @@ fieldset {
 }
 
 .matrix-table {
-  width: 100%;
-  font-size: smaller;
-  text-align: center;
-  border-collapse: collapse;
+  max-height: 80vh;
+  max-width: 85vw;
+  scrollbar-width: thin;
+  overflow: auto;
 }
 
-table.matrix-table th,
-table.matrix-table td {
+.matrix-table > table {
+  text-align: center;
+  border-collapse: collapse;
+  font-size: smaller;
+}
+
+.matrix-table > table th,
+.matrix-table > table td {
   border: 1px solid var(--dark-solid);
   height: 2em;
   padding: 0.2em;
   position: relative;
 }
 
-table.matrix-table th {
+.matrix-table > table th {
   background-color: #302a2a;
   color: #ffffff;
 }
 
-table.matrix-table tr:hover th {
-  background: #3e3636;
-}
-
-table.matrix-table td:hover {
+.matrix-table > table td:hover {
   outline: 2px solid var(--dark-solid);
   outline-offset: -1px;
   z-index: 1;
+  cursor: pointer;
 }
 
-table.matrix-table td.Ally {
+.matrix-table > table td.Ally {
   background-color: #73ec73;
   color: #000000;
 }
 
-table.matrix-table td.Friendly {
+.matrix-table > table td.Friendly {
   background-color: #d4f8aa;
 }
 
-table.matrix-table td.Neutral {
+.matrix-table > table td.Neutral {
   background-color: #d8d9d3;
 }
 
-table.matrix-table td.Suspicion {
+.matrix-table > table td.Suspicion {
   background-color: #eeafaa;
 }
 
-table.matrix-table td.Enemy {
+.matrix-table > table td.Enemy {
   background-color: #ffa39c;
   color: #af0d23;
 }
 
-table.matrix-table td.Unknown {
+.matrix-table > table td.Unknown {
   background-color: #c1bfbf;
 }
 
-table.matrix-table td.Rival {
+.matrix-table > table td.Rival {
   background-color: #bd845c;
 }
 
-table.matrix-table td.Vassal {
+.matrix-table > table td.Vassal {
   background-color: #87cefa;
 }
 
-table.matrix-table td.Suzerain {
+.matrix-table > table td.Suzerain {
   background-color: #8f8fe1;
 }
 
-table.matrix-table td.x {
+.matrix-table > table td.x {
   background-color: #d4ca94;
+  cursor: initial;
 }
 
 #sizeOutput {
@@ -1311,19 +1318,23 @@ div.slider .ui-slider-handle {
 }
 
 #alertMessage::-webkit-scrollbar,
-.table::-webkit-scrollbar {
+.table::-webkit-scrollbar,
+.matrix-table::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
   background-color: transparent;
 }
 
 #alertMessage::-webkit-scrollbar-thumb,
-.table::-webkit-scrollbar-thumb {
+.table::-webkit-scrollbar-thumb,
+.matrix-table::-webkit-scrollbar-thumb {
   background-color: #aaa;
   border-radius: 6px;
 }
 
 #alertMessage::-webkit-scrollbar-thumb:hover,
-.table::-webkit-scrollbar-thumb:hover {
+.table::-webkit-scrollbar-thumb:hover,
+.matrix-table::-webkit-scrollbar-thumb:hover {
   background: #666;
 }
 
@@ -1505,15 +1516,14 @@ div.states > .riverType {
   width: 5em;
 }
 
-div.states > .coaIcon {
+.coaIcon {
   stroke-width: 3;
   width: 1.4em;
   height: 1.4em;
   margin: -0.3em 0;
-  cursor: pointer;
 }
 
-div.states > .coaIcon > use {
+.coaIcon > use {
   pointer-events: none;
 }
 
@@ -2001,7 +2011,7 @@ div.textual fieldset {
 
 div.textual span,
 .textual legend {
-  font-size: 0.8em;
+  font-size: 0.9em;
   font-weight: bold;
 }
 
@@ -2120,8 +2130,9 @@ svg.button {
   text-decoration: underline;
 }
 
-#info-line {
+.info-line {
   font-size: 0.9em;
+  font-style: italic;
   color: gray;
   user-select: none;
 }
@@ -2265,10 +2276,10 @@ svg.button {
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  max-width: 22em;
-  background-color: #fff;
+  max-width: 23em;
   padding: 1.2em;
-  border: solid 1px #000;
+  background-color: var(--bg-dialogs);
+  border: solid 1px var(--dark-solid);
   font-size: 1.2em;
   z-index: 1000;
 }

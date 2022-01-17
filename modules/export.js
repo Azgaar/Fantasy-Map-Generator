@@ -405,8 +405,8 @@ function saveGeoJSON_Cells() {
     json.features.push(feature);
   });
 
-  const name = getFileName("Cells") + ".geojson";
-  downloadFile(JSON.stringify(json), name, "application/json");
+  const fileName = getFileName("Cells") + ".geojson";
+  downloadFile(JSON.stringify(json), fileName, "application/json");
 }
 
 function saveGeoJSON_Routes() {
@@ -421,30 +421,25 @@ function saveGeoJSON_Routes() {
     json.features.push(feature);
   });
 
-  const name = getFileName("Routes") + ".geojson";
-  downloadFile(JSON.stringify(json), name, "application/json");
+  const fileName = getFileName("Routes") + ".geojson";
+  downloadFile(JSON.stringify(json), fileName, "application/json");
 }
 
 function saveGeoJSON_Rivers() {
   const json = {type: "FeatureCollection", features: []};
 
   rivers.selectAll("path").each(function () {
-    const coordinates = getRiverPoints(this);
-    const id = this.id;
-    const width = +this.dataset.increment;
-    const increment = +this.dataset.increment;
-    const river = pack.rivers.find(r => r.i === +id.slice(5));
-    const name = river ? river.name : "";
-    const type = river ? river.type : "";
-    const i = river ? river.i : "";
-    const basin = river ? river.basin : "";
+    const river = pack.rivers.find(r => r.i === +this.id.slice(5));
+    if (!river) return;
 
-    const feature = {type: "Feature", geometry: {type: "LineString", coordinates}, properties: {id, i, basin, name, type, width, increment}};
+    const coordinates = getRiverPoints(this);
+    const properties = {...river, id: this.id};
+    const feature = {type: "Feature", geometry: {type: "LineString", coordinates}, properties};
     json.features.push(feature);
   });
 
-  const name = getFileName("Rivers") + ".geojson";
-  downloadFile(JSON.stringify(json), name, "application/json");
+  const fileName = getFileName("Rivers") + ".geojson";
+  downloadFile(JSON.stringify(json), fileName, "application/json");
 }
 
 function saveGeoJSON_Markers() {

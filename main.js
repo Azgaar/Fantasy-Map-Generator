@@ -109,7 +109,7 @@ scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", ()
 legend.on("mousemove", () => tip("Drag to change the position. Click to hide the legend")).on("click", () => clearLegend());
 
 // main data variables
-let grid = {}; // initial grapg based on jittered square grid and data
+let grid = {}; // initial graph based on jittered square grid and data
 let pack = {}; // packed graph and data
 let seed;
 let mapId;
@@ -161,7 +161,7 @@ let urbanDensity = +document.getElementById("urbanDensityInput").value;
 
 applyStoredOptions();
 
-// voronoi graph extention, cannot be changed arter generation
+// voronoi graph extension, cannot be changed after generation
 let graphWidth = +mapWidthInput.value;
 let graphHeight = +mapHeightInput.value;
 
@@ -493,7 +493,7 @@ function invokeActiveZooming() {
     coastline.select("#sea_island").attr("filter", filter);
   }
 
-  // rescale lables on zoom
+  // rescale labels on zoom
   if (labels.style("display") !== "none") {
     labels.selectAll("g").each(function () {
       if (this.id === "burgLabels") return;
@@ -668,7 +668,7 @@ function generate() {
     const parsedError = parseError(error);
     clearMainTip();
 
-    alertMessage.innerHTML = `An error is occured on map generation. Please retry.
+    alertMessage.innerHTML = `An error has occurred on map generation. Please retry.
       <br>If error is critical, clear the stored data and try again.
       <p id="errorBox">${parsedError}</p>`;
     $("#alert").dialog({
@@ -909,7 +909,7 @@ function defineMapSize() {
     const template = document.getElementById("templateInput").value; // heightmap template
     const part = grid.features.some(f => f.land && f.border); // if land goes over map borders
     const max = part ? 80 : 100; // max size
-    const lat = () => gauss(P(0.5) ? 40 : 60, 15, 25, 75); // latiture shift
+    const lat = () => gauss(P(0.5) ? 40 : 60, 15, 25, 75); // latitude shift
 
     if (!part) {
       if (template === "Pangea") return [100, 50];
@@ -981,7 +981,10 @@ function generatePrecipitation() {
   prec.selectAll("*").remove();
   const {cells, cellsX, cellsY} = grid;
   cells.prec = new Uint8Array(cells.i.length); // precipitation array
-  const modifier = precInput.value / 100; // user's input
+
+  const cellsNumberModifier = (pointsInput.dataset.cells / 10000) ** 0.25;
+  const precInputModifier = precInput.value / 100;
+  const modifier = cellsNumberModifier * precInputModifier;
 
   const westerly = [];
   const easterly = [];
@@ -997,14 +1000,14 @@ function generatePrecipitation() {
   // x2 = 60-70 latitude: wet summer (rising zone), dry winter (sinking zone)
   // x1 = 70-85 latitude: dry all year (sinking zone)
   // x0.5 = 85-90 latitude: dry all year (sinking zone)
-  const lalitudeModifier = [4, 2, 2, 2, 1, 1, 2, 2, 2, 2, 3, 3, 2, 2, 1, 1, 1, 0.5];
+  const latitudeModifier = [4, 2, 2, 2, 1, 1, 2, 2, 2, 2, 3, 3, 2, 2, 1, 1, 1, 0.5];
   const MAX_PASSABLE_ELEVATION = 85;
 
   // define wind directions based on cells latitude and prevailing winds there
   d3.range(0, cells.i.length, cellsX).forEach(function (c, i) {
     const lat = mapCoordinates.latN - (i / cellsY) * mapCoordinates.latT;
     const latBand = ((Math.abs(lat) - 1) / 5) | 0;
-    const latMod = lalitudeModifier[latBand];
+    const latMod = latitudeModifier[latBand];
     const windTier = (Math.abs(lat - 89) / 30) | 0; // 30d tiers from 0 to 5 from N to S
     const {isWest, isEast, isNorth, isSouth} = getWindDirections(windTier);
 
@@ -1021,14 +1024,14 @@ function generatePrecipitation() {
   const vertT = southerly + northerly;
   if (northerly) {
     const bandN = ((Math.abs(mapCoordinates.latN) - 1) / 5) | 0;
-    const latModN = mapCoordinates.latT > 60 ? d3.mean(lalitudeModifier) : lalitudeModifier[bandN];
+    const latModN = mapCoordinates.latT > 60 ? d3.mean(latitudeModifier) : latitudeModifier[bandN];
     const maxPrecN = (northerly / vertT) * 60 * modifier * latModN;
     passWind(d3.range(0, cellsX, 1), maxPrecN, cellsX, cellsY);
   }
 
   if (southerly) {
     const bandS = ((Math.abs(mapCoordinates.latS) - 1) / 5) | 0;
-    const latModS = mapCoordinates.latT > 60 ? d3.mean(lalitudeModifier) : lalitudeModifier[bandS];
+    const latModS = mapCoordinates.latT > 60 ? d3.mean(latitudeModifier) : latitudeModifier[bandS];
     const maxPrecS = (southerly / vertT) * 60 * modifier * latModS;
     passWind(d3.range(cells.i.length - cellsX, cells.i.length, 1), maxPrecS, -cellsX, cellsY);
   }
@@ -1054,7 +1057,7 @@ function generatePrecipitation() {
       }
 
       let humidity = maxPrec - cells.h[first]; // initial water amount
-      if (humidity <= 0) continue; // if first cell in row is too elevated cosdired wind dry
+      if (humidity <= 0) continue; // if first cell in row is too elevated consider wind dry
 
       for (let s = 0, current = first; s < steps; s++, current += next) {
         if (cells.temp[current] < -5) continue; // no flux in permafrost
@@ -1182,7 +1185,7 @@ function reGraph() {
   TIME && console.timeEnd("reGraph");
 }
 
-// Detect and draw the coasline
+// Detect and draw the coastline
 function drawCoastline() {
   TIME && console.time("drawCoastline");
   reMarkFeatures();
@@ -1191,7 +1194,7 @@ function drawCoastline() {
     vertices = pack.vertices,
     n = cells.i.length,
     features = pack.features;
-  const used = new Uint8Array(features.length); // store conneted features
+  const used = new Uint8Array(features.length); // store connected features
   const largestLand = d3.scan(
     features.map(f => (f.land ? f.cells : 0)),
     (a, b) => b - a
@@ -1395,6 +1398,12 @@ function reMarkFeatures() {
   TIME && console.timeEnd("reMarkFeatures");
 }
 
+function isWetLand(moisture, temperature, height) {
+  if (moisture > 40 && temperature > -2 && height < 25) return true; //near coast
+  if (moisture > 24 && temperature > -2 && height > 24 && height < 60) return true; //off coast
+  return false;
+}
+
 // assign biome id for each cell
 function defineBiomes() {
   TIME && console.time("defineBiomes");
@@ -1427,7 +1436,7 @@ function defineBiomes() {
 function getBiomeId(moisture, temperature, height) {
   if (height < 20) return 0; // marine biome: all water cells
   if (temperature < -5) return 11; // permafrost biome
-  if (moisture > 40 && temperature > -2 && (height < 25 || (moisture > 24 && height > 24 && height < 60))) return 12; // wetland biome
+  if (isWetLand(moisture, temperature, height)) return 12; // wetland biome
 
   const moistureBand = Math.min((moisture / 5) | 0, 4); // [0-4]
   const temperatureBand = Math.min(Math.max(20 - temperature, 0), 25); // [0-25]

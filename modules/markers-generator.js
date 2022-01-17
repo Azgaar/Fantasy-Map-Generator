@@ -97,7 +97,7 @@ window.Markers = (function () {
   }
 
   function addMarker({cell, type, icon, dx, dy, px}) {
-    const i = pack.markers.length;
+    const i = last(pack.markers)?.i + 1 || 0;
     const [x, y] = getMarkerCoordinates(cell);
     const marker = {i, icon, type, x, y, cell};
     if (dx) marker.dx = dx;

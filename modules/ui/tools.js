@@ -143,7 +143,7 @@ function regenerateStates() {
   const localSeed = Math.floor(Math.random() * 1e9); // new random seed
   Math.random = aleaPRNG(localSeed);
 
-  const statesCount = +regionsInput.value;
+  const statesCount = +regionsOutput.value;
   const burgs = pack.burgs.filter(b => b.i && !b.removed);
   if (!burgs.length) return tip("There are no any burgs to generate states. Please create burgs first", false, "error");
   if (burgs.length < statesCount) tip(`Not enough burgs to generate ${statesCount} states. Will generate only ${burgs.length} states`, false, "warn");
@@ -624,7 +624,9 @@ function addRiverOnClick() {
 
   const source = riverCells[0];
   const mouth = riverCells[riverCells.length - 2];
-  const widthFactor = river?.widthFactor || (!parent || parent === riverId ? 1.2 : 1);
+
+  const defaultWidthFactor = rn(1 / (pointsInput.dataset.cells / 10000) ** 0.25, 2);
+  const widthFactor = river?.widthFactor || (!parent || parent === riverId ? defaultWidthFactor * 1.2 : defaultWidthFactor);
   const meanderedPoints = addMeandering(riverCells);
 
   const discharge = cells.fl[mouth]; // m3 in second
@@ -739,7 +741,7 @@ function configMarkersGeneration() {
       const inputId = `markerIconInput${index}`;
       return `<tr>
         <td><input value="${type}" /></td>
-        <td>
+        <td style="position: relative">
           <input id="${inputId}" style="width: 5em" value="${icon}" />
           <i class="icon-edit pointer" style="position: absolute; margin:.4em 0 0 -1.4em; font-size:.85em"></i>
         </td>

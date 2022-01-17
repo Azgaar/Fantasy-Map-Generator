@@ -831,7 +831,7 @@ function applyDefaultStyle() {
   landmass.attr("opacity", 1).attr("fill", "#eef6fb").attr("filter", null);
   markers.attr("opacity", null).attr("rescale", 1).attr("filter", "url(#dropShadow01)");
 
-  prec.attr("opacity", null).attr("stroke", "#000000").attr("stroke-width", 0.1).attr("fill", "#003dff").attr("filter", null);
+  prec.attr("opacity", null).attr("stroke", "#000000").attr("stroke-width", 0).attr("fill", "#003dff").attr("filter", null);
   population.attr("opacity", null).attr("stroke-width", 1.6).attr("stroke-dasharray", null).attr("stroke-linecap", "butt").attr("filter", null);
   population.select("#rural").attr("stroke", "#0000ff");
   population.select("#urban").attr("stroke", "#ff0000");
@@ -938,7 +938,7 @@ function applyDefaultStyle() {
     .attr("stroke-linecap", "round");
   legend.select("#legendBox").attr("fill", "#ffffff").attr("fill-opacity", 0.8);
 
-  const citiesSize = Math.max(rn(8 - regionsInput.value / 20), 3);
+  const citiesSize = Math.max(rn(8 - regionsOutput.value / 20), 3);
   burgLabels
     .select("#cities")
     .attr("fill", "#3e3e4b")
@@ -979,7 +979,7 @@ function applyDefaultStyle() {
     .attr("stroke-linecap", "butt");
   anchors.select("#towns").attr("opacity", 1).attr("fill", "#ffffff").attr("stroke", "#3e3e4b").attr("stroke-width", 1.2).attr("size", 1);
 
-  const stateLabelSize = Math.max(rn(24 - regionsInput.value / 6), 6);
+  const stateLabelSize = Math.max(rn(24 - regionsOutput.value / 6), 6);
   labels
     .select("#states")
     .attr("fill", "#3e3e4b")
