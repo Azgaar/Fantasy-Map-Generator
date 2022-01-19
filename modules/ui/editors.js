@@ -492,8 +492,8 @@ function createPicker() {
       .attr("id", "picker_" + d)
       .attr("fill", d)
       .attr("class", i ? "" : "selected")
-      .attr("x", (i % 15) * 22 + 4)
-      .attr("y", 40 + Math.floor(i / 15)*20)
+      .attr("x", (i % 14) * 22 + 4)
+      .attr("y", 40 + Math.floor(i / 14)*20)
       .attr("width", 16)
       .attr("height", 16);
   });
@@ -503,8 +503,8 @@ function createPicker() {
       .append("rect")
       .attr("id", "picker_" + this.id)
       .attr("fill", "url(#" + this.id + ")")
-      .attr("x", (i % 15) * 22 + 4)
-      .attr("y", Math.floor(i / 15)*20 + (number * 2))
+      .attr("x", (i % 14) * 22 + 4)
+      .attr("y", Math.floor(i / 14)*20 + 20 + (number * 2))
       .attr("width", 16)
       .attr("height", 16)
       .on("mousemove", () => tip("Click to fill with the hatching " + this.id));
