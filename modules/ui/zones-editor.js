@@ -28,9 +28,7 @@ function editZones() {
   document.getElementById("zonesManuallyApply").addEventListener("click", applyZonesManualAssignent);
   document.getElementById("zonesManuallyCancel").addEventListener("click", cancelZonesManualAssignent);
   document.getElementById("zonesAdd").addEventListener("click", addZonesDialog);
-  //document.getElementById("typeTrash").addEventListener("click", removeZoneType);
   document.getElementById("zonesNewBlank").addEventListener("click", addZonesLayer);
-  document.getElementById("zonesNewRandom").addEventListener("click", addZonesLayer);
   document.getElementById("zonesNewTypeButton").addEventListener("click", addZonesType);
   document.getElementById("zonesExport").addEventListener("click", downloadZonesData);
   document.getElementById("zonesRemove").addEventListener("click", toggleEraseMode);
@@ -102,6 +100,12 @@ function editZones() {
     const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
     let lines = "";
 
+    // make sure all zone types are loaded from the SVG
+    zones.selectAll("g").each(function () {
+      const zoneType = this.dataset.type;
+      if (!zoneTypes.includes(zoneType)) { zoneTypes.push(zoneType); }
+    });
+
     const selectedType = zonesFilterType.value || "All";
     zonesFilterType.options.length=0;
     zonesFilterType.options.add(new Option("All", "All", false, selectedType=="All"));
@@ -111,8 +115,7 @@ function editZones() {
 
     zones.selectAll("g").each(function () {
       const zoneType = this.dataset.type;
-      //if (zonesFilterButton.classList.contains("pressed") && zoneType !== selectedType) return;
-	  if (selectedType !== "All" && (zonesFilterButton.classList.contains("pressed") && zoneType !== selectedType)) return;
+      if (selectedType !== "All" && (zonesFilterButton.classList.contains("pressed") && zoneType !== selectedType)) return;
 
       const c = this.dataset.cells ? this.dataset.cells.split(",").map(c => +c) : [];
       const description = this.dataset.description;
@@ -144,8 +147,6 @@ function editZones() {
     });
 
     body.innerHTML = lines;
-		  if (body.innerHTML === "") { body.innerHTML = `<div class="states"><span>Zero entries for this type. To see entries again, select "All" or disable the filter button</span>
-		        </div>`; }
 
     // update footer
     const totalArea = (zonesFooterArea.dataset.area = graphWidth * graphHeight * distanceScaleInput.value ** 2);
@@ -522,7 +523,9 @@ function editZones() {
     const zoneTypeListBody = document.getElementById("zonesTypesBodySection");
     let lines = "";
     zoneTypes.forEach(function(z, i) {
-    lines += `<div class="states"><span class="religionname">${z}</span>`;
+    let count=0; // Amount of zones per type
+    zones.selectAll("g").each(function() { if (this.dataset.type === z) count++; });
+    lines += `<div class="states"><span class="religionDeity">${z}</span><span class="religionType">${count}</span>`;
     if (i > 5) {
       let id="removeZoneType" + i;
       lines += `<span data-tip="Remove zone type" class="icon-trash-empty" id="${id}"></span>`;
@@ -531,7 +534,7 @@ function editZones() {
     });
     zoneTypeListBody.innerHTML = lines;
     zonesTypesFooterNumber.innerHTML = zoneTypes.length;
-}
+  }
 
   function addZonesDialog() {
     $("#zonesTypes").dialog({
@@ -539,9 +542,9 @@ function editZones() {
       width: fitContent(),
       close: closeZoneTypesEditor,
       position: {my: "center", at: "center", of: "svg"},
-  });
+    });
     zonesTypesAddLines();
-}
+  }
 
   function closeZoneTypesEditor() {
     zonesEditorAddLines();
@@ -560,21 +563,21 @@ function editZones() {
     }
   }
   
-function removeZoneType(zoneType) {
-  zones.selectAll("g").each(function () {
-    if (this.dataset.type === zoneType) {
-      this.dataset.type = "Unassigned";
-    }
-  });  
+  function removeZoneType(zoneType) {
+    zones.selectAll("g").each(function () {
+      if (this.dataset.type === zoneType) {
+        this.dataset.type = "Unassigned";
+      }
+    });  
 
-  for (let i=0; i<zoneTypes.length; i++) {
-    if (zoneTypes[i] === zoneType) {
-      zoneTypes.splice(i, 1);
-      zonesTypesAddLines();
-      break;
+    for (let i=0; i<zoneTypes.length; i++) {
+      if (zoneTypes[i] === zoneType) {
+        zoneTypes.splice(i, 1);
+        zonesTypesAddLines();
+        break;
+      }
     }
   }
-}
 	
   function zoneRemove(zone) {
     zones.select("#" + zone).remove();
