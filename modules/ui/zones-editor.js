@@ -99,7 +99,7 @@ function editZones() {
 
 // add line for each zone
   function zonesEditorAddLines() {
-    const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "Â²" : " " + areaUnit.value;
+    const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
     let lines = "";
 
     const selectedType = zonesFilterType.value || "All";
@@ -111,7 +111,8 @@ function editZones() {
 
     zones.selectAll("g").each(function () {
       const zoneType = this.dataset.type;
-      if (zonesFilterButton.classList.contains("pressed") && zoneType !== selectedType) return;
+      //if (zonesFilterButton.classList.contains("pressed") && zoneType !== selectedType) return;
+	  if (selectedType !== "All" && (zonesFilterButton.classList.contains("pressed") && zoneType !== selectedType)) return;
 
       const c = this.dataset.cells ? this.dataset.cells.split(",").map(c => +c) : [];
       const description = this.dataset.description;
@@ -143,6 +144,8 @@ function editZones() {
     });
 
     body.innerHTML = lines;
+		  if (body.innerHTML === "") { body.innerHTML = `<div class="states"><span>Zero entries for this type. To see entries again, select "All" or disable the filter button</span>
+		        </div>`; }
 
     // update footer
     const totalArea = (zonesFooterArea.dataset.area = graphWidth * graphHeight * distanceScaleInput.value ** 2);
@@ -387,28 +390,10 @@ function editZones() {
       zonesEditorAddLines();
     }
   }
-  
     
   function toggleFilterTable() {
     this.classList.toggle("pressed");
-    const selectedType = zonesFilterType.value || "All";
-    const FilterTable = document.getElementById("zonesFilterButton").classList.contains("pressed");
-      /*if (FilterTable) {
-        // hide the elements from the list
-        selection.forEach(i => {
-          const index = zones.id(i);
-          if (index === -1) return;
-          zone.select("polygon#" + base + i).remove();
-          cells.splice(index, 1);
-        });
-      } else {
-        // keep the elements visible
-        selection.forEach(i => {
-          if (zones.includes(i)) return;
-          zone
-            .attr("id", base + i);
-        });
-      }*/
+    zonesEditorAddLines();
   }
 
   function addZonesLayer() {
