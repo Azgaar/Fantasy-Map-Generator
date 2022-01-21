@@ -1849,7 +1849,8 @@ function addZones(number = 1) {
 }
 
 // Update zone types
-function updateZoneType(zone, newType) {
+function updateZoneType(zoneId, newType) {
+  const zone = document.getElementById(zoneId);
   if (zone) {
     zone.dataset.type = newType;
   }
