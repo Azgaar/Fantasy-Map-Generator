@@ -517,7 +517,6 @@ function createPicker() {
   hatches
     .selectAll("rect")
     .on("click", pickerFillClicked)
-    //.on("mousemove", () => tip("Click to fill with the hatching " + #("#picker_" + hatch.id) ));
 
   // append box
   const bbox = picker.node().getBBox();
