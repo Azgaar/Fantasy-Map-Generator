@@ -37,9 +37,9 @@ function editBiomes() {
   document.getElementById("biomesExport").addEventListener("click", downloadBiomesData);
 
   body.addEventListener("click", function (ev) {
-    const el = ev.target,
-      cl = el.classList;
-    if (cl.contains("fillRect")) biomeChangeColor(el);
+    const el = ev.target;
+    const cl = el.classList;
+    if (el.tagName === "FILL-BOX") biomeChangeColor(el);
     else if (cl.contains("icon-info-circled")) openWiki(el);
     else if (cl.contains("icon-trash-empty")) removeCustomBiome(el);
     if (customization === 6) selectBiomeOnLineClick(el);
@@ -94,9 +94,7 @@ function editBiomes() {
 
       lines += `<div class="states biomes" data-id="${i}" data-name="${b.name[i]}" data-habitability="${b.habitability[i]}"
       data-cells=${b.cells[i]} data-area=${area} data-population=${population} data-color=${b.color[i]}>
-        <svg data-tip="Biomes fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${
-          b.color[i]
-        }" class="fillRect pointer"></svg>
+        <fill-box fill="${b.color[i]}"></fill-box>
         <input data-tip="Biome name. Click and type to change" class="biomeName" value="${b.name[i]}" autocorrect="off" spellcheck="false">
         <span data-tip="Biome habitability percent" class="hide">%</span>
         <input data-tip="Biome habitability percent. Click and set new value to change" type="number" min=0 max=9999 class="biomeHabitability hide" value=${
@@ -158,15 +156,15 @@ function editBiomes() {
 
   function biomeChangeColor(el) {
     const currentFill = el.getAttribute("fill");
-    const biome = +el.parentNode.parentNode.dataset.id;
+    const biome = +el.parentNode.dataset.id;
 
-    const callback = function (fill) {
-      el.setAttribute("fill", fill);
-      biomesData.color[biome] = fill;
+    const callback = newFill => {
+      el.fill = newFill;
+      biomesData.color[biome] = newFill;
       biomes
         .select("#biome" + biome)
-        .attr("fill", fill)
-        .attr("stroke", fill);
+        .attr("fill", newFill)
+        .attr("stroke", newFill);
     };
 
     openPicker(currentFill, callback);
@@ -270,7 +268,7 @@ function editBiomes() {
 
     const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
     const line = `<div class="states biomes" data-id="${i}" data-name="${b.name[i]}" data-habitability=${b.habitability[i]} data-cells=0 data-area=0 data-population=0 data-color=${b.color[i]}>
-      <svg data-tip="Biomes fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${b.color[i]}" class="fillRect pointer"></svg>
+      <fill-box fill="${b.color[i]}"></fill-box>
       <input data-tip="Biome name. Click and type to change" class="biomeName" value="${b.name[i]}" autocorrect="off" spellcheck="false">
       <span data-tip="Biome habitability percent" class="hide">%</span>
       <input data-tip="Biome habitability percent. Click and set new value to change" type="number" min=0 max=9999 step=1 class="biomeHabitability hide" value=${b.habitability[i]}>

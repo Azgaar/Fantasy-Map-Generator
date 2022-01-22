@@ -79,7 +79,7 @@ function editReligions() {
       if (r.i) {
         lines += `<div class="states religions" data-id=${r.i} data-name="${r.name}" data-color="${r.color}" data-area=${area} 
           data-population=${population} data-type=${r.type} data-form=${r.form} data-deity="${r.deity ? r.deity : ""}" data-expansionism=${r.expansionism}>
-          <svg data-tip="Religion fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${r.color}" class="fillRect pointer"></svg>
+          <fill-box fill="${r.color}"></fill-box>
           <input data-tip="Religion name. Click and type to change" class="religionName" value="${r.name}" autocorrect="off" spellcheck="false">
           <select data-tip="Religion type" class="religionType">${getTypeOptions(r.type)}</select>
           <input data-tip="Religion form" class="religionForm hide" value="${r.form}" autocorrect="off" spellcheck="false">
@@ -93,7 +93,9 @@ function editReligions() {
         </div>`;
       } else {
         // No religion (neutral) line
-        lines += `<div class="states" data-id=${r.i} data-name="${r.name}" data-color="" data-area=${area} data-population=${population} data-type="" data-form="" data-deity="" data-expansionism="">
+        lines += `<div class="states" data-id=${r.i} data-name="${
+          r.name
+        }" data-color="" data-area=${area} data-population=${population} data-type="" data-form="" data-deity="" data-expansionism="">
           <svg width="9" height="9" class="placeholder"></svg>
           <input data-tip="Religion name. Click and type to change" class="religionName italic" value="${r.name}" autocorrect="off" spellcheck="false">
           <select data-tip="Religion type" class="religionType placeholder">${getTypeOptions(r.type)}</select>
@@ -124,7 +126,7 @@ function editReligions() {
     body.querySelectorAll("div.religions").forEach(el => el.addEventListener("mouseenter", ev => religionHighlightOn(ev)));
     body.querySelectorAll("div.religions").forEach(el => el.addEventListener("mouseleave", ev => religionHighlightOff(ev)));
     body.querySelectorAll("div.states").forEach(el => el.addEventListener("click", selectReligionOnLineClick));
-    body.querySelectorAll("rect.fillRect").forEach(el => el.addEventListener("click", religionChangeColor));
+    body.querySelectorAll("fill-box").forEach(el => el.addEventListener("click", religionChangeColor));
     body.querySelectorAll("div > input.religionName").forEach(el => el.addEventListener("input", religionChangeName));
     body.querySelectorAll("div > select.religionType").forEach(el => el.addEventListener("change", religionChangeType));
     body.querySelectorAll("div > input.religionForm").forEach(el => el.addEventListener("input", religionChangeForm));
@@ -215,13 +217,13 @@ function editReligions() {
   function religionChangeColor() {
     const el = this;
     const currentFill = el.getAttribute("fill");
-    const religion = +el.parentNode.parentNode.dataset.id;
+    const religion = +el.parentNode.dataset.id;
 
-    const callback = function (fill) {
-      el.setAttribute("fill", fill);
-      pack.religions[religion].color = fill;
-      relig.select("#religion" + religion).attr("fill", fill);
-      debug.select("#religionsCenter" + religion).attr("fill", fill);
+    const callback = newFill => {
+      el.fill = newFill;
+      pack.religions[religion].color = newFill;
+      relig.select("#religion" + religion).attr("fill", newFill);
+      debug.select("#religionsCenter" + religion).attr("fill", newFill);
     };
 
     openPicker(currentFill, callback);
@@ -459,7 +461,13 @@ function editReligions() {
 
     // prepare svg
     alertMessage.innerHTML = "<div id='religionInfo' class='chartInfo'>&#8205;</div>";
-    const svg = d3.select("#alertMessage").insert("svg", "#religionInfo").attr("id", "hierarchy").attr("width", width).attr("height", height).style("text-anchor", "middle");
+    const svg = d3
+      .select("#alertMessage")
+      .insert("svg", "#religionInfo")
+      .attr("id", "hierarchy")
+      .attr("width", width)
+      .attr("height", height)
+      .style("text-anchor", "middle");
     const graph = svg.append("g").attr("transform", `translate(10, -45)`);
     const links = graph.append("g").attr("fill", "none").attr("stroke", "#aaaaaa");
     const nodes = graph.append("g");
@@ -473,7 +481,24 @@ function editReligions() {
         .enter()
         .append("path")
         .attr("d", d => {
-          return "M" + d.source.x + "," + d.source.y + "C" + d.source.x + "," + (d.source.y * 3 + d.target.y) / 4 + " " + d.target.x + "," + (d.source.y * 2 + d.target.y) / 3 + " " + d.target.x + "," + d.target.y;
+          return (
+            "M" +
+            d.source.x +
+            "," +
+            d.source.y +
+            "C" +
+            d.source.x +
+            "," +
+            (d.source.y * 3 + d.target.y) / 4 +
+            " " +
+            d.target.x +
+            "," +
+            (d.source.y * 2 + d.target.y) / 3 +
+            " " +
+            d.target.x +
+            "," +
+            d.target.y
+          );
         });
 
       const node = nodes
@@ -578,7 +603,11 @@ function editReligions() {
     $("#religionsEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg"}});
 
     tip("Click on religion to select, drag the circle to change religion", true);
-    viewbox.style("cursor", "crosshair").on("click", selectReligionOnMapClick).call(d3.drag().on("start", dragReligionBrush)).on("touchmove mousemove", moveReligionBrush);
+    viewbox
+      .style("cursor", "crosshair")
+      .on("click", selectReligionOnMapClick)
+      .call(d3.drag().on("start", dragReligionBrush))
+      .on("touchmove mousemove", moveReligionBrush);
 
     body.querySelector("div").classList.add("selected");
   }

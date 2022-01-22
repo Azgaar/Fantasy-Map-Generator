@@ -1531,6 +1531,11 @@ div.states > .riverType {
   cursor: pointer;
 }
 
+.changeRelations > * {
+  pointer-events: none;
+  cursor: pointer;
+}
+
 #diplomacySelect {
   width: 5em;
   margin: 0.1em 0 0 -0.3em;
@@ -1666,11 +1671,6 @@ div.states > input.biomeName {
 
 div.states > div.biomeArea {
   width: 5em;
-}
-
-rect.fillRect {
-  stroke: #666666;
-  stroke-width: 2;
 }
 
 #militaryHeader > div,
