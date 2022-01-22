@@ -7,7 +7,6 @@
     }
 
     fill-box > svg {
-      aspect-ratio: 1;
       vertical-align: middle;
       pointer-events: none;
     }
@@ -38,6 +37,7 @@
       this.appendChild(template.content.cloneNode(true));
       this.querySelector("rect")?.setAttribute("fill", this.fill);
       this.querySelector("svg")?.setAttribute("width", this.size);
+      this.querySelector("svg")?.setAttribute("height", this.size);
     }
 
     static showTip() {
