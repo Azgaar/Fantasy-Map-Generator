@@ -27,8 +27,8 @@ function editZones() {
   document.getElementById("zonesManually").addEventListener("click", enterZonesManualAssignent);
   document.getElementById("zonesManuallyApply").addEventListener("click", applyZonesManualAssignent);
   document.getElementById("zonesManuallyCancel").addEventListener("click", cancelZonesManualAssignent);
-  document.getElementById("zonesAdd").addEventListener("click", addZonesDialog);
-  document.getElementById("zonesNewBlank").addEventListener("click", addZonesLayer);
+  document.getElementById("zonesAdd").addEventListener("click", addZonesLayer);
+  document.getElementById("zonesEditTypes").addEventListener("click", addZonesDialog);
   document.getElementById("zonesNewTypeButton").addEventListener("click", addZonesType);
   document.getElementById("zonesExport").addEventListener("click", downloadZonesData);
   document.getElementById("zonesRemove").addEventListener("click", toggleEraseMode);
@@ -149,6 +149,8 @@ function editZones() {
     });
 
     body.innerHTML = lines;
+    if (body.innerHTML === "") { body.innerHTML = `<div class="states"><span>Zero entries for this type. To see entries again, select "All" or disable the filter button</span>
+    </div>`; }
 
     for (let i=0; i<zoneCount; i++) {
       let d = document.getElementById("zoneTypeZoneIdzone" + i);
@@ -536,7 +538,7 @@ function editZones() {
       let count=0; // Amount of zones per type
       zones.selectAll("g").each(function() { if (this.dataset.type === z) count++; });
   
-      lines += `<div class="states"><span class="religionDeity">${z}</span><span class="religionType">${count}</span>`;
+      lines += `<div class="states"><span class="religionDeity">${z}</span><span class="statePopulation">${count}</span>`;
       if (i > 5) {
         let id="removeZoneType" + i;
         lines += `<span data-tip="Remove zone type" class="icon-trash-empty" id="${id}"></span>`;
