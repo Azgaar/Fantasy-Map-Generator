@@ -413,10 +413,10 @@ function clearLegend() {
 function createPicker() {
   const pos = () => tip("Drag to change the picker position");
   const cl = () => tip("Click to close the picker");
-  const closePicker = () => contaiter.style("display", "none");
+  const closePicker = () => container.style("display", "none");
 
-  const contaiter = d3.select("body").append("svg").attr("id", "pickerContainer").attr("width", "100%").attr("height", "100%");
-  contaiter
+  const container = d3.select("body").append("svg").attr("id", "pickerContainer").attr("width", "100%").attr("height", "100%");
+  container
     .append("rect")
     .attr("x", 0)
     .attr("y", 0)
@@ -425,7 +425,7 @@ function createPicker() {
     .attr("opacity", 0.2)
     .on("mousemove", cl)
     .on("click", closePicker);
-  const picker = contaiter
+  const picker = container
     .append("g")
     .attr("id", "picker")
     .call(
@@ -507,16 +507,16 @@ function createPicker() {
       .attr("y", Math.floor(i / 14)*20 + 20 + (number * 2))
       .attr("width", 16)
       .attr("height", 16)
-      .on("mousemove", () => tip("Click to fill with the hatching " + this.id));
   });
 
   colors
     .selectAll("rect")
     .on("click", pickerFillClicked)
-    .on("mousemove", () => tip("Click to fill with the color"));
+    .on("mouseover", () => tip("Click to fill with the color"));
   hatches
     .selectAll("rect")
     .on("click", pickerFillClicked)
+	.on("mouseover", function() { tip("Click to fill with the hatching " + this.id) });
 
   // append box
   const bbox = picker.node().getBBox();
