@@ -73,8 +73,8 @@ function editBurg(id) {
     cultures.forEach(c => cultureSelect.options.add(new Option(c.name, c.i, false, c.i === b.culture)));
 
     const temperature = grid.cells.temp[pack.cells.g[b.cell]];
-    document.getElementById("burgTemperature").innerHTML = convertTemperature(temperature);
-    document.getElementById("burgTemperatureLikeIn").innerHTML = getTemperatureLikeness(temperature);
+    const prec = grid.cells.prec[pack.cells.g[b.cell]];
+    document.getElementById("burgTemperature").innerHTML = getTMP(temperature,prec);
     document.getElementById("burgElevation").innerHTML = getHeight(pack.cells.h[b.cell]);
 
     // toggle features
@@ -125,50 +125,77 @@ function editBurg(id) {
     }
   }
 
-  // in °C, array from -1 °C; source: https://en.wikipedia.org/wiki/List_of_cities_by_average_temperature
-  function getTemperatureLikeness(temperature) {
-    if (temperature < -5) return "Yakutsk";
-    const cities = [
-      "Snag (Yukon)",
-      "Yellowknife (Canada)",
-      "Okhotsk (Russia)",
-      "Fairbanks (Alaska)",
-      "Nuuk (Greenland)",
-      "Murmansk", // -5 - 0
-      "Arkhangelsk",
-      "Anchorage",
-      "Tromsø",
-      "Reykjavik",
-      "Riga",
-      "Stockholm",
-      "Halifax",
-      "Prague",
-      "Copenhagen",
-      "London", // 1 - 10
-      "Antwerp",
-      "Paris",
-      "Milan",
-      "Batumi",
-      "Rome",
-      "Dubrovnik",
-      "Lisbon",
-      "Barcelona",
-      "Marrakesh",
-      "Alexandria", // 11 - 20
-      "Tegucigalpa",
-      "Guangzhou",
-      "Rio de Janeiro",
-      "Dakar",
-      "Miami",
-      "Jakarta",
-      "Mogadishu",
-      "Bangkok",
-      "Aden",
-      "Khartoum"
-    ]; // 21 - 30
-    if (temperature > 30) return "Mecca";
-    return cities[temperature + 5] || null;
-  }
+	//Returns temperature day and night
+	function getTMP(temperature,prec) {
+		const I1a = 14.6696329255;
+		const I1b = 29.9239661022;
+		const I2a = 17.9276974416;
+		const I2b = 46.1381431893;
+		//Layer1
+		const weights1 = [
+			[-1.568538763072844,0.39896285438965934],
+			[9.362766569441865,16.35735174725377],
+			[11.153869905564198,0.43910608419095637],
+			[-5.4922076135882945,0.7795169557342387],
+			[-0.5303038225734198,1.7085648028450837],
+			[-32.68782289040919,54.16240717717199]
+		];
+		//Layer2
+		const weights2 = [
+			[9.039400131509195,-0.14134020297280914,-1.8251579089165946,-2.7224797463544554,-7.068030109731971,-0.25015275501636025],
+			[-1.2337360995649882,-0.10463427691452784,1.1384430048368683,1.9397462611598868,-3.54461473807957,-0.17489323970406837],
+			[-8.469704496889626,-0.5121168415422923,3.2474698014724335,7.840489303677814,-2.1328116090125024,-0.14099404961787781]
+		];
+		
+		//From (-∞,∞) to ~[-1,1]
+		const In1 = [(temperature - I1a)/I1b,(prec - I2a)/I2b];
+		
+		//Layer1
+		let work1 = [];
+		for (let i = 0; i < weights1.length ; i++) {
+			work1[i] = 0;
+			for (let j = 0; j < weights1[i].length ; j++) {
+				const a = In1[j];
+				const b = weights1[i][j];
+				const c = a * b;
+				work1[i] = work1[i] + In1[j]*weights1[i][j] ;
+			}
+			//Sigmoid
+			work1[i] = 1/(1+Math.exp(-work1[i]));
+		}
+		
+		//Layer2
+		let work2 = [];
+		for (let i = 0; i < weights2.length ; i++) {
+			work2[i] = 0;
+			for (let j = 0; j < weights2[i].length ; j++)
+				work2[i] = work2[i] + work1[j]*weights2[i][j] ;
+			//Sigmoid
+			work2[i] = 1/(1+Math.exp(-work2[i]));
+		}
+		
+		//From [0,1] to [min,max]
+		//Standard deviation for average temperature for the year
+		const yearSig = work2[0]*56+1;
+		//Standard deviation for the difference between the minimum and maximum temperatures for the year
+		const yearDelTmpSig = work2[1]*19+1;
+		//Expected value for the difference between the minimum and maximum temperatures for the year
+		const yearDelTmpMu = work2[2]*14+2;
+		
+		let dateNow = new Date();
+		//Part of a cycle [0,1]
+		const data = (dateNow.getMonth()+(dateNow.getDate()-1)/31)/12;
+		
+		//Temperature change shape
+		const formTmp = -Math.cos(data*2*Math.PI) / 2;
+		
+		const averT = formTmp * yearSig + temperature;
+		const delT = yearDelTmpMu/2+formTmp*yearDelTmpSig/2;
+		
+		const minT = averT-delT;
+		const maxT = averT+delT;
+		return convertTemperature(maxT.toFixed(1)) + "/" + convertTemperature(minT.toFixed(1));
+	}
 
   function dragBurgLabel() {
     const tr = parseTransform(this.getAttribute("transform"));
