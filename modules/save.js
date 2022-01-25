@@ -120,6 +120,122 @@ function getMapData() {
   return mapData;
 }
 
+
+function getMapDataAPIJson() {
+
+  TIME && console.time("createMapDataJson");
+
+  const date = new Date();
+  const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
+  const license = "Api-Like Output File Gathered From: azgaar.github.io/Fantasy-Map-Generator";
+  const params = {version, license, dateString, seed, graphWidth, graphHeight, mapId};
+  const SettingsOut = {
+    "distanceUnit" : distanceUnitInput.value,
+    "distanceScale": distanceScaleInput.value,
+    "areaUnit" : areaUnit.value,
+    "heightUnit" : heightUnit.value,
+    "heightExponent" : heightExponentInput.value,
+    "temperatureScale" : temperatureScale.value,
+    "barSizeInput" : barSizeInput.value,
+    "barLabel" : barLabel.value,
+    "barBackOpacity" : barBackOpacity.value,
+    "barBackColor" : barBackColor.value,
+    "barPosX" : barPosX.value,
+    "barPosY" : barPosY.value,
+    "populationRate" : populationRate,
+    "urbanization" : urbanization,
+    "mapSizeOutput" : mapSizeOutput.value,
+    "latitudeOutput" : latitudeOutput.value,
+    "temperatureEquatorOutput" : temperatureEquatorOutput.value,
+    "temperaturePoleOutput" : temperaturePoleOutput.value,
+    "precOutput" : precOutput.value,
+    "options" : options,
+    "mapName" : mapName.value,
+    "hideLabels" : hideLabels.checked,
+    "stylePreset" : stylePreset.value,
+    "rescaleLabels" : rescaleLabels.checked,
+    "urbanDensity" : urbanDensity
+  };
+  const coords = mapCoordinates;
+  let BiomeObjArr = [];
+  {
+    for (let i = 0; i < biomesData.name.length; i++)
+  {
+    const biome = {
+      "name": biomesData.name[i],
+      "biomeColor": biomesData.color[i],
+      "habitability": biomesData.habitability[i]
+    };
+    BiomeObjArr.push(biome);
+  }
+  }
+  const biomes = BiomeObjArr;
+  const notesData = notes;
+  const fonts = getUsedFonts(svg.node());
+
+  const {spacing, cellsX, cellsY, boundary, points, features} = grid;
+  const gridGeneral = {spacing, cellsX, cellsY, boundary, points, features};
+  const packFeatures = pack.features;
+  const cultures = pack.cultures;
+  const states = pack.states;
+  const burgs = pack.burgs;
+  const religions = pack.religions;
+  const provinces = pack.provinces;
+  const rivers = pack.rivers;
+  const markers = pack.markers;
+
+  // store name array only if not the same as default
+  const defaultNB = Names.getNameBases();
+  const namesData = nameBases
+      .map((b, i) => {
+        const names = defaultNB[i] && defaultNB[i].b === b.b ? "" : b.b;
+        return {"name":b.name,"min":b.min,"max":b.max,"d":b.d,"m":b.m,"names":names}
+      });
+
+
+  // round population to save space
+  const pop = Array.from(pack.cells.pop).map(p => rn(p, 4));
+
+
+  const ExportData =JSON.stringify({
+    "params" : params,
+    "settings" : SettingOut,
+    "coords" : coords,
+    "biomes" : biomes,
+    "notesData" : notesData,
+    "gridGeneral" : gridGeneral,
+    "gridCellsH" : grid.cells.h,
+    "gridCellsPrec" : grid.cells.prec,
+    "gridCellsF" : grid.cells.f,
+    "gridCellsT" : grid.cells.t,
+    "gridCellsTemp" : grid.cells.temp,
+    "packFeatures" : packFeatures,
+    "cultures" : cultures,
+    "states" : states,
+    "burgs" : burgs,
+    "packCellsBiome" : pack.cells.biome,
+    "packCellsBurg" : pack.cells.burg,
+    "packCellsConf" : pack.cells.conf,
+    "packCellsCulture" : pack.cells.culture,
+    "packCellsFl" : pack.cells.fl,
+    "pop" : pop,
+    "packCellsR" : pack.cells.r,
+    "packCellsRoad" : pack.cells.road,
+    "packCellsState" : pack.cells.state,
+    "packCellsReligion" : pack.cells.religion,
+    "packCellsCrossroad" : pack.cells.crossroad,
+    "provinces": provinces,
+    "religions" : religions,
+    "namesData" : namesData,
+    "rivers" : rivers,
+    "rulers" : rulers,
+    "fonts" : fonts,
+    "markers" : markers
+  })
+
+  TIME && console.timeEnd("createMapDataJson");
+  return ExportData;
+}
 // Download .map file
 function dowloadMap() {
   if (customization) return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
@@ -135,6 +251,36 @@ function dowloadMap() {
   tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
   window.URL.revokeObjectURL(URL);
 }
+
+function downloadMapDataAPIJson() {
+  if (customization) return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
+  closeDialogs("#alert");
+
+  const mapData = getMapDataAPIJson();
+  const blob = new Blob([mapData], {type: "application/json"});
+  const URL = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.download = getFileName() + ".json";
+  link.href = URL;
+  link.click();
+  tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
+  window.URL.revokeObjectURL(URL);
+}
+function exportGridCellsData(exportName){
+  if(customization) return tip("Map cannot be saved when edit mode is active, please exit and retry",false,"error");
+  closeDialogs("#alert");
+
+  const toWrite = JSON.stringify(grid.cells);
+  const blob = new Blob([toWrite],{type: "application/json"});
+  const URL = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.download = exportName + ".json";
+  link.href = URL;
+  link.click();
+  window.URL.revokeObjectURL(URL);
+  return "Item Must Be Downloading"
+}
+
 
 async function saveToDropbox() {
   if (customization) return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
