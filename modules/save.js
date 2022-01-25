@@ -120,23 +120,30 @@ function getMapData() {
   return mapData;
 }
 
-
+//Prepare data for API-JSON
 function getMapDataAPIJson() {
 
   TIME && console.time("createMapDataJson");
 
   const date = new Date();
   const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
-  const license = "Api-Like Output File Gathered From: azgaar.github.io/Fantasy-Map-Generator";
-  const params = {version, license, dateString, seed, graphWidth, graphHeight, mapId};
-  const SettingsOut = {
+  const info = {
+    "version": version,
+    "description": "Api-Like Output File Gathered From: azgaar.github.io/Fantasy-map-generator",
+    "creation-date":dateString,
+    "seed" : seed,
+    "mapId":mapId,
+    "mapName" : mapName.value
+  }
+
+  const settings = {
     "distanceUnit" : distanceUnitInput.value,
     "distanceScale": distanceScaleInput.value,
     "areaUnit" : areaUnit.value,
     "heightUnit" : heightUnit.value,
     "heightExponent" : heightExponentInput.value,
     "temperatureScale" : temperatureScale.value,
-    "barSizeInput" : barSizeInput.value,
+    "barSize" : barSizeInput.value,
     "barLabel" : barLabel.value,
     "barBackOpacity" : barBackOpacity.value,
     "barBackColor" : barBackColor.value,
@@ -144,11 +151,11 @@ function getMapDataAPIJson() {
     "barPosY" : barPosY.value,
     "populationRate" : populationRate,
     "urbanization" : urbanization,
-    "mapSizeOutput" : mapSizeOutput.value,
-    "latitudeOutput" : latitudeOutput.value,
-    "temperatureEquatorOutput" : temperatureEquatorOutput.value,
-    "temperaturePoleOutput" : temperaturePoleOutput.value,
-    "precOutput" : precOutput.value,
+    "mapSize" : mapSizeOutput.value,
+    "latitudeO" : latitudeOutput.value,
+    "temperatureEquator" : temperatureEquatorOutput.value,
+    "temperaturePole" : temperaturePoleOutput.value,
+    "prec" : precOutput.value,
     "options" : options,
     "mapName" : mapName.value,
     "hideLabels" : hideLabels.checked,
@@ -157,84 +164,43 @@ function getMapDataAPIJson() {
     "urbanDensity" : urbanDensity
   };
   const coords = mapCoordinates;
-  let BiomeObjArr = [];
-  {
-    for (let i = 0; i < biomesData.name.length; i++)
-  {
-    const biome = {
-      "name": biomesData.name[i],
-      "biomeColor": biomesData.color[i],
-      "habitability": biomesData.habitability[i]
-    };
-    BiomeObjArr.push(biome);
+  const packs = {
+    "cells":{
+      "h": pack.cells.h,
+      "f": pack.cells.f,
+      "t": pack.cells.t,
+      "s": pack.cells.s,
+      "biome": pack.cells.biome,
+      "burg": pack.cells.burg,
+      "culture": pack.cells.culture,
+      "state": pack.cells.state,
+      "province" : pack.cells.province,
+      "religion" : pack.cells.religion,
+      "area": pack.cells.area,
+      "pop" : pack.cells.pop,
+      "r" : pack.cells.r,
+      "fl" : pack.cells.fl,
+      "conf" : pack.cells.conf,
+      "harbor":pack.cells.harbor,
+      "haven" : pack.cells.haven,
+      "road":pack.cells.road,
+      "crossroad":pack.cells.crossroad
+    },
+    "features":pack.features,
+    "cultures":pack.cultures,
+    "burgs":pack.burgs,
+    "states":pack.states,
+    "provinces":pack.provinces,
+    "religions":pack.religions,
+    "rivers":pack.rivers,
+    "markers":pack.markers,
   }
-  }
-  const biomes = BiomeObjArr;
-  const notesData = notes;
-  const fonts = getUsedFonts(svg.node());
+  const biomes = biomesData;
 
-  const {spacing, cellsX, cellsY, boundary, points, features} = grid;
-  const gridGeneral = {spacing, cellsX, cellsY, boundary, points, features};
-  const packFeatures = pack.features;
-  const cultures = pack.cultures;
-  const states = pack.states;
-  const burgs = pack.burgs;
-  const religions = pack.religions;
-  const provinces = pack.provinces;
-  const rivers = pack.rivers;
-  const markers = pack.markers;
-
-  // store name array only if not the same as default
-  const defaultNB = Names.getNameBases();
-  const namesData = nameBases
-      .map((b, i) => {
-        const names = defaultNB[i] && defaultNB[i].b === b.b ? "" : b.b;
-        return {"name":b.name,"min":b.min,"max":b.max,"d":b.d,"m":b.m,"names":names}
-      });
-
-
-  // round population to save space
-  const pop = Array.from(pack.cells.pop).map(p => rn(p, 4));
-
-
-  const ExportData =JSON.stringify({
-    "params" : params,
-    "settings" : SettingOut,
-    "coords" : coords,
-    "biomes" : biomes,
-    "notesData" : notesData,
-    "gridGeneral" : gridGeneral,
-    "gridCellsH" : grid.cells.h,
-    "gridCellsPrec" : grid.cells.prec,
-    "gridCellsF" : grid.cells.f,
-    "gridCellsT" : grid.cells.t,
-    "gridCellsTemp" : grid.cells.temp,
-    "packFeatures" : packFeatures,
-    "cultures" : cultures,
-    "states" : states,
-    "burgs" : burgs,
-    "packCellsBiome" : pack.cells.biome,
-    "packCellsBurg" : pack.cells.burg,
-    "packCellsConf" : pack.cells.conf,
-    "packCellsCulture" : pack.cells.culture,
-    "packCellsFl" : pack.cells.fl,
-    "pop" : pop,
-    "packCellsR" : pack.cells.r,
-    "packCellsRoad" : pack.cells.road,
-    "packCellsState" : pack.cells.state,
-    "packCellsReligion" : pack.cells.religion,
-    "packCellsCrossroad" : pack.cells.crossroad,
-    "provinces": provinces,
-    "religions" : religions,
-    "namesData" : namesData,
-    "rivers" : rivers,
-    "rulers" : rulers,
-    "fonts" : fonts,
-    "markers" : markers
-  })
+  const ExportData = {info,settings,coords,packs,biomes,notes,nameBases}
 
   TIME && console.timeEnd("createMapDataJson");
-  return ExportData;
+  return JSON.stringify(ExportData);
 }
 // Download .map file
 function dowloadMap() {
@@ -266,6 +232,7 @@ function downloadMapDataAPIJson() {
   tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
   window.URL.revokeObjectURL(URL);
 }
+
 function exportGridCellsData(exportName){
   if(customization) return tip("Map cannot be saved when edit mode is active, please exit and retry",false,"error");
   closeDialogs("#alert");
