@@ -3607,13 +3607,16 @@
       <p>GeoJSON format is used in GIS tools such as QGIS. Check out <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export" target="_blank">wiki-page</a> for guidance.</p>
       <p>Generator uses pop-up window to download files. Please ensure your browser does not block popups.</p>
       <p>It's also possible to export map to <i>Foundry VTT</i>, see <a href="https://github.com/Ethck/azgaar-foundry" target="_blank">the module.</a></p>
+      <div style="margin: 1em 0 .3em; font-weight: bold">Export To Json</div>
+      <div>
+        <button onclick="downloadMapDataAPIJson()" data-tip="Download a json file that looks like API response.">api-like json</button>
+      </div>
     </div>
 
     <div id="saveMapData" style="display: none" class="dialog">
       <div style="margin-top: .3em">
         <strong>Save map to</strong>
         <button onclick="dowloadMap()" data-tip="Download .map file to your local disk. Shortcut: Ctrl + S">machine</button>
-        <button onclick="downloadMapDataAPIJson()" data-tip="Download a json file that looks like API response.">api-like json</button>
         <button onclick="saveToDropbox()" data-tip="Save .map file to your Dropbox. Shortcut: Ctrl + C">dropbox</button>
         <button onclick="quickSave()" data-tip="Save the project to browser storage. It can be unreliable. Shortcut: F6">browser</button>
       </div>
@@ -4401,6 +4404,7 @@
   <script defer src="modules/load.js"></script>
   <script defer src="modules/cloud.js"></script>
   <script defer src="main.js"></script>
+  <script defer src="modules/export-json.js"></script>
   <script defer src="modules/save.js"></script>
   <script defer src="modules/export.js"></script>
   <script defer src="modules/relief-icons.js"></script>
