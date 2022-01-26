@@ -122,28 +122,66 @@ function getMapDataAPIJson() {
         "urbanDensity" : urbanDensity
     };
     const coords = mapCoordinates;
+    const CellConverted = {
+        "i" : Array.from(pack.cells.i),
+        "v" : pack.cells.v,
+        "c" : pack.cells.c,
+        "p" : pack.cells.p,
+        "g" : Array.from(pack.cells.g),
+        "h" : Array.from(pack.cells.h),
+        "area" : Array.from(pack.cells.area),
+        "f" : Array.from(pack.cells.f),
+        "t" : Array.from(pack.cells.t),
+        "haven" : Array.from(pack.cells.haven),
+        "harbor" : Array.from(pack.cells.harbor),
+        "fl" : Array.from(pack.cells.fl),
+        "r" : Array.from(pack.cells.r),
+        "conf" : Array.from(pack.cells.conf),
+        "biome" : Array.from(pack.cells.biome),
+        "s" : Array.from(pack.cells.s),
+        "pop" : Array.from(pack.cells.pop),
+        "culture" : Array.from(pack.cells.culture),
+        "burg" : Array.from(pack.cells.burg),
+        "road" : Array.from(pack.cells.road),
+        "crossroad" : Array.from(pack.cells.crossroad),
+        "state" : Array.from(pack.cells.state),
+        "religion" : Array.from(pack.cells.religion),
+        "province" : Array.from(pack.cells.province)
+    };
+    const cellObjArr = [];
+    {
+        CellConverted.i.forEach(value => {
+            const cellobj = {
+                "i" : value,
+                "v" : CellConverted.v[value],
+                "c" : CellConverted.c[value],
+                "p" : CellConverted.p[value],
+                "g" : CellConverted.g[value],
+                "h" : CellConverted.h[value],
+                "area" : CellConverted.area[value],
+                "f" : CellConverted.f[value],
+                "t" : CellConverted.t[value],
+                "haven" : CellConverted.haven[value],
+                "harbor" : CellConverted.harbor[value],
+                "fl" : CellConverted.fl[value],
+                "r" : CellConverted.r[value],
+                "conf" : CellConverted.conf[value],
+                "biome" : CellConverted.biome[value],
+                "s" : CellConverted.s[value],
+                "pop" : CellConverted.pop[value],
+                "culture" : CellConverted.culture[value],
+                "burg" : CellConverted.burg[value],
+                "road" : CellConverted.road[value],
+                "crossroad" : CellConverted.crossroad[value],
+                "state" : CellConverted.state[value],
+                "religion" : CellConverted.religion[value],
+                "province" : CellConverted.province[value]
+            }
+            cellObjArr.push(cellobj)
+        })
+    };
     const packs = {
-        "cells":{
-            "h": pack.cells.h,
-            "f": pack.cells.f,
-            "t": pack.cells.t,
-            "s": pack.cells.s,
-            "biome": pack.cells.biome,
-            "burg": pack.cells.burg,
-            "culture": pack.cells.culture,
-            "state": pack.cells.state,
-            "province" : pack.cells.province,
-            "religion" : pack.cells.religion,
-            "area": pack.cells.area,
-            "pop" : pack.cells.pop,
-            "r" : pack.cells.r,
-            "fl" : pack.cells.fl,
-            "conf" : pack.cells.conf,
-            "harbor":pack.cells.harbor,
-            "haven" : pack.cells.haven,
-            "road":pack.cells.road,
-            "crossroad":pack.cells.crossroad
-        },
+        "cells": cellObjArr,
         "features":pack.features,
         "cultures":pack.cultures,
         "burgs":pack.burgs,
@@ -255,7 +293,66 @@ function getCellJSONData() {
         "mapId":mapId,
         "mapName" : mapName.value
     }
-    const cells = pack.cells
+    const CellConverted = {
+        "i" : Array.from(pack.cells.i),
+        "v" : pack.cells.v,
+        "c" : pack.cells.c,
+        "p" : pack.cells.p,
+        "g" : Array.from(pack.cells.g),
+        "h" : Array.from(pack.cells.h),
+        "area" : Array.from(pack.cells.area),
+        "f" : Array.from(pack.cells.f),
+        "t" : Array.from(pack.cells.t),
+        "haven" : Array.from(pack.cells.haven),
+        "harbor" : Array.from(pack.cells.harbor),
+        "fl" : Array.from(pack.cells.fl),
+        "r" : Array.from(pack.cells.r),
+        "conf" : Array.from(pack.cells.conf),
+        "biome" : Array.from(pack.cells.biome),
+        "s" : Array.from(pack.cells.s),
+        "pop" : Array.from(pack.cells.pop),
+        "culture" : Array.from(pack.cells.culture),
+        "burg" : Array.from(pack.cells.burg),
+        "road" : Array.from(pack.cells.road),
+        "crossroad" : Array.from(pack.cells.crossroad),
+        "state" : Array.from(pack.cells.state),
+        "religion" : Array.from(pack.cells.religion),
+        "province" : Array.from(pack.cells.province)
+    };
+    const cellObjArr = [];
+    {
+        CellConverted.i.forEach(value => {
+            const cellobj = {
+                "i" : value,
+                "v" : CellConverted.v[value],
+                "c" : CellConverted.c[value],
+                "p" : CellConverted.p[value],
+                "g" : CellConverted.g[value],
+                "h" : CellConverted.h[value],
+                "area" : CellConverted.area[value],
+                "f" : CellConverted.f[value],
+                "t" : CellConverted.t[value],
+                "haven" : CellConverted.haven[value],
+                "harbor" : CellConverted.harbor[value],
+                "fl" : CellConverted.fl[value],
+                "r" : CellConverted.r[value],
+                "conf" : CellConverted.conf[value],
+                "biome" : CellConverted.biome[value],
+                "s" : CellConverted.s[value],
+                "pop" : CellConverted.pop[value],
+                "culture" : CellConverted.culture[value],
+                "burg" : CellConverted.burg[value],
+                "road" : CellConverted.road[value],
+                "crossroad" : CellConverted.crossroad[value],
+                "state" : CellConverted.state[value],
+                "religion" : CellConverted.religion[value],
+                "province" : CellConverted.province[value]
+            }
+            cellObjArr.push(cellobj)
+        })
+    };
+    const cells = cellObjArr;
+
     const ExportData = {info, cells}
 
     TIME && console.timeEnd("createMapDataMinimalJson");
