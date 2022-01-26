@@ -978,7 +978,7 @@
               <input id="mapName" data-stored="mapName" class="long" autocorrect="off" spellcheck="false" type="text">
             </td>
             <td>
-              <i data-tip="Regenerate map name" onclick="Names.getMapName(true)" class="icon-arrows-cw"></i>
+              <i data-tip="Regenerate map name" onclick="Names.MapName(true)" class="icon-arrows-cw"></i>
             </td>
           </tr>
 
@@ -3607,6 +3607,12 @@
       <p>GeoJSON format is used in GIS tools such as QGIS. Check out <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export" target="_blank">wiki-page</a> for guidance.</p>
       <p>Generator uses pop-up window to download files. Please ensure your browser does not block popups.</p>
       <p>It's also possible to export map to <i>Foundry VTT</i>, see <a href="https://github.com/Ethck/azgaar-foundry" target="_blank">the module.</a></p>
+      <div style="margin: 1em 0 .3em; font-weight: bold">Export To Json</div>
+      <div>
+        <button onclick="downloadMapDataAPIJson()" data-tip="Downlads Full Data as a .json file. WARNING: This data can be huge. Use at your own risk. You can use other buttons for smaller and filtered files.">all json</button>
+        <button onclick="downloadMapDataMinimalAPIJson()" data-tip="Download a json file that looks like API response. Includes global data and doesn't include cell data. For cell data you must use cells json button">minimal json</button>
+        <button onclick="downloadCellsDataJSON()" data-tip="Download a json file that only contains cell data. And related map info.">cells json</button>
+      </div>
     </div>
 
     <div id="saveMapData" style="display: none" class="dialog">
@@ -4400,6 +4406,7 @@
   <script defer src="modules/load.js"></script>
   <script defer src="modules/cloud.js"></script>
   <script defer src="main.js"></script>
+  <script defer src="modules/export-json.js"></script>
   <script defer src="modules/save.js"></script>
   <script defer src="modules/export.js"></script>
   <script defer src="modules/relief-icons.js"></script>

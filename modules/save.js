@@ -120,6 +120,7 @@ function getMapData() {
   return mapData;
 }
 
+
 // Download .map file
 function dowloadMap() {
   if (customization) return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
@@ -135,6 +136,7 @@ function dowloadMap() {
   tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
   window.URL.revokeObjectURL(URL);
 }
+
 
 async function saveToDropbox() {
   if (customization) return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
