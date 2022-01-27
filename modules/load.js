@@ -190,7 +190,6 @@ function parseLoadedData(data) {
     if (customizationMenu.offsetParent) styleTab.click();
 
     const reliefIcons = document.getElementById("defs-relief").innerHTML; // save relief icons
-    const newHatching = document.getElementById("hatching").cloneNode(true); // save hatching
 
     void (function parseParameters() {
       const params = data[0].split("|");
@@ -474,7 +473,9 @@ function parseLoadedData(data) {
         if (!layerIsOn("toggleStates")) regions.attr("display", "none").selectAll("path").remove();
 
         // 1.0 adds hatching
-        document.getElementsByTagName("defs")[0].appendChild(newHatching);
+        const gHatching = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        gHatching.setAttribute("id", "hatching");
+        document.getElementsByTagName("defs")[0].appendChild(gHatching);
 
         // 1.0 adds zones layer
         zones = viewbox.insert("g", "#borders").attr("id", "zones").attr("display", "none");
@@ -930,11 +931,7 @@ function parseLoadedData(data) {
         }
       }
 
-     if (version < 1.72) {
-        // v 1.72 changed hatching data
-        document.getElementById("hatching").remove();      
-        document.getElementsByTagName("defs")[0].appendChild(newHatching);
-      };
+      copyHatching();
  
     })();
 
