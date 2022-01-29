@@ -51,7 +51,6 @@ function getMapData() {
   cloneEl.querySelector("#viewbox").removeAttribute("transform");
 
   cloneEl.querySelector("#ruler").innerHTML = ""; // always remove rulers
-  cloneEl.querySelector("#hatching").innerHTML = ""; // remove hatching patterns
 
   const serializedSVG = new XMLSerializer().serializeToString(cloneEl);
 
