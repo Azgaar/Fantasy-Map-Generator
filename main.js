@@ -656,7 +656,6 @@ function generate() {
 
     Military.generate();
     Markers.generate();
-    copyHatching();
     addZones();
     Names.getMapName();
 
@@ -1482,11 +1481,6 @@ function rankCells() {
   }
 
   TIME && console.timeEnd("rankCells");
-}
-
-// copy the hatching (patterns)
-function copyHatching() {
-    document.getElementById("hatching").innerHTML = document.getElementById("defs-hatching").innerHTML;
 }
 
 // regenerate some zones

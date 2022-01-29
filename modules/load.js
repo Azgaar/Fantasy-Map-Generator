@@ -472,11 +472,6 @@ function parseLoadedData(data) {
         if (!layerIsOn("toggleBorders")) $("#borders").fadeOut();
         if (!layerIsOn("toggleStates")) regions.attr("display", "none").selectAll("path").remove();
 
-        // 1.0 adds hatching
-        const gHatching = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        gHatching.setAttribute("id", "hatching");
-        document.getElementsByTagName("defs")[0].appendChild(gHatching);
-
         // 1.0 adds zones layer
         zones = viewbox.insert("g", "#borders").attr("id", "zones").attr("display", "none");
         zones.attr("opacity", 0.6).attr("stroke", null).attr("stroke-width", 0).attr("stroke-dasharray", null).attr("stroke-linecap", "butt");
@@ -931,8 +926,11 @@ function parseLoadedData(data) {
         }
       }
 
-      copyHatching();
- 
+      if (version < 1.72) {
+        // 1.72 moves the hatching patterns out of the SVG
+        document.getElementById("hatching")?.remove();
+      }
+
     })();
 
     void (function checkDataIntegrity() {

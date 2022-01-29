@@ -482,7 +482,7 @@ function createPicker() {
 
   const colors = picker.append("g").attr("id", "pickerColors").attr("stroke", "#333333");
   const hatches = picker.append("g").attr("id", "pickerHatches").attr("stroke", "#333333");
-  const hatching = d3.selectAll("g#hatching > pattern");
+  const hatching = d3.selectAll("g#defs-hatching > pattern");
   const number = hatching.size();
 
   const clr = d3.range(number).map(i => d3.hsl((i / number) * 360, 0.7, 0.7).hex());
