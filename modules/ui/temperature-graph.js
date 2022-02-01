@@ -56,13 +56,15 @@ function showTGForBurg(id) {
 	//Standard deviation for average temperature for the year
 	const yearSig = lstOut[0]*62;
 	//Standard deviation for the difference between the minimum and maximum temperatures for the year
-	const yearDelTmpSig = lstOut[1]*12;
+	const yearDelTmpSig = lstOut[1]*12 > yearSig ? yearSig : lstOut[1]*12;
 	//Expected value for the difference between the minimum and maximum temperatures for the year
 	const yearDelTmpMu = lstOut[2]*15+1;
 	
 	//Temperature change shape
 	//const formTmp = -Math.cos(data*2*Math.PI) / 2;
 	const delT = yearDelTmpMu/2+0.5*yearDelTmpSig/2;
+	const minT = temperature - ((yearSig+delT) > 15 ? (yearSig+delT) : 15);
+	const maxT = temperature + (temperature - minT);
 
 	const chartWidth = window.innerWidth/2,
 	chartHeight = 300; // height of our land/sea profile, excluding the biomes data below
@@ -70,8 +72,9 @@ function showTGForBurg(id) {
     yOffset = 10; // this is our drawing starting point from top-left (y = 0) of SVG
 	
     const xscale = d3.scaleLinear().domain([0,360]).range([0, chartWidth]);
-    const yscale = d3.scaleLinear().domain([temperature-yearSig-delT, temperature+yearSig+delT]).range([chartHeight, 0]);
-    const yscale_inv = d3.scaleLinear().domain([chartHeight, 0]).range([temperature-yearSig-delT, temperature+yearSig+delT]);
+    const xscale_inv = d3.scaleLinear().domain([0, chartWidth]).range([0,360]);
+    const yscale = d3.scaleLinear().domain([minT, maxT]).range([chartHeight, 0]);
+    const yscale_inv = d3.scaleLinear().domain([chartHeight, 0]).range([minT, maxT]);
 	
 	const dataAverTmp = [];
 	const dataMinTmp = [];
@@ -101,36 +104,54 @@ function showTGForBurg(id) {
   function draw() {
 
     document.getElementById("elevationGraph").innerHTML = "";
-
+	const legendSize = 60;
     const chart = d3
       .select("#elevationGraph")
       .append("svg")
       .attr("width", chartWidth + 120)
-      .attr("height", chartHeight + yOffset + 40)
+      .attr("height", chartHeight + yOffset + legendSize)
       .attr("id", "elevationSVG")
       .attr("class", "epbackground");
     // arrow-head definition
     chart.append("defs").append("marker").attr("id", "arrowhead").attr("orient", "auto").attr("markerWidth", "2").attr("markerHeight", "4").attr("refX", "0.1").attr("refY", "2");
 
-    // land
 	let Gen = d3.line().curve(d3.curveBasis).x((p) => p.x).y((p) => p.y);
 
-	chart.append("g").append("path").attr("d", Gen(dataAverTmp)).attr("fill", "none").attr("stroke", "orange").on("mousemove", printVal).style("stroke-width", "2");
-	chart.append("g").append("path").attr("d", Gen(dataMinTmp)).attr("fill", "none").attr("stroke", "blue").on("mousemove", printVal).style("stroke-width", "2");
-	chart.append("g").append("path").attr("d", Gen(dataMaxTmp)).attr("fill", "none").attr("stroke", "red").on("mousemove", printVal).style("stroke-width", "2");
+	//print graphs
+	chart.append("g").append("path").attr("d", Gen(dataAverTmp))
+		.attr("fill", "none").attr("stroke", "orange").on("mousemove", printVal).style("stroke-width", "2");
+	chart.append("g").append("path").attr("d", Gen(dataMinTmp))
+		.attr("fill", "none").attr("stroke", "blue").on("mousemove", printVal).style("stroke-width", "2");
+	chart.append("g").append("path").attr("d", Gen(dataMaxTmp))
+		.attr("fill", "none").attr("stroke", "red").on("mousemove", printVal).style("stroke-width", "2");
+	
+	//print legend
+	chart.append("circle").attr("cx",chartWidth*1/4).attr("cy",chartHeight + yOffset + legendSize*0.8).attr("r", 4).style("fill", "red")
+	chart.append("text").attr("x", chartWidth*1/4+20).attr("y", chartHeight + yOffset + legendSize*0.8)
+		.text("Day temperature").style("font-size", "10px").attr("alignment-baseline","middle")
+	chart.append("circle").attr("cx",chartWidth*2/4).attr("cy",chartHeight + yOffset + legendSize*0.8).attr("r", 4).style("fill", "orange")
+	chart.append("text").attr("x", chartWidth*2/4+20).attr("y", chartHeight + yOffset + legendSize*0.8)
+		.text("Average daily temperature").style("font-size", "10px").attr("alignment-baseline","middle")
+	chart.append("circle").attr("cx",chartWidth*3/4).attr("cy",chartHeight + yOffset + legendSize*0.8).attr("r", 4).style("fill", "blue")
+	chart.append("text").attr("x", chartWidth*3/4+20).attr("y", chartHeight + yOffset + legendSize*0.8)
+		.text("Night temperature").style("font-size", "10px").attr("alignment-baseline","middle")
+	
+	
+	
 	//print title
 	let timerId = setTimeout(() => chart.attr("data-tip", "Seasonal temperature schedule"), 1000);
+	
+	const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 	//Val under line
 	function printVal(){
 		let m = d3.mouse(this);
-		let val = convertTemperature(yscale_inv(m[1]-yOffset).toFixed(1));
-		chart.attr("data-tip", val);
+		let tmp = convertTemperature(yscale_inv(m[1]-yOffset).toFixed(1));
+		let month = months[parseInt(xscale_inv(m[0]-xOffset)/360*12)];
+		chart.attr("data-tip", tmp + " in " + month);
 		clearTimeout(timerId);
 		timerId = setTimeout(() => chart.attr("data-tip", "Seasonal temperature schedule"), 1000);
 	}
-
-	const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-
+	
     const xAxis = d3
       .axisBottom(xscale)
       .ticks(10)
@@ -172,6 +193,16 @@ function showTGForBurg(id) {
       .attr("stroke-dasharray", "4 1")
       .attr("transform", "translate(" + xOffset + "," + parseInt(chartHeight + +yOffset) + ")")
       .call(xGrid);
+	  
+	if(minT < 0 && maxT > 0){
+		//add zero lv
+		chart.append("g").append("line")
+			.attr("x1", xscale(0) + xOffset)
+			.attr("y1", yscale(0) + yOffset)
+			.attr("x2", xscale(360) + xOffset)
+			.attr("y2", yscale(0) + yOffset)
+			.attr("stroke", "black");
+	}
 
     // add the Y gridlines
     chart
