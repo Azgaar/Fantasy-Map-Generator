@@ -5,7 +5,8 @@ function exportToJson(type) {
   const typeMap = {
     Full: getFullDataJson,
     Minimal: getMinimalDataJson,
-    Cells: getCellsDataJson
+    PackCells: getPackCellsDataJson,
+    GridCells: getGridCellsDataJson,
   };
 
   const mapData = typeMap[type]();
@@ -64,7 +65,7 @@ function getSettings() {
   return settings;
 }
 
-function getCellsData() {
+function getPackCellsData() {
   const cellConverted = {
     i: Array.from(pack.cells.i),
     v: pack.cells.v,
@@ -91,7 +92,6 @@ function getCellsData() {
     religion: Array.from(pack.cells.religion),
     province: Array.from(pack.cells.province)
   };
-
   const cellObjArr = [];
   {
     cellConverted.i.forEach(value => {
@@ -140,12 +140,24 @@ function getCellsData() {
   return cellsData;
 }
 
+//data only containing graphical appearance
+function getGridCellsData(){
+  const gridData = {
+    spacing: grid.spacing,
+    cellsY: grid.cellsY,
+    cellsX: grid.cellsX,
+    points: grid.points,
+    boundary: grid.boundary
+  }
+  return gridData
+}
+
 function getFullDataJson() {
   TIME && console.time("getFullDataJson");
 
   const info = getMapInfo();
   const settings = getSettings();
-  const cells = getCellsData();
+  const cells = getPackCellsData();
   const exportData = {info, settings, coords: mapCoordinates, cells, biomes: biomesData, notes, nameBases};
 
   TIME && console.timeEnd("getFullDataJson");
@@ -174,13 +186,24 @@ function getMinimalDataJson() {
   return JSON.stringify(exportData);
 }
 
-function getCellsDataJson() {
+function getPackCellsDataJson() {
   TIME && console.time("getCellsDataJson");
 
   const info = getMapInfo();
-  const cells = getCellsData();
+  const cells = getPackCellsData();
   const exportData = {info, cells};
 
   TIME && console.timeEnd("getCellsDataJson");
+  return JSON.stringify(exportData);
+}
+
+function getGridCellsDataJson() {
+  TIME && console.time("getGridCellsDataJson");
+
+  const info = getMapInfo();
+  const gridCells = getGridCellsData()
+  const exportData = {info,gridCells};
+
+  TIME && console.log("getGridCellsDataJson");
   return JSON.stringify(exportData);
 }

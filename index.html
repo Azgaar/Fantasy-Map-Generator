@@ -2085,6 +2085,7 @@
         <button id="burglLegend" data-tip="Edit free text notes (legend) for this burg" class="icon-edit"></button>
         <button id="burgLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
         <button id="burgRemove" data-tip="Remove non-capital burg. Shortcut: Delete" class="icon-trash fastDelete"></button>
+        <button id="burgTemperatureGraph" data-tip="Shows the temperature graph in the burg" class="icon-chart-area"></button>
       </div>
     </div>
 
@@ -3611,7 +3612,8 @@
       <div>
         <button onclick="exportToJson('Full')" data-tip="Download full data as in JSON format">full</button>
         <button onclick="exportToJson('Minimal')" data-tip="Download minimal data as in JSON format">minimal</button>
-        <button onclick="exportToJson('Cells')" data-tip="Download map metadata and cells data as in JSON format">cells</button>
+        <button onclick="exportToJson('PackCells')" data-tip="Download map metadata and pack cells data as in JSON format">pack cells</button>
+        <button onclick="exportToJson('GridCells')" data-tip="Download map metadata and grid cells data as in JSON format">grid cells</button>
       </div>
       <p>Export in JSON format can be used as an API replacement.</p>
 
@@ -4425,6 +4427,7 @@
   <script defer src="modules/ui/cultures-editor.js"></script>
   <script defer src="modules/ui/namesbase-editor.js"></script>
   <script defer src="modules/ui/elevation-profile.js"></script>
+  <script defer src="modules/ui/temperature-graph.js"></script>
   <script defer src="modules/ui/routes-editor.js"></script>
   <script defer src="modules/ui/ice-editor.js"></script>
   <script defer src="modules/ui/lakes-editor.js"></script>
