@@ -621,6 +621,11 @@ function editBurg(id) {
     const id = elSelected.attr("data-id");
     showBurgTemperatureGraph(id);
   }
+  function showTemperatureGraphs() {
+    const id = elSelected.attr("data-id");
+	showTGForBurg(id);
+  }
+
 
   function removeSelectedBurg() {
     const id = +elSelected.attr('data-id');
