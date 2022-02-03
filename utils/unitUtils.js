@@ -5,7 +5,7 @@
 function convertTemperature(temp) {
   switch (temperatureScale.value) {
     case "°C":
-      return temp + "°C";
+      return rn(temp) + "°C";
     case "°F":
       return rn((temp * 9) / 5 + 32) + "°F";
     case "K":
@@ -21,7 +21,7 @@ function convertTemperature(temp) {
     case "°Rø":
       return rn((temp * 21) / 40 + 7.5) + "°Rø";
     default:
-      return temp + "°C";
+      return rn(temp) + "°C";
   }
 }
 

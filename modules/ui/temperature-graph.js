@@ -98,147 +98,68 @@ function showBurgTemperatureGraph(id) {
   function drawGraph() {
     alertMessage.innerHTML = "";
 
+    const makeCurve = d3
+      .line()
+      .curve(d3.curveBasis)
+      .x(p => p.x)
+      .y(p => p.y);
+    const getCurve = data => round(makeCurve(data), 2);
+
     const legendSize = 60;
     const chart = d3
       .select("#alertMessage")
       .append("svg")
       .attr("width", chartWidth + 120)
-      .attr("height", chartHeight + yOffset + legendSize)
-      .attr("id", "elevationSVG")
-      .attr("class", "epbackground");
+      .attr("height", chartHeight + yOffset + legendSize);
 
-    // arrow-head definition
-    chart
-      .append("defs")
-      .append("marker")
-      .attr("id", "arrowhead")
-      .attr("orient", "auto")
-      .attr("markerWidth", "2")
-      .attr("markerHeight", "4")
-      .attr("refX", "0.1")
-      .attr("refY", "2");
+    const curves = chart.append("g").attr("fill", "none").style("stroke-width", 2.5);
+    curves.append("path").attr("d", getCurve(dataAverTmp)).attr("stroke", "orange").on("mousemove", printVal);
+    curves.append("path").attr("d", getCurve(dataMinTmp)).attr("stroke", "blue").on("mousemove", printVal);
+    curves.append("path").attr("d", getCurve(dataMaxTmp)).attr("stroke", "red").on("mousemove", printVal);
 
-    let Gen = d3
-      .line()
-      .curve(d3.curveBasis)
-      .x(p => p.x)
-      .y(p => p.y);
-
-    //print graphs
-    chart
-      .append("g")
-      .append("path")
-      .attr("d", Gen(dataAverTmp))
-      .attr("fill", "none")
-      .attr("stroke", "orange")
-      .on("mousemove", printVal)
-      .style("stroke-width", "2");
-    chart
-      .append("g")
-      .append("path")
-      .attr("d", Gen(dataMinTmp))
-      .attr("fill", "none")
-      .attr("stroke", "blue")
-      .on("mousemove", printVal)
-      .style("stroke-width", "2");
-    chart.append("g").append("path").attr("d", Gen(dataMaxTmp)).attr("fill", "none").attr("stroke", "red").on("mousemove", printVal).style("stroke-width", "2");
-
-    //print legend
-    chart
-      .append("circle")
-      .attr("cx", (chartWidth * 1) / 4)
-      .attr("cy", chartHeight + yOffset + legendSize * 0.8)
-      .attr("r", 4)
-      .style("fill", "red");
-    chart
-      .append("text")
-      .attr("x", (chartWidth * 1) / 4 + 20)
-      .attr("y", chartHeight + yOffset + legendSize * 0.8)
-      .text("Day temperature")
-      .style("font-size", "10px")
-      .attr("alignment-baseline", "middle");
-    chart
-      .append("circle")
-      .attr("cx", (chartWidth * 2) / 4)
-      .attr("cy", chartHeight + yOffset + legendSize * 0.8)
-      .attr("r", 4)
-      .style("fill", "orange");
-    chart
-      .append("text")
-      .attr("x", (chartWidth * 2) / 4 + 20)
-      .attr("y", chartHeight + yOffset + legendSize * 0.8)
-      .text("Average daily temperature")
-      .style("font-size", "10px")
-      .attr("alignment-baseline", "middle");
-    chart
-      .append("circle")
-      .attr("cx", (chartWidth * 3) / 4)
-      .attr("cy", chartHeight + yOffset + legendSize * 0.8)
-      .attr("r", 4)
-      .style("fill", "blue");
-    chart
-      .append("text")
-      .attr("x", (chartWidth * 3) / 4 + 20)
-      .attr("y", chartHeight + yOffset + legendSize * 0.8)
-      .text("Night temperature")
-      .style("font-size", "10px")
-      .attr("alignment-baseline", "middle");
-
-    //print title
-    let timerId = setTimeout(() => chart.attr("data-tip", "Seasonal temperature schedule"), 1000);
+    const legend = chart.append("g");
+    const legendY = chartHeight + yOffset + legendSize * 0.9;
+    const legendX = n => (chartWidth * n) / 4;
+    const legendTextPadding = 10;
+    const legendTextX = n => legendX(n) + legendTextPadding;
+    legend.append("circle").attr("cx", legendX(1)).attr("cy", legendY).attr("r", 4).style("fill", "red");
+    legend.append("text").attr("x", legendTextX(1)).attr("y", legendY).attr("alignment-baseline", "central").text("Day temperature");
+    legend.append("circle").attr("cx", legendX(2)).attr("cy", legendY).attr("r", 4).style("fill", "orange");
+    legend.append("text").attr("x", legendTextX(2)).attr("y", legendY).attr("alignment-baseline", "central").text("Mean daily temperature");
+    legend.append("circle").attr("cx", legendX(3)).attr("cy", legendY).attr("r", 4).style("fill", "blue");
+    legend.append("text").attr("x", legendTextX(3)).attr("y", legendY).attr("alignment-baseline", "central").text("Night temperature");
 
     const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-    //Val under line
+
     function printVal() {
-      let m = d3.mouse(this);
-      let tmp = convertTemperature(yscale_inv(m[1] - yOffset).toFixed(1));
-      let month = months[parseInt((xscale_inv(m[0] - xOffset) / 360) * 12)];
-      chart.attr("data-tip", tmp + " in " + month);
-      clearTimeout(timerId);
-      timerId = setTimeout(() => chart.attr("data-tip", "Seasonal temperature schedule"), 1000);
+      const [x, y] = d3.mouse(this);
+      const tmp = convertTemperature(yscale_inv(y - yOffset));
+      const month = months[parseInt((xscale_inv(x - xOffset) / 360) * 12)];
+      chart.attr("data-tip", `${month} temperature: ${tmp}`);
     }
 
-    const xAxis = d3
-      .axisBottom(xscale)
-      .ticks(10)
-      .tickFormat(function (d) {
-        return months[parseInt((d / 360) * 12)];
-      });
-    const yAxis = d3
-      .axisLeft(yscale)
-      .ticks(5)
-      .tickFormat(function (d) {
-        return convertTemperature(d);
-      });
+    const xGrid = d3.axisBottom(xscale).ticks(10).tickSize(-chartHeight);
+    const yGrid = d3.axisLeft(yscale).ticks(5).tickSize(-chartWidth);
 
-    const xGrid = d3.axisBottom(xscale).ticks(10).tickSize(-chartHeight).tickFormat("");
-    const yGrid = d3.axisLeft(yscale).ticks(5).tickSize(-chartWidth).tickFormat("");
-
-    chart
+    const grid = chart.append("g").attr("class", "epgrid").attr("stroke-dasharray", "4 1");
+    grid
       .append("g")
-      .attr("id", "epxaxis")
-      .attr("transform", "translate(" + xOffset + "," + parseInt(chartHeight + +yOffset + 20) + ")")
-      .call(xAxis)
-      .selectAll("text")
-      .style("text-anchor", "center")
-      .attr("transform", function (d) {
-        return "rotate(0)"; // used to rotate labels, - anti-clockwise, + clockwise
-      });
-
-    chart
-      .append("g")
-      .attr("id", "epyaxis")
-      .attr("transform", "translate(" + parseInt(+xOffset - 10) + "," + parseInt(+yOffset) + ")")
-      .call(yAxis);
-
-    // add the X gridlines
-    chart
-      .append("g")
-      .attr("id", "epxgrid")
-      .attr("class", "epgrid")
-      .attr("stroke-dasharray", "4 1")
-      .attr("transform", "translate(" + xOffset + "," + parseInt(chartHeight + +yOffset) + ")")
+      .attr("transform", `translate(${xOffset}, ${chartHeight + yOffset})`)
       .call(xGrid);
+    grid.append("g").attr("transform", `translate(${xOffset}, ${yOffset})`).call(yGrid);
+    grid.selectAll("text").remove();
+
+    const formatX = d => months[parseInt((d / 360) * 12)];
+    const xAxis = d3.axisBottom(xscale).ticks(10).tickFormat(formatX);
+
+    const formatY = d => convertTemperature(d);
+    const yAxis = d3.axisLeft(yscale).ticks(5).tickFormat(formatY);
+
+    chart
+      .append("g")
+      .attr("transform", `translate(${xOffset}, ${chartHeight + yOffset})`)
+      .call(xAxis);
+    chart.append("g").attr("transform", `translate(${xOffset}, ${yOffset})`).call(yAxis);
 
     if (minT < 0 && maxT > 0) {
       //add zero lv
@@ -251,14 +172,5 @@ function showBurgTemperatureGraph(id) {
         .attr("y2", yscale(0) + yOffset)
         .attr("stroke", "black");
     }
-
-    // add the Y gridlines
-    chart
-      .append("g")
-      .attr("id", "epygrid")
-      .attr("class", "epgrid")
-      .attr("stroke-dasharray", "4 1")
-      .attr("transform", "translate(" + xOffset + "," + yOffset + ")")
-      .call(yGrid);
   }
 }
