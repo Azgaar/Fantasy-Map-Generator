@@ -2310,7 +2310,7 @@ svg.button {
 
 .epgrid line {
   stroke: lightgrey;
-  stroke-opacity: 0.7;
+  stroke-opacity: 0.5;
   shape-rendering: crispEdges;
 }
 

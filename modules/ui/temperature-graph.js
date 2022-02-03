@@ -149,6 +149,18 @@ function showBurgTemperatureGraph(id) {
     grid.append("g").attr("transform", `translate(${xOffset}, ${yOffset})`).call(yGrid);
     grid.selectAll("text").remove();
 
+    //add zero degree line
+    if (minT < 0 && maxT > 0) {
+      chart
+        .append("g")
+        .append("line")
+        .attr("x1", xscale(0) + xOffset)
+        .attr("y1", yscale(0) + yOffset)
+        .attr("x2", xscale(360) + xOffset)
+        .attr("y2", yscale(0) + yOffset)
+        .attr("stroke", "gray");
+    }
+
     const formatX = d => months[parseInt((d / 360) * 12)];
     const xAxis = d3.axisBottom(xscale).ticks(10).tickFormat(formatX);
 
@@ -160,17 +172,5 @@ function showBurgTemperatureGraph(id) {
       .attr("transform", `translate(${xOffset}, ${chartHeight + yOffset})`)
       .call(xAxis);
     chart.append("g").attr("transform", `translate(${xOffset}, ${yOffset})`).call(yAxis);
-
-    if (minT < 0 && maxT > 0) {
-      //add zero lv
-      chart
-        .append("g")
-        .append("line")
-        .attr("x1", xscale(0) + xOffset)
-        .attr("y1", yscale(0) + yOffset)
-        .attr("x2", xscale(360) + xOffset)
-        .attr("y2", yscale(0) + yOffset)
-        .attr("stroke", "black");
-    }
   }
 }
