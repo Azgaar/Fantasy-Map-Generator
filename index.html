@@ -1799,7 +1799,7 @@
           <span data-tip="Set curve profile">Curve:
             <select id="epCurve">
               <option>Linear</option>
-                <option selected>Basis spline</option>
+              <option selected>Basis spline</option>
               <option>Bundle</option>
               <option>Cubic Catmull-Rom</option>
               <option>Monotone X</option>
@@ -1990,61 +1990,62 @@
       <div id="burgBody" style="padding-bottom: .3em">
         <div style="display: flex; align-items: center">
           <svg data-tip="Burg emblem. Click to edit" class="pointer" viewBox="0 0 200 200" width="13em" height="13em"><use id="burgEmblem"></use></svg>
-          <div>
-          <div id="burgProvinceAndState" style="font-style: italic; max-width: 16em"></div>
+          <div style="display: grid; grid-auto-rows: minmax(1.6em, auto)">
+            <div id="burgProvinceAndState" style="font-style: italic; max-width: 16em"></div>
 
-          <div>
-            <div class="label">Name:</div>
-            <input id="burgName" data-tip="Type to rename the burg" autocorrect="off" spellcheck="false" style="width: 8em">
-            <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
-            <span id="burgNameReRandom" data-tip="Generate random name for the burg" class="icon-globe pointer"></span>
-          </div>
+            <div>
+              <div class="label">Name:</div>
+              <input id="burgName" data-tip="Type to rename the burg" autocorrect="off" spellcheck="false" style="width: 8em">
+              <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+              <span id="burgNameReRandom" data-tip="Generate random name for the burg" class="icon-globe pointer"></span>
+            </div>
 
-          <div data-tip="Select burg type. Type slightly affects emblem generation">
-            <div class="label">Type:</div>
-            <select id="burgType" style="width: 8em">
-              <option value="Generic">Generic</option>
-              <option value="River">River</option>
-              <option value="Lake">Lake</option>
-              <option value="Naval">Naval</option>
-              <option value="Nomadic">Nomadic</option>
-              <option value="Hunting">Hunting</option>
-              <option value="Highland">Highland</option>
-            </select>
-          </div>
+            <div data-tip="Select burg type. Type slightly affects emblem generation">
+              <div class="label">Type:</div>
+              <select id="burgType" style="width: 8em">
+                <option value="Generic">Generic</option>
+                <option value="River">River</option>
+                <option value="Lake">Lake</option>
+                <option value="Naval">Naval</option>
+                <option value="Nomadic">Nomadic</option>
+                <option value="Hunting">Hunting</option>
+                <option value="Highland">Highland</option>
+              </select>
+            </div>
 
-          <div data-tip="Select dominant culture">
-            <div class="label">Culture:</div>
-            <select id="burgCulture" style="width: 8em"></select>
-            <span id="burgNameReCulture" data-tip="Generate culture-specific name for the burg" class="icon-book pointer"></span>
-          </div>
+            <div data-tip="Select dominant culture">
+              <div class="label">Culture:</div>
+              <select id="burgCulture" style="width: 8em"></select>
+              <span id="burgNameReCulture" data-tip="Generate culture-specific name for the burg" class="icon-book pointer"></span>
+            </div>
 
-          <div data-tip="Set burg population">
-            <div class="label">Population:</div>
-            <input id="burgPopulation" type="number" min=0 step=1 style="width: 8em">
-          </div>
+            <div data-tip="Set burg population">
+              <div class="label">Population:</div>
+              <input id="burgPopulation" type="number" min=0 step=1 style="width: 8em">
+            </div>
 
-          <div>
-            <div class="label">Features:</div>
-            <span id="burgCapital" data-tip="Shows whether the burg is a state capital. Click to toggle" data-feature="capital" class="burgFeature icon-star"></span>
-            <span id="burgPort" data-tip="Shows whether the burg is a port. Click to toggle" data-feature="port" class="burgFeature icon-anchor"></span>
-            <span id="burgCitadel" data-tip="Shows whether the burg has a citadel (castle). Click to toggle" data-feature="citadel" class="burgFeature icon-chess-rook" style="font-size: 1.1em"></span>
-            <span id="burgWalls" data-tip="Shows whether the burg is walled. Click to toggle" data-feature="walls" class="burgFeature icon-fort-awesome"></span>
-            <span id="burgPlaza" data-tip="Shows whether the burg is a trade center (has big marketplace). Click to toggle" data-feature="plaza" class="burgFeature icon-store" style="font-size: 1em"></span>
-            <span id="burgTemple" data-tip="Shows whether the burg is a religious center. Click to toggle" data-feature="temple" class="burgFeature icon-chess-bishop" style="font-size: 1.1em; margin-left: 3px"></span>
-            <span id="burgShanty" data-tip="Shows whether the burg has a shanty town. Click to toggle" data-feature="shanty" class="burgFeature icon-campground" style="font-size: 1em"></span>
-          </div>
+            <div>
+              <div class="label">Features:</div>
+              <span id="burgCapital" data-tip="Shows whether the burg is a state capital. Click to toggle" data-feature="capital" class="burgFeature icon-star"></span>
+              <span id="burgPort" data-tip="Shows whether the burg is a port. Click to toggle" data-feature="port" class="burgFeature icon-anchor"></span>
+              <span id="burgCitadel" data-tip="Shows whether the burg has a citadel (castle). Click to toggle" data-feature="citadel" class="burgFeature icon-chess-rook" style="font-size: 1.1em"></span>
+              <span id="burgWalls" data-tip="Shows whether the burg is walled. Click to toggle" data-feature="walls" class="burgFeature icon-fort-awesome"></span>
+              <span id="burgPlaza" data-tip="Shows whether the burg is a trade center (has big marketplace). Click to toggle" data-feature="plaza" class="burgFeature icon-store" style="font-size: 1em"></span>
+              <span id="burgTemple" data-tip="Shows whether the burg is a religious center. Click to toggle" data-feature="temple" class="burgFeature icon-chess-bishop" style="font-size: 1.1em; margin-left: 3px"></span>
+              <span id="burgShanty" data-tip="Shows whether the burg has a shanty town. Click to toggle" data-feature="shanty" class="burgFeature icon-campground" style="font-size: 1em"></span>
+            </div>
 
-          <div data-tip="Burg mean annual temperature and real-world city for comparison">
-            <div class="label">Temperature:</div>
-            <span id="burgTemperature"></span>, like in
-            <span id="burgTemperatureLikeIn"></span>
-          </div>
+            <div data-tip="Burg mean annual temperature and real-world city for comparison">
+              <div class="label">Temperature:</div>
+              <span id="burgTemperature"></span>, like in
+              <span id="burgTemperatureLikeIn"></span>
+              <i id="burgTemperatureGraph" data-tip="Show temperature graph for the burg" class="icon-chart-area pointer"></i>
+            </div>
 
-          <div data-tip="Burg height above mean sea level">
-            <div class="label">Elevation:</div>
-            <span id="burgElevation"></span> above sea level
-          </div>
+            <div data-tip="Burg height above mean sea level">
+              <div class="label">Elevation:</div>
+              <span id="burgElevation"></span> above sea level
+            </div>
           </div>
         </div>
 
@@ -2085,7 +2086,6 @@
         <button id="burglLegend" data-tip="Edit free text notes (legend) for this burg" class="icon-edit"></button>
         <button id="burgLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
         <button id="burgRemove" data-tip="Remove non-capital burg. Shortcut: Delete" class="icon-trash fastDelete"></button>
-        <button id="burgTemperatureGraph" data-tip="Shows the temperature graph in the burg" class="icon-chart-area"></button>
       </div>
     </div>
 
