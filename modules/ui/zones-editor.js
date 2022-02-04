@@ -560,14 +560,9 @@ function editZones() {
     $("#zonesTypes").dialog({
       title: "Add zones and types",
       width: fitContent(),
-      close: closeZoneTypesEditor,
       position: {my: "center", at: "center", of: "svg"},
     });
     zonesTypesAddLines();
-  }
-
-  function closeZoneTypesEditor() {
-    zonesEditorAddLines();
   }
   
   function addZonesType() {
@@ -576,6 +571,7 @@ function editZones() {
     zonesNewTypeInput.value = "";
     zonesTypesAddLines();
     zonesTypesFooterNumber.innerHTML = zoneTypes.length;
+	zonesEditorAddLines();
   }
   
   function removeZoneType(zoneType) {
