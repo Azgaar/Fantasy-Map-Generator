@@ -5,7 +5,7 @@
 const version = "1.662"; // generator version
 document.title += " v" + version;
 
-// Switches to disable/enable logging features
+// switches to disable/enable logging features
 const PRODUCTION = location.hostname && location.hostname !== "localhost" && location.hostname !== "127.0.0.1";
 const DEBUG = localStorage.getItem("debug");
 const INFO = DEBUG || !PRODUCTION;

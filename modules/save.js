@@ -144,7 +144,7 @@ async function saveToDropbox() {
     await Cloud.providers.dropbox.save(filename, mapData);
     tip("Map is saved to your Dropbox", true, "success", 8000);
   } catch (msg) {
-    console.error(msg);
+    ERROR && console.error(msg);
     tip("Cannot save .map to your Dropbox", true, "error", 8000);
   }
 }
