@@ -91,7 +91,7 @@ function showBurgTemperatureGraph(id) {
   });
 
   drawGraph();
-  $("#alert").dialog({title: "Annual temperature in " + b.name, position: {my: "center", at: "center", of: "svg"}});
+  $("#alert").dialog({title: "Annual temperature in " + b.name, width: "auto", position: {my: "center", at: "center", of: "svg"}});
 
   function drawGraph() {
     alertMessage.innerHTML = "";
