@@ -2,7 +2,7 @@
 "use strict";
 
 const systemPresets = ["default", "ancient", "gloom", "clean", "light", "watercolor", "cyberpunk", "monochrome"];
-const customPresetPrefix = "fmgStyle";
+const customPresetPrefix = "fmgStyle_";
 
 // add style presets to list
 {

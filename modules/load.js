@@ -929,6 +929,16 @@ function parseLoadedData(data) {
           if (layerIsOn("markers")) drawMarkers();
         }
       }
+
+      if (version < 1.72) {
+        const storedStyles = Object.keys(localStorage).filter(key => key.startsWith("style"));
+        storedStyles.forEach(styleName => {
+          const style = localStorage.getItem(styleName);
+          const newStyleName = styleName.replace(/^style/, customPresetPrefix);
+          localStorage.setItem(newStyleName, style);
+          localStorage.removeItem(styleName);
+        });
+      }
     })();
 
     void (function checkDataIntegrity() {
