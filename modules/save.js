@@ -120,7 +120,6 @@ function getMapData() {
   return mapData;
 }
 
-
 // Download .map file
 function dowloadMap() {
   if (customization) return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
@@ -137,7 +136,6 @@ function dowloadMap() {
   window.URL.revokeObjectURL(URL);
 }
 
-
 async function saveToDropbox() {
   if (customization) return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
   closeDialogs("#alert");
@@ -147,7 +145,7 @@ async function saveToDropbox() {
     await Cloud.providers.dropbox.save(filename, mapData);
     tip("Map is saved to your Dropbox", true, "success", 8000);
   } catch (msg) {
-    console.error(msg);
+    ERROR && console.error(msg);
     tip("Cannot save .map to your Dropbox", true, "error", 8000);
   }
 }

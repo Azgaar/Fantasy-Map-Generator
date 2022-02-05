@@ -19,7 +19,7 @@
     body {margin: 0; font-size: 10px; overflow: hidden;}
     #map {position: absolute;}
     #initial {fill: none; stroke: black; pointer-events: none;}
-    #init-rose {animation: 20s infinite spin; opacity: .7; transform-origin: center;}
+    #init-rose {opacity: .7; transform-origin: center; opacity: .7; animation: 20s infinite spin;}
     @keyframes spin {0% {transform: rotate(0deg);} 100% {transform: rotate(359deg);}}
     #loading {opacity:1; font-size: 11px; color:#fff5da; text-align:center; text-shadow:0px 1px 4px #4c3a35; width:80%; max-width:600px; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); pointer-events:none;}
     #loading-text {font-size: 1.8em; margin: 0.2em 0 0 1em;}
@@ -309,17 +309,9 @@
 
       <div id="styleContent" class="tabcontent">
         <p data-tip="Select a style preset. State labels may required regeneration if font is changed" style="display: inline-block">Style preset:</p>
-        <select data-tip="Select a style preset" id="stylePreset" onchange="changeStylePreset(this.value)" style="width:45%">
-          <option value="styleDefault" data-system=1 selected>Default</option>
-          <option value="styleAncient" data-system=1>Ancient</option>
-          <option value="styleGloom" data-system=1>Gloom</option>
-          <option value="styleClean" data-system=1>Clean</option>
-          <option value="styleLight" data-system=1>Light</option>
-          <option value="styleWatercolor" data-system=1>Watercolor</option>
-          <option value="styleMonochrome" data-system=1>Monochrome</option>
-        </select>
+        <select data-tip="Select a style preset" id="stylePreset" onchange="requestStylePresetChange(this.value)" style="width:45%; text-transform: capitalize;"></select>
         <button id="addStyleButton" data-tip="Click to save current style as a new preset" class="icon-plus sideButton" style="display: inline-block" onclick="addStylePreset()"></button>
-        <button id="removeStyleButton" data-tip="Click to remove current custom style preset" class="icon-minus sideButton" style="display: none" onclick="removeStylePreset()"></button>
+        <button id="removeStyleButton" data-tip="Click to remove current custom style preset" class="icon-minus sideButton" style="display: none" onclick="requestRemoveStylePreset()"></button>
 
         <p data-tip="Select an element to edit its style" style="display: inline-block;">Select element:</p>
         <select data-tip="Select an element to edit its style (list is ordered alphabetically)" id="styleElementSelect" style="width:42%">
@@ -4404,19 +4396,20 @@
   <script src="modules/fonts.js"></script>
   <script src="modules/ui/layers.js"></script>
   <script src="modules/ui/measurers.js"></script>
+  <script src="modules/ui/stylePresets.js"></script>
   <!-- <script src="libs/umami.js"></script> -->
 
-  <script defer src="https://unpkg.com/dropbox@10.8.0/dist/Dropbox-sdk.min.js"></script>
-  <script defer src="modules/ui/general.js"></script>
-  <script defer src="modules/ui/options.js"></script>
-  <script defer src="modules/ui/style.js"></script>
+  <script src="modules/ui/general.js"></script>
+  <script src="modules/ui/options.js"></script>
+  <script src="main.js"></script>
+
   <script defer src="modules/load.js"></script>
   <script defer src="modules/cloud.js"></script>
-  <script defer src="main.js"></script>
   <script defer src="modules/export-json.js"></script>
   <script defer src="modules/save.js"></script>
   <script defer src="modules/export.js"></script>
   <script defer src="modules/relief-icons.js"></script>
+  <script defer src="modules/ui/style.js"></script>
   <script defer src="modules/ui/tools.js"></script>
   <script defer src="modules/ui/world-configurator.js"></script>
   <script defer src="modules/ui/editors.js"></script>
@@ -4437,7 +4430,6 @@
   <script defer src="modules/ui/rivers-creator.js"></script>
   <script defer src="modules/ui/relief-editor.js"></script>
   <script defer src="modules/ui/religions-editor.js"></script>
-  <script defer src="modules/ui/markers-editor.js"></script>
   <script defer src="modules/ui/burg-editor.js"></script>
   <script defer src="modules/ui/units-editor.js"></script>
   <script defer src="modules/ui/notes-editor.js"></script>
@@ -4450,14 +4442,16 @@
   <script defer src="modules/ui/markers-overview.js"></script>
   <script defer src="modules/ui/regiment-editor.js"></script>
   <script defer src="modules/ui/battle-screen.js"></script>
-  <script defer src="modules/coa-renderer.js"></script>
   <script defer src="modules/ui/emblems-editor.js"></script>
+  <script defer src="modules/ui/markers-editor.js"></script>
   <script defer src="modules/ui/3d.js"></script>
   <script defer src="modules/ui/hotkeys.js"></script>
+  <script defer src="modules/coa-renderer.js"></script>
   <script defer src="libs/rgbquant.min.js"></script>
   <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
   <script defer src="libs/pell.min.js"></script>
   <script defer src="libs/jszip.min.js"></script>
+  <script defer src="https://unpkg.com/dropbox@10.8.0/dist/Dropbox-sdk.min.js"></script>
 
   <!-- Web Components -->
   <script defer src="components/fill-box.js"></script>

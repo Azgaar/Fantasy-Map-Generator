@@ -145,7 +145,7 @@ function parseLoadedResult(result) {
     const mapVersion = parseFloat(mapData[0].split("|")[0] || mapData[0]);
     return [mapData, mapVersion];
   } catch (error) {
-    console.error(error);
+    ERROR && console.error(error);
     return [null, null];
   }
 }
@@ -928,6 +928,16 @@ function parseLoadedData(data) {
           markerElements.forEach(el => el.remove());
           if (layerIsOn("markers")) drawMarkers();
         }
+      }
+
+      if (version < 1.72) {
+        const storedStyles = Object.keys(localStorage).filter(key => key.startsWith("style"));
+        storedStyles.forEach(styleName => {
+          const style = localStorage.getItem(styleName);
+          const newStyleName = styleName.replace(/^style/, customPresetPrefix);
+          localStorage.setItem(newStyleName, style);
+          localStorage.removeItem(styleName);
+        });
       }
     })();
 

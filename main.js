@@ -2,10 +2,10 @@
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 "use strict";
-const version = "1.72"; // generator version
+const version = "1.721"; // generator version
 document.title += " v" + version;
 
-// Switches to disable/enable logging features
+// switches to disable/enable logging features
 const PRODUCTION = location.hostname && location.hostname !== "localhost" && location.hostname !== "127.0.0.1";
 const DEBUG = localStorage.getItem("debug");
 const INFO = DEBUG || !PRODUCTION;
@@ -172,14 +172,37 @@ landmass.append("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr
 oceanPattern.append("rect").attr("fill", "url(#oceanic)").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 oceanLayers.append("rect").attr("id", "oceanBase").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 
-// remove loading screen
-d3.select("#loading").transition().duration(4000).style("opacity", 0).remove();
-d3.select("#initial").transition().duration(4000).attr("opacity", 0).remove();
-d3.select("#optionsContainer").transition().duration(3000).style("opacity", 1);
-d3.select("#tooltip").transition().duration(4000).style("opacity", 1);
+if (!location.hostname) {
+  const wiki = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally";
+  alertMessage.innerHTML = `Fantasy Map Generator cannot run serverless.
+  Follow the <a href="${wiki}" target="_blank">instructions</a> on how you can easily run a local web-server`;
+
+  $("#alert").dialog({
+    resizable: false,
+    title: "Loading error",
+    width: "28em",
+    position: {my: "center center-4em", at: "center", of: "svg"},
+    buttons: {
+      OK: function () {
+        $(this).dialog("close");
+      }
+    }
+  });
+
+  d3.select("#loading-text").transition().duration(1000).style("opacity", 0);
+  d3.select("#init-rose").transition().duration(4000).style("opacity", 0);
+} else {
+  checkLoadParameters();
+
+  // remove loading screen
+  d3.select("#loading").transition().duration(4000).style("opacity", 0).remove();
+  d3.select("#initial").transition().duration(4000).attr("opacity", 0).remove();
+  d3.select("#optionsContainer").transition().duration(3000).style("opacity", 1);
+  d3.select("#tooltip").transition().duration(4000).style("opacity", 1);
+}
 
 // decide which map should be loaded or generated on page load
-void (function checkLoadParameters() {
+function checkLoadParameters() {
   const url = new URL(window.location.href);
   const params = url.searchParams;
 
@@ -224,10 +247,10 @@ void (function checkLoadParameters() {
 
   WARN && console.warn("Generate random map");
   generateMapOnLoad();
-})();
+}
 
-function generateMapOnLoad() {
-  applyStyleOnLoad(); // apply default or previously selected style
+async function generateMapOnLoad() {
+  await applyStyleOnLoad(); // apply previously selected default or custom style
   generate(); // generate map
   focusOn(); // based on searchParams focus on point, cell or burg from MFCG
   applyPreset(); // apply saved layers preset
@@ -412,15 +435,12 @@ function showWelcomeMessage() {
   alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
     <ul><b>Latest changes:</b>
+      <li>New style preset: Cyberpunk</li>
       <li>Burg temperature graph</li>
       <li>4 new textures</li>
       <li>Province capture logic rework</li>
       <li>Button to release all provinces</li>
       <li>Limit military units by biome, state, culture and religion</li>
-      <li>New marker types</li>
-      <li>New markers editor</li>
-      <li>Markers overview screen</li>
-      <li>Markers regeneration menu</li>
     </ul>
 
     <p>Join our ${discord} and ${reddit} to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
