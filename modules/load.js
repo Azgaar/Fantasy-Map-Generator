@@ -145,7 +145,7 @@ function parseLoadedResult(result) {
     const mapVersion = parseFloat(mapData[0].split("|")[0] || mapData[0]);
     return [mapData, mapVersion];
   } catch (error) {
-    console.error(error);
+    ERROR && console.error(error);
     return [null, null];
   }
 }

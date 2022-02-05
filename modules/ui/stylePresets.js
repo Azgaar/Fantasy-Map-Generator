@@ -31,13 +31,13 @@ async function getStylePreset(desiredPreset) {
   if (isCustom) {
     const storedStyleJSON = localStorage.getItem(desiredPreset);
     if (!storedStyleJSON) {
-      console.error(`Custom style ${desiredPreset} in not found in localStorage. Applying default style`);
+      ERROR && console.error(`Custom style ${desiredPreset} in not found in localStorage. Applying default style`);
       presetToLoad = "default";
     } else {
       const isValid = JSON.isValid(storedStyleJSON);
       if (isValid) return [desiredPreset, JSON.parse(storedStyleJSON)];
 
-      console.error(`Custom style ${desiredPreset} stored in localStorage is not valid. Applying default style`);
+      ERROR && console.error(`Custom style ${desiredPreset} stored in localStorage is not valid. Applying default style`);
       presetToLoad = "default";
     }
   }
@@ -50,7 +50,7 @@ async function fetchSystemPreset(preset) {
   const style = await fetch(`/styles/${preset}.json`)
     .then(res => res.json())
     .catch(err => {
-      console.error("Error on loading style preset", preset, err);
+      ERROR && console.error("Error on loading style preset", preset, err);
       return null;
     });
 
