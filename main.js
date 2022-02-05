@@ -2,7 +2,7 @@
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 "use strict";
-const version = "1.71"; // generator version
+const version = "1.72"; // generator version
 document.title += " v" + version;
 
 // Switches to disable/enable logging features
@@ -411,20 +411,20 @@ function showWelcomeMessage() {
 
   alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
-    <ul>Main changes:
-      <li>Ability to limit military units by biome, state, culture and religion</li>
+    <ul><b>Latest changes:</b>
+      <li>Burg temperature graph</li>
+      <li>4 new textures</li>
+      <li>Province capture logic rework</li>
+      <li>Button to release all provinces</li>
+      <li>Limit military units by biome, state, culture and religion</li>
       <li>New marker types</li>
       <li>New markers editor</li>
       <li>Markers overview screen</li>
       <li>Markers regeneration menu</li>
-      <li>Burg editor update</li>
-      <li>Editable theme color</li>
-      <li>Add font dialog</li>
-      <li>Save to Dropbox</li>
     </ul>
 
     <p>Join our ${discord} and ${reddit} to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
-    <span>Thanks for all supporters on <a href="https://www.patreon.com/azgaar" target="_blank">Patreon</a>!</i></span>`;
+    <span><i>Thanks for all supporters on ${patreon}!</i></span>`;
 
   $("#alert").dialog({
     resizable: false,
