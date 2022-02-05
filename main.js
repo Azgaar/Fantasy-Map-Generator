@@ -1,4 +1,4 @@
-// Azgaar (azgaar.fmg@yandex.com). Minsk, 2017-2021. MIT License
+// Azgaar (azgaar.fmg@yandex.com). Minsk, 2017-2022. MIT License
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 "use strict";
