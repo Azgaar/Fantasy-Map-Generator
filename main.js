@@ -226,8 +226,8 @@ void (function checkLoadParameters() {
   generateMapOnLoad();
 })();
 
-function generateMapOnLoad() {
-  applyStyleOnLoad(); // apply default or previously selected style
+async function generateMapOnLoad() {
+  await applyStyleOnLoad(); // apply previously selected default or custom style
   generate(); // generate map
   focusOn(); // based on searchParams focus on point, cell or burg from MFCG
   applyPreset(); // apply saved layers preset
