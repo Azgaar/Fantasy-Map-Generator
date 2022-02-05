@@ -1,49 +1,61 @@
 // UI module to control the style presets
 "use strict";
 
-const defaultStyles = ["default", "ancient", "gloom", "clean", "light", "watercolor", "cyberpunk", "monochrome"];
+const systemPresets = ["default", "ancient", "gloom", "clean", "light", "watercolor", "cyberpunk", "monochrome"];
+const customPresetPrefix = "fmgStyle";
 
-// add styles to list
+// add style presets to list
 {
-  const defaultOptions = defaultStyles.map(styleName => `<option value="${styleName}">${styleName}</option>`);
-  const storedStyles = Object.keys(localStorage).filter(key => key.startsWith("fmgStyle"));
-  const customOptions = storedStyles.map(styleName => `<option value="${styleName}">${styleName.replace("fmgStyle", "")} [custom]</option>`);
-  const options = defaultOptions.join("") + customOptions.join("");
+  const systemOptions = systemPresets.map(styleName => `<option value="${styleName}">${styleName}</option>`);
+  const storedStyles = Object.keys(localStorage).filter(key => key.startsWith(customPresetPrefix));
+  const customOptions = storedStyles.map(styleName => `<option value="${styleName}">${styleName.replace(customPresetPrefix, "")} [custom]</option>`);
+  const options = systemOptions.join("") + customOptions.join("");
   document.getElementById("stylePreset").innerHTML = options;
 }
 
 async function applyStyleOnLoad() {
-  let preset = localStorage.getItem("presetStyle") || "default";
-  let style = {};
-
-  const isCustom = !defaultStyles.includes(preset);
-  if (isCustom) {
-    const storedStyleJSON = localStorage.getItem(preset);
-    if (!storedStyleJSON) {
-      console.error(`Custom style ${preset} in not found in localStorage. Appliying default style`);
-      preset = "default";
-    } else {
-      const isValid = JSON.isValid(storedStyleJSON);
-      if (isValid) {
-        style = JSON.parse(storedStyleJSON);
-      } else {
-        console.error(`Custom style ${preset} stored in localStorage is not valid. Appliying default style`);
-        preset = "default";
-      }
-    }
-  } else {
-    const defaultStyle = await fetch(`/styles/${preset}.json`)
-      .then(res => res.json())
-      .catch(err => {
-        console.error("Error on loading style", preset, err);
-        return {};
-      });
-    style = defaultStyle;
-  }
+  const desiredPreset = localStorage.getItem("presetStyle") || "default";
+  const styleData = await getStylePreset(desiredPreset);
+  const [appliedPreset, style] = styleData;
 
   applyStyle(style);
   updateMapFilter();
-  stylePreset.value = stylePreset.dataset.old = preset;
+  stylePreset.value = stylePreset.dataset.old = appliedPreset;
+  setPresetRemoveButtonVisibiliy();
+}
+
+async function getStylePreset(desiredPreset) {
+  let presetToLoad = desiredPreset;
+
+  const isCustom = !systemPresets.includes(desiredPreset);
+  if (isCustom) {
+    const storedStyleJSON = localStorage.getItem(desiredPreset);
+    if (!storedStyleJSON) {
+      console.error(`Custom style ${desiredPreset} in not found in localStorage. Applying default style`);
+      presetToLoad = "default";
+    } else {
+      const isValid = JSON.isValid(storedStyleJSON);
+      if (isValid) return [desiredPreset, JSON.parse(storedStyleJSON)];
+
+      console.error(`Custom style ${desiredPreset} stored in localStorage is not valid. Applying default style`);
+      presetToLoad = "default";
+    }
+  }
+
+  const style = await fetchSystemPreset(presetToLoad);
+  return [presetToLoad, style];
+}
+
+async function fetchSystemPreset(preset) {
+  const style = await fetch(`/styles/${preset}.json`)
+    .then(res => res.json())
+    .catch(err => {
+      console.error("Error on loading style preset", preset, err);
+      return null;
+    });
+
+  if (!style) throw new Error("Cannot fetch style preset", preset);
+  return style;
 }
 
 function applyStyle(style) {
@@ -67,67 +79,51 @@ function applyStyle(style) {
   }
 }
 
-// change current style preset to another saved one
-function changeStylePreset(preset) {
-  if (customization) return tip("Please exit the customization mode first", false, "error");
-
-  if (sessionStorage.getItem("styleChangeWarningShown")) {
-    changeStyle();
-  } else {
-    sessionStorage.setItem("styleChangeWarningShown", true);
-    alertMessage.innerHTML = "Are you sure you want to change the style preset? All unsaved style changes will be lost";
-    $("#alert").dialog({
-      resizable: false,
-      title: "Change style preset",
-      width: "23em",
-      buttons: {
-        Change: function () {
-          changeStyle();
-          $(this).dialog("close");
-        },
-        Cancel: function () {
-          stylePreset.value = stylePreset.dataset.old;
-          $(this).dialog("close");
-        }
-      }
-    });
+function requestStylePresetChange(preset) {
+  const isConfirmed = sessionStorage.getItem("styleChangeConfirmed");
+  if (isConfirmed) {
+    changeStyle(preset);
+    return;
   }
 
-  function changeStyle() {
-    const customPreset = localStorage.getItem(preset);
-    if (customPreset) {
-      if (JSON.isValid(customPreset)) applyStyle(JSON.parse(customPreset));
-      else {
-        tip("Cannot parse stored style JSON. Default style applied", false, "error", 5000);
-        applyDefaultStyle();
-      }
-    } else if (defaultStyles[preset]) {
-      const style = defaultStyles[preset];
-      if (JSON.isValid(style)) applyStyle(JSON.parse(style));
-      else tip("Cannot parse style JSON", false, "error", 5000);
-    } else applyDefaultStyle();
+  confirmationDialog({
+    title: "Change style preset",
+    message: "Are you sure you want to change the style preset? All unsaved style changes will be lost",
+    confirm: "Change",
+    onConfirm: () => {
+      sessionStorage.setItem("styleChangeConfirmed", true);
+      changeStyle(preset);
+    },
+    onCancel: () => {
+      stylePreset.value = stylePreset.dataset.old;
+    }
+  });
+}
 
-    const isDefault = defaultStyles.includes(stylePreset.value);
-    removeStyleButton.style.display = isDefault ? "none" : "inline-block";
-    updateElements(); // change elements
-    selectStyleElement(); // re-select element to trigger values update
-    updateMapFilter();
-    localStorage.setItem("presetStyle", preset); // save preset to use it onload
-    stylePreset.dataset.old = stylePreset.value; // save current value
-  }
+async function changeStyle(desiredPreset) {
+  const styleData = await getStylePreset(desiredPreset);
+  const [appliedPreset, style] = styleData;
+  localStorage.setItem("presetStyle", appliedPreset);
+  applyStyleWithUiRefresh(style);
+}
+
+function applyStyleWithUiRefresh(style) {
+  applyStyle(style);
+  updateElements();
+  selectStyleElement(); // re-select element to trigger values update
+  updateMapFilter();
+  stylePreset.dataset.old = stylePreset.value;
+
+  invokeActiveZooming();
+  setPresetRemoveButtonVisibiliy();
 }
 
 function addStylePreset() {
-  $("#styleSaver").dialog({
-    title: "Style Saver",
-    width: "26em",
-    position: {my: "center", at: "center", of: "svg"}
-  });
+  $("#styleSaver").dialog({title: "Style Saver", width: "26em", position: {my: "center", at: "center", of: "svg"}});
 
-  const currentPreset = document.getElementById("stylePreset").selectedOptions[0];
-  const styleName = currentPreset ? currentPreset.text : "custom";
+  const styleName = stylePreset.value.replace(customPresetPrefix, "");
   document.getElementById("styleSaverName").value = styleName;
-  styleSaverJSON.value = JSON.stringify(getStyle(), null, 2);
+  styleSaverJSON.value = JSON.stringify(collectStyleData(), null, 2);
   checkName();
 
   if (modules.saveStyle) return;
@@ -138,11 +134,9 @@ function addStylePreset() {
   document.getElementById("styleSaverSave").addEventListener("click", saveStyle);
   document.getElementById("styleSaverDownload").addEventListener("click", styleDownload);
   document.getElementById("styleSaverLoad").addEventListener("click", () => styleToLoad.click());
-  document.getElementById("styleToLoad").addEventListener("change", function () {
-    uploadFile(this, styleUpload);
-  });
+  document.getElementById("styleToLoad").addEventListener("change", loadStyleFile);
 
-  function getStyle() {
+  function collectStyleData() {
     const style = {};
     const attributes = {
       "#map": ["background-color", "filter", "data-filter"],
@@ -226,65 +220,82 @@ function addStylePreset() {
   }
 
   function checkName() {
-    let tip = "";
-    const v = "style" + styleSaverName.value;
-    const listed = Array.from(stylePreset.options).some(o => o.value == v);
-    const stored = localStorage.getItem(v);
-    if (!stored && listed) tip = "default";
-    else if (stored) tip = "existing";
-    else if (styleSaverName.value) tip = "new";
-    styleSaverTip.innerHTML = tip;
+    const styleName = customPresetPrefix + styleSaverName.value;
+
+    const isSystem = systemPresets.includes(styleName) || systemPresets.includes(styleSaverName.value);
+    if (isSystem) return (styleSaverTip.innerHTML = "default");
+
+    const isExisting = Array.from(stylePreset.options).some(option => option.value == styleName);
+    if (isExisting) return (styleSaverTip.innerHTML = "existing");
+
+    styleSaverTip.innerHTML = "new";
   }
 
   function saveStyle() {
-    if (!styleSaverJSON.value) return tip("Please provide a style JSON", false, "error");
-    if (!JSON.isValid(styleSaverJSON.value)) return tip("JSON string is not valid, please check the format", false, "error");
-    if (!styleSaverName.value) return tip("Please provide a preset name", false, "error");
+    const styleJSON = styleSaverJSON.value;
+    const desiredName = styleSaverName.value;
+
+    if (!styleJSON) return tip("Please provide a style JSON", false, "error");
+    if (!JSON.isValid(styleJSON)) return tip("JSON string is not valid, please check the format", false, "error");
+    if (!desiredName) return tip("Please provide a preset name", false, "error");
     if (styleSaverTip.innerHTML === "default") return tip("You cannot overwrite default preset, please change the name", false, "error");
 
-    const preset = "style" + styleSaverName.value;
-    applyOption(stylePreset, preset, styleSaverName.value); // add option
-    localStorage.setItem("presetStyle", preset); // mark preset as default
-    localStorage.setItem(preset, styleSaverJSON.value); // save preset
+    const presetName = customPresetPrefix + desiredName;
+    applyOption(stylePreset, presetName, desiredName + " [custom]");
+    localStorage.setItem("presetStyle", presetName);
+    localStorage.setItem(presetName, styleJSON);
 
-    applyStyle(JSON.parse(styleSaverJSON.value));
-    updateMapFilter();
-    invokeActiveZooming();
-
+    applyStyleWithUiRefresh(JSON.parse(styleJSON));
+    tip("Style preset is saved and applied", false, "success", 4000);
     $("#styleSaver").dialog("close");
-    removeStyleButton.style.display = "inline-block";
-    tip("Style preset is saved", false, "success", 4000);
   }
 
   function styleDownload() {
-    if (!styleSaverJSON.value) return tip("Please provide a style JSON", false, "error");
-    if (!JSON.isValid(styleSaverJSON.value)) return tip("JSON string is not valid, please check the format", false, "error");
-    if (!styleSaverName.value) return tip("Please provide a preset name", false, "error");
+    const styleJSON = styleSaverJSON.value;
+    const styleName = styleSaverName.value;
 
-    const data = styleSaverJSON.value;
-    if (!data) return tip("Please provide a style JSON", false, "error");
-    downloadFile(data, "style" + styleSaverName.value + ".json", "application/json");
+    if (!styleJSON) return tip("Please provide a style JSON", false, "error");
+    if (!JSON.isValid(styleJSON)) return tip("JSON string is not valid, please check the format", false, "error");
+    if (!styleName) return tip("Please provide a preset name", false, "error");
+
+    downloadFile(styleJSON, styleName + ".json", "application/json");
   }
 
-  function styleUpload(dataLoaded) {
-    if (!dataLoaded) return tip("Cannot load the file. Please check the data format", false, "error");
-    const data = JSON.stringify(JSON.parse(dataLoaded), null, 2);
-    styleSaverJSON.value = data;
+  function loadStyleFile() {
+    const fileName = this.files[0]?.name.replace(/\.[^.]*$/, "");
+    uploadFile(this, styleUpload);
+
+    function styleUpload(dataLoaded) {
+      if (!dataLoaded) return tip("Cannot load the file. Please check the data format", false, "error");
+      const isValid = JSON.isValid(dataLoaded);
+      if (!isValid) return tip("Loaded data is not a valid JSON, please check the format", false, "error");
+
+      styleSaverJSON.value = JSON.stringify(JSON.parse(dataLoaded), null, 2);
+      styleSaverName.value = fileName;
+      checkName();
+      tip("Style preset is uploaded", false, "success", 4000);
+    }
   }
 }
 
-function removeStylePreset() {
-  const isDefault = defaultStyles.includes(stylePreset.value);
+function requestRemoveStylePreset() {
+  const isDefault = systemPresets.includes(stylePreset.value);
   if (isDefault) return tip("Cannot remove system preset", false, "error");
 
+  confirmationDialog({
+    title: "Remove style preset",
+    message: "Are you sure you want to remove the style preset? This action cannot be undone.",
+    confirm: "Remove",
+    onConfirm: removeStylePreset
+  });
+}
+
+function removeStylePreset() {
   localStorage.removeItem("presetStyle");
   localStorage.removeItem(stylePreset.value);
   stylePreset.selectedOptions[0].remove();
-  removeStyleButton.style.display = "none";
 
-  applyDefaultStyle();
-  updateMapFilter();
-  invokeActiveZooming();
+  changeStyle("default");
 }
 
 function updateMapFilter() {
@@ -292,4 +303,9 @@ function updateMapFilter() {
   mapFilters.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
   if (!filter) return;
   mapFilters.querySelector("#" + filter).classList.add("pressed");
+}
+
+function setPresetRemoveButtonVisibiliy() {
+  const isDefault = systemPresets.includes(stylePreset.value);
+  removeStyleButton.style.display = isDefault ? "none" : "inline-block";
 }
