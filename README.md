@@ -3,6 +3,7 @@
 Azgaar's _Fantasy Map Generator_ is a free web application generating interactive and highly customizable svg maps based on voronoi diagram.
 
 Project is under development, the current version is available on [Github Pages](https://azgaar.github.io/Fantasy-Map-Generator).
+[Avengium fork at github](https://avengium.github.io/Fantasy-Map-Generator/).
 
 Refer to the [project wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki) for guidance. The current progress is tracked in [Trello](https://trello.com/b/7x832DG4/fantasy-map-generator). Some details are covered in my old blog [_Fantasy Maps for fun and glory_](https://azgaar.wordpress.com).
 
