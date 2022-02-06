@@ -1,7 +1,7 @@
 // UI module to control the style presets
 "use strict";
 
-const systemPresets = ["default", "ancient", "gloom", "clean", "light", "watercolor", "cyberpunk", "monochrome"];
+const systemPresets = ["default", "ancient", "gloom", "light", "watercolor", "clean", "atlas", "cyberpunk", "monochrome"];
 const customPresetPrefix = "fmgStyle_";
 
 // add style presets to list
