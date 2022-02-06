@@ -4,6 +4,8 @@ function editZones() {
   closeDialogs();
   if (!layerIsOn("toggleZones")) toggleZones();
   const body = document.getElementById("zonesBodySection");
+
+  updateFilters();
   zonesEditorAddLines();
 
   if (modules.editZones) return;
@@ -18,7 +20,8 @@ function editZones() {
   });
 
   // add listeners
-  document.getElementById("zonesFilterType").addEventListener("change", filterZonesByType);
+  document.getElementById("zonesFilterType").addEventListener("click", updateFilters);
+  document.getElementById("zonesFilterType").addEventListener("change", zonesEditorAddLines);
   document.getElementById("zonesEditorRefresh").addEventListener("click", zonesEditorAddLines);
   document.getElementById("zonesEditStyle").addEventListener("click", () => editStyle("zones"));
   document.getElementById("zonesLegend").addEventListener("click", toggleLegend);
@@ -39,39 +42,55 @@ function editZones() {
     else if (cl.contains("icon-trash-empty")) zoneRemove(zone);
     else if (cl.contains("icon-eye")) toggleVisibility(el);
     else if (cl.contains("icon-pin")) toggleFog(zone, cl);
-
     if (customization) selectZone(el);
   });
 
   body.addEventListener("input", function (ev) {
-    const el = ev.target,
-      zone = el.parentNode.dataset.id;
-    if (el.classList.contains("religionName")) zones.select("#" + zone).attr("data-description", el.value);
+    const el = ev.target;
+    const zone = zones.select("#" + el.parentNode.dataset.id);
+
+    if (el.classList.contains("zoneName")) zone.attr("data-description", el.value);
+    else if (el.classList.contains("zoneType")) zone.attr("data-type", el.value);
   });
+
+  // update type filter with a list of used types
+  function updateFilters() {
+    const zones = Array.from(document.querySelectorAll("#zones > g"));
+    const types = unique(zones.map(zone => zone.dataset.type));
+
+    const filterSelect = document.getElementById("zonesFilterType");
+    const typeToFilterBy = types.includes(zonesFilterType.value) ? zonesFilterType.value : "all";
+
+    filterSelect.innerHTML = "<option value='all'>all</option>" + types.map(type => `<option value="${type}">${type}</option>`).join("");
+    filterSelect.value = typeToFilterBy;
+  }
 
   // add line for each zone
   function zonesEditorAddLines() {
     const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
-    let lines = "";
 
-    zones.selectAll("g").each(function () {
-      const c = this.dataset.cells ? this.dataset.cells.split(",").map(c => +c) : [];
-      const description = this.dataset.description;
-      const type = this.dataset.type;
-      const fill = this.getAttribute("fill");
+    const typeToFilterBy = document.getElementById("zonesFilterType").value;
+    const zones = Array.from(document.querySelectorAll("#zones > g"));
+    const filteredZones = typeToFilterBy === "all" ? zones : zones.filter(zone => zone.dataset.type === typeToFilterBy);
+
+    const lines = filteredZones.map(zoneEl => {
+      const c = zoneEl.dataset.cells ? zoneEl.dataset.cells.split(",").map(c => +c) : [];
+      const description = zoneEl.dataset.description;
+      const type = zoneEl.dataset.type;
+      const fill = zoneEl.getAttribute("fill");
       const area = d3.sum(c.map(i => pack.cells.area[i])) * distanceScaleInput.value ** 2;
       const rural = d3.sum(c.map(i => pack.cells.pop[i])) * populationRate;
       const urban = d3.sum(c.map(i => pack.cells.burg[i]).map(b => pack.burgs[b].population)) * populationRate * urbanization;
       const population = rural + urban;
       const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}. Click to change`;
-      const inactive = this.style.display === "none";
-      const focused = defs.select("#fog #focus" + this.id).size();
+      const inactive = zoneEl.style.display === "none";
+      const focused = defs.select("#fog #focus" + zoneEl.id).size();
 
-      lines += `<div class="states" data-id="${this.id}" data-fill="${fill}" data-description="${description}"
+      return `<div class="states" data-id="${zoneEl.id}" data-fill="${fill}" data-description="${description}"
         data-cells=${c.length} data-area=${area} data-population=${population}>
         <fill-box fill="${fill}"></fill-box>
-        <input data-tip="Zone description. Click and type to change" class="religionName" value="${description}" autocorrect="off" spellcheck="false">
-        <input data-tip="Zone type. Click and type to change" value="${type}">
+        <input data-tip="Zone description. Click and type to change" style="width: 11em" class="zoneName" value="${description}" autocorrect="off" spellcheck="false">
+        <input data-tip="Zone type. Click and type to change" class="zoneType" value="${type}">
         <span data-tip="Cells count" class="icon-check-empty hide"></span>
         <div data-tip="Cells count" class="stateCells hide">${c.length}</div>
         <span data-tip="Zone area" style="padding-right:4px" class="icon-map-o hide"></span>
@@ -85,13 +104,13 @@ function editZones() {
       </div>`;
     });
 
-    body.innerHTML = lines;
+    body.innerHTML = lines.join("");
 
     // update footer
     const totalArea = (zonesFooterArea.dataset.area = graphWidth * graphHeight * distanceScaleInput.value ** 2);
     const totalPop = (d3.sum(pack.cells.pop) + d3.sum(pack.burgs.filter(b => !b.removed).map(b => b.population)) * urbanization) * populationRate;
     zonesFooterPopulation.dataset.population = totalPop;
-    zonesFooterNumber.innerHTML = zones.selectAll("g").size();
+    zonesFooterNumber.innerHTML = `${filteredZones.length} of ${zones.length}`;
     zonesFooterCells.innerHTML = pack.cells.i.length;
     zonesFooterArea.innerHTML = si(totalArea) + unit;
     zonesFooterPopulation.innerHTML = si(totalPop);
@@ -106,8 +125,6 @@ function editZones() {
     }
     $("#zonesEditor").dialog({width: fitContent()});
   }
-
-  function filterZonesByType() {}
 
   function zoneHighlightOn(event) {
     const zone = event.target.dataset.id;
@@ -134,7 +151,7 @@ function editZones() {
   function enterZonesManualAssignent() {
     if (!layerIsOn("toggleZones")) toggleZones();
     customization = 10;
-    document.querySelectorAll("#zonesBottom > button").forEach(el => (el.style.display = "none"));
+    document.querySelectorAll("#zonesBottom > *").forEach(el => (el.style.display = "none"));
     document.getElementById("zonesManuallyButtons").style.display = "inline-block";
 
     zonesEditor.querySelectorAll(".hide").forEach(el => el.classList.add("hidden"));
@@ -336,13 +353,15 @@ function editZones() {
   function addZonesLayer() {
     const id = getNextId("zone");
     const description = "Unknown zone";
+    const type = "Unknown";
     const fill = "url(#hatch" + (id.slice(4) % 42) + ")";
     zones.append("g").attr("id", id).attr("data-description", description).attr("data-cells", "").attr("fill", fill);
     const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
 
     const line = `<div class="states" data-id="${id}" data-fill="${fill}" data-description="${description}" data-cells=0 data-area=0 data-population=0>
       <fill-box fill="${fill}"></fill-box>
-      <input data-tip="Zone description. Click and type to change" class="religionName" value="${description}" autocorrect="off" spellcheck="false">
+      <input data-tip="Zone description. Click and type to change" style="width: 11em" class="zoneName" value="${description}" autocorrect="off" spellcheck="false">
+      <input data-tip="Zone type. Click and type to change" value="${type}">
       <span data-tip="Cells count" class="icon-check-empty hide"></span>
       <div data-tip="Cells count" class="stateCells hide">0</div>
       <span data-tip="Zone area" style="padding-right:4px" class="icon-map-o hide"></span>
@@ -361,12 +380,13 @@ function editZones() {
 
   function downloadZonesData() {
     const unit = areaUnit.value === "square" ? distanceUnitInput.value + "2" : areaUnit.value;
-    let data = "Id,Fill,Description,Cells,Area " + unit + ",Population\n"; // headers
+    let data = "Id,Fill,Description,Type,Cells,Area " + unit + ",Population\n"; // headers
 
     body.querySelectorAll(":scope > div").forEach(function (el) {
       data += el.dataset.id + ",";
       data += el.dataset.fill + ",";
       data += el.dataset.description + ",";
+      data += el.dataset.type + ",";
       data += el.dataset.cells + ",";
       data += el.dataset.area + ",";
       data += el.dataset.population + "\n";
