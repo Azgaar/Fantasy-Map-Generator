@@ -2,7 +2,7 @@
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 "use strict";
-const version = "1.721"; // generator version
+const version = "1.722"; // generator version
 document.title += " v" + version;
 
 // switches to disable/enable logging features
@@ -435,7 +435,7 @@ function showWelcomeMessage() {
   alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
     <ul><b>Latest changes:</b>
-      <li>New style preset: Cyberpunk</li>
+      <li>New style presets: Cyberpunk and Atlas</li>
       <li>Burg temperature graph</li>
       <li>4 new textures</li>
       <li>Province capture logic rework</li>
