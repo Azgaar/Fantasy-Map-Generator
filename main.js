@@ -2,7 +2,7 @@
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 "use strict";
-const version = "1.722"; // generator version
+const version = "1.73"; // generator version
 document.title += " v" + version;
 
 // switches to disable/enable logging features
