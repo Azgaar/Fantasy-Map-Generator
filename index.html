@@ -2871,18 +2871,17 @@
     <div id="zonesEditor" class="dialog stable" style="display: none">
       <div id="customHeader" class="header">
         <div style="left:1.8em" data-tip="Zone description">Description&nbsp;</div>
-        <div style="left:13em" data-tip="Zone cells count" class="hide">Cells&nbsp;</div>
-        <div style="left:19em" data-tip="Zone area" class="hide">Area&nbsp;</div>
-        <div style="left:24em" data-tip="Zone population" class="hide">Population&nbsp;</div>
-        <div style="left:31em" data-tip="Zone type" class="hide">Type&nbsp;</div>
+        <div style="left:13em" data-tip="Zone type" class="hide">Type&nbsp;</div>
+        <div style="left:19em" data-tip="Zone cells count" class="hide">Cells&nbsp;</div>
+        <div style="left:23.6em" data-tip="Zone area" class="hide">Area&nbsp;</div>
+        <div style="left:30.6em" data-tip="Zone population" class="hide">Population&nbsp;</div>
       </div>
 
       <div id="zonesBodySection" class="table" data-type="absolute"></div>
-	  
-      <div id="zonesFilters">
-        <span>Filter by type: </span>
-	<select id="zonesFilterType" data-tip="Only zones of this type appear on the map"></select>
-          <button id="zonesFilterButton" data-tip="Click to toggle the filtering of elements on the list" class="icon-resize-small"></button>
+
+      <div id="zonesFilters" data-tip="Show only zones of selected type">
+        Type: 
+        <select id="zonesFilterType"></select>
       </div>
 
       <div id="zonesFooter" class="totalLine">
@@ -2909,29 +2908,10 @@
           <button id="zonesRemove" data-tip="Click to toggle the removal mode on brush dragging. Shortcut: ctrl" class="icon-eraser"></button>
         </div>
 
-        <button id="zonesAdd" data-tip="Add new zone layers" class="icon-plus"></button>
-        <button id="zonesEditTypes" data-tip="Add and edit zone types" class="icon-edit"></button>
+        <button id="zonesAdd" data-tip="Add new zone layer" class="icon-plus"></button>
         <button id="zonesExport" data-tip="Download zones-related data" class="icon-download"></button>
       </div>
     </div>
-	
-	<div id="zonesTypes" class="dialog stable" style="display: none">
-	  <div id="customHeader" class="header">
-        <div style="left:1.8em" data-tip="Name of this type of zone">Type Name&nbsp;</div>
-        <div style="left:14em" data-tip="Number of zones of this type" class="hide">Amount&nbsp;</div>
-      </div>
-	  
-	  <div id="zonesTypesBodySection" class="table" data-type="absolute"></div>
-	  
-	  <div id="zonesTypesFooter" class="totalLine">
-        <div data-tip="The amount of zone types" style="margin-left: 5px">Types:&nbsp;<span id="zonesTypesFooterNumber">0</span></div>
-	  </div>
-	  
-	  <div id="zonesTypesBottom">
-		<input type="text" id="zonesNewTypeInput" data-tip="Write the name of the type you want to add" maxlength="20" placeholder="Add type"></input>
-		  <input type="button" id="zonesNewTypeButton" data-tip="Click add to save the type" value="Add">
-	  </div>
-	</div>
 
     <div id="notesEditor" class="dialog stable textual" style="display: none">
       <div>

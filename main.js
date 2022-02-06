@@ -122,7 +122,6 @@ let customization = 0;
 
 let biomesData = applyDefaultBiomesSystem();
 let nameBases = Names.getNameBases(); // cultures-related data
-const zoneTypes = ["Invasion", "Rebels", "Proselytism", "Crusade", "Disease", "Disaster"];
 
 let color = d3.scaleSequential(d3.interpolateSpectral); // default color scheme
 const lineGen = d3.line().curve(d3.curveBasis); // d3 line generator with default curve interpolation
@@ -1505,14 +1504,12 @@ function rankCells() {
   TIME && console.timeEnd("rankCells");
 }
 
-// regenerate some zones
+// generate zones
 function addZones(number = 1) {
   TIME && console.time("addZones");
-  const data = [],
-    cells = pack.cells,
-    states = pack.states,
-    burgs = pack.burgs;
+  const {cells, states, burgs} = pack;
   const used = new Uint8Array(cells.i.length); // to store used cells
+  const zonesData = [];
 
   for (let i = 0; i < rn(Math.random() * 1.8 * number); i++) addInvasion(); // invasion of enemy lands
   for (let i = 0; i < rn(Math.random() * 1.6 * number); i++) addRebels(); // rebels along a state border
@@ -1525,6 +1522,8 @@ function addZones(number = 1) {
   for (let i = 0; i < rn(Math.random() * 1.4 * number); i++) addFault(); // fault line in elevated areas
   for (let i = 0; i < rn(Math.random() * 1.4 * number); i++) addFlood(); // flood on river banks
   for (let i = 0; i < rn(Math.random() * 1.2 * number); i++) addTsunami(); // tsunami starting near coast
+
+  drawZones();
 
   function addInvasion() {
     const atWar = states.filter(s => s.diplomacy && s.diplomacy.some(d => d === "Enemy"));
@@ -1566,7 +1565,7 @@ function addZones(number = 1) {
       Intervention: 1
     });
     const name = getAdjective(invader.name) + " " + invasion;
-    data.push({name, type: "Invasion", cells: cellsArray, fill: "url(#hatch1)"});
+    zonesData.push({name, type: "Invasion", cells: cellsArray, fill: "url(#hatch1)"});
   }
 
   function addRebels() {
@@ -1595,7 +1594,7 @@ function addZones(number = 1) {
 
     const rebels = rw({Rebels: 5, Insurgents: 2, Mutineers: 1, Rioters: 1, Separatists: 1, Secessionists: 1, Insurrection: 2, Rebellion: 1, Conspiracy: 2});
     const name = getAdjective(states[neib].name) + " " + rebels;
-    data.push({name, type: "Rebels", cells: cellsArray, fill: "url(#hatch3)"});
+    zonesData.push({name, type: "Rebels", cells: cellsArray, fill: "url(#hatch3)"});
   }
 
   function addProselytism() {
@@ -1625,7 +1624,7 @@ function addZones(number = 1) {
     }
 
     const name = getAdjective(organized.name.split(" ")[0]) + " Proselytism";
-    data.push({name, type: "Proselytism", cells: cellsArray, fill: "url(#hatch6)"});
+    zonesData.push({name, type: "Proselytism", cells: cellsArray, fill: "url(#hatch6)"});
   }
 
   function addCrusade() {
@@ -1637,7 +1636,7 @@ function addZones(number = 1) {
     cellsArray.forEach(i => (used[i] = 1));
 
     const name = getAdjective(heresy.name.split(" ")[0]) + " Crusade";
-    data.push({name, type: "Crusade", cells: cellsArray, fill: "url(#hatch6)"});
+    zonesData.push({name, type: "Crusade", cells: cellsArray, fill: "url(#hatch6)"});
   }
 
   function addDisease() {
@@ -1674,7 +1673,7 @@ function addZones(number = 1) {
 
     const type = rw({Fever: 5, Pestilence: 2, Flu: 2, Pox: 2, Smallpox: 2, Plague: 4, Cholera: 2, Dropsy: 1, Leprosy: 2});
     const name = rw({[color()]: 4, [animal()]: 2, [adjective()]: 1}) + " " + type;
-    data.push({name, type: "Disease", cells: cellsArray, fill: "url(#hatch12)"});
+    zonesData.push({name, type: "Disease", cells: cellsArray, fill: "url(#hatch12)"});
   }
 
   function addDisaster() {
@@ -1706,7 +1705,7 @@ function addZones(number = 1) {
 
     const type = rw({Famine: 5, Dearth: 1, Drought: 3, Earthquake: 3, Tornadoes: 1, Wildfires: 1});
     const name = getAdjective(burg.name) + " " + type;
-    data.push({name, type: "Disaster", cells: cellsArray, fill: "url(#hatch5)"});
+    zonesData.push({name, type: "Disaster", cells: cellsArray, fill: "url(#hatch5)"});
   }
 
   function addEruption() {
@@ -1737,7 +1736,7 @@ function addZones(number = 1) {
       });
     }
 
-    data.push({name, type: "Disaster", cells: cellsArray, fill: "url(#hatch7)"});
+    zonesData.push({name, type: "Disaster", cells: cellsArray, fill: "url(#hatch7)"});
   }
 
   function addAvalanche() {
@@ -1762,7 +1761,7 @@ function addZones(number = 1) {
 
     const proper = getAdjective(Names.getCultureShort(cells.culture[cell]));
     const name = proper + " Avalanche";
-    data.push({name, type: "Disaster", cells: cellsArray, fill: "url(#hatch5)"});
+    zonesData.push({name, type: "Disaster", cells: cellsArray, fill: "url(#hatch5)"});
   }
 
   function addFault() {
@@ -1787,7 +1786,7 @@ function addZones(number = 1) {
 
     const proper = getAdjective(Names.getCultureShort(cells.culture[cell]));
     const name = proper + " Fault";
-    data.push({name, type: "Disaster", cells: cellsArray, fill: "url(#hatch2)"});
+    zonesData.push({name, type: "Disaster", cells: cellsArray, fill: "url(#hatch2)"});
   }
 
   function addFlood() {
@@ -1817,7 +1816,7 @@ function addZones(number = 1) {
     }
 
     const name = getAdjective(burgs[cells.burg[cell]].name) + " Flood";
-    data.push({name, type: "Disaster", cells: cellsArray, fill: "url(#hatch13)"});
+    zonesData.push({name, type: "Disaster", cells: cellsArray, fill: "url(#hatch13)"});
   }
 
   function addTsunami() {
@@ -1845,13 +1844,13 @@ function addZones(number = 1) {
 
     const proper = getAdjective(Names.getCultureShort(cells.culture[cell]));
     const name = proper + " Tsunami";
-    data.push({name, type: "Disaster", cells: cellsArray, fill: "url(#hatch13)"});
+    zonesData.push({name, type: "Disaster", cells: cellsArray, fill: "url(#hatch13)"});
   }
 
-  void (function drawZones() {
+  function drawZones() {
     zones
       .selectAll("g")
-      .data(data)
+      .data(zonesData)
       .enter()
       .append("g")
       .attr("id", (d, i) => "zone" + i)
@@ -1867,17 +1866,9 @@ function addZones(number = 1) {
       .attr("id", function (d) {
         return this.parentNode.id + "_" + d;
       });
-  })();
+  }
 
   TIME && console.timeEnd("addZones");
-}
-
-// Update zone types
-function updateZoneType(zoneId, newType) {
-  const zone = document.getElementById(zoneId);
-  if (zone) {
-    zone.dataset.type = newType;
-  }
 }
 
 // show map stats on generation complete
