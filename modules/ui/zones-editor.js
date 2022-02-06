@@ -30,8 +30,6 @@ function editZones() {
   document.getElementById("zonesManuallyApply").addEventListener("click", applyZonesManualAssignent);
   document.getElementById("zonesManuallyCancel").addEventListener("click", cancelZonesManualAssignent);
   document.getElementById("zonesAdd").addEventListener("click", addZonesLayer);
-  document.getElementById("zonesEditTypes").addEventListener("click", addZonesDialog);
-  document.getElementById("zonesNewTypeButton").addEventListener("click", addZonesType);
   document.getElementById("zonesExport").addEventListener("click", downloadZonesData);
   document.getElementById("zonesRemove").addEventListener("click", toggleEraseMode);
 
@@ -54,14 +52,6 @@ function editZones() {
     if (el.classList.contains("zoneName")) zone.attr("data-description", el.value);
     else if (el.classList.contains("zoneType")) zone.attr("data-type", el.value);
   });
-  
-  function refreshZonesEditor() {
-    updateSVG();
-    zonesEditorAddLines();
-  }
-  
-  function updateSVG() {
-    const value = document.getElementById("zonesFilterType").value; 
 
   // update type filter with a list of used types
   function updateFilters() {
@@ -92,7 +82,6 @@ function editZones() {
       const rural = d3.sum(c.map(i => pack.cells.pop[i])) * populationRate;
       const urban = d3.sum(c.map(i => pack.cells.burg[i]).map(b => pack.burgs[b].population)) * populationRate * urbanization;
       const population = rural + urban;
-      const zoneTypeList = getZoneTypesList(this.id, this.dataset.type);
       const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}. Click to change`;
       const inactive = zoneEl.style.display === "none";
       const focused = defs.select("#fog #focus" + zoneEl.id).size();
@@ -108,7 +97,6 @@ function editZones() {
         <div data-tip="Zone area" class="biomeArea hide">${si(area) + unit}</div>
         <span data-tip="${populationTip}" class="icon-male hide"></span>
         <div data-tip="${populationTip}" class="culturePopulation hide">${si(population)}</div>
-        ${zoneTypeList}
         <span data-tip="Drag to raise or lower the zone" class="icon-resize-vertical hide"></span>
         <span data-tip="Toggle zone focus" class="icon-pin ${focused ? "" : " inactive"} hide ${c.length ? "" : " placeholder"}"></span>
         <span data-tip="Toggle zone visibility" class="icon-eye ${inactive ? " inactive" : ""} hide ${c.length ? "" : " placeholder"}"></span>
@@ -138,6 +126,8 @@ function editZones() {
     }
     $("#zonesEditor").dialog({width: fitContent()});
   }
+
+  function filterZonesByType() {}
 
   function zoneHighlightOn(event) {
     const zone = event.target.dataset.id;
@@ -375,11 +365,6 @@ function editZones() {
       zonesEditorAddLines();
     }
   }
-    
-  function toggleFilterTable() {
-    this.classList.toggle("pressed");
-    zonesEditorAddLines();
-  }
 
   function addZonesLayer() {
     const id = getNextId("zone");
@@ -487,66 +472,6 @@ function editZones() {
     }
   }
 
-  function zonesTypesAddLines() {
-    const zoneTypeListBody = document.getElementById("zonesTypesBodySection");
-  
-    let lines = "";
-    zoneTypes.forEach(function(z, i) {
-      let count=0; // Amount of zones per type
-      zones.selectAll("g").each(function() { if (this.dataset.type === z) count++; });
-  
-      lines += `<div class="states"><span class="religionDeity">${z}</span><span class="statePopulation">${count}</span>`;
-      if (i > 5) {
-        let id="removeZoneType" + i;
-        lines += `<span data-tip="Remove zone type" class="icon-trash-empty" id="${id}"></span>`;
-      }
-      lines += '</div>';
-    });
-    zoneTypeListBody.innerHTML = lines;
-    zonesTypesFooterNumber.innerHTML = zoneTypes.length;
-  
-    for (let i=0; i<zoneTypes.length; i++) {
-      let d = document.getElementById("removeZoneType" + i);
-      if (d) {
-        d.addEventListener("click", function() { removeZoneType(zoneTypes[i]); });
-      }
-    }
-  }
-
-  function addZonesDialog() {
-    $("#zonesTypes").dialog({
-      title: "Add zones and types",
-      width: fitContent(),
-      position: {my: "center", at: "center", of: "svg"},
-    });
-    zonesTypesAddLines();
-  }
-  
-  function addZonesType() {
-    let zoneType = zonesNewTypeInput.value;
-    if (!zoneTypes.includes(zoneType)) { zoneTypes.push(zoneType); }
-    zonesNewTypeInput.value = "";
-    zonesTypesAddLines();
-    zonesTypesFooterNumber.innerHTML = zoneTypes.length;
-	zonesEditorAddLines();
-  }
-  
-  function removeZoneType(zoneType) {
-    zones.selectAll("g").each(function () {
-      if (this.dataset.type === zoneType) {
-        this.dataset.type = zoneTypes[0];
-      }
-    });  
-
-    for (let i=0; i<zoneTypes.length; i++) {
-      if (zoneTypes[i] === zoneType) {
-        zoneTypes.splice(i, 1);
-        zonesTypesAddLines();
-        break;
-      }
-    }
-  }
-	
   function zoneRemove(zone) {
     zones.select("#" + zone).remove();
     unfog("focusZone" + zone);

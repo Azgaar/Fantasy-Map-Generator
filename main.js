@@ -158,7 +158,6 @@ let customization = 0;
 
 let biomesData = applyDefaultBiomesSystem();
 let nameBases = Names.getNameBases(); // cultures-related data
-const zoneTypes = ["Invasion", "Rebels", "Proselytism", "Crusade", "Disease", "Disaster"];
 
 let color = d3.scaleSequential(d3.interpolateSpectral); // default color scheme
 const lineGen = d3.line().curve(d3.curveBasis); // d3 line generator with default curve interpolation
@@ -2055,14 +2054,6 @@ function addZones(number = 1) {
   }
 
   TIME && console.timeEnd("addZones");
-}
-
-// Update zone types
-function updateZoneType(zoneId, newType) {
-  const zone = document.getElementById(zoneId);
-  if (zone) {
-    zone.dataset.type = newType;
-  }
 }
 
 // show map stats on generation complete
