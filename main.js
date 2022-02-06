@@ -1,11 +1,11 @@
-// Azgaar (azgaar.fmg@yandex.com). Minsk, 2017-2021. MIT License
+// Azgaar (azgaar.fmg@yandex.com). Minsk, 2017-2022. MIT License
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 "use strict";
-const version = "1.71"; // generator version
+const version = "1.73"; // generator version
 document.title += " v" + version;
 
-// Switches to disable/enable logging features
+// switches to disable/enable logging features
 const PRODUCTION = location.hostname && location.hostname !== "localhost" && location.hostname !== "127.0.0.1";
 const DEBUG = localStorage.getItem("debug");
 const INFO = DEBUG || !PRODUCTION;
@@ -109,7 +109,7 @@ scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", ()
 legend.on("mousemove", () => tip("Drag to change the position. Click to hide the legend")).on("click", () => clearLegend());
 
 // main data variables
-let grid = {}; // initial grapg based on jittered square grid and data
+let grid = {}; // initial graph based on jittered square grid and data
 let pack = {}; // packed graph and data
 let seed;
 let mapId;
@@ -161,7 +161,7 @@ let urbanDensity = +document.getElementById("urbanDensityInput").value;
 
 applyStoredOptions();
 
-// voronoi graph extention, cannot be changed arter generation
+// voronoi graph extension, cannot be changed after generation
 let graphWidth = +mapWidthInput.value;
 let graphHeight = +mapHeightInput.value;
 
@@ -173,14 +173,37 @@ landmass.append("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr
 oceanPattern.append("rect").attr("fill", "url(#oceanic)").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 oceanLayers.append("rect").attr("id", "oceanBase").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 
-// remove loading screen
-d3.select("#loading").transition().duration(4000).style("opacity", 0).remove();
-d3.select("#initial").transition().duration(4000).attr("opacity", 0).remove();
-d3.select("#optionsContainer").transition().duration(3000).style("opacity", 1);
-d3.select("#tooltip").transition().duration(4000).style("opacity", 1);
+if (!location.hostname) {
+  const wiki = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally";
+  alertMessage.innerHTML = `Fantasy Map Generator cannot run serverless.
+  Follow the <a href="${wiki}" target="_blank">instructions</a> on how you can easily run a local web-server`;
+
+  $("#alert").dialog({
+    resizable: false,
+    title: "Loading error",
+    width: "28em",
+    position: {my: "center center-4em", at: "center", of: "svg"},
+    buttons: {
+      OK: function () {
+        $(this).dialog("close");
+      }
+    }
+  });
+
+  d3.select("#loading-text").transition().duration(1000).style("opacity", 0);
+  d3.select("#init-rose").transition().duration(4000).style("opacity", 0);
+} else {
+  checkLoadParameters();
+
+  // remove loading screen
+  d3.select("#loading").transition().duration(4000).style("opacity", 0).remove();
+  d3.select("#initial").transition().duration(4000).attr("opacity", 0).remove();
+  d3.select("#optionsContainer").transition().duration(3000).style("opacity", 1);
+  d3.select("#tooltip").transition().duration(4000).style("opacity", 1);
+}
 
 // decide which map should be loaded or generated on page load
-void (function checkLoadParameters() {
+function checkLoadParameters() {
   const url = new URL(window.location.href);
   const params = url.searchParams;
 
@@ -225,10 +248,10 @@ void (function checkLoadParameters() {
 
   WARN && console.warn("Generate random map");
   generateMapOnLoad();
-})();
+}
 
-function generateMapOnLoad() {
-  applyStyleOnLoad(); // apply default or previously selected style
+async function generateMapOnLoad() {
+  await applyStyleOnLoad(); // apply previously selected default or custom style
   generate(); // generate map
   focusOn(); // based on searchParams focus on point, cell or burg from MFCG
   applyPreset(); // apply saved layers preset
@@ -412,20 +435,18 @@ function showWelcomeMessage() {
 
   alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
-    <ul>Main changes:
-      <li>Ability to limit military units by biome, state, culture and religion</li>
-      <li>New marker types</li>
-      <li>New markers editor</li>
-      <li>Markers overview screen</li>
-      <li>Markers regeneration menu</li>
-      <li>Burg editor update</li>
-      <li>Editable theme color</li>
-      <li>Add font dialog</li>
-      <li>Save to Dropbox</li>
+    <ul><b>Latest changes:</b>
+      <li>Color picker: new hatchings</li>
+      <li>New style presets: Cyberpunk and Atlas</li>
+      <li>Burg temperature graph</li>
+      <li>4 new textures</li>
+      <li>Province capture logic rework</li>
+      <li>Button to release all provinces</li>
+      <li>Limit military units by biome, state, culture and religion</li>
     </ul>
 
     <p>Join our ${discord} and ${reddit} to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
-    <span>Thanks for all supporters on <a href="https://www.patreon.com/azgaar" target="_blank">Patreon</a>!</i></span>`;
+    <span><i>Thanks for all supporters on ${patreon}!</i></span>`;
 
   $("#alert").dialog({
     resizable: false,
@@ -493,7 +514,7 @@ function invokeActiveZooming() {
     coastline.select("#sea_island").attr("filter", filter);
   }
 
-  // rescale lables on zoom
+  // rescale labels on zoom
   if (labels.style("display") !== "none") {
     labels.selectAll("g").each(function () {
       if (this.id === "burgLabels") return;
@@ -668,7 +689,7 @@ function generate() {
     const parsedError = parseError(error);
     clearMainTip();
 
-    alertMessage.innerHTML = `An error is occured on map generation. Please retry.
+    alertMessage.innerHTML = `An error has occurred on map generation. Please retry.
       <br>If error is critical, clear the stored data and try again.
       <p id="errorBox">${parsedError}</p>`;
     $("#alert").dialog({
@@ -980,7 +1001,10 @@ function generatePrecipitation() {
   prec.selectAll("*").remove();
   const {cells, cellsX, cellsY} = grid;
   cells.prec = new Uint8Array(cells.i.length); // precipitation array
-  const modifier = precInput.value / 100; // user's input
+
+  const cellsNumberModifier = (pointsInput.dataset.cells / 10000) ** 0.25;
+  const precInputModifier = precInput.value / 100;
+  const modifier = cellsNumberModifier * precInputModifier;
 
   const westerly = [];
   const easterly = [];
@@ -996,14 +1020,14 @@ function generatePrecipitation() {
   // x2 = 60-70 latitude: wet summer (rising zone), dry winter (sinking zone)
   // x1 = 70-85 latitude: dry all year (sinking zone)
   // x0.5 = 85-90 latitude: dry all year (sinking zone)
-  const lalitudeModifier = [4, 2, 2, 2, 1, 1, 2, 2, 2, 2, 3, 3, 2, 2, 1, 1, 1, 0.5];
+  const latitudeModifier = [4, 2, 2, 2, 1, 1, 2, 2, 2, 2, 3, 3, 2, 2, 1, 1, 1, 0.5];
   const MAX_PASSABLE_ELEVATION = 85;
 
   // define wind directions based on cells latitude and prevailing winds there
   d3.range(0, cells.i.length, cellsX).forEach(function (c, i) {
     const lat = mapCoordinates.latN - (i / cellsY) * mapCoordinates.latT;
     const latBand = ((Math.abs(lat) - 1) / 5) | 0;
-    const latMod = lalitudeModifier[latBand];
+    const latMod = latitudeModifier[latBand];
     const windTier = (Math.abs(lat - 89) / 30) | 0; // 30d tiers from 0 to 5 from N to S
     const {isWest, isEast, isNorth, isSouth} = getWindDirections(windTier);
 
@@ -1020,14 +1044,14 @@ function generatePrecipitation() {
   const vertT = southerly + northerly;
   if (northerly) {
     const bandN = ((Math.abs(mapCoordinates.latN) - 1) / 5) | 0;
-    const latModN = mapCoordinates.latT > 60 ? d3.mean(lalitudeModifier) : lalitudeModifier[bandN];
+    const latModN = mapCoordinates.latT > 60 ? d3.mean(latitudeModifier) : latitudeModifier[bandN];
     const maxPrecN = (northerly / vertT) * 60 * modifier * latModN;
     passWind(d3.range(0, cellsX, 1), maxPrecN, cellsX, cellsY);
   }
 
   if (southerly) {
     const bandS = ((Math.abs(mapCoordinates.latS) - 1) / 5) | 0;
-    const latModS = mapCoordinates.latT > 60 ? d3.mean(lalitudeModifier) : lalitudeModifier[bandS];
+    const latModS = mapCoordinates.latT > 60 ? d3.mean(latitudeModifier) : latitudeModifier[bandS];
     const maxPrecS = (southerly / vertT) * 60 * modifier * latModS;
     passWind(d3.range(cells.i.length - cellsX, cells.i.length, 1), maxPrecS, -cellsX, cellsY);
   }
@@ -1181,7 +1205,7 @@ function reGraph() {
   TIME && console.timeEnd("reGraph");
 }
 
-// Detect and draw the coasline
+// Detect and draw the coastline
 function drawCoastline() {
   TIME && console.time("drawCoastline");
   reMarkFeatures();
@@ -1190,7 +1214,7 @@ function drawCoastline() {
     vertices = pack.vertices,
     n = cells.i.length,
     features = pack.features;
-  const used = new Uint8Array(features.length); // store conneted features
+  const used = new Uint8Array(features.length); // store connected features
   const largestLand = d3.scan(
     features.map(f => (f.land ? f.cells : 0)),
     (a, b) => b - a

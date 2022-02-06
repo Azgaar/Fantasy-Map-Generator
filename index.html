@@ -19,7 +19,7 @@
     body {margin: 0; font-size: 10px; overflow: hidden;}
     #map {position: absolute;}
     #initial {fill: none; stroke: black; pointer-events: none;}
-    #init-rose {animation: 20s infinite spin; opacity: .7; transform-origin: center;}
+    #init-rose {opacity: .7; transform-origin: center; opacity: .7; animation: 20s infinite spin;}
     @keyframes spin {0% {transform: rotate(0deg);} 100% {transform: rotate(359deg);}}
     #loading {opacity:1; font-size: 11px; color:#fff5da; text-align:center; text-shadow:0px 1px 4px #4c3a35; width:80%; max-width:600px; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); pointer-events:none;}
     #loading-text {font-size: 1.8em; margin: 0.2em 0 0 1em;}
@@ -148,55 +148,6 @@
         </filter>
       </g>
 
-      <g id="hatching">
-        <pattern id="hatch0" patternUnits="userSpaceOnUse" width="4" height="4">
-          <line x1="0" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:2"/>
-        </pattern>
-        <pattern id="hatch1" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
-          <line x1="0" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:2"/>
-        </pattern>
-        <pattern id="hatch2" patternUnits="userSpaceOnUse" width="4" height="4">
-          <line x1="0" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:2"/>
-        </pattern>
-        <pattern id="hatch3" patternTransform="rotate(-45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
-          <line x1="0" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:2"/>
-        </pattern>
-        <pattern id="hatch4" patternUnits="userSpaceOnUse" width="4" height="4">
-          <line x1="0" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:1.5"/>
-          <line x1="0" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:1.5"/>
-        </pattern>
-        <pattern id="hatch5" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
-          <line x1="0" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:1.5"/>
-          <line x1="0" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:1.5"/>
-        </pattern>
-        <pattern id="hatch6" patternUnits="userSpaceOnUse" width="5" height="5">
-          <circle cx="2.5" cy="2.5" r="1" style="fill: black"/>
-        </pattern>
-        <pattern id="hatch7" patternUnits="userSpaceOnUse" width="4" height="4">
-          <line x1="0" y1="0" x2="0" y2="3" transform="rotate(-45 0 0)" style="stroke:black; stroke-width:1.5" />
-        </pattern>
-        <pattern id="hatch8" patternUnits="userSpaceOnUse" width="4" height="4">
-          <line x1="0" y1="0" x2="0" y2="3" style="stroke:black; stroke-width:2.5"/>
-        </pattern>
-        <pattern id="hatch9" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
-          <line x1="0" y1="0" x2="0" y2="3" style="stroke:black; stroke-width:2.5"/>
-        </pattern>
-        <pattern id="hatch10" patternUnits="userSpaceOnUse" width="4" height="4">
-          <line x1="0" y1="0" x2="3" y2="0" style="stroke:black; stroke-width:2.5"/>
-        </pattern>
-        <pattern id="hatch11" patternTransform="rotate(-45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
-          <line x1="0" y1="0" x2="0" y2="3" style="stroke:black; stroke-width:2.5"/>
-        </pattern>
-        <pattern id="hatch12" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
-          <line x1="0" y1="1" x2="0" y2="3" style="stroke:black; stroke-width:1.5" />
-          <line x1="1" y1="0" x2="3" y2="0" style="stroke:black; stroke-width:1.5" />
-        </pattern>
-        <pattern id="hatch13" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
-          <line x1="0" y1="0" x2="0" y2="3" style="stroke:black; stroke-width:1.5" />
-          <line x1="0" y1="0" x2="3" y2="0" style="stroke:black; stroke-width:1.5" />
-        </pattern>
-      </g>
-
       <g id="deftemp">
         <mask id="land"></mask>
         <mask id="water">
@@ -226,7 +177,7 @@
   <div id="loading">
     <div id="titleName"><t data-t="titleName">Azgaar's</t></div>
     <div id="title"><t data-t="title">Fantasy Map Generator</t></div>
-    <div id="version"><t data-t="version">v. </t>1.71</div>
+    <div id="version"><t data-t="version">v. </t>1.72</div>
     <p id="loading-text"><t data-t="loading">LOADING</t><span>.</span><span>.</span><span>.</span></p>
   </div>
 
@@ -309,17 +260,9 @@
 
       <div id="styleContent" class="tabcontent">
         <p data-tip="Select a style preset. State labels may required regeneration if font is changed" style="display: inline-block">Style preset:</p>
-        <select data-tip="Select a style preset" id="stylePreset" onchange="changeStylePreset(this.value)" style="width:45%">
-          <option value="styleDefault" data-system=1 selected>Default</option>
-          <option value="styleAncient" data-system=1>Ancient</option>
-          <option value="styleGloom" data-system=1>Gloom</option>
-          <option value="styleClean" data-system=1>Clean</option>
-          <option value="styleLight" data-system=1>Light</option>
-          <option value="styleWatercolor" data-system=1>Watercolor</option>
-          <option value="styleMonochrome" data-system=1>Monochrome</option>
-        </select>
+        <select data-tip="Select a style preset" id="stylePreset" onchange="requestStylePresetChange(this.value)" style="width:45%; text-transform: capitalize;"></select>
         <button id="addStyleButton" data-tip="Click to save current style as a new preset" class="icon-plus sideButton" style="display: inline-block" onclick="addStylePreset()"></button>
-        <button id="removeStyleButton" data-tip="Click to remove current custom style preset" class="icon-minus sideButton" style="display: none" onclick="removeStylePreset()"></button>
+        <button id="removeStyleButton" data-tip="Click to remove current custom style preset" class="icon-minus sideButton" style="display: none" onclick="requestRemoveStylePreset()"></button>
 
         <p data-tip="Select an element to edit its style" style="display: inline-block;">Select element:</p>
         <select data-tip="Select an element to edit its style (list is ordered alphabetically)" id="styleElementSelect" style="width:42%">
@@ -947,7 +890,7 @@
 
           <tr data-tip="Map seed number. Seed produces the same map only if canvas size and options are the same">
             <td>
-              <i data-tip="Show seed history to apply a previous seed" id="optionsMapHistory" class="icon-history"></i>
+              <i data-tip="Show seed history to apply a previous seed" id="optionsMapHistory" class="icon-hourglass-1"></i>
             </td>
             <td>Map seed</td>
             <td>
@@ -1062,7 +1005,7 @@
               <input id="regionsInput" data-stored="regions" type="range" min=0 max=99 value=13>
             </td>
             <td>
-              <input id="regionsOutput" data-stored="regions" type="number" min=0 max=99 value=13>
+              <input id="regionsOutput" data-stored="regions" type="number" min=0 max=999 value=13>
             </td>
           </tr>
 
@@ -1446,9 +1389,21 @@
       </div>
 
       <div id="aboutContent" class="tabcontent">
-        <p><a href="https://github.com/Azgaar/Fantasy-Map-Generator" target="_blank">Fantasy Map Generator</a> is a free <a href="https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE" target="_blank">open source</a> tool which procedurally generates fantasy maps. You may use auto-generated maps as they are, edit them or even create a new map from scratch. Check out the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Quick-Start-Tutorial" target="_blank">quick start tutorial</a>, <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A" target="_blank">Q&A</a> and <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys" target="_blank">hotkeys</a> for guidance.</p>
-        <p>Join our <a href='https://discordapp.com/invite/X7E84HU' target='_blank'>Discord server</a> and <a href="https://www.reddit.com/r/FantasyMapGenerator/" target="_blank">Reddit community</a> to ask questions, get help and share maps.</p>
-        <p>The project is under active development. Creator and main maintainer: Azgaar. To track the development progress see the <a href="https://trello.com/b/7x832DG4/fantasy-map-generator" target="_blank">devboard</a>. For older versions see the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog" target="_blank">changelog</a>. Please report bugs <a href="https://github.com/Azgaar/Fantasy-Map-Generator/issues" target="_blank">here</a>. You can also contact me directly via <a href="mailto:azgaar.fmg@yandex.by" target="_blank">email</a>.</p>
+        <p>
+          <a href="https://github.com/Azgaar/Fantasy-Map-Generator" target="_blank">Fantasy Map Generator</a> is a free <a href="https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE" target="_blank">open source</a> tool which procedurally generates fantasy maps.
+          You may use auto-generated maps as they are, edit them or even create a new map from scratch.
+          Check out the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Quick-Start-Tutorial" target="_blank">Quick start</a>, <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A" target="_blank">Q&A</a>, <a href="https://youtube.com/playlist?list=PLtgiuDC8iVR2gIG8zMTRn7T_L0arl9h1C" target="_blank">Video tutorial</a>, and <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys" target="_blank">hotkeys</a> for guidance.
+        </p>
+
+        <p>
+          Join our <a href='https://discordapp.com/invite/X7E84HU' target='_blank'>Discord server</a> and <a href="https://www.reddit.com/r/FantasyMapGenerator/" target="_blank">Reddit community</a> to ask questions, get help and share maps.
+        </p>
+        
+        <p>
+          The project is under active development. Creator and main maintainer: Azgaar. To track the development progress see the <a href="https://trello.com/b/7x832DG4/fantasy-map-generator" target="_blank">devboard</a>.
+          For older versions see the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog" target="_blank">changelog</a>. Please report bugs <a href="https://github.com/Azgaar/Fantasy-Map-Generator/issues" target="_blank">here</a>. You can also contact me directly via <a href="mailto:azgaar.fmg@yandex.by" target="_blank">email</a>.
+        </p>
+
         <div style="background-color: #e85b46; padding: .4em; width: max-content; margin: .6em auto 0 auto; border: 1px solid #943838">
           <a href="https://www.patreon.com/azgaar" target="_blank" style="color: white; text-decoration: none; font-family: sans-serif">
             <div>
@@ -1461,7 +1416,10 @@
             </div>
           </a>
         </div>
-        <p>Special thanks to <a data-tip="Click to see list of supporters" onclick="showSupporters()">all supporters</a> on Patreon!</p>
+
+        <p>
+          Special thanks to <a data-tip="Click to see list of supporters" onclick="showSupporters()">all supporters</a> on Patreon!
+        </p>
 
         <ul class="share-buttons">
           <li><a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator%2F&quote=" data-tip="Share on Facebook" target="_blank"><img alt="Share on Facebook" src="images/Facebook.png" /></a></li>
@@ -1784,7 +1742,7 @@
           <span data-tip="Set curve profile">Curve:
             <select id="epCurve">
               <option>Linear</option>
-                <option selected>Basis spline</option>
+              <option selected>Basis spline</option>
               <option>Bundle</option>
               <option>Cubic Catmull-Rom</option>
               <option>Monotone X</option>
@@ -1975,69 +1933,73 @@
       <div id="burgBody" style="padding-bottom: .3em">
         <div style="display: flex; align-items: center">
           <svg data-tip="Burg emblem. Click to edit" class="pointer" viewBox="0 0 200 200" width="13em" height="13em"><use id="burgEmblem"></use></svg>
-          <div>
-          <div id="burgProvinceAndState" style="font-style: italic; max-width: 16em"></div>
+          <div style="display: grid; grid-auto-rows: minmax(1.6em, auto)">
+            <div id="burgProvinceAndState" style="font-style: italic; max-width: 16em"></div>
 
-          <div>
-            <div class="label">Name:</div>
-            <input id="burgName" data-tip="Type to rename the burg" autocorrect="off" spellcheck="false" style="width: 8em">
-            <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
-            <span id="burgNameReRandom" data-tip="Generate random name for the burg" class="icon-globe pointer"></span>
-          </div>
+            <div>
+              <div class="label">Name:</div>
+              <input id="burgName" data-tip="Type to rename the burg" autocorrect="off" spellcheck="false" style="width: 8em">
+              <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+              <span id="burgNameReRandom" data-tip="Generate random name for the burg" class="icon-globe pointer"></span>
+            </div>
 
-          <div data-tip="Select burg type. Type slightly affects emblem generation">
-            <div class="label">Type:</div>
-            <select id="burgType" style="width: 8em">
-              <option value="Generic">Generic</option>
-              <option value="River">River</option>
-              <option value="Lake">Lake</option>
-              <option value="Naval">Naval</option>
-              <option value="Nomadic">Nomadic</option>
-              <option value="Hunting">Hunting</option>
-              <option value="Highland">Highland</option>
-            </select>
-          </div>
+            <div data-tip="Select burg type. Type slightly affects emblem generation">
+              <div class="label">Type:</div>
+              <select id="burgType" style="width: 8em">
+                <option value="Generic">Generic</option>
+                <option value="River">River</option>
+                <option value="Lake">Lake</option>
+                <option value="Naval">Naval</option>
+                <option value="Nomadic">Nomadic</option>
+                <option value="Hunting">Hunting</option>
+                <option value="Highland">Highland</option>
+              </select>
+            </div>
 
-          <div data-tip="Select dominant culture">
-            <div class="label">Culture:</div>
-            <select id="burgCulture" style="width: 8em"></select>
-            <span id="burgNameReCulture" data-tip="Generate culture-specific name for the burg" class="icon-book pointer"></span>
-          </div>
+            <div data-tip="Select dominant culture">
+              <div class="label">Culture:</div>
+              <select id="burgCulture" style="width: 8em"></select>
+              <span id="burgNameReCulture" data-tip="Generate culture-specific name for the burg" class="icon-book pointer"></span>
+            </div>
 
-          <div data-tip="Set burg population">
-            <div class="label">Population:</div>
-            <input id="burgPopulation" type="number" min=0 step=1 style="width: 8em">
-          </div>
+            <div data-tip="Set burg population">
+              <div class="label">Population:</div>
+              <input id="burgPopulation" type="number" min=0 step=1 style="width: 8em">
+            </div>
 
-          <div>
-            <div class="label">Features:</div>
-            <span id="burgCapital" data-tip="Shows whether the burg is a state capital. Click to toggle" data-feature="capital" class="burgFeature icon-star"></span>
-            <span id="burgPort" data-tip="Shows whether the burg is a port. Click to toggle" data-feature="port" class="burgFeature icon-anchor"></span>
-            <span id="burgCitadel" data-tip="Shows whether the burg has a citadel (castle). Click to toggle" data-feature="citadel" class="burgFeature icon-chess-rook" style="font-size: 1.1em"></span>
-            <span id="burgWalls" data-tip="Shows whether the burg is walled. Click to toggle" data-feature="walls" class="burgFeature icon-fort-awesome"></span>
-            <span id="burgPlaza" data-tip="Shows whether the burg is a trade center (has big marketplace). Click to toggle" data-feature="plaza" class="burgFeature icon-store" style="font-size: 1em"></span>
-            <span id="burgTemple" data-tip="Shows whether the burg is a religious center. Click to toggle" data-feature="temple" class="burgFeature icon-chess-bishop" style="font-size: 1.1em; margin-left: 3px"></span>
-            <span id="burgShanty" data-tip="Shows whether the burg has a shanty town. Click to toggle" data-feature="shanty" class="burgFeature icon-campground" style="font-size: 1em"></span>
-          </div>
+            <div>
+              <div class="label">Features:</div>
+              <span id="burgCapital" data-tip="Shows whether the burg is a state capital. Click to toggle" data-feature="capital" class="burgFeature icon-star"></span>
+              <span id="burgPort" data-tip="Shows whether the burg is a port. Click to toggle" data-feature="port" class="burgFeature icon-anchor"></span>
+              <span id="burgCitadel" data-tip="Shows whether the burg has a citadel (castle). Click to toggle" data-feature="citadel" class="burgFeature icon-chess-rook" style="font-size: 1.1em"></span>
+              <span id="burgWalls" data-tip="Shows whether the burg is walled. Click to toggle" data-feature="walls" class="burgFeature icon-fort-awesome"></span>
+              <span id="burgPlaza" data-tip="Shows whether the burg is a trade center (has big marketplace). Click to toggle" data-feature="plaza" class="burgFeature icon-store" style="font-size: 1em"></span>
+              <span id="burgTemple" data-tip="Shows whether the burg is a religious center. Click to toggle" data-feature="temple" class="burgFeature icon-chess-bishop" style="font-size: 1.1em; margin-left: 3px"></span>
+              <span id="burgShanty" data-tip="Shows whether the burg has a shanty town. Click to toggle" data-feature="shanty" class="burgFeature icon-campground" style="font-size: 1em"></span>
+            </div>
 
-          <div data-tip="Burg mean annual temperature and real-world city for comparison">
-            <div class="label">Temperature:</div>
-            <span id="burgTemperature"></span>, like in
-            <span id="burgTemperatureLikeIn"></span>
-          </div>
+            <div data-tip="Burg mean annual temperature and real-world city for comparison">
+              <div class="label">Temperature:</div>
+              <span id="burgTemperature"></span>, like in
+              <span id="burgTemperatureLikeIn"></span>
+              <i id="burgTemperatureGraph" data-tip="Show temperature graph for the burg" class="icon-chart-area pointer"></i>
+            </div>
 
-          <div data-tip="Burg height above mean sea level">
-            <div class="label">Elevation:</div>
-            <span id="burgElevation"></span> above sea level
-          </div>
+            <div data-tip="Burg height above mean sea level">
+              <div class="label">Elevation:</div>
+              <span id="burgElevation"></span> above sea level
+            </div>
           </div>
         </div>
 
         <div id="mfcgPreviewSection" data-tip="Burg preview in the Medieval Fantasy City Generator. Default seed is a combination of map seed and burg id" style="display: flex; flex-direction: column">
           <div>
-            See in <a id="mfcgLink" target="_blank">City Generator by Watabou</a>. 
-            Seed: <input id="mfcgBurgSeed" style="width: 10em" type="number" min=1 max="1e13" step="1" />
-            <i id="regenerateMFCGBurgSeed" data-tip="Randomize Medieval Fantasy City Generator burg seed" class="icon-arrows-cw pointer" style="margin-left: .1em"></i>
+            See in <a id="mfcgLink" target="_blank">City Generator by Watabou</a>.
+            <div id="mfcgBurgSeedSection">
+              Seed: <input id="mfcgBurgSeed" style="width: 10em" type="number" min=1 max="1e13" step="1" />
+              <i id="regenerateMFCGBurgSeed" data-tip="Randomize Medieval Fantasy City Generator burg seed" class="icon-arrows-cw pointer" style="margin-left: .1em"></i>
+            </div>
+            <i id="addCustomMFCGBurgLink" data-tip="Provide custom link to the burg map" class="icon-pencil pointer" style="margin-left: .1em"></i>
           </div>
           <iframe id="mfcgPreview" sandbox="allow-scripts allow-same-origin"></iframe>
         </div>
@@ -2618,8 +2580,10 @@
             <option value="Sultanate">Sultanate</option>
             <option value="Tsardom">Tsardom</option>
             <option value="Ulus">Ulus</option>
+            <option value="Viceroyalty">Viceroyalty</option>			
           </optgroup>
           <optgroup label="Republic">
+            <option value="Chancellery">Chancellery</option>
             <option value="City-state">City-state</option>
             <option value="Diarchy">Diarchy</option>
             <option value="Federation">Federation</option>
@@ -2657,8 +2621,10 @@
             <option value="Divine Kingdom">Divine Kingdom</option>
             <option value="Divine Empire">Divine Empire</option>
             <option value="Eparchy">Eparchy</option>
+            <option value="Exarchate">Exarchate</option>
             <option value="Holy State">Holy State</option>
             <option value="Imamah">Imamah</option>
+            <option value="Patriarchate">Patriarchate</option>
             <option value="Theocracy">Theocracy</option>
           </optgroup>
           <optgroup label="Anarchy">
@@ -2735,31 +2701,25 @@
     <div id="diplomacyEditor" class="dialog stable" style="display: none">
       <div id="diplomacyHeader" class="header">
         <div style="left:.2em" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">State&nbsp;</div>
-        <div style="left:13.4em" data-tip="Click to sort by diplomatical relations" class="sortable alphabetically" data-sortby="relations">Relations&nbsp;</div>
+        <div style="left:14.4em" data-tip="Click to sort by diplomatical relations" class="sortable alphabetically" data-sortby="relations">Relations&nbsp;</div>
       </div>
 
 	    <div id="diplomacyBodySection" class="table"></div>
-
-      <div id="diplomacySelect">
-        <div data-tip="Ally means states formed a defensive pact and will protect each other in case of third party aggression">Ally</div>
-        <div data-tip="State is friendly to anouther state when they share some common interests">Friendly</div>
-        <div data-tip="Neutral means states relations are neither positive nor negative">Neutral</div>
-        <div data-tip="Suspicion means state has a cautious distrust of another state">Suspicion</div>
-        <div data-tip="Enemies are states at war with each other">Enemy</div>
-        <div data-tip="Relations are unknown if states do not have enough information about each other">Unknown</div>
-        <div data-tip="Rivalry is a state of competing for dominance in the region">Rival</div>
-        <div data-tip="Vassal is a state having obligation to its suzerain">Vassal</div>
-        <div data-tip="Suzerain is a state having some control over its vassals">Suzerain</div>
-      </div>
+	    <div class="info-line">Click on state name to see relations.<br>Click on relations name to change it</div>
 
       <div id="diplomacyBottom" style="margin-top: .1em">
         <button id="diplomacyEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
         <button id="diplomacyEditStyle" data-tip="Edit states (including diplomacy view) style in Style Editor" class="icon-adjust"></button>
         <button id="diplomacyRegenerate" data-tip="Regenerate diplomatical relations" class="icon-retweet"></button>
+        <button id="diplomacyReset" data-tip="Reset diplomatical relations of selected state to Neutral" class="icon-eraser"></button>
         <button id="diplomacyHistory" data-tip="Show relations history" class="icon-hourglass-1"></button>
-        <button id="diplomacyMatrix" data-tip="Show relations matrix" class="icon-list-bullet"></button>
+        <button id="diplomacyShowMatrix" data-tip="Show relations matrix" class="icon-list-bullet"></button>
         <button id="diplomacyExport" data-tip="Save state relations matrix as a text file (.csv)" class="icon-download"></button>
       </div>
+    </div>
+
+    <div id="diplomacyMatrix" class="dialog" style="display: none">
+      <div id="diplomacyMatrixBody" class="matrix-table"></div>
     </div>
 
     <div id="provinceNameEditor" class="dialog" data-province="0" style="display: none">
@@ -2779,6 +2739,8 @@
           <option value="Autonomy">Autonomy</option>
           <option value="Barony">Barony</option>
           <option value="Canton">Canton</option>
+          <option value="Captaincy">Captaincy</option>
+          <option value="Chiefdom">Chiefdom</option>
           <option value="Clan">Clan</option>
           <option value="Colony">Colony</option>
           <option value="Council">Council</option>
@@ -2786,6 +2748,7 @@
           <option value="Deanery">Deanery</option>
           <option value="Department">Department</option>
           <option value="Dependency">Dependency</option>
+          <option value="Diaconate">Diaconate</option>
           <option value="District">District</option>
           <option value="Earldom">Earldom</option>
           <option value="Governorate">Governorate</option>
@@ -2795,6 +2758,7 @@
           <option value="Landgrave">Landgrave</option>
           <option value="Mandate">Mandate</option>
           <option value="Margrave">Margrave</option>
+          <option value="Municipality">Municipality</option>
           <option value="Occupation zone">Occupation zone</option>
           <option value="Parish">Parish</option>
           <option value="Prefecture">Prefecture</option>
@@ -2802,6 +2766,7 @@
           <option value="Region">Region</option>
           <option value="Republic">Republic</option>
           <option value="Reservation">Reservation</option>
+          <option value="Seneschalty">Seneschalty</option>
           <option value="Shire">Shire</option>
           <option value="State">State</option>
           <option value="Territory">Territory</option>
@@ -2869,21 +2834,22 @@
       <div id="namesbaseBasesTop">
         <span>Select base: </span>
         <select id="namesbaseSelect" data-tip="Select base to edit" style="width: 12em" value="0"></select>
+        <span style="margin-left: 2px">Names data: </span>
       </div>
 
-      <div id="namesbaseBody">
-        <span>Names data:</span><br>
-        <textarea id="namesbaseTextarea" data-base="0" rows=12 data-tip="Names data: a comma separated list of source names used for names generation" placeholder="Provide a names data: a comma separated list of source names" autocorrect="off" spellcheck="false"></textarea>
-        <br>
+      <div id="namesbaseBody" style="margin-block: 2px">
+        <textarea id="namesbaseTextarea" data-base="0" rows=13 data-tip="Names data: a comma separated list of source names used for names generation" placeholder="Provide a names data: a comma separated list of source names" autocorrect="off" spellcheck="false"></textarea>
+
         <div>
           <span>Name: </span>
           <input id="namesbaseName" data-tip="Type to change a base name" placeholder="Base name" autocorrect="off" spellcheck="false" style="width:12em"/>
           <span>Length: </span>
           <input id="namesbaseMin" data-tip="Recommended minimum name length" type="number" min=2 max=100>
           <input id="namesbaseMax" data-tip="Recommended maximum name length" type="number" min=2 value=10>
-          <span>Double: </span>
+          <span>Doubled: </span>
           <input id="namesbaseDouble" data-tip="Populate with letters that can used twice in a row (geminates)" autocorrect="off" spellcheck="false" style="width:10em">
         </div>
+
         <fieldset>
           <legend>Generated examples: </legend>
           <div id="namesbaseExamples" data-tip="Examples. Click to re-generate"></div>
@@ -2892,12 +2858,12 @@
 
       <div id="namesbaseBottom">
         <button id="namesbaseUpdateExamples" data-tip="Re-generate examples based on provided data" class="icon-arrows-cw"></button>
-        <button id="namesbaseAnalize" data-tip="Analyze namesbase to get a validity and quality overview" class="icon-flask"></button>
         <button id="namesbaseAdd" data-tip="Add new namesbase" class="icon-plus"></button>
         <button id="namesbaseDefault" data-tip="Restore default namesbase" class="icon-cancel"></button>
         <button id="namesbaseDownload" data-tip="Download namesbase to PC" class="icon-download"></button>
         <button id="namesbaseUpload" data-tip="Upload a namesbase from PC" class="icon-upload"></button>
-        <button id="namesbaseCA" data-tip="Find or share custom namesbase on Cartography Assets portal" class="icon-drafting-compass" onclick="openURL('https://cartographyassets.com/asset-category/specific-assets/azgaars-generator/namebases/')"></button>
+        <button id="namesbaseCA" data-tip="Find or share custom namesbase on Cartography Assets portal" class="icon-drafting-compass"></button>
+        <button id="namesbaseAnalyze" data-tip="Analyze namesbase to get a validity and quality overview" class="icon-flask"></button>
         <button id="namesbaseSpeak" data-tip="Speak the examples. You can change voice and language in options" class="icon-voice"></button>
       </div>
     </div>
@@ -3310,6 +3276,7 @@
         <button id="addNewBurg" data-tip="Add a new burg. Hold Shift to add multiple" class="icon-plus"></button>
         <button id="burgsExport" data-tip="Save burgs-related data as a text file (.csv)" class="icon-download"></button>
         <button id="burgNamesImport" data-tip="Rename burgs in bulk" class="icon-upload"></button>
+        <button id="burgsLockAll" data-tip="Lock or unlock all burgs" class="icon-lock"></button>
         <button id="burgsRemoveAll" data-tip="Remove all unlocked burgs except for capitals. To remove a capital remove its state first" class="icon-trash"></button>
       </div>
     </div>
@@ -3609,7 +3576,19 @@
       </div>
       <p>GeoJSON format is used in GIS tools such as QGIS. Check out <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export" target="_blank">wiki-page</a> for guidance.</p>
       <p>Generator uses pop-up window to download files. Please ensure your browser does not block popups.</p>
-      <p>It's also possible to export map to <i>Foundry VTT</i>, see <a href="https://github.com/Ethck/azgaar-foundry" target="_blank">the module.</a></p>
+
+      <div style="margin: 1em 0 .3em; font-weight: bold">Export To JSON</div>
+      <div>
+        <button onclick="exportToJson('Full')" data-tip="Download full data as in JSON format">full</button>
+        <button onclick="exportToJson('Minimal')" data-tip="Download minimal data as in JSON format">minimal</button>
+        <button onclick="exportToJson('PackCells')" data-tip="Download map metadata and pack cells data as in JSON format">pack cells</button>
+        <button onclick="exportToJson('GridCells')" data-tip="Download map metadata and grid cells data as in JSON format">grid cells</button>
+      </div>
+      <p>Export in JSON format can be used as an API replacement.</p>
+
+      <div>
+        <p>It's also possible to export map to <i>Foundry VTT</i>, see <a href="https://github.com/Ethck/azgaar-foundry" target="_blank">the module.</a></p>
+      </div>
     </div>
 
     <div id="saveMapData" style="display: none" class="dialog">
@@ -3662,8 +3641,7 @@
       <div data-tip="Image scale relative to image size (e.g. 5x)" style="margin-bottom: .3em">
         <div class="label">Scale:</div>
         <input id="tileScaleInput" data-stored="tileScale" type="range" min=1 max=4 value=1 style="width: 10em">
-        <input id="tileScaleOutput" data-stored="tileScale" type="number" min=1 value=1
-        >
+        <input id="tileScaleOutput" data-stored="tileScale" type="number" min=1 value=1 >
       </div>
       <div data-tip="Calculated size of image if combined" style="margin-bottom: .3em">
         <div class="label">Total size:</div>
@@ -3679,7 +3657,7 @@
     <div id="prompt" style="display: none" class="dialog">
       <form id="promptForm">
         <div id="promptText"></div>
-        <input id="promptInput" type="number" step=.01 placeholder="type value" autocomplete="off" required>
+        <input id="promptInput" type="number" step=.01 placeholder="type value" autocomplete="off">
         <button type="submit">Confirm</button>
         <button type="button" id="promptCancel" formnovalidate>Cancel</button>
       </form>
@@ -4355,6 +4333,153 @@
           <path d="M 43.4,0 36.2,12.5 43.4,25 M 21.7,12.5 H 36.2 Z M 0,0 H 14.5 L 21.7,12.5 14.5,25 H 0"/>
         </pattern>
       </g>
+	  
+      <g id="defs-hatching">
+        <pattern id="hatch0" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:2"/>
+        </pattern>
+        <pattern id="hatch1" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:2"/>
+        </pattern>
+        <pattern id="hatch2" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:2"/>
+        </pattern>
+        <pattern id="hatch3" patternTransform="rotate(-45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:2"/>
+        </pattern>
+        <pattern id="hatch4" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:1.5"/>
+          <line x1="0" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+        <pattern id="hatch5" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:1.5"/>
+          <line x1="0" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+        <pattern id="hatch6" patternUnits="userSpaceOnUse" width="5" height="5">
+          <circle cx="2.5" cy="2.5" r="1" style="fill: black"/>
+        </pattern>
+        <pattern id="hatch7" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="0" y2="3" transform="rotate(-45 0 0)" style="stroke:black; stroke-width:1.5" />
+        </pattern>
+        <pattern id="hatch8" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="0" y2="3" style="stroke:black; stroke-width:2.5"/>
+        </pattern>
+        <pattern id="hatch9" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="0" y2="3" style="stroke:black; stroke-width:2.5"/>
+        </pattern>
+        <pattern id="hatch10" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="3" y2="0" style="stroke:black; stroke-width:2.5"/>
+        </pattern>
+        <pattern id="hatch11" patternTransform="rotate(-45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="0" y2="3" style="stroke:black; stroke-width:2.5"/>
+        </pattern>
+        <pattern id="hatch12" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="1" x2="0" y2="3" style="stroke:black; stroke-width:1.5"/>
+          <line x1="1" y1="0" x2="3" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+        <pattern id="hatch13" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="0" y2="3" style="stroke:black; stroke-width:1.5"/>
+          <line x1="0" y1="0" x2="3" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+        <pattern id="hatch14" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="1" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:2"/>
+        </pattern>
+        <pattern id="hatch15" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="1" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:2"/>
+        </pattern>
+        <pattern id="hatch16" patternTransform="rotate(-45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="1" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:2"/>
+        </pattern>
+        <pattern id="hatch17" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="1" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:1.5"/>
+          <line x1="1" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+        <pattern id="hatch18" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="1" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:1.5"/>
+          <line x1="1" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+        <pattern id="hatch19" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="2" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:2"/>
+        </pattern>
+        <pattern id="hatch20" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="2" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:2"/>
+        </pattern>
+        <pattern id="hatch21" patternTransform="rotate(-45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="2" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:2"/>
+        </pattern>
+        <pattern id="hatch22" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="2" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:1.5"/>
+          <line x1="2" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+        <pattern id="hatch23" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="0" y2="3" style="stroke:black; stroke-width:1.5"/>
+          <line x1="0" y1="0" x2="3" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+        <pattern id="hatch24" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="2" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:1.5"/>
+          <line x1="2" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+		<pattern id="hatch25" patternTransform="rotate(-45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="2" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:2"/>
+        </pattern>
+        <pattern id="hatch26" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="2" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:2"/>
+        </pattern>
+		<pattern id="hatch27" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="2" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:2"/>
+        </pattern>
+		<pattern id="hatch28" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="2" y1="0" x2="0" y2="2" style="stroke:black; stroke-width:2"/>
+        </pattern>
+        <pattern id="hatch29" patternTransform="rotate(30 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="1" x2="0" y2="3" style="stroke:black; stroke-width:1.5"/>
+          <line x1="1" y1="0" x2="3" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+		<pattern id="hatch30" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="1" y1="0" x2="0" y2="3" style="stroke:black; stroke-width:1.5"/>
+          <line x1="1" y1="0" x2="3" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+        <pattern id="hatch31" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="1" y1="0" x2="0" y2="3" style="stroke:black; stroke-width:1.5"/>
+          <line x1="1" y1="0" x2="3" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+        <pattern id="hatch32" patternUnits="userSpaceOnUse" width="5" height="5">
+          <circle cx="2.5" cy="2.5" r="0.5" style="fill: black"/>
+        </pattern>
+        <pattern id="hatch33" patternUnits="userSpaceOnUse" width="5" height="5">
+          <circle cx="2.5" cy="2.5" r="1.5" style="fill: black"/>
+        </pattern>
+        <pattern id="hatch34" patternUnits="userSpaceOnUse" width="5" height="5">
+          <circle cx="3" cy="3" r="1" style="fill: black"/>
+          <circle cx="1" cy="1" r="1" style="fill: black"/>
+        </pattern>
+        <pattern id="hatch35" patternUnits="userSpaceOnUse" width="5" height="5">
+          <circle cx="3" cy="3" r="1.5" style="fill: black"/>
+          <circle cx="1" cy="1" r="1.5" style="fill: black"/>
+        </pattern>
+        <pattern id="hatch36" patternTransform="rotate(-45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="0" y2="3" transform="rotate(-45 0 0)" style="stroke:black; stroke-width:1.5" />
+        </pattern>
+        <pattern id="hatch37" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="0" y2="3" transform="rotate(-45 0 0)" style="stroke:black; stroke-width:1.5" />
+        </pattern>
+        <pattern id="hatch38" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="4" y2="4" style="stroke:black; stroke-width:1.5"/>
+          <line x1="0" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+        <pattern id="hatch39" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="4" y2="4" style="stroke:black; stroke-width:1.5"/>
+          <line x1="0" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+        <pattern id="hatch40" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="3" y2="3" style="stroke:black; stroke-width:1.5"/>
+          <line x1="0" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+        <pattern id="hatch41" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="3" y2="3" style="stroke:black; stroke-width:1.5"/>
+          <line x1="0" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+      </g>
     </defs>
   </svg>
 
@@ -4395,18 +4520,20 @@
   <script src="modules/fonts.js"></script>
   <script src="modules/ui/layers.js"></script>
   <script src="modules/ui/measurers.js"></script>
+  <script src="modules/ui/stylePresets.js"></script>
   <!-- <script src="libs/umami.js"></script> -->
 
-  <script defer src="https://unpkg.com/dropbox@10.8.0/dist/Dropbox-sdk.min.js"></script>
-  <script defer src="modules/ui/general.js"></script>
-  <script defer src="modules/ui/options.js"></script>
-  <script defer src="modules/ui/style.js"></script>
+  <script src="modules/ui/general.js"></script>
+  <script src="modules/ui/options.js"></script>
+  <script src="main.js"></script>
+
   <script defer src="modules/load.js"></script>
   <script defer src="modules/cloud.js"></script>
-  <script defer src="main.js"></script>
+  <script defer src="modules/export-json.js"></script>
   <script defer src="modules/save.js"></script>
   <script defer src="modules/export.js"></script>
   <script defer src="modules/relief-icons.js"></script>
+  <script defer src="modules/ui/style.js"></script>
   <script defer src="modules/ui/tools.js"></script>
   <script defer src="modules/ui/world-configurator.js"></script>
   <script defer src="modules/ui/editors.js"></script>
@@ -4417,6 +4544,7 @@
   <script defer src="modules/ui/cultures-editor.js"></script>
   <script defer src="modules/ui/namesbase-editor.js"></script>
   <script defer src="modules/ui/elevation-profile.js"></script>
+  <script defer src="modules/ui/temperature-graph.js"></script>
   <script defer src="modules/ui/routes-editor.js"></script>
   <script defer src="modules/ui/ice-editor.js"></script>
   <script defer src="modules/ui/lakes-editor.js"></script>
@@ -4426,7 +4554,6 @@
   <script defer src="modules/ui/rivers-creator.js"></script>
   <script defer src="modules/ui/relief-editor.js"></script>
   <script defer src="modules/ui/religions-editor.js"></script>
-  <script defer src="modules/ui/markers-editor.js"></script>
   <script defer src="modules/ui/burg-editor.js"></script>
   <script defer src="modules/ui/units-editor.js"></script>
   <script defer src="modules/ui/notes-editor.js"></script>
@@ -4439,13 +4566,18 @@
   <script defer src="modules/ui/markers-overview.js"></script>
   <script defer src="modules/ui/regiment-editor.js"></script>
   <script defer src="modules/ui/battle-screen.js"></script>
-  <script defer src="modules/coa-renderer.js"></script>
   <script defer src="modules/ui/emblems-editor.js"></script>
+  <script defer src="modules/ui/markers-editor.js"></script>
   <script defer src="modules/ui/3d.js"></script>
   <script defer src="modules/ui/hotkeys.js"></script>
+  <script defer src="modules/coa-renderer.js"></script>
   <script defer src="libs/rgbquant.min.js"></script>
   <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
   <script defer src="libs/pell.min.js"></script>
   <script defer src="libs/jszip.min.js"></script>
+  <script defer src="https://unpkg.com/dropbox@10.8.0/dist/Dropbox-sdk.min.js"></script>
+
+  <!-- Web Components -->
+  <script defer src="components/fill-box.js"></script>
 </body>
 </html>

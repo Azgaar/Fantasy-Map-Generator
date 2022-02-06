@@ -37,26 +37,12 @@ function editZones() {
     const el = ev.target,
       cl = el.classList,
       zone = el.parentNode.dataset.id;
-    if (cl.contains("culturePopulation")) {
-      changePopulation(zone);
-      return;
-    }
-    if (cl.contains("icon-trash-empty")) {
-      zoneRemove(zone);
-      return;
-    }
-    if (cl.contains("icon-eye")) {
-      toggleVisibility(el);
-      return;
-    }
-    if (cl.contains("icon-pin")) {
-      toggleFog(zone, cl);
-      return;
-    }
-    if (cl.contains("fillRect")) {
-      changeFill(el);
-      return;
-    }
+    if (el.tagName === "FILL-BOX") changeFill(el);
+    else if (cl.contains("culturePopulation")) changePopulation(zone);
+    else if (cl.contains("icon-trash-empty")) zoneRemove(zone);
+    else if (cl.contains("icon-eye")) toggleVisibility(el);
+    else if (cl.contains("icon-pin")) toggleFog(zone, cl);
+
     if (customization) selectZone(el);
   });
 
@@ -131,8 +117,9 @@ function editZones() {
       const inactive = this.style.display === "none";
       const focused = defs.select("#fog #focus" + this.id).size();
 
-      lines += `<div class="states" data-id="${this.id}" data-fill="${fill}" data-description="${description}" data-cells=${c.length} data-area=${area} data-population=${population}>
-        <svg data-tip="Zone fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${fill}" class="fillRect pointer"></svg>
+      lines += `<div class="states" data-id="${this.id}" data-fill="${fill}" data-description="${description}"
+        data-cells=${c.length} data-area=${area} data-population=${population}>
+        <fill-box fill="${fill}"></fill-box>
         <input data-tip="Zone description. Click and type to change" class="religionName" value="${description}" autocorrect="off" spellcheck="false">
         <span data-tip="Cells count" class="icon-check-empty hide"></span>
         <div data-tip="Cells count" class="stateCells hide">${c.length}</div>
@@ -337,9 +324,9 @@ function editZones() {
 
   function changeFill(el) {
     const fill = el.getAttribute("fill");
-    const callback = function (fill) {
-      el.setAttribute("fill", fill);
-      document.getElementById(el.parentNode.parentNode.dataset.id).setAttribute("fill", fill);
+    const callback = newFill => {
+      el.fill = newFill;
+      document.getElementById(el.parentNode.dataset.id).setAttribute("fill", newFill);
     };
 
     openPicker(fill, callback);
@@ -411,12 +398,12 @@ function editZones() {
   function addZonesLayer() {
     const id = getNextId("zone");
     const description = "Unknown zone";
-    const fill = "url(#hatch" + (id.slice(4) % 14) + ")";
-    zones.append("g").attr("id", id).attr("data-description", description).attr("data-cells", "").attr("fill", fill).attr("data-type", zoneTypes[0]);
+    const fill = "url(#hatch" + (id.slice(4) % 42) + ")";
+    zones.append("g").attr("id", id).attr("data-description", description).attr("data-cells", "").attr("fill", fill);
     const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
 
     const line = `<div class="states" data-id="${id}" data-fill="${fill}" data-description="${description}" data-cells=0 data-area=0 data-population=0>
-      <svg data-tip="Zone fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${fill}" class="fillRect pointer"></svg>
+      <fill-box fill="${fill}"></fill-box>
       <input data-tip="Zone description. Click and type to change" class="religionName" value="${description}" autocorrect="off" spellcheck="false">
       <span data-tip="Cells count" class="icon-check-empty hide"></span>
       <div data-tip="Cells count" class="stateCells hide">0</div>

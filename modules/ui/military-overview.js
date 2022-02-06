@@ -75,12 +75,9 @@ function overviewMilitary() {
       const sortData = options.military.map(u => `data-${u.name}="${getForces(u)}"`).join(" ");
       const lineData = options.military.map(u => `<div data-type="${u.name}" data-tip="State ${u.name} units number">${getForces(u)}</div>`).join(" ");
 
-      lines += `<div class="states" data-id=${s.i} data-state="${
-        s.name
-      }" ${sortData} data-total="${total}" data-population="${population}" data-rate="${rate}" data-alert="${s.alert}">
-        <svg data-tip="${s.fullName}" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${
-        s.color
-      }" class="fillRect"></svg>
+      lines += `<div class="states" data-id=${s.i} data-state="${s.name}" ${sortData} data-total="${total}"
+        data-population="${population}" data-rate="${rate}" data-alert="${s.alert}">
+        <fill-box data-tip="${s.fullName}" fill="${s.color}" disabled></fill-box>
         <input data-tip="${s.fullName}" style="width:6em" value="${s.name}" readonly>
         ${lineData}
         <div data-type="total" data-tip="Total state military personnel (considering crew)" style="font-weight: bold">${si(total)}</div>

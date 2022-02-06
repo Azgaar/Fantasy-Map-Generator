@@ -262,19 +262,19 @@ async function getMapURL(type, options = {}) {
     if (pattern) cloneDefs.appendChild(pattern.cloneNode(true));
   }
 
-  if (!cloneEl.getElementById("hatching").children.length) cloneEl.getElementById("hatching")?.remove(); // remove unused hatching group
   if (!cloneEl.getElementById("fogging-cont")) cloneEl.getElementById("fog")?.remove(); // remove unused fog
   if (!cloneEl.getElementById("regions")) cloneEl.getElementById("statePaths")?.remove(); // removed unused statePaths
   if (!cloneEl.getElementById("labels")) cloneEl.getElementById("textPaths")?.remove(); // removed unused textPaths
 
   // add armies style
-  if (cloneEl.getElementById("armies"))
+  if (cloneEl.getElementById("armies")) {
     cloneEl.insertAdjacentHTML(
       "afterbegin",
       "<style>#armies text {stroke: none; fill: #fff; text-shadow: 0 0 4px #000; dominant-baseline: central; text-anchor: middle; font-family: Helvetica; fill-opacity: 1;}#armies text.regimentIcon {font-size: .8em;}</style>"
     );
+  }
 
-  // add xlink: for href to support svg1.1
+  // add xlink: for href to support svg 1.1
   if (type === "svg") {
     cloneEl.querySelectorAll("[href]").forEach(el => {
       const href = el.getAttribute("href");
@@ -283,6 +283,16 @@ async function getMapURL(type, options = {}) {
     });
   }
 
+  // add hatchings
+  const hatchingUsers = cloneEl.querySelectorAll(`[fill^='url(#hatch']`);
+  const hatchingFills = unique(Array.from(hatchingUsers).map(el => el.getAttribute("fill")));
+  const hatchingIds = hatchingFills.map(fill => fill.slice(5, -1));
+  for (const hatchingId of hatchingIds) {
+    const hatching = svgDefs.getElementById(hatchingId);
+    if (hatching) cloneDefs.appendChild(hatching.cloneNode(true));
+  }
+
+  // load fonts
   const usedFonts = getUsedFonts(cloneEl);
   const fontsToLoad = usedFonts.filter(font => font.src);
   if (fontsToLoad.length) {
@@ -405,8 +415,8 @@ function saveGeoJSON_Cells() {
     json.features.push(feature);
   });
 
-  const name = getFileName("Cells") + ".geojson";
-  downloadFile(JSON.stringify(json), name, "application/json");
+  const fileName = getFileName("Cells") + ".geojson";
+  downloadFile(JSON.stringify(json), fileName, "application/json");
 }
 
 function saveGeoJSON_Routes() {
@@ -421,30 +431,25 @@ function saveGeoJSON_Routes() {
     json.features.push(feature);
   });
 
-  const name = getFileName("Routes") + ".geojson";
-  downloadFile(JSON.stringify(json), name, "application/json");
+  const fileName = getFileName("Routes") + ".geojson";
+  downloadFile(JSON.stringify(json), fileName, "application/json");
 }
 
 function saveGeoJSON_Rivers() {
   const json = {type: "FeatureCollection", features: []};
 
   rivers.selectAll("path").each(function () {
-    const coordinates = getRiverPoints(this);
-    const id = this.id;
-    const width = +this.dataset.increment;
-    const increment = +this.dataset.increment;
-    const river = pack.rivers.find(r => r.i === +id.slice(5));
-    const name = river ? river.name : "";
-    const type = river ? river.type : "";
-    const i = river ? river.i : "";
-    const basin = river ? river.basin : "";
+    const river = pack.rivers.find(r => r.i === +this.id.slice(5));
+    if (!river) return;
 
-    const feature = {type: "Feature", geometry: {type: "LineString", coordinates}, properties: {id, i, basin, name, type, width, increment}};
+    const coordinates = getRiverPoints(this);
+    const properties = {...river, id: this.id};
+    const feature = {type: "Feature", geometry: {type: "LineString", coordinates}, properties};
     json.features.push(feature);
   });
 
-  const name = getFileName("Rivers") + ".geojson";
-  downloadFile(JSON.stringify(json), name, "application/json");
+  const fileName = getFileName("Rivers") + ".geojson";
+  downloadFile(JSON.stringify(json), fileName, "application/json");
 }
 
 function saveGeoJSON_Markers() {

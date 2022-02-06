@@ -45,7 +45,7 @@ function editStates() {
       cl = el.classList,
       line = el.parentNode,
       state = +line.dataset.id;
-    if (cl.contains("fillRect")) stateChangeFill(el);
+    if (el.tagName === "FILL-BOX") stateChangeFill(el);
     else if (cl.contains("name")) editStateName(state);
     else if (cl.contains("coaIcon")) editEmblem("state", "stateCOA" + state, pack.states[state]);
     else if (cl.contains("icon-star-empty")) stateCapitalZoomIn(state);
@@ -102,7 +102,7 @@ function editStates() {
         // Neutral line
         lines += `<div class="states" data-id=${s.i} data-name="${s.name}" data-cells=${s.cells} data-area=${area} 
         data-population=${population} data-burgs=${s.burgs} data-color="" data-form="" data-capital="" data-culture="" data-type="" data-expansionism="">
-          <svg width="9" height="9" class="placeholder"></svg>
+          <svg width="1em" height="1em" class="placeholder"></svg>
           <input data-tip="Neutral lands name. Click to change" class="stateName name pointer italic" value="${s.name}" readonly>
           <svg class="coaIcon placeholder hide"></svg>
           <input class="stateForm placeholder" value="none">
@@ -126,17 +126,12 @@ function editStates() {
 
       const capital = pack.burgs[s.capital].name;
       COArenderer.trigger("stateCOA" + s.i, s.coa);
-      lines += `<div class="states" data-id=${s.i} data-name="${s.name}" data-form="${s.formName}" data-capital="${capital}" data-color="${
-        s.color
-      }" data-cells=${s.cells}
-        data-area=${area} data-population=${population} data-burgs=${s.burgs} data-culture=${pack.cultures[s.culture].name} data-type=${
-        s.type
-      } data-expansionism=${s.expansionism}>
-        <svg data-tip="State fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${
-          s.color
-        }" class="fillRect pointer"></svg>
+      lines += `<div class="states" data-id=${s.i} data-name="${s.name}" data-form="${s.formName}" data-capital="${capital}"
+        data-color="${s.color}" data-cells=${s.cells} data-area=${area} data-population=${population} data-burgs=${s.burgs}
+        data-culture=${pack.cultures[s.culture].name} data-type=${s.type} data-expansionism=${s.expansionism}>
+        <fill-box fill="${s.color}"></fill-box>
         <input data-tip="State name. Click to change" class="stateName name pointer" value="${s.name}" readonly>
-        <svg data-tip="Click to show and edit state emblem" class="coaIcon hide" viewBox="0 0 200 200"><use href="#stateCOA${s.i}"></use></svg>
+        <svg data-tip="Click to show and edit state emblem" class="coaIcon pointer hide" viewBox="0 0 200 200"><use href="#stateCOA${s.i}"></use></svg>
         <input data-tip="State form name. Click to change" class="stateForm name pointer" value="${s.formName}" readonly>
         <span data-tip="State capital. Click to zoom into view" class="icon-star-empty pointer hide"></span>
         <input data-tip="Capital name. Click and type to rename" class="stateCapital hide" value="${capital}" autocorrect="off" spellcheck="false"/>
@@ -149,9 +144,8 @@ function editStates() {
         <div data-tip="${populationTip}" class="culturePopulation hide">${si(population)}</div>
         <select data-tip="State type. Defines growth model. Click to change" class="cultureType ${hidden} show hide">${getTypeOptions(s.type)}</select>
         <span data-tip="State expansionism" class="icon-resize-full ${hidden} show hide"></span>
-        <input data-tip="Expansionism (defines competitive size). Change to re-calculate states based on new value" class="statePower ${hidden} show hide" type="number" min=0 max=99 step=.1 value=${
-        s.expansionism
-      }>
+        <input data-tip="Expansionism (defines competitive size). Change to re-calculate states based on new value"
+          class="statePower ${hidden} show hide" type="number" min=0 max=99 step=.1 value=${s.expansionism}>
         <span data-tip="Cells count" class="icon-check-empty ${hidden} show hide"></span>
         <div data-tip="Cells count" class="stateCells ${hidden} show hide">${s.cells}</div>
         <span data-tip="Toggle state focus" class="icon-pin ${focused ? "" : " inactive"} hide"></span>
@@ -237,18 +231,18 @@ function editStates() {
 
   function stateChangeFill(el) {
     const currentFill = el.getAttribute("fill");
-    const state = +el.parentNode.parentNode.dataset.id;
+    const state = +el.parentNode.dataset.id;
 
-    const callback = function (fill) {
-      el.setAttribute("fill", fill);
-      pack.states[state].color = fill;
-      statesBody.select("#state" + state).attr("fill", fill);
-      statesBody.select("#state-gap" + state).attr("stroke", fill);
-      const halo = d3.color(fill) ? d3.color(fill).darker().hex() : "#666666";
+    const callback = function (newFill) {
+      el.fill = newFill;
+      pack.states[state].color = newFill;
+      statesBody.select("#state" + state).attr("fill", newFill);
+      statesBody.select("#state-gap" + state).attr("stroke", newFill);
+      const halo = d3.color(newFill) ? d3.color(newFill).darker().hex() : "#666666";
       statesHalo.select("#state-border" + state).attr("stroke", halo);
 
       // recolor regiments
-      const solidColor = fill[0] === "#" ? fill : "#999";
+      const solidColor = newFill[0] === "#" ? newFill : "#999";
       const darkerColor = d3.color(solidColor).darker().hex();
       armies.select("#army" + state).attr("fill", solidColor);
       armies

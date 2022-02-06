@@ -470,23 +470,26 @@ function togglePrec(event) {
 
 function drawPrec() {
   prec.selectAll("circle").remove();
-  const cells = grid.cells,
-    p = grid.points;
+  const {cells, points} = grid;
+
   prec.style("display", "block");
   const show = d3.transition().duration(800).ease(d3.easeSinIn);
   prec.selectAll("text").attr("opacity", 0).transition(show).attr("opacity", 1);
 
+  const cellsNumberModifier = (pointsInput.dataset.cells / 10000) ** 0.25;
   const data = cells.i.filter(i => cells.h[i] >= 20 && cells.prec[i]);
+  const getRadius = prec => rn(Math.sqrt(prec / 4) / cellsNumberModifier, 2);
+
   prec
     .selectAll("circle")
     .data(data)
     .enter()
     .append("circle")
-    .attr("cx", d => p[d][0])
-    .attr("cy", d => p[d][1])
+    .attr("cx", d => points[d][0])
+    .attr("cy", d => points[d][1])
     .attr("r", 0)
     .transition(show)
-    .attr("r", d => rn(Math.max(Math.sqrt(cells.prec[d] * 0.5), 0.8), 2));
+    .attr("r", d => getRadius(cells.prec[d]));
 }
 
 function togglePopulation(event) {

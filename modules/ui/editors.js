@@ -265,41 +265,48 @@ function getBurgSeed(burg) {
 }
 
 function getMFCGlink(burg) {
+  if (burg.link) return burg.link;
+
   const {cells} = pack;
-  const {name, population, cell} = burg;
-  const burgSeed = getBurgSeed(burg);
-  const sizeRaw = 2.13 * Math.pow((population * populationRate) / urbanDensity, 0.385);
+  const {i, name, population: burgPopulation, cell} = burg;
+  const seed = getBurgSeed(burg);
+
+  const sizeRaw = 2.13 * Math.pow((burgPopulation * populationRate) / urbanDensity, 0.385);
   const size = minmax(Math.ceil(sizeRaw), 6, 100);
-  const people = rn(population * populationRate * urbanization);
+  const population = rn(burgPopulation * populationRate * urbanization);
+
+  const river = cells.r[cell] ? 1 : 0;
+  const coast = Number(burg.port > 0);
+  const sea = coast && cells.haven[cell] ? getSeaDirections(cell) : null;
+
+  const biome = cells.biome[cell];
+  const arableBiomes = river ? [1, 2, 3, 4, 5, 6, 7, 8] : [5, 6, 7, 8];
+  const farms = +arableBiomes.includes(biome);
+
+  const citadel = +burg.citadel;
+  const urban_castle = +(citadel && each(2)(i));
 
   const hub = +cells.road[cell] > 50;
-  const river = cells.r[cell] ? 1 : 0;
 
-  const coast = +burg.port;
-  const citadel = +burg.citadel;
   const walls = +burg.walls;
   const plaza = +burg.plaza;
   const temple = +burg.temple;
-  const shanty = +burg.shanty;
+  const shantytown = +burg.shanty;
 
-  const sea = coast && cells.haven[cell] ? getSeaDirections(cell) : "";
   function getSeaDirections(i) {
     const p1 = cells.p[i];
     const p2 = cells.p[cells.haven[i]];
     let deg = (Math.atan2(p2[1] - p1[1], p2[0] - p1[0]) * 180) / Math.PI - 90;
     if (deg < 0) deg += 360;
-    const norm = rn(normalize(deg, 0, 360) * 2, 2); // 0 = south, 0.5 = west, 1 = north, 1.5 = east
-    return "&sea=" + norm;
+    return rn(normalize(deg, 0, 360) * 2, 2); // 0 = south, 0.5 = west, 1 = north, 1.5 = east
   }
 
-  const baseURL = "https://watabou.github.io/city-generator/?random=0&continuous=0";
-  const url = `${baseURL}&name=${name}&population=${people}&size=${size}&seed=${burgSeed}&hub=${hub}&river=${river}&coast=${coast}&citadel=${citadel}&plaza=${plaza}&temple=${temple}&walls=${walls}&shantytown=${shanty}${sea}`;
-  return url;
-}
+  const parameters = {name, population, size, seed, river, coast, farms, citadel, urban_castle, hub, plaza, temple, walls, shantytown, gates: -1};
+  const url = new URL("https://watabou.github.io/city-generator");
+  url.search = new URLSearchParams(parameters);
+  if (sea) url.searchParams.append("sea", sea);
 
-function toggleBurgLock(burg) {
-  const b = pack.burgs[burg];
-  b.lock = b.lock ? 0 : 1;
+  return url.toString();
 }
 
 // draw legend box
@@ -418,10 +425,10 @@ function clearLegend() {
 function createPicker() {
   const pos = () => tip("Drag to change the picker position");
   const cl = () => tip("Click to close the picker");
-  const closePicker = () => contaiter.style("display", "none");
+  const closePicker = () => container.style("display", "none");
 
-  const contaiter = d3.select("body").append("svg").attr("id", "pickerContainer").attr("width", "100%").attr("height", "100%");
-  contaiter
+  const container = d3.select("body").append("svg").attr("id", "pickerContainer").attr("width", "100%").attr("height", "100%");
+  container
     .append("rect")
     .attr("x", 0)
     .attr("y", 0)
@@ -430,7 +437,7 @@ function createPicker() {
     .attr("opacity", 0.2)
     .on("mousemove", cl)
     .on("click", closePicker);
-  const picker = contaiter
+  const picker = container
     .append("g")
     .attr("id", "picker")
     .call(
@@ -487,7 +494,7 @@ function createPicker() {
 
   const colors = picker.append("g").attr("id", "pickerColors").attr("stroke", "#333333");
   const hatches = picker.append("g").attr("id", "pickerHatches").attr("stroke", "#333333");
-  const hatching = d3.selectAll("g#hatching > pattern");
+  const hatching = d3.selectAll("g#defs-hatching > pattern");
   const number = hatching.size();
 
   const clr = d3.range(number).map(i => d3.hsl((i / number) * 360, 0.7, 0.7).hex());
@@ -497,8 +504,8 @@ function createPicker() {
       .attr("id", "picker_" + d)
       .attr("fill", d)
       .attr("class", i ? "" : "selected")
-      .attr("x", i * 22 + 4)
-      .attr("y", 40)
+      .attr("x", (i % 14) * 22 + 4)
+      .attr("y", 40 + Math.floor(i / 14)*20)
       .attr("width", 16)
       .attr("height", 16);
   });
@@ -508,20 +515,20 @@ function createPicker() {
       .append("rect")
       .attr("id", "picker_" + this.id)
       .attr("fill", "url(#" + this.id + ")")
-      .attr("x", i * 22 + 4)
-      .attr("y", 61)
+      .attr("x", (i % 14) * 22 + 4)
+      .attr("y", Math.floor(i / 14)*20 + 20 + (number * 2))
       .attr("width", 16)
-      .attr("height", 16);
+      .attr("height", 16)
   });
 
   colors
     .selectAll("rect")
     .on("click", pickerFillClicked)
-    .on("mousemove", () => tip("Click to fill with the color"));
+    .on("mouseover", () => tip("Click to fill with the color"));
   hatches
     .selectAll("rect")
     .on("click", pickerFillClicked)
-    .on("mousemove", () => tip("Click to fill with the hatching"));
+	.on("mouseover", function() { tip("Click to fill with the hatching " + this.id) });
 
   // append box
   const bbox = picker.node().getBBox();
@@ -537,10 +544,10 @@ function createPicker() {
     .attr("fill", "#ffffff")
     .attr("stroke", "#5d4651")
     .on("mousemove", pos);
-  picker.insert("text", ":first-child").attr("x", 291).attr("y", -10).attr("id", "pickerCloseText").text("✕");
+  picker.insert("text", ":first-child").attr("x", width-20).attr("y", -10).attr("id", "pickerCloseText").text("✕");
   picker
     .insert("rect", ":first-child")
-    .attr("x", 288)
+    .attr("x", width-23)
     .attr("y", -21)
     .attr("id", "pickerCloseRect")
     .attr("width", 14)

@@ -108,9 +108,7 @@ function editCultures() {
 
       lines += `<div class="states cultures" data-id=${c.i} data-name="${c.name}" data-color="${c.color}" data-cells=${c.cells}
       data-area=${area} data-population=${population} data-base=${c.base} data-type=${c.type} data-expansionism=${c.expansionism} data-emblems="${c.shield}">
-        <svg data-tip="Culture fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px">
-          <rect x="0" y="0" width="100%" height="100%" fill="${c.color}" class="fillRect pointer">
-        </svg>
+        <fill-box fill="${c.color}"></fill-box>
         <input data-tip="Culture name. Click and type to change" class="cultureName" value="${c.name}" autocorrect="off" spellcheck="false">
         <span data-tip="Regenerate culture name" class="icon-cw hiddenIcon" style="visibility: hidden"></span>
         <span data-tip="Cells count" class="icon-check-empty hide"></span>
@@ -148,7 +146,7 @@ function editCultures() {
     body.querySelectorAll("div.cultures").forEach(el => el.addEventListener("mouseenter", ev => cultureHighlightOn(ev)));
     body.querySelectorAll("div.cultures").forEach(el => el.addEventListener("mouseleave", ev => cultureHighlightOff(ev)));
     body.querySelectorAll("div.states").forEach(el => el.addEventListener("click", selectCultureOnLineClick));
-    body.querySelectorAll("rect.fillRect").forEach(el => el.addEventListener("click", cultureChangeColor));
+    body.querySelectorAll("fill-box").forEach(el => el.addEventListener("click", cultureChangeColor));
     body.querySelectorAll("div > input.cultureName").forEach(el => el.addEventListener("input", cultureChangeName));
     body.querySelectorAll("div > span.icon-cw").forEach(el => el.addEventListener("click", cultureRegenerateName));
     body.querySelectorAll("div > input.statePower").forEach(el => el.addEventListener("input", cultureChangeExpansionism));
@@ -248,16 +246,16 @@ function editCultures() {
   function cultureChangeColor() {
     const el = this;
     const currentFill = el.getAttribute("fill");
-    const culture = +el.parentNode.parentNode.dataset.id;
+    const culture = +el.parentNode.dataset.id;
 
-    const callback = function (fill) {
-      el.setAttribute("fill", fill);
-      pack.cultures[culture].color = fill;
+    const callback = newFill => {
+      el.fill = newFill;
+      pack.cultures[culture].color = newFill;
       cults
         .select("#culture" + culture)
-        .attr("fill", fill)
-        .attr("stroke", fill);
-      debug.select("#cultureCenter" + culture).attr("fill", fill);
+        .attr("fill", newFill)
+        .attr("stroke", newFill);
+      debug.select("#cultureCenter" + culture).attr("fill", newFill);
     };
 
     openPicker(currentFill, callback);
