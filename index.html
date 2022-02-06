@@ -177,7 +177,7 @@
   <div id="loading">
     <div id="titleName"><t data-t="titleName">Azgaar's</t></div>
     <div id="title"><t data-t="title">Fantasy Map Generator</t></div>
-    <div id="version"><t data-t="version">v. </t>1.72</div>
+    <div id="version"><t data-t="version">v. </t>1.73</div>
     <p id="loading-text"><t data-t="loading">LOADING</t><span>.</span><span>.</span><span>.</span></p>
   </div>
 
@@ -2871,9 +2871,10 @@
     <div id="zonesEditor" class="dialog stable" style="display: none">
       <div id="customHeader" class="header">
         <div style="left:1.8em" data-tip="Zone description">Description&nbsp;</div>
-        <div style="left:13em" data-tip="Zone cells count" class="hide">Cells&nbsp;</div>
-        <div style="left:19em" data-tip="Zone area" class="hide">Area&nbsp;</div>
-        <div style="left:24em" data-tip="Zone population" class="hide">Population&nbsp;</div>
+        <div style="left:13em" data-tip="Zone type">Type&nbsp;</div>
+        <div style="left:19em" data-tip="Zone cells count" class="hide">Cells&nbsp;</div>
+        <div style="left:23.6em" data-tip="Zone area" class="hide">Area&nbsp;</div>
+        <div style="left:30.6em" data-tip="Zone population" class="hide">Population&nbsp;</div>
       </div>
 
       <div id="zonesBodySection" class="table" data-type="absolute"></div>
@@ -2894,16 +2895,18 @@
         <button id="zonesManually" data-tip="Re-assign zones" class="icon-brush"></button>
         <div id="zonesManuallyButtons" style="display: none">
           <label data-tip="Change brush size. Shortcut: + (increase), – (decrease)" class="italic">Brush:
-            <input id="zonesBrush" oninput="tip('Brush size: '+this.value); zonesBrushNumber.value = this.value" type="range" min=5 max=25 value=7 style="width:7em">
-            <input id="zonesBrushNumber" oninput="tip('Brush size: '+this.value); zonesBrush.value = this.value" type="number" min=5 max=25 value=7>
+            <input id="zonesBrush" oninput="tip('Brush size: '+this.value); zonesBrushNumber.value = this.value" type="range" min=5 max=50 value=7 style="width:9em">
+            <input id="zonesBrushNumber" oninput="tip('Brush size: '+this.value); zonesBrush.value = this.value" type="number" min=5 max=50 value=7>
           </label><br>
           <button id="zonesManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
           <button id="zonesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
           <button id="zonesRemove" data-tip="Click to toggle the removal mode on brush dragging. Shortcut: ctrl" class="icon-eraser"></button>
         </div>
 
-        <button id="zonesAdd" data-tip="Add a new zone layer" class="icon-plus"></button>
+        <button id="zonesAdd" data-tip="Add new zone layer" class="icon-plus"></button>
         <button id="zonesExport" data-tip="Download zones-related data" class="icon-download"></button>
+
+        <div id="zonesFilters" data-tip="Show only zones of selected type" style="display: inline-block">Type: <select id="zonesFilterType"></select></div>
       </div>
     </div>
 
