@@ -435,6 +435,7 @@ function showWelcomeMessage() {
   alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
     <ul><b>Latest changes:</b>
+      <li>Color picker: new hatchings</li>
       <li>New style presets: Cyberpunk and Atlas</li>
       <li>Burg temperature graph</li>
       <li>4 new textures</li>
