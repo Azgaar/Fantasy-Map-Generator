@@ -940,10 +940,12 @@ function parseLoadedData(data) {
       if (version < 1.73) {
         // v1.73 moved the hatching patterns out of the user's SVG
         document.getElementById("hatching")?.remove();
-      }
 
-      if (version < 1.731) {
-        // v1.731 added type to zones
+        // v1.73 added zone type to UI, ensure type is populated
+        const zones = Array.from(document.querySelectorAll("#zones > g"));
+        zones.forEach(zone => {
+          if (!zone.dataset.type) zone.dataset.type = "Unknown";
+        });
       }
     })();
 
