@@ -331,7 +331,7 @@ function editZones() {
   function addZonesLayer() {
     const id = getNextId("zone");
     const description = "Unknown zone";
-    const fill = "url(#hatch" + (id.slice(4) % 14) + ")";
+    const fill = "url(#hatch" + (id.slice(4) % 42) + ")";
     zones.append("g").attr("id", id).attr("data-description", description).attr("data-cells", "").attr("fill", fill);
     const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
 
