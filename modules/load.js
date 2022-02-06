@@ -189,8 +189,7 @@ function parseLoadedData(data) {
     customization = 0;
     if (customizationMenu.offsetParent) styleTab.click();
 
-    const reliefIcons = document.getElementById('defs-relief').innerHTML; // save relief icons
-    const hatching = document.getElementById('hatching').cloneNode(true); // save hatching
+    const reliefIcons = document.getElementById("defs-relief").innerHTML; // save relief icons
 
     void (function parseParameters() {
       const params = data[0].split('|');
@@ -472,9 +471,6 @@ function parseLoadedData(data) {
         drawBorders();
         if (!layerIsOn('toggleBorders')) $('#borders').fadeOut();
         if (!layerIsOn('toggleStates')) regions.attr('display', 'none').selectAll('path').remove();
-
-        // 1.0 adds hatching
-        document.getElementsByTagName('defs')[0].appendChild(hatching);
 
         // 1.0 adds zones layer
         zones = viewbox.insert('g', '#borders').attr('id', 'zones').attr('display', 'none');
@@ -883,6 +879,11 @@ function parseLoadedData(data) {
         // v 1.7 changed markers data
         // TODO: get markers data from svg
       }
+
+      if (version < 1.73) {
+        // v1.73 moved the hatching patterns out of the user's SVG
+        document.getElementById("hatching")?.remove();
+      }
     })();
 
     void (function checkDataIntegrity() {
@@ -993,7 +994,7 @@ function parseLoadedData(data) {
         // sort markers by index
         pack.markers.sort((a, b) => a.i - b.i);
       }
-    })();
+   })();
 
     changeMapSize();
 

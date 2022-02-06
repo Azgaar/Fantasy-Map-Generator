@@ -180,6 +180,9 @@ async function getMapURL(type, options = {}) {
     filters[i].remove();
   }
 
+  const hatching = svgDefs.getElementById("defs-hatching");
+  if (hatching) cloneDefs.appendChild(hatching.cloneNode(true));
+
   // remove unused patterns
   const patterns = cloneEl.querySelectorAll("pattern");
   for (let i = 0; i < patterns.length; i++) {
@@ -258,7 +261,7 @@ async function getMapURL(type, options = {}) {
     if (pattern) cloneDefs.appendChild(pattern.cloneNode(true));
   }
 
-  if (!cloneEl.getElementById("hatching").children.length) cloneEl.getElementById("hatching")?.remove(); // remove unused hatching group
+  if (!cloneEl.getElementById("defs-hatching").children.length) cloneEl.getElementById("defs-hatching")?.remove(); // remove unused hatching group
   if (!cloneEl.getElementById("fogging-cont")) cloneEl.getElementById("fog")?.remove(); // remove unused fog
   if (!cloneEl.getElementById("regions")) cloneEl.getElementById("statePaths")?.remove(); // removed unused statePaths
   if (!cloneEl.getElementById("labels")) cloneEl.getElementById("textPaths")?.remove(); // removed unused textPaths
