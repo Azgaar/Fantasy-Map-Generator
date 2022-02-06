@@ -44,7 +44,8 @@ function editProvinces() {
       cl = el.classList,
       line = el.parentNode,
       p = +line.dataset.id;
-    if (cl.contains("fillRect")) changeFill(el);
+
+    if (el.tagName === "FILL-BOX") changeFill(el);
     else if (cl.contains("name")) editProvinceName(p);
     else if (cl.contains("coaIcon")) editEmblem("province", "provinceCOA" + p, pack.provinces[p]);
     else if (cl.contains("icon-star-empty")) capitalZoomIn(p);
@@ -133,9 +134,7 @@ function editProvinces() {
       lines += `<div class="states" data-id=${p.i} data-name="${p.name}" data-form="${p.formName}" data-color="${
         p.color
       }" data-capital="${capital}" data-state="${stateName}" data-area=${area} data-population=${population}>
-        <svg data-tip="Province fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${
-          p.color
-        }" class="fillRect pointer"></svg>
+        <fill-box fill="${p.color}"></fill-box>
         <input data-tip="Province name. Click to change" class="name pointer" value="${p.name}" readonly>
         <svg data-tip="Click to show and edit province emblem" class="coaIcon pointer hide" viewBox="0 0 200 200"><use href="#provinceCOA${p.i}"></use></svg>
         <input data-tip="Province form name. Click to change" class="name pointer hide" value="${p.formName}" readonly>
@@ -215,14 +214,14 @@ function editProvinces() {
 
   function changeFill(el) {
     const currentFill = el.getAttribute("fill");
-    const p = +el.parentNode.parentNode.dataset.id;
+    const p = +el.parentNode.dataset.id;
 
-    const callback = function (fill) {
-      el.setAttribute("fill", fill);
-      pack.provinces[p].color = fill;
+    const callback = newFill => {
+      el.fill = newFill;
+      pack.provinces[p].color = newFill;
       const g = provs.select("#provincesBody");
-      g.select("#province" + p).attr("fill", fill);
-      g.select("#province-gap" + p).attr("stroke", fill);
+      g.select("#province" + p).attr("fill", newFill);
+      g.select("#province-gap" + p).attr("stroke", newFill);
     };
 
     openPicker(currentFill, callback);

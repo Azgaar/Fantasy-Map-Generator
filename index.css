@@ -35,8 +35,7 @@ input[type="radio"] {
 }
 
 textarea {
-  padding: 2px;
-  text-indent: 1px;
+  padding: 3px;
   box-sizing: border-box;
   width: 100%;
 }
@@ -1532,6 +1531,11 @@ div.states > .riverType {
   cursor: pointer;
 }
 
+.changeRelations > * {
+  pointer-events: none;
+  cursor: pointer;
+}
+
 #diplomacySelect {
   width: 5em;
   margin: 0.1em 0 0 -0.3em;
@@ -1667,11 +1671,6 @@ div.states > input.biomeName {
 
 div.states > div.biomeArea {
   width: 5em;
-}
-
-rect.fillRect {
-  stroke: #666666;
-  stroke-width: 2;
 }
 
 #militaryHeader > div,
@@ -2012,7 +2011,7 @@ div.textual fieldset {
 
 div.textual span,
 .textual legend {
-  font-size: 0.8em;
+  font-size: 0.9em;
   font-weight: bold;
 }
 
@@ -2277,10 +2276,10 @@ svg.button {
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  max-width: 22em;
-  background-color: #fff;
+  max-width: 23em;
   padding: 1.2em;
-  border: solid 1px #000;
+  background-color: var(--bg-dialogs);
+  border: solid 1px var(--dark-solid);
   font-size: 1.2em;
   z-index: 1000;
 }
@@ -2311,7 +2310,7 @@ svg.button {
 
 .epgrid line {
   stroke: lightgrey;
-  stroke-opacity: 0.7;
+  stroke-opacity: 0.5;
   shape-rendering: crispEdges;
 }
 

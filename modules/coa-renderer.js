@@ -1938,7 +1938,9 @@ window.COArenderer = (function () {
         g.setAttribute("id", charge + "_" + id);
         return g.outerHTML;
       })
-      .catch(err => console.error(err));
+      .catch(err => {
+        ERROR && console.error(err);
+      });
     return fetched;
   }
 

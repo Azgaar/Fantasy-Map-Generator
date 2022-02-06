@@ -17,18 +17,24 @@ function editNamesbase() {
   document.getElementById("namesbaseMax").addEventListener("input", updateBaseMax);
   document.getElementById("namesbaseDouble").addEventListener("input", updateBaseDublication);
   document.getElementById("namesbaseAdd").addEventListener("click", namesbaseAdd);
-  document.getElementById("namesbaseAnalize").addEventListener("click", analizeNamesbase);
+  document.getElementById("namesbaseAnalyze").addEventListener("click", analyzeNamesbase);
   document.getElementById("namesbaseDefault").addEventListener("click", namesbaseRestoreDefault);
   document.getElementById("namesbaseDownload").addEventListener("click", namesbaseDownload);
-  document.getElementById("namesbaseUpload").addEventListener("click", () => namesbaseToLoad.click());
-  document.getElementById("namesbaseToLoad").addEventListener("change", function() {uploadFile(this, namesbaseUpload)});
+  document.getElementById("namesbaseUpload").addEventListener("click", () => document.getElementById("namesbaseToLoad").click());
+  document.getElementById("namesbaseToLoad").addEventListener("change", function () {
+    uploadFile(this, namesbaseUpload);
+  });
+  document.getElementById("namesbaseCA").addEventListener("click", () => {
+    openURL("https://cartographyassets.com/asset-category/specific-assets/azgaars-generator/namebases/");
+  });
   document.getElementById("namesbaseSpeak").addEventListener("click", () => speak(namesbaseExamples.textContent));
 
   createBasesList();
   updateInputs();
 
   $("#namesbaseEditor").dialog({
-    title: "Namesbase Editor", width: "42.5em",
+    title: "Namesbase Editor",
+    width: "auto",
     position: {my: "center", at: "center", of: "svg"}
   });
 
@@ -40,7 +46,10 @@ function editNamesbase() {
 
   function updateInputs() {
     const base = +document.getElementById("namesbaseSelect").value;
-    if (!nameBases[base]) {tip(`Namesbase ${base} is not defined`, false, "error"); return;}
+    if (!nameBases[base]) {
+      tip(`Namesbase ${base} is not defined`, false, "error");
+      return;
+    }
     document.getElementById("namesbaseTextarea").value = nameBases[base].b;
     document.getElementById("namesbaseName").value = nameBases[base].name;
     document.getElementById("namesbaseMin").value = nameBases[base].min;
@@ -52,7 +61,7 @@ function editNamesbase() {
   function updateExamples() {
     const base = +document.getElementById("namesbaseSelect").value;
     let examples = "";
-    for (let i=0; i < 10; i++) {
+    for (let i = 0; i < 10; i++) {
       const example = Names.getBase(base);
       if (example === undefined) {
         examples = "Cannot generate examples. Please verify the data";
@@ -84,13 +93,19 @@ function editNamesbase() {
 
   function updateBaseMin() {
     const base = +document.getElementById("namesbaseSelect").value;
-    if (+this.value > nameBases[base].max) {tip("Minimal length cannot be greater than maximal", false, "error"); return;}
+    if (+this.value > nameBases[base].max) {
+      tip("Minimal length cannot be greater than maximal", false, "error");
+      return;
+    }
     nameBases[base].min = +this.value;
   }
 
   function updateBaseMax() {
     const base = +document.getElementById("namesbaseSelect").value;
-    if (+this.value < nameBases[base].min) {tip("Maximal length should be greater than minimal", false, "error"); return;}
+    if (+this.value < nameBases[base].min) {
+      tip("Maximal length should be greater than minimal", false, "error");
+      return;
+    }
     nameBases[base].max = +this.value;
   }
 
@@ -99,59 +114,70 @@ function editNamesbase() {
     nameBases[base].d = this.value;
   }
 
-  function analizeNamesbase() {
-    const string = document.getElementById("namesbaseTextarea").value;
-    if (!string) {tip("Names data field should not be empty", false, "error"); return;}
-    const base = string.toLowerCase();
-    const array = base.split(",");
-    const l = array.length;
-    if (!l) {tip("Names data should not be empty", false, "error"); return;}
+  function analyzeNamesbase() {
+    const namesSourceString = document.getElementById("namesbaseTextarea").value;
+    const namesArray = namesSourceString.toLowerCase().split(",");
+    const length = namesArray.length;
+    if (!namesSourceString || !length) return tip("Names data should not be empty", false, "error");
 
-    const wordsLength = array.map(n => n.length);
-    const multi = rn(d3.mean(array.map(n => (n.match(/ /i)||[]).length)) * 100, 2);
-    const geminate = array.map(name => name.match(/[^\w\s]|(.)(?=\1)/g)||[]).flat();
-    const doubled = ([...new Set(geminate)].filter(l => geminate.filter(d => d === l).length > 3)||["none"]).join("");
-    const chain = Names.calculateChain(string);
-    const depth = rn(d3.mean(Object.keys(chain).map(key => chain[key].filter(c => c !== " ").length)));
-    const nonLatin = (string.match(/[^\u0000-\u007f]/g)||["none"]).join("");
+    const chain = Names.calculateChain(namesSourceString);
+    const variety = rn(d3.mean(Object.values(chain).map(keyValue => keyValue.length)));
 
-    const lengthStat = 
-      l < 30 ? "<span style='color:red'>[not enough]</span>" :
-      l < 150 ? "<span style='color:darkred'>[low]</span>" :
-      l < 150 ? "<span style='color:orange'>[low]</span>" :
-      l < 400 ? "<span style='color:green'>[good]</span>" :
-      l < 600 ? "<span style='color:orange'>[overmuch]</span>" :
-      "<span style='color:darkred'>[overmuch]</span>";
+    const wordsLength = namesArray.map(n => n.length);
 
-    const rangeStat = 
-      l < 10 ? "<span style='color:red'>[low]</span>" :
-      l < 15 ? "<span style='color:darkred'>[low]</span>" :
-      l < 20 ? "<span style='color:orange'>[low]</span>" :
-      "<span style='color:green'>[good]</span>";
+    const nonLatin = namesSourceString.match(/[^\u0000-\u007f]/g);
+    const nonBasicLatinChars = nonLatin
+      ? unique(
+          namesSourceString
+            .match(/[^\u0000-\u007f]/g)
+            .join("")
+            .toLowerCase()
+        ).join("")
+      : "none";
 
-    const depthStat = 
-      l < 15 ? "<span style='color:red'>[low]</span>" :
-      l < 20 ? "<span style='color:darkred'>[low]</span>" :
-      l < 25 ? "<span style='color:orange'>[low]</span>" :
-      "<span style='color:green'>[good]</span>";
+    const geminate = namesArray.map(name => name.match(/[^\w\s]|(.)(?=\1)/g) || []).flat();
+    const doubled = unique(geminate).filter(char => geminate.filter(doudledChar => doudledChar === char).length > 3) || ["none"];
+
+    const duplicates = unique(namesArray.filter((e, i, a) => a.indexOf(e) !== i)).join(", ") || "none";
+    const multiwordRate = d3.mean(namesArray.map(n => +n.includes(" ")));
+
+    const getLengthQuality = () => {
+      if (length < 30) return "<span data-tip='Namesbase contains < 30 names - not enough to generate reasonable data' style='color:red'>[not enough]</span>";
+      if (length < 100) return "<span data-tip='Namesbase contains < 100 names - not enough to generate good names' style='color:darkred'>[low]</span>";
+      if (length <= 400) return "<span data-tip='Namesbase contains a reasonable number of samples' style='color:green'>[good]</span>";
+      return "<span data-tip='Namesbase contains > 400 names. That is too much, try to reduce it to ~300 names' style='color:darkred'>[overmuch]</span>";
+    };
+
+    const getVarietyLevel = () => {
+      if (variety < 15) return "<span data-tip='Namesbase average variety < 15 - generated names will be too repetitive' style='color:red'>[low]</span>";
+      if (variety < 30) return "<span data-tip='Namesbase average variety < 30 - names can be too repetitive' style='color:orange'>[mean]</span>";
+      return "<span data-tip='Namesbase variety is good' style='color:green'>[good]</span>";
+    };
 
     alertMessage.innerHTML = `<div style="line-height: 1.6em; max-width: 20em">
-      <div>Namesbase length: ${l} ${lengthStat}</div>
-      <div>Namesbase range: ${Object.keys(chain).length-1} ${rangeStat}</div>
-      <div>Namesbase depth: ${depth} ${depthStat}</div>
-      <div>Non-basic chars: ${nonLatin}</div>
+      <div data-tip="Number of names provided">Namesbase length: ${length} ${getLengthQuality()}</div>
+      <div data-tip="Average number of generation variants for each key in the chain">Namesbase variety: ${variety} ${getVarietyLevel()}</div>
       <hr>
-      <div>Min name length: ${d3.min(wordsLength)}</div>
-      <div>Max name length: ${d3.max(wordsLength)}</div>
-      <div>Mean name length: ${rn(d3.mean(wordsLength), 1)}</div>
-      <div>Median name length: ${d3.median(wordsLength)}</div>
-      <div>Doubled chars: ${doubled}</div>
-      <div>Multi-word names: ${multi}%</div>
+      <div data-tip="The shortest name length">Min name length: ${d3.min(wordsLength)}</div>
+      <div data-tip="The longest name length">Max name length: ${d3.max(wordsLength)}</div>
+      <div data-tip="Average name length">Mean name length: ${rn(d3.mean(wordsLength), 1)}</div>
+      <div data-tip="Common name length">Median name length: ${d3.median(wordsLength)}</div>
+      <hr>
+      <div data-tip="Characters outside of Basic Latin have bad font support">Non-basic chars: ${nonBasicLatinChars}</div>
+      <div data-tip="Characters that are frequently (more than 3 times) doubled">Doubled chars: ${doubled.join("")}</div>
+      <div data-tip="Names used more than one time">Duplicates: ${duplicates}</div>
+      <div data-tip="Percentage of names containing space character">Multi-word names: ${rn(multiwordRate * 100, 2)}%</div>
     </div>`;
+
     $("#alert").dialog({
-      resizable: false, title: "Data Analysis",
+      resizable: false,
+      title: "Data Analysis",
       position: {my: "left top-30", at: "right+10 top", of: "#namesbaseEditor"},
-      buttons: {OK: function() {$(this).dialog("close");}}
+      buttons: {
+        OK: function () {
+          $(this).dialog("close");
+        }
+      }
     });
   }
 
@@ -171,35 +197,42 @@ function editNamesbase() {
 
   function namesbaseRestoreDefault() {
     alertMessage.innerHTML = `Are you sure you want to restore default namesbase?`;
-    $("#alert").dialog({resizable: false, title: "Restore default data",
+    $("#alert").dialog({
+      resizable: false,
+      title: "Restore default data",
       buttons: {
-        Restore: function() {
+        Restore: function () {
           $(this).dialog("close");
           Names.clearChains();
           nameBases = Names.getNameBases();
           createBasesList();
           updateInputs();
         },
-        Cancel: function() {$(this).dialog("close");}
+        Cancel: function () {
+          $(this).dialog("close");
+        }
       }
     });
   }
 
   function namesbaseDownload() {
-    const data = nameBases.map((b,i) => `${b.name}|${b.min}|${b.max}|${b.d}|${b.m}|${b.b}`).join("\r\n");
+    const data = nameBases.map((b, i) => `${b.name}|${b.min}|${b.max}|${b.d}|${b.m}|${b.b}`).join("\r\n");
     const name = getFileName("Namesbase") + ".txt";
     downloadFile(data, name);
   }
 
   function namesbaseUpload(dataLoaded) {
     const data = dataLoaded.split("\r\n");
-    if (!data || !data[0]) {tip("Cannot load a namesbase. Please check the data format", false, "error"); return;}
+    if (!data || !data[0]) {
+      tip("Cannot load a namesbase. Please check the data format", false, "error");
+      return;
+    }
 
     Names.clearChains();
     nameBases = [];
     data.forEach(d => {
       const e = d.split("|");
-      nameBases.push({name:e[0], min:e[1], max:e[2], d:e[3], m:e[4], b:e[5]});
+      nameBases.push({name: e[0], min: e[1], max: e[2], d: e[3], m: e[4], b: e[5]});
     });
 
     createBasesList();

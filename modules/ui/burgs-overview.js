@@ -483,9 +483,9 @@ function overviewBurgs() {
   }
 
   function renameBurgsInBulk() {
-    const message = `Download burgs list as a text file, make changes and re-upload the file.
+    alertMessage.innerHTML = `Download burgs list as a text file, make changes and re-upload the file.
+    Make sure the file is a plain text document with each name on its own line (the dilimiter is CRLF).
     If you do not want to change the name, just leave it as is`;
-    alertMessage.innerHTML = message;
 
     $("#alert").dialog({
       title: "Burgs bulk renaming",

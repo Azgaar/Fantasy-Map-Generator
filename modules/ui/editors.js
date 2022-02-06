@@ -265,36 +265,48 @@ function getBurgSeed(burg) {
 }
 
 function getMFCGlink(burg) {
+  if (burg.link) return burg.link;
+
   const {cells} = pack;
-  const {name, population, cell} = burg;
-  const burgSeed = getBurgSeed(burg);
-  const sizeRaw = 2.13 * Math.pow((population * populationRate) / urbanDensity, 0.385);
+  const {i, name, population: burgPopulation, cell} = burg;
+  const seed = getBurgSeed(burg);
+
+  const sizeRaw = 2.13 * Math.pow((burgPopulation * populationRate) / urbanDensity, 0.385);
   const size = minmax(Math.ceil(sizeRaw), 6, 100);
-  const people = rn(population * populationRate * urbanization);
+  const population = rn(burgPopulation * populationRate * urbanization);
+
+  const river = cells.r[cell] ? 1 : 0;
+  const coast = Number(burg.port > 0);
+  const sea = coast && cells.haven[cell] ? getSeaDirections(cell) : null;
+
+  const biome = cells.biome[cell];
+  const arableBiomes = river ? [1, 2, 3, 4, 5, 6, 7, 8] : [5, 6, 7, 8];
+  const farms = +arableBiomes.includes(biome);
+
+  const citadel = +burg.citadel;
+  const urban_castle = +(citadel && each(2)(i));
 
   const hub = +cells.road[cell] > 50;
-  const river = cells.r[cell] ? 1 : 0;
 
-  const coast = +burg.port;
-  const citadel = +burg.citadel;
   const walls = +burg.walls;
   const plaza = +burg.plaza;
   const temple = +burg.temple;
-  const shanty = +burg.shanty;
+  const shantytown = +burg.shanty;
 
-  const sea = coast && cells.haven[cell] ? getSeaDirections(cell) : "";
   function getSeaDirections(i) {
     const p1 = cells.p[i];
     const p2 = cells.p[cells.haven[i]];
     let deg = (Math.atan2(p2[1] - p1[1], p2[0] - p1[0]) * 180) / Math.PI - 90;
     if (deg < 0) deg += 360;
-    const norm = rn(normalize(deg, 0, 360) * 2, 2); // 0 = south, 0.5 = west, 1 = north, 1.5 = east
-    return "&sea=" + norm;
+    return rn(normalize(deg, 0, 360) * 2, 2); // 0 = south, 0.5 = west, 1 = north, 1.5 = east
   }
 
-  const baseURL = "https://watabou.github.io/city-generator/?random=0&continuous=0";
-  const url = `${baseURL}&name=${name}&population=${people}&size=${size}&seed=${burgSeed}&hub=${hub}&river=${river}&coast=${coast}&citadel=${citadel}&plaza=${plaza}&temple=${temple}&walls=${walls}&shantytown=${shanty}${sea}`;
-  return url;
+  const parameters = {name, population, size, seed, river, coast, farms, citadel, urban_castle, hub, plaza, temple, walls, shantytown, gates: -1};
+  const url = new URL("https://watabou.github.io/city-generator");
+  url.search = new URLSearchParams(parameters);
+  if (sea) url.searchParams.append("sea", sea);
+
+  return url.toString();
 }
 
 // draw legend box

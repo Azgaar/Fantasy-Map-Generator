@@ -103,7 +103,8 @@ function showSupporters() {
     Mike Conley,Xavier privé,Hope You're Well,Mark Sprietsma,Robert Landry,Nick Mowry,steve hall,Markell,Josh Wren,Neutrix,BLRageQuit,Rocky,
     Dario Spadavecchia,Bas Kroot,John Patrick Callahan Jr,Alexandra Vesey,D,Exp1nt,james,Braxton Istace,w,Rurikid,AntiBlock,Redsauz,BigE0021,
     Jonathan Williams,ojacid .,Brian Wilson,A Patreon of the Ahts,Shubham Jakhotiya,www15o,Jan Bundesmann,Angelique Badger,Joshua Xiong,Moist mongol,
-    Frank Fewkes,jason baldrick,Game Master Pro,Andrew Kircher,Preston Mitchell,Chris Kohut`;
+    Frank Fewkes,jason baldrick,Game Master Pro,Andrew Kircher,Preston Mitchell,Chris Kohut,Emarandzeb,Trentin Bergeron,Damon Gallaty,Pleaseworkforonce,
+    Jordan,William Markus,Sidr Dim`;
 
   const array = supporters
     .replace(/(?:\r\n|\r|\n)/g, "")
@@ -288,18 +289,16 @@ function generateMapWithSeed(source) {
 }
 
 function showSeedHistoryDialog() {
-  const alert = mapHistory
-    .map(function (h, i) {
-      const created = new Date(h.created).toLocaleTimeString();
-      const button = `<i data-tip"Click to generate a map with this seed" onclick="restoreSeed(${i})" class="icon-history optionsSeedRestore"></i>`;
-      return `<div>${i + 1}. Seed: ${h.seed} ${button}. Size: ${h.width}x${h.height}. Template: ${h.template}. Created: ${created}</div>`;
-    })
-    .join("");
-  alertMessage.innerHTML = alert;
+  const lines = mapHistory.map((h, i) => {
+    const created = new Date(h.created).toLocaleTimeString();
+    const button = `<i data-tip="Click to generate a map with this seed" onclick="restoreSeed(${i})" class="icon-history optionsSeedRestore"></i>`;
+    return `<li>Seed: ${h.seed} ${button}. Size: ${h.width}x${h.height}. Template: ${h.template}. Created: ${created}</li>`;
+  });
+  alertMessage.innerHTML = `<ol style="margin: 0; padding-left: 1.5em">${lines.join("")}</ol>`;
+
   $("#alert").dialog({
     resizable: false,
     title: "Seed history",
-    width: fitContent(),
     position: {my: "center", at: "center", of: "svg"}
   });
 }

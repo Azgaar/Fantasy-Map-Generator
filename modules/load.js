@@ -145,7 +145,7 @@ function parseLoadedResult(result) {
     const mapVersion = parseFloat(mapData[0].split("|")[0] || mapData[0]);
     return [mapData, mapVersion];
   } catch (error) {
-    console.error(error);
+    ERROR && console.error(error);
     return [null, null];
   }
 }
@@ -927,10 +927,19 @@ function parseLoadedData(data) {
       }
 
       if (version < 1.72) {
-        // 1.72 moves the hatching patterns out of the SVG
-        document.getElementById("hatching")?.remove();
+        const storedStyles = Object.keys(localStorage).filter(key => key.startsWith("style"));
+        storedStyles.forEach(styleName => {
+          const style = localStorage.getItem(styleName);
+          const newStyleName = styleName.replace(/^style/, customPresetPrefix);
+          localStorage.setItem(newStyleName, style);
+          localStorage.removeItem(styleName);
+        });
       }
 
+      if (version < 1.73) {
+        // v1.73 moved the hatching patterns out of the user's SVG
+        document.getElementById("hatching")?.remove();
+      }
     })();
 
     void (function checkDataIntegrity() {

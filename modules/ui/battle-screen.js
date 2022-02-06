@@ -141,8 +141,8 @@ class Battle {
     const state = pack.states[regiment.state];
     const distance = (Math.hypot(this.y - regiment.by, this.x - regiment.bx) * distanceScaleInput.value) | 0; // distance between regiment and its base
     const color = state.color[0] === "#" ? state.color : "#999";
-    const icon = `<svg width="1.4em" height="1.4em" style="margin-bottom: -.6em">
-      <rect x="0" y="0" width="100%" height="100%" fill="${color}" class="fillRect"></rect>
+    const icon = `<svg width="1.4em" height="1.4em" style="margin-bottom: -.6em; stroke: #333">
+      <rect x="0" y="0" width="100%" height="100%" fill="${color}"></rect>
       <text x="0" y="1.04em" style="">${regiment.icon}</text></svg>`;
     const body = `<tbody id="battle${state.i}-${regiment.i}">`;
 
@@ -183,7 +183,7 @@ class Battle {
           dist = added ? "0 " + distanceUnitInput.value : distance(r);
         return `<div ${added ? "class='inactive'" : ""} data-s=${s.i} data-i=${r.i} data-state=${s.name} data-regiment=${r.name} 
         data-total=${r.a} data-distance=${dist} data-tip="Click to select regiment">
-        <svg width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${s.color}" class="fillRect"></svg>
+        <svg width=".9em" height=".9em" style="margin-bottom:-1px; stroke: #333"><rect x="0" y="0" width="100%" height="100%" fill="${s.color}" ></svg>
         <div style="width:6em">${s.name.slice(0, 11)}</div>
         <div style="width:1.2em">${r.icon}</div>
         <div style="width:13em">${r.name.slice(0, 24)}</div>
