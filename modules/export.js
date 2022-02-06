@@ -180,9 +180,6 @@ async function getMapURL(type, options = {}) {
     filters[i].remove();
   }
 
-  const hatching = svgDefs.getElementById("defs-hatching");
-  if (hatching) cloneDefs.appendChild(hatching.cloneNode(true));
-
   // remove unused patterns
   const patterns = cloneEl.querySelectorAll("pattern");
   for (let i = 0; i < patterns.length; i++) {
@@ -261,19 +258,19 @@ async function getMapURL(type, options = {}) {
     if (pattern) cloneDefs.appendChild(pattern.cloneNode(true));
   }
 
-  if (!cloneEl.getElementById("defs-hatching").children.length) cloneEl.getElementById("defs-hatching")?.remove(); // remove unused hatching group
   if (!cloneEl.getElementById("fogging-cont")) cloneEl.getElementById("fog")?.remove(); // remove unused fog
   if (!cloneEl.getElementById("regions")) cloneEl.getElementById("statePaths")?.remove(); // removed unused statePaths
   if (!cloneEl.getElementById("labels")) cloneEl.getElementById("textPaths")?.remove(); // removed unused textPaths
 
   // add armies style
-  if (cloneEl.getElementById("armies"))
+  if (cloneEl.getElementById("armies")) {
     cloneEl.insertAdjacentHTML(
       "afterbegin",
       "<style>#armies text {stroke: none; fill: #fff; text-shadow: 0 0 4px #000; dominant-baseline: central; text-anchor: middle; font-family: Helvetica; fill-opacity: 1;}#armies text.regimentIcon {font-size: .8em;}</style>"
     );
+  }
 
-  // add xlink: for href to support svg1.1
+  // add xlink: for href to support svg 1.1
   if (type === "svg") {
     cloneEl.querySelectorAll("[href]").forEach(el => {
       const href = el.getAttribute("href");
@@ -282,6 +279,16 @@ async function getMapURL(type, options = {}) {
     });
   }
 
+  // add hatchings
+  const hatchingUsers = cloneEl.querySelectorAll(`[fill^='url(#hatch']`);
+  const hatchingFills = unique(Array.from(hatchingUsers).map(el => el.getAttribute("fill")));
+  const hatchingIds = hatchingFills.map(fill => fill.slice(5, -1));
+  for (const hatchingId of hatchingIds) {
+    const hatching = svgDefs.getElementById(hatchingId);
+    if (hatching) cloneDefs.appendChild(hatching.cloneNode(true));
+  }
+
+  // load fonts
   const usedFonts = getUsedFonts(cloneEl);
   const fontsToLoad = usedFonts.filter(font => font.src);
   if (fontsToLoad.length) {
