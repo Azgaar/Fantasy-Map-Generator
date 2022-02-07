@@ -3586,12 +3586,15 @@
         <button onclick="quickLoad()" data-tip="Load map from browser storage (if saved before)">storage</button>
       </div>
       <div id="loadFromDropbox">
-        <p style="margin-bottom: .3em">From your Dropbox account</p>
-        <select id="loadFromDropboxSelect" style="width: 22em"></select>
+        <p style="margin-bottom: .3em">
+          From your Dropbox account
+          <button id="dropboxConnectButton" onclick="connectToDropbox()" data-tip="Connect your Dropbox account to be able to load maps from it">Connect</button>
+        </p>
 
-        <div id="loadFromDropboxButtons" style="margin-bottom: .3em">
-          <button onclick="loadFromDropbox()" data-tip="Load .map file from your Dropbox">Open</button>
-          <button onclick="createSharableDropboxLink()" data-tip="Select file and create a link to share with your friends">Create link</button>
+        <select id="loadFromDropboxSelect" style="width: 22em"></select>
+        <div id="loadFromDropboxButtons" style="margin-bottom: .6em">
+          <button onclick="loadFromDropbox()" data-tip="Load .map file from your Dropbox">Load</button>
+          <button onclick="createSharableDropboxLink()" data-tip="Select file and create a link to share with your friends">Share</button>
         </div>
 
         <div style="margin-top: .3em">
@@ -4547,7 +4550,6 @@
   <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
   <script defer src="libs/pell.min.js"></script>
   <script defer src="libs/jszip.min.js"></script>
-  <script defer src="https://unpkg.com/dropbox@10.8.0/dist/Dropbox-sdk.min.js"></script>
 
   <script defer src="modules/io/save.js"></script>
   <script defer src="modules/io/load.js"></script>

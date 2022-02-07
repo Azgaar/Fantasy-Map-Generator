@@ -737,24 +737,43 @@ async function showLoadPane() {
     }
   });
 
-  const loadFromDropboxButtons = document.getElementById("loadFromDropboxButtons");
-  const fileSelect = document.getElementById("loadFromDropboxSelect");
-  const files = await Cloud.providers.dropbox.list();
+  // already connected to Dropbox: list saved maps
+  if (Cloud.providers.dropbox.api) {
+    document.getElementById("dropboxConnectButton").style.display = "none";
+    document.getElementById("loadFromDropboxSelect").style.display = "block";
+    const loadFromDropboxButtons = document.getElementById("loadFromDropboxButtons");
+    const fileSelect = document.getElementById("loadFromDropboxSelect");
+    fileSelect.innerHTML = `<option value="" disabled selected>Loading...</option>`;
 
-  if (!files) {
-    loadFromDropboxButtons.style.display = "none";
-    fileSelect.innerHTML = `<option value="" disabled selected>Save files to Dropbox first</option>`;
+    const files = await Cloud.providers.dropbox.list();
+
+    if (!files) {
+      loadFromDropboxButtons.style.display = "none";
+      fileSelect.innerHTML = `<option value="" disabled selected>Save files to Dropbox first</option>`;
+      return;
+    }
+
+    loadFromDropboxButtons.style.display = "block";
+    fileSelect.innerHTML = "";
+    files.forEach(file => {
+      const opt = document.createElement("option");
+      opt.innerText = file.name;
+      opt.value = file.path;
+      fileSelect.appendChild(opt);
+    });
+
     return;
   }
 
-  loadFromDropboxButtons.style.display = "block";
-  fileSelect.innerHTML = "";
-  files.forEach(file => {
-    const opt = document.createElement("option");
-    opt.innerText = file.name;
-    opt.value = file.path;
-    fileSelect.appendChild(opt);
-  });
+  // not connected to Dropbox: show connect button
+  document.getElementById("dropboxConnectButton").style.display = "inline-block";
+  document.getElementById("loadFromDropboxButtons").style.display = "none";
+  document.getElementById("loadFromDropboxSelect").style.display = "none";
+}
+
+async function connectToDropbox() {
+  await Cloud.providers.dropbox.initialize();
+  if (Cloud.providers.dropbox.api) showLoadPane();
 }
 
 function loadURL() {

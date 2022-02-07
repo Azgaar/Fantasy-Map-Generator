@@ -213,7 +213,9 @@ function checkLoadParameters() {
     const pattern = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
     const valid = pattern.test(maplink);
     if (valid) {
-      loadMapFromURL(maplink, 1);
+      setTimeout(() => {
+        loadMapFromURL(maplink, 1);
+      }, 1000);
       return;
     } else showUploadErrorMessage("Map link is not a valid URL", maplink);
   }
