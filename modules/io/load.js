@@ -435,6 +435,7 @@ async function parseLoadedData(data) {
       resolveVersionConflicts(versionNumber);
     }
 
+
     void (function checkDataIntegrity() {
       const cells = pack.cells;
 
