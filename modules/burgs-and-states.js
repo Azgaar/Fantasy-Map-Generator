@@ -595,7 +595,7 @@ window.BurgsAndStates = (function () {
           g.select("#stateLabel" + id).remove();
         }
 
-        const path = p[1].length > 1 ? lineGen(p[1]) : `M${p[1][0][0] - 50},${p[1][0][1]}h${100}`;
+        const path = p[1].length > 1 ? round(lineGen(p[1])) : `M${p[1][0][0] - 50},${p[1][0][1]}h${100}`;
         const textPath = t
           .append("path")
           .attr("d", path)
@@ -621,7 +621,7 @@ window.BurgsAndStates = (function () {
         const spans = lines.map((l, d) => {
           example.text(l);
           const left = example.node().getBBox().width / -2; // x offset
-          return `<tspan x="${left}px" dy="${d ? 1 : top}em">${l}</tspan>`;
+          return `<tspan x=${rn(left, 1)} dy="${d ? 1 : top}em">${l}</tspan>`;
         });
 
         const el = g
