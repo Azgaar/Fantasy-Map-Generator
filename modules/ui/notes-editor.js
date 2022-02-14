@@ -55,6 +55,7 @@ function editNotes(id, name) {
   // add listeners
   document.getElementById("notesSelect").addEventListener("change", changeElement);
   document.getElementById("notesName").addEventListener("input", changeName);
+  document.getElementById("notesLegend").addEventListener("blur", updateLegend);
   document.getElementById("notesPin").addEventListener("click", toggleNotesPin);
   document.getElementById("notesFocus").addEventListener("click", validateHighlightElement);
   document.getElementById("notesDownload").addEventListener("click", downloadLegends);
@@ -64,27 +65,45 @@ function editNotes(id, name) {
   });
   document.getElementById("notesRemove").addEventListener("click", triggerNotesRemove);
 
-  function initEditor() {
-    tinymce.init({
-      selector: "#notesLegend",
-      height: "90%",
-      menubar: false,
-      plugins: `autolink lists link charmap print formatpainter casechange code fullscreen image link media table paste hr checklist wordcount`,
-      toolbar: `fullscreen code | undo redo | bold italic strikethrough forecolor backcolor | formatpainter removeformat | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media table | blockquote hr casechange checklist charmap print | fontselect fontsizeselect`,
-      media_alt_source: false,
-      media_poster: false,
-      setup: editor => {
-        editor.on("Change", updateLegend);
+  async function initEditor() {
+    if (!window.tinymce) {
+      const url = "https://cdn.tiny.cloud/1/4i6a79ymt2y0cagke174jp3meoi28vyecrch12e5puyw3p9a/tinymce/5/tinymce.min.js";
+      try {
+        await import(url);
+      } catch (error) {
+        // error may be caused by failed request being cached, try again with random hash
+        try {
+          const hash = Math.random().toString(36).substring(2, 15);
+          await import(`${url}#${hash}`);
+        } catch (error) {
+          console.error(error);
+        }
       }
-    });
+    }
+
+    if (window.tinymce) {
+      tinymce.init({
+        selector: "#notesLegend",
+        height: "90%",
+        menubar: false,
+        plugins: `autolink lists link charmap print formatpainter casechange code fullscreen image link media table paste hr checklist wordcount`,
+        toolbar: `fullscreen code | undo redo | bold italic strikethrough forecolor backcolor | formatpainter removeformat | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media table | blockquote hr casechange checklist charmap print | fontselect fontsizeselect`,
+        media_alt_source: false,
+        media_poster: false,
+        setup: editor => {
+          editor.on("Change", updateLegend);
+        }
+      });
+    }
   }
 
   function updateLegend() {
     const note = notes.find(note => note.id === notesSelect.value);
-    if (note && tinymce?.activeEditor) {
-      note.legend = tinymce.activeEditor.getContent();
-      updateNotesBox(note);
-    }
+    if (!note) return tip("Note element is not found", true, "error", 4000);
+
+    const isTinyEditorActive = window.tinymce?.activeEditor;
+    note.legend = isTinyEditorActive ? tinymce.activeEditor.getContent() : notesLegend.innerHTML;
+    updateNotesBox(note);
   }
 
   function updateNotesBox(note) {
@@ -97,8 +116,10 @@ function editNotes(id, name) {
     if (!note) return tip("Note element is not found", true, "error", 4000);
 
     notesName.value = note.name;
-    tinymce.activeEditor.setContent(note.legend);
+    notesLegend.innerHTML = note.legend;
     updateNotesBox(note);
+
+    if (window.tinymce) tinymce.activeEditor.setContent(note.legend);
   }
 
   function changeName() {
@@ -160,6 +181,6 @@ function editNotes(id, name) {
   }
 
   function removeEditor() {
-    tinymce.remove();
+    if (window.tinymce) tinymce.remove();
   }
 }

@@ -2071,6 +2071,17 @@ div.textual span,
   margin: 4px;
 }
 
+#notesLegend {
+  height: 87%;
+  outline: 0;
+  overflow-y: auto;
+  padding: 0.6em;
+  font-family: Copperplate, monospace;
+  background-color: #fff;
+  border: 1px solid #dedede;
+  color: #000;
+}
+
 svg.button {
   position: relative;
   background-color: transparent;
@@ -2325,45 +2336,6 @@ svg.button {
 
 .epgrid path {
   stroke-width: 0;
-}
-
-.pell {
-  border: 1px solid hsla(0, 0%, 4%, 0.1);
-}
-
-.pell,
-.pell-content {
-  box-sizing: border-box;
-}
-
-.pell-content {
-  height: 14em;
-  outline: 0;
-  overflow-y: auto;
-  padding: 0.6em;
-  font-family: Copperplate, monospace;
-  background-color: #fff;
-  border: 1px solid #dedede;
-}
-
-.pell-actionbar {
-  background-color: #fff;
-  border: 1px solid #dedede;
-  border-bottom: 0;
-}
-
-.pell-button {
-  background-color: transparent;
-  border: none;
-  cursor: pointer;
-  height: 30px;
-  outline: 0;
-  width: 30px;
-  vertical-align: bottom;
-}
-
-.pell-button-selected {
-  background-color: #f0f0f0;
 }
 
 #debug {
