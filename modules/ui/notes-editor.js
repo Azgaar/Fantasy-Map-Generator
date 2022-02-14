@@ -166,6 +166,70 @@ function editNotes(id, name) {
     });
   }
 
+  function updateLegend() {
+    const note = notes.find(note => note.id === notesSelect.value);
+    if (note && tinymce?.activeEditor) {
+      note.legend = tinymce.activeEditor.getContent();
+      updateNotesBox(note);
+    }
+  }
+
+  function updateNotesBox(note) {
+    document.getElementById("notesHeader").innerHTML = note.name;
+    document.getElementById("notesBody").innerHTML = note.legend;
+  }
+
+  function changeElement() {
+    const note = notes.find(note => note.id === this.value);
+    if (!note) return tip("Note element is not found", true, "error", 4000);
+
+    notesName.value = note.name;
+    tinymce.activeEditor.setContent(note.legend);
+    updateNotesBox(note);
+  }
+
+  function changeName() {
+    const note = notes.find(note => note.id === notesSelect.value);
+    if (!note) return tip("Note element is not found", true, "error", 4000);
+
+    note.name = this.value;
+  }
+
+  function validateHighlightElement() {
+    const element = document.getElementById(notesSelect.value);
+    if (element) return highlightElement(element, 3);
+
+    confirmationDialog({
+      title: "Element not found",
+      message: "Note element is not found. Would you like to remove the note?",
+      confirm: "Remove",
+      cancel: "Keep",
+      onConfirm: removeLegend
+    });
+  }
+
+  function downloadLegends() {
+    const notesData = JSON.stringify(notes);
+    const name = getFileName("Notes") + ".txt";
+    downloadFile(notesData, name);
+  }
+
+  function uploadLegends(dataLoaded) {
+    if (!dataLoaded) return tip("Cannot load the file. Please check the data format", false, "error");
+    notes = JSON.parse(dataLoaded);
+    notesSelect.options.length = 0;
+    editNotes(notes[0].id, notes[0].name);
+  }
+
+  function triggerNotesRemove() {
+    confirmationDialog({
+      title: "Remove note",
+      message: "Are you sure you want to remove the selected note? There is no way to undo this action",
+      confirm: "Remove",
+      onConfirm: removeLegend
+    });
+  }
+
   function removeLegend() {
     const index = notes.findIndex(n => n.id === notesSelect.value);
     notes.splice(index, 1);
