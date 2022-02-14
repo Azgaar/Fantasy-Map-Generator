@@ -70,7 +70,8 @@ function mouseMove() {
   const point = d3.mouse(this);
   const i = findCell(point[0], point[1]); // pack cell id
   if (i === undefined) return;
-  showNotes(d3.event, i);
+
+  showNotes(d3.event);
   const g = findGridCell(point[0], point[1]); // grid cell id
   if (tooltip.dataset.main) showMainTip();
   else showMapTooltip(point, d3.event, i, g);
@@ -78,7 +79,7 @@ function mouseMove() {
 }
 
 // show note box on hover (if any)
-function showNotes(e, i) {
+function showNotes(e) {
   if (notesEditor.offsetParent) return;
   let id = e.target.id || e.target.parentNode.id || e.target.parentNode.parentNode.id;
   if (e.target.parentNode.parentNode.id === "burgLabels") id = "burg" + e.target.dataset.id;

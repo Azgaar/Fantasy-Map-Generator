@@ -2036,7 +2036,7 @@ div.textual span,
   fill: none;
 }
 
-div#notes {
+#notes {
   display: none;
   position: fixed;
   width: 28vw;
@@ -2046,20 +2046,29 @@ div#notes {
   border: 1px solid #5e4fa2;
   background: rgba(255, 250, 228, 0.7);
   box-shadow: 2px 2px 5px -3px #3a2804;
-  white-space: pre-line;
 }
 
-div#notesHeader {
+@media screen and (max-width: 600px) {
+  #notes {
+    width: 50vw;
+  }
+}
+
+#notesHeader {
   font-weight: bold;
   font-size: 1.3em;
-  padding: 0 0 4px 14px;
+  padding: 16px 0 4px 12px;
   border-bottom: 1px solid #5e4fa2;
 }
 
-div#notesBody {
-  padding: 0 1em;
+#notesBody {
+  padding: 14px 12px;
   max-height: 80vh;
   overflow: auto;
+}
+
+#notesBody p {
+  margin: 4px;
 }
 
 svg.button {
