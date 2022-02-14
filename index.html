@@ -2911,22 +2911,20 @@
       </div>
     </div>
 
-    <div id="notesEditor" class="dialog stable textual" style="display: none">
-      <div>
-        <span>Select object: </span>
-        <select id="notesSelect" data-tip="Select object" style="width: 12em"></select>
-        <span>Object name: </span>
-        <input id="notesName" data-tip="Type to change object name" autocorrect="off" spellcheck="false" style="width: 16em">
+    <div id="notesEditor" class="dialog stable" style="display: none">
+      <div style="margin-bottom: 0.3em">
+        <strong>Element: </strong>
+        <select id="notesSelect" data-tip="Select element id" style="width: 12em"></select>
+        <strong>Element name: </strong>
+        <input id="notesName" data-tip="Set element name" autocorrect="off" spellcheck="false" style="width: 16em">
         <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
       </div>
-      <div id="notesText" data-tip="Type and style object description" style="padding: .4em 0"></div>
-      <div>
-        <button id="notesSpeak" data-tip="Speak the note. You can change voice and language in options" class="icon-voice"></button>
+      <div id="notesLegend" contenteditable="true"></div>
+      <div style="margin-top: 0.3em">
         <button id="notesFocus" data-tip="Focus on selected object" class="icon-target"></button>
         <button id="notesPin" data-tip="Toggle notes box dispay: hide or do not hide the box on mouse move" class="icon-pin"></button>
         <button id="notesDownload" data-tip="Download notes to PC" class="icon-download"></button>
         <button id="notesUpload" data-tip="Upload notes from PC" class="icon-upload"></button>
-        <button id="notesClearStyle" data-tip="Remove all styling, get plain text only" class="icon-eraser"></button>
         <button id="notesRemove" data-tip="Remove this note" class="icon-trash fastDelete"></button>
       </div>
     </div>
@@ -4549,7 +4547,6 @@
   <script defer src="modules/coa-renderer.js"></script>
   <script defer src="libs/rgbquant.min.js"></script>
   <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
-  <script defer src="libs/pell.min.js"></script>
   <script defer src="libs/jszip.min.js"></script>
 
   <script defer src="modules/io/save.js"></script>

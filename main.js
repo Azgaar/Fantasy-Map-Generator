@@ -2,7 +2,7 @@
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 "use strict";
-const version = "1.73"; // generator version
+const version = "1.731"; // generator version
 document.title += " v" + version;
 
 // switches to disable/enable logging features
@@ -434,9 +434,10 @@ function showWelcomeMessage() {
   const discord = link("https://discordapp.com/invite/X7E84HU", "Discord server");
   const patreon = link("https://www.patreon.com/azgaar", "Patreon");
 
-  alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
+  alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <strong>${version}</strong>.
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
-    <ul><b>Latest changes:</b>
+    <ul><strong>Latest changes:</strong>
+      <li>Advanced notes editor</li>
       <li>Zones editor: filter by type</li>
       <li>Color picker: new hatchings</li>
       <li>New style presets: Cyberpunk and Atlas</li>
@@ -444,7 +445,6 @@ function showWelcomeMessage() {
       <li>4 new textures</li>
       <li>Province capture logic rework</li>
       <li>Button to release all provinces</li>
-      <li>Limit military units by biome, state, culture and religion</li>
     </ul>
 
     <p>Join our ${discord} and ${reddit} to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>

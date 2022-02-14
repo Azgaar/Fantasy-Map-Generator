@@ -2036,7 +2036,7 @@ div.textual span,
   fill: none;
 }
 
-div#notes {
+#notes {
   display: none;
   position: fixed;
   width: 28vw;
@@ -2046,20 +2046,45 @@ div#notes {
   border: 1px solid #5e4fa2;
   background: rgba(255, 250, 228, 0.7);
   box-shadow: 2px 2px 5px -3px #3a2804;
-  white-space: pre-line;
 }
 
-div#notesHeader {
+@media screen and (max-width: 600px) {
+  #notes {
+    width: 50vw;
+  }
+}
+
+#notesHeader {
   font-weight: bold;
   font-size: 1.3em;
-  padding: 0 0 4px 14px;
+  padding: 16px 0 4px 12px;
   border-bottom: 1px solid #5e4fa2;
 }
 
-div#notesBody {
-  padding: 0 1em;
+#notesBody {
+  padding: 14px 12px;
   max-height: 80vh;
   overflow: auto;
+}
+
+#notesBody > iframe {
+  pointer-events: none;
+  user-select: none;
+}
+
+#notesBody p {
+  margin: 4px;
+}
+
+#notesLegend {
+  height: 87%;
+  outline: 0;
+  overflow-y: auto;
+  padding: 0.6em;
+  font-family: Copperplate, monospace;
+  background-color: #fff;
+  border: 1px solid #dedede;
+  color: #000;
 }
 
 svg.button {
@@ -2316,45 +2341,6 @@ svg.button {
 
 .epgrid path {
   stroke-width: 0;
-}
-
-.pell {
-  border: 1px solid hsla(0, 0%, 4%, 0.1);
-}
-
-.pell,
-.pell-content {
-  box-sizing: border-box;
-}
-
-.pell-content {
-  height: 14em;
-  outline: 0;
-  overflow-y: auto;
-  padding: 0.6em;
-  font-family: Copperplate, monospace;
-  background-color: #fff;
-  border: 1px solid #dedede;
-}
-
-.pell-actionbar {
-  background-color: #fff;
-  border: 1px solid #dedede;
-  border-bottom: 0;
-}
-
-.pell-button {
-  background-color: transparent;
-  border: none;
-  cursor: pointer;
-  height: 30px;
-  outline: 0;
-  width: 30px;
-  vertical-align: bottom;
-}
-
-.pell-button-selected {
-  background-color: #f0f0f0;
 }
 
 #debug {
