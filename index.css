@@ -2067,6 +2067,11 @@ div.textual span,
   overflow: auto;
 }
 
+#notesBody > iframe {
+  pointer-events: none;
+  user-select: none;
+}
+
 #notesBody p {
   margin: 4px;
 }
