@@ -87,7 +87,7 @@ function editNotes(id, name) {
         height: "90%",
         menubar: false,
         plugins: `autolink lists link charmap print formatpainter casechange code fullscreen image link media table paste hr checklist wordcount`,
-        toolbar: `code | undo redo | bold italic strikethrough forecolor backcolor | formatpainter removeformat | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media table | fontselect fontsizeselect | blockquote hr casechange checklist charmap | print fullscreen`,
+        toolbar: `code | undo redo | bold italic strikethrough | forecolor backcolor | formatpainter removeformat | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media table | fontselect fontsizeselect | blockquote hr casechange checklist charmap | print fullscreen`,
         media_alt_source: false,
         media_poster: false,
         setup: editor => {
