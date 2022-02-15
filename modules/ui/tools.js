@@ -706,14 +706,16 @@ function addMarkerOnClick() {
   const point = d3.mouse(this);
   const x = rn(point[0], 2);
   const y = rn(point[1], 2);
-  const i = markers.length ? last(markers).i + 1 : 0;
 
+  // Find the current cell
+  const cell = findCell(point[0], point[1]);
+
+  // Find the currently selected marker to use as a base
   const isMarkerSelected = markers.length && elSelected?.node()?.parentElement?.id === "markers";
   const selectedMarker = isMarkerSelected ? markers.find(marker => marker.i === +elSelected.attr("id").slice(6)) : null;
   const baseMarker = selectedMarker || {icon: "❓"};
-  const marker = {...baseMarker, i, x, y};
+  const marker = Markers.add({...baseMarker, x, y, cell});
 
-  markers.push(marker);
   const markersElement = document.getElementById("markers");
   const rescale = +markersElement.getAttribute("rescale");
   markersElement.insertAdjacentHTML("beforeend", drawMarker(marker, rescale));
