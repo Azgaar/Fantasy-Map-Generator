@@ -444,7 +444,7 @@ window.HeightmapGenerator = (function () {
     for (let i = 0; i < cells.i.length; i++) {
       const lightness = imageData[i * 4] / 255;
       const powered = lightness < 0.2 ? lightness : 0.2 + (lightness - 0.2) ** 0.8;
-      cells.h[i] = minmax(rn(powered * 100), 0, 100);
+      cells.h[i] = minmax(Math.floor(powered * 100), 0, 100);
     }
   }
 

@@ -306,10 +306,8 @@ function showSeedHistoryDialog() {
 
 // generate map with historical seed
 function restoreSeed(id) {
-  if (mapHistory[id].seed == seed) {
-    tip("The current map is already generated with this seed", null, "error");
-    return;
-  }
+  if (mapHistory[id].seed == seed) return tip("The current map is already generated with this seed", null, "error");
+
   optionsSeed.value = mapHistory[id].seed;
   mapWidthInput.value = mapHistory[id].width;
   mapHeightInput.value = mapHistory[id].height;

@@ -930,7 +930,29 @@ function defineMapSize() {
   function getSizeAndLatitude() {
     const template = document.getElementById("templateInput").value; // heightmap template
 
-    if (template === "europe") return [40, 50];
+    if (template === "africa-centric") return [45, 53];
+    if (template === "arabia") return [20, 35];
+    if (template === "atlantics") return [42, 23];
+    if (template === "britain") return [7, 20];
+    if (template === "caribbean") return [15, 40];
+    if (template === "east-asia") return [11, 28];
+    if (template === "eurasia") return [38, 19];
+    if (template === "europe") return [20, 16];
+    if (template === "europe-accented") return [14, 22];
+    if (template === "europe-and-central-asia") return [25, 10];
+    if (template === "europe-central") return [11, 22];
+    if (template === "europe-north") return [7, 18];
+    if (template === "greenland") return [22, 7];
+    if (template === "hellenica") return [8, 27];
+    if (template === "iceland") return [2, 15];
+    if (template === "indian-ocean") return [45, 55];
+    if (template === "mediterranean-sea") return [10, 29];
+    if (template === "middle-east") return [8, 31];
+    if (template === "north-america") return [37, 17];
+    if (template === "us-centric") return [66, 27];
+    if (template === "us-mainland") return [16, 30];
+    if (template === "world") return [78, 27];
+    if (template === "world-from-pacific") return [75, 32];
 
     const part = grid.features.some(f => f.land && f.border); // if land goes over map borders
     const max = part ? 80 : 100; // max size
