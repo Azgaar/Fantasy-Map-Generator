@@ -253,7 +253,7 @@ function checkLoadParameters() {
 
 async function generateMapOnLoad() {
   await applyStyleOnLoad(); // apply previously selected default or custom style
-  generate(); // generate map
+  await generate(); // generate map
   focusOn(); // based on searchParams focus on point, cell or burg from MFCG
   applyPreset(); // apply saved layers preset
 }
@@ -632,7 +632,7 @@ void (function addDragToUpload() {
   });
 })();
 
-function generate() {
+async function generate() {
   try {
     const timeStart = performance.now();
     invokeActiveZooming();
@@ -643,7 +643,7 @@ function generate() {
     placePoints();
     calculateVoronoi(grid, grid.points);
     drawScaleBar();
-    HeightmapGenerator.generate();
+    await HeightmapGenerator.generate();
     markFeatures();
     markupGridOcean();
     addLakesInDeepDepressions();
@@ -929,6 +929,9 @@ function defineMapSize() {
 
   function getSizeAndLatitude() {
     const template = document.getElementById("templateInput").value; // heightmap template
+
+    if (template === "europe") return [40, 50];
+
     const part = grid.features.some(f => f.land && f.border); // if land goes over map borders
     const max = part ? 80 : 100; // max size
     const lat = () => gauss(P(0.5) ? 40 : 60, 15, 25, 75); // latitude shift

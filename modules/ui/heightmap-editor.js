@@ -913,11 +913,9 @@ function editHeightmap() {
 
     function uploadTemplate(dataLoaded) {
       const steps = dataLoaded.split("\r\n");
-      if (!steps.length) {
-        tip("Cannot parse the template, please check the file", false, "error");
-        return;
-      }
+      if (!steps.length) return tip("Cannot parse the template, please check the file", false, "error");
       templateBody.innerHTML = "";
+
       for (const s of steps) {
         const step = s.split(" ");
         if (step.length !== 5) {
