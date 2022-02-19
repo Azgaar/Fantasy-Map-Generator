@@ -2,7 +2,7 @@
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 "use strict";
-const version = "1.731"; // generator version
+const version = "1.732"; // generator version
 document.title += " v" + version;
 
 // switches to disable/enable logging features
@@ -446,6 +446,7 @@ function showWelcomeMessage() {
   alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <strong>${version}</strong>.
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
     <ul><strong>Latest changes:</strong>
+      <li>Pre-defined heightmaps</li>
       <li>Advanced notes editor</li>
       <li>Zones editor: filter by type</li>
       <li>Color picker: new hatchings</li>
