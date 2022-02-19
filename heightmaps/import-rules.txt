@@ -1,0 +1,8 @@
+To get heightmap with correct height scale:
+1. Open tangrams.github.io
+2. Toggle off auto-exposure
+3. Set max elevation to 2000
+4. Set min elevation to -500
+5. Find region you like
+6. Render image
+7. Optionally rescale image to a smaller size (e.g. 500x300px) as high resolution is not used

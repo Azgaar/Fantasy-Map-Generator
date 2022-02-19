@@ -162,14 +162,14 @@
       </g>
 
       <pattern id="oceanic" width="100" height="100" patternUnits="userSpaceOnUse">
-        <image id="oceanicPattern" href="./images/pattern1.png"></image>
+        <image id="oceanicPattern" href="./images/pattern1.png" opacity="0.2"></image>
       </pattern>
     </defs>
     <g id="viewbox"></g>
     <g id="scaleBar"></g>
     <g id="initial" opacity=1>
       <rect x="-1%" y="-1%" width="102%" height="102%" fill="#466eab"/>
-      <rect x="-1%" y="-1%" width="102%" height="102%" fill="url(#oceanic)" opacity=".2"/>
+      <rect x="-1%" y="-1%" width="102%" height="102%" fill="url(#oceanic)"/>
       <use href="#rose" id="init-rose" x="50%" y="50%"/>
     </g>
   </svg>
@@ -939,25 +939,52 @@
             </td>
           </tr>
 
-          <tr data-tip="Select template to be used for a Heightmap generation">
+          <tr data-tip="Select heightmap generation template or precreated heightmap">
             <td>
               <i data-locked=0 id="lock_template" class="icon-lock-open"></i>
             </td>
-            <td>Map template</td>
+            <td>Heightmap</td>
             <td>
               <select id="templateInput" data-stored="template">
-                <option value="volcano">Volcano</option>
-                <option value="highIsland">High Island</option>
-                <option value="lowIsland">Low Island</option>
-                <option value="continents">Two Continents</option>
-                <option value="archipelago">Archipelago</option>
-                <option value="atoll">Atoll</option>
-                <option value="mediterranean">Mediterranean</option>
-                <option value="peninsula">Peninsula</option>
-                <option value="pangea">Pangea</option>
-                <option value="isthmus">Isthmus</option>
-                <option value="shattered">Shattered</option>
-                <option value="taklamakan">Taklamakan</option>
+                <optgroup label="Template">
+                  <option value="volcano">Volcano</option>
+                  <option value="highIsland">High Island</option>
+                  <option value="lowIsland">Low Island</option>
+                  <option value="continents">Two Continents</option>
+                  <option value="archipelago">Archipelago</option>
+                  <option value="atoll">Atoll</option>
+                  <option value="mediterranean">Mediterranean</option>
+                  <option value="peninsula">Peninsula</option>
+                  <option value="pangea">Pangea</option>
+                  <option value="isthmus">Isthmus</option>
+                  <option value="shattered">Shattered</option>
+                  <option value="taklamakan">Taklamakan</option>
+                </optgroup>
+                <optgroup label="Specific">
+                  <option value="africa-centric">Africa Centric</option>
+                  <option value="arabia">Arabia</option>
+                  <option value="atlantics">Atlantics</option>
+                  <option value="britain">Britain</option>
+                  <option value="caribbean">Caribbean</option>
+                  <option value="east-asia">East Asia</option>
+                  <option value="eurasia">Eurasia</option>
+                  <option value="europe">Europe</option>
+                  <option value="europe-accented">Europe Accented</option>
+                  <option value="europe-and-central-asia">Europe and Central Asia</option>
+                  <option value="europe-central">Europe Central</option>
+                  <option value="europe-north">Europe North</option>
+                  <option value="greenland">Greenland</option>
+                  <option value="hellenica">Hellenica</option>
+                  <option value="iceland">Iceland</option>
+                  <option value="indian-ocean">Indian Ocean</option>
+                  <option value="mediterranean-sea">Mediterranean Sea</option>
+                  <option value="middle-east">Middle East</option>
+                  <option value="north-america">North America</option>
+                  <option value="us-centric">US-centric</option>
+                  <option value="us-mainland">US Mainland</option>
+                  <option value="world">World</option>
+                  <option value="world-from-pacific">World from Pacific</option>
+                </optgroup>
               </select>
             </td>
             <td></td>

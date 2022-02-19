@@ -306,10 +306,8 @@ function showSeedHistoryDialog() {
 
 // generate map with historical seed
 function restoreSeed(id) {
-  if (mapHistory[id].seed == seed) {
-    tip("The current map is already generated with this seed", null, "error");
-    return;
-  }
+  if (mapHistory[id].seed == seed) return tip("The current map is already generated with this seed", null, "error");
+
   optionsSeed.value = mapHistory[id].seed;
   mapWidthInput.value = mapHistory[id].width;
   mapHeightInput.value = mapHistory[id].height;
@@ -547,7 +545,7 @@ function randomizeOptions() {
 
   // 'Options' settings
   if (randomize || !locked("template")) randomizeHeightmapTemplate();
-  if (randomize || !locked("regions")) regionsInput.value = regionsOutput.value = gauss(15, 3, 2, 30);
+  if (randomize || !locked("regions")) regionsInput.value = regionsOutput.value = gauss(18, 5, 2, 30);
   if (randomize || !locked("provinces")) provincesInput.value = provincesOutput.value = gauss(20, 10, 20, 100);
   if (randomize || !locked("manors")) {
     manorsInput.value = 1000;

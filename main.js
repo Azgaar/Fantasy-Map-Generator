@@ -2,7 +2,7 @@
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 "use strict";
-const version = "1.731"; // generator version
+const version = "1.732"; // generator version
 document.title += " v" + version;
 
 // switches to disable/enable logging features
@@ -192,13 +192,22 @@ if (!location.hostname) {
   d3.select("#loading-text").transition().duration(1000).style("opacity", 0);
   d3.select("#init-rose").transition().duration(4000).style("opacity", 0);
 } else {
+  hideLoading();
   checkLoadParameters();
+}
 
-  // remove loading screen
-  d3.select("#loading").transition().duration(4000).style("opacity", 0).remove();
-  d3.select("#initial").transition().duration(4000).attr("opacity", 0).remove();
+function hideLoading() {
+  d3.select("#loading").transition().duration(4000).style("opacity", 0);
+  d3.select("#initial").transition().duration(4000).attr("opacity", 0);
   d3.select("#optionsContainer").transition().duration(3000).style("opacity", 1);
   d3.select("#tooltip").transition().duration(4000).style("opacity", 1);
+}
+
+function showLoading() {
+  d3.select("#loading").transition().duration(200).style("opacity", 1);
+  d3.select("#initial").transition().duration(200).attr("opacity", 1);
+  d3.select("#optionsContainer").transition().duration(100).style("opacity", 0);
+  d3.select("#tooltip").transition().duration(200).style("opacity", 0);
 }
 
 // decide which map should be loaded or generated on page load
@@ -253,7 +262,7 @@ function checkLoadParameters() {
 
 async function generateMapOnLoad() {
   await applyStyleOnLoad(); // apply previously selected default or custom style
-  generate(); // generate map
+  await generate(); // generate map
   focusOn(); // based on searchParams focus on point, cell or burg from MFCG
   applyPreset(); // apply saved layers preset
 }
@@ -437,6 +446,7 @@ function showWelcomeMessage() {
   alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <strong>${version}</strong>.
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
     <ul><strong>Latest changes:</strong>
+      <li>Pre-defined heightmaps</li>
       <li>Advanced notes editor</li>
       <li>Zones editor: filter by type</li>
       <li>Color picker: new hatchings</li>
@@ -632,7 +642,7 @@ void (function addDragToUpload() {
   });
 })();
 
-function generate() {
+async function generate() {
   try {
     const timeStart = performance.now();
     invokeActiveZooming();
@@ -643,7 +653,7 @@ function generate() {
     placePoints();
     calculateVoronoi(grid, grid.points);
     drawScaleBar();
-    HeightmapGenerator.generate();
+    await HeightmapGenerator.generate();
     markFeatures();
     markupGridOcean();
     addLakesInDeepDepressions();
@@ -929,6 +939,31 @@ function defineMapSize() {
 
   function getSizeAndLatitude() {
     const template = document.getElementById("templateInput").value; // heightmap template
+
+    if (template === "africa-centric") return [45, 53];
+    if (template === "arabia") return [20, 35];
+    if (template === "atlantics") return [42, 23];
+    if (template === "britain") return [7, 20];
+    if (template === "caribbean") return [15, 40];
+    if (template === "east-asia") return [11, 28];
+    if (template === "eurasia") return [38, 19];
+    if (template === "europe") return [20, 16];
+    if (template === "europe-accented") return [14, 22];
+    if (template === "europe-and-central-asia") return [25, 10];
+    if (template === "europe-central") return [11, 22];
+    if (template === "europe-north") return [7, 18];
+    if (template === "greenland") return [22, 7];
+    if (template === "hellenica") return [8, 27];
+    if (template === "iceland") return [2, 15];
+    if (template === "indian-ocean") return [45, 55];
+    if (template === "mediterranean-sea") return [10, 29];
+    if (template === "middle-east") return [8, 31];
+    if (template === "north-america") return [37, 17];
+    if (template === "us-centric") return [66, 27];
+    if (template === "us-mainland") return [16, 30];
+    if (template === "world") return [78, 27];
+    if (template === "world-from-pacific") return [75, 32];
+
     const part = grid.features.some(f => f.land && f.border); // if land goes over map borders
     const max = part ? 80 : 100; // max size
     const lat = () => gauss(P(0.5) ? 40 : 60, 15, 25, 75); // latitude shift
@@ -1896,16 +1931,18 @@ function showStatistics() {
   INFO && console.log(stats);
 }
 
-const regenerateMap = debounce(function () {
+const regenerateMap = debounce(async function () {
   WARN && console.warn("Generate new random map");
+  showLoading();
   closeDialogs("#worldConfigurator, #options3d");
   customization = 0;
-  undraw();
   resetZoom(1000);
-  generate();
+  undraw();
+  await generate();
   restoreLayers();
   if (ThreeD.options.isOn) ThreeD.redraw();
   if ($("#worldConfigurator").is(":visible")) editWorld();
+  hideLoading();
 }, 1000);
 
 // clear the map

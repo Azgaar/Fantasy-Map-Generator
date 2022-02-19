@@ -3,13 +3,43 @@
 window.HeightmapGenerator = (function () {
   let cells, p;
 
-  const generate = function () {
-    TIME && console.time("generateHeightmap");
+  const generate = async function () {
     cells = grid.cells;
     p = grid.points;
     cells.h = new Uint8Array(grid.points.length);
 
-    const template = document.getElementById("templateInput").value;
+    const input = document.getElementById("templateInput");
+    const type = input.querySelector(`[value=${input.value}]`).parentElement.label;
+
+    if (type === "Specific") {
+      // pre-defined heightmap
+      TIME && console.time("defineHeightmap");
+      return new Promise(resolve => {
+        // create canvas where 1px correcponds to a cell
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        const {cellsX, cellsY} = grid;
+        canvas.width = cellsX;
+        canvas.height = cellsY;
+
+        // load heightmap into image and render to canvas
+        const img = new Image();
+        img.src = `./heightmaps/${input.value}.png`;
+        img.onload = function () {
+          ctx.drawImage(img, 0, 0, cellsX, cellsY);
+          const imageData = ctx.getImageData(0, 0, cellsX, cellsY);
+          assignColorsToHeight(imageData.data);
+          canvas.remove();
+          img.remove();
+          TIME && console.timeEnd("defineHeightmap");
+          resolve();
+        };
+      });
+    }
+
+    // heightmap template
+    TIME && console.time("generateHeightmap");
+    const template = input.value;
     const templateString = HeightmapTemplates[template];
     const steps = templateString.split("\n");
 
@@ -79,8 +109,8 @@ window.HeightmapGenerator = (function () {
 
     function addOneHill() {
       const change = new Uint8Array(cells.h.length);
-      let limit = 0,
-        start;
+      let limit = 0;
+      let start;
       let h = lim(getNumberInRange(height));
 
       do {
@@ -408,6 +438,14 @@ window.HeightmapGenerator = (function () {
     const min = range.split("-")[0] / 100 || 0;
     const max = range.split("-")[1] / 100 || min;
     return rand(min * length, max * length);
+  }
+
+  function assignColorsToHeight(imageData) {
+    for (let i = 0; i < cells.i.length; i++) {
+      const lightness = imageData[i * 4] / 255;
+      const powered = lightness < 0.2 ? lightness : 0.2 + (lightness - 0.2) ** 0.8;
+      cells.h[i] = minmax(Math.floor(powered * 100), 0, 100);
+    }
   }
 
   return {generate, addHill, addRange, addTrough, addStrait, addPit, smooth, modify};
