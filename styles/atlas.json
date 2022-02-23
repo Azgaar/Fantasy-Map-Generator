@@ -15,7 +15,7 @@
   "#biomes": {
     "opacity": null,
     "filter": null,
-    "mask": "u rl(#land)"
+    "mask": "url(#land)"
   },
   "#stateBorders": {
     "opacity": 1,
@@ -69,7 +69,7 @@
     "opacity": 0.8,
     "transform": null,
     "filter": null,
-    "mask": "u rl(#water)",
+    "mask": "url(#water)",
     "shape-rendering": "optimizespeed"
   },
   "#rose": {
@@ -97,7 +97,7 @@
   "#markers": {
     "opacity": null,
     "rescale": 1,
-    "filter": "u rl(#dropShadow01)"
+    "filter": "url(#dropShadow01)"
   },
   "#prec": {
     "opacity": null,
@@ -152,7 +152,7 @@
     "fill": "#90270d",
     "stroke": "#f93e0c",
     "stroke-width": 2,
-    "filter": "u rl(#crumpled)"
+    "filter": "url(#crumpled)"
   },
   "#dry": {
     "opacity": 1,
@@ -232,26 +232,26 @@
     "opacity": 1,
     "fill": "#000000",
     "font-size": 10,
-    "font-family": "Times New Roman",
+    "font-family": "Georgia",
     "filter": null
   },
   "#temperature": {
     "opacity": null,
-    "font-size": "14px",
+    "font-size": "8px",
     "fill": "#000000",
     "fill-opacity": 0.3,
     "stroke": null,
     "stroke-width": 1.8,
     "stroke-dasharray": null,
     "stroke-linecap": null,
-    "filter": ""
+    "filter": null
   },
   "#ice": {
     "opacity": 0.9,
     "fill": "#e8f0f6",
     "stroke": "#e8f0f6",
     "stroke-width": 1,
-    "filter": "u rl(#dropShadow05)"
+    "filter": "url(#dropShadow05)"
   },
   "#emblems": {
     "opacity": 0.9,
@@ -261,7 +261,7 @@
   "#texture": {
     "opacity": null,
     "filter": null,
-    "mask": "u rl(#land)"
+    "mask": "url(#land)"
   },
   "#zones": {
     "opacity": 0.6,
@@ -291,7 +291,7 @@
     "relax": 0,
     "curve": 0,
     "filter": null,
-    "mask": "u rl(#land)"
+    "mask": "url(#land)"
   },
   "#legend": {
     "data-size": 13,
@@ -309,8 +309,8 @@
     "opacity": 1,
     "fill": "#000000",
     "text-shadow": "white 0px 0px 4px",
-    "data-size": 4,
-    "font-size": 4,
+    "data-size": 5,
+    "font-size": 5,
     "font-family": "Questrial"
   },
   "#burgIcons > #cities": {
@@ -334,8 +334,8 @@
     "opacity": 1,
     "fill": "#000000",
     "text-shadow": "white 0px 0px 4px",
-    "data-size": 3,
-    "font-size": 3,
+    "data-size": 4,
+    "font-size": 4,
     "font-family": "Questrial"
   },
   "#burgIcons > #towns": {
@@ -356,14 +356,14 @@
     "stroke-width": 1.2
   },
   "#labels > #states": {
-    "opacity": 0.7,
+    "opacity": 0,
     "fill": "#000000",
     "stroke": "#000000",
     "stroke-width": 0,
     "text-shadow": "white 0px 0px 4px",
-    "data-size": 16,
-    "font-size": 16,
-    "font-family": "Times New Roman",
+    "data-size": 21,
+    "font-size": 21,
+    "font-family": "Questrial",
     "filter": null
   },
   "#labels > #addedLabels": {
