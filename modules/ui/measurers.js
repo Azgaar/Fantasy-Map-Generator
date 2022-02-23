@@ -536,10 +536,9 @@ class Planimeter extends Measurer {
 }
 
 // Scale bar
-function drawScaleBar(requestedScale) {
+function drawScaleBar(scaleLevel = scale) {
   if (scaleBar.style("display") === "none") return; // no need to re-draw hidden element
   scaleBar.selectAll("*").remove(); // fully redraw every time
-  const scaleLevel = requestedScale || scale;
 
   const distanceScale = distanceScaleInput.value;
   const unit = distanceUnitInput.value;

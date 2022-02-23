@@ -9,7 +9,8 @@ window.HeightmapGenerator = (function () {
     cells.h = new Uint8Array(grid.points.length);
 
     const input = document.getElementById("templateInput");
-    const type = input.querySelector(`[value=${input.value}]`).parentElement.label;
+    const selectedId = input.selectedIndex >= 0 ? input.selectedIndex : 0;
+    const type = input.options[selectedId]?.parentElement?.label;
 
     if (type === "Specific") {
       // pre-defined heightmap
