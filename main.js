@@ -481,7 +481,7 @@ function doWorkOnZoom(isScaleChanged, isPositionChanged) {
 
   if (isScaleChanged) {
     invokeActiveZooming();
-    drawScaleBar();
+    drawScaleBar(scale);
   }
 
   // zoom image converter overlay
@@ -652,7 +652,7 @@ async function generate() {
     randomizeOptions();
     placePoints();
     calculateVoronoi(grid, grid.points);
-    drawScaleBar();
+    drawScaleBar(scale);
     await HeightmapGenerator.generate();
     markFeatures();
     markupGridOcean();

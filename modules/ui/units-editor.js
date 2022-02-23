@@ -11,6 +11,8 @@ function editUnits() {
     position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
   });
 
+  const drawBar = () => drawScaleBar(scale);
+
   // add listeners
   document.getElementById("distanceUnitInput").addEventListener("change", changeDistanceUnit);
   document.getElementById("distanceScaleOutput").addEventListener("input", changeDistanceScale);
@@ -19,9 +21,9 @@ function editUnits() {
   document.getElementById("heightExponentInput").addEventListener("input", changeHeightExponent);
   document.getElementById("heightExponentOutput").addEventListener("input", changeHeightExponent);
   document.getElementById("temperatureScale").addEventListener("change", changeTemperatureScale);
-  document.getElementById("barSizeOutput").addEventListener("input", drawScaleBar);
-  document.getElementById("barSizeInput").addEventListener("input", drawScaleBar);
-  document.getElementById("barLabel").addEventListener("input", drawScaleBar);
+  document.getElementById("barSizeOutput").addEventListener("input", drawBar);
+  document.getElementById("barSizeInput").addEventListener("input", drawBar);
+  document.getElementById("barLabel").addEventListener("input", drawBar);
   document.getElementById("barPosX").addEventListener("input", fitScaleBar);
   document.getElementById("barPosY").addEventListener("input", fitScaleBar);
   document.getElementById("barBackOpacity").addEventListener("input", changeScaleBarOpacity);
@@ -46,18 +48,18 @@ function editUnits() {
       prompt("Provide a custom name for a distance unit", {default: ""}, custom => {
         this.options.add(new Option(custom, custom, false, true));
         lock("distanceUnit");
-        drawScaleBar();
+        drawScaleBar(scale);
         calculateFriendlyGridSize();
       });
       return;
     }
 
-    drawScaleBar();
+    drawScaleBar(scale);
     calculateFriendlyGridSize();
   }
 
   function changeDistanceScale() {
-    drawScaleBar();
+    drawScaleBar(scale);
     calculateFriendlyGridSize();
   }
 
@@ -136,7 +138,7 @@ function editUnits() {
     localStorage.removeItem("barBackColor");
     localStorage.removeItem("barPosX");
     localStorage.removeItem("barPosY");
-    drawScaleBar();
+    drawScaleBar(scale);
 
     // population
     populationRate = populationRateOutput.value = populationRateInput.value = 1000;
