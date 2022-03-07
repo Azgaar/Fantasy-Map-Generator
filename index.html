@@ -19,7 +19,7 @@
     body {margin: 0; font-size: 10px; overflow: hidden;}
     #map {position: absolute;}
     #initial {fill: none; stroke: black; pointer-events: none;}
-    #init-rose {animation: 20s infinite spin; opacity: .7; transform-origin: center;}
+    #init-rose {opacity: .7; transform-origin: center; opacity: .7; animation: 20s infinite spin;}
     @keyframes spin {0% {transform: rotate(0deg);} 100% {transform: rotate(359deg);}}
     #loading {opacity:1; font-size: 11px; color:#fff5da; text-align:center; text-shadow:0px 1px 4px #4c3a35; width:80%; max-width:600px; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); pointer-events:none;}
     #loading-text {font-size: 1.8em; margin: 0.2em 0 0 1em;}
@@ -148,55 +148,6 @@
         </filter>
       </g>
 
-      <g id="hatching">
-        <pattern id="hatch0" patternUnits="userSpaceOnUse" width="4" height="4">
-          <line x1="0" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:2"/>
-        </pattern>
-        <pattern id="hatch1" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
-          <line x1="0" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:2"/>
-        </pattern>
-        <pattern id="hatch2" patternUnits="userSpaceOnUse" width="4" height="4">
-          <line x1="0" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:2"/>
-        </pattern>
-        <pattern id="hatch3" patternTransform="rotate(-45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
-          <line x1="0" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:2"/>
-        </pattern>
-        <pattern id="hatch4" patternUnits="userSpaceOnUse" width="4" height="4">
-          <line x1="0" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:1.5"/>
-          <line x1="0" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:1.5"/>
-        </pattern>
-        <pattern id="hatch5" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
-          <line x1="0" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:1.5"/>
-          <line x1="0" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:1.5"/>
-        </pattern>
-        <pattern id="hatch6" patternUnits="userSpaceOnUse" width="5" height="5">
-          <circle cx="2.5" cy="2.5" r="1" style="fill: black"/>
-        </pattern>
-        <pattern id="hatch7" patternUnits="userSpaceOnUse" width="4" height="4">
-          <line x1="0" y1="0" x2="0" y2="3" transform="rotate(-45 0 0)" style="stroke:black; stroke-width:1.5" />
-        </pattern>
-        <pattern id="hatch8" patternUnits="userSpaceOnUse" width="4" height="4">
-          <line x1="0" y1="0" x2="0" y2="3" style="stroke:black; stroke-width:2.5"/>
-        </pattern>
-        <pattern id="hatch9" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
-          <line x1="0" y1="0" x2="0" y2="3" style="stroke:black; stroke-width:2.5"/>
-        </pattern>
-        <pattern id="hatch10" patternUnits="userSpaceOnUse" width="4" height="4">
-          <line x1="0" y1="0" x2="3" y2="0" style="stroke:black; stroke-width:2.5"/>
-        </pattern>
-        <pattern id="hatch11" patternTransform="rotate(-45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
-          <line x1="0" y1="0" x2="0" y2="3" style="stroke:black; stroke-width:2.5"/>
-        </pattern>
-        <pattern id="hatch12" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
-          <line x1="0" y1="1" x2="0" y2="3" style="stroke:black; stroke-width:1.5" />
-          <line x1="1" y1="0" x2="3" y2="0" style="stroke:black; stroke-width:1.5" />
-        </pattern>
-        <pattern id="hatch13" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
-          <line x1="0" y1="0" x2="0" y2="3" style="stroke:black; stroke-width:1.5" />
-          <line x1="0" y1="0" x2="3" y2="0" style="stroke:black; stroke-width:1.5" />
-        </pattern>
-      </g>
-
       <g id="deftemp">
         <mask id="land"></mask>
         <mask id="water">
@@ -211,14 +162,14 @@
       </g>
 
       <pattern id="oceanic" width="100" height="100" patternUnits="userSpaceOnUse">
-        <image id="oceanicPattern" href="./images/pattern1.png"></image>
+        <image id="oceanicPattern" href="./images/pattern1.png" opacity="0.2"></image>
       </pattern>
     </defs>
     <g id="viewbox"></g>
     <g id="scaleBar"></g>
     <g id="initial" opacity=1>
       <rect x="-1%" y="-1%" width="102%" height="102%" fill="#466eab"/>
-      <rect x="-1%" y="-1%" width="102%" height="102%" fill="url(#oceanic)" opacity=".2"/>
+      <rect x="-1%" y="-1%" width="102%" height="102%" fill="url(#oceanic)"/>
       <use href="#rose" id="init-rose" x="50%" y="50%"/>
     </g>
   </svg>
@@ -226,7 +177,7 @@
   <div id="loading">
     <div id="titleName"><t data-t="titleName">Azgaar's</t></div>
     <div id="title"><t data-t="title">Fantasy Map Generator</t></div>
-    <div id="version"><t data-t="version">v. </t>1.71</div>
+    <div id="version"><t data-t="version">v. </t>1.73</div>
     <p id="loading-text"><t data-t="loading">LOADING</t><span>.</span><span>.</span><span>.</span></p>
   </div>
 
@@ -309,17 +260,9 @@
 
       <div id="styleContent" class="tabcontent">
         <p data-tip="Select a style preset. State labels may required regeneration if font is changed" style="display: inline-block">Style preset:</p>
-        <select data-tip="Select a style preset" id="stylePreset" onchange="changeStylePreset(this.value)" style="width:45%">
-          <option value="styleDefault" data-system=1 selected>Default</option>
-          <option value="styleAncient" data-system=1>Ancient</option>
-          <option value="styleGloom" data-system=1>Gloom</option>
-          <option value="styleClean" data-system=1>Clean</option>
-          <option value="styleLight" data-system=1>Light</option>
-          <option value="styleWatercolor" data-system=1>Watercolor</option>
-          <option value="styleMonochrome" data-system=1>Monochrome</option>
-        </select>
+        <select data-tip="Select a style preset" id="stylePreset" onchange="requestStylePresetChange(this.value)" style="width:45%; text-transform: capitalize;"></select>
         <button id="addStyleButton" data-tip="Click to save current style as a new preset" class="icon-plus sideButton" style="display: inline-block" onclick="addStylePreset()"></button>
-        <button id="removeStyleButton" data-tip="Click to remove current custom style preset" class="icon-minus sideButton" style="display: none" onclick="removeStylePreset()"></button>
+        <button id="removeStyleButton" data-tip="Click to remove current custom style preset" class="icon-minus sideButton" style="display: none" onclick="requestRemoveStylePreset()"></button>
 
         <p data-tip="Select an element to edit its style" style="display: inline-block;">Select element:</p>
         <select data-tip="Select an element to edit its style (list is ordered alphabetically)" id="styleElementSelect" style="width:42%">
@@ -996,25 +939,52 @@
             </td>
           </tr>
 
-          <tr data-tip="Select template to be used for a Heightmap generation">
+          <tr data-tip="Select heightmap generation template or precreated heightmap">
             <td>
               <i data-locked=0 id="lock_template" class="icon-lock-open"></i>
             </td>
-            <td>Map template</td>
+            <td>Heightmap</td>
             <td>
               <select id="templateInput" data-stored="template">
-                <option value="volcano">Volcano</option>
-                <option value="highIsland">High Island</option>
-                <option value="lowIsland">Low Island</option>
-                <option value="continents">Two Continents</option>
-                <option value="archipelago">Archipelago</option>
-                <option value="atoll">Atoll</option>
-                <option value="mediterranean">Mediterranean</option>
-                <option value="peninsula">Peninsula</option>
-                <option value="pangea">Pangea</option>
-                <option value="isthmus">Isthmus</option>
-                <option value="shattered">Shattered</option>
-                <option value="taklamakan">Taklamakan</option>
+                <optgroup label="Template">
+                  <option value="volcano">Volcano</option>
+                  <option value="highIsland">High Island</option>
+                  <option value="lowIsland">Low Island</option>
+                  <option value="continents">Two Continents</option>
+                  <option value="archipelago">Archipelago</option>
+                  <option value="atoll">Atoll</option>
+                  <option value="mediterranean">Mediterranean</option>
+                  <option value="peninsula">Peninsula</option>
+                  <option value="pangea">Pangea</option>
+                  <option value="isthmus">Isthmus</option>
+                  <option value="shattered">Shattered</option>
+                  <option value="taklamakan">Taklamakan</option>
+                </optgroup>
+                <optgroup label="Specific">
+                  <option value="africa-centric">Africa Centric</option>
+                  <option value="arabia">Arabia</option>
+                  <option value="atlantics">Atlantics</option>
+                  <option value="britain">Britain</option>
+                  <option value="caribbean">Caribbean</option>
+                  <option value="east-asia">East Asia</option>
+                  <option value="eurasia">Eurasia</option>
+                  <option value="europe">Europe</option>
+                  <option value="europe-accented">Europe Accented</option>
+                  <option value="europe-and-central-asia">Europe and Central Asia</option>
+                  <option value="europe-central">Europe Central</option>
+                  <option value="europe-north">Europe North</option>
+                  <option value="greenland">Greenland</option>
+                  <option value="hellenica">Hellenica</option>
+                  <option value="iceland">Iceland</option>
+                  <option value="indian-ocean">Indian Ocean</option>
+                  <option value="mediterranean-sea">Mediterranean Sea</option>
+                  <option value="middle-east">Middle East</option>
+                  <option value="north-america">North America</option>
+                  <option value="us-centric">US-centric</option>
+                  <option value="us-mainland">US Mainland</option>
+                  <option value="world">World</option>
+                  <option value="world-from-pacific">World from Pacific</option>
+                </optgroup>
               </select>
             </td>
             <td></td>
@@ -1489,6 +1459,7 @@
           <li><a href="http://www.tumblr.com/share?v=3&u=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator" target="_blank" data-tip="Post to Tumblr"><img alt="Post to Tumblr" src="images/Tumblr.png" /></a></li>
           <li><a href="http://pinterest.com/pin/create/button/?url=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator" target="_blank" data-tip="Pin it"><img alt="Pin it" src="images/Pinterest.png" /></a></li>
           <li><a href="http://www.reddit.com/submit?url=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator" target="_blank" data-tip="Submit to Reddit"><img alt="Submit to Reddit" src="images/Reddit.png" /></a></li>
+          <li><a href="https://discord.gg/X7E84HU" target="_blank" data-tip="Join Discord server"><img alt="Join Discord server" src="images/Discord.png" /></a></li>
         </ul>
       </div>
 
@@ -1649,7 +1620,7 @@
         <button id="labelSizeHide" data-tip="Hide the font size section" class="icon-text-height"></button>
         <input id="labelStartOffset" data-tip="Set starting offset for the particular label" type="range" min=20 max=80 style="width:8em">
         <i class="icon-text-height"></i>
-        <input id="labelRelativeSize" data-tip="Set relative size for the particular label" type="number" min=30 max=300 step=1 style="width:3.2em">
+        <input id="labelRelativeSize" data-tip="Set relative size for the particular label" type="number" min=30 max=300 step=1 style="width:4.5em">
       </div>
 
       <button id="labelAlign" data-tip="Turn text path into a straight line" class="icon-resize-horizontal"></button>
@@ -1804,7 +1775,7 @@
           <span data-tip="Set curve profile">Curve:
             <select id="epCurve">
               <option>Linear</option>
-                <option selected>Basis spline</option>
+              <option selected>Basis spline</option>
               <option>Bundle</option>
               <option>Cubic Catmull-Rom</option>
               <option>Monotone X</option>
@@ -1995,61 +1966,62 @@
       <div id="burgBody" style="padding-bottom: .3em">
         <div style="display: flex; align-items: center">
           <svg data-tip="Burg emblem. Click to edit" class="pointer" viewBox="0 0 200 200" width="13em" height="13em"><use id="burgEmblem"></use></svg>
-          <div>
-          <div id="burgProvinceAndState" style="font-style: italic; max-width: 16em"></div>
+          <div style="display: grid; grid-auto-rows: minmax(1.6em, auto)">
+            <div id="burgProvinceAndState" style="font-style: italic; max-width: 16em"></div>
 
-          <div>
-            <div class="label">Name:</div>
-            <input id="burgName" data-tip="Type to rename the burg" autocorrect="off" spellcheck="false" style="width: 8em">
-            <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
-            <span id="burgNameReRandom" data-tip="Generate random name for the burg" class="icon-globe pointer"></span>
-          </div>
+            <div>
+              <div class="label">Name:</div>
+              <input id="burgName" data-tip="Type to rename the burg" autocorrect="off" spellcheck="false" style="width: 8em">
+              <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+              <span id="burgNameReRandom" data-tip="Generate random name for the burg" class="icon-globe pointer"></span>
+            </div>
 
-          <div data-tip="Select burg type. Type slightly affects emblem generation">
-            <div class="label">Type:</div>
-            <select id="burgType" style="width: 8em">
-              <option value="Generic">Generic</option>
-              <option value="River">River</option>
-              <option value="Lake">Lake</option>
-              <option value="Naval">Naval</option>
-              <option value="Nomadic">Nomadic</option>
-              <option value="Hunting">Hunting</option>
-              <option value="Highland">Highland</option>
-            </select>
-          </div>
+            <div data-tip="Select burg type. Type slightly affects emblem generation">
+              <div class="label">Type:</div>
+              <select id="burgType" style="width: 8em">
+                <option value="Generic">Generic</option>
+                <option value="River">River</option>
+                <option value="Lake">Lake</option>
+                <option value="Naval">Naval</option>
+                <option value="Nomadic">Nomadic</option>
+                <option value="Hunting">Hunting</option>
+                <option value="Highland">Highland</option>
+              </select>
+            </div>
 
-          <div data-tip="Select dominant culture">
-            <div class="label">Culture:</div>
-            <select id="burgCulture" style="width: 8em"></select>
-            <span id="burgNameReCulture" data-tip="Generate culture-specific name for the burg" class="icon-book pointer"></span>
-          </div>
+            <div data-tip="Select dominant culture">
+              <div class="label">Culture:</div>
+              <select id="burgCulture" style="width: 8em"></select>
+              <span id="burgNameReCulture" data-tip="Generate culture-specific name for the burg" class="icon-book pointer"></span>
+            </div>
 
-          <div data-tip="Set burg population">
-            <div class="label">Population:</div>
-            <input id="burgPopulation" type="number" min=0 step=1 style="width: 8em">
-          </div>
+            <div data-tip="Set burg population">
+              <div class="label">Population:</div>
+              <input id="burgPopulation" type="number" min=0 step=1 style="width: 8em">
+            </div>
 
-          <div>
-            <div class="label">Features:</div>
-            <span id="burgCapital" data-tip="Shows whether the burg is a state capital. Click to toggle" data-feature="capital" class="burgFeature icon-star"></span>
-            <span id="burgPort" data-tip="Shows whether the burg is a port. Click to toggle" data-feature="port" class="burgFeature icon-anchor"></span>
-            <span id="burgCitadel" data-tip="Shows whether the burg has a citadel (castle). Click to toggle" data-feature="citadel" class="burgFeature icon-chess-rook" style="font-size: 1.1em"></span>
-            <span id="burgWalls" data-tip="Shows whether the burg is walled. Click to toggle" data-feature="walls" class="burgFeature icon-fort-awesome"></span>
-            <span id="burgPlaza" data-tip="Shows whether the burg is a trade center (has big marketplace). Click to toggle" data-feature="plaza" class="burgFeature icon-store" style="font-size: 1em"></span>
-            <span id="burgTemple" data-tip="Shows whether the burg is a religious center. Click to toggle" data-feature="temple" class="burgFeature icon-chess-bishop" style="font-size: 1.1em; margin-left: 3px"></span>
-            <span id="burgShanty" data-tip="Shows whether the burg has a shanty town. Click to toggle" data-feature="shanty" class="burgFeature icon-campground" style="font-size: 1em"></span>
-          </div>
+            <div>
+              <div class="label">Features:</div>
+              <span id="burgCapital" data-tip="Shows whether the burg is a state capital. Click to toggle" data-feature="capital" class="burgFeature icon-star"></span>
+              <span id="burgPort" data-tip="Shows whether the burg is a port. Click to toggle" data-feature="port" class="burgFeature icon-anchor"></span>
+              <span id="burgCitadel" data-tip="Shows whether the burg has a citadel (castle). Click to toggle" data-feature="citadel" class="burgFeature icon-chess-rook" style="font-size: 1.1em"></span>
+              <span id="burgWalls" data-tip="Shows whether the burg is walled. Click to toggle" data-feature="walls" class="burgFeature icon-fort-awesome"></span>
+              <span id="burgPlaza" data-tip="Shows whether the burg is a trade center (has big marketplace). Click to toggle" data-feature="plaza" class="burgFeature icon-store" style="font-size: 1em"></span>
+              <span id="burgTemple" data-tip="Shows whether the burg is a religious center. Click to toggle" data-feature="temple" class="burgFeature icon-chess-bishop" style="font-size: 1.1em; margin-left: 3px"></span>
+              <span id="burgShanty" data-tip="Shows whether the burg has a shanty town. Click to toggle" data-feature="shanty" class="burgFeature icon-campground" style="font-size: 1em"></span>
+            </div>
 
-          <div data-tip="Burg mean annual temperature and real-world city for comparison">
-            <div class="label">Temperature:</div>
-            <span id="burgTemperature"></span>, like in
-            <span id="burgTemperatureLikeIn"></span>
-          </div>
+            <div data-tip="Burg mean annual temperature and real-world city for comparison">
+              <div class="label">Temperature:</div>
+              <span id="burgTemperature"></span>, like in
+              <span id="burgTemperatureLikeIn"></span>
+              <i id="burgTemperatureGraph" data-tip="Show temperature graph for the burg" class="icon-chart-area pointer"></i>
+            </div>
 
-          <div data-tip="Burg height above mean sea level">
-            <div class="label">Elevation:</div>
-            <span id="burgElevation"></span> above sea level
-          </div>
+            <div data-tip="Burg height above mean sea level">
+              <div class="label">Elevation:</div>
+              <span id="burgElevation"></span> above sea level
+            </div>
           </div>
         </div>
 
@@ -2932,9 +2904,10 @@
     <div id="zonesEditor" class="dialog stable" style="display: none">
       <div id="customHeader" class="header">
         <div style="left:1.8em" data-tip="Zone description">Description&nbsp;</div>
-        <div style="left:13em" data-tip="Zone cells count" class="hide">Cells&nbsp;</div>
-        <div style="left:19em" data-tip="Zone area" class="hide">Area&nbsp;</div>
-        <div style="left:24em" data-tip="Zone population" class="hide">Population&nbsp;</div>
+        <div style="left:13em" data-tip="Zone type">Type&nbsp;</div>
+        <div style="left:19em" data-tip="Zone cells count" class="hide">Cells&nbsp;</div>
+        <div style="left:23.6em" data-tip="Zone area" class="hide">Area&nbsp;</div>
+        <div style="left:30.6em" data-tip="Zone population" class="hide">Population&nbsp;</div>
       </div>
 
       <div id="zonesBodySection" class="table" data-type="absolute"></div>
@@ -2955,35 +2928,35 @@
         <button id="zonesManually" data-tip="Re-assign zones" class="icon-brush"></button>
         <div id="zonesManuallyButtons" style="display: none">
           <label data-tip="Change brush size. Shortcut: + (increase), – (decrease)" class="italic">Brush:
-            <input id="zonesBrush" oninput="tip('Brush size: '+this.value); zonesBrushNumber.value = this.value" type="range" min=5 max=25 value=7 style="width:7em">
-            <input id="zonesBrushNumber" oninput="tip('Brush size: '+this.value); zonesBrush.value = this.value" type="number" min=5 max=25 value=7>
+            <input id="zonesBrush" oninput="tip('Brush size: '+this.value); zonesBrushNumber.value = this.value" type="range" min=5 max=50 value=7 style="width:9em">
+            <input id="zonesBrushNumber" oninput="tip('Brush size: '+this.value); zonesBrush.value = this.value" type="number" min=5 max=50 value=7>
           </label><br>
           <button id="zonesManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
           <button id="zonesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
           <button id="zonesRemove" data-tip="Click to toggle the removal mode on brush dragging. Shortcut: ctrl" class="icon-eraser"></button>
         </div>
 
-        <button id="zonesAdd" data-tip="Add a new zone layer" class="icon-plus"></button>
+        <button id="zonesAdd" data-tip="Add new zone layer" class="icon-plus"></button>
         <button id="zonesExport" data-tip="Download zones-related data" class="icon-download"></button>
+
+        <div id="zonesFilters" data-tip="Show only zones of selected type" style="display: inline-block">Type: <select id="zonesFilterType"></select></div>
       </div>
     </div>
 
-    <div id="notesEditor" class="dialog stable textual" style="display: none">
-      <div>
-        <span>Select object: </span>
-        <select id="notesSelect" data-tip="Select object" style="width: 12em"></select>
-        <span>Object name: </span>
-        <input id="notesName" data-tip="Type to change object name" autocorrect="off" spellcheck="false" style="width: 16em">
+    <div id="notesEditor" class="dialog stable" style="display: none">
+      <div style="margin-bottom: 0.3em">
+        <strong>Element: </strong>
+        <select id="notesSelect" data-tip="Select element id" style="width: 12em"></select>
+        <strong>Element name: </strong>
+        <input id="notesName" data-tip="Set element name" autocorrect="off" spellcheck="false" style="width: 16em">
         <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
       </div>
-      <div id="notesText" data-tip="Type and style object description" style="padding: .4em 0"></div>
-      <div>
-        <button id="notesSpeak" data-tip="Speak the note. You can change voice and language in options" class="icon-voice"></button>
+      <div id="notesLegend" contenteditable="true"></div>
+      <div style="margin-top: 0.3em">
         <button id="notesFocus" data-tip="Focus on selected object" class="icon-target"></button>
         <button id="notesPin" data-tip="Toggle notes box dispay: hide or do not hide the box on mouse move" class="icon-pin"></button>
         <button id="notesDownload" data-tip="Download notes to PC" class="icon-download"></button>
         <button id="notesUpload" data-tip="Upload notes from PC" class="icon-upload"></button>
-        <button id="notesClearStyle" data-tip="Remove all styling, get plain text only" class="icon-eraser"></button>
         <button id="notesRemove" data-tip="Remove this note" class="icon-trash fastDelete"></button>
       </div>
     </div>
@@ -3611,7 +3584,19 @@
       </div>
       <p>GeoJSON format is used in GIS tools such as QGIS. Check out <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export" target="_blank">wiki-page</a> for guidance.</p>
       <p>Generator uses pop-up window to download files. Please ensure your browser does not block popups.</p>
-      <p>It's also possible to export map to <i>Foundry VTT</i>, see <a href="https://github.com/Ethck/azgaar-foundry" target="_blank">the module.</a></p>
+
+      <div style="margin: 1em 0 .3em; font-weight: bold">Export To JSON</div>
+      <div>
+        <button onclick="exportToJson('Full')" data-tip="Download full data as in JSON format">full</button>
+        <button onclick="exportToJson('Minimal')" data-tip="Download minimal data as in JSON format">minimal</button>
+        <button onclick="exportToJson('PackCells')" data-tip="Download map metadata and pack cells data as in JSON format">pack cells</button>
+        <button onclick="exportToJson('GridCells')" data-tip="Download map metadata and grid cells data as in JSON format">grid cells</button>
+      </div>
+      <p>Export in JSON format can be used as an API replacement.</p>
+
+      <div>
+        <p>It's also possible to export map to <i>Foundry VTT</i>, see <a href="https://github.com/Ethck/azgaar-foundry" target="_blank">the module.</a></p>
+      </div>
     </div>
 
     <div id="saveMapData" style="display: none" class="dialog">
@@ -3632,12 +3617,15 @@
         <button onclick="quickLoad()" data-tip="Load map from browser storage (if saved before)">storage</button>
       </div>
       <div id="loadFromDropbox">
-        <p style="margin-bottom: .3em">From your Dropbox account</p>
-        <select id="loadFromDropboxSelect" style="width: 22em"></select>
+        <p style="margin-bottom: .3em">
+          From your Dropbox account
+          <button id="dropboxConnectButton" onclick="connectToDropbox()" data-tip="Connect your Dropbox account to be able to load maps from it">Connect</button>
+        </p>
 
-        <div id="loadFromDropboxButtons" style="margin-bottom: .3em">
-          <button onclick="loadFromDropbox()" data-tip="Load .map file from your Dropbox">Open</button>
-          <button onclick="createSharableDropboxLink()" data-tip="Select file and create a link to share with your friends">Create link</button>
+        <select id="loadFromDropboxSelect" style="width: 22em"></select>
+        <div id="loadFromDropboxButtons" style="margin-bottom: .6em">
+          <button onclick="loadFromDropbox()" data-tip="Load .map file from your Dropbox">Load</button>
+          <button onclick="createSharableDropboxLink()" data-tip="Select file and create a link to share with your friends">Share</button>
         </div>
 
         <div style="margin-top: .3em">
@@ -4394,6 +4382,153 @@
           <path d="M 43.4,0 36.2,12.5 43.4,25 M 21.7,12.5 H 36.2 Z M 0,0 H 14.5 L 21.7,12.5 14.5,25 H 0"/>
         </pattern>
       </g>
+	  
+      <g id="defs-hatching">
+        <pattern id="hatch0" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:2"/>
+        </pattern>
+        <pattern id="hatch1" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:2"/>
+        </pattern>
+        <pattern id="hatch2" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:2"/>
+        </pattern>
+        <pattern id="hatch3" patternTransform="rotate(-45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:2"/>
+        </pattern>
+        <pattern id="hatch4" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:1.5"/>
+          <line x1="0" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+        <pattern id="hatch5" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:1.5"/>
+          <line x1="0" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+        <pattern id="hatch6" patternUnits="userSpaceOnUse" width="5" height="5">
+          <circle cx="2.5" cy="2.5" r="1" style="fill: black"/>
+        </pattern>
+        <pattern id="hatch7" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="0" y2="3" transform="rotate(-45 0 0)" style="stroke:black; stroke-width:1.5" />
+        </pattern>
+        <pattern id="hatch8" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="0" y2="3" style="stroke:black; stroke-width:2.5"/>
+        </pattern>
+        <pattern id="hatch9" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="0" y2="3" style="stroke:black; stroke-width:2.5"/>
+        </pattern>
+        <pattern id="hatch10" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="3" y2="0" style="stroke:black; stroke-width:2.5"/>
+        </pattern>
+        <pattern id="hatch11" patternTransform="rotate(-45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="0" y2="3" style="stroke:black; stroke-width:2.5"/>
+        </pattern>
+        <pattern id="hatch12" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="1" x2="0" y2="3" style="stroke:black; stroke-width:1.5"/>
+          <line x1="1" y1="0" x2="3" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+        <pattern id="hatch13" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="0" y2="3" style="stroke:black; stroke-width:1.5"/>
+          <line x1="0" y1="0" x2="3" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+        <pattern id="hatch14" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="1" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:2"/>
+        </pattern>
+        <pattern id="hatch15" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="1" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:2"/>
+        </pattern>
+        <pattern id="hatch16" patternTransform="rotate(-45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="1" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:2"/>
+        </pattern>
+        <pattern id="hatch17" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="1" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:1.5"/>
+          <line x1="1" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+        <pattern id="hatch18" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="1" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:1.5"/>
+          <line x1="1" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+        <pattern id="hatch19" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="2" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:2"/>
+        </pattern>
+        <pattern id="hatch20" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="2" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:2"/>
+        </pattern>
+        <pattern id="hatch21" patternTransform="rotate(-45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="2" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:2"/>
+        </pattern>
+        <pattern id="hatch22" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="2" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:1.5"/>
+          <line x1="2" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+        <pattern id="hatch23" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="0" y2="3" style="stroke:black; stroke-width:1.5"/>
+          <line x1="0" y1="0" x2="3" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+        <pattern id="hatch24" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="2" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:1.5"/>
+          <line x1="2" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+		<pattern id="hatch25" patternTransform="rotate(-45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="2" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:2"/>
+        </pattern>
+        <pattern id="hatch26" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="2" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:2"/>
+        </pattern>
+		<pattern id="hatch27" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="2" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:2"/>
+        </pattern>
+		<pattern id="hatch28" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="2" y1="0" x2="0" y2="2" style="stroke:black; stroke-width:2"/>
+        </pattern>
+        <pattern id="hatch29" patternTransform="rotate(30 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="1" x2="0" y2="3" style="stroke:black; stroke-width:1.5"/>
+          <line x1="1" y1="0" x2="3" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+		<pattern id="hatch30" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="1" y1="0" x2="0" y2="3" style="stroke:black; stroke-width:1.5"/>
+          <line x1="1" y1="0" x2="3" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+        <pattern id="hatch31" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="1" y1="0" x2="0" y2="3" style="stroke:black; stroke-width:1.5"/>
+          <line x1="1" y1="0" x2="3" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+        <pattern id="hatch32" patternUnits="userSpaceOnUse" width="5" height="5">
+          <circle cx="2.5" cy="2.5" r="0.5" style="fill: black"/>
+        </pattern>
+        <pattern id="hatch33" patternUnits="userSpaceOnUse" width="5" height="5">
+          <circle cx="2.5" cy="2.5" r="1.5" style="fill: black"/>
+        </pattern>
+        <pattern id="hatch34" patternUnits="userSpaceOnUse" width="5" height="5">
+          <circle cx="3" cy="3" r="1" style="fill: black"/>
+          <circle cx="1" cy="1" r="1" style="fill: black"/>
+        </pattern>
+        <pattern id="hatch35" patternUnits="userSpaceOnUse" width="5" height="5">
+          <circle cx="3" cy="3" r="1.5" style="fill: black"/>
+          <circle cx="1" cy="1" r="1.5" style="fill: black"/>
+        </pattern>
+        <pattern id="hatch36" patternTransform="rotate(-45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="0" y2="3" transform="rotate(-45 0 0)" style="stroke:black; stroke-width:1.5" />
+        </pattern>
+        <pattern id="hatch37" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="0" y2="3" transform="rotate(-45 0 0)" style="stroke:black; stroke-width:1.5" />
+        </pattern>
+        <pattern id="hatch38" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="4" y2="4" style="stroke:black; stroke-width:1.5"/>
+          <line x1="0" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+        <pattern id="hatch39" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="4" y2="4" style="stroke:black; stroke-width:1.5"/>
+          <line x1="0" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+        <pattern id="hatch40" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="3" y2="3" style="stroke:black; stroke-width:1.5"/>
+          <line x1="0" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+        <pattern id="hatch41" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse" width="4" height="4">
+          <line x1="0" y1="0" x2="3" y2="3" style="stroke:black; stroke-width:1.5"/>
+          <line x1="0" y1="0" x2="4" y2="0" style="stroke:black; stroke-width:1.5"/>
+        </pattern>
+      </g>
     </defs>
   </svg>
 
@@ -4436,18 +4571,15 @@
   <script src="modules/fonts.js"></script>
   <script src="modules/ui/layers.js"></script>
   <script src="modules/ui/measurers.js"></script>
+  <script src="modules/ui/stylePresets.js"></script>
   <!-- <script src="libs/umami.js"></script> -->
 
-  <script defer src="https://unpkg.com/dropbox@10.8.0/dist/Dropbox-sdk.min.js"></script>
-  <script defer src="modules/ui/general.js"></script>
-  <script defer src="modules/ui/options.js"></script>
-  <script defer src="modules/ui/style.js"></script>
-  <script defer src="modules/load.js"></script>
-  <script defer src="modules/cloud.js"></script>
-  <script defer src="main.js"></script>
-  <script defer src="modules/save.js"></script>
-  <script defer src="modules/export.js"></script>
+  <script src="modules/ui/general.js"></script>
+  <script src="modules/ui/options.js"></script>
+  <script src="main.js"></script>
+
   <script defer src="modules/relief-icons.js"></script>
+  <script defer src="modules/ui/style.js"></script>
   <script defer src="modules/ui/tools.js"></script>
   <script defer src="modules/ui/world-configurator.js"></script>
   <script defer src="modules/ui/editors.js"></script>
@@ -4458,6 +4590,7 @@
   <script defer src="modules/ui/cultures-editor.js"></script>
   <script defer src="modules/ui/namesbase-editor.js"></script>
   <script defer src="modules/ui/elevation-profile.js"></script>
+  <script defer src="modules/ui/temperature-graph.js"></script>
   <script defer src="modules/ui/routes-editor.js"></script>
   <script defer src="modules/ui/ice-editor.js"></script>
   <script defer src="modules/ui/lakes-editor.js"></script>
@@ -4467,7 +4600,6 @@
   <script defer src="modules/ui/rivers-creator.js"></script>
   <script defer src="modules/ui/relief-editor.js"></script>
   <script defer src="modules/ui/religions-editor.js"></script>
-  <script defer src="modules/ui/markers-editor.js"></script>
   <script defer src="modules/ui/burg-editor.js"></script>
   <script defer src="modules/ui/units-editor.js"></script>
   <script defer src="modules/ui/notes-editor.js"></script>
@@ -4480,14 +4612,23 @@
   <script defer src="modules/ui/markers-overview.js"></script>
   <script defer src="modules/ui/regiment-editor.js"></script>
   <script defer src="modules/ui/battle-screen.js"></script>
-  <script defer src="modules/coa-renderer.js"></script>
   <script defer src="modules/ui/emblems-editor.js"></script>
+  <script defer src="modules/ui/markers-editor.js"></script>
   <script defer src="modules/ui/3d.js"></script>
   <script defer src="modules/ui/submap.js"></script>
   <script defer src="modules/ui/hotkeys.js"></script>
+  <script defer src="modules/coa-renderer.js"></script>
   <script defer src="libs/rgbquant.min.js"></script>
   <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
-  <script defer src="libs/pell.min.js"></script>
   <script defer src="libs/jszip.min.js"></script>
+
+  <script defer src="modules/io/save.js"></script>
+  <script defer src="modules/io/load.js"></script>
+  <script defer src="modules/io/cloud.js"></script>
+  <script defer src="modules/io/export.js"></script>
+  <script defer src="modules/io/export-json.js"></script>
+
+  <!-- Web Components -->
+  <script defer src="components/fill-box.js"></script>
 </body>
 </html>

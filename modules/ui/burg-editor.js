@@ -52,6 +52,7 @@ function editBurg(id) {
   document.getElementById("burglLegend").addEventListener("click", editBurgLegend);
   document.getElementById("burgLock").addEventListener("click", toggleBurgLockButton);
   document.getElementById("burgRemove").addEventListener("click", removeSelectedBurg);
+  document.getElementById("burgTemperatureGraph").addEventListener("click", showTemperatureGraph);
 
   function updateBurgValues() {
     const id = +elSelected.attr("data-id");
@@ -541,6 +542,11 @@ function editBurg(id) {
     const id = elSelected.attr("data-id");
     const name = elSelected.text();
     editNotes("burg" + id, name);
+  }
+
+  function showTemperatureGraph() {
+    const id = elSelected.attr("data-id");
+    showBurgTemperatureGraph(id);
   }
 
   function removeSelectedBurg() {

@@ -1,11 +1,11 @@
-// Azgaar (azgaar.fmg@yandex.com). Minsk, 2017-2021. MIT License
+// Azgaar (azgaar.fmg@yandex.com). Minsk, 2017-2022. MIT License
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 "use strict";
-const version = "1.71"; // generator version
+const version = "1.732"; // generator version
 document.title += " v" + version;
 
-// Switches to disable/enable logging features
+// switches to disable/enable logging features
 const PRODUCTION = location.hostname && location.hostname !== "localhost" && location.hostname !== "127.0.0.1";
 const DEBUG = localStorage.getItem("debug");
 const INFO = DEBUG || !PRODUCTION;
@@ -173,14 +173,46 @@ landmass.append("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr
 oceanPattern.append("rect").attr("fill", "url(#oceanic)").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 oceanLayers.append("rect").attr("id", "oceanBase").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 
-// remove loading screen
-d3.select("#loading").transition().duration(4000).style("opacity", 0).remove();
-d3.select("#initial").transition().duration(4000).attr("opacity", 0).remove();
-d3.select("#optionsContainer").transition().duration(3000).style("opacity", 1);
-d3.select("#tooltip").transition().duration(4000).style("opacity", 1);
+if (!location.hostname) {
+  const wiki = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally";
+  alertMessage.innerHTML = `Fantasy Map Generator cannot run serverless.
+  Follow the <a href="${wiki}" target="_blank">instructions</a> on how you can easily run a local web-server`;
+
+  $("#alert").dialog({
+    resizable: false,
+    title: "Loading error",
+    width: "28em",
+    position: {my: "center center-4em", at: "center", of: "svg"},
+    buttons: {
+      OK: function () {
+        $(this).dialog("close");
+      }
+    }
+  });
+
+  d3.select("#loading-text").transition().duration(1000).style("opacity", 0);
+  d3.select("#init-rose").transition().duration(4000).style("opacity", 0);
+} else {
+  hideLoading();
+  checkLoadParameters();
+}
+
+function hideLoading() {
+  d3.select("#loading").transition().duration(4000).style("opacity", 0);
+  d3.select("#initial").transition().duration(4000).attr("opacity", 0);
+  d3.select("#optionsContainer").transition().duration(3000).style("opacity", 1);
+  d3.select("#tooltip").transition().duration(4000).style("opacity", 1);
+}
+
+function showLoading() {
+  d3.select("#loading").transition().duration(200).style("opacity", 1);
+  d3.select("#initial").transition().duration(200).attr("opacity", 1);
+  d3.select("#optionsContainer").transition().duration(100).style("opacity", 0);
+  d3.select("#tooltip").transition().duration(200).style("opacity", 0);
+}
 
 // decide which map should be loaded or generated on page load
-void (function checkLoadParameters() {
+function checkLoadParameters() {
   const url = new URL(window.location.href);
   const params = url.searchParams;
 
@@ -191,7 +223,9 @@ void (function checkLoadParameters() {
     const pattern = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
     const valid = pattern.test(maplink);
     if (valid) {
-      loadMapFromURL(maplink, 1);
+      setTimeout(() => {
+        loadMapFromURL(maplink, 1);
+      }, 1000);
       return;
     } else showUploadErrorMessage("Map link is not a valid URL", maplink);
   }
@@ -225,11 +259,11 @@ void (function checkLoadParameters() {
 
   WARN && console.warn("Generate random map");
   generateMapOnLoad();
-})();
+}
 
-function generateMapOnLoad() {
-  applyStyleOnLoad(); // apply default or previously selected style
-  generate(); // generate map
+async function generateMapOnLoad() {
+  await applyStyleOnLoad(); // apply previously selected default or custom style
+  await generate(); // generate map
   focusOn(); // based on searchParams focus on point, cell or burg from MFCG
   applyPreset(); // apply saved layers preset
 }
@@ -410,22 +444,22 @@ function showWelcomeMessage() {
   const discord = link("https://discordapp.com/invite/X7E84HU", "Discord server");
   const patreon = link("https://www.patreon.com/azgaar", "Patreon");
 
-  alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <b>${version}</b>.
+  alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <strong>${version}</strong>.
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
-    <ul>Main changes:
-      <li>Ability to limit military units by biome, state, culture and religion</li>
-      <li>New marker types</li>
-      <li>New markers editor</li>
-      <li>Markers overview screen</li>
-      <li>Markers regeneration menu</li>
-      <li>Burg editor update</li>
-      <li>Editable theme color</li>
-      <li>Add font dialog</li>
-      <li>Save to Dropbox</li>
+    <ul><strong>Latest changes:</strong>
+      <li>Pre-defined heightmaps</li>
+      <li>Advanced notes editor</li>
+      <li>Zones editor: filter by type</li>
+      <li>Color picker: new hatchings</li>
+      <li>New style presets: Cyberpunk and Atlas</li>
+      <li>Burg temperature graph</li>
+      <li>4 new textures</li>
+      <li>Province capture logic rework</li>
+      <li>Button to release all provinces</li>
     </ul>
 
     <p>Join our ${discord} and ${reddit} to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
-    <span>Thanks for all supporters on <a href="https://www.patreon.com/azgaar" target="_blank">Patreon</a>!</i></span>`;
+    <span><i>Thanks for all supporters on ${patreon}!</i></span>`;
 
   $("#alert").dialog({
     resizable: false,
@@ -448,7 +482,7 @@ function doWorkOnZoom(isScaleChanged, isPositionChanged) {
 
   if (isScaleChanged) {
     invokeActiveZooming();
-    drawScaleBar();
+    drawScaleBar(scale);
   }
 
   // zoom image converter overlay
@@ -609,7 +643,7 @@ void (function addDragToUpload() {
   });
 })();
 
-function generate() {
+async function generate() {
   try {
     const timeStart = performance.now();
     invokeActiveZooming();
@@ -619,8 +653,8 @@ function generate() {
     randomizeOptions();
     placePoints();
     calculateVoronoi(grid, grid.points);
-    drawScaleBar();
-    HeightmapGenerator.generate();
+    drawScaleBar(scale);
+    await HeightmapGenerator.generate();
     markFeatures();
     markupGridOcean();
     addLakesInDeepDepressions();
@@ -907,6 +941,31 @@ function defineMapSize() {
 
   function getSizeAndLatitude() {
     const template = document.getElementById("templateInput").value; // heightmap template
+
+    if (template === "africa-centric") return [45, 53];
+    if (template === "arabia") return [20, 35];
+    if (template === "atlantics") return [42, 23];
+    if (template === "britain") return [7, 20];
+    if (template === "caribbean") return [15, 40];
+    if (template === "east-asia") return [11, 28];
+    if (template === "eurasia") return [38, 19];
+    if (template === "europe") return [20, 16];
+    if (template === "europe-accented") return [14, 22];
+    if (template === "europe-and-central-asia") return [25, 10];
+    if (template === "europe-central") return [11, 22];
+    if (template === "europe-north") return [7, 18];
+    if (template === "greenland") return [22, 7];
+    if (template === "hellenica") return [8, 27];
+    if (template === "iceland") return [2, 15];
+    if (template === "indian-ocean") return [45, 55];
+    if (template === "mediterranean-sea") return [10, 29];
+    if (template === "middle-east") return [8, 31];
+    if (template === "north-america") return [37, 17];
+    if (template === "us-centric") return [66, 27];
+    if (template === "us-mainland") return [16, 30];
+    if (template === "world") return [78, 27];
+    if (template === "world-from-pacific") return [75, 32];
+
     const part = grid.features.some(f => f.land && f.border); // if land goes over map borders
     const max = part ? 80 : 100; // max size
     const lat = () => gauss(P(0.5) ? 40 : 60, 15, 25, 75); // latitude shift
@@ -1485,14 +1544,12 @@ function rankCells() {
   TIME && console.timeEnd("rankCells");
 }
 
-// regenerate some zones
+// generate zones
 function addZones(number = 1) {
   TIME && console.time("addZones");
-  const data = [],
-    cells = pack.cells,
-    states = pack.states,
-    burgs = pack.burgs;
+  const {cells, states, burgs} = pack;
   const used = new Uint8Array(cells.i.length); // to store used cells
+  const zonesData = [];
 
   for (let i = 0; i < rn(Math.random() * 1.8 * number); i++) addInvasion(); // invasion of enemy lands
   for (let i = 0; i < rn(Math.random() * 1.6 * number); i++) addRebels(); // rebels along a state border
@@ -1505,6 +1562,8 @@ function addZones(number = 1) {
   for (let i = 0; i < rn(Math.random() * 1.4 * number); i++) addFault(); // fault line in elevated areas
   for (let i = 0; i < rn(Math.random() * 1.4 * number); i++) addFlood(); // flood on river banks
   for (let i = 0; i < rn(Math.random() * 1.2 * number); i++) addTsunami(); // tsunami starting near coast
+
+  drawZones();
 
   function addInvasion() {
     const atWar = states.filter(s => s.diplomacy && s.diplomacy.some(d => d === "Enemy"));
@@ -1546,7 +1605,7 @@ function addZones(number = 1) {
       Intervention: 1
     });
     const name = getAdjective(invader.name) + " " + invasion;
-    data.push({name, type: "Invasion", cells: cellsArray, fill: "url(#hatch1)"});
+    zonesData.push({name, type: "Invasion", cells: cellsArray, fill: "url(#hatch1)"});
   }
 
   function addRebels() {
@@ -1582,7 +1641,7 @@ function addZones(number = 1) {
 
     const rebels = rw({Rebels: 5, Insurgents: 2, Mutineers: 1, Rioters: 1, Separatists: 1, Secessionists: 1, Insurrection: 2, Rebellion: 1, Conspiracy: 2});
     const name = getAdjective(states[neib].name) + " " + rebels;
-    data.push({name, type: "Rebels", cells: cellsArray, fill: "url(#hatch3)"});
+    zonesData.push({name, type: "Rebels", cells: cellsArray, fill: "url(#hatch3)"});
   }
 
   function addProselytism() {
@@ -1612,7 +1671,7 @@ function addZones(number = 1) {
     }
 
     const name = getAdjective(organized.name.split(" ")[0]) + " Proselytism";
-    data.push({name, type: "Proselytism", cells: cellsArray, fill: "url(#hatch6)"});
+    zonesData.push({name, type: "Proselytism", cells: cellsArray, fill: "url(#hatch6)"});
   }
 
   function addCrusade() {
@@ -1624,7 +1683,7 @@ function addZones(number = 1) {
     cellsArray.forEach(i => (used[i] = 1));
 
     const name = getAdjective(heresy.name.split(" ")[0]) + " Crusade";
-    data.push({name, type: "Crusade", cells: cellsArray, fill: "url(#hatch6)"});
+    zonesData.push({name, type: "Crusade", cells: cellsArray, fill: "url(#hatch6)"});
   }
 
   function addDisease() {
@@ -1661,7 +1720,7 @@ function addZones(number = 1) {
 
     const type = rw({Fever: 5, Pestilence: 2, Flu: 2, Pox: 2, Smallpox: 2, Plague: 4, Cholera: 2, Dropsy: 1, Leprosy: 2});
     const name = rw({[color()]: 4, [animal()]: 2, [adjective()]: 1}) + " " + type;
-    data.push({name, type: "Disease", cells: cellsArray, fill: "url(#hatch12)"});
+    zonesData.push({name, type: "Disease", cells: cellsArray, fill: "url(#hatch12)"});
   }
 
   function addDisaster() {
@@ -1693,7 +1752,7 @@ function addZones(number = 1) {
 
     const type = rw({Famine: 5, Dearth: 1, Drought: 3, Earthquake: 3, Tornadoes: 1, Wildfires: 1});
     const name = getAdjective(burg.name) + " " + type;
-    data.push({name, type: "Disaster", cells: cellsArray, fill: "url(#hatch5)"});
+    zonesData.push({name, type: "Disaster", cells: cellsArray, fill: "url(#hatch5)"});
   }
 
   function addEruption() {
@@ -1724,7 +1783,7 @@ function addZones(number = 1) {
       });
     }
 
-    data.push({name, type: "Disaster", cells: cellsArray, fill: "url(#hatch7)"});
+    zonesData.push({name, type: "Disaster", cells: cellsArray, fill: "url(#hatch7)"});
   }
 
   function addAvalanche() {
@@ -1749,7 +1808,7 @@ function addZones(number = 1) {
 
     const proper = getAdjective(Names.getCultureShort(cells.culture[cell]));
     const name = proper + " Avalanche";
-    data.push({name, type: "Disaster", cells: cellsArray, fill: "url(#hatch5)"});
+    zonesData.push({name, type: "Disaster", cells: cellsArray, fill: "url(#hatch5)"});
   }
 
   function addFault() {
@@ -1774,7 +1833,7 @@ function addZones(number = 1) {
 
     const proper = getAdjective(Names.getCultureShort(cells.culture[cell]));
     const name = proper + " Fault";
-    data.push({name, type: "Disaster", cells: cellsArray, fill: "url(#hatch2)"});
+    zonesData.push({name, type: "Disaster", cells: cellsArray, fill: "url(#hatch2)"});
   }
 
   function addFlood() {
@@ -1804,7 +1863,7 @@ function addZones(number = 1) {
     }
 
     const name = getAdjective(burgs[cells.burg[cell]].name) + " Flood";
-    data.push({name, type: "Disaster", cells: cellsArray, fill: "url(#hatch13)"});
+    zonesData.push({name, type: "Disaster", cells: cellsArray, fill: "url(#hatch13)"});
   }
 
   function addTsunami() {
@@ -1832,13 +1891,13 @@ function addZones(number = 1) {
 
     const proper = getAdjective(Names.getCultureShort(cells.culture[cell]));
     const name = proper + " Tsunami";
-    data.push({name, type: "Disaster", cells: cellsArray, fill: "url(#hatch13)"});
+    zonesData.push({name, type: "Disaster", cells: cellsArray, fill: "url(#hatch13)"});
   }
 
-  void (function drawZones() {
+  function drawZones() {
     zones
       .selectAll("g")
-      .data(data)
+      .data(zonesData)
       .enter()
       .append("g")
       .attr("id", (d, i) => "zone" + i)
@@ -1854,7 +1913,7 @@ function addZones(number = 1) {
       .attr("id", function (d) {
         return this.parentNode.id + "_" + d;
       });
-  })();
+  }
 
   TIME && console.timeEnd("addZones");
 }
@@ -1881,16 +1940,18 @@ function showStatistics() {
   INFO && console.log(stats);
 }
 
-const regenerateMap = debounce(function () {
+const regenerateMap = debounce(async function () {
   WARN && console.warn("Generate new random map");
+  showLoading();
   closeDialogs("#worldConfigurator, #options3d");
   customization = 0;
-  undraw();
   resetZoom(1000);
-  generate();
+  undraw();
+  await generate();
   restoreLayers();
   if (ThreeD.options.isOn) ThreeD.redraw();
   if ($("#worldConfigurator").is(":visible")) editWorld();
+  hideLoading();
 }, 1000);
 
 // clear the map

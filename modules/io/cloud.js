@@ -12,7 +12,6 @@ async load(filename): load filename from provider
 async list(): list available filenames at provider
 async getLink(filePath): get shareable link for file
 restore(): restore access tokens from storage if possible
-
 */
 
 window.Cloud = (function () {
@@ -32,38 +31,40 @@ window.Cloud = (function () {
     token: null, // Access token
     api: null,
 
-    restore() {
-      this.token = getToken(this.name);
-      if (this.token) this.connect(this.token);
-    },
-
     async call(name, param) {
       try {
+        if (!this.api) await this.initialize();
         return await this.api[name](param);
       } catch (e) {
         if (e.name !== "DropboxResponseError") throw e;
-        // retry with auth
-        await this.auth();
+        await this.auth(); // retry with auth
         return await this.api[name](param);
       }
     },
 
-    connect(token) {
-      const clientId = this.clientId;
-      const auth = new Dropbox.DropboxAuth({clientId});
+    initialize() {
+      const token = getToken(this.name);
+      if (token) {
+        return this.connect(token);
+      } else {
+        return this.auth();
+      }
+    },
+
+    async connect(token) {
+      await import("https://unpkg.com/dropbox@10.8.0/dist/Dropbox-sdk.min.js");
+      const auth = new Dropbox.DropboxAuth({clientId: this.clientId});
       auth.setAccessToken(token);
       this.api = new Dropbox.Dropbox({auth});
     },
 
     async save(fileName, contents) {
-      if (!this.api) await this.auth();
-      const resp = this.call("filesUpload", {path: "/" + fileName, contents});
+      const resp = await this.call("filesUpload", {path: "/" + fileName, contents});
       DEBUG && console.log("Dropbox response:", resp);
       return true;
     },
 
     async load(path) {
-      if (!this.api) await this.auth();
       const resp = await this.call("filesDownload", {path});
       const blob = resp.result.fileBlob;
       if (!blob) throw new Error("Invalid response from dropbox.");
@@ -71,22 +72,23 @@ window.Cloud = (function () {
     },
 
     async list() {
-      if (!this.api) return null;
       const resp = await this.call("filesListFolder", {path: ""});
       return resp.result.entries.map(e => ({name: e.name, path: e.path_lower}));
     },
 
     auth() {
-      const url = window.location.origin + window.location.pathname + "dropbox.html";
-      this.authWindow = window.open(url, "auth", "width=640,height=480");
-      // child window expected to call
-      // window.opener.Cloud.providers.dropbox.setDropBoxToken (see below)
+      const width = 640;
+      const height = 480;
+      const left = window.innerWidth / 2 - width / 2;
+      const top = window.innerHeight / 2 - height / 2.5;
+      this.authWindow = window.open("./dropbox.html", "auth", `width=640, height=${height}, top=${top}, left=${left}}`);
+
       return new Promise((resolve, reject) => {
-        const watchDog = () => {
+        const watchDog = setTimeout(() => {
           this.authWindow.close();
-          reject(new Error("Timeout. No auth for dropbox."));
-        };
-        setTimeout(watchDog, 120 * 1000);
+          reject(new Error("Timeout. No auth for Dropbox"));
+        }, 120 * 1000);
+
         window.addEventListener("dropboxauth", e => {
           clearTimeout(watchDog);
           resolve();
@@ -94,46 +96,34 @@ window.Cloud = (function () {
       });
     },
 
-    // Callback function for auth window.
-    setDropBoxToken(token) {
+    // Callback function for auth window
+    async setDropBoxToken(token) {
       DEBUG && console.log("Access token:", token);
       setToken(this.name, token);
-      this.connect(token);
+      await this.connect(token);
       this.authWindow.close();
       window.dispatchEvent(new Event("dropboxauth"));
     },
 
+    returnError(errorDescription) {
+      console.error(errorDescription);
+      tip(errorDescription.replaceAll("+", " "), true, "error", 4000);
+      this.authWindow.close();
+    },
+
     async getLink(path) {
-      if (!this.api) await this.auth();
-      let resp;
+      // return existitng shared link
+      const sharedLinks = await this.call("sharingListSharedLinks", {path});
+      if (sharedLinks.result.links.length) return resp.result.links[0].url;
 
-      // already exists?
-      resp = await this.call("sharingListSharedLinks", {path});
-      if (resp.result.links.length) return resp.result.links[0].url;
-
-      // create new
-      resp = await this.call("sharingCreateSharedLinkWithSettings", {
-        path,
-        settings: {
-          require_password: false,
-          audience: "public",
-          access: "viewer",
-          requested_visibility: "public",
-          allow_download: true
-        }
-      });
+      // create new shared link
+      const settings = {require_password: false, audience: "public", access: "viewer", requested_visibility: "public", allow_download: true};
+      const resp = await this.call("sharingCreateSharedLinkWithSettings", {path, settings});
       DEBUG && console.log("Dropbox link object:", resp.result);
       return resp.result.url;
     }
   };
 
-  // register providers here:
-  const providers = {
-    dropbox: DBP
-  };
-
-  // restore all providers at startup
-  for (const p of Object.values(providers)) p.restore();
-
+  const providers = {dropbox: DBP};
   return {providers};
 })();

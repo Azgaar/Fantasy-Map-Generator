@@ -913,11 +913,9 @@ function editHeightmap() {
 
     function uploadTemplate(dataLoaded) {
       const steps = dataLoaded.split("\r\n");
-      if (!steps.length) {
-        tip("Cannot parse the template, please check the file", false, "error");
-        return;
-      }
+      if (!steps.length) return tip("Cannot parse the template, please check the file", false, "error");
       templateBody.innerHTML = "";
+
       for (const s of steps) {
         const step = s.split(" ");
         if (step.length !== 5) {
@@ -1318,10 +1316,10 @@ function editHeightmap() {
     img.onload = function () {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
-      canvas.width = svgWidth;
-      canvas.height = svgHeight;
+      canvas.width = graphWidth;
+      canvas.height = graphHeight;
       document.body.insertBefore(canvas, optionsContainer);
-      ctx.drawImage(img, 0, 0, svgWidth, svgHeight);
+      ctx.drawImage(img, 0, 0, graphWidth, graphHeight);
       const imgBig = canvas.toDataURL("image/png");
       const link = document.createElement("a");
       link.download = getFileName("Heightmap") + ".png";

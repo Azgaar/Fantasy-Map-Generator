@@ -101,10 +101,8 @@ function editDiplomacy() {
       lines += `<div class="states" data-id=${state.i} data-name="${name}" data-relations="${relation}">
         <svg data-tip="${tipSelect}" class="coaIcon" viewBox="0 0 200 200"><use href="#stateCOA${state.i}"></use></svg>
         <div data-tip="${tipSelect}" style="width: 12em">${name}</div>
-        <div data-tip="${tipChange}" class="changeRelations pointer" style="width: 6em">
-          <svg width=".9em" height=".9em" style="margin-bottom:-1px">
-            <rect x="0" y="0" width="100%" height="100%" fill="${color}" class="fillRect"></rect>
-          </svg>
+        <div data-tip="${tipChange}" class="changeRelations" style="width: 6em">
+          <fill-box fill="${color}" size=".9em"></fill-box>
           ${relation}
         </div>
       </div>`;
@@ -195,9 +193,7 @@ function editDiplomacy() {
         ([relation, {color, inText, tip}]) =>
           `<div style="margin-block: 0.2em" data-tip="${tip}"><label class="pointer">
           <input type="radio" name="relationSelect" value="${relation}" ${currentRelation === relation && "checked"} >
-          <svg width=".9em" height=".9em" style="margin-bottom:-1px">
-            <rect x="0" y="0" width="100%" height="100%" fill="${color}" class="fillRect" />
-          </svg>
+          <fill-box fill="${color}" size=".8em"></fill-box>
           ${inText}
         </label></div>`
       )
