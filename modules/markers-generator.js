@@ -9,27 +9,27 @@ window.Markers = (function () {
     const isFantasy = culturesSet.includes("Fantasy");
 
     return [
-      {type: "volcanoes", icon: "🌋", dx: 52, px: 13, min: 10, each: 500, multiplier: 1, fn: [listVolcanoes, addVolcano]},
-      {type: "hot-springs", icon: "♨️", dy: 52, min: 30, each: 1200, multiplier: 1, fn: [listHotSprings, addHotSpring]},
-      {type: "mines", icon: "⛏️", dx: 48, px: 13, min: 1, each: 15, multiplier: 1, fn: [listMines, addMine]},
-      {type: "bridges", icon: "🌉", px: 14, min: 1, each: 5, multiplier: 1, fn: [listBridges, addBridge]},
-      {type: "inns", icon: "🍻", px: 14, min: 1, each: 100, multiplier: 1, fn: [listInns, addInn]},
-      {type: "lighthouses", icon: "🚨", px: 14, min: 1, each: 2, multiplier: 1, fn: [listLighthouses, addLighthouse]},
-      {type: "waterfalls", icon: "⟱", dy: 54, px: 16, min: 1, each: 5, multiplier: 1, fn: [listWaterfalls, addWaterfall]},
-      {type: "battlefields", icon: "⚔️", dy: 52, min: 50, each: 700, multiplier: 1, fn: [listBattlefields, addBattlefield]},
-      {type: "dungeons", icon: "🗝️", dy: 51, px: 13, min: 30, each: 200, multiplier: 1, fn: [listDungeons, addDungeon]},
-      {type: "lake-monsters", icon: "🐉", dy: 48, min: 2, each: 10, multiplier: 1, fn: [listLakeMonsters, addLakeMonster]},
-      {type: "sea-monsters", icon: "🦑", min: 50, each: 700, multiplier: 1, fn: [listSeaMonsters, addSeaMonster]},
-      {type: "hill-monsters", icon: "👹", dy: 54, px: 13, min: 30, each: 600, multiplier: 1, fn: [listHillMonsters, addHillMonster]},
-      {type: "sacred-mountains", icon: "🗻", dy: 48, min: 1, each: 5, multiplier: 1, fn: [listSacredMountains, addSacredMountain]},
-      {type: "sacred-forests", icon: "🌳", min: 30, each: 1000, multiplier: 1, fn: [listSacredForests, addSacredForest]},
-      {type: "sacred-pineries", icon: "🌲", px: 13, min: 30, each: 800, multiplier: 1, fn: [listSacredPineries, addSacredPinery]},
-      {type: "sacred-palm-groves", icon: "🌴", px: 13, min: 1, each: 100, multiplier: 1, fn: [listSacredPalmGroves, addSacredPalmGrove]},
-      {type: "brigands", icon: "💰", px: 13, min: 50, each: 100, multiplier: 1, fn: [listBrigands, addBrigands]},
-      {type: "pirates", icon: "🏴‍☠️", dx: 51, min: 40, each: 300, multiplier: 1, fn: [listPirates, addPirates]},
-      {type: "statues", icon: "🗿", min: 80, each: 1200, multiplier: 1, fn: [listStatues, addStatue]},
-      {type: "ruines", icon: "🏺", min: 80, each: 1200, multiplier: 1, fn: [listRuins, addRuins]},
-      {type: "portals", icon: "🌀", px: 14, min: 16, each: 8, multiplier: +isFantasy, fn: [listPortals, addPortal]}
+      {type: "volcanoes", icon: "🌋", dx: 52, px: 13, min: 10, each: 500, multiplier: 1, list: listVolcanoes, add: addVolcano},
+      {type: "hot-springs", icon: "♨️", dy: 52, min: 30, each: 1200, multiplier: 1, list: listHotSprings, add: addHotSpring},
+      {type: "mines", icon: "⛏️", dx: 48, px: 13, min: 1, each: 15, multiplier: 1, list: listMines, add: addMine},
+      {type: "bridges", icon: "🌉", px: 14, min: 1, each: 5, multiplier: 1, list: listBridges, add: addBridge},
+      {type: "inns", icon: "🍻", px: 14, min: 1, each: 100, multiplier: 1, list: listInns, add: addInn},
+      {type: "lighthouses", icon: "🚨", px: 14, min: 1, each: 2, multiplier: 1, list: listLighthouses, add: addLighthouse},
+      {type: "waterfalls", icon: "⟱", dy: 54, px: 16, min: 1, each: 5, multiplier: 1, list: listWaterfalls, add: addWaterfall},
+      {type: "battlefields", icon: "⚔️", dy: 52, min: 50, each: 700, multiplier: 1, list: listBattlefields, add: addBattlefield},
+      {type: "dungeons", icon: "🗝️", dy: 51, px: 13, min: 30, each: 200, multiplier: 1, list: listDungeons, add: addDungeon},
+      {type: "lake-monsters", icon: "🐉", dy: 48, min: 2, each: 10, multiplier: 1, list: listLakeMonsters, add: addLakeMonster},
+      {type: "sea-monsters", icon: "🦑", min: 50, each: 700, multiplier: 1, list: listSeaMonsters, add: addSeaMonster},
+      {type: "hill-monsters", icon: "👹", dy: 54, px: 13, min: 30, each: 600, multiplier: 1, list: listHillMonsters, add: addHillMonster},
+      {type: "sacred-mountains", icon: "🗻", dy: 48, min: 1, each: 5, multiplier: 1, list: listSacredMountains, add: addSacredMountain},
+      {type: "sacred-forests", icon: "🌳", min: 30, each: 1000, multiplier: 1, list: listSacredForests, add: addSacredForest},
+      {type: "sacred-pineries", icon: "🌲", px: 13, min: 30, each: 800, multiplier: 1, list: listSacredPineries, add: addSacredPinery},
+      {type: "sacred-palm-groves", icon: "🌴", px: 13, min: 1, each: 100, multiplier: 1, list: listSacredPalmGroves, add: addSacredPalmGrove},
+      {type: "brigands", icon: "💰", px: 13, min: 50, each: 100, multiplier: 1, list: listBrigands, add: addBrigands},
+      {type: "pirates", icon: "🏴‍☠️", dx: 51, min: 40, each: 300, multiplier: 1, list: listPirates, add: addPirates},
+      {type: "statues", icon: "🗿", min: 80, each: 1200, multiplier: 1, list: listStatues, add: addStatue},
+      {type: "ruines", icon: "🏺", min: 80, each: 1200, multiplier: 1, list: listRuins, add: addRuins},
+      {type: "portals", icon: "🌀", px: 14, min: 16, each: 8, multiplier: +isFantasy, list: listPortals, add: addPortal}
     ];
   }
 
@@ -66,7 +66,7 @@ window.Markers = (function () {
     if (base) {
       const {icon, type, dx, dy, px} = base;
       marker = addMarker({icon, type, dx, dy, px}, marker);
-      base.fn[1]("marker" + marker.i, marker.cell);
+      base.add("marker" + marker.i, marker.cell);
       return marker;
     }
 
@@ -79,16 +79,16 @@ window.Markers = (function () {
   function generateTypes() {
     TIME && console.time("addMarkers");
 
-    config.forEach(({type, icon, dx, dy, px, min, each, multiplier, fn}) => {
+    config.forEach(({type, icon, dx, dy, px, min, each, multiplier, list, add}) => {
       if (multiplier === 0) return;
 
-      let candidates = Array.from(fn[0](pack));
+      let candidates = Array.from(list(pack));
       let quantity = getQuantity(candidates, min, each, multiplier);
 
       while (quantity && candidates.length) {
         const [cell] = extractAnyElement(candidates);
         const marker = addMarker({icon, type, dx, dy, px}, {cell});
-        fn[1]("marker" + marker.i, cell);
+        add("marker" + marker.i, cell);
         quantity--;
       }
     });
@@ -171,7 +171,9 @@ window.Markers = (function () {
 
   function listBridges({cells, burgs}) {
     const meanFlux = d3.mean(cells.fl.filter(fl => fl));
-    return cells.i.filter(i => !occupied[i] && cells.burg[i] && cells.t[i] !== 1 && burgs[cells.burg[i]].population > 20 && cells.r[i] && cells.fl[i] > meanFlux);
+    return cells.i.filter(
+      i => !occupied[i] && cells.burg[i] && cells.t[i] !== 1 && burgs[cells.burg[i]].population > 20 && cells.r[i] && cells.fl[i] > meanFlux
+    );
   }
 
   function addBridge(id, cell) {
@@ -496,7 +498,9 @@ window.Markers = (function () {
   }
 
   function listLakeMonsters({features}) {
-    return features.filter(feature => feature.type === "lake" && feature.group === "freshwater" && !occupied[feature.firstCell]).map(feature => feature.firstCell);
+    return features
+      .filter(feature => feature.type === "lake" && feature.group === "freshwater" && !occupied[feature.firstCell])
+      .map(feature => feature.firstCell);
   }
 
   function addLakeMonster(id, cell) {
@@ -690,16 +694,16 @@ window.Markers = (function () {
     const height = cells.p[cell];
     const locality =
       height >= 70
-      ? "highlander"
-      : [1, 2].includes(biome)
-      ? "desert"
-      : [3, 4].includes(biome)
-      ? "mounted"
-      : [5, 6, 7, 8, 9].includes(biome)
-      ? "forest"
-      : biome === 12
-      ? "swamp"
-      : "angry";
+        ? "highlander"
+        : [1, 2].includes(biome)
+        ? "desert"
+        : [3, 4].includes(biome)
+        ? "mounted"
+        : [5, 6, 7, 8, 9].includes(biome)
+        ? "forest"
+        : biome === 12
+        ? "swamp"
+        : "angry";
     const name = `${Names.getCulture(culture)} ${ra(animals)}`;
     const legend = `A gang of ${locality} ${rw(types)}`;
     notes.push({id, name, legend});
@@ -717,7 +721,7 @@ window.Markers = (function () {
   }
 
   function listStatues({cells}) {
-      return cells.i.filter(i => !occupied[i] && cells.h[i] >= 20 && cells.h[i] < 40);
+    return cells.i.filter(i => !occupied[i] && cells.h[i] >= 20 && cells.h[i] < 40);
   }
 
   function addStatue(id, cell) {
