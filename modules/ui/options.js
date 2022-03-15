@@ -579,17 +579,18 @@ function randomizeOptions() {
 function randomizeHeightmapTemplate() {
   const templates = {
     volcano: 3,
-    highIsland: 22,
+    highIsland: 19,
     lowIsland: 9,
-    continents: 19,
-    archipelago: 23,
+    continents: 16,
+    archipelago: 18,
     mediterranean: 5,
     peninsula: 3,
     pangea: 5,
     isthmus: 2,
     atoll: 1,
     shattered: 7,
-    taklamakan: 1
+    taklamakan: 1,
+    oldWorld: 11
   };
   document.getElementById("templateInput").value = rw(templates);
 }
