@@ -119,5 +119,56 @@ window.HeightmapTemplates = (function () {
     Hill 3-4 60-85 20-80 0-5
     Hill 3-4 60-85 20-80 95-100`;
 
-  return {volcano, highIsland, lowIsland, continents, archipelago, atoll, mediterranean, peninsula, peninsula, pangea, isthmus, shattered, taklamakan};
+
+  const oldWorld = `Hill 4-6 20-40 15-85 30-45
+    Hill 3-7 20-40 15-85 55-70
+    Strait 2-7 vertical 0 0
+    Pit 1-2 40-50 35-55 20-80
+    Strait 2-7 vertical 0 0
+    Range 2-3 20-25 15-35 20-30
+    Range 2-3 20-25 15-35 65-80
+    Range 2-3 20-25 45-85 20-45
+    Range 2-3 20-25 45-85 65-80
+    Multiply .9 80-100 0 0
+    Strait 2-7 vertical 0 0
+    Pit 2-3 40-50 45-65 20-80
+    Trough 1-2 40-50 15-45 20-45
+    Trough 1-3 40-50 15-45 45-80
+    Trough 1-2 40-50 45-85 20-45
+    Trough 1-2 40-50 45-85 45-80
+    Multiply 1.2 17-20 0 0
+    Strait 2-7 horizontal 0 0
+    Multiply 1.2 17-50 0 0
+    Range 1-2 20-25 15-45 45-65
+    Range 1-2 20-25 65-85 45-80
+    Multiply 1.1 50-80 0 0
+    Hill 1-2 20 15-45 20-80
+    Hill 1-2 20 65-85 20-80
+    Multiply 1.2 15-30 0 0
+    Strait 2-7 vertical 0 0
+    Trough 1-2 40-50 35-65 65-80
+    Range 1-2 20-25 15-35 20-45
+    Strait 2-7 vertical 0 0
+    Range 1-2 20-25 65-85 45-80
+    Multiply .9 70-100 0 0
+    Hill 1-2 20-25 15-45 65-80
+    Hill 1-2 20-25 65-85 20-45
+    Hill 1 20-25 15-45 45-65
+    Hill 1 20-25 65-85 45-65
+    Strait 2-7 vertical 0 0
+    Trough 1-2 20-50 15-45 45-65
+    Trough 1-2 20-50 65-85 45-65
+    Strait 2-7 horizontal 0 0
+    Multiply 0.8 70-100 0 0
+    Hill 1-2 20-25 35-45 45-65
+    Hill 1-2 20-25 65-70 45-65
+    Pit 2-3 40-50 45-65 30-70
+    Trough 1-2 40-50 15-85 65-80
+    Trough 1-2 40-50 15-85 10-35
+    Strait 2-5 vertical 0 0
+    Multiply 1.1 45-90 0 0
+    Strait 3-7 vertical 0 0
+    Trough 1-2 40-50 45-65 45-65`;
+
+  return {volcano, highIsland, lowIsland, continents, archipelago, atoll, mediterranean, peninsula, peninsula, pangea, isthmus, shattered, taklamakan, oldWorld};
 })();
