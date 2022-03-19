@@ -105,7 +105,7 @@ function showSupporters() {
     Jonathan Williams,ojacid .,Brian Wilson,A Patreon of the Ahts,Shubham Jakhotiya,www15o,Jan Bundesmann,Angelique Badger,Joshua Xiong,Moist mongol,
     Frank Fewkes,jason baldrick,Game Master Pro,Andrew Kircher,Preston Mitchell,Chris Kohut,Emarandzeb,Trentin Bergeron,Damon Gallaty,Pleaseworkforonce,
     Jordan,William Markus,Sidr Dim,Alexander Whittaker,The Next Level,Patrick Valverde,Markus Peham,Daniel Cooper,the Beagles of Neorbus,Marley Moule,
-    Maximilian Schielke,Johnathan Xavier Hutchinson,Ele,Rita`;
+    Maximilian Schielke,Johnathan Xavier Hutchinson,Ele,Rita,Randy Ross,John Wick,RedSpaz,cameron cannon,Ian Grau-Fay,Kyle Barrett,Charlotte Wiland`;
 
   const array = supporters
     .replace(/(?:\r\n|\r|\n)/g, "")
