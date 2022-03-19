@@ -14,7 +14,10 @@ const customPresetPrefix = "fmgStyle_";
 }
 
 async function applyStyleOnLoad() {
-  const desiredPreset = localStorage.getItem("presetStyle") || "default";
+  const queryString = window.location.search;
+  const urlParams = new URLSearchParams(queryString);
+  
+  const desiredPreset = urlParams.get("presetStyle") || localStorage.getItem("presetStyle") || "default";
   const styleData = await getStylePreset(desiredPreset);
   const [appliedPreset, style] = styleData;
 
