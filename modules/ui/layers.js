@@ -5,7 +5,8 @@ let presets = {}; // global object
 restoreCustomPresets(); // run on-load
 
 function getDefaultPresets() {
-  return {
+  const presets = {
+    geographical: ["toggleBiomes", "toggleIce", "toggleRelief", "toggleRivers", "toggleScaleBar"],
     political: ["toggleBorders", "toggleIcons", "toggleIce", "toggleLabels", "toggleRivers", "toggleRoutes", "toggleScaleBar", "toggleStates"],
     cultural: ["toggleBorders", "toggleCultures", "toggleIcons", "toggleLabels", "toggleRivers", "toggleRoutes", "toggleScaleBar"],
     religions: ["toggleBorders", "toggleIcons", "toggleLabels", "toggleReligions", "toggleRivers", "toggleRoutes", "toggleScaleBar"],
@@ -18,6 +19,16 @@ function getDefaultPresets() {
     emblems: ["toggleBorders", "toggleIcons", "toggleIce", "toggleEmblems", "toggleRivers", "toggleRoutes", "toggleScaleBar", "toggleStates"],
     landmass: ["toggleScaleBar"]
   };
+
+  const queryString = window.location.search;
+  const urlParams = new URLSearchParams(queryString);
+  const urlPreset = urlParams.get("presetLayers") ? urlParams.get("presetLayers").split(',') : undefined;
+
+  if (urlPreset) {
+    presets.url = urlPreset;
+  }
+
+  return presets;
 }
 
 function restoreCustomPresets() {
@@ -35,7 +46,17 @@ function restoreCustomPresets() {
 
 // run on map generation
 function applyPreset() {
-  const preset = localStorage.getItem("preset") || document.getElementById("layersPreset").value;
+  const queryString = window.location.search;
+  const urlParams = new URLSearchParams(queryString);
+
+  const layersInUrl = urlParams.get("presetLayers");
+
+  if (layersInUrl) {
+    changePreset('url');
+    return;
+  }
+
+  const preset = urlParams.get("preset") || localStorage.getItem("preset") || document.getElementById("layersPreset").value;
   changePreset(preset);
 }
 

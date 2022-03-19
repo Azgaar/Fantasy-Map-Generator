@@ -197,9 +197,16 @@ if (!location.hostname) {
 }
 
 function hideLoading() {
+  const queryString = window.location.search;
+  const urlParams = new URLSearchParams(queryString);
+  
+  const hideEditor = urlParams.get("hideEditor") ? true : false;
+  
   d3.select("#loading").transition().duration(4000).style("opacity", 0);
   d3.select("#initial").transition().duration(4000).attr("opacity", 0);
-  d3.select("#optionsContainer").transition().duration(3000).style("opacity", 1);
+  if (!hideEditor) {  
+    d3.select("#optionsContainer").transition().duration(3000).style("opacity", 1);
+  }
   d3.select("#tooltip").transition().duration(4000).style("opacity", 1);
 }
 
@@ -438,6 +445,15 @@ function applyDefaultBiomesSystem() {
 }
 
 function showWelcomeMessage() {
+  const queryString = window.location.search;
+  const urlParams = new URLSearchParams(queryString);
+
+  const hideWelcomeMessage = urlParams.get("hideWelcomeMessage");
+
+  if (hideWelcomeMessage) {
+    return;
+  }
+
   const changelog = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "previous versions");
   const reddit = link("https://www.reddit.com/r/FantasyMapGenerator", "Reddit community");
   const discord = link("https://discordapp.com/invite/X7E84HU", "Discord server");
