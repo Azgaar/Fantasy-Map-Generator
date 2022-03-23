@@ -21,13 +21,15 @@ const generateSubmap = debounce(async function () {
   closeDialogs("#worldConfigurator, #options3d");
   const checked = id => Boolean(document.getElementById(id).checked)
   const options = {
-    promoteTown: checked("submapPromoteTown"),
-    depressRivers: checked("submapDepressRivers"),
     copyBurgs: checked("submapCopyBurgs"),
+    copyMilitary: checked("submapCopyMilitary"),
+    copyMarkers: checked("submapCopyMarkers"),
+    copyZones: checked("submapCopyZones"),
+    copyZones: checked("submapCopyRivers"),
+
+    depressRivers: checked("submapDepressRivers"),
     addLakesInDepressions: checked("submapAddLakeInDepression"),
-    addMilitary: checked("submapAddMilitary"),
-    addMarkers: checked("submapAddMarkers"),
-    addZones: checked("submapAddZones"),
+    promoteTown: checked("submapPromoteTown"),
     smoothHeightMap: scale > 2,
   }
 

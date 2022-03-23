@@ -3667,33 +3667,40 @@
         be automatically updated according to the current scale factor. If you'd like
         to generate a new parent-map, <b>don't forget to reset them!</b> Options are interpreted as usual.</p>
       <hr />
+      <p>Remap (copy) features:</p>
       <div data-tip="Copy burgs from old map. Regenerate burgs if not checked." >
         <input id="submapCopyBurgs" class="checkbox" type="checkbox" checked>
         <label for="submapCopyBurgs" class="checkbox-label">Copy cities</label>
+      </div>
+      <div data-tip="Copy Rivers from the original map, regenerate otherwise (see errode riverbeds)." >
+        <input id="submapCopyZones" class="checkbox" type="checkbox" checked>
+        <label for="submapCopyZones" class="checkbox-label">Add Zones</label>
+      </div>
+      <div data-tip="Copy military data from the original map. Regenerate military if not checked." >
+        <input id="submapCopyMilitary" class="checkbox" type="checkbox">
+        <label for="submapCopyMilitary" class="checkbox-label">Add Military</label>
+      </div>
+      <div data-tip="Copy markers from the original map. Regenerate markers if not checked." >
+        <input id="submapCopyMarkers" class="checkbox" type="checkbox" checked>
+        <label for="submapCopyMarkers" class="checkbox-label">Add Markers</label>
+      </div>
+      <div data-tip="Copy Zones from the original map. Regenerate Zones if not checked." >
+        <input id="submapCopyZones" class="checkbox" type="checkbox" checked>
+        <label for="submapCopyZones" class="checkbox-label">Add Zones</label>
+      </div>
+      <hr />
+      <p>Extra / experimental features:</p>
+      <div data-tip="Rivers on the parent map errode land (helps to get similar river network.)" >
+        <input id="submapDepressRivers" class="checkbox" type="checkbox">
+        <label for="submapDepressRivers" class="checkbox-label">Errode riverbeds.</label>
       </div>
       <div data-tip="All small cities of the parent map will be promoted to Capitals." >
         <input id="submapPromoteTown" class="checkbox" type="checkbox">
         <label for="submapPromoteTown" class="checkbox-label">Promote towns to cities.</label>
       </div>
-      <div data-tip="Rivers on the parent map errode land (helps to get similar river network.)" >
-        <input id="submapDepressRivers" class="checkbox" type="checkbox">
-        <label for="submapDepressRivers" class="checkbox-label">Errode riverbeds.</label>
-      </div>
-      <div data-tip="Add lakes in depressions. (Can be very slow on big landmass!)" >
+      <div data-tip="Add lakes in depressions. (Can be very slow on big landmasses!)" >
         <input id="submapAddLakeInDepression" class="checkbox" type="checkbox">
         <label for="submapAddLakeInDepression" class="checkbox-label">Add lakes in depressions.</label>
-      </div>
-      <div data-tip="Regenerate military data in submap." >
-        <input id="submapAddMilitary" class="checkbox" type="checkbox">
-        <label for="submapAddMilitary" class="checkbox-label">Add Military</label>
-      </div>
-      <div data-tip="Regenerate markers data in submap." >
-        <input id="submapAddMarkers" class="checkbox" type="checkbox" checked>
-        <label for="submapAddMarkers" class="checkbox-label">Add Markers</label>
-      </div>
-      <div data-tip="Regenerate military data in submap." >
-        <input id="submapAddZones" class="checkbox" type="checkbox" checked>
-        <label for="submapAddZones" class="checkbox-label">Add Zones</label>
       </div>
       <hr/>
       <button id="start" data-tip="Start submap resampling" class="options" onclick="generateSubmap()">Generate</button>
@@ -4382,7 +4389,7 @@
           <path d="M 43.4,0 36.2,12.5 43.4,25 M 21.7,12.5 H 36.2 Z M 0,0 H 14.5 L 21.7,12.5 14.5,25 H 0"/>
         </pattern>
       </g>
-	  
+
       <g id="defs-hatching">
         <pattern id="hatch0" patternUnits="userSpaceOnUse" width="4" height="4">
           <line x1="0" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:2"/>
