@@ -290,7 +290,7 @@ window.Submap = (function () {
 
     stage("Modelling military, markers and zones (if requested).");
     if (options.addMilitary) Military.generate();
-    if (options.addMarkers) addMarkers();
+    if (options.addMarkers) Markers.generate();
     if (options.addZones) addZones();
     Names.getMapName();
     stage("Submap done.");

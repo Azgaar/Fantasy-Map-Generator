@@ -861,7 +861,7 @@ window.Markers = (function () {
     const {burgs} = pack;
     let portals = burgs
       .slice(1, Math.ceil(burgs.length / 10) + 1)
-      .filter(({cell}) => !occupied[cell])
+      .filter(({cell}) => cell && !occupied[cell])
       .map(burg => [burg.name, burg.cell]);
     let quantity = getQuantity(portals, 16, 8, multiplier);
     if (!quantity) return;
