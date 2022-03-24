@@ -895,9 +895,7 @@ function editCultures() {
       .flat();
     const populated = pack.cells.pop.map((c, i) => c? i: null).filter(c => c);
     cultures.forEach((item) => {if (item.i) item.removed = true});
-    console.log(csv);
     for (const c of csv.iterator((a, b) => +a[0] > +b[0])) {
-      console.log(c);
       let current;
       if (+c.id < cultures.length) {
         current = cultures[c.id];
