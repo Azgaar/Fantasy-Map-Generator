@@ -50,6 +50,7 @@ iframe {
   mask-mode: alpha;
   mask-clip: no-clip;
   fill-rule: evenodd;
+  user-select: none;
 }
 
 #canvas {
