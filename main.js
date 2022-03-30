@@ -172,29 +172,32 @@ landmass.append("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr
 oceanPattern.append("rect").attr("fill", "url(#oceanic)").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 oceanLayers.append("rect").attr("id", "oceanBase").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 
-if (!location.hostname) {
-  const wiki = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally";
-  alertMessage.innerHTML = `Fantasy Map Generator cannot run serverless.
-  Follow the <a href="${wiki}" target="_blank">instructions</a> on how you can easily run a local web-server`;
+document.addEventListener("DOMContentLoaded", () => {
+  if (!location.hostname) {
+    const wiki = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally";
+    alertMessage.innerHTML = `Fantasy Map Generator cannot run serverless.
+    Follow the <a href="${wiki}" target="_blank">instructions</a> on how you can easily run a local web-server`;
 
-  $("#alert").dialog({
-    resizable: false,
-    title: "Loading error",
-    width: "28em",
-    position: {my: "center center-4em", at: "center", of: "svg"},
-    buttons: {
-      OK: function () {
-        $(this).dialog("close");
+    $("#alert").dialog({
+      resizable: false,
+      title: "Loading error",
+      width: "28em",
+      position: {my: "center center-4em", at: "center", of: "svg"},
+      buttons: {
+        OK: function () {
+          $(this).dialog("close");
+        }
       }
-    }
-  });
+    });
 
-  d3.select("#loading-text").transition().duration(1000).style("opacity", 0);
-  d3.select("#init-rose").transition().duration(4000).style("opacity", 0);
-} else {
-  hideLoading();
-  checkLoadParameters();
-}
+    d3.select("#loading-text").transition().duration(1000).style("opacity", 0);
+    d3.select("#init-rose").transition().duration(4000).style("opacity", 0);
+  } else {
+    hideLoading();
+    checkLoadParameters();
+  }
+  restoreDefaultEvents(); // apply default viewbox events
+});
 
 function hideLoading() {
   d3.select("#loading").transition().duration(4000).style("opacity", 0);
