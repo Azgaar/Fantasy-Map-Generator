@@ -1481,6 +1481,12 @@ function drawRivers() {
 
   const riverPaths = pack.rivers.map(({cells, points, i, widthFactor, sourceWidth}) => {
     if (!cells || cells.length < 2) return;
+
+    if (points && points.length !== cells.length) {
+      console.error(`River ${i} has ${cells.length} cells, but only ${points.length} points defined. Resetting points data`);
+      points = undefined;
+    }
+
     const meanderedPoints = addMeandering(cells, points);
     const path = getRiverPath(meanderedPoints, widthFactor, sourceWidth);
     return `<path id="river${i}" d="${path}"/>`;

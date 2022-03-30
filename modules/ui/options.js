@@ -105,7 +105,7 @@ function showSupporters() {
     Jonathan Williams,ojacid .,Brian Wilson,A Patreon of the Ahts,Shubham Jakhotiya,www15o,Jan Bundesmann,Angelique Badger,Joshua Xiong,Moist mongol,
     Frank Fewkes,jason baldrick,Game Master Pro,Andrew Kircher,Preston Mitchell,Chris Kohut,Emarandzeb,Trentin Bergeron,Damon Gallaty,Pleaseworkforonce,
     Jordan,William Markus,Sidr Dim,Alexander Whittaker,The Next Level,Patrick Valverde,Markus Peham,Daniel Cooper,the Beagles of Neorbus,Marley Moule,
-    Maximilian Schielke,Johnathan Xavier Hutchinson,Ele,Rita`;
+    Maximilian Schielke,Johnathan Xavier Hutchinson,Ele,Rita,Randy Ross,John Wick,RedSpaz,cameron cannon,Ian Grau-Fay,Kyle Barrett,Charlotte Wiland`;
 
   const array = supporters
     .replace(/(?:\r\n|\r|\n)/g, "")
@@ -579,17 +579,18 @@ function randomizeOptions() {
 function randomizeHeightmapTemplate() {
   const templates = {
     volcano: 3,
-    highIsland: 22,
+    highIsland: 19,
     lowIsland: 9,
-    continents: 19,
-    archipelago: 23,
+    continents: 16,
+    archipelago: 18,
     mediterranean: 5,
     peninsula: 3,
     pangea: 5,
     isthmus: 2,
     atoll: 1,
     shattered: 7,
-    taklamakan: 1
+    taklamakan: 1,
+    oldWorld: 11
   };
   document.getElementById("templateInput").value = rw(templates);
 }
