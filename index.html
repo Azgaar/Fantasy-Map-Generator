@@ -3667,26 +3667,30 @@
         be automatically updated according to the current scale factor. If you'd like
         to generate a new parent-map, <b>don't forget to reset them!</b> Options are interpreted as usual.</p>
       <hr />
-      <p>Remap (copy) features:</p>
+      <p>Remap (copy) the following features to the new map:</p>
       <div data-tip="Copy burgs from old map. Regenerate burgs if not checked." >
         <input id="submapCopyBurgs" class="checkbox" type="checkbox" checked>
-        <label for="submapCopyBurgs" class="checkbox-label">Copy cities</label>
+        <label for="submapCopyBurgs" class="checkbox-label">Burgs (cities)</label>
       </div>
       <div data-tip="Copy Rivers from the original map, regenerate otherwise (see errode riverbeds)." >
-        <input id="submapCopyZones" class="checkbox" type="checkbox" checked>
-        <label for="submapCopyZones" class="checkbox-label">Add Zones</label>
+        <input id="submapCopyRivers" class="checkbox" type="checkbox">
+        <label for="submapCopyRivers" class="checkbox-label">Rivers</label>
       </div>
       <div data-tip="Copy military data from the original map. Regenerate military if not checked." >
         <input id="submapCopyMilitary" class="checkbox" type="checkbox">
-        <label for="submapCopyMilitary" class="checkbox-label">Add Military</label>
+        <label for="submapCopyMilitary" class="checkbox-label">Military</label>
       </div>
       <div data-tip="Copy markers from the original map. Regenerate markers if not checked." >
         <input id="submapCopyMarkers" class="checkbox" type="checkbox" checked>
-        <label for="submapCopyMarkers" class="checkbox-label">Add Markers</label>
+        <label for="submapCopyMarkers" class="checkbox-label">Markers</label>
       </div>
-      <div data-tip="Copy Zones from the original map. Regenerate Zones if not checked." >
-        <input id="submapCopyZones" class="checkbox" type="checkbox" checked>
-        <label for="submapCopyZones" class="checkbox-label">Add Zones</label>
+      <div data-tip="Copy Zones from the original map. Regenerate Zones if not checked." class="disabled">
+        <input id="submapCopyZones" class="checkbox" type="checkbox" disabled>
+        <label for="submapCopyZones" class="checkbox-label">Zones</label>
+      </div>
+      <div data-tip="Copy road network of the original map. Regenerate if not checked." class="disabled">
+        <input id="submapCopyRoads" class="checkbox" type="checkbox" disabled>
+        <label for="submapCopyRoads" class="checkbox-label">Roads</label>
       </div>
       <hr />
       <p>Extra / experimental features:</p>
