@@ -22,10 +22,10 @@ const generateSubmap = debounce(async function () {
   const checked = id => Boolean(document.getElementById(id).checked)
   const options = {
     copyBurgs: checked("submapCopyBurgs"),
-    copyMilitary: checked("submapCopyMilitary"),
     copyMarkers: checked("submapCopyMarkers"),
     copyZones: checked("submapCopyZones"),
     copyZones: checked("submapCopyRivers"),
+    copyZones: checked("submapCopyRoads"),
 
     depressRivers: checked("submapDepressRivers"),
     addLakesInDepressions: checked("submapAddLakeInDepression"),

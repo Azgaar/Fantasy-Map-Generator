@@ -157,14 +157,6 @@ window.Military = (function () {
       }
     }
 
-    void (function removeExistingRegiments() {
-      armies.selectAll("g > g").each(function () {
-        const index = notes.findIndex(n => n.id === this.id);
-        if (index != -1) notes.splice(index, 1);
-      });
-      armies.selectAll("g").remove();
-    })();
-
     const expected = 3 * populationRate; // expected regiment size
     const mergeable = (n0, n1) => (!n0.s && !n1.s) || n0.u === n1.u; // check if regiments can be merged
 
@@ -172,8 +164,9 @@ window.Military = (function () {
     valid.forEach(s => {
       s.military = createRegiments(s.temp.platoons, s);
       delete s.temp; // do not store temp data
-      drawRegiments(s.military, s.i);
     });
+
+    redraw();
 
     function createRegiments(nodes, s) {
       if (!nodes.length) return [];
@@ -235,6 +228,16 @@ window.Military = (function () {
 
     TIME && console.timeEnd("generateMilitaryForces");
   };
+
+  function redraw() {
+    const validStates = pack.states.filter(s => s.i && !s.removed);
+    armies.selectAll("g > g").each(function () {
+      const index = notes.findIndex(n => n.id === this.id);
+      if (index != -1) notes.splice(index, 1);
+    });
+    armies.selectAll("g").remove();
+    validStates.forEach(s => drawRegiments(s.military, s.i));
+  }
 
   const getDefaultOptions = function () {
     return [
@@ -406,5 +409,5 @@ window.Military = (function () {
     notes.push({id: `regiment${s.i}-${r.i}`, name: `${r.icon} ${r.name}`, legend});
   };
 
-  return {generate, getDefaultOptions, getName, generateNote, drawRegiments, drawRegiment, moveRegiment, getTotal, getEmblem};
+  return {generate, redraw, getDefaultOptions, getName, generateNote, drawRegiments, drawRegiment, moveRegiment, getTotal, getEmblem};
 })();

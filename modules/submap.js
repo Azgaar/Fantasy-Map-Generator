@@ -27,7 +27,7 @@ window.Submap = (function () {
     applyMapSize();
     placePoints();
     calculateVoronoi(grid, grid.points);
-    drawScaleBar();
+    drawScaleBar(scale);
 
     const resampler = (points, qtree, f) => {
       for(const [i,[x, y]] of points.entries()) {
@@ -172,7 +172,7 @@ window.Submap = (function () {
               "newheight", grid.cells.h[cells.g[id]])
             throw new Error("should be the same type.")
           }
-          const [oldpx, oldpy]= oldCells.p[oid];
+          const [oldpx, oldpy] = oldCells.p[oid];
           const nd = distance(projection(oldpx, oldpx, false));
           if (!nd) {
             console.error("no distance!", nd, "old point", oldp)
@@ -212,13 +212,14 @@ window.Submap = (function () {
 
     // transfer basemap cultures
     pack.cultures = parentMap.pack.cultures;
+
     // fix culture centers
     const validCultures = new Set(pack.cells.culture);
     pack.cultures.forEach((c, i) => {
       if (!i) return // ignore wildlands
       if (!validCultures.has(i)) {
         c.removed = true;
-        c.center = undefined;
+        c.center = null;
         return
       }
       const newCenters = forwardMap[c.center]
@@ -241,21 +242,10 @@ window.Submap = (function () {
       s.neighbors = s.neighbors.filter(n => validStates.has(n));
 
       // find center
-      let capital
-      if (options.copyBurgs) // capital is the best bet
-        capital = pack.burgs[s.capital].cell;
-
-      s.center = capital
-        ? capital
-        : pack.cells.state.findIndex(x => x===i);
+      s.center = (options.copyBurgs && pack.burgs[s.capital].cell)
+        ? pack.burgs[s.capital].cell // capital is the best bet
+        : pack.cells.state.findIndex(x => x===i); // otherwise use the first valid cell
     });
-
-    /* probably not needed now
-    // fix extra coastline cells without state.
-    const newCoastCells = cells.t.reduce(
-      (a,c,i) => c === -1 && !cells.state[i] ? a.push(i) && a: a, []
-    );
-    */
 
     // transfer provinces, mark provinces without land as removed.
     stage("Porting provinces.");
@@ -279,7 +269,7 @@ window.Submap = (function () {
     BurgsAndStates.drawBurgs();
 
     stage("Regenerating road network.");
-    Routes.regenerate();
+    if (!options.copyRoads) Routes.regenerate();
 
     drawStates();
     drawBorders();
@@ -288,8 +278,20 @@ window.Submap = (function () {
     Rivers.specify();
     Lakes.generateName();
 
-    stage("Modelling military, markers and zones (if requested).");
-    if (options.addMilitary) Military.generate();
+    stage("Porting military.");
+    for (const s of pack.states) {
+      if (!s.military) continue;
+      for (const m of s.military) {
+        [m.x, m.y] = projection(m.x, m.y, false);
+        [m.bx, m.by] = projection(m.bx, m.by, false);
+        const cc = forwardMap[m.cell];
+        m.cell = (cc && cc.length)? cc[0]: null;
+      }
+      s.military = s.military.filter(m=>m.cell).map((m, i) => ({...m, i}));
+    }
+    Military.redraw();
+
+    stage("markers and zones (if requested).");
     if (options.addMarkers) Markers.generate();
     if (options.addZones) addZones();
     Names.getMapName();
@@ -336,7 +338,7 @@ window.Submap = (function () {
       // disable out-of-map (removed) burgs
       if (!inMap(b.x,b.y)) {
         b.removed = true;
-        b.cell = undefined;
+        b.cell = null;
         return;
       }
 
