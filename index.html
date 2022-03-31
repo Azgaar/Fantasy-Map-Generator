@@ -3664,12 +3664,16 @@
     </div>
 
     <div id="submapOptionsDialog" style="display: none; max-width:300px;" class="dialog">
-      <p style="font-style: italic; color: red; font-weight:bold;">Original map will be destroyed! Don't forget to save your work!</p>
+      <p style="font-style: italic; color: red; font-weight:bold;">Warning! This operation is destructive and irreversible. Don't forget to save your original map!</p>
       <p>Population rate (Units editor -> population) and map pixel size will
         be automatically updated according to the current scale factor. If you'd like
         to generate a new parent-map, <b>don't forget to reset them!</b> Options are interpreted as usual.</p>
         <p>
-        Automatically copied: Heightmap, Biome, Precipitation, Cultures, States, Provinces, Regiments (military).
+        <em>Data to be copied:</em> Heightmap, Biome, Religion, Population, Precipitation, Cultures, States, Provinces, Regiments (military).
+        </p>
+        <p>
+        <em>Data to be destroyed (regenerated):</em> Markers, Zones, Rivers (mostly regenerate at the same place).
+        Remapping Burgs (cities) is not 100% guaranteed, you may need to fix missing or wrongly mapped burgs manually.
         </p>
       <hr />
       <p>Remap (copy) the following features to the new map:</p>

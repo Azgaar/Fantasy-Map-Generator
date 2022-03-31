@@ -210,9 +210,8 @@ window.Submap = (function () {
     // TODO: normalize according to the base-map
     rankCells();
 
-    // transfer basemap cultures
+    stage("Porting Cultures");
     pack.cultures = parentMap.pack.cultures;
-
     // fix culture centers
     const validCultures = new Set(pack.cells.culture);
     pack.cultures.forEach((c, i) => {
@@ -292,8 +291,13 @@ window.Submap = (function () {
     Military.redraw();
 
     stage("markers and zones (if requested).");
-    if (options.addMarkers) Markers.generate();
-    if (options.addZones) addZones();
+    if (!options.copyMarkers) Markers.generate();
+    else {
+      // TODO
+      pack.markers = [];
+    }
+    
+    if (!options.copyZones) addZones();
     Names.getMapName();
     stage("Submap done.");
 
