@@ -172,7 +172,7 @@ landmass.append("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr
 oceanPattern.append("rect").attr("fill", "url(#oceanic)").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 oceanLayers.append("rect").attr("id", "oceanBase").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   if (!location.hostname) {
     const wiki = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally";
     alertMessage.innerHTML = `Fantasy Map Generator cannot run serverless.
@@ -194,7 +194,7 @@ document.addEventListener("DOMContentLoaded", () => {
     d3.select("#init-rose").transition().duration(4000).style("opacity", 0);
   } else {
     hideLoading();
-    checkLoadParameters();
+    await checkLoadParameters();
   }
   restoreDefaultEvents(); // apply default viewbox events
 });
@@ -214,7 +214,7 @@ function showLoading() {
 }
 
 // decide which map should be loaded or generated on page load
-function checkLoadParameters() {
+async function checkLoadParameters() {
   const url = new URL(window.location.href);
   const params = url.searchParams;
 
@@ -235,32 +235,39 @@ function checkLoadParameters() {
   // if there is a seed (user of MFCG provided), generate map for it
   if (params.get("seed")) {
     WARN && console.warn("Generate map for seed");
-    generateMapOnLoad();
+    await generateMapOnLoad();
     return;
   }
 
   // open latest map if option is active and map is stored
-  if (onloadMap.value === "saved") {
+  const loadLastMap = () => new Promise((resolve, reject) => {
     ldb.get("lastMap", blob => {
       if (blob) {
         WARN && console.warn("Load last saved map");
         try {
           uploadMap(blob);
+          resolve();
         } catch (error) {
-          ERROR && console.error(error);
-          WARN && console.warn("Cannot load stored map, random map to be generated");
-          generateMapOnLoad();
+          reject(error);
         }
       } else {
-        ERROR && console.error("No map stored, random map to be generated");
-        generateMapOnLoad();
+        reject("No map stored");
       }
-    });
-    return;
-  }
+    })
+  })
 
-  WARN && console.warn("Generate random map");
-  generateMapOnLoad();
+  if (onloadMap.value === "saved") {
+    try {
+      await loadLastMap();
+    } catch(error) {
+      ERROR && console.error(error);
+      WARN && console.warn("Cannot load stored map, random map to be generated");
+      await generateMapOnLoad();
+    }
+  } else {
+    WARN && console.warn("Generate random map");
+    await generateMapOnLoad();
+  }
 }
 
 async function generateMapOnLoad() {
