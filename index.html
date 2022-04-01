@@ -3685,10 +3685,6 @@
         <input id="submapCopyRivers" class="checkbox" type="checkbox">
         <label for="submapCopyRivers" class="checkbox-label">Rivers</label>
       </div>
-      <div data-tip="Copy markers from the original map. Regenerate markers if not checked." >
-        <input id="submapCopyMarkers" class="checkbox" type="checkbox" checked>
-        <label for="submapCopyMarkers" class="checkbox-label">Markers</label>
-      </div>
       <div data-tip="Copy Zones from the original map. Regenerate Zones if not checked." class="disabled">
         <input id="submapCopyZones" class="checkbox" type="checkbox" disabled>
         <label for="submapCopyZones" class="checkbox-label">Zones</label>
@@ -3698,6 +3694,17 @@
         <label for="submapCopyRoads" class="checkbox-label">Roads</label>
       </div>
       <hr />
+
+      <p>Lock remapped items for:</p>
+      <div data-tip="Lock all markers copied from the original map." >
+        <input id="submapLockMarkers" class="checkbox" type="checkbox" checked>
+        <label for="submapLockMarkers" class="checkbox-label">Markers</label>
+      </div>
+      <div data-tip="Lock all burgs copied from the original map." >
+        <input id="submapLockBurgs" class="checkbox" type="checkbox" checked>
+        <label for="submapLockBurgs" class="checkbox-label">Burgs (cities)</label>
+      </div>
+
       <p>Extra / experimental features:</p>
       <div data-tip="Rivers on the parent map errode land (helps to get similar river network.)" >
         <input id="submapDepressRivers" class="checkbox" type="checkbox">

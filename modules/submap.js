@@ -5,6 +5,7 @@ Experimental submaping module
 
 window.Submap = (function () {
   const isWater = (map, id) => map.grid.cells.h[map.pack.cells.g[id]] < 20? true: false;
+  const inMap = (x,y) => x>0 && x<graphWidth && y>0 && y<graphHeight;
 
   function resample(parentMap, projection, options) {
     // generate new map based on an existing one (resampling parentMap)
@@ -290,13 +291,21 @@ window.Submap = (function () {
     }
     Military.redraw();
 
-    stage("markers and zones (if requested).");
-    if (!options.copyMarkers) Markers.generate();
-    else {
-      // TODO
-      pack.markers = [];
+    stage("Copying markers.");
+    for (const m of pack.markers) {
+      const [x, y] = projection(m.x, m.y, false);
+      if (!inMap(x, y)) {
+        Markers.deleteMarker(m.i);
+      } else {
+        m.x = x;
+        m.y = y;
+        m.cell = findCell(x, y);
+        if (options.lockMarkers) m.lock = true;
+      }
     }
-    
+    drawMarkers();
+
+    stage("Regenerating Zones.");
     if (!options.copyZones) addZones();
     Names.getMapName();
     stage("Submap done.");
@@ -327,7 +336,6 @@ window.Submap = (function () {
   }
 
   function copyBurgs(parentMap, projection, options) {
-    const inMap = (x,y) => x>0 && x<graphWidth && y>0 && y<graphHeight;
     const cells = pack.cells;
     const childMap = { grid, pack }
     const isCoast = c => cells.t[c] === 1
@@ -379,7 +387,7 @@ window.Submap = (function () {
         b.cell = cityCell;
         [b.x, b.y] = cells.p[cityCell];
       }
-      b.lock = true;
+      if (!b.lock) b.lock = options.lockBurgs;
       pack.cells.burg[b.cell] = id;
       if (options.promoteTown) b.capital = 1;
     });
