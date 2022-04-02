@@ -427,7 +427,7 @@ function editCultures() {
       resizable: false,
       title: "Remove culture",
       buttons: {
-        Remove: function () {urban
+        Remove: function () {
           cults.select("#culture" + culture).remove();
           debug.select("#cultureCenter" + culture).remove();
 
