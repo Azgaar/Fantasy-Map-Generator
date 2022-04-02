@@ -1426,7 +1426,7 @@
         <p>
           Join our <a href='https://discordapp.com/invite/X7E84HU' target='_blank'>Discord server</a> and <a href="https://www.reddit.com/r/FantasyMapGenerator/" target="_blank">Reddit community</a> to ask questions, get help and share maps.
         </p>
-        
+
         <p>
           The project is under active development. Creator and main maintainer: Azgaar. To track the development progress see the <a href="https://trello.com/b/7x832DG4/fantasy-map-generator" target="_blank">devboard</a>.
           For older versions see the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog" target="_blank">changelog</a>. Please report bugs <a href="https://github.com/Azgaar/Fantasy-Map-Generator/issues" target="_blank">here</a>. You can also contact me directly via <a href="mailto:azgaar.fmg@yandex.by" target="_blank">email</a>.
@@ -2610,7 +2610,7 @@
             <option value="Sultanate">Sultanate</option>
             <option value="Tsardom">Tsardom</option>
             <option value="Ulus">Ulus</option>
-            <option value="Viceroyalty">Viceroyalty</option>			
+            <option value="Viceroyalty">Viceroyalty</option>
           </optgroup>
           <optgroup label="Republic">
             <option value="Chancellery">Chancellery</option>
@@ -2852,6 +2852,7 @@
         <button id="culturesEditNamesBase" data-tip="Edit a database used for names generation" class="icon-font"></button>
         <button id="culturesAdd" data-tip="Add a new culture. Hold Shift to add multiple" class="icon-plus"></button>
         <button id="culturesExport" data-tip="Download cultures-related data" class="icon-download"></button>
+        <button id="culturesImport" data-tip="Upload cultures-related data" class="icon-upload"></button>
         <button id="culturesRecalculate" data-tip="Recalculate cultures based on current values of growth-related attributes" class="icon-retweet"></button>
         <span data-tip="Allow culture centers, expansion and type changes to take an immediate effect">
           <input id="culturesAutoChange" class="checkbox" type="checkbox">
@@ -3692,6 +3693,7 @@
     <input type="file" accept=".txt" id="templateToLoad">
     <input type="file" accept=".txt" id="namesbaseToLoad">
     <input type="file" accept=".json" id="styleToLoad">
+    <input type="file" accept=".csv" id="culturesCSVToLoad">
   </div>
 
   <!-- svg elements not required for map display -->
@@ -4341,7 +4343,7 @@
           <path d="M 43.4,0 36.2,12.5 43.4,25 M 21.7,12.5 H 36.2 Z M 0,0 H 14.5 L 21.7,12.5 14.5,25 H 0"/>
         </pattern>
       </g>
-	  
+
       <g id="defs-hatching">
         <pattern id="hatch0" patternUnits="userSpaceOnUse" width="4" height="4">
           <line x1="0" y1="0" x2="0" y2="4" style="stroke:black; stroke-width:2"/>
@@ -4583,6 +4585,7 @@
   <script defer src="modules/io/cloud.js"></script>
   <script defer src="modules/io/export.js"></script>
   <script defer src="modules/io/export-json.js"></script>
+  <script defer src="modules/io/formats.js"></script>
 
   <!-- Web Components -->
   <script defer src="components/fill-box.js"></script>
