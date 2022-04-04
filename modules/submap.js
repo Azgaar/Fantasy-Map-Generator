@@ -315,7 +315,7 @@ window.Submap = (function () {
     INFO && console.groupEnd("Generated Map " + seed);
   }
 
-  /* find the nearest fulfilling filter f *and* having at
+  /* find the nearest cell accepted by filter f *and* having at
   *  least one *neighbor* fulfilling filter g, up to cell-distance `max`
   *  returns [cellid, neighbor] tuple or undefined if no such cell.
   */
