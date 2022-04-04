@@ -2857,6 +2857,7 @@
         <button id="culturesEditNamesBase" data-tip="Edit a database used for names generation" class="icon-font"></button>
         <button id="culturesAdd" data-tip="Add a new culture. Hold Shift to add multiple" class="icon-plus"></button>
         <button id="culturesExport" data-tip="Download cultures-related data" class="icon-download"></button>
+        <button id="culturesImport" data-tip="Upload cultures-related data" class="icon-upload"></button>
         <button id="culturesRecalculate" data-tip="Recalculate cultures based on current values of growth-related attributes" class="icon-retweet"></button>
         <span data-tip="Allow culture centers, expansion and type changes to take an immediate effect">
           <input id="culturesAutoChange" class="checkbox" type="checkbox">
@@ -3756,6 +3757,7 @@
     <input type="file" accept=".txt" id="templateToLoad">
     <input type="file" accept=".txt" id="namesbaseToLoad">
     <input type="file" accept=".json" id="styleToLoad">
+    <input type="file" accept=".csv" id="culturesCSVToLoad">
   </div>
 
   <!-- svg elements not required for map display -->
@@ -4650,6 +4652,7 @@
   <script defer src="modules/io/cloud.js"></script>
   <script defer src="modules/io/export.js"></script>
   <script defer src="modules/io/export-json.js"></script>
+  <script defer src="modules/io/formats.js"></script>
 
   <!-- Web Components -->
   <script defer src="components/fill-box.js"></script>
