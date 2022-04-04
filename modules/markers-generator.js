@@ -788,7 +788,7 @@ window.Markers = (function () {
     const {cells, burgs} = pack;
 
     // Portals can only be added to burgs
-    if (cells.burg[cell]) return;
+    if (!cells.burg[cell]) return;
     const burgName = burgs[cells.burg[cell]].name;
 
     const name = `${burgName} Portal`;
