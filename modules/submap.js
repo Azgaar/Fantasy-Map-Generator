@@ -174,14 +174,14 @@ window.Submap = (function () {
             throw new Error("should be the same type.")
           }
           const [oldpx, oldpy] = oldCells.p[oid];
-          const nd = distance(projection(oldpx, oldpx, false));
+          const nd = distance(projection(oldpx, oldpy, false));
           if (!nd) {
-            console.error("no distance!", nd, "old point", oldp)
+            console.error("no distance!", nd, "old point", oldpx, oldpy)
           }
           if (nd < d) [d, oldid] = [nd, oid];
         })
         if (!oldid) {
-          console.warn("Warning, no match for", id, "parent", gridCellId, "in");
+          console.warn("Warning, no match for", id, "(parent:", gridCellId, ")");
           continue;
         }
       }
