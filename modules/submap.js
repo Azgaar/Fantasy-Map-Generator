@@ -229,7 +229,7 @@ window.Submap = (function () {
     });
 
     stage("Porting and locking burgs.");
-    if (options.copyBurgs) copyBurgs(parentMap, projection, options);
+    copyBurgs(parentMap, projection, options);
 
     // transfer states, mark states without land as removed.
     stage("Porting states.");
@@ -242,7 +242,7 @@ window.Submap = (function () {
       s.neighbors = s.neighbors.filter(n => validStates.has(n));
 
       // find center
-      s.center = (options.copyBurgs && pack.burgs[s.capital].cell)
+      s.center = pack.burgs[s.capital].cell
         ? pack.burgs[s.capital].cell // capital is the best bet
         : pack.cells.state.findIndex(x => x===i); // otherwise use the first valid cell
     });
@@ -264,12 +264,10 @@ window.Submap = (function () {
         : pack.cells.province.findIndex(x => x===i);
     });
 
-    // regenerate (if not copied) and display burgs
-    if (!options.copyBurgs) BurgsAndStates.regenerateBurgs();
     BurgsAndStates.drawBurgs();
 
     stage("Regenerating road network.");
-    if (!options.copyRoads) Routes.regenerate();
+    Routes.regenerate();
 
     drawStates();
     drawBorders();
@@ -306,7 +304,7 @@ window.Submap = (function () {
     drawMarkers();
 
     stage("Regenerating Zones.");
-    if (!options.copyZones) addZones();
+    addZones();
     Names.getMapName();
     stage("Submap done.");
 

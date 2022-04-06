@@ -1368,8 +1368,9 @@
         </div>
 
         <p>Click to create a new map:</p>
-        <div id="reSample">
-          <button id="openSubmapOptions" data-tip="Click to generate new (sub)map from the current viewport" onclick="openSubmapOptions()">Submap</button>
+        <div id="resamplers">
+          <button data-tip="Click to generate new (sub)map from the current viewport" onclick="openSubmapOptions()">Submap</button>
+          <button data-tip="Click to resample (transform) your map to different cellcount" onclick="openRemapOptions()">Resample</button>
         </div>
       </div>
 
@@ -3666,36 +3667,18 @@
 
     <div id="submapOptionsDialog" style="display: none; max-width:300px;" class="dialog">
       <p style="font-style: italic; color: red; font-weight:bold;">Warning! This operation is destructive and irreversible. Don't forget to save your original map!</p>
-      <p>Population rate (Units editor -> population) and map pixel size will
-        be automatically updated according to the current scale factor. If you'd like
-        to generate a new parent-map, <b>don't forget to reset them!</b> Options are interpreted as usual.</p>
-        <p>
-        <em>Data to be copied:</em> Heightmap, Biome, Religion, Population, Precipitation, Cultures, States, Provinces, Regiments (military).
-        </p>
-        <p>
-        <em>Data to be destroyed (regenerated):</em> Markers, Zones, Rivers (mostly regenerate at the same place).
-        Remapping Burgs (cities) is not 100% guaranteed, you may need to fix missing or wrongly mapped burgs manually.
-        </p>
-      <hr />
-      <p>Remap (copy) the following features to the new map:</p>
-      <div data-tip="Copy burgs from old map. Regenerate burgs if not checked." >
-        <input id="submapCopyBurgs" class="checkbox" type="checkbox" checked>
-        <label for="submapCopyBurgs" class="checkbox-label">Burgs (cities)</label>
-      </div>
-      <div data-tip="Copy Rivers from the original map, regenerate otherwise (see errode riverbeds)." >
-        <input id="submapCopyRivers" class="checkbox" type="checkbox">
-        <label for="submapCopyRivers" class="checkbox-label">Rivers</label>
-      </div>
-      <div data-tip="Copy Zones from the original map. Regenerate Zones if not checked." class="disabled">
-        <input id="submapCopyZones" class="checkbox" type="checkbox" disabled>
-        <label for="submapCopyZones" class="checkbox-label">Zones</label>
-      </div>
-      <div data-tip="Copy road network of the original map. Regenerate if not checked." class="disabled">
-        <input id="submapCopyRoads" class="checkbox" type="checkbox" disabled>
-        <label for="submapCopyRoads" class="checkbox-label">Roads</label>
-      </div>
-      <hr />
-
+      <p>
+        <em>Settings to be changed:</em> Population rate, map pixel size.
+      </p>
+      <p>
+        <em>Data to be copied:</em> Heightmap, Biome, Religion, Population, Precipitation, Cultures, States, Provinces, Regiments (military), Markers.
+      </p>
+      <p>
+        <em>Data to be destroyed (regenerated):</em> Zones, Roads, Rivers (mostly regenerate at the same place).
+      </p>
+      <p>
+        Remapping Burgs (cities) may be imprecise, you will need to fix missing or wrongly mapped burgs manually.
+      </p>
       <p>Lock remapped items for:</p>
       <div data-tip="Lock all markers copied from the original map." >
         <input id="submapLockMarkers" class="checkbox" type="checkbox" checked>
@@ -3711,18 +3694,30 @@
         <input id="submapDepressRivers" class="checkbox" type="checkbox">
         <label for="submapDepressRivers" class="checkbox-label">Errode riverbeds.</label>
       </div>
-      <div data-tip="All small cities of the parent map will be promoted to Capitals." >
+      <div data-tip="All small cities of the parent map will be promoted to Capitals" >
         <input id="submapPromoteTown" class="checkbox" type="checkbox">
-        <label for="submapPromoteTown" class="checkbox-label">Promote towns to cities.</label>
+        <label for="submapPromoteTown" class="checkbox-label">Promote towns to cities</label>
       </div>
       <div data-tip="Add lakes in depressions. (Can be very slow on big landmasses!)" >
         <input id="submapAddLakeInDepression" class="checkbox" type="checkbox">
-        <label for="submapAddLakeInDepression" class="checkbox-label">Add lakes in depressions.</label>
+        <label for="submapAddLakeInDepression" class="checkbox-label">Add lakes in depressions (slow)</label>
       </div>
       <hr/>
       <button id="start" data-tip="Start submap resampling" class="options" onclick="generateSubmap()">Generate</button>
     </div>
 
+    <div id="remapOptionsDialog" style="display: none; max-width:300px;" class="dialog">
+      WIP (not working yet)
+      <table>
+      <td>Points number</td>
+      <td>
+        <input id="submapPointsInput" type="range" min=1 max=13 value=4 data-cells=10000 oninput="event => {document.getElementById('submapPointsOutput').value=cellsDensityConstants[+this.value]/1000 + 'K'; event.stopPropagation()}">
+      </td>
+      <td>
+        <output id="submapPointsOutput" style="color: #053305">10K</output>
+      </td>
+      </table>
+    </div>
     <div id="alert" style="display: none" class="dialog">
       <p id="alertMessage">Warning!</p>
     </div>
