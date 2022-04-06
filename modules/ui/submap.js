@@ -22,6 +22,10 @@ function openRemapOptions() {
   });
 }
 
+const resampleCurrentMap = debounce(async function () {
+  WARN && console.warn("Resampling current map");
+});
+
 const generateSubmap = debounce(async function () {
   // Create submap from the current map
   // submap limits defined by the current window size (canvas viewport)
@@ -58,8 +62,8 @@ const generateSubmap = debounce(async function () {
   document.getElementById("latitudeInput").value = latitudeOutput.value;
 
   // fix scale
-  distanceScale = distanceScaleInput.value = distanceScaleOutput.value = distanceScaleOutput.value / scale;
-  populationRate = populationRateInput.value = populationRateOutput.value = populationRateOutput.value / scale;
+  distanceScaleInput.value = distanceScaleOutput.value = rn(distanceScale = distanceScaleOutput.value / scale, 2);
+  populationRateInput.value = populationRateOutput.value = rn(populationRate = populationRateOutput.value / scale, 2);
   customization = 0;
 
   undraw();
