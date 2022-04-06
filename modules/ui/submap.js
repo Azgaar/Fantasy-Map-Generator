@@ -82,8 +82,8 @@ const generateSubmap = debounce(async function () {
     if (options.promoteTowns) {
       const groupName = 'largetowns';
       moveAllBurgsToGroup('towns', groupName);
-      changeRadius(oldScale * 0.8, groupName);
-      changeFontSize(svg.select(`#labels #${groupName}`), oldScale*2);
+      changeRadius(rn(oldScale * 0.8,2), groupName);
+      changeFontSize(svg.select(`#labels #${groupName}`), rn(oldScale*2, 2));
       invokeActiveZooming();
     }
   } catch (error) {
