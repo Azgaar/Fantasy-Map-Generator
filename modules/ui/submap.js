@@ -84,7 +84,7 @@ const generateSubmap = debounce(async function () {
       moveAllBurgsToGroup('towns', groupName);
       changeRadius(oldScale * 0.8, groupName);
       changeFontSize(svg.select(`#labels #${groupName}`), oldScale*2);
-      invoceActiveZooming();
+      invokeActiveZooming();
     }
   } catch (error) {
     generateSubmapErrorHandler(error, oldstate, projection, options);
