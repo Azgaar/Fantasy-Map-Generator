@@ -152,7 +152,7 @@ window.Submap = (function () {
           continue;
         }
         // find replacement: closest water cell
-        const [ox, oy] = cells.p[id]
+        const [ox, oy] = cells.p[id];
         const [tx, ty] = projection(x, y, true);
         oldid = oldCells.q.find(tx,ty,Infinity)[2];
         if (!oldid) {
@@ -387,7 +387,6 @@ window.Submap = (function () {
       }
       if (!b.lock) b.lock = options.lockBurgs;
       pack.cells.burg[b.cell] = id;
-      if (options.promoteTown) b.capital = 1;
     });
   }
 
