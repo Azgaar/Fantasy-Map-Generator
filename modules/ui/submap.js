@@ -39,7 +39,7 @@ const generateSubmap = debounce(async function () {
 
     depressRivers: checked("submapDepressRivers"),
     addLakesInDepressions: checked("submapAddLakeInDepression"),
-    promoteTown: checked("submapPromoteTown"),
+    promoteTowns: checked("submapPromoteTowns"),
     smoothHeightMap: scale > 2,
   }
 
@@ -67,7 +67,7 @@ const generateSubmap = debounce(async function () {
   customization = 0;
 
   undraw();
-  resetZoom(1000);
+  resetZoom(0);
   let oldstate = {
     grid: _.cloneDeep(grid),
     pack: _.cloneDeep(pack),
@@ -77,7 +77,15 @@ const generateSubmap = debounce(async function () {
   };
 
   try {
+    const oldScale = scale;
     await Submap.resample(oldstate, projection, options);
+    if (options.promoteTowns) {
+      const groupName = 'largetowns';
+      moveAllBurgsToGroup('towns', groupName);
+      changeRadius(oldScale * 0.8, groupName);
+      changeFontSize(svg.select(`#labels #${groupName}`), oldScale*2);
+      invoceActiveZooming();
+    }
   } catch (error) {
     generateSubmapErrorHandler(error, oldstate, projection, options);
   }
