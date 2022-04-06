@@ -318,13 +318,13 @@ window.Submap = (function () {
   *  returns [cellid, neighbor] tuple or undefined if no such cell.
   */
   const findNearest = (f, g, max=3) => centerId => {
-    const met = new Set([centerId]); // cache, f might be expensive
+    const met = new Set(); // cache, f might be expensive
     const kernel = (c, dist) => {
       const ncs = pack.cells.c[c].filter(nc => !met.has(nc));
       const n = ncs.find(g);
       if (f(c) && n) return [c, n];
       if (dist >= max || !ncs.length) return undefined;
-      ncs.forEach(i => met.add(i));
+      met.add(c);
       const targets = ncs.filter(f)
       let answer;
       while (targets.length && !answer) answer = kernel(targets.shift(), dist+1);
@@ -360,6 +360,7 @@ window.Submap = (function () {
         const res = searchCoastCell(cityCell)
         if (!res) {
           WARN && console.warn(`Burg ${b.name} sank like Atlantis. Unable to find coastal cells nearby. Try to reduce resample zoom level.`);
+          b.cell = null;
           b.removed = true;
           return;
         }
@@ -391,5 +392,5 @@ window.Submap = (function () {
   }
 
   // export
-  return { resample }
+  return { resample, findNearest }
 })();
