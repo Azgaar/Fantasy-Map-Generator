@@ -140,7 +140,10 @@ window.Submap = (function () {
     stage("Resampling culture, state and religion map.")
     for(const [id, gridCellId] of cells.g.entries()) {
       const oldGridId = reverseGridMap[gridCellId];
-      if (!oldGridId) throw new Error("Old grid Id must be defined!")
+      if (oldGridId === undefined) {
+        console.error('Can not find old cell id', reverseGridMap, 'in', gridCellId);
+        continue;
+      }
       // find old parent's children
       const oldChildren = oldCells.i.filter(oid=>oldCells.g[oid]==oldGridId);
       let oldid; // matching cell on the original map
@@ -175,12 +178,12 @@ window.Submap = (function () {
           }
           const [oldpx, oldpy] = oldCells.p[oid];
           const nd = distance(projection(oldpx, oldpy, false));
-          if (!nd) {
-            console.error("no distance!", nd, "old point", oldpx, oldpy)
+          if (isNaN(nd)) {
+            console.error("Distance is not a number!", "Old point:", oldpx, oldpy);
           }
           if (nd < d) [d, oldid] = [nd, oid];
         })
-        if (!oldid) {
+        if (oldid === undefined) {
           console.warn("Warning, no match for", id, "(parent:", gridCellId, ")");
           continue;
         }
