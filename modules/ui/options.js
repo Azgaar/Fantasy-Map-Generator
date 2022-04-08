@@ -353,7 +353,7 @@ const cellsDensityConstants =  {
 
 function changeCellsDensity(value) {
   const cells = value in cellsDensityConstants? cellsDensityConstants[value]: 1000;
-  pointsInput.setAttribute("data-cells", cells);
+  pointsInput.dataset.cells = cells;
   pointsOutput_formatted.value = cells / 1000 + "K";
   pointsOutput_formatted.style.color = cells > 50000 ? "#b12117" : cells !== 10000 ? "#dfdf12" : "#053305";
 }

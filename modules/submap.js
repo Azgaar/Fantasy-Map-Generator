@@ -7,13 +7,15 @@ window.Submap = (function () {
   const isWater = (map, id) => map.grid.cells.h[map.pack.cells.g[id]] < 20? true: false;
   const inMap = (x,y) => x>0 && x<graphWidth && y>0 && y<graphHeight;
 
-  function resample(parentMap, projection, options) {
+  function resample(parentMap, options) {
     // generate new map based on an existing one (resampling parentMap)
     // parentMap: {seed, grid, pack} from original map
     // projection: map function from old to new coordinates or backwards
     //  prj(x,y,direction:bool) -> [x',y']
 
-    const stage = s => INFO && console.log('SUBMAP:', s)
+    const projection = options.projection;
+    const inverse = options.inverse;
+    const stage = s => INFO && console.log('SUBMAP:', s);
     const timeStart = performance.now();
     const childMap = { grid, pack }
     invokeActiveZooming();
@@ -32,7 +34,7 @@ window.Submap = (function () {
 
     const resampler = (points, qtree, f) => {
       for(const [i,[x, y]] of points.entries()) {
-        const [tx, ty] = projection(x, y, true);
+        const [tx, ty] = inverse(x, y);
         const oldid = qtree.find(tx,ty,Infinity)[2];
         f(i, oldid);
       }
@@ -156,7 +158,7 @@ window.Submap = (function () {
         }
         // find replacement: closest water cell
         const [ox, oy] = cells.p[id];
-        const [tx, ty] = projection(x, y, true);
+        const [tx, ty] = inverse(x, y);
         oldid = oldCells.q.find(tx,ty,Infinity)[2];
         if (!oldid) {
           console.warn("Warning, no id found in quad", id, "parent", gridCellId);
@@ -167,17 +169,13 @@ window.Submap = (function () {
         const distance = x => (x[0]-cells.p[id][0])**2 + (x[1]-cells.p[id][1])**2;
         let d = Infinity;
         oldChildren.forEach(oid => {
-          // must be the same type (this should be always true!)
+          // this should be always true, unless some algo modded the height!
           if (isWater(parentMap, oid) !== isWater(childMap, id)) {
-            console.error(
-              "should be the same", oid, id, oldCells.t[oid], cells.t[id],
-              "oldparent", oldCells.g[oid], "newparent", cells.g[id],
-              "oldheight:", oldGrid.cells.h[oldCells.g[oid]],
-              "newheight", grid.cells.h[cells.g[id]])
-            throw new Error("should be the same type.")
+            console.warn(`cell sank because of addLakesInDepressions: ${oid}`);
+            return;
           }
           const [oldpx, oldpy] = oldCells.p[oid];
-          const nd = distance(projection(oldpx, oldpy, false));
+          const nd = distance(projection(oldpx, oldpy));
           if (isNaN(nd)) {
             console.error("Distance is not a number!", "Old point:", oldpx, oldpy);
           }
@@ -283,8 +281,8 @@ window.Submap = (function () {
     for (const s of pack.states) {
       if (!s.military) continue;
       for (const m of s.military) {
-        [m.x, m.y] = projection(m.x, m.y, false);
-        [m.bx, m.by] = projection(m.bx, m.by, false);
+        [m.x, m.y] = projection(m.x, m.y);
+        [m.bx, m.by] = projection(m.bx, m.by);
         const cc = forwardMap[m.cell];
         m.cell = (cc && cc.length)? cc[0]: null;
       }
@@ -294,7 +292,7 @@ window.Submap = (function () {
 
     stage("Copying markers.");
     for (const m of pack.markers) {
-      const [x, y] = projection(m.x, m.y, false);
+      const [x, y] = projection(m.x, m.y);
       if (!inMap(x, y)) {
         Markers.deleteMarker(m.i);
       } else {
@@ -339,14 +337,14 @@ window.Submap = (function () {
   function copyBurgs(parentMap, projection, options) {
     const cells = pack.cells;
     const childMap = { grid, pack }
-    const isCoast = c => cells.t[c] === 1
+    const isCoastFree = c => cells.t[c] === 1 && !cells.burg[c]
     const isNearCoast = c => cells.t[c] === -1
     pack.burgs = parentMap.pack.burgs;
 
     // remap burgs to the best new cell
     pack.burgs.forEach( (b, id) => {
       if (id == 0) return; // skip empty city of neturals
-      [b.x, b.y] = projection(b.x, b.y, false);
+      [b.x, b.y] = projection(b.x, b.y);
 
       // disable out-of-map (removed) burgs
       if (!inMap(b.x,b.y)) {
@@ -357,7 +355,9 @@ window.Submap = (function () {
 
       let cityCell = findCell(b.x, b.y);
 
-      const searchCoastCell = findNearest(isCoast, isNearCoast, 6);
+      const searchCoastCell = findNearest(isCoastFree, isNearCoast, 6);
+      const searchFreeCell = findNearest(c => !cells.burg[c],  _=>true, 3);
+
       // pull sunken burgs out of water
       if (isWater(childMap, cityCell)) {
         const res = searchCoastCell(cityCell)
@@ -371,7 +371,7 @@ window.Submap = (function () {
         [b.x, b.y] = b.port? getMiddlePoint(coast, water): cells.p[coast];
         if (b.port) b.port = cells.f[water];
         b.cell = coast;
-      } if (b.port) {
+      } else if (b.port) {
         // find coast for ports on land
         const res = searchCoastCell(cityCell);
         if (res) {
@@ -385,6 +385,17 @@ window.Submap = (function () {
           [b.x, b.y] = cells.p[cityCell];
           b.port = 0;
         }
+      } else if (cells.burg[b.cell]) { // already occupied
+        const res = searchFreeCell(cityCell);
+        if (!res) {
+          WARN && console.warn(`No space left for ${b.name}. Removed.`);
+          b.cell = null;
+          b.removed = true;
+          return;
+        }
+        const [newCell, _] = res;
+        b.cell = newCell;
+        [b.x, b.y] = cells.p[newCell];
       } else {
         b.cell = cityCell;
         [b.x, b.y] = cells.p[cityCell];

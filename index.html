@@ -3670,13 +3670,12 @@
       <table>
       <td>Points number</td>
       <td>
-        <input id="submapPointsInput" type="range" min=1 max=13 value=4 data-cells=10000 oninput="document.getElementById('submapPointsOutput').value=cellsDensityConstants[+this.value]/1000 + 'K'; event.stopPropagation()">
+        <input id="submapPointsInput" autocomplete="off" type="range" min=1 max=13 value=8 data-cells=50000 oninput="document.getElementById('submapPointsOutput').value=cellsDensityConstants[+this.value]/1000 + 'K'; event.stopPropagation()">
       </td>
       <td>
-        <output id="submapPointsOutput" style="color: #053305">10K</output>
+        <output id="submapPointsOutput" style="color: #053305">50K</output>
       </td>
       </table>
-      <button id="start" data-tip="Start resampling" class="options" onclick="resampleCurrentMap()">Resample</button>
     </div>
     <div id="submapOptionsDialog" style="display: none; max-width:300px;" class="dialog">
       <p style="font-style: italic; color: red; font-weight:bold;">Warning! This operation is destructive and irreversible. Don't forget to save your original map!</p>
@@ -3716,7 +3715,6 @@
         <label for="submapAddLakeInDepression" class="checkbox-label">Add lakes in depressions (slow)</label>
       </div>
       <hr/>
-      <button id="start" data-tip="Start submap resampling" class="options" onclick="generateSubmap()">Generate</button>
     </div>
 
     <div id="alert" style="display: none" class="dialog">
