@@ -317,18 +317,18 @@ window.Submap = (function () {
   /* find the nearest cell accepted by filter f *and* having at
   *  least one *neighbor* fulfilling filter g, up to cell-distance `max`
   *  returns [cellid, neighbor] tuple or undefined if no such cell.
-  *  accepts pointLike (object having .x and .y)
+  *  accepts coordinates (x, y)
   */
-  const findNearest = (f, g, max=3) => pointLike => {
-    const d2 = c => (pointLike.x-pack.cells.p[c][0])**2 + (pointLike.y-pack.cells.p[c][0])**2
-    const startCell = findCell(pointLike.x, pointLike.y);
+  const findNearest = (f, g, max=3) => (px,py) => {
+    const d2 = c => (px-pack.cells.p[c][0])**2 + (py-pack.cells.p[c][0])**2
+    const startCell = findCell(px, py);
     const tested = new Set([startCell]); // ignore analyzed cells
     const kernel = (cs, level) => {
       const [bestf, bestg] = cs.filter(f).reduce(([cf, cg], c) => {
         const neighbors = pack.cells.c[c];
-        const bestg = neighbors.filter(g).reduce((u, x) => d2(c)<d2(u)? c:x);
-        if (cf === undefined) return [c, bestg];
-        return (bestg && d2(cf) < d2(c))? [c, bestg]: [cf, cg];
+        const betterg = neighbors.filter(g).reduce((u, x) => d2(x)<d2(u)? x:u);
+        if (cf === undefined) return [c, betterg];
+        return (betterg && d2(cf) < d2(c))? [c, betterg]: [cf, cg];
       }, [undefined, undefined]);
       if (bestf && bestg) return [bestf, bestg];
 
@@ -374,7 +374,7 @@ window.Submap = (function () {
         searchFunc = findNearest(isFreeLand, nearCoast, 6);
 
       if (searchFunc) {
-        const [newCell, neighbor] = searchFunc(b);
+        const [newCell, neighbor] = searchFunc(b.x, b.y);
         if (!newCell) {
           WARN && console.warn(`Can not relocate Burg: ${b.name} sunk and destroyed. :-(`);
           b.cell = null;
@@ -384,8 +384,8 @@ window.Submap = (function () {
         DEBUG && console.log(`Moving ${b.name} from ${cityCell} to ${newCell} near ${neighbor}.`);
         [b.x, b.y] = b.port? getMiddlePoint(newCell, neighbor): cells.p[newCell];
         if (b.port) b.port = cells.f[neighbor]; // copy feature number
-        if (b.port && !isWater(childMap, neighbor)) console.error('betrayal! negihbor must be water!', b);
         b.cell = newCell;
+        if (b.port && !isWater(childMap, neighbor)) console.error('betrayal! negihbor must be water!', b);
       } else {
         b.cell = cityCell;
       }
