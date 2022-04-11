@@ -2,8 +2,15 @@
 
 /*
 To add:
-migrating herds of animals
+migrating herds of animals - freq only
 archery contests
+ball dance
+dead frozen people
+rogue iceberg
+ghost/abandoned ship
+mirage
+emergency council of state meeting
+auroura
 */
 
 window.Markers = (function () {
@@ -36,8 +43,10 @@ window.Markers = (function () {
       {type: "statues", icon: "🗿", min: 80, each: 1200, multiplier: 1, list: listStatues, add: addStatue},
       {type: "ruins", icon: "🏺", min: 80, each: 1200, multiplier: 1, list: listRuins, add: addRuins},
       {type: "circuses", icon: "🎪", min: 80, each: 1000, multiplier: 1, list: listCircuses, add: addCircuses},
-      {type: "jousts", icon: "🤺", min: 1, each: 25, multiplier: 1, list: listJousts, add: addJousts},
+      {type: "jousts", icon: "🤺", dx: 48, min: 1, each: 25, multiplier: 1, list: listJousts, add: addJousts},
       {type: "canoes", icon: "🛶", min: 20, each: 250, multiplier: 1, list: listCanoes, add: addCanoes},
+      {type: "migration", icon: "🐗", min: 20, each: 250, multiplier: 1, list: listMigrations, add: addMigrations},
+      {type: "dances", icon: "💃🏽", min: 5, each: 20, multiplier: 1, list: listDances, add: addDances},
       {type: "portals", icon: "🌀", px: 14, min: 16, each: 8, multiplier: +isFantasy, list: listPortals, add: addPortal},
       {type: "rifts", icon: "🌌", min: 50, each: 2000, multiplier: +isFantasy, list: listRifts, add: addRifts}
     ];
@@ -852,10 +861,111 @@ window.Markers = (function () {
 
 
     const name = `Minor Jetty`;
-    const legend = `A small location along the ${river} to launch boats from sits here, along with a weary looking owner, willing to sell passage along the river`;
+    const riverName = river ? `${river.name} ${river.type}` : "river";
+    const legend = `A small location along the ${riverName} to launch boats from sits here, along with a weary looking owner, willing to sell passage along the river`;
     notes.push({id, name, legend});
   }
-  
+
+  function listMigrations({cells}) {
+    return cells.i.filter(i => !occupied[i] && cells.h[i] >= 20 && cells.pop[i] <= 2);
+  }
+
+  function addMigrations(id, cell) {
+    const {cells} = pack;
+    const animals = [
+      "Antelopes",
+      "Apes",
+      "Badgers",
+      "Bears",
+      "Beavers",
+      "Bisons",
+      "Boars",
+      "Buffalo",
+      "Cats",
+      "Cranes",
+      "Crocodiles",
+      "Crows",
+      "Deers",
+      "Dogs",
+      "Eagles",
+      "Elks",
+      "Foxs",
+      "Goats",
+      "Geese",
+      "Hares",
+      "Hawks",
+      "Herons",
+      "Horses",
+      "Hyenas",
+      "Ibises",
+      "Jackals",
+      "Jaguars",
+      "Larks",
+      "Leopards",
+      "Lions",
+      "Mantises",
+      "Martens",
+      "Mooses",
+      "Mules",
+      "Owls",
+      "Panthers",
+      "Rats",
+      "Ravens",
+      "Rooks",
+      "Scorpions",
+      "Sharks",
+      "Sheeps",
+      "Snakes",
+      "Spiders",
+      "Tigers",
+      "Wolfs",
+      "Wolverines",
+      "Camels",
+      "Falcons",
+      "Hounds",
+      "Oxen"
+    ];
+    const animalChoice = ra(animals)
+
+    const name = `${animalChoice} migration`;
+    const legend = `A herd of ${animalChoice} is migrating`;
+    notes.push({id, name, legend});
+  }
+
+  function listDances({cells, burgs}) {
+    return cells.i.filter(i => !occupied[i] && cells.burg[i] && burgs[cells.burg[i]].population > 15);
+  }
+
+  function addDances(id, cell) {
+    const {cells, burgs} = pack;
+    const burgName = burgs[cells.burg[cell]].name;
+    const socialTypes = [
+    "gala",
+    "dance",
+    "performance",
+    "ball",
+    "soiree",
+    "jamboree",
+    "exhibition",
+    "carnival",
+    "festival",
+    "jubilee"
+    ];
+    const people = [
+    "great and the good",
+    "nobility",
+    "local elders",
+    "foreign dignitaries",
+    "spiritual leaders",
+    "suspected revolutionaries"
+    ]
+    const socialType = ra(socialTypes)
+
+    const name = `${burgName} ${socialType}`;
+    const legend = `A ${socialType} has been organised at ${burgName} as a cahnce ot gather the ${ra(people)} of the area together to be merry, make alliances and scheme around the crisis`;
+    notes.push({id, name, legend});
+  }
+
   function listPortals({burgs}) {
     return burgs
       .slice(1, Math.ceil(burgs.length / 10) + 1)
