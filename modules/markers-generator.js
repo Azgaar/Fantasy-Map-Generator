@@ -1,18 +1,5 @@
 "use strict";
 
-/*
-To add:
-migrating herds of animals - freq only
-archery contests
-ball dance
-dead frozen people
-rogue iceberg
-ghost/abandoned ship
-mirage
-emergency council of state meeting
-auroura
-*/
-
 window.Markers = (function () {
   let config = [];
   let occupied = [];
@@ -49,7 +36,7 @@ window.Markers = (function () {
       {type: "dances", icon: "💃🏽", min: 5, each: 30, multiplier: 1, list: listDances, add: addDances},
       {type: "mirage", icon: "💦", min: 5, each: 400, multiplier: 1, list: listMirage, add: addMirage},
       {type: "portals", icon: "🌀", px: 14, min: 16, each: 8, multiplier: +isFantasy, list: listPortals, add: addPortal},
-      {type: "rifts", icon: "🌌", min: 50, each: 2000, multiplier: +isFantasy, list: listRifts, add: addRifts}
+      {type: "rifts", icon: "🎆", min: 50, each: 2000, multiplier: +isFantasy, list: listRifts, add: addRifts}
     ];
   }
 
@@ -869,7 +856,6 @@ window.Markers = (function () {
     const {cells} = pack;
     const river = pack.rivers.find(r => r.i === pack.cells.r[cell]);
 
-
     const name = `Minor Jetty`;
     const riverName = river ? `${river.name} ${river.type}` : "river";
     const legend = `A small location along the ${riverName} to launch boats from sits here, along with a weary looking owner, willing to sell passage along the river`;
@@ -935,10 +921,10 @@ window.Markers = (function () {
       "Hounds",
       "Oxen"
     ];
-    const animalChoice = ra(animals)
+    const animalchoice = ra(animals)
 
-    const name = `${animalChoice} migration`;
-    const legend = `A huge group of ${animalChoice} is migrating, though whether part of their annual routine, or something more extraordinary`;
+    const name = `${animalchoice} migration`;
+    const legend = `A huge group of ${animalchoice} is migrating, though whether part of their annual routine, or something more extraordinary`;
     notes.push({id, name, legend});
   }
 
