@@ -31,8 +31,8 @@ window.Markers = (function () {
       {type: "ruins", icon: "🏺", min: 80, each: 1200, multiplier: 1, list: listRuins, add: addRuins},
       {type: "circuses", icon: "🎪", min: 80, each: 1000, multiplier: 1, list: listCircuses, add: addCircuses},
       {type: "jousts", icon: "🤺", dx: 48, min: 1, each: 25, multiplier: 1, list: listJousts, add: addJousts},
-      {type: "canoes", icon: "🛶", min: 20, each: 250, multiplier: 1, list: listCanoes, add: addCanoes},
-      {type: "migration", icon: "🐗", min: 20, each: 250, multiplier: 1, list: listMigrations, add: addMigrations},
+      {type: "canoes", icon: "🛶", min: 20, each: 400, multiplier: 1, list: listCanoes, add: addCanoes},
+      {type: "migration", icon: "🐗", min: 20, each: 400, multiplier: 1, list: listMigrations, add: addMigrations},
       {type: "dances", icon: "💃🏽", min: 5, each: 30, multiplier: 1, list: listDances, add: addDances},
       {type: "mirage", icon: "💦", min: 5, each: 400, multiplier: 1, list: listMirage, add: addMirage},
       {type: "portals", icon: "🌀", px: 14, min: 16, each: 8, multiplier: +isFantasy, list: listPortals, add: addPortal},
@@ -921,10 +921,10 @@ window.Markers = (function () {
       "Hounds",
       "Oxen"
     ];
-    const animalchoice = ra(animals)
+    const animalChoice = ra(animals)
 
-    const name = `${animalchoice} migration`;
-    const legend = `A huge group of ${animalchoice} is migrating, though whether part of their annual routine, or something more extraordinary`;
+    const name = `${animalChoice} migration`;
+    const legend = `A huge group of ${animalChoice.toLowerCase()} is migrating, though whether part of their annual routine, or something more extraordinary`;
     notes.push({id, name, legend});
   }
 
