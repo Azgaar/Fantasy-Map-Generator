@@ -1635,18 +1635,13 @@ function addZones(number = 1) {
       cellsArray.push(q);
       if (cellsArray.length > power) break;
 
-      try {
-        cells.c[q].forEach(e => {
-          if (used[e]) return;
-          if (cells.state[e] !== state.i) return;
-          used[e] = 1;
-          if (e % 4 !== 0 && !cells.c[e].some(c => cells.state[c] === neib)) return;
-          queue.push(e);
-        });
-      } catch (er) {
-        console.error('Error in rebel generation: ', q, cellsArray);
-        throw er;
-      }
+      cells.c[q].forEach(e => {
+        if (used[e]) return;
+        if (cells.state[e] !== state.i) return;
+        used[e] = 1;
+        if (e % 4 !== 0 && !cells.c[e].some(c => cells.state[c] === neib)) return;
+        queue.push(e);
+      });
     }
 
     const rebels = rw({Rebels: 5, Insurgents: 2, Mutineers: 1, Rioters: 1, Separatists: 1, Secessionists: 1, Insurrection: 2, Rebellion: 1, Conspiracy: 2});

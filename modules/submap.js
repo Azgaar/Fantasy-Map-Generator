@@ -1,17 +1,29 @@
 "use strict";
 /*
-Experimental submaping module
+Cell resampler module used by submapper and resampler (transform)
+main function: resample(options);
 */
 
 window.Submap = (function () {
   const isWater = (map, id) => map.grid.cells.h[map.pack.cells.g[id]] < 20? true: false;
   const inMap = (x,y) => x>0 && x<graphWidth && y>0 && y<graphHeight;
 
-  function resample(parentMap, options) {
-    // generate new map based on an existing one (resampling parentMap)
-    // parentMap: {seed, grid, pack} from original map
-    // projection: map function from old to new coordinates or backwards
-    //  prj(x,y,direction:bool) -> [x',y']
+  function resample(parentMap, options) { /*
+    generate new map based on an existing one (resampling parentMap)
+    parentMap: {seed, grid, pack} from original map
+    options = {
+          projection: f(Number,Number)->[Number, Number]
+                      function to calculate new coordinates
+          inverse: g(Number,Number)->[Number, Number]
+                    inverse of f
+          depressRivers: Bool     carve out riverbeds?
+          smoothHeightMap: Bool   run smooth filter on heights
+          addLakesInDepressions:  call FMG original funtion on heightmap
+
+          lockMarkers: Bool       Auto lock all copied markers
+          lockBurgs: Bool         Auto lock all copied burgs
+      }
+    */
 
     const projection = options.projection;
     const inverse = options.inverse;
