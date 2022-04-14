@@ -30,7 +30,7 @@ window.Markers = (function () {
       {type: "statues", icon: "🗿", min: 80, each: 1200, multiplier: 1, list: listStatues, add: addStatue},
       {type: "ruins", icon: "🏺", min: 80, each: 1200, multiplier: 1, list: listRuins, add: addRuins},
       {type: "circuses", icon: "🎪", min: 80, each: 1000, multiplier: 1, list: listCircuses, add: addCircuses},
-      {type: "jousts", icon: "🤺", dx: 48, min: 1, each: 25, multiplier: 1, list: listJousts, add: addJousts},
+      {type: "jousts", icon: "🤺", dx: 48, min: 1, each: 500, multiplier: 1, list: listJousts, add: addJousts},
       {type: "canoes", icon: "🛶", min: 20, each: 400, multiplier: 1, list: listCanoes, add: addCanoes},
       {type: "migration", icon: "🐗", min: 20, each: 400, multiplier: 1, list: listMigrations, add: addMigrations},
       {type: "dances", icon: "💃🏽", min: 5, each: 30, multiplier: 1, list: listDances, add: addDances},
