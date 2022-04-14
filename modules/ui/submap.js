@@ -108,8 +108,8 @@ async function startResample(options) {
   undraw();
   resetZoom(0);
   let oldstate = {
-    grid: _.cloneDeep(grid),
-    pack: _.cloneDeep(pack),
+    grid: deepCopy(grid),
+    pack: deepCopy(pack),
     seed,
     graphWidth,
     graphHeight,
