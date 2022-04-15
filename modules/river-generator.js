@@ -40,6 +40,7 @@ window.Rivers = (function () {
       const cellsNumberModifier = (pointsInput.dataset.cells / 10000) ** 0.25;
 
       const prec = grid.cells.prec;
+      const area = pack.cells.area;
       const land = cells.i.filter(i => h[i] >= 20).sort((a, b) => h[b] - h[a]);
       const lakeOutCells = Lakes.setClimateData(h);
 
