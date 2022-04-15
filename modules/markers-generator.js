@@ -28,8 +28,15 @@ window.Markers = (function () {
       {type: "brigands", icon: "💰", px: 13, min: 50, each: 100, multiplier: 1, list: listBrigands, add: addBrigands},
       {type: "pirates", icon: "🏴‍☠️", dx: 51, min: 40, each: 300, multiplier: 1, list: listPirates, add: addPirates},
       {type: "statues", icon: "🗿", min: 80, each: 1200, multiplier: 1, list: listStatues, add: addStatue},
-      {type: "ruines", icon: "🏺", min: 80, each: 1200, multiplier: 1, list: listRuins, add: addRuins},
-      {type: "portals", icon: "🌀", px: 14, min: 16, each: 8, multiplier: +isFantasy, list: listPortals, add: addPortal}
+      {type: "ruins", icon: "🏺", min: 80, each: 1200, multiplier: 1, list: listRuins, add: addRuins},
+      {type: "circuses", icon: "🎪", min: 80, each: 1000, multiplier: 1, list: listCircuses, add: addCircuses},
+      {type: "jousts", icon: "🤺", dx: 48, min: 1, each: 500, multiplier: 1, list: listJousts, add: addJousts},
+      {type: "canoes", icon: "🛶", min: 20, each: 400, multiplier: 1, list: listCanoes, add: addCanoes},
+      {type: "migration", icon: "🐗", min: 20, each: 400, multiplier: 1, list: listMigrations, add: addMigrations},
+      {type: "dances", icon: "💃🏽", min: 5, each: 30, multiplier: 1, list: listDances, add: addDances},
+      {type: "mirage", icon: "💦", min: 5, each: 400, multiplier: 1, list: listMirage, add: addMirage},
+      {type: "portals", icon: "🌀", px: 14, min: 16, each: 8, multiplier: +isFantasy, list: listPortals, add: addPortal},
+      {type: "rifts", icon: "🎆", min: 50, each: 2000, multiplier: +isFantasy, list: listRifts, add: addRifts}
     ];
   }
 
@@ -188,7 +195,7 @@ window.Markers = (function () {
     const burg = pack.burgs[cells.burg[cell]];
     const river = pack.rivers.find(r => r.i === pack.cells.r[cell]);
     const riverName = river ? `${river.name} ${river.type}` : "river";
-    const name = river && P(0.2) ? river.name : burg.name;
+    const name = river && P(0.2) ? `${river.name} Bridge` : `${burg.name} Bridge`;
     const weightedAdjectives = {
       stone: 10,
       wooden: 1,
@@ -198,7 +205,16 @@ window.Markers = (function () {
       beaten: 1,
       weathered: 1
     };
-    notes.push({id, name: `${name} Bridge`, legend: `A ${rw(weightedAdjectives)} bridge spans over the ${riverName} near ${burg.name}`});
+    const barriers = [
+    "collapse during the flood",
+    "being rumoured to attract trolls",
+    "the drying up of local trade",
+    "banditry infested the area",
+    "the old waypoints crumbled"
+    ];
+    const legend = P(0.7) ? `A ${rw(weightedAdjectives)} bridge spans over the ${riverName} near ${burg.name}` : `An old crossing of the ${riverName}, rarely used since ${ra(barriers)}`;
+
+    notes.push({id, name, legend});
   }
 
   function listInns({cells}) {
@@ -413,14 +429,14 @@ window.Markers = (function () {
     const drinks = [
       "wine",
       "brandy",
-      "jinn",
+      "gin",
       "whisky",
       "rom",
       "beer",
       "cider",
       "mead",
       "liquor",
-      "spirit",
+      "spirits",
       "vodka",
       "tequila",
       "absinthe",
@@ -783,6 +799,194 @@ window.Markers = (function () {
     notes.push({id, name, legend});
   }
 
+  function listCircuses({cells}) {
+    return cells.i.filter(i => !occupied[i] && cells.culture[i] && cells.h[i] >= 20 && pack.cells.road[i]);
+  }
+
+  function addCircuses(id, cell) {
+    const adjectives = [
+      "Fantastical",
+      "Wonderous",
+      "Incomprehensible",
+      "Magical",
+      "Extraordinary",
+      "Unmissable",
+      "World-famous",
+      "Breathtaking"
+    ];
+
+    const adjective = ra(adjectives);
+    const name = `Travelling ${adjective} Circus`;
+    const legend = `Roll up, roll up, this ${adjective.toLowerCase()} circus is here for a limited time only.`;
+    notes.push({id, name, legend});
+  }
+
+  function listJousts({cells, burgs}) {
+    return cells.i.filter(i => !occupied[i] && cells.burg[i] && burgs[cells.burg[i]].population > 20);
+  }
+
+  function addJousts(id, cell) {
+    const {cells, burgs} = pack;
+    const types = [
+    "Joust",
+    "Competition",
+    "Melee",
+    "Tournament",
+    "Contest"
+    ];
+    const virtues = [
+    "cunning",
+    "might",
+    "speed",
+    "the greats",
+    "acumen",
+    "brutality"
+    ];
+
+    // Jousts can only be added to burgs
+    if (!cells.burg[cell]) return;
+    const burgName = burgs[cells.burg[cell]].name;
+    const type = ra(types)
+    const virtue = ra(virtues)
+
+    const name = `${burgName} ${type}`;
+    const legend = `Warriors from around the land gather for a ${type.toLowerCase()} of ${virtue} in ${burgName}, with fame, fortune and favour on offer to the victor`;
+    notes.push({id, name, legend});
+  }
+
+  function listCanoes({cells}) {
+    return cells.i.filter(i => !occupied[i] && cells.r[i]);
+  }
+
+  function addCanoes(id, cell) {
+    const {cells} = pack;
+    const river = pack.rivers.find(r => r.i === pack.cells.r[cell]);
+
+    const name = `Minor Jetty`;
+    const riverName = river ? `${river.name} ${river.type}` : "river";
+    const legend = `A small location along the ${riverName} to launch boats from sits here, along with a weary looking owner, willing to sell passage along the river`;
+    notes.push({id, name, legend});
+  }
+
+  function listMigrations({cells}) {
+    return cells.i.filter(i => !occupied[i] && cells.h[i] >= 20 && cells.pop[i] <= 2);
+  }
+
+  function addMigrations(id, cell) {
+    const {cells} = pack;
+    const animals = [
+      "Antelopes",
+      "Apes",
+      "Badgers",
+      "Bears",
+      "Beavers",
+      "Bisons",
+      "Boars",
+      "Buffalo",
+      "Cats",
+      "Cranes",
+      "Crocodiles",
+      "Crows",
+      "Deers",
+      "Dogs",
+      "Eagles",
+      "Elks",
+      "Foxs",
+      "Goats",
+      "Geese",
+      "Hares",
+      "Hawks",
+      "Herons",
+      "Horses",
+      "Hyenas",
+      "Ibises",
+      "Jackals",
+      "Jaguars",
+      "Larks",
+      "Leopards",
+      "Lions",
+      "Mantises",
+      "Martens",
+      "Mooses",
+      "Mules",
+      "Owls",
+      "Panthers",
+      "Rats",
+      "Ravens",
+      "Rooks",
+      "Scorpions",
+      "Sharks",
+      "Sheeps",
+      "Snakes",
+      "Spiders",
+      "Tigers",
+      "Wolfs",
+      "Wolverines",
+      "Camels",
+      "Falcons",
+      "Hounds",
+      "Oxen"
+    ];
+    const animalChoice = ra(animals)
+
+    const name = `${animalChoice} migration`;
+    const legend = `A huge group of ${animalChoice.toLowerCase()} is migrating, though whether part of their annual routine, or something more extraordinary`;
+    notes.push({id, name, legend});
+  }
+
+  function listDances({cells, burgs}) {
+    return cells.i.filter(i => !occupied[i] && cells.burg[i] && burgs[cells.burg[i]].population > 15);
+  }
+
+  function addDances(id, cell) {
+    const {cells, burgs} = pack;
+    const burgName = burgs[cells.burg[cell]].name;
+    const socialTypes = [
+    "gala",
+    "dance",
+    "performance",
+    "ball",
+    "soiree",
+    "jamboree",
+    "exhibition",
+    "carnival",
+    "festival",
+    "jubilee"
+    ];
+    const people = [
+    "great and the good",
+    "nobility",
+    "local elders",
+    "foreign dignitaries",
+    "spiritual leaders",
+    "suspected revolutionaries"
+    ]
+    const socialType = ra(socialTypes)
+
+    const name = `${burgName} ${socialType}`;
+    const legend = `A ${socialType} has been organised at ${burgName} as a chance to gather the ${ra(people)} of the area together to be merry, make alliances and scheme around the crisis`;
+    notes.push({id, name, legend});
+  }
+
+  function listMirage({cells}) {
+    return cells.i.filter(i => !occupied[i] && cells.biome[i] === 1);
+  }
+
+  function addMirage(id, cell) {
+    const {cells} = pack;
+    const adjectives = [
+    "Entrancing",
+    "Diaphanous",
+    "Illusory",
+    "Distant",
+    "Perculiar"
+    ]
+
+    const mirageAdjective = ra(adjectives)
+    const name = `${mirageAdjective} mirage`;
+    const legend = `This ${mirageAdjective.toLowerCase()} mirage has been luring travellers out of their way for eons`;
+    notes.push({id, name, legend});
+  }
   function listPortals({burgs}) {
     return burgs
       .slice(1, Math.ceil(burgs.length / 10) + 1)
@@ -798,8 +1002,41 @@ window.Markers = (function () {
     const burgName = burgs[cells.burg[cell]].name;
 
     const name = `${burgName} Portal`;
-    const legend = `An element of the magic portal system connecting major cities. Portals installed centuries ago, but still work fine`;
+    const legend = `An element of the magic portal system connecting major cities. The portals were installed centuries ago, but still work fine`;
     notes.push({id, name, legend});
+  }
+
+  function listRifts({cells}) {
+    return cells.i.filter(i => !occupied[i] && pack.cells.pop[i] <= 3);
+  }
+
+  function addRifts(id, cell) {
+    const types = [
+      "Demonic",
+      "Interdimensional",
+      "Abyssal",
+      "Cosmic",
+      "Cataclysmic",
+      "Subterranean",
+      "Ancient"
+    ];
+
+    const descriptions = [
+    "all known nearby beings to flee in terror",
+    "cracks in reality itself to form",
+    "swarms of foes to spill forth",
+    "the life of nearby plants to wither and decay",
+    "an emmissary to step through with an all-powerful relic"
+    ]
+
+    const riftType = ra(types);
+    const name = `${riftType} Rift`;
+    const legend = `A rumoured ${riftType.toLowerCase()} rift in this area is causing ${ra(descriptions)}.`;
+    notes.push({id, name, legend});
+  }
+
+  function listRifts({cells}) {
+    return cells.i.filter(i => !occupied[i] && pack.cells.pop[i] <= 3);
   }
 
   return {add, generate, regenerate, getConfig, setConfig, deleteMarker};
