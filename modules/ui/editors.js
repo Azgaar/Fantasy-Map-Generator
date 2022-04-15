@@ -169,7 +169,7 @@ function moveBurgToGroup(id, g) {
   const icon = document.querySelector("#burgIcons [data-id='" + id + "']");
   const anchor = document.querySelector("#anchors [data-id='" + id + "']");
   if (!label || !icon) {
-    ERROR && console.error("Cannot find label or icon elements");
+    ERROR && console.error(`Cannot find label or icon elements for id ${id}`);
     return;
   }
 
@@ -188,6 +188,25 @@ function moveBurgToGroup(id, g) {
     anchor.setAttribute("x", rn(pack.burgs[id].x - anchorSize * 0.47, 2));
     anchor.setAttribute("y", rn(pack.burgs[id].y - anchorSize * 0.47, 2));
   }
+}
+
+function moveAllBurgsToGroup(fromGroup, toGroup) {
+  const groupToMove = document.querySelector(`#burgIcons #${fromGroup}`);
+  const burgsToMove = Array.from(groupToMove.children).map(x=>x.dataset.id);
+  addBurgsGroup(toGroup)
+  burgsToMove.forEach(x=>moveBurgToGroup(x, toGroup));
+}
+
+function addBurgsGroup(group) {
+  if (document.querySelector(`#burgLabels > #${group}`)) return;
+  const labelCopy = document.querySelector("#burgLabels > #towns").cloneNode(false);
+  const iconCopy = document.querySelector("#burgIcons > #towns").cloneNode(false);
+  const anchorCopy = document.querySelector("#anchors > #towns").cloneNode(false);
+
+  // FIXME: using the same id is against the spec!
+  document.querySelector("#burgLabels").appendChild(labelCopy).id = group;
+  document.querySelector("#burgIcons").appendChild(iconCopy).id = group;
+  document.querySelector("#anchors").appendChild(anchorCopy).id = group;
 }
 
 function removeBurg(id) {

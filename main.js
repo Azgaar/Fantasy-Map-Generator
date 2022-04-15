@@ -155,6 +155,7 @@ let options = {
 };
 let mapCoordinates = {}; // map coordinates on globe
 let populationRate = +document.getElementById("populationRateInput").value;
+let distanceScale = +document.getElementById("distanceScaleInput").value;
 let urbanization = +document.getElementById("urbanizationInput").value;
 let urbanDensity = +document.getElementById("urbanDensityInput").value;
 
@@ -826,6 +827,7 @@ function markupGridOcean() {
   TIME && console.timeEnd("markupGridOcean");
 }
 
+// Calculate cell-distance to coast for every cell
 function markup(cells, start, increment, limit) {
   for (let t = start, count = Infinity; count > 0 && t > limit; t += increment) {
     count = 0;
@@ -1617,14 +1619,16 @@ function addZones(number = 1) {
   }
 
   function addRebels() {
-    const state = ra(states.filter(s => s.i && s.neighbors.some(n => n)));
+    const state = ra(states.filter(s => s.i && !s.removed && s.neighbors.some(n => n)));
     if (!state) return;
 
-    const neib = ra(state.neighbors.filter(n => n));
-    const cell = cells.i.find(i => cells.state[i] === state.i && cells.c[i].some(c => cells.state[c] === neib));
+    const neib = ra(state.neighbors.filter(n => n && !states[n].removed));
+    if (!neib) return;
+    const cell = cells.i.find(i => cells.state[i] === state.i && !state.removed && cells.c[i].some(c => cells.state[c] === neib));
     const cellsArray = [],
-      queue = [cell],
+      queue = [],
       power = rand(10, 30);
+    if (cell) queue.push.cell;
 
     while (queue.length) {
       const q = queue.shift();

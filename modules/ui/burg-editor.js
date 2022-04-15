@@ -266,14 +266,7 @@ function editBurg(id) {
     toggleNewGroupInput();
     document.getElementById("burgInputGroup").value = "";
 
-    const newLabelG = document.querySelector("#burgLabels").appendChild(labelG.cloneNode(false));
-    newLabelG.id = group;
-    const newIconG = document.querySelector("#burgIcons").appendChild(iconG.cloneNode(false));
-    newIconG.id = group;
-    if (anchor) {
-      const newAnchorG = document.querySelector("#anchors").appendChild(anchorG.cloneNode(false));
-      newAnchorG.id = group;
-    }
+    addBurgsGroup(group);
     moveBurgToGroup(id, group);
   }
 
