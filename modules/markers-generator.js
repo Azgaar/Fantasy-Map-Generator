@@ -8,6 +8,18 @@ window.Markers = (function () {
     const culturesSet = document.getElementById("culturesSet").value;
     const isFantasy = culturesSet.includes("Fantasy");
 
+    /*
+      Default markers config:
+      type - short description (snake-case)
+      icon - unicode character, make sure it's supported by most of the browsers. Source: emojipedia.org
+      dx: icon offset in x direction, in pixels
+      dy: icon offset in y direction, in pixels
+      min: minimum number of candidates to add at least 1 marker
+      each: how many of the candidates should be added as markers
+      multiplier: multiply markers quantity to add
+      list: function to select candidates
+      add: function to add marker legend
+    */
     return [
       {type: "volcanoes", icon: "🌋", dx: 52, px: 13, min: 10, each: 500, multiplier: 1, list: listVolcanoes, add: addVolcano},
       {type: "hot-springs", icon: "♨️", dy: 52, min: 30, each: 1200, multiplier: 1, list: listHotSprings, add: addHotSpring},
@@ -91,7 +103,8 @@ window.Markers = (function () {
 
       let candidates = Array.from(list(pack));
       let quantity = getQuantity(candidates, min, each, multiplier);
-      console.log(type, icon, `each ${each} of ${candidates.length}. Got`, quantity);
+      // uncomment for debugging:
+      // console.log(`${icon} ${type}: each ${each} of ${candidates.length}, min ${min} candidates. Got ${quantity}`);
 
       while (quantity && candidates.length) {
         const [cell] = extractAnyElement(candidates);
@@ -798,7 +811,7 @@ window.Markers = (function () {
 
     const ruinType = ra(types);
     const name = `Ruined ${ruinType}`;
-    const legend = `Ruins of an ancient ${ruinType.toLowerCase()}. Untold riches may lie within.`;
+    const legend = `Ruins of an ancient ${ruinType.toLowerCase()}. Untold riches may lie within`;
     notes.push({id, name, legend});
   }
 
@@ -811,7 +824,7 @@ window.Markers = (function () {
 
     const adjective = ra(adjectives);
     const name = `Travelling ${adjective} Circus`;
-    const legend = `Roll up, roll up, this ${adjective.toLowerCase()} circus is here for a limited time only.`;
+    const legend = `Roll up, roll up, this ${adjective.toLowerCase()} circus is here for a limited time only`;
     notes.push({id, name, legend});
   }
 
@@ -961,7 +974,7 @@ window.Markers = (function () {
   }
 
   function listRifts({cells}) {
-    return cells.i.filter(i => !occupied[i] && pack.cells.pop[i] <= 3);
+    return cells.i.filter(i => !occupied[i] && pack.cells.pop[i] <= 3 && biomesData.habitability[pack.cells.biome[i]]);
   }
 
   function addRifts(id, cell) {
