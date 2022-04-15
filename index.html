@@ -1366,6 +1366,12 @@
           <button id="addRoute" data-tip="Click on map to place a route. Shortcut: Shift + 4">Route</button>
           <button id="addMarker" data-tip="Click on map to place a marker. Hold Shift to add multiple. Shortcut: Shift + 5">Marker</button>
         </div>
+
+        <p>Click to create a new map:</p>
+        <div id="resamplers">
+          <button data-tip="Click to generate new (sub)map from the current viewport" onclick="openSubmapOptions()">Submap</button>
+          <button data-tip="Click to resample (transform) your map to different cellcount" onclick="openRemapOptions()">Resample</button>
+        </div>
       </div>
 
       <div id="customizationMenu" class="tabcontent">
@@ -2234,7 +2240,7 @@
         </div>
         <table id="battleAttackers"></table>
         <div style="font-size:1.2em; font-weight: bold; width: unset">
-          <span></span>Defenders</span>
+          <span>Defenders</span>
           <div style="float: right; font-size: .7em">
             <meter id="battleMorale_defenders" data-tip="Defenders morale: " min=0 max=100 low=33 high=66 optimum=80></meter>
             <div id="battlePower_defenders" data-tip="Defenders strength during this phase. Strength defines dealt damage" style="display: inline-block; text-align: center" class="icon-button-power"></div>
@@ -3659,6 +3665,58 @@
       <div id="tileStatus" style="background-color: #33333310; font-style: italic"></div>
     </div>
 
+    <div id="remapOptionsDialog" style="display: none; max-width:300px;" class="dialog">
+      <p style="font-style: italic; color: red; font-weight:bold;">Warning! This operation is destructive and irreversible. Don't forget to save your map!</p>
+      <table>
+      <td>Points number</td>
+      <td>
+        <input id="submapPointsInput" autocomplete="off" type="range" min=1 max=13 value=8 data-cells=50000 oninput="document.getElementById('submapPointsOutput').value=cellsDensityConstants[+this.value]/1000 + 'K'; event.stopPropagation()">
+      </td>
+      <td>
+        <output id="submapPointsOutput" style="color: #053305">50K</output>
+      </td>
+      </table>
+    </div>
+    <div id="submapOptionsDialog" style="display: none; max-width:300px;" class="dialog">
+      <p style="font-style: italic; color: red; font-weight:bold;">Warning! This operation is destructive and irreversible. Don't forget to save your original map!</p>
+      <p>
+        <em>Settings to be changed:</em> Population rate, map pixel size.
+      </p>
+      <p>
+        <em>Data to be copied:</em> Heightmap, Biome, Religion, Population, Precipitation, Cultures, States, Provinces, Regiments (military), Markers.
+      </p>
+      <p>
+        <em>Data to be destroyed (regenerated):</em> Zones, Roads, Rivers (mostly regenerate at the same place).
+      </p>
+      <p>
+        Remapping Burgs (cities) may be imprecise, you will need to fix missing or wrongly mapped burgs manually.
+      </p>
+      <p>Lock remapped items for:</p>
+      <div data-tip="Lock all markers copied from the original map." >
+        <input id="submapLockMarkers" class="checkbox" type="checkbox" checked>
+        <label for="submapLockMarkers" class="checkbox-label">Markers</label>
+      </div>
+      <div data-tip="Lock all burgs copied from the original map." >
+        <input id="submapLockBurgs" class="checkbox" type="checkbox" checked>
+        <label for="submapLockBurgs" class="checkbox-label">Burgs (cities)</label>
+      </div>
+
+      <p>Extra / experimental features:</p>
+      <div data-tip="Rivers on the parent map errode land (helps to get similar river network.)" >
+        <input id="submapDepressRivers" class="checkbox" type="checkbox">
+        <label for="submapDepressRivers" class="checkbox-label">Errode riverbeds.</label>
+      </div>
+      <div data-tip="Move all existing towns to the 'largetown' burg group">
+        <input id="submapPromoteTowns" class="checkbox" type="checkbox">
+        <label for="submapPromoteTowns" class="checkbox-label">Promote towns to largetowns</label>
+      </div>
+      <div data-tip="Add lakes in depressions. (Can be very slow on big landmasses!)" >
+        <input id="submapAddLakeInDepression" class="checkbox" type="checkbox">
+        <label for="submapAddLakeInDepression" class="checkbox-label">Add lakes in depressions (slow)</label>
+      </div>
+      <hr/>
+    </div>
+
     <div id="alert" style="display: none" class="dialog">
       <p id="alertMessage">Warning!</p>
     </div>
@@ -4523,6 +4581,7 @@
   <script src="modules/military-generator.js"></script>
   <script src="modules/markers-generator.js"></script>
   <script src="modules/coa-generator.js"></script>
+  <script src="modules/submap.js"></script>
   <script src="libs/polylabel.min.js"></script>
   <script src="libs/lineclip.min.js"></script>
   <script src="libs/jquery-ui.min.js"></script>
@@ -4574,6 +4633,7 @@
   <script defer src="modules/ui/emblems-editor.js"></script>
   <script defer src="modules/ui/markers-editor.js"></script>
   <script defer src="modules/ui/3d.js"></script>
+  <script defer src="modules/ui/submap.js"></script>
   <script defer src="modules/ui/hotkeys.js"></script>
   <script defer src="modules/coa-renderer.js"></script>
   <script defer src="libs/rgbquant.min.js"></script>

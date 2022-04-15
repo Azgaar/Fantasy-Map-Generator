@@ -129,6 +129,12 @@ window.Markers = (function () {
     return marker;
   }
 
+  function deleteMarker(markerId) {
+    const noteId = 'marker' + markerId;
+    notes = notes.filter(note => note.id !== noteId);
+    pack.markers = pack.markers.filter(m => m.i !== markerId);
+  }
+
   function listVolcanoes({cells}) {
     return cells.i.filter(i => !occupied[i] && cells.h[i] >= 70);
   }
@@ -796,5 +802,5 @@ window.Markers = (function () {
     notes.push({id, name, legend});
   }
 
-  return {add, generate, regenerate, getConfig, setConfig};
+  return {add, generate, regenerate, getConfig, setConfig, deleteMarker};
 })();
