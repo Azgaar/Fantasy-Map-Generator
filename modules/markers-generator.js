@@ -30,13 +30,13 @@ window.Markers = (function () {
       {type: "statues", icon: "🗿", min: 80, each: 1200, multiplier: 1, list: listStatues, add: addStatue},
       {type: "ruins", icon: "🏺", min: 80, each: 1200, multiplier: 1, list: listRuins, add: addRuins},
       {type: "circuses", icon: "🎪", min: 80, each: 1000, multiplier: 1, list: listCircuses, add: addCircuses},
-      {type: "jousts", icon: "🤺", dx: 48, min: 1, each: 500, multiplier: 1, list: listJousts, add: addJousts},
-      {type: "canoes", icon: "🛶", min: 20, each: 400, multiplier: 1, list: listCanoes, add: addCanoes},
-      {type: "migration", icon: "🐗", min: 20, each: 400, multiplier: 1, list: listMigrations, add: addMigrations},
-      {type: "dances", icon: "💃🏽", min: 5, each: 30, multiplier: 1, list: listDances, add: addDances},
-      {type: "mirage", icon: "💦", min: 5, each: 400, multiplier: 1, list: listMirage, add: addMirage},
+      {type: "jousts", icon: "🤺", dx: 48, min: 5, each: 500, multiplier: 1, list: listJousts, add: addJousts},
+      {type: "canoes", icon: "🛶", min: 1000, each: 2000, multiplier: 1, list: listCanoes, add: addCanoes},
+      {type: "migration", icon: "🐗", min: 20, each: 1000, multiplier: 1, list: listMigrations, add: addMigrations},
+      {type: "dances", icon: "💃🏽", min: 5, each: 60, multiplier: 1, list: listDances, add: addDances},
+      {type: "mirage", icon: "💦", min: 10, each: 400, multiplier: 1, list: listMirage, add: addMirage},
       {type: "portals", icon: "🌀", px: 14, min: 16, each: 8, multiplier: +isFantasy, list: listPortals, add: addPortal},
-      {type: "rifts", icon: "🎆", min: 50, each: 2000, multiplier: +isFantasy, list: listRifts, add: addRifts}
+      {type: "rifts", icon: "🎆", min: 1, each: 3000, multiplier: +isFantasy, list: listRifts, add: addRifts}
     ];
   }
 
@@ -91,6 +91,7 @@ window.Markers = (function () {
 
       let candidates = Array.from(list(pack));
       let quantity = getQuantity(candidates, min, each, multiplier);
+      console.log(type, icon, `each ${each} of ${candidates.length}. Got`, quantity);
 
       while (quantity && candidates.length) {
         const [cell] = extractAnyElement(candidates);
@@ -823,7 +824,6 @@ window.Markers = (function () {
     const types = ["Joust", "Competition", "Melee", "Tournament", "Contest"];
     const virtues = ["cunning", "might", "speed", "the greats", "acumen", "brutality"];
 
-    // Jousts can only be added to burgs
     if (!cells.burg[cell]) return;
     const burgName = burgs[cells.burg[cell]].name;
     const type = ra(types);
@@ -839,7 +839,6 @@ window.Markers = (function () {
   }
 
   function addCanoes(id, cell) {
-    const {cells} = pack;
     const river = pack.rivers.find(r => r.i === pack.cells.r[cell]);
 
     const name = `Minor Jetty`;
@@ -853,7 +852,6 @@ window.Markers = (function () {
   }
 
   function addMigrations(id, cell) {
-    const {cells} = pack;
     const animals = [
       "Antelopes",
       "Apes",
@@ -937,7 +935,6 @@ window.Markers = (function () {
   }
 
   function addMirage(id, cell) {
-    const {cells} = pack;
     const adjectives = ["Entrancing", "Diaphanous", "Illusory", "Distant", "Perculiar"];
 
     const mirageAdjective = ra(adjectives);
@@ -955,7 +952,6 @@ window.Markers = (function () {
   function addPortal(id, cell) {
     const {cells, burgs} = pack;
 
-    // Portals can only be added to burgs
     if (!cells.burg[cell]) return;
     const burgName = burgs[cells.burg[cell]].name;
 
@@ -983,10 +979,6 @@ window.Markers = (function () {
     const name = `${riftType} Rift`;
     const legend = `A rumoured ${riftType.toLowerCase()} rift in this area is causing ${ra(descriptions)}.`;
     notes.push({id, name, legend});
-  }
-
-  function listRifts({cells}) {
-    return cells.i.filter(i => !occupied[i] && pack.cells.pop[i] <= 3);
   }
 
   return {add, generate, regenerate, getConfig, setConfig, deleteMarker};
