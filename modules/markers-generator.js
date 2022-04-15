@@ -137,7 +137,7 @@ window.Markers = (function () {
   }
 
   function deleteMarker(markerId) {
-    const noteId = 'marker' + markerId;
+    const noteId = "marker" + markerId;
     notes = notes.filter(note => note.id !== noteId);
     pack.markers = pack.markers.filter(m => m.i !== markerId);
   }
@@ -206,13 +206,15 @@ window.Markers = (function () {
       weathered: 1
     };
     const barriers = [
-    "collapse during the flood",
-    "being rumoured to attract trolls",
-    "the drying up of local trade",
-    "banditry infested the area",
-    "the old waypoints crumbled"
+      "collapse during the flood",
+      "being rumoured to attract trolls",
+      "the drying up of local trade",
+      "banditry infested the area",
+      "the old waypoints crumbled"
     ];
-    const legend = P(0.7) ? `A ${rw(weightedAdjectives)} bridge spans over the ${riverName} near ${burg.name}` : `An old crossing of the ${riverName}, rarely used since ${ra(barriers)}`;
+    const legend = P(0.7)
+      ? `A ${rw(weightedAdjectives)} bridge spans over the ${riverName} near ${burg.name}`
+      : `An old crossing of the ${riverName}, rarely used since ${ra(barriers)}`;
 
     notes.push({id, name, legend});
   }
@@ -804,16 +806,7 @@ window.Markers = (function () {
   }
 
   function addCircuses(id, cell) {
-    const adjectives = [
-      "Fantastical",
-      "Wonderous",
-      "Incomprehensible",
-      "Magical",
-      "Extraordinary",
-      "Unmissable",
-      "World-famous",
-      "Breathtaking"
-    ];
+    const adjectives = ["Fantastical", "Wonderous", "Incomprehensible", "Magical", "Extraordinary", "Unmissable", "World-famous", "Breathtaking"];
 
     const adjective = ra(adjectives);
     const name = `Travelling ${adjective} Circus`;
@@ -827,27 +820,14 @@ window.Markers = (function () {
 
   function addJousts(id, cell) {
     const {cells, burgs} = pack;
-    const types = [
-    "Joust",
-    "Competition",
-    "Melee",
-    "Tournament",
-    "Contest"
-    ];
-    const virtues = [
-    "cunning",
-    "might",
-    "speed",
-    "the greats",
-    "acumen",
-    "brutality"
-    ];
+    const types = ["Joust", "Competition", "Melee", "Tournament", "Contest"];
+    const virtues = ["cunning", "might", "speed", "the greats", "acumen", "brutality"];
 
     // Jousts can only be added to burgs
     if (!cells.burg[cell]) return;
     const burgName = burgs[cells.burg[cell]].name;
-    const type = ra(types)
-    const virtue = ra(virtues)
+    const type = ra(types);
+    const virtue = ra(virtues);
 
     const name = `${burgName} ${type}`;
     const legend = `Warriors from around the land gather for a ${type.toLowerCase()} of ${virtue} in ${burgName}, with fame, fortune and favour on offer to the victor`;
@@ -927,7 +907,7 @@ window.Markers = (function () {
       "Hounds",
       "Oxen"
     ];
-    const animalChoice = ra(animals)
+    const animalChoice = ra(animals);
 
     const name = `${animalChoice} migration`;
     const legend = `A huge group of ${animalChoice.toLowerCase()} is migrating, though whether part of their annual routine, or something more extraordinary`;
@@ -941,30 +921,14 @@ window.Markers = (function () {
   function addDances(id, cell) {
     const {cells, burgs} = pack;
     const burgName = burgs[cells.burg[cell]].name;
-    const socialTypes = [
-    "gala",
-    "dance",
-    "performance",
-    "ball",
-    "soiree",
-    "jamboree",
-    "exhibition",
-    "carnival",
-    "festival",
-    "jubilee"
-    ];
-    const people = [
-    "great and the good",
-    "nobility",
-    "local elders",
-    "foreign dignitaries",
-    "spiritual leaders",
-    "suspected revolutionaries"
-    ]
-    const socialType = ra(socialTypes)
+    const socialTypes = ["gala", "dance", "performance", "ball", "soiree", "jamboree", "exhibition", "carnival", "festival", "jubilee"];
+    const people = ["great and the good", "nobility", "local elders", "foreign dignitaries", "spiritual leaders", "suspected revolutionaries"];
+    const socialType = ra(socialTypes);
 
     const name = `${burgName} ${socialType}`;
-    const legend = `A ${socialType} has been organised at ${burgName} as a chance to gather the ${ra(people)} of the area together to be merry, make alliances and scheme around the crisis`;
+    const legend = `A ${socialType} has been organised at ${burgName} as a chance to gather the ${ra(
+      people
+    )} of the area together to be merry, make alliances and scheme around the crisis`;
     notes.push({id, name, legend});
   }
 
@@ -974,15 +938,9 @@ window.Markers = (function () {
 
   function addMirage(id, cell) {
     const {cells} = pack;
-    const adjectives = [
-    "Entrancing",
-    "Diaphanous",
-    "Illusory",
-    "Distant",
-    "Perculiar"
-    ]
+    const adjectives = ["Entrancing", "Diaphanous", "Illusory", "Distant", "Perculiar"];
 
-    const mirageAdjective = ra(adjectives)
+    const mirageAdjective = ra(adjectives);
     const name = `${mirageAdjective} mirage`;
     const legend = `This ${mirageAdjective.toLowerCase()} mirage has been luring travellers out of their way for eons`;
     notes.push({id, name, legend});
@@ -1011,23 +969,15 @@ window.Markers = (function () {
   }
 
   function addRifts(id, cell) {
-    const types = [
-      "Demonic",
-      "Interdimensional",
-      "Abyssal",
-      "Cosmic",
-      "Cataclysmic",
-      "Subterranean",
-      "Ancient"
-    ];
+    const types = ["Demonic", "Interdimensional", "Abyssal", "Cosmic", "Cataclysmic", "Subterranean", "Ancient"];
 
     const descriptions = [
-    "all known nearby beings to flee in terror",
-    "cracks in reality itself to form",
-    "swarms of foes to spill forth",
-    "the life of nearby plants to wither and decay",
-    "an emmissary to step through with an all-powerful relic"
-    ]
+      "all known nearby beings to flee in terror",
+      "cracks in reality itself to form",
+      "swarms of foes to spill forth",
+      "the life of nearby plants to wither and decay",
+      "an emmissary to step through with an all-powerful relic"
+    ];
 
     const riftType = ra(types);
     const name = `${riftType} Rift`;
