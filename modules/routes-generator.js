@@ -74,7 +74,7 @@ window.Routes = (function () {
       const ports = allPorts.filter(b => b.port === f); // all ports on the same feature
       if (!ports.length) return;
 
-      if (features[f].border) addOverseaRoute(f, ports[0]);
+      if (features[f]?.border) addOverseaRoute(f, ports[0]);
 
       // get inner-map routes
       for (let s = 0; s < ports.length; s++) {

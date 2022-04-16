@@ -241,8 +241,7 @@ function editMarker(markerI) {
   }
 
   function deleteMarker() {
-    notes = notes.filter(note => note.id !== element.id);
-    pack.markers = pack.markers.filter(m => m.i !== marker.i);
+    Markers.deleteMarker(marker.i)
     element.remove();
     $("#markerEditor").dialog("close");
     if (document.getElementById("markersOverviewRefresh").offsetParent) markersOverviewRefresh.click();

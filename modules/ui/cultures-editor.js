@@ -1,5 +1,6 @@
 "use strict";
 function editCultures() {
+  const cultureTypes = ["Generic", "River", "Lake", "Naval", "Nomadic", "Hunting", "Highland"];
   if (customization) return;
   closeDialogs("#culturesEditor, .stable");
   if (!layerIsOn("toggleCultures")) toggleCultures();
@@ -37,6 +38,8 @@ function editCultures() {
   document.getElementById("culturesEditNamesBase").addEventListener("click", editNamesbase);
   document.getElementById("culturesAdd").addEventListener("click", enterAddCulturesMode);
   document.getElementById("culturesExport").addEventListener("click", downloadCulturesData);
+  document.getElementById("culturesImport").addEventListener("click", () => document.getElementById("culturesCSVToLoad").click());
+  document.getElementById("culturesCSVToLoad").addEventListener("change", uploadCulturesData);
 
   function refreshCulturesEditor() {
     culturesCollectStatistics();
@@ -169,8 +172,7 @@ function editCultures() {
 
   function getTypeOptions(type) {
     let options = "";
-    const types = ["Generic", "River", "Lake", "Naval", "Nomadic", "Hunting", "Highland"];
-    types.forEach(t => (options += `<option ${type === t ? "selected" : ""} value="${t}">${t}</option>`));
+    cultureTypes.forEach(t => (options += `<option ${type === t ? "selected" : ""} value="${t}">${t}</option>`));
     return options;
   }
 
@@ -366,7 +368,7 @@ function editCultures() {
       width: "24em",
       buttons: {
         Apply: function () {
-          applyPopulationChange();
+          applyPopulationChange(rural, urban, ruralPop.value, urbanPop.value, culture);
           $(this).dialog("close");
         },
         Cancel: function () {
@@ -375,32 +377,33 @@ function editCultures() {
       },
       position: {my: "center", at: "center", of: "svg"}
     });
+  }
 
-    function applyPopulationChange() {
-      const ruralChange = ruralPop.value / rural;
-      if (isFinite(ruralChange) && ruralChange !== 1) {
-        const cells = pack.cells.i.filter(i => pack.cells.culture[i] === culture);
-        cells.forEach(i => (pack.cells.pop[i] *= ruralChange));
-      }
-      if (!isFinite(ruralChange) && +ruralPop.value > 0) {
-        const points = ruralPop.value / populationRate;
-        const cells = pack.cells.i.filter(i => pack.cells.culture[i] === culture);
-        const pop = rn(points / cells.length);
-        cells.forEach(i => (pack.cells.pop[i] = pop));
-      }
-
-      const urbanChange = urbanPop.value / urban;
-      if (isFinite(urbanChange) && urbanChange !== 1) {
-        burgs.forEach(b => (b.population = rn(b.population * urbanChange, 4)));
-      }
-      if (!isFinite(urbanChange) && +urbanPop.value > 0) {
-        const points = urbanPop.value / populationRate / urbanization;
-        const population = rn(points / burgs.length, 4);
-        burgs.forEach(b => (b.population = population));
-      }
-
-      refreshCulturesEditor();
+  function applyPopulationChange(oldRural, oldUrban, newRural, newUrban, culture) {
+    const ruralChange = newRural / oldRural;
+    if (isFinite(ruralChange) && ruralChange !== 1) {
+      const cells = pack.cells.i.filter(i => pack.cells.culture[i] === culture);
+      cells.forEach(i => (pack.cells.pop[i] *= ruralChange));
     }
+    if (!isFinite(ruralChange) && +newRural > 0) {
+      const points = newRural / populationRate;
+      const cells = pack.cells.i.filter(i => pack.cells.culture[i] === culture);
+      const pop = rn(points / cells.length);
+      cells.forEach(i => (pack.cells.pop[i] = pop));
+    }
+
+    const burgs = pack.burgs.filter(b => !b.removed && b.culture === culture);
+    const urbanChange = newUrban / oldUrban;
+    if (isFinite(urbanChange) && urbanChange !== 1) {
+      burgs.forEach(b => (b.population = rn(b.population * urbanChange, 4)));
+    }
+    if (!isFinite(urbanChange) && +newUrban > 0) {
+      const points = newUrban / populationRate / urbanization;
+      const population = rn(points / burgs.length, 4);
+      burgs.forEach(b => (b.population = population));
+    }
+
+    refreshCulturesEditor();
   }
 
   function cultureRegenerateBurgs() {
@@ -856,7 +859,7 @@ function editCultures() {
 
   function downloadCulturesData() {
     const unit = areaUnit.value === "square" ? distanceUnitInput.value + "2" : areaUnit.value;
-    let data = "Id,Culture,Color,Cells,Expansionism,Type,Area " + unit + ",Population,Namesbase,Emblems Shape\n"; // headers
+    let data = "Id,Culture,Color,Cells,Expansionism,Type,Area " + unit + ",Population,Namesbase,Emblems Shape,Origin\n"; // headers
 
     body.querySelectorAll(":scope > div").forEach(function (el) {
       data += el.dataset.id + ",";
@@ -869,7 +872,8 @@ function editCultures() {
       data += el.dataset.population + ",";
       const base = +el.dataset.base;
       data += nameBases[base].name + ",";
-      data += el.dataset.emblems + "\n";
+      data += el.dataset.emblems + ",";
+      data += pack.cultures[+el.dataset.id].origin + "\n";
     });
 
     const name = getFileName("Cultures") + ".csv";
@@ -880,5 +884,57 @@ function editCultures() {
     debug.select("#cultureCenters").remove();
     exitCulturesManualAssignment("close");
     exitAddCultureMode();
+  }
+
+  async function uploadCulturesData() {
+    const csv = await Formats.csvParser(this.files[0]);
+    this.value = "";
+
+    const cultures = pack.cultures;
+    const shapes = Object.keys(COA.shields.types)
+      .map(type => Object.keys(COA.shields[type]))
+      .flat();
+
+    const populated = pack.cells.pop.map((c, i) => (c ? i : null)).filter(c => c);
+
+    for (const c of csv.iterator((a, b) => +a[0] > +b[0])) {
+      let current;
+      if (+c.id < cultures.length) {
+        current = cultures[c.id];
+        current.removed = false;
+        const ratio = current.urban / (current.rural + current.urban);
+        applyPopulationChange(current.rural, current.urban, c.population * (1 - ratio), c.population * ratio, +c.id);
+      } else {
+        current = {i: cultures.length, center: ra(populated), area: 0, cells: 0, origin: 0, rural: 0, urban: 0};
+        cultures.push(current);
+      }
+
+      current.name = c.culture;
+      current.code = abbreviate(
+        current.name,
+        cultures.map(c => c.code)
+      );
+
+      current.color = c.color;
+      current.expansionism = +c.expansionism;
+      current.origin = +c.origin;
+
+      if (cultureTypes.includes(c.type)) current.type = c.type;
+      else current.type = "Generic";
+
+      const shieldShape = c["emblems shape"].toLowerCase();
+      if (shapes.includes(shieldShape)) current.shield = shieldShape;
+      else current.shield = "heater";
+
+      const nameBaseIndex = nameBases.findIndex(n => n.name == c.namesbase);
+      current.base = nameBaseIndex === -1 ? 0 : nameBaseIndex;
+    }
+
+    const validId = cultures.filter(c => !c.removed).map(c => c.i);
+    cultures.forEach(item => (item.origin = validId.includes(item.origin) ? item.origin : 0));
+    cultures[0].origin = null;
+
+    drawCultures();
+    refreshCulturesEditor();
   }
 }

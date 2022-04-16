@@ -574,20 +574,20 @@ addFontMethod.addEventListener("change", function () {
 });
 
 styleFontSize.addEventListener("change", function () {
-  changeFontSize(+this.value);
+  changeFontSize(getEl(), +this.value);
 });
 
 styleFontPlus.addEventListener("click", function () {
   const size = +getEl().attr("data-size") + 1;
-  changeFontSize(Math.min(size, 999));
+  changeFontSize(getEl(), Math.min(size, 999));
 });
 
 styleFontMinus.addEventListener("click", function () {
   const size = +getEl().attr("data-size") - 1;
-  changeFontSize(Math.max(size, 1));
+  changeFontSize(getEl(), Math.max(size, 1));
 });
 
-function changeFontSize(size) {
+function changeFontSize(el, size) {
   styleFontSize.value = size;
 
   const getSizeOnScale = element => {
@@ -600,7 +600,7 @@ function changeFontSize(size) {
   };
 
   const scaleSize = getSizeOnScale(styleElementSelect.value);
-  getEl().attr("data-size", size).attr("font-size", scaleSize);
+  el.attr("data-size", size).attr("font-size", scaleSize);
 
   if (styleElementSelect.value === "legend") redrawLegend();
 }

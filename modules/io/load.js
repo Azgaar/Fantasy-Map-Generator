@@ -205,7 +205,7 @@ async function parseLoadedData(data) {
     void (function parseSettings() {
       const settings = data[1].split("|");
       if (settings[0]) applyOption(distanceUnitInput, settings[0]);
-      if (settings[1]) distanceScaleInput.value = distanceScaleOutput.value = settings[1];
+      if (settings[1]) distanceScale = distanceScaleInput.value = distanceScaleOutput.value = settings[1];
       if (settings[2]) areaUnit.value = settings[2];
       if (settings[3]) applyOption(heightUnit, settings[3]);
       if (settings[4]) heightExponentInput.value = heightExponentOutput.value = settings[4];
@@ -459,7 +459,7 @@ async function parseLoadedData(data) {
       invalidReligions.forEach(r => {
         const invalidCells = cells.i.filter(i => cells.religion[i] === r);
         invalidCells.forEach(i => (cells.religion[i] = 0));
-        ERROR && console.error("Data Integrity Check. Invalid religion", c, "is assigned to cells", invalidCells);
+        ERROR && console.error("Data Integrity Check. Invalid religion", r, "is assigned to cells", invalidCells);
       });
 
       const invalidFeatures = [...new Set(cells.f)].filter(f => f && !pack.features[f]);
