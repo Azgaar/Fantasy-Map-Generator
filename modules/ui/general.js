@@ -405,7 +405,7 @@ document.querySelectorAll("[data-locked]").forEach(function (e) {
 
 // lock option
 function lock(id) {
-  const input = document.querySelector("[data-stored='" + id + "']");
+  const input = document.querySelector("[data-stored=\"" + id + "\"]");
   if (input) localStorage.setItem(id, input.value);
   const el = document.getElementById("lock_" + id);
   if (!el) return;
