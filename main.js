@@ -760,8 +760,8 @@ function placePoints() {
   const spacing = (grid.spacing = rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2)); // spacing between points before jirrering
   grid.boundary = getBoundaryPoints(graphWidth, graphHeight, spacing);
   grid.points = getJitteredGrid(graphWidth, graphHeight, spacing); // jittered square grid
-  grid.cellsX = Math.floor((graphWidth + 0.5 * spacing) / spacing);
-  grid.cellsY = Math.floor((graphHeight + 0.5 * spacing) / spacing);
+  grid.cellsX = Math.floor((graphWidth + 0.5 * spacing - 1e-10) / spacing);
+  grid.cellsY = Math.floor((graphHeight + 0.5 * spacing - 1e-10) / spacing);
   TIME && console.timeEnd("placePoints");
 }
 
