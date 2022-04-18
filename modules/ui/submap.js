@@ -76,6 +76,7 @@ const generateSubmap = debounce(function () {
   const checked = id => Boolean(document.getElementById(id).checked);
   // Create projection func from current zoom extents
   const [[x0, y0], [x1, y1]] = getViewBoxExtent();
+  const origScale = scale;
 
   const options = {
     lockMarkers: checked("submapLockMarkers"),
@@ -85,8 +86,8 @@ const generateSubmap = debounce(function () {
     addLakesInDepressions: checked("submapAddLakeInDepression"),
     promoteTowns: checked("submapPromoteTowns"),
     smoothHeightMap: scale > 2,
-    inverse: (x, y) => [(x * (x1 - x0)) / graphWidth + x0, (y * (y1 - y0)) / graphHeight + y0],
-    projection: (x, y) => [((x - x0) * graphWidth) / (x1 - x0), ((y - y0) * graphHeight) / (y1 - y0)]
+    inverse: (x, y) => [x / origScale + x0, y / origScale + y0],
+    projection: (x, y) => [(x - x0) * origScale, (y - y0) * origScale],
   };
 
   // converting map position on the planet

@@ -310,6 +310,8 @@ window.Submap = (function () {
     }
     drawMarkers();
 
+    stage("Redraw emblems.");
+    drawEmblems();
     stage("Regenerating Zones.");
     addZones();
     Names.getMapName();
