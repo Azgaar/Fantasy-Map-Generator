@@ -58,7 +58,7 @@ window.Submap = (function () {
     const n = grid.points.length;
     grid.cells.h = new Uint8Array(n); // heightmap
     grid.cells.temp = new Int8Array(n); // temperature
-    grid.cells.prec = new Int8Array(n); // precipitation
+    grid.cells.prec = new Uint8Array(n); // precipitation
     const reverseGridMap = new Uint32Array(n); // cellmap from new -> oldcell
 
     const oldGrid = parentMap.grid;
