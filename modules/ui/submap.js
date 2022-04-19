@@ -146,8 +146,7 @@ window.UISubmap = (function () {
     // resize burgIcons
     const burgIcons = [...document.getElementById("burgIcons").querySelectorAll("g")];
     for (const bi of burgIcons) {
-      const newRadius = rn(minmax(scale, 0.2, 10) * 0.8, 2);
-      styleRadiusInput.value = newRadius;
+      const newRadius = rn(minmax(bi.getAttribute('size') * scale, 0.2, 10), 2);
       changeRadius(newRadius, bi.id);
       const swAttr = bi.attributes['stroke-width'];
       swAttr.value = +swAttr.value * scale;
