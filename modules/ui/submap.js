@@ -47,10 +47,30 @@ window.UISubmap = (function () {
   const resampleCurrentMap = debounce(function () {
     // Resample the whole map to different cell resolution or shape
     const cellNumId = Number(document.getElementById("submapPointsInput").value);
+    const angle = Number(document.getElementById("submapRotationAngle").value) / 180 * Math.PI;
+    const shiftX = Number(document.getElementById("submapShiftX").value);
+    const shiftY = Number(document.getElementById("submapShiftY").value);
+    const [cx, cy] = [graphWidth / 2, graphHeight / 2];
+    const rot = alfa  => (x, y) => [
+      (x - cx) * Math.cos(alfa) - (y - cy) * Math.sin(alfa) + cx,
+      (y - cy) * Math.cos(alfa) + (x - cx) * Math.sin(alfa) + cy
+    ];
+    const shift = (dx, dy) => (x, y) => [x + dx, y + dy];
+    const app = (f, g) => (x, y) => f(...g(x, y));
     if (!cellsDensityConstants[cellNumId]) {
       console.error("Unknown cell number!");
       return;
     }
+
+    let projection, inverse;
+    if (angle || shiftX || shiftY) {
+      projection = app(rot(angle), shift(shiftX, shiftY));
+      inverse = app(shift(-shiftX, -shiftY), rot(-angle));
+    } else {
+      projection = (x, y) => [x, y];
+      inverse = (x, y) => [x, y];
+    }
+
     changeCellsDensity(cellNumId);
     WARN && console.warn("Resampling current map");
     startResample({
@@ -61,8 +81,8 @@ window.UISubmap = (function () {
       promoteTowns: false,
       smoothHeightMap: false,
       rescaleStyles: false,
-      projection: (x, y) => [x, y],
-      inverse: (x, y) => [x, y]
+      projection,
+      inverse,
     });
   }, 1000);
 
