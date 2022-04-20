@@ -1728,8 +1728,8 @@
 
           <p>Click to create a new map:</p>
           <div id="resamplers">
-            <button data-tip="Click to generate new (sub)map from the current viewport" onclick="openSubmapOptions()">Submap</button>
-            <button data-tip="Click to resample (transform) your map to different cellcount" onclick="openRemapOptions()">Resample</button>
+            <button data-tip="Click to generate new (sub)map from the current viewport" onclick="UISubmap.openSubmapOptions()">Submap</button>
+            <button data-tip="Click to resample (transform) your map to different cellcount" onclick="UISubmap.openRemapOptions()">Resample</button>
           </div>
         </div>
 
@@ -4487,6 +4487,10 @@
         <div data-tip="Rivers on the parent map errode land (helps to get similar river network.)">
           <input id="submapDepressRivers" class="checkbox" type="checkbox" />
           <label for="submapDepressRivers" class="checkbox-label">Errode riverbeds.</label>
+        </div>
+        <div data-tip="Rescale styles (burg labels, emblem size) to match the new scale.">
+          <input id="submapRescaleStyles" class="checkbox" type="checkbox" checked/>
+          <label for="submapRescaleStyles" class="checkbox-label">Rescale Styles</label>
         </div>
         <div data-tip="Move all existing towns to the 'largetown' burg group">
           <input id="submapPromoteTowns" class="checkbox" type="checkbox" />
