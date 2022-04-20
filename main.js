@@ -241,26 +241,27 @@ async function checkLoadParameters() {
   }
 
   // open latest map if option is active and map is stored
-  const loadLastMap = () => new Promise((resolve, reject) => {
-    ldb.get("lastMap", blob => {
-      if (blob) {
-        WARN && console.warn("Load last saved map");
-        try {
-          uploadMap(blob);
-          resolve();
-        } catch (error) {
-          reject(error);
+  const loadLastMap = () =>
+    new Promise((resolve, reject) => {
+      ldb.get("lastMap", blob => {
+        if (blob) {
+          WARN && console.warn("Load last saved map");
+          try {
+            uploadMap(blob);
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
+        } else {
+          reject("No map stored");
         }
-      } else {
-        reject("No map stored");
-      }
-    })
-  })
+      });
+    });
 
   if (onloadMap.value === "saved") {
     try {
       await loadLastMap();
-    } catch(error) {
+    } catch (error) {
       ERROR && console.error(error);
       WARN && console.warn("Cannot load stored map, random map to be generated");
       await generateMapOnLoad();
@@ -1625,10 +1626,11 @@ function addZones(number = 1) {
     const neib = ra(state.neighbors.filter(n => n && !states[n].removed));
     if (!neib) return;
     const cell = cells.i.find(i => cells.state[i] === state.i && !state.removed && cells.c[i].some(c => cells.state[c] === neib));
-    const cellsArray = [],
-      queue = [],
-      power = rand(10, 30);
-    if (cell) queue.push.cell;
+    const cellsArray = [];
+    const queue = [];
+    if (cell) queue.push(cell);
+
+    const power = rand(10, 30);
 
     while (queue.length) {
       const q = queue.shift();
