@@ -1413,6 +1413,7 @@ function reMarkFeatures() {
     cells.harbor[i] = water.length;
   };
 
+  if (!cells.i.length) return; // no cells -> there is nothing to do
   for (let i = 1, queue = [0]; queue[0] !== -1; i++) {
     const start = queue[0]; // first cell
     cells.f[start] = i; // assign feature number

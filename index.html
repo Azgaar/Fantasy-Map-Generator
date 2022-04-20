@@ -4456,13 +4456,20 @@
                 type="range"
                 min="1"
                 max="13"
-                value="8"
-                data-cells="50000"
+                value="4"
+                data-cells="10000"
                 oninput="document.getElementById('submapPointsOutput').value=cellsDensityConstants[+this.value]/1000 + 'K'; event.stopPropagation()"
               />
             </td>
             <td>
-              <output id="submapPointsOutput" style="color: #053305">50K</output>
+              <output id="submapPointsOutput" style="color: #053305">10K</output>
+            </td>
+          </tr>
+          <tr>
+            <td>Shift</td>
+            <td colspan="2">
+              X: <input id="submapShiftX" autocomplete="off" min="0" size="4" value="0"/>
+              Y: <input id="submapShiftY" autocomplete="off" min="0" size="4" value="0"/>
             </td>
           </tr>
           <tr>
@@ -4483,10 +4490,13 @@
             </td>
           </tr>
           <tr>
-            <td>Shift</td>
+            <td>Mirror</td>
             <td colspan="2">
-              X: <input id="submapShiftX" autocomplete="off" min="0" size="4" value="0"/>
-              Y: <input id="submapShiftY" autocomplete="off" min="0" size="4" value="0"/>
+              <input type="checkbox" class="checkbox" id="submapMirrorH" />
+              <label for="submapMirrorH" class="checkbox-label" >Horizontally</label>
+              &nbsp;
+              <input type="checkbox" class="checkbox" id="submapMirrorV" />
+              <label for="submapMirrorV" class="checkbox-label">Vertically</label>
             </td>
           </tr>
         </table>

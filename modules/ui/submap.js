@@ -25,6 +25,12 @@ window.UISubmap = (function () {
 
   function openRemapOptions() {
     resetZoom(0);
+    document.getElementById("submapRotationAngle").value = 0;
+    document.getElementById("submapRotationAngleOutput").value = "0°";
+    document.getElementById("submapShiftX").value = 0;
+    document.getElementById("submapShiftY").value = 0;
+    document.getElementById("submapMirrorH").checked = false;
+    document.getElementById("submapMirrorV").checked = false;
     $("#remapOptionsDialog").dialog({
       title: "Resampler options",
       resizable: false,
@@ -50,26 +56,32 @@ window.UISubmap = (function () {
     const angle = Number(document.getElementById("submapRotationAngle").value) / 180 * Math.PI;
     const shiftX = Number(document.getElementById("submapShiftX").value);
     const shiftY = Number(document.getElementById("submapShiftY").value);
+    const mirrorH = document.getElementById("submapMirrorH").checked;
+    const mirrorV = document.getElementById("submapMirrorV").checked;
+    if (!cellsDensityConstants[cellNumId]) {
+      console.error("Unknown cell number!");
+      return;
+    }
+
     const [cx, cy] = [graphWidth / 2, graphHeight / 2];
     const rot = alfa  => (x, y) => [
       (x - cx) * Math.cos(alfa) - (y - cy) * Math.sin(alfa) + cx,
       (y - cy) * Math.cos(alfa) + (x - cx) * Math.sin(alfa) + cy
     ];
     const shift = (dx, dy) => (x, y) => [x + dx, y + dy];
+    const flipH = (x, y) => [-x + 2 * cx, y];
+    const flipV = (x, y) => [x, -y + 2 * cy];
     const app = (f, g) => (x, y) => f(...g(x, y));
-    if (!cellsDensityConstants[cellNumId]) {
-      console.error("Unknown cell number!");
-      return;
-    }
+    const id = (x, y) => [x, y];
+    let projection = id, inverse = id;
 
-    let projection, inverse;
-    if (angle || shiftX || shiftY) {
-      projection = app(shift(shiftX, shiftY), rot(angle));
-      inverse = app(rot(-angle), shift(-shiftX, -shiftY));
-    } else {
-      projection = (x, y) => [x, y];
-      inverse = (x, y) => [x, y];
+    if (angle) [projection, inverse] = [rot(angle), rot(-angle)];
+    if (shiftX || shiftY) {
+      projection = app(shift(shiftX, shiftY), projection);
+      inverse = app(inverse, shift(-shiftX, -shiftY));
     }
+    if (mirrorH) [projection, inverse] = [app(flipH, projection), app(inverse, flipH)];
+    if (mirrorV) [projection, inverse] = [app(flipV, projection), app(inverse, flipV)];
 
     changeCellsDensity(cellNumId);
     WARN && console.warn("Resampling current map");
