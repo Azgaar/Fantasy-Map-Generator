@@ -64,8 +64,8 @@ window.UISubmap = (function () {
 
     let projection, inverse;
     if (angle || shiftX || shiftY) {
-      projection = app(rot(angle), shift(shiftX, shiftY));
-      inverse = app(shift(-shiftX, -shiftY), rot(-angle));
+      projection = app(shift(shiftX, shiftY), rot(angle));
+      inverse = app(rot(-angle), shift(-shiftX, -shiftY));
     } else {
       projection = (x, y) => [x, y];
       inverse = (x, y) => [x, y];
