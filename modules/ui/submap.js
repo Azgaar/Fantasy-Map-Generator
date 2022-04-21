@@ -141,16 +141,16 @@ window.UISubmap = (function () {
 
   async function startResample(options) {
     // Do model changes with Submap.resample then do view changes if needed.
-    undraw();
     resetZoom(0);
     let oldstate = {
       grid: deepCopy(grid),
       pack: deepCopy(pack),
+      notes: deepCopy(notes),
       seed,
       graphWidth,
       graphHeight
     };
-
+    undraw();
     try {
       const oldScale = scale;
       await Submap.resample(oldstate, options);

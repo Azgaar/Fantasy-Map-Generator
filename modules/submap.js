@@ -315,6 +315,8 @@ window.Submap = (function () {
     stage("Regenerating Zones.");
     addZones();
     Names.getMapName();
+    stage("Restoring Notes.");
+    notes = parentMap.notes;
     stage("Submap done.");
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - timeStart) / 1000, 2)}s`);
