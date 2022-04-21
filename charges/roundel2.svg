@@ -1,7 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200">
-  <metadata author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0"/>
-  <g id="roundel2">
-    <circle cx="100" cy="100" r="30"/>
-    <path fill="none" stroke-width=".5" d="M124 95a23 23 0 01-25 30"/>
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200"><metadata author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0"/><g id="roundel2"><circle cx="100" cy="100" r="30"/><path fill="none" stroke-width=".5" d="M124 95a23 23 0 01-25 30"/></g></svg>

@@ -1,6 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200">
-  <metadata author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0"/>
-  <g id="crossOrthodox" stroke-width=".5">
-    <path d="m 95,60 h 10 v 8 h 10 v 10 h -10 v 7 h 25 v 10 h -25 v 27 l 10,5 v 9 l -10,-5 v 9 H 95 v -14 l -10,-5 v -9 l 10,5 V 95 H 70 V 85 H 95 V 78 H 85 V 68 h 10 z"/>
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200"><metadata author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0"/><g id="crossOrthodox" stroke-width=".5"><path d="m 95,60 h 10 v 8 h 10 v 10 h -10 v 7 h 25 v 10 h -25 v 27 l 10,5 v 9 l -10,-5 v 9 H 95 v -14 l -10,-5 v -9 l 10,5 V 95 H 70 V 85 H 95 V 78 H 85 V 68 h 10 z"/></g></svg>
