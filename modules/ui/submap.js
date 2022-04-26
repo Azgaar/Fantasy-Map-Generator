@@ -170,7 +170,6 @@ window.UISubmap = (function () {
     oldstate = null; // destroy old state to free memory
 
     restoreLayers();
-    turnButtonOn("toggleMarkers");
     if (ThreeD.options.isOn) ThreeD.redraw();
     if ($("#worldConfigurator").is(":visible")) editWorld();
   }
