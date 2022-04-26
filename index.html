@@ -1247,7 +1247,7 @@
                 <input id="pointsInput" type="range" min="1" max="13" value="4" data-cells="10000" />
               </td>
               <td>
-                <output id="pointsOutput_formatted" style="color: #053305">10K</output>
+                <output id="pointsOutputFormatted" style="color: #053305">10K</output>
               </td>
             </tr>
 
@@ -1729,7 +1729,7 @@
           <p>Click to create a new map:</p>
           <div>
             <button id="openSubmapMenu" data-tip="Click to generate a submap from the current viewport">Submap</button>
-            <button id="openResampleMenu" data-tip="Click to transform the map" onclick="UISubmap.openRemapOptions()">Resample</button>
+            <button id="openResampleMenu" data-tip="Click to transform the map">Resample</button>
           </div>
         </div>
 
@@ -4444,64 +4444,42 @@
         <div id="tileStatus" style="background-color: #33333310; font-style: italic"></div>
       </div>
 
-      <div id="remapOptionsDialog" style="display: none; max-width: 300px" class="dialog">
-        <p style="font-style: italic; color: red; font-weight: bold">Warning! This operation is destructive and irreversible. Don't forget to save your map!</p>
-        <table>
-          <tr>
-            <td>Points number</td>
-            <td>
-              <input
-                id="submapPointsInput"
-                autocomplete="off"
-                type="range"
-                min="1"
-                max="13"
-                value="4"
-                data-cells="10000"
-                oninput="document.getElementById('submapPointsOutput').value=cellsDensityConstants[+this.value]/1000 + 'K'; event.stopPropagation()"
-              />
-            </td>
-            <td>
-              <output id="submapPointsOutput" style="color: #053305">10K</output>
-            </td>
-          </tr>
-          <tr>
-            <td>Shift</td>
-            <td colspan="2">
-              X: <input id="submapShiftX" autocomplete="off" min="0" size="4" value="0"/>
-              Y: <input id="submapShiftY" autocomplete="off" min="0" size="4" value="0"/>
-            </td>
-          </tr>
-          <tr>
-            <td>Rotate <i class="icon-cw"></i></td>
-            <td>
-              <input
-                id="submapRotationAngle"
-                autocomplete="off"
-                type="range"
-                min="0"
-                max="359"
-                value="0"
-                oninput="document.getElementById('submapRotationAngleOutput').value=+this.value + '°'"
-              />
-            </td>
-            <td>
-              <output id="submapRotationAngleOutput" style="color: #053305">0°</output>
-            </td>
-          </tr>
-          <tr>
-            <td>Mirror</td>
-            <td colspan="2">
-              <input type="checkbox" class="checkbox" id="submapMirrorH" />
-              <label for="submapMirrorH" class="checkbox-label" >Horizontally</label>
-              &nbsp;
-              <input type="checkbox" class="checkbox" id="submapMirrorV" />
-              <label for="submapMirrorV" class="checkbox-label">Vertically</label>
-            </td>
-          </tr>
-        </table>
+      <div id="resampleDialog" style="display: none" class="dialog">
+        <p style="font-weight: bold">
+          This operation is destructive and irreversible. It will create a completely new map based on the current one. Don't forget to save the current project
+          as a .map file first!
+        </p>
+        <div style="display: grid; grid-template-columns: 2fr 3fr; grid-template-rows: repeat(4, 1fr); align-items: center; padding-left: 0.5em">
+          <div>Points number</div>
+          <div>
+            <input id="submapPointsInput" type="range" min="1" max="13" value="4" />
+            <output id="submapPointsOutputFormatted" style="color: #053305">10K</output>
+          </div>
+
+          <div>Shift</div>
+          <div>
+            <label>X: <input id="submapShiftX" type="number" min="0" size="4" value="0" /></label>
+            <label>Y: <input id="submapShiftY" type="number" min="0" size="4" value="0" /></label>
+          </div>
+
+          <div>Rotate</div>
+          <div>
+            <input id="submapAngleInput" type="range" min="0" max="359" value="0" />
+            <output id="submapAngleOutput">0</output>°
+          </div>
+
+          <div>Mirror</div>
+          <div>
+            <input type="checkbox" class="checkbox" id="submapMirrorH" />
+            <label for="submapMirrorH" class="checkbox-label">horizontally</label>
+            &nbsp;
+            <input type="checkbox" class="checkbox" id="submapMirrorV" />
+            <label for="submapMirrorV" class="checkbox-label">vertically</label>
+          </div>
+        </div>
       </div>
-      <div id="submapOptionsDialog" style="display: none; max-width: 300px" class="dialog">
+
+      <div id="submapOptionsDialog" style="display: none" class="dialog">
         <p style="font-style: italic; color: red; font-weight: bold">
           Warning! This operation is destructive and irreversible. Don't forget to save your original map!
         </p>

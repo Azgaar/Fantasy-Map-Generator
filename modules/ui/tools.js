@@ -73,8 +73,8 @@ toolsContent.addEventListener("click", function (event) {
   else if (button === "addRoute") toggleAddRoute();
   else if (button === "addMarker") toggleAddMarker();
   // click to create a new map buttons
-  else if (button === "openSubmapMenu") UISubmap.openSubmapOptions();
-  else if (button === "openResampleMenu") UISubmap.openRemapOptions();
+  else if (button === "openSubmapMenu") UISubmap.openSubmapMenu();
+  else if (button === "openResampleMenu") UISubmap.openResampleMenu();
 });
 
 function processFeatureRegeneration(event, button) {

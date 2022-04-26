@@ -1,16 +1,21 @@
 "use strict";
-
-/*
-UI elements for submap generation
-*/
+// UI elements for submap generation
 
 window.UISubmap = (function () {
-  function openSubmapOptions() {
+  document.getElementById("submapPointsInput").addEventListener("input", function () {
+    const output = document.getElementById("submapPointsOutputFormatted");
+    const cells = cellsDensityMap[+this.value] || 1000;
+    this.dataset.cells = cells;
+    output.value = getCellsDensityValue(cells);
+    output.style.color = getCellsDensityColor(cells);
+  });
+
+  function openSubmapMenu() {
     $("#submapOptionsDialog").dialog({
-      title: "Submap options",
+      title: "Create a submap",
+      width: "30em",
       resizable: false,
-      width: fitContent(),
-      position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"},
+      position: {my: "center", at: "center", of: "svg"},
       buttons: {
         Submap: function () {
           $(this).dialog("close");
@@ -23,19 +28,21 @@ window.UISubmap = (function () {
     });
   }
 
-  function openRemapOptions() {
+  function openResampleMenu() {
     resetZoom(0);
-    document.getElementById("submapRotationAngle").value = 0;
-    document.getElementById("submapRotationAngleOutput").value = "0°";
+
+    document.getElementById("submapAngleInput").value = 0;
+    document.getElementById("submapAngleOutput").value = "0°";
     document.getElementById("submapShiftX").value = 0;
     document.getElementById("submapShiftY").value = 0;
     document.getElementById("submapMirrorH").checked = false;
     document.getElementById("submapMirrorV").checked = false;
-    $("#remapOptionsDialog").dialog({
-      title: "Resampler options",
+
+    $("#resampleDialog").dialog({
+      title: "Resample map",
+      width: "30em",
       resizable: false,
-      width: fitContent(),
-      position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"},
+      position: {my: "center", at: "center", of: "svg"},
       buttons: {
         Resample: function () {
           $(this).dialog("close");
@@ -48,32 +55,28 @@ window.UISubmap = (function () {
     });
   }
 
-  /* callbacks */
-
+  // Resample the whole map to different cell resolution or shape
   const resampleCurrentMap = debounce(function () {
-    // Resample the whole map to different cell resolution or shape
-    const cellNumId = Number(document.getElementById("submapPointsInput").value);
-    const angle = Number(document.getElementById("submapRotationAngle").value) / 180 * Math.PI;
-    const shiftX = Number(document.getElementById("submapShiftX").value);
-    const shiftY = Number(document.getElementById("submapShiftY").value);
+    WARN && console.warn("Resampling current map");
+    const cellNumId = +document.getElementById("submapPointsInput").value;
+    if (!cellsDensityMap[cellNumId]) return console.error("Unknown cell number!");
+
+    const angle = (+document.getElementById("submapAngleInput").value / 180) * Math.PI;
+    const shiftX = +document.getElementById("submapShiftX").value;
+    const shiftY = +document.getElementById("submapShiftY").value;
     const mirrorH = document.getElementById("submapMirrorH").checked;
     const mirrorV = document.getElementById("submapMirrorV").checked;
-    if (!cellsDensityConstants[cellNumId]) {
-      console.error("Unknown cell number!");
-      return;
-    }
 
     const [cx, cy] = [graphWidth / 2, graphHeight / 2];
-    const rot = alfa  => (x, y) => [
-      (x - cx) * Math.cos(alfa) - (y - cy) * Math.sin(alfa) + cx,
-      (y - cy) * Math.cos(alfa) + (x - cx) * Math.sin(alfa) + cy
-    ];
+    const rot = alfa => (x, y) => [(x - cx) * Math.cos(alfa) - (y - cy) * Math.sin(alfa) + cx, (y - cy) * Math.cos(alfa) + (x - cx) * Math.sin(alfa) + cy];
     const shift = (dx, dy) => (x, y) => [x + dx, y + dy];
     const flipH = (x, y) => [-x + 2 * cx, y];
     const flipV = (x, y) => [x, -y + 2 * cy];
     const app = (f, g) => (x, y) => f(...g(x, y));
     const id = (x, y) => [x, y];
-    let projection = id, inverse = id;
+
+    let projection = id;
+    let inverse = id;
 
     if (angle) [projection, inverse] = [rot(angle), rot(-angle)];
     if (shiftX || shiftY) {
@@ -84,7 +87,6 @@ window.UISubmap = (function () {
     if (mirrorV) [projection, inverse] = [app(flipV, projection), app(inverse, flipV)];
 
     changeCellsDensity(cellNumId);
-    WARN && console.warn("Resampling current map");
     startResample({
       lockMarkers: false,
       lockBurgs: false,
@@ -94,17 +96,16 @@ window.UISubmap = (function () {
       smoothHeightMap: false,
       rescaleStyles: false,
       projection,
-      inverse,
+      inverse
     });
   }, 1000);
 
+  // Create submap from the current map. Submap limits defined by the current window size (canvas viewport)
   const generateSubmap = debounce(function () {
-    // Create submap from the current map
-    // submap limits defined by the current window size (canvas viewport)
-
     WARN && console.warn("Resampling current map");
     closeDialogs("#worldConfigurator, #options3d");
     const checked = id => Boolean(document.getElementById(id).checked);
+
     // Create projection func from current zoom extents
     const [[x0, y0], [x1, y1]] = getViewBoxExtent();
     const origScale = scale;
@@ -140,7 +141,7 @@ window.UISubmap = (function () {
   }, 1000);
 
   async function startResample(options) {
-    // Do model changes with Submap.resample then do view changes if needed.
+    // Do model changes with Submap.resample then do view changes if needed
     resetZoom(0);
     let oldstate = {
       grid: deepCopy(grid),
@@ -203,12 +204,12 @@ window.UISubmap = (function () {
     ERROR && console.error(error);
     clearMainTip();
 
-    alertMessage.innerHTML = `Map resampling failed :_(.
+    alertMessage.innerHTML = `Map resampling failed:
       <br>You may retry after clearing stored data or contact us at discord.
       <p id="errorBox">${parseError(error)}</p>`;
     $("#alert").dialog({
       resizable: false,
-      title: "Generation error",
+      title: "Resampling error",
       width: "32em",
       buttons: {
         Ok: function () {
@@ -219,5 +220,5 @@ window.UISubmap = (function () {
     });
   }
 
-  return {openSubmapOptions, openRemapOptions};
+  return {openSubmapMenu, openResampleMenu};
 })();
