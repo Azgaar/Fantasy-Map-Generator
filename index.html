@@ -274,7 +274,7 @@
     <div id="loading">
       <div id="titleName"><t data-t="titleName">Azgaar's</t></div>
       <div id="title"><t data-t="title">Fantasy Map Generator</t></div>
-      <div id="version"><t data-t="version">v. </t>1.73</div>
+      <div id="version"><t data-t="version">v. </t>1.8</div>
       <p id="loading-text"><t data-t="loading">LOADING</t><span>.</span><span>.</span><span>.</span></p>
     </div>
 
@@ -1727,9 +1727,9 @@
           </div>
 
           <p>Click to create a new map:</p>
-          <div id="resamplers">
-            <button data-tip="Click to generate new (sub)map from the current viewport" onclick="UISubmap.openSubmapOptions()">Submap</button>
-            <button data-tip="Click to resample (transform) your map to different cellcount" onclick="UISubmap.openRemapOptions()">Resample</button>
+          <div>
+            <button id="openSubmapMenu" data-tip="Click to generate a submap from the current viewport">Submap</button>
+            <button id="openResampleMenu" data-tip="Click to transform the map" onclick="UISubmap.openRemapOptions()">Resample</button>
           </div>
         </div>
 
@@ -4489,7 +4489,7 @@
           <label for="submapDepressRivers" class="checkbox-label">Errode riverbeds.</label>
         </div>
         <div data-tip="Rescale styles (burg labels, emblem size) to match the new scale.">
-          <input id="submapRescaleStyles" class="checkbox" type="checkbox" checked/>
+          <input id="submapRescaleStyles" class="checkbox" type="checkbox" checked />
           <label for="submapRescaleStyles" class="checkbox-label">Rescale Styles</label>
         </div>
         <div data-tip="Move all existing towns to the 'largetown' burg group">

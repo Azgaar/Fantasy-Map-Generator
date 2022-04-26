@@ -87,7 +87,7 @@ window.UISubmap = (function () {
       rescaleStyles: checked("submapRescaleStyles"),
       smoothHeightMap: scale > 2,
       inverse: (x, y) => [x / origScale + x0, y / origScale + y0],
-      projection: (x, y) => [(x - x0) * origScale, (y - y0) * origScale],
+      projection: (x, y) => [(x - x0) * origScale, (y - y0) * origScale]
     };
 
     // converting map position on the planet
@@ -146,17 +146,17 @@ window.UISubmap = (function () {
     // resize burgIcons
     const burgIcons = [...document.getElementById("burgIcons").querySelectorAll("g")];
     for (const bi of burgIcons) {
-      const newRadius = rn(minmax(bi.getAttribute('size') * scale, 0.2, 10), 2);
+      const newRadius = rn(minmax(bi.getAttribute("size") * scale, 0.2, 10), 2);
       changeRadius(newRadius, bi.id);
-      const swAttr = bi.attributes['stroke-width'];
+      const swAttr = bi.attributes["stroke-width"];
       swAttr.value = +swAttr.value * scale;
     }
 
     // burglabels
-    const burgLabels= [...document.getElementById("burgLabels").querySelectorAll("g")];
+    const burgLabels = [...document.getElementById("burgLabels").querySelectorAll("g")];
     for (const bl of burgLabels) {
-      const size = +bl.dataset['size'];
-      bl.dataset['size'] = Math.max(rn((size + size / scale) / 2, 2), 1) * scale;
+      const size = +bl.dataset["size"];
+      bl.dataset["size"] = Math.max(rn((size + size / scale) / 2, 2), 1) * scale;
     }
 
     // emblems
@@ -187,5 +187,5 @@ window.UISubmap = (function () {
     });
   }
 
-  return {openSubmapOptions, openRemapOptions}
+  return {openSubmapOptions, openRemapOptions};
 })();
