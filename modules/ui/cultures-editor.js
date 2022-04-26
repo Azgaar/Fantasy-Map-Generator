@@ -894,14 +894,13 @@ function editCultures() {
     const shapes = Object.keys(COA.shields.types)
       .map(type => Object.keys(COA.shields[type]))
       .flat();
-
-    const populated = pack.cells.pop.map((c, i) => (c ? i : null)).filter(c => c);
-
+    const populated = pack.cells.pop.map((c, i) => c? i: null).filter(c => c);
+    cultures.forEach((item) => {if (item.i) item.removed = true});
     for (const c of csv.iterator((a, b) => +a[0] > +b[0])) {
       let current;
       if (+c.id < cultures.length) {
         current = cultures[c.id];
-        current.removed = false;
+
         const ratio = current.urban / (current.rural + current.urban);
         applyPopulationChange(current.rural, current.urban, c.population * (1 - ratio), c.population * ratio, +c.id);
       } else {
@@ -909,6 +908,7 @@ function editCultures() {
         cultures.push(current);
       }
 
+      current.removed = false;
       current.name = c.culture;
       current.code = abbreviate(
         current.name,
