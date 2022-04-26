@@ -308,7 +308,7 @@ window.Submap = (function () {
         if (options.lockMarkers) m.lock = true;
       }
     }
-    drawMarkers();
+    if (layerIsOn("toggleMarkers")) drawMarkers();
 
     stage("Redraw emblems.");
     drawEmblems();

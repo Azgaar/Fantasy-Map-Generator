@@ -335,27 +335,35 @@ function copyMapURL() {
     .catch(err => tip("Could not copy URL: " + err, false, "error", 5000));
 }
 
-const cellsDensityConstants =  {
-    1: 1000,
-    2: 2000,
-    3: 5000,
-    4: 10000,
-    5: 20000,
-    6: 30000,
-    7: 40000,
-    8: 50000,
-    9: 60000,
-    10: 70000,
-    11: 80000,
-    12: 90000,
-    13: 100000,
+const cellsDensityMap = {
+  1: 1000,
+  2: 2000,
+  3: 5000,
+  4: 10000,
+  5: 20000,
+  6: 30000,
+  7: 40000,
+  8: 50000,
+  9: 60000,
+  10: 70000,
+  11: 80000,
+  12: 90000,
+  13: 100000
 };
 
 function changeCellsDensity(value) {
-  const cells = value in cellsDensityConstants? cellsDensityConstants[value]: 1000;
+  const cells = cellsDensityMap[value] || 1000;
   pointsInput.dataset.cells = cells;
-  pointsOutput_formatted.value = cells / 1000 + "K";
-  pointsOutput_formatted.style.color = cells > 50000 ? "#b12117" : cells !== 10000 ? "#dfdf12" : "#053305";
+  pointsOutputFormatted.value = getCellsDensityValue(cells);
+  pointsOutputFormatted.style.color = getCellsDensityColor(cells);
+}
+
+function getCellsDensityValue(cells) {
+  return cells / 1000 + "K";
+}
+
+function getCellsDensityColor(cells) {
+  return cells > 50000 ? "#b12117" : cells !== 10000 ? "#dfdf12" : "#053305";
 }
 
 function changeCultureSet() {

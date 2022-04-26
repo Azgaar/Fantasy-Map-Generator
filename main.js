@@ -2,7 +2,7 @@
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 "use strict";
-const version = "1.732"; // generator version
+const version = "1.8"; // generator version
 document.title += " v" + version;
 
 // switches to disable/enable logging features
@@ -458,6 +458,8 @@ function showWelcomeMessage() {
   alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <strong>${version}</strong>.
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
     <ul><strong>Latest changes:</strong>
+      <li>Submap tool by Goteguru</li>
+      <li>Resample tool by Goteguru</li>
       <li>Pre-defined heightmaps</li>
       <li>Advanced notes editor</li>
       <li>Zones editor: filter by type</li>
@@ -465,8 +467,6 @@ function showWelcomeMessage() {
       <li>New style presets: Cyberpunk and Atlas</li>
       <li>Burg temperature graph</li>
       <li>4 new textures</li>
-      <li>Province capture logic rework</li>
-      <li>Button to release all provinces</li>
     </ul>
 
     <p>Join our ${discord} and ${reddit} to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
