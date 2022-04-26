@@ -4480,41 +4480,43 @@
       </div>
 
       <div id="submapOptionsDialog" style="display: none" class="dialog">
-        <p style="font-style: italic; color: red; font-weight: bold">
-          Warning! This operation is destructive and irreversible. Don't forget to save your original map!
+        <p style="font-weight: bold">
+          This operation is destructive and irreversible. It will create a completely new map based on the current one. Don't forget to save the current project
+          as a .map file first!
         </p>
-        <p><em>Settings to be changed:</em> Population rate, map pixel size.</p>
-        <p><em>Data to be copied:</em> Heightmap, Biome, Religion, Population, Precipitation, Cultures, States, Provinces, Regiments (military), Markers.</p>
-        <p><em>Data to be destroyed (regenerated):</em> Zones, Roads, Rivers (mostly regenerate at the same place).</p>
-        <p>Remapping Burgs (cities) may be imprecise, you will need to fix missing or wrongly mapped burgs manually.</p>
-        <p>Lock remapped items for:</p>
-        <div data-tip="Lock all markers copied from the original map.">
+
+        <p>Settings to be changed: population rate, map pixel size</p>
+        <p>Data to be copied: heightmap, biomes, religions, population, precipitation, cultures, states, provinces, military regiments</p>
+        <p>Data to be regenerated: zones, roads, rivers</p>
+        <p>Burgs may be remapped incorrectly, manual change is required</p>
+
+        <p>Keep data for:</p>
+        <div data-tip="Lock all markers copied from the original map">
           <input id="submapLockMarkers" class="checkbox" type="checkbox" checked />
           <label for="submapLockMarkers" class="checkbox-label">Markers</label>
         </div>
-        <div data-tip="Lock all burgs copied from the original map.">
+        <div data-tip="Lock all burgs copied from the original map">
           <input id="submapLockBurgs" class="checkbox" type="checkbox" checked />
-          <label for="submapLockBurgs" class="checkbox-label">Burgs (cities)</label>
+          <label for="submapLockBurgs" class="checkbox-label">Burgs</label>
         </div>
 
-        <p>Extra / experimental features:</p>
-        <div data-tip="Rivers on the parent map errode land (helps to get similar river network.)">
+        <p>Experimental features:</p>
+        <div data-tip="Rivers on the parent map will errode land (helps to get similar river network)">
           <input id="submapDepressRivers" class="checkbox" type="checkbox" />
-          <label for="submapDepressRivers" class="checkbox-label">Errode riverbeds.</label>
+          <label for="submapDepressRivers" class="checkbox-label">Errode riverbeds</label>
         </div>
-        <div data-tip="Rescale styles (burg labels, emblem size) to match the new scale.">
+        <div data-tip="Rescale styles (burg labels, emblem size) to match the new scale">
           <input id="submapRescaleStyles" class="checkbox" type="checkbox" checked />
-          <label for="submapRescaleStyles" class="checkbox-label">Rescale Styles</label>
+          <label for="submapRescaleStyles" class="checkbox-label">Rescale styles</label>
         </div>
         <div data-tip="Move all existing towns to the 'largetown' burg group">
           <input id="submapPromoteTowns" class="checkbox" type="checkbox" />
           <label for="submapPromoteTowns" class="checkbox-label">Promote towns to largetowns</label>
         </div>
-        <div data-tip="Add lakes in depressions. (Can be very slow on big landmasses!)">
+        <div data-tip="Add lakes in depressions (can be very slow on big landmasses)">
           <input id="submapAddLakeInDepression" class="checkbox" type="checkbox" />
           <label for="submapAddLakeInDepression" class="checkbox-label">Add lakes in depressions (slow)</label>
         </div>
-        <hr />
       </div>
 
       <div id="alert" style="display: none" class="dialog">
