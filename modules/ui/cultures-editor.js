@@ -417,6 +417,26 @@ function editCultures() {
     tip(`Names for ${cBurgs.length} burgs are regenerated`, false, "success");
   }
 
+  function removeCultureModel(culture) {
+    cults.select("#culture" + culture).remove();
+    debug.select("#cultureCenter" + culture).remove();
+
+    pack.burgs.filter(b => b.culture == culture).forEach(b => (b.culture = 0));
+    pack.states.forEach((s, i) => {
+      if (s.culture === culture) s.culture = 0;
+    });
+    pack.cells.culture.forEach((c, i) => {
+      if (c === culture) pack.cells.culture[i] = 0;
+    });
+    pack.cultures[culture].removed = true;
+
+    const origin = pack.cultures[culture].origin;
+    pack.cultures.forEach(c => {
+      if (c.origin === culture) c.origin = origin;
+    });
+    refreshCulturesEditor();
+  }
+
   function cultureRemove() {
     if (customization === 4) return;
     const culture = +this.parentNode.dataset.id;
@@ -427,23 +447,7 @@ function editCultures() {
       title: "Remove culture",
       buttons: {
         Remove: function () {
-          cults.select("#culture" + culture).remove();
-          debug.select("#cultureCenter" + culture).remove();
-
-          pack.burgs.filter(b => b.culture == culture).forEach(b => (b.culture = 0));
-          pack.states.forEach((s, i) => {
-            if (s.culture === culture) s.culture = 0;
-          });
-          pack.cells.culture.forEach((c, i) => {
-            if (c === culture) pack.cells.culture[i] = 0;
-          });
-          pack.cultures[culture].removed = true;
-
-          const origin = pack.cultures[culture].origin;
-          pack.cultures.forEach(c => {
-            if (c.origin === culture) c.origin = origin;
-          });
-          refreshCulturesEditor();
+          removeCultureModel(culture);
           $(this).dialog("close");
         },
         Cancel: function () {
@@ -930,9 +934,7 @@ function editCultures() {
       current.base = nameBaseIndex === -1 ? 0 : nameBaseIndex;
     }
 
-    const validId = cultures.filter(c => !c.removed).map(c => c.i);
-    cultures.forEach(item => (item.origin = validId.includes(item.origin) ? item.origin : 0));
-    cultures[0].origin = null;
+    cultures.filter(c => c.removed).forEach(c => removeCultureModel(c.i))
 
     drawCultures();
     refreshCulturesEditor();
