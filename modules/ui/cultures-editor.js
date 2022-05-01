@@ -417,6 +417,26 @@ function editCultures() {
     tip(`Names for ${cBurgs.length} burgs are regenerated`, false, "success");
   }
 
+  function removeCultureModel(culture) {
+    cults.select("#culture" + culture).remove();
+    debug.select("#cultureCenter" + culture).remove();
+
+    pack.burgs.filter(b => b.culture == culture).forEach(b => (b.culture = 0));
+    pack.states.forEach((s, i) => {
+      if (s.culture === culture) s.culture = 0;
+    });
+    pack.cells.culture.forEach((c, i) => {
+      if (c === culture) pack.cells.culture[i] = 0;
+    });
+    pack.cultures[culture].removed = true;
+
+    const origin = pack.cultures[culture].origin;
+    pack.cultures.forEach(c => {
+      if (c.origin === culture) c.origin = origin;
+    });
+    refreshCulturesEditor();
+  }
+
   function cultureRemove() {
     if (customization === 4) return;
     const culture = +this.parentNode.dataset.id;
@@ -427,23 +447,7 @@ function editCultures() {
       title: "Remove culture",
       buttons: {
         Remove: function () {
-          cults.select("#culture" + culture).remove();
-          debug.select("#cultureCenter" + culture).remove();
-
-          pack.burgs.filter(b => b.culture == culture).forEach(b => (b.culture = 0));
-          pack.states.forEach((s, i) => {
-            if (s.culture === culture) s.culture = 0;
-          });
-          pack.cells.culture.forEach((c, i) => {
-            if (c === culture) pack.cells.culture[i] = 0;
-          });
-          pack.cultures[culture].removed = true;
-
-          const origin = pack.cultures[culture].origin;
-          pack.cultures.forEach(c => {
-            if (c.origin === culture) c.origin = origin;
-          });
-          refreshCulturesEditor();
+          removeCultureModel(culture);
           $(this).dialog("close");
         },
         Cancel: function () {
@@ -894,14 +898,13 @@ function editCultures() {
     const shapes = Object.keys(COA.shields.types)
       .map(type => Object.keys(COA.shields[type]))
       .flat();
-
-    const populated = pack.cells.pop.map((c, i) => (c ? i : null)).filter(c => c);
-
+    const populated = pack.cells.pop.map((c, i) => c? i: null).filter(c => c);
+    cultures.forEach((item) => {if (item.i) item.removed = true});
     for (const c of csv.iterator((a, b) => +a[0] > +b[0])) {
       let current;
       if (+c.id < cultures.length) {
         current = cultures[c.id];
-        current.removed = false;
+
         const ratio = current.urban / (current.rural + current.urban);
         applyPopulationChange(current.rural, current.urban, c.population * (1 - ratio), c.population * ratio, +c.id);
       } else {
@@ -909,6 +912,7 @@ function editCultures() {
         cultures.push(current);
       }
 
+      current.removed = false;
       current.name = c.culture;
       current.code = abbreviate(
         current.name,
@@ -930,9 +934,7 @@ function editCultures() {
       current.base = nameBaseIndex === -1 ? 0 : nameBaseIndex;
     }
 
-    const validId = cultures.filter(c => !c.removed).map(c => c.i);
-    cultures.forEach(item => (item.origin = validId.includes(item.origin) ? item.origin : 0));
-    cultures[0].origin = null;
+    cultures.filter(c => c.removed).forEach(c => removeCultureModel(c.i))
 
     drawCultures();
     refreshCulturesEditor();
