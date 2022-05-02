@@ -105,7 +105,8 @@ function showSupporters() {
     Jonathan Williams,ojacid .,Brian Wilson,A Patreon of the Ahts,Shubham Jakhotiya,www15o,Jan Bundesmann,Angelique Badger,Joshua Xiong,Moist mongol,
     Frank Fewkes,jason baldrick,Game Master Pro,Andrew Kircher,Preston Mitchell,Chris Kohut,Emarandzeb,Trentin Bergeron,Damon Gallaty,Pleaseworkforonce,
     Jordan,William Markus,Sidr Dim,Alexander Whittaker,The Next Level,Patrick Valverde,Markus Peham,Daniel Cooper,the Beagles of Neorbus,Marley Moule,
-    Maximilian Schielke,Johnathan Xavier Hutchinson,Ele,Rita,Randy Ross,John Wick,RedSpaz,cameron cannon,Ian Grau-Fay,Kyle Barrett,Charlotte Wiland`;
+    Maximilian Schielke,Johnathan Xavier Hutchinson,Ele,Rita,Randy Ross,John Wick,RedSpaz,cameron cannon,Ian Grau-Fay,Kyle Barrett,Charlotte Wiland,
+    David Kaul,E. Jason Davis,Cyberate,Atenfox,Sea Wolf,Holly Loveless,Roekai,Alden Z,angel carrillo,Sam Spoerle`;
 
   const array = supporters
     .replace(/(?:\r\n|\r|\n)/g, "")
@@ -334,27 +335,35 @@ function copyMapURL() {
     .catch(err => tip("Could not copy URL: " + err, false, "error", 5000));
 }
 
-function changeCellsDensity(value) {
-  const convert = v => {
-    if (v == 1) return 1000;
-    if (v == 2) return 2000;
-    if (v == 3) return 5000;
-    if (v == 4) return 10000;
-    if (v == 5) return 20000;
-    if (v == 6) return 30000;
-    if (v == 7) return 40000;
-    if (v == 8) return 50000;
-    if (v == 9) return 60000;
-    if (v == 10) return 70000;
-    if (v == 11) return 80000;
-    if (v == 12) return 90000;
-    if (v == 13) return 100000;
-  };
-  const cells = convert(value);
+const cellsDensityMap = {
+  1: 1000,
+  2: 2000,
+  3: 5000,
+  4: 10000,
+  5: 20000,
+  6: 30000,
+  7: 40000,
+  8: 50000,
+  9: 60000,
+  10: 70000,
+  11: 80000,
+  12: 90000,
+  13: 100000
+};
 
-  pointsInput.setAttribute("data-cells", cells);
-  pointsOutput_formatted.value = cells / 1000 + "K";
-  pointsOutput_formatted.style.color = cells > 50000 ? "#b12117" : cells !== 10000 ? "#dfdf12" : "#053305";
+function changeCellsDensity(value) {
+  const cells = cellsDensityMap[value] || 1000;
+  pointsInput.dataset.cells = cells;
+  pointsOutputFormatted.value = getCellsDensityValue(cells);
+  pointsOutputFormatted.style.color = getCellsDensityColor(cells);
+}
+
+function getCellsDensityValue(cells) {
+  return cells / 1000 + "K";
+}
+
+function getCellsDensityColor(cells) {
+  return cells > 50000 ? "#b12117" : cells !== 10000 ? "#dfdf12" : "#053305";
 }
 
 function changeCultureSet() {

@@ -1823,6 +1823,7 @@ function getLayer(id) {
   if (id === "toggleCompass") return $("#compass");
   if (id === "toggleRivers") return $("#rivers");
   if (id === "toggleRelief") return $("#terrain");
+  if (id === "toggleReligions") return $("#relig");
   if (id === "toggleCultures") return $("#cults");
   if (id === "toggleStates") return $("#regions");
   if (id === "toggleProvinces") return $("#provs");

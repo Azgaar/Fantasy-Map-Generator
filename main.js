@@ -2,7 +2,7 @@
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 "use strict";
-const version = "1.732"; // generator version
+const version = "1.8"; // generator version
 document.title += " v" + version;
 
 // switches to disable/enable logging features
@@ -155,6 +155,7 @@ let options = {
 };
 let mapCoordinates = {}; // map coordinates on globe
 let populationRate = +document.getElementById("populationRateInput").value;
+let distanceScale = +document.getElementById("distanceScaleInput").value;
 let urbanization = +document.getElementById("urbanizationInput").value;
 let urbanDensity = +document.getElementById("urbanDensityInput").value;
 
@@ -247,26 +248,27 @@ async function checkLoadParameters() {
   }
 
   // open latest map if option is active and map is stored
-  const loadLastMap = () => new Promise((resolve, reject) => {
-    ldb.get("lastMap", blob => {
-      if (blob) {
-        WARN && console.warn("Load last saved map");
-        try {
-          uploadMap(blob);
-          resolve();
-        } catch (error) {
-          reject(error);
+  const loadLastMap = () =>
+    new Promise((resolve, reject) => {
+      ldb.get("lastMap", blob => {
+        if (blob) {
+          WARN && console.warn("Load last saved map");
+          try {
+            uploadMap(blob);
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
+        } else {
+          reject("No map stored");
         }
-      } else {
-        reject("No map stored");
-      }
-    })
-  })
+      });
+    });
 
   if (onloadMap.value === "saved") {
     try {
       await loadLastMap();
-    } catch(error) {
+    } catch (error) {
       ERROR && console.error(error);
       WARN && console.warn("Cannot load stored map, random map to be generated");
       await generateMapOnLoad();
@@ -472,6 +474,8 @@ function showWelcomeMessage() {
   alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <strong>${version}</strong>.
     This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
     <ul><strong>Latest changes:</strong>
+      <li>Submap tool by Goteguru</li>
+      <li>Resample tool by Goteguru</li>
       <li>Pre-defined heightmaps</li>
       <li>Advanced notes editor</li>
       <li>Zones editor: filter by type</li>
@@ -479,8 +483,6 @@ function showWelcomeMessage() {
       <li>New style presets: Cyberpunk and Atlas</li>
       <li>Burg temperature graph</li>
       <li>4 new textures</li>
-      <li>Province capture logic rework</li>
-      <li>Button to release all provinces</li>
     </ul>
 
     <p>Join our ${discord} and ${reddit} to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
@@ -775,8 +777,8 @@ function placePoints() {
   const spacing = (grid.spacing = rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2)); // spacing between points before jirrering
   grid.boundary = getBoundaryPoints(graphWidth, graphHeight, spacing);
   grid.points = getJitteredGrid(graphWidth, graphHeight, spacing); // jittered square grid
-  grid.cellsX = Math.floor((graphWidth + 0.5 * spacing) / spacing);
-  grid.cellsY = Math.floor((graphHeight + 0.5 * spacing) / spacing);
+  grid.cellsX = Math.floor((graphWidth + 0.5 * spacing - 1e-10) / spacing);
+  grid.cellsY = Math.floor((graphHeight + 0.5 * spacing - 1e-10) / spacing);
   TIME && console.timeEnd("placePoints");
 }
 
@@ -842,6 +844,7 @@ function markupGridOcean() {
   TIME && console.timeEnd("markupGridOcean");
 }
 
+// Calculate cell-distance to coast for every cell
 function markup(cells, start, increment, limit) {
   for (let t = start, count = Infinity; count > 0 && t > limit; t += increment) {
     count = 0;
@@ -1426,6 +1429,7 @@ function reMarkFeatures() {
     cells.harbor[i] = water.length;
   };
 
+  if (!cells.i.length) return; // no cells -> there is nothing to do
   for (let i = 1, queue = [0]; queue[0] !== -1; i++) {
     const start = queue[0]; // first cell
     cells.f[start] = i; // assign feature number
@@ -1633,14 +1637,17 @@ function addZones(number = 1) {
   }
 
   function addRebels() {
-    const state = ra(states.filter(s => s.i && s.neighbors.some(n => n)));
+    const state = ra(states.filter(s => s.i && !s.removed && s.neighbors.some(n => n)));
     if (!state) return;
 
-    const neib = ra(state.neighbors.filter(n => n));
-    const cell = cells.i.find(i => cells.state[i] === state.i && cells.c[i].some(c => cells.state[c] === neib));
-    const cellsArray = [],
-      queue = [cell],
-      power = rand(10, 30);
+    const neib = ra(state.neighbors.filter(n => n && !states[n].removed));
+    if (!neib) return;
+    const cell = cells.i.find(i => cells.state[i] === state.i && !state.removed && cells.c[i].some(c => cells.state[c] === neib));
+    const cellsArray = [];
+    const queue = [];
+    if (cell) queue.push(cell);
+
+    const power = rand(10, 30);
 
     while (queue.length) {
       const q = queue.shift();
