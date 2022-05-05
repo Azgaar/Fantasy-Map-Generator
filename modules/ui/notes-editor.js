@@ -90,6 +90,8 @@ function editNotes(id, name) {
         toolbar: `code | undo redo | removeformat | bold italic strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media table | fontselect fontsizeselect | blockquote hr charmap | print fullscreen`,
         media_alt_source: false,
         media_poster: false,
+        browser_spellcheck: true,
+        contextmenu: false,
         setup: editor => {
           editor.on("Change", updateLegend);
         }
