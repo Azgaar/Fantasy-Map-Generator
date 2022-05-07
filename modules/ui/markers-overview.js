@@ -171,7 +171,7 @@ function overviewMarkers() {
 
   function exportMarkers() {
     const headers = "Id,Type,Icon,Name,Note,X,Y\n";
-    const quote = s => '"' + s.replace('"', "'") + '"';
+    const quote = s => '"' + s.replaceAll('"', '""') + '"';
 
     const body = pack.markers.map(marker => {
       const {i, type, icon, x, y} = marker;
