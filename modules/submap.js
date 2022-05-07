@@ -367,6 +367,7 @@ window.Submap = (function () {
     pack.burgs.forEach((b, id) => {
       if (id == 0) return; // skip empty city of neturals
       [b.x, b.y] = projection(b.x, b.y);
+      b.population = b.population * options.scale; // adjust for populationRate change
 
       // disable out-of-map (removed) burgs
       if (!inMap(b.x, b.y)) {
