@@ -1,3 +1,5 @@
+[![Stand With Ukraine](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/badges/StandWithUkraine.svg)](https://stand-with-ukraine.pp.ua)
+
 # Fantasy Map Generator
 
 Azgaar's _Fantasy Map Generator_ is a free web application generating interactive and highly customizable svg maps based on voronoi diagram.
