@@ -1,7 +1,5 @@
-// fill-box cannot use Shadow DOM as it needs access to svg hatches
-// append stylesheet
 {
-  const style = `
+  const style = /* css */ `
     fill-box:not([disabled]) {
       cursor: pointer;
     }
@@ -14,7 +12,8 @@
     fill-box > svg > rect {
       stroke: #666666;
       stroke-width: 2;
-    }`;
+    }
+  `;
 
   const styleElement = document.createElement("style");
   styleElement.setAttribute("type", "text/css");
@@ -24,7 +23,7 @@
 
 {
   const template = document.createElement("template");
-  template.innerHTML = `
+  template.innerHTML = /* html */ `
     <svg>
       <rect x="0" y="0" width="100%" height="100%">
     </svg>
@@ -70,5 +69,6 @@
     }
   }
 
+  // cannot use Shadow DOM here as need an access to svg hatches
   customElements.define("fill-box", FillBox);
 }

@@ -405,7 +405,7 @@ document.querySelectorAll("[data-locked]").forEach(function (e) {
 
 // lock option
 function lock(id) {
-  const input = document.querySelector("[data-stored=\"" + id + "\"]");
+  const input = document.querySelector('[data-stored="' + id + '"]');
   if (input) localStorage.setItem(id, input.value);
   const el = document.getElementById("lock_" + id);
   if (!el) return;
@@ -467,15 +467,18 @@ function showInfo() {
   const QAA = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A", "Q&A page");
   const VideoTutorial = link("https://youtube.com/playlist?list=PLtgiuDC8iVR2gIG8zMTRn7T_L0arl9h1C", "Video tutorial");
 
-  alertMessage.innerHTML = `
-    <b>Fantasy Map Generator</b> (FMG) is a free open-source application.
-    It means that you own all created maps and can use them as you wish.
+  alertMessage.innerHTML = /* html */ `<b>Fantasy Map Generator</b> (FMG) is a free open-source application. It means that you own all created maps and can use them as
+    you wish.
 
-    <p>The development is community-backed, you can donate on ${Patreon}.
-    You can also help creating overviews, tutorials and spreding the word about the Generator.</p>
+    <p>
+      The development is community-backed, you can donate on ${Patreon}. You can also help creating overviews, tutorials and spreding the word about the
+      Generator.
+    </p>
 
-    <p>The best way to get help is to contact the community on ${Discord} and ${Reddit}.
-    Before asking questions, please check out the ${QuickStart}, the ${QAA}, and ${VideoTutorial}.</p>
+    <p>
+      The best way to get help is to contact the community on ${Discord} and ${Reddit}. Before asking questions, please check out the ${QuickStart}, the ${QAA},
+      and ${VideoTutorial}.
+    </p>
 
     <p>Check out our another project: ${Armoria} — heraldry generator and editor.</p>
 

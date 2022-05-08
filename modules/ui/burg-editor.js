@@ -281,10 +281,10 @@ function editBurg(id) {
     const burgsToRemove = burgsInGroup.filter(b => !(pack.burgs[b].capital || pack.burgs[b].lock));
     const capital = burgsToRemove.length < burgsInGroup.length;
 
-    alertMessage.innerHTML = `Are you sure you want to remove
-      ${basic || capital ? "all unlocked elements in the burg group" : "the entire burg group"}?
-      <br>Please note that capital or locked burgs will not be deleted.
-      <br><br>Burgs to be removed: ${burgsToRemove.length}`;
+    alertMessage.innerHTML = /* html */ `Are you sure you want to remove ${
+      basic || capital ? "all unlocked elements in the burg group" : "the entire burg group"
+    }?
+      <br />Please note that capital or locked burgs will not be deleted. <br /><br />Burgs to be removed: ${burgsToRemove.length}`;
     $("#alert").dialog({
       resizable: false,
       title: "Remove burg group",
@@ -545,7 +545,7 @@ function editBurg(id) {
   function removeSelectedBurg() {
     const id = +elSelected.attr("data-id");
     if (pack.burgs[id].capital) {
-      alertMessage.innerHTML = `You cannot remove the burg as it is a state capital.<br><br>
+      alertMessage.innerHTML = /* html */ `You cannot remove the burg as it is a state capital.<br /><br />
         You can change the capital using Burgs Editor (shift + T)`;
       $("#alert").dialog({
         resizable: false,

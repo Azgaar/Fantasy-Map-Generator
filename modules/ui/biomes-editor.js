@@ -92,23 +92,38 @@ function editBiomes() {
       totalArea += area;
       totalPopulation += population;
 
-      lines += `<div class="states biomes" data-id="${i}" data-name="${b.name[i]}" data-habitability="${b.habitability[i]}"
-      data-cells=${b.cells[i]} data-area=${area} data-population=${population} data-color=${b.color[i]}>
-        <fill-box fill="${b.color[i]}"></fill-box>
-        <input data-tip="Biome name. Click and type to change" class="biomeName" value="${b.name[i]}" autocorrect="off" spellcheck="false">
-        <span data-tip="Biome habitability percent" class="hide">%</span>
-        <input data-tip="Biome habitability percent. Click and set new value to change" type="number" min=0 max=9999 class="biomeHabitability hide" value=${
-          b.habitability[i]
-        }>
-        <span data-tip="Cells count" class="icon-check-empty hide"></span>
-        <div data-tip="Cells count" class="biomeCells hide">${b.cells[i]}</div>
-        <span data-tip="Biome area" style="padding-right: 4px" class="icon-map-o hide"></span>
-        <div data-tip="Biome area" class="biomeArea hide">${si(area) + unit}</div>
-        <span data-tip="${populationTip}" class="icon-male hide"></span>
-        <div data-tip="${populationTip}" class="biomePopulation hide">${si(population)}</div>
-        <span data-tip="Open Wikipedia article about the biome" class="icon-info-circled pointer hide"></span>
-        ${i > 12 && !b.cells[i] ? '<span data-tip="Remove the custom biome" class="icon-trash-empty hide"></span>' : ""}
-      </div>`;
+      lines += /* html */ `
+        <div
+          class="states biomes"
+          data-id="${i}"
+          data-name="${b.name[i]}"
+          data-habitability="${b.habitability[i]}"
+          data-cells=${b.cells[i]}
+          data-area=${area}
+          data-population=${population}
+          data-color=${b.color[i]}
+        >
+          <fill-box fill="${b.color[i]}"></fill-box>
+          <input data-tip="Biome name. Click and type to change" class="biomeName" value="${b.name[i]}" autocorrect="off" spellcheck="false" />
+          <span data-tip="Biome habitability percent" class="hide">%</span>
+          <input
+            data-tip="Biome habitability percent. Click and set new value to change"
+            type="number"
+            min="0"
+            max="9999"
+            class="biomeHabitability hide"
+            value=${b.habitability[i]}
+          />
+          <span data-tip="Cells count" class="icon-check-empty hide"></span>
+          <div data-tip="Cells count" class="biomeCells hide">${b.cells[i]}</div>
+          <span data-tip="Biome area" style="padding-right: 4px" class="icon-map-o hide"></span>
+          <div data-tip="Biome area" class="biomeArea hide">${si(area) + unit}</div>
+          <span data-tip="${populationTip}" class="icon-male hide"></span>
+          <div data-tip="${populationTip}" class="biomePopulation hide">${si(population)}</div>
+          <span data-tip="Open Wikipedia article about the biome" class="icon-info-circled pointer hide"></span>
+          ${i > 12 && !b.cells[i] ? '<span data-tip="Remove the custom biome" class="icon-trash-empty hide"></span>' : ""}
+        </div>
+      `;
     }
     body.innerHTML = lines;
 

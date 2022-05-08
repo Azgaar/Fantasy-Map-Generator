@@ -60,7 +60,7 @@ function closeDialogs(except = "#except") {
 function moveCircle(x, y, r = 20) {
   let circle = document.getElementById("brushCircle");
   if (!circle) {
-    const html = `<circle id="brushCircle" cx=${x} cy=${y} r=${r}></circle>`;
+    const html = /* html */ `<circle id="brushCircle" cx=${x} cy=${y} r=${r}></circle>`;
     document.getElementById("debug").insertAdjacentHTML("afterBegin", html);
   } else {
     circle.setAttribute("cx", x);
@@ -192,9 +192,9 @@ function moveBurgToGroup(id, g) {
 
 function moveAllBurgsToGroup(fromGroup, toGroup) {
   const groupToMove = document.querySelector(`#burgIcons #${fromGroup}`);
-  const burgsToMove = Array.from(groupToMove.children).map(x=>x.dataset.id);
-  addBurgsGroup(toGroup)
-  burgsToMove.forEach(x=>moveBurgToGroup(x, toGroup));
+  const burgsToMove = Array.from(groupToMove.children).map(x => x.dataset.id);
+  addBurgsGroup(toGroup);
+  burgsToMove.forEach(x => moveBurgToGroup(x, toGroup));
 }
 
 function addBurgsGroup(group) {
@@ -495,18 +495,17 @@ function createPicker() {
     .attr("width", 303)
     .attr("height", 20)
     .on("mousemove", () => tip("Color value in different color spaces. Edit to change"));
-  const html = `
-  <label style="margin-right: 6px">HSL:
-    <input type="number" id="pickerHSL_H" data-space="hsl" min=0 max=360 value="231">,
-    <input type="number" id="pickerHSL_S" data-space="hsl" min=0 max=100 value="70">,
-    <input type="number" id="pickerHSL_L" data-space="hsl" min=0 max=100 value="70">
-  </label>
-  <label style="margin-right: 6px">RGB:
-    <input type="number" id="pickerRGB_R" data-space="rgb" min=0 max=255 value="125">,
-    <input type="number" id="pickerRGB_G" data-space="rgb" min=0 max=255 value="142">,
-    <input type="number" id="pickerRGB_B" data-space="rgb" min=0 max=255 value="232">
-  </label>
-  <label>HEX: <input type="text" id="pickerHEX" data-space="hex" style="width:42px" autocorrect="off" spellcheck="false" value="#7d8ee8"></label>`;
+  const html = /* html */ ` <label style="margin-right: 6px"
+      >HSL: <input type="number" id="pickerHSL_H" data-space="hsl" min="0" max="360" value="231" />,
+      <input type="number" id="pickerHSL_S" data-space="hsl" min="0" max="100" value="70" />,
+      <input type="number" id="pickerHSL_L" data-space="hsl" min="0" max="100" value="70" />
+    </label>
+    <label style="margin-right: 6px"
+      >RGB: <input type="number" id="pickerRGB_R" data-space="rgb" min="0" max="255" value="125" />,
+      <input type="number" id="pickerRGB_G" data-space="rgb" min="0" max="255" value="142" />,
+      <input type="number" id="pickerRGB_B" data-space="rgb" min="0" max="255" value="232" />
+    </label>
+    <label>HEX: <input type="text" id="pickerHEX" data-space="hex" style="width:42px" autocorrect="off" spellcheck="false" value="#7d8ee8" /></label>`;
   spaces.node().insertAdjacentHTML("beforeend", html);
   spaces.selectAll("input").on("change", changePickerSpace);
 
@@ -523,7 +522,7 @@ function createPicker() {
       .attr("fill", d)
       .attr("class", i ? "" : "selected")
       .attr("x", (i % 14) * 22 + 4)
-      .attr("y", 40 + Math.floor(i / 14)*20)
+      .attr("y", 40 + Math.floor(i / 14) * 20)
       .attr("width", 16)
       .attr("height", 16);
   });
@@ -534,9 +533,9 @@ function createPicker() {
       .attr("id", "picker_" + this.id)
       .attr("fill", "url(#" + this.id + ")")
       .attr("x", (i % 14) * 22 + 4)
-      .attr("y", Math.floor(i / 14)*20 + 20 + (number * 2))
+      .attr("y", Math.floor(i / 14) * 20 + 20 + number * 2)
       .attr("width", 16)
-      .attr("height", 16)
+      .attr("height", 16);
   });
 
   colors
@@ -546,7 +545,9 @@ function createPicker() {
   hatches
     .selectAll("rect")
     .on("click", pickerFillClicked)
-	.on("mouseover", function() { tip("Click to fill with the hatching " + this.id) });
+    .on("mouseover", function () {
+      tip("Click to fill with the hatching " + this.id);
+    });
 
   // append box
   const bbox = picker.node().getBBox();
@@ -562,10 +563,15 @@ function createPicker() {
     .attr("fill", "#ffffff")
     .attr("stroke", "#5d4651")
     .on("mousemove", pos);
-  picker.insert("text", ":first-child").attr("x", width-20).attr("y", -10).attr("id", "pickerCloseText").text("✕");
+  picker
+    .insert("text", ":first-child")
+    .attr("x", width - 20)
+    .attr("y", -10)
+    .attr("id", "pickerCloseText")
+    .text("✕");
   picker
     .insert("rect", ":first-child")
-    .attr("x", width-23)
+    .attr("x", width - 23)
     .attr("y", -21)
     .attr("id", "pickerCloseRect")
     .attr("width", 14)

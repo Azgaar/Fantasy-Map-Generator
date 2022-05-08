@@ -296,7 +296,9 @@ function showSeedHistoryDialog() {
     const button = `<i data-tip="Click to generate a map with this seed" onclick="restoreSeed(${i})" class="icon-history optionsSeedRestore"></i>`;
     return `<li>Seed: ${h.seed} ${button}. Size: ${h.width}x${h.height}. Template: ${h.template}. Created: ${created}</li>`;
   });
-  alertMessage.innerHTML = `<ol style="margin: 0; padding-left: 1.5em">${lines.join("")}</ol>`;
+  alertMessage.innerHTML = /* html */ `<ol style="margin: 0; padding-left: 1.5em">
+    ${lines.join("")}
+  </ol>`;
 
   $("#alert").dialog({
     resizable: false,
@@ -677,8 +679,8 @@ function regeneratePrompt(source) {
   const workingTime = (Date.now() - last(mapHistory).created) / 60000; // minutes
   if (workingTime < 5) return regenerateMap(source);
 
-  alertMessage.innerHTML = `Are you sure you want to generate a new map?<br>
-  All unsaved changes made to the current map will be lost`;
+  alertMessage.innerHTML = /* html */ `Are you sure you want to generate a new map?<br />
+    All unsaved changes made to the current map will be lost`;
   $("#alert").dialog({
     resizable: false,
     title: "Generate new map",
@@ -752,13 +754,13 @@ async function showLoadPane() {
     document.getElementById("loadFromDropboxSelect").style.display = "block";
     const loadFromDropboxButtons = document.getElementById("loadFromDropboxButtons");
     const fileSelect = document.getElementById("loadFromDropboxSelect");
-    fileSelect.innerHTML = `<option value="" disabled selected>Loading...</option>`;
+    fileSelect.innerHTML = /* html */ `<option value="" disabled selected>Loading...</option>`;
 
     const files = await Cloud.providers.dropbox.list();
 
     if (!files) {
       loadFromDropboxButtons.style.display = "none";
-      fileSelect.innerHTML = `<option value="" disabled selected>Save files to Dropbox first</option>`;
+      fileSelect.innerHTML = /* html */ `<option value="" disabled selected>Save files to Dropbox first</option>`;
       return;
     }
 
@@ -841,7 +843,7 @@ function openSaveTiles() {
         loading = setInterval(() => (status.innerHTML += "."), 1000);
         saveTiles().then(() => {
           clearInterval(loading);
-          status.innerHTML = `Done. Check file in "Downloads" (crtl + J)`;
+          status.innerHTML = /* html */ `Done. Check file in "Downloads" (crtl + J)`;
           setTimeout(() => (status.innerHTML = ""), 8000);
         });
       },
@@ -874,7 +876,7 @@ function updateTilesOptions() {
   const sizeY = graphHeight * scale * tilesY;
   const totalSize = sizeX * sizeY;
 
-  tileSize.innerHTML = `${sizeX} x ${sizeY} px`;
+  tileSize.innerHTML = /* html */ `${sizeX} x ${sizeY} px`;
   tileSize.style.color = totalSize > 1e9 ? "#d00b0b" : totalSize > 1e8 ? "#9e6409" : "#1a941a";
 
   // draw tiles

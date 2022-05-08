@@ -176,8 +176,8 @@ oceanLayers.append("rect").attr("id", "oceanBase").attr("x", 0).attr("y", 0).att
 document.addEventListener("DOMContentLoaded", async () => {
   if (!location.hostname) {
     const wiki = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally";
-    alertMessage.innerHTML = `Fantasy Map Generator cannot run serverless.
-    Follow the <a href="${wiki}" target="_blank">instructions</a> on how you can easily run a local web-server`;
+    alertMessage.innerHTML = /* html */ `Fantasy Map Generator cannot run serverless. Follow the <a href="${wiki}" target="_blank">instructions</a> on how you can
+      easily run a local web-server`;
 
     $("#alert").dialog({
       resizable: false,
@@ -455,9 +455,10 @@ function showWelcomeMessage() {
   const discord = link("https://discordapp.com/invite/X7E84HU", "Discord server");
   const patreon = link("https://www.patreon.com/azgaar", "Patreon");
 
-  alertMessage.innerHTML = `The Fantasy Map Generator is updated up to version <strong>${version}</strong>.
-    This version is compatible with ${changelog}, loaded <i>.map</i> files will be auto-updated.
-    <ul><strong>Latest changes:</strong>
+  alertMessage.innerHTML = /* html */ `The Fantasy Map Generator is updated up to version <strong>${version}</strong>. This version is compatible with ${changelog},
+    loaded <i>.map</i> files will be auto-updated.
+    <ul>
+      <strong>Latest changes:</strong>
       <li>Submap tool by Goteguru</li>
       <li>Resample tool by Goteguru</li>
       <li>Pre-defined heightmaps</li>
@@ -713,8 +714,7 @@ async function generate() {
     const parsedError = parseError(error);
     clearMainTip();
 
-    alertMessage.innerHTML = `An error has occurred on map generation. Please retry.
-      <br>If error is critical, clear the stored data and try again.
+    alertMessage.innerHTML = /* html */ `An error has occurred on map generation. Please retry. <br />If error is critical, clear the stored data and try again.
       <p id="errorBox">${parsedError}</p>`;
     $("#alert").dialog({
       resizable: false,

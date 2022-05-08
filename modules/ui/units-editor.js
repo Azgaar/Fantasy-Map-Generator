@@ -277,9 +277,8 @@ function editUnits() {
 
   function removeAllRulers() {
     if (!rulers.data.length) return;
-    alertMessage.innerHTML = `
-      Are you sure you want to remove all placed rulers?
-      <br>If you just want to hide rulers, toggle the Rulers layer off in Menu`;
+    alertMessage.innerHTML = /* html */ ` Are you sure you want to remove all placed rulers?
+      <br />If you just want to hide rulers, toggle the Rulers layer off in Menu`;
     $("#alert").dialog({
       resizable: false,
       title: "Remove all rulers",

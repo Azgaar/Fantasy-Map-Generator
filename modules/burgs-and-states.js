@@ -41,7 +41,7 @@ window.BurgsAndStates = (function () {
       if (sorted.length < count * 10) {
         count = Math.floor(sorted.length / 10);
         if (!count) {
-          WARN && console.warn(`There is no populated cells. Cannot generate states`);
+          WARN && console.warn("There is no populated cells. Cannot generate states");
           return burgs;
         } else {
           WARN && console.warn(`Not enough populated cells (${sorted.length}). Will generate only ${count} states`);
@@ -883,7 +883,7 @@ window.BurgsAndStates = (function () {
       dd.forEach((r, d) => {
         if (r !== "Ally" || states[d].diplomacy.includes("Vassal")) return;
         if (states[d].diplomacy[attacker] !== "Rival" && ap / dp > 2 * gauss(1.6, 0.8, 0, 10, 2)) {
-          const reason = states[d].diplomacy.includes("Enemy") ? `Being already at war,` : `Frightened by ${an},`;
+          const reason = states[d].diplomacy.includes("Enemy") ? "Being already at war," : `Frightened by ${an},`;
           war.push(`${reason} ${states[d].name} severed the defense pact with ${dn}`);
           dd[d] = states[d].diplomacy[defender] = "Suspicion";
           return;

@@ -110,7 +110,7 @@ function editZones() {
     const totalArea = (zonesFooterArea.dataset.area = graphWidth * graphHeight * distanceScaleInput.value ** 2);
     const totalPop = (d3.sum(pack.cells.pop) + d3.sum(pack.burgs.filter(b => !b.removed).map(b => b.population)) * urbanization) * populationRate;
     zonesFooterPopulation.dataset.population = totalPop;
-    zonesFooterNumber.innerHTML = `${filteredZones.length} of ${zones.length}`;
+    zonesFooterNumber.innerHTML = /* html */ `${filteredZones.length} of ${zones.length}`;
     zonesFooterCells.innerHTML = pack.cells.i.length;
     zonesFooterArea.innerHTML = si(totalArea) + unit;
     zonesFooterPopulation.innerHTML = si(totalPop);
@@ -414,10 +414,9 @@ function editZones() {
     const total = rural + urban;
     const l = n => Number(n).toLocaleString();
 
-    alertMessage.innerHTML = `
-    Rural: <input type="number" min=0 step=1 id="ruralPop" value=${rural} style="width:6em">
-    Urban: <input type="number" min=0 step=1 id="urbanPop" value=${urban} style="width:6em" ${burgs.length ? "" : "disabled"}>
-    <p>Total population: ${l(total)} ⇒ <span id="totalPop">${l(total)}</span> (<span id="totalPopPerc">100</span>%)</p>`;
+    alertMessage.innerHTML = /* html */ `Rural: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" /> Urban:
+      <input type="number" min="0" step="1" id="urbanPop" value=${urban} style="width:6em" ${burgs.length ? "" : "disabled"} />
+      <p>Total population: ${l(total)} ⇒ <span id="totalPop">${l(total)}</span> (<span id="totalPopPerc">100</span>%)</p>`;
 
     const update = function () {
       const totalNew = ruralPop.valueAsNumber + urbanPop.valueAsNumber;

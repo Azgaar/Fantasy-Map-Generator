@@ -2,12 +2,14 @@
 
 function editHeightmap() {
   void (function selectEditMode() {
-    alertMessage.innerHTML = `Heightmap is a core element on which all other data (rivers, burgs, states etc) is based.
-      So the best edit approach is to <i>erase</i> the secondary data and let the system automatically regenerate it on edit completion.
+    alertMessage.innerHTML = /* html */ `Heightmap is a core element on which all other data (rivers, burgs, states etc) is based. So the best edit approach is to
+      <i>erase</i> the secondary data and let the system automatically regenerate it on edit completion.
       <p><i>Erase</i> mode also allows you Convert an Image into a heightmap or use Template Editor.</p>
       <p>You can <i>keep</i> the data, but you won't be able to change the coastline.</p>
-      <p>Try <i>risk</i> mode to change the coastline and keep the data. The data will be restored as much as possible, but it can cause unpredictable errors.</p>
-      <p>Please <span class="pseudoLink" onclick=dowloadMap(); editHeightmap();>save the map</span> before editing the heightmap!</p>
+      <p>
+        Try <i>risk</i> mode to change the coastline and keep the data. The data will be restored as much as possible, but it can cause unpredictable errors.
+      </p>
+      <p>Please <span class="pseudoLink" onclick="dowloadMap();" editHeightmap();>save the map</span> before editing the heightmap!</p>
       <p style="margin-bottom: 0">Check out ${link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization", "wiki")} for guidance.</p>`;
 
     $("#alert").dialog({
@@ -107,7 +109,7 @@ function editHeightmap() {
     heightmapInfoX.innerHTML = rn(p[0]);
     heightmapInfoY.innerHTML = rn(p[1]);
     heightmapInfoCell.innerHTML = cell;
-    heightmapInfoHeight.innerHTML = `${grid.cells.h[cell]} (${getHeight(grid.cells.h[cell])})`;
+    heightmapInfoHeight.innerHTML = /* html */ `${grid.cells.h[cell]} (${getHeight(grid.cells.h[cell])})`;
     if (tooltip.dataset.main) showMainTip();
 
     // move radius circle if drag mode is active
@@ -485,7 +487,7 @@ function editHeightmap() {
 
   function updateStatistics() {
     const landCells = grid.cells.h.reduce((s, h) => (h >= 20 ? s + 1 : s));
-    landmassCounter.innerHTML = `${landCells} (${rn((landCells / grid.cells.i.length) * 100)}%)`;
+    landmassCounter.innerHTML = /* html */ `${landCells} (${rn((landCells / grid.cells.i.length) * 100)}%)`;
     landmassAverage.innerHTML = rn(d3.mean(grid.cells.h));
   }
 
@@ -1247,11 +1249,8 @@ function editHeightmap() {
     function closeImageConverter(event) {
       event.preventDefault();
       event.stopPropagation();
-      alertMessage.innerHTML = `
-        Are you sure you want to close the Image Converter? 
-        Click "Cancel" to geck back to convertion. 
-        Click "Complete" to apply the conversion. 
-        Click "Close" to exit conversion mode and restore previous heightmap`;
+      alertMessage.innerHTML = /* html */ ` Are you sure you want to close the Image Converter? Click "Cancel" to geck back to convertion. Click "Complete" to apply
+      the conversion. Click "Close" to exit conversion mode and restore previous heightmap`;
 
       $("#alert").dialog({
         resizable: false,

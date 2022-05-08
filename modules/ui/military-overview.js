@@ -75,18 +75,30 @@ function overviewMilitary() {
       const sortData = options.military.map(u => `data-${u.name}="${getForces(u)}"`).join(" ");
       const lineData = options.military.map(u => `<div data-type="${u.name}" data-tip="State ${u.name} units number">${getForces(u)}</div>`).join(" ");
 
-      lines += `<div class="states" data-id=${s.i} data-state="${s.name}" ${sortData} data-total="${total}"
-        data-population="${population}" data-rate="${rate}" data-alert="${s.alert}">
+      lines += /* html */ `<div
+        class="states"
+        data-id=${s.i}
+        data-state="${s.name}"
+        ${sortData}
+        data-total="${total}"
+        data-population="${population}"
+        data-rate="${rate}"
+        data-alert="${s.alert}"
+      >
         <fill-box data-tip="${s.fullName}" fill="${s.color}" disabled></fill-box>
-        <input data-tip="${s.fullName}" style="width:6em" value="${s.name}" readonly>
+        <input data-tip="${s.fullName}" style="width:6em" value="${s.name}" readonly />
         ${lineData}
         <div data-type="total" data-tip="Total state military personnel (considering crew)" style="font-weight: bold">${si(total)}</div>
         <div data-type="population" data-tip="State population">${si(population)}</div>
         <div data-type="rate" data-tip="Military personnel rate (% of state population). Depends on war alert">${rn(rate, 2)}%</div>
-        <input data-tip="War Alert. Editable modifier to military forces number, depends of political situation" style="width:4.1em" type="number" min=0 step=.01 value="${rn(
-          s.alert,
-          2
-        )}">
+        <input
+          data-tip="War Alert. Editable modifier to military forces number, depends of political situation"
+          style="width:4.1em"
+          type="number"
+          min="0"
+          step=".01"
+          value="${rn(s.alert, 2)}"
+        />
         <span data-tip="Show regiments list" class="icon-list-bullet pointer"></span>
       </div>`;
     }
@@ -290,21 +302,28 @@ function overviewMilitary() {
           ${getLimitText(unit[attr])}
         </button>`;
 
-      row.innerHTML = `<td><button data-type="icon" data-tip="Click to select unit icon">${icon || " "}</button></td>
-        <td><input data-tip="Type unit name. If name is changed for existing unit, old unit will be replaced" value="${name}"></td>
+      row.innerHTML = /* html */ `<td><button data-type="icon" data-tip="Click to select unit icon">${icon || " "}</button></td>
+        <td><input data-tip="Type unit name. If name is changed for existing unit, old unit will be replaced" value="${name}" /></td>
         <td>${getLimitButton("biomes")}</td>
         <td>${getLimitButton("states")}</td>
         <td>${getLimitButton("cultures")}</td>
         <td>${getLimitButton("religions")}</td>
-        <td><input data-tip="Enter conscription percentage for rural population" type="number" min=0 max=100 step=.01 value="${rural}"></td>
-        <td><input data-tip="Enter conscription percentage for urban population" type="number" min=0 max=100 step=.01 value="${urban}"></td>
-        <td><input data-tip="Enter average number of people in crew (for total personnel calculation)" type="number" min=1 step=1 value="${crew}"></td>
-        <td><input data-tip="Enter military power (used for battle simulation)" type="number" min=0 step=.1 value="${power}"></td>
-        <td><select data-tip="Select unit type to apply special rules on forces recalculation">${typeOptions}</select></td>
+        <td><input data-tip="Enter conscription percentage for rural population" type="number" min="0" max="100" step=".01" value="${rural}" /></td>
+        <td><input data-tip="Enter conscription percentage for urban population" type="number" min="0" max="100" step=".01" value="${urban}" /></td>
+        <td><input data-tip="Enter average number of people in crew (for total personnel calculation)" type="number" min="1" step="1" value="${crew}" /></td>
+        <td><input data-tip="Enter military power (used for battle simulation)" type="number" min="0" step=".1" value="${power}" /></td>
+        <td>
+          <select data-tip="Select unit type to apply special rules on forces recalculation">
+            ${typeOptions}
+          </select>
+        </td>
         <td data-tip="Check if unit is <b>separate</b> and can be stacked only with the same units">
-          <input id="${name}Separate" type="checkbox" class="checkbox" ${separate ? "checked" : ""}>
-          <label for="${name}Separate" class="checkbox-label"></label></td>
-        <td data-tip="Remove the unit"><span data-tip="Remove unit type" class="icon-trash-empty pointer" onclick="this.parentElement.parentElement.remove();"></span></td>`;
+          <input id="${name}Separate" type="checkbox" class="checkbox" ${separate ? "checked" : ""} />
+          <label for="${name}Separate" class="checkbox-label"></label>
+        </td>
+        <td data-tip="Remove the unit">
+          <span data-tip="Remove unit type" class="icon-trash-empty pointer" onclick="this.parentElement.parentElement.remove();"></span>
+        </td>`;
       tableBody.appendChild(row);
     }
 
@@ -326,7 +345,12 @@ function overviewMilitary() {
             <label for="el${i}" class="checkbox-label">${fullName || name}</label>
           </td></tr>`
       );
-      alertMessage.innerHTML = `<b>Limit unit by ${type}:</b><table style="margin-top:.3em"><tbody>${lines.join("")}</tbody></table>`;
+      alertMessage.innerHTML = /* html */ `<b>Limit unit by ${type}:</b>
+        <table style="margin-top:.3em">
+          <tbody>
+            ${lines.join("")}
+          </tbody>
+        </table>`;
 
       $("#alert").dialog({
         width: fitContent(),

@@ -203,8 +203,7 @@ window.UISubmap = (function () {
     ERROR && console.error(error);
     clearMainTip();
 
-    alertMessage.innerHTML = `Map resampling failed:
-      <br>You may retry after clearing stored data or contact us at discord.
+    alertMessage.innerHTML = /* html */ `Map resampling failed: <br />You may retry after clearing stored data or contact us at discord.
       <p id="errorBox">${parseError(error)}</p>`;
     $("#alert").dialog({
       resizable: false,

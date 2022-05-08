@@ -13,7 +13,10 @@ function editEmblem(type, id, el) {
   updateElementSelectors(type, id, el);
 
   $("#emblemEditor").dialog({
-    title: "Edit Emblem", resizable: true, width: "18.2em", height: "auto",
+    title: "Edit Emblem",
+    resizable: true,
+    width: "18.2em",
+    height: "auto",
     position: {my: "left top", at: "left+10 top+10", of: "svg", collision: "fit"},
     close: closeEmblemEditor
   });
@@ -41,17 +44,17 @@ function editEmblem(type, id, el) {
 
   function defineEmblemData(e) {
     const parent = e.target.parentNode;
-    const [g, t] = parent.id === "burgEmblems" ? [pack.burgs, "burg"] :
-                      parent.id === "provinceEmblems" ? [pack.provinces, "province"] :
-                      [pack.states, "state"];
+    const [g, t] = parent.id === "burgEmblems" ? [pack.burgs, "burg"] : parent.id === "provinceEmblems" ? [pack.provinces, "province"] : [pack.states, "state"];
     const i = +e.target.dataset.i;
     type = t;
-    id = type+"COA"+i;
+    id = type + "COA" + i;
     el = g[i];
   }
 
   function updateElementSelectors(type, id, el) {
-    let state = 0, province = 0, burg = 0;
+    let state = 0,
+      province = 0,
+      burg = 0;
 
     // set active type
     emblemStates.parentElement.className = type === "state" ? "active" : "";
@@ -61,7 +64,7 @@ function editEmblem(type, id, el) {
     // define selected values
     if (type === "state") state = el.i;
     else if (type === "province") {
-      province = el.i
+      province = el.i;
       state = pack.states[el.state].i;
     } else {
       burg = el.i;
@@ -85,7 +88,7 @@ function editEmblem(type, id, el) {
 
     emblemBurgs.options.length = 0;
     emblemBurgs.options.add(new Option("", 0, false, !burg));
-    const burgList = validBurgs.filter(burg => province ? pack.cells.province[burg.cell] === province : burg.state === state);
+    const burgList = validBurgs.filter(burg => (province ? pack.cells.province[burg.cell] === province : burg.state === state));
     burgList.forEach(b => emblemBurgs.options.add(new Option(b.capital ? "👑 " + b.name : b.name, b.i, false, b.i === burg)));
     emblemBurgs.options[0].disabled = true;
 
@@ -116,14 +119,14 @@ function editEmblem(type, id, el) {
     if (state) {
       type = "state";
       el = pack.states[state];
-      id = "stateCOA"+ state;
+      id = "stateCOA" + state;
     } else {
       // select neutral burg if state is changed to Neutrals
       const neutralBurgs = pack.burgs.filter(burg => burg.i && !burg.removed && !burg.state);
       if (!neutralBurgs.length) return;
       type = "burg";
       el = neutralBurgs[0];
-      id = "burgCOA"+ neutralBurgs[0].i;
+      id = "burgCOA" + neutralBurgs[0].i;
     }
     updateElementSelectors(type, id, el);
   }
@@ -134,13 +137,13 @@ function editEmblem(type, id, el) {
     if (province) {
       type = "province";
       el = pack.provinces[province];
-      id = "provinceCOA"+ province;
+      id = "provinceCOA" + province;
     } else {
       // select state if province is changed to null value
       const state = +emblemStates.value;
       type = "state";
       el = pack.states[state];
-      id = "stateCOA"+ state;
+      id = "stateCOA" + state;
     }
 
     updateElementSelectors(type, id, el);
@@ -150,7 +153,7 @@ function editEmblem(type, id, el) {
     const burg = +this.value;
     type = "burg";
     el = pack.burgs[burg];
-    id = "burgCOA"+ burg;
+    id = "burgCOA" + burg;
     updateElementSelectors(type, id, el);
   }
 
@@ -166,23 +169,26 @@ function editEmblem(type, id, el) {
   }
 
   function changeSize() {
-    const size = el.coaSize = +this.value;
+    const size = (el.coaSize = +this.value);
     document.getElementById("emblemSizeSlider").value = size;
     document.getElementById("emblemSizeNumber").value = size;
 
-    const g = emblems.select("#"+type+"Emblems");
-    g.select("[data-i='"+el.i+"']").remove();
+    const g = emblems.select("#" + type + "Emblems");
+    g.select("[data-i='" + el.i + "']").remove();
     if (!size) return;
 
     // re-append use element
     const categotySize = +g.attr("font-size");
-    const shift = categotySize * size / 2;
+    const shift = (categotySize * size) / 2;
     const x = el.x || el.pole[0];
     const y = el.y || el.pole[1];
-    g.append("use").attr("data-i", el.i)
-      .attr("x", rn(x - shift), 2).attr("y", rn(y - shift), 2)
-      .attr("width", size+"em").attr("height", size+"em")
-      .attr("href", "#"+id);
+    g.append("use")
+      .attr("data-i", el.i)
+      .attr("x", rn(x - shift), 2)
+      .attr("y", rn(y - shift), 2)
+      .attr("width", size + "em")
+      .attr("height", size + "em")
+      .attr("href", "#" + id);
   }
 
   function regenerate() {
@@ -194,7 +200,7 @@ function editEmblem(type, id, el) {
     }
 
     const shield = el.coa.shield || COA.getShield(el.culture || parent?.culture || 0, el.state);
-    el.coa = COA.generate(parent ? parent.coa : null, .3, .1, null);
+    el.coa = COA.generate(parent ? parent.coa : null, 0.3, 0.1, null);
     el.coa.shield = shield;
     emblemShapeSelector.disabled = false;
     emblemShapeSelector.value = el.coa.shield;
@@ -228,8 +234,8 @@ function editEmblem(type, id, el) {
     }
 
     const reader = new FileReader();
-    
-    reader.onload = function(readerEvent) {
+
+    reader.onload = function (readerEvent) {
       const result = readerEvent.target.result;
       const defs = document.getElementById("defs-emblems");
       const coa = document.getElementById(id); // old emblem
@@ -240,7 +246,7 @@ function editEmblem(type, id, el) {
       } else {
         const el = document.createElement("html");
         el.innerHTML = result;
-  
+
         // remove sodipodi and inkscape attributes
         el.querySelectorAll("*").forEach(el => {
           const attributes = el.getAttributeNames();
@@ -266,7 +272,8 @@ function editEmblem(type, id, el) {
       emblemShapeSelector.disabled = true;
     };
 
-    if (type === "image") reader.readAsDataURL(file); else reader.readAsText(file);
+    if (type === "image") reader.readAsDataURL(file);
+    else reader.readAsText(file);
   }
 
   function toggleDownload() {
@@ -282,7 +289,8 @@ function editEmblem(type, id, el) {
     const link = document.createElement("a");
     link.download = getFileName(`Emblem ${el.fullName || el.name}`) + "." + format;
 
-    if (format === "svg") downloadSVG(url, link); else downloadRaster(format, url, link, size);
+    if (format === "svg") downloadSVG(url, link);
+    else downloadRaster(format, url, link, size);
     document.getElementById("emblemDownloadControl").classList.add("hidden");
   }
 
@@ -299,22 +307,22 @@ function editEmblem(type, id, el) {
 
     const img = new Image();
     img.src = url;
-    img.onload = function() {
+    img.onload = function () {
       if (format === "jpeg") {
         ctx.fillStyle = "#fff";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      const dataURL = canvas.toDataURL("image/" + format, .92);
+      const dataURL = canvas.toDataURL("image/" + format, 0.92);
       link.href = dataURL;
       link.click();
       window.setTimeout(() => window.URL.revokeObjectURL(dataURL), 6000);
-    }
+    };
   }
 
   async function getURL(svg, size) {
     const serialized = getSVG(svg, size);
-    const blob = new Blob([serialized], {type: 'image/svg+xml;charset=utf-8'});
+    const blob = new Blob([serialized], {type: "image/svg+xml;charset=utf-8"});
     const url = window.URL.createObjectURL(blob);
     window.setTimeout(() => window.URL.revokeObjectURL(url), 6000);
     return url;
@@ -324,7 +332,7 @@ function editEmblem(type, id, el) {
     const clone = svg.cloneNode(true);
     clone.setAttribute("width", size);
     clone.setAttribute("height", size);
-    return (new XMLSerializer()).serializeToString(clone);
+    return new XMLSerializer().serializeToString(clone);
   }
 
   async function downloadGallery() {
@@ -338,70 +346,135 @@ function editEmblem(type, id, el) {
     function runDownload() {
       const back = `<a href="javascript:history.back()">Go Back</a>`;
 
-      const stateSection = `<div><h2>States</h2>` + validStates.map(state => {
-        const el = document.getElementById("stateCOA"+state.i);
-        return `<figure id="state_${state.i}"><a href="#provinces_${state.i}"><figcaption>${state.fullName}</figcaption>${getSVG(el, 200)}</a></figure>`;
-      }).join("") + `</div>`;
+      const stateSection =
+        `<div><h2>States</h2>` +
+        validStates
+          .map(state => {
+            const el = document.getElementById("stateCOA" + state.i);
+            return `<figure id="state_${state.i}"><a href="#provinces_${state.i}"><figcaption>${state.fullName}</figcaption>${getSVG(el, 200)}</a></figure>`;
+          })
+          .join("") +
+        `</div>`;
 
-      const provinceSections = validStates.map(state => {
-        const stateProvinces = validProvinces.filter(p => p.state === state.i);
-        const figures = stateProvinces.map(province => {
-          const el = document.getElementById("provinceCOA"+province.i);
-          return `<figure id="province_${province.i}"><a href="#burgs_${province.i}"><figcaption>${province.fullName}</figcaption>${getSVG(el, 200)}</a></figure>`;
-        }).join("");
-        return stateProvinces.length ? `<div id="provinces_${state.i}">${back}<h2>${state.fullName} provinces</h2>${figures}</div>` : "";
-      }).join("");
+      const provinceSections = validStates
+        .map(state => {
+          const stateProvinces = validProvinces.filter(p => p.state === state.i);
+          const figures = stateProvinces
+            .map(province => {
+              const el = document.getElementById("provinceCOA" + province.i);
+              return `<figure id="province_${province.i}"><a href="#burgs_${province.i}"><figcaption>${province.fullName}</figcaption>${getSVG(
+                el,
+                200
+              )}</a></figure>`;
+            })
+            .join("");
+          return stateProvinces.length ? `<div id="provinces_${state.i}">${back}<h2>${state.fullName} provinces</h2>${figures}</div>` : "";
+        })
+        .join("");
 
-      const burgSections = validStates.map(state => {
-        const stateBurgs = validBurgs.filter(b => b.state === state.i);
-        let stateBurgSections = validProvinces.filter(p => p.state === state.i).map(province => {
-          const provinceBurgs = stateBurgs.filter(b => pack.cells.province[b.cell] === province.i);
-          const provinceBurgFigures = provinceBurgs.map(burg => {
-            const el = document.getElementById("burgCOA"+burg.i);
-            return `<figure id="burg_${burg.i}"><figcaption>${burg.name}</figcaption>${getSVG(el, 200)}</figure>`;
-          }).join("");
-          return provinceBurgs.length ? `<div id="burgs_${province.i}">${back}<h2>${province.fullName} burgs</h2>${provinceBurgFigures}</div>` : "";
-        }).join("");
+      const burgSections = validStates
+        .map(state => {
+          const stateBurgs = validBurgs.filter(b => b.state === state.i);
+          let stateBurgSections = validProvinces
+            .filter(p => p.state === state.i)
+            .map(province => {
+              const provinceBurgs = stateBurgs.filter(b => pack.cells.province[b.cell] === province.i);
+              const provinceBurgFigures = provinceBurgs
+                .map(burg => {
+                  const el = document.getElementById("burgCOA" + burg.i);
+                  return `<figure id="burg_${burg.i}"><figcaption>${burg.name}</figcaption>${getSVG(el, 200)}</figure>`;
+                })
+                .join("");
+              return provinceBurgs.length ? `<div id="burgs_${province.i}">${back}<h2>${province.fullName} burgs</h2>${provinceBurgFigures}</div>` : "";
+            })
+            .join("");
 
-        const stateBurgOutOfProvinces = stateBurgs.filter(b => !pack.cells.province[b.cell]);
-        const stateBurgOutOfProvincesFigures = stateBurgOutOfProvinces.map(burg => {
-          const el = document.getElementById("burgCOA"+burg.i);
-          return `<figure id="burg_${burg.i}"><figcaption>${burg.name}</figcaption>${getSVG(el, 200)}</figure>`;
-        }).join("");
-        if (stateBurgOutOfProvincesFigures) stateBurgSections += `<div><h2>${state.fullName} burgs under direct control</h2>${stateBurgOutOfProvincesFigures}</div>`;
-        return stateBurgSections;
-      }).join("");
+          const stateBurgOutOfProvinces = stateBurgs.filter(b => !pack.cells.province[b.cell]);
+          const stateBurgOutOfProvincesFigures = stateBurgOutOfProvinces
+            .map(burg => {
+              const el = document.getElementById("burgCOA" + burg.i);
+              return `<figure id="burg_${burg.i}"><figcaption>${burg.name}</figcaption>${getSVG(el, 200)}</figure>`;
+            })
+            .join("");
+          if (stateBurgOutOfProvincesFigures)
+            stateBurgSections += `<div><h2>${state.fullName} burgs under direct control</h2>${stateBurgOutOfProvincesFigures}</div>`;
+          return stateBurgSections;
+        })
+        .join("");
 
       const neutralBurgs = validBurgs.filter(b => !b.state);
-      const neutralsSection = neutralBurgs.length ? "<div><h2>Independent burgs</h2>" + neutralBurgs.map(burg => {
-        const el = document.getElementById("burgCOA"+burg.i);
-        return `<figure id="burg_${burg.i}"><figcaption>${burg.name}</figcaption>${getSVG(el, 200)}</figure>`;
-      }).join("") + "</div>" : "";
+      const neutralsSection = neutralBurgs.length
+        ? "<div><h2>Independent burgs</h2>" +
+          neutralBurgs
+            .map(burg => {
+              const el = document.getElementById("burgCOA" + burg.i);
+              return `<figure id="burg_${burg.i}"><figcaption>${burg.name}</figcaption>${getSVG(el, 200)}</figure>`;
+            })
+            .join("") +
+          "</div>"
+        : "";
 
       const FMG = `<a href="https://azgaar.github.io/Fantasy-Map-Generator" target="_blank">Azgaar's Fantasy Map Generator</a>`;
       const license = `<a target="_blank" href="https://github.com/Azgaar/Armoria#license">the license</a>`;
-      const html = `<!DOCTYPE html><html><head><title>${mapName.value} Emblems Gallery</title></head>
-        <style type="text/css">
-          body { margin: 0; padding: 1em; font-family: serif; }
-          h1, h2 { font-family: 'Forum'; }
-          div { width: 100%; max-width: 1018px; margin: 0 auto; border-bottom: 1px solid #ddd; }
-          figure { margin: 0 0 2em; display: inline-block; transition: .2s; }
-          figure:hover { background-color: #f6f6f6; }
-          figcaption { text-align: center; margin: .4em 0; width: 200px; font-family: 'Overlock SC' }
-          address { width: 100%; max-width: 1018px; margin: 0 auto; }
-          a { color: black; }
-          figure > a { text-decoration: none; }
-          div > a { float: right; font-family: monospace; margin-top: .8em; }
-        </style>
-        <link href="https://fonts.googleapis.com/css2?family=Forum&family=Overlock+SC" rel="stylesheet">
-        <body>
-          <div><h1>${mapName.value} Emblems Gallery</h1></div>
-          ${stateSection}
-          ${provinceSections}
-          ${burgSections}
-          ${neutralsSection}
-          <address>Generated by ${FMG}. The tool is free, but images may be copyrighted, see ${license}</address>
-        </body></html>`;
+      const html = /* html */ `<!DOCTYPE html>
+        <html>
+          <head>
+            <title>${mapName.value} Emblems Gallery</title>
+          </head>
+          <style type="text/css">
+            body {
+              margin: 0;
+              padding: 1em;
+              font-family: serif;
+            }
+            h1,
+            h2 {
+              font-family: "Forum";
+            }
+            div {
+              width: 100%;
+              max-width: 1018px;
+              margin: 0 auto;
+              border-bottom: 1px solid #ddd;
+            }
+            figure {
+              margin: 0 0 2em;
+              display: inline-block;
+              transition: 0.2s;
+            }
+            figure:hover {
+              background-color: #f6f6f6;
+            }
+            figcaption {
+              text-align: center;
+              margin: 0.4em 0;
+              width: 200px;
+              font-family: "Overlock SC";
+            }
+            address {
+              width: 100%;
+              max-width: 1018px;
+              margin: 0 auto;
+            }
+            a {
+              color: black;
+            }
+            figure > a {
+              text-decoration: none;
+            }
+            div > a {
+              float: right;
+              font-family: monospace;
+              margin-top: 0.8em;
+            }
+          </style>
+          <link href="https://fonts.googleapis.com/css2?family=Forum&family=Overlock+SC" rel="stylesheet" />
+          <body>
+            <div><h1>${mapName.value} Emblems Gallery</h1></div>
+            ${stateSection} ${provinceSections} ${burgSections} ${neutralsSection}
+            <address>Generated by ${FMG}. The tool is free, but images may be copyrighted, see ${license}</address>
+          </body>
+        </html>`;
       downloadFile(html, name + ".html", "text/plain");
     }
   }
@@ -409,9 +482,9 @@ function editEmblem(type, id, el) {
   async function renderAllEmblems(states, provinces, burgs) {
     tip("Preparing for download...", true, "warn");
 
-    const statePromises = states.map(state => COArenderer.trigger("stateCOA"+state.i, state.coa));
-    const provincePromises = provinces.map(province => COArenderer.trigger("provinceCOA"+province.i, province.coa));
-    const burgPromises = burgs.map(burg => COArenderer.trigger("burgCOA"+burg.i, burg.coa));
+    const statePromises = states.map(state => COArenderer.trigger("stateCOA" + state.i, state.coa));
+    const provincePromises = provinces.map(province => COArenderer.trigger("provinceCOA" + province.i, province.coa));
+    const burgPromises = burgs.map(burg => COArenderer.trigger("burgCOA" + burg.i, burg.coa));
     const promises = [...statePromises, ...provincePromises, ...burgPromises];
 
     return Promise.allSettled(promises).then(res => clearMainTip());
@@ -419,10 +492,11 @@ function editEmblem(type, id, el) {
 
   function dragEmblem() {
     const tr = parseTransform(this.getAttribute("transform"));
-    const x = +tr[0] - d3.event.x, y = +tr[1] - d3.event.y;
+    const x = +tr[0] - d3.event.x,
+      y = +tr[1] - d3.event.y;
 
-    d3.event.on("drag", function() {
-      const transform = `translate(${(x + d3.event.x)},${(y + d3.event.y)})`;
+    d3.event.on("drag", function () {
+      const transform = `translate(${x + d3.event.x},${y + d3.event.y})`;
       this.setAttribute("transform", transform);
     });
   }

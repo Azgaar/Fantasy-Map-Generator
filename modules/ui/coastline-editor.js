@@ -5,7 +5,8 @@ function editCoastline(node = d3.event.target) {
   if (layerIsOn("toggleCells")) toggleCells();
 
   $("#coastlineEditor").dialog({
-    title: "Edit Coastline", resizable: false,
+    title: "Edit Coastline",
+    resizable: false,
     position: {my: "center top+20", at: "top", of: d3.event, collision: "fit"},
     close: closeCoastlineEditor
   });
@@ -33,13 +34,27 @@ function editCoastline(node = d3.event.target) {
     const v = pack.features[f].vertices; // coastline outer vertices
 
     const l = pack.cells.i.length;
-    const c = [... new Set(v.map(v => pack.vertices.c[v]).flat())].filter(c => c < l);
-    debug.select("#vertices").selectAll("polygon").data(c).enter().append("polygon")
-      .attr("points", d => getPackPolygon(d)).attr("data-c", d => d);
+    const c = [...new Set(v.map(v => pack.vertices.c[v]).flat())].filter(c => c < l);
+    debug
+      .select("#vertices")
+      .selectAll("polygon")
+      .data(c)
+      .enter()
+      .append("polygon")
+      .attr("points", d => getPackPolygon(d))
+      .attr("data-c", d => d);
 
-    debug.select("#vertices").selectAll("circle").data(v).enter().append("circle")
-      .attr("cx", d => pack.vertices.p[d][0]).attr("cy", d => pack.vertices.p[d][1])
-      .attr("r", .4).attr("data-v", d => d).call(d3.drag().on("drag", dragVertex))
+    debug
+      .select("#vertices")
+      .selectAll("circle")
+      .data(v)
+      .enter()
+      .append("circle")
+      .attr("cx", d => pack.vertices.p[d][0])
+      .attr("cy", d => pack.vertices.p[d][1])
+      .attr("r", 0.4)
+      .attr("data-v", d => d)
+      .call(d3.drag().on("drag", dragVertex))
       .on("mousemove", () => tip("Drag to move the vertex, please use for fine-tuning only. Edit heightmap to change actual cell heights"));
 
     const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
@@ -48,12 +63,16 @@ function editCoastline(node = d3.event.target) {
   }
 
   function dragVertex() {
-    const x = rn(d3.event.x, 2), y = rn(d3.event.y, 2);
+    const x = rn(d3.event.x, 2),
+      y = rn(d3.event.y, 2);
     this.setAttribute("cx", x);
     this.setAttribute("cy", y);
     const v = +this.dataset.v;
     pack.vertices.p[v] = [x, y];
-    debug.select("#vertices").selectAll("polygon").attr("points", d => getPackPolygon(d));
+    debug
+      .select("#vertices")
+      .selectAll("polygon")
+      .attr("points", d => getPackPolygon(d));
     redrawCoastline();
   }
 
@@ -61,11 +80,14 @@ function editCoastline(node = d3.event.target) {
     lineGen.curve(d3.curveBasisClosed);
     const f = +elSelected.attr("data-f");
     const vertices = pack.features[f].vertices;
-    const points = clipPoly(vertices.map(v => pack.vertices.p[v]), 1);
+    const points = clipPoly(
+      vertices.map(v => pack.vertices.p[v]),
+      1
+    );
     const d = round(lineGen(points));
     elSelected.attr("d", d);
-    defs.select("mask#land > path#land_"+f).attr("d", d); // update land mask
-    defs.select("mask#water > path#water_"+f).attr("d", d); // update water mask
+    defs.select("mask#land > path#land_" + f).attr("d", d); // update land mask
+    defs.select("mask#water > path#water_" + f).attr("d", d); // update water mask
 
     const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
     const area = Math.abs(d3.polygonArea(points));
@@ -73,12 +95,12 @@ function editCoastline(node = d3.event.target) {
   }
 
   function showGroupSection() {
-    document.querySelectorAll("#coastlineEditor > button").forEach(el => el.style.display = "none");
+    document.querySelectorAll("#coastlineEditor > button").forEach(el => (el.style.display = "none"));
     document.getElementById("coastlineGroupsSelection").style.display = "inline-block";
   }
 
   function hideGroupSection() {
-    document.querySelectorAll("#coastlineEditor > button").forEach(el => el.style.display = "inline-block");
+    document.querySelectorAll("#coastlineEditor > button").forEach(el => (el.style.display = "inline-block"));
     document.getElementById("coastlineGroupsSelection").style.display = "none";
     document.getElementById("coastlineGroupName").style.display = "none";
     document.getElementById("coastlineGroupName").value = "";
@@ -90,7 +112,7 @@ function editCoastline(node = d3.event.target) {
     const select = document.getElementById("coastlineGroup");
     select.options.length = 0; // remove all options
 
-    coastline.selectAll("g").each(function() {
+    coastline.selectAll("g").each(function () {
       select.options.add(new Option(this.id, this.id, false, this.id === group));
     });
   }
@@ -111,8 +133,14 @@ function editCoastline(node = d3.event.target) {
   }
 
   function createNewGroup() {
-    if (!this.value) {tip("Please provide a valid group name"); return;}
-    const group = this.value.toLowerCase().replace(/ /g, "_").replace(/[^\w\s]/gi, "");
+    if (!this.value) {
+      tip("Please provide a valid group name");
+      return;
+    }
+    const group = this.value
+      .toLowerCase()
+      .replace(/ /g, "_")
+      .replace(/[^\w\s]/gi, "");
 
     if (document.getElementById(group)) {
       tip("Element with this id already exists. Please provide a unique name", false, "error");
@@ -155,11 +183,14 @@ function editCoastline(node = d3.event.target) {
     }
 
     const count = elSelected.node().parentNode.childElementCount;
-    alertMessage.innerHTML = `Are you sure you want to remove the group?
-      All coastline elements of the group (${count}) will be moved under <i>sea_island</i> group`;
-    $("#alert").dialog({resizable: false, title: "Remove coastline group", width:"26em",
+    alertMessage.innerHTML = /* html */ `Are you sure you want to remove the group? All coastline elements of the group (${count}) will be moved under
+      <i>sea_island</i> group`;
+    $("#alert").dialog({
+      resizable: false,
+      title: "Remove coastline group",
+      width: "26em",
       buttons: {
-        Remove: function() {
+        Remove: function () {
           $(this).dialog("close");
           const sea = document.getElementById("sea_island");
           const groupEl = document.getElementById(group);
@@ -170,7 +201,9 @@ function editCoastline(node = d3.event.target) {
           document.getElementById("coastlineGroup").selectedOptions[0].remove();
           document.getElementById("coastlineGroup").value = "sea_island";
         },
-        Cancel: function() {$(this).dialog("close");}
+        Cancel: function () {
+          $(this).dialog("close");
+        }
       }
     });
   }

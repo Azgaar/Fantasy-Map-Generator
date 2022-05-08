@@ -712,8 +712,8 @@ emblemsBurgSizeInput.addEventListener("change", drawEmblems);
 
 // request a URL to image to be used as a texture
 function textureProvideURL() {
-  alertMessage.innerHTML = `Provide an image URL to be used as a texture:
-    <input id="textureURL" type="url" style="width: 100%" placeholder="http://www.example.com/image.jpg" oninput="fetchTextureURL(this.value)">
+  alertMessage.innerHTML = /* html */ `Provide an image URL to be used as a texture:
+    <input id="textureURL" type="url" style="width: 100%" placeholder="http://www.example.com/image.jpg" oninput="fetchTextureURL(this.value)" />
     <canvas id="texturePreview" width="256px" height="144px"></canvas>`;
   $("#alert").dialog({
     resizable: false,

@@ -50,8 +50,8 @@ function loadMapPrompt(blob) {
     return;
   }
 
-  alertMessage.innerHTML = `Are you sure you want to load saved map?<br>
-  All unsaved changes made to the current map will be lost`;
+  alertMessage.innerHTML = /* html */ `Are you sure you want to load saved map?<br />
+    All unsaved changes made to the current map will be lost`;
   $("#alert").dialog({
     resizable: false,
     title: "Load saved map",
@@ -94,9 +94,10 @@ function loadMapFromURL(maplink, random) {
 
 function showUploadErrorMessage(error, URL, random) {
   ERROR && console.error(error);
-  alertMessage.innerHTML = `Cannot load map from the ${link(URL, "link provided")}.
-    ${random ? `A new random map is generated. ` : ""}
-    Please ensure the linked file is reachable and CORS is allowed on server side`;
+  alertMessage.innerHTML = /* html */ `Cannot load map from the ${link(URL, "link provided")}. ${
+    random ? `A new random map is generated. ` : ""
+  } Please ensure the
+  linked file is reachable and CORS is allowed on server side`;
   $("#alert").dialog({
     title: "Loading error",
     width: "32em",
@@ -563,8 +564,7 @@ async function parseLoadedData(data) {
     ERROR && console.error(error);
     clearMainTip();
 
-    alertMessage.innerHTML = `An error is occured on map loading. Select a different file to load,
-      <br>generate a new random map or cancel the loading
+    alertMessage.innerHTML = /* html */ `An error is occured on map loading. Select a different file to load, <br />generate a new random map or cancel the loading
       <p id="errorBox">${parseError(error)}</p>`;
 
     $("#alert").dialog({

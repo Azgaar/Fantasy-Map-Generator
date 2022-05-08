@@ -35,7 +35,7 @@ toolsContent.addEventListener("click", function (event) {
       return;
     }
 
-    alertMessage.innerHTML = `Regeneration will remove all the custom changes for the element.<br><br>Are you sure you want to proceed?`;
+    alertMessage.innerHTML = /* html */ `Regeneration will remove all the custom changes for the element.<br /><br />Are you sure you want to proceed?`;
     $("#alert").dialog({
       resizable: false,
       title: "Regenerate element",

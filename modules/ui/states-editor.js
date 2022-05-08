@@ -100,24 +100,41 @@ function editStates() {
 
       if (!s.i) {
         // Neutral line
-        lines += `<div class="states" data-id=${s.i} data-name="${s.name}" data-cells=${s.cells} data-area=${area} 
-        data-population=${population} data-burgs=${s.burgs} data-color="" data-form="" data-capital="" data-culture="" data-type="" data-expansionism="">
+        lines += /* html */ `<div
+          class="states"
+          data-id=${s.i}
+          data-name="${s.name}"
+          data-cells=${s.cells}
+          data-area=${area}
+          data-population=${population}
+          data-burgs=${s.burgs}
+          data-color=""
+          data-form=""
+          data-capital=""
+          data-culture=""
+          data-type=""
+          data-expansionism=""
+        >
           <svg width="1em" height="1em" class="placeholder"></svg>
-          <input data-tip="Neutral lands name. Click to change" class="stateName name pointer italic" value="${s.name}" readonly>
+          <input data-tip="Neutral lands name. Click to change" class="stateName name pointer italic" value="${s.name}" readonly />
           <svg class="coaIcon placeholder hide"></svg>
-          <input class="stateForm placeholder" value="none">
+          <input class="stateForm placeholder" value="none" />
           <span class="icon-star-empty placeholder hide"></span>
-          <input class="stateCapital placeholder hide">
-          <select class="stateCulture placeholder hide">${getCultureOptions(0)}</select>
+          <input class="stateCapital placeholder hide" />
+          <select class="stateCulture placeholder hide">
+            ${getCultureOptions(0)}
+          </select>
           <span data-tip="Burgs count" style="padding-right: 1px" class="icon-dot-circled hide"></span>
           <div data-tip="Burgs count" class="stateBurgs hide">${s.burgs}</div>
           <span data-tip="Neutral lands area" style="padding-right: 4px" class="icon-map-o hide"></span>
           <div data-tip="Neutral lands area" class="biomeArea hide">${si(area) + unit}</div>
           <span data-tip="${populationTip}" class="icon-male hide"></span>
           <div data-tip="${populationTip}" class="culturePopulation hide">${si(population)}</div>
-          <select class="cultureType ${hidden} placeholder show hide">${getTypeOptions(0)}</select>
+          <select class="cultureType ${hidden} placeholder show hide">
+            ${getTypeOptions(0)}
+          </select>
           <span class="icon-resize-full ${hidden} placeholder show hide"></span>
-          <input class="statePower ${hidden} placeholder show hide" type="number" value=0>
+          <input class="statePower ${hidden} placeholder show hide" type="number" value="0" />
           <span data-tip="Cells count" class="icon-check-empty ${hidden} show hide"></span>
           <div data-tip="Cells count" class="stateCells ${hidden} show hide">${s.cells}</div>
         </div>`;
@@ -126,26 +143,49 @@ function editStates() {
 
       const capital = pack.burgs[s.capital].name;
       COArenderer.trigger("stateCOA" + s.i, s.coa);
-      lines += `<div class="states" data-id=${s.i} data-name="${s.name}" data-form="${s.formName}" data-capital="${capital}"
-        data-color="${s.color}" data-cells=${s.cells} data-area=${area} data-population=${population} data-burgs=${s.burgs}
-        data-culture=${pack.cultures[s.culture].name} data-type=${s.type} data-expansionism=${s.expansionism}>
+      lines += /* html */ `<div
+        class="states"
+        data-id=${s.i}
+        data-name="${s.name}"
+        data-form="${s.formName}"
+        data-capital="${capital}"
+        data-color="${s.color}"
+        data-cells=${s.cells}
+        data-area=${area}
+        data-population=${population}
+        data-burgs=${s.burgs}
+        data-culture=${pack.cultures[s.culture].name}
+        data-type=${s.type}
+        data-expansionism=${s.expansionism}
+      >
         <fill-box fill="${s.color}"></fill-box>
-        <input data-tip="State name. Click to change" class="stateName name pointer" value="${s.name}" readonly>
+        <input data-tip="State name. Click to change" class="stateName name pointer" value="${s.name}" readonly />
         <svg data-tip="Click to show and edit state emblem" class="coaIcon pointer hide" viewBox="0 0 200 200"><use href="#stateCOA${s.i}"></use></svg>
-        <input data-tip="State form name. Click to change" class="stateForm name pointer" value="${s.formName}" readonly>
+        <input data-tip="State form name. Click to change" class="stateForm name pointer" value="${s.formName}" readonly />
         <span data-tip="State capital. Click to zoom into view" class="icon-star-empty pointer hide"></span>
-        <input data-tip="Capital name. Click and type to rename" class="stateCapital hide" value="${capital}" autocorrect="off" spellcheck="false"/>
-        <select data-tip="Dominant culture. Click to change" class="stateCulture hide">${getCultureOptions(s.culture)}</select>
+        <input data-tip="Capital name. Click and type to rename" class="stateCapital hide" value="${capital}" autocorrect="off" spellcheck="false" />
+        <select data-tip="Dominant culture. Click to change" class="stateCulture hide">
+          ${getCultureOptions(s.culture)}
+        </select>
         <span data-tip="Burgs count" style="padding-right: 1px" class="icon-dot-circled hide"></span>
         <div data-tip="Burgs count" class="stateBurgs hide">${s.burgs}</div>
         <span data-tip="State area" style="padding-right: 4px" class="icon-map-o hide"></span>
         <div data-tip="State area" class="biomeArea hide">${si(area) + unit}</div>
         <span data-tip="${populationTip}" class="icon-male hide"></span>
         <div data-tip="${populationTip}" class="culturePopulation hide">${si(population)}</div>
-        <select data-tip="State type. Defines growth model. Click to change" class="cultureType ${hidden} show hide">${getTypeOptions(s.type)}</select>
+        <select data-tip="State type. Defines growth model. Click to change" class="cultureType ${hidden} show hide">
+          ${getTypeOptions(s.type)}
+        </select>
         <span data-tip="State expansionism" class="icon-resize-full ${hidden} show hide"></span>
-        <input data-tip="Expansionism (defines competitive size). Change to re-calculate states based on new value"
-          class="statePower ${hidden} show hide" type="number" min=0 max=99 step=.1 value=${s.expansionism}>
+        <input
+          data-tip="Expansionism (defines competitive size). Change to re-calculate states based on new value"
+          class="statePower ${hidden} show hide"
+          type="number"
+          min="0"
+          max="99"
+          step=".1"
+          value=${s.expansionism}
+        />
         <span data-tip="Cells count" class="icon-check-empty ${hidden} show hide"></span>
         <div data-tip="Cells count" class="stateCells ${hidden} show hide">${s.cells}</div>
         <span data-tip="Toggle state focus" class="icon-pin ${focused ? "" : " inactive"} hide"></span>
@@ -373,10 +413,9 @@ function editStates() {
     const total = rural + urban;
     const l = n => Number(n).toLocaleString();
 
-    alertMessage.innerHTML = `
-    Rural: <input type="number" min=0 step=1 id="ruralPop" value=${rural} style="width:6em">
-    Urban: <input type="number" min=0 step=1 id="urbanPop" value=${urban} style="width:6em" ${s.burgs ? "" : "disabled"}>
-    <p>Total population: ${l(total)} ⇒ <span id="totalPop">${l(total)}</span> (<span id="totalPopPerc">100</span>%)</p>`;
+    alertMessage.innerHTML = /* html */ ` Rural: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" /> Urban:
+      <input type="number" min="0" step="1" id="urbanPop" value=${urban} style="width:6em" ${s.burgs ? "" : "disabled"} />
+      <p>Total population: ${l(total)} ⇒ <span id="totalPop">${l(total)}</span> (<span id="totalPopPerc">100</span>%)</p>`;
 
     const update = function () {
       const totalNew = ruralPop.valueAsNumber + urbanPop.valueAsNumber;
@@ -592,7 +631,7 @@ function editStates() {
     const treeLayout = d3.pack().size([w, h]).padding(3);
 
     // prepare svg
-    alertMessage.innerHTML = `<select id="statesTreeType" style="display:block; margin-left:13px; font-size:11px">
+    alertMessage.innerHTML = /* html */ `<select id="statesTreeType" style="display:block; margin-left:13px; font-size:11px">
       <option value="area" selected>Area</option>
       <option value="population">Total population</option>
       <option value="rural">Rural population</option>
@@ -664,7 +703,7 @@ function editStates() {
           ? "Burgs number: " + d.data.burgs
           : "Population: " + si(rural + urban);
 
-      statesInfo.innerHTML = `${state}. ${value}`;
+      statesInfo.innerHTML = /* html */ `${state}. ${value}`;
       stateHighlightOn(ev);
     }
 

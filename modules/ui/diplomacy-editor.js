@@ -81,7 +81,7 @@ function editDiplomacy() {
     const selectedName = states[selectedId].name;
 
     COArenderer.trigger("stateCOA" + selectedId, states[selectedId].coa);
-    let lines = `<div class="states Self" data-id=${selectedId} data-tip="List below shows relations to ${selectedName}">
+    let lines = /* html */ `<div class="states Self" data-id=${selectedId} data-tip="List below shows relations to ${selectedName}">
       <div style="width: max-content">${states[selectedId].fullName}</div>
       <svg class="coaIcon" viewBox="0 0 200 200"><use href="#stateCOA${selectedId}"></use></svg>
     </div>`;
@@ -98,7 +98,7 @@ function editDiplomacy() {
       const name = state.fullName.length < 23 ? state.fullName : state.name;
       COArenderer.trigger("stateCOA" + state.i, state.coa);
 
-      lines += `<div class="states" data-id=${state.i} data-name="${name}" data-relations="${relation}">
+      lines += /* html */ `<div class="states" data-id=${state.i} data-name="${name}" data-relations="${relation}">
         <svg data-tip="${tipSelect}" class="coaIcon" viewBox="0 0 200 200"><use href="#stateCOA${state.i}"></use></svg>
         <div data-tip="${tipSelect}" style="width: 12em">${name}</div>
         <div data-tip="${tipChange}" class="changeRelations" style="width: 6em">
@@ -202,7 +202,7 @@ function editDiplomacy() {
     const object = states[objectId];
     const footer = `<div style="margin-top: 0.7em"><svg class="coaIcon" viewBox="0 0 200 200"><use href="#stateCOA${object.i}"></use></svg> <b>${object.fullName}</b></div>`;
 
-    alertMessage.innerHTML = `<div style="overflow: hidden">${header} ${options} ${footer}</div>`;
+    alertMessage.innerHTML = /* html */ `<div style="overflow: hidden">${header} ${options} ${footer}</div>`;
 
     $("#alert").dialog({
       width: fitContent(),

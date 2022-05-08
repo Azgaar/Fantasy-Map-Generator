@@ -254,7 +254,7 @@ function editReliefIcon() {
     let selection = null;
     const pressed = reliefTools.querySelector("button.pressed");
     if (pressed.id === "reliefIndividual") {
-      alertMessage.innerHTML = `Are you sure you want to remove the icon?`;
+      alertMessage.innerHTML = "Are you sure you want to remove the icon?";
       selection = elSelected;
     } else {
       const type = reliefIconsDiv.querySelector("svg.pressed")?.dataset.type;

@@ -15,9 +15,8 @@ window.Cultures = (function () {
       if (!count) {
         WARN && console.warn(`There are no populated cells. Cannot generate cultures`);
         pack.cultures = [{name: "Wildlands", i: 0, base: 1, shield: "round"}];
-        alertMessage.innerHTML = `
-          The climate is harsh and people cannot live in this world.<br>
-          No cultures, states and burgs will be created.<br>
+        alertMessage.innerHTML = /* html */ ` The climate is harsh and people cannot live in this world.<br />
+          No cultures, states and burgs will be created.<br />
           Please consider changing climate settings in the World Configurator`;
         $("#alert").dialog({
           resizable: false,
@@ -31,9 +30,8 @@ window.Cultures = (function () {
         return;
       } else {
         WARN && console.warn(`Not enough populated cells (${populated.length}). Will generate only ${count} cultures`);
-        alertMessage.innerHTML = `
-          There are only ${populated.length} populated cells and it's insufficient livable area.<br>
-          Only ${count} out of ${culturesInput.value} requested cultures will be generated.<br>
+        alertMessage.innerHTML = /* html */ ` There are only ${populated.length} populated cells and it's insufficient livable area.<br />
+          Only ${count} out of ${culturesInput.value} requested cultures will be generated.<br />
           Please consider changing climate settings in the World Configurator`;
         $("#alert").dialog({
           resizable: false,

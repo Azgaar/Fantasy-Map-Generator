@@ -38,14 +38,23 @@ function overviewRivers() {
       const width = rn(r.width * distanceScaleInput.value, 3) + " " + unit;
       const basin = pack.rivers.find(river => river.i === r.basin)?.name;
 
-      lines += `<div class="states" data-id=${r.i} data-name="${r.name}" data-type="${r.type}" data-discharge="${r.discharge}" data-length="${r.length}" data-width="${r.width}" data-basin="${basin}">
+      lines += /* html */ `<div
+        class="states"
+        data-id=${r.i}
+        data-name="${r.name}"
+        data-type="${r.type}"
+        data-discharge="${r.discharge}"
+        data-length="${r.length}"
+        data-width="${r.width}"
+        data-basin="${basin}"
+      >
         <span data-tip="Click to focus on river" class="icon-dot-circled pointer"></span>
         <div data-tip="River name" class="riverName">${r.name}</div>
         <div data-tip="River type name" class="riverType">${r.type}</div>
         <div data-tip="River discharge (flux power)" class="biomeArea">${discharge}</div>
         <div data-tip="River length from source to mouth" class="biomeArea">${length}</div>
         <div data-tip="River mouth width" class="biomeArea">${width}</div>
-        <input data-tip="River basin (name of the main stem)" class="stateName" value="${basin}" disabled>
+        <input data-tip="River basin (name of the main stem)" class="stateName" value="${basin}" disabled />
         <span data-tip="Edit river" class="icon-pencil"></span>
         <span data-tip="Remove river" class="icon-trash-empty"></span>
       </div>`;
@@ -136,8 +145,7 @@ function overviewRivers() {
 
   function triggerRiverRemove() {
     const river = +this.parentNode.dataset.id;
-    alertMessage.innerHTML = `Are you sure you want to remove the river? 
-      All tributaries will be auto-removed`;
+    alertMessage.innerHTML = /* html */ `Are you sure you want to remove the river? All tributaries will be auto-removed`;
 
     $("#alert").dialog({
       resizable: false,
@@ -157,7 +165,7 @@ function overviewRivers() {
   }
 
   function triggerAllRiversRemove() {
-    alertMessage.innerHTML = `Are you sure you want to remove all rivers?`;
+    alertMessage.innerHTML = /* html */ `Are you sure you want to remove all rivers?`;
     $("#alert").dialog({
       resizable: false,
       title: "Remove all rivers",

@@ -154,15 +154,15 @@ function editNamesbase() {
       return "<span data-tip='Namesbase variety is good' style='color:green'>[good]</span>";
     };
 
-    alertMessage.innerHTML = `<div style="line-height: 1.6em; max-width: 20em">
+    alertMessage.innerHTML = /* html */ `<div style="line-height: 1.6em; max-width: 20em">
       <div data-tip="Number of names provided">Namesbase length: ${length} ${getLengthQuality()}</div>
       <div data-tip="Average number of generation variants for each key in the chain">Namesbase variety: ${variety} ${getVarietyLevel()}</div>
-      <hr>
+      <hr />
       <div data-tip="The shortest name length">Min name length: ${d3.min(wordsLength)}</div>
       <div data-tip="The longest name length">Max name length: ${d3.max(wordsLength)}</div>
       <div data-tip="Average name length">Mean name length: ${rn(d3.mean(wordsLength), 1)}</div>
       <div data-tip="Common name length">Median name length: ${d3.median(wordsLength)}</div>
-      <hr>
+      <hr />
       <div data-tip="Characters outside of Basic Latin have bad font support">Non-basic chars: ${nonBasicLatinChars}</div>
       <div data-tip="Characters that are frequently (more than 3 times) doubled">Doubled chars: ${doubled.join("")}</div>
       <div data-tip="Names used more than one time">Duplicates: ${duplicates}</div>
@@ -196,7 +196,7 @@ function editNamesbase() {
   }
 
   function namesbaseRestoreDefault() {
-    alertMessage.innerHTML = `Are you sure you want to restore default namesbase?`;
+    alertMessage.innerHTML = /* html */ `Are you sure you want to restore default namesbase?`;
     $("#alert").dialog({
       resizable: false,
       title: "Restore default data",

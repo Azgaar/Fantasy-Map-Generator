@@ -257,9 +257,10 @@ function editLabel() {
     const group = elSelected.node().parentNode.id;
     const basic = group === "states" || group === "addedLabels";
     const count = elSelected.node().parentNode.childElementCount;
-    alertMessage.innerHTML = `Are you sure you want to remove 
-      ${basic ? "all elements in the group" : "the entire label group"}?
-      <br><br>Labels to be removed: ${count}`;
+    alertMessage.innerHTML = /* html */ `Are you sure you want to remove ${
+      basic ? "all elements in the group" : "the entire label group"
+    }? <br /><br />Labels to be
+      removed: ${count}`;
     $("#alert").dialog({
       resizable: false,
       title: "Remove route group",
