@@ -120,7 +120,8 @@ window.UISubmap = (function () {
       rescaleStyles: checked("submapRescaleStyles"),
       smoothHeightMap: scale > 2,
       inverse: (x, y) => [x / origScale + x0, y / origScale + y0],
-      projection: (x, y) => [(x - x0) * origScale, (y - y0) * origScale]
+      projection: (x, y) => [(x - x0) * origScale, (y - y0) * origScale],
+      scale: origScale,
     };
 
     // converting map position on the planet

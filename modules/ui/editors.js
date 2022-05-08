@@ -320,7 +320,7 @@ function getMFCGlink(burg) {
   }
 
   const parameters = {name, population, size, seed, river, coast, farms, citadel, urban_castle, hub, plaza, temple, walls, shantytown, gates: -1};
-  const url = new URL("https://watabou.github.io/city-generator");
+  const url = new URL("https://watabou.github.io/city-generator/");
   url.search = new URLSearchParams(parameters);
   if (sea) url.searchParams.append("sea", sea);
 
