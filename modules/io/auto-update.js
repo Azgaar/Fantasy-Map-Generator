@@ -69,7 +69,7 @@ export function resolveVersionConflicts(version) {
     labels.selectAll("textPath").each(function () {
       const text = this.textContent;
       const shift = this.getComputedTextLength() / -1.5;
-      this.innerHTML = `<tspan x="${shift}">${text}</tspan>`;
+      this.innerHTML = /* html */ `<tspan x="${shift}">${text}</tspan>`;
     });
 
     // v1.0 added new biome - Wetland
@@ -362,7 +362,7 @@ export function resolveVersionConflicts(version) {
     const pattern = document.getElementById("oceanic");
     const filter = pattern.firstElementChild.getAttribute("filter");
     const href = filter ? "./images/" + filter.replace("url(#", "").replace(")", "") + ".png" : "";
-    pattern.innerHTML = `<image id="oceanicPattern" href=${href} width="100" height="100" opacity="0.2"></image>`;
+    pattern.innerHTML = /* html */ `<image id="oceanicPattern" href=${href} width="100" height="100" opacity="0.2"></image>`;
   }
 
   if (version < 1.62) {

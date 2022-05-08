@@ -77,12 +77,12 @@ function editWorld() {
     const scale = +distanceScaleInput.value;
     const unit = distanceUnitInput.value;
     const meridian = toKilometer(eqD * 2 * scale);
-    document.getElementById("mapSize").innerHTML = `${graphWidth}x${graphHeight}`;
-    document.getElementById("mapSizeFriendly").innerHTML = `${rn(graphWidth * scale)}x${rn(graphHeight * scale)} ${unit}`;
+    document.getElementById("mapSize").innerHTML = /* html */ `${graphWidth}x${graphHeight}`;
+    document.getElementById("mapSizeFriendly").innerHTML = /* html */ `${rn(graphWidth * scale)}x${rn(graphHeight * scale)} ${unit}`;
     document.getElementById("meridianLength").innerHTML = rn(eqD * 2);
-    document.getElementById("meridianLengthFriendly").innerHTML = `${rn(eqD * 2 * scale)} ${unit}`;
+    document.getElementById("meridianLengthFriendly").innerHTML = /* html */ `${rn(eqD * 2 * scale)} ${unit}`;
     document.getElementById("meridianLengthEarth").innerHTML = meridian ? " = " + rn(meridian / 200) + "%🌏" : "";
-    document.getElementById("mapCoordinates").innerHTML = `${lat(mc.latN)} ${Math.abs(rn(mc.lonW))}°W; ${lat(mc.latS)} ${rn(mc.lonE)}°E`;
+    document.getElementById("mapCoordinates").innerHTML = /* html */ `${lat(mc.latN)} ${Math.abs(rn(mc.lonW))}°W; ${lat(mc.latS)} ${rn(mc.lonE)}°E`;
 
     function toKilometer(v) {
       if (unit === "km") return v;
