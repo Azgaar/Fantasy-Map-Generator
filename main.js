@@ -2,10 +2,7 @@
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 "use strict";
-const version = "1.8"; // generator version
-document.title += " v" + version;
-
-// switches to disable/enable logging features
+// set debug options
 const PRODUCTION = location.hostname && location.hostname !== "localhost" && location.hostname !== "127.0.0.1";
 const DEBUG = localStorage.getItem("debug");
 const INFO = DEBUG || !PRODUCTION;
@@ -13,10 +10,13 @@ const TIME = DEBUG || !PRODUCTION;
 const WARN = true;
 const ERROR = true;
 
-// if map version is not stored, clear localStorage and show a message
-if (rn(localStorage.getItem("version"), 1) !== rn(version, 1)) {
-  localStorage.clear();
-  setTimeout(showWelcomeMessage, 8000);
+// register service worker responsible for caching
+if (PRODUCTION && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(err => {
+      console.error("ServiceWorker registration failed: ", err);
+    });
+  });
 }
 
 // append svg layers (in default order)
@@ -447,44 +447,6 @@ function applyDefaultBiomesSystem() {
   }
 
   return {i: d3.range(0, name.length), name, color, biomesMartix, habitability, iconsDensity, icons, cost};
-}
-
-function showWelcomeMessage() {
-  const changelog = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "previous versions");
-  const reddit = link("https://www.reddit.com/r/FantasyMapGenerator", "Reddit community");
-  const discord = link("https://discordapp.com/invite/X7E84HU", "Discord server");
-  const patreon = link("https://www.patreon.com/azgaar", "Patreon");
-
-  alertMessage.innerHTML = /* html */ `The Fantasy Map Generator is updated up to version <strong>${version}</strong>. This version is compatible with ${changelog},
-    loaded <i>.map</i> files will be auto-updated.
-    <ul>
-      <strong>Latest changes:</strong>
-      <li>Submap tool by Goteguru</li>
-      <li>Resample tool by Goteguru</li>
-      <li>Pre-defined heightmaps</li>
-      <li>Advanced notes editor</li>
-      <li>Zones editor: filter by type</li>
-      <li>Color picker: new hatchings</li>
-      <li>New style presets: Cyberpunk and Atlas</li>
-      <li>Burg temperature graph</li>
-      <li>4 new textures</li>
-    </ul>
-
-    <p>Join our ${discord} and ${reddit} to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
-    <span><i>Thanks for all supporters on ${patreon}!</i></span>`;
-
-  $("#alert").dialog({
-    resizable: false,
-    title: "Fantasy Map Generator update",
-    width: "28em",
-    buttons: {
-      OK: function () {
-        $(this).dialog("close");
-      }
-    },
-    position: {my: "center center-4em", at: "center", of: "svg"},
-    close: () => localStorage.setItem("version", version)
-  });
 }
 
 function doWorkOnZoom(isScaleChanged, isPositionChanged) {
