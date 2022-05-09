@@ -13,6 +13,13 @@ const TIME = DEBUG || !PRODUCTION;
 const WARN = true;
 const ERROR = true;
 
+// register service worker
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js");
+  });
+}
+
 // if map version is not stored, clear localStorage and show a message
 if (rn(localStorage.getItem("version"), 1) !== rn(version, 1)) {
   localStorage.clear();
