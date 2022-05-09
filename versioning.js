@@ -8,15 +8,6 @@ const version = "1.81"; // generator version, update each time
   const loadingScreenVersion = document.getElementById("version");
   if (loadingScreenVersion) loadingScreenVersion.innerHTML = version;
 
-  // register service worker responsible for caching
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("/sw.js").catch(err => {
-        console.error("ServiceWorker registration failed: ", err);
-      });
-    });
-  }
-
   const majorVersion = Math.round(version * 10) / 10;
   const storedVersion = +localStorage.getItem("version") || 0;
 

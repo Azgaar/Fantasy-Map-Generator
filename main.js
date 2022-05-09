@@ -10,6 +10,15 @@ const TIME = DEBUG || !PRODUCTION;
 const WARN = true;
 const ERROR = true;
 
+// register service worker responsible for caching
+if (PRODUCTION && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(err => {
+      console.error("ServiceWorker registration failed: ", err);
+    });
+  });
+}
+
 // append svg layers (in default order)
 let svg = d3.select("#map");
 let defs = svg.select("#deftemp");
