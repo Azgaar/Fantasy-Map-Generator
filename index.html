@@ -4223,16 +4223,17 @@
         <p>
           <strong>Font URL</strong>. Provide font name and link to the font file hosted online. The best free font hostings are
           <a href="https://fonts.google.com/" target="_blank">Google Fonts</a> and <a target="_blank" href="https://www.cdnfonts.com">CDN Fonts</a>. To get font
-          file open the link to css provided by these services and manually copy the link to <code>woff2</code>.
+          file open the link to css provided by these services and manually copy the link to <code>woff2</code> of desired variant. To add another variant (e.g.
+          Cyrillic), add the font one more time under the same name, but with another URL
         </p>
         <div style="margin-top: 0.3em" data-tip="Select font adding method">
           <select id="addFontMethod">
             <option value="googleFont" selected>Google font</option>
             <option value="localFont">Local font</option>
-            <option value="fontURL" selected>Font URL</option>
+            <option value="fontURL">Font URL</option>
           </select>
           <input id="addFontNameInput" placeholder="font family" style="width: 15em" />
-          <input id="addFontURLInput" placeholder="font file URL" style="width: 22.6em; margin-top: 0.1em" />
+          <input id="addFontURLInput" placeholder="font file URL" style="width: 22.6em; margin-top: 0.1em; display: none" />
         </div>
       </div>
 

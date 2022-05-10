@@ -44,12 +44,14 @@ const version = "1.81"; // generator version, update each time
       Ok: function () {
         $(this).dialog("close");
         if (storedVersion) clearStoredData();
+        localStorage.setItem("version", version);
       }
     };
 
     if (storedVersion) {
       buttons.Reload = () => {
         clearStoredData();
+        localStorage.setItem("version", version);
         location.reload();
       };
     }
@@ -65,8 +67,6 @@ const version = "1.81"; // generator version, update each time
 
   async function clearStoredData() {
     localStorage.clear();
-    localStorage.setItem("version", version);
-
     const cacheNames = await caches.keys();
     Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)));
   }

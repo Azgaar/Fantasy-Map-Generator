@@ -546,15 +546,15 @@ styleFontAdd.addEventListener("click", function () {
     buttons: {
       Add: function () {
         const family = addFontNameInput.value;
+        const src = addFontURLInput.value;
+        const method = addFontMethod.value;
+
         if (!family) return tip("Please provide a font name", false, "error");
 
-        const existingFont = fonts.find(font => font.family === family);
+        const existingFont = method === "fontURL" ? fonts.find(font => font.family === family && font.src === src) : fonts.find(font => font.family === family);
         if (existingFont) return tip("The font is already added", false, "error");
 
-        const method = addFontMethod.value;
-        const url = addFontURLInput.value;
-
-        if (method === "fontURL") addWebFont(family, url);
+        if (method === "fontURL") addWebFont(family, src);
         else if (method === "googleFont") addGoogleFont(family);
         else if (method === "localFont") addLocalFont(family);
 
