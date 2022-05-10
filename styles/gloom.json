@@ -302,7 +302,7 @@
   "#legend": {
     "data-size": 13,
     "font-size": 13,
-    "font-family": "Almendra SC",
+    "font-family": "Underdog",
     "stroke": "#812929",
     "stroke-width": 2.5,
     "stroke-dasharray": "0 4 10 4",
@@ -315,10 +315,10 @@
   "#burgLabels > #cities": {
     "opacity": 1,
     "fill": "#3e3e4b",
-    "text-shadow": "white 0 0 4px",
-    "data-size": 7,
-    "font-size": 7,
-    "font-family": "Bitter"
+    "text-shadow": "white 0 0 2px",
+    "data-size": 8,
+    "font-size": 8,
+    "font-family": "Underdog"
   },
   "#burgIcons > #cities": {
     "opacity": 1,
@@ -340,9 +340,9 @@
   "#burgLabels > #towns": {
     "opacity": 1,
     "fill": "#3e3e4b",
-    "data-size": 3,
-    "font-size": 3,
-    "font-family": "Bitter"
+    "data-size": 4,
+    "font-size": 4,
+    "font-family": "Underdog"
   },
   "#burgIcons > #towns": {
     "opacity": 0.95,
@@ -366,10 +366,10 @@
     "fill": "#4e4e4e",
     "stroke": "#b5b5b5",
     "stroke-width": 0,
-    "text-shadow": "white 0 0 4px",
-    "data-size": 22,
-    "font-size": 22,
-    "font-family": "Almendra SC",
+    "text-shadow": "white 0 0 2px",
+    "data-size": 20,
+    "font-size": 20,
+    "font-family": "Underdog",
     "filter": null
   },
   "#labels > #addedLabels": {
@@ -380,7 +380,7 @@
     "text-shadow": "white 0 0 4px",
     "data-size": 18,
     "font-size": 18,
-    "font-family": "Almendra SC",
+    "font-family": "Underdog",
     "filter": null
   },
   "#fogging": {

@@ -227,7 +227,7 @@
     "fill": "#000000",
     "data-size": 10,
     "font-size": 10,
-    "font-family": "Georgia",
+    "font-family": "Courier New",
     "filter": null
   },
   "#temperature": {
@@ -292,7 +292,7 @@
   "#legend": {
     "data-size": 13,
     "font-size": 13,
-    "font-family": "Almendra SC",
+    "font-family": "Courier New",
     "stroke": "#812929",
     "stroke-width": 2.5,
     "stroke-dasharray": "0 4 10 4",
@@ -304,11 +304,11 @@
   "#legendBox": {},
   "#burgLabels > #cities": {
     "opacity": 1,
-    "fill": "#3e3e4b",
-    "text-shadow": "white 0 0 4px",
+    "fill": "#000000",
+    "text-shadow": "white 0px 0px 4px",
     "data-size": 7,
     "font-size": 7,
-    "font-family": "Almendra SC"
+    "font-family": "Courier New"
   },
   "#burgIcons > #cities": {
     "opacity": 1,
@@ -329,10 +329,11 @@
   },
   "#burgLabels > #towns": {
     "opacity": 1,
-    "fill": "#3e3e4b",
+    "fill": "#000000",
+    "text-shadow": "white 0px 0px 4px",
     "data-size": 4,
     "font-size": 4,
-    "font-family": "Almendra SC"
+    "font-family": "Courier New"
   },
   "#burgIcons > #towns": {
     "opacity": 1,
@@ -353,13 +354,13 @@
   },
   "#labels > #states": {
     "opacity": 1,
-    "fill": "#3e3e4b",
+    "fill": "#000000",
     "stroke": "#3a3a3a",
     "stroke-width": 0,
-    "text-shadow": "white 0 0 4px",
-    "data-size": 22,
-    "font-size": 22,
-    "font-family": "Almendra SC",
+    "text-shadow": "white 0px 0px 4px",
+    "data-size": 18,
+    "font-size": 18,
+    "font-family": "Courier New",
     "filter": null
   },
   "#labels > #addedLabels": {
@@ -370,7 +371,7 @@
     "text-shadow": "white 0 0 4px",
     "data-size": 18,
     "font-size": 18,
-    "font-family": "Almendra SC",
+    "font-family": "Courier New",
     "filter": null
   },
   "#fogging": {

@@ -311,7 +311,7 @@
     "text-shadow": "white 0px 0px 4px",
     "data-size": 5,
     "font-size": 5,
-    "font-family": "Questrial"
+    "font-family": "Amarante"
   },
   "#burgIcons > #cities": {
     "opacity": 1,
@@ -336,7 +336,7 @@
     "text-shadow": "white 0px 0px 4px",
     "data-size": 4,
     "font-size": 4,
-    "font-family": "Questrial"
+    "font-family": "Amarante"
   },
   "#burgIcons > #towns": {
     "opacity": 1,
@@ -356,14 +356,14 @@
     "stroke-width": 1.2
   },
   "#labels > #states": {
-    "opacity": 0,
+    "opacity": 0.5,
     "fill": "#000000",
     "stroke": "#000000",
     "stroke-width": 0,
     "text-shadow": "white 0px 0px 4px",
     "data-size": 21,
     "font-size": 21,
-    "font-family": "Questrial",
+    "font-family": "Amarante",
     "filter": null
   },
   "#labels > #addedLabels": {
@@ -374,7 +374,7 @@
     "text-shadow": "white 0px 0px 4px",
     "data-size": 18,
     "font-size": 18,
-    "font-family": "Questrial",
+    "font-family": "Amarante",
     "filter": null
   },
   "#fogging": {
