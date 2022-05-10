@@ -136,18 +136,15 @@ declareDefaultFonts(); // execute once on load
 
 function declareFont(font) {
   const {family, src, ...rest} = font;
-  if (!src) return;
+  addFontOption(family);
 
+  if (!src) return;
   const fontFace = new FontFace(family, src, {...rest, display: "block"});
   document.fonts.add(fontFace);
-  addFontOption(family);
 }
 
 function declareDefaultFonts() {
-  fonts.forEach(font => {
-    if (font.src) declareFont(font);
-    else addFontOption(font.family);
-  });
+  fonts.forEach(font => declareFont(font));
 }
 
 function getUsedFonts(svg) {
