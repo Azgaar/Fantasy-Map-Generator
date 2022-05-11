@@ -192,6 +192,12 @@ const fonts = [
     unicodeRange: "U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215"
   },
   {
+    family: "Tapestry",
+    src: "url(https://fonts.gstatic.com/s/macondo/v21/RrQQboN9-iB1IXmOe2LE0Q.woff2)",
+    unicodeRange:
+      "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+  },
+  {
     family: "Uncial Antiqua",
     src: "url(https://fonts.gstatic.com/s/uncialantiqua/v5/N0bM2S5WOex4OUbESzoESK-i-MfWQZQ.woff2)",
     unicodeRange:
