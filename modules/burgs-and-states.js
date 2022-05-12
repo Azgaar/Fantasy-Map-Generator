@@ -792,19 +792,6 @@ window.BurgsAndStates = (function () {
       .sort((a, b) => a.start - b.start);
   };
 
-  const wars = {War: 6, Conflict: 2, Campaign: 4, Invasion: 2, Rebellion: 2, Conquest: 2, Intervention: 1, Expedition: 1, Crusade: 1};
-  const generateCampaign = state => {
-    const neighbors = state.neighbors.length ? state.neighbors : [0];
-    return neighbors
-      .map(i => {
-        const name = i && P(0.8) ? pack.states[i].name : Names.getCultureShort(state.culture);
-        const start = gauss(options.year - 100, 150, 1, options.year - 6);
-        const end = start + gauss(4, 5, 1, options.year - start - 1);
-        return {name: getAdjective(name) + " " + rw(wars), start, end};
-      })
-      .sort((a, b) => a.start - b.start);
-  };
-
   // generate historical conflicts of each state
   const generateCampaigns = function () {
     pack.states.forEach(s => {

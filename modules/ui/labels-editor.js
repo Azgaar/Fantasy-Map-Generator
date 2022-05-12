@@ -401,3 +401,4 @@ function editLabel() {
     unselect();
   }
 }
+}

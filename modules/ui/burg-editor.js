@@ -383,7 +383,7 @@ function editBurg(id) {
           $(this).dialog("close");
         }
       }
-    }
+    });
   }
 
   function changeName() {

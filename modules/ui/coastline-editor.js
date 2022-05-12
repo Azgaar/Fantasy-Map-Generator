@@ -203,10 +203,7 @@ function editCoastline(node = d3.event.target) {
           $(this).dialog("close");
         }
       }
-      groupEl.remove();
-      document.getElementById('coastlineGroup').selectedOptions[0].remove();
-      document.getElementById('coastlineGroup').value = 'sea_island';
-    };
+    });
     confirmationDialog({title: 'Remove coastline group', message, confirm: 'Remove', onConfirm});
   }
 

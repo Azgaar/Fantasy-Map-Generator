@@ -235,10 +235,7 @@ function editLake() {
           $(this).dialog("close");
         }
       }
-      groupEl.remove();
-      document.getElementById('lakeGroup').selectedOptions[0].remove();
-      document.getElementById('lakeGroup').value = 'freshwater';
-    };
+    });
     confirmationDialog({title: 'Remove lake group', message, confirm: 'Remove', onConfirm});
   }
 
