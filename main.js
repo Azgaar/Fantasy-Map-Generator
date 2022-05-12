@@ -131,20 +131,21 @@ let scale = 1;
 let viewX = 0;
 let viewY = 0;
 
-const zoomThrottled = throttle(doWorkOnZoom, 100);
-function zoomed() {
+function onZoom() {
   const {k, x, y} = d3.event.transform;
 
   const isScaleChanged = Boolean(scale - k);
   const isPositionChanged = Boolean(viewX - x || viewY - y);
+  if (!isScaleChanged && !isPositionChanged) return;
 
   scale = k;
   viewX = x;
   viewY = y;
 
-  zoomThrottled(isScaleChanged, isPositionChanged);
+  handleZoom(isScaleChanged, isPositionChanged);
 }
-const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", zoomed);
+const onZoomDebouced = debounce(onZoom, 50);
+const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", onZoomDebouced);
 
 // default options
 let options = {
@@ -449,7 +450,17 @@ function applyDefaultBiomesSystem() {
   return {i: d3.range(0, name.length), name, color, biomesMartix, habitability, iconsDensity, icons, cost};
 }
 
-function doWorkOnZoom(isScaleChanged, isPositionChanged) {
+let optimizedQuality = false;
+
+function handleZoom(isScaleChanged, isPositionChanged) {
+  if (!optimizedQuality) {
+    setRendering("optimizeSpeed");
+    setTimeout(() => {
+      optimizedQuality = false;
+      setRendering(shapeRendering.value);
+    }, 1000);
+  }
+
   viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
 
   if (isPositionChanged) drawCoordinates();

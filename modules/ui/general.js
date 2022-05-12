@@ -65,8 +65,8 @@ function showElementLockTip(event) {
   }
 }
 
-const moved = debounce(mouseMove, 100);
-function mouseMove() {
+const onMouseMove = debounce(handleMouseMove, 100);
+function handleMouseMove() {
   const point = d3.mouse(this);
   const i = findCell(point[0], point[1]); // pack cell id
   if (i === undefined) return;

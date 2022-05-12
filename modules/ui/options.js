@@ -167,7 +167,7 @@ optionsContent.addEventListener("change", function (event) {
   if (id === "zoomExtentMin" || id === "zoomExtentMax") changeZoomExtent(value);
   else if (id === "optionsSeed") generateMapWithSeed("seed change");
   else if (id === "uiSizeInput" || id === "uiSizeOutput") changeUIsize(value);
-  if (id === "shapeRendering") viewbox.attr("shape-rendering", value);
+  else if (id === "shapeRendering") setRendering(value);
   else if (id === "yearInput") changeYear();
   else if (id === "eraInput") changeEra();
   else if (id === "stateLabelsModeInput") options.stateLabelsMode = value;
@@ -543,9 +543,7 @@ function applyStoredOptions() {
   const themeColor = localStorage.getItem("themeColor");
   changeDialogsTheme(themeColor, transparency);
 
-  // set shape rendering
-  viewbox.attr("shape-rendering", shapeRendering.value);
-
+  setRendering(shapeRendering.value);
   options.stateLabelsMode = stateLabelsModeInput.value;
 }
 
@@ -620,6 +618,10 @@ function randomizeCultureSet() {
   };
   culturesSet.value = rw(sets);
   changeCultureSet();
+}
+
+function setRendering(value) {
+  viewbox.attr("shape-rendering", value);
 }
 
 // generate current year and era name
