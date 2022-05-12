@@ -652,6 +652,10 @@ styleIconSizeMinus.addEventListener("click", function () {
 
 function changeIconSize(size, group) {
   const el = group ? anchors.select("#" + group) : getEl();
+  if (!el.size()) {
+    console.warn(`Group ${group} not found. Can not set icon size!`);
+    return;
+  }
   const oldSize = +el.attr("size");
   const shift = (size - oldSize) / 2;
   el.attr("size", size);
