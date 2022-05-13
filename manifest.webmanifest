@@ -2,11 +2,12 @@
   "background_color": "#fff",
   "display": "standalone",
   "orientation": "landscape",
-  "scope": "/",
-  "start_url": "/",
   "name": "Azgaar's Fantansy Map Generator",
   "short_name": "Azgaar's Fantansy Map Generator",
   "description": "Web application generating interactive and highly customizable maps",
+  "scope": "/Fantasy-Map-Generator/",
+  "start_url": "/Fantasy-Map-Generator/?source=pwa",
+  "url": "https://azgaar.github.io/Fantasy-Map-Generator",
   "icons": [
     {
       "src": "images/icons/icon_x512.png",
