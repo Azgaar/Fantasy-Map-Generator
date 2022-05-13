@@ -33,10 +33,13 @@ function createButton() {
 }
 
 function openDialog() {
-  alertMessage.innerHTML = /* html */ `You can install the tool so that it will look and feel like desktop application`;
+  alertMessage.innerHTML = /* html */ `You can install the tool so that it will look and feel like desktop application:
+    have its own icon on your home screen and work offline with some limitations
+  `;
   $("#alert").dialog({
     resizable: false,
     title: "Install the Application",
+    width: "38em",
     buttons: {
       Install: function () {
         $(this).dialog("close");
