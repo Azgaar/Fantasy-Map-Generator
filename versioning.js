@@ -1,7 +1,7 @@
 "use strict";
 // version and caching control
 
-const version = "1.81"; // generator version, update each time
+const version = "1.811"; // generator version, update each time
 
 {
   document.title += " v" + version;
@@ -25,6 +25,8 @@ const version = "1.81"; // generator version, update each time
 
       <ul>
         <strong>Latest changes:</strong>
+        <li>Ability to install the App</li>
+        <li>14 new default fonts</li>
         <li>Caching for faster startup</li>
         <li>Submap tool by Goteguru</li>
         <li>Resample tool by Goteguru</li>
@@ -32,9 +34,6 @@ const version = "1.81"; // generator version, update each time
         <li>Advanced notes editor</li>
         <li>Zones editor: filter by type</li>
         <li>Color picker: new hatchings</li>
-        <li>New style presets: Cyberpunk and Atlas</li>
-        <li>Burg temperature graph</li>
-        <li>4 new textures</li>
       </ul>
 
       <p>Join our <a href="${discord}" target="_blank">Discord server</a> and <a href="${reddit}" target="_blank">Reddit community</a> to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>

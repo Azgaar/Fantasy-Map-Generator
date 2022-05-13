@@ -2,10 +2,7 @@
 // module to control the Tools options (click to edit, to re-geenerate, tp add)
 
 toolsContent.addEventListener("click", function (event) {
-  if (customization) {
-    tip("Please exit the customization mode first", false, "warning");
-    return;
-  }
+  if (customization) return tip("Please exit the customization mode first", false, "warning");
   if (!["BUTTON", "I"].includes(event.target.tagName)) return;
   const button = event.target.id;
 
@@ -30,10 +27,8 @@ toolsContent.addEventListener("click", function (event) {
 
   // click on Regenerate buttons
   if (event.target.parentNode.id === "regenerateFeature") {
-    if (sessionStorage.getItem("regenerateFeatureDontAsk")) {
-      processFeatureRegeneration(event, button);
-      return;
-    }
+    const dontAsk = sessionStorage.getItem("regenerateFeatureDontAsk");
+    if (dontAsk) return processFeatureRegeneration(event, button);
 
     alertMessage.innerHTML = /* html */ `Regeneration will remove all the custom changes for the element.<br /><br />Are you sure you want to proceed?`;
     $("#alert").dialog({
@@ -49,15 +44,14 @@ toolsContent.addEventListener("click", function (event) {
         }
       },
       open: function () {
-        const pane = $(this).dialog("widget").find(".ui-dialog-buttonpane");
-        $(
-          '<span><input id="dontAsk" class="checkbox" type="checkbox"><label for="dontAsk" class="checkbox-label dontAsk"><i>do not ask again</i></label><span>'
-        ).prependTo(pane);
+        const checkbox =
+          '<span><input id="dontAsk" class="checkbox" type="checkbox"><label for="dontAsk" class="checkbox-label dontAsk"><i>do not ask again</i></label><span>';
+        const pane = this.parentElement.querySelector(".ui-dialog-buttonpane");
+        pane.insertAdjacentHTML("afterbegin", checkbox);
       },
       close: function () {
-        const box = $(this).dialog("widget").find(".checkbox")[0];
-        if (!box) return;
-        if (box.checked) sessionStorage.setItem("regenerateFeatureDontAsk", true);
+        const box = this.parentElement.querySelector(".checkbox");
+        if (box?.checked) sessionStorage.setItem("regenerateFeatureDontAsk", true);
         $(this).dialog("destroy");
       }
     });

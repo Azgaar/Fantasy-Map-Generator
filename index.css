@@ -2273,8 +2273,9 @@ svg.button {
 
 
 .dontAsk {
-  display: inline-block;
   margin: 0.9em 0 0 0.6em;
+  display: inline-flex;
+  align-items: center;
 }
 
 #errorBox {
