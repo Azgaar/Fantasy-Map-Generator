@@ -8,10 +8,10 @@ const version = "1.811"; // generator version, update each time
   const loadingScreenVersion = document.getElementById("version");
   if (loadingScreenVersion) loadingScreenVersion.innerHTML = version;
 
-  const majorVersion = Math.round(version * 10) / 10;
+  const majorChangesVersion = 1.811;
   const storedVersion = +localStorage.getItem("version") || 0;
 
-  const showUpdate = storedVersion < majorVersion;
+  const showUpdate = storedVersion < majorChangesVersion;
   if (showUpdate) setTimeout(showUpdateWindow, 5000);
 
   function showUpdateWindow() {
