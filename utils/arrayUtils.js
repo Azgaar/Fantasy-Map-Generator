@@ -6,10 +6,19 @@ function last(array) {
   return array[array.length - 1];
 }
 
-// return array of values common for both array a and array b
+/**
+ * Return common elements between two arrays.
+ * @param {*} a array of any type.
+ * @param {*} b array of any type.
+ * @returns Array of common elements between A and B.
+ * @example
+ * const a = [1, 2, 3, 4];
+ * const b = [1, 3, 6, 7];
+ * const result = common(a, b);
+ * console.log(result); // => [1, 3];
+ */
 function common(a, b) {
-  const setB = new Set(b);
-  return [...new Set(a)].filter(a => setB.has(a));
+  return a.filter(element => b.includes(element));
 }
 
 function unique(array) {
