@@ -2,10 +2,7 @@
 // module to control the Tools options (click to edit, to re-geenerate, tp add)
 
 toolsContent.addEventListener("click", function (event) {
-  if (customization) {
-    tip("Please exit the customization mode first", false, "warning");
-    return;
-  }
+  if (customization) return tip("Please exit the customization mode first", false, "warning");
   if (!["BUTTON", "I"].includes(event.target.tagName)) return;
   const button = event.target.id;
 
