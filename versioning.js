@@ -8,9 +8,12 @@ const version = "1.811"; // generator version, update each time
   const loadingScreenVersion = document.getElementById("version");
   if (loadingScreenVersion) loadingScreenVersion.innerHTML = version;
 
-  const majorChangesVersion = 1.811;
   const storedVersion = +localStorage.getItem("version") || 0;
 
+  const isOutdated = storedVersion !== +version;
+  if (isOutdated) clearCache();
+
+  const majorChangesVersion = 1.811;
   const showUpdate = storedVersion < majorChangesVersion;
   if (showUpdate) setTimeout(showUpdateWindow, 5000);
 
@@ -42,14 +45,14 @@ const version = "1.811"; // generator version, update each time
     const buttons = {
       Ok: function () {
         $(this).dialog("close");
-        if (storedVersion) clearStoredData();
+        if (storedVersion) localStorage.clear();
         localStorage.setItem("version", version);
       }
     };
 
     if (storedVersion) {
       buttons.Reload = () => {
-        clearStoredData();
+        localStorage.clear();
         localStorage.setItem("version", version);
         location.reload();
       };
@@ -64,8 +67,7 @@ const version = "1.811"; // generator version, update each time
     });
   }
 
-  async function clearStoredData() {
-    localStorage.clear();
+  async function clearCache() {
     const cacheNames = await caches.keys();
     Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)));
   }
