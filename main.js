@@ -21,7 +21,7 @@ if (PRODUCTION && "serviceWorker" in navigator) {
     "beforeinstallprompt",
     async event => {
       event.preventDefault();
-      const Installation = await import("/modules/dynamic/installation.js");
+      const Installation = await import("./modules/dynamic/installation.js");
       Installation.init(event);
     },
     {once: true}
