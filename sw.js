@@ -1,15 +1,24 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/6.2.0/workbox-sw.js");
 
 const {Route, registerRoute} = workbox.routing;
-const {CacheFirst} = workbox.strategies;
+const {CacheFirst, NetworkFirst} = workbox.strategies;
 const {CacheableResponsePlugin} = workbox.cacheableResponse;
 const {ExpirationPlugin} = workbox.expiration;
 
 const DAY = 24 * 60 * 60;
 
 const getPolitics = ({entries, days}) => {
-  return [new CacheableResponsePlugin({statuses: [200]}), new ExpirationPlugin({maxEntries: entries, maxAgeSeconds: days * DAY})];
+  return [new CacheableResponsePlugin({statuses: [0, 200]}), new ExpirationPlugin({maxEntries: entries, maxAgeSeconds: days * DAY})];
 };
+
+registerRoute(
+  ({request}) => request.mode === "navigate",
+  new NetworkFirst({
+    networkTimeoutSeconds: 3,
+    cacheName: "fmg-html",
+    plugins: [new CacheableResponsePlugin({statuses: [0, 200]})]
+  })
+);
 
 registerRoute(
   ({request, url}) => request.destination === "script" && !url.pathname.endsWith("min.js") && !url.pathname.includes("versioning.js"),
