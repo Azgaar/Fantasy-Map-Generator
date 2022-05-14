@@ -459,17 +459,7 @@ function applyDefaultBiomesSystem() {
   return {i: d3.range(0, name.length), name, color, biomesMartix, habitability, iconsDensity, icons, cost};
 }
 
-let optimizedQuality = false;
-
 function handleZoom(isScaleChanged, isPositionChanged) {
-  if (!optimizedQuality) {
-    setRendering("optimizeSpeed");
-    setTimeout(() => {
-      optimizedQuality = false;
-      setRendering(shapeRendering.value);
-    }, 1000);
-  }
-
   viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
 
   if (isPositionChanged) drawCoordinates();
