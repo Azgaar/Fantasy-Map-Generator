@@ -1,21 +1,21 @@
 "use strict";
 // version and caching control
 
-const version = "1.811"; // generator version, update each time
+const version = "1.81.1"; // generator version, update each time
 
 {
   document.title += " v" + version;
   const loadingScreenVersion = document.getElementById("version");
   if (loadingScreenVersion) loadingScreenVersion.innerHTML = version;
 
-  const storedVersion = +localStorage.getItem("version") || 0;
+  const versionNumber = parseFloat(version);
+  const storedVersion = localStorage.getItem("version") ? parseFloat(localStorage.getItem("version")) : 0;
 
-  const isOutdated = storedVersion !== +version;
+  const isOutdated = storedVersion !== versionNumber;
   if (isOutdated) clearCache();
 
-  const majorChangesVersion = 1.811;
-  const showUpdate = storedVersion < majorChangesVersion;
-  if (showUpdate) setTimeout(showUpdateWindow, 5000);
+  const showUpdate = storedVersion < versionNumber;
+  if (showUpdate) setTimeout(showUpdateWindow, 6000);
 
   function showUpdateWindow() {
     const changelog = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog";

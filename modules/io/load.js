@@ -423,9 +423,9 @@ async function parseLoadedData(data) {
 
     {
       // dynamically import and run auto-udpdate script
-      const version = parseFloat(params[0]);
+      const versionNumber = parseFloat(params[0]);
       const {resolveVersionConflicts} = await import("../dynamic/auto-update.js");
-      resolveVersionConflicts(version);
+      resolveVersionConflicts(versionNumber);
     }
 
     void (function checkDataIntegrity() {
