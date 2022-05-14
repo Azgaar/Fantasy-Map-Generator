@@ -124,7 +124,8 @@ function uploadMap(file, callback) {
     const isInvalid = !mapData || isNaN(mapVersion) || mapData.length < 26 || !mapData[5];
     const isUpdated = mapVersion === currentVersion;
     const isAncient = mapVersion < OLDEST_SUPPORTED_VERSION;
-    const isNewer = mapVersion > currentVersion;
+    // TODO: temp condition for 1.811, remove when 1.82 is released
+    const isNewer = mapVersion > currentVersion && currentVersion !== 1.811;
     const isOutdated = mapVersion < currentVersion;
 
     if (isInvalid) return showUploadMessage("invalid", mapData, mapVersion);
