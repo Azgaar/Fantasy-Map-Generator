@@ -496,25 +496,20 @@ window.BurgsAndStates = (function () {
       paths.push([s.i, relaxed]);
 
       function getHull(start, state, maxLake) {
-        const queue = [start],
-          hull = new Set();
+        const queue = [start];
+        const hull = new Set();
 
         while (queue.length) {
           const q = queue.pop();
-          const nQ = cells.c[q].filter(c => cells.state[c] === state);
+          const sameStateNeibs = cells.c[q].filter(c => cells.state[c] === state);
 
           cells.c[q].forEach(function (c, d) {
             const passableLake = features[cells.f[c]].type === "lake" && features[cells.f[c]].cells < maxLake;
-            if (cells.b[c] || (cells.state[c] !== state && !passableLake)) {
-              hull.add(cells.v[q][d]);
-              return;
-            }
-            const nC = cells.c[c].filter(n => cells.state[n] === state);
-            const intersected = common(nQ, nC).length;
-            if (hull.size > 20 && !intersected && !passableLake) {
-              hull.add(cells.v[q][d]);
-              return;
-            }
+            if (cells.b[c] || (cells.state[c] !== state && !passableLake)) return hull.add(cells.v[q][d]);
+
+            const hasCoadjacentSameStateCells = sameStateNeibs.some(neib => cells.c[c].includes(neib));
+            if (hull.size > 20 && !hasCoadjacentSameStateCells && !passableLake) return hull.add(cells.v[q][d]);
+
             if (used[c]) return;
             used[c] = 1;
             queue.push(c);
