@@ -20,9 +20,13 @@ function editNamesbase() {
   document.getElementById("namesbaseAnalyze").addEventListener("click", analyzeNamesbase);
   document.getElementById("namesbaseDefault").addEventListener("click", namesbaseRestoreDefault);
   document.getElementById("namesbaseDownload").addEventListener("click", namesbaseDownload);
-  document.getElementById("namesbaseUpload").addEventListener("click", () => document.getElementById("namesbaseToLoad").click());
-  document.getElementById("namesbaseToLoad").addEventListener("change", function () {
-    uploadFile(this, namesbaseUpload);
+  document.getElementById("namesbaseUpload").addEventListener("click", () => {
+    const uploader = document.getElementById("namesbaseToLoad");
+    uploader.dataset.override = event.ctrlKey ? "no" : "yes";
+    uploader.click();
+  });
+  document.getElementById("namesbaseToLoad").addEventListener("change", function (ev) {
+    uploadFile(this, d => namesbaseUpload(d, ev.target.dataset.override === "yes"));
   });
   document.getElementById("namesbaseCA").addEventListener("click", () => {
     openURL("https://cartographyassets.com/asset-category/specific-assets/azgaars-generator/namebases/");
@@ -221,7 +225,7 @@ function editNamesbase() {
     downloadFile(data, name);
   }
 
-  function namesbaseUpload(dataLoaded) {
+  function namesbaseUpload(dataLoaded, override=true) {
     const data = dataLoaded.split("\r\n");
     if (!data || !data[0]) {
       tip("Cannot load a namesbase. Please check the data format", false, "error");
@@ -229,7 +233,7 @@ function editNamesbase() {
     }
 
     Names.clearChains();
-    nameBases = [];
+    if (override) nameBases = [];
     data.forEach(d => {
       const e = d.split("|");
       nameBases.push({name: e[0], min: e[1], max: e[2], d: e[3], m: e[4], b: e[5]});
