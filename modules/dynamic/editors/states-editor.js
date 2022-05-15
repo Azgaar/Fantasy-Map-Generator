@@ -147,6 +147,15 @@ function addListeners() {
   document.getElementById("statesAdd").addEventListener("click", enterAddStateMode);
   document.getElementById("statesExport").addEventListener("click", downloadStatesData);
 
+  document
+    .getElementById("statesHeader")
+    .querySelectorAll(".sortable")
+    .forEach(function (element) {
+      element.addEventListener("click", function () {
+        sortLines(this);
+      });
+    });
+
   body.addEventListener("click", function (event) {
     const element = event.target;
     const classList = element.classList;

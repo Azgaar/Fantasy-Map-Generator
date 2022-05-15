@@ -80,23 +80,23 @@ function fitContent() {
 
 // apply sorting behaviour for lines on Editor header click
 document.querySelectorAll(".sortable").forEach(function (e) {
-  e.addEventListener("click", function (e) {
+  e.addEventListener("click", function () {
     sortLines(this);
   });
 });
 
-function sortLines(header) {
-  const type = header.classList.contains("alphabetically") ? "name" : "number";
-  let order = header.className.includes("-down") ? "-up" : "-down";
-  if (!header.className.includes("icon-sort") && type === "name") order = "-up";
+function sortLines(headerElement) {
+  const type = headerElement.classList.contains("alphabetically") ? "name" : "number";
+  let order = headerElement.className.includes("-down") ? "-up" : "-down";
+  if (!headerElement.className.includes("icon-sort") && type === "name") order = "-up";
 
-  const headers = header.parentNode;
+  const headers = headerElement.parentNode;
   headers.querySelectorAll("div.sortable").forEach(e => {
     e.classList.forEach(c => {
       if (c.includes("icon-sort")) e.classList.remove(c);
     });
   });
-  header.classList.add("icon-sort-" + type + order);
+  headerElement.classList.add("icon-sort-" + type + order);
   applySorting(headers);
 }
 
