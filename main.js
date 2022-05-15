@@ -168,6 +168,7 @@ let populationRate = +document.getElementById("populationRateInput").value;
 let distanceScale = +document.getElementById("distanceScaleInput").value;
 let urbanization = +document.getElementById("urbanizationInput").value;
 let urbanDensity = +document.getElementById("urbanDensityInput").value;
+let statesNeutral = 1; // statesEditor growth parameter
 
 applyStoredOptions();
 

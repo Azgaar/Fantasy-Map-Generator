@@ -75,12 +75,12 @@ function handleMouseMove() {
   const g = findGridCell(point[0], point[1]); // grid cell id
   if (tooltip.dataset.main) showMainTip();
   else showMapTooltip(point, d3.event, i, g);
-  if (cellInfo.offsetParent) updateCellInfo(point, i, g);
+  if (cellInfo?.offsetParent) updateCellInfo(point, i, g);
 }
 
 // show note box on hover (if any)
 function showNotes(e) {
-  if (notesEditor.offsetParent) return;
+  if (notesEditor?.offsetParent) return;
   let id = e.target.id || e.target.parentNode.id || e.target.parentNode.parentNode.id;
   if (e.target.parentNode.parentNode.id === "burgLabels") id = "burg" + e.target.dataset.id;
   else if (e.target.parentNode.parentNode.id === "burgIcons") id = "burg" + e.target.dataset.id;
@@ -90,7 +90,7 @@ function showNotes(e) {
     document.getElementById("notes").style.display = "block";
     document.getElementById("notesHeader").innerHTML = note.name;
     document.getElementById("notesBody").innerHTML = note.legend;
-  } else if (!options.pinNotes && !markerEditor.offsetParent) {
+  } else if (!options.pinNotes && !markerEditor?.offsetParent) {
     document.getElementById("notes").style.display = "none";
     document.getElementById("notesHeader").innerHTML = "";
     document.getElementById("notesBody").innerHTML = "";
@@ -129,7 +129,7 @@ function showMapTooltip(point, e, i, g) {
     const r = pack.rivers.find(r => r.i === river);
     const name = r ? r.name + " " + r.type : "";
     tip(name + ". Click to edit");
-    if (riversOverview.offsetParent) highlightEditorLine(riversOverview, river, 5000);
+    if (riversOverview?.offsetParent) highlightEditorLine(riversOverview, river, 5000);
     return;
   }
 
@@ -142,7 +142,7 @@ function showMapTooltip(point, e, i, g) {
     const b = pack.burgs[burg];
     const population = si(b.population * populationRate * urbanization);
     tip(`${b.name}. Population: ${population}. Click to edit`);
-    if (burgsOverview.offsetParent) highlightEditorLine(burgsOverview, burg, 5000);
+    if (burgsOverview?.offsetParent) highlightEditorLine(burgsOverview, burg, 5000);
     return;
   }
   if (group === "labels") return tip("Click to edit the Label");
@@ -176,7 +176,7 @@ function showMapTooltip(point, e, i, g) {
   if (group === "zones") {
     const zone = path[path.length - 8];
     tip(zone.dataset.description);
-    if (zonesEditor.offsetParent) highlightEditorLine(zonesEditor, zone.id, 5000);
+    if (zonesEditor?.offsetParent) highlightEditorLine(zonesEditor, zone.id, 5000);
     return;
   }
 
@@ -189,27 +189,27 @@ function showMapTooltip(point, e, i, g) {
   else if (layerIsOn("toggleBiomes") && pack.cells.biome[i]) {
     const biome = pack.cells.biome[i];
     tip("Biome: " + biomesData.name[biome]);
-    if (biomesEditor.offsetParent) highlightEditorLine(biomesEditor, biome);
+    if (biomesEditor?.offsetParent) highlightEditorLine(biomesEditor, biome);
   } else if (layerIsOn("toggleReligions") && pack.cells.religion[i]) {
     const religion = pack.cells.religion[i];
     const r = pack.religions[religion];
     const type = r.type === "Cult" || r.type == "Heresy" ? r.type : r.type + " religion";
     tip(type + ": " + r.name);
-    if (religionsEditor.offsetParent) highlightEditorLine(religionsEditor, religion);
+    if (religionsEditor?.offsetParent) highlightEditorLine(religionsEditor, religion);
   } else if (pack.cells.state[i] && (layerIsOn("toggleProvinces") || layerIsOn("toggleStates"))) {
     const state = pack.cells.state[i];
     const stateName = pack.states[state].fullName;
     const province = pack.cells.province[i];
     const prov = province ? pack.provinces[province].fullName + ", " : "";
     tip(prov + stateName);
-    if (statesEditor.offsetParent) highlightEditorLine(statesEditor, state);
-    if (diplomacyEditor.offsetParent) highlightEditorLine(diplomacyEditor, state);
-    if (militaryOverview.offsetParent) highlightEditorLine(militaryOverview, state);
-    if (provincesEditor.offsetParent) highlightEditorLine(provincesEditor, province);
+    if (statesEditor?.offsetParent) highlightEditorLine(statesEditor, state);
+    if (diplomacyEditor?.offsetParent) highlightEditorLine(diplomacyEditor, state);
+    if (militaryOverview?.offsetParent) highlightEditorLine(militaryOverview, state);
+    if (provincesEditor?.offsetParent) highlightEditorLine(provincesEditor, province);
   } else if (layerIsOn("toggleCultures") && pack.cells.culture[i]) {
     const culture = pack.cells.culture[i];
     tip("Culture: " + pack.cultures[culture].name);
-    if (culturesEditor.offsetParent) highlightEditorLine(culturesEditor, culture);
+    if (culturesEditor?.offsetParent) highlightEditorLine(culturesEditor, culture);
   } else if (layerIsOn("toggleHeight")) tip("Height: " + getFriendlyHeight(point));
 }
 
