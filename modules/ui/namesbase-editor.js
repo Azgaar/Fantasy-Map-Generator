@@ -20,14 +20,21 @@ function editNamesbase() {
   document.getElementById("namesbaseAnalyze").addEventListener("click", analyzeNamesbase);
   document.getElementById("namesbaseDefault").addEventListener("click", namesbaseRestoreDefault);
   document.getElementById("namesbaseDownload").addEventListener("click", namesbaseDownload);
+
+  const uploader = document.getElementById("namesbaseToLoad");
   document.getElementById("namesbaseUpload").addEventListener("click", () => {
-    const uploader = document.getElementById("namesbaseToLoad");
-    uploader.dataset.override = event.ctrlKey ? "no" : "yes";
+    uploader.addEventListener("change", function (event) {
+      uploadFile(event.target, d => namesbaseUpload(d, true));
+    }, { once: true });
     uploader.click();
   });
-  document.getElementById("namesbaseToLoad").addEventListener("change", function (ev) {
-    uploadFile(this, d => namesbaseUpload(d, ev.target.dataset.override === "yes"));
+  document.getElementById("namesbaseUploadExtend").addEventListener("click", () => {
+    uploader.addEventListener("change", function (event) {
+      uploadFile(event.target, d => namesbaseUpload(d, false));
+    }, { once: true });
+    uploader.click();
   });
+
   document.getElementById("namesbaseCA").addEventListener("click", () => {
     openURL("https://cartographyassets.com/asset-category/specific-assets/azgaars-generator/namebases/");
   });
