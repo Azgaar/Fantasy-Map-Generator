@@ -1093,3 +1093,10 @@ function refreshAllEditors() {
   if (document.getElementById("zonesEditorRefresh").offsetParent) zonesEditorRefresh.click();
   TIME && console.timeEnd("refreshAllEditors");
 }
+
+// dynamically loaded editors
+async function editStates() {
+  if (customization) return;
+  const StateEditor = await import("../dynamic/editors/states-editor.js");
+  StateEditor.open();
+}

@@ -3083,110 +3083,6 @@
         </div>
       </div>
 
-      <div id="statesEditor" class="dialog stable" style="display: none">
-        <div id="statesHeader" class="header">
-          <div style="left: 1.8em" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">State&nbsp;</div>
-          <div style="left: 9.7em" data-tip="Click to sort by state form name" class="sortable alphabetically" data-sortby="form">Form&nbsp;</div>
-          <div style="left: 16.3em" data-tip="Click to sort by capital name" class="sortable alphabetically hide" data-sortby="capital">Capital&nbsp;</div>
-          <div style="left: 23em" data-tip="Click to sort by state dominant culture" class="sortable alphabetically hide" data-sortby="culture">
-            Culture&nbsp;
-          </div>
-          <div style="left: 27.8em" data-tip="Click to sort by state burgs count" class="sortable hide" data-sortby="burgs">Burgs&nbsp;</div>
-          <div style="left: 32.5em" data-tip="Click to sort by state area" class="sortable hide icon-sort-number-down" data-sortby="area">Area&nbsp;</div>
-          <div style="left: 37em" data-tip="Click to sort by state population" class="sortable hide" data-sortby="population">Population&nbsp;</div>
-          <div style="left: 43.5em" data-tip="Click to sort by state type" class="sortable alphabetically hidden show hide" data-sortby="type">Type&nbsp;</div>
-          <div style="left: 47em" data-tip="Click to sort by state expansion value" class="sortable hidden show hide" data-sortby="expansionism">
-            Expansion&nbsp;
-          </div>
-          <div style="left: 53.5em" data-tip="Click to sort by state cells count" class="sortable hidden show hide" data-sortby="cells">Cells&nbsp;</div>
-        </div>
-
-        <div id="statesBodySection" class="table" data-type="absolute"></div>
-
-        <div id="statesFooter" class="totalLine">
-          <div data-tip="States number" style="margin-left: 5px">States:&nbsp;<span id="statesFooterStates">0</span></div>
-          <div data-tip="Total land cells number" style="margin-left: 12px">Cells:&nbsp;<span id="statesFooterCells">0</span></div>
-          <div data-tip="Total burgs number" style="margin-left: 12px">Burgs:&nbsp;<span id="statesFooterBurgs">0</span></div>
-          <div data-tip="Total land area" style="margin-left: 12px">Land Area:&nbsp;<span id="statesFooterArea">0</span></div>
-          <div data-tip="Total population" style="margin-left: 12px">Population:&nbsp;<span id="statesFooterPopulation">0</span></div>
-        </div>
-
-        <div id="statesBottom">
-          <button id="statesEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-          <button id="statesEditStyle" data-tip="Edit states style in Style Editor" class="icon-adjust"></button>
-          <button id="statesLegend" data-tip="Toggle Legend box" class="icon-list-bullet"></button>
-          <button id="statesPercentage" data-tip="Toggle percentage / absolute values views" class="icon-percent"></button>
-          <button id="statesChart" data-tip="Show states bubble chart" class="icon-chart-area"></button>
-
-          <button id="statesRegenerate" data-tip="Show the regeneration menu and more data" class="icon-cog-alt"></button>
-          <div id="statesRegenerateButtons" style="display: none">
-            <button id="statesRegenerateBack" data-tip="Hide the regeneration menu" class="icon-cog-alt"></button>
-            <button id="statesRandomize" data-tip="Randomize states Expansion value and re-calculate states and provinces" class="icon-shuffle"></button>
-            <span data-tip="Additional growth rate. Defines how many lands will stay neutral">
-              <label class="italic">Growth rate:</label>
-              <input
-                id="statesNeutral"
-                oninput="tip('Growth rate: '+this.value); statesNeutralNumber.value = this.value"
-                type="range"
-                min=".1"
-                max="3"
-                step=".05"
-                value="1"
-                style="width: 90px"
-              />
-              <input
-                id="statesNeutralNumber"
-                oninput="tip('Growth rate: '+this.value); statesNeutral.value = this.value"
-                type="number"
-                min=".1"
-                max="3"
-                step=".05"
-                value="1"
-                style="width: 42px"
-              />
-            </span>
-            <button id="statesRecalculate" data-tip="Recalculate states based on current values of growth-related attributes" class="icon-retweet"></button>
-            <span data-tip="Allow states neutral distance, expansion and type changes to take an immediate effect">
-              <input id="statesAutoChange" class="checkbox" type="checkbox" />
-              <label for="statesAutoChange" class="checkbox-label"><i>auto-apply changes</i></label>
-            </span>
-            <span data-tip="Allow system to change state labels when states data is change">
-              <input id="adjustLabels" class="checkbox" type="checkbox" />
-              <label for="adjustLabels" class="checkbox-label"><i>auto-change labels</i></label>
-            </span>
-          </div>
-
-          <button id="statesManually" data-tip="Manually re-assign states" class="icon-brush"></button>
-          <div id="statesManuallyButtons" style="display: none">
-            <label data-tip="Change brush size. Shortcut: + (increase), – (decrease)" class="italic"
-              >Brush size:
-              <input
-                id="statesManuallyBrush"
-                oninput="tip('Brush size: '+this.value); statesManuallyBrushNumber.value = this.value"
-                type="range"
-                min="5"
-                max="99"
-                value="15"
-                style="width: 5em"
-              />
-              <input
-                id="statesManuallyBrushNumber"
-                oninput="tip('Brush size: '+this.value); statesManuallyBrush.value = this.value"
-                type="number"
-                min="5"
-                max="99"
-                value="15"
-              /> </label
-            ><br />
-            <button id="statesManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
-            <button id="statesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
-          </div>
-
-          <button id="statesAdd" data-tip="Add a new state. Hold Shift to add multiple" class="icon-plus"></button>
-          <button id="statesExport" data-tip="Save state-related data as a text file (.csv)" class="icon-download"></button>
-        </div>
-      </div>
-
       <div id="stateNameEditor" class="dialog" data-state="0" style="display: none">
         <div>
           <div data-tip="State short name" class="label">Short name:</div>
@@ -6278,7 +6174,7 @@
     <script src="modules/lakes.js"></script>
     <script src="modules/names-generator.js"></script>
     <script src="modules/cultures-generator.js"></script>
-    <script src="modules/burgs-and-states.js?v=14052022"></script>
+    <script src="modules/burgs-and-states.js?v=15052022"></script>
     <script src="modules/routes-generator.js"></script>
     <script src="modules/religions-generator.js"></script>
     <script src="modules/military-generator.js"></script>
@@ -6293,17 +6189,16 @@
     <script src="modules/ui/measurers.js"></script>
     <script src="modules/ui/stylePresets.js"></script>
 
-    <script src="modules/ui/general.js"></script>
+    <script src="modules/ui/general.js?v=15052022"></script>
     <script src="modules/ui/options.js?v=14052022"></script>
-    <script src="main.js?v=14052022"></script>
+    <script src="main.js?v=15052022"></script>
 
     <script defer src="modules/relief-icons.js"></script>
     <script defer src="modules/ui/style.js"></script>
+    <script defer src="modules/ui/editors.js?v=15052022"></script>
     <script defer src="modules/ui/tools.js"></script>
     <script defer src="modules/ui/world-configurator.js"></script>
-    <script defer src="modules/ui/editors.js"></script>
     <script defer src="modules/ui/heightmap-editor.js"></script>
-    <script defer src="modules/ui/states-editor.js"></script>
     <script defer src="modules/ui/provinces-editor.js"></script>
     <script defer src="modules/ui/biomes-editor.js"></script>
     <script defer src="modules/ui/cultures-editor.js"></script>
