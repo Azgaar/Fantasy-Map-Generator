@@ -24,19 +24,15 @@ function insertEditorHtml() {
   const editorHtml = /* html */ `<div id="statesEditor" class="dialog stable" style="display: none">
     <div id="statesHeader" class="header">
       <div style="left: 1.8em" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">State&nbsp;</div>
-      <div style="left: 9.7em" data-tip="Click to sort by state form name" class="sortable alphabetically" data-sortby="form">Form&nbsp;</div>
-      <div style="left: 16.3em" data-tip="Click to sort by capital name" class="sortable alphabetically hide" data-sortby="capital">Capital&nbsp;</div>
-      <div style="left: 23em" data-tip="Click to sort by state dominant culture" class="sortable alphabetically hide" data-sortby="culture">
-        Culture&nbsp;
-      </div>
-      <div style="left: 27.8em" data-tip="Click to sort by state burgs count" class="sortable hide" data-sortby="burgs">Burgs&nbsp;</div>
-      <div style="left: 32.5em" data-tip="Click to sort by state area" class="sortable hide icon-sort-number-down" data-sortby="area">Area&nbsp;</div>
-      <div style="left: 37em" data-tip="Click to sort by state population" class="sortable hide" data-sortby="population">Population&nbsp;</div>
-      <div style="left: 43.5em" data-tip="Click to sort by state type" class="sortable alphabetically hidden show hide" data-sortby="type">Type&nbsp;</div>
-      <div style="left: 47em" data-tip="Click to sort by state expansion value" class="sortable hidden show hide" data-sortby="expansionism">
-        Expansion&nbsp;
-      </div>
-      <div style="left: 53.5em" data-tip="Click to sort by state cells count" class="sortable hidden show hide" data-sortby="cells">Cells&nbsp;</div>
+      <div style="left: 10.8em" data-tip="Click to sort by state form name" class="sortable alphabetically" data-sortby="form">Form&nbsp;</div>
+      <div style="left: 19.1em" data-tip="Click to sort by capital name" class="sortable alphabetically hide" data-sortby="capital">Capital&nbsp;</div>
+      <div style="left: 26.1em" data-tip="Click to sort by state dominant culture" class="sortable alphabetically hide" data-sortby="culture">Culture&nbsp;</div>
+      <div style="left: 33.4em" data-tip="Click to sort by state burgs count" class="sortable hide" data-sortby="burgs">Burgs&nbsp;</div>
+      <div style="left: 39.6em" data-tip="Click to sort by state area" class="sortable hide icon-sort-number-down" data-sortby="area">Area&nbsp;</div>
+      <div style="left: 45.9em" data-tip="Click to sort by state population" class="sortable hide" data-sortby="population">Population&nbsp;</div>
+      <div style="left: 52.2em" data-tip="Click to sort by state type" class="sortable alphabetically hidden show hide" data-sortby="type">Type&nbsp;</div>
+      <div style="left: 59em" data-tip="Click to sort by state expansion value" class="sortable hidden show hide" data-sortby="expansionism">Expansion&nbsp;</div>
+      <div style="left: 65.5em" data-tip="Click to sort by state cells count" class="sortable hidden show hide" data-sortby="cells">Cells&nbsp;</div>
     </div>
 
     <div id="statesBodySection" class="table" data-type="absolute"></div>
@@ -69,7 +65,7 @@ function insertEditorHtml() {
             max="3"
             step=".05"
             value="1"
-            style="width: 90px"
+            style="width: 12em"
           />
           <input
             id="statesNeutralNumber"
@@ -78,7 +74,7 @@ function insertEditorHtml() {
             max="3"
             step=".05"
             value="1"
-            style="width: 42px"
+            style="width: 4em"
           />
         </span>
         <button id="statesRecalculate" data-tip="Recalculate states based on current values of growth-related attributes" class="icon-retweet"></button>
@@ -165,7 +161,7 @@ function addListeners() {
     else if (classList.contains("name")) editStateName(state);
     else if (classList.contains("coaIcon")) editEmblem("state", "stateCOA" + state, pack.states[state]);
     else if (classList.contains("icon-star-empty")) stateCapitalZoomIn(state);
-    else if (classList.contains("culturePopulation")) changePopulation(state);
+    else if (classList.contains("statePopulation")) changePopulation(state);
     else if (classList.contains("icon-pin")) toggleFog(state, classList);
     else if (classList.contains("icon-trash-empty")) stateRemovePrompt(state);
   });
@@ -238,18 +234,14 @@ function statesEditorAddLines() {
         <input class="stateForm placeholder" value="none" />
         <span class="icon-star-empty placeholder hide"></span>
         <input class="stateCapital placeholder hide" />
-        <select class="stateCulture placeholder hide">
-          ${getCultureOptions(0)}
-        </select>
-        <span data-tip="Burgs count" style="padding-right: 1px" class="icon-dot-circled hide"></span>
+        <select class="stateCulture placeholder hide">${getCultureOptions(0)}</select>
+        <span data-tip="Burgs count" class="icon-dot-circled hide" style="padding-right: 1px"></span>
         <div data-tip="Burgs count" class="stateBurgs hide">${s.burgs}</div>
         <span data-tip="Neutral lands area" style="padding-right: 4px" class="icon-map-o hide"></span>
-        <div data-tip="Neutral lands area" class="biomeArea hide">${si(area) + unit}</div>
+        <div data-tip="Neutral lands area" class="stateArea hide" style="width: 6em">${si(area) + unit}</div>
         <span data-tip="${populationTip}" class="icon-male hide"></span>
-        <div data-tip="${populationTip}" class="culturePopulation hide">${si(population)}</div>
-        <select class="cultureType ${hidden} placeholder show hide">
-          ${getTypeOptions(0)}
-        </select>
+        <div data-tip="${populationTip}" class="statePopulation pointer hide" style="width: 5em">${si(population)}</div>
+        <select class="cultureType ${hidden} placeholder show hide">${getTypeOptions(0)}</select>
         <span class="icon-resize-full ${hidden} placeholder show hide"></span>
         <input class="statePower ${hidden} placeholder show hide" type="number" value="0" />
         <span data-tip="Cells count" class="icon-check-empty ${hidden} show hide"></span>
@@ -281,28 +273,17 @@ function statesEditorAddLines() {
       <input data-tip="State form name. Click to change" class="stateForm name pointer" value="${s.formName}" readonly />
       <span data-tip="State capital. Click to zoom into view" class="icon-star-empty pointer hide"></span>
       <input data-tip="Capital name. Click and type to rename" class="stateCapital hide" value="${capital}" autocorrect="off" spellcheck="false" />
-      <select data-tip="Dominant culture. Click to change" class="stateCulture hide">
-        ${getCultureOptions(s.culture)}
-      </select>
+      <select data-tip="Dominant culture. Click to change" class="stateCulture hide">${getCultureOptions(s.culture)}</select>
       <span data-tip="Burgs count" style="padding-right: 1px" class="icon-dot-circled hide"></span>
       <div data-tip="Burgs count" class="stateBurgs hide">${s.burgs}</div>
       <span data-tip="State area" style="padding-right: 4px" class="icon-map-o hide"></span>
-      <div data-tip="State area" class="biomeArea hide">${si(area) + unit}</div>
+      <div data-tip="State area" class="stateArea hide" style="width: 6em">${si(area) + unit}</div>
       <span data-tip="${populationTip}" class="icon-male hide"></span>
-      <div data-tip="${populationTip}" class="culturePopulation hide">${si(population)}</div>
-      <select data-tip="State type. Defines growth model. Click to change" class="cultureType ${hidden} show hide">
-        ${getTypeOptions(s.type)}
-      </select>
+      <div data-tip="${populationTip}" class="statePopulation pointer hide" style="width: 5em">${si(population)}</div>
+      <select data-tip="State type. Defines growth model. Click to change" class="cultureType ${hidden} show hide">${getTypeOptions(s.type)}</select>
       <span data-tip="State expansionism" class="icon-resize-full ${hidden} show hide"></span>
-      <input
-        data-tip="Expansionism (defines competitive size). Change to re-calculate states based on new value"
-        class="statePower ${hidden} show hide"
-        type="number"
-        min="0"
-        max="99"
-        step=".1"
-        value=${s.expansionism}
-      />
+      <input data-tip="Expansionism (defines competitive size). Change to re-calculate states based on new value"
+        class="statePower ${hidden} show hide" type="number" min="0" max="99" step=".1" value=${s.expansionism} />
       <span data-tip="Cells count" class="icon-check-empty ${hidden} show hide"></span>
       <div data-tip="Cells count" class="stateCells ${hidden} show hide">${s.cells}</div>
       <span data-tip="Toggle state focus" class="icon-pin ${focused ? "" : " inactive"} hide"></span>
@@ -720,8 +701,8 @@ function togglePercentageMode() {
     body.querySelectorAll(":scope > div").forEach(function (el) {
       el.querySelector(".stateCells").innerHTML = rn((+el.dataset.cells / totalCells) * 100) + "%";
       el.querySelector(".stateBurgs").innerHTML = rn((+el.dataset.burgs / totalBurgs) * 100) + "%";
-      el.querySelector(".biomeArea").innerHTML = rn((+el.dataset.area / totalArea) * 100) + "%";
-      el.querySelector(".culturePopulation").innerHTML = rn((+el.dataset.population / totalPopulation) * 100) + "%";
+      el.querySelector(".stateArea").innerHTML = rn((+el.dataset.area / totalArea) * 100) + "%";
+      el.querySelector(".statePopulation").innerHTML = rn((+el.dataset.population / totalPopulation) * 100) + "%";
     });
   } else {
     body.dataset.type = "absolute";

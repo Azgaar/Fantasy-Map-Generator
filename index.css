@@ -1396,7 +1396,7 @@ div.totalLine > div {
 }
 
 div.states > input {
-  width: 6em;
+  width: 7em;
   background: none;
   border: 0;
 }
@@ -1405,18 +1405,9 @@ div.states div {
   width: 3.2em;
 }
 
-div.states .statePower,
 div.states .biomeHabitability {
   width: 4em;
   -moz-appearance: textfield;
-}
-
-div.states .stateBurgs {
-  width: 2.4em;
-}
-
-div.states > .stateArea {
-  width: 5em;
 }
 
 div.states > .statePopulation {
@@ -1471,7 +1462,7 @@ div.states > .culturePopulation {
 }
 
 div.states > select {
-  width: 4.6em;
+  width: 7em;
   cursor: pointer;
   border: 0;
   background-color: transparent;
