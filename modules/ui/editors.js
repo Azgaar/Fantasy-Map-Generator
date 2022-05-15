@@ -1190,3 +1190,10 @@ async function editReligions() {
   const Editor = await import("../dynamic/editors/religions-editor.js?v=1.87.01");
   Editor.open();
 }
+
+// dynamically loaded editors
+async function editStates() {
+  if (customization) return;
+  const StateEditor = await import("../dynamic/editors/states-editor.js");
+  StateEditor.open();
+}
