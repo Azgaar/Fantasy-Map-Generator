@@ -202,10 +202,10 @@ function showMapTooltip(point, e, i, g) {
     const province = pack.cells.province[i];
     const prov = province ? pack.provinces[province].fullName + ", " : "";
     tip(prov + stateName);
-    if (statesEditor?.offsetParent) highlightEditorLine(statesEditor, state);
-    if (diplomacyEditor?.offsetParent) highlightEditorLine(diplomacyEditor, state);
-    if (militaryOverview?.offsetParent) highlightEditorLine(militaryOverview, state);
-    if (provincesEditor?.offsetParent) highlightEditorLine(provincesEditor, province);
+    if (document.getElementById('statesEditor')?.offsetParent) highlightEditorLine(statesEditor, state);
+    if (document.getElementById('diplomacyEditor')?.offsetParent) highlightEditorLine(diplomacyEditor, state);
+    if (document.getElementById('militaryOverview')?.offsetParent) highlightEditorLine(militaryOverview, state);
+    if (document.getElementById('provincesEditor')?.offsetParent) highlightEditorLine(provincesEditor, province);
   } else if (layerIsOn("toggleCultures") && pack.cells.culture[i]) {
     const culture = pack.cells.culture[i];
     tip("Culture: " + pack.cultures[culture].name);
