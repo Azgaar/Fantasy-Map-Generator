@@ -1097,6 +1097,6 @@ function refreshAllEditors() {
 // dynamically loaded editors
 async function editStates() {
   if (customization) return;
-  const StateEditor = await import("../dynamic/editors/states-editor.js");
+  const StateEditor = await import("../dynamic/editors/states-editor.js?v=17052022");
   StateEditor.open();
 }
