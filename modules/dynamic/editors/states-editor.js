@@ -184,7 +184,7 @@ function refreshStatesEditor() {
 // add line for each state
 function statesEditorAddLines() {
   const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
-  const hidden = statesRegenerateButtons.style.display === "block" ? "" : "hidden"; // show/hide regenerate columns
+  const hidden = byId("statesRegenerateButtons").style.display === "block" ? "" : "hidden"; // toggle regenerate columns
   let lines = "";
   let totalArea = 0;
   let totalPopulation = 0;
@@ -845,10 +845,14 @@ function showStatesChart() {
 }
 
 function openRegenerationMenu() {
-  statesBottom.queryAll(":scope > button").forEach(el => (el.style.display = "none"));
-  statesRegenerateButtons.style.display = "block";
+  byId("statesBottom")
+    .queryAll(":scope > button")
+    .forEach(el => (el.style.display = "none"));
+  byId("statesRegenerateButtons").style.display = "block";
 
-  statesEditor.queryAll(".show").forEach(el => el.classList.remove("hidden"));
+  byId("statesEditor")
+    .queryAll(".show")
+    .forEach(el => el.classList.remove("hidden"));
   $("#statesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});
 }
 
@@ -886,9 +890,13 @@ function randomizeStatesExpansion() {
 }
 
 function exitRegenerationMenu() {
-  statesBottom.queryAll(":scope > button").forEach(el => (el.style.display = "inline-block"));
-  statesRegenerateButtons.style.display = "none";
-  statesEditor.queryAll(".show").forEach(el => el.classList.add("hidden"));
+  byId("statesBottom")
+    .queryAll(":scope > button")
+    .forEach(el => (el.style.display = "inline-block"));
+  byId("statesRegenerateButtons").style.display = "none";
+  byId("statesEditor")
+    .queryAll(".show")
+    .forEach(el => el.classList.add("hidden"));
   $("#statesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});
 }
 
@@ -900,17 +908,15 @@ function enterStatesManualAssignent() {
   byId("statesManuallyButtons").style.display = "inline-block";
   byId("statesHalo").style.display = "none";
 
-  statesEditor.queryAll(".hide").forEach(el => el.classList.add("hidden"));
+  byId("statesEditor")
+    .queryAll(".hide")
+    .forEach(el => el.classList.add("hidden"));
   statesFooter.style.display = "none";
   $body.queryAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "none"));
   $("#statesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});
 
   tip("Click on state to select, drag the circle to change state", true);
-  byId("viewbox")
-    .style("cursor", "crosshair")
-    .on("click", selectStateOnMapClick)
-    .call(d3.drag().on("start", dragStateBrush))
-    .on("touchmove mousemove", moveStateBrush);
+  viewbox.style("cursor", "crosshair").on("click", selectStateOnMapClick).call(d3.drag().on("start", dragStateBrush)).on("touchmove mousemove", moveStateBrush);
 
   $body.query("div").classList.add("selected");
 }
@@ -1144,7 +1150,9 @@ function exitStatesManualAssignment(close) {
   byId("statesManuallyButtons").style.display = "none";
   byId("statesHalo").style.display = "block";
 
-  statesEditor.queryAll(".hide:not(.show)").forEach(el => el.classList.remove("hidden"));
+  byId("statesEditor")
+    .queryAll(".hide:not(.show)")
+    .forEach(el => el.classList.remove("hidden"));
   statesFooter.style.display = "block";
   $body.queryAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "all"));
   if (!close) $("#statesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});
