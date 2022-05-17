@@ -3455,7 +3455,8 @@
           <button id="namesbaseAdd" data-tip="Add new namesbase" class="icon-plus"></button>
           <button id="namesbaseDefault" data-tip="Restore default namesbase" class="icon-cancel"></button>
           <button id="namesbaseDownload" data-tip="Download namesbase to PC" class="icon-download"></button>
-          <button id="namesbaseUpload" data-tip="Upload a namesbase from PC, click to override, ctrl+click to extend" class="icon-upload"></button>
+          <button id="namesbaseUpload" data-tip="Upload a namesbase from PC, replacing the current set" class="icon-upload"></button>
+          <button id="namesbaseUploadExtend" data-tip="Upload a namesbase from PC, extending the current set" class="icon-up-circled2"></button>
           <button id="namesbaseCA" data-tip="Find or share custom namesbase on Cartography Assets portal" class="icon-drafting-compass"></button>
           <button id="namesbaseAnalyze" data-tip="Analyze namesbase to get a validity and quality overview" class="icon-flask"></button>
           <button id="namesbaseSpeak" data-tip="Speak the examples. You can change voice and language in options" class="icon-voice"></button>
@@ -4377,6 +4378,12 @@
           <div>
             <input id="submapAngleInput" type="range" min="0" max="359" value="0" />
             <output id="submapAngleOutput">0</output>°
+          </div>
+
+          <div>Scale</div>
+          <div>
+            <input id="submapScaleInput" type="range" min="-25" max="25" value="0" />
+            <output id="submapScaleOutput">1</output>x
           </div>
 
           <div>Mirror</div>

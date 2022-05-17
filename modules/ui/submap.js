@@ -10,6 +10,12 @@ window.UISubmap = (function () {
     output.style.color = getCellsDensityColor(cells);
   });
 
+  document.getElementById("submapScaleInput").addEventListener("input", function (event) {
+    const exp = Math.pow(1.1, +event.target.value);
+    document.getElementById("submapScaleOutput").value = rn(exp,2);
+    event.stopPropagation();
+  });
+
   function openSubmapMenu() {
     $("#submapOptionsDialog").dialog({
       title: "Create a submap",
@@ -32,7 +38,9 @@ window.UISubmap = (function () {
     resetZoom(0);
 
     document.getElementById("submapAngleInput").value = 0;
-    document.getElementById("submapAngleOutput").value = "0°";
+    document.getElementById("submapAngleOutput").value = "0";
+    document.getElementById("submapScaleInput").value = 1;
+    document.getElementById("submapScaleOutput").value = 1;
     document.getElementById("submapShiftX").value = 0;
     document.getElementById("submapShiftY").value = 0;
     document.getElementById("submapMirrorH").checked = false;
@@ -64,11 +72,13 @@ window.UISubmap = (function () {
     const angle = (+document.getElementById("submapAngleInput").value / 180) * Math.PI;
     const shiftX = +document.getElementById("submapShiftX").value;
     const shiftY = +document.getElementById("submapShiftY").value;
+    const ratio = +document.getElementById("submapScaleInput").value;
     const mirrorH = document.getElementById("submapMirrorH").checked;
     const mirrorV = document.getElementById("submapMirrorV").checked;
 
     const [cx, cy] = [graphWidth / 2, graphHeight / 2];
     const rot = alfa => (x, y) => [(x - cx) * Math.cos(alfa) - (y - cy) * Math.sin(alfa) + cx, (y - cy) * Math.cos(alfa) + (x - cx) * Math.sin(alfa) + cy];
+    const scale = ratio => (x, y) => [(x-cx) * ratio + cx, (y-cy) * ratio + cy];
     const shift = (dx, dy) => (x, y) => [x + dx, y + dy];
     const flipH = (x, y) => [-x + 2 * cx, y];
     const flipV = (x, y) => [x, -y + 2 * cy];
@@ -83,6 +93,7 @@ window.UISubmap = (function () {
       projection = app(shift(shiftX, shiftY), projection);
       inverse = app(inverse, shift(-shiftX, -shiftY));
     }
+    if (ratio) [projection, inverse] = [app(scale(Math.pow(1.1,ratio)), projection), app(inverse, scale(Math.pow(1.1,-ratio)))];
     if (mirrorH) [projection, inverse] = [app(flipH, projection), app(inverse, flipH)];
     if (mirrorV) [projection, inverse] = [app(flipV, projection), app(inverse, flipV)];
 
