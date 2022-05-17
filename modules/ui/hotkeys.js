@@ -35,8 +35,8 @@ function handleKeyup(event) {
   else if (ctrl && code === "KeyQ") toggleSaveReminder();
   else if (ctrl && code === "KeyS") dowloadMap();
   else if (ctrl && code === "KeyC") saveToDropbox();
-  else if (ctrl && code === "KeyZ" && undo.offsetParent) undo.click();
-  else if (ctrl && code === "KeyY" && redo.offsetParent) redo.click();
+  else if (ctrl && code === "KeyZ" && undo?.offsetParent) undo.click();
+  else if (ctrl && code === "KeyY" && redo?.offsetParent) redo.click();
   else if (shift && code === "KeyH") editHeightmap();
   else if (shift && code === "KeyB") editBiomes();
   else if (shift && code === "KeyS") editStates();
@@ -113,13 +113,13 @@ function pressNumpadSign(key) {
   const change = key === "+" ? 1 : -1;
   let brush = null;
 
-  if (brushRadius.offsetParent) brush = document.getElementById("brushRadius");
-  else if (biomesManuallyBrush.offsetParent) brush = document.getElementById("biomesManuallyBrush");
-  else if (statesManuallyBrush.offsetParent) brush = document.getElementById("statesManuallyBrush");
-  else if (provincesManuallyBrush.offsetParent) brush = document.getElementById("provincesManuallyBrush");
-  else if (culturesManuallyBrush.offsetParent) brush = document.getElementById("culturesManuallyBrush");
-  else if (zonesBrush.offsetParent) brush = document.getElementById("zonesBrush");
-  else if (religionsManuallyBrush.offsetParent) brush = document.getElementById("religionsManuallyBrush");
+  if (document.getElementById("brushRadius")?.offsetParent) brush = document.getElementById("brushRadius");
+  else if (document.getElementById("biomesManuallyBrush")?.offsetParent) brush = document.getElementById("biomesManuallyBrush");
+  else if (document.getElementById("statesManuallyBrush")?.offsetParent) brush = document.getElementById("statesManuallyBrush");
+  else if (document.getElementById("provincesManuallyBrush")?.offsetParent) brush = document.getElementById("provincesManuallyBrush");
+  else if (document.getElementById("culturesManuallyBrush")?.offsetParent) brush = document.getElementById("culturesManuallyBrush");
+  else if (document.getElementById("zonesBrush")?.offsetParent) brush = document.getElementById("zonesBrush");
+  else if (document.getElementById("religionsManuallyBrush")?.offsetParent) brush = document.getElementById("religionsManuallyBrush");
 
   if (brush) {
     const value = minmax(+brush.value + change, +brush.min, +brush.max);
@@ -132,7 +132,7 @@ function pressNumpadSign(key) {
 }
 
 function toggleMode() {
-  if (zonesRemove.offsetParent) {
+  if (zonesRemove?.offsetParent) {
     zonesRemove.classList.contains("pressed") ? zonesRemove.classList.remove("pressed") : zonesRemove.classList.add("pressed");
   }
 }
