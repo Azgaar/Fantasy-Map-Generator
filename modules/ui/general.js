@@ -202,18 +202,18 @@ function showMapTooltip(point, e, i, g) {
     const province = pack.cells.province[i];
     const prov = province ? pack.provinces[province].fullName + ", " : "";
     tip(prov + stateName);
-    if (document.getElementById('statesEditor')?.offsetParent) highlightEditorLine(statesEditor, state);
-    if (document.getElementById('diplomacyEditor')?.offsetParent) highlightEditorLine(diplomacyEditor, state);
-    if (document.getElementById('militaryOverview')?.offsetParent) highlightEditorLine(militaryOverview, state);
-    if (document.getElementById('provincesEditor')?.offsetParent) highlightEditorLine(provincesEditor, province);
+    if (document.getElementById("statesEditor")?.offsetParent) highlightEditorLine(statesEditor, state);
+    if (document.getElementById("diplomacyEditor")?.offsetParent) highlightEditorLine(diplomacyEditor, state);
+    if (document.getElementById("militaryOverview")?.offsetParent) highlightEditorLine(militaryOverview, state);
+    if (document.getElementById("provincesEditor")?.offsetParent) highlightEditorLine(provincesEditor, province);
   } else if (layerIsOn("toggleCultures") && pack.cells.culture[i]) {
     const culture = pack.cells.culture[i];
     tip("Culture: " + pack.cultures[culture].name);
-    if (culturesEditor?.offsetParent) highlightEditorLine(culturesEditor, culture);
+    if (document.getElementById("culturesEditor")?.offsetParent) highlightEditorLine(culturesEditor, culture);
   } else if (layerIsOn("toggleHeight")) tip("Height: " + getFriendlyHeight(point));
 }
 
-function highlightEditorLine(editor, id, timeout = 15000) {
+function highlightEditorLine(editor, id, timeout = 10000) {
   Array.from(editor.getElementsByClassName("states hovered")).forEach(el => el.classList.remove("hovered")); // clear all hovered
   const hovered = Array.from(editor.querySelectorAll("div")).find(el => el.dataset.id == id);
   if (hovered) hovered.classList.add("hovered"); // add hovered class
@@ -233,8 +233,7 @@ function updateCellInfo(point, i, g) {
   infoLon.innerHTML = toDMS(getLongitude(x, 4), "lon");
 
   infoCell.innerHTML = i;
-  const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
-  infoArea.innerHTML = cells.area[i] ? si(cells.area[i] * distanceScaleInput.value ** 2) + unit : "n/a";
+  infoArea.innerHTML = cells.area[i] ? si(getArea(cells.area[i])) + " " + getAreaUnit() : "n/a";
   infoEvelation.innerHTML = getElevation(pack.features[f], pack.cells.h[i]);
   infoDepth.innerHTML = getDepth(pack.features[f], pack.cells.h[i], point);
   infoTemp.innerHTML = convertTemperature(grid.cells.temp[g]);

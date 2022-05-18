@@ -59,7 +59,7 @@ function editReligions() {
 
   // add line for each religion
   function religionsEditorAddLines() {
-    const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
+    const unit = " " + getAreaUnit();
     let lines = "",
       totalArea = 0,
       totalPopulation = 0;
@@ -67,7 +67,7 @@ function editReligions() {
     for (const r of pack.religions) {
       if (r.removed) continue;
 
-      const area = r.area * distanceScaleInput.value ** 2;
+      const area = getArea(r.area);
       const rural = r.rural * populationRate;
       const urban = r.urban * populationRate * urbanization;
       const population = rn(rural + urban);
@@ -117,7 +117,7 @@ function editReligions() {
           data-deity=""
           data-expansionism=""
         >
-          <svg width="9" height="9" class="placeholder"></svg>
+          <svg width="11" height="11" class="placeholder"></svg>
           <input data-tip="Religion name. Click and type to change" class="religionName italic" value="${r.name}" autocorrect="off" spellcheck="false" />
           <select data-tip="Religion type" class="religionType placeholder">
             ${getTypeOptions(r.type)}

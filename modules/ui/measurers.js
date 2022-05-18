@@ -528,8 +528,7 @@ class Planimeter extends Measurer {
     if (this.points.length < 3) return;
 
     const polygonArea = rn(Math.abs(d3.polygonArea(this.points)));
-    const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
-    const area = si(polygonArea * distanceScaleInput.value ** 2) + " " + unit;
+    const area = si(getArea(polygonArea)) + " " + getAreaUnit();
     const c = polylabel([this.points], 1.0);
     this.el.select("text").attr("x", c[0]).attr("y", c[1]).text(area);
   }

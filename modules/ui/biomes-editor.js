@@ -76,7 +76,7 @@ function editBiomes() {
   }
 
   function biomesEditorAddLines() {
-    const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
+    const unit = " " + getAreaUnit();
     const b = biomesData;
     let lines = "",
       totalArea = 0,
@@ -84,7 +84,7 @@ function editBiomes() {
 
     for (const i of b.i) {
       if (!i || biomesData.name[i] === "removed") continue; // ignore water and removed biomes
-      const area = b.area[i] * distanceScaleInput.value ** 2;
+      const area = getArea(b.area[i]);
       const rural = b.rural[i] * populationRate;
       const urban = b.urban[i] * populationRate * urbanization;
       const population = rn(rural + urban);
@@ -281,7 +281,7 @@ function editBiomes() {
     b.cells.push(0);
     b.area.push(0);
 
-    const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
+    const unit = getAreaUnit();
     const line = `<div class="states biomes" data-id="${i}" data-name="${b.name[i]}" data-habitability=${b.habitability[i]} data-cells=0 data-area=0 data-population=0 data-color=${b.color[i]}>
       <fill-box fill="${b.color[i]}"></fill-box>
       <input data-tip="Biome name. Click and type to change" class="biomeName" value="${b.name[i]}" autocorrect="off" spellcheck="false">
