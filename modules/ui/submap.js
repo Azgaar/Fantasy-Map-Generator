@@ -94,7 +94,7 @@ window.UISubmap = (function () {
     };
 
     $("#resampleDialog").dialog({
-      title: "Resample map",
+      title: "Transform map",
       width: "430px",
       resizable: false,
       position: {my: "center", at: "center", of: "svg"},
