@@ -106,6 +106,7 @@ window.UISubmap = (function () {
       promoteTowns: false,
       smoothHeightMap: false,
       rescaleStyles: false,
+      scale: 1,
       projection,
       inverse
     });
