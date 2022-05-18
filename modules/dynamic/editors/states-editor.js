@@ -294,13 +294,13 @@ function statesEditorAddLines() {
   $body.innerHTML = lines;
 
   // update footer
-  byId("statesFooterStates").innerHTML = pack.states.filter(s => s.i && !s.removed).length;
-  byId("statesFooterCells").innerHTML = pack.cells.h.filter(h => h >= 20).length;
-  byId("statesFooterBurgs").innerHTML = totalBurgs;
-  byId("statesFooterArea").innerHTML = si(totalArea) + unit;
-  byId("statesFooterArea").dataset.area = totalArea;
-  byId("statesFooterPopulation").innerHTML = si(totalPopulation);
-  byId("statesFooterPopulation").dataset.population = totalPopulation;
+  statesFooterStates.innerHTML = pack.states.filter(s => s.i && !s.removed).length;
+  statesFooterCells.innerHTML = pack.cells.h.filter(h => h >= 20).length;
+  statesFooterBurgs.innerHTML = totalBurgs;
+  statesFooterArea.innerHTML = `${si(totalArea)} ${unit}`;
+  statesFooterPopulation.innerHTML = si(totalPopulation);
+  statesFooterArea.dataset.area = totalArea;
+  statesFooterPopulation.dataset.population = totalPopulation;
 
   // add listeners
   $body.querySelectorAll(":scope > div").forEach($line => {
