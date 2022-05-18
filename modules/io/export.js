@@ -164,12 +164,8 @@ async function getMapURL(type, options = {}) {
     clone.select("#oceanBase").attr("opacity", 0);
     clone.select("#oceanPattern").attr("opacity", 0);
   }
-  if (noScaleBar) {
-    clone.select("#scaleBar")?.remove()
-  }
-  if (noIce) {
-    clone.select("#ice")?.remove()
-  }
+  if (noScaleBar) clone.select("#scaleBar")?.remove();
+  if (noIce) clone.select("#ice")?.remove();
   if (fullMap) {
     // reset transform to show the whole map
     clone.attr("width", graphWidth).attr("height", graphHeight);
