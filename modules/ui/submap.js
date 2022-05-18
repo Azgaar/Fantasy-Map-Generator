@@ -99,7 +99,7 @@ window.UISubmap = (function () {
       resizable: false,
       position: {my: "center", at: "center", of: "svg"},
       buttons: {
-        Resample: function () {
+        Transform: function () {
           $(this).dialog("close");
           resampleCurrentMap();
         },
