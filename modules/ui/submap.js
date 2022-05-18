@@ -81,7 +81,11 @@ window.UISubmap = (function () {
 
     // mouse drag
     let mouseIsDown = false, mouseX = 0, mouseY = 0;
-    $previewBox.onmousedown = e => [ mouseIsDown, mouseX, mouseY ] = [ true, $shiftX.value - e.clientX / previewScale, $shiftY.value - e.clientY / previewScale];
+    $previewBox.onmousedown = e => {
+      mouseIsDown = true;
+      mouseX = $shiftX.value - e.clientX / previewScale;
+      mouseY = $shiftY.value - e.clientY / previewScale;
+    }
     $previewBox.onmouseup = _ => mouseIsDown = false;
     $previewBox.onmouseleave = _ => mouseIsDown = false;
     $previewBox.onmousemove = e => {
@@ -133,9 +137,8 @@ window.UISubmap = (function () {
   }
 
   async function loadPreview($container, w, h) {
-    const url = await getMapURL("png", { globe: false, noWater: true, fullMap: true, noLabels: false, noScaleBar: true, noIce: true });
+    const url = await getMapURL("png", { globe: false, noWater: true, fullMap: true, noLabels: true, noScaleBar: true, noIce: true });
 
-    const link = document.createElement("a");
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     canvas.width = w;
