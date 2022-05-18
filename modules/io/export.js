@@ -139,7 +139,7 @@ async function saveTiles() {
 
 // parse map svg to object url
 async function getMapURL(type, options = {}) {
-  const {debug = false, globe = false, noLabels = false, noWater = false, fullMap = false} = options;
+  const {debug = false, globe = false, noLabels = false, noWater = false, noScaleBar = false, noIce = false, fullMap = false} = options;
 
   if (fullMap) drawScaleBar(1);
 
@@ -163,6 +163,12 @@ async function getMapURL(type, options = {}) {
   if (noWater) {
     clone.select("#oceanBase").attr("opacity", 0);
     clone.select("#oceanPattern").attr("opacity", 0);
+  }
+  if (noScaleBar) {
+    clone.select("#scaleBar")?.remove()
+  }
+  if (noIce) {
+    clone.select("#ice")?.remove()
   }
   if (fullMap) {
     // reset transform to show the whole map

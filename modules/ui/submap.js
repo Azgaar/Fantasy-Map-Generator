@@ -2,19 +2,28 @@
 // UI elements for submap generation
 
 window.UISubmap = (function () {
-  document.getElementById("submapPointsInput").addEventListener("input", function () {
-    const output = document.getElementById("submapPointsOutputFormatted");
+  const byId = document.getElementById.bind(document);
+  byId("submapPointsInput").addEventListener("input", function () {
+    const output = byId("submapPointsOutputFormatted");
     const cells = cellsDensityMap[+this.value] || 1000;
     this.dataset.cells = cells;
     output.value = getCellsDensityValue(cells);
     output.style.color = getCellsDensityColor(cells);
   });
 
-  document.getElementById("submapScaleInput").addEventListener("input", function (event) {
+  byId("submapScaleInput").addEventListener("input", function (event) {
     const exp = Math.pow(1.1, +event.target.value);
-    document.getElementById("submapScaleOutput").value = rn(exp,2);
-    event.stopPropagation();
+    byId("submapScaleOutput").value = rn(exp,2);
   });
+
+  byId("submapAngleInput").addEventListener("input", function (event) {
+    byId("submapAngleOutput").value = event.target.value;
+  });
+
+  const $previewBox = byId("submapPreview");
+  const $scaleInput = byId("submapScaleInput");
+  const $shiftX = byId("submapShiftX");
+  const $shiftY = byId("submapShiftY");
 
   function openSubmapMenu() {
     $("#submapOptionsDialog").dialog({
@@ -34,21 +43,59 @@ window.UISubmap = (function () {
     });
   }
 
-  function openResampleMenu() {
+  const getTransformInput = _ => ({
+    angle: (+byId("submapAngleInput").value / 180) * Math.PI,
+    shiftX: +byId("submapShiftX").value,
+    shiftY: +byId("submapShiftY").value,
+    ratio: +byId("submapScaleInput").value,
+    mirrorH: byId("submapMirrorH").checked,
+    mirrorV: byId("submapMirrorV").checked,
+  })
+
+  async function openResampleMenu() {
     resetZoom(0);
 
-    document.getElementById("submapAngleInput").value = 0;
-    document.getElementById("submapAngleOutput").value = "0";
-    document.getElementById("submapScaleInput").value = 1;
-    document.getElementById("submapScaleOutput").value = 1;
-    document.getElementById("submapShiftX").value = 0;
-    document.getElementById("submapShiftY").value = 0;
-    document.getElementById("submapMirrorH").checked = false;
-    document.getElementById("submapMirrorV").checked = false;
+    byId("submapAngleInput").value = 0;
+    byId("submapAngleOutput").value = "0";
+    byId("submapScaleOutput").value = 1;
+    byId("submapMirrorH").checked = false;
+    byId("submapMirrorV").checked = false;
+    $scaleInput.value = 0;
+    $shiftX.value = 0;
+    $shiftY.value = 0;
+
+    const previewScale = 400 / graphWidth;
+    const [w, h] = [400, graphHeight * previewScale];
+    $previewBox.style.width = w + 'px';
+    $previewBox.style.height = h + 'px';
+    $previewBox.style.position = 'relative';
+
+    // handle mouse input
+    const dispatchInput = e => e.dispatchEvent(new Event('input', {bubbles:true}));
+
+    // mouse wheel
+    $previewBox.onwheel = e => {
+      $scaleInput.value = $scaleInput.valueAsNumber - Math.sign(e.deltaY);
+      dispatchInput($scaleInput);
+    };
+
+    // mouse drag
+    let mouseIsDown = false, mouseX = 0, mouseY = 0;
+    $previewBox.onmousedown = e => [ mouseIsDown, mouseX, mouseY ] = [ true, $shiftX.value - e.clientX / previewScale, $shiftY.value - e.clientY / previewScale];
+    $previewBox.onmouseup = _ => mouseIsDown = false;
+    $previewBox.onmouseleave = _ => mouseIsDown = false;
+    $previewBox.onmousemove = e => {
+      if (!mouseIsDown) return;
+      e.preventDefault();
+      $shiftX.value = Math.round(mouseX + e.clientX / previewScale);
+      $shiftY.value = Math.round(mouseY + e.clientY / previewScale);
+      dispatchInput($shiftX);
+      // dispatchInput($shiftY); // not needed X bubbles anyway
+    };
 
     $("#resampleDialog").dialog({
       title: "Resample map",
-      width: "30em",
+      width: "430px",
       resizable: false,
       position: {my: "center", at: "center", of: "svg"},
       buttons: {
@@ -61,25 +108,72 @@ window.UISubmap = (function () {
         }
       }
     });
+
+    // use double resolution for PNG to get sharper image
+    const $preview = await loadPreview($previewBox, w*2, h*2);
+    // could be done with SVG. Faster to load, slower to use.
+    // const $preview = await loadPreviewSVG($previewBox, w, h);
+    $preview.style.position = "absolute";
+    $preview.style.width = w + "px";
+    $preview.style.height = h + "px";
+
+    byId("resampleDialog").oninput = event => {
+      const { angle, shiftX, shiftY, ratio, mirrorH, mirrorV } = getTransformInput();
+      const scale = Math.pow(1.1,ratio);
+      const transformStyle = `
+        translate(${shiftX*previewScale}px, ${shiftY*previewScale}px)
+        scale(${mirrorH?-scale:scale}, ${mirrorV?-scale:scale})
+        rotate(${angle}rad)
+      `;
+
+      $preview.style.transform = transformStyle;
+      $preview.style['transform-origin'] = 'center';
+      event.stopPropagation();
+    }
+  }
+
+  async function loadPreview($container, w, h) {
+    const url = await getMapURL("png", { globe: false, noWater: true, fullMap: true, noLabels: false, noScaleBar: true, noIce: true });
+
+    const link = document.createElement("a");
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = w;
+    canvas.height = h;
+    const img = new Image();
+    img.src = url;
+    img.onload = function () {
+      ctx.drawImage(img, 0, 0, w, h);
+    };
+    $container.textContent = '';
+    $container.appendChild(canvas);
+    return canvas;
+  }
+
+  // currently unused alternative to PNG version
+  async function loadPreviewSVG($container, w, h) {
+    $container.innerHTML = /*html*/`
+      <svg id="submapPreviewSVG" viewBox="0 0 ${graphWidth} ${graphHeight}">
+        <rect width="100%" height="100%" fill="${byId('styleOceanFill').value}" />
+        <rect fill="url(#oceanic)" width="100%" height="100%" />
+        <use href="#map"></use>
+      </svg>
+    `;
+    return byId("submapPreviewSVG");
   }
 
   // Resample the whole map to different cell resolution or shape
   const resampleCurrentMap = debounce(function () {
     WARN && console.warn("Resampling current map");
-    const cellNumId = +document.getElementById("submapPointsInput").value;
+    const cellNumId = +byId("submapPointsInput").value;
     if (!cellsDensityMap[cellNumId]) return console.error("Unknown cell number!");
 
-    const angle = (+document.getElementById("submapAngleInput").value / 180) * Math.PI;
-    const shiftX = +document.getElementById("submapShiftX").value;
-    const shiftY = +document.getElementById("submapShiftY").value;
-    const ratio = +document.getElementById("submapScaleInput").value;
-    const mirrorH = document.getElementById("submapMirrorH").checked;
-    const mirrorV = document.getElementById("submapMirrorV").checked;
+    const { angle, shiftX, shiftY, ratio, mirrorH, mirrorV } = getTransformInput()
 
     const [cx, cy] = [graphWidth / 2, graphHeight / 2];
     const rot = alfa => (x, y) => [(x - cx) * Math.cos(alfa) - (y - cy) * Math.sin(alfa) + cx, (y - cy) * Math.cos(alfa) + (x - cx) * Math.sin(alfa) + cy];
-    const scale = ratio => (x, y) => [(x-cx) * ratio + cx, (y-cy) * ratio + cy];
     const shift = (dx, dy) => (x, y) => [x + dx, y + dy];
+    const scale = r => (x, y) => [(x-cx) * r + cx, (y-cy) * r + cy];
     const flipH = (x, y) => [-x + 2 * cx, y];
     const flipV = (x, y) => [x, -y + 2 * cy];
     const app = (f, g) => (x, y) => f(...g(x, y));
@@ -89,13 +183,13 @@ window.UISubmap = (function () {
     let inverse = id;
 
     if (angle) [projection, inverse] = [rot(angle), rot(-angle)];
+    if (ratio) [projection, inverse] = [app(scale(Math.pow(1.1,ratio)), projection), app(inverse, scale(Math.pow(1.1,-ratio)))];
+    if (mirrorH) [projection, inverse] = [app(flipH, projection), app(inverse, flipH)];
+    if (mirrorV) [projection, inverse] = [app(flipV, projection), app(inverse, flipV)];
     if (shiftX || shiftY) {
       projection = app(shift(shiftX, shiftY), projection);
       inverse = app(inverse, shift(-shiftX, -shiftY));
     }
-    if (ratio) [projection, inverse] = [app(scale(Math.pow(1.1,ratio)), projection), app(inverse, scale(Math.pow(1.1,-ratio)))];
-    if (mirrorH) [projection, inverse] = [app(flipH, projection), app(inverse, flipH)];
-    if (mirrorV) [projection, inverse] = [app(flipV, projection), app(inverse, flipV)];
 
     changeCellsDensity(cellNumId);
     startResample({
@@ -115,7 +209,7 @@ window.UISubmap = (function () {
   const generateSubmap = debounce(function () {
     WARN && console.warn("Resampling current map");
     closeDialogs("#worldConfigurator, #options3d");
-    const checked = id => Boolean(document.getElementById(id).checked);
+    const checked = id => Boolean(byId(id).checked);
 
     // Create projection func from current zoom extents
     const [[x0, y0], [x1, y1]] = getViewBoxExtent();
@@ -136,14 +230,14 @@ window.UISubmap = (function () {
     };
 
     // converting map position on the planet
-    const mapSizeOutput = document.getElementById("mapSizeOutput");
-    const latitudeOutput = document.getElementById("latitudeOutput");
+    const mapSizeOutput = byId("mapSizeOutput");
+    const latitudeOutput = byId("latitudeOutput");
     const latN = 90 - ((180 - (mapSizeInput.value / 100) * 180) * latitudeOutput.value) / 100;
     const newLatN = latN - ((y0 / graphHeight) * mapSizeOutput.value * 180) / 100;
     mapSizeOutput.value /= scale;
     latitudeOutput.value = ((90 - newLatN) / (180 - (mapSizeOutput.value / 100) * 180)) * 100;
-    document.getElementById("mapSizeInput").value = mapSizeOutput.value;
-    document.getElementById("latitudeInput").value = latitudeOutput.value;
+    byId("mapSizeInput").value = mapSizeOutput.value;
+    byId("latitudeInput").value = latitudeOutput.value;
 
     // fix scale
     distanceScaleInput.value = distanceScaleOutput.value = rn((distanceScale = distanceScaleOutput.value / scale), 2);
@@ -188,7 +282,7 @@ window.UISubmap = (function () {
 
   function changeStyles(scale) {
     // resize burgIcons
-    const burgIcons = [...document.getElementById("burgIcons").querySelectorAll("g")];
+    const burgIcons = [...byId("burgIcons").querySelectorAll("g")];
     for (const bi of burgIcons) {
       const newRadius = rn(minmax(bi.getAttribute("size") * scale, 0.2, 10), 2);
       changeRadius(newRadius, bi.id);
@@ -197,7 +291,7 @@ window.UISubmap = (function () {
     }
 
     // burglabels
-    const burgLabels = [...document.getElementById("burgLabels").querySelectorAll("g")];
+    const burgLabels = [...byId("burgLabels").querySelectorAll("g")];
     for (const bl of burgLabels) {
       const size = +bl.dataset["size"];
       bl.dataset["size"] = Math.max(rn((size + size / scale) / 2, 2), 1) * scale;
