@@ -126,6 +126,8 @@ function insertEditorHtml() {
 }
 
 function addListeners() {
+  applySortingByHeader("statesHeader");
+
   document.getElementById("statesEditorRefresh").addEventListener("click", refreshStatesEditor);
   document.getElementById("statesEditStyle").addEventListener("click", () => editStyle("regions"));
   document.getElementById("statesLegend").addEventListener("click", toggleLegend);
@@ -142,15 +144,6 @@ function addListeners() {
   document.getElementById("statesManuallyCancel").addEventListener("click", () => exitStatesManualAssignment());
   document.getElementById("statesAdd").addEventListener("click", enterAddStateMode);
   document.getElementById("statesExport").addEventListener("click", downloadStatesData);
-
-  document
-    .getElementById("statesHeader")
-    .querySelectorAll(".sortable")
-    .forEach(function (element) {
-      element.addEventListener("click", function () {
-        sortLines(this);
-      });
-    });
 
   body.addEventListener("click", function (event) {
     const element = event.target;
@@ -192,7 +185,7 @@ function refreshStatesEditor() {
 
 // add line for each state
 function statesEditorAddLines() {
-  const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
+  const unit = getAreaUnit();
   const hidden = statesRegenerateButtons.style.display === "block" ? "" : "hidden"; // show/hide regenerate columns
   let lines = "",
     totalArea = 0,
@@ -201,7 +194,7 @@ function statesEditorAddLines() {
 
   for (const s of pack.states) {
     if (s.removed) continue;
-    const area = s.area * distanceScaleInput.value ** 2;
+    const area = getArea(s.area);
     const rural = s.rural * populationRate;
     const urban = s.urban * populationRate * urbanization;
     const population = rn(rural + urban);
@@ -238,7 +231,7 @@ function statesEditorAddLines() {
         <span data-tip="Burgs count" class="icon-dot-circled hide" style="padding-right: 1px"></span>
         <div data-tip="Burgs count" class="stateBurgs hide">${s.burgs}</div>
         <span data-tip="Neutral lands area" style="padding-right: 4px" class="icon-map-o hide"></span>
-        <div data-tip="Neutral lands area" class="stateArea hide" style="width: 6em">${si(area) + unit}</div>
+        <div data-tip="Neutral lands area" class="stateArea hide" style="width: 6em">${si(area)} ${unit}</div>
         <span data-tip="${populationTip}" class="icon-male hide"></span>
         <div data-tip="${populationTip}" class="statePopulation pointer hide" style="width: 5em">${si(population)}</div>
         <select class="cultureType ${hidden} placeholder show hide">${getTypeOptions(0)}</select>
@@ -277,7 +270,7 @@ function statesEditorAddLines() {
       <span data-tip="Burgs count" style="padding-right: 1px" class="icon-dot-circled hide"></span>
       <div data-tip="Burgs count" class="stateBurgs hide">${s.burgs}</div>
       <span data-tip="State area" style="padding-right: 4px" class="icon-map-o hide"></span>
-      <div data-tip="State area" class="stateArea hide" style="width: 6em">${si(area) + unit}</div>
+      <div data-tip="State area" class="stateArea hide" style="width: 6em">${si(area)} ${unit}</div>
       <span data-tip="${populationTip}" class="icon-male hide"></span>
       <div data-tip="${populationTip}" class="statePopulation pointer hide" style="width: 5em">${si(population)}</div>
       <select data-tip="State type. Defines growth model. Click to change" class="cultureType ${hidden} show hide">${getTypeOptions(s.type)}</select>
@@ -296,7 +289,7 @@ function statesEditorAddLines() {
   statesFooterStates.innerHTML = pack.states.filter(s => s.i && !s.removed).length;
   statesFooterCells.innerHTML = pack.cells.h.filter(h => h >= 20).length;
   statesFooterBurgs.innerHTML = totalBurgs;
-  statesFooterArea.innerHTML = si(totalArea) + unit;
+  statesFooterArea.innerHTML = `${si(totalArea)} ${unit}`;
   statesFooterPopulation.innerHTML = si(totalPopulation);
   statesFooterArea.dataset.area = totalArea;
   statesFooterPopulation.dataset.population = totalPopulation;
@@ -784,8 +777,7 @@ function showStatesChart() {
     d3.select(ev.target).select("circle").classed("selected", 1);
     const state = d.data.fullName;
 
-    const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
-    const area = d.data.area * distanceScaleInput.value ** 2 + unit;
+    const area = getArea(d.data.area) + " " + getAreaUnit();
     const rural = rn(d.data.rural * populationRate);
     const urban = rn(d.data.urban * populationRate * urbanization);
 
@@ -1289,7 +1281,7 @@ function exitAddStateMode() {
 }
 
 function downloadStatesData() {
-  const unit = areaUnit.value === "square" ? distanceUnitInput.value + "2" : areaUnit.value;
+  const unit = getAreaUnit("2");
   let data =
     "Id,State,Full Name,Form,Color,Capital,Culture,Type,Expansionism,Cells,Burgs,Area " + unit + ",Total Population,Rural Population,Urban Population\n"; // headers
   body.querySelectorAll(":scope > div").forEach(function (el) {

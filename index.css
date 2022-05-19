@@ -1452,15 +1452,6 @@ div.states > .small {
   font-size: 0.9em;
 }
 
-div.states > .cultureName {
-  width: 7em;
-}
-
-div.states > .culturePopulation {
-  width: 4em;
-  cursor: pointer;
-}
-
 div.states > select {
   width: 7em;
   cursor: pointer;
@@ -1471,7 +1462,6 @@ div.states > select {
   appearance: none;
 }
 
-div.states > .cultureBase,
 div.states > .burgName,
 div.states > .burgState,
 div.states > .burgCulture {

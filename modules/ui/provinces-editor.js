@@ -108,7 +108,7 @@ function editProvinces() {
 
   // add line for each state
   function provincesEditorAddLines() {
-    const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
+    const unit = " " + getAreaUnit();
     const selectedState = +document.getElementById("provincesFilterState").value;
     let filtered = pack.provinces.filter(p => p.i && !p.removed); // all valid burgs
     if (selectedState != -1) filtered = filtered.filter(p => p.state === selectedState); // filtered by state
@@ -118,8 +118,7 @@ function editProvinces() {
       totalPopulation = 0;
 
     for (const p of filtered) {
-      const area = p.area * distanceScaleInput.value ** 2;
-      totalArea += area;
+      totalArea += getArea(p.area);
       const rural = p.rural * populationRate;
       const urban = p.urban * populationRate * urbanization;
       const population = rn(rural + urban);
@@ -632,8 +631,7 @@ function editProvinces() {
       const name = d.data.fullName;
       const state = pack.states[d.data.state].fullName;
 
-      const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
-      const area = d.data.area * distanceScaleInput.value ** 2 + unit;
+      const area = getArea(d.data.area) + " " + getAreaUnit();
       const rural = rn(d.data.rural * populationRate);
       const urban = rn(d.data.urban * populationRate * urbanization);
 

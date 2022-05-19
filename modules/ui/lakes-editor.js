@@ -45,9 +45,7 @@ function editLake() {
 
     const l = getLake();
     document.getElementById("lakeName").value = l.name;
-
-    const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
-    document.getElementById("lakeArea").value = si(l.area * distanceScaleInput.value ** 2) + unit;
+    document.getElementById("lakeArea").value = si(getArea(l.area)) + " " + getAreaUnit();
 
     const length = d3.polygonLength(l.vertices.map(v => pack.vertices.p[v]));
     document.getElementById("lakeShoreLength").value = si(length * distanceScaleInput.value) + " " + distanceUnitInput.value;
@@ -118,9 +116,8 @@ function editLake() {
     elSelected.attr("d", d);
     defs.select("mask#land > path#land_" + feature.i).attr("d", d); // update land mask
 
-    const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
     feature.area = Math.abs(d3.polygonArea(points));
-    document.getElementById("lakeArea").value = si(feature.area * distanceScaleInput.value ** 2) + unit;
+    document.getElementById("lakeArea").value = si(getArea(feature.area)) + " " + getAreaUnit();
   }
 
   function changeName() {
