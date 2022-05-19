@@ -118,7 +118,8 @@ function editProvinces() {
       totalPopulation = 0;
 
     for (const p of filtered) {
-      totalArea += getArea(p.area);
+      const area = getArea(p.area);
+      totalArea += area;
       const rural = p.rural * populationRate;
       const urban = p.urban * populationRate * urbanization;
       const population = rn(rural + urban);
