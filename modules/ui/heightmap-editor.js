@@ -1006,10 +1006,14 @@ function editHeightmap() {
       this.value = ""; // reset input value to get triggered if the file is re-uploaded
       const reader = new FileReader();
 
-      const img = new Image();
-      img.id = "imageToConvert";
-      img.style.display = "none";
-      document.body.appendChild(img);
+      const imgId = "imageToConvert";
+      let img = document.getElementById(imgId);
+      if (!img) {
+        img = new Image();
+        img.id = imgId;
+        img.style.display = "none";
+        document.body.appendChild(img);
+      }
 
       img.onload = function () {
         const ctx = document.getElementById("canvas").getContext("2d");
