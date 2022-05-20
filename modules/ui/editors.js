@@ -1119,12 +1119,12 @@ function refreshAllEditors() {
 // dynamically loaded editors
 async function editStates() {
   if (customization) return;
-  const StateEditor = await import("../dynamic/editors/states-editor.js?v=18052022");
+  const StateEditor = await import("../dynamic/editors/states-editor.js?v=20052022");
   StateEditor.open();
 }
 
 async function editCultures() {
   if (customization) return;
-  const CulturesEditor = await import("../dynamic/editors/cultures-editor.js");
+  const CulturesEditor = await import("../dynamic/editors/cultures-editor.js?v=20052022");
   CulturesEditor.open();
 }
