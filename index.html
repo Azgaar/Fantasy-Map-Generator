@@ -107,7 +107,7 @@
         }
       }
     </style>
-    <link rel="stylesheet" href="index.css?v=15052022" />
+    <link rel="stylesheet" href="index.css?v=18052022" />
     <link rel="stylesheet" href="icons.css" />
     <link rel="stylesheet" href="libs/jquery-ui.css" />
   </head>
@@ -1732,7 +1732,7 @@
           <p>Click to create a new map:</p>
           <div>
             <button id="openSubmapMenu" data-tip="Click to generate a submap from the current viewport">Submap</button>
-            <button id="openResampleMenu" data-tip="Click to transform the map">Resample</button>
+            <button id="openResampleMenu" data-tip="Click to transform the map">Transform</button>
           </div>
         </div>
 
@@ -3343,73 +3343,6 @@
         </div>
       </div>
 
-      <div id="culturesEditor" class="dialog stable" style="display: none">
-        <div id="culturesHeader" class="header">
-          <div style="left: 1.8em" data-tip="Click to sort by culture name" class="sortable alphabetically" data-sortby="name">Culture&nbsp;</div>
-          <div style="left: 9.9em" data-tip="Click to sort by culture cells count" class="sortable hide" data-sortby="cells">Cells&nbsp;</div>
-          <div style="left: 14.5em" data-tip="Click to sort by expansionism" class="sortable hide" data-sortby="expansionism">Expan.&nbsp;</div>
-          <div style="left: 20.3em" data-tip="Click to sort by type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
-          <div style="left: 29.1em" data-tip="Click to sort by culture area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
-          <div style="left: 33em" data-tip="Click to sort by culture population" class="sortable hide icon-sort-number-down" data-sortby="population">
-            Population&nbsp;
-          </div>
-          <div style="left: 39.5em" data-tip="Click to sort by culture namesbase" class="sortable" data-sortby="base">Namesbase&nbsp;</div>
-          <div style="left: 47em" data-tip="Click to sort by culture emblems shape" class="sortable alphabetically hide" data-sortby="emblems">
-            Emblems&nbsp;
-          </div>
-        </div>
-        <div id="culturesBody" class="table" data-type="absolute"></div>
-
-        <div id="culturesFooter" class="totalLine">
-          <div data-tip="Cultures number" style="margin-left: 12px">Cultures:&nbsp;<span id="culturesFooterCultures">0</span></div>
-          <div data-tip="Total land cells number" style="margin-left: 12px">Cells:&nbsp;<span id="culturesFooterCells">0</span></div>
-          <div data-tip="Total land area" style="margin-left: 12px">Land Area:&nbsp;<span id="culturesFooterArea">0</span></div>
-          <div data-tip="Total population" style="margin-left: 12px">Population:&nbsp;<span id="culturesFooterPopulation">0</span></div>
-        </div>
-
-        <div id="culturesBottom">
-          <button id="culturesEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-          <button id="culturesEditStyle" data-tip="Edit cultures style in Style Editor" class="icon-adjust"></button>
-          <button id="culturesLegend" data-tip="Toggle Legend box" class="icon-list-bullet"></button>
-          <button id="culturesPercentage" data-tip="Toggle percentage / absolute values display mode" class="icon-percent"></button>
-          <button id="culturesHeirarchy" data-tip="Show cultures hierarchy tree" class="icon-sitemap"></button>
-          <button id="culturesManually" data-tip="Manually re-assign cultures" class="icon-brush"></button>
-          <div id="culturesManuallyButtons" style="display: none">
-            <label data-tip="Change brush size. Shortcut: + (increase), – (decrease)" class="italic"
-              >Brush size:
-              <input
-                id="culturesManuallyBrush"
-                oninput="tip('Brush size: '+this.value); culturesManuallyBrushNumber.value = this.value"
-                type="range"
-                min="5"
-                max="99"
-                value="15"
-                style="width: 7em"
-              />
-              <input
-                id="culturesManuallyBrushNumber"
-                oninput="tip('Brush size: '+this.value); culturesManuallyBrush.value = this.value"
-                type="number"
-                min="5"
-                max="99"
-                value="15"
-              /> </label
-            ><br />
-            <button id="culturesManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
-            <button id="culturesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
-          </div>
-          <button id="culturesEditNamesBase" data-tip="Edit a database used for names generation" class="icon-font"></button>
-          <button id="culturesAdd" data-tip="Add a new culture. Hold Shift to add multiple" class="icon-plus"></button>
-          <button id="culturesExport" data-tip="Download cultures-related data" class="icon-download"></button>
-          <button id="culturesImport" data-tip="Upload cultures-related data" class="icon-upload"></button>
-          <button id="culturesRecalculate" data-tip="Recalculate cultures based on current values of growth-related attributes" class="icon-retweet"></button>
-          <span data-tip="Allow culture centers, expansion and type changes to take an immediate effect">
-            <input id="culturesAutoChange" class="checkbox" type="checkbox" />
-            <label for="culturesAutoChange" class="checkbox-label"><i>auto-apply changes</i></label>
-          </span>
-        </div>
-      </div>
-
       <div id="namesbaseEditor" class="dialog stable textual" style="display: none">
         <div id="namesbaseBasesTop">
           <span>Select base: </span>
@@ -4370,8 +4303,8 @@
 
           <div>Shift</div>
           <div>
-            <label>X: <input id="submapShiftX" type="number" min="0" size="4" value="0" /></label>
-            <label>Y: <input id="submapShiftY" type="number" min="0" size="4" value="0" /></label>
+            <label>X: <input id="submapShiftX" type="number" size="4" value="0" /></label>
+            <label>Y: <input id="submapShiftY" type="number" size="4" value="0" /></label>
           </div>
 
           <div>Rotate</div>
@@ -4395,6 +4328,7 @@
             <label for="submapMirrorV" class="checkbox-label">vertically</label>
           </div>
         </div>
+        <div id="submapPreview" style="border: 1px solid black; margin: 1em auto; overflow: hidden"></div>
       </div>
 
       <div id="submapOptionsDialog" style="display: none" class="dialog">
@@ -6194,39 +6128,38 @@
     <script src="libs/alea.min.js"></script>
     <script src="modules/fonts.js?v=11052022"></script>
     <script src="modules/ui/layers.js"></script>
-    <script src="modules/ui/measurers.js"></script>
+    <script src="modules/ui/measurers.js?v=18052022"></script>
     <script src="modules/ui/stylePresets.js"></script>
 
-    <script src="modules/ui/general.js?v=15052022"></script>
+    <script src="modules/ui/general.js?v=18052022"></script>
     <script src="modules/ui/options.js?v=14052022"></script>
     <script src="main.js?v=15052022"></script>
 
     <script defer src="modules/relief-icons.js"></script>
     <script defer src="modules/ui/style.js"></script>
-    <script defer src="modules/ui/editors.js?v=17052022"></script>
+    <script defer src="modules/ui/editors.js?v=18052022"></script>
     <script defer src="modules/ui/tools.js"></script>
     <script defer src="modules/ui/world-configurator.js"></script>
     <script defer src="modules/ui/heightmap-editor.js"></script>
-    <script defer src="modules/ui/provinces-editor.js"></script>
-    <script defer src="modules/ui/biomes-editor.js"></script>
-    <script defer src="modules/ui/cultures-editor.js"></script>
+    <script defer src="modules/ui/provinces-editor.js?v=19052022"></script>
+    <script defer src="modules/ui/biomes-editor.js?v=18052022"></script>
     <script defer src="modules/ui/namesbase-editor.js"></script>
     <script defer src="modules/ui/elevation-profile.js"></script>
     <script defer src="modules/ui/temperature-graph.js"></script>
     <script defer src="modules/ui/routes-editor.js"></script>
     <script defer src="modules/ui/ice-editor.js"></script>
-    <script defer src="modules/ui/lakes-editor.js"></script>
-    <script defer src="modules/ui/coastline-editor.js"></script>
+    <script defer src="modules/ui/lakes-editor.js?v=18052022"></script>
+    <script defer src="modules/ui/coastline-editor.js?v=18052022"></script>
     <script defer src="modules/ui/labels-editor.js"></script>
     <script defer src="modules/ui/rivers-editor.js"></script>
     <script defer src="modules/ui/rivers-creator.js"></script>
     <script defer src="modules/ui/relief-editor.js"></script>
-    <script defer src="modules/ui/religions-editor.js"></script>
+    <script defer src="modules/ui/religions-editor.js?v=18052022"></script>
     <script defer src="modules/ui/burg-editor.js"></script>
     <script defer src="modules/ui/units-editor.js"></script>
     <script defer src="modules/ui/notes-editor.js"></script>
     <script defer src="modules/ui/diplomacy-editor.js"></script>
-    <script defer src="modules/ui/zones-editor.js"></script>
+    <script defer src="modules/ui/zones-editor.js?v=18052022"></script>
     <script defer src="modules/ui/burgs-overview.js"></script>
     <script defer src="modules/ui/rivers-overview.js"></script>
     <script defer src="modules/ui/military-overview.js"></script>
@@ -6246,7 +6179,7 @@
 
     <script defer src="modules/io/save.js"></script>
     <script defer src="modules/io/load.js?v=15052022-5"></script>
-    <script defer src="modules/io/cloud.js"></script>
+    <script defer src="modules/io/cloud.js?v=24052022"></script>
     <script defer src="modules/io/export.js"></script>
     <script defer src="modules/io/export-json.js"></script>
     <script defer src="modules/io/formats.js"></script>

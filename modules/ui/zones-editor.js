@@ -67,7 +67,7 @@ function editZones() {
 
   // add line for each zone
   function zonesEditorAddLines() {
-    const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
+    const unit = " " + getAreaUnit();
 
     const typeToFilterBy = document.getElementById("zonesFilterType").value;
     const zones = Array.from(document.querySelectorAll("#zones > g"));
@@ -78,7 +78,7 @@ function editZones() {
       const description = zoneEl.dataset.description;
       const type = zoneEl.dataset.type;
       const fill = zoneEl.getAttribute("fill");
-      const area = d3.sum(c.map(i => pack.cells.area[i])) * distanceScaleInput.value ** 2;
+      const area = getArea(d3.sum(c.map(i => pack.cells.area[i])));
       const rural = d3.sum(c.map(i => pack.cells.pop[i])) * populationRate;
       const urban = d3.sum(c.map(i => pack.cells.burg[i]).map(b => pack.burgs[b].population)) * populationRate * urbanization;
       const population = rural + urban;
@@ -107,7 +107,8 @@ function editZones() {
     body.innerHTML = lines.join("");
 
     // update footer
-    const totalArea = (zonesFooterArea.dataset.area = graphWidth * graphHeight * distanceScaleInput.value ** 2);
+    const totalArea = getArea(graphWidth * graphHeight);
+    zonesFooterArea.dataset.area = totalArea;
     const totalPop = (d3.sum(pack.cells.pop) + d3.sum(pack.burgs.filter(b => !b.removed).map(b => b.population)) * urbanization) * populationRate;
     zonesFooterPopulation.dataset.population = totalPop;
     zonesFooterNumber.innerHTML = /* html */ `${filteredZones.length} of ${zones.length}`;

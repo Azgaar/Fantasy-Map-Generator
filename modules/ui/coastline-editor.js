@@ -57,9 +57,8 @@ function editCoastline(node = d3.event.target) {
       .call(d3.drag().on("drag", dragVertex))
       .on("mousemove", () => tip("Drag to move the vertex, please use for fine-tuning only. Edit heightmap to change actual cell heights"));
 
-    const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
     const area = pack.features[f].area;
-    coastlineArea.innerHTML = si(area * distanceScaleInput.value ** 2) + unit;
+    coastlineArea.innerHTML = si(getArea(area)) + " " + getAreaUnit();
   }
 
   function dragVertex() {
@@ -89,9 +88,8 @@ function editCoastline(node = d3.event.target) {
     defs.select("mask#land > path#land_" + f).attr("d", d); // update land mask
     defs.select("mask#water > path#water_" + f).attr("d", d); // update water mask
 
-    const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
     const area = Math.abs(d3.polygonArea(points));
-    coastlineArea.innerHTML = si(area * distanceScaleInput.value ** 2) + unit;
+    coastlineArea.innerHTML = si(getArea(area)) + " " + getAreaUnit();
   }
 
   function showGroupSection() {

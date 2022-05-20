@@ -85,6 +85,17 @@ document.querySelectorAll(".sortable").forEach(function (e) {
   });
 });
 
+function applySortingByHeader(headerContainer) {
+  document
+    .getElementById(headerContainer)
+    .querySelectorAll(".sortable")
+    .forEach(function (element) {
+      element.addEventListener("click", function () {
+        sortLines(this);
+      });
+    });
+}
+
 function sortLines(headerElement) {
   const type = headerElement.classList.contains("alphabetically") ? "name" : "number";
   let order = headerElement.className.includes("-down") ? "-up" : "-down";
@@ -1050,6 +1061,17 @@ function selectIcon(initial, callback) {
   });
 }
 
+function getAreaUnit(squareMark = "²") {
+  return document.getElementById("areaUnit").value === "square"
+    ? document.getElementById("distanceUnitInput").value + squareMark
+    : document.getElementById("areaUnit").value;
+}
+
+function getArea(rawArea) {
+  const distanceScale = document.getElementById("distanceScaleInput")?.value;
+  return rawArea * distanceScale ** 2;
+}
+
 function confirmationDialog(options) {
   const {
     title = "Confirm action",
@@ -1097,6 +1119,12 @@ function refreshAllEditors() {
 // dynamically loaded editors
 async function editStates() {
   if (customization) return;
-  const StateEditor = await import("../dynamic/editors/states-editor.js?v=17052022");
+  const StateEditor = await import("../dynamic/editors/states-editor.js?v=20052022");
   StateEditor.open();
+}
+
+async function editCultures() {
+  if (customization) return;
+  const CulturesEditor = await import("../dynamic/editors/cultures-editor.js?v=20052022");
+  CulturesEditor.open();
 }

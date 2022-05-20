@@ -124,6 +124,8 @@ function insertEditorHtml() {
 }
 
 function addListeners() {
+  applySortingByHeader("statesHeader");
+
   byId("statesEditorRefresh").on("click", refreshStatesEditor);
   byId("statesEditStyle").on("click", () => editStyle("regions"));
   byId("statesLegend").on("click", toggleLegend);
@@ -183,7 +185,7 @@ function refreshStatesEditor() {
 
 // add line for each state
 function statesEditorAddLines() {
-  const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
+  const unit = getAreaUnit();
   const hidden = byId("statesRegenerateButtons").style.display === "block" ? "" : "hidden"; // toggle regenerate columns
   let lines = "";
   let totalArea = 0;
@@ -192,7 +194,7 @@ function statesEditorAddLines() {
 
   for (const s of pack.states) {
     if (s.removed) continue;
-    const area = s.area * distanceScaleInput.value ** 2;
+    const area = getArea(s.area);
     const rural = s.rural * populationRate;
     const urban = s.urban * populationRate * urbanization;
     const population = rn(rural + urban);
@@ -229,7 +231,7 @@ function statesEditorAddLines() {
         <span data-tip="Burgs count" class="icon-dot-circled hide" style="padding-right: 1px"></span>
         <div data-tip="Burgs count" class="stateBurgs hide">${s.burgs}</div>
         <span data-tip="Neutral lands area" style="padding-right: 4px" class="icon-map-o hide"></span>
-        <div data-tip="Neutral lands area" class="stateArea hide" style="width: 6em">${si(area) + unit}</div>
+        <div data-tip="Neutral lands area" class="stateArea hide" style="width: 6em">${si(area)} ${unit}</div>
         <span data-tip="${populationTip}" class="icon-male hide"></span>
         <div data-tip="${populationTip}" class="statePopulation pointer hide" style="width: 5em">${si(population)}</div>
         <select class="cultureType ${hidden} placeholder show hide">${getTypeOptions(0)}</select>
@@ -268,7 +270,7 @@ function statesEditorAddLines() {
       <span data-tip="Burgs count" style="padding-right: 1px" class="icon-dot-circled hide"></span>
       <div data-tip="Burgs count" class="stateBurgs hide">${s.burgs}</div>
       <span data-tip="State area" style="padding-right: 4px" class="icon-map-o hide"></span>
-      <div data-tip="State area" class="stateArea hide" style="width: 6em">${si(area) + unit}</div>
+      <div data-tip="State area" class="stateArea hide" style="width: 6em">${si(area)} ${unit}</div>
       <span data-tip="${populationTip}" class="icon-male hide"></span>
       <div data-tip="${populationTip}" class="statePopulation pointer hide" style="width: 5em">${si(population)}</div>
       <select data-tip="State type. Defines growth model. Click to change" class="cultureType ${hidden} show hide">${getTypeOptions(s.type)}</select>
@@ -774,8 +776,7 @@ function showStatesChart() {
     d3.select(ev.target).select("circle").classed("selected", 1);
     const state = d.data.fullName;
 
-    const unit = areaUnit.value === "square" ? " " + distanceUnitInput.value + "²" : " " + areaUnit.value;
-    const area = d.data.area * distanceScaleInput.value ** 2 + unit;
+    const area = getArea(d.data.area) + " " + getAreaUnit();
     const rural = rn(d.data.rural * populationRate);
     const urban = rn(d.data.urban * populationRate * urbanization);
 

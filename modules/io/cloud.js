@@ -52,7 +52,7 @@ window.Cloud = (function () {
     },
 
     async connect(token) {
-      await import("https://unpkg.com/dropbox@10.8.0/dist/Dropbox-sdk.min.js");
+      await import("../../libs/dropbox-sdk.min.js");
       const auth = new Dropbox.DropboxAuth({clientId: this.clientId});
       auth.setAccessToken(token);
       this.api = new Dropbox.Dropbox({auth});
