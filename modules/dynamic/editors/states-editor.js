@@ -1289,17 +1289,17 @@ function exitAddStateMode() {
 }
 
 function downloadStatesCsv() {
-  const unit = byId("areaUnit").value === "square" ? byId("distanceUnitInput").value + "2" : byId("areaUnit").value;
+  const unit = getAreaUnit("2");
   const headers = `Id,State,Full Name,Form,Color,Capital,Culture,Type,Expansionism,Cells,Burgs,Area ${unit},Total Population,Rural Population,Urban Population`;
   const lines = Array.from($body.querySelectorAll(":scope > div"));
-  const statesData = lines.map($line => {
+  const data = lines.map($line => {
     const {id, name, form, color, capital, culture, type, expansionism, cells, burgs, area, population} = $line.dataset;
     const {fullName = "", rural, urban} = pack.states[+id];
     const ruralPopulation = Math.round(rural * populationRate);
     const urbanPopulation = Math.round(urban * populationRate * urbanization);
     return [id, name, fullName, form, color, capital, culture, type, expansionism, cells, burgs, area, population, ruralPopulation, urbanPopulation].join(",");
   });
-  const csvData = [headers].concat(statesData).join("\n");
+  const csvData = [headers].concat(data).join("\n");
 
   const name = getFileName("States") + ".csv";
   downloadFile(csvData, name);
