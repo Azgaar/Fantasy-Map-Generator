@@ -119,7 +119,6 @@ window.HeightmapTemplates = (function () {
     Hill 3-4 60-85 20-80 0-5
     Hill 3-4 60-85 20-80 95-100`;
 
-
   const oldWorld = `Hill 4-6 20-40 15-85 30-45
     Hill 3-7 20-40 15-85 55-70
     Strait 2-7 vertical 0 0
@@ -170,5 +169,20 @@ window.HeightmapTemplates = (function () {
     Strait 3-7 vertical 0 0
     Trough 1-2 40-50 45-65 45-65`;
 
-  return {volcano, highIsland, lowIsland, continents, archipelago, atoll, mediterranean, peninsula, peninsula, pangea, isthmus, shattered, taklamakan, oldWorld};
+  return {
+    volcano,
+    highIsland,
+    lowIsland,
+    continents,
+    archipelago,
+    atoll,
+    mediterranean,
+    peninsula,
+    peninsula,
+    pangea,
+    isthmus,
+    shattered,
+    taklamakan,
+    oldWorld
+  };
 })();

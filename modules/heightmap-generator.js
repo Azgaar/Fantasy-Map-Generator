@@ -26,7 +26,7 @@ window.HeightmapGenerator = (function () {
         // load heightmap into image and render to canvas
         const img = new Image();
         img.src = `./heightmaps/${input.value}.png`;
-        img.onload = function () {
+        img.onload = () => {
           ctx.drawImage(img, 0, 0, cellsX, cellsY);
           const imageData = ctx.getImageData(0, 0, cellsX, cellsY);
           assignColorsToHeight(imageData.data);
@@ -61,6 +61,7 @@ window.HeightmapGenerator = (function () {
     if (a1 === "Range") return addRange(a2, a3, a4, a5);
     if (a1 === "Trough") return addTrough(a2, a3, a4, a5);
     if (a1 === "Strait") return addStrait(a2, a3);
+    if (a1 === "Insulate") return insulate(a2);
     if (a1 === "Add") return modify(a3, +a2, 1);
     if (a1 === "Multiply") return modify(a3, 0, +a2);
     if (a1 === "Smooth") return smooth(a2);
@@ -100,7 +101,7 @@ window.HeightmapGenerator = (function () {
     if (cells === 100000) return 0.93;
   }
 
-  const addHill = function (count, height, rangeX, rangeY) {
+  const addHill = (count, height, rangeX, rangeY) => {
     count = getNumberInRange(count);
     const power = getBlobPower();
     while (count > 0) {
@@ -137,7 +138,7 @@ window.HeightmapGenerator = (function () {
     }
   };
 
-  const addPit = function (count, height, rangeX, rangeY) {
+  const addPit = (count, height, rangeX, rangeY) => {
     count = getNumberInRange(count);
     while (count > 0) {
       addOnePit();
@@ -173,7 +174,7 @@ window.HeightmapGenerator = (function () {
     }
   };
 
-  const addRange = function (count, height, rangeX, rangeY) {
+  const addRange = (count, height, rangeX, rangeY) => {
     count = getNumberInRange(count);
     const power = getLinePower();
     while (count > 0) {
@@ -259,7 +260,7 @@ window.HeightmapGenerator = (function () {
     }
   };
 
-  const addTrough = function (count, height, rangeX, rangeY) {
+  const addTrough = (count, height, rangeX, rangeY) => {
     count = getNumberInRange(count);
     const power = getLinePower();
     while (count > 0) {
@@ -354,7 +355,7 @@ window.HeightmapGenerator = (function () {
     }
   };
 
-  const addStrait = function (width, direction = "vertical") {
+  const addStrait = (width, direction = "vertical") => {
     width = Math.min(getNumberInRange(width), grid.cellsX / 3);
     if (width < 1 && P(width)) return;
     const used = new Uint8Array(cells.h.length);
@@ -407,7 +408,7 @@ window.HeightmapGenerator = (function () {
     }
   };
 
-  const modify = function (range, add, mult, power) {
+  const modify = (range, add, mult, power) => {
     const min = range === "land" ? 20 : range === "all" ? 0 : +range.split("-")[0];
     const max = range === "land" || range === "all" ? 100 : +range.split("-")[1];
     const isLand = min === 20;
@@ -422,11 +423,23 @@ window.HeightmapGenerator = (function () {
     });
   };
 
-  const smooth = function (fr = 2, add = 0) {
+  const smooth = (fr = 2, add = 0) => {
     cells.h = cells.h.map((h, i) => {
       const a = [h];
       cells.c[i].forEach(c => a.push(cells.h[c]));
+      if (fr === 1) return d3.mean(a) + add;
       return lim((h * (fr - 1) + d3.mean(a) + add) / fr);
+    });
+  };
+
+  const insulate = (fr = 2) => {
+    const power = fr * 2;
+    cells.h = cells.h.map((h, i) => {
+      const [x, y] = p[i];
+      const nx = (2 * x) / graphWidth - 1;
+      const ny = (2 * y) / graphHeight - 1;
+      const distance = (1 - nx ** power) * (1 - ny ** power); // 1 is center, 0 is edge
+      return h * distance;
     });
   };
 
@@ -449,5 +462,5 @@ window.HeightmapGenerator = (function () {
     }
   }
 
-  return {generate, addHill, addRange, addTrough, addStrait, addPit, smooth, modify};
+  return {generate, addHill, addRange, addTrough, addStrait, addPit, smooth, modify, insulate};
 })();

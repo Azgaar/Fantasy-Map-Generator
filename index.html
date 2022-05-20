@@ -2951,14 +2951,15 @@
           </select>
         </div>
         <div id="templateTools">
-          <button id="templateHill" data-tip="Hill: small blob" class="noicon">H</button>
-          <button id="templatePit" data-tip="Pit: round depression" class="noicon">P</button>
-          <button id="templateRange" data-tip="Range: elongated elevation" class="noicon">R</button>
-          <button id="templateTrough" data-tip="Trough: elongated depression" class="noicon">T</button>
-          <button id="templateStrait" data-tip="Strait: centered vertical or horizontal depression" class="noicon">S</button>
-          <button id="templateAdd" data-tip="Add or subtract value from all heights in range" class="noicon">+</button>
-          <button id="templateMultiply" data-tip="Multiply all heights in range by factor" class="noicon">*</button>
-          <button id="templateSmooth" data-tip="Smooth the map replacing cell heights by an average values of its neighbors" class="noicon">~</button>
+          <button data-type="Hill" data-tip="Hill: small blob" class="noicon">H</button>
+          <button data-type="Pit" data-tip="Pit: round depression" class="noicon">P</button>
+          <button data-type="Range" data-tip="Range: elongated elevation" class="noicon">R</button>
+          <button data-type="Trough" data-tip="Trough: elongated depression" class="noicon">T</button>
+          <button data-type="Strait" data-tip="Strait: centered vertical or horizontal depression" class="noicon">S</button>
+          <button data-type="Insulate" data-tip="Insulate: lower cells near edges" class="noicon">I</button>
+          <button data-type="Add" data-tip="Add or subtract value from all heights in range" class="noicon">+</button>
+          <button data-type="Multiply" data-tip="Multiply all heights in range by factor" class="noicon">*</button>
+          <button data-type="Smooth" data-tip="Smooth the map replacing cell heights by an average values of its neighbors" class="noicon">~</button>
         </div>
         <div id="templateBody" data-changed="0" class="table" style="padding: 2px 0">
           <div data-type="Hill">
@@ -6110,7 +6111,7 @@
 
     <script src="modules/voronoi.js"></script>
     <script src="modules/heightmap-templates.js"></script>
-    <script src="modules/heightmap-generator.js"></script>
+    <script src="modules/heightmap-generator.js?v=21052020"></script>
     <script src="modules/ocean-layers.js"></script>
     <script src="modules/river-generator.js"></script>
     <script src="modules/lakes.js"></script>
@@ -6140,7 +6141,7 @@
     <script defer src="modules/ui/editors.js?v=18052022"></script>
     <script defer src="modules/ui/tools.js"></script>
     <script defer src="modules/ui/world-configurator.js"></script>
-    <script defer src="modules/ui/heightmap-editor.js"></script>
+    <script defer src="modules/ui/heightmap-editor.js?v=21052020"></script>
     <script defer src="modules/ui/provinces-editor.js?v=19052022"></script>
     <script defer src="modules/ui/biomes-editor.js?v=18052022"></script>
     <script defer src="modules/ui/namesbase-editor.js"></script>
