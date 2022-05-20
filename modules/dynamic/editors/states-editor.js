@@ -144,7 +144,7 @@ function addListeners() {
   byId("statesExport").on("click", downloadStatesCsv);
 
   const $header = byId("statesHeader");
-  $header.queryAll(".sortable").forEach(element => element.on("click", () => sortLines(element)));
+  $header.querySelectorAll(".sortable").forEach(element => element.on("click", () => sortLines(element)));
 
   $body.on("click", event => {
     const $element = event.target;
@@ -295,7 +295,7 @@ function statesEditorAddLines() {
   byId("statesFooterPopulation").dataset.population = totalPopulation;
 
   // add listeners
-  $body.queryAll("div.states").forEach(el => {
+  $body.querySelectorAll("div.states").forEach(el => {
     el.on("click", selectStateOnLineClick);
     el.on("mouseenter", stateHighlightOn);
     el.on("mouseleave", stateHighlightOff);
@@ -489,7 +489,7 @@ function stateChangeCapitalName(state, line, value) {
   const capital = pack.states[state].capital;
   if (!capital) return;
   pack.burgs[capital].name = value;
-  query("#burgLabel" + capital).textContent = value;
+  document.querySelector("#burgLabel" + capital).textContent = value;
 }
 
 function changePopulation(state) {
@@ -690,11 +690,11 @@ function togglePercentageMode() {
     const totalArea = +statesFooterArea.dataset.area;
     const totalPopulation = +statesFooterPopulation.dataset.population;
 
-    $body.queryAll(":scope > div").forEach(function (el) {
-      el.query(".stateCells").innerHTML = rn((+el.dataset.cells / totalCells) * 100) + "%";
-      el.query(".stateBurgs").innerHTML = rn((+el.dataset.burgs / totalBurgs) * 100) + "%";
-      el.query(".stateArea").innerHTML = rn((+el.dataset.area / totalArea) * 100) + "%";
-      el.query(".statePopulation").innerHTML = rn((+el.dataset.population / totalPopulation) * 100) + "%";
+    $body.querySelectorAll(":scope > div").forEach(function (el) {
+      el.querySelector(".stateCells").innerHTML = rn((+el.dataset.cells / totalCells) * 100) + "%";
+      el.querySelector(".stateBurgs").innerHTML = rn((+el.dataset.burgs / totalBurgs) * 100) + "%";
+      el.querySelector(".stateArea").innerHTML = rn((+el.dataset.area / totalArea) * 100) + "%";
+      el.querySelector(".statePopulation").innerHTML = rn((+el.dataset.population / totalPopulation) * 100) + "%";
     });
   } else {
     $body.dataset.type = "absolute";
@@ -847,12 +847,12 @@ function showStatesChart() {
 
 function openRegenerationMenu() {
   byId("statesBottom")
-    .queryAll(":scope > button")
+    .querySelectorAll(":scope > button")
     .forEach(el => (el.style.display = "none"));
   byId("statesRegenerateButtons").style.display = "block";
 
   byId("statesEditor")
-    .queryAll(".show")
+    .querySelectorAll(".show")
     .forEach(el => el.classList.remove("hidden"));
   $("#statesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});
 }
@@ -885,18 +885,18 @@ function randomizeStatesExpansion() {
     if (!s.i || s.removed) return;
     const expansionism = rn(Math.random() * 4 + 1, 1);
     s.expansionism = expansionism;
-    $body.query("div.states[data-id='" + s.i + "'] > input.statePower").value = expansionism;
+    $body.querySelector("div.states[data-id='" + s.i + "'] > input.statePower").value = expansionism;
   });
   recalculateStates(true, true);
 }
 
 function exitRegenerationMenu() {
   byId("statesBottom")
-    .queryAll(":scope > button")
+    .querySelectorAll(":scope > button")
     .forEach(el => (el.style.display = "inline-block"));
   byId("statesRegenerateButtons").style.display = "none";
   byId("statesEditor")
-    .queryAll(".show")
+    .querySelectorAll(".show")
     .forEach(el => el.classList.add("hidden"));
   $("#statesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});
 }
@@ -905,27 +905,27 @@ function enterStatesManualAssignent() {
   if (!layerIsOn("toggleStates")) toggleStates();
   customization = 2;
   statesBody.append("g").attr("id", "temp");
-  queryAll("#statesBottom > button").forEach(el => (el.style.display = "none"));
+  document.querySelectorAll("#statesBottom > button").forEach(el => (el.style.display = "none"));
   byId("statesManuallyButtons").style.display = "inline-block";
   byId("statesHalo").style.display = "none";
 
   byId("statesEditor")
-    .queryAll(".hide")
+    .querySelectorAll(".hide")
     .forEach(el => el.classList.add("hidden"));
   statesFooter.style.display = "none";
-  $body.queryAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "none"));
+  $body.querySelectorAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "none"));
   $("#statesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});
 
   tip("Click on state to select, drag the circle to change state", true);
   viewbox.style("cursor", "crosshair").on("click", selectStateOnMapClick).call(d3.drag().on("start", dragStateBrush)).on("touchmove mousemove", moveStateBrush);
 
-  $body.query("div").classList.add("selected");
+  $body.querySelector("div").classList.add("selected");
 }
 
 function selectStateOnLineClick() {
   if (customization !== 2) return;
   if (this.parentNode.id !== "statesBodySection") return;
-  $body.query("div.selected").classList.remove("selected");
+  $body.querySelector("div.selected").classList.remove("selected");
   this.classList.add("selected");
 }
 
@@ -937,8 +937,8 @@ function selectStateOnMapClick() {
   const assigned = statesBody.select("#temp").select("polygon[data-cell='" + i + "']");
   const state = assigned.size() ? +assigned.attr("data-state") : pack.cells.state[i];
 
-  $body.query("div.selected").classList.remove("selected");
-  $body.query("div[data-id='" + state + "']").classList.add("selected");
+  $body.querySelector("div.selected").classList.remove("selected");
+  $body.querySelector("div[data-id='" + state + "']").classList.add("selected");
 }
 
 function dragStateBrush() {
@@ -959,7 +959,7 @@ function dragStateBrush() {
 function changeStateForSelection(selection) {
   const temp = statesBody.select("#temp");
 
-  const $selected = $body.query("div.selected");
+  const $selected = $body.querySelector("div.selected");
   const stateNew = +$selected.dataset.id;
   const color = pack.states[stateNew].color || "#ffffff";
 
@@ -1147,20 +1147,20 @@ function exitStatesManualAssignment(close) {
   customization = 0;
   statesBody.select("#temp").remove();
   removeCircle();
-  queryAll("#statesBottom > button").forEach(el => (el.style.display = "inline-block"));
+  document.querySelectorAll("#statesBottom > button").forEach(el => (el.style.display = "inline-block"));
   byId("statesManuallyButtons").style.display = "none";
   byId("statesHalo").style.display = "block";
 
   byId("statesEditor")
-    .queryAll(".hide:not(.show)")
+    .querySelectorAll(".hide:not(.show)")
     .forEach(el => el.classList.remove("hidden"));
   statesFooter.style.display = "block";
-  $body.queryAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "all"));
+  $body.querySelectorAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "all"));
   if (!close) $("#statesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});
 
   restoreDefaultEvents();
   clearMainTip();
-  const selected = $body.query("div.selected");
+  const selected = $body.querySelector("div.selected");
   if (selected) selected.classList.remove("selected");
 }
 
@@ -1173,7 +1173,7 @@ function enterAddStateMode() {
   this.classList.add("pressed");
   tip("Click on the map to create a new capital or promote an existing burg", true);
   viewbox.style("cursor", "crosshair").on("click", addState);
-  $body.queryAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "none"));
+  $body.querySelectorAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "none"));
 }
 
 function addState() {
@@ -1287,14 +1287,14 @@ function exitAddStateMode() {
   customization = 0;
   restoreDefaultEvents();
   clearMainTip();
-  $body.queryAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "all"));
+  $body.querySelectorAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "all"));
   if (statesAdd.classList.contains("pressed")) statesAdd.classList.remove("pressed");
 }
 
 function downloadStatesCsv() {
   const unit = byId("areaUnit").value === "square" ? byId("distanceUnitInput").value + "2" : byId("areaUnit").value;
   const headers = `Id,State,Full Name,Form,Color,Capital,Culture,Type,Expansionism,Cells,Burgs,Area ${unit},Total Population,Rural Population,Urban Population`;
-  const lines = Array.from($body.queryAll(":scope > div"));
+  const lines = Array.from($body.querySelectorAll(":scope > div"));
   const statesData = lines.map($line => {
     const {id, name, form, color, capital, culture, type, expansionism, cells, burgs, area, population} = $line.dataset;
     const {fullName = "", rural, urban} = pack.states[+id];
