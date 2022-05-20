@@ -143,9 +143,6 @@ function addListeners() {
   byId("statesAdd").on("click", enterAddStateMode);
   byId("statesExport").on("click", downloadStatesCsv);
 
-  const $header = byId("statesHeader");
-  $header.querySelectorAll(".sortable").forEach(element => element.on("click", () => sortLines(element)));
-
   $body.on("click", event => {
     const $element = event.target;
     const classList = $element.classList;
