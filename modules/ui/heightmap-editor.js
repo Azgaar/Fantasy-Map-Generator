@@ -613,9 +613,7 @@ function editHeightmap() {
       const power = brushPower.valueAsNumber;
       const interpolate = d3.interpolateRound(power, 1);
       const land = changeOnlyLand.checked;
-      function lim(v) {
-        return minmax(v, land ? 20 : 0, 100);
-      }
+      const lim = v => minmax(v, land ? 20 : 0, 100);
       const h = grid.cells.h;
 
       const brush = document.querySelector("#brushesButtons > button.pressed").id;
@@ -674,15 +672,10 @@ function editHeightmap() {
     }
 
     function startFromScratch() {
-      if (changeOnlyLand.checked) {
-        tip("Not allowed when 'Change only land cells' mode is set", false, "error");
-        return;
-      }
+      if (changeOnlyLand.checked) return tip("Not allowed when 'Change only land cells' mode is set", false, "error");
       const someHeights = grid.cells.h.some(h => h);
-      if (!someHeights) {
-        tip("Heightmap is already cleared, please do not click twice if not required", false, "error");
-        return;
-      }
+      if (!someHeights) return tip("Heightmap is already cleared, please do not click twice if not required", false, "error");
+
       grid.cells.h = new Uint8Array(grid.cells.i.length);
       viewbox.select("#heights").selectAll("*").remove();
       updateHistory();
@@ -752,19 +745,21 @@ function editHeightmap() {
     }
 
     function addStep(type, count, dist, arg4, arg5) {
-      const body = byId("templateBody");
-      body.insertAdjacentHTML("beforeend", getStepHTML(type, count, dist, arg4, arg5));
-      const elDist = body.querySelector("div:last-child").querySelector(".templateDist");
-      if (elDist) elDist.on("change", setRange);
-      if (dist && elDist && elDist.tagName === "SELECT") {
-        for (const o of elDist.options) {
-          if (o.value === dist) elDist.value = dist;
+      const $body = byId("templateBody");
+      $body.insertAdjacentHTML("beforeend", getStepHTML(type, count, dist, arg4, arg5));
+
+      const $elDist = $body.querySelector("div:last-child > span > .templateDist");
+      if ($elDist) $elDist.on("change", setRange);
+
+      if (dist && $elDist && $elDist.tagName === "SELECT") {
+        for (const option of $elDist.options) {
+          if (option.value === dist) $elDist.value = dist;
         }
-        if (elDist.value !== dist) {
+        if ($elDist.value !== dist) {
           const opt = document.createElement("option");
           opt.value = opt.innerHTML = dist;
-          elDist.add(opt);
-          elDist.value = dist;
+          $elDist.add(opt);
+          $elDist.value = dist;
         }
       }
     }
@@ -775,52 +770,97 @@ function editHeightmap() {
       const Reorder = /* html */ `<i class="icon-resize-vertical" data-tip="Drag to reorder"></i>`;
       const common = /* html */ `<div data-type="${type}">${Hide}<div style="width:4em">${type}</div>${Trash}${Reorder}`;
 
-      const TempY = /* html */ `<span>y:<input class="templateY" data-tip="Placement range percentage along Y axis (minY-maxY)"
-        value=${arg5 || "20-80"}></span>`;
+      const TempY = /* html */ `<span>y:
+          <input class="templateY" data-tip="Placement range percentage along Y axis (minY-maxY)" value=${arg5 || "20-80"} />
+        </span>`;
 
-      const TempX = /* html */ `<span>x:<input class="templateX" data-tip="Placement range percentage along X axis (minX-maxX)"
-        value=${arg4 || "15-85"}></span>`;
+      const TempX = /* html */ `<span>x:
+          <input class="templateX" data-tip="Placement range percentage along X axis (minX-maxX)" value=${arg4 || "15-85"} />
+        </span>`;
 
-      const Height = /* html */ `<span>h:<input class="templateHeight" data-tip="Blob maximum height, use hyphen to get a random number in range"
-        value=${arg3 || "40-50"}></span>`;
+      const Height = /* html */ `<span>h:
+          <input class="templateHeight" data-tip="Blob maximum height, use hyphen to get a random number in range" value=${arg3 || "40-50"} />
+        </span>`;
 
-      const Count = /* html */ `<span>n:<input class="templateCount" data-tip="Blobs to add, use hyphen to get a random number in range"
-        value=${count || "1-2"}></span>`;
+      const Count = /* html */ `<span>n:
+          <input class="templateCount" data-tip="Blobs to add, use hyphen to get a random number in range" value=${count || "1-2"} />
+        </span>`;
 
       if (type === "Hill" || type === "Pit" || type === "Range" || type === "Trough") return /* html */ `${common}${TempY}${TempX}${Height}${Count}</div>`;
 
       if (type === "Strait")
-        return /* html */ `${common}<span>d:<select class="templateDist" data-tip="Strait direction">
-            <option value="vertical" selected>vertical</option>
-            <option value="horizontal">horizontal</option>
-          </select></span>
-          <span>w:<input class="templateCount" data-tip="Strait width, use hyphen to get a random number in range" value=${count || "2-7"}></span></div>`;
+        return /* html */ `${common}
+          <span>d:
+            <select class="templateDist" data-tip="Strait direction">
+              <option value="vertical" selected>vertical</option>
+              <option value="horizontal">horizontal</option>
+            </select>
+          </span>
+          <span>w:
+            <input class="templateCount" data-tip="Strait width, use hyphen to get a random number in range" value=${count || "2-7"} />
+          </span>
+        </div>`;
+
+      if (type === "Invert")
+        return /* html */ `${common}
+          <span>by:
+            <select class="templateDist" data-tip="Mirror heightmap along axis" style="width: 7.8em">
+              <option value="x" selected>x</option>
+              <option value="y">y</option>
+              <option value="xy">both</option>
+            </select>
+          </span>
+          <span>n:
+            <input class="templateCount" data-tip="Probability of inversion, range 0-1" value=${count || "0.5"} />
+          </span>
+        </div>`;
 
       if (type === "Mask")
-        return /* html */ `${common}<span>f:<input class="templateCount"
-          data-tip="Set masking fraction. 1 - full insulation (prevent land on map edges), 2 - half-insulation, etc. Negative number to inverse the effect"
-          type="number" min=-10 max=10 value=${count || 1}></span></div>`;
+        return /* html */ `${common}
+          <span>f:
+            <input class="templateCount"
+              data-tip="Set masking fraction. 1 - full insulation (prevent land on map edges), 2 - half-insulation, etc. Negative number to inverse the effect"
+              type="number" min=-10 max=10 value=${count || 1} />
+          </span>
+        </div>`;
 
       if (type === "Add")
-        return /* html */ `${common}<span>to:<select class="templateDist" data-tip="Change only land or all cells">
-            <option value="all" selected>all cells</option>
-            <option value="land">land only</option>
-            <option value="interval">interval</option>
-          </select></span>
-          <span>v:<input class="templateCount" data-tip="Add value to height of all cells (negative values are allowed)"
-            type="number" value=${count || -10} min=-100 max=100 step=1></span></div>`;
+        return /* html */ `${common}
+          <span>to:
+            <select class="templateDist" data-tip="Change only land or all cells">
+              <option value="all" selected>all cells</option>
+              <option value="land">land only</option>
+              <option value="interval">interval</option>
+            </select>
+          </span>
+          <span>v:
+            <input class="templateCount" data-tip="Add value to height of all cells (negative values are allowed)"
+            type="number" value=${count || -10} min=-100 max=100 step=1 />
+          </span>
+        </div>`;
 
       if (type === "Multiply")
-        return /* html */ `${common}<span>to:<select class="templateDist" data-tip="Change only land or all cells">
-            <option value="all" selected>all cells</option>
-            <option value="land">land only</option><option value="interval">interval</option>
-          </select></span>
-          <span>v:<input class="templateCount" data-tip="Multiply all cells Height by the value" type="number"
-          value=${count || 1.1} min=0 max=10 step=.1></span></div>`;
+        return /* html */ `${common}
+          <span>to:
+            <select class="templateDist" data-tip="Change only land or all cells">
+              <option value="all" selected>all cells</option>
+              <option value="land">land only</option>
+              <option value="interval">interval</option>
+            </select>
+          </span>
+          <span>v:
+            <input class="templateCount" data-tip="Multiply all cells Height by the value" type="number" 
+              value=${count || 1.1} min=0 max=10 step=.1 />
+          </span>
+        </div>`;
 
       if (type === "Smooth")
-        return /* html */ `${common}<span>f:<input class="templateCount" data-tip="Set smooth fraction. 1 - full smooth, 2 - half-smooth, etc."
-          type="number" min=1 max=10 step=1 value=${count || 2}></span></div>`;
+        return /* html */ `${common}
+          <span>f:
+            <input class="templateCount" data-tip="Set smooth fraction. 1 - full smooth, 2 - half-smooth, etc." 
+              type="number" min=1 max=10 step=1 value=${count || 2} />
+          </span>
+        </div>`;
     }
 
     function setRange(event) {
@@ -903,6 +943,7 @@ function editHeightmap() {
         else if (type === "Trough") HeightmapGenerator.addTrough(count, height, x, y);
         else if (type === "Strait") HeightmapGenerator.addStrait(count, dist);
         else if (type === "Mask") HeightmapGenerator.mask(+count);
+        else if (type === "Invert") HeightmapGenerator.invert(+count, dist);
         else if (type === "Add") HeightmapGenerator.modify(dist, +count, 1);
         else if (type === "Multiply") HeightmapGenerator.modify(dist, 0, +count);
         else if (type === "Smooth") HeightmapGenerator.smooth(+count);

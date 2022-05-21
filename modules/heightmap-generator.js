@@ -365,8 +365,8 @@ window.HeightmapGenerator = (function () {
     const endX = vert ? Math.floor(graphWidth - startX - graphWidth * 0.1 + Math.random() * graphWidth * 0.2) : graphWidth - 5;
     const endY = vert ? graphHeight - 5 : Math.floor(graphHeight - startY - graphHeight * 0.1 + Math.random() * graphHeight * 0.2);
 
-    const start = findGridCell(startX, startY),
-      end = findGridCell(endX, endY);
+    const start = findGridCell(startX, startY);
+    const end = findGridCell(endX, endY);
     let range = getRange(start, end);
     const query = [];
 
@@ -446,6 +446,26 @@ window.HeightmapGenerator = (function () {
     });
   };
 
+  const invert = (count, axes) => {
+    if (!P(count)) return;
+
+    const invertX = axes !== "y";
+    const invertY = axes !== "x";
+    const {cellsX, cellsY} = grid;
+
+    const inverted = cells.h.map((h, i) => {
+      const x = i % cellsX;
+      const y = Math.floor(i / cellsX);
+
+      const nx = invertX ? cellsX - x - 1 : x;
+      const ny = invertY ? cellsY - y - 1 : y;
+      const invertedI = nx + ny * cellsX;
+      return cells.h[invertedI];
+    });
+
+    cells.h = inverted;
+  };
+
   function getPointInRange(range, length) {
     if (typeof range !== "string") {
       ERROR && console.error("Range should be a string");
@@ -465,5 +485,5 @@ window.HeightmapGenerator = (function () {
     }
   }
 
-  return {generate, addHill, addRange, addTrough, addStrait, addPit, smooth, modify, mask};
+  return {generate, addHill, addRange, addTrough, addStrait, addPit, smooth, modify, mask, invert};
 })();

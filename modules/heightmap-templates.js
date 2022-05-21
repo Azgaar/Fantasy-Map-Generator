@@ -69,7 +69,7 @@ window.HeightmapTemplates = (function () {
     Hill .5 30-50 25-35 30-70
     Smooth 1 0 0 0
     Multiply 0.2 25-100 0 0
-    Hill .5 10-20 50-55 48-52`;
+    Hill 0.5 10-20 50-55 48-52`;
 
   const mediterranean = `Range 4-6 30-80 0-100 0-10
     Range 4-6 30-80 0-100 90-100
@@ -90,7 +90,8 @@ window.HeightmapTemplates = (function () {
     Hill 3-4 3-5 5-95 80-100
     Hill 1-2 3-5 5-95 40-60
     Trough 5-6 10-25 5-95 5-95
-    Smooth 3 0 0 0`;
+    Smooth 3 0 0 0
+    Invert 0.4 both 0 0`;
 
   const pangea = `Hill 1-2 25-40 15-50 0-10
     Hill 1-2 5-40 50-85 0-10
@@ -113,7 +114,8 @@ window.HeightmapTemplates = (function () {
     Trough 4-8 15-30 10-50 20-40
     Trough 4-8 15-30 30-70 40-60
     Trough 4-8 15-30 50-90 60-80
-    Trough 4-8 15-30 70-100 80-100`;
+    Trough 4-8 15-30 70-100 80-100
+    Invert 0.25 x 0 0`;
 
   const shattered = `Hill 8 35-40 15-85 30-70
     Trough 10-20 40-50 5-95 5-95
