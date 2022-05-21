@@ -989,6 +989,10 @@ function editHeightmap(options) {
       HeightmapGenerator.setGraph(grid);
       restartHistory();
 
+      const seed = byId("templateSeed").value;
+      if (seed) Math.random = aleaPRNG(seed);
+      restartHistory();
+
       for (const step of steps) {
         if (step.style.opacity === "0.5") continue;
 
