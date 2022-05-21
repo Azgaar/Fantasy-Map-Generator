@@ -1292,7 +1292,7 @@
                     <option value="volcano">Volcano</option>
                     <option value="highIsland">High Island</option>
                     <option value="lowIsland">Low Island</option>
-                    <option value="continents">Two Continents</option>
+                    <option value="continents">Continents</option>
                     <option value="archipelago">Archipelago</option>
                     <option value="atoll">Atoll</option>
                     <option value="mediterranean">Mediterranean</option>
@@ -1302,6 +1302,7 @@
                     <option value="shattered">Shattered</option>
                     <option value="taklamakan">Taklamakan</option>
                     <option value="oldWorld">Old World</option>
+                    <option value="fractious">Fractious</option>
                   </optgroup>
                   <optgroup label="Specific">
                     <option value="africa-centric">Africa Centric</option>
@@ -2932,13 +2933,13 @@
 
       <div id="templateEditor" class="dialog stable" style="display: none">
         <div id="templateTop">
-          <i>Select template: </i
-          ><select id="templateSelect" style="width: 16em" data-prev="templateCustom" data-tip="Select base template">
+          <i>Select template: </i>
+          <select id="templateSelect" style="width: 16em" data-prev="templateCustom" data-tip="Select base template">
             <option value="custom" selected>Custom</option>
             <option value="volcano">Volcano</option>
             <option value="highIsland">High Island</option>
             <option value="lowIsland">Low Island</option>
-            <option value="continents">Two Continents</option>
+            <option value="continents">Continents</option>
             <option value="archipelago">Archipelago</option>
             <option value="atoll">Atoll</option>
             <option value="mediterranean">Mediterranean</option>
@@ -2948,18 +2949,19 @@
             <option value="shattered">Shattered</option>
             <option value="taklamakan">Taklamakan</option>
             <option value="oldWorld">Old World</option>
+            <option value="fractious">Fractious</option>
           </select>
         </div>
         <div id="templateTools">
-          <button data-type="Hill" data-tip="Hill: small blob" class="noicon">H</button>
-          <button data-type="Pit" data-tip="Pit: round depression" class="noicon">P</button>
-          <button data-type="Range" data-tip="Range: elongated elevation" class="noicon">R</button>
-          <button data-type="Trough" data-tip="Trough: elongated depression" class="noicon">T</button>
-          <button data-type="Strait" data-tip="Strait: centered vertical or horizontal depression" class="noicon">S</button>
-          <button data-type="Insulate" data-tip="Insulate: lower cells near edges" class="noicon">I</button>
-          <button data-type="Add" data-tip="Add or subtract value from all heights in range" class="noicon">+</button>
-          <button data-type="Multiply" data-tip="Multiply all heights in range by factor" class="noicon">*</button>
-          <button data-type="Smooth" data-tip="Smooth the map replacing cell heights by an average values of its neighbors" class="noicon">~</button>
+          <button data-type="Hill" data-tip="Hill: small blob">H</button>
+          <button data-type="Pit" data-tip="Pit: round depression">P</button>
+          <button data-type="Range" data-tip="Range: elongated elevation">R</button>
+          <button data-type="Trough" data-tip="Trough: elongated depression">T</button>
+          <button data-type="Strait" data-tip="Strait: centered vertical or horizontal depression">S</button>
+          <button data-type="Mask" data-tip="Mask: lower cells near edges or in map center">M</button>
+          <button data-type="Add" data-tip="Add or subtract value from all heights in range">+</button>
+          <button data-type="Multiply" data-tip="Multiply all heights in range by factor">*</button>
+          <button data-type="Smooth" data-tip="Smooth the map replacing cell heights by an average values of its neighbors">~</button>
         </div>
         <div id="templateBody" data-changed="0" class="table" style="padding: 2px 0">
           <div data-type="Hill">
@@ -2986,6 +2988,9 @@
             onclick="openURL('https://cartographyassets.com/asset-category/specific-assets/azgaars-generator/templates')"
           ></button>
           <button id="templateTutorial" data-tip="Open Template Editor Tutorial" class="icon-info" onclick="wiki('Heightmap-template-editor')"></button>
+          <label data-tip="Set seed if you want template to generate the same heightmap each time. Leave blank to use random seed">
+            Seed: <input id="templateSeed" value="" type="number" min="1" max="999999999" step="1" />
+          </label>
         </div>
       </div>
 
@@ -6110,7 +6115,7 @@
     <script src="utils/unitUtils.js"></script>
 
     <script src="modules/voronoi.js"></script>
-    <script src="modules/heightmap-templates.js"></script>
+    <script src="modules/heightmap-templates.js?v=21052020"></script>
     <script src="modules/heightmap-generator.js?v=21052020"></script>
     <script src="modules/ocean-layers.js"></script>
     <script src="modules/river-generator.js"></script>

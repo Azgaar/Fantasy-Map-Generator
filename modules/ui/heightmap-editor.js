@@ -487,8 +487,8 @@ function editHeightmap() {
 
   function updateStatistics() {
     const landCells = grid.cells.h.reduce((s, h) => (h >= 20 ? s + 1 : s));
-    landmassCounter.innerHTML = /* html */ `${landCells} (${rn((landCells / grid.cells.i.length) * 100)}%)`;
-    landmassAverage.innerHTML = rn(d3.mean(grid.cells.h));
+    byId("landmassCounter").innerText = `${landCells} (${rn((landCells / grid.cells.i.length) * 100)}%)`;
+    byId("landmassAverage").innerText = rn(d3.mean(grid.cells.h));
   }
 
   function updateHistory(noStat) {
@@ -691,7 +691,7 @@ function editHeightmap() {
 
   function openTemplateEditor() {
     if ($("#templateEditor").is(":visible")) return;
-    const body = byId("templateBody");
+    const $body = byId("templateBody");
 
     $("#templateEditor").dialog({
       title: "Template Editor",
@@ -707,13 +707,13 @@ function editHeightmap() {
     $("#templateBody").sortable({items: "> div", handle: ".icon-resize-vertical", containment: "#templateBody", axis: "y"});
 
     // add listeners
-    body.on("click", function (ev) {
+    $body.on("click", function (ev) {
       const el = ev.target;
       if (el.classList.contains("icon-check")) {
         el.classList.remove("icon-check");
         el.classList.add("icon-check-empty");
         el.parentElement.style.opacity = 0.5;
-        body.dataset.changed = 1;
+        $body.dataset.changed = 1;
         return;
       }
       if (el.classList.contains("icon-check-empty")) {
@@ -725,6 +725,13 @@ function editHeightmap() {
       if (el.classList.contains("icon-trash-empty")) {
         el.parentElement.remove();
         return;
+      }
+    });
+
+    byId("templateEditor").on("keypress", event => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        executeTemplate();
       }
     });
 
@@ -789,9 +796,10 @@ function editHeightmap() {
           </select></span>
           <span>w:<input class="templateCount" data-tip="Strait width, use hyphen to get a random number in range" value=${count || "2-7"}></span></div>`;
 
-      if (type === "Insulate")
-        return /* html */ `${common}<span>f:<input class="templateCount" data-tip="Set insulation power. 1 - full insulation, 2 - half-insulation, etc." type="number" min=1 max=10
-          value=${count || 2}></span></div>`;
+      if (type === "Mask")
+        return /* html */ `${common}<span>f:<input class="templateCount"
+          data-tip="Set masking fraction. 1 - full insulation (prevent land on map edges), 2 - half-insulation, etc. Negative number to inverse the effect"
+          type="number" min=-10 max=10 value=${count || 1}></span></div>`;
 
       if (type === "Add")
         return /* html */ `${common}<span>to:<select class="templateDist" data-tip="Change only land or all cells">
@@ -811,8 +819,8 @@ function editHeightmap() {
           value=${count || 1.1} min=0 max=10 step=.1></span></div>`;
 
       if (type === "Smooth")
-        return /* html */ `${common}<span>f:<input class="templateCount" data-tip="Set smooth fraction. 1 - full smooth, 2 - half-smooth, etc." type="number" min=1 max=10
-          value=${count || 2}></span></div>`;
+        return /* html */ `${common}<span>f:<input class="templateCount" data-tip="Set smooth fraction. 1 - full smooth, 2 - half-smooth, etc."
+          type="number" min=1 max=10 step=1 value=${count || 2}></span></div>`;
     }
 
     function setRange(event) {
@@ -870,34 +878,36 @@ function editHeightmap() {
     }
 
     function executeTemplate() {
-      const body = byId("templateBody");
-      const steps = body.querySelectorAll("#templateBody > div");
+      const steps = byId("templateBody").querySelectorAll("#templateBody > div");
       if (!steps.length) return;
 
-      const {addHill, addPit, addRange, addTrough, addStrait, modify, smooth, insulate} = HeightmapGenerator;
       grid.cells.h = new Uint8Array(grid.cells.i.length); // clean all heights
+
+      const seed = byId("templateSeed").value;
+      if (seed) Math.random = aleaPRNG(seed);
+      restartHistory();
 
       for (const step of steps) {
         if (step.style.opacity === "0.5") continue;
-        const type = step.dataset.type;
 
         const count = step.querySelector(".templateCount")?.value || "";
         const height = step.querySelector(".templateHeight")?.value || "";
         const dist = step.querySelector(".templateDist")?.value || null;
         const x = step.querySelector(".templateX")?.value || null;
         const y = step.querySelector(".templateY")?.value || null;
+        const type = step.dataset.type;
 
-        if (type === "Hill") addHill(count, height, x, y);
-        else if (type === "Pit") addPit(count, height, x, y);
-        else if (type === "Range") addRange(count, height, x, y);
-        else if (type === "Trough") addTrough(count, height, x, y);
-        else if (type === "Strait") addStrait(count, dist);
-        else if (type === "Insulate") insulate(+count);
-        else if (type === "Add") modify(dist, +count, 1);
-        else if (type === "Multiply") modify(dist, 0, +count);
-        else if (type === "Smooth") smooth(+count);
+        if (type === "Hill") HeightmapGenerator.addHill(count, height, x, y);
+        else if (type === "Pit") HeightmapGenerator.addPit(count, height, x, y);
+        else if (type === "Range") HeightmapGenerator.addRange(count, height, x, y);
+        else if (type === "Trough") HeightmapGenerator.addTrough(count, height, x, y);
+        else if (type === "Strait") HeightmapGenerator.addStrait(count, dist);
+        else if (type === "Mask") HeightmapGenerator.mask(+count);
+        else if (type === "Add") HeightmapGenerator.modify(dist, +count, 1);
+        else if (type === "Multiply") HeightmapGenerator.modify(dist, 0, +count);
+        else if (type === "Smooth") HeightmapGenerator.smooth(+count);
 
-        updateHistory("noStat"); // update history every step
+        updateHistory("noStat"); // update history on every step
       }
 
       updateStatistics();

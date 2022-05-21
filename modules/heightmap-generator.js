@@ -61,7 +61,7 @@ window.HeightmapGenerator = (function () {
     if (a1 === "Range") return addRange(a2, a3, a4, a5);
     if (a1 === "Trough") return addTrough(a2, a3, a4, a5);
     if (a1 === "Strait") return addStrait(a2, a3);
-    if (a1 === "Insulate") return insulate(a2);
+    if (a1 === "Mask") return mask(a2);
     if (a1 === "Add") return modify(a3, +a2, 1);
     if (a1 === "Multiply") return modify(a3, 0, +a2);
     if (a1 === "Smooth") return smooth(a2);
@@ -432,14 +432,17 @@ window.HeightmapGenerator = (function () {
     });
   };
 
-  const insulate = (fr = 2) => {
-    const power = fr * 2;
+  const mask = (power = 1) => {
+    const fr = power ? Math.abs(power) : 1;
+
     cells.h = cells.h.map((h, i) => {
       const [x, y] = p[i];
-      const nx = (2 * x) / graphWidth - 1;
-      const ny = (2 * y) / graphHeight - 1;
-      const distance = (1 - nx ** power) * (1 - ny ** power); // 1 is center, 0 is edge
-      return h * distance;
+      const nx = (2 * x) / graphWidth - 1; // [-1, 1], 0 is center
+      const ny = (2 * y) / graphHeight - 1; // [-1, 1], 0 is center
+      let distance = (1 - nx ** 2) * (1 - ny ** 2); // 1 is center, 0 is edge
+      if (power < 0) distance = 1 - distance; // inverted, 0 is center, 1 is edge
+      const masked = h * distance;
+      return lim((h * (fr - 1) + masked) / fr);
     });
   };
 
@@ -462,5 +465,5 @@ window.HeightmapGenerator = (function () {
     }
   }
 
-  return {generate, addHill, addRange, addTrough, addStrait, addPit, smooth, modify, insulate};
+  return {generate, addHill, addRange, addTrough, addStrait, addPit, smooth, modify, mask};
 })();
