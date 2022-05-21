@@ -107,7 +107,7 @@
         }
       }
     </style>
-    <link rel="stylesheet" href="index.css?v=18052022" />
+    <link rel="stylesheet" href="index.css?v=21052022" />
     <link rel="stylesheet" href="icons.css" />
     <link rel="stylesheet" href="libs/jquery-ui.css" />
   </head>
@@ -1292,7 +1292,7 @@
                     <option value="volcano">Volcano</option>
                     <option value="highIsland">High Island</option>
                     <option value="lowIsland">Low Island</option>
-                    <option value="continents">Two Continents</option>
+                    <option value="continents">Continents</option>
                     <option value="archipelago">Archipelago</option>
                     <option value="atoll">Atoll</option>
                     <option value="mediterranean">Mediterranean</option>
@@ -1302,6 +1302,7 @@
                     <option value="shattered">Shattered</option>
                     <option value="taklamakan">Taklamakan</option>
                     <option value="oldWorld">Old World</option>
+                    <option value="fractious">Fractious</option>
                   </optgroup>
                   <optgroup label="Specific">
                     <option value="africa-centric">Africa Centric</option>
@@ -1758,13 +1759,13 @@
               <label for="allowErosion" class="checkbox-label">Allow water erosion</label>
             </div>
             <div data-tip="Maximum number of iterations taken to resolve depressions. Increase if you have rivers ending nowhere">
-              Depressions filling max iterations:
+              <div>Depressions filling max iterations:</div>
               <input id="resolveDepressionsStepsInput" data-stored="resolveDepressionsSteps" type="range" min="0" max="500" value="250" />
               <input id="resolveDepressionsStepsOutput" data-stored="resolveDepressionsSteps" type="number" min="0" max="1000" value="250" />
             </div>
 
             <div data-tip="Depression depth to form a new lake. Increase to reduce number of lakes added by system">
-              Depression depth threshold:
+              <div>Depression depth threshold:</div>
               <input id="lakeElevationLimitInput" data-stored="lakeElevationLimit" type="range" min="0" max="80" value="20" />
               <input id="lakeElevationLimitOutput" data-stored="lakeElevationLimit" type="number" min="0" max="80" value="20" />
             </div>
@@ -2932,13 +2933,13 @@
 
       <div id="templateEditor" class="dialog stable" style="display: none">
         <div id="templateTop">
-          <i>Select template: </i
-          ><select id="templateSelect" style="width: 16em" data-prev="templateCustom" data-tip="Select base template">
+          <i>Select template: </i>
+          <select id="templateSelect" style="width: 16em" data-prev="templateCustom" data-tip="Select base template">
             <option value="custom" selected>Custom</option>
             <option value="volcano">Volcano</option>
             <option value="highIsland">High Island</option>
             <option value="lowIsland">Low Island</option>
-            <option value="continents">Two Continents</option>
+            <option value="continents">Continents</option>
             <option value="archipelago">Archipelago</option>
             <option value="atoll">Atoll</option>
             <option value="mediterranean">Mediterranean</option>
@@ -2948,17 +2949,20 @@
             <option value="shattered">Shattered</option>
             <option value="taklamakan">Taklamakan</option>
             <option value="oldWorld">Old World</option>
+            <option value="fractious">Fractious</option>
           </select>
         </div>
         <div id="templateTools">
-          <button id="templateHill" data-tip="Hill: small blob" class="noicon">H</button>
-          <button id="templatePit" data-tip="Pit: round depression" class="noicon">P</button>
-          <button id="templateRange" data-tip="Range: elongated elevation" class="noicon">R</button>
-          <button id="templateTrough" data-tip="Trough: elongated depression" class="noicon">T</button>
-          <button id="templateStrait" data-tip="Strait: centered vertical or horizontal depression" class="noicon">S</button>
-          <button id="templateAdd" data-tip="Add or subtract value from all heights in range" class="noicon">+</button>
-          <button id="templateMultiply" data-tip="Multiply all heights in range by factor" class="noicon">*</button>
-          <button id="templateSmooth" data-tip="Smooth the map replacing cell heights by an average values of its neighbors" class="noicon">~</button>
+          <button data-type="Hill" data-tip="Hill: small blob">H</button>
+          <button data-type="Pit" data-tip="Pit: round depression">P</button>
+          <button data-type="Range" data-tip="Range: elongated elevation">R</button>
+          <button data-type="Trough" data-tip="Trough: elongated depression">T</button>
+          <button data-type="Strait" data-tip="Strait: centered vertical or horizontal depression">S</button>
+          <button data-type="Mask" data-tip="Mask: lower cells near edges or in map center">M</button>
+          <button data-type="Invert" data-tip="Invert heightmap along the axes">I</button>
+          <button data-type="Add" data-tip="Add or subtract value from all heights in range">+</button>
+          <button data-type="Multiply" data-tip="Multiply all heights in range by factor">*</button>
+          <button data-type="Smooth" data-tip="Smooth the map replacing cell heights by an average values of its neighbors">~</button>
         </div>
         <div id="templateBody" data-changed="0" class="table" style="padding: 2px 0">
           <div data-type="Hill">
@@ -2973,7 +2977,7 @@
           </div>
         </div>
         <div id="templateBottom">
-          <button id="templateRun" data-tip="Apply current template" class="icon-play-circled2"></button>
+          <button id="templateRun" data-tip="Execute the template" class="icon-play-circled2"></button>
           <button id="templateUndo" data-tip="Undo the latest action" class="icon-ccw" disabled></button>
           <button id="templateRedo" data-tip="Redo the action" class="icon-cw" disabled></button>
           <button id="templateSave" data-tip="Download the template as a text file" class="icon-download"></button>
@@ -2985,6 +2989,9 @@
             onclick="openURL('https://cartographyassets.com/asset-category/specific-assets/azgaars-generator/templates')"
           ></button>
           <button id="templateTutorial" data-tip="Open Template Editor Tutorial" class="icon-info" onclick="wiki('Heightmap-template-editor')"></button>
+          <label data-tip="Set seed if you want template to generate the same heightmap each time. Leave blank to use random seed">
+            Seed: <input id="templateSeed" value="" type="number" min="1" max="999999999" step="1" style="width: 7em" />
+          </label>
         </div>
       </div>
 
@@ -6109,8 +6116,8 @@
     <script src="utils/unitUtils.js"></script>
 
     <script src="modules/voronoi.js"></script>
-    <script src="modules/heightmap-templates.js"></script>
-    <script src="modules/heightmap-generator.js"></script>
+    <script src="modules/heightmap-templates.js?v=21052020"></script>
+    <script src="modules/heightmap-generator.js?v=21052020"></script>
     <script src="modules/ocean-layers.js"></script>
     <script src="modules/river-generator.js"></script>
     <script src="modules/lakes.js"></script>
@@ -6140,7 +6147,7 @@
     <script defer src="modules/ui/editors.js?v=18052022"></script>
     <script defer src="modules/ui/tools.js"></script>
     <script defer src="modules/ui/world-configurator.js"></script>
-    <script defer src="modules/ui/heightmap-editor.js"></script>
+    <script defer src="modules/ui/heightmap-editor.js?v=21052020"></script>
     <script defer src="modules/ui/provinces-editor.js?v=19052022"></script>
     <script defer src="modules/ui/biomes-editor.js?v=18052022"></script>
     <script defer src="modules/ui/namesbase-editor.js"></script>

@@ -922,7 +922,7 @@ fieldset {
   display: inline-block;
 }
 
-body button.noicon {
+#templateTools > button {
   width: 1.8em;
   height: 1.6em;
   margin: 1px;
