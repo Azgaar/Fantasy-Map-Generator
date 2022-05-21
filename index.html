@@ -107,7 +107,7 @@
         }
       }
     </style>
-    <link rel="stylesheet" href="index.css?v=18052022" />
+    <link rel="stylesheet" href="index.css?v=21052022" />
     <link rel="stylesheet" href="icons.css" />
     <link rel="stylesheet" href="libs/jquery-ui.css" />
   </head>
@@ -1759,13 +1759,13 @@
               <label for="allowErosion" class="checkbox-label">Allow water erosion</label>
             </div>
             <div data-tip="Maximum number of iterations taken to resolve depressions. Increase if you have rivers ending nowhere">
-              Depressions filling max iterations:
+              <div>Depressions filling max iterations:</div>
               <input id="resolveDepressionsStepsInput" data-stored="resolveDepressionsSteps" type="range" min="0" max="500" value="250" />
               <input id="resolveDepressionsStepsOutput" data-stored="resolveDepressionsSteps" type="number" min="0" max="1000" value="250" />
             </div>
 
             <div data-tip="Depression depth to form a new lake. Increase to reduce number of lakes added by system">
-              Depression depth threshold:
+              <div>Depression depth threshold:</div>
               <input id="lakeElevationLimitInput" data-stored="lakeElevationLimit" type="range" min="0" max="80" value="20" />
               <input id="lakeElevationLimitOutput" data-stored="lakeElevationLimit" type="number" min="0" max="80" value="20" />
             </div>
@@ -2989,7 +2989,7 @@
           ></button>
           <button id="templateTutorial" data-tip="Open Template Editor Tutorial" class="icon-info" onclick="wiki('Heightmap-template-editor')"></button>
           <label data-tip="Set seed if you want template to generate the same heightmap each time. Leave blank to use random seed">
-            Seed: <input id="templateSeed" value="" type="number" min="1" max="999999999" step="1" />
+            Seed: <input id="templateSeed" value="" type="number" min="1" max="999999999" step="1" style="width: 7em" />
           </label>
         </div>
       </div>
