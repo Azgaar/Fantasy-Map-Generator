@@ -41,6 +41,8 @@ const heightmaps = [
   {id: "world-from-pacific", name: "World from Pacific"}
 ];
 
+let seed = Math.floor(Math.random() * 1e9);
+
 appendStyleSheet();
 insertEditorHtml();
 addListeners();
@@ -109,11 +111,18 @@ function appendStyleSheet() {
       color: #000;
     }
 
+    .heightmap-selection article > div > span.icon-cw:active {
+      color: #666;
+    }
+
     .heightmap-selection article > img {
       width: 100%;
       aspect-ratio: 16/9;
       border-radius: 8px;
       object-fit: cover;
+    }
+
+    img.heightmap-selection_precreated {
       filter: contrast(1.3);
     }
   `;
@@ -126,8 +135,12 @@ function appendStyleSheet() {
 function insertEditorHtml() {
   const templatesHtml = templates
     .map(({id, name}) => {
-      return /* html */ `<article data-id="${id}">
-      <img src="../../heightmaps/europe.png" alt="${name}" loading="lazy" />
+      Math.random = aleaPRNG(seed);
+      const heights = HeightmapGenerator.fromTemplate(id);
+      const dataUrl = drawHeights(heights);
+
+      return /* html */ `<article data-id="${id}" data-seed="${seed}">
+      <img src="${dataUrl}" alt="${name}" />
       <div>
         ${name}
         <span data-tip="Regenerate preview" class="icon-cw"></span>
@@ -139,7 +152,7 @@ function insertEditorHtml() {
   const heightmapsHtml = heightmaps
     .map(({id, name}) => {
       return /* html */ `<article data-id="${id}">
-      <img src="../../heightmaps/${id}.png" alt="${name}" loading="lazy" />
+      <img src="../../heightmaps/${id}.png" alt="${name}" class="heightmap-selection_precreated" />
       <div>${name}</div>
     </article>`;
     })
@@ -168,7 +181,11 @@ function insertEditorHtml() {
 function addListeners() {
   byId("heightmapSelection").on("click", event => {
     const article = event.target.closest("#heightmapSelection article");
-    if (article) setSelected(article.dataset.id);
+    if (!article) return;
+
+    const id = article.dataset.id;
+    if (event.target.matches("span.icon-cw")) regeneratePreview(article, id);
+    else setSelected(id);
   });
 }
 
@@ -180,4 +197,34 @@ function setSelected(id) {
   const $heightmapSelection = byId("heightmapSelection");
   $heightmapSelection.querySelector(".selected")?.classList?.remove("selected");
   $heightmapSelection.querySelector(`[data-id="${id}"]`)?.classList?.add("selected");
+}
+
+function drawHeights(heights) {
+  const canvas = document.createElement("canvas");
+  canvas.width = grid.cellsX;
+  canvas.height = grid.cellsY;
+  const ctx = canvas.getContext("2d");
+  const imageData = ctx.createImageData(grid.cellsX, grid.cellsY);
+
+  heights.forEach((height, i) => {
+    const h = height < 20 ? Math.max(height / 1.5, 0) : height;
+    const v = (h / 100) * 255;
+    imageData.data[i * 4] = v;
+    imageData.data[i * 4 + 1] = v;
+    imageData.data[i * 4 + 2] = v;
+    imageData.data[i * 4 + 3] = 255;
+  });
+
+  ctx.putImageData(imageData, 0, 0);
+  return canvas.toDataURL("image/png");
+}
+
+function regeneratePreview(article, id) {
+  seed = Math.floor(Math.random() * 1e9);
+  article.dataset.seed = seed;
+  Math.random = aleaPRNG(seed);
+
+  const heights = HeightmapGenerator.fromTemplate(id);
+  const dataUrl = drawHeights(heights);
+  article.querySelector("img").src = dataUrl;
 }
