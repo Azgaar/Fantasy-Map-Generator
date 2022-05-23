@@ -21,7 +21,7 @@ export function open() {
 }
 
 function insertEditorHtml() {
-  const editorHtml = /* html */ `<div id="statesEditor" class="dialog stable" style="display: none">
+  const editorHtml = /* html */ `<div id="statesEditor" class="dialog stable">
     <div id="statesHeader" class="header">
       <div style="left: 1.8em" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">State&nbsp;</div>
       <div style="left: 10.8em" data-tip="Click to sort by state form name" class="sortable alphabetically" data-sortby="form">Form&nbsp;</div>

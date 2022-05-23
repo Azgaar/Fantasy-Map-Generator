@@ -142,6 +142,7 @@ optionsContent.addEventListener("click", function (event) {
   else if (id === "optionsMapHistory") showSeedHistoryDialog();
   else if (id === "optionsCopySeed") copyMapURL();
   else if (id === "optionsEraRegenerate") regenerateEra();
+  else if (id === "templateSelect") openTemplateSelectionDialog();
   else if (id === "zoomExtentDefault") restoreDefaultZoomExtent();
   else if (id === "translateExtent") toggleTranslateExtent(event.target);
   else if (id === "speakerTest") testSpeaker();
@@ -621,6 +622,11 @@ function changeEra() {
   if (!eraInput.value) return;
   lock("era");
   options.era = eraInput.value;
+}
+
+async function openTemplateSelectionDialog() {
+  const HeightmapSelectionDialog = await import("../dynamic/heightmap-selection.js");
+  HeightmapSelectionDialog.open();
 }
 
 // remove all saved data from LocalStorage and reload the page

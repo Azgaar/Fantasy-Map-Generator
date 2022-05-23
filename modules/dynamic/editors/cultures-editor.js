@@ -24,7 +24,7 @@ export function open() {
 }
 
 function insertEditorHtml() {
-  const editorHtml = /* html */ `<div id="culturesEditor" class="dialog stable" style="display: none">
+  const editorHtml = /* html */ `<div id="culturesEditor" class="dialog stable">
     <div id="culturesHeader" class="header">
       <div style="left: 1.8em" data-tip="Click to sort by culture name" class="sortable alphabetically" data-sortby="name">Culture&nbsp;</div>
       <div style="left: 9.9em" data-tip="Click to sort by type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>

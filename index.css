@@ -1318,6 +1318,12 @@ div.slider .ui-slider-handle {
   scrollbar-width: thin;
 }
 
+.dialog::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+  background-color: transparent;
+}
+
 #alertMessage::-webkit-scrollbar,
 .table::-webkit-scrollbar,
 .matrix-table::-webkit-scrollbar {
@@ -1326,6 +1332,7 @@ div.slider .ui-slider-handle {
   background-color: transparent;
 }
 
+.dialog::-webkit-scrollbar-thumb,
 #alertMessage::-webkit-scrollbar-thumb,
 .table::-webkit-scrollbar-thumb,
 .matrix-table::-webkit-scrollbar-thumb {
@@ -1333,6 +1340,7 @@ div.slider .ui-slider-handle {
   border-radius: 6px;
 }
 
+.dialog::-webkit-scrollbar-thumb:hover,
 #alertMessage::-webkit-scrollbar-thumb:hover,
 .table::-webkit-scrollbar-thumb:hover,
 .matrix-table::-webkit-scrollbar-thumb:hover {
@@ -2363,3 +2371,8 @@ svg.button {
     display: none;
   }
 }
+
+
+img {}
+
+div {}
