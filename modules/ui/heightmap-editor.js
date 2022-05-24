@@ -991,6 +991,8 @@ function editHeightmap(options) {
 
       const seed = byId("templateSeed").value;
       if (seed) Math.random = aleaPRNG(seed);
+
+      HeightmapGenerator.resetHeights();
       restartHistory();
 
       for (const step of steps) {
