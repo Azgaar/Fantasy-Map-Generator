@@ -136,7 +136,10 @@ function insertEditorHtml() {
   const templatesHtml = templates
     .map(({id, name}) => {
       Math.random = aleaPRNG(seed);
+
+      HeightmapGenerator.resetHeights();
       const heights = HeightmapGenerator.fromTemplate(id);
+      HeightmapGenerator.cleanup();
       const dataUrl = drawHeights(heights);
 
       return /* html */ `<article data-id="${id}" data-seed="${seed}">
@@ -224,7 +227,9 @@ function regeneratePreview(article, id) {
   article.dataset.seed = seed;
   Math.random = aleaPRNG(seed);
 
+  HeightmapGenerator.resetHeights();
   const heights = HeightmapGenerator.fromTemplate(id);
+  HeightmapGenerator.cleanup();
   const dataUrl = drawHeights(heights);
   article.querySelector("img").src = dataUrl;
 }

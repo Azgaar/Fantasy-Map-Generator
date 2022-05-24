@@ -652,17 +652,24 @@ function editHeightmap() {
       if (Number.isNaN(operand)) return tip("Operand should be a number", false, "error");
       if ((operator === "add" || operator === "subtract") && !Number.isInteger(operand)) return tip("Operand should be an integer", false, "error");
 
+      HeightmapGenerator.setHeights(grid.cells.h);
+
       if (operator === "multiply") HeightmapGenerator.modify(range, 0, operand, 0);
       else if (operator === "divide") HeightmapGenerator.modify(range, 0, 1 / operand, 0);
       else if (operator === "add") HeightmapGenerator.modify(range, operand, 1, 0);
       else if (operator === "subtract") HeightmapGenerator.modify(range, -1 * operand, 1, 0);
       else if (operator === "exponent") HeightmapGenerator.modify(range, 0, 1, operand);
 
+      grid.cells.h = HeightmapGenerator.getHeights();
+      HeightmapGenerator.cleanup();
       updateHeightmap();
     }
 
     function smoothAllHeights() {
+      HeightmapGenerator.setHeights(grid.cells.h);
       HeightmapGenerator.smooth(4, 1.5);
+      grid.cells.h = HeightmapGenerator.getHeights();
+      HeightmapGenerator.cleanup();
       updateHeightmap();
     }
 
@@ -879,10 +886,7 @@ function editHeightmap() {
       const steps = body.querySelectorAll("div").length;
       const changed = +body.getAttribute("data-changed");
       const template = e.target.value;
-      if (!steps || !changed) {
-        changeTemplate(template);
-        return;
-      }
+      if (!steps || !changed) return changeTemplate(template);
 
       alertMessage.innerHTML = "Are you sure you want to select a different template? All changes will be lost.";
       $("#alert").dialog({
@@ -921,10 +925,10 @@ function editHeightmap() {
       const steps = byId("templateBody").querySelectorAll("#templateBody > div");
       if (!steps.length) return;
 
-      grid.cells.h = new Uint8Array(grid.cells.i.length); // clean all heights
-
       const seed = byId("templateSeed").value;
       if (seed) Math.random = aleaPRNG(seed);
+
+      HeightmapGenerator.resetHeights();
       restartHistory();
 
       for (const step of steps) {
@@ -948,9 +952,12 @@ function editHeightmap() {
         else if (type === "Multiply") HeightmapGenerator.modify(dist, 0, +count);
         else if (type === "Smooth") HeightmapGenerator.smooth(+count);
 
+        grid.cells.h = HeightmapGenerator.getHeights();
         updateHistory("noStat"); // update history on every step
       }
 
+      grid.cells.h = HeightmapGenerator.getHeights();
+      HeightmapGenerator.cleanup();
       updateStatistics();
       mockHeightmap();
       if (byId("preview")) drawHeightmapPreview(); // update heightmap preview if opened
