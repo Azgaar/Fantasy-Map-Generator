@@ -249,9 +249,9 @@ function testSpeaker() {
   speechSynthesis.speak(speaker);
 }
 
-function generateMapWithSeed(source) {
+function generateMapWithSeed() {
   if (optionsSeed.value == seed) return tip("The current map already has this seed", false, "error");
-  regeneratePrompt(source);
+  regeneratePrompt();
 }
 
 function showSeedHistoryDialog() {
@@ -280,7 +280,7 @@ function restoreSeed(id) {
   mapHeightInput.value = mapHistory[id].height;
   templateInput.value = mapHistory[id].template;
   if (locked("template")) unlock("template");
-  regeneratePrompt("seed history");
+  regeneratePrompt();
 }
 
 function restoreDefaultZoomExtent() {
@@ -513,7 +513,6 @@ function applyStoredOptions() {
 
 // randomize options if randomization is allowed (not locked or options='default')
 function randomizeOptions() {
-  Math.random = aleaPRNG(seed); // reset seed to initial one
   const randomize = new URL(window.location.href).searchParams.get("options") === "default"; // ignore stored options
 
   // 'Options' settings
@@ -638,17 +637,17 @@ function restoreDefaultOptions() {
 // Sticked menu Options listeners
 document.getElementById("sticked").addEventListener("click", function (event) {
   const id = event.target.id;
-  if (id === "newMapButton") regeneratePrompt("sticky button");
+  if (id === "newMapButton") regeneratePrompt();
   else if (id === "saveButton") showSavePane();
   else if (id === "exportButton") showExportPane();
   else if (id === "loadButton") showLoadPane();
   else if (id === "zoomReset") resetZoom(1000);
 });
 
-function regeneratePrompt(source) {
+function regeneratePrompt(options) {
   if (customization) return tip("New map cannot be generated when edit mode is active, please exit the mode and retry", false, "error");
   const workingTime = (Date.now() - last(mapHistory).created) / 60000; // minutes
-  if (workingTime < 5) return regenerateMap(source);
+  if (workingTime < 5) return regenerateMap(options);
 
   alertMessage.innerHTML = /* html */ `Are you sure you want to generate a new map?<br />
     All unsaved changes made to the current map will be lost`;
@@ -661,7 +660,7 @@ function regeneratePrompt(source) {
       },
       Generate: function () {
         closeDialogs();
-        regenerateMap(source);
+        regenerateMap(options);
       }
     }
   });

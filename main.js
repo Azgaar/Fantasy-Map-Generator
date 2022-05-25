@@ -628,18 +628,24 @@ void (function addDragToUpload() {
   });
 })();
 
-async function generate() {
+async function generate(options) {
   try {
     const timeStart = performance.now();
+    const {seed: precreatedSeed} = options || {};
+
     invokeActiveZooming();
-    generateSeed();
+    setSeed(precreatedSeed);
     INFO && console.group("Generated Map " + seed);
+
     applyMapSize();
     randomizeOptions();
-    placePoints();
-    calculateVoronoi(grid, grid.points);
-    drawScaleBar(scale);
+
+    if (shouldRegenerateGrid()) {
+      placePoints();
+      calculateVoronoi(grid, grid.points);
+    }
     await HeightmapGenerator.generate();
+
     markFeatures();
     markupGridOcean();
     addLakesInDeepDepressions();
@@ -677,6 +683,8 @@ async function generate() {
     Military.generate();
     Markers.generate();
     addZones();
+
+    drawScaleBar(scale);
     Names.getMapName();
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - timeStart) / 1000, 2)}s`);
@@ -711,18 +719,31 @@ async function generate() {
   }
 }
 
-// generate map seed (string!) or get it from URL searchParams
-function generateSeed() {
-  const first = !mapHistory[0];
-  const url = new URL(window.location.href);
-  const params = url.searchParams;
-  const urlSeed = url.searchParams.get("seed");
-  if (first && params.get("from") === "MFCG" && urlSeed.length === 13) seed = urlSeed.slice(0, -4);
-  else if (first && urlSeed) seed = urlSeed;
-  else if (optionsSeed.value && optionsSeed.value != seed) seed = optionsSeed.value;
-  else seed = Math.floor(Math.random() * 1e9).toString();
-  optionsSeed.value = seed;
+// set map seed (string!)
+function setSeed(precreatedSeed) {
+  if (!precreatedSeed) {
+    const first = !mapHistory[0];
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+    const urlSeed = url.searchParams.get("seed");
+    if (first && params.get("from") === "MFCG" && urlSeed.length === 13) seed = urlSeed.slice(0, -4);
+    else if (first && urlSeed) seed = urlSeed;
+    else if (optionsSeed.value && optionsSeed.value != seed) seed = optionsSeed.value;
+    else seed = generateSeed();
+  } else {
+    seed = precreatedSeed;
+  }
+
+  byId("optionsSeed").value = seed;
   Math.random = aleaPRNG(seed);
+}
+
+// check if new grid graph should be generated or we can use the existing one
+function shouldRegenerateGrid() {
+  if (!grid.spacing) return true;
+  const cellsDesired = +byId("pointsInput").dataset.cells;
+  const newSpacing = rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2);
+  return grid.spacing !== newSpacing;
 }
 
 // Place points to calculate Voronoi diagram
@@ -730,8 +751,9 @@ function placePoints() {
   TIME && console.time("placePoints");
   Math.random = aleaPRNG(seed); // reset PRNG
 
-  const cellsDesired = +pointsInput.dataset.cells;
-  const spacing = (grid.spacing = rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2)); // spacing between points before jirrering
+  const cellsDesired = +byId("pointsInput").dataset.cells;
+  const spacing = rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2); // spacing between points before jirrering
+  grid.spacing = spacing;
   grid.boundary = getBoundaryPoints(graphWidth, graphHeight, spacing);
   grid.points = getJitteredGrid(graphWidth, graphHeight, spacing); // jittered square grid
   grid.cellsX = Math.floor((graphWidth + 0.5 * spacing - 1e-10) / spacing);
@@ -1921,14 +1943,14 @@ function showStatistics() {
   INFO && console.log(stats);
 }
 
-const regenerateMap = debounce(async function () {
+const regenerateMap = debounce(async function (options) {
   WARN && console.warn("Generate new random map");
   showLoading();
   closeDialogs("#worldConfigurator, #options3d");
   customization = 0;
   resetZoom(1000);
   undraw();
-  await generate();
+  await generate(options);
   restoreLayers();
   if (ThreeD.options.isOn) ThreeD.redraw();
   if ($("#worldConfigurator").is(":visible")) editWorld();

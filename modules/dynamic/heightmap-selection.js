@@ -41,8 +41,6 @@ const heightmaps = [
   {id: "world-from-pacific", name: "World from Pacific"}
 ];
 
-let seed = Math.floor(Math.random() * 1e9);
-
 appendStyleSheet();
 insertEditorHtml();
 addListeners();
@@ -62,7 +60,20 @@ export function open() {
         $(this).dialog("close");
       },
       Select: function () {
-        $templateInput.value = getSelected();
+        const id = getSelected();
+        $templateInput.value = id;
+        lock("template");
+        $(this).dialog("close");
+      },
+      "New Map": function () {
+        const id = getSelected();
+        $templateInput.value = id;
+        lock("template");
+
+        const seed = getSeed();
+        Math.random = aleaPRNG(seed);
+
+        regeneratePrompt({seed});
         $(this).dialog("close");
       }
     }
@@ -133,13 +144,12 @@ function appendStyleSheet() {
 }
 
 function insertEditorHtml() {
+  const seed = generateSeed();
+
   const templatesHtml = templates
     .map(({id, name}) => {
       Math.random = aleaPRNG(seed);
-
-      HeightmapGenerator.resetHeights();
-      const heights = HeightmapGenerator.fromTemplate(id);
-      HeightmapGenerator.cleanup();
+      const heights = generateHeightmap(id);
       const dataUrl = drawHeights(heights);
 
       return /* html */ `<article data-id="${id}" data-seed="${seed}">
@@ -154,7 +164,7 @@ function insertEditorHtml() {
 
   const heightmapsHtml = heightmaps
     .map(({id, name}) => {
-      return /* html */ `<article data-id="${id}">
+      return /* html */ `<article data-id="${id}" data-seed="${seed}">
       <img src="../../heightmaps/${id}.png" alt="${name}" class="heightmap-selection_precreated" />
       <div>${name}</div>
     </article>`;
@@ -202,6 +212,10 @@ function setSelected(id) {
   $heightmapSelection.querySelector(`[data-id="${id}"]`)?.classList?.add("selected");
 }
 
+function getSeed() {
+  return byId("heightmapSelection").querySelector(".selected")?.dataset?.seed;
+}
+
 function drawHeights(heights) {
   const canvas = document.createElement("canvas");
   canvas.width = grid.cellsX;
@@ -222,14 +236,19 @@ function drawHeights(heights) {
   return canvas.toDataURL("image/png");
 }
 
-function regeneratePreview(article, id) {
-  seed = Math.floor(Math.random() * 1e9);
-  article.dataset.seed = seed;
-  Math.random = aleaPRNG(seed);
-
+function generateHeightmap(id) {
   HeightmapGenerator.resetHeights();
   const heights = HeightmapGenerator.fromTemplate(id);
   HeightmapGenerator.cleanup();
+  return heights;
+}
+
+function regeneratePreview(article, id) {
+  const seed = generateSeed();
+  article.dataset.seed = seed;
+  Math.random = aleaPRNG(seed);
+
+  const heights = generateHeightmap(id);
   const dataUrl = drawHeights(heights);
   article.querySelector("img").src = dataUrl;
 }

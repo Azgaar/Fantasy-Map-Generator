@@ -7,61 +7,6 @@ window.HeightmapGenerator = (function () {
   const getHeights = () => heights;
   const cleanup = () => (heights = null);
 
-  const generate = async function () {
-    resetHeights();
-
-    const input = document.getElementById("templateInput");
-    const selectedId = input.selectedIndex >= 0 ? input.selectedIndex : 0;
-    const type = input.options[selectedId]?.parentElement?.label;
-
-    if (type === "Specific") {
-      // pre-defined heightmap
-      TIME && console.time("defineHeightmap");
-      return new Promise(resolve => {
-        // create canvas where 1px correcponds to a cell
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        const {cellsX, cellsY} = grid;
-        canvas.width = cellsX;
-        canvas.height = cellsY;
-
-        // load heightmap into image and render to canvas
-        const img = new Image();
-        img.src = `./heightmaps/${input.value}.png`;
-        img.onload = () => {
-          ctx.drawImage(img, 0, 0, cellsX, cellsY);
-          const imageData = ctx.getImageData(0, 0, cellsX, cellsY);
-          assignColorsToHeight(imageData.data);
-          canvas.remove();
-          img.remove();
-
-          grid.cells.h = heights;
-          cleanup();
-          TIME && console.timeEnd("defineHeightmap");
-          resolve();
-        };
-      });
-    }
-
-    // heightmap template
-    TIME && console.time("generateHeightmap");
-    const template = input.value;
-    const templateString = HeightmapTemplates[template];
-    const steps = templateString.split("\n");
-
-    if (!steps.length) throw new Error(`Heightmap template: no steps. Template: ${template}. Steps: ${steps}`);
-
-    for (const step of steps) {
-      const elements = step.trim().split(" ");
-      if (elements.length < 2) throw new Error(`Heightmap template: steps < 2. Template: ${template}. Step: ${elements}`);
-      addStep(...elements);
-    }
-
-    grid.cells.h = heights;
-    cleanup();
-    TIME && console.timeEnd("generateHeightmap");
-  };
-
   const fromTemplate = template => {
     const templateString = HeightmapTemplates[template];
     const steps = templateString.split("\n");
@@ -75,6 +20,49 @@ window.HeightmapGenerator = (function () {
     }
 
     return heights;
+  };
+
+  const fromPrecreated = id => {
+    return new Promise(resolve => {
+      TIME && console.time("defineHeightmap");
+      // create canvas where 1px corresponts to a cell
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      const {cellsX, cellsY} = grid;
+      canvas.width = cellsX;
+      canvas.height = cellsY;
+
+      // load heightmap into image and render to canvas
+      const img = new Image();
+      img.src = `./heightmaps/${id}.png`;
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, cellsX, cellsY);
+        const imageData = ctx.getImageData(0, 0, cellsX, cellsY);
+        assignColorsToHeight(imageData.data);
+        canvas.remove();
+        img.remove();
+
+        grid.cells.h = heights;
+        cleanup();
+        TIME && console.timeEnd("defineHeightmap");
+        resolve();
+      };
+    });
+  };
+
+  const generate = async function () {
+    Math.random = aleaPRNG(seed);
+    resetHeights();
+    const id = byId("templateInput").value;
+
+    if (HeightmapTemplates[id]) {
+      TIME && console.time("generateHeightmap");
+      grid.cells.h = fromTemplate(id);
+      cleanup();
+      TIME && console.timeEnd("generateHeightmap");
+    } else {
+      return fromPrecreated(id);
+    }
   };
 
   function addStep(tool, a2, a3, a4, a5) {
