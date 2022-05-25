@@ -287,7 +287,6 @@ function restoreSeed(id) {
   byId("templateInput").value = template;
 
   if (locked("template")) unlock("template");
-
   regeneratePrompt();
 }
 
@@ -665,7 +664,7 @@ function restoreDefaultOptions() {
 // Sticked menu Options listeners
 document.getElementById("sticked").addEventListener("click", function (event) {
   const id = event.target.id;
-  if (id === "newMapButton") regeneratePrompt("sticky button");
+  if (id === "newMapButton") regeneratePrompt();
   else if (id === "saveButton") showSavePane();
   else if (id === "exportButton") showExportPane();
   else if (id === "loadButton") showLoadPane();
