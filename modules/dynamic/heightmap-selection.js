@@ -96,6 +96,19 @@ function appendStyleSheet() {
       justify-self: end;
     }
 
+    @media (max-width: 600px) {
+      .heightmap-selection_container {
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        grid-gap: 4px;
+      }
+    }
+
+    @media (min-width: 2000px) {
+      .heightmap-selection_container {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      }
+    }
+
     .heightmap-selection article {
       padding: 4px;
       border-radius: 8px;
@@ -303,6 +316,13 @@ function drawTemplatePreview(id) {
 
 async function drawPrecreatedHeightmap(id) {
   const heights = await HeightmapGenerator.fromPrecreated(graph, id);
+  const dataUrl = drawHeights(heights);
+  const article = byId("heightmapSelection").querySelector(`[data-id="${id}"]`);
+  article.querySelector("img").src = dataUrl;
+}
+
+async function drawPrecreatedHeightmap(id) {
+  const heights = await HeightmapGenerator.fromPrecreated(id);
   const dataUrl = drawHeights(heights);
   const article = byId("heightmapSelection").querySelector(`[data-id="${id}"]`);
   article.querySelector("img").src = dataUrl;
