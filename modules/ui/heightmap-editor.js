@@ -1369,10 +1369,12 @@ function editHeightmap() {
     grid.cells.h.forEach((height, i) => {
       const h = height < 20 ? Math.max(height / 1.5, 0) : height;
       const v = (h / 100) * 255;
-      imageData.data[i * 4] = v;
-      imageData.data[i * 4 + 1] = v;
-      imageData.data[i * 4 + 2] = v;
-      imageData.data[i * 4 + 3] = 255;
+
+      const n = i * 4;
+      imageData.data[n] = v;
+      imageData.data[n + 1] = v;
+      imageData.data[n + 2] = v;
+      imageData.data[n + 3] = 255;
     });
 
     ctx.putImageData(imageData, 0, 0);

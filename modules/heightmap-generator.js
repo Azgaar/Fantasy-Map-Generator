@@ -24,7 +24,6 @@ window.HeightmapGenerator = (function () {
 
   const fromPrecreated = id => {
     return new Promise(resolve => {
-      TIME && console.time("defineHeightmap");
       // create canvas where 1px corresponts to a cell
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
@@ -38,31 +37,26 @@ window.HeightmapGenerator = (function () {
       img.onload = () => {
         ctx.drawImage(img, 0, 0, cellsX, cellsY);
         const imageData = ctx.getImageData(0, 0, cellsX, cellsY);
-        assignColorsToHeight(imageData.data);
+        const heights = getHeightsFromImageData(imageData.data);
         canvas.remove();
         img.remove();
-
-        grid.cells.h = heights;
-        cleanup();
-        TIME && console.timeEnd("defineHeightmap");
-        resolve();
+        resolve(heights);
       };
     });
   };
 
   const generate = async function () {
     Math.random = aleaPRNG(seed);
-    resetHeights();
-    const id = byId("templateInput").value;
 
-    if (HeightmapTemplates[id]) {
-      TIME && console.time("generateHeightmap");
-      grid.cells.h = fromTemplate(id);
-      cleanup();
-      TIME && console.timeEnd("generateHeightmap");
-    } else {
-      return fromPrecreated(id);
-    }
+    TIME && console.time("defineHeightmap");
+    const id = byId("templateInput").value;
+    resetHeights();
+
+    const isTemplate = id in HeightmapTemplates;
+    grid.cells.h = isTemplate ? fromTemplate(id) : await fromPrecreated(id);
+
+    cleanup();
+    TIME && console.timeEnd("defineHeightmap");
   };
 
   function addStep(tool, a2, a3, a4, a5) {
@@ -491,13 +485,32 @@ window.HeightmapGenerator = (function () {
     return rand(min * length, max * length);
   }
 
-  function assignColorsToHeight(imageData) {
-    for (let i = 0; i < grid.cells.i.length; i++) {
+  function getHeightsFromImageData(imageData) {
+    const heights = new Uint8Array(grid.points.length);
+    for (let i = 0; i < heights.length; i++) {
       const lightness = imageData[i * 4] / 255;
       const powered = lightness < 0.2 ? lightness : 0.2 + (lightness - 0.2) ** 0.8;
       heights[i] = minmax(Math.floor(powered * 100), 0, 100);
     }
+    return heights;
   }
 
-  return {setHeights, resetHeights, getHeights, cleanup, generate, fromTemplate, addHill, addRange, addTrough, addStrait, addPit, smooth, modify, mask, invert};
+  return {
+    setHeights,
+    resetHeights,
+    getHeights,
+    cleanup,
+    generate,
+    fromTemplate,
+    fromPrecreated,
+    addHill,
+    addRange,
+    addTrough,
+    addStrait,
+    addPit,
+    smooth,
+    modify,
+    mask,
+    invert
+  };
 })();

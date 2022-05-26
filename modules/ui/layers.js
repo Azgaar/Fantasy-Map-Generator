@@ -151,9 +151,9 @@ function toggleHeight(event) {
 function drawHeightmap() {
   TIME && console.time("drawHeightmap");
   terrs.selectAll("*").remove();
-  const cells = pack.cells,
-    vertices = pack.vertices,
-    n = cells.i.length;
+
+  const {cells, vertices} = pack;
+  const n = cells.i.length;
   const used = new Uint8Array(cells.i.length);
   const paths = new Array(101).fill("");
 
@@ -161,6 +161,7 @@ function drawHeightmap() {
   const terracing = terrs.attr("terracing") / 10; // add additional shifted darker layer for pseudo-3d effect
   const skip = +terrs.attr("skip") + 1;
   const simplification = +terrs.attr("relax");
+
   switch (+terrs.attr("curve")) {
     case 0:
       lineGen.curve(d3.curveBasisClosed);

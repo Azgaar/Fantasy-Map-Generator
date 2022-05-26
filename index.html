@@ -24,29 +24,21 @@
         font-size: 10px;
         overflow: hidden;
       }
-      #map {
-        position: absolute;
+      #loading > * {
+        pointer-events: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
       }
-      #initial {
+      #loading > #loading-rose > use {
         fill: none;
         stroke: black;
-        pointer-events: none;
-      }
-      #init-rose {
         opacity: 0.7;
         transform-origin: center;
-        opacity: 0.7;
-        animation: 20s infinite spin;
+        animation: 20s linear 0s infinite spin;
       }
-      @keyframes spin {
-        0% {
-          transform: rotate(0deg);
-        }
-        100% {
-          transform: rotate(359deg);
-        }
-      }
-      #loading {
+      #loading > #loading-typography {
         opacity: 1;
         font-size: 11px;
         color: #fff5da;
@@ -54,11 +46,6 @@
         text-shadow: 0px 1px 4px #4c3a35;
         width: 80%;
         max-width: 600px;
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        pointer-events: none;
       }
       #loading-text {
         font-size: 1.8em;
@@ -106,6 +93,14 @@
           opacity: 0.1;
         }
       }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(359deg);
+        }
+      }
     </style>
     <link rel="stylesheet" href="index.css?v=21052022" />
     <link rel="stylesheet" href="icons.css" />
@@ -116,6 +111,7 @@
       id="map"
       width="100%"
       height="100%"
+      style="position: absolute"
       version="1.1"
       xmlns="http://www.w3.org/2000/svg"
       xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -267,18 +263,24 @@
       </defs>
       <g id="viewbox"></g>
       <g id="scaleBar"></g>
-      <g id="initial" opacity="1">
-        <rect x="-1%" y="-1%" width="102%" height="102%" fill="#466eab" />
-        <rect x="-1%" y="-1%" width="102%" height="102%" fill="url(#oceanic)" />
-        <use href="#rose" id="init-rose" x="50%" y="50%" />
-      </g>
     </svg>
 
     <div id="loading">
-      <div id="titleName"><t data-t="titleName">Azgaar's</t></div>
-      <div id="title"><t data-t="title">Fantasy Map Generator</t></div>
-      <div id="versionText"><t data-t="version">v. </t><span id="version"></span></div>
-      <p id="loading-text"><t data-t="loading">LOADING</t><span>.</span><span>.</span><span>.</span></p>
+      <svg width="100%" height="100%">
+        <rect x="-1%" y="-1%" width="102%" height="102%" fill="#466eab" />
+        <rect x="-1%" y="-1%" width="102%" height="102%" fill="url(#oceanic)" />
+      </svg>
+      <svg id="loading-rose" width="100%" height="100%" viewBox="0 0 700 700">
+        <use href="#rose" x="50%" y="50%" />
+      </svg>
+      <div id="loading-typography">
+        <div>
+          <div id="titleName"><t data-t="titleName">Azgaar's</t></div>
+          <div id="title"><t data-t="title">Fantasy Map Generator</t></div>
+          <div id="versionText"><t data-t="version">v. </t><span id="version"></span></div>
+          <p id="loading-text"><t data-t="loading">LOADING</t><span>.</span><span>.</span><span>.</span></p>
+        </div>
+      </div>
     </div>
 
     <div id="optionsContainer" style="opacity: 0">

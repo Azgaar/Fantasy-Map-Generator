@@ -201,9 +201,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       }
     });
-
-    d3.select("#loading-text").transition().duration(1000).style("opacity", 0);
-    d3.select("#init-rose").transition().duration(4000).style("opacity", 0);
   } else {
     hideLoading();
     await checkLoadParameters();
@@ -213,14 +210,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 function hideLoading() {
   d3.select("#loading").transition().duration(4000).style("opacity", 0);
-  d3.select("#initial").transition().duration(4000).attr("opacity", 0);
   d3.select("#optionsContainer").transition().duration(3000).style("opacity", 1);
   d3.select("#tooltip").transition().duration(4000).style("opacity", 1);
 }
 
 function showLoading() {
   d3.select("#loading").transition().duration(200).style("opacity", 1);
-  d3.select("#initial").transition().duration(200).attr("opacity", 1);
   d3.select("#optionsContainer").transition().duration(100).style("opacity", 0);
   d3.select("#tooltip").transition().duration(200).style("opacity", 0);
 }

@@ -89,8 +89,21 @@ function appendStyleSheet() {
 
     .heightmap-selection_container {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
       grid-gap: 8px;
+    }
+
+    @media (max-width: 600px) {
+      .heightmap-selection_container {
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        grid-gap: 4px;
+      }
+    }
+
+    @media (min-width: 2000px) {
+      .heightmap-selection_container {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      }
     }
 
     .heightmap-selection article {
@@ -128,13 +141,9 @@ function appendStyleSheet() {
 
     .heightmap-selection article > img {
       width: 100%;
-      aspect-ratio: 16/9;
+      aspect-ratio: ${graphWidth}/${graphHeight};
       border-radius: 8px;
-      object-fit: cover;
-    }
-
-    img.heightmap-selection_precreated {
-      filter: contrast(1.3);
+      object-fit: fill;
     }
   `;
 
@@ -153,21 +162,23 @@ function insertEditorHtml() {
       const dataUrl = drawHeights(heights);
 
       return /* html */ `<article data-id="${id}" data-seed="${seed}">
-      <img src="${dataUrl}" alt="${name}" />
-      <div>
-        ${name}
-        <span data-tip="Regenerate preview" class="icon-cw"></span>
-      </div>
-    </article>`;
+        <img src="${dataUrl}" alt="${name}" />
+        <div>
+          ${name}
+          <span data-tip="Regenerate preview" class="icon-cw"></span>
+        </div>
+      </article>`;
     })
     .join("");
 
   const heightmapsHtml = heightmaps
     .map(({id, name}) => {
+      drawPrecreatedHeightmap(id);
+
       return /* html */ `<article data-id="${id}" data-seed="${seed}">
-      <img src="../../heightmaps/${id}.png" alt="${name}" class="heightmap-selection_precreated" />
-      <div>${name}</div>
-    </article>`;
+        <img alt="${name}" />
+        <div>${name}</div>
+      </article>`;
     })
     .join("");
 
@@ -222,15 +233,19 @@ function drawHeights(heights) {
   canvas.height = grid.cellsY;
   const ctx = canvas.getContext("2d");
   const imageData = ctx.createImageData(grid.cellsX, grid.cellsY);
+  const scheme = getColorScheme();
+  const waterColor = scheme(1);
 
-  heights.forEach((height, i) => {
-    const h = height < 20 ? Math.max(height / 1.5, 0) : height;
-    const v = (h / 100) * 255;
-    imageData.data[i * 4] = v;
-    imageData.data[i * 4 + 1] = v;
-    imageData.data[i * 4 + 2] = v;
-    imageData.data[i * 4 + 3] = 255;
-  });
+  for (let i = 0; i < heights.length; i++) {
+    const color = heights[i] < 20 ? waterColor : scheme(1 - heights[i] / 100);
+    const {r, g, b} = d3.color(color);
+
+    const n = i * 4;
+    imageData.data[n] = r;
+    imageData.data[n + 1] = g;
+    imageData.data[n + 2] = b;
+    imageData.data[n + 3] = 255;
+  }
 
   ctx.putImageData(imageData, 0, 0);
   return canvas.toDataURL("image/png");
@@ -241,6 +256,13 @@ function generateHeightmap(id) {
   const heights = HeightmapGenerator.fromTemplate(id);
   HeightmapGenerator.cleanup();
   return heights;
+}
+
+async function drawPrecreatedHeightmap(id) {
+  const heights = await HeightmapGenerator.fromPrecreated(id);
+  const dataUrl = drawHeights(heights);
+  const article = byId("heightmapSelection").querySelector(`[data-id="${id}"]`);
+  article.querySelector("img").src = dataUrl;
 }
 
 function regeneratePreview(article, id) {
