@@ -209,9 +209,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 function hideLoading() {
-  d3.select("#loading").transition().duration(4000).style("opacity", 0);
-  d3.select("#optionsContainer").transition().duration(3000).style("opacity", 1);
-  d3.select("#tooltip").transition().duration(4000).style("opacity", 1);
+  d3.select("#loading").transition().duration(3000).style("opacity", 0);
+  d3.select("#optionsContainer").transition().duration(2000).style("opacity", 1);
+  d3.select("#tooltip").transition().duration(3000).style("opacity", 1);
 }
 
 function showLoading() {

@@ -3,7 +3,7 @@ function editWorld() {
   $("#worldConfigurator").dialog({
     title: "Configure World",
     resizable: false,
-    width: "42em",
+    width: "minmax(40em, 85vw)",
     buttons: {
       "Whole World": () => applyWorldPreset(100, 50),
       Northern: () => applyWorldPreset(33, 25),

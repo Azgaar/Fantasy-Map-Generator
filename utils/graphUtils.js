@@ -261,7 +261,7 @@ function drawCellsValue(data) {
 function drawPolygons(data) {
   const max = d3.max(data),
     min = d3.min(data),
-    scheme = getColorScheme();
+    scheme = getColorScheme(terrs.attr("scheme"));
   data = data.map(d => 1 - normalize(d, min, max));
 
   debug.selectAll("polygon").remove();

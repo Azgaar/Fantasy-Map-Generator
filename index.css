@@ -929,7 +929,7 @@ fieldset {
   padding: 0.1em 0.5em;
   float: left;
   font-size: 1.2em;
-  font-family: Copperplate, monospace;
+  font-family: monospace;
 }
 
 #brushesButtons > button {
@@ -1318,12 +1318,13 @@ div.slider .ui-slider-handle {
   scrollbar-width: thin;
 }
 
-.dialog::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-  background-color: transparent;
+@media screen and (max-width: 600px) {
+  .table {
+    max-width: unset;
+  }
 }
 
+.dialog::-webkit-scrollbar,
 #alertMessage::-webkit-scrollbar,
 .table::-webkit-scrollbar,
 .matrix-table::-webkit-scrollbar {
@@ -1347,24 +1348,23 @@ div.slider .ui-slider-handle {
   background: #666;
 }
 
-.overflow {
+.dialog {
   max-width: 93vw;
-  overflow: auto;
-  max-height: 75vh;
 }
 
-.overflow > div {
+.dialog > div {
   width: max-content;
 }
 
-div.header > div {
+div.header {
+  display: grid;
+  width: 0;
   font-weight: bold;
   font-size: 0.9em;
-  display: inline-block;
-  position: sticky;
-  white-space: nowrap;
-  overflow-x: hidden;
-  vertical-align: bottom;
+}
+
+div.header > div:first-child {
+  margin-left: 1.8em;
 }
 
 .sortable {
@@ -1661,11 +1661,6 @@ div.states > input.biomeName {
 
 div.states > div.biomeArea {
   width: 5em;
-}
-
-#militaryHeader > div,
-#regimentsHeader > div {
-  width: 5.2em;
 }
 
 #militaryBody div.states > input {
@@ -1986,12 +1981,9 @@ input[type="checkbox"] {
 }
 
 div.textual select,
-div.textual textarea {
-  font-family: Copperplate, monospace;
-}
-
+div.textual textarea,
 div.textual input {
-  font-family: Copperplate, monospace;
+  font-family: monospace;
 }
 
 div.textual fieldset {
@@ -2006,7 +1998,7 @@ div.textual span,
 }
 
 #namesbaseExamples {
-  font-family: Copperplate, monospace;
+  font-family: monospace;
   cursor: pointer;
 }
 
@@ -2071,7 +2063,7 @@ div.textual span,
   outline: 0;
   overflow-y: auto;
   padding: 0.6em;
-  font-family: Copperplate, monospace;
+  font-family: monospace;
   background-color: #fff;
   border: 1px solid #dedede;
   color: #000;
@@ -2100,6 +2092,7 @@ svg.button {
 #reliefIconsDiv {
   margin-top: 2px;
   padding: 2px;
+  width: 100%;
 }
 
 #reliefIconsDiv svg {
@@ -2345,17 +2338,6 @@ svg.button {
 }
 
 @media only screen and (max-width: 420px) {
-  #collapsible,
-  #options {
-    margin: 0;
-    border: 0;
-  }
-
-  #options {
-    height: 100vh;
-    width: 100vw;
-  }
-
   table {
     width: 100%;
   }
@@ -2368,8 +2350,3 @@ svg.button {
     display: none;
   }
 }
-
-
-img {}
-
-div {}

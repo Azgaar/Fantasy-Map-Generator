@@ -47,6 +47,9 @@ function overviewMilitary() {
   // update military types in header and tooltips
   function updateHeaders() {
     const header = document.getElementById("militaryHeader");
+    const units = options.military.length;
+    header.style.gridTemplateColumns = `8em repeat(${units}, 5.2em) 4em 7em 5em 6em`;
+
     header.querySelectorAll(".removable").forEach(el => el.remove());
     const insert = html => document.getElementById("militaryTotal").insertAdjacentHTML("beforebegin", html);
     for (const u of options.military) {

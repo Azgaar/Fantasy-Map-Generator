@@ -41,6 +41,7 @@ const heightmaps = [
   {id: "world-from-pacific", name: "World from Pacific"}
 ];
 
+const initialSeed = generateSeed();
 appendStyleSheet();
 insertEditorHtml();
 addListeners();
@@ -107,6 +108,14 @@ function appendStyleSheet() {
       }
     }
 
+    .heightmap-selection_options {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(50%, 200px));
+      grid-row-gap: 6px;
+      justify-items: start;
+      align-items: center;
+    }
+
     .heightmap-selection article {
       padding: 4px;
       border-radius: 8px;
@@ -154,15 +163,49 @@ function appendStyleSheet() {
 }
 
 function insertEditorHtml() {
-  const seed = generateSeed();
+  const heightmapSelectionHtml = /* html */ `<div id="heightmapSelection" class="dialog stable">
+    <div class="heightmap-selection">
+      <section>
+        <header><h1>Heightmap templates</h1></header>
+        <div class="heightmap-selection_container"></div>
+      </section>
+      <section>
+        <header><h1>Pre-created heightmaps</h1></header>
+        <div class="heightmap-selection_container"></div>
+      </section>
+      <section>
+        <header><h1>Options</h1></header>
+        <div class="heightmap-selection_options">
+          <div>
+            <input id="heightmapSelectionRenderOcean" class="checkbox" type="checkbox" />
+            <label for="heightmapSelectionRenderOcean" class="checkbox-label">Render ocean heights</label>
+          </div>
+          <div>
+            Color scheme
+            <select id="heightmapSelectionColorScheme">
+              <option value="bright" selected>Bright</option>
+              <option value="light">Light</option>
+              <option value="green">Green</option>
+              <option value="monochrome">Monochrome</option>
+            </select>
+          </div>
+          <button data-tip="Open Template Editor" id="heightmapSelectionEditTemplates">Edit Templates</button>
+          <button data-tip="Open Image Converter" id="heightmapSelectionImportHeightmap">Import Heightmap</button>
+        </div>
+      </section>
+    </div>
+  </div>`;
 
-  const templatesHtml = templates
+  byId("dialogs").insertAdjacentHTML("beforeend", heightmapSelectionHtml);
+  const sections = document.getElementsByClassName("heightmap-selection_container");
+
+  sections[0].innerHTML = templates
     .map(({id, name}) => {
-      Math.random = aleaPRNG(seed);
+      Math.random = aleaPRNG(initialSeed);
       const heights = generateHeightmap(id);
       const dataUrl = drawHeights(heights);
 
-      return /* html */ `<article data-id="${id}" data-seed="${seed}">
+      return /* html */ `<article data-id="${id}" data-seed="${initialSeed}">
         <img src="${dataUrl}" alt="${name}" />
         <div>
           ${name}
@@ -172,35 +215,16 @@ function insertEditorHtml() {
     })
     .join("");
 
-  const heightmapsHtml = heightmaps
+  sections[1].innerHTML = heightmaps
     .map(({id, name}) => {
       drawPrecreatedHeightmap(id);
 
-      return /* html */ `<article data-id="${id}" data-seed="${seed}">
+      return /* html */ `<article data-id="${id}" data-seed="${initialSeed}">
         <img alt="${name}" />
         <div>${name}</div>
       </article>`;
     })
     .join("");
-
-  const heightmapSelectionHtml = /* html */ `<div id="heightmapSelection" class="dialog stable">
-    <div class="heightmap-selection">
-      <section>
-        <header><h1>Heightmap templates</h1></header>
-        <div class="heightmap-selection_container">
-          ${templatesHtml}
-        </div>
-      </section>
-      <section>
-        <header><h1>Pre-created heightmaps</h1></header>
-        <div class="heightmap-selection_container">
-          ${heightmapsHtml}
-        </div>
-      </section>
-    </div>
-  </div>`;
-
-  byId("dialogs").insertAdjacentHTML("beforeend", heightmapSelectionHtml);
 }
 
 function addListeners() {
@@ -209,9 +233,16 @@ function addListeners() {
     if (!article) return;
 
     const id = article.dataset.id;
-    if (event.target.matches("span.icon-cw")) regeneratePreview(article, id);
-    else setSelected(id);
+    if (event.target.matches("span.icon-cw")) {
+      const seed = generateSeed();
+      article.dataset.seed = seed;
+      Math.random = aleaPRNG(seed);
+      drawTemplatePreview(id);
+    } else setSelected(id);
   });
+
+  byId("heightmapSelectionRenderOcean").on("change", redrawAll);
+  byId("heightmapSelectionColorScheme").on("change", redrawAll);
 }
 
 function getSelected() {
@@ -234,11 +265,14 @@ function drawHeights(heights) {
   canvas.height = grid.cellsY;
   const ctx = canvas.getContext("2d");
   const imageData = ctx.createImageData(grid.cellsX, grid.cellsY);
-  const scheme = getColorScheme();
-  const waterColor = scheme(1);
+
+  const schemeId = byId("heightmapSelectionColorScheme").value;
+  const scheme = getColorScheme(schemeId);
+  const renderOcean = byId("heightmapSelectionRenderOcean").checked;
+  const getHeight = height => (height < 20 ? (renderOcean ? height : 0) : height);
 
   for (let i = 0; i < heights.length; i++) {
-    const color = heights[i] < 20 ? waterColor : scheme(1 - heights[i] / 100);
+    const color = scheme(1 - getHeight(heights[i]) / 100);
     const {r, g, b} = d3.color(color);
 
     const n = i * 4;
@@ -259,6 +293,13 @@ function generateHeightmap(id) {
   return heights;
 }
 
+function drawTemplatePreview(id) {
+  const heights = generateHeightmap(id);
+  const dataUrl = drawHeights(heights);
+  const article = byId("heightmapSelection").querySelector(`[data-id="${id}"]`);
+  article.querySelector("img").src = dataUrl;
+}
+
 async function drawPrecreatedHeightmap(id) {
   const heights = await HeightmapGenerator.fromPrecreated(id);
   const dataUrl = drawHeights(heights);
@@ -266,12 +307,14 @@ async function drawPrecreatedHeightmap(id) {
   article.querySelector("img").src = dataUrl;
 }
 
-function regeneratePreview(article, id) {
-  const seed = generateSeed();
-  article.dataset.seed = seed;
-  Math.random = aleaPRNG(seed);
+function redrawAll() {
+  const articles = byId("heightmapSelection").querySelectorAll(`article`);
+  for (const article of articles) {
+    const {id, seed} = article.dataset;
+    Math.random = aleaPRNG(seed);
 
-  const heights = generateHeightmap(id);
-  const dataUrl = drawHeights(heights);
-  article.querySelector("img").src = dataUrl;
+    const isTemplate = id in HeightmapTemplates;
+    if (isTemplate) drawTemplatePreview(id);
+    else drawPrecreatedHeightmap(id);
+  }
 }

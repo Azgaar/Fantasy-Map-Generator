@@ -1896,115 +1896,117 @@
 
     <div id="dialogs">
       <div id="worldConfigurator" class="dialog stable" style="display: none">
-        <div id="worldControls">
-          <div>
-            <i data-locked="0" id="lock_temperatureEquator" class="icon-lock-open"></i>
-            <label data-tip="Set temperature at equator">
-              <i>Equator:</i>
-              <input id="temperatureEquatorInput" data-stored="temperatureEquator" type="number" min="-50" max="50" />°C =
-              <span id="temperatureEquatorF"></span>°F
-              <input id="temperatureEquatorOutput" data-stored="temperatureEquator" type="range" min="-50" max="50" />
-            </label>
-          </div>
-          <div>
-            <i data-locked="0" id="lock_temperaturePole" class="icon-lock-open"></i>
-            <label data-tip="Set temperature near poles">
-              <i>Poles:</i>
-              <input id="temperaturePoleInput" data-stored="temperaturePole" type="number" min="-50" max="50" />°C = <span id="temperaturePoleF"></span>°F
-              <input id="temperaturePoleOutput" data-stored="temperaturePole" type="range" min="-50" max="50" />
-            </label>
-          </div>
-          <div>
-            <i data-locked="0" id="lock_mapSize" class="icon-lock-open"></i>
-            <label data-tip="Set map size relative to the world size">
-              <i>Map size:</i>
-              <input id="mapSizeInput" data-stored="mapSize" type="number" min="1" max="100" />%
-              <input id="mapSizeOutput" data-stored="mapSize" type="range" min="1" max="100" />
-            </label>
-          </div>
-          <div>
-            <i data-locked="0" id="lock_latitude" class="icon-lock-open"></i>
-            <label data-tip="Set a North-South map shift">
-              <i>Latitudes:</i>
-              <input id="latitudeInput" data-stored="latitude" type="number" min="0" max="100" step="1" />
-              <br /><i>N</i><input id="latitudeOutput" data-stored="latitude" type="range" min="0" max="100" step="1" style="width: 10.3em" /><i>S</i>
-            </label>
+        <div>
+          <div id="worldControls">
+            <div>
+              <i data-locked="0" id="lock_temperatureEquator" class="icon-lock-open"></i>
+              <label data-tip="Set temperature at equator">
+                <i>Equator:</i>
+                <input id="temperatureEquatorInput" data-stored="temperatureEquator" type="number" min="-50" max="50" />°C =
+                <span id="temperatureEquatorF"></span>°F
+                <input id="temperatureEquatorOutput" data-stored="temperatureEquator" type="range" min="-50" max="50" />
+              </label>
+            </div>
+            <div>
+              <i data-locked="0" id="lock_temperaturePole" class="icon-lock-open"></i>
+              <label data-tip="Set temperature near poles">
+                <i>Poles:</i>
+                <input id="temperaturePoleInput" data-stored="temperaturePole" type="number" min="-50" max="50" />°C = <span id="temperaturePoleF"></span>°F
+                <input id="temperaturePoleOutput" data-stored="temperaturePole" type="range" min="-50" max="50" />
+              </label>
+            </div>
+            <div>
+              <i data-locked="0" id="lock_mapSize" class="icon-lock-open"></i>
+              <label data-tip="Set map size relative to the world size">
+                <i>Map size:</i>
+                <input id="mapSizeInput" data-stored="mapSize" type="number" min="1" max="100" />%
+                <input id="mapSizeOutput" data-stored="mapSize" type="range" min="1" max="100" />
+              </label>
+            </div>
+            <div>
+              <i data-locked="0" id="lock_latitude" class="icon-lock-open"></i>
+              <label data-tip="Set a North-South map shift">
+                <i>Latitudes:</i>
+                <input id="latitudeInput" data-stored="latitude" type="number" min="0" max="100" step="1" />
+                <br /><i>N</i><input id="latitudeOutput" data-stored="latitude" type="range" min="0" max="100" step="1" style="width: 10.3em" /><i>S</i>
+              </label>
+            </div>
+
+            <div>
+              <label data-tip="Set precipitation - water amount clouds can bring. Defines rivers and biomes generation">
+                <i data-locked="0" id="lock_prec" class="icon-lock-open"></i>
+                <i>Precipitation:</i>
+                <input id="precInput" data-stored="prec" type="number" />%
+                <input id="precOutput" data-stored="prec" type="range" min="0" max="500" value="50" />
+              </label>
+            </div>
+            <div data-tip="Canvas size. Can be changed in general options on new map generation">
+              <i>Canvas size:</i><br />
+              <span id="mapSize"></span> px = <span id="mapSizeFriendly"></span>
+            </div>
+            <div>
+              <i data-tip="Length of Meridian. Almost half of the equator length">Meridian length:</i><br />
+              <span id="meridianLength" data-tip="Length of Meridian in pixels"></span> px =
+              <span id="meridianLengthFriendly" data-tip="Length of Meridian is friendly units (depends on user configuration)"></span>
+              <span id="meridianLengthEarth" data-tip="Fantasy world Meridian length relative to real-world Earth (20k km)"></span>
+            </div>
+            <div data-tip="Map coordinates on globe"><i>Coords:</i> <span id="mapCoordinates"></span></div>
           </div>
 
-          <div>
-            <label data-tip="Set precipitation - water amount clouds can bring. Defines rivers and biomes generation">
-              <i data-locked="0" id="lock_prec" class="icon-lock-open"></i>
-              <i>Precipitation:</i>
-              <input id="precInput" data-stored="prec" type="number" />%
-              <input id="precOutput" data-stored="prec" type="range" min="0" max="500" value="50" />
-            </label>
-          </div>
-          <div data-tip="Canvas size. Can be changed in general options on new map generation">
-            <i>Canvas size:</i><br />
-            <span id="mapSize"></span> px = <span id="mapSizeFriendly"></span>
-          </div>
-          <div>
-            <i data-tip="Length of Meridian. Almost half of the equator length">Meridian length:</i><br />
-            <span id="meridianLength" data-tip="Length of Meridian in pixels"></span> px =
-            <span id="meridianLengthFriendly" data-tip="Length of Meridian is friendly units (depends on user configuration)"></span>
-            <span id="meridianLengthEarth" data-tip="Fantasy world Meridian length relative to real-world Earth (20k km)"></span>
-          </div>
-          <div data-tip="Map coordinates on globe"><i>Coords:</i> <span id="mapCoordinates"></span></div>
+          <svg id="globe" width="22em" height="22em" viewBox="-20 -25 240 240">
+            <defs>
+              <linearGradient id="temperatureGradient" x1="0" x2="0" y1="0" y2="1">
+                <stop class="tempGradient90" offset="0%" stop-color="blue" />
+                <stop class="tempGradient60" offset="16.6%" stop-color="green" />
+                <stop class="tempGradient30" offset="33.3%" stop-color="yellow" />
+                <stop class="tempGradient0" offset="50%" stop-color="red" />
+                <stop class="tempGradient30" offset="66.6%" stop-color="yellow" />
+                <stop class="tempGradient60" offset="83.3%" stop-color="green" />
+                <stop class="tempGradient90" offset="100%" stop-color="blue" />
+              </linearGradient>
+            </defs>
+            <g id="globeNoteLines">
+              <line x1="5" x2="220" y1="0" y2="0" />
+              <line x1="5" x2="220" y1="13" y2="13" />
+              <line x1="5" x2="220" y1="49.5" y2="49.5" />
+              <line x1="-5" x2="220" y1="100" y2="100" />
+              <line x1="5" x2="220" y1="150.5" y2="150.5" />
+              <line x1="5" x2="220" y1="187" y2="187" />
+              <line x1="5" x2="220" y1="200" y2="200" />
+            </g>
+            <g id="globeWindArrows" data-tip="Click to change wind direction" stroke-linejoin="round">
+              <circle cx="210" cy="6" r="12" />
+              <path data-tier="0" d="M210,11 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(225 210 6)" />
+              <circle cx="210" cy="30" r="12" />
+              <path data-tier="1" d="M210,35 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(45 210 30)" />
+              <circle cx="210" cy="75" r="12" />
+              <path data-tier="2" d="M210,80 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(225 210 75)" />
+              <circle cx="210" cy="130" r="12" />
+              <path data-tier="3" d="M210,135 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(315 210 130)" />
+              <circle cx="210" cy="173" r="12" />
+              <path data-tier="4" d="M210,178 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(135 210 173)" />
+              <circle cx="210" cy="194" r="12" />
+              <path data-tier="5" d="M210,199 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(315 210 194)" />
+            </g>
+            <g id="globaAxisLabels">
+              <text x="82%" y="-4%">wind</text>
+              <text x="-8%" y="-4%">latitude</text>
+            </g>
+            <g id="globeLatLabels">
+              <text x="-15" y="5">90°</text>
+              <text x="-15" y="18">60°</text>
+              <text x="-15" y="53">30°</text>
+              <text x="-15" y="103">0°</text>
+              <text x="-15" y="153">30°</text>
+              <text x="-15" y="190">60°</text>
+              <text x="-15" y="204">90°</text>
+            </g>
+            <circle id="globeOutline" cx="100" cy="100" r="100" />
+            <line id="globeEquator" x1="1" x2="199" y1="100" y2="100" />
+            <path id="globeGraticule" />
+            <path id="globeArea" />
+          </svg>
         </div>
-
-        <svg id="globe" width="22em" height="22em" viewBox="-20 -25 240 240">
-          <defs>
-            <linearGradient id="temperatureGradient" x1="0" x2="0" y1="0" y2="1">
-              <stop class="tempGradient90" offset="0%" stop-color="blue" />
-              <stop class="tempGradient60" offset="16.6%" stop-color="green" />
-              <stop class="tempGradient30" offset="33.3%" stop-color="yellow" />
-              <stop class="tempGradient0" offset="50%" stop-color="red" />
-              <stop class="tempGradient30" offset="66.6%" stop-color="yellow" />
-              <stop class="tempGradient60" offset="83.3%" stop-color="green" />
-              <stop class="tempGradient90" offset="100%" stop-color="blue" />
-            </linearGradient>
-          </defs>
-          <g id="globeNoteLines">
-            <line x1="5" x2="220" y1="0" y2="0" />
-            <line x1="5" x2="220" y1="13" y2="13" />
-            <line x1="5" x2="220" y1="49.5" y2="49.5" />
-            <line x1="-5" x2="220" y1="100" y2="100" />
-            <line x1="5" x2="220" y1="150.5" y2="150.5" />
-            <line x1="5" x2="220" y1="187" y2="187" />
-            <line x1="5" x2="220" y1="200" y2="200" />
-          </g>
-          <g id="globeWindArrows" data-tip="Click to change wind direction" stroke-linejoin="round">
-            <circle cx="210" cy="6" r="12" />
-            <path data-tier="0" d="M210,11 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(225 210 6)" />
-            <circle cx="210" cy="30" r="12" />
-            <path data-tier="1" d="M210,35 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(45 210 30)" />
-            <circle cx="210" cy="75" r="12" />
-            <path data-tier="2" d="M210,80 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(225 210 75)" />
-            <circle cx="210" cy="130" r="12" />
-            <path data-tier="3" d="M210,135 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(315 210 130)" />
-            <circle cx="210" cy="173" r="12" />
-            <path data-tier="4" d="M210,178 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(135 210 173)" />
-            <circle cx="210" cy="194" r="12" />
-            <path data-tier="5" d="M210,199 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(315 210 194)" />
-          </g>
-          <g id="globaAxisLabels">
-            <text x="82%" y="-4%">wind</text>
-            <text x="-8%" y="-4%">latitude</text>
-          </g>
-          <g id="globeLatLabels">
-            <text x="-15" y="5">90°</text>
-            <text x="-15" y="18">60°</text>
-            <text x="-15" y="53">30°</text>
-            <text x="-15" y="103">0°</text>
-            <text x="-15" y="153">30°</text>
-            <text x="-15" y="190">60°</text>
-            <text x="-15" y="204">90°</text>
-          </g>
-          <circle id="globeOutline" cx="100" cy="100" r="100" />
-          <line id="globeEquator" x1="1" x2="199" y1="100" y2="100" />
-          <path id="globeGraticule" />
-          <path id="globeArea" />
-        </svg>
       </div>
 
       <div id="labelEditor" class="dialog" style="display: none">
@@ -2651,7 +2653,7 @@
       </div>
 
       <div id="battleScreen" class="dialog stable" style="display: none">
-        <div id="battleBody" class="overflow">
+        <div id="battleBody">
           <template id="battlePhases_field">
             <button data-tip="Skirmish phase. Ranged units excel" data-phase="skirmish" class="icon-button-skirmish"></button>
             <button data-tip="Melee phase. Melee units excel" data-phase="melee" class="icon-button-melee"></button>
@@ -2806,15 +2808,13 @@
       </div>
 
       <div id="regimentSelectorScreen" class="dialog" style="display: none">
-        <div id="regimentSelectorHeader" class="header">
-          <div style="left: 1.2em" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
-          <div style="left: 9.2em" data-tip="Click to sort by regiment name" class="sortable alphabetically" data-sortby="regiment">Regiment&nbsp;</div>
-          <div style="left: 22.4em" data-tip="Click to sort by total military forces" class="sortable" data-sortby="total">Total&nbsp;</div>
-          <div style="left: 28em" data-tip="Click to sort by distance to the battlefield" class="sortable icon-sort-number-up" data-sortby="distance">
-            Distance&nbsp;
-          </div>
+        <div id="regimentSelectorHeader" class="header" style="grid-template-columns: 9em 13em 4em 6em">
+          <div data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
+          <div data-tip="Click to sort by regiment name" class="sortable alphabetically" data-sortby="regiment">Regiment&nbsp;</div>
+          <div data-tip="Click to sort by total military forces" class="sortable" data-sortby="total">Total&nbsp;</div>
+          <div data-tip="Click to sort by distance to the battlefield" class="sortable icon-sort-number-up" data-sortby="distance">Distance&nbsp;</div>
         </div>
-        <div id="regimentSelectorBody"></div>
+        <div id="regimentSelectorBody" class="table"></div>
       </div>
 
       <div id="brushesPanel" class="dialog stable" style="display: none">
@@ -3034,14 +3034,12 @@
       </div>
 
       <div id="biomesEditor" class="dialog stable" style="display: none">
-        <div id="biomesHeader" class="header">
-          <div style="left: 1.8em" data-tip="Click to sort by biome name" class="sortable alphabetically" data-sortby="name">Biome&nbsp;</div>
-          <div style="left: 12em" data-tip="Click to sort by biome habitability" class="sortable hide" data-sortby="habitability">Habitability&nbsp;</div>
-          <div style="left: 19em" data-tip="Click to sort by biome cells number" class="sortable hide icon-sort-number-down" data-sortby="cells">
-            Cells&nbsp;
-          </div>
-          <div style="left: 25em" data-tip="Click to sort by biome area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
-          <div style="left: 30em" data-tip="Click to sort by biome population" class="sortable hide" data-sortby="population">Population&nbsp;</div>
+        <div id="biomesHeader" class="header" style="grid-template-columns: 13em 7em 5em 5em 7em">
+          <div data-tip="Click to sort by biome name" class="sortable alphabetically" data-sortby="name">Biome&nbsp;</div>
+          <div data-tip="Click to sort by biome habitability" class="sortable hide" data-sortby="habitability">Habitability&nbsp;</div>
+          <div data-tip="Click to sort by biome cells number" class="sortable hide icon-sort-number-down" data-sortby="cells">Cells&nbsp;</div>
+          <div data-tip="Click to sort by biome area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
+          <div data-tip="Click to sort by biome population" class="sortable hide" data-sortby="population">Population&nbsp;</div>
         </div>
 
         <div id="biomesBody" class="table" data-type="absolute"></div>
@@ -3200,13 +3198,13 @@
       </div>
 
       <div id="provincesEditor" class="dialog stable" style="display: none">
-        <div id="provincesHeader" class="header">
-          <div style="left: 1.8em" data-tip="Click to sort by province name" class="sortable alphabetically" data-sortby="name">Province&nbsp;</div>
-          <div style="left: 10.8em" data-tip="Click to sort by province form name" class="sortable alphabetically hide" data-sortby="form">Form&nbsp;</div>
-          <div style="left: 18.8em" data-tip="Click to sort by province capital" class="sortable alphabetically hide" data-sortby="capital">Capital&nbsp;</div>
-          <div style="left: 25.3em" data-tip="Click to sort by province owner" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
-          <div style="left: 33.9em" data-tip="Click to sort by province area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
-          <div style="left: 39.3em" data-tip="Click to sort by province population" class="sortable hide" data-sortby="population">Population&nbsp;</div>
+        <div id="provincesHeader" class="header" style="grid-template-columns: 11em 8em 8em 8em 5em 8em">
+          <div data-tip="Click to sort by province name" class="sortable alphabetically" data-sortby="name">Province&nbsp;</div>
+          <div data-tip="Click to sort by province form name" class="sortable alphabetically hide" data-sortby="form">Form&nbsp;</div>
+          <div data-tip="Click to sort by province capital" class="sortable alphabetically hide" data-sortby="capital">Capital&nbsp;</div>
+          <div data-tip="Click to sort by province owner" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
+          <div data-tip="Click to sort by province area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
+          <div data-tip="Click to sort by province population" class="sortable hide" data-sortby="population">Population&nbsp;</div>
         </div>
 
         <div id="provincesBodySection" class="table" data-type="absolute"></div>
@@ -3262,11 +3260,9 @@
       </div>
 
       <div id="diplomacyEditor" class="dialog stable" style="display: none">
-        <div id="diplomacyHeader" class="header">
-          <div style="left: 0.2em" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">State&nbsp;</div>
-          <div style="left: 14.4em" data-tip="Click to sort by diplomatical relations" class="sortable alphabetically" data-sortby="relations">
-            Relations&nbsp;
-          </div>
+        <div id="diplomacyHeader" class="header" style="grid-template-columns: 15em 6em">
+          <div data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">State&nbsp;</div>
+          <div data-tip="Click to sort by diplomatical relations" class="sortable alphabetically" data-sortby="relations">Relations&nbsp;</div>
         </div>
 
         <div id="diplomacyBodySection" class="table"></div>
@@ -3408,12 +3404,12 @@
       </div>
 
       <div id="zonesEditor" class="dialog stable" style="display: none">
-        <div id="customHeader" class="header">
-          <div style="left: 1.8em" data-tip="Zone description">Description&nbsp;</div>
-          <div style="left: 13em" data-tip="Zone type">Type&nbsp;</div>
-          <div style="left: 20em" data-tip="Zone cells count" class="hide">Cells&nbsp;</div>
-          <div style="left: 26.1em" data-tip="Zone area" class="hide">Area&nbsp;</div>
-          <div style="left: 31.6em" data-tip="Zone population" class="hide">Population&nbsp;</div>
+        <div id="customHeader" class="header" style="grid-template-columns: 13em 7em 6em 5em 9em">
+          <div data-tip="Zone description">Description&nbsp;</div>
+          <div data-tip="Zone type">Type&nbsp;</div>
+          <div data-tip="Zone cells count" class="hide">Cells&nbsp;</div>
+          <div data-tip="Zone area" class="hide">Area&nbsp;</div>
+          <div data-tip="Zone population" class="hide">Population&nbsp;</div>
         </div>
 
         <div id="zonesBodySection" class="table" data-type="absolute"></div>
@@ -3487,17 +3483,13 @@
       </div>
 
       <div id="religionsEditor" class="dialog stable" style="display: none">
-        <div id="religionsHeader" class="header">
-          <div style="left: 1.8em" data-tip="Click to sort by religion name" class="sortable alphabetically" data-sortby="name">Religion&nbsp;</div>
-          <div style="left: 12.8em" data-tip="Click to sort by religion type" class="sortable alphabetically icon-sort-name-down" data-sortby="type">
-            Type&nbsp;
-          </div>
-          <div style="left: 18.4em" data-tip="Click to sort by religion form" class="sortable alphabetically hide" data-sortby="form">Form&nbsp;</div>
-          <div style="left: 25.6em" data-tip="Click to sort by supreme deity" class="sortable alphabetically hide" data-sortby="deity">Supreme Deity&nbsp;</div>
-          <div style="left: 42.2em" data-tip="Click to sort by religion area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
-          <div style="left: 47.5em" data-tip="Click to sort by number of believers (religion area population)" class="sortable hide" data-sortby="population">
-            Believers&nbsp;
-          </div>
+        <div id="religionsHeader" class="header" style="grid-template-columns: 13em 6em 7em 16em 5em 6em">
+          <div data-tip="Click to sort by religion name" class="sortable alphabetically" data-sortby="name">Religion&nbsp;</div>
+          <div data-tip="Click to sort by religion type" class="sortable alphabetically icon-sort-name-down" data-sortby="type">Type&nbsp;</div>
+          <div data-tip="Click to sort by religion form" class="sortable alphabetically hide" data-sortby="form">Form&nbsp;</div>
+          <div data-tip="Click to sort by supreme deity" class="sortable alphabetically hide" data-sortby="deity">Supreme Deity&nbsp;</div>
+          <div data-tip="Click to sort by religion area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
+          <div data-tip="Click to sort by number of believers (religion area population)" class="sortable hide" data-sortby="population">Believers&nbsp;</div>
         </div>
         <div id="religionsBody" class="table" data-type="absolute"></div>
 
@@ -3817,14 +3809,14 @@
       </div>
 
       <div id="burgsOverview" class="dialog stable" style="display: none">
-        <div id="burgsHeader" class="header">
-          <div style="left: 1.8em" data-tip="Click to sort by burg name" class="sortable alphabetically icon-sort-name-up" data-sortby="name">Burg&nbsp;</div>
-          <div style="left: 8em" data-tip="Click to sort by province name" class="sortable alphabetically" data-sortby="province">Province&nbsp;</div>
-          <div style="left: 14.2em" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
-          <div style="left: 20.2em" data-tip="Click to sort by culture name" class="sortable alphabetically" data-sortby="culture">Culture&nbsp;</div>
-          <div style="left: 27em" data-tip="Click to sort by burg population" class="sortable" data-sortby="population">Population&nbsp;</div>
-          <div style="left: 33.7em" data-tip="Click to sort by burg type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
-          <div id="burgsInvertLock" style="left: 38em; color: #6e5e66" data-tip="Click to invert lock for all burgs" class="icon-lock pointer"></div>
+        <div id="burgsHeader" class="header" style="grid-template-columns: 8em 6em 6em 7em 7em 4em 2em">
+          <div data-tip="Click to sort by burg name" class="sortable alphabetically icon-sort-name-up" data-sortby="name">Burg&nbsp;</div>
+          <div data-tip="Click to sort by province name" class="sortable alphabetically" data-sortby="province">Province&nbsp;</div>
+          <div data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
+          <div data-tip="Click to sort by culture name" class="sortable alphabetically" data-sortby="culture">Culture&nbsp;</div>
+          <div data-tip="Click to sort by burg population" class="sortable" data-sortby="population">Population&nbsp;</div>
+          <div data-tip="Click to sort by burg type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
+          <div id="burgsInvertLock" style="color: #6e5e66" data-tip="Click to invert lock for all burgs" class="icon-lock pointer"></div>
         </div>
 
         <div id="burgsBody" class="table"></div>
@@ -3858,15 +3850,13 @@
       </div>
 
       <div id="riversOverview" class="dialog stable" style="display: none">
-        <div id="riversHeader" class="header">
-          <div style="left: 1.3em" data-tip="Click to sort by river name" class="sortable alphabetically" data-sortby="name">River&nbsp;</div>
-          <div style="left: 8.6em" data-tip="Click to sort by river type name" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
-          <div style="left: 13em" data-tip="Click to sort by discharge (flux in m3/s)" class="sortable icon-sort-number-down" data-sortby="discharge">
-            Discharge&nbsp;
-          </div>
-          <div style="left: 19.3em" data-tip="Click to sort by river length" class="sortable" data-sortby="length">Length&nbsp;</div>
-          <div style="left: 24.4em" data-tip="Click to sort by river mouth width" class="sortable" data-sortby="width">Width&nbsp;</div>
-          <div style="left: 30em" data-tip="Click to sort by river basin" class="sortable alphabetically" data-sortby="basin">Basin&nbsp;</div>
+        <div id="riversHeader" class="header" style="grid-template-columns: 9em 4em 6em 6em 5em 9em">
+          <div data-tip="Click to sort by river name" class="sortable alphabetically" data-sortby="name">River&nbsp;</div>
+          <div data-tip="Click to sort by river type name" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
+          <div data-tip="Click to sort by discharge (flux in m3/s)" class="sortable icon-sort-number-down" data-sortby="discharge">Discharge&nbsp;</div>
+          <div data-tip="Click to sort by river length" class="sortable" data-sortby="length">Length&nbsp;</div>
+          <div data-tip="Click to sort by river mouth width" class="sortable" data-sortby="width">Width&nbsp;</div>
+          <div data-tip="Click to sort by river basin" class="sortable alphabetically" data-sortby="basin">Basin&nbsp;</div>
         </div>
 
         <div id="riversBody" class="table"></div>
@@ -3889,37 +3879,26 @@
       </div>
 
       <div id="militaryOverview" class="dialog stable" style="display: none">
-        <div class="overflow">
-          <div id="militaryHeader" class="header">
-            <div data-tip="State name. Click to sort" style="margin-left: 1.8em; width: 5.6em" class="sortable alphabetically" data-sortby="state">
-              State&nbsp;
-            </div>
-            <div
-              data-tip="Total military personnel (considering crew). Click to sort"
-              id="militaryTotal"
-              class="sortable icon-sort-number-down"
-              data-sortby="total"
-            >
-              Total&nbsp;
-            </div>
-            <div data-tip="State population. Click to sort" style="width: 6.5em; margin-left: -1em" class="sortable" data-sortby="population">
-              Population&nbsp;
-            </div>
-            <div
-              data-tip="Military personnel rate (% of state population). Depends on war alert. Click to sort"
-              style="width: 3.7em"
-              class="sortable"
-              data-sortby="rate"
-            >
-              Rate&nbsp;
-            </div>
-            <div data-tip="War Alert. Modifier to military forces number, depends of political situation. Click to sort" class="sortable" data-sortby="alert">
-              War Alert&nbsp;
-            </div>
+        <div id="militaryHeader" class="header">
+          <div data-tip="State name. Click to sort" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
+          <div
+            data-tip="Total military personnel (considering crew). Click to sort"
+            id="militaryTotal"
+            class="sortable icon-sort-number-down"
+            data-sortby="total"
+          >
+            Total&nbsp;
           </div>
-
-          <div id="militaryBody" data-type="absolute"></div>
+          <div data-tip="State population. Click to sort" class="sortable" data-sortby="population">Population&nbsp;</div>
+          <div data-tip="Military personnel rate (% of state population). Depends on war alert. Click to sort" class="sortable" data-sortby="rate">
+            Rate&nbsp;
+          </div>
+          <div data-tip="War Alert. Modifier to military forces number, depends of political situation. Click to sort" class="sortable" data-sortby="alert">
+            War Alert&nbsp;
+          </div>
         </div>
+
+        <div id="militaryBody" class="table" data-type="absolute"></div>
 
         <div id="militaryFooter" class="totalLine">
           <div data-tip="States number" style="margin-left: 4px">States:&nbsp;<span id="militaryFooterStates">0</span></div>
@@ -3941,25 +3920,20 @@
       </div>
 
       <div id="regimentsOverview" class="dialog stable" style="display: none">
-        <div class="overflow">
-          <div id="regimentsHeader" class="header">
-            <div data-tip="State name. Click to sort" style="left: 1.8em; width: 9em" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
-            <div data-tip="Regiment emblem and name. Click to sort by name" style="width: 12em" class="sortable alphabetically" data-sortby="name">
-              Name&nbsp;
-            </div>
-            <div
-              data-tip="Total military personnel (not considering crew). Click to sort"
-              style="margin-left: 0.8em"
-              id="regimentsTotal"
-              class="sortable icon-sort-number-down"
-              data-sortby="total"
-            >
-              Total&nbsp;
-            </div>
+        <div id="regimentsHeader" class="header">
+          <div data-tip="State name. Click to sort" class="sortable alphabetically" data-sortby="state">State&nbsp;</div>
+          <div data-tip="Regiment emblem and name. Click to sort by name" class="sortable alphabetically" data-sortby="name">Name&nbsp;</div>
+          <div
+            data-tip="Total military personnel (not considering crew). Click to sort"
+            id="regimentsTotal"
+            class="sortable icon-sort-number-down"
+            data-sortby="total"
+          >
+            Total&nbsp;
           </div>
-
-          <div id="regimentsBody" data-type="absolute"></div>
         </div>
+
+        <div id="regimentsBody" class="table" data-type="absolute"></div>
 
         <div id="regimentsBottom">
           <button id="regimentsOverviewRefresh" data-tip="Refresh the overview screen" class="icon-cw"></button>
@@ -3998,10 +3972,10 @@
       </div>
 
       <div id="markersOverview" class="dialog stable" style="display: none">
-        <div id="markersHeader" class="header">
-          <div style="left: 1.8em" data-tip="Click to sort by marker type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
-          <div id="markersInverPin" style="left: 14.9em; color: #6e5e66" data-tip="Click to invert pin state for all markers" class="icon-pin pointer"></div>
-          <div id="markersInverLock" style="left: 16.1em; color: #6e5e66" data-tip="Click to invert lock state for all markers" class="icon-lock pointer"></div>
+        <div id="markersHeader" class="header" style="grid-template-columns: 15em 1em 3em">
+          <div data-tip="Click to sort by marker type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
+          <div id="markersInverPin" style="color: #6e5e66" data-tip="Click to invert pin state for all markers" class="icon-pin pointer"></div>
+          <div id="markersInverLock" style="color: #6e5e66" data-tip="Click to invert lock state for all markers" class="icon-lock pointer"></div>
         </div>
 
         <div id="markersBody" class="table"></div>
@@ -4026,7 +4000,7 @@
           <span id="styleSaverTip" data-tip="Shows whether there is already a preset with this name" class="italic"></span>
         </div>
 
-        <div id="styleSaverBody" style="padding: 2px 0">
+        <div id="styleSaverBody" style="padding: 2px 0; width: 100%">
           <span>Style JSON:</span>
           <textarea
             id="styleSaverJSON"
@@ -4076,7 +4050,9 @@
             <option value="fontURL">Font URL</option>
           </select>
           <input id="addFontNameInput" placeholder="font family" style="width: 15em" />
-          <input id="addFontURLInput" placeholder="font file URL" style="width: 22.6em; margin-top: 0.1em; display: none" />
+          <div>
+            <input id="addFontURLInput" placeholder="font file URL" style="width: 22.6em; margin-top: 0.1em; display: none" />
+          </div>
         </div>
       </div>
 
@@ -4301,11 +4277,12 @@
       </div>
 
       <div id="resampleDialog" style="display: none" class="dialog">
-        <p style="font-weight: bold">
+        <div style="width: 34em; max-width: 80vw; font-weight: bold; padding: 6px">
           This operation is destructive and irreversible. It will create a completely new map based on the current one. Don't forget to save the current project
           as a .map file first!
-        </p>
-        <div style="display: grid; grid-template-columns: 2fr 3fr; grid-template-rows: repeat(4, 1fr); align-items: center; padding-left: 0.5em">
+        </div>
+
+        <div style="width: auto; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(5, 1fr); align-items: center; padding: 0.5em">
           <div>Points number</div>
           <div>
             <input id="submapPointsInput" type="range" min="1" max="13" value="4" />
@@ -4339,7 +4316,8 @@
             <label for="submapMirrorV" class="checkbox-label">vertically</label>
           </div>
         </div>
-        <div id="submapPreview" style="border: 1px solid black; margin: 1em auto; overflow: hidden"></div>
+
+        <div id="submapPreview" style="border: 1px solid #666; margin: 1em auto; overflow: hidden; position: relative"></div>
       </div>
 
       <div id="submapOptionsDialog" style="display: none" class="dialog">

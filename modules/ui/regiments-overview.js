@@ -30,6 +30,9 @@ function overviewRegiments(state) {
   // update military types in header and tooltips
   function updateHeaders() {
     const header = document.getElementById("regimentsHeader");
+    const units = options.military.length;
+    header.style.gridTemplateColumns = `9em 13em repeat(${units}, 5.2em) 7em`;
+
     header.querySelectorAll(".removable").forEach(el => el.remove());
     const insert = html => document.getElementById("regimentsTotal").insertAdjacentHTML("beforebegin", html);
     for (const u of options.military) {

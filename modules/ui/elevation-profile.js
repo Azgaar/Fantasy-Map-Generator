@@ -109,7 +109,8 @@ function showElevationProfile(data, routeLen, isRiver) {
   draw();
 
   function downloadCSV() {
-    let data = "Point,X,Y,Cell,Height,Height value,Population,Burg,Burg population,Biome,Biome color,Culture,Culture color,Religion,Religion color,Province,Province color,State,State color\n"; // headers
+    let data =
+      "Point,X,Y,Cell,Height,Height value,Population,Burg,Burg population,Biome,Biome color,Culture,Culture color,Religion,Religion color,Province,Province color,State,State color\n"; // headers
 
     for (let k = 0; k < chartData.points.length; k++) {
       let cell = chartData.cell[k];
@@ -179,9 +180,20 @@ function showElevationProfile(data, routeLen, isRiver) {
       .attr("id", "elevationSVG")
       .attr("class", "epbackground");
     // arrow-head definition
-    chart.append("defs").append("marker").attr("id", "arrowhead").attr("orient", "auto").attr("markerWidth", "2").attr("markerHeight", "4").attr("refX", "0.1").attr("refY", "2").append("path").attr("d", "M0,0 V4 L2,2 Z").attr("fill", "darkgray");
+    chart
+      .append("defs")
+      .append("marker")
+      .attr("id", "arrowhead")
+      .attr("orient", "auto")
+      .attr("markerWidth", "2")
+      .attr("markerHeight", "4")
+      .attr("refX", "0.1")
+      .attr("refY", "2")
+      .append("path")
+      .attr("d", "M0,0 V4 L2,2 Z")
+      .attr("fill", "darkgray");
 
-    let colors = getColorScheme();
+    let colors = getColorScheme(terrs.attr("scheme"));
     const landdef = chart.select("defs").append("linearGradient").attr("id", "landdef").attr("x1", "0%").attr("y1", "0%").attr("x2", "0%").attr("y2", "100%");
 
     if (chartData.mah == chartData.mih) {
@@ -258,7 +270,24 @@ function showElevationProfile(data, routeLen, isRiver) {
       const populationDesc = rn(pop * populationRate);
 
       const provinceDesc = province ? ", " + pack.provinces[province].name : "";
-      const dataTip = biomesData.name[chartData.biome[k]] + provinceDesc + ", " + pack.states[state].name + ", " + pack.religions[religion].name + ", " + pack.cultures[culture].name + " (height: " + chartData.height[k] + " " + hu + ", population " + populationDesc + ", cell " + chartData.cell[k] + ")";
+      const dataTip =
+        biomesData.name[chartData.biome[k]] +
+        provinceDesc +
+        ", " +
+        pack.states[state].name +
+        ", " +
+        pack.religions[religion].name +
+        ", " +
+        pack.cultures[culture].name +
+        " (height: " +
+        chartData.height[k] +
+        " " +
+        hu +
+        ", population " +
+        populationDesc +
+        ", cell " +
+        chartData.cell[k] +
+        ")";
 
       g.append("rect").attr("stroke", c).attr("fill", c).attr("x", x).attr("y", y).attr("width", xscale(1)).attr("height", 15).attr("data-tip", dataTip);
     }
