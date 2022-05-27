@@ -1,6 +1,7 @@
 const initialSeed = generateSeed();
 let graph = getGraph(grid);
 
+const initialSeed = generateSeed();
 appendStyleSheet();
 insertHtml();
 addListeners();
@@ -316,6 +317,13 @@ function drawTemplatePreview(id) {
 
 async function drawPrecreatedHeightmap(id) {
   const heights = await HeightmapGenerator.fromPrecreated(graph, id);
+  const dataUrl = drawHeights(heights);
+  const article = byId("heightmapSelection").querySelector(`[data-id="${id}"]`);
+  article.querySelector("img").src = dataUrl;
+}
+
+function drawTemplatePreview(id) {
+  const heights = generateHeightmap(id);
   const dataUrl = drawHeights(heights);
   const article = byId("heightmapSelection").querySelector(`[data-id="${id}"]`);
   article.querySelector("img").src = dataUrl;
