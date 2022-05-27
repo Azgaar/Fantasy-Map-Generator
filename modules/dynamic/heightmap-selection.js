@@ -90,7 +90,7 @@ function appendStyleSheet() {
     .heightmap-selection_container {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      grid-gap: 8px;
+      grid-gap: 6px;
     }
 
     @media (max-width: 600px) {
@@ -103,6 +103,7 @@ function appendStyleSheet() {
     @media (min-width: 2000px) {
       .heightmap-selection_container {
         grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        grid-gap: 8px;
       }
     }
 
