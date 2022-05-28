@@ -124,7 +124,7 @@ function editHeightmap(options) {
     heightmapInfoX.innerHTML = rn(x);
     heightmapInfoY.innerHTML = rn(y);
     heightmapInfoCell.innerHTML = cell;
-    heightmapInfoHeight.innerHTML = /* html */ `${grid.cells.h[cell]} (${getHeight(grid.cells.h[cell])})`;
+    heightmapInfoHeight.innerHTML = `${grid.cells.h[cell]} (${getHeight(grid.cells.h[cell])})`;
     if (tooltip.dataset.main) showMainTip();
 
     // move radius circle if drag mode is active
