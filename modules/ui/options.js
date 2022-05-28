@@ -287,6 +287,7 @@ function restoreSeed(id) {
   byId("templateInput").value = template;
 
   if (locked("template")) unlock("template");
+
   regeneratePrompt();
 }
 
