@@ -3,7 +3,7 @@
 
 // fit full-screen map if window is resized
 window.addEventListener("resize", function (e) {
-  if (localStorage.getItem("mapWidth") && localStorage.getItem("mapHeight")) return;
+  if (stored("mapWidth") && stored("mapHeight")) return;
   mapWidthInput.value = window.innerWidth;
   mapHeightInput.value = window.innerHeight;
   changeMapSize();
@@ -414,7 +414,7 @@ document.querySelectorAll("[data-locked]").forEach(function (e) {
 // lock option
 function lock(id) {
   const input = document.querySelector('[data-stored="' + id + '"]');
-  if (input) localStorage.setItem(id, input.value);
+  if (input) store(id, input.value);
   const el = document.getElementById("lock_" + id);
   if (!el) return;
   el.dataset.locked = 1;
@@ -436,9 +436,14 @@ function locked(id) {
   return lockEl.dataset.locked == 1;
 }
 
-// check if option is stored in localStorage
-function stored(option) {
-  return localStorage.getItem(option);
+// return key value stored in localStorage or null
+function stored(key) {
+  return localStorage.getItem(key) || null;
+}
+
+// store key value in localStorage
+function store(key, value) {
+  return localStorage.setItem(key, value);
 }
 
 // assign skeaker behaviour
@@ -458,10 +463,10 @@ function speak(text) {
 }
 
 // apply drop-down menu option. If the value is not in options, add it
-function applyOption(select, id, name = id) {
-  const custom = !Array.from(select.options).some(o => o.value == id);
-  if (custom) select.options.add(new Option(name, id));
-  select.value = id;
+function applyOption($select, value, name = value) {
+  const isExisting = Array.from($select.options).some(o => o.value === value);
+  if (!isExisting) $select.options.add(new Option(name, value));
+  $select.value = value;
 }
 
 // show info about the generator in a popup

@@ -6,14 +6,14 @@ $("#exitCustomization").draggable({handle: "div"});
 $("#mapLayers").disableSelection();
 
 // remove glow if tip is aknowledged
-if (localStorage.getItem("disable_click_arrow_tooltip")) {
+if (stored("disable_click_arrow_tooltip")) {
   clearMainTip();
   optionsTrigger.classList.remove("glow");
 }
 
 // Show options pane on trigger click
 function showOptions(event) {
-  if (!localStorage.getItem("disable_click_arrow_tooltip")) {
+  if (!stored("disable_click_arrow_tooltip")) {
     clearMainTip();
     localStorage.setItem("disable_click_arrow_tooltip", true);
     optionsTrigger.classList.remove("glow");
@@ -81,12 +81,12 @@ async function showSupporters() {
 }
 
 // on any option or dialog change
-document.getElementById("options").addEventListener("change", checkIfStored);
-document.getElementById("dialogs").addEventListener("change", checkIfStored);
+document.getElementById("options").addEventListener("change", storeValueIfRequired);
+document.getElementById("dialogs").addEventListener("change", storeValueIfRequired);
 document.getElementById("options").addEventListener("input", updateOutputToFollowInput);
 document.getElementById("dialogs").addEventListener("input", updateOutputToFollowInput);
 
-function checkIfStored(ev) {
+function storeValueIfRequired(ev) {
   if (ev.target.dataset.stored) lock(ev.target.dataset.stored);
 }
 
@@ -142,7 +142,7 @@ optionsContent.addEventListener("click", function (event) {
   else if (id === "optionsMapHistory") showSeedHistoryDialog();
   else if (id === "optionsCopySeed") copyMapURL();
   else if (id === "optionsEraRegenerate") regenerateEra();
-  else if (id === "templateSelectButton") openTemplateSelectionDialog();
+  else if (id === "templateInput") openTemplateSelectionDialog();
   else if (id === "zoomExtentDefault") restoreDefaultZoomExtent();
   else if (id === "translateExtent") toggleTranslateExtent(event.target);
   else if (id === "speakerTest") testSpeaker();
@@ -233,7 +233,7 @@ const voiceInterval = setInterval(function () {
   voices.forEach((voice, i) => {
     select.options.add(new Option(voice.name, i, false));
   });
-  if (stored("speakerVoice")) select.value = localStorage.getItem("speakerVoice");
+  if (stored("speakerVoice")) select.value = stored("speakerVoice");
   // se voice to store
   else select.value = voices.findIndex(voice => voice.lang === "en-US"); // or to first found English-US
 }, 1000);
@@ -273,13 +273,14 @@ function showSeedHistoryDialog() {
 
 // generate map with historical seed
 function restoreSeed(id) {
-  if (mapHistory[id].seed == seed) return tip("The current map is already generated with this seed", null, "error");
+  const {seed, width, height, template} = mapHistory[id];
+  byId("optionsSeed").value = seed;
+  byId("mapWidthInput").value = width;
+  byId("mapHeightInput").value = height;
+  byId("templateInput").value = template;
 
-  optionsSeed.value = mapHistory[id].seed;
-  mapWidthInput.value = mapHistory[id].width;
-  mapHeightInput.value = mapHistory[id].height;
-  templateInput.value = mapHistory[id].template;
   if (locked("template")) unlock("template");
+
   regeneratePrompt();
 }
 
@@ -457,43 +458,50 @@ function changeZoomExtent(value) {
   zoom.scaleTo(svg, scale);
 }
 
-// control stored options logic
+// restore options stored in localStorage
 function applyStoredOptions() {
-  if (!localStorage.getItem("mapWidth") || !localStorage.getItem("mapHeight")) {
+  if (!stored("mapWidth") || !stored("mapHeight")) {
     mapWidthInput.value = window.innerWidth;
     mapHeightInput.value = window.innerHeight;
   }
 
-  if (localStorage.getItem("distanceUnit")) applyOption(distanceUnitInput, localStorage.getItem("distanceUnit"));
-  if (localStorage.getItem("heightUnit")) applyOption(heightUnit, localStorage.getItem("heightUnit"));
-
-  for (let i = 0; i < localStorage.length; i++) {
-    const stored = localStorage.key(i);
-    const value = localStorage.getItem(stored);
-
-    if (stored === "speakerVoice") continue;
-    const input = document.getElementById(stored + "Input") || document.getElementById(stored);
-    const output = document.getElementById(stored + "Output");
-    if (input) input.value = value;
-    if (output) output.value = value;
-    lock(stored);
-
-    // add saved style presets to options
-    if (stored.slice(0, 5) === "style") applyOption(stylePreset, stored, stored.slice(5));
+  const heightmapId = stored("template");
+  if (heightmapId) {
+    const name = heightmapTemplates[heightmapId]?.name || precreatedHeightmaps[heightmapId]?.name || heightmapId;
+    applyOption(byId("templateInput"), heightmapId, name);
   }
 
-  if (localStorage.getItem("winds"))
+  if (stored("distanceUnit")) applyOption(distanceUnitInput, stored("distanceUnit"));
+  if (stored("heightUnit")) applyOption(heightUnit, stored("heightUnit"));
+
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+
+    if (key === "speakerVoice") continue;
+    const input = byId(key + "Input") || byId(key);
+    const output = byId(key + "Output");
+
+    const value = stored(key);
+    if (input) input.value = value;
+    if (output) output.value = value;
+    lock(key);
+
+    // add saved style presets to options
+    if (key.slice(0, 5) === "style") applyOption(stylePreset, key, key.slice(5));
+  }
+
+  if (stored("winds"))
     options.winds = localStorage
       .getItem("winds")
       .split(",")
       .map(w => +w);
-  if (localStorage.getItem("military")) options.military = JSON.parse(localStorage.getItem("military"));
+  if (stored("military")) options.military = JSON.parse(stored("military"));
 
-  if (localStorage.getItem("tooltipSize")) changeTooltipSize(localStorage.getItem("tooltipSize"));
-  if (localStorage.getItem("regions")) changeStatesNumber(localStorage.getItem("regions"));
+  if (stored("tooltipSize")) changeTooltipSize(stored("tooltipSize"));
+  if (stored("regions")) changeStatesNumber(stored("regions"));
 
   uiSizeInput.max = uiSizeOutput.max = getUImaxSize();
-  if (localStorage.getItem("uiSize")) changeUIsize(localStorage.getItem("uiSize"));
+  if (stored("uiSize")) changeUIsize(stored("uiSize"));
   else changeUIsize(minmax(rn(mapWidthInput.value / 1280, 1), 1, 2.5));
 
   // search params overwrite stored and default options
@@ -503,8 +511,8 @@ function applyStoredOptions() {
   if (width) mapWidthInput.value = width;
   if (height) mapHeightInput.value = height;
 
-  const transparency = localStorage.getItem("transparency") || 5;
-  const themeColor = localStorage.getItem("themeColor");
+  const transparency = stored("transparency") || 5;
+  const themeColor = stored("themeColor");
   changeDialogsTheme(themeColor, transparency);
 
   setRendering(shapeRendering.value);
@@ -549,22 +557,13 @@ function randomizeOptions() {
 
 // select heightmap template pseudo-randomly
 function randomizeHeightmapTemplate() {
-  const templates = {
-    volcano: 3,
-    highIsland: 19,
-    lowIsland: 9,
-    continents: 16,
-    archipelago: 18,
-    mediterranean: 5,
-    peninsula: 3,
-    pangea: 5,
-    isthmus: 2,
-    atoll: 1,
-    shattered: 7,
-    taklamakan: 1,
-    oldWorld: 11
-  };
-  document.getElementById("templateInput").value = rw(templates);
+  const templates = {};
+  for (const key in heightmapTemplates) {
+    templates[key] = heightmapTemplates[key].probability || 0;
+  }
+  const template = rw(templates);
+  const name = heightmapTemplates[template].name;
+  applyOption(byId("templateInput"), template, name);
 }
 
 // select culture set pseudo-randomly

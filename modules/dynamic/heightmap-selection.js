@@ -1,46 +1,3 @@
-const templates = [
-  {id: "volcano", name: "Volcano"},
-  {id: "highIsland", name: "High Island"},
-  {id: "lowIsland", name: "Low Island"},
-  {id: "continents", name: "Continents"},
-  {id: "archipelago", name: "Archipelago"},
-  {id: "atoll", name: "Atoll"},
-  {id: "mediterranean", name: "Mediterranean"},
-  {id: "peninsula", name: "Peninsula"},
-  {id: "pangea", name: "Pangea"},
-  {id: "isthmus", name: "Isthmus"},
-  {id: "shattered", name: "Shattered"},
-  {id: "taklamakan", name: "Taklamakan"},
-  {id: "oldWorld", name: "Old World"},
-  {id: "fractious", name: "Fractious"}
-];
-
-const heightmaps = [
-  {id: "africa-centric", name: "Africa Centric"},
-  {id: "arabia", name: "Arabia"},
-  {id: "atlantics", name: "Atlantics"},
-  {id: "britain", name: "Britain"},
-  {id: "caribbean", name: "Caribbean"},
-  {id: "east-asia", name: "East Asia"},
-  {id: "eurasia", name: "Eurasia"},
-  {id: "europe", name: "Europe"},
-  {id: "europe-accented", name: "Europe Accented"},
-  {id: "europe-and-central-asia", name: "Europe and Central Asia"},
-  {id: "europe-central", name: "Europe Central"},
-  {id: "europe-north", name: "Europe North"},
-  {id: "greenland", name: "Greenland"},
-  {id: "hellenica", name: "Hellenica"},
-  {id: "iceland", name: "Iceland"},
-  {id: "indian-ocean", name: "Indian Ocean"},
-  {id: "mediterranean-sea", name: "Mediterranean Sea"},
-  {id: "middle-east", name: "Middle East"},
-  {id: "north-america", name: "North America"},
-  {id: "us-centric", name: "US-centric"},
-  {id: "us-mainland", name: "US Mainland"},
-  {id: "world", name: "World"},
-  {id: "world-from-pacific", name: "World from Pacific"}
-];
-
 const initialSeed = generateSeed();
 appendStyleSheet();
 insertEditorHtml();
@@ -62,19 +19,20 @@ export function open() {
       },
       Select: function () {
         const id = getSelected();
-        $templateInput.value = id;
+        applyOption($templateInput, id, getName(id));
         lock("template");
+
         $(this).dialog("close");
       },
       "New Map": function () {
         const id = getSelected();
-        $templateInput.value = id;
+        applyOption($templateInput, id, getName(id));
         lock("template");
 
         const seed = getSeed();
         Math.random = aleaPRNG(seed);
-
         regeneratePrompt({seed});
+
         $(this).dialog("close");
       }
     }
@@ -208,13 +166,14 @@ function insertEditorHtml() {
   byId("dialogs").insertAdjacentHTML("beforeend", heightmapSelectionHtml);
   const sections = document.getElementsByClassName("heightmap-selection_container");
 
-  sections[0].innerHTML = templates
-    .map(({id, name}) => {
+  sections[0].innerHTML = Object.keys(heightmapTemplates)
+    .map(key => {
+      const name = heightmapTemplates[key].name;
       Math.random = aleaPRNG(initialSeed);
-      const heights = generateHeightmap(id);
+      const heights = generateHeightmap(key);
       const dataUrl = drawHeights(heights);
 
-      return /* html */ `<article data-id="${id}" data-seed="${initialSeed}">
+      return /* html */ `<article data-id="${key}" data-seed="${initialSeed}">
         <img src="${dataUrl}" alt="${name}" />
         <div>
           ${name}
@@ -224,11 +183,12 @@ function insertEditorHtml() {
     })
     .join("");
 
-  sections[1].innerHTML = heightmaps
-    .map(({id, name}) => {
-      drawPrecreatedHeightmap(id);
+  sections[1].innerHTML = Object.keys(precreatedHeightmaps)
+    .map(key => {
+      const name = precreatedHeightmaps[key].name;
+      drawPrecreatedHeightmap(key);
 
-      return /* html */ `<article data-id="${id}" data-seed="${initialSeed}">
+      return /* html */ `<article data-id="${key}" data-seed="${initialSeed}">
         <img alt="${name}" />
         <div>${name}</div>
       </article>`;
@@ -269,6 +229,11 @@ function setSelected(id) {
 
 function getSeed() {
   return byId("heightmapSelection").querySelector(".selected")?.dataset?.seed;
+}
+
+function getName(id) {
+  const isTemplate = id in heightmapTemplates;
+  return isTemplate ? heightmapTemplates[id].name : precreatedHeightmaps[id].name;
 }
 
 function drawHeights(heights) {
@@ -325,7 +290,7 @@ function redrawAll() {
     const {id, seed} = article.dataset;
     Math.random = aleaPRNG(seed);
 
-    const isTemplate = id in HeightmapTemplates;
+    const isTemplate = id in heightmapTemplates;
     if (isTemplate) drawTemplatePreview(id);
     else drawPrecreatedHeightmap(id);
   }

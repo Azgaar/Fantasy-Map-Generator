@@ -921,7 +921,7 @@ function editHeightmap(options) {
       body.setAttribute("data-changed", 0);
       body.innerHTML = "";
 
-      const templateString = HeightmapTemplates[template];
+      const templateString = heightmapTemplates[template]?.template;
       if (!templateString) return;
 
       const steps = templateString.split("\n");

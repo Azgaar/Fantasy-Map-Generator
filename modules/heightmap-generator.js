@@ -8,7 +8,7 @@ window.HeightmapGenerator = (function () {
   const cleanup = () => (heights = null);
 
   const fromTemplate = template => {
-    const templateString = HeightmapTemplates[template];
+    const templateString = heightmapTemplates[template]?.template || "";
     const steps = templateString.split("\n");
 
     if (!steps.length) throw new Error(`Heightmap template: no steps. Template: ${template}. Steps: ${steps}`);
@@ -52,7 +52,7 @@ window.HeightmapGenerator = (function () {
     const id = byId("templateInput").value;
     resetHeights();
 
-    const isTemplate = id in HeightmapTemplates;
+    const isTemplate = id in heightmapTemplates;
     grid.cells.h = isTemplate ? fromTemplate(id) : await fromPrecreated(id);
 
     cleanup();

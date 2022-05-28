@@ -899,7 +899,7 @@ function addLakesInDeepDepressions() {
 
 // near sea lakes usually get a lot of water inflow, most of them should brake threshold and flow out to sea (see Ancylus Lake)
 function openNearSeaLakes() {
-  if (templateInput.value === "Atoll") return; // no need for Atolls
+  if (byId("templateInput").value === "Atoll") return; // no need for Atolls
 
   const cells = grid.cells;
   const features = grid.features;
@@ -944,7 +944,7 @@ function defineMapSize() {
   if (randomize || !locked("latitude")) latitudeOutput.value = latitudeInput.value = rn(latitude);
 
   function getSizeAndLatitude() {
-    const template = document.getElementById("templateInput").value; // heightmap template
+    const template = byId("templateInput").value; // heightmap template
 
     if (template === "africa-centric") return [45, 53];
     if (template === "arabia") return [20, 35];
@@ -1921,11 +1921,14 @@ function addZones(number = 1) {
 
 // show map stats on generation complete
 function showStatistics() {
-  const template = templateInput.options[templateInput.selectedIndex].text;
-  const templateRandom = locked("template") ? "" : "(random)";
+  const heightmap = byId("templateInput").value;
+  const isTemplate = heightmap in heightmapTemplates;
+  const heightmapType = isTemplate ? "template" : "precreated";
+  const isRandomTemplate = isTemplate && !locked("template") ? "random " : "";
+
   const stats = `  Seed: ${seed}
-    Canvas size: ${graphWidth}x${graphHeight}
-    Template: ${template} ${templateRandom}
+    Canvas size: ${graphWidth}x${graphHeight} px
+    Heightmap: ${heightmap} (${isRandomTemplate}${heightmapType})
     Points: ${grid.points.length}
     Cells: ${pack.cells.i.length}
     Map size: ${mapSizeOutput.value}%
@@ -1937,7 +1940,7 @@ function showStatistics() {
     Cultures: ${pack.cultures.length - 1}`;
 
   mapId = Date.now(); // unique map id is it's creation date number
-  mapHistory.push({seed, width: graphWidth, height: graphHeight, template, created: mapId});
+  mapHistory.push({seed, width: graphWidth, height: graphHeight, template: heightmap, created: mapId});
   INFO && console.log(stats);
 }
 
