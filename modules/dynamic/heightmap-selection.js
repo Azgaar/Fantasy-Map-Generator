@@ -83,7 +83,7 @@ export function open() {
 
 function appendStyleSheet() {
   const styles = /* css */ `
-    .heightmap-selection {
+    div.dialog > div.heightmap-selection {
       width: 70vw;
       height: 70vh;
     }
@@ -110,9 +110,13 @@ function appendStyleSheet() {
 
     .heightmap-selection_options {
       display: grid;
-      grid-template-columns: repeat(2, minmax(50%, 200px));
-      grid-row-gap: 6px;
+      grid-template-columns: 2fr 1fr;
       justify-items: start;
+    }
+
+    .heightmap-selection_options > div:first-child {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       align-items: center;
     }
 
@@ -177,20 +181,25 @@ function insertEditorHtml() {
         <header><h1>Options</h1></header>
         <div class="heightmap-selection_options">
           <div>
-            <input id="heightmapSelectionRenderOcean" class="checkbox" type="checkbox" />
-            <label for="heightmapSelectionRenderOcean" class="checkbox-label">Render ocean heights</label>
+            <div>
+              <input id="heightmapSelectionRenderOcean" class="checkbox" type="checkbox" />
+              <label for="heightmapSelectionRenderOcean" class="checkbox-label">Render ocean heights</label>
+            </div>
+            <div>
+              Color scheme
+              <select id="heightmapSelectionColorScheme">
+                <option value="bright" selected>Bright</option>
+                <option value="light">Light</option>
+                <option value="green">Green</option>
+                <option value="monochrome">Monochrome</option>
+              </select>
+            </div>
           </div>
           <div>
-            Color scheme
-            <select id="heightmapSelectionColorScheme">
-              <option value="bright" selected>Bright</option>
-              <option value="light">Light</option>
-              <option value="green">Green</option>
-              <option value="monochrome">Monochrome</option>
-            </select>
+            <button data-tip="Rerender all preview images" id="heightmapSelectionRedrawPreview">Redraw preview</button>
+            <button data-tip="Open Template Editor" data-tool="templateEditor" id="heightmapSelectionEditTemplates">Edit Templates</button>
+            <button data-tip="Open Image Converter" data-tool="imageConverter" id="heightmapSelectionImportHeightmap">Import Heightmap</button>
           </div>
-          <button data-tip="Open Template Editor" id="heightmapSelectionEditTemplates">Edit Templates</button>
-          <button data-tip="Open Image Converter" id="heightmapSelectionImportHeightmap">Import Heightmap</button>
         </div>
       </section>
     </div>
@@ -243,6 +252,9 @@ function addListeners() {
 
   byId("heightmapSelectionRenderOcean").on("change", redrawAll);
   byId("heightmapSelectionColorScheme").on("change", redrawAll);
+  byId("heightmapSelectionRedrawPreview").on("click", redrawAll);
+  byId("heightmapSelectionEditTemplates").on("click", confirmHeightmapEdit);
+  byId("heightmapSelectionImportHeightmap").on("click", confirmHeightmapEdit);
 }
 
 function getSelected() {
@@ -317,4 +329,15 @@ function redrawAll() {
     if (isTemplate) drawTemplatePreview(id);
     else drawPrecreatedHeightmap(id);
   }
+}
+
+function confirmHeightmapEdit() {
+  const tool = this.dataset.tool;
+
+  confirmationDialog({
+    title: this.dataset.tip,
+    message: "Opening the tool will erase the current map. Are you sure you want to proceed?",
+    confirm: "Continue",
+    onConfirm: () => editHeightmap({mode: "erase", tool})
+  });
 }
