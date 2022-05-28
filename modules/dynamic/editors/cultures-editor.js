@@ -51,7 +51,7 @@ function insertEditorHtml() {
       <button id="culturesHeirarchy" data-tip="Show cultures hierarchy tree" class="icon-sitemap"></button>
       <button id="culturesManually" data-tip="Manually re-assign cultures" class="icon-brush"></button>
       <div id="culturesManuallyButtons" style="display: none">
-        <label data-tip="Change brush size. Shortcut: + (increase), – (decrease)" class="italic">Brush size:
+        <label data-tip="Change brush size" data-shortcut="+ (increase), – (decrease)" class="italic">Brush size:
           <input
             id="culturesManuallyBrush"
             oninput="tip('Brush size: '+this.value); culturesManuallyBrushNumber.value = this.value"

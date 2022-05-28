@@ -21,18 +21,22 @@ document.getElementById("dialogs").addEventListener("mousemove", showDataTip);
 document.getElementById("optionsContainer").addEventListener("mousemove", showDataTip);
 document.getElementById("exitCustomization").addEventListener("mousemove", showDataTip);
 
-function tip(tip = "Tip is undefined", main, type, time) {
+const tipBackgroundMap = {
+  info: "linear-gradient(0.1turn, #ffffff00, #5e5c5c80, #ffffff00)",
+  success: "linear-gradient(0.1turn, #ffffff00, #127912cc, #ffffff00)",
+  warn: "linear-gradient(0.1turn, #ffffff00, #be5d08cc, #ffffff00)",
+  error: "linear-gradient(0.1turn, #ffffff00, #e11d1dcc, #ffffff00)"
+};
+
+function tip(tip = "Tip is undefined", main = false, type = "info", time = 0) {
   tooltip.innerHTML = tip;
-  tooltip.style.background = "linear-gradient(0.1turn, #ffffff00, #5e5c5c80, #ffffff00)";
-  if (type === "error") tooltip.style.background = "linear-gradient(0.1turn, #ffffff00, #e11d1dcc, #ffffff00)";
-  else if (type === "warn") tooltip.style.background = "linear-gradient(0.1turn, #ffffff00, #be5d08cc, #ffffff00)";
-  else if (type === "success") tooltip.style.background = "linear-gradient(0.1turn, #ffffff00, #127912cc, #ffffff00)";
+  tooltip.style.background = tipBackgroundMap[type];
 
   if (main) {
     tooltip.dataset.main = tip;
     tooltip.dataset.color = tooltip.style.background;
   }
-  if (time) setTimeout(() => clearMainTip(), time);
+  if (time) setTimeout(clearMainTip, time);
 }
 
 function showMainTip() {
@@ -47,11 +51,16 @@ function clearMainTip() {
 }
 
 // show tip at the bottom of the screen, consider possible translation
-function showDataTip(e) {
-  if (!e.target) return;
-  let dataTip = e.target.dataset.tip;
-  if (!dataTip && e.target.parentNode.dataset.tip) dataTip = e.target.parentNode.dataset.tip;
+function showDataTip(event) {
+  if (!event.target) return;
+
+  let dataTip = event.target.dataset.tip;
+  if (!dataTip && event.target.parentNode.dataset.tip) dataTip = event.target.parentNode.dataset.tip;
   if (!dataTip) return;
+
+  const shortcut = event.target.dataset.shortcut;
+  if (shortcut && !MOBILE) dataTip += `. Shortcut: ${shortcut}`;
+
   //const tooltip = lang === "en" ? dataTip : translate(e.target.dataset.t || e.target.parentNode.dataset.t, dataTip);
   tip(dataTip);
 }

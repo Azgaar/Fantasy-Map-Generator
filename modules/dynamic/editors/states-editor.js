@@ -89,7 +89,7 @@ function insertEditorHtml() {
 
       <button id="statesManually" data-tip="Manually re-assign states" class="icon-brush"></button>
       <div id="statesManuallyButtons" style="display: none">
-        <label data-tip="Change brush size. Shortcut: + (increase), – (decrease)" class="italic"
+        <label data-tip="Change brush size" data-shortcut="+ (increase), – (decrease)" class="italic"
           >Brush size:
           <input
             id="statesManuallyBrush"

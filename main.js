@@ -10,6 +10,9 @@ const TIME = DEBUG || !PRODUCTION;
 const WARN = true;
 const ERROR = true;
 
+// detect device
+const MOBILE = window.innerWidth < 600 || navigator.userAgentData?.mobile;
+
 if (PRODUCTION && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").catch(err => {

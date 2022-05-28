@@ -347,6 +347,20 @@ text.drag {
   user-select: none;
 }
 
+#optionsTrigger {
+  padding: 0.6em 0.45em;
+}
+
+@media (max-width: 600px) {
+  #optionsTrigger {
+    font-size: 2em;
+    padding: 0;
+    width: 1.3em;
+    height: 1.6em;
+    border: solid 1px #5e4fa2;
+  }
+}
+
 #options {
   position: absolute;
   font-family: Consolas, monospace;
