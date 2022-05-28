@@ -142,7 +142,7 @@ optionsContent.addEventListener("click", function (event) {
   else if (id === "optionsMapHistory") showSeedHistoryDialog();
   else if (id === "optionsCopySeed") copyMapURL();
   else if (id === "optionsEraRegenerate") regenerateEra();
-  else if (id === "templateInput") openTemplateSelectionDialog();
+  else if (id === "templateInputContainer") openTemplateSelectionDialog();
   else if (id === "zoomExtentDefault") restoreDefaultZoomExtent();
   else if (id === "translateExtent") toggleTranslateExtent(event.target);
   else if (id === "speakerTest") testSpeaker();

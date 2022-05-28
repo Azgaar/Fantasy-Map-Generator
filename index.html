@@ -1318,13 +1318,13 @@
               </td>
             </tr>
 
-            <tr data-tip="Select heightmap generation template or precreated heightmap">
+            <tr data-tip="Select template or precreated heightmap to be used on generation">
               <td>
                 <i data-locked="0" id="lock_template" class="icon-lock-open"></i>
               </td>
               <td>Heightmap</td>
-              <td>
-                <select id="templateInput" data-stored="template" disabled style="opacity: 1; color: unset"></select>
+              <td id="templateInputContainer" class="pointer">
+                <select id="templateInput" data-stored="template" style="pointer-events: none"></select>
               </td>
               <td></td>
             </tr>

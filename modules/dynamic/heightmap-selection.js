@@ -69,13 +69,18 @@ function appendStyleSheet() {
     .heightmap-selection_options {
       display: grid;
       grid-template-columns: 2fr 1fr;
-      justify-items: start;
     }
 
     .heightmap-selection_options > div:first-child {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       align-items: center;
+      justify-self: start;
+      justify-items: start;
+    }
+
+    .heightmap-selection_options > div:last-child {
+      justify-self: end;
     }
 
     .heightmap-selection article {
@@ -127,23 +132,27 @@ function appendStyleSheet() {
 function insertEditorHtml() {
   const heightmapSelectionHtml = /* html */ `<div id="heightmapSelection" class="dialog stable">
     <div class="heightmap-selection">
-      <section>
+      <section data-tip="Select heightmap template – template provides unique, but similar-looking maps on generation">
         <header><h1>Heightmap templates</h1></header>
         <div class="heightmap-selection_container"></div>
       </section>
-      <section>
-        <header><h1>Pre-created heightmaps</h1></header>
+      <section data-tip="Select precreated heightmap – it will be the same for each map">
+        <header><h1>Precreated heightmaps</h1></header>
         <div class="heightmap-selection_container"></div>
       </section>
       <section>
         <header><h1>Options</h1></header>
         <div class="heightmap-selection_options">
           <div>
+            <label data-tip="Rerender all preview images" class="checkbox-label" id="heightmapSelectionRedrawPreview">
+              <i class="icon-cw"></i>
+              Redraw preview
+            </label>
             <div>
               <input id="heightmapSelectionRenderOcean" class="checkbox" type="checkbox" />
-              <label for="heightmapSelectionRenderOcean" class="checkbox-label">Render ocean heights</label>
+              <label data-tip="Draw heights of water cells" for="heightmapSelectionRenderOcean" class="checkbox-label">Render ocean heights</label>
             </div>
-            <div>
+            <div data-tip="Color scheme used for heightmap preview">
               Color scheme
               <select id="heightmapSelectionColorScheme">
                 <option value="bright" selected>Bright</option>
@@ -154,7 +163,6 @@ function insertEditorHtml() {
             </div>
           </div>
           <div>
-            <button data-tip="Rerender all preview images" id="heightmapSelectionRedrawPreview">Redraw preview</button>
             <button data-tip="Open Template Editor" data-tool="templateEditor" id="heightmapSelectionEditTemplates">Edit Templates</button>
             <button data-tip="Open Image Converter" data-tool="imageConverter" id="heightmapSelectionImportHeightmap">Import Heightmap</button>
           </div>
