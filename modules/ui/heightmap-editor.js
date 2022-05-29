@@ -940,7 +940,11 @@ function editHeightmap(options) {
       const seed = byId("templateSeed").value;
       if (seed) Math.random = aleaPRNG(seed);
 
-      HeightmapGenerator.resetHeights();
+      const heights = new Uint8Array(grid.points.length);
+      // use cells number of the current graph, no matter what UI input value is
+      const cellsDesired = rn((graphWidth * graphHeight) / grid.spacing ** 2, -3);
+      HeightmapGenerator.setHeights(heights, cellsDesired);
+
       restartHistory();
 
       for (const step of steps) {

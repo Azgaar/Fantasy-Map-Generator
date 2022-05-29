@@ -282,10 +282,14 @@ function drawHeights(heights) {
 }
 
 function generateHeightmap(id) {
-  HeightmapGenerator.resetHeights();
-  const heights = HeightmapGenerator.fromTemplate(id);
+  const heights = new Uint8Array(grid.points.length);
+  // use cells number of the current graph, no matter what UI input value is
+  const cellsDesired = rn((graphWidth * graphHeight) / grid.spacing ** 2, -3);
+
+  HeightmapGenerator.setHeights(heights, cellsDesired);
+  const newHeights = HeightmapGenerator.fromTemplate(id);
   HeightmapGenerator.cleanup();
-  return heights;
+  return newHeights;
 }
 
 function drawTemplatePreview(id) {

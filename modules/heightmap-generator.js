@@ -2,9 +2,23 @@
 
 window.HeightmapGenerator = (function () {
   let heights = null;
-  const setHeights = h => (heights = h);
-  const resetHeights = () => (heights = new Uint8Array(grid.points.length));
+  let blobPower;
+  let linePower;
+
+  const setHeights = (savedHeights, cellsNumber) => {
+    heights = savedHeights;
+    blobPower = getBlobPower(cellsNumber);
+    linePower = getLinePower(cellsNumber);
+  };
+
+  const resetHeights = () => {
+    heights = new Uint8Array(grid.points.length);
+    const cellsNumber = +byId("pointsInput").dataset.cells;
+    blobPower = getBlobPower(cellsNumber);
+    linePower = getLinePower(cellsNumber);
+  };
   const getHeights = () => heights;
+
   const cleanup = () => (heights = null);
 
   const fromTemplate = template => {
@@ -72,43 +86,47 @@ window.HeightmapGenerator = (function () {
     if (tool === "Smooth") return smooth(a2);
   }
 
-  function getBlobPower() {
-    const cells = +byId("pointsInput").dataset.cells;
-    if (cells === 1000) return 0.93;
-    if (cells === 2000) return 0.95;
-    if (cells === 5000) return 0.96;
-    if (cells === 10000) return 0.98;
-    if (cells === 20000) return 0.985;
-    if (cells === 30000) return 0.987;
-    if (cells === 40000) return 0.9892;
-    if (cells === 50000) return 0.9911;
-    if (cells === 60000) return 0.9921;
-    if (cells === 70000) return 0.9934;
-    if (cells === 80000) return 0.9942;
-    if (cells === 90000) return 0.9946;
-    if (cells === 100000) return 0.995;
+  function getBlobPower(cells) {
+    const blobPowerMap = {
+      1000: 0.93,
+      2000: 0.95,
+      5000: 0.96,
+      10000: 0.98,
+      20000: 0.985,
+      30000: 0.987,
+      40000: 0.9892,
+      50000: 0.9911,
+      60000: 0.9921,
+      70000: 0.9934,
+      80000: 0.9942,
+      90000: 0.9946,
+      100000: 0.995
+    };
+    return blobPowerMap[cells] || 0.98;
   }
 
   function getLinePower() {
-    const cells = +byId("pointsInput").dataset.cells;
-    if (cells === 1000) return 0.74;
-    if (cells === 2000) return 0.75;
-    if (cells === 5000) return 0.78;
-    if (cells === 10000) return 0.81;
-    if (cells === 20000) return 0.82;
-    if (cells === 30000) return 0.83;
-    if (cells === 40000) return 0.84;
-    if (cells === 50000) return 0.855;
-    if (cells === 60000) return 0.87;
-    if (cells === 70000) return 0.885;
-    if (cells === 80000) return 0.91;
-    if (cells === 90000) return 0.92;
-    if (cells === 100000) return 0.93;
+    const linePowerMap = {
+      1000: 0.74,
+      2000: 0.75,
+      5000: 0.78,
+      10000: 0.81,
+      20000: 0.82,
+      30000: 0.83,
+      40000: 0.84,
+      50000: 0.855,
+      60000: 0.87,
+      70000: 0.885,
+      80000: 0.91,
+      90000: 0.92,
+      100000: 0.93
+    };
+
+    return linePowerMap[cells] || 0.81;
   }
 
   const addHill = (count, height, rangeX, rangeY) => {
     count = getNumberInRange(count);
-    const power = getBlobPower();
     while (count > 0) {
       addOneHill();
       count--;
@@ -134,7 +152,7 @@ window.HeightmapGenerator = (function () {
 
         for (const c of grid.cells.c[q]) {
           if (change[c]) continue;
-          change[c] = change[q] ** power * (Math.random() * 0.2 + 0.9);
+          change[c] = change[q] ** blobPower * (Math.random() * 0.2 + 0.9);
           if (change[c] > 1) queue.push(c);
         }
       }
@@ -166,7 +184,7 @@ window.HeightmapGenerator = (function () {
       const queue = [start];
       while (queue.length) {
         const q = queue.shift();
-        h = h ** getBlobPower() * (Math.random() * 0.2 + 0.9);
+        h = h ** blobPower * (Math.random() * 0.2 + 0.9);
         if (h < 1) return;
 
         grid.cells.c[q].forEach(function (c, i) {
@@ -181,7 +199,6 @@ window.HeightmapGenerator = (function () {
 
   const addRange = (count, height, rangeX, rangeY) => {
     count = getNumberInRange(count);
-    const power = getLinePower();
     while (count > 0) {
       addOneRange();
       count--;
@@ -242,7 +259,7 @@ window.HeightmapGenerator = (function () {
         frontier.forEach(i => {
           heights[i] = lim(heights[i] + h * (Math.random() * 0.3 + 0.85));
         });
-        h = h ** power - 1;
+        h = h ** linePower - 1;
         if (h < 2) break;
         frontier.forEach(f => {
           grid.cells.c[f].forEach(i => {
@@ -268,7 +285,6 @@ window.HeightmapGenerator = (function () {
 
   const addTrough = (count, height, rangeX, rangeY) => {
     count = getNumberInRange(count);
-    const power = getLinePower();
     while (count > 0) {
       addOneTrough();
       count--;
@@ -337,7 +353,7 @@ window.HeightmapGenerator = (function () {
         frontier.forEach(i => {
           heights[i] = lim(heights[i] - h * (Math.random() * 0.3 + 0.85));
         });
-        h = h ** power - 1;
+        h = h ** linePower - 1;
         if (h < 2) break;
         frontier.forEach(f => {
           grid.cells.c[f].forEach(i => {
