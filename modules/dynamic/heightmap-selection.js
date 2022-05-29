@@ -79,6 +79,16 @@ function appendStyleSheet() {
       justify-items: start;
     }
 
+    @media (max-width: 600px) {
+      .heightmap-selection_options {
+        grid-template-columns: 3fr 1fr;
+      }
+
+      .heightmap-selection_options > div:first-child {
+        display: block;
+      }
+    }
+
     .heightmap-selection_options > div:last-child {
       justify-self: end;
     }
