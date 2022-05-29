@@ -1,4 +1,6 @@
 const initialSeed = generateSeed();
+let graph = getGraph(grid);
+
 appendStyleSheet();
 insertEditorHtml();
 addListeners();
@@ -8,6 +10,7 @@ export function open() {
 
   const $templateInput = byId("templateInput");
   setSelected($templateInput.value);
+  graph = getGraph(graph);
 
   $("#heightmapSelection").dialog({
     title: "Select Heightmap",
@@ -30,8 +33,7 @@ export function open() {
         lock("template");
 
         const seed = getSeed();
-        Math.random = aleaPRNG(seed);
-        regeneratePrompt({seed});
+        regeneratePrompt({seed, graph});
 
         $(this).dialog("close");
       }
@@ -182,13 +184,14 @@ function insertEditorHtml() {
   </div>`;
 
   byId("dialogs").insertAdjacentHTML("beforeend", heightmapSelectionHtml);
+
   const sections = document.getElementsByClassName("heightmap-selection_container");
 
   sections[0].innerHTML = Object.keys(heightmapTemplates)
     .map(key => {
       const name = heightmapTemplates[key].name;
       Math.random = aleaPRNG(initialSeed);
-      const heights = generateHeightmap(key);
+      const heights = HeightmapGenerator.fromTemplate(graph, key);
       const dataUrl = drawHeights(heights);
 
       return /* html */ `<article data-id="${key}" data-seed="${initialSeed}">
@@ -220,12 +223,8 @@ function addListeners() {
     if (!article) return;
 
     const id = article.dataset.id;
-    if (event.target.matches("span.icon-cw")) {
-      const seed = generateSeed();
-      article.dataset.seed = seed;
-      Math.random = aleaPRNG(seed);
-      drawTemplatePreview(id);
-    } else setSelected(id);
+    if (event.target.matches("span.icon-cw")) regeneratePreview(article, id);
+    setSelected(id);
   });
 
   byId("heightmapSelectionRenderOcean").on("change", redrawAll);
@@ -254,12 +253,18 @@ function getName(id) {
   return isTemplate ? heightmapTemplates[id].name : precreatedHeightmaps[id].name;
 }
 
+function getGraph(currentGraph) {
+  const newGraph = shouldRegenerateGrid(currentGraph) ? generateGrid() : deepCopy(currentGraph);
+  delete newGraph.cells.h;
+  return newGraph;
+}
+
 function drawHeights(heights) {
   const canvas = document.createElement("canvas");
-  canvas.width = grid.cellsX;
-  canvas.height = grid.cellsY;
+  canvas.width = graph.cellsX;
+  canvas.height = graph.cellsY;
   const ctx = canvas.getContext("2d");
-  const imageData = ctx.createImageData(grid.cellsX, grid.cellsY);
+  const imageData = ctx.createImageData(graph.cellsX, graph.cellsY);
 
   const schemeId = byId("heightmapSelectionColorScheme").value;
   const scheme = getColorScheme(schemeId);
@@ -281,32 +286,30 @@ function drawHeights(heights) {
   return canvas.toDataURL("image/png");
 }
 
-function generateHeightmap(id) {
-  const heights = new Uint8Array(grid.points.length);
-  // use cells number of the current graph, no matter what UI input value is
-  const cellsDesired = rn((graphWidth * graphHeight) / grid.spacing ** 2, -3);
-
-  HeightmapGenerator.setHeights(heights, cellsDesired);
-  const newHeights = HeightmapGenerator.fromTemplate(id);
-  HeightmapGenerator.cleanup();
-  return newHeights;
-}
-
 function drawTemplatePreview(id) {
-  const heights = generateHeightmap(id);
+  const heights = HeightmapGenerator.fromTemplate(graph, id);
   const dataUrl = drawHeights(heights);
   const article = byId("heightmapSelection").querySelector(`[data-id="${id}"]`);
   article.querySelector("img").src = dataUrl;
 }
 
 async function drawPrecreatedHeightmap(id) {
-  const heights = await HeightmapGenerator.fromPrecreated(id);
+  const heights = await HeightmapGenerator.fromPrecreated(graph, id);
   const dataUrl = drawHeights(heights);
   const article = byId("heightmapSelection").querySelector(`[data-id="${id}"]`);
   article.querySelector("img").src = dataUrl;
 }
 
+function regeneratePreview(article, id) {
+  graph = getGraph(graph);
+  const seed = generateSeed();
+  article.dataset.seed = seed;
+  Math.random = aleaPRNG(seed);
+  drawTemplatePreview(id);
+}
+
 function redrawAll() {
+  graph = getGraph(graph);
   const articles = byId("heightmapSelection").querySelectorAll(`article`);
   for (const article of articles) {
     const {id, seed} = article.dataset;

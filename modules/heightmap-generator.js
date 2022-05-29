@@ -1,47 +1,48 @@
 "use strict";
 
 window.HeightmapGenerator = (function () {
+  let grid = null;
   let heights = null;
   let blobPower;
   let linePower;
 
-  const setHeights = (savedHeights, cellsNumber) => {
-    heights = savedHeights;
-    blobPower = getBlobPower(cellsNumber);
-    linePower = getLinePower(cellsNumber);
+  const setGraph = graph => {
+    const {cellsDesired, cells, points} = graph;
+    heights = cells.h || createTypedArray({maxValue: 100, length: points.length});
+    blobPower = getBlobPower(cellsDesired);
+    linePower = getLinePower(cellsDesired);
+    grid = graph;
   };
 
-  const resetHeights = () => {
-    heights = new Uint8Array(grid.points.length);
-    const cellsNumber = +byId("pointsInput").dataset.cells;
-    blobPower = getBlobPower(cellsNumber);
-    linePower = getLinePower(cellsNumber);
-  };
   const getHeights = () => heights;
 
-  const cleanup = () => (heights = null);
+  const clearData = () => {
+    heights = null;
+    grid = null;
+  };
 
-  const fromTemplate = template => {
-    const templateString = heightmapTemplates[template]?.template || "";
+  const fromTemplate = (graph, id) => {
+    const templateString = heightmapTemplates[id]?.template || "";
     const steps = templateString.split("\n");
 
-    if (!steps.length) throw new Error(`Heightmap template: no steps. Template: ${template}. Steps: ${steps}`);
+    if (!steps.length) throw new Error(`Heightmap template: no steps. Template: ${id}. Steps: ${steps}`);
+    setGraph(graph);
 
     for (const step of steps) {
       const elements = step.trim().split(" ");
-      if (elements.length < 2) throw new Error(`Heightmap template: steps < 2. Template: ${template}. Step: ${elements}`);
+      if (elements.length < 2) throw new Error(`Heightmap template: steps < 2. Template: ${id}. Step: ${elements}`);
       addStep(...elements);
     }
 
     return heights;
   };
 
-  const fromPrecreated = id => {
+  const fromPrecreated = (graph, id) => {
     return new Promise(resolve => {
       // create canvas where 1px corresponts to a cell
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
-      const {cellsX, cellsY} = grid;
+      const {cellsX, cellsY} = graph;
       canvas.width = cellsX;
       canvas.height = cellsY;
 
@@ -51,7 +52,8 @@ window.HeightmapGenerator = (function () {
       img.onload = () => {
         ctx.drawImage(img, 0, 0, cellsX, cellsY);
         const imageData = ctx.getImageData(0, 0, cellsX, cellsY);
-        const heights = getHeightsFromImageData(imageData.data);
+        setGraph(graph);
+        getHeightsFromImageData(imageData.data);
         canvas.remove();
         img.remove();
         resolve(heights);
@@ -59,18 +61,17 @@ window.HeightmapGenerator = (function () {
     });
   };
 
-  const generate = async function () {
-    Math.random = aleaPRNG(seed);
-
+  const generate = async function (graph) {
     TIME && console.time("defineHeightmap");
     const id = byId("templateInput").value;
-    resetHeights();
 
+    Math.random = aleaPRNG(seed);
     const isTemplate = id in heightmapTemplates;
-    grid.cells.h = isTemplate ? fromTemplate(id) : await fromPrecreated(id);
-
-    cleanup();
+    const heights = isTemplate ? fromTemplate(graph, id) : await fromPrecreated(graph, id);
     TIME && console.timeEnd("defineHeightmap");
+
+    clearData();
+    return heights;
   };
 
   function addStep(tool, a2, a3, a4, a5) {
@@ -141,7 +142,7 @@ window.HeightmapGenerator = (function () {
       do {
         const x = getPointInRange(rangeX, graphWidth);
         const y = getPointInRange(rangeY, graphHeight);
-        start = findGridCell(x, y);
+        start = findGridCell(x, y, grid);
         limit++;
       } while (heights[start] + h > 90 && limit < 50);
 
@@ -177,7 +178,7 @@ window.HeightmapGenerator = (function () {
       do {
         const x = getPointInRange(rangeX, graphWidth);
         const y = getPointInRange(rangeY, graphHeight);
-        start = findGridCell(x, y);
+        start = findGridCell(x, y, grid);
         limit++;
       } while (heights[start] < 20 && limit < 50);
 
@@ -223,7 +224,9 @@ window.HeightmapGenerator = (function () {
         limit++;
       } while ((dist < graphWidth / 8 || dist > graphWidth / 3) && limit < 50);
 
-      let range = getRange(findGridCell(startX, startY), findGridCell(endX, endY));
+      const startCell = findGridCell(startX, startY, grid);
+      const endCell = findGridCell(endX, endY, grid);
+      let range = getRange(startCell, endCell);
 
       // get main ridge
       function getRange(cur, end) {
@@ -305,7 +308,7 @@ window.HeightmapGenerator = (function () {
       do {
         startX = getPointInRange(rangeX, graphWidth);
         startY = getPointInRange(rangeY, graphHeight);
-        start = findGridCell(startX, startY);
+        start = findGridCell(startX, startY, grid);
         limit++;
       } while (heights[start] < 20 && limit < 50);
 
@@ -317,7 +320,7 @@ window.HeightmapGenerator = (function () {
         limit++;
       } while ((dist < graphWidth / 8 || dist > graphWidth / 2) && limit < 50);
 
-      let range = getRange(start, findGridCell(endX, endY));
+      let range = getRange(start, findGridCell(endX, endY, grid));
 
       // get main ridge
       function getRange(cur, end) {
@@ -388,8 +391,8 @@ window.HeightmapGenerator = (function () {
     const endX = vert ? Math.floor(graphWidth - startX - graphWidth * 0.1 + Math.random() * graphWidth * 0.2) : graphWidth - 5;
     const endY = vert ? graphHeight - 5 : Math.floor(graphHeight - startY - graphHeight * 0.1 + Math.random() * graphHeight * 0.2);
 
-    const start = findGridCell(startX, startY);
-    const end = findGridCell(endX, endY);
+    const start = findGridCell(startX, startY, grid);
+    const end = findGridCell(endX, endY, grid);
     let range = getRange(start, end);
     const query = [];
 
@@ -502,20 +505,16 @@ window.HeightmapGenerator = (function () {
   }
 
   function getHeightsFromImageData(imageData) {
-    const heights = new Uint8Array(grid.points.length);
     for (let i = 0; i < heights.length; i++) {
       const lightness = imageData[i * 4] / 255;
       const powered = lightness < 0.2 ? lightness : 0.2 + (lightness - 0.2) ** 0.8;
       heights[i] = minmax(Math.floor(powered * 100), 0, 100);
     }
-    return heights;
   }
 
   return {
-    setHeights,
-    resetHeights,
+    setGraph,
     getHeights,
-    cleanup,
     generate,
     fromTemplate,
     fromPrecreated,

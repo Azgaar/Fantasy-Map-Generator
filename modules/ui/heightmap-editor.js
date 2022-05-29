@@ -117,7 +117,7 @@ function editHeightmap(options) {
 
   function moveCursor() {
     const [x, y] = d3.mouse(this);
-    const cell = findGridCell(x, y);
+    const cell = findGridCell(x, y, grid);
     heightmapInfoX.innerHTML = rn(x);
     heightmapInfoY.innerHTML = rn(y);
     heightmapInfoCell.innerHTML = cell;
@@ -605,8 +605,8 @@ function editHeightmap(options) {
 
     function dragBrush() {
       const r = brushRadius.valueAsNumber;
-      const point = d3.mouse(this);
-      const start = findGridCell(point[0], point[1]);
+      const [x, y] = d3.mouse(this);
+      const start = findGridCell(x, y, grid);
 
       d3.event.on("drag", () => {
         const p = d3.mouse(this);
@@ -664,7 +664,7 @@ function editHeightmap(options) {
       if (Number.isNaN(operand)) return tip("Operand should be a number", false, "error");
       if ((operator === "add" || operator === "subtract") && !Number.isInteger(operand)) return tip("Operand should be an integer", false, "error");
 
-      HeightmapGenerator.setHeights(grid.cells.h);
+      HeightmapGenerator.setGraph(grid);
 
       if (operator === "multiply") HeightmapGenerator.modify(range, 0, operand, 0);
       else if (operator === "divide") HeightmapGenerator.modify(range, 0, 1 / operand, 0);
@@ -673,15 +673,13 @@ function editHeightmap(options) {
       else if (operator === "exponent") HeightmapGenerator.modify(range, 0, 1, operand);
 
       grid.cells.h = HeightmapGenerator.getHeights();
-      HeightmapGenerator.cleanup();
       updateHeightmap();
     }
 
     function smoothAllHeights() {
-      HeightmapGenerator.setHeights(grid.cells.h);
+      HeightmapGenerator.setGraph(grid);
       HeightmapGenerator.smooth(4, 1.5);
       grid.cells.h = HeightmapGenerator.getHeights();
-      HeightmapGenerator.cleanup();
       updateHeightmap();
     }
 
@@ -940,11 +938,8 @@ function editHeightmap(options) {
       const seed = byId("templateSeed").value;
       if (seed) Math.random = aleaPRNG(seed);
 
-      const heights = new Uint8Array(grid.points.length);
-      // use cells number of the current graph, no matter what UI input value is
-      const cellsDesired = rn((graphWidth * graphHeight) / grid.spacing ** 2, -3);
-      HeightmapGenerator.setHeights(heights, cellsDesired);
-
+      grid.cells.h = createTypedArray({maxValue: 100, length: grid.points.length});
+      HeightmapGenerator.setGraph(grid);
       restartHistory();
 
       for (const step of steps) {
@@ -973,7 +968,6 @@ function editHeightmap(options) {
       }
 
       grid.cells.h = HeightmapGenerator.getHeights();
-      HeightmapGenerator.cleanup();
       updateStatistics();
       mockHeightmap();
       if (byId("preview")) drawHeightmapPreview(); // update heightmap preview if opened

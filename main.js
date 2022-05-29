@@ -629,7 +629,7 @@ void (function addDragToUpload() {
 async function generate(options) {
   try {
     const timeStart = performance.now();
-    const {seed: precreatedSeed} = options || {};
+    const {seed: precreatedSeed, graph: precreatedGraph} = options || {};
 
     invokeActiveZooming();
     setSeed(precreatedSeed);
@@ -638,11 +638,9 @@ async function generate(options) {
     applyMapSize();
     randomizeOptions();
 
-    if (shouldRegenerateGrid()) {
-      placePoints();
-      calculateVoronoi(grid, grid.points);
-    }
-    await HeightmapGenerator.generate();
+    if (shouldRegenerateGrid(grid)) grid = precreatedGraph || generateGrid();
+    else delete grid.cells.h;
+    grid.cells.h = await HeightmapGenerator.generate(grid);
 
     markFeatures();
     markupGridOcean();
@@ -654,6 +652,7 @@ async function generate(options) {
     calculateMapCoordinates();
     calculateTemperatures();
     generatePrecipitation();
+
     reGraph();
     drawCoastline();
 
@@ -736,52 +735,13 @@ function setSeed(precreatedSeed) {
   Math.random = aleaPRNG(seed);
 }
 
-// check if new grid graph should be generated or we can use the existing one
-function shouldRegenerateGrid() {
-  if (!grid.spacing) return true;
-  const cellsDesired = +byId("pointsInput").dataset.cells;
-  const newSpacing = rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2);
-  return grid.spacing !== newSpacing;
-}
-
-// Place points to calculate Voronoi diagram
-function placePoints() {
-  TIME && console.time("placePoints");
-  Math.random = aleaPRNG(seed); // reset PRNG
-
-  const cellsDesired = +byId("pointsInput").dataset.cells;
-  const spacing = rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2); // spacing between points before jirrering
-  grid.spacing = spacing;
-  grid.boundary = getBoundaryPoints(graphWidth, graphHeight, spacing);
-  grid.points = getJitteredGrid(graphWidth, graphHeight, spacing); // jittered square grid
-  grid.cellsX = Math.floor((graphWidth + 0.5 * spacing - 1e-10) / spacing);
-  grid.cellsY = Math.floor((graphHeight + 0.5 * spacing - 1e-10) / spacing);
-  TIME && console.timeEnd("placePoints");
-}
-
-// calculate Delaunay and then Voronoi diagram
-function calculateVoronoi(graph, points) {
-  TIME && console.time("calculateDelaunay");
-  const n = points.length;
-  const allPoints = points.concat(grid.boundary);
-  const delaunay = Delaunator.from(allPoints);
-  TIME && console.timeEnd("calculateDelaunay");
-
-  TIME && console.time("calculateVoronoi");
-  const voronoi = new Voronoi(delaunay, allPoints, n);
-  graph.cells = voronoi.cells;
-  graph.cells.i = n < 65535 ? Uint16Array.from(d3.range(n)) : Uint32Array.from(d3.range(n)); // array of indexes
-  graph.vertices = voronoi.vertices;
-  TIME && console.timeEnd("calculateVoronoi");
-}
-
 // Mark features (ocean, lakes, islands) and calculate distance field
 function markFeatures() {
   TIME && console.time("markFeatures");
   Math.random = aleaPRNG(seed); // get the same result on heightmap edit in Erase mode
 
-  const cells = grid.cells,
-    heights = grid.cells.h;
+  const cells = grid.cells;
+  const heights = grid.cells.h;
   cells.f = new Uint16Array(cells.i.length); // cell feature number
   cells.t = new Int8Array(cells.i.length); // cell type: 1 = land coast; -1 = water near coast
   grid.features = [0];
@@ -1201,8 +1161,8 @@ function generatePrecipitation() {
 // recalculate Voronoi Graph to pack cells
 function reGraph() {
   TIME && console.time("reGraph");
-  let {cells, points, features} = grid;
-  const newCells = {p: [], g: [], h: []}; // to store new data
+  const {cells, points, features} = grid;
+  const newCells = {p: [], g: [], h: []}; // store new data
   const spacing2 = grid.spacing ** 2;
 
   for (const i of cells.i) {
@@ -1236,14 +1196,17 @@ function reGraph() {
     newCells.h.push(height);
   }
 
-  calculateVoronoi(pack, newCells.p);
-  cells = pack.cells;
-  cells.p = newCells.p; // points coordinates [x, y]
-  cells.g = grid.cells.i.length < 65535 ? Uint16Array.from(newCells.g) : Uint32Array.from(newCells.g); // reference to initial grid cell
-  cells.q = d3.quadtree(cells.p.map((p, d) => [p[0], p[1], d])); // points quadtree for fast search
-  cells.h = new Uint8Array(newCells.h); // heights
-  cells.area = new Uint16Array(cells.i.length); // cell area
-  cells.i.forEach(i => (cells.area[i] = Math.abs(d3.polygonArea(getPackPolygon(i)))));
+  function getCellArea(i) {
+    const area = Math.abs(d3.polygonArea(getPackPolygon(i)));
+    return Math.min(area, 65535);
+  }
+
+  pack = calculateVoronoi(newCells.p, grid.boundary);
+  pack.cells.p = newCells.p;
+  pack.cells.g = getTypedArray(grid.points.length).from(newCells.g);
+  pack.cells.q = d3.quadtree(newCells.p.map(([x, y], i) => [x, y, i]));
+  pack.cells.h = getTypedArray(100).from(newCells.h);
+  pack.cells.area = getTypedArray(65535).from(pack.cells.i).map(getCellArea);
 
   TIME && console.timeEnd("reGraph");
 }
@@ -1946,7 +1909,11 @@ function showStatistics() {
 
 const regenerateMap = debounce(async function (options) {
   WARN && console.warn("Generate new random map");
-  showLoading();
+
+  const cellsDesired = +byId("pointsInput").dataset.cells;
+  const shouldShowLoading = cellsDesired > 10000;
+
+  shouldShowLoading && showLoading();
   closeDialogs("#worldConfigurator, #options3d");
   customization = 0;
   resetZoom(1000);
@@ -1955,7 +1922,7 @@ const regenerateMap = debounce(async function (options) {
   restoreLayers();
   if (ThreeD.options.isOn) ThreeD.redraw();
   if ($("#worldConfigurator").is(":visible")) editWorld();
-  hideLoading();
+  shouldShowLoading && hideLoading();
 }, 1000);
 
 // clear the map

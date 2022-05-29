@@ -81,10 +81,10 @@ function handleMouseMove() {
   if (i === undefined) return;
 
   showNotes(d3.event);
-  const g = findGridCell(point[0], point[1]); // grid cell id
+  const gridCell = findGridCell(point[0], point[1], grid);
   if (tooltip.dataset.main) showMainTip();
-  else showMapTooltip(point, d3.event, i, g);
-  if (cellInfo?.offsetParent) updateCellInfo(point, i, g);
+  else showMapTooltip(point, d3.event, i, gridCell);
+  if (cellInfo?.offsetParent) updateCellInfo(point, i, gridCell);
 }
 
 // show note box on hover (if any)
@@ -244,7 +244,7 @@ function updateCellInfo(point, i, g) {
   infoCell.innerHTML = i;
   infoArea.innerHTML = cells.area[i] ? si(getArea(cells.area[i])) + " " + getAreaUnit() : "n/a";
   infoEvelation.innerHTML = getElevation(pack.features[f], pack.cells.h[i]);
-  infoDepth.innerHTML = getDepth(pack.features[f], pack.cells.h[i], point);
+  infoDepth.innerHTML = getDepth(pack.features[f], point);
   infoTemp.innerHTML = convertTemperature(grid.cells.temp[g]);
   infoPrec.innerHTML = cells.h[i] >= 20 ? getFriendlyPrecipitation(i) : "n/a";
   infoRiver.innerHTML = cells.h[i] >= 20 && cells.r[i] ? getRiverInfo(cells.r[i]) : "no";
@@ -276,11 +276,11 @@ function getElevation(f, h) {
 }
 
 // get water depth
-function getDepth(f, h, p) {
+function getDepth(f, p) {
   if (f.land) return "0 " + heightUnit.value; // land: 0
 
   // lake: difference between surface and bottom
-  const gridH = grid.cells.h[findGridCell(p[0], p[1])];
+  const gridH = grid.cells.h[findGridCell(p[0], p[1], grid)];
   if (f.type === "lake") {
     const depth = gridH === 19 ? f.height / 2 : gridH;
     return getHeight(depth, "abs");
@@ -290,9 +290,9 @@ function getDepth(f, h, p) {
 }
 
 // get user-friendly (real-world) height value from map data
-function getFriendlyHeight(p) {
-  const packH = pack.cells.h[findCell(p[0], p[1])];
-  const gridH = grid.cells.h[findGridCell(p[0], p[1])];
+function getFriendlyHeight([x, y]) {
+  const packH = pack.cells.h[findCell(x, y, grid)];
+  const gridH = grid.cells.h[findGridCell(x, y, grid)];
   const h = packH < 20 ? gridH : packH;
   return getHeight(h);
 }

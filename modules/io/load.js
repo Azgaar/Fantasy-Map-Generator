@@ -324,7 +324,11 @@ async function parseLoadedData(data) {
 
     void (function parseGridData() {
       grid = JSON.parse(data[6]);
-      calculateVoronoi(grid, grid.points);
+
+      const {cells, vertices} = calculateVoronoi(grid.points, grid.boundary);
+      grid.cells = cells;
+      grid.vertices = vertices;
+
       grid.cells.h = Uint8Array.from(data[7].split(","));
       grid.cells.prec = Uint8Array.from(data[8].split(","));
       grid.cells.f = Uint16Array.from(data[9].split(","));
@@ -333,7 +337,6 @@ async function parseLoadedData(data) {
     })();
 
     void (function parsePackData() {
-      pack = {};
       reGraph();
       reMarkFeatures();
       pack.features = JSON.parse(data[12]);

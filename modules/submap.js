@@ -41,8 +41,7 @@ window.Submap = (function () {
 
     // create new grid
     applyMapSize();
-    placePoints();
-    calculateVoronoi(grid, grid.points);
+    grid = generateGrid();
     drawScaleBar(scale);
 
     const resampler = (points, qtree, f) => {

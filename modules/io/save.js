@@ -54,8 +54,8 @@ function getMapData() {
 
   const serializedSVG = new XMLSerializer().serializeToString(cloneEl);
 
-  const {spacing, cellsX, cellsY, boundary, points, features} = grid;
-  const gridGeneral = JSON.stringify({spacing, cellsX, cellsY, boundary, points, features});
+  const {spacing, cellsX, cellsY, boundary, points, features, cellsDesired} = grid;
+  const gridGeneral = JSON.stringify({spacing, cellsX, cellsY, boundary, points, features, cellsDesired});
   const packFeatures = JSON.stringify(pack.features);
   const cultures = JSON.stringify(pack.cultures);
   const states = JSON.stringify(pack.states);
