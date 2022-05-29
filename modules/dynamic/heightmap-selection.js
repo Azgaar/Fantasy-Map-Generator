@@ -120,19 +120,28 @@ function appendStyleSheet() {
       padding: 2px 1px;
     }
 
-    .heightmap-selection article > div > span.icon-cw:hover {
-      color: #000;
-    }
-
-    .heightmap-selection article > div > span.icon-cw:active {
-      color: #666;
-    }
-
     .heightmap-selection article > img {
       width: 100%;
       aspect-ratio: ${graphWidth}/${graphHeight};
       border-radius: 8px;
       object-fit: fill;
+    }
+
+    .heightmap-selection article .regeneratePreview {
+      outline: 1px solid #bbb;
+      padding: 1px 3px;
+      border-radius: 4px;
+      transition: all 0.1s ease-in-out;
+    }
+
+    .heightmap-selection article .regeneratePreview:hover {
+      outline: 1px solid #666;
+    }
+
+    .heightmap-selection article .regeneratePreview:active {
+      outline: 1px solid #333;
+      color: #000;
+      transform: rotate(45deg);
     }
   `;
 
@@ -198,7 +207,7 @@ function insertEditorHtml() {
         <img src="${dataUrl}" alt="${name}" />
         <div>
           ${name}
-          <span data-tip="Regenerate preview" class="icon-cw"></span>
+          <span data-tip="Regenerate preview" class="icon-cw regeneratePreview"></span>
         </div>
       </article>`;
     })
