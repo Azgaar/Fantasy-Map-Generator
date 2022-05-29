@@ -28,6 +28,8 @@ const version = "1.84.0"; // generator version, update each time
 
       <ul>
         <strong>Latest changes:</strong>
+        <li>Heightmap selection screen</li>
+        <li>Dialogs optimization for mobile</li>
         <li>New heightmap template: Fractious</li>
         <li>Template Editor: mask and invert tools</li>
         <li>Ability to install the App</li>
@@ -36,7 +38,6 @@ const version = "1.84.0"; // generator version, update each time
         <li>Submap tool by Goteguru</li>
         <li>Resample tool by Goteguru</li>
         <li>Pre-defined heightmaps</li>
-        <li>Advanced notes editor</li>
       </ul>
 
       <p>Join our <a href="${discord}" target="_blank">Discord server</a> and <a href="${reddit}" target="_blank">Reddit community</a> to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>

@@ -623,7 +623,7 @@ function changeEra() {
 }
 
 async function openTemplateSelectionDialog() {
-  const HeightmapSelectionDialog = await import("../dynamic/heightmap-selection.js");
+  const HeightmapSelectionDialog = await import("../dynamic/heightmap-selection.js?v=290520222");
   HeightmapSelectionDialog.open();
 }
 

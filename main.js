@@ -1912,8 +1912,8 @@ const regenerateMap = debounce(async function (options) {
 
   const cellsDesired = +byId("pointsInput").dataset.cells;
   const shouldShowLoading = cellsDesired > 10000;
-
   shouldShowLoading && showLoading();
+
   closeDialogs("#worldConfigurator, #options3d");
   customization = 0;
   resetZoom(1000);
@@ -1922,7 +1922,9 @@ const regenerateMap = debounce(async function (options) {
   restoreLayers();
   if (ThreeD.options.isOn) ThreeD.redraw();
   if ($("#worldConfigurator").is(":visible")) editWorld();
+
   shouldShowLoading && hideLoading();
+  clearMainTip();
 }, 1000);
 
 // clear the map
