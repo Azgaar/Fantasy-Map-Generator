@@ -323,14 +323,14 @@ async function drawPrecreatedHeightmap(id) {
 }
 
 function drawTemplatePreview(id) {
-  const heights = generateHeightmap(id);
+  const heights = HeightmapGenerator.fromTemplate(graph, id);
   const dataUrl = drawHeights(heights);
   const article = byId("heightmapSelection").querySelector(`[data-id="${id}"]`);
   article.querySelector("img").src = dataUrl;
 }
 
 async function drawPrecreatedHeightmap(id) {
-  const heights = await HeightmapGenerator.fromPrecreated(id);
+  const heights = await HeightmapGenerator.fromPrecreated(graph, id);
   const dataUrl = drawHeights(heights);
   const article = byId("heightmapSelection").querySelector(`[data-id="${id}"]`);
   article.querySelector("img").src = dataUrl;

@@ -510,7 +510,6 @@ window.HeightmapGenerator = (function () {
       const powered = lightness < 0.2 ? lightness : 0.2 + (lightness - 0.2) ** 0.8;
       heights[i] = minmax(Math.floor(powered * 100), 0, 100);
     }
-    return heights;
   }
 
   return {

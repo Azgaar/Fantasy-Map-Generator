@@ -96,3 +96,19 @@ function deepCopy(obj) {
 
   return dcAny(obj);
 }
+
+function getTypedArray(maxValue) {
+  console.assert(
+    Number.isInteger(maxValue) && maxValue >= 0 && maxValue <= 4294967295,
+    `Array maxValue must be an integer between 0 and 4294967295, got ${maxValue}`
+  );
+
+  if (maxValue <= 255) return Uint8Array;
+  if (maxValue <= 65535) return Uint16Array;
+  if (maxValue <= 4294967295) return Uint32Array;
+  return Uint32Array;
+}
+
+function createTypedArray({maxValue, length}) {
+  return new (getTypedArray(maxValue))(length);
+}

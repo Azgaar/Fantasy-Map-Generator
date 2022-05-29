@@ -41,7 +41,6 @@ window.Submap = (function () {
     // create new grid
     applyMapSize();
     grid = generateGrid();
-
     drawScaleBar(scale);
 
     const resampler = (points, qtree, f) => {
