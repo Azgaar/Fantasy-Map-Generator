@@ -1,11 +1,7 @@
 "use strict";
 
-<<<<<<< HEAD
 // version and caching control
 const version = "1.87.15"; // generator version, update each time
-=======
-const version = "1.83.0"; // generator version, update each time
->>>>>>> 1d405891 (pump version to 1.83.0)
 
 {
   document.title += " v" + version;

@@ -1200,6 +1200,6 @@ async function editStates() {
 
 async function editCultures() {
   if (customization) return;
-  const CulturesEditor = await import("../dynamic/editors/cultures-editor.js");
+  const CulturesEditor = await import("../dynamic/editors/cultures-editor.js?v=29052022");
   CulturesEditor.open();
 }
