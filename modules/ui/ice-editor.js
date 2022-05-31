@@ -65,8 +65,8 @@ function editIce() {
   }
 
   function addIcebergOnClick() {
-    const point = d3.mouse(this);
-    const i = findGridCell(point[0], point[1]);
+    const [x, y] = d3.mouse(this);
+    const i = findGridCell(x, y, grid);
     const c = grid.points[i];
     const s = +document.getElementById("iceSize").value;
 

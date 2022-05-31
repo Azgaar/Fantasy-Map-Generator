@@ -347,6 +347,20 @@ text.drag {
   user-select: none;
 }
 
+#optionsTrigger {
+  padding: 0.6em 0.45em;
+}
+
+@media (max-width: 600px) {
+  #optionsTrigger {
+    font-size: 2em;
+    padding: 0;
+    width: 1.3em;
+    height: 1.6em;
+    border: solid 1px #5e4fa2;
+  }
+}
+
 #options {
   position: absolute;
   font-family: Consolas, monospace;
@@ -929,7 +943,7 @@ fieldset {
   padding: 0.1em 0.5em;
   float: left;
   font-size: 1.2em;
-  font-family: Copperplate, monospace;
+  font-family: monospace;
 }
 
 #brushesButtons > button {
@@ -1318,6 +1332,13 @@ div.slider .ui-slider-handle {
   scrollbar-width: thin;
 }
 
+@media screen and (max-width: 600px) {
+  .table {
+    max-width: unset;
+  }
+}
+
+.dialog::-webkit-scrollbar,
 #alertMessage::-webkit-scrollbar,
 .table::-webkit-scrollbar,
 .matrix-table::-webkit-scrollbar {
@@ -1326,6 +1347,7 @@ div.slider .ui-slider-handle {
   background-color: transparent;
 }
 
+.dialog::-webkit-scrollbar-thumb,
 #alertMessage::-webkit-scrollbar-thumb,
 .table::-webkit-scrollbar-thumb,
 .matrix-table::-webkit-scrollbar-thumb {
@@ -1333,30 +1355,30 @@ div.slider .ui-slider-handle {
   border-radius: 6px;
 }
 
+.dialog::-webkit-scrollbar-thumb:hover,
 #alertMessage::-webkit-scrollbar-thumb:hover,
 .table::-webkit-scrollbar-thumb:hover,
 .matrix-table::-webkit-scrollbar-thumb:hover {
   background: #666;
 }
 
-.overflow {
+.dialog {
   max-width: 93vw;
-  overflow: auto;
-  max-height: 75vh;
 }
 
-.overflow > div {
+.dialog > div {
   width: max-content;
 }
 
-div.header > div {
+div.header {
+  display: grid;
+  width: 0;
   font-weight: bold;
   font-size: 0.9em;
-  display: inline-block;
-  position: sticky;
-  white-space: nowrap;
-  overflow-x: hidden;
-  vertical-align: bottom;
+}
+
+div.header > div:first-child {
+  margin-left: 1.8em;
 }
 
 .sortable {
@@ -1653,11 +1675,6 @@ div.states > input.biomeName {
 
 div.states > div.biomeArea {
   width: 5em;
-}
-
-#militaryHeader > div,
-#regimentsHeader > div {
-  width: 5.2em;
 }
 
 #militaryBody div.states > input {
@@ -1978,12 +1995,9 @@ input[type="checkbox"] {
 }
 
 div.textual select,
-div.textual textarea {
-  font-family: Copperplate, monospace;
-}
-
+div.textual textarea,
 div.textual input {
-  font-family: Copperplate, monospace;
+  font-family: monospace;
 }
 
 div.textual fieldset {
@@ -1998,7 +2012,7 @@ div.textual span,
 }
 
 #namesbaseExamples {
-  font-family: Copperplate, monospace;
+  font-family: monospace;
   cursor: pointer;
 }
 
@@ -2063,7 +2077,7 @@ div.textual span,
   outline: 0;
   overflow-y: auto;
   padding: 0.6em;
-  font-family: Copperplate, monospace;
+  font-family: monospace;
   background-color: #fff;
   border: 1px solid #dedede;
   color: #000;
@@ -2092,6 +2106,7 @@ svg.button {
 #reliefIconsDiv {
   margin-top: 2px;
   padding: 2px;
+  width: 100%;
 }
 
 #reliefIconsDiv svg {
@@ -2301,11 +2316,8 @@ svg.button {
 
 #mapOverlay {
   position: absolute;
+  inset: 0;
   display: flex;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
   align-items: center;
   justify-content: center;
   z-index: 10;
@@ -2340,17 +2352,6 @@ svg.button {
 }
 
 @media only screen and (max-width: 420px) {
-  #collapsible,
-  #options {
-    margin: 0;
-    border: 0;
-  }
-
-  #options {
-    height: 100vh;
-    width: 100vw;
-  }
-
   table {
     width: 100%;
   }

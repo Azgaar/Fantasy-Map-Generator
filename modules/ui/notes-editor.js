@@ -42,7 +42,7 @@ function editNotes(id, name) {
 
   $("#notesEditor").dialog({
     title: "Notes Editor",
-    width: "70vw",
+    width: "minmax(80vw, 540px)",
     height: window.innerHeight * 0.75,
     position: {my: "center", at: "center", of: "svg"},
     close: removeEditor

@@ -3,7 +3,7 @@
 
 // fit full-screen map if window is resized
 window.addEventListener("resize", function (e) {
-  if (localStorage.getItem("mapWidth") && localStorage.getItem("mapHeight")) return;
+  if (stored("mapWidth") && stored("mapHeight")) return;
   mapWidthInput.value = window.innerWidth;
   mapHeightInput.value = window.innerHeight;
   changeMapSize();
@@ -21,18 +21,22 @@ document.getElementById("dialogs").addEventListener("mousemove", showDataTip);
 document.getElementById("optionsContainer").addEventListener("mousemove", showDataTip);
 document.getElementById("exitCustomization").addEventListener("mousemove", showDataTip);
 
-function tip(tip = "Tip is undefined", main, type, time) {
+const tipBackgroundMap = {
+  info: "linear-gradient(0.1turn, #ffffff00, #5e5c5c80, #ffffff00)",
+  success: "linear-gradient(0.1turn, #ffffff00, #127912cc, #ffffff00)",
+  warn: "linear-gradient(0.1turn, #ffffff00, #be5d08cc, #ffffff00)",
+  error: "linear-gradient(0.1turn, #ffffff00, #e11d1dcc, #ffffff00)"
+};
+
+function tip(tip = "Tip is undefined", main = false, type = "info", time = 0) {
   tooltip.innerHTML = tip;
-  tooltip.style.background = "linear-gradient(0.1turn, #ffffff00, #5e5c5c80, #ffffff00)";
-  if (type === "error") tooltip.style.background = "linear-gradient(0.1turn, #ffffff00, #e11d1dcc, #ffffff00)";
-  else if (type === "warn") tooltip.style.background = "linear-gradient(0.1turn, #ffffff00, #be5d08cc, #ffffff00)";
-  else if (type === "success") tooltip.style.background = "linear-gradient(0.1turn, #ffffff00, #127912cc, #ffffff00)";
+  tooltip.style.background = tipBackgroundMap[type];
 
   if (main) {
     tooltip.dataset.main = tip;
     tooltip.dataset.color = tooltip.style.background;
   }
-  if (time) setTimeout(() => clearMainTip(), time);
+  if (time) setTimeout(clearMainTip, time);
 }
 
 function showMainTip() {
@@ -47,11 +51,16 @@ function clearMainTip() {
 }
 
 // show tip at the bottom of the screen, consider possible translation
-function showDataTip(e) {
-  if (!e.target) return;
-  let dataTip = e.target.dataset.tip;
-  if (!dataTip && e.target.parentNode.dataset.tip) dataTip = e.target.parentNode.dataset.tip;
+function showDataTip(event) {
+  if (!event.target) return;
+
+  let dataTip = event.target.dataset.tip;
+  if (!dataTip && event.target.parentNode.dataset.tip) dataTip = event.target.parentNode.dataset.tip;
   if (!dataTip) return;
+
+  const shortcut = event.target.dataset.shortcut;
+  if (shortcut && !MOBILE) dataTip += `. Shortcut: ${shortcut}`;
+
   //const tooltip = lang === "en" ? dataTip : translate(e.target.dataset.t || e.target.parentNode.dataset.t, dataTip);
   tip(dataTip);
 }
@@ -72,10 +81,10 @@ function handleMouseMove() {
   if (i === undefined) return;
 
   showNotes(d3.event);
-  const g = findGridCell(point[0], point[1]); // grid cell id
+  const gridCell = findGridCell(point[0], point[1], grid);
   if (tooltip.dataset.main) showMainTip();
-  else showMapTooltip(point, d3.event, i, g);
-  if (cellInfo?.offsetParent) updateCellInfo(point, i, g);
+  else showMapTooltip(point, d3.event, i, gridCell);
+  if (cellInfo?.offsetParent) updateCellInfo(point, i, gridCell);
 }
 
 // show note box on hover (if any)
@@ -235,7 +244,7 @@ function updateCellInfo(point, i, g) {
   infoCell.innerHTML = i;
   infoArea.innerHTML = cells.area[i] ? si(getArea(cells.area[i])) + " " + getAreaUnit() : "n/a";
   infoEvelation.innerHTML = getElevation(pack.features[f], pack.cells.h[i]);
-  infoDepth.innerHTML = getDepth(pack.features[f], pack.cells.h[i], point);
+  infoDepth.innerHTML = getDepth(pack.features[f], point);
   infoTemp.innerHTML = convertTemperature(grid.cells.temp[g]);
   infoPrec.innerHTML = cells.h[i] >= 20 ? getFriendlyPrecipitation(i) : "n/a";
   infoRiver.innerHTML = cells.h[i] >= 20 && cells.r[i] ? getRiverInfo(cells.r[i]) : "no";
@@ -267,11 +276,11 @@ function getElevation(f, h) {
 }
 
 // get water depth
-function getDepth(f, h, p) {
+function getDepth(f, p) {
   if (f.land) return "0 " + heightUnit.value; // land: 0
 
   // lake: difference between surface and bottom
-  const gridH = grid.cells.h[findGridCell(p[0], p[1])];
+  const gridH = grid.cells.h[findGridCell(p[0], p[1], grid)];
   if (f.type === "lake") {
     const depth = gridH === 19 ? f.height / 2 : gridH;
     return getHeight(depth, "abs");
@@ -281,9 +290,9 @@ function getDepth(f, h, p) {
 }
 
 // get user-friendly (real-world) height value from map data
-function getFriendlyHeight(p) {
-  const packH = pack.cells.h[findCell(p[0], p[1])];
-  const gridH = grid.cells.h[findGridCell(p[0], p[1])];
+function getFriendlyHeight([x, y]) {
+  const packH = pack.cells.h[findCell(x, y, grid)];
+  const gridH = grid.cells.h[findGridCell(x, y, grid)];
   const h = packH < 20 ? gridH : packH;
   return getHeight(h);
 }
@@ -405,7 +414,7 @@ document.querySelectorAll("[data-locked]").forEach(function (e) {
 // lock option
 function lock(id) {
   const input = document.querySelector('[data-stored="' + id + '"]');
-  if (input) localStorage.setItem(id, input.value);
+  if (input) store(id, input.value);
   const el = document.getElementById("lock_" + id);
   if (!el) return;
   el.dataset.locked = 1;
@@ -427,9 +436,14 @@ function locked(id) {
   return lockEl.dataset.locked == 1;
 }
 
-// check if option is stored in localStorage
-function stored(option) {
-  return localStorage.getItem(option);
+// return key value stored in localStorage or null
+function stored(key) {
+  return localStorage.getItem(key) || null;
+}
+
+// store key value in localStorage
+function store(key, value) {
+  return localStorage.setItem(key, value);
 }
 
 // assign skeaker behaviour
@@ -449,10 +463,10 @@ function speak(text) {
 }
 
 // apply drop-down menu option. If the value is not in options, add it
-function applyOption(select, id, name = id) {
-  const custom = !Array.from(select.options).some(o => o.value == id);
-  if (custom) select.options.add(new Option(name, id));
-  select.value = id;
+function applyOption($select, value, name = value) {
+  const isExisting = Array.from($select.options).some(o => o.value === value);
+  if (!isExisting) $select.options.add(new Option(name, value));
+  $select.value = value;
 }
 
 // show info about the generator in a popup

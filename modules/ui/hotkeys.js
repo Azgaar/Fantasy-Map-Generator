@@ -25,7 +25,7 @@ function handleKeyup(event) {
   const alt = altKey || key === "Alt";
 
   if (code === "F1") showInfo();
-  else if (code === "F2") regeneratePrompt("hotkey");
+  else if (code === "F2") regeneratePrompt();
   else if (code === "F6") quickSave();
   else if (code === "F9") quickLoad();
   else if (code === "Tab") toggleOptions(event);

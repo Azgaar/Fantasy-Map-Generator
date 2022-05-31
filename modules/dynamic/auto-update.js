@@ -520,4 +520,9 @@ export function resolveVersionConflicts(version) {
       if (!zone.dataset.type) zone.dataset.type = "Unknown";
     });
   }
+
+  if (version < 1.84) {
+    // v1.84.0 added grid.cellsDesired to stored data
+    if (!grid.cellsDesired) grid.cellsDesired = rn((graphWidth * graphHeight) / grid.spacing ** 2, -3);
+  }
 }

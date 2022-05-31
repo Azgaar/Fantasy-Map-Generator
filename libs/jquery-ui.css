@@ -359,7 +359,7 @@ body .ui-dialog {
   padding: 0.5em 1em;
   background: none;
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: auto;
 }
 .ui-dialog .ui-dialog-buttonpane {
   text-align: left;

@@ -137,7 +137,7 @@ function recalculatePopulation() {
 }
 
 function regenerateStates() {
-  const localSeed = Math.floor(Math.random() * 1e9); // new random seed
+  const localSeed = generateSeed();
   Math.random = aleaPRNG(localSeed);
 
   const statesCount = +regionsOutput.value;

@@ -10,6 +10,9 @@ const TIME = DEBUG || !PRODUCTION;
 const WARN = true;
 const ERROR = true;
 
+// detect device
+const MOBILE = window.innerWidth < 600 || navigator.userAgentData?.mobile;
+
 if (PRODUCTION && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").catch(err => {
@@ -201,9 +204,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       }
     });
-
-    d3.select("#loading-text").transition().duration(1000).style("opacity", 0);
-    d3.select("#init-rose").transition().duration(4000).style("opacity", 0);
   } else {
     hideLoading();
     await checkLoadParameters();
@@ -212,15 +212,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 function hideLoading() {
-  d3.select("#loading").transition().duration(4000).style("opacity", 0);
-  d3.select("#initial").transition().duration(4000).attr("opacity", 0);
-  d3.select("#optionsContainer").transition().duration(3000).style("opacity", 1);
-  d3.select("#tooltip").transition().duration(4000).style("opacity", 1);
+  d3.select("#loading").transition().duration(3000).style("opacity", 0);
+  d3.select("#optionsContainer").transition().duration(2000).style("opacity", 1);
+  d3.select("#tooltip").transition().duration(3000).style("opacity", 1);
 }
 
 function showLoading() {
   d3.select("#loading").transition().duration(200).style("opacity", 1);
-  d3.select("#initial").transition().duration(200).attr("opacity", 1);
   d3.select("#optionsContainer").transition().duration(100).style("opacity", 0);
   d3.select("#tooltip").transition().duration(200).style("opacity", 0);
 }
@@ -628,18 +626,22 @@ void (function addDragToUpload() {
   });
 })();
 
-async function generate() {
+async function generate(options) {
   try {
     const timeStart = performance.now();
+    const {seed: precreatedSeed, graph: precreatedGraph} = options || {};
+
     invokeActiveZooming();
-    generateSeed();
+    setSeed(precreatedSeed);
     INFO && console.group("Generated Map " + seed);
+
     applyMapSize();
     randomizeOptions();
-    placePoints();
-    calculateVoronoi(grid, grid.points);
-    drawScaleBar(scale);
-    await HeightmapGenerator.generate();
+
+    if (shouldRegenerateGrid(grid)) grid = precreatedGraph || generateGrid();
+    else delete grid.cells.h;
+    grid.cells.h = await HeightmapGenerator.generate(grid);
+
     markFeatures();
     markupGridOcean();
     addLakesInDeepDepressions();
@@ -650,6 +652,7 @@ async function generate() {
     calculateMapCoordinates();
     calculateTemperatures();
     generatePrecipitation();
+
     reGraph();
     drawCoastline();
 
@@ -677,6 +680,8 @@ async function generate() {
     Military.generate();
     Markers.generate();
     addZones();
+
+    drawScaleBar(scale);
     Names.getMapName();
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - timeStart) / 1000, 2)}s`);
@@ -711,48 +716,23 @@ async function generate() {
   }
 }
 
-// generate map seed (string!) or get it from URL searchParams
-function generateSeed() {
-  const first = !mapHistory[0];
-  const url = new URL(window.location.href);
-  const params = url.searchParams;
-  const urlSeed = url.searchParams.get("seed");
-  if (first && params.get("from") === "MFCG" && urlSeed.length === 13) seed = urlSeed.slice(0, -4);
-  else if (first && urlSeed) seed = urlSeed;
-  else if (optionsSeed.value && optionsSeed.value != seed) seed = optionsSeed.value;
-  else seed = Math.floor(Math.random() * 1e9).toString();
-  optionsSeed.value = seed;
+// set map seed (string!)
+function setSeed(precreatedSeed) {
+  if (!precreatedSeed) {
+    const first = !mapHistory[0];
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+    const urlSeed = url.searchParams.get("seed");
+    if (first && params.get("from") === "MFCG" && urlSeed.length === 13) seed = urlSeed.slice(0, -4);
+    else if (first && urlSeed) seed = urlSeed;
+    else if (optionsSeed.value && optionsSeed.value != seed) seed = optionsSeed.value;
+    else seed = generateSeed();
+  } else {
+    seed = precreatedSeed;
+  }
+
+  byId("optionsSeed").value = seed;
   Math.random = aleaPRNG(seed);
-}
-
-// Place points to calculate Voronoi diagram
-function placePoints() {
-  TIME && console.time("placePoints");
-  Math.random = aleaPRNG(seed); // reset PRNG
-
-  const cellsDesired = +pointsInput.dataset.cells;
-  const spacing = (grid.spacing = rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2)); // spacing between points before jirrering
-  grid.boundary = getBoundaryPoints(graphWidth, graphHeight, spacing);
-  grid.points = getJitteredGrid(graphWidth, graphHeight, spacing); // jittered square grid
-  grid.cellsX = Math.floor((graphWidth + 0.5 * spacing - 1e-10) / spacing);
-  grid.cellsY = Math.floor((graphHeight + 0.5 * spacing - 1e-10) / spacing);
-  TIME && console.timeEnd("placePoints");
-}
-
-// calculate Delaunay and then Voronoi diagram
-function calculateVoronoi(graph, points) {
-  TIME && console.time("calculateDelaunay");
-  const n = points.length;
-  const allPoints = points.concat(grid.boundary);
-  const delaunay = Delaunator.from(allPoints);
-  TIME && console.timeEnd("calculateDelaunay");
-
-  TIME && console.time("calculateVoronoi");
-  const voronoi = new Voronoi(delaunay, allPoints, n);
-  graph.cells = voronoi.cells;
-  graph.cells.i = n < 65535 ? Uint16Array.from(d3.range(n)) : Uint32Array.from(d3.range(n)); // array of indexes
-  graph.vertices = voronoi.vertices;
-  TIME && console.timeEnd("calculateVoronoi");
 }
 
 // Mark features (ocean, lakes, islands) and calculate distance field
@@ -760,8 +740,8 @@ function markFeatures() {
   TIME && console.time("markFeatures");
   Math.random = aleaPRNG(seed); // get the same result on heightmap edit in Erase mode
 
-  const cells = grid.cells,
-    heights = grid.cells.h;
+  const cells = grid.cells;
+  const heights = grid.cells.h;
   cells.f = new Uint16Array(cells.i.length); // cell feature number
   cells.t = new Int8Array(cells.i.length); // cell type: 1 = land coast; -1 = water near coast
   grid.features = [0];
@@ -879,7 +859,7 @@ function addLakesInDeepDepressions() {
 
 // near sea lakes usually get a lot of water inflow, most of them should brake threshold and flow out to sea (see Ancylus Lake)
 function openNearSeaLakes() {
-  if (templateInput.value === "Atoll") return; // no need for Atolls
+  if (byId("templateInput").value === "Atoll") return; // no need for Atolls
 
   const cells = grid.cells;
   const features = grid.features;
@@ -924,7 +904,7 @@ function defineMapSize() {
   if (randomize || !locked("latitude")) latitudeOutput.value = latitudeInput.value = rn(latitude);
 
   function getSizeAndLatitude() {
-    const template = document.getElementById("templateInput").value; // heightmap template
+    const template = byId("templateInput").value; // heightmap template
 
     if (template === "africa-centric") return [45, 53];
     if (template === "arabia") return [20, 35];
@@ -1181,8 +1161,8 @@ function generatePrecipitation() {
 // recalculate Voronoi Graph to pack cells
 function reGraph() {
   TIME && console.time("reGraph");
-  let {cells, points, features} = grid;
-  const newCells = {p: [], g: [], h: []}; // to store new data
+  const {cells, points, features} = grid;
+  const newCells = {p: [], g: [], h: []}; // store new data
   const spacing2 = grid.spacing ** 2;
 
   for (const i of cells.i) {
@@ -1216,14 +1196,17 @@ function reGraph() {
     newCells.h.push(height);
   }
 
-  calculateVoronoi(pack, newCells.p);
-  cells = pack.cells;
-  cells.p = newCells.p; // points coordinates [x, y]
-  cells.g = grid.cells.i.length < 65535 ? Uint16Array.from(newCells.g) : Uint32Array.from(newCells.g); // reference to initial grid cell
-  cells.q = d3.quadtree(cells.p.map((p, d) => [p[0], p[1], d])); // points quadtree for fast search
-  cells.h = new Uint8Array(newCells.h); // heights
-  cells.area = new Uint16Array(cells.i.length); // cell area
-  cells.i.forEach(i => (cells.area[i] = Math.abs(d3.polygonArea(getPackPolygon(i)))));
+  function getCellArea(i) {
+    const area = Math.abs(d3.polygonArea(getPackPolygon(i)));
+    return Math.min(area, 65535);
+  }
+
+  pack = calculateVoronoi(newCells.p, grid.boundary);
+  pack.cells.p = newCells.p;
+  pack.cells.g = getTypedArray(grid.points.length).from(newCells.g);
+  pack.cells.q = d3.quadtree(newCells.p.map(([x, y], i) => [x, y, i]));
+  pack.cells.h = getTypedArray(100).from(newCells.h);
+  pack.cells.area = getTypedArray(65535).from(pack.cells.i).map(getCellArea);
 
   TIME && console.timeEnd("reGraph");
 }
@@ -1901,11 +1884,14 @@ function addZones(number = 1) {
 
 // show map stats on generation complete
 function showStatistics() {
-  const template = templateInput.options[templateInput.selectedIndex].text;
-  const templateRandom = locked("template") ? "" : "(random)";
+  const heightmap = byId("templateInput").value;
+  const isTemplate = heightmap in heightmapTemplates;
+  const heightmapType = isTemplate ? "template" : "precreated";
+  const isRandomTemplate = isTemplate && !locked("template") ? "random " : "";
+
   const stats = `  Seed: ${seed}
-    Canvas size: ${graphWidth}x${graphHeight}
-    Template: ${template} ${templateRandom}
+    Canvas size: ${graphWidth}x${graphHeight} px
+    Heightmap: ${heightmap} (${isRandomTemplate}${heightmapType})
     Points: ${grid.points.length}
     Cells: ${pack.cells.i.length}
     Map size: ${mapSizeOutput.value}%
@@ -1917,22 +1903,28 @@ function showStatistics() {
     Cultures: ${pack.cultures.length - 1}`;
 
   mapId = Date.now(); // unique map id is it's creation date number
-  mapHistory.push({seed, width: graphWidth, height: graphHeight, template, created: mapId});
+  mapHistory.push({seed, width: graphWidth, height: graphHeight, template: heightmap, created: mapId});
   INFO && console.log(stats);
 }
 
-const regenerateMap = debounce(async function () {
+const regenerateMap = debounce(async function (options) {
   WARN && console.warn("Generate new random map");
-  showLoading();
+
+  const cellsDesired = +byId("pointsInput").dataset.cells;
+  const shouldShowLoading = cellsDesired > 10000;
+  shouldShowLoading && showLoading();
+
   closeDialogs("#worldConfigurator, #options3d");
   customization = 0;
   resetZoom(1000);
   undraw();
-  await generate();
+  await generate(options);
   restoreLayers();
   if (ThreeD.options.isOn) ThreeD.redraw();
   if ($("#worldConfigurator").is(":visible")) editWorld();
-  hideLoading();
+
+  shouldShowLoading && hideLoading();
+  clearMainTip();
 }, 1000);
 
 // clear the map

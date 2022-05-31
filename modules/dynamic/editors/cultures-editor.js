@@ -16,7 +16,6 @@ export function open() {
   $("#culturesEditor").dialog({
     title: "Cultures Editor",
     resizable: false,
-    width: fitContent(),
     close: closeCulturesEditor,
     position: {my: "right top", at: "right-10 top+10", of: "svg"}
   });
@@ -24,16 +23,16 @@ export function open() {
 }
 
 function insertEditorHtml() {
-  const editorHtml = /* html */ `<div id="culturesEditor" class="dialog stable" style="display: none">
-    <div id="culturesHeader" class="header">
-      <div style="left: 1.8em" data-tip="Click to sort by culture name" class="sortable alphabetically" data-sortby="name">Culture&nbsp;</div>
-      <div style="left: 9.9em" data-tip="Click to sort by type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
-      <div style="left: 16.2em" data-tip="Click to sort by culture namesbase" class="sortable" data-sortby="base">Namesbase&nbsp;</div>
-      <div style="left: 24.5em" data-tip="Click to sort by culture cells count" class="sortable hide" data-sortby="cells">Cells&nbsp;</div>
-      <div style="left: 29.8em" data-tip="Click to sort by expansionism" class="sortable hide" data-sortby="expansionism">Expansion&nbsp;</div>
-      <div style="left: 37.2em" data-tip="Click to sort by culture area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
-      <div style="left: 42.8em" data-tip="Click to sort by culture population" class="sortable hide icon-sort-number-down" data-sortby="population">Population&nbsp;</div>
-      <div style="left: 50.8em" data-tip="Click to sort by culture emblems shape" class="sortable alphabetically hide" data-sortby="emblems">Emblems&nbsp;</div>
+  const editorHtml = /* html */ `<div id="culturesEditor" class="dialog stable">
+    <div id="culturesHeader" class="header" style="grid-template-columns: 10em 7em 8em 4em 8em 5em 8em 8em">
+      <div data-tip="Click to sort by culture name" class="sortable alphabetically" data-sortby="name">Culture&nbsp;</div>
+      <div data-tip="Click to sort by type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
+      <div data-tip="Click to sort by culture namesbase" class="sortable" data-sortby="base">Namesbase&nbsp;</div>
+      <div data-tip="Click to sort by culture cells count" class="sortable hide" data-sortby="cells">Cells&nbsp;</div>
+      <div data-tip="Click to sort by expansionism" class="sortable hide" data-sortby="expansionism">Expansion&nbsp;</div>
+      <div data-tip="Click to sort by culture area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
+      <div data-tip="Click to sort by culture population" class="sortable hide icon-sort-number-down" data-sortby="population">Population&nbsp;</div>
+      <div data-tip="Click to sort by culture emblems shape" class="sortable alphabetically hide" data-sortby="emblems">Emblems&nbsp;</div>
     </div>
     <div id="culturesBody" class="table" data-type="absolute"></div>
 
@@ -52,7 +51,7 @@ function insertEditorHtml() {
       <button id="culturesHeirarchy" data-tip="Show cultures hierarchy tree" class="icon-sitemap"></button>
       <button id="culturesManually" data-tip="Manually re-assign cultures" class="icon-brush"></button>
       <div id="culturesManuallyButtons" style="display: none">
-        <label data-tip="Change brush size. Shortcut: + (increase), – (decrease)" class="italic">Brush size:
+        <label data-tip="Change brush size" data-shortcut="+ (increase), – (decrease)" class="italic">Brush size:
           <input
             id="culturesManuallyBrush"
             oninput="tip('Brush size: '+this.value); culturesManuallyBrushNumber.value = this.value"

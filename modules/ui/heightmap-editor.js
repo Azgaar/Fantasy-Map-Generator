@@ -1,34 +1,12 @@
 "use strict";
 
-function editHeightmap() {
-  void (function selectEditMode() {
-    alertMessage.innerHTML = /* html */ `Heightmap is a core element on which all other data (rivers, burgs, states etc) is based. So the best edit approach is to
-      <i>erase</i> the secondary data and let the system automatically regenerate it on edit completion.
-      <p><i>Erase</i> mode also allows you Convert an Image into a heightmap or use Template Editor.</p>
-      <p>You can <i>keep</i> the data, but you won't be able to change the coastline.</p>
-      <p>
-        Try <i>risk</i> mode to change the coastline and keep the data. The data will be restored as much as possible, but it can cause unpredictable errors.
-      </p>
-      <p>Please <span class="pseudoLink" onclick="dowloadMap();" editHeightmap();>save the map</span> before editing the heightmap!</p>
-      <p style="margin-bottom: 0">Check out ${link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization", "wiki")} for guidance.</p>`;
-
-    $("#alert").dialog({
-      resizable: false,
-      title: "Edit Heightmap",
-      width: "28em",
-      buttons: {
-        Erase: () => enterHeightmapEditMode("erase"),
-        Keep: () => enterHeightmapEditMode("keep"),
-        Risk: () => enterHeightmapEditMode("risk"),
-        Cancel: function () {
-          $(this).dialog("close");
-        }
-      }
-    });
-  })();
-
+function editHeightmap(options) {
+  const {mode, tool} = options || {};
   restartHistory();
   viewbox.insert("g", "#terrs").attr("id", "heights");
+
+  if (!mode) showModeDialog();
+  else enterHeightmapEditMode(mode);
 
   if (modules.editHeightmap) return;
   modules.editHeightmap = true;
@@ -44,35 +22,66 @@ function editHeightmap() {
   byId("templateUndo").on("click", () => restoreHistory(edits.n - 1));
   byId("templateRedo").on("click", () => restoreHistory(edits.n + 1));
 
-  function enterHeightmapEditMode(type) {
+  function showModeDialog() {
+    alertMessage.innerHTML = /* html */ `Heightmap is a core element on which all other data (rivers, burgs, states etc) is based. So the best edit approach is to
+    <i>erase</i> the secondary data and let the system automatically regenerate it on edit completion.
+    <p><i>Erase</i> mode also allows you Convert an Image into a heightmap or use Template Editor.</p>
+    <p>You can <i>keep</i> the data, but you won't be able to change the coastline.</p>
+    <p>Try <i>risk</i> mode to change the coastline and keep the data. The data will be restored as much as possible, but it can cause unpredictable errors.</p>
+    <p>Please <span class="pseudoLink" onclick="dowloadMap();">save the map</span> before editing the heightmap!</p>
+    <p style="margin-bottom: 0">Check out ${link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization", "wiki")} for guidance.</p>`;
+
+    $("#alert").dialog({
+      resizable: false,
+      title: "Edit Heightmap",
+      width: "28em",
+      buttons: {
+        Erase: () => enterHeightmapEditMode("erase"),
+        Keep: () => enterHeightmapEditMode("keep"),
+        Risk: () => enterHeightmapEditMode("risk"),
+        Cancel: function () {
+          $(this).dialog("close");
+        }
+      }
+    });
+  }
+
+  function enterHeightmapEditMode(mode) {
     editHeightmap.layers = Array.from(mapLayers.querySelectorAll("li:not(.buttonoff)")).map(node => node.id); // store layers preset
     editHeightmap.layers.forEach(l => byId(l).click()); // turn off all layers
 
     customization = 1;
     closeDialogs();
     tip('Heightmap edit mode is active. Click on "Exit Customization" to finalize the heightmap', true);
-    customizationMenu.style.display = "block";
-    toolsContent.style.display = "none";
-    heightmapEditMode.innerHTML = type;
 
-    if (type === "erase") {
+    byId("options")
+      .querySelectorAll(".tabcontent")
+      .forEach(tabcontent => {
+        tabcontent.style.display = "none";
+      });
+    byId("options").querySelector(".tab > .active").classList.remove("active");
+    byId("customizationMenu").style.display = "block";
+    byId("toolsTab").classList.add("active");
+    heightmapEditMode.innerHTML = mode;
+
+    if (mode === "erase") {
       undraw();
       changeOnlyLand.checked = false;
-    } else if (type === "keep") {
+    } else if (mode === "keep") {
       viewbox.selectAll("#landmass, #lakes").style("display", "none");
       changeOnlyLand.checked = true;
-    } else if (type === "risk") {
+    } else if (mode === "risk") {
       defs.selectAll("#land, #water").selectAll("path").remove();
       viewbox.selectAll("#coastline path, #lakes path, #oceanLayers path").remove();
       changeOnlyLand.checked = false;
     }
 
     // show convert and template buttons for Erase mode only
-    applyTemplate.style.display = type === "erase" ? "inline-block" : "none";
-    convertImage.style.display = type === "erase" ? "inline-block" : "none";
+    applyTemplate.style.display = mode === "erase" ? "inline-block" : "none";
+    convertImage.style.display = mode === "erase" ? "inline-block" : "none";
 
     // hide erosion checkbox if mode is Keep
-    allowErosionBox.style.display = type === "keep" ? "none" : "inline-block";
+    allowErosionBox.style.display = mode === "keep" ? "none" : "inline-block";
 
     // show finalize button
     if (!sessionStorage.getItem("noExitButtonAnimation")) {
@@ -95,27 +104,30 @@ function editHeightmap() {
         .style("transform", "scale(1)");
     } else exitCustomization.style.display = "block";
 
-    openBrushesPanel();
     turnButtonOn("toggleHeight");
     layersPreset.value = "heightmap";
     layersPreset.disabled = true;
     mockHeightmap();
     viewbox.on("touchmove mousemove", moveCursor);
+
+    if (tool === "templateEditor") openTemplateEditor();
+    else if (tool === "imageConverter") openImageConverter();
+    else openBrushesPanel();
   }
 
   function moveCursor() {
-    const p = d3.mouse(this),
-      cell = findGridCell(p[0], p[1]);
-    heightmapInfoX.innerHTML = rn(p[0]);
-    heightmapInfoY.innerHTML = rn(p[1]);
+    const [x, y] = d3.mouse(this);
+    const cell = findGridCell(x, y, grid);
+    heightmapInfoX.innerHTML = rn(x);
+    heightmapInfoY.innerHTML = rn(y);
     heightmapInfoCell.innerHTML = cell;
-    heightmapInfoHeight.innerHTML = /* html */ `${grid.cells.h[cell]} (${getHeight(grid.cells.h[cell])})`;
+    heightmapInfoHeight.innerHTML = `${grid.cells.h[cell]} (${getHeight(grid.cells.h[cell])})`;
     if (tooltip.dataset.main) showMainTip();
 
     // move radius circle if drag mode is active
     const pressed = byId("brushesButtons").querySelector("button.pressed");
     if (!pressed) return;
-    moveCircle(p[0], p[1], brushRadius.valueAsNumber, "#333");
+    moveCircle(x, y, brushRadius.valueAsNumber, "#333");
   }
 
   // get user-friendly (real-world) height value from map data
@@ -593,8 +605,8 @@ function editHeightmap() {
 
     function dragBrush() {
       const r = brushRadius.valueAsNumber;
-      const point = d3.mouse(this);
-      const start = findGridCell(point[0], point[1]);
+      const [x, y] = d3.mouse(this);
+      const start = findGridCell(x, y, grid);
 
       d3.event.on("drag", () => {
         const p = d3.mouse(this);
@@ -652,17 +664,22 @@ function editHeightmap() {
       if (Number.isNaN(operand)) return tip("Operand should be a number", false, "error");
       if ((operator === "add" || operator === "subtract") && !Number.isInteger(operand)) return tip("Operand should be an integer", false, "error");
 
+      HeightmapGenerator.setGraph(grid);
+
       if (operator === "multiply") HeightmapGenerator.modify(range, 0, operand, 0);
       else if (operator === "divide") HeightmapGenerator.modify(range, 0, 1 / operand, 0);
       else if (operator === "add") HeightmapGenerator.modify(range, operand, 1, 0);
       else if (operator === "subtract") HeightmapGenerator.modify(range, -1 * operand, 1, 0);
       else if (operator === "exponent") HeightmapGenerator.modify(range, 0, 1, operand);
 
+      grid.cells.h = HeightmapGenerator.getHeights();
       updateHeightmap();
     }
 
     function smoothAllHeights() {
+      HeightmapGenerator.setGraph(grid);
       HeightmapGenerator.smooth(4, 1.5);
+      grid.cells.h = HeightmapGenerator.getHeights();
       updateHeightmap();
     }
 
@@ -879,10 +896,7 @@ function editHeightmap() {
       const steps = body.querySelectorAll("div").length;
       const changed = +body.getAttribute("data-changed");
       const template = e.target.value;
-      if (!steps || !changed) {
-        changeTemplate(template);
-        return;
-      }
+      if (!steps || !changed) return changeTemplate(template);
 
       alertMessage.innerHTML = "Are you sure you want to select a different template? All changes will be lost.";
       $("#alert").dialog({
@@ -905,7 +919,7 @@ function editHeightmap() {
       body.setAttribute("data-changed", 0);
       body.innerHTML = "";
 
-      const templateString = HeightmapTemplates[template];
+      const templateString = heightmapTemplates[template]?.template;
       if (!templateString) return;
 
       const steps = templateString.split("\n");
@@ -921,10 +935,11 @@ function editHeightmap() {
       const steps = byId("templateBody").querySelectorAll("#templateBody > div");
       if (!steps.length) return;
 
-      grid.cells.h = new Uint8Array(grid.cells.i.length); // clean all heights
-
       const seed = byId("templateSeed").value;
       if (seed) Math.random = aleaPRNG(seed);
+
+      grid.cells.h = createTypedArray({maxValue: 100, length: grid.points.length});
+      HeightmapGenerator.setGraph(grid);
       restartHistory();
 
       for (const step of steps) {
@@ -948,9 +963,11 @@ function editHeightmap() {
         else if (type === "Multiply") HeightmapGenerator.modify(dist, 0, +count);
         else if (type === "Smooth") HeightmapGenerator.smooth(+count);
 
+        grid.cells.h = HeightmapGenerator.getHeights();
         updateHistory("noStat"); // update history on every step
       }
 
+      grid.cells.h = HeightmapGenerator.getHeights();
       updateStatistics();
       mockHeightmap();
       if (byId("preview")) drawHeightmapPreview(); // update heightmap preview if opened
@@ -1360,12 +1377,14 @@ function editHeightmap() {
     const imageData = ctx.createImageData(grid.cellsX, grid.cellsY);
 
     grid.cells.h.forEach((height, i) => {
-      let h = height < 20 ? Math.max(height / 1.5, 0) : height;
+      const h = height < 20 ? Math.max(height / 1.5, 0) : height;
       const v = (h / 100) * 255;
-      imageData.data[i * 4] = v;
-      imageData.data[i * 4 + 1] = v;
-      imageData.data[i * 4 + 2] = v;
-      imageData.data[i * 4 + 3] = 255;
+
+      const n = i * 4;
+      imageData.data[n] = v;
+      imageData.data[n + 1] = v;
+      imageData.data[n + 2] = v;
+      imageData.data[n + 3] = 255;
     });
 
     ctx.putImageData(imageData, 0, 0);

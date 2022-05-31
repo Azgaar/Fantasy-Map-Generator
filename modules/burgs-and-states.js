@@ -1077,7 +1077,7 @@ window.BurgsAndStates = (function () {
 
   const generateProvinces = function (regenerate) {
     TIME && console.time("generateProvinces");
-    const localSeed = regenerate ? Math.floor(Math.random() * 1e9).toString() : seed;
+    const localSeed = regenerate ? generateSeed() : seed;
     Math.random = aleaPRNG(localSeed);
 
     const {cells, states, burgs} = pack;

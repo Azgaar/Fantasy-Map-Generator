@@ -74,3 +74,7 @@ function getNumberInRange(r) {
   }
   return count;
 }
+
+function generateSeed() {
+  return String(Math.floor(Math.random() * 1e9));
+}

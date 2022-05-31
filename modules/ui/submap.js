@@ -2,7 +2,6 @@
 // UI elements for submap generation
 
 window.UISubmap = (function () {
-  const byId = document.getElementById.bind(document);
   byId("submapPointsInput").addEventListener("input", function () {
     const output = byId("submapPointsOutputFormatted");
     const cells = cellsDensityMap[+this.value] || 1000;
@@ -13,7 +12,7 @@ window.UISubmap = (function () {
 
   byId("submapScaleInput").addEventListener("input", function (event) {
     const exp = Math.pow(1.1, +event.target.value);
-    byId("submapScaleOutput").value = rn(exp,2);
+    byId("submapScaleOutput").value = rn(exp, 2);
   });
 
   byId("submapAngleInput").addEventListener("input", function (event) {
@@ -28,7 +27,6 @@ window.UISubmap = (function () {
   function openSubmapMenu() {
     $("#submapOptionsDialog").dialog({
       title: "Create a submap",
-      width: "30em",
       resizable: false,
       position: {my: "center", at: "center", of: "svg"},
       buttons: {
@@ -49,8 +47,8 @@ window.UISubmap = (function () {
     shiftY: +byId("submapShiftY").value,
     ratio: +byId("submapScaleInput").value,
     mirrorH: byId("submapMirrorH").checked,
-    mirrorV: byId("submapMirrorV").checked,
-  })
+    mirrorV: byId("submapMirrorV").checked
+  });
 
   async function openResampleMenu() {
     resetZoom(0);
@@ -64,14 +62,14 @@ window.UISubmap = (function () {
     $shiftX.value = 0;
     $shiftY.value = 0;
 
-    const previewScale = 400 / graphWidth;
-    const [w, h] = [400, graphHeight * previewScale];
-    $previewBox.style.width = w + 'px';
-    $previewBox.style.height = h + 'px';
-    $previewBox.style.position = 'relative';
+    const w = Math.min(400, window.innerWidth * 0.5);
+    const previewScale = w / graphWidth;
+    const h = graphHeight * previewScale;
+    $previewBox.style.width = w + "px";
+    $previewBox.style.height = h + "px";
 
     // handle mouse input
-    const dispatchInput = e => e.dispatchEvent(new Event('input', {bubbles:true}));
+    const dispatchInput = e => e.dispatchEvent(new Event("input", {bubbles: true}));
 
     // mouse wheel
     $previewBox.onwheel = e => {
@@ -80,14 +78,16 @@ window.UISubmap = (function () {
     };
 
     // mouse drag
-    let mouseIsDown = false, mouseX = 0, mouseY = 0;
+    let mouseIsDown = false,
+      mouseX = 0,
+      mouseY = 0;
     $previewBox.onmousedown = e => {
       mouseIsDown = true;
       mouseX = $shiftX.value - e.clientX / previewScale;
       mouseY = $shiftY.value - e.clientY / previewScale;
-    }
-    $previewBox.onmouseup = _ => mouseIsDown = false;
-    $previewBox.onmouseleave = _ => mouseIsDown = false;
+    };
+    $previewBox.onmouseup = _ => (mouseIsDown = false);
+    $previewBox.onmouseleave = _ => (mouseIsDown = false);
     $previewBox.onmousemove = e => {
       if (!mouseIsDown) return;
       e.preventDefault();
@@ -99,7 +99,6 @@ window.UISubmap = (function () {
 
     $("#resampleDialog").dialog({
       title: "Transform map",
-      width: "430px",
       resizable: false,
       position: {my: "center", at: "center", of: "svg"},
       buttons: {
@@ -114,7 +113,7 @@ window.UISubmap = (function () {
     });
 
     // use double resolution for PNG to get sharper image
-    const $preview = await loadPreview($previewBox, w*2, h*2);
+    const $preview = await loadPreview($previewBox, w * 2, h * 2);
     // could be done with SVG. Faster to load, slower to use.
     // const $preview = await loadPreviewSVG($previewBox, w, h);
     $preview.style.position = "absolute";
@@ -122,22 +121,22 @@ window.UISubmap = (function () {
     $preview.style.height = h + "px";
 
     byId("resampleDialog").oninput = event => {
-      const { angle, shiftX, shiftY, ratio, mirrorH, mirrorV } = getTransformInput();
-      const scale = Math.pow(1.1,ratio);
+      const {angle, shiftX, shiftY, ratio, mirrorH, mirrorV} = getTransformInput();
+      const scale = Math.pow(1.1, ratio);
       const transformStyle = `
-        translate(${shiftX*previewScale}px, ${shiftY*previewScale}px)
-        scale(${mirrorH?-scale:scale}, ${mirrorV?-scale:scale})
+        translate(${shiftX * previewScale}px, ${shiftY * previewScale}px)
+        scale(${mirrorH ? -scale : scale}, ${mirrorV ? -scale : scale})
         rotate(${angle}rad)
       `;
 
       $preview.style.transform = transformStyle;
-      $preview.style['transform-origin'] = 'center';
+      $preview.style["transform-origin"] = "center";
       event.stopPropagation();
-    }
+    };
   }
 
   async function loadPreview($container, w, h) {
-    const url = await getMapURL("png", { globe: false, noWater: true, fullMap: true, noLabels: true, noScaleBar: true, noIce: true });
+    const url = await getMapURL("png", {globe: false, noWater: true, fullMap: true, noLabels: true, noScaleBar: true, noIce: true});
 
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
@@ -148,16 +147,16 @@ window.UISubmap = (function () {
     img.onload = function () {
       ctx.drawImage(img, 0, 0, w, h);
     };
-    $container.textContent = '';
+    $container.textContent = "";
     $container.appendChild(canvas);
     return canvas;
   }
 
   // currently unused alternative to PNG version
   async function loadPreviewSVG($container, w, h) {
-    $container.innerHTML = /*html*/`
+    $container.innerHTML = /*html*/ `
       <svg id="submapPreviewSVG" viewBox="0 0 ${graphWidth} ${graphHeight}">
-        <rect width="100%" height="100%" fill="${byId('styleOceanFill').value}" />
+        <rect width="100%" height="100%" fill="${byId("styleOceanFill").value}" />
         <rect fill="url(#oceanic)" width="100%" height="100%" />
         <use href="#map"></use>
       </svg>
@@ -171,12 +170,12 @@ window.UISubmap = (function () {
     const cellNumId = +byId("submapPointsInput").value;
     if (!cellsDensityMap[cellNumId]) return console.error("Unknown cell number!");
 
-    const { angle, shiftX, shiftY, ratio, mirrorH, mirrorV } = getTransformInput()
+    const {angle, shiftX, shiftY, ratio, mirrorH, mirrorV} = getTransformInput();
 
     const [cx, cy] = [graphWidth / 2, graphHeight / 2];
     const rot = alfa => (x, y) => [(x - cx) * Math.cos(alfa) - (y - cy) * Math.sin(alfa) + cx, (y - cy) * Math.cos(alfa) + (x - cx) * Math.sin(alfa) + cy];
     const shift = (dx, dy) => (x, y) => [x + dx, y + dy];
-    const scale = r => (x, y) => [(x-cx) * r + cx, (y-cy) * r + cy];
+    const scale = r => (x, y) => [(x - cx) * r + cx, (y - cy) * r + cy];
     const flipH = (x, y) => [-x + 2 * cx, y];
     const flipV = (x, y) => [x, -y + 2 * cy];
     const app = (f, g) => (x, y) => f(...g(x, y));
@@ -186,7 +185,7 @@ window.UISubmap = (function () {
     let inverse = id;
 
     if (angle) [projection, inverse] = [rot(angle), rot(-angle)];
-    if (ratio) [projection, inverse] = [app(scale(Math.pow(1.1,ratio)), projection), app(inverse, scale(Math.pow(1.1,-ratio)))];
+    if (ratio) [projection, inverse] = [app(scale(Math.pow(1.1, ratio)), projection), app(inverse, scale(Math.pow(1.1, -ratio)))];
     if (mirrorH) [projection, inverse] = [app(flipH, projection), app(inverse, flipH)];
     if (mirrorV) [projection, inverse] = [app(flipV, projection), app(inverse, flipV)];
     if (shiftX || shiftY) {
@@ -230,7 +229,7 @@ window.UISubmap = (function () {
       smoothHeightMap: scale > 2,
       inverse: (x, y) => [x / origScale + x0, y / origScale + y0],
       projection: (x, y) => [(x - x0) * origScale, (y - y0) * origScale],
-      scale: origScale,
+      scale: origScale
     };
 
     // converting map position on the planet

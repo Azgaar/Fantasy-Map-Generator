@@ -151,16 +151,17 @@ function toggleHeight(event) {
 function drawHeightmap() {
   TIME && console.time("drawHeightmap");
   terrs.selectAll("*").remove();
-  const cells = pack.cells,
-    vertices = pack.vertices,
-    n = cells.i.length;
+
+  const {cells, vertices} = pack;
+  const n = cells.i.length;
   const used = new Uint8Array(cells.i.length);
   const paths = new Array(101).fill("");
 
-  const scheme = getColorScheme();
+  const scheme = getColorScheme(terrs.attr("scheme"));
   const terracing = terrs.attr("terracing") / 10; // add additional shifted darker layer for pseudo-3d effect
   const skip = +terrs.attr("skip") + 1;
   const simplification = +terrs.attr("relax");
+
   switch (+terrs.attr("curve")) {
     case 0:
       lineGen.curve(d3.curveBasisClosed);
@@ -233,8 +234,7 @@ function drawHeightmap() {
   TIME && console.timeEnd("drawHeightmap");
 }
 
-function getColorScheme() {
-  const scheme = terrs.attr("scheme");
+function getColorScheme(scheme) {
   if (scheme === "bright") return d3.scaleSequential(d3.interpolateSpectral);
   if (scheme === "light") return d3.scaleSequential(d3.interpolateRdYlGn);
   if (scheme === "green") return d3.scaleSequential(d3.interpolateGreens);
