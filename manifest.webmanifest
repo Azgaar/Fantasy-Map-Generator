@@ -1,7 +1,7 @@
 {
   "background_color": "#fff",
   "display": "standalone",
-  "orientation": "landscape",
+  "orientation": "any",
   "name": "Azgaar's Fantansy Map Generator",
   "short_name": "Azgaar's Fantansy Map Generator",
   "description": "Web application generating interactive and highly customizable maps",
