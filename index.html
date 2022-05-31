@@ -44,26 +44,28 @@
         color: #fff5da;
         text-align: center;
         text-shadow: 0px 1px 4px #4c3a35;
-        width: 80%;
-        max-width: 600px;
+        width: 80vw;
+        max-width: 540px;
       }
-      #loading-text {
-        font-size: 1.8em;
-        margin: 0.2em 0 0 1em;
+      @media screen and (max-width: 600px) {
+        #loading > #loading-typography {
+          font-size: 8px;
+        }
       }
       #titleName {
         text-align: left;
         font-size: 3em;
-        margin-left: 5%;
       }
       #title {
         font-size: 7em;
-        margin: -12px 0 -6px 0;
       }
       #versionText {
         text-align: right;
         font-size: 2em;
-        margin-right: 3%;
+      }
+      #loading-text {
+        font-size: 2em;
+        margin: 0.2em;
       }
       #loading-text > span {
         font-size: 1.3em;
@@ -274,12 +276,10 @@
         <use href="#rose" x="50%" y="50%" />
       </svg>
       <div id="loading-typography">
-        <div>
-          <div id="titleName"><t data-t="titleName">Azgaar's</t></div>
-          <div id="title"><t data-t="title">Fantasy Map Generator</t></div>
-          <div id="versionText"><t data-t="version">v. </t><span id="version"></span></div>
-          <p id="loading-text"><t data-t="loading">LOADING</t><span>.</span><span>.</span><span>.</span></p>
-        </div>
+        <div id="titleName"><t data-t="titleName">Azgaar's</t></div>
+        <div id="title"><t data-t="title">Fantasy Map Generator</t></div>
+        <div id="versionText"><t data-t="version">v</t><span id="version"></span></div>
+        <p id="loading-text"><t data-t="loading">LOADING</t><span>.</span><span>.</span><span>.</span></p>
       </div>
     </div>
 
