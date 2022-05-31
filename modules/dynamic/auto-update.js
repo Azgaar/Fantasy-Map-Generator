@@ -525,4 +525,9 @@ export function resolveVersionConflicts(version) {
     // v1.84.0 added grid.cellsDesired to stored data
     if (!grid.cellsDesired) grid.cellsDesired = rn((graphWidth * graphHeight) / grid.spacing ** 2, -3);
   }
+
+  if (version < 1.85) {
+    // v1.84.0 moved intial screen out of maon svg
+    svg.select("#initial").remove();
+  }
 }
