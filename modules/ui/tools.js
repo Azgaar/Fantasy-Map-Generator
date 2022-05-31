@@ -234,9 +234,9 @@ function regenerateStates() {
   Military.generate();
   if (layerIsOn("toggleEmblems")) drawEmblems(); // redrawEmblems
 
-  if (document.getElementById("burgsOverviewRefresh").offsetParent) burgsOverviewRefresh.click();
-  if (document.getElementById("statesEditorRefresh").offsetParent) statesEditorRefresh.click();
-  if (document.getElementById("militaryOverviewRefresh").offsetParent) militaryOverviewRefresh.click();
+  if (document.getElementById("burgsOverviewRefresh")?.offsetParent) burgsOverviewRefresh.click();
+  if (document.getElementById("statesEditorRefresh")?.offsetParent) statesEditorRefresh.click();
+  if (document.getElementById("militaryOverviewRefresh")?.offsetParent) militaryOverviewRefresh.click();
 }
 
 function regenerateProvinces() {
@@ -333,8 +333,8 @@ function regenerateBurgs() {
   emblems.selectAll("use").remove();
   if (layerIsOn("toggleEmblems")) drawEmblems();
 
-  if (document.getElementById("burgsOverviewRefresh").offsetParent) burgsOverviewRefresh.click();
-  if (document.getElementById("statesEditorRefresh").offsetParent) statesEditorRefresh.click();
+  if (document.getElementById("burgsOverviewRefresh")?.offsetParent) burgsOverviewRefresh.click();
+  if (document.getElementById("statesEditorRefresh")?.offsetParent) statesEditorRefresh.click();
 }
 
 function regenerateEmblems() {
