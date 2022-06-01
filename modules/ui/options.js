@@ -73,9 +73,9 @@ document
     else if (id === "aboutTab") aboutContent.style.display = "block";
   });
 
-// show popup with a list of Patreon supportes (updated manually, to be replaced with API call)
+// show popup with a list of Patreon supportes (updated manually)
 async function showSupporters() {
-  const {supporters} = await import("../dynamic/supporters.js?v=23052022");
+  const {supporters} = await import("../dynamic/supporters.js?v=01062022");
   alertMessage.innerHTML = "<ul style='column-count: 5; column-gap: 2em'>" + supporters.map(n => `<li>${n}</li>`).join("") + "</ul>";
   $("#alert").dialog({resizable: false, title: "Patreon Supporters", width: "54vw", position: {my: "center", at: "center", of: "svg"}});
 }
