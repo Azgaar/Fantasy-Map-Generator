@@ -291,7 +291,7 @@ function getDepth(f, p) {
 
 // get user-friendly (real-world) height value from map data
 function getFriendlyHeight([x, y]) {
-  const packH = pack.cells.h[findCell(x, y, grid)];
+  const packH = pack.cells.h[findCell(x, y)];
   const gridH = grid.cells.h[findGridCell(x, y, grid)];
   const h = packH < 20 ? gridH : packH;
   return getHeight(h);
