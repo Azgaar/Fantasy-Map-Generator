@@ -45,7 +45,7 @@ let landmass = viewbox.append("g").attr("id", "landmass");
 let texture = viewbox.append("g").attr("id", "texture");
 let terrs = viewbox.append("g").attr("id", "terrs");
 let biomes = viewbox.append("g").attr("id", "biomes");
-let cells = viewbox.append("g").attr("id", "cells");
+let gridCells = viewbox.append("g").attr("id", "cells");
 let gridOverlay = viewbox.append("g").attr("id", "gridOverlay");
 let coordinates = viewbox.append("g").attr("id", "coordinates");
 let compass = viewbox.append("g").attr("id", "compass");
@@ -1161,25 +1161,25 @@ function generatePrecipitation() {
 // recalculate Voronoi Graph to pack cells
 function reGraph() {
   TIME && console.time("reGraph");
-  const {cells, points, features} = grid;
+  const {cells: gridCells, points, features} = grid;
   const newCells = {p: [], g: [], h: []}; // store new data
   const spacing2 = grid.spacing ** 2;
 
-  for (const i of cells.i) {
-    const height = cells.h[i];
-    const type = cells.t[i];
+  for (const i of gridCells.i) {
+    const height = gridCells.h[i];
+    const type = gridCells.t[i];
     if (height < 20 && type !== -1 && type !== -2) continue; // exclude all deep ocean points
-    if (type === -2 && (i % 4 === 0 || features[cells.f[i]].type === "lake")) continue; // exclude non-coastal lake points
+    if (type === -2 && (i % 4 === 0 || features[gridCells.f[i]].type === "lake")) continue; // exclude non-coastal lake points
     const [x, y] = points[i];
 
     addNewPoint(i, x, y, height);
 
     // add additional points for cells along coast
     if (type === 1 || type === -1) {
-      if (cells.b[i]) continue; // not for near-border cells
-      cells.c[i].forEach(function (e) {
+      if (gridCells.b[i]) continue; // not for near-border cells
+      gridCells.c[i].forEach(function (e) {
         if (i > e) return;
-        if (cells.t[e] === type) {
+        if (gridCells.t[e] === type) {
           const dist2 = (y - points[e][1]) ** 2 + (x - points[e][0]) ** 2;
           if (dist2 < spacing2) return; // too close to each other
           const x1 = rn((x + points[e][0]) / 2, 1);
@@ -1201,7 +1201,9 @@ function reGraph() {
     return Math.min(area, 65535);
   }
 
-  pack = calculateVoronoi(newCells.p, grid.boundary);
+  const {cells: packCells, vertices} = calculateVoronoi(newCells.p, grid.boundary);
+  pack.vertices = vertices;
+  pack.cells = packCells;
   pack.cells.p = newCells.p;
   pack.cells.g = getTypedArray(grid.points.length).from(newCells.g);
   pack.cells.q = d3.quadtree(newCells.p.map(([x, y], i) => [x, y, i]));
