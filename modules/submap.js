@@ -30,7 +30,6 @@ window.Submap = (function () {
     const inverse = options.inverse;
     const stage = s => INFO && console.log("SUBMAP:", s);
     const timeStart = performance.now();
-    const childMap = {grid, pack};
     invokeActiveZooming();
 
     // copy seed
@@ -42,6 +41,7 @@ window.Submap = (function () {
     // create new grid
     applyMapSize();
     grid = generateGrid();
+
     drawScaleBar(scale);
 
     const resampler = (points, qtree, f) => {
@@ -126,6 +126,7 @@ window.Submap = (function () {
     // generatePrecipitation();
     stage("Cell cleanup.");
     reGraph();
+    const childMap = {grid, pack};
 
     // remove misclassified cells
     stage("Define coastline.");
