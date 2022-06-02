@@ -1927,7 +1927,7 @@ const regenerateMap = debounce(async function (options) {
 
   shouldShowLoading && hideLoading();
   clearMainTip();
-}, 1000);
+}, 250);
 
 // clear the map
 function undraw() {
