@@ -13,6 +13,11 @@ const ERROR = true;
 // detect device
 const MOBILE = window.innerWidth < 600 || navigator.userAgentData?.mobile;
 
+// typed arrays max values
+const UINT8_MAX = 255;
+const UINT16_MAX = 65535;
+const UINT32_MAX = 4294967295;
+
 if (PRODUCTION && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").catch(err => {
@@ -1198,17 +1203,17 @@ function reGraph() {
 
   function getCellArea(i) {
     const area = Math.abs(d3.polygonArea(getPackPolygon(i)));
-    return Math.min(area, 65535);
+    return Math.min(area, UINT16_MAX);
   }
 
   const {cells: packCells, vertices} = calculateVoronoi(newCells.p, grid.boundary);
   pack.vertices = vertices;
   pack.cells = packCells;
   pack.cells.p = newCells.p;
-  pack.cells.g = getTypedArray(grid.points.length).from(newCells.g);
+  pack.cells.g = createTypedArray({maxValue: grid.points.length, from: newCells.g});
   pack.cells.q = d3.quadtree(newCells.p.map(([x, y], i) => [x, y, i]));
-  pack.cells.h = getTypedArray(100).from(newCells.h);
-  pack.cells.area = getTypedArray(65535).from(pack.cells.i).map(getCellArea);
+  pack.cells.h = createTypedArray({maxValue: 100, from: newCells.h});
+  pack.cells.area = createTypedArray({maxValue: UINT16_MAX, from: pack.cells.i}).map(getCellArea);
 
   TIME && console.timeEnd("reGraph");
 }

@@ -43,11 +43,10 @@ function calculateVoronoi(points, boundary) {
   TIME && console.timeEnd("calculateDelaunay");
 
   TIME && console.time("calculateVoronoi");
-  const n = points.length;
-  const voronoi = new Voronoi(delaunay, allPoints, n);
+  const voronoi = new Voronoi(delaunay, allPoints, points.length);
 
   const cells = voronoi.cells;
-  cells.i = getTypedArray(n).from(d3.range(n)); // array of indexes
+  cells.i = createTypedArray({maxValue: points.length, length: points.length}).map((_, i) => i); // array of indexes
   const vertices = voronoi.vertices;
   TIME && console.timeEnd("calculateVoronoi");
 
