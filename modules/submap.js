@@ -5,7 +5,7 @@ main function: resample(options);
 */
 
 window.Submap = (function () {
-  const isWater = (map, id) => (map.grid.cells.h[map.pack.cells.g[id]] < 20 ? true : false);
+  const isWater = (map, id) => map.pack.cells.h[id] < 20;
   const inMap = (x, y) => x > 0 && x < graphWidth && y > 0 && y < graphHeight;
 
   function resample(parentMap, options) {
@@ -126,7 +126,6 @@ window.Submap = (function () {
     // generatePrecipitation();
     stage("Cell cleanup.");
     reGraph();
-    const childMap = {grid, pack};
 
     // remove misclassified cells
     stage("Define coastline.");
@@ -141,6 +140,7 @@ window.Submap = (function () {
 
     const pn = pack.cells.i.length;
     const cells = pack.cells;
+    const childMap = {grid, pack};
     cells.culture = new Uint16Array(pn);
     cells.state = new Uint16Array(pn);
     cells.burg = new Uint16Array(pn);
@@ -182,7 +182,6 @@ window.Submap = (function () {
           // this should be always true, unless some algo modded the height!
           if (isWater(parentMap, oid) !== isWater(childMap, id)) {
             console.warn(`cell sank because of addLakesInDepressions: ${oid}`);
-            return;
           }
           const [oldpx, oldpy] = oldCells.p[oid];
           const nd = distance(projection(oldpx, oldpy));
