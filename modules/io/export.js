@@ -75,7 +75,8 @@ async function saveTiles() {
   return new Promise(async (resolve, reject) => {
     // download schema
     const urlSchema = await getMapURL("tiles", {debug: true, fullMap: true});
-    const zip = new JSZip();
+    await import("../../libs/jszip.min.js");
+    const zip = new window.JSZip();
 
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
