@@ -1,7 +1,8 @@
 "use strict";
 function editDiplomacy() {
   if (customization) return;
-  if (pack.states.filter(s => s.i && !s.removed).length < 2) return tip("There should be at least 2 states to edit the diplomacy", false, "error");
+  if (pack.states.filter(s => s.i && !s.removed).length < 2)
+    return tip("There should be at least 2 states to edit the diplomacy", false, "error");
 
   const body = document.getElementById("diplomacyBodySection");
 
@@ -14,15 +15,43 @@ function editDiplomacy() {
   if (layerIsOn("toggleReligions")) toggleReligions();
 
   const relations = {
-    Ally: {inText: "is an ally of", color: "#00b300", tip: "Allies formed a defensive pact and protect each other in case of third party aggression"},
-    Friendly: {inText: "is friendly to", color: "#d4f8aa", tip: "State is friendly to anouther state when they share some common interests"},
-    Neutral: {inText: "is neutral to", color: "#edeee8", tip: "Neutral means states relations are neither positive nor negative"},
-    Suspicion: {inText: "is suspicious of", color: "#eeafaa", tip: "Suspicion means state has a cautious distrust of another state"},
+    Ally: {
+      inText: "is an ally of",
+      color: "#00b300",
+      tip: "Allies formed a defensive pact and protect each other in case of third party aggression"
+    },
+    Friendly: {
+      inText: "is friendly to",
+      color: "#d4f8aa",
+      tip: "State is friendly to anouther state when they share some common interests"
+    },
+    Neutral: {
+      inText: "is neutral to",
+      color: "#edeee8",
+      tip: "Neutral means states relations are neither positive nor negative"
+    },
+    Suspicion: {
+      inText: "is suspicious of",
+      color: "#eeafaa",
+      tip: "Suspicion means state has a cautious distrust of another state"
+    },
     Enemy: {inText: "is at war with", color: "#e64b40", tip: "Enemies are states at war with each other"},
-    Unknown: {inText: "does not know about", color: "#a9a9a9", tip: "Relations are unknown if states do not have enough information about each other"},
-    Rival: {inText: "is a rival of", color: "#ad5a1f", tip: "Rivalry is a state of competing for dominance in the region"},
+    Unknown: {
+      inText: "does not know about",
+      color: "#a9a9a9",
+      tip: "Relations are unknown if states do not have enough information about each other"
+    },
+    Rival: {
+      inText: "is a rival of",
+      color: "#ad5a1f",
+      tip: "Rivalry is a state of competing for dominance in the region"
+    },
     Vassal: {inText: "is a vassal of", color: "#87CEFA", tip: "Vassal is a state having obligation to its suzerain"},
-    Suzerain: {inText: "is suzerain to", color: "#00008B", tip: "Suzerain is a state having some control over its vassals"}
+    Suzerain: {
+      inText: "is suzerain to",
+      color: "#00008B",
+      tip: "Suzerain is a state having some control over its vassals"
+    }
   };
 
   refreshDiplomacyEditor();
@@ -229,15 +258,22 @@ function editDiplomacy() {
     const objectName = states[objectId].name;
 
     states[subjectId].diplomacy[objectId] = newRelation;
-    states[objectId].diplomacy[subjectId] = newRelation === "Vassal" ? "Suzerain" : newRelation === "Suzerain" ? "Vassal" : newRelation;
+    states[objectId].diplomacy[subjectId] =
+      newRelation === "Vassal" ? "Suzerain" : newRelation === "Suzerain" ? "Vassal" : newRelation;
 
     // update relation history
-    const change = () => [`Relations change`, `${subjectName}-${getAdjective(objectName)} relations changed to ${newRelation.toLowerCase()}`];
+    const change = () => [
+      `Relations change`,
+      `${subjectName}-${getAdjective(objectName)} relations changed to ${newRelation.toLowerCase()}`
+    ];
     const ally = () => [`Defence pact`, `${subjectName} entered into defensive pact with ${objectName}`];
     const vassal = () => [`Vassalization`, `${subjectName} became a vassal of ${objectName}`];
     const suzerain = () => [`Vassalization`, `${subjectName} vassalized ${objectName}`];
     const rival = () => [`Rivalization`, `${subjectName} and ${objectName} became rivals`];
-    const unknown = () => [`Relations severance`, `${subjectName} recalled their ambassadors and wiped all the records about ${objectName}`];
+    const unknown = () => [
+      `Relations severance`,
+      `${subjectName} recalled their ambassadors and wiped all the records about ${objectName}`
+    ];
     const war = () => [`War declaration`, `${subjectName} declared a war on its enemy ${objectName}`];
     const peace = () => {
       const treaty = `${subjectName} and ${objectName} agreed to cease fire and signed a peace treaty`;
@@ -292,18 +328,28 @@ function editDiplomacy() {
 
   function showRelationsHistory() {
     const chronicle = pack.states[0].diplomacy;
-    if (!chronicle.length) return tip("Relations history is blank", false, "error");
 
-    let message = `<div autocorrect="off" spellcheck="false">`;
-    chronicle.forEach((entry, d) => {
+    let message = /* html */ `<div autocorrect="off" spellcheck="false">`;
+    chronicle.forEach((entry, index) => {
       message += `<div>`;
-      entry.forEach((l, i) => {
-        message += `<div contenteditable="true" data-id="${d}-${i}"${i ? "" : " style='font-weight:bold'"}>${l}</div>`;
+      entry.forEach((l, entryIndex) => {
+        message += /* html */ `<div contenteditable="true" data-id="${index}-${entryIndex}"
+          ${entryIndex ? "" : "style='font-weight:bold'"}>${l}</div>`;
       });
       message += `&#8205;</div>`;
     });
-    alertMessage.innerHTML = message + `</div><div class="info-line">Type to edit. Press Enter to add a new line, empty the element to remove it</div>`;
-    alertMessage.querySelectorAll("div[contenteditable='true']").forEach(el => el.addEventListener("input", changeReliationsHistory));
+
+    if (!chronicle.length) {
+      pack.states[0].diplomacy = [[]];
+      message += /* html */ `<div><div contenteditable="true" data-id="0-0">No historical records</div>&#8205;</div>`;
+    }
+
+    alertMessage.innerHTML =
+      message +
+      `</div><div class="info-line">Type to edit. Press Enter to add a new line, empty the element to remove it</div>`;
+    alertMessage
+      .querySelectorAll("div[contenteditable='true']")
+      .forEach(el => el.addEventListener("input", changeReliationsHistory));
 
     $("#alert").dialog({
       title: "Relations history",
@@ -377,7 +423,11 @@ function editDiplomacy() {
       selectRelation(subjectId, objectId, currentRelation);
     });
 
-    $("#diplomacyMatrix").dialog({title: "Relations matrix", position: {my: "center", at: "center", of: "svg"}, buttons: {}});
+    $("#diplomacyMatrix").dialog({
+      title: "Relations matrix",
+      position: {my: "center", at: "center", of: "svg"},
+      buttons: {}
+    });
   }
 
   function downloadDiplomacyData() {
