@@ -1,12 +1,13 @@
-function exportToJson(type) {
-  if (customization) return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
+export function exportToJson(type) {
+  if (customization)
+    return tip("Data cannot be exported when edit mode is active, please exit the mode and retry", false, "error");
   closeDialogs("#alert");
 
   const typeMap = {
     Full: getFullDataJson,
     Minimal: getMinimalDataJson,
     PackCells: getPackCellsDataJson,
-    GridCells: getGridCellsDataJson,
+    GridCells: getGridCellsDataJson
   };
 
   const mapData = typeMap[type]();
@@ -18,6 +19,62 @@ function exportToJson(type) {
   link.click();
   tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
   window.URL.revokeObjectURL(URL);
+}
+
+function getFullDataJson() {
+  TIME && console.time("getFullDataJson");
+
+  const info = getMapInfo();
+  const settings = getSettings();
+  const cells = getPackCellsData();
+  const vertices = getPackVerticesData();
+  const exportData = {info, settings, coords: mapCoordinates, cells, vertices, biomes: biomesData, notes, nameBases};
+
+  TIME && console.timeEnd("getFullDataJson");
+  return JSON.stringify(exportData);
+}
+
+function getMinimalDataJson() {
+  TIME && console.time("getMinimalDataJson");
+
+  const info = getMapInfo();
+  const settings = getSettings();
+  const packData = {
+    features: pack.features,
+    cultures: pack.cultures,
+    burgs: pack.burgs,
+    states: pack.states,
+    provinces: pack.provinces,
+    religions: pack.religions,
+    rivers: pack.rivers,
+    markers: pack.markers
+  };
+  const exportData = {info, settings, coords: mapCoordinates, pack: packData, biomes: biomesData, notes, nameBases};
+
+  TIME && console.timeEnd("getMinimalDataJson");
+  return JSON.stringify(exportData);
+}
+
+function getPackCellsDataJson() {
+  TIME && console.time("getCellsDataJson");
+
+  const info = getMapInfo();
+  const cells = getPackCellsData();
+  const exportData = {info, cells};
+
+  TIME && console.timeEnd("getCellsDataJson");
+  return JSON.stringify(exportData);
+}
+
+function getGridCellsDataJson() {
+  TIME && console.time("getGridCellsDataJson");
+
+  const info = getMapInfo();
+  const gridCells = getGridCellsData();
+  const exportData = {info, gridCells};
+
+  TIME && console.log("getGridCellsDataJson");
+  return JSON.stringify(exportData);
 }
 
 function getMapInfo() {
@@ -92,6 +149,7 @@ function getPackCellsData() {
     religion: Array.from(pack.cells.religion),
     province: Array.from(pack.cells.province)
   };
+
   const cellObjArr = [];
   {
     cellConverted.i.forEach(value => {
@@ -140,70 +198,28 @@ function getPackCellsData() {
   return cellsData;
 }
 
-//data only containing graphical appearance
-function getGridCellsData(){
+function getGridCellsData() {
   const gridData = {
+    cellsDesired: grid.cellsDesired,
     spacing: grid.spacing,
     cellsY: grid.cellsY,
     cellsX: grid.cellsX,
     points: grid.points,
     boundary: grid.boundary
-  }
-  return gridData
-}
-
-function getFullDataJson() {
-  TIME && console.time("getFullDataJson");
-
-  const info = getMapInfo();
-  const settings = getSettings();
-  const cells = getPackCellsData();
-  const exportData = {info, settings, coords: mapCoordinates, cells, biomes: biomesData, notes, nameBases};
-
-  TIME && console.timeEnd("getFullDataJson");
-  return JSON.stringify(exportData);
-}
-
-// data excluding cells
-function getMinimalDataJson() {
-  TIME && console.time("getMinimalDataJson");
-
-  const info = getMapInfo();
-  const settings = getSettings();
-  const packData = {
-    features: pack.features,
-    cultures: pack.cultures,
-    burgs: pack.burgs,
-    states: pack.states,
-    provinces: pack.provinces,
-    religions: pack.religions,
-    rivers: pack.rivers,
-    markers: pack.markers
   };
-  const exportData = {info, settings, coords: mapCoordinates, pack: packData, biomes: biomesData, notes, nameBases};
-
-  TIME && console.timeEnd("getMinimalDataJson");
-  return JSON.stringify(exportData);
+  return gridData;
 }
 
-function getPackCellsDataJson() {
-  TIME && console.time("getCellsDataJson");
-
-  const info = getMapInfo();
-  const cells = getPackCellsData();
-  const exportData = {info, cells};
-
-  TIME && console.timeEnd("getCellsDataJson");
-  return JSON.stringify(exportData);
-}
-
-function getGridCellsDataJson() {
-  TIME && console.time("getGridCellsDataJson");
-
-  const info = getMapInfo();
-  const gridCells = getGridCellsData()
-  const exportData = {info,gridCells};
-
-  TIME && console.log("getGridCellsDataJson");
-  return JSON.stringify(exportData);
+function getPackVerticesData() {
+  const {vertices} = pack;
+  const verticesNumber = vertices.p.length;
+  const verticesArray = new Array(verticesNumber);
+  for (let i = 0; i < verticesNumber; i++) {
+    verticesArray[i] = {
+      p: vertices.p[i],
+      v: vertices.v[i],
+      c: vertices.c[i]
+    };
+  }
+  return verticesArray;
 }

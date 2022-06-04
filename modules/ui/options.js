@@ -717,6 +717,11 @@ function showExportPane() {
   });
 }
 
+async function exportToJson(type) {
+  const {exportToJson} = await import("../dynamic/export-json.js");
+  exportToJson(type);
+}
+
 async function showLoadPane() {
   $("#loadMapData").dialog({
     title: "Load map",
