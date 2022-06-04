@@ -143,7 +143,9 @@ function culturesEditorAddLines() {
     const rural = c.rural * populationRate;
     const urban = c.urban * populationRate * urbanization;
     const population = rn(rural + urban);
-    const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}. Click to edit`;
+    const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(
+      urban
+    )}. Click to edit`;
     totalArea += area;
     totalPopulation += population;
 
@@ -167,7 +169,9 @@ function culturesEditorAddLines() {
             value="${c.name}" autocorrect="off" spellcheck="false" />
           <span class="icon-cw placeholder"></span>
           <select class="cultureType placeholder">${getTypeOptions(c.type)}</select>
-          <select data-tip="Culture namesbase. Click to change. Click on arrows to re-generate names" class="cultureBase">${getBaseOptions(c.base)}</select>
+          <select data-tip="Culture namesbase. Click to change. Click on arrows to re-generate names" class="cultureBase">${getBaseOptions(
+            c.base
+          )}</select>
           <span data-tip="Cells count" class="icon-check-empty hide"></span>
           <div data-tip="Cells count" class="cultureCells hide" style="width: 4em">${c.cells}</div>
           <span class="icon-resize-full placeholder hide"></span>
@@ -175,7 +179,9 @@ function culturesEditorAddLines() {
           <span data-tip="Culture area" style="padding-right: 4px" class="icon-map-o hide"></span>
           <div data-tip="Culture area" class="cultureArea hide" style="width: 6em">${si(area)} ${unit}</div>
           <span data-tip="${populationTip}" class="icon-male hide"></span>
-          <div data-tip="${populationTip}" class="culturePopulation hide pointer" style="width: 5em">${si(population)}</div>
+          <div data-tip="${populationTip}" class="culturePopulation hide pointer" style="width: 5em">${si(
+        population
+      )}</div>
           <span data-tip="Click to re-generate names for burgs with this culture assigned" class="icon-arrows-cw hide"></span>
           ${getShapeOptions(selectShape, c.shield)}
         </div>`;
@@ -199,8 +205,12 @@ function culturesEditorAddLines() {
         <input data-tip="Culture name. Click and type to change" class="cultureName" style="width: 7em"
           value="${c.name}" autocorrect="off" spellcheck="false" />
         <span data-tip="Regenerate culture name" class="icon-cw hiddenIcon" style="visibility: hidden"></span>
-        <select data-tip="Culture type. Defines growth model. Click to change" class="cultureType">${getTypeOptions(c.type)}</select>
-        <select data-tip="Culture namesbase. Click to change. Click on arrows to re-generate names" class="cultureBase">${getBaseOptions(c.base)}</select>
+        <select data-tip="Culture type. Defines growth model. Click to change" class="cultureType">${getTypeOptions(
+          c.type
+        )}</select>
+        <select data-tip="Culture namesbase. Click to change. Click on arrows to re-generate names" class="cultureBase">${getBaseOptions(
+          c.base
+        )}</select>
         <span data-tip="Cells count" class="icon-check-empty hide"></span>
         <div data-tip="Cells count" class="cultureCells hide" style="width: 4em">${c.cells}</div>
         <span data-tip="Culture expansionism. Defines competitive size" class="icon-resize-full hide"></span>
@@ -216,7 +226,9 @@ function culturesEditorAddLines() {
         <span data-tip="Culture area" style="padding-right: 4px" class="icon-map-o hide"></span>
         <div data-tip="Culture area" class="cultureArea hide" style="width: 6em">${si(area)} ${unit}</div>
         <span data-tip="${populationTip}" class="icon-male hide"></span>
-        <div data-tip="${populationTip}" class="culturePopulation hide pointer" style="width: 5em">${si(population)}</div>
+        <div data-tip="${populationTip}" class="culturePopulation hide pointer" style="width: 5em">${si(
+      population
+    )}</div>
         <span data-tip="Click to re-generate names for burgs with this culture assigned" class="icon-arrows-cw hide"></span>
         ${getShapeOptions(selectShape, c.shield)}
         <span data-tip="Remove culture" class="icon-trash-empty hide"></span>
@@ -276,12 +288,14 @@ function getShapeOptions(selectShape, selected) {
   const shapes = Object.keys(COA.shields.types)
     .map(type => Object.keys(COA.shields[type]))
     .flat();
-  const options = shapes.map(shape => `<option ${shape === selected ? "selected" : ""} value="${shape}">${capitalize(shape)}</option>`);
+  const options = shapes.map(
+    shape => `<option ${shape === selected ? "selected" : ""} value="${shape}">${capitalize(shape)}</option>`
+  );
   return `<select data-tip="Emblem shape associated with culture. Click to change" class="cultureEmblems hide">${options}</select>`;
 }
 
 function cultureHighlightOn(event) {
-  const culture = +event.target.dataset.id;
+  const culture = Number(event.id || event.target.dataset.id);
   const $info = byId("cultureInfo");
   if ($info) {
     d3.select("#hierarchy")
@@ -314,7 +328,7 @@ function cultureHighlightOn(event) {
 }
 
 function cultureHighlightOff(event) {
-  const culture = +event.target.dataset.id;
+  const culture = Number(event.id || event.target.dataset.id);
   const $info = byId("cultureInfo");
   if ($info) {
     d3.select("#hierarchy")
@@ -412,7 +426,14 @@ function cultureChangeEmblemsShape() {
   });
 
   pack.provinces.forEach(province => {
-    if (pack.cells.culture[province.center] !== culture || !province.i || province.removed || !province.coa || province.coa === "custom") return;
+    if (
+      pack.cells.culture[province.center] !== culture ||
+      !province.i ||
+      province.removed ||
+      !province.coa ||
+      province.coa === "custom"
+    )
+      return;
     if (shape === province.coa.shield) return;
     province.coa.shield = shape;
     rerenderCOA("provinceCOA" + province.i, province.coa);
@@ -438,8 +459,12 @@ function changePopulation() {
   const burgs = pack.burgs.filter(b => !b.removed && b.culture === cultureId);
 
   alertMessage.innerHTML = /* html */ `Rural: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" /> Urban:
-      <input type="number" min="0" step="1" id="urbanPop" value=${urban} style="width:6em" ${burgs.length ? "" : "disabled"} />
-      <p>Total population: ${l(total)} ⇒ <span id="totalPop">${l(total)}</span> (<span id="totalPopPerc">100</span>%)</p>`;
+      <input type="number" min="0" step="1" id="urbanPop" value=${urban} style="width:6em" ${
+    burgs.length ? "" : "disabled"
+  } />
+      <p>Total population: ${l(total)} ⇒ <span id="totalPop">${l(
+    total
+  )}</span> (<span id="totalPopPerc">100</span>%)</p>`;
 
   const update = function () {
     const totalNew = ruralPop.valueAsNumber + urbanPop.valueAsNumber;
@@ -522,10 +547,12 @@ function removeCulture(cultureId) {
   });
   cultures[cultureId].removed = true;
 
-  const origin = cultures[cultureId].origin;
-  cultures.forEach(c => {
-    if (c.origin === cultureId) c.origin = origin;
-  });
+  cultures
+    .filter(c => c.i && !c.removed)
+    .forEach(c => {
+      c.origins = c.origins.filter(origin => origin !== cultureId);
+      if (!c.origins.length) c.origins = [0];
+    });
   refreshCulturesEditor();
 }
 
@@ -552,7 +579,12 @@ function cultureRemove() {
 function drawCultureCenters() {
   const tooltip = "Drag to move the culture center (ancestral home)";
   debug.select("#cultureCenters").remove();
-  const cultureCenters = debug.append("g").attr("id", "cultureCenters").attr("stroke-width", 2).attr("stroke", "#444444").style("cursor", "move");
+  const cultureCenters = debug
+    .append("g")
+    .attr("id", "cultureCenters")
+    .attr("stroke-width", 2)
+    .attr("stroke", "#444444")
+    .style("cursor", "move");
 
   const data = pack.cultures.filter(c => c.i && !c.removed);
   cultureCenters
@@ -623,17 +655,17 @@ function togglePercentageMode() {
 
 function showHierarchy() {
   // build hierarchy tree
-  pack.cultures[0].origin = null;
+  pack.cultures[0].origins = [null];
   const validCultures = pack.cultures.filter(c => !c.removed);
   if (validCultures.length < 3) return tip("Not enough cultures to show hierarchy", false, "error");
 
   const root = d3
     .stratify()
     .id(d => d.i)
-    .parentId(d => d.origin)(validCultures);
+    .parentId(d => d.origins[0])(validCultures);
   const treeWidth = root.leaves().length;
   const treeHeight = root.height;
-  const width = treeWidth * 40;
+  const width = Math.max(treeWidth * 40, 300);
   const height = treeHeight * 60;
 
   const margin = {top: 10, right: 10, bottom: -5, left: 10};
@@ -649,39 +681,59 @@ function showHierarchy() {
     .attr("id", "hierarchy")
     .attr("width", width)
     .attr("height", height)
-    .style("text-anchor", "middle");
+    .style("text-anchor", "middle")
+    .style("min-width", "300px");
   const graph = svg.append("g").attr("transform", `translate(10, -45)`);
   const links = graph.append("g").attr("fill", "none").attr("stroke", "#aaaaaa");
+  const primaryLinks = links.append("g");
+  const secondaryLinks = links.append("g").attr("stroke-dasharray", 1);
   const nodes = graph.append("g");
+
+  // render helper functions
+  const getLinkPath = d => {
+    const {
+      source: {x: sx, y: sy},
+      target: {x: tx, y: ty}
+    } = d;
+    return `M${sx},${sy} C${sx},${(sy * 3 + ty) / 4} ${tx},${(sy * 2 + ty) / 3} ${tx},${ty}`;
+  };
+
+  const getSecondaryLinks = root => {
+    const nodes = root.descendants();
+    const links = [];
+
+    for (const node of nodes) {
+      const origins = node.data.origins;
+      if (node.depth < 2) continue;
+
+      for (let i = 1; i < origins.length; i++) {
+        const source = nodes.find(n => n.data.i === origins[i]);
+        if (source) links.push({source, target: node});
+      }
+    }
+
+    return links;
+  };
+
+  const nodePathMap = {
+    undefined: "M5,0A5,5,0,1,1,-5,0A5,5,0,1,1,5,0", // small circle
+    Generic: "M11.3,0A11.3,11.3,0,1,1,-11.3,0A11.3,11.3,0,1,1,11.3,0", // circle
+    River: "M0,-14L14,0L0,14L-14,0Z", // diamond
+    Lake: "M-6.5,-11.26l13,0l6.5,11.26l-6.5,11.26l-13,0l-6.5,-11.26Z", // hexagon
+    Naval: "M-11,-11h22v22h-22Z", // square
+    Highland: "M-11,-11l11,2l11,-2l-2,11l2,11l-11,-2l-11,2l2,-11Z", // concave square
+    Nomadic: "M-4.97,-12.01 l9.95,0 l7.04,7.04 l0,9.95 l-7.04,7.04 l-9.95,0 l-7.04,-7.04 l0,-9.95Z", // octagon
+    Hunting: "M0,-14l14,11l-6,14h-16l-6,-14Z" // pentagon
+  };
+
+  const getNodePath = d => nodePathMap[d.data.type];
 
   renderTree();
   function renderTree() {
     treeLayout(root);
-    links
-      .selectAll("path")
-      .data(root.links())
-      .enter()
-      .append("path")
-      .attr("d", d => {
-        return (
-          "M" +
-          d.source.x +
-          "," +
-          d.source.y +
-          "C" +
-          d.source.x +
-          "," +
-          (d.source.y * 3 + d.target.y) / 4 +
-          " " +
-          d.target.x +
-          "," +
-          (d.source.y * 2 + d.target.y) / 3 +
-          " " +
-          d.target.x +
-          "," +
-          d.target.y
-        );
-      });
+
+    primaryLinks.selectAll("path").data(root.links()).enter().append("path").attr("d", getLinkPath);
+    secondaryLinks.selectAll("path").data(getSecondaryLinks(root)).enter().append("path").attr("d", getLinkPath);
 
     const node = nodes
       .selectAll("g")
@@ -691,42 +743,29 @@ function showHierarchy() {
       .attr("data-id", d => d.data.i)
       .attr("stroke", "#333333")
       .attr("transform", d => `translate(${d.x}, ${d.y})`)
-      .on("mouseenter", () => cultureHighlightOn(event))
-      .on("mouseleave", () => cultureHighlightOff(event))
-      .call(d3.drag().on("start", d => dragToReorigin(d)));
+      .on("mouseenter", cultureHighlightOn)
+      .on("mouseleave", cultureHighlightOff)
+      .call(d3.drag().on("start", dragToReorigin));
 
     node
       .append("path")
-      .attr("d", d => {
-        if (!d.data.i) return "M5,0A5,5,0,1,1,-5,0A5,5,0,1,1,5,0";
-        // small circle
-        else if (d.data.type === "Generic") return "M11.3,0A11.3,11.3,0,1,1,-11.3,0A11.3,11.3,0,1,1,11.3,0";
-        // circle
-        else if (d.data.type === "River") return "M0,-14L14,0L0,14L-14,0Z";
-        // diamond
-        else if (d.data.type === "Lake") return "M-6.5,-11.26l13,0l6.5,11.26l-6.5,11.26l-13,0l-6.5,-11.26Z";
-        // hexagon
-        else if (d.data.type === "Naval") return "M-11,-11h22v22h-22Z"; // square
-        if (d.data.type === "Highland") return "M-11,-11l11,2l11,-2l-2,11l2,11l-11,-2l-11,2l2,-11Z"; // concave square
-        if (d.data.type === "Nomadic") return "M-4.97,-12.01 l9.95,0 l7.04,7.04 l0,9.95 l-7.04,7.04 l-9.95,0 l-7.04,-7.04 l0,-9.95Z"; // octagon
-        if (d.data.type === "Hunting") return "M0,-14l14,11l-6,14h-16l-6,-14Z"; // pentagon
-        return "M-11,-11h22v22h-22Z"; // square
-      })
-      .attr("fill", d => (d.data.i ? d.data.color : "#ffffff"))
+      .attr("d", getNodePath)
+      .attr("fill", d => d.data.color || "#ffffff")
       .attr("stroke-dasharray", d => (d.data.cells ? "null" : "1"));
 
     node
       .append("text")
       .attr("dy", ".35em")
-      .text(d => (d.data.i ? d.data.code : ""));
+      .text(d => d.data.code || "");
   }
 
   $("#alert").dialog({
     title: "Cultures tree",
     width: fitContent(),
+    minWidth: "20vw",
     resizable: false,
     position: {my: "left center", at: "left+10 center", of: "svg"},
-    buttons: {},
+    buttons: null,
     close: () => {
       alertMessage.innerHTML = "";
     }
@@ -745,14 +784,17 @@ function showHierarchy() {
       originLine.remove();
       const selected = graph.select("path.selected");
       if (!selected.size()) return;
-      const culture = d.data.i;
-      const oldOrigin = d.data.origin;
-      let newOrigin = selected.datum().data.i;
-      if (newOrigin == oldOrigin) return; // already a child of the selected node
-      if (newOrigin == culture) newOrigin = 0; // move to top
-      if (newOrigin && d.descendants().some(node => node.id == newOrigin)) return; // cannot be a child of its own child
-      pack.cultures[culture].origin = d.data.origin = newOrigin; // change data
-      showHierarchy(); // update hierarchy
+      const cultureId = d.data.i;
+      let newOrigin = Number(selected.datum().data.i);
+      if (cultureId === newOrigin) return; // dragged to itself
+      if (d.data.origins.includes(newOrigin)) return; // already a child of the selected node
+      if (newOrigin && d.descendants().some(node => node.id === newOrigin)) return; // cannot be a child of its own child
+
+      const culture = pack.cultures[cultureId];
+      if (culture.origins[0] === 0) culture.origins = [];
+      culture.origins.push(newOrigin);
+
+      showHierarchy();
     });
   }
 
@@ -853,7 +895,13 @@ function changeCultureForSelection(selection) {
     // change of append new element
     if (exists.size()) exists.attr("data-culture", cultureNew).attr("fill", color).attr("stroke", color);
     else
-      temp.append("polygon").attr("data-cell", i).attr("data-culture", cultureNew).attr("points", getPackPolygon(i)).attr("fill", color).attr("stroke", color);
+      temp
+        .append("polygon")
+        .attr("data-cell", i)
+        .attr("data-culture", cultureNew)
+        .attr("points", getPackPolygon(i))
+        .attr("fill", color)
+        .attr("stroke", color);
   });
 }
 
@@ -921,7 +969,8 @@ function addCulture() {
   const point = d3.mouse(this);
   const center = findCell(point[0], point[1]);
 
-  if (pack.cells.h[center] < 20) return tip("You cannot place culture center into the water. Please click on a land cell", false, "error");
+  if (pack.cells.h[center] < 20)
+    return tip("You cannot place culture center into the water. Please click on a land cell", false, "error");
   const occupied = pack.cultures.some(c => !c.removed && c.center === center);
   if (occupied) return tip("This cell is already a culture center. Please select a different cell", false, "error");
 
@@ -989,7 +1038,7 @@ async function uploadCulturesData() {
 
     current.color = c.color;
     current.expansionism = +c.expansionism;
-    current.origin = +c.origin;
+    current.origins = JSON.parse(c.origins);
 
     if (cultureTypes.includes(c.type)) current.type = c.type;
     else current.type = "Generic";

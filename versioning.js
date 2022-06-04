@@ -1,7 +1,7 @@
 "use strict";
 // version and caching control
 
-const version = "1.85.02"; // generator version, update each time
+const version = "1.86.00"; // generator version, update each time
 
 {
   document.title += " v" + version;
@@ -28,6 +28,7 @@ const version = "1.85.02"; // generator version, update each time
 
       <ul>
         <strong>Latest changes:</strong>
+        <li>Hierarchy tree: cultures and religions can have multiple parents</li>
         <li>Heightmap selection screen</li>
         <li>Dialogs optimization for mobile</li>
         <li>New heightmap template: Fractious</li>
