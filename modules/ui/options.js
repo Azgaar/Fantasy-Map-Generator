@@ -69,15 +69,22 @@ document
     if (id === "layersTab") layersContent.style.display = "block";
     else if (id === "styleTab") styleContent.style.display = "block";
     else if (id === "optionsTab") optionsContent.style.display = "block";
-    else if (id === "toolsTab") customization === 1 ? (customizationMenu.style.display = "block") : (toolsContent.style.display = "block");
+    else if (id === "toolsTab")
+      customization === 1 ? (customizationMenu.style.display = "block") : (toolsContent.style.display = "block");
     else if (id === "aboutTab") aboutContent.style.display = "block";
   });
 
 // show popup with a list of Patreon supportes (updated manually)
 async function showSupporters() {
   const {supporters} = await import("../dynamic/supporters.js?v=01062022");
-  alertMessage.innerHTML = "<ul style='column-count: 5; column-gap: 2em'>" + supporters.map(n => `<li>${n}</li>`).join("") + "</ul>";
-  $("#alert").dialog({resizable: false, title: "Patreon Supporters", width: "54vw", position: {my: "center", at: "center", of: "svg"}});
+  alertMessage.innerHTML =
+    "<ul style='column-count: 5; column-gap: 2em'>" + supporters.map(n => `<li>${n}</li>`).join("") + "</ul>";
+  $("#alert").dialog({
+    resizable: false,
+    title: "Patreon Supporters",
+    width: "54vw",
+    position: {my: "center", at: "center", of: "svg"}
+  });
 }
 
 // on any option or dialog change
@@ -292,7 +299,9 @@ function restoreDefaultZoomExtent() {
 
 function copyMapURL() {
   const locked = document.querySelectorAll("i.icon-lock").length; // check if some options are locked
-  const search = `?seed=${optionsSeed.value}&width=${graphWidth}&height=${graphHeight}${locked ? "" : "&options=default"}`;
+  const search = `?seed=${optionsSeed.value}&width=${graphWidth}&height=${graphHeight}${
+    locked ? "" : "&options=default"
+  }`;
   navigator.clipboard
     .writeText(location.host + location.pathname + search)
     .then(() => {
@@ -345,7 +354,8 @@ function changeEmblemShape(emblemShape) {
   shapePath ? image.setAttribute("d", shapePath) : image.removeAttribute("d");
 
   const specificShape = ["culture", "state", "random"].includes(emblemShape) ? null : emblemShape;
-  if (emblemShape === "random") pack.cultures.filter(c => !c.removed).forEach(c => (c.shield = Cultures.getRandomShield()));
+  if (emblemShape === "random")
+    pack.cultures.filter(c => !c.removed).forEach(c => (c.shield = Cultures.getRandomShield()));
 
   const rerenderCOA = (id, coa) => {
     const coaEl = document.getElementById(id);
@@ -541,8 +551,10 @@ function randomizeOptions() {
   if (randomize || !locked("prec")) precInput.value = precOutput.value = gauss(100, 40, 5, 500);
   const tMax = 30,
     tMin = -30; // temperature extremes
-  if (randomize || !locked("temperatureEquator")) temperatureEquatorOutput.value = temperatureEquatorInput.value = rand(tMax - 10, tMax);
-  if (randomize || !locked("temperaturePole")) temperaturePoleOutput.value = temperaturePoleInput.value = rand(tMin, tMin + 30);
+  if (randomize || !locked("temperatureEquator"))
+    temperatureEquatorOutput.value = temperatureEquatorInput.value = rand(tMax - 10, tMax);
+  if (randomize || !locked("temperaturePole"))
+    temperaturePoleOutput.value = temperaturePoleInput.value = rand(tMin, tMin + 30);
 
   // 'Units Editor' settings
   const US = navigator.language === "en-US";
@@ -644,7 +656,8 @@ document.getElementById("sticked").addEventListener("click", function (event) {
 });
 
 function regeneratePrompt(options) {
-  if (customization) return tip("New map cannot be generated when edit mode is active, please exit the mode and retry", false, "error");
+  if (customization)
+    return tip("New map cannot be generated when edit mode is active, please exit the mode and retry", false, "error");
   const workingTime = (Date.now() - last(mapHistory).created) / 60000; // minutes
   if (workingTime < 5) return regenerateMap(options);
 
@@ -735,11 +748,12 @@ async function showLoadPane() {
 
     loadFromDropboxButtons.style.display = "block";
     fileSelect.innerHTML = "";
-    files.forEach(file => {
-      const opt = document.createElement("option");
-      opt.innerText = file.name;
-      opt.value = file.path;
-      fileSelect.appendChild(opt);
+    files.forEach(({name, updated, size, path}) => {
+      const sizeMB = rn(size / 1024 / 1024, 2) + " MB";
+      const updatedOn = new Date(updated).toLocaleDateString();
+      const nameFormatted = `${updatedOn}: ${name} [${sizeMB}]`;
+      const option = new Option(nameFormatted, path);
+      fileSelect.options.add(option);
     });
 
     return;
@@ -860,7 +874,10 @@ function updateTilesOptions() {
     }
   }
   const rectsG = "<g fill='none' stroke='#000'>" + rects.join("") + "</g>";
-  const labelsG = "<g fill='#000' stroke='none' text-anchor='middle' dominant-baseline='central' font-size='24px'>" + labels.join("") + "</g>";
+  const labelsG =
+    "<g fill='#000' stroke='none' text-anchor='middle' dominant-baseline='central' font-size='24px'>" +
+    labels.join("") +
+    "</g>";
   debug.html(rectsG + labelsG);
 }
 
@@ -912,7 +929,8 @@ async function enter3dView(type) {
 
   canvas.style.display = "block";
   canvas.onmouseenter = () => {
-    const help = "Left mouse to change angle, middle mouse / mousewheel to zoom, right mouse to pan. <b>O</b> to toggle options";
+    const help =
+      "Left mouse to change angle, middle mouse / mousewheel to zoom, right mouse to pan. <b>O</b> to toggle options";
     +canvas.dataset.hovered > 2 ? tip("") : tip(help);
     canvas.dataset.hovered = (+canvas.dataset.hovered | 0) + 1;
   };
