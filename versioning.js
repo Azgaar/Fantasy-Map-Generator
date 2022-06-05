@@ -28,7 +28,7 @@ const version = "1.86.00"; // generator version, update each time
 
       <ul>
         <strong>Latest changes:</strong>
-        <li>Hierarchy tree: cultures and religions can have multiple parents</li>
+        <li>Сultures and religions can have multiple parents in hierarchy tree</li>
         <li>Heightmap selection screen</li>
         <li>Dialogs optimization for mobile</li>
         <li>New heightmap template: Fractious</li>

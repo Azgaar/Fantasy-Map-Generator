@@ -115,7 +115,9 @@ function refreshCulturesEditor() {
 
 function culturesCollectStatistics() {
   const {cells, cultures, burgs} = pack;
-  cultures.forEach(c => (c.cells = c.area = c.rural = c.urban = 0));
+  cultures.forEach(c => {
+    c.cells = c.area = c.rural = c.urban = 0;
+  });
 
   for (const i of cells.i) {
     if (cells.h[i] < 20) continue;
@@ -143,7 +145,7 @@ function culturesEditorAddLines() {
     const rural = c.rural * populationRate;
     const urban = c.urban * populationRate * urbanization;
     const population = rn(rural + urban);
-    const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(
+    const populationTip = `Total population: ${si(population)}. Rural population: ${si(rural)}. Urban population: ${si(
       urban
     )}. Click to edit`;
     totalArea += area;
@@ -153,13 +155,13 @@ function culturesEditorAddLines() {
       // Uncultured (neutral) line
       lines += /* html */ `<div
           class="states"
-          data-id=${c.i}
+          data-id="${c.i}"
           data-name="${c.name}"
           data-color=""
-          data-cells=${c.cells}
-          data-area=${area}
-          data-population=${population}
-          data-base=${c.base}
+          data-cells="${c.cells}"
+          data-area="${area}"
+          data-population="${population}"
+          data-base="${c.base}"
           data-type=""
           data-expansionism=""
           data-emblems="${c.shield}"
@@ -169,9 +171,8 @@ function culturesEditorAddLines() {
             value="${c.name}" autocorrect="off" spellcheck="false" />
           <span class="icon-cw placeholder"></span>
           <select class="cultureType placeholder">${getTypeOptions(c.type)}</select>
-          <select data-tip="Culture namesbase. Click to change. Click on arrows to re-generate names" class="cultureBase">${getBaseOptions(
-            c.base
-          )}</select>
+          <select data-tip="Culture namesbase. Click to change. Click on arrows to re-generate names"
+            class="cultureBase">${getBaseOptions(c.base)}</select>
           <span data-tip="Cells count" class="icon-check-empty hide"></span>
           <div data-tip="Cells count" class="cultureCells hide" style="width: 4em">${c.cells}</div>
           <span class="icon-resize-full placeholder hide"></span>
@@ -179,9 +180,8 @@ function culturesEditorAddLines() {
           <span data-tip="Culture area" style="padding-right: 4px" class="icon-map-o hide"></span>
           <div data-tip="Culture area" class="cultureArea hide" style="width: 6em">${si(area)} ${unit}</div>
           <span data-tip="${populationTip}" class="icon-male hide"></span>
-          <div data-tip="${populationTip}" class="culturePopulation hide pointer" style="width: 5em">${si(
-        population
-      )}</div>
+          <div data-tip="${populationTip}" class="culturePopulation hide pointer"
+            style="width: 5em">${si(population)}</div>
           <span data-tip="Click to re-generate names for burgs with this culture assigned" class="icon-arrows-cw hide"></span>
           ${getShapeOptions(selectShape, c.shield)}
         </div>`;
@@ -190,27 +190,25 @@ function culturesEditorAddLines() {
 
     lines += /* html */ `<div
         class="states cultures"
-        data-id=${c.i}
+        data-id="${c.i}"
         data-name="${c.name}"
         data-color="${c.color}"
-        data-cells=${c.cells}
-        data-area=${area}
-        data-population=${population}
-        data-base=${c.base}
-        data-type=${c.type}
-        data-expansionism=${c.expansionism}
+        data-cells="${c.cells}"
+        data-area="${area}"
+        data-population="${population}"
+        data-base="${c.base}"
+        data-type="${c.type}"
+        data-expansionism="${c.expansionism}"
         data-emblems="${c.shield}"
       >
         <fill-box fill="${c.color}"></fill-box>
         <input data-tip="Culture name. Click and type to change" class="cultureName" style="width: 7em"
           value="${c.name}" autocorrect="off" spellcheck="false" />
         <span data-tip="Regenerate culture name" class="icon-cw hiddenIcon" style="visibility: hidden"></span>
-        <select data-tip="Culture type. Defines growth model. Click to change" class="cultureType">${getTypeOptions(
-          c.type
-        )}</select>
-        <select data-tip="Culture namesbase. Click to change. Click on arrows to re-generate names" class="cultureBase">${getBaseOptions(
-          c.base
-        )}</select>
+        <select data-tip="Culture type. Defines growth model. Click to change"
+          class="cultureType">${getTypeOptions(c.type)}</select>
+        <select data-tip="Culture namesbase. Click to change. Click on arrows to re-generate names"
+          class="cultureBase">${getBaseOptions(c.base)}</select>
         <span data-tip="Cells count" class="icon-check-empty hide"></span>
         <div data-tip="Cells count" class="cultureCells hide" style="width: 4em">${c.cells}</div>
         <span data-tip="Culture expansionism. Defines competitive size" class="icon-resize-full hide"></span>
@@ -226,9 +224,8 @@ function culturesEditorAddLines() {
         <span data-tip="Culture area" style="padding-right: 4px" class="icon-map-o hide"></span>
         <div data-tip="Culture area" class="cultureArea hide" style="width: 6em">${si(area)} ${unit}</div>
         <span data-tip="${populationTip}" class="icon-male hide"></span>
-        <div data-tip="${populationTip}" class="culturePopulation hide pointer" style="width: 5em">${si(
-      population
-    )}</div>
+        <div data-tip="${populationTip}" class="culturePopulation hide pointer"
+          style="width: 5em">${si(population)}</div>
         <span data-tip="Click to re-generate names for burgs with this culture assigned" class="icon-arrows-cw hide"></span>
         ${getShapeOptions(selectShape, c.shield)}
         <span data-tip="Remove culture" class="icon-trash-empty hide"></span>
@@ -257,7 +254,7 @@ function culturesEditorAddLines() {
   $body.querySelectorAll("div > select.cultureEmblems").forEach(el => el.on("change", cultureChangeEmblemsShape));
   $body.querySelectorAll("div > div.culturePopulation").forEach(el => el.on("click", changePopulation));
   $body.querySelectorAll("div > span.icon-arrows-cw").forEach(el => el.on("click", cultureRegenerateBurgs));
-  $body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.on("click", cultureRemove));
+  $body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.on("click", cultureRemovePrompt));
 
   const $culturesHeader = byId("culturesHeader");
   $culturesHeader.querySelector("div[data-sortby='emblems']").style.display = selectShape ? "inline-block" : "none";
@@ -350,16 +347,16 @@ function cultureHighlightOff(event) {
 function cultureChangeColor() {
   const $el = this;
   const currentFill = $el.getAttribute("fill");
-  const culture = +$el.parentNode.dataset.id;
+  const cultureId = +$el.parentNode.dataset.id;
 
   const callback = newFill => {
     $el.fill = newFill;
-    pack.cultures[culture].color = newFill;
+    pack.cultures[cultureId].color = newFill;
     cults
-      .select("#culture" + culture)
+      .select("#culture" + cultureId)
       .attr("fill", newFill)
       .attr("stroke", newFill);
-    debug.select("#cultureCenter" + culture).attr("fill", newFill);
+    debug.select("#cultureCenter" + cultureId).attr("fill", newFill);
   };
 
   openPicker(currentFill, callback);
@@ -451,16 +448,20 @@ function changePopulation() {
   const rural = rn(culture.rural * populationRate);
   const urban = rn(culture.urban * populationRate * urbanization);
   const total = rural + urban;
-  const l = n => Number(n).toLocaleString();
+  const format = n => Number(n).toLocaleString();
   const burgs = pack.burgs.filter(b => !b.removed && b.culture === cultureId);
 
-  alertMessage.innerHTML = /* html */ `Rural: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" /> Urban:
-      <input type="number" min="0" step="1" id="urbanPop" value=${urban} style="width:6em" ${
-    burgs.length ? "" : "disabled"
-  } />
-      <p>Total population: ${l(total)} ⇒ <span id="totalPop">${l(
-    total
-  )}</span> (<span id="totalPopPerc">100</span>%)</p>`;
+  alertMessage.innerHTML = /* html */ `<div>
+    <i>Change population of all cells assigned to the culture</i>
+    <div style="margin: 0.5em 0">
+      Rural: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" />
+      Urban: <input type="number" min="0" step="1" id="urbanPop" value=${urban} style="width:6em"
+        ${burgs.length ? "" : "disabled"} />
+    </div>
+    <div>Total population: ${format(total)} ⇒ <span id="totalPop">${format(total)}</span>
+      (<span id="totalPopPerc">100</span>%)
+    </div>
+  </div>`;
 
   const update = function () {
     const totalNew = ruralPop.valueAsNumber + urbanPop.valueAsNumber;
@@ -552,23 +553,15 @@ function removeCulture(cultureId) {
   refreshCulturesEditor();
 }
 
-function cultureRemove() {
-  if (customization === 4) return;
-  const cultureId = +this.parentNode.dataset.id;
+function cultureRemovePrompt() {
+  if (customization) return;
 
-  alertMessage.innerHTML = "Are you sure you want to remove the culture? <br>This action cannot be reverted";
-  $("#alert").dialog({
-    resizable: false,
+  const cultureId = +this.parentNode.dataset.id;
+  confirmationDialog({
     title: "Remove culture",
-    buttons: {
-      Remove: function () {
-        removeCulture(cultureId);
-        $(this).dialog("close");
-      },
-      Cancel: function () {
-        $(this).dialog("close");
-      }
-    }
+    message: "Are you sure you want to remove the culture? <br>This action cannot be reverted",
+    confirm: "Remove",
+    onConfirm: () => removeCulture(cultureId)
   });
 }
 
@@ -608,22 +601,21 @@ function drawCultureCenters() {
 }
 
 function cultureCenterDrag() {
-  const el = d3.select(this);
-  const c = +this.id.slice(13);
+  const $el = d3.select(this);
+  const cultureId = +this.id.slice(13);
   d3.event.on("drag", () => {
-    el.attr("cx", d3.event.x).attr("cy", d3.event.y);
-    const cell = findCell(d3.event.x, d3.event.y);
+    const {x, y} = d3.event;
+    $el.attr("cx", x).attr("cy", y);
+    const cell = findCell(x, y);
     if (pack.cells.h[cell] < 20) return; // ignore dragging on water
-    pack.cultures[c].center = cell;
+    pack.cultures[cultureId].center = cell;
     recalculateCultures();
   });
 }
 
 function toggleLegend() {
-  if (legend.selectAll("*").size()) {
-    clearLegend();
-    return;
-  } // hide legend
+  if (legend.selectAll("*").size()) return clearLegend();
+
   const data = pack.cultures
     .filter(c => c.i && !c.removed && c.cells)
     .sort((a, b) => b.area - a.area)
@@ -634,14 +626,15 @@ function toggleLegend() {
 function togglePercentageMode() {
   if ($body.dataset.type === "absolute") {
     $body.dataset.type = "percentage";
-    const totalCells = +culturesFooterCells.innerHTML;
-    const totalArea = +culturesFooterArea.dataset.area;
-    const totalPopulation = +culturesFooterPopulation.dataset.population;
+    const totalCells = +byId("culturesFooterCells").innerText;
+    const totalArea = +byId("culturesFooterArea").dataset.area;
+    const totalPopulation = +byId("culturesFooterPopulation").dataset.population;
 
     $body.querySelectorAll(":scope > div").forEach(function (el) {
-      el.querySelector(".cultureCells").innerHTML = rn((+el.dataset.cells / totalCells) * 100) + "%";
-      el.querySelector(".cultureArea").innerHTML = rn((+el.dataset.area / totalArea) * 100) + "%";
-      el.querySelector(".culturePopulation").innerHTML = rn((+el.dataset.population / totalPopulation) * 100) + "%";
+      const {cells, area, population} = el.dataset;
+      el.querySelector(".cultureCells").innerText = rn((+cells / totalCells) * 100) + "%";
+      el.querySelector(".cultureArea").innerText = rn((+area / totalArea) * 100) + "%";
+      el.querySelector(".culturePopulation").innerText = rn((+population / totalPopulation) * 100) + "%";
     });
   } else {
     $body.dataset.type = "absolute";
