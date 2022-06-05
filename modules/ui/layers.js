@@ -6,16 +6,68 @@ restoreCustomPresets(); // run on-load
 
 function getDefaultPresets() {
   return {
-    political: ["toggleBorders", "toggleIcons", "toggleIce", "toggleLabels", "toggleRivers", "toggleRoutes", "toggleScaleBar", "toggleStates"],
-    cultural: ["toggleBorders", "toggleCultures", "toggleIcons", "toggleLabels", "toggleRivers", "toggleRoutes", "toggleScaleBar"],
-    religions: ["toggleBorders", "toggleIcons", "toggleLabels", "toggleReligions", "toggleRivers", "toggleRoutes", "toggleScaleBar"],
+    political: [
+      "toggleBorders",
+      "toggleIcons",
+      "toggleIce",
+      "toggleLabels",
+      "toggleRivers",
+      "toggleRoutes",
+      "toggleScaleBar",
+      "toggleStates"
+    ],
+    cultural: [
+      "toggleBorders",
+      "toggleCultures",
+      "toggleIcons",
+      "toggleLabels",
+      "toggleRivers",
+      "toggleRoutes",
+      "toggleScaleBar"
+    ],
+    religions: [
+      "toggleBorders",
+      "toggleIcons",
+      "toggleLabels",
+      "toggleReligions",
+      "toggleRivers",
+      "toggleRoutes",
+      "toggleScaleBar"
+    ],
     provinces: ["toggleBorders", "toggleIcons", "toggleProvinces", "toggleRivers", "toggleScaleBar"],
     biomes: ["toggleBiomes", "toggleIce", "toggleRivers", "toggleScaleBar"],
     heightmap: ["toggleHeight", "toggleRivers"],
     physical: ["toggleCoordinates", "toggleHeight", "toggleIce", "toggleRivers", "toggleScaleBar"],
-    poi: ["toggleBorders", "toggleHeight", "toggleIce", "toggleIcons", "toggleMarkers", "toggleRivers", "toggleRoutes", "toggleScaleBar"],
-    military: ["toggleBorders", "toggleIcons", "toggleLabels", "toggleMilitary", "toggleRivers", "toggleRoutes", "toggleScaleBar", "toggleStates"],
-    emblems: ["toggleBorders", "toggleIcons", "toggleIce", "toggleEmblems", "toggleRivers", "toggleRoutes", "toggleScaleBar", "toggleStates"],
+    poi: [
+      "toggleBorders",
+      "toggleHeight",
+      "toggleIce",
+      "toggleIcons",
+      "toggleMarkers",
+      "toggleRivers",
+      "toggleRoutes",
+      "toggleScaleBar"
+    ],
+    military: [
+      "toggleBorders",
+      "toggleIcons",
+      "toggleLabels",
+      "toggleMilitary",
+      "toggleRivers",
+      "toggleRoutes",
+      "toggleScaleBar",
+      "toggleStates"
+    ],
+    emblems: [
+      "toggleBorders",
+      "toggleIcons",
+      "toggleIce",
+      "toggleEmblems",
+      "toggleRivers",
+      "toggleRoutes",
+      "toggleScaleBar",
+      "toggleStates"
+    ],
     landmass: ["toggleScaleBar"]
   };
 }
@@ -193,12 +245,23 @@ function drawHeightmap() {
     paths[h] += round(lineGen(points));
   }
 
-  terrs.append("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight).attr("fill", scheme(0.8)); // draw base layer
+  terrs
+    .append("rect")
+    .attr("x", 0)
+    .attr("y", 0)
+    .attr("width", graphWidth)
+    .attr("height", graphHeight)
+    .attr("fill", scheme(0.8)); // draw base layer
   for (const i of d3.range(20, 101)) {
     if (paths[i].length < 10) continue;
     const color = getColor(i, scheme);
     if (terracing)
-      terrs.append("path").attr("d", paths[i]).attr("transform", "translate(.7,1.4)").attr("fill", d3.color(color).darker(terracing)).attr("data-height", i);
+      terrs
+        .append("path")
+        .attr("d", paths[i])
+        .attr("transform", "translate(.7,1.4)")
+        .attr("fill", d3.color(color).darker(terracing))
+        .attr("data-height", i);
     terrs.append("path").attr("d", paths[i]).attr("fill", color).attr("data-height", i);
   }
 
@@ -701,10 +764,8 @@ function drawCultures() {
   TIME && console.time("drawCultures");
 
   cults.selectAll("path").remove();
-  const cells = pack.cells,
-    vertices = pack.vertices,
-    cultures = pack.cultures,
-    n = cells.i.length;
+  const {cells, vertices, cultures} = pack;
+  const n = cells.i.length;
   const used = new Uint8Array(cells.i.length);
   const paths = new Array(cultures.length).fill("");
 
@@ -777,11 +838,9 @@ function drawReligions() {
   TIME && console.time("drawReligions");
 
   relig.selectAll("path").remove();
-  const cells = pack.cells,
-    vertices = pack.vertices,
-    religions = pack.religions,
-    features = pack.features,
-    n = cells.i.length;
+  const {cells, vertices, religions} = pack;
+  const n = cells.i.length;
+
   const used = new Uint8Array(cells.i.length);
   const vArray = new Array(religions.length); // store vertices array
   const body = new Array(religions.length).fill(""); // store path around each religion
@@ -801,11 +860,15 @@ function drawReligions() {
     const points = chain.map(v => vertices.p[v[0]]);
     if (!vArray[r]) vArray[r] = [];
     vArray[r].push(points);
-    body[r] += "M" + points.join("L");
+    body[r] += "M" + points.join("L") + "Z";
     gap[r] +=
       "M" +
       vertices.p[chain[0][0]] +
-      chain.reduce((r2, v, i, d) => (!i ? r2 : !v[2] ? r2 + "L" + vertices.p[v[0]] : d[i + 1] && !d[i + 1][2] ? r2 + "M" + vertices.p[v[0]] : r2), "");
+      chain.reduce(
+        (r2, v, i, d) =>
+          !i ? r2 : !v[2] ? r2 + "L" + vertices.p[v[0]] : d[i + 1] && !d[i + 1][2] ? r2 + "M" + vertices.p[v[0]] : r2,
+        ""
+      );
   }
 
   const bodyData = body.map((p, i) => [p.length > 10 ? p : null, i, religions[i].color]).filter(d => d[0]);
@@ -971,7 +1034,9 @@ function drawStates() {
 
   const bodyString = bodyData.map(d => `<path id="state${d[1]}" d="${d[0]}" fill="${d[2]}" stroke="none"/>`).join("");
   const gapString = gapData.map(d => `<path id="state-gap${d[1]}" d="${d[0]}" fill="none" stroke="${d[2]}"/>`).join("");
-  const clipString = bodyData.map(d => `<clipPath id="state-clip${d[1]}"><use href="#state${d[1]}"/></clipPath>`).join("");
+  const clipString = bodyData
+    .map(d => `<clipPath id="state-clip${d[1]}"><use href="#state${d[1]}"/></clipPath>`)
+    .join("");
   const haloString = haloData
     .map(
       d =>
@@ -1064,7 +1129,9 @@ function drawBorders() {
     const s = cells.state[i];
 
     // if cell is on province border
-    const provToCell = cells.c[i].find(n => cells.state[n] === s && p > cells.province[n] && pUsed[p][n] !== cells.province[n]);
+    const provToCell = cells.c[i].find(
+      n => cells.state[n] === s && p > cells.province[n] && pUsed[p][n] !== cells.province[n]
+    );
     if (provToCell) {
       const provTo = cells.province[provToCell];
       pUsed[p][provToCell] = provTo;
@@ -1101,7 +1168,8 @@ function drawBorders() {
   function connectVertices(current, f, array, t, used) {
     let chain = [];
     const checkCell = c => c >= n || array[c] !== f;
-    const checkVertex = v => vertices.c[v].some(c => array[c] === f) && vertices.c[v].some(c => array[c] === t && cells.h[c] >= 20);
+    const checkVertex = v =>
+      vertices.c[v].some(c => array[c] === f) && vertices.c[v].some(c => array[c] === t && cells.h[c] >= 20);
 
     // find starting vertex
     for (let i = 0; i < 1000; i++) {
@@ -1234,7 +1302,11 @@ function getProvincesVertices() {
     gap[p] +=
       "M" +
       vertices.p[chain[0][0]] +
-      chain.reduce((r, v, i, d) => (!i ? r : !v[2] ? r + "L" + vertices.p[v[0]] : d[i + 1] && !d[i + 1][2] ? r + "M" + vertices.p[v[0]] : r), "");
+      chain.reduce(
+        (r, v, i, d) =>
+          !i ? r : !v[2] ? r + "L" + vertices.p[v[0]] : d[i + 1] && !d[i + 1][2] ? r + "M" + vertices.p[v[0]] : r,
+        ""
+      );
   }
 
   // find province visual center
@@ -1373,7 +1445,17 @@ function drawCoordinates() {
       pos = projection(c); // map coordinates
     const [x, y] = lat ? [rn(p.x, 2), rn(pos[1], 2)] : [rn(pos[0], 2), rn(p.y, 2)]; // labels position
     const v = lat ? c[1] : c[0]; // label
-    const text = !v ? v : Number.isInteger(v) ? (lat ? (c[1] < 0 ? -c[1] + "°S" : c[1] + "°N") : c[0] < 0 ? -c[0] + "°W" : c[0] + "°E") : "";
+    const text = !v
+      ? v
+      : Number.isInteger(v)
+      ? lat
+        ? c[1] < 0
+          ? -c[1] + "°S"
+          : c[1] + "°N"
+        : c[0] < 0
+        ? -c[0] + "°W"
+        : c[0] + "°E"
+      : "";
     return {lat, x, y, text};
   });
 
@@ -1483,7 +1565,9 @@ function drawRivers() {
     if (!cells || cells.length < 2) return;
 
     if (points && points.length !== cells.length) {
-      console.error(`River ${i} has ${cells.length} cells, but only ${points.length} points defined. Resetting points data`);
+      console.error(
+        `River ${i} has ${cells.length} cells, but only ${points.length} points defined. Resetting points data`
+      );
       points = undefined;
     }
 
@@ -1552,15 +1636,20 @@ const getPin = (shape = "bubble", fill = "#fff", stroke = "#000") => {
     return `<path d="M6,19 l9,10 L24,19" fill="${stroke}" stroke="none" /><circle cx="15" cy="15" r="10" fill="${fill}" stroke="${stroke}"/>`;
   if (shape === "pin")
     return `<path d="m 15,3 c -5.5,0 -9.7,4.09 -9.7,9.3 0,6.8 9.7,17 9.7,17 0,0 9.7,-10.2 9.7,-17 C 24.7,7.09 20.5,3 15,3 Z" fill="${fill}" stroke="${stroke}"/>`;
-  if (shape === "square") return `<path d="m 20,25 -5,4 -5,-4 z" fill="${stroke}"/><path d="M 5,5 H 25 V 25 H 5 Z" fill="${fill}" stroke="${stroke}"/>`;
-  if (shape === "squarish") return `<path d="m 5,5 h 20 v 20 h -6 l -4,4 -4,-4 H 5 Z" fill="${fill}" stroke="${stroke}" />`;
+  if (shape === "square")
+    return `<path d="m 20,25 -5,4 -5,-4 z" fill="${stroke}"/><path d="M 5,5 H 25 V 25 H 5 Z" fill="${fill}" stroke="${stroke}"/>`;
+  if (shape === "squarish")
+    return `<path d="m 5,5 h 20 v 20 h -6 l -4,4 -4,-4 H 5 Z" fill="${fill}" stroke="${stroke}" />`;
   if (shape === "diamond") return `<path d="M 2,15 15,1 28,15 15,29 Z" fill="${fill}" stroke="${stroke}" />`;
   if (shape === "hex") return `<path d="M 15,29 4.61,21 V 9 L 15,3 25.4,9 v 12 z" fill="${fill}" stroke="${stroke}" />`;
   if (shape === "hexy") return `<path d="M 15,29 6,21 5,8 15,4 25,8 24,21 Z" fill="${fill}" stroke="${stroke}" />`;
-  if (shape === "shieldy") return `<path d="M 15,29 6,21 5,7 c 0,0 5,-3 10,-3 5,0 10,3 10,3 l -1,14 z" fill="${fill}" stroke="${stroke}" />`;
-  if (shape === "shield") return `<path d="M 4.6,5.2 H 25 v 6.7 A 20.3,20.4 0 0 1 15,29 20.3,20.4 0 0 1 4.6,11.9 Z" fill="${fill}" stroke="${stroke}" />`;
+  if (shape === "shieldy")
+    return `<path d="M 15,29 6,21 5,7 c 0,0 5,-3 10,-3 5,0 10,3 10,3 l -1,14 z" fill="${fill}" stroke="${stroke}" />`;
+  if (shape === "shield")
+    return `<path d="M 4.6,5.2 H 25 v 6.7 A 20.3,20.4 0 0 1 15,29 20.3,20.4 0 0 1 4.6,11.9 Z" fill="${fill}" stroke="${stroke}" />`;
   if (shape === "pentagon") return `<path d="M 4,16 9,4 h 12 l 5,12 -11,13 z" fill="${fill}" stroke="${stroke}" />`;
-  if (shape === "heptagon") return `<path d="M 15,29 6,22 4,12 10,4 h 10 l 6,8 -2,10 z" fill="${fill}" stroke="${stroke}" />`;
+  if (shape === "heptagon")
+    return `<path d="M 15,29 6,22 4,12 10,4 h 10 l 6,8 -2,10 z" fill="${fill}" stroke="${stroke}" />`;
   if (shape === "circle") return `<circle cx="15" cy="15" r="11" fill="${fill}" stroke="${stroke}" />`;
   if (shape === "no") return "";
 };
@@ -1744,19 +1833,34 @@ function drawEmblems() {
 
     const burgNodes = nodes.filter(node => node.type === "burg");
     const burgString = burgNodes
-      .map(d => `<use data-i="${d.i}" x="${rn(d.x - d.shift)}" y="${rn(d.y - d.shift)}" width="${d.size}em" height="${d.size}em"/>`)
+      .map(
+        d =>
+          `<use data-i="${d.i}" x="${rn(d.x - d.shift)}" y="${rn(d.y - d.shift)}" width="${d.size}em" height="${
+            d.size
+          }em"/>`
+      )
       .join("");
     emblems.select("#burgEmblems").attr("font-size", sizeBurgs).html(burgString);
 
     const provinceNodes = nodes.filter(node => node.type === "province");
     const provinceString = provinceNodes
-      .map(d => `<use data-i="${d.i}" x="${rn(d.x - d.shift)}" y="${rn(d.y - d.shift)}" width="${d.size}em" height="${d.size}em"/>`)
+      .map(
+        d =>
+          `<use data-i="${d.i}" x="${rn(d.x - d.shift)}" y="${rn(d.y - d.shift)}" width="${d.size}em" height="${
+            d.size
+          }em"/>`
+      )
       .join("");
     emblems.select("#provinceEmblems").attr("font-size", sizeProvinces).html(provinceString);
 
     const stateNodes = nodes.filter(node => node.type === "state");
     const stateString = stateNodes
-      .map(d => `<use data-i="${d.i}" x="${rn(d.x - d.shift)}" y="${rn(d.y - d.shift)}" width="${d.size}em" height="${d.size}em"/>`)
+      .map(
+        d =>
+          `<use data-i="${d.i}" x="${rn(d.x - d.shift)}" y="${rn(d.y - d.shift)}" width="${d.size}em" height="${
+            d.size
+          }em"/>`
+      )
       .join("");
     emblems.select("#stateEmblems").attr("font-size", sizeStates).html(stateString);
 
