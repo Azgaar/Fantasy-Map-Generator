@@ -298,15 +298,13 @@ function cultureHighlightOn(event) {
   const culture = Number(event.id || event.target.dataset.id);
   const $info = byId("cultureInfo");
   if ($info) {
-    d3.select("#hierarchy")
-      .select("g[data-id='" + culture + "'] > path")
-      .classed("selected", 1);
+    d3.select("#hierarchy").select(`g[data-id='${culture}']`).classed("selected", 1);
     const c = pack.cultures[culture];
     const rural = c.rural * populationRate;
     const urban = c.urban * populationRate * urbanization;
     const population = rural + urban > 0 ? si(rn(rural + urban)) + " people" : "Extinct";
     $info.innerHTML = `${c.name} culture. ${c.type}. ${population}`;
-    tip("Drag to change parent, drag to itself to move to the top level. Hold CTRL and click to change abbreviation");
+    tip("Drag to other node to add parent, click to edit");
   }
 
   if (!layerIsOn("toggleCultures")) return;
@@ -329,11 +327,10 @@ function cultureHighlightOn(event) {
 
 function cultureHighlightOff(event) {
   const culture = Number(event.id || event.target.dataset.id);
+
   const $info = byId("cultureInfo");
   if ($info) {
-    d3.select("#hierarchy")
-      .select("g[data-id='" + culture + "'] > path")
-      .classed("selected", 0);
+    d3.select("#hierarchy").select(`g[data-id='${culture}']`).classed("selected", 0);
     $info.innerHTML = "&#8205;";
     tip("");
   }
@@ -673,11 +670,20 @@ function showHierarchy() {
   const h = height + 30 - margin.top - margin.bottom;
   const treeLayout = d3.tree().size([w, h]);
 
+  alertMessage.innerHTML = /* html */ `<div id="cultureChartDetails" class='chartInfo'>
+    <div id='cultureInfo' style="display: block">&#8205;</div>
+    <div id='cultureSelected' style="display: none">
+      <span><span id='cultureSelectedName'></span> culture. </span>
+      <span data-name="Type culture short name (abbreviation)">Abbreviation: <input id='cultureSelectedCode' type='text' maxlength='3' size='3' /></span>
+      <button data-tip='Clear origin, culture will be linked to top level' id='cultureSelectedClear'>Clear</button>
+      <button data-tip='Close edit mode' id='cultureSelectedClose'>Close</button>
+    </div>
+  </div>`;
+
   // prepare svg
-  alertMessage.innerHTML = "<div id='cultureInfo' class='chartInfo'>&#8205;</div>";
   const svg = d3
     .select("#alertMessage")
-    .insert("svg", "#cultureInfo")
+    .insert("svg", "#cultureChartDetails")
     .attr("id", "hierarchy")
     .attr("width", width)
     .attr("height", height)
@@ -745,6 +751,7 @@ function showHierarchy() {
       .attr("transform", d => `translate(${d.x}, ${d.y})`)
       .on("mouseenter", cultureHighlightOn)
       .on("mouseleave", cultureHighlightOff)
+      .on("click", cultureSelect)
       .call(d3.drag().on("start", dragToReorigin));
 
     node
@@ -771,9 +778,38 @@ function showHierarchy() {
     }
   });
 
-  function dragToReorigin(d) {
-    if (isCtrlClick(d3.event.sourceEvent)) return changeCode(d);
+  function cultureSelect(d) {
+    d3.event.stopPropagation();
 
+    nodes.selectAll("g").style("outline", "none");
+    this.style.outline = "1px solid #c13119";
+    byId("cultureSelected").style.display = "block";
+    byId("cultureInfo").style.display = "none";
+
+    const culture = d.data;
+    byId("cultureSelectedName").innerText = culture.name;
+    byId("cultureSelectedCode").value = culture.code;
+
+    byId("cultureSelectedCode").onchange = function () {
+      if (this.value.length > 3) return tip("Abbreviation must be 3 characters or less", false, "error", 3000);
+      if (!this.value.length) return tip("Abbreviation cannot be empty", false, "error", 3000);
+      nodes.select(`g[data-id="${d.id}"] > text`).text(this.value);
+      culture.code = this.value;
+    };
+
+    byId("cultureSelectedClear").onclick = () => {
+      culture.origins = [0];
+      showHierarchy();
+    };
+
+    byId("cultureSelectedClose").onclick = () => {
+      this.style.outline = "none";
+      byId("cultureSelected").style.display = "none";
+      byId("cultureInfo").style.display = "block";
+    };
+  }
+
+  function dragToReorigin(d) {
     const originLine = graph.append("path").attr("class", "dragLine").attr("d", `M${d.x},${d.y}L${d.x},${d.y}`);
 
     d3.event.on("drag", () => {
@@ -782,10 +818,11 @@ function showHierarchy() {
 
     d3.event.on("end", () => {
       originLine.remove();
-      const selected = graph.select("path.selected");
+      const selected = graph.select("g.selected");
       if (!selected.size()) return;
+
       const cultureId = d.data.i;
-      let newOrigin = Number(selected.datum().data.i);
+      const newOrigin = Number(selected.datum().data.i);
       if (cultureId === newOrigin) return; // dragged to itself
       if (d.data.origins.includes(newOrigin)) return; // already a child of the selected node
       if (newOrigin && d.descendants().some(node => node.id === newOrigin)) return; // cannot be a child of its own child
@@ -795,16 +832,6 @@ function showHierarchy() {
       culture.origins.push(newOrigin);
 
       showHierarchy();
-    });
-  }
-
-  function changeCode(d) {
-    prompt(`Please provide an abbreviation for culture: ${d.data.name}`, {default: d.data.code}, v => {
-      pack.cultures[d.data.i].code = v;
-      nodes
-        .select("g[data-id='" + d.data.i + "']")
-        .select("text")
-        .text(v);
     });
   }
 }
