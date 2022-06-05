@@ -8,7 +8,7 @@ function editReligions() {
   if (layerIsOn("toggleBiomes")) toggleBiomes();
   if (layerIsOn("toggleProvinces")) toggleProvinces();
 
-  const body = byId("religionsBody");
+  const $body = byId("religionsBody");
   const animate = d3.transition().duration(1500).ease(d3.easeSinIn);
   refreshReligionsEditor();
   drawReligionCenters();
@@ -35,7 +35,7 @@ function editReligions() {
   byId("religionsManuallyApply").on("click", applyReligionsManualAssignent);
   byId("religionsManuallyCancel").on("click", () => exitReligionsManualAssignment());
   byId("religionsAdd").on("click", enterAddReligionMode);
-  byId("religionsExport").on("click", downloadReligionsData);
+  byId("religionsExport").on("click", downloadReligionsCsv);
 
   function refreshReligionsEditor() {
     religionsCollectStatistics();
@@ -71,7 +71,7 @@ function editReligions() {
       const rural = r.rural * populationRate;
       const urban = r.urban * populationRate * urbanization;
       const population = rn(rural + urban);
-      if (r.i && !r.cells && body.dataset.extinct !== "show") continue; // hide extinct religions
+      if (r.i && !r.cells && $body.dataset.extinct !== "show") continue; // hide extinct religions
       const populationTip = `Believers: ${si(population)}; Rural areas: ${si(rural)}; Urban areas: ${si(
         urban
       )}. Click to change`;
@@ -142,7 +142,7 @@ function editReligions() {
         </div>`;
       }
     }
-    body.innerHTML = lines;
+    $body.innerHTML = lines;
 
     // update footer
     const valid = pack.religions.filter(r => r.i && !r.removed);
@@ -156,20 +156,20 @@ function editReligions() {
     religionsFooterPopulation.dataset.population = totalPopulation;
 
     // add listeners
-    body.querySelectorAll("div.religions").forEach(el => el.on("mouseenter", religionHighlightOn));
-    body.querySelectorAll("div.religions").forEach(el => el.on("mouseleave", religionHighlightOff));
-    body.querySelectorAll("div.states").forEach(el => el.on("click", selectReligionOnLineClick));
-    body.querySelectorAll("fill-box").forEach(el => el.on("click", religionChangeColor));
-    body.querySelectorAll("div > input.religionName").forEach(el => el.on("input", religionChangeName));
-    body.querySelectorAll("div > select.religionType").forEach(el => el.on("change", religionChangeType));
-    body.querySelectorAll("div > input.religionForm").forEach(el => el.on("input", religionChangeForm));
-    body.querySelectorAll("div > input.religionDeity").forEach(el => el.on("input", religionChangeDeity));
-    body.querySelectorAll("div > span.icon-arrows-cw").forEach(el => el.on("click", regenerateDeity));
-    body.querySelectorAll("div > div.culturePopulation").forEach(el => el.on("click", changePopulation));
-    body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.on("click", religionRemove));
+    $body.querySelectorAll("div.religions").forEach(el => el.on("mouseenter", religionHighlightOn));
+    $body.querySelectorAll("div.religions").forEach(el => el.on("mouseleave", religionHighlightOff));
+    $body.querySelectorAll("div.states").forEach(el => el.on("click", selectReligionOnLineClick));
+    $body.querySelectorAll("fill-box").forEach(el => el.on("click", religionChangeColor));
+    $body.querySelectorAll("div > input.religionName").forEach(el => el.on("input", religionChangeName));
+    $body.querySelectorAll("div > select.religionType").forEach(el => el.on("change", religionChangeType));
+    $body.querySelectorAll("div > input.religionForm").forEach(el => el.on("input", religionChangeForm));
+    $body.querySelectorAll("div > input.religionDeity").forEach(el => el.on("input", religionChangeDeity));
+    $body.querySelectorAll("div > span.icon-arrows-cw").forEach(el => el.on("click", regenerateDeity));
+    $body.querySelectorAll("div > div.culturePopulation").forEach(el => el.on("click", changePopulation));
+    $body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.on("click", religionRemove));
 
-    if (body.dataset.type === "percentage") {
-      body.dataset.type = "absolute";
+    if ($body.dataset.type === "percentage") {
+      $body.dataset.type = "absolute";
       togglePercentageMode();
     }
     applySorting(religionsHeader);
@@ -204,7 +204,7 @@ function editReligions() {
       tip("Drag to other node to add parent, click to edit");
     }
 
-    const el = body.querySelector(`div[data-id='${religionId}']`);
+    const el = $body.querySelector(`div[data-id='${religionId}']`);
     if (el) el.classList.add("active");
 
     if (!layerIsOn("toggleReligions")) return;
@@ -233,7 +233,7 @@ function editReligions() {
       tip("");
     }
 
-    const el = body.querySelector(`div[data-id='${religionId}']`);
+    const el = $body.querySelector(`div[data-id='${religionId}']`);
     if (el) el.classList.remove("active");
 
     relig
@@ -473,17 +473,17 @@ function editReligions() {
   }
 
   function togglePercentageMode() {
-    if (body.dataset.type === "absolute") {
-      body.dataset.type = "percentage";
+    if ($body.dataset.type === "absolute") {
+      $body.dataset.type = "percentage";
       const totalArea = +religionsFooterArea.dataset.area;
       const totalPopulation = +religionsFooterPopulation.dataset.population;
 
-      body.querySelectorAll(":scope > div").forEach(function (el) {
+      $body.querySelectorAll(":scope > div").forEach(function (el) {
         el.querySelector(".biomeArea").innerHTML = rn((+el.dataset.area / totalArea) * 100) + "%";
         el.querySelector(".culturePopulation").innerHTML = rn((+el.dataset.population / totalPopulation) * 100) + "%";
       });
     } else {
-      body.dataset.type = "absolute";
+      $body.dataset.type = "absolute";
       religionsEditorAddLines();
     }
   }
@@ -670,7 +670,7 @@ function editReligions() {
   }
 
   function toggleExtinct() {
-    body.dataset.extinct = body.dataset.extinct !== "show" ? "show" : "hide";
+    $body.dataset.extinct = $body.dataset.extinct !== "show" ? "show" : "hide";
     religionsEditorAddLines();
   }
 
@@ -684,7 +684,7 @@ function editReligions() {
 
     religionsEditor.querySelectorAll(".hide").forEach(el => el.classList.add("hidden"));
     religionsFooter.style.display = "none";
-    body.querySelectorAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "none"));
+    $body.querySelectorAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "none"));
     $("#religionsEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg"}});
 
     tip("Click on religion to select, drag the circle to change religion", true);
@@ -694,12 +694,12 @@ function editReligions() {
       .call(d3.drag().on("start", dragReligionBrush))
       .on("touchmove mousemove", moveReligionBrush);
 
-    body.querySelector("div").classList.add("selected");
+    $body.querySelector("div").classList.add("selected");
   }
 
   function selectReligionOnLineClick(i) {
     if (customization !== 7) return;
-    body.querySelector("div.selected").classList.remove("selected");
+    $body.querySelector("div.selected").classList.remove("selected");
     this.classList.add("selected");
   }
 
@@ -711,8 +711,8 @@ function editReligions() {
     const assigned = relig.select("#temp").select("polygon[data-cell='" + i + "']");
     const religion = assigned.size() ? +assigned.attr("data-religion") : pack.cells.religion[i];
 
-    body.querySelector("div.selected").classList.remove("selected");
-    body.querySelector("div[data-id='" + religion + "']").classList.add("selected");
+    $body.querySelector("div.selected").classList.remove("selected");
+    $body.querySelector("div[data-id='" + religion + "']").classList.add("selected");
   }
 
   function dragReligionBrush() {
@@ -732,7 +732,7 @@ function editReligions() {
   // change religion within selection
   function changeReligionForSelection(selection) {
     const temp = relig.select("#temp");
-    const selected = body.querySelector("div.selected");
+    const selected = $body.querySelector("div.selected");
     const r = +selected.dataset.id; // religionNew
     const color = pack.religions[r].color || "#ffffff";
 
@@ -785,13 +785,13 @@ function editReligions() {
 
     religionsEditor.querySelectorAll(".hide").forEach(el => el.classList.remove("hidden"));
     religionsFooter.style.display = "block";
-    body.querySelectorAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "all"));
+    $body.querySelectorAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "all"));
     if (!close) $("#religionsEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg"}});
 
     debug.select("#religionCenters").style("display", null);
     restoreDefaultEvents();
     clearMainTip();
-    const selected = body.querySelector("div.selected");
+    const selected = $body.querySelector("div.selected");
     if (selected) selected.classList.remove("selected");
   }
 
@@ -804,14 +804,14 @@ function editReligions() {
     this.classList.add("pressed");
     tip("Click on the map to add a new religion", true);
     viewbox.style("cursor", "crosshair").on("click", addReligion);
-    body.querySelectorAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "none"));
+    $body.querySelectorAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "none"));
   }
 
   function exitAddReligionMode() {
     customization = 0;
     restoreDefaultEvents();
     clearMainTip();
-    body.querySelectorAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "all"));
+    $body.querySelectorAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "all"));
     if (religionsAdd.classList.contains("pressed")) religionsAdd.classList.remove("pressed");
   }
 
@@ -836,23 +836,22 @@ function editReligions() {
     drawReligionCenters();
   }
 
-  function downloadReligionsData() {
-    const unit = areaUnit.value === "square" ? distanceUnitInput.value + "2" : areaUnit.value;
-    let data = "Id,Religion,Color,Type,Form,Deity,Area " + unit + ",Believers\n"; // headers
-
-    body.querySelectorAll(":scope > div").forEach(function (el) {
-      data += el.dataset.id + ",";
-      data += el.dataset.name + ",";
-      data += el.dataset.color + ",";
-      data += el.dataset.type + ",";
-      data += el.dataset.form + ",";
-      data += el.dataset.deity.replace(",", " -") + ",";
-      data += el.dataset.area + ",";
-      data += el.dataset.population + "\n";
+  function downloadReligionsCsv() {
+    const unit = getAreaUnit("2");
+    const headers = `Id,Name,Color,Type,Form,Supreme Deity,Area ${unit},Believers,Origins`;
+    const lines = Array.from($body.querySelectorAll(":scope > div"));
+    const data = lines.map($line => {
+      const {id, name, color, type, form, deity, area, population} = $line.dataset;
+      const deityText = '"' + deity + '"';
+      const {origins} = pack.religions[+id];
+      const originList = (origins || []).filter(origin => origin).map(origin => pack.religions[origin].name);
+      const originText = '"' + originList.join(", ") + '"';
+      return [id, name, color, type, form, deityText, area, population, originText].join(",");
     });
+    const csvData = [headers].concat(data).join("\n");
 
     const name = getFileName("Religions") + ".csv";
-    downloadFile(data, name);
+    downloadFile(csvData, name);
   }
 
   function closeReligionsEditor() {

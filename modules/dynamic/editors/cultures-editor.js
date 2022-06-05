@@ -1008,13 +1008,15 @@ function addCulture() {
 
 function downloadCulturesCsv() {
   const unit = getAreaUnit("2");
-  const headers = `Id,Name,Color,Cells,Expansionism,Type,Area ${unit},Population,Namesbase,Emblems Shape,Origin`;
+  const headers = `Id,Name,Color,Cells,Expansionism,Type,Area ${unit},Population,Namesbase,Emblems Shape,Origins`;
   const lines = Array.from($body.querySelectorAll(":scope > div"));
   const data = lines.map($line => {
     const {id, name, color, cells, expansionism, type, area, population, emblems, base} = $line.dataset;
     const namesbase = nameBases[+base].name;
-    const {origin} = pack.cultures[+id];
-    return [id, name, color, cells, expansionism, type, area, population, namesbase, emblems, origin].join(",");
+    const {origins} = pack.cultures[+id];
+    const originList = origins.filter(origin => origin).map(origin => pack.cultures[origin].name);
+    const originText = '"' + originList.join(", ") + '"';
+    return [id, name, color, cells, expansionism, type, area, population, namesbase, emblems, originText].join(",");
   });
   const csvData = [headers].concat(data).join("\n");
 
