@@ -618,17 +618,15 @@ export function resolveVersionConflicts(version) {
   }
 
   if (version < 1.86) {
-    // v1.86.0 added support of multi-origin culture and religion hierarchy trees
+    // v1.86.0 added multi-origin culture and religion hierarchy trees
     for (const culture of pack.cultures) {
-      const origin = culture.origin;
+      culture.origins = [culture.origin];
       delete culture.origin;
-      culture.origins = [origin];
     }
 
     for (const religion of pack.religions) {
-      const origin = religion.origin;
+      religion.origins = [religion.origin];
       delete religion.origin;
-      religion.origins = [origin];
     }
   }
 }

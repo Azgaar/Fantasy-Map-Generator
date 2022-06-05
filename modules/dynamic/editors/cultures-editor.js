@@ -295,15 +295,14 @@ function getShapeOptions(selectShape, selected) {
 }
 
 function cultureHighlightOn(event) {
-  const culture = Number(event.id || event.target.dataset.id);
+  const cultureId = Number(event.id || event.target.dataset.id);
   const $info = byId("cultureInfo");
   if ($info) {
-    d3.select("#hierarchy").select(`g[data-id='${culture}']`).classed("selected", 1);
-    const c = pack.cultures[culture];
-    const rural = c.rural * populationRate;
-    const urban = c.urban * populationRate * urbanization;
-    const population = rural + urban > 0 ? si(rn(rural + urban)) + " people" : "Extinct";
-    $info.innerHTML = `${c.name} culture. ${c.type}. ${population}`;
+    d3.select("#hierarchy").select(`g[data-id='${cultureId}']`).classed("selected", 1);
+    const {name, type, rural, urban} = pack.cultures[cultureId];
+    const population = rural * populationRate + urban * populationRate * urbanization;
+    const populationText = population > 0 ? si(rn(population)) + " people" : "Extinct";
+    $info.innerHTML = `${name} culture. ${type}. ${populationText}`;
     tip("Drag to other node to add parent, click to edit");
   }
 
@@ -312,13 +311,13 @@ function cultureHighlightOn(event) {
 
   const animate = d3.transition().duration(2000).ease(d3.easeSinIn);
   cults
-    .select("#culture" + culture)
+    .select("#culture" + cultureId)
     .raise()
     .transition(animate)
     .attr("stroke-width", 2.5)
     .attr("stroke", "#d0240f");
   debug
-    .select("#cultureCenter" + culture)
+    .select("#cultureCenter" + cultureId)
     .raise()
     .transition(animate)
     .attr("r", 8)
@@ -326,23 +325,23 @@ function cultureHighlightOn(event) {
 }
 
 function cultureHighlightOff(event) {
-  const culture = Number(event.id || event.target.dataset.id);
+  const cultureId = Number(event.id || event.target.dataset.id);
 
   const $info = byId("cultureInfo");
   if ($info) {
-    d3.select("#hierarchy").select(`g[data-id='${culture}']`).classed("selected", 0);
+    d3.select("#hierarchy").select(`g[data-id='${cultureId}']`).classed("selected", 0);
     $info.innerHTML = "&#8205;";
     tip("");
   }
 
   if (!layerIsOn("toggleCultures")) return;
   cults
-    .select("#culture" + culture)
+    .select("#culture" + cultureId)
     .transition()
     .attr("stroke-width", null)
     .attr("stroke", null);
   debug
-    .select("#cultureCenter" + culture)
+    .select("#cultureCenter" + cultureId)
     .transition()
     .attr("r", 6)
     .attr("stroke", null);
@@ -769,7 +768,6 @@ function showHierarchy() {
   $("#alert").dialog({
     title: "Cultures tree",
     width: fitContent(),
-    minWidth: "20vw",
     resizable: false,
     position: {my: "left center", at: "left+10 center", of: "svg"},
     buttons: null,
@@ -822,10 +820,10 @@ function showHierarchy() {
       if (!selected.size()) return;
 
       const cultureId = d.data.i;
-      const newOrigin = Number(selected.datum().data.i);
+      const newOrigin = selected.datum().data.i;
       if (cultureId === newOrigin) return; // dragged to itself
       if (d.data.origins.includes(newOrigin)) return; // already a child of the selected node
-      if (newOrigin && d.descendants().some(node => node.id === newOrigin)) return; // cannot be a child of its own child
+      if (d.descendants().some(node => node.data.i === newOrigin)) return; // cannot be a child of its own child
 
       const culture = pack.cultures[cultureId];
       if (culture.origins[0] === 0) culture.origins = [];
