@@ -783,14 +783,14 @@ function selectReligionOnMapClick() {
 }
 
 function dragReligionBrush() {
-  const r = +religionsManuallyBrushNumber.value;
+  const radius = +byId("religionsManuallyBrushNumber").value;
 
   d3.event.on("drag", () => {
     if (!d3.event.dx && !d3.event.dy) return;
-    const p = d3.mouse(this);
-    moveCircle(p[0], p[1], r);
+    const [x, y] = d3.mouse(this);
+    moveCircle(x, y, radius);
 
-    const found = r > 5 ? findAll(p[0], p[1], r) : [findCell(p[0], p[1], r)];
+    const found = radius > 5 ? findAll(x, y, radius) : [findCell(x, y, radius)];
     const selection = found.filter(isLand);
     if (selection) changeReligionForSelection(selection);
   });
@@ -800,21 +800,21 @@ function dragReligionBrush() {
 function changeReligionForSelection(selection) {
   const temp = relig.select("#temp");
   const selected = $body.querySelector("div.selected");
-  const r = +selected.dataset.id; // religionNew
-  const color = pack.religions[r].color || "#ffffff";
+  const religionNew = +selected.dataset.id;
+  const color = pack.religions[religionNew].color || "#ffffff";
 
   selection.forEach(function (i) {
     const exists = temp.select("polygon[data-cell='" + i + "']");
     const religionOld = exists.size() ? +exists.attr("data-religion") : pack.cells.religion[i];
-    if (r === religionOld) return;
+    if (religionNew === religionOld) return;
 
     // change of append new element
-    if (exists.size()) exists.attr("data-religion", r).attr("fill", color);
+    if (exists.size()) exists.attr("data-religion", religionNew).attr("fill", color);
     else
       temp
         .append("polygon")
         .attr("data-cell", i)
-        .attr("data-religion", r)
+        .attr("data-religion", religionNew)
         .attr("points", getPackPolygon(i))
         .attr("fill", color);
   });
@@ -822,9 +822,9 @@ function changeReligionForSelection(selection) {
 
 function moveReligionBrush() {
   showMainTip();
-  const point = d3.mouse(this);
-  const radius = +religionsManuallyBrushNumber.value;
-  moveCircle(point[0], point[1], radius);
+  const [x, y] = d3.mouse(this);
+  const radius = +byId("religionsManuallyBrushNumber").value;
+  moveCircle(x, y, radius);
 }
 
 function applyReligionsManualAssignent() {
@@ -850,23 +850,23 @@ function exitReligionsManualAssignment(close) {
   document.querySelectorAll("#religionsBottom > button").forEach(el => (el.style.display = "inline-block"));
   byId("religionsManuallyButtons").style.display = "none";
 
-  religionsEditor.querySelectorAll(".hide").forEach(el => el.classList.remove("hidden"));
-  religionsFooter.style.display = "block";
+  byId("religionsEditor")
+    .querySelectorAll(".hide")
+    .forEach(el => el.classList.remove("hidden"));
+  byId("religionsFooter").style.display = "block";
   $body.querySelectorAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "all"));
   if (!close) $("#religionsEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg"}});
 
   debug.select("#religionCenters").style("display", null);
   restoreDefaultEvents();
   clearMainTip();
-  const selected = $body.querySelector("div.selected");
-  if (selected) selected.classList.remove("selected");
+  const $selected = $body.querySelector("div.selected");
+  if ($selected) $selected.classList.remove("selected");
 }
 
 function enterAddReligionMode() {
-  if (this.classList.contains("pressed")) {
-    exitAddReligionMode();
-    return;
-  }
+  if (this.classList.contains("pressed")) return exitAddReligionMode();
+
   customization = 8;
   this.classList.add("pressed");
   tip("Click on the map to add a new religion", true);
@@ -883,17 +883,13 @@ function exitAddReligionMode() {
 }
 
 function addReligion() {
-  const point = d3.mouse(this);
-  const center = findCell(point[0], point[1]);
-  if (pack.cells.h[center] < 20) {
-    tip("You cannot place religion center into the water. Please click on a land cell", false, "error");
-    return;
-  }
+  const [x, y] = d3.mouse(this);
+  const center = findCell(x, y);
+  if (pack.cells.h[center] < 20)
+    return tip("You cannot place religion center into the water. Please click on a land cell", false, "error");
+
   const occupied = pack.religions.some(r => !r.removed && r.center === center);
-  if (occupied) {
-    tip("This cell is already a religion center. Please select a different cell", false, "error");
-    return;
-  }
+  if (occupied) return tip("This cell is already a religion center. Please select a different cell", false, "error");
 
   if (d3.event.shiftKey === false) exitAddReligionMode();
   Religions.add(center);
