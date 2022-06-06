@@ -1206,6 +1206,6 @@ async function editCultures() {
 
 async function editReligions() {
   if (customization) return;
-  const Editor = await import("../dynamic/editors/religions-editor.js?v=05062022");
+  const Editor = await import("../dynamic/editors/religions-editor.js?v=06062022");
   Editor.open();
 }
