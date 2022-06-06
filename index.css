@@ -1619,28 +1619,6 @@ div.states > .riverType {
   color: #abaaaa;
 }
 
-div.states > .religionName {
-  width: 11em;
-}
-
-div.states > .religionType {
-  width: 5em;
-  cursor: pointer;
-  border: 0;
-  background-color: transparent;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-}
-
-div.states > .religionForm {
-  width: 6em;
-}
-
-div.states > .religionDeity {
-  width: 15em;
-}
-
 .placeholder {
   opacity: 0;
   cursor: default;

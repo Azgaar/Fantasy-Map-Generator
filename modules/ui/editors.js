@@ -330,7 +330,23 @@ function getMFCGlink(burg) {
     return rn(normalize(deg, 0, 360) * 2, 2); // 0 = south, 0.5 = west, 1 = north, 1.5 = east
   }
 
-  const parameters = {name, population, size, seed, river, coast, farms, citadel, urban_castle, hub, plaza, temple, walls, shantytown, gates: -1};
+  const parameters = {
+    name,
+    population,
+    size,
+    seed,
+    river,
+    coast,
+    farms,
+    citadel,
+    urban_castle,
+    hub,
+    plaza,
+    temple,
+    walls,
+    shantytown,
+    gates: -1
+  };
   const url = new URL("https://watabou.github.io/city-generator/");
   url.search = new URLSearchParams(parameters);
   if (sea) url.searchParams.append("sea", sea);
@@ -456,7 +472,12 @@ function createPicker() {
   const cl = () => tip("Click to close the picker");
   const closePicker = () => container.style("display", "none");
 
-  const container = d3.select("body").append("svg").attr("id", "pickerContainer").attr("width", "100%").attr("height", "100%");
+  const container = d3
+    .select("body")
+    .append("svg")
+    .attr("id", "pickerContainer")
+    .attr("width", "100%")
+    .attr("height", "100%");
   container
     .append("rect")
     .attr("x", 0)
@@ -589,8 +610,21 @@ function createPicker() {
     .attr("height", 14)
     .on("mousemove", cl)
     .on("click", closePicker);
-  picker.insert("text", ":first-child").attr("x", 12).attr("y", -10).attr("id", "pickerLabel").text("Color Picker").on("mousemove", pos);
-  picker.insert("rect", ":first-child").attr("x", 0).attr("y", -30).attr("width", width).attr("height", 30).attr("id", "pickerHeader").on("mousemove", pos);
+  picker
+    .insert("text", ":first-child")
+    .attr("x", 12)
+    .attr("y", -10)
+    .attr("id", "pickerLabel")
+    .text("Color Picker")
+    .on("mousemove", pos);
+  picker
+    .insert("rect", ":first-child")
+    .attr("x", 0)
+    .attr("y", -30)
+    .attr("width", width)
+    .attr("height", 30)
+    .attr("id", "pickerHeader")
+    .on("mousemove", pos);
   picker.attr("transform", `translate(${(svgWidth - width) / 2},${(svgHeight - height) / 2})`);
 }
 
@@ -729,7 +763,12 @@ function changePickerSpace() {
 
   const space = this.dataset.space;
   const i = Array.from(this.parentNode.querySelectorAll("input")).map(input => input.value); // inputs
-  const fill = space === "hex" ? d3.rgb(this.value) : space === "rgb" ? d3.rgb(i[0], i[1], i[2]) : d3.hsl(i[0], i[1] / 100, i[2] / 100);
+  const fill =
+    space === "hex"
+      ? d3.rgb(this.value)
+      : space === "rgb"
+      ? d3.rgb(i[0], i[1], i[2])
+      : d3.hsl(i[0], i[1] / 100, i[2] / 100);
 
   const hsl = d3.hsl(fill);
   if (isNaN(hsl.l)) {
@@ -750,7 +789,14 @@ function fog(id, path) {
   if (defs.select("#fog #" + id).size()) return;
   const fadeIn = d3.transition().duration(2000).ease(d3.easeSinInOut);
   if (defs.select("#fog path").size()) {
-    defs.select("#fog").append("path").attr("d", path).attr("id", id).attr("opacity", 0).transition(fadeIn).attr("opacity", 1);
+    defs
+      .select("#fog")
+      .append("path")
+      .attr("d", path)
+      .attr("id", id)
+      .attr("opacity", 0)
+      .transition(fadeIn)
+      .attr("opacity", 1);
   } else {
     defs.select("#fog").append("path").attr("d", path).attr("id", id).attr("opacity", 1);
     const opacity = fogging.attr("opacity");
@@ -813,9 +859,20 @@ function highlightElement(element, zoom) {
   const enter = d3.transition().duration(1000).ease(d3.easeBounceOut);
   const exit = d3.transition().duration(500).ease(d3.easeLinear);
 
-  const highlight = debug.append("rect").attr("x", box.x).attr("y", box.y).attr("width", box.width).attr("height", box.height);
+  const highlight = debug
+    .append("rect")
+    .attr("x", box.x)
+    .attr("y", box.y)
+    .attr("width", box.width)
+    .attr("height", box.height);
   highlight.classed("highlighted", 1).attr("transform", transform);
-  highlight.transition(enter).style("outline-offset", "0px").transition(exit).style("outline-color", "transparent").delay(1000).remove();
+  highlight
+    .transition(enter)
+    .style("outline-offset", "0px")
+    .transition(exit)
+    .style("outline-color", "transparent")
+    .delay(1000)
+    .remove();
 
   if (zoom) {
     const tr = parseTransform(transform);
@@ -1119,12 +1176,18 @@ function refreshAllEditors() {
 // dynamically loaded editors
 async function editStates() {
   if (customization) return;
-  const StateEditor = await import("../dynamic/editors/states-editor.js?v=29052022");
-  StateEditor.open();
+  const Editor = await import("../dynamic/editors/states-editor.js?v=06062022");
+  Editor.open();
 }
 
 async function editCultures() {
   if (customization) return;
-  const CulturesEditor = await import("../dynamic/editors/cultures-editor.js?v=29052022");
-  CulturesEditor.open();
+  const Editor = await import("../dynamic/editors/cultures-editor.js?v=06062022");
+  Editor.open();
+}
+
+async function editReligions() {
+  if (customization) return;
+  const Editor = await import("../dynamic/editors/religions-editor.js?v=06062022");
+  Editor.open();
 }

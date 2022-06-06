@@ -145,14 +145,14 @@ function addListeners() {
   $body.on("click", event => {
     const $element = event.target;
     const classList = $element.classList;
-    const state = +$element.parentNode?.dataset?.id;
+    const stateId = +$element.parentNode?.dataset?.id;
     if ($element.tagName === "FILL-BOX") stateChangeFill($element);
-    else if (classList.contains("name")) editStateName(state);
-    else if (classList.contains("coaIcon")) editEmblem("state", "stateCOA" + state, pack.states[state]);
-    else if (classList.contains("icon-star-empty")) stateCapitalZoomIn(state);
-    else if (classList.contains("statePopulation")) changePopulation(state);
-    else if (classList.contains("icon-pin")) toggleFog(state, classList);
-    else if (classList.contains("icon-trash-empty")) stateRemovePrompt(state);
+    else if (classList.contains("name")) editStateName(stateId);
+    else if (classList.contains("coaIcon")) editEmblem("state", "stateCOA" + stateId, pack.states[stateId]);
+    else if (classList.contains("icon-star-empty")) stateCapitalZoomIn(stateId);
+    else if (classList.contains("statePopulation")) changePopulation(stateId);
+    else if (classList.contains("icon-pin")) toggleFog(stateId, classList);
+    else if (classList.contains("icon-trash-empty")) stateRemovePrompt(stateId);
   });
 
   $body.on("input", function (ev) {
@@ -194,7 +194,9 @@ function statesEditorAddLines() {
     const rural = s.rural * populationRate;
     const urban = s.urban * populationRate * urbanization;
     const population = rn(rural + urban);
-    const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}. Click to change`;
+    const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(
+      urban
+    )}. Click to change`;
     totalArea += area;
     totalPopulation += population;
     totalBurgs += s.burgs;
@@ -218,7 +220,9 @@ function statesEditorAddLines() {
         data-expansionism=""
       >
         <svg width="1em" height="1em" class="placeholder"></svg>
-        <input data-tip="Neutral lands name. Click to change" class="stateName name pointer italic" value="${s.name}" readonly />
+        <input data-tip="Neutral lands name. Click to change" class="stateName name pointer italic" value="${
+          s.name
+        }" readonly />
         <svg class="coaIcon placeholder hide"></svg>
         <input class="stateForm placeholder" value="none" />
         <span class="icon-star-empty placeholder hide"></span>
@@ -258,18 +262,26 @@ function statesEditorAddLines() {
     >
       <fill-box fill="${s.color}"></fill-box>
       <input data-tip="State name. Click to change" class="stateName name pointer" value="${s.name}" readonly />
-      <svg data-tip="Click to show and edit state emblem" class="coaIcon pointer hide" viewBox="0 0 200 200"><use href="#stateCOA${s.i}"></use></svg>
-      <input data-tip="State form name. Click to change" class="stateForm name pointer" value="${s.formName}" readonly />
+      <svg data-tip="Click to show and edit state emblem" class="coaIcon pointer hide" viewBox="0 0 200 200"><use href="#stateCOA${
+        s.i
+      }"></use></svg>
+      <input data-tip="State form name. Click to change" class="stateForm name pointer" value="${
+        s.formName
+      }" readonly />
       <span data-tip="State capital. Click to zoom into view" class="icon-star-empty pointer hide"></span>
       <input data-tip="Capital name. Click and type to rename" class="stateCapital hide" value="${capital}" autocorrect="off" spellcheck="false" />
-      <select data-tip="Dominant culture. Click to change" class="stateCulture hide">${getCultureOptions(s.culture)}</select>
+      <select data-tip="Dominant culture. Click to change" class="stateCulture hide">${getCultureOptions(
+        s.culture
+      )}</select>
       <span data-tip="Burgs count" style="padding-right: 1px" class="icon-dot-circled hide"></span>
       <div data-tip="Burgs count" class="stateBurgs hide">${s.burgs}</div>
       <span data-tip="State area" style="padding-right: 4px" class="icon-map-o hide"></span>
       <div data-tip="State area" class="stateArea hide" style="width: 6em">${si(area)} ${unit}</div>
       <span data-tip="${populationTip}" class="icon-male hide"></span>
       <div data-tip="${populationTip}" class="statePopulation pointer hide" style="width: 5em">${si(population)}</div>
-      <select data-tip="State type. Defines growth model. Click to change" class="cultureType ${hidden} show hide">${getTypeOptions(s.type)}</select>
+      <select data-tip="State type. Defines growth model. Click to change" class="cultureType ${hidden} show hide">${getTypeOptions(
+      s.type
+    )}</select>
       <span data-tip="State expansionism" class="icon-resize-full ${hidden} show hide"></span>
       <input data-tip="Expansionism (defines competitive size). Change to re-calculate states based on new value"
         class="statePower ${hidden} show hide" type="number" min="0" max="99" step=".1" value=${s.expansionism} />
@@ -488,25 +500,30 @@ function stateChangeCapitalName(state, line, value) {
   document.querySelector("#burgLabel" + capital).textContent = value;
 }
 
-function changePopulation(state) {
-  const s = pack.states[state];
-  if (!s.cells) {
-    tip("State does not have any cells, cannot change population", false, "error");
-    return;
-  }
-  const rural = rn(s.rural * populationRate);
-  const urban = rn(s.urban * populationRate * urbanization);
-  const total = rural + urban;
-  const l = n => Number(n).toLocaleString();
+function changePopulation(stateId) {
+  const state = pack.states[stateId];
+  if (!state.cells) return tip("State does not have any cells, cannot change population", false, "error");
 
-  alertMessage.innerHTML = /* html */ ` Rural: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" /> Urban:
-    <input type="number" min="0" step="1" id="urbanPop" value=${urban} style="width:6em" ${s.burgs ? "" : "disabled"} />
-    <p>Total population: ${l(total)} ⇒ <span id="totalPop">${l(total)}</span> (<span id="totalPopPerc">100</span>%)</p>`;
+  const rural = rn(state.rural * populationRate);
+  const urban = rn(state.urban * populationRate * urbanization);
+  const total = rural + urban;
+  const format = n => Number(n).toLocaleString();
+
+  alertMessage.innerHTML = /* html */ `<div>
+    <i>Change population of all cells assigned to the state</i>
+    <div style="margin: 0.5em 0">
+      Rural: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" />
+      Urban: <input type="number" min="0" step="1" id="urbanPop" value=${urban} style="width:6em" />
+    </div>
+    <div>Total population: ${format(total)} ⇒ <span id="totalPop">${format(total)}</span>
+      (<span id="totalPopPerc">100</span>%)
+    </div>
+  </div>`;
 
   const update = function () {
     const totalNew = ruralPop.valueAsNumber + urbanPop.valueAsNumber;
     if (isNaN(totalNew)) return;
-    totalPop.innerHTML = l(totalNew);
+    totalPop.innerHTML = format(totalNew);
     totalPopPerc.innerHTML = rn((totalNew / total) * 100);
   };
 
@@ -532,24 +549,24 @@ function changePopulation(state) {
   function applyPopulationChange() {
     const ruralChange = ruralPop.value / rural;
     if (isFinite(ruralChange) && ruralChange !== 1) {
-      const cells = pack.cells.i.filter(i => pack.cells.state[i] === state);
+      const cells = pack.cells.i.filter(i => pack.cells.state[i] === stateId);
       cells.forEach(i => (pack.cells.pop[i] *= ruralChange));
     }
     if (!isFinite(ruralChange) && +ruralPop.value > 0) {
       const points = ruralPop.value / populationRate;
-      const cells = pack.cells.i.filter(i => pack.cells.state[i] === state);
+      const cells = pack.cells.i.filter(i => pack.cells.state[i] === stateId);
       const pop = points / cells.length;
       cells.forEach(i => (pack.cells.pop[i] = pop));
     }
 
     const urbanChange = urbanPop.value / urban;
     if (isFinite(urbanChange) && urbanChange !== 1) {
-      const burgs = pack.burgs.filter(b => !b.removed && b.state === state);
+      const burgs = pack.burgs.filter(b => !b.removed && b.state === stateId);
       burgs.forEach(b => (b.population = rn(b.population * urbanChange, 4)));
     }
     if (!isFinite(urbanChange) && +urbanPop.value > 0) {
       const points = urbanPop.value / populationRate / urbanization;
-      const burgs = pack.burgs.filter(b => !b.removed && b.state === state);
+      const burgs = pack.burgs.filter(b => !b.removed && b.state === stateId);
       const population = rn(points / burgs.length, 4);
       burgs.forEach(b => (b.population = population));
     }
@@ -591,19 +608,11 @@ function toggleFog(state, cl) {
 function stateRemovePrompt(state) {
   if (customization) return;
 
-  alertMessage.innerHTML = "Are you sure you want to remove the state? <br>This action cannot be reverted";
-  $("#alert").dialog({
-    resizable: false,
+  confirmationDialog({
     title: "Remove state",
-    buttons: {
-      Remove: function () {
-        $(this).dialog("close");
-        stateRemove(state);
-      },
-      Cancel: function () {
-        $(this).dialog("close");
-      }
-    }
+    message: "Are you sure you want to remove the state? <br>This action cannot be reverted",
+    confirm: "Remove",
+    onConfirm: () => stateRemove(state)
   });
 }
 
@@ -667,10 +676,8 @@ function stateRemove(state) {
 }
 
 function toggleLegend() {
-  if (legend.selectAll("*").size()) {
-    clearLegend();
-    return;
-  } // hide legend
+  if (legend.selectAll("*").size()) return clearLegend(); // hide legend
+
   const data = pack.states
     .filter(s => s.i && !s.removed && s.cells)
     .sort((a, b) => b.area - a.area)
@@ -681,16 +688,17 @@ function toggleLegend() {
 function togglePercentageMode() {
   if ($body.dataset.type === "absolute") {
     $body.dataset.type = "percentage";
-    const totalCells = +statesFooterCells.innerHTML;
-    const totalBurgs = +statesFooterBurgs.innerHTML;
-    const totalArea = +statesFooterArea.dataset.area;
-    const totalPopulation = +statesFooterPopulation.dataset.population;
+    const totalCells = +byId("statesFooterCells").innerText;
+    const totalBurgs = +byId("statesFooterBurgs").innerText;
+    const totalArea = +byId("statesFooterArea").dataset.area;
+    const totalPopulation = +byId("statesFooterPopulation").dataset.population;
 
     $body.querySelectorAll(":scope > div").forEach(function (el) {
-      el.querySelector(".stateCells").innerHTML = rn((+el.dataset.cells / totalCells) * 100) + "%";
-      el.querySelector(".stateBurgs").innerHTML = rn((+el.dataset.burgs / totalBurgs) * 100) + "%";
-      el.querySelector(".stateArea").innerHTML = rn((+el.dataset.area / totalArea) * 100) + "%";
-      el.querySelector(".statePopulation").innerHTML = rn((+el.dataset.population / totalPopulation) * 100) + "%";
+      const {cells, burgs, area, population} = el.dataset;
+      el.querySelector(".stateCells").innerText = rn((+cells / totalCells) * 100) + "%";
+      el.querySelector(".stateBurgs").innerText = rn((+burgs / totalBurgs) * 100) + "%";
+      el.querySelector(".stateArea").innerText = rn((+area / totalArea) * 100) + "%";
+      el.querySelector(".statePopulation").innerText = rn((+population / totalPopulation) * 100) + "%";
     });
   } else {
     $body.dataset.type = "absolute";
@@ -913,7 +921,11 @@ function enterStatesManualAssignent() {
   $("#statesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});
 
   tip("Click on state to select, drag the circle to change state", true);
-  viewbox.style("cursor", "crosshair").on("click", selectStateOnMapClick).call(d3.drag().on("start", dragStateBrush)).on("touchmove mousemove", moveStateBrush);
+  viewbox
+    .style("cursor", "crosshair")
+    .on("click", selectStateOnMapClick)
+    .call(d3.drag().on("start", dragStateBrush))
+    .on("touchmove mousemove", moveStateBrush);
 
   $body.querySelector("div").classList.add("selected");
 }
@@ -967,7 +979,14 @@ function changeStateForSelection(selection) {
 
     // change of append new element
     if (exists.size()) exists.attr("data-state", stateNew).attr("fill", color).attr("stroke", color);
-    else temp.append("polygon").attr("data-cell", i).attr("data-state", stateNew).attr("points", getPackPolygon(i)).attr("fill", color).attr("stroke", color);
+    else
+      temp
+        .append("polygon")
+        .attr("data-cell", i)
+        .attr("data-state", stateNew)
+        .attr("points", getPackPolygon(i))
+        .attr("fill", color)
+        .attr("stroke", color);
   });
 }
 
@@ -1118,7 +1137,17 @@ function adjustProvinces(affectedProvinces) {
     const coa = COA.generate(burg?.coa || states[stateId].coa, kinship, burg ? null : 0.9, type);
     coa.shield = COA.getShield(culture, stateId);
 
-    provinces.push({i: newProvinceId, state: stateId, center, burg: burgId, name, formName, fullName: `${name} ${formName}`, color, coa});
+    provinces.push({
+      i: newProvinceId,
+      state: stateId,
+      center,
+      burg: burgId,
+      name,
+      formName,
+      fullName: `${name} ${formName}`,
+      color,
+      coa
+    });
 
     provinceCells.forEach(i => {
       cells.province[i] = newProvinceId;
@@ -1134,7 +1163,9 @@ function adjustProvinces(affectedProvinces) {
       })
     );
 
-    const closesProvince = borderCell && cells.c[borderCell].map(c => cells.province[c]).find(province => province && province !== provinceId);
+    const closesProvince =
+      borderCell &&
+      cells.c[borderCell].map(c => cells.province[c]).find(province => province && province !== provinceId);
     return closesProvince;
   }
 }
@@ -1152,7 +1183,8 @@ function exitStatesManualAssignment(close) {
     .forEach(el => el.classList.remove("hidden"));
   statesFooter.style.display = "block";
   $body.querySelectorAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "all"));
-  if (!close) $("#statesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});
+  if (!close)
+    $("#statesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});
 
   restoreDefaultEvents();
   clearMainTip();
@@ -1176,10 +1208,12 @@ function addState() {
   const {cells, states, burgs} = pack;
   const point = d3.mouse(this);
   const center = findCell(point[0], point[1]);
-  if (cells.h[center] < 20) return tip("You cannot place state into the water. Please click on a land cell", false, "error");
+  if (cells.h[center] < 20)
+    return tip("You cannot place state into the water. Please click on a land cell", false, "error");
 
   let burg = cells.burg[center];
-  if (burg && burgs[burg].capital) return tip("Existing capital cannot be selected as a new state capital! Select other cell", false, "error");
+  if (burg && burgs[burg].capital)
+    return tip("Existing capital cannot be selected as a new state capital! Select other cell", false, "error");
 
   if (!burg) burg = addBurg(point); // add new burg
 
@@ -1226,7 +1260,10 @@ function addState() {
     return relations;
   });
   diplomacy.push("x");
-  states[0].diplomacy.push([`Independance declaration`, `${name} declared its independance from ${states[oldState].name}`]);
+  states[0].diplomacy.push([
+    `Independance declaration`,
+    `${name} declared its independance from ${states[oldState].name}`
+  ]);
 
   cells.state[center] = newState;
   cells.province[center] = 0;
@@ -1296,7 +1333,23 @@ function downloadStatesCsv() {
     const {fullName = "", rural, urban} = pack.states[+id];
     const ruralPopulation = Math.round(rural * populationRate);
     const urbanPopulation = Math.round(urban * populationRate * urbanization);
-    return [id, name, fullName, form, color, capital, culture, type, expansionism, cells, burgs, area, population, ruralPopulation, urbanPopulation].join(",");
+    return [
+      id,
+      name,
+      fullName,
+      form,
+      color,
+      capital,
+      culture,
+      type,
+      expansionism,
+      cells,
+      burgs,
+      area,
+      population,
+      ruralPopulation,
+      urbanPopulation
+    ].join(",");
   });
   const csvData = [headers].concat(data).join("\n");
 

@@ -108,7 +108,7 @@
       }
     </style>
 
-    <link rel="preload" href="index.css?v=04062022" as="style" onload="this.onload=null; this.rel='stylesheet'" />
+    <link rel="preload" href="index.css?v=06062022" as="style" onload="this.onload=null; this.rel='stylesheet'" />
     <link rel="preload" href="icons.css?v=04062022" as="style" onload="this.onload=null; this.rel='stylesheet'" />
     <link
       rel="preload"
@@ -4739,106 +4739,6 @@
         </div>
       </div>
 
-      <div id="religionsEditor" class="dialog stable" style="display: none">
-        <div id="religionsHeader" class="header" style="grid-template-columns: 13em 6em 7em 16em 5em 6em">
-          <div data-tip="Click to sort by religion name" class="sortable alphabetically" data-sortby="name">
-            Religion&nbsp;
-          </div>
-          <div
-            data-tip="Click to sort by religion type"
-            class="sortable alphabetically icon-sort-name-down"
-            data-sortby="type"
-          >
-            Type&nbsp;
-          </div>
-          <div data-tip="Click to sort by religion form" class="sortable alphabetically hide" data-sortby="form">
-            Form&nbsp;
-          </div>
-          <div data-tip="Click to sort by supreme deity" class="sortable alphabetically hide" data-sortby="deity">
-            Supreme Deity&nbsp;
-          </div>
-          <div data-tip="Click to sort by religion area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
-          <div
-            data-tip="Click to sort by number of believers (religion area population)"
-            class="sortable hide"
-            data-sortby="population"
-          >
-            Believers&nbsp;
-          </div>
-        </div>
-        <div id="religionsBody" class="table" data-type="absolute"></div>
-
-        <div id="religionsFooter" class="totalLine">
-          <div data-tip="Total number of organized religions" style="margin-left: 12px">
-            Organized:&nbsp;<span id="religionsOrganized">0</span>
-          </div>
-          <div data-tip="Total number of heresies" style="margin-left: 12px">
-            Heresies:&nbsp;<span id="religionsHeresies">0</span>
-          </div>
-          <div data-tip="Total number of cults" style="margin-left: 12px">
-            Cults:&nbsp;<span id="religionsCults">0</span>
-          </div>
-          <div data-tip="Total number of folk religions" style="margin-left: 12px">
-            Folk:&nbsp;<span id="religionsFolk">0</span>
-          </div>
-          <div data-tip="Total land area" style="margin-left: 12px">
-            Land Area:&nbsp;<span id="religionsFooterArea">0</span>
-          </div>
-          <div data-tip="Total number of believers (population)" style="margin-left: 12px">
-            Believers:&nbsp;<span id="religionsFooterPopulation">0</span>
-          </div>
-        </div>
-
-        <div id="religionsBottom">
-          <button id="religionsEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-          <button id="religionsEditStyle" data-tip="Edit religions style in Style Editor" class="icon-adjust"></button>
-          <button id="religionsLegend" data-tip="Toggle Legend box" class="icon-list-bullet"></button>
-          <button
-            id="religionsPercentage"
-            data-tip="Toggle percentage / absolute values display mode"
-            class="icon-percent"
-          ></button>
-          <button id="religionsHeirarchy" data-tip="Show religions hierarchy tree" class="icon-sitemap"></button>
-          <button
-            id="religionsExtinct"
-            data-tip="Show/hide extinct religions (religions without cells)"
-            class="icon-eye-off"
-          ></button>
-
-          <button id="religionsManually" data-tip="Manually re-assign religions" class="icon-brush"></button>
-          <div id="religionsManuallyButtons" style="display: none">
-            <label data-tip="Change brush size" data-shortcut="+ (increase), – (decrease)" class="italic"
-              >Brush size:
-              <input
-                id="religionsManuallyBrush"
-                oninput="tip('Brush size: '+this.value); religionsManuallyBrushNumber.value = this.value"
-                type="range"
-                min="5"
-                max="99"
-                value="15"
-                style="width: 7em"
-              />
-              <input
-                id="religionsManuallyBrushNumber"
-                oninput="tip('Brush size: '+this.value); religionsManuallyBrush.value = this.value"
-                type="number"
-                min="5"
-                max="99"
-                value="15"
-              /> </label
-            ><br />
-            <button id="religionsManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
-            <button id="religionsManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
-          </div>
-          <button
-            id="religionsAdd"
-            data-tip="Add a new religion. Hold Shift to add multiple"
-            class="icon-plus"
-          ></button>
-          <button id="religionsExport" data-tip="Download religions-related data" class="icon-download"></button>
-        </div>
-      </div>
-
       <div id="emblemEditor" class="dialog stable" style="display: none">
         <svg viewBox="0 0 200 200"><use id="emblemImage"></use></svg>
         <div id="emblemBody">
@@ -7906,10 +7806,10 @@
     <script src="modules/river-generator.js"></script>
     <script src="modules/lakes.js"></script>
     <script src="modules/names-generator.js"></script>
-    <script src="modules/cultures-generator.js"></script>
+    <script src="modules/cultures-generator.js?v=06062022"></script>
     <script src="modules/burgs-and-states.js?v=29052022"></script>
     <script src="modules/routes-generator.js"></script>
-    <script src="modules/religions-generator.js"></script>
+    <script src="modules/religions-generator.js?v=06062022"></script>
     <script src="modules/military-generator.js"></script>
     <script src="modules/markers-generator.js"></script>
     <script src="modules/coa-generator.js"></script>
@@ -7918,7 +7818,7 @@
     <script src="libs/lineclip.min.js"></script>
     <script src="libs/alea.min.js"></script>
     <script src="modules/fonts.js?v=11052022"></script>
-    <script src="modules/ui/layers.js"></script>
+    <script src="modules/ui/layers.js?v=06062022"></script>
     <script src="modules/ui/measurers.js?v=18052022"></script>
     <script src="modules/ui/stylePresets.js"></script>
 
@@ -7928,7 +7828,7 @@
 
     <script defer src="modules/relief-icons.js"></script>
     <script defer src="modules/ui/style.js"></script>
-    <script defer src="modules/ui/editors.js?v=01062022"></script>
+    <script defer src="modules/ui/editors.js?v=06062022"></script>
     <script defer src="modules/ui/tools.js?v=01062022"></script>
     <script defer src="modules/ui/world-configurator.js?v=29052022"></script>
     <script defer src="modules/ui/heightmap-editor.js?v=29052020"></script>
@@ -7945,7 +7845,6 @@
     <script defer src="modules/ui/rivers-editor.js"></script>
     <script defer src="modules/ui/rivers-creator.js"></script>
     <script defer src="modules/ui/relief-editor.js"></script>
-    <script defer src="modules/ui/religions-editor.js?v=18052022"></script>
     <script defer src="modules/ui/burg-editor.js"></script>
     <script defer src="modules/ui/units-editor.js"></script>
     <script defer src="modules/ui/notes-editor.js?v=29052022"></script>
