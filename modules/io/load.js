@@ -244,7 +244,10 @@ async function parseLoadedData(data) {
         const usedFonts = JSON.parse(data[34]);
         usedFonts.forEach(usedFont => {
           const {family: usedFamily, unicodeRange: usedRange, variant: usedVariant} = usedFont;
-          const defaultFont = fonts.find(({family, unicodeRange, variant}) => family === usedFamily && unicodeRange === usedRange && variant === usedVariant);
+          const defaultFont = fonts.find(
+            ({family, unicodeRange, variant}) =>
+              family === usedFamily && unicodeRange === usedRange && variant === usedVariant
+          );
           if (!defaultFont) fonts.push(usedFont);
           declareFont(usedFont);
         });
@@ -421,13 +424,15 @@ async function parseLoadedData(data) {
 
     void (function restoreEvents() {
       scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => editUnits());
-      legend.on("mousemove", () => tip("Drag to change the position. Click to hide the legend")).on("click", () => clearLegend());
+      legend
+        .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
+        .on("click", () => clearLegend());
     })();
 
     {
       // dynamically import and run auto-udpdate script
       const versionNumber = parseFloat(params[0]);
-      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=01062022");
+      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=06062022");
       resolveVersionConflicts(versionNumber);
     }
 
@@ -435,7 +440,10 @@ async function parseLoadedData(data) {
       const cells = pack.cells;
 
       if (pack.cells.i.length !== pack.cells.state.length) {
-        ERROR && console.error("Striping issue. Map data is corrupted. The only solution is to edit the heightmap in erase mode");
+        ERROR &&
+          console.error(
+            "Striping issue. Map data is corrupted. The only solution is to edit the heightmap in erase mode"
+          );
       }
 
       const invalidStates = [...new Set(cells.state)].filter(s => !pack.states[s] || pack.states[s].removed);
@@ -445,7 +453,9 @@ async function parseLoadedData(data) {
         ERROR && console.error("Data Integrity Check. Invalid state", s, "is assigned to cells", invalidCells);
       });
 
-      const invalidProvinces = [...new Set(cells.province)].filter(p => p && (!pack.provinces[p] || pack.provinces[p].removed));
+      const invalidProvinces = [...new Set(cells.province)].filter(
+        p => p && (!pack.provinces[p] || pack.provinces[p].removed)
+      );
       invalidProvinces.forEach(p => {
         const invalidCells = cells.i.filter(i => cells.province[i] === p);
         invalidCells.forEach(i => (cells.province[i] = 0));
@@ -459,7 +469,9 @@ async function parseLoadedData(data) {
         ERROR && console.error("Data Integrity Check. Invalid culture", c, "is assigned to cells", invalidCells);
       });
 
-      const invalidReligions = [...new Set(cells.religion)].filter(r => !pack.religions[r] || pack.religions[r].removed);
+      const invalidReligions = [...new Set(cells.religion)].filter(
+        r => !pack.religions[r] || pack.religions[r].removed
+      );
       invalidReligions.forEach(r => {
         const invalidCells = cells.i.filter(i => cells.religion[i] === r);
         invalidCells.forEach(i => (cells.religion[i] = 0));
