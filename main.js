@@ -642,8 +642,10 @@ async function generate(options) {
 
     applyMapSize();
     randomizeOptions();
+    const method = window[document.getElementById('gridAlgorithm').value];
+    console.log('gird generation method', method);
 
-    if (shouldRegenerateGrid(grid)) grid = precreatedGraph || generateGrid();
+    if (shouldRegenerateGrid(grid, method)) grid = precreatedGraph || generateGrid(method);
     else delete grid.cells.h;
     grid.cells.h = await HeightmapGenerator.generate(grid);
 
