@@ -385,6 +385,7 @@ window.Religions = (function () {
     const count = +religionsInput.value - cultsCount + religions.length;
 
     function getReligionsInRadius({x, y, r, max}) {
+      if (max === 0) return [0];
       const cellsInRadius = findAll(x, y, r);
       const religions = unique(cellsInRadius.map(i => cells.religion[i]).filter(r => r));
       return religions.length ? religions.slice(0, max) : [0];
@@ -421,6 +422,7 @@ window.Religions = (function () {
       const expansionism = rand(3, 8);
       const baseColor = religions[culture]?.color || states[state]?.color || getRandomColor();
       const color = getMixedColor(baseColor, 0.3, 0);
+
       religions.push({
         i: religions.length,
         name,
@@ -517,17 +519,17 @@ window.Religions = (function () {
   };
 
   const add = function (center) {
-    const cells = pack.cells,
-      religions = pack.religions;
-    const r = cells.religion[center];
-    const i = religions.length;
+    const {cells, religions} = pack;
+    const religionId = cells.religion[center];
+
     const culture = cells.culture[center];
-    const color = getMixedColor(religions[r].color, 0.3, 0);
+    const color = getMixedColor(religions[religionId].color, 0.3, 0);
 
     const type =
-      religions[r].type === "Organized" ? rw({Organized: 4, Cult: 1, Heresy: 2}) : rw({Organized: 5, Cult: 2});
+      religions[religionId].type === "Organized" ? rw({Organized: 4, Cult: 1, Heresy: 2}) : rw({Organized: 5, Cult: 2});
     const form = rw(forms[type]);
-    const deity = type === "Heresy" ? religions[r].deity : form === "Non-theism" ? null : getDeityName(culture);
+    const deity =
+      type === "Heresy" ? religions[religionId].deity : form === "Non-theism" ? null : getDeityName(culture);
 
     let name, expansion;
     if (type === "Organized") [name, expansion] = getReligionName(form, deity, center);
@@ -535,11 +537,14 @@ window.Religions = (function () {
       name = getCultName(form, center);
       expansion = "global";
     }
-    const formName = type === "Heresy" ? religions[r].form : form;
+
+    const formName = type === "Heresy" ? religions[religionId].form : form;
     const code = abbreviate(
       name,
       religions.map(r => r.code)
     );
+
+    const i = religions.length;
     religions.push({
       i,
       name,
@@ -555,7 +560,7 @@ window.Religions = (function () {
       area: 0,
       rural: 0,
       urban: 0,
-      origins: [r],
+      origins: [religionId],
       code
     });
     cells.religion[center] = i;
