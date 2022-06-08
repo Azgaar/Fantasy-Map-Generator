@@ -261,7 +261,7 @@ function getTypeOptions(type) {
 function religionHighlightOn(event) {
   const religionId = Number(event.id || event.target.dataset.id);
   const $info = byId("religionInfo");
-  if ($info) {
+  if ($info && religionId) {
     d3.select("#hierarchy").select(`g[data-id='${religionId}']`).classed("selected", 1);
     const {name, type, form, rural, urban} = pack.religions[religionId];
 
@@ -563,39 +563,55 @@ function showHierarchy() {
   const validReligions = pack.religions.filter(r => !r.removed);
   if (validReligions.length < 3) return tip("Not enough religions to show hierarchy", false, "error");
 
-  const root = d3
-    .stratify()
-    .id(d => d.i)
-    .parentId(d => d.origins[0])(validReligions);
-  const treeWidth = root.leaves().length;
-  const treeHeight = root.height;
-  const width = Math.max(treeWidth * 40, 300);
-  const height = treeHeight * 60;
+  const getRoot = () =>
+    d3
+      .stratify()
+      .id(d => d.i)
+      .parentId(d => d.origins[0])(validReligions);
+
+  const root = getRoot();
+  const treeWidth = root.leaves().length * 50;
+  const treeHeight = root.height * 50;
 
   const margin = {top: 10, right: 10, bottom: -5, left: 10};
-  const w = width - margin.left - margin.right;
-  const h = height + 30 - margin.top - margin.bottom;
+  const w = treeWidth - margin.left - margin.right;
+  const h = treeHeight + 30 - margin.top - margin.bottom;
   const treeLayout = d3.tree().size([w, h]);
 
-  alertMessage.innerHTML = /* html */ `<div id="religionChartDetails" class='chartInfo'>
-    <div id='religionInfo' style="display: block">&#8205;</div>
-    <div id='religionSelected' style="display: none">
-      <span><span id='religionSelectedName'></span>. </span>
-      <span data-name="Type religion short name (abbreviation)">Abbreviation: <input id='religionSelectedCode' type='text' maxlength='3' size='3' /></span>
-      <button data-tip='Clear origin, religion will be linked to top level' id='religionSelectedClear'>Clear</button>
-      <button data-tip='Close edit mode' id='religionSelectedClose'>Close</button>
+  const width = minmax(treeWidth, 300, innerWidth * 0.75);
+  const height = minmax(treeHeight, 200, innerHeight * 0.75);
+
+  alertMessage.innerHTML = /* html */ `<div id="religionChart" style="overflow: hidden; width: ${width}px">
+    <div id="religionChartDetails" class='chartInfo'>
+      <div id='religionInfo' style="display: block">&#8205;</div>
+      <div id='religionSelected' style="display: none">
+        <span><span id='religionSelectedName'></span>. </span>
+        <span data-name="Type religion short name (abbreviation)">Abbreviation: <input id='religionSelectedCode' type='text' maxlength='3' size='3' /></span>
+        <span id='religionSelectedOrigins'></span>
+        <button data-tip='Close edit mode' id='religionSelectedClose'>Close</button>
+      </div>
     </div>
   </div>`;
 
   // prepare svg
+  const zoom = d3
+    .zoom()
+    .extent([Array(2).fill(0), [width, height]])
+    .scaleExtent([0.2, 1.5])
+    .on("zoom", () => {
+      viewbox.attr("transform", d3.event.transform);
+    });
+
   const svg = d3
-    .select("#alertMessage")
+    .select("#religionChart")
     .insert("svg", "#religionChartDetails")
     .attr("id", "hierarchy")
-    .attr("width", width)
-    .attr("height", height)
-    .style("text-anchor", "middle");
-  const graph = svg.append("g").attr("transform", `translate(10, -45)`);
+    .attr("viewBox", [0, 0, width, height])
+    .style("text-anchor", "middle")
+    .call(zoom);
+
+  const viewbox = svg.append("g");
+  const graph = viewbox.append("g").attr("transform", `translate(10, -45)`);
   const links = graph.append("g").attr("fill", "none").attr("stroke", "#aaaaaa");
   const primaryLinks = links.append("g");
   const secondaryLinks = links.append("g").attr("stroke-dasharray", 1);
@@ -637,8 +653,9 @@ function showHierarchy() {
 
   const getNodePath = d => nodePathMap[d.data.type];
 
-  renderTree();
-  function renderTree() {
+  renderTree(root, treeLayout);
+
+  function renderTree(root, treeLayout) {
     treeLayout(root);
 
     primaryLinks.selectAll("path").data(root.links()).enter().append("path").attr("d", getLinkPath);
@@ -669,10 +686,24 @@ function showHierarchy() {
       .text(d => d.data.code || "");
   }
 
+  function rerenderTree() {
+    nodes.selectAll("*").remove();
+    primaryLinks.selectAll("*").remove();
+    secondaryLinks.selectAll("*").remove();
+
+    const root = getRoot();
+    const treeWidth = root.leaves().length * 50;
+    const treeHeight = root.height * 50;
+
+    const w = treeWidth - margin.left - margin.right;
+    const h = treeHeight + 30 - margin.top - margin.bottom;
+    const treeLayout = d3.tree().size([w, h]);
+
+    renderTree(root, treeLayout);
+  }
+
   $("#alert").dialog({
     title: "Religions tree",
-    width: fitContent(),
-    resizable: false,
     position: {my: "left center", at: "left+10 center", of: "svg"},
     buttons: {},
     close: () => {
@@ -699,9 +730,24 @@ function showHierarchy() {
       religion.code = this.value;
     };
 
-    byId("religionSelectedClear").onclick = () => {
-      religion.origins = [0];
-      showHierarchy();
+    byId("religionSelectedOrigins").innerHTML = religion.origins
+      .filter(origin => origin)
+      .map((origin, index) => {
+        const {name, code} = validReligions.find(r => r.i === origin) || {};
+        const type = index ? "Secondary" : "Primary";
+        const tip = `${type} origin: ${name}. Click to remove link to that origin`;
+        return `<button data-id="${origin}" class='religionSelectedOrigin' data-tip="${tip}">${code}</button>`;
+      })
+      .join("");
+
+    byId("religionSelectedOrigins").onclick = function (event) {
+      const target = event.target;
+      if (target.tagName !== "BUTTON") return;
+      const origin = Number(target.dataset.id);
+      const filtered = religion.origins.filter(religionOrigin => religionOrigin !== origin);
+      religion.origins = filtered.length ? filtered : [0];
+      target.remove();
+      rerenderTree();
     };
 
     byId("religionSelectedClose").onclick = () => {
@@ -733,7 +779,7 @@ function showHierarchy() {
       if (religion.origins[0] === 0) religion.origins = [];
       religion.origins.push(newOrigin);
 
-      showHierarchy();
+      rerenderTree();
     });
   }
 }
