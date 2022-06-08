@@ -303,10 +303,10 @@ function statesEditorAddLines() {
   byId("statesFooterPopulation").dataset.population = totalPopulation;
 
   // add listeners
-  $body.querySelectorAll("div.states").forEach(el => {
-    el.on("click", selectStateOnLineClick);
-    el.on("mouseenter", stateHighlightOn);
-    el.on("mouseleave", stateHighlightOff);
+  $body.querySelectorAll(":scope > div").forEach($line => {
+    $line.on("mouseenter", stateHighlightOn);
+    $line.on("mouseleave", stateHighlightOff);
+    $line.on("click", selectStateOnLineClick);
   });
 
   if ($body.dataset.type === "percentage") {

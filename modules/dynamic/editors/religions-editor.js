@@ -229,9 +229,11 @@ function religionsEditorAddLines() {
   byId("religionsFooterPopulation").dataset.population = totalPopulation;
 
   // add listeners
-  $body.querySelectorAll("div.religions").forEach(el => el.on("mouseenter", religionHighlightOn));
-  $body.querySelectorAll("div.religions").forEach(el => el.on("mouseleave", religionHighlightOff));
-  $body.querySelectorAll("div.states").forEach(el => el.on("click", selectReligionOnLineClick));
+  $body.querySelectorAll(":scope > div").forEach($line => {
+    $line.on("mouseenter", religionHighlightOn);
+    $line.on("mouseleave", religionHighlightOff);
+    $line.on("click", selectReligionOnLineClick);
+  });
   $body.querySelectorAll("fill-box").forEach(el => el.on("click", religionChangeColor));
   $body.querySelectorAll("div > input.religionName").forEach(el => el.on("input", religionChangeName));
   $body.querySelectorAll("div > select.religionType").forEach(el => el.on("change", religionChangeType));

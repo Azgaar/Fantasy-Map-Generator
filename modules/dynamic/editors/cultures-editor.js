@@ -189,7 +189,7 @@ function culturesEditorAddLines() {
     }
 
     lines += /* html */ `<div
-        class="states cultures"
+        class="states"
         data-id="${c.i}"
         data-name="${c.name}"
         data-color="${c.color}"
@@ -242,19 +242,21 @@ function culturesEditorAddLines() {
   byId("culturesFooterPopulation").dataset.population = totalPopulation;
 
   // add listeners
-  $body.querySelectorAll("div.cultures").forEach(el => el.on("mouseenter", cultureHighlightOn));
-  $body.querySelectorAll("div.cultures").forEach(el => el.on("mouseleave", cultureHighlightOff));
-  $body.querySelectorAll("div.states").forEach(el => el.on("click", selectCultureOnLineClick));
-  $body.querySelectorAll("fill-box").forEach(el => el.on("click", cultureChangeColor));
-  $body.querySelectorAll("div > input.cultureName").forEach(el => el.on("input", cultureChangeName));
-  $body.querySelectorAll("div > span.icon-cw").forEach(el => el.on("click", cultureRegenerateName));
-  $body.querySelectorAll("div > input.cultureExpan").forEach(el => el.on("input", cultureChangeExpansionism));
-  $body.querySelectorAll("div > select.cultureType").forEach(el => el.on("change", cultureChangeType));
-  $body.querySelectorAll("div > select.cultureBase").forEach(el => el.on("change", cultureChangeBase));
-  $body.querySelectorAll("div > select.cultureEmblems").forEach(el => el.on("change", cultureChangeEmblemsShape));
-  $body.querySelectorAll("div > div.culturePopulation").forEach(el => el.on("click", changePopulation));
-  $body.querySelectorAll("div > span.icon-arrows-cw").forEach(el => el.on("click", cultureRegenerateBurgs));
-  $body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.on("click", cultureRemovePrompt));
+  $body.querySelectorAll(":scope > div").forEach($line => {
+    $line.on("mouseenter", cultureHighlightOn);
+    $line.on("mouseleave", cultureHighlightOff);
+    $line.on("click", selectCultureOnLineClick);
+  });
+  $body.querySelectorAll("fill-box").forEach($el => $el.on("click", cultureChangeColor));
+  $body.querySelectorAll("div > input.cultureName").forEach($el => $el.on("input", cultureChangeName));
+  $body.querySelectorAll("div > span.icon-cw").forEach($el => $el.on("click", cultureRegenerateName));
+  $body.querySelectorAll("div > input.cultureExpan").forEach($el => $el.on("input", cultureChangeExpansionism));
+  $body.querySelectorAll("div > select.cultureType").forEach($el => $el.on("change", cultureChangeType));
+  $body.querySelectorAll("div > select.cultureBase").forEach($el => $el.on("change", cultureChangeBase));
+  $body.querySelectorAll("div > select.cultureEmblems").forEach($el => $el.on("change", cultureChangeEmblemsShape));
+  $body.querySelectorAll("div > div.culturePopulation").forEach($el => $el.on("click", changePopulation));
+  $body.querySelectorAll("div > span.icon-arrows-cw").forEach($el => $el.on("click", cultureRegenerateBurgs));
+  $body.querySelectorAll("div > span.icon-trash-empty").forEach($el => $el.on("click", cultureRemovePrompt));
 
   const $culturesHeader = byId("culturesHeader");
   $culturesHeader.querySelector("div[data-sortby='emblems']").style.display = selectShape ? "inline-block" : "none";
