@@ -3,10 +3,10 @@ addListeners();
 
 export function open() {
   closeDialogs("#religionsEditor, .stable");
-  if (!layerIsOn("toggleCultures")) toggleCultures();
+  if (!layerIsOn("toggleReligions")) toggleCultures();
   if (layerIsOn("toggleStates")) toggleStates();
   if (layerIsOn("toggleBiomes")) toggleBiomes();
-  if (layerIsOn("toggleReligions")) toggleReligions();
+  if (layerIsOn("toggleCultures")) toggleReligions();
   if (layerIsOn("toggleProvinces")) toggleProvinces();
 
   refreshReligionsEditor();
