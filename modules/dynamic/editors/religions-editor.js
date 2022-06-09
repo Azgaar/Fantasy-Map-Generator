@@ -9,6 +9,7 @@ export function open() {
   if (layerIsOn("toggleCultures")) toggleReligions();
   if (layerIsOn("toggleProvinces")) toggleProvinces();
 
+  appendStyleSheet();
   refreshReligionsEditor();
   drawReligionCenters();
 
@@ -19,6 +20,38 @@ export function open() {
     position: {my: "right top", at: "right-10 top+10", of: "svg"}
   });
   $body.focus();
+}
+
+function appendStyleSheet() {
+  const styles = /* css */ `
+    #religionSelectedOrigins > button {
+      margin: 0 4px;
+    }
+
+    .religionSelectedButton {
+      border: 1px solid #aaa;
+      background: none;
+      padding: 1px 2px;
+    }
+
+    .religionSelectedButton:hover {
+      border: 1px solid #333;
+    }
+
+    .religionSelectedOrigin::after {
+      content: "✕";
+      margin-left: 8px;
+      color: #999;
+    }
+
+    .religionSelectedOrigin:hover:after {
+      color: #333;
+    }
+  `;
+
+  const style = document.createElement("style");
+  style.appendChild(document.createTextNode(styles));
+  document.head.appendChild(style);
 }
 
 function insertEditorHtml() {
@@ -587,8 +620,9 @@ function showHierarchy() {
       <div id='religionSelected' style="display: none">
         <span><span id='religionSelectedName'></span>. </span>
         <span data-name="Type religion short name (abbreviation)">Abbreviation: <input id='religionSelectedCode' type='text' maxlength='3' size='3' /></span>
-        <span id='religionSelectedOrigins'></span>
-        <button data-tip='Close edit mode' id='religionSelectedClose'>Close</button>
+        <span>Origins: <span id='religionSelectedOrigins'></span></span>
+        <button data-tip='Add origin' class="religionSelectedButton" id='religionSelectedAdd'>Add</button>
+        <button data-tip='Exit edit mode' class="religionSelectedButton" id='religionSelectedClose'>Exit</button>
       </div>
     </div>
   </div>`;
@@ -713,13 +747,13 @@ function showHierarchy() {
 
   function religionSelect(d) {
     d3.event.stopPropagation();
+    const religion = d.data;
 
     nodes.selectAll("g").style("outline", "none");
     this.style.outline = "1px solid #c13119";
     byId("religionSelected").style.display = "block";
     byId("religionInfo").style.display = "none";
 
-    const religion = d.data;
     byId("religionSelectedName").innerText = religion.name;
     byId("religionSelectedCode").value = religion.code;
 
@@ -736,7 +770,7 @@ function showHierarchy() {
         const {name, code} = validReligions.find(r => r.i === origin) || {};
         const type = index ? "Secondary" : "Primary";
         const tip = `${type} origin: ${name}. Click to remove link to that origin`;
-        return `<button data-id="${origin}" class='religionSelectedOrigin' data-tip="${tip}">${code}</button>`;
+        return `<button data-id="${origin}" class="religionSelectedButton religionSelectedOrigin" data-tip="${tip}">${code}</button>`;
       })
       .join("");
 
@@ -748,6 +782,14 @@ function showHierarchy() {
       religion.origins = filtered.length ? filtered : [0];
       target.remove();
       rerenderTree();
+    };
+
+    byId("religionSelectedAdd").onclick = () => {
+      const ancestors = d.ancestors().map(({id}) => Number(id));
+      const origins = religion.origins;
+
+      const selectableReligions = validReligions.filter(({i}) => i && !origins.includes(i) && !ancestors.includes(i));
+      console.log(selectableReligions);
     };
 
     byId("religionSelectedClose").onclick = () => {
