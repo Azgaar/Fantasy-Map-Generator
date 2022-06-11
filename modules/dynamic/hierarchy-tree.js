@@ -418,7 +418,6 @@ function selectElement(d) {
         </div>
       `;
     });
-
     byId("hierarchyTree_originSelector").innerHTML = /*html*/ `
       <form style="max-height: 35vh">
         ${selectableElementsHtml.join("")}
