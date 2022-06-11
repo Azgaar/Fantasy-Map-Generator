@@ -254,13 +254,6 @@ i.icon-lock {
   font-size: 12px;
 }
 
-#hierarchy .selected {
-  stroke: #c13119;
-  stroke-width: 1;
-  cursor: move;
-}
-
-#hierarchy text,
 #statesTree text,
 #provincesTree text {
   pointer-events: none;
@@ -281,7 +274,7 @@ i.icon-lock {
   stroke-width: 2;
 }
 
-.dragLine {
+.regimentDragLine {
   marker-end: url(#end-arrow);
   stroke: #333333;
   stroke-dasharray: 5;

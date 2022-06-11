@@ -707,7 +707,6 @@ function togglePercentageMode() {
 }
 
 function showStatesChart() {
-  // build hierarchy tree
   const statesData = pack.states.filter(s => !s.removed);
   if (statesData.length < 2) return tip("There are no states to show", false, "error");
 
