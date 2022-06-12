@@ -293,17 +293,8 @@ function getShapeOptions(selectShape, selected) {
   return `<select data-tip="Emblem shape associated with culture. Click to change" class="cultureEmblems hide">${options}</select>`;
 }
 
-function cultureHighlightOn(event) {
+const cultureHighlightOn = debounce(event => {
   const cultureId = Number(event.id || event.target.dataset.id);
-  const $info = byId("cultureInfo");
-  if ($info) {
-    d3.select("#hierarchy").select(`g[data-id='${cultureId}']`).classed("selected", 1);
-    const {name, type, rural, urban} = pack.cultures[cultureId];
-    const population = rural * populationRate + urban * populationRate * urbanization;
-    const populationText = population > 0 ? si(rn(population)) + " people" : "Extinct";
-    $info.innerHTML = `${name} culture. ${type}. ${populationText}`;
-    tip("Drag to other node to add parent, click to edit");
-  }
 
   if (!layerIsOn("toggleCultures")) return;
   if (customization) return;
@@ -321,17 +312,10 @@ function cultureHighlightOn(event) {
     .transition(animate)
     .attr("r", 8)
     .attr("stroke", "#d0240f");
-}
+}, 200);
 
 function cultureHighlightOff(event) {
   const cultureId = Number(event.id || event.target.dataset.id);
-
-  const $info = byId("cultureInfo");
-  if ($info) {
-    d3.select("#hierarchy").select(`g[data-id='${cultureId}']`).classed("selected", 0);
-    $info.innerHTML = "&#8205;";
-    tip("");
-  }
 
   if (!layerIsOn("toggleCultures")) return;
   cults
@@ -644,189 +628,36 @@ function togglePercentageMode() {
   }
 }
 
-function showHierarchy() {
-  // build hierarchy tree
-  pack.cultures[0].origins = [null];
-  const validCultures = pack.cultures.filter(c => !c.removed);
-  if (validCultures.length < 3) return tip("Not enough cultures to show hierarchy", false, "error");
+async function showHierarchy() {
+  if (customization) return;
+  const HeirarchyTree = await import("../hierarchy-tree.js");
 
-  const root = d3
-    .stratify()
-    .id(d => d.i)
-    .parentId(d => d.origins[0])(validCultures);
-  const treeWidth = root.leaves().length;
-  const treeHeight = root.height;
-  const width = Math.max(treeWidth * 40, 300);
-  const height = treeHeight * 60;
+  const getDescription = culture => {
+    const {name, type, rural, urban} = culture;
 
-  const margin = {top: 10, right: 10, bottom: -5, left: 10};
-  const w = width - margin.left - margin.right;
-  const h = height + 30 - margin.top - margin.bottom;
-  const treeLayout = d3.tree().size([w, h]);
-
-  alertMessage.innerHTML = /* html */ `<div id="cultureChartDetails" class='chartInfo'>
-    <div id='cultureInfo' style="display: block">&#8205;</div>
-    <div id='cultureSelected' style="display: none">
-      <span><span id='cultureSelectedName'></span> culture. </span>
-      <span data-name="Type culture short name (abbreviation)">Abbreviation: <input id='cultureSelectedCode' type='text' maxlength='3' size='3' /></span>
-      <button data-tip='Clear origin, culture will be linked to top level' id='cultureSelectedClear'>Clear</button>
-      <button data-tip='Close edit mode' id='cultureSelectedClose'>Close</button>
-    </div>
-  </div>`;
-
-  // prepare svg
-  const svg = d3
-    .select("#alertMessage")
-    .insert("svg", "#cultureChartDetails")
-    .attr("id", "hierarchy")
-    .attr("width", width)
-    .attr("height", height)
-    .style("text-anchor", "middle")
-    .style("min-width", "300px");
-  const graph = svg.append("g").attr("transform", `translate(10, -45)`);
-  const links = graph.append("g").attr("fill", "none").attr("stroke", "#aaaaaa");
-  const primaryLinks = links.append("g");
-  const secondaryLinks = links.append("g").attr("stroke-dasharray", 1);
-  const nodes = graph.append("g");
-
-  // render helper functions
-  const getLinkPath = d => {
-    const {
-      source: {x: sx, y: sy},
-      target: {x: tx, y: ty}
-    } = d;
-    return `M${sx},${sy} C${sx},${(sy * 3 + ty) / 4} ${tx},${(sy * 2 + ty) / 3} ${tx},${ty}`;
+    const population = rural * populationRate + urban * populationRate * urbanization;
+    const populationText = population > 0 ? si(rn(population)) + " people" : "Extinct";
+    return `${name} culture. ${type}. ${populationText}`;
   };
 
-  const getSecondaryLinks = root => {
-    const nodes = root.descendants();
-    const links = [];
-
-    for (const node of nodes) {
-      const origins = node.data.origins;
-      if (node.depth < 2) continue;
-
-      for (let i = 1; i < origins.length; i++) {
-        const source = nodes.find(n => n.data.i === origins[i]);
-        if (source) links.push({source, target: node});
-      }
-    }
-
-    return links;
+  const getShape = ({type}) => {
+    if (type === "Generic") return "circle";
+    if (type === "River") return "diamond";
+    if (type === "Lake") return "hexagon";
+    if (type === "Naval") return "square";
+    if (type === "Highland") return "concave";
+    if (type === "Nomadic") return "octagon";
+    if (type === "Hunting") return "pentagon";
   };
 
-  const nodePathMap = {
-    undefined: "M5,0A5,5,0,1,1,-5,0A5,5,0,1,1,5,0", // small circle
-    Generic: "M11.3,0A11.3,11.3,0,1,1,-11.3,0A11.3,11.3,0,1,1,11.3,0", // circle
-    River: "M0,-14L14,0L0,14L-14,0Z", // diamond
-    Lake: "M-6.5,-11.26l13,0l6.5,11.26l-6.5,11.26l-13,0l-6.5,-11.26Z", // hexagon
-    Naval: "M-11,-11h22v22h-22Z", // square
-    Highland: "M-11,-11l11,2l11,-2l-2,11l2,11l-11,-2l-11,2l2,-11Z", // concave square
-    Nomadic: "M-4.97,-12.01 l9.95,0 l7.04,7.04 l0,9.95 l-7.04,7.04 l-9.95,0 l-7.04,-7.04 l0,-9.95Z", // octagon
-    Hunting: "M0,-14l14,11l-6,14h-16l-6,-14Z" // pentagon
-  };
-
-  const getNodePath = d => nodePathMap[d.data.type];
-
-  renderTree();
-  function renderTree() {
-    treeLayout(root);
-
-    primaryLinks.selectAll("path").data(root.links()).enter().append("path").attr("d", getLinkPath);
-    secondaryLinks.selectAll("path").data(getSecondaryLinks(root)).enter().append("path").attr("d", getLinkPath);
-
-    const node = nodes
-      .selectAll("g")
-      .data(root.descendants())
-      .enter()
-      .append("g")
-      .attr("data-id", d => d.data.i)
-      .attr("stroke", "#333333")
-      .attr("transform", d => `translate(${d.x}, ${d.y})`)
-      .on("mouseenter", cultureHighlightOn)
-      .on("mouseleave", cultureHighlightOff)
-      .on("click", cultureSelect)
-      .call(d3.drag().on("start", dragToReorigin));
-
-    node
-      .append("path")
-      .attr("d", getNodePath)
-      .attr("fill", d => d.data.color || "#ffffff")
-      .attr("stroke-dasharray", d => (d.data.cells ? "null" : "1"));
-
-    node
-      .append("text")
-      .attr("dy", ".35em")
-      .text(d => d.data.code || "");
-  }
-
-  $("#alert").dialog({
-    title: "Cultures tree",
-    width: fitContent(),
-    resizable: false,
-    position: {my: "left center", at: "left+10 center", of: "svg"},
-    buttons: null,
-    close: () => {
-      alertMessage.innerHTML = "";
-    }
+  HeirarchyTree.open({
+    type: "cultures",
+    data: pack.cultures,
+    onNodeEnter: cultureHighlightOn,
+    onNodeLeave: cultureHighlightOff,
+    getDescription,
+    getShape
   });
-
-  function cultureSelect(d) {
-    d3.event.stopPropagation();
-
-    nodes.selectAll("g").style("outline", "none");
-    this.style.outline = "1px solid #c13119";
-    byId("cultureSelected").style.display = "block";
-    byId("cultureInfo").style.display = "none";
-
-    const culture = d.data;
-    byId("cultureSelectedName").innerText = culture.name;
-    byId("cultureSelectedCode").value = culture.code;
-
-    byId("cultureSelectedCode").onchange = function () {
-      if (this.value.length > 3) return tip("Abbreviation must be 3 characters or less", false, "error", 3000);
-      if (!this.value.length) return tip("Abbreviation cannot be empty", false, "error", 3000);
-      nodes.select(`g[data-id="${d.id}"] > text`).text(this.value);
-      culture.code = this.value;
-    };
-
-    byId("cultureSelectedClear").onclick = () => {
-      culture.origins = [0];
-      showHierarchy();
-    };
-
-    byId("cultureSelectedClose").onclick = () => {
-      this.style.outline = "none";
-      byId("cultureSelected").style.display = "none";
-      byId("cultureInfo").style.display = "block";
-    };
-  }
-
-  function dragToReorigin(d) {
-    const originLine = graph.append("path").attr("class", "dragLine").attr("d", `M${d.x},${d.y}L${d.x},${d.y}`);
-
-    d3.event.on("drag", () => {
-      originLine.attr("d", `M${d.x},${d.y}L${d3.event.x},${d3.event.y}`);
-    });
-
-    d3.event.on("end", () => {
-      originLine.remove();
-      const selected = graph.select("g.selected");
-      if (!selected.size()) return;
-
-      const cultureId = d.data.i;
-      const newOrigin = selected.datum().data.i;
-      if (cultureId === newOrigin) return; // dragged to itself
-      if (d.data.origins.includes(newOrigin)) return; // already a child of the selected node
-      if (d.descendants().some(node => node.data.i === newOrigin)) return; // cannot be a child of its own child
-
-      const culture = pack.cultures[cultureId];
-      if (culture.origins[0] === 0) culture.origins = [];
-      culture.origins.push(newOrigin);
-
-      showHierarchy();
-    });
-  }
 }
 
 function recalculateCultures(must) {

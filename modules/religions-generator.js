@@ -418,7 +418,7 @@ window.Religions = (function () {
       const folk = isFolkBased && religions.find(r => r.culture === culture && r.type === "Folk");
       if (folk && expansion === "culture" && folk.name.slice(0, 3) !== "Old") folk.name = "Old " + folk.name;
 
-      const origins = folk ? [folk.i] : getReligionsInRadius({x, y, r: 30, max: 2});
+      const origins = folk ? [folk.i] : getReligionsInRadius({x, y, r: 150 / count, max: 2});
       const expansionism = rand(3, 8);
       const baseColor = religions[culture]?.color || states[state]?.color || getRandomColor();
       const color = getMixedColor(baseColor, 0.3, 0);
@@ -451,7 +451,7 @@ window.Religions = (function () {
       if (religionsTree.find(x, y, s) !== undefined) continue; // to close to existing religion
 
       const culture = cells.culture[center];
-      const origins = getReligionsInRadius({x, y, r: 75, max: rand(0, 4)});
+      const origins = getReligionsInRadius({x, y, r: 300 / count, max: rand(0, 4)});
 
       const deity = getDeityName(culture);
       const name = getCultName(form, center);
