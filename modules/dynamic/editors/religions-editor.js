@@ -258,7 +258,7 @@ function getTypeOptions(type) {
   return options;
 }
 
-function religionHighlightOn(event) {
+const religionHighlightOn = debounce(event => {
   const religionId = Number(event.id || event.target.dataset.id);
   const $el = $body.querySelector(`div[data-id='${religionId}']`);
   if ($el) $el.classList.add("active");
@@ -280,7 +280,7 @@ function religionHighlightOn(event) {
     .attr("r", 8)
     .attr("stroke-width", 2)
     .attr("stroke", "#c13119");
-}
+}, 200);
 
 function religionHighlightOff(event) {
   const religionId = Number(event.id || event.target.dataset.id);

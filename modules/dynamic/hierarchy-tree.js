@@ -7,6 +7,9 @@ const MARGINS = {top: 10, right: 10, bottom: -5, left: 10};
 const handleZoom = () => viewbox.attr("transform", d3.event.transform);
 const zoom = d3.zoom().scaleExtent([0.2, 1.5]).on("zoom", handleZoom);
 
+// store old root for transitions
+let oldRoot;
+
 // define svg elements
 const svg = d3.select("#hierarchyTree > svg").call(zoom);
 const viewbox = svg.select("g#hierarchyTree_viewbox");
@@ -159,10 +162,21 @@ function insertHtml() {
 function addListeners() {}
 
 function getRoot() {
-  return d3
+  const root = d3
     .stratify()
     .id(d => d.i)
     .parentId(d => d.origins[0])(validElements);
+
+  oldRoot = root;
+  return root;
+}
+
+function getLinkKey(d) {
+  return `${d.source.id}-${d.target.id}`;
+}
+
+function getNodeKey(d) {
+  return d.id;
 }
 
 function getLinkPath(d) {
@@ -211,14 +225,13 @@ const getSortIndex = node => {
 function renderTree(root, treeLayout) {
   treeLayout(root.sort((a, b) => getSortIndex(a) - getSortIndex(b)));
 
-  primaryLinks.selectAll("path").data(root.links()).enter().append("path").attr("d", getLinkPath);
-  secondaryLinks.selectAll("path").data(getSecondaryLinks(root)).enter().append("path").attr("d", getLinkPath);
+  primaryLinks.selectAll("path").data(root.links(), getLinkKey).join("path").attr("d", getLinkPath);
+  secondaryLinks.selectAll("path").data(getSecondaryLinks(root), getLinkKey).join("path").attr("d", getLinkPath);
 
   const node = nodes
     .selectAll("g")
-    .data(root.descendants())
-    .enter()
-    .append("g")
+    .data(root.descendants(), getNodeKey)
+    .join("g")
     .attr("data-id", d => d.data.i)
     .attr("stroke", "#333")
     .attr("transform", d => `translate(${d.x}, ${d.y})`)
@@ -236,27 +249,86 @@ function renderTree(root, treeLayout) {
   node.append("text").text(d => d.data.code || "");
 }
 
-function rerenderTree() {
-  nodes.selectAll("*").remove();
-  primaryLinks.selectAll("*").remove();
-  secondaryLinks.selectAll("*").remove();
+function mapCoords(newRoot, prevRoot) {
+  newRoot.x = prevRoot.x;
+  newRoot.y = prevRoot.y;
 
+  for (const node of newRoot.descendants()) {
+    const prevNode = prevRoot.descendants().find(n => n.data.i === node.data.i);
+    if (prevNode) {
+      node.x = prevNode.x;
+      node.y = prevNode.y;
+    }
+  }
+}
+
+function updateTree() {
+  const prevRoot = oldRoot;
   const root = getRoot();
+  mapCoords(root, prevRoot);
+
+  const linksUpdateDuration = 50;
+  const moveDuration = 1000;
+
+  // old layout: update links at old nodes positions
+  const linkEnter = enter =>
+    enter
+      .append("path")
+      .attr("d", getLinkPath)
+      .attr("opacity", 0)
+      .call(enter => enter.transition().duration(linksUpdateDuration).attr("opacity", 1));
+
+  const linkUpdate = update =>
+    update.call(update => update.transition().duration(linksUpdateDuration).attr("d", getLinkPath));
+
+  const linkExit = exit =>
+    exit.call(exit => exit.transition().duration(linksUpdateDuration).attr("opacity", 0).remove());
+
+  primaryLinks.selectAll("path").data(root.links(), getLinkKey).join(linkEnter, linkUpdate, linkExit);
+  secondaryLinks.selectAll("path").data(getSecondaryLinks(root), getLinkKey).join(linkEnter, linkUpdate, linkExit);
+
+  // new layout: move nodes with links to new positions
   const treeWidth = root.leaves().length * 50;
   const treeHeight = root.height * 50;
 
   const w = treeWidth - MARGINS.left - MARGINS.right;
   const h = treeHeight + 30 - MARGINS.top - MARGINS.bottom;
-  const treeLayout = d3.tree().size([w, h]);
 
-  renderTree(root, treeLayout);
+  const treeLayout = d3.tree().size([w, h]);
+  treeLayout(root.sort((a, b) => getSortIndex(a) - getSortIndex(b)));
+
+  primaryLinks
+    .selectAll("path")
+    .data(root.links(), getLinkKey)
+    .transition()
+    .duration(moveDuration)
+    .delay(linksUpdateDuration)
+    .attr("d", getLinkPath);
+
+  secondaryLinks
+    .selectAll("path")
+    .data(getSecondaryLinks(root), getLinkKey)
+    .transition()
+    .duration(moveDuration)
+    .delay(linksUpdateDuration)
+    .attr("d", getLinkPath);
+
+  nodes
+    .selectAll("g")
+    .data(root.descendants(), getNodeKey)
+    .transition()
+    .delay(linksUpdateDuration)
+    .duration(moveDuration)
+    .attr("transform", d => `translate(${d.x},${d.y})`);
 }
 
 function selectElement(d) {
   const dataElement = d.data;
 
+  const node = nodes.select(`g[data-id="${d.id}"]`);
   nodes.selectAll("g").style("outline", "none");
-  this.style.outline = "1px solid #c13119";
+  node.style("outline", "1px solid #c13119");
+
   byId("hierarchyTree_selected").style.display = "block";
   byId("hierarchyTree_infoLine").style.display = "none";
 
@@ -266,7 +338,8 @@ function selectElement(d) {
   byId("hierarchyTree_selectedCode").onchange = function () {
     if (this.value.length > 3) return tip("Abbreviation must be 3 characters or less", false, "error", 3000);
     if (!this.value.length) return tip("Abbreviation cannot be empty", false, "error", 3000);
-    nodes.select(`g[data-id="${d.id}"] > text`).text(this.value);
+
+    node.select("text").text(this.value);
     dataElement.code = this.value;
   };
 
@@ -288,7 +361,7 @@ function selectElement(d) {
       const filtered = dataElement.origins.filter(elementOrigin => elementOrigin !== origin);
       dataElement.origins = filtered.length ? filtered : [0];
       target.remove();
-      rerenderTree();
+      updateTree();
     };
   };
 
@@ -324,6 +397,7 @@ function selectElement(d) {
         </div>
       `;
     });
+
     byId("hierarchyTree_originSelector").innerHTML = /*html*/ `
       <form style="max-height: 35vh">
         ${selectableElementsHtml.join("")}
@@ -347,7 +421,7 @@ function selectElement(d) {
 
           dataElement.origins = [primary, ...secondary];
 
-          rerenderTree();
+          updateTree();
           createOriginButtons();
         },
         Cancel: () => {
@@ -365,6 +439,8 @@ function selectElement(d) {
 }
 
 function handleNoteEnter(d) {
+  if (d.depth === 0) return;
+
   this.classList.add("selected");
   onNodeEnter(d);
 
@@ -404,6 +480,7 @@ function dragToReorigin(from) {
     if (element.origins[0] === 0) element.origins = [];
     element.origins.push(newOrigin);
 
-    rerenderTree();
+    selectElement(from);
+    updateTree();
   });
 }

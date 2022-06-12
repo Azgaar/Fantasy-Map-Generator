@@ -293,7 +293,7 @@ function getShapeOptions(selectShape, selected) {
   return `<select data-tip="Emblem shape associated with culture. Click to change" class="cultureEmblems hide">${options}</select>`;
 }
 
-function cultureHighlightOn(event) {
+const cultureHighlightOn = debounce(event => {
   const cultureId = Number(event.id || event.target.dataset.id);
 
   if (!layerIsOn("toggleCultures")) return;
@@ -312,7 +312,7 @@ function cultureHighlightOn(event) {
     .transition(animate)
     .attr("r", 8)
     .attr("stroke", "#d0240f");
-}
+}, 200);
 
 function cultureHighlightOff(event) {
   const cultureId = Number(event.id || event.target.dataset.id);
