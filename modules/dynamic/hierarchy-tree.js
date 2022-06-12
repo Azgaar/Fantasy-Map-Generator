@@ -432,7 +432,7 @@ function selectElement(d) {
   };
 
   byId("hierarchyTree_selectedCloseButton").onclick = () => {
-    this.style.outline = "none";
+    node.style("outline", "none");
     byId("hierarchyTree_selected").style.display = "none";
     byId("hierarchyTree_infoLine").style.display = "block";
   };
