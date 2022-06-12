@@ -28,8 +28,7 @@ async function createSharableDropboxLink() {
   try {
     url = await Cloud.providers.dropbox.getLink(mapFile);
   } catch {
-    tip("Dropbox API error. Can not create link.", true, "error", 2000);
-    return;
+    return tip("Dropbox API error. Can not create link.", true, "error", 2000);
   }
 
   const fmg = window.location.href.split("?")[0];
@@ -500,23 +499,28 @@ async function parseLoadedData(data) {
         ERROR && console.error("Data Integrity Check. Invalid river", r, "is assigned to cells", invalidCells);
       });
 
-      pack.burgs.forEach(b => {
-        if (!b.i || b.removed) return;
-        if (b.port < 0) {
-          ERROR && console.error("Data Integrity Check. Burg", b.i, "has invalid port value", b.port);
-          b.port = 0;
+      pack.burgs.forEach(burg => {
+        if (!burg.i || burg.removed) return;
+        if (burg.port < 0) {
+          ERROR && console.error("Data Integrity Check. Burg", burg.i, "has invalid port value", burg.port);
+          burg.port = 0;
         }
 
-        if (b.cell >= cells.i.length) {
-          ERROR && console.error("Data Integrity Check. Burg", b.i, "is linked to invalid cell", b.cell);
-          b.cell = findCell(b.x, b.y);
-          cells.i.filter(i => cells.burg[i] === b.i).forEach(i => (cells.burg[i] = 0));
-          cells.burg[b.cell] = b.i;
+        if (burg.cell >= cells.i.length) {
+          ERROR && console.error("Data Integrity Check. Burg", burg.i, "is linked to invalid cell", burg.cell);
+          burg.cell = findCell(burg.x, burg.y);
+          cells.i.filter(i => cells.burg[i] === burg.i).forEach(i => (cells.burg[i] = 0));
+          cells.burg[burg.cell] = burg.i;
         }
 
-        if (b.state && !pack.states[b.state]) {
-          ERROR && console.error("Data Integrity Check. Burg", b.i, "is linked to invalid state", b.state);
-          b.state = 0;
+        if (burg.state && !pack.states[burg.state]) {
+          ERROR && console.error("Data Integrity Check. Burg", burg.i, "is linked to invalid state", burg.state);
+          burg.state = 0;
+        }
+
+        if (burg.state === undefined) {
+          ERROR && console.error("Data Integrity Check. Burg", burg.i, "has no state data");
+          burg.state = 0;
         }
       });
 

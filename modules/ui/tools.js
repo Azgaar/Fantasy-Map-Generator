@@ -143,7 +143,8 @@ function regenerateStates() {
   const statesCount = +regionsOutput.value;
   const burgs = pack.burgs.filter(b => b.i && !b.removed);
   if (!burgs.length) return tip("There are no any burgs to generate states. Please create burgs first", false, "error");
-  if (burgs.length < statesCount) tip(`Not enough burgs to generate ${statesCount} states. Will generate only ${burgs.length} states`, false, "warn");
+  if (burgs.length < statesCount)
+    tip(`Not enough burgs to generate ${statesCount} states. Will generate only ${burgs.length} states`, false, "warn");
 
   // turn all old capitals into towns
   burgs
@@ -205,10 +206,15 @@ function regenerateStates() {
     }
 
     const culture = capital.culture;
-    const basename = capital.name.length < 9 && capital.cell % 5 === 0 ? capital.name : Names.getCulture(culture, 3, 6, "", 0);
+    const basename =
+      capital.name.length < 9 && capital.cell % 5 === 0 ? capital.name : Names.getCulture(culture, 3, 6, "", 0);
     const name = Names.getState(basename, culture);
     const nomadic = [1, 2, 3, 4].includes(pack.cells.biome[capital.cell]);
-    const type = nomadic ? "Nomadic" : pack.cultures[culture].type === "Nomadic" ? "Generic" : pack.cultures[culture].type;
+    const type = nomadic
+      ? "Nomadic"
+      : pack.cultures[culture].type === "Nomadic"
+      ? "Generic"
+      : pack.cultures[culture].type;
     const expansionism = rn(Math.random() * powerInput.value + 1, 1);
 
     const cultureType = pack.cultures[culture].type;
@@ -253,57 +259,59 @@ function regenerateProvinces() {
 }
 
 function regenerateBurgs() {
-  const cells = pack.cells,
-    states = pack.states,
-    Lockedburgs = pack.burgs.filter(b => b.lock);
+  const {cells, states} = pack;
+  const lockedburgs = pack.burgs.filter(b => b.lock);
   rankCells();
+
   cells.burg = new Uint16Array(cells.i.length);
   const burgs = (pack.burgs = [0]); // clear burgs array
   states.filter(s => s.i).forEach(s => (s.capital = 0)); // clear state capitals
   pack.provinces.filter(p => p.i).forEach(p => (p.burg = 0)); // clear province capitals
   const burgsTree = d3.quadtree();
 
+  // add locked burgs
+  for (let j = 0; j < lockedburgs.length; j++) {
+    const id = burgs.length;
+    const lockedBurg = lockedburgs[j];
+    lockedBurg.i = id;
+    burgs.push(lockedBurg);
+
+    burgsTree.add([lockedBurg.x, lockedBurg.y]);
+    cells.burg[lockedBurg.cell] = id;
+
+    if (lockedBurg.capital) {
+      const stateId = lockedBurg.state;
+      states[stateId].capital = id;
+      states[stateId].center = lockedBurg.cell;
+    }
+  }
+
   const score = new Int16Array(cells.s.map(s => s * Math.random())); // cell score for capitals placement
   const sorted = cells.i.filter(i => score[i] > 0 && cells.culture[i]).sort((a, b) => score[b] - score[a]); // filtered and sorted array of indexes
   const burgsCount =
-    manorsInput.value == 1000 ? rn(sorted.length / 5 / (grid.points.length / 10000) ** 0.8) + states.length : +manorsInput.value + states.length;
+    manorsInput.value === "1000"
+      ? rn(sorted.length / 5 / (grid.points.length / 10000) ** 0.8) + states.length
+      : +manorsInput.value + states.length;
   const spacing = (graphWidth + graphHeight) / 150 / (burgsCount ** 0.7 / 66); // base min distance between towns
-
-  //clear locked list since ids will change
-  //burglock.selectAll("text").remove();
-  for (let j = 0; j < Lockedburgs.length; j++) {
-    const id = burgs.length;
-    const oldBurg = Lockedburgs[j];
-    oldBurg.i = id;
-    burgs.push(oldBurg);
-    burgsTree.add([oldBurg.x, oldBurg.y]);
-    cells.burg[oldBurg.cell] = id;
-    if (oldBurg.capital) {
-      states[oldBurg.state].capital = id;
-      states[oldBurg.state].center = oldBurg.cell;
-    }
-    //burglock.append("text").attr("data-id", id);
-  }
 
   for (let i = 0; i < sorted.length && burgs.length < burgsCount; i++) {
     const id = burgs.length;
     const cell = sorted[i];
-    const x = cells.p[cell][0],
-      y = cells.p[cell][1];
+    const [x, y] = cells.p[cell];
 
     const s = spacing * gauss(1, 0.3, 0.2, 2, 2); // randomize to make the placement not uniform
     if (burgsTree.find(x, y, s) !== undefined) continue; // to close to existing burg
 
-    const state = cells.state[cell];
-    const capital = state && !states[state].capital; // if state doesn't have capital, make this burg a capital, no capital for neutral lands
+    const stateId = cells.state[cell];
+    const capital = stateId && !states[stateId].capital; // if state doesn't have capital, make this burg a capital, no capital for neutral lands
     if (capital) {
-      states[state].capital = id;
-      states[state].center = cell;
+      states[stateId].capital = id;
+      states[stateId].center = cell;
     }
 
     const culture = cells.culture[cell];
     const name = Names.getCulture(culture);
-    burgs.push({cell, x, y, state, i: id, culture, name, capital, feature: cells.f[cell]});
+    burgs.push({cell, x, y, state: stateId, i: id, culture, name, capital, feature: cells.f[cell]});
     burgsTree.add([x, y]);
     cells.burg[cell] = id;
   }
@@ -321,8 +329,9 @@ function regenerateBurgs() {
     });
 
   pack.features.forEach(f => {
-    if (f.port) f.port = 0;
-  }); // reset features ports counter
+    if (f.port) f.port = 0; // reset features ports counter
+  });
+
   BurgsAndStates.specifyBurgs();
   BurgsAndStates.defineBurgFeatures();
   BurgsAndStates.drawBurgs();
@@ -425,7 +434,10 @@ function regenerateMarkers() {
 }
 
 function regenerateZones(event) {
-  if (isCtrlClick(event)) prompt("Please provide zones number multiplier", {default: 1, step: 0.01, min: 0, max: 100}, v => addNumberOfZones(v));
+  if (isCtrlClick(event))
+    prompt("Please provide zones number multiplier", {default: 1, step: 0.01, min: 0, max: 100}, v =>
+      addNumberOfZones(v)
+    );
   else addNumberOfZones(gauss(1, 0.5, 0.6, 5, 2));
 
   function addNumberOfZones(number) {
@@ -542,7 +554,18 @@ function addRiverOnClick() {
   if (cells.h[i] < 20) return tip("Cannot create river in water cell", false, "error");
   if (cells.b[i]) return;
 
-  const {alterHeights, resolveDepressions, addMeandering, getRiverPath, getBasin, getName, getType, getWidth, getOffset, getApproximateLength} = Rivers;
+  const {
+    alterHeights,
+    resolveDepressions,
+    addMeandering,
+    getRiverPath,
+    getBasin,
+    getName,
+    getType,
+    getWidth,
+    getOffset,
+    getApproximateLength
+  } = Rivers;
   const riverCells = [];
   let riverId = rivers.length ? last(rivers).i + 1 : 1;
   let parent = riverId;
@@ -623,7 +646,8 @@ function addRiverOnClick() {
   const mouth = riverCells[riverCells.length - 2];
 
   const defaultWidthFactor = rn(1 / (pointsInput.dataset.cells / 10000) ** 0.25, 2);
-  const widthFactor = river?.widthFactor || (!parent || parent === riverId ? defaultWidthFactor * 1.2 : defaultWidthFactor);
+  const widthFactor =
+    river?.widthFactor || (!parent || parent === riverId ? defaultWidthFactor * 1.2 : defaultWidthFactor);
   const meanderedPoints = addMeandering(riverCells);
 
   const discharge = cells.fl[mouth]; // m3 in second
@@ -641,7 +665,21 @@ function addRiverOnClick() {
     const name = getName(mouth);
     const type = getType({i: riverId, length, parent});
 
-    rivers.push({i: riverId, source, mouth, discharge, length, width, widthFactor, sourceWidth: 0, parent, cells: riverCells, basin, name, type});
+    rivers.push({
+      i: riverId,
+      source,
+      mouth,
+      discharge,
+      length,
+      width,
+      widthFactor,
+      sourceWidth: 0,
+      parent,
+      cells: riverCells,
+      basin,
+      name,
+      type
+    });
   }
 
   // render river
@@ -678,7 +716,12 @@ function addRouteOnClick() {
   unpressClickToAddButton();
   const point = d3.mouse(this);
   const id = getNextId("route");
-  elSelected = routes.select("g").append("path").attr("id", id).attr("data-new", 1).attr("d", `M${point[0]},${point[1]}`);
+  elSelected = routes
+    .select("g")
+    .append("path")
+    .attr("id", id)
+    .attr("data-new", 1)
+    .attr("d", `M${point[0]},${point[1]}`);
   editRoute(true);
 }
 
