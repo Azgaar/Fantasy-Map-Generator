@@ -200,8 +200,16 @@ const shapesMap = {
   pentagon: "M0,-14l14,11l-6,14h-16l-6,-14Z"
 };
 
+const getSortIndex = node => {
+  const descendants = node.descendants();
+  const secondaryOrigins = descendants.map(({data}) => data.origins.slice(1)).flat();
+
+  if (secondaryOrigins.length === 0) return node.data.i;
+  return d3.mean(secondaryOrigins);
+};
+
 function renderTree(root, treeLayout) {
-  treeLayout(root);
+  treeLayout(root.sort((a, b) => getSortIndex(a) - getSortIndex(b)));
 
   primaryLinks.selectAll("path").data(root.links()).enter().append("path").attr("d", getLinkPath);
   secondaryLinks.selectAll("path").data(getSecondaryLinks(root)).enter().append("path").attr("d", getLinkPath);
