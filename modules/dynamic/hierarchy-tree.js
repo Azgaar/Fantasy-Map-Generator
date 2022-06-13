@@ -343,6 +343,7 @@ function updateTree() {
 
 function selectElement(d) {
   const dataElement = d.data;
+  if (d.id == 0) return;
 
   const node = nodes.select(`g[data-id="${d.id}"]`);
   nodes.selectAll("g").style("outline", "none");
@@ -476,6 +477,8 @@ function handleNodeExit(d) {
 }
 
 function dragToReorigin(from) {
+  if (from.id == 0) return;
+
   dragLine.attr("d", `M${from.x},${from.y}L${from.x},${from.y}`);
 
   d3.event.on("drag", () => {
