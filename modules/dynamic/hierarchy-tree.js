@@ -79,13 +79,17 @@ function appendStyleSheet() {
       margin: 0 2px;
     }
 
-    .hierarchyTree_selectedButton {
+    .hierarchyTree_selectedOrigins {
+      margin-right: 15px;
+    }
+
+    .hierarchyTree_selectedOrigin {
       border: 1px solid #aaa;
       background: none;
       padding: 1px 4px;
     }
 
-    .hierarchyTree_selectedButton:hover {
+    .hierarchyTree_selectedOrigin:hover {
       border: 1px solid #333;
     }
 
