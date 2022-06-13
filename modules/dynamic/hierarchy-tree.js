@@ -168,8 +168,8 @@ function insertHtml() {
         <span><span id='hierarchyTree_selectedName'></span>. </span>
         <span data-name="Type short name (abbreviation)">Abbreviation: <input id='hierarchyTree_selectedCode' type='text' maxlength='3' size='3' /></span>
         <span>Origins: <span id='hierarchyTree_selectedOrigins'></span></span>
-        <button data-tip='Add origin' class="hierarchyTree_selectedButton" id='hierarchyTree_selectedSelectButton'>Select</button>
-        <button data-tip='Exit edit mode' class="hierarchyTree_selectedButton" id='hierarchyTree_selectedCloseButton'>Exit</button>
+        <button data-tip='Edit this node's origins' class="hierarchyTree_selectedButton" id='hierarchyTree_selectedSelectButton'>Edit</button>
+        <button data-tip='Unselect this node' class="hierarchyTree_selectedButton" id='hierarchyTree_selectedCloseButton'>Unselect</button>
       </div>
     </div>
     <div id="hierarchyTree_originSelector"></div>
