@@ -64,6 +64,17 @@ export function open(props) {
 
 function appendStyleSheet() {
   const styles = /* css */ `
+
+    #hierarchyTree {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    #hierarchyTree > svg {
+      height: 100%;
+    }
+
     #hierarchyTree_selectedOrigins > button {
       margin: 0 2px;
     }
@@ -86,6 +97,10 @@ function appendStyleSheet() {
 
     .hierarchyTree_selectedOrigin:hover:after {
       color: #333;
+    }
+
+    #hierarchyTree_originSelector {
+      display: none;
     }
 
     #hierarchyTree_originSelector > form > div {
