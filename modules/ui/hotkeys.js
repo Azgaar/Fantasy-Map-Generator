@@ -49,6 +49,7 @@ function handleKeyup(event) {
   else if (shift && code === "KeyY") openEmblemEditor();
   else if (shift && code === "KeyQ") editUnits();
   else if (shift && code === "KeyO") editNotes();
+  else if (shift && code === "KeyA") overviewCharts();
   else if (shift && code === "KeyT") overviewBurgs();
   else if (shift && code === "KeyV") overviewRivers();
   else if (shift && code === "KeyM") overviewMilitary();
@@ -114,12 +115,17 @@ function pressNumpadSign(key) {
   let brush = null;
 
   if (document.getElementById("brushRadius")?.offsetParent) brush = document.getElementById("brushRadius");
-  else if (document.getElementById("biomesManuallyBrush")?.offsetParent) brush = document.getElementById("biomesManuallyBrush");
-  else if (document.getElementById("statesManuallyBrush")?.offsetParent) brush = document.getElementById("statesManuallyBrush");
-  else if (document.getElementById("provincesManuallyBrush")?.offsetParent) brush = document.getElementById("provincesManuallyBrush");
-  else if (document.getElementById("culturesManuallyBrush")?.offsetParent) brush = document.getElementById("culturesManuallyBrush");
+  else if (document.getElementById("biomesManuallyBrush")?.offsetParent)
+    brush = document.getElementById("biomesManuallyBrush");
+  else if (document.getElementById("statesManuallyBrush")?.offsetParent)
+    brush = document.getElementById("statesManuallyBrush");
+  else if (document.getElementById("provincesManuallyBrush")?.offsetParent)
+    brush = document.getElementById("provincesManuallyBrush");
+  else if (document.getElementById("culturesManuallyBrush")?.offsetParent)
+    brush = document.getElementById("culturesManuallyBrush");
   else if (document.getElementById("zonesBrush")?.offsetParent) brush = document.getElementById("zonesBrush");
-  else if (document.getElementById("religionsManuallyBrush")?.offsetParent) brush = document.getElementById("religionsManuallyBrush");
+  else if (document.getElementById("religionsManuallyBrush")?.offsetParent)
+    brush = document.getElementById("religionsManuallyBrush");
 
   if (brush) {
     const value = minmax(+brush.value + change, +brush.min, +brush.max);
@@ -133,18 +139,26 @@ function pressNumpadSign(key) {
 
 function toggleMode() {
   if (zonesRemove?.offsetParent) {
-    zonesRemove.classList.contains("pressed") ? zonesRemove.classList.remove("pressed") : zonesRemove.classList.add("pressed");
+    zonesRemove.classList.contains("pressed")
+      ? zonesRemove.classList.remove("pressed")
+      : zonesRemove.classList.add("pressed");
   }
 }
 
 function removeElementOnKey() {
-  const fastDelete = Array.from(document.querySelectorAll("[role='dialog'] .fastDelete")).find(dialog => dialog.style.display !== "none");
+  const fastDelete = Array.from(document.querySelectorAll("[role='dialog'] .fastDelete")).find(
+    dialog => dialog.style.display !== "none"
+  );
   if (fastDelete) fastDelete.click();
 
-  const visibleDialogs = Array.from(document.querySelectorAll("[role='dialog']")).filter(dialog => dialog.style.display !== "none");
+  const visibleDialogs = Array.from(document.querySelectorAll("[role='dialog']")).filter(
+    dialog => dialog.style.display !== "none"
+  );
   if (!visibleDialogs.length) return;
 
-  visibleDialogs.forEach(dialog => dialog.querySelectorAll("button").forEach(button => button.textContent === "Remove" && button.click()));
+  visibleDialogs.forEach(dialog =>
+    dialog.querySelectorAll("button").forEach(button => button.textContent === "Remove" && button.click())
+  );
 }
 
 function closeAllDialogs() {

@@ -19,6 +19,7 @@ toolsContent.addEventListener("click", function (event) {
   else if (button === "editUnitsButton") editUnits();
   else if (button === "editNotesButton") editNotes();
   else if (button === "editZonesButton") editZones();
+  else if (button === "overviewChartsButton") overviewCharts();
   else if (button === "overviewBurgsButton") overviewBurgs();
   else if (button === "overviewRiversButton") overviewRivers();
   else if (button === "overviewMilitaryButton") overviewMilitary();
@@ -854,4 +855,9 @@ function viewCellDetails() {
     title: "Cell Details",
     position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
   });
+}
+
+async function overviewCharts() {
+  const Overview = await import("../dynamic/overview/charts-overview.js");
+  Overview.open();
 }

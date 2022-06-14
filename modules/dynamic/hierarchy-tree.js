@@ -1,6 +1,5 @@
 appendStyleSheet();
 insertHtml();
-addListeners();
 
 const MARGINS = {top: 10, right: 10, bottom: -5, left: 10};
 
@@ -158,8 +157,6 @@ function insertHtml() {
 
   byId("dialogs").insertAdjacentHTML("beforeend", html);
 }
-
-function addListeners() {}
 
 function getRoot() {
   const root = d3
