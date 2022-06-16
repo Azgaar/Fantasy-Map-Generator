@@ -1,3 +1,6 @@
+import {rollup} from "../../../utils/functionUtils.js";
+import {stack} from "https://cdn.skypack.dev/d3-shape@3";
+
 const entities = ["states", "cultures", "religions"];
 const quantitatives = ["total_population", "urban_population", "rural_population", "area", "cells"];
 const groupings = ["cultures", "states", "religions"];
@@ -14,6 +17,11 @@ const quantizationMap = {
   rural_population: getRuralPopulation,
   area: cellId => getArea(pack.cells.area[cellId]),
   cells: () => 1
+};
+
+const sortingMap = {
+  value: (a, b) => b.value - a.value,
+  name: (a, b) => a.name.localeCompare(b.name)
 };
 
 appendStyleSheet();
@@ -78,26 +86,40 @@ function renderChart() {
   const plotBy = $plotBySelect.value;
   const groupBy = $groupBySelect.value;
 
-  const {array: entityArray, getName: getEntityName, cellsData: entityCells} = dataMap[entity];
+  const filterWater = true;
+  const filterZeroes = true;
+  const sorting = sortingMap["value"];
+
+  const {getName: getEntityName, cellsData: entityCells} = dataMap[entity];
   const {getName: getGroupName, cellsData: groupCells} = dataMap[groupBy];
   const quantize = quantizationMap[plotBy];
 
-  const chartData = entityArray
-    .filter(element => !element.removed)
-    .map(({i}) => {
-      const cells = pack.cells.i.filter(cellId => entityCells[cellId] === i);
-      const name = getEntityName(i);
+  const dataCollection = {};
+  for (const cellId of pack.cells.i) {
+    if (filterWater && isWater(cellId)) continue;
+    const entityId = entityCells[cellId];
+    const groupId = groupCells[cellId];
+    const value = quantize(cellId);
 
-      return Array.from(cells).map(cellId => {
-        const group = getGroupName(groupCells[cellId]);
-        const value = quantize(cellId);
+    if (!dataCollection[entityId]) dataCollection[entityId] = {[groupId]: value};
+    else if (!dataCollection[entityId][groupId]) dataCollection[entityId][groupId] = value;
+    else dataCollection[entityId][groupId] += value;
+  }
+
+  const chartData = Object.entries(dataCollection)
+    .map(([entityId, groupData]) => {
+      const name = getEntityName(entityId);
+      return Object.entries(groupData).map(([groupId, rawValue]) => {
+        const group = getGroupName(groupId);
+        const value = rn(rawValue);
         return {name, group, value};
       });
     })
     .flat();
 
-  console.log(chartData);
-  const chart = plot(chartData, {});
+  const chartDataFiltered = filterZeroes ? chartData.filter(({value}) => value > 0) : chartData;
+
+  const chart = plot(chartDataFiltered, {sorting});
   byId("chartsOverview__svgContainer").appendChild(chart);
 }
 
@@ -115,54 +137,58 @@ function updateSelectorOptions() {
 function plot(
   data,
   {
-    title, // given d in data, returns the title text
     marginTop = 30, // top margin, in pixels
     marginRight = 0, // right margin, in pixels
     marginBottom = 40, // bottom margin, in pixels
     marginLeft = 100, // left margin, in pixels
-    width = 2400, // outer width, in pixels
-    height = 400, // outer height, in pixels
+    width = 800, // outer width, in pixels
     xRange = [marginLeft, width - marginRight], // [xmin, xmax]
-    xPadding = 0.1, // amount of x-range to reserve to separate groups
-    yType = d3.scaleLinear, // type of y-scale
-    yRange = [height - marginBottom, marginTop], // [ymin, ymax]
-    zPadding = 0.05, // amount of x-range to reserve to separate bars
-    yFormat, // a format specifier string for the y-axis
-    yLabel, // a label for the y-axis
-    colors = d3.schemeCategory10 // array of colors
+    yPadding = 0.2,
+    xFormat,
+    xLabel = "Population (millions) →",
+    sorting
   } = {}
 ) {
-  const X = data.map(d => d.name);
-  const Y = data.map(d => d.value);
+  const X = data.map(d => d.value);
+  const Y = data.map(d => d.name);
   const Z = data.map(d => d.group);
 
-  const xDomain = new Set(X);
-  const yDomain = [0, d3.max(Y)];
+  const yDomain = new Set(Y); // get from parent, already sorted
   const zDomain = new Set(Z);
 
-  // omit any data not present in both the x- and z-domain
-  const I = d3.range(X.length).filter(i => xDomain.has(X[i]) && zDomain.has(Z[i]));
+  // omit any data not present in both the y- and z-domain
+  const I = d3.range(X.length).filter(i => yDomain.has(Y[i]) && zDomain.has(Z[i]));
 
-  const xDomainArray = Array.from(xDomain);
-  const zDomainArray = Array.from(zDomain);
+  const height = yDomain.size * 25 + marginTop + marginBottom;
+  const yRange = [height - marginBottom, marginTop];
 
-  // Construct scales, axes, and formats
-  const xScale = d3.scaleBand(xDomainArray, xRange).paddingInner(xPadding);
-  const xzScale = d3.scaleBand(zDomainArray, [0, xScale.bandwidth()]).padding(zPadding);
-  const yScale = yType(yDomain, yRange);
-  const zScale = d3.scaleOrdinal(zDomainArray, colors);
-  const xAxis = d3.axisBottom(xScale).tickSizeOuter(0);
-  const yAxis = d3.axisLeft(yScale).ticks(height / 60, yFormat);
+  const offset = d3.stackOffsetDiverging;
+  const order = d3.stackOrderNone;
 
-  // Compute titles
-  if (title === undefined) {
-    const formatValue = yScale.tickFormat(100, yFormat);
-    title = i => `${X[i]}\n${Z[i]}\n${formatValue(Y[i])}`;
-  } else {
-    const O = d3.map(data, d => d);
-    const T = title;
-    title = i => T(O[i], i, data);
-  }
+  const series = stack()
+    .keys(zDomain)
+    .value(([, I], z) => X[I.get(z)])
+    .order(order)
+    .offset(offset)(
+      rollup(
+        I,
+        ([i]) => i,
+        i => Y[i],
+        i => Z[i]
+      )
+    )
+    .map(s => s.map(d => Object.assign(d, {i: d.data[1].get(s.key)})));
+
+  const xDomain = d3.extent(series.flat(2));
+
+  const xScale = d3.scaleLinear(xDomain, xRange);
+  const yScale = d3.scaleBand(Array.from(yDomain), yRange).paddingInner(yPadding);
+  const color = d3.scaleOrdinal(Array.from(zDomain), d3.schemeCategory10);
+  const xAxis = d3.axisTop(xScale).ticks(width / 80, xFormat);
+  const yAxis = d3.axisLeft(yScale).tickSizeOuter(0);
+
+  const formatValue = xScale.tickFormat(100, xFormat);
+  const title = i => `${Y[i]}\n${Z[i]}\n${formatValue(X[i])}`;
 
   const svg = d3
     .create("svg")
@@ -173,47 +199,48 @@ function plot(
 
   svg
     .append("g")
-    .attr("transform", `translate(${marginLeft},0)`)
-    .call(yAxis)
+    .attr("transform", `translate(0,${marginTop})`)
+    .call(xAxis)
     .call(g => g.select(".domain").remove())
     .call(g =>
       g
         .selectAll(".tick line")
         .clone()
-        .attr("x2", width - marginLeft - marginRight)
+        .attr("y2", height - marginTop - marginBottom)
         .attr("stroke-opacity", 0.1)
     )
     .call(g =>
       g
         .append("text")
-        .attr("x", -marginLeft)
-        .attr("y", 10)
+        .attr("x", width - marginRight)
+        .attr("y", -22)
         .attr("fill", "currentColor")
-        .attr("text-anchor", "start")
-        .text(yLabel)
+        .attr("text-anchor", "end")
+        .text(xLabel)
     );
 
   const bar = svg
     .append("g")
+    .selectAll("g")
+    .data(series)
+    .join("g")
+    .attr("fill", ([{i}]) => color(Z[i]))
     .selectAll("rect")
-    .data(I)
+    .data(d => d.filter(d => d.i !== undefined))
     .join("rect")
-    .attr("x", i => xScale(X[i]) + xzScale(Z[i]))
-    .attr("y", i => yScale(Y[i]))
-    .attr("width", xzScale.bandwidth())
-    .attr("height", i => yScale(0) - yScale(Y[i]))
-    .attr("fill", i => zScale(Z[i]));
+    .attr("x", ([x1, x2]) => Math.min(xScale(x1), xScale(x2)))
+    .attr("y", ({i}) => yScale(Y[i]))
+    .attr("width", ([x1, x2]) => Math.abs(xScale(x1) - xScale(x2)))
+    .attr("height", yScale.bandwidth());
 
-  if (title) bar.append("title").text(title);
+  bar.append("title").text(({i}) => title(i));
 
   svg
     .append("g")
-    .attr("transform", `translate(0,${height - marginBottom})`)
-    .call(xAxis);
+    .attr("transform", `translate(${xScale(0)},0)`)
+    .call(yAxis);
 
-  const chart = Object.assign(svg.node(), {scales: {color: zScale}});
-  console.log(chart);
-  return chart;
+  return Object.assign(svg.node(), {scales: {color}});
 }
 
 // helper functions
@@ -225,6 +252,5 @@ function getUrbanPopulation(cellId) {
 }
 
 function getRuralPopulation(cellId) {
-  const populationPoints = pack.cells.pop[cellId] * populationRate;
-  return populationPoints * populationRate;
+  return pack.cells.pop[cellId] * populationRate;
 }
