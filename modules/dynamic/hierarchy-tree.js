@@ -62,8 +62,18 @@ export function open(props) {
 }
 
 function appendStyleSheet() {
-  const style = document.createElement("style");
-  style.textContent = /* css */ `
+  const styles = /* css */ `
+
+    #hierarchyTree {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    #hierarchyTree > svg {
+      height: 100%;
+    }
+
     #hierarchyTree_selectedOrigins > button {
       margin: 0 2px;
     }
