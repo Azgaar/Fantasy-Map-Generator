@@ -64,17 +64,32 @@ export function open(props) {
 
 function appendStyleSheet() {
   const styles = /* css */ `
+
+    #hierarchyTree {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    #hierarchyTree > svg {
+      height: 100%;
+    }
+
     #hierarchyTree_selectedOrigins > button {
       margin: 0 2px;
     }
 
-    .hierarchyTree_selectedButton {
+    .hierarchyTree_selectedOrigins {
+      margin-right: 15px;
+    }
+
+    .hierarchyTree_selectedOrigin {
       border: 1px solid #aaa;
       background: none;
       padding: 1px 4px;
     }
 
-    .hierarchyTree_selectedButton:hover {
+    .hierarchyTree_selectedOrigin:hover {
       border: 1px solid #333;
     }
 
@@ -86,6 +101,10 @@ function appendStyleSheet() {
 
     .hierarchyTree_selectedOrigin:hover:after {
       color: #333;
+    }
+
+    #hierarchyTree_originSelector {
+      display: none;
     }
 
     #hierarchyTree_originSelector > form > div {
@@ -149,8 +168,8 @@ function insertHtml() {
         <span><span id='hierarchyTree_selectedName'></span>. </span>
         <span data-name="Type short name (abbreviation)">Abbreviation: <input id='hierarchyTree_selectedCode' type='text' maxlength='3' size='3' /></span>
         <span>Origins: <span id='hierarchyTree_selectedOrigins'></span></span>
-        <button data-tip='Add origin' class="hierarchyTree_selectedButton" id='hierarchyTree_selectedSelectButton'>Select</button>
-        <button data-tip='Exit edit mode' class="hierarchyTree_selectedButton" id='hierarchyTree_selectedCloseButton'>Exit</button>
+        <button data-tip='Edit this node's origins' class="hierarchyTree_selectedButton" id='hierarchyTree_selectedSelectButton'>Edit</button>
+        <button data-tip='Unselect this node' class="hierarchyTree_selectedButton" id='hierarchyTree_selectedCloseButton'>Unselect</button>
       </div>
     </div>
     <div id="hierarchyTree_originSelector"></div>
@@ -324,6 +343,7 @@ function updateTree() {
 
 function selectElement(d) {
   const dataElement = d.data;
+  if (d.id == 0) return;
 
   const node = nodes.select(`g[data-id="${d.id}"]`);
   nodes.selectAll("g").style("outline", "none");
@@ -457,6 +477,8 @@ function handleNodeExit(d) {
 }
 
 function dragToReorigin(from) {
+  if (from.id == 0) return;
+
   dragLine.attr("d", `M${from.x},${from.y}L${from.x},${from.y}`);
 
   d3.event.on("drag", () => {
