@@ -4,6 +4,8 @@ document.addEventListener("keydown", handleKeydown);
 document.addEventListener("keyup", handleKeyup);
 
 function handleKeydown(event) {
+  if (!allowHotkeys()) return; // in some cases (e.g. in a textarea) hotkeys are not allowed
+
   const {code, ctrlKey, altKey} = event;
   if (altKey && !ctrlKey) event.preventDefault(); // disallow alt key combinations
   if (ctrlKey && ["KeyS", "KeyC"].includes(code)) event.preventDefault(); // disallow CTRL + S and CTRL + C
@@ -12,11 +14,8 @@ function handleKeydown(event) {
 
 function handleKeyup(event) {
   if (!modules.editors) return; // if editors are not loaded, do nothing
+  if (!allowHotkeys()) return; // in some cases (e.g. in a textarea) hotkeys are not allowed
 
-  const {tagName, contentEditable} = document.activeElement;
-  if (["INPUT", "SELECT", "TEXTAREA"].includes(tagName)) return; // don't trigger if user inputs text
-  if (tagName === "DIV" && contentEditable === "true") return; // don't trigger if user inputs a text
-  if (document.getSelection().toString()) return; // don't trigger if user selects text
   event.stopPropagation();
 
   const {code, key, ctrlKey, metaKey, shiftKey, altKey} = event;
@@ -109,17 +108,30 @@ function handleKeyup(event) {
   else if (ctrl) toggleMode();
 }
 
+function allowHotkeys() {
+  const {tagName, contentEditable} = document.activeElement;
+  if (["INPUT", "SELECT", "TEXTAREA"].includes(tagName)) return false;
+  if (tagName === "DIV" && contentEditable === "true") return false;
+  if (document.getSelection().toString()) return false;
+  return true;
+}
+
 function pressNumpadSign(key) {
   const change = key === "+" ? 1 : -1;
   let brush = null;
 
   if (document.getElementById("brushRadius")?.offsetParent) brush = document.getElementById("brushRadius");
-  else if (document.getElementById("biomesManuallyBrush")?.offsetParent) brush = document.getElementById("biomesManuallyBrush");
-  else if (document.getElementById("statesManuallyBrush")?.offsetParent) brush = document.getElementById("statesManuallyBrush");
-  else if (document.getElementById("provincesManuallyBrush")?.offsetParent) brush = document.getElementById("provincesManuallyBrush");
-  else if (document.getElementById("culturesManuallyBrush")?.offsetParent) brush = document.getElementById("culturesManuallyBrush");
+  else if (document.getElementById("biomesManuallyBrush")?.offsetParent)
+    brush = document.getElementById("biomesManuallyBrush");
+  else if (document.getElementById("statesManuallyBrush")?.offsetParent)
+    brush = document.getElementById("statesManuallyBrush");
+  else if (document.getElementById("provincesManuallyBrush")?.offsetParent)
+    brush = document.getElementById("provincesManuallyBrush");
+  else if (document.getElementById("culturesManuallyBrush")?.offsetParent)
+    brush = document.getElementById("culturesManuallyBrush");
   else if (document.getElementById("zonesBrush")?.offsetParent) brush = document.getElementById("zonesBrush");
-  else if (document.getElementById("religionsManuallyBrush")?.offsetParent) brush = document.getElementById("religionsManuallyBrush");
+  else if (document.getElementById("religionsManuallyBrush")?.offsetParent)
+    brush = document.getElementById("religionsManuallyBrush");
 
   if (brush) {
     const value = minmax(+brush.value + change, +brush.min, +brush.max);
@@ -133,18 +145,26 @@ function pressNumpadSign(key) {
 
 function toggleMode() {
   if (zonesRemove?.offsetParent) {
-    zonesRemove.classList.contains("pressed") ? zonesRemove.classList.remove("pressed") : zonesRemove.classList.add("pressed");
+    zonesRemove.classList.contains("pressed")
+      ? zonesRemove.classList.remove("pressed")
+      : zonesRemove.classList.add("pressed");
   }
 }
 
 function removeElementOnKey() {
-  const fastDelete = Array.from(document.querySelectorAll("[role='dialog'] .fastDelete")).find(dialog => dialog.style.display !== "none");
+  const fastDelete = Array.from(document.querySelectorAll("[role='dialog'] .fastDelete")).find(
+    dialog => dialog.style.display !== "none"
+  );
   if (fastDelete) fastDelete.click();
 
-  const visibleDialogs = Array.from(document.querySelectorAll("[role='dialog']")).filter(dialog => dialog.style.display !== "none");
+  const visibleDialogs = Array.from(document.querySelectorAll("[role='dialog']")).filter(
+    dialog => dialog.style.display !== "none"
+  );
   if (!visibleDialogs.length) return;
 
-  visibleDialogs.forEach(dialog => dialog.querySelectorAll("button").forEach(button => button.textContent === "Remove" && button.click()));
+  visibleDialogs.forEach(dialog =>
+    dialog.querySelectorAll("button").forEach(button => button.textContent === "Remove" && button.click())
+  );
 }
 
 function closeAllDialogs() {

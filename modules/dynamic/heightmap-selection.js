@@ -2,7 +2,7 @@ const initialSeed = generateSeed();
 let graph = getGraph(grid);
 
 appendStyleSheet();
-insertEditorHtml();
+insertHtml();
 addListeners();
 
 export function open() {
@@ -150,7 +150,7 @@ function appendStyleSheet() {
   document.head.appendChild(style);
 }
 
-function insertEditorHtml() {
+function insertHtml() {
   const heightmapSelectionHtml = /* html */ `<div id="heightmapSelection" class="dialog stable">
     <div class="heightmap-selection">
       <section data-tip="Select heightmap template – template provides unique, but similar-looking maps on generation">

@@ -30,8 +30,18 @@ export function resolveVersionConflicts(version) {
       .attr("stroke-dasharray", null)
       .attr("stroke-linecap", null)
       .attr("filter", null);
-    stateBorders.attr("opacity", 0.8).attr("stroke", "#56566d").attr("stroke-width", 1).attr("stroke-dasharray", "2").attr("stroke-linecap", "butt");
-    provinceBorders.attr("opacity", 0.8).attr("stroke", "#56566d").attr("stroke-width", 0.5).attr("stroke-dasharray", "1").attr("stroke-linecap", "butt");
+    stateBorders
+      .attr("opacity", 0.8)
+      .attr("stroke", "#56566d")
+      .attr("stroke-width", 1)
+      .attr("stroke-dasharray", "2")
+      .attr("stroke-linecap", "butt");
+    provinceBorders
+      .attr("opacity", 0.8)
+      .attr("stroke", "#56566d")
+      .attr("stroke-width", 0.5)
+      .attr("stroke-dasharray", "1")
+      .attr("stroke-linecap", "butt");
 
     // v1.0 added state relations, provinces, forms and full names
     provs = viewbox.insert("g", "#borders").attr("id", "provs").attr("opacity", 0.6);
@@ -47,7 +57,12 @@ export function resolveVersionConflicts(version) {
 
     // v1.0 added zones layer
     zones = viewbox.insert("g", "#borders").attr("id", "zones").attr("display", "none");
-    zones.attr("opacity", 0.6).attr("stroke", null).attr("stroke-width", 0).attr("stroke-dasharray", null).attr("stroke-linecap", "butt");
+    zones
+      .attr("opacity", 0.6)
+      .attr("stroke", null)
+      .attr("stroke-width", 0)
+      .attr("stroke-dasharray", null)
+      .attr("stroke-linecap", "butt");
     addZones();
     if (!markers.selectAll("*").size()) {
       Markers.generate();
@@ -55,9 +70,23 @@ export function resolveVersionConflicts(version) {
     }
 
     // v1.0 add fogging layer (state focus)
-    fogging = viewbox.insert("g", "#ruler").attr("id", "fogging-cont").attr("mask", "url(#fog)").append("g").attr("id", "fogging").style("display", "none");
+    fogging = viewbox
+      .insert("g", "#ruler")
+      .attr("id", "fogging-cont")
+      .attr("mask", "url(#fog)")
+      .append("g")
+      .attr("id", "fogging")
+      .style("display", "none");
     fogging.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
-    defs.append("mask").attr("id", "fog").append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%").attr("fill", "white");
+    defs
+      .append("mask")
+      .attr("id", "fog")
+      .append("rect")
+      .attr("x", 0)
+      .attr("y", 0)
+      .attr("width", "100%")
+      .attr("height", "100%")
+      .attr("fill", "white");
 
     // v1.0 changes states opacity bask to regions level
     if (statesBody.attr("opacity")) {
@@ -103,12 +132,24 @@ export function resolveVersionConflicts(version) {
 
     if (!document.getElementById("freshwater")) {
       lakes.append("g").attr("id", "freshwater");
-      lakes.select("#freshwater").attr("opacity", 0.5).attr("fill", "#a6c1fd").attr("stroke", "#5f799d").attr("stroke-width", 0.7).attr("filter", null);
+      lakes
+        .select("#freshwater")
+        .attr("opacity", 0.5)
+        .attr("fill", "#a6c1fd")
+        .attr("stroke", "#5f799d")
+        .attr("stroke-width", 0.7)
+        .attr("filter", null);
     }
 
     if (!document.getElementById("salt")) {
       lakes.append("g").attr("id", "salt");
-      lakes.select("#salt").attr("opacity", 0.5).attr("fill", "#409b8a").attr("stroke", "#388985").attr("stroke-width", 0.7).attr("filter", null);
+      lakes
+        .select("#salt")
+        .attr("opacity", 0.5)
+        .attr("fill", "#409b8a")
+        .attr("stroke", "#388985")
+        .attr("stroke-width", 0.7)
+        .attr("filter", null);
     }
 
     // v1.1 added new lake and coast groups
@@ -116,14 +157,42 @@ export function resolveVersionConflicts(version) {
       lakes.append("g").attr("id", "sinkhole");
       lakes.append("g").attr("id", "frozen");
       lakes.append("g").attr("id", "lava");
-      lakes.select("#sinkhole").attr("opacity", 1).attr("fill", "#5bc9fd").attr("stroke", "#53a3b0").attr("stroke-width", 0.7).attr("filter", null);
-      lakes.select("#frozen").attr("opacity", 0.95).attr("fill", "#cdd4e7").attr("stroke", "#cfe0eb").attr("stroke-width", 0).attr("filter", null);
-      lakes.select("#lava").attr("opacity", 0.7).attr("fill", "#90270d").attr("stroke", "#f93e0c").attr("stroke-width", 2).attr("filter", "url(#crumpled)");
+      lakes
+        .select("#sinkhole")
+        .attr("opacity", 1)
+        .attr("fill", "#5bc9fd")
+        .attr("stroke", "#53a3b0")
+        .attr("stroke-width", 0.7)
+        .attr("filter", null);
+      lakes
+        .select("#frozen")
+        .attr("opacity", 0.95)
+        .attr("fill", "#cdd4e7")
+        .attr("stroke", "#cfe0eb")
+        .attr("stroke-width", 0)
+        .attr("filter", null);
+      lakes
+        .select("#lava")
+        .attr("opacity", 0.7)
+        .attr("fill", "#90270d")
+        .attr("stroke", "#f93e0c")
+        .attr("stroke-width", 2)
+        .attr("filter", "url(#crumpled)");
 
       coastline.append("g").attr("id", "sea_island");
       coastline.append("g").attr("id", "lake_island");
-      coastline.select("#sea_island").attr("opacity", 0.5).attr("stroke", "#1f3846").attr("stroke-width", 0.7).attr("filter", "url(#dropShadow)");
-      coastline.select("#lake_island").attr("opacity", 1).attr("stroke", "#7c8eaf").attr("stroke-width", 0.35).attr("filter", null);
+      coastline
+        .select("#sea_island")
+        .attr("opacity", 0.5)
+        .attr("stroke", "#1f3846")
+        .attr("stroke-width", 0.7)
+        .attr("filter", "url(#dropShadow)");
+      coastline
+        .select("#lake_island")
+        .attr("opacity", 1)
+        .attr("stroke", "#7c8eaf")
+        .attr("stroke-width", 0.35)
+        .attr("filter", null);
     }
 
     // v1.1 features stores more data
@@ -203,7 +272,13 @@ export function resolveVersionConflicts(version) {
 
     // v1.3 added militry layer
     armies = viewbox.insert("g", "#icons").attr("id", "armies");
-    armies.attr("opacity", 1).attr("fill-opacity", 1).attr("font-size", 6).attr("box-size", 3).attr("stroke", "#000").attr("stroke-width", 0.3);
+    armies
+      .attr("opacity", 1)
+      .attr("fill-opacity", 1)
+      .attr("font-size", 6)
+      .attr("box-size", 3)
+      .attr("stroke", "#000")
+      .attr("stroke-width", 0.3);
     turnButtonOn("toggleMilitary");
     Military.generate();
   }
@@ -212,12 +287,23 @@ export function resolveVersionConflicts(version) {
     // v1.35 added dry lakes
     if (!lakes.select("#dry").size()) {
       lakes.append("g").attr("id", "dry");
-      lakes.select("#dry").attr("opacity", 1).attr("fill", "#c9bfa7").attr("stroke", "#8e816f").attr("stroke-width", 0.7).attr("filter", null);
+      lakes
+        .select("#dry")
+        .attr("opacity", 1)
+        .attr("fill", "#c9bfa7")
+        .attr("stroke", "#8e816f")
+        .attr("stroke-width", 0.7)
+        .attr("filter", null);
     }
 
     // v1.4 added ice layer
     ice = viewbox.insert("g", "#coastline").attr("id", "ice").style("display", "none");
-    ice.attr("opacity", null).attr("fill", "#e8f0f6").attr("stroke", "#e8f0f6").attr("stroke-width", 1).attr("filter", "url(#dropShadow05)");
+    ice
+      .attr("opacity", null)
+      .attr("fill", "#e8f0f6")
+      .attr("stroke", "#e8f0f6")
+      .attr("stroke-width", 1)
+      .attr("filter", "url(#dropShadow05)");
     drawIce();
 
     // v1.4 added icon and power attributes for units
@@ -529,5 +615,18 @@ export function resolveVersionConflicts(version) {
   if (version < 1.85) {
     // v1.84.0 moved intial screen out of maon svg
     svg.select("#initial").remove();
+  }
+
+  if (version < 1.86) {
+    // v1.86.0 added multi-origin culture and religion hierarchy trees
+    for (const culture of pack.cultures) {
+      culture.origins = [culture.origin];
+      delete culture.origin;
+    }
+
+    for (const religion of pack.religions) {
+      religion.origins = [religion.origin];
+      delete religion.origin;
+    }
   }
 }

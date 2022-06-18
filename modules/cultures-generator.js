@@ -60,7 +60,7 @@ window.Cultures = (function () {
       c.color = colors[i];
       c.type = defineCultureType(cell);
       c.expansionism = defineCultureExpansionism(c.type);
-      c.origin = 0;
+      c.origins = [0];
       c.code = abbreviate(c.name, codes);
       codes.push(c.code);
       cells.culture[cell] = i + 1;
@@ -80,7 +80,7 @@ window.Cultures = (function () {
     }
 
     // the first culture with id 0 is for wildlands
-    cultures.unshift({name: "Wildlands", i: 0, base: 1, origin: null, shield: "round"});
+    cultures.unshift({name: "Wildlands", i: 0, base: 1, origins: [null], shield: "round"});
 
     // make sure all bases exist in nameBases
     if (!nameBases.length) {
@@ -115,7 +115,11 @@ window.Cultures = (function () {
       if (cells.h[i] > 50) return "Highland"; // no penalty for hills and moutains, high for other elevations
       const f = pack.features[cells.f[cells.haven[i]]]; // opposite feature
       if (f.type === "lake" && f.cells > 5) return "Lake"; // low water cross penalty and high for growth not along coastline
-      if ((cells.harbor[i] && f.type !== "lake" && P(0.1)) || (cells.harbor[i] === 1 && P(0.6)) || (pack.features[cells.f[i]].group === "isle" && P(0.4)))
+      if (
+        (cells.harbor[i] && f.type !== "lake" && P(0.1)) ||
+        (cells.harbor[i] === 1 && P(0.6)) ||
+        (pack.features[cells.f[i]].group === "isle" && P(0.4))
+      )
         return "Naval"; // low water cross penalty and high for non-along-coastline growth
       if (cells.r[i] && cells.fl[i] > 100) return "River"; // no River cross penalty, penalty for non-River growth
       if (cells.t[i] > 2 && [3, 7, 8, 9, 10, 12].includes(cells.biome[i])) return "Hunting"; // high penalty in non-native biomes
@@ -163,7 +167,22 @@ window.Cultures = (function () {
     const emblemShape = document.getElementById("emblemShape").value;
     if (emblemShape === "random") shield = getRandomShield();
 
-    pack.cultures.push({name, color, base, center, i, expansionism: 1, type: "Generic", cells: 0, area: 0, rural: 0, urban: 0, origin: 0, code, shield});
+    pack.cultures.push({
+      name,
+      color,
+      base,
+      center,
+      i,
+      expansionism: 1,
+      type: "Generic",
+      cells: 0,
+      area: 0,
+      rural: 0,
+      urban: 0,
+      origins: [0],
+      code,
+      shield
+    });
   };
 
   const getDefault = function (count) {
@@ -180,7 +199,8 @@ window.Cultures = (function () {
       return d ? d + 1 : 1;
     }; // temperature difference fee
     const bd = (cell, biomes, fee = 4) => (biomes.includes(cells.biome[cell]) ? 1 : fee); // biome difference fee
-    const sf = (cell, fee = 4) => (cells.haven[cell] && pack.features[cells.f[cells.haven[cell]]].type !== "lake" ? 1 : fee); // not on sea coast fee
+    const sf = (cell, fee = 4) =>
+      cells.haven[cell] && pack.features[cells.f[cells.haven[cell]]].type !== "lake" ? 1 : fee; // not on sea coast fee
 
     if (culturesSet.value === "european") {
       return [
@@ -208,7 +228,13 @@ window.Cultures = (function () {
         {name: "Hantzu", base: 11, odd: 1, sort: i => n(i) / td(i, 13), shield: "banner"},
         {name: "Yamoto", base: 12, odd: 1, sort: i => n(i) / td(i, 15) / t[i], shield: "round"},
         {name: "Turchian", base: 16, odd: 1, sort: i => n(i) / td(i, 12), shield: "round"},
-        {name: "Berberan", base: 17, odd: 0.2, sort: i => (n(i) / td(i, 19) / bd(i, [1, 2, 3], 7)) * t[i], shield: "oval"},
+        {
+          name: "Berberan",
+          base: 17,
+          odd: 0.2,
+          sort: i => (n(i) / td(i, 19) / bd(i, [1, 2, 3], 7)) * t[i],
+          shield: "oval"
+        },
         {name: "Eurabic", base: 18, odd: 1, sort: i => (n(i) / td(i, 26) / bd(i, [1, 2], 7)) * t[i], shield: "oval"},
         {name: "Efratic", base: 23, odd: 0.1, sort: i => (n(i) / td(i, 22)) * t[i], shield: "round"},
         {name: "Tehrani", base: 24, odd: 1, sort: i => (n(i) / td(i, 18)) * h[i], shield: "round"},
@@ -259,15 +285,45 @@ window.Cultures = (function () {
     if (culturesSet.value === "highFantasy") {
       return [
         // fantasy races
-        {name: "Quenian (Elfish)", base: 33, odd: 1, sort: i => (n(i) / bd(i, [6, 7, 8, 9], 10)) * t[i], shield: "gondor"}, // Elves
-        {name: "Eldar (Elfish)", base: 33, odd: 1, sort: i => (n(i) / bd(i, [6, 7, 8, 9], 10)) * t[i], shield: "noldor"}, // Elves
-        {name: "Trow (Dark Elfish)", base: 34, odd: 0.9, sort: i => (n(i) / bd(i, [7, 8, 9, 12], 10)) * t[i], shield: "hessen"}, // Dark Elves
-        {name: "Lothian (Dark Elfish)", base: 34, odd: 0.3, sort: i => (n(i) / bd(i, [7, 8, 9, 12], 10)) * t[i], shield: "wedged"}, // Dark Elves
+        {
+          name: "Quenian (Elfish)",
+          base: 33,
+          odd: 1,
+          sort: i => (n(i) / bd(i, [6, 7, 8, 9], 10)) * t[i],
+          shield: "gondor"
+        }, // Elves
+        {
+          name: "Eldar (Elfish)",
+          base: 33,
+          odd: 1,
+          sort: i => (n(i) / bd(i, [6, 7, 8, 9], 10)) * t[i],
+          shield: "noldor"
+        }, // Elves
+        {
+          name: "Trow (Dark Elfish)",
+          base: 34,
+          odd: 0.9,
+          sort: i => (n(i) / bd(i, [7, 8, 9, 12], 10)) * t[i],
+          shield: "hessen"
+        }, // Dark Elves
+        {
+          name: "Lothian (Dark Elfish)",
+          base: 34,
+          odd: 0.3,
+          sort: i => (n(i) / bd(i, [7, 8, 9, 12], 10)) * t[i],
+          shield: "wedged"
+        }, // Dark Elves
         {name: "Dunirr (Dwarven)", base: 35, odd: 1, sort: i => n(i) + h[i], shield: "ironHills"}, // Dwarfs
         {name: "Khazadur (Dwarven)", base: 35, odd: 1, sort: i => n(i) + h[i], shield: "erebor"}, // Dwarfs
         {name: "Kobold (Goblin)", base: 36, odd: 1, sort: i => t[i] - s[i], shield: "moriaOrc"}, // Goblin
         {name: "Uruk (Orkish)", base: 37, odd: 1, sort: i => h[i] * t[i], shield: "urukHai"}, // Orc
-        {name: "Ugluk (Orkish)", base: 37, odd: 0.5, sort: i => (h[i] * t[i]) / bd(i, [1, 2, 10, 11]), shield: "moriaOrc"}, // Orc
+        {
+          name: "Ugluk (Orkish)",
+          base: 37,
+          odd: 0.5,
+          sort: i => (h[i] * t[i]) / bd(i, [1, 2, 10, 11]),
+          shield: "moriaOrc"
+        }, // Orc
         {name: "Yotunn (Giants)", base: 38, odd: 0.7, sort: i => td(i, -10), shield: "pavise"}, // Giant
         {name: "Rake (Drakonic)", base: 39, odd: 0.7, sort: i => -s[i], shield: "fantasy2"}, // Draconic
         {name: "Arago (Arachnid)", base: 40, odd: 0.7, sort: i => t[i] - s[i], shield: "horsehead2"}, // Arachnid
@@ -276,7 +332,13 @@ window.Cultures = (function () {
         {name: "Anor (Human)", base: 32, odd: 1, sort: i => n(i) / td(i, 10), shield: "fantasy5"},
         {name: "Dail (Human)", base: 32, odd: 1, sort: i => n(i) / td(i, 13), shield: "roman"},
         {name: "Rohand (Human)", base: 16, odd: 1, sort: i => n(i) / td(i, 16), shield: "round"},
-        {name: "Dulandir (Human)", base: 31, odd: 1, sort: i => (n(i) / td(i, 5) / bd(i, [2, 4, 10], 7)) * t[i], shield: "easterling"}
+        {
+          name: "Dulandir (Human)",
+          base: 31,
+          odd: 1,
+          sort: i => (n(i) / td(i, 5) / bd(i, [2, 4, 10], 7)) * t[i],
+          shield: "easterling"
+        }
       ];
     }
 
@@ -296,18 +358,48 @@ window.Cultures = (function () {
         {name: "Hetallian", base: 3, odd: 0.3, sort: i => n(i) / td(i, 15), shield: "oval"},
         {name: "Astellian", base: 4, odd: 0.3, sort: i => n(i) / td(i, 16), shield: "spanish"},
         // rare real-world exotic
-        {name: "Kiswaili", base: 28, odd: 0.05, sort: i => n(i) / td(i, 29) / bd(i, [1, 3, 5, 7]), shield: "vesicaPiscis"},
+        {
+          name: "Kiswaili",
+          base: 28,
+          odd: 0.05,
+          sort: i => n(i) / td(i, 29) / bd(i, [1, 3, 5, 7]),
+          shield: "vesicaPiscis"
+        },
         {name: "Yoruba", base: 21, odd: 0.05, sort: i => n(i) / td(i, 15) / bd(i, [5, 7]), shield: "vesicaPiscis"},
         {name: "Koryo", base: 10, odd: 0.05, sort: i => n(i) / td(i, 12) / t[i], shield: "round"},
         {name: "Hantzu", base: 11, odd: 0.05, sort: i => n(i) / td(i, 13), shield: "banner"},
         {name: "Yamoto", base: 12, odd: 0.05, sort: i => n(i) / td(i, 15) / t[i], shield: "round"},
         {name: "Guantzu", base: 30, odd: 0.05, sort: i => n(i) / td(i, 17), shield: "banner"},
-        {name: "Ulus", base: 31, odd: 0.05, sort: i => (n(i) / td(i, 5) / bd(i, [2, 4, 10], 7)) * t[i], shield: "banner"},
+        {
+          name: "Ulus",
+          base: 31,
+          odd: 0.05,
+          sort: i => (n(i) / td(i, 5) / bd(i, [2, 4, 10], 7)) * t[i],
+          shield: "banner"
+        },
         {name: "Turan", base: 16, odd: 0.05, sort: i => n(i) / td(i, 12), shield: "round"},
-        {name: "Berberan", base: 17, odd: 0.05, sort: i => (n(i) / td(i, 19) / bd(i, [1, 2, 3], 7)) * t[i], shield: "round"},
-        {name: "Eurabic", base: 18, odd: 0.05, sort: i => (n(i) / td(i, 26) / bd(i, [1, 2], 7)) * t[i], shield: "round"},
+        {
+          name: "Berberan",
+          base: 17,
+          odd: 0.05,
+          sort: i => (n(i) / td(i, 19) / bd(i, [1, 2, 3], 7)) * t[i],
+          shield: "round"
+        },
+        {
+          name: "Eurabic",
+          base: 18,
+          odd: 0.05,
+          sort: i => (n(i) / td(i, 26) / bd(i, [1, 2], 7)) * t[i],
+          shield: "round"
+        },
         {name: "Slovan", base: 5, odd: 0.05, sort: i => (n(i) / td(i, 6)) * t[i], shield: "round"},
-        {name: "Keltan", base: 22, odd: 0.1, sort: i => n(i) / td(i, 11) ** 0.5 / bd(i, [6, 8]), shield: "vesicaPiscis"},
+        {
+          name: "Keltan",
+          base: 22,
+          odd: 0.1,
+          sort: i => n(i) / td(i, 11) ** 0.5 / bd(i, [6, 8]),
+          shield: "vesicaPiscis"
+        },
         {name: "Elladan", base: 7, odd: 0.2, sort: i => (n(i) / td(i, 18) / sf(i)) * h[i], shield: "boeotian"},
         {name: "Romian", base: 8, odd: 0.2, sort: i => n(i) / td(i, 14) / t[i], shield: "roman"},
         // fantasy races
@@ -350,12 +442,24 @@ window.Cultures = (function () {
       {name: "Nawatli", base: 14, odd: 0.1, sort: i => h[i] / td(i, 18) / bd(i, [7]), shield: "square"},
       {name: "Vengrian", base: 15, odd: 0.2, sort: i => (n(i) / td(i, 11) / bd(i, [4])) * t[i], shield: "wedged"},
       {name: "Turchian", base: 16, odd: 0.2, sort: i => n(i) / td(i, 13), shield: "round"},
-      {name: "Berberan", base: 17, odd: 0.1, sort: i => (n(i) / td(i, 19) / bd(i, [1, 2, 3], 7)) * t[i], shield: "round"},
+      {
+        name: "Berberan",
+        base: 17,
+        odd: 0.1,
+        sort: i => (n(i) / td(i, 19) / bd(i, [1, 2, 3], 7)) * t[i],
+        shield: "round"
+      },
       {name: "Eurabic", base: 18, odd: 0.2, sort: i => (n(i) / td(i, 26) / bd(i, [1, 2], 7)) * t[i], shield: "round"},
       {name: "Inuk", base: 19, odd: 0.05, sort: i => td(i, -1) / bd(i, [10, 11]) / sf(i), shield: "square"},
       {name: "Euskati", base: 20, odd: 0.05, sort: i => (n(i) / td(i, 15)) * h[i], shield: "spanish"},
       {name: "Yoruba", base: 21, odd: 0.05, sort: i => n(i) / td(i, 15) / bd(i, [5, 7]), shield: "vesicaPiscis"},
-      {name: "Keltan", base: 22, odd: 0.05, sort: i => (n(i) / td(i, 11) / bd(i, [6, 8])) * t[i], shield: "vesicaPiscis"},
+      {
+        name: "Keltan",
+        base: 22,
+        odd: 0.05,
+        sort: i => (n(i) / td(i, 11) / bd(i, [6, 8])) * t[i],
+        shield: "vesicaPiscis"
+      },
       {name: "Efratic", base: 23, odd: 0.05, sort: i => (n(i) / td(i, 22)) * t[i], shield: "diamond"},
       {name: "Tehrani", base: 24, odd: 0.1, sort: i => (n(i) / td(i, 18)) * h[i], shield: "round"},
       {name: "Maui", base: 25, odd: 0.05, sort: i => n(i) / td(i, 24) / sf(i) / t[i], shield: "round"},
@@ -394,7 +498,8 @@ window.Cultures = (function () {
         const heightCost = getHeightCost(e, cells.h[e], type);
         const riverCost = getRiverCost(cells.r[e], e, type);
         const typeCost = getTypeCost(cells.t[e], type);
-        const totalCost = p + (biomeCost + biomeChangeCost + heightCost + riverCost + typeCost) / pack.cultures[c].expansionism;
+        const totalCost =
+          p + (biomeCost + biomeChangeCost + heightCost + riverCost + typeCost) / pack.cultures[c].expansionism;
 
         if (totalCost > neutral) return;
 

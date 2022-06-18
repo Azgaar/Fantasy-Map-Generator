@@ -32,7 +32,7 @@ function clicked() {
   else if (grand.id === "coastline") editCoastline();
   else if (great.id === "armies") editRegiment();
   else if (pack.cells.t[i] === 1) {
-    const node = document.getElementById("island_" + pack.cells.f[i]);
+    const node = byId("island_" + pack.cells.f[i]);
     editCoastline(node);
   } else if (grand.id === "lakes") editLake();
 }
@@ -58,10 +58,10 @@ function closeDialogs(except = "#except") {
 
 // move brush radius circle
 function moveCircle(x, y, r = 20) {
-  let circle = document.getElementById("brushCircle");
+  let circle = byId("brushCircle");
   if (!circle) {
     const html = /* html */ `<circle id="brushCircle" cx=${x} cy=${y} r=${r}></circle>`;
-    document.getElementById("debug").insertAdjacentHTML("afterBegin", html);
+    byId("debug").insertAdjacentHTML("afterBegin", html);
   } else {
     circle.setAttribute("cx", x);
     circle.setAttribute("cy", y);
@@ -70,7 +70,7 @@ function moveCircle(x, y, r = 20) {
 }
 
 function removeCircle() {
-  if (document.getElementById("brushCircle")) document.getElementById("brushCircle").remove();
+  if (byId("brushCircle")) byId("brushCircle").remove();
 }
 
 // get browser-defined fit-content
@@ -79,8 +79,8 @@ function fitContent() {
 }
 
 // apply sorting behaviour for lines on Editor header click
-document.querySelectorAll(".sortable").forEach(function (e) {
-  e.addEventListener("click", function () {
+document.querySelectorAll(".sortable").forEach(function (event) {
+  event.on("click", function () {
     sortLines(this);
   });
 });
@@ -90,7 +90,7 @@ function applySortingByHeader(headerContainer) {
     .getElementById(headerContainer)
     .querySelectorAll(".sortable")
     .forEach(function (element) {
-      element.addEventListener("click", function () {
+      element.on("click", function () {
         sortLines(this);
       });
     });
@@ -235,7 +235,7 @@ function removeBurg(id) {
 
   if (burg.coa) {
     const coaId = "burgCOA" + id;
-    if (document.getElementById(coaId)) document.getElementById(coaId).remove();
+    if (byId(coaId)) byId(coaId).remove();
     emblems.select(`#burgEmblems > use[data-i='${id}']`).remove();
     delete burg.coa; // remove to save data
   }
@@ -330,7 +330,23 @@ function getMFCGlink(burg) {
     return rn(normalize(deg, 0, 360) * 2, 2); // 0 = south, 0.5 = west, 1 = north, 1.5 = east
   }
 
-  const parameters = {name, population, size, seed, river, coast, farms, citadel, urban_castle, hub, plaza, temple, walls, shantytown, gates: -1};
+  const parameters = {
+    name,
+    population,
+    size,
+    seed,
+    river,
+    coast,
+    farms,
+    citadel,
+    urban_castle,
+    hub,
+    plaza,
+    temple,
+    walls,
+    shantytown,
+    gates: -1
+  };
   const url = new URL("https://watabou.github.io/city-generator/");
   url.search = new URLSearchParams(parameters);
   if (sea) url.searchParams.append("sea", sea);
@@ -456,7 +472,12 @@ function createPicker() {
   const cl = () => tip("Click to close the picker");
   const closePicker = () => container.style("display", "none");
 
-  const container = d3.select("body").append("svg").attr("id", "pickerContainer").attr("width", "100%").attr("height", "100%");
+  const container = d3
+    .select("body")
+    .append("svg")
+    .attr("id", "pickerContainer")
+    .attr("width", "100%")
+    .attr("height", "100%");
   container
     .append("rect")
     .attr("x", 0)
@@ -589,13 +610,26 @@ function createPicker() {
     .attr("height", 14)
     .on("mousemove", cl)
     .on("click", closePicker);
-  picker.insert("text", ":first-child").attr("x", 12).attr("y", -10).attr("id", "pickerLabel").text("Color Picker").on("mousemove", pos);
-  picker.insert("rect", ":first-child").attr("x", 0).attr("y", -30).attr("width", width).attr("height", 30).attr("id", "pickerHeader").on("mousemove", pos);
+  picker
+    .insert("text", ":first-child")
+    .attr("x", 12)
+    .attr("y", -10)
+    .attr("id", "pickerLabel")
+    .text("Color Picker")
+    .on("mousemove", pos);
+  picker
+    .insert("rect", ":first-child")
+    .attr("x", 0)
+    .attr("y", -30)
+    .attr("width", width)
+    .attr("height", 30)
+    .attr("id", "pickerHeader")
+    .on("mousemove", pos);
   picker.attr("transform", `translate(${(svgWidth - width) / 2},${(svgHeight - height) / 2})`);
 }
 
 function updateSelectedRect(fill) {
-  document.getElementById("picker").querySelector("rect.selected").classList.remove("selected");
+  byId("picker").querySelector("rect.selected").classList.remove("selected");
   document
     .getElementById("picker")
     .querySelector("rect[fill='" + fill.toLowerCase() + "']")
@@ -653,7 +687,7 @@ function openPicker(fill, callback) {
   updateSelectedRect(fill);
 
   openPicker.updateFill = function () {
-    const selected = document.getElementById("picker").querySelector("rect.selected");
+    const selected = byId("picker").querySelector("rect.selected");
     if (!selected) return;
     callback(selected.getAttribute("fill"));
   };
@@ -729,7 +763,12 @@ function changePickerSpace() {
 
   const space = this.dataset.space;
   const i = Array.from(this.parentNode.querySelectorAll("input")).map(input => input.value); // inputs
-  const fill = space === "hex" ? d3.rgb(this.value) : space === "rgb" ? d3.rgb(i[0], i[1], i[2]) : d3.hsl(i[0], i[1] / 100, i[2] / 100);
+  const fill =
+    space === "hex"
+      ? d3.rgb(this.value)
+      : space === "rgb"
+      ? d3.rgb(i[0], i[1], i[2])
+      : d3.hsl(i[0], i[1] / 100, i[2] / 100);
 
   const hsl = d3.hsl(fill);
   if (isNaN(hsl.l)) {
@@ -750,7 +789,14 @@ function fog(id, path) {
   if (defs.select("#fog #" + id).size()) return;
   const fadeIn = d3.transition().duration(2000).ease(d3.easeSinInOut);
   if (defs.select("#fog path").size()) {
-    defs.select("#fog").append("path").attr("d", path).attr("id", id).attr("opacity", 0).transition(fadeIn).attr("opacity", 1);
+    defs
+      .select("#fog")
+      .append("path")
+      .attr("d", path)
+      .attr("id", id)
+      .attr("opacity", 0)
+      .transition(fadeIn)
+      .attr("opacity", 1);
   } else {
     defs.select("#fog").append("path").attr("d", path).attr("id", id).attr("opacity", 1);
     const opacity = fogging.attr("opacity");
@@ -813,9 +859,20 @@ function highlightElement(element, zoom) {
   const enter = d3.transition().duration(1000).ease(d3.easeBounceOut);
   const exit = d3.transition().duration(500).ease(d3.easeLinear);
 
-  const highlight = debug.append("rect").attr("x", box.x).attr("y", box.y).attr("width", box.width).attr("height", box.height);
+  const highlight = debug
+    .append("rect")
+    .attr("x", box.x)
+    .attr("y", box.y)
+    .attr("width", box.width)
+    .attr("height", box.height);
   highlight.classed("highlighted", 1).attr("transform", transform);
-  highlight.transition(enter).style("outline-offset", "0px").transition(exit).style("outline-color", "transparent").delay(1000).remove();
+  highlight
+    .transition(enter)
+    .style("outline-offset", "0px")
+    .transition(exit)
+    .style("outline-color", "transparent")
+    .delay(1000)
+    .remove();
 
   if (zoom) {
     const tr = parseTransform(transform);
@@ -831,8 +888,8 @@ function selectIcon(initial, callback) {
   if (!callback) return;
   $("#iconSelector").dialog();
 
-  const table = document.getElementById("iconTable");
-  const input = document.getElementById("iconInput");
+  const table = byId("iconTable");
+  const input = byId("iconInput");
   input.value = initial;
 
   if (!table.innerHTML) {
@@ -1062,13 +1119,11 @@ function selectIcon(initial, callback) {
 }
 
 function getAreaUnit(squareMark = "²") {
-  return document.getElementById("areaUnit").value === "square"
-    ? document.getElementById("distanceUnitInput").value + squareMark
-    : document.getElementById("areaUnit").value;
+  return byId("areaUnit").value === "square" ? byId("distanceUnitInput").value + squareMark : byId("areaUnit").value;
 }
 
 function getArea(rawArea) {
-  const distanceScale = document.getElementById("distanceScaleInput")?.value;
+  const distanceScale = byId("distanceScaleInput")?.value;
   return rawArea * distanceScale ** 2;
 }
 
@@ -1093,38 +1148,44 @@ function confirmationDialog(options) {
     }
   };
 
-  document.getElementById("alertMessage").innerHTML = message;
+  byId("alertMessage").innerHTML = message;
   $("#alert").dialog({resizable: false, title, buttons});
 }
 
 // add and register event listeners to clean up on editor closure
 function listen(element, event, handler) {
-  element.addEventListener(event, handler);
+  element.on(event, handler);
   return () => element.removeEventListener(event, handler);
 }
 
 // Calls the refresh functionality on all editors currently open.
 function refreshAllEditors() {
   TIME && console.time("refreshAllEditors");
-  if (document.getElementById("culturesEditorRefresh")?.offsetParent) culturesEditorRefresh.click();
-  if (document.getElementById("biomesEditorRefresh")?.offsetParent) biomesEditorRefresh.click();
-  if (document.getElementById("diplomacyEditorRefresh")?.offsetParent) diplomacyEditorRefresh.click();
-  if (document.getElementById("provincesEditorRefresh")?.offsetParent) provincesEditorRefresh.click();
-  if (document.getElementById("religionsEditorRefresh")?.offsetParent) religionsEditorRefresh.click();
-  if (document.getElementById("statesEditorRefresh")?.offsetParent) statesEditorRefresh.click();
-  if (document.getElementById("zonesEditorRefresh")?.offsetParent) zonesEditorRefresh.click();
+  if (byId("culturesEditorRefresh")?.offsetParent) culturesEditorRefresh.click();
+  if (byId("biomesEditorRefresh")?.offsetParent) biomesEditorRefresh.click();
+  if (byId("diplomacyEditorRefresh")?.offsetParent) diplomacyEditorRefresh.click();
+  if (byId("provincesEditorRefresh")?.offsetParent) provincesEditorRefresh.click();
+  if (byId("religionsEditorRefresh")?.offsetParent) religionsEditorRefresh.click();
+  if (byId("statesEditorRefresh")?.offsetParent) statesEditorRefresh.click();
+  if (byId("zonesEditorRefresh")?.offsetParent) zonesEditorRefresh.click();
   TIME && console.timeEnd("refreshAllEditors");
 }
 
 // dynamically loaded editors
 async function editStates() {
   if (customization) return;
-  const StateEditor = await import("../dynamic/editors/states-editor.js?v=29052022");
-  StateEditor.open();
+  const Editor = await import("../dynamic/editors/states-editor.js?v=12062022");
+  Editor.open();
 }
 
 async function editCultures() {
   if (customization) return;
-  const CulturesEditor = await import("../dynamic/editors/cultures-editor.js?v=29052022");
-  CulturesEditor.open();
+  const Editor = await import("../dynamic/editors/cultures-editor.js?v=12062022");
+  Editor.open();
+}
+
+async function editReligions() {
+  if (customization) return;
+  const Editor = await import("../dynamic/editors/religions-editor.js?v=12062022");
+  Editor.open();
 }

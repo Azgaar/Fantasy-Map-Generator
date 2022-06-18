@@ -5,7 +5,7 @@ main function: resample(options);
 */
 
 window.Submap = (function () {
-  const isWater = (map, id) => (map.grid.cells.h[map.pack.cells.g[id]] < 20 ? true : false);
+  const isWater = (pack, id) => pack.cells.h[id] < 20;
   const inMap = (x, y) => x > 0 && x < graphWidth && y > 0 && y < graphHeight;
 
   function resample(parentMap, options) {
@@ -126,7 +126,6 @@ window.Submap = (function () {
     // generatePrecipitation();
     stage("Cell cleanup.");
     reGraph();
-    const childMap = {grid, pack};
 
     // remove misclassified cells
     stage("Define coastline.");
@@ -180,9 +179,8 @@ window.Submap = (function () {
         let d = Infinity;
         oldChildren.forEach(oid => {
           // this should be always true, unless some algo modded the height!
-          if (isWater(parentMap, oid) !== isWater(childMap, id)) {
+          if (isWater(parentMap.pack, oid) !== isWater(pack, id)) {
             console.warn(`cell sank because of addLakesInDepressions: ${oid}`);
-            return;
           }
           const [oldpx, oldpy] = oldCells.p[oid];
           const nd = distance(projection(oldpx, oldpy));
@@ -197,7 +195,7 @@ window.Submap = (function () {
         }
       }
 
-      if (isWater(childMap, id) !== isWater(parentMap, oldid)) {
+      if (isWater(pack, id) !== isWater(parentMap.pack, oldid)) {
         WARN && console.warn("Type discrepancy detected:", id, oldid, `${pack.cells.t[id]} != ${oldCells.t[oldid]}`);
       }
 
@@ -360,7 +358,6 @@ window.Submap = (function () {
 
   function copyBurgs(parentMap, projection, options) {
     const cells = pack.cells;
-    const childMap = {grid, pack};
     pack.burgs = parentMap.pack.burgs;
 
     // remap burgs to the best new cell
@@ -386,7 +383,7 @@ window.Submap = (function () {
         // already occupied
         searchFunc = findNearest(isFreeLand, _ => true, 3);
 
-      if (isWater(childMap, cityCell) || b.port)
+      if (isWater(pack, cityCell) || b.port)
         // burg is in water or port
         searchFunc = findNearest(isFreeLand, nearCoast, 6);
 
@@ -402,7 +399,7 @@ window.Submap = (function () {
         [b.x, b.y] = b.port ? getMiddlePoint(newCell, neighbor) : cells.p[newCell];
         if (b.port) b.port = cells.f[neighbor]; // copy feature number
         b.cell = newCell;
-        if (b.port && !isWater(childMap, neighbor)) console.error("betrayal! negihbor must be water!", b);
+        if (b.port && !isWater(pack, neighbor)) console.error("betrayal! negihbor must be water!", b);
       } else {
         b.cell = cityCell;
       }
