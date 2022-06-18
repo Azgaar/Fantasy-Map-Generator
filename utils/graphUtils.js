@@ -37,28 +37,34 @@ function voronoiPoints() {
 }
 
 // alternatively generate hex-grid
-function hexPoints() {
+function hexPointsP() { return hexPoints(true) }
+function hexPointsF() { return hexPoints(false) }
+const hexRatio = Math.sqrt(3)/2;
+function hexPoints(pointy) { // pointy must be 0 or 1
   TIME && console.time("hexPoints");
   const cellsDesired = +byId("pointsInput").dataset.cells;
-  const hexRatio = 0.86602540378;
-  const spacing = rn(Math.sqrt(graphWidth * graphHeight / hexRatio / cellsDesired), 2); // spacing between points
-  const lineOffset = spacing * hexRatio;
+  let spacing = rn(Math.sqrt(graphWidth * graphHeight / hexRatio / cellsDesired), 2); // spacing between points
+  let xSpacing, ySpacing;
+  if (pointy) {
+    xSpacing = spacing;
+    ySpacing = spacing * hexRatio;
+  } else {
+    xSpacing = spacing * hexRatio * 2;
+    ySpacing = spacing / 2 ;
+  }
 
   const boundary = getBoundaryPoints(graphWidth, graphHeight, spacing);
-  const cellsX = Math.floor((graphWidth + 0.5 * spacing - 1e-10) / spacing);
-  const cellsY = Math.floor((graphHeight + 0.5 * lineOffset - 1e-10) / lineOffset);
-  console.log('desired hexgrid:', cellsX, cellsY);
-
   let points = [];
 
-  for (let y = lineOffset / 2, lc = 0 ; y < graphHeight; y += lineOffset, lc++) {
-    for (let x = lc % 2 ? 0 : spacing / 2; x < graphWidth; x += spacing) {
+  let rc, lc, x, y;
+  for (y = ySpacing / 2, lc = 0 ; y < graphHeight; y += ySpacing, lc++) {
+    for (x = lc % 2 ? 0 : xSpacing / 2, rc=0; x < graphWidth; x += xSpacing, rc++) {
       points.push([x, y]);
     }
   }
 
   TIME && console.timeEnd("hexPoints");
-  return {spacing, cellsDesired, boundary, points, cellsX, cellsY};
+  return {spacing, cellsDesired, boundary, points, cellsX: rc, cellsY: lc};
 }
 
 // square grid
@@ -143,7 +149,19 @@ function getJitteredGrid(width, height, spacing) {
 
 // return cell index on a regular square grid
 function findGridCell(x, y, grid) {
-  return Math.floor(Math.min(y / grid.spacing, grid.cellsY - 1)) * grid.cellsX + Math.floor(Math.min(x / grid.spacing, grid.cellsX - 1));
+  let xSpacing = grid.spacing;
+  let ySpacing = grid.spacing * Math.sqrt(3) / 2;
+  const maxindex = grid.cells.i.length; // safety belt
+  switch (grid.generator) {
+    case voronoiPoints:
+    case squarePoints:
+      return Math.floor(Math.min(y / grid.spacing, grid.cellsY - 1)) * grid.cellsX + Math.floor(Math.min(x / grid.spacing, grid.cellsX - 1));
+    case hexPointsF:
+      xSpacing = grid.spacing * hexRatio;
+      ySpacing = grid.spacing / 2;
+    case hexPointsP:
+      return Math.min(Math.floor(Math.min(y / ySpacing + 1e-10, grid.cellsY - 1)) * grid.cellsX + Math.floor(Math.min(x / xSpacing + 1e-10, grid.cellsX - 1)), maxindex);
+  }
 }
 
 // return array of cell indexes in radius on a regular square grid

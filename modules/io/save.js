@@ -34,7 +34,8 @@ function getMapData() {
     +hideLabels.checked,
     stylePreset.value,
     +rescaleLabels.checked,
-    urbanDensity
+    urbanDensity,
+    byId('gridAlgorithm').value,
   ].join("|");
   const coords = JSON.stringify(mapCoordinates);
   const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");

@@ -229,6 +229,7 @@ async function parseLoadedData(data) {
       if (settings[22]) stylePreset.value = settings[22];
       if (settings[23]) rescaleLabels.checked = +settings[23];
       if (settings[24]) urbanDensity = urbanDensityInput.value = urbanDensityOutput.value = +settings[24];
+      if (settings[25]) gridAlgorithm.value = settings[25];
     })();
 
     void (function applyOptionsToUI() {
