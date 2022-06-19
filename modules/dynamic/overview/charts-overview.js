@@ -178,7 +178,6 @@ function renderChart(event) {
   const noGrouping = groupBy === entity;
 
   const filterWater = true;
-  const filterZeroes = true;
 
   const {label: plotByLabel, stringify, quantize, formatTicks} = quantizationMap[plotBy];
   const {label: entityLabel, getName: getEntityName, cellsData: entityCells} = entitiesMap[entity];
@@ -194,6 +193,8 @@ function renderChart(event) {
   };
 
   const dataCollection = {};
+  const groups = new Set();
+
   for (const cellId of pack.cells.i) {
     if (filterWater && isWater(cellId)) continue;
     const entityId = entityCells[cellId];
@@ -203,6 +204,15 @@ function renderChart(event) {
     if (!dataCollection[entityId]) dataCollection[entityId] = {[groupId]: value};
     else if (!dataCollection[entityId][groupId]) dataCollection[entityId][groupId] = value;
     else dataCollection[entityId][groupId] += value;
+
+    groups.add(groupId);
+  }
+
+  // fill missing groups with 0
+  for (const entityId in dataCollection) {
+    for (const groupId of groups) {
+      if (!dataCollection[entityId][groupId]) dataCollection[entityId][groupId] = 0;
+    }
   }
 
   const chartData = Object.entries(dataCollection)
@@ -216,10 +226,9 @@ function renderChart(event) {
     })
     .flat();
 
-  const chartDataFiltered = filterZeroes ? chartData.filter(({value}) => value > 0) : chartData;
   const colors = getColors();
 
-  const chart = plot(chartDataFiltered, {sorting, colors, formatTicks, tooltip});
+  const chart = plot(chartData, {sorting, colors, formatTicks, tooltip});
   insertChart(chart, title);
 
   byId("chartsOverview__charts").lastChild.scrollIntoView();
@@ -243,13 +252,13 @@ function plot(
     tooltip
   } = {}
 ) {
-  const X = data.map(d => d.value);
-  const Y = data.map(d => d.name);
-  const Z = data.map(d => d.group);
+  const sortedData = sortData(data, sorting);
 
-  const sortedY = sortData({array: Y, sorting, data, dataKey: "name", reverse: true});
-  const sortedZ = sortData({array: Z, sorting, data, dataKey: "group", reverse: false});
-  const yDomain = new Set(sortedY);
+  const X = sortedData.map(d => d.value);
+  const Y = sortedData.map(d => d.name);
+  const Z = sortedData.map(d => d.group);
+
+  const yDomain = new Set(Y);
   const zDomain = new Set(Z);
 
   const I = d3.range(X.length).filter(i => X[i] > 0 && yDomain.has(Y[i]) && zDomain.has(Z[i]));
@@ -372,17 +381,29 @@ function getRuralPopulation(cellId) {
   return pack.cells.pop[cellId] * populationRate;
 }
 
-function sortData({array, sorting, data, dataKey, reverse}) {
-  if (sorting === "natural") return array;
-  if (sorting === "name") return array.sort((a, b) => (reverse ? b.localeCompare(a) : a.localeCompare(b)));
+function sortData(data, sorting) {
+  if (sorting === "natural") return data;
 
-  if (sorting === "value") {
-    return [...new Set(array)].sort((a, b) => {
-      const valueA = d3.sum(data.filter(d => d[dataKey] === a).map(d => d.value));
-      const valueB = d3.sum(data.filter(d => d[dataKey] === b).map(d => d.value));
-      return reverse ? valueA - valueB : valueB - valueA;
+  if (sorting === "name") {
+    return data.sort((a, b) => {
+      if (a.name !== b.name) return b.name.localeCompare(a.name); // reversed as 1st element is the bottom
+      return a.group.localeCompare(b.group);
     });
   }
 
-  return array;
+  if (sorting === "value") {
+    const entitySum = {};
+    const groupSum = {};
+    for (const {name, group, value} of data) {
+      entitySum[name] = (entitySum[name] || 0) + value;
+      groupSum[group] = (groupSum[group] || 0) + value;
+    }
+
+    return data.sort((a, b) => {
+      if (a.name !== b.name) return entitySum[a.name] - entitySum[b.name]; // reversed as 1st element is the bottom
+      return groupSum[b.group] - groupSum[a.group];
+    });
+  }
+
+  return data;
 }
