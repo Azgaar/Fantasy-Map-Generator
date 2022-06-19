@@ -1,6 +1,5 @@
 appendStyleSheet();
 insertHtml();
-addListeners();
 
 const MARGINS = {top: 10, right: 10, bottom: -5, left: 10};
 
@@ -178,8 +177,6 @@ function insertHtml() {
   byId("dialogs").insertAdjacentHTML("beforeend", html);
 }
 
-function addListeners() {}
-
 function getRoot() {
   const root = d3
     .stratify()
@@ -260,12 +257,18 @@ function renderTree(root, treeLayout) {
     .call(d3.drag().on("start", dragToReorigin));
 
   node
-    .append("path")
-    .attr("d", ({data}) => shapesMap[getShape(data)])
+    .selectAll("path")
+    .data(d => [d])
+    .join("path")
+    .attr("d", d => shapesMap[getShape(d.data)])
     .attr("fill", d => d.data.color || "#ffffff")
     .attr("stroke-dasharray", d => (d.data.cells ? "none" : "1"));
 
-  node.append("text").text(d => d.data.code || "");
+  node
+    .selectAll("text")
+    .data(d => [d])
+    .join("text")
+    .text(d => d.data.code || "");
 }
 
 function mapCoords(newRoot, prevRoot) {
