@@ -6,31 +6,36 @@ const entitiesMap = {
     label: "State",
     cellsData: pack.cells.state,
     getName: nameGetter("states"),
-    getColors: colorsGetter("states")
+    getColors: colorsGetter("states"),
+    landOnly: true
   },
   cultures: {
     label: "Culture",
     cellsData: pack.cells.culture,
     getName: nameGetter("cultures"),
-    getColors: colorsGetter("cultures")
+    getColors: colorsGetter("cultures"),
+    landOnly: true
   },
   religions: {
     label: "Religion",
     cellsData: pack.cells.religion,
     getName: nameGetter("religions"),
-    getColors: colorsGetter("religions")
+    getColors: colorsGetter("religions"),
+    landOnly: true
   },
   provinces: {
     label: "Province",
     cellsData: pack.cells.province,
     getName: nameGetter("provinces"),
-    getColors: colorsGetter("provinces")
+    getColors: colorsGetter("provinces"),
+    landOnly: true
   },
   biomes: {
     label: "Biome",
     cellsData: pack.cells.biome,
     getName: biomeNameGetter,
-    getColors: biomeColorsGetter
+    getColors: biomeColorsGetter,
+    landOnly: false
   }
 };
 
@@ -38,32 +43,155 @@ const quantizationMap = {
   total_population: {
     label: "Total population",
     quantize: cellId => getUrbanPopulation(cellId) + getRuralPopulation(cellId),
+    aggregate: values => rn(d3.sum(values)),
     formatTicks: value => si(value),
-    stringify: value => `${value.toLocaleString()} people`
+    stringify: value => value.toLocaleString(),
+    stackable: true,
+    landOnly: true
   },
   urban_population: {
     label: "Urban population",
     quantize: getUrbanPopulation,
+    aggregate: values => rn(d3.sum(values)),
     formatTicks: value => si(value),
-    stringify: value => `${value.toLocaleString()} people`
+    stringify: value => value.toLocaleString(),
+    stackable: true,
+    landOnly: true
   },
   rural_population: {
     label: "Rural population",
     quantize: getRuralPopulation,
+    aggregate: values => rn(d3.sum(values)),
     formatTicks: value => si(value),
-    stringify: value => `${value.toLocaleString()} people`
+    stringify: value => value.toLocaleString(),
+    stackable: true,
+    landOnly: true
   },
   area: {
     label: "Land area",
     quantize: cellId => getArea(pack.cells.area[cellId]),
+    aggregate: values => rn(d3.sum(values)),
     formatTicks: value => `${si(value)} ${getAreaUnit()}`,
-    stringify: value => `${value.toLocaleString()} ${getAreaUnit()}`
+    stringify: value => `${value.toLocaleString()} ${getAreaUnit()}`,
+    stackable: true,
+    landOnly: true
   },
   cells: {
     label: "Number of cells",
     quantize: () => 1,
+    aggregate: values => d3.sum(values),
     formatTicks: value => value,
-    stringify: value => `${value.toLocaleString()} cells`
+    stringify: value => value.toLocaleString(),
+    stackable: true,
+    landOnly: true
+  },
+  burgs_number: {
+    label: "Number of burgs",
+    quantize: cellId => (pack.cells.burg[cellId] ? 1 : 0),
+    aggregate: values => d3.sum(values),
+    formatTicks: value => value,
+    stringify: value => value.toLocaleString(),
+    stackable: true,
+    landOnly: true
+  },
+  average_elevation: {
+    label: "Average elevation",
+    quantize: cellId => pack.cells.h[cellId],
+    aggregate: values => d3.mean(values),
+    formatTicks: value => getHeight(value),
+    stringify: value => getHeight(value),
+    stackable: false,
+    landOnly: false
+  },
+  max_elevation: {
+    label: "Maximum mean elevation",
+    quantize: cellId => pack.cells.h[cellId],
+    aggregate: values => d3.max(values),
+    formatTicks: value => getHeight(value),
+    stringify: value => getHeight(value),
+    stackable: false,
+    landOnly: false
+  },
+  min_elevation: {
+    label: "Minimum mean elevation",
+    quantize: cellId => pack.cells.h[cellId],
+    aggregate: values => d3.min(values),
+    formatTicks: value => getHeight(value),
+    stringify: value => getHeight(value),
+    stackable: false,
+    landOnly: false
+  },
+  average_temperature: {
+    label: "Annual mean temperature",
+    quantize: cellId => grid.cells.temp[pack.cells.g[cellId]],
+    aggregate: values => d3.mean(values),
+    formatTicks: value => convertTemperature(value),
+    stringify: value => convertTemperature(value),
+    stackable: false,
+    landOnly: false
+  },
+  max_temperature: {
+    label: "Mean annual maximum temperature",
+    quantize: cellId => grid.cells.temp[pack.cells.g[cellId]],
+    aggregate: values => d3.max(values),
+    formatTicks: value => convertTemperature(value),
+    stringify: value => convertTemperature(value),
+    stackable: false,
+    landOnly: false
+  },
+  min_temperature: {
+    label: "Mean annual minimum temperature",
+    quantize: cellId => grid.cells.temp[pack.cells.g[cellId]],
+    aggregate: values => d3.min(values),
+    formatTicks: value => convertTemperature(value),
+    stringify: value => convertTemperature(value),
+    stackable: false,
+    landOnly: false
+  },
+  average_precipitation: {
+    label: "Annual mean precipitation",
+    quantize: cellId => grid.cells.prec[pack.cells.g[cellId]],
+    aggregate: values => rn(d3.mean(values)),
+    formatTicks: value => getPrecipitation(rn(value)),
+    stringify: value => getPrecipitation(rn(value)),
+    stackable: false,
+    landOnly: true
+  },
+  max_precipitation: {
+    label: "Mean annual maximum precipitation",
+    quantize: cellId => grid.cells.prec[pack.cells.g[cellId]],
+    aggregate: values => rn(d3.max(values)),
+    formatTicks: value => getPrecipitation(rn(value)),
+    stringify: value => getPrecipitation(rn(value)),
+    stackable: false,
+    landOnly: true
+  },
+  min_precipitation: {
+    label: "Mean annual minimum precipitation",
+    quantize: cellId => grid.cells.prec[pack.cells.g[cellId]],
+    aggregate: values => rn(d3.min(values)),
+    formatTicks: value => getPrecipitation(rn(value)),
+    stringify: value => getPrecipitation(rn(value)),
+    stackable: false,
+    landOnly: true
+  },
+  coastal_cells: {
+    label: "Number of coastal cells",
+    quantize: cellId => (pack.cells.t[cellId] === 1 ? 1 : 0),
+    aggregate: values => d3.sum(values),
+    formatTicks: value => value,
+    stringify: value => value.toLocaleString(),
+    stackable: true,
+    landOnly: true
+  },
+  river_cells: {
+    label: "Number of river cells",
+    quantize: cellId => (pack.cells.r[cellId] ? 1 : 0),
+    aggregate: values => d3.sum(values),
+    formatTicks: value => value,
+    stringify: value => value.toLocaleString(),
+    stackable: true,
+    landOnly: true
   }
 };
 
@@ -181,14 +309,32 @@ function renderChart(event) {
 
   const entity = byId("chartsOverview__entitiesSelect").value;
   const plotBy = byId("chartsOverview__plotBySelect").value;
-  const groupBy = byId("chartsOverview__groupBySelect").value;
+  let groupBy = byId("chartsOverview__groupBySelect").value;
   const sorting = byId("chartsOverview__sortingSelect").value;
 
-  const noGrouping = groupBy === entity;
-  const filterWater = true;
+  const {
+    label: plotByLabel,
+    stringify,
+    quantize,
+    aggregate,
+    formatTicks,
+    stackable,
+    landOnly: plotByLandOnly
+  } = quantizationMap[plotBy];
 
-  const {label: plotByLabel, stringify, quantize, formatTicks} = quantizationMap[plotBy];
-  const {label: entityLabel, getName: getEntityName, cellsData: entityCells} = entitiesMap[entity];
+  if (!stackable && groupBy !== entity) {
+    tip("Grouping is not supported for this chart type", false, "warn", 4000);
+    groupBy = entity;
+  }
+
+  const noGrouping = groupBy === entity;
+
+  const {
+    label: entityLabel,
+    getName: getEntityName,
+    cellsData: entityCells,
+    landOnly: entityLandOnly
+  } = entitiesMap[entity];
   const {label: groupLabel, getName: getGroupName, cellsData: groupCells, getColors} = entitiesMap[groupBy];
 
   const title = `${capitalize(entity)} by ${plotByLabel}${noGrouping ? "" : " grouped by " + groupLabel}`;
@@ -204,31 +350,24 @@ function renderChart(event) {
   const groups = new Set();
 
   for (const cellId of pack.cells.i) {
-    if (filterWater && isWater(cellId)) continue;
+    if ((entityLandOnly || plotByLandOnly) && isWater(cellId)) continue;
     const entityId = entityCells[cellId];
     const groupId = groupCells[cellId];
     const value = quantize(cellId);
 
-    if (!dataCollection[entityId]) dataCollection[entityId] = {[groupId]: value};
-    else if (!dataCollection[entityId][groupId]) dataCollection[entityId][groupId] = value;
-    else dataCollection[entityId][groupId] += value;
+    if (!dataCollection[entityId]) dataCollection[entityId] = {[groupId]: [value]};
+    else if (!dataCollection[entityId][groupId]) dataCollection[entityId][groupId] = [value];
+    else dataCollection[entityId][groupId].push(value);
 
     groups.add(groupId);
-  }
-
-  // fill missing groups with 0
-  for (const entityId in dataCollection) {
-    for (const groupId of groups) {
-      if (!dataCollection[entityId][groupId]) dataCollection[entityId][groupId] = 0;
-    }
   }
 
   const chartData = Object.entries(dataCollection)
     .map(([entityId, groupData]) => {
       const name = getEntityName(entityId);
-      return Object.entries(groupData).map(([groupId, rawValue]) => {
+      return Object.entries(groupData).map(([groupId, values]) => {
         const group = getGroupName(groupId);
-        const value = rn(rawValue);
+        const value = aggregate(values);
         return {name, group, value};
       });
     })
@@ -269,7 +408,7 @@ function plot(
   const yDomain = new Set(Y);
   const zDomain = new Set(Z);
 
-  const I = d3.range(X.length).filter(i => X[i] > 0 && yDomain.has(Y[i]) && zDomain.has(Z[i]));
+  const I = d3.range(X.length).filter(i => yDomain.has(Y[i]) && zDomain.has(Z[i]));
 
   const height = yDomain.size * 25 + marginTop + marginBottom;
   const yRange = [height - marginBottom, marginTop];
@@ -282,8 +421,8 @@ function plot(
     .order(d3.stackOrderNone)
     .offset(d3.stackOffsetDiverging)(rolled)
     .map(s => {
-      const nonNull = s.filter(d => Boolean(d[1]));
-      const data = nonNull.map(d => Object.assign(d, {i: d.data[1].get(s.key)}));
+      const defined = s.filter(d => !isNaN(d[1]));
+      const data = defined.map(d => Object.assign(d, {i: d.data[1].get(s.key)}));
       return {key: s.key, data};
     });
 
@@ -324,7 +463,7 @@ function plot(
     .join("g")
     .attr("fill", d => colors[d.key])
     .selectAll("rect")
-    .data(d => d.data)
+    .data(d => d.data.filter(([x1, x2]) => x1 !== x2))
     .join("rect")
     .attr("x", ([x1, x2]) => Math.min(xScale(x1), xScale(x2)))
     .attr("y", ({i}) => yScale(Y[i]))

@@ -121,7 +121,11 @@ function showMapTooltip(point, e, i, g) {
   if (group === "emblems" && e.target.tagName === "use") {
     const parent = e.target.parentNode;
     const [g, type] =
-      parent.id === "burgEmblems" ? [pack.burgs, "burg"] : parent.id === "provinceEmblems" ? [pack.provinces, "province"] : [pack.states, "state"];
+      parent.id === "burgEmblems"
+        ? [pack.burgs, "burg"]
+        : parent.id === "provinceEmblems"
+        ? [pack.provinces, "province"]
+        : [pack.states, "state"];
     const i = +e.target.dataset.i;
     if (event.shiftKey) highlightEmblemElement(type, g[i]);
 
@@ -161,8 +165,10 @@ function showMapTooltip(point, e, i, g) {
   if (group === "ruler") {
     const tag = e.target.tagName;
     const className = e.target.getAttribute("class");
-    if (tag === "circle" && className === "edge") return tip("Drag to adjust. Hold Ctrl and drag to add a point. Click to remove the point");
-    if (tag === "circle" && className === "control") return tip("Drag to adjust. Hold Shift and drag to keep axial direction. Click to remove the point");
+    if (tag === "circle" && className === "edge")
+      return tip("Drag to adjust. Hold Ctrl and drag to add a point. Click to remove the point");
+    if (tag === "circle" && className === "control")
+      return tip("Drag to adjust. Hold Shift and drag to keep axial direction. Click to remove the point");
     if (tag === "circle") return tip("Drag to adjust the measurer");
     if (tag === "polyline") return tip("Click on drag to add a control point");
     if (tag === "path") return tip("Drag to move the measurer");
@@ -248,10 +254,19 @@ function updateCellInfo(point, i, g) {
   infoTemp.innerHTML = convertTemperature(grid.cells.temp[g]);
   infoPrec.innerHTML = cells.h[i] >= 20 ? getFriendlyPrecipitation(i) : "n/a";
   infoRiver.innerHTML = cells.h[i] >= 20 && cells.r[i] ? getRiverInfo(cells.r[i]) : "no";
-  infoState.innerHTML = cells.h[i] >= 20 ? (cells.state[i] ? `${pack.states[cells.state[i]].fullName} (${cells.state[i]})` : "neutral lands (0)") : "no";
-  infoProvince.innerHTML = cells.province[i] ? `${pack.provinces[cells.province[i]].fullName} (${cells.province[i]})` : "no";
+  infoState.innerHTML =
+    cells.h[i] >= 20
+      ? cells.state[i]
+        ? `${pack.states[cells.state[i]].fullName} (${cells.state[i]})`
+        : "neutral lands (0)"
+      : "no";
+  infoProvince.innerHTML = cells.province[i]
+    ? `${pack.provinces[cells.province[i]].fullName} (${cells.province[i]})`
+    : "no";
   infoCulture.innerHTML = cells.culture[i] ? `${pack.cultures[cells.culture[i]].name} (${cells.culture[i]})` : "no";
-  infoReligion.innerHTML = cells.religion[i] ? `${pack.religions[cells.religion[i]].name} (${cells.religion[i]})` : "no";
+  infoReligion.innerHTML = cells.religion[i]
+    ? `${pack.religions[cells.religion[i]].name} (${cells.religion[i]})`
+    : "no";
   infoPopulation.innerHTML = getFriendlyPopulation(i);
   infoBurg.innerHTML = cells.burg[i] ? pack.burgs[cells.burg[i]].name + " (" + cells.burg[i] + ")" : "no";
   infoFeature.innerHTML = f ? pack.features[f].group + " (" + f + ")" : "n/a";
@@ -300,8 +315,7 @@ function getFriendlyHeight([x, y]) {
 function getHeight(h, abs) {
   const unit = heightUnit.value;
   let unitRatio = 3.281; // default calculations are in feet
-  if (unit === "m") unitRatio = 1;
-  // if meter
+  if (unit === "m") unitRatio = 1; // if meter
   else if (unit === "f") unitRatio = 0.5468; // if fathom
 
   let height = -990;
@@ -312,10 +326,14 @@ function getHeight(h, abs) {
   return rn(height * unitRatio) + " " + unit;
 }
 
+function getPrecipitation(prec) {
+  return prec * 100 + " mm";
+}
+
 // get user-friendly (real-world) precipitation value from map data
 function getFriendlyPrecipitation(i) {
   const prec = grid.cells.prec[pack.cells.g[i]];
-  return prec * 100 + " mm";
+  return getPrecipitation(prec);
 }
 
 function getRiverInfo(id) {
@@ -399,7 +417,8 @@ function highlightEmblemElement(type, el) {
 // assign lock behavior
 document.querySelectorAll("[data-locked]").forEach(function (e) {
   e.addEventListener("mouseover", function (event) {
-    if (this.className === "icon-lock") tip("Click to unlock the option and allow it to be randomized on new map generation");
+    if (this.className === "icon-lock")
+      tip("Click to unlock the option and allow it to be randomized on new map generation");
     else tip("Click to lock the option and always use the current value on new map generation");
     event.stopPropagation();
   });
@@ -476,7 +495,10 @@ function showInfo() {
   const Patreon = link("https://www.patreon.com/azgaar", "Patreon");
   const Armoria = link("https://azgaar.github.io/Armoria", "Armoria");
 
-  const QuickStart = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Quick-Start-Tutorial", "Quick start tutorial");
+  const QuickStart = link(
+    "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Quick-Start-Tutorial",
+    "Quick start tutorial"
+  );
   const QAA = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A", "Q&A page");
   const VideoTutorial = link("https://youtube.com/playlist?list=PLtgiuDC8iVR2gIG8zMTRn7T_L0arl9h1C", "Video tutorial");
 
