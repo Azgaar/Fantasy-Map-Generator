@@ -76,7 +76,7 @@ document
 
 // show popup with a list of Patreon supportes (updated manually)
 async function showSupporters() {
-  const {supporters} = await import("../dynamic/supporters.js?v=01062022");
+  const {supporters} = await import("../dynamic/supporters.js?v=19062022");
   alertMessage.innerHTML =
     "<ul style='column-count: 5; column-gap: 2em'>" + supporters.map(n => `<li>${n}</li>`).join("") + "</ul>";
   $("#alert").dialog({
