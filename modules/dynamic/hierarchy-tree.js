@@ -62,7 +62,8 @@ export function open(props) {
 }
 
 function appendStyleSheet() {
-  const styles = /* css */ `
+  const style = document.createElement("style");
+  style.textContent = /* css */ `
     #hierarchyTree_selectedOrigins > button {
       margin: 0 2px;
     }
@@ -122,8 +123,6 @@ function appendStyleSheet() {
     }
   `;
 
-  const style = document.createElement("style");
-  style.appendChild(document.createTextNode(styles));
   document.head.appendChild(style);
 }
 

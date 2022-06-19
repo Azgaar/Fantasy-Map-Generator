@@ -196,7 +196,6 @@ const quantizationMap = {
 };
 
 appendStyleSheet();
-
 insertHtml();
 addListeners();
 changeViewColumns();
@@ -204,12 +203,12 @@ changeViewColumns();
 export function open() {
   const charts = byId("chartsOverview__charts").childElementCount;
   if (!charts) renderChart();
-
-  $("#chartsOverview").dialog({title: "Data Charts"});
+  else $("#chartsOverview").dialog({title: "Data Charts"});
 }
 
 function appendStyleSheet() {
-  const styles = /* css */ `
+  const style = document.createElement("style");
+  style.textContent = /* css */ `
     #chartsOverview {
       max-width: 90vw !important;
       max-height: 90vh !important;
@@ -237,17 +236,12 @@ function appendStyleSheet() {
 
     #chartsOverview__charts figcaption {
       font-size: 1.2em;
-      margin-left: 4%;
-    }
-
-    .chartsOverview__bars {
-      stroke: #666;
-      stroke-width: 0.5;
+      margin: 0 1% 0 4%;
+      display: grid;
+      grid-template-columns: 1fr auto;
     }
   `;
 
-  const style = document.createElement("style");
-  style.appendChild(document.createTextNode(styles));
   document.head.appendChild(style);
 }
 
@@ -383,22 +377,7 @@ function renderChart(event) {
 }
 
 // based on observablehq.com/@d3/stacked-horizontal-bar-chart
-function plot(
-  data,
-  {
-    marginTop = 30, // top margin, in pixels
-    marginRight = 10, // right margin, in pixels
-    marginBottom = 10, // bottom margin, in pixels
-    marginLeft = 80, // left margin, in pixels
-    width = 800, // outer width, in pixels
-    xRange = [marginLeft, width - marginRight], // [xmin, xmax]
-    yPadding = 0.2,
-    sorting,
-    colors,
-    formatTicks,
-    tooltip
-  } = {}
-) {
+function plot(data, {sorting, colors, formatTicks, tooltip}) {
   const sortedData = sortData(data, sorting);
 
   const X = sortedData.map(d => d.value);
@@ -407,11 +386,10 @@ function plot(
 
   const yDomain = new Set(Y);
   const zDomain = new Set(Z);
-
   const I = d3.range(X.length).filter(i => yDomain.has(Y[i]) && zDomain.has(Z[i]));
 
-  const height = yDomain.size * 25 + marginTop + marginBottom;
-  const yRange = [height - marginBottom, marginTop];
+  const height = yDomain.size * 25 + MARGIN.top + MARGIN.bottom;
+  const yRange = [height - MARGIN.bottom, MARGIN.top];
 
   const rolled = rollup(...[I, ([i]) => i, i => Y[i], i => Z[i]]);
 
@@ -429,21 +407,21 @@ function plot(
   const xDomain = d3.extent(series.map(d => d.data).flat(2));
 
   const xScale = d3.scaleLinear(xDomain, xRange);
-  const yScale = d3.scaleBand(Array.from(yDomain), yRange).paddingInner(yPadding);
+  const yScale = d3.scaleBand(Array.from(yDomain), yRange).paddingInner(Y_PADDING);
 
-  const xAxis = d3.axisTop(xScale).ticks(width / 80, null);
+  const xAxis = d3.axisTop(xScale).ticks(WIDTH / 80, null);
   const yAxis = d3.axisLeft(yScale).tickSizeOuter(0);
 
   const svg = d3
     .create("svg")
-    .attr("width", width)
-    .attr("height", height)
-    .attr("viewBox", [0, 0, width, height])
+    .attr("version", "1.1")
+    .attr("xmlns", "http://www.w3.org/2000/svg")
+    .attr("viewBox", [0, 0, WIDTH, height])
     .attr("style", "max-width: 100%; height: auto; height: intrinsic;");
 
   svg
     .append("g")
-    .attr("transform", `translate(0,${marginTop})`)
+    .attr("transform", `translate(0,${MARGIN.top})`)
     .call(xAxis)
     .call(g => g.select(".domain").remove())
     .call(g => g.selectAll("text").text(d => formatTicks(d)))
@@ -451,13 +429,14 @@ function plot(
       g
         .selectAll(".tick line")
         .clone()
-        .attr("y2", height - marginTop - marginBottom)
+        .attr("y2", height - MARGIN.top - MARGIN.bottom)
         .attr("stroke-opacity", 0.1)
     );
 
   const bar = svg
     .append("g")
-    .attr("class", "chartsOverview__bars")
+    .attr("stroke", "#666")
+    .attr("stroke-width", 0.5)
     .selectAll("g")
     .data(series)
     .join("g")
@@ -477,6 +456,37 @@ function plot(
     .attr("transform", `translate(${xScale(0)},0)`)
     .call(yAxis);
 
+  const groups = Array.from(zDomain);
+  const minWidth = d3.max(groups.map(name => name.length)) * 8;
+  const maxInRow = Math.floor(WIDTH / minWidth);
+  const rows = Math.ceil(groups.length / maxInRow);
+  const rowElements = Math.floor(groups.length / rows);
+
+  const columnWidth = WIDTH / (rowElements + 0.5);
+  const rowHeight = 20;
+
+  const legend = svg
+    .append("g")
+    .attr("dominant-baseline", "central")
+    .attr("transform", `translate(${MARGIN.left},${height - MARGIN.bottom + 15})`);
+
+  legend
+    .selectAll("circle")
+    .data(groups)
+    .join("circle")
+    .attr("cx", (d, i) => (i % rowElements) * columnWidth)
+    .attr("cy", (d, i) => Math.floor(i / rowElements) * rowHeight)
+    .attr("r", 6)
+    .attr("fill", d => colors[d]);
+
+  legend
+    .selectAll("text")
+    .data(groups)
+    .join("text")
+    .attr("x", (d, i) => (i % rowElements) * columnWidth + 8)
+    .attr("y", (d, i) => Math.floor(i / rowElements) * rowHeight)
+    .text(d => d);
+
   return svg.node();
 }
 
@@ -487,12 +497,32 @@ function insertChart(chart, title) {
   const $caption = document.createElement("figcaption");
 
   const figureNo = $chartContainer.childElementCount + 1;
-  $caption.innerHTML = `<strong>Figure ${figureNo}</strong>. ${title}`;
+  $caption.innerHTML = /* html */ `
+    <div>
+      <strong>Figure ${figureNo}</strong>. ${title}
+    </div>
+    <div>
+      <button class="icon-download"></button>
+      <button class="icon-trash"></button>
+    </div>
+  `;
 
   $figure.appendChild(chart);
   $figure.appendChild($caption);
-
   $chartContainer.appendChild($figure);
+
+  const downloadChart = () => {
+    const name = `${getFileName(title)}.svg`;
+    downloadFile(chart.outerHTML, name);
+  };
+
+  const removeChart = () => {
+    $figure.remove();
+    updateDialog();
+  };
+
+  $figure.querySelector("button.icon-download").on("click", downloadChart);
+  $figure.querySelector("button.icon-trash").on("click", removeChart);
 }
 
 function changeViewColumns() {
@@ -503,14 +533,24 @@ function changeViewColumns() {
 }
 
 function updateDialog() {
-  $("#chartsOverview").dialog({position: {my: "center", at: "center", of: window}});
+  $("#chartsOverview").dialog({position: {my: "center", at: "center", of: "svg"}});
 }
 
 // config
 const NEUTRAL_COLOR = "#ccc";
 const EMPTY_NAME = "no";
 
-// helper functions
+const MARGIN = {
+  top: 30,
+  right: 10,
+  bottom: 50,
+  left: 80
+};
+
+const WIDTH = 800;
+const xRange = [MARGIN.left, WIDTH - MARGIN.right];
+const Y_PADDING = 0.2;
+
 function nameGetter(entity) {
   return i => pack[entity][i].name || EMPTY_NAME;
 }
