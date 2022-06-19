@@ -4,24 +4,33 @@ import {stack} from "https://cdn.skypack.dev/d3-shape@3";
 const entitiesMap = {
   states: {
     label: "State",
-    array: pack.states,
     cellsData: pack.cells.state,
     getName: nameGetter("states"),
     getColors: colorsGetter("states")
   },
   cultures: {
     label: "Culture",
-    array: pack.cultures,
     cellsData: pack.cells.culture,
     getName: nameGetter("cultures"),
     getColors: colorsGetter("cultures")
   },
   religions: {
     label: "Religion",
-    array: pack.religions,
     cellsData: pack.cells.religion,
     getName: nameGetter("religions"),
     getColors: colorsGetter("religions")
+  },
+  provinces: {
+    label: "Province",
+    cellsData: pack.cells.province,
+    getName: nameGetter("provinces"),
+    getColors: colorsGetter("provinces")
+  },
+  biomes: {
+    label: "Biome",
+    cellsData: pack.cells.biome,
+    getName: biomeNameGetter,
+    getColors: biomeColorsGetter
   }
 };
 
@@ -176,7 +185,6 @@ function renderChart(event) {
   const sorting = byId("chartsOverview__sortingSelect").value;
 
   const noGrouping = groupBy === entity;
-
   const filterWater = true;
 
   const {label: plotByLabel, stringify, quantize, formatTicks} = quantizationMap[plotBy];
@@ -361,13 +369,23 @@ function updateDialog() {
 
 // config
 const NEUTRAL_COLOR = "#ccc";
+const EMPTY_NAME = "no";
 
 // helper functions
 function nameGetter(entity) {
-  return i => pack[entity][i].name;
+  return i => pack[entity][i].name || EMPTY_NAME;
 }
+
 function colorsGetter(entity) {
-  return () => Object.fromEntries(pack[entity].map(({name, color}) => [name, color || NEUTRAL_COLOR]));
+  return () => Object.fromEntries(pack[entity].map(({name, color}) => [name || EMPTY_NAME, color || NEUTRAL_COLOR]));
+}
+
+function biomeNameGetter(i) {
+  return biomesData.name[i] || EMPTY_NAME;
+}
+
+function biomeColorsGetter() {
+  return Object.fromEntries(biomesData.i.map(i => [biomesData.name[i], biomesData.color[i]]));
 }
 
 function getUrbanPopulation(cellId) {
