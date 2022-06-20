@@ -169,7 +169,6 @@ window.UISubmap = (function () {
     WARN && console.warn("Resampling current map");
     const cellNumId = +byId("submapPointsInput").value;
     if (!cellsDensityMap[cellNumId]) return console.error("Unknown cell number!");
-    const gridAlgorithm = window[document.getElementById('gridAlgorithm').value];
 
     const {angle, shiftX, shiftY, ratio, mirrorH, mirrorV} = getTransformInput();
 
@@ -204,7 +203,8 @@ window.UISubmap = (function () {
       smoothHeightMap: false,
       rescaleStyles: false,
       scale: 1,
-      gridAlgorithm,
+      gridAlgorithm: globalThis[byId('gridAlgorithm').value],
+      cellsDesired: +byId("pointsInput").dataset.cells,
       projection,
       inverse
     });
@@ -232,7 +232,8 @@ window.UISubmap = (function () {
       inverse: (x, y) => [x / origScale + x0, y / origScale + y0],
       projection: (x, y) => [(x - x0) * origScale, (y - y0) * origScale],
       scale: origScale,
-      gridAlgorithm: window[byId('gridAlgorithm').value],
+      gridAlgorithm: globalThis[byId('gridAlgorithm').value],
+      cellsDesired: +byId("pointsInput").dataset.cells,
     };
 
     // converting map position on the planet

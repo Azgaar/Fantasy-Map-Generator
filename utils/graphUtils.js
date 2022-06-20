@@ -13,19 +13,23 @@ function shouldRegenerateGrid(grid, method) {
   return grid.generator !== method || grid.spacing !== newSpacing || grid.cellsX !== newCellsX || grid.cellsY !== newCellsY;
 }
 
-function generateGrid(generator = voronoiPoints) {
+function generateGrid(numberOfCells, generator = jitteredGridPoints) {
   Math.random = aleaPRNG(seed); // reset PRNG
   //const {spacing, cellsDesired, boundary, points, cellsX, cellsY} = placePoints();
-  const {spacing, cellsDesired, boundary, points, cellsX, cellsY} = generator();
+  const {spacing, cellsDesired, boundary, points, cellsX, cellsY} = generator(numberOfCells);
   const {cells, vertices} = calculateVoronoi(points, boundary);
   return {spacing, cellsDesired, boundary, points, cellsX, cellsY, cells, vertices, generator};
 }
 
-// place random points to calculate Voronoi diagram
-function voronoiPoints() {
-  TIME && console.time("placePoints");
+function squareSpacing() {
   const cellsDesired = +byId("pointsInput").dataset.cells;
-  const spacing = rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2); // spacing between points before jittering
+  return rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2); // spacing between points before jittering
+}
+
+// place random points to calculate Voronoi diagram
+function jitteredGridPoints(cellsDesired) {
+  TIME && console.time("placePoints");
+  const spacing = squareSpacing();
 
   const boundary = getBoundaryPoints(graphWidth, graphHeight, spacing);
   const points = getJitteredGrid(graphWidth, graphHeight, spacing); // points of jittered square grid
@@ -37,21 +41,19 @@ function voronoiPoints() {
 }
 
 // alternatively generate hex-grid
-function hexPointsP() { return hexPoints(true) }
-function hexPointsF() { return hexPoints(false) }
 const hexRatio = Math.sqrt(3)/2;
-function hexPoints(pointy) { // pointy must be 0 or 1
+function hexPointsP(cellsDesired) {
+  const spacing = squareSpacing();
+  return hexPoints(cellsDesired, spacing / hexRatio , spacing);
+}
+function hexPointsF(cellsDesired) {
+  const spacing = squareSpacing();
+  return hexPoints(cellsDesired, spacing * 2, spacing  / hexRatio / 2);
+}
+
+function hexPoints(cellsDesired, xSpacing, ySpacing) {
   TIME && console.time("hexPoints");
-  const cellsDesired = +byId("pointsInput").dataset.cells;
-  let spacing = rn(Math.sqrt(graphWidth * graphHeight / hexRatio / cellsDesired), 2); // spacing between points
-  let xSpacing, ySpacing;
-  if (pointy) {
-    xSpacing = spacing;
-    ySpacing = spacing * hexRatio;
-  } else {
-    xSpacing = spacing * hexRatio * 2;
-    ySpacing = spacing / 2 ;
-  }
+  const spacing = (xSpacing + ySpacing) / 2;
 
   const boundary = getBoundaryPoints(graphWidth, graphHeight, spacing);
   let points = [];
@@ -70,7 +72,6 @@ function hexPoints(pointy) { // pointy must be 0 or 1
 // square grid
 function squarePoints() {
   TIME && console.time("squarePoints");
-  const cellsDesired = +byId("pointsInput").dataset.cells;
   const spacing = rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2);
 
   const boundary = getBoundaryPoints(graphWidth, graphHeight, spacing);
@@ -153,7 +154,7 @@ function findGridCell(x, y, grid) {
   let ySpacing = grid.spacing * Math.sqrt(3) / 2;
   const maxindex = grid.cells.i.length; // safety belt
   switch (grid.generator) {
-    case voronoiPoints:
+    case jitteredGridPoints:
     case squarePoints:
       return Math.floor(Math.min(y / grid.spacing, grid.cellsY - 1)) * grid.cellsX + Math.floor(Math.min(x / grid.spacing, grid.cellsX - 1));
     case hexPointsF:

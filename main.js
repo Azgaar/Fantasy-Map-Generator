@@ -631,7 +631,7 @@ void (function addDragToUpload() {
   });
 })();
 
-const gridOptimizationRequired = () => window[document.getElementById('gridAlgorithm').value] == voronoiPoints;
+const gridOptimizationRequired = () => globalThis[byId('gridAlgorithm').value] == jitteredGridPoints;
 async function generate(options) {
   try {
     const timeStart = performance.now();
@@ -643,10 +643,10 @@ async function generate(options) {
 
     applyMapSize();
     randomizeOptions();
-    const method = window[document.getElementById('gridAlgorithm').value];
-    console.log('gird generation method', method);
+    const method = globalThis[byId('gridAlgorithm').value];
 
-    if (shouldRegenerateGrid(grid, method)) grid = precreatedGraph || generateGrid(method);
+    const cellsDesired = +byId("pointsInput").dataset.cells;
+    if (shouldRegenerateGrid(grid, method)) grid = precreatedGraph || generateGrid(cellsDesired, method);
     else delete grid.cells.h;
     grid.cells.h = await HeightmapGenerator.generate(grid);
 
