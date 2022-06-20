@@ -203,6 +203,8 @@ window.UISubmap = (function () {
       smoothHeightMap: false,
       rescaleStyles: false,
       scale: 1,
+      gridAlgorithm: globalThis[byId('gridAlgorithm').value],
+      cellsDesired: +byId("pointsInput").dataset.cells,
       projection,
       inverse
     });
@@ -229,7 +231,9 @@ window.UISubmap = (function () {
       smoothHeightMap: scale > 2,
       inverse: (x, y) => [x / origScale + x0, y / origScale + y0],
       projection: (x, y) => [(x - x0) * origScale, (y - y0) * origScale],
-      scale: origScale
+      scale: origScale,
+      gridAlgorithm: globalThis[byId('gridAlgorithm').value],
+      cellsDesired: +byId("pointsInput").dataset.cells,
     };
 
     // converting map position on the planet

@@ -631,6 +631,7 @@ void (function addDragToUpload() {
   });
 })();
 
+const gridOptimizationRequired = () => globalThis[byId('gridAlgorithm').value] == jitteredGridPoints;
 async function generate(options) {
   try {
     const timeStart = performance.now();
@@ -642,8 +643,10 @@ async function generate(options) {
 
     applyMapSize();
     randomizeOptions();
+    const method = globalThis[byId('gridAlgorithm').value];
 
-    if (shouldRegenerateGrid(grid)) grid = precreatedGraph || generateGrid();
+    const cellsDesired = +byId("pointsInput").dataset.cells;
+    if (shouldRegenerateGrid(grid, method)) grid = precreatedGraph || generateGrid(cellsDesired, method);
     else delete grid.cells.h;
     grid.cells.h = await HeightmapGenerator.generate(grid);
 
@@ -1164,23 +1167,27 @@ function generatePrecipitation() {
 }
 
 // recalculate Voronoi Graph to pack cells
+// pars: optimize -> optimize cells structure, copy original graph otherwise.
 function reGraph() {
   TIME && console.time("reGraph");
   const {cells: gridCells, points, features} = grid;
   const newCells = {p: [], g: [], h: []}; // store new data
   const spacing2 = grid.spacing ** 2;
+  const optimize = gridOptimizationRequired()
 
   for (const i of gridCells.i) {
     const height = gridCells.h[i];
     const type = gridCells.t[i];
-    if (height < 20 && type !== -1 && type !== -2) continue; // exclude all deep ocean points
-    if (type === -2 && (i % 4 === 0 || features[gridCells.f[i]].type === "lake")) continue; // exclude non-coastal lake points
+    if (optimize) {
+      if (height < 20 && type !== -1 && type !== -2) continue; // exclude all deep ocean points
+      if (type === -2 && (i % 4 === 0 || features[gridCells.f[i]].type === "lake")) continue; // exclude non-coastal lake points
+    }
     const [x, y] = points[i];
 
     addNewPoint(i, x, y, height);
 
     // add additional points for cells along coast
-    if (type === 1 || type === -1) {
+    if (optimize && (type === 1 || type === -1)) {
       if (gridCells.b[i]) continue; // not for near-border cells
       gridCells.c[i].forEach(function (e) {
         if (i > e) return;

@@ -2,3 +2,4 @@
 .vscode
 .idea
 .idea/Fantasy-Map-Generator.iml
+node_modules

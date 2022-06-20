@@ -40,7 +40,7 @@ window.Submap = (function () {
 
     // create new grid
     applyMapSize();
-    grid = generateGrid();
+    grid = generateGrid(options.cellsDesired, options.gridAlgorithm);
 
     drawScaleBar(scale);
 

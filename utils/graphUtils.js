@@ -2,7 +2,7 @@
 // FMG utils related to graph
 
 // check if new grid graph should be generated or we can use the existing one
-function shouldRegenerateGrid(grid) {
+function shouldRegenerateGrid(grid, method) {
   const cellsDesired = +byId("pointsInput").dataset.cells;
   if (cellsDesired !== grid.cellsDesired) return true;
 
@@ -10,21 +10,26 @@ function shouldRegenerateGrid(grid) {
   const newCellsX = Math.floor((graphWidth + 0.5 * newSpacing - 1e-10) / newSpacing);
   const newCellsY = Math.floor((graphHeight + 0.5 * newSpacing - 1e-10) / newSpacing);
 
-  return grid.spacing !== newSpacing || grid.cellsX !== newCellsX || grid.cellsY !== newCellsY;
+  return grid.generator !== method || grid.spacing !== newSpacing || grid.cellsX !== newCellsX || grid.cellsY !== newCellsY;
 }
 
-function generateGrid() {
+function generateGrid(numberOfCells, generator = jitteredGridPoints) {
   Math.random = aleaPRNG(seed); // reset PRNG
-  const {spacing, cellsDesired, boundary, points, cellsX, cellsY} = placePoints();
+  //const {spacing, cellsDesired, boundary, points, cellsX, cellsY} = placePoints();
+  const {spacing, cellsDesired, boundary, points, cellsX, cellsY} = generator(numberOfCells);
   const {cells, vertices} = calculateVoronoi(points, boundary);
-  return {spacing, cellsDesired, boundary, points, cellsX, cellsY, cells, vertices};
+  return {spacing, cellsDesired, boundary, points, cellsX, cellsY, cells, vertices, generator};
+}
+
+function squareSpacing() {
+  const cellsDesired = +byId("pointsInput").dataset.cells;
+  return rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2); // spacing between points before jittering
 }
 
 // place random points to calculate Voronoi diagram
-function placePoints() {
+function jitteredGridPoints(cellsDesired) {
   TIME && console.time("placePoints");
-  const cellsDesired = +byId("pointsInput").dataset.cells;
-  const spacing = rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2); // spacing between points before jirrering
+  const spacing = squareSpacing();
 
   const boundary = getBoundaryPoints(graphWidth, graphHeight, spacing);
   const points = getJitteredGrid(graphWidth, graphHeight, spacing); // points of jittered square grid
@@ -32,6 +37,55 @@ function placePoints() {
   const cellsY = Math.floor((graphHeight + 0.5 * spacing - 1e-10) / spacing);
   TIME && console.timeEnd("placePoints");
 
+  return {spacing, cellsDesired, boundary, points, cellsX, cellsY};
+}
+
+// alternatively generate hex-grid
+const hexRatio = Math.sqrt(3)/2;
+function hexPointsP(cellsDesired) {
+  const spacing = squareSpacing();
+  return hexPoints(cellsDesired, spacing / hexRatio , spacing);
+}
+function hexPointsF(cellsDesired) {
+  const spacing = squareSpacing();
+  return hexPoints(cellsDesired, spacing * 2, spacing  / hexRatio / 2);
+}
+
+function hexPoints(cellsDesired, xSpacing, ySpacing) {
+  TIME && console.time("hexPoints");
+  const spacing = (xSpacing + ySpacing) / 2;
+
+  const boundary = getBoundaryPoints(graphWidth, graphHeight, spacing);
+  let points = [];
+
+  let rc, lc, x, y;
+  for (y = ySpacing / 2, lc = 0 ; y < graphHeight; y += ySpacing, lc++) {
+    for (x = lc % 2 ? 0 : xSpacing / 2, rc=0; x < graphWidth; x += xSpacing, rc++) {
+      points.push([x, y]);
+    }
+  }
+
+  TIME && console.timeEnd("hexPoints");
+  return {spacing, cellsDesired, boundary, points, cellsX: rc, cellsY: lc};
+}
+
+// square grid
+function squarePoints() {
+  TIME && console.time("squarePoints");
+  const spacing = rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2);
+
+  const boundary = getBoundaryPoints(graphWidth, graphHeight, spacing);
+  const cellsX = Math.floor((graphWidth + 0.5 * spacing - 1e-10) / spacing);
+  const cellsY = Math.floor((graphHeight + 0.5 * spacing - 1e-10) / spacing);
+
+  const radius = spacing / 2;
+
+  let points = [];
+  for (let y = radius; y < graphHeight; y += spacing)
+    for (let x = radius; x < graphWidth; x += spacing)
+      points.push([x, y]);
+
+  TIME && console.timeEnd("squarePoints");
   return {spacing, cellsDesired, boundary, points, cellsX, cellsY};
 }
 
@@ -96,7 +150,19 @@ function getJitteredGrid(width, height, spacing) {
 
 // return cell index on a regular square grid
 function findGridCell(x, y, grid) {
-  return Math.floor(Math.min(y / grid.spacing, grid.cellsY - 1)) * grid.cellsX + Math.floor(Math.min(x / grid.spacing, grid.cellsX - 1));
+  let xSpacing = grid.spacing;
+  let ySpacing = grid.spacing * Math.sqrt(3) / 2;
+  const maxindex = grid.cells.i.length; // safety belt
+  switch (grid.generator) {
+    case jitteredGridPoints:
+    case squarePoints:
+      return Math.floor(Math.min(y / grid.spacing, grid.cellsY - 1)) * grid.cellsX + Math.floor(Math.min(x / grid.spacing, grid.cellsX - 1));
+    case hexPointsF:
+      xSpacing = grid.spacing * hexRatio;
+      ySpacing = grid.spacing / 2;
+    case hexPointsP:
+      return Math.min(Math.floor(Math.min(y / ySpacing + 1e-10, grid.cellsY - 1)) * grid.cellsX + Math.floor(Math.min(x / xSpacing + 1e-10, grid.cellsX - 1)), maxindex);
+  }
 }
 
 // return array of cell indexes in radius on a regular square grid
