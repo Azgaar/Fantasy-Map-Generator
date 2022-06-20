@@ -388,8 +388,16 @@ function plot(data, {sorting, colors, formatTicks, tooltip}) {
   const zDomain = new Set(Z);
   const I = d3.range(X.length).filter(i => yDomain.has(Y[i]) && zDomain.has(Z[i]));
 
-  const height = yDomain.size * 25 + MARGIN.top + MARGIN.bottom;
-  const yRange = [height - MARGIN.bottom, MARGIN.top];
+  const entities = Array.from(yDomain);
+  const groups = Array.from(zDomain);
+
+  const yScaleMinWidth = getTextMinWidth(entities);
+  const legendRows = calculateLegendRows(groups);
+
+  const margin = {top: 30, right: 10, bottom: legendRows * 20 + 10, left: yScaleMinWidth};
+  const xRange = [margin.left, WIDTH - margin.right];
+  const height = yDomain.size * 25 + margin.top + margin.bottom;
+  const yRange = [height - margin.bottom, margin.top];
 
   const rolled = rollup(...[I, ([i]) => i, i => Y[i], i => Z[i]]);
 
@@ -407,7 +415,7 @@ function plot(data, {sorting, colors, formatTicks, tooltip}) {
   const xDomain = d3.extent(series.map(d => d.data).flat(2));
 
   const xScale = d3.scaleLinear(xDomain, xRange);
-  const yScale = d3.scaleBand(Array.from(yDomain), yRange).paddingInner(Y_PADDING);
+  const yScale = d3.scaleBand(entities, yRange).paddingInner(Y_PADDING);
 
   const xAxis = d3.axisTop(xScale).ticks(WIDTH / 80, null);
   const yAxis = d3.axisLeft(yScale).tickSizeOuter(0);
@@ -421,7 +429,7 @@ function plot(data, {sorting, colors, formatTicks, tooltip}) {
 
   svg
     .append("g")
-    .attr("transform", `translate(0,${MARGIN.top})`)
+    .attr("transform", `translate(0,${margin.top})`)
     .call(xAxis)
     .call(g => g.select(".domain").remove())
     .call(g => g.selectAll("text").text(d => formatTicks(d)))
@@ -429,7 +437,7 @@ function plot(data, {sorting, colors, formatTicks, tooltip}) {
       g
         .selectAll(".tick line")
         .clone()
-        .attr("y2", height - MARGIN.top - MARGIN.bottom)
+        .attr("y2", height - margin.top - margin.bottom)
         .attr("stroke-opacity", 0.1)
     );
 
@@ -456,38 +464,55 @@ function plot(data, {sorting, colors, formatTicks, tooltip}) {
     .attr("transform", `translate(${xScale(0)},0)`)
     .call(yAxis);
 
-  const groups = Array.from(zDomain);
-  const minWidth = d3.max(groups.map(name => name.length)) * 8;
-  const maxInRow = Math.floor(WIDTH / minWidth);
-  const rows = Math.ceil(groups.length / maxInRow);
-  const rowElements = Math.floor(groups.length / rows);
-
+  const rowElements = Math.ceil(groups.length / legendRows);
   const columnWidth = WIDTH / (rowElements + 0.5);
-  const rowHeight = 20;
+
+  const ROW_HEIGHT = 20;
+  const LABEL_GAP = 10;
+
+  const getLegendX = (d, i) => (i % rowElements) * columnWidth;
+  const getLegendLabelX = (d, i) => getLegendX(d, i) + LABEL_GAP;
+  const getLegendY = (d, i) => Math.floor(i / rowElements) * ROW_HEIGHT;
 
   const legend = svg
     .append("g")
+    .attr("stroke", "#666")
+    .attr("stroke-width", 0.5)
     .attr("dominant-baseline", "central")
-    .attr("transform", `translate(${MARGIN.left},${height - MARGIN.bottom + 15})`);
+    .attr("transform", `translate(${margin.left},${height - margin.bottom + 15})`);
 
   legend
     .selectAll("circle")
     .data(groups)
-    .join("circle")
-    .attr("cx", (d, i) => (i % rowElements) * columnWidth)
-    .attr("cy", (d, i) => Math.floor(i / rowElements) * rowHeight)
-    .attr("r", 6)
+    .join("rect")
+    .attr("x", getLegendX)
+    .attr("y", getLegendY)
+    .attr("width", 10)
+    .attr("height", 10)
+    .attr("transform", "translate(-5, -5)")
     .attr("fill", d => colors[d]);
 
   legend
     .selectAll("text")
     .data(groups)
     .join("text")
-    .attr("x", (d, i) => (i % rowElements) * columnWidth + 8)
-    .attr("y", (d, i) => Math.floor(i / rowElements) * rowHeight)
+    .attr("x", getLegendLabelX)
+    .attr("y", getLegendY)
     .text(d => d);
 
   return svg.node();
+}
+
+const RESERVED_PX_PER_CHAR = 8;
+function getTextMinWidth(entities) {
+  return d3.max(entities.map(name => name.length)) * RESERVED_PX_PER_CHAR;
+}
+
+function calculateLegendRows(groups) {
+  const minWidth = getTextMinWidth(groups);
+  const maxInRow = Math.floor(WIDTH / minWidth);
+  const legendRows = Math.ceil(groups.length / maxInRow);
+  return legendRows;
 }
 
 function insertChart(chart, title) {
@@ -540,15 +565,7 @@ function updateDialog() {
 const NEUTRAL_COLOR = "#ccc";
 const EMPTY_NAME = "no";
 
-const MARGIN = {
-  top: 30,
-  right: 10,
-  bottom: 50,
-  left: 80
-};
-
 const WIDTH = 800;
-const xRange = [MARGIN.left, WIDTH - MARGIN.right];
 const Y_PADDING = 0.2;
 
 function nameGetter(entity) {
