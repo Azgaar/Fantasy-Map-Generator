@@ -1,4 +1,4 @@
-import {rollup} from "../../../utils/functionUtils.js";
+import {rollup, rollups} from "../../../utils/functionUtils.js";
 import {stack} from "https://cdn.skypack.dev/d3-shape@3";
 
 const entitiesMap = {
@@ -195,6 +195,11 @@ const quantizationMap = {
   }
 };
 
+const plotTypeMap = {
+  stackedBar: {offset: d3.stackOffsetDiverging},
+  normalizedStackedBar: {offset: d3.stackOffsetExpand, formatX: value => rn(value * 100) + "%"}
+};
+
 appendStyleSheet();
 insertHtml();
 addListeners();
@@ -219,9 +224,20 @@ function appendStyleSheet() {
 
     #chartsOverview__form {
       font-size: 1.1em;
-      margin: 0.3em;
-      display: flex;
-      justify-content: space-between;
+      margin: 0.3em 0;
+      display: grid;
+      grid-template-columns: auto auto;
+      grid-gap: 0.3em;
+      align-items: start;
+     justify-items: end;
+    }
+
+    @media (max-width: 600px) {
+      #chartsOverview__form {
+        font-size: 1em;
+        grid-template-columns: 1fr;
+        justify-items: normal;
+      }
     }
 
     #chartsOverview__charts {
@@ -256,22 +272,32 @@ function insertHtml() {
     <form id="chartsOverview__form">
       <div>
         <button type="submit">Plot</button>
+
         <select id="chartsOverview__entitiesSelect">${createOptions(entities)}</select>
 
-        <span>by</span>
-        <select id="chartsOverview__plotBySelect">${createOptions(plotBy)}</select>
+        <label>by
+          <select id="chartsOverview__plotBySelect">${createOptions(plotBy)}</select>
+        </label>
 
-        <span>grouped by</span>
-        <select id="chartsOverview__groupBySelect">${createOptions(entities)}</select>
+        <label>grouped by
+          <select id="chartsOverview__groupBySelect">${createOptions(entities)}</select>
+        </label>
 
-        <span>sorted</span>
-        <select id="chartsOverview__sortingSelect">
-          <option value="value">by value</option>
-          <option value="name">by name</option>
-          <option value="natural">naturally</option>
-        </select>
+        <label>sorted
+          <select id="chartsOverview__sortingSelect">
+            <option value="value">by value</option>
+            <option value="name">by name</option>
+            <option value="natural">naturally</option>
+          </select>
+        </label>
       </div>
       <div>
+        <span>Type</span>
+        <select id="chartsOverview__chartType">
+          <option value="stackedBar" selected>Stacked Bar</option>
+          <option value="normalizedStackedBar">Normalized Stacked Bar</option>
+        </select>
+
         <span>Columns</span>
         <select id="chartsOverview__viewColumns">
           <option value="1" selected>1</option>
@@ -305,6 +331,7 @@ function renderChart(event) {
   const plotBy = byId("chartsOverview__plotBySelect").value;
   let groupBy = byId("chartsOverview__groupBySelect").value;
   const sorting = byId("chartsOverview__sortingSelect").value;
+  const type = byId("chartsOverview__chartType").value;
 
   const {
     label: plotByLabel,
@@ -333,11 +360,12 @@ function renderChart(event) {
 
   const title = `${capitalize(entity)} by ${plotByLabel}${noGrouping ? "" : " grouped by " + groupLabel}`;
 
-  const tooltip = (entity, group, value) => {
+  const tooltip = (entity, group, value, percentage) => {
     const entityTip = `${entityLabel}: ${entity}`;
     const groupTip = noGrouping ? "" : `${groupLabel}: ${group}`;
-    const valueTip = `${plotByLabel}: ${stringify(value)}`;
-    tip([entityTip, groupTip, valueTip].filter(Boolean).join(". "));
+    let valueTip = `${plotByLabel}: ${stringify(value)}`;
+    if (!noGrouping) valueTip += ` (${rn(percentage * 100)}%)`;
+    return [entityTip, groupTip, valueTip].filter(Boolean);
   };
 
   const dataCollection = {};
@@ -368,8 +396,9 @@ function renderChart(event) {
     .flat();
 
   const colors = getColors();
+  const {offset, formatX = formatTicks} = plotTypeMap[type];
 
-  const chart = plot(chartData, {sorting, colors, formatTicks, tooltip});
+  const chart = createStackedBarChart(chartData, {sorting, colors, tooltip, offset, formatX});
   insertChart(chart, title);
 
   byId("chartsOverview__charts").lastChild.scrollIntoView();
@@ -377,7 +406,7 @@ function renderChart(event) {
 }
 
 // based on observablehq.com/@d3/stacked-horizontal-bar-chart
-function plot(data, {sorting, colors, formatTicks, tooltip}) {
+function createStackedBarChart(data, {sorting, colors, tooltip, offset, formatX}) {
   const sortedData = sortData(data, sorting);
 
   const X = sortedData.map(d => d.value);
@@ -392,9 +421,9 @@ function plot(data, {sorting, colors, formatTicks, tooltip}) {
   const groups = Array.from(zDomain);
 
   const yScaleMinWidth = getTextMinWidth(entities);
-  const legendRows = calculateLegendRows(groups);
+  const legendRows = calculateLegendRows(groups, WIDTH - yScaleMinWidth - 15);
 
-  const margin = {top: 30, right: 10, bottom: legendRows * 20 + 10, left: yScaleMinWidth};
+  const margin = {top: 30, right: 15, bottom: legendRows * 20 + 10, left: yScaleMinWidth};
   const xRange = [margin.left, WIDTH - margin.right];
   const height = yDomain.size * 25 + margin.top + margin.bottom;
   const yRange = [height - margin.bottom, margin.top];
@@ -405,7 +434,7 @@ function plot(data, {sorting, colors, formatTicks, tooltip}) {
     .keys(zDomain)
     .value(([, I], z) => X[I.get(z)])
     .order(d3.stackOrderNone)
-    .offset(d3.stackOffsetDiverging)(rolled)
+    .offset(offset)(rolled)
     .map(s => {
       const defined = s.filter(d => !isNaN(d[1]));
       const data = defined.map(d => Object.assign(d, {i: d.data[1].get(s.key)}));
@@ -432,7 +461,7 @@ function plot(data, {sorting, colors, formatTicks, tooltip}) {
     .attr("transform", `translate(0,${margin.top})`)
     .call(xAxis)
     .call(g => g.select(".domain").remove())
-    .call(g => g.selectAll("text").text(d => formatTicks(d)))
+    .call(g => g.selectAll("text").text(d => formatX(d)))
     .call(g =>
       g
         .selectAll(".tick line")
@@ -457,7 +486,13 @@ function plot(data, {sorting, colors, formatTicks, tooltip}) {
     .attr("width", ([x1, x2]) => Math.abs(xScale(x1) - xScale(x2)))
     .attr("height", yScale.bandwidth());
 
-  bar.on("mouseover", ({i}) => tooltip(Y[i], Z[i], X[i]));
+  const totalZ = Object.fromEntries(
+    rollups(...[I, ([i]) => i, i => Y[i], i => X[i]]).map(([y, yz]) => [y, d3.sum(yz, yz => yz[0])])
+  );
+  const getTooltip = ({i}) => tooltip(Y[i], Z[i], X[i], X[i] / totalZ[Y[i]]);
+
+  bar.append("title").text(d => getTooltip(d).join("\r\n"));
+  bar.on("mouseover", d => tip(getTooltip(d).join(". ")));
 
   svg
     .append("g")
@@ -468,7 +503,6 @@ function plot(data, {sorting, colors, formatTicks, tooltip}) {
   const columnWidth = WIDTH / (rowElements + 0.5);
 
   const ROW_HEIGHT = 20;
-  const LABEL_GAP = 10;
 
   const getLegendX = (d, i) => (i % rowElements) * columnWidth;
   const getLegendLabelX = (d, i) => getLegendX(d, i) + LABEL_GAP;
@@ -501,18 +535,6 @@ function plot(data, {sorting, colors, formatTicks, tooltip}) {
     .text(d => d);
 
   return svg.node();
-}
-
-const RESERVED_PX_PER_CHAR = 8;
-function getTextMinWidth(entities) {
-  return d3.max(entities.map(name => name.length)) * RESERVED_PX_PER_CHAR;
-}
-
-function calculateLegendRows(groups) {
-  const minWidth = getTextMinWidth(groups);
-  const maxInRow = Math.floor(WIDTH / minWidth);
-  const legendRows = Math.ceil(groups.length / maxInRow);
-  return legendRows;
 }
 
 function insertChart(chart, title) {
@@ -567,6 +589,20 @@ const EMPTY_NAME = "no";
 
 const WIDTH = 800;
 const Y_PADDING = 0.2;
+
+const RESERVED_PX_PER_CHAR = 6;
+const LABEL_GAP = 10;
+
+function getTextMinWidth(entities) {
+  return d3.max(entities.map(name => name.length)) * RESERVED_PX_PER_CHAR;
+}
+
+function calculateLegendRows(groups, availableWidth) {
+  const minWidth = LABEL_GAP + getTextMinWidth(groups);
+  const maxInRow = Math.floor(availableWidth / minWidth);
+  const legendRows = Math.ceil(groups.length / maxInRow);
+  return legendRows;
+}
 
 function nameGetter(entity) {
   return i => pack[entity][i].name || EMPTY_NAME;

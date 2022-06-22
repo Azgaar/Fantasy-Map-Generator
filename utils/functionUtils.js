@@ -2,8 +2,16 @@ function identity(x) {
   return x;
 }
 
+export function group(values, ...keys) {
+  return nest(values, identity, identity, keys);
+}
+
 export function rollup(values, reduce, ...keys) {
   return nest(values, identity, reduce, keys);
+}
+
+export function rollups(values, reduce, ...keys) {
+  return nest(values, Array.from, reduce, keys);
 }
 
 function nest(values, map, reduce, keys) {
