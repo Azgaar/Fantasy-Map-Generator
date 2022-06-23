@@ -1180,12 +1180,12 @@ async function editStates() {
 
 async function editCultures() {
   if (customization) return;
-  const Editor = await import("../dynamic/editors/cultures-editor.js?v=19062022");
+  const Editor = await import("../dynamic/editors/cultures-editor.js?v=1.87.00");
   Editor.open();
 }
 
 async function editReligions() {
   if (customization) return;
-  const Editor = await import("../dynamic/editors/religions-editor.js?v=19062022");
+  const Editor = await import("../dynamic/editors/religions-editor.js?v=1.87.00");
   Editor.open();
 }

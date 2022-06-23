@@ -1,7 +1,7 @@
 "use strict";
 // version and caching control
 
-const version = "1.86.10"; // generator version, update each time
+const version = "1.87.00"; // generator version, update each time
 
 {
   document.title += " v" + version;
@@ -28,6 +28,7 @@ const version = "1.86.10"; // generator version, update each time
 
       <ul>
         <strong>Latest changes:</strong>
+        <li>Data Charts screen</li>
         <li>Сultures and religions can have multiple parents in hierarchy tree</li>
         <li>Heightmap selection screen</li>
         <li>Dialogs optimization for mobile</li>
@@ -36,9 +37,6 @@ const version = "1.86.10"; // generator version, update each time
         <li>Ability to install the App</li>
         <li>14 new default fonts</li>
         <li>Caching for faster startup</li>
-        <li>Submap tool by Goteguru</li>
-        <li>Resample tool by Goteguru</li>
-        <li>Pre-defined heightmaps</li>
       </ul>
 
       <p>Join our <a href="${discord}" target="_blank">Discord server</a> and <a href="${reddit}" target="_blank">Reddit community</a> to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>

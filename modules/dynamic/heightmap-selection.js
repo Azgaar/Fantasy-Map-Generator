@@ -42,7 +42,8 @@ export function open() {
 }
 
 function appendStyleSheet() {
-  const styles = /* css */ `
+  const style = document.createElement("style");
+  style.textContent = /* css */ `
     div.dialog > div.heightmap-selection {
       width: 70vw;
       height: 70vh;
@@ -145,8 +146,6 @@ function appendStyleSheet() {
     }
   `;
 
-  const style = document.createElement("style");
-  style.appendChild(document.createTextNode(styles));
   document.head.appendChild(style);
 }
 

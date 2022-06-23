@@ -108,14 +108,9 @@
       }
     </style>
 
-    <link rel="preload" href="index.css?v=12062022" as="style" onload="this.onload=null; this.rel='stylesheet'" />
-    <link rel="preload" href="icons.css?v=04062022" as="style" onload="this.onload=null; this.rel='stylesheet'" />
-    <link
-      rel="preload"
-      href="libs/jquery-ui.css?v=04062022"
-      as="style"
-      onload="this.onload=null; this.rel='stylesheet'"
-    />
+    <link rel="preload" href="index.css" as="style" onload="this.onload=null; this.rel='stylesheet'" />
+    <link rel="preload" href="icons.css" as="style" onload="this.onload=null; this.rel='stylesheet'" />
+    <link rel="preload" href="libs/jquery-ui.css" as="style" onload="this.onload=null; this.rel='stylesheet'" />
   </head>
   <body>
     <svg
@@ -1967,6 +1962,13 @@
 
           <p>Click to overview:</p>
           <div>
+            <button
+              id="overviewChartsButton"
+              data-tip="Click to open Charts to overview cells data"
+              data-shortcut="Shift + A"
+            >
+              Charts
+            </button>
             <button id="overviewBurgsButton" data-tip="Click to open Burgs Overview" data-shortcut="Shift + T">
               Burgs
             </button>
@@ -7779,89 +7781,89 @@
 
     <script src="utils/shorthands.js"></script>
     <script src="utils/commonUtils.js"></script>
-    <script src="utils/arrayUtils.js?v=02062022"></script>
+    <script src="utils/arrayUtils.js"></script>
     <script src="utils/colorUtils.js"></script>
-    <script src="utils/graphUtils.js?v=02062022"></script>
+    <script src="utils/graphUtils.js"></script>
     <script src="utils/nodeUtils.js"></script>
     <script src="utils/numberUtils.js"></script>
     <script src="utils/polyfills.js"></script>
-    <script src="utils/probabilityUtils.js?v=29052022"></script>
-    <script src="utils/stringUtils.js?v=04062022"></script>
+    <script src="utils/probabilityUtils.js"></script>
+    <script src="utils/stringUtils.js"></script>
     <script src="utils/languageUtils.js"></script>
-    <script src="utils/unitUtils.js"></script>
+    <script src="utils/unitUtils.js?v=1.87.00"></script>
 
     <script src="modules/voronoi.js"></script>
     <script src="config/heightmap-templates.js"></script>
     <script src="config/precreated-heightmaps.js"></script>
-    <script src="modules/heightmap-generator.js?v=29052020"></script>
-    <script src="modules/ocean-layers.js?v=29052022"></script>
+    <script src="modules/heightmap-generator.js"></script>
+    <script src="modules/ocean-layers.js"></script>
     <script src="modules/river-generator.js"></script>
     <script src="modules/lakes.js"></script>
     <script src="modules/names-generator.js"></script>
-    <script src="modules/cultures-generator.js?v=16062022"></script>
-    <script src="modules/burgs-and-states.js?v=29052022"></script>
+    <script src="modules/cultures-generator.js"></script>
+    <script src="modules/burgs-and-states.js"></script>
     <script src="modules/routes-generator.js"></script>
-    <script src="modules/religions-generator.js?v=16062022"></script>
+    <script src="modules/religions-generator.js"></script>
     <script src="modules/military-generator.js"></script>
     <script src="modules/markers-generator.js"></script>
     <script src="modules/coa-generator.js"></script>
-    <script src="modules/submap.js?v=02062022"></script>
+    <script src="modules/submap.js"></script>
     <script src="libs/polylabel.min.js"></script>
     <script src="libs/lineclip.min.js"></script>
     <script src="libs/alea.min.js"></script>
-    <script src="modules/fonts.js?v=11052022"></script>
-    <script src="modules/ui/layers.js?v=06062022"></script>
-    <script src="modules/ui/measurers.js?v=18052022"></script>
+    <script src="modules/fonts.js"></script>
+    <script src="modules/ui/layers.js"></script>
+    <script src="modules/ui/measurers.js"></script>
     <script src="modules/ui/stylePresets.js"></script>
 
-    <script src="modules/ui/general.js?v=02062022"></script>
-    <script src="modules/ui/options.js?v=190620222"></script>
-    <script src="main.js?v=020620222"></script>
+    <script src="modules/ui/general.js?v=1.87.00"></script>
+    <script src="modules/ui/options.js?v=1.87.00"></script>
+    <script src="main.js"></script>
 
     <script defer src="modules/relief-icons.js"></script>
     <script defer src="modules/ui/style.js"></script>
-    <script defer src="modules/ui/editors.js?v=19062022"></script>
-    <script defer src="modules/ui/tools.js?v=12062022"></script>
-    <script defer src="modules/ui/world-configurator.js?v=29052022"></script>
-    <script defer src="modules/ui/heightmap-editor.js?v=29052020"></script>
-    <script defer src="modules/ui/provinces-editor.js?v=29052022"></script>
-    <script defer src="modules/ui/biomes-editor.js?v=29052022"></script>
+    <script defer src="modules/ui/editors.js?v=1.87.00"></script>
+    <script defer src="modules/ui/tools.js?v=1.87.00"></script>
+    <script defer src="modules/ui/world-configurator.js"></script>
+    <script defer src="modules/ui/heightmap-editor.js"></script>
+    <script defer src="modules/ui/provinces-editor.js"></script>
+    <script defer src="modules/ui/biomes-editor.js"></script>
     <script defer src="modules/ui/namesbase-editor.js"></script>
-    <script defer src="modules/ui/elevation-profile.js?v=29052022"></script>
+    <script defer src="modules/ui/elevation-profile.js"></script>
     <script defer src="modules/ui/temperature-graph.js"></script>
     <script defer src="modules/ui/routes-editor.js"></script>
-    <script defer src="modules/ui/ice-editor.js?v=29052022"></script>
-    <script defer src="modules/ui/lakes-editor.js?v=18052022"></script>
-    <script defer src="modules/ui/coastline-editor.js?v=18052022"></script>
+    <script defer src="modules/ui/ice-editor.js"></script>
+    <script defer src="modules/ui/lakes-editor.js"></script>
+    <script defer src="modules/ui/coastline-editor.js"></script>
     <script defer src="modules/ui/labels-editor.js"></script>
     <script defer src="modules/ui/rivers-editor.js"></script>
     <script defer src="modules/ui/rivers-creator.js"></script>
     <script defer src="modules/ui/relief-editor.js"></script>
     <script defer src="modules/ui/burg-editor.js"></script>
     <script defer src="modules/ui/units-editor.js"></script>
-    <script defer src="modules/ui/notes-editor.js?v=29052022"></script>
-    <script defer src="modules/ui/diplomacy-editor.js?v=04062022"></script>
-    <script defer src="modules/ui/zones-editor.js?v=18052022"></script>
-    <script defer src="modules/ui/burgs-overview.js?v=29052022"></script>
-    <script defer src="modules/ui/rivers-overview.js?v=29052022"></script>
-    <script defer src="modules/ui/military-overview.js?v=29052022"></script>
-    <script defer src="modules/ui/regiments-overview.js?v=29052022"></script>
-    <script defer src="modules/ui/markers-overview.js?v=29052022"></script>
-    <script defer src="modules/ui/regiment-editor.js?v=12062022"></script>
+    <script defer src="modules/ui/notes-editor.js"></script>
+    <script defer src="modules/ui/diplomacy-editor.js"></script>
+    <script defer src="modules/ui/zones-editor.js"></script>
+    <script defer src="modules/ui/burgs-overview.js"></script>
+    <script defer src="modules/ui/rivers-overview.js"></script>
+    <script defer src="modules/ui/military-overview.js"></script>
+    <script defer src="modules/ui/regiments-overview.js"></script>
+    <script defer src="modules/ui/markers-overview.js"></script>
+    <script defer src="modules/ui/regiment-editor.js"></script>
     <script defer src="modules/ui/battle-screen.js"></script>
     <script defer src="modules/ui/emblems-editor.js"></script>
     <script defer src="modules/ui/markers-editor.js"></script>
     <script defer src="modules/ui/3d.js"></script>
-    <script defer src="modules/ui/submap.js?v=29052022"></script>
-    <script defer src="modules/ui/hotkeys.js?v=17062022"></script>
+    <script defer src="modules/ui/submap.js"></script>
+    <script defer src="modules/ui/hotkeys.js?v=1.87.00"></script>
     <script defer src="modules/coa-renderer.js"></script>
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
 
-    <script defer src="modules/io/save.js?v=29052022"></script>
-    <script defer src="modules/io/load.js?v=12062022"></script>
-    <script defer src="modules/io/cloud.js?v=04062022"></script>
-    <script defer src="modules/io/export.js?v=04062022"></script>
+    <script defer src="modules/io/save.js"></script>
+    <script defer src="modules/io/load.js?v=1.87.00"></script>
+    <script defer src="modules/io/cloud.js"></script>
+    <script defer src="modules/io/export.js"></script>
     <script defer src="modules/io/formats.js"></script>
 
     <!-- Web Components -->

@@ -2,27 +2,20 @@
 // FMG utils related to units
 
 // conver temperature from °C to other scales
+const temperatureConversionMap = {
+  "°C": temp => rn(temp) + "°C",
+  "°F": temp => rn((temp * 9) / 5 + 32) + "°F",
+  K: temp => rn(temp + 273.15) + "K",
+  "°R": temp => rn(((temp + 273.15) * 9) / 5) + "°R",
+  "°De": temp => rn(((100 - temp) * 3) / 2) + "°De",
+  "°N": temp => rn((temp * 33) / 100) + "°N",
+  "°Ré": temp => rn((temp * 4) / 5) + "°Ré",
+  "°Rø": temp => rn((temp * 21) / 40 + 7.5) + "°Rø"
+};
+
 function convertTemperature(temp) {
-  switch (temperatureScale.value) {
-    case "°C":
-      return rn(temp) + "°C";
-    case "°F":
-      return rn((temp * 9) / 5 + 32) + "°F";
-    case "K":
-      return rn(temp + 273.15) + "K";
-    case "°R":
-      return rn(((temp + 273.15) * 9) / 5) + "°R";
-    case "°De":
-      return rn(((100 - temp) * 3) / 2) + "°De";
-    case "°N":
-      return rn((temp * 33) / 100) + "°N";
-    case "°Ré":
-      return rn((temp * 4) / 5) + "°Ré";
-    case "°Rø":
-      return rn((temp * 21) / 40 + 7.5) + "°Rø";
-    default:
-      return rn(temp) + "°C";
-  }
+  const scale = temperatureScale.value || "°C";
+  return temperatureConversionMap[scale](temp);
 }
 
 // corvent number to short string with SI postfix
