@@ -4,6 +4,8 @@ document.addEventListener("keydown", handleKeydown);
 document.addEventListener("keyup", handleKeyup);
 
 function handleKeydown(event) {
+  if (!allowHotkeys()) return; // in some cases (e.g. in a textarea) hotkeys are not allowed
+
   const {code, ctrlKey, altKey} = event;
   if (altKey && !ctrlKey) event.preventDefault(); // disallow alt key combinations
   if (ctrlKey && ["KeyS", "KeyC"].includes(code)) event.preventDefault(); // disallow CTRL + S and CTRL + C
@@ -12,11 +14,8 @@ function handleKeydown(event) {
 
 function handleKeyup(event) {
   if (!modules.editors) return; // if editors are not loaded, do nothing
+  if (!allowHotkeys()) return; // in some cases (e.g. in a textarea) hotkeys are not allowed
 
-  const {tagName, contentEditable} = document.activeElement;
-  if (["INPUT", "SELECT", "TEXTAREA"].includes(tagName)) return; // don't trigger if user inputs text
-  if (tagName === "DIV" && contentEditable === "true") return; // don't trigger if user inputs a text
-  if (document.getSelection().toString()) return; // don't trigger if user selects text
   event.stopPropagation();
 
   const {code, key, ctrlKey, metaKey, shiftKey, altKey} = event;
@@ -108,6 +107,14 @@ function handleKeyup(event) {
   else if (key === "8") zoom.scaleTo(svg, 8);
   else if (key === "9") zoom.scaleTo(svg, 9);
   else if (ctrl) toggleMode();
+}
+
+function allowHotkeys() {
+  const {tagName, contentEditable} = document.activeElement;
+  if (["INPUT", "SELECT", "TEXTAREA"].includes(tagName)) return false;
+  if (tagName === "DIV" && contentEditable === "true") return false;
+  if (document.getSelection().toString()) return false;
+  return true;
 }
 
 function pressNumpadSign(key) {

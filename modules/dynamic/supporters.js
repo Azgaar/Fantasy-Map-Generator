@@ -40,5 +40,5 @@ export const supporters = format(`
   Jordan,William Markus,Sidr Dim,Alexander Whittaker,The Next Level,Patrick Valverde,Markus Peham,Daniel Cooper,the Beagles of Neorbus,Marley Moule,
   Maximilian Schielke,Johnathan Xavier Hutchinson,Ele,Rita,Randy Ross,John Wick,RedSpaz,cameron cannon,Ian Grau-Fay,Kyle Barrett,Charlotte Wiland,
   David Kaul,E. Jason Davis,Cyberate,Atenfox,Sea Wolf,Holly Loveless,Roekai,Alden Z,angel carrillo,Sam Spoerle,S A Rudy,Bird Law Expert,Mira Cyr,
-  Aaron Blair,Neyimadd,RLKZ1022,DerWolf,Kenji Yamada,Zion
+  Aaron Blair,Neyimadd,RLKZ1022,DerWolf,Kenji Yamada,Zion,Robert Rinne,Actual_Dio,Kyarou
 `);
