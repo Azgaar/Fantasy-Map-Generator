@@ -1,5 +1,4 @@
-import {rollup, rollups} from "../../../utils/functionUtils.js";
-import {stack} from "https://cdn.skypack.dev/d3-shape@3";
+import {rollups} from "../../../utils/functionUtils.js";
 
 const entitiesMap = {
   states: {
@@ -434,16 +433,17 @@ function createStackedBarChart(data, {sorting, colors, tooltip, offset, formatX}
   const height = yDomain.size * 25 + margin.top + margin.bottom;
   const yRange = [height - margin.bottom, margin.top];
 
-  const rolled = rollup(...[I, ([i]) => i, i => Y[i], i => Z[i]]);
+  const rolled = rollups(...[I, ([i]) => i, i => Y[i], i => Z[i]]);
 
-  const series = stack()
-    .keys(zDomain)
-    .value(([, I], z) => X[I.get(z)])
+  const series = d3
+    .stack()
+    .keys(groups)
+    .value(([, I], z) => X[new Map(I).get(z)])
     .order(d3.stackOrderNone)
     .offset(offset)(rolled)
     .map(s => {
       const defined = s.filter(d => !isNaN(d[1]));
-      const data = defined.map(d => Object.assign(d, {i: d.data[1].get(s.key)}));
+      const data = defined.map(d => Object.assign(d, {i: new Map(d.data[1]).get(s.key)}));
       return {key: s.key, data};
     });
 

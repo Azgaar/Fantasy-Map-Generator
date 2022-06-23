@@ -1,14 +1,5 @@
-function identity(x) {
-  return x;
-}
-
-export function group(values, ...keys) {
-  return nest(values, identity, identity, keys);
-}
-
-export function rollup(values, reduce, ...keys) {
-  return nest(values, identity, reduce, keys);
-}
+// extracted d3 code to bypass version conflicts
+// https://github.com/d3/d3-array/blob/main/src/group.js
 
 export function rollups(values, reduce, ...keys) {
   return nest(values, Array.from, reduce, keys);
