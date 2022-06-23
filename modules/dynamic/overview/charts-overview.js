@@ -208,7 +208,7 @@ changeViewColumns();
 export function open() {
   const charts = byId("chartsOverview__charts").childElementCount;
   if (!charts) renderChart();
-  else $("#chartsOverview").dialog({title: "Data Charts"});
+  $("#chartsOverview").dialog({title: "Data Charts"});
 }
 
 function appendStyleSheet() {
@@ -271,19 +271,25 @@ function insertHtml() {
   const html = /* html */ `<div id="chartsOverview">
     <form id="chartsOverview__form">
       <div>
-        <button type="submit">Plot</button>
+        <button data-tip="Add a chart" type="submit">Plot</button>
 
-        <select id="chartsOverview__entitiesSelect">${createOptions(entities)}</select>
+        <select data-tip="Select entity (y axis)" id="chartsOverview__entitiesSelect">${createOptions(
+          entities
+        )}</select>
 
         <label>by
-          <select id="chartsOverview__plotBySelect">${createOptions(plotBy)}</select>
+          <select data-tip="Select value to plot by (x axis)" id="chartsOverview__plotBySelect">${createOptions(
+            plotBy
+          )}</select>
         </label>
 
         <label>grouped by
-          <select id="chartsOverview__groupBySelect">${createOptions(entities)}</select>
+          <select data-tip="Select entoty to group by. If you don't need grouping, set it the same as the entity" id="chartsOverview__groupBySelect">${createOptions(
+            entities
+          )}</select>
         </label>
 
-        <label>sorted
+        <label data-tip="Sorting type">sorted
           <select id="chartsOverview__sortingSelect">
             <option value="value">by value</option>
             <option value="name">by name</option>
@@ -292,13 +298,13 @@ function insertHtml() {
         </label>
       </div>
       <div>
-        <span>Type</span>
+        <span data-tip="Chart type">Type</span>
         <select id="chartsOverview__chartType">
           <option value="stackedBar" selected>Stacked Bar</option>
           <option value="normalizedStackedBar">Normalized Stacked Bar</option>
         </select>
 
-        <span>Columns</span>
+        <span data-tip="Columns to display">Columns</span>
         <select id="chartsOverview__viewColumns">
           <option value="1" selected>1</option>
           <option value="2">2</option>
@@ -344,7 +350,7 @@ function renderChart(event) {
   } = quantizationMap[plotBy];
 
   if (!stackable && groupBy !== entity) {
-    tip("Grouping is not supported for this chart type", false, "warn", 4000);
+    tip(`Grouping is not supported for ${plotByLabel}`, false, "warn", 4000);
     groupBy = entity;
   }
 
@@ -549,8 +555,8 @@ function insertChart(chart, title) {
       <strong>Figure ${figureNo}</strong>. ${title}
     </div>
     <div>
-      <button class="icon-download"></button>
-      <button class="icon-trash"></button>
+      <button data-tip="Download the chart in svg format (can open in browser or Inkscape)" class="icon-download"></button>
+      <button data-tip="Remove the chart" class="icon-trash"></button>
     </div>
   `;
 
@@ -590,7 +596,7 @@ const EMPTY_NAME = "no";
 const WIDTH = 800;
 const Y_PADDING = 0.2;
 
-const RESERVED_PX_PER_CHAR = 6;
+const RESERVED_PX_PER_CHAR = 7;
 const LABEL_GAP = 10;
 
 function getTextMinWidth(entities) {
