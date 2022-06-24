@@ -1,5 +1,3 @@
-"use strict";
-
 window.Names = (function () {
   let chains = [];
 
@@ -142,7 +140,11 @@ window.Names = (function () {
   // generate short name for base
   const getBaseShort = function (base) {
     if (nameBases[base] === undefined) {
-      tip(`Namebase ${base} does not exist. Please upload custom namebases of change the base in Cultures Editor`, false, "error");
+      tip(
+        `Namebase ${base} does not exist. Please upload custom namebases of change the base in Cultures Editor`,
+        false,
+        "error"
+      );
       base = 1;
     }
     const min = nameBases[base].min - 1;
@@ -165,7 +167,8 @@ window.Names = (function () {
     // remove -sk/-ev/-ov for Ruthenian
     else if (base === 12) return vowel(name.slice(-1)) ? name : name + "u";
     // Japanese ends on any vowel or -u
-    else if (base === 18 && P(0.4)) name = vowel(name.slice(0, 1).toLowerCase()) ? "Al" + name.toLowerCase() : "Al " + name; // Arabic starts with -Al
+    else if (base === 18 && P(0.4))
+      name = vowel(name.slice(0, 1).toLowerCase()) ? "Al" + name.toLowerCase() : "Al " + name; // Arabic starts with -Al
 
     // no suffix for fantasy bases
     if (base > 32 && base < 42) return name;
@@ -304,5 +307,16 @@ window.Names = (function () {
     ];
   };
 
-  return {getBase, getCulture, getCultureShort, getBaseShort, getState, updateChain, clearChains, getNameBases, getMapName, calculateChain};
+  return {
+    getBase,
+    getCulture,
+    getCultureShort,
+    getBaseShort,
+    getState,
+    updateChain,
+    clearChains,
+    getNameBases,
+    getMapName,
+    calculateChain
+  };
 })();

@@ -1,5 +1,5 @@
-"use strict";
-// Module to store general UI functions
+import {findCell} from "/src/utils/graphUtils";
+import {MOBILE} from "/src/constants";
 
 // fit full-screen map if window is resized
 window.addEventListener("resize", function (e) {
@@ -431,7 +431,7 @@ document.querySelectorAll("[data-locked]").forEach(function (e) {
 });
 
 // lock option
-function lock(id) {
+export function lock(id) {
   const input = document.querySelector('[data-stored="' + id + '"]');
   if (input) store(id, input.value);
   const el = document.getElementById("lock_" + id);
@@ -450,13 +450,13 @@ function unlock(id) {
 }
 
 // check if option is locked
-function locked(id) {
+export function locked(id) {
   const lockEl = document.getElementById("lock_" + id);
   return lockEl.dataset.locked == 1;
 }
 
 // return key value stored in localStorage or null
-function stored(key) {
+export function stored(key) {
   return localStorage.getItem(key) || null;
 }
 
@@ -482,7 +482,7 @@ function speak(text) {
 }
 
 // apply drop-down menu option. If the value is not in options, add it
-function applyOption($select, value, name = value) {
+export function applyOption($select, value, name = value) {
   const isExisting = Array.from($select.options).some(o => o.value === value);
   if (!isExisting) $select.options.add(new Option(name, value));
   $select.value = value;

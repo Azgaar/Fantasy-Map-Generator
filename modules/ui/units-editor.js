@@ -3,8 +3,8 @@ function editUnits() {
   closeDialogs("#unitsEditor, .stable");
   $("#unitsEditor").dialog();
 
-  if (modules.editUnits) return;
-  modules.editUnits = true;
+  if (fmg.modules.editUnits) return;
+  fmg.modules.editUnits = true;
 
   $("#unitsEditor").dialog({
     title: "Units Editor",

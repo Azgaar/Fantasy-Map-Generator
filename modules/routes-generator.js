@@ -1,3 +1,6 @@
+import {TIME} from "/src/config/logging";
+import {findCell} from "/src/utils/graphUtils";
+
 window.Routes = (function () {
   const getRoads = function () {
     TIME && console.time("generateMainRoads");
@@ -39,7 +42,10 @@ window.Routes = (function () {
         if (!i) {
           // build trail from the first burg on island
           // to the farthest one on the same island or the closest road
-          const farthest = d3.scan(isle, (a, c) => (c.y - b.y) ** 2 + (c.x - b.x) ** 2 - ((a.y - b.y) ** 2 + (a.x - b.x) ** 2));
+          const farthest = d3.scan(
+            isle,
+            (a, c) => (c.y - b.y) ** 2 + (c.x - b.x) ** 2 - ((a.y - b.y) ** 2 + (a.x - b.x) ** 2)
+          );
           const to = isle[farthest].cell;
           if (cells.road[to]) return;
           const [from, exit] = findLandPath(b.cell, to, true);
@@ -131,7 +137,8 @@ window.Routes = (function () {
     const getBurgCoords = b => [burgs[b].x, burgs[b].y];
     const getPathPoints = cells => cells.map(i => (Array.isArray(i) ? i : burg[i] ? getBurgCoords(burg[i]) : p[i]));
     const getPath = segment => round(lineGen(getPathPoints(segment)), 1);
-    const getPathsHTML = (paths, type) => paths.map((path, i) => `<path id="${type}${i}" d="${getPath(path)}" />`).join("");
+    const getPathsHTML = (paths, type) =>
+      paths.map((path, i) => `<path id="${type}${i}" d="${getPath(path)}" />`).join("");
 
     lineGen.curve(d3.curveCatmullRom.alpha(0.1));
     roads.html(getPathsHTML(main, "road"));

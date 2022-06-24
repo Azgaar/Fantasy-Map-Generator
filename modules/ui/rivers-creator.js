@@ -21,8 +21,8 @@ function createRiver() {
     close: closeRiverCreator
   });
 
-  if (modules.createRiver) return;
-  modules.createRiver = true;
+  if (fmg.modules.createRiver) return;
+  fmg.modules.createRiver = true;
 
   // add listeners
   document.getElementById("riverCreatorComplete").addEventListener("click", addRiver);
@@ -100,12 +100,30 @@ function createRiver() {
     const name = getName(mouth);
     const basin = getBasin(parent);
 
-    rivers.push({i: riverId, source, mouth, discharge, length, width, widthFactor, sourceWidth, parent, cells: riverCells, basin, name, type: "River"});
+    rivers.push({
+      i: riverId,
+      source,
+      mouth,
+      discharge,
+      length,
+      width,
+      widthFactor,
+      sourceWidth,
+      parent,
+      cells: riverCells,
+      basin,
+      name,
+      type: "River"
+    });
     const id = "river" + riverId;
 
     // render river
     lineGen.curve(d3.curveCatmullRom.alpha(0.1));
-    viewbox.select("#rivers").append("path").attr("id", id).attr("d", getRiverPath(meanderedPoints, widthFactor, sourceWidth));
+    viewbox
+      .select("#rivers")
+      .append("path")
+      .attr("id", id)
+      .attr("d", getRiverPath(meanderedPoints, widthFactor, sourceWidth));
 
     editRiver(id);
   }

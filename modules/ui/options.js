@@ -1,5 +1,4 @@
-// UI module to control the options (preferences)
-"use strict";
+import {stored, lock, locked, applyOption} from "./general";
 
 $("#optionsContainer").draggable({handle: ".drag-trigger", snap: "svg", snapMode: "both"});
 $("#exitCustomization").draggable({handle: "div"});
@@ -170,10 +169,7 @@ function changeMapSize() {
 
   const maxWidth = Math.max(+mapWidthInput.value, graphWidth);
   const maxHeight = Math.max(+mapHeightInput.value, graphHeight);
-  zoom.translateExtent([
-    [0, 0],
-    [maxWidth, maxHeight]
-  ]);
+  Zoom.translateExtent([0, 0, maxWidth, maxHeight]);
   landmass.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
   oceanPattern.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
   oceanLayers.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
@@ -186,7 +182,7 @@ function changeMapSize() {
 }
 
 // just apply canvas size that was already set
-function applyMapSize() {
+export function applyMapSize() {
   const zoomMin = +zoomExtentMin.value;
   const zoomMax = +zoomExtentMax.value;
   graphWidth = +mapWidthInput.value;
@@ -194,13 +190,10 @@ function applyMapSize() {
   svgWidth = Math.min(graphWidth, window.innerWidth);
   svgHeight = Math.min(graphHeight, window.innerHeight);
   svg.attr("width", svgWidth).attr("height", svgHeight);
-  zoom
-    .translateExtent([
-      [0, 0],
-      [graphWidth, graphHeight]
-    ])
-    .scaleExtent([zoomMin, zoomMax])
-    .scaleTo(svg, zoomMin);
+
+  Zoom.translateExtent([0, 0, graphWidth, graphHeight]);
+  Zoom.scaleExtent([zoomMin, zoomMax]);
+  Zoom.scaleTo(svg, zoomMin);
 }
 
 function toggleFullscreen() {
@@ -217,17 +210,13 @@ function toggleFullscreen() {
 }
 
 function toggleTranslateExtent(el) {
-  const on = (el.dataset.on = +!+el.dataset.on);
-  if (on)
-    zoom.translateExtent([
-      [-graphWidth / 2, -graphHeight / 2],
-      [graphWidth * 1.5, graphHeight * 1.5]
-    ]);
-  else
-    zoom.translateExtent([
-      [0, 0],
-      [graphWidth, graphHeight]
-    ]);
+  const on = !Number(el.dataset.on);
+  const extent = on
+    ? [-graphWidth / 2, -graphHeight / 2, graphWidth * 1.5, graphHeight * 1.5]
+    : [0, 0, graphWidth, graphHeight];
+  Zoom.translateExtent(extent);
+
+  el.dataset.on = Number(on);
 }
 
 // add voice options
@@ -294,7 +283,8 @@ function restoreSeed(id) {
 function restoreDefaultZoomExtent() {
   zoomExtentMin.value = 1;
   zoomExtentMax.value = 20;
-  zoom.scaleExtent([1, 20]).scaleTo(svg, 1);
+  Zoom.scaleExtent([1, 20]);
+  Zoom.scaleTo(svg, 1);
 }
 
 function copyMapURL() {
@@ -461,15 +451,16 @@ function changeDialogsTheme(themeColor, transparency) {
 }
 
 function changeZoomExtent(value) {
-  const min = Math.max(+zoomExtentMin.value, 0.01);
-  const max = Math.min(+zoomExtentMax.value, 200);
-  zoom.scaleExtent([min, max]);
+  const min = Math.max(+byId("zoomExtentMin").value, 0.01);
+  const max = Math.min(+byId("zoomExtentMax").value, 200);
+  Zoom.scaleExtent([min, max]);
+
   const scale = minmax(+value, 0.01, 200);
-  zoom.scaleTo(svg, scale);
+  Zoom.scaleTo(svg, scale);
 }
 
 // restore options stored in localStorage
-function applyStoredOptions() {
+export function applyStoredOptions() {
   if (!stored("mapWidth") || !stored("mapHeight")) {
     mapWidthInput.value = window.innerWidth;
     mapHeightInput.value = window.innerHeight;
@@ -530,7 +521,7 @@ function applyStoredOptions() {
 }
 
 // randomize options if randomization is allowed (not locked or options='default')
-function randomizeOptions() {
+export function randomizeOptions() {
   const randomize = new URL(window.location.href).searchParams.get("options") === "default"; // ignore stored options
 
   // 'Options' settings
@@ -595,7 +586,7 @@ function randomizeCultureSet() {
 }
 
 function setRendering(value) {
-  viewbox.attr("shape-rendering", value);
+  fmg.viewbox?.attr("shape-rendering", value);
 }
 
 // generate current year and era name
@@ -652,7 +643,7 @@ document.getElementById("sticked").addEventListener("click", function (event) {
   else if (id === "saveButton") showSavePane();
   else if (id === "exportButton") showExportPane();
   else if (id === "loadButton") showLoadPane();
-  else if (id === "zoomReset") resetZoom(1000);
+  else if (id === "zoomReset") Zoom.reset(1000);
 });
 
 function regeneratePrompt(options) {
@@ -975,8 +966,8 @@ function toggle3dOptions() {
 
   updateValues();
 
-  if (modules.options3d) return;
-  modules.options3d = true;
+  if (fmg.modules.options3d) return;
+  fmg.modules.options3d = true;
 
   document.getElementById("options3dUpdate").addEventListener("click", ThreeD.update);
   document.getElementById("options3dSave").addEventListener("click", ThreeD.saveScreenshot);

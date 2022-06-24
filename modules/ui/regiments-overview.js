@@ -9,8 +9,8 @@ function overviewRegiments(state) {
   addLines();
   $("#regimentsOverview").dialog();
 
-  if (modules.overviewRegiments) return;
-  modules.overviewRegiments = true;
+  if (fmg.modules.overviewRegiments) return;
+  fmg.modules.overviewRegiments = true;
   updateHeaders();
 
   $("#regimentsOverview").dialog({
@@ -37,7 +37,9 @@ function overviewRegiments(state) {
     const insert = html => document.getElementById("regimentsTotal").insertAdjacentHTML("beforebegin", html);
     for (const u of options.military) {
       const label = capitalize(u.name.replace(/_/g, " "));
-      insert(`<div data-tip="Regiment ${u.name} units number. Click to sort" class="sortable removable" data-sortby="${u.name}">${label}&nbsp;</div>`);
+      insert(
+        `<div data-tip="Regiment ${u.name} units number. Click to sort" class="sortable removable" data-sortby="${u.name}">${label}&nbsp;</div>`
+      );
     }
     header.querySelectorAll(".removable").forEach(function (e) {
       e.addEventListener("click", function () {
@@ -60,7 +62,9 @@ function overviewRegiments(state) {
       for (const r of s.military) {
         const sortData = options.military.map(u => `data-${u.name}=${r.u[u.name] || 0}`).join(" ");
         const lineData = options.military
-          .map(u => `<div data-type="${u.name}" data-tip="${capitalize(u.name)} units number">${r.u[u.name] || 0}</div>`)
+          .map(
+            u => `<div data-type="${u.name}" data-tip="${capitalize(u.name)} units number">${r.u[u.name] || 0}</div>`
+          )
           .join(" ");
 
         lines += /* html */ `<div class="states" data-id=${r.i} data-s="${s.i}" data-state="${s.name}" data-name="${r.name}" ${sortData} data-total="${r.a}">
@@ -79,7 +83,9 @@ function overviewRegiments(state) {
 
     lines += /* html */ `<div id="regimentsTotalLine" class="totalLine" data-tip="Total of all displayed regiments">
       <div style="width: 21em; margin-left: 1em">Regiments: ${regiments.length}</div>
-      ${options.military.map(u => `<div style="width:5em">${si(d3.sum(regiments.map(r => r.u[u.name] || 0)))}</div>`).join(" ")}
+      ${options.military
+        .map(u => `<div style="width:5em">${si(d3.sum(regiments.map(r => r.u[u.name] || 0)))}</div>`)
+        .join(" ")}
       <div style="width:5em">${si(d3.sum(regiments.map(r => r.a)))}</div>
     </div>`;
 
@@ -92,7 +98,9 @@ function overviewRegiments(state) {
 
     // add listeners
     body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseenter", ev => regimentHighlightOn(ev)));
-    body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseleave", ev => regimentHighlightOff(ev)));
+    body
+      .querySelectorAll("div.states")
+      .forEach(el => el.addEventListener("mouseleave", ev => regimentHighlightOff(ev)));
   }
 
   function updateFilter(state) {

@@ -1,8 +1,6 @@
 // module stub to store common functions for ui editors
 "use strict";
 
-modules.editors = true;
-
 // restore default viewbox events
 function restoreDefaultEvents() {
   svg.call(zoom);

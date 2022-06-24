@@ -1,5 +1,3 @@
-"use strict";
-
 window.COA = (function () {
   const tinctures = {
     field: {metals: 3, colours: 4, stains: +P(0.03), patterns: 1},
@@ -305,7 +303,19 @@ window.COA = (function () {
     Highland: {tower: 1, raven: 1, wolfHeadErased: 1, wolfPassant: 1, goat: 1, axe: 1},
     River: {tower: 1, garb: 1, rake: 1, boat: 1, pike: 2, bullHeadCaboshed: 1, apple: 1, plough: 1},
     Lake: {cancer: 2, escallop: 1, pike: 2, heron: 1, boat: 1, boat2: 2},
-    Nomadic: {pot: 1, buckle: 1, wheel: 2, sabre: 2, sabresCrossed: 1, bow: 2, arrow: 1, horseRampant: 1, horseSalient: 1, crescent: 1, camel: 3},
+    Nomadic: {
+      pot: 1,
+      buckle: 1,
+      wheel: 2,
+      sabre: 2,
+      sabresCrossed: 1,
+      bow: 2,
+      arrow: 1,
+      horseRampant: 1,
+      horseSalient: 1,
+      crescent: 1,
+      camel: 3
+    },
     Hunting: {
       bugleHorn: 2,
       bugleHorn2: 1,
@@ -322,7 +332,19 @@ window.COA = (function () {
     // selection based on type
     City: {key: 3, bell: 2, lute: 1, tower: 1, castle: 1, mallet: 1, cannon: 1, anvil: 1},
     Capital: {crown: 2, orb: 1, lute: 1, castle: 3, tower: 1, crown2: 2},
-    Сathedra: {chalice: 1, orb: 1, crosier: 2, lamb: 1, monk: 2, angel: 3, crossLatin: 2, crossPatriarchal: 1, crossOrthodox: 1, crossCalvary: 1, agnusDei: 3},
+    Сathedra: {
+      chalice: 1,
+      orb: 1,
+      crosier: 2,
+      lamb: 1,
+      monk: 2,
+      angel: 3,
+      crossLatin: 2,
+      crossPatriarchal: 1,
+      crossOrthodox: 1,
+      crossCalvary: 1,
+      agnusDei: 3
+    },
     // specific cases
     natural: {fountain: "azure", garb: "or", raven: "sable"}, // charges to mainly use predefined colours
     sinister: [
@@ -508,7 +530,22 @@ window.COA = (function () {
     },
     // charges
     inescutcheon: {e: 4, jln: 1},
-    mascle: {e: 15, abcdefgzi: 3, beh: 3, bdefh: 4, acegi: 1, kn: 3, joe: 2, abc: 3, jlh: 8, jleh: 1, df: 3, abcpqh: 4, pqe: 3, eknpq: 3},
+    mascle: {
+      e: 15,
+      abcdefgzi: 3,
+      beh: 3,
+      bdefh: 4,
+      acegi: 1,
+      kn: 3,
+      joe: 2,
+      abc: 3,
+      jlh: 8,
+      jleh: 1,
+      df: 3,
+      abcpqh: 4,
+      pqe: 3,
+      eknpq: 3
+    },
     lionRampant: {e: 10, def: 2, abc: 2, bdefh: 1, kn: 1, jlh: 2, abcpqh: 1},
     lionPassant: {e: 10, def: 1, abc: 1, bdefh: 1, jlh: 1, abcpqh: 1},
     wolfPassant: {e: 10, def: 1, abc: 1, bdefh: 1, jlh: 1, abcpqh: 1},
@@ -681,18 +718,41 @@ window.COA = (function () {
     const coa = {t1};
 
     let charge = P(usedPattern ? 0.5 : 0.93) ? true : false; // 80% for charge
-    const linedOrdinary = (charge && P(0.3)) || P(0.5) ? (parent?.ordinaries && P(kinship) ? parent.ordinaries[0].ordinary : rw(ordinaries.lined)) : null;
+    const linedOrdinary =
+      (charge && P(0.3)) || P(0.5)
+        ? parent?.ordinaries && P(kinship)
+          ? parent.ordinaries[0].ordinary
+          : rw(ordinaries.lined)
+        : null;
     const ordinary = (!charge && P(0.65)) || P(0.3) ? (linedOrdinary ? linedOrdinary : rw(ordinaries.straight)) : null; // 36% for ordinary
     const rareDivided = ["chief", "terrace", "chevron", "quarter", "flaunches"].includes(ordinary);
-    const divisioned = rareDivided ? P(0.03) : charge && ordinary ? P(0.03) : charge ? P(0.3) : ordinary ? P(0.7) : P(0.995); // 33% for division
-    const division = divisioned ? (parent?.division && P(kinship - 0.1) ? parent.division.division : rw(divisions.variants)) : null;
+    const divisioned = rareDivided
+      ? P(0.03)
+      : charge && ordinary
+      ? P(0.03)
+      : charge
+      ? P(0.3)
+      : ordinary
+      ? P(0.7)
+      : P(0.995); // 33% for division
+    const division = divisioned
+      ? parent?.division && P(kinship - 0.1)
+        ? parent.division.division
+        : rw(divisions.variants)
+      : null;
     if (charge)
-      charge = parent?.charges && P(kinship - 0.1) ? parent.charges[0].charge : type && type !== "Generic" && P(0.2) ? rw(charges[type]) : selectCharge();
+      charge =
+        parent?.charges && P(kinship - 0.1)
+          ? parent.charges[0].charge
+          : type && type !== "Generic" && P(0.2)
+          ? rw(charges[type])
+          : selectCharge();
 
     if (division) {
       const t = getTincture("division", usedTinctures, P(0.98) ? coa.t1 : null);
       coa.division = {division, t};
-      if (divisions[division]) coa.division.line = usedPattern || (ordinary && P(0.7)) ? "straight" : rw(divisions[division]);
+      if (divisions[division])
+        coa.division.line = usedPattern || (ordinary && P(0.7)) ? "straight" : rw(divisions[division]);
     }
 
     if (ordinary) {
@@ -768,7 +828,14 @@ window.COA = (function () {
         // counterchanged, 40%
         else if (["perPale", "perFess", "perBend", "perBendSinister"].includes(division) && P(0.8)) {
           // place 2 charges in division standard positions
-          const [p1, p2] = division === "perPale" ? ["p", "q"] : division === "perFess" ? ["k", "n"] : division === "perBend" ? ["l", "m"] : ["j", "o"]; // perBendSinister
+          const [p1, p2] =
+            division === "perPale"
+              ? ["p", "q"]
+              : division === "perFess"
+              ? ["k", "n"]
+              : division === "perBend"
+              ? ["l", "m"]
+              : ["j", "o"]; // perBendSinister
           coa.charges[0].p = p1;
 
           const charge = selectCharge(charges.single);

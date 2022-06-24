@@ -1,5 +1,5 @@
-// UI module stub to control map layers
-"use strict";
+import {TIME} from "/src/config/logging";
+import {invokeActiveZooming} from "../activeZooming";
 
 let presets = {}; // global object
 restoreCustomPresets(); // run on-load
@@ -946,7 +946,7 @@ function toggleStates(event) {
   }
 }
 
-function drawStates() {
+export function drawStates() {
   TIME && console.time("drawStates");
   regions.selectAll("path").remove();
 
@@ -1110,7 +1110,7 @@ function toggleBorders(event) {
 }
 
 // draw state and province borders
-function drawBorders() {
+export function drawBorders() {
   TIME && console.time("drawBorders");
   borders.selectAll("path").remove();
 
@@ -1554,7 +1554,7 @@ function toggleRivers(event) {
   }
 }
 
-function drawRivers() {
+export function drawRivers() {
   TIME && console.time("drawRivers");
   rivers.selectAll("*").remove();
 
@@ -1870,7 +1870,7 @@ function drawEmblems() {
   TIME && console.timeEnd("drawEmblems");
 }
 
-function layerIsOn(el) {
+export function layerIsOn(el) {
   const buttonoff = document.getElementById(el).classList.contains("buttonoff");
   return !buttonoff;
 }

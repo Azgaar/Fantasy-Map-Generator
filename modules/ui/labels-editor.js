@@ -22,8 +22,8 @@ function editLabel() {
   selectLabelGroup(text);
   updateValues(textPath);
 
-  if (modules.editLabel) return;
-  modules.editLabel = true;
+  if (fmg.modules.editLabel) return;
+  fmg.modules.editLabel = true;
 
   // add listeners
   document.getElementById("labelGroupShow").addEventListener("click", showGroupSection);
@@ -78,7 +78,9 @@ function editLabel() {
   }
 
   function updateValues(textPath) {
-    document.getElementById("labelText").value = [...textPath.querySelectorAll("tspan")].map(tspan => tspan.textContent).join("|");
+    document.getElementById("labelText").value = [...textPath.querySelectorAll("tspan")]
+      .map(tspan => tspan.textContent)
+      .join("|");
     document.getElementById("labelStartOffset").value = parseFloat(textPath.getAttribute("startOffset"));
     document.getElementById("labelRelativeSize").value = parseFloat(textPath.getAttribute("font-size"));
   }
@@ -298,7 +300,13 @@ function editLabel() {
   function changeText() {
     const input = document.getElementById("labelText").value;
     const el = elSelected.select("textPath").node();
-    const example = d3.select(elSelected.node().parentNode).append("text").attr("x", 0).attr("x", 0).attr("font-size", el.getAttribute("font-size")).node();
+    const example = d3
+      .select(elSelected.node().parentNode)
+      .append("text")
+      .attr("x", 0)
+      .attr("x", 0)
+      .attr("font-size", el.getAttribute("font-size"))
+      .node();
 
     const lines = input.split("|");
     const top = (lines.length - 1) / -2; // y offset
@@ -313,7 +321,8 @@ function editLabel() {
     el.innerHTML = inner;
     example.remove();
 
-    if (elSelected.attr("id").slice(0, 10) === "stateLabel") tip("Use States Editor to change an actual state name, not just a label", false, "warning");
+    if (elSelected.attr("id").slice(0, 10) === "stateLabel")
+      tip("Use States Editor to change an actual state name, not just a label", false, "warning");
   }
 
   function generateRandomName() {

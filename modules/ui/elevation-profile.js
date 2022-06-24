@@ -194,7 +194,14 @@ function showElevationProfile(data, routeLen, isRiver) {
       .attr("fill", "darkgray");
 
     let colors = getColorScheme(terrs.attr("scheme"));
-    const landdef = chart.select("defs").append("linearGradient").attr("id", "landdef").attr("x1", "0%").attr("y1", "0%").attr("x2", "0%").attr("y2", "100%");
+    const landdef = chart
+      .select("defs")
+      .append("linearGradient")
+      .attr("id", "landdef")
+      .attr("x1", "0%")
+      .attr("y1", "0%")
+      .attr("x2", "0%")
+      .attr("y2", "100%");
 
     if (chartData.mah == chartData.mih) {
       landdef
@@ -247,7 +254,14 @@ function showElevationProfile(data, routeLen, isRiver) {
     path += " L" + parseInt(xscale(extra.length) + +xOffset) + "," + parseInt(yscale(0) + +yOffset);
     path += " L" + parseInt(xscale(0) + +xOffset) + "," + parseInt(yscale(0) + +yOffset);
     path += "Z";
-    chart.append("g").attr("id", "epland").append("path").attr("d", path).attr("stroke", "purple").attr("stroke-width", "0").attr("fill", "url(#landdef)");
+    chart
+      .append("g")
+      .attr("id", "epland")
+      .append("path")
+      .attr("d", path)
+      .attr("stroke", "purple")
+      .attr("stroke-width", "0")
+      .attr("fill", "url(#landdef)");
 
     // biome / heights
     let g = chart.append("g").attr("id", "epbiomes");
@@ -289,7 +303,14 @@ function showElevationProfile(data, routeLen, isRiver) {
         chartData.cell[k] +
         ")";
 
-      g.append("rect").attr("stroke", c).attr("fill", c).attr("x", x).attr("y", y).attr("width", xscale(1)).attr("height", 15).attr("data-tip", dataTip);
+      g.append("rect")
+        .attr("stroke", c)
+        .attr("fill", c)
+        .attr("x", x)
+        .attr("y", y)
+        .attr("width", xscale(1))
+        .attr("height", 15)
+        .attr("data-tip", dataTip);
     }
 
     const xAxis = d3
@@ -371,7 +392,17 @@ function showElevationProfile(data, routeLen, isRiver) {
         // arrow from burg name to graph line
         g.append("path")
           .attr("id", "eparrow" + b)
-          .attr("d", "M" + x1.toString() + "," + (y1 + 3).toString() + "L" + x1.toString() + "," + parseInt(chartData.points[k][1] - 3).toString())
+          .attr(
+            "d",
+            "M" +
+              x1.toString() +
+              "," +
+              (y1 + 3).toString() +
+              "L" +
+              x1.toString() +
+              "," +
+              parseInt(chartData.points[k][1] - 3).toString()
+          )
           .attr("stroke", "darkgray")
           .attr("fill", "lightgray")
           .attr("stroke-width", "1")
@@ -385,6 +416,6 @@ function showElevationProfile(data, routeLen, isRiver) {
     document.getElementById("epCurve").removeEventListener("change", draw);
     document.getElementById("epSave").removeEventListener("click", downloadCSV);
     document.getElementById("elevationGraph").innerHTML = "";
-    modules.elevation = false;
+    fmg.modules.elevation = false;
   }
 }

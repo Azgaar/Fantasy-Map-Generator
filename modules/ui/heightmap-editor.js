@@ -8,8 +8,8 @@ function editHeightmap(options) {
   if (!mode) showModeDialog();
   else enterHeightmapEditMode(mode);
 
-  if (modules.editHeightmap) return;
-  modules.editHeightmap = true;
+  if (fmg.modules.editHeightmap) return;
+  fmg.modules.editHeightmap = true;
 
   // add listeners
   byId("paintBrushes").on("click", openBrushesPanel);
@@ -29,7 +29,10 @@ function editHeightmap(options) {
     <p>You can <i>keep</i> the data, but you won't be able to change the coastline.</p>
     <p>Try <i>risk</i> mode to change the coastline and keep the data. The data will be restored as much as possible, but it can cause unpredictable errors.</p>
     <p>Please <span class="pseudoLink" onclick="dowloadMap();">save the map</span> before editing the heightmap!</p>
-    <p style="margin-bottom: 0">Check out ${link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization", "wiki")} for guidance.</p>`;
+    <p style="margin-bottom: 0">Check out ${link(
+      "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization",
+      "wiki"
+    )} for guidance.</p>`;
 
     $("#alert").dialog({
       resizable: false,
@@ -148,7 +151,11 @@ function editHeightmap(options) {
   // Exit customization mode
   function finalizeHeightmap() {
     if (viewbox.select("#heights").selectAll("*").size() < 200)
-      return tip("Insufficient land area! There should be at least 200 land cells to finalize the heightmap", null, "error");
+      return tip(
+        "Insufficient land area! There should be at least 200 land cells to finalize the heightmap",
+        null,
+        "error"
+      );
     if (byId("imageConverter").offsetParent) return tip("Please exit the Image Conversion mode first", null, "error");
 
     delete window.edits; // remove global variable
@@ -210,7 +217,8 @@ function editHeightmap(options) {
     if (!erosionAllowed) {
       for (const i of pack.cells.i) {
         const g = pack.cells.g[i];
-        if (pack.cells.h[i] !== grid.cells.h[g] && pack.cells.h[i] >= 20 === grid.cells.h[g] >= 20) pack.cells.h[i] = grid.cells.h[g];
+        if (pack.cells.h[i] !== grid.cells.h[g] && pack.cells.h[i] >= 20 === grid.cells.h[g] >= 20)
+          pack.cells.h[i] = grid.cells.h[g];
       }
     }
 
@@ -349,7 +357,8 @@ function editHeightmap(options) {
       const isLand = pack.cells.h[i] >= 20;
 
       // check biome
-      pack.cells.biome[i] = isLand && biome[g] ? biome[g] : getBiomeId(grid.cells.prec[g], grid.cells.temp[g], pack.cells.h[i]);
+      pack.cells.biome[i] =
+        isLand && biome[g] ? biome[g] : getBiomeId(grid.cells.prec[g], grid.cells.temp[g], pack.cells.h[i]);
 
       // rivers data
       if (!erosionAllowed) {
@@ -373,7 +382,9 @@ function editHeightmap(options) {
     const findBurgCell = function (x, y) {
       let i = findCell(x, y);
       if (pack.cells.h[i] >= 20) return i;
-      const dist = pack.cells.c[i].map(c => (pack.cells.h[c] < 20 ? Infinity : (pack.cells.p[c][0] - x) ** 2 + (pack.cells.p[c][1] - y) ** 2));
+      const dist = pack.cells.c[i].map(c =>
+        pack.cells.h[c] < 20 ? Infinity : (pack.cells.p[c][0] - x) ** 2 + (pack.cells.p[c][1] - y) ** 2
+      );
       return pack.cells.c[i][d3.scan(dist)];
     };
 
@@ -551,8 +562,8 @@ function editHeightmap(options) {
       })
       .on("dialogclose", exitBrushMode);
 
-    if (modules.openBrushesPanel) return;
-    modules.openBrushesPanel = true;
+    if (fmg.modules.openBrushesPanel) return;
+    fmg.modules.openBrushesPanel = true;
 
     // add listeners
     byId("brushesButtons").on("click", e => toggleBrushMode(e));
@@ -630,15 +641,25 @@ function editHeightmap(options) {
 
       const brush = document.querySelector("#brushesButtons > button.pressed").id;
       if (brush === "brushRaise") s.forEach(i => (h[i] = h[i] < 20 ? 20 : lim(h[i] + power)));
-      else if (brush === "brushElevate") s.forEach((i, d) => (h[i] = lim(h[i] + interpolate(d / Math.max(s.length - 1, 1)))));
+      else if (brush === "brushElevate")
+        s.forEach((i, d) => (h[i] = lim(h[i] + interpolate(d / Math.max(s.length - 1, 1)))));
       else if (brush === "brushLower") s.forEach(i => (h[i] = lim(h[i] - power)));
-      else if (brush === "brushDepress") s.forEach((i, d) => (h[i] = lim(h[i] - interpolate(d / Math.max(s.length - 1, 1)))));
+      else if (brush === "brushDepress")
+        s.forEach((i, d) => (h[i] = lim(h[i] - interpolate(d / Math.max(s.length - 1, 1)))));
       else if (brush === "brushAlign") s.forEach(i => (h[i] = lim(h[start])));
       else if (brush === "brushSmooth")
         s.forEach(
-          i => (h[i] = rn((d3.mean(grid.cells.c[i].filter(i => (land ? h[i] >= 20 : 1)).map(c => h[c])) + h[i] * (10 - power) + 0.6) / (11 - power), 1))
+          i =>
+            (h[i] = rn(
+              (d3.mean(grid.cells.c[i].filter(i => (land ? h[i] >= 20 : 1)).map(c => h[c])) +
+                h[i] * (10 - power) +
+                0.6) /
+                (11 - power),
+              1
+            ))
         );
-      else if (brush === "brushDisrupt") s.forEach(i => (h[i] = h[i] < 15 ? h[i] : lim(h[i] + power / 1.6 - Math.random() * power)));
+      else if (brush === "brushDisrupt")
+        s.forEach(i => (h[i] = h[i] < 15 ? h[i] : lim(h[i] + power / 1.6 - Math.random() * power)));
 
       mockHeightmapSelection(s);
       // updateHistory(); uncomment to update history every step
@@ -662,7 +683,8 @@ function editHeightmap(options) {
       const operator = conditionSign.value;
       const operand = rescaleModifier.valueAsNumber;
       if (Number.isNaN(operand)) return tip("Operand should be a number", false, "error");
-      if ((operator === "add" || operator === "subtract") && !Number.isInteger(operand)) return tip("Operand should be an integer", false, "error");
+      if ((operator === "add" || operator === "subtract") && !Number.isInteger(operand))
+        return tip("Operand should be an integer", false, "error");
 
       HeightmapGenerator.setGraph(grid);
 
@@ -691,7 +713,8 @@ function editHeightmap(options) {
     function startFromScratch() {
       if (changeOnlyLand.checked) return tip("Not allowed when 'Change only land cells' mode is set", false, "error");
       const someHeights = grid.cells.h.some(h => h);
-      if (!someHeights) return tip("Heightmap is already cleared, please do not click twice if not required", false, "error");
+      if (!someHeights)
+        return tip("Heightmap is already cleared, please do not click twice if not required", false, "error");
 
       grid.cells.h = new Uint8Array(grid.cells.i.length);
       viewbox.select("#heights").selectAll("*").remove();
@@ -711,10 +734,15 @@ function editHeightmap(options) {
       position: {my: "right top", at: "right-10 top+10", of: "svg"}
     });
 
-    if (modules.openTemplateEditor) return;
-    modules.openTemplateEditor = true;
+    if (fmg.modules.openTemplateEditor) return;
+    fmg.modules.openTemplateEditor = true;
 
-    $("#templateBody").sortable({items: "> div", handle: ".icon-resize-vertical", containment: "#templateBody", axis: "y"});
+    $("#templateBody").sortable({
+      items: "> div",
+      handle: ".icon-resize-vertical",
+      containment: "#templateBody",
+      axis: "y"
+    });
 
     // add listeners
     $body.on("click", function (ev) {
@@ -788,22 +816,31 @@ function editHeightmap(options) {
       const common = /* html */ `<div data-type="${type}">${Hide}<div style="width:4em">${type}</div>${Trash}${Reorder}`;
 
       const TempY = /* html */ `<span>y:
-          <input class="templateY" data-tip="Placement range percentage along Y axis (minY-maxY)" value=${arg5 || "20-80"} />
+          <input class="templateY" data-tip="Placement range percentage along Y axis (minY-maxY)" value=${
+            arg5 || "20-80"
+          } />
         </span>`;
 
       const TempX = /* html */ `<span>x:
-          <input class="templateX" data-tip="Placement range percentage along X axis (minX-maxX)" value=${arg4 || "15-85"} />
+          <input class="templateX" data-tip="Placement range percentage along X axis (minX-maxX)" value=${
+            arg4 || "15-85"
+          } />
         </span>`;
 
       const Height = /* html */ `<span>h:
-          <input class="templateHeight" data-tip="Blob maximum height, use hyphen to get a random number in range" value=${arg3 || "40-50"} />
+          <input class="templateHeight" data-tip="Blob maximum height, use hyphen to get a random number in range" value=${
+            arg3 || "40-50"
+          } />
         </span>`;
 
       const Count = /* html */ `<span>n:
-          <input class="templateCount" data-tip="Blobs to add, use hyphen to get a random number in range" value=${count || "1-2"} />
+          <input class="templateCount" data-tip="Blobs to add, use hyphen to get a random number in range" value=${
+            count || "1-2"
+          } />
         </span>`;
 
-      if (type === "Hill" || type === "Pit" || type === "Range" || type === "Trough") return /* html */ `${common}${TempY}${TempX}${Height}${Count}</div>`;
+      if (type === "Hill" || type === "Pit" || type === "Range" || type === "Trough")
+        return /* html */ `${common}${TempY}${TempX}${Height}${Count}</div>`;
 
       if (type === "Strait")
         return /* html */ `${common}
@@ -814,7 +851,9 @@ function editHeightmap(options) {
             </select>
           </span>
           <span>w:
-            <input class="templateCount" data-tip="Strait width, use hyphen to get a random number in range" value=${count || "2-7"} />
+            <input class="templateCount" data-tip="Strait width, use hyphen to get a random number in range" value=${
+              count || "2-7"
+            } />
           </span>
         </div>`;
 
@@ -1042,8 +1081,8 @@ function editHeightmap(options) {
     viewbox.select("#heights").selectAll("*").remove();
     updateHistory();
 
-    if (modules.openImageConverter) return;
-    modules.openImageConverter = true;
+    if (fmg.modules.openImageConverter) return;
+    fmg.modules.openImageConverter = true;
 
     // add color pallete
     void (function createColorPallete() {
@@ -1245,7 +1284,8 @@ function editHeightmap(options) {
       const assinged = []; // store assigned heights
       unassigned.forEach(el => {
         const clr = el.dataset.color;
-        const height = type === "hue" ? getHeightByHue(clr) : type === "lum" ? getHeightByLum(clr) : getHeightByScheme(clr);
+        const height =
+          type === "hue" ? getHeightByHue(clr) : type === "lum" ? getHeightByLum(clr) : getHeightByScheme(clr);
         const colorTo = color(1 - (height < 20 ? (height - 5) / 100 : height / 100));
         viewbox
           .select("#heights")
