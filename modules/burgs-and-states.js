@@ -99,7 +99,17 @@ window.BurgsAndStates = (function () {
 
         const coa = COA.generate(null, null, null, type);
         coa.shield = COA.getShield(b.culture, null);
-        states.push({i, color: colors[i - 1], name, expansionism, capital: i, type, center: b.cell, culture: b.culture, coa});
+        states.push({
+          i,
+          color: colors[i - 1],
+          name,
+          expansionism,
+          capital: i,
+          type,
+          center: b.cell,
+          culture: b.culture,
+          coa
+        });
         cells.burg[b.cell] = i;
       });
 
@@ -111,9 +121,14 @@ window.BurgsAndStates = (function () {
     function placeTowns() {
       TIME && console.time("placeTowns");
       const score = new Int16Array(cells.s.map(s => s * gauss(1, 3, 0, 20, 3))); // a bit randomized cell score for towns placement
-      const sorted = cells.i.filter(i => !cells.burg[i] && score[i] > 0 && cells.culture[i]).sort((a, b) => score[b] - score[a]); // filtered and sorted array of indexes
+      const sorted = cells.i
+        .filter(i => !cells.burg[i] && score[i] > 0 && cells.culture[i])
+        .sort((a, b) => score[b] - score[a]); // filtered and sorted array of indexes
 
-      const desiredNumber = manorsInput.value == 1000 ? rn(sorted.length / 5 / (grid.points.length / 10000) ** 0.8) : manorsInput.valueAsNumber;
+      const desiredNumber =
+        manorsInput.value == 1000
+          ? rn(sorted.length / 5 / (grid.points.length / 10000) ** 0.8)
+          : manorsInput.valueAsNumber;
       const burgsNumber = Math.min(desiredNumber, sorted.length); // towns to generate
       let burgsAdded = 0;
 
@@ -529,8 +544,20 @@ window.BurgsAndStates = (function () {
         const pointsInside = d3.range(c.p.length).filter(i => inside[i]);
         if (!pointsInside.length) return [0];
         const h = c.p.length < 200 ? 0 : c.p.length < 600 ? 0.5 : 1; // power of horyzontality shift
-        const end = pointsInside[d3.scan(pointsInside, (a, b) => c.p[a][0] - c.p[b][0] + (Math.abs(c.p[a][1] - y) - Math.abs(c.p[b][1] - y)) * h)]; // left point
-        const start = pointsInside[d3.scan(pointsInside, (a, b) => c.p[b][0] - c.p[a][0] - (Math.abs(c.p[b][1] - y) - Math.abs(c.p[a][1] - y)) * h)]; // right point
+        const end =
+          pointsInside[
+            d3.scan(
+              pointsInside,
+              (a, b) => c.p[a][0] - c.p[b][0] + (Math.abs(c.p[a][1] - y) - Math.abs(c.p[b][1] - y)) * h
+            )
+          ]; // left point
+        const start =
+          pointsInside[
+            d3.scan(
+              pointsInside,
+              (a, b) => c.p[b][0] - c.p[a][0] - (Math.abs(c.p[b][1] - y) - Math.abs(c.p[a][1] - y)) * h
+            )
+          ]; // right point
 
         // connect leftmost and rightmost points with shortest path
         const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
@@ -696,7 +723,9 @@ window.BurgsAndStates = (function () {
       const s = cells.state[i];
 
       // check for neighboring states
-      cells.c[i].filter(c => cells.h[c] >= 20 && cells.state[c] !== s).forEach(c => states[s].neighbors.add(cells.state[c]));
+      cells.c[i]
+        .filter(c => cells.h[c] >= 20 && cells.state[c] !== s)
+        .forEach(c => states[s].neighbors.add(cells.state[c]));
 
       // collect stats
       states[s].cells += 1;
@@ -742,7 +771,17 @@ window.BurgsAndStates = (function () {
     TIME && console.timeEnd("assignColors");
   };
 
-  const wars = {War: 6, Conflict: 2, Campaign: 4, Invasion: 2, Rebellion: 2, Conquest: 2, Intervention: 1, Expedition: 1, Crusade: 1};
+  const wars = {
+    War: 6,
+    Conflict: 2,
+    Campaign: 4,
+    Invasion: 2,
+    Rebellion: 2,
+    Conquest: 2,
+    Intervention: 1,
+    Expedition: 1,
+    Crusade: 1
+  };
   const generateCampaign = state => {
     const neighbors = state.neighbors.length ? state.neighbors : [0];
     return neighbors
@@ -810,7 +849,10 @@ window.BurgsAndStates = (function () {
           continue;
         }
 
-        const naval = states[f].type === "Naval" && states[t].type === "Naval" && cells.f[states[f].center] !== cells.f[states[t].center];
+        const naval =
+          states[f].type === "Naval" &&
+          states[t].type === "Naval" &&
+          cells.f[states[f].center] !== cells.f[states[t].center];
         const neib = naval ? false : states[f].neighbors.includes(t);
         const neibOfNeib =
           naval || neib
@@ -823,7 +865,14 @@ window.BurgsAndStates = (function () {
         let status = naval ? rw(navals) : neib ? rw(neibs) : neibOfNeib ? rw(neibsOfNeibs) : rw(far);
 
         // add Vassal
-        if (neib && P(0.8) && states[f].area > areaMean && states[t].area < areaMean && states[f].area / states[t].area > 2) status = "Vassal";
+        if (
+          neib &&
+          P(0.8) &&
+          states[f].area > areaMean &&
+          states[t].area < areaMean &&
+          states[f].area / states[t].area > 2
+        )
+          status = "Vassal";
         states[f].diplomacy[t] = status === "Vassal" ? "Suzerain" : status;
         states[t].diplomacy[f] = status;
       }
@@ -838,7 +887,9 @@ window.BurgsAndStates = (function () {
       if (ad.includes("Enemy")) continue; // already at war
 
       // random independent rival
-      const defender = ra(ad.map((r, d) => (r === "Rival" && !states[d].diplomacy.includes("Vassal") ? d : 0)).filter(d => d));
+      const defender = ra(
+        ad.map((r, d) => (r === "Rival" && !states[d].diplomacy.includes("Vassal") ? d : 0)).filter(d => d)
+      );
       let ap = states[attacker].area * states[attacker].expansionism,
         dp = states[defender].area * states[defender].expansionism;
       if (ap < dp * gauss(1.6, 0.8, 0, 10, 2)) continue; // defender is too strong
@@ -965,7 +1016,16 @@ window.BurgsAndStates = (function () {
       Diarchy: 1,
       Junta: 1
     }; // weighted random
-    const union = {Union: 3, League: 4, Confederation: 1, "United Kingdom": 1, "United Republic": 1, "United Provinces": 2, Commonwealth: 1, Heptarchy: 1}; // weighted random
+    const union = {
+      Union: 3,
+      League: 4,
+      Confederation: 1,
+      "United Kingdom": 1,
+      "United Republic": 1,
+      "United Provinces": 2,
+      Commonwealth: 1,
+      Heptarchy: 1
+    }; // weighted random
     const theocracy = {Theocracy: 20, Brotherhood: 1, Thearchy: 2, See: 1, "Holy State": 1};
     const anarchy = {"Free Territory": 2, Council: 3, Commune: 1, Community: 1};
 
@@ -975,7 +1035,8 @@ window.BurgsAndStates = (function () {
 
       const religion = pack.cells.religion[s.center];
       const isTheocracy =
-        (religion && pack.religions[religion].expansion === "state") || (P(0.1) && ["Organized", "Cult"].includes(pack.religions[religion].type));
+        (religion && pack.religions[religion].expansion === "state") ||
+        (P(0.1) && ["Organized", "Cult"].includes(pack.religions[religion].type));
       const isAnarchy = P(0.01 - tier / 500);
 
       if (isTheocracy) s.form = "Theocracy";
@@ -992,7 +1053,13 @@ window.BurgsAndStates = (function () {
         const form = monarchy[tier];
         // Default name depends on exponent tier, some culture bases have special names for tiers
         if (s.diplomacy) {
-          if (form === "Duchy" && s.neighbors.length > 1 && rand(6) < s.neighbors.length && s.diplomacy.includes("Vassal")) return "Marches"; // some vassal duchies on borderland
+          if (
+            form === "Duchy" &&
+            s.neighbors.length > 1 &&
+            rand(6) < s.neighbors.length &&
+            s.diplomacy.includes("Vassal")
+          )
+            return "Marches"; // some vassal duchies on borderland
           if (base === 1 && P(0.3) && s.diplomacy.includes("Vassal")) return "Dominion"; // English vassals
           if (P(0.3) && s.diplomacy.includes("Vassal")) return "Protectorate"; // some vassals
         }
@@ -1183,6 +1250,17 @@ window.BurgsAndStates = (function () {
     const noProvince = Array.from(cells.i).filter(i => cells.state[i] && !cells.province[i]); // cells without province assigned
     states.forEach(s => {
       if (!s.provinces.length) return;
+
+      const coreProvinceNames = s.provinces.map(p => provinces[p]?.name);
+      const colonyNamePool = [s.name, ...coreProvinceNames].filter(name => name && !/new/i.test(name));
+      const getColonyName = () => {
+        if (colonyNamePool.length < 1) return null;
+
+        const index = rand(colonyNamePool.length - 1);
+        const spliced = colonyNamePool.splice(index, 1);
+        return spliced[0] ? `New ${spliced[0]}` : null;
+      };
+
       let stateNoProvince = noProvince.filter(i => cells.state[i] === s.i && !cells.province[i]);
       while (stateNoProvince.length) {
         // add new province
@@ -1219,21 +1297,36 @@ window.BurgsAndStates = (function () {
 
         // generate "wild" province name
         const c = cells.culture[center];
-        const nameByBurg = burgCell && P(0.5);
-        const name = nameByBurg ? burgs[burg].name : Names.getState(Names.getCultureShort(c), c);
         const f = pack.features[cells.f[center]];
+        const color = getMixedColor(s.color);
+
         const provCells = stateNoProvince.filter(i => cells.province[i] === province);
         const singleIsle = provCells.length === f.cells && !provCells.find(i => cells.f[i] !== f.i);
         const isleGroup = !singleIsle && !provCells.find(i => pack.features[cells.f[i]].group !== "isle");
         const colony = !singleIsle && !isleGroup && P(0.5) && !isPassable(s.center, center);
-        const formName = singleIsle ? "Island" : isleGroup ? "Islands" : colony ? "Colony" : rw(forms["Wild"]);
+
+        const name = (function () {
+          const colonyName = colony && P(0.8) && getColonyName();
+          if (colonyName) return colonyName;
+          if (burgCell && P(0.5)) return burgs[burg].name;
+          return Names.getState(Names.getCultureShort(c), c);
+        })();
+
+        const formName = (function () {
+          if (singleIsle) return "Island";
+          if (isleGroup) return "Islands";
+          if (colony) return "Colony";
+          return rw(forms["Wild"]);
+        })();
+
         const fullName = name + " " + formName;
-        const color = getMixedColor(s.color);
+
         const dominion = colony ? P(0.95) : singleIsle || isleGroup ? P(0.7) : P(0.3);
         const kinship = dominion ? 0 : 0.4;
         const type = getType(center, burgs[burg]?.port);
         const coa = COA.generate(s.coa, kinship, dominion, type);
         coa.shield = COA.getShield(c, s.i);
+
         provinces.push({i: province, state: s.i, center, burg, name, formName, fullName, color, coa});
         s.provinces.push(province);
 
