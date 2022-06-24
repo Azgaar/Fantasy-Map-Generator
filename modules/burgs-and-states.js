@@ -1347,6 +1347,7 @@ window.BurgsAndStates = (function () {
         const type = getType(center, burgs[burg]?.port);
         const coa = COA.generate(s.coa, kinship, dominion, type);
         coa.shield = COA.getShield(c, s.i);
+
         provinces.push({i: province, state: s.i, center, burg, name, formName, fullName, color, coa});
         s.provinces.push(province);
 
