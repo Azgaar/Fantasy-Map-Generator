@@ -282,7 +282,7 @@ function insertHtml() {
   const createOption = ([value, label]) => `<option value="${value}">${label}</option>`;
   const createOptions = values => values.map(createOption).join("");
 
-  const html = /* html */ `<div id="chartsOverview" class="dialog">
+  const html = /* html */ `<div id="chartsOverview" class="dialog stable">
     <form id="chartsOverview__form">
       <div>
         <button data-tip="Add a chart" type="submit">Plot</button>
