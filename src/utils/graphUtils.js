@@ -1,8 +1,8 @@
-"use strict";
-// FMG utils related to graph
+import {TIME} from "../config/logging";
+import {createTypedArray} from ".";
 
 // check if new grid graph should be generated or we can use the existing one
-function shouldRegenerateGrid(grid) {
+export function shouldRegenerateGrid(grid) {
   const cellsDesired = +byId("pointsInput").dataset.cells;
   if (cellsDesired !== grid.cellsDesired) return true;
 
@@ -13,7 +13,7 @@ function shouldRegenerateGrid(grid) {
   return grid.spacing !== newSpacing || grid.cellsX !== newCellsX || grid.cellsY !== newCellsY;
 }
 
-function generateGrid() {
+export function generateGrid() {
   Math.random = aleaPRNG(seed); // reset PRNG
   const {spacing, cellsDesired, boundary, points, cellsX, cellsY} = placePoints();
   const {cells, vertices} = calculateVoronoi(points, boundary);
@@ -36,7 +36,7 @@ function placePoints() {
 }
 
 // calculate Delaunay and then Voronoi diagram
-function calculateVoronoi(points, boundary) {
+export function calculateVoronoi(points, boundary) {
   TIME && console.time("calculateDelaunay");
   const allPoints = points.concat(boundary);
   const delaunay = Delaunator.from(allPoints);
@@ -95,8 +95,11 @@ function getJitteredGrid(width, height, spacing) {
 }
 
 // return cell index on a regular square grid
-function findGridCell(x, y, grid) {
-  return Math.floor(Math.min(y / grid.spacing, grid.cellsY - 1)) * grid.cellsX + Math.floor(Math.min(x / grid.spacing, grid.cellsX - 1));
+export function findGridCell(x, y, grid) {
+  return (
+    Math.floor(Math.min(y / grid.spacing, grid.cellsY - 1)) * grid.cellsX +
+    Math.floor(Math.min(x / grid.spacing, grid.cellsX - 1))
+  );
 }
 
 // return array of cell indexes in radius on a regular square grid
@@ -130,21 +133,21 @@ function find(x, y, radius = Infinity) {
   return pack.cells.q.find(x, y, radius);
 }
 
-// return closest cell index
-function findCell(x, y, radius = Infinity) {
-  const found = pack.cells.q.find(x, y, radius);
-  return found ? found[2] : undefined;
-}
-
 // return array of cell indexes in radius
-function findAll(x, y, radius) {
+export function findAll(x, y, radius) {
   const found = pack.cells.q.findAll(x, y, radius);
   return found.map(r => r[2]);
 }
 
 // get polygon points for packed cells knowing cell id
-function getPackPolygon(i) {
+export function getPackPolygon(i) {
   return pack.cells.v[i].map(v => pack.vertices.p[v]);
+}
+
+// return closest cell index
+export function findCell(x, y, radius = Infinity) {
+  const found = pack.cells.q.find(x, y, radius);
+  return found ? found[2] : undefined;
 }
 
 // get polygon points for initial cells knowing cell id
@@ -215,12 +218,12 @@ function* poissonDiscSampler(x0, y0, x1, y1, r, k = 3) {
 }
 
 // filter land cells
-function isLand(i) {
+export function isLand(i) {
   return pack.cells.h[i] >= 20;
 }
 
 // filter water cells
-function isWater(i) {
+export function isWater(i) {
   return pack.cells.h[i] < 20;
 }
 
@@ -246,7 +249,14 @@ void (function addFindAll() {
       i++;
 
       // Stop searching if this quadrant can’t contain a closer node.
-      if (!(t.node = t.q.node) || (t.x1 = t.q.x0) > t.x3 || (t.y1 = t.q.y0) > t.y3 || (t.x2 = t.q.x1) < t.x0 || (t.y2 = t.q.y1) < t.y0) continue;
+      if (
+        !(t.node = t.q.node) ||
+        (t.x1 = t.q.x0) > t.x3 ||
+        (t.y1 = t.q.y0) > t.y3 ||
+        (t.x2 = t.q.x1) < t.x0 ||
+        (t.y2 = t.q.y1) < t.y0
+      )
+        continue;
 
       // Bisect the current quadrant.
       if (t.node.length) {

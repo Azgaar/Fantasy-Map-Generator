@@ -1,4 +1,4 @@
-"use strict";
+import {TIME} from "/src/config/logging";
 
 window.Cultures = (function () {
   let cells;

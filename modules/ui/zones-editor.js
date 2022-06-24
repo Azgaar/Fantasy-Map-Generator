@@ -8,8 +8,8 @@ function editZones() {
   updateFilters();
   zonesEditorAddLines();
 
-  if (modules.editZones) return;
-  modules.editZones = true;
+  if (fmg.modules.editZones) return;
+  fmg.modules.editZones = true;
 
   $("#zonesEditor").dialog({
     title: "Zones Editor",
@@ -61,7 +61,8 @@ function editZones() {
     const filterSelect = document.getElementById("zonesFilterType");
     const typeToFilterBy = types.includes(zonesFilterType.value) ? zonesFilterType.value : "all";
 
-    filterSelect.innerHTML = "<option value='all'>all</option>" + types.map(type => `<option value="${type}">${type}</option>`).join("");
+    filterSelect.innerHTML =
+      "<option value='all'>all</option>" + types.map(type => `<option value="${type}">${type}</option>`).join("");
     filterSelect.value = typeToFilterBy;
   }
 
@@ -80,9 +81,12 @@ function editZones() {
       const fill = zoneEl.getAttribute("fill");
       const area = getArea(d3.sum(c.map(i => pack.cells.area[i])));
       const rural = d3.sum(c.map(i => pack.cells.pop[i])) * populationRate;
-      const urban = d3.sum(c.map(i => pack.cells.burg[i]).map(b => pack.burgs[b].population)) * populationRate * urbanization;
+      const urban =
+        d3.sum(c.map(i => pack.cells.burg[i]).map(b => pack.burgs[b].population)) * populationRate * urbanization;
       const population = rural + urban;
-      const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}. Click to change`;
+      const populationTip = `Total population: ${si(population)}; Rural population: ${si(
+        rural
+      )}; Urban population: ${si(urban)}. Click to change`;
       const inactive = zoneEl.style.display === "none";
       const focused = defs.select("#fog #focus" + zoneEl.id).size();
 
@@ -98,8 +102,12 @@ function editZones() {
         <span data-tip="${populationTip}" class="icon-male hide"></span>
         <div data-tip="${populationTip}" class="culturePopulation hide">${si(population)}</div>
         <span data-tip="Drag to raise or lower the zone" class="icon-resize-vertical hide"></span>
-        <span data-tip="Toggle zone focus" class="icon-pin ${focused ? "" : " inactive"} hide ${c.length ? "" : " placeholder"}"></span>
-        <span data-tip="Toggle zone visibility" class="icon-eye ${inactive ? " inactive" : ""} hide ${c.length ? "" : " placeholder"}"></span>
+        <span data-tip="Toggle zone focus" class="icon-pin ${focused ? "" : " inactive"} hide ${
+        c.length ? "" : " placeholder"
+      }"></span>
+        <span data-tip="Toggle zone visibility" class="icon-eye ${inactive ? " inactive" : ""} hide ${
+        c.length ? "" : " placeholder"
+      }"></span>
         <span data-tip="Remove zone" class="icon-trash-empty hide"></span>
       </div>`;
     });
@@ -109,7 +117,9 @@ function editZones() {
     // update footer
     const totalArea = getArea(graphWidth * graphHeight);
     zonesFooterArea.dataset.area = totalArea;
-    const totalPop = (d3.sum(pack.cells.pop) + d3.sum(pack.burgs.filter(b => !b.removed).map(b => b.population)) * urbanization) * populationRate;
+    const totalPop =
+      (d3.sum(pack.cells.pop) + d3.sum(pack.burgs.filter(b => !b.removed).map(b => b.population)) * urbanization) *
+      populationRate;
     zonesFooterPopulation.dataset.population = totalPop;
     zonesFooterNumber.innerHTML = /* html */ `${filteredZones.length} of ${zones.length}`;
     zonesFooterCells.innerHTML = pack.cells.i.length;
@@ -150,7 +160,13 @@ function editZones() {
     zonesEditorAddLines();
   }
 
-  $(body).sortable({items: "div.states", handle: ".icon-resize-vertical", containment: "parent", axis: "y", update: movezone});
+  $(body).sortable({
+    items: "div.states",
+    handle: ".icon-resize-vertical",
+    containment: "parent",
+    axis: "y",
+    update: movezone
+  });
   function movezone(ev, ui) {
     const zone = $("#" + ui.item.attr("data-id"));
     const prev = $("#" + ui.item.prev().attr("data-id"));
@@ -174,7 +190,11 @@ function editZones() {
     $("#zonesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});
 
     tip("Click to select a zone, drag to paint a zone", true);
-    viewbox.style("cursor", "crosshair").on("click", selectZoneOnMapClick).call(d3.drag().on("start", dragZoneBrush)).on("touchmove mousemove", moveZoneBrush);
+    viewbox
+      .style("cursor", "crosshair")
+      .on("click", selectZoneOnMapClick)
+      .call(d3.drag().on("start", dragZoneBrush))
+      .on("touchmove mousemove", moveZoneBrush);
 
     body.querySelector("div").classList.add("selected");
     zones.selectAll("g").each(function () {
@@ -285,7 +305,8 @@ function editZones() {
     zonesEditor.querySelectorAll(".hide:not(.show)").forEach(el => el.classList.remove("hidden"));
     zonesFooter.style.display = "block";
     body.querySelectorAll("div > input, select, svg").forEach(e => (e.style.pointerEvents = "all"));
-    if (!close) $("#zonesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});
+    if (!close)
+      $("#zonesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});
 
     restoreDefaultEvents();
     clearMainTip();
@@ -356,7 +377,8 @@ function editZones() {
       body.querySelectorAll(":scope > div").forEach(function (el) {
         el.querySelector(".stateCells").innerHTML = rn((+el.dataset.cells / totalCells) * 100, 2) + "%";
         el.querySelector(".biomeArea").innerHTML = rn((+el.dataset.area / totalArea) * 100, 2) + "%";
-        el.querySelector(".culturePopulation").innerHTML = rn((+el.dataset.population / totalPopulation) * 100, 2) + "%";
+        el.querySelector(".culturePopulation").innerHTML =
+          rn((+el.dataset.population / totalPopulation) * 100, 2) + "%";
       });
     } else {
       body.dataset.type = "absolute";
@@ -369,7 +391,13 @@ function editZones() {
     const description = "Unknown zone";
     const type = "Unknown";
     const fill = "url(#hatch" + (id.slice(4) % 42) + ")";
-    zones.append("g").attr("id", id).attr("data-description", description).attr("data-type", type).attr("data-cells", "").attr("fill", fill);
+    zones
+      .append("g")
+      .attr("id", id)
+      .attr("data-description", description)
+      .attr("data-type", type)
+      .attr("data-cells", "")
+      .attr("fill", fill);
 
     zonesEditorAddLines();
   }
@@ -411,13 +439,19 @@ function editZones() {
     const burgs = pack.burgs.filter(b => !b.removed && cells.includes(b.cell));
 
     const rural = rn(d3.sum(cells.map(i => pack.cells.pop[i])) * populationRate);
-    const urban = rn(d3.sum(cells.map(i => pack.cells.burg[i]).map(b => pack.burgs[b].population)) * populationRate * urbanization);
+    const urban = rn(
+      d3.sum(cells.map(i => pack.cells.burg[i]).map(b => pack.burgs[b].population)) * populationRate * urbanization
+    );
     const total = rural + urban;
     const l = n => Number(n).toLocaleString();
 
     alertMessage.innerHTML = /* html */ `Rural: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" /> Urban:
-      <input type="number" min="0" step="1" id="urbanPop" value=${urban} style="width:6em" ${burgs.length ? "" : "disabled"} />
-      <p>Total population: ${l(total)} ⇒ <span id="totalPop">${l(total)}</span> (<span id="totalPopPerc">100</span>%)</p>`;
+      <input type="number" min="0" step="1" id="urbanPop" value=${urban} style="width:6em" ${
+      burgs.length ? "" : "disabled"
+    } />
+      <p>Total population: ${l(total)} ⇒ <span id="totalPop">${l(
+      total
+    )}</span> (<span id="totalPopPerc">100</span>%)</p>`;
 
     const update = function () {
       const totalNew = ruralPop.valueAsNumber + urbanPop.valueAsNumber;

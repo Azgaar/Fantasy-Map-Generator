@@ -136,7 +136,14 @@ window.UISubmap = (function () {
   }
 
   async function loadPreview($container, w, h) {
-    const url = await getMapURL("png", {globe: false, noWater: true, fullMap: true, noLabels: true, noScaleBar: true, noIce: true});
+    const url = await getMapURL("png", {
+      globe: false,
+      noWater: true,
+      fullMap: true,
+      noLabels: true,
+      noScaleBar: true,
+      noIce: true
+    });
 
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
@@ -173,7 +180,11 @@ window.UISubmap = (function () {
     const {angle, shiftX, shiftY, ratio, mirrorH, mirrorV} = getTransformInput();
 
     const [cx, cy] = [graphWidth / 2, graphHeight / 2];
-    const rot = alfa => (x, y) => [(x - cx) * Math.cos(alfa) - (y - cy) * Math.sin(alfa) + cx, (y - cy) * Math.cos(alfa) + (x - cx) * Math.sin(alfa) + cy];
+    const rot = alfa => (x, y) =>
+      [
+        (x - cx) * Math.cos(alfa) - (y - cy) * Math.sin(alfa) + cx,
+        (y - cy) * Math.cos(alfa) + (x - cx) * Math.sin(alfa) + cy
+      ];
     const shift = (dx, dy) => (x, y) => [x + dx, y + dy];
     const scale = r => (x, y) => [(x - cx) * r + cx, (y - cy) * r + cy];
     const flipH = (x, y) => [-x + 2 * cx, y];
@@ -185,7 +196,11 @@ window.UISubmap = (function () {
     let inverse = id;
 
     if (angle) [projection, inverse] = [rot(angle), rot(-angle)];
-    if (ratio) [projection, inverse] = [app(scale(Math.pow(1.1, ratio)), projection), app(inverse, scale(Math.pow(1.1, -ratio)))];
+    if (ratio)
+      [projection, inverse] = [
+        app(scale(Math.pow(1.1, ratio)), projection),
+        app(inverse, scale(Math.pow(1.1, -ratio)))
+      ];
     if (mirrorH) [projection, inverse] = [app(flipH, projection), app(inverse, flipH)];
     if (mirrorV) [projection, inverse] = [app(flipV, projection), app(inverse, flipV)];
     if (shiftX || shiftY) {
@@ -207,6 +222,14 @@ window.UISubmap = (function () {
       inverse
     });
   }, 1000);
+
+  // calculate x y extreme points of viewBox
+  function getViewBoxExtent() {
+    return [
+      [Math.abs(viewX / scale), Math.abs(viewY / scale)],
+      [Math.abs(viewX / scale) + graphWidth / scale, Math.abs(viewY / scale) + graphHeight / scale]
+    ];
+  }
 
   // Create submap from the current map. Submap limits defined by the current window size (canvas viewport)
   const generateSubmap = debounce(function () {
@@ -244,7 +267,10 @@ window.UISubmap = (function () {
 
     // fix scale
     distanceScaleInput.value = distanceScaleOutput.value = rn((distanceScale = distanceScaleOutput.value / scale), 2);
-    populationRateInput.value = populationRateOutput.value = rn((populationRate = populationRateOutput.value / scale), 2);
+    populationRateInput.value = populationRateOutput.value = rn(
+      (populationRate = populationRateOutput.value / scale),
+      2
+    );
     customization = 0;
     startResample(options);
   }, 1000);
@@ -253,9 +279,9 @@ window.UISubmap = (function () {
     // Do model changes with Submap.resample then do view changes if needed
     resetZoom(0);
     let oldstate = {
-      grid: deepCopy(grid),
-      pack: deepCopy(pack),
-      notes: deepCopy(notes),
+      grid: structuredClone(grid),
+      pack: structuredClone(pack),
+      notes: structuredClone(notes),
       seed,
       graphWidth,
       graphHeight

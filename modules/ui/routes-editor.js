@@ -21,8 +21,8 @@ function editRoute(onClick) {
   viewbox.on("touchmove mousemove", showEditorTips);
   if (onClick) toggleRouteCreationMode();
 
-  if (modules.editRoute) return;
-  modules.editRoute = true;
+  if (fmg.modules.editRoute) return;
+  fmg.modules.editRoute = true;
 
   // add listeners
   document.getElementById("routeGroupsShow").addEventListener("click", showGroupSection);
@@ -97,11 +97,11 @@ function editRoute(onClick) {
     const l = elSelected.node().getTotalLength();
     routeLength.innerHTML = rn(l * distanceScaleInput.value) + " " + distanceUnitInput.value;
 
-    if (modules.elevation) showEPForRoute(elSelected.node());
+    if (fmg.modules.elevation) showEPForRoute(elSelected.node());
   }
 
   function showElevationProfile() {
-    modules.elevation = true;
+    fmg.modules.elevation = true;
     showEPForRoute(elSelected.node());
   }
 

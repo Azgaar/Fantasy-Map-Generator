@@ -10,7 +10,10 @@ function editRiver(id) {
 
   elSelected = d3.select("#" + id).on("click", addControlPoint);
 
-  tip("Drag control points to change the river course. Click on point to remove it. Click on river to add additional control point. For major changes please create a new river instead", true);
+  tip(
+    "Drag control points to change the river course. Click on point to remove it. Click on river to add additional control point. For major changes please create a new river instead",
+    true
+  );
   debug.append("g").attr("id", "controlCells");
   debug.append("g").attr("id", "controlPoints");
 
@@ -29,8 +32,8 @@ function editRiver(id) {
     close: closeRiverEditor
   });
 
-  if (modules.editRiver) return;
-  modules.editRiver = true;
+  if (fmg.modules.editRiver) return;
+  fmg.modules.editRiver = true;
 
   // add listeners
   document.getElementById("riverCreateSelectingCells").addEventListener("click", createRiver);
@@ -163,7 +166,7 @@ function editRiver(id) {
     elSelected.attr("d", path);
 
     updateRiverLength(river);
-    if (modules.elevation) showEPForRiver(elSelected.node());
+    if (fmg.modules.elevation) showEPForRiver(elSelected.node());
   }
 
   function addControlPoint() {
@@ -227,7 +230,7 @@ function editRiver(id) {
   }
 
   function showElevationProfile() {
-    modules.elevation = true;
+    fmg.modules.elevation = true;
     showEPForRiver(elSelected.node());
   }
 

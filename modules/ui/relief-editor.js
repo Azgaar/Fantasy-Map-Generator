@@ -19,8 +19,8 @@ function editReliefIcon() {
     close: closeReliefEditor
   });
 
-  if (modules.editReliefIcon) return;
-  modules.editReliefIcon = true;
+  if (fmg.modules.editReliefIcon) return;
+  fmg.modules.editReliefIcon = true;
 
   // add listeners
   document.getElementById("reliefIndividual").addEventListener("click", enterIndividualMode);
@@ -260,7 +260,9 @@ function editReliefIcon() {
       const type = reliefIconsDiv.querySelector("svg.pressed")?.dataset.type;
       selection = type ? terrain.selectAll("use[href='" + type + "']") : terrain.selectAll("use");
       const size = selection.size();
-      alertMessage.innerHTML = type ? `Are you sure you want to remove all ${type} icons (${size})?` : `Are you sure you want to remove all icons (${size})?`;
+      alertMessage.innerHTML = type
+        ? `Are you sure you want to remove all ${type} icons (${size})?`
+        : `Are you sure you want to remove all icons (${size})?`;
     }
 
     $("#alert").dialog({

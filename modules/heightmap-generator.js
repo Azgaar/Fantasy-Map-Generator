@@ -1,4 +1,6 @@
-"use strict";
+import {TIME} from "/src/config/logging";
+import {createTypedArray} from "/src/utils";
+import {findGridCell} from "/src/utils/graphUtils";
 
 window.HeightmapGenerator = (function () {
   let grid = null;
@@ -388,8 +390,12 @@ window.HeightmapGenerator = (function () {
     const vert = direction === "vertical";
     const startX = vert ? Math.floor(Math.random() * graphWidth * 0.4 + graphWidth * 0.3) : 5;
     const startY = vert ? 5 : Math.floor(Math.random() * graphHeight * 0.4 + graphHeight * 0.3);
-    const endX = vert ? Math.floor(graphWidth - startX - graphWidth * 0.1 + Math.random() * graphWidth * 0.2) : graphWidth - 5;
-    const endY = vert ? graphHeight - 5 : Math.floor(graphHeight - startY - graphHeight * 0.1 + Math.random() * graphHeight * 0.2);
+    const endX = vert
+      ? Math.floor(graphWidth - startX - graphWidth * 0.1 + Math.random() * graphWidth * 0.2)
+      : graphWidth - 5;
+    const endY = vert
+      ? graphHeight - 5
+      : Math.floor(graphHeight - startY - graphHeight * 0.1 + Math.random() * graphHeight * 0.2);
 
     const start = findGridCell(startX, startY, grid);
     const end = findGridCell(endX, endY, grid);

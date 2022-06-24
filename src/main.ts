@@ -1,26 +1,22 @@
 // Azgaar (azgaar.fmg@yandex.com). Minsk, 2017-2022. MIT License
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
-"use strict";
-// set debug options
-const PRODUCTION = location.hostname && location.hostname !== "localhost" && location.hostname !== "127.0.0.1";
-const DEBUG = localStorage.getItem("debug");
-const INFO = DEBUG || !PRODUCTION;
-const TIME = DEBUG || !PRODUCTION;
-const WARN = true;
-const ERROR = true;
+import {PRODUCTION, UINT16_MAX} from "./constants";
+import {INFO, TIME, WARN, ERROR} from "./config/logging";
+import {createTypedArray} from "./utils";
+import {shouldRegenerateGrid, generateGrid, calculateVoronoi, getPackPolygon, isLand} from "./utils/graphUtils";
+import {drawRivers, drawStates, drawBorders} from "../modules/ui/layers";
+import {invokeActiveZooming} from "../modules/activeZooming";
+import {applyStoredOptions, applyMapSize, randomizeOptions} from "../modules/ui/options";
+import {locked} from "../modules/ui/general";
 
-// detect device
-const MOBILE = window.innerWidth < 600 || navigator.userAgentData?.mobile;
-
-// typed arrays max values
-const UINT8_MAX = 255;
-const UINT16_MAX = 65535;
-const UINT32_MAX = 4294967295;
+globalThis.fmg = {
+  modules: {}
+};
 
 if (PRODUCTION && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch(err => {
+    navigator.serviceWorker.register("../sw.js").catch(err => {
       console.error("ServiceWorker registration failed: ", err);
     });
   });
@@ -29,170 +25,47 @@ if (PRODUCTION && "serviceWorker" in navigator) {
     "beforeinstallprompt",
     async event => {
       event.preventDefault();
-      const Installation = await import("./modules/dynamic/installation.js");
+      const Installation = await import("../modules/dynamic/installation.js");
       Installation.init(event);
     },
     {once: true}
   );
 }
 
-// append svg layers (in default order)
-let svg = d3.select("#map");
-let defs = svg.select("#deftemp");
-let viewbox = svg.select("#viewbox");
-let scaleBar = svg.select("#scaleBar");
-let legend = svg.append("g").attr("id", "legend");
-let ocean = viewbox.append("g").attr("id", "ocean");
-let oceanLayers = ocean.append("g").attr("id", "oceanLayers");
-let oceanPattern = ocean.append("g").attr("id", "oceanPattern");
-let lakes = viewbox.append("g").attr("id", "lakes");
-let landmass = viewbox.append("g").attr("id", "landmass");
-let texture = viewbox.append("g").attr("id", "texture");
-let terrs = viewbox.append("g").attr("id", "terrs");
-let biomes = viewbox.append("g").attr("id", "biomes");
-let cells = viewbox.append("g").attr("id", "cells");
-let gridOverlay = viewbox.append("g").attr("id", "gridOverlay");
-let coordinates = viewbox.append("g").attr("id", "coordinates");
-let compass = viewbox.append("g").attr("id", "compass");
-let rivers = viewbox.append("g").attr("id", "rivers");
-let terrain = viewbox.append("g").attr("id", "terrain");
-let relig = viewbox.append("g").attr("id", "relig");
-let cults = viewbox.append("g").attr("id", "cults");
-let regions = viewbox.append("g").attr("id", "regions");
-let statesBody = regions.append("g").attr("id", "statesBody");
-let statesHalo = regions.append("g").attr("id", "statesHalo");
-let provs = viewbox.append("g").attr("id", "provs");
-let zones = viewbox.append("g").attr("id", "zones").style("display", "none");
-let borders = viewbox.append("g").attr("id", "borders");
-let stateBorders = borders.append("g").attr("id", "stateBorders");
-let provinceBorders = borders.append("g").attr("id", "provinceBorders");
-let routes = viewbox.append("g").attr("id", "routes");
-let roads = routes.append("g").attr("id", "roads");
-let trails = routes.append("g").attr("id", "trails");
-let searoutes = routes.append("g").attr("id", "searoutes");
-let temperature = viewbox.append("g").attr("id", "temperature");
-let coastline = viewbox.append("g").attr("id", "coastline");
-let ice = viewbox.append("g").attr("id", "ice").style("display", "none");
-let prec = viewbox.append("g").attr("id", "prec").style("display", "none");
-let population = viewbox.append("g").attr("id", "population");
-let emblems = viewbox.append("g").attr("id", "emblems").style("display", "none");
-let labels = viewbox.append("g").attr("id", "labels");
-let icons = viewbox.append("g").attr("id", "icons");
-let burgIcons = icons.append("g").attr("id", "burgIcons");
-let anchors = icons.append("g").attr("id", "anchors");
-let armies = viewbox.append("g").attr("id", "armies").style("display", "none");
-let markers = viewbox.append("g").attr("id", "markers");
-let fogging = viewbox.append("g").attr("id", "fogging-cont").attr("mask", "url(#fog)").append("g").attr("id", "fogging").style("display", "none");
-let ruler = viewbox.append("g").attr("id", "ruler").style("display", "none");
-let debug = viewbox.append("g").attr("id", "debug");
-
-// lake and coast groups
-lakes.append("g").attr("id", "freshwater");
-lakes.append("g").attr("id", "salt");
-lakes.append("g").attr("id", "sinkhole");
-lakes.append("g").attr("id", "frozen");
-lakes.append("g").attr("id", "lava");
-lakes.append("g").attr("id", "dry");
-coastline.append("g").attr("id", "sea_island");
-coastline.append("g").attr("id", "lake_island");
-
-labels.append("g").attr("id", "states");
-labels.append("g").attr("id", "addedLabels");
-
-let burgLabels = labels.append("g").attr("id", "burgLabels");
-burgIcons.append("g").attr("id", "cities");
-burgLabels.append("g").attr("id", "cities");
-anchors.append("g").attr("id", "cities");
-
-burgIcons.append("g").attr("id", "towns");
-burgLabels.append("g").attr("id", "towns");
-anchors.append("g").attr("id", "towns");
-
-// population groups
-population.append("g").attr("id", "rural");
-population.append("g").attr("id", "urban");
-
-// emblem groups
-emblems.append("g").attr("id", "burgEmblems");
-emblems.append("g").attr("id", "provinceEmblems");
-emblems.append("g").attr("id", "stateEmblems");
-
-// fogging
-fogging.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
-fogging.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%").attr("fill", "#e8f0f6").attr("filter", "url(#splotch)");
-
-// assign events separately as not a viewbox child
-scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => editUnits());
-legend.on("mousemove", () => tip("Drag to change the position. Click to hide the legend")).on("click", () => clearLegend());
-
-// main data variables
-let grid = {}; // initial graph based on jittered square grid and data
-let pack = {}; // packed graph and data
-let seed;
-let mapId;
-let mapHistory = [];
-let elSelected;
-let modules = {};
-let notes = [];
-let rulers = new Rulers();
-let customization = 0;
-
-let biomesData = applyDefaultBiomesSystem();
-let nameBases = Names.getNameBases(); // cultures-related data
-
-let color = d3.scaleSequential(d3.interpolateSpectral); // default color scheme
-const lineGen = d3.line().curve(d3.curveBasis); // d3 line generator with default curve interpolation
-
-// d3 zoom behavior
-let scale = 1;
-let viewX = 0;
-let viewY = 0;
-
-function onZoom() {
-  const {k, x, y} = d3.event.transform;
-
-  const isScaleChanged = Boolean(scale - k);
-  const isPositionChanged = Boolean(viewX - x || viewY - y);
-  if (!isScaleChanged && !isPositionChanged) return;
-
-  scale = k;
-  viewX = x;
-  viewY = y;
-
-  handleZoom(isScaleChanged, isPositionChanged);
-}
-const onZoomDebouced = debounce(onZoom, 50);
-const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", onZoomDebouced);
-
 // default options
-let options = {
+options = {
   pinNotes: false,
   showMFCGMap: true,
   winds: [225, 45, 225, 315, 135, 315],
   stateLabelsMode: "auto"
 };
-let mapCoordinates = {}; // map coordinates on globe
-let populationRate = +document.getElementById("populationRateInput").value;
-let distanceScale = +document.getElementById("distanceScaleInput").value;
-let urbanization = +document.getElementById("urbanizationInput").value;
-let urbanDensity = +document.getElementById("urbanDensityInput").value;
-let statesNeutral = 1; // statesEditor growth parameter
+mapCoordinates = {}; // map coordinates on globe
+populationRate = +byId("populationRateInput").value;
+distanceScale = +byId("distanceScaleInput").value;
+urbanization = +byId("urbanizationInput").value;
+urbanDensity = +byId("urbanDensityInput").value;
+statesNeutral = 1; // statesEditor growth parameter
 
 applyStoredOptions();
 
+rulers = new Rulers();
+biomesData = Biomes.getDefault();
+nameBases = Names.getNameBases(); // cultures-related data
+
+color = d3.scaleSequential(d3.interpolateSpectral); // default color scheme
+lineGen = d3.line().curve(d3.curveBasis); // d3 line generator with default curve interpolation
+
 // voronoi graph extension, cannot be changed after generation
-let graphWidth = +mapWidthInput.value;
-let graphHeight = +mapHeightInput.value;
+graphWidth = +byId("mapWidthInput").value;
+graphHeight = +byId("mapHeightInput").value;
 
 // svg canvas resolution, can be changed
-let svgWidth = graphWidth;
-let svgHeight = graphHeight;
+svgWidth = graphWidth;
+svgHeight = graphHeight;
 
-landmass.append("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
-oceanPattern.append("rect").attr("fill", "url(#oceanic)").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
-oceanLayers.append("rect").attr("id", "oceanBase").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
+defineSvg(graphWidth, graphHeight);
 
-document.addEventListener("DOMContentLoaded", async () => {
+document.on("DOMContentLoaded", async () => {
   if (!location.hostname) {
     const wiki = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally";
     alertMessage.innerHTML = /* html */ `Fantasy Map Generator cannot run serverless. Follow the <a href="${wiki}" target="_blank">instructions</a> on how you can
@@ -321,7 +194,7 @@ function focusOn() {
     if (cellParam) {
       const cell = +params.get("cell");
       const [x, y] = pack.cells.p[cell];
-      zoomTo(x, y, scale, 1600);
+      Zoom.to(x, y, scale, 1600);
       return;
     }
 
@@ -330,13 +203,13 @@ function focusOn() {
       if (!burg) return;
 
       const {x, y} = burg;
-      zoomTo(x, y, scale, 1600);
+      Zoom.to(x, y, scale, 1600);
       return;
     }
 
     const x = +params.get("x") || graphWidth / 2;
     const y = +params.get("y") || graphHeight / 2;
-    zoomTo(x, y, scale, 1600);
+    Zoom.to(x, y, scale, 1600);
   }
 }
 
@@ -399,183 +272,18 @@ function findBurgForMFCG(params) {
       });
   }
 
-  zoomTo(b.x, b.y, 8, 1600);
+  Zoom.to(b.x, b.y, 8, 1600);
   invokeActiveZooming();
   tip("Here stands the glorious city of " + b.name, true, "success", 15000);
 }
 
-// apply default biomes data
-function applyDefaultBiomesSystem() {
-  const name = [
-    "Marine",
-    "Hot desert",
-    "Cold desert",
-    "Savanna",
-    "Grassland",
-    "Tropical seasonal forest",
-    "Temperate deciduous forest",
-    "Tropical rainforest",
-    "Temperate rainforest",
-    "Taiga",
-    "Tundra",
-    "Glacier",
-    "Wetland"
-  ];
-  const color = ["#466eab", "#fbe79f", "#b5b887", "#d2d082", "#c8d68f", "#b6d95d", "#29bc56", "#7dcb35", "#409c43", "#4b6b32", "#96784b", "#d5e7eb", "#0b9131"];
-  const habitability = [0, 4, 10, 22, 30, 50, 100, 80, 90, 12, 4, 0, 12];
-  const iconsDensity = [0, 3, 2, 120, 120, 120, 120, 150, 150, 100, 5, 0, 150];
-  const icons = [
-    {},
-    {dune: 3, cactus: 6, deadTree: 1},
-    {dune: 9, deadTree: 1},
-    {acacia: 1, grass: 9},
-    {grass: 1},
-    {acacia: 8, palm: 1},
-    {deciduous: 1},
-    {acacia: 5, palm: 3, deciduous: 1, swamp: 1},
-    {deciduous: 6, swamp: 1},
-    {conifer: 1},
-    {grass: 1},
-    {},
-    {swamp: 1}
-  ];
-  const cost = [10, 200, 150, 60, 50, 70, 70, 80, 90, 200, 1000, 5000, 150]; // biome movement cost
-  const biomesMartix = [
-    // hot ↔ cold [>19°C; <-4°C]; dry ↕ wet
-    new Uint8Array([1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 10]),
-    new Uint8Array([3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 9, 9, 9, 9, 10, 10, 10]),
-    new Uint8Array([5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 9, 9, 9, 9, 9, 10, 10, 10]),
-    new Uint8Array([5, 6, 6, 6, 6, 6, 6, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 10, 10, 10]),
-    new Uint8Array([7, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 10, 10])
-  ];
-
-  // parse icons weighted array into a simple array
-  for (let i = 0; i < icons.length; i++) {
-    const parsed = [];
-    for (const icon in icons[i]) {
-      for (let j = 0; j < icons[i][icon]; j++) {
-        parsed.push(icon);
-      }
-    }
-    icons[i] = parsed;
-  }
-
-  return {i: d3.range(0, name.length), name, color, biomesMartix, habitability, iconsDensity, icons, cost};
-}
-
-function handleZoom(isScaleChanged, isPositionChanged) {
-  viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
-
-  if (isPositionChanged) drawCoordinates();
-
-  if (isScaleChanged) {
-    invokeActiveZooming();
-    drawScaleBar(scale);
-  }
-
-  // zoom image converter overlay
-  if (customization === 1) {
-    const canvas = document.getElementById("canvas");
-    if (!canvas || canvas.style.opacity === "0") return;
-
-    const img = document.getElementById("imageToConvert");
-    if (!img) return;
-
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.setTransform(scale, 0, 0, scale, viewX, viewY);
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-  }
-}
-
-// Zoom to a specific point
-function zoomTo(x, y, z = 8, d = 2000) {
-  const transform = d3.zoomIdentity.translate(x * -z + graphWidth / 2, y * -z + graphHeight / 2).scale(z);
-  svg.transition().duration(d).call(zoom.transform, transform);
-}
-
-// Reset zoom to initial
-function resetZoom(d = 1000) {
-  svg.transition().duration(d).call(zoom.transform, d3.zoomIdentity);
-}
-
-// calculate x y extreme points of viewBox
-function getViewBoxExtent() {
-  return [
-    [Math.abs(viewX / scale), Math.abs(viewY / scale)],
-    [Math.abs(viewX / scale) + graphWidth / scale, Math.abs(viewY / scale) + graphHeight / scale]
-  ];
-}
-
-// active zooming feature
-function invokeActiveZooming() {
-  if (coastline.select("#sea_island").size() && +coastline.select("#sea_island").attr("auto-filter")) {
-    // toggle shade/blur filter for coatline on zoom
-    const filter = scale > 1.5 && scale <= 2.6 ? null : scale > 2.6 ? "url(#blurFilter)" : "url(#dropShadow)";
-    coastline.select("#sea_island").attr("filter", filter);
-  }
-
-  // rescale labels on zoom
-  if (labels.style("display") !== "none") {
-    labels.selectAll("g").each(function () {
-      if (this.id === "burgLabels") return;
-      const desired = +this.dataset.size;
-      const relative = Math.max(rn((desired + desired / scale) / 2, 2), 1);
-      if (rescaleLabels.checked) this.setAttribute("font-size", relative);
-
-      const hidden = hideLabels.checked && (relative * scale < 6 || relative * scale > 60);
-      if (hidden) this.classList.add("hidden");
-      else this.classList.remove("hidden");
-    });
-  }
-
-  // rescale emblems on zoom
-  if (emblems.style("display") !== "none") {
-    emblems.selectAll("g").each(function () {
-      const size = this.getAttribute("font-size") * scale;
-      const hidden = hideEmblems.checked && (size < 25 || size > 300);
-      if (hidden) this.classList.add("hidden");
-      else this.classList.remove("hidden");
-      if (!hidden && window.COArenderer && this.children.length && !this.children[0].getAttribute("href")) renderGroupCOAs(this);
-    });
-  }
-
-  // turn off ocean pattern if scale is big (improves performance)
-  oceanPattern
-    .select("rect")
-    .attr("fill", scale > 10 ? "#fff" : "url(#oceanic)")
-    .attr("opacity", scale > 10 ? 0.2 : null);
-
-  // change states halo width
-  if (!customization) {
-    const desired = +statesHalo.attr("data-width");
-    const haloSize = rn(desired / scale ** 0.8, 2);
-    statesHalo.attr("stroke-width", haloSize).style("display", haloSize > 0.1 ? "block" : "none");
-  }
-
-  // rescale map markers
-  +markers.attr("rescale") &&
-    pack.markers?.forEach(marker => {
-      const {i, x, y, size = 30, hidden} = marker;
-      const el = !hidden && document.getElementById(`marker${i}`);
-      if (!el) return;
-
-      const zoomedSize = Math.max(rn(size / 5 + 24 / scale, 2), 1);
-      el.setAttribute("width", zoomedSize);
-      el.setAttribute("height", zoomedSize);
-      el.setAttribute("x", rn(x - zoomedSize / 2, 1));
-      el.setAttribute("y", rn(y - zoomedSize, 1));
-    });
-
-  // rescale rulers to have always the same size
-  if (ruler.style("display") !== "none") {
-    const size = rn((10 / scale ** 0.3) * 2, 2);
-    ruler.selectAll("text").attr("font-size", size);
-  }
-}
-
 async function renderGroupCOAs(g) {
-  const [group, type] = g.id === "burgEmblems" ? [pack.burgs, "burg"] : g.id === "provinceEmblems" ? [pack.provinces, "province"] : [pack.states, "state"];
+  const [group, type] =
+    g.id === "burgEmblems"
+      ? [pack.burgs, "burg"]
+      : g.id === "provinceEmblems"
+      ? [pack.provinces, "province"]
+      : [pack.states, "state"];
   for (let use of g.children) {
     const i = +use.dataset.i;
     const id = type + "COA" + i;
@@ -1547,7 +1255,9 @@ function addZones(number = 1) {
     const invader = ra(atWar);
     const target = invader.diplomacy.findIndex(d => d === "Enemy");
 
-    const cell = ra(cells.i.filter(i => cells.state[i] === target && cells.c[i].some(c => cells.state[c] === invader.i)));
+    const cell = ra(
+      cells.i.filter(i => cells.state[i] === target && cells.c[i].some(c => cells.state[c] === invader.i))
+    );
     if (!cell) return;
 
     const cellsArray = [],
@@ -1589,7 +1299,9 @@ function addZones(number = 1) {
 
     const neib = ra(state.neighbors.filter(n => n && !states[n].removed));
     if (!neib) return;
-    const cell = cells.i.find(i => cells.state[i] === state.i && !state.removed && cells.c[i].some(c => cells.state[c] === neib));
+    const cell = cells.i.find(
+      i => cells.state[i] === state.i && !state.removed && cells.c[i].some(c => cells.state[c] === neib)
+    );
     const cellsArray = [];
     const queue = [];
     if (cell) queue.push(cell);
@@ -1610,7 +1322,17 @@ function addZones(number = 1) {
       });
     }
 
-    const rebels = rw({Rebels: 5, Insurgents: 2, Mutineers: 1, Rioters: 1, Separatists: 1, Secessionists: 1, Insurrection: 2, Rebellion: 1, Conspiracy: 2});
+    const rebels = rw({
+      Rebels: 5,
+      Insurgents: 2,
+      Mutineers: 1,
+      Rioters: 1,
+      Separatists: 1,
+      Secessionists: 1,
+      Insurrection: 2,
+      Rebellion: 1,
+      Conspiracy: 2
+    });
     const name = getAdjective(states[neib].name) + " " + rebels;
     zonesData.push({name, type: "Rebels", cells: cellsArray, fill: "url(#hatch3)"});
   }
@@ -1619,7 +1341,14 @@ function addZones(number = 1) {
     const organized = ra(pack.religions.filter(r => r.type === "Organized"));
     if (!organized) return;
 
-    const cell = ra(cells.i.filter(i => cells.religion[i] && cells.religion[i] !== organized.i && cells.c[i].some(c => cells.religion[c] === organized.i)));
+    const cell = ra(
+      cells.i.filter(
+        i =>
+          cells.religion[i] &&
+          cells.religion[i] !== organized.i &&
+          cells.c[i].some(c => cells.religion[c] === organized.i)
+      )
+    );
     if (!cell) return;
     const target = cells.religion[cell];
     const cellsArray = [],
@@ -1685,11 +1414,54 @@ function addZones(number = 1) {
       });
     }
 
-    const adjective = () => ra(["Great", "Silent", "Severe", "Blind", "Unknown", "Loud", "Deadly", "Burning", "Bloody", "Brutal", "Fatal"]);
-    const animal = () => ra(["Ape", "Bear", "Boar", "Cat", "Cow", "Dog", "Pig", "Fox", "Bird", "Horse", "Rat", "Raven", "Sheep", "Spider", "Wolf"]);
-    const color = () => ra(["Golden", "White", "Black", "Red", "Pink", "Purple", "Blue", "Green", "Yellow", "Amber", "Orange", "Brown", "Grey"]);
+    const adjective = () =>
+      ra(["Great", "Silent", "Severe", "Blind", "Unknown", "Loud", "Deadly", "Burning", "Bloody", "Brutal", "Fatal"]);
+    const animal = () =>
+      ra([
+        "Ape",
+        "Bear",
+        "Boar",
+        "Cat",
+        "Cow",
+        "Dog",
+        "Pig",
+        "Fox",
+        "Bird",
+        "Horse",
+        "Rat",
+        "Raven",
+        "Sheep",
+        "Spider",
+        "Wolf"
+      ]);
+    const color = () =>
+      ra([
+        "Golden",
+        "White",
+        "Black",
+        "Red",
+        "Pink",
+        "Purple",
+        "Blue",
+        "Green",
+        "Yellow",
+        "Amber",
+        "Orange",
+        "Brown",
+        "Grey"
+      ]);
 
-    const type = rw({Fever: 5, Pestilence: 2, Flu: 2, Pox: 2, Smallpox: 2, Plague: 4, Cholera: 2, Dropsy: 1, Leprosy: 2});
+    const type = rw({
+      Fever: 5,
+      Pestilence: 2,
+      Flu: 2,
+      Pox: 2,
+      Smallpox: 2,
+      Plague: 4,
+      Cholera: 2,
+      Dropsy: 1,
+      Leprosy: 2
+    });
     const name = rw({[color()]: 4, [animal()]: 2, [adjective()]: 1}) + " " + type;
     zonesData.push({name, type: "Disease", cells: cellsArray, fill: "url(#hatch12)"});
   }
@@ -1812,7 +1584,9 @@ function addZones(number = 1) {
       meanFlux = d3.mean(fl),
       maxFlux = d3.max(fl),
       flux = (maxFlux - meanFlux) / 2 + meanFlux;
-    const rivers = cells.i.filter(i => !used[i] && cells.h[i] < 50 && cells.r[i] && cells.fl[i] > flux && cells.burg[i]);
+    const rivers = cells.i.filter(
+      i => !used[i] && cells.h[i] < 50 && cells.r[i] && cells.fl[i] > flux && cells.burg[i]
+    );
     if (!rivers.length) return;
 
     const cell = +ra(rivers),
@@ -1923,7 +1697,7 @@ const regenerateMap = debounce(async function (options) {
 
   closeDialogs("#worldConfigurator, #options3d");
   customization = 0;
-  resetZoom(1000);
+  Zoom.reset(1000);
   undraw();
   await generate(options);
   restoreLayers();

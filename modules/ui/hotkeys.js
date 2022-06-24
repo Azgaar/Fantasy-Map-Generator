@@ -13,7 +13,6 @@ function handleKeydown(event) {
 }
 
 function handleKeyup(event) {
-  if (!modules.editors) return; // if editors are not loaded, do nothing
   if (!allowHotkeys()) return; // in some cases (e.g. in a textarea) hotkeys are not allowed
 
   event.stopPropagation();

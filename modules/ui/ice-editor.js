@@ -18,8 +18,8 @@ function editIce() {
     close: closeEditor
   });
 
-  if (modules.editIce) return;
-  modules.editIce = true;
+  if (fmg.modules.editIce) return;
+  fmg.modules.editIce = true;
 
   // add listeners
   document.getElementById("iceEditStyle").addEventListener("click", () => editStyle("ice"));

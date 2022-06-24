@@ -11,8 +11,8 @@ function editProvinces() {
   const body = document.getElementById("provincesBodySection");
   refreshProvincesEditor();
 
-  if (modules.editProvinces) return;
-  modules.editProvinces = true;
+  if (fmg.modules.editProvinces) return;
+  fmg.modules.editProvinces = true;
 
   $("#provincesEditor").dialog({
     title: "Provinces Editor",
@@ -123,7 +123,9 @@ function editProvinces() {
       const rural = p.rural * populationRate;
       const urban = p.urban * populationRate * urbanization;
       const population = rn(rural + urban);
-      const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}`;
+      const populationTip = `Total population: ${si(population)}; Rural population: ${si(
+        rural
+      )}; Urban population: ${si(urban)}`;
       totalPopulation += population;
 
       const stateName = pack.states[p.state].name;
@@ -144,9 +146,15 @@ function editProvinces() {
       >
         <fill-box fill="${p.color}"></fill-box>
         <input data-tip="Province name. Click to change" class="name pointer" value="${p.name}" readonly />
-        <svg data-tip="Click to show and edit province emblem" class="coaIcon pointer hide" viewBox="0 0 200 200"><use href="#provinceCOA${p.i}"></use></svg>
-        <input data-tip="Province form name. Click to change" class="name pointer hide" value="${p.formName}" readonly />
-        <span data-tip="Province capital. Click to zoom into view" class="icon-star-empty pointer hide ${p.burg ? "" : "placeholder"}"></span>
+        <svg data-tip="Click to show and edit province emblem" class="coaIcon pointer hide" viewBox="0 0 200 200"><use href="#provinceCOA${
+          p.i
+        }"></use></svg>
+        <input data-tip="Province form name. Click to change" class="name pointer hide" value="${
+          p.formName
+        }" readonly />
+        <span data-tip="Province capital. Click to zoom into view" class="icon-star-empty pointer hide ${
+          p.burg ? "" : "placeholder"
+        }"></span>
         <select
           data-tip="Province capital. Click to select from burgs within the state. No capital means the province is governed from the state capital"
           class="cultureBase hide ${p.burgs.length ? "" : "placeholder"}"
@@ -191,7 +199,9 @@ function editProvinces() {
 
   function getCapitalOptions(burgs, capital) {
     let options = "";
-    burgs.forEach(b => (options += `<option ${b === capital ? "selected" : ""} value="${b}">${pack.burgs[b].name}</option>`));
+    burgs.forEach(
+      b => (options += `<option ${b === capital ? "selected" : ""} value="${b}">${pack.burgs[b].name}</option>`)
+    );
     return options;
   }
 
@@ -265,7 +275,11 @@ function editProvinces() {
     const {name, burg: burgId, burgs: provinceBurgs} = province;
 
     if (provinceBurgs.some(b => burgs[b].capital))
-      return tip("Cannot declare independence of a province having capital burg. Please change capital first", false, "error");
+      return tip(
+        "Cannot declare independence of a province having capital burg. Please change capital first",
+        false,
+        "error"
+      );
     if (!burgId) return tip("Cannot declare independence of a province without burg", false, "error");
 
     const oldStateId = province.state;
@@ -311,7 +325,10 @@ function editProvinces() {
       return relations;
     });
     diplomacy.push("x");
-    states[0].diplomacy.push([`Independance declaration`, `${name} declared its independance from ${states[oldStateId].name}`]);
+    states[0].diplomacy.push([
+      `Independance declaration`,
+      `${name} declared its independance from ${states[oldStateId].name}`
+    ]);
 
     // create new state
     states.push({
@@ -373,8 +390,12 @@ function editProvinces() {
     const l = n => Number(n).toLocaleString();
 
     alertMessage.innerHTML = /* html */ ` Rural: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" /> Urban:
-      <input type="number" min="0" step="1" id="urbanPop" value=${urban} style="width:6em" ${p.burgs.length ? "" : "disabled"} />
-      <p>Total population: ${l(total)} ⇒ <span id="totalPop">${l(total)}</span> (<span id="totalPopPerc">100</span>%)</p>`;
+      <input type="number" min="0" step="1" id="urbanPop" value=${urban} style="width:6em" ${
+      p.burgs.length ? "" : "disabled"
+    } />
+      <p>Total population: ${l(total)} ⇒ <span id="totalPop">${l(
+      total
+    )}</span> (<span id="totalPopPerc">100</span>%)</p>`;
 
     const update = function () {
       const totalNew = ruralPop.valueAsNumber + urbanPop.valueAsNumber;
@@ -493,8 +514,8 @@ function editProvinces() {
       position: {my: "center", at: "center", of: "svg"}
     });
 
-    if (modules.editProvinceName) return;
-    modules.editProvinceName = true;
+    if (fmg.modules.editProvinceName) return;
+    fmg.modules.editProvinceName = true;
 
     // add listeners
     document.getElementById("provinceNameEditorShortCulture").addEventListener("click", regenerateShortNameCuture);
@@ -692,7 +713,13 @@ function editProvinces() {
 
     function updateChart() {
       const value =
-        this.value === "area" ? d => d.area : this.value === "rural" ? d => d.rural : this.value === "urban" ? d => d.urban : d => d.rural + d.urban;
+        this.value === "area"
+          ? d => d.area
+          : this.value === "rural"
+          ? d => d.rural
+          : this.value === "urban"
+          ? d => d.urban
+          : d => d.rural + d.urban;
 
       root.sum(value);
       node.data(treeLayout(root).leaves());
@@ -774,7 +801,13 @@ function editProvinces() {
 
     customization = 11;
     provs.select("g#provincesBody").append("g").attr("id", "temp");
-    provs.select("g#provincesBody").append("g").attr("id", "centers").attr("fill", "none").attr("stroke", "#ff0000").attr("stroke-width", 1);
+    provs
+      .select("g#provincesBody")
+      .append("g")
+      .attr("id", "centers")
+      .attr("fill", "none")
+      .attr("stroke", "#ff0000")
+      .attr("stroke-width", 1);
 
     document.querySelectorAll("#provincesBottom > *").forEach(el => (el.style.display = "none"));
     document.getElementById("provincesManuallyButtons").style.display = "inline-block";
@@ -786,7 +819,11 @@ function editProvinces() {
     $("#provincesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});
 
     tip("Click on a province to select, drag the circle to change province", true);
-    viewbox.style("cursor", "crosshair").on("click", selectProvinceOnMapClick).call(d3.drag().on("start", dragBrush)).on("touchmove mousemove", moveBrush);
+    viewbox
+      .style("cursor", "crosshair")
+      .on("click", selectProvinceOnMapClick)
+      .call(d3.drag().on("start", dragBrush))
+      .on("touchmove mousemove", moveBrush);
 
     body.querySelector("div").classList.add("selected");
     selectProvince(+body.querySelector("div").dataset.id);
@@ -857,7 +894,11 @@ function editProvinces() {
       if (i === pack.provinces[provinceOld].center) {
         const center = centers.select("polygon[data-center='" + i + "']");
         if (!center.size()) centers.append("polygon").attr("data-center", i).attr("points", getPackPolygon(i));
-        tip("Province center cannot be assigned to a different region. Please remove the province first", false, "error");
+        tip(
+          "Province center cannot be assigned to a different region. Please remove the province first",
+          false,
+          "error"
+        );
         return;
       }
 
@@ -919,7 +960,8 @@ function editProvinces() {
     provincesHeader.querySelector("div[data-sortby='state']").style.left = "22em";
     provincesFooter.style.display = "block";
     body.querySelectorAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "all"));
-    if (!close) $("#provincesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});
+    if (!close)
+      $("#provincesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});
 
     restoreDefaultEvents();
     clearMainTip();
@@ -941,14 +983,20 @@ function editProvinces() {
     const {cells, provinces} = pack;
     const point = d3.mouse(this);
     const center = findCell(point[0], point[1]);
-    if (cells.h[center] < 20) return tip("You cannot place province into the water. Please click on a land cell", false, "error");
+    if (cells.h[center] < 20)
+      return tip("You cannot place province into the water. Please click on a land cell", false, "error");
 
     const oldProvince = cells.province[center];
     if (oldProvince && provinces[oldProvince].center === center)
       return tip("The cell is already a center of a different province. Select other cell", false, "error");
 
     const state = cells.state[center];
-    if (!state) return tip("You cannot create a province in neutral lands. Please assign this land to a state first", false, "error");
+    if (!state)
+      return tip(
+        "You cannot create a province in neutral lands. Please assign this land to a state first",
+        false,
+        "error"
+      );
 
     if (d3.event.shiftKey === false) exitAddProvinceMode();
 
@@ -1014,7 +1062,10 @@ function editProvinces() {
 
   function downloadProvincesData() {
     const unit = areaUnit.value === "square" ? distanceUnitInput.value + "2" : areaUnit.value;
-    let data = "Id,Province,Full Name,Form,State,Color,Capital,Area " + unit + ",Total Population,Rural Population,Urban Population\n"; // headers
+    let data =
+      "Id,Province,Full Name,Form,State,Color,Capital,Area " +
+      unit +
+      ",Total Population,Rural Population,Urban Population\n"; // headers
 
     body.querySelectorAll(":scope > div").forEach(function (el) {
       const key = parseInt(el.dataset.id);

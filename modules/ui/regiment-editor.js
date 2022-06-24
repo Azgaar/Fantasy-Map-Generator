@@ -19,8 +19,8 @@ function editRegiment(selector) {
     position: {my: "left top", at: "left+10 top+10", of: "#map"}
   });
 
-  if (modules.editRegiment) return;
-  modules.editRegiment = true;
+  if (fmg.modules.editRegiment) return;
+  fmg.modules.editRegiment = true;
 
   // add listeners
   document.getElementById("regimentNameRestore").addEventListener("click", restoreName);

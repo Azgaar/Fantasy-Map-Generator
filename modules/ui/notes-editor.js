@@ -69,12 +69,12 @@ function editNotes(id, name) {
     if (!window.tinymce) {
       const url = "https://cdn.tiny.cloud/1/4i6a79ymt2y0cagke174jp3meoi28vyecrch12e5puyw3p9a/tinymce/5/tinymce.min.js";
       try {
-        await import(url);
+        await import(/* @vite-ignore */ url);
       } catch (error) {
         // error may be caused by failed request being cached, try again with random hash
         try {
           const hash = Math.random().toString(36).substring(2, 15);
-          await import(`${url}#${hash}`);
+          await import(/* @vite-ignore */ `${url}#${hash}`);
         } catch (error) {
           console.error(error);
         }

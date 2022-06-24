@@ -57,8 +57,8 @@ function editDiplomacy() {
   refreshDiplomacyEditor();
   viewbox.style("cursor", "crosshair").on("click", selectStateOnMapClick);
 
-  if (modules.editDiplomacy) return;
-  modules.editDiplomacy = true;
+  if (fmg.modules.editDiplomacy) return;
+  fmg.modules.editDiplomacy = true;
 
   $("#diplomacyEditor").dialog({
     title: "Diplomacy Editor",

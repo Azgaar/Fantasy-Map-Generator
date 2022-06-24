@@ -17,8 +17,8 @@ function editCoastline(node = d3.event.target) {
   drawCoastlineVertices();
   viewbox.on("touchmove mousemove", null);
 
-  if (modules.editCoastline) return;
-  modules.editCoastline = true;
+  if (fmg.modules.editCoastline) return;
+  fmg.modules.editCoastline = true;
 
   // add listeners
   document.getElementById("coastlineGroupsShow").addEventListener("click", showGroupSection);
@@ -55,7 +55,9 @@ function editCoastline(node = d3.event.target) {
       .attr("r", 0.4)
       .attr("data-v", d => d)
       .call(d3.drag().on("drag", dragVertex))
-      .on("mousemove", () => tip("Drag to move the vertex, please use for fine-tuning only. Edit heightmap to change actual cell heights"));
+      .on("mousemove", () =>
+        tip("Drag to move the vertex, please use for fine-tuning only. Edit heightmap to change actual cell heights")
+      );
 
     const area = pack.features[f].area;
     coastlineArea.innerHTML = si(getArea(area)) + " " + getAreaUnit();

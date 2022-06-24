@@ -422,8 +422,8 @@ function editStateName(state) {
     position: {my: "center", at: "center", of: "svg"}
   });
 
-  if (modules.editStateName) return;
-  modules.editStateName = true;
+  if (fmg.modules.editStateName) return;
+  fmg.modules.editStateName = true;
 
   // add listeners
   byId("stateNameEditorShortCulture").on("click", regenerateShortNameCuture);
