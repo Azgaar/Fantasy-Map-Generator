@@ -26,7 +26,7 @@ let getDescription; // dataElement => string
 let getShape; // dataElement => string;
 
 export function open(props) {
-  closeDialogs(".stable");
+  closeDialogs("#hierarchyTree, .stable");
 
   dataElements = props.data;
   dataElements[0].origins = [null];
@@ -145,7 +145,7 @@ function appendStyleSheet() {
 }
 
 function insertHtml() {
-  const html = /* html */ `<div id="hierarchyTree" style="overflow: hidden;">
+  const html = /* html */ `<div id="hierarchyTree" class="dialog" style="overflow: hidden;">
     <svg>
       <g id="hierarchyTree_viewbox" style="text-anchor: middle; dominant-baseline: central">
         <g transform="translate(10, -45)">

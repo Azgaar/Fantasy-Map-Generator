@@ -3,35 +3,35 @@ import {rollups} from "../../../utils/functionUtils.js";
 const entitiesMap = {
   states: {
     label: "State",
-    cellsData: pack.cells.state,
+    getCellsData: () => pack.cells.state,
     getName: nameGetter("states"),
     getColors: colorsGetter("states"),
     landOnly: true
   },
   cultures: {
     label: "Culture",
-    cellsData: pack.cells.culture,
+    getCellsData: () => pack.cells.culture,
     getName: nameGetter("cultures"),
     getColors: colorsGetter("cultures"),
     landOnly: true
   },
   religions: {
     label: "Religion",
-    cellsData: pack.cells.religion,
+    getCellsData: () => pack.cells.religion,
     getName: nameGetter("religions"),
     getColors: colorsGetter("religions"),
     landOnly: true
   },
   provinces: {
     label: "Province",
-    cellsData: pack.cells.province,
+    getCellsData: () => pack.cells.province,
     getName: nameGetter("provinces"),
     getColors: colorsGetter("provinces"),
     landOnly: true
   },
   biomes: {
     label: "Biome",
-    cellsData: pack.cells.biome,
+    getCellsData: () => pack.cells.biome,
     getName: biomeNameGetter,
     getColors: biomeColorsGetter,
     landOnly: false
@@ -199,15 +199,30 @@ const plotTypeMap = {
   normalizedStackedBar: {offset: d3.stackOffsetExpand, formatX: value => rn(value * 100) + "%"}
 };
 
+let charts = []; // store charts data
+let prevMapId = mapId;
+
 appendStyleSheet();
 insertHtml();
 addListeners();
 changeViewColumns();
 
 export function open() {
-  const charts = byId("chartsOverview__charts").childElementCount;
-  if (!charts) renderChart();
-  $("#chartsOverview").dialog({title: "Data Charts"});
+  closeDialogs("#chartsOverview, .stable");
+
+  if (prevMapId !== mapId) {
+    charts = [];
+    prevMapId = mapId;
+  }
+
+  if (!charts.length) addChart();
+  else charts.forEach(chart => renderChart(chart));
+
+  $("#chartsOverview").dialog({
+    title: "Data Charts",
+    position: {my: "center", at: "center", of: "svg"},
+    close: handleClose
+  });
 }
 
 function appendStyleSheet() {
@@ -267,25 +282,25 @@ function insertHtml() {
   const createOption = ([value, label]) => `<option value="${value}">${label}</option>`;
   const createOptions = values => values.map(createOption).join("");
 
-  const html = /* html */ `<div id="chartsOverview">
+  const html = /* html */ `<div id="chartsOverview" class="dialog">
     <form id="chartsOverview__form">
       <div>
         <button data-tip="Add a chart" type="submit">Plot</button>
 
-        <select data-tip="Select entity (y axis)" id="chartsOverview__entitiesSelect">${createOptions(
-          entities
-        )}</select>
+        <select data-tip="Select entity (y axis)" id="chartsOverview__entitiesSelect">
+          ${createOptions(entities)}
+        </select>
 
         <label>by
-          <select data-tip="Select value to plot by (x axis)" id="chartsOverview__plotBySelect">${createOptions(
-            plotBy
-          )}</select>
+          <select data-tip="Select value to plot by (x axis)" id="chartsOverview__plotBySelect">
+            ${createOptions(plotBy)}
+          </select>
         </label>
 
         <label>grouped by
-          <select data-tip="Select entoty to group by. If you don't need grouping, set it the same as the entity" id="chartsOverview__groupBySelect">${createOptions(
-            entities
-          )}</select>
+          <select data-tip="Select entoty to group by. If you don't need grouping, set it the same as the entity" id="chartsOverview__groupBySelect">
+            ${createOptions(entities)}
+          </select>
         </label>
 
         <label data-tip="Sorting type">sorted
@@ -325,11 +340,11 @@ function insertHtml() {
 }
 
 function addListeners() {
-  byId("chartsOverview__form").on("submit", renderChart);
+  byId("chartsOverview__form").on("submit", addChart);
   byId("chartsOverview__viewColumns").on("change", changeViewColumns);
 }
 
-function renderChart(event) {
+function addChart(event) {
   if (event) event.preventDefault();
 
   const entity = byId("chartsOverview__entitiesSelect").value;
@@ -338,30 +353,41 @@ function renderChart(event) {
   const sorting = byId("chartsOverview__sortingSelect").value;
   const type = byId("chartsOverview__chartType").value;
 
-  const {
-    label: plotByLabel,
-    stringify,
-    quantize,
-    aggregate,
-    formatTicks,
-    stackable,
-    landOnly: plotByLandOnly
-  } = quantizationMap[plotBy];
+  const {stackable} = quantizationMap[plotBy];
 
   if (!stackable && groupBy !== entity) {
     tip(`Grouping is not supported for ${plotByLabel}`, false, "warn", 4000);
     groupBy = entity;
   }
 
+  const chartOptions = {id: Date.now(), entity, plotBy, groupBy, sorting, type};
+  charts.push(chartOptions);
+  renderChart(chartOptions);
+  updateDialogPosition();
+}
+
+function renderChart({id, entity, plotBy, groupBy, sorting, type}) {
+  const {
+    label: plotByLabel,
+    stringify,
+    quantize,
+    aggregate,
+    formatTicks,
+    landOnly: plotByLandOnly
+  } = quantizationMap[plotBy];
+
   const noGrouping = groupBy === entity;
 
   const {
     label: entityLabel,
     getName: getEntityName,
-    cellsData: entityCells,
+    getCellsData: getEntityCellsData,
     landOnly: entityLandOnly
   } = entitiesMap[entity];
-  const {label: groupLabel, getName: getGroupName, cellsData: groupCells, getColors} = entitiesMap[groupBy];
+  const {label: groupLabel, getName: getGroupName, getCellsData: getGroupCellsData, getColors} = entitiesMap[groupBy];
+
+  const entityCells = getEntityCellsData();
+  const groupCells = getGroupCellsData();
 
   const title = `${capitalize(entity)} by ${plotByLabel}${noGrouping ? "" : " grouped by " + groupLabel}`;
 
@@ -403,11 +429,10 @@ function renderChart(event) {
   const colors = getColors();
   const {offset, formatX = formatTicks} = plotTypeMap[type];
 
-  const chart = createStackedBarChart(chartData, {sorting, colors, tooltip, offset, formatX});
-  insertChart(chart, title);
+  const $chart = createStackedBarChart(chartData, {sorting, colors, tooltip, offset, formatX});
+  insertChart(id, $chart, title);
 
   byId("chartsOverview__charts").lastChild.scrollIntoView();
-  updateDialog();
 }
 
 // based on observablehq.com/@d3/stacked-horizontal-bar-chart
@@ -543,7 +568,7 @@ function createStackedBarChart(data, {sorting, colors, tooltip, offset, formatX}
   return svg.node();
 }
 
-function insertChart(chart, title) {
+function insertChart(id, $chart, title) {
   const $chartContainer = byId("chartsOverview__charts");
 
   const $figure = document.createElement("figure");
@@ -560,18 +585,19 @@ function insertChart(chart, title) {
     </div>
   `;
 
-  $figure.appendChild(chart);
+  $figure.appendChild($chart);
   $figure.appendChild($caption);
   $chartContainer.appendChild($figure);
 
   const downloadChart = () => {
     const name = `${getFileName(title)}.svg`;
-    downloadFile(chart.outerHTML, name);
+    downloadFile($chart.outerHTML, name);
   };
 
   const removeChart = () => {
     $figure.remove();
-    updateDialog();
+    charts = charts.filter(chart => chart.id !== id);
+    updateDialogPosition();
   };
 
   $figure.querySelector("button.icon-download").on("click", downloadChart);
@@ -582,11 +608,17 @@ function changeViewColumns() {
   const columns = byId("chartsOverview__viewColumns").value;
   const $charts = byId("chartsOverview__charts");
   $charts.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
-  updateDialog();
+  updateDialogPosition();
 }
 
-function updateDialog() {
+function updateDialogPosition() {
   $("#chartsOverview").dialog({position: {my: "center", at: "center", of: "svg"}});
+}
+
+function handleClose() {
+  const $chartContainer = byId("chartsOverview__charts");
+  $chartContainer.innerHTML = "";
+  $("#chartsOverview").dialog("destroy");
 }
 
 // config

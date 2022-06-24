@@ -49,11 +49,13 @@ function unselect() {
 
 // close all dialogs except stated
 function closeDialogs(except = "#except") {
-  $(".dialog:visible")
-    .not(except)
-    .each(function () {
-      $(this).dialog("close");
-    });
+  try {
+    $(".dialog:visible")
+      .not(except)
+      .each(function () {
+        $(this).dialog("close");
+      });
+  } catch (error) {}
 }
 
 // move brush radius circle
@@ -1155,7 +1157,7 @@ function confirmationDialog(options) {
 // add and register event listeners to clean up on editor closure
 function listen(element, event, handler) {
   element.on(event, handler);
-  return () => element.removeEventListener(event, handler);
+  return () => element.off(event, handler);
 }
 
 // Calls the refresh functionality on all editors currently open.
@@ -1180,12 +1182,12 @@ async function editStates() {
 
 async function editCultures() {
   if (customization) return;
-  const Editor = await import("../dynamic/editors/cultures-editor.js?v=1.87.00");
+  const Editor = await import("../dynamic/editors/cultures-editor.js?v=1.87.01");
   Editor.open();
 }
 
 async function editReligions() {
   if (customization) return;
-  const Editor = await import("../dynamic/editors/religions-editor.js?v=1.87.00");
+  const Editor = await import("../dynamic/editors/religions-editor.js?v=1.87.01");
   Editor.open();
 }
