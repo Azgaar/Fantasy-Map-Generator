@@ -1,6 +1,6 @@
 import {restoreDefaultEvents} from "/src/scripts/events";
 import {findAll, findCell, getPackPolygon, isLand} from "/src/utils/graphUtils";
-import {showMainTip, clearMainTip} from "/src/scripts/tooltips";
+import {tip, showMainTip, clearMainTip} from "/src/scripts/tooltips";
 import {byId} from "/src/utils/shorthands";
 
 const $body = insertEditorHtml();
@@ -59,7 +59,6 @@ function insertEditorHtml() {
         <label data-tip="Change brush size" data-shortcut="+ (increase), – (decrease)" class="italic">Brush size:
           <input
             id="culturesManuallyBrush"
-            oninput="tip('Brush size: '+this.value); culturesManuallyBrushNumber.value = this.value"
             type="range"
             min="5"
             max="99"
@@ -68,7 +67,6 @@ function insertEditorHtml() {
           />
           <input
             id="culturesManuallyBrushNumber"
-            oninput="tip('Brush size: '+this.value); culturesManuallyBrush.value = this.value"
             type="number"
             min="5"
             max="99"

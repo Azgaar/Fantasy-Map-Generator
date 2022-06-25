@@ -1,3 +1,5 @@
+import {tip} from "/src/scripts/tooltips";
+
 // module to prompt PWA installation
 let installButton = null;
 let deferredPrompt = null;

@@ -1,4 +1,5 @@
-"use strict";
+import {tip} from "/src/scripts/tooltips";
+
 // functions to save project as .map file
 
 // prepare map data for saving
@@ -122,7 +123,8 @@ function getMapData() {
 
 // Download .map file
 function dowloadMap() {
-  if (customization) return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
+  if (customization)
+    return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
   closeDialogs("#alert");
 
   const mapData = getMapData();
@@ -137,7 +139,8 @@ function dowloadMap() {
 }
 
 async function saveToDropbox() {
-  if (customization) return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
+  if (customization)
+    return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
   closeDialogs("#alert");
   const mapData = getMapData();
   const filename = getFileName() + ".map";
@@ -151,7 +154,8 @@ async function saveToDropbox() {
 }
 
 function quickSave() {
-  if (customization) return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
+  if (customization)
+    return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
 
   const mapData = getMapData();
   const blob = new Blob([mapData], {type: "text/plain"});

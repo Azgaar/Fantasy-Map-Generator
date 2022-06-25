@@ -1,6 +1,6 @@
-"use strict";
+import {tip} from "/src/scripts/tooltips";
 
-function editNotes(id, name) {
+export function editNotes(id, name) {
   // elements
   const notesLegend = document.getElementById("notesLegend");
   const notesName = document.getElementById("notesName");

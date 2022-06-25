@@ -1,7 +1,7 @@
 import {restoreDefaultEvents} from "/src/scripts/events";
 import {findAll, findCell, getPackPolygon} from "/src/utils/graphUtils";
 import {unique} from "/src/utils/arrayUtils";
-import {showMainTip, clearMainTip} from "/src/scripts/tooltips";
+import {tip, showMainTip, clearMainTip} from "/src/scripts/tooltips";
 
 export function editZones() {
   closeDialogs();

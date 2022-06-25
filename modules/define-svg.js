@@ -150,13 +150,6 @@ function defineSvg(width, height) {
     .attr("fill", "#e8f0f6")
     .attr("filter", "url(#splotch)");
 
-  // assign events separately as not a viewbox child
-  scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => editUnits());
-
-  legend
-    .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
-    .on("click", () => clearLegend());
-
   landmass.append("rect").attr("x", 0).attr("y", 0).attr("width", width).attr("height", height);
 
   oceanPattern

@@ -1,4 +1,5 @@
 import {getPackPolygon} from "/src/utils/graphUtils";
+import {tip} from "/src/scripts/tooltips";
 
 export function editLake() {
   if (customization) return;

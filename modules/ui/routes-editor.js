@@ -1,4 +1,4 @@
-import {showMainTip, clearMainTip} from "/src/scripts/tooltips";
+import {tip, showMainTip, clearMainTip} from "/src/scripts/tooltips";
 
 export function editRoute(onClick) {
   if (customization) return;

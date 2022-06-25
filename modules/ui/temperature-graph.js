@@ -1,6 +1,6 @@
-"use strict";
+import {tip} from "/src/scripts/tooltips";
 
-function showBurgTemperatureGraph(id) {
+export function showBurgTemperatureGraph(id) {
   const b = pack.burgs[id];
   const lat = mapCoordinates.latN - (b.y / graphHeight) * mapCoordinates.latT;
   const burgTemp = grid.cells.temp[pack.cells.g[b.cell]];
@@ -48,7 +48,10 @@ function showBurgTemperatureGraph(id) {
   // Standard deviation for average temperature for the year from [0, 1] to [min, max]
   const yearSig = lstOut[0] * 62.9466411977018 + 0.28613807855649165;
   // Standard deviation for the difference between the minimum and maximum temperatures for the year
-  const yearDelTmpSig = lstOut[1] * 13.541688670361175 + 0.1414213562373084 > yearSig ? yearSig : lstOut[1] * 13.541688670361175 + 0.1414213562373084;
+  const yearDelTmpSig =
+    lstOut[1] * 13.541688670361175 + 0.1414213562373084 > yearSig
+      ? yearSig
+      : lstOut[1] * 13.541688670361175 + 0.1414213562373084;
   // Expected value for the difference between the minimum and maximum temperatures for the year
   const yearDelTmpMu = lstOut[2] * 15.266666666666667 + 0.6416666666666663;
 
@@ -67,7 +70,20 @@ function showBurgTemperatureGraph(id) {
   const year = new Date().getFullYear(); // use current year
   const startDate = new Date(year, 0, 1);
   const endDate = new Date(year, 11, 31);
-  const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December"
+  ];
 
   const xscale = d3.scaleTime().domain([startDate, endDate]).range([0, chartWidth]);
   const yscale = d3.scaleLinear().domain([minT, maxT]).range([chartHeight, 0]);
@@ -91,7 +107,11 @@ function showBurgTemperatureGraph(id) {
   });
 
   drawGraph();
-  $("#alert").dialog({title: "Annual temperature in " + b.name, width: "auto", position: {my: "center", at: "center", of: "svg"}});
+  $("#alert").dialog({
+    title: "Annual temperature in " + b.name,
+    width: "auto",
+    position: {my: "center", at: "center", of: "svg"}
+  });
 
   function drawGraph() {
     alertMessage.innerHTML = "";
@@ -109,11 +129,26 @@ function showBurgTemperatureGraph(id) {
     const legendX = n => (chartWidth * n) / 4;
     const legendTextX = n => legendX(n) + 10;
     legend.append("circle").attr("cx", legendX(1)).attr("cy", legendY).attr("r", 4).style("fill", "red");
-    legend.append("text").attr("x", legendTextX(1)).attr("y", legendY).attr("alignment-baseline", "central").text("Day temperature");
+    legend
+      .append("text")
+      .attr("x", legendTextX(1))
+      .attr("y", legendY)
+      .attr("alignment-baseline", "central")
+      .text("Day temperature");
     legend.append("circle").attr("cx", legendX(2)).attr("cy", legendY).attr("r", 4).style("fill", "orange");
-    legend.append("text").attr("x", legendTextX(2)).attr("y", legendY).attr("alignment-baseline", "central").text("Mean temperature");
+    legend
+      .append("text")
+      .attr("x", legendTextX(2))
+      .attr("y", legendY)
+      .attr("alignment-baseline", "central")
+      .text("Mean temperature");
     legend.append("circle").attr("cx", legendX(3)).attr("cy", legendY).attr("r", 4).style("fill", "blue");
-    legend.append("text").attr("x", legendTextX(3)).attr("y", legendY).attr("alignment-baseline", "central").text("Night temperature");
+    legend
+      .append("text")
+      .attr("x", legendTextX(3))
+      .attr("y", legendY)
+      .attr("alignment-baseline", "central")
+      .text("Night temperature");
 
     const xGrid = d3.axisBottom(xscale).ticks().tickSize(-chartHeight);
     const yGrid = d3.axisLeft(yscale).ticks(5).tickSize(-chartWidth);
@@ -146,9 +181,24 @@ function showBurgTemperatureGraph(id) {
     axis.select("path.domain").attr("d", `M0.5,0.5 H${chartWidth + 0.5}`);
 
     const curves = chart.append("g").attr("fill", "none").style("stroke-width", 2.5);
-    curves.append("path").attr("d", getCurve(tempMean)).attr("data-type", "daily").attr("stroke", "orange").on("mousemove", printVal);
-    curves.append("path").attr("d", getCurve(tempMin)).attr("data-type", "night").attr("stroke", "blue").on("mousemove", printVal);
-    curves.append("path").attr("d", getCurve(tempMax)).attr("data-type", "day").attr("stroke", "red").on("mousemove", printVal);
+    curves
+      .append("path")
+      .attr("d", getCurve(tempMean))
+      .attr("data-type", "daily")
+      .attr("stroke", "orange")
+      .on("mousemove", printVal);
+    curves
+      .append("path")
+      .attr("d", getCurve(tempMin))
+      .attr("data-type", "night")
+      .attr("stroke", "blue")
+      .on("mousemove", printVal);
+    curves
+      .append("path")
+      .attr("d", getCurve(tempMax))
+      .attr("data-type", "day")
+      .attr("stroke", "red")
+      .on("mousemove", printVal);
 
     function printVal() {
       const [x, y] = d3.mouse(this);

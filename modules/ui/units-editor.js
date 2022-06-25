@@ -1,5 +1,6 @@
 import {restoreDefaultEvents} from "/src/scripts/events";
 import {findCell} from "/src/utils/graphUtils";
+import {tip} from "/src/scripts/tooltips";
 
 export function editUnits() {
   closeDialogs("#unitsEditor, .stable");

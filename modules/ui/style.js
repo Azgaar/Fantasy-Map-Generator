@@ -1,5 +1,4 @@
-// UI module to control the style
-"use strict";
+import {tip} from "/src/scripts/tooltips";
 
 // add available filters to lists
 {

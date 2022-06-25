@@ -1,7 +1,7 @@
 import {applyOption} from "./general";
 import {last} from "/src/utils/arrayUtils";
 import {lock, locked} from "/src/scripts/options/lock";
-import {clearMainTip} from "/src/scripts/tooltips";
+import {tip, clearMainTip} from "/src/scripts/tooltips";
 import {byId, stored} from "/src/utils/shorthands";
 
 $("#optionsContainer").draggable({handle: ".drag-trigger", snap: "svg", snapMode: "both"});

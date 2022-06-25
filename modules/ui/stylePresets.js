@@ -1,5 +1,4 @@
-"use strict";
-// UI module to control the style presets
+import {tip} from "/src/scripts/tooltips";
 
 const systemPresets = [
   "default",

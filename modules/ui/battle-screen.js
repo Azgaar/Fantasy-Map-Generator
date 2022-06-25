@@ -1,4 +1,5 @@
 import {last} from "/src/utils/arrayUtils";
+import {tip} from "/src/scripts/tooltips";
 
 export class Battle {
   constructor(attacker, defender) {

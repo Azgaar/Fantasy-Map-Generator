@@ -1,4 +1,5 @@
 import {store} from "../../utils/shorthands";
+import {tip} from "../tooltips";
 
 export function assignLockBehavior() {
   const $lockable = document.querySelectorAll("[data-locked]");

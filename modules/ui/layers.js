@@ -3,6 +3,7 @@ import {invokeActiveZooming} from "../activeZooming";
 import {getGridPolygon} from "/src/utils/graphUtils";
 import {last} from "/src/utils/arrayUtils";
 import {stored, store} from "/src/utils/shorthands";
+import {tip} from "/src/scripts/tooltips";
 import {byId} from "/src/utils/shorthands";
 
 let presets = {};

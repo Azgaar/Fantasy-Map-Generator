@@ -1,5 +1,6 @@
 import {getGridPolygon} from "/src/utils/graphUtils";
 import {unique} from "/src/utils/arrayUtils";
+import {tip} from "/src/scripts/tooltips";
 
 // download map as SVG
 async function saveSVG() {
@@ -10,12 +11,8 @@ async function saveSVG() {
   link.href = url;
   link.click();
 
-  tip(
-    `${link.download} is saved. Open "Downloads" screen (crtl + J) to check. You can set image scale in options`,
-    true,
-    "success",
-    5000
-  );
+  const tooltip = `${link.download} is saved. Open "Downloads" screen (CTRL + J) to check. You can image scale in options`;
+  tip(tooltip, true, "success", 5000);
   TIME && console.timeEnd("saveSVG");
 }
 

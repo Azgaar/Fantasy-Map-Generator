@@ -1,4 +1,6 @@
-function editWorld() {
+import {tip} from "/src/scripts/tooltips";
+
+export function editWorld() {
   if (customization) return;
   $("#worldConfigurator").dialog({
     title: "Configure World",

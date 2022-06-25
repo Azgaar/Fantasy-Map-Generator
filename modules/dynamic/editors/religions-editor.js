@@ -1,6 +1,6 @@
 import {restoreDefaultEvents} from "/src/scripts/events";
 import {findAll, findCell, getPackPolygon, isLand} from "/src/utils/graphUtils";
-import {showMainTip, clearMainTip} from "/src/scripts/tooltips";
+import {tip, showMainTip, clearMainTip} from "/src/scripts/tooltips";
 import {byId} from "/src/utils/shorthands";
 
 const $body = insertEditorHtml();

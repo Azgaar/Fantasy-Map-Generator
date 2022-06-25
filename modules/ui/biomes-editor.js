@@ -1,6 +1,6 @@
 import {restoreDefaultEvents} from "/src/scripts/events";
 import {findAll, findCell, getPackPolygon, isLand} from "/src/utils/graphUtils";
-import {showMainTip, clearMainTip} from "/src/scripts/tooltips";
+import {tip, showMainTip, clearMainTip} from "/src/scripts/tooltips";
 
 export function editBiomes() {
   if (customization) return;

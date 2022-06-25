@@ -1,4 +1,4 @@
-"use strict";
+import {tip} from "/src/scripts/tooltips";
 
 window.ThreeD = (function () {
   const options = {
@@ -242,7 +242,11 @@ window.ThreeD = (function () {
     context2d.fillStyle = color;
     context2d.fillText(text, 0, size * quality);
 
-    return textureToSprite(context2d.canvas.toDataURL(), context2d.canvas.width / quality, context2d.canvas.height / quality);
+    return textureToSprite(
+      context2d.canvas.toDataURL(),
+      context2d.canvas.width / quality,
+      context2d.canvas.height / quality
+    );
   }
 
   function get3dCoords(baseX, baseY) {
@@ -297,8 +301,20 @@ window.ThreeD = (function () {
 
     const city_icon_material = new THREE.MeshPhongMaterial({color: cityOptions.iconColor});
     const town_icon_material = new THREE.MeshPhongMaterial({color: townOptions.iconColor});
-    const city_icon_geometry = new THREE.CylinderGeometry(cityOptions.iconSize * 2, cityOptions.iconSize * 2, cityOptions.iconSize, 16, 1);
-    const town_icon_geometry = new THREE.CylinderGeometry(townOptions.iconSize * 2, townOptions.iconSize * 2, townOptions.iconSize, 16, 1);
+    const city_icon_geometry = new THREE.CylinderGeometry(
+      cityOptions.iconSize * 2,
+      cityOptions.iconSize * 2,
+      cityOptions.iconSize,
+      16,
+      1
+    );
+    const town_icon_geometry = new THREE.CylinderGeometry(
+      townOptions.iconSize * 2,
+      townOptions.iconSize * 2,
+      townOptions.iconSize,
+      16,
+      1
+    );
     const line_material = new THREE.LineBasicMaterial({color: cityOptions.iconColor});
 
     // burg labels
@@ -464,7 +480,10 @@ window.ThreeD = (function () {
 
     // scene
     scene = new THREE.Scene();
-    scene.background = new THREE.TextureLoader().load("https://i0.wp.com/azgaar.files.wordpress.com/2019/10/stars-1.png", render);
+    scene.background = new THREE.TextureLoader().load(
+      "https://i0.wp.com/azgaar.files.wordpress.com/2019/10/stars-1.png",
+      render
+    );
 
     // Renderer
     Renderer = new THREE.WebGLRenderer({canvas, antialias: true, preserveDrawingBuffer: true});

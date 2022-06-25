@@ -1,4 +1,4 @@
-"use strict";
+import {tip} from "/src/scripts/tooltips";
 
 /*
 Cloud provider implementations (Dropbox only as now)
@@ -13,7 +13,6 @@ async list(): list available filenames at provider
 async getLink(filePath): get shareable link for file
 restore(): restore access tokens from storage if possible
 */
-
 window.Cloud = (function () {
   // helpers to use in providers for token handling
   const lSKey = x => `auth-${x}`;

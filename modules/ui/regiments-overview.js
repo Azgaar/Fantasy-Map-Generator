@@ -1,6 +1,6 @@
 import {findCell} from "/src/utils/graphUtils";
 import {last} from "/src/utils/arrayUtils";
-import {clearMainTip} from "/src/scripts/tooltips";
+import {tip, clearMainTip} from "/src/scripts/tooltips";
 
 export function overviewRegiments(state) {
   if (customization) return;

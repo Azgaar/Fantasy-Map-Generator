@@ -20,7 +20,8 @@ import {Rulers, Ruler, drawScaleBar} from "./modules/measurers";
 import {byId} from "./utils/shorthands";
 import {addGlobalListeners} from "./scripts/listeners";
 import {restoreDefaultEvents} from "./scripts/events";
-import {clearMainTip} from "./scripts/tooltips";
+import {clearMainTip, tip} from "./scripts/tooltips";
+import {clearLegend} from "./modules/legend";
 import "./components";
 
 addGlobalListeners();
@@ -61,6 +62,10 @@ svgWidth = graphWidth;
 svgHeight = graphHeight;
 
 defineSvg(graphWidth, graphHeight);
+scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => editUnits());
+legend
+  .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
+  .on("click", () => clearLegend());
 
 document.on("DOMContentLoaded", async () => {
   if (!location.hostname) {

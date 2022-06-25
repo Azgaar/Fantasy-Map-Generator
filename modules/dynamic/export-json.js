@@ -1,3 +1,5 @@
+import {tip} from "/src/scripts/tooltips";
+
 export function exportToJson(type) {
   if (customization)
     return tip("Data cannot be exported when edit mode is active, please exit the mode and retry", false, "error");

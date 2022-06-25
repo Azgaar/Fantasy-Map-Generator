@@ -1,4 +1,5 @@
 import {byId} from "/src/utils/shorthands";
+import {tip} from "/src/scripts/tooltips";
 
 appendStyleSheet();
 insertHtml();

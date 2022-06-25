@@ -1,7 +1,7 @@
 import {restoreDefaultEvents} from "/src/scripts/events";
 import {findCell} from "/src/utils/graphUtils";
 import {last} from "/src/utils/arrayUtils";
-import {clearMainTip} from "/src/scripts/tooltips";
+import {tip, clearMainTip} from "/src/scripts/tooltips";
 
 // module to control the Tools options (click to edit, to re-geenerate, tp add)
 

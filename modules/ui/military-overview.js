@@ -1,5 +1,6 @@
-"use strict";
-function overviewMilitary() {
+import {tip} from "/src/scripts/tooltips";
+
+export function overviewMilitary() {
   if (customization) return;
   closeDialogs("#militaryOverview, .stable");
   if (!layerIsOn("toggleStates")) toggleStates();
