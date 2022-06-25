@@ -8,7 +8,7 @@ function vowel(c) {
 
 // remove vowels from the end of the string
 function trimVowels(string, minLength = 3) {
-  while (string.length > minLength && vowel(last(string))) {
+  while (string.length > minLength && vowel(string.at(-1))) {
     string = string.slice(0, -1);
   }
   return string;

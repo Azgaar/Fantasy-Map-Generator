@@ -414,57 +414,6 @@ function highlightEmblemElement(type, el) {
     .remove();
 }
 
-// assign lock behavior
-document.querySelectorAll("[data-locked]").forEach(function (e) {
-  e.addEventListener("mouseover", function (event) {
-    if (this.className === "icon-lock")
-      tip("Click to unlock the option and allow it to be randomized on new map generation");
-    else tip("Click to lock the option and always use the current value on new map generation");
-    event.stopPropagation();
-  });
-
-  e.addEventListener("click", function () {
-    const id = this.id.slice(5);
-    if (this.className === "icon-lock") unlock(id);
-    else lock(id);
-  });
-});
-
-// lock option
-export function lock(id) {
-  const input = document.querySelector('[data-stored="' + id + '"]');
-  if (input) store(id, input.value);
-  const el = document.getElementById("lock_" + id);
-  if (!el) return;
-  el.dataset.locked = 1;
-  el.className = "icon-lock";
-}
-
-// unlock option
-function unlock(id) {
-  localStorage.removeItem(id);
-  const el = document.getElementById("lock_" + id);
-  if (!el) return;
-  el.dataset.locked = 0;
-  el.className = "icon-lock-open";
-}
-
-// check if option is locked
-export function locked(id) {
-  const lockEl = document.getElementById("lock_" + id);
-  return lockEl.dataset.locked == 1;
-}
-
-// return key value stored in localStorage or null
-export function stored(key) {
-  return localStorage.getItem(key) || null;
-}
-
-// store key value in localStorage
-function store(key, value) {
-  return localStorage.setItem(key, value);
-}
-
 // assign skeaker behaviour
 Array.from(document.getElementsByClassName("speaker")).forEach(el => {
   const input = el.previousElementSibling;

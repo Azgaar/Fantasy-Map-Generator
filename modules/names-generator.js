@@ -1,4 +1,5 @@
 import {last} from "/src/utils/arrayUtils";
+import {locked} from "/src/scripts/options/lock";
 
 window.Names = (function () {
   let chains = [];

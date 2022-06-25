@@ -1,7 +1,7 @@
 // Azgaar (azgaar.fmg@yandex.com). Minsk, 2017-2022. MIT License
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
-import {PRODUCTION, UINT16_MAX} from "./constants";
+import {UINT16_MAX} from "./constants";
 import {INFO, TIME, WARN, ERROR} from "./config/logging";
 import {
   shouldRegenerateGrid,
@@ -15,31 +15,16 @@ import {createTypedArray} from "./utils/arrayUtils";
 import {drawRivers, drawStates, drawBorders} from "../modules/ui/layers";
 import {invokeActiveZooming} from "../modules/activeZooming";
 import {applyStoredOptions, applyMapSize, randomizeOptions} from "../modules/ui/options";
-import {locked} from "../modules/ui/general";
+import {locked} from "./scripts/options/lock";
 import {Rulers, Ruler, drawScaleBar} from "./modules/measurers";
 import {byId} from "./utils/shorthands";
+import {addGlobalListeners} from "./scripts/listeners";
+
+addGlobalListeners();
 
 window.fmg = {
   modules: {}
 };
-
-if (PRODUCTION && "serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("../sw.js").catch(err => {
-      console.error("ServiceWorker registration failed: ", err);
-    });
-  });
-
-  window.addEventListener(
-    "beforeinstallprompt",
-    async event => {
-      event.preventDefault();
-      const Installation = await import("../modules/dynamic/installation.js");
-      Installation.init(event);
-    },
-    {once: true}
-  );
-}
 
 // default options
 options = {
