@@ -1,6 +1,7 @@
 import {TIME} from "/src/config/logging";
 import {createTypedArray} from "/src/utils/arrayUtils";
 import {findGridCell} from "/src/utils/graphUtils";
+import {byId} from "/src/utils/shorthands";
 
 window.HeightmapGenerator = (function () {
   let grid = null;

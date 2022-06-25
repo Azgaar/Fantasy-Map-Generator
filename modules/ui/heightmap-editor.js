@@ -1,5 +1,6 @@
 import {findGridCell, findGridAll, findCell, getPackPolygon, getGridPolygon} from "/src/utils/graphUtils";
-import {last} from "/src/utils/arrayUtils";
+import {last, createTypedArray} from "/src/utils/arrayUtils";
+import {byId} from "/src/utils/shorthands";
 
 export function editHeightmap(options) {
   const {mode, tool} = options || {};

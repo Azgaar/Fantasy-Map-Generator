@@ -1,4 +1,5 @@
 import {findCell} from "/src/utils/graphUtils";
+import {byId} from "/src/utils/shorthands";
 
 // restore default viewbox events
 function restoreDefaultEvents() {

@@ -1,4 +1,5 @@
 import {findAll, findCell, getPackPolygon, isLand} from "/src/utils/graphUtils";
+import {byId} from "/src/utils/shorthands";
 
 const $body = insertEditorHtml();
 addListeners();

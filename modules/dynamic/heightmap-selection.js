@@ -1,4 +1,5 @@
 import {shouldRegenerateGrid, generateGrid} from "/src/utils/graphUtils";
+import {byId} from "/src/utils/shorthands";
 
 const initialSeed = generateSeed();
 let graph = getGraph(grid);

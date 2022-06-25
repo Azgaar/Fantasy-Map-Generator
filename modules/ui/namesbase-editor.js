@@ -1,5 +1,6 @@
-"use strict";
-function editNamesbase() {
+import {unique} from "/src/utils/arrayUtils";
+
+export function editNamesbase() {
   if (customization) return;
   closeDialogs("#namesbaseEditor, .stable");
   $("#namesbaseEditor").dialog();

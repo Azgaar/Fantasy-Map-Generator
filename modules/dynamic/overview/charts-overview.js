@@ -1,5 +1,6 @@
 import {rollups} from "../../../utils/functionUtils.js";
 import {isWater} from "/src/utils/graphUtils";
+import {byId} from "/src/utils/shorthands";
 
 const entitiesMap = {
   states: {

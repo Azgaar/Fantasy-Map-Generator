@@ -1,4 +1,5 @@
 import {getGridPolygon} from "/src/utils/graphUtils";
+import {unique} from "/src/utils/arrayUtils";
 
 // download map as SVG
 async function saveSVG() {
