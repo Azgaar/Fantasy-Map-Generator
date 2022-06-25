@@ -3,6 +3,7 @@ import {findGridCell, findGridAll, findCell, getPackPolygon, getGridPolygon} fro
 import {last, createTypedArray} from "/src/utils/arrayUtils";
 import {tip, showMainTip, clearMainTip} from "/src/scripts/tooltips";
 import {byId} from "/src/utils/shorthands";
+import {rn, minmax, lim} from "/src/utils/numberUtils";
 
 export function editHeightmap(options) {
   const {mode, tool} = options || {};

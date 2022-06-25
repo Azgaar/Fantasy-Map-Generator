@@ -1,5 +1,4 @@
-"use strict";
-// FMG utils related to randomness
+import {rn, minmax} from "/src/utils/numberUtils";
 
 // random number in a range
 function rand(min, max) {

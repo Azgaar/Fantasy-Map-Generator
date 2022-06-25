@@ -22,10 +22,13 @@ import {
   isLand,
   shouldRegenerateGrid
 } from "./utils/graphUtils";
+import {rn, minmax, normalize} from "./utils/numberUtils";
 import {byId} from "./utils/shorthands";
 import "./components";
 
 addGlobalListeners();
+
+const d3 = window.d3;
 
 window.fmg = {
   modules: {}
@@ -51,8 +54,8 @@ rulers = new Rulers();
 biomesData = Biomes.getDefault();
 nameBases = Names.getNameBases(); // cultures-related data
 
-color = d3.scaleSequential(d3.interpolateSpectral); // default color scheme
-lineGen = d3.line().curve(d3.curveBasis); // d3 line generator with default curve interpolation
+// color = d3.scaleSequential(d3.interpolateSpectral); // default color scheme
+// lineGen = d3.line().curve(d3.curveBasis); // d3 line generator with default curve interpolation
 
 // voronoi graph extension, cannot be changed after generation
 graphWidth = +byId("mapWidthInput").value;

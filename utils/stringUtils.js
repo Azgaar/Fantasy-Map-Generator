@@ -1,5 +1,4 @@
-"use strict";
-// FMG utils related to strings
+import {rn} from "/src/utils/numberUtils";
 
 // round numbers in string to d decimals
 function round(s, d = 1) {

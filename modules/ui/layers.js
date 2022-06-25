@@ -5,6 +5,7 @@ import {last} from "/src/utils/arrayUtils";
 import {stored, store} from "/src/utils/shorthands";
 import {tip} from "/src/scripts/tooltips";
 import {byId} from "/src/utils/shorthands";
+import {rn, minmax, normalize} from "/src/utils/numberUtils";
 
 let presets = {};
 restoreCustomPresets(); // run on-load

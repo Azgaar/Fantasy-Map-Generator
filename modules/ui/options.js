@@ -3,6 +3,7 @@ import {last} from "/src/utils/arrayUtils";
 import {lock, locked} from "/src/scripts/options/lock";
 import {tip, clearMainTip} from "/src/scripts/tooltips";
 import {byId, stored} from "/src/utils/shorthands";
+import {rn, minmax} from "/src/utils/numberUtils";
 
 $("#optionsContainer").draggable({handle: ".drag-trigger", snap: "svg", snapMode: "both"});
 $("#exitCustomization").draggable({handle: "div"});

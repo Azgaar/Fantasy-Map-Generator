@@ -1,4 +1,5 @@
 import {TIME} from "/src/config/logging";
+import {rn, minmax} from "/src/utils/numberUtils";
 
 window.Military = (function () {
   const generate = function () {

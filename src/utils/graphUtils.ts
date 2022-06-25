@@ -1,10 +1,16 @@
 import {TIME} from "../config/logging";
 import {createTypedArray} from "./arrayUtils";
+import {rn} from "./numberUtils";
 import {byId} from "./shorthands";
+
+const Delaunator = window.Delaunator;
+const Voronoi = window.Voronoi;
+const graphWidth = window.graphWidth;
+const graphHeight = window.graphHeight;
 
 // check if new grid graph should be generated or we can use the existing one
 export function shouldRegenerateGrid(grid) {
-  const cellsDesired = +byId("pointsInput").dataset.cells;
+  const cellsDesired = Number(byId("pointsInput")?.dataset.cells);
   if (cellsDesired !== grid.cellsDesired) return true;
 
   const newSpacing = rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2);

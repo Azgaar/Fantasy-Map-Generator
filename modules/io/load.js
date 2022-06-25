@@ -2,6 +2,7 @@ import {restoreDefaultEvents} from "/src/scripts/events";
 import {calculateVoronoi, findCell} from "/src/utils/graphUtils";
 import {last} from "/src/utils/arrayUtils";
 import {tip} from "/src/scripts/tooltips";
+import {rn, minmax} from "/src/utils/numberUtils";
 
 function quickLoad() {
   ldb.get("lastMap", blob => {

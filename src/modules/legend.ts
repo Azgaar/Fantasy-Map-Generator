@@ -1,3 +1,5 @@
+import {rn} from "../utils/numberUtils";
+
 export function drawLegend(name: string, data: unknown[]) {
   legend.selectAll("*").remove(); // fully redraw every time
   legend.attr("data", data.join("|")); // store data

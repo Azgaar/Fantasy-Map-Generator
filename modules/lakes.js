@@ -1,3 +1,5 @@
+import {rn} from "/src/utils/numberUtils";
+
 window.Lakes = (function () {
   const setClimateData = function (h) {
     const cells = pack.cells;

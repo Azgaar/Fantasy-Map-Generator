@@ -1,5 +1,4 @@
-"use strict";
-// FMG utils related to units
+import {rn} from "/src/utils/numberUtils";
 
 // conver temperature from °C to other scales
 const temperatureConversionMap = {

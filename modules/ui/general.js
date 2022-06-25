@@ -1,5 +1,5 @@
 import {findCell, findGridCell} from "/src/utils/graphUtils";
-import {MOBILE} from "/src/constants";
+import {rn} from "/src/utils/numberUtils";
 
 // fit full-screen map if window is resized
 window.addEventListener("resize", function (e) {

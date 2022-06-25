@@ -1,4 +1,6 @@
-window.handleZoom = function (isScaleChanged, isPositionChanged) {
+import {rn} from "/src/utils/numberUtils";
+
+export function handleZoom(isScaleChanged, isPositionChanged) {
   viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
 
   if (isPositionChanged) drawCoordinates();
@@ -21,7 +23,7 @@ window.handleZoom = function (isScaleChanged, isPositionChanged) {
     ctx.setTransform(scale, 0, 0, scale, viewX, viewY);
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
   }
-};
+}
 
 // active zooming feature
 export function invokeActiveZooming() {

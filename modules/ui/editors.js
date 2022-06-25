@@ -2,6 +2,7 @@ import {restoreDefaultEvents} from "/src/scripts/events";
 import {findCell} from "/src/utils/graphUtils";
 import {byId} from "/src/utils/shorthands";
 import {tip} from "/src/scripts/tooltips";
+import {rn, minmax, normalize} from "/src/utils/numberUtils";
 
 // clear elSelected variable
 export function unselect() {

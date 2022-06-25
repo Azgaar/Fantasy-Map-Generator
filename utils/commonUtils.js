@@ -1,5 +1,4 @@
-"use strict";
-// FMG helper functions
+import {rn} from "/src/utils/numberUtils";
 
 // clip polygon by graph bbox
 function clipPoly(points, secure = 0) {

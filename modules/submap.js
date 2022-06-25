@@ -1,4 +1,5 @@
 import {findCell} from "/src/utils/graphUtils";
+import {rn} from "/src/utils/numberUtils";
 
 window.Submap = (function () {
   const isWater = (pack, id) => pack.cells.h[id] < 20;

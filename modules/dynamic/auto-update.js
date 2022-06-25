@@ -1,4 +1,5 @@
 import {findCell} from "/src/utils/graphUtils";
+import {rn} from "/src/utils/numberUtils";
 
 // update old .map version to the current one
 export function resolveVersionConflicts(version) {

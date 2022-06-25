@@ -2,6 +2,7 @@ import {TIME} from "/src/config/logging";
 import {findAll} from "/src/utils/graphUtils";
 import {unique} from "/src/utils/arrayUtils";
 import {getRandomColor, getMixedColor} from "/src/utils/colorUtils";
+import {rn} from "/src/utils/numberUtils";
 
 window.Religions = (function () {
   // name generation approach and relative chance to be selected

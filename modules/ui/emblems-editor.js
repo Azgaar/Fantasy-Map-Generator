@@ -1,5 +1,6 @@
 import {clearMainTip} from "/src/scripts/tooltips";
 import {tip} from "/src/scripts/tooltips";
+import {rn} from "/src/utils/numberUtils";
 
 export function editEmblem(type, id, el) {
   if (customization) return;

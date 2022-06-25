@@ -1,5 +1,6 @@
-"use strict";
-function overviewRivers() {
+import {rn} from "/src/utils/numberUtils";
+
+export function overviewRivers() {
   if (customization) return;
   closeDialogs("#riversOverview, .stable");
   if (!layerIsOn("toggleRivers")) toggleRivers();
