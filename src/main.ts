@@ -1,27 +1,28 @@
 // Azgaar (azgaar.fmg@yandex.com). Minsk, 2017-2022. MIT License
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
+import {invokeActiveZooming} from "../modules/activeZooming";
+import {applyPreset, drawBorders, drawRivers, drawStates} from "../modules/ui/layers";
+import {applyMapSize, applyStoredOptions, randomizeOptions} from "../modules/ui/options";
+import {ERROR, INFO, TIME, WARN} from "./config/logging";
 import {UINT16_MAX} from "./constants";
-import {INFO, TIME, WARN, ERROR} from "./config/logging";
+import {clearLegend} from "./modules/legend";
+import {drawScaleBar, Ruler, Rulers} from "./modules/measurers";
+import {applyStyleOnLoad} from "../modules/ui/stylePresets";
+import {restoreDefaultEvents} from "./scripts/events";
+import {addGlobalListeners} from "./scripts/listeners";
+import {locked} from "./scripts/options/lock";
+import {clearMainTip, tip} from "./scripts/tooltips";
+import {createTypedArray} from "./utils/arrayUtils";
 import {
-  shouldRegenerateGrid,
-  generateGrid,
   calculateVoronoi,
+  findCell,
+  generateGrid,
   getPackPolygon,
   isLand,
-  findCell
+  shouldRegenerateGrid
 } from "./utils/graphUtils";
-import {createTypedArray} from "./utils/arrayUtils";
-import {applyPreset, drawRivers, drawStates, drawBorders} from "../modules/ui/layers";
-import {invokeActiveZooming} from "../modules/activeZooming";
-import {applyStoredOptions, applyMapSize, randomizeOptions} from "../modules/ui/options";
-import {locked} from "./scripts/options/lock";
-import {Rulers, Ruler, drawScaleBar} from "./modules/measurers";
 import {byId} from "./utils/shorthands";
-import {addGlobalListeners} from "./scripts/listeners";
-import {restoreDefaultEvents} from "./scripts/events";
-import {clearMainTip, tip} from "./scripts/tooltips";
-import {clearLegend} from "./modules/legend";
 import "./components";
 
 addGlobalListeners();

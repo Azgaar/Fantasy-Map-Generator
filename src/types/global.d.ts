@@ -12,6 +12,7 @@ interface Window {
   };
   pack: IPack;
   grig: IGrid;
+  d3: typeof d3;
 }
 
 interface Node {

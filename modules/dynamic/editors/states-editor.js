@@ -2,6 +2,7 @@ import {restoreDefaultEvents} from "/src/scripts/events";
 import {findAll, findCell, getPackPolygon, isLand} from "/src/utils/graphUtils";
 import {byId} from "/src/utils/shorthands";
 import {tip, showMainTip, clearMainTip} from "/src/scripts/tooltips";
+import {getRandomColor, getMixedColor} from "/src/utils/colorUtils";
 
 const $body = insertEditorHtml();
 addListeners();
