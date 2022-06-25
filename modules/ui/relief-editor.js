@@ -1,3 +1,4 @@
+import {restoreDefaultEvents} from "/src/scripts/events";
 import {findCell} from "/src/utils/graphUtils";
 
 export function editReliefIcon() {

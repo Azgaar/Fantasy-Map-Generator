@@ -2,9 +2,12 @@ import {TIME} from "/src/config/logging";
 import {invokeActiveZooming} from "../activeZooming";
 import {getGridPolygon} from "/src/utils/graphUtils";
 import {last} from "/src/utils/arrayUtils";
+import {stored, store} from "/src/utils/shorthands";
+import {byId} from "/src/utils/shorthands";
 
-let presets = {}; // global object
+let presets = {};
 restoreCustomPresets(); // run on-load
+addToggleLayersListener();
 
 function getDefaultPresets() {
   return {
@@ -88,33 +91,34 @@ function restoreCustomPresets() {
 }
 
 // run on map generation
-function applyPreset() {
-  const preset = localStorage.getItem("preset") || document.getElementById("layersPreset").value;
+export function applyPreset() {
+  const preset = stored("preset") || byId("layersPreset")?.value || "political";
   changePreset(preset);
 }
 
 // toggle layers on preset change
 function changePreset(preset) {
   const layers = presets[preset]; // layers to be turned on
-  document
-    .getElementById("mapLayers")
-    .querySelectorAll("li")
-    .forEach(function (e) {
-      if (layers.includes(e.id) && !layerIsOn(e.id)) e.click();
-      else if (!layers.includes(e.id) && layerIsOn(e.id)) e.click();
-    });
-  layersPreset.value = preset;
-  localStorage.setItem("preset", preset);
+  const $layerButtons = byId("mapLayers").querySelectorAll("li");
+
+  $layerButtons.forEach(function ($layerButton) {
+    const {id} = $layerButton;
+    if (layers.includes(id) && !layerIsOn(id)) $layerButton.click();
+    else if (!layers.includes(id) && layerIsOn(id)) $layerButton.click();
+  });
+
+  byId("layersPreset").value = preset;
+  store("preset", preset);
 
   const isDefault = getDefaultPresets()[preset];
-  removePresetButton.style.display = isDefault ? "none" : "inline-block";
-  savePresetButton.style.display = "none";
-  if (document.getElementById("canvas3d")) setTimeout(ThreeD.update(), 400);
+  byId("removePresetButton").style.display = isDefault ? "none" : "inline-block";
+  byId("savePresetButton").style.display = "none";
+  if (byId("canvas3d")) setTimeout(ThreeD.update(), 400);
 }
 
 function savePreset() {
   prompt("Please provide a preset name", {default: ""}, preset => {
-    presets[preset] = Array.from(document.getElementById("mapLayers").querySelectorAll("li:not(.buttonoff)"))
+    presets[preset] = Array.from(byId("mapLayers").querySelectorAll("li:not(.buttonoff)"))
       .map(node => node.id)
       .sort();
     layersPreset.add(new Option(preset, preset, false, true));
@@ -139,22 +143,24 @@ function removePreset() {
 }
 
 function getCurrentPreset() {
-  const layers = Array.from(document.getElementById("mapLayers").querySelectorAll("li:not(.buttonoff)"))
+  const $toggledOnLayers = byId("mapLayers").querySelectorAll("li:not(.buttonoff)");
+  const currentLayers = Array.from($toggledOnLayers)
     .map(node => node.id)
     .sort();
-  const defaultPresets = getDefaultPresets();
 
+  const defaultPresets = getDefaultPresets();
   for (const preset in presets) {
-    if (JSON.stringify(presets[preset]) !== JSON.stringify(layers)) continue;
-    layersPreset.value = preset;
-    removePresetButton.style.display = defaultPresets[preset] ? "none" : "inline-block";
-    savePresetButton.style.display = "none";
+    if (JSON.stringify(presets[preset].sort()) !== JSON.stringify(currentLayers)) continue;
+
+    byId("layersPreset").value = preset;
+    byId("removePresetButton").style.display = defaultPresets[preset] ? "none" : "inline-block";
+    byId("savePresetButton").style.display = "none";
     return;
   }
 
-  layersPreset.value = "custom";
-  removePresetButton.style.display = "none";
-  savePresetButton.style.display = "inline-block";
+  byId("layersPreset").value = "custom";
+  byId("removePresetButton").style.display = "none";
+  byId("savePresetButton").style.display = "inline-block";
 }
 
 // run on map regeneration
@@ -180,6 +186,46 @@ function restoreLayers() {
   if (!layerIsOn("toggleBorders")) borders.selectAll("path").remove();
   if (!layerIsOn("toggleStates")) regions.selectAll("path").remove();
   if (!layerIsOn("toggleRivers")) rivers.selectAll("*").remove();
+}
+
+export const layerTogglesMap = {
+  toggleBiomes,
+  toggleBorders,
+  toggleCells,
+  toggleCompass,
+  toggleCoordinates,
+  toggleCultures,
+  toggleEmblems,
+  toggleGrid,
+  toggleHeight,
+  toggleIce,
+  toggleIcons,
+  toggleLabels,
+  toggleMarkers,
+  toggleMilitary,
+  togglePopulation,
+  togglePrec,
+  toggleProvinces,
+  toggleRelief,
+  toggleReligions,
+  toggleRivers,
+  toggleRoutes,
+  toggleRulers,
+  toggleScaleBar,
+  toggleStates,
+  toggleTemp,
+  toggleTexture,
+  toggleZones
+};
+
+function toggleLayer(event) {
+  const targetId = event.target.id;
+  if (!targetId || targetId === "mapLayers" || !layerTogglesMap[targetId]) return;
+  layerTogglesMap[targetId]();
+}
+
+export function addToggleLayersListener() {
+  byId("mapLayers").on("click", toggleLayer);
 }
 
 function toggleHeight(event) {
@@ -1475,8 +1521,8 @@ function drawCoordinates() {
 
 // conver svg point into viewBox point
 function getViewPoint(x, y) {
-  const view = document.getElementById("viewbox");
-  const svg = document.getElementById("map");
+  const view = byId("viewbox");
+  const svg = byId("map");
   const pt = svg.createSVGPoint();
   (pt.x = x), (pt.y = y);
   return pt.matrixTransform(view.getScreenCTM().inverse());
@@ -1597,7 +1643,7 @@ function toggleRoutes(event) {
   }
 }
 
-function toggleMilitary() {
+function toggleMilitary(event) {
   if (!layerIsOn("toggleMilitary")) {
     turnButtonOn("toggleMilitary");
     $("#armies").fadeIn();
@@ -1772,21 +1818,21 @@ function drawEmblems() {
   const getStateEmblemsSize = () => {
     const startSize = minmax((graphHeight + graphWidth) / 40, 10, 100);
     const statesMod = 1 + validStates.length / 100 - (15 - validStates.length) / 200; // states number modifier
-    const sizeMod = +document.getElementById("emblemsStateSizeInput").value || 1;
+    const sizeMod = +byId("emblemsStateSizeInput").value || 1;
     return rn((startSize / statesMod) * sizeMod); // target size ~50px on 1536x754 map with 15 states
   };
 
   const getProvinceEmblemsSize = () => {
     const startSize = minmax((graphHeight + graphWidth) / 100, 5, 70);
     const provincesMod = 1 + validProvinces.length / 1000 - (115 - validProvinces.length) / 1000; // states number modifier
-    const sizeMod = +document.getElementById("emblemsProvinceSizeInput").value || 1;
+    const sizeMod = +byId("emblemsProvinceSizeInput").value || 1;
     return rn((startSize / provincesMod) * sizeMod); // target size ~20px on 1536x754 map with 115 provinces
   };
 
   const getBurgEmblemSize = () => {
     const startSize = minmax((graphHeight + graphWidth) / 185, 2, 50);
     const burgsMod = 1 + validBurgs.length / 1000 - (450 - validBurgs.length) / 1000; // states number modifier
-    const sizeMod = +document.getElementById("emblemsBurgSizeInput").value || 1;
+    const sizeMod = +byId("emblemsBurgSizeInput").value || 1;
     return rn((startSize / burgsMod) * sizeMod); // target size ~8.5px on 1536x754 map with 450 burgs
   };
 
@@ -1873,17 +1919,17 @@ function drawEmblems() {
 }
 
 export function layerIsOn(el) {
-  const buttonoff = document.getElementById(el).classList.contains("buttonoff");
+  const buttonoff = byId(el).classList.contains("buttonoff");
   return !buttonoff;
 }
 
 function turnButtonOff(el) {
-  document.getElementById(el).classList.add("buttonoff");
+  byId(el).classList.add("buttonoff");
   getCurrentPreset();
 }
 
 function turnButtonOn(el) {
-  document.getElementById(el).classList.remove("buttonoff");
+  byId(el).classList.remove("buttonoff");
   getCurrentPreset();
 }
 

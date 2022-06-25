@@ -1,3 +1,4 @@
+import {restoreDefaultEvents} from "/src/scripts/events";
 import {findAll, findCell, getPackPolygon, isLand} from "/src/utils/graphUtils";
 import {byId} from "/src/utils/shorthands";
 

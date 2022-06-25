@@ -1,3 +1,4 @@
+import {restoreDefaultEvents} from "/src/scripts/events";
 import {findAll, findCell, getPackPolygon} from "/src/utils/graphUtils";
 import {unique} from "/src/utils/arrayUtils";
 

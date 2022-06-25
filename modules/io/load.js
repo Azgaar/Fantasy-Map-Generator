@@ -1,3 +1,4 @@
+import {restoreDefaultEvents} from "/src/scripts/events";
 import {calculateVoronoi, findCell} from "/src/utils/graphUtils";
 import {last} from "/src/utils/arrayUtils";
 
@@ -571,7 +572,7 @@ async function parseLoadedData(data) {
     eraInput.value = options.era;
     shapeRendering.value = viewbox.attr("shape-rendering") || "geometricPrecision";
 
-    if (window.restoreDefaultEvents) restoreDefaultEvents();
+    restoreDefaultEvents();
     focusOn(); // based on searchParams focus on point, cell or burg
     invokeActiveZooming();
 

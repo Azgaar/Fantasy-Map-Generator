@@ -22,6 +22,10 @@ window.Zoom = (function () {
   const onZoomDebouced = debounce(onZoom, 50);
   const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", onZoomDebouced);
 
+  function setZoomBehavior() {
+    svg.call(zoom);
+  }
+
   // zoom to a specific point
   function to(x, y, z = 8, d = 2000) {
     const transform = d3.zoomIdentity.translate(x * -z + graphWidth / 2, y * -z + graphHeight / 2).scale(z);
@@ -48,5 +52,5 @@ window.Zoom = (function () {
     zoom.scaleTo(element, scale);
   }
 
-  return {to, reset, scaleExtent, translateExtent, scaleTo};
+  return {setZoomBehavior, to, reset, scaleExtent, translateExtent, scaleTo};
 })();

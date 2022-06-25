@@ -1,3 +1,4 @@
+import {restoreDefaultEvents} from "/src/scripts/events";
 import {findGridCell, findGridAll, findCell, getPackPolygon, getGridPolygon} from "/src/utils/graphUtils";
 import {last, createTypedArray} from "/src/utils/arrayUtils";
 import {byId} from "/src/utils/shorthands";

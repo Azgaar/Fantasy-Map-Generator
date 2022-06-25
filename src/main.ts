@@ -12,13 +12,14 @@ import {
   findCell
 } from "./utils/graphUtils";
 import {createTypedArray} from "./utils/arrayUtils";
-import {drawRivers, drawStates, drawBorders} from "../modules/ui/layers";
+import {applyPreset, drawRivers, drawStates, drawBorders} from "../modules/ui/layers";
 import {invokeActiveZooming} from "../modules/activeZooming";
 import {applyStoredOptions, applyMapSize, randomizeOptions} from "../modules/ui/options";
 import {locked} from "./scripts/options/lock";
 import {Rulers, Ruler, drawScaleBar} from "./modules/measurers";
 import {byId} from "./utils/shorthands";
 import {addGlobalListeners} from "./scripts/listeners";
+import {restoreDefaultEvents} from "./scripts/events";
 
 addGlobalListeners();
 

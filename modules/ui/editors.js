@@ -1,12 +1,6 @@
+import {restoreDefaultEvents} from "/src/scripts/events";
 import {findCell} from "/src/utils/graphUtils";
 import {byId} from "/src/utils/shorthands";
-
-// restore default viewbox events
-function restoreDefaultEvents() {
-  svg.call(zoom);
-  viewbox.style("cursor", "default").on(".drag", null).on("click", clicked).on("touchmove mousemove", onMouseMove);
-  legend.call(d3.drag().on("start", dragLegendBox));
-}
 
 // on viewbox click event - run function based on target
 function clicked() {
