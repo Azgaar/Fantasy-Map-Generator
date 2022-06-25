@@ -1,5 +1,6 @@
-"use strict";
-function editProvinces() {
+import {findAll, findCell, getPackPolygon, isLand} from "/src/utils/graphUtils";
+
+export function editProvinces() {
   if (customization) return;
   closeDialogs("#provincesEditor, .stable");
   if (!layerIsOn("toggleProvinces")) toggleProvinces();

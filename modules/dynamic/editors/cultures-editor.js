@@ -1,3 +1,5 @@
+import {findAll, findCell, getPackPolygon, isLand} from "/src/utils/graphUtils";
+
 const $body = insertEditorHtml();
 addListeners();
 

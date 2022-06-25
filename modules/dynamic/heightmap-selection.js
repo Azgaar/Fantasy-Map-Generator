@@ -1,3 +1,5 @@
+import {shouldRegenerateGrid, generateGrid} from "/src/utils/graphUtils";
+
 const initialSeed = generateSeed();
 let graph = getGraph(grid);
 

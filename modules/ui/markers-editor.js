@@ -1,5 +1,6 @@
-"use strict";
-function editMarker(markerI) {
+import {findCell} from "/src/utils/graphUtils";
+
+export function editMarker(markerI) {
   if (customization) return;
   closeDialogs(".stable");
 
@@ -97,7 +98,18 @@ function editMarker(markerI) {
   }
 
   function updateInputs() {
-    const {icon, type = "", size = 30, dx = 50, dy = 50, px = 12, stroke = "#000000", fill = "#ffffff", pin = "bubble", lock} = marker;
+    const {
+      icon,
+      type = "",
+      size = 30,
+      dx = 50,
+      dy = 50,
+      px = 12,
+      stroke = "#000000",
+      fill = "#ffffff",
+      pin = "bubble",
+      lock
+    } = marker;
 
     markerType.value = type;
     markerIcon.value = icon;
@@ -241,7 +253,7 @@ function editMarker(markerI) {
   }
 
   function deleteMarker() {
-    Markers.deleteMarker(marker.i)
+    Markers.deleteMarker(marker.i);
     element.remove();
     $("#markerEditor").dialog("close");
     if (document.getElementById("markersOverviewRefresh").offsetParent) markersOverviewRefresh.click();

@@ -1,5 +1,6 @@
-"use strict";
-function editRegiment(selector) {
+import {findCell} from "/src/utils/graphUtils";
+
+export function editRegiment(selector) {
   if (customization) return;
   closeDialogs(".stable");
   if (!layerIsOn("toggleMilitary")) toggleMilitary();

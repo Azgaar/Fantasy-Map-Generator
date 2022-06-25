@@ -1,8 +1,4 @@
-"use strict";
-/*
-Cell resampler module used by submapper and resampler (transform)
-main function: resample(options);
-*/
+import {findCell} from "/src/utils/graphUtils";
 
 window.Submap = (function () {
   const isWater = (pack, id) => pack.cells.h[id] < 20;

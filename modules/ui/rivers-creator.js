@@ -1,5 +1,6 @@
-"use strict";
-function createRiver() {
+import {getPackPolygon, findCell} from "/src/utils/graphUtils";
+
+export function createRiver() {
   if (customization) return;
   closeDialogs();
   if (!layerIsOn("toggleRivers")) toggleRivers();

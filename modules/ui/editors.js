@@ -1,5 +1,4 @@
-// module stub to store common functions for ui editors
-"use strict";
+import {findCell} from "/src/utils/graphUtils";
 
 // restore default viewbox events
 function restoreDefaultEvents() {

@@ -1,5 +1,6 @@
-"use strict";
-function editLabel() {
+import {findCell} from "/src/utils/graphUtils";
+
+export function editLabel() {
   if (customization) return;
   closeDialogs();
   if (!layerIsOn("toggleLabels")) toggleLabels();

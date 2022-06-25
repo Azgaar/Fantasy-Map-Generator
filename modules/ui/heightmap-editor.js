@@ -1,6 +1,6 @@
-"use strict";
+import {findGridCell, findGridAll, findCell, getPackPolygon, getGridPolygon} from "/src/utils/graphUtils";
 
-function editHeightmap(options) {
+export function editHeightmap(options) {
   const {mode, tool} = options || {};
   restartHistory();
   viewbox.insert("g", "#terrs").attr("id", "heights");

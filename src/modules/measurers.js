@@ -1,4 +1,6 @@
-class Rulers {
+import {findCell} from "/src/utils/graphUtils";
+
+export class Rulers {
   constructor() {
     this.data = [];
   }
@@ -113,7 +115,7 @@ class Measurer {
   }
 }
 
-class Ruler extends Measurer {
+export class Ruler extends Measurer {
   constructor(points) {
     super(points);
   }
@@ -275,7 +277,7 @@ class Ruler extends Measurer {
   }
 }
 
-class Opisometer extends Measurer {
+export class Opisometer extends Measurer {
   constructor(points) {
     super(points);
   }
@@ -365,7 +367,7 @@ class Opisometer extends Measurer {
   }
 }
 
-class RouteOpisometer extends Measurer {
+export class RouteOpisometer extends Measurer {
   constructor(points) {
     super(points);
     if (pack.cells) {
@@ -495,7 +497,7 @@ class RouteOpisometer extends Measurer {
   }
 }
 
-class Planimeter extends Measurer {
+export class Planimeter extends Measurer {
   constructor(points) {
     super(points);
   }
@@ -533,8 +535,7 @@ class Planimeter extends Measurer {
   }
 }
 
-// Scale bar
-function drawScaleBar(scaleLevel) {
+export function drawScaleBar(scaleLevel) {
   if (scaleBar.style("display") === "none") return; // no need to re-draw hidden element
   scaleBar.selectAll("*").remove(); // fully redraw every time
 
@@ -621,7 +622,7 @@ function drawScaleBar(scaleLevel) {
 }
 
 // fit ScaleBar to canvas size
-function fitScaleBar() {
+export function fitScaleBar() {
   if (!scaleBar.select("rect").size() || scaleBar.style("display") === "none") return;
   const px = isNaN(+barPosX.value) ? 0.99 : barPosX.value / 100;
   const py = isNaN(+barPosY.value) ? 0.99 : barPosY.value / 100;

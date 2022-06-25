@@ -1,5 +1,6 @@
-"use strict";
-function overviewBurgs() {
+import {findCell} from "/src/utils/graphUtils";
+
+export function overviewBurgs() {
   if (customization) return;
   closeDialogs("#burgsOverview, .stable");
   if (!layerIsOn("toggleIcons")) toggleIcons();

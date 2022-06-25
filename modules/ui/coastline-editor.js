@@ -1,5 +1,6 @@
-"use strict";
-function editCoastline(node = d3.event.target) {
+import {getPackPolygon} from "/src/utils/graphUtils";
+
+export function editCoastline(node = d3.event.target) {
   if (customization) return;
   closeDialogs(".stable");
   if (layerIsOn("toggleCells")) toggleCells();

@@ -1,4 +1,4 @@
-"use strict";
+import {findCell} from "/src/utils/graphUtils";
 
 // update old .map version to the current one
 export function resolveVersionConflicts(version) {

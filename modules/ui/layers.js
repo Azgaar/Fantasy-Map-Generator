@@ -1,5 +1,6 @@
 import {TIME} from "/src/config/logging";
 import {invokeActiveZooming} from "../activeZooming";
+import {getGridPolygon} from "/src/utils/graphUtils";
 
 let presets = {}; // global object
 restoreCustomPresets(); // run on-load

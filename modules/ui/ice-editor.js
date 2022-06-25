@@ -1,5 +1,6 @@
-"use strict";
-function editIce() {
+import {findGridCell, getGridPolygon} from "/src/utils/graphUtils";
+
+export function editIce() {
   if (customization) return;
   closeDialogs(".stable");
   if (!layerIsOn("toggleIce")) toggleIce();

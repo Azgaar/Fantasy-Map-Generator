@@ -1,6 +1,6 @@
-"use strict";
+import {findCell} from "/src/utils/graphUtils";
 
-function showEPForRoute(node) {
+export function showEPForRoute(node) {
   const points = [];
   debug
     .select("#controlPoints")
@@ -14,7 +14,7 @@ function showEPForRoute(node) {
   showElevationProfile(points, routeLen, false);
 }
 
-function showEPForRiver(node) {
+export function showEPForRiver(node) {
   const points = [];
   debug
     .select("#controlPoints")

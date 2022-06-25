@@ -1,5 +1,6 @@
-"use strict";
-function editUnits() {
+import {findCell} from "/src/utils/graphUtils";
+
+export function editUnits() {
   closeDialogs("#unitsEditor, .stable");
   $("#unitsEditor").dialog();
 

@@ -1,5 +1,6 @@
-"use strict";
-function overviewRegiments(state) {
+import {findCell} from "/src/utils/graphUtils";
+
+export function overviewRegiments(state) {
   if (customization) return;
   closeDialogs(".stable");
   if (!layerIsOn("toggleMilitary")) toggleMilitary();

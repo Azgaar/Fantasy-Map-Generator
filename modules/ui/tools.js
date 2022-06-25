@@ -1,4 +1,5 @@
-"use strict";
+import {findCell} from "/src/utils/graphUtils";
+
 // module to control the Tools options (click to edit, to re-geenerate, tp add)
 
 toolsContent.addEventListener("click", function (event) {

@@ -1,5 +1,4 @@
-"use strict";
-// Functions to export map to image or data files
+import {getGridPolygon} from "/src/utils/graphUtils";
 
 // download map as SVG
 async function saveSVG() {
@@ -10,7 +9,12 @@ async function saveSVG() {
   link.href = url;
   link.click();
 
-  tip(`${link.download} is saved. Open "Downloads" screen (crtl + J) to check. You can set image scale in options`, true, "success", 5000);
+  tip(
+    `${link.download} is saved. Open "Downloads" screen (crtl + J) to check. You can set image scale in options`,
+    true,
+    "success",
+    5000
+  );
   TIME && console.timeEnd("saveSVG");
 }
 
@@ -36,7 +40,12 @@ async function savePNG() {
       window.setTimeout(function () {
         canvas.remove();
         window.URL.revokeObjectURL(link.href);
-        tip(`${link.download} is saved. Open "Downloads" screen (crtl + J) to check. You can set image scale in options`, true, "success", 5000);
+        tip(
+          `${link.download} is saved. Open "Downloads" screen (crtl + J) to check. You can set image scale in options`,
+          true,
+          "success",
+          5000
+        );
       }, 1000);
     });
   };
@@ -140,7 +149,15 @@ async function saveTiles() {
 
 // parse map svg to object url
 async function getMapURL(type, options = {}) {
-  const {debug = false, globe = false, noLabels = false, noWater = false, noScaleBar = false, noIce = false, fullMap = false} = options;
+  const {
+    debug = false,
+    globe = false,
+    noLabels = false,
+    noWater = false,
+    noScaleBar = false,
+    noIce = false,
+    fullMap = false
+  } = options;
 
   if (fullMap) drawScaleBar(1);
 
@@ -315,7 +332,8 @@ async function getMapURL(type, options = {}) {
 
   clone.remove();
 
-  const serialized = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>` + new XMLSerializer().serializeToString(cloneEl);
+  const serialized =
+    `<?xml version="1.0" encoding="UTF-8" standalone="no"?>` + new XMLSerializer().serializeToString(cloneEl);
   const blob = new Blob([serialized], {type: "image/svg+xml;charset=utf-8"});
   const url = window.URL.createObjectURL(blob);
   window.setTimeout(() => window.URL.revokeObjectURL(url), 5000);

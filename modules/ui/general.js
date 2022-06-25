@@ -1,4 +1,4 @@
-import {findCell} from "/src/utils/graphUtils";
+import {findCell, findGridCell} from "/src/utils/graphUtils";
 import {MOBILE} from "/src/constants";
 
 // fit full-screen map if window is resized
@@ -305,7 +305,7 @@ function getDepth(f, p) {
 }
 
 // get user-friendly (real-world) height value from map data
-function getFriendlyHeight([x, y]) {
+export function getFriendlyHeight([x, y]) {
   const packH = pack.cells.h[findCell(x, y)];
   const gridH = grid.cells.h[findGridCell(x, y, grid)];
   const h = packH < 20 ? gridH : packH;

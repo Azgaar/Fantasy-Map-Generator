@@ -1,5 +1,4 @@
-"use strict";
-// Functions to load and parse .map files
+import {calculateVoronoi, findCell} from "/src/utils/graphUtils";
 
 function quickLoad() {
   ldb.get("lastMap", blob => {

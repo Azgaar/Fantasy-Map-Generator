@@ -4,4 +4,12 @@ interface Navigator {
   };
 }
 
+interface Window {
+  fmg: {
+    modules: {
+      [key: string]: boolean;
+    };
+  };
+}
+
 type UnknownObject = {[key: string]: unknown};

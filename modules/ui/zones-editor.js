@@ -1,6 +1,6 @@
-"use strict";
+import {findAll, findCell, getPackPolygon} from "/src/utils/graphUtils";
 
-function editZones() {
+export function editZones() {
   closeDialogs();
   if (!layerIsOn("toggleZones")) toggleZones();
   const body = document.getElementById("zonesBodySection");

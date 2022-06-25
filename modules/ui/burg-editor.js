@@ -1,5 +1,6 @@
-"use strict";
-function editBurg(id) {
+import {findCell} from "/src/utils/graphUtils";
+
+export function editBurg(id) {
   if (customization) return;
   closeDialogs(".stable");
   if (!layerIsOn("toggleIcons")) toggleIcons();

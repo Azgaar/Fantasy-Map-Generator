@@ -1,5 +1,6 @@
-"use strict";
-function editRiver(id) {
+import {findCell, getPackPolygon} from "/src/utils/graphUtils";
+
+export function editRiver(id) {
   if (customization) return;
   if (elSelected && id === elSelected.attr("id")) return;
   closeDialogs(".stable");

@@ -1,5 +1,6 @@
-"use strict";
-function editBiomes() {
+import {findAll, findCell, getPackPolygon, isLand} from "/src/utils/graphUtils";
+
+export function editBiomes() {
   if (customization) return;
   closeDialogs("#biomesEditor, .stable");
   if (!layerIsOn("toggleBiomes")) toggleBiomes();

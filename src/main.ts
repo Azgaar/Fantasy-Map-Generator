@@ -3,14 +3,22 @@
 
 import {PRODUCTION, UINT16_MAX} from "./constants";
 import {INFO, TIME, WARN, ERROR} from "./config/logging";
-import {createTypedArray} from "./utils";
-import {shouldRegenerateGrid, generateGrid, calculateVoronoi, getPackPolygon, isLand} from "./utils/graphUtils";
+import {
+  shouldRegenerateGrid,
+  generateGrid,
+  calculateVoronoi,
+  getPackPolygon,
+  isLand,
+  findCell
+} from "./utils/graphUtils";
+import {createTypedArray} from "./utils/arrayUtils";
 import {drawRivers, drawStates, drawBorders} from "../modules/ui/layers";
 import {invokeActiveZooming} from "../modules/activeZooming";
 import {applyStoredOptions, applyMapSize, randomizeOptions} from "../modules/ui/options";
 import {locked} from "../modules/ui/general";
+import {Rulers, Ruler, drawScaleBar} from "./modules/measurers";
 
-globalThis.fmg = {
+window.fmg = {
   modules: {}
 };
 
@@ -931,10 +939,9 @@ function drawCoastline() {
   TIME && console.time("drawCoastline");
   reMarkFeatures();
 
-  const cells = pack.cells,
-    vertices = pack.vertices,
-    n = cells.i.length,
-    features = pack.features;
+  const {cells, vertices, features} = pack;
+  const n = cells.i.length;
+
   const used = new Uint8Array(features.length); // store connected features
   const largestLand = d3.scan(
     features.map(f => (f.land ? f.cells : 0)),

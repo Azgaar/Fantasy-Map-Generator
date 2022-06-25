@@ -1,5 +1,5 @@
 import {TIME} from "/src/config/logging";
-import {createTypedArray} from "/src/utils";
+import {createTypedArray} from "/src/utils/arrayUtils";
 import {findGridCell} from "/src/utils/graphUtils";
 
 window.HeightmapGenerator = (function () {

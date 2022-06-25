@@ -1,5 +1,6 @@
-"use strict";
-function editReliefIcon() {
+import {findCell} from "/src/utils/graphUtils";
+
+export function editReliefIcon() {
   if (customization) return;
   closeDialogs(".stable");
   if (!layerIsOn("toggleRelief")) toggleRelief();

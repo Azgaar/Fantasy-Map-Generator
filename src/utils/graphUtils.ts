@@ -1,5 +1,5 @@
 import {TIME} from "../config/logging";
-import {createTypedArray} from ".";
+import {createTypedArray} from "./arrayUtils";
 
 // check if new grid graph should be generated or we can use the existing one
 export function shouldRegenerateGrid(grid) {
@@ -103,7 +103,7 @@ export function findGridCell(x, y, grid) {
 }
 
 // return array of cell indexes in radius on a regular square grid
-function findGridAll(x, y, radius) {
+export function findGridAll(x, y, radius) {
   const c = grid.cells.c;
   let r = Math.floor(radius / grid.spacing);
   let found = [findGridCell(x, y, grid)];
@@ -128,11 +128,6 @@ function findGridAll(x, y, radius) {
   return found;
 }
 
-// return closest pack points quadtree datum
-function find(x, y, radius = Infinity) {
-  return pack.cells.q.find(x, y, radius);
-}
-
 // return array of cell indexes in radius
 export function findAll(x, y, radius) {
   const found = pack.cells.q.findAll(x, y, radius);
@@ -151,70 +146,8 @@ export function findCell(x, y, radius = Infinity) {
 }
 
 // get polygon points for initial cells knowing cell id
-function getGridPolygon(i) {
+export function getGridPolygon(i) {
   return grid.cells.v[i].map(v => grid.vertices.p[v]);
-}
-
-// mbostock's poissonDiscSampler
-function* poissonDiscSampler(x0, y0, x1, y1, r, k = 3) {
-  if (!(x1 >= x0) || !(y1 >= y0) || !(r > 0)) throw new Error();
-
-  const width = x1 - x0;
-  const height = y1 - y0;
-  const r2 = r * r;
-  const r2_3 = 3 * r2;
-  const cellSize = r * Math.SQRT1_2;
-  const gridWidth = Math.ceil(width / cellSize);
-  const gridHeight = Math.ceil(height / cellSize);
-  const grid = new Array(gridWidth * gridHeight);
-  const queue = [];
-
-  function far(x, y) {
-    const i = (x / cellSize) | 0;
-    const j = (y / cellSize) | 0;
-    const i0 = Math.max(i - 2, 0);
-    const j0 = Math.max(j - 2, 0);
-    const i1 = Math.min(i + 3, gridWidth);
-    const j1 = Math.min(j + 3, gridHeight);
-    for (let j = j0; j < j1; ++j) {
-      const o = j * gridWidth;
-      for (let i = i0; i < i1; ++i) {
-        const s = grid[o + i];
-        if (s) {
-          const dx = s[0] - x;
-          const dy = s[1] - y;
-          if (dx * dx + dy * dy < r2) return false;
-        }
-      }
-    }
-    return true;
-  }
-
-  function sample(x, y) {
-    queue.push((grid[gridWidth * ((y / cellSize) | 0) + ((x / cellSize) | 0)] = [x, y]));
-    return [x + x0, y + y0];
-  }
-
-  yield sample(width / 2, height / 2);
-
-  pick: while (queue.length) {
-    const i = (Math.random() * queue.length) | 0;
-    const parent = queue[i];
-
-    for (let j = 0; j < k; ++j) {
-      const a = 2 * Math.PI * Math.random();
-      const r = Math.sqrt(Math.random() * r2_3 + r2);
-      const x = parent[0] + r * Math.cos(a);
-      const y = parent[1] + r * Math.sin(a);
-      if (0 <= x && x < width && 0 <= y && y < height && far(x, y)) {
-        yield sample(x, y);
-        continue pick;
-      }
-    }
-
-    const r = queue.pop();
-    if (i < queue.length) queue[i] = r;
-  }
 }
 
 // filter land cells
@@ -308,34 +241,3 @@ void (function addFindAll() {
     }
   };
 })();
-
-// helper function non-used for the generation
-function drawCellsValue(data) {
-  debug.selectAll("text").remove();
-  debug
-    .selectAll("text")
-    .data(data)
-    .enter()
-    .append("text")
-    .attr("x", (d, i) => pack.cells.p[i][0])
-    .attr("y", (d, i) => pack.cells.p[i][1])
-    .text(d => d);
-}
-
-// helper function non-used for the generation
-function drawPolygons(data) {
-  const max = d3.max(data),
-    min = d3.min(data),
-    scheme = getColorScheme(terrs.attr("scheme"));
-  data = data.map(d => 1 - normalize(d, min, max));
-
-  debug.selectAll("polygon").remove();
-  debug
-    .selectAll("polygon")
-    .data(data)
-    .enter()
-    .append("polygon")
-    .attr("points", (d, i) => getPackPolygon(i))
-    .attr("fill", d => scheme(d))
-    .attr("stroke", d => scheme(d));
-}

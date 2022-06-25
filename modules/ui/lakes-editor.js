@@ -1,5 +1,6 @@
-"use strict";
-function editLake() {
+import {getPackPolygon} from "/src/utils/graphUtils";
+
+export function editLake() {
   if (customization) return;
   closeDialogs(".stable");
   if (layerIsOn("toggleCells")) toggleCells();

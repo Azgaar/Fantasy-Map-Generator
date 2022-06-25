@@ -1,5 +1,6 @@
-"use strict";
-function editDiplomacy() {
+import {findCell} from "/src/utils/graphUtils";
+
+export function editDiplomacy() {
   if (customization) return;
   if (pack.states.filter(s => s.i && !s.removed).length < 2)
     return tip("There should be at least 2 states to edit the diplomacy", false, "error");
