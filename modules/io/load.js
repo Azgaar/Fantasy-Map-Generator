@@ -439,10 +439,8 @@ async function parseLoadedData(data) {
       const cells = pack.cells;
 
       if (pack.cells.i.length !== pack.cells.state.length) {
-        ERROR &&
-          console.error(
-            "Striping issue. Map data is corrupted. The only solution is to edit the heightmap in erase mode"
-          );
+        const message = "Data Integrity Check. Striping issue. To fix edit the heightmap in erase mode";
+        ERROR && console.error(message);
       }
 
       const invalidStates = [...new Set(cells.state)].filter(s => !pack.states[s] || pack.states[s].removed);
@@ -501,6 +499,14 @@ async function parseLoadedData(data) {
 
       pack.burgs.forEach(burg => {
         if (!burg.i || burg.removed) return;
+        if (burg.cell === undefined || burg.x === undefined || burg.y === undefined) {
+          ERROR &&
+            console.error(
+              `Data Integrity Check. Burg ${burg.i} is missing cell info or coordinates. Removing the burg`
+            );
+          burg.removed = true;
+        }
+
         if (burg.port < 0) {
           ERROR && console.error("Data Integrity Check. Burg", burg.i, "has invalid port value", burg.port);
           burg.port = 0;
