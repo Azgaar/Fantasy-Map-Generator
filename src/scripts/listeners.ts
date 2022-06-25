@@ -1,10 +1,12 @@
 import {PRODUCTION} from "../constants";
 import {assignLockBehavior} from "./options/lock";
+import {addTooptipListers} from "./tooltips";
 
 export function addGlobalListeners() {
   PRODUCTION && registerServiceWorker();
   PRODUCTION && addInstallationPrompt();
   assignLockBehavior();
+  addTooptipListers();
 }
 
 function registerServiceWorker() {

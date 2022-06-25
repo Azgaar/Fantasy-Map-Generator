@@ -1,5 +1,6 @@
-"use strict";
-function editRoute(onClick) {
+import {showMainTip, clearMainTip} from "/src/scripts/tooltips";
+
+export function editRoute(onClick) {
   if (customization) return;
   if (!onClick && elSelected && d3.event.target.id === elSelected.attr("id")) return;
   closeDialogs(".stable");

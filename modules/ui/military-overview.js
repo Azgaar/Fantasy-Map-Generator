@@ -17,7 +17,7 @@ function overviewMilitary() {
   $("#militaryOverview").dialog({
     title: "Military Overview",
     resizable: false,
-    width: fitContent(),
+    width: "fit-content",
     position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
   });
 
@@ -244,7 +244,7 @@ function overviewMilitary() {
     $("#militaryOptions").dialog({
       title: "Edit Military Units",
       resizable: false,
-      width: fitContent(),
+      width: "fit-content",
       position: {my: "center", at: "center", of: "svg"},
       buttons: {
         Apply: applyMilitaryOptions,
@@ -382,7 +382,7 @@ function overviewMilitary() {
         </table>`;
 
       $("#alert").dialog({
-        width: fitContent(),
+        width: "fit-content",
         title: `Limit unit`,
         buttons: {
           Invert: function () {

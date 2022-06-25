@@ -14,7 +14,7 @@ function overviewRivers() {
   $("#riversOverview").dialog({
     title: "Rivers Overview",
     resizable: false,
-    width: fitContent(),
+    width: "fit-content",
     position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
   });
 

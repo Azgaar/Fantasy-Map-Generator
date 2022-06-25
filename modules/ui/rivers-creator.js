@@ -1,6 +1,7 @@
 import {restoreDefaultEvents} from "/src/scripts/events";
 import {getPackPolygon, findCell} from "/src/utils/graphUtils";
 import {last} from "/src/utils/arrayUtils";
+import {clearMainTip} from "/src/scripts/tooltips";
 
 export function createRiver() {
   if (customization) return;

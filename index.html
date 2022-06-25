@@ -3248,7 +3248,11 @@
           <button id="burgToggleMFCGMap" data-tip="Toggle MFCG map" class="icon-map"></button>
           <button id="burgRelocate" data-tip="Relocate burg" class="icon-target"></button>
           <button id="burglLegend" data-tip="Edit free text notes (legend) for this burg" class="icon-edit"></button>
-          <button id="burgLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
+          <button
+            id="burgLock"
+            data-tip="Toggle element lock. Lock will prevent it from regeneration"
+            class="icon-lock-open"
+          ></button>
           <button
             id="burgRemove"
             data-tip="Remove non-capital burg"
@@ -3328,7 +3332,11 @@
 
         <div id="markerBottom">
           <button id="markerNotes" data-tip="Edit place legend (notes)" class="icon-edit"></button>
-          <button id="markerLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
+          <button
+            id="markerLock"
+            data-tip="Toggle element lock. Lock will prevent it from regeneration"
+            class="icon-lock-open"
+          ></button>
           <button id="markerAdd" data-tip="Add additional marker of that type" class="icon-plus"></button>
           <button
             id="markerRemove"
@@ -3810,44 +3818,14 @@
         <div id="brushesSliders" style="display: none">
           <div data-tip="Change brush size" data-shortcut="+ (increase), – (decrease)" style="padding-bottom: 1px">
             <div style="width: 3.2em; display: inline-block"><i>Radius:</i></div>
-            <input
-              id="brushRadius"
-              oninput="tip('Brush radius: '+this.value); brushRadiusNumber.value = this.value"
-              type="range"
-              min="1"
-              max="99"
-              value="25"
-            />
-            <input
-              id="brushRadiusNumber"
-              oninput="tip('Brush radius: '+this.value); brushRadius.value = this.value"
-              type="number"
-              min="1"
-              max="99"
-              value="25"
-              style="border: 1px solid #d4d4d4"
-            />
+            <input id="brushRadius" type="range" min="1" max="99" value="25" />
+            <input id="brushRadiusNumber" type="number" min="1" max="99" value="25" style="border: 1px solid #d4d4d4" />
           </div>
 
           <div data-tip="Set the brush power">
             <div style="width: 3.2em; display: inline-block"><i>Power:</i></div>
-            <input
-              id="brushPower"
-              oninput="tip('Brush power: '+this.value); brushPowerNumber.value = this.value"
-              type="range"
-              min="1"
-              max="10"
-              value="5"
-            />
-            <input
-              id="brushPowerNumber"
-              oninput="tip('Brush power: '+this.value); brushPower.value = this.value"
-              type="number"
-              min="1"
-              max="10"
-              value="5"
-              style="border: 1px solid #d4d4d4"
-            />
+            <input id="brushPower" type="range" min="1" max="10" value="5" />
+            <input id="brushPowerNumber" type="number" min="1" max="10" value="5" style="border: 1px solid #d4d4d4" />
           </div>
         </div>
 
@@ -4108,23 +4086,8 @@
           <div id="biomesManuallyButtons" style="display: none">
             <label data-tip="Change brush size" data-shortcut="+ (increase), – (decrease)" class="italic"
               >Brush radius:
-              <input
-                id="biomesManuallyBrush"
-                oninput="tip('Brush radius: '+this.value); biomesManuallyBrushNumber.value = this.value"
-                type="range"
-                min="5"
-                max="99"
-                value="15"
-                style="width: 4em"
-              />
-              <input
-                id="biomesManuallyBrushNumber"
-                oninput="tip('Brush radius: '+this.value); biomesManuallyBrush.value = this.value"
-                type="number"
-                min="5"
-                max="99"
-                value="15"
-              /> </label
+              <input id="biomesManuallyBrush" type="range" min="5" max="99" value="15" style="width: 4em" />
+              <input id="biomesManuallyBrushNumber" type="number" min="5" max="99" value="15" /> </label
             ><br />
             <button id="biomesManuallyApply" data-tip="Apply current assignment" class="icon-check"></button>
             <button id="biomesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
@@ -4346,23 +4309,8 @@
           <div id="provincesManuallyButtons" style="display: none">
             <label data-tip="Change brush size" data-shortcut="+ (increase), – (decrease)" class="italic"
               >Brush size:
-              <input
-                id="provincesManuallyBrush"
-                oninput="tip('Brush size: '+this.value); provincesManuallyBrushNumber.value = this.value"
-                type="range"
-                min="5"
-                max="99"
-                value="8"
-                style="width: 5em"
-              />
-              <input
-                id="provincesManuallyBrushNumber"
-                oninput="tip('Brush size: '+this.value); provincesManuallyBrush.value = this.value"
-                type="number"
-                min="5"
-                max="99"
-                value="8"
-              /> </label
+              <input id="provincesManuallyBrush" type="range" min="5" max="99" value="8" style="width: 5em" />
+              <input id="provincesManuallyBrushNumber" type="number" min="5" max="99" value="8" /> </label
             ><br />
             <button id="provincesManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
             <button id="provincesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
@@ -4646,23 +4594,8 @@
           <div id="zonesManuallyButtons" style="display: none">
             <label data-tip="Change brush size" data-shortcut="+ (increase), – (decrease)" class="italic"
               >Brush:
-              <input
-                id="zonesBrush"
-                oninput="tip('Brush size: '+this.value); zonesBrushNumber.value = this.value"
-                type="range"
-                min="5"
-                max="50"
-                value="7"
-                style="width: 9em"
-              />
-              <input
-                id="zonesBrushNumber"
-                oninput="tip('Brush size: '+this.value); zonesBrush.value = this.value"
-                type="number"
-                min="5"
-                max="50"
-                value="7"
-              /> </label
+              <input id="zonesBrush" type="range" min="5" max="50" value="7" style="width: 9em" />
+              <input id="zonesBrushNumber" type="number" min="5" max="50" value="7" /> </label
             ><br />
             <button id="zonesManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
             <button id="zonesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
@@ -7828,9 +7761,5 @@
     <script type="module" src="modules/io/cloud.js"></script>
     <script type="module" src="modules/io/export.js"></script>
     <script type="module" src="modules/io/formats.js"></script>
-
-    <!-- Web Components -->
-    <script src="components/fill-box.js"></script>
   </body>
 </html>
-f

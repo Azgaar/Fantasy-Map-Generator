@@ -1,4 +1,5 @@
 import {findCell, getPackPolygon} from "/src/utils/graphUtils";
+import {clearMainTip} from "/src/scripts/tooltips";
 
 export function editRiver(id) {
   if (customization) return;

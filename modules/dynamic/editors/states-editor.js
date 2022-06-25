@@ -1,6 +1,7 @@
 import {restoreDefaultEvents} from "/src/scripts/events";
 import {findAll, findCell, getPackPolygon, isLand} from "/src/utils/graphUtils";
 import {byId} from "/src/utils/shorthands";
+import {showMainTip, clearMainTip} from "/src/scripts/tooltips";
 
 const $body = insertEditorHtml();
 addListeners();
@@ -318,7 +319,7 @@ function statesEditorAddLines() {
     togglePercentageMode();
   }
   applySorting(statesHeader);
-  $("#statesEditor").dialog({width: fitContent()});
+  $("#statesEditor").dialog({width: "fit-content"});
 }
 
 function getCultureOptions(culture) {
@@ -843,7 +844,7 @@ function showStatesChart() {
 
   $("#alert").dialog({
     title: "States bubble chart",
-    width: fitContent(),
+    width: "fit-content",
     position: {my: "left bottom", at: "left+10 bottom-10", of: "svg"},
     buttons: {},
     close: () => {

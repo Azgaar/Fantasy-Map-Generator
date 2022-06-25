@@ -1,4 +1,5 @@
 import {findCell} from "/src/utils/graphUtils";
+import {showMainTip} from "/src/scripts/tooltips";
 
 export function editLabel() {
   if (customization) return;
@@ -14,7 +15,7 @@ export function editLabel() {
   $("#labelEditor").dialog({
     title: "Edit Label",
     resizable: false,
-    width: fitContent(),
+    width: "fit-content",
     position: {my: "center top+10", at: "bottom", of: text, collision: "fit"},
     close: closeLabelEditor
   });

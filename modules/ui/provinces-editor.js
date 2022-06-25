@@ -1,6 +1,7 @@
 import {restoreDefaultEvents} from "/src/scripts/events";
 import {findAll, findCell, getPackPolygon, isLand} from "/src/utils/graphUtils";
 import {unique} from "/src/utils/arrayUtils";
+import {showMainTip, clearMainTip} from "/src/scripts/tooltips";
 
 export function editProvinces() {
   if (customization) return;
@@ -20,7 +21,7 @@ export function editProvinces() {
   $("#provincesEditor").dialog({
     title: "Provinces Editor",
     resizable: false,
-    width: fitContent(),
+    width: "fit-content",
     close: closeProvincesEditor,
     position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
   });
@@ -197,7 +198,7 @@ export function editProvinces() {
       togglePercentageMode();
     }
     applySorting(provincesHeader);
-    $("#provincesEditor").dialog({width: fitContent()});
+    $("#provincesEditor").dialog({width: "fit-content"});
   }
 
   function getCapitalOptions(burgs, capital) {
@@ -748,7 +749,7 @@ export function editProvinces() {
 
     $("#alert").dialog({
       title: "Provinces chart",
-      width: fitContent(),
+      width: "fit-content",
       position: {my: "left bottom", at: "left+10 bottom-10", of: "svg"},
       buttons: {},
       close: () => {

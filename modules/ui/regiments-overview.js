@@ -1,5 +1,6 @@
 import {findCell} from "/src/utils/graphUtils";
 import {last} from "/src/utils/arrayUtils";
+import {clearMainTip} from "/src/scripts/tooltips";
 
 export function overviewRegiments(state) {
   if (customization) return;
@@ -18,7 +19,7 @@ export function overviewRegiments(state) {
   $("#regimentsOverview").dialog({
     title: "Regiments Overview",
     resizable: false,
-    width: fitContent(),
+    width: "fit-content",
     position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
   });
 

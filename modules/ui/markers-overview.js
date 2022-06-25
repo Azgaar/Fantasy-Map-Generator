@@ -1,4 +1,5 @@
 import {restoreDefaultEvents} from "/src/scripts/events";
+import {clearMainTip} from "/src/scripts/tooltips";
 
 export function overviewMarkers() {
   if (customization) return;
@@ -21,7 +22,7 @@ export function overviewMarkers() {
   $("#markersOverview").dialog({
     title: "Markers Overview",
     resizable: false,
-    width: fitContent(),
+    width: "fit-content",
     close: close,
     position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
   });
@@ -51,16 +52,14 @@ export function overviewMarkers() {
   function addLines() {
     const lines = pack.markers
       .map(({i, type, icon, pinned, lock}) => {
-        return `<div class="states" data-i=${i} data-type="${type}">
+        return /* html */ `<div class="states" data-i=${i} data-type="${type}">
         <div data-tip="Marker icon and type" style="width:12em">${icon} ${type}</div>
         <span style="padding-right:.1em" data-tip="Edit marker" class="icon-pencil"></span>
         <span style="padding-right:.1em" data-tip="Focus on marker position" class="icon-dot-circled pointer"></span>
-        <span style="padding-right:.1em" data-tip="Pin marker (display only pinned markers)" class="icon-pin ${
-          pinned ? "" : "inactive"
-        }" pointer"></span>
-        <span style="padding-right:.1em" class="locks pointer ${
-          lock ? "icon-lock" : "icon-lock-open inactive"
-        }" onmouseover="showElementLockTip(event)"></span>
+        <span style="padding-right:.1em" data-tip="Pin marker (display only pinned markers)"
+          class="icon-pin ${pinned ? "" : "inactive"}" pointer"></span>
+        <span style="padding-right:.1em" data-tip="Toggle element lock. Lock will prevent it from regeneration"
+          class="locks pointer ${lock ? "icon-lock" : "icon-lock-open inactive"}" ></span>
         <span data-tip="Remove marker" class="icon-trash-empty"></span>
       </div>`;
       })

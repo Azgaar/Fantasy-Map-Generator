@@ -1,5 +1,6 @@
 import {restoreDefaultEvents} from "/src/scripts/events";
 import {findAll, findCell, getPackPolygon, isLand} from "/src/utils/graphUtils";
+import {showMainTip, clearMainTip} from "/src/scripts/tooltips";
 
 export function editBiomes() {
   if (customization) return;
@@ -20,7 +21,7 @@ export function editBiomes() {
   $("#biomesEditor").dialog({
     title: "Biomes Editor",
     resizable: false,
-    width: fitContent(),
+    width: "fit-content",
     close: closeBiomesEditor,
     position: {my: "right top", at: "right-10 top+10", of: "svg"}
   });
@@ -154,7 +155,7 @@ export function editBiomes() {
       togglePercentageMode();
     }
     applySorting(biomesHeader);
-    $("#biomesEditor").dialog({width: fitContent()});
+    $("#biomesEditor").dialog({width: "fit-content"});
   }
 
   function biomeHighlightOn(event) {
@@ -308,7 +309,7 @@ export function editBiomes() {
 
     body.insertAdjacentHTML("beforeend", line);
     biomesFooterBiomes.innerHTML = body.querySelectorAll(":scope > div").length;
-    $("#biomesEditor").dialog({width: fitContent()});
+    $("#biomesEditor").dialog({width: "fit-content"});
   }
 
   function removeCustomBiome(el) {

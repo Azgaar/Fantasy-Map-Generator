@@ -1,5 +1,6 @@
 import {restoreDefaultEvents} from "/src/scripts/events";
 import {findCell} from "/src/utils/graphUtils";
+import {clearMainTip} from "/src/scripts/tooltips";
 
 export function editDiplomacy() {
   if (customization) return;
@@ -65,7 +66,7 @@ export function editDiplomacy() {
   $("#diplomacyEditor").dialog({
     title: "Diplomacy Editor",
     resizable: false,
-    width: fitContent(),
+    width: "fit-content",
     close: closeDiplomacyEditor,
     position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
   });
@@ -236,7 +237,7 @@ export function editDiplomacy() {
     alertMessage.innerHTML = /* html */ `<div style="overflow: hidden">${header} ${options} ${footer}</div>`;
 
     $("#alert").dialog({
-      width: fitContent(),
+      width: "fit-content",
       title: `Change relations`,
       buttons: {
         Apply: function () {

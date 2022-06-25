@@ -1,5 +1,6 @@
 import {restoreDefaultEvents} from "/src/scripts/events";
 import {findCell} from "/src/utils/graphUtils";
+import {clearMainTip} from "/src/scripts/tooltips";
 
 export function overviewBurgs() {
   if (customization) return;
@@ -19,7 +20,7 @@ export function overviewBurgs() {
   $("#burgsOverview").dialog({
     title: "Burgs Overview",
     resizable: false,
-    width: fitContent(),
+    width: "fit-content",
     close: exitAddBurgMode,
     position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
   });
@@ -110,14 +111,12 @@ export function overviewBurgs() {
             data-tip="${b.capital ? " This burg is a state capital" : "Click to assign a capital status"}"
             class="icon-star-empty${b.capital ? "" : " inactive pointer"}"
           ></span>
-          <span data-tip="Click to toggle port status" class="icon-anchor pointer${
-            b.port ? "" : " inactive"
-          }" style="font-size:.9em"></span>
+          <span data-tip="Click to toggle port status"
+            class="icon-anchor pointer${b.port ? "" : " inactive"}" style="font-size:.9em"></span>
         </div>
         <span data-tip="Edit burg" class="icon-pencil"></span>
-        <span class="locks pointer ${
-          b.lock ? "icon-lock" : "icon-lock-open inactive"
-        }" onmouseover="showElementLockTip(event)"></span>
+        <span data-tip="Toggle element lock. Lock will prevent it from regeneration"
+          class="locks pointer ${b.lock ? "icon-lock" : "icon-lock-open inactive"}"></span>
         <span data-tip="Remove burg" class="icon-trash-empty"></span>
       </div>`;
     }
@@ -473,7 +472,7 @@ export function overviewBurgs() {
 
     $("#alert").dialog({
       title: "Burgs bubble chart",
-      width: fitContent(),
+      width: "fit-content",
       position: {my: "left bottom", at: "left+10 bottom-10", of: "svg"},
       buttons: {},
       close: () => (alertMessage.innerHTML = "")

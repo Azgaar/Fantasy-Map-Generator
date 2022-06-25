@@ -28,7 +28,7 @@ export class Battle {
     $("#battleScreen").dialog({
       title: this.name,
       resizable: false,
-      width: fitContent(),
+      width: "fit-content",
       position: {my: "center", at: "center", of: "#map"},
       close: () => Battle.prototype.context.cancelResults()
     });
@@ -235,7 +235,7 @@ export class Battle {
 
     $("#regimentSelectorScreen").dialog({
       resizable: false,
-      width: fitContent(),
+      width: "fit-content",
       title: "Add regiment to the battle",
       position: {my: "left center", at: "right+10 center", of: "#battleScreen"},
       close: addSideClosed,

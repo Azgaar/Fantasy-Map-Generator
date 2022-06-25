@@ -1,7 +1,8 @@
 import {applyOption} from "./general";
 import {last} from "/src/utils/arrayUtils";
-import {byId, stored} from "/src/utils/shorthands";
 import {lock, locked} from "/src/scripts/options/lock";
+import {clearMainTip} from "/src/scripts/tooltips";
+import {byId, stored} from "/src/utils/shorthands";
 
 $("#optionsContainer").draggable({handle: ".drag-trigger", snap: "svg", snapMode: "both"});
 $("#exitCustomization").draggable({handle: "div"});
@@ -963,7 +964,7 @@ function toggle3dOptions() {
   $("#options3d").dialog({
     title: "3D mode settings",
     resizable: false,
-    width: fitContent(),
+    width: "fit-content",
     position: {my: "right top", at: "right-30 top+10", of: "svg", collision: "fit"}
   });
 

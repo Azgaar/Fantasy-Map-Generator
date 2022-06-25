@@ -414,9 +414,8 @@ function selectElement(d) {
           <input data-tip="Set as primary origin" type="radio" name="primary" value="${i}" ${isPrimary} />
           <input data-id="${i}" id="selectElementOrigin${i}" class="checkbox" type="checkbox" ${isChecked} />
           <label data-tip="Check to set as a secondary origin" for="selectElementOrigin${i}" class="checkbox-label">
-            <fill-box fill="${color}" size=".8em" disabled></fill-box>
-            ${code}: ${name}
-          </label>
+          <fill-box fill="${color}" size=".8em" disabled></fill-box>
+          ${code}: ${name}</label>
         </div>
       `;
     });

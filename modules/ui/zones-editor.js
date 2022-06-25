@@ -1,6 +1,7 @@
 import {restoreDefaultEvents} from "/src/scripts/events";
 import {findAll, findCell, getPackPolygon} from "/src/utils/graphUtils";
 import {unique} from "/src/utils/arrayUtils";
+import {showMainTip, clearMainTip} from "/src/scripts/tooltips";
 
 export function editZones() {
   closeDialogs();
@@ -16,7 +17,7 @@ export function editZones() {
   $("#zonesEditor").dialog({
     title: "Zones Editor",
     resizable: false,
-    width: fitContent(),
+    width: "fit-content",
     close: () => exitZonesManualAssignment("close"),
     position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
   });
@@ -136,7 +137,7 @@ export function editZones() {
       body.dataset.type = "absolute";
       togglePercentageMode();
     }
-    $("#zonesEditor").dialog({width: fitContent()});
+    $("#zonesEditor").dialog({width: "fit-content"});
   }
 
   function zoneHighlightOn(event) {

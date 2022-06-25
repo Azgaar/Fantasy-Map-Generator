@@ -1,5 +1,6 @@
 import {restoreDefaultEvents} from "/src/scripts/events";
 import {findAll, findCell, getPackPolygon, isLand} from "/src/utils/graphUtils";
+import {showMainTip, clearMainTip} from "/src/scripts/tooltips";
 import {byId} from "/src/utils/shorthands";
 
 const $body = insertEditorHtml();
@@ -270,7 +271,7 @@ function culturesEditorAddLines() {
     togglePercentageMode();
   }
   applySorting($culturesHeader);
-  $("#culturesEditor").dialog({width: fitContent()});
+  $("#culturesEditor").dialog({width: "fit-content"});
 }
 
 function getTypeOptions(type) {

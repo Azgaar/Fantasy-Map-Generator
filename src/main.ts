@@ -20,6 +20,8 @@ import {Rulers, Ruler, drawScaleBar} from "./modules/measurers";
 import {byId} from "./utils/shorthands";
 import {addGlobalListeners} from "./scripts/listeners";
 import {restoreDefaultEvents} from "./scripts/events";
+import {clearMainTip} from "./scripts/tooltips";
+import "./components";
 
 addGlobalListeners();
 
