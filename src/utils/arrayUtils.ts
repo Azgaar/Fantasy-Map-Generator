@@ -23,7 +23,7 @@ function getTypedArray(maxValue: number) {
 interface ICreateTypedArray {
   maxValue: number;
   length: number;
-  from: ArrayLike<number>;
+  from?: ArrayLike<number>;
 }
 
 export function createTypedArray({maxValue, length, from}: ICreateTypedArray) {

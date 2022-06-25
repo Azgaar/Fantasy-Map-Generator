@@ -1,4 +1,5 @@
 import {getPackPolygon, findCell} from "/src/utils/graphUtils";
+import {last} from "/src/utils/arrayUtils";
 
 export function createRiver() {
   if (customization) return;

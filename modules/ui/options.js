@@ -1,4 +1,7 @@
 import {stored, lock, locked, applyOption} from "./general";
+import {last} from "/src/utils/arrayUtils";
+import {byId} from "/src/utils/shorthands";
+import {last} from "/src/utils/arrayUtils";
 
 $("#optionsContainer").draggable({handle: ".drag-trigger", snap: "svg", snapMode: "both"});
 $("#exitCustomization").draggable({handle: "div"});

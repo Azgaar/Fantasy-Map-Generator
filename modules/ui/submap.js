@@ -1,5 +1,4 @@
-"use strict";
-// UI elements for submap generation
+import {byId} from "/src/utils/shorthands";
 
 window.UISubmap = (function () {
   byId("submapPointsInput").addEventListener("input", function () {

@@ -1,5 +1,6 @@
-"use strict";
-class Battle {
+import {last} from "/src/utils/arrayUtils";
+
+export class Battle {
   constructor(attacker, defender) {
     if (customization) return;
     closeDialogs(".stable");

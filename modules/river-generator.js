@@ -1,4 +1,5 @@
 import {TIME} from "/src/config/logging";
+import {last} from "/src/utils/arrayUtils";
 
 window.Rivers = (function () {
   const generate = function (allowErosion = true) {

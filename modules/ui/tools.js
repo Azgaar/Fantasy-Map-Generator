@@ -1,4 +1,5 @@
 import {findCell} from "/src/utils/graphUtils";
+import {last} from "/src/utils/arrayUtils";
 
 // module to control the Tools options (click to edit, to re-geenerate, tp add)
 

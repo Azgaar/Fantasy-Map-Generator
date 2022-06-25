@@ -1,5 +1,6 @@
 import {TIME} from "/src/config/logging";
 import {getFriendlyHeight} from "./ui/general";
+import {last} from "/src/utils/arrayUtils";
 
 window.Markers = (function () {
   let config = [];

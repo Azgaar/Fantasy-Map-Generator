@@ -94,7 +94,7 @@ function parseError(error) {
   const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
   const errorString = isFirefox ? error.toString() + " " + error.stack : error.stack;
   const regex = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gi;
-  const errorNoURL = errorString.replace(regex, url => "<i>" + last(url.split("/")) + "</i>");
+  const errorNoURL = errorString.replace(regex, url => "<i>" + url.split("/").at(-1) + "</i>");
   const errorParsed = errorNoURL.replace(/at /gi, "<br>&nbsp;&nbsp;at ");
   return errorParsed;
 }
@@ -134,7 +134,11 @@ function isCtrlClick(event) {
 }
 
 function generateDate(from = 100, to = 1000) {
-  return new Date(rand(from, to), rand(12), rand(31)).toLocaleDateString("en", {year: "numeric", month: "long", day: "numeric"});
+  return new Date(rand(from, to), rand(12), rand(31)).toLocaleDateString("en", {
+    year: "numeric",
+    month: "long",
+    day: "numeric"
+  });
 }
 
 function getLongitude(x, decimals = 2) {
@@ -158,7 +162,8 @@ void (function () {
   const defaultOptions = {default: 1, step: 0.01, min: 0, max: 100, required: true};
 
   window.prompt = function (promptText = defaultText, options = defaultOptions, callback) {
-    if (options.default === undefined) return ERROR && console.error("Prompt: options object does not have default value defined");
+    if (options.default === undefined)
+      return ERROR && console.error("Prompt: options object does not have default value defined");
 
     const input = prompt.querySelector("#promptInput");
     prompt.querySelector("#promptText").innerHTML = promptText;

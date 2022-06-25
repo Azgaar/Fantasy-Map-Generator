@@ -1,4 +1,5 @@
 import {calculateVoronoi, findCell} from "/src/utils/graphUtils";
+import {last} from "/src/utils/arrayUtils";
 
 function quickLoad() {
   ldb.get("lastMap", blob => {

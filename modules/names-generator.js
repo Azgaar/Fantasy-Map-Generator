@@ -1,3 +1,5 @@
+import {last} from "/src/utils/arrayUtils";
+
 window.Names = (function () {
   let chains = [];
 

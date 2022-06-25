@@ -1,5 +1,6 @@
 import {TIME} from "/src/config/logging";
 import {findCell} from "/src/utils/graphUtils";
+import {last} from "/src/utils/arrayUtils";
 
 window.Routes = (function () {
   const getRoads = function () {

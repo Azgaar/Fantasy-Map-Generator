@@ -1,4 +1,4 @@
-const byId = document.getElementById.bind(document);
+export const byId = document.getElementById.bind(document);
 
 Node.prototype.on = function (name, fn, options) {
   this.addEventListener(name, fn, options);

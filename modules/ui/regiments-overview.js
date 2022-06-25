@@ -1,4 +1,5 @@
 import {findCell} from "/src/utils/graphUtils";
+import {last} from "/src/utils/arrayUtils";
 
 export function overviewRegiments(state) {
   if (customization) return;

@@ -17,6 +17,7 @@ import {invokeActiveZooming} from "../modules/activeZooming";
 import {applyStoredOptions, applyMapSize, randomizeOptions} from "../modules/ui/options";
 import {locked} from "../modules/ui/general";
 import {Rulers, Ruler, drawScaleBar} from "./modules/measurers";
+import {byId} from "./utils/shorthands";
 
 window.fmg = {
   modules: {}
@@ -223,8 +224,8 @@ function focusOn() {
 
 // find burg for MFCG and focus on it
 function findBurgForMFCG(params) {
-  const cells = pack.cells,
-    burgs = pack.burgs;
+  const {cells, burgs} = pack;
+
   if (pack.burgs.length < 2) {
     ERROR && console.error("Cannot select a burg for MFCG");
     return;
@@ -305,18 +306,18 @@ void (function addDragToUpload() {
   document.addEventListener("dragover", function (e) {
     e.stopPropagation();
     e.preventDefault();
-    document.getElementById("mapOverlay").style.display = null;
+    byId("mapOverlay").style.display = null;
   });
 
   document.addEventListener("dragleave", function (e) {
-    document.getElementById("mapOverlay").style.display = "none";
+    byId("mapOverlay").style.display = "none";
   });
 
   document.addEventListener("drop", function (e) {
     e.stopPropagation();
     e.preventDefault();
 
-    const overlay = document.getElementById("mapOverlay");
+    const overlay = byId("mapOverlay");
     overlay.style.display = "none";
     if (e.dataTransfer.items == null || e.dataTransfer.items.length !== 1) return; // no files or more than one
     const file = e.dataTransfer.items[0].getAsFile();
@@ -523,7 +524,7 @@ function addLakesInDeepDepressions() {
   TIME && console.time("addLakesInDeepDepressions");
   const {cells, features} = grid;
   const {c, h, b} = cells;
-  const ELEVATION_LIMIT = +document.getElementById("lakeElevationLimitOutput").value;
+  const ELEVATION_LIMIT = +byId("lakeElevationLimitOutput").value;
   if (ELEVATION_LIMIT === 80) return;
 
   for (const i of cells.i) {
@@ -677,8 +678,8 @@ function defineMapSize() {
 
 // calculate map position on globe
 function calculateMapCoordinates() {
-  const size = +document.getElementById("mapSizeOutput").value;
-  const latShift = +document.getElementById("latitudeOutput").value;
+  const size = +byId("mapSizeOutput").value;
+  const latShift = +byId("latitudeOutput").value;
 
   const latT = rn((size / 100) * 180, 1);
   const latN = rn(90 - ((180 - latT) * latShift) / 100, 1);
@@ -1506,7 +1507,7 @@ function addZones(number = 1) {
   }
 
   function addEruption() {
-    const volcano = document.getElementById("markers").querySelector("use[data-id='#marker_volcano']");
+    const volcano = byId("markers").querySelector("use[data-id='#marker_volcano']");
     if (!volcano) return;
 
     const x = +volcano.dataset.x,
@@ -1722,7 +1723,7 @@ function undraw() {
     .getElementById("deftemp")
     .querySelectorAll("path, clipPath, svg")
     .forEach(el => el.remove());
-  document.getElementById("coas").innerHTML = ""; // remove auto-generated emblems
+  byId("coas").innerHTML = ""; // remove auto-generated emblems
   notes = [];
   rulers = new Rulers();
   unfog();

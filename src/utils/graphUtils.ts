@@ -1,5 +1,6 @@
 import {TIME} from "../config/logging";
 import {createTypedArray} from "./arrayUtils";
+import {byId} from "./shorthands";
 
 // check if new grid graph should be generated or we can use the existing one
 export function shouldRegenerateGrid(grid) {
@@ -36,7 +37,7 @@ function placePoints() {
 }
 
 // calculate Delaunay and then Voronoi diagram
-export function calculateVoronoi(points, boundary) {
+export function calculateVoronoi(points: number[][], boundary: number[][]) {
   TIME && console.time("calculateDelaunay");
   const allPoints = points.concat(boundary);
   const delaunay = Delaunator.from(allPoints);
@@ -54,7 +55,7 @@ export function calculateVoronoi(points, boundary) {
 }
 
 // add points along map edge to pseudo-clip voronoi cells
-function getBoundaryPoints(width, height, spacing) {
+function getBoundaryPoints(width: number, height: number, spacing: number) {
   const offset = rn(-1 * spacing);
   const bSpacing = spacing * 2;
   const w = width - offset * 2;
@@ -77,7 +78,7 @@ function getBoundaryPoints(width, height, spacing) {
 }
 
 // get points on a regular square grid and jitter them a bit
-function getJitteredGrid(width, height, spacing) {
+function getJitteredGrid(width: number, height: number, spacing: number) {
   const radius = spacing / 2; // square radius
   const jittering = radius * 0.9; // max deviation
   const doubleJittering = jittering * 2;
@@ -95,7 +96,7 @@ function getJitteredGrid(width, height, spacing) {
 }
 
 // return cell index on a regular square grid
-export function findGridCell(x, y, grid) {
+export function findGridCell(x: number, y: number, grid) {
   return (
     Math.floor(Math.min(y / grid.spacing, grid.cellsY - 1)) * grid.cellsX +
     Math.floor(Math.min(x / grid.spacing, grid.cellsX - 1))
@@ -103,7 +104,7 @@ export function findGridCell(x, y, grid) {
 }
 
 // return array of cell indexes in radius on a regular square grid
-export function findGridAll(x, y, radius) {
+export function findGridAll(x: number, y: number, radius: number) {
   const c = grid.cells.c;
   let r = Math.floor(radius / grid.spacing);
   let found = [findGridCell(x, y, grid)];
@@ -129,34 +130,34 @@ export function findGridAll(x, y, radius) {
 }
 
 // return array of cell indexes in radius
-export function findAll(x, y, radius) {
+export function findAll(x: number, y: number, radius: number) {
   const found = pack.cells.q.findAll(x, y, radius);
   return found.map(r => r[2]);
 }
 
 // get polygon points for packed cells knowing cell id
-export function getPackPolygon(i) {
+export function getPackPolygon(i: number) {
   return pack.cells.v[i].map(v => pack.vertices.p[v]);
 }
 
 // return closest cell index
-export function findCell(x, y, radius = Infinity) {
+export function findCell(x: number, y: number, radius = Infinity) {
   const found = pack.cells.q.find(x, y, radius);
   return found ? found[2] : undefined;
 }
 
 // get polygon points for initial cells knowing cell id
-export function getGridPolygon(i) {
+export function getGridPolygon(i: number) {
   return grid.cells.v[i].map(v => grid.vertices.p[v]);
 }
 
 // filter land cells
-export function isLand(i) {
+export function isLand(i: number) {
   return pack.cells.h[i] >= 20;
 }
 
 // filter water cells
-export function isWater(i) {
+export function isWater(i: number) {
   return pack.cells.h[i] < 20;
 }
 
