@@ -1,9 +1,9 @@
 import {getPackPolygon} from "/src/utils/graphUtils";
 import {tip} from "/src/scripts/tooltips";
-import {clipPoly} from "@/utils/lineUtils";
+import {clipPoly} from "/src/utils/lineUtils";
 import {rn} from "/src/utils/numberUtils";
-import {round} from "@/utils/stringUtils";
-import {si} from "@/utils/unitUtils";
+import {round} from "/src/utils/stringUtils";
+import {si} from "/src/utils/unitUtils";
 
 export function editCoastline(node = d3.event.target) {
   if (customization) return;

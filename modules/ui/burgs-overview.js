@@ -1,9 +1,9 @@
 import {restoreDefaultEvents} from "/src/scripts/events";
 import {findCell} from "/src/utils/graphUtils";
 import {tip, clearMainTip} from "/src/scripts/tooltips";
-import {getCoordinates} from "@/utils/coordinateUtils";
+import {getCoordinates} from "/src/utils/coordinateUtils";
 import {rn} from "/src/utils/numberUtils";
-import {si, siToInteger} from "@/utils/unitUtils";
+import {si, siToInteger} from "/src/utils/unitUtils";
 
 export function overviewBurgs() {
   if (customization) return;

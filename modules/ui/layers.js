@@ -5,13 +5,13 @@ import {last} from "/src/utils/arrayUtils";
 import {stored, store} from "/src/utils/shorthands";
 import {tip} from "/src/scripts/tooltips";
 import {byId} from "/src/utils/shorthands";
-import {clipPoly} from "@/utils/lineUtils";
+import {clipPoly} from "/src/utils/lineUtils";
 import {rn, minmax, normalize} from "/src/utils/numberUtils";
-import {isCtrlClick} from "@/utils/keyboardUtils";
-import {prompt} from "@/scripts/prompt";
-import {rand, P} from "@/utils/probabilityUtils";
-import {convertTemperature} from "@/utils/unitUtils";
-import {getBase64} from "@/utils/functionUtils";
+import {isCtrlClick} from "/src/utils/keyboardUtils";
+import {prompt} from "/src/scripts/prompt";
+import {rand, P} from "/src/utils/probabilityUtils";
+import {convertTemperature} from "/src/utils/unitUtils";
+import {getBase64} from "/src/utils/functionUtils";
 
 let presets = {};
 restoreCustomPresets(); // run on-load

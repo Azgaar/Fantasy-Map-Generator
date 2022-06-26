@@ -1,4 +1,4 @@
-import {debounce} from "@/utils/functionUtils";
+import {debounce} from "/src/utils/functionUtils";
 
 // temporary expose to global
 window.scale = 1;

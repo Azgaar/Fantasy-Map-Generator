@@ -1,6 +1,6 @@
 import {shouldRegenerateGrid, generateGrid} from "/src/utils/graphUtils";
 import {byId} from "/src/utils/shorthands";
-import {generateSeed} from "@/utils/probabilityUtils";
+import {generateSeed} from "/src/utils/probabilityUtils";
 
 const initialSeed = generateSeed();
 let graph = getGraph(grid);

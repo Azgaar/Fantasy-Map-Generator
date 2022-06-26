@@ -1,9 +1,9 @@
 import {last} from "/src/utils/arrayUtils";
 import {locked} from "/src/scripts/options/lock";
 import {tip} from "/src/scripts/tooltips";
-import {rand, P, ra} from "@/utils/probabilityUtils";
-import {capitalize} from "@/utils/stringUtils";
-import {vowel} from "@/utils/languageUtils";
+import {rand, P, ra} from "/src/utils/probabilityUtils";
+import {capitalize} from "/src/utils/stringUtils";
+import {vowel} from "/src/utils/languageUtils";
 
 window.Names = (function () {
   let chains = [];

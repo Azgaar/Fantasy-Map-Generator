@@ -2,10 +2,10 @@ import {restoreDefaultEvents} from "/src/scripts/events";
 import {calculateVoronoi, findCell} from "/src/utils/graphUtils";
 import {last} from "/src/utils/arrayUtils";
 import {tip} from "/src/scripts/tooltips";
-import {parseError} from "@/utils/errorUtils";
+import {parseError} from "/src/utils/errorUtils";
 import {rn, minmax} from "/src/utils/numberUtils";
-import {link} from "@/utils/linkUtils";
-import {ldb} from "@/scripts/indexedDB";
+import {link} from "/src/utils/linkUtils";
+import {ldb} from "/src/scripts/indexedDB";
 
 function quickLoad() {
   ldb.get("lastMap", blob => {

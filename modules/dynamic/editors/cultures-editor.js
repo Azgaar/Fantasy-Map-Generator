@@ -3,10 +3,10 @@ import {findAll, findCell, getPackPolygon, isLand} from "/src/utils/graphUtils";
 import {tip, showMainTip, clearMainTip} from "/src/scripts/tooltips";
 import {byId} from "/src/utils/shorthands";
 import {rn} from "/src/utils/numberUtils";
-import {capitalize} from "@/utils/stringUtils";
-import {si} from "@/utils/unitUtils";
-import {abbreviate} from "@/utils/languageUtils";
-import {debounce} from "@/utils/functionUtils";
+import {capitalize} from "/src/utils/stringUtils";
+import {si} from "/src/utils/unitUtils";
+import {abbreviate} from "/src/utils/languageUtils";
+import {debounce} from "/src/utils/functionUtils";
 
 const $body = insertEditorHtml();
 addListeners();

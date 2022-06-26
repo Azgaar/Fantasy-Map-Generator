@@ -1,8 +1,8 @@
 import {byId} from "/src/utils/shorthands";
 import {clearMainTip} from "/src/scripts/tooltips";
-import {parseError} from "@/utils/errorUtils";
+import {parseError} from "/src/utils/errorUtils";
 import {rn, minmax} from "/src/utils/numberUtils";
-import {debounce} from "@/utils/functionUtils";
+import {debounce} from "/src/utils/functionUtils";
 
 window.UISubmap = (function () {
   byId("submapPointsInput").addEventListener("input", function () {

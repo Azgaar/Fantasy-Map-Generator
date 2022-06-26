@@ -1,8 +1,8 @@
 import {findCell, findGridCell} from "/src/utils/graphUtils";
 import {rn} from "/src/utils/numberUtils";
-import {link} from "@/utils/linkUtils";
-import {getCoordinates, toDMS} from "@/utils/coordinateUtils";
-import {si} from "@/utils/unitUtils";
+import {link} from "/src/utils/linkUtils";
+import {getCoordinates, toDMS} from "/src/utils/coordinateUtils";
+import {si} from "/src/utils/unitUtils";
 
 // fit full-screen map if window is resized
 window.addEventListener("resize", function (e) {

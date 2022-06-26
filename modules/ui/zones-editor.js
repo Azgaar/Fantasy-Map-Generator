@@ -3,8 +3,8 @@ import {findAll, findCell, getPackPolygon} from "/src/utils/graphUtils";
 import {unique} from "/src/utils/arrayUtils";
 import {tip, showMainTip, clearMainTip} from "/src/scripts/tooltips";
 import {rn} from "/src/utils/numberUtils";
-import {getNextId} from "@/utils/nodeUtils";
-import {si} from "@/utils/unitUtils";
+import {getNextId} from "/src/utils/nodeUtils";
+import {si} from "/src/utils/unitUtils";
 
 export function editZones() {
   closeDialogs();

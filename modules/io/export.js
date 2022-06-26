@@ -1,9 +1,9 @@
 import {getGridPolygon} from "/src/utils/graphUtils";
 import {unique} from "/src/utils/arrayUtils";
 import {tip} from "/src/scripts/tooltips";
-import {getCoordinates} from "@/utils/coordinateUtils";
+import {getCoordinates} from "/src/utils/coordinateUtils";
 import {rn} from "/src/utils/numberUtils";
-import {getBase64} from "@/utils/functionUtils";
+import {getBase64} from "/src/utils/functionUtils";
 
 // download map as SVG
 async function saveSVG() {

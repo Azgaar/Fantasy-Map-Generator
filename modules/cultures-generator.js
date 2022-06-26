@@ -1,8 +1,8 @@
 import {TIME} from "/src/config/logging";
 import {getColors} from "/src/utils/colorUtils";
 import {rn, minmax} from "/src/utils/numberUtils";
-import {rand, P, rw, biased} from "@/utils/probabilityUtils";
-import {abbreviate} from "@/utils/languageUtils";
+import {rand, P, rw, biased} from "/src/utils/probabilityUtils";
+import {abbreviate} from "/src/utils/languageUtils";
 
 window.Cultures = (function () {
   let cells;

@@ -2,11 +2,11 @@ import {TIME} from "/src/config/logging";
 import {findCell} from "/src/utils/graphUtils";
 import {layerIsOn} from "./ui/layers";
 import {getColors, getRandomColor, getMixedColor} from "/src/utils/colorUtils";
-import {getMiddlePoint} from "@/utils/lineUtils";
+import {getMiddlePoint} from "/src/utils/lineUtils";
 import {rn, minmax} from "/src/utils/numberUtils";
-import {rand, P, each, gauss, ra, rw, generateSeed} from "@/utils/probabilityUtils";
-import {round, splitInTwo} from "@/utils/stringUtils";
-import {trimVowels, getAdjective} from "@/utils/languageUtils";
+import {rand, P, each, gauss, ra, rw, generateSeed} from "/src/utils/probabilityUtils";
+import {round, splitInTwo} from "/src/utils/stringUtils";
+import {trimVowels, getAdjective} from "/src/utils/languageUtils";
 
 window.BurgsAndStates = (function () {
   const generate = function () {

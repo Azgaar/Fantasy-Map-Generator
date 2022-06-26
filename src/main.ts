@@ -1,6 +1,8 @@
 // Azgaar (azgaar.fmg@yandex.com). Minsk, 2017-2022. MIT License
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
+console.log("Hello World");
+
 import {invokeActiveZooming} from "../modules/activeZooming";
 import {applyPreset, drawBorders, drawRivers, drawStates} from "../modules/ui/layers";
 import {applyMapSize, applyStoredOptions, randomizeOptions} from "../modules/ui/options";
@@ -21,12 +23,13 @@ import {
   isLand,
   shouldRegenerateGrid
 } from "./utils/graphUtils";
-import {parseError} from "@/utils/errorUtils";
+import {parseError} from "./utils/errorUtils";
 import {rn, minmax, normalize} from "./utils/numberUtils";
 import {createTypedArray} from "./utils/arrayUtils";
-import {clipPoly} from "@/utils/lineUtils";
-import {rand, P, gauss, ra, rw, generateSeed} from "@/utils/probabilityUtils";
-import {getAdjective} from "@/utils/languageUtils";
+import {clipPoly} from "./utils/lineUtils";
+import {rand, P, gauss, ra, rw, generateSeed} from "./utils/probabilityUtils";
+import {getAdjective} from "./utils/languageUtils";
+import {debounce} from "./utils/functionUtils";
 import {byId} from "./utils/shorthands";
 import "./components";
 

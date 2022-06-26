@@ -1,4 +1,4 @@
-import {capitalize} from "@/utils/stringUtils";
+import {capitalize} from "/src/utils/stringUtils";
 
 const capitalize = text => text.charAt(0).toUpperCase() + text.slice(1);
 

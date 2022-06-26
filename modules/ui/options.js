@@ -4,7 +4,7 @@ import {lock, locked} from "/src/scripts/options/lock";
 import {tip, clearMainTip} from "/src/scripts/tooltips";
 import {byId, stored} from "/src/utils/shorthands";
 import {rn, minmax} from "/src/utils/numberUtils";
-import {rand, P, gauss} from "@/utils/probabilityUtils";
+import {rand, P, gauss} from "/src/utils/probabilityUtils";
 
 $("#optionsContainer").draggable({handle: ".drag-trigger", snap: "svg", snapMode: "both"});
 $("#exitCustomization").draggable({handle: "div"});

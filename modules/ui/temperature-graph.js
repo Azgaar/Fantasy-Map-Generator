@@ -1,7 +1,7 @@
 import {tip} from "/src/scripts/tooltips";
 import {rn} from "/src/utils/numberUtils";
-import {round} from "@/utils/stringUtils";
-import {convertTemperature} from "@/utils/unitUtils";
+import {round} from "/src/utils/stringUtils";
+import {convertTemperature} from "/src/utils/unitUtils";
 
 export function showBurgTemperatureGraph(id) {
   const b = pack.burgs[id];

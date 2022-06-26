@@ -1,4 +1,4 @@
-import {rn} from "@/utils/numberUtils";
+import {rn} from "/src/utils/numberUtils";
 
 // round numbers in string to d decimals
 export function round(str: string, d = 1) {

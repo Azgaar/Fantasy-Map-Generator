@@ -1,4 +1,4 @@
-import {ERROR} from "@/config/logging";
+import {ERROR} from "/src/config/logging";
 
 // prompt replacer (prompt does not work in Electron)
 const $prompt: HTMLElement = document.getElementById("prompt")!;

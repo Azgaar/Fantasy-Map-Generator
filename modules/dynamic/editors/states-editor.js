@@ -4,9 +4,9 @@ import {byId} from "/src/utils/shorthands";
 import {tip, showMainTip, clearMainTip} from "/src/scripts/tooltips";
 import {getRandomColor, getMixedColor} from "/src/utils/colorUtils";
 import {rn} from "/src/utils/numberUtils";
-import {rand, P} from "@/utils/probabilityUtils";
-import {si} from "@/utils/unitUtils";
-import {getAdjective} from "@/utils/languageUtils";
+import {rand, P} from "/src/utils/probabilityUtils";
+import {si} from "/src/utils/unitUtils";
+import {getAdjective} from "/src/utils/languageUtils";
 
 const $body = insertEditorHtml();
 addListeners();

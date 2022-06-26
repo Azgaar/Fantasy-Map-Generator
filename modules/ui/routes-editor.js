@@ -1,8 +1,8 @@
 import {tip, showMainTip, clearMainTip} from "/src/scripts/tooltips";
-import {getSegmentId} from "@/utils/lineUtils";
+import {getSegmentId} from "/src/utils/lineUtils";
 import {rn} from "/src/utils/numberUtils";
-import {getNextId} from "@/utils/nodeUtils";
-import {round} from "@/utils/stringUtils";
+import {getNextId} from "/src/utils/nodeUtils";
+import {round} from "/src/utils/stringUtils";
 
 export function editRoute(onClick) {
   if (customization) return;

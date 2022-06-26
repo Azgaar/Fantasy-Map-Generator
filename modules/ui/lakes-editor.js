@@ -1,9 +1,9 @@
 import {getPackPolygon} from "/src/utils/graphUtils";
 import {tip} from "/src/scripts/tooltips";
 import {rn} from "/src/utils/numberUtils";
-import {rand} from "@/utils/probabilityUtils";
-import {round} from "@/utils/stringUtils";
-import {si} from "@/utils/unitUtils";
+import {rand} from "/src/utils/probabilityUtils";
+import {round} from "/src/utils/stringUtils";
+import {si} from "/src/utils/unitUtils";
 
 export function editLake() {
   if (customization) return;

@@ -1,5 +1,5 @@
 import {tip} from "/src/scripts/tooltips";
-import {isJsonValid} from "@/utils/stringUtils";
+import {isJsonValid} from "/src/utils/stringUtils";
 
 const systemPresets = [
   "default",

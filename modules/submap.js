@@ -1,5 +1,5 @@
 import {findCell} from "/src/utils/graphUtils";
-import {getMiddlePoint} from "@/utils/lineUtils";
+import {getMiddlePoint} from "/src/utils/lineUtils";
 import {rn} from "/src/utils/numberUtils";
 
 window.Submap = (function () {

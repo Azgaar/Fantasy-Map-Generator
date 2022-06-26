@@ -1,8 +1,8 @@
 import {clearMainTip} from "/src/scripts/tooltips";
 import {tip} from "/src/scripts/tooltips";
-import {openURL} from "@/utils/linkUtils";
+import {openURL} from "/src/utils/linkUtils";
 import {rn} from "/src/utils/numberUtils";
-import {parseTransform} from "@/utils/stringUtils";
+import {parseTransform} from "/src/utils/stringUtils";
 
 export function editEmblem(type, id, el) {
   if (customization) return;

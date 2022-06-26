@@ -1,7 +1,7 @@
 import {findCell} from "/src/utils/graphUtils";
 import {rn} from "/src/utils/numberUtils";
-import {rand, P, rw} from "@/utils/probabilityUtils";
-import {parseTransform} from "@/utils/stringUtils";
+import {rand, P, rw} from "/src/utils/probabilityUtils";
+import {parseTransform} from "/src/utils/stringUtils";
 
 // update old .map version to the current one
 export function resolveVersionConflicts(version) {

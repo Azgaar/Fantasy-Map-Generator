@@ -3,8 +3,8 @@ import {findAll} from "/src/utils/graphUtils";
 import {unique} from "/src/utils/arrayUtils";
 import {getRandomColor, getMixedColor} from "/src/utils/colorUtils";
 import {rn} from "/src/utils/numberUtils";
-import {rand, P, ra, rw, biased} from "@/utils/probabilityUtils";
-import {trimVowels, getAdjective, abbreviate} from "@/utils/languageUtils";
+import {rand, P, ra, rw, biased} from "/src/utils/probabilityUtils";
+import {trimVowels, getAdjective, abbreviate} from "/src/utils/languageUtils";
 
 window.Religions = (function () {
   // name generation approach and relative chance to be selected

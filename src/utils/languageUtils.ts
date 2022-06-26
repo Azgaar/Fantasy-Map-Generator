@@ -1,4 +1,4 @@
-import {P} from "@/utils/probabilityUtils";
+import {P} from "/src/utils/probabilityUtils";
 
 // chars that serve as vowels
 const VOWELS = `aeiouyɑ'əøɛœæɶɒɨɪɔɐʊɤɯаоиеёэыуюяàèìòùỳẁȁȅȉȍȕáéíóúýẃőűâêîôûŷŵäëïöüÿẅãẽĩõũỹąęįǫųāēīōūȳăĕĭŏŭǎěǐǒǔȧėȯẏẇạẹịọụỵẉḛḭṵṳ`;
