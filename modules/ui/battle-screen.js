@@ -2,6 +2,8 @@ import {last} from "/src/utils/arrayUtils";
 import {tip} from "/src/scripts/tooltips";
 import {wiki} from "@/utils/linkUtils";
 import {rn, minmax} from "/src/utils/numberUtils";
+import {rand, P, Pint} from "@/utils/probabilityUtils";
+import {capitalize} from "@/utils/stringUtils";
 
 export class Battle {
   constructor(attacker, defender) {

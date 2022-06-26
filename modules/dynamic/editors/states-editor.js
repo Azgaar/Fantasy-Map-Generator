@@ -4,6 +4,7 @@ import {byId} from "/src/utils/shorthands";
 import {tip, showMainTip, clearMainTip} from "/src/scripts/tooltips";
 import {getRandomColor, getMixedColor} from "/src/utils/colorUtils";
 import {rn} from "/src/utils/numberUtils";
+import {rand, P} from "@/utils/probabilityUtils";
 
 const $body = insertEditorHtml();
 addListeners();

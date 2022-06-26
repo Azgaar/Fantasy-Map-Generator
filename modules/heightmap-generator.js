@@ -2,6 +2,7 @@ import {TIME} from "/src/config/logging";
 import {createTypedArray} from "/src/utils/arrayUtils";
 import {findGridCell} from "/src/utils/graphUtils";
 import {byId} from "/src/utils/shorthands";
+import {rand, P, getNumberInRange} from "@/utils/probabilityUtils";
 
 window.HeightmapGenerator = (function () {
   let grid = null;

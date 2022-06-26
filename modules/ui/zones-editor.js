@@ -3,6 +3,7 @@ import {findAll, findCell, getPackPolygon} from "/src/utils/graphUtils";
 import {unique} from "/src/utils/arrayUtils";
 import {tip, showMainTip, clearMainTip} from "/src/scripts/tooltips";
 import {rn} from "/src/utils/numberUtils";
+import {getNextId} from "@/utils/nodeUtils";
 
 export function editZones() {
   closeDialogs();

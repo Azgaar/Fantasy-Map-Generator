@@ -5,6 +5,8 @@ import {tip, clearMainTip} from "/src/scripts/tooltips";
 import {rn} from "/src/utils/numberUtils";
 import {isCtrlClick} from "@/utils/keyboardUtils";
 import {prompt} from "@/scripts/prompt";
+import {getNextId} from "@/utils/nodeUtils";
+import {P, generateSeed} from "@/utils/probabilityUtils";
 
 toolsContent.addEventListener("click", function (event) {
   if (customization) return tip("Please exit the customization mode first", false, "warning");

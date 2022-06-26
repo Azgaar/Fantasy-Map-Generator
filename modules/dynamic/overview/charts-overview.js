@@ -3,6 +3,7 @@ import {isWater} from "/src/utils/graphUtils";
 import {tip} from "/src/scripts/tooltips";
 import {byId} from "/src/utils/shorthands";
 import {rn} from "/src/utils/numberUtils";
+import {capitalize} from "@/utils/stringUtils";
 
 const entitiesMap = {
   states: {

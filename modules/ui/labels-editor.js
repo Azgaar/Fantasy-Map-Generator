@@ -1,5 +1,7 @@
 import {findCell} from "/src/utils/graphUtils";
 import {tip, showMainTip} from "/src/scripts/tooltips";
+import {round, parseTransform} from "@/utils/stringUtils";
+import {parseTransform} from "@/utils/stringUtils";
 
 export function editLabel() {
   if (customization) return;

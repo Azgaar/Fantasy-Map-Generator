@@ -2,6 +2,7 @@ import {findCell} from "/src/utils/graphUtils";
 import {last} from "/src/utils/arrayUtils";
 import {getSegmentId} from "@/utils/lineUtils";
 import {rn} from "/src/utils/numberUtils";
+import {round, parseTransform} from "@/utils/stringUtils";
 
 export class Rulers {
   constructor() {

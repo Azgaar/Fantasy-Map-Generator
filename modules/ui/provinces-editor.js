@@ -4,6 +4,8 @@ import {unique} from "/src/utils/arrayUtils";
 import {tip, showMainTip, clearMainTip} from "/src/scripts/tooltips";
 import {getRandomColor} from "/src/utils/colorUtils";
 import {rn} from "/src/utils/numberUtils";
+import {rand, P} from "@/utils/probabilityUtils";
+import {parseTransform} from "@/utils/stringUtils";
 
 export function editProvinces() {
   if (customization) return;

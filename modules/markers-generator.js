@@ -2,6 +2,8 @@ import {TIME} from "/src/config/logging";
 import {getFriendlyHeight} from "./ui/general";
 import {last} from "/src/utils/arrayUtils";
 import {rn} from "/src/utils/numberUtils";
+import {rand, P, gauss, ra, rw} from "@/utils/probabilityUtils";
+import {capitalize} from "@/utils/stringUtils";
 
 window.Markers = (function () {
   let config = [];

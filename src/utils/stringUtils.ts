@@ -1,22 +1,21 @@
-import {rn} from "/src/utils/numberUtils";
+import {rn} from "@/utils/numberUtils";
 
 // round numbers in string to d decimals
-function round(s, d = 1) {
-  return s.replace(/[\d\.-][\d\.e-]*/g, function (n) {
-    return rn(n, d);
-  });
+export function round(str: string, d = 1) {
+  return str.replace(/[\d\.-][\d\.e-]*/g, n => String(rn(+n, d)));
 }
 
 // return string with 1st char capitalized
-function capitalize(string) {
-  return string.charAt(0).toUpperCase() + string.slice(1);
+export function capitalize(str: string) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 // split string into 2 almost equal parts not breaking words
-function splitInTwo(str) {
+export function splitInTwo(str: string) {
   const half = str.length / 2;
   const ar = str.split(" ");
   if (ar.length < 2) return ar; // only one word
+
   let first = "",
     last = "",
     middle = "",
@@ -36,10 +35,10 @@ function splitInTwo(str) {
 }
 
 // transform string to array [translateX,translateY,rotateDeg,rotateX,rotateY,scale]
-function parseTransform(string) {
-  if (!string) return [0, 0, 0, 0, 0, 1];
+export function parseTransform(str: string) {
+  if (!str) return [0, 0, 0, 0, 0, 1];
 
-  const a = string
+  const a = str
     .replace(/[a-z()]/g, "")
     .replace(/[ ]/g, ",")
     .split(",");
@@ -47,7 +46,7 @@ function parseTransform(string) {
 }
 
 // check if string is a valid for JSON parse
-JSON.isValid = str => {
+export const isJsonValid = (str: string) => {
   try {
     JSON.parse(str);
   } catch (e) {

@@ -9,6 +9,7 @@ import {clipPoly} from "@/utils/lineUtils";
 import {rn, minmax, normalize} from "/src/utils/numberUtils";
 import {isCtrlClick} from "@/utils/keyboardUtils";
 import {prompt} from "@/scripts/prompt";
+import {rand, P} from "@/utils/probabilityUtils";
 
 let presets = {};
 restoreCustomPresets(); // run on-load

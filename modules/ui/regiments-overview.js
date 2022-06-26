@@ -2,6 +2,7 @@ import {findCell} from "/src/utils/graphUtils";
 import {last} from "/src/utils/arrayUtils";
 import {tip, clearMainTip} from "/src/scripts/tooltips";
 import {rn} from "/src/utils/numberUtils";
+import {capitalize} from "@/utils/stringUtils";
 
 export function overviewRegiments(state) {
   if (customization) return;

@@ -1,4 +1,5 @@
 import {tip} from "/src/scripts/tooltips";
+import {isJsonValid} from "@/utils/stringUtils";
 
 const systemPresets = [
   "default",
@@ -45,7 +46,7 @@ async function getStylePreset(desiredPreset) {
       ERROR && console.error(`Custom style ${desiredPreset} in not found in localStorage. Applying default style`);
       presetToLoad = "default";
     } else {
-      const isValid = JSON.isValid(storedStyleJSON);
+      const isValid = isJsonValid(storedStyleJSON);
       if (isValid) return [desiredPreset, JSON.parse(storedStyleJSON)];
 
       ERROR &&
@@ -330,7 +331,7 @@ function addStylePreset() {
     const desiredName = styleSaverName.value;
 
     if (!styleJSON) return tip("Please provide a style JSON", false, "error");
-    if (!JSON.isValid(styleJSON)) return tip("JSON string is not valid, please check the format", false, "error");
+    if (!isJsonValid(styleJSON)) return tip("JSON string is not valid, please check the format", false, "error");
     if (!desiredName) return tip("Please provide a preset name", false, "error");
     if (styleSaverTip.innerHTML === "default")
       return tip("You cannot overwrite default preset, please change the name", false, "error");
@@ -350,7 +351,7 @@ function addStylePreset() {
     const styleName = styleSaverName.value;
 
     if (!styleJSON) return tip("Please provide a style JSON", false, "error");
-    if (!JSON.isValid(styleJSON)) return tip("JSON string is not valid, please check the format", false, "error");
+    if (!isJsonValid(styleJSON)) return tip("JSON string is not valid, please check the format", false, "error");
     if (!styleName) return tip("Please provide a preset name", false, "error");
 
     downloadFile(styleJSON, styleName + ".json", "application/json");
@@ -362,7 +363,7 @@ function addStylePreset() {
 
     function styleUpload(dataLoaded) {
       if (!dataLoaded) return tip("Cannot load the file. Please check the data format", false, "error");
-      const isValid = JSON.isValid(dataLoaded);
+      const isValid = isJsonValid(dataLoaded);
       if (!isValid) return tip("Loaded data is not a valid JSON, please check the format", false, "error");
 
       styleSaverJSON.value = JSON.stringify(JSON.parse(dataLoaded), null, 2);

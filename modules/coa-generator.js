@@ -1,3 +1,5 @@
+import {P, rw} from "@/utils/probabilityUtils";
+
 window.COA = (function () {
   const tinctures = {
     field: {metals: 3, colours: 4, stains: +P(0.03), patterns: 1},

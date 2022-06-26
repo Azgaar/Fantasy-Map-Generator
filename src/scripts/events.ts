@@ -70,7 +70,7 @@ function showNotes(event: Event) {
 // show viewbox tooltip if main tooltip is blank
 function showMapTooltip(point: number[], event: Event, packCellId: number, gridCellId: number) {
   tip(""); // clear tip
-  const path = event.composedPath ? event.composedPath() : getComposedPath(event.target); // apply polyfill
+  const path = event.composedPath();
   if (!path[path.length - 8]) return;
   const group = path[path.length - 7].id;
   const subgroup = path[path.length - 8].id;

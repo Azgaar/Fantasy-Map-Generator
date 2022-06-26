@@ -4,6 +4,8 @@ import {layerIsOn} from "./ui/layers";
 import {getColors, getRandomColor, getMixedColor} from "/src/utils/colorUtils";
 import {getMiddlePoint} from "@/utils/lineUtils";
 import {rn, minmax} from "/src/utils/numberUtils";
+import {rand, P, each, gauss, ra, rw, generateSeed} from "@/utils/probabilityUtils";
+import {round, splitInTwo} from "@/utils/stringUtils";
 
 window.BurgsAndStates = (function () {
   const generate = function () {

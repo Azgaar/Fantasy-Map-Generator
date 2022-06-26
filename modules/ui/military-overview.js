@@ -1,6 +1,7 @@
 import {tip} from "/src/scripts/tooltips";
 import {wiki} from "@/utils/linkUtils";
 import {rn} from "/src/utils/numberUtils";
+import {capitalize} from "@/utils/stringUtils";
 
 export function overviewMilitary() {
   if (customization) return;
