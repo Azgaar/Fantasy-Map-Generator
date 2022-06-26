@@ -13,7 +13,6 @@ import {restoreDefaultEvents} from "./scripts/events";
 import {addGlobalListeners} from "./scripts/listeners";
 import {locked} from "./scripts/options/lock";
 import {clearMainTip, tip} from "./scripts/tooltips";
-import {createTypedArray} from "./utils/arrayUtils";
 import {
   calculateVoronoi,
   findCell,
@@ -23,6 +22,7 @@ import {
   shouldRegenerateGrid
 } from "./utils/graphUtils";
 import {rn, minmax, normalize} from "./utils/numberUtils";
+import {createTypedArray} from "./utils/arrayUtils";
 import {byId} from "./utils/shorthands";
 import "./components";
 
