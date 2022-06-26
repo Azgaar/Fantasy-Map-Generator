@@ -7,6 +7,7 @@ window.viewY = 0;
 
 window.Zoom = (function () {
   function onZoom() {
+    if (!d3.event?.transform) return;
     const {k, x, y} = d3.event.transform;
 
     const isScaleChanged = Boolean(scale - k);

@@ -1,7 +1,12 @@
+import {ERROR} from "../config/logging";
 import {rn} from "./numberUtils";
 
 // round numbers in string to d decimals
 export function round(str: string, d = 1) {
+  if (!str) {
+    ERROR && console.error("Path is empty", str);
+    return "";
+  }
   return str.replace(/[\d\.-][\d\.e-]*/g, n => String(rn(+n, d)));
 }
 

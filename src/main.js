@@ -3,18 +3,22 @@
 
 console.log("Hello World");
 
-import {invokeActiveZooming} from "./modules/activeZooming";
-import {applyPreset, drawBorders, drawRivers, drawStates} from "./modules/ui/layers";
-import {applyMapSize, applyStoredOptions, randomizeOptions} from "./modules/ui/options";
+import "./components";
 import {ERROR, INFO, TIME, WARN} from "./config/logging";
 import {UINT16_MAX} from "./constants";
+import {invokeActiveZooming} from "./modules/activeZooming";
 import {clearLegend} from "./modules/legend";
 import {drawScaleBar, Ruler, Rulers} from "./modules/measurers";
+import {applyPreset, drawBorders, drawRivers, drawStates} from "./modules/ui/layers";
+import {applyMapSize, applyStoredOptions, randomizeOptions} from "./modules/ui/options";
 import {applyStyleOnLoad} from "./modules/ui/stylePresets";
 import {restoreDefaultEvents} from "./scripts/events";
 import {addGlobalListeners} from "./scripts/listeners";
 import {locked} from "./scripts/options/lock";
 import {clearMainTip, tip} from "./scripts/tooltips";
+import {createTypedArray} from "./utils/arrayUtils";
+import {parseError} from "./utils/errorUtils";
+import {debounce} from "./utils/functionUtils";
 import {
   calculateVoronoi,
   findCell,
@@ -23,15 +27,12 @@ import {
   isLand,
   shouldRegenerateGrid
 } from "./utils/graphUtils";
-import {parseError} from "./utils/errorUtils";
-import {rn, minmax, normalize} from "./utils/numberUtils";
-import {createTypedArray} from "./utils/arrayUtils";
-import {clipPoly} from "./utils/lineUtils";
-import {rand, P, gauss, ra, rw, generateSeed} from "./utils/probabilityUtils";
 import {getAdjective} from "./utils/languageUtils";
-import {debounce} from "./utils/functionUtils";
+import {clipPoly} from "./utils/lineUtils";
+import {minmax, normalize, rn} from "./utils/numberUtils";
+import {gauss, generateSeed, P, ra, rand, rw} from "./utils/probabilityUtils";
 import {byId} from "./utils/shorthands";
-import "./components";
+import {round} from "./utils/stringUtils";
 
 addGlobalListeners();
 
@@ -362,8 +363,6 @@ async function generate(options) {
 
     applyMapSize();
     randomizeOptions();
-
-    debugger;
 
     if (shouldRegenerateGrid(grid)) grid = precreatedGraph || generateGrid();
     else delete grid.cells.h;

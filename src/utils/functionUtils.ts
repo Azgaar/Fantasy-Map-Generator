@@ -32,41 +32,43 @@ export function rollups<TObject, TKey, TReduce>(
   return nest(values, Array.from, reduce, keys);
 }
 
-export function debounce<T extends (...args: any[]) => any>(func: T, waitFor: number) {
-  let timeout: ReturnType<typeof setTimeout>;
-  return (...args: Parameters<T>): ReturnType<T> => {
-    let result: any;
-    timeout && clearTimeout(timeout);
-    timeout = setTimeout(() => {
-      result = func(...args);
-    }, waitFor);
-    return result;
+export function debounce(func: Function, ms: number) {
+  let isCooldown = false;
+
+  return function (this: unknown, ...args: unknown[]) {
+    if (isCooldown) return;
+    func.apply(this, args);
+    isCooldown = true;
+    setTimeout(() => (isCooldown = false), ms);
   };
 }
 
-export function throttle(func: Function, waitFor: number = 300) {
-  let inThrottle: boolean;
-  let lastFn: ReturnType<typeof setTimeout>;
-  let lastTime: number;
+export function throttle(func: Function, ms: number) {
+  let isThrottled = false;
+  let savedArgs: unknown[];
+  let savedThis: unknown;
 
-  return function (this: any) {
-    const context = this;
-    const args = arguments;
-
-    if (!inThrottle) {
-      func.apply(context, args);
-      lastTime = Date.now();
-      inThrottle = true;
-    } else {
-      clearTimeout(lastFn);
-      lastFn = setTimeout(() => {
-        if (Date.now() - lastTime >= waitFor) {
-          func.apply(context, args);
-          lastTime = Date.now();
-        }
-      }, Math.max(waitFor - (Date.now() - lastTime), 0));
+  function wrapper(this: unknown, ...args: unknown[]) {
+    if (isThrottled) {
+      savedArgs = args;
+      savedThis = this;
+      return;
     }
-  };
+
+    func.apply(this, args);
+    isThrottled = true;
+
+    setTimeout(function () {
+      isThrottled = false;
+      if (savedArgs) {
+        wrapper.apply(savedThis, savedArgs);
+        savedArgs = [];
+        savedThis = null;
+      }
+    }, ms);
+  }
+
+  return wrapper;
 }
 
 export function getBase64(url: string, callback: (base64: string | ArrayBuffer | null) => void) {
