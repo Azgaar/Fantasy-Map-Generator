@@ -10,6 +10,7 @@ import {rn, minmax, normalize} from "/src/utils/numberUtils";
 import {isCtrlClick} from "@/utils/keyboardUtils";
 import {prompt} from "@/scripts/prompt";
 import {rand, P} from "@/utils/probabilityUtils";
+import {convertTemperature} from "@/utils/unitUtils";
 
 let presets = {};
 restoreCustomPresets(); // run on-load

@@ -4,6 +4,7 @@ import {tip, showMainTip, clearMainTip} from "/src/scripts/tooltips";
 import {getRandomColor} from "/src/utils/colorUtils";
 import {openURL} from "@/utils/linkUtils";
 import {rn} from "/src/utils/numberUtils";
+import {si} from "@/utils/unitUtils";
 
 export function editBiomes() {
   if (customization) return;

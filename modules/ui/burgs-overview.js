@@ -3,6 +3,7 @@ import {findCell} from "/src/utils/graphUtils";
 import {tip, clearMainTip} from "/src/scripts/tooltips";
 import {getCoordinates} from "@/utils/coordinateUtils";
 import {rn} from "/src/utils/numberUtils";
+import {si, siToInteger} from "@/utils/unitUtils";
 
 export function overviewBurgs() {
   if (customization) return;
@@ -202,7 +203,7 @@ export function overviewBurgs() {
     this.value = si(this.value);
 
     const population = [];
-    body.querySelectorAll(":scope > div").forEach(el => population.push(+getInteger(el.dataset.population)));
+    body.querySelectorAll(":scope > div").forEach(el => population.push(siToInteger(el.dataset.population)));
     burgsFooterPopulation.innerHTML = si(d3.mean(population));
   }
 

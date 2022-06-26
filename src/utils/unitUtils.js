@@ -12,13 +12,13 @@ const temperatureConversionMap = {
   "°Rø": temp => rn((temp * 21) / 40 + 7.5) + "°Rø"
 };
 
-function convertTemperature(temp) {
+export function convertTemperature(temp) {
   const scale = temperatureScale.value || "°C";
   return temperatureConversionMap[scale](temp);
 }
 
-// corvent number to short string with SI postfix
-function si(n) {
+// corvert number to short string with SI postfix
+export function si(n) {
   if (n >= 1e9) return rn(n / 1e9, 1) + "B";
   if (n >= 1e8) return rn(n / 1e6) + "M";
   if (n >= 1e6) return rn(n / 1e6, 1) + "M";
@@ -27,8 +27,8 @@ function si(n) {
   return rn(n);
 }
 
-// getInteger number from user input data
-function getInteger(value) {
+// convert SI number to integer
+export function siToInteger(value) {
   const metric = value.slice(-1);
   if (metric === "K") return parseInt(value.slice(0, -1) * 1e3);
   if (metric === "M") return parseInt(value.slice(0, -1) * 1e6);

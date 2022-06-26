@@ -4,6 +4,7 @@ import {last} from "/src/utils/arrayUtils";
 import {rn} from "/src/utils/numberUtils";
 import {rand, P, gauss, ra, rw} from "@/utils/probabilityUtils";
 import {capitalize} from "@/utils/stringUtils";
+import {convertTemperature} from "@/utils/unitUtils";
 
 window.Markers = (function () {
   let config = [];

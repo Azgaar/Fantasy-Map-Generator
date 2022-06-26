@@ -5,6 +5,7 @@ import {tip, showMainTip, clearMainTip} from "/src/scripts/tooltips";
 import {getRandomColor, getMixedColor} from "/src/utils/colorUtils";
 import {rn} from "/src/utils/numberUtils";
 import {rand, P} from "@/utils/probabilityUtils";
+import {si} from "@/utils/unitUtils";
 
 const $body = insertEditorHtml();
 addListeners();

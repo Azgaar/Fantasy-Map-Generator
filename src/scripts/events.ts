@@ -1,6 +1,7 @@
 import {dragLegendBox} from "../modules/legend";
 import {findCell, findGridCell} from "../utils/graphUtils";
 import {tip, showMainTip} from "./tooltips";
+import {si, convertTemperature} from "@/utils/unitUtils";
 
 export function restoreDefaultEvents() {
   Zoom.setZoomBehavior();

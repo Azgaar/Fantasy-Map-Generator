@@ -4,6 +4,7 @@ import {tip} from "/src/scripts/tooltips";
 import {byId} from "/src/utils/shorthands";
 import {rn} from "/src/utils/numberUtils";
 import {capitalize} from "@/utils/stringUtils";
+import {si, convertTemperature} from "@/utils/unitUtils";
 
 const entitiesMap = {
   states: {

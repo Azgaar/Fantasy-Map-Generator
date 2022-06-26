@@ -1,6 +1,7 @@
 import {TIME} from "/src/config/logging";
 import {rn, minmax} from "/src/utils/numberUtils";
 import {rand, gauss, ra} from "@/utils/probabilityUtils";
+import {si} from "@/utils/unitUtils";
 
 window.Military = (function () {
   const generate = function () {

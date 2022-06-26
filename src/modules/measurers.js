@@ -3,6 +3,7 @@ import {last} from "/src/utils/arrayUtils";
 import {getSegmentId} from "@/utils/lineUtils";
 import {rn} from "/src/utils/numberUtils";
 import {round, parseTransform} from "@/utils/stringUtils";
+import {si} from "@/utils/unitUtils";
 
 export class Rulers {
   constructor() {

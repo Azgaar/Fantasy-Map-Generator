@@ -3,6 +3,7 @@ import {tip} from "/src/scripts/tooltips";
 import {clipPoly} from "@/utils/lineUtils";
 import {rn} from "/src/utils/numberUtils";
 import {round} from "@/utils/stringUtils";
+import {si} from "@/utils/unitUtils";
 
 export function editCoastline(node = d3.event.target) {
   if (customization) return;
