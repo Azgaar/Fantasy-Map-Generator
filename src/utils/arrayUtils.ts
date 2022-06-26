@@ -1,4 +1,4 @@
-import {UINT8_MAX, UINT16_MAX, UINT32_MAX} from "../constants";
+import {UINT16_MAX, UINT32_MAX, UINT8_MAX} from "../constants";
 
 export function last<T>(array: T[]) {
   return array[array.length - 1];

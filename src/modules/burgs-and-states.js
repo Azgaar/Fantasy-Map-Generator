@@ -7,6 +7,7 @@ import {rn, minmax} from "/src/utils/numberUtils";
 import {rand, P, each, gauss, ra, rw, generateSeed} from "/src/utils/probabilityUtils";
 import {round, splitInTwo} from "/src/utils/stringUtils";
 import {trimVowels, getAdjective} from "/src/utils/languageUtils";
+import {Voronoi} from "/src/modules/voronoi";
 
 window.BurgsAndStates = (function () {
   const generate = function () {

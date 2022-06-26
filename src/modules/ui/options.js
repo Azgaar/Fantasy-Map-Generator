@@ -1,10 +1,10 @@
 import {applyOption} from "./general";
-import {last} from "/src/utils/arrayUtils";
 import {lock, locked} from "/src/scripts/options/lock";
-import {tip, clearMainTip} from "/src/scripts/tooltips";
+import {clearMainTip, tip} from "/src/scripts/tooltips";
+import {last} from "/src/utils/arrayUtils";
+import {minmax, rn} from "/src/utils/numberUtils";
+import {gauss, P, rand, rw} from "/src/utils/probabilityUtils";
 import {byId, stored} from "/src/utils/shorthands";
-import {rn, minmax} from "/src/utils/numberUtils";
-import {rand, P, gauss} from "/src/utils/probabilityUtils";
 
 $("#optionsContainer").draggable({handle: ".drag-trigger", snap: "svg", snapMode: "both"});
 $("#exitCustomization").draggable({handle: "div"});

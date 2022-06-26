@@ -3,9 +3,9 @@ import {TIME} from "../config/logging";
 import {createTypedArray} from "./arrayUtils";
 import {rn} from "./numberUtils";
 import {byId} from "./shorthands";
+import {Voronoi} from "/src/modules/voronoi";
 
 const Delaunator = window.Delaunator;
-const Voronoi = window.Voronoi;
 const graphWidth = window.graphWidth;
 const graphHeight = window.graphHeight;
 
