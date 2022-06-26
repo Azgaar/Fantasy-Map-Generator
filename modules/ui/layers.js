@@ -11,6 +11,7 @@ import {isCtrlClick} from "@/utils/keyboardUtils";
 import {prompt} from "@/scripts/prompt";
 import {rand, P} from "@/utils/probabilityUtils";
 import {convertTemperature} from "@/utils/unitUtils";
+import {getBase64} from "@/utils/functionUtils";
 
 let presets = {};
 restoreCustomPresets(); // run on-load

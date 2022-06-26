@@ -6,6 +6,7 @@ import {rn} from "/src/utils/numberUtils";
 import {capitalize} from "@/utils/stringUtils";
 import {si} from "@/utils/unitUtils";
 import {abbreviate} from "@/utils/languageUtils";
+import {debounce} from "@/utils/functionUtils";
 
 const $body = insertEditorHtml();
 addListeners();

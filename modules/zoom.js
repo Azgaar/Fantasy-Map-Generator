@@ -1,9 +1,9 @@
-"use strict";
+import {debounce} from "@/utils/functionUtils";
 
 // temporary expose to global
-let scale = 1;
-let viewX = 0;
-let viewY = 0;
+window.scale = 1;
+window.viewX = 0;
+window.viewY = 0;
 
 window.Zoom = (function () {
   function onZoom() {

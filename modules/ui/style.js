@@ -1,6 +1,7 @@
 import {tip} from "/src/scripts/tooltips";
 import {rn} from "/src/utils/numberUtils";
 import {parseTransform} from "@/utils/stringUtils";
+import {getBase64} from "@/utils/functionUtils";
 
 // add available filters to lists
 {

@@ -3,6 +3,7 @@ import {unique} from "/src/utils/arrayUtils";
 import {tip} from "/src/scripts/tooltips";
 import {getCoordinates} from "@/utils/coordinateUtils";
 import {rn} from "/src/utils/numberUtils";
+import {getBase64} from "@/utils/functionUtils";
 
 // download map as SVG
 async function saveSVG() {

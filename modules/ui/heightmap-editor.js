@@ -6,6 +6,7 @@ import {byId} from "/src/utils/shorthands";
 import {rn, minmax, lim} from "/src/utils/numberUtils";
 import {link} from "@/utils/linkUtils";
 import {prompt} from "@/scripts/prompt";
+import {throttle} from "@/utils/functionUtils";
 
 export function editHeightmap(options) {
   const {mode, tool} = options || {};
