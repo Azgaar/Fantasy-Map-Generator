@@ -23,3 +23,55 @@ function nest(values, map, reduce, keys) {
     return map(groups);
   })(values, 0);
 }
+
+function debounce(func, ms) {
+  let isCooldown = false;
+
+  return function () {
+    if (isCooldown) return;
+    func.apply(this, arguments);
+    isCooldown = true;
+    setTimeout(() => (isCooldown = false), ms);
+  };
+}
+
+function throttle(func, ms) {
+  let isThrottled = false;
+  let savedArgs;
+  let savedThis;
+
+  function wrapper() {
+    if (isThrottled) {
+      savedArgs = arguments;
+      savedThis = this;
+      return;
+    }
+
+    func.apply(this, arguments);
+    isThrottled = true;
+
+    setTimeout(function () {
+      isThrottled = false;
+      if (savedArgs) {
+        wrapper.apply(savedThis, savedArgs);
+        savedArgs = savedThis = null;
+      }
+    }, ms);
+  }
+
+  return wrapper;
+}
+
+function getBase64(url, callback) {
+  const xhr = new XMLHttpRequest();
+  xhr.onload = function () {
+    const reader = new FileReader();
+    reader.onloadend = function () {
+      callback(reader.result);
+    };
+    reader.readAsDataURL(xhr.response);
+  };
+  xhr.open("GET", url);
+  xhr.responseType = "blob";
+  xhr.send();
+}

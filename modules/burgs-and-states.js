@@ -2,6 +2,7 @@ import {TIME} from "/src/config/logging";
 import {findCell} from "/src/utils/graphUtils";
 import {layerIsOn} from "./ui/layers";
 import {getColors, getRandomColor, getMixedColor} from "/src/utils/colorUtils";
+import {getMiddlePoint} from "@/utils/lineUtils";
 import {rn, minmax} from "/src/utils/numberUtils";
 
 window.BurgsAndStates = (function () {

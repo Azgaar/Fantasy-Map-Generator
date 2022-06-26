@@ -1,5 +1,7 @@
 import {findCell, findGridCell} from "/src/utils/graphUtils";
 import {rn} from "/src/utils/numberUtils";
+import {link} from "@/utils/linkUtils";
+import {getCoordinates, toDMS} from "@/utils/coordinateUtils";
 
 // fit full-screen map if window is resized
 window.addEventListener("resize", function (e) {
@@ -29,8 +31,10 @@ function updateCellInfo(point, i, g) {
   const x = (infoX.innerHTML = rn(point[0]));
   const y = (infoY.innerHTML = rn(point[1]));
   const f = cells.f[i];
-  infoLat.innerHTML = toDMS(getLatitude(y, 4), "lat");
-  infoLon.innerHTML = toDMS(getLongitude(x, 4), "lon");
+
+  const [lon, lat] = getCoordinates(x, y, 4);
+  infoLat.innerHTML = toDMS(lat, "lat");
+  infoLon.innerHTML = toDMS(lon, "lon");
 
   infoCell.innerHTML = i;
   infoArea.innerHTML = cells.area[i] ? si(getArea(cells.area[i])) + " " + getAreaUnit() : "n/a";
@@ -56,16 +60,6 @@ function updateCellInfo(point, i, g) {
   infoBurg.innerHTML = cells.burg[i] ? pack.burgs[cells.burg[i]].name + " (" + cells.burg[i] + ")" : "no";
   infoFeature.innerHTML = f ? pack.features[f].group + " (" + f + ")" : "n/a";
   infoBiome.innerHTML = biomesData.name[cells.biome[i]];
-}
-
-// convert coordinate to DMS format
-function toDMS(coord, c) {
-  const degrees = Math.floor(Math.abs(coord));
-  const minutesNotTruncated = (Math.abs(coord) - degrees) * 60;
-  const minutes = Math.floor(minutesNotTruncated);
-  const seconds = Math.floor((minutesNotTruncated - minutes) * 60);
-  const cardinal = c === "lat" ? (coord >= 0 ? "N" : "S") : coord >= 0 ? "E" : "W";
-  return degrees + "° " + minutes + "′ " + seconds + "″ " + cardinal;
 }
 
 // get surface elevation

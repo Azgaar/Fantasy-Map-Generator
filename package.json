@@ -10,5 +10,8 @@
   "devDependencies": {
     "typescript": "^4.7.4",
     "vite": "^2.9.12"
+  },
+  "dependencies": {
+    "lineclip": "^1.1.5"
   }
 }

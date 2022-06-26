@@ -25,7 +25,6 @@ let svgWidth;
 let svgHeight;
 
 let options = {};
-let mapCoordinates = {};
 let populationRate;
 let distanceScale;
 let urbanization;

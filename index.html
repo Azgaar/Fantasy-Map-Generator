@@ -1858,18 +1858,6 @@
               </td>
               <td></td>
             </tr>
-
-            <!-- <tr data-tip="Select language (not all languages are fully supported). Reload the page to apply">
-            <td></td>
-            <td>Language</td>
-            <td>
-              <select id="selectLanguage" data-stored="lang">
-                <option value="en" selected>English (100%)</option>
-                <option value="ru">Русский (1%)</option>
-              </select>
-            </td>
-            <td></td>
-          </tr> -->
           </table>
 
           <div>
@@ -3957,18 +3945,20 @@
           <button id="templateRedo" data-tip="Redo the action" class="icon-cw" disabled></button>
           <button id="templateSave" data-tip="Download the template as a text file" class="icon-download"></button>
           <button id="templateLoad" data-tip="Open previously downloaded template" class="icon-upload"></button>
-          <button
+          <a
             id="templateCA"
             data-tip="Find or share custom template on Cartography Assets portal"
             class="icon-drafting-compass"
-            onclick="openURL('https://cartographyassets.com/asset-category/specific-assets/azgaars-generator/templates')"
-          ></button>
-          <button
+            href="https://cartographyassets.com/asset-category/specific-assets/azgaars-generator/templates"
+            target="_blank"
+          ></a>
+          <a
             id="templateTutorial"
             data-tip="Open Template Editor Tutorial"
             class="icon-info"
-            onclick="wiki('Heightmap-template-editor')"
-          ></button>
+            href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-template-editor"
+            target="_blank"
+          ></a>
           <label
             data-tip="Set seed if you want template to generate the same heightmap each time. Leave blank to use random seed"
           >
@@ -5389,12 +5379,13 @@
             class="icon-download"
           ></button>
           <button id="styleSaverLoad" data-tip="Open previously downloaded style file" class="icon-upload"></button>
-          <button
+          <a
             id="styleSaverCA"
             data-tip="Find or share custom style preset on Cartography Assets portal"
             class="icon-drafting-compass"
-            onclick="openURL('https://cartographyassets.com/asset-category/specific-assets/azgaars-generator/styles/')"
-          ></button>
+            href="https://cartographyassets.com/asset-category/specific-assets/azgaars-generator/styles"
+            target="_blank"
+          ></a>
         </div>
       </div>
 
@@ -7698,7 +7689,6 @@
     <script type="module" src="modules/coa-generator.js"></script>
     <script type="module" src="modules/submap.js"></script>
     <script src="libs/polylabel.min.js"></script>
-    <script src="libs/lineclip.min.js"></script>
     <script src="libs/alea.min.js"></script>
     <script type="module" src="modules/fonts.js"></script>
     <script type="module" src="modules/ui/layers.js"></script>

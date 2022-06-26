@@ -1,5 +1,6 @@
 import {byId} from "/src/utils/shorthands";
 import {clearMainTip} from "/src/scripts/tooltips";
+import {parseError} from "@/utils/errorUtils";
 import {rn, minmax} from "/src/utils/numberUtils";
 
 window.UISubmap = (function () {

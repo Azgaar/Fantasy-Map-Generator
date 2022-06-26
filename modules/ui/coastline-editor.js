@@ -1,5 +1,6 @@
 import {getPackPolygon} from "/src/utils/graphUtils";
 import {tip} from "/src/scripts/tooltips";
+import {clipPoly} from "@/utils/lineUtils";
 import {rn} from "/src/utils/numberUtils";
 
 export function editCoastline(node = d3.event.target) {

@@ -1,6 +1,7 @@
 import {restoreDefaultEvents} from "/src/scripts/events";
 import {findCell} from "/src/utils/graphUtils";
 import {tip, clearMainTip} from "/src/scripts/tooltips";
+import {getCoordinates} from "@/utils/coordinateUtils";
 import {rn} from "/src/utils/numberUtils";
 
 export function overviewBurgs() {
@@ -500,8 +501,9 @@ export function overviewBurgs() {
       data += rn(b.population * populationRate * urbanization) + ",";
 
       // add geography data
-      data += getLatitude(b.y, 2) + ",";
-      data += getLongitude(b.x, 2) + ",";
+      const [lon, lat] = getCoordinates(b.x, b.y, 2);
+      data += lat + ",";
+      data += lon + ",";
       data += parseInt(getHeight(pack.cells.h[b.cell])) + ",";
 
       // add status data

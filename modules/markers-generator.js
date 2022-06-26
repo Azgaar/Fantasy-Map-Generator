@@ -562,6 +562,14 @@ window.Markers = (function () {
     notes.push({id, name, legend});
   }
 
+  function generateDate(from = 100, to = 1000) {
+    return new Date(rand(from, to), rand(12), rand(31)).toLocaleDateString("en", {
+      year: "numeric",
+      month: "long",
+      day: "numeric"
+    });
+  }
+
   function listDungeons({cells}) {
     return cells.i.filter(i => !occupied[i] && cells.pop[i] && cells.pop[i] < 3);
   }

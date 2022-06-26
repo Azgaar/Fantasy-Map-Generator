@@ -1,5 +1,6 @@
 import {findCell} from "/src/utils/graphUtils";
 import {last} from "/src/utils/arrayUtils";
+import {getSegmentId} from "@/utils/lineUtils";
 import {rn} from "/src/utils/numberUtils";
 
 export class Rulers {

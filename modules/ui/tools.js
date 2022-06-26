@@ -3,8 +3,8 @@ import {findCell} from "/src/utils/graphUtils";
 import {last} from "/src/utils/arrayUtils";
 import {tip, clearMainTip} from "/src/scripts/tooltips";
 import {rn} from "/src/utils/numberUtils";
-
-// module to control the Tools options (click to edit, to re-geenerate, tp add)
+import {isCtrlClick} from "@/utils/keyboardUtils";
+import {prompt} from "@/scripts/prompt";
 
 toolsContent.addEventListener("click", function (event) {
   if (customization) return tip("Please exit the customization mode first", false, "warning");

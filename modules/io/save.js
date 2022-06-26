@@ -1,5 +1,6 @@
 import {tip} from "/src/scripts/tooltips";
 import {rn} from "/src/utils/numberUtils";
+import {ldb} from "@/scripts/indexedDB";
 
 // functions to save project as .map file
 

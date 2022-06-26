@@ -21,8 +21,10 @@ import {
   isLand,
   shouldRegenerateGrid
 } from "./utils/graphUtils";
+import {parseError} from "@/utils/errorUtils";
 import {rn, minmax, normalize} from "./utils/numberUtils";
 import {createTypedArray} from "./utils/arrayUtils";
+import {clipPoly} from "@/utils/lineUtils";
 import {byId} from "./utils/shorthands";
 import "./components";
 
@@ -41,7 +43,7 @@ options = {
   winds: [225, 45, 225, 315, 135, 315],
   stateLabelsMode: "auto"
 };
-mapCoordinates = {}; // map coordinates on globe
+
 populationRate = +byId("populationRateInput").value;
 distanceScale = +byId("distanceScaleInput").value;
 urbanization = +byId("urbanizationInput").value;
@@ -368,7 +370,7 @@ async function generate(options) {
 
     OceanLayers();
     defineMapSize();
-    calculateMapCoordinates();
+    window.mapCoordinates = calculateMapCoordinates();
     calculateTemperatures();
     generatePrecipitation();
 
@@ -674,7 +676,7 @@ function defineMapSize() {
 }
 
 // calculate map position on globe
-function calculateMapCoordinates() {
+function calculateMapCoordinates(): IMapCoordinates {
   const size = +byId("mapSizeOutput").value;
   const latShift = +byId("latitudeOutput").value;
 
@@ -683,7 +685,7 @@ function calculateMapCoordinates() {
   const latS = rn(latN - latT, 1);
 
   const lon = rn(Math.min(((graphWidth / graphHeight) * latT) / 2, 180));
-  mapCoordinates = {latT, latN, latS, lonT: lon * 2, lonW: -lon, lonE: lon};
+  return {latT, latN, latS, lonT: lon * 2, lonW: -lon, lonE: lon};
 }
 
 // temperature model

@@ -1,6 +1,7 @@
 import {getGridPolygon} from "/src/utils/graphUtils";
 import {unique} from "/src/utils/arrayUtils";
 import {tip} from "/src/scripts/tooltips";
+import {getCoordinates} from "@/utils/coordinateUtils";
 import {rn} from "/src/utils/numberUtils";
 
 // download map as SVG

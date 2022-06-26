@@ -1,5 +1,6 @@
 import {findCell, getPackPolygon} from "/src/utils/graphUtils";
 import {tip, clearMainTip} from "/src/scripts/tooltips";
+import {getSegmentId} from "@/utils/lineUtils";
 import {rn} from "/src/utils/numberUtils";
 
 export function editRiver(id) {

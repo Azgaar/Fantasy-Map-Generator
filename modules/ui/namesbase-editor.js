@@ -1,5 +1,6 @@
 import {unique} from "/src/utils/arrayUtils";
 import {tip} from "/src/scripts/tooltips";
+import {openURL} from "@/utils/linkUtils";
 import {rn} from "/src/utils/numberUtils";
 
 export function editNamesbase() {

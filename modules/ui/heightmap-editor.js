@@ -4,6 +4,8 @@ import {last, createTypedArray} from "/src/utils/arrayUtils";
 import {tip, showMainTip, clearMainTip} from "/src/scripts/tooltips";
 import {byId} from "/src/utils/shorthands";
 import {rn, minmax, lim} from "/src/utils/numberUtils";
+import {link} from "@/utils/linkUtils";
+import {prompt} from "@/scripts/prompt";
 
 export function editHeightmap(options) {
   const {mode, tool} = options || {};

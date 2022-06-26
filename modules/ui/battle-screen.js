@@ -1,5 +1,6 @@
 import {last} from "/src/utils/arrayUtils";
 import {tip} from "/src/scripts/tooltips";
+import {wiki} from "@/utils/linkUtils";
 import {rn, minmax} from "/src/utils/numberUtils";
 
 export class Battle {
