@@ -15,9 +15,6 @@ let rulers;
 let biomesData;
 let nameBases;
 
-let color;
-let lineGen;
-
 // defined in main.js
 let graphWidth;
 let graphHeight;

@@ -117,8 +117,9 @@ export function editLake() {
     redrawLake();
   }
 
+  const lineGen = d3.line().curve(d3.curveBasisClosed);
+
   function redrawLake() {
-    lineGen.curve(d3.curveBasisClosed);
     const feature = getLake();
     const points = feature.vertices.map(v => pack.vertices.p[v]);
     const d = round(lineGen(points));

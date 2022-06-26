@@ -166,7 +166,6 @@ export function editRiver(id) {
     const {widthFactor, sourceWidth} = river;
     const meanderedPoints = Rivers.addMeandering(river.cells, river.points);
 
-    lineGen.curve(d3.curveCatmullRom.alpha(0.1));
     const path = Rivers.getRiverPath(meanderedPoints, widthFactor, sourceWidth);
     elSelected.attr("d", path);
 

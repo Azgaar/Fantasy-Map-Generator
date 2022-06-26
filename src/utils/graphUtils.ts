@@ -6,8 +6,6 @@ import {byId} from "./shorthands";
 import {Voronoi} from "/src/modules/voronoi";
 
 const Delaunator = window.Delaunator;
-const graphWidth = window.graphWidth;
-const graphHeight = window.graphHeight;
 
 // check if new grid graph should be generated or we can use the existing one
 export function shouldRegenerateGrid(grid) {

@@ -401,6 +401,8 @@ window.Rivers = (function () {
     return widthFactor * (lengthWidth + fluxWidth) + startingWidth;
   };
 
+  const lineGen = d3.line().curve(d3.curveBasis);
+
   // build polygon from a list of points and calculated offset (width)
   const getRiverPath = function (points, widthFactor, startingWidth = 0) {
     const riverPointsLeft = [];

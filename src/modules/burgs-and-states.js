@@ -503,7 +503,8 @@ window.BurgsAndStates = (function () {
     TIME && console.time("drawStateLabels");
     const {cells, features, states} = pack;
     const paths = []; // text paths
-    lineGen.curve(d3.curveBundle.beta(1));
+
+    const lineGen = d3.line().curve(d3.curveBundle.beta(1));
     const mode = options.stateLabelsMode || "auto";
 
     for (const s of states) {

@@ -119,9 +119,10 @@ export function editLabel() {
     redrawLabelPath();
   }
 
+  const lineGen = d3.line().curve(d3.curveBundle.beta(1));
+
   function redrawLabelPath() {
     const path = document.getElementById("textPath_" + elSelected.attr("id"));
-    lineGen.curve(d3.curveBundle.beta(1));
     const points = [];
     debug
       .select("#controlPoints")

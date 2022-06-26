@@ -123,7 +123,6 @@ export function createRiver() {
     const id = "river" + riverId;
 
     // render river
-    lineGen.curve(d3.curveCatmullRom.alpha(0.1));
     viewbox
       .select("#rivers")
       .append("path")

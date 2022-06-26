@@ -270,6 +270,7 @@ function drawHeightmap() {
   const skip = +terrs.attr("skip") + 1;
   const simplification = +terrs.attr("relax");
 
+  const lineGen = d3.line().curve(d3.curveBasis);
   switch (+terrs.attr("curve")) {
     case 0:
       lineGen.curve(d3.curveBasisClosed);
@@ -383,7 +384,8 @@ function toggleTemp(event) {
 function drawTemp() {
   TIME && console.time("drawTemp");
   temperature.selectAll("*").remove();
-  lineGen.curve(d3.curveBasisClosed);
+
+  const lineGen = d3.line().curve(d3.curveBasisClosed);
   const scheme = d3.scaleSequential(d3.interpolateSpectral);
   const tMax = +temperatureEquatorOutput.max,
     tMin = +temperatureEquatorOutput.min,
@@ -1615,7 +1617,6 @@ export function drawRivers() {
   rivers.selectAll("*").remove();
 
   const {addMeandering, getRiverPath} = Rivers;
-  lineGen.curve(d3.curveCatmullRom.alpha(0.1));
 
   const riverPaths = pack.rivers.map(({cells, points, i, widthFactor, sourceWidth}) => {
     if (!cells || cells.length < 2) return;

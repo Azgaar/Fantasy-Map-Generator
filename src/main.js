@@ -62,7 +62,6 @@ biomesData = Biomes.getDefault();
 nameBases = Names.getNameBases(); // cultures-related data
 
 // color = d3.scaleSequential(d3.interpolateSpectral); // default color scheme
-// lineGen = d3.line().curve(d3.curveBasis); // d3 line generator with default curve interpolation
 
 // voronoi graph extension, cannot be changed after generation
 graphWidth = +byId("mapWidthInput").value;
@@ -363,6 +362,8 @@ async function generate(options) {
 
     applyMapSize();
     randomizeOptions();
+
+    debugger;
 
     if (shouldRegenerateGrid(grid)) grid = precreatedGraph || generateGrid();
     else delete grid.cells.h;
@@ -954,7 +955,7 @@ function drawCoastline() {
   );
   const landMask = defs.select("#land");
   const waterMask = defs.select("#water");
-  lineGen.curve(d3.curveBasisClosed);
+  const lineGen = d3.line().curve(d3.curveBasis);
 
   for (const i of cells.i) {
     const startFromEdge = !i && cells.h[i] >= 20;

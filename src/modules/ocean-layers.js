@@ -12,7 +12,7 @@ window.OceanLayers = (function () {
     if (outline === "none") return;
     TIME && console.time("drawOceanLayers");
 
-    lineGen.curve(d3.curveBasisClosed);
+    const lineGen = d3.line().curve(d3.curveBasisClosed);
     (cells = grid.cells), (pointsN = grid.cells.i.length), (vertices = grid.vertices);
     const limits = outline === "random" ? randomizeOutline() : outline.split(",").map(s => +s);
 

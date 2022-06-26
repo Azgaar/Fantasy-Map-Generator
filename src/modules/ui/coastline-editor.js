@@ -83,8 +83,9 @@ export function editCoastline(node = d3.event.target) {
     redrawCoastline();
   }
 
+  const lineGen = d3.line().curve(d3.curveBasisClosed);
+
   function redrawCoastline() {
-    lineGen.curve(d3.curveBasisClosed);
     const f = +elSelected.attr("data-f");
     const vertices = pack.features[f].vertices;
     const points = clipPoly(

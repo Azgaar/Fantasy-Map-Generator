@@ -332,7 +332,7 @@ export class Opisometer extends Measurer {
   }
 
   updateCurve() {
-    lineGen.curve(d3.curveCatmullRom.alpha(0.5));
+    const lineGen = d3.line().curve(d3.curveCatmullRom.alpha(0.5));
     const path = round(lineGen(this.points));
     this.el.selectAll("path").attr("d", path);
 
@@ -470,7 +470,7 @@ export class RouteOpisometer extends Measurer {
   }
 
   updateCurve() {
-    lineGen.curve(d3.curveCatmullRom.alpha(0.5));
+    const lineGen = d3.line().curve(d3.curveCatmullRomClosed.alpha(0.5));
     const path = round(lineGen(this.points));
     this.el.selectAll("path").attr("d", path);
 
@@ -525,7 +525,7 @@ export class Planimeter extends Measurer {
   }
 
   updateCurve() {
-    lineGen.curve(d3.curveCatmullRomClosed.alpha(0.5));
+    const lineGen = d3.line().curve(d3.curveCatmullRomClosed.alpha(0.5));
     const path = round(lineGen(this.points));
     this.el.selectAll("path").attr("d", path);
   }

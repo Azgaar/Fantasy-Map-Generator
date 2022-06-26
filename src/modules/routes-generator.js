@@ -131,6 +131,8 @@ window.Routes = (function () {
     return paths;
   };
 
+  const lineGen = d3.line().curve(d3.curveBasis);
+
   const draw = function (main, small, water) {
     TIME && console.time("drawRoutes");
     const {cells, burgs} = pack;

@@ -88,8 +88,9 @@ export function editRoute(onClick) {
     redrawRoute();
   }
 
+  const lineGen = d3.line().curve(d3.curveCatmullRom.alpha(0.1));
+
   function redrawRoute() {
-    lineGen.curve(d3.curveCatmullRom.alpha(0.1));
     const points = [];
     debug
       .select("#controlPoints")
