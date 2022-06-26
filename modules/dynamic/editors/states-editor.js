@@ -6,6 +6,7 @@ import {getRandomColor, getMixedColor} from "/src/utils/colorUtils";
 import {rn} from "/src/utils/numberUtils";
 import {rand, P} from "@/utils/probabilityUtils";
 import {si} from "@/utils/unitUtils";
+import {getAdjective} from "@/utils/languageUtils";
 
 const $body = insertEditorHtml();
 addListeners();

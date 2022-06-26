@@ -3,6 +3,7 @@ import {locked} from "/src/scripts/options/lock";
 import {tip} from "/src/scripts/tooltips";
 import {rand, P, ra} from "@/utils/probabilityUtils";
 import {capitalize} from "@/utils/stringUtils";
+import {vowel} from "@/utils/languageUtils";
 
 window.Names = (function () {
   let chains = [];

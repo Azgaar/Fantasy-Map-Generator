@@ -1,7 +1,8 @@
-import {rn} from "/src/utils/numberUtils";
+import {byId} from "./shorthands";
+import {rn} from "./numberUtils";
 
 // conver temperature from °C to other scales
-const temperatureConversionMap = {
+const temperatureConversionMap: Dict<(temp: number) => string> = {
   "°C": temp => rn(temp) + "°C",
   "°F": temp => rn((temp * 9) / 5 + 32) + "°F",
   K: temp => rn(temp + 273.15) + "K",
@@ -12,13 +13,14 @@ const temperatureConversionMap = {
   "°Rø": temp => rn((temp * 21) / 40 + 7.5) + "°Rø"
 };
 
-export function convertTemperature(temp) {
-  const scale = temperatureScale.value || "°C";
-  return temperatureConversionMap[scale](temp);
+export function convertTemperature(temp: number) {
+  const scale = (byId("temperatureScale") as HTMLInputElement)?.value || "°C";
+  const conversionFn = temperatureConversionMap[scale];
+  return conversionFn(temp);
 }
 
 // corvert number to short string with SI postfix
-export function si(n) {
+export function si(n: number) {
   if (n >= 1e9) return rn(n / 1e9, 1) + "B";
   if (n >= 1e8) return rn(n / 1e6) + "M";
   if (n >= 1e6) return rn(n / 1e6, 1) + "M";
@@ -28,10 +30,12 @@ export function si(n) {
 }
 
 // convert SI number to integer
-export function siToInteger(value) {
+export function siToInteger(value: string) {
   const metric = value.slice(-1);
-  if (metric === "K") return parseInt(value.slice(0, -1) * 1e3);
-  if (metric === "M") return parseInt(value.slice(0, -1) * 1e6);
-  if (metric === "B") return parseInt(value.slice(0, -1) * 1e9);
+  const number = parseFloat(value.slice(0, -1));
+
+  if (metric === "K") return rn(number * 1e3);
+  if (metric === "M") return rn(number * 1e6);
+  if (metric === "B") return rn(number * 1e9);
   return parseInt(value);
 }

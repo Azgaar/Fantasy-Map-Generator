@@ -6,6 +6,7 @@ import {getMiddlePoint} from "@/utils/lineUtils";
 import {rn, minmax} from "/src/utils/numberUtils";
 import {rand, P, each, gauss, ra, rw, generateSeed} from "@/utils/probabilityUtils";
 import {round, splitInTwo} from "@/utils/stringUtils";
+import {trimVowels, getAdjective} from "@/utils/languageUtils";
 
 window.BurgsAndStates = (function () {
   const generate = function () {

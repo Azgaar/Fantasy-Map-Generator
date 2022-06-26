@@ -5,6 +5,7 @@ import {rn} from "/src/utils/numberUtils";
 import {rand, P, gauss, ra, rw} from "@/utils/probabilityUtils";
 import {capitalize} from "@/utils/stringUtils";
 import {convertTemperature} from "@/utils/unitUtils";
+import {getAdjective, list} from "@/utils/languageUtils";
 
 window.Markers = (function () {
   let config = [];

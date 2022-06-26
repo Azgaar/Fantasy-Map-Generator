@@ -4,6 +4,7 @@ import {tip, showMainTip, clearMainTip} from "/src/scripts/tooltips";
 import {byId} from "/src/utils/shorthands";
 import {rn} from "/src/utils/numberUtils";
 import {si} from "@/utils/unitUtils";
+import {abbreviate} from "@/utils/languageUtils";
 
 const $body = insertEditorHtml();
 addListeners();

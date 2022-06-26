@@ -5,6 +5,7 @@ import {byId} from "/src/utils/shorthands";
 import {rn} from "/src/utils/numberUtils";
 import {capitalize} from "@/utils/stringUtils";
 import {si} from "@/utils/unitUtils";
+import {abbreviate} from "@/utils/languageUtils";
 
 const $body = insertEditorHtml();
 addListeners();

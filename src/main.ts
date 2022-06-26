@@ -26,6 +26,7 @@ import {rn, minmax, normalize} from "./utils/numberUtils";
 import {createTypedArray} from "./utils/arrayUtils";
 import {clipPoly} from "@/utils/lineUtils";
 import {rand, P, gauss, ra, rw, generateSeed} from "@/utils/probabilityUtils";
+import {getAdjective} from "@/utils/languageUtils";
 import {byId} from "./utils/shorthands";
 import "./components";
 

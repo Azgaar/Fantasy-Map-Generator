@@ -2,19 +2,27 @@ import {P} from "@/utils/probabilityUtils";
 
 // chars that serve as vowels
 const VOWELS = `aeiouyɑ'əøɛœæɶɒɨɪɔɐʊɤɯаоиеёэыуюяàèìòùỳẁȁȅȉȍȕáéíóúýẃőűâêîôûŷŵäëïöüÿẅãẽĩõũỹąęįǫųāēīōūȳăĕĭŏŭǎěǐǒǔȧėȯẏẇạẹịọụỵẉḛḭṵṳ`;
-function vowel(c) {
-  return VOWELS.includes(c);
+
+export function vowel(char: string) {
+  return VOWELS.includes(char);
 }
 
 // remove vowels from the end of the string
-function trimVowels(string, minLength = 3) {
-  while (string.length > minLength && vowel(string.at(-1))) {
-    string = string.slice(0, -1);
+export function trimVowels(str: string, minLength = 3) {
+  while (str.length > minLength && str.length && vowel(str.at(-1) as string)) {
+    str = str.slice(0, -1);
   }
-  return string;
+  return str;
 }
 
-const adjectivizationRules = [
+interface AdjectivizationRule {
+  name: string;
+  probability: number;
+  condition: RegExp;
+  action: (noun: string) => string;
+}
+
+const adjectivizationRules: AdjectivizationRule[] = [
   {name: "guo", probability: 1, condition: new RegExp(" Guo$"), action: noun => noun.slice(0, -4)},
   {
     name: "orszag",
@@ -141,7 +149,7 @@ const adjectivizationRules = [
 ];
 
 // get adjective form from noun
-function getAdjective(noun) {
+export function getAdjective(noun: string) {
   for (const rule of adjectivizationRules) {
     if (P(rule.probability) && rule.condition.test(noun)) {
       return rule.action(noun);
@@ -150,12 +158,12 @@ function getAdjective(noun) {
   return noun; // no rule applied, return noun as is
 }
 
-// get ordinal from integer: 1 => 1st
-const nth = n => n + (["st", "nd", "rd"][((((n + 90) % 100) - 10) % 10) - 1] || "th");
+// get English ordinal from integer: 1 => 1st
+export const nth = (n: number) => n + (["st", "nd", "rd"][((((n + 90) % 100) - 10) % 10) - 1] || "th");
 
 // get two-letters code (abbreviation) from string
-function abbreviate(name, restricted = []) {
-  const parsed = name.replace("Old ", "O ").replace(/[()]/g, ""); // remove Old prefix and parentheses
+export function abbreviate(str: string, restricted: string[] = []) {
+  const parsed = str.replace("Old ", "O ").replace(/[()]/g, ""); // remove Old prefix and parentheses
   const words = parsed.split(" ");
   const letters = words.join("");
 
@@ -167,8 +175,8 @@ function abbreviate(name, restricted = []) {
 }
 
 // conjunct array: [A,B,C] => "A, B and C"
-function list(array) {
+export function list(array: string[]) {
   if (!Intl.ListFormat) return array.join(", ");
-  const conjunction = new Intl.ListFormat(window.lang || "en", {style: "long", type: "conjunction"});
+  const conjunction = new Intl.ListFormat("en", {style: "long", type: "conjunction"});
   return conjunction.format(array);
 }

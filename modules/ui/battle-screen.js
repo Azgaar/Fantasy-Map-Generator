@@ -4,6 +4,7 @@ import {wiki} from "@/utils/linkUtils";
 import {rn, minmax} from "/src/utils/numberUtils";
 import {rand, P, Pint} from "@/utils/probabilityUtils";
 import {capitalize} from "@/utils/stringUtils";
+import {getAdjective, list} from "@/utils/languageUtils";
 
 export class Battle {
   constructor(attacker, defender) {
