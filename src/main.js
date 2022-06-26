@@ -3,14 +3,14 @@
 
 console.log("Hello World");
 
-import {invokeActiveZooming} from "../modules/activeZooming";
-import {applyPreset, drawBorders, drawRivers, drawStates} from "../modules/ui/layers";
-import {applyMapSize, applyStoredOptions, randomizeOptions} from "../modules/ui/options";
+import {invokeActiveZooming} from "./modules/activeZooming";
+import {applyPreset, drawBorders, drawRivers, drawStates} from "./modules/ui/layers";
+import {applyMapSize, applyStoredOptions, randomizeOptions} from "./modules/ui/options";
 import {ERROR, INFO, TIME, WARN} from "./config/logging";
 import {UINT16_MAX} from "./constants";
 import {clearLegend} from "./modules/legend";
 import {drawScaleBar, Ruler, Rulers} from "./modules/measurers";
-import {applyStyleOnLoad} from "../modules/ui/stylePresets";
+import {applyStyleOnLoad} from "./modules/ui/stylePresets";
 import {restoreDefaultEvents} from "./scripts/events";
 import {addGlobalListeners} from "./scripts/listeners";
 import {locked} from "./scripts/options/lock";
@@ -681,7 +681,7 @@ function defineMapSize() {
 }
 
 // calculate map position on globe
-function calculateMapCoordinates(): IMapCoordinates {
+function calculateMapCoordinates() {
   const size = +byId("mapSizeOutput").value;
   const latShift = +byId("latitudeOutput").value;
 

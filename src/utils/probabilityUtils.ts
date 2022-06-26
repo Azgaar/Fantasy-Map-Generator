@@ -1,4 +1,4 @@
-import {ERROR} from "/src/config/logging";
+import {ERROR} from "../config/logging";
 import {minmax, rn} from "./numberUtils";
 
 const d3 = window.d3;

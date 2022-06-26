@@ -1,7 +1,7 @@
 import {rn} from "../utils/numberUtils";
 import {parseTransform} from "/src/utils/stringUtils";
 
-export function drawLegend(name: string, data: unknown[]) {
+export function drawLegend(name, data) {
   legend.selectAll("*").remove(); // fully redraw every time
   legend.attr("data", data.join("|")); // store data
 

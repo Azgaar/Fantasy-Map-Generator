@@ -3,8 +3,6 @@
 // version and caching control
 const version = "1.87.04"; // generator version, update each time
 
-console.log(`version: ${version}`);
-
 {
   document.title += " v" + version;
   const loadingScreenVersion = document.getElementById("version");

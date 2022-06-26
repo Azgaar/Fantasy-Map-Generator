@@ -1,6 +1,4 @@
-import {capitalize} from "/src/utils/stringUtils";
-
-const capitalize = text => text.charAt(0).toUpperCase() + text.slice(1);
+import {capitalize} from "../../utils/stringUtils";
 
 const format = rawList =>
   rawList

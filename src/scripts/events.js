@@ -1,8 +1,8 @@
 import {dragLegendBox} from "../modules/legend";
 import {findCell, findGridCell} from "../utils/graphUtils";
 import {tip, showMainTip} from "./tooltips";
-import {si, convertTemperature} from "/src/utils/unitUtils";
-import {debounce} from "/src/utils/functionUtils";
+import {si, convertTemperature} from "../utils/unitUtils";
+import {debounce} from "../utils/functionUtils";
 
 export function restoreDefaultEvents() {
   Zoom.setZoomBehavior();
@@ -51,7 +51,7 @@ function handleMouseMove() {
 }
 
 // show note box on hover (if any)
-function showNotes(event: Event) {
+function showNotes(event) {
   if (notesEditor?.offsetParent) return;
   let id = event.target.id || event.target.parentNode.id || event.target.parentNode.parentNode.id;
   if (event.target.parentNode.parentNode.id === "burgLabels") id = "burg" + event.target.dataset.id;
@@ -70,7 +70,7 @@ function showNotes(event: Event) {
 }
 
 // show viewbox tooltip if main tooltip is blank
-function showMapTooltip(point: number[], event: Event, packCellId: number, gridCellId: number) {
+function showMapTooltip(point, event, packCellId, gridCellId) {
   tip(""); // clear tip
   const path = event.composedPath();
   if (!path[path.length - 8]) return;

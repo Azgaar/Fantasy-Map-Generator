@@ -23,7 +23,8 @@ function addInstallationPrompt() {
     "beforeinstallprompt",
     async event => {
       event.preventDefault();
-      const Installation = await import("../../modules/dynamic/installation.js");
+      // @ts-ignore
+      const Installation = await import("../modules/dynamic/installation.js");
       Installation.init(event);
     },
     {once: true}

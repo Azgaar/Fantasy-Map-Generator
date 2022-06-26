@@ -1,3 +1,4 @@
+// @ts-nocheck
 import {TIME} from "../config/logging";
 import {createTypedArray} from "./arrayUtils";
 import {rn} from "./numberUtils";
