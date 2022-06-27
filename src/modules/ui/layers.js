@@ -172,7 +172,7 @@ function getCurrentPreset() {
 }
 
 // run on map regeneration
-function restoreLayers() {
+export function restoreLayers() {
   if (layerIsOn("toggleHeight")) drawHeightmap();
   if (layerIsOn("toggleCells")) drawCells();
   if (layerIsOn("toggleGrid")) drawGrid();
@@ -1474,7 +1474,7 @@ function toggleCoordinates(event) {
   }
 }
 
-function drawCoordinates() {
+export function drawCoordinates() {
   if (!layerIsOn("toggleCoordinates")) return;
   coordinates.selectAll("*").remove(); // remove every time
   const steps = [0.5, 1, 2, 5, 10, 15, 30]; // possible steps

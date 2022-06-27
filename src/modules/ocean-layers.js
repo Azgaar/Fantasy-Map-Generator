@@ -7,7 +7,7 @@ import {round} from "/src/utils/stringUtils";
 window.OceanLayers = (function () {
   let cells, vertices, pointsN, used;
 
-  const OceanLayers = function OceanLayers() {
+  function OceanLayers() {
     const outline = oceanLayers.attr("layers");
     if (outline === "none") return;
     TIME && console.time("drawOceanLayers");
@@ -52,7 +52,7 @@ window.OceanLayers = (function () {
     }
 
     TIME && console.timeEnd("drawOceanLayers");
-  };
+  }
 
   function randomizeOutline() {
     const limits = [];

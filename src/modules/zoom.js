@@ -1,4 +1,5 @@
 import {debounce} from "/src/utils/functionUtils";
+import {handleZoom} from "/src/modules/activeZooming";
 
 // temporary expose to global
 window.scale = 1;
