@@ -13,35 +13,6 @@ import {convertTemperature} from "/src/utils/unitUtils";
 import {getColorScheme, getHeightColor} from "/src/utils/colorUtils";
 
 let presets = {};
-restoreCustomPresets(); // run on-load
-addLayerListeners();
-
-function restoreCustomPresets() {
-  const storedPresets = JSON.parse(stored("presets"));
-  if (!storedPresets) {
-    presets = defaultPresets.slice();
-    return;
-  }
-
-  for (const preset in storedPresets) {
-    if (presets[preset]) continue;
-    byId("layersPreset").add(new Option(preset, preset));
-  }
-
-  presets = storedPresets;
-}
-
-function addLayerListeners() {
-  byId("mapLayers").on("click", toggleLayer);
-  byId("savePresetButton").on("click", savePreset);
-  byId("removePresetButton").on("click", removePreset);
-}
-
-function toggleLayer(event) {
-  const targetId = event.target.id;
-  if (!targetId || targetId === "mapLayers" || !layerTogglesMap[targetId]) return;
-  layerTogglesMap[targetId]();
-}
 
 const defaultPresets = {
   political: [
@@ -139,6 +110,81 @@ const layerTogglesMap = {
   toggleZones
 };
 
+restoreCustomPresets(); // run on-load
+addLayerListeners();
+
+function restoreCustomPresets() {
+  const storedPresets = JSON.parse(stored("presets"));
+  if (!storedPresets) {
+    presets = structuredClone(defaultPresets);
+    return;
+  }
+
+  for (const preset in storedPresets) {
+    if (presets[preset]) continue;
+    byId("layersPreset").add(new Option(preset, preset));
+  }
+
+  presets = storedPresets;
+}
+
+function addLayerListeners() {
+  byId("mapLayers").on("click", toggleLayerOnClick);
+  byId("savePresetButton").on("click", savePreset);
+  byId("removePresetButton").on("click", removePreset);
+
+  // allow to move layers by dragging layer button (jquery)
+  $("#mapLayers").sortable({items: "li:not(.solid)", containment: "parent", cancel: ".solid", update: moveLayer});
+}
+
+// connection between option layer buttons and actual svg groups to move the element
+const layerButtonToElementMap = {
+  toggleBiomes: "biomes",
+  toggleBorders: "borders",
+  toggleCells: "cells",
+  toggleCompass: "compass",
+  toggleCoordinates: "coordinates",
+  toggleCultures: "cults",
+  toggleEmblems: "emblems",
+  toggleGrid: "gridOverlay",
+  toggleHeight: "terrs",
+  toggleIce: "ice",
+  toggleIcons: "icons",
+  toggleLabels: "labels",
+  toggleMarkers: "markers",
+  toggleMilitary: "armies",
+  togglePopulation: "population",
+  togglePrec: "prec",
+  toggleProvinces: "provs",
+  toggleRelief: "terrain",
+  toggleReligions: "relig",
+  toggleRivers: "rivers",
+  toggleRoutes: "routes",
+  toggleRulers: "ruler",
+  toggleStates: "regions",
+  toggleTemp: "temperature",
+  toggleTexture: "texture",
+  toggleZones: "zones"
+};
+
+function moveLayer(event, $layerButton) {
+  const getLayer = buttonId => $("#" + layerButtonToElementMap[buttonId]);
+  const layer = getLayer($layerButton.item.attr("id"));
+  if (!layer) return;
+
+  const prev = getLayer($layerButton.item.prev().attr("id"));
+  const next = getLayer($layerButton.item.next().attr("id"));
+
+  if (prev) layer.insertAfter(prev);
+  else if (next) layer.insertBefore(next);
+}
+
+function toggleLayerOnClick(event) {
+  const targetId = event.target.id;
+  if (!targetId || targetId === "mapLayers" || !layerTogglesMap[targetId]) return;
+  layerTogglesMap[targetId]();
+}
+
 // run on map generation
 export function applyPreset() {
   const preset = stored("preset") || byId("layersPreset")?.value || "political";
@@ -216,22 +262,26 @@ export function restoreLayers() {
   if (!layerIsOn("toggleRivers")) rivers.selectAll("*").remove();
 }
 
+export function toggleLayer(layerId) {
+  layerTogglesMap[layerId]();
+}
+
 export function layerIsOn(el) {
   const buttonoff = byId(el).classList.contains("buttonoff");
   return !buttonoff;
 }
 
-function turnLayerButtonOn(el) {
+export function turnLayerButtonOn(el) {
   byId(el).classList.remove("buttonoff");
   updatePresetInput();
 }
 
-function turnLayerButtonOff(el) {
+export function turnLayerButtonOff(el) {
   byId(el).classList.add("buttonoff");
   updatePresetInput();
 }
 
-function updatePresetInput() {
+export function updatePresetInput() {
   const $toggledOnLayers = byId("mapLayers").querySelectorAll("li:not(.buttonoff)");
   const currentLayers = Array.from($toggledOnLayers)
     .map(node => node.id)
@@ -250,6 +300,10 @@ function updatePresetInput() {
   byId("removePresetButton").style.display = "none";
   byId("savePresetButton").style.display = "inline-block";
 }
+
+// ***
+// Specific layer toggles and renderers
+// ***
 
 function toggleHeight(event) {
   if (customization === 1) {
@@ -271,7 +325,7 @@ function toggleHeight(event) {
   }
 }
 
-function drawHeightmap() {
+export function drawHeightmap() {
   TIME && console.time("drawHeightmap");
   terrs.selectAll("*").remove();
 
@@ -285,20 +339,9 @@ function drawHeightmap() {
   const skip = +terrs.attr("skip") + 1;
   const simplification = +terrs.attr("relax");
 
-  const lineGen = d3.line().curve(d3.curveBasis);
-  switch (+terrs.attr("curve")) {
-    case 0:
-      lineGen.curve(d3.curveBasisClosed);
-      break;
-    case 1:
-      lineGen.curve(d3.curveLinear);
-      break;
-    case 2:
-      lineGen.curve(d3.curveStep);
-      break;
-    default:
-      lineGen.curve(d3.curveBasisClosed);
-  }
+  const curveMap = {0: d3.curveBasisClosed, 1: d3.curveLinear, 2: d3.curveStep};
+  const curve = curveMap[+terrs.attr("curve") || 0];
+  const lineGen = d3.line().curve(curve);
 
   let currentLayer = 20;
   const heights = cells.i.sort((a, b) => cells.h[a] - cells.h[b]);
@@ -328,6 +371,7 @@ function drawHeightmap() {
   for (const i of d3.range(20, 101)) {
     if (paths[i].length < 10) continue;
     const color = getHeightColor(i, scheme);
+
     if (terracing)
       terrs
         .append("path")
@@ -385,7 +429,7 @@ function toggleTemp(event) {
   }
 }
 
-function drawTemp() {
+export function drawTemp() {
   TIME && console.time("drawTemp");
   temperature.selectAll("*").remove();
 
@@ -517,7 +561,7 @@ function toggleBiomes(event) {
   }
 }
 
-function drawBiomes() {
+export function drawBiomes() {
   biomes.selectAll("path").remove();
   const cells = pack.cells,
     vertices = pack.vertices,
@@ -593,7 +637,7 @@ function togglePrec(event) {
   }
 }
 
-function drawPrec() {
+export function drawPrec() {
   prec.selectAll("circle").remove();
   const {cells, points} = grid;
 
@@ -652,7 +696,7 @@ function togglePopulation(event) {
   }
 }
 
-function drawPopulation(event) {
+export function drawPopulation(event) {
   population.selectAll("line").remove();
   const cells = pack.cells,
     p = cells.p,
@@ -707,7 +751,7 @@ function toggleCells(event) {
   }
 }
 
-function drawCells() {
+export function drawCells() {
   cells.selectAll("path").remove();
   const data = customization === 1 ? grid.cells.i : pack.cells.i;
   const polygon = customization === 1 ? getGridPolygon : getPackPolygon;
@@ -732,7 +776,7 @@ function toggleIce(event) {
   }
 }
 
-function drawIce() {
+export function drawIce() {
   const cells = grid.cells,
     vertices = grid.vertices,
     n = cells.i.length,
@@ -822,7 +866,7 @@ function toggleCultures(event) {
   }
 }
 
-function drawCultures() {
+export function drawCultures() {
   TIME && console.time("drawCultures");
 
   cults.selectAll("path").remove();
@@ -896,7 +940,7 @@ function toggleReligions(event) {
   }
 }
 
-function drawReligions() {
+export function drawReligions() {
   TIME && console.time("drawReligions");
 
   relig.selectAll("path").remove();
@@ -1171,7 +1215,6 @@ function toggleBorders(event) {
   }
 }
 
-// draw state and province borders
 export function drawBorders() {
   TIME && console.time("drawBorders");
   borders.selectAll("path").remove();
@@ -1434,7 +1477,7 @@ function toggleGrid(event) {
   }
 }
 
-function drawGrid() {
+export function drawGrid() {
   gridOverlay.selectAll("*").remove();
   const pattern = "#pattern_" + (gridOverlay.attr("type") || "pointyHex");
   const stroke = gridOverlay.attr("stroke") || "#808080";
@@ -1692,36 +1735,35 @@ function drawMarkers() {
   markers.html(html.join(""));
 }
 
-const getPin = (shape = "bubble", fill = "#fff", stroke = "#000") => {
-  if (shape === "bubble")
-    return `<path d="M6,19 l9,10 L24,19" fill="${stroke}" stroke="none" /><circle cx="15" cy="15" r="10" fill="${fill}" stroke="${stroke}"/>`;
-  if (shape === "pin")
-    return `<path d="m 15,3 c -5.5,0 -9.7,4.09 -9.7,9.3 0,6.8 9.7,17 9.7,17 0,0 9.7,-10.2 9.7,-17 C 24.7,7.09 20.5,3 15,3 Z" fill="${fill}" stroke="${stroke}"/>`;
-  if (shape === "square")
-    return `<path d="m 20,25 -5,4 -5,-4 z" fill="${stroke}"/><path d="M 5,5 H 25 V 25 H 5 Z" fill="${fill}" stroke="${stroke}"/>`;
-  if (shape === "squarish")
-    return `<path d="m 5,5 h 20 v 20 h -6 l -4,4 -4,-4 H 5 Z" fill="${fill}" stroke="${stroke}" />`;
-  if (shape === "diamond") return `<path d="M 2,15 15,1 28,15 15,29 Z" fill="${fill}" stroke="${stroke}" />`;
-  if (shape === "hex") return `<path d="M 15,29 4.61,21 V 9 L 15,3 25.4,9 v 12 z" fill="${fill}" stroke="${stroke}" />`;
-  if (shape === "hexy") return `<path d="M 15,29 6,21 5,8 15,4 25,8 24,21 Z" fill="${fill}" stroke="${stroke}" />`;
-  if (shape === "shieldy")
-    return `<path d="M 15,29 6,21 5,7 c 0,0 5,-3 10,-3 5,0 10,3 10,3 l -1,14 z" fill="${fill}" stroke="${stroke}" />`;
-  if (shape === "shield")
-    return `<path d="M 4.6,5.2 H 25 v 6.7 A 20.3,20.4 0 0 1 15,29 20.3,20.4 0 0 1 4.6,11.9 Z" fill="${fill}" stroke="${stroke}" />`;
-  if (shape === "pentagon") return `<path d="M 4,16 9,4 h 12 l 5,12 -11,13 z" fill="${fill}" stroke="${stroke}" />`;
-  if (shape === "heptagon")
-    return `<path d="M 15,29 6,22 4,12 10,4 h 10 l 6,8 -2,10 z" fill="${fill}" stroke="${stroke}" />`;
-  if (shape === "circle") return `<circle cx="15" cy="15" r="11" fill="${fill}" stroke="${stroke}" />`;
-  if (shape === "no") return "";
+const pinShapeMap = {
+  bubble: (stroke, fill) =>
+    `<path d="M6,19 l9,10 L24,19" fill="${stroke}" stroke="none" /><circle cx="15" cy="15" r="10" fill="${fill}" stroke="${stroke}"/>`,
+  pin: (stroke, fill) =>
+    `<path d="m 15,3 c -5.5,0 -9.7,4.09 -9.7,9.3 0,6.8 9.7,17 9.7,17 0,0 9.7,-10.2 9.7,-17 C 24.7,7.09 20.5,3 15,3 Z" fill="${fill}" stroke="${stroke}"/>`,
+  square: (stroke, fill) =>
+    `<path d="m 20,25 -5,4 -5,-4 z" fill="${fill}"/><path d="M 5,5 H 25 V 25 H 5 Z" fill="${fill}" stroke="${stroke}"/>`,
+  squarish: (stroke, fill) => `<path d="m 5,5 h 20 v 20 h -6 l -4,4 -4,-4 H 5 Z" fill="${fill}" stroke="${stroke}" />`,
+  diamond: (stroke, fill) => `<path d="M 2,15 15,1 28,15 15,29 Z" fill="${fill}" stroke="${stroke}" />`,
+  hex: (stroke, fill) => `<path d="M 15,29 4.61,21 V 9 L 15,3 25.4,9 v 12 z" fill="${fill}" stroke="${stroke}" />`,
+  hexy: (stroke, fill) => `<path d="M 15,29 6,21 5,8 15,4 25,8 24,21 Z" fill="${fill}" stroke="${stroke}" />`,
+  shieldy: (stroke, fill) =>
+    `<path d="M 15,29 6,21 5,7 c 0,0 5,-3 10,-3 5,0 10,3 10,3 l -1,14 z" fill="${fill}" stroke="${stroke}" />`,
+  shield: (stroke, fill) =>
+    `<path d="M 4.6,5.2 H 25 v 6.7 A 20.3,20.4 0 0 1 15,29 20.3,20.4 0 0 1 4.6,11.9 Z" fill="${fill}" stroke="${stroke}" />`,
+  pentagon: (stroke, fill) => `<path d="M 4,16 9,4 h 12 l 5,12 -11,13 z" fill="${fill}" stroke="${stroke}" />`,
+  heptagon: (stroke, fill) =>
+    `<path d="M 15,29 6,22 4,12 10,4 h 10 l 6,8 -2,10 z" fill="${fill}" stroke="${stroke}" />`,
+  circle: (stroke, fill) => `<circle cx="15" cy="15" r="11" fill="${fill}" stroke="${stroke}" />`,
+  no: (stroke, fill) => ""
 };
 
 function drawMarker(marker, rescale = 1) {
-  const {i, icon, x, y, dx = 50, dy = 50, px = 12, size = 30, pin, fill, stroke} = marker;
+  const {i, icon, x, y, dx = 50, dy = 50, px = 12, size = 30, pin = "bubble", fill = "#fff", stroke = "#000"} = marker;
   const id = `marker${i}`;
   const zoomSize = rescale ? Math.max(rn(size / 5 + 24 / scale, 2), 1) : size;
   const viewX = rn(x - zoomSize / 2, 1);
   const viewY = rn(y - zoomSize, 1);
-  const pinHTML = getPin(pin, fill, stroke);
+  const pinHTML = pinShapeMap[pin](fill, stroke);
 
   return `<svg id="${id}" viewbox="0 0 30 30" width="${zoomSize}" height="${zoomSize}" x="${viewX}" y="${viewY}"><g>${pinHTML}</g><text x="${dx}%" y="${dy}%" font-size="${px}px" >${icon}</text></svg>`;
 }
@@ -1820,7 +1862,7 @@ function toggleEmblems(event) {
   }
 }
 
-function drawEmblems() {
+export function drawEmblems() {
   TIME && console.time("drawEmblems");
   const {states, provinces, burgs} = pack;
 
@@ -1928,43 +1970,4 @@ function drawEmblems() {
   });
 
   TIME && console.timeEnd("drawEmblems");
-}
-
-// move layers on mapLayers dragging (jquery sortable)
-$("#mapLayers").sortable({items: "li:not(.solid)", containment: "parent", cancel: ".solid", update: moveLayer});
-function moveLayer(event, ui) {
-  const el = getLayer(ui.item.attr("id"));
-  if (!el) return;
-  const prev = getLayer(ui.item.prev().attr("id"));
-  const next = getLayer(ui.item.next().attr("id"));
-  if (prev) el.insertAfter(prev);
-  else if (next) el.insertBefore(next);
-}
-
-// define connection between option layer buttons and actual svg groups to move the element
-function getLayer(id) {
-  if (id === "toggleHeight") return $("#terrs");
-  if (id === "toggleBiomes") return $("#biomes");
-  if (id === "toggleCells") return $("#cells");
-  if (id === "toggleGrid") return $("#gridOverlay");
-  if (id === "toggleCoordinates") return $("#coordinates");
-  if (id === "toggleCompass") return $("#compass");
-  if (id === "toggleRivers") return $("#rivers");
-  if (id === "toggleRelief") return $("#terrain");
-  if (id === "toggleReligions") return $("#relig");
-  if (id === "toggleCultures") return $("#cults");
-  if (id === "toggleStates") return $("#regions");
-  if (id === "toggleProvinces") return $("#provs");
-  if (id === "toggleBorders") return $("#borders");
-  if (id === "toggleRoutes") return $("#routes");
-  if (id === "toggleTemp") return $("#temperature");
-  if (id === "togglePrec") return $("#prec");
-  if (id === "togglePopulation") return $("#population");
-  if (id === "toggleIce") return $("#ice");
-  if (id === "toggleTexture") return $("#texture");
-  if (id === "toggleEmblems") return $("#emblems");
-  if (id === "toggleLabels") return $("#labels");
-  if (id === "toggleIcons") return $("#icons");
-  if (id === "toggleMarkers") return $("#markers");
-  if (id === "toggleRulers") return $("#ruler");
 }

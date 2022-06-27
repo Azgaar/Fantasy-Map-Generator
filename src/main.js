@@ -1,8 +1,6 @@
 // Azgaar (azgaar.fmg@yandex.com). Minsk, 2017-2022. MIT License
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
-console.log("Hello World");
-
 import "./components";
 import {ERROR, INFO, TIME, WARN} from "./config/logging";
 import {UINT16_MAX} from "./constants";
@@ -954,7 +952,7 @@ function drawCoastline() {
   );
   const landMask = defs.select("#land");
   const waterMask = defs.select("#water");
-  const lineGen = d3.line().curve(d3.curveBasis);
+  const lineGen = d3.line().curve(d3.curveBasisClosed);
 
   for (const i of cells.i) {
     const startFromEdge = !i && cells.h[i] >= 20;

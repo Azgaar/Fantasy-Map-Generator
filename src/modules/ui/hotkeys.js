@@ -1,7 +1,9 @@
-"use strict";
+import {byId} from "/src/utils/shorthands";
+import {toggleLayer} from "/src/modules/ui/layers";
+
 // Hotkeys, see github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys
-document.addEventListener("keydown", handleKeydown);
-document.addEventListener("keyup", handleKeyup);
+document.on("keydown", handleKeydown);
+document.on("keyup", handleKeyup);
 
 function handleKeydown(event) {
   if (!allowHotkeys()) return; // in some cases (e.g. in a textarea) hotkeys are not allowed
@@ -29,7 +31,7 @@ function handleKeyup(event) {
   else if (code === "Tab") toggleOptions(event);
   else if (code === "Escape") closeAllDialogs();
   else if (code === "Delete") removeElementOnKey();
-  else if (code === "KeyO" && document.getElementById("canvas3d")) toggle3dOptions();
+  else if (code === "KeyO" && byId("canvas3d")) toggle3dOptions();
   else if (ctrl && code === "KeyQ") toggleSaveReminder();
   else if (ctrl && code === "KeyS") dowloadMap();
   else if (ctrl && code === "KeyC") saveToDropbox();
@@ -63,33 +65,33 @@ function handleKeyup(event) {
   else if (alt && code === "KeyC") console.table(pack.cultures);
   else if (alt && code === "KeyR") console.table(pack.religions);
   else if (alt && code === "KeyF") console.table(pack.features);
-  else if (code === "KeyX") toggleTexture();
-  else if (code === "KeyH") toggleHeight();
-  else if (code === "KeyB") toggleBiomes();
-  else if (code === "KeyE") toggleCells();
-  else if (code === "KeyG") toggleGrid();
-  else if (code === "KeyO") toggleCoordinates();
-  else if (code === "KeyW") toggleCompass();
-  else if (code === "KeyV") toggleRivers();
-  else if (code === "KeyF") toggleRelief();
-  else if (code === "KeyC") toggleCultures();
-  else if (code === "KeyS") toggleStates();
-  else if (code === "KeyP") toggleProvinces();
-  else if (code === "KeyZ") toggleZones();
-  else if (code === "KeyD") toggleBorders();
-  else if (code === "KeyR") toggleReligions();
-  else if (code === "KeyU") toggleRoutes();
-  else if (code === "KeyT") toggleTemp();
-  else if (code === "KeyN") togglePopulation();
-  else if (code === "KeyJ") toggleIce();
-  else if (code === "KeyA") togglePrec();
-  else if (code === "KeyY") toggleEmblems();
-  else if (code === "KeyL") toggleLabels();
-  else if (code === "KeyI") toggleIcons();
-  else if (code === "KeyM") toggleMilitary();
-  else if (code === "KeyK") toggleMarkers();
-  else if (code === "Equal") toggleRulers();
-  else if (code === "Slash") toggleScaleBar();
+  else if (code === "KeyX") toggleLayer("toggleTexture");
+  else if (code === "KeyH") toggleLayer("toggleHeight");
+  else if (code === "KeyB") toggleLayer("toggleBiomes");
+  else if (code === "KeyE") toggleLayer("toggleCells");
+  else if (code === "KeyG") toggleLayer("toggleGrid");
+  else if (code === "KeyO") toggleLayer("toggleCoordinates");
+  else if (code === "KeyW") toggleLayer("toggleCompass");
+  else if (code === "KeyV") toggleLayer("toggleRivers");
+  else if (code === "KeyF") toggleLayer("toggleRelief");
+  else if (code === "KeyC") toggleLayer("toggleCultures");
+  else if (code === "KeyS") toggleLayer("toggleStates");
+  else if (code === "KeyP") toggleLayer("toggleProvinces");
+  else if (code === "KeyZ") toggleLayer("toggleZones");
+  else if (code === "KeyD") toggleLayer("toggleBorders");
+  else if (code === "KeyR") toggleLayer("toggleReligions");
+  else if (code === "KeyU") toggleLayer("toggleRoutes");
+  else if (code === "KeyT") toggleLayer("toggleTemp");
+  else if (code === "KeyN") toggleLayer("togglePopulation");
+  else if (code === "KeyJ") toggleLayer("toggleIce");
+  else if (code === "KeyA") toggleLayer("togglePrec");
+  else if (code === "KeyY") toggleLayer("toggleEmblems");
+  else if (code === "KeyL") toggleLayer("toggleLabels");
+  else if (code === "KeyI") toggleLayer("toggleIcons");
+  else if (code === "KeyM") toggleLayer("toggleMilitary");
+  else if (code === "KeyK") toggleLayer("toggleMarkers");
+  else if (code === "Equal") toggleLayer("toggleRulers");
+  else if (code === "Slash") toggleLayer("toggleScaleBar");
   else if (code === "ArrowLeft") zoom.translateBy(svg, 10, 0);
   else if (code === "ArrowRight") zoom.translateBy(svg, -10, 0);
   else if (code === "ArrowUp") zoom.translateBy(svg, 0, 10);
@@ -120,22 +122,17 @@ function pressNumpadSign(key) {
   const change = key === "+" ? 1 : -1;
   let brush = null;
 
-  if (document.getElementById("brushRadius")?.offsetParent) brush = document.getElementById("brushRadius");
-  else if (document.getElementById("biomesManuallyBrush")?.offsetParent)
-    brush = document.getElementById("biomesManuallyBrush");
-  else if (document.getElementById("statesManuallyBrush")?.offsetParent)
-    brush = document.getElementById("statesManuallyBrush");
-  else if (document.getElementById("provincesManuallyBrush")?.offsetParent)
-    brush = document.getElementById("provincesManuallyBrush");
-  else if (document.getElementById("culturesManuallyBrush")?.offsetParent)
-    brush = document.getElementById("culturesManuallyBrush");
-  else if (document.getElementById("zonesBrush")?.offsetParent) brush = document.getElementById("zonesBrush");
-  else if (document.getElementById("religionsManuallyBrush")?.offsetParent)
-    brush = document.getElementById("religionsManuallyBrush");
+  if (byId("brushRadius")?.offsetParent) brush = byId("brushRadius");
+  else if (byId("biomesManuallyBrush")?.offsetParent) brush = byId("biomesManuallyBrush");
+  else if (byId("statesManuallyBrush")?.offsetParent) brush = byId("statesManuallyBrush");
+  else if (byId("provincesManuallyBrush")?.offsetParent) brush = byId("provincesManuallyBrush");
+  else if (byId("culturesManuallyBrush")?.offsetParent) brush = byId("culturesManuallyBrush");
+  else if (byId("zonesBrush")?.offsetParent) brush = byId("zonesBrush");
+  else if (byId("religionsManuallyBrush")?.offsetParent) brush = byId("religionsManuallyBrush");
 
   if (brush) {
     const value = minmax(+brush.value + change, +brush.min, +brush.max);
-    brush.value = document.getElementById(brush.id + "Number").value = value;
+    brush.value = byId(brush.id + "Number").value = value;
     return;
   }
 

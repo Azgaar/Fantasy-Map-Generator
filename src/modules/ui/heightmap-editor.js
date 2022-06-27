@@ -1,14 +1,14 @@
+import {turnLayerButtonOff, turnLayerButtonOn, updatePresetInput} from "/src/modules/ui/layers";
 import {restoreDefaultEvents} from "/src/scripts/events";
-import {findGridCell, findGridAll, findCell, getPackPolygon, getGridPolygon} from "/src/utils/graphUtils";
-import {last, createTypedArray} from "/src/utils/arrayUtils";
-import {tip, showMainTip, clearMainTip} from "/src/scripts/tooltips";
-import {byId} from "/src/utils/shorthands";
-import {rn, minmax, lim} from "/src/utils/numberUtils";
-import {link} from "/src/utils/linkUtils";
 import {prompt} from "/src/scripts/prompt";
-import {throttle} from "/src/utils/functionUtils";
-import {turnLayerButtonOn, turnLayerButtonOff} from "/src/modules/ui/layers";
+import {clearMainTip, showMainTip, tip} from "/src/scripts/tooltips";
+import {createTypedArray, last} from "/src/utils/arrayUtils";
 import {getColorScheme, getHeightColor} from "/src/utils/colorUtils";
+import {throttle} from "/src/utils/functionUtils";
+import {findCell, findGridAll, findGridCell, getGridPolygon, getPackPolygon} from "/src/utils/graphUtils";
+import {link} from "/src/utils/linkUtils";
+import {lim, minmax, rn} from "/src/utils/numberUtils";
+import {byId} from "/src/utils/shorthands";
 
 export function editHeightmap(options) {
   const {mode, tool} = options || {};
@@ -202,7 +202,7 @@ export function editHeightmap(options) {
         // turn on
         else if (!editHeightmap.layers.includes(e.id) && layerIsOn(e.id)) e.click(); // turn off
       });
-    getCurrentPreset();
+    updatePresetInput();
   }
 
   function regenerateErasedData() {

@@ -1,11 +1,12 @@
+import {updatePresetInput} from "/src/modules/ui/layers";
 import {restoreDefaultEvents} from "/src/scripts/events";
-import {calculateVoronoi, findCell} from "/src/utils/graphUtils";
-import {last} from "/src/utils/arrayUtils";
-import {tip} from "/src/scripts/tooltips";
-import {parseError} from "/src/utils/errorUtils";
-import {rn, minmax} from "/src/utils/numberUtils";
-import {link} from "/src/utils/linkUtils";
 import {ldb} from "/src/scripts/indexedDB";
+import {tip} from "/src/scripts/tooltips";
+import {last} from "/src/utils/arrayUtils";
+import {parseError} from "/src/utils/errorUtils";
+import {calculateVoronoi, findCell} from "/src/utils/graphUtils";
+import {link} from "/src/utils/linkUtils";
+import {minmax, rn} from "/src/utils/numberUtils";
 
 function quickLoad() {
   ldb.get("lastMap", blob => {
@@ -424,7 +425,7 @@ async function parseLoadedData(data) {
       if (notHidden(ruler)) turnOn("toggleRulers");
       if (notHidden(scaleBar)) turnOn("toggleScaleBar");
 
-      getCurrentPreset();
+      updatePresetInput();
     })();
 
     void (function restoreEvents() {
