@@ -4,6 +4,7 @@ import {tip} from "/src/scripts/tooltips";
 import {getCoordinates} from "/src/utils/coordinateUtils";
 import {rn} from "/src/utils/numberUtils";
 import {getBase64} from "/src/utils/functionUtils";
+import {getColorScheme, getHeightColor} from "/src/utils/colorUtils";
 
 // download map as SVG
 async function saveSVG() {
@@ -368,7 +369,7 @@ function updateMeshCells(clone) {
     .join("polygon")
     .attr("points", d => getGridPolygon(d))
     .attr("id", d => "cell" + d)
-    .attr("stroke", d => getColor(grid.cells.h[d], scheme));
+    .attr("stroke", d => getHeightColor(grid.cells.h[d], scheme));
 }
 
 // for each g element get inline style

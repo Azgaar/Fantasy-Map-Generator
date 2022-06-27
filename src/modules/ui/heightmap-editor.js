@@ -7,6 +7,8 @@ import {rn, minmax, lim} from "/src/utils/numberUtils";
 import {link} from "/src/utils/linkUtils";
 import {prompt} from "/src/scripts/prompt";
 import {throttle} from "/src/utils/functionUtils";
+import {turnLayerButtonOn, turnLayerButtonOff} from "/src/modules/ui/layers";
+import {getColorScheme, getHeightColor} from "/src/utils/colorUtils";
 
 export function editHeightmap(options) {
   const {mode, tool} = options || {};
@@ -115,7 +117,7 @@ export function editHeightmap(options) {
         .style("transform", "scale(1)");
     } else exitCustomization.style.display = "block";
 
-    turnButtonOn("toggleHeight");
+    turnLayerButtonOn("toggleHeight");
     layersPreset.value = "heightmap";
     layersPreset.disabled = true;
     mockHeightmap();
@@ -191,7 +193,7 @@ export function editHeightmap(options) {
     // restore initial layers
     //viewbox.select("#heights").remove();
     byId("heights").remove();
-    turnButtonOff("toggleHeight");
+    turnLayerButtonOff("toggleHeight");
     document
       .getElementById("mapLayers")
       .querySelectorAll("li")
@@ -492,7 +494,7 @@ export function editHeightmap(options) {
       .join("polygon")
       .attr("points", d => getGridPolygon(d))
       .attr("id", d => "cell" + d)
-      .attr("fill", d => getColor(grid.cells.h[d], scheme));
+      .attr("fill", d => getHeightColor(grid.cells.h[d], scheme));
   }
 
   // draw or update heightmap for a selection of cells
@@ -512,7 +514,7 @@ export function editHeightmap(options) {
           .append("polygon")
           .attr("points", getGridPolygon(i))
           .attr("id", "cell" + i);
-      cell.attr("fill", getColor(grid.cells.h[i], scheme));
+      cell.attr("fill", getHeightColor(grid.cells.h[i], scheme));
     });
   }
 
@@ -1279,7 +1281,7 @@ export function editHeightmap(options) {
         return lum | 0; // land
       };
 
-      const scheme = d3.range(101).map(i => getColor(i, color()));
+      const scheme = d3.range(101).map(i => getHeightColor(i, color()));
       const hues = scheme.map(rgb => d3.hsl(rgb).h | 0);
       const getHeightByScheme = function (color) {
         let height = scheme.indexOf(color);

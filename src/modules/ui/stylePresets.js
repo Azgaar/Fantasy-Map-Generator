@@ -127,7 +127,7 @@ function applyStyleWithUiRefresh(style) {
   updateMapFilter();
   stylePreset.dataset.old = stylePreset.value;
 
-  invokeActiveZooming();
+  Zoom.invoke();
   setPresetRemoveButtonVisibiliy();
 }
 

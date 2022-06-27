@@ -7,6 +7,7 @@ import {rn} from "/src/utils/numberUtils";
 import {rand, P} from "/src/utils/probabilityUtils";
 import {parseTransform} from "/src/utils/stringUtils";
 import {si} from "/src/utils/unitUtils";
+import {turnLayerButtonOff} from "/src/modules/ui/layers";
 
 export function editProvinces() {
   if (customization) return;
@@ -1118,7 +1119,7 @@ export function editProvinces() {
           if (!layerIsOn("toggleBorders")) toggleBorders();
           else drawBorders();
           provs.select("#provincesBody").remove();
-          turnButtonOff("toggleProvinces");
+          turnLayerButtonOff("toggleProvinces");
 
           provincesEditorAddLines();
         },

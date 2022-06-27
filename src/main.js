@@ -6,7 +6,6 @@ console.log("Hello World");
 import "./components";
 import {ERROR, INFO, TIME, WARN} from "./config/logging";
 import {UINT16_MAX} from "./constants";
-import {invokeActiveZooming} from "./modules/activeZooming";
 import {clearLegend} from "./modules/legend";
 import {drawScaleBar, Ruler, Rulers} from "./modules/measurers";
 import {applyPreset, drawBorders, drawRivers, drawStates} from "./modules/ui/layers";
@@ -33,6 +32,7 @@ import {minmax, normalize, rn} from "./utils/numberUtils";
 import {gauss, generateSeed, P, ra, rand, rw} from "./utils/probabilityUtils";
 import {byId} from "./utils/shorthands";
 import {round} from "./utils/stringUtils";
+import {restoreLayers} from "./modules/ui/layers";
 
 addGlobalListeners();
 
@@ -286,7 +286,7 @@ function findBurgForMFCG(params) {
   }
 
   Zoom.to(b.x, b.y, 8, 1600);
-  invokeActiveZooming();
+  Zoom.invoke();
   tip("Here stands the glorious city of " + b.name, true, "success", 15000);
 }
 
@@ -357,7 +357,7 @@ async function generate(options) {
     const timeStart = performance.now();
     const {seed: precreatedSeed, graph: precreatedGraph} = options || {};
 
-    invokeActiveZooming();
+    Zoom.invoke();
     setSeed(precreatedSeed);
     INFO && console.group("Generated Map " + seed);
 

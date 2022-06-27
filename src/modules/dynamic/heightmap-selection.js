@@ -1,6 +1,7 @@
 import {shouldRegenerateGrid, generateGrid} from "/src/utils/graphUtils";
 import {byId} from "/src/utils/shorthands";
 import {generateSeed} from "/src/utils/probabilityUtils";
+import {getColorScheme} from "/src/utils/colorUtils";
 
 const initialSeed = generateSeed();
 let graph = getGraph(grid);

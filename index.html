@@ -437,14 +437,12 @@
             data-tip="Click to save displayed layers as a new preset"
             class="icon-plus sideButton"
             style="display: none"
-            onclick="savePreset()"
           ></button>
           <button
             id="removePresetButton"
             data-tip="Click to remove current custom preset"
             class="icon-minus sideButton"
             style="display: none"
-            onclick="removePreset()"
           ></button>
 
           <p data-tip="Click to toggle a layer, drag to raise or lower a layer. Ctrl + click to edit layer style">
@@ -1348,7 +1346,7 @@
 
               <tr data-tip="Allow system to hide emblem groups if their size in too small or too big on that scale">
                 <td colspan="2">
-                  <input id="hideEmblems" class="checkbox" type="checkbox" onchange="invokeActiveZooming()" checked />
+                  <input id="hideEmblems" class="checkbox" type="checkbox" onchange="Zoom.invoke()" checked />
                   <label for="hideEmblems" class="checkbox-label">Toggle visibility automatically</label>
                 </td>
               </tr>
@@ -1386,14 +1384,14 @@
             <tbody id="styleVisibility">
               <tr data-tip="Allow system to hide labels if their size in too small or too big on that scale">
                 <td colspan="2">
-                  <input id="hideLabels" class="checkbox" type="checkbox" onchange="invokeActiveZooming()" checked />
+                  <input id="hideLabels" class="checkbox" type="checkbox" onchange="Zoom.invoke()" checked />
                   <label for="hideLabels" class="checkbox-label">Toggle visibility automatically</label>
                 </td>
               </tr>
 
               <tr data-tip="Allow system to rescale labels on zoom">
                 <td colspan="2">
-                  <input id="rescaleLabels" class="checkbox" type="checkbox" onchange="invokeActiveZooming()" checked />
+                  <input id="rescaleLabels" class="checkbox" type="checkbox" onchange="Zoom.invoke()" checked />
                   <label for="rescaleLabels" class="checkbox-label">Rescale on zoom</label>
                 </td>
               </tr>
@@ -5576,7 +5574,7 @@
               id="showLabels"
               class="checkbox"
               type="checkbox"
-              onchange="hideLabels.checked = !this.checked; invokeActiveZooming()"
+              onchange="hideLabels.checked = !this.checked; Zoom.invoke()"
               checked
             />
             <label for="showLabels" class="checkbox-label">Show all labels</label>

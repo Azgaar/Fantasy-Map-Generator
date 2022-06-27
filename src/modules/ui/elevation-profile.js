@@ -1,5 +1,6 @@
 import {findCell} from "/src/utils/graphUtils";
 import {rn} from "/src/utils/numberUtils";
+import {getColorScheme, getHeightColor} from "/src/utils/colorUtils";
 
 export function showEPForRoute(node) {
   const points = [];
@@ -208,18 +209,18 @@ function showElevationProfile(data, routeLen, isRiver) {
       landdef
         .append("stop")
         .attr("offset", "0%")
-        .attr("style", "stop-color:" + getColor(chartData.mih, colors) + ";stop-opacity:1");
+        .attr("style", "stop-color:" + getHeightColor(chartData.mih, colors) + ";stop-opacity:1");
       landdef
         .append("stop")
         .attr("offset", "100%")
-        .attr("style", "stop-color:" + getColor(chartData.mah, colors) + ";stop-opacity:1");
+        .attr("style", "stop-color:" + getHeightColor(chartData.mah, colors) + ";stop-opacity:1");
     } else {
       for (let k = chartData.mah; k >= chartData.mih; k--) {
         let perc = 1 - (k - chartData.mih) / (chartData.mah - chartData.mih);
         landdef
           .append("stop")
           .attr("offset", perc * 100 + "%")
-          .attr("style", "stop-color:" + getColor(k, colors) + ";stop-opacity:1");
+          .attr("style", "stop-color:" + getHeightColor(k, colors) + ";stop-opacity:1");
       }
     }
 

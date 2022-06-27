@@ -3,6 +3,7 @@ import {clearMainTip} from "/src/scripts/tooltips";
 import {parseError} from "/src/utils/errorUtils";
 import {rn, minmax} from "/src/utils/numberUtils";
 import {debounce} from "/src/utils/functionUtils";
+import {restoreLayers} from "/src/modules/ui/layers";
 
 window.UISubmap = (function () {
   byId("submapPointsInput").addEventListener("input", function () {
@@ -298,7 +299,7 @@ window.UISubmap = (function () {
         moveAllBurgsToGroup("towns", groupName);
         changeRadius(rn(oldScale * 0.8, 2), groupName);
         changeFontSize(svg.select(`#labels #${groupName}`), rn(oldScale * 2, 2));
-        invokeActiveZooming();
+        Zoom.invoke();
       }
       if (options.rescaleStyles) changeStyles(oldScale);
     } catch (error) {

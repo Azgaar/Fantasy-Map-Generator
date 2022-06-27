@@ -579,7 +579,7 @@ async function parseLoadedData(data) {
 
     restoreDefaultEvents();
     focusOn(); // based on searchParams focus on point, cell or burg
-    invokeActiveZooming();
+    Zoom.invoke();
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - uploadMap.timeStart) / 1000, 2)}s`);
     showStatistics();

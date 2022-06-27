@@ -1,12 +1,15 @@
 import {debounce} from "/src/utils/functionUtils";
-import {handleZoom} from "/src/modules/activeZooming";
+import {handleZoom, invokeActiveZooming} from "/src/modules/activeZooming";
 
-// temporary expose to global
+// temporary expose to window
 window.scale = 1;
 window.viewX = 0;
 window.viewY = 0;
 
 window.Zoom = (function () {
+  const onZoomDebouced = debounce(onZoom, 50);
+  const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", onZoomDebouced);
+
   function onZoom() {
     if (!d3.event?.transform) return;
     const {k, x, y} = d3.event.transform;
@@ -21,11 +24,13 @@ window.Zoom = (function () {
 
     handleZoom(isScaleChanged, isPositionChanged);
   }
-  const onZoomDebouced = debounce(onZoom, 50);
-  const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", onZoomDebouced);
 
   function setZoomBehavior() {
     svg.call(zoom);
+  }
+
+  function invoke() {
+    invokeActiveZooming();
   }
 
   // zoom to a specific point
@@ -54,5 +59,5 @@ window.Zoom = (function () {
     zoom.scaleTo(element, scale);
   }
 
-  return {setZoomBehavior, to, reset, scaleExtent, translateExtent, scaleTo};
+  return {setZoomBehavior, invoke, to, reset, scaleExtent, translateExtent, scaleTo};
 })();

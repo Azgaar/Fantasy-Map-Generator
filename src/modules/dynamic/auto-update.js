@@ -2,6 +2,7 @@ import {findCell} from "/src/utils/graphUtils";
 import {rn} from "/src/utils/numberUtils";
 import {rand, P, rw} from "/src/utils/probabilityUtils";
 import {parseTransform} from "/src/utils/stringUtils";
+import {turnLayerButtonOn, turnLayerButtonOff} from "/src/modules/ui/layers";
 
 // update old .map version to the current one
 export function resolveVersionConflicts(version) {
@@ -69,7 +70,7 @@ export function resolveVersionConflicts(version) {
     addZones();
     if (!markers.selectAll("*").size()) {
       Markers.generate();
-      turnButtonOn("toggleMarkers");
+      turnLayerButtonOn("toggleMarkers");
     }
 
     // v1.0 add fogging layer (state focus)
@@ -282,7 +283,7 @@ export function resolveVersionConflicts(version) {
       .attr("box-size", 3)
       .attr("stroke", "#000")
       .attr("stroke-width", 0.3);
-    turnButtonOn("toggleMilitary");
+    turnLayerButtonOn("toggleMilitary");
     Military.generate();
   }
 
@@ -443,9 +444,9 @@ export function resolveVersionConflicts(version) {
     ruler.selectAll("*").remove();
 
     if (rulers.data.length) {
-      turnButtonOn("toggleRulers");
+      turnLayerButtonOn("toggleRulers");
       rulers.draw();
-    } else turnButtonOff("toggleRulers");
+    } else turnLayerButtonOff("toggleRulers");
 
     // 1.61 changed oceanicPattern from rect to image
     const pattern = document.getElementById("oceanic");

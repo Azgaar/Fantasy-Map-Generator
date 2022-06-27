@@ -28,7 +28,7 @@ window.Submap = (function () {
     const inverse = options.inverse;
     const stage = s => INFO && console.log("SUBMAP:", s);
     const timeStart = performance.now();
-    invokeActiveZooming();
+    Zoom.invoke();
 
     // copy seed
     seed = parentMap.seed;

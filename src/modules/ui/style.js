@@ -430,13 +430,13 @@ function shiftElement() {
 
 styleRescaleMarkers.addEventListener("change", function () {
   markers.attr("rescale", +this.checked);
-  invokeActiveZooming();
+  Zoom.invoke();
 });
 
 styleCoastlineAuto.addEventListener("change", function () {
   coastline.select("#sea_island").attr("auto-filter", +this.checked);
   styleFilter.style.display = this.checked ? "none" : "block";
-  invokeActiveZooming();
+  Zoom.invoke();
 });
 
 styleOceanFill.addEventListener("input", function () {
@@ -834,7 +834,7 @@ function updateElements() {
   if (legend.selectAll("*").size() && window.redrawLegend) redrawLegend();
   oceanLayers.selectAll("path").remove();
   OceanLayers();
-  invokeActiveZooming();
+  Zoom.invoke();
 }
 
 // GLOBAL FILTERS
