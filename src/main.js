@@ -6,7 +6,7 @@ import {ERROR, INFO, TIME, WARN} from "./config/logging";
 import {UINT16_MAX} from "./constants";
 import {clearLegend} from "./modules/legend";
 import {drawScaleBar, Ruler, Rulers} from "./modules/measurers";
-import {applyPreset, drawBorders, drawRivers, drawStates} from "./modules/ui/layers";
+import {initLayers, restoreLayers, renderLayer} from "./layers";
 import {applyMapSize, applyStoredOptions, randomizeOptions} from "./modules/ui/options";
 import {applyStyleOnLoad} from "./modules/ui/stylePresets";
 import {restoreDefaultEvents} from "./scripts/events";
@@ -30,7 +30,6 @@ import {minmax, normalize, rn} from "./utils/numberUtils";
 import {gauss, generateSeed, P, ra, rand, rw} from "./utils/probabilityUtils";
 import {byId} from "./utils/shorthands";
 import {round} from "./utils/stringUtils";
-import {restoreLayers} from "./modules/ui/layers";
 
 addGlobalListeners();
 
@@ -174,7 +173,7 @@ async function generateMapOnLoad() {
   await applyStyleOnLoad(); // apply previously selected default or custom style
   await generate(); // generate map
   focusOn(); // based on searchParams focus on point, cell or burg from MFCG
-  applyPreset(); // apply saved layers preset
+  initLayers(); // apply saved layers data
 }
 
 // focus on coordinates, cell or burg provided in searchParams
@@ -381,7 +380,7 @@ async function generate(options) {
     drawCoastline();
 
     Rivers.generate();
-    drawRivers();
+    renderLayer("rivers");
     Lakes.defineGroup();
     defineBiomes();
 
@@ -394,8 +393,8 @@ async function generate(options) {
     BurgsAndStates.generateProvinces();
     BurgsAndStates.defineBurgFeatures();
 
-    drawStates();
-    drawBorders();
+    renderLayer("states");
+    renderLayer("borders");
     BurgsAndStates.drawStateLabels();
 
     Rivers.specify();

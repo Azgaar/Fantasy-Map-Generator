@@ -7,7 +7,7 @@ import {rn} from "/src/utils/numberUtils";
 import {rand, P} from "/src/utils/probabilityUtils";
 import {parseTransform} from "/src/utils/stringUtils";
 import {si} from "/src/utils/unitUtils";
-import {turnLayerButtonOff} from "/src/modules/ui/layers";
+import {turnLayerButtonOff} from "/src/layers";
 
 export function editProvinces() {
   if (customization) return;

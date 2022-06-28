@@ -7,7 +7,7 @@ import {isCtrlClick} from "/src/utils/keyboardUtils";
 import {prompt} from "/src/scripts/prompt";
 import {getNextId} from "/src/utils/nodeUtils";
 import {P, generateSeed} from "/src/utils/probabilityUtils";
-import {turnLayerButtonOn} from "/src/modules/ui/layers";
+import {turnLayerButtonOn} from "/src/layers";
 
 toolsContent.addEventListener("click", function (event) {
   if (customization) return tip("Please exit the customization mode first", false, "warning");

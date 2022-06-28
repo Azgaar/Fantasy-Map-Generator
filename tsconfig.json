@@ -15,7 +15,7 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "skipLibCheck": true,
-    "baseUrl": "src"
+    "baseUrl": "."
   },
   "include": ["src"]
 }

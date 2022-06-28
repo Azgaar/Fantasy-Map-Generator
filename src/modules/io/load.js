@@ -1,4 +1,4 @@
-import {updatePresetInput} from "/src/modules/ui/layers";
+import {updatePresetInput} from "/src/layers";
 import {restoreDefaultEvents} from "/src/scripts/events";
 import {ldb} from "/src/scripts/indexedDB";
 import {tip} from "/src/scripts/tooltips";

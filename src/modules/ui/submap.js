@@ -3,7 +3,7 @@ import {clearMainTip} from "/src/scripts/tooltips";
 import {parseError} from "/src/utils/errorUtils";
 import {rn, minmax} from "/src/utils/numberUtils";
 import {debounce} from "/src/utils/functionUtils";
-import {restoreLayers} from "/src/modules/ui/layers";
+import {restoreLayers} from "/src/layers";
 
 window.UISubmap = (function () {
   byId("submapPointsInput").addEventListener("input", function () {

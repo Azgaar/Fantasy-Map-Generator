@@ -1,5 +1,5 @@
 import {byId} from "/src/utils/shorthands";
-import {toggleLayer} from "/src/modules/ui/layers";
+import {toggleLayer} from "/src/layers";
 
 // Hotkeys, see github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys
 document.on("keydown", handleKeydown);

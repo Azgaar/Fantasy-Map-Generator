@@ -1,4 +1,4 @@
-import {turnLayerButtonOff, turnLayerButtonOn, updatePresetInput} from "/src/modules/ui/layers";
+import {turnLayerButtonOff, turnLayerButtonOn, updatePresetInput} from "/src/layers";
 import {restoreDefaultEvents} from "/src/scripts/events";
 import {prompt} from "/src/scripts/prompt";
 import {clearMainTip, showMainTip, tip} from "/src/scripts/tooltips";

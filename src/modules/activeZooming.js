@@ -1,11 +1,11 @@
 import {rn} from "/src/utils/numberUtils";
-import {drawCoordinates} from "/src/modules/ui/layers";
+import {layerIsOn, renderLayer} from "/src/layers";
 import {drawScaleBar} from "/src/modules/measurers";
 
 export function handleZoom(isScaleChanged, isPositionChanged) {
   viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
 
-  if (isPositionChanged) drawCoordinates();
+  if (isPositionChanged && layerIsOn("toggleCoordinates")) renderLayer("coordinates");
 
   if (isScaleChanged) {
     invokeActiveZooming();

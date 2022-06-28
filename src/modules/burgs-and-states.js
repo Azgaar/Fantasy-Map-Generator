@@ -1,13 +1,13 @@
 import {TIME} from "/src/config/logging";
-import {findCell} from "/src/utils/graphUtils";
-import {layerIsOn} from "./ui/layers";
-import {getColors, getRandomColor, getMixedColor} from "/src/utils/colorUtils";
-import {getMiddlePoint} from "/src/utils/lineUtils";
-import {rn, minmax} from "/src/utils/numberUtils";
-import {rand, P, each, gauss, ra, rw, generateSeed} from "/src/utils/probabilityUtils";
-import {round, splitInTwo} from "/src/utils/stringUtils";
-import {trimVowels, getAdjective} from "/src/utils/languageUtils";
+import {layerIsOn} from "/src/layers";
 import {Voronoi} from "/src/modules/voronoi";
+import {getColors, getMixedColor, getRandomColor} from "/src/utils/colorUtils";
+import {findCell} from "/src/utils/graphUtils";
+import {getAdjective, trimVowels} from "/src/utils/languageUtils";
+import {getMiddlePoint} from "/src/utils/lineUtils";
+import {minmax, rn} from "/src/utils/numberUtils";
+import {each, gauss, generateSeed, P, ra, rand, rw} from "/src/utils/probabilityUtils";
+import {round, splitInTwo} from "/src/utils/stringUtils";
 
 window.BurgsAndStates = (function () {
   const generate = function () {
