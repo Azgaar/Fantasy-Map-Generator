@@ -1,5 +1,4 @@
-import {prompt} from "/src/scripts/prompt";
-import {byId, store, stored} from "/src/utils/shorthands";
+import {stored, byId, store} from "utils/shorthands";
 import {layerIsOn} from "./utils";
 
 export function initLayers() {
@@ -77,11 +76,13 @@ const defaultPresets = {
 };
 
 function restoreCustomPresets() {
-  const storedPresets = JSON.parse(stored("presets"));
-  if (!storedPresets) {
+  const storedPresentsRaw = stored("presets");
+  if (!storedPresentsRaw) {
     presets = structuredClone(defaultPresets);
     return;
   }
+
+  const storedPresets = JSON.parse(storedPresentsRaw);
 
   for (const preset in storedPresets) {
     if (presets[preset]) continue;

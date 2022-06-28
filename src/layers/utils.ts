@@ -1,4 +1,4 @@
-import {byId} from "/src/utils/shorthands";
+import {byId} from "utils/shorthands";
 import {updatePresetInput} from "./init";
 
 export function layerIsOn(toggleId: string) {
