@@ -883,18 +883,37 @@ async function uploadCulturesData() {
     }
 
     current.removed = false;
-    current.name = c.culture;
-    current.code = abbreviate(
-      current.name,
-      cultures.map(c => c.code)
-    );
+    current.name = c.name;
 
-    current.color = c.color;
-    current.expansionism = +c.expansionism;
-    current.origins = JSON.parse(c.origins);
+    if (current.i) {
+      current.code = abbreviate(
+        current.name,
+        cultures.map(c => c.code)
+      );
 
-    if (cultureTypes.includes(c.type)) current.type = c.type;
-    else current.type = "Generic";
+      current.color = c.color;
+      current.expansionism = +c.expansionism;
+
+      if (cultureTypes.includes(c.type)) current.type = c.type;
+      else current.type = "Generic";
+    }
+
+    function restoreOrigins(originsString) {
+      const originNames = originsString
+        .replaceAll('"', "")
+        .split(",")
+        .map(s => s.trim())
+        .filter(s => s);
+
+      const originIds = originNames.map(name => {
+        const id = cultures.findIndex(c => c.name === name);
+        return id === -1 ? null : id;
+      });
+
+      current.origins = originIds.filter(id => id !== null);
+      if (!current.origins.length) current.origins = [0];
+    }
+    c.origins = current.i ? restoreOrigins(c.origins) : [null];
 
     const shieldShape = c["emblems shape"].toLowerCase();
     if (shapes.includes(shieldShape)) current.shield = shieldShape;
