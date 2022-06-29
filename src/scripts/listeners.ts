@@ -1,12 +1,20 @@
 import {PRODUCTION} from "../constants";
 import {assignLockBehavior} from "./options/lock";
 import {addTooptipListers} from "./tooltips";
+import {assignSpeakerBehavior} from "./speaker";
+// @ts-ignore
+import {addResizeListener} from "modules/ui/options";
 
 export function addGlobalListeners() {
-  PRODUCTION && registerServiceWorker();
-  PRODUCTION && addInstallationPrompt();
+  if (PRODUCTION) {
+    registerServiceWorker();
+    addInstallationPrompt();
+    addBeforeunloadListener();
+  }
   assignLockBehavior();
   addTooptipListers();
+  addResizeListener();
+  assignSpeakerBehavior();
 }
 
 function registerServiceWorker() {
@@ -29,4 +37,8 @@ function addInstallationPrompt() {
     },
     {once: true}
   );
+}
+
+function addBeforeunloadListener() {
+  window.onbeforeunload = () => "Are you sure you want to navigate away?";
 }

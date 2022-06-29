@@ -1,4 +1,4 @@
-import {debounce} from "/src/utils/functionUtils";
+import {debounce} from "utils/functionUtils";
 import {handleZoom, invokeActiveZooming} from "/src/modules/activeZooming";
 
 // temporary expose to window

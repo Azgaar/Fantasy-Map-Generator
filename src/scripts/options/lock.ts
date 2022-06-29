@@ -29,8 +29,8 @@ function showTooltip(this: Element, event: Event) {
 // lock option from regeneration on page refresh
 export function lock(id: string) {
   const $input = document.querySelector('[data-stored="' + id + '"]');
-  if ($input && $input instanceof HTMLInputElement === false) {
-    store(id, ($input as HTMLInputElement).value);
+  if ($input && $input instanceof HTMLInputElement) {
+    store(id, $input.value);
   }
 
   const $lock = document.getElementById("lock_" + id);

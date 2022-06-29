@@ -1,5 +1,6 @@
-import {byId} from "/src/utils/shorthands";
-import {toggleLayer} from "/src/layers";
+import {byId} from "utils/shorthands";
+import {toggleLayer} from "layers";
+import {showAboutDialog} from "scripts/options/about";
 
 // Hotkeys, see github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys
 document.on("keydown", handleKeydown);
@@ -24,7 +25,7 @@ function handleKeyup(event) {
   const shift = shiftKey || key === "Shift";
   const alt = altKey || key === "Alt";
 
-  if (code === "F1") showInfo();
+  if (code === "F1") showAboutDialog();
   else if (code === "F2") regeneratePrompt();
   else if (code === "F6") quickSave();
   else if (code === "F9") quickLoad();

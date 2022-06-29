@@ -1,7 +1,7 @@
-import {shouldRegenerateGrid, generateGrid} from "/src/utils/graphUtils";
-import {byId} from "/src/utils/shorthands";
-import {generateSeed} from "/src/utils/probabilityUtils";
-import {getColorScheme} from "/src/utils/colorUtils";
+import {shouldRegenerateGrid, generateGrid} from "utils/graphUtils";
+import {byId} from "utils/shorthands";
+import {generateSeed} from "utils/probabilityUtils";
+import {getColorScheme} from "utils/colorUtils";
 
 const initialSeed = generateSeed();
 let graph = getGraph(grid);
@@ -27,14 +27,14 @@ export function open() {
       },
       Select: function () {
         const id = getSelected();
-        applyOption($templateInput, id, getName(id));
+        applyDropdownOption($templateInput, id, getName(id));
         lock("template");
 
         $(this).dialog("close");
       },
       "New Map": function () {
         const id = getSelected();
-        applyOption($templateInput, id, getName(id));
+        applyDropdownOption($templateInput, id, getName(id));
         lock("template");
 
         const seed = getSeed();

@@ -1,5 +1,5 @@
-import {restoreDefaultEvents} from "/src/scripts/events";
-import {clearMainTip} from "/src/scripts/tooltips";
+import {restoreDefaultEvents} from "scripts/events";
+import {clearMainTip} from "scripts/tooltips";
 
 export function overviewMarkers() {
   if (customization) return;

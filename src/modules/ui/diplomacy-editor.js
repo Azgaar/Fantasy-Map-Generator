@@ -1,6 +1,6 @@
-import {restoreDefaultEvents} from "/src/scripts/events";
-import {findCell} from "/src/utils/graphUtils";
-import {tip, clearMainTip} from "/src/scripts/tooltips";
+import {restoreDefaultEvents} from "scripts/events";
+import {findCell} from "utils/graphUtils";
+import {tip, clearMainTip} from "scripts/tooltips";
 
 export function editDiplomacy() {
   if (customization) return;

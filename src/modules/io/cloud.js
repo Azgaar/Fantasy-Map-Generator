@@ -1,4 +1,4 @@
-import {tip} from "/src/scripts/tooltips";
+import {tip} from "scripts/tooltips";
 
 /*
 Cloud provider implementations (Dropbox only as now)

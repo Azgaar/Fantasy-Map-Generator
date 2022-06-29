@@ -1,13 +1,14 @@
-import {restoreDefaultEvents} from "/src/scripts/events";
-import {findAll, findCell, getPackPolygon, isLand} from "/src/utils/graphUtils";
-import {unique} from "/src/utils/arrayUtils";
-import {tip, showMainTip, clearMainTip} from "/src/scripts/tooltips";
-import {getRandomColor} from "/src/utils/colorUtils";
-import {rn} from "/src/utils/numberUtils";
-import {rand, P} from "/src/utils/probabilityUtils";
-import {parseTransform} from "/src/utils/stringUtils";
-import {si} from "/src/utils/unitUtils";
-import {turnLayerButtonOff} from "/src/layers";
+import {restoreDefaultEvents} from "scripts/events";
+import {findAll, findCell, getPackPolygon, isLand} from "utils/graphUtils";
+import {unique} from "utils/arrayUtils";
+import {tip, showMainTip, clearMainTip} from "scripts/tooltips";
+import {getRandomColor} from "utils/colorUtils";
+import {rn} from "utils/numberUtils";
+import {rand, P} from "utils/probabilityUtils";
+import {parseTransform} from "utils/stringUtils";
+import {si} from "utils/unitUtils";
+import {turnLayerButtonOff} from "layers";
+import {byId} from "utils/shorthands";
 
 export function editProvinces() {
   if (customization) return;
@@ -18,7 +19,7 @@ export function editProvinces() {
   if (layerIsOn("toggleCultures")) toggleCultures();
 
   provs.selectAll("text").call(d3.drag().on("drag", dragLabel)).classed("draggable", true);
-  const body = document.getElementById("provincesBodySection");
+  const body = byId("provincesBodySection");
   refreshProvincesEditor();
 
   if (fmg.modules.editProvinces) return;
@@ -33,20 +34,20 @@ export function editProvinces() {
   });
 
   // add listeners
-  document.getElementById("provincesEditorRefresh").addEventListener("click", refreshProvincesEditor);
-  document.getElementById("provincesEditStyle").addEventListener("click", () => editStyle("provs"));
-  document.getElementById("provincesFilterState").addEventListener("change", provincesEditorAddLines);
-  document.getElementById("provincesPercentage").addEventListener("click", togglePercentageMode);
-  document.getElementById("provincesChart").addEventListener("click", showChart);
-  document.getElementById("provincesToggleLabels").addEventListener("click", toggleLabels);
-  document.getElementById("provincesExport").addEventListener("click", downloadProvincesData);
-  document.getElementById("provincesRemoveAll").addEventListener("click", removeAllProvinces);
-  document.getElementById("provincesManually").addEventListener("click", enterProvincesManualAssignent);
-  document.getElementById("provincesManuallyApply").addEventListener("click", applyProvincesManualAssignent);
-  document.getElementById("provincesManuallyCancel").addEventListener("click", () => exitProvincesManualAssignment());
-  document.getElementById("provincesRelease").addEventListener("click", triggerProvincesRelease);
-  document.getElementById("provincesAdd").addEventListener("click", enterAddProvinceMode);
-  document.getElementById("provincesRecolor").addEventListener("click", recolorProvinces);
+  byId("provincesEditorRefresh").addEventListener("click", refreshProvincesEditor);
+  byId("provincesEditStyle").addEventListener("click", () => editStyle("provs"));
+  byId("provincesFilterState").addEventListener("change", provincesEditorAddLines);
+  byId("provincesPercentage").addEventListener("click", togglePercentageMode);
+  byId("provincesChart").addEventListener("click", showChart);
+  byId("provincesToggleLabels").addEventListener("click", toggleLabels);
+  byId("provincesExport").addEventListener("click", downloadProvincesData);
+  byId("provincesRemoveAll").addEventListener("click", removeAllProvinces);
+  byId("provincesManually").addEventListener("click", enterProvincesManualAssignent);
+  byId("provincesManuallyApply").addEventListener("click", applyProvincesManualAssignent);
+  byId("provincesManuallyCancel").addEventListener("click", () => exitProvincesManualAssignment());
+  byId("provincesRelease").addEventListener("click", triggerProvincesRelease);
+  byId("provincesAdd").addEventListener("click", enterAddProvinceMode);
+  byId("provincesRecolor").addEventListener("click", recolorProvinces);
 
   body.addEventListener("click", function (ev) {
     if (customization) return;
@@ -108,7 +109,7 @@ export function editProvinces() {
   }
 
   function updateFilter() {
-    const stateFilter = document.getElementById("provincesFilterState");
+    const stateFilter = byId("provincesFilterState");
     const selectedState = stateFilter.value || 1;
     stateFilter.options.length = 0; // remove all options
     stateFilter.options.add(new Option(`all`, -1, false, selectedState == -1));
@@ -119,7 +120,7 @@ export function editProvinces() {
   // add line for each state
   function provincesEditorAddLines() {
     const unit = " " + getAreaUnit();
-    const selectedState = +document.getElementById("provincesFilterState").value;
+    const selectedState = +byId("provincesFilterState").value;
     let filtered = pack.provinces.filter(p => p.i && !p.removed); // all valid burgs
     if (selectedState != -1) filtered = filtered.filter(p => p.state === selectedState); // filtered by state
     body.innerHTML = "";
@@ -306,7 +307,7 @@ export function editProvinces() {
     const {cell: center, culture} = burgs[burgId];
     const color = getRandomColor();
     const coa = province.coa;
-    const coaEl = document.getElementById("provinceCOA" + provinceId);
+    const coaEl = byId("provinceCOA" + provinceId);
     if (coaEl) coaEl.id = "stateCOA" + newStateId;
     emblems.select(`#provinceEmblems > use[data-i='${provinceId}']`).remove();
 
@@ -482,7 +483,7 @@ export function editProvinces() {
           unfog("focusProvince" + p);
 
           const coaId = "provinceCOA" + p;
-          if (document.getElementById(coaId)) document.getElementById(coaId).remove();
+          if (byId(coaId)) byId(coaId).remove();
           emblems.select(`#provinceEmblems > use[data-i='${p}']`).remove();
 
           pack.provinces[p] = {i: p, removed: true};
@@ -504,10 +505,10 @@ export function editProvinces() {
 
   function editProvinceName(province) {
     const p = pack.provinces[province];
-    document.getElementById("provinceNameEditor").dataset.province = province;
-    document.getElementById("provinceNameEditorShort").value = p.name;
-    applyOption(provinceNameEditorSelectForm, p.formName);
-    document.getElementById("provinceNameEditorFull").value = p.fullName;
+    byId("provinceNameEditor").dataset.province = province;
+    byId("provinceNameEditorShort").value = p.name;
+    applyDropdownOption(byId("provinceNameEditorSelectForm"), p.formName);
+    byId("provinceNameEditorFull").value = p.fullName;
 
     $("#provinceNameEditor").dialog({
       resizable: false,
@@ -528,36 +529,39 @@ export function editProvinces() {
     fmg.modules.editProvinceName = true;
 
     // add listeners
-    document.getElementById("provinceNameEditorShortCulture").addEventListener("click", regenerateShortNameCuture);
-    document.getElementById("provinceNameEditorShortRandom").addEventListener("click", regenerateShortNameRandom);
-    document.getElementById("provinceNameEditorAddForm").addEventListener("click", addCustomForm);
-    document.getElementById("provinceNameEditorFullRegenerate").addEventListener("click", regenerateFullName);
+    byId("provinceNameEditorShortCulture").addEventListener("click", regenerateShortNameCuture);
+    byId("provinceNameEditorShortRandom").addEventListener("click", regenerateShortNameRandom);
+    byId("provinceNameEditorAddForm").addEventListener("click", addCustomForm);
+    byId("provinceNameEditorFullRegenerate").addEventListener("click", regenerateFullName);
 
     function regenerateShortNameCuture() {
       const province = +provinceNameEditor.dataset.province;
       const culture = pack.cells.culture[pack.provinces[province].center];
       const name = Names.getState(Names.getCultureShort(culture), culture);
-      document.getElementById("provinceNameEditorShort").value = name;
+      byId("provinceNameEditorShort").value = name;
     }
 
     function regenerateShortNameRandom() {
       const base = rand(nameBases.length - 1);
       const name = Names.getState(Names.getBase(base), undefined, base);
-      document.getElementById("provinceNameEditorShort").value = name;
+      byId("provinceNameEditorShort").value = name;
     }
 
     function addCustomForm() {
-      const value = provinceNameEditorCustomForm.value;
-      const displayed = provinceNameEditorCustomForm.style.display === "inline-block";
-      provinceNameEditorCustomForm.style.display = displayed ? "none" : "inline-block";
-      provinceNameEditorSelectForm.style.display = displayed ? "inline-block" : "none";
-      if (displayed) applyOption(provinceNameEditorSelectForm, value);
+      const $provinceNameEditorCustomForm = byId("provinceNameEditorCustomForm");
+      const $provinceNameEditorSelectForm = byId("provinceNameEditorSelectForm");
+
+      const value = $provinceNameEditorCustomForm.value;
+      const displayed = $provinceNameEditorCustomForm.style.display === "inline-block";
+      $provinceNameEditorCustomForm.style.display = displayed ? "none" : "inline-block";
+      $provinceNameEditorSelectForm.style.display = displayed ? "inline-block" : "none";
+      if (displayed) applyDropdownOption($provinceNameEditorSelectForm, value);
     }
 
     function regenerateFullName() {
-      const short = document.getElementById("provinceNameEditorShort").value;
-      const form = document.getElementById("provinceNameEditorSelectForm").value;
-      document.getElementById("provinceNameEditorFull").value = getFullName();
+      const short = byId("provinceNameEditorShort").value;
+      const form = byId("provinceNameEditorSelectForm").value;
+      byId("provinceNameEditorFull").value = getFullName();
 
       function getFullName() {
         if (!form) return short;
@@ -567,9 +571,9 @@ export function editProvinces() {
     }
 
     function applyNameChange(p) {
-      p.name = document.getElementById("provinceNameEditorShort").value;
-      p.formName = document.getElementById("provinceNameEditorSelectForm").value;
-      p.fullName = document.getElementById("provinceNameEditorFull").value;
+      p.name = byId("provinceNameEditorShort").value;
+      p.formName = byId("provinceNameEditorSelectForm").value;
+      p.fullName = byId("provinceNameEditorFull").value;
       provs.select("#provinceLabel" + p.i).text(p.name);
       refreshProvincesEditor();
     }
@@ -645,7 +649,7 @@ export function editProvinces() {
       .attr("height", height)
       .attr("font-size", "10px");
     const graph = svg.append("g").attr("transform", `translate(10, 0)`);
-    document.getElementById("provincesTreeType").addEventListener("change", updateChart);
+    byId("provincesTreeType").addEventListener("change", updateChart);
 
     treeLayout(root);
 
@@ -682,7 +686,7 @@ export function editProvinces() {
 
     function hideInfo(ev) {
       provinceHighlightOff(ev);
-      if (!document.getElementById("provinceInfo")) return;
+      if (!byId("provinceInfo")) return;
       provinceInfo.innerHTML = "&#8205;";
       d3.select(ev.target).select("rect").classed("selected", 0);
     }
@@ -820,7 +824,7 @@ export function editProvinces() {
       .attr("stroke-width", 1);
 
     document.querySelectorAll("#provincesBottom > *").forEach(el => (el.style.display = "none"));
-    document.getElementById("provincesManuallyButtons").style.display = "inline-block";
+    byId("provincesManuallyButtons").style.display = "inline-block";
 
     provincesEditor.querySelectorAll(".hide").forEach(el => el.classList.add("hidden"));
     provincesHeader.querySelector("div[data-sortby='state']").style.left = "7.7em";
@@ -964,7 +968,7 @@ export function editProvinces() {
     debug.selectAll("path.selected").remove();
 
     document.querySelectorAll("#provincesBottom > *").forEach(el => (el.style.display = "inline-block"));
-    document.getElementById("provincesManuallyButtons").style.display = "none";
+    byId("provincesManuallyButtons").style.display = "none";
 
     provincesEditor.querySelectorAll(".hide:not(.show)").forEach(el => el.classList.remove("hidden"));
     provincesHeader.querySelector("div[data-sortby='state']").style.left = "22em";
@@ -1043,7 +1047,7 @@ export function editProvinces() {
     if (!layerIsOn("toggleProvinces")) toggleProvinces();
     else drawProvinces();
     collectStatistics();
-    document.getElementById("provincesFilterState").value = state;
+    byId("provincesFilterState").value = state;
     provincesEditorAddLines();
   }
 
@@ -1056,7 +1060,7 @@ export function editProvinces() {
   }
 
   function recolorProvinces() {
-    const state = +document.getElementById("provincesFilterState").value;
+    const state = +byId("provincesFilterState").value;
 
     pack.provinces.forEach(p => {
       if (!p || p.removed) return;

@@ -1,10 +1,10 @@
-import {TIME} from "/src/config/logging";
-import {findAll} from "/src/utils/graphUtils";
-import {unique} from "/src/utils/arrayUtils";
-import {getRandomColor, getMixedColor} from "/src/utils/colorUtils";
-import {rn} from "/src/utils/numberUtils";
-import {rand, P, ra, rw, biased, gauss} from "/src/utils/probabilityUtils";
-import {trimVowels, getAdjective, abbreviate} from "/src/utils/languageUtils";
+import {TIME} from "config/logging";
+import {findAll} from "utils/graphUtils";
+import {unique} from "utils/arrayUtils";
+import {getRandomColor, getMixedColor} from "utils/colorUtils";
+import {rn} from "utils/numberUtils";
+import {rand, P, ra, rw, biased, gauss} from "utils/probabilityUtils";
+import {trimVowels, getAdjective, abbreviate} from "utils/languageUtils";
 
 window.Religions = (function () {
   // name generation approach and relative chance to be selected

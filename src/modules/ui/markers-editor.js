@@ -1,7 +1,7 @@
-import {restoreDefaultEvents} from "/src/scripts/events";
-import {findCell} from "/src/utils/graphUtils";
-import {clearMainTip} from "/src/scripts/tooltips";
-import {rn} from "/src/utils/numberUtils";
+import {restoreDefaultEvents} from "scripts/events";
+import {findCell} from "utils/graphUtils";
+import {clearMainTip} from "scripts/tooltips";
+import {rn} from "utils/numberUtils";
 
 export function editMarker(markerI) {
   if (customization) return;

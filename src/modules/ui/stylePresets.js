@@ -1,5 +1,6 @@
-import {tip} from "/src/scripts/tooltips";
-import {isJsonValid} from "/src/utils/stringUtils";
+import {tip} from "scripts/tooltips";
+import {isJsonValid} from "utils/stringUtils";
+import {byId} from "utils/shorthands";
 
 const systemPresets = [
   "default",
@@ -337,7 +338,7 @@ function addStylePreset() {
       return tip("You cannot overwrite default preset, please change the name", false, "error");
 
     const presetName = customPresetPrefix + desiredName;
-    applyOption(stylePreset, presetName, desiredName + " [custom]");
+    applyDropdownOption(byId("stylePreset"), presetName, desiredName + " [custom]");
     localStorage.setItem("presetStyle", presetName);
     localStorage.setItem(presetName, styleJSON);
 

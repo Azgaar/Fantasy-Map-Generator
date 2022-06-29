@@ -1,10 +1,10 @@
-import {restoreDefaultEvents} from "/src/scripts/events";
-import {findAll, findCell, getPackPolygon, isLand} from "/src/utils/graphUtils";
-import {tip, showMainTip, clearMainTip} from "/src/scripts/tooltips";
-import {getRandomColor} from "/src/utils/colorUtils";
-import {openURL} from "/src/utils/linkUtils";
-import {rn} from "/src/utils/numberUtils";
-import {si} from "/src/utils/unitUtils";
+import {restoreDefaultEvents} from "scripts/events";
+import {findAll, findCell, getPackPolygon, isLand} from "utils/graphUtils";
+import {tip, showMainTip, clearMainTip} from "scripts/tooltips";
+import {getRandomColor} from "utils/colorUtils";
+import {openURL} from "utils/linkUtils";
+import {rn} from "utils/numberUtils";
+import {si} from "utils/unitUtils";
 
 export function editBiomes() {
   if (customization) return;

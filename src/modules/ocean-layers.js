@@ -1,8 +1,8 @@
-import {TIME} from "/src/config/logging";
-import {clipPoly} from "/src/utils/lineUtils";
-import {rn} from "/src/utils/numberUtils";
-import {P} from "/src/utils/probabilityUtils";
-import {round} from "/src/utils/stringUtils";
+import {TIME} from "config/logging";
+import {clipPoly} from "utils/lineUtils";
+import {rn} from "utils/numberUtils";
+import {P} from "utils/probabilityUtils";
+import {round} from "utils/stringUtils";
 
 window.OceanLayers = (function () {
   let cells, vertices, pointsN, used;

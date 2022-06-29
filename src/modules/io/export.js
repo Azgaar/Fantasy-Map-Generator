@@ -1,10 +1,11 @@
-import {getGridPolygon} from "/src/utils/graphUtils";
-import {unique} from "/src/utils/arrayUtils";
-import {tip} from "/src/scripts/tooltips";
-import {getCoordinates} from "/src/utils/coordinateUtils";
-import {rn} from "/src/utils/numberUtils";
-import {getBase64} from "/src/utils/functionUtils";
-import {getColorScheme, getHeightColor} from "/src/utils/colorUtils";
+import {getGridPolygon} from "utils/graphUtils";
+import {unique} from "utils/arrayUtils";
+import {tip} from "scripts/tooltips";
+import {getCoordinates} from "utils/coordinateUtils";
+import {rn} from "utils/numberUtils";
+import {getBase64} from "utils/functionUtils";
+import {getColorScheme, getHeightColor} from "utils/colorUtils";
+import {getFriendlyHeight, getCellPopulation} from "utils/unitUtils";
 
 // download map as SVG
 async function saveSVG() {

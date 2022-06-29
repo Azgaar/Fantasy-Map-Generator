@@ -1,6 +1,6 @@
-import {rn} from "/src/utils/numberUtils";
-import {round} from "/src/utils/stringUtils";
-import {byId} from "/src/utils/shorthands";
+import {rn} from "utils/numberUtils";
+import {round} from "utils/stringUtils";
+import {byId} from "utils/shorthands";
 
 export function drawCoordinates() {
   coordinates.selectAll("*").remove(); // remove every time

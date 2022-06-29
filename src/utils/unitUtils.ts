@@ -1,23 +1,10 @@
-import {byId} from "./shorthands";
 import {rn} from "./numberUtils";
+import {findCell, findGridCell} from "./graphUtils";
+import {getInputNumber, getInputValue} from "./nodeUtils";
 
-// conver temperature from °C to other scales
-const temperatureConversionMap: Dict<(temp: number) => string> = {
-  "°C": temp => rn(temp) + "°C",
-  "°F": temp => rn((temp * 9) / 5 + 32) + "°F",
-  K: temp => rn(temp + 273.15) + "K",
-  "°R": temp => rn(((temp + 273.15) * 9) / 5) + "°R",
-  "°De": temp => rn(((100 - temp) * 3) / 2) + "°De",
-  "°N": temp => rn((temp * 33) / 100) + "°N",
-  "°Ré": temp => rn((temp * 4) / 5) + "°Ré",
-  "°Rø": temp => rn((temp * 21) / 40 + 7.5) + "°Rø"
-};
-
-export function convertTemperature(temp: number) {
-  const scale = (byId("temperatureScale") as HTMLInputElement)?.value || "°C";
-  const conversionFn = temperatureConversionMap[scale];
-  return conversionFn(temp);
-}
+// ***
+// SI
+// ***
 
 // corvert number to short string with SI postfix
 export function si(n: number) {
@@ -38,4 +25,99 @@ export function siToInteger(value: string) {
   if (metric === "M") return rn(number * 1e6);
   if (metric === "B") return rn(number * 1e9);
   return parseInt(value);
+}
+
+// ***
+// Temperature
+// ***
+
+// conver temperature from °C to other scales
+const temperatureConversionMap: Dict<(temp: number) => string> = {
+  "°C": temp => rn(temp) + "°C",
+  "°F": temp => rn((temp * 9) / 5 + 32) + "°F",
+  K: temp => rn(temp + 273.15) + "K",
+  "°R": temp => rn(((temp + 273.15) * 9) / 5) + "°R",
+  "°De": temp => rn(((100 - temp) * 3) / 2) + "°De",
+  "°N": temp => rn((temp * 33) / 100) + "°N",
+  "°Ré": temp => rn((temp * 4) / 5) + "°Ré",
+  "°Rø": temp => rn((temp * 21) / 40 + 7.5) + "°Rø"
+};
+
+export function convertTemperature(temp: number) {
+  const scale = getInputValue("temperatureScale") || "°C";
+  const conversionFn = temperatureConversionMap[scale];
+  return conversionFn(temp);
+}
+
+// ***
+// Elevation
+// ***
+
+// get user-friendly (real-world) height value from coordinates
+export function getFriendlyHeight([x, y]: [number, number]) {
+  // @ts-expect-error pack is a global variable
+  const packH = pack.cells.h[findCell(x, y)];
+  // @ts-expect-error grid is a global variable
+  const gridH = grid.cells.h[findGridCell(x, y, grid)];
+  const h = packH < 20 ? gridH : packH;
+  return getHeight(h);
+}
+
+const heightUnitMap: Dict<number> = {
+  m: 1, // meters
+  ft: 3.281, // feet
+  f: 0.5468 // fathoms
+};
+
+export function getHeight(h: number, abs: boolean = false) {
+  const unit = getInputValue("heightUnit");
+  const unitRatio = heightUnitMap[unit] || 1;
+  const exponent = getInputNumber("heightExponentInput");
+
+  let height = -990;
+  if (h >= 20) height = Math.pow(h - 18, exponent);
+  else if (h < 20 && h > 0) height = ((h - 20) / h) * 50;
+
+  if (abs) height = Math.abs(height);
+  return rn(height * unitRatio) + " " + unit;
+}
+
+// ***
+// Precipitation
+// ***
+
+function getFriendlyPrecipitation(prec: number) {
+  return prec * 100 + " mm";
+}
+
+// get user-friendly (real-world) precipitation value from map data
+export function getCellIdPrecipitation(gridCellId: number) {
+  // @ts-expect-error pack and grid are global variables
+  const prec = grid.cells.prec[pack.cells.g[gridCellId]];
+  return getFriendlyPrecipitation(prec);
+}
+
+// ***
+// Population
+// ***
+
+export function getCellPopulation(cellId: number) {
+  // @ts-expect-error pack and populationRate are global variables
+  const rural = pack.cells.pop[cellId] * populationRate;
+  // @ts-expect-error pack is a global variable
+  const burg = pack.cells.burg[cellId];
+  // @ts-expect-error pack and populationRate and urbanization are global variables
+  const urban = burg ? pack.burgs[burg].population * populationRate * urbanization : 0;
+  return [rural, urban];
+}
+
+// get user-friendly (real-world) population value from map data
+export function getFriendlyPopulation(cellId: number) {
+  const [rural, urban] = getCellPopulation(cellId);
+  return `${si(rural + urban)} (${si(rural)} rural, urban ${si(urban)})`;
+}
+
+export function getPopulationTip(cellId: number) {
+  const [rural, urban] = getCellPopulation(cellId);
+  return `Cell population: ${si(rural + urban)}; Rural: ${si(rural)}; Urban: ${si(urban)}`;
 }

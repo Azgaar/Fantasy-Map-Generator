@@ -1,6 +1,6 @@
-import {byId} from "/src/utils/shorthands";
-import {tip} from "/src/scripts/tooltips";
-import {capitalize} from "/src/utils/stringUtils";
+import {byId} from "utils/shorthands";
+import {tip} from "scripts/tooltips";
+import {capitalize} from "utils/stringUtils";
 
 appendStyleSheet();
 insertHtml();

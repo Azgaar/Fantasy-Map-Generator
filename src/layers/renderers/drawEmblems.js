@@ -1,6 +1,6 @@
 import {getProvincesVertices} from "./drawProvinces";
-import {minmax, rn} from "/src/utils/numberUtils";
-import {byId} from "/src/utils/shorthands";
+import {minmax, rn} from "utils/numberUtils";
+import {byId} from "utils/shorthands";
 
 export function drawEmblems() {
   const {states, provinces, burgs} = pack;

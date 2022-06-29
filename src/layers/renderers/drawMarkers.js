@@ -1,4 +1,4 @@
-import {rn} from "/src/utils/numberUtils";
+import {rn} from "utils/numberUtils";
 
 const pinShapeMap = {
   bubble: (stroke, fill) =>

@@ -1,8 +1,8 @@
-import {TIME, WARN} from "/src/config/logging";
-import {last} from "/src/utils/arrayUtils";
-import {rn} from "/src/utils/numberUtils";
-import {round} from "/src/utils/stringUtils";
-import {rw, each} from "/src/utils/probabilityUtils";
+import {TIME, WARN} from "config/logging";
+import {last} from "utils/arrayUtils";
+import {rn} from "utils/numberUtils";
+import {round} from "utils/stringUtils";
+import {rw, each} from "utils/probabilityUtils";
 
 window.Rivers = (function () {
   const generate = function (allowErosion = true) {

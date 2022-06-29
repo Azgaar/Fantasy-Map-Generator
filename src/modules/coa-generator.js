@@ -1,4 +1,4 @@
-import {P, rw} from "/src/utils/probabilityUtils";
+import {P, rw} from "utils/probabilityUtils";
 
 window.COA = (function () {
   const tinctures = {

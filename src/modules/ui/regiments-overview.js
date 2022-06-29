@@ -1,9 +1,9 @@
-import {findCell} from "/src/utils/graphUtils";
-import {last} from "/src/utils/arrayUtils";
-import {tip, clearMainTip} from "/src/scripts/tooltips";
-import {rn} from "/src/utils/numberUtils";
-import {capitalize} from "/src/utils/stringUtils";
-import {si} from "/src/utils/unitUtils";
+import {findCell} from "utils/graphUtils";
+import {last} from "utils/arrayUtils";
+import {tip, clearMainTip} from "scripts/tooltips";
+import {rn} from "utils/numberUtils";
+import {capitalize} from "utils/stringUtils";
+import {si} from "utils/unitUtils";
 
 export function overviewRegiments(state) {
   if (customization) return;

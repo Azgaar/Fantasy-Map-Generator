@@ -1,6 +1,6 @@
-import {getPackPolygon} from "/src/utils/graphUtils";
-import {rn, minmax} from "/src/utils/numberUtils";
-import {rand} from "/src/utils/probabilityUtils";
+import {getPackPolygon} from "utils/graphUtils";
+import {rn, minmax} from "utils/numberUtils";
+import {rand} from "utils/probabilityUtils";
 
 window.ReliefIcons = (function () {
   const ReliefIcons = function () {

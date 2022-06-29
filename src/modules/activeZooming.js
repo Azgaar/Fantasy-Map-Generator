@@ -1,5 +1,5 @@
-import {rn} from "/src/utils/numberUtils";
-import {layerIsOn, renderLayer} from "/src/layers";
+import {rn} from "utils/numberUtils";
+import {layerIsOn, renderLayer} from "layers";
 import {drawScaleBar} from "/src/modules/measurers";
 
 export function handleZoom(isScaleChanged, isPositionChanged) {

@@ -1,8 +1,8 @@
-import {findGridCell, getGridPolygon} from "/src/utils/graphUtils";
-import {tip, clearMainTip} from "/src/scripts/tooltips";
-import {rn} from "/src/utils/numberUtils";
-import {ra} from "/src/utils/probabilityUtils";
-import {parseTransform} from "/src/utils/stringUtils";
+import {findGridCell, getGridPolygon} from "utils/graphUtils";
+import {tip, clearMainTip} from "scripts/tooltips";
+import {rn} from "utils/numberUtils";
+import {ra} from "utils/probabilityUtils";
+import {parseTransform} from "utils/stringUtils";
 
 export function editIce() {
   if (customization) return;

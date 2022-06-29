@@ -1,12 +1,12 @@
-import {restoreDefaultEvents} from "/src/scripts/events";
-import {findAll, findCell, getPackPolygon, isLand} from "/src/utils/graphUtils";
-import {byId} from "/src/utils/shorthands";
-import {tip, showMainTip, clearMainTip} from "/src/scripts/tooltips";
-import {getRandomColor, getMixedColor} from "/src/utils/colorUtils";
-import {rn} from "/src/utils/numberUtils";
-import {rand, P} from "/src/utils/probabilityUtils";
-import {si} from "/src/utils/unitUtils";
-import {getAdjective} from "/src/utils/languageUtils";
+import {restoreDefaultEvents} from "scripts/events";
+import {findAll, findCell, getPackPolygon, isLand} from "utils/graphUtils";
+import {byId} from "utils/shorthands";
+import {tip, showMainTip, clearMainTip} from "scripts/tooltips";
+import {getRandomColor, getMixedColor} from "utils/colorUtils";
+import {rn} from "utils/numberUtils";
+import {rand, P} from "utils/probabilityUtils";
+import {si} from "utils/unitUtils";
+import {getAdjective} from "utils/languageUtils";
 
 const $body = insertEditorHtml();
 addListeners();
@@ -403,18 +403,21 @@ function stateChangeFill(el) {
 }
 
 function editStateName(state) {
+  const $stateNameEditorCustomForm = byId("stateNameEditorCustomForm");
+  const $stateNameEditorSelectForm = byId("stateNameEditorSelectForm");
+
   // reset input value and close add mode
-  stateNameEditorCustomForm.value = "";
-  const addModeActive = stateNameEditorCustomForm.style.display === "inline-block";
+  $stateNameEditorCustomForm.value = "";
+  const addModeActive = $stateNameEditorCustomForm.style.display === "inline-block";
   if (addModeActive) {
-    stateNameEditorCustomForm.style.display = "none";
-    stateNameEditorSelectForm.style.display = "inline-block";
+    $stateNameEditorCustomForm.style.display = "none";
+    $stateNameEditorSelectForm.style.display = "inline-block";
   }
 
   const s = pack.states[state];
   byId("stateNameEditor").dataset.state = state;
   byId("stateNameEditorShort").value = s.name || "";
-  applyOption(stateNameEditorSelectForm, s.formName);
+  applyDropdownOption($stateNameEditorSelectForm, s.formName);
   byId("stateNameEditorFull").value = s.fullName || "";
 
   $("#stateNameEditor").dialog({
@@ -456,11 +459,15 @@ function editStateName(state) {
   }
 
   function addCustomForm() {
-    const value = stateNameEditorCustomForm.value;
-    const addModeActive = stateNameEditorCustomForm.style.display === "inline-block";
-    stateNameEditorCustomForm.style.display = addModeActive ? "none" : "inline-block";
-    stateNameEditorSelectForm.style.display = addModeActive ? "inline-block" : "none";
-    if (value && addModeActive) applyOption(stateNameEditorSelectForm, value);
+    const $stateNameEditorCustomForm = byId("stateNameEditorCustomForm");
+    const $stateNameEditorSelectForm = byId("stateNameEditorSelectForm");
+
+    const value = $stateNameEditorCustomForm.value;
+    const addModeActive = $stateNameEditorCustomForm.style.display === "inline-block";
+    $stateNameEditorCustomForm.style.display = addModeActive ? "none" : "inline-block";
+    $stateNameEditorSelectForm.style.display = addModeActive ? "inline-block" : "none";
+
+    if (value && addModeActive) applyDropdownOption($stateNameEditorSelectForm, value);
     stateNameEditorCustomForm.value = "";
   }
 

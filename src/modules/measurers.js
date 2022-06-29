@@ -1,9 +1,9 @@
-import {findCell} from "/src/utils/graphUtils";
-import {last} from "/src/utils/arrayUtils";
-import {getSegmentId} from "/src/utils/lineUtils";
-import {rn} from "/src/utils/numberUtils";
-import {round, parseTransform} from "/src/utils/stringUtils";
-import {si} from "/src/utils/unitUtils";
+import {findCell} from "utils/graphUtils";
+import {last} from "utils/arrayUtils";
+import {getSegmentId} from "utils/lineUtils";
+import {rn} from "utils/numberUtils";
+import {round, parseTransform} from "utils/stringUtils";
+import {si} from "utils/unitUtils";
 
 export class Rulers {
   constructor() {

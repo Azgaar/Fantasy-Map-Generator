@@ -1,11 +1,10 @@
-import {TIME} from "/src/config/logging";
-import {getFriendlyHeight} from "./ui/general";
-import {last} from "/src/utils/arrayUtils";
-import {rn} from "/src/utils/numberUtils";
-import {rand, P, gauss, ra, rw} from "/src/utils/probabilityUtils";
-import {capitalize} from "/src/utils/stringUtils";
-import {convertTemperature} from "/src/utils/unitUtils";
-import {getAdjective, list} from "/src/utils/languageUtils";
+import {TIME} from "config/logging";
+import {last} from "utils/arrayUtils";
+import {rn} from "utils/numberUtils";
+import {rand, P, gauss, ra, rw} from "utils/probabilityUtils";
+import {capitalize} from "utils/stringUtils";
+import {convertTemperature, getFriendlyHeight} from "utils/unitUtils";
+import {getAdjective} from "utils/languageUtils";
 
 window.Markers = (function () {
   let config = [];

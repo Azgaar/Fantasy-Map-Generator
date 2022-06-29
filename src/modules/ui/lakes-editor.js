@@ -1,9 +1,9 @@
-import {getPackPolygon} from "/src/utils/graphUtils";
-import {tip} from "/src/scripts/tooltips";
-import {rn} from "/src/utils/numberUtils";
-import {rand} from "/src/utils/probabilityUtils";
-import {round} from "/src/utils/stringUtils";
-import {si} from "/src/utils/unitUtils";
+import {getPackPolygon} from "utils/graphUtils";
+import {tip} from "scripts/tooltips";
+import {rn} from "utils/numberUtils";
+import {rand} from "utils/probabilityUtils";
+import {round} from "utils/stringUtils";
+import {si, getHeight} from "utils/unitUtils";
 
 export function editLake() {
   if (customization) return;
@@ -61,8 +61,8 @@ export function editLake() {
     const heights = lakeCells.map(i => cells.h[i]);
 
     document.getElementById("lakeElevation").value = getHeight(l.height);
-    document.getElementById("lakeAvarageDepth").value = getHeight(d3.mean(heights), "abs");
-    document.getElementById("lakeMaxDepth").value = getHeight(d3.min(heights), "abs");
+    document.getElementById("lakeAvarageDepth").value = getHeight(d3.mean(heights), true);
+    document.getElementById("lakeMaxDepth").value = getHeight(d3.min(heights), true);
 
     document.getElementById("lakeFlux").value = l.flux;
     document.getElementById("lakeEvaporation").value = l.evaporation;

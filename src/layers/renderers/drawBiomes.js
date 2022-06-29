@@ -1,4 +1,4 @@
-import {clipPoly} from "/src/utils/lineUtils";
+import {clipPoly} from "utils/lineUtils";
 
 export function drawBiomes() {
   TIME && console.time("drawBiomes");

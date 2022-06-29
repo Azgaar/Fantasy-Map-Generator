@@ -1,6 +1,6 @@
-import {tip} from "/src/scripts/tooltips";
-import {getBase64} from "/src/utils/functionUtils";
-import {isCtrlClick} from "/src/utils/keyboardUtils";
+import {tip} from "scripts/tooltips";
+import {getBase64} from "utils/functionUtils";
+import {isCtrlClick} from "utils/keyboardUtils";
 import {turnLayerButtonOn, turnLayerButtonOff, layerIsOn} from "./utils";
 import {renderLayer} from "./renderers";
 

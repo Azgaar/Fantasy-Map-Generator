@@ -1,10 +1,10 @@
-import {isWater} from "/src/utils/graphUtils";
-import {tip} from "/src/scripts/tooltips";
-import {byId} from "/src/utils/shorthands";
-import {rn} from "/src/utils/numberUtils";
-import {capitalize} from "/src/utils/stringUtils";
-import {si, convertTemperature} from "/src/utils/unitUtils";
-import {rollups} from "/src/utils/functionUtils";
+import {isWater} from "utils/graphUtils";
+import {tip} from "scripts/tooltips";
+import {byId} from "utils/shorthands";
+import {rn} from "utils/numberUtils";
+import {capitalize} from "utils/stringUtils";
+import {si, convertTemperature, getFriendlyPrecipitation} from "utils/unitUtils";
+import {rollups} from "utils/functionUtils";
 
 const entitiesMap = {
   states: {
@@ -157,8 +157,8 @@ const quantizationMap = {
     label: "Annual mean precipitation",
     quantize: cellId => grid.cells.prec[pack.cells.g[cellId]],
     aggregate: values => rn(d3.mean(values)),
-    formatTicks: value => getPrecipitation(rn(value)),
-    stringify: value => getPrecipitation(rn(value)),
+    formatTicks: value => getFriendlyPrecipitation(rn(value)),
+    stringify: value => getFriendlyPrecipitation(rn(value)),
     stackable: false,
     landOnly: true
   },
@@ -166,8 +166,8 @@ const quantizationMap = {
     label: "Mean annual maximum precipitation",
     quantize: cellId => grid.cells.prec[pack.cells.g[cellId]],
     aggregate: values => rn(d3.max(values)),
-    formatTicks: value => getPrecipitation(rn(value)),
-    stringify: value => getPrecipitation(rn(value)),
+    formatTicks: value => getFriendlyPrecipitation(rn(value)),
+    stringify: value => getFriendlyPrecipitation(rn(value)),
     stackable: false,
     landOnly: true
   },
@@ -175,8 +175,8 @@ const quantizationMap = {
     label: "Mean annual minimum precipitation",
     quantize: cellId => grid.cells.prec[pack.cells.g[cellId]],
     aggregate: values => rn(d3.min(values)),
-    formatTicks: value => getPrecipitation(rn(value)),
-    stringify: value => getPrecipitation(rn(value)),
+    formatTicks: value => getFriendlyPrecipitation(rn(value)),
+    stringify: value => getFriendlyPrecipitation(rn(value)),
     stackable: false,
     landOnly: true
   },

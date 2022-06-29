@@ -1,8 +1,8 @@
-import {clearMainTip} from "/src/scripts/tooltips";
-import {tip} from "/src/scripts/tooltips";
-import {openURL} from "/src/utils/linkUtils";
-import {rn} from "/src/utils/numberUtils";
-import {parseTransform} from "/src/utils/stringUtils";
+import {clearMainTip} from "scripts/tooltips";
+import {tip} from "scripts/tooltips";
+import {openURL} from "utils/linkUtils";
+import {rn} from "utils/numberUtils";
+import {parseTransform} from "utils/stringUtils";
 
 export function editEmblem(type, id, el) {
   if (customization) return;
@@ -179,7 +179,59 @@ export function editEmblem(type, id, el) {
   }
 
   function showArea() {
-    highlightEmblemElement(type, el);
+    const i = el.i;
+    const cells = pack.cells;
+    const animation = d3.transition().duration(1000).ease(d3.easeSinIn);
+
+    if (type === "burg") {
+      const {x, y} = el;
+      debug
+        .append("circle")
+        .attr("cx", x)
+        .attr("cy", y)
+        .attr("r", 0)
+        .attr("fill", "none")
+        .attr("stroke", "#d0240f")
+        .attr("stroke-width", 1)
+        .attr("opacity", 1)
+        .transition(animation)
+        .attr("r", 20)
+        .attr("opacity", 0.1)
+        .attr("stroke-width", 0)
+        .remove();
+      return;
+    }
+
+    const [x, y] = el.pole || pack.cells.p[el.center];
+    const obj = type === "state" ? cells.state : cells.province;
+    const borderCells = cells.i.filter(id => obj[id] === i && cells.c[id].some(n => obj[n] !== i));
+    const data = Array.from(borderCells)
+      .filter((c, i) => !(i % 2))
+      .map(i => cells.p[i])
+      .map(i => [i[0], i[1], Math.hypot(i[0] - x, i[1] - y)]);
+
+    debug
+      .selectAll("line")
+      .data(data)
+      .enter()
+      .append("line")
+      .attr("x1", x)
+      .attr("y1", y)
+      .attr("x2", d => d[0])
+      .attr("y2", d => d[1])
+      .attr("stroke", "#d0240f")
+      .attr("stroke-width", 0.5)
+      .attr("opacity", 0.2)
+      .attr("stroke-dashoffset", d => d[2])
+      .attr("stroke-dasharray", d => d[2])
+      .transition(animation)
+      .attr("stroke-dashoffset", 0)
+      .attr("opacity", 1)
+      .transition(animation)
+      .delay(1000)
+      .attr("stroke-dashoffset", d => d[2])
+      .attr("opacity", 0)
+      .remove();
   }
 
   function changeSize() {

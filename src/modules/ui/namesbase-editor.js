@@ -1,7 +1,7 @@
-import {unique} from "/src/utils/arrayUtils";
-import {tip} from "/src/scripts/tooltips";
-import {openURL} from "/src/utils/linkUtils";
-import {rn} from "/src/utils/numberUtils";
+import {unique} from "utils/arrayUtils";
+import {tip} from "scripts/tooltips";
+import {openURL} from "utils/linkUtils";
+import {rn} from "utils/numberUtils";
 
 export function editNamesbase() {
   if (customization) return;

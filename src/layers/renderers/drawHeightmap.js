@@ -1,4 +1,4 @@
-import {getColorScheme, getHeightColor} from "/src/utils/colorUtils";
+import {getColorScheme, getHeightColor} from "utils/colorUtils";
 
 export function drawHeightmap() {
   terrs.selectAll("*").remove();

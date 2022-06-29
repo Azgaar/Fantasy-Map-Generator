@@ -1,9 +1,10 @@
-import {findCell} from "/src/utils/graphUtils";
-import {tip, clearMainTip} from "/src/scripts/tooltips";
-import {rn} from "/src/utils/numberUtils";
-import {prompt} from "/src/scripts/prompt";
-import {rand} from "/src/utils/probabilityUtils";
-import {parseTransform} from "/src/utils/stringUtils";
+import {findCell} from "utils/graphUtils";
+import {tip, clearMainTip} from "scripts/tooltips";
+import {rn} from "utils/numberUtils";
+import {prompt} from "scripts/prompt";
+import {rand} from "utils/probabilityUtils";
+import {parseTransform} from "utils/stringUtils";
+import {getHeight} from "utils/unitUtils";
 
 export function editBurg(id) {
   if (customization) return;

@@ -1,8 +1,10 @@
-import {dragLegendBox} from "../modules/legend";
-import {findCell, findGridCell} from "../utils/graphUtils";
-import {tip, showMainTip} from "./tooltips";
-import {si, convertTemperature} from "../utils/unitUtils";
-import {debounce} from "../utils/functionUtils";
+import {dragLegendBox} from "modules/legend";
+import {debounce} from "utils/functionUtils";
+import {findCell, findGridCell} from "utils/graphUtils";
+import {byId} from "utils/shorthands";
+import {convertTemperature, si, getFriendlyHeight, getCellIdPrecipitation, getPopulationTip} from "utils/unitUtils";
+import {showMainTip, tip} from "./tooltips";
+import {updateCellInfo} from "modules/ui/cell-info";
 
 export function restoreDefaultEvents() {
   Zoom.setZoomBehavior();
@@ -59,13 +61,13 @@ function showNotes(event) {
 
   const note = notes.find(note => note.id === id);
   if (note !== undefined && note.legend !== "") {
-    document.getElementById("notes").style.display = "block";
-    document.getElementById("notesHeader").innerHTML = note.name;
-    document.getElementById("notesBody").innerHTML = note.legend;
+    byId("notes").style.display = "block";
+    byId("notesHeader").innerHTML = note.name;
+    byId("notesBody").innerHTML = note.legend;
   } else if (!options.pinNotes && !markerEditor?.offsetParent) {
-    document.getElementById("notes").style.display = "none";
-    document.getElementById("notesHeader").innerHTML = "";
-    document.getElementById("notesBody").innerHTML = "";
+    byId("notes").style.display = "none";
+    byId("notesHeader").innerHTML = "";
+    byId("notesBody").innerHTML = "";
   }
 }
 
@@ -90,13 +92,12 @@ function showMapTooltip(point, event, packCellId, gridCellId) {
         ? [pack.provinces, "province"]
         : [pack.states, "state"];
     const i = +event.target.dataset.i;
-    if (event.shiftKey) highlightEmblemElement(type, g[i]);
 
     d3.select(event.target).raise();
     d3.select(parent).raise();
 
     const name = g[i].fullName || g[i].name;
-    tip(`${name} ${type} emblem. Click to edit. Hold Shift to show associated area or place`);
+    tip(`${name} ${type} emblem. Click to edit`);
     return;
   }
 
@@ -161,7 +162,7 @@ function showMapTooltip(point, event, packCellId, gridCellId) {
   if (group === "ice") return tip("Click to edit the Ice");
 
   // covering elements
-  if (layerIsOn("togglePrec") && land) tip("Annual Precipitation: " + getFriendlyPrecipitation(packCellId));
+  if (layerIsOn("togglePrec") && land) tip("Annual Precipitation: " + getCellIdPrecipitation(packCellId));
   else if (layerIsOn("togglePopulation")) tip(getPopulationTip(packCellId));
   else if (layerIsOn("toggleTemp")) tip("Temperature: " + convertTemperature(grid.cells.temp[gridCellId]));
   else if (layerIsOn("toggleBiomes") && pack.cells.biome[packCellId]) {
@@ -180,13 +181,23 @@ function showMapTooltip(point, event, packCellId, gridCellId) {
     const province = pack.cells.province[packCellId];
     const prov = province ? pack.provinces[province].fullName + ", " : "";
     tip(prov + stateName);
-    if (document.getElementById("statesEditor")?.offsetParent) highlightEditorLine(statesEditor, state);
-    if (document.getElementById("diplomacyEditor")?.offsetParent) highlightEditorLine(diplomacyEditor, state);
-    if (document.getElementById("militaryOverview")?.offsetParent) highlightEditorLine(militaryOverview, state);
-    if (document.getElementById("provincesEditor")?.offsetParent) highlightEditorLine(provincesEditor, province);
+    if (byId("statesEditor")?.offsetParent) highlightEditorLine(statesEditor, state);
+    if (byId("diplomacyEditor")?.offsetParent) highlightEditorLine(diplomacyEditor, state);
+    if (byId("militaryOverview")?.offsetParent) highlightEditorLine(militaryOverview, state);
+    if (byId("provincesEditor")?.offsetParent) highlightEditorLine(provincesEditor, province);
   } else if (layerIsOn("toggleCultures") && pack.cells.culture[packCellId]) {
     const culture = pack.cells.culture[packCellId];
     tip("Culture: " + pack.cultures[culture].name);
-    if (document.getElementById("culturesEditor")?.offsetParent) highlightEditorLine(culturesEditor, culture);
+    if (byId("culturesEditor")?.offsetParent) highlightEditorLine(culturesEditor, culture);
   } else if (layerIsOn("toggleHeight")) tip("Height: " + getFriendlyHeight(point));
+}
+
+function highlightEditorLine(editor, id, timeout = 10000) {
+  Array.from(editor.getElementsByClassName("states hovered")).forEach(el => el.classList.remove("hovered")); // clear all hovered
+  const hovered = Array.from(editor.querySelectorAll("div")).find(el => el.dataset.id == id);
+  if (hovered) hovered.classList.add("hovered"); // add hovered class
+  if (timeout)
+    setTimeout(() => {
+      hovered && hovered.classList.remove("hovered");
+    }, timeout);
 }

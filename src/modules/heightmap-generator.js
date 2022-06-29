@@ -1,10 +1,10 @@
 import {ERROR} from "../config/logging";
 import {lim, minmax} from "../utils/numberUtils";
-import {TIME} from "/src/config/logging";
-import {createTypedArray} from "/src/utils/arrayUtils";
-import {findGridCell} from "/src/utils/graphUtils";
-import {getNumberInRange, P, rand} from "/src/utils/probabilityUtils";
-import {byId} from "/src/utils/shorthands";
+import {TIME} from "config/logging";
+import {createTypedArray} from "utils/arrayUtils";
+import {findGridCell} from "utils/graphUtils";
+import {getNumberInRange, P, rand} from "utils/probabilityUtils";
+import {byId} from "utils/shorthands";
 
 window.HeightmapGenerator = (function () {
   let grid = null;

@@ -1,14 +1,15 @@
-import {turnLayerButtonOff, turnLayerButtonOn, updatePresetInput} from "/src/layers";
-import {restoreDefaultEvents} from "/src/scripts/events";
-import {prompt} from "/src/scripts/prompt";
-import {clearMainTip, showMainTip, tip} from "/src/scripts/tooltips";
-import {createTypedArray, last} from "/src/utils/arrayUtils";
-import {getColorScheme, getHeightColor} from "/src/utils/colorUtils";
-import {throttle} from "/src/utils/functionUtils";
-import {findCell, findGridAll, findGridCell, getGridPolygon, getPackPolygon} from "/src/utils/graphUtils";
-import {link} from "/src/utils/linkUtils";
-import {lim, minmax, rn} from "/src/utils/numberUtils";
-import {byId} from "/src/utils/shorthands";
+import {createTypedArray, last} from "utils/arrayUtils";
+import {getColorScheme, getHeightColor} from "utils/colorUtils";
+import {throttle} from "utils/functionUtils";
+import {findCell, findGridAll, findGridCell, getGridPolygon, getPackPolygon} from "utils/graphUtils";
+import {link} from "utils/linkUtils";
+import {lim, minmax, rn} from "utils/numberUtils";
+import {byId} from "utils/shorthands";
+import {getHeight} from "utils/unitUtils";
+import {turnLayerButtonOff, turnLayerButtonOn, updatePresetInput} from "layers";
+import {restoreDefaultEvents} from "scripts/events";
+import {prompt} from "scripts/prompt";
+import {clearMainTip, showMainTip, tip} from "scripts/tooltips";
 
 export function editHeightmap(options) {
   const {mode, tool} = options || {};
@@ -141,21 +142,6 @@ export function editHeightmap(options) {
     const pressed = byId("brushesButtons").querySelector("button.pressed");
     if (!pressed) return;
     moveCircle(x, y, brushRadius.valueAsNumber, "#333");
-  }
-
-  // get user-friendly (real-world) height value from map data
-  function getHeight(h) {
-    const unit = heightUnit.value;
-    let unitRatio = 3.281; // default calculations are in feet
-    if (unit === "m") unitRatio = 1;
-    // if meter
-    else if (unit === "f") unitRatio = 0.5468; // if fathom
-
-    let height = -990;
-    if (h >= 20) height = Math.pow(h - 18, +heightExponentInput.value);
-    else if (h < 20 && h > 0) height = ((h - 20) / h) * 50;
-
-    return rn(height * unitRatio) + " " + unit;
   }
 
   // Exit customization mode

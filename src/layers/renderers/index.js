@@ -1,4 +1,4 @@
-import {TIME} from "/src/config/logging";
+import {TIME} from "config/logging";
 import {drawBiomes} from "./drawBiomes";
 import {drawBorders} from "./drawBorders";
 import {drawCells} from "./drawCells";

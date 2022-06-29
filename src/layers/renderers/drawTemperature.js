@@ -1,4 +1,4 @@
-import {convertTemperature} from "/src/utils/unitUtils";
+import {convertTemperature} from "utils/unitUtils";
 
 export function drawTemperature() {
   temperature.selectAll("*").remove();

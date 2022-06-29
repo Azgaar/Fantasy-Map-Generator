@@ -1,13 +1,13 @@
-import {restoreDefaultEvents} from "/src/scripts/events";
-import {findCell} from "/src/utils/graphUtils";
-import {last} from "/src/utils/arrayUtils";
-import {tip, clearMainTip} from "/src/scripts/tooltips";
-import {rn} from "/src/utils/numberUtils";
-import {isCtrlClick} from "/src/utils/keyboardUtils";
-import {prompt} from "/src/scripts/prompt";
-import {getNextId} from "/src/utils/nodeUtils";
-import {P, generateSeed} from "/src/utils/probabilityUtils";
-import {turnLayerButtonOn} from "/src/layers";
+import {restoreDefaultEvents} from "scripts/events";
+import {findCell} from "utils/graphUtils";
+import {last} from "utils/arrayUtils";
+import {tip, clearMainTip} from "scripts/tooltips";
+import {rn} from "utils/numberUtils";
+import {isCtrlClick} from "utils/keyboardUtils";
+import {prompt} from "scripts/prompt";
+import {getNextId} from "utils/nodeUtils";
+import {P, generateSeed} from "utils/probabilityUtils";
+import {turnLayerButtonOn} from "layers";
 
 toolsContent.addEventListener("click", function (event) {
   if (customization) return tip("Please exit the customization mode first", false, "warning");

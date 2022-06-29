@@ -1,12 +1,12 @@
-import {updatePresetInput} from "/src/layers";
-import {restoreDefaultEvents} from "/src/scripts/events";
-import {ldb} from "/src/scripts/indexedDB";
-import {tip} from "/src/scripts/tooltips";
-import {last} from "/src/utils/arrayUtils";
-import {parseError} from "/src/utils/errorUtils";
-import {calculateVoronoi, findCell} from "/src/utils/graphUtils";
-import {link} from "/src/utils/linkUtils";
-import {minmax, rn} from "/src/utils/numberUtils";
+import {updatePresetInput} from "layers";
+import {restoreDefaultEvents} from "scripts/events";
+import {ldb} from "scripts/indexedDB";
+import {tip} from "scripts/tooltips";
+import {last} from "utils/arrayUtils";
+import {parseError} from "utils/errorUtils";
+import {calculateVoronoi, findCell} from "utils/graphUtils";
+import {link} from "utils/linkUtils";
+import {minmax, rn} from "utils/numberUtils";
 
 function quickLoad() {
   ldb.get("lastMap", blob => {
@@ -211,10 +211,10 @@ async function parseLoadedData(data) {
 
     void (function parseSettings() {
       const settings = data[1].split("|");
-      if (settings[0]) applyOption(distanceUnitInput, settings[0]);
+      if (settings[0]) applyDropdownOption(byId("distanceUnitInput"), settings[0]);
       if (settings[1]) distanceScale = distanceScaleInput.value = distanceScaleOutput.value = settings[1];
       if (settings[2]) areaUnit.value = settings[2];
-      if (settings[3]) applyOption(heightUnit, settings[3]);
+      if (settings[3]) applyDropdownOption(byId("heightUnit"), settings[3]);
       if (settings[4]) heightExponentInput.value = heightExponentOutput.value = settings[4];
       if (settings[5]) temperatureScale.value = settings[5];
       if (settings[6]) barSizeInput.value = barSizeOutput.value = settings[6];

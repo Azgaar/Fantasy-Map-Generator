@@ -1,10 +1,10 @@
-import {applyOption} from "./general";
-import {lock, locked} from "/src/scripts/options/lock";
-import {clearMainTip, tip} from "/src/scripts/tooltips";
-import {last} from "/src/utils/arrayUtils";
-import {minmax, rn} from "/src/utils/numberUtils";
-import {gauss, P, rand, rw} from "/src/utils/probabilityUtils";
-import {byId, stored} from "/src/utils/shorthands";
+import {lock, locked} from "scripts/options/lock";
+import {clearMainTip, tip} from "scripts/tooltips";
+import {last} from "utils/arrayUtils";
+import {applyDropdownOption} from "utils/nodeUtils";
+import {minmax, rn} from "utils/numberUtils";
+import {gauss, P, rand, rw} from "utils/probabilityUtils";
+import {byId, stored} from "utils/shorthands";
 
 $("#optionsContainer").draggable({handle: ".drag-trigger", snap: "svg", snapMode: "both"});
 $("#exitCustomization").draggable({handle: "div"});
@@ -165,6 +165,19 @@ function mapSizeInputChange() {
   changeMapSize();
   localStorage.setItem("mapWidth", mapWidthInput.value);
   localStorage.setItem("mapHeight", mapHeightInput.value);
+}
+
+export function addResizeListener() {
+  // fit full-screen map if window is resized
+  window.addEventListener("resize", function () {
+    if (stored("mapWidth") && stored("mapHeight")) return;
+
+    const {innerWidth, innerHeight} = window;
+    byId("mapWidthInput").value = innerWidth;
+    byId("mapHeightInput").value = innerHeight;
+
+    changeMapSize();
+  });
 }
 
 // change svg size on manual size change or window resize, do not change graph size
@@ -475,11 +488,11 @@ export function applyStoredOptions() {
   const heightmapId = stored("template");
   if (heightmapId) {
     const name = heightmapTemplates[heightmapId]?.name || precreatedHeightmaps[heightmapId]?.name || heightmapId;
-    applyOption(byId("templateInput"), heightmapId, name);
+    applyDropdownOption(byId("templateInput"), heightmapId, name);
   }
 
-  if (stored("distanceUnit")) applyOption(distanceUnitInput, stored("distanceUnit"));
-  if (stored("heightUnit")) applyOption(heightUnit, stored("heightUnit"));
+  if (stored("distanceUnit")) applyDropdownOption(byId("distanceUnitInput"), stored("distanceUnit"));
+  if (stored("heightUnit")) applyDropdownOption(byId("heightUnit"), stored("heightUnit"));
 
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
@@ -494,7 +507,7 @@ export function applyStoredOptions() {
     lock(key);
 
     // add saved style presets to options
-    if (key.slice(0, 5) === "style") applyOption(stylePreset, key, key.slice(5));
+    if (key.slice(0, 5) === "style") applyDropdownOption(byId("stylePreset"), key, key.slice(5));
   }
 
   if (stored("winds"))
@@ -572,7 +585,7 @@ function randomizeHeightmapTemplate() {
   }
   const template = rw(templates);
   const name = heightmapTemplates[template].name;
-  applyOption(byId("templateInput"), template, name);
+  applyDropdownOption(byId("templateInput"), template, name);
 }
 
 // select culture set pseudo-randomly

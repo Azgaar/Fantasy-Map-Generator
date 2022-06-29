@@ -1,4 +1,4 @@
-import {getGridPolygon} from "/src/utils/graphUtils";
+import {getGridPolygon} from "utils/graphUtils";
 
 export function drawCells() {
   cells.selectAll("path").remove();

@@ -1,5 +1,5 @@
 import {rn} from "../utils/numberUtils";
-import {parseTransform} from "/src/utils/stringUtils";
+import {parseTransform} from "utils/stringUtils";
 
 export function drawLegend(name, data) {
   legend.selectAll("*").remove(); // fully redraw every time

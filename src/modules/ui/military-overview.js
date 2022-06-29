@@ -1,8 +1,8 @@
-import {tip} from "/src/scripts/tooltips";
-import {wiki} from "/src/utils/linkUtils";
-import {rn} from "/src/utils/numberUtils";
-import {capitalize} from "/src/utils/stringUtils";
-import {si} from "/src/utils/unitUtils";
+import {tip} from "scripts/tooltips";
+import {wiki} from "utils/linkUtils";
+import {rn} from "utils/numberUtils";
+import {capitalize} from "utils/stringUtils";
+import {si} from "utils/unitUtils";
 
 export function overviewMilitary() {
   if (customization) return;

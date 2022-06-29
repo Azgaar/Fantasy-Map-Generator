@@ -1,6 +1,6 @@
-import {tip} from "/src/scripts/tooltips";
-import {rn} from "/src/utils/numberUtils";
-import {throttle} from "/src/utils/functionUtils";
+import {tip} from "scripts/tooltips";
+import {rn} from "utils/numberUtils";
+import {throttle} from "utils/functionUtils";
 
 window.ThreeD = (function () {
   const options = {

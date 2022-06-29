@@ -1,10 +1,10 @@
-import {restoreDefaultEvents} from "/src/scripts/events";
-import {findAll, findCell, getPackPolygon} from "/src/utils/graphUtils";
-import {unique} from "/src/utils/arrayUtils";
-import {tip, showMainTip, clearMainTip} from "/src/scripts/tooltips";
-import {rn} from "/src/utils/numberUtils";
-import {getNextId} from "/src/utils/nodeUtils";
-import {si} from "/src/utils/unitUtils";
+import {restoreDefaultEvents} from "scripts/events";
+import {findAll, findCell, getPackPolygon} from "utils/graphUtils";
+import {unique} from "utils/arrayUtils";
+import {tip, showMainTip, clearMainTip} from "scripts/tooltips";
+import {rn} from "utils/numberUtils";
+import {getNextId} from "utils/nodeUtils";
+import {si} from "utils/unitUtils";
 
 export function editZones() {
   closeDialogs();
