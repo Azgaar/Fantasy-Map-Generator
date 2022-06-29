@@ -30,6 +30,7 @@ import {minmax, normalize, rn} from "./utils/numberUtils";
 import {gauss, generateSeed, P, ra, rand, rw} from "./utils/probabilityUtils";
 import {byId} from "./utils/shorthands";
 import {round} from "./utils/stringUtils";
+import {heightmapTemplates} from "config/heightmap-templates";
 
 addGlobalListeners();
 

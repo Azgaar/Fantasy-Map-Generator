@@ -1,3 +1,4 @@
+import {heightmapTemplates} from "config/heightmap-templates";
 import {createTypedArray, last} from "utils/arrayUtils";
 import {getColorScheme, getHeightColor} from "utils/colorUtils";
 import {throttle} from "utils/functionUtils";

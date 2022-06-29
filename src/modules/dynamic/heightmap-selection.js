@@ -1,3 +1,5 @@
+import {heightmapTemplates} from "config/heightmap-templates";
+import {precreatedHeightmaps} from "config/precreated-heightmaps";
 import {shouldRegenerateGrid, generateGrid} from "utils/graphUtils";
 import {byId} from "utils/shorthands";
 import {generateSeed} from "utils/probabilityUtils";

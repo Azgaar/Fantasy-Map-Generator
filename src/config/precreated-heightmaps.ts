@@ -1,6 +1,9 @@
-"use strict";
+interface PrecreatedHeightmap {
+  id: number;
+  name: string;
+}
 
-const precreatedHeightmaps = {
+export const precreatedHeightmaps: Dict<PrecreatedHeightmap> = {
   "africa-centric": {id: 0, name: "Africa Centric"},
   arabia: {id: 1, name: "Arabia"},
   atlantics: {id: 2, name: "Atlantics"},

@@ -1,3 +1,5 @@
+import {heightmapTemplates} from "config/heightmap-templates";
+import {precreatedHeightmaps} from "config/precreated-heightmaps";
 import {lock, locked} from "scripts/options/lock";
 import {clearMainTip, tip} from "scripts/tooltips";
 import {last} from "utils/arrayUtils";
