@@ -31,6 +31,7 @@ import {gauss, generateSeed, P, ra, rand, rw} from "./utils/probabilityUtils";
 import {byId} from "./utils/shorthands";
 import {round} from "./utils/stringUtils";
 import {heightmapTemplates} from "config/heightmap-templates";
+import {aleaPRNG} from "scripts/aleaPRNG";
 
 addGlobalListeners();
 

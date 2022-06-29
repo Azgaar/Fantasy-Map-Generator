@@ -1,3 +1,5 @@
+import polylabel from "polylabel";
+
 export function drawProvinces() {
   const labelsOn = provs.attr("data-labels") == 1;
   provs.selectAll("*").remove();

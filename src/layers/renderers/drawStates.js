@@ -1,3 +1,5 @@
+import polylabel from "polylabel";
+
 export function drawStates() {
   regions.selectAll("path").remove();
 

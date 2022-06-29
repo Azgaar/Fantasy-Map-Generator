@@ -4,6 +4,7 @@ import {tip} from "scripts/tooltips";
 import {rand, P, ra} from "utils/probabilityUtils";
 import {capitalize} from "utils/stringUtils";
 import {vowel} from "utils/languageUtils";
+import {ERROR} from "config/logging";
 
 window.Names = (function () {
   let chains = [];

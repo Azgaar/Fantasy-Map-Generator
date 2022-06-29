@@ -8,6 +8,7 @@ import {getMiddlePoint} from "utils/lineUtils";
 import {minmax, rn} from "utils/numberUtils";
 import {each, gauss, generateSeed, P, ra, rand, rw} from "utils/probabilityUtils";
 import {round, splitInTwo} from "utils/stringUtils";
+import {aleaPRNG} from "scripts/aleaPRNG";
 
 window.BurgsAndStates = (function () {
   const generate = function () {

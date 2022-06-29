@@ -4,6 +4,7 @@ import {shouldRegenerateGrid, generateGrid} from "utils/graphUtils";
 import {byId} from "utils/shorthands";
 import {generateSeed} from "utils/probabilityUtils";
 import {getColorScheme} from "utils/colorUtils";
+import {aleaPRNG} from "scripts/aleaPRNG";
 
 const initialSeed = generateSeed();
 let graph = getGraph(grid);

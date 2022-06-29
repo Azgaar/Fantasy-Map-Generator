@@ -4,6 +4,7 @@ import {createTypedArray} from "./arrayUtils";
 import {rn} from "./numberUtils";
 import {byId} from "./shorthands";
 import {Voronoi} from "/src/modules/voronoi";
+import {aleaPRNG} from "scripts/aleaPRNG";
 
 const Delaunator = window.Delaunator;
 

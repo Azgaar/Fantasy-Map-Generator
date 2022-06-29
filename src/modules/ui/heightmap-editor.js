@@ -11,6 +11,7 @@ import {turnLayerButtonOff, turnLayerButtonOn, updatePresetInput} from "layers";
 import {restoreDefaultEvents} from "scripts/events";
 import {prompt} from "scripts/prompt";
 import {clearMainTip, showMainTip, tip} from "scripts/tooltips";
+import {aleaPRNG} from "scripts/aleaPRNG";
 
 export function editHeightmap(options) {
   const {mode, tool} = options || {};

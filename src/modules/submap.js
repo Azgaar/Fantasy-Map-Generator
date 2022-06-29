@@ -1,6 +1,7 @@
 import {findCell} from "utils/graphUtils";
 import {getMiddlePoint} from "utils/lineUtils";
 import {rn} from "utils/numberUtils";
+import {aleaPRNG} from "scripts/aleaPRNG";
 
 window.Submap = (function () {
   const isWater = (pack, id) => pack.cells.h[id] < 20;

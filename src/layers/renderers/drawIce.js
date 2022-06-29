@@ -1,4 +1,5 @@
 import {getGridPolygon} from "utils/graphUtils";
+import {aleaPRNG} from "scripts/aleaPRNG";
 
 export function drawIce() {
   const {cells, vertices} = grid;

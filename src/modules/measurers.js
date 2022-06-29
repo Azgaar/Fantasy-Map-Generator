@@ -1,8 +1,10 @@
-import {findCell} from "utils/graphUtils";
+import polylabel from "polylabel";
+
 import {last} from "utils/arrayUtils";
+import {findCell} from "utils/graphUtils";
 import {getSegmentId} from "utils/lineUtils";
 import {rn} from "utils/numberUtils";
-import {round, parseTransform} from "utils/stringUtils";
+import {parseTransform, round} from "utils/stringUtils";
 import {si} from "utils/unitUtils";
 
 export class Rulers {

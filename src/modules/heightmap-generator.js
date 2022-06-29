@@ -6,6 +6,7 @@ import {getNumberInRange, P, rand} from "utils/probabilityUtils";
 import {byId} from "utils/shorthands";
 import {ERROR} from "../config/logging";
 import {lim, minmax} from "../utils/numberUtils";
+import {aleaPRNG} from "scripts/aleaPRNG";
 
 window.HeightmapGenerator = (function () {
   let grid = null;

@@ -3,6 +3,7 @@ import {last} from "utils/arrayUtils";
 import {rn} from "utils/numberUtils";
 import {round} from "utils/stringUtils";
 import {rw, each} from "utils/probabilityUtils";
+import {aleaPRNG} from "scripts/aleaPRNG";
 
 window.Rivers = (function () {
   const generate = function (allowErosion = true) {

@@ -1,4 +1,5 @@
 import {rn} from "utils/numberUtils";
+import {aleaPRNG} from "scripts/aleaPRNG";
 
 window.Lakes = (function () {
   const setClimateData = function (h) {
