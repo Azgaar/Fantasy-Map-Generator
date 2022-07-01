@@ -431,7 +431,7 @@ async function parseLoadedData(data) {
     {
       // dynamically import and run auto-udpdate script
       const versionNumber = parseFloat(params[0]);
-      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=06062022");
+      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.87.08");
       resolveVersionConflicts(versionNumber);
     }
 
