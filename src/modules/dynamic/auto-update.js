@@ -633,4 +633,11 @@ export function resolveVersionConflicts(version) {
       delete religion.origin;
     }
   }
+
+  if (version < 1.88) {
+    // v1.87 may have incorrect shield for some reason
+    pack.states.forEach(({coa}) => {
+      if (coa?.shield === "state") delete coa.shield;
+    });
+  }
 }
