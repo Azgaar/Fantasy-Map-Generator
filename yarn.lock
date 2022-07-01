@@ -128,6 +128,11 @@ esbuild@^0.14.43:
     esbuild-windows-64 "0.14.47"
     esbuild-windows-arm64 "0.14.47"
 
+flatqueue@^2.0.3:
+  version "2.0.3"
+  resolved "https://registry.yarnpkg.com/flatqueue/-/flatqueue-2.0.3.tgz#dd23673cb478e25d5a9acb9dcbb85c89e9e8e64e"
+  integrity sha512-RZCWZNkmxzUOh8jqEcEGZCycb3B8KAfpPwg3H//cURasunYxsg1eIvE+QDSjX+ZPHTIVfINfK1aLTrVKKO0i4g==
+
 fsevents@~2.3.2:
   version "2.3.2"
   resolved "https://registry.yarnpkg.com/fsevents/-/fsevents-2.3.2.tgz#8a526f78b8fdf4623b709e0b975c52c24c02fd1a"

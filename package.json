@@ -12,6 +12,7 @@
     "vite": "^3.0.0-beta.3"
   },
   "dependencies": {
+    "flatqueue": "^2.0.3",
     "lineclip": "^1.1.5",
     "polylabel": "^1.1.0"
   }

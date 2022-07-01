@@ -1,3 +1,5 @@
+import FlatQueue from "flatqueue";
+
 import {TIME} from "config/logging";
 import {findCell} from "utils/graphUtils";
 import {last} from "utils/arrayUtils";
@@ -169,33 +171,33 @@ window.Routes = (function () {
   // Find a land path to a specific cell (exit), to a closest road (toRoad), or to all reachable cells (null, null)
   function findLandPath(start, exit = null, toRoad = null) {
     const cells = pack.cells;
-    const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
-    const cost = [],
-      from = [];
-    queue.queue({e: start, p: 0});
+    const queue = new FlatQueue();
+    const cost = [];
+    const from = [];
+    queue.push(start, 0);
 
     while (queue.length) {
-      const next = queue.dequeue(),
-        n = next.e,
-        p = next.p;
-      if (toRoad && cells.road[n]) return [from, n];
+      const priority = queue.peekValue();
+      const next = queue.pop();
 
-      for (const c of cells.c[n]) {
-        if (cells.h[c] < 20) continue; // ignore water cells
-        const stateChangeCost = cells.state && cells.state[c] !== cells.state[n] ? 400 : 0; // trails tend to lay within the same state
-        const habitability = biomesData.habitability[cells.biome[c]];
+      if (toRoad && cells.road[next]) return [from, next];
+
+      for (const neibCellId of cells.c[next]) {
+        if (cells.h[neibCellId] < 20) continue; // ignore water cells
+        const stateChangeCost = cells.state && cells.state[neibCellId] !== cells.state[next] ? 400 : 0; // trails tend to lay within the same state
+        const habitability = biomesData.habitability[cells.biome[neibCellId]];
         if (!habitability) continue; // avoid inhabitable cells (eg. lava, glacier)
         const habitedCost = habitability ? Math.max(100 - habitability, 0) : 400; // routes tend to lay within populated areas
-        const heightChangeCost = Math.abs(cells.h[c] - cells.h[n]) * 10; // routes tend to avoid elevation changes
-        const heightCost = cells.h[c] > 80 ? cells.h[c] : 0; // routes tend to avoid mountainous areas
+        const heightChangeCost = Math.abs(cells.h[neibCellId] - cells.h[next]) * 10; // routes tend to avoid elevation changes
+        const heightCost = cells.h[neibCellId] > 80 ? cells.h[neibCellId] : 0; // routes tend to avoid mountainous areas
         const cellCoast = 10 + stateChangeCost + habitedCost + heightChangeCost + heightCost;
-        const totalCost = p + (cells.road[c] || cells.burg[c] ? cellCoast / 3 : cellCoast);
+        const totalCost = priority + (cells.road[neibCellId] || cells.burg[neibCellId] ? cellCoast / 3 : cellCoast);
 
-        if (from[c] || totalCost >= cost[c]) continue;
-        from[c] = n;
-        if (c === exit) return [from, exit];
-        cost[c] = totalCost;
-        queue.queue({e: c, p: totalCost});
+        if (from[neibCellId] || totalCost >= cost[neibCellId]) continue;
+        from[neibCellId] = next;
+        if (neibCellId === exit) return [from, exit];
+        cost[neibCellId] = totalCost;
+        queue.push(neibCellId, totalCost);
       }
     }
     return [from, exit];
@@ -247,32 +249,36 @@ window.Routes = (function () {
 
   // find water paths
   function findOceanPath(start, exit = null, toRoute = null) {
-    const cells = pack.cells,
-      temp = grid.cells.temp;
-    const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
-    const cost = [],
-      from = [];
-    queue.queue({e: start, p: 0});
+    const cells = pack.cells;
+    const temp = grid.cells.temp;
+
+    const queue = new FlatQueue();
+    const cost = [];
+    const from = [];
+    queue.push(start, 0);
 
     while (queue.length) {
-      const next = queue.dequeue(),
-        n = next.e,
-        p = next.p;
-      if (toRoute && n !== start && cells.road[n]) return [from, n, true];
+      const priority = queue.peekValue();
+      const next = queue.pop();
 
-      for (const c of cells.c[n]) {
-        if (c === exit) {
-          from[c] = n;
+      if (toRoute && next !== start && cells.road[next]) return [from, next, true];
+
+      for (const neibCellId of cells.c[next]) {
+        if (neibCellId === exit) {
+          from[neibCellId] = next;
           return [from, exit, true];
         }
-        if (cells.h[c] >= 20) continue; // ignore land cells
-        if (temp[cells.g[c]] <= -5) continue; // ignore cells with term <= -5
-        const dist2 = (cells.p[c][1] - cells.p[n][1]) ** 2 + (cells.p[c][0] - cells.p[n][0]) ** 2;
-        const totalCost = p + (cells.road[c] ? 1 + dist2 / 2 : dist2 + (cells.t[c] ? 1 : 100));
 
-        if (from[c] || totalCost >= cost[c]) continue;
-        (from[c] = n), (cost[c] = totalCost);
-        queue.queue({e: c, p: totalCost});
+        if (cells.h[neibCellId] >= 20) continue; // ignore land cells
+        if (temp[cells.g[neibCellId]] <= -5) continue; // ignore cells with term <= -5
+
+        const dist2 =
+          (cells.p[neibCellId][1] - cells.p[next][1]) ** 2 + (cells.p[neibCellId][0] - cells.p[next][0]) ** 2;
+        const totalCost = priority + (cells.road[neibCellId] ? 1 + dist2 / 2 : dist2 + (cells.t[neibCellId] ? 1 : 100));
+
+        if (from[neibCellId] || totalCost >= cost[neibCellId]) continue;
+        (from[neibCellId] = next), (cost[neibCellId] = totalCost);
+        queue.push(neibCellId, totalCost);
       }
     }
     return [from, exit, false];

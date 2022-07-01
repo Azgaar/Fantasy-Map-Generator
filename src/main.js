@@ -1,6 +1,8 @@
 // Azgaar (azgaar.fmg@yandex.com). Minsk, 2017-2022. MIT License
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
+import FlatQueue from "flatqueue";
+
 import "./components";
 import {ERROR, INFO, TIME, WARN} from "./config/logging";
 import {UINT16_MAX} from "./constants";
@@ -1401,26 +1403,29 @@ function addZones(number = 1) {
     const burg = ra(burgs.filter(b => !used[b.cell] && b.i && !b.removed)); // random burg
     if (!burg) return;
 
-    const cellsArray = [],
-      cost = [],
-      power = rand(20, 37);
-    const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
-    queue.queue({e: burg.cell, p: 0});
+    const cellsArray = [];
+    const costs = [];
+    const power = rand(20, 37);
+
+    const queue = new FlatQueue();
+    queue.push(burg.cell, 0);
 
     while (queue.length) {
-      const next = queue.dequeue();
-      if (cells.burg[next.e] || cells.pop[next.e]) cellsArray.push(next.e);
-      used[next.e] = 1;
+      const priority = queue.peekValue();
+      const next = queue.pop();
 
-      cells.c[next.e].forEach(function (e) {
-        const r = cells.road[next.e];
-        const c = r ? Math.max(10 - r, 1) : 100;
-        const p = next.p + c;
-        if (p > power) return;
+      if (cells.burg[next] || cells.pop[next]) cellsArray.push(next);
+      used[next] = 1;
 
-        if (!cost[e] || p < cost[e]) {
-          cost[e] = p;
-          queue.queue({e, p});
+      cells.c[next].forEach(neibCellId => {
+        const roadValue = cells.road[next];
+        const cost = roadValue ? Math.max(10 - roadValue, 1) : 100;
+        const totalPriority = priority + cost;
+        if (totalPriority > power) return;
+
+        if (!costs[neibCellId] || totalPriority < costs[neibCellId]) {
+          costs[neibCellId] = totalPriority;
+          queue.push(neibCellId, totalPriority);
         }
       });
     }
@@ -1481,25 +1486,28 @@ function addZones(number = 1) {
     const burg = ra(burgs.filter(b => !used[b.cell] && b.i && !b.removed)); // random burg
     if (!burg) return;
 
-    const cellsArray = [],
-      cost = [],
-      power = rand(5, 25);
-    const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
-    queue.queue({e: burg.cell, p: 0});
+    const cellsArray = [];
+    const costs = [];
+    const power = rand(5, 25);
+
+    const queue = new FlatQueue();
+    queue.push(burg.cell, 0);
 
     while (queue.length) {
-      const next = queue.dequeue();
-      if (cells.burg[next.e] || cells.pop[next.e]) cellsArray.push(next.e);
-      used[next.e] = 1;
+      const priority = queue.peekValue();
+      const next = queue.pop();
 
-      cells.c[next.e].forEach(function (e) {
-        const c = rand(1, 10);
-        const p = next.p + c;
-        if (p > power) return;
+      if (cells.burg[next] || cells.pop[next]) cellsArray.push(next);
+      used[next] = 1;
 
-        if (!cost[e] || p < cost[e]) {
-          cost[e] = p;
-          queue.queue({e, p});
+      cells.c[next].forEach(neibCellId => {
+        const cost = rand(1, 10);
+        const totalPriority = priority + cost;
+        if (totalPriority > power) return;
+
+        if (!costs[neibCellId] || totalPriority < costs[neibCellId]) {
+          costs[neibCellId] = totalPriority;
+          queue.push(neibCellId, totalPriority);
         }
       });
     }
@@ -1522,9 +1530,9 @@ function addZones(number = 1) {
     if (note[0]) note[0].legend = note[0].legend.replace("Active volcano", "Erupting volcano");
     const name = note[0] ? note[0].name.replace(" Volcano", "") + " Eruption" : "Volcano Eruption";
 
-    const cellsArray = [],
-      queue = [cell],
-      power = rand(10, 30);
+    const cellsArray = [];
+    const queue = [cell];
+    const power = rand(10, 30);
 
     while (queue.length) {
       const q = P(0.5) ? queue.shift() : queue.pop();
@@ -1545,9 +1553,9 @@ function addZones(number = 1) {
     if (!roads.length) return;
 
     const cell = +ra(roads);
-    const cellsArray = [],
-      queue = [cell],
-      power = rand(3, 15);
+    const cellsArray = [];
+    const queue = [cell];
+    const power = rand(3, 15);
 
     while (queue.length) {
       const q = P(0.3) ? queue.shift() : queue.pop();
@@ -1570,9 +1578,9 @@ function addZones(number = 1) {
     if (!elevated.length) return;
 
     const cell = ra(elevated);
-    const cellsArray = [],
-      queue = [cell],
-      power = rand(3, 15);
+    const cellsArray = [];
+    const queue = [cell];
+    const power = rand(3, 15);
 
     while (queue.length) {
       const q = queue.pop();
@@ -1602,9 +1610,9 @@ function addZones(number = 1) {
 
     const cell = +ra(rivers),
       river = cells.r[cell];
-    const cellsArray = [],
-      queue = [cell],
-      power = rand(5, 30);
+    const cellsArray = [];
+    const queue = [cell];
+    const power = rand(5, 30);
 
     while (queue.length) {
       const q = queue.pop();
@@ -1627,9 +1635,9 @@ function addZones(number = 1) {
     if (!coastal.length) return;
 
     const cell = +ra(coastal);
-    const cellsArray = [],
-      queue = [cell],
-      power = rand(10, 30);
+    const cellsArray = [];
+    const queue = [cell];
+    const power = rand(10, 30);
 
     while (queue.length) {
       const q = queue.shift();

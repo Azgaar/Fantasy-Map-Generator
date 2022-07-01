@@ -1,3 +1,5 @@
+import FlatQueue from "flatqueue";
+
 import {TIME} from "config/logging";
 import {getColors} from "utils/colorUtils";
 import {rn, minmax} from "utils/numberUtils";
@@ -481,36 +483,37 @@ window.Cultures = (function () {
     TIME && console.time("expandCultures");
     cells = pack.cells;
 
-    const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
-    pack.cultures.forEach(function (c) {
-      if (!c.i || c.removed) return;
-      queue.queue({e: c.center, p: 0, c: c.i});
+    const queue = new FlatQueue();
+    pack.cultures.forEach(culture => {
+      if (!culture.i || culture.removed) return;
+      queue.push({cellId: culture.center, cultureId: culture.i}, 0);
     });
 
     const neutral = (cells.i.length / 5000) * 3000 * neutralInput.value; // limit cost for culture growth
     const cost = [];
+
     while (queue.length) {
-      const next = queue.dequeue(),
-        n = next.e,
-        p = next.p,
-        c = next.c;
-      const type = pack.cultures[c].type;
-      cells.c[n].forEach(function (e) {
-        const biome = cells.biome[e];
-        const biomeCost = getBiomeCost(c, biome, type);
-        const biomeChangeCost = biome === cells.biome[n] ? 0 : 20; // penalty on biome change
-        const heightCost = getHeightCost(e, cells.h[e], type);
-        const riverCost = getRiverCost(cells.r[e], e, type);
-        const typeCost = getTypeCost(cells.t[e], type);
+      const priority = queue.peekValue();
+      const {cellId, cultureId} = queue.pop();
+
+      const type = pack.cultures[cultureId].type;
+      cells.c[cellId].forEach(neibCellId => {
+        const biome = cells.biome[neibCellId];
+        const biomeCost = getBiomeCost(cultureId, biome, type);
+        const biomeChangeCost = biome === cells.biome[cellId] ? 0 : 20; // penalty on biome change
+        const heightCost = getHeightCost(neibCellId, cells.h[neibCellId], type);
+        const riverCost = getRiverCost(cells.r[neibCellId], neibCellId, type);
+        const typeCost = getTypeCost(cells.t[neibCellId], type);
         const totalCost =
-          p + (biomeCost + biomeChangeCost + heightCost + riverCost + typeCost) / pack.cultures[c].expansionism;
+          priority +
+          (biomeCost + biomeChangeCost + heightCost + riverCost + typeCost) / pack.cultures[cultureId].expansionism;
 
         if (totalCost > neutral) return;
 
-        if (!cost[e] || totalCost < cost[e]) {
-          if (cells.s[e] > 0) cells.culture[e] = c; // assign culture to populated cell
-          cost[e] = totalCost;
-          queue.queue({e, p: totalCost, c});
+        if (!cost[neibCellId] || totalCost < cost[neibCellId]) {
+          if (cells.s[neibCellId] > 0) cells.culture[neibCellId] = cultureId; // assign culture to populated cell
+          cost[neibCellId] = totalCost;
+          queue.push({cellId: neibCellId, cultureId}, totalCost);
         }
       });
     }

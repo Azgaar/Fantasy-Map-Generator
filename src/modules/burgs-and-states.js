@@ -1,3 +1,5 @@
+import FlatQueue from "flatqueue";
+
 import {TIME} from "config/logging";
 import {layerIsOn} from "layers";
 import {Voronoi} from "/src/modules/voronoi";
@@ -375,44 +377,46 @@ window.BurgsAndStates = (function () {
     const {cells, states, cultures, burgs} = pack;
 
     cells.state = new Uint16Array(cells.i.length);
-    const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
+    const queue = new FlatQueue();
     const cost = [];
     const neutral = (cells.i.length / 5000) * 2500 * neutralInput.value * statesNeutral; // limit cost for state growth
 
     states
       .filter(s => s.i && !s.removed)
-      .forEach(s => {
-        const capitalCell = burgs[s.capital].cell;
-        cells.state[capitalCell] = s.i;
-        const cultureCenter = cultures[s.culture].center;
-        const b = cells.biome[cultureCenter]; // state native biome
-        queue.queue({e: s.center, p: 0, s: s.i, b});
-        cost[s.center] = 1;
+      .forEach(state => {
+        const capitalCell = burgs[state.capital].cell;
+        cells.state[capitalCell] = state.i;
+        const cultureCenter = cultures[state.culture].center;
+        const biome = cells.biome[cultureCenter]; // state native biome
+        queue.push({cellId: state.center, stateId: state.i, b: biome}, 0);
+        cost[state.center] = 1;
       });
 
     while (queue.length) {
-      const next = queue.dequeue();
-      const {e, p, s, b} = next;
-      const {type, culture} = states[s];
+      const priority = queue.peekValue();
+      const {cellId, stateId, biome} = queue.pop();
+      const {type, culture} = states[stateId];
 
-      cells.c[e].forEach(e => {
-        if (cells.state[e] && e === states[cells.state[e]].center) return; // do not overwrite capital cells
+      cells.c[cellId].forEach(neibCellId => {
+        if (cells.state[neibCellId] && neibCellId === states[cells.state[neibCellId]].center) return; // do not overwrite capital cells
 
-        const cultureCost = culture === cells.culture[e] ? -9 : 100;
-        const populationCost = cells.h[e] < 20 ? 0 : cells.s[e] ? Math.max(20 - cells.s[e], 0) : 5000;
-        const biomeCost = getBiomeCost(b, cells.biome[e], type);
-        const heightCost = getHeightCost(pack.features[cells.f[e]], cells.h[e], type);
-        const riverCost = getRiverCost(cells.r[e], e, type);
-        const typeCost = getTypeCost(cells.t[e], type);
+        const cultureCost = culture === cells.culture[neibCellId] ? -9 : 100;
+        const populationCost =
+          cells.h[neibCellId] < 20 ? 0 : cells.s[neibCellId] ? Math.max(20 - cells.s[neibCellId], 0) : 5000;
+        const biomeCost = getBiomeCost(biome, cells.biome[neibCellId], type);
+        const heightCost = getHeightCost(pack.features[cells.f[neibCellId]], cells.h[neibCellId], type);
+        const riverCost = getRiverCost(cells.r[neibCellId], neibCellId, type);
+        const typeCost = getTypeCost(cells.t[neibCellId], type);
         const cellCost = Math.max(cultureCost + populationCost + biomeCost + heightCost + riverCost + typeCost, 0);
-        const totalCost = p + 10 + cellCost / states[s].expansionism;
+        const totalCost = priority + 10 + cellCost / states[stateId].expansionism;
 
         if (totalCost > neutral) return;
 
-        if (!cost[e] || totalCost < cost[e]) {
-          if (cells.h[e] >= 20) cells.state[e] = s; // assign state to cell
-          cost[e] = totalCost;
-          queue.queue({e, p: totalCost, s, b});
+        if (!cost[neibCellId] || totalCost < cost[neibCellId]) {
+          if (cells.h[neibCellId] >= 20) cells.state[neibCellId] = stateId; // assign state to cell
+          cost[neibCellId] = totalCost;
+
+          queue.push({cellId: neibCellId, stateId, biome}, totalCost);
         }
       });
     }
@@ -571,24 +575,24 @@ window.BurgsAndStates = (function () {
           ]; // right point
 
         // connect leftmost and rightmost points with shortest path
-        const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
-        const cost = [],
-          from = [];
-        queue.queue({e: start, p: 0});
+        const queue = new FlatQueue();
+        const cost = [];
+        const from = [];
+        queue.push(start, 0);
 
         while (queue.length) {
-          const next = queue.dequeue(),
-            n = next.e,
-            p = next.p;
-          if (n === end) break;
+          const priority = queue.peekValue();
+          const next = queue.pop();
 
-          for (const v of c.v[n]) {
-            if (v === -1) continue;
-            const totalCost = p + (inside[v] ? 1 : 100);
-            if (from[v] || totalCost >= cost[v]) continue;
-            cost[v] = totalCost;
-            from[v] = n;
-            queue.queue({e: v, p: totalCost});
+          if (next === end) break;
+
+          for (const vertex of c.v[next]) {
+            if (vertex === -1) continue;
+            const totalCost = priority + (inside[vertex] ? 1 : 100);
+            if (from[vertex] || totalCost >= cost[vertex]) continue;
+            cost[vertex] = totalCost;
+            from[vertex] = next;
+            queue.push(vertex, totalCost);
           }
         }
 
@@ -1212,33 +1216,34 @@ window.BurgsAndStates = (function () {
     });
 
     // expand generated provinces
-    const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
+    const queue = new FlatQueue();
     const cost = [];
-    provinces.forEach(function (p) {
-      if (!p.i || p.removed) return;
-      cells.province[p.center] = p.i;
-      queue.queue({e: p.center, p: 0, province: p.i, state: p.state});
-      cost[p.center] = 1;
+    provinces.forEach(province => {
+      const {i, center, state, removed} = province;
+      if (!i || removed) return;
+
+      cells.province[center] = i;
+      queue.push({cellId: center, provinceId: i, stateId: state}, 0);
+      cost[province.center] = 1;
     });
 
     while (queue.length) {
-      const next = queue.dequeue(),
-        n = next.e,
-        p = next.p,
-        province = next.province,
-        state = next.state;
-      cells.c[n].forEach(function (e) {
-        const land = cells.h[e] >= 20;
-        if (!land && !cells.t[e]) return; // cannot pass deep ocean
-        if (land && cells.state[e] !== state) return;
-        const evevation = cells.h[e] >= 70 ? 100 : cells.h[e] >= 50 ? 30 : cells.h[e] >= 20 ? 10 : 100;
-        const totalCost = p + evevation;
+      const priority = queue.peekValue();
+      const {cellId, provinceId, stateId} = queue.pop();
+
+      cells.c[cellId].forEach(neibCellId => {
+        const land = cells.h[neibCellId] >= 20;
+        if (!land && !cells.t[neibCellId]) return; // cannot pass deep ocean
+        if (land && cells.state[neibCellId] !== stateId) return;
+        const evevation =
+          cells.h[neibCellId] >= 70 ? 100 : cells.h[neibCellId] >= 50 ? 30 : cells.h[neibCellId] >= 20 ? 10 : 100;
+        const totalCost = priority + evevation;
 
         if (totalCost > max) return;
-        if (!cost[e] || totalCost < cost[e]) {
-          if (land) cells.province[e] = province; // assign province to a cell
-          cost[e] = totalCost;
-          queue.queue({e, p: totalCost, province, state});
+        if (!cost[neibCellId] || totalCost < cost[neibCellId]) {
+          if (land) cells.province[neibCellId] = provinceId;
+          cost[neibCellId] = totalCost;
+          queue.push({cellId: neibCellId, provinceId, stateId}, totalCost);
         }
       });
     }
@@ -1282,26 +1287,26 @@ window.BurgsAndStates = (function () {
         cells.province[center] = province;
 
         // expand province
-        const cost = [];
-        cost[center] = 1;
-        queue.queue({e: center, p: 0});
-        while (queue.length) {
-          const next = queue.dequeue(),
-            n = next.e,
-            p = next.p;
+        const costs = [];
+        costs[center] = 1;
+        queue.push(center, 0);
 
-          cells.c[n].forEach(function (e) {
-            if (cells.province[e]) return;
-            const land = cells.h[e] >= 20;
-            if (cells.state[e] && cells.state[e] !== s.i) return;
-            const ter = land ? (cells.state[e] === s.i ? 3 : 20) : cells.t[e] ? 10 : 30;
-            const totalCost = p + ter;
+        while (queue.length) {
+          const priority = queue.peekValue();
+          const next = queue.pop();
+
+          cells.c[next].forEach(neibCellId => {
+            if (cells.province[neibCellId]) return;
+            const land = cells.h[neibCellId] >= 20;
+            if (cells.state[neibCellId] && cells.state[neibCellId] !== s.i) return;
+            const cost = land ? (cells.state[neibCellId] === s.i ? 3 : 20) : cells.t[neibCellId] ? 10 : 30;
+            const totalCost = priority + cost;
 
             if (totalCost > max) return;
-            if (!cost[e] || totalCost < cost[e]) {
-              if (land && cells.state[e] === s.i) cells.province[e] = province; // assign province to a cell
-              cost[e] = totalCost;
-              queue.queue({e, p: totalCost});
+            if (!costs[neibCellId] || totalCost < costs[neibCellId]) {
+              if (land && cells.state[neibCellId] === s.i) cells.province[neibCellId] = province; // assign province to a cell
+              costs[neibCellId] = totalCost;
+              queue.push(neibCellId, totalCost);
             }
           });
         }
@@ -1344,9 +1349,11 @@ window.BurgsAndStates = (function () {
         // check if there is a land way within the same state between two cells
         function isPassable(from, to) {
           if (cells.f[from] !== cells.f[to]) return false; // on different islands
-          const queue = [from],
-            used = new Uint8Array(cells.i.length),
-            state = cells.state[from];
+          const queue = [from];
+
+          const used = new Uint8Array(cells.i.length);
+          const state = cells.state[from];
+
           while (queue.length) {
             const current = queue.pop();
             if (current === to) return true; // way is found
