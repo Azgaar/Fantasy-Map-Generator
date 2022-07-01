@@ -611,7 +611,7 @@ window.Markers = (function () {
     const modusOperandi = [
       "steals cattle at night",
       "prefers eating children",
-      "doesn't mind of human flesh",
+      "doesn't mind human flesh",
       "keeps the region at bay",
       "eats kids whole",
       "abducts young women",
@@ -878,11 +878,11 @@ window.Markers = (function () {
       "Cranes",
       "Crocodiles",
       "Crows",
-      "Deers",
+      "Deer",
       "Dogs",
       "Eagles",
-      "Elks",
-      "Foxs",
+      "Elk",
+      "Foxes",
       "Goats",
       "Geese",
       "Hares",
@@ -907,11 +907,11 @@ window.Markers = (function () {
       "Rooks",
       "Scorpions",
       "Sharks",
-      "Sheeps",
+      "Sheep",
       "Snakes",
       "Spiders",
       "Tigers",
-      "Wolfs",
+      "Wolves",
       "Wolverines",
       "Camels",
       "Falcons",
@@ -921,7 +921,7 @@ window.Markers = (function () {
     const animalChoice = ra(animals);
 
     const name = `${animalChoice} migration`;
-    const legend = `A huge group of ${animalChoice.toLowerCase()} is migrating, though whether part of their annual routine, or something more extraordinary`;
+    const legend = `A huge group of ${animalChoice.toLowerCase()} are migrating, whether part of their annual routine, or something more extraordinary`;
     notes.push({id, name, legend});
   }
 
