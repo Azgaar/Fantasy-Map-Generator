@@ -15,6 +15,7 @@
     "delaunator": "^5.0.0",
     "flatqueue": "^2.0.3",
     "lineclip": "^1.1.5",
-    "polylabel": "^1.1.0"
+    "polylabel": "^1.1.0",
+    "rgbquant": "^1.1.2"
   }
 }

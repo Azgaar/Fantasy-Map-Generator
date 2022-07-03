@@ -209,6 +209,11 @@ resolve@^1.22.1:
     path-parse "^1.0.7"
     supports-preserve-symlinks-flag "^1.0.0"
 
+rgbquant@^1.1.2:
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/rgbquant/-/rgbquant-1.1.2.tgz#d95e889a8fcb1e6c1a4fa2ccc8be3a41a2fcd185"
+  integrity sha512-AGuKVeUUFW5rhm4Eu/7SXQRSxs3MoXIGKP4i/5Rok89QBrOu9+ytWezuxHhCsHT9Y6z+sGPKL9PKo6X8tZNUaw==
+
 robust-predicates@^3.0.0:
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/robust-predicates/-/robust-predicates-3.0.1.tgz#ecde075044f7f30118682bd9fb3f123109577f9a"
