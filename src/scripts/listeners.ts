@@ -1,11 +1,16 @@
 import {PRODUCTION} from "../constants";
+// @ts-ignore
+import {checkIfServerless} from "./loading";
 import {assignLockBehavior} from "./options/lock";
 import {addTooptipListers} from "./tooltips";
 import {assignSpeakerBehavior} from "./speaker";
 // @ts-ignore
 import {addResizeListener} from "modules/ui/options";
+// @ts-ignore
+import {addDragToUpload} from "modules/io/load";
 
 export function addGlobalListeners() {
+  checkIfServerless();
   if (PRODUCTION) {
     registerServiceWorker();
     addInstallationPrompt();
@@ -15,6 +20,7 @@ export function addGlobalListeners() {
   addTooptipListers();
   addResizeListener();
   assignSpeakerBehavior();
+  addDragToUpload();
 }
 
 function registerServiceWorker() {

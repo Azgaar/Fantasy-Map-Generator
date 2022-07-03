@@ -7,6 +7,55 @@ import {parseError} from "utils/errorUtils";
 import {calculateVoronoi, findCell} from "utils/graphUtils";
 import {link} from "utils/linkUtils";
 import {minmax, rn} from "utils/numberUtils";
+import {regenerateMap} from "scripts/generation";
+import {reMarkFeatures} from "modules/markup";
+
+// add drag to upload logic, pull request from @evyatron
+export function addDragToUpload() {
+  document.addEventListener("dragover", function (e) {
+    e.stopPropagation();
+    e.preventDefault();
+    byId("mapOverlay").style.display = null;
+  });
+
+  document.addEventListener("dragleave", function (e) {
+    byId("mapOverlay").style.display = "none";
+  });
+
+  document.addEventListener("drop", function (e) {
+    e.stopPropagation();
+    e.preventDefault();
+
+    const overlay = byId("mapOverlay");
+    overlay.style.display = "none";
+    if (e.dataTransfer.items == null || e.dataTransfer.items.length !== 1) return; // no files or more than one
+    const file = e.dataTransfer.items[0].getAsFile();
+    if (file.name.indexOf(".map") == -1) {
+      // not a .map file
+      alertMessage.innerHTML = "Please upload a <b>.map</b> file you have previously downloaded";
+      $("#alert").dialog({
+        resizable: false,
+        title: "Invalid file format",
+        position: {my: "center", at: "center", of: "svg"},
+        buttons: {
+          Close: function () {
+            $(this).dialog("close");
+          }
+        }
+      });
+      return;
+    }
+
+    // all good - show uploading text and load the map
+    overlay.style.display = null;
+    overlay.innerHTML = "Uploading<span>.</span><span>.</span><span>.</span>";
+    if (closeDialogs) closeDialogs();
+    uploadMap(file, () => {
+      overlay.style.display = "none";
+      overlay.innerHTML = "Drop a .map file to open";
+    });
+  });
+}
 
 function quickLoad() {
   ldb.get("lastMap", blob => {
@@ -83,7 +132,7 @@ function loadMapPrompt(blob) {
   }
 }
 
-function loadMapFromURL(maplink, random) {
+export function loadMapFromURL(maplink, random) {
   const URL = decodeURIComponent(maplink);
 
   fetch(URL, {method: "GET", mode: "cors"})

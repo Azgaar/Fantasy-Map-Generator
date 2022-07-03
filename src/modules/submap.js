@@ -114,8 +114,8 @@ window.Submap = (function () {
 
     // Warning: addLakesInDeepDepressions can be very slow!
     if (options.addLakesInDepressions) {
-      addLakesInDeepDepressions();
-      openNearSeaLakes();
+      Lakes.addLakesInDeepDepressions();
+      Lakes.openNearSeaLakes();
     }
 
     OceanLayers();
@@ -214,7 +214,7 @@ window.Submap = (function () {
     // biome calculation based on (resampled) grid.cells.temp and prec
     // it's safe to recalculate.
     stage("Regenerating Biome.");
-    defineBiomes();
+    Biomes.define();
     // recalculate suitability and population
     // TODO: normalize according to the base-map
     rankCells();

@@ -472,7 +472,7 @@ export function editBiomes() {
 
   function restoreInitialBiomes() {
     biomesData = applyDefaultBiomesSystem();
-    defineBiomes();
+    Biomes.define();
     drawBiomes();
     recalculatePopulation();
     refreshBiomesEditor();

@@ -14,6 +14,7 @@ import {restoreDefaultEvents} from "scripts/events";
 import {prompt} from "scripts/prompt";
 import {clearMainTip, showMainTip, tip} from "scripts/tooltips";
 import {aleaPRNG} from "scripts/aleaPRNG";
+import {undraw} from "scripts/generation";
 
 export function editHeightmap(options) {
   const {mode, tool} = options || {};
@@ -203,8 +204,8 @@ export function editHeightmap(options) {
     markFeatures();
     markupGridOcean();
     if (erosionAllowed) {
-      addLakesInDeepDepressions();
-      openNearSeaLakes();
+      Lakes.addLakesInDeepDepressions();
+      Lakes.openNearSeaLakes();
     }
     OceanLayers();
     calculateTemperatures();
@@ -224,7 +225,7 @@ export function editHeightmap(options) {
 
     drawRivers();
     Lakes.defineGroup();
-    defineBiomes();
+    Biomes.define();
     rankCells();
     Cultures.generate();
     Cultures.expand();
@@ -358,7 +359,7 @@ export function editHeightmap(options) {
 
       // check biome
       pack.cells.biome[i] =
-        isLand && biome[g] ? biome[g] : getBiomeId(grid.cells.prec[g], grid.cells.temp[g], pack.cells.h[i]);
+        isLand && biome[g] ? biome[g] : Biomes.getId(grid.cells.prec[g], grid.cells.temp[g], pack.cells.h[i]);
 
       // rivers data
       if (!erosionAllowed) {

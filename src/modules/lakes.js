@@ -1,5 +1,7 @@
+import {TIME} from "config/logging";
 import {rn} from "utils/numberUtils";
 import {aleaPRNG} from "scripts/aleaPRNG";
+import {byId} from "utils/shorthands";
 
 window.Lakes = (function () {
   const setClimateData = function (h) {
@@ -150,5 +152,113 @@ window.Lakes = (function () {
     return "freshwater";
   }
 
-  return {setClimateData, cleanupLakeData, prepareLakeData, defineGroup, generateName, getName, getShoreline};
+  function addLakesInDeepDepressions() {
+    TIME && console.time("addLakesInDeepDepressions");
+    const {cells, features} = grid;
+    const {c, h, b} = cells;
+    const ELEVATION_LIMIT = +byId("lakeElevationLimitOutput").value;
+    if (ELEVATION_LIMIT === 80) return;
+
+    for (const i of cells.i) {
+      if (b[i] || h[i] < 20) continue;
+
+      const minHeight = d3.min(c[i].map(c => h[c]));
+      if (h[i] > minHeight) continue;
+
+      let deep = true;
+      const threshold = h[i] + ELEVATION_LIMIT;
+      const queue = [i];
+      const checked = [];
+      checked[i] = true;
+
+      // check if elevated cell can potentially pour to water
+      while (deep && queue.length) {
+        const q = queue.pop();
+
+        for (const n of c[q]) {
+          if (checked[n]) continue;
+          if (h[n] >= threshold) continue;
+          if (h[n] < 20) {
+            deep = false;
+            break;
+          }
+
+          checked[n] = true;
+          queue.push(n);
+        }
+      }
+
+      // if not, add a lake
+      if (deep) {
+        const lakeCells = [i].concat(c[i].filter(n => h[n] === h[i]));
+        addLake(lakeCells);
+      }
+    }
+
+    function addLake(lakeCells) {
+      const f = features.length;
+
+      lakeCells.forEach(i => {
+        cells.h[i] = 19;
+        cells.t[i] = -1;
+        cells.f[i] = f;
+        c[i].forEach(n => !lakeCells.includes(n) && (cells.t[c] = 1));
+      });
+
+      features.push({i: f, land: false, border: false, type: "lake"});
+    }
+
+    TIME && console.timeEnd("addLakesInDeepDepressions");
+  }
+
+  // near sea lakes usually get a lot of water inflow, most of them should brake threshold and flow out to sea (see Ancylus Lake)
+  function openNearSeaLakes() {
+    if (byId("templateInput").value === "Atoll") return; // no need for Atolls
+
+    const cells = grid.cells;
+    const features = grid.features;
+    if (!features.find(f => f.type === "lake")) return; // no lakes
+    TIME && console.time("openLakes");
+    const LIMIT = 22; // max height that can be breached by water
+
+    for (const i of cells.i) {
+      const lake = cells.f[i];
+      if (features[lake].type !== "lake") continue; // not a lake cell
+
+      check_neighbours: for (const c of cells.c[i]) {
+        if (cells.t[c] !== 1 || cells.h[c] > LIMIT) continue; // water cannot brake this
+
+        for (const n of cells.c[c]) {
+          const ocean = cells.f[n];
+          if (features[ocean].type !== "ocean") continue; // not an ocean
+          removeLake(c, lake, ocean);
+          break check_neighbours;
+        }
+      }
+    }
+
+    function removeLake(threshold, lake, ocean) {
+      cells.h[threshold] = 19;
+      cells.t[threshold] = -1;
+      cells.f[threshold] = ocean;
+      cells.c[threshold].forEach(function (c) {
+        if (cells.h[c] >= 20) cells.t[c] = 1; // mark as coastline
+      });
+      features[lake].type = "ocean"; // mark former lake as ocean
+    }
+
+    TIME && console.timeEnd("openLakes");
+  }
+
+  return {
+    setClimateData,
+    cleanupLakeData,
+    prepareLakeData,
+    defineGroup,
+    generateName,
+    getName,
+    getShoreline,
+    addLakesInDeepDepressions,
+    openNearSeaLakes
+  };
 })();

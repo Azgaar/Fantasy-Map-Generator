@@ -4,6 +4,7 @@ import {parseError} from "utils/errorUtils";
 import {rn, minmax} from "utils/numberUtils";
 import {debounce} from "utils/functionUtils";
 import {restoreLayers} from "layers";
+import {undraw} from "scripts/generation";
 
 window.UISubmap = (function () {
   byId("submapPointsInput").addEventListener("input", function () {
