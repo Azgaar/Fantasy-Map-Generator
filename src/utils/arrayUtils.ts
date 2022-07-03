@@ -8,16 +8,25 @@ export function unique<T>(array: T[]) {
   return [...new Set(array)];
 }
 
-interface ICreateTypedArray {
+interface ICreateTypesArrayLength {
   maxValue: number;
   length: number;
-  from?: ArrayLike<number>;
 }
 
-export function createTypedArray({maxValue, length, from}: ICreateTypedArray) {
-  const typedArray = getTypedArray(maxValue);
-  if (!from) return new typedArray(length);
-  return typedArray.from(from);
+interface ICreateTypesArrayFrom {
+  maxValue: number;
+  from: ArrayLike<number>;
+}
+
+export function createTypedArray(params: ICreateTypesArrayLength | ICreateTypesArrayFrom) {
+  const typedArray = getTypedArray(params.maxValue);
+  if ("from" in params) {
+    typedArray.from(params.from);
+  } else if ("length" in params) {
+    return new typedArray(params.length);
+  }
+
+  return typedArray;
 }
 
 function getTypedArray(maxValue: number) {

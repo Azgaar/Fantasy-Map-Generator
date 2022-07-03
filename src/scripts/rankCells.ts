@@ -1,3 +1,4 @@
+// @ts-nocheck global variables
 import {TIME} from "config/logging";
 import {normalize} from "utils/numberUtils";
 

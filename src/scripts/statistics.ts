@@ -1,11 +1,12 @@
+// @ts-nocheck global variables
 import {INFO} from "config/logging";
-import {byId} from "utils/shorthands";
 import {heightmapTemplates} from "config/heightmap-templates";
 import {locked} from "scripts/options/lock";
+import {getInputValue} from "utils/nodeUtils";
 
 // show map stats on generation complete
 export function showStatistics() {
-  const heightmap = byId("templateInput").value;
+  const heightmap = getInputValue("templateInput");
   const isTemplate = heightmap in heightmapTemplates;
   const heightmapType = isTemplate ? "template" : "precreated";
   const isRandomTemplate = isTemplate && !locked("template") ? "random " : "";

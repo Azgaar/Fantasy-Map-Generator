@@ -1,3 +1,4 @@
+// @ts-nocheck global variables
 import {TIME} from "config/logging";
 import {UINT16_MAX} from "constants";
 import {createTypedArray} from "utils/arrayUtils";
@@ -8,7 +9,7 @@ import {rn} from "utils/numberUtils";
 export function reGraph() {
   TIME && console.time("reGraph");
   const {cells: gridCells, points, features} = grid;
-  const newCells = {p: [], g: [], h: []}; // store new data
+  const newCells: {p: number[][]; g: number[]; h: number[]} = {p: [], g: [], h: []}; // store new data
   const spacing2 = grid.spacing ** 2;
 
   for (const i of gridCells.i) {
@@ -36,13 +37,13 @@ export function reGraph() {
     }
   }
 
-  function addNewPoint(i, x, y, height) {
+  function addNewPoint(i: number, x: number, y: number, height: number) {
     newCells.p.push([x, y]);
     newCells.g.push(i);
     newCells.h.push(height);
   }
 
-  function getCellArea(i) {
+  function getCellArea(i: number) {
     const area = Math.abs(d3.polygonArea(getPackPolygon(i)));
     return Math.min(area, UINT16_MAX);
   }
