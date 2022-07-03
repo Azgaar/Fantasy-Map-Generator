@@ -1,4 +1,5 @@
 import FlatQueue from "flatqueue";
+import Delaunator from "delaunator";
 
 import {TIME} from "config/logging";
 import {layerIsOn} from "layers";

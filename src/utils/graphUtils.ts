@@ -1,12 +1,12 @@
 // @ts-nocheck
+import Delaunator from "delaunator";
+
 import {TIME} from "../config/logging";
 import {createTypedArray} from "./arrayUtils";
 import {rn} from "./numberUtils";
 import {byId} from "./shorthands";
 import {Voronoi} from "/src/modules/voronoi";
 import {aleaPRNG} from "scripts/aleaPRNG";
-
-const Delaunator = window.Delaunator;
 
 // check if new grid graph should be generated or we can use the existing one
 export function shouldRegenerateGrid(grid) {
