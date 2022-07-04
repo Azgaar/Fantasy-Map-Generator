@@ -21,12 +21,10 @@ interface ICreateTypesArrayFrom {
 export function createTypedArray(params: ICreateTypesArrayLength | ICreateTypesArrayFrom) {
   const typedArray = getTypedArray(params.maxValue);
   if ("from" in params) {
-    typedArray.from(params.from);
-  } else if ("length" in params) {
-    return new typedArray(params.length);
+    return typedArray.from(params.from);
   }
 
-  return typedArray;
+  return new typedArray(params.length);
 }
 
 function getTypedArray(maxValue: number) {

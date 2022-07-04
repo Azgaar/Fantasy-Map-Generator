@@ -3,9 +3,11 @@
 
 let grid = {}; // initial graph based on jittered square grid and data
 let pack = {}; // packed graph and data
+
 let seed;
 let mapId;
 let mapHistory = [];
+
 let elSelected;
 
 let notes = [];

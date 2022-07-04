@@ -2,13 +2,18 @@
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 import "./components";
+// @ts-expect-error js-module
 import {clearLegend} from "./modules/legend";
+// @ts-expect-error js-module
 import {Rulers} from "./modules/measurers";
+// @ts-expect-error js-module
 import {applyStoredOptions} from "./modules/ui/options";
 import {addGlobalListeners} from "./scripts/listeners";
 import {tip} from "./scripts/tooltips";
-import {byId} from "./utils/shorthands";
+import {checkForUpdates} from "./scripts/updater";
+import {getInputNumber} from "utils/nodeUtils";
 
+checkForUpdates();
 addGlobalListeners();
 
 window.fmg = {
@@ -23,10 +28,10 @@ options = {
   stateLabelsMode: "auto"
 };
 
-populationRate = +byId("populationRateInput").value;
-distanceScale = +byId("distanceScaleInput").value;
-urbanization = +byId("urbanizationInput").value;
-urbanDensity = +byId("urbanDensityInput").value;
+populationRate = getInputNumber("populationRateInput");
+distanceScale = getInputNumber("distanceScaleInput");
+urbanization = getInputNumber("urbanizationInput");
+urbanDensity = getInputNumber("urbanDensityInput");
 statesNeutral = 1; // statesEditor growth parameter
 
 applyStoredOptions();
@@ -36,8 +41,8 @@ biomesData = Biomes.getDefault();
 nameBases = Names.getNameBases(); // cultures-related data
 
 // voronoi graph extension, cannot be changed after generation
-graphWidth = +byId("mapWidthInput").value;
-graphHeight = +byId("mapHeightInput").value;
+graphWidth = getInputNumber("mapWidthInput");
+graphHeight = getInputNumber("mapHeightInput");
 
 // svg canvas resolution, can be changed
 svgWidth = graphWidth;

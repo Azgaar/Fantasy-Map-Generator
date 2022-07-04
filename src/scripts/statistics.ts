@@ -1,8 +1,8 @@
-// @ts-nocheck global variables
 import {INFO} from "config/logging";
 import {heightmapTemplates} from "config/heightmap-templates";
 import {locked} from "scripts/options/lock";
 import {getInputValue} from "utils/nodeUtils";
+import {byId} from "utils/shorthands";
 
 // show map stats on generation complete
 export function showStatistics() {
@@ -16,12 +16,12 @@ export function showStatistics() {
     Heightmap: ${heightmap} (${isRandomTemplate}${heightmapType})
     Points: ${grid.points.length}
     Cells: ${pack.cells.i.length}
-    Map size: ${mapSizeOutput.value}%
+    Map size: ${getInputValue("mapSizeOutput")}%
     States: ${pack.states.length - 1}
     Provinces: ${pack.provinces.length - 1}
     Burgs: ${pack.burgs.length - 1}
     Religions: ${pack.religions.length - 1}
-    Culture set: ${culturesSet.selectedOptions[0].innerText}
+    Culture set: ${(byId("culturesSet") as HTMLSelectElement)?.selectedOptions[0].innerText}
     Cultures: ${pack.cultures.length - 1}`;
 
   mapId = Date.now(); // unique map id is it's creation date number

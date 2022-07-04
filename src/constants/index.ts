@@ -1,5 +1,3 @@
-export const PRODUCTION = location.hostname && location.hostname !== "localhost" && location.hostname !== "127.0.0.1";
-
 // detect device
 export const MOBILE = window.innerWidth < 600 || window.navigator.userAgentData?.mobile;
 

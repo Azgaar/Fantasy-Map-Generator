@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Azgaar's Fantasy Map Generator</title>
+    <title>Azgaar's Fantasy Map Generator v<%- APP_VERSION %></title>
     <meta name="application-name" content="Azgaar's Fantasy Map Generator" />
     <meta name="author" content="Azgaar (Max Ganiev)" />
     <meta name="description" content="Azgaar's Fantasy Map Generator and Editor" />
@@ -345,7 +345,7 @@
       <div id="loading-typography">
         <div id="titleName"><t data-t="titleName">Azgaar's</t></div>
         <div id="title"><t data-t="title">Fantasy Map Generator</t></div>
-        <div id="versionText"><t data-t="version">v</t><span id="version"></span></div>
+        <div id="versionText"><t data-t="version">v</t><%- APP_VERSION %></div>
         <p id="loading-text"><t data-t="loading">LOADING</t><span>.</span><span>.</span><span>.</span></p>
       </div>
     </div>
@@ -7657,7 +7657,6 @@
 
     <script src="/src/libs/jquery-3.1.1.min.js"></script>
     <script src="/src/libs/jquery-ui.min.js"></script>
-    <script src="/src/versioning.js"></script>
     <script src="/src/libs/d3.min.js"></script>
 
     <script type="module" src="/src/modules/heightmap-generator.js"></script>
@@ -7681,7 +7680,7 @@
     <script src="/src/modules/define-svg.js"></script>
     <script type="module" src="/src/modules/zoom.js"></script>
 
-    <script type="module" src="/src/main.js"></script>
+    <script type="module" src="/src/main.ts"></script>
 
     <script type="module" src="/src/modules/activeZooming.js"></script>
     <script type="module" src="/src/modules/relief-icons.js"></script>

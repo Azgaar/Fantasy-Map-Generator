@@ -1,41 +1,40 @@
-// indexedDB support: ldb object
-
 // @ts-ignore unimplemented historical interfaces
 const indexedDBfactory = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
 if (!indexedDBfactory) console.error("indexedDB not supported");
 
-let database;
+let database: IDBDatabase | null = null;
 const databaseRequest = indexedDBfactory.open("d2", 1);
 
 databaseRequest.onsuccess = function () {
   database = this.result;
 };
 
-databaseRequest.onerror = function (e) {
+databaseRequest.onerror = e => {
   console.error("indexedDB request error", e);
 };
 
-databaseRequest.onupgradeneeded = function (event) {
+databaseRequest.onupgradeneeded = () => {
   database = null;
   const store = databaseRequest.result.createObjectStore("s", {keyPath: "k"});
-  store.transaction.oncomplete = function (e) {
-    database = e.target.db;
+  store.transaction.oncomplete = event => {
+    database = (event.target as IDBTransaction)?.db;
   };
 };
 
-function getValue(key, callback) {
+function getValue(key: string, callback: (value: unknown) => void) {
   if (!database) {
     setTimeout(() => getValue(key, callback), 100);
     return;
   }
 
-  database.transaction("s").objectStore("s").get(key).onsuccess = function (e) {
-    const value = (e.target.result && e.target.result.v) || null;
+  database.transaction("s").objectStore("s").get(key).onsuccess = event => {
+    const target = event.target as IDBRequest<IDBDatabase>;
+    const value = target.result || null;
     callback(value);
   };
 }
 
-function setValue(key) {
+function setValue(key: string, value: unknown) {
   if (!database) {
     setTimeout(() => setValue(key, value), 100);
     return;

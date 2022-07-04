@@ -1,5 +1,7 @@
 type UnknownObject = {[key: string]: unknown};
 
+type noop = () => void;
+
 interface Dict<T> {
   [key: string]: T;
 }

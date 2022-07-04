@@ -8,6 +8,7 @@ import {minmax, rn} from "utils/numberUtils";
 import {gauss, P, rand, rw} from "utils/probabilityUtils";
 import {byId, stored} from "utils/shorthands";
 import {regenerateMap} from "scripts/generation";
+import {fitScaleBar} from "modules/measurers";
 
 $("#optionsContainer").draggable({handle: ".drag-trigger", snap: "svg", snapMode: "both"});
 $("#exitCustomization").draggable({handle: "div"});

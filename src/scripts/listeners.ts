@@ -1,4 +1,3 @@
-import {PRODUCTION} from "../constants";
 // @ts-ignore
 import {checkIfServerless} from "./loading";
 import {assignLockBehavior} from "./options/lock";

@@ -55,9 +55,7 @@ export function convertTemperature(temp: number) {
 
 // get user-friendly (real-world) height value from coordinates
 export function getFriendlyHeight([x, y]: [number, number]) {
-  // @ts-expect-error pack is a global variable
   const packH = pack.cells.h[findCell(x, y)];
-  // @ts-expect-error grid is a global variable
   const gridH = grid.cells.h[findGridCell(x, y, grid)];
   const h = packH < 20 ? gridH : packH;
   return getHeight(h);
@@ -92,7 +90,6 @@ function getFriendlyPrecipitation(prec: number) {
 
 // get user-friendly (real-world) precipitation value from map data
 export function getCellIdPrecipitation(gridCellId: number) {
-  // @ts-expect-error pack and grid are global variables
   const prec = grid.cells.prec[pack.cells.g[gridCellId]];
   return getFriendlyPrecipitation(prec);
 }
@@ -102,11 +99,8 @@ export function getCellIdPrecipitation(gridCellId: number) {
 // ***
 
 export function getCellPopulation(cellId: number) {
-  // @ts-expect-error pack and populationRate are global variables
   const rural = pack.cells.pop[cellId] * populationRate;
-  // @ts-expect-error pack is a global variable
   const burg = pack.cells.burg[cellId];
-  // @ts-expect-error pack and populationRate and urbanization are global variables
   const urban = burg ? pack.burgs[burg].population * populationRate * urbanization : 0;
   return [rural, urban];
 }
