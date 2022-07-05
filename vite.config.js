@@ -24,6 +24,25 @@ export default defineConfig(({mode}) => {
         }
       })
     ],
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id, {getModuleInfo}) {
+            if (id.includes("d3")) {
+              return "d3";
+            }
+            if (id.includes("node_modules")) {
+              return "vendor";
+            }
+
+            const importersLen = getModuleInfo(id).importers.length;
+            if (importersLen > 1) {
+              return "common";
+            }
+          }
+        }
+      }
+    },
     resolve: {
       alias: [
         {find: "src", replacement: path.resolve(pathName, "./src")},
