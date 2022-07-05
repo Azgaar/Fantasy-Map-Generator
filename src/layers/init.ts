@@ -1,5 +1,9 @@
+import {getInputValue, setInputValue} from "utils/nodeUtils";
 import {stored, byId, store} from "utils/shorthands";
+import {renderLayer} from "./renderers";
+import {toggleLayerOnClick} from "./toggles";
 import {layerIsOn} from "./utils";
+import {prompt} from "scripts/prompt";
 
 export function initLayers() {
   restoreCustomPresets();
@@ -7,7 +11,7 @@ export function initLayers() {
   addLayerListeners();
 }
 
-let presets = {};
+let presets: Dict<string[]> = {};
 
 const defaultPresets = {
   political: [
@@ -86,23 +90,23 @@ function restoreCustomPresets() {
 
   for (const preset in storedPresets) {
     if (presets[preset]) continue;
-    byId("layersPreset").add(new Option(preset, preset));
+    (byId("layersPreset") as HTMLSelectElement)?.add(new Option(preset, preset));
   }
 
   presets = storedPresets;
 }
 
 function addLayerListeners() {
-  byId("mapLayers").on("click", toggleLayerOnClick);
-  byId("savePresetButton").on("click", savePreset);
-  byId("removePresetButton").on("click", removePreset);
+  byId("mapLayers")?.on("click", toggleLayerOnClick);
+  byId("savePresetButton")?.on("click", savePreset);
+  byId("removePresetButton")?.on("click", removePreset);
 
   // allow to move layers by dragging layer button (jquery)
   $("#mapLayers").sortable({items: "li:not(.solid)", containment: "parent", cancel: ".solid", update: moveLayer});
 }
 
 // connection between option layer buttons and actual svg groups to move the element
-const layerButtonToElementMap = {
+const layerButtonToElementMap: Dict<string> = {
   toggleBiomes: "biomes",
   toggleBorders: "borders",
   toggleCells: "cells",
@@ -131,34 +135,28 @@ const layerButtonToElementMap = {
   toggleZones: "zones"
 };
 
-function moveLayer(event, $layerButton) {
-  const getLayer = buttonId => $("#" + layerButtonToElementMap[buttonId]);
-  const layer = getLayer($layerButton.item.attr("id"));
-  if (!layer) return;
+function moveLayer(_event: Event, layer: JQueryUI.SortableUIParams) {
+  const getLayer = (buttonId: string) => $("#" + layerButtonToElementMap[buttonId]);
+  const layerId = getLayer(layer.item.attr("id") || "");
+  if (!layerId) return;
 
-  const prev = getLayer($layerButton.item.prev().attr("id"));
-  const next = getLayer($layerButton.item.next().attr("id"));
+  const prev = getLayer(layer.item.prev().attr("id") || "");
+  const next = getLayer(layer.item.next().attr("id") || "");
 
-  if (prev) layer.insertAfter(prev);
-  else if (next) layer.insertBefore(next);
-}
-
-function toggleLayerOnClick(event) {
-  const targetId = event.target.id;
-  if (!targetId || targetId === "mapLayers" || !layerTogglesMap[targetId]) return;
-  layerTogglesMap[targetId]();
+  if (prev) layer.item.insertAfter(prev);
+  else if (next) layer.item.insertBefore(next);
 }
 
 // run on map generation
 function applyPreset() {
-  const preset = stored("preset") || byId("layersPreset")?.value || "political";
+  const preset = stored("preset") || getInputValue("layersPreset") || "political";
   changePreset(preset);
 }
 
 // toggle layers on preset change
-function changePreset(preset) {
+function changePreset(preset: string) {
   const layers = presets[preset]; // layers to be turned on
-  const $layerButtons = byId("mapLayers").querySelectorAll("li");
+  const $layerButtons = byId("mapLayers")?.querySelectorAll("li")!;
 
   $layerButtons.forEach(function ($layerButton) {
     const {id} = $layerButton;
@@ -166,36 +164,45 @@ function changePreset(preset) {
     else if (!layers.includes(id) && layerIsOn(id)) $layerButton.click();
   });
 
-  byId("layersPreset").value = preset;
+  setInputValue("layersPreset", preset);
   store("preset", preset);
 
-  const isDefault = defaultPresets[preset];
-  byId("removePresetButton").style.display = isDefault ? "none" : "inline-block";
-  byId("savePresetButton").style.display = "none";
-  if (byId("canvas3d")) setTimeout(ThreeD.update(), 400);
+  const isDefault = preset in defaultPresets;
+
+  const $removeButton = byId("removePresetButton")!;
+  const $saveButton = byId("savePresetButton")!;
+
+  $removeButton.style.display = isDefault ? "none" : "inline-block";
+  $saveButton.style.display = "none";
+
+  if (byId("canvas3d")) setTimeout(window.ThreeD.update(), 400);
 }
 
 function savePreset() {
-  prompt("Please provide a preset name", {default: ""}, preset => {
-    presets[preset] = Array.from(byId("mapLayers").querySelectorAll("li:not(.buttonoff)"))
+  prompt("Please provide a preset name", {default: ""}, returned => {
+    const preset = String(returned);
+    presets[preset] = Array.from(byId("mapLayers")?.querySelectorAll("li:not(.buttonoff)") || [])
       .map(node => node.id)
       .sort();
-    layersPreset.add(new Option(preset, preset, false, true));
+
+    (byId("layersPreset") as HTMLSelectElement)?.add(new Option(preset, preset, false, true));
     localStorage.setItem("presets", JSON.stringify(presets));
     localStorage.setItem("preset", preset);
-    removePresetButton.style.display = "inline-block";
-    savePresetButton.style.display = "none";
+    byId("removePresetButton")!.style.display = "inline-block";
+    byId("savePresetButton")!.style.display = "none";
   });
 }
 
 function removePreset() {
-  const preset = layersPreset.value;
+  const $layersPreset = byId("layersPreset") as HTMLSelectElement;
+  const preset = $layersPreset.value;
   delete presets[preset];
-  const index = Array.from(layersPreset.options).findIndex(o => o.value === preset);
-  layersPreset.options.remove(index);
-  layersPreset.value = "custom";
-  removePresetButton.style.display = "none";
-  savePresetButton.style.display = "inline-block";
+  const index = Array.from($layersPreset.options).findIndex(option => option.value === preset);
+  $layersPreset.options.remove(index);
+  $layersPreset.value = "custom";
+
+  byId("removePresetButton")!.style.display = "none";
+  byId("savePresetButton")!.style.display = "inline-block";
 
   store("presets", JSON.stringify(presets));
   localStorage.removeItem("preset");
@@ -203,22 +210,22 @@ function removePreset() {
 
 // run on map regeneration
 export function restoreLayers() {
-  if (layerIsOn("toggleHeight")) drawHeightmap();
-  if (layerIsOn("toggleCells")) drawCells();
-  if (layerIsOn("toggleGrid")) drawGrid();
-  if (layerIsOn("toggleCoordinates")) drawCoordinates();
+  if (layerIsOn("toggleHeight")) renderLayer("heightmap");
+  if (layerIsOn("toggleCells")) renderLayer("cells");
+  if (layerIsOn("toggleGrid")) renderLayer("grid");
+  if (layerIsOn("toggleCoordinates")) renderLayer("coordinates");
   if (layerIsOn("toggleCompass")) compass.style("display", "block");
-  if (layerIsOn("toggleTemp")) drawTemp();
-  if (layerIsOn("togglePrec")) drawPrec();
-  if (layerIsOn("togglePopulation")) drawPopulation();
-  if (layerIsOn("toggleBiomes")) drawBiomes();
-  if (layerIsOn("toggleRelief")) ReliefIcons();
-  if (layerIsOn("toggleCultures")) drawCultures();
-  if (layerIsOn("toggleProvinces")) drawProvinces();
-  if (layerIsOn("toggleReligions")) drawReligions();
-  if (layerIsOn("toggleIce")) drawIce();
-  if (layerIsOn("toggleEmblems")) drawEmblems();
-  if (layerIsOn("toggleMarkers")) drawMarkers();
+  if (layerIsOn("toggleTemp")) renderLayer("temperature");
+  if (layerIsOn("togglePrec")) renderLayer("precipitation");
+  if (layerIsOn("togglePopulation")) renderLayer("population");
+  if (layerIsOn("toggleBiomes")) renderLayer("biomes");
+  if (layerIsOn("toggleRelief")) window.ReliefIcons();
+  if (layerIsOn("toggleCultures")) renderLayer("cultures");
+  if (layerIsOn("toggleProvinces")) renderLayer("provinces");
+  if (layerIsOn("toggleReligions")) renderLayer("religions");
+  if (layerIsOn("toggleIce")) renderLayer("ice");
+  if (layerIsOn("toggleEmblems")) renderLayer("emblems");
+  if (layerIsOn("toggleMarkers")) renderLayer("markers");
 
   // some layers are rendered each time, remove them if they are not on
   if (!layerIsOn("toggleBorders")) borders.selectAll("path").remove();
@@ -227,21 +234,21 @@ export function restoreLayers() {
 }
 
 export function updatePresetInput() {
-  const $toggledOnLayers = byId("mapLayers").querySelectorAll("li:not(.buttonoff)");
-  const currentLayers = Array.from($toggledOnLayers)
+  const $toggledOnLayers = byId("mapLayers")?.querySelectorAll("li:not(.buttonoff)");
+  const currentLayers = Array.from($toggledOnLayers || [])
     .map(node => node.id)
     .sort();
 
   for (const preset in presets) {
     if (JSON.stringify(presets[preset].sort()) !== JSON.stringify(currentLayers)) continue;
 
-    byId("layersPreset").value = preset;
-    byId("removePresetButton").style.display = defaultPresets[preset] ? "none" : "inline-block";
-    byId("savePresetButton").style.display = "none";
+    setInputValue("layersPreset", preset);
+    byId("removePresetButton")!.style.display = preset in defaultPresets ? "none" : "inline-block";
+    byId("savePresetButton")!.style.display = "none";
     return;
   }
 
-  byId("layersPreset").value = "custom";
-  byId("removePresetButton").style.display = "none";
-  byId("savePresetButton").style.display = "inline-block";
+  setInputValue("layersPreset", "custom");
+  byId("removePresetButton")!.style.display = "none";
+  byId("savePresetButton")!.style.display = "inline-block";
 }

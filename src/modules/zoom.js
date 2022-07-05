@@ -33,6 +33,10 @@ window.Zoom = (function () {
     invokeActiveZooming();
   }
 
+  function force() {
+    zoom.scaleBy(svg, 1.00001); // enforce browser re-draw;
+  }
+
   // zoom to a specific point
   function to(x, y, z = 8, d = 2000) {
     const transform = d3.zoomIdentity.translate(x * -z + graphWidth / 2, y * -z + graphHeight / 2).scale(z);
@@ -59,5 +63,5 @@ window.Zoom = (function () {
     zoom.scaleTo(element, scale);
   }
 
-  return {setZoomBehavior, invoke, to, reset, scaleExtent, translateExtent, scaleTo};
+  return {setZoomBehavior, invoke, force, to, reset, scaleExtent, translateExtent, scaleTo};
 })();

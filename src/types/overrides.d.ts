@@ -10,9 +10,15 @@ interface Window {
       [key: string]: boolean;
     };
   };
-  d3: typeof d3;
-  $: typeof $;
   mapCoordinates: IMapCoordinates;
+  // untyped IIFE modules
+  $: typeof $;
+  d3: typeof d3;
+  Biomes: typeof Biomes;
+  Names: typeof Names;
+  ThreeD: typeof ThreeD;
+  ReliefIcons: typeof ReliefIcons;
+  Zoom: typeof Zoom;
 }
 
 interface Node {

@@ -24,7 +24,7 @@ styleElements.addEventListener("change", function (ev) {
 });
 
 // select element to be edited
-function editStyle(element, group) {
+export function editStyle(element, group) {
   showOptions();
   styleTab.click();
   styleElementSelect.value = element;
@@ -403,7 +403,7 @@ styleGridScale.addEventListener("input", function () {
   calculateFriendlyGridSize();
 });
 
-function calculateFriendlyGridSize() {
+export function calculateFriendlyGridSize() {
   const size = styleGridScale.value * 25;
   const friendly = `${rn(size * distanceScaleInput.value, 2)} ${distanceUnitInput.value}`;
   styleGridSizeFriendly.value = friendly;
@@ -537,7 +537,7 @@ styleCompassSizeInput.addEventListener("input", function () {
 styleCompassShiftX.addEventListener("input", shiftCompass);
 styleCompassShiftY.addEventListener("input", shiftCompass);
 
-function shiftCompass() {
+export function shiftCompass() {
   const tr = `translate(${styleCompassShiftX.value} ${styleCompassShiftY.value}) scale(${styleCompassSizeInput.value})`;
   compass.select("use").attr("transform", tr);
 }

@@ -3,7 +3,7 @@ import {findCell} from "utils/graphUtils";
 import {last} from "utils/arrayUtils";
 import {tip, clearMainTip} from "scripts/tooltips";
 import {rn} from "utils/numberUtils";
-import {isCtrlClick} from "utils/keyboardUtils";
+import {isCtrlPressed} from "utils/keyboardUtils";
 import {prompt} from "scripts/prompt";
 import {getNextId} from "utils/nodeUtils";
 import {P, generateSeed} from "utils/probabilityUtils";
@@ -444,7 +444,7 @@ function regenerateMarkers() {
 }
 
 function regenerateZones(event) {
-  if (isCtrlClick(event))
+  if (isCtrlPressed(event))
     prompt("Please provide zones number multiplier", {default: 1, step: 0.01, min: 0, max: 100}, v =>
       addNumberOfZones(v)
     );

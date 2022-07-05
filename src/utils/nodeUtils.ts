@@ -7,11 +7,27 @@ export function getNextId(core: string, index = 1) {
 }
 
 export function getInputValue(id: string) {
+  const $element = byId(id);
+  if (!$element) throw new Error(`Element ${id} not found`);
+  if (!("value" in $element)) throw new Error(`Element ${id} is not an input`);
+
   return (byId(id) as HTMLInputElement)?.value;
 }
 
 export function getInputNumber(id: string) {
+  const $element = byId(id);
+  if (!$element) throw new Error(`Element ${id} not found`);
+  if (!("value" in $element)) throw new Error(`Element ${id} is not an input`);
+
   return (byId(id) as HTMLInputElement)?.valueAsNumber;
+}
+
+export function setInputValue(id: string, value: string | number | boolean) {
+  const $element = byId(id);
+  if (!$element) throw new Error(`Element ${id} not found`);
+  if (!("value" in $element)) throw new Error(`Element ${id} is not an input`);
+
+  ($element as HTMLInputElement).value = String(value);
 }
 
 // apply drop-down menu option. If the value is not in options, add it

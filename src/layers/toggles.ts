@@ -1,8 +1,11 @@
 import {tip} from "scripts/tooltips";
 import {getBase64} from "utils/functionUtils";
-import {isCtrlClick} from "utils/keyboardUtils";
+import {isCtrlPressed} from "utils/keyboardUtils";
+// @ts-expect-error js module
+import {editStyle, calculateFriendlyGridSize, shiftCompass} from "modules/ui/style";
 import {turnLayerButtonOn, turnLayerButtonOff, layerIsOn} from "./utils";
 import {renderLayer} from "./renderers";
+import {getInputNumber, getInputValue} from "utils/nodeUtils";
 
 const layerTogglesMap = {
   toggleBiomes,
@@ -34,11 +37,19 @@ const layerTogglesMap = {
   toggleZones
 };
 
-export function toggleLayer(toggleId) {
+type TLayerToggle = keyof typeof layerTogglesMap;
+
+export function toggleLayer(toggleId: TLayerToggle) {
   layerTogglesMap[toggleId]();
 }
 
-function toggleHeight(event) {
+export function toggleLayerOnClick(event: Event) {
+  const targetId = (event.target as HTMLButtonElement)?.id;
+  if (!targetId || targetId === "mapLayers" || !(targetId in layerTogglesMap)) return;
+  layerTogglesMap[targetId as TLayerToggle](event as MouseEvent);
+}
+
+function toggleHeight(event?: MouseEvent) {
   if (customization === 1) {
     tip("You cannot turn off the layer when heightmap is in edit mode", false, "error");
     return;
@@ -47,9 +58,9 @@ function toggleHeight(event) {
   if (!terrs.selectAll("*").size()) {
     turnLayerButtonOn("toggleHeight");
     renderLayer("heightmap");
-    if (event && isCtrlClick(event)) editStyle("terrs");
+    if (isCtrlPressed(event)) editStyle("terrs");
   } else {
-    if (event && isCtrlClick(event)) {
+    if (isCtrlPressed(event)) {
       editStyle("terrs");
       return;
     }
@@ -58,13 +69,13 @@ function toggleHeight(event) {
   }
 }
 
-function toggleTemp(event) {
+function toggleTemp(event?: MouseEvent) {
   if (!temperature.selectAll("*").size()) {
     turnLayerButtonOn("toggleTemp");
     renderLayer("temperature");
-    if (event && isCtrlClick(event)) editStyle("temperature");
+    if (isCtrlPressed(event)) editStyle("temperature");
   } else {
-    if (event && isCtrlClick(event)) {
+    if (isCtrlPressed(event)) {
       editStyle("temperature");
       return;
     }
@@ -73,13 +84,13 @@ function toggleTemp(event) {
   }
 }
 
-function toggleBiomes(event) {
+function toggleBiomes(event?: MouseEvent) {
   if (!biomes.selectAll("path").size()) {
     turnLayerButtonOn("toggleBiomes");
     renderLayer("biomes");
-    if (event && isCtrlClick(event)) editStyle("biomes");
+    if (isCtrlPressed(event)) editStyle("biomes");
   } else {
-    if (event && isCtrlClick(event)) {
+    if (isCtrlPressed(event)) {
       editStyle("biomes");
       return;
     }
@@ -88,13 +99,13 @@ function toggleBiomes(event) {
   }
 }
 
-function togglePrec(event) {
+function togglePrec(event?: MouseEvent) {
   if (!prec.selectAll("circle").size()) {
     turnLayerButtonOn("togglePrec");
     renderLayer("precipitation");
-    if (event && isCtrlClick(event)) editStyle("prec");
+    if (isCtrlPressed(event)) editStyle("prec");
   } else {
-    if (event && isCtrlClick(event)) {
+    if (isCtrlPressed(event)) {
       editStyle("prec");
       return;
     }
@@ -106,13 +117,13 @@ function togglePrec(event) {
   }
 }
 
-function togglePopulation(event) {
+function togglePopulation(event?: MouseEvent) {
   if (!population.selectAll("line").size()) {
     turnLayerButtonOn("togglePopulation");
     renderLayer("population");
-    if (event && isCtrlClick(event)) editStyle("population");
+    if (isCtrlPressed(event)) editStyle("population");
   } else {
-    if (event && isCtrlClick(event)) {
+    if (isCtrlPressed(event)) {
       editStyle("population");
       return;
     }
@@ -141,13 +152,13 @@ function togglePopulation(event) {
   }
 }
 
-function toggleCells(event) {
+function toggleCells(event?: MouseEvent) {
   if (!cells.selectAll("path").size()) {
     turnLayerButtonOn("toggleCells");
     renderLayer("cells");
-    if (event && isCtrlClick(event)) editStyle("cells");
+    if (isCtrlPressed(event)) editStyle("cells");
   } else {
-    if (event && isCtrlClick(event)) {
+    if (isCtrlPressed(event)) {
       editStyle("cells");
       return;
     }
@@ -156,14 +167,14 @@ function toggleCells(event) {
   }
 }
 
-function toggleIce(event) {
+function toggleIce(event?: MouseEvent) {
   if (!layerIsOn("toggleIce")) {
     turnLayerButtonOn("toggleIce");
     $("#ice").fadeIn();
     if (!ice.selectAll("*").size()) renderLayer("ice");
-    if (event && isCtrlClick(event)) editStyle("ice");
+    if (isCtrlPressed(event)) editStyle("ice");
   } else {
-    if (event && isCtrlClick(event)) {
+    if (isCtrlPressed(event)) {
       editStyle("ice");
       return;
     }
@@ -172,15 +183,15 @@ function toggleIce(event) {
   }
 }
 
-function toggleCultures(event) {
-  const cultures = pack.cultures.filter(c => c.i && !c.removed);
+function toggleCultures(event?: MouseEvent) {
+  const cultures = pack.cultures.filter(({i, removed}) => i && !removed);
   const empty = !cults.selectAll("path").size();
   if (empty && cultures.length) {
     turnLayerButtonOn("toggleCultures");
     renderLayer("cultures");
-    if (event && isCtrlClick(event)) editStyle("cults");
+    if (isCtrlPressed(event)) editStyle("cults");
   } else {
-    if (event && isCtrlClick(event)) {
+    if (isCtrlPressed(event)) {
       editStyle("cults");
       return;
     }
@@ -189,14 +200,14 @@ function toggleCultures(event) {
   }
 }
 
-function toggleReligions(event) {
-  const religions = pack.religions.filter(r => r.i && !r.removed);
+function toggleReligions(event?: MouseEvent) {
+  const religions = pack.religions.filter(({i, removed}) => i && !removed);
   if (!relig.selectAll("path").size() && religions.length) {
     turnLayerButtonOn("toggleReligions");
     renderLayer("religions");
-    if (event && isCtrlClick(event)) editStyle("relig");
+    if (isCtrlPressed(event)) editStyle("relig");
   } else {
-    if (event && isCtrlClick(event)) {
+    if (isCtrlPressed(event)) {
       editStyle("relig");
       return;
     }
@@ -205,14 +216,14 @@ function toggleReligions(event) {
   }
 }
 
-function toggleStates(event) {
+function toggleStates(event?: MouseEvent) {
   if (!layerIsOn("toggleStates")) {
     turnLayerButtonOn("toggleStates");
     regions.style("display", null);
     renderLayer("states");
-    if (event && isCtrlClick(event)) editStyle("regions");
+    if (isCtrlPressed(event)) editStyle("regions");
   } else {
-    if (event && isCtrlClick(event)) {
+    if (isCtrlPressed(event)) {
       editStyle("regions");
       return;
     }
@@ -221,13 +232,13 @@ function toggleStates(event) {
   }
 }
 
-function toggleBorders(event) {
+function toggleBorders(event?: MouseEvent) {
   if (!layerIsOn("toggleBorders")) {
     turnLayerButtonOn("toggleBorders");
     renderLayer("borders");
-    if (event && isCtrlClick(event)) editStyle("borders");
+    if (isCtrlPressed(event)) editStyle("borders");
   } else {
-    if (event && isCtrlClick(event)) {
+    if (isCtrlPressed(event)) {
       editStyle("borders");
       return;
     }
@@ -236,13 +247,13 @@ function toggleBorders(event) {
   }
 }
 
-function toggleProvinces(event) {
+function toggleProvinces(event?: MouseEvent) {
   if (!layerIsOn("toggleProvinces")) {
     turnLayerButtonOn("toggleProvinces");
     renderLayer("provinces");
-    if (event && isCtrlClick(event)) editStyle("provs");
+    if (isCtrlPressed(event)) editStyle("provs");
   } else {
-    if (event && isCtrlClick(event)) {
+    if (isCtrlPressed(event)) {
       editStyle("provs");
       return;
     }
@@ -251,15 +262,15 @@ function toggleProvinces(event) {
   }
 }
 
-function toggleGrid(event) {
+function toggleGrid(event?: MouseEvent) {
   if (!gridOverlay.selectAll("*").size()) {
     turnLayerButtonOn("toggleGrid");
     renderLayer("grid");
     calculateFriendlyGridSize();
 
-    if (event && isCtrlClick(event)) editStyle("gridOverlay");
+    if (isCtrlPressed(event)) editStyle("gridOverlay");
   } else {
-    if (event && isCtrlClick(event)) {
+    if (isCtrlPressed(event)) {
       editStyle("gridOverlay");
       return;
     }
@@ -268,13 +279,13 @@ function toggleGrid(event) {
   }
 }
 
-function toggleCoordinates(event) {
+function toggleCoordinates(event?: MouseEvent) {
   if (!coordinates.selectAll("*").size()) {
     turnLayerButtonOn("toggleCoordinates");
     renderLayer("coordinates");
-    if (event && isCtrlClick(event)) editStyle("coordinates");
+    if (isCtrlPressed(event)) editStyle("coordinates");
   } else {
-    if (event && isCtrlClick(event)) {
+    if (isCtrlPressed(event)) {
       editStyle("coordinates");
       return;
     }
@@ -283,7 +294,7 @@ function toggleCoordinates(event) {
   }
 }
 
-function toggleCompass(event) {
+function toggleCompass(event?: MouseEvent) {
   if (!layerIsOn("toggleCompass")) {
     turnLayerButtonOn("toggleCompass");
     $("#compass").fadeIn();
@@ -291,9 +302,9 @@ function toggleCompass(event) {
       compass.append("use").attr("xlink:href", "#rose");
       shiftCompass();
     }
-    if (event && isCtrlClick(event)) editStyle("compass");
+    if (isCtrlPressed(event)) editStyle("compass");
   } else {
-    if (event && isCtrlClick(event)) {
+    if (isCtrlPressed(event)) {
       editStyle("compass");
       return;
     }
@@ -302,14 +313,14 @@ function toggleCompass(event) {
   }
 }
 
-function toggleRelief(event) {
+function toggleRelief(event?: MouseEvent) {
   if (!layerIsOn("toggleRelief")) {
     turnLayerButtonOn("toggleRelief");
-    if (!terrain.selectAll("*").size()) ReliefIcons();
+    if (!terrain.selectAll("*").size()) window.ReliefIcons();
     $("#terrain").fadeIn();
-    if (event && isCtrlClick(event)) editStyle("terrain");
+    if (isCtrlPressed(event)) editStyle("terrain");
   } else {
-    if (event && isCtrlClick(event)) {
+    if (isCtrlPressed(event)) {
       editStyle("terrain");
       return;
     }
@@ -318,13 +329,14 @@ function toggleRelief(event) {
   }
 }
 
-function toggleTexture(event) {
+function toggleTexture(event?: MouseEvent) {
   if (!layerIsOn("toggleTexture")) {
     turnLayerButtonOn("toggleTexture");
     // append default texture image selected by default. Don't append on load to not harm performance
     if (!texture.selectAll("*").size()) {
-      const x = +styleTextureShiftX.value;
-      const y = +styleTextureShiftY.value;
+      const x = getInputNumber("styleTextureShiftX");
+      const y = getInputNumber("styleTextureShiftY");
+
       const image = texture
         .append("image")
         .attr("id", "textureImage")
@@ -333,37 +345,37 @@ function toggleTexture(event) {
         .attr("width", graphWidth - x)
         .attr("height", graphHeight - y)
         .attr("preserveAspectRatio", "xMidYMid slice");
-      getBase64(styleTextureInput.value, base64 => image.attr("xlink:href", base64));
+      getBase64(getInputValue("styleTextureInput"), base64 => image.attr("xlink:href", base64));
     }
     $("#texture").fadeIn();
-    zoom.scaleBy(svg, 1.00001); // enforce browser re-draw
-    if (event && isCtrlClick(event)) editStyle("texture");
+    window.Zoom.force;
+    if (isCtrlPressed(event)) editStyle("texture");
   } else {
-    if (event && isCtrlClick(event)) return editStyle("texture");
+    if (isCtrlPressed(event)) return editStyle("texture");
     $("#texture").fadeOut();
     turnLayerButtonOff("toggleTexture");
   }
 }
 
-function toggleRivers(event) {
+function toggleRivers(event?: MouseEvent) {
   if (!layerIsOn("toggleRivers")) {
     turnLayerButtonOn("toggleRivers");
     renderLayer("rivers");
-    if (event && isCtrlClick(event)) editStyle("rivers");
+    if (isCtrlPressed(event)) editStyle("rivers");
   } else {
-    if (event && isCtrlClick(event)) return editStyle("rivers");
+    if (isCtrlPressed(event)) return editStyle("rivers");
     rivers.selectAll("*").remove();
     turnLayerButtonOff("toggleRivers");
   }
 }
 
-function toggleRoutes(event) {
+function toggleRoutes(event?: MouseEvent) {
   if (!layerIsOn("toggleRoutes")) {
     turnLayerButtonOn("toggleRoutes");
     $("#routes").fadeIn();
-    if (event && isCtrlClick(event)) editStyle("routes");
+    if (isCtrlPressed(event)) editStyle("routes");
   } else {
-    if (event && isCtrlClick(event)) {
+    if (isCtrlPressed(event)) {
       editStyle("routes");
       return;
     }
@@ -372,13 +384,13 @@ function toggleRoutes(event) {
   }
 }
 
-function toggleMilitary(event) {
+function toggleMilitary(event?: MouseEvent) {
   if (!layerIsOn("toggleMilitary")) {
     turnLayerButtonOn("toggleMilitary");
     $("#armies").fadeIn();
-    if (event && isCtrlClick(event)) editStyle("armies");
+    if (isCtrlPressed(event)) editStyle("armies");
   } else {
-    if (event && isCtrlClick(event)) {
+    if (isCtrlPressed(event)) {
       editStyle("armies");
       return;
     }
@@ -387,26 +399,26 @@ function toggleMilitary(event) {
   }
 }
 
-function toggleMarkers(event) {
+function toggleMarkers(event?: MouseEvent) {
   if (!layerIsOn("toggleMarkers")) {
     turnLayerButtonOn("toggleMarkers");
     renderLayer("markers");
-    if (event && isCtrlClick(event)) editStyle("markers");
+    if (isCtrlPressed(event)) editStyle("markers");
   } else {
-    if (event && isCtrlClick(event)) return editStyle("markers");
+    if (isCtrlPressed(event)) return editStyle("markers");
     markers.selectAll("*").remove();
     turnLayerButtonOff("toggleMarkers");
   }
 }
 
-function toggleLabels(event) {
+function toggleLabels(event?: MouseEvent) {
   if (!layerIsOn("toggleLabels")) {
     turnLayerButtonOn("toggleLabels");
     labels.style("display", null);
-    Zoom.invoke();
-    if (event && isCtrlClick(event)) editStyle("labels");
+    window.Zoom.invoke();
+    if (isCtrlPressed(event)) editStyle("labels");
   } else {
-    if (event && isCtrlClick(event)) {
+    if (isCtrlPressed(event)) {
       editStyle("labels");
       return;
     }
@@ -415,13 +427,13 @@ function toggleLabels(event) {
   }
 }
 
-function toggleIcons(event) {
+function toggleIcons(event?: MouseEvent) {
   if (!layerIsOn("toggleIcons")) {
     turnLayerButtonOn("toggleIcons");
     $("#icons").fadeIn();
-    if (event && isCtrlClick(event)) editStyle("burgIcons");
+    if (isCtrlPressed(event)) editStyle("burgIcons");
   } else {
-    if (event && isCtrlClick(event)) {
+    if (isCtrlPressed(event)) {
       editStyle("burgIcons");
       return;
     }
@@ -430,14 +442,14 @@ function toggleIcons(event) {
   }
 }
 
-function toggleRulers(event) {
+function toggleRulers(event?: MouseEvent) {
   if (!layerIsOn("toggleRulers")) {
     turnLayerButtonOn("toggleRulers");
-    if (event && isCtrlClick(event)) editStyle("ruler");
+    if (isCtrlPressed(event)) editStyle("ruler");
     rulers.draw();
     ruler.style("display", null);
   } else {
-    if (event && isCtrlClick(event)) {
+    if (isCtrlPressed(event)) {
       editStyle("ruler");
       return;
     }
@@ -447,28 +459,33 @@ function toggleRulers(event) {
   }
 }
 
-function toggleScaleBar(event) {
+function toggleScaleBar(event?: MouseEvent) {
   if (!layerIsOn("toggleScaleBar")) {
     turnLayerButtonOn("toggleScaleBar");
     $("#scaleBar").fadeIn();
-    if (event && isCtrlClick(event)) editUnits();
+    if (isCtrlPressed(event)) openUnitsEditor();
   } else {
-    if (event && isCtrlClick(event)) {
-      editUnits();
-      return;
+    if (isCtrlPressed(event)) openUnitsEditor();
+    else {
+      $("#scaleBar").fadeOut();
+      turnLayerButtonOff("toggleScaleBar");
     }
-    $("#scaleBar").fadeOut();
-    turnLayerButtonOff("toggleScaleBar");
+  }
+
+  async function openUnitsEditor() {
+    // @ts-ignore fix dynamic import
+    const {editUnits} = await import("./../modules/ui/unitsEditor.js");
+    editUnits();
   }
 }
 
-function toggleZones(event) {
+function toggleZones(event?: MouseEvent) {
   if (!layerIsOn("toggleZones")) {
     turnLayerButtonOn("toggleZones");
     $("#zones").fadeIn();
-    if (event && isCtrlClick(event)) editStyle("zones");
+    if (isCtrlPressed(event)) editStyle("zones");
   } else {
-    if (event && isCtrlClick(event)) {
+    if (isCtrlPressed(event)) {
       editStyle("zones");
       return;
     }
@@ -477,14 +494,14 @@ function toggleZones(event) {
   }
 }
 
-function toggleEmblems(event) {
+function toggleEmblems(event?: MouseEvent) {
   if (!layerIsOn("toggleEmblems")) {
     turnLayerButtonOn("toggleEmblems");
     if (!emblems.selectAll("use").size()) renderLayer("emblems");
     $("#emblems").fadeIn();
-    if (event && isCtrlClick(event)) editStyle("emblems");
+    if (isCtrlPressed(event)) editStyle("emblems");
   } else {
-    if (event && isCtrlClick(event)) {
+    if (isCtrlPressed(event)) {
       editStyle("emblems");
       return;
     }

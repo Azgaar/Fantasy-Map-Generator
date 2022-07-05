@@ -6,11 +6,29 @@ interface IPack {
     pop: number[];
     burg: number[];
   };
-  states: [];
-  cultures: [];
-  provinces: [];
+  states: IState[];
+  cultures: ICulture[];
+  provinces: IProvince[];
   burgs: IBurg[];
-  religions: [];
+  religions: IReligion[];
+}
+
+interface IState {
+  i: number;
+  name: string;
+  removed?: boolean;
+}
+
+interface ICulture {
+  i: number;
+  name: string;
+  removed?: boolean;
+}
+
+interface IProvince {
+  i: number;
+  name: string;
+  removed?: boolean;
 }
 
 interface IBurg {
@@ -20,4 +38,11 @@ interface IBurg {
   x: number;
   y: number;
   population: number;
+  removed?: boolean;
+}
+
+interface IReligion {
+  i: number;
+  name: string;
+  removed?: boolean;
 }
