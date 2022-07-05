@@ -108,9 +108,16 @@
       }
     </style>
 
+    <!-- public libs -->
+    <script src="/libs/jquery-3.1.1.min.js"></script>
+    <script defer src="/libs/jquery-ui.min.js"></script>
+    <script defer src="/libs/jquery.ui.touch-punch.min.js"></script>
+    <link href="/libs/jquery-ui.css" as="style" />
+    <script src="/libs/define-globals.js"></script>
+
+    <!-- styles -->
     <link rel="preload" href="/src/index.css" as="style" onload="this.onload=null; this.rel='stylesheet'" />
     <link rel="preload" href="/src/icons.css" as="style" onload="this.onload=null; this.rel='stylesheet'" />
-    <link rel="preload" href="/src/libs/jquery-ui.css" as="style" onload="this.onload=null; this.rel='stylesheet'" />
   </head>
   <body>
     <svg
@@ -7655,9 +7662,6 @@
       </defs>
     </svg>
 
-    <script src="/src/libs/jquery-3.1.1.min.js"></script>
-    <script src="/src/libs/jquery-ui.min.js"></script>
-
     <script type="module" src="/src/modules/heightmap-generator.js"></script>
     <script type="module" src="/src/modules/ocean-layers.js"></script>
     <script type="module" src="/src/modules/river-generator.js"></script>
@@ -7673,10 +7677,8 @@
     <script type="module" src="/src/modules/coa-generator.js"></script>
     <script type="module" src="/src/modules/submap.js"></script>
     <script type="module" src="/src/modules/fonts.js"></script>
-    <script type="modile" src="/src/modules/ui/stylePresets.js"></script>
+    <script type="module" src="/src/modules/ui/stylePresets.js"></script>
     <script type="module" src="/src/modules/ui/options.js"></script>
-
-    <script src="/src/modules/define-globals.js"></script>
     <script type="module" src="/src/modules/zoom.js"></script>
 
     <script type="module" src="/src/main.ts"></script>
@@ -7684,8 +7686,8 @@
     <script type="module" src="/src/modules/activeZooming.js"></script>
     <script type="module" src="/src/modules/relief-icons.js"></script>
     <script type="module" src="/src/modules/ui/style.js"></script>
-    <script type="module" src="/src/modules/ui/editors.js?v=1.87.01"></script>
-    <script type="module" src="/src/modules/ui/tools.js?v=1.87.03"></script>
+    <script type="module" src="/src/modules/ui/editors.js"></script>
+    <script type="module" src="/src/modules/ui/tools.js"></script>
     <script type="module" src="/src/modules/ui/world-configurator.js"></script>
     <script type="module" src="/src/modules/ui/heightmap-editor.js"></script>
     <script type="module" src="/src/modules/ui/provinces-editor.js"></script>
@@ -7702,7 +7704,6 @@
     <script type="module" src="/src/modules/ui/rivers-creator.js"></script>
     <script type="module" src="/src/modules/ui/relief-editor.js"></script>
     <script type="module" src="/src/modules/ui/burg-editor.js"></script>
-    <script type="module" src="/src/modules/ui/units-editor.js"></script>
     <script type="module" src="/src/modules/ui/notes-editor.js"></script>
     <script type="module" src="/src/modules/ui/diplomacy-editor.js"></script>
     <script type="module" src="/src/modules/ui/zones-editor.js"></script>
@@ -7719,7 +7720,6 @@
     <script type="module" src="/src/modules/ui/submap.js"></script>
     <script type="module" src="/src/modules/ui/hotkeys.js"></script>
     <script type="module" src="/src/modules/coa-renderer.js"></script>
-    <script defer src="/src/libs/jquery.ui.touch-punch.min.js"></script>
     <script type="module" src="/src/modules/io/save.js"></script>
     <script type="module" src="/src/modules/io/load.js"></script>
     <script type="module" src="/src/modules/io/cloud.js"></script>

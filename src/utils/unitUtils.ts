@@ -84,7 +84,7 @@ export function getHeight(h: number, abs: boolean = false) {
 // Precipitation
 // ***
 
-function getFriendlyPrecipitation(prec: number) {
+export function getFriendlyPrecipitation(prec: number) {
   return prec * 100 + " mm";
 }
 

@@ -1,6 +1,8 @@
 {
   "name": "fantasy-map-generator",
   "version": "1.88.00",
+  "description": "Web application generating interactive and highly customizable maps",
+  "author": "Azgaar",
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -544,7 +544,7 @@ function togglePercentageMode() {
 
 async function showHierarchy() {
   if (customization) return;
-  const HeirarchyTree = await import("../hierarchy-tree.js?v=1.87.01");
+  const HeirarchyTree = await import("../hierarchy-tree.js");
 
   const getDescription = religion => {
     const {name, type, form, rural, urban} = religion;

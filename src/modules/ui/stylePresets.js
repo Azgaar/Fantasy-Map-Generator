@@ -1,3 +1,4 @@
+import {ERROR} from "config/logging";
 import {tip} from "scripts/tooltips";
 import {isJsonValid} from "utils/stringUtils";
 import {byId} from "utils/shorthands";
@@ -56,20 +57,18 @@ async function getStylePreset(desiredPreset) {
     }
   }
 
-  const style = await fetchSystemPreset(presetToLoad);
+  const style = await importSystemPreset(presetToLoad);
   return [presetToLoad, style];
 }
 
-async function fetchSystemPreset(preset) {
-  const style = await fetch(`./styles/${preset}.json`)
-    .then(res => res.json())
-    .catch(err => {
-      ERROR && console.error("Error on loading style preset", preset, err);
-      return null;
-    });
+async function importSystemPreset(preset) {
+  const style = await import(`../../assets/styles/${preset}.json`).catch(err => {
+    ERROR && console.error("Error on loading style preset", preset, err);
+    return null;
+  });
 
-  if (!style) throw new Error("Cannot fetch style preset", preset);
-  return style;
+  if (!style.default) throw new Error("Cannot fetch style preset", preset);
+  return style.default;
 }
 
 function applyStyle(style) {
