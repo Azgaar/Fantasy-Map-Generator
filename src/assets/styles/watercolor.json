@@ -280,7 +280,7 @@
     "fill": "#2d788b"
   },
   "#oceanicPattern": {
-    "href": "./images/kiwiroo.png",
+    "href": "./images/oceanPatterns/kiwiroo.png",
     "opacity": 0.5
   },
   "#terrs": {

@@ -286,7 +286,7 @@
     "fill": "#4e6964"
   },
   "#oceanicPattern": {
-    "href": "./images/pattern3.png",
+    "href": "./images/oceanPatterns/pattern3.png",
     "opacity": 0.2
   },
   "#terrs": {

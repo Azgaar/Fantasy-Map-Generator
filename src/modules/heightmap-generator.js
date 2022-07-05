@@ -58,7 +58,7 @@ window.HeightmapGenerator = (function () {
 
       // load heightmap into image and render to canvas
       const img = new Image();
-      img.src = `./heightmaps/${id}.png`;
+      img.src = `../assets/heightmaps/${id}.png`;
       img.onload = () => {
         ctx.drawImage(img, 0, 0, cellsX, cellsY);
         const imageData = ctx.getImageData(0, 0, cellsX, cellsY);

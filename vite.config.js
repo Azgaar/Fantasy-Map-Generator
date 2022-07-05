@@ -34,7 +34,6 @@ export default defineConfig(({mode}) => {
             if (id.includes("node_modules")) {
               return "vendor";
             }
-
             const importersLen = getModuleInfo(id).importers.length;
             if (importersLen > 1) {
               return "common";
