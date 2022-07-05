@@ -10,7 +10,7 @@ import {rn} from "utils/numberUtils";
 export function reGraph() {
   TIME && console.time("reGraph");
   const {cells: gridCells, points, features} = grid;
-  const newCells: {p: number[][]; g: number[]; h: number[]} = {p: [], g: [], h: []}; // store new data
+  const newCells: {p: TPoints; g: number[]; h: number[]} = {p: [], g: [], h: []}; // store new data
   const spacing2 = grid.spacing ** 2;
 
   for (const i of gridCells.i) {

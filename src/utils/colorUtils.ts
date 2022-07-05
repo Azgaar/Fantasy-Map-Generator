@@ -15,18 +15,28 @@ const c12: Hex[] = [
   "#eb8de7"
 ];
 
+type ColorScheme = (n: number) => string;
+const colorSchemeMap: Dict<ColorScheme> = {
+  default: d3.scaleSequential(d3.interpolateRainbow),
+  bright: d3.scaleSequential(d3.interpolateSpectral),
+  light: d3.scaleSequential(d3.interpolateRdYlGn),
+  green: d3.scaleSequential(d3.interpolateGreens),
+  monochrome: d3.scaleSequential(d3.interpolateGreys)
+};
+
 export function getColors(number: number) {
-  const cRB = d3.scaleSequential(d3.interpolateRainbow);
+  const scheme = colorSchemeMap.default;
   const colors = d3.shuffle(
     d3
       .range(number)
-      .map((index: number) => (index < 12 ? c12[index] : d3.color(cRB((index - 12) / (number - 12))).hex()))
+      .map((index: number) => (index < 12 ? c12[index] : d3.color(scheme((index - 12) / (number - 12)))!.formatHex()))
   );
   return colors;
 }
 
-export function getRandomColor() {
-  return d3.color(d3.scaleSequential(d3.interpolateRainbow)(Math.random())).hex();
+export function getRandomColor(): Hex {
+  const rgb = colorSchemeMap.default(Math.random());
+  return d3.color(rgb)!.formatHex() as Hex;
 }
 
 // mix a color with a random color
@@ -36,21 +46,12 @@ export function getMixedColor(hexColor: string, mixation = 0.2, bright = 0.3) {
   const color2 = getRandomColor();
   const mixedColor = d3.interpolate(color1, color2)(mixation);
 
-  return d3.color(mixedColor).brighter(bright).hex();
+  return d3.color(mixedColor)!.brighter(bright).hex();
 }
 
 export function getColorScheme(schemeName: string) {
   return colorSchemeMap[schemeName] || colorSchemeMap.default;
 }
-
-type ColorScheme = (n: number) => RGB;
-const colorSchemeMap: Dict<ColorScheme> = {
-  default: d3.scaleSequential(d3.interpolateSpectral),
-  bright: d3.scaleSequential(d3.interpolateSpectral),
-  light: d3.scaleSequential(d3.interpolateRdYlGn),
-  green: d3.scaleSequential(d3.interpolateGreens),
-  monochrome: d3.scaleSequential(d3.interpolateGreys)
-};
 
 export function getHeightColor(height: number, scheme = getColorScheme("default")) {
   const fittedValue = height < 20 ? height - 5 : height;

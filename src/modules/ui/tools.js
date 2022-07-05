@@ -1,16 +1,17 @@
 import * as d3 from "d3";
 
-import {restoreDefaultEvents} from "scripts/events";
-import {findCell} from "utils/graphUtils";
-import {last} from "utils/arrayUtils";
-import {tip, clearMainTip} from "scripts/tooltips";
-import {rn} from "utils/numberUtils";
-import {isCtrlPressed} from "utils/keyboardUtils";
-import {prompt} from "scripts/prompt";
-import {getNextId} from "utils/nodeUtils";
-import {P, generateSeed} from "utils/probabilityUtils";
 import {turnLayerButtonOn} from "layers";
+import {editUnits} from "modules/ui/editors";
 import {aleaPRNG} from "scripts/aleaPRNG";
+import {restoreDefaultEvents} from "scripts/events";
+import {prompt} from "scripts/prompt";
+import {clearMainTip, tip} from "scripts/tooltips";
+import {last} from "utils/arrayUtils";
+import {findCell} from "utils/graphUtils";
+import {isCtrlPressed} from "utils/keyboardUtils";
+import {getNextId} from "utils/nodeUtils";
+import {rn} from "utils/numberUtils";
+import {generateSeed, P} from "utils/probabilityUtils";
 
 toolsContent.addEventListener("click", function (event) {
   if (customization) return tip("Please exit the customization mode first", false, "warning");

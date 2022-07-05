@@ -1,5 +1,3 @@
-import {ERROR} from "../config/logging";
-
 interface IPromptStringOptions {
   default: string;
   required?: boolean;

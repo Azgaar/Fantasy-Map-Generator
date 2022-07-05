@@ -8,6 +8,8 @@ import {editStyle, calculateFriendlyGridSize, shiftCompass} from "modules/ui/sty
 import {turnLayerButtonOn, turnLayerButtonOff, layerIsOn} from "./utils";
 import {renderLayer} from "./renderers";
 import {getInputNumber, getInputValue} from "utils/nodeUtils";
+// @ts-expect-error js module
+import {editUnits} from "modules/ui/editors";
 
 const layerTogglesMap = {
   toggleBiomes,
@@ -465,19 +467,13 @@ function toggleScaleBar(event?: MouseEvent) {
   if (!layerIsOn("toggleScaleBar")) {
     turnLayerButtonOn("toggleScaleBar");
     $("#scaleBar").fadeIn();
-    if (isCtrlPressed(event)) openUnitsEditor();
+    if (isCtrlPressed(event)) editUnits();
   } else {
-    if (isCtrlPressed(event)) openUnitsEditor();
+    if (isCtrlPressed(event)) editUnits();
     else {
       $("#scaleBar").fadeOut();
       turnLayerButtonOff("toggleScaleBar");
     }
-  }
-
-  async function openUnitsEditor() {
-    // @ts-ignore untyped module
-    const {editUnits} = await import("../modules/ui/units-editor.js");
-    editUnits();
   }
 }
 

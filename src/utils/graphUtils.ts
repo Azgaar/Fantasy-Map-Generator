@@ -148,7 +148,9 @@ export function getPackPolygon(i: number) {
 }
 
 // return closest cell index
-export function findCell(x: number, y: number, radius = Infinity) {
+export function findCell(x: number, y: number): number;
+export function findCell(x: number, y: number, radius: number): number | undefined;
+export function findCell(x: number, y: number, radius = Infinity): number | undefined {
   const found = pack.cells.q.find(x, y, radius);
   return found ? found[2] : undefined;
 }

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import {TIME} from "config/logging";
 import {drawBiomes} from "./drawBiomes";
 import {drawBorders} from "./drawBorders";

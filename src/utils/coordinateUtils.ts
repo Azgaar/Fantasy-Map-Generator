@@ -1,13 +1,11 @@
 import {rn} from "./numberUtils";
 
-const {mapCoordinates, graphWidth, graphHeight} = window;
-
 function getLongitude(x: number, decimals = 2) {
-  return rn(mapCoordinates.lonW + (x / graphWidth) * mapCoordinates.lonT, decimals);
+  return rn(window.mapCoordinates.lonW + (x / graphWidth) * window.mapCoordinates.lonT, decimals);
 }
 
 function getLatitude(y: number, decimals = 2) {
-  return rn(mapCoordinates.latN - (y / graphHeight) * mapCoordinates.latT, decimals);
+  return rn(window.mapCoordinates.latN - (y / graphHeight) * window.mapCoordinates.latT, decimals);
 }
 
 export function getCoordinates(x: number, y: number, decimals = 2) {

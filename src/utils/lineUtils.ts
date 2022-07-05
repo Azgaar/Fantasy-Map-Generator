@@ -2,7 +2,6 @@ import {polygon} from "lineclip";
 
 // clip polygon by graph bbox
 export function clipPoly(points: TPoints) {
-  // @ts-expect-error graphWidth/graphWidth are global variables
   return polygon(points, [0, 0, graphWidth, graphWidth]);
 }
 
@@ -39,7 +38,6 @@ export function getSegmentId(points: TPoints, point: TPoint, step = 10) {
 
 // return center point of common edge of 2 pack cells
 export function getMiddlePoint(cell1: number, cell2: number) {
-  // @ts-expect-error pack is global variable
   const {cells, vertices} = pack;
 
   const commonVertices = cells.v[cell1].filter((vertex: number) =>

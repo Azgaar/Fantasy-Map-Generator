@@ -1,10 +1,20 @@
 interface IPack {
+  vertices: {
+    p: TPoints;
+    v: number[][];
+    c: number[][];
+  };
   cells: {
-    i: number[];
-    g: number[];
-    h: number[];
-    pop: number[];
-    burg: number[];
+    i: IntArray;
+    p: TPoints;
+    v: number[][];
+    c: number[][];
+    g: IntArray;
+    h: IntArray;
+    pop: Float32Array;
+    burg: IntArray;
+    area: IntArray;
+    q: d3.Quadtree<number[]>;
   };
   states: IState[];
   cultures: ICulture[];

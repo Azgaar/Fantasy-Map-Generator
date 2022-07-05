@@ -14,6 +14,8 @@ import {addGlobalListeners} from "./scripts/listeners";
 import {tip} from "./scripts/tooltips";
 import {checkForUpdates} from "./scripts/updater";
 import {getInputNumber} from "utils/nodeUtils";
+// @ts-expect-error js module
+import {editUnits} from "modules/ui/editors";
 
 checkForUpdates();
 addGlobalListeners();
@@ -52,7 +54,7 @@ svgHeight = graphHeight;
 
 defineSvg(graphWidth, graphHeight);
 
-scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => editUnits());
+scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", editUnits);
 legend
   .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
   .on("click", () => clearLegend());

@@ -5,7 +5,7 @@ import {findCell} from "utils/graphUtils";
 import {tip} from "scripts/tooltips";
 import {prompt} from "scripts/prompt";
 
-export function editUnits() {
+export function open() {
   closeDialogs("#unitsEditor, .stable");
   $("#unitsEditor").dialog();
 
