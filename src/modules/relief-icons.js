@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import {getPackPolygon} from "utils/graphUtils";
 import {rn, minmax} from "utils/numberUtils";
 import {rand} from "utils/probabilityUtils";

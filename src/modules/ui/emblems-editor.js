@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import {clearMainTip} from "scripts/tooltips";
 import {tip} from "scripts/tooltips";
 import {openURL} from "utils/linkUtils";

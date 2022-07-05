@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import {TIME} from "config/logging";
 import {rn, minmax} from "utils/numberUtils";
 import {rand, gauss, ra} from "utils/probabilityUtils";

@@ -1,7 +1,7 @@
+import * as d3 from "d3";
+
 import {ERROR} from "../config/logging";
 import {minmax, rn} from "./numberUtils";
-
-const d3 = window.d3;
 
 // random number in range
 export function rand(min: number, max: number) {

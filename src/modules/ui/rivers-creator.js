@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import {restoreDefaultEvents} from "scripts/events";
 import {getPackPolygon, findCell} from "utils/graphUtils";
 import {last} from "utils/arrayUtils";

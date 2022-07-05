@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import {getProvincesVertices} from "./drawProvinces";
 import {minmax, rn} from "utils/numberUtils";
 import {byId} from "utils/shorthands";

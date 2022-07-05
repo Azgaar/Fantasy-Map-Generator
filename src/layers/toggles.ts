@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import {tip} from "scripts/tooltips";
 import {getBase64} from "utils/functionUtils";
 import {isCtrlPressed} from "utils/keyboardUtils";
@@ -139,14 +141,14 @@ function togglePopulation(event?: MouseEvent) {
         .select("#rural")
         .selectAll("line")
         .transition(hide)
-        .attr("y2", d => d[1])
+        .attr("y2", (d: any[]) => d[1])
         .remove();
       population
         .select("#urban")
         .selectAll("line")
         .transition(hide)
         .delay(1000)
-        .attr("y2", d => d[1])
+        .attr("y2", (d: any[]) => d[1])
         .remove();
     }
   }
@@ -473,8 +475,8 @@ function toggleScaleBar(event?: MouseEvent) {
   }
 
   async function openUnitsEditor() {
-    // @ts-ignore fix dynamic import
-    const {editUnits} = await import("./../modules/ui/unitsEditor.js");
+    // @ts-ignore untyped module
+    const {editUnits} = await import("../modules/ui/units-editor.js");
     editUnits();
   }
 }

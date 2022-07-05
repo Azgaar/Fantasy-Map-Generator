@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import {restoreDefaultEvents} from "scripts/events";
 import {findCell} from "utils/graphUtils";
 import {tip, clearMainTip} from "scripts/tooltips";

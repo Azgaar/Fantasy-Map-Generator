@@ -1,4 +1,5 @@
 // @ts-nocheck
+import * as d3 from "d3";
 import Delaunator from "delaunator";
 
 import {TIME} from "../config/logging";

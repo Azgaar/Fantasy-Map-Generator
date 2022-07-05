@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import {getColorScheme, getHeightColor} from "utils/colorUtils";
 
 export function drawHeightmap() {

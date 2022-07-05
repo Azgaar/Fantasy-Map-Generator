@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import {debounce} from "utils/functionUtils";
 import {handleZoom, invokeActiveZooming} from "/src/modules/activeZooming";
 

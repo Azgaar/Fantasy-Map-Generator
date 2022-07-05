@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import {isWater} from "utils/graphUtils";
 import {tip} from "scripts/tooltips";
 import {byId} from "utils/shorthands";

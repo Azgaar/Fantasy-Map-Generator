@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 export function drawGrid() {
   gridOverlay.selectAll("*").remove();
   const pattern = "#pattern_" + (gridOverlay.attr("type") || "pointyHex");

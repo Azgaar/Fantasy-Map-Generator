@@ -1,3 +1,4 @@
+import * as d3 from "d3";
 import RgbQuant from "rgbquant";
 
 import {heightmapTemplates} from "config/heightmap-templates";

@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 export function drawPrecipitation() {
   prec.selectAll("circle").remove();
   const {cells, points} = grid;

@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import {tip, showMainTip, clearMainTip} from "scripts/tooltips";
 import {getSegmentId} from "utils/lineUtils";
 import {rn} from "utils/numberUtils";

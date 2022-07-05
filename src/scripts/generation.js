@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import {ERROR, INFO, WARN} from "config/logging";
 import {initLayers, renderLayer, restoreLayers} from "layers";
 import {drawCoastline} from "modules/coastline";

@@ -3,6 +3,8 @@
 
 import "./components";
 // @ts-expect-error js-module
+import {defineSvg} from "./modules/define-svg";
+// @ts-expect-error js-module
 import {clearLegend} from "./modules/legend";
 // @ts-expect-error js-module
 import {Rulers} from "./modules/measurers";
@@ -37,8 +39,8 @@ statesNeutral = 1; // statesEditor growth parameter
 applyStoredOptions();
 
 rulers = new Rulers();
-biomesData = Biomes.getDefault();
-nameBases = Names.getNameBases(); // cultures-related data
+biomesData = window.Biomes.getDefault();
+nameBases = window.Names.getNameBases(); // cultures-related data
 
 // voronoi graph extension, cannot be changed after generation
 graphWidth = getInputNumber("mapWidthInput");

@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import {findCell} from "utils/graphUtils";
 import {last} from "utils/arrayUtils";
 import {tip, clearMainTip} from "scripts/tooltips";

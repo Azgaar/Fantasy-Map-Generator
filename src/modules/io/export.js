@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import {getGridPolygon} from "utils/graphUtils";
 import {unique} from "utils/arrayUtils";
 import {tip} from "scripts/tooltips";

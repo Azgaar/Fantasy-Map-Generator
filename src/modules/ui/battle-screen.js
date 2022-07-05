@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import {last} from "utils/arrayUtils";
 import {tip} from "scripts/tooltips";
 import {wiki} from "utils/linkUtils";

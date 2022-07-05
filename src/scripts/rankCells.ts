@@ -1,4 +1,5 @@
-// @ts-nocheck global variables
+import * as d3 from "d3";
+
 import {TIME} from "config/logging";
 import {normalize} from "utils/numberUtils";
 

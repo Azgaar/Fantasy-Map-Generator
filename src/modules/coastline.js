@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import {ERROR, TIME} from "config/logging";
 import {reMarkFeatures} from "modules/markup";
 import {clipPoly} from "utils/lineUtils";

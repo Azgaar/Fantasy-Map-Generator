@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import {findCell, getPackPolygon} from "utils/graphUtils";
 import {tip, clearMainTip} from "scripts/tooltips";
 import {getSegmentId} from "utils/lineUtils";

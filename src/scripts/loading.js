@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import {ERROR, WARN} from "config/logging";
 import {generateMapOnLoad} from "./generation";
 import {loadMapFromURL} from "modules/io/load";

@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 export function drawPopulation(event) {
   population.selectAll("line").remove();
 

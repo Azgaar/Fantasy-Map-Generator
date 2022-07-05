@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import {TIME} from "config/logging";
 import {isLand} from "utils/graphUtils";
 import {rn} from "utils/numberUtils";

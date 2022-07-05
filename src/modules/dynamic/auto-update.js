@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import {findCell} from "utils/graphUtils";
 import {rn} from "utils/numberUtils";
 import {rand, P, rw} from "utils/probabilityUtils";

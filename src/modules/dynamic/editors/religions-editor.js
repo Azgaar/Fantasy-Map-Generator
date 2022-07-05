@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import {restoreDefaultEvents} from "scripts/events";
 import {findAll, findCell, getPackPolygon, isLand} from "utils/graphUtils";
 import {tip, showMainTip, clearMainTip} from "scripts/tooltips";

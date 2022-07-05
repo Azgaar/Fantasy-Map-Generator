@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import {updatePresetInput} from "layers";
 import {restoreDefaultEvents} from "scripts/events";
 import {ldb} from "scripts/indexedDB";

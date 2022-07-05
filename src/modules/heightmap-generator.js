@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import {heightmapTemplates} from "config/heightmap-templates";
 import {TIME} from "config/logging";
 import {createTypedArray} from "utils/arrayUtils";

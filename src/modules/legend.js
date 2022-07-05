@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import {rn} from "../utils/numberUtils";
 import {parseTransform} from "utils/stringUtils";
 

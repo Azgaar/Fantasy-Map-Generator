@@ -1,3 +1,4 @@
+import * as d3 from "d3";
 import polylabel from "polylabel";
 
 import {last} from "utils/arrayUtils";

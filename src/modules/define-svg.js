@@ -1,57 +1,6 @@
-"use strict";
-// temporary define svg elements as globals
+import * as d3 from "d3";
 
-let svg,
-  defs,
-  viewbox,
-  scaleBar,
-  legend,
-  ocean,
-  oceanLayers,
-  oceanPattern,
-  lakes,
-  landmass,
-  texture,
-  terrs,
-  biomes,
-  cells,
-  gridOverlay,
-  coordinates,
-  compass,
-  rivers,
-  terrain,
-  relig,
-  cults,
-  regions,
-  statesBody,
-  statesHalo,
-  provs,
-  zones,
-  borders,
-  stateBorders,
-  provinceBorders,
-  routes,
-  roads,
-  trails,
-  searoutes,
-  temperature,
-  coastline,
-  ice,
-  prec,
-  population,
-  emblems,
-  labels,
-  icons,
-  burgLabels,
-  burgIcons,
-  anchors,
-  armies,
-  markers,
-  fogging,
-  ruler,
-  debug;
-
-function defineSvg(width, height) {
+export function defineSvg(width, height) {
   // append svg layers (in default order)
   svg = d3.select("#map");
   defs = svg.select("#deftemp");

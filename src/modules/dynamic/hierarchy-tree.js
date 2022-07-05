@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import {byId} from "utils/shorthands";
 import {tip} from "scripts/tooltips";
 import {capitalize} from "utils/stringUtils";

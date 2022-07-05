@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import {getPackPolygon} from "utils/graphUtils";
 import {tip} from "scripts/tooltips";
 import {rn} from "utils/numberUtils";

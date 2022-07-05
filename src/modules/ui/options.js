@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import {heightmapTemplates} from "config/heightmap-templates";
 import {precreatedHeightmaps} from "config/precreated-heightmaps";
 import {lock, locked} from "scripts/options/lock";

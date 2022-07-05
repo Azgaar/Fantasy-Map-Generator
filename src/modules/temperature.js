@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import {TIME} from "config/logging";
 import {minmax, rn} from "utils/numberUtils";
 

@@ -1,4 +1,5 @@
-// @ts-nocheck global variables
+import * as d3 from "d3";
+
 import {TIME} from "config/logging";
 import {UINT16_MAX} from "constants";
 import {createTypedArray} from "utils/arrayUtils";

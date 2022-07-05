@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import {unique} from "utils/arrayUtils";
 import {tip} from "scripts/tooltips";
 import {openURL} from "utils/linkUtils";

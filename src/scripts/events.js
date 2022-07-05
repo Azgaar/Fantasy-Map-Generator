@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import {dragLegendBox} from "modules/legend";
 import {debounce} from "utils/functionUtils";
 import {findCell, findGridCell} from "utils/graphUtils";
