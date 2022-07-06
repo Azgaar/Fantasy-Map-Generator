@@ -18,10 +18,7 @@ export function drawBiomes() {
     const edgeVerticle = cells.v[i].find(v => vertices.c[v].some(i => cells.biome[i] !== b));
     const chain = connectVertices(edgeVerticle, b);
     if (chain.length < 3) continue;
-    const points = clipPoly(
-      chain.map(v => vertices.p[v]),
-      1
-    );
+    const points = clipPoly(chain.map(v => vertices.p[v]));
     paths[b] += "M" + points.join("L") + "Z";
   }
 

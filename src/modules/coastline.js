@@ -37,10 +37,7 @@ export function drawCoastline() {
     let vchain = connectVertices(start, type);
     if (features[f].type === "lake") relax(vchain, 1.2);
     used[f] = 1;
-    let points = clipPoly(
-      vchain.map(v => vertices.p[v]),
-      1
-    );
+    let points = clipPoly(vchain.map(v => vertices.p[v]));
     const area = d3.polygonArea(points); // area with lakes/islands
     if (area > 0 && features[f].type === "lake") {
       points = points.reverse();

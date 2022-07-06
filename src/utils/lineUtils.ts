@@ -2,7 +2,7 @@ import {polygon} from "lineclip";
 
 // clip polygon by graph bbox
 export function clipPoly(points: TPoints) {
-  return polygon(points, [0, 0, graphWidth, graphWidth]);
+  return polygon(points, [0, 0, graphWidth, graphHeight]);
 }
 
 // get segment of any point on polyline

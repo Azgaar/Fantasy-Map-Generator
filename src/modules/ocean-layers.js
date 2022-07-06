@@ -34,10 +34,7 @@ window.OceanLayers = (function () {
       const relax = 1 + t * -2; // select only n-th point
       const relaxed = chain.filter((v, i) => !(i % relax) || vertices.c[v].some(c => c >= pointsN));
       if (relaxed.length < 4) continue;
-      const points = clipPoly(
-        relaxed.map(v => vertices.p[v]),
-        1
-      );
+      const points = clipPoly(relaxed.map(v => vertices.p[v]));
       chains.push([t, points]);
     }
 
