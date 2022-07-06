@@ -7,20 +7,20 @@ import {P} from "utils/probabilityUtils";
 import {round} from "utils/stringUtils";
 
 window.OceanLayers = (function () {
-  let cells, vertices, pointsN, used;
-
-  function OceanLayers() {
+  function render() {
     const outline = oceanLayers.attr("layers");
     if (outline === "none") return;
     TIME && console.time("drawOceanLayers");
 
     const lineGen = d3.line().curve(d3.curveBasisClosed);
-    (cells = grid.cells), (pointsN = grid.cells.i.length), (vertices = grid.vertices);
     const limits = outline === "random" ? randomizeOutline() : outline.split(",").map(s => +s);
+
+    const {cells, vertices} = grid;
+    const pointsN = cells.i.length;
 
     const chains = [];
     const opacity = rn(0.4 / limits.length, 2);
-    used = new Uint8Array(pointsN); // to detect already passed cells
+    const used = new Uint8Array(pointsN); // to detect already passed cells
 
     for (const i of cells.i) {
       const t = cells.t[i];
@@ -29,7 +29,7 @@ window.OceanLayers = (function () {
       const start = findStart(i, t);
       if (!start) continue;
       used[i] = 1;
-      const chain = connectVertices(start, t); // vertices chain to form a path
+      const chain = connectVertices({cells, vertices, used}, start, t); // vertices chain to form a path
       if (chain.length < 4) continue;
       const relax = 1 + t * -2; // select only n-th point
       const relaxed = chain.filter((v, i) => !(i % relax) || vertices.c[v].some(c => c >= pointsN));
@@ -71,7 +71,7 @@ window.OceanLayers = (function () {
   }
 
   // connect vertices to chain
-  function connectVertices(start, t) {
+  function connectVertices({cells, vertices, used}, start, t) {
     const chain = []; // vertices chain to form a path
     for (let i = 0, current = start; i === 0 || (current !== start && i < 10000); i++) {
       const prev = chain[chain.length - 1]; // previous vertex in chain
@@ -94,5 +94,5 @@ window.OceanLayers = (function () {
     return chain;
   }
 
-  return OceanLayers;
+  return render;
 })();

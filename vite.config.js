@@ -1,9 +1,34 @@
+import {nodeResolve} from "@rollup/plugin-node-resolve";
+import replace from "@rollup/plugin-replace";
+import path from "path";
+import {rollup} from "rollup";
+import {terser} from "rollup-plugin-terser";
+import {fileURLToPath} from "url";
 import {defineConfig} from "vite";
 import {createHtmlPlugin} from "vite-plugin-html";
-import {fileURLToPath} from "url";
-import path from "path";
 
 const pathName = path.dirname(fileURLToPath(import.meta.url));
+
+const CompileServiceWorker = () => ({
+  name: "compile-service-worker",
+  async writeBundle(_options, _outputBundle) {
+    const inputOptions = {
+      input: "src/sw.js",
+      plugins: [
+        replace({
+          "process.env.NODE_ENV": JSON.stringify("production"),
+          preventAssignment: true
+        }),
+        terser(),
+        nodeResolve()
+      ]
+    };
+    const outputOptions = {file: "dist/sw.js", format: "es"};
+    const bundle = await rollup(inputOptions);
+    await bundle.write(outputOptions);
+    await bundle.close();
+  }
+});
 
 export default defineConfig(({mode}) => {
   const APP_VERSION = JSON.stringify(process.env.npm_package_version);
@@ -22,7 +47,8 @@ export default defineConfig(({mode}) => {
             APP_VERSION: APP_VERSION.replaceAll('"', "")
           }
         }
-      })
+      }),
+      CompileServiceWorker()
     ],
     build: {
       rollupOptions: {

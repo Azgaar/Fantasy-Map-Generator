@@ -8,8 +8,10 @@ export function markFeatures() {
 
   const cells = grid.cells;
   const heights = grid.cells.h;
+
   cells.f = new Uint16Array(cells.i.length); // cell feature number
   cells.t = new Int8Array(cells.i.length); // cell type: 1 = land coast; -1 = water near coast
+
   grid.features = [0];
 
   for (let i = 1, queue = [0]; queue[0] !== -1; i++) {

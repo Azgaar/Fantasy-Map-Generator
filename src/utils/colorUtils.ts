@@ -15,7 +15,7 @@ const c12: Hex[] = [
   "#eb8de7"
 ];
 
-type ColorScheme = (n: number) => string;
+type ColorScheme = d3.ScaleSequential<string>;
 const colorSchemeMap: Dict<ColorScheme> = {
   default: d3.scaleSequential(d3.interpolateRainbow),
   bright: d3.scaleSequential(d3.interpolateSpectral),
@@ -29,14 +29,14 @@ export function getColors(number: number) {
   const colors = d3.shuffle(
     d3
       .range(number)
-      .map((index: number) => (index < 12 ? c12[index] : d3.color(scheme((index - 12) / (number - 12)))!.formatHex()))
+      .map((index: number) => (index < 12 ? c12[index] : d3.color(scheme((index - 12) / (number - 12))!)!.formatHex()))
   );
   return colors;
 }
 
 export function getRandomColor(): Hex {
-  const rgb = colorSchemeMap.default(Math.random());
-  return d3.color(rgb)!.formatHex() as Hex;
+  const rgb = colorSchemeMap.default(Math.random())!;
+  return d3.color(rgb)?.formatHex() as Hex;
 }
 
 // mix a color with a random color

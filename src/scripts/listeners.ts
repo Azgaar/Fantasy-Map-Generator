@@ -1,5 +1,5 @@
 // @ts-ignore
-import {checkIfServerless} from "./loading";
+import {addOnLoadListener} from "./loading";
 import {assignLockBehavior} from "./options/lock";
 import {addTooptipListers} from "./tooltips";
 import {assignSpeakerBehavior} from "./speaker";
@@ -9,12 +9,12 @@ import {addResizeListener} from "modules/ui/options";
 import {addDragToUpload} from "modules/io/load";
 
 export function addGlobalListeners() {
-  checkIfServerless();
   if (PRODUCTION) {
     registerServiceWorker();
     addInstallationPrompt();
     addBeforeunloadListener();
   }
+  addOnLoadListener();
   assignLockBehavior();
   addTooptipListers();
   addResizeListener();
@@ -25,9 +25,11 @@ export function addGlobalListeners() {
 function registerServiceWorker() {
   "serviceWorker" in navigator &&
     window.addEventListener("load", () => {
-      navigator.serviceWorker.register("../sw.js").catch(err => {
-        console.error("ServiceWorker registration failed: ", err);
-      });
+      navigator.serviceWorker
+        .register("/Fantasy-Map-Generator/sw.js", {scope: "/Fantasy-Map-Generator/"})
+        .catch(err => {
+          console.error("ServiceWorker registration failed: ", err);
+        });
     });
 }
 
