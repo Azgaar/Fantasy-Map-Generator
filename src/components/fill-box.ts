@@ -1,4 +1,4 @@
-import {tip} from "../scripts/tooltips";
+import {tip} from "scripts/tooltips";
 
 const template = document.createElement("template");
 template.innerHTML = /* html */ `
@@ -29,6 +29,9 @@ class FillBox extends HTMLElement {
     super();
 
     this.tooltip = this.dataset.tip || "Fill style. Click to change";
+
+    // cannot use Shadow DOM here as need an access to svg hatches
+    this.appendChild(template.content.cloneNode(true));
   }
 
   private showTip() {
@@ -36,8 +39,6 @@ class FillBox extends HTMLElement {
   }
 
   connectedCallback() {
-    // cannot use Shadow DOM here as need an access to svg hatches
-    this.appendChild(template.content.cloneNode(true));
     this.querySelector("rect")?.setAttribute("fill", this.fill);
     this.querySelector("svg")?.setAttribute("width", this.size);
     this.querySelector("svg")?.setAttribute("height", this.size);
