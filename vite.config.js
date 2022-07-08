@@ -3,6 +3,7 @@ import replace from "@rollup/plugin-replace";
 import path from "path";
 import {rollup} from "rollup";
 import {terser} from "rollup-plugin-terser";
+import {visualizer} from "rollup-plugin-visualizer";
 import {fileURLToPath} from "url";
 import {defineConfig} from "vite";
 import {createHtmlPlugin} from "vite-plugin-html";
@@ -48,7 +49,8 @@ export default defineConfig(({mode}) => {
           }
         }
       }),
-      CompileServiceWorker()
+      CompileServiceWorker(),
+      visualizer()
     ],
     build: {
       rollupOptions: {

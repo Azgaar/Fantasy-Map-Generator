@@ -7,6 +7,7 @@ import {byId} from "utils/shorthands";
 import {convertTemperature, si, getFriendlyHeight, getCellIdPrecipitation, getPopulationTip} from "utils/unitUtils";
 import {showMainTip, tip} from "./tooltips";
 import {updateCellInfo} from "modules/ui/cell-info";
+import {layerIsOn} from "layers";
 
 export function restoreDefaultEvents() {
   Zoom.setZoomBehavior();
