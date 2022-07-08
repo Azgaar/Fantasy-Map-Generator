@@ -1,11 +1,15 @@
 import * as d3 from "d3";
 
-import {restoreDefaultEvents} from "scripts/events";
-import {findCell} from "utils/graphUtils";
-import {tip, clearMainTip} from "scripts/tooltips";
 import {closeDialogs} from "dialogs/utils";
+import {layerIsOn} from "layers";
+import {restoreDefaultEvents} from "scripts/events";
+import {clearMainTip, tip} from "scripts/tooltips";
+import {findCell} from "utils/graphUtils";
+import {applySorting} from "modules/ui/editors";
 
-export function editDiplomacy() {
+let isLoaded = false;
+
+export function open() {
   if (customization) return;
   if (pack.states.filter(s => s.i && !s.removed).length < 2)
     return tip("There should be at least 2 states to edit the diplomacy", false, "error");
@@ -63,8 +67,8 @@ export function editDiplomacy() {
   refreshDiplomacyEditor();
   viewbox.style("cursor", "crosshair").on("click", selectStateOnMapClick);
 
-  if (fmg.modules.editDiplomacy) return;
-  fmg.modules.editDiplomacy = true;
+  if (isLoaded) return;
+  isLoaded = true;
 
   $("#diplomacyEditor").dialog({
     title: "Diplomacy Editor",

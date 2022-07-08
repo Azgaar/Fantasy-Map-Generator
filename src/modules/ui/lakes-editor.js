@@ -1,12 +1,12 @@
 import * as d3 from "d3";
 
-import {getPackPolygon} from "utils/graphUtils";
+import {closeDialogs} from "dialogs/utils";
 import {tip} from "scripts/tooltips";
+import {getPackPolygon} from "utils/graphUtils";
 import {rn} from "utils/numberUtils";
 import {rand} from "utils/probabilityUtils";
 import {round} from "utils/stringUtils";
-import {si, getHeight} from "utils/unitUtils";
-import {closeDialogs} from "dialogs/utils";
+import {getArea, getAreaUnit, getHeight, si} from "utils/unitUtils";
 
 export function editLake() {
   if (customization) return;

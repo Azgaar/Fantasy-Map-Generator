@@ -9,7 +9,7 @@ import {rn} from "utils/numberUtils";
 import {rand} from "utils/probabilityUtils";
 import {parseTransform} from "utils/stringUtils";
 import {convertTemperature, getHeight} from "utils/unitUtils";
-import {getMFCGlink, getBurgSeed} from "modules/ui/editors";
+import {getMFCGlink, getBurgSeed, unselect} from "modules/ui/editors";
 
 let isLoaded = false;
 

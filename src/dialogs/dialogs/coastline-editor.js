@@ -1,14 +1,17 @@
 import * as d3 from "d3";
 
-import {getPackPolygon} from "utils/graphUtils";
+import {closeDialogs} from "dialogs/utils";
+import {layerIsOn} from "layers";
 import {tip} from "scripts/tooltips";
+import {getPackPolygon} from "utils/graphUtils";
 import {clipPoly} from "utils/lineUtils";
 import {rn} from "utils/numberUtils";
 import {round} from "utils/stringUtils";
-import {si} from "utils/unitUtils";
-import {closeDialogs} from "dialogs/utils";
+import {getArea, getAreaUnit, si} from "utils/unitUtils";
 
-export function editCoastline(node = d3.event.target) {
+let isLoaded = false;
+
+export function open({node}) {
   if (customization) return;
   closeDialogs(".stable");
   if (layerIsOn("toggleCells")) toggleCells();
@@ -26,8 +29,8 @@ export function editCoastline(node = d3.event.target) {
   drawCoastlineVertices();
   viewbox.on("touchmove mousemove", null);
 
-  if (fmg.modules.editCoastline) return;
-  fmg.modules.editCoastline = true;
+  if (isLoaded) return;
+  isLoaded = true;
 
   // add listeners
   document.getElementById("coastlineGroupsShow").addEventListener("click", showGroupSection);
@@ -44,6 +47,7 @@ export function editCoastline(node = d3.event.target) {
 
     const l = pack.cells.i.length;
     const c = [...new Set(v.map(v => pack.vertices.c[v]).flat())].filter(c => c < l);
+
     debug
       .select("#vertices")
       .selectAll("polygon")
@@ -73,8 +77,9 @@ export function editCoastline(node = d3.event.target) {
   }
 
   function dragVertex() {
-    const x = rn(d3.event.x, 2),
-      y = rn(d3.event.y, 2);
+    const x = rn(d3.event.x, 2);
+    const y = rn(d3.event.y, 2);
+
     this.setAttribute("cx", x);
     this.setAttribute("cy", y);
     const v = +this.dataset.v;

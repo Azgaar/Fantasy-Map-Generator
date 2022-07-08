@@ -1,8 +1,11 @@
 const dialogsMap = {
   biomesEditor: "biomes-editor",
   burgEditor: "burg-editor",
+  burgsOverview: "burgs-overview",
   chartsOverview: "charts-overview",
+  coastlineEditor: "coastline-editor",
   culturesEditor: "cultures-editor",
+  diplomacyEditor: "diplomacy-editor",
   heightmapSelection: "heightmap-selection",
   hierarchyTree: "hierarchy-tree",
   religionsEditor: "religions-editor",
@@ -18,7 +21,7 @@ const defaultOptions = {
 
 // dynamically load UI dialog
 // dialog is a es module with the only exported function 'open'
-export async function openDialog(dialog: TDialog, options: null | typeof defaultOptions, props?: UnknownObject) {
+export async function openDialog(dialog: TDialog, options?: null | typeof defaultOptions, props?: UnknownObject) {
   const {allowDuringCustomization} = options || defaultOptions;
   if (customization && !allowDuringCustomization) return;
 

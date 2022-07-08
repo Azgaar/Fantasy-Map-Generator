@@ -28,6 +28,21 @@ export function siToInteger(value: string) {
 }
 
 // ***
+// Area
+// ***
+
+export function getAreaUnit(squareMark = "²") {
+  return getInputValue("areaUnit") === "square"
+    ? getInputValue("distanceUnitInput") + squareMark
+    : getInputValue("areaUnit");
+}
+
+export function getArea(rawArea: number) {
+  const distanceScale = getInputNumber("distanceScaleInput");
+  return rawArea * distanceScale ** 2;
+}
+
+// ***
 // Temperature
 // ***
 
@@ -105,7 +120,6 @@ export function getCellPopulation(cellId: number) {
   return [rural, urban];
 }
 
-// get user-friendly (real-world) population value from map data
 export function getFriendlyPopulation(cellId: number) {
   const [rural, urban] = getCellPopulation(cellId);
   return `${si(rural + urban)} (${si(rural)} rural, urban ${si(urban)})`;

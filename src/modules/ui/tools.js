@@ -24,7 +24,7 @@ toolsContent.addEventListener("click", function (event) {
   else if (button === "editBiomesButton") editBiomes();
   else if (button === "editStatesButton") openDialog("statesEditor");
   else if (button === "editProvincesButton") editProvinces();
-  else if (button === "editDiplomacyButton") editDiplomacy();
+  else if (button === "editDiplomacyButton") openDialog("diplomacyEditor");
   else if (button === "editCulturesButton") openDialog("culturesEditor");
   else if (button === "editReligions") openDialog("religionsEditor");
   else if (button === "editEmblemButton") openEmblemEditor();
@@ -33,7 +33,7 @@ toolsContent.addEventListener("click", function (event) {
   else if (button === "editNotesButton") editNotes();
   else if (button === "editZonesButton") editZones();
   else if (button === "overviewChartsButton") openDialog("chartsOverview");
-  else if (button === "overviewBurgsButton") overviewBurgs();
+  else if (button === "overviewBurgsButton") openDialog("burgsOverview");
   else if (button === "overviewRiversButton") overviewRivers();
   else if (button === "overviewMilitaryButton") overviewMilitary();
   else if (button === "overviewMarkersButton") overviewMarkers();
@@ -539,7 +539,7 @@ function addLabelOnClick() {
 function toggleAddBurg() {
   unpressClickToAddButton();
   document.getElementById("addBurgTool").classList.add("pressed");
-  overviewBurgs();
+  openDialog("burgsOverview");
   document.getElementById("addNewBurg").click();
 }
 

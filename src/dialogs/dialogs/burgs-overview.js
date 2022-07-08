@@ -9,8 +9,12 @@ import {si, siToInteger} from "utils/unitUtils";
 import {getHeight} from "utils/unitUtils";
 import {closeDialogs} from "dialogs/utils";
 import {openDialog} from "dialogs";
+import {layerIsOn} from "layers";
+import {applySorting} from "modules/ui/editors";
 
-export function overviewBurgs() {
+let isLoaded = false;
+
+export function open() {
   if (customization) return;
   closeDialogs("#burgsOverview, .stable");
   if (!layerIsOn("toggleIcons")) toggleIcons();
@@ -22,8 +26,8 @@ export function overviewBurgs() {
   burgsOverviewAddLines();
   $("#burgsOverview").dialog();
 
-  if (fmg.modules.overviewBurgs) return;
-  fmg.modules.overviewBurgs = true;
+  if (isLoaded) return;
+  isLoaded = true;
 
   $("#burgsOverview").dialog({
     title: "Burgs Overview",

@@ -44,7 +44,7 @@ function handleKeyup(event) {
   else if (shift && code === "KeyB") editBiomes();
   else if (shift && code === "KeyS") openDialog("statesEditor");
   else if (shift && code === "KeyP") editProvinces();
-  else if (shift && code === "KeyD") editDiplomacy();
+  else if (shift && code === "KeyD") openDialog("diplomacyEditor");
   else if (shift && code === "KeyC") openDialog("culturesEditor");
   else if (shift && code === "KeyN") editNamesbase();
   else if (shift && code === "KeyZ") editZones();
@@ -53,7 +53,7 @@ function handleKeyup(event) {
   else if (shift && code === "KeyQ") openDialog("unitsEditor");
   else if (shift && code === "KeyO") editNotes();
   else if (shift && code === "KeyA") openDialog("chartsOverview");
-  else if (shift && code === "KeyT") overviewBurgs();
+  else if (shift && code === "KeyT") openDialog("burgsOverview");
   else if (shift && code === "KeyV") overviewRivers();
   else if (shift && code === "KeyM") overviewMilitary();
   else if (shift && code === "KeyK") overviewMarkers();

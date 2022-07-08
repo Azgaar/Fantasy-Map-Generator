@@ -1,13 +1,13 @@
 import * as d3 from "d3";
 
-import {restoreDefaultEvents} from "scripts/events";
-import {findAll, findCell, getPackPolygon} from "utils/graphUtils";
-import {unique} from "utils/arrayUtils";
-import {tip, showMainTip, clearMainTip} from "scripts/tooltips";
-import {rn} from "utils/numberUtils";
-import {getNextId} from "utils/nodeUtils";
-import {si} from "utils/unitUtils";
 import {closeDialogs} from "dialogs/utils";
+import {restoreDefaultEvents} from "scripts/events";
+import {clearMainTip, showMainTip, tip} from "scripts/tooltips";
+import {unique} from "utils/arrayUtils";
+import {findAll, findCell, getPackPolygon} from "utils/graphUtils";
+import {getNextId} from "utils/nodeUtils";
+import {rn} from "utils/numberUtils";
+import {getArea, getAreaUnit, si} from "utils/unitUtils";
 
 export function editZones() {
   closeDialogs();

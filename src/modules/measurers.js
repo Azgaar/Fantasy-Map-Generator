@@ -6,7 +6,7 @@ import {findCell} from "utils/graphUtils";
 import {getSegmentId} from "utils/lineUtils";
 import {rn} from "utils/numberUtils";
 import {parseTransform, round} from "utils/stringUtils";
-import {si} from "utils/unitUtils";
+import {getArea, getAreaUnit, si} from "utils/unitUtils";
 
 export class Rulers {
   constructor() {

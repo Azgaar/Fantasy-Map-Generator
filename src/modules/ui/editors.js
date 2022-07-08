@@ -68,7 +68,7 @@ function sortLines(headerElement) {
   applySorting(headers);
 }
 
-function applySorting(headers) {
+export function applySorting(headers) {
   const header = headers.querySelector("div[class*='icon-sort']");
   if (!header) return;
   const sortby = header.dataset.sortby;
@@ -961,15 +961,6 @@ function selectIcon(initial, callback) {
       }
     }
   });
-}
-
-function getAreaUnit(squareMark = "²") {
-  return byId("areaUnit").value === "square" ? byId("distanceUnitInput").value + squareMark : byId("areaUnit").value;
-}
-
-function getArea(rawArea) {
-  const distanceScale = byId("distanceScaleInput")?.value;
-  return rawArea * distanceScale ** 2;
 }
 
 function confirmationDialog(options) {

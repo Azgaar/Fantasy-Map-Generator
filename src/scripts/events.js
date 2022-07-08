@@ -34,17 +34,14 @@ function clicked() {
   else if (parent.id === "rivers") editRiver(el.id);
   else if (grand.id === "routes") editRoute();
   else if (el.tagName === "tspan" && grand.parentNode.parentNode.id === "labels") editLabel();
-  else if (grand.id === "burgLabels" || grand.id === "burgIcons") {
-    const burgId = grand.id === "burgLabels" ? +el.dataset.id : +el.parentNode.dataset.id;
-    openDialog("burgEditor", null, {id: burgId});
-  } else if (parent.id === "ice") editIce();
+  else if (grand.id === "burgLabels" || grand.id === "burgIcons") openDialog("burgEditor", null, {id: +el.dataset.id});
+  else if (parent.id === "ice") editIce();
   else if (parent.id === "terrain") editReliefIcon();
   else if (grand.id === "markers" || great.id === "markers") editMarker();
-  else if (grand.id === "coastline") editCoastline();
+  else if (grand.id === "coastline") openDialog("coastlineEditor", null, {node: d3.event.target});
   else if (great.id === "armies") editRegiment();
   else if (pack.cells.t[i] === 1) {
-    const node = byId("island_" + pack.cells.f[i]);
-    editCoastline(node);
+    openDialog("coastlineEditor", null, {node: byId("island_" + pack.cells.f[i])});
   } else if (grand.id === "lakes") editLake();
 }
 

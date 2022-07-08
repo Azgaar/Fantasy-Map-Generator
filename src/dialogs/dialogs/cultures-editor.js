@@ -1,16 +1,16 @@
 import * as d3 from "d3";
 
-import {restoreDefaultEvents} from "scripts/events";
-import {findAll, findCell, getPackPolygon, isLand} from "utils/graphUtils";
-import {tip, showMainTip, clearMainTip} from "scripts/tooltips";
-import {byId} from "utils/shorthands";
-import {rn} from "utils/numberUtils";
-import {capitalize} from "utils/stringUtils";
-import {si} from "utils/unitUtils";
-import {abbreviate} from "utils/languageUtils";
-import {debounce} from "utils/functionUtils";
-import {closeDialogs} from "dialogs/utils";
 import {openDialog} from "dialogs";
+import {closeDialogs} from "dialogs/utils";
+import {restoreDefaultEvents} from "scripts/events";
+import {clearMainTip, showMainTip, tip} from "scripts/tooltips";
+import {debounce} from "utils/functionUtils";
+import {findAll, findCell, getPackPolygon, isLand} from "utils/graphUtils";
+import {abbreviate} from "utils/languageUtils";
+import {rn} from "utils/numberUtils";
+import {byId} from "utils/shorthands";
+import {capitalize} from "utils/stringUtils";
+import {getArea, getAreaUnit, si} from "utils/unitUtils";
 
 const $body = insertEditorHtml();
 addListeners();

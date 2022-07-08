@@ -1,13 +1,13 @@
 import * as d3 from "d3";
 
-import {isWater} from "utils/graphUtils";
-import {tip} from "scripts/tooltips";
-import {byId} from "utils/shorthands";
-import {rn} from "utils/numberUtils";
-import {capitalize} from "utils/stringUtils";
-import {si, convertTemperature, getFriendlyPrecipitation} from "utils/unitUtils";
-import {rollups} from "utils/functionUtils";
 import {closeDialogs} from "dialogs/utils";
+import {tip} from "scripts/tooltips";
+import {rollups} from "utils/functionUtils";
+import {isWater} from "utils/graphUtils";
+import {rn} from "utils/numberUtils";
+import {byId} from "utils/shorthands";
+import {capitalize} from "utils/stringUtils";
+import {convertTemperature, getArea, getAreaUnit, getFriendlyPrecipitation, si} from "utils/unitUtils";
 
 const entitiesMap = {
   states: {

@@ -1,15 +1,15 @@
 import * as d3 from "d3";
 
-import {restoreDefaultEvents} from "scripts/events";
-import {findAll, findCell, getPackPolygon, isLand} from "utils/graphUtils";
-import {byId} from "utils/shorthands";
-import {tip, showMainTip, clearMainTip} from "scripts/tooltips";
-import {getRandomColor, getMixedColor} from "utils/colorUtils";
-import {rn} from "utils/numberUtils";
-import {rand, P} from "utils/probabilityUtils";
-import {si} from "utils/unitUtils";
-import {getAdjective} from "utils/languageUtils";
 import {closeDialogs} from "dialogs/utils";
+import {restoreDefaultEvents} from "scripts/events";
+import {clearMainTip, showMainTip, tip} from "scripts/tooltips";
+import {getMixedColor, getRandomColor} from "utils/colorUtils";
+import {findAll, findCell, getPackPolygon, isLand} from "utils/graphUtils";
+import {getAdjective} from "utils/languageUtils";
+import {rn} from "utils/numberUtils";
+import {P, rand} from "utils/probabilityUtils";
+import {byId} from "utils/shorthands";
+import {getArea, getAreaUnit, si} from "utils/unitUtils";
 
 const $body = insertEditorHtml();
 addListeners();

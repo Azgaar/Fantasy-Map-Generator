@@ -1,13 +1,13 @@
 import * as d3 from "d3";
 
+import {closeDialogs} from "dialogs/utils";
 import {restoreDefaultEvents} from "scripts/events";
-import {findAll, findCell, getPackPolygon, isLand} from "utils/graphUtils";
-import {tip, showMainTip, clearMainTip} from "scripts/tooltips";
+import {clearMainTip, showMainTip, tip} from "scripts/tooltips";
 import {getRandomColor} from "utils/colorUtils";
+import {findAll, findCell, getPackPolygon, isLand} from "utils/graphUtils";
 import {openURL} from "utils/linkUtils";
 import {rn} from "utils/numberUtils";
-import {si} from "utils/unitUtils";
-import {closeDialogs} from "dialogs/utils";
+import {getArea, getAreaUnit, si} from "utils/unitUtils";
 
 export function open() {
   closeDialogs("#biomesEditor, .stable");

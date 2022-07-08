@@ -1,4 +1,5 @@
-import {getHeight, getCellIdPrecipitation, getFriendlyPopulation} from "utils/unitUtils.ts";
+import {getArea, getAreaUnit} from "utils/unitUtils";
+import {getCellIdPrecipitation, getFriendlyPopulation, getHeight} from "utils/unitUtils.ts";
 
 // get cell info on mouse move
 export function updateCellInfo(point, i, g) {

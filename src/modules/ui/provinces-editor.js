@@ -1,17 +1,17 @@
 import * as d3 from "d3";
 
-import {restoreDefaultEvents} from "scripts/events";
-import {findAll, findCell, getPackPolygon, isLand} from "utils/graphUtils";
-import {unique} from "utils/arrayUtils";
-import {tip, showMainTip, clearMainTip} from "scripts/tooltips";
-import {getRandomColor} from "utils/colorUtils";
-import {rn} from "utils/numberUtils";
-import {rand, P} from "utils/probabilityUtils";
-import {parseTransform} from "utils/stringUtils";
-import {si} from "utils/unitUtils";
-import {turnLayerButtonOff} from "layers";
-import {byId} from "utils/shorthands";
 import {closeDialogs} from "dialogs/utils";
+import {turnLayerButtonOff} from "layers";
+import {restoreDefaultEvents} from "scripts/events";
+import {clearMainTip, showMainTip, tip} from "scripts/tooltips";
+import {unique} from "utils/arrayUtils";
+import {getRandomColor} from "utils/colorUtils";
+import {findAll, findCell, getPackPolygon, isLand} from "utils/graphUtils";
+import {rn} from "utils/numberUtils";
+import {P, rand} from "utils/probabilityUtils";
+import {byId} from "utils/shorthands";
+import {parseTransform} from "utils/stringUtils";
+import {getArea, getAreaUnit, si} from "utils/unitUtils";
 
 export function editProvinces() {
   if (customization) return;
