@@ -1,6 +1,7 @@
 import * as d3 from "d3";
 
 import {closeDialogs} from "dialogs/utils";
+import {openDialog} from "dialogs";
 import {turnLayerButtonOff} from "layers";
 import {restoreDefaultEvents} from "scripts/events";
 import {clearMainTip, showMainTip, tip} from "scripts/tooltips";
@@ -12,6 +13,8 @@ import {P, rand} from "utils/probabilityUtils";
 import {byId} from "utils/shorthands";
 import {parseTransform} from "utils/stringUtils";
 import {getArea, getAreaUnit, si} from "utils/unitUtils";
+
+let isLoaded = false;
 
 export function editProvinces() {
   if (customization) return;
@@ -25,8 +28,8 @@ export function editProvinces() {
   const body = byId("provincesBodySection");
   refreshProvincesEditor();
 
-  if (fmg.modules.editProvinces) return;
-  fmg.modules.editProvinces = true;
+  if (isLoaded) return;
+  isLoaded = true;
 
   $("#provincesEditor").dialog({
     title: "Provinces Editor",
@@ -61,7 +64,8 @@ export function editProvinces() {
 
     if (el.tagName === "FILL-BOX") changeFill(el);
     else if (cl.contains("name")) editProvinceName(p);
-    else if (cl.contains("coaIcon")) editEmblem("province", "provinceCOA" + p, pack.provinces[p]);
+    else if (cl.contains("coaIcon"))
+      openDialog("emblemEditor", null, {type: "province", id: "provinceCOA" + p, el: pack.provinces[p]});
     else if (cl.contains("icon-star-empty")) capitalZoomIn(p);
     else if (cl.contains("icon-flag-empty")) triggerIndependencePromps(p);
     else if (cl.contains("culturePopulation")) changePopulation(p);
@@ -506,6 +510,8 @@ export function editProvinces() {
     });
   }
 
+  let isNameEditorLoaded = false;
+
   function editProvinceName(province) {
     const p = pack.provinces[province];
     byId("provinceNameEditor").dataset.province = province;
@@ -528,8 +534,8 @@ export function editProvinces() {
       position: {my: "center", at: "center", of: "svg"}
     });
 
-    if (fmg.modules.editProvinceName) return;
-    fmg.modules.editProvinceName = true;
+    if (isNameEditorLoaded) return;
+    isNameEditorLoaded = true;
 
     // add listeners
     byId("provinceNameEditorShortCulture").addEventListener("click", regenerateShortNameCuture);

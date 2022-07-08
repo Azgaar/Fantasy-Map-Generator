@@ -7,6 +7,8 @@ import {tip, clearMainTip} from "scripts/tooltips";
 import {rn} from "utils/numberUtils";
 import {closeDialogs} from "dialogs/utils";
 
+let isLoaded = false;
+
 export function createRiver() {
   if (customization) return;
   closeDialogs();
@@ -29,8 +31,8 @@ export function createRiver() {
     close: closeRiverCreator
   });
 
-  if (fmg.modules.createRiver) return;
-  fmg.modules.createRiver = true;
+  if (isLoaded) return;
+  isLoaded = true;
 
   // add listeners
   document.getElementById("riverCreatorComplete").addEventListener("click", addRiver);

@@ -8,6 +8,8 @@ import {rn} from "utils/numberUtils";
 import {capitalize} from "utils/stringUtils";
 import {closeDialogs} from "dialogs/utils";
 
+let isLoaded = false;
+
 export function editRegiment(selector) {
   if (customization) return;
   closeDialogs(".stable");
@@ -28,8 +30,8 @@ export function editRegiment(selector) {
     position: {my: "left top", at: "left+10 top+10", of: "#map"}
   });
 
-  if (fmg.modules.editRegiment) return;
-  fmg.modules.editRegiment = true;
+  if (isLoaded) return;
+  isLoaded = true;
 
   // add listeners
   document.getElementById("regimentNameRestore").addEventListener("click", restoreName);

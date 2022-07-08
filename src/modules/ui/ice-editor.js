@@ -7,6 +7,8 @@ import {ra} from "utils/probabilityUtils";
 import {parseTransform} from "utils/stringUtils";
 import {closeDialogs} from "dialogs/utils";
 
+let isLoaded = false;
+
 export function editIce() {
   if (customization) return;
   closeDialogs(".stable");
@@ -26,8 +28,8 @@ export function editIce() {
     close: closeEditor
   });
 
-  if (fmg.modules.editIce) return;
-  fmg.modules.editIce = true;
+  if (isLoaded) return;
+  isLoaded = true;
 
   // add listeners
   document.getElementById("iceEditStyle").addEventListener("click", () => editStyle("ice"));

@@ -3,6 +3,8 @@ import {tip, showMainTip} from "scripts/tooltips";
 import {round, parseTransform} from "utils/stringUtils";
 import {closeDialogs} from "dialogs/utils";
 
+let isLoaded = false;
+
 export function editLabel() {
   if (customization) return;
   closeDialogs();
@@ -26,8 +28,8 @@ export function editLabel() {
   selectLabelGroup(text);
   updateValues(textPath);
 
-  if (fmg.modules.editLabel) return;
-  fmg.modules.editLabel = true;
+  if (isLoaded) return;
+  isLoaded = true;
 
   // add listeners
   document.getElementById("labelGroupShow").addEventListener("click", showGroupSection);

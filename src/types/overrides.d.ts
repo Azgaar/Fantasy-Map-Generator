@@ -5,11 +5,6 @@ interface Navigator {
 }
 
 interface Window {
-  fmg: {
-    modules: {
-      [key: string]: boolean;
-    };
-  };
   mapCoordinates: IMapCoordinates;
   // untyped IIFE modules
   $: typeof $;

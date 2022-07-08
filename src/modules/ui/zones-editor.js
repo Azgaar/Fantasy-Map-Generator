@@ -9,6 +9,8 @@ import {getNextId} from "utils/nodeUtils";
 import {rn} from "utils/numberUtils";
 import {getArea, getAreaUnit, si} from "utils/unitUtils";
 
+let isLoaded = false;
+
 export function editZones() {
   closeDialogs();
   if (!layerIsOn("toggleZones")) toggleZones();
@@ -17,8 +19,8 @@ export function editZones() {
   updateFilters();
   zonesEditorAddLines();
 
-  if (fmg.modules.editZones) return;
-  fmg.modules.editZones = true;
+  if (isLoaded) return;
+  isLoaded = true;
 
   $("#zonesEditor").dialog({
     title: "Zones Editor",

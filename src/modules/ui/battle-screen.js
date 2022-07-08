@@ -9,6 +9,8 @@ import {capitalize} from "utils/stringUtils";
 import {getAdjective, list} from "utils/languageUtils";
 import {closeDialogs} from "dialogs/utils";
 
+let isLoaded = false;
+
 export class Battle {
   constructor(attacker, defender) {
     if (customization) return;
@@ -42,8 +44,8 @@ export class Battle {
       close: () => Battle.prototype.context.cancelResults()
     });
 
-    if (fmg.modules.Battle) return;
-    fmg.modules.Battle = true;
+    if (isLoaded) return;
+    isLoaded = true;
 
     // add listeners
     document.getElementById("battleType").addEventListener("click", ev => this.toggleChange(ev));

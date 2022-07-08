@@ -131,6 +131,8 @@ function applyStyleWithUiRefresh(style) {
   setPresetRemoveButtonVisibiliy();
 }
 
+let isLoaded = false;
+
 function addStylePreset() {
   $("#styleSaver").dialog({title: "Style Saver", width: "26em", position: {my: "center", at: "center", of: "svg"}});
 
@@ -139,8 +141,8 @@ function addStylePreset() {
   styleSaverJSON.value = JSON.stringify(collectStyleData(), null, 2);
   checkName();
 
-  if (fmg.modules.saveStyle) return;
-  fmg.modules.saveStyle = true;
+  if (isLoaded) return;
+  isLoaded = true;
 
   // add listeners
   document.getElementById("styleSaverName").addEventListener("input", checkName);

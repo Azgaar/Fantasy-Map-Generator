@@ -14,10 +14,6 @@ import {addGlobalListeners} from "./scripts/listeners";
 import {checkForUpdates} from "./scripts/updater";
 import {getInputNumber} from "utils/nodeUtils";
 
-window.fmg = {
-  modules: {}
-};
-
 // default options
 options = {
   pinNotes: false,

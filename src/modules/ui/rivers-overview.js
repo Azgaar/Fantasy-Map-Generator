@@ -3,6 +3,8 @@ import * as d3 from "d3";
 import {rn} from "utils/numberUtils";
 import {closeDialogs} from "dialogs/utils";
 
+let isLoaded = false;
+
 export function overviewRivers() {
   if (customization) return;
   closeDialogs("#riversOverview, .stable");
@@ -12,8 +14,8 @@ export function overviewRivers() {
   riversOverviewAddLines();
   $("#riversOverview").dialog();
 
-  if (fmg.modules.overviewRivers) return;
-  fmg.modules.overviewRivers = true;
+  if (isLoaded) return;
+  isLoaded = true;
 
   $("#riversOverview").dialog({
     title: "Rivers Overview",

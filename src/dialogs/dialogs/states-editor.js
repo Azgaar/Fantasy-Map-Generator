@@ -1,6 +1,7 @@
 import * as d3 from "d3";
 
 import {closeDialogs} from "dialogs/utils";
+import {openDialog} from "dialogs";
 import {restoreDefaultEvents} from "scripts/events";
 import {clearMainTip, showMainTip, tip} from "scripts/tooltips";
 import {getMixedColor, getRandomColor} from "utils/colorUtils";
@@ -161,7 +162,8 @@ function addListeners() {
     const stateId = +$element.parentNode?.dataset?.id;
     if ($element.tagName === "FILL-BOX") stateChangeFill($element);
     else if (classList.contains("name")) editStateName(stateId);
-    else if (classList.contains("coaIcon")) editEmblem("state", "stateCOA" + stateId, pack.states[stateId]);
+    else if (classList.contains("coaIcon"))
+      openDialog("emblemEditor", null, {type: "state", id: "stateCOA" + stateId, el: pack.state[stateId]});
     else if (classList.contains("icon-star-empty")) stateCapitalZoomIn(stateId);
     else if (classList.contains("statePopulation")) changePopulation(stateId);
     else if (classList.contains("icon-pin")) toggleFog(stateId, classList);
@@ -405,6 +407,8 @@ function stateChangeFill(el) {
   openPicker(currentFill, callback);
 }
 
+let isLoaded = false;
+
 function editStateName(state) {
   const $stateNameEditorCustomForm = byId("stateNameEditorCustomForm");
   const $stateNameEditorSelectForm = byId("stateNameEditorSelectForm");
@@ -438,8 +442,8 @@ function editStateName(state) {
     position: {my: "center", at: "center", of: "svg"}
   });
 
-  if (fmg.modules.editStateName) return;
-  fmg.modules.editStateName = true;
+  if (isLoaded) return;
+  isLoaded = true;
 
   // add listeners
   byId("stateNameEditorShortCulture").on("click", regenerateShortNameCuture);

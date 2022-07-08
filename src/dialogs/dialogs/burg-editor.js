@@ -1,6 +1,7 @@
 import * as d3 from "d3";
 
 import {closeDialogs} from "dialogs/utils";
+import {openDialog} from "dialogs";
 import {layerIsOn} from "layers";
 import {prompt} from "scripts/prompt";
 import {clearMainTip, tip} from "scripts/tooltips";
@@ -459,9 +460,9 @@ export function open({id} = {}) {
   }
 
   function openEmblemEdit() {
-    const id = +elSelected.attr("data-id"),
-      burg = pack.burgs[id];
-    editEmblem("burg", "burgCOA" + id, burg);
+    const id = +elSelected.attr("data-id");
+    const burg = pack.burgs[id];
+    openDialog("emblemEditor", null, {type: "burg", id: "burgCOA" + id, el: burg});
   }
 
   function toggleMFCGMap() {

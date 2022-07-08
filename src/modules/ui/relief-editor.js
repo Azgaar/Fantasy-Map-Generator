@@ -6,6 +6,8 @@ import {tip, showMainTip, clearMainTip} from "scripts/tooltips";
 import {rn} from "utils/numberUtils";
 import {closeDialogs} from "dialogs/utils";
 
+let isLoaded = false;
+
 export function editReliefIcon() {
   if (customization) return;
   closeDialogs(".stable");
@@ -26,8 +28,8 @@ export function editReliefIcon() {
     close: closeReliefEditor
   });
 
-  if (fmg.modules.editReliefIcon) return;
-  fmg.modules.editReliefIcon = true;
+  if (isLoaded) return;
+  isLoaded = true;
 
   // add listeners
   document.getElementById("reliefIndividual").addEventListener("click", enterIndividualMode);

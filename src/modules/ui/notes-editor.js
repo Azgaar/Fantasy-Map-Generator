@@ -1,5 +1,7 @@
 import {tip} from "scripts/tooltips";
 
+let isLoaded = false;
+
 export function editNotes(id, name) {
   // elements
   const notesLegend = document.getElementById("notesLegend");
@@ -49,8 +51,8 @@ export function editNotes(id, name) {
   });
   $("[aria-describedby='notesEditor']").css("top", "10vh");
 
-  if (modules.editNotes) return;
-  modules.editNotes = true;
+  if (isLoaded) return;
+  isLoaded = true;
 
   // add listeners
   document.getElementById("notesSelect").addEventListener("change", changeElement);

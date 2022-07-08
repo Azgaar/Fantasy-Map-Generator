@@ -30,7 +30,7 @@ function clicked() {
   const p = d3.mouse(this);
   const i = findCell(p[0], p[1]);
 
-  if (grand.id === "emblems") editEmblem();
+  if (grand.id === "emblems") openDialog("emblemEditor", null, defineEmblemData(+el.dataset.i, parent));
   else if (parent.id === "rivers") editRiver(el.id);
   else if (grand.id === "routes") editRoute();
   else if (el.tagName === "tspan" && grand.parentNode.parentNode.id === "labels") editLabel();
@@ -43,6 +43,16 @@ function clicked() {
   else if (pack.cells.t[i] === 1) {
     openDialog("coastlineEditor", null, {node: byId("island_" + pack.cells.f[i])});
   } else if (grand.id === "lakes") editLake();
+}
+
+function defineEmblemData(i, parent) {
+  const [g, type] =
+    parent.id === "burgEmblems"
+      ? [pack.burgs, "burg"]
+      : parent.id === "provinceEmblems"
+      ? [pack.provinces, "province"]
+      : [pack.states, "state"];
+  return {type, id: type + "COA" + i, el: g[i]};
 }
 
 const onMouseMove = debounce(handleMouseMove, 100);

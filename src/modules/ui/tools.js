@@ -126,7 +126,7 @@ async function openEmblemEditor() {
   }
 
   await COArenderer.trigger(id, el.coa);
-  editEmblem(type, id, el);
+  openDialog("emblemEditor", null, {type, id, el});
 }
 
 function regenerateRivers() {

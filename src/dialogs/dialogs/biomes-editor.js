@@ -9,6 +9,8 @@ import {openURL} from "utils/linkUtils";
 import {rn} from "utils/numberUtils";
 import {getArea, getAreaUnit, si} from "utils/unitUtils";
 
+let isLoaded = false;
+
 export function open() {
   closeDialogs("#biomesEditor, .stable");
   if (!layerIsOn("toggleBiomes")) toggleBiomes();
@@ -21,8 +23,8 @@ export function open() {
   const animate = d3.transition().duration(2000).ease(d3.easeSinIn);
   refreshBiomesEditor();
 
-  if (fmg.modules.editBiomes) return;
-  fmg.modules.editBiomes = true;
+  if (isLoaded) return;
+  isLoaded = true;
 
   $("#biomesEditor").dialog({
     title: "Biomes Editor",

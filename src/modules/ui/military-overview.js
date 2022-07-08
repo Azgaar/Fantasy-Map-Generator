@@ -7,6 +7,8 @@ import {capitalize} from "utils/stringUtils";
 import {si} from "utils/unitUtils";
 import {closeDialogs} from "dialogs/utils";
 
+let isLoaded = false;
+
 export function overviewMilitary() {
   if (customization) return;
   closeDialogs("#militaryOverview, .stable");
@@ -18,8 +20,9 @@ export function overviewMilitary() {
   addLines();
   $("#militaryOverview").dialog();
 
-  if (fmg.modules.overviewMilitary) return;
-  fmg.modules.overviewMilitary = true;
+  if (isLoaded) return;
+  isLoaded = true;
+
   updateHeaders();
 
   $("#militaryOverview").dialog({
@@ -243,6 +246,8 @@ export function overviewMilitary() {
     }
   }
 
+  let isCustomizeLoaded = false;
+
   function militaryCustomize() {
     const types = ["melee", "ranged", "mounted", "machinery", "naval", "armored", "aviation", "magical"];
     const tableBody = document.getElementById("militaryOptions").querySelector("tbody");
@@ -282,8 +287,8 @@ export function overviewMilitary() {
       }
     });
 
-    if (fmg.modules.overviewMilitaryCustomize) return;
-    fmg.modules.overviewMilitaryCustomize = true;
+    if (isCustomizeLoaded) return;
+    isCustomizeLoaded = true;
 
     tableBody.addEventListener("click", event => {
       const el = event.target;

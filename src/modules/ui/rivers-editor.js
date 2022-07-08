@@ -7,6 +7,8 @@ import {rn} from "utils/numberUtils";
 import {rand} from "utils/probabilityUtils";
 import {closeDialogs} from "dialogs/utils";
 
+let isLoaded = false;
+
 export function editRiver(id) {
   if (customization) return;
   if (elSelected && id === elSelected.attr("id")) return;
@@ -40,8 +42,8 @@ export function editRiver(id) {
     close: closeRiverEditor
   });
 
-  if (fmg.modules.editRiver) return;
-  fmg.modules.editRiver = true;
+  if (isLoaded) return;
+  isLoaded = true;
 
   // add listeners
   document.getElementById("riverCreateSelectingCells").addEventListener("click", createRiver);
@@ -173,7 +175,7 @@ export function editRiver(id) {
     elSelected.attr("d", path);
 
     updateRiverLength(river);
-    if (fmg.modules.elevation) showEPForRiver(elSelected.node());
+    // TODO: check visibility showEPForRiver(elSelected.node());
   }
 
   function addControlPoint() {
@@ -237,7 +239,6 @@ export function editRiver(id) {
   }
 
   function showElevationProfile() {
-    fmg.modules.elevation = true;
     showEPForRiver(elSelected.node());
   }
 

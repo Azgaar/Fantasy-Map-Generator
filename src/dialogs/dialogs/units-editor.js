@@ -7,12 +7,14 @@ import {prompt} from "scripts/prompt";
 import {closeDialogs} from "dialogs/utils";
 import {fitScaleBar} from "modules/measurers";
 
+let isLoaded = false;
+
 export function open() {
   closeDialogs("#unitsEditor, .stable");
   $("#unitsEditor").dialog();
 
-  if (fmg.modules.editUnits) return;
-  fmg.modules.editUnits = true;
+  if (isLoaded) return;
+  isLoaded = true;
 
   $("#unitsEditor").dialog({
     title: "Units Editor",

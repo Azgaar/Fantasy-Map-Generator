@@ -6,13 +6,15 @@ import {openURL} from "utils/linkUtils";
 import {rn} from "utils/numberUtils";
 import {closeDialogs} from "dialogs/utils";
 
+let isLoaded = false;
+
 export function editNamesbase() {
   if (customization) return;
   closeDialogs("#namesbaseEditor, .stable");
   $("#namesbaseEditor").dialog();
 
-  if (fmg.modules.editNamesbase) return;
-  fmg.modules.editNamesbase = true;
+  if (isLoaded) return;
+  isLoaded = true;
 
   // add listeners
   document.getElementById("namesbaseSelect").addEventListener("change", updateInputs);

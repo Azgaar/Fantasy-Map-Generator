@@ -6,10 +6,7 @@ import {openURL} from "utils/linkUtils";
 import {rn} from "utils/numberUtils";
 import {parseTransform} from "utils/stringUtils";
 
-export function editEmblem(type, id, el) {
-  if (customization) return;
-  if (!id && d3.event) defineEmblemData(d3.event);
-
+export function open({type, id, el}) {
   emblems.selectAll("use").call(d3.drag().on("drag", dragEmblem)).classed("draggable", true);
 
   const emblemStates = document.getElementById("emblemStates");
@@ -48,20 +45,6 @@ export function editEmblem(type, id, el) {
   document.getElementById("emblemsDownloadJPG").onclick = () => download("jpeg");
   document.getElementById("emblemsGallery").onclick = downloadGallery;
   document.getElementById("emblemsFocus").onclick = showArea;
-
-  function defineEmblemData(e) {
-    const parent = e.target.parentNode;
-    const [g, t] =
-      parent.id === "burgEmblems"
-        ? [pack.burgs, "burg"]
-        : parent.id === "provinceEmblems"
-        ? [pack.provinces, "province"]
-        : [pack.states, "state"];
-    const i = +e.target.dataset.i;
-    type = t;
-    id = type + "COA" + i;
-    el = g[i];
-  }
 
   function updateElementSelectors(type, id, el) {
     let state = 0,

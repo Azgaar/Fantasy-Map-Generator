@@ -18,6 +18,8 @@ import {aleaPRNG} from "scripts/aleaPRNG";
 import {undraw} from "scripts/generation";
 import {closeDialogs} from "dialogs/utils";
 
+let isLoaded = false;
+
 export function editHeightmap(options) {
   const {mode, tool} = options || {};
   restartHistory();
@@ -26,8 +28,8 @@ export function editHeightmap(options) {
   if (!mode) showModeDialog();
   else enterHeightmapEditMode(mode);
 
-  if (fmg.modules.editHeightmap) return;
-  fmg.modules.editHeightmap = true;
+  if (isLoaded) return;
+  isLoaded = true;
 
   // add listeners
   byId("paintBrushes").on("click", openBrushesPanel);
@@ -555,6 +557,8 @@ export function editHeightmap(options) {
     updateHistory();
   }
 
+  let isBrushesPanelLoaded = false;
+
   function openBrushesPanel() {
     if ($("#brushesPanel").is(":visible")) return;
     $("#brushesPanel")
@@ -565,8 +569,8 @@ export function editHeightmap(options) {
       })
       .on("dialogclose", exitBrushMode);
 
-    if (fmg.modules.openBrushesPanel) return;
-    fmg.modules.openBrushesPanel = true;
+    if (isBrushesPanelLoaded) return;
+    isBrushesPanelLoaded = true;
 
     // add listeners
     byId("brushesButtons").on("click", e => toggleBrushMode(e));
@@ -725,6 +729,8 @@ export function editHeightmap(options) {
     }
   }
 
+  let isTemplateEditorLoaded = false;
+
   function openTemplateEditor() {
     if ($("#templateEditor").is(":visible")) return;
     const $body = byId("templateBody");
@@ -737,8 +743,8 @@ export function editHeightmap(options) {
       position: {my: "right top", at: "right-10 top+10", of: "svg"}
     });
 
-    if (fmg.modules.openTemplateEditor) return;
-    fmg.modules.openTemplateEditor = true;
+    if (isTemplateEditorLoaded) return;
+    isTemplateEditorLoaded = true;
 
     $("#templateBody").sortable({
       items: "> div",
@@ -1054,6 +1060,8 @@ export function editHeightmap(options) {
     }
   }
 
+  let isImageConverterLoaded = false;
+
   function openImageConverter() {
     if ($("#imageConverter").is(":visible")) return;
     imageToLoad.click();
@@ -1084,8 +1092,8 @@ export function editHeightmap(options) {
     viewbox.select("#heights").selectAll("*").remove();
     updateHistory();
 
-    if (fmg.modules.openImageConverter) return;
-    fmg.modules.openImageConverter = true;
+    if (isImageConverterLoaded) return;
+    isImageConverterLoaded = true;
 
     // add color pallete
     void (function createColorPallete() {

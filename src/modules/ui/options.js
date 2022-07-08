@@ -974,6 +974,8 @@ function resize3d() {
   ThreeD.redraw();
 }
 
+let isLoaded = false;
+
 function toggle3dOptions() {
   if (options3dUpdate.offsetParent) {
     $("#options3d").dialog("close");
@@ -988,8 +990,8 @@ function toggle3dOptions() {
 
   updateValues();
 
-  if (fmg.modules.options3d) return;
-  fmg.modules.options3d = true;
+  if (isLoaded) return;
+  isLoaded = true;
 
   document.getElementById("options3dUpdate").addEventListener("click", ThreeD.update);
   document.getElementById("options3dSave").addEventListener("click", ThreeD.saveScreenshot);

@@ -8,6 +8,8 @@ import {capitalize} from "utils/stringUtils";
 import {si} from "utils/unitUtils";
 import {closeDialogs} from "dialogs/utils";
 
+let isLoaded = false;
+
 export function overviewRegiments(state) {
   if (customization) return;
   closeDialogs(".stable");
@@ -18,8 +20,9 @@ export function overviewRegiments(state) {
   addLines();
   $("#regimentsOverview").dialog();
 
-  if (fmg.modules.overviewRegiments) return;
-  fmg.modules.overviewRegiments = true;
+  if (isLoaded) return;
+  isLoaded = true;
+
   updateHeaders();
 
   $("#regimentsOverview").dialog({

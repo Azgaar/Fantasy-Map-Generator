@@ -421,6 +421,5 @@ function showElevationProfile(data, routeLen, isRiver) {
     document.getElementById("epCurve").removeEventListener("change", draw);
     document.getElementById("epSave").removeEventListener("click", downloadCSV);
     document.getElementById("elevationGraph").innerHTML = "";
-    fmg.modules.elevation = false;
   }
 }

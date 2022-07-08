@@ -4,6 +4,8 @@ import {tip} from "scripts/tooltips";
 import {rn} from "utils/numberUtils";
 import {round, parseTransform} from "utils/stringUtils";
 
+let isLoaded = false;
+
 export function editWorld() {
   if (customization) return;
   $("#worldConfigurator").dialog({
@@ -40,8 +42,8 @@ export function editWorld() {
   updateGlobeTemperature();
   updateGlobePosition();
 
-  if (fmg.modules.editWorld) return;
-  fmg.modules.editWorld = true;
+  if (isLoaded) return;
+  isLoaded = true;
 
   document.getElementById("worldControls").addEventListener("input", e => updateWorld(e.target));
   globe.select("#globeWindArrows").on("click", changeWind);

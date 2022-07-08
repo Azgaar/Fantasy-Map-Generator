@@ -7,6 +7,8 @@ import {getNextId} from "utils/nodeUtils";
 import {round} from "utils/stringUtils";
 import {closeDialogs} from "dialogs/utils";
 
+let isLoaded = false;
+
 export function editRoute(onClick) {
   if (customization) return;
   if (!onClick && elSelected && d3.event.target.id === elSelected.attr("id")) return;
@@ -29,8 +31,8 @@ export function editRoute(onClick) {
   viewbox.on("touchmove mousemove", showEditorTips);
   if (onClick) toggleRouteCreationMode();
 
-  if (fmg.modules.editRoute) return;
-  fmg.modules.editRoute = true;
+  if (isLoaded) return;
+  isLoaded = true;
 
   // add listeners
   document.getElementById("routeGroupsShow").addEventListener("click", showGroupSection);
@@ -106,11 +108,10 @@ export function editRoute(onClick) {
     const l = elSelected.node().getTotalLength();
     routeLength.innerHTML = rn(l * distanceScaleInput.value) + " " + distanceUnitInput.value;
 
-    if (fmg.modules.elevation) showEPForRoute(elSelected.node());
+    // TODO: check visibility showEPForRoute(elSelected.node());
   }
 
   function showElevationProfile() {
-    fmg.modules.elevation = true;
     showEPForRoute(elSelected.node());
   }
 

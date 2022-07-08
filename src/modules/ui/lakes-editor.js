@@ -8,6 +8,8 @@ import {rand} from "utils/probabilityUtils";
 import {round} from "utils/stringUtils";
 import {getArea, getAreaUnit, getHeight, si} from "utils/unitUtils";
 
+let isLoaded = false;
+
 export function editLake() {
   if (customization) return;
   closeDialogs(".stable");
@@ -28,8 +30,8 @@ export function editLake() {
   drawLakeVertices();
   viewbox.on("touchmove mousemove", null);
 
-  if (fmg.modules.editLake) return;
-  fmg.modules.editLake = true;
+  if (isLoaded) return;
+  isLoaded = true;
 
   // add listeners
   document.getElementById("lakeName").addEventListener("input", changeName);

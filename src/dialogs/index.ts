@@ -6,6 +6,8 @@ const dialogsMap = {
   coastlineEditor: "coastline-editor",
   culturesEditor: "cultures-editor",
   diplomacyEditor: "diplomacy-editor",
+  emblemEditor: "emblem-editor",
+  heightmapEditor: "heightmap-editor",
   heightmapSelection: "heightmap-selection",
   hierarchyTree: "hierarchy-tree",
   religionsEditor: "religions-editor",
