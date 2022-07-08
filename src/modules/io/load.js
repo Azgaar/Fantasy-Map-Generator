@@ -11,7 +11,7 @@ import {link} from "utils/linkUtils";
 import {minmax, rn} from "utils/numberUtils";
 import {regenerateMap} from "scripts/generation";
 import {reMarkFeatures} from "modules/markup";
-import {editUnits} from "modules/ui/editors";
+import {closeDialogs} from "dialogs/utils";
 
 // add drag to upload logic, pull request from @evyatron
 export function addDragToUpload() {
@@ -478,13 +478,6 @@ async function parseLoadedData(data) {
       if (notHidden(scaleBar)) turnOn("toggleScaleBar");
 
       updatePresetInput();
-    })();
-
-    void (function restoreEvents() {
-      scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", editUnits);
-      legend
-        .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
-        .on("click", () => clearLegend());
     })();
 
     {

@@ -6,6 +6,7 @@ import {byId} from "utils/shorthands";
 import {tip} from "scripts/tooltips";
 import {rn, minmax, normalize} from "utils/numberUtils";
 import {parseTransform} from "utils/stringUtils";
+import {each} from "utils/probabilityUtils";
 
 // clear elSelected variable
 export function unselect() {
@@ -15,17 +16,6 @@ export function unselect() {
   debug.selectAll("*").remove();
   viewbox.style("cursor", "default");
   elSelected = null;
-}
-
-// close all dialogs except stated
-export function closeDialogs(except = "#except") {
-  try {
-    $(".dialog:visible")
-      .not(except)
-      .each(function () {
-        $(this).dialog("close");
-      });
-  } catch (error) {}
 }
 
 // move brush radius circle
@@ -256,11 +246,11 @@ function togglePort(burg) {
     .attr("height", size);
 }
 
-function getBurgSeed(burg) {
+export function getBurgSeed(burg) {
   return burg.MFCG || Number(`${seed}${String(burg.i).padStart(4, 0)}`);
 }
 
-function getMFCGlink(burg) {
+export function getMFCGlink(burg) {
   if (burg.link) return burg.link;
 
   const {cells} = pack;
@@ -1024,28 +1014,4 @@ function refreshAllEditors() {
   if (byId("statesEditorRefresh")?.offsetParent) statesEditorRefresh.click();
   if (byId("zonesEditorRefresh")?.offsetParent) zonesEditorRefresh.click();
   TIME && console.timeEnd("refreshAllEditors");
-}
-
-// dynamically loaded editors
-export async function editStates() {
-  if (customization) return;
-  const Editor = await import("../dynamic/editors/states-editor.js");
-  Editor.open();
-}
-
-export async function editCultures() {
-  if (customization) return;
-  const Editor = await import("../dynamic/editors/cultures-editor.js");
-  Editor.open();
-}
-
-export async function editReligions() {
-  if (customization) return;
-  const Editor = await import("../dynamic/editors/religions-editor.js");
-  Editor.open();
-}
-
-export async function editUnits() {
-  const {open} = await import("./units-editor.js");
-  open();
 }

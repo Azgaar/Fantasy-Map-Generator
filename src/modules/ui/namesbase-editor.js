@@ -4,6 +4,7 @@ import {unique} from "utils/arrayUtils";
 import {tip} from "scripts/tooltips";
 import {openURL} from "utils/linkUtils";
 import {rn} from "utils/numberUtils";
+import {closeDialogs} from "dialogs/utils";
 
 export function editNamesbase() {
   if (customization) return;

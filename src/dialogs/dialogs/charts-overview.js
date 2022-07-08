@@ -7,6 +7,7 @@ import {rn} from "utils/numberUtils";
 import {capitalize} from "utils/stringUtils";
 import {si, convertTemperature, getFriendlyPrecipitation} from "utils/unitUtils";
 import {rollups} from "utils/functionUtils";
+import {closeDialogs} from "dialogs/utils";
 
 const entitiesMap = {
   states: {

@@ -2,6 +2,7 @@ import {tip} from "scripts/tooltips";
 import {rn} from "utils/numberUtils";
 import {ldb} from "scripts/indexedDB";
 import {ra} from "utils/probabilityUtils";
+import {closeDialogs} from "dialogs/utils";
 
 // functions to save project as .map file
 

@@ -1,6 +1,7 @@
 import {findCell} from "utils/graphUtils";
 import {tip, showMainTip} from "scripts/tooltips";
 import {round, parseTransform} from "utils/stringUtils";
+import {closeDialogs} from "dialogs/utils";
 
 export function editLabel() {
   if (customization) return;

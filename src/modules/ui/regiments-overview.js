@@ -6,6 +6,7 @@ import {tip, clearMainTip} from "scripts/tooltips";
 import {rn} from "utils/numberUtils";
 import {capitalize} from "utils/stringUtils";
 import {si} from "utils/unitUtils";
+import {closeDialogs} from "dialogs/utils";
 
 export function overviewRegiments(state) {
   if (customization) return;

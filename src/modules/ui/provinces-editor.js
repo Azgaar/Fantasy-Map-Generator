@@ -11,6 +11,7 @@ import {parseTransform} from "utils/stringUtils";
 import {si} from "utils/unitUtils";
 import {turnLayerButtonOff} from "layers";
 import {byId} from "utils/shorthands";
+import {closeDialogs} from "dialogs/utils";
 
 export function editProvinces() {
   if (customization) return;
@@ -387,7 +388,7 @@ export function editProvinces() {
 
     unfog();
     closeDialogs();
-    editStates();
+    openDialog("statesEditor");
   }
 
   function changePopulation(province) {

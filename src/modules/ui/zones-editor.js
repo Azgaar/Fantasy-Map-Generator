@@ -7,6 +7,7 @@ import {tip, showMainTip, clearMainTip} from "scripts/tooltips";
 import {rn} from "utils/numberUtils";
 import {getNextId} from "utils/nodeUtils";
 import {si} from "utils/unitUtils";
+import {closeDialogs} from "dialogs/utils";
 
 export function editZones() {
   closeDialogs();

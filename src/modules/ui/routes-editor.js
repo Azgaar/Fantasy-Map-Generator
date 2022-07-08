@@ -5,6 +5,7 @@ import {getSegmentId} from "utils/lineUtils";
 import {rn} from "utils/numberUtils";
 import {getNextId} from "utils/nodeUtils";
 import {round} from "utils/stringUtils";
+import {closeDialogs} from "dialogs/utils";
 
 export function editRoute(onClick) {
   if (customization) return;

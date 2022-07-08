@@ -1,14 +1,19 @@
 import * as d3 from "d3";
 
-import {findCell} from "utils/graphUtils";
-import {tip, clearMainTip} from "scripts/tooltips";
-import {rn} from "utils/numberUtils";
+import {closeDialogs} from "dialogs/utils";
+import {layerIsOn} from "layers";
 import {prompt} from "scripts/prompt";
+import {clearMainTip, tip} from "scripts/tooltips";
+import {findCell} from "utils/graphUtils";
+import {rn} from "utils/numberUtils";
 import {rand} from "utils/probabilityUtils";
 import {parseTransform} from "utils/stringUtils";
-import {getHeight} from "utils/unitUtils";
+import {convertTemperature, getHeight} from "utils/unitUtils";
+import {getMFCGlink, getBurgSeed} from "modules/ui/editors";
 
-export function editBurg(id) {
+let isLoaded = false;
+
+export function open({id} = {}) {
   if (customization) return;
   closeDialogs(".stable");
   if (!layerIsOn("toggleIcons")) toggleIcons();
@@ -26,8 +31,8 @@ export function editBurg(id) {
     position: {my: "left top", at: "left+10 top+10", of: "svg", collision: "fit"}
   });
 
-  if (fmg.modules.editBurg) return;
-  fmg.modules.editBurg = true;
+  if (isLoaded) return;
+  isLoaded = true;
 
   // add listeners
   document.getElementById("burgGroupShow").addEventListener("click", showGroupSection);

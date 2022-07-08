@@ -1,4 +1,5 @@
 import {tip} from "scripts/tooltips";
+import {closeDialogs} from "dialogs/utils";
 
 export function exportToJson(type) {
   if (customization)

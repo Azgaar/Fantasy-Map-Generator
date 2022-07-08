@@ -6,6 +6,7 @@ import {rn} from "utils/numberUtils";
 import {rand} from "utils/probabilityUtils";
 import {round} from "utils/stringUtils";
 import {si, getHeight} from "utils/unitUtils";
+import {closeDialogs} from "dialogs/utils";
 
 export function editLake() {
   if (customization) return;

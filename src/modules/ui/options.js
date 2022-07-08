@@ -11,6 +11,8 @@ import {gauss, P, rand, rw} from "utils/probabilityUtils";
 import {byId, stored} from "utils/shorthands";
 import {regenerateMap} from "scripts/generation";
 import {fitScaleBar} from "modules/measurers";
+import {openDialog} from "dialogs";
+import {closeDialogs} from "dialogs/utils";
 
 $("#optionsContainer").draggable({handle: ".drag-trigger", snap: "svg", snapMode: "both"});
 $("#exitCustomization").draggable({handle: "div"});
@@ -160,7 +162,7 @@ optionsContent.addEventListener("click", function (event) {
   else if (id === "optionsMapHistory") showSeedHistoryDialog();
   else if (id === "optionsCopySeed") copyMapURL();
   else if (id === "optionsEraRegenerate") regenerateEra();
-  else if (id === "templateInputContainer") openTemplateSelectionDialog();
+  else if (id === "templateInputContainer") openDialog("heightmapSelection");
   else if (id === "zoomExtentDefault") restoreDefaultZoomExtent();
   else if (id === "translateExtent") toggleTranslateExtent(event.target);
   else if (id === "speakerTest") testSpeaker();
@@ -648,11 +650,6 @@ function changeEra() {
   if (!eraInput.value) return;
   lock("era");
   options.era = eraInput.value;
-}
-
-async function openTemplateSelectionDialog() {
-  const HeightmapSelectionDialog = await import("../dynamic/heightmap-selection.js");
-  HeightmapSelectionDialog.open();
 }
 
 // remove all saved data from LocalStorage and reload the page

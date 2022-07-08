@@ -5,6 +5,7 @@ import {wiki} from "utils/linkUtils";
 import {rn} from "utils/numberUtils";
 import {capitalize} from "utils/stringUtils";
 import {si} from "utils/unitUtils";
+import {closeDialogs} from "dialogs/utils";
 
 export function overviewMilitary() {
   if (customization) return;

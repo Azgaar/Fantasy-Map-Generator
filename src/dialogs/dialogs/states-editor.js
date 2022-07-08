@@ -9,6 +9,7 @@ import {rn} from "utils/numberUtils";
 import {rand, P} from "utils/probabilityUtils";
 import {si} from "utils/unitUtils";
 import {getAdjective} from "utils/languageUtils";
+import {closeDialogs} from "dialogs/utils";
 
 const $body = insertEditorHtml();
 addListeners();

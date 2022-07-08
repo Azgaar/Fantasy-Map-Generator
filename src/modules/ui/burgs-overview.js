@@ -7,6 +7,8 @@ import {getCoordinates} from "utils/coordinateUtils";
 import {rn} from "utils/numberUtils";
 import {si, siToInteger} from "utils/unitUtils";
 import {getHeight} from "utils/unitUtils";
+import {closeDialogs} from "dialogs/utils";
+import {openDialog} from "dialogs";
 
 export function overviewBurgs() {
   if (customization) return;
@@ -241,8 +243,7 @@ export function overviewBurgs() {
   }
 
   function openBurgEditor() {
-    const burg = +this.parentNode.dataset.id;
-    editBurg(burg);
+    openDialog("burgEditor", null, {id: +this.parentNode.dataset.id});
   }
 
   function triggerBurgRemove() {

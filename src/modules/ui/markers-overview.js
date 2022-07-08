@@ -1,5 +1,6 @@
 import {restoreDefaultEvents} from "scripts/events";
 import {clearMainTip} from "scripts/tooltips";
+import {closeDialogs} from "dialogs/utils";
 
 export function overviewMarkers() {
   if (customization) return;

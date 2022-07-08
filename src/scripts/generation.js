@@ -23,6 +23,7 @@ import {byId} from "utils/shorthands";
 import {showStatistics} from "./statistics";
 import {reGraph} from "./reGraph";
 import {rankCells} from "./rankCells";
+import {closeDialogs} from "dialogs/utils";
 
 export async function generate(options) {
   try {

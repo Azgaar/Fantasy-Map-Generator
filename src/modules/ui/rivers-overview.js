@@ -1,6 +1,7 @@
 import * as d3 from "d3";
 
 import {rn} from "utils/numberUtils";
+import {closeDialogs} from "dialogs/utils";
 
 export function overviewRivers() {
   if (customization) return;

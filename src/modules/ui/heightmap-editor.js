@@ -16,6 +16,7 @@ import {prompt} from "scripts/prompt";
 import {clearMainTip, showMainTip, tip} from "scripts/tooltips";
 import {aleaPRNG} from "scripts/aleaPRNG";
 import {undraw} from "scripts/generation";
+import {closeDialogs} from "dialogs/utils";
 
 export function editHeightmap(options) {
   const {mode, tool} = options || {};

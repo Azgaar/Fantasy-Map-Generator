@@ -7,6 +7,7 @@ import {rn, minmax} from "utils/numberUtils";
 import {rand, P, Pint} from "utils/probabilityUtils";
 import {capitalize} from "utils/stringUtils";
 import {getAdjective, list} from "utils/languageUtils";
+import {closeDialogs} from "dialogs/utils";
 
 export class Battle {
   constructor(attacker, defender) {
@@ -172,35 +173,38 @@ export class Battle {
     const state = pack.states[regiment.state];
     const distance = (Math.hypot(this.y - regiment.by, this.x - regiment.bx) * distanceScaleInput.value) | 0; // distance between regiment and its base
     const color = state.color[0] === "#" ? state.color : "#999";
-    const icon = `<svg width="1.4em" height="1.4em" style="margin-bottom: -.6em; stroke: #333">
+    const icon = /* html */ `<svg width="1.4em" height="1.4em" style="margin-bottom: -.6em; stroke: #333">
       <rect x="0" y="0" width="100%" height="100%" fill="${color}"></rect>
       <text x="0" y="1.04em" style="">${regiment.icon}</text></svg>`;
     const body = `<tbody id="battle${state.i}-${regiment.i}">`;
 
-    let initial = `<tr class="battleInitial"><td>${icon}</td><td class="regiment" data-tip="${
-      regiment.name
-    }">${regiment.name.slice(0, 24)}</td>`;
-    let casualties = `<tr class="battleCasualties"><td></td><td data-tip="${state.fullName}">${state.fullName.slice(
-      0,
-      26
-    )}</td>`;
-    let survivors = `<tr class="battleSurvivors"><td></td><td data-tip="Supply line length, affects morale">Distance to base: ${distance} ${distanceUnitInput.value}</td>`;
+    let initial = /* html */ `<tr class="battleInitial">
+      <td>${icon}</td>
+      <td class="regiment" data-tip="${regiment.name}">${regiment.name.slice(0, 24)}</td>
+    `;
+
+    let casualties = /* html */ `<tr class="battleCasualties">
+      <td></td>
+      <td data-tip="${state.fullName}">${state.fullName.slice(0, 26)}</td>
+    `;
+
+    let survivors = /* html */ `<tr class="battleSurvivors">
+      <td></td>
+      <td data-tip="Supply line length, affects morale">Distance to base: ${distance} ${distanceUnitInput.value}</td>
+    `;
 
     for (const u of options.military) {
-      initial += `<td data-tip="Initial forces" style="width: 2.5em; text-align: center">${
-        regiment.u[u.name] || 0
-      }</td>`;
+      initial += `<td data-tip="Initial forces" style="width: 2.5em; text-align: center">
+        ${regiment.u[u.name] || 0}</td>`;
       casualties += `<td data-tip="Casualties" style="width: 2.5em; text-align: center; color: red">0</td>`;
-      survivors += `<td data-tip="Survivors" style="width: 2.5em; text-align: center; color: green">${
-        regiment.u[u.name] || 0
-      }</td>`;
+      survivors += `<td data-tip="Survivors" style="width: 2.5em; text-align: center; color: green">
+        ${regiment.u[u.name] || 0}</td>`;
     }
 
     initial += `<td data-tip="Initial forces" style="width: 2.5em; text-align: center">${regiment.a || 0}</td></tr>`;
     casualties += `<td data-tip="Casualties"  style="width: 2.5em; text-align: center; color: red">0</td></tr>`;
-    survivors += `<td data-tip="Survivors" style="width: 2.5em; text-align: center; color: green">${
-      regiment.a || 0
-    }</td></tr>`;
+    survivors += `<td data-tip="Survivors" style="width: 2.5em; text-align: center; color: green">
+      ${regiment.a || 0}</td></tr>`;
 
     const div = side === "attackers" ? battleAttackers : battleDefenders;
     div.innerHTML += body + initial + casualties + survivors + "</tbody>";

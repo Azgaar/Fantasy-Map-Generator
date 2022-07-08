@@ -5,6 +5,7 @@ import {tip, clearMainTip} from "scripts/tooltips";
 import {getSegmentId} from "utils/lineUtils";
 import {rn} from "utils/numberUtils";
 import {rand} from "utils/probabilityUtils";
+import {closeDialogs} from "dialogs/utils";
 
 export function editRiver(id) {
   if (customization) return;

@@ -7,9 +7,9 @@ import {getRandomColor} from "utils/colorUtils";
 import {openURL} from "utils/linkUtils";
 import {rn} from "utils/numberUtils";
 import {si} from "utils/unitUtils";
+import {closeDialogs} from "dialogs/utils";
 
-export function editBiomes() {
-  if (customization) return;
+export function open() {
   closeDialogs("#biomesEditor, .stable");
   if (!layerIsOn("toggleBiomes")) toggleBiomes();
   if (layerIsOn("toggleStates")) toggleStates();

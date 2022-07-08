@@ -6,6 +6,7 @@ import {clipPoly} from "utils/lineUtils";
 import {rn} from "utils/numberUtils";
 import {round} from "utils/stringUtils";
 import {si} from "utils/unitUtils";
+import {closeDialogs} from "dialogs/utils";
 
 export function editCoastline(node = d3.event.target) {
   if (customization) return;

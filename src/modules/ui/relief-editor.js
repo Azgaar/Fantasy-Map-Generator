@@ -4,6 +4,7 @@ import {restoreDefaultEvents} from "scripts/events";
 import {findCell} from "utils/graphUtils";
 import {tip, showMainTip, clearMainTip} from "scripts/tooltips";
 import {rn} from "utils/numberUtils";
+import {closeDialogs} from "dialogs/utils";
 
 export function editReliefIcon() {
   if (customization) return;

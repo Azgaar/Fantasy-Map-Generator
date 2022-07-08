@@ -5,6 +5,7 @@ import {getPackPolygon, findCell} from "utils/graphUtils";
 import {last} from "utils/arrayUtils";
 import {tip, clearMainTip} from "scripts/tooltips";
 import {rn} from "utils/numberUtils";
+import {closeDialogs} from "dialogs/utils";
 
 export function createRiver() {
   if (customization) return;

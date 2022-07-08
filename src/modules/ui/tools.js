@@ -1,7 +1,8 @@
 import * as d3 from "d3";
 
+import {openDialog} from "dialogs";
+import {closeDialogs} from "dialogs/utils";
 import {turnLayerButtonOn} from "layers";
-import {editUnits} from "modules/ui/editors";
 import {aleaPRNG} from "scripts/aleaPRNG";
 import {restoreDefaultEvents} from "scripts/events";
 import {prompt} from "scripts/prompt";
@@ -21,17 +22,17 @@ toolsContent.addEventListener("click", function (event) {
   // click on open Editor buttons
   if (button === "editHeightmapButton") editHeightmap();
   else if (button === "editBiomesButton") editBiomes();
-  else if (button === "editStatesButton") editStates();
+  else if (button === "editStatesButton") openDialog("statesEditor");
   else if (button === "editProvincesButton") editProvinces();
   else if (button === "editDiplomacyButton") editDiplomacy();
-  else if (button === "editCulturesButton") editCultures();
-  else if (button === "editReligions") editReligions();
+  else if (button === "editCulturesButton") openDialog("culturesEditor");
+  else if (button === "editReligions") openDialog("religionsEditor");
   else if (button === "editEmblemButton") openEmblemEditor();
   else if (button === "editNamesBaseButton") editNamesbase();
-  else if (button === "editUnitsButton") editUnits();
+  else if (button === "editUnitsButton") openDialog("unitsEditor");
   else if (button === "editNotesButton") editNotes();
   else if (button === "editZonesButton") editZones();
-  else if (button === "overviewChartsButton") overviewCharts();
+  else if (button === "overviewChartsButton") openDialog("chartsOverview");
   else if (button === "overviewBurgsButton") overviewBurgs();
   else if (button === "overviewRiversButton") overviewRivers();
   else if (button === "overviewMilitaryButton") overviewMilitary();
@@ -866,9 +867,4 @@ function viewCellDetails() {
     title: "Cell Details",
     position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
   });
-}
-
-async function overviewCharts() {
-  const Overview = await import("../dynamic/overview/charts-overview.js");
-  Overview.open();
 }

@@ -8,6 +8,8 @@ import {rn} from "utils/numberUtils";
 import {si} from "utils/unitUtils";
 import {abbreviate} from "utils/languageUtils";
 import {debounce} from "utils/functionUtils";
+import {closeDialogs} from "dialogs/utils";
+import {openDialog} from "dialogs";
 
 const $body = insertEditorHtml();
 addListeners();
@@ -543,9 +545,6 @@ function togglePercentageMode() {
 }
 
 async function showHierarchy() {
-  if (customization) return;
-  const HeirarchyTree = await import("../hierarchy-tree.js");
-
   const getDescription = religion => {
     const {name, type, form, rural, urban} = religion;
 
@@ -570,7 +569,7 @@ async function showHierarchy() {
     if (type === "Heresy") return "diamond";
   };
 
-  HeirarchyTree.open({
+  openDialog("hierarchyTree", null, {
     type: "religions",
     data: pack.religions,
     onNodeEnter: religionHighlightOn,

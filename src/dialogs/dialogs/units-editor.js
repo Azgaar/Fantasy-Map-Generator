@@ -4,6 +4,8 @@ import {restoreDefaultEvents} from "scripts/events";
 import {findCell} from "utils/graphUtils";
 import {tip} from "scripts/tooltips";
 import {prompt} from "scripts/prompt";
+import {closeDialogs} from "dialogs/utils";
+import {fitScaleBar} from "modules/measurers";
 
 export function open() {
   closeDialogs("#unitsEditor, .stable");

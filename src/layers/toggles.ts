@@ -3,13 +3,12 @@ import * as d3 from "d3";
 import {tip} from "scripts/tooltips";
 import {getBase64} from "utils/functionUtils";
 import {isCtrlPressed} from "utils/keyboardUtils";
+import {openDialog} from "dialogs";
 // @ts-expect-error js module
-import {editStyle, calculateFriendlyGridSize, shiftCompass} from "modules/ui/style";
-import {turnLayerButtonOn, turnLayerButtonOff, layerIsOn} from "./utils";
-import {renderLayer} from "./renderers";
+import {calculateFriendlyGridSize, editStyle, shiftCompass} from "modules/ui/style";
 import {getInputNumber, getInputValue} from "utils/nodeUtils";
-// @ts-expect-error js module
-import {editUnits} from "modules/ui/editors";
+import {renderLayer} from "./renderers";
+import {layerIsOn, turnLayerButtonOff, turnLayerButtonOn} from "./utils";
 
 const layerTogglesMap = {
   toggleBiomes,
@@ -467,9 +466,9 @@ function toggleScaleBar(event?: MouseEvent) {
   if (!layerIsOn("toggleScaleBar")) {
     turnLayerButtonOn("toggleScaleBar");
     $("#scaleBar").fadeIn();
-    if (isCtrlPressed(event)) editUnits();
+    if (isCtrlPressed(event)) openDialog("unitsEditor");
   } else {
-    if (isCtrlPressed(event)) editUnits();
+    if (isCtrlPressed(event)) openDialog("unitsEditor");
     else {
       $("#scaleBar").fadeOut();
       turnLayerButtonOff("toggleScaleBar");

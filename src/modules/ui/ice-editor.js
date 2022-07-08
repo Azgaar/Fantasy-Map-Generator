@@ -5,6 +5,7 @@ import {tip, clearMainTip} from "scripts/tooltips";
 import {rn} from "utils/numberUtils";
 import {ra} from "utils/probabilityUtils";
 import {parseTransform} from "utils/stringUtils";
+import {closeDialogs} from "dialogs/utils";
 
 export function editIce() {
   if (customization) return;

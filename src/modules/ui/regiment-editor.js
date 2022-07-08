@@ -6,6 +6,7 @@ import {last} from "utils/arrayUtils";
 import {tip, clearMainTip} from "scripts/tooltips";
 import {rn} from "utils/numberUtils";
 import {capitalize} from "utils/stringUtils";
+import {closeDialogs} from "dialogs/utils";
 
 export function editRegiment(selector) {
   if (customization) return;

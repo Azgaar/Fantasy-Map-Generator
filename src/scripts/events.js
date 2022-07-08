@@ -1,18 +1,23 @@
 import * as d3 from "d3";
 
-import {dragLegendBox} from "modules/legend";
+import {openDialog} from "dialogs";
+import {layerIsOn} from "layers";
+import {clearLegend, dragLegendBox} from "modules/legend";
+import {updateCellInfo} from "modules/ui/cell-info";
 import {debounce} from "utils/functionUtils";
 import {findCell, findGridCell} from "utils/graphUtils";
 import {byId} from "utils/shorthands";
-import {convertTemperature, si, getFriendlyHeight, getCellIdPrecipitation, getPopulationTip} from "utils/unitUtils";
+import {convertTemperature, getCellIdPrecipitation, getFriendlyHeight, getPopulationTip, si} from "utils/unitUtils";
 import {showMainTip, tip} from "./tooltips";
-import {updateCellInfo} from "modules/ui/cell-info";
-import {layerIsOn} from "layers";
 
 export function restoreDefaultEvents() {
   Zoom.setZoomBehavior();
   viewbox.style("cursor", "default").on(".drag", null).on("click", clicked).on("touchmove mousemove", onMouseMove);
-  legend.call(d3.drag().on("start", dragLegendBox));
+  scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => openDialog("unitsEditor"));
+  legend
+    .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
+    .on("click", clearLegend)
+    .call(d3.drag().on("start", dragLegendBox));
 }
 
 // on viewbox click event - run function based on target
@@ -29,9 +34,10 @@ function clicked() {
   else if (parent.id === "rivers") editRiver(el.id);
   else if (grand.id === "routes") editRoute();
   else if (el.tagName === "tspan" && grand.parentNode.parentNode.id === "labels") editLabel();
-  else if (grand.id === "burgLabels") editBurg();
-  else if (grand.id === "burgIcons") editBurg();
-  else if (parent.id === "ice") editIce();
+  else if (grand.id === "burgLabels" || grand.id === "burgIcons") {
+    const burgId = grand.id === "burgLabels" ? +el.dataset.id : +el.parentNode.dataset.id;
+    openDialog("burgEditor", null, {id: burgId});
+  } else if (parent.id === "ice") editIce();
   else if (parent.id === "terrain") editReliefIcon();
   else if (grand.id === "markers" || great.id === "markers") editMarker();
   else if (grand.id === "coastline") editCoastline();

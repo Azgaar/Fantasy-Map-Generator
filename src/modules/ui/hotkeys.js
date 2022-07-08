@@ -1,6 +1,8 @@
-import {byId} from "utils/shorthands";
+import {openDialog} from "dialogs";
 import {toggleLayer} from "layers";
 import {showAboutDialog} from "scripts/options/about";
+import {byId} from "utils/shorthands";
+import {closeDialogs} from "dialogs/utils";
 
 // Hotkeys, see github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys
 document.on("keydown", handleKeydown);
@@ -40,17 +42,17 @@ function handleKeyup(event) {
   else if (ctrl && code === "KeyY" && redo?.offsetParent) redo.click();
   else if (shift && code === "KeyH") editHeightmap();
   else if (shift && code === "KeyB") editBiomes();
-  else if (shift && code === "KeyS") editStates();
+  else if (shift && code === "KeyS") openDialog("statesEditor");
   else if (shift && code === "KeyP") editProvinces();
   else if (shift && code === "KeyD") editDiplomacy();
-  else if (shift && code === "KeyC") editCultures();
+  else if (shift && code === "KeyC") openDialog("culturesEditor");
   else if (shift && code === "KeyN") editNamesbase();
   else if (shift && code === "KeyZ") editZones();
-  else if (shift && code === "KeyR") editReligions();
+  else if (shift && code === "KeyR") openDialog("religionsEditor");
   else if (shift && code === "KeyY") openEmblemEditor();
-  else if (shift && code === "KeyQ") editUnits();
+  else if (shift && code === "KeyQ") openDialog("unitsEditor");
   else if (shift && code === "KeyO") editNotes();
-  else if (shift && code === "KeyA") overviewCharts();
+  else if (shift && code === "KeyA") openDialog("chartsOverview");
   else if (shift && code === "KeyT") overviewBurgs();
   else if (shift && code === "KeyV") overviewRivers();
   else if (shift && code === "KeyM") overviewMilitary();
