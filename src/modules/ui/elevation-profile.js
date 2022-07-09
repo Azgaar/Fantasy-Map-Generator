@@ -3,7 +3,7 @@ import * as d3 from "d3";
 import {findCell} from "utils/graphUtils";
 import {rn} from "utils/numberUtils";
 import {getColorScheme, getHeightColor} from "utils/colorUtils";
-import {getHeight} from "utils/unitUtils.ts";
+import {getHeight, getRuralPopulation, getBurgPopulation} from "utils/unitUtils.ts";
 
 export function showEPForRoute(node) {
   const points = [];
@@ -134,10 +134,10 @@ function showElevationProfile(data, routeLen, isRiver) {
       data += cell + ",";
       data += getHeight(h) + ",";
       data += h + ",";
-      data += rn(pop * populationRate) + ",";
+      data += getRuralPopulation(pop) + ",";
       if (burg) {
         data += pack.burgs[burg].name + ",";
-        data += pack.burgs[burg].population * populationRate * urbanization + ",";
+        data += getBurgPopulation(pack.burgs[burg].population) + ",";
       } else {
         data += ",0,";
       }
@@ -286,7 +286,7 @@ function showElevationProfile(data, routeLen, isRiver) {
         pop += pack.burgs[chartData.burg[k]].population * urbanization;
       }
 
-      const populationDesc = rn(pop * populationRate);
+      const populationDesc = getRuralPopulation(pop);
 
       const provinceDesc = province ? ", " + pack.provinces[province].name : "";
       const dataTip =

@@ -113,10 +113,26 @@ export function getCellIdPrecipitation(gridCellId: number) {
 // Population
 // ***
 
+export function getRuralPopulation(cellPopulationPoints: number) {
+  return rn(cellPopulationPoints * populationRate);
+}
+
+export function getBurgPopulation(burgPopulationPoints: number) {
+  return rn(burgPopulationPoints * populationRate * urbanization);
+}
+
+export function getTotalPopulation(cellPopulationPoints: number, burgPopulationPoints: number) {
+  return rn((cellPopulationPoints + burgPopulationPoints * urbanization) * populationRate);
+}
+
+export function getBurgPopulationPoints(burgPopulationValue: number) {
+  return rn(burgPopulationValue / populationRate / urbanization, 4);
+}
+
 export function getCellPopulation(cellId: number) {
-  const rural = pack.cells.pop[cellId] * populationRate;
-  const burg = pack.cells.burg[cellId];
-  const urban = burg ? pack.burgs[burg].population * populationRate * urbanization : 0;
+  const rural = getRuralPopulation(pack.cells.pop[cellId]);
+  const burgId = pack.cells.burg[cellId];
+  const urban = burgId ? getBurgPopulation(pack.burgs[burgId].population) : 0;
   return [rural, urban];
 }
 
@@ -125,7 +141,6 @@ export function getFriendlyPopulation(cellId: number) {
   return `${si(rural + urban)} (${si(rural)} rural, urban ${si(urban)})`;
 }
 
-export function getPopulationTip(cellId: number) {
-  const [rural, urban] = getCellPopulation(cellId);
-  return `Cell population: ${si(rural + urban)}; Rural: ${si(rural)}; Urban: ${si(urban)}`;
+export function getPopulationTip(type = "Cell", rural: number, urban: number) {
+  return `${type} population: ${si(rural + urban)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}`;
 }

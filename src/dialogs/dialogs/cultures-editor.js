@@ -10,7 +10,16 @@ import {abbreviate} from "utils/languageUtils";
 import {rn} from "utils/numberUtils";
 import {byId} from "utils/shorthands";
 import {capitalize} from "utils/stringUtils";
-import {getArea, getAreaUnit, si} from "utils/unitUtils";
+import {
+  getArea,
+  getAreaUnit,
+  si,
+  getRuralPopulation,
+  getBurgPopulation,
+  getTotalPopulation,
+  getBurgPopulationPoints,
+  getPopulationTip
+} from "utils/unitUtils";
 import {applySortingByHeader} from "modules/ui/editors";
 
 const $body = insertEditorHtml();
@@ -155,13 +164,12 @@ function culturesEditorAddLines() {
   for (const c of pack.cultures) {
     if (c.removed) continue;
     const area = getArea(c.area);
-    const rural = c.rural * populationRate;
-    const urban = c.urban * populationRate * urbanization;
-    const population = rn(rural + urban);
-    const populationTip = `Total population: ${si(population)}. Rural population: ${si(rural)}. Urban population: ${si(
-      urban
-    )}. Click to edit`;
     totalArea += area;
+
+    const rural = getRuralPopulation(c.rural);
+    const urban = getBurgPopulation(c.urban);
+    const population = rn(rural + urban);
+    const populationTip = getPopulationTip("Total", rural, urban) + ". Click to edit";
     totalPopulation += population;
 
     if (!c.i) {
@@ -444,8 +452,8 @@ function changePopulation() {
   const culture = pack.cultures[cultureId];
   if (!culture.cells) return tip("Culture does not have any cells, cannot change population", false, "error");
 
-  const rural = rn(culture.rural * populationRate);
-  const urban = rn(culture.urban * populationRate * urbanization);
+  const rural = getRuralPopulation(culture.rural);
+  const urban = getBurgPopulation(culture.urban);
   const total = rural + urban;
   const format = n => Number(n).toLocaleString();
   const burgs = pack.burgs.filter(b => !b.removed && b.culture === cultureId);
@@ -507,8 +515,9 @@ function applyPopulationChange(oldRural, oldUrban, newRural, newUrban, culture) 
   if (isFinite(urbanChange) && urbanChange !== 1) {
     burgs.forEach(b => (b.population = rn(b.population * urbanChange, 4)));
   }
+
   if (!isFinite(urbanChange) && +newUrban > 0) {
-    const points = newUrban / populationRate / urbanization;
+    const points = getBurgPopulationPoints(newUrban);
     const population = rn(points / burgs.length, 4);
     burgs.forEach(b => (b.population = population));
   }
@@ -645,8 +654,8 @@ async function showHierarchy() {
   const getDescription = culture => {
     const {name, type, rural, urban} = culture;
 
-    const population = rural * populationRate + urban * populationRate * urbanization;
-    const populationText = population > 0 ? si(rn(population)) + " people" : "Extinct";
+    const population = getTotalPopulation(rural, urban);
+    const populationText = population > 0 ? si(population) + " people" : "Extinct";
     return `${name} culture. ${type}. ${populationText}`;
   };
 

@@ -13,7 +13,15 @@ import {rn} from "utils/numberUtils";
 import {P, rand} from "utils/probabilityUtils";
 import {byId} from "utils/shorthands";
 import {parseTransform} from "utils/stringUtils";
-import {getArea, getAreaUnit, si} from "utils/unitUtils";
+import {
+  getArea,
+  getAreaUnit,
+  si,
+  getRuralPopulation,
+  getBurgPopulation,
+  getBurgPopulationPoints,
+  getPopulationTip
+} from "utils/unitUtils";
 
 let isLoaded = false;
 
@@ -89,9 +97,7 @@ export function editProvinces() {
   }
 
   function collectStatistics() {
-    const cells = pack.cells,
-      provinces = pack.provinces,
-      burgs = pack.burgs;
+    const {cells, provinces, burgs} = pack;
     provinces.forEach(p => {
       if (!p.i || p.removed) return;
       p.area = p.rural = p.urban = 0;
@@ -139,12 +145,11 @@ export function editProvinces() {
     for (const p of filtered) {
       const area = getArea(p.area);
       totalArea += area;
-      const rural = p.rural * populationRate;
-      const urban = p.urban * populationRate * urbanization;
+
+      const rural = getRuralPopulation(p.rural);
+      const urban = getBurgPopulation(p.urban);
       const population = rn(rural + urban);
-      const populationTip = `Total population: ${si(population)}; Rural population: ${si(
-        rural
-      )}; Urban population: ${si(urban)}`;
+      const populationTip = getPopulationTip("Total", rural, urban) + ". Click to change";
       totalPopulation += population;
 
       const stateName = pack.states[p.state].name;
@@ -403,8 +408,8 @@ export function editProvinces() {
       tip("Province does not have any cells, cannot change population", false, "error");
       return;
     }
-    const rural = rn(p.rural * populationRate);
-    const urban = rn(p.urban * populationRate * urbanization);
+    const rural = getRuralPopulation(p.rural);
+    const urban = getBurgPopulation(p.urban);
     const total = rural + urban;
     const l = n => Number(n).toLocaleString();
 
@@ -458,7 +463,7 @@ export function editProvinces() {
         p.burgs.forEach(b => (pack.burgs[b].population = rn(pack.burgs[b].population * urbanChange, 4)));
       }
       if (!isFinite(urbanChange) && +urbanPop.value > 0) {
-        const points = urbanPop.value / populationRate / urbanization;
+        const points = getBurgPopulationPoints(urbanPop.value);
         const population = rn(points / burgs.length, 4);
         p.burgs.forEach(b => (pack.burgs[b].population = population));
       }
@@ -678,17 +683,18 @@ export function editProvinces() {
       const state = pack.states[d.data.state].fullName;
 
       const area = getArea(d.data.area) + " " + getAreaUnit();
-      const rural = rn(d.data.rural * populationRate);
-      const urban = rn(d.data.urban * populationRate * urbanization);
+      const rural = getRuralPopulation(d.data.rural);
+      const urban = getBurgPopulation(d.data.urban);
 
-      const value =
-        provincesTreeType.value === "area"
-          ? "Area: " + area
-          : provincesTreeType.value === "rural"
-          ? "Rural population: " + si(rural)
-          : provincesTreeType.value === "urban"
-          ? "Urban population: " + si(urban)
-          : "Population: " + si(rural + urban);
+      const optionToLabelMap = {
+        area: "Area: " + area,
+        rural: "Rural population: " + si(rural),
+        urban: "Urban population: " + si(urban),
+        burgs: "Burgs number: " + d.data.burgs,
+        population: "Population: " + si(rural + urban)
+      };
+      const option = getInputValue("provincesTreeType");
+      const value = optionToLabelMap[option] || "";
 
       provinceInfo.innerHTML = /* html */ `${name}. ${state}. ${value}`;
       provinceHighlightOn(ev);
@@ -1103,8 +1109,8 @@ export function editProvinces() {
       data += el.dataset.capital + ",";
       data += el.dataset.area + ",";
       data += el.dataset.population + ",";
-      data += `${Math.round(provincePack.rural * populationRate)},`;
-      data += `${Math.round(provincePack.urban * populationRate * urbanization)}\n`;
+      data += getRuralPopulation(provincePack.rural) + ",";
+      data += getBurgPopulation(provincePack.urban) + "\n";
     });
 
     const name = getFileName("Provinces") + ".csv";

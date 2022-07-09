@@ -7,6 +7,7 @@ import {minmax, normalize, rn} from "utils/numberUtils";
 import {each} from "utils/probabilityUtils";
 import {byId} from "utils/shorthands";
 import {parseTransform} from "utils/stringUtils";
+import {getBurgPopulation} from "utils/unitUtils";
 
 // clear elSelected variable
 export function unselect() {
@@ -259,7 +260,7 @@ export function getMFCGlink(burg) {
 
   const sizeRaw = 2.13 * Math.pow((burgPopulation * populationRate) / urbanDensity, 0.385);
   const size = minmax(Math.ceil(sizeRaw), 6, 100);
-  const population = rn(burgPopulation * populationRate * urbanization);
+  const population = getBurgPopulation(burgPopulation);
 
   const river = cells.r[cell] ? 1 : 0;
   const coast = Number(burg.port > 0);

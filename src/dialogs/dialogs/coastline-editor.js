@@ -11,7 +11,7 @@ import {getArea, getAreaUnit, si} from "utils/unitUtils";
 
 let isLoaded = false;
 
-export function open({node}) {
+export function open({el}) {
   if (customization) return;
   closeDialogs(".stable");
   if (layerIsOn("toggleCells")) toggleCells();
@@ -24,8 +24,8 @@ export function open({node}) {
   });
 
   debug.append("g").attr("id", "vertices");
-  elSelected = d3.select(node);
-  selectCoastlineGroup(node);
+  elSelected = d3.select(el);
+  selectCoastlineGroup(el);
   drawCoastlineVertices();
   viewbox.on("touchmove mousemove", null);
 

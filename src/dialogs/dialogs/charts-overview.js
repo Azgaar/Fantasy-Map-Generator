@@ -7,7 +7,14 @@ import {isWater} from "utils/graphUtils";
 import {rn} from "utils/numberUtils";
 import {byId} from "utils/shorthands";
 import {capitalize} from "utils/stringUtils";
-import {convertTemperature, getArea, getAreaUnit, getFriendlyPrecipitation, si} from "utils/unitUtils";
+import {
+  convertTemperature,
+  getArea,
+  getAreaUnit,
+  getFriendlyPrecipitation,
+  si,
+  getCellPopulation
+} from "utils/unitUtils";
 
 const entitiesMap = {
   states: {
@@ -50,16 +57,7 @@ const entitiesMap = {
 const quantizationMap = {
   total_population: {
     label: "Total population",
-    quantize: cellId => getUrbanPopulation(cellId) + getRuralPopulation(cellId),
-    aggregate: values => rn(d3.sum(values)),
-    formatTicks: value => si(value),
-    stringify: value => value.toLocaleString(),
-    stackable: true,
-    landOnly: true
-  },
-  urban_population: {
-    label: "Urban population",
-    quantize: getUrbanPopulation,
+    quantize: cellId => d3.sum(getCellPopulation(cellId)),
     aggregate: values => rn(d3.sum(values)),
     formatTicks: value => si(value),
     stringify: value => value.toLocaleString(),
@@ -68,7 +66,16 @@ const quantizationMap = {
   },
   rural_population: {
     label: "Rural population",
-    quantize: getRuralPopulation,
+    quantize: cellId => getCellPopulation(cellId)[0],
+    aggregate: values => rn(d3.sum(values)),
+    formatTicks: value => si(value),
+    stringify: value => value.toLocaleString(),
+    stackable: true,
+    landOnly: true
+  },
+  urban_population: {
+    label: "Urban population",
+    quantize: cellId => getCellPopulation(cellId)[1],
     aggregate: values => rn(d3.sum(values)),
     formatTicks: value => si(value),
     stringify: value => value.toLocaleString(),
@@ -665,17 +672,6 @@ function biomeNameGetter(i) {
 
 function biomeColorsGetter() {
   return Object.fromEntries(biomesData.i.map(i => [biomesData.name[i], biomesData.color[i]]));
-}
-
-function getUrbanPopulation(cellId) {
-  const burgId = pack.cells.burg[cellId];
-  if (!burgId) return 0;
-  const populationPoints = pack.burgs[burgId].population;
-  return populationPoints * populationRate * urbanization;
-}
-
-function getRuralPopulation(cellId) {
-  return pack.cells.pop[cellId] * populationRate;
 }
 
 function sortData(data, sorting) {

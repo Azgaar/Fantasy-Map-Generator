@@ -4,7 +4,7 @@ import {tip} from "scripts/tooltips";
 import {wiki} from "utils/linkUtils";
 import {rn} from "utils/numberUtils";
 import {capitalize} from "utils/stringUtils";
-import {si} from "utils/unitUtils";
+import {si, getTotalPopulation} from "utils/unitUtils";
 import {closeDialogs} from "dialogs/utils";
 
 let isLoaded = false;
@@ -83,7 +83,7 @@ export function overviewMilitary() {
     const states = pack.states.filter(s => s.i && !s.removed);
 
     for (const s of states) {
-      const population = rn((s.rural + s.urban * urbanization) * populationRate);
+      const population = getTotalPopulation(s.rural, s.urban);
       const getForces = u => s.military.reduce((s, r) => s + (r.u[u.name] || 0), 0);
       const total = options.military.reduce((s, u) => s + getForces(u) * u.crew, 0);
       const rate = (total / population) * 100;
@@ -155,7 +155,7 @@ export function overviewMilitary() {
       u => (line.dataset[u.name] = line.querySelector(`div[data-type='${u.name}']`).innerHTML = getForces(u))
     );
 
-    const population = rn((s.rural + s.urban * urbanization) * populationRate);
+    const population = getTotalPopulation(s.rural, s.urban);
     const total = (line.dataset.total = options.military.reduce((s, u) => s + getForces(u) * u.crew, 0));
     const rate = (line.dataset.rate = (total / population) * 100);
     line.querySelector("div[data-type='total']").innerHTML = si(total);

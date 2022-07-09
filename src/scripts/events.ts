@@ -2,16 +2,26 @@ import * as d3 from "d3";
 
 import {openDialog} from "dialogs";
 import {layerIsOn} from "layers";
+// @ts-expect-error js module
 import {clearLegend, dragLegendBox} from "modules/legend";
+// @ts-expect-error js module
 import {updateCellInfo} from "modules/ui/cell-info";
 import {debounce} from "utils/functionUtils";
-import {findCell, findGridCell} from "utils/graphUtils";
+import {findCell, findGridCell, isLand} from "utils/graphUtils";
 import {byId} from "utils/shorthands";
-import {convertTemperature, getCellIdPrecipitation, getFriendlyHeight, getPopulationTip, si} from "utils/unitUtils";
+import {
+  convertTemperature,
+  getBurgPopulation,
+  getCellIdPrecipitation,
+  getFriendlyHeight,
+  getCellPopulation,
+  getPopulationTip,
+  si
+} from "utils/unitUtils";
 import {showMainTip, tip} from "./tooltips";
 
 export function restoreDefaultEvents() {
-  Zoom.setZoomBehavior();
+  window.Zoom.setZoomBehavior();
   viewbox
     .style("cursor", "default")
     .on(".drag", null)
@@ -25,108 +35,132 @@ export function restoreDefaultEvents() {
 }
 
 // on viewbox click event - run function based on target
-function handleMapClick() {
-  const el = d3.event.target;
-  if (!el || !el.parentElement || !el.parentElement.parentElement) return;
+function handleMapClick(this: d3.ContainerElement) {
+  const el: HTMLElement = d3.event.target;
+  if (!el?.parentElement?.parentElement?.parentElement) return;
+
   const parent = el.parentElement;
-  const grand = parent.parentElement;
-  const great = grand.parentElement;
+  const grand = parent.parentElement!;
+  const great = grand.parentElement!;
+  const greatGreat = great.parentElement;
+
   const p = d3.mouse(this);
   const i = findCell(p[0], p[1]);
 
-  if (grand.id === "emblems") openDialog("emblemEditor", null, defineEmblemData(+el.dataset.i, parent));
+  if (grand.id === "emblems" && defineEmblemData(el)) openDialog("emblemEditor", null, defineEmblemData(el));
   else if (parent.id === "rivers") editRiver(el.id);
   else if (grand.id === "routes") editRoute();
-  else if (el.tagName === "tspan" && grand.parentNode.parentNode.id === "labels") editLabel();
-  else if (grand.id === "burgLabels" || grand.id === "burgIcons") openDialog("burgEditor", null, {id: +el.dataset.id});
+  else if (el.tagName === "tspan" && greatGreat?.id === "labels") openDialog("labelEditor", null, {el});
+  else if (grand.id === "burgLabels" || grand.id === "burgIcons")
+    openDialog("burgEditor", null, {id: +(el.dataset.id || 0)});
   else if (parent.id === "ice") openDialog("iceEditor");
   else if (parent.id === "terrain") editReliefIcon();
   else if (grand.id === "markers" || great.id === "markers") editMarker();
-  else if (grand.id === "coastline") openDialog("coastlineEditor", null, {node: d3.event.target});
+  else if (grand.id === "coastline") openDialog("coastlineEditor", null, {el});
   else if (great.id === "armies") editRegiment();
   else if (pack.cells.t[i] === 1) {
     openDialog("coastlineEditor", null, {node: byId("island_" + pack.cells.f[i])});
-  } else if (grand.id === "lakes") editLake();
+  } else if (grand.id === "lakes") openDialog("lakeEditor", null, {el});
 }
 
-function defineEmblemData(i, parent) {
-  const [g, type] =
-    parent.id === "burgEmblems"
-      ? [pack.burgs, "burg"]
-      : parent.id === "provinceEmblems"
-      ? [pack.provinces, "province"]
-      : [pack.states, "state"];
-  return {type, id: type + "COA" + i, el: g[i]};
+function defineEmblemData(el: HTMLElement) {
+  const i = +(el.dataset?.i || 0);
+
+  type TEmblemType = "state" | "burg" | "province";
+  type TEmblemTypeArray = IPack[`${TEmblemType}s`];
+
+  const emblemTypeMap: Dict<[TEmblemTypeArray, TEmblemType]> = {
+    burgEmblems: [pack.burgs, "burg"],
+    provinceEmblems: [pack.provinces, "province"],
+    stateEmblems: [pack.states, "state"]
+  };
+
+  const emblemType = el.parentElement?.id;
+  if (emblemType && emblemType in emblemTypeMap) {
+    const [data, type] = emblemTypeMap[emblemType];
+    return {type, id: type + "COA" + i, el: data[i]};
+  }
+
+  return undefined;
 }
 
 const onMouseMove = debounce(handleMouseMove, 100);
-function handleMouseMove() {
+function handleMouseMove(this: d3.ContainerElement) {
   const point = d3.mouse(this);
   const i = findCell(point[0], point[1]); // pack cell id
   if (i === undefined) return;
 
   showNotes(d3.event);
   const gridCell = findGridCell(point[0], point[1], grid);
-  if (tooltip.dataset.main) showMainTip();
-  else showMapTooltip(point, d3.event, i, gridCell);
-  if (cellInfo?.offsetParent) updateCellInfo(point, i, gridCell);
+  if (byId("tooltip")?.dataset.main) showMainTip();
+  else showTooltipOnMapHover(point, d3.event, i, gridCell);
+  if (byId("cellInfo")?.offsetParent) updateCellInfo(point, i, gridCell);
 }
 
 // show note box on hover (if any)
-function showNotes(event) {
-  if (notesEditor?.offsetParent) return;
-  let id = event.target.id || event.target.parentNode.id || event.target.parentNode.parentNode.id;
-  if (event.target.parentNode.parentNode.id === "burgLabels") id = "burg" + event.target.dataset.id;
-  else if (event.target.parentNode.parentNode.id === "burgIcons") id = "burg" + event.target.dataset.id;
+function showNotes(event: Event) {
+  if (byId("notesEditor")?.offsetParent) return;
+
+  const el = event.target as SVGElement;
+  if (!el?.parentElement?.parentElement?.parentElement) return;
+
+  const parent = el.parentElement;
+  const grand = parent.parentElement!;
+
+  let id = el.id || parent.id || grand.id;
+  if (grand.id === "burgLabels") id = "burg" + el.dataset.id;
+  else if (grand.id === "burgIcons") id = "burg" + el.dataset.id;
 
   const note = notes.find(note => note.id === id);
   if (note !== undefined && note.legend !== "") {
-    byId("notes").style.display = "block";
-    byId("notesHeader").innerHTML = note.name;
-    byId("notesBody").innerHTML = note.legend;
-  } else if (!options.pinNotes && !markerEditor?.offsetParent) {
-    byId("notes").style.display = "none";
-    byId("notesHeader").innerHTML = "";
-    byId("notesBody").innerHTML = "";
+    byId("notes")!.style.display = "block";
+    byId("notesHeader")!.innerHTML = note.name;
+    byId("notesBody")!.innerHTML = note.legend;
+  } else if (!options.pinNotes && !byId("markerEditor")?.offsetParent) {
+    byId("notes")!.style.display = "none";
+    byId("notesHeader")!.innerHTML = "";
+    byId("notesBody")!.innerHTML = "";
   }
 }
 
 // show viewbox tooltip if main tooltip is blank
-function showMapTooltip(point, event, packCellId, gridCellId) {
+function showTooltipOnMapHover(point: TPoint, event: Event, packCellId: number, gridCellId: number) {
   tip(""); // clear tip
-  const path = event.composedPath();
+  const path = event.composedPath() as HTMLElement[];
   if (!path[path.length - 8]) return;
+
   const group = path[path.length - 7].id;
   const subgroup = path[path.length - 8].id;
-  const land = pack.cells.h[packCellId] >= 20;
+
+  const element = event.target as HTMLElement;
+  const parent = element.parentElement!;
+
+  const land = isLand(packCellId);
 
   // specific elements
-  if (group === "armies") return tip(event.target.parentNode.dataset.name + ". Click to edit");
+  if (group === "armies") return tip(parent.dataset.name + ". Click to edit");
 
-  if (group === "emblems" && event.target.tagName === "use") {
-    const parent = event.target.parentNode;
-    const [g, type] =
-      parent.id === "burgEmblems"
-        ? [pack.burgs, "burg"]
-        : parent.id === "provinceEmblems"
-        ? [pack.provinces, "province"]
-        : [pack.states, "state"];
-    const i = +event.target.dataset.i;
-
-    d3.select(event.target).raise();
+  if (group === "emblems" && element.tagName === "use") {
+    d3.select(element).raise();
     d3.select(parent).raise();
 
-    const name = g[i].fullName || g[i].name;
+    const emblemData = defineEmblemData(element);
+    if (!emblemData) return;
+
+    const {type, el} = emblemData;
+    const name = ("fullName" in el && el.fullName) || el.name;
     tip(`${name} ${type} emblem. Click to edit`);
     return;
   }
 
   if (group === "rivers") {
-    const river = +event.target.id.slice(5);
-    const r = pack.rivers.find(r => r.i === river);
-    const name = r ? r.name + " " + r.type : "";
+    const riverId = +element.id.slice(5);
+    const river = pack.rivers.find(r => r.i === riverId);
+    const name = river ? `${river.name} ${river.type}` : "";
     tip(name + ". Click to edit");
-    if (riversOverview?.offsetParent) highlightEditorLine(riversOverview, river, 5000);
+
+    const $riversOverview = byId("riversOverview")!;
+    if ($riversOverview?.offsetParent) highlightEditorLine($riversOverview, riverId, 5000);
     return;
   }
 
@@ -135,11 +169,14 @@ function showMapTooltip(point, event, packCellId, gridCellId) {
   if (group === "terrain") return tip("Click to edit the Relief Icon");
 
   if (subgroup === "burgLabels" || subgroup === "burgIcons") {
-    const burg = +path[path.length - 10].dataset.id;
-    const b = pack.burgs[burg];
-    const population = si(b.population * populationRate * urbanization);
-    tip(`${b.name}. Population: ${population}. Click to edit`);
-    if (burgsOverview?.offsetParent) highlightEditorLine(burgsOverview, burg, 5000);
+    const burgId = +(path[path.length - 10].dataset.id || 0);
+    const burg = pack.burgs[burgId];
+
+    const population = si(getBurgPopulation(burg.population));
+    tip(`${burg.name}. Population: ${population}. Click to edit`);
+
+    const $burgOverview = byId("burgOverview");
+    if ($burgOverview?.offsetParent) highlightEditorLine($burgOverview, burgId, 5000);
     return;
   }
   if (group === "labels") return tip("Click to edit the Label");
@@ -147,8 +184,8 @@ function showMapTooltip(point, event, packCellId, gridCellId) {
   if (group === "markers") return tip("Click to edit the Marker and pin the marker note");
 
   if (group === "ruler") {
-    const tag = event.target.tagName;
-    const className = event.target.getAttribute("class");
+    const tag = element.tagName;
+    const className = element.getAttribute("class");
     if (tag === "circle" && className === "edge")
       return tip("Drag to adjust. Hold Ctrl and drag to add a point. Click to remove the point");
     if (tag === "circle" && className === "control")
@@ -164,7 +201,7 @@ function showMapTooltip(point, event, packCellId, gridCellId) {
   if (subgroup === "burgLabels") return tip("Click to edit the Burg");
 
   if (group === "lakes" && !land) {
-    const lakeId = +event.target.dataset.f;
+    const lakeId = +element.dataset.f;
     const name = pack.features[lakeId]?.name;
     const fullName = subgroup === "freshwater" ? name : name + " " + subgroup;
     tip(`${fullName} lake. Click to edit`);
@@ -183,8 +220,10 @@ function showMapTooltip(point, event, packCellId, gridCellId) {
 
   // covering elements
   if (layerIsOn("togglePrec") && land) tip("Annual Precipitation: " + getCellIdPrecipitation(packCellId));
-  else if (layerIsOn("togglePopulation")) tip(getPopulationTip(packCellId));
-  else if (layerIsOn("toggleTemp")) tip("Temperature: " + convertTemperature(grid.cells.temp[gridCellId]));
+  else if (layerIsOn("togglePopulation")) {
+    const [rural, urban] = getCellPopulation(packCellId);
+    tip(getPopulationTip("Cell population", rural, urban));
+  } else if (layerIsOn("toggleTemp")) tip("Temperature: " + convertTemperature(grid.cells.temp[gridCellId]));
   else if (layerIsOn("toggleBiomes") && pack.cells.biome[packCellId]) {
     const biome = pack.cells.biome[packCellId];
     tip("Biome: " + biomesData.name[biome]);
@@ -212,9 +251,9 @@ function showMapTooltip(point, event, packCellId, gridCellId) {
   } else if (layerIsOn("toggleHeight")) tip("Height: " + getFriendlyHeight(point));
 }
 
-function highlightEditorLine(editor, id, timeout = 10000) {
-  Array.from(editor.getElementsByClassName("states hovered")).forEach(el => el.classList.remove("hovered")); // clear all hovered
-  const hovered = Array.from(editor.querySelectorAll("div")).find(el => el.dataset.id == id);
+function highlightEditorLine($editor, id, timeout = 10000) {
+  Array.from($editor.getElementsByClassName("states hovered")).forEach(el => el.classList.remove("hovered")); // clear all hovered
+  const hovered = Array.from($editor.querySelectorAll("div")).find(el => el.dataset.id == id);
   if (hovered) hovered.classList.add("hovered"); // add hovered class
   if (timeout)
     setTimeout(() => {

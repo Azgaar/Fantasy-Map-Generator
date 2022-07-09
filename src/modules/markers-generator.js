@@ -5,7 +5,7 @@ import {last} from "utils/arrayUtils";
 import {rn} from "utils/numberUtils";
 import {rand, P, gauss, ra, rw} from "utils/probabilityUtils";
 import {capitalize} from "utils/stringUtils";
-import {convertTemperature, getFriendlyHeight} from "utils/unitUtils";
+import {convertTemperature, getFriendlyHeight, getBurgPopulation} from "utils/unitUtils";
 import {getAdjective} from "utils/languageUtils";
 
 window.Markers = (function () {
@@ -200,7 +200,7 @@ window.Markers = (function () {
     const resource = rw(resources);
     const burg = pack.burgs[cells.burg[cell]];
     const name = `${burg.name} — ${resource} mining town`;
-    const population = rn(burg.population * populationRate * urbanization);
+    const population = getBurgPopulation(burg.population);
     const legend = `${burg.name} is a mining town of ${population} people just nearby the ${resource} mine`;
     notes.push({id, name, legend});
   }

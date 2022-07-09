@@ -2,6 +2,7 @@ import * as d3 from "d3";
 
 import {openDialog} from "dialogs";
 import {closeDialogs} from "dialogs/utils";
+import {applySortingByHeader} from "modules/ui/editors";
 import {restoreDefaultEvents} from "scripts/events";
 import {clearMainTip, showMainTip, tip} from "scripts/tooltips";
 import {debounce} from "utils/functionUtils";
@@ -9,8 +10,16 @@ import {findAll, findCell, getPackPolygon, isLand} from "utils/graphUtils";
 import {abbreviate} from "utils/languageUtils";
 import {rn} from "utils/numberUtils";
 import {byId} from "utils/shorthands";
-import {getArea, getAreaUnit, si} from "utils/unitUtils";
-import {applySortingByHeader} from "modules/ui/editors";
+import {
+  getArea,
+  getAreaUnit,
+  getRuralPopulation,
+  getBurgPopulation,
+  getTotalPopulation,
+  getBurgPopulationPoints,
+  getPopulationTip,
+  si
+} from "utils/unitUtils";
 
 const $body = insertEditorHtml();
 addListeners();
@@ -159,13 +168,12 @@ function religionsEditorAddLines() {
     if (r.i && !r.cells && $body.dataset.extinct !== "show") continue; // hide extinct religions
 
     const area = getArea(r.area);
-    const rural = r.rural * populationRate;
-    const urban = r.urban * populationRate * urbanization;
-    const population = rn(rural + urban);
-    const populationTip = `Believers: ${si(population)}; Rural areas: ${si(rural)}; Urban areas: ${si(
-      urban
-    )}. Click to change`;
     totalArea += area;
+
+    const rural = getRuralPopulation(r.rural);
+    const urban = getBurgPopulation(r.urban);
+    const population = rn(rural + urban);
+    const populationTip = getPopulationTip("Total", rural, urban) + ". Click to change";
     totalPopulation += population;
 
     if (!r.i) {
@@ -371,8 +379,8 @@ function changePopulation() {
   const religion = pack.religions[religionId];
   if (!religion.cells) return tip("Religion does not have any cells, cannot change population", false, "error");
 
-  const rural = rn(religion.rural * populationRate);
-  const urban = rn(religion.urban * populationRate * urbanization);
+  const rural = getRuralPopulation(religion.rural);
+  const urban = getBurgPopulation(religion.urban);
   const total = rural + urban;
   const format = n => Number(n).toLocaleString();
   const burgs = pack.burgs.filter(b => !b.removed && pack.cells.religion[b.cell] === religionId);
@@ -433,7 +441,7 @@ function changePopulation() {
       burgs.forEach(b => (b.population = rn(b.population * urbanChange, 4)));
     }
     if (!isFinite(urbanChange) && +urbanPop.value > 0) {
-      const points = urbanPop.value / populationRate / urbanization;
+      const points = getBurgPopulationPoints(urbanPop.value);
       const population = rn(points / burgs.length, 4);
       burgs.forEach(b => (b.population = population));
     }
@@ -557,8 +565,8 @@ async function showHierarchy() {
     };
 
     const formText = form === type ? "" : ". " + form;
-    const population = rural * populationRate + urban * populationRate * urbanization;
-    const populationText = population > 0 ? si(rn(population)) + " people" : "Extinct";
+    const population = getTotalPopulation(rural, urban);
+    const populationText = population > 0 ? si(population) + " people" : "Extinct";
 
     return `${name}${getTypeText()}${formText}. ${populationText}`;
   };

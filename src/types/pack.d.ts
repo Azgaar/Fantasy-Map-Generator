@@ -1,5 +1,3 @@
-import {Numeric} from "d3";
-
 interface IPack {
   vertices: {
     p: TPoints;
@@ -23,16 +21,18 @@ interface IPack {
   cultures: ICulture[];
   provinces: IProvince[];
   burgs: IBurg[];
+  rivers: IRiver[];
   religions: IReligion[];
 }
 
 interface IFeature {
-  i: Numeric;
+  i: number;
 }
 
 interface IState {
   i: number;
   name: string;
+  fullName: string;
   removed?: boolean;
 }
 
@@ -45,6 +45,7 @@ interface ICulture {
 interface IProvince {
   i: number;
   name: string;
+  fullName: string;
   removed?: boolean;
 }
 
@@ -62,4 +63,20 @@ interface IReligion {
   i: number;
   name: string;
   removed?: boolean;
+}
+
+interface IRiver {
+  i: number;
+  name: string;
+  basin: number;
+  parent: number;
+  type: string;
+  source: number;
+  mouth: number;
+  sourceWidth: number;
+  width: number;
+  widthFactor: number;
+  length: number;
+  discharge: number;
+  cells: number[];
 }

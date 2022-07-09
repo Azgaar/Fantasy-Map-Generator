@@ -1,16 +1,21 @@
 import * as d3 from "d3";
 
-import {restoreDefaultEvents} from "scripts/events";
-import {findCell} from "utils/graphUtils";
-import {tip, clearMainTip} from "scripts/tooltips";
-import {getCoordinates} from "utils/coordinateUtils";
-import {rn} from "utils/numberUtils";
-import {si, siToInteger} from "utils/unitUtils";
-import {getHeight} from "utils/unitUtils";
-import {closeDialogs} from "dialogs/utils";
 import {openDialog} from "dialogs";
+import {closeDialogs} from "dialogs/utils";
 import {layerIsOn, toggleLayer} from "layers";
 import {applySorting} from "modules/ui/editors";
+import {restoreDefaultEvents} from "scripts/events";
+import {clearMainTip, tip} from "scripts/tooltips";
+import {getCoordinates} from "utils/coordinateUtils";
+import {findCell} from "utils/graphUtils";
+import {
+  getBurgPopulation,
+  getHeight,
+  si,
+  siToInteger,
+  getBurgPopulation,
+  getBurgPopulationPoints
+} from "utils/unitUtils";
 
 let isLoaded = false;
 
@@ -89,7 +94,7 @@ export function open() {
       totalPopulation = 0;
 
     for (const b of filtered) {
-      const population = b.population * populationRate * urbanization;
+      const population = getBurgPopulation(b.population);
       totalPopulation += population;
       const type = b.capital && b.port ? "a-capital-port" : b.capital ? "c-capital" : b.port ? "p-port" : "z-burg";
       const state = pack.states[b.state].name;
@@ -204,10 +209,11 @@ export function open() {
     const burg = +this.parentNode.dataset.id;
     if (this.value == "" || isNaN(+this.value)) {
       tip("Please provide an integer number (like 10000, not 10K)", false, "error");
-      this.value = si(pack.burgs[burg].population * populationRate * urbanization);
+      this.value = si(getBurgPopulation(pack.burgs[burg].population));
       return;
     }
-    pack.burgs[burg].population = this.value / populationRate / urbanization;
+
+    pack.burgs[burg].population = getBurgPopulationPoints(this.value);
     this.parentNode.dataset.population = this.value;
     this.value = si(this.value);
 
@@ -395,7 +401,7 @@ export function open() {
       d3.select(ev.target).transition().duration(1500).attr("stroke", "#c13119");
       const name = d.data.name;
       const parent = d.parent.data.name;
-      const population = si(d.value * populationRate * urbanization);
+      const population = si(getBurgPopulation(d.value));
 
       burgsInfo.innerHTML = /* html */ `${name}. ${parent}. Population: ${population}`;
       burgHighlightOn(ev);
@@ -507,7 +513,7 @@ export function open() {
       data += pack.states[b.state].fullName + ",";
       data += pack.cultures[b.culture].name + ",";
       data += pack.religions[pack.cells.religion[b.cell]].name + ",";
-      data += rn(b.population * populationRate * urbanization) + ",";
+      data += getBurgPopulation(b.population) + ",";
 
       // add geography data
       const [lon, lat] = getCoordinates(b.x, b.y, 2);

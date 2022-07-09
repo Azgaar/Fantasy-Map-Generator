@@ -10,7 +10,7 @@ import {findCell} from "utils/graphUtils";
 import {rn} from "utils/numberUtils";
 import {rand} from "utils/probabilityUtils";
 import {parseTransform} from "utils/stringUtils";
-import {convertTemperature, getHeight} from "utils/unitUtils";
+import {convertTemperature, getHeight, getBurgPopulation, getBurgPopulationPoints} from "utils/unitUtils";
 import {restoreDefaultEvents} from "scripts/events";
 
 let isLoaded = false;
@@ -80,7 +80,7 @@ export function open({id} = {}) {
 
     document.getElementById("burgName").value = b.name;
     document.getElementById("burgType").value = b.type || "Generic";
-    document.getElementById("burgPopulation").value = rn(b.population * populationRate * urbanization);
+    document.getElementById("burgPopulation").value = getBurgPopulation(b.population);
     document.getElementById("burgEditAnchorStyle").style.display = +b.port ? "inline-block" : "none";
 
     // update list and select culture
@@ -361,7 +361,7 @@ export function open({id} = {}) {
 
   function changePopulation() {
     const id = +elSelected.attr("data-id");
-    pack.burgs[id].population = rn(burgPopulation.value / populationRate / urbanization, 4);
+    pack.burgs[id].population = getBurgPopulationPoints(burgPopulation.value);
   }
 
   function toggleFeature() {

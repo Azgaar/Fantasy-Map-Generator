@@ -11,6 +11,8 @@ const dialogsMap = {
   heightmapSelection: "heightmap-selection",
   hierarchyTree: "hierarchy-tree",
   iceEditor: "ice-editor",
+  labelEditor: "label-editor",
+  lakeEditor: "lake-editor",
   religionsEditor: "religions-editor",
   statesEditor: "states-editor",
   unitsEditor: "units-editor"

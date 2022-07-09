@@ -107,19 +107,19 @@ function getSettings() {
     barBackColor: barBackColor.value,
     barPosX: barPosX.value,
     barPosY: barPosY.value,
-    populationRate: populationRate,
-    urbanization: urbanization,
+    populationRate,
+    urbanization,
     mapSize: mapSizeOutput.value,
     latitudeO: latitudeOutput.value,
     temperatureEquator: temperatureEquatorOutput.value,
     temperaturePole: temperaturePoleOutput.value,
     prec: precOutput.value,
-    options: options,
+    options,
     mapName: mapName.value,
     hideLabels: hideLabels.checked,
     stylePreset: stylePreset.value,
     rescaleLabels: rescaleLabels.checked,
-    urbanDensity: urbanDensity
+    urbanDensity
   };
 
   return settings;

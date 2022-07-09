@@ -1,5 +1,5 @@
 interface INote {
-  id: number;
+  id: string;
   name: string;
   legend: string;
 }

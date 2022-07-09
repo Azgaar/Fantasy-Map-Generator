@@ -8,7 +8,15 @@ import {unique} from "utils/arrayUtils";
 import {findAll, findCell, getPackPolygon} from "utils/graphUtils";
 import {getNextId} from "utils/nodeUtils";
 import {rn} from "utils/numberUtils";
-import {getArea, getAreaUnit, si} from "utils/unitUtils";
+import {
+  getArea,
+  getAreaUnit,
+  si,
+  getRuralPopulation,
+  getBurgPopulation,
+  getBurgPopulationPoints,
+  getPopulationTip
+} from "utils/unitUtils";
 
 let isLoaded = false;
 
@@ -92,13 +100,12 @@ export function editZones() {
       const type = zoneEl.dataset.type;
       const fill = zoneEl.getAttribute("fill");
       const area = getArea(d3.sum(c.map(i => pack.cells.area[i])));
-      const rural = d3.sum(c.map(i => pack.cells.pop[i])) * populationRate;
-      const urban =
-        d3.sum(c.map(i => pack.cells.burg[i]).map(b => pack.burgs[b].population)) * populationRate * urbanization;
+
+      const rural = getRuralPopulation(d3.sum(c.map(i => pack.cells.pop[i])));
+      const urban = getBurgPopulation(d3.sum(c.map(i => pack.cells.burg[i]).map(b => pack.burgs[b].population)));
       const population = rural + urban;
-      const populationTip = `Total population: ${si(population)}; Rural population: ${si(
-        rural
-      )}; Urban population: ${si(urban)}. Click to change`;
+      const populationTip = getPopulationTip("Total", rural, urban) + ". Click to change";
+
       const inactive = zoneEl.style.display === "none";
       const focused = defs.select("#fog #focus" + zoneEl.id).size();
 
@@ -129,9 +136,11 @@ export function editZones() {
     // update footer
     const totalArea = getArea(graphWidth * graphHeight);
     zonesFooterArea.dataset.area = totalArea;
-    const totalPop =
-      (d3.sum(pack.cells.pop) + d3.sum(pack.burgs.filter(b => !b.removed).map(b => b.population)) * urbanization) *
-      populationRate;
+
+    const ruralPopulation = d3.sum(pack.cells.pop);
+    const urbanPopulation = d3.sum(pack.burgs.filter(b => !b.removed).map(b => b.population));
+    const totalPop = getTotalPopulation(ruralPopulation, urbanPopulation);
+
     zonesFooterPopulation.dataset.population = totalPop;
     zonesFooterNumber.innerHTML = /* html */ `${filteredZones.length} of ${zones.length}`;
     zonesFooterCells.innerHTML = pack.cells.i.length;
@@ -450,10 +459,8 @@ export function editZones() {
     }
     const burgs = pack.burgs.filter(b => !b.removed && cells.includes(b.cell));
 
-    const rural = rn(d3.sum(cells.map(i => pack.cells.pop[i])) * populationRate);
-    const urban = rn(
-      d3.sum(cells.map(i => pack.cells.burg[i]).map(b => pack.burgs[b].population)) * populationRate * urbanization
-    );
+    const rural = getRuralPopulation(d3.sum(cells.map(i => pack.cells.pop[i])));
+    const urban = getBurgPopulation(d3.sum(cells.map(i => pack.cells.burg[i]).map(b => pack.burgs[b].population)));
     const total = rural + urban;
     const l = n => Number(n).toLocaleString();
 
@@ -507,7 +514,7 @@ export function editZones() {
         burgs.forEach(b => (b.population = rn(b.population * urbanChange, 4)));
       }
       if (!isFinite(urbanChange) && +urbanPop.value > 0) {
-        const points = urbanPop.value / populationRate / urbanization;
+        const points = getBurgPopulationPoints(urbanPop.value);
         const population = rn(points / burgs.length, 4);
         burgs.forEach(b => (b.population = population));
       }

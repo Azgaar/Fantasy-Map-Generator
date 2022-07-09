@@ -11,7 +11,15 @@ import {getAdjective} from "utils/languageUtils";
 import {rn} from "utils/numberUtils";
 import {P, rand} from "utils/probabilityUtils";
 import {byId} from "utils/shorthands";
-import {getArea, getAreaUnit, si} from "utils/unitUtils";
+import {
+  getArea,
+  getAreaUnit,
+  si,
+  getRuralPopulation,
+  getBurgPopulation,
+  getBurgPopulationPoints,
+  getPopulationTip
+} from "utils/unitUtils";
 
 const $body = insertEditorHtml();
 addListeners();
@@ -207,15 +215,16 @@ function statesEditorAddLines() {
   for (const s of pack.states) {
     if (s.removed) continue;
     const area = getArea(s.area);
-    const rural = s.rural * populationRate;
-    const urban = s.urban * populationRate * urbanization;
-    const population = rn(rural + urban);
-    const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(
-      urban
-    )}. Click to change`;
     totalArea += area;
+
+    const rural = getRuralPopulation(s.rural);
+    const urban = getBurgPopulation(s.urban);
+    const population = rn(rural + urban);
+    const populationTip = getPopulationTip("Total", rural, urban) + ". Click to change";
     totalPopulation += population;
+
     totalBurgs += s.burgs;
+
     const focused = defs.select("#fog #focusState" + s.i).size();
 
     if (!s.i) {
@@ -529,8 +538,8 @@ function changePopulation(stateId) {
   const state = pack.states[stateId];
   if (!state.cells) return tip("State does not have any cells, cannot change population", false, "error");
 
-  const rural = rn(state.rural * populationRate);
-  const urban = rn(state.urban * populationRate * urbanization);
+  const rural = getRuralPopulation(state.rural);
+  const urban = getBurgPopulation(state.urban);
   const total = rural + urban;
   const format = n => Number(n).toLocaleString();
 
@@ -590,7 +599,7 @@ function changePopulation(stateId) {
       burgs.forEach(b => (b.population = rn(b.population * urbanChange, 4)));
     }
     if (!isFinite(urbanChange) && +urbanPop.value > 0) {
-      const points = urbanPop.value / populationRate / urbanization;
+      const points = getBurgPopulationPoints(urbanPop.value);
       const burgs = pack.burgs.filter(b => !b.removed && b.state === stateId);
       const population = rn(points / burgs.length, 4);
       burgs.forEach(b => (b.population = population));
@@ -805,20 +814,18 @@ function showStatesChart() {
     const state = d.data.fullName;
 
     const area = getArea(d.data.area) + " " + getAreaUnit();
-    const rural = rn(d.data.rural * populationRate);
-    const urban = rn(d.data.urban * populationRate * urbanization);
+    const rural = getRuralPopulation(d.data.rural);
+    const urban = getBurgPopulation(d.data.urban);
 
-    const option = statesTreeType.value;
-    const value =
-      option === "area"
-        ? "Area: " + area
-        : option === "rural"
-        ? "Rural population: " + si(rural)
-        : option === "urban"
-        ? "Urban population: " + si(urban)
-        : option === "burgs"
-        ? "Burgs number: " + d.data.burgs
-        : "Population: " + si(rural + urban);
+    const optionToLabelMap = {
+      area: "Area: " + area,
+      rural: "Rural population: " + si(rural),
+      urban: "Urban population: " + si(urban),
+      burgs: "Burgs number: " + d.data.burgs,
+      population: "Population: " + si(rural + urban)
+    };
+    const option = getInputValue("statesTreeType");
+    const value = optionToLabelMap[option] || "";
 
     statesInfo.innerHTML = /* html */ `${state}. ${value}`;
     stateHighlightOn(ev);
@@ -1355,8 +1362,9 @@ function downloadStatesCsv() {
   const data = lines.map($line => {
     const {id, name, form, color, capital, culture, type, expansionism, cells, burgs, area, population} = $line.dataset;
     const {fullName = "", rural, urban} = pack.states[+id];
-    const ruralPopulation = Math.round(rural * populationRate);
-    const urbanPopulation = Math.round(urban * populationRate * urbanization);
+    const ruralPopulation = getRuralPopulation(rural);
+    const urbanPopulation = getBurgPopulation(urban);
+
     return [
       id,
       name,

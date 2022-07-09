@@ -7,7 +7,7 @@ import {getRandomColor} from "utils/colorUtils";
 import {findAll, findCell, getPackPolygon, isLand} from "utils/graphUtils";
 import {openURL} from "utils/linkUtils";
 import {rn} from "utils/numberUtils";
-import {getArea, getAreaUnit, si} from "utils/unitUtils";
+import {getArea, getAreaUnit, si, getRuralPopulation, getBurgPopulation, getPopulationTip} from "utils/unitUtils";
 
 let isLoaded = false;
 
@@ -96,13 +96,12 @@ export function open() {
     for (const i of b.i) {
       if (!i || biomesData.name[i] === "removed") continue; // ignore water and removed biomes
       const area = getArea(b.area[i]);
-      const rural = b.rural[i] * populationRate;
-      const urban = b.urban[i] * populationRate * urbanization;
-      const population = rn(rural + urban);
-      const populationTip = `Total population: ${si(population)}; Rural population: ${si(
-        rural
-      )}; Urban population: ${si(urban)}`;
       totalArea += area;
+
+      const rural = getRuralPopulation(b.rural[i]);
+      const urban = getBurgPopulation(b.urban[i]);
+      const population = rn(rural + urban);
+      const populationTip = getPopulationTip("Total", rural, urban);
       totalPopulation += population;
 
       lines += /* html */ `

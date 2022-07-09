@@ -1,19 +1,20 @@
 import * as d3 from "d3";
 
 import {closeDialogs} from "dialogs/utils";
+import {layerIsOn, toggleLayer} from "layers";
 import {tip} from "scripts/tooltips";
 import {getPackPolygon} from "utils/graphUtils";
 import {rn} from "utils/numberUtils";
 import {rand} from "utils/probabilityUtils";
 import {round} from "utils/stringUtils";
 import {getArea, getAreaUnit, getHeight, si} from "utils/unitUtils";
+import {unselect} from "modules/ui/editors";
 
 let isLoaded = false;
 
-export function editLake() {
-  if (customization) return;
+export function open({el}) {
   closeDialogs(".stable");
-  if (layerIsOn("toggleCells")) toggleCells();
+  if (layerIsOn("toggleCells")) toggleLayer("toggleCells");
 
   $("#lakeEditor").dialog({
     title: "Edit Lake",
@@ -22,11 +23,10 @@ export function editLake() {
     close: closeLakesEditor
   });
 
-  const node = d3.event.target;
   debug.append("g").attr("id", "vertices");
-  elSelected = d3.select(node);
+  elSelected = d3.select(el);
   updateLakeValues();
-  selectLakeGroup(node);
+  selectLakeGroup(el);
   drawLakeVertices();
   viewbox.on("touchmove mousemove", null);
 
@@ -34,17 +34,17 @@ export function editLake() {
   isLoaded = true;
 
   // add listeners
-  document.getElementById("lakeName").addEventListener("input", changeName);
-  document.getElementById("lakeNameCulture").addEventListener("click", generateNameCulture);
-  document.getElementById("lakeNameRandom").addEventListener("click", generateNameRandom);
+  byId("lakeName")?.on("input", changeName);
+  byId("lakeNameCulture")?.on("click", generateNameCulture);
+  byId("lakeNameRandom")?.on("click", generateNameRandom);
 
-  document.getElementById("lakeGroup").addEventListener("change", changeLakeGroup);
-  document.getElementById("lakeGroupAdd").addEventListener("click", toggleNewGroupInput);
-  document.getElementById("lakeGroupName").addEventListener("change", createNewGroup);
-  document.getElementById("lakeGroupRemove").addEventListener("click", removeLakeGroup);
+  byId("lakeGroup")?.on("change", changeLakeGroup);
+  byId("lakeGroupAdd")?.on("click", toggleNewGroupInput);
+  byId("lakeGroupName")?.on("change", createNewGroup);
+  byId("lakeGroupRemove")?.on("click", removeLakeGroup);
 
-  document.getElementById("lakeEditStyle").addEventListener("click", editGroupStyle);
-  document.getElementById("lakeLegend").addEventListener("click", editLakeLegend);
+  byId("lakeEditStyle")?.on("click", editGroupStyle);
+  byId("lakeLegend")?.on("click", editLakeLegend);
 
   function getLake() {
     const lakeId = +elSelected.attr("data-f");
@@ -55,28 +55,27 @@ export function editLake() {
     const cells = pack.cells;
 
     const l = getLake();
-    document.getElementById("lakeName").value = l.name;
-    document.getElementById("lakeArea").value = si(getArea(l.area)) + " " + getAreaUnit();
+    byId("lakeName").value = l.name;
+    byId("lakeArea").value = si(getArea(l.area)) + " " + getAreaUnit();
 
     const length = d3.polygonLength(l.vertices.map(v => pack.vertices.p[v]));
-    document.getElementById("lakeShoreLength").value =
-      si(length * distanceScaleInput.value) + " " + distanceUnitInput.value;
+    byId("lakeShoreLength").value = si(length * distanceScaleInput.value) + " " + distanceUnitInput.value;
 
     const lakeCells = Array.from(cells.i.filter(i => cells.f[i] === l.i));
     const heights = lakeCells.map(i => cells.h[i]);
 
-    document.getElementById("lakeElevation").value = getHeight(l.height);
-    document.getElementById("lakeAvarageDepth").value = getHeight(d3.mean(heights), true);
-    document.getElementById("lakeMaxDepth").value = getHeight(d3.min(heights), true);
+    byId("lakeElevation").value = getHeight(l.height);
+    byId("lakeAvarageDepth").value = getHeight(d3.mean(heights), true);
+    byId("lakeMaxDepth").value = getHeight(d3.min(heights), true);
 
-    document.getElementById("lakeFlux").value = l.flux;
-    document.getElementById("lakeEvaporation").value = l.evaporation;
+    byId("lakeFlux").value = l.flux;
+    byId("lakeEvaporation").value = l.evaporation;
 
     const inlets = l.inlets && l.inlets.map(inlet => pack.rivers.find(river => river.i === inlet)?.name);
     const outlet = l.outlet ? pack.rivers.find(river => river.i === l.outlet)?.name : "no";
-    document.getElementById("lakeInlets").value = inlets ? inlets.length : "no";
-    document.getElementById("lakeInlets").title = inlets ? inlets.join(", ") : "";
-    document.getElementById("lakeOutlet").value = outlet;
+    byId("lakeInlets").value = inlets ? inlets.length : "no";
+    byId("lakeInlets").title = inlets ? inlets.join(", ") : "";
+    byId("lakeOutlet").value = outlet;
   }
 
   function drawLakeVertices() {
@@ -132,7 +131,7 @@ export function editLake() {
     defs.select("mask#land > path#land_" + feature.i).attr("d", d); // update land mask
 
     feature.area = Math.abs(d3.polygonArea(points));
-    document.getElementById("lakeArea").value = si(getArea(feature.area)) + " " + getAreaUnit();
+    byId("lakeArea").value = si(getArea(feature.area)) + " " + getAreaUnit();
   }
 
   function changeName() {
@@ -151,7 +150,7 @@ export function editLake() {
 
   function selectLakeGroup(node) {
     const group = node.parentNode.id;
-    const select = document.getElementById("lakeGroup");
+    const select = byId("lakeGroup");
     select.options.length = 0; // remove all options
 
     lakes.selectAll("g").each(function () {
@@ -160,7 +159,7 @@ export function editLake() {
   }
 
   function changeLakeGroup() {
-    document.getElementById(this.value).appendChild(elSelected.node());
+    byId(this.value).appendChild(elSelected.node());
     getLake().group = this.value;
   }
 
@@ -185,7 +184,7 @@ export function editLake() {
       .replace(/ /g, "_")
       .replace(/[^\w\s]/gi, "");
 
-    if (document.getElementById(group)) {
+    if (byId(group)) {
       tip("Element with this id already exists. Please provide a unique name", false, "error");
       return;
     }
@@ -199,23 +198,23 @@ export function editLake() {
     const oldGroup = elSelected.node().parentNode;
     const basic = ["freshwater", "salt", "sinkhole", "frozen", "lava", "dry"].includes(oldGroup.id);
     if (!basic && oldGroup.childElementCount === 1) {
-      document.getElementById("lakeGroup").selectedOptions[0].remove();
-      document.getElementById("lakeGroup").options.add(new Option(group, group, false, true));
+      byId("lakeGroup").selectedOptions[0].remove();
+      byId("lakeGroup").options.add(new Option(group, group, false, true));
       oldGroup.id = group;
       toggleNewGroupInput();
-      document.getElementById("lakeGroupName").value = "";
+      byId("lakeGroupName").value = "";
       return;
     }
 
     // create a new group
     const newGroup = elSelected.node().parentNode.cloneNode(false);
-    document.getElementById("lakes").appendChild(newGroup);
+    byId("lakes").appendChild(newGroup);
     newGroup.id = group;
-    document.getElementById("lakeGroup").options.add(new Option(group, group, false, true));
-    document.getElementById(group).appendChild(elSelected.node());
+    byId("lakeGroup").options.add(new Option(group, group, false, true));
+    byId(group).appendChild(elSelected.node());
 
     toggleNewGroupInput();
-    document.getElementById("lakeGroupName").value = "";
+    byId("lakeGroupName").value = "";
   }
 
   function removeLakeGroup() {
@@ -234,14 +233,14 @@ export function editLake() {
       buttons: {
         Remove: function () {
           $(this).dialog("close");
-          const freshwater = document.getElementById("freshwater");
-          const groupEl = document.getElementById(group);
+          const freshwater = byId("freshwater");
+          const groupEl = byId(group);
           while (groupEl.childNodes.length) {
             freshwater.appendChild(groupEl.childNodes[0]);
           }
           groupEl.remove();
-          document.getElementById("lakeGroup").selectedOptions[0].remove();
-          document.getElementById("lakeGroup").value = "freshwater";
+          byId("lakeGroup").selectedOptions[0].remove();
+          byId("lakeGroup").value = "freshwater";
         },
         Cancel: function () {
           $(this).dialog("close");
