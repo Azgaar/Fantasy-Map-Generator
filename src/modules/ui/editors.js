@@ -1,6 +1,6 @@
 import * as d3 from "d3";
 
-import {restoreDefaultEvents} from "scripts/events";
+import {setDefaultEventHandlers} from "scripts/events";
 import {tip} from "scripts/tooltips";
 import {findCell} from "utils/graphUtils";
 import {minmax, normalize, rn} from "utils/numberUtils";
@@ -11,7 +11,7 @@ import {getBurgPopulation} from "utils/unitUtils";
 
 // clear elSelected variable
 export function unselect() {
-  restoreDefaultEvents();
+  setDefaultEventHandlers();
   if (!elSelected) return;
   elSelected.call(d3.drag().on("drag", null)).attr("class", null);
   debug.selectAll("*").remove();

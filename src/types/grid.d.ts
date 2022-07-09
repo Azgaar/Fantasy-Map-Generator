@@ -15,6 +15,7 @@ interface IGrid {
     h: IntArray;
     t: IntArray;
     f: IntArray;
+    temp: IntArray;
     prec: IntArray;
   };
   features: IFeature[];

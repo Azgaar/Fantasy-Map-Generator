@@ -3,7 +3,7 @@ import * as d3 from "d3";
 import {openDialog} from "dialogs";
 import {closeDialogs} from "dialogs/utils";
 import {applySortingByHeader, unfog} from "modules/ui/editors";
-import {restoreDefaultEvents} from "scripts/events";
+import {setDefaultEventHandlers} from "scripts/events";
 import {clearMainTip, showMainTip, tip} from "scripts/tooltips";
 import {getMixedColor, getRandomColor} from "utils/colorUtils";
 import {findAll, findCell, getPackPolygon, isLand} from "utils/graphUtils";
@@ -1217,7 +1217,7 @@ function exitStatesManualAssignment(close) {
   if (!close)
     $("#statesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});
 
-  restoreDefaultEvents();
+  setDefaultEventHandlers();
   clearMainTip();
   const selected = $body.querySelector("div.selected");
   if (selected) selected.classList.remove("selected");
@@ -1349,7 +1349,7 @@ function addState() {
 
 function exitAddStateMode() {
   customization = 0;
-  restoreDefaultEvents();
+  setDefaultEventHandlers();
   clearMainTip();
   $body.querySelectorAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "all"));
   if (statesAdd.classList.contains("pressed")) statesAdd.classList.remove("pressed");

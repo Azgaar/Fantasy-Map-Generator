@@ -6,7 +6,7 @@ import {rn} from "utils/numberUtils";
 import {getNextId} from "utils/nodeUtils";
 import {round} from "utils/stringUtils";
 import {closeDialogs} from "dialogs/utils";
-import {restoreDefaultEvents} from "../../scripts/events";
+import {setDefaultEventHandlers} from "../../scripts/events";
 
 let isLoaded = false;
 
@@ -279,7 +279,7 @@ export function editRoute(onClick) {
       elSelected.on("click", null);
     } else {
       clearMainTip();
-      restoreDefaultEvents();
+      setDefaultEventHandlers();
       elSelected.on("click", addInterimControlPoint).attr("data-new", null);
     }
   }

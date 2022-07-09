@@ -2,7 +2,7 @@ import * as d3 from "d3";
 
 import {openDialog} from "dialogs";
 import {closeDialogs} from "dialogs/utils";
-import {restoreDefaultEvents} from "scripts/events";
+import {setDefaultEventHandlers} from "scripts/events";
 import {clearMainTip, showMainTip, tip} from "scripts/tooltips";
 import {debounce} from "utils/functionUtils";
 import {findAll, findCell, getPackPolygon, isLand} from "utils/graphUtils";
@@ -811,7 +811,7 @@ function exitCulturesManualAssignment(close) {
   if (!close) $("#culturesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg"}});
 
   debug.select("#cultureCenters").style("display", null);
-  restoreDefaultEvents();
+  setDefaultEventHandlers();
   clearMainTip();
   const selected = $body.querySelector("div.selected");
   if (selected) selected.classList.remove("selected");
@@ -829,7 +829,7 @@ function enterAddCulturesMode() {
 
 function exitAddCultureMode() {
   customization = 0;
-  restoreDefaultEvents();
+  setDefaultEventHandlers();
   clearMainTip();
   $body.querySelectorAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "all"));
   if (culturesAdd.classList.contains("pressed")) culturesAdd.classList.remove("pressed");

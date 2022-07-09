@@ -5,7 +5,7 @@ import {closeDialogs} from "dialogs/utils";
 import {renderLayer, toggleLayer, turnLayerButtonOn} from "layers";
 import {unfog} from "modules/ui/editors";
 import {aleaPRNG} from "scripts/aleaPRNG";
-import {restoreDefaultEvents} from "scripts/events";
+import {setDefaultEventHandlers} from "scripts/events";
 import {prompt} from "scripts/prompt";
 import {clearMainTip, tip} from "scripts/tooltips";
 import {last} from "utils/arrayUtils";
@@ -465,7 +465,7 @@ function regenerateZones(event) {
 
 function unpressClickToAddButton() {
   addFeature.querySelectorAll("button.pressed").forEach(b => b.classList.remove("pressed"));
-  restoreDefaultEvents();
+  setDefaultEventHandlers();
   clearMainTip();
 }
 

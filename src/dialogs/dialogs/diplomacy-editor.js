@@ -2,7 +2,7 @@ import * as d3 from "d3";
 
 import {closeDialogs} from "dialogs/utils";
 import {layerIsOn} from "layers";
-import {restoreDefaultEvents} from "scripts/events";
+import {setDefaultEventHandlers} from "scripts/events";
 import {clearMainTip, tip} from "scripts/tooltips";
 import {findCell} from "utils/graphUtils";
 import {applySorting} from "modules/ui/editors";
@@ -455,7 +455,7 @@ export function open() {
   }
 
   function closeDiplomacyEditor() {
-    restoreDefaultEvents();
+    setDefaultEventHandlers();
     clearMainTip();
     const selected = body.querySelector("div.Self");
     if (selected) selected.classList.remove("Self");

@@ -2,7 +2,7 @@ import * as d3 from "d3";
 
 import {closeDialogs} from "dialogs/utils";
 import {unfog} from "modules/ui/editors";
-import {restoreDefaultEvents} from "scripts/events";
+import {setDefaultEventHandlers} from "scripts/events";
 import {clearMainTip, showMainTip, tip} from "scripts/tooltips";
 import {unique} from "utils/arrayUtils";
 import {findAll, findCell, getPackPolygon} from "utils/graphUtils";
@@ -329,7 +329,7 @@ export function editZones() {
     if (!close)
       $("#zonesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});
 
-    restoreDefaultEvents();
+    setDefaultEventHandlers();
     clearMainTip();
     zones.selectAll("g").each(function () {
       this.removeAttribute("data-init");

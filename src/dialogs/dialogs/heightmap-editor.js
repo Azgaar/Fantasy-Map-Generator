@@ -13,7 +13,7 @@ import {moveCircle, removeCircle} from "modules/ui/editors";
 import {changeViewMode} from "modules/ui/options";
 import {addZones} from "modules/zones";
 import {aleaPRNG} from "scripts/aleaPRNG";
-import {restoreDefaultEvents} from "scripts/events";
+import {setDefaultEventHandlers} from "scripts/events";
 import {undraw} from "scripts/generation";
 import {prompt} from "scripts/prompt";
 import {rankCells} from "scripts/rankCells";
@@ -182,7 +182,7 @@ export function open(options) {
     if (byId("options").querySelector(".tab > button.active").id === "toolsTab") toolsContent.style.display = "block";
     layersPreset.disabled = false;
     exitCustomization.style.display = "none"; // hide finalize button
-    restoreDefaultEvents();
+    setDefaultEventHandlers();
     clearMainTip();
     closeDialogs();
     Zoom.reset();

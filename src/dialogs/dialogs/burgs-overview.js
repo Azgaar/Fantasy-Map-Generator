@@ -4,7 +4,7 @@ import {openDialog} from "dialogs";
 import {closeDialogs} from "dialogs/utils";
 import {layerIsOn, toggleLayer} from "layers";
 import {applySorting} from "modules/ui/editors";
-import {restoreDefaultEvents} from "scripts/events";
+import {setDefaultEventHandlers} from "scripts/events";
 import {clearMainTip, tip} from "scripts/tooltips";
 import {getCoordinates} from "utils/coordinateUtils";
 import {findCell} from "utils/graphUtils";
@@ -312,7 +312,7 @@ export function open() {
 
   function exitAddBurgMode() {
     customization = 0;
-    restoreDefaultEvents();
+    setDefaultEventHandlers();
     clearMainTip();
     if (addBurgTool.classList.contains("pressed")) addBurgTool.classList.remove("pressed");
     if (addNewBurg.classList.contains("pressed")) addNewBurg.classList.remove("pressed");

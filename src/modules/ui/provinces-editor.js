@@ -4,7 +4,7 @@ import {openDialog} from "dialogs";
 import {closeDialogs} from "dialogs/utils";
 import {turnLayerButtonOff} from "layers";
 import {unfog} from "modules/ui/editors";
-import {restoreDefaultEvents} from "scripts/events";
+import {setDefaultEventHandlers} from "scripts/events";
 import {clearMainTip, showMainTip, tip} from "scripts/tooltips";
 import {unique} from "utils/arrayUtils";
 import {getRandomColor} from "utils/colorUtils";
@@ -993,7 +993,7 @@ export function editProvinces() {
     if (!close)
       $("#provincesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});
 
-    restoreDefaultEvents();
+    setDefaultEventHandlers();
     clearMainTip();
     const selected = body.querySelector("div.selected");
     if (selected) selected.classList.remove("selected");
@@ -1069,7 +1069,7 @@ export function editProvinces() {
 
   function exitAddProvinceMode() {
     customization = 0;
-    restoreDefaultEvents();
+    setDefaultEventHandlers();
     clearMainTip();
     body.querySelectorAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "all"));
     if (provincesAdd.classList.contains("pressed")) provincesAdd.classList.remove("pressed");

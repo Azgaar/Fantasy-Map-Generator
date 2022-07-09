@@ -1,6 +1,6 @@
 import * as d3 from "d3";
 
-import {restoreDefaultEvents} from "scripts/events";
+import {setDefaultEventHandlers} from "scripts/events";
 import {findCell} from "utils/graphUtils";
 import {clearMainTip} from "scripts/tooltips";
 import {rn} from "utils/numberUtils";
@@ -271,7 +271,7 @@ export function editMarker(markerI) {
     unselect();
     addMarker.classList.remove("pressed");
     markerAdd.classList.remove("pressed");
-    restoreDefaultEvents();
+    setDefaultEventHandlers();
     clearMainTip();
   }
 }

@@ -11,7 +11,7 @@ import {rn} from "utils/numberUtils";
 import {rand} from "utils/probabilityUtils";
 import {parseTransform} from "utils/stringUtils";
 import {convertTemperature, getHeight, getBurgPopulation, getBurgPopulationPoints} from "utils/unitUtils";
-import {restoreDefaultEvents} from "scripts/events";
+import {setDefaultEventHandlers} from "scripts/events";
 
 let isLoaded = false;
 
@@ -484,7 +484,7 @@ export function open({id} = {}) {
       }
     } else {
       clearMainTip();
-      restoreDefaultEvents();
+      setDefaultEventHandlers();
 
       if (layerIsOn("toggleCells") && toggler.dataset.forced) {
         toggleCells();

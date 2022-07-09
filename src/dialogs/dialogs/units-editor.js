@@ -1,6 +1,6 @@
 import * as d3 from "d3";
 
-import {restoreDefaultEvents} from "scripts/events";
+import {setDefaultEventHandlers} from "scripts/events";
 import {findCell} from "utils/graphUtils";
 import {tip} from "scripts/tooltips";
 import {prompt} from "scripts/prompt";
@@ -174,7 +174,7 @@ export function open() {
 
   function toggleOpisometerMode() {
     if (this.classList.contains("pressed")) {
-      restoreDefaultEvents();
+      setDefaultEventHandlers();
       clearMainTip();
       this.classList.remove("pressed");
     } else {
@@ -193,7 +193,7 @@ export function open() {
           });
 
           d3.event.on("end", function () {
-            restoreDefaultEvents();
+            setDefaultEventHandlers();
             clearMainTip();
             addOpisometer.classList.remove("pressed");
             if (opisometer.points.length < 2) rulers.remove(opisometer.id);
@@ -206,7 +206,7 @@ export function open() {
 
   function toggleRouteOpisometerMode() {
     if (this.classList.contains("pressed")) {
-      restoreDefaultEvents();
+      setDefaultEventHandlers();
       clearMainTip();
       this.classList.remove("pressed");
     } else {
@@ -235,7 +235,7 @@ export function open() {
             });
 
             d3.event.on("end", function () {
-              restoreDefaultEvents();
+              setDefaultEventHandlers();
               clearMainTip();
               addRouteOpisometer.classList.remove("pressed");
               if (routeOpisometer.points.length < 2) {
@@ -243,7 +243,7 @@ export function open() {
               }
             });
           } else {
-            restoreDefaultEvents();
+            setDefaultEventHandlers();
             clearMainTip();
             addRouteOpisometer.classList.remove("pressed");
             tip("Must start in a cell with a route in it", false, "error");
@@ -255,7 +255,7 @@ export function open() {
 
   function togglePlanimeterMode() {
     if (this.classList.contains("pressed")) {
-      restoreDefaultEvents();
+      setDefaultEventHandlers();
       clearMainTip();
       this.classList.remove("pressed");
     } else {
@@ -274,7 +274,7 @@ export function open() {
           });
 
           d3.event.on("end", function () {
-            restoreDefaultEvents();
+            setDefaultEventHandlers();
             clearMainTip();
             addPlanimeter.classList.remove("pressed");
             if (planimeter.points.length < 3) rulers.remove(planimeter.id);

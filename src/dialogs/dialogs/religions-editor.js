@@ -3,7 +3,7 @@ import * as d3 from "d3";
 import {openDialog} from "dialogs";
 import {closeDialogs} from "dialogs/utils";
 import {applySortingByHeader} from "modules/ui/editors";
-import {restoreDefaultEvents} from "scripts/events";
+import {setDefaultEventHandlers} from "scripts/events";
 import {clearMainTip, showMainTip, tip} from "scripts/tooltips";
 import {debounce} from "utils/functionUtils";
 import {findAll, findCell, getPackPolygon, isLand} from "utils/graphUtils";
@@ -710,7 +710,7 @@ function exitReligionsManualAssignment(close) {
   if (!close) $("#religionsEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg"}});
 
   debug.select("#religionCenters").style("display", null);
-  restoreDefaultEvents();
+  setDefaultEventHandlers();
   clearMainTip();
   const $selected = $body.querySelector("div.selected");
   if ($selected) $selected.classList.remove("selected");
@@ -728,7 +728,7 @@ function enterAddReligionMode() {
 
 function exitAddReligionMode() {
   customization = 0;
-  restoreDefaultEvents();
+  setDefaultEventHandlers();
   clearMainTip();
   $body.querySelectorAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "all"));
   if (religionsAdd.classList.contains("pressed")) religionsAdd.classList.remove("pressed");

@@ -1,6 +1,6 @@
 import * as d3 from "d3";
 
-import {restoreDefaultEvents} from "scripts/events";
+import {setDefaultEventHandlers} from "scripts/events";
 import {findCell} from "utils/graphUtils";
 import {tip, showMainTip, clearMainTip} from "scripts/tooltips";
 import {rn} from "utils/numberUtils";
@@ -92,7 +92,7 @@ export function editReliefIcon() {
 
     removeCircle();
     updateReliefSizeInput();
-    restoreDefaultEvents();
+    setDefaultEventHandlers();
     clearMainTip();
   }
 

@@ -12,9 +12,16 @@ interface IPack {
     c: number[][];
     g: IntArray;
     h: IntArray;
+    t: IntArray;
+    f: IntArray;
+    biome: IntArray;
     pop: Float32Array;
-    burg: IntArray;
     area: IntArray;
+    state: IntArray;
+    culture: IntArray;
+    religion: IntArray;
+    province: IntArray;
+    burg: IntArray;
     q: d3.Quadtree<number[]>;
   };
   states: IState[];
@@ -27,6 +34,7 @@ interface IPack {
 
 interface IFeature {
   i: number;
+  name: string;
 }
 
 interface IState {
@@ -62,6 +70,7 @@ interface IBurg {
 interface IReligion {
   i: number;
   name: string;
+  type: "Folk" | "Orgamized" | "Cult" | "Heresy";
   removed?: boolean;
 }
 

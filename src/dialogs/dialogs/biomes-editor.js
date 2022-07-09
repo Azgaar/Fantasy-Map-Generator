@@ -1,7 +1,7 @@
 import * as d3 from "d3";
 
 import {closeDialogs} from "dialogs/utils";
-import {restoreDefaultEvents} from "scripts/events";
+import {setDefaultEventHandlers} from "scripts/events";
 import {clearMainTip, showMainTip, tip} from "scripts/tooltips";
 import {getRandomColor} from "utils/colorUtils";
 import {findAll, findCell, getPackPolygon, isLand} from "utils/graphUtils";
@@ -467,7 +467,7 @@ export function open() {
     biomesFooter.style.display = "block";
     if (!close) $("#biomesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg"}});
 
-    restoreDefaultEvents();
+    setDefaultEventHandlers();
     clearMainTip();
     const selected = document.querySelector("#biomesBody > div.selected");
     if (selected) selected.classList.remove("selected");

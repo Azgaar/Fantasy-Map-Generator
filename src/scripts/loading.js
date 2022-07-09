@@ -2,7 +2,7 @@ import * as d3 from "d3";
 
 import {ERROR, WARN} from "config/logging";
 import {loadMapFromURL} from "modules/io/load";
-import {restoreDefaultEvents} from "scripts/events";
+import {setDefaultEventHandlers} from "scripts/events";
 import {ldb} from "scripts/indexedDB";
 import {getInputValue} from "utils/nodeUtils";
 import {generateMapOnLoad} from "./generation";
@@ -11,7 +11,7 @@ export function addOnLoadListener() {
   document.on("DOMContentLoaded", async () => {
     await loadOrGenerateMap();
     hideLoading();
-    restoreDefaultEvents();
+    setDefaultEventHandlers();
   });
 }
 

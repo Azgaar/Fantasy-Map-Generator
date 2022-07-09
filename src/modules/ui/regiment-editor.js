@@ -1,6 +1,6 @@
 import * as d3 from "d3";
 
-import {restoreDefaultEvents} from "scripts/events";
+import {setDefaultEventHandlers} from "scripts/events";
 import {findCell} from "utils/graphUtils";
 import {last} from "utils/arrayUtils";
 import {tip, clearMainTip} from "scripts/tooltips";
@@ -210,7 +210,7 @@ export function editRegiment(selector) {
       tip("Click on map to create new regiment or fleet", true);
     } else {
       clearMainTip();
-      restoreDefaultEvents();
+      setDefaultEventHandlers();
     }
   }
 
@@ -240,7 +240,7 @@ export function editRegiment(selector) {
       armies.selectAll(":scope > g").classed("draggable", false);
     } else {
       clearMainTip();
-      restoreDefaultEvents();
+      setDefaultEventHandlers();
       armies.selectAll(":scope > g").classed("draggable", true);
     }
   }
@@ -313,7 +313,7 @@ export function editRegiment(selector) {
     } else {
       clearMainTip();
       armies.selectAll(":scope > g").classed("draggable", true);
-      restoreDefaultEvents();
+      setDefaultEventHandlers();
     }
   }
 
@@ -453,7 +453,7 @@ export function editRegiment(selector) {
     document.getElementById("regimentAdd").classList.remove("pressed");
     document.getElementById("regimentAttack").classList.remove("pressed");
     document.getElementById("regimentAttach").classList.remove("pressed");
-    restoreDefaultEvents();
+    setDefaultEventHandlers();
     elSelected = null;
   }
 }

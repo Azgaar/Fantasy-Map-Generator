@@ -11,8 +11,7 @@ import {byId} from "utils/shorthands";
 import {parseTransform} from "utils/stringUtils";
 // @ts-expect-error js module
 import {editStyle} from "modules/style";
-// @ts-expect-error js module
-import {restoreDefaultEvents} from "scripts/events";
+import {setDefaultEventHandlers} from "scripts/events";
 // @ts-expect-error js module
 import {unselect} from "modules/ui/editors";
 
@@ -85,7 +84,7 @@ export function open() {
       tip("Click on map to create an iceberg. Hold Shift to add multiple", true);
     } else {
       clearMainTip();
-      restoreDefaultEvents();
+      setDefaultEventHandlers();
     }
   }
 

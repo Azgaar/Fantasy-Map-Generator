@@ -1,4 +1,4 @@
-import {restoreDefaultEvents} from "scripts/events";
+import {setDefaultEventHandlers} from "scripts/events";
 import {clearMainTip} from "scripts/tooltips";
 import {closeDialogs} from "dialogs/utils";
 
@@ -197,7 +197,7 @@ export function overviewMarkers() {
 
     addMarker.classList.remove("pressed");
     markerAdd.classList.remove("pressed");
-    restoreDefaultEvents();
+    setDefaultEventHandlers();
     clearMainTip();
   }
 }

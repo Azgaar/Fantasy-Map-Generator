@@ -2,7 +2,7 @@ import * as d3 from "d3";
 
 import {INFO} from "config/logging";
 import {updatePresetInput} from "layers";
-import {restoreDefaultEvents} from "scripts/events";
+import {setDefaultEventHandlers} from "scripts/events";
 import {ldb} from "scripts/indexedDB";
 import {tip} from "scripts/tooltips";
 import {last} from "utils/arrayUtils";
@@ -624,7 +624,7 @@ async function parseLoadedData(data) {
     eraInput.value = options.era;
     shapeRendering.value = viewbox.attr("shape-rendering") || "geometricPrecision";
 
-    restoreDefaultEvents();
+    setDefaultEventHandlers();
     focusOn(); // based on searchParams focus on point, cell or burg
     Zoom.invoke();
 
