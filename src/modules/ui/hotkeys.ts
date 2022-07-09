@@ -1,14 +1,26 @@
 import {openDialog} from "dialogs";
 import {toggleLayer} from "layers";
+// @ts-expect-error js module
 import {showAboutDialog} from "scripts/options/about";
 import {byId} from "utils/shorthands";
 import {closeDialogs} from "dialogs/utils";
+import {minmax} from "utils/numberUtils";
+// @ts-expect-error js module
+import {hideOptions} from "modules/ui/options";
+// @ts-expect-error js module
+import {regeneratePrompt, toggle3dOptions, toggleOptions} from "modules/ui/options";
+// @ts-expect-error js module
+import {quickSave, saveToDropbox, dowloadMap, toggleSaveReminder} from "modules/io/save";
+// @ts-expect-error js module
+import {quickLoad} from "modules/io/load";
 
 // Hotkeys, see github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys
-document.on("keydown", handleKeydown);
-document.on("keyup", handleKeyup);
+export function addHotkeyListeners() {
+  document.on("keydown", handleKeydown as EventListener);
+  document.on("keyup", handleKeyup as EventListener);
+}
 
-function handleKeydown(event) {
+function handleKeydown(event: KeyboardEvent) {
   if (!allowHotkeys()) return; // in some cases (e.g. in a textarea) hotkeys are not allowed
 
   const {code, ctrlKey, altKey} = event;
@@ -17,7 +29,7 @@ function handleKeydown(event) {
   if (["F1", "F2", "F6", "F9", "Tab"].includes(code)) event.preventDefault(); // disallow default Fn and Tab
 }
 
-function handleKeyup(event) {
+function handleKeyup(event: KeyboardEvent) {
   if (!allowHotkeys()) return; // in some cases (e.g. in a textarea) hotkeys are not allowed
 
   event.stopPropagation();
@@ -26,6 +38,10 @@ function handleKeyup(event) {
   const ctrl = ctrlKey || metaKey || key === "Control";
   const shift = shiftKey || key === "Shift";
   const alt = altKey || key === "Alt";
+
+  const Zoom = window.Zoom;
+  const $undo = byId("undo");
+  const $redo = byId("redo");
 
   if (code === "F1") showAboutDialog();
   else if (code === "F2") regeneratePrompt();
@@ -38,8 +54,8 @@ function handleKeyup(event) {
   else if (ctrl && code === "KeyQ") toggleSaveReminder();
   else if (ctrl && code === "KeyS") dowloadMap();
   else if (ctrl && code === "KeyC") saveToDropbox();
-  else if (ctrl && code === "KeyZ" && undo?.offsetParent) undo.click();
-  else if (ctrl && code === "KeyY" && redo?.offsetParent) redo.click();
+  else if (ctrl && code === "KeyZ" && $undo?.offsetParent) $undo.click();
+  else if (ctrl && code === "KeyY" && $redo?.offsetParent) $redo.click();
   else if (shift && code === "KeyH") openDialog("heightmapEditor");
   else if (shift && code === "KeyB") editBiomes();
   else if (shift && code === "KeyS") openDialog("statesEditor");
@@ -95,70 +111,80 @@ function handleKeyup(event) {
   else if (code === "KeyK") toggleLayer("toggleMarkers");
   else if (code === "Equal") toggleLayer("toggleRulers");
   else if (code === "Slash") toggleLayer("toggleScaleBar");
-  else if (code === "ArrowLeft") zoom.translateBy(svg, 10, 0);
-  else if (code === "ArrowRight") zoom.translateBy(svg, -10, 0);
-  else if (code === "ArrowUp") zoom.translateBy(svg, 0, 10);
-  else if (code === "ArrowDown") zoom.translateBy(svg, 0, -10);
+  else if (code === "ArrowLeft") Zoom.translateBy(svg, 10, 0);
+  else if (code === "ArrowRight") Zoom.translateBy(svg, -10, 0);
+  else if (code === "ArrowUp") Zoom.translateBy(svg, 0, 10);
+  else if (code === "ArrowDown") Zoom.translateBy(svg, 0, -10);
   else if (key === "+" || key === "-") pressNumpadSign(key);
   else if (key === "0") Zoom.reset(1000);
-  else if (key === "1") zoom.scaleTo(svg, 1);
-  else if (key === "2") zoom.scaleTo(svg, 2);
-  else if (key === "3") zoom.scaleTo(svg, 3);
-  else if (key === "4") zoom.scaleTo(svg, 4);
-  else if (key === "5") zoom.scaleTo(svg, 5);
-  else if (key === "6") zoom.scaleTo(svg, 6);
-  else if (key === "7") zoom.scaleTo(svg, 7);
-  else if (key === "8") zoom.scaleTo(svg, 8);
-  else if (key === "9") zoom.scaleTo(svg, 9);
+  else if (key === "1") Zoom.scaleTo(svg, 1);
+  else if (key === "2") Zoom.scaleTo(svg, 2);
+  else if (key === "3") Zoom.scaleTo(svg, 3);
+  else if (key === "4") Zoom.scaleTo(svg, 4);
+  else if (key === "5") Zoom.scaleTo(svg, 5);
+  else if (key === "6") Zoom.scaleTo(svg, 6);
+  else if (key === "7") Zoom.scaleTo(svg, 7);
+  else if (key === "8") Zoom.scaleTo(svg, 8);
+  else if (key === "9") Zoom.scaleTo(svg, 9);
   else if (ctrl) toggleMode();
 }
 
 function allowHotkeys() {
-  const {tagName, contentEditable} = document.activeElement;
-  if (["INPUT", "SELECT", "TEXTAREA"].includes(tagName)) return false;
-  if (tagName === "DIV" && contentEditable === "true") return false;
-  if (document.getSelection().toString()) return false;
+  if (document.activeElement) {
+    const {tagName, contentEditable} = document.activeElement as HTMLElement;
+    if (["INPUT", "SELECT", "TEXTAREA"].includes(tagName)) return false;
+    if (tagName === "DIV" && contentEditable === "true") return false;
+  }
+
+  if (document.getSelection()?.toString()) return false;
   return true;
 }
 
-function pressNumpadSign(key) {
-  const change = key === "+" ? 1 : -1;
-  let brush = null;
+function getActionBrushInput() {
+  if (byId("brushRadius")?.offsetParent) return byId("brushRadius");
+  if (byId("biomesManuallyBrush")?.offsetParent) return byId("biomesManuallyBrush");
+  if (byId("statesManuallyBrush")?.offsetParent) return byId("statesManuallyBrush");
+  if (byId("provincesManuallyBrush")?.offsetParent) return byId("provincesManuallyBrush");
+  if (byId("culturesManuallyBrush")?.offsetParent) return byId("culturesManuallyBrush");
+  if (byId("zonesBrush")?.offsetParent) return byId("zonesBrush");
+  if (byId("religionsManuallyBrush")?.offsetParent) return byId("religionsManuallyBrush");
+  return null;
+}
 
-  if (byId("brushRadius")?.offsetParent) brush = byId("brushRadius");
-  else if (byId("biomesManuallyBrush")?.offsetParent) brush = byId("biomesManuallyBrush");
-  else if (byId("statesManuallyBrush")?.offsetParent) brush = byId("statesManuallyBrush");
-  else if (byId("provincesManuallyBrush")?.offsetParent) brush = byId("provincesManuallyBrush");
-  else if (byId("culturesManuallyBrush")?.offsetParent) brush = byId("culturesManuallyBrush");
-  else if (byId("zonesBrush")?.offsetParent) brush = byId("zonesBrush");
-  else if (byId("religionsManuallyBrush")?.offsetParent) brush = byId("religionsManuallyBrush");
-
+function pressNumpadSign(key: "+" | "-") {
+  const brush = getActionBrushInput() as HTMLInputElement | null;
   if (brush) {
-    const value = minmax(+brush.value + change, +brush.min, +brush.max);
-    brush.value = byId(brush.id + "Number").value = value;
-    return;
-  }
+    const change = key === "+" ? 1 : -1;
+    const value = String(minmax(+brush.value + change, +brush.min, +brush.max));
+    brush.value = value;
 
-  const scaleBy = key === "+" ? 1.2 : 0.8;
-  zoom.scaleBy(svg, scaleBy); // if no brush elements displayed, zoom map
+    const numberInput = byId(brush.id + "Number") as HTMLInputElement | null;
+    if (numberInput) numberInput.value = value;
+  } else {
+    // if no brush inputs visible, Zoom map
+    const scaleBy = key === "+" ? 1.2 : 0.8;
+    window.Zoom.scaleBy(svg, scaleBy);
+  }
 }
 
 function toggleMode() {
-  if (zonesRemove?.offsetParent) {
-    zonesRemove.classList.contains("pressed")
-      ? zonesRemove.classList.remove("pressed")
-      : zonesRemove.classList.add("pressed");
+  const $zonesRemove = byId("zonesRemove");
+  if ($zonesRemove?.offsetParent) {
+    $zonesRemove.classList.contains("pressed")
+      ? $zonesRemove.classList.remove("pressed")
+      : $zonesRemove.classList.add("pressed");
   }
 }
 
 function removeElementOnKey() {
-  const fastDelete = Array.from(document.querySelectorAll("[role='dialog'] .fastDelete")).find(
-    dialog => dialog.style.display !== "none"
-  );
-  if (fastDelete) fastDelete.click();
+  const dialogsWithFastDelete = document.querySelectorAll("[role='dialog'] .fastDelete");
+  const $fastDelete = Array.from(dialogsWithFastDelete).find(
+    dialog => (dialog as HTMLElement).style.display !== "none"
+  ) as HTMLElement | undefined;
+  if ($fastDelete) $fastDelete.click();
 
   const visibleDialogs = Array.from(document.querySelectorAll("[role='dialog']")).filter(
-    dialog => dialog.style.display !== "none"
+    dialog => (dialog as HTMLElement).style.display !== "none"
   );
   if (!visibleDialogs.length) return;
 

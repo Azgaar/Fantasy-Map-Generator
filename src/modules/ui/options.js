@@ -13,6 +13,7 @@ import {regenerateMap} from "scripts/generation";
 import {fitScaleBar} from "modules/measurers";
 import {openDialog} from "dialogs";
 import {closeDialogs} from "dialogs/utils";
+import {quickSave, saveToDropbox, dowloadMap} from "modules/io/save.js";
 
 $("#optionsContainer").draggable({handle: ".drag-trigger", snap: "svg", snapMode: "both"});
 $("#exitCustomization").draggable({handle: "div"});
@@ -33,32 +34,32 @@ function showOptions(event) {
   }
 
   regenerate.style.display = "none";
-  document.getElementById("options").style.display = "block";
+  byId("options").style.display = "block";
   optionsTrigger.style.display = "none";
 
   if (event) event.stopPropagation();
 }
 
 // Hide options pane on trigger click
-function hideOptions(event) {
-  document.getElementById("options").style.display = "none";
+export function hideOptions(event) {
+  byId("options").style.display = "none";
   optionsTrigger.style.display = "block";
   if (event) event.stopPropagation();
 }
 
 // To toggle options on hotkey press
-function toggleOptions(event) {
-  if (document.getElementById("options").style.display === "none") showOptions(event);
+export function toggleOptions(event) {
+  if (byId("options").style.display === "none") showOptions(event);
   else hideOptions(event);
 }
 
 // Toggle "New Map!" pane on hover
-optionsTrigger.addEventListener("mouseenter", function () {
+optionsTrigger.on("mouseenter", function () {
   if (optionsTrigger.classList.contains("glow")) return;
-  if (document.getElementById("options").style.display === "none") regenerate.style.display = "block";
+  if (byId("options").style.display === "none") regenerate.style.display = "block";
 });
 
-collapsible.addEventListener("mouseleave", function () {
+collapsible.on("mouseleave", function () {
   regenerate.style.display = "none";
 });
 
@@ -66,14 +67,14 @@ collapsible.addEventListener("mouseleave", function () {
 document
   .getElementById("options")
   .querySelector("div.tab")
-  .addEventListener("click", function (event) {
+  .on("click", function (event) {
     if (event.target.tagName !== "BUTTON") return;
     const id = event.target.id;
-    const active = document.getElementById("options").querySelector(".tab > button.active");
+    const active = byId("options").querySelector(".tab > button.active");
     if (active && id === active.id) return; // already active tab is clicked
 
     if (active) active.classList.remove("active");
-    document.getElementById(id).classList.add("active");
+    byId(id).classList.add("active");
     document
       .getElementById("options")
       .querySelectorAll(".tabcontent")
@@ -101,10 +102,10 @@ async function showSupporters() {
 }
 
 // on any option or dialog change
-document.getElementById("options").addEventListener("change", storeValueIfRequired);
-document.getElementById("dialogs").addEventListener("change", storeValueIfRequired);
-document.getElementById("options").addEventListener("input", updateOutputToFollowInput);
-document.getElementById("dialogs").addEventListener("input", updateOutputToFollowInput);
+byId("options").on("change", storeValueIfRequired);
+byId("dialogs").on("change", storeValueIfRequired);
+byId("options").on("input", updateOutputToFollowInput);
+byId("dialogs").on("input", updateOutputToFollowInput);
 
 function storeValueIfRequired(ev) {
   if (ev.target.dataset.stored) lock(ev.target.dataset.stored);
@@ -119,17 +120,17 @@ function updateOutputToFollowInput(ev) {
 
   // generic case
   if (id.slice(-5) === "Input") {
-    const output = document.getElementById(id.slice(0, -5) + "Output");
+    const output = byId(id.slice(0, -5) + "Output");
     if (output) output.value = value;
   } else if (id.slice(-6) === "Output") {
-    const input = document.getElementById(id.slice(0, -6) + "Input");
+    const input = byId(id.slice(0, -6) + "Input");
     if (input) input.value = value;
   }
 }
 
 // Option listeners
-const optionsContent = document.getElementById("optionsContent");
-optionsContent.addEventListener("input", function (event) {
+const optionsContent = byId("optionsContent");
+optionsContent.on("input", function (event) {
   const id = event.target.id;
   const value = event.target.value;
   if (id === "mapWidthInput" || id === "mapHeightInput") mapSizeInputChange();
@@ -143,7 +144,7 @@ optionsContent.addEventListener("input", function (event) {
   else if (id === "transparencyInput") changeDialogsTheme(themeColorInput.value, value);
 });
 
-optionsContent.addEventListener("change", function (event) {
+optionsContent.on("change", function (event) {
   const id = event.target.id;
   const value = event.target.value;
 
@@ -156,7 +157,7 @@ optionsContent.addEventListener("change", function (event) {
   else if (id === "stateLabelsModeInput") options.stateLabelsMode = value;
 });
 
-optionsContent.addEventListener("click", function (event) {
+optionsContent.on("click", function (event) {
   const id = event.target.id;
   if (id === "toggleFullscreen") toggleFullscreen();
   else if (id === "optionsMapHistory") showSeedHistoryDialog();
@@ -252,7 +253,7 @@ const voiceInterval = setInterval(function () {
   if (voices.length) clearInterval(voiceInterval);
   else return;
 
-  const select = document.getElementById("speakerVoice");
+  const select = byId("speakerVoice");
   voices.forEach((voice, i) => {
     select.options.add(new Option(voice.name, i, false));
   });
@@ -266,7 +267,7 @@ function testSpeaker() {
   const speaker = new SpeechSynthesisUtterance(text);
   const voices = speechSynthesis.getVoices();
   if (voices.length) {
-    const voiceId = +document.getElementById("speakerVoice").value;
+    const voiceId = +byId("speakerVoice").value;
     speaker.voice = voices[voiceId];
   }
   speechSynthesis.speak(speaker);
@@ -366,7 +367,7 @@ function changeCultureSet() {
 }
 
 function changeEmblemShape(emblemShape) {
-  const image = document.getElementById("emblemShapeImage");
+  const image = byId("emblemShapeImage");
   const shapePath = window.COArenderer && COArenderer.shieldPaths[emblemShape];
   shapePath ? image.setAttribute("d", shapePath) : image.removeAttribute("d");
 
@@ -375,7 +376,7 @@ function changeEmblemShape(emblemShape) {
     pack.cultures.filter(c => !c.removed).forEach(c => (c.shield = Cultures.getRandomShield()));
 
   const rerenderCOA = (id, coa) => {
-    const coaEl = document.getElementById(id);
+    const coaEl = byId(id);
     if (!coaEl) return; // not rendered
     coaEl.remove();
     COArenderer.trigger(id, coa);
@@ -421,7 +422,7 @@ function changeUIsize(value) {
 
   uiSizeInput.value = uiSizeOutput.value = value;
   document.getElementsByTagName("body")[0].style.fontSize = rn(value * 10, 2) + "px";
-  document.getElementById("options").style.width = value * 300 + "px";
+  byId("options").style.width = value * 300 + "px";
 }
 
 function getUImaxSize() {
@@ -659,7 +660,7 @@ function restoreDefaultOptions() {
 }
 
 // Sticked menu Options listeners
-document.getElementById("sticked").addEventListener("click", function (event) {
+byId("sticked").on("click", function (event) {
   const id = event.target.id;
   if (id === "newMapButton") regeneratePrompt();
   else if (id === "saveButton") showSavePane();
@@ -668,7 +669,9 @@ document.getElementById("sticked").addEventListener("click", function (event) {
   else if (id === "zoomReset") Zoom.reset(1000);
 });
 
-function regeneratePrompt(options) {
+byId("regenerate").on("click", regeneratePrompt);
+
+export function regeneratePrompt(options) {
   if (customization)
     return tip("New map cannot be generated when edit mode is active, please exit the mode and retry", false, "error");
   const workingTime = (Date.now() - last(mapHistory).created) / 60000; // minutes
@@ -692,7 +695,7 @@ function regeneratePrompt(options) {
 }
 
 function showSavePane() {
-  const sharableLinkContainer = document.getElementById("sharableLinkContainer");
+  const sharableLinkContainer = byId("sharableLinkContainer");
   sharableLinkContainer.style.display = "none";
 
   $("#saveMapData").dialog({
@@ -708,14 +711,18 @@ function showSavePane() {
   });
 }
 
+byId("dowloadMap").on("click", dowloadMap);
+byId("saveToDropbox").on("click", saveToDropbox);
+byId("quickSave").on("click", quickSave);
+
 function copyLinkToClickboard() {
-  const shrableLink = document.getElementById("sharableLink");
+  const shrableLink = byId("sharableLink");
   const link = shrableLink.getAttribute("href");
   navigator.clipboard.writeText(link).then(() => tip("Link is copied to the clipboard", true, "success", 8000));
 }
 
 function showExportPane() {
-  document.getElementById("showLabels").checked = !hideLabels.checked;
+  byId("showLabels").checked = !hideLabels.checked;
 
   $("#exportMapData").dialog({
     title: "Export map data",
@@ -735,6 +742,21 @@ async function exportToJson(type) {
   exportToJson(type);
 }
 
+byId("saveSVG").on("click", saveSVG);
+byId("savePNG").on("click", savePNG);
+byId("saveJPEG").on("click", saveJPEG);
+byId("openSaveTiles").on("click", openSaveTiles);
+
+byId("saveGeoJSON_Cells").on("click", saveGeoJSON_Cells);
+byId("saveGeoJSON_Routes").on("click", saveGeoJSON_Routes);
+byId("saveGeoJSON_Rivers").on("click", saveGeoJSON_Rivers);
+byId("saveGeoJSON_Markers").on("click", saveGeoJSON_Markers);
+
+byId("exportToJson_Full").on("click", () => exportToJson("Full"));
+byId("exportToJson_Minimal").on("click", () => exportToJson("Minimal"));
+byId("exportToJson_PackCells").on("click", () => exportToJson("PackCells"));
+byId("exportToJson_GridCells").on("click", () => exportToJson("GridCells"));
+
 async function showLoadPane() {
   $("#loadMapData").dialog({
     title: "Load map",
@@ -750,10 +772,10 @@ async function showLoadPane() {
 
   // already connected to Dropbox: list saved maps
   if (Cloud.providers.dropbox.api) {
-    document.getElementById("dropboxConnectButton").style.display = "none";
-    document.getElementById("loadFromDropboxSelect").style.display = "block";
-    const loadFromDropboxButtons = document.getElementById("loadFromDropboxButtons");
-    const fileSelect = document.getElementById("loadFromDropboxSelect");
+    byId("dropboxConnectButton").style.display = "none";
+    byId("loadFromDropboxSelect").style.display = "block";
+    const loadFromDropboxButtons = byId("loadFromDropboxButtons");
+    const fileSelect = byId("loadFromDropboxSelect");
     fileSelect.innerHTML = /* html */ `<option value="" disabled selected>Loading...</option>`;
 
     const files = await Cloud.providers.dropbox.list();
@@ -778,10 +800,19 @@ async function showLoadPane() {
   }
 
   // not connected to Dropbox: show connect button
-  document.getElementById("dropboxConnectButton").style.display = "inline-block";
-  document.getElementById("loadFromDropboxButtons").style.display = "none";
-  document.getElementById("loadFromDropboxSelect").style.display = "none";
+  byId("dropboxConnectButton").style.display = "inline-block";
+  byId("loadFromDropboxButtons").style.display = "none";
+  byId("loadFromDropboxSelect").style.display = "none";
 }
+
+byId("loadFromMachine").on("click", () => mapToLoad.click());
+byId("loadURL").on("click", loadURL);
+byId("quickLoad").on("click", quickLoad);
+
+byId("dropboxConnectButton").on("click", connectToDropbox);
+byId("loadFromDropbox").on("click", loadFromDropbox);
+byId("createSharableDropboxLink").on("click", createSharableDropboxLink);
+byId("copyLinkToClickboard").on("click", copyLinkToClickboard);
 
 async function connectToDropbox() {
   await Cloud.providers.dropbox.initialize();
@@ -816,7 +847,7 @@ function loadURL() {
 }
 
 // load map
-document.getElementById("mapToLoad").addEventListener("change", function () {
+byId("mapToLoad").on("change", function () {
   const fileToLoad = this.files[0];
   this.value = "";
   closeDialogs();
@@ -826,12 +857,12 @@ document.getElementById("mapToLoad").addEventListener("change", function () {
 function openSaveTiles() {
   closeDialogs();
   updateTilesOptions();
-  const status = document.getElementById("tileStatus");
+  const status = byId("tileStatus");
   status.innerHTML = "";
   let loading = null;
 
-  const inputs = document.getElementById("saveTilesScreen").querySelectorAll("input");
-  inputs.forEach(input => input.addEventListener("input", updateTilesOptions));
+  const inputs = byId("saveTilesScreen").querySelectorAll("input");
+  inputs.forEach(input => input.on("input", updateTilesOptions));
 
   $("#saveTilesScreen").dialog({
     resizable: false,
@@ -867,10 +898,10 @@ function updateTilesOptions() {
     if (prev?.tagName === "INPUT") prev.value = this.value;
   }
 
-  const tileSize = document.getElementById("tileSize");
-  const tilesX = +document.getElementById("tileColsOutput").value;
-  const tilesY = +document.getElementById("tileRowsOutput").value;
-  const scale = +document.getElementById("tileScaleOutput").value;
+  const tileSize = byId("tileSize");
+  const tilesX = +byId("tileColsOutput").value;
+  const tilesY = +byId("tileRowsOutput").value;
+  const scale = +byId("tileScaleOutput").value;
 
   // calculate size
   const sizeX = graphWidth * scale * tilesX;
@@ -900,7 +931,7 @@ function updateTilesOptions() {
 }
 
 // View mode
-viewMode.addEventListener("click", changeViewMode);
+viewMode.on("click", changeViewMode);
 export function changeViewMode(event) {
   const button = event.target;
   if (button.tagName !== "BUTTON") return;
@@ -919,9 +950,9 @@ function enterStandardView() {
   heightmap3DView.classList.remove("pressed");
   viewStandard.classList.add("pressed");
 
-  if (!document.getElementById("canvas3d")) return;
+  if (!byId("canvas3d")) return;
   ThreeD.stop();
-  document.getElementById("canvas3d").remove();
+  byId("canvas3d").remove();
   if (options3dUpdate.offsetParent) $("#options3d").dialog("close");
   if (preview3d.offsetParent) $("#preview3d").dialog("close");
 }
@@ -954,7 +985,7 @@ async function enter3dView(type) {
   };
 
   if (type === "heightmap3DView") {
-    document.getElementById("preview3d").appendChild(canvas);
+    byId("preview3d").appendChild(canvas);
     $("#preview3d").dialog({
       title: "3D Preview",
       resizable: true,
@@ -968,7 +999,7 @@ async function enter3dView(type) {
 }
 
 function resize3d() {
-  const canvas = document.getElementById("canvas3d");
+  const canvas = byId("canvas3d");
   canvas.width = parseFloat(preview3d.style.width);
   canvas.height = parseFloat(preview3d.style.height) - 2;
   ThreeD.redraw();
@@ -976,7 +1007,7 @@ function resize3d() {
 
 let isLoaded = false;
 
-function toggle3dOptions() {
+export function toggle3dOptions() {
   if (options3dUpdate.offsetParent) {
     $("#options3d").dialog("close");
     return;
@@ -993,29 +1024,29 @@ function toggle3dOptions() {
   if (isLoaded) return;
   isLoaded = true;
 
-  document.getElementById("options3dUpdate").addEventListener("click", ThreeD.update);
-  document.getElementById("options3dSave").addEventListener("click", ThreeD.saveScreenshot);
-  document.getElementById("options3dOBJSave").addEventListener("click", ThreeD.saveOBJ);
+  byId("options3dUpdate").on("click", ThreeD.update);
+  byId("options3dSave").on("click", ThreeD.saveScreenshot);
+  byId("options3dOBJSave").on("click", ThreeD.saveOBJ);
 
-  document.getElementById("options3dScaleRange").addEventListener("input", changeHeightScale);
-  document.getElementById("options3dScaleNumber").addEventListener("change", changeHeightScale);
-  document.getElementById("options3dLightnessRange").addEventListener("input", changeLightness);
-  document.getElementById("options3dLightnessNumber").addEventListener("change", changeLightness);
-  document.getElementById("options3dSunX").addEventListener("change", changeSunPosition);
-  document.getElementById("options3dSunY").addEventListener("change", changeSunPosition);
-  document.getElementById("options3dSunZ").addEventListener("change", changeSunPosition);
-  document.getElementById("options3dMeshRotationRange").addEventListener("input", changeRotation);
-  document.getElementById("options3dMeshRotationNumber").addEventListener("change", changeRotation);
-  document.getElementById("options3dGlobeRotationRange").addEventListener("input", changeRotation);
-  document.getElementById("options3dGlobeRotationNumber").addEventListener("change", changeRotation);
-  document.getElementById("options3dMeshLabels3d").addEventListener("change", toggleLabels3d);
-  document.getElementById("options3dMeshSkyMode").addEventListener("change", toggleSkyMode);
-  document.getElementById("options3dMeshSky").addEventListener("input", changeColors);
-  document.getElementById("options3dMeshWater").addEventListener("input", changeColors);
-  document.getElementById("options3dGlobeResolution").addEventListener("change", changeResolution);
+  byId("options3dScaleRange").on("input", changeHeightScale);
+  byId("options3dScaleNumber").on("change", changeHeightScale);
+  byId("options3dLightnessRange").on("input", changeLightness);
+  byId("options3dLightnessNumber").on("change", changeLightness);
+  byId("options3dSunX").on("change", changeSunPosition);
+  byId("options3dSunY").on("change", changeSunPosition);
+  byId("options3dSunZ").on("change", changeSunPosition);
+  byId("options3dMeshRotationRange").on("input", changeRotation);
+  byId("options3dMeshRotationNumber").on("change", changeRotation);
+  byId("options3dGlobeRotationRange").on("input", changeRotation);
+  byId("options3dGlobeRotationNumber").on("change", changeRotation);
+  byId("options3dMeshLabels3d").on("change", toggleLabels3d);
+  byId("options3dMeshSkyMode").on("change", toggleSkyMode);
+  byId("options3dMeshSky").on("input", changeColors);
+  byId("options3dMeshWater").on("input", changeColors);
+  byId("options3dGlobeResolution").on("change", changeResolution);
 
   function updateValues() {
-    const globe = document.getElementById("canvas3d").dataset.type === "viewGlobe";
+    const globe = byId("canvas3d").dataset.type === "viewGlobe";
     options3dMesh.style.display = globe ? "none" : "block";
     options3dGlobe.style.display = globe ? "block" : "none";
     options3dScaleRange.value = options3dScaleNumber.value = ThreeD.options.scale;

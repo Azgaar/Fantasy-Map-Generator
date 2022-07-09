@@ -8,6 +8,7 @@ import {generateSeed} from "utils/probabilityUtils";
 import {getColorScheme} from "utils/colorUtils";
 import {aleaPRNG} from "scripts/aleaPRNG";
 import {closeDialogs} from "dialogs/utils";
+import {regeneratePrompt} from "modules/ui/options";
 
 const initialSeed = generateSeed();
 let graph = getGraph(grid);

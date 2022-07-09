@@ -7,6 +7,7 @@ import {assignSpeakerBehavior} from "./speaker";
 import {addResizeListener} from "modules/ui/options";
 // @ts-ignore
 import {addDragToUpload} from "modules/io/load";
+import {addHotkeyListeners} from "modules/ui/hotkeys";
 
 export function addGlobalListeners() {
   if (PRODUCTION) {
@@ -18,6 +19,7 @@ export function addGlobalListeners() {
   assignLockBehavior();
   addTooptipListers();
   addResizeListener();
+  addHotkeyListeners();
   assignSpeakerBehavior();
   addDragToUpload();
 }

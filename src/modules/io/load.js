@@ -61,7 +61,7 @@ export function addDragToUpload() {
   });
 }
 
-function quickLoad() {
+export function quickLoad() {
   ldb.get("lastMap", blob => {
     if (blob) {
       loadMapPrompt(blob);

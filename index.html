@@ -374,7 +374,6 @@
           data-t="tipRegenerate"
           data-tip="Click to generate a new map"
           data-shortcut="F2"
-          onclick="regeneratePrompt()"
           class="options"
           style="display: none"
         >
@@ -5562,19 +5561,14 @@
       <div id="exportMapData" style="display: none" class="dialog">
         <div style="margin-bottom: 0.3em; font-weight: bold">Download image</div>
         <div>
-          <button
-            onclick="saveSVG()"
-            data-tip="Download the map as vector image (open directly in browser or Inkscape)"
-          >
+          <button id="saveSVG" data-tip="Download the map as vector image (open directly in browser or Inkscape)">
             .svg
           </button>
-          <button onclick="savePNG()" data-tip="Download visible part of the map as .png (lossless compressed)">
-            .png
-          </button>
-          <button onclick="saveJPEG()" data-tip="Download visible part of the map as .jpeg (lossy compressed) image">
+          <button id="savePNG" data-tip="Download visible part of the map as .png (lossless compressed)">.png</button>
+          <button id="saveJPEG" data-tip="Download visible part of the map as .jpeg (lossy compressed) image">
             .jpeg
           </button>
-          <button onclick="openSaveTiles()" data-tip="Split map into smaller png tiles and download as zip archive">
+          <button id="openSaveTiles" data-tip="Split map into smaller png tiles and download as zip archive">
             tiles
           </button>
           <span data-tip="Check to not allow system to automatically hide labels">
@@ -5608,10 +5602,10 @@
 
         <div style="margin: 1em 0 0.3em; font-weight: bold">Export to GeoJSON</div>
         <div>
-          <button onclick="saveGeoJSON_Cells()" data-tip="Download cells data in GeoJSON format">cells</button>
-          <button onclick="saveGeoJSON_Routes()" data-tip="Download routes data in GeoJSON format">routes</button>
-          <button onclick="saveGeoJSON_Rivers()" data-tip="Download rivers data in GeoJSON format">rivers</button>
-          <button onclick="saveGeoJSON_Markers()" data-tip="Download markers data in GeoJSON format">markers</button>
+          <button id="saveGeoJSON_Cells" data-tip="Download cells data in GeoJSON format">cells</button>
+          <button id="saveGeoJSON_Routes" data-tip="Download routes data in GeoJSON format">routes</button>
+          <button id="saveGeoJSON_Rivers" data-tip="Download rivers data in GeoJSON format">rivers</button>
+          <button id="saveGeoJSON_Markers" data-tip="Download markers data in GeoJSON format">markers</button>
         </div>
         <p>
           GeoJSON format is used in GIS tools such as QGIS. Check out
@@ -5622,12 +5616,12 @@
 
         <div style="margin: 1em 0 0.3em; font-weight: bold">Export To JSON</div>
         <div>
-          <button onclick="exportToJson('Full')" data-tip="Download full data in JSON">full</button>
-          <button onclick="exportToJson('Minimal')" data-tip="Download minimal data in JSON">minimal</button>
-          <button onclick="exportToJson('PackCells')" data-tip="Download map metadata and pack cells data in JSON">
+          <button id="exportToJson_Full" data-tip="Download full data in JSON">full</button>
+          <button id="exportToJson_Minimal" data-tip="Download minimal data in JSON">minimal</button>
+          <button id="exportToJson_PackCells" data-tip="Download map metadata and pack cells data in JSON">
             pack cells
           </button>
-          <button onclick="exportToJson('GridCells')" data-tip="Download map metadata and grid cells data in JSON">
+          <button id="exportToJson_GridCells" data-tip="Download map metadata and grid cells data in JSON">
             grid cells
           </button>
         </div>
@@ -5644,14 +5638,12 @@
       <div id="saveMapData" style="display: none" class="dialog">
         <div style="margin-top: 0.3em">
           <strong>Save map to</strong>
-          <button onclick="dowloadMap()" data-tip="Download .map file to your local disk" data-shortcut="Ctrl + S">
+          <button id="dowloadMap" data-tip="Download .map file to your local disk" data-shortcut="Ctrl + S">
             machine
           </button>
-          <button onclick="saveToDropbox()" data-tip="Save .map file to your Dropbox" data-shortcut="Ctrl + C">
-            dropbox
-          </button>
+          <button id="saveToDropbox" data-tip="Save .map file to your Dropbox" data-shortcut="Ctrl + C">dropbox</button>
           <button
-            onclick="quickSave()"
+            id="quickSave"
             data-tip="Save the project to browser storage. It can be unreliable"
             data-shortcut="F6"
           >
@@ -5668,29 +5660,22 @@
       <div id="loadMapData" style="display: none" class="dialog">
         <div>
           <strong>Load map from</strong>
-          <button onclick="mapToLoad.click()" data-tip="Load .map file from your local disk">machine</button>
-          <button onclick="loadURL()" data-tip="Load .map file from URL (server should allow CORS)">URL</button>
-          <button onclick="quickLoad()" data-tip="Load map from browser storage (if saved before)">storage</button>
+          <button id="loadFromMachine" data-tip="Load .map file from your local disk">machine</button>
+          <button id="loadURL" data-tip="Load .map file from URL (server should allow CORS)">URL</button>
+          <button id="quickLoad" data-tip="Load map from browser storage (if saved before)">storage</button>
         </div>
         <div id="loadFromDropbox">
           <p style="margin-bottom: 0.3em">
             From your Dropbox account
-            <button
-              id="dropboxConnectButton"
-              onclick="connectToDropbox()"
-              data-tip="Connect your Dropbox account to be able to load maps from it"
-            >
+            <button id="dropboxConnectButton" data-tip="Connect your Dropbox account to be able to load maps from it">
               Connect
             </button>
           </p>
 
           <select id="loadFromDropboxSelect" style="width: 22em"></select>
           <div id="loadFromDropboxButtons" style="margin-bottom: 0.6em">
-            <button onclick="loadFromDropbox()" data-tip="Load .map file from your Dropbox">Load</button>
-            <button
-              onclick="createSharableDropboxLink()"
-              data-tip="Select file and create a link to share with your friends"
-            >
+            <button id="loadFromDropbox" data-tip="Load .map file from your Dropbox">Load</button>
+            <button id="createSharableDropboxLink" data-tip="Select file and create a link to share with your friends">
               Share
             </button>
           </div>
@@ -5698,7 +5683,7 @@
           <div style="margin-top: 0.3em">
             <div id="sharableLinkContainer" style="display: none">
               <a id="sharableLink" target="_blank"></a>
-              <i data-tip="Copy link to the clipboard" onclick="copyLinkToClickboard()" class="icon-clone pointer"></i>
+              <i id="copyLinkToClickboard" data-tip="Copy link to the clipboard" class="icon-clone pointer"></i>
             </div>
           </div>
         </div>
@@ -7691,7 +7676,6 @@
     <script type="module" src="/src/modules/ui/tools.js"></script>
     <script type="module" src="/src/modules/ui/threeD.js"></script>
     <script type="module" src="/src/modules/ui/submap.js"></script>
-    <script type="module" src="/src/modules/ui/hotkeys.js"></script>
     <script type="module" src="/src/modules/coa-renderer.js"></script>
     <script type="module" src="/src/modules/io/save.js"></script>
     <script type="module" src="/src/modules/io/load.js"></script>

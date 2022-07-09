@@ -126,7 +126,7 @@ function getMapData() {
 }
 
 // Download .map file
-function dowloadMap() {
+export function dowloadMap() {
   if (customization)
     return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
   closeDialogs("#alert");
@@ -142,7 +142,7 @@ function dowloadMap() {
   window.URL.revokeObjectURL(URL);
 }
 
-async function saveToDropbox() {
+export async function saveToDropbox() {
   if (customization)
     return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
   closeDialogs("#alert");
@@ -157,7 +157,7 @@ async function saveToDropbox() {
   }
 }
 
-function quickSave() {
+export function quickSave() {
   if (customization)
     return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
 
@@ -189,7 +189,7 @@ const saveReminder = function () {
 };
 saveReminder();
 
-function toggleSaveReminder() {
+export function toggleSaveReminder() {
   if (saveReminder.status) {
     tip("Save reminder is turned off. Press CTRL+Q again to re-initiate", true, "warn", 2000);
     clearInterval(saveReminder.reminder);

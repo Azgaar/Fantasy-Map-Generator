@@ -65,5 +65,9 @@ window.Zoom = (function () {
     zoom.scaleTo(element, scale);
   }
 
-  return {setZoomBehavior, invoke, force, to, reset, scaleExtent, translateExtent, scaleTo};
+  function translateBy(element, x, y) {
+    zoom.translateBy(element, x, y);
+  }
+
+  return {setZoomBehavior, invoke, force, to, reset, scaleExtent, translateExtent, scaleTo, translateBy};
 })();

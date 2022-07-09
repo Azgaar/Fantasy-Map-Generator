@@ -1,9 +1,12 @@
+import {Numeric} from "d3";
+
 interface IPack {
   vertices: {
     p: TPoints;
     v: number[][];
     c: number[][];
   };
+  features: IFeature[];
   cells: {
     i: IntArray;
     p: TPoints;
@@ -21,6 +24,10 @@ interface IPack {
   provinces: IProvince[];
   burgs: IBurg[];
   religions: IReligion[];
+}
+
+interface IFeature {
+  i: Numeric;
 }
 
 interface IState {
