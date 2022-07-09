@@ -1,24 +1,37 @@
 import * as d3 from "d3";
 
-import {findGridCell, getGridPolygon} from "utils/graphUtils";
-import {tip, clearMainTip} from "scripts/tooltips";
-import {rn} from "utils/numberUtils";
-import {ra} from "utils/probabilityUtils";
-import {parseTransform} from "utils/stringUtils";
 import {closeDialogs} from "dialogs/utils";
+import {layerIsOn, toggleLayer} from "layers";
+import {clearMainTip, tip} from "scripts/tooltips";
+import {findGridCell, getGridPolygon} from "utils/graphUtils";
+import {getInputNumber} from "utils/nodeUtils";
+import {rn} from "utils/numberUtils";
+import {rand} from "utils/probabilityUtils";
+import {byId} from "utils/shorthands";
+import {parseTransform} from "utils/stringUtils";
+// @ts-expect-error js module
+import {editStyle} from "modules/style";
+// @ts-expect-error js module
+import {restoreDefaultEvents} from "scripts/events";
+// @ts-expect-error js module
+import {unselect} from "modules/ui/editors";
 
 let isLoaded = false;
 
-export function editIce() {
-  if (customization) return;
+export function open() {
   closeDialogs(".stable");
-  if (!layerIsOn("toggleIce")) toggleIce();
+  if (!layerIsOn("toggleIce")) toggleLayer("toggleIce");
 
   elSelected = d3.select(d3.event.target);
+
   const type = elSelected.attr("type") ? "Glacier" : "Iceberg";
-  document.getElementById("iceRandomize").style.display = type === "Glacier" ? "none" : "inline-block";
-  document.getElementById("iceSize").style.display = type === "Glacier" ? "none" : "inline-block";
-  if (type === "Iceberg") document.getElementById("iceSize").value = +elSelected.attr("size");
+  if (byId("iceRandomize")) byId("iceRandomize")!.style.display = type === "Glacier" ? "none" : "inline-block";
+
+  const $iceSize = byId("iceSize") as HTMLInputElement;
+  if ($iceSize) {
+    $iceSize.style.display = type === "Glacier" ? "none" : "inline-block";
+    if (type === "Iceberg") $iceSize.value = elSelected.attr("size");
+  }
   ice.selectAll("*").classed("draggable", true).call(d3.drag().on("drag", dragElement));
 
   $("#iceEditor").dialog({
@@ -32,29 +45,31 @@ export function editIce() {
   isLoaded = true;
 
   // add listeners
-  document.getElementById("iceEditStyle").addEventListener("click", () => editStyle("ice"));
-  document.getElementById("iceRandomize").addEventListener("click", randomizeShape);
-  document.getElementById("iceSize").addEventListener("input", changeSize);
-  document.getElementById("iceNew").addEventListener("click", toggleAdd);
-  document.getElementById("iceRemove").addEventListener("click", removeIce);
+  byId("iceEditStyle")?.on("click", () => editStyle("ice"));
+  byId("iceRandomize")?.on("click", randomizeShape);
+  byId("iceSize")?.on("input", changeSize);
+  byId("iceNew")?.on("click", toggleAdd);
+  byId("iceRemove")?.on("click", removeIce);
 
   function randomizeShape() {
     const c = grid.points[+elSelected.attr("cell")];
     const s = +elSelected.attr("size");
-    const i = ra(grid.cells.i),
-      cn = grid.points[i];
+    const i = rand(0, grid.cells.i.length);
+
+    const cn = grid.points[i];
     const poly = getGridPolygon(i).map(p => [p[0] - cn[0], p[1] - cn[1]]);
     const points = poly.map(p => [rn(c[0] + p[0] * s, 2), rn(c[1] + p[1] * s, 2)]);
     elSelected.attr("points", points);
   }
 
-  function changeSize() {
+  function changeSize(this: HTMLInputElement) {
     const c = grid.points[+elSelected.attr("cell")];
     const s = +elSelected.attr("size");
     const flat = elSelected
       .attr("points")
       .split(",")
-      .map(el => +el);
+      .map((pointString: string) => +pointString);
+
     const pairs = [];
     while (flat.length) pairs.push(flat.splice(0, 2));
     const poly = pairs.map(p => [(p[0] - c[0]) / s, (p[1] - c[1]) / s]);
@@ -64,21 +79,21 @@ export function editIce() {
   }
 
   function toggleAdd() {
-    document.getElementById("iceNew").classList.toggle("pressed");
-    if (document.getElementById("iceNew").classList.contains("pressed")) {
+    byId("iceNew")?.classList.toggle("pressed");
+    if (byId("iceNew")?.classList.contains("pressed")) {
       viewbox.style("cursor", "crosshair").on("click", addIcebergOnClick);
       tip("Click on map to create an iceberg. Hold Shift to add multiple", true);
     } else {
       clearMainTip();
-      viewbox.on("click", clicked).style("cursor", "default");
+      restoreDefaultEvents();
     }
   }
 
-  function addIcebergOnClick() {
+  function addIcebergOnClick(this: d3.ContainerElement) {
     const [x, y] = d3.mouse(this);
     const i = findGridCell(x, y, grid);
     const c = grid.points[i];
-    const s = +document.getElementById("iceSize").value;
+    const s = getInputNumber("iceSize");
 
     const points = getGridPolygon(i).map(p => [(p[0] + (c[0] - p[0]) / s) | 0, (p[1] + (c[1] - p[1]) / s) | 0]);
     const iceberg = ice.append("polygon").attr("points", points).attr("cell", i).attr("size", s);
@@ -88,7 +103,7 @@ export function editIce() {
 
   function removeIce() {
     const type = elSelected.attr("type") ? "Glacier" : "Iceberg";
-    alertMessage.innerHTML = /* html */ `Are you sure you want to remove the ${type}?`;
+    byId("alertMessage")!.innerHTML = `Are you sure you want to remove the ${type}?`;
     $("#alert").dialog({
       resizable: false,
       title: "Remove " + type,
@@ -105,14 +120,13 @@ export function editIce() {
     });
   }
 
-  function dragElement() {
+  function dragElement(this: Element) {
     const tr = parseTransform(this.getAttribute("transform"));
-    const dx = +tr[0] - d3.event.x,
-      dy = +tr[1] - d3.event.y;
+    const dx = +tr[0] - d3.event.x;
+    const dy = +tr[1] - d3.event.y;
 
-    d3.event.on("drag", function () {
-      const x = d3.event.x,
-        y = d3.event.y;
+    d3.event.on("drag", function (this: Element) {
+      const {x, y} = d3.event;
       this.setAttribute("transform", `translate(${dx + x},${dy + y})`);
     });
   }
@@ -120,7 +134,7 @@ export function editIce() {
   function closeEditor() {
     ice.selectAll("*").classed("draggable", false).call(d3.drag().on("drag", null));
     clearMainTip();
-    iceNew.classList.remove("pressed");
+    byId("iceNew")?.classList.remove("pressed");
     unselect();
   }
 }

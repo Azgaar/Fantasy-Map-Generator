@@ -210,7 +210,7 @@ export function editRegiment(selector) {
       tip("Click on map to create new regiment or fleet", true);
     } else {
       clearMainTip();
-      viewbox.on("click", clicked).style("cursor", "default");
+      restoreDefaultEvents();
     }
   }
 
@@ -240,8 +240,8 @@ export function editRegiment(selector) {
       armies.selectAll(":scope > g").classed("draggable", false);
     } else {
       clearMainTip();
+      restoreDefaultEvents();
       armies.selectAll(":scope > g").classed("draggable", true);
-      viewbox.on("click", clicked).style("cursor", "default");
     }
   }
 
@@ -313,7 +313,7 @@ export function editRegiment(selector) {
     } else {
       clearMainTip();
       armies.selectAll(":scope > g").classed("draggable", true);
-      viewbox.on("click", clicked).style("cursor", "default");
+      restoreDefaultEvents();
     }
   }
 

@@ -12,7 +12,11 @@ import {showMainTip, tip} from "./tooltips";
 
 export function restoreDefaultEvents() {
   Zoom.setZoomBehavior();
-  viewbox.style("cursor", "default").on(".drag", null).on("click", clicked).on("touchmove mousemove", onMouseMove);
+  viewbox
+    .style("cursor", "default")
+    .on(".drag", null)
+    .on("click", handleMapClick)
+    .on("touchmove mousemove", onMouseMove);
   scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => openDialog("unitsEditor"));
   legend
     .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
@@ -21,7 +25,7 @@ export function restoreDefaultEvents() {
 }
 
 // on viewbox click event - run function based on target
-function clicked() {
+function handleMapClick() {
   const el = d3.event.target;
   if (!el || !el.parentElement || !el.parentElement.parentElement) return;
   const parent = el.parentElement;
@@ -35,7 +39,7 @@ function clicked() {
   else if (grand.id === "routes") editRoute();
   else if (el.tagName === "tspan" && grand.parentNode.parentNode.id === "labels") editLabel();
   else if (grand.id === "burgLabels" || grand.id === "burgIcons") openDialog("burgEditor", null, {id: +el.dataset.id});
-  else if (parent.id === "ice") editIce();
+  else if (parent.id === "ice") openDialog("iceEditor");
   else if (parent.id === "terrain") editReliefIcon();
   else if (grand.id === "markers" || great.id === "markers") editMarker();
   else if (grand.id === "coastline") openDialog("coastlineEditor", null, {node: d3.event.target});

@@ -40,7 +40,7 @@ export function splitInTwo(str: string) {
 }
 
 // transform string to array [translateX,translateY,rotateDeg,rotateX,rotateY,scale]
-export function parseTransform(str: string) {
+export function parseTransform(str: string | null) {
   if (!str) return [0, 0, 0, 0, 0, 1];
 
   const a = str

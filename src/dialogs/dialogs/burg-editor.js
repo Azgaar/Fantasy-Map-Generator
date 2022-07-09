@@ -11,6 +11,7 @@ import {rn} from "utils/numberUtils";
 import {rand} from "utils/probabilityUtils";
 import {parseTransform} from "utils/stringUtils";
 import {convertTemperature, getHeight} from "utils/unitUtils";
+import {restoreDefaultEvents} from "scripts/events";
 
 let isLoaded = false;
 
@@ -483,7 +484,8 @@ export function open({id} = {}) {
       }
     } else {
       clearMainTip();
-      viewbox.on("click", clicked).style("cursor", "default");
+      restoreDefaultEvents();
+
       if (layerIsOn("toggleCells") && toggler.dataset.forced) {
         toggleCells();
         toggler.dataset.forced = false;

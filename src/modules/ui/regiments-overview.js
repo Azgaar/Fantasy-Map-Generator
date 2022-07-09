@@ -7,6 +7,7 @@ import {rn} from "utils/numberUtils";
 import {capitalize} from "utils/stringUtils";
 import {si} from "utils/unitUtils";
 import {closeDialogs} from "dialogs/utils";
+import {restoreDefaultEvents} from "scripts/events";
 
 let isLoaded = false;
 
@@ -170,7 +171,7 @@ export function overviewRegiments(state) {
       if (regimentAdd.offsetParent) regimentAdd.classList.add("pressed");
     } else {
       clearMainTip();
-      viewbox.on("click", clicked).style("cursor", "default");
+      restoreDefaultEvents();
       addLines();
       if (regimentAdd.offsetParent) regimentAdd.classList.remove("pressed");
     }

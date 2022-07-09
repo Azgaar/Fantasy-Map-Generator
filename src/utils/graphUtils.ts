@@ -156,7 +156,7 @@ export function findCell(x: number, y: number, radius = Infinity): number | unde
 }
 
 // get polygon points for initial cells knowing cell id
-export function getGridPolygon(i: number) {
+export function getGridPolygon(i: number): TPoints {
   return grid.cells.v[i].map(v => grid.vertices.p[v]);
 }
 
