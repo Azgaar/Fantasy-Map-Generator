@@ -1,12 +1,12 @@
 import * as d3 from "d3";
 
 import {restoreDefaultEvents} from "scripts/events";
-import {findCell} from "utils/graphUtils";
-import {byId} from "utils/shorthands";
 import {tip} from "scripts/tooltips";
-import {rn, minmax, normalize} from "utils/numberUtils";
-import {parseTransform} from "utils/stringUtils";
+import {findCell} from "utils/graphUtils";
+import {minmax, normalize, rn} from "utils/numberUtils";
 import {each} from "utils/probabilityUtils";
+import {byId} from "utils/shorthands";
+import {parseTransform} from "utils/stringUtils";
 
 // clear elSelected variable
 export function unselect() {
@@ -650,7 +650,7 @@ function fog(id, path) {
 }
 
 // remove fogging
-function unfog(id) {
+export function unfog(id) {
   let el = defs.select("#fog #" + id);
   if (!id || !el.size()) el = defs.select("#fog").selectAll("path");
 

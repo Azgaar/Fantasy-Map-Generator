@@ -17,25 +17,24 @@ const c12: Hex[] = [
 
 type ColorScheme = d3.ScaleSequential<string>;
 const colorSchemeMap: Dict<ColorScheme> = {
-  default: d3.scaleSequential(d3.interpolateRainbow),
   bright: d3.scaleSequential(d3.interpolateSpectral),
   light: d3.scaleSequential(d3.interpolateRdYlGn),
   green: d3.scaleSequential(d3.interpolateGreens),
+  rainbow: d3.scaleSequential(d3.interpolateRainbow),
   monochrome: d3.scaleSequential(d3.interpolateGreys)
 };
 
 export function getColors(number: number) {
-  const scheme = colorSchemeMap.default;
-  const colors = d3.shuffle(
-    d3
-      .range(number)
-      .map((index: number) => (index < 12 ? c12[index] : d3.color(scheme((index - 12) / (number - 12))!)!.formatHex()))
-  );
-  return colors;
+  const scheme = colorSchemeMap.bright;
+  const colors = d3
+    .range(number)
+    .map(index => (index < 12 ? c12[index] : d3.color(scheme((index - 12) / (number - 12))!)!.formatHex()));
+  return d3.shuffle(colors);
 }
 
 export function getRandomColor(): Hex {
-  const rgb = colorSchemeMap.default(Math.random())!;
+  const scheme = colorSchemeMap.bright;
+  const rgb = scheme(Math.random())!;
   return d3.color(rgb)?.formatHex() as Hex;
 }
 
@@ -50,7 +49,7 @@ export function getMixedColor(hexColor: string, mixation = 0.2, bright = 0.3) {
 }
 
 export function getColorScheme(schemeName: string) {
-  return colorSchemeMap[schemeName] || colorSchemeMap.default;
+  return colorSchemeMap[schemeName] || colorSchemeMap.bright;
 }
 
 export function getHeightColor(height: number, scheme = getColorScheme("default")) {

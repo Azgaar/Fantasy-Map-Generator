@@ -11,6 +11,7 @@ import {rn} from "utils/numberUtils";
 import {byId} from "utils/shorthands";
 import {capitalize} from "utils/stringUtils";
 import {getArea, getAreaUnit, si} from "utils/unitUtils";
+import {applySortingByHeader} from "modules/ui/editors";
 
 const $body = insertEditorHtml();
 addListeners();

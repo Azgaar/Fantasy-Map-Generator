@@ -1,10 +1,11 @@
 import * as d3 from "d3";
 
+import {turnLayerButtonOff, turnLayerButtonOn} from "layers";
+import {unfog} from "modules/ui/editors";
 import {findCell} from "utils/graphUtils";
 import {rn} from "utils/numberUtils";
-import {rand, P, rw} from "utils/probabilityUtils";
+import {P, rand, rw} from "utils/probabilityUtils";
 import {parseTransform} from "utils/stringUtils";
-import {turnLayerButtonOn, turnLayerButtonOff} from "layers";
 
 // update old .map version to the current one
 export function resolveVersionConflicts(version) {

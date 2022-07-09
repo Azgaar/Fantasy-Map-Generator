@@ -9,7 +9,7 @@ import {si, siToInteger} from "utils/unitUtils";
 import {getHeight} from "utils/unitUtils";
 import {closeDialogs} from "dialogs/utils";
 import {openDialog} from "dialogs";
-import {layerIsOn} from "layers";
+import {layerIsOn, toggleLayer} from "layers";
 import {applySorting} from "modules/ui/editors";
 
 let isLoaded = false;
@@ -17,8 +17,8 @@ let isLoaded = false;
 export function open() {
   if (customization) return;
   closeDialogs("#burgsOverview, .stable");
-  if (!layerIsOn("toggleIcons")) toggleIcons();
-  if (!layerIsOn("toggleLabels")) toggleLabels();
+  if (!layerIsOn("toggleIcons")) toggleLayer("toggleIcons");
+  if (!layerIsOn("toggleLabels")) toggleLayer("toggleLabels");
 
   const body = document.getElementById("burgsBody");
   updateFilter();

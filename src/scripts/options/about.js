@@ -32,7 +32,7 @@ export function showAboutDialog() {
       <li>${link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "Changelog")}</li>
       <li>${link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys", "Hotkeys")}</li>
       <li>${link("https://trello.com/b/7x832DG4/fantasy-map-generator", "Devboard")}</li>
-      <li><a href="mailto:azgaar.fmg@yandex.by" target="_blank">Contact Azgaar</a></li>
+      <li><a href="mailto:azgaar.fmg@yandex.com" target="_blank">Contact Azgaar</a></li>
     </ul>`;
 
   $("#alert").dialog({

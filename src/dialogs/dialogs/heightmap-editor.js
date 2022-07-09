@@ -2,6 +2,23 @@ import * as d3 from "d3";
 import RgbQuant from "rgbquant";
 
 import {heightmapTemplates} from "config/heightmap-templates";
+import {ERROR, INFO, TIME} from "config/logging";
+import {closeDialogs} from "dialogs/utils";
+import {layerIsOn, turnLayerButtonOff, turnLayerButtonOn, updatePresetInput, renderLayer} from "layers";
+import {drawCoastline} from "modules/coastline";
+import {markFeatures, markupGridOcean} from "modules/markup";
+import {generatePrecipitation} from "modules/precipitation";
+import {calculateTemperatures} from "modules/temperature";
+import {moveCircle, removeCircle} from "modules/ui/editors";
+import {changeViewMode} from "modules/ui/options";
+import {addZones} from "modules/zones";
+import {aleaPRNG} from "scripts/aleaPRNG";
+import {restoreDefaultEvents} from "scripts/events";
+import {undraw} from "scripts/generation";
+import {prompt} from "scripts/prompt";
+import {rankCells} from "scripts/rankCells";
+import {reGraph} from "scripts/reGraph";
+import {clearMainTip, showMainTip, tip} from "scripts/tooltips";
 import {createTypedArray, last} from "utils/arrayUtils";
 import {getColorScheme, getHeightColor} from "utils/colorUtils";
 import {throttle} from "utils/functionUtils";
@@ -10,17 +27,11 @@ import {link} from "utils/linkUtils";
 import {lim, minmax, rn} from "utils/numberUtils";
 import {byId} from "utils/shorthands";
 import {getHeight} from "utils/unitUtils";
-import {turnLayerButtonOff, turnLayerButtonOn, updatePresetInput} from "layers";
-import {restoreDefaultEvents} from "scripts/events";
-import {prompt} from "scripts/prompt";
-import {clearMainTip, showMainTip, tip} from "scripts/tooltips";
-import {aleaPRNG} from "scripts/aleaPRNG";
-import {undraw} from "scripts/generation";
-import {closeDialogs} from "dialogs/utils";
 
 let isLoaded = false;
+let layers;
 
-export function editHeightmap(options) {
+export function open(options) {
   const {mode, tool} = options || {};
   restartHistory();
   viewbox.insert("g", "#terrs").attr("id", "heights");
@@ -70,8 +81,8 @@ export function editHeightmap(options) {
   }
 
   function enterHeightmapEditMode(mode) {
-    editHeightmap.layers = Array.from(mapLayers.querySelectorAll("li:not(.buttonoff)")).map(node => node.id); // store layers preset
-    editHeightmap.layers.forEach(l => byId(l).click()); // turn off all layers
+    layers = Array.from(mapLayers.querySelectorAll("li:not(.buttonoff)")).map(node => node.id); // store layers preset
+    layers.forEach(l => byId(l).click()); // turn off all layers
 
     customization = 1;
     closeDialogs();
@@ -155,12 +166,11 @@ export function editHeightmap(options) {
 
   // Exit customization mode
   function finalizeHeightmap() {
-    if (viewbox.select("#heights").selectAll("*").size() < 200)
-      return tip(
-        "Insufficient land area! There should be at least 200 land cells to finalize the heightmap",
-        null,
-        "error"
-      );
+    if (viewbox.select("#heights").selectAll("*").size() < 200) {
+      const error = "Insufficient land area! There should be at least 200 land cells to finalize the heightmap";
+      return tip(error, null, "error");
+    }
+
     if (byId("imageConverter").offsetParent) return tip("Please exit the Image Conversion mode first", null, "error");
 
     delete window.edits; // remove global variable
@@ -175,7 +185,7 @@ export function editHeightmap(options) {
     restoreDefaultEvents();
     clearMainTip();
     closeDialogs();
-    resetZoom();
+    Zoom.reset();
 
     if (byId("preview")) byId("preview").remove();
     if (byId("canvas3d")) enterStandardView();
@@ -186,16 +196,15 @@ export function editHeightmap(options) {
     else if (mode === "risk") restoreRiskedData();
 
     // restore initial layers
-    //viewbox.select("#heights").remove();
+    // viewbox.select("#heights").remove();
     byId("heights").remove();
     turnLayerButtonOff("toggleHeight");
     document
       .getElementById("mapLayers")
       .querySelectorAll("li")
       .forEach(function (e) {
-        if (editHeightmap.layers.includes(e.id) && !layerIsOn(e.id)) e.click();
-        // turn on
-        else if (!editHeightmap.layers.includes(e.id) && layerIsOn(e.id)) e.click(); // turn off
+        if (layers.includes(e.id) && !layerIsOn(e.id)) e.click(); // turn on
+        else if (!layers.includes(e.id) && layerIsOn(e.id)) e.click(); // turn off
       });
     updatePresetInput();
   }
@@ -227,7 +236,7 @@ export function editHeightmap(options) {
       }
     }
 
-    drawRivers();
+    renderLayer("rivers");
     Lakes.defineGroup();
     Biomes.define();
     rankCells();
@@ -239,8 +248,8 @@ export function editHeightmap(options) {
     BurgsAndStates.generateProvinces();
     BurgsAndStates.defineBurgFeatures();
 
-    drawStates();
-    drawBorders();
+    renderLayer("states");
+    renderLayer("borders");
     BurgsAndStates.drawStateLabels();
 
     Rivers.specify();
@@ -429,8 +438,8 @@ export function editHeightmap(options) {
     }
 
     BurgsAndStates.drawStateLabels();
-    drawStates();
-    drawBorders();
+    renderLayer("states");
+    renderLayer("borders");
 
     if (erosionAllowed) {
       Rivers.specify();
@@ -1148,7 +1157,7 @@ export function editHeightmap(options) {
         const ctx = byId("canvas").getContext("2d");
         ctx.drawImage(img, 0, 0, graphWidth, graphHeight);
         heightsFromImage(+convertColors.value);
-        resetZoom();
+        Zoom.reset();
       };
 
       reader.onloadend = () => (img.src = reader.result);

@@ -1,6 +1,7 @@
 import * as d3 from "d3";
 
 import {getColorScheme, getHeightColor} from "utils/colorUtils";
+import {round} from "utils/stringUtils";
 
 export function drawHeightmap() {
   terrs.selectAll("*").remove();

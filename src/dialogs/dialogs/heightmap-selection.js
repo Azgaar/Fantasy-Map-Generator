@@ -347,6 +347,6 @@ function confirmHeightmapEdit() {
     title: this.dataset.tip,
     message: "Opening the tool will erase the current map. Are you sure you want to proceed?",
     confirm: "Continue",
-    onConfirm: () => editHeightmap({mode: "erase", tool})
+    onConfirm: () => openDialog("heightmapEditor", null, {mode: "erase", tool})
   });
 }

@@ -2,7 +2,8 @@ import * as d3 from "d3";
 
 import {openDialog} from "dialogs";
 import {closeDialogs} from "dialogs/utils";
-import {turnLayerButtonOn} from "layers";
+import {renderLayer, toggleLayer, turnLayerButtonOn} from "layers";
+import {unfog} from "modules/ui/editors";
 import {aleaPRNG} from "scripts/aleaPRNG";
 import {restoreDefaultEvents} from "scripts/events";
 import {prompt} from "scripts/prompt";
@@ -20,7 +21,7 @@ toolsContent.addEventListener("click", function (event) {
   const button = event.target.id;
 
   // click on open Editor buttons
-  if (button === "editHeightmapButton") editHeightmap();
+  if (button === "editHeightmapButton") openDialog("heightmapEditor");
   else if (button === "editBiomesButton") editBiomes();
   else if (button === "editStatesButton") openDialog("statesEditor");
   else if (button === "editProvincesButton") editProvinces();
@@ -133,8 +134,8 @@ function regenerateRivers() {
   Rivers.generate();
   Lakes.defineGroup();
   Rivers.specify();
-  if (!layerIsOn("toggleRivers")) toggleRivers();
-  else drawRivers();
+  if (!layerIsOn("toggleRivers")) toggleLayer("toggleRivers");
+  else renderLayer("rivers");
 }
 
 function recalculatePopulation() {

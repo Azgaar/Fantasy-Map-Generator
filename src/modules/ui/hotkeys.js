@@ -40,7 +40,7 @@ function handleKeyup(event) {
   else if (ctrl && code === "KeyC") saveToDropbox();
   else if (ctrl && code === "KeyZ" && undo?.offsetParent) undo.click();
   else if (ctrl && code === "KeyY" && redo?.offsetParent) redo.click();
-  else if (shift && code === "KeyH") editHeightmap();
+  else if (shift && code === "KeyH") openDialog("heightmapEditor");
   else if (shift && code === "KeyB") editBiomes();
   else if (shift && code === "KeyS") openDialog("statesEditor");
   else if (shift && code === "KeyP") editProvinces();
@@ -100,7 +100,7 @@ function handleKeyup(event) {
   else if (code === "ArrowUp") zoom.translateBy(svg, 0, 10);
   else if (code === "ArrowDown") zoom.translateBy(svg, 0, -10);
   else if (key === "+" || key === "-") pressNumpadSign(key);
-  else if (key === "0") resetZoom(1000);
+  else if (key === "0") Zoom.reset(1000);
   else if (key === "1") zoom.scaleTo(svg, 1);
   else if (key === "2") zoom.scaleTo(svg, 2);
   else if (key === "3") zoom.scaleTo(svg, 3);

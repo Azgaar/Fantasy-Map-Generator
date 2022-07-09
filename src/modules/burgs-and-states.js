@@ -3,7 +3,7 @@ import FlatQueue from "flatqueue";
 import Delaunator from "delaunator";
 
 import {TIME} from "config/logging";
-import {layerIsOn} from "layers";
+import {layerIsOn, toggleLayer} from "layers";
 import {Voronoi} from "/src/modules/voronoi";
 import {getColors, getMixedColor, getRandomColor} from "utils/colorUtils";
 import {findCell} from "utils/graphUtils";
@@ -613,7 +613,7 @@ window.BurgsAndStates = (function () {
       const g = labels.select("#states");
       const t = defs.select("#textPaths");
       const displayed = layerIsOn("toggleLabels");
-      if (!displayed) toggleLabels();
+      if (!displayed) toggleLayer("toggleLabels");
 
       if (!list) {
         // remove all labels and textpaths
@@ -697,7 +697,7 @@ window.BurgsAndStates = (function () {
       });
 
       example.remove();
-      if (!displayed) toggleLabels();
+      if (!displayed) toggleLayer("toggleLabels");
     })();
 
     function getLines(mode, name, fullName, pathLength) {

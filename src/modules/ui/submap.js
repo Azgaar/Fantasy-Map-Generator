@@ -57,7 +57,7 @@ window.UISubmap = (function () {
   });
 
   async function openResampleMenu() {
-    resetZoom(0);
+    Zoom.reset(0);
 
     byId("submapAngleInput").value = 0;
     byId("submapAngleOutput").value = "0";
@@ -283,7 +283,7 @@ window.UISubmap = (function () {
 
   async function startResample(options) {
     // Do model changes with Submap.resample then do view changes if needed
-    resetZoom(0);
+    Zoom.reset(0);
     let oldstate = {
       grid: structuredClone(grid),
       pack: structuredClone(pack),

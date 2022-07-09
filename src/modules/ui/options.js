@@ -613,7 +613,7 @@ function randomizeCultureSet() {
 }
 
 function setRendering(value) {
-  fmg.viewbox?.attr("shape-rendering", value);
+  viewbox?.attr("shape-rendering", value);
 }
 
 // generate current year and era name
@@ -901,7 +901,7 @@ function updateTilesOptions() {
 
 // View mode
 viewMode.addEventListener("click", changeViewMode);
-function changeViewMode(event) {
+export function changeViewMode(event) {
   const button = event.target;
   if (button.tagName !== "BUTTON") return;
   const pressed = button.classList.contains("pressed");

@@ -1,9 +1,11 @@
 import * as d3 from "d3";
 
+import {INFO} from "config/logging";
 import {findCell} from "utils/graphUtils";
 import {getMiddlePoint} from "utils/lineUtils";
 import {rn} from "utils/numberUtils";
 import {aleaPRNG} from "scripts/aleaPRNG";
+import {renderLayer} from "layers";
 
 window.Submap = (function () {
   const isWater = (pack, id) => pack.cells.h[id] < 20;
@@ -210,7 +212,7 @@ window.Submap = (function () {
 
     stage("Regenerating river network.");
     Rivers.generate();
-    drawRivers();
+    renderLayer("rivers");
     Lakes.defineGroup();
 
     // biome calculation based on (resampled) grid.cells.temp and prec

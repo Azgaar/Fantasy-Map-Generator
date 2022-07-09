@@ -10,6 +10,7 @@ import {abbreviate} from "utils/languageUtils";
 import {rn} from "utils/numberUtils";
 import {byId} from "utils/shorthands";
 import {getArea, getAreaUnit, si} from "utils/unitUtils";
+import {applySortingByHeader} from "modules/ui/editors";
 
 const $body = insertEditorHtml();
 addListeners();

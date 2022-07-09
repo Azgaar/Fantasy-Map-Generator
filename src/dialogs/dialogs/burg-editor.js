@@ -1,8 +1,9 @@
 import * as d3 from "d3";
 
-import {closeDialogs} from "dialogs/utils";
 import {openDialog} from "dialogs";
-import {layerIsOn} from "layers";
+import {closeDialogs} from "dialogs/utils";
+import {layerIsOn, toggleLayer} from "layers";
+import {getBurgSeed, getMFCGlink, unselect} from "modules/ui/editors";
 import {prompt} from "scripts/prompt";
 import {clearMainTip, tip} from "scripts/tooltips";
 import {findCell} from "utils/graphUtils";
@@ -10,15 +11,14 @@ import {rn} from "utils/numberUtils";
 import {rand} from "utils/probabilityUtils";
 import {parseTransform} from "utils/stringUtils";
 import {convertTemperature, getHeight} from "utils/unitUtils";
-import {getMFCGlink, getBurgSeed, unselect} from "modules/ui/editors";
 
 let isLoaded = false;
 
 export function open({id} = {}) {
   if (customization) return;
   closeDialogs(".stable");
-  if (!layerIsOn("toggleIcons")) toggleIcons();
-  if (!layerIsOn("toggleLabels")) toggleLabels();
+  if (!layerIsOn("toggleIcons")) toggleLayer("toggleIcons");
+  if (!layerIsOn("toggleLabels")) toggleLayer("toggleLabels");
 
   const burg = id || d3.event.target.dataset.id;
   elSelected = burgLabels.select("[data-id='" + burg + "']");

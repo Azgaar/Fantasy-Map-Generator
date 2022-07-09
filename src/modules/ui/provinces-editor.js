@@ -1,8 +1,9 @@
 import * as d3 from "d3";
 
-import {closeDialogs} from "dialogs/utils";
 import {openDialog} from "dialogs";
+import {closeDialogs} from "dialogs/utils";
 import {turnLayerButtonOff} from "layers";
+import {unfog} from "modules/ui/editors";
 import {restoreDefaultEvents} from "scripts/events";
 import {clearMainTip, showMainTip, tip} from "scripts/tooltips";
 import {unique} from "utils/arrayUtils";

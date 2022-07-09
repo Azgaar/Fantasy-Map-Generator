@@ -1,6 +1,7 @@
 import * as d3 from "d3";
 
 import {ERROR, INFO, WARN} from "config/logging";
+import {closeDialogs} from "dialogs/utils";
 import {initLayers, renderLayer, restoreLayers} from "layers";
 import {drawCoastline} from "modules/coastline";
 import {calculateMapCoordinates, defineMapSize} from "modules/coordinates";
@@ -8,6 +9,7 @@ import {markFeatures, markupGridOcean} from "modules/markup";
 import {drawScaleBar, Rulers} from "modules/measurers";
 import {generatePrecipitation} from "modules/precipitation";
 import {calculateTemperatures} from "modules/temperature";
+import {unfog} from "modules/ui/editors";
 import {applyMapSize, randomizeOptions} from "modules/ui/options";
 import {applyStyleOnLoad} from "modules/ui/stylePresets";
 import {addZones} from "modules/zones";
@@ -20,10 +22,9 @@ import {generateGrid, shouldRegenerateGrid} from "utils/graphUtils";
 import {rn} from "utils/numberUtils";
 import {generateSeed} from "utils/probabilityUtils";
 import {byId} from "utils/shorthands";
-import {showStatistics} from "./statistics";
-import {reGraph} from "./reGraph";
 import {rankCells} from "./rankCells";
-import {closeDialogs} from "dialogs/utils";
+import {reGraph} from "./reGraph";
+import {showStatistics} from "./statistics";
 
 export async function generate(options) {
   try {

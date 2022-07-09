@@ -3,6 +3,7 @@ import * as d3 from "d3";
 import {tip} from "scripts/tooltips";
 import {rn} from "utils/numberUtils";
 import {round, parseTransform} from "utils/stringUtils";
+import {renderLayer} from "layers";
 
 let isLoaded = false;
 
@@ -68,11 +69,11 @@ export function editWorld() {
     pack.cells.h = new Float32Array(heights);
     Biomes.define();
 
-    if (layerIsOn("toggleTemp")) drawTemp();
-    if (layerIsOn("togglePrec")) drawPrec();
-    if (layerIsOn("toggleBiomes")) drawBiomes();
+    if (layerIsOn("toggleTemp")) renderLayer("temperature");
+    if (layerIsOn("togglePrec")) renderLayer("precipitation");
+    if (layerIsOn("toggleBiomes")) renderLayer("biomes");
     if (layerIsOn("toggleCoordinates")) drawCoordinates();
-    if (layerIsOn("toggleRivers")) drawRivers();
+    if (layerIsOn("toggleRivers")) renderLayer("rivers");
     if (document.getElementById("canvas3d")) setTimeout(ThreeD.update(), 500);
   }
 

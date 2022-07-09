@@ -1,5 +1,6 @@
 import * as d3 from "d3";
 
+import {INFO} from "config/logging";
 import {tip} from "scripts/tooltips";
 import {rn} from "utils/numberUtils";
 import {parseTransform} from "utils/stringUtils";
