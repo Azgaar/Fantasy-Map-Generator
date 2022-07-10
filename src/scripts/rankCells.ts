@@ -7,6 +7,7 @@ import {normalize} from "utils/numberUtils";
 export function rankCells() {
   TIME && console.time("rankCells");
   const {cells, features} = pack;
+
   cells.s = new Int16Array(cells.i.length); // cell suitability array
   cells.pop = new Float32Array(cells.i.length); // cell population array
 

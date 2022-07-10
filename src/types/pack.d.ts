@@ -4,24 +4,26 @@ interface IPack {
     v: number[][];
     c: number[][];
   };
-  features: IFeature[];
+  features: TPackFeature[];
   cells: {
-    i: IntArray;
+    i: UintArray;
     p: TPoints;
     v: number[][];
     c: number[][];
-    g: IntArray;
-    h: IntArray;
-    t: IntArray;
-    f: IntArray;
-    biome: IntArray;
+    g: UintArray;
+    h: UintArray;
+    t: UintArray;
+    f: UintArray;
+    s: IntArray;
     pop: Float32Array;
-    area: IntArray;
-    state: IntArray;
-    culture: IntArray;
-    religion: IntArray;
-    province: IntArray;
-    burg: IntArray;
+    fl: UintArray;
+    biome: UintArray;
+    area: UintArray;
+    state: UintArray;
+    culture: UintArray;
+    religion: UintArray;
+    province: UintArray;
+    burg: UintArray;
     q: d3.Quadtree<number[]>;
   };
   states: IState[];
@@ -32,10 +34,34 @@ interface IPack {
   religions: IReligion[];
 }
 
-interface IFeature {
-  i: number;
+interface IPackFeatureBase {
+  i: number; // feature id starting from 1
+  border: boolean; // if touches map border
+  cells: number; // number of cells
+  firstCell: number; // index of the top left cell
+  vertices: number[]; // indexes of perimetric vertices
+}
+
+interface IPackFeatureOcean extends IPackFeatureBase {
+  land: false;
+  type: "ocean";
+  group: "ocean";
+}
+
+interface IPackFeatureIsland extends IPackFeatureBase {
+  land: true;
+  type: "island";
+  group: "continent" | "island" | "isle" | "lake_island";
+}
+
+interface IPackFeatureLake extends IPackFeatureBase {
+  land: false;
+  type: "lake";
+  group: "freshwater" | "salt" | "frozen" | "dry" | "sinkhole" | "lava";
   name: string;
 }
+
+type TPackFeature = IPackFeatureOcean | IPackFeatureIsland | IPackFeatureLake;
 
 interface IState {
   i: number;

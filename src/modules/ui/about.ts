@@ -1,3 +1,6 @@
+import {link} from "utils/linkUtils";
+import {byId} from "utils/shorthands";
+
 // show info about the generator in a popup
 export function showAboutDialog() {
   const Discord = link("https://discordapp.com/invite/X7E84HU", "Discord");
@@ -11,7 +14,9 @@ export function showAboutDialog() {
   const QAA = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A", "Q&A page");
   const VideoTutorial = link("https://youtube.com/playlist?list=PLtgiuDC8iVR2gIG8zMTRn7T_L0arl9h1C", "Video tutorial");
 
-  alertMessage.innerHTML = /* html */ `<b>Fantasy Map Generator</b> (FMG) is a free open-source application. It means that you own all created maps and can use them as
+  byId(
+    "alertMessage"
+  )!.innerHTML = /* html */ `<b>Fantasy Map Generator</b> (FMG) is a free open-source application. It means that you own all created maps and can use them as
     you wish.
 
     <p>

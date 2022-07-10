@@ -8,19 +8,19 @@ interface IGrid {
     c: number[][];
   };
   cells: {
-    i: IntArray;
-    b: IntArray;
+    i: UintArray;
+    b: UintArray;
     c: number[][];
     v: number[][];
-    h: IntArray;
-    t: IntArray;
-    f: IntArray;
-    temp: IntArray;
-    prec: IntArray;
+    h: UintArray;
+    t: UintArray;
+    f: UintArray;
+    temp: UintArray;
+    prec: UintArray;
   };
-  features: IFeature[];
+  features: IGridFeature[];
 }
-interface IFeature {
+interface IGridFeature {
   i: number;
   land: boolean;
   border: boolean;
