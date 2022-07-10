@@ -160,14 +160,16 @@ export function getGridPolygon(i: number): TPoints {
   return grid.cells.v[i].map(v => grid.vertices.p[v]);
 }
 
-// filter land cells
-export function isLand(i: number) {
-  return pack.cells.h[i] >= 20;
+export function isLand(cellId: number) {
+  return pack.cells.h[cellId] >= 20;
 }
 
-// filter water cells
-export function isWater(i: number) {
-  return pack.cells.h[i] < 20;
+export function isWater(cellId: number) {
+  return pack.cells.h[cellId] < 20;
+}
+
+export function isCoastal(i: number) {
+  return pack.cells.t[i] === 1;
 }
 
 // findAll d3.quandtree search from https://bl.ocks.org/lwthatcher/b41479725e0ff2277c7ac90df2de2b5e

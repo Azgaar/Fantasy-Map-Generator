@@ -17,6 +17,8 @@ interface IPack {
     s: IntArray;
     pop: Float32Array;
     fl: UintArray;
+    conf: UintArray;
+    r: UintArray;
     biome: UintArray;
     area: UintArray;
     state: UintArray;
@@ -24,6 +26,8 @@ interface IPack {
     religion: UintArray;
     province: UintArray;
     burg: UintArray;
+    haven: UintArray;
+    harbor: UintArray;
     q: d3.Quadtree<number[]>;
   };
   states: IState[];
