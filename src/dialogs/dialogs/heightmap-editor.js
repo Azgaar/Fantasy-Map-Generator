@@ -220,7 +220,7 @@ export function open(options) {
       Lakes.addLakesInDeepDepressions(grid);
       Lakes.openNearSeaLakes(grid);
     }
-    OceanLayers();
+    OceanLayers(grid);
     calculateTemperatures();
     generatePrecipitation();
     reGraph();
@@ -339,7 +339,7 @@ export function open(options) {
     markupGridFeatures();
 
     if (erosionAllowed) addLakesInDeepDepressions();
-    OceanLayers();
+    OceanLayers(grid);
     calculateTemperatures();
     generatePrecipitation();
     reGraph();

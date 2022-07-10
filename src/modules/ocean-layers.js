@@ -7,9 +7,10 @@ import {P} from "utils/probabilityUtils";
 import {round} from "utils/stringUtils";
 
 window.OceanLayers = (function () {
-  function render() {
+  function render(grid) {
     const outline = oceanLayers.attr("layers");
     if (outline === "none") return;
+
     TIME && console.time("drawOceanLayers");
 
     const lineGen = d3.line().curve(d3.curveBasisClosed);

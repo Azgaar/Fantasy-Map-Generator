@@ -125,11 +125,14 @@ async function updateGrid(precreatedGraph?: IGrid) {
   updatedGrid.cells.t = distanceField;
   updatedGrid.features = features;
 
+  const touchesEdges = features.some(feature => feature && feature.land && feature.border);
+  defineMapSize(touchesEdges);
+
   Lakes.addLakesInDeepDepressions(updatedGrid);
   Lakes.openNearSeaLakes(updatedGrid);
 
-  OceanLayers();
-  defineMapSize();
+  OceanLayers(updatedGrid);
+
   window.mapCoordinates = calculateMapCoordinates();
   calculateTemperatures();
   generatePrecipitation();

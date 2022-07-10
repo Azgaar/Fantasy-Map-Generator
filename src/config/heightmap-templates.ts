@@ -148,22 +148,127 @@ interface HeightMapTemplate {
   id: number;
   name: string;
   template: string;
-  probability: number;
+  probability: number; // selection probability, Int
+  coversGlobe: number; // chance to cover the whole globe [0, 1]
+  size: {
+    expected: number;
+    deviation: number;
+    min: number;
+    max?: number;
+  };
 }
 
 export const heightmapTemplates: Dict<HeightMapTemplate> = {
-  volcano: {id: 0, name: "Volcano", template: volcano, probability: 3},
-  highIsland: {id: 1, name: "High Island", template: highIsland, probability: 19},
-  lowIsland: {id: 2, name: "Low Island", template: lowIsland, probability: 9},
-  continents: {id: 3, name: "Continents", template: continents, probability: 16},
-  archipelago: {id: 4, name: "Archipelago", template: archipelago, probability: 18},
-  atoll: {id: 5, name: "Atoll", template: atoll, probability: 1},
-  mediterranean: {id: 6, name: "Mediterranean", template: mediterranean, probability: 5},
-  peninsula: {id: 7, name: "Peninsula", template: peninsula, probability: 3},
-  pangea: {id: 8, name: "Pangea", template: pangea, probability: 5},
-  isthmus: {id: 9, name: "Isthmus", template: isthmus, probability: 2},
-  shattered: {id: 10, name: "Shattered", template: shattered, probability: 7},
-  taklamakan: {id: 11, name: "Taklamakan", template: taklamakan, probability: 1},
-  oldWorld: {id: 12, name: "Old World", template: oldWorld, probability: 8},
-  fractious: {id: 13, name: "Fractious", template: fractious, probability: 3}
+  volcano: {
+    id: 0,
+    name: "Volcano",
+    template: volcano,
+    probability: 3,
+    coversGlobe: 0,
+    size: {expected: 20, deviation: 20, min: 10}
+  },
+  highIsland: {
+    id: 1,
+    name: "High Island",
+    template: highIsland,
+    probability: 19,
+    coversGlobe: 0.25,
+    size: {expected: 30, deviation: 20, min: 15}
+  },
+  lowIsland: {
+    id: 2,
+    name: "Low Island",
+    template: lowIsland,
+    probability: 9,
+    coversGlobe: 0.1,
+    size: {expected: 30, deviation: 20, min: 15}
+  },
+  continents: {
+    id: 3,
+    name: "Continents",
+    template: continents,
+    probability: 16,
+    coversGlobe: 0.5,
+    size: {expected: 30, deviation: 20, min: 15}
+  },
+  archipelago: {
+    id: 4,
+    name: "Archipelago",
+    template: archipelago,
+    probability: 18,
+    coversGlobe: 0.35,
+    size: {expected: 30, deviation: 20, min: 15}
+  },
+  atoll: {
+    id: 5,
+    name: "Atoll",
+    template: atoll,
+    probability: 1,
+    coversGlobe: 0,
+    size: {expected: 5, deviation: 10, min: 2}
+  },
+  mediterranean: {
+    id: 6,
+    name: "Mediterranean",
+    template: mediterranean,
+    probability: 5,
+    coversGlobe: 0,
+    size: {expected: 25, deviation: 30, min: 15, max: 80}
+  },
+  peninsula: {
+    id: 7,
+    name: "Peninsula",
+    template: peninsula,
+    probability: 3,
+    coversGlobe: 0,
+    size: {expected: 15, deviation: 15, min: 5, max: 80}
+  },
+  pangea: {
+    id: 8,
+    name: "Pangea",
+    template: pangea,
+    probability: 5,
+    coversGlobe: 1,
+    size: {expected: 70, deviation: 20, min: 30}
+  },
+  isthmus: {
+    id: 9,
+    name: "Isthmus",
+    template: isthmus,
+    probability: 2,
+    coversGlobe: 0,
+    size: {expected: 15, deviation: 20, min: 3, max: 80}
+  },
+  shattered: {
+    id: 10,
+    name: "Shattered",
+    template: shattered,
+    probability: 7,
+    coversGlobe: 0.7,
+    size: {expected: 30, deviation: 20, min: 15}
+  },
+  taklamakan: {
+    id: 11,
+    name: "Taklamakan",
+    template: taklamakan,
+    probability: 1,
+    coversGlobe: 0,
+    size: {expected: 30, deviation: 20, min: 15}
+  },
+  oldWorld: {
+    id: 12,
+    name: "Old World",
+    template: oldWorld,
+    probability: 8,
+    coversGlobe: 0.35,
+    size: {expected: 30, deviation: 20, min: 15}
+  },
+  fractious: {
+    id: 13,
+    name: "Fractious",
+    template: fractious,
+    probability: 3,
+    coversGlobe: 0.2,
+    size: {expected: 30, deviation: 20, min: 15}
+  }
 };

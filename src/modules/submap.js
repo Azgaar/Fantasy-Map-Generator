@@ -122,7 +122,7 @@ window.Submap = (function () {
       Lakes.openNearSeaLakes(grid);
     }
 
-    OceanLayers();
+    OceanLayers(grid);
 
     calculateMapCoordinates();
     // calculateTemperatures();

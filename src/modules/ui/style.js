@@ -459,7 +459,7 @@ styleOceanPatternOpacity.addEventListener("input", function () {
 outlineLayers.addEventListener("change", function () {
   oceanLayers.selectAll("path").remove();
   oceanLayers.attr("layers", this.value);
-  OceanLayers();
+  OceanLayers(grid);
 });
 
 styleHeightmapScheme.addEventListener("change", function () {
@@ -836,7 +836,7 @@ function updateElements() {
   if (layerIsOn("toggleHeight")) drawHeightmap();
   if (legend.selectAll("*").size() && window.redrawLegend) redrawLegend();
   oceanLayers.selectAll("path").remove();
-  OceanLayers();
+  OceanLayers(grid);
   Zoom.invoke();
 }
 
