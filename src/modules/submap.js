@@ -6,6 +6,7 @@ import {getMiddlePoint} from "utils/lineUtils";
 import {rn} from "utils/numberUtils";
 import {aleaPRNG} from "scripts/aleaPRNG";
 import {renderLayer} from "layers";
+import {markupGridFeatures} from "modules/markup";
 
 window.Submap = (function () {
   const isWater = (pack, id) => pack.cells.h[id] < 20;
@@ -113,13 +114,12 @@ window.Submap = (function () {
     }
 
     stage("Detect features, ocean and generating lakes.");
-    markFeatures();
-    markupGridOcean();
+    markupGridFeatures();
 
     // Warning: addLakesInDeepDepressions can be very slow!
     if (options.addLakesInDepressions) {
-      Lakes.addLakesInDeepDepressions();
-      Lakes.openNearSeaLakes();
+      Lakes.addLakesInDeepDepressions(grid);
+      Lakes.openNearSeaLakes(grid);
     }
 
     OceanLayers();

@@ -1,7 +1,7 @@
 import * as d3 from "d3";
 
 import {TIME} from "config/logging";
-import {normalize, rn} from "utils/numberUtils";
+import {normalize} from "utils/numberUtils";
 import {isWater, isCoastal} from "utils/graphUtils";
 
 const FLUX_MAX_BONUS = 250;

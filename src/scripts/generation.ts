@@ -5,7 +5,7 @@ import {closeDialogs} from "dialogs/utils";
 import {initLayers, renderLayer, restoreLayers} from "layers";
 import {drawCoastline} from "modules/coastline";
 import {calculateMapCoordinates, defineMapSize} from "modules/coordinates";
-import {markFeatures, markupGridOcean} from "modules/markup";
+import {markupGridFeatures, markupGridOcean} from "modules/markup";
 import {drawScaleBar, Rulers} from "modules/measurers";
 import {generatePrecipitation} from "modules/precipitation";
 import {calculateTemperatures} from "modules/temperature";
@@ -18,7 +18,7 @@ import {hideLoading, showLoading} from "scripts/loading";
 import {clearMainTip, tip} from "scripts/tooltips";
 import {parseError} from "utils/errorUtils";
 import {debounce} from "utils/functionUtils";
-import {generateGrid, shouldRegenerateGrid} from "utils/graphUtils";
+import {generateGrid, shouldRegenerateGridPoints} from "utils/graphUtils";
 import {rn} from "utils/numberUtils";
 import {generateSeed} from "utils/probabilityUtils";
 import {byId} from "utils/shorthands";
@@ -26,33 +26,26 @@ import {rankCells} from "./rankCells";
 import {reGraph} from "./reGraph";
 import {showStatistics} from "./statistics";
 
-export async function generate(options) {
+const {Zoom, Lakes, HeightmapGenerator, OceanLayers} = window;
+
+interface IGenerationOptions {
+  seed: string;
+  graph: IGrid;
+}
+
+export async function generate(options?: IGenerationOptions) {
   try {
     const timeStart = performance.now();
     const {seed: precreatedSeed, graph: precreatedGraph} = options || {};
 
-    Zoom.invoke();
+    Zoom?.invoke();
     setSeed(precreatedSeed);
     INFO && console.group("Generated Map " + seed);
 
     applyMapSize();
     randomizeOptions();
 
-    if (shouldRegenerateGrid(grid)) grid = precreatedGraph || generateGrid();
-    else delete grid.cells.h;
-    grid.cells.h = await HeightmapGenerator.generate(grid);
-
-    markFeatures();
-    markupGridOcean();
-
-    Lakes.addLakesInDeepDepressions();
-    Lakes.openNearSeaLakes();
-
-    OceanLayers();
-    defineMapSize();
-    window.mapCoordinates = calculateMapCoordinates();
-    calculateTemperatures();
-    generatePrecipitation();
+    const updatedGrid = await updateGrid(precreatedGraph);
 
     reGraph();
     drawCoastline();
@@ -117,6 +110,37 @@ export async function generate(options) {
   }
 }
 
+async function updateGrid(precreatedGraph?: IGrid) {
+  const globalGrid = grid;
+
+  const updatedGrid: IGraph & Partial<IGrid> = shouldRegenerateGridPoints(globalGrid)
+    ? (precreatedGraph && undressGrid(precreatedGraph)) || generateGrid()
+    : undressGrid(globalGrid);
+
+  const heights = await HeightmapGenerator.generate(updatedGrid);
+  updatedGrid.cells.h = heights;
+
+  const {featureIds, distanceField, features} = markupGridFeatures(updatedGrid);
+  updatedGrid.cells.f = featureIds;
+  updatedGrid.cells.t = distanceField;
+  updatedGrid.features = features;
+
+  Lakes.addLakesInDeepDepressions(updatedGrid);
+  Lakes.openNearSeaLakes(updatedGrid);
+
+  OceanLayers();
+  defineMapSize();
+  window.mapCoordinates = calculateMapCoordinates();
+  calculateTemperatures();
+  generatePrecipitation();
+}
+
+function undressGrid(extendedGrid: IGrid) {
+  const {spacing, cellsDesired, boundary, points, cellsX, cellsY, cells, vertices} = extendedGrid;
+  const {i, b, c, v} = cells;
+  return {spacing, cellsDesired, boundary, points, cellsX, cellsY, cells: {i, b, c, v}, vertices};
+}
+
 export async function generateMapOnLoad() {
   await applyStyleOnLoad(); // apply previously selected default or custom style
   await generate(); // generate map
@@ -127,8 +151,7 @@ export async function generateMapOnLoad() {
 // clear the map
 export function undraw() {
   viewbox.selectAll("path, circle, polygon, line, text, use, #zones > g, #armies > g, #ruler > g").remove();
-  document
-    .getElementById("deftemp")
+  byId("deftemp")
     .querySelectorAll("path, clipPath, svg")
     .forEach(el => el.remove());
   byId("coas").innerHTML = ""; // remove auto-generated emblems

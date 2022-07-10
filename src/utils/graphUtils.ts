@@ -2,15 +2,16 @@
 import * as d3 from "d3";
 import Delaunator from "delaunator";
 
+import {aleaPRNG} from "scripts/aleaPRNG";
 import {TIME} from "../config/logging";
 import {createTypedArray} from "./arrayUtils";
 import {rn} from "./numberUtils";
 import {byId} from "./shorthands";
 import {Voronoi} from "/src/modules/voronoi";
-import {aleaPRNG} from "scripts/aleaPRNG";
+import {MIN_LAND_HEIGHT, DISTANCE_FIELD} from "config/generation";
 
 // check if new grid graph should be generated or we can use the existing one
-export function shouldRegenerateGrid(grid) {
+export function shouldRegenerateGridPoints(grid: IGrid) {
   const cellsDesired = Number(byId("pointsInput")?.dataset.cells);
   if (cellsDesired !== grid.cellsDesired) return true;
 
@@ -69,7 +70,7 @@ function getBoundaryPoints(width: number, height: number, spacing: number) {
   const h = height - offset * 2;
   const numberX = Math.ceil(w / bSpacing) - 1;
   const numberY = Math.ceil(h / bSpacing) - 1;
-  const points = [];
+  const points: TPoints = [];
 
   for (let i = 0.5; i < numberX; i++) {
     let x = Math.ceil((w * i) / numberX + offset);
@@ -91,7 +92,7 @@ function getJitteredGrid(width: number, height: number, spacing: number) {
   const doubleJittering = jittering * 2;
   const jitter = () => Math.random() * doubleJittering - jittering;
 
-  let points = [];
+  const points: TPoints = [];
   for (let y = radius; y < height; y += spacing) {
     for (let x = radius; x < width; x += spacing) {
       const xj = Math.min(rn(x + jitter(), 2), width);
@@ -161,15 +162,15 @@ export function getGridPolygon(i: number): TPoints {
 }
 
 export function isLand(cellId: number) {
-  return pack.cells.h[cellId] >= 20;
+  return pack.cells.h[cellId] >= MIN_LAND_HEIGHT;
 }
 
 export function isWater(cellId: number) {
-  return pack.cells.h[cellId] < 20;
+  return pack.cells.h[cellId] < MIN_LAND_HEIGHT;
 }
 
 export function isCoastal(i: number) {
-  return pack.cells.t[i] === 1;
+  return pack.cells.t[i] === DISTANCE_FIELD.LAND_COAST;
 }
 
 // findAll d3.quandtree search from https://bl.ocks.org/lwthatcher/b41479725e0ff2277c7ac90df2de2b5e

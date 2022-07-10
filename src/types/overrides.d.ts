@@ -6,14 +6,16 @@ interface Navigator {
 
 interface Window {
   mapCoordinates: IMapCoordinates;
-  // untyped IIFE modules
   $: typeof $;
-  d3: typeof d3;
+  // untyped IIFE modules
   Biomes: typeof Biomes;
   Names: typeof Names;
   ThreeD: typeof ThreeD;
   ReliefIcons: typeof ReliefIcons;
   Zoom: typeof Zoom;
+  Lakes: typeof Lakes;
+  HeightmapGenerator: typeof HeightmapGenerator;
+  OceanLayers: typeof OceanLayers;
 }
 
 interface Node {

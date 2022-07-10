@@ -1,5 +1,5 @@
-declare const grid: IGrid;
-declare const pack: IPack;
+declare let grid: IGrid;
+declare let pack: IPack;
 
 declare let seed: string;
 declare let mapId: number;

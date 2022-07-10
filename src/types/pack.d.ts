@@ -1,35 +1,6 @@
-interface IPack {
-  vertices: {
-    p: TPoints;
-    v: number[][];
-    c: number[][];
-  };
-  features: TPackFeature[];
-  cells: {
-    i: UintArray;
-    p: TPoints;
-    v: number[][];
-    c: number[][];
-    g: UintArray;
-    h: UintArray;
-    t: UintArray;
-    f: UintArray;
-    s: IntArray;
-    pop: Float32Array;
-    fl: UintArray;
-    conf: UintArray;
-    r: UintArray;
-    biome: UintArray;
-    area: UintArray;
-    state: UintArray;
-    culture: UintArray;
-    religion: UintArray;
-    province: UintArray;
-    burg: UintArray;
-    haven: UintArray;
-    harbor: UintArray;
-    q: d3.Quadtree<number[]>;
-  };
+interface IPack extends IGraph {
+  cells: IPackCells;
+  features: TPackFeatures;
   states: IState[];
   cultures: ICulture[];
   provinces: IProvince[];
@@ -38,18 +9,41 @@ interface IPack {
   religions: IReligion[];
 }
 
+interface IPackCells extends IGraphCells {
+  p: TPoints; // cell center points
+  h: UintArray; // heights, [0, 100], see MIN_LAND_HEIGHT constant
+  t: Int8Array; // see DISTANCE_FIELD enum
+  f: Uint16Array; // feature id, see TPackFeature
+  g: UintArray;
+  s: IntArray;
+  pop: Float32Array;
+  fl: UintArray;
+  conf: UintArray;
+  r: UintArray;
+  biome: UintArray;
+  area: UintArray;
+  state: UintArray;
+  culture: UintArray;
+  religion: UintArray;
+  province: UintArray;
+  burg: UintArray;
+  haven: UintArray;
+  harbor: UintArray;
+  q: d3.Quadtree<number[]>;
+}
+
 interface IPackFeatureBase {
   i: number; // feature id starting from 1
   border: boolean; // if touches map border
   cells: number; // number of cells
   firstCell: number; // index of the top left cell
-  vertices: number[]; // indexes of perimetric vertices
+  vertices?: number[]; // indexes of perimetric vertices
 }
 
 interface IPackFeatureOcean extends IPackFeatureBase {
   land: false;
   type: "ocean";
-  group: "ocean";
+  group: "ocean" | "sea" | "gulf";
 }
 
 interface IPackFeatureIsland extends IPackFeatureBase {
@@ -66,6 +60,8 @@ interface IPackFeatureLake extends IPackFeatureBase {
 }
 
 type TPackFeature = IPackFeatureOcean | IPackFeatureIsland | IPackFeatureLake;
+
+type TPackFeatures = [0, ...TPackFeature[]];
 
 interface IState {
   i: number;

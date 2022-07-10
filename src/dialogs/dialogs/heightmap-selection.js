@@ -2,7 +2,7 @@ import * as d3 from "d3";
 
 import {heightmapTemplates} from "config/heightmap-templates";
 import {precreatedHeightmaps} from "config/precreated-heightmaps";
-import {shouldRegenerateGrid, generateGrid} from "utils/graphUtils";
+import {shouldRegenerateGridPoints, generateGrid} from "utils/graphUtils";
 import {byId} from "utils/shorthands";
 import {generateSeed} from "utils/probabilityUtils";
 import {getColorScheme} from "utils/colorUtils";
@@ -274,7 +274,7 @@ function getName(id) {
 }
 
 function getGraph(currentGraph) {
-  const newGraph = shouldRegenerateGrid(currentGraph) ? generateGrid() : structuredClone(currentGraph);
+  const newGraph = shouldRegenerateGridPoints(currentGraph) ? generateGrid() : structuredClone(currentGraph);
   delete newGraph.cells.h;
   return newGraph;
 }

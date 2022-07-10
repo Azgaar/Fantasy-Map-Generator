@@ -6,7 +6,7 @@ import {ERROR, INFO, TIME} from "config/logging";
 import {closeDialogs} from "dialogs/utils";
 import {layerIsOn, turnLayerButtonOff, turnLayerButtonOn, updatePresetInput, renderLayer} from "layers";
 import {drawCoastline} from "modules/coastline";
-import {markFeatures, markupGridOcean} from "modules/markup";
+import {markupGridFeatures} from "modules/markup";
 import {generatePrecipitation} from "modules/precipitation";
 import {calculateTemperatures} from "modules/temperature";
 import {moveCircle, removeCircle} from "modules/ui/editors";
@@ -214,11 +214,11 @@ export function open(options) {
     TIME && console.time("regenerateErasedData");
 
     const erosionAllowed = allowErosion.checked;
-    markFeatures();
-    markupGridOcean();
+    markupGridFeatures();
+
     if (erosionAllowed) {
-      Lakes.addLakesInDeepDepressions();
-      Lakes.openNearSeaLakes();
+      Lakes.addLakesInDeepDepressions(grid);
+      Lakes.openNearSeaLakes(grid);
     }
     OceanLayers();
     calculateTemperatures();
@@ -336,8 +336,8 @@ export function open(options) {
       zone.selectAll("*").remove();
     });
 
-    markFeatures();
-    markupGridOcean();
+    markupGridFeatures();
+
     if (erosionAllowed) addLakesInDeepDepressions();
     OceanLayers();
     calculateTemperatures();

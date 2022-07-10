@@ -4,6 +4,8 @@ import {TIME} from "config/logging";
 import {rn} from "utils/numberUtils";
 import {aleaPRNG} from "scripts/aleaPRNG";
 import {byId} from "utils/shorthands";
+import {getInputNumber, getInputValue} from "utils/nodeUtils";
+import {DISTANCE_FIELD, MIN_LAND_HEIGHT} from "config/generation";
 
 window.Lakes = (function () {
   const setClimateData = function (h) {
@@ -154,17 +156,21 @@ window.Lakes = (function () {
     return "freshwater";
   }
 
-  function addLakesInDeepDepressions() {
-    TIME && console.time("addLakesInDeepDepressions");
-    const {cells, features} = grid;
-    const {c, h, b} = cells;
-    const ELEVATION_LIMIT = +byId("lakeElevationLimitOutput").value;
+  const {LAND_COAST, WATER_COAST} = DISTANCE_FIELD;
+
+  function addLakesInDeepDepressions(grid: IGraph & Partial<IGrid>) {
+    const ELEVATION_LIMIT = getInputNumber("lakeElevationLimitOutput");
     if (ELEVATION_LIMIT === 80) return;
 
-    for (const i of cells.i) {
-      if (b[i] || h[i] < 20) continue;
+    TIME && console.time("addLakesInDeepDepressions");
+    const {cells, features} = grid;
+    if (!features) throw new Error("addLakesInDeepDepressions: features are not defined");
+    const {c, h, b} = cells;
 
-      const minHeight = d3.min(c[i].map(c => h[c]));
+    for (const i of cells.i) {
+      if (b[i] || h[i] < MIN_LAND_HEIGHT) continue;
+
+      const minHeight = d3.min(c[i].map(c => h[c])) || 0;
       if (h[i] > minHeight) continue;
 
       let deep = true;
@@ -175,12 +181,12 @@ window.Lakes = (function () {
 
       // check if elevated cell can potentially pour to water
       while (deep && queue.length) {
-        const q = queue.pop();
+        const q = queue.pop()!;
 
         for (const n of c[q]) {
           if (checked[n]) continue;
           if (h[n] >= threshold) continue;
-          if (h[n] < 20) {
+          if (h[n] < MIN_LAND_HEIGHT) {
             deep = false;
             break;
           }
@@ -197,56 +203,68 @@ window.Lakes = (function () {
       }
     }
 
-    function addLake(lakeCells) {
-      const f = features.length;
+    function addLake(lakeCells: number[]) {
+      const featureId = features!.length;
 
-      lakeCells.forEach(i => {
-        cells.h[i] = 19;
-        cells.t[i] = -1;
-        cells.f[i] = f;
-        c[i].forEach(n => !lakeCells.includes(n) && (cells.t[c] = 1));
-      });
+      for (const lakeCellId of lakeCells) {
+        cells.h[lakeCellId] = MIN_LAND_HEIGHT - 1;
+        cells.t[lakeCellId] = WATER_COAST;
+        cells.f[lakeCellId] = featureId;
 
-      features.push({i: f, land: false, border: false, type: "lake"});
+        for (const neibCellId of c[lakeCellId]) {
+          if (!lakeCells.includes(neibCellId)) cells.t[neibCellId] = LAND_COAST;
+        }
+      }
+
+      features!.push({i: featureId, land: false, border: false, type: "lake"});
     }
 
     TIME && console.timeEnd("addLakesInDeepDepressions");
   }
 
   // near sea lakes usually get a lot of water inflow, most of them should brake threshold and flow out to sea (see Ancylus Lake)
-  function openNearSeaLakes() {
-    if (byId("templateInput").value === "Atoll") return; // no need for Atolls
+  function openNearSeaLakes(grid: IGraph & Partial<IGrid>) {
+    if (getInputValue("templateInput") === "Atoll") return; // no need for Atolls
 
-    const cells = grid.cells;
-    const features = grid.features;
-    if (!features.find(f => f.type === "lake")) return; // no lakes
+    const {cells, features} = grid;
+    if (!features?.find(f => f && f.type === "lake")) return; // no lakes
+
     TIME && console.time("openLakes");
     const LIMIT = 22; // max height that can be breached by water
 
-    for (const i of cells.i) {
-      const lake = cells.f[i];
-      if (features[lake].type !== "lake") continue; // not a lake cell
+    const isLake = (featureId: number) => featureId && (features[featureId] as IGridFeature).type === "lake";
+    const isOcean = (featureId: number) => featureId && (features[featureId] as IGridFeature).type === "ocean";
 
-      check_neighbours: for (const c of cells.c[i]) {
-        if (cells.t[c] !== 1 || cells.h[c] > LIMIT) continue; // water cannot brake this
+    for (const cellId of cells.i) {
+      const featureId = cells.f[cellId];
+      if (!isLake(featureId)) continue; // not a lake cell
 
-        for (const n of cells.c[c]) {
-          const ocean = cells.f[n];
-          if (features[ocean].type !== "ocean") continue; // not an ocean
-          removeLake(c, lake, ocean);
+      check_neighbours: for (const neibCellId of cells.c[cellId]) {
+        // water cannot brake the barrier
+        if (cells.t[neibCellId] !== WATER_COAST || cells.h[neibCellId] > LIMIT) continue;
+
+        for (const neibOfNeibCellId of cells.c[neibCellId]) {
+          const neibOfNeibFeatureId = cells.f[neibOfNeibCellId];
+          if (!isOcean(neibOfNeibFeatureId)) continue; // not an ocean
+          removeLake(neibCellId, featureId, neibOfNeibFeatureId);
           break check_neighbours;
         }
       }
     }
 
-    function removeLake(threshold, lake, ocean) {
-      cells.h[threshold] = 19;
-      cells.t[threshold] = -1;
-      cells.f[threshold] = ocean;
-      cells.c[threshold].forEach(function (c) {
-        if (cells.h[c] >= 20) cells.t[c] = 1; // mark as coastline
-      });
-      features[lake].type = "ocean"; // mark former lake as ocean
+    function removeLake(barrierCellId: number, lakeFeatureId: number, oceanFeatureId: number) {
+      cells.h[barrierCellId] = MIN_LAND_HEIGHT - 1;
+      cells.t[barrierCellId] = WATER_COAST;
+      cells.f[barrierCellId] = oceanFeatureId;
+
+      for (const neibCellId of cells.c[barrierCellId]) {
+        if (cells.h[neibCellId] >= MIN_LAND_HEIGHT) cells.t[neibCellId] = LAND_COAST;
+      }
+
+      if (features && lakeFeatureId) {
+        // mark former lake as ocean
+        (features[lakeFeatureId] as IGridFeature).type = "ocean";
+      }
     }
 
     TIME && console.timeEnd("openLakes");

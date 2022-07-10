@@ -1,28 +1,27 @@
-interface IGrid {
+interface IGrid extends IGraph {
+  cellsDesired: number;
+  cellsX: number;
+  cellsY: number;
   spacing: number;
   boundary: TPoints;
   points: TPoints;
-  vertices: {
-    p: TPoints;
-    v: number[][];
-    c: number[][];
-  };
-  cells: {
-    i: UintArray;
-    b: UintArray;
-    c: number[][];
-    v: number[][];
-    h: UintArray;
-    t: UintArray;
-    f: UintArray;
-    temp: UintArray;
-    prec: UintArray;
-  };
-  features: IGridFeature[];
+  cells: IGridCells;
+  features: TGridFeatures;
 }
+
+interface IGridCells extends IGraphCells {
+  h: UintArray; // heights, [0, 100], see MIN_LAND_HEIGHT constant
+  t: Int8Array; // see DISTANCE_FIELD enum
+  f: Uint16Array; // feature id, see IGridFeature
+  temp: UintArray; // temparature in Celsius
+  prec: UintArray; // precipitation in inner units
+}
+
+type TGridFeatures = [0, ...IGridFeature[]];
+
 interface IGridFeature {
-  i: number;
+  i: number; // starts from 1, not 0
   land: boolean;
-  border: boolean;
+  border: boolean; // if touches map edge
   type: "ocean" | "lake" | "island";
 }

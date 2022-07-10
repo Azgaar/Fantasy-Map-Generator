@@ -5,7 +5,8 @@ import {loadMapFromURL} from "modules/io/load";
 import {setDefaultEventHandlers} from "scripts/events";
 import {ldb} from "scripts/indexedDB";
 import {getInputValue} from "utils/nodeUtils";
-import {generateMapOnLoad} from "./generation";
+import {generateMapOnLoad} from "./generation.ts";
+import {showUploadErrorMessage, uploadMap} from "modules/io/load";
 
 export function addOnLoadListener() {
   document.on("DOMContentLoaded", async () => {
@@ -73,9 +74,9 @@ function loadLastMap() {
       if (blob) {
         WARN && console.warn("Load last saved map");
         try {
-          uploadMap(blob);
-          resolve();
+          uploadMap(blob, resolve);
         } catch (error) {
+          ERROR && console.error("Cannot load last saved map", error);
           reject(error);
         }
       } else {

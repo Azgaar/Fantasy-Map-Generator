@@ -151,7 +151,7 @@ export function loadMapFromURL(maplink, random) {
     });
 }
 
-function showUploadErrorMessage(error, URL, random) {
+export function showUploadErrorMessage(error, URL, random) {
   ERROR && console.error(error);
   alertMessage.innerHTML = /* html */ `Cannot load map from the ${link(URL, "link provided")}. ${
     random ? `A new random map is generated. ` : ""
@@ -168,7 +168,7 @@ function showUploadErrorMessage(error, URL, random) {
   });
 }
 
-function uploadMap(file, callback) {
+export function uploadMap(file, callback) {
   uploadMap.timeStart = performance.now();
   const OLDEST_SUPPORTED_VERSION = 0.7;
   const currentVersion = parseFloat(version);
