@@ -3,16 +3,24 @@ import * as d3 from "d3";
 import {ERROR, INFO, WARN} from "config/logging";
 import {closeDialogs} from "dialogs/utils";
 import {initLayers, renderLayer, restoreLayers} from "layers";
+// @ts-expect-error js module
 import {drawCoastline} from "modules/coastline";
 import {calculateMapCoordinates, defineMapSize} from "modules/coordinates";
-import {markupGridFeatures, markupGridOcean} from "modules/markup";
+import {markupGridFeatures} from "modules/markup";
+// @ts-expect-error js module
 import {drawScaleBar, Rulers} from "modules/measurers";
+// @ts-expect-error js module
 import {generatePrecipitation} from "modules/precipitation";
 import {calculateTemperatures} from "modules/temperature";
+// @ts-expect-error js module
 import {unfog} from "modules/ui/editors";
+// @ts-expect-error js module
 import {applyMapSize, randomizeOptions} from "modules/ui/options";
+// @ts-expect-error js module
 import {applyStyleOnLoad} from "modules/ui/stylePresets";
+// @ts-expect-error js module
 import {addZones} from "modules/zones";
+// @ts-expect-error js module
 import {aleaPRNG} from "scripts/aleaPRNG";
 import {hideLoading, showLoading} from "scripts/loading";
 import {clearMainTip, tip} from "scripts/tooltips";
@@ -45,9 +53,9 @@ export async function generate(options?: IGenerationOptions) {
     applyMapSize();
     randomizeOptions();
 
-    const updatedGrid = await updateGrid(precreatedGraph);
+    const updatedGrid = await updateGrid(grid, precreatedGraph);
 
-    reGraph();
+    reGraph(updatedGrid);
     drawCoastline();
 
     Rivers.generate();
@@ -74,6 +82,8 @@ export async function generate(options?: IGenerationOptions) {
     Military.generate();
     Markers.generate();
     addZones();
+
+    OceanLayers(updatedGrid);
 
     drawScaleBar(scale);
     Names.getMapName();
@@ -110,35 +120,33 @@ export async function generate(options?: IGenerationOptions) {
   }
 }
 
-async function updateGrid(precreatedGraph?: IGrid) {
-  const globalGrid = grid;
-
-  const updatedGrid: IGraph & Partial<IGrid> = shouldRegenerateGridPoints(globalGrid)
+async function updateGrid(globalGrid: IGrid, precreatedGraph?: IGrid): Promise<IGrid> {
+  const baseGrid: IGridBase = shouldRegenerateGridPoints(globalGrid)
     ? (precreatedGraph && undressGrid(precreatedGraph)) || generateGrid()
     : undressGrid(globalGrid);
 
-  const heights = await HeightmapGenerator.generate(updatedGrid);
-  updatedGrid.cells.h = heights;
+  const heights: Uint8Array = await HeightmapGenerator.generate(baseGrid);
+  if (!heights) throw new Error("Heightmap generation failed");
+  const heightsGrid = {...baseGrid, cells: {...baseGrid.cells, h: heights}};
 
-  const {featureIds, distanceField, features} = markupGridFeatures(updatedGrid);
-  updatedGrid.cells.f = featureIds;
-  updatedGrid.cells.t = distanceField;
-  updatedGrid.features = features;
+  const {featureIds, distanceField, features} = markupGridFeatures(heightsGrid);
+  const markedGrid = {...heightsGrid, features, cells: {...heightsGrid.cells, f: featureIds, t: distanceField}};
 
   const touchesEdges = features.some(feature => feature && feature.land && feature.border);
   defineMapSize(touchesEdges);
-
-  Lakes.addLakesInDeepDepressions(updatedGrid);
-  Lakes.openNearSeaLakes(updatedGrid);
-
-  OceanLayers(updatedGrid);
-
   window.mapCoordinates = calculateMapCoordinates();
-  calculateTemperatures();
-  generatePrecipitation();
+
+  Lakes.addLakesInDeepDepressions(markedGrid);
+  Lakes.openNearSeaLakes(markedGrid);
+
+  const temperature = calculateTemperatures(markedGrid);
+  const temperatureGrid = {...markedGrid, cells: {...markedGrid.cells, temp: temperature}};
+
+  const prec = generatePrecipitation(temperatureGrid);
+  return {...temperatureGrid, cells: {...temperatureGrid.cells, prec}};
 }
 
-function undressGrid(extendedGrid: IGrid) {
+function undressGrid(extendedGrid: IGrid): IGridBase {
   const {spacing, cellsDesired, boundary, points, cellsX, cellsY, cells, vertices} = extendedGrid;
   const {i, b, c, v} = cells;
   return {spacing, cellsDesired, boundary, points, cellsX, cellsY, cells: {i, b, c, v}, vertices};
@@ -154,12 +162,17 @@ export async function generateMapOnLoad() {
 // clear the map
 export function undraw() {
   viewbox.selectAll("path, circle, polygon, line, text, use, #zones > g, #armies > g, #ruler > g").remove();
+
   byId("deftemp")
-    .querySelectorAll("path, clipPath, svg")
+    ?.querySelectorAll("path, clipPath, svg")
     .forEach(el => el.remove());
-  byId("coas").innerHTML = ""; // remove auto-generated emblems
+
+  // remove auto-generated emblems
+  if (byId("coas")) byId("coas")!.innerHTML = "";
+
   notes = [];
   rulers = new Rulers();
+
   unfog();
 }
 

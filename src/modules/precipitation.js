@@ -5,11 +5,12 @@ import {minmax} from "utils/numberUtils";
 import {rand} from "utils/probabilityUtils";
 
 // simplest precipitation model
-export function generatePrecipitation() {
+export function generatePrecipitation(grid) {
   TIME && console.time("generatePrecipitation");
   prec.selectAll("*").remove();
+
   const {cells, cellsX, cellsY} = grid;
-  cells.prec = new Uint8Array(cells.i.length); // precipitation array
+  const precipitation = new Uint8Array(cells.i.length); // precipitation array
 
   const cellsNumberModifier = (pointsInput.dataset.cells / 10000) ** 0.25;
   const precInputModifier = precInput.value / 100;
@@ -94,20 +95,20 @@ export function generatePrecipitation() {
         if (cells.h[current] < 20) {
           // water cell
           if (cells.h[current + next] >= 20) {
-            cells.prec[current + next] += Math.max(humidity / rand(10, 20), 1); // coastal precipitation
+            precipitation[current + next] += Math.max(humidity / rand(10, 20), 1); // coastal precipitation
           } else {
             humidity = Math.min(humidity + 5 * modifier, maxPrec); // wind gets more humidity passing water cell
-            cells.prec[current] += 5 * modifier; // water cells precipitation (need to correctly pour water through lakes)
+            precipitation[current] += 5 * modifier; // water cells precipitation (need to correctly pour water through lakes)
           }
           continue;
         }
 
         // land cell
         const isPassable = cells.h[current + next] <= MAX_PASSABLE_ELEVATION;
-        const precipitation = isPassable ? getPrecipitation(humidity, current, next) : humidity;
-        cells.prec[current] += precipitation;
-        const evaporation = precipitation > 1.5 ? 1 : 0; // some humidity evaporates back to the atmosphere
-        humidity = isPassable ? minmax(humidity - precipitation + evaporation, 0, maxPrec) : 0;
+        const cellPrec = isPassable ? getPrecipitation(humidity, current, next) : humidity;
+        precipitation[current] += cellPrec;
+        const evaporation = cellPrec > 1.5 ? 1 : 0; // some humidity evaporates back to the atmosphere
+        humidity = isPassable ? minmax(humidity - cellPrec + evaporation, 0, maxPrec) : 0;
       }
     }
   }
@@ -162,4 +163,5 @@ export function generatePrecipitation() {
   })();
 
   TIME && console.timeEnd("generatePrecipitation");
+  return precipitation;
 }

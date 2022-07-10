@@ -83,7 +83,7 @@ export function open() {
   }
 
   function changeHeightExponent() {
-    calculateTemperatures();
+    calculateTemperatures(grid);
     if (layerIsOn("toggleTemp")) drawTemp();
   }
 
@@ -134,7 +134,7 @@ export function open() {
     // height exponent
     heightExponentInput.value = heightExponentOutput.value = 1.8;
     localStorage.removeItem("heightExponent");
-    calculateTemperatures();
+    calculateTemperatures(grid);
 
     // scale bar
     barSizeOutput.value = barSizeInput.value = 2;

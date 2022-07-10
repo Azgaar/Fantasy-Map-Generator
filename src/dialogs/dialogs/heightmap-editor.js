@@ -221,9 +221,9 @@ export function open(options) {
       Lakes.openNearSeaLakes(grid);
     }
     OceanLayers(grid);
-    calculateTemperatures();
-    generatePrecipitation();
-    reGraph();
+    calculateTemperatures(grid);
+    generatePrecipitation(grid);
+    reGraph(grid);
     drawCoastline();
 
     Rivers.generate(erosionAllowed);
@@ -340,9 +340,9 @@ export function open(options) {
 
     if (erosionAllowed) addLakesInDeepDepressions();
     OceanLayers(grid);
-    calculateTemperatures();
-    generatePrecipitation();
-    reGraph();
+    calculateTemperatures(grid);
+    generatePrecipitation(grid);
+    reGraph(grid);
     drawCoastline();
 
     if (erosionAllowed) Rivers.generate(true);

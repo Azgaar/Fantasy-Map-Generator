@@ -125,10 +125,8 @@ window.Submap = (function () {
     OceanLayers(grid);
 
     calculateMapCoordinates();
-    // calculateTemperatures();
-    // generatePrecipitation();
     stage("Cell cleanup.");
-    reGraph();
+    reGraph(grid);
 
     // remove misclassified cells
     stage("Define coastline.");

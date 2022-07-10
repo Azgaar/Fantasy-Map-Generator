@@ -6,16 +6,23 @@ interface Navigator {
 
 interface Window {
   mapCoordinates: IMapCoordinates;
-  $: typeof $;
+  $: typeof $; // jQuery
+
   // untyped IIFE modules
-  Biomes: typeof Biomes;
-  Names: typeof Names;
-  ThreeD: typeof ThreeD;
-  ReliefIcons: typeof ReliefIcons;
-  Zoom: typeof Zoom;
-  Lakes: typeof Lakes;
-  HeightmapGenerator: typeof HeightmapGenerator;
-  OceanLayers: typeof OceanLayers;
+  Biomes: any;
+  Names: any;
+  ThreeD: any;
+  ReliefIcons: any;
+  Zoom: any;
+  Lakes: any;
+  HeightmapGenerator: any;
+  OceanLayers: any;
+  Rivers: any;
+  Cultures: any;
+  BurgsAndStates: any;
+  Religions: any;
+  Military: any;
+  Markers: any;
 }
 
 interface Node {

@@ -60,8 +60,8 @@ export function editWorld() {
 
     updateGlobeTemperature();
     updateGlobePosition();
-    calculateTemperatures();
-    generatePrecipitation();
+    calculateTemperatures(grid);
+    generatePrecipitation(grid);
     const heights = new Uint8Array(pack.cells.h);
     Rivers.generate();
     Lakes.defineGroup();

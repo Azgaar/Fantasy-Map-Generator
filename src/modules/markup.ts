@@ -7,7 +7,7 @@ import {aleaPRNG} from "scripts/aleaPRNG";
 const {UNMARKED, LAND_COAST, WATER_COAST} = DISTANCE_FIELD;
 
 // define features (grid.features: ocean, lakes, islands) and calculate distance field (cells.t)
-export function markupGridFeatures(grid: IGraph & {cells: {h: UintArray}}) {
+export function markupGridFeatures(grid: IGridWithHeights) {
   TIME && console.time("markupGridFeatures");
   Math.random = aleaPRNG(seed); // get the same result on heightmap edit in Erase mode
 
@@ -173,8 +173,10 @@ export function reMarkFeatures() {
     return "gulf";
   }
 
-  function defineIslandGroup(cell, number) {
-    if (cell && features[cells.f[cell - 1]].type === "lake") return "lake_island";
+  function defineIslandGroup(cellId: number, number: number) {
+    const prevCellFeature = features[cells.f[cellId - 1]];
+
+    if (cellId && prevCellFeature && prevCellFeature.type === "lake") return "lake_island";
     if (number > grid.cells.i.length / 10) return "continent";
     if (number > grid.cells.i.length / 1000) return "island";
     return "isle";

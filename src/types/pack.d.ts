@@ -11,7 +11,7 @@ interface IPack extends IGraph {
 
 interface IPackCells extends IGraphCells {
   p: TPoints; // cell center points
-  h: UintArray; // heights, [0, 100], see MIN_LAND_HEIGHT constant
+  h: Uint8Array; // heights, [0, 100], see MIN_LAND_HEIGHT constant
   t: Int8Array; // see DISTANCE_FIELD enum
   f: Uint16Array; // feature id, see TPackFeature
   g: UintArray;
