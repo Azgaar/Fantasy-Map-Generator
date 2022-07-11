@@ -337,6 +337,11 @@
     "@types/d3-voronoi" "*"
     "@types/d3-zoom" "^1"
 
+"@types/delaunator@^5.0.0":
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/@types/delaunator/-/delaunator-5.0.0.tgz#c6be322f0f3eff9fa9f6a5dcaa2ded54913b2d17"
+  integrity sha512-00nrXdKbhF9FQsq6MskmdUgEqd5MWzA+x8CoDt8OJqbS4QB528SgkOfEcnQMa2sIg2XTKowwwVQx8iGsAX6CAQ==
+
 "@types/estree@0.0.39":
   version "0.0.39"
   resolved "https://registry.yarnpkg.com/@types/estree/-/estree-0.0.39.tgz#e177e699ee1b8c22d23174caaa7422644389509f"

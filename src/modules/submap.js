@@ -130,6 +130,7 @@ window.Submap = (function () {
 
     // remove misclassified cells
     stage("Define coastline.");
+    reMarkFeatures();
     drawCoastline();
 
     /****************************************************/

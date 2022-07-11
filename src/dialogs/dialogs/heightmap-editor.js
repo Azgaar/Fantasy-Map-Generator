@@ -224,6 +224,7 @@ export function open(options) {
     calculateTemperatures(grid);
     generatePrecipitation(grid);
     reGraph(grid);
+    reMarkFeatures();
     drawCoastline();
 
     Rivers.generate(erosionAllowed);

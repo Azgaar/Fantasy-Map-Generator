@@ -1,5 +1,5 @@
 interface IPack extends IGraph {
-  cells: IPackCells;
+  cells: IGraphCells & IPackCells;
   features: TPackFeatures;
   states: IState[];
   cultures: ICulture[];
@@ -9,7 +9,7 @@ interface IPack extends IGraph {
   religions: IReligion[];
 }
 
-interface IPackCells extends IGraphCells {
+interface IPackCells {
   p: TPoints; // cell center points
   h: Uint8Array; // heights, [0, 100], see MIN_LAND_HEIGHT constant
   t: Int8Array; // see DISTANCE_FIELD enum
@@ -30,6 +30,11 @@ interface IPackCells extends IGraphCells {
   haven: UintArray;
   harbor: UintArray;
   q: d3.Quadtree<number[]>;
+}
+
+interface IPackBase extends IGraph {
+  cells: IGraphCells & Partial<IPackCells>;
+  features?: TPackFeatures;
 }
 
 interface IPackFeatureBase {

@@ -96,7 +96,7 @@ function markup({
 }
 
 // Re-mark features (ocean, lakes, islands)
-export function reMarkFeatures() {
+export function reMarkFeatures(pack: IPackBase, grid: IGrid) {
   TIME && console.time("reMarkFeatures");
   const {cells} = pack;
   const features: TPackFeatures = [0];
@@ -165,7 +165,7 @@ export function reMarkFeatures() {
   }
 
   // markupPackLand
-  markup({graph: pack, distanceField: pack.cells.t, start: 3, increment: 1, limit: INT8_MAX});
+  markup({graph: pack, distanceField: cells.t, start: 3, increment: 1, limit: INT8_MAX});
 
   function defineOceanGroup(number: number) {
     if (number > grid.cells.i.length / 25) return "ocean";

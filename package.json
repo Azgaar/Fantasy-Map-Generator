@@ -13,6 +13,7 @@
     "@rollup/plugin-node-resolve": "^13.3.0",
     "@rollup/plugin-replace": "^4.0.0",
     "@types/d3": "^5.9.0",
+    "@types/delaunator": "^5.0.0",
     "@types/jquery": "^3.5.14",
     "@types/jqueryui": "^1.12.16",
     "rollup": "^2.75.7",

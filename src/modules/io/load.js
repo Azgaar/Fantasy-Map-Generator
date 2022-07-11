@@ -388,6 +388,7 @@ async function parseLoadedData(data) {
       grid = JSON.parse(data[6]);
 
       const {cells, vertices} = calculateVoronoi(grid.points, grid.boundary);
+
       grid.cells = cells;
       grid.vertices = vertices;
 

@@ -6,7 +6,7 @@ import {initLayers, renderLayer, restoreLayers} from "layers";
 // @ts-expect-error js module
 import {drawCoastline} from "modules/coastline";
 import {calculateMapCoordinates, defineMapSize} from "modules/coordinates";
-import {markupGridFeatures} from "modules/markup";
+import {markupGridFeatures, reMarkFeatures} from "modules/markup";
 // @ts-expect-error js module
 import {drawScaleBar, Rulers} from "modules/measurers";
 // @ts-expect-error js module
@@ -55,7 +55,8 @@ export async function generate(options?: IGenerationOptions) {
 
     const updatedGrid = await updateGrid(grid, precreatedGraph);
 
-    reGraph(updatedGrid);
+    const pack = reGraph(updatedGrid);
+    reMarkFeatures(pack, grid);
     drawCoastline();
 
     Rivers.generate();

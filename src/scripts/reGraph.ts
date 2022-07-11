@@ -10,7 +10,7 @@ import {DISTANCE_FIELD, MIN_LAND_HEIGHT} from "config/generation";
 const {LAND_COAST, WATER_COAST, DEEPER_WATER} = DISTANCE_FIELD;
 
 // recalculate Voronoi Graph to pack cells
-export function reGraph(grid: IGrid) {
+export function reGraph(grid: IGrid): IPackBase {
   TIME && console.time("reGraph");
   const {cells: gridCells, points, features} = grid;
   const newCells: {p: TPoints; g: number[]; h: number[]} = {p: [], g: [], h: []}; // store new data
@@ -56,14 +56,20 @@ export function reGraph(grid: IGrid) {
     return Math.min(area, UINT16_MAX);
   }
 
-  const {cells: packCells, vertices} = calculateVoronoi(newCells.p, grid.boundary);
-  pack.vertices = vertices;
-  pack.cells = packCells;
-  pack.cells.p = newCells.p;
-  pack.cells.g = createTypedArray({maxValue: grid.points.length, from: newCells.g});
-  pack.cells.q = d3.quadtree(newCells.p.map(([x, y], i) => [x, y, i]));
-  pack.cells.h = new Uint8Array(newCells.h);
-  pack.cells.area = createTypedArray({maxValue: UINT16_MAX, from: pack.cells.i}).map(getCellArea);
+  const {cells, vertices} = calculateVoronoi(newCells.p, grid.boundary);
+
+  const pack: IPackBase = {
+    vertices,
+    cells: {
+      ...cells,
+      p: newCells.p,
+      g: createTypedArray({maxValue: grid.points.length, from: newCells.g}),
+      q: d3.quadtree(newCells.p.map(([x, y], i) => [x, y, i])),
+      h: new Uint8Array(newCells.h),
+      area: createTypedArray({maxValue: UINT16_MAX, from: cells.i}).map(getCellArea)
+    }
+  };
 
   TIME && console.timeEnd("reGraph");
+  return pack;
 }

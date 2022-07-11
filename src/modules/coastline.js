@@ -1,7 +1,6 @@
 import * as d3 from "d3";
 
 import {ERROR, TIME} from "config/logging";
-import {reMarkFeatures} from "modules/markup";
 import {clipPoly} from "utils/lineUtils";
 import {round} from "utils/stringUtils";
 import {Ruler} from "modules/measurers";
@@ -9,7 +8,6 @@ import {Ruler} from "modules/measurers";
 // Detect and draw the coastline
 export function drawCoastline() {
   TIME && console.time("drawCoastline");
-  reMarkFeatures();
 
   const {cells, vertices, features} = pack;
   const n = cells.i.length;

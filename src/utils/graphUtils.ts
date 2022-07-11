@@ -1,14 +1,13 @@
-// @ts-nocheck
 import * as d3 from "d3";
 import Delaunator from "delaunator";
 
+import {DISTANCE_FIELD, MIN_LAND_HEIGHT} from "config/generation";
+import {Voronoi} from "modules/voronoi";
 import {aleaPRNG} from "scripts/aleaPRNG";
 import {TIME} from "../config/logging";
 import {createTypedArray} from "./arrayUtils";
 import {rn} from "./numberUtils";
 import {byId} from "./shorthands";
-import {Voronoi} from "/src/modules/voronoi";
-import {MIN_LAND_HEIGHT, DISTANCE_FIELD} from "config/generation";
 
 // check if new grid graph should be generated or we can use the existing one
 export function shouldRegenerateGridPoints(grid: IGrid) {
@@ -45,21 +44,18 @@ function placePoints() {
 }
 
 // calculate Delaunay and then Voronoi diagram
-export function calculateVoronoi(points: number[][], boundary: number[][]) {
+export function calculateVoronoi(points: TPoints, boundary: TPoints): IGraph {
   TIME && console.time("calculateDelaunay");
-  const allPoints = points.concat(boundary);
+  const allPoints: TPoints = points.concat(boundary);
   const delaunay = Delaunator.from(allPoints);
   TIME && console.timeEnd("calculateDelaunay");
 
   TIME && console.time("calculateVoronoi");
-  const voronoi = new Voronoi(delaunay, allPoints, points.length);
+  const {cells, vertices} = new Voronoi(delaunay, allPoints, points.length);
+  const i = createTypedArray({maxValue: points.length, length: points.length}).map((_, i) => i); // array of indexes
 
-  const cells = voronoi.cells;
-  cells.i = createTypedArray({maxValue: points.length, length: points.length}).map((_, i) => i); // array of indexes
-  const vertices = voronoi.vertices;
   TIME && console.timeEnd("calculateVoronoi");
-
-  return {cells, vertices};
+  return {cells: {...cells, i}, vertices};
 }
 
 // add points along map edge to pseudo-clip voronoi cells

@@ -207,6 +207,8 @@ export function resolveVersionConflicts(version) {
     defs.select("#water").selectAll("path").remove();
     coastline.selectAll("path").remove();
     lakes.selectAll("path").remove();
+
+    reMarkFeatures();
     drawCoastline();
   }
 
