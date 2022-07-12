@@ -3,7 +3,7 @@ import * as d3 from "d3";
 import {TIME} from "config/logging";
 import {UINT16_MAX} from "constants";
 import {createTypedArray} from "utils/arrayUtils";
-import {calculateVoronoi, getPackPolygon} from "utils/graphUtils";
+import {calculateVoronoi} from "scripts/generation/graph";
 import {rn} from "utils/numberUtils";
 import {DISTANCE_FIELD, MIN_LAND_HEIGHT} from "config/generation";
 
@@ -51,12 +51,13 @@ export function reGraph(grid: IGrid): IPackBase {
     newCells.h.push(height);
   }
 
+  const {cells, vertices} = calculateVoronoi(newCells.p, grid.boundary);
+
   function getCellArea(i: number) {
-    const area = Math.abs(d3.polygonArea(getPackPolygon(i)));
+    const polygon = cells.v[i].map(v => vertices.p[v]);
+    const area = Math.abs(d3.polygonArea(polygon));
     return Math.min(area, UINT16_MAX);
   }
-
-  const {cells, vertices} = calculateVoronoi(newCells.p, grid.boundary);
 
   const pack: IPackBase = {
     vertices,
@@ -64,7 +65,7 @@ export function reGraph(grid: IGrid): IPackBase {
       ...cells,
       p: newCells.p,
       g: createTypedArray({maxValue: grid.points.length, from: newCells.g}),
-      q: d3.quadtree(newCells.p.map(([x, y], i) => [x, y, i])),
+      q: d3.quadtree(newCells.p.map(([x, y], i) => [x, y, i])) as unknown as Quadtree,
       h: new Uint8Array(newCells.h),
       area: createTypedArray({maxValue: UINT16_MAX, from: cells.i}).map(getCellArea)
     }

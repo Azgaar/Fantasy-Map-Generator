@@ -1,7 +1,7 @@
-export function drawRivers() {
+export function drawRivers(pack: IPack) {
   rivers.selectAll("*").remove();
 
-  const {addMeandering, getRiverPath} = Rivers;
+  const {addMeandering, getRiverPath} = window.Rivers;
 
   const riverPaths = pack.rivers.map(({cells, points, i, widthFactor, sourceWidth}) => {
     if (!cells || cells.length < 2) return;
@@ -12,7 +12,7 @@ export function drawRivers() {
       points = undefined;
     }
 
-    const meanderedPoints = addMeandering(cells, points);
+    const meanderedPoints = addMeandering(pack, cells, points);
     const path = getRiverPath(meanderedPoints, widthFactor, sourceWidth);
     return `<path id="river${i}" d="${path}"/>`;
   });

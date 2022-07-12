@@ -33,3 +33,8 @@ interface Node {
   on: (name: string, fn: EventListenerOrEventListenerObject, options?: AddEventListenerOptions) => void;
   off: (name: string, fn: EventListenerOrEventListenerObject) => void;
 }
+
+interface Quadtree extends d3.Quadtree<Number> {
+  find: (x: number, y: number, radius: number) => [x: number, y: number, cellId: number];
+  findAll: (x: number, y: number, radius: number) => [x: number, y: number, cellId: number][];
+}

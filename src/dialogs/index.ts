@@ -15,7 +15,8 @@ const dialogsMap = {
   lakeEditor: "lake-editor",
   religionsEditor: "religions-editor",
   statesEditor: "states-editor",
-  unitsEditor: "units-editor"
+  unitsEditor: "units-editor",
+  worldConfigurator: "world-configurator"
 };
 
 type TDialog = keyof typeof dialogsMap;

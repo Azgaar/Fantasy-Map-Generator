@@ -131,11 +131,11 @@ async function openEmblemEditor() {
 }
 
 function regenerateRivers() {
-  Rivers.generate();
+  Rivers.generate(pack, grid);
   Lakes.defineGroup();
   Rivers.specify();
   if (!layerIsOn("toggleRivers")) toggleLayer("toggleRivers");
-  else renderLayer("rivers");
+  else renderLayer("rivers", pack);
 }
 
 function recalculatePopulation() {
@@ -588,8 +588,8 @@ function addRiverOnClick() {
   const initialFlux = grid.cells.prec[cells.g[i]];
   cells.fl[i] = initialFlux;
 
-  const h = alterHeights();
-  resolveDepressions(h);
+  const h = alterHeights(pacl.cells);
+  resolveDepressions(pack, h);
 
   while (i) {
     cells.r[i] = riverId;
@@ -663,7 +663,7 @@ function addRiverOnClick() {
   const defaultWidthFactor = rn(1 / (pointsInput.dataset.cells / 10000) ** 0.25, 2);
   const widthFactor =
     river?.widthFactor || (!parent || parent === riverId ? defaultWidthFactor * 1.2 : defaultWidthFactor);
-  const meanderedPoints = addMeandering(riverCells);
+  const meanderedPoints = addMeandering(pack, riverCells);
 
   const discharge = cells.fl[mouth]; // m3 in second
   const length = getApproximateLength(meanderedPoints);
@@ -704,7 +704,7 @@ function addRiverOnClick() {
   riversG.append("path").attr("id", id).attr("d", path);
 
   if (d3.event.shiftKey === false) {
-    Lakes.cleanupLakeData();
+    Lakes.cleanupLakeData(pack);
     unpressClickToAddButton();
     document.getElementById("addNewRiver").classList.remove("pressed");
     if (addNewRiver.offsetParent) riversOverviewRefresh.click();

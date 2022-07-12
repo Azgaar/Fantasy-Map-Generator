@@ -31,7 +31,7 @@ export function editRiver(id) {
 
   const river = getRiver();
   const {cells, points} = river;
-  const riverPoints = Rivers.getRiverPoints(cells, points);
+  const riverPoints = Rivers.getRiverPoints(pack, cells, points);
   drawControlPoints(riverPoints);
   drawCells(cells);
 
@@ -98,7 +98,7 @@ export function editRiver(id) {
   function updateRiverWidth(river) {
     const {addMeandering, getWidth, getOffset} = Rivers;
     const {cells, discharge, widthFactor, sourceWidth} = river;
-    const meanderedPoints = addMeandering(cells);
+    const meanderedPoints = addMeandering(pack, cells);
     river.width = getWidth(getOffset(discharge, meanderedPoints.length, widthFactor, sourceWidth));
 
     const width = `${rn(river.width * distanceScaleInput.value, 3)} ${distanceUnitInput.value}`;
@@ -169,7 +169,7 @@ export function editRiver(id) {
     river.cells = river.points.map(([x, y]) => findCell(x, y));
 
     const {widthFactor, sourceWidth} = river;
-    const meanderedPoints = Rivers.addMeandering(river.cells, river.points);
+    const meanderedPoints = Rivers.addMeandering(pack, river.cells, river.points);
 
     const path = Rivers.getRiverPath(meanderedPoints, widthFactor, sourceWidth);
     elSelected.attr("d", path);

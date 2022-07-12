@@ -6,6 +6,7 @@ import {debounce} from "utils/functionUtils";
 import {restoreLayers} from "layers";
 import {undraw} from "scripts/generation/generation";
 import {closeDialogs} from "dialogs/utils";
+import {openDialog} from "dialogs";
 
 window.UISubmap = (function () {
   byId("submapPointsInput").addEventListener("input", function () {
@@ -312,7 +313,7 @@ window.UISubmap = (function () {
 
     restoreLayers();
     if (ThreeD.options.isOn) ThreeD.redraw();
-    if ($("#worldConfigurator").is(":visible")) editWorld();
+    if ($("#worldConfigurator").is(":visible")) openDialog("worldConfigurator");
   }
 
   function changeStyles(scale) {

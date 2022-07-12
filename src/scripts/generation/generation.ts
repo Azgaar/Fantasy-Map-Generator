@@ -2,6 +2,7 @@ import * as d3 from "d3";
 
 import {ERROR, INFO, WARN} from "config/logging";
 import {closeDialogs} from "dialogs/utils";
+import {openDialog} from "dialogs";
 import {initLayers, renderLayer, restoreLayers} from "layers";
 // @ts-expect-error js module
 import {drawCoastline} from "modules/coastline";
@@ -29,11 +30,29 @@ import {rankCells} from "../rankCells";
 import {showStatistics} from "../statistics";
 import {createGrid} from "./grid";
 import {reGraph} from "./reGraph";
+import {getInputValue, setInputValue} from "utils/nodeUtils";
 
-const {Zoom, Lakes, OceanLayers, Rivers, Biomes, Cultures, BurgsAndStates, Religions, Military, Markers, Names} =
-  window;
+const {
+  Zoom,
+  Lakes,
+  OceanLayers,
+  Rivers,
+  Biomes,
+  Cultures,
+  BurgsAndStates,
+  Religions,
+  Military,
+  Markers,
+  Names,
+  ThreeD
+} = window;
 
-async function generate(options?: {seed: string; graph: IGrid}) {
+interface IGenerationOptions {
+  seed: string;
+  graph: IGrid;
+}
+
+async function generate(options?: IGenerationOptions) {
   try {
     const timeStart = performance.now();
     const {seed: precreatedSeed, graph: precreatedGraph} = options || {};
@@ -47,17 +66,17 @@ async function generate(options?: {seed: string; graph: IGrid}) {
     randomizeOptions();
 
     const newGrid = await createGrid(grid, precreatedGraph);
+    const newPack = reGraph(newGrid);
 
-    const pack = reGraph(newGrid);
-    reMarkFeatures(pack, newGrid);
-    drawCoastline();
+    reMarkFeatures(newPack, newGrid);
+    drawCoastline(newPack);
 
-    Rivers.generate();
-    renderLayer("rivers");
-    Lakes.defineGroup();
-    Biomes.define();
+    Rivers.generate(newPack, newGrid);
+    renderLayer("rivers", newPack);
+    Lakes.defineGroup(newPack);
+    Biomes.define(newPack, newGrid);
 
-    rankCells();
+    rankCells(newPack);
     Cultures.generate();
     Cultures.expand();
     BurgsAndStates.generate();
@@ -81,6 +100,9 @@ async function generate(options?: {seed: string; graph: IGrid}) {
 
     drawScaleBar(window.scale);
     Names.getMapName();
+
+    // @ts-expect-error redefine global
+    pack = newPack;
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - timeStart) / 1000, 2)}s`);
     showStatistics();
@@ -142,10 +164,10 @@ export function undraw() {
   unfog();
 }
 
-export const regenerateMap = debounce(async function (options) {
+export const regenerateMap = debounce(async function (options: IGenerationOptions) {
   WARN && console.warn("Generate new random map");
 
-  const cellsDesired = +byId("pointsInput").dataset.cells;
+  const cellsDesired = Number(byId("pointsInput")?.dataset.cells);
   const shouldShowLoading = cellsDesired > 10000;
   shouldShowLoading && showLoading();
 
@@ -156,7 +178,7 @@ export const regenerateMap = debounce(async function (options) {
   await generate(options);
   restoreLayers();
   if (ThreeD.options.isOn) ThreeD.redraw();
-  if ($("#worldConfigurator").is(":visible")) editWorld();
+  if ($("#worldConfigurator").is(":visible")) openDialog("worldConfigurator");
 
   shouldShowLoading && hideLoading();
   clearMainTip();
@@ -164,14 +186,13 @@ export const regenerateMap = debounce(async function (options) {
 
 // focus on coordinates, cell or burg provided in searchParams
 function focusOn() {
-  const url = new URL(window.location.href);
-  const params = url.searchParams;
+  const params = new URL(window.location.href).searchParams;
 
   const fromMGCG = params.get("from") === "MFCG" && document.referrer;
   if (fromMGCG) {
-    if (params.get("seed").length === 13) {
+    if (params.get("seed")?.length === 13) {
       // show back burg from MFCG
-      const burgSeed = params.get("seed").slice(-4);
+      const burgSeed = params.get("seed")!.slice(-4);
       params.set("burg", burgSeed);
     } else {
       // select burg for MFCG
@@ -185,10 +206,10 @@ function focusOn() {
   const burgParam = params.get("burg");
 
   if (scaleParam || cellParam || burgParam) {
-    const scale = +scaleParam || 8;
+    const scale = scaleParam ? Number(scaleParam) : 8;
 
     if (cellParam) {
-      const cell = +params.get("cell");
+      const cell = Number(scaleParam);
       const [x, y] = pack.cells.p[cell];
       Zoom.to(x, y, scale, 1600);
       return;
@@ -203,14 +224,14 @@ function focusOn() {
       return;
     }
 
-    const x = +params.get("x") || graphWidth / 2;
-    const y = +params.get("y") || graphHeight / 2;
+    const x = params.get("x") ? Number(params.get("x")) : graphWidth / 2;
+    const y = params.get("y") ? Number(params.get("y")) : graphHeight / 2;
     Zoom.to(x, y, scale, 1600);
   }
 }
 
 // find burg for MFCG and focus on it
-function findBurgForMFCG(params) {
+function findBurgForMFCG(params: URLSearchParams) {
   const {cells, burgs} = pack;
 
   if (pack.burgs.length < 2) {
@@ -219,17 +240,17 @@ function findBurgForMFCG(params) {
   }
 
   // used for selection
-  const size = +params.get("size");
-  const coast = +params.get("coast");
-  const port = +params.get("port");
-  const river = +params.get("river");
+  const size = params.get("size") ? Number(params.get("size")) : 10;
+  const coast = Boolean(params.get("coast"));
+  const port = Boolean(params.get("port"));
+  const river = Boolean(params.get("river"));
 
   let selection = defineSelection(coast, port, river);
   if (!selection.length) selection = defineSelection(coast, !port, !river);
-  if (!selection.length) selection = defineSelection(!coast, 0, !river);
+  if (!selection.length) selection = defineSelection(!coast, false, !river);
   if (!selection.length) selection = [burgs[1]]; // select first if nothing is found
 
-  function defineSelection(coast, port, river) {
+  function defineSelection(coast: boolean, port: boolean, river: boolean) {
     if (port && river) return burgs.filter(b => b.port && cells.r[b.cell]);
     if (!port && coast && river) return burgs.filter(b => !b.port && cells.t[b.cell] === 1 && cells.r[b.cell]);
     if (!coast && !river) return burgs.filter(b => cells.t[b.cell] !== 1 && !cells.r[b.cell]);
@@ -240,29 +261,27 @@ function findBurgForMFCG(params) {
 
   // select a burg with closest population from selection
   const selected = d3.scan(selection, (a, b) => Math.abs(a.population - size) - Math.abs(b.population - size));
-  const burgId = selection[selected].i;
-  if (!burgId) {
-    ERROR && console.error("Cannot select a burg for MFCG");
-    return;
-  }
+  const burgId = selected && selection[selected].i;
+  if (!burgId) return ERROR && console.error("Cannot select a burg for MFCG");
 
   const b = burgs[burgId];
-  const referrer = new URL(document.referrer);
-  for (let p of referrer.searchParams) {
-    if (p[0] === "name") b.name = p[1];
-    else if (p[0] === "size") b.population = +p[1];
-    else if (p[0] === "seed") b.MFCG = +p[1];
-    else if (p[0] === "shantytown") b.shanty = +p[1];
-    else b[p[0]] = +p[1]; // other parameters
+  const searchParams = new URL(document.referrer).searchParams;
+  for (let [param, value] of searchParams) {
+    if (param === "name") b.name = value;
+    else if (param === "size") b.population = +value;
+    else if (param === "seed") b.MFCG = +value;
+    else if (param === "shantytown") b.shanty = +value;
   }
-  if (params.get("name") && params.get("name") != "null") b.name = params.get("name");
+
+  const nameParam = params.get("name");
+  if (nameParam && nameParam !== "null") b.name = nameParam;
 
   const label = burgLabels.select("[data-id='" + burgId + "']");
   if (label.size()) {
     label
       .text(b.name)
       .classed("drag", true)
-      .on("mouseover", function () {
+      .on("mouseover", function (this: Element) {
         d3.select(this).classed("drag", false);
         label.on("mouseover", null);
       });
@@ -270,24 +289,27 @@ function findBurgForMFCG(params) {
 
   Zoom.to(b.x, b.y, 8, 1600);
   Zoom.invoke();
+
   tip("Here stands the glorious city of " + b.name, true, "success", 15000);
 }
 
 // set map seed (string!)
-function setSeed(precreatedSeed) {
+function setSeed(precreatedSeed?: string) {
   if (!precreatedSeed) {
     const first = !mapHistory[0];
-    const url = new URL(window.location.href);
-    const params = url.searchParams;
-    const urlSeed = url.searchParams.get("seed");
-    if (first && params.get("from") === "MFCG" && urlSeed.length === 13) seed = urlSeed.slice(0, -4);
+
+    const params = new URL(window.location.href).searchParams;
+    const urlSeed = params.get("seed");
+    const optionsSeed = getInputValue("optionsSeed");
+
+    if (first && params.get("from") === "MFCG" && urlSeed?.length === 13) seed = urlSeed.slice(0, -4);
     else if (first && urlSeed) seed = urlSeed;
-    else if (optionsSeed.value && optionsSeed.value != seed) seed = optionsSeed.value;
+    else if (optionsSeed && optionsSeed !== seed) seed = optionsSeed;
     else seed = generateSeed();
   } else {
     seed = precreatedSeed;
   }
 
-  byId("optionsSeed").value = seed;
+  setInputValue("optionsSeed", seed);
   Math.random = aleaPRNG(seed);
 }

@@ -1,18 +1,19 @@
 import * as d3 from "d3";
 
 import {INFO} from "config/logging";
+import {closeDialogs} from "dialogs/utils";
 import {updatePresetInput} from "layers";
+import {reMarkFeatures} from "modules/markup";
 import {setDefaultEventHandlers} from "scripts/events";
+import {regenerateMap} from "scripts/generation/generation";
+import {calculateVoronoi} from "scripts/generation/graph";
 import {ldb} from "scripts/indexedDB";
 import {tip} from "scripts/tooltips";
 import {last} from "utils/arrayUtils";
 import {parseError} from "utils/errorUtils";
-import {calculateVoronoi, findCell} from "utils/graphUtils";
+import {findCell} from "utils/graphUtils";
 import {link} from "utils/linkUtils";
 import {minmax, rn} from "utils/numberUtils";
-import {regenerateMap} from "scripts/generation/generation";
-import {reMarkFeatures} from "modules/markup";
-import {closeDialogs} from "dialogs/utils";
 
 // add drag to upload logic, pull request from @evyatron
 export function addDragToUpload() {

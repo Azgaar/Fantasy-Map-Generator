@@ -29,7 +29,7 @@ interface IPackCells {
   burg: UintArray;
   haven: UintArray;
   harbor: UintArray;
-  q: d3.Quadtree<number[]>;
+  q: Quadtree;
 }
 
 interface IPackBase extends IGraph {
@@ -95,6 +95,9 @@ interface IBurg {
   x: number;
   y: number;
   population: number;
+  port: number;
+  shanty: number;
+  MFCG?: string | number;
   removed?: boolean;
 }
 
@@ -119,4 +122,5 @@ interface IRiver {
   length: number;
   discharge: number;
   cells: number[];
+  points?: number[];
 }

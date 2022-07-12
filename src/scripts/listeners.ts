@@ -8,6 +8,8 @@ import {addResizeListener} from "modules/ui/options";
 // @ts-ignore
 import {addDragToUpload} from "modules/io/load";
 import {addHotkeyListeners} from "scripts/hotkeys";
+// @ts-ignore
+import {addFindAll} from "scripts/findAll";
 
 export function addGlobalListeners() {
   if (PRODUCTION) {
@@ -22,6 +24,7 @@ export function addGlobalListeners() {
   addHotkeyListeners();
   assignSpeakerBehavior();
   addDragToUpload();
+  addFindAll();
 }
 
 function registerServiceWorker() {

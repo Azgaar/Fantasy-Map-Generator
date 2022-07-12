@@ -168,6 +168,8 @@ optionsContent.on("click", function (event) {
   else if (id === "translateExtent") toggleTranslateExtent(event.target);
   else if (id === "speakerTest") testSpeaker();
   else if (id === "themeColorRestore") restoreDefaultThemeColor();
+  else if (id === "configureWorld") openDialog("worldConfigurator");
+  else if (id === "optionsReset") restoreDefaultOptions();
 });
 
 function mapSizeInputChange() {
@@ -1025,6 +1027,7 @@ export function toggle3dOptions() {
   isLoaded = true;
 
   byId("options3dUpdate").on("click", ThreeD.update);
+  byId("options3dConfigureWorld").on("click", () => openDialog("worldConfigurator"));
   byId("options3dSave").on("click", ThreeD.saveScreenshot);
   byId("options3dOBJSave").on("click", ThreeD.saveOBJ);
 

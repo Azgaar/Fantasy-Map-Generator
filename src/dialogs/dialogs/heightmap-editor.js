@@ -224,10 +224,10 @@ export function open(options) {
     calculateTemperatures(grid);
     generatePrecipitation(grid);
     reGraph(grid);
-    reMarkFeatures();
-    drawCoastline();
+    reMarkFeatures(pack, newGrid);
+    drawCoastline(pack);
 
-    Rivers.generate(erosionAllowed);
+    Rivers.generate(pack, grid, erosionAllowed);
 
     if (!erosionAllowed) {
       for (const i of pack.cells.i) {
@@ -237,7 +237,7 @@ export function open(options) {
       }
     }
 
-    renderLayer("rivers");
+    renderLayer("rivers", pack);
     Lakes.defineGroup();
     Biomes.define();
     rankCells();
@@ -344,9 +344,9 @@ export function open(options) {
     calculateTemperatures(grid);
     generatePrecipitation(grid);
     reGraph(grid);
-    drawCoastline();
+    drawCoastline(pack);
 
-    if (erosionAllowed) Rivers.generate(true);
+    if (erosionAllowed) Rivers.generate(pack, grid, true);
 
     // assign saved pack data from grid back to pack
     const n = pack.cells.i.length;

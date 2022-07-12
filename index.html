@@ -1869,15 +1869,10 @@
             <button
               id="configureWorld"
               data-tip="Click to open world configurator to setup map position on Globe and World climate"
-              onclick="editWorld()"
             >
               Configure World
             </button>
-            <button
-              id="optionsReset"
-              data-tip="Click to restore default options (page will be reloaded)"
-              onclick="restoreDefaultOptions()"
-            >
+            <button id="optionsReset" data-tip="Click to restore default options (page will be reloaded)">
               Reset to defaults
             </button>
           </div>
@@ -5547,8 +5542,8 @@
         <div id="options3dBottom" style="margin-top: 0.2em">
           <button id="options3dUpdate" data-tip="Update the scene" class="icon-cw"></button>
           <button
+            id="options3dConfigureWorld"
             data-tip="Configure world and map size and climate settings"
-            onclick="editWorld()"
             class="icon-globe"
           ></button>
           <button id="options3dSave" data-tip="Save screenshot of the 3d scene" class="icon-button-screenshot"></button>

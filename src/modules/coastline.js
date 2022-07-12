@@ -6,7 +6,7 @@ import {round} from "utils/stringUtils";
 import {Ruler} from "modules/measurers";
 
 // Detect and draw the coastline
-export function drawCoastline() {
+export function drawCoastline(pack) {
   TIME && console.time("drawCoastline");
 
   const {cells, vertices, features} = pack;

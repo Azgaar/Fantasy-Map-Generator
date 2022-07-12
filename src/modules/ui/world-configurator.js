@@ -7,8 +7,7 @@ import {renderLayer} from "layers";
 
 let isLoaded = false;
 
-export function editWorld() {
-  if (customization) return;
+export function open() {
   $("#worldConfigurator").dialog({
     title: "Configure World",
     resizable: false,
@@ -63,7 +62,7 @@ export function editWorld() {
     calculateTemperatures(grid);
     generatePrecipitation(grid);
     const heights = new Uint8Array(pack.cells.h);
-    Rivers.generate();
+    Rivers.generate(pack, grid);
     Lakes.defineGroup();
     Rivers.specify();
     pack.cells.h = new Float32Array(heights);
@@ -73,7 +72,7 @@ export function editWorld() {
     if (layerIsOn("togglePrec")) renderLayer("precipitation");
     if (layerIsOn("toggleBiomes")) renderLayer("biomes");
     if (layerIsOn("toggleCoordinates")) drawCoordinates();
-    if (layerIsOn("toggleRivers")) renderLayer("rivers");
+    if (layerIsOn("toggleRivers")) renderLayer("rivers", pack);
     if (document.getElementById("canvas3d")) setTimeout(ThreeD.update(), 500);
   }
 

@@ -8,7 +8,7 @@ const FLUX_MAX_BONUS = 250;
 const SUITABILITY_FACTOR = 5;
 
 // assess cells suitability for population and rank cells for culture centers and burgs placement
-export function rankCells() {
+export function rankCells(pack: IPack) {
   TIME && console.time("rankCells");
   const {cells, features} = pack;
 

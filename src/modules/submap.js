@@ -7,6 +7,7 @@ import {rn} from "utils/numberUtils";
 import {aleaPRNG} from "scripts/aleaPRNG";
 import {renderLayer} from "layers";
 import {markupGridFeatures} from "modules/markup";
+import {generateGrid} from "scripts/generation/graph";
 
 window.Submap = (function () {
   const isWater = (pack, id) => pack.cells.h[id] < 20;
@@ -130,8 +131,8 @@ window.Submap = (function () {
 
     // remove misclassified cells
     stage("Define coastline.");
-    reMarkFeatures();
-    drawCoastline();
+    reMarkFeatures(pack, newGrid);
+    drawCoastline(pack);
 
     /****************************************************/
     /* Packed Graph */
@@ -210,8 +211,8 @@ window.Submap = (function () {
     }
 
     stage("Regenerating river network.");
-    Rivers.generate();
-    renderLayer("rivers");
+    Rivers.generate(pack, grid);
+    renderLayer("rivers", pack);
     Lakes.defineGroup();
 
     // biome calculation based on (resampled) grid.cells.temp and prec

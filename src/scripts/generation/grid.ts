@@ -1,5 +1,5 @@
 import {calculateTemperatures} from "modules/temperature";
-import {generateGrid} from "utils/graphUtils";
+import {generateGrid} from "scripts/generation/graph";
 import {calculateMapCoordinates, defineMapSize} from "modules/coordinates";
 import {markupGridFeatures} from "modules/markup";
 // @ts-expect-error js module

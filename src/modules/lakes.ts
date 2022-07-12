@@ -2,13 +2,14 @@ import * as d3 from "d3";
 
 import {TIME} from "config/logging";
 import {rn} from "utils/numberUtils";
+// @ts-expect-error js module
 import {aleaPRNG} from "scripts/aleaPRNG";
-import {byId} from "utils/shorthands";
 import {getInputNumber, getInputValue} from "utils/nodeUtils";
 import {DISTANCE_FIELD, MIN_LAND_HEIGHT} from "config/generation";
+import {byId} from "utils/shorthands";
 
 window.Lakes = (function () {
-  const setClimateData = function (h) {
+  const setClimateData = function (h: Uint8Array, pack: IPack, grid: IGrid) {
     const cells = pack.cells;
     const lakeOutCells = new Uint16Array(cells.i.length);
 
@@ -39,37 +40,39 @@ window.Lakes = (function () {
   };
 
   // get array of land cells aroound lake
-  const getShoreline = function (lake) {
+  const getShoreline = function (lake: IPackFeatureLake, pack: IPack) {
     const uniqueCells = new Set();
-    lake.vertices.forEach(v => pack.vertices.c[v].forEach(c => pack.cells.h[c] >= 20 && uniqueCells.add(c)));
+    lake.vertices.forEach(v =>
+      pack.vertices.c[v].forEach(c => pack.cells.h[c] >= MIN_LAND_HEIGHT && uniqueCells.add(c))
+    );
     lake.shoreline = [...uniqueCells];
   };
 
-  const prepareLakeData = h => {
+  const prepareLakeData = (h: Uint8Array, pack: IPack) => {
     const cells = pack.cells;
-    const ELEVATION_LIMIT = +document.getElementById("lakeElevationLimitOutput").value;
+    const ELEVATION_LIMIT = getInputNumber("lakeElevationLimitOutput");
 
-    pack.features.forEach(f => {
-      if (f.type !== "lake") return;
-      delete f.flux;
-      delete f.inlets;
-      delete f.outlet;
-      delete f.height;
-      delete f.closed;
-      !f.shoreline && Lakes.getShoreline(f);
+    pack.features.forEach(feature => {
+      if (!feature || feature.type !== "lake") return;
+      delete feature.flux;
+      delete feature.inlets;
+      delete feature.outlet;
+      delete feature.height;
+      delete feature.closed;
+      !feature.shoreline && getShoreline(feature, pack);
 
       // lake surface height is as lowest land cells around
-      const min = f.shoreline.sort((a, b) => h[a] - h[b])[0];
-      f.height = h[min] - 0.1;
+      const min = feature.shoreline.sort((a, b) => h[a] - h[b])[0];
+      feature.height = h[min] - 0.1;
 
       // check if lake can be open (not in deep depression)
       if (ELEVATION_LIMIT === 80) {
-        f.closed = false;
+        feature.closed = false;
         return;
       }
 
       let deep = true;
-      const threshold = f.height + ELEVATION_LIMIT;
+      const threshold = feature.height + ELEVATION_LIMIT;
       const queue = [min];
       const checked = [];
       checked[min] = true;
@@ -84,7 +87,7 @@ window.Lakes = (function () {
 
           if (h[n] < 20) {
             const nFeature = pack.features[cells.f[n]];
-            if (nFeature.type === "ocean" || f.height > nFeature.height) {
+            if ((nFeature && nFeature.type === "ocean") || feature.height > nFeature.height) {
               deep = false;
               break;
             }
@@ -95,11 +98,11 @@ window.Lakes = (function () {
         }
       }
 
-      f.closed = deep;
+      feature.closed = deep;
     });
   };
 
-  const cleanupLakeData = function () {
+  const cleanupLakeData = function (pack: IPack) {
     for (const feature of pack.features) {
       if (feature.type !== "lake") continue;
       delete feature.river;
@@ -117,14 +120,15 @@ window.Lakes = (function () {
     }
   };
 
-  const defineGroup = function () {
+  const defineGroup = function (pack: IPack) {
     for (const feature of pack.features) {
-      if (feature.type !== "lake") continue;
-      const lakeEl = lakes.select(`[data-f="${feature.i}"]`).node();
-      if (!lakeEl) continue;
+      if (feature && feature.type === "lake") {
+        const lakeEl = lakes.select(`[data-f="${feature.i}"]`).node();
+        if (!lakeEl) continue;
 
-      feature.group = getGroup(feature);
-      document.getElementById(feature.group).appendChild(lakeEl);
+        feature.group = getGroup(feature);
+        byId(feature.group)?.appendChild(lakeEl);
+      }
     }
   };
 

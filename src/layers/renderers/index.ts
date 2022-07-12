@@ -39,9 +39,9 @@ const layerRenderersMap = {
   temperature: drawTemperature
 };
 
-export function renderLayer(layerName: keyof typeof layerRenderersMap) {
-  const rendered = layerRenderersMap[layerName];
-  TIME && console.time(rendered.name);
-  rendered();
-  TIME && console.timeEnd(rendered.name);
+export function renderLayer(layerName: keyof typeof layerRenderersMap, ...args) {
+  const renderer = layerRenderersMap[layerName];
+  TIME && console.time(renderer.name);
+  renderer(...args);
+  TIME && console.timeEnd(renderer.name);
 }

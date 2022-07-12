@@ -102,7 +102,7 @@ export function createRiver() {
     const defaultWidthFactor = rn(1 / (pointsInput.dataset.cells / 10000) ** 0.25, 2);
     const widthFactor = 1.2 * defaultWidthFactor;
 
-    const meanderedPoints = addMeandering(riverCells);
+    const meanderedPoints = addMeandering(pack, riverCells);
 
     const discharge = cells.fl[mouth]; // m3 in second
     const length = getApproximateLength(meanderedPoints);

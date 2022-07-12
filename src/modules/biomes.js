@@ -85,7 +85,7 @@ window.Biomes = (function () {
   }
 
   // assign biome id for each cell
-  function define() {
+  function define(pack, grid) {
     TIME && console.time("defineBiomes");
     const {cells} = pack;
     const {temp, prec} = grid.cells;

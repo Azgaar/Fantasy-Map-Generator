@@ -8,7 +8,7 @@ import {rw, each} from "utils/probabilityUtils";
 import {aleaPRNG} from "scripts/aleaPRNG";
 
 window.Rivers = (function () {
-  const generate = function (allowErosion = true) {
+  const generate = function (pack, grid, allowErosion = true) {
     TIME && console.time("generateRivers");
     Math.random = aleaPRNG(seed);
     const {cells, features} = pack;
@@ -25,14 +25,14 @@ window.Rivers = (function () {
     cells.conf = new Uint8Array(cells.i.length); // confluences array
     let riverNext = 1; // first river id is 1
 
-    const h = alterHeights();
-    Lakes.prepareLakeData(h);
-    resolveDepressions(h);
+    const h = alterHeights(pack.cells);
+    Lakes.prepareLakeData(h, pack);
+    resolveDepressions(pack, h);
     drainWater();
     defineRivers();
 
     calculateConfluenceFlux();
-    Lakes.cleanupLakeData();
+    Lakes.cleanupLakeData(pack);
 
     if (allowErosion) {
       cells.h = Uint8Array.from(h); // apply gradient
@@ -42,14 +42,12 @@ window.Rivers = (function () {
     TIME && console.timeEnd("generateRivers");
 
     function drainWater() {
-      //const MIN_FLUX_TO_FORM_RIVER = 10 * distanceScale;
       const MIN_FLUX_TO_FORM_RIVER = 30;
       const cellsNumberModifier = (pointsInput.dataset.cells / 10000) ** 0.25;
 
       const prec = grid.cells.prec;
-      const area = pack.cells.area;
       const land = cells.i.filter(i => h[i] >= 20).sort((a, b) => h[b] - h[a]);
-      const lakeOutCells = Lakes.setClimateData(h);
+      const lakeOutCells = Lakes.setClimateData(h, pack, grid);
 
       land.forEach(function (i) {
         cells.fl[i] += prec[cells.g[i]] / cellsNumberModifier; // add flux from precipitation
@@ -195,7 +193,7 @@ window.Rivers = (function () {
         const parent = riverParents[key] || 0;
 
         const widthFactor = !parent || parent === riverId ? mainStemWidthFactor : defaultWidthFactor;
-        const meanderedPoints = addMeandering(riverCells);
+        const meanderedPoints = addMeandering(pack, riverCells);
         const discharge = cells.fl[mouth]; // m3 in second
         const length = getApproximateLength(meanderedPoints);
         const width = getWidth(getOffset(discharge, meanderedPoints.length, widthFactor, 0));
@@ -245,8 +243,7 @@ window.Rivers = (function () {
   };
 
   // add distance to water value to land cells to make map less depressed
-  const alterHeights = () => {
-    const {h, c, t} = pack.cells;
+  const alterHeights = ({h, c, t}) => {
     return Array.from(h).map((h, i) => {
       if (h < 20 || t[i] < 1) return h;
       return h + t[i] / 100 + d3.mean(c[i].map(c => t[c])) / 10000;
@@ -254,7 +251,7 @@ window.Rivers = (function () {
   };
 
   // depression filling algorithm (for a correct water flux modeling)
-  const resolveDepressions = function (h) {
+  const resolveDepressions = function (pack, h) {
     const {cells, features} = pack;
     const maxIterations = +document.getElementById("resolveDepressionsStepsOutput").value;
     const checkLakeMaxIteration = maxIterations * 0.85;
@@ -272,7 +269,7 @@ window.Rivers = (function () {
     for (let iteration = 0; depressions && iteration < maxIterations; iteration++) {
       if (progress.length > 5 && d3.sum(progress) > 0) {
         // bad progress, abort and set heights back
-        h = alterHeights();
+        h = alterHeights(pack.cells);
         depressions = progress[0];
         break;
       }
@@ -313,11 +310,11 @@ window.Rivers = (function () {
   };
 
   // add points at 1/3 and 2/3 of a line between adjacents river cells
-  const addMeandering = function (riverCells, riverPoints = null, meandering = 0.5) {
+  const addMeandering = (pack, riverCells, riverPoints = null, meandering = 0.5) => {
     const {fl, conf, h} = pack.cells;
     const meandered = [];
     const lastStep = riverCells.length - 1;
-    const points = getRiverPoints(riverCells, riverPoints);
+    const points = getRiverPoints(pack, riverCells, riverPoints);
     let step = h[riverCells[0]] < 20 ? 1 : 10;
 
     let fluxPrev = 0;
@@ -373,17 +370,17 @@ window.Rivers = (function () {
     return meandered;
   };
 
-  const getRiverPoints = (riverCells, riverPoints) => {
+  const getRiverPoints = (pack, riverCells, riverPoints) => {
     if (riverPoints) return riverPoints;
 
     const {p} = pack.cells;
     return riverCells.map((cell, i) => {
-      if (cell === -1) return getBorderPoint(riverCells[i - 1]);
+      if (cell === -1) return getBorderPoint(pack, riverCells[i - 1]);
       return p[cell];
     });
   };
 
-  const getBorderPoint = i => {
+  const getBorderPoint = (pack, i) => {
     const [x, y] = pack.cells.p[i];
     const min = Math.min(y, graphHeight - y, x, graphWidth - x);
     if (min === y) return [x, 0];

@@ -208,8 +208,8 @@ export function resolveVersionConflicts(version) {
     coastline.selectAll("path").remove();
     lakes.selectAll("path").remove();
 
-    reMarkFeatures();
-    drawCoastline();
+    reMarkFeatures(pack, newGrid);
+    drawCoastline(pack);
   }
 
   if (version < 1.11) {

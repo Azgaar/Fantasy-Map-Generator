@@ -363,7 +363,7 @@ function toggleTexture(event?: MouseEvent) {
 function toggleRivers(event?: MouseEvent) {
   if (!layerIsOn("toggleRivers")) {
     turnLayerButtonOn("toggleRivers");
-    renderLayer("rivers");
+    renderLayer("rivers", pack);
     if (isCtrlPressed(event)) editStyle("rivers");
   } else {
     if (isCtrlPressed(event)) return editStyle("rivers");

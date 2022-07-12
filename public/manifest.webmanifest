@@ -3,7 +3,7 @@
   "display": "standalone",
   "orientation": "any",
   "name": "Azgaar's Fantansy Map Generator",
-  "short_name": "Azgaar's Fantansy Map Generator",
+  "short_name": "Azgaar's Fantasy Map Generator",
   "description": "Web application generating interactive and highly customizable maps",
   "scope": "/Fantasy-Map-Generator/",
   "start_url": "/Fantasy-Map-Generator/?source=pwa",
