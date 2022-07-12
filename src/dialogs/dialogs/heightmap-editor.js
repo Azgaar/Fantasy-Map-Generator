@@ -14,7 +14,7 @@ import {changeViewMode} from "modules/ui/options";
 import {addZones} from "modules/zones";
 import {aleaPRNG} from "scripts/aleaPRNG";
 import {setDefaultEventHandlers} from "scripts/events";
-import {undraw} from "scripts/generation";
+import {undraw} from "scripts/generation/generation";
 import {prompt} from "scripts/prompt";
 import {rankCells} from "scripts/rankCells";
 import {reGraph} from "scripts/reGraph";

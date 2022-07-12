@@ -3,23 +3,12 @@ import Delaunator from "delaunator";
 
 import {DISTANCE_FIELD, MIN_LAND_HEIGHT} from "config/generation";
 import {Voronoi} from "modules/voronoi";
+// @ts-expect-error js module
 import {aleaPRNG} from "scripts/aleaPRNG";
 import {TIME} from "../config/logging";
 import {createTypedArray} from "./arrayUtils";
 import {rn} from "./numberUtils";
 import {byId} from "./shorthands";
-
-// check if new grid graph should be generated or we can use the existing one
-export function shouldRegenerateGridPoints(grid: IGrid) {
-  const cellsDesired = Number(byId("pointsInput")?.dataset.cells);
-  if (cellsDesired !== grid.cellsDesired) return true;
-
-  const newSpacing = rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2);
-  const newCellsX = Math.floor((graphWidth + 0.5 * newSpacing - 1e-10) / newSpacing);
-  const newCellsY = Math.floor((graphHeight + 0.5 * newSpacing - 1e-10) / newSpacing);
-
-  return grid.spacing !== newSpacing || grid.cellsX !== newCellsX || grid.cellsY !== newCellsY;
-}
 
 export function generateGrid() {
   Math.random = aleaPRNG(seed); // reset PRNG
@@ -31,7 +20,7 @@ export function generateGrid() {
 // place random points to calculate Voronoi diagram
 function placePoints() {
   TIME && console.time("placePoints");
-  const cellsDesired = +byId("pointsInput").dataset.cells;
+  const cellsDesired = Number(byId("pointsInput")?.dataset.cells);
   const spacing = rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2); // spacing between points before jirrering
 
   const boundary = getBoundaryPoints(graphWidth, graphHeight, spacing);
@@ -100,7 +89,7 @@ function getJitteredGrid(width: number, height: number, spacing: number) {
 }
 
 // return cell index on a regular square grid
-export function findGridCell(x: number, y: number, grid) {
+export function findGridCell(x: number, y: number, grid: IGrid) {
   return (
     Math.floor(Math.min(y / grid.spacing, grid.cellsY - 1)) * grid.cellsX +
     Math.floor(Math.min(x / grid.spacing, grid.cellsX - 1))
@@ -170,7 +159,7 @@ export function isCoastal(i: number) {
 }
 
 // findAll d3.quandtree search from https://bl.ocks.org/lwthatcher/b41479725e0ff2277c7ac90df2de2b5e
-void (function addFindAll() {
+function addFindAll() {
   const Quad = function (node, x0, y0, x1, y1) {
     this.node = node;
     this.x0 = x0;
@@ -249,4 +238,4 @@ void (function addFindAll() {
       } while ((t.node = t.node.next));
     }
   };
-})();
+}

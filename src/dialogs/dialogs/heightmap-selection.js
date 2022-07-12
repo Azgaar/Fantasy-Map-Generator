@@ -2,7 +2,8 @@ import * as d3 from "d3";
 
 import {heightmapTemplates} from "config/heightmap-templates";
 import {precreatedHeightmaps} from "config/precreated-heightmaps";
-import {shouldRegenerateGridPoints, generateGrid} from "utils/graphUtils";
+import {generateGrid} from "utils/graphUtils";
+import {shouldRegenerateGridPoints} from "scripts/generation/generation";
 import {byId} from "utils/shorthands";
 import {generateSeed} from "utils/probabilityUtils";
 import {getColorScheme} from "utils/colorUtils";

@@ -8,6 +8,10 @@ interface Window {
   mapCoordinates: IMapCoordinates;
   $: typeof $; // jQuery
 
+  scale: number;
+  viewX: number;
+  viewY: number;
+
   // untyped IIFE modules
   Biomes: any;
   Names: any;

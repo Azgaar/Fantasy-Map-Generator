@@ -9,7 +9,7 @@ import {applyDropdownOption} from "utils/nodeUtils";
 import {minmax, rn} from "utils/numberUtils";
 import {gauss, P, rand, rw} from "utils/probabilityUtils";
 import {byId, stored} from "utils/shorthands";
-import {regenerateMap} from "scripts/generation";
+import {regenerateMap} from "scripts/generation/generation";
 import {fitScaleBar} from "modules/measurers";
 import {openDialog} from "dialogs";
 import {closeDialogs} from "dialogs/utils";

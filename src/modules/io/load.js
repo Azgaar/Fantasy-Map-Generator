@@ -10,7 +10,7 @@ import {parseError} from "utils/errorUtils";
 import {calculateVoronoi, findCell} from "utils/graphUtils";
 import {link} from "utils/linkUtils";
 import {minmax, rn} from "utils/numberUtils";
-import {regenerateMap} from "scripts/generation";
+import {regenerateMap} from "scripts/generation/generation";
 import {reMarkFeatures} from "modules/markup";
 import {closeDialogs} from "dialogs/utils";
 

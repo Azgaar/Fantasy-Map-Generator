@@ -5,13 +5,9 @@ import {closeDialogs} from "dialogs/utils";
 import {initLayers, renderLayer, restoreLayers} from "layers";
 // @ts-expect-error js module
 import {drawCoastline} from "modules/coastline";
-import {calculateMapCoordinates, defineMapSize} from "modules/coordinates";
-import {markupGridFeatures, reMarkFeatures} from "modules/markup";
+import {reMarkFeatures} from "modules/markup";
 // @ts-expect-error js module
 import {drawScaleBar, Rulers} from "modules/measurers";
-// @ts-expect-error js module
-import {generatePrecipitation} from "modules/precipitation";
-import {calculateTemperatures} from "modules/temperature";
 // @ts-expect-error js module
 import {unfog} from "modules/ui/editors";
 // @ts-expect-error js module
@@ -26,37 +22,34 @@ import {hideLoading, showLoading} from "scripts/loading";
 import {clearMainTip, tip} from "scripts/tooltips";
 import {parseError} from "utils/errorUtils";
 import {debounce} from "utils/functionUtils";
-import {generateGrid, shouldRegenerateGridPoints} from "utils/graphUtils";
 import {rn} from "utils/numberUtils";
 import {generateSeed} from "utils/probabilityUtils";
 import {byId} from "utils/shorthands";
-import {rankCells} from "./rankCells";
+import {rankCells} from "../rankCells";
+import {showStatistics} from "../statistics";
+import {createGrid} from "./grid";
 import {reGraph} from "./reGraph";
-import {showStatistics} from "./statistics";
 
-const {Zoom, Lakes, HeightmapGenerator, OceanLayers} = window;
+const {Zoom, Lakes, OceanLayers, Rivers, Biomes, Cultures, BurgsAndStates, Religions, Military, Markers, Names} =
+  window;
 
-interface IGenerationOptions {
-  seed: string;
-  graph: IGrid;
-}
-
-export async function generate(options?: IGenerationOptions) {
+async function generate(options?: {seed: string; graph: IGrid}) {
   try {
     const timeStart = performance.now();
     const {seed: precreatedSeed, graph: precreatedGraph} = options || {};
 
     Zoom?.invoke();
     setSeed(precreatedSeed);
+
     INFO && console.group("Generated Map " + seed);
 
     applyMapSize();
     randomizeOptions();
 
-    const updatedGrid = await updateGrid(grid, precreatedGraph);
+    const newGrid = await createGrid(grid, precreatedGraph);
 
-    const pack = reGraph(updatedGrid);
-    reMarkFeatures(pack, grid);
+    const pack = reGraph(newGrid);
+    reMarkFeatures(pack, newGrid);
     drawCoastline();
 
     Rivers.generate();
@@ -84,73 +77,45 @@ export async function generate(options?: IGenerationOptions) {
     Markers.generate();
     addZones();
 
-    OceanLayers(updatedGrid);
+    OceanLayers(newGrid);
 
-    drawScaleBar(scale);
+    drawScaleBar(window.scale);
     Names.getMapName();
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - timeStart) / 1000, 2)}s`);
     showStatistics();
-    INFO && console.groupEnd("Generated Map " + seed);
+    INFO && console.groupEnd();
   } catch (error) {
-    ERROR && console.error(error);
-    const parsedError = parseError(error);
-    clearMainTip();
-
-    alertMessage.innerHTML = /* html */ `An error has occurred on map generation. Please retry. <br />If error is critical, clear the stored data and try again.
-      <p id="errorBox">${parsedError}</p>`;
-    $("#alert").dialog({
-      resizable: false,
-      title: "Generation error",
-      width: "32em",
-      buttons: {
-        "Clear data": function () {
-          localStorage.clear();
-          localStorage.setItem("version", version);
-        },
-        Regenerate: function () {
-          regenerateMap("generation error");
-          $(this).dialog("close");
-        },
-        Ignore: function () {
-          $(this).dialog("close");
-        }
-      },
-      position: {my: "center", at: "center", of: "svg"}
-    });
+    showGenerationError(error as Error);
   }
 }
 
-async function updateGrid(globalGrid: IGrid, precreatedGraph?: IGrid): Promise<IGrid> {
-  const baseGrid: IGridBase = shouldRegenerateGridPoints(globalGrid)
-    ? (precreatedGraph && undressGrid(precreatedGraph)) || generateGrid()
-    : undressGrid(globalGrid);
+function showGenerationError(error: Error) {
+  clearMainTip();
+  ERROR && console.error(error);
+  const message = `An error has occurred on map generation. Please retry. <br />If error is critical, clear the stored data and try again.
+  <p id="errorBox">${parseError(error)}</p>`;
+  byId("alertMessage")!.innerHTML = message;
 
-  const heights: Uint8Array = await HeightmapGenerator.generate(baseGrid);
-  if (!heights) throw new Error("Heightmap generation failed");
-  const heightsGrid = {...baseGrid, cells: {...baseGrid.cells, h: heights}};
-
-  const {featureIds, distanceField, features} = markupGridFeatures(heightsGrid);
-  const markedGrid = {...heightsGrid, features, cells: {...heightsGrid.cells, f: featureIds, t: distanceField}};
-
-  const touchesEdges = features.some(feature => feature && feature.land && feature.border);
-  defineMapSize(touchesEdges);
-  window.mapCoordinates = calculateMapCoordinates();
-
-  Lakes.addLakesInDeepDepressions(markedGrid);
-  Lakes.openNearSeaLakes(markedGrid);
-
-  const temperature = calculateTemperatures(markedGrid);
-  const temperatureGrid = {...markedGrid, cells: {...markedGrid.cells, temp: temperature}};
-
-  const prec = generatePrecipitation(temperatureGrid);
-  return {...temperatureGrid, cells: {...temperatureGrid.cells, prec}};
-}
-
-function undressGrid(extendedGrid: IGrid): IGridBase {
-  const {spacing, cellsDesired, boundary, points, cellsX, cellsY, cells, vertices} = extendedGrid;
-  const {i, b, c, v} = cells;
-  return {spacing, cellsDesired, boundary, points, cellsX, cellsY, cells: {i, b, c, v}, vertices};
+  $("#alert").dialog({
+    resizable: false,
+    title: "Generation error",
+    width: "32em",
+    buttons: {
+      "Clear data": function () {
+        localStorage.clear();
+        localStorage.setItem("version", APP_VERSION);
+      },
+      Regenerate: function () {
+        regenerateMap("generation error");
+        $(this).dialog("close");
+      },
+      Ignore: function () {
+        $(this).dialog("close");
+      }
+    },
+    position: {my: "center", at: "center", of: "svg"}
+  });
 }
 
 export async function generateMapOnLoad() {

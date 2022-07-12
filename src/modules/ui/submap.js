@@ -4,7 +4,7 @@ import {parseError} from "utils/errorUtils";
 import {rn, minmax} from "utils/numberUtils";
 import {debounce} from "utils/functionUtils";
 import {restoreLayers} from "layers";
-import {undraw} from "scripts/generation";
+import {undraw} from "scripts/generation/generation";
 import {closeDialogs} from "dialogs/utils";
 
 window.UISubmap = (function () {

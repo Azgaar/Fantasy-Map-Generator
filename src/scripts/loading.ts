@@ -1,11 +1,13 @@
 import * as d3 from "d3";
 
 import {ERROR, WARN} from "config/logging";
+// @ts-expect-error js module
 import {loadMapFromURL} from "modules/io/load";
 import {setDefaultEventHandlers} from "scripts/events";
 import {ldb} from "scripts/indexedDB";
 import {getInputValue} from "utils/nodeUtils";
-import {generateMapOnLoad} from "./generation.ts";
+import {generateMapOnLoad} from "./generation/generation";
+// @ts-expect-error js module
 import {showUploadErrorMessage, uploadMap} from "modules/io/load";
 
 export function addOnLoadListener() {
