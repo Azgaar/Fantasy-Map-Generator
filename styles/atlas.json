@@ -281,7 +281,7 @@
   },
   "#oceanicPattern": {
     "href": "",
-    "opacity": 1
+    "opacity": 0
   },
   "#terrs": {
     "opacity": null,
