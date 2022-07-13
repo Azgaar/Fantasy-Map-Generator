@@ -1,17 +1,75 @@
 import * as d3 from "d3";
 
+import {renderLayer} from "layers";
+// @ts-expect-error js module
+import {drawCoastline} from "modules/coastline";
+import {markupPackFeatures} from "modules/markup";
+// @ts-expect-error js module
+import {drawScaleBar} from "modules/measurers";
+// @ts-expect-error js module
+import {addZones} from "modules/zones";
+import {DISTANCE_FIELD, MIN_LAND_HEIGHT} from "config/generation";
 import {TIME} from "config/logging";
 import {UINT16_MAX} from "constants";
-import {createTypedArray} from "utils/arrayUtils";
 import {calculateVoronoi} from "scripts/generation/graph";
+import {createTypedArray} from "utils/arrayUtils";
+import {pick} from "utils/functionUtils";
 import {rn} from "utils/numberUtils";
-import {DISTANCE_FIELD, MIN_LAND_HEIGHT} from "config/generation";
+import {rankCells} from "../rankCells";
 
 const {LAND_COAST, WATER_COAST, DEEPER_WATER} = DISTANCE_FIELD;
+const {Lakes, OceanLayers, Rivers, Biomes, Cultures, BurgsAndStates, Religions, Military, Markers, Names} = window;
 
-// recalculate Voronoi Graph to pack cells
-export function reGraph(grid: IGrid): IPackBase {
-  TIME && console.time("reGraph");
+export function createPack(grid: IGrid): IPack {
+  const {vertices, cells} = repackGrid(grid);
+
+  const markup = markupPackFeatures(grid, pick(cells, "c", "b", "p", "h"));
+
+  drawCoastline({vertices, cells}); // split into vertices definition and rendering
+
+  // Rivers.generate(newPack, grid);
+  // renderLayer("rivers", newPack);
+  // Lakes.defineGroup(newPack);
+  // Biomes.define(newPack, grid);
+
+  // const rankCellsData = pick(newPack.cells, "i", "f", "fl", "conf", "r", "h", "area", "biome", "haven", "harbor");
+  // rankCells(newPack.features!, rankCellsData);
+
+  Cultures.generate();
+  Cultures.expand();
+  BurgsAndStates.generate();
+  Religions.generate();
+  BurgsAndStates.defineStateForms();
+  BurgsAndStates.generateProvinces();
+  BurgsAndStates.defineBurgFeatures();
+
+  renderLayer("states");
+  renderLayer("borders");
+  BurgsAndStates.drawStateLabels();
+
+  Rivers.specify();
+  Lakes.generateName();
+
+  Military.generate();
+  Markers.generate();
+  addZones();
+
+  OceanLayers(newGrid);
+
+  drawScaleBar(window.scale);
+  Names.getMapName();
+
+  const pack = {
+    vertices,
+    cells
+  };
+
+  return pack as IPack;
+}
+
+// repack grid cells: discart deep water cells, add land cells along the coast
+function repackGrid(grid: IGrid) {
+  TIME && console.time("repackGrid");
   const {cells: gridCells, points, features} = grid;
   const newCells: {p: TPoints; g: number[]; h: number[]} = {p: [], g: [], h: []}; // store new data
   const spacing2 = grid.spacing ** 2;
@@ -59,7 +117,7 @@ export function reGraph(grid: IGrid): IPackBase {
     return Math.min(area, UINT16_MAX);
   }
 
-  const pack: IPackBase = {
+  const pack = {
     vertices,
     cells: {
       ...cells,
@@ -71,6 +129,6 @@ export function reGraph(grid: IGrid): IPackBase {
     }
   };
 
-  TIME && console.timeEnd("reGraph");
+  TIME && console.timeEnd("repackGrid");
   return pack;
 }

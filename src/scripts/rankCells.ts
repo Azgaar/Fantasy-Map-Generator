@@ -8,12 +8,14 @@ const FLUX_MAX_BONUS = 250;
 const SUITABILITY_FACTOR = 5;
 
 // assess cells suitability for population and rank cells for culture centers and burgs placement
-export function rankCells(pack: IPack) {
+export function rankCells(
+  features: TPackFeatures,
+  cells: Pick<IPack["cells"], "i" | "f" | "fl" | "conf" | "r" | "h" | "area" | "biome" | "haven" | "harbor">
+) {
   TIME && console.time("rankCells");
-  const {cells, features} = pack;
 
-  cells.s = new Int16Array(cells.i.length); // cell suitability array
-  cells.pop = new Float32Array(cells.i.length); // cell population array
+  const suitability = new Int16Array(cells.i.length); // cell suitability array
+  const population = new Float32Array(cells.i.length); // cell population array
 
   const meanFlux = d3.median(cells.fl.filter(f => f)) || 0;
   const maxFlux = (d3.max(cells.fl) || 0) + (d3.max(cells.conf) || 0); // to normalize flux
@@ -30,14 +32,12 @@ export function rankCells(pack: IPack) {
     const coastBonus = getCoastBonus(cellId); // [-30, 30]
     const estuaryBonus = getEstuaryBonus(cellId); // [0, 15]
 
-    const suitability =
-      (habitabilityBonus + riverBonus + elevationBonus + coastBonus + estuaryBonus) / SUITABILITY_FACTOR; // [-30, 311]
+    const bonuses = [habitabilityBonus, riverBonus, elevationBonus, coastBonus, estuaryBonus];
+    const total = d3.sum(bonuses) / SUITABILITY_FACTOR; // [-30, 311]
+    suitability[cellId] = total;
 
     // cell rural population is suitability adjusted by cell area
-    const population = suitability > 0 ? suitability * (cells.area[cellId] / meanArea) : 0;
-
-    cells.pop[cellId] = population;
-    cells.s[cellId] = suitability;
+    population[cellId] = total > 0 ? total * (cells.area[cellId] / meanArea) : 0;
   }
 
   function getHabitabilityBonus(cellId: number) {
@@ -57,7 +57,10 @@ export function rankCells(pack: IPack) {
     if (!isCoastal(cellId)) return 0;
 
     const havenCell = cells.haven[cellId];
-    const {group} = features[cells.f[havenCell]];
+    const feature = features[cells.f[havenCell]];
+    if (!feature) return 0;
+
+    const {group} = feature;
 
     // lake coast
     if (group === "freshwater") return 30;
@@ -78,4 +81,6 @@ export function rankCells(pack: IPack) {
   }
 
   TIME && console.timeEnd("rankCells");
+
+  return {s: suitability, pop: population};
 }

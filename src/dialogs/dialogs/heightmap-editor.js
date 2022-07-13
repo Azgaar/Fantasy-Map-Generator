@@ -17,7 +17,7 @@ import {setDefaultEventHandlers} from "scripts/events";
 import {undraw} from "scripts/generation/generation";
 import {prompt} from "scripts/prompt";
 import {rankCells} from "scripts/rankCells";
-import {reGraph} from "scripts/reGraph";
+import {repackGrid, markupPackFeatures} from "scripts/reGraph";
 import {clearMainTip, showMainTip, tip} from "scripts/tooltips";
 import {createTypedArray, last} from "utils/arrayUtils";
 import {getColorScheme, getHeightColor} from "utils/colorUtils";
@@ -223,8 +223,8 @@ export function open(options) {
     OceanLayers(grid);
     calculateTemperatures(grid);
     generatePrecipitation(grid);
-    reGraph(grid);
-    reMarkFeatures(pack, newGrid);
+    repackGrid(grid);
+    markupPackFeatures(pack, newGrid);
     drawCoastline(pack);
 
     Rivers.generate(pack, grid, erosionAllowed);

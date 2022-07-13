@@ -3,10 +3,9 @@ import * as d3 from "d3";
 import {ERROR, INFO, WARN} from "config/logging";
 import {closeDialogs} from "dialogs/utils";
 import {openDialog} from "dialogs";
-import {initLayers, renderLayer, restoreLayers} from "layers";
+import {initLayers, restoreLayers} from "layers";
 // @ts-expect-error js module
 import {drawCoastline} from "modules/coastline";
-import {reMarkFeatures} from "modules/markup";
 // @ts-expect-error js module
 import {drawScaleBar, Rulers} from "modules/measurers";
 // @ts-expect-error js module
@@ -26,26 +25,12 @@ import {debounce} from "utils/functionUtils";
 import {rn} from "utils/numberUtils";
 import {generateSeed} from "utils/probabilityUtils";
 import {byId} from "utils/shorthands";
-import {rankCells} from "../rankCells";
 import {showStatistics} from "../statistics";
 import {createGrid} from "./grid";
-import {reGraph} from "./reGraph";
+import {createPack} from "./pack";
 import {getInputValue, setInputValue} from "utils/nodeUtils";
 
-const {
-  Zoom,
-  Lakes,
-  OceanLayers,
-  Rivers,
-  Biomes,
-  Cultures,
-  BurgsAndStates,
-  Religions,
-  Military,
-  Markers,
-  Names,
-  ThreeD
-} = window;
+const {Zoom, ThreeD} = window;
 
 interface IGenerationOptions {
   seed: string;
@@ -66,42 +51,10 @@ async function generate(options?: IGenerationOptions) {
     randomizeOptions();
 
     const newGrid = await createGrid(grid, precreatedGraph);
-    const newPack = reGraph(newGrid);
+    const newPack = createPack(newGrid);
 
-    reMarkFeatures(newPack, newGrid);
-    drawCoastline(newPack);
-
-    Rivers.generate(newPack, newGrid);
-    renderLayer("rivers", newPack);
-    Lakes.defineGroup(newPack);
-    Biomes.define(newPack, newGrid);
-
-    rankCells(newPack);
-    Cultures.generate();
-    Cultures.expand();
-    BurgsAndStates.generate();
-    Religions.generate();
-    BurgsAndStates.defineStateForms();
-    BurgsAndStates.generateProvinces();
-    BurgsAndStates.defineBurgFeatures();
-
-    renderLayer("states");
-    renderLayer("borders");
-    BurgsAndStates.drawStateLabels();
-
-    Rivers.specify();
-    Lakes.generateName();
-
-    Military.generate();
-    Markers.generate();
-    addZones();
-
-    OceanLayers(newGrid);
-
-    drawScaleBar(window.scale);
-    Names.getMapName();
-
-    // @ts-expect-error redefine global
+    // redefine global grid and pack
+    grid = newGrid;
     pack = newPack;
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - timeStart) / 1000, 2)}s`);

@@ -3,7 +3,6 @@ import * as d3 from "d3";
 import {INFO} from "config/logging";
 import {closeDialogs} from "dialogs/utils";
 import {updatePresetInput} from "layers";
-import {reMarkFeatures} from "modules/markup";
 import {setDefaultEventHandlers} from "scripts/events";
 import {regenerateMap} from "scripts/generation/generation";
 import {calculateVoronoi} from "scripts/generation/graph";

@@ -84,3 +84,15 @@ export function getBase64(url: string, callback: (base64: string | ArrayBuffer |
   xhr.responseType = "blob";
   xhr.send();
 }
+
+export function pick<T, K extends keyof T>(obj: T, ...keys: K[]): Pick<T, K> {
+  const ret = {} as Pick<T, K>;
+  keys.forEach(key => {
+    ret[key] = obj[key];
+  });
+  return ret;
+}
+
+export function dist2([x1, y1]: [number, number], [x2, y2]: [number, number]) {
+  return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
+}
