@@ -23,9 +23,9 @@ const {Lakes, OceanLayers, Rivers, Biomes, Cultures, BurgsAndStates, Religions, 
 export function createPack(grid: IGrid): IPack {
   const {vertices, cells} = repackGrid(grid);
 
-  const markup = markupPackFeatures(grid, pick(cells, "c", "b", "p", "h"));
+  const markup = markupPackFeatures(grid, vertices, pick(cells, "v", "c", "b", "p", "h"));
 
-  drawCoastline({vertices, cells}); // split into vertices definition and rendering
+  // drawCoastline({vertices, cells}); // split into vertices definition and rendering
 
   // Rivers.generate(newPack, grid);
   // renderLayer("rivers", newPack);

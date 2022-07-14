@@ -42,6 +42,9 @@ async function generate(options?: IGenerationOptions) {
     const timeStart = performance.now();
     const {seed: precreatedSeed, graph: precreatedGraph} = options || {};
 
+    // temp for testing:
+    hideLoading();
+
     Zoom?.invoke();
     setSeed(precreatedSeed);
 

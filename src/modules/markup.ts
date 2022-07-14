@@ -1,10 +1,13 @@
+import * as d3 from "d3";
+
 import {MIN_LAND_HEIGHT, DISTANCE_FIELD} from "config/generation";
 import {TIME} from "config/logging";
 import {INT8_MAX} from "constants";
 // @ts-expect-error js module
 import {aleaPRNG} from "scripts/aleaPRNG";
 import {createTypedArray} from "utils/arrayUtils";
-import {dist2} from "utils/functionUtils";
+import {dist2, pick} from "utils/functionUtils";
+import {getColors} from "utils/colorUtils";
 
 const {UNMARKED, LAND_COAST, WATER_COAST, LANDLOCKED, DEEPER_WATER} = DISTANCE_FIELD;
 
@@ -70,7 +73,11 @@ export function markupGridFeatures(grid: IGridWithHeights) {
 }
 
 // define features (oceans, lakes, islands) add related details
-export function markupPackFeatures(grid: IGrid, cells: Pick<IPack["cells"], "c" | "b" | "p" | "h">) {
+export function markupPackFeatures(
+  grid: IGrid,
+  vertices: IGraphVertices,
+  cells: Pick<IPack["cells"], "c" | "v" | "b" | "p" | "h">
+) {
   TIME && console.time("markupPackFeatures");
 
   const packCellsNumber = cells.h.length;
@@ -111,13 +118,22 @@ export function markupPackFeatures(grid: IGrid, cells: Pick<IPack["cells"], "c" 
     return "isle";
   }
 
-  function addIsland(featureId: number, border: boolean, firstCell: number, cells: number) {
+  function addIsland(featureId: number, border: boolean, firstCell: number, cells: number, vertices: number[]) {
     const group = defineIslandGroup(firstCell, cells);
-    const feature: IPackFeatureIsland = {i: featureId, type: "island", group, land: true, border, cells, firstCell};
+    const feature: IPackFeatureIsland = {
+      i: featureId,
+      type: "island",
+      group,
+      land: true,
+      border,
+      cells,
+      firstCell,
+      vertices
+    };
     features.push(feature);
   }
 
-  function addOcean(featureId: number, firstCell: number, cells: number) {
+  function addOcean(featureId: number, firstCell: number, cells: number, vertices: number[]) {
     const group = defineOceanGroup(cells);
     const feature: IPackFeatureOcean = {
       i: featureId,
@@ -126,12 +142,13 @@ export function markupPackFeatures(grid: IGrid, cells: Pick<IPack["cells"], "c" 
       land: false,
       border: false,
       cells,
-      firstCell
+      firstCell,
+      vertices
     };
     features.push(feature);
   }
 
-  function addLake(featureId: number, firstCell: number, cells: number) {
+  function addLake(featureId: number, firstCell: number, cells: number, vertices: number[]) {
     const group = "freshwater"; // temp, to be defined later
     const name = ""; // temp, to be defined later
     const feature: IPackFeatureLake = {
@@ -142,7 +159,8 @@ export function markupPackFeatures(grid: IGrid, cells: Pick<IPack["cells"], "c" 
       land: false,
       border: false,
       cells,
-      firstCell
+      firstCell,
+      vertices
     };
     features.push(feature);
   }
@@ -155,6 +173,8 @@ export function markupPackFeatures(grid: IGrid, cells: Pick<IPack["cells"], "c" 
     const land = cells.h[firstCell] >= MIN_LAND_HEIGHT;
     let border = false; // true if feature touches map border
     let cellNumber = 1; // count cells in a feature
+
+    const featureCells = [firstCell];
 
     while (queue.length) {
       const cellId = queue.pop()!;
@@ -178,15 +198,44 @@ export function markupPackFeatures(grid: IGrid, cells: Pick<IPack["cells"], "c" 
           queue.push(neighborId);
           featureIds[neighborId] = featureId;
           cellNumber++;
+          featureCells.push(neighborId);
         }
       }
     }
 
-    // const vertices = detectFeatureVertices(cells, firstCell);
+    const startingVertex = findStartingVertex(
+      firstCell,
+      border,
+      featureIds,
+      featureId,
+      vertices,
+      pick(cells, "c", "v"),
+      packCellsNumber
+    );
 
-    if (land) addIsland(featureId, border, firstCell, cellNumber);
-    else if (border) addOcean(featureId, firstCell, cellNumber);
-    else addLake(featureId, firstCell, cellNumber);
+    if (startingVertex === undefined || startingVertex > vertices.p.length) {
+      debugger;
+    }
+
+    const color = featureId === 1 ? "#2274cc" : getColors(12)[featureId % 12];
+    const paths: TPoint[][] = featureCells.map(i => cells.v[i].map(v => vertices.p[v]));
+    d3.select("#cells")
+      .append("path")
+      .attr("d", "M" + paths.join("M"))
+      .attr("fill", color)
+      .attr("stroke", "#000")
+      .attr("stroke-width", "0.2");
+
+    const [x, y] = cells.p[firstCell];
+    d3.select("#debug").append("circle").attr("cx", x).attr("cy", y).attr("r", 1).attr("fill", "blue");
+    const [cx, cy] = vertices.p[startingVertex];
+    d3.select("#debug").append("circle").attr("cx", cx).attr("cy", cy).attr("r", 2).attr("fill", "red");
+
+    // const vertices: number[] = []; // connectVertices(startingVertex);
+
+    if (land) addIsland(featureId, border, firstCell, cellNumber, []);
+    else if (border) addOcean(featureId, firstCell, cellNumber, []);
+    else addLake(featureId, firstCell, cellNumber, []);
 
     queue[0] = featureIds.findIndex(f => f === UNMARKED); // find unmarked cell
   }
@@ -230,8 +279,39 @@ function markup({
   return distanceField;
 }
 
-// connect vertices to chain
-function connectVertices(start, t) {
+function findStartingVertex(
+  firstCell: number,
+  border: boolean,
+  featureIds: Uint16Array,
+  featureId: number,
+  vertices: IGraphVertices,
+  cells: Pick<IPack["cells"], "c" | "v">,
+  packCellsNumber: number
+) {
+  const neibCells = cells.c[firstCell];
+  const cellVertices = cells.v[firstCell];
+
+  if (border) {
+    const externalVertex = cellVertices.find(vertex => {
+      const [x, y] = vertices.p[vertex];
+      if (x < 0 || y < 0) return true;
+      return vertices.c[vertex].some(neibCell => neibCell >= packCellsNumber);
+    });
+    if (externalVertex !== undefined) return externalVertex;
+  }
+
+  const otherFeatureNeibs = neibCells.filter(neibCell => featureIds[neibCell] !== featureId);
+  if (!otherFeatureNeibs.length) {
+    throw new Error(`Markup: firstCell ${firstCell} of feature ${featureId} has no neighbors of other features`);
+  }
+
+  const index = neibCells.indexOf(d3.min(otherFeatureNeibs)!);
+
+  return cellVertices[index];
+}
+
+// connect vertices around feature
+function connectVertices(start: number, t: number) {
   const chain = []; // vertices chain to form a path
   for (let i = 0, current = start; i === 0 || (current !== start && i < 50000); i++) {
     const prev = chain[chain.length - 1]; // previous vertex in chain

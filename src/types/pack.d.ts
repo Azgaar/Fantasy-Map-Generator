@@ -42,7 +42,7 @@ interface IPackFeatureBase {
   border: boolean; // if touches map border
   cells: number; // number of cells
   firstCell: number; // index of the top left cell
-  vertices?: number[]; // indexes of perimetric vertices
+  vertices: number[]; // indexes of perimetric vertices
 }
 
 interface IPackFeatureOcean extends IPackFeatureBase {

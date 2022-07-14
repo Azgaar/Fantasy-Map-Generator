@@ -199,7 +199,9 @@ function changeMapSize() {
 
   const maxWidth = Math.max(+mapWidthInput.value, graphWidth);
   const maxHeight = Math.max(+mapHeightInput.value, graphHeight);
+
   Zoom.translateExtent([0, 0, maxWidth, maxHeight]);
+
   landmass.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
   oceanPattern.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
   oceanLayers.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
@@ -221,7 +223,9 @@ export function applyMapSize() {
   svgHeight = Math.min(graphHeight, window.innerHeight);
   svg.attr("width", svgWidth).attr("height", svgHeight);
 
-  Zoom.translateExtent([0, 0, graphWidth, graphHeight]);
+  // Zoom.translateExtent([0, 0, graphWidth, graphHeight]);
+  Zoom.translateExtent([-100, -100, graphWidth + 200, graphHeight + 200]);
+
   Zoom.scaleExtent([zoomMin, zoomMax]);
   Zoom.scaleTo(svg, zoomMin);
 }
