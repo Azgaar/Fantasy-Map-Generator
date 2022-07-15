@@ -1,13 +1,14 @@
 import * as d3 from "d3";
 
 import {MIN_LAND_HEIGHT, DISTANCE_FIELD} from "config/generation";
-import {TIME} from "config/logging";
+import {ERROR, TIME} from "config/logging";
 import {INT8_MAX} from "constants";
 // @ts-expect-error js module
 import {aleaPRNG} from "scripts/aleaPRNG";
 import {createTypedArray} from "utils/arrayUtils";
 import {dist2, pick} from "utils/functionUtils";
 import {getColors} from "utils/colorUtils";
+import {clipPoly} from "utils/lineUtils";
 
 const {UNMARKED, LAND_COAST, WATER_COAST, LANDLOCKED, DEEPER_WATER} = DISTANCE_FIELD;
 
@@ -203,18 +204,27 @@ export function markupPackFeatures(
       }
     }
 
-    const startingVertex = findStartingVertex(
-      firstCell,
+    cells.v[firstCell]
+      .map(v => vertices.p[v])
+      .forEach(([x, y]) => {
+        d3.select("#debug").append("circle").attr("cx", x).attr("cy", y).attr("r", 0.2).attr("fill", "yellow");
+      });
+
+    const startingCell = findStartingCell({firstCell, featureIds, featureId, vertices, cells, packCellsNumber});
+
+    const isOuterCell = (cellId: number) => cellId >= packCellsNumber;
+    const startingVertex = findStartingVertex({
+      startingCell,
       border,
       featureIds,
       featureId,
       vertices,
-      pick(cells, "c", "v"),
-      packCellsNumber
-    );
+      cells,
+      isOuterCell
+    });
 
     if (startingVertex === undefined || startingVertex > vertices.p.length) {
-      debugger;
+      throw new Error("Starting vertex not found");
     }
 
     const color = featureId === 1 ? "#2274cc" : getColors(12)[featureId % 12];
@@ -223,15 +233,21 @@ export function markupPackFeatures(
       .append("path")
       .attr("d", "M" + paths.join("M"))
       .attr("fill", color)
-      .attr("stroke", "#000")
-      .attr("stroke-width", "0.2");
+      .attr("fill-opacity", 0.5)
+      .attr("stroke", "#333")
+      .attr("stroke-width", "0.1");
 
     const [x, y] = cells.p[firstCell];
     d3.select("#debug").append("circle").attr("cx", x).attr("cy", y).attr("r", 1).attr("fill", "blue");
     const [cx, cy] = vertices.p[startingVertex];
-    d3.select("#debug").append("circle").attr("cx", cx).attr("cy", cy).attr("r", 2).attr("fill", "red");
+    d3.select("#debug").append("circle").attr("cx", cx).attr("cy", cy).attr("r", 1.5).attr("fill", "red");
 
-    // const vertices: number[] = []; // connectVertices(startingVertex);
+    const featureVertices = connectVertices({vertices, startingVertex, featureIds, featureId});
+
+    const lineGen = d3.line();
+    const points = clipPoly(featureVertices.map(v => vertices.p[v]));
+    const path = lineGen(points)!;
+    d3.select("#sea_island").attr("stroke", "black").append("path").attr("d", path);
 
     if (land) addIsland(featureId, border, firstCell, cellNumber, []);
     else if (border) addOcean(featureId, firstCell, cellNumber, []);
@@ -279,55 +295,110 @@ function markup({
   return distanceField;
 }
 
-function findStartingVertex(
-  firstCell: number,
-  border: boolean,
-  featureIds: Uint16Array,
-  featureId: number,
-  vertices: IGraphVertices,
-  cells: Pick<IPack["cells"], "c" | "v">,
-  packCellsNumber: number
-) {
-  const neibCells = cells.c[firstCell];
-  const cellVertices = cells.v[firstCell];
+function findStartingCell({
+  firstCell,
+  featureIds,
+  featureId,
+  vertices,
+  cells,
+  packCellsNumber
+}: {
+  firstCell: number;
+  featureIds: Uint16Array;
+  featureId: number;
+  vertices: IGraphVertices;
+  cells: Pick<IPack["cells"], "c" | "v">;
+  packCellsNumber: number;
+}) {
+  const bordersOtherFeature = cells.c[firstCell].some(neighbor => featureIds[neighbor] !== featureId);
+  if (bordersOtherFeature) return firstCell;
+
+  const neibCells = cells.c[firstCell].sort((a, b) => a - b);
+  for (const neibCell of neibCells) {
+    const cellVertices = cells.v[neibCell];
+    const edgingVertex = cellVertices.findIndex(vertex => vertices.c[vertex].some(cellId => cellId >= packCellsNumber));
+    if (edgingVertex !== -1) {
+      const engingCell = cells.c[neibCell];
+      return engingCell[edgingVertex];
+    }
+  }
+
+  throw new Error(`Markup: firstCell ${firstCell} of feature ${featureId} has no neighbors of other features`);
+}
+
+function findStartingVertex({
+  startingCell,
+  border,
+  featureIds,
+  featureId,
+  vertices,
+  cells,
+  isOuterCell
+}: {
+  startingCell: number;
+  border: boolean;
+  featureIds: Uint16Array;
+  featureId: number;
+  vertices: IGraphVertices;
+  cells: Pick<IPack["cells"], "c" | "v">;
+  isOuterCell: (cellId: number) => boolean;
+}) {
+  const neibCells = cells.c[startingCell];
+  const cellVertices = cells.v[startingCell];
 
   if (border) {
     const externalVertex = cellVertices.find(vertex => {
       const [x, y] = vertices.p[vertex];
       if (x < 0 || y < 0) return true;
-      return vertices.c[vertex].some(neibCell => neibCell >= packCellsNumber);
+      return vertices.c[vertex].some(isOuterCell);
     });
     if (externalVertex !== undefined) return externalVertex;
   }
 
   const otherFeatureNeibs = neibCells.filter(neibCell => featureIds[neibCell] !== featureId);
   if (!otherFeatureNeibs.length) {
-    throw new Error(`Markup: firstCell ${firstCell} of feature ${featureId} has no neighbors of other features`);
+    throw new Error(`Markup: firstCell ${startingCell} of feature ${featureId} has no neighbors of other features`);
   }
 
   const index = neibCells.indexOf(d3.min(otherFeatureNeibs)!);
-
   return cellVertices[index];
 }
 
+const CONNECT_VERTICES_MAX_ITERATIONS = 50000;
+
 // connect vertices around feature
-function connectVertices(start: number, t: number) {
-  const chain = []; // vertices chain to form a path
-  for (let i = 0, current = start; i === 0 || (current !== start && i < 50000); i++) {
-    const prev = chain[chain.length - 1]; // previous vertex in chain
-    chain.push(current); // add current vertex to sequence
-    const c = vertices.c[current]; // cells adjacent to vertex
-    const v = vertices.v[current]; // neighboring vertices
-    const c0 = c[0] >= n || cells.t[c[0]] === t;
-    const c1 = c[1] >= n || cells.t[c[1]] === t;
-    const c2 = c[2] >= n || cells.t[c[2]] === t;
-    if (v[0] !== prev && c0 !== c1) current = v[0];
-    else if (v[1] !== prev && c1 !== c2) current = v[1];
-    else if (v[2] !== prev && c0 !== c2) current = v[2];
-    if (current === chain[chain.length - 1]) {
+function connectVertices({
+  vertices,
+  startingVertex,
+  featureIds,
+  featureId
+}: {
+  vertices: IGraphVertices;
+  startingVertex: number;
+  featureIds: Uint16Array;
+  featureId: number;
+}) {
+  const ofSameType = (cellId: number) => featureIds[cellId] === featureId;
+  const chain: number[] = []; // vertices chain to form a path
+
+  let next = startingVertex;
+  for (let i = 0; i === 0 || (next !== startingVertex && i < CONNECT_VERTICES_MAX_ITERATIONS); i++) {
+    const previous = chain.at(-1);
+    const current = next;
+    chain.push(current);
+
+    const [c1, c2, c3] = vertices.c[current].map(ofSameType);
+    const [v1, v2, v3] = vertices.v[current];
+
+    if (v1 !== previous && c1 !== c2) next = v1;
+    else if (v2 !== previous && c2 !== c3) next = v2;
+    else if (v3 !== previous && c1 !== c3) next = v3;
+
+    if (next === current) {
       ERROR && console.error("Next vertex is not found");
       break;
     }
   }
+
   return chain;
 }

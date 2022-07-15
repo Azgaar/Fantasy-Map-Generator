@@ -47,12 +47,15 @@ export function calculateVoronoi(points: TPoints, boundary: TPoints): IGraph {
 
 // add points along map edge to pseudo-clip voronoi cells
 function getBoundaryPoints(width: number, height: number, spacing: number) {
-  const offset = rn(-1 * spacing);
+  const offset = rn(spacing * -1.5);
+
   const bSpacing = spacing * 2;
   const w = width - offset * 2;
   const h = height - offset * 2;
+
   const numberX = Math.ceil(w / bSpacing) - 1;
   const numberY = Math.ceil(h / bSpacing) - 1;
+
   const points: TPoints = [];
 
   for (let i = 0.5; i < numberX; i++) {

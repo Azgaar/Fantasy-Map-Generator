@@ -1,4 +1,4 @@
 declare module "lineclip" {
-  export function polygon(points: number[][], bbox: number[]): number[][];
-  export function lineclip(points: number[][], bbox: number[], result: number[][]): number[][];
+  export function polygon(points: TPoints, bbox: [number, number, number, number]): TPoints;
+  export function lineclip(points: TPoints, bbox: [number, number, number, number], result: TPoints): TPoints;
 }

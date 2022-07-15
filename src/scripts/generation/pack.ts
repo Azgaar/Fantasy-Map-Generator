@@ -15,7 +15,6 @@ import {calculateVoronoi} from "scripts/generation/graph";
 import {createTypedArray} from "utils/arrayUtils";
 import {pick} from "utils/functionUtils";
 import {rn} from "utils/numberUtils";
-import {rankCells} from "../rankCells";
 
 const {LAND_COAST, WATER_COAST, DEEPER_WATER} = DISTANCE_FIELD;
 const {Lakes, OceanLayers, Rivers, Biomes, Cultures, BurgsAndStates, Religions, Military, Markers, Names} = window;
