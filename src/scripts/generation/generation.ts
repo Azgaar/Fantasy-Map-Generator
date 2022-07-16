@@ -5,7 +5,7 @@ import {closeDialogs} from "dialogs/utils";
 import {openDialog} from "dialogs";
 import {initLayers, restoreLayers} from "layers";
 // @ts-expect-error js module
-import {drawCoastline} from "modules/coastline";
+import {drawCoastline} from "layers/renderers/drawCoastline";
 // @ts-expect-error js module
 import {drawScaleBar, Rulers} from "modules/measurers";
 // @ts-expect-error js module
@@ -29,6 +29,7 @@ import {showStatistics} from "../statistics";
 import {createGrid} from "./grid";
 import {createPack} from "./pack";
 import {getInputValue, setInputValue} from "utils/nodeUtils";
+// import {Ruler} from "modules/measurers";
 
 const {Zoom, ThreeD} = window;
 
@@ -55,6 +56,8 @@ async function generate(options?: IGenerationOptions) {
 
     const newGrid = await createGrid(grid, precreatedGraph);
     const newPack = createPack(newGrid);
+
+    // TODO: draw default ruler
 
     // redefine global grid and pack
     grid = newGrid;

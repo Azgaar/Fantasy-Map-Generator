@@ -3,6 +3,7 @@ import {TIME} from "config/logging";
 import {drawBiomes} from "./drawBiomes";
 import {drawBorders} from "./drawBorders";
 import {drawCells} from "./drawCells";
+import {drawCoastline} from "./drawCoastline";
 import {drawCoordinates} from "./drawCoordinates";
 import {drawCultures} from "./drawCultures";
 import {drawEmblems} from "./drawEmblems";
@@ -23,6 +24,7 @@ const layerRenderersMap = {
   biomes: drawBiomes,
   borders: drawBorders,
   cells: drawCells,
+  coastline: drawCoastline,
   coordinates: drawCoordinates,
   cultures: drawCultures,
   emblems: drawEmblems,

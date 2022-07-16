@@ -2,7 +2,7 @@ import * as d3 from "d3";
 
 import {renderLayer} from "layers";
 // @ts-expect-error js module
-import {drawCoastline} from "modules/coastline";
+import {drawCoastline} from "layers/renderers/drawCoastline";
 import {markupPackFeatures} from "modules/markup";
 // @ts-expect-error js module
 import {drawScaleBar} from "modules/measurers";
@@ -23,6 +23,8 @@ export function createPack(grid: IGrid): IPack {
   const {vertices, cells} = repackGrid(grid);
 
   const markup = markupPackFeatures(grid, vertices, pick(cells, "v", "c", "b", "p", "h"));
+
+  renderLayer("coastline", vertices, markup.features);
 
   // drawCoastline({vertices, cells}); // split into vertices definition and rendering
 
@@ -130,4 +132,7 @@ function repackGrid(grid: IGrid) {
 
   TIME && console.timeEnd("repackGrid");
   return pack;
+}
+function drawLayer(arg0: string, vertices: IGraphVertices, features: TPackFeatures) {
+  throw new Error("Function not implemented.");
 }
