@@ -1,7 +1,4 @@
-import * as d3 from "d3";
-
 import {ERROR} from "config/logging";
-import {clipPoly} from "utils/lineUtils";
 
 export function getFeatureVertices({
   firstCell,
@@ -21,26 +18,6 @@ export function getFeatureVertices({
   const startingCell = findStartingCell({firstCell, featureIds, featureId, vertices, cells, packCellsNumber});
   const startingVertex = findStartingVertex({startingCell, featureIds, featureId, vertices, cells, packCellsNumber});
   const featureVertices = connectVertices({vertices, startingVertex, featureIds, featureId});
-
-  // temp: draw feature vertices
-  cells.v[firstCell]
-    .map(v => vertices.p[v])
-    .forEach(([x, y]) => {
-      d3.select("#debug").append("circle").attr("cx", x).attr("cy", y).attr("r", 0.2).attr("fill", "yellow");
-    });
-
-  const [cx, cy] = vertices.p[startingVertex];
-  d3.select("#debug").append("circle").attr("cx", cx).attr("cy", cy).attr("r", 1.5).attr("fill", "red");
-
-  const lineGen = d3.line();
-  const points = clipPoly(featureVertices.map(v => vertices.p[v]));
-  const path = lineGen(points)!;
-  d3.select("#debug")
-    .attr("fill", "none")
-    .attr("stroke", "black")
-    .attr("stroke-width", 0.1)
-    .append("path")
-    .attr("d", path);
 
   return featureVertices;
 }
@@ -106,7 +83,7 @@ function findStartingVertex({
     throw new Error(`Markup: firstCell ${startingCell} of feature ${featureId} has no neighbors of other features`);
   }
 
-  const index = neibCells.indexOf(d3.min(otherFeatureNeibs)!);
+  const index = neibCells.indexOf(Math.min(...otherFeatureNeibs)!);
   return cellVertices[index];
 }
 

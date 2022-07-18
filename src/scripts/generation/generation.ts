@@ -3,7 +3,7 @@ import * as d3 from "d3";
 import {ERROR, INFO, WARN} from "config/logging";
 import {closeDialogs} from "dialogs/utils";
 import {openDialog} from "dialogs";
-import {initLayers, restoreLayers} from "layers";
+import {initLayers, renderLayer, restoreLayers} from "layers";
 // @ts-expect-error js module
 import {drawCoastline} from "layers/renderers/drawCoastline";
 // @ts-expect-error js module
@@ -16,7 +16,6 @@ import {applyMapSize, randomizeOptions} from "modules/ui/options";
 import {applyStyleOnLoad} from "modules/ui/stylePresets";
 // @ts-expect-error js module
 import {addZones} from "modules/zones";
-// @ts-expect-error js module
 import {aleaPRNG} from "scripts/aleaPRNG";
 import {hideLoading, showLoading} from "scripts/loading";
 import {clearMainTip, tip} from "scripts/tooltips";
@@ -62,6 +61,11 @@ async function generate(options?: IGenerationOptions) {
     // redefine global grid and pack
     grid = newGrid;
     pack = newPack;
+
+    // temp rendering for debug
+    renderLayer("coastline", pack.vertices, pack.features);
+    renderLayer("heightmap");
+    renderLayer("rivers", pack);
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - timeStart) / 1000, 2)}s`);
     showStatistics();

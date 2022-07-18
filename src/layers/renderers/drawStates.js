@@ -20,9 +20,9 @@ export function drawStates() {
   // define inner-state lakes to omit on border render
   const innerLakes = features.map(feature => {
     if (feature.type !== "lake") return false;
-    if (!feature.shoreline) Lakes.getShoreline(feature);
 
-    const states = feature.shoreline.map(i => cells.state[i]);
+    const shoreline = feature.shoreline || [];
+    const states = shoreline.map(i => cells.state[i]);
     return new Set(states).size > 1 ? false : true;
   });
 

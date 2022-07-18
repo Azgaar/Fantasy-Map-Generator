@@ -1,11 +1,14 @@
-import {MIN_LAND_HEIGHT, DISTANCE_FIELD} from "config/generation";
+import * as d3 from "d3";
+
+import {DISTANCE_FIELD, MIN_LAND_HEIGHT} from "config/generation";
 import {TIME} from "config/logging";
 import {INT8_MAX} from "constants";
-// @ts-expect-error js module
 import {aleaPRNG} from "scripts/aleaPRNG";
-import {createTypedArray} from "utils/arrayUtils";
-import {dist2} from "utils/functionUtils";
 import {getFeatureVertices} from "scripts/connectVertices";
+import {createTypedArray, unique} from "utils/arrayUtils";
+import {dist2} from "utils/functionUtils";
+import {clipPoly} from "utils/lineUtils";
+import {rn} from "utils/numberUtils";
 
 const {UNMARKED, LAND_COAST, WATER_COAST, LANDLOCKED, DEEPER_WATER} = DISTANCE_FIELD;
 
@@ -132,23 +135,22 @@ export function markupPackFeatures(
     }
 
     const featureVertices = getFeatureVertices({firstCell, vertices, cells, featureIds, featureId});
-
-    //   let points = clipPoly(vchain.map(v => vertices.p[v]));
-    //   const area = d3.polygonArea(points); // area with lakes/islands
-    //   if (area > 0 && features[f].type === "lake") {
-    //     points = points.reverse();
-    //     vchain = vchain.reverse();
-    //   }
+    const points = clipPoly(featureVertices.map(vertex => vertices.p[vertex]));
+    const area = d3.polygonArea(points); // feature perimiter area
 
     const feature = addFeature({
+      vertices,
+      heights: cells.h,
       features,
+      featureIds,
       firstCell,
       land,
       border,
       featureVertices,
       featureId,
       cellNumber,
-      gridCellsNumber
+      gridCellsNumber,
+      area
     });
     features.push(feature);
 
@@ -164,16 +166,23 @@ export function markupPackFeatures(
 }
 
 function addFeature({
+  vertices,
+  heights,
   features,
+  featureIds,
   firstCell,
   land,
   border,
   featureVertices,
   featureId,
   cellNumber,
-  gridCellsNumber
+  gridCellsNumber,
+  area
 }: {
+  vertices: IGraphVertices;
+  heights: Uint8Array;
   features: TPackFeatures;
+  featureIds: Uint16Array;
   firstCell: number;
   land: boolean;
   border: boolean;
@@ -181,11 +190,14 @@ function addFeature({
   featureId: number;
   cellNumber: number;
   gridCellsNumber: number;
+  area: number;
 }) {
   const OCEAN_MIN_SIZE = gridCellsNumber / 25;
   const SEA_MIN_SIZE = gridCellsNumber / 1000;
   const CONTINENT_MIN_SIZE = gridCellsNumber / 10;
   const ISLAND_MIN_SIZE = gridCellsNumber / 1000;
+
+  const absArea = Math.abs(rn(area));
 
   if (land) return addIsland();
   if (border) return addOcean();
@@ -201,7 +213,8 @@ function addFeature({
       border,
       cells: cellNumber,
       firstCell,
-      vertices: featureVertices
+      vertices: featureVertices,
+      area: absArea
     };
     return feature;
   }
@@ -216,7 +229,8 @@ function addFeature({
       border: false,
       cells: cellNumber,
       firstCell,
-      vertices: featureVertices
+      vertices: featureVertices,
+      area: absArea
     };
     return feature;
   }
@@ -224,6 +238,25 @@ function addFeature({
   function addLake() {
     const group = "freshwater"; // temp, to be defined later
     const name = ""; // temp, to be defined later
+
+    // ensure lake ring is clockwise (to form a hole)
+    const lakeVertices = area > 0 ? featureVertices.reverse() : featureVertices;
+
+    const shoreline = getShoreline(); // land cells around lake
+    const height = getLakeElevation();
+
+    function getShoreline() {
+      const isLand = (cellId: number) => heights[cellId] >= MIN_LAND_HEIGHT;
+      const cellsAround = lakeVertices.map(vertex => vertices.c[vertex].filter(isLand)).flat();
+      return unique(cellsAround);
+    }
+
+    function getLakeElevation() {
+      const MIN_ELEVATION_DELTA = 0.1;
+      const minShoreHeight = d3.min(shoreline.map(cellId => heights[cellId])) || MIN_LAND_HEIGHT;
+      return minShoreHeight - MIN_ELEVATION_DELTA;
+    }
+
     const feature: IPackFeatureLake = {
       i: featureId,
       type: "lake",
@@ -233,7 +266,10 @@ function addFeature({
       border: false,
       cells: cellNumber,
       firstCell,
-      vertices: featureVertices
+      vertices: lakeVertices,
+      shoreline: shoreline,
+      height,
+      area: absArea
     };
     return feature;
   }
@@ -245,7 +281,7 @@ function addFeature({
   }
 
   function defineIslandGroup() {
-    const prevFeature = features.at(-1);
+    const prevFeature = features[featureIds[firstCell - 1]];
 
     if (prevFeature && prevFeature.type === "lake") return "lake_island";
     if (cellNumber > CONTINENT_MIN_SIZE) return "continent";

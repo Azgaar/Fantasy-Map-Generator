@@ -1,8 +1,8 @@
+// @ts-nocheckd
 import * as d3 from "d3";
 
 import {TIME} from "config/logging";
 import {rn} from "utils/numberUtils";
-// @ts-expect-error js module
 import {aleaPRNG} from "scripts/aleaPRNG";
 import {getInputNumber, getInputValue} from "utils/nodeUtils";
 import {DISTANCE_FIELD, MIN_LAND_HEIGHT} from "config/generation";
@@ -37,69 +37,6 @@ window.Lakes = (function () {
     });
 
     return lakeOutCells;
-  };
-
-  // get array of land cells aroound lake
-  const getShoreline = function (lake: IPackFeatureLake, pack: IPack) {
-    const uniqueCells = new Set();
-    lake.vertices.forEach(v =>
-      pack.vertices.c[v].forEach(c => pack.cells.h[c] >= MIN_LAND_HEIGHT && uniqueCells.add(c))
-    );
-    lake.shoreline = [...uniqueCells];
-  };
-
-  const prepareLakeData = (h: Uint8Array, pack: IPack) => {
-    const cells = pack.cells;
-    const ELEVATION_LIMIT = getInputNumber("lakeElevationLimitOutput");
-
-    pack.features.forEach(feature => {
-      if (!feature || feature.type !== "lake") return;
-      delete feature.flux;
-      delete feature.inlets;
-      delete feature.outlet;
-      delete feature.height;
-      delete feature.closed;
-      !feature.shoreline && getShoreline(feature, pack);
-
-      // lake surface height is as lowest land cells around
-      const min = feature.shoreline.sort((a, b) => h[a] - h[b])[0];
-      feature.height = h[min] - 0.1;
-
-      // check if lake can be open (not in deep depression)
-      if (ELEVATION_LIMIT === 80) {
-        feature.closed = false;
-        return;
-      }
-
-      let deep = true;
-      const threshold = feature.height + ELEVATION_LIMIT;
-      const queue = [min];
-      const checked = [];
-      checked[min] = true;
-
-      // check if elevated lake can potentially pour to another water body
-      while (deep && queue.length) {
-        const q = queue.pop();
-
-        for (const n of cells.c[q]) {
-          if (checked[n]) continue;
-          if (h[n] >= threshold) continue;
-
-          if (h[n] < 20) {
-            const nFeature = pack.features[cells.f[n]];
-            if ((nFeature && nFeature.type === "ocean") || feature.height > nFeature.height) {
-              deep = false;
-              break;
-            }
-          }
-
-          checked[n] = true;
-          queue.push(n);
-        }
-      }
-
-      feature.closed = deep;
-    });
   };
 
   const cleanupLakeData = function (pack: IPack) {
@@ -277,11 +214,9 @@ window.Lakes = (function () {
   return {
     setClimateData,
     cleanupLakeData,
-    prepareLakeData,
     defineGroup,
     generateName,
     getName,
-    getShoreline,
     addLakesInDeepDepressions,
     openNearSeaLakes
   };

@@ -13,18 +13,19 @@ export function drawCoastline(vertices: IGraphVertices, features: TPackFeatures)
 
   for (const feature of features) {
     if (!feature) continue;
+    if (feature.type === "ocean") continue;
 
     const points = clipPoly(feature.vertices.map(vertex => vertices.p[vertex]));
     const simplifiedPoints = simplify(points, SIMPLIFICATION_TOLERANCE);
     const path = round(lineGen(simplifiedPoints)!);
 
-    landMask
-      .append("path")
-      .attr("d", path)
-      .attr("fill", "black")
-      .attr("id", "land_" + feature.i);
-
     if (feature.type === "lake") {
+      landMask
+        .append("path")
+        .attr("d", path)
+        .attr("fill", "black")
+        .attr("id", "land_" + feature.i);
+
       lakes
         .select("#freshwater")
         .append("path")
@@ -32,6 +33,12 @@ export function drawCoastline(vertices: IGraphVertices, features: TPackFeatures)
         .attr("id", "lake_" + feature.i)
         .attr("data-f", feature.i);
     } else {
+      landMask
+        .append("path")
+        .attr("d", path)
+        .attr("fill", "white")
+        .attr("id", "land_" + feature.i);
+
       waterMask
         .append("path")
         .attr("d", path)

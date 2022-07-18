@@ -6,28 +6,36 @@ import {rn} from "utils/numberUtils";
 import {round} from "utils/stringUtils";
 import {rw, each} from "utils/probabilityUtils";
 import {aleaPRNG} from "scripts/aleaPRNG";
+import {DISTANCE_FIELD, MIN_LAND_HEIGHT} from "config/generation";
+import {getInputNumber} from "utils/nodeUtils";
+
+const {Lakes} = window;
+const {LAND_COAST} = DISTANCE_FIELD;
+
+interface IRiverPackData {
+  cells: Pick<IPack["cells"], "i" | "h" | "c" | "t">;
+  features: TPackFeatures;
+}
 
 window.Rivers = (function () {
-  const generate = function (pack, grid, allowErosion = true) {
+  const generate = function (grid: IGrid, {cells, features}: IRiverPackData, allowErosion = true) {
     TIME && console.time("generateRivers");
+
     Math.random = aleaPRNG(seed);
-    const {cells, features} = pack;
 
     const riversData = {}; // rivers data
     const riverParents = {};
-    const addCellToRiver = function (cell, river) {
-      if (!riversData[river]) riversData[river] = [cell];
-      else riversData[river].push(cell);
-    };
 
-    cells.fl = new Uint16Array(cells.i.length); // water flux array
-    cells.r = new Uint16Array(cells.i.length); // rivers array
-    cells.conf = new Uint8Array(cells.i.length); // confluences array
-    let riverNext = 1; // first river id is 1
+    const cellsNumber = cells.i.length;
+    const flux = new Uint16Array(cellsNumber);
+    const riverIds = new Uint16Array(cellsNumber);
+    const confluence = new Uint8Array(cellsNumber);
 
-    const h = alterHeights(pack.cells);
-    Lakes.prepareLakeData(h, pack);
-    resolveDepressions(pack, h);
+    let nextRiverId = 1; // starts with 1
+
+    const alteredHeights = alterHeights({h: cells.h, c: cells.c, t: cells.t});
+
+    resolveDepressions(pack, alteredHeights);
     drainWater();
     defineRivers();
 
@@ -35,7 +43,7 @@ window.Rivers = (function () {
     Lakes.cleanupLakeData(pack);
 
     if (allowErosion) {
-      cells.h = Uint8Array.from(h); // apply gradient
+      cells.h = Uint8Array.from(alteredHeights); // apply gradient
       downcutRivers(); // downcut river beds
     }
 
@@ -46,36 +54,36 @@ window.Rivers = (function () {
       const cellsNumberModifier = (pointsInput.dataset.cells / 10000) ** 0.25;
 
       const prec = grid.cells.prec;
-      const land = cells.i.filter(i => h[i] >= 20).sort((a, b) => h[b] - h[a]);
-      const lakeOutCells = Lakes.setClimateData(h, pack, grid);
+      const land = cells.i.filter(i => alteredHeights[i] >= 20).sort((a, b) => alteredHeights[b] - alteredHeights[a]);
+      const lakeOutCells = Lakes.setClimateData(alteredHeights, pack, grid);
 
       land.forEach(function (i) {
-        cells.fl[i] += prec[cells.g[i]] / cellsNumberModifier; // add flux from precipitation
+        flux[i] += prec[cells.g[i]] / cellsNumberModifier; // add flux from precipitation
 
         // create lake outlet if lake is not in deep depression and flux > evaporation
         const lakes = lakeOutCells[i]
           ? features.filter(feature => i === feature.outCell && feature.flux > feature.evaporation)
           : [];
         for (const lake of lakes) {
-          const lakeCell = cells.c[i].find(c => h[c] < 20 && cells.f[c] === lake.i);
-          cells.fl[lakeCell] += Math.max(lake.flux - lake.evaporation, 0); // not evaporated lake water drains to outlet
+          const lakeCell = cells.c[i].find(c => alteredHeights[c] < 20 && cells.f[c] === lake.i);
+          flux[lakeCell] += Math.max(lake.flux - lake.evaporation, 0); // not evaporated lake water drains to outlet
 
           // allow chain lakes to retain identity
-          if (cells.r[lakeCell] !== lake.river) {
-            const sameRiver = cells.c[lakeCell].some(c => cells.r[c] === lake.river);
+          if (riverIds[lakeCell] !== lake.river) {
+            const sameRiver = cells.c[lakeCell].some(c => riverIds[c] === lake.river);
 
             if (sameRiver) {
-              cells.r[lakeCell] = lake.river;
+              riverIds[lakeCell] = lake.river;
               addCellToRiver(lakeCell, lake.river);
             } else {
-              cells.r[lakeCell] = riverNext;
-              addCellToRiver(lakeCell, riverNext);
-              riverNext++;
+              riverIds[lakeCell] = nextRiverId;
+              addCellToRiver(lakeCell, nextRiverId);
+              nextRiverId++;
             }
           }
 
-          lake.outlet = cells.r[lakeCell];
-          flowDown(i, cells.fl[lakeCell], lake.outlet);
+          lake.outlet = riverIds[lakeCell];
+          flowDown(i, flux[lakeCell], lake.outlet);
         }
 
         // assign all tributary rivers to outlet basin
@@ -88,21 +96,21 @@ window.Rivers = (function () {
         }
 
         // near-border cell: pour water out of the screen
-        if (cells.b[i] && cells.r[i]) return addCellToRiver(-1, cells.r[i]);
+        if (cells.b[i] && riverIds[i]) return addCellToRiver(-1, riverIds[i]);
 
         // downhill cell (make sure it's not in the source lake)
         let min = null;
         if (lakeOutCells[i]) {
           const filtered = cells.c[i].filter(c => !lakes.map(lake => lake.i).includes(cells.f[c]));
-          min = filtered.sort((a, b) => h[a] - h[b])[0];
+          min = filtered.sort((a, b) => alteredHeights[a] - alteredHeights[b])[0];
         } else if (cells.haven[i]) {
           min = cells.haven[i];
         } else {
-          min = cells.c[i].sort((a, b) => h[a] - h[b])[0];
+          min = cells.c[i].sort((a, b) => alteredHeights[a] - alteredHeights[b])[0];
         }
 
         // cells is depressed
-        if (h[i] <= h[min]) return;
+        if (alteredHeights[i] <= alteredHeights[min]) return;
 
         // debug
         //   .append("line")
@@ -113,40 +121,45 @@ window.Rivers = (function () {
         //   .attr("stroke", "#333")
         //   .attr("stroke-width", 0.2);
 
-        if (cells.fl[i] < MIN_FLUX_TO_FORM_RIVER) {
+        if (flux[i] < MIN_FLUX_TO_FORM_RIVER) {
           // flux is too small to operate as a river
-          if (h[min] >= 20) cells.fl[min] += cells.fl[i];
+          if (alteredHeights[min] >= 20) flux[min] += flux[i];
           return;
         }
 
         // proclaim a new river
-        if (!cells.r[i]) {
-          cells.r[i] = riverNext;
-          addCellToRiver(i, riverNext);
-          riverNext++;
+        if (!riverIds[i]) {
+          riverIds[i] = nextRiverId;
+          addCellToRiver(i, nextRiverId);
+          nextRiverId++;
         }
 
-        flowDown(min, cells.fl[i], cells.r[i]);
+        flowDown(min, flux[i], riverIds[i]);
       });
     }
 
+    function addCellToRiver(cellId: number, riverId: number) {
+      if (!riversData[riverId]) riversData[riverId] = [cellId];
+      else riversData[riverId].push(cellId);
+    }
+
     function flowDown(toCell, fromFlux, river) {
-      const toFlux = cells.fl[toCell] - cells.conf[toCell];
-      const toRiver = cells.r[toCell];
+      const toFlux = flux[toCell] - confluence[toCell];
+      const toRiver = riverIds[toCell];
 
       if (toRiver) {
         // downhill cell already has river assigned
         if (fromFlux > toFlux) {
-          cells.conf[toCell] += cells.fl[toCell]; // mark confluence
-          if (h[toCell] >= 20) riverParents[toRiver] = river; // min river is a tributary of current river
-          cells.r[toCell] = river; // re-assign river if downhill part has less flux
+          confluence[toCell] += flux[toCell]; // mark confluence
+          if (alteredHeights[toCell] >= 20) riverParents[toRiver] = river; // min river is a tributary of current river
+          riverIds[toCell] = river; // re-assign river if downhill part has less flux
         } else {
-          cells.conf[toCell] += fromFlux; // mark confluence
-          if (h[toCell] >= 20) riverParents[river] = toRiver; // current river is a tributary of min river
+          confluence[toCell] += fromFlux; // mark confluence
+          if (alteredHeights[toCell] >= 20) riverParents[river] = toRiver; // current river is a tributary of min river
         }
-      } else cells.r[toCell] = river; // assign the river to the downhill cell
+      } else riverIds[toCell] = river; // assign the river to the downhill cell
 
-      if (h[toCell] < 20) {
+      if (alteredHeights[toCell] < 20) {
         // pour water to the water body
         const waterBody = features[cells.f[toCell]];
         if (waterBody.type === "lake") {
@@ -160,7 +173,7 @@ window.Rivers = (function () {
         }
       } else {
         // propagate flux and add next river segment
-        cells.fl[toCell] += fromFlux;
+        flux[toCell] += fromFlux;
       }
 
       addCellToRiver(toCell, river);
@@ -168,8 +181,8 @@ window.Rivers = (function () {
 
     function defineRivers() {
       // re-initialize rivers and confluence arrays
-      cells.r = new Uint16Array(cells.i.length);
-      cells.conf = new Uint16Array(cells.i.length);
+      riverIds = new Uint16Array(cellsNumber);
+      confluence = new Uint16Array(cellsNumber);
       pack.rivers = [];
 
       const defaultWidthFactor = rn(1 / (pointsInput.dataset.cells / 10000) ** 0.25, 2);
@@ -184,8 +197,8 @@ window.Rivers = (function () {
           if (cell < 0 || cells.h[cell] < 20) continue;
 
           // mark real confluences and assign river to cells
-          if (cells.r[cell]) cells.conf[cell] = 1;
-          else cells.r[cell] = riverId;
+          if (riverIds[cell]) confluence[cell] = 1;
+          else riverIds[cell] = riverId;
         }
 
         const source = riverCells[0];
@@ -194,7 +207,7 @@ window.Rivers = (function () {
 
         const widthFactor = !parent || parent === riverId ? mainStemWidthFactor : defaultWidthFactor;
         const meanderedPoints = addMeandering(pack, riverCells);
-        const discharge = cells.fl[mouth]; // m3 in second
+        const discharge = flux[mouth]; // m3 in second
         const length = getApproximateLength(meanderedPoints);
         const width = getWidth(getOffset(discharge, meanderedPoints.length, widthFactor, 0));
 
@@ -218,48 +231,94 @@ window.Rivers = (function () {
 
       for (const i of pack.cells.i) {
         if (cells.h[i] < 35) continue; // don't donwcut lowlands
-        if (!cells.fl[i]) continue;
+        if (!flux[i]) continue;
 
         const higherCells = cells.c[i].filter(c => cells.h[c] > cells.h[i]);
-        const higherFlux = higherCells.reduce((acc, c) => acc + cells.fl[c], 0) / higherCells.length;
+        const higherFlux = higherCells.reduce((acc, c) => acc + flux[c], 0) / higherCells.length;
         if (!higherFlux) continue;
 
-        const downcut = Math.floor(cells.fl[i] / higherFlux);
+        const downcut = Math.floor(flux[i] / higherFlux);
         if (downcut) cells.h[i] -= Math.min(downcut, MAX_DOWNCUT);
       }
     }
 
     function calculateConfluenceFlux() {
       for (const i of cells.i) {
-        if (!cells.conf[i]) continue;
+        if (!confluence[i]) continue;
 
         const sortedInflux = cells.c[i]
-          .filter(c => cells.r[c] && h[c] > h[i])
-          .map(c => cells.fl[c])
+          .filter(c => riverIds[c] && alteredHeights[c] > alteredHeights[i])
+          .map(c => flux[c])
           .sort((a, b) => b - a);
-        cells.conf[i] = sortedInflux.reduce((acc, flux, index) => (index ? acc + flux : acc), 0);
+        confluence[i] = sortedInflux.reduce((acc, flux, index) => (index ? acc + flux : acc), 0);
       }
     }
   };
 
   // add distance to water value to land cells to make map less depressed
-  const alterHeights = ({h, c, t}) => {
-    return Array.from(h).map((h, i) => {
-      if (h < 20 || t[i] < 1) return h;
-      return h + t[i] / 100 + d3.mean(c[i].map(c => t[c])) / 10000;
+  const alterHeights = ({h, c, t}: Pick<IPack["cells"], "h" | "c" | "t">) => {
+    return Array.from(h).map((height, index) => {
+      if (height < MIN_LAND_HEIGHT || t[index] < LAND_COAST) return height;
+      const mean = d3.mean(c[index].map(c => t[c])) || 0;
+      return height + t[index] / 100 + mean / 10000;
     });
   };
 
   // depression filling algorithm (for a correct water flux modeling)
   const resolveDepressions = function (pack, h) {
     const {cells, features} = pack;
-    const maxIterations = +document.getElementById("resolveDepressionsStepsOutput").value;
+    const maxIterations = getInputNumber("resolveDepressionsStepsOutput");
     const checkLakeMaxIteration = maxIterations * 0.85;
     const elevateLakeMaxIteration = maxIterations * 0.75;
 
     const height = i => features[cells.f[i]].height || h[i]; // height of lake or specific cell
 
-    const lakes = features.filter(f => f.type === "lake");
+    const lakes = features.filter(feature => feature.type === "lake");
+    const canBePoured = () => {
+      const ELEVATION_LIMIT = getInputNumber("lakeElevationLimitOutput");
+
+      const lakes = features.filter(feature => feature && feature.type === "lake") as IPackFeatureLake[];
+      const lakeData = lakes.map(feature => {
+        const minShoreHeight = d3.min(feature.shoreline.map(cellId => heights[cellId])) || MIN_LAND_HEIGHT;
+        const minHeightCell =
+          feature.shoreline.find(cellId => heights[cellId] === minShoreHeight) || feature.shoreline[0];
+
+        if (ELEVATION_LIMIT === 80) return {...feature, closed: false};
+
+        // check if lake can be open (not in deep depression)
+        let deep = true;
+
+        const threshold = feature.height + ELEVATION_LIMIT;
+        const queue = [minHeightCell];
+        const checked = [];
+        checked[minHeightCell] = true;
+
+        // check if elevated lake can potentially pour to another water body
+        while (deep && queue.length) {
+          const cellId = queue.pop()!;
+
+          for (const neibCellId of cells.c[cellId]) {
+            if (checked[neibCellId]) continue;
+            if (heights[neibCellId] >= threshold) continue;
+
+            if (heights[neibCellId] < MIN_LAND_HEIGHT) {
+              const waterFeatureMet = features[cells.f[neibCellId]];
+
+              if ((waterFeatureMet && waterFeatureMet.type === "ocean") || feature.height > waterFeatureMet.height) {
+                deep = false;
+                break;
+              }
+            }
+
+            checked[neibCellId] = true;
+            queue.push(neibCellId);
+          }
+        }
+
+        return {...feature, closed: deep};
+      });
+    };
+
     const land = cells.i.filter(i => h[i] >= 20 && !cells.b[i]); // exclude near-border cells
     land.sort((a, b) => h[a] - h[b]); // lowest cells go first
 
@@ -476,10 +535,10 @@ window.Rivers = (function () {
 
   // Real mouth width examples: Amazon 6000m, Volga 6000m, Dniepr 3000m, Mississippi 1300m, Themes 900m,
   // Danube 800m, Daugava 600m, Neva 500m, Nile 450m, Don 400m, Wisla 300m, Pripyat 150m, Bug 140m, Muchavets 40m
-  const getWidth = offset => rn((offset / 1.5) ** 1.8, 2); // mouth width in km
+  const getWidth = (offset: number) => rn((offset / 1.5) ** 1.8, 2); // mouth width in km
 
   // remove river and all its tributaries
-  const remove = function (id) {
+  const remove = function (id: number) {
     const cells = pack.cells;
     const riversToRemove = pack.rivers.filter(r => r.i === id || r.parent === id || r.basin === id).map(r => r.i);
     riversToRemove.forEach(r => rivers.select("#river" + r).remove());
@@ -492,9 +551,9 @@ window.Rivers = (function () {
     pack.rivers = pack.rivers.filter(r => !riversToRemove.includes(r.i));
   };
 
-  const getBasin = function (r) {
-    const parent = pack.rivers.find(river => river.i === r)?.parent;
-    if (!parent || r === parent) return r;
+  const getBasin = function (riverId: number) {
+    const parent = pack.rivers.find(river => river.i === riverId)?.parent;
+    if (!parent || riverId === parent) return riverId;
     return getBasin(parent);
   };
 

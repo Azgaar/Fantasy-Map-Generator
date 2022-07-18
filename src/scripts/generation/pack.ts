@@ -1,6 +1,5 @@
 import * as d3 from "d3";
 
-import {renderLayer} from "layers";
 // @ts-expect-error js module
 import {drawCoastline} from "layers/renderers/drawCoastline";
 import {markupPackFeatures} from "modules/markup";
@@ -23,49 +22,54 @@ export function createPack(grid: IGrid): IPack {
   const {vertices, cells} = repackGrid(grid);
 
   const markup = markupPackFeatures(grid, vertices, pick(cells, "v", "c", "b", "p", "h"));
+  const {features, featureIds, distanceField, haven, harbor} = markup;
 
-  renderLayer("coastline", vertices, markup.features);
+  const riverCells = {...cells, f: featureIds, t: distanceField, haven};
+  Rivers.generate(grid, {cells: riverCells, features}, true);
 
-  // drawCoastline({vertices, cells}); // split into vertices definition and rendering
-
-  // Rivers.generate(newPack, grid);
-  // renderLayer("rivers", newPack);
   // Lakes.defineGroup(newPack);
   // Biomes.define(newPack, grid);
 
   // const rankCellsData = pick(newPack.cells, "i", "f", "fl", "conf", "r", "h", "area", "biome", "haven", "harbor");
   // rankCells(newPack.features!, rankCellsData);
 
-  Cultures.generate();
-  Cultures.expand();
-  BurgsAndStates.generate();
-  Religions.generate();
-  BurgsAndStates.defineStateForms();
-  BurgsAndStates.generateProvinces();
-  BurgsAndStates.defineBurgFeatures();
+  // Cultures.generate();
+  // Cultures.expand();
+  // BurgsAndStates.generate();
+  // Religions.generate();
+  // BurgsAndStates.defineStateForms();
+  // BurgsAndStates.generateProvinces();
+  // BurgsAndStates.defineBurgFeatures();
 
-  renderLayer("states");
-  renderLayer("borders");
-  BurgsAndStates.drawStateLabels();
+  // renderLayer("states");
+  // renderLayer("borders");
+  // BurgsAndStates.drawStateLabels();
 
-  Rivers.specify();
-  Lakes.generateName();
+  // Rivers.specify();
+  // Lakes.generateName();
 
-  Military.generate();
-  Markers.generate();
-  addZones();
+  // Military.generate();
+  // Markers.generate();
+  // addZones();
 
-  OceanLayers(newGrid);
+  // OceanLayers(newGrid);
 
-  drawScaleBar(window.scale);
-  Names.getMapName();
+  // drawScaleBar(window.scale);
+  // Names.getMapName();
 
-  const pack = {
+  const pack: IPack = {
     vertices,
-    cells
+    cells: {
+      ...cells,
+      f: featureIds,
+      t: distanceField,
+      haven,
+      harbor
+    },
+    features
   };
 
-  return pack as IPack;
+  return pack;
 }
 
 // repack grid cells: discart deep water cells, add land cells along the coast
@@ -132,7 +136,4 @@ function repackGrid(grid: IGrid) {
 
   TIME && console.timeEnd("repackGrid");
   return pack;
-}
-function drawLayer(arg0: string, vertices: IGraphVertices, features: TPackFeatures) {
-  throw new Error("Function not implemented.");
 }
