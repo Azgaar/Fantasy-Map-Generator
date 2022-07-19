@@ -27,6 +27,10 @@ interface IPackFeatureLake extends IPackFeatureBase {
   name: string;
   shoreline: number[];
   height: number;
+  flux?: number;
+  temp?: number;
+  evaporation?: number;
+  outCell?: number;
 }
 
 type TPackFeature = IPackFeatureOcean | IPackFeatureIsland | IPackFeatureLake;

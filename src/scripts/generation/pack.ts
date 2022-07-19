@@ -24,8 +24,13 @@ export function createPack(grid: IGrid): IPack {
   const markup = markupPackFeatures(grid, vertices, pick(cells, "v", "c", "b", "p", "h"));
   const {features, featureIds, distanceField, haven, harbor} = markup;
 
-  const riverCells = {...cells, f: featureIds, t: distanceField, haven};
-  Rivers.generate(grid, {cells: riverCells, features}, true);
+  Rivers.generate(
+    grid.cells.prec,
+    grid.cells.temp,
+    pick({...cells, f: featureIds, t: distanceField, haven}, "i", "c", "b", "g", "t", "h", "f", "haven"),
+    features,
+    true
+  );
 
   // Lakes.defineGroup(newPack);
   // Biomes.define(newPack, grid);

@@ -68,6 +68,10 @@ export function convertTemperature(temp: number) {
 // Elevation
 // ***
 
+export function getRealHeight(height: number) {
+  return (height - 18) ** getInputNumber("heightExponentInput");
+}
+
 // get user-friendly (real-world) height value from coordinates
 export function getFriendlyHeight([x, y]: TPoint) {
   const packH = pack.cells.h[findCell(x, y)];

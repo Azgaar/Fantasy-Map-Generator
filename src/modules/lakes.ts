@@ -7,34 +7,42 @@ import {aleaPRNG} from "scripts/aleaPRNG";
 import {getInputNumber, getInputValue} from "utils/nodeUtils";
 import {DISTANCE_FIELD, MIN_LAND_HEIGHT} from "config/generation";
 import {byId} from "utils/shorthands";
+import {getRealHeight} from "utils/unitUtils";
 
 window.Lakes = (function () {
-  const setClimateData = function (h: Uint8Array, pack: IPack, grid: IGrid) {
-    const cells = pack.cells;
-    const lakeOutCells = new Uint16Array(cells.i.length);
+  const setClimateData = function (
+    heights: Uint8Array,
+    lakes: IPackFeatureLake[],
+    gridReference: IPack["cells"]["g"],
+    precipitation: IGrid["cells"]["prec"],
+    temperature: IGrid["cells"]["temp"]
+  ) {
+    const lakeOutCells = new Uint16Array(gridReference.length);
 
-    pack.features.forEach(f => {
-      if (f.type !== "lake") return;
+    for (const lake of lakes) {
+      const {firstCell, shoreline} = lake;
 
       // default flux: sum of precipitation around lake
-      f.flux = f.shoreline.reduce((acc, c) => acc + grid.cells.prec[cells.g[c]], 0);
+      lake.flux = shoreline.reduce((acc, cellId) => acc + precipitation[gridReference[cellId]], 0);
 
       // temperature and evaporation to detect closed lakes
-      f.temp =
-        f.cells < 6
-          ? grid.cells.temp[cells.g[f.firstCell]]
-          : rn(d3.mean(f.shoreline.map(c => grid.cells.temp[cells.g[c]])), 1);
-      const height = (f.height - 18) ** heightExponentInput.value; // height in meters
-      const evaporation = ((700 * (f.temp + 0.006 * height)) / 50 + 75) / (80 - f.temp); // based on Penman formula, [1-11]
-      f.evaporation = rn(evaporation * f.cells);
+      lake.temp =
+        lake.cells < 6
+          ? temperature[gridReference[firstCell]]
+          : rn(d3.mean(shoreline.map(cellId => temperature[gridReference[cellId]]))!, 1);
+
+      const height = getRealHeight(lake.height); // height in meters
+      const evaporation = ((700 * (lake.temp + 0.006 * height)) / 50 + 75) / (80 - lake.temp); // based on Penman formula, [1-11]
+      lake.evaporation = rn(evaporation * lake.cells);
 
       // no outlet for lakes in depressed areas
-      if (f.closed) return;
+      // if (lake.closed) continue;
 
       // lake outlet cell
-      f.outCell = f.shoreline[d3.scan(f.shoreline, (a, b) => h[a] - h[b])];
-      lakeOutCells[f.outCell] = f.i;
-    });
+      const outCell = shoreline[d3.scan(shoreline, (a, b) => heights[a] - heights[b])!];
+      lake.outCell = outCell;
+      lakeOutCells[lake.outCell] = lake.i;
+    }
 
     return lakeOutCells;
   };
