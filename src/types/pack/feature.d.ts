@@ -30,7 +30,8 @@ interface IPackFeatureLake extends IPackFeatureBase {
   flux?: number;
   temp?: number;
   evaporation?: number;
-  outCell?: number;
+  inlets?: number[];
+  outlet?: number;
 }
 
 type TPackFeature = IPackFeatureOcean | IPackFeatureIsland | IPackFeatureLake;

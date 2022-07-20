@@ -1,3 +1,5 @@
+import {pick} from "utils/functionUtils";
+
 export function drawRivers(pack: IPack) {
   rivers.selectAll("*").remove();
 
@@ -12,7 +14,7 @@ export function drawRivers(pack: IPack) {
       points = undefined;
     }
 
-    const meanderedPoints = addMeandering(pack, cells, points);
+    const meanderedPoints = addMeandering(pick(pack.cells, "fl", "conf", "h", "p"), cells, points);
     const path = getRiverPath(meanderedPoints, widthFactor, sourceWidth);
     return `<path id="river${i}" d="${path}"/>`;
   });

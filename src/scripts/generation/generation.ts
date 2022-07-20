@@ -26,7 +26,7 @@ import {generateSeed} from "utils/probabilityUtils";
 import {byId} from "utils/shorthands";
 import {showStatistics} from "../statistics";
 import {createGrid} from "./grid";
-import {createPack} from "./pack";
+import {createPack} from "./pack/pack";
 import {getInputValue, setInputValue} from "utils/nodeUtils";
 // import {Ruler} from "modules/measurers";
 
@@ -68,7 +68,7 @@ async function generate(options?: IGenerationOptions) {
     renderLayer("rivers", pack);
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - timeStart) / 1000, 2)}s`);
-    showStatistics();
+    // showStatistics();
     INFO && console.groupEnd();
   } catch (error) {
     showGenerationError(error as Error);

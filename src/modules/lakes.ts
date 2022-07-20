@@ -1,70 +1,13 @@
-// @ts-nocheckd
+// @ts-nocheck
 import * as d3 from "d3";
 
 import {TIME} from "config/logging";
-import {rn} from "utils/numberUtils";
 import {aleaPRNG} from "scripts/aleaPRNG";
 import {getInputNumber, getInputValue} from "utils/nodeUtils";
 import {DISTANCE_FIELD, MIN_LAND_HEIGHT} from "config/generation";
 import {byId} from "utils/shorthands";
-import {getRealHeight} from "utils/unitUtils";
 
 window.Lakes = (function () {
-  const setClimateData = function (
-    heights: Uint8Array,
-    lakes: IPackFeatureLake[],
-    gridReference: IPack["cells"]["g"],
-    precipitation: IGrid["cells"]["prec"],
-    temperature: IGrid["cells"]["temp"]
-  ) {
-    const lakeOutCells = new Uint16Array(gridReference.length);
-
-    for (const lake of lakes) {
-      const {firstCell, shoreline} = lake;
-
-      // default flux: sum of precipitation around lake
-      lake.flux = shoreline.reduce((acc, cellId) => acc + precipitation[gridReference[cellId]], 0);
-
-      // temperature and evaporation to detect closed lakes
-      lake.temp =
-        lake.cells < 6
-          ? temperature[gridReference[firstCell]]
-          : rn(d3.mean(shoreline.map(cellId => temperature[gridReference[cellId]]))!, 1);
-
-      const height = getRealHeight(lake.height); // height in meters
-      const evaporation = ((700 * (lake.temp + 0.006 * height)) / 50 + 75) / (80 - lake.temp); // based on Penman formula, [1-11]
-      lake.evaporation = rn(evaporation * lake.cells);
-
-      // no outlet for lakes in depressed areas
-      // if (lake.closed) continue;
-
-      // lake outlet cell
-      const outCell = shoreline[d3.scan(shoreline, (a, b) => heights[a] - heights[b])!];
-      lake.outCell = outCell;
-      lakeOutCells[lake.outCell] = lake.i;
-    }
-
-    return lakeOutCells;
-  };
-
-  const cleanupLakeData = function (pack: IPack) {
-    for (const feature of pack.features) {
-      if (feature.type !== "lake") continue;
-      delete feature.river;
-      delete feature.enteringFlux;
-      delete feature.outCell;
-      delete feature.closed;
-      feature.height = rn(feature.height, 3);
-
-      const inlets = feature.inlets?.filter(r => pack.rivers.find(river => river.i === r));
-      if (!inlets || !inlets.length) delete feature.inlets;
-      else feature.inlets = inlets;
-
-      const outlet = feature.outlet && pack.rivers.find(river => river.i === feature.outlet);
-      if (!outlet) delete feature.outlet;
-    }
-  };
-
   const defineGroup = function (pack: IPack) {
     for (const feature of pack.features) {
       if (feature && feature.type === "lake") {
@@ -220,8 +163,6 @@ window.Lakes = (function () {
   }
 
   return {
-    setClimateData,
-    cleanupLakeData,
     defineGroup,
     generateName,
     getName,

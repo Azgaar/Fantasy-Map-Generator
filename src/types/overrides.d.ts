@@ -14,6 +14,7 @@ interface Window {
 
   // untyped IIFE modules
   Biomes: any;
+  Rivers: any;
   Names: any;
   ThreeD: any;
   ReliefIcons: any;
@@ -21,7 +22,6 @@ interface Window {
   Lakes: any;
   HeightmapGenerator: any;
   OceanLayers: any;
-  Rivers: any;
   Cultures: any;
   BurgsAndStates: any;
   Religions: any;

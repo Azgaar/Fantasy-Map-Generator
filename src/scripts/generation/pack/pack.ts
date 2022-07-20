@@ -9,14 +9,15 @@ import {drawScaleBar} from "modules/measurers";
 import {addZones} from "modules/zones";
 import {DISTANCE_FIELD, MIN_LAND_HEIGHT} from "config/generation";
 import {TIME} from "config/logging";
-import {UINT16_MAX} from "constants";
+import {UINT16_MAX} from "config/constants";
 import {calculateVoronoi} from "scripts/generation/graph";
 import {createTypedArray} from "utils/arrayUtils";
 import {pick} from "utils/functionUtils";
 import {rn} from "utils/numberUtils";
+import {generateRivers} from "./rivers";
 
 const {LAND_COAST, WATER_COAST, DEEPER_WATER} = DISTANCE_FIELD;
-const {Lakes, OceanLayers, Rivers, Biomes, Cultures, BurgsAndStates, Religions, Military, Markers, Names} = window;
+// const {Lakes, OceanLayers, Biomes, Cultures, BurgsAndStates, Religions, Military, Markers, Names} = window;
 
 export function createPack(grid: IGrid): IPack {
   const {vertices, cells} = repackGrid(grid);
@@ -24,12 +25,11 @@ export function createPack(grid: IGrid): IPack {
   const markup = markupPackFeatures(grid, vertices, pick(cells, "v", "c", "b", "p", "h"));
   const {features, featureIds, distanceField, haven, harbor} = markup;
 
-  Rivers.generate(
+  const {heights, flux, r, conf, rivers, mergedFeatures} = generateRivers(
     grid.cells.prec,
     grid.cells.temp,
-    pick({...cells, f: featureIds, t: distanceField, haven}, "i", "c", "b", "g", "t", "h", "f", "haven"),
-    features,
-    true
+    pick({...cells, f: featureIds, t: distanceField, haven}, "i", "c", "b", "g", "t", "h", "f", "haven", "p"),
+    features
   );
 
   // Lakes.defineGroup(newPack);
@@ -66,12 +66,17 @@ export function createPack(grid: IGrid): IPack {
     vertices,
     cells: {
       ...cells,
+      h: new Uint8Array(heights),
       f: featureIds,
       t: distanceField,
       haven,
-      harbor
+      harbor,
+      fl: flux,
+      r,
+      conf
     },
-    features
+    features: mergedFeatures,
+    rivers
   };
 
   return pack;

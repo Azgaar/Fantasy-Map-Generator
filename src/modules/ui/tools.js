@@ -570,7 +570,7 @@ function addRiverOnClick() {
   if (cells.b[i]) return;
 
   const {
-    alterHeights,
+    applyDistanceField,
     resolveDepressions,
     addMeandering,
     getRiverPath,
@@ -588,7 +588,7 @@ function addRiverOnClick() {
   const initialFlux = grid.cells.prec[cells.g[i]];
   cells.fl[i] = initialFlux;
 
-  const h = alterHeights(pacl.cells);
+  const h = applyDistanceField(pacl.cells);
   resolveDepressions(pack, h);
 
   while (i) {

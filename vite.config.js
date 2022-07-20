@@ -68,7 +68,6 @@ export default defineConfig(({mode}) => {
         {find: "src", replacement: path.resolve(pathName, "./src")},
         {find: "components", replacement: path.resolve(pathName, "./src/components")},
         {find: "config", replacement: path.resolve(pathName, "./src/config")},
-        {find: "constants", replacement: path.resolve(pathName, "./src/constants")},
         {find: "dialogs", replacement: path.resolve(pathName, "./src/dialogs")},
         {find: "layers", replacement: path.resolve(pathName, "./src/layers")},
         {find: "libs", replacement: path.resolve(pathName, "./src/libs")},

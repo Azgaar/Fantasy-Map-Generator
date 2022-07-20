@@ -2,7 +2,7 @@ import * as d3 from "d3";
 
 import {DISTANCE_FIELD, MIN_LAND_HEIGHT} from "config/generation";
 import {TIME} from "config/logging";
-import {INT8_MAX} from "constants";
+import {INT8_MAX} from "config/constants";
 import {aleaPRNG} from "scripts/aleaPRNG";
 import {getFeatureVertices} from "scripts/connectVertices";
 import {createTypedArray, unique} from "utils/arrayUtils";
@@ -254,7 +254,7 @@ function addFeature({
     function getLakeElevation() {
       const MIN_ELEVATION_DELTA = 0.1;
       const minShoreHeight = d3.min(shoreline.map(cellId => heights[cellId])) || MIN_LAND_HEIGHT;
-      return minShoreHeight - MIN_ELEVATION_DELTA;
+      return rn(minShoreHeight - MIN_ELEVATION_DELTA, 2);
     }
 
     const feature: IPackFeatureLake = {

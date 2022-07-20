@@ -1,4 +1,4 @@
-import {MOBILE} from "../constants";
+import {MOBILE} from "../config/constants";
 import {byId} from "../utils/shorthands";
 
 const $tooltip = byId("tooltip")!;
