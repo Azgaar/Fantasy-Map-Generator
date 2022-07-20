@@ -56,16 +56,9 @@ export default defineConfig(({mode}) => {
       rollupOptions: {
         output: {
           manualChunks(id, {getModuleInfo}) {
-            if (id.includes("d3")) {
-              return "d3";
-            }
-            if (id.includes("node_modules")) {
-              return "vendor";
-            }
-            const importersLen = getModuleInfo(id).importers.length;
-            if (importersLen > 1) {
-              return "common";
-            }
+            if (id.includes("d3")) return "d3";
+            if (id.includes("node_modules")) return "vendor";
+            if (getModuleInfo(id).importers.length > 1) return "common";
           }
         }
       }
