@@ -1,5 +1,23 @@
-// utils used for debugging (not in PROD) only
-export function drawArrow([x1, y1]: TPoint, [x2, y2]: TPoint, width = 1, color = "#444"): void {
+// utils to be used for debugging (not in PROD)
+
+export function drawPoint([x, y]: TPoint, {radius = 1, color = "red"} = {}) {
+  debug.append("circle").attr("cx", x).attr("cy", y).attr("r", radius).attr("fill", color);
+}
+
+export function drawPolygon(
+  points: TPoints,
+  {fill = "lighblue", fillOpacity = 0.3, stroke = "#222", strokeWidth = 0.2} = {}
+) {
+  debug
+    .append("polyline")
+    .attr("points", [...points, points[0]])
+    .attr("fill", fill)
+    .attr("fill-opacity", fillOpacity)
+    .attr("stroke", stroke)
+    .attr("stroke-width", strokeWidth);
+}
+
+export function drawArrow([x1, y1]: TPoint, [x2, y2]: TPoint, {width = 1, color = "#444"} = {}): void {
   const angle = Math.atan2(y2 - y1, x2 - x1);
   const normal = angle + Math.PI / 2;
 

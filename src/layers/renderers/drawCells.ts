@@ -1,4 +1,4 @@
-import {getGridPolygon} from "utils/graphUtils";
+import {getGridPolygon, getPackPolygon} from "utils/graphUtils";
 
 export function drawCells() {
   cells.selectAll("path").remove();
@@ -6,6 +6,6 @@ export function drawCells() {
   const cellIds = customization === 1 ? grid.cells.i : pack.cells.i;
   const getPolygon = customization === 1 ? getGridPolygon : getPackPolygon;
 
-  const paths = cellIds.map(getPolygon);
+  const paths = Array.from(cellIds).map(getPolygon);
   cells.append("path").attr("d", "M" + paths.join("M"));
 }

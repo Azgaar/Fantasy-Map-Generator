@@ -62,6 +62,7 @@ async function generate(options?: IGenerationOptions) {
     pack = newPack;
 
     // temp rendering for debug
+    renderLayer("cells");
     renderLayer("coastline", pack.vertices, pack.features);
     renderLayer("heightmap");
     renderLayer("rivers", pack);

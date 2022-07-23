@@ -11,17 +11,6 @@ export function drawCoastline(vertices: IGraphVertices, features: TPackFeatures)
   const lineGen = d3.line().curve(d3.curveBasisClosed);
   const SIMPLIFICATION_TOLERANCE = 0.3; // px
 
-  // map edge rectangle
-  debug
-    .append("rect")
-    .attr("x", 0)
-    .attr("y", 0)
-    .attr("width", graphWidth)
-    .attr("height", graphHeight)
-    .attr("fill", "none")
-    .attr("stroke", "black")
-    .attr("stroke-width", 0.1);
-
   for (const feature of features) {
     if (!feature) continue;
     if (feature.type === "ocean") continue;

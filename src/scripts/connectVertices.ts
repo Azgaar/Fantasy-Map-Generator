@@ -71,20 +71,20 @@ function findStartingVertex({
   const neibCells = cells.c[startingCell];
   const cellVertices = cells.v[startingCell];
 
+  const otherFeatureNeibs = neibCells.filter(neibCell => featureIds[neibCell] !== featureId);
+  if (otherFeatureNeibs.length) {
+    const index = neibCells.indexOf(Math.min(...otherFeatureNeibs)!);
+    return cellVertices[index];
+  }
+
   const externalVertex = cellVertices.find(vertex => {
     const [x, y] = vertices.p[vertex];
-    if (x < 0 || y < 0) return true;
+    if (x < 0 || y < 0 || x > graphWidth || y > graphHeight) return true;
     return vertices.c[vertex].some((cellId: number) => cellId >= packCellsNumber);
   });
   if (externalVertex !== undefined) return externalVertex;
 
-  const otherFeatureNeibs = neibCells.filter(neibCell => featureIds[neibCell] !== featureId);
-  if (!otherFeatureNeibs.length) {
-    throw new Error(`Markup: firstCell ${startingCell} of feature ${featureId} has no neighbors of other features`);
-  }
-
-  const index = neibCells.indexOf(Math.min(...otherFeatureNeibs)!);
-  return cellVertices[index];
+  throw new Error(`Markup: firstCell of feature ${featureId} has no neighbors of other features or external vertices`);
 }
 
 const CONNECT_VERTICES_MAX_ITERATIONS = 50000;
