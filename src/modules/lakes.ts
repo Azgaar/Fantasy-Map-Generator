@@ -8,20 +8,6 @@ import {DISTANCE_FIELD, MIN_LAND_HEIGHT} from "config/generation";
 import {byId} from "utils/shorthands";
 
 window.Lakes = (function () {
-  const generateName = function () {
-    Math.random = aleaPRNG(seed);
-    for (const feature of pack.features) {
-      if (feature.type !== "lake") continue;
-      feature.name = getName(feature);
-    }
-  };
-
-  const getName = function (feature) {
-    const landCell = pack.cells.c[feature.firstCell].find(c => pack.cells.h[c] >= 20);
-    const culture = pack.cells.culture[landCell];
-    return Names.getCulture(culture);
-  };
-
   const {LAND_COAST, WATER_COAST} = DISTANCE_FIELD;
 
   function addLakesInDeepDepressions(grid: IGraph & Partial<IGrid>) {

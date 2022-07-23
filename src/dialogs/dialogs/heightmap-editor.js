@@ -252,7 +252,6 @@ export function open(options) {
     BurgsAndStates.drawStateLabels();
 
     Rivers.specify();
-    Lakes.generateName();
 
     Military.generate();
     Markers.generate();
@@ -441,7 +440,6 @@ export function open(options) {
 
     if (erosionAllowed) {
       Rivers.specify();
-      Lakes.generateName();
     }
 
     // restore zones from grid

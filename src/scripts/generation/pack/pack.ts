@@ -51,7 +51,7 @@ export function createPack(grid: IGrid): IPack {
   // BurgsAndStates.drawStateLabels();
 
   // Rivers.specify();
-  // Lakes.generateName();
+  // const updatedFeatures = generateLakeNames();
 
   // Military.generate();
   // Markers.generate();

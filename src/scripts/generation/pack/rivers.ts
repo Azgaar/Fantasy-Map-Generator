@@ -7,7 +7,7 @@ import {DISTANCE_FIELD, MAX_HEIGHT, MIN_LAND_HEIGHT} from "config/generation";
 import {getInputNumber} from "utils/nodeUtils";
 import {pick} from "utils/functionUtils";
 import {byId} from "utils/shorthands";
-import {mergeLakeDataToFeatures, getClimateData, ILakeClimateData} from "./lakes";
+import {mergeLakeData, getClimateData, ILakeClimateData} from "./lakes";
 import {drawArrow} from "utils/debugUtils";
 
 const {Rivers} = window;
@@ -44,7 +44,7 @@ export function generateRivers(
   const {r, conf, rivers} = defineRivers();
   const heights = downcutRivers(currentCellHeights);
 
-  const mergedFeatures = mergeLakeDataToFeatures(features, lakeData, rivers);
+  const mergedFeatures = mergeLakeData(features, lakeData, rivers);
 
   TIME && console.timeEnd("generateRivers");
 
@@ -97,7 +97,7 @@ export function generateRivers(
         }
 
         lake.outlet = riverIds[lakeCell];
-        flowDown(lakeCell, cellId, flux[lakeCell], lake.outlet);
+        flowDown(cellId, flux[lakeCell], lake.outlet);
       }
 
       if (lakesDrainingToCell.length && lakesDrainingToCell[0].outlet) {
@@ -125,6 +125,8 @@ export function generateRivers(
         min = cells.c[cellId].sort((a, b) => currentCellHeights[a] - currentCellHeights[b])[0];
       }
 
+      // drawArrow(cells.p[fromCell], cells.p[toCell]);
+
       // cells is depressed
       if (currentCellHeights[cellId] <= currentCellHeights[min]) return;
 
@@ -141,14 +143,12 @@ export function generateRivers(
         nextRiverId++;
       }
 
-      flowDown(cellId, min, flux[cellId], riverIds[cellId]);
+      flowDown(min, flux[cellId], riverIds[cellId]);
     });
 
     return {flux, lakeData};
 
-    function flowDown(fromCell: number, toCell: number, fromFlux: number, riverId: number) {
-      // drawArrow(cells.p[fromCell], cells.p[toCell]);
-
+    function flowDown(toCell: number, fromFlux: number, riverId: number) {
       const toFlux = flux[toCell] - confluence[toCell];
       const toRiver = riverIds[toCell];
 

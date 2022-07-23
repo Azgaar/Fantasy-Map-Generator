@@ -281,7 +281,6 @@ window.Submap = (function () {
     BurgsAndStates.drawStateLabels();
 
     Rivers.specify();
-    Lakes.generateName();
 
     stage("Porting military.");
     for (const s of pack.states) {
