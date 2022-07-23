@@ -24,7 +24,6 @@ import {debounce} from "utils/functionUtils";
 import {rn} from "utils/numberUtils";
 import {generateSeed} from "utils/probabilityUtils";
 import {byId} from "utils/shorthands";
-import {showStatistics} from "../statistics";
 import {createGrid} from "./grid";
 import {createPack} from "./pack/pack";
 import {getInputValue, setInputValue} from "utils/nodeUtils";

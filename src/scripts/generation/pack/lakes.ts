@@ -15,7 +15,7 @@ export interface ILakeClimateData extends IPackFeatureLake {
 
 export const getClimateData = function (
   lakes: IPackFeatureLake[],
-  heights: number[],
+  heights: Float32Array,
   drainableLakes: Dict<boolean>,
   gridReference: IPack["cells"]["g"],
   precipitation: IGrid["cells"]["prec"],

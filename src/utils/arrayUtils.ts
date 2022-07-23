@@ -8,6 +8,27 @@ export function unique<T>(array: T[]) {
   return [...new Set(array)];
 }
 
+export function sliceFragment<T>(array: T[], index: number, zone: number) {
+  if (zone + 1 + zone >= array.length) {
+    return array.slice();
+  }
+
+  const start = index - zone;
+  const end = index + zone;
+
+  if (start < 0) {
+    return array.slice(0, end).concat(array.slice(start));
+  }
+
+  if (end >= array.length) {
+    return array.slice(start).concat(array.slice(0, end % array.length));
+  }
+
+  return array.slice(start, end);
+}
+
+window.sliceFragment = sliceFragment;
+
 interface ICreateTypesArrayLength {
   maxValue: number;
   length: number;

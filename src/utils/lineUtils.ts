@@ -52,3 +52,29 @@ export function getMiddlePoint(cell1: number, cell2: number) {
 
   return [x, y];
 }
+
+function getOffCanvasSide([x, y]: TPoint) {
+  if (y <= 0) return "top";
+  if (y >= graphHeight) return "bottom";
+  if (x <= 0) return "left";
+  if (x >= graphWidth) return "right";
+
+  return false;
+}
+
+// remove intermediate out-of-canvas points from polyline
+export function filterOutOfCanvasPoints(points: TPoints) {
+  const pointsOutSide = points.map(getOffCanvasSide);
+  const SAFE_ZONE = 3;
+
+  const filterOutCanvasPoint = (i: number) => {
+    const pointSide = pointsOutSide[i];
+    if (pointSide === false) return true;
+    if (pointsOutSide.slice(i - SAFE_ZONE, i + SAFE_ZONE).some(side => !side || side !== pointSide)) return true;
+    return false;
+  };
+
+  const result = points.filter((_, i) => filterOutCanvasPoint(i));
+
+  return result;
+}

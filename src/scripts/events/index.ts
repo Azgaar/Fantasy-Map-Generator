@@ -10,11 +10,8 @@ import {clearLegend, dragLegendBox} from "modules/legend";
 export function setDefaultEventHandlers() {
   window.Zoom.setZoomBehavior();
 
-  viewbox
-    .style("cursor", "default")
-    .on(".drag", null)
-    .on("click", handleMapClick)
-    .on("touchmove mousemove", onMouseMove);
+  viewbox.style("cursor", "default").on(".drag", null).on("click", handleMapClick);
+  //.on("touchmove mousemove", onMouseMove);
 
   scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => openDialog("unitsEditor"));
 
