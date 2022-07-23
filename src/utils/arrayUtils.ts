@@ -1,4 +1,4 @@
-import {UINT16_MAX, UINT32_MAX, UINT8_MAX} from "../config/constants";
+import {UINT16_MAX, UINT32_MAX, UINT8_MAX} from "config/constants";
 
 export function last<T>(array: T[]) {
   return array[array.length - 1];
@@ -9,15 +9,18 @@ export function unique<T>(array: T[]) {
 }
 
 export function sliceFragment<T>(array: T[], index: number, zone: number) {
+  if (index < 0) throw new Error("Index must not be negative");
+  if (zone < 0) throw new Error("Zone must not be negative");
+
   if (zone + 1 + zone >= array.length) {
     return array.slice();
   }
 
   const start = index - zone;
-  const end = index + zone;
+  const end = index + zone + 1;
 
   if (start < 0) {
-    return array.slice(0, end).concat(array.slice(start));
+    return array.slice(start).concat(array.slice(0, end));
   }
 
   if (end >= array.length) {
@@ -26,8 +29,6 @@ export function sliceFragment<T>(array: T[], index: number, zone: number) {
 
   return array.slice(start, end);
 }
-
-window.sliceFragment = sliceFragment;
 
 interface ICreateTypesArrayLength {
   maxValue: number;

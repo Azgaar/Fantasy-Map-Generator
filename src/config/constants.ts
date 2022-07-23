@@ -1,5 +1,5 @@
 // detect device
-export const MOBILE = window.innerWidth < 600 || window.navigator.userAgentData?.mobile;
+export const MOBILE = globalThis.innerWidth < 600 || globalThis.navigator?.userAgentData?.mobile;
 
 // typed arrays max values
 export const INT8_MAX = 127;

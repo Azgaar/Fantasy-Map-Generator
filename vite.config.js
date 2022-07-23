@@ -45,7 +45,7 @@ export default defineConfig(({mode}) => {
       createHtmlPlugin({
         inject: {
           data: {
-            APP_VERSION: APP_VERSION.replaceAll('"', "")
+            APP_VERSION: APP_VERSION?.replace(/"/g, "")
           }
         }
       }),
