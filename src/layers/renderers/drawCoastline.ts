@@ -9,7 +9,7 @@ export function drawCoastline(vertices: IGraphVertices, features: TPackFeatures)
   const waterMask = defs.select("#water");
 
   const lineGen = d3.line().curve(d3.curveBasisClosed);
-  const SIMPLIFICATION_TOLERANCE = 0.5; // px
+  const SIMPLIFICATION_TOLERANCE = 0.3; // px
 
   // map edge rectangle
   debug
@@ -30,18 +30,6 @@ export function drawCoastline(vertices: IGraphVertices, features: TPackFeatures)
     const filteredPoints = filterOutOfCanvasPoints(points);
     const simplifiedPoints = simplify(filteredPoints, SIMPLIFICATION_TOLERANCE);
     const path = round(lineGen(simplifiedPoints)!);
-
-    points.forEach(([x, y]) => {
-      debug.append("circle").attr("cx", x).attr("cy", y).attr("r", 0.3).attr("fill", "red");
-    });
-
-    filteredPoints.forEach(([x, y]) => {
-      debug.append("circle").attr("cx", x).attr("cy", y).attr("r", 0.3).attr("fill", "blue");
-    });
-
-    simplifiedPoints.forEach(([x, y]) => {
-      debug.append("circle").attr("cx", x).attr("cy", y).attr("r", 0.3).attr("fill", "green");
-    });
 
     if (feature.type === "lake") {
       landMask

@@ -1,4 +1,5 @@
 import {polygon} from "lineclip";
+import {sliceFragment} from "./arrayUtils";
 
 // clip polygon by graph bbox
 export function clipPoly(points: TPoints) {
@@ -53,7 +54,7 @@ export function getMiddlePoint(cell1: number, cell2: number) {
   return [x, y];
 }
 
-function getOffCanvasSide([x, y]: TPoint) {
+function getPointOffCanvasSide([x, y]: TPoint) {
   if (y <= 0) return "top";
   if (y >= graphHeight) return "bottom";
   if (x <= 0) return "left";
@@ -64,17 +65,14 @@ function getOffCanvasSide([x, y]: TPoint) {
 
 // remove intermediate out-of-canvas points from polyline
 export function filterOutOfCanvasPoints(points: TPoints) {
-  const pointsOutSide = points.map(getOffCanvasSide);
+  const pointsOutSide = points.map(getPointOffCanvasSide);
   const SAFE_ZONE = 3;
+  const fragment = (i: number) => sliceFragment(pointsOutSide, i, SAFE_ZONE);
 
   const filterOutCanvasPoint = (i: number) => {
     const pointSide = pointsOutSide[i];
-    if (pointSide === false) return true;
-    if (pointsOutSide.slice(i - SAFE_ZONE, i + SAFE_ZONE).some(side => !side || side !== pointSide)) return true;
-    return false;
+    return !pointSide || fragment(i).some(side => !side || side !== pointSide);
   };
 
-  const result = points.filter((_, i) => filterOutCanvasPoint(i));
-
-  return result;
+  return points.filter((_, i) => filterOutCanvasPoint(i));
 }
