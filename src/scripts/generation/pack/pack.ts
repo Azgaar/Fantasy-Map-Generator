@@ -1,7 +1,5 @@
 import * as d3 from "d3";
 
-// @ts-expect-error js module
-import {drawCoastline} from "layers/renderers/drawCoastline";
 import {markupPackFeatures} from "modules/markup";
 // @ts-expect-error js module
 import {drawScaleBar} from "modules/measurers";
@@ -22,17 +20,19 @@ const {LAND_COAST, WATER_COAST, DEEPER_WATER} = DISTANCE_FIELD;
 export function createPack(grid: IGrid): IPack {
   const {vertices, cells} = repackGrid(grid);
 
-  const markup = markupPackFeatures(grid, vertices, pick(cells, "v", "c", "b", "p", "h"));
-  const {features, featureIds, distanceField, haven, harbor} = markup;
+  const {features, featureIds, distanceField, haven, harbor} = markupPackFeatures(
+    grid,
+    vertices,
+    pick(cells, "v", "c", "b", "p", "h")
+  );
 
   const {heights, flux, r, conf, rivers, mergedFeatures} = generateRivers(
     grid.cells.prec,
     grid.cells.temp,
-    pick({...cells, f: featureIds, t: distanceField, haven}, "i", "c", "b", "g", "t", "h", "f", "haven", "p"),
+    {...pick(cells, "i", "c", "b", "g", "h", "p"), f: featureIds, t: distanceField, haven},
     features
   );
 
-  // Lakes.defineGroup(newPack);
   // Biomes.define(newPack, grid);
 
   // const rankCellsData = pick(newPack.cells, "i", "f", "fl", "conf", "r", "h", "area", "biome", "haven", "harbor");

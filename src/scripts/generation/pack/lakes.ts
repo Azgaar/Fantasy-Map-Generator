@@ -45,7 +45,7 @@ export const getClimateData = function (
   return lakeData;
 };
 
-export const mergeLakeData = function (
+export const mergeLakeDataToFeatures = function (
   features: TPackFeatures,
   lakeData: ILakeClimateData[],
   rivers: Pick<IRiver, "i">[]
@@ -57,11 +57,12 @@ export const mergeLakeData = function (
     const lake = lakeData.find(lake => lake.i === feature.i);
     if (!lake) return feature;
 
-    const {flux, temp, evaporation} = lake;
+    const {firstCell, height, flux, temp, evaporation} = lake;
     const inlets = lake.inlets?.filter(inlet => rivers.find(river => river.i === inlet));
     const outlet = rivers.find(river => river.i === lake.outlet)?.i;
+    const group = defineLakeGroup({firstCell, height, flux, temp, evaporation, inlets, outlet});
 
-    const lakeFeature: IPackFeatureLake = {...feature, flux, temp, evaporation, inlets, outlet};
+    const lakeFeature: IPackFeatureLake = {...feature, flux, temp, evaporation, inlets, outlet, group};
     if (!inlets || !inlets.length) delete lakeFeature.inlets;
     if (!outlet) delete lakeFeature.outlet;
 
@@ -70,3 +71,33 @@ export const mergeLakeData = function (
 
   return updatedFeatures as TPackFeatures;
 };
+
+function defineLakeGroup({
+  firstCell,
+  height,
+  flux,
+  temp,
+  evaporation,
+  inlets,
+  outlet
+}: {
+  firstCell: number;
+  height: number;
+  flux: number;
+  temp: number;
+  evaporation: number;
+  inlets?: number[];
+  outlet?: number;
+}): IPackFeatureLake["group"] {
+  if (temp < -3) return "frozen";
+  if (height > 60 && cells < 10 && firstCell % 10 === 0) return "lava";
+
+  if ((!inlets || !inlets.length) && !outlet) {
+    if (evaporation > flux * 4) return "dry";
+    if (cells < 3 && firstCell % 10 === 0) return "sinkhole";
+  }
+
+  if (!outlet && evaporation > flux) return "salt";
+
+  return "freshwater";
+}

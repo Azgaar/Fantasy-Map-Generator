@@ -132,7 +132,6 @@ window.Submap = (function () {
     // remove misclassified cells
     stage("Define coastline.");
     reMarkFeatures(pack, newGrid);
-    drawCoastline(pack);
 
     /****************************************************/
     /* Packed Graph */

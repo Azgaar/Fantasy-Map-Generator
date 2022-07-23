@@ -5,8 +5,6 @@ import {closeDialogs} from "dialogs/utils";
 import {openDialog} from "dialogs";
 import {initLayers, renderLayer, restoreLayers} from "layers";
 // @ts-expect-error js module
-import {drawCoastline} from "layers/renderers/drawCoastline";
-// @ts-expect-error js module
 import {drawScaleBar, Rulers} from "modules/measurers";
 // @ts-expect-error js module
 import {unfog} from "modules/ui/editors";
@@ -63,7 +61,7 @@ async function generate(options?: IGenerationOptions) {
 
     // temp rendering for debug
     renderLayer("cells");
-    renderLayer("coastline", pack.vertices, pack.features);
+    renderLayer("features");
     renderLayer("heightmap");
     renderLayer("rivers", pack);
 

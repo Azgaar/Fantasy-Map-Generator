@@ -209,7 +209,6 @@ export function resolveVersionConflicts(version) {
     lakes.selectAll("path").remove();
 
     reMarkFeatures(pack, newGrid);
-    drawCoastline(pack);
   }
 
   if (version < 1.11) {

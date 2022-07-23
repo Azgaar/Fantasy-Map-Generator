@@ -7,7 +7,7 @@ import {DISTANCE_FIELD, MAX_HEIGHT, MIN_LAND_HEIGHT} from "config/generation";
 import {getInputNumber} from "utils/nodeUtils";
 import {pick} from "utils/functionUtils";
 import {byId} from "utils/shorthands";
-import {mergeLakeData, getClimateData, ILakeClimateData} from "./lakes";
+import {mergeLakeDataToFeatures, getClimateData, ILakeClimateData} from "./lakes";
 import {drawArrow} from "utils/debugUtils";
 
 const {Rivers} = window;
@@ -44,7 +44,7 @@ export function generateRivers(
   const {r, conf, rivers} = defineRivers();
   const heights = downcutRivers(currentCellHeights);
 
-  const mergedFeatures = mergeLakeData(features, lakeData, rivers);
+  const mergedFeatures = mergeLakeDataToFeatures(features, lakeData, rivers);
 
   TIME && console.timeEnd("generateRivers");
 

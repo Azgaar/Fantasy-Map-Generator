@@ -8,18 +8,6 @@ import {DISTANCE_FIELD, MIN_LAND_HEIGHT} from "config/generation";
 import {byId} from "utils/shorthands";
 
 window.Lakes = (function () {
-  const defineGroup = function (pack: IPack) {
-    for (const feature of pack.features) {
-      if (feature && feature.type === "lake") {
-        const lakeEl = lakes.select(`[data-f="${feature.i}"]`).node();
-        if (!lakeEl) continue;
-
-        feature.group = getGroup(feature);
-        byId(feature.group)?.appendChild(lakeEl);
-      }
-    }
-  };
-
   const generateName = function () {
     Math.random = aleaPRNG(seed);
     for (const feature of pack.features) {
@@ -33,20 +21,6 @@ window.Lakes = (function () {
     const culture = pack.cells.culture[landCell];
     return Names.getCulture(culture);
   };
-
-  function getGroup(feature) {
-    if (feature.temp < -3) return "frozen";
-    if (feature.height > 60 && feature.cells < 10 && feature.firstCell % 10 === 0) return "lava";
-
-    if (!feature.inlets && !feature.outlet) {
-      if (feature.evaporation > feature.flux * 4) return "dry";
-      if (feature.cells < 3 && feature.firstCell % 10 === 0) return "sinkhole";
-    }
-
-    if (!feature.outlet && feature.evaporation > feature.flux) return "salt";
-
-    return "freshwater";
-  }
 
   const {LAND_COAST, WATER_COAST} = DISTANCE_FIELD;
 
@@ -162,11 +136,5 @@ window.Lakes = (function () {
     TIME && console.timeEnd("openLakes");
   }
 
-  return {
-    defineGroup,
-    generateName,
-    getName,
-    addLakesInDeepDepressions,
-    openNearSeaLakes
-  };
+  return {generateName, getName, addLakesInDeepDepressions, openNearSeaLakes};
 })();

@@ -5,7 +5,6 @@ import {heightmapTemplates} from "config/heightmap-templates";
 import {ERROR, INFO, TIME} from "config/logging";
 import {closeDialogs} from "dialogs/utils";
 import {layerIsOn, turnLayerButtonOff, turnLayerButtonOn, updatePresetInput, renderLayer} from "layers";
-import {drawCoastline} from "modules/coastline";
 import {markupGridFeatures} from "modules/markup";
 import {generatePrecipitation} from "modules/precipitation";
 import {calculateTemperatures} from "modules/temperature";
@@ -225,7 +224,6 @@ export function open(options) {
     generatePrecipitation(grid);
     repackGrid(grid);
     markupPackFeatures(pack, newGrid);
-    drawCoastline(pack);
 
     Rivers.generate(pack, grid, erosionAllowed);
 
@@ -344,7 +342,6 @@ export function open(options) {
     calculateTemperatures(grid);
     generatePrecipitation(grid);
     reGraph(grid);
-    drawCoastline(pack);
 
     if (erosionAllowed) Rivers.generate(pack, grid, true);
 

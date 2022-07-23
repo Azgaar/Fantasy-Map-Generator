@@ -4,7 +4,9 @@ import {simplify} from "scripts/simplify";
 import {filterOutOfCanvasPoints} from "utils/lineUtils";
 import {round} from "utils/stringUtils";
 
-export function drawCoastline(vertices: IGraphVertices, features: TPackFeatures) {
+export function drawFeatures() {
+  /* uses */ const {vertices, features} = pack;
+
   const landMask = defs.select("#land");
   const waterMask = defs.select("#water");
 
@@ -12,8 +14,7 @@ export function drawCoastline(vertices: IGraphVertices, features: TPackFeatures)
   const SIMPLIFICATION_TOLERANCE = 0.3; // px
 
   for (const feature of features) {
-    if (!feature) continue;
-    if (feature.type === "ocean") continue;
+    if (!feature || feature.type === "ocean") continue;
 
     const points = feature.vertices.map(vertex => vertices.p[vertex]);
     const filteredPoints = filterOutOfCanvasPoints(points);
@@ -28,7 +29,7 @@ export function drawCoastline(vertices: IGraphVertices, features: TPackFeatures)
         .attr("id", "land_" + feature.i);
 
       lakes
-        .select("#freshwater")
+        .select(`#${feature.group}`)
         .append("path")
         .attr("d", path)
         .attr("id", "lake_" + feature.i)
@@ -46,9 +47,8 @@ export function drawCoastline(vertices: IGraphVertices, features: TPackFeatures)
         .attr("fill", "black")
         .attr("id", "water_" + feature.i);
 
-      const group = feature.group === "lake_island" ? "lake_island" : "sea_island";
       coastline
-        .select("#" + group)
+        .select(`#${feature.group}`)
         .append("path")
         .attr("d", path)
         .attr("id", "island_" + feature.i)
