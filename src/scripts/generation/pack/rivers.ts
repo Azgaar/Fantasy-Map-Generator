@@ -13,10 +13,10 @@ const {Rivers} = window;
 const {LAND_COAST} = DISTANCE_FIELD;
 
 export function generateRivers(
-  precipitation: IGrid["cells"]["prec"],
-  temperature: IGrid["cells"]["temp"],
   cells: Pick<IPack["cells"], "i" | "c" | "p" | "b" | "g" | "t" | "h" | "f" | "haven">,
-  features: TPackFeatures
+  features: TPackFeatures,
+  precipitation: IGrid["cells"]["prec"],
+  temperature: IGrid["cells"]["temp"]
 ) {
   TIME && console.time("generateRivers");
 

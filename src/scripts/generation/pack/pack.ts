@@ -26,11 +26,18 @@ export function createPack(grid: IGrid): IPack {
     pick(cells, "v", "c", "b", "p", "h")
   );
 
-  const {heights, flux, r, conf, rivers, mergedFeatures} = generateRivers(
-    grid.cells.prec,
-    grid.cells.temp,
+  const {
+    heights,
+    flux,
+    r,
+    conf,
+    rivers: rawRivers,
+    mergedFeatures
+  } = generateRivers(
     {...pick(cells, "i", "c", "b", "g", "h", "p"), f: featureIds, t: distanceField, haven},
-    features
+    features,
+    grid.cells.prec,
+    grid.cells.temp
   );
 
   // Biomes.define(newPack, grid);
@@ -76,7 +83,7 @@ export function createPack(grid: IGrid): IPack {
       conf
     },
     features: mergedFeatures,
-    rivers
+    rivers: rawRivers
   };
 
   return pack;

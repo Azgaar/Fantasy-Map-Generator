@@ -64,8 +64,8 @@ async function generate(options?: IGenerationOptions) {
     // temp rendering for debug
     // renderLayer("cells");
     renderLayer("features");
-    // renderLayer("heightmap");
-    // renderLayer("rivers", pack);
+    renderLayer("heightmap");
+    renderLayer("rivers", pack);
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - timeStart) / 1000, 2)}s`);
     // showStatistics();

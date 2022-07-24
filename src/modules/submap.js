@@ -6,7 +6,7 @@ import {getMiddlePoint} from "utils/lineUtils";
 import {rn} from "utils/numberUtils";
 import {aleaPRNG} from "scripts/aleaPRNG";
 import {renderLayer} from "layers";
-import {markupGridFeatures} from "modules/markup";
+import {markupGridFeatures} from "scripts/generation/markup";
 import {generateGrid} from "scripts/generation/graph";
 
 window.Submap = (function () {
