@@ -1,6 +1,6 @@
 import {pick} from "utils/functionUtils";
 
-export function drawRivers(pack: IPack) {
+export function drawRivers() {
   rivers.selectAll("*").remove();
 
   const {addMeandering, getRiverPath} = window.Rivers;

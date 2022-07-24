@@ -1,8 +1,8 @@
 import * as d3 from "d3";
 
 import {TIME} from "config/logging";
-import {isLand} from "utils/graphUtils";
 import {rn} from "utils/numberUtils";
+import {MIN_LAND_HEIGHT} from "config/generation";
 
 window.Biomes = (function () {
   const getDefault = () => {
@@ -78,38 +78,38 @@ window.Biomes = (function () {
     return {i: d3.range(0, name.length), name, color, biomesMartix, habitability, iconsDensity, icons, cost};
   };
 
+  // assign biome id for each cell
+  function define({temp, prec, flux, riverIds, heights, neighbors, gridReference}) {
+    TIME && console.time("defineBiomes");
+
+    const biome = new Uint8Array(heights.length); // biomes array
+
+    for (let cellId = 0; cellId < heights.length; cellId++) {
+      const temperature = temp[gridReference[cellId]];
+      const height = heights[cellId];
+      const moisture = height < MIN_LAND_HEIGHT ? 0 : calculateMoisture(cellId);
+      biome[cellId] = getId(moisture, temperature, height);
+    }
+
+    function calculateMoisture(cellId) {
+      let moist = prec[gridReference[cellId]];
+      if (riverIds[cellId]) moist += Math.max(flux[cellId] / 20, 2);
+
+      const moistAround = neighbors[cellId]
+        .filter(neibCellId => heights[neibCellId] >= MIN_LAND_HEIGHT)
+        .map(c => prec[gridReference[c]])
+        .concat([moist]);
+      return rn(4 + d3.mean(moistAround));
+    }
+
+    TIME && console.timeEnd("defineBiomes");
+    return biome;
+  }
+
   function isWetLand(moisture, temperature, height) {
     if (moisture > 40 && temperature > -2 && height < 25) return true; //near coast
     if (moisture > 24 && temperature > -2 && height > 24 && height < 60) return true; //off coast
     return false;
-  }
-
-  // assign biome id for each cell
-  function define(pack, grid) {
-    TIME && console.time("defineBiomes");
-    const {cells} = pack;
-    const {temp, prec} = grid.cells;
-    cells.biome = new Uint8Array(cells.i.length); // biomes array
-
-    for (const i of cells.i) {
-      const temperature = temp[cells.g[i]];
-      const height = cells.h[i];
-      const moisture = height < 20 ? 0 : calculateMoisture(i);
-      cells.biome[i] = getId(moisture, temperature, height);
-    }
-
-    function calculateMoisture(i) {
-      let moist = prec[cells.g[i]];
-      if (cells.r[i]) moist += Math.max(cells.fl[i] / 20, 2);
-
-      const n = cells.c[i]
-        .filter(isLand)
-        .map(c => prec[cells.g[c]])
-        .concat([moist]);
-      return rn(4 + d3.mean(n));
-    }
-
-    TIME && console.timeEnd("defineBiomes");
   }
 
   // assign biome id to a cell

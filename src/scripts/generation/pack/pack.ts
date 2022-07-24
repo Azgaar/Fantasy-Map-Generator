@@ -15,9 +15,10 @@ import {rn} from "utils/numberUtils";
 import {generateRivers} from "./rivers";
 
 const {LAND_COAST, WATER_COAST, DEEPER_WATER} = DISTANCE_FIELD;
-// const {Lakes, OceanLayers, Biomes, Cultures, BurgsAndStates, Religions, Military, Markers, Names} = window;
+const {Biomes} = window;
 
 export function createPack(grid: IGrid): IPack {
+  const {temp, prec} = grid.cells;
   const {vertices, cells} = repackGrid(grid);
 
   const {features, featureIds, distanceField, haven, harbor} = markupPackFeatures(
@@ -29,18 +30,26 @@ export function createPack(grid: IGrid): IPack {
   const {
     heights,
     flux,
-    r,
+    riverIds,
     conf,
     rivers: rawRivers,
     mergedFeatures
   } = generateRivers(
     {...pick(cells, "i", "c", "b", "g", "h", "p"), f: featureIds, t: distanceField, haven},
     features,
-    grid.cells.prec,
-    grid.cells.temp
+    prec,
+    temp
   );
 
-  // Biomes.define(newPack, grid);
+  const biome: IPack["cells"]["biome"] = Biomes.define({
+    temp,
+    prec,
+    flux,
+    riverIds,
+    heights,
+    neighbors: cells.c,
+    gridReference: cells.g
+  });
 
   // const rankCellsData = pick(newPack.cells, "i", "f", "fl", "conf", "r", "h", "area", "biome", "haven", "harbor");
   // rankCells(newPack.features!, rankCellsData);
@@ -79,8 +88,9 @@ export function createPack(grid: IGrid): IPack {
       haven,
       harbor,
       fl: flux,
-      r,
-      conf
+      r: riverIds,
+      conf,
+      biome
     },
     features: mergedFeatures,
     rivers: rawRivers

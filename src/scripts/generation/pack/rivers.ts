@@ -40,19 +40,19 @@ export function generateRivers(
   const cellsNumberModifier = (points / 10000) ** 0.25;
 
   const {flux, lakeData} = drainWater();
-  const {r, conf, rivers} = defineRivers();
+  const {riverIds, conf, rivers} = defineRivers();
   const heights = downcutRivers(currentCellHeights);
 
   const mergedFeatures = mergeLakeData(features, lakeData, rivers);
 
   TIME && console.timeEnd("generateRivers");
 
-  return {heights, flux, r, conf, rivers, mergedFeatures};
+  return {heights, flux, riverIds, conf, rivers, mergedFeatures};
 
   function drainWater() {
     const MIN_FLUX_TO_FORM_RIVER = 30;
 
-    const riverIds = new Uint16Array(cellsNumber);
+    const tempRiverIds = new Uint16Array(cellsNumber);
     const confluence = new Uint8Array(cellsNumber);
     const flux = new Uint16Array(cellsNumber);
 
@@ -82,20 +82,20 @@ export function generateRivers(
         flux[lakeCell] += Math.max(lake.flux - lake.evaporation, 0); // not evaporated lake water drains to outlet
 
         // allow to chain lakes to keep river identity
-        if (riverIds[lakeCell] !== lake.river) {
-          const sameRiver = cells.c[lakeCell].some(c => riverIds[c] === lake.river);
+        if (tempRiverIds[lakeCell] !== lake.river) {
+          const sameRiver = cells.c[lakeCell].some(c => tempRiverIds[c] === lake.river);
 
           if (lake.river && sameRiver) {
-            riverIds[lakeCell] = lake.river;
+            tempRiverIds[lakeCell] = lake.river;
             addCellToRiver(lakeCell, lake.river);
           } else {
-            riverIds[lakeCell] = nextRiverId;
+            tempRiverIds[lakeCell] = nextRiverId;
             addCellToRiver(lakeCell, nextRiverId);
             nextRiverId++;
           }
         }
 
-        lake.outlet = riverIds[lakeCell];
+        lake.outlet = tempRiverIds[lakeCell];
         flowDown(cellId, flux[lakeCell], lake.outlet);
       }
 
@@ -111,7 +111,7 @@ export function generateRivers(
       }
 
       // near-border cell: pour water out of the screen
-      if (cells.b[cellId] && riverIds[cellId]) return addCellToRiver(-1, riverIds[cellId]);
+      if (cells.b[cellId] && tempRiverIds[cellId]) return addCellToRiver(-1, tempRiverIds[cellId]);
 
       // downhill cell (make sure it's not in the source lake)
       let min = null;
@@ -136,20 +136,20 @@ export function generateRivers(
       }
 
       // create a new river
-      if (!riverIds[cellId]) {
-        riverIds[cellId] = nextRiverId;
+      if (!tempRiverIds[cellId]) {
+        tempRiverIds[cellId] = nextRiverId;
         addCellToRiver(cellId, nextRiverId);
         nextRiverId++;
       }
 
-      flowDown(min, flux[cellId], riverIds[cellId]);
+      flowDown(min, flux[cellId], tempRiverIds[cellId]);
     });
 
     return {flux, lakeData};
 
     function flowDown(toCell: number, fromFlux: number, riverId: number) {
       const toFlux = flux[toCell] - confluence[toCell];
-      const toRiver = riverIds[toCell];
+      const toRiver = tempRiverIds[toCell];
 
       if (toRiver) {
         // downhill cell already has river assigned
@@ -159,7 +159,7 @@ export function generateRivers(
             // min river is a tributary of current river
             riverParents[toRiver] = riverId;
           }
-          riverIds[toCell] = riverId; // re-assign river if downhill part has less flux
+          tempRiverIds[toCell] = riverId; // re-assign river if downhill part has less flux
         } else {
           confluence[toCell] += fromFlux; // mark confluence
           if (currentCellHeights[toCell] >= MIN_LAND_HEIGHT) {
@@ -167,7 +167,7 @@ export function generateRivers(
             riverParents[riverId] = toRiver;
           }
         }
-      } else riverIds[toCell] = riverId; // assign the river to the downhill cell
+      } else tempRiverIds[toCell] = riverId; // assign the river to the downhill cell
 
       if (currentCellHeights[toCell] < MIN_LAND_HEIGHT) {
         // pour water to the water body
@@ -197,7 +197,7 @@ export function generateRivers(
   }
 
   function defineRivers() {
-    const r = new Uint16Array(cellsNumber);
+    const riverIds = new Uint16Array(cellsNumber);
     const conf = new Uint16Array(cellsNumber);
     const rivers: Omit<IRiver, "name" | "basin" | "type">[] = [];
 
@@ -213,8 +213,8 @@ export function generateRivers(
         if (cell < 0 || cells.h[cell] < MIN_LAND_HEIGHT) continue;
 
         // mark confluences and assign river to cells
-        if (r[cell]) conf[cell] = 1;
-        else r[cell] = riverId;
+        if (riverIds[cell]) conf[cell] = 1;
+        else riverIds[cell] = riverId;
       }
 
       const source = riverCells[0];
@@ -246,13 +246,13 @@ export function generateRivers(
       if (!conf[i]) continue;
 
       const sortedInflux = cells.c[i]
-        .filter(c => r[c] && currentCellHeights[c] > currentCellHeights[i])
+        .filter(c => riverIds[c] && currentCellHeights[c] > currentCellHeights[i])
         .map(c => flux[c])
         .sort((a, b) => b - a);
       conf[i] = sortedInflux.reduce((acc, flux, index) => (index ? acc + flux : acc), 0);
     }
 
-    return {r, conf, rivers};
+    return {riverIds, conf, rivers};
   }
 
   function downcutRivers(heights: Float32Array) {

@@ -1,4 +1,5 @@
 import {clipPoly} from "utils/lineUtils";
+import {TIME} from "config/logging";
 
 export function drawBiomes() {
   TIME && console.time("drawBiomes");
@@ -6,6 +7,7 @@ export function drawBiomes() {
 
   const {cells, vertices} = pack;
   const n = cells.i.length;
+
   const used = new Uint8Array(cells.i.length);
   const paths = new Array(biomesData.i.length).fill("");
 

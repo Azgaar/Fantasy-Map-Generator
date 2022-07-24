@@ -20,7 +20,7 @@ interface IPackCells {
   fl: Uint16Array; // flux volume, defined by drainWater() in river-generator.ts
   r: Uint16Array; // river id, defined by defineRivers() in river-generator.ts
   conf: Uint16Array; // conluence, defined by defineRivers() in river-generator.ts
-  biome: UintArray;
+  biome: Uint8Array;
   area: UintArray;
   state: UintArray;
   culture: UintArray;
