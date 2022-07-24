@@ -2,7 +2,6 @@ import Delaunator from "delaunator";
 
 import {Voronoi} from "modules/voronoi";
 import {TIME} from "config/logging";
-// @ts-expect-error js module
 import {aleaPRNG} from "scripts/aleaPRNG";
 import {createTypedArray} from "utils/arrayUtils";
 import {rn} from "utils/numberUtils";

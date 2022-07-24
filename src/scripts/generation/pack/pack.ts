@@ -1,6 +1,6 @@
 import * as d3 from "d3";
 
-import {markupPackFeatures} from "modules/markup";
+import {markupPackFeatures} from "scripts/generation/markup";
 // @ts-expect-error js module
 import {drawScaleBar} from "modules/measurers";
 // @ts-expect-error js module

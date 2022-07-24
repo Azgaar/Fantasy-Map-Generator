@@ -22,10 +22,10 @@ import {debounce} from "utils/functionUtils";
 import {rn} from "utils/numberUtils";
 import {generateSeed} from "utils/probabilityUtils";
 import {byId} from "utils/shorthands";
-import {createGrid} from "./grid";
+import {createGrid} from "./grid/grid";
 import {createPack} from "./pack/pack";
 import {getInputValue, setInputValue} from "utils/nodeUtils";
-// import {Ruler} from "modules/measurers";
+import {calculateMapCoordinates} from "modules/coordinates";
 
 const {Zoom, ThreeD} = window;
 
@@ -50,6 +50,8 @@ async function generate(options?: IGenerationOptions) {
     applyMapSize();
     randomizeOptions();
 
+    window.mapCoordinates = calculateMapCoordinates();
+
     const newGrid = await createGrid(grid, precreatedGraph);
     const newPack = createPack(newGrid);
 
@@ -60,10 +62,10 @@ async function generate(options?: IGenerationOptions) {
     pack = newPack;
 
     // temp rendering for debug
-    renderLayer("cells");
+    // renderLayer("cells");
     renderLayer("features");
-    renderLayer("heightmap");
-    renderLayer("rivers", pack);
+    // renderLayer("heightmap");
+    // renderLayer("rivers", pack);
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - timeStart) / 1000, 2)}s`);
     // showStatistics();

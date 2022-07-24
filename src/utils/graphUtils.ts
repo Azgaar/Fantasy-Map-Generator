@@ -1,13 +1,9 @@
 import {DISTANCE_FIELD, MIN_LAND_HEIGHT} from "config/generation";
-// @ts-expect-error js module
-import {aleaPRNG} from "scripts/aleaPRNG";
 
 // return cell index on a regular square grid
 export function findGridCell(x: number, y: number, grid: IGrid) {
-  return (
-    Math.floor(Math.min(y / grid.spacing, grid.cellsY - 1)) * grid.cellsX +
-    Math.floor(Math.min(x / grid.spacing, grid.cellsX - 1))
-  );
+  /* use */ const {spacing, cellsX, cellsY} = grid;
+  return Math.floor(Math.min(y / spacing, cellsY - 1)) * cellsX + Math.floor(Math.min(x / spacing, cellsX - 1));
 }
 
 // return array of cell indexes in radius on a regular square grid

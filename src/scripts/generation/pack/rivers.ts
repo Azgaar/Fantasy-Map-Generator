@@ -8,7 +8,6 @@ import {getInputNumber} from "utils/nodeUtils";
 import {pick} from "utils/functionUtils";
 import {byId} from "utils/shorthands";
 import {mergeLakeData, getClimateData, ILakeClimateData} from "./lakes";
-import {drawArrow} from "utils/debugUtils";
 
 const {Rivers} = window;
 const {LAND_COAST} = DISTANCE_FIELD;
@@ -376,8 +375,7 @@ const resolveDepressions = function (
     return [initialCellHeights, {}];
   }
 
-  INFO &&
-    console.info(`ⓘ Resolved all depressions. Depressions: ${depressions[0]}. Interations: ${depressions.length}`);
+  INFO && console.info(`ⓘ Resolved all depressions. Depressions: ${depressions[0]}. Iterations: ${depressions.length}`);
   return [currentCellHeights, currentDrainableLakes];
 
   // define lakes that potentially can be open (drained into another water body)

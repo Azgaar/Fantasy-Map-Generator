@@ -7,11 +7,8 @@ import {MIN_LAND_HEIGHT} from "config/generation";
 
 const interpolate = d3.easePolyInOut.exponent(0.5); // interpolation function
 
-export function calculateTemperatures(grid: IGridWithHeights) {
+export function calculateTemperatures(heights: Uint8Array, cellsX: number, points: TPoints) {
   TIME && console.time("calculateTemperatures");
-
-  const {cells, cellsX, points} = grid;
-  const heights = cells.h;
 
   const temperatures = new Int8Array(heights.length); // temperature array
 

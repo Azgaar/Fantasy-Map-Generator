@@ -215,10 +215,10 @@ export function open(options) {
     const erosionAllowed = allowErosion.checked;
     markupGridFeatures();
 
-    if (erosionAllowed) {
-      Lakes.addLakesInDeepDepressions(grid);
-      Lakes.openNearSeaLakes(grid);
-    }
+    // if (erosionAllowed) {
+    //   Lakes.addLakesInDeepDepressions(grid);
+    //   Lakes.openNearSeaLakes(grid);
+    // }
     OceanLayers(grid);
     calculateTemperatures(grid);
     generatePrecipitation(grid);

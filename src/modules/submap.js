@@ -118,10 +118,10 @@ window.Submap = (function () {
     markupGridFeatures();
 
     // Warning: addLakesInDeepDepressions can be very slow!
-    if (options.addLakesInDepressions) {
-      Lakes.addLakesInDeepDepressions(grid);
-      Lakes.openNearSeaLakes(grid);
-    }
+    // if (options.addLakesInDepressions) {
+    //   Lakes.addLakesInDeepDepressions(grid);
+    //   Lakes.openNearSeaLakes(grid);
+    // }
 
     OceanLayers(grid);
 

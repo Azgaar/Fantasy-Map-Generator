@@ -17,16 +17,6 @@ interface IGridCells {
   prec: Uint8Array; // precipitation in inner units
 }
 
-interface IGridBase extends IGrid {
-  cells: IGraphCells & Partial<IGridCells>;
-  features?: TGridFeatures;
-}
-
-interface IGridWithHeights extends IGrid {
-  cells: IGraphCells & Partial<IGridCells> & {h: Uint8Array};
-  features?: TGridFeatures;
-}
-
 type TGridFeatures = [0, ...IGridFeature[]];
 
 interface IGridFeature {

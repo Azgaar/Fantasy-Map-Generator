@@ -13,20 +13,13 @@ import {rn} from "utils/numberUtils";
 const {UNMARKED, LAND_COAST, WATER_COAST, LANDLOCKED, DEEPER_WATER} = DISTANCE_FIELD;
 
 // define features (oceans, lakes, islands)
-export function markupGridFeatures(grid: IGridWithHeights) {
+export function markupGridFeatures(neighbors: IGraphCells["c"], borderCells: IGraphCells["b"], heights: Uint8Array) {
   TIME && console.time("markupGridFeatures");
   Math.random = aleaPRNG(seed); // get the same result on heightmap edit in Erase mode
 
-  if (!grid.cells || !grid.cells.h) {
-    throw new Error("markupGridFeatures: grid.cells.h is required");
-  }
-
-  const cells = grid.cells;
-  const heights = cells.h;
-  const n = cells.i.length;
-
-  const featureIds = new Uint16Array(n); // starts from 1
-  const distanceField = new Int8Array(n);
+  const gridCellsNumber = borderCells.length;
+  const featureIds = new Uint16Array(gridCellsNumber); // starts from 1
+  const distanceField = new Int8Array(gridCellsNumber);
   const features: TGridFeatures = [0];
 
   const queue = [0];
@@ -39,9 +32,9 @@ export function markupGridFeatures(grid: IGridWithHeights) {
 
     while (queue.length) {
       const cellId = queue.pop()!;
-      if (cells.b[cellId]) border = true;
+      if (borderCells[cellId]) border = true;
 
-      for (const neighborId of cells.c[cellId]) {
+      for (const neighborId of neighbors[cellId]) {
         const isNeibLand = heights[neighborId] >= MIN_LAND_HEIGHT;
 
         if (land === isNeibLand && featureIds[neighborId] === UNMARKED) {
@@ -61,13 +54,7 @@ export function markupGridFeatures(grid: IGridWithHeights) {
   }
 
   // markup deep ocean cells
-  const dfOceanMarked = markup({
-    distanceField,
-    neighbors: grid.cells.c,
-    start: DEEPER_WATER,
-    increment: -1,
-    limit: -10
-  });
+  const dfOceanMarked = markup({distanceField, neighbors, start: DEEPER_WATER, increment: -1, limit: -10});
 
   TIME && console.timeEnd("markupGridFeatures");
   return {featureIds, distanceField: dfOceanMarked, features};

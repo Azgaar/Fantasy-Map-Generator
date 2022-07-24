@@ -9,6 +9,7 @@ import {byId} from "utils/shorthands";
 import {ERROR} from "../config/logging";
 import {lim, minmax} from "../utils/numberUtils";
 import {aleaPRNG} from "scripts/aleaPRNG";
+import {addLakesInDeepDepressions} from "scripts/generation/grid/lakes";
 
 window.HeightmapGenerator = (function () {
   let grid = null;
@@ -77,7 +78,10 @@ window.HeightmapGenerator = (function () {
 
     Math.random = aleaPRNG(seed);
     const isTemplate = id in heightmapTemplates;
-    const heights = isTemplate ? fromTemplate(graph, id) : await fromPrecreated(graph, id);
+    const rawHeights = isTemplate ? fromTemplate(graph, id) : await fromPrecreated(graph, id);
+
+    const heights = addLakesInDeepDepressions(rawHeights, graph.cells.c, graph.cells.v, graph.vertices, graph.cells.i);
+
     TIME && console.timeEnd("defineHeightmap");
 
     clearData();
