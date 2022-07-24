@@ -4,7 +4,7 @@ import FlatQueue from "flatqueue";
 import {TIME, WARN} from "config/logging";
 import {getColors} from "utils/colorUtils";
 import {rn, minmax} from "utils/numberUtils";
-import {rand, P, rw, biased} from "utils/probabilityUtils";
+import {rand, P, biased} from "utils/probabilityUtils";
 import {abbreviate} from "utils/languageUtils";
 import {getInputNumber, getInputValue, getSelectedOption} from "utils/nodeUtils";
 import {byId} from "utils/shorthands";
@@ -25,14 +25,14 @@ window.Cultures = (function () {
     const culturesNumber = getCulturesNumber();
     if (!culturesNumber) return {culture, cultures: [wildlands]};
 
-    const cultures = selectCultures(culturesNumber);
+    const culturesData = selectCulturesData(culturesNumber);
     const centers = d3.quadtree();
     const colors = getColors(culturesNumber);
     const emblemShape = getInputValue("emblemShape");
 
-    const codes = [];
+    const codes: string[] = [];
 
-    cultures.forEach(function (c, i) {
+    const cultures = culturesData.map(function (c, i) {
       const cell = (c.center = placeCenter(c.sort ? c.sort : i => cells.s[i]));
       centers.add(cells.p[cell]);
       c.i = i + 1;
@@ -115,8 +115,7 @@ window.Cultures = (function () {
       return reducedNumber;
     }
 
-    function selectCultures(culturesNumber: number) {
-      debugger;
+    function selectCulturesData(culturesNumber: number) {
       let defaultCultures = getDefault(culturesNumber);
       if (defaultCultures.length === culturesNumber) return defaultCultures;
       if (defaultCultures.every(d => d.odd === 1)) return defaultCultures.slice(0, culturesNumber);
