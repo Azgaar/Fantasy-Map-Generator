@@ -27,6 +27,7 @@ interface Window {
   Religions: any;
   Military: any;
   Markers: any;
+  COA: any;
 }
 
 interface Node {

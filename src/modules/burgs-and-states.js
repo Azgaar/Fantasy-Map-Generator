@@ -49,7 +49,7 @@ window.BurgsAndStates = (function () {
       let burgs = [0];
 
       const rand = () => 0.5 + Math.random() * 0.5;
-      const score = new Int16Array(cells.s.map(s => s * rand())); // cell score for capitals placement
+      const score = new Int16Array(cells.s.map(s => s * Math.random())); // cell score for capitals placement
       const sorted = cells.i.filter(i => score[i] > 0 && cells.culture[i]).sort((a, b) => score[b] - score[a]); // filtered and sorted array of indexes
 
       if (sorted.length < count * 10) {

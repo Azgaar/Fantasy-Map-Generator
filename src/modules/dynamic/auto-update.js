@@ -345,7 +345,7 @@ export function resolveVersionConflicts(version) {
     // v1.5 cultures has shield attribute
     pack.cultures.forEach(culture => {
       if (culture.removed) return;
-      culture.shield = Cultures.getRandomShield();
+      culture.shield = COA.getRandomShield();
     });
 
     // v1.5 added burg type value

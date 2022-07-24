@@ -1049,8 +1049,13 @@ window.COA = (function () {
     return "heater";
   };
 
+  const getRandomShield = function () {
+    const type = rw(shields.types);
+    return rw(shields[type]);
+  };
+
   const toString = coa => JSON.stringify(coa).replaceAll("#", "%23");
   const copy = coa => JSON.parse(JSON.stringify(coa));
 
-  return {generate, toString, copy, getShield, shields};
+  return {generate, toString, copy, getShield, shields, getRandomShield};
 })();

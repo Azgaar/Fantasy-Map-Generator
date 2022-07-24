@@ -11,3 +11,5 @@ type IntArray = Int8Array | Int16Array | Int32Array;
 
 type RGB = `rgb(${number}, ${number}, ${number})`;
 type Hex = `#${string}`;
+
+type CssUrl = `url(#${string})`;

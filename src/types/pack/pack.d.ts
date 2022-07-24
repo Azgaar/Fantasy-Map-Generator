@@ -23,7 +23,7 @@ interface IPackCells {
   biome: Uint8Array;
   area: UintArray;
   state: UintArray;
-  culture: UintArray;
+  culture: Uint16Array;
   religion: UintArray;
   province: UintArray;
   burg: UintArray;
@@ -46,9 +46,18 @@ interface IState {
 
 interface ICulture {
   i: number;
+  type: TCultureType;
   name: string;
+  base: number;
+  code: string;
+  color: Hex | CssUrl;
+  expansionism: number;
+  origins: number[] | [null];
+  shield: string;
   removed?: boolean;
 }
+
+type TCultureType = "Generic" | "Lake" | "Naval" | "River" | "Nomadic" | "Hunting" | "Highland";
 
 interface IProvince {
   i: number;

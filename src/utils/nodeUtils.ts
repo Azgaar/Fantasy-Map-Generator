@@ -30,6 +30,13 @@ export function setInputValue(id: string, value: string | number | boolean) {
   ($element as HTMLInputElement).value = String(value);
 }
 
+export function getSelectedOption(id: string) {
+  const $element = byId(id);
+  if (!$element) throw new Error(`Element ${id} not found`);
+
+  return ($element as HTMLSelectElement).selectedOptions[0];
+}
+
 // apply drop-down menu option. If the value is not in options, add it
 export function applyDropdownOption($select: HTMLSelectElement, value: string, name = value) {
   const isExisting = Array.from($select.options).some(o => o.value === value);

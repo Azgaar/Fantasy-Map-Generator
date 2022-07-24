@@ -4,12 +4,12 @@ import {ERROR} from "../config/logging";
 import {minmax, rn} from "./numberUtils";
 
 // random number in range
-export function rand(min: number, max: number) {
-  if (min === undefined && max === undefined) return Math.random();
+export function rand(min: number, max?: number) {
   if (max === undefined) {
     max = min;
     min = 0;
   }
+
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 

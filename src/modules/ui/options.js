@@ -378,8 +378,7 @@ function changeEmblemShape(emblemShape) {
   shapePath ? image.setAttribute("d", shapePath) : image.removeAttribute("d");
 
   const specificShape = ["culture", "state", "random"].includes(emblemShape) ? null : emblemShape;
-  if (emblemShape === "random")
-    pack.cultures.filter(c => !c.removed).forEach(c => (c.shield = Cultures.getRandomShield()));
+  if (emblemShape === "random") pack.cultures.filter(c => !c.removed).forEach(c => (c.shield = COA.getRandomShield()));
 
   const rerenderCOA = (id, coa) => {
     const coaEl = byId(id);

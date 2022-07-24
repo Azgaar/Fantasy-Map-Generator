@@ -36,7 +36,7 @@ export function drawIce() {
     if (grid.features[cells.f[i]].type === "lake") continue; // lake: no icebers
     let size = (6.5 + t) / 10; // iceberg size: 0 = full size, 1 = zero size
     if (cells.t[i] === -1) size *= 1.3; // coasline: smaller icebers
-    size = Math.min(size * (0.4 + rand() * 1.2), 0.95); // randomize iceberg size
+    size = Math.min(size * (0.4 + Math.random() * 1.2), 0.95); // randomize iceberg size
     resizePolygon(i, size);
   }
 

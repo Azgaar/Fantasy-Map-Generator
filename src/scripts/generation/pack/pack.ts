@@ -12,7 +12,7 @@ import {rn} from "utils/numberUtils";
 import {generateRivers} from "./rivers";
 
 const {LAND_COAST, WATER_COAST, DEEPER_WATER} = DISTANCE_FIELD;
-const {Biomes} = window;
+const {Biomes, Cultures} = window;
 
 export function createPack(grid: IGrid): IPack {
   const {temp, prec} = grid.cells;
@@ -61,7 +61,11 @@ export function createPack(grid: IGrid): IPack {
     harbor
   });
 
-  // Cultures.generate();
+  const {cultureIds, cultures}: {cultureIds: Uint16Array; cultures: ICulture[]} = Cultures.generate({
+    features: mergedFeatures,
+    cells: {...cells, pop: population}
+  });
+
   // Cultures.expand();
   // BurgsAndStates.generate();
   // Religions.generate();
@@ -99,11 +103,13 @@ export function createPack(grid: IGrid): IPack {
       conf,
       biome,
       s: suitability,
-      pop: population
-      // state, culture, religion, province, burg
+      pop: population,
+      culture: cultureIds
+      // state, religion, province, burg
     },
     features: mergedFeatures,
-    rivers: rawRivers // "name" | "basin" | "type"
+    rivers: rawRivers, // "name" | "basin" | "type"
+    cultures
   };
 
   return pack;
