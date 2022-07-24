@@ -9,7 +9,7 @@ import {byId} from "utils/shorthands";
 import {ERROR} from "../config/logging";
 import {lim, minmax} from "../utils/numberUtils";
 import {aleaPRNG} from "scripts/aleaPRNG";
-import {addLakesInDeepDepressions} from "scripts/generation/grid/lakes";
+import {openNearSeaLakes, addLakesInDeepDepressions} from "scripts/generation/grid/lakes";
 
 window.HeightmapGenerator = (function () {
   let grid = null;
@@ -75,19 +75,24 @@ window.HeightmapGenerator = (function () {
   const generate = async function (graph) {
     TIME && console.time("defineHeightmap");
     const id = byId("templateInput").value;
-
     Math.random = aleaPRNG(seed);
-    const isTemplate = id in heightmapTemplates;
-    const rawHeights = isTemplate ? fromTemplate(graph, id) : await fromPrecreated(graph, id);
 
-    const heights = addLakesInDeepDepressions(rawHeights, graph.cells.c, graph.cells.v, graph.vertices, graph.cells.i);
+    const rawHeights = id in heightmapTemplates ? fromTemplate(graph, id) : await fromPrecreated(graph, id);
+    const removedLakesHeights = openNearSeaLakes(rawHeights, graph.cells.c, graph.cells.i, graph.cells.b);
+    const addedLakesHeights = addLakesInDeepDepressions(
+      removedLakesHeights,
+      graph.cells.c,
+      graph.cells.v,
+      graph.vertices,
+      graph.cells.i
+    );
 
     TIME && console.timeEnd("defineHeightmap");
 
     clearData();
-    return heights;
+    return addedLakesHeights;
   };
-
+  3;
   function addStep(tool, a2, a3, a4, a5) {
     if (tool === "Hill") return addHill(a2, a3, a4, a5);
     if (tool === "Pit") return addPit(a2, a3, a4, a5);

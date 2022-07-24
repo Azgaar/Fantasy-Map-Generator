@@ -8,51 +8,59 @@ const {LAND_COAST, WATER_COAST} = DISTANCE_FIELD;
 // near sea lakes usually get a lot of water inflow
 // most of them would brake threshold and flow out to sea (see Ancylus Lake)
 // connect these type of lakes to the main water body to improve the heightmap
-export function openNearSeaLakes(grid: IGraph & Partial<IGrid>) {
+export function openNearSeaLakes(
+  heights: Uint8Array,
+  neighbours: number[][],
+  indexes: UintArray,
+  borderCells: IGraphCells["b"]
+) {
   if (getInputValue("templateInput") === "Atoll") return; // no need for Atolls
 
-  const {cells, features} = grid;
-  if (!features?.find(f => f && f.type === "lake")) return; // no lakes
-
   TIME && console.time("openNearSeaLakes");
-  const LIMIT = 22; // max height that can be breached by water
+  const MAX_BREACHABLE_HEIGHT = 22; // max height that can be breached by water
 
-  const isLake = (featureId: number) => featureId && (features[featureId] as IGridFeature).type === "lake";
-  const isOcean = (featureId: number) => featureId && (features[featureId] as IGridFeature).type === "ocean";
+  const features: Dict<"ocean" | "lake"> = {};
+  const featureIds: Dict<number> = {};
+  let featureId = 0;
 
-  for (const cellId of cells.i) {
-    const featureId = cells.f[cellId];
-    if (!isLake(featureId)) continue; // not a lake cell
+  const lakeCoastalCells: Dict<number[]> = {};
 
-    check_neighbours: for (const neibCellId of cells.c[cellId]) {
-      // water cannot brake the barrier
-      if (cells.t[neibCellId] !== WATER_COAST || cells.h[neibCellId] > LIMIT) continue;
+  for (const cellId of indexes) {
+    if (featureIds[cellId]) continue;
+    if (heights[cellId] >= MIN_LAND_HEIGHT) continue;
 
-      for (const neibOfNeibCellId of cells.c[neibCellId]) {
-        const neibOfNeibFeatureId = cells.f[neibOfNeibCellId];
-        if (!isOcean(neibOfNeibFeatureId)) continue; // not an ocean
-        removeLake(neibCellId, featureId, neibOfNeibFeatureId);
-        break check_neighbours;
+    featureId += 1;
+    const breachableCoastalCells: number[] = [];
+    let isLake = true; // lakes are features surrounded by land cells
+
+    const queue = [cellId];
+    featureIds[cellId] = featureId;
+
+    while (queue.length) {
+      const nextCellId = queue.pop()!;
+
+      for (const neighborId of neighbours[nextCellId]) {
+        if (isLake && borderCells[neighborId]) isLake = false;
+        if (featureIds[neighborId]) continue;
+        const height = heights[neighborId];
+
+        if (height < MIN_LAND_HEIGHT) {
+          featureIds[neighborId] = featureId;
+          queue.push(neighborId);
+        } else if (isLake && height <= MAX_BREACHABLE_HEIGHT) {
+          breachableCoastalCells.push(neighborId);
+        }
       }
     }
+
+    features[featureId] = isLake ? "lake" : "ocean";
+    if (isLake) lakeCoastalCells[featureId] = breachableCoastalCells;
   }
 
-  function removeLake(barrierCellId: number, lakeFeatureId: number, oceanFeatureId: number) {
-    cells.h[barrierCellId] = MIN_LAND_HEIGHT - 1;
-    cells.t[barrierCellId] = WATER_COAST;
-    cells.f[barrierCellId] = oceanFeatureId;
-
-    for (const neibCellId of cells.c[barrierCellId]) {
-      if (cells.h[neibCellId] >= MIN_LAND_HEIGHT) cells.t[neibCellId] = LAND_COAST;
-    }
-
-    if (features && lakeFeatureId) {
-      // mark former lake as ocean
-      (features[lakeFeatureId] as IGridFeature).type = "ocean";
-    }
-  }
+  console.log(featureIds, features, lakeCoastalCells);
 
   TIME && console.timeEnd("openNearSeaLakes");
+  return heights;
 }
 
 // some deeply depressed areas may not be resolved on river generation
