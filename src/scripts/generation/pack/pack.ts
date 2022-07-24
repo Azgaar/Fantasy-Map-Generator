@@ -1,14 +1,11 @@
 import * as d3 from "d3";
 
-import {markupPackFeatures} from "scripts/generation/markup";
-// @ts-expect-error js module
-import {drawScaleBar} from "modules/measurers";
-// @ts-expect-error js module
-import {addZones} from "modules/zones";
+import {UINT16_MAX} from "config/constants";
 import {DISTANCE_FIELD, MIN_LAND_HEIGHT} from "config/generation";
 import {TIME} from "config/logging";
-import {UINT16_MAX} from "config/constants";
 import {calculateVoronoi} from "scripts/generation/graph";
+import {markupPackFeatures} from "scripts/generation/markup";
+import {rankCells} from "scripts/generation/pack/rankCells";
 import {createTypedArray} from "utils/arrayUtils";
 import {pick} from "utils/functionUtils";
 import {rn} from "utils/numberUtils";
@@ -51,8 +48,18 @@ export function createPack(grid: IGrid): IPack {
     gridReference: cells.g
   });
 
-  // const rankCellsData = pick(newPack.cells, "i", "f", "fl", "conf", "r", "h", "area", "biome", "haven", "harbor");
-  // rankCells(newPack.features!, rankCellsData);
+  const {suitability, population} = rankCells(mergedFeatures, {
+    t: distanceField,
+    f: featureIds,
+    fl: riverIds,
+    conf,
+    r: riverIds,
+    h: heights,
+    area: cells.area,
+    biome,
+    haven,
+    harbor
+  });
 
   // Cultures.generate();
   // Cultures.expand();
@@ -90,10 +97,13 @@ export function createPack(grid: IGrid): IPack {
       fl: flux,
       r: riverIds,
       conf,
-      biome
+      biome,
+      s: suitability,
+      pop: population
+      // state, culture, religion, province, burg
     },
     features: mergedFeatures,
-    rivers: rawRivers
+    rivers: rawRivers // "name" | "basin" | "type"
   };
 
   return pack;

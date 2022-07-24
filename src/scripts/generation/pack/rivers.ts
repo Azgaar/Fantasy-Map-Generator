@@ -47,7 +47,7 @@ export function generateRivers(
 
   TIME && console.timeEnd("generateRivers");
 
-  return {heights, flux, riverIds, conf, rivers, mergedFeatures};
+  return {heights: new Uint8Array(heights), flux, riverIds, conf, rivers, mergedFeatures};
 
   function drainWater() {
     const MIN_FLUX_TO_FORM_RIVER = 30;
